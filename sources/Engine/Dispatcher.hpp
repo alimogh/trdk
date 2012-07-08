@@ -1,0 +1,41 @@
+/**************************************************************************
+ *   Created: 2012/07/09 16:09:53
+ *    Author: Eugene V. Palchukovsky
+ *    E-mail: eugene@palchukovsky.com
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot
+ **************************************************************************/
+
+#pragma once
+
+class Algo;
+
+class Dispatcher : private boost::noncopyable {
+
+private:
+
+	class AlgoState;
+	class Notifier;
+	class Slots;
+
+public:
+
+	Dispatcher();
+	~Dispatcher();
+
+public:
+
+	void Register(boost::shared_ptr<Algo>);
+
+public:
+
+	void Start();
+	void Stop();
+
+private:
+
+	
+	boost::shared_ptr<Notifier> m_notifier;
+	std::unique_ptr<Slots> m_slots;
+	
+};
