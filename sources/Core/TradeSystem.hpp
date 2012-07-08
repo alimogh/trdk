@@ -9,7 +9,6 @@
 #pragma once
 
 class Security;
-class DynamicSecurity;
 
 class TradeSystem : private boost::noncopyable {
 
@@ -63,7 +62,15 @@ public:
 		ORDER_STATUS_ERROR
 	};
 
-	typedef boost::function<void(OrderStatus, OrderQty, OrderPrice)> OrderStatusUpdateSlot;
+	typedef boost::function<
+			void(
+				OrderId,
+				OrderStatus,
+				OrderQty filled,
+				OrderQty remaining,
+				OrderPrice avgPrice,
+				OrderPrice lastPrice)>
+		OrderStatusUpdateSlot;
 
 public:
 

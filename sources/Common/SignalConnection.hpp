@@ -77,7 +77,7 @@ public:
 			return false;
 		}
 		foreach (const auto &c, m_list) {
-			if (c.connected()) {
+			if (!c.connected()) {
 				return false;
 			}
 		}

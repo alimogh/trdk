@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/07/09 12:47:34
+ *   Created: 2012/07/09 00:29:59
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,16 +8,21 @@
 
 #pragma once
 
-#include <boost/filesystem.hpp>
+class Position;
 
-struct Defaults {
+class PositionReporter : private boost::noncopyable {
 
-	static boost::filesystem::path GetLogFilePath();
+public:
 
-	static boost::filesystem::path GetIqFeedLogFilePath();
+	PositionReporter() {
+		//...//
+	}
+	virtual ~PositionReporter() {
+		//...//
+	}
 
-	static boost::filesystem::path GetMarketDataLogDir();
+public:
 
-	static boost::filesystem::path GetPositionsLogDir();
+	virtual void ReportClosedPositon(const Position &) = 0;
 
 };

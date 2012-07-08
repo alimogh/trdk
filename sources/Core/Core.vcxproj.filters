@@ -61,5 +61,11 @@
     <ClInclude Include="PositionBundle.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PositionReporter.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PositionReporterAlgo.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

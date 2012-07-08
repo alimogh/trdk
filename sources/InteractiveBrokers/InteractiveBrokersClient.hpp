@@ -16,10 +16,6 @@ class InteractiveBrokersClient : protected EWrapper {
 
 public:
 
-	typedef double RawPrice;
-
-public:
-
 	typedef std::list<boost::function<void()>> CallbackList;
 
 	typedef void (OrderStatusSlotSignature)(
@@ -28,7 +24,8 @@ public:
 			TradeSystem::OrderStatus,
 			long filled,
 			long remaining,
-			RawPrice price,
+			double avgFillPrice,
+			double lastFillPrice,
 			const std::string &whyHeld,
 			CallbackList &);
 	typedef boost::function<OrderStatusSlotSignature> OrderStatusSlot;
@@ -51,29 +48,29 @@ public:
 	TradeSystem::OrderId SendAsk(
 			const Security &,
 			TradeSystem::OrderQty,
-			RawPrice);
+			double);
 	TradeSystem::OrderId SendAskWithMarketPrice(
 			const Security &,
 			TradeSystem::OrderQty,
-			RawPrice stopPrice);
+			double stopPrice);
 	TradeSystem::OrderId SendIocAsk(
 			const Security &,
 			TradeSystem::OrderQty,
-			RawPrice);
+			double);
 
 	TradeSystem::OrderId SendBid(const Security &, TradeSystem::OrderQty);
 	TradeSystem::OrderId SendBid(
 			const Security &,
 			TradeSystem::OrderQty,
-			RawPrice);
+			double);
 	TradeSystem::OrderId SendBidWithMarketPrice(
 			const Security &,
 			TradeSystem::OrderQty,
-			RawPrice stopPrice);
+			double stopPrice);
 	TradeSystem::OrderId SendIocBid(
 			const Security &,
 			TradeSystem::OrderQty,
-			RawPrice);
+			double);
 
 	void CancelOrder(TradeSystem::OrderId);
 

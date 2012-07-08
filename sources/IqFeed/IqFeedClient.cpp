@@ -289,7 +289,7 @@ namespace {
 					Log::Error(IQFEED_CLIENT_CONNECTION_NAME ": ERROR message received.");
 					DumpReceived(message);
 				} else {
-					DumpReceived(message);
+					// DumpReceived(message);
 					HandleMessage(message);
 				}
 				m_messagesBuffer.erase(m_messagesBuffer.begin(), ++end);

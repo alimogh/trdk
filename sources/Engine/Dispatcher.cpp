@@ -12,6 +12,7 @@
 #include "Core/Security.hpp"
 #include "Core/PositionBundle.hpp"
 #include "Core/Position.hpp"
+#include "Core/PositionReporter.hpp"
 
 namespace mi = boost::multi_index;
 
@@ -155,38 +156,70 @@ public:
 private:
 
 	bool CheckPositionsUnsafe() {
-		Assert(m_algo->GetSecurity()); // must be checked it security object
+		
+		const DynamicSecurity &security
+			= *const_cast<const Algo &>(*m_algo).GetSecurity();
+		Assert(security); // must be checked it security object
+
 		if (m_positions) {
+
+			Assert(!m_positions->Get().empty());
 			Assert(m_stateUpdateConnections.IsConnected());
-			Assert(!m_algo->GetSecurity().IsHistoryData());
+			Assert(!security.IsHistoryData());
+			
+			ReportClosedPositon(*m_positions);
+
 			if (!m_positions->IsCompleted()) {
 				m_algo->ClosePositions(*m_positions);
 				if (!m_positions->IsCompleted()) {
 					return false;
 				}
 			}
+			ReportClosedPositon(*m_positions);
 			m_stateUpdateConnections.Diconnect();
 			m_positions.reset();
+
 		}
+
 		Assert(!m_stateUpdateConnections.IsConnected());
-		if (m_algo->GetSecurity().IsHistoryData()) {
+
+		if (security.IsHistoryData()) {
 			m_algo->Update();
 			return false;
 		}
+
 		boost::shared_ptr<PositionBandle> positions = m_algo->OpenPositions();
-		if (positions->Get().empty()) {
+		if (!positions || positions->Get().empty()) {
 			return false;
 		}
+
 		StateUpdateConnections stateUpdateConnections;
 		foreach (const auto &p, positions->Get()) {
+			Assert(&p->GetSecurity() == &security);
+			m_algo->ReportDecision(*p);
 			stateUpdateConnections.InsertSafe(
 				p->Subscribe(
 					boost::bind(&Notifier::Signal, m_notifier.get(), shared_from_this())));
 		}
+		Assert(stateUpdateConnections.IsConnected());
+
 		stateUpdateConnections.Swap(m_stateUpdateConnections);
 		positions.swap(m_positions);
 		return true;
-		
+
+	}
+
+private:
+
+	void ReportClosedPositon(PositionBandle &positions) {
+		Assert(!positions.Get().empty());
+		foreach (auto &p, positions.Get()) {
+			if (	(p->IsClosed() || p->IsNotClosed())
+					&& !p->IsReported()) {
+				m_algo->GetPositionReporter().ReportClosedPositon(*p);
+				p->MarkAsReported();
+			}
+		}
 	}
 
 private:
@@ -275,18 +308,19 @@ void Dispatcher::Stop() {
 }
 
 void Dispatcher::Register(boost::shared_ptr<Algo> algo) {
+	const DynamicSecurity &security = *const_cast<const Algo &>(*algo).GetSecurity();
 	{
 		const Slots::Lock lock(m_slots->m_dataUpdateMutex);
 		boost::shared_ptr<AlgoState> algoState(new AlgoState(algo, m_notifier));
 		m_slots->m_dataUpdateConnections.InsertSafe(
-			algo->GetSecurity().Subcribe(
+			security.Subcribe(
 				DynamicSecurity::UpdateSlot(
 					boost::bind(&Notifier::Signal, m_notifier.get(), algoState))));
 	}
 	Log::Info(
 		"Registered \"%1%\" for security \"%2%\".",
 		algo->GetName(),
-		algo->GetSecurity().GetFullSymbol());
+		security.GetFullSymbol());
 }
 
 ////////////////////////////////////////////////////////////////////////////////

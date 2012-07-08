@@ -8,22 +8,19 @@
 
 #pragma once
 
+#include "TradeSystem.hpp"
+
 class Instrument : private boost::noncopyable {
 
 public:
 
-	typedef boost::posix_time::ptime MarketDataTime;
-
-	typedef double Price;
-	typedef boost::int64_t ScaledPrice;
-
-public:
-
 	explicit Instrument(
+				boost::shared_ptr<TradeSystem> tradeSystem,
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange)
-			: m_symbol(symbol),
+			: m_tradeSystem(tradeSystem),
+			m_symbol(symbol),
 			m_primaryExchange(primaryExchange),
 			m_exchange(exchange),
 			m_fullSymbol((boost::format("%1%:%2%:%3%") % m_symbol % m_primaryExchange % m_exchange).str()) {
@@ -49,23 +46,15 @@ public:
 		return m_exchange;
 	}
 
-	const char * GetCurrency() const {
-		return "USD";
-	}
+protected:
 
-	unsigned int GetScale() const throw() {
-		return 10000;
-	}
-	
-	ScaledPrice Scale(Price price) const {
-		return Util::Scale(price, GetScale());
-	}
-	Price Descale(ScaledPrice price) const {
-		return Util::Descale(price, GetScale());
+	TradeSystem & GetTradeSystem() {
+		return *m_tradeSystem;
 	}
 
 private:
 
+	const boost::shared_ptr<TradeSystem> m_tradeSystem;
 	const std::string m_symbol;
 	const std::string m_primaryExchange;
 	const std::string m_exchange;

@@ -20,7 +20,7 @@ namespace Strategies { namespace QuickArbitrage {
 
 	public:
 
-		explicit Algo(boost::shared_ptr<const DynamicSecurity>);
+		explicit Algo(boost::shared_ptr<DynamicSecurity>);
 		virtual ~Algo();
 
 	public:
@@ -33,6 +33,20 @@ namespace Strategies { namespace QuickArbitrage {
 
 		virtual boost::shared_ptr<PositionBandle> OpenPositions();
 		virtual void ClosePositions(PositionBandle &);
+		
+		virtual void ReportDecision(const Position &) const;
+
+	protected:
+
+		Security::Price CalcLongPrice() const;
+		Security::Price CalcLongTakeProfit(Security::Price openPrice) const;
+		Security::Price CalcLongStopLoss(Security::Price openPrice) const;
+		
+		Security::Price CalcShortPrice() const;
+		Security::Price CalcShortTakeProfit(Security::Price openPrice) const;
+		Security::Price CalcShortStopLoss(Security::Price openPrice) const;
+
+		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
 
 	};
 

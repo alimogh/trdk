@@ -79,6 +79,8 @@
     <ClInclude Include="Log.hpp" />
     <ClInclude Include="Position.hpp" />
     <ClInclude Include="PositionBundle.hpp" />
+    <ClInclude Include="PositionReporter.hpp" />
+    <ClInclude Include="PositionReporterAlgo.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Security.hpp" />
     <ClInclude Include="TradeSystem.hpp" />

@@ -15,65 +15,70 @@ namespace lt = boost::local_time;
 //////////////////////////////////////////////////////////////////////////
 
 Security::Security(
+			boost::shared_ptr<TradeSystem> tradeSystem,
 			const std::string &symbol,
 			const std::string &primaryExchange,
 			const std::string &exchange)
-		: Base(symbol, primaryExchange, exchange) {
-	Interlocking::Exchange(m_last, 0);
-	Interlocking::Exchange(m_ask, 0);
-	Interlocking::Exchange(m_bid, 0);
+		: Base(tradeSystem, symbol, primaryExchange, exchange) {
+	//...//
 }
 
-Security::operator bool() const {
-	return m_last && m_ask && m_bid;
+void Security::Sell(
+			Qty qty,
+			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+	GetTradeSystem().Sell(*this, qty, orderStatusUpdateSlot);
 }
 
-Security::ScaledPrice Security::GetLastScaled() const {
-	return m_last;
+void Security::Sell(
+			Qty qty,
+			Price price,
+			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+	GetTradeSystem().Sell(*this, qty, price, orderStatusUpdateSlot);
 }
 
-Security::ScaledPrice Security::GetAskScaled() const {
-	return m_ask;
+void Security::SellAtMarketPrice(
+			Qty qty,
+			Price stopPrice,
+			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+	GetTradeSystem().SellAtMarketPrice(*this, qty, stopPrice, orderStatusUpdateSlot);
 }
 
-Security::ScaledPrice Security::GetBidScaled() const {
-	return m_bid;
+void Security::SellOrCancel(
+			Qty qty,
+			Price price,
+			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+	GetTradeSystem().SellOrCancel(*this, qty, price, orderStatusUpdateSlot);
 }
 
-bool Security::SetLast(Price last) {
-	return SetLast(Scale(last));
+void Security::Buy(
+			Qty qty,
+			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+	GetTradeSystem().Buy(*this, qty, orderStatusUpdateSlot);
 }
 
-bool Security::SetAsk(Price ask) {
-	return SetAsk(Scale(ask));
+void Security::Buy(
+			Qty qty,
+			Price price,
+			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+	GetTradeSystem().Buy(*this, qty, price, orderStatusUpdateSlot);
 }
 
-bool Security::SetBid(Price bid) {
-	return SetBid(Scale(bid));
+void Security::BuyAtMarketPrice(
+			Qty qty,
+			Price stopPrice,
+			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+	GetTradeSystem().BuyAtMarketPrice(*this, qty, stopPrice, orderStatusUpdateSlot);
 }
 
-bool Security::SetLast(ScaledPrice last) {
-	if (!last) {
-		return false;
-	}
-	Interlocking::Exchange(m_last, last);
-	return true;
+void Security::BuyOrCancel(
+			Qty qty,
+			Price price,
+			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+	GetTradeSystem().BuyOrCancel(*this, qty, price, orderStatusUpdateSlot);
 }
 
-bool Security::SetAsk(ScaledPrice ask) {
-	if (!ask) {
-		return false;
-	}
-	Interlocking::Exchange(m_ask, ask);
-	return true;
-}
-
-bool Security::SetBid(ScaledPrice bid) {
-	if (!bid) {
-		return false;
-	}
-	Interlocking::Exchange(m_bid, bid);
-	return true;
+void Security::CancelAllOrders() {
+	GetTradeSystem().CancelAllOrders(*this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -96,7 +101,7 @@ public:
 		if (isNew) {
 			fs::create_directories(filePath.branch_path());
 		}
-		m_file.open(filePath.c_str());
+		m_file.open(filePath.c_str(), std::ios::out | std::ios::ate | std::ios::app);
 		if (!m_file) {
 			Log::Error(
 				"Failed to open log file %1% for security market data.",
@@ -113,7 +118,7 @@ public:
 
 public:
 
-	void Append(const MarketDataTime &time, Price last, Price ask, Price bid) {
+	void Append(const MarketDataTime &time, double last, double ask, double bid) {
 		const lt::local_date_time esdTime(time, Util::GetEdtTimeZone());
 		// const Lock lock(m_mutex); - not required while it uses only one IQLink thread
 		m_file << esdTime << "," << last << "," << ask << "," << bid << std::endl;
@@ -127,22 +132,26 @@ private:
 };
 
 DynamicSecurity::DynamicSecurity(
+				boost::shared_ptr<TradeSystem> tradeSystem,
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange,
 				bool logMarketData)
-		: Base(symbol, primaryExchange, exchange) {
+		: Base(tradeSystem, symbol, primaryExchange, exchange) {
 	if (logMarketData) {
 		m_marketDataLog.reset(new MarketDataLog(GetFullSymbol()));
 	}
 	Interlocking::Exchange(m_isHistoryData, false);
+	Interlocking::Exchange(m_last, 0);
+	Interlocking::Exchange(m_ask, 0);
+	Interlocking::Exchange(m_bid, 0);
 }
 
 void DynamicSecurity::Update(
 				const MarketDataTime &time,
-				Price last,
-				Price ask,
-				Price bid) {
+				double last,
+				double ask,
+				double bid) {
 	if (!SetLast(last) || !SetAsk(ask) || !SetBid(bid)) {
 		return;
 	}
@@ -172,4 +181,53 @@ void DynamicSecurity::OnHistoryDataEnd() {
 	if (Interlocking::Exchange(m_isHistoryData, false) && *this) {
 		m_updateSignal();
 	}
+}
+
+DynamicSecurity::operator bool() const {
+	return m_last && m_ask && m_bid;
+}
+
+DynamicSecurity::Price DynamicSecurity::GetLastScaled() const {
+	return m_last;
+}
+
+Security::Price DynamicSecurity::GetAskScaled() const {
+	return m_ask;
+}
+
+Security::Price DynamicSecurity::GetBidScaled() const {
+	return m_bid;
+}
+
+bool DynamicSecurity::SetLast(double last) {
+	return SetLast(Scale(last));
+}
+
+bool DynamicSecurity::SetAsk(double ask) {
+	return SetAsk(Scale(ask));
+}
+
+bool DynamicSecurity::SetBid(double bid) {
+	return SetBid(Scale(bid));
+}
+
+bool DynamicSecurity::SetLast(Price last) {
+	if (!last) {
+		return false;
+	}
+	return Interlocking::Exchange(m_last, last) != last;
+}
+
+bool DynamicSecurity::SetAsk(Price ask) {
+	if (!ask) {
+		return false;
+	}
+	return Interlocking::Exchange(m_ask, ask) != ask;
+}
+
+bool DynamicSecurity::SetBid(Price bid) {
+	if (!bid) {
+		return false;
+	}
+	return Interlocking::Exchange(m_bid, bid) != bid;
 }

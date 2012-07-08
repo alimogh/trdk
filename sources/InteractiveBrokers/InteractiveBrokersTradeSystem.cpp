@@ -53,7 +53,8 @@ void InteractiveBrokersTradeSystem::Connect() {
 					TradeSystem::OrderStatus status,
 					long filled,
 					long remaining,
-					TradeSystem::OrderPrice price,
+					double avgFillPrice,
+					double lastFillPrice,
 					const std::string &/*whyHeld*/,
 					InteractiveBrokersClient::CallbackList &callBackList) {
 			UseUnused(remaining);
@@ -69,7 +70,6 @@ void InteractiveBrokersTradeSystem::Connect() {
 							break;
 						case TradeSystem::ORDER_STATUS_FILLED:
 							Assert(filled > 0);
-							Assert(remaining == 0);
 							isError = false;
 							/* no break */
 						case TradeSystem::ORDER_STATUS_CANCELLED:
@@ -78,7 +78,8 @@ void InteractiveBrokersTradeSystem::Connect() {
 							symb = pos->second.first;
 							callBack = pos->second.second;
 							m_orderToSecurity.erase(pos);
-							{
+							if (	status !=  TradeSystem::ORDER_STATUS_FILLED
+									|| remaining == 0) {
 								auto posSec = m_securityToOrder.find(symb);
 								while (	posSec != m_securityToOrder.end()
 										&& posSec->first == symb) {
@@ -113,7 +114,8 @@ void InteractiveBrokersTradeSystem::Connect() {
 			}
 			if (callBack) {
 				// Log::Trading("order-status", "act=reaction\tsource-order=%1%", id);
-				callBackList.push_back(boost::bind(callBack, status, filled, price));
+				callBackList.push_back(
+					boost::bind(callBack, id, status, filled, remaining, avgFillPrice, lastFillPrice));
 			}
 		});
 	client->StartData();

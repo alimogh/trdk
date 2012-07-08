@@ -412,6 +412,7 @@ public:
 					0,
 					0,
 					.0,
+					.0,
 					std::string(),
 					m_callBackList);
 				break;
@@ -422,6 +423,7 @@ public:
 					TradeSystem::ORDER_STATUS_CANCELLED,
 					0,
 					0,
+					.0,
 					.0,
 					std::string(),
 					m_callBackList);
@@ -541,7 +543,7 @@ TradeSystem::OrderId InteractiveBrokersClient::SendAsk(
 TradeSystem::OrderId InteractiveBrokersClient::SendAsk(
 			const Security &security,
 			TradeSystem::OrderQty qty,
-			RawPrice price) {
+			double price) {
 
 	Contract contract;
 	contract << security;
@@ -566,7 +568,7 @@ TradeSystem::OrderId InteractiveBrokersClient::SendAsk(
 TradeSystem::OrderId InteractiveBrokersClient::SendAskWithMarketPrice(
 			const Security &security,
 			TradeSystem::OrderQty qty,
-			RawPrice stopPrice) {
+			double stopPrice) {
 
 	Contract contract;
 	contract << security;
@@ -591,7 +593,7 @@ TradeSystem::OrderId InteractiveBrokersClient::SendAskWithMarketPrice(
 TradeSystem::OrderId InteractiveBrokersClient::SendIocAsk(
 			const Security &security,
 			TradeSystem::OrderQty qty,
-			RawPrice price) {
+			double price) {
 
 	Contract contract;
 	contract << security;
@@ -640,7 +642,7 @@ TradeSystem::OrderId InteractiveBrokersClient::SendBid(
 TradeSystem::OrderId InteractiveBrokersClient::SendBid(
 			const Security &security,
 			TradeSystem::OrderQty qty,
-			RawPrice price) {
+			double price) {
 
 	Contract contract;
 	contract << security;
@@ -665,7 +667,7 @@ TradeSystem::OrderId InteractiveBrokersClient::SendBid(
 TradeSystem::OrderId InteractiveBrokersClient::SendBidWithMarketPrice(
 			const Security &security,
 			TradeSystem::OrderQty qty,
-			RawPrice stopPrice) {
+			double stopPrice) {
 
 	Contract contract;
 	contract << security;
@@ -690,7 +692,7 @@ TradeSystem::OrderId InteractiveBrokersClient::SendBidWithMarketPrice(
 TradeSystem::OrderId InteractiveBrokersClient::SendIocBid(
 			const Security &security,
 			TradeSystem::OrderQty qty,
-			RawPrice price) {
+			double price) {
 
 	Contract contract;
 	contract << security;
@@ -728,7 +730,7 @@ void InteractiveBrokersClient::orderStatus(
 			const IBString &statusText,
 			int filled,
 			int remaining,
-			double /*avgFillPrice*/,
+			double avgFillPrice,
 			int /*permId*/,
 			int parentId,
 			double lastFillPrice,
@@ -770,6 +772,7 @@ void InteractiveBrokersClient::orderStatus(
 		statusPos->second,
 		filled,
 		remaining,
+		avgFillPrice,
 		lastFillPrice,
 		whyHeld,
 		m_pimpl->m_callBackList);

@@ -18,39 +18,52 @@ public:
 
 	typedef Instrument Base;
 
+	typedef TradeSystem::OrderStatusUpdateSlot OrderStatusUpdateSlot;
+
+	typedef boost::posix_time::ptime MarketDataTime;
+
+	typedef TradeSystem::OrderQty Qty;
+	typedef TradeSystem::OrderPrice Price;
+
 public:
 
 	explicit Security(
+				boost::shared_ptr<TradeSystem>,
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange);
 
 public:
 
-	//! Check security for valid market data and state.
-	operator bool() const;
+	const char * GetCurrency() const {
+		return "USD";
+	}
+
+	unsigned int GetScale() const throw() {
+		return 10000;
+	}
+	
+	Price Scale(double price) const {
+		return Util::Scale(price, GetScale());
+	}
+
+	double Descale(Price price) const {
+		return Util::Descale(price, GetScale());
+	}
 
 public:
 
-	ScaledPrice GetLastScaled() const;
-	ScaledPrice GetAskScaled() const;
-	ScaledPrice GetBidScaled() const;
+	void Sell(Qty, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
+	void Sell(Qty, Price, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
+	void SellAtMarketPrice(Qty, Price stopPrice, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
+	void SellOrCancel(Qty, Price, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
 
-protected:
+	void Buy(Qty, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
+	void Buy(Qty, Price, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
+	void BuyAtMarketPrice(Qty, Price stopPrice, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
+	void BuyOrCancel(Qty, Price, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
 
-	bool SetLast(Price last);
-	bool SetAsk(Price ask);
-	bool SetBid(Price bid);
-
-	bool SetLast(ScaledPrice);
-	bool SetAsk(ScaledPrice);
-	bool SetBid(ScaledPrice);
-
-private:
-
-	volatile LONGLONG m_last;
-	volatile LONGLONG m_ask;
-	volatile LONGLONG m_bid;
+	void CancelAllOrders();
 
 };
 
@@ -69,10 +82,32 @@ public:
 public:
 
 	explicit DynamicSecurity(
+				boost::shared_ptr<TradeSystem>,
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange,
 				bool logMarketData);
+
+public:
+
+	//! Check security for valid market data and state.
+	operator bool() const;
+
+public:
+
+	Price GetLastScaled() const;
+	Price GetAskScaled() const;
+	Price GetBidScaled() const;
+
+protected:
+
+	bool SetLast(double);
+	bool SetAsk(double);
+	bool SetBid(double);
+
+	bool SetLast(Price);
+	bool SetAsk(Price);
+	bool SetBid(Price);
 
 public:
 
@@ -82,7 +117,7 @@ public:
 
 public:
 
-	void Update(const MarketDataTime &, Price last, Price ask, Price bid);
+	void Update(const MarketDataTime &, double last, double ask, double bid);
 
 	void OnHistoryDataStart();
 	void OnHistoryDataEnd();
@@ -99,6 +134,10 @@ private:
 	mutable boost::signals2::signal<UpdateSlotSignature> m_updateSignal;
 
 	volatile LONGLONG m_isHistoryData;
+
+	volatile LONGLONG m_last;
+	volatile LONGLONG m_ask;
+	volatile LONGLONG m_bid;
 
 };
 

@@ -15,6 +15,8 @@
 #	include <boost/noncopyable.hpp>
 #	include <boost/shared_ptr.hpp>
 #	include <boost/signals2.hpp>
+#	include <boost/thread/mutex.hpp>
+#	include <boost/algorithm/string.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

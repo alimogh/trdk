@@ -10,7 +10,7 @@
 
 #include "Core/TradeSystem.hpp"
 
-class Security;
+class DynamicSecurity;
 
 class IqFeedClient : private boost::noncopyable {
 

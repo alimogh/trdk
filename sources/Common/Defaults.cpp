@@ -25,3 +25,9 @@ fs::path Defaults::GetMarketDataLogDir() {
 	result /= "MarketData";
 	return result;
 }
+
+fs::path Defaults::GetPositionsLogDir() {
+	auto result = GetLogFilePath();
+	result /= "Positions";
+	return result;
+}

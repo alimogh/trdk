@@ -43,14 +43,16 @@ namespace {
 
 void Trade() {
 
-	boost::shared_ptr<DynamicSecurity> fb(new DynamicSecurity("FB", "NASDAQ", "SMART", true));
+	boost::shared_ptr<TradeSystem> tradeSystem(new InteractiveBrokersTradeSystem);
+
+	boost::shared_ptr<DynamicSecurity> fb(
+		new DynamicSecurity(tradeSystem, "FB", "NASDAQ", "SMART", true));
 	boost::shared_ptr<Strategies::QuickArbitrage::Algo> quickArbitrage(
 		new Strategies::QuickArbitrage::Algo(fb));
 
 	Dispatcher dispatcher;
 	dispatcher.Register(quickArbitrage);
 
-	boost::shared_ptr<TradeSystem> tradeSystem(new InteractiveBrokersTradeSystem);
 	Connect(*tradeSystem);
 	
 	IqFeedClient marketDataSource;
