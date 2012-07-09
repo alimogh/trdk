@@ -59,10 +59,14 @@ namespace Util {
 		};
 	}
 
+	inline double RoundDouble(double source, size_t scale) {
+		return boost::math::round(source * scale) / scale;
+	}
+
 	template<size_t numbsAfterDot>
 	inline double RoundDouble(double source) {
 		typedef Detail::NumbsAfterDotToScale<numbsAfterDot> Scale;
-		return boost::math::round(source * Scale::GetScale()) / Scale::GetScale();
+		return RoundDouble(source, Scale::GetScale());
 	}
 
 	inline double AddPercents(double source, double percents) {
@@ -74,7 +78,7 @@ namespace Util {
 	}
 
 	inline double Descale(boost::int64_t value, unsigned long scale) {
-		return double(value) / scale;
+		return RoundDouble(double(value) / scale, scale);
 	}
 
 	boost::filesystem::path SymbolToFilePath(

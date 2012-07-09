@@ -552,7 +552,7 @@ TradeSystem::OrderId InteractiveBrokersClient::SendAsk(
 	order.action = "BUY";
 	order.totalQuantity = qty;
 	order.orderType = "LMT";
-	order.lmtPrice = Util::RoundDouble<2>(price);
+	order.lmtPrice = price;
 
 	const Implementation::Lock lock(m_pimpl->m_mutex);
 	m_pimpl->CheckState();
@@ -577,7 +577,7 @@ TradeSystem::OrderId InteractiveBrokersClient::SendAskWithMarketPrice(
 	order.action = "BUY";
 	order.totalQuantity = qty;
 	order.orderType = "STP";
-	order.auxPrice = Util::RoundDouble<2>(stopPrice);
+	order.auxPrice = stopPrice;
 
 	const Implementation::Lock lock(m_pimpl->m_mutex);
 	m_pimpl->CheckState();
@@ -603,7 +603,7 @@ TradeSystem::OrderId InteractiveBrokersClient::SendIocAsk(
 	order.totalQuantity = qty;
 	order.orderType = "LMT";
 	order.tif = "IOC";
-	order.lmtPrice = Util::RoundDouble<2>(price);
+	order.lmtPrice = price;
 
 	const Implementation::Lock lock(m_pimpl->m_mutex);
 	m_pimpl->CheckState();
@@ -651,7 +651,7 @@ TradeSystem::OrderId InteractiveBrokersClient::SendBid(
 	order.action = "SELL";
 	order.totalQuantity = qty;
 	order.orderType = "LMT";
-	order.lmtPrice = Util::RoundDouble<2>(price);
+	order.lmtPrice = price;
 
 	const Implementation::Lock lock(m_pimpl->m_mutex);
 	m_pimpl->CheckState();
@@ -676,7 +676,7 @@ TradeSystem::OrderId InteractiveBrokersClient::SendBidWithMarketPrice(
 	order.action = "SELL";
 	order.totalQuantity = qty;
 	order.orderType = "STP";
-	order.auxPrice = Util::RoundDouble<2>(stopPrice);
+	order.auxPrice = stopPrice;
 
 	const Implementation::Lock lock(m_pimpl->m_mutex);
 	m_pimpl->CheckState();
@@ -702,7 +702,7 @@ TradeSystem::OrderId InteractiveBrokersClient::SendIocBid(
 	order.totalQuantity = qty;
 	order.orderType = "LMT";
 	order.tif = "IOC";
-	order.lmtPrice = Util::RoundDouble<2>(price);
+	order.lmtPrice = price;
 
 	const Implementation::Lock lock(m_pimpl->m_mutex);
 	m_pimpl->CheckState();

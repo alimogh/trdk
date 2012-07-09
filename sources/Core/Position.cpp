@@ -127,7 +127,6 @@ void Position::UpdateOpening(
 				m_opened.orderId,
 				m_opened.qty);
 		case TradeSystem::ORDER_STATUS_CANCELLED:
-			Assert((m_opened.qty == 0) == (remaining == m_planedQty));
 			state = m_opened.qty == 0
 				?	STATE_NOT_OPENED
 				:	STATE_OPENED;

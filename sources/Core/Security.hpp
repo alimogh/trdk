@@ -40,7 +40,7 @@ public:
 	}
 
 	unsigned int GetScale() const throw() {
-		return 10000;
+		return 100;
 	}
 	
 	Price Scale(double price) const {
