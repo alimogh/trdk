@@ -63,6 +63,10 @@ public:
 
 	void Start() {
 		const Lock lock(m_mutex);
+		if (m_isActive) {
+			return;
+		}
+		Log::Info("Starting events dispatching...");
 		m_isActive = true;
 		m_condition.notify_all();
 	}

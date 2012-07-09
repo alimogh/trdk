@@ -10,7 +10,7 @@
 
 namespace fs = boost::filesystem;
 
-void Trade();
+void Trade(const std::string &);
 
 namespace {
 
@@ -47,7 +47,7 @@ namespace {
 void main() {
 	try {
 		InitLogs();
-		Trade();
+		Trade("Etc/trade.ini");
 	} catch (const std::exception &ex) {
 		Log::Error("Unexpected error: \"%1%\".", ex.what());
 	} catch (...) {

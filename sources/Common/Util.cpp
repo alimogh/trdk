@@ -37,3 +37,10 @@ pt::time_duration Util::GetEdtDiff() {
 	const lt::local_date_time estTime(boost::get_system_time(), GetEdtTimeZone());
 	return estTime.local_time() - estTime.utc_time();
 }
+
+std::string Util::CreateSymbolFullStr(
+			const std::string &symbol,
+			const std::string &primaryExchange,
+			const std::string &exchange) {
+	return (boost::format("%1%:%2%:%3%") % symbol % primaryExchange % exchange).str();
+}

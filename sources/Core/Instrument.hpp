@@ -23,7 +23,7 @@ public:
 			m_symbol(symbol),
 			m_primaryExchange(primaryExchange),
 			m_exchange(exchange),
-			m_fullSymbol((boost::format("%1%:%2%:%3%") % m_symbol % m_primaryExchange % m_exchange).str()) {
+			m_fullSymbol(Util::CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)) {
 		//...//
 	}
 

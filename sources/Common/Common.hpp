@@ -15,6 +15,7 @@
 #include "Common/UseUnused.hpp"
 #include "Common/SignalConnection.hpp"
 #include "Common/Foreach.hpp"
+#include "Common/IniFile.hpp"
 
 #include "Core/Log.hpp"
 #include "Core/Exception.hpp"

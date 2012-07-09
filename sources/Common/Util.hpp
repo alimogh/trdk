@@ -85,5 +85,10 @@ namespace Util {
 	boost::shared_ptr<boost::local_time::posix_time_zone> GetEdtTimeZone();
 
 	boost::posix_time::time_duration GetEdtDiff();
+
+	std::string CreateSymbolFullStr(
+				const std::string &symbol,
+				const std::string &primaryExchange,
+				const std::string &exchange);
 	
 }
