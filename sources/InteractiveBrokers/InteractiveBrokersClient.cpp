@@ -148,11 +148,7 @@ private:
 					}
 					if (nextIterationTime > m_clientNow) {
 						heavyCount = 0;
-						if (m_timeoutTime != pt::not_a_date_time) {
-							m_condition.timed_wait(*lock, m_timeoutTime);
-						} else {
-							m_condition.wait(*lock);
-						}
+						m_condition.timed_wait(*lock, nextIterationTime);
 					} else if (heavyCount == 5 || (heavyCount > 5 && !(++heavyCount % 10))) {
 						lock->unlock();
 						Log::Warn(

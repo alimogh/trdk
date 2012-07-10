@@ -38,15 +38,18 @@ namespace Strategies { namespace QuickArbitrage {
 
 	protected:
 
-		Security::Price CalcLongPrice() const;
-		Security::Price CalcLongTakeProfit(Security::Price openPrice) const;
-		Security::Price CalcLongStopLoss(Security::Price openPrice) const;
-		
-		Security::Price CalcShortPrice() const;
-		Security::Price CalcShortTakeProfit(Security::Price openPrice) const;
-		Security::Price CalcShortStopLoss(Security::Price openPrice) const;
-
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
+
+		void ReportStopLoss(const Position &) const;
+
+	private:
+
+		boost::shared_ptr<Position> OpenLongPosition();
+		boost::shared_ptr<Position> OpenShortPosition();
+
+		void ClosePosition(Position &);
+		void CloseLongPosition(Position &);
+		void CloseShortPosition(Position &);
 
 	};
 

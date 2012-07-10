@@ -11,7 +11,9 @@
 #include "Security.hpp"
 #include "TradeSystem.hpp"
 
-class Position : private boost::noncopyable {
+class Position
+		: private boost::noncopyable,
+		public boost::enable_shared_from_this<Position> {
 
 public:
 
@@ -37,6 +39,8 @@ public:
 		CLOSE_TYPE_STOP_LOSS
 	};
 
+	typedef boost::int64_t AlgoFlag;
+
 private:
 
 	typedef boost::signals2::signal<StateUpdateSlotSignature> StateUpdateSignal;
@@ -55,14 +59,15 @@ private:
 public:
 
 	explicit Position(
-				boost::shared_ptr<const Security> security,
-				Type,
-				Qty,
-				Price startPrice,
-				Price decisionAks,
-				Price decisionBid,
-				Price takeProfit,
-				Price stopLoss);
+			boost::shared_ptr<const Security> security,
+			Type,
+			Qty,
+			Price startPrice,
+			Price decisionAks,
+			Price decisionBid,
+			Price takeProfit,
+			Price stopLoss,
+			AlgoFlag algoFlag);
 	~Position();
 
 public:
@@ -74,6 +79,9 @@ public:
 
 	bool IsReported() const;
 	void MarkAsReported();
+
+	AlgoFlag GetAlgoFlag() const;
+	void SetAlgoFlag(AlgoFlag);
 
 	bool IsOpened() const;
 	bool IsNotOpened() const;
@@ -102,6 +110,13 @@ public:
 
 public:
 
+	StateUpdateConnection Subscribe(const StateUpdateSlot &) const;
+
+	Security::OrderStatusUpdateSlot GetSellOrderStatusUpdateSlot();
+	Security::OrderStatusUpdateSlot GetBuyOrderStatusUpdateSlot();
+
+protected:
+
 	void UpdateOpening(
 				TradeSystem::OrderId,
 				TradeSystem::OrderStatus,
@@ -116,10 +131,6 @@ public:
 				Qty remaining,
 				Price avgPrice,
 				Price lastPrice);
-
-public:
-
-	StateUpdateConnection Subscribe(const StateUpdateSlot &) const;
 
 private:
 
@@ -143,5 +154,6 @@ private:
 	CloseType m_closeType;
 
 	bool m_isReported;
+	AlgoFlag m_algoFlag;
 
 };

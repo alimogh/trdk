@@ -10,6 +10,8 @@
 
 #include "Instrument.hpp"
 
+class Position;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 class Security : public Instrument {
@@ -53,15 +55,15 @@ public:
 
 public:
 
-	void Sell(Qty, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
-	void Sell(Qty, Price, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
-	void SellAtMarketPrice(Qty, Price stopPrice, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
-	void SellOrCancel(Qty, Price, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
+	void Sell(Qty, Position &);
+	void Sell(Qty, Price, Position &);
+	void SellAtMarketPrice(Qty, Price stopPrice, Position &);
+	void SellOrCancel(Qty, Price, Position &);
 
-	void Buy(Qty, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
-	void Buy(Qty, Price, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
-	void BuyAtMarketPrice(Qty, Price stopPrice, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
-	void BuyOrCancel(Qty, Price, OrderStatusUpdateSlot = OrderStatusUpdateSlot());
+	void Buy(Qty, Position &);
+	void Buy(Qty, Price, Position &);
+	void BuyAtMarketPrice(Qty, Price stopPrice, Position &);
+	void BuyOrCancel(Qty, Price, Position &);
 
 	void CancelAllOrders();
 

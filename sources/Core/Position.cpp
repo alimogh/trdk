@@ -42,7 +42,8 @@ Position::Position(
 			Price decisionAks,
 			Price decisionBid,
 			Price takeProfit,
-			Price stopLoss)
+			Price stopLoss,
+			AlgoFlag algoFlag)
 		: m_security(security),
 		m_type(type),
 		m_planedQty(qty),
@@ -52,12 +53,21 @@ Position::Position(
 		m_takeProfit(takeProfit),
 		m_stopLoss(stopLoss),
 		m_closeType(CLOSE_TYPE_NONE),
-		m_isReported(false) {
+		m_isReported(false),
+		m_algoFlag(algoFlag) {
 	Interlocking::Exchange(m_state, STATE_NONE);
 }
 
 Position::~Position() {
 	//...//
+}
+
+Position::AlgoFlag Position::GetAlgoFlag() const {
+	return m_algoFlag;
+}
+
+void Position::SetAlgoFlag(AlgoFlag algoFlag) {
+	m_algoFlag = algoFlag;
 }
 
 bool Position::IsReported() const {
@@ -134,7 +144,7 @@ void Position::UpdateOpening(
 	}
 	Assert(m_opened.qty <= m_planedQty);
 
-	if (state >= STATE_OPENED) {
+	if (state >= STATE_OPENED && state < STATE_NOT_CLOSED) {
 		Assert(state == STATE_OPENED);
 		Assert(m_opened.time.is_not_a_date_time());
 		if (m_opened.time.is_not_a_date_time()) {
@@ -144,9 +154,7 @@ void Position::UpdateOpening(
 
 	Interlocking::Exchange(m_state, state);
 	if (m_state >= STATE_OPENED) {
-		Assert(state == STATE_OPENED);
 		Assert(m_opened.orderId != 0);
-		Assert(!m_opened.time.is_not_a_date_time());
 		Assert(m_closed.orderId == 0);
 		Assert(m_closed.time.is_not_a_date_time());
 		Assert(m_closed.qty == 0);
@@ -212,7 +220,7 @@ void Position::UpdateClosing(
 	}
 	Assert(m_opened.qty <= m_planedQty);
 
-	if (state > STATE_OPENED) {
+	if (state > STATE_OPENED && state < STATE_NOT_CLOSED) {
 		Assert(m_closed.time.is_not_a_date_time());
 		if (m_closed.time.is_not_a_date_time()) {
 			m_closed.time = boost::get_system_time();
@@ -274,6 +282,30 @@ Position::StateUpdateConnection Position::Subscribe(
 			const StateUpdateSlot &slot)
 		const {
 	return StateUpdateConnection(m_stateUpdateSignal.connect(slot));
+}
+
+Security::OrderStatusUpdateSlot Position::GetSellOrderStatusUpdateSlot() {
+	switch (m_type) {
+		case TYPE_LONG:
+			return boost::bind(&Position::UpdateClosing, shared_from_this(), _1, _2, _3, _4, _5, _6);
+		case  TYPE_SHORT:
+			return boost::bind(&Position::UpdateOpening, shared_from_this(), _1, _2, _3, _4, _5, _6);
+		default:
+			AssertFail("Unknown position type.");
+			throw Exception("Unknown position type");
+	}
+}
+
+Security::OrderStatusUpdateSlot Position::GetBuyOrderStatusUpdateSlot() {
+	switch (m_type) {
+		case TYPE_LONG:
+			return boost::bind(&Position::UpdateOpening, shared_from_this(), _1, _2, _3, _4, _5, _6);
+		case  TYPE_SHORT:
+			return boost::bind(&Position::UpdateClosing, shared_from_this(), _1, _2, _3, _4, _5, _6);
+		default:
+			AssertFail("Unknown position type.");
+			throw Exception("Unknown position type");
+	}
 }
 
 Position::Type Position::GetType() const {

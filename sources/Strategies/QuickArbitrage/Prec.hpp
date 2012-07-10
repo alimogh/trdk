@@ -17,6 +17,7 @@
 #	include <boost/signals2.hpp>
 #	include <boost/thread/mutex.hpp>
 #	include <boost/algorithm/string.hpp>
+#	include <boost/enable_shared_from_this.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

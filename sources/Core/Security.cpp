@@ -8,6 +8,7 @@
 
 #include "Prec.hpp"
 #include "Security.hpp"
+#include "Position.hpp"
 
 namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
@@ -23,58 +24,36 @@ Security::Security(
 	//...//
 }
 
-void Security::Sell(
-			Qty qty,
-			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
-	GetTradeSystem().Sell(*this, qty, orderStatusUpdateSlot);
+void Security::Sell(Qty qty, Position &position) {
+	GetTradeSystem().Sell(*this, qty, position.GetSellOrderStatusUpdateSlot());
 }
 
-void Security::Sell(
-			Qty qty,
-			Price price,
-			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
-	GetTradeSystem().Sell(*this, qty, price, orderStatusUpdateSlot);
+void Security::Sell(Qty qty, Price price, Position &position) {
+	GetTradeSystem().Sell(*this, qty, price, position.GetSellOrderStatusUpdateSlot());
 }
 
-void Security::SellAtMarketPrice(
-			Qty qty,
-			Price stopPrice,
-			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
-	GetTradeSystem().SellAtMarketPrice(*this, qty, stopPrice, orderStatusUpdateSlot);
+void Security::SellAtMarketPrice(Qty qty, Price stopPrice, Position &position) {
+	GetTradeSystem().SellAtMarketPrice(*this, qty, stopPrice, position.GetSellOrderStatusUpdateSlot());
 }
 
-void Security::SellOrCancel(
-			Qty qty,
-			Price price,
-			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
-	GetTradeSystem().SellOrCancel(*this, qty, price, orderStatusUpdateSlot);
+void Security::SellOrCancel(Qty qty, Price price, Position &position) {
+	GetTradeSystem().SellOrCancel(*this, qty, price, position.GetSellOrderStatusUpdateSlot());
 }
 
-void Security::Buy(
-			Qty qty,
-			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
-	GetTradeSystem().Buy(*this, qty, orderStatusUpdateSlot);
+void Security::Buy(Qty qty, Position &position) {
+	GetTradeSystem().Buy(*this, qty, position.GetBuyOrderStatusUpdateSlot());
 }
 
-void Security::Buy(
-			Qty qty,
-			Price price,
-			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
-	GetTradeSystem().Buy(*this, qty, price, orderStatusUpdateSlot);
+void Security::Buy(Qty qty, Price price, Position &position) {
+	GetTradeSystem().Buy(*this, qty, price, position.GetBuyOrderStatusUpdateSlot());
 }
 
-void Security::BuyAtMarketPrice(
-			Qty qty,
-			Price stopPrice,
-			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
-	GetTradeSystem().BuyAtMarketPrice(*this, qty, stopPrice, orderStatusUpdateSlot);
+void Security::BuyAtMarketPrice(Qty qty, Price stopPrice, Position &position) {
+	GetTradeSystem().BuyAtMarketPrice(*this, qty, stopPrice, position.GetBuyOrderStatusUpdateSlot());
 }
 
-void Security::BuyOrCancel(
-			Qty qty,
-			Price price,
-			OrderStatusUpdateSlot orderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
-	GetTradeSystem().BuyOrCancel(*this, qty, price, orderStatusUpdateSlot);
+void Security::BuyOrCancel(Qty qty, Price price, Position &position) {
+	GetTradeSystem().BuyOrCancel(*this, qty, price, position.GetBuyOrderStatusUpdateSlot());
 }
 
 void Security::CancelAllOrders() {
