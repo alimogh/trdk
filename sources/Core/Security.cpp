@@ -131,6 +131,9 @@ void DynamicSecurity::Update(
 				double last,
 				double ask,
 				double bid) {
+	if (m_marketDataLog) {
+		m_marketDataLog->Append(time, last, ask, bid);
+	}
 	if (!SetLast(last) || !SetAsk(ask) || !SetBid(bid)) {
 		return;
 	}
@@ -139,9 +142,6 @@ void DynamicSecurity::Update(
 		return;
 	}
 	m_updateSignal();
-	if (m_marketDataLog) {
-		m_marketDataLog->Append(time, last, ask, bid);
-	}
 }
 
 DynamicSecurity::UpdateSlotConnection DynamicSecurity::Subcribe(
