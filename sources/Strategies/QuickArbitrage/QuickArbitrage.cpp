@@ -23,20 +23,66 @@ namespace {
 
 	const char *const logTag = "quick-arbitrage";
 
+	const std::string algoName = "Quick Arbitrage";
+
 }
 
-s::Algo::Algo(boost::shared_ptr<DynamicSecurity> security)
+s::Algo::Algo(
+			boost::shared_ptr<DynamicSecurity> security,
+			const IniFile &ini,
+			const std::string &section)
 		: Base(security) {
-	//...//
+	DoSettingsUpodate(ini, section);
 }
 
 s::Algo::~Algo() {
 	//...//
 }
 
+void s::Algo::UpdateAlogImplSettings(const IniFile &ini, const std::string &section) {
+	DoSettingsUpodate(ini, section);
+}
+
+void s::Algo::DoSettingsUpodate(const IniFile &ini, const std::string &section) {
+	
+	Settings settings = {};
+	settings.shortPos.isEnabled = ini.ReadBoolKey(section, "open_shorts");
+	if (settings.shortPos.isEnabled) {
+		settings.shortPos.priceMod
+			= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "short_open_price"));
+	}
+	settings.longPos.isEnabled = ini.ReadBoolKey(section, "open_longs");
+	if (settings.longPos.isEnabled) {
+		settings.longPos.priceMod
+			= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "long_open_price"));
+	}
+	settings.takeProfit
+		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "take_profit"));
+	settings.stopLoss
+		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "stop_loss"));
+	settings.volume
+		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "volume"));
+
+	m_settings = settings;
+
+	Log::Info(
+		"Settings: algo \"%1%\" for \"%2%\":"
+			" open_shorts = %3%; short_open_price = %4%; open_longs = %5%; long_open_price = %6%;"
+			" take_profit = %7%; stop_loss = %8%; volume = %9%;",
+		algoName,
+		GetSecurity()->GetFullSymbol(),
+		m_settings.shortPos.isEnabled ? "yes" : "no",
+		GetSecurity()->Descale(m_settings.shortPos.priceMod),
+		m_settings.longPos.isEnabled ? "yes" : "no",
+		GetSecurity()->Descale(m_settings.longPos.priceMod),
+		GetSecurity()->Descale(m_settings.takeProfit),
+		GetSecurity()->Descale(m_settings.stopLoss),
+		GetSecurity()->Descale(m_settings.volume));
+
+}
+
 const std::string & s::Algo::GetName() const {
-	static const std::string name = "Quick Arbitrage";
-	return name;
+	return algoName;
 }
 
 std::auto_ptr<PositionReporter> s::Algo::CreatePositionReporter() const {
@@ -50,8 +96,12 @@ void s::Algo::Update() {
 
 boost::shared_ptr<PositionBandle> s::Algo::OpenPositions() {
 	boost::shared_ptr<PositionBandle> result(new PositionBandle);
-	result->Get().push_back(OpenLongPosition());
-	result->Get().push_back(OpenShortPosition());
+	if (m_settings.longPos.isEnabled) {
+		result->Get().push_back(OpenLongPosition());
+	}
+	if (m_settings.shortPos.isEnabled) {
+		result->Get().push_back(OpenShortPosition());
+	}
 	return result;
 }
 
@@ -60,15 +110,15 @@ boost::shared_ptr<Position> s::Algo::OpenLongPosition() {
 	DynamicSecurity &security = *GetSecurity();
 	const auto ask = security.GetAskScaled();
 	const auto bid = security.GetBidScaled();
-	const auto price = ask - security.Scale(0.04);
-	const auto takeProfit = price + security.Scale(0.04);
-	const auto stopLoss = price - security.Scale(0.04);
+	const auto price = ask - m_settings.longPos.priceMod;
+	const auto takeProfit = price + m_settings.takeProfit;
+	const auto stopLoss = price - m_settings.stopLoss;
 	
 	boost::shared_ptr<Position> result(
 		new Position(
 			GetSecurity(),
 			Position::TYPE_LONG,
-			CalcQty(price),
+			CalcQty(price, m_settings.volume),
 			price,
 			ask,
 			bid,
@@ -86,15 +136,15 @@ boost::shared_ptr<Position> s::Algo::OpenShortPosition() {
 	DynamicSecurity &security = *GetSecurity();
 	const auto ask = security.GetAskScaled();
 	const auto bid = security.GetBidScaled();
-	const auto price = bid + security.Scale(0.04);
-	const auto takeProfit = price - security.Scale(0.04);
-	const auto stopLoss = price + security.Scale(0.04);
+	const auto price = bid + m_settings.shortPos.priceMod;
+	const auto takeProfit = price - m_settings.takeProfit;
+	const auto stopLoss = price + m_settings.stopLoss;
 
 	boost::shared_ptr<Position> result(
 		new Position(
 			GetSecurity(),
 			Position::TYPE_SHORT,
-			CalcQty(price),
+			CalcQty(price, m_settings.volume),
 			price,
 			ask,
 			bid,

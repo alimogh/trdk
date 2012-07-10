@@ -18,9 +18,31 @@ namespace Strategies { namespace QuickArbitrage {
 
 		typedef ::Algo Base;
 
+	private:
+
+		struct Settings {
+
+			struct Direction {
+				bool isEnabled;
+				Security::Price priceMod;
+			};
+
+			Direction shortPos;
+			Direction longPos;
+
+			Security::Price takeProfit;
+			Security::Price stopLoss;
+
+			Security::Price volume;
+
+		};
+
 	public:
 
-		explicit Algo(boost::shared_ptr<DynamicSecurity>);
+		explicit Algo(
+				boost::shared_ptr<DynamicSecurity>,
+				const IniFile &,
+				const std::string &section);
 		virtual ~Algo();
 
 	public:
@@ -42,6 +64,12 @@ namespace Strategies { namespace QuickArbitrage {
 
 		void ReportStopLoss(const Position &) const;
 
+		virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section);
+
+	private:
+
+		void DoSettingsUpodate(const IniFile &, const std::string &section);
+
 	private:
 
 		boost::shared_ptr<Position> OpenLongPosition();
@@ -50,6 +78,10 @@ namespace Strategies { namespace QuickArbitrage {
 		void ClosePosition(Position &);
 		void CloseLongPosition(Position &);
 		void CloseShortPosition(Position &);
+
+	private:
+
+		Settings m_settings;
 
 	};
 

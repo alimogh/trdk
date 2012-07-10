@@ -13,8 +13,14 @@
 class PositionBandle;
 class Position;
 class PositionReporter;
+class IniFile;
 
 class Algo : private boost::noncopyable {
+
+public:
+
+	typedef boost::mutex Mutex;
+	typedef Mutex::scoped_lock Lock;
 
 public:
 
@@ -31,6 +37,10 @@ public:
 
 	virtual boost::posix_time::ptime GetLastDataTime();
 
+	void UpdateSettings(const IniFile &, const std::string &section);
+
+	Mutex & GetMutex();
+
 public:
 
 	virtual void Update() = 0;
@@ -44,12 +54,15 @@ protected:
 
 	boost::shared_ptr<DynamicSecurity> GetSecurity();
 
-	Security::Qty CalcQty(Security::Price) const;
+	Security::Qty CalcQty(Security::Price, Security::Price volume) const;
 
 	virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const = 0;
 
+	virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section) = 0;
+
 private:
 
+	Mutex m_mutex;
 	const boost::shared_ptr<DynamicSecurity> m_security;
 	PositionReporter *m_positionReporter;
 

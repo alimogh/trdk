@@ -49,6 +49,11 @@ public:
 		SymbolFormatError() throw();
 	};
 
+	class KeyFormatError : public Error {
+	public:
+		KeyFormatError(const char *what) throw();
+	};
+
 	struct Symbol {
 		std::string symbol;
 		std::string exchange;
@@ -88,8 +93,16 @@ public:
 				const std::string &section,
 				const std::string &key)
 			const {
-		return boost::lexical_cast<T>(ReadKey(section, key));
+		try {
+			return boost::lexical_cast<T>(ReadKey(section, key, false));
+		} catch (const boost::bad_lexical_cast &ex) {
+			boost::format message("Wrong INI-file key (\"%1%:%2%\") format: \"%3%\"");
+			message % section % key % ex.what();
+			throw KeyFormatError(message.str().c_str());
+		}
 	}
+
+	bool ReadBoolKey(const std::string &section, const std::string &key) const;
 
 	std::list<std::string> ReadList() const;
 

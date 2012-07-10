@@ -83,6 +83,11 @@ IniFile::SymbolFormatError::SymbolFormatError()
 	//...//
 }
 
+IniFile::KeyFormatError::KeyFormatError(const char *what)
+		: Error(what) {
+	//...//
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 IniFile::IniFile(const fs::path &path)
@@ -195,6 +200,20 @@ std::string IniFile::ReadKey(
 	}
 	boost::trim(result);
 	return result;
+}
+
+
+bool IniFile::ReadBoolKey(const std::string &section, const std::string &key) const {
+	const std::string val = ReadKey(section, key, false);
+	if (boost::iequals(val, "true") || boost::iequals(val, "yes") || val == "1") {
+		return true;
+	} else if (!boost::iequals(val, "false") && !boost::iequals(val, "no") && val != "0") {
+		boost::format message("Wrong INI-file key (\"%1%:%2%\") format: \"for boolean available values: true/false, yes/no, 1/0");
+		message % section % key;
+		throw KeyFormatError(message.str().c_str());
+	} else {
+		return false;
+	}
 }
 
 std::list<std::string> IniFile::ReadList() const {

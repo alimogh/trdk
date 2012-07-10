@@ -137,9 +137,6 @@ class Dispatcher::AlgoState
 
 private:
 
-	typedef boost::mutex Mutex;
-	typedef Mutex::scoped_lock Lock;
-
 	typedef SignalConnectionList<Position::StateUpdateConnection> StateUpdateConnections;
 
 public:
@@ -153,7 +150,7 @@ public:
 	}
 
 	void CheckPositions() {
-		const Lock lock(m_mutex);
+		const Algo::Lock lock(m_algo->GetMutex());
 		while (CheckPositionsUnsafe());
 	}
 
@@ -228,7 +225,6 @@ private:
 
 private:
 
-	Mutex m_mutex;
 	boost::shared_ptr<Algo> m_algo;
 	boost::shared_ptr<PositionBandle> m_positions;
 		

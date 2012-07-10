@@ -21,10 +21,17 @@ Algo::~Algo() {
 	delete m_positionReporter;
 }
 
-Security::Qty Algo::CalcQty(Security::Price price) const {
-	return std::max<Security::Qty>(
-		1,
-		Security::Qty(10000.0 / GetSecurity()->Descale(price)));
+Algo::Mutex & Algo::GetMutex() {
+	return m_mutex;
+}
+
+void Algo::UpdateSettings(const IniFile &ini, const std::string &section) {
+	const Lock lock(m_mutex);
+	UpdateAlogImplSettings(ini, section);
+}
+
+Security::Qty Algo::CalcQty(Security::Price price, Security::Price volume) const {
+	return std::max<Security::Qty>(1, Security::Qty(volume / price));
 }
 
 boost::shared_ptr<const DynamicSecurity> Algo::GetSecurity() const {

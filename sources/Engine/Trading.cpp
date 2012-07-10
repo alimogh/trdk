@@ -80,16 +80,6 @@ namespace {
 		securititesTmp.swap(securitites);
 	}
 
-	boost::shared_ptr<Algo> CreateQuickArbitrageAlgo(
-				boost::shared_ptr<DynamicSecurity> security,
-				const std::string &/*iniSection*/,
-				const IniFile &/*ini*/) {
-		Assert(security);
-		boost::shared_ptr<Strategies::QuickArbitrage::Algo> algo(
-			new Strategies::QuickArbitrage::Algo(security));
-		return algo;
-	}
-
 }
 
 void Trade(const std::string &iniFilePath) {
@@ -140,10 +130,11 @@ void Trade(const std::string &iniFilePath) {
 				foreach (const auto &symbol, symbols) {
 					Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
 					try {
-						auto algo = CreateQuickArbitrageAlgo(
-							securities[CreateSecuritiesKey(symbol)],
-							section,
-							ini);
+						boost::shared_ptr<Algo> algo(
+							new Strategies::QuickArbitrage::Algo(
+								securities[CreateSecuritiesKey(symbol)],
+								ini,
+								section));
 						algos.push_back(algo);
 						Log::Info(
 							"Loaded strategy \"%1%\" for \"%2%\".",
