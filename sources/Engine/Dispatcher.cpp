@@ -145,41 +145,44 @@ public:
 				boost::shared_ptr<Algo> algo,
 				boost::shared_ptr<Notifier> notifier)
 			: m_algo(algo),
-			m_notifier(notifier) {
+			m_notifier(notifier),
+			m_isBlocked(false) {
 		//...//
 	}
 
 	void CheckPositions() {
 		const Algo::Lock lock(m_algo->GetMutex());
+		if (m_isBlocked) {
+			return;
+		}
 		while (CheckPositionsUnsafe());
 	}
 
 private:
 
 	bool CheckPositionsUnsafe() {
+
+		Assert(!m_isBlocked);
 		
 		const DynamicSecurity &security
 			= *const_cast<const Algo &>(*m_algo).GetSecurity();
 		Assert(security); // must be checked it security object
 
 		if (m_positions) {
-
 			Assert(!m_positions->Get().empty());
 			Assert(m_stateUpdateConnections.IsConnected());
 			Assert(!security.IsHistoryData());
-			
 			ReportClosedPositon(*m_positions);
-
 			if (!m_positions->IsCompleted()) {
-				m_algo->ClosePositions(*m_positions);
-				if (!m_positions->IsCompleted()) {
-					return false;
+				if (!m_positions->IsCloseError()) {
+					m_algo->TryToClosePositions(*m_positions);
+				} else {
+					m_isBlocked = true;
 				}
+				return false;
 			}
-			ReportClosedPositon(*m_positions);
 			m_stateUpdateConnections.Diconnect();
 			m_positions.reset();
-
 		}
 
 		Assert(!m_stateUpdateConnections.IsConnected());
@@ -189,7 +192,7 @@ private:
 			return false;
 		}
 
-		boost::shared_ptr<PositionBandle> positions = m_algo->OpenPositions();
+		boost::shared_ptr<PositionBandle> positions = m_algo->TryToOpenPositions();
 		if (!positions || positions->Get().empty()) {
 			return false;
 		}
@@ -215,7 +218,7 @@ private:
 	void ReportClosedPositon(PositionBandle &positions) {
 		Assert(!positions.Get().empty());
 		foreach (auto &p, positions.Get()) {
-			if (	(p->IsClosed() || p->IsNotClosed())
+			if (	(p->IsClosed() || p->IsCloseError())
 					&& !p->IsReported()) {
 				m_algo->GetPositionReporter().ReportClosedPositon(*p);
 				p->MarkAsReported();
@@ -230,6 +233,8 @@ private:
 		
 	boost::shared_ptr<Notifier> m_notifier;
 	StateUpdateConnections m_stateUpdateConnections;
+
+	bool m_isBlocked;
 
 };
 

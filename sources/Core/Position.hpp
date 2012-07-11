@@ -59,7 +59,7 @@ private:
 public:
 
 	explicit Position(
-			boost::shared_ptr<const Security> security,
+			boost::shared_ptr<const DynamicSecurity> security,
 			Type,
 			Qty,
 			Price startPrice,
@@ -72,11 +72,12 @@ public:
 
 public:
 
-	const Security & GetSecurity() const;
+	const DynamicSecurity & GetSecurity() const;
 
 	void SetCloseType(CloseType);
 	CloseType GetCloseType() const;
-
+	const char * GetCloseTypeStr() const;
+	
 	bool IsReported() const;
 	void MarkAsReported();
 
@@ -84,10 +85,9 @@ public:
 	void SetAlgoFlag(AlgoFlag);
 
 	bool IsOpened() const;
-	bool IsNotOpened() const;
 	bool IsClosed() const;
-	bool IsNotClosed() const;
-	bool IsCompleted() const;
+	bool IsOpenError() const;
+	bool IsCloseError() const;
 
 	Type GetType() const;
 	const char * GetTypeStr() const;
@@ -132,11 +132,22 @@ protected:
 				double avgPrice,
 				double lastPrice);
 
+	void ReportOpeningUpdate(
+				const char *eventDesc,
+				TradeSystem::OrderStatus,
+				long state)
+			const;
+	void ReportClosingUpdate(
+				const char *eventDesc,
+				TradeSystem::OrderStatus,
+				long state)
+			const;
+
 private:
 
 	mutable StateUpdateSignal m_stateUpdateSignal;
 
-	boost::shared_ptr<const Security> m_security;
+	boost::shared_ptr<const DynamicSecurity> m_security;
 
 	const Type m_type;
 	const Qty m_planedQty;

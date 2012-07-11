@@ -14,11 +14,22 @@
 namespace {
 
 	enum State {
+		//! not opened
 		STATE_NONE,
+		//! partial filled
+		STATE_OPENING,
+		//! not opened, error occurred
+		STATE_OPEN_ERROR,
+		//! opened
 		STATE_OPENED,
-		STATE_CLOSED,
-		STATE_NOT_CLOSED,
-		STATE_NOT_OPENED
+		//! partial filled
+		STATE_CLOSING,
+		//! closing after order cancel
+		STATE_RECLOSING,
+		//! opened and not closed, error occurred at closing
+		STATE_CLOSE_ERROR,
+		//! opened and then closed
+		STATE_CLOSED
 	};
 
 }
@@ -35,7 +46,7 @@ Position::DynamicData::DynamicData()
 //////////////////////////////////////////////////////////////////////////
 
 Position::Position(
-			boost::shared_ptr<const Security> security,
+			boost::shared_ptr<const DynamicSecurity> security,
 			Type type,
 			Qty qty,
 			Price startPrice,
@@ -87,6 +98,19 @@ Position::CloseType Position::GetCloseType() const {
 	return m_closeType;
 }
 
+const char * Position::GetCloseTypeStr() const {
+	switch (m_closeType) {
+		default:
+			AssertFail("Unknown position close type.");
+		case CLOSE_TYPE_NONE:
+			return "-";
+		case CLOSE_TYPE_TAKE_PROFIT:
+			return "t/p";
+		case CLOSE_TYPE_STOP_LOSS:
+			return "s/l";
+	}
+}
+
 void Position::UpdateOpening(
 			TradeSystem::OrderId orderId,
 			TradeSystem::OrderStatus orderStatus,
@@ -95,7 +119,8 @@ void Position::UpdateOpening(
 			double avgPrice,
 			double /*lastPrice*/) {
 
-	Assert(m_state < STATE_OPENED);
+	Assert(!IsOpened());
+	Assert(m_state == STATE_NONE || m_state == STATE_OPENING);
 	Assert(m_opened.orderId == 0 || m_opened.orderId == orderId);
 	Assert(m_closed.orderId == 0);
 	Assert(m_closed.price == 0);
@@ -121,10 +146,9 @@ void Position::UpdateOpening(
 			Assert(avgPrice > 0);
 			m_opened.price = m_security->Scale(avgPrice);
 			m_opened.qty += filled;
-			if (remaining == 0) {
-				Assert(m_opened.qty > 0);
-				state = STATE_OPENED;
-			}
+			Assert(m_opened.qty > 0);
+			state = remaining == 0 ? STATE_OPENED : STATE_OPENING;
+			ReportOpeningUpdate("filled", orderStatus, state);
 			break;
 		case TradeSystem::ORDER_STATUS_INACTIVE:
 		case TradeSystem::ORDER_STATUS_ERROR:
@@ -136,22 +160,21 @@ void Position::UpdateOpening(
 				m_opened.qty);
 		case TradeSystem::ORDER_STATUS_CANCELLED:
 			state = m_opened.qty == 0
-				?	STATE_NOT_OPENED
+				?	STATE_OPEN_ERROR
 				:	STATE_OPENED;
+			if (m_opened.qty > 0) {
+				ReportOpeningUpdate("canceled", orderStatus, state);
+			}
 			break;
 	}
 	Assert(m_opened.qty <= m_planedQty);
 
-	if (state >= STATE_OPENED && state < STATE_NOT_CLOSED) {
-		Assert(state == STATE_OPENED);
-		Assert(m_opened.time.is_not_a_date_time());
-		if (m_opened.time.is_not_a_date_time()) {
-			m_opened.time = boost::get_system_time();
-		}
+	Assert(m_opened.time.is_not_a_date_time());
+	if (state == STATE_OPENED) {
+		m_opened.time = boost::get_system_time();
 	}
 
-	Interlocking::Exchange(m_state, state);
-	if (m_state >= STATE_OPENED) {
+	if (Interlocking::Exchange(m_state, state) != state) {
 		Assert(m_opened.orderId != 0);
 		Assert(m_closed.orderId == 0);
 		Assert(m_closed.time.is_not_a_date_time());
@@ -170,9 +193,11 @@ void Position::UpdateClosing(
 			double avgPrice,
 			double /*lastPrice*/) {
 
-	Assert(m_state == STATE_OPENED);
+	Assert(IsOpened());
+	Assert(!IsClosed());
+	Assert(m_state == STATE_OPENED || m_state == STATE_RECLOSING || m_state == STATE_CLOSING);
 	Assert(m_opened.orderId != 0);
-	Assert(m_closed.orderId == 0 || m_closed.orderId == orderId);
+	Assert(m_state == STATE_RECLOSING || (m_closed.orderId == 0 || m_closed.orderId == orderId));
 	Assert(m_opened.price != 0);
 	Assert(!m_opened.time.is_not_a_date_time());
 	Assert(m_closed.time.is_not_a_date_time());
@@ -196,15 +221,13 @@ void Position::UpdateClosing(
 			Assert(avgPrice > 0);
 			m_closed.price = m_security->Scale(avgPrice);
 			m_closed.qty += filled;
-			if (remaining == 0) {
-				Assert(m_closed.qty > 0);
-				state = STATE_CLOSED;
-			}
+			Assert(m_closed.qty > 0);
+			state = remaining == 0 ? STATE_CLOSED : STATE_CLOSING;
+			ReportClosingUpdate("filled", orderStatus, state);
 			break;
 		case TradeSystem::ORDER_STATUS_INACTIVE:
 		case TradeSystem::ORDER_STATUS_ERROR:
-		case TradeSystem::ORDER_STATUS_CANCELLED:
-			state = STATE_NOT_CLOSED;
+			state = STATE_CLOSE_ERROR;
 			Log::Error(
 				"Position CLOSE error: symbol:"
 					" \"%1%\", trade system state: %2%, orders ID: %3%->%4%, qty: %5%->%6%.",
@@ -214,23 +237,26 @@ void Position::UpdateClosing(
 				m_closed.orderId,	
 				m_opened.qty,
 				m_closed.qty);
+			ReportClosingUpdate("error", orderStatus, state);
+			break;
+		case TradeSystem::ORDER_STATUS_CANCELLED:
+			state = STATE_RECLOSING;
+			if (m_closed.qty > 0) {
+				ReportClosingUpdate("canceled", orderStatus, state);
+			}
 			break;
 	}
 	Assert(m_opened.qty <= m_planedQty);
 
-	if (state > STATE_OPENED && state < STATE_NOT_CLOSED) {
-		Assert(m_closed.time.is_not_a_date_time());
-		if (m_closed.time.is_not_a_date_time()) {
-			m_closed.time = boost::get_system_time();
-		}
+	Assert(m_closed.time.is_not_a_date_time());
+	if (state == STATE_CLOSED) {
+		m_closed.time = boost::get_system_time();
 	}
 
-	Interlocking::Exchange(m_state, state);
-	if (m_state > STATE_OPENED) {
+	if (Interlocking::Exchange(m_state, state) != state) {
 		Assert(m_opened.orderId != 0);
 		Assert(!m_opened.time.is_not_a_date_time());
 		Assert(m_closed.orderId != 0);
-		Assert(!m_closed.time.is_not_a_date_time());
 		m_stateUpdateSignal();
 	}
 
@@ -252,28 +278,24 @@ Position::Time Position::GetCloseTime() const {
 	return m_opened.time;
 }
 
-const Security & Position::GetSecurity() const {
+const DynamicSecurity & Position::GetSecurity() const {
 	return *m_security;
 }
 
 bool Position::IsOpened() const {
-	return m_state >= STATE_OPENED && !IsNotOpened();
+	return m_state >= STATE_OPENED;
 }
 
-bool Position::IsNotOpened() const {
-	return m_state == STATE_NOT_OPENED;
+bool Position::IsOpenError() const {
+	return m_state == STATE_OPEN_ERROR;
 }
 
 bool Position::IsClosed() const {
-	return m_state == STATE_CLOSED && !IsNotClosed();
-}
-
-bool Position::IsNotClosed() const {
-	return m_state == STATE_NOT_CLOSED;
-}
-
-bool Position::IsCompleted() const {
 	return m_state >= STATE_CLOSED;
+}
+
+bool Position::IsCloseError() const {
+	return m_state == STATE_CLOSED;
 }
 
 Position::StateUpdateConnection Position::Subscribe(
@@ -360,4 +382,56 @@ Position::Price Position::GetOpenPrice() const {
 
 Position::Price Position::GetClosePrice() const {
 	return m_closed.price;
+}
+
+void Position::ReportOpeningUpdate(
+			const char *eventDesc,
+			TradeSystem::OrderStatus orderStatus,
+			long state)
+		const {
+	Log::Trading(
+		"position",
+		"%1% %2% open-%3% qty=%4%->%5% price=%6%->%7% order-id=%8%"
+			" order-status=%9% state=%10% cur-ask-bid=%11%/%12%"
+			" take-profit=%13% stop-loss=%14%",
+		GetSecurity().GetSymbol(),
+		GetTypeStr(),
+		eventDesc,
+		GetPlanedQty(),
+		GetOpenedQty(),
+		GetSecurity().Descale(GetStartPrice()),
+		GetSecurity().Descale(GetOpenPrice()),
+		GetOpenOrderId(),
+		GetSecurity().GetTradeSystem().GetStringStatus(orderStatus),
+		state,
+		GetSecurity().GetAsk(),
+		GetSecurity().GetBid(),
+		GetSecurity().Descale(GetTakeProfit()),
+		GetSecurity().Descale(GetStopLoss()));
+}
+
+void Position::ReportClosingUpdate(
+			const char *eventDesc,
+			TradeSystem::OrderStatus orderStatus,
+			long state)
+		const {
+	Log::Trading(
+		"position",
+		"%1% %2% close-%3% qty=%4%->%5% price=%6% order-id=%7%->%8%"
+			" order-status=%9% state=%10% cur-ask-bid=%11%/%12%"
+			" take-profit=%13% stop-loss=%14%",
+		GetSecurity().GetSymbol(),
+		GetTypeStr(),
+		eventDesc,
+		GetOpenedQty(),
+		GetClosedQty(),
+		GetSecurity().Descale(GetClosePrice()),
+		GetOpenOrderId(),
+		GetCloseOrderId(),
+		GetSecurity().GetTradeSystem().GetStringStatus(orderStatus),
+		state,
+		GetSecurity().GetAsk(),
+		GetSecurity().GetBid(),
+		GetSecurity().Descale(GetTakeProfit()),
+		GetSecurity().Descale(GetStopLoss()));
 }

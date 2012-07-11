@@ -46,6 +46,12 @@ public:
 		return m_exchange;
 	}
 
+public:
+
+	const TradeSystem & GetTradeSystem() const {
+		return *m_tradeSystem;
+	}
+
 protected:
 
 	TradeSystem & GetTradeSystem() {

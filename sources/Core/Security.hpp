@@ -100,6 +100,9 @@ public:
 	Price GetLastScaled() const;
 	Price GetAskScaled() const;
 	Price GetBidScaled() const;
+	double GetLast() const;
+	double GetAsk() const;
+	double GetBid() const;
 
 protected:
 

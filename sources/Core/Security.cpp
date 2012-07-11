@@ -178,6 +178,18 @@ Security::Price DynamicSecurity::GetBidScaled() const {
 	return m_bid;
 }
 
+double DynamicSecurity::GetLast() const {
+	return Descale(GetLastScaled());
+}
+
+double DynamicSecurity::GetAsk() const {
+	return Descale(GetAskScaled());
+}
+
+double DynamicSecurity::GetBid() const {
+	return Descale(GetBidScaled());
+}
+
 bool DynamicSecurity::SetLast(double last) {
 	return SetLast(Scale(last));
 }

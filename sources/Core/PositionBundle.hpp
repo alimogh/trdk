@@ -23,6 +23,7 @@ public:
 
 public:
 
+	bool IsCloseError() const;
 	bool IsCompleted() const;
 
 public:

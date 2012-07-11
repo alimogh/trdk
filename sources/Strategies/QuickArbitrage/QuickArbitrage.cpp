@@ -95,7 +95,7 @@ void s::Algo::Update() {
 	AssertFail("Strategy logic error - method \"Update\" has been called");
 }
 
-boost::shared_ptr<PositionBandle> s::Algo::OpenPositions() {
+boost::shared_ptr<PositionBandle> s::Algo::TryToOpenPositions() {
 	boost::shared_ptr<PositionBandle> result(new PositionBandle);
 	if (m_settings.longPos.isEnabled) {
 		result->Get().push_back(OpenLongPosition());
@@ -234,8 +234,9 @@ void s::Algo::ClosePosition(Position &position) {
 		|| position.GetAlgoFlag() == STATE_CLOSING);
 	
 	if (!position.IsOpened()) {
+		Assert(!position.IsClosed());
 		return;
-	} else if (position.IsCompleted()) {
+	} else if (position.IsClosed()) {
 		return;
 	} else if (
 			position.GetAlgoFlag() == STATE_CLOSING
@@ -243,10 +244,6 @@ void s::Algo::ClosePosition(Position &position) {
 		return;
 	}
 
-	if (position.GetAlgoFlag() == STATE_OPENING) {
-		ReportOpen(position);
-	}
-	
 	switch (position.GetType()) {
 		case Position::TYPE_LONG:
 			CloseLongPosition(position);
@@ -263,7 +260,7 @@ void s::Algo::ClosePosition(Position &position) {
 
 }
 
-void s::Algo::ClosePositions(PositionBandle &positions) {
+void s::Algo::TryToClosePositions(PositionBandle &positions) {
 	foreach (auto p, positions.Get()) {
 		ClosePosition(*p);
 	}
@@ -272,7 +269,7 @@ void s::Algo::ClosePositions(PositionBandle &positions) {
 void s::Algo::ReportDecision(const Position &position) const {
 	Log::Trading(
 		logTag,
-		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% number-of-shares=%6% take-profit-price=%7% stop-loss-price=%8%",
+		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6% take-profit=%7% stop-loss=%8%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
 		position.GetSecurity().Descale(position.GetDecisionAks()),
@@ -283,28 +280,14 @@ void s::Algo::ReportDecision(const Position &position) const {
 		position.GetSecurity().Descale(position.GetStopLoss()));
 }
 
-void s::Algo::ReportOpen(const Position &position) const {
-	Log::Trading(
-		logTag,
-		"%1% %2% opened cur-ask-bid=%3%/%4% price=%5% number-of-shares=%6% take-profit-price=%7% stop-loss-price=%8%",
-		position.GetSecurity().GetSymbol(),
-		position.GetTypeStr(),
-		position.GetSecurity().Descale(position.GetDecisionAks()),
-		position.GetSecurity().Descale(position.GetDecisionBid()),
-		position.GetSecurity().Descale(position.GetOpenPrice()),
-		position.GetPlanedQty(),
-		position.GetSecurity().Descale(position.GetTakeProfit()),
-		position.GetSecurity().Descale(position.GetStopLoss()));
-}
-
 void s::Algo::ReportStopLossTry(const Position &position) const {
 	Log::Trading(
 		logTag,
-		"%1% %2% stop-loss-try cur-ask-bid=%3%/%4% stop-loss-price=%5% number-of-shares=%6%->%7%",
+		"%1% %2% stop-loss-try cur-ask-bid=%3%/%4% stop-loss=%5% qty=%6%->%7%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
-		position.GetSecurity().Descale(position.GetDecisionAks()),
-		position.GetSecurity().Descale(position.GetDecisionBid()),
+		position.GetSecurity().GetAsk(),
+		position.GetSecurity().GetBid(),
 		position.GetSecurity().Descale(position.GetStopLoss()),
 		position.GetOpenedQty(),
 		position.GetOpenedQty() - position.GetClosedQty());
@@ -313,11 +296,11 @@ void s::Algo::ReportStopLossTry(const Position &position) const {
 void s::Algo::ReportStopLossDo(const Position &position) const {
 	Log::Trading(
 		logTag,
-		"%1% %2% stop-loss-do cur-ask-bid=%3%/%4% stop-loss-price=%5% number-of-shares=%6%->%7%",
+		"%1% %2% stop-loss-do cur-ask-bid=%3%/%4% stop-loss=%5% qty=%6%->%7%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
-		position.GetSecurity().Descale(position.GetDecisionAks()),
-		position.GetSecurity().Descale(position.GetDecisionBid()),
+		position.GetSecurity().GetAsk(),
+		position.GetSecurity().GetBid(),
 		position.GetSecurity().Descale(position.GetStopLoss()),
 		position.GetOpenedQty(),
 		position.GetOpenedQty() - position.GetClosedQty());

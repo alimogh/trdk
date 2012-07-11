@@ -45,8 +45,8 @@ public:
 
 	virtual void Update() = 0;
 
-	virtual boost::shared_ptr<PositionBandle> OpenPositions() = 0;
-	virtual void ClosePositions(PositionBandle &) = 0;
+	virtual boost::shared_ptr<PositionBandle> TryToOpenPositions() = 0;
+	virtual void TryToClosePositions(PositionBandle &) = 0;
 
 	virtual void ReportDecision(const Position &) const = 0;
 

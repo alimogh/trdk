@@ -94,26 +94,7 @@ void InteractiveBrokersTradeSystem::Connect() {
 					}
 				}
 			}
-			if (!symb.empty()) {
-// 				Log::Trading(
-// 					"order-status",
-// 					"id=%1%"
-// 					"\tsymb=%2%"
-// 						"\tstatus=%3%"
-// 						"\tparent=%4%"
-// 						"\tfilled=%5%"
-// 						"\tremaining=%6%"
-// 						"\twhy-held=%7%",
-// 					id,
-// 					symb,
-// 					GetStringStatus(status),
-// 					parentId,
-// 					filled,
-// 					remaining,
-// 					whyHeld);
-			}
 			if (callBack) {
-				// Log::Trading("order-status", "act=reaction\tsource-order=%1%", id);
 				callBackList.push_back(
 					boost::bind(callBack, id, status, filled, remaining, avgFillPrice, lastFillPrice));
 			}
@@ -142,8 +123,8 @@ void InteractiveBrokersTradeSystem::CancelAllOrders(const Security &security) {
 	}
 	Log::Trading(
 		"cancel",
-		"symb=%1%\torders=[%2%]",
-		security.GetFullSymbol(),
+		"%1% orders=[%2%]",
+		security.GetSymbol(),
 		boost::join(idsStr, ","));
 	std::for_each(
 		ids.begin(),
@@ -160,9 +141,9 @@ void InteractiveBrokersTradeSystem::Sell(
 	const OrderId orderId = m_client->SendBid(security, qty);
 	Log::Trading(
 		"sell",
-		"id=%1%\tsymb=%2%\tqty=%3%\tprice=market",
+		"%2% id=%1% qty=%3% price=market",
 		orderId,
-		security.GetFullSymbol(),
+		security.GetSymbol(),
 		qty);
 	const WriteLock lock(m_mutex);
 	m_securityToOrder.insert(std::make_pair(security.GetFullSymbol(), orderId));
@@ -180,9 +161,9 @@ void InteractiveBrokersTradeSystem::Sell(
 	const OrderId orderId = m_client->SendBid(security, qty, rawPrice);
 	Log::Trading(
 		"sell",
-		"id=%1%\tsymb=%2%\tqty=%3%\tprice=%4%",
+		"%2% id=%1% qty=%3% price=%4%",
 		orderId,
-		security.GetFullSymbol(),
+		security.GetSymbol(),
 		qty,
 		rawPrice);
 	const WriteLock lock(m_mutex);
@@ -200,9 +181,9 @@ void InteractiveBrokersTradeSystem::SellAtMarketPrice(
 	const OrderId orderId = m_client->SendBidWithMarketPrice(security, qty, rawStopPrice);
 	Log::Trading(
 		"sell",
-		"id=%1%\tsymb=%2%\ttype=stop\tqty=%3%\tprice=market\tstop-price=%4%",
+		"%2% id=%1% type=stop qty=%3% price=market stop-price=%4%",
 		orderId,
-		security.GetFullSymbol(),
+		security.GetSymbol(),
 		qty,
 		rawStopPrice);
 	const WriteLock lock(m_mutex);
@@ -218,13 +199,6 @@ void InteractiveBrokersTradeSystem::SellOrCancel(
 			OrderStatusUpdateSlot stateUpdateSlot /* = StateUpdateSlot() */) {
 	const auto rawPrice = security.Descale(price);
 	const OrderId orderId = m_client->SendIocBid(security, qty, rawPrice);
-// 	Log::Trading(
-// 		"sell",
-// 		"id=%1%\tsymb=%2%\tqty=%3%\tprice=%4%",
-// 		orderId,
-// 		security.GetFullSymbol(),
-// 		qty,
-// 		rawPrice);
 	const WriteLock lock(m_mutex);
 	m_securityToOrder.insert(std::make_pair(security.GetFullSymbol(), orderId));
 	m_orderToSecurity[orderId]
@@ -238,9 +212,9 @@ void InteractiveBrokersTradeSystem::Buy(
 	const OrderId orderId = m_client->SendAsk(security, qty);
 	Log::Trading(
 		"buy",
-		"id=%1%\tsymb=%2%\tqty=%3%\tprice=market",
+		"%2% id=%1% qty=%3% price=market",
 		orderId,
-		security.GetFullSymbol(),
+		security.GetSymbol(),
 		qty);
 	const WriteLock lock(m_mutex);
 	m_securityToOrder.insert(std::make_pair(security.GetFullSymbol(), orderId));
@@ -257,9 +231,9 @@ void InteractiveBrokersTradeSystem::Buy(
 	const OrderId orderId = m_client->SendAsk(security, qty, rawPrice);
 	Log::Trading(
 		"buy",
-		"id=%1%\tsymb=%2%\tqty=%3%\tprice=%4%",
+		"%2% id=%1% qty=%3% price=%4%",
 		orderId,
-		security.GetFullSymbol(),
+		security.GetSymbol(),
 		qty,
 		rawPrice);
 	const WriteLock lock(m_mutex);
@@ -277,9 +251,9 @@ void InteractiveBrokersTradeSystem::BuyAtMarketPrice(
 	const OrderId orderId = m_client->SendAskWithMarketPrice(security, qty, rawStopPrice);
 	Log::Trading(
 		"buy",
-		"id=%1%\tsymb=%2%\ttype=stop\tqty=%3%\tprice=market\tstop-price=%4%",
+		"%2% id=%1% type=stop qty=%3% price=market stop-price=%4%",
 		orderId,
-		security.GetFullSymbol(),
+		security.GetSymbol(),
 		qty,
 		rawStopPrice);
 	const WriteLock lock(m_mutex);
@@ -295,13 +269,6 @@ void InteractiveBrokersTradeSystem::BuyOrCancel(
 			OrderStatusUpdateSlot stateUpdateSlot /* =  StateUpdateSlot() */) {
 	const auto rawPrice = security.Descale(price);
 	const OrderId orderId = m_client->SendIocAsk(security, qty, rawPrice);
-// 	Log::Trading(
-// 		"buy",
-// 		"id=%1%\tsymb=%2%\tqty=%3%\tprice=%4%",
-// 		orderId,
-// 		security.GetFullSymbol(),
-// 		qty,
-// 		rawPrice);
 	const WriteLock lock(m_mutex);
 	m_securityToOrder.insert(std::make_pair(security.GetFullSymbol(), orderId));
 	m_orderToSecurity[orderId]

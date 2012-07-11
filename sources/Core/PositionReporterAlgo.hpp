@@ -43,7 +43,7 @@ public:
 			}
 			Log::Info("Logging \"%1%\" positions into %2%...", algo.GetName(), filePath);
 			if (isNew) {
-				m_file << "type,symbol,exit type,entry price,entry date time,number of shares,exit price,exit date time,commission paid,open order,close order" << std::endl;
+				m_file << "type;symbol;exit type;entry price;entry date time;number of shares;exit price;exit date time;commission paid;open order;close order" << std::endl;
 			}
 			m_isInited = true;
 		}
@@ -60,7 +60,8 @@ public:
 
 	virtual void ReportClosedPositon(const Position &position) {
 		namespace lt = boost::local_time;
-		Assert(position.IsClosed() || position.IsNotClosed());
+		Assert(position.IsOpened());
+		Assert(position.IsClosed() || position.IsCloseError());
 		Assert(!position.IsReported());
 		const Lock lock(m_mutex);
 		Assert(m_isInited);
@@ -69,7 +70,7 @@ public:
 		m_file
 			<< position.GetTypeStr()
 			<< ";" << security.GetSymbol()
-			<< ";" << GetCloseTypeStr(position.GetCloseType())
+			<< ";" << position.GetCloseTypeStr()
 			<< ";" << security.Descale(position.GetOpenPrice());
 		{
 			const lt::local_date_time esdTime(position.GetOpenTime(), Util::GetEdtTimeZone());
@@ -89,21 +90,6 @@ public:
 			<< ";" << position.GetOpenOrderId()
 			<< ";" << position.GetCloseOrderId();
 		m_file << std::endl;
-	}
-
-private:
-
-	static const char * GetCloseTypeStr(Position::CloseType closeType) {
-		switch (closeType) {
-			default:
-				AssertFail("Unknown position close type.");
-			case Position::CLOSE_TYPE_NONE:
-				return "-";
-			case Position::CLOSE_TYPE_TAKE_PROFIT:
-				return "t/p";
-			case Position::CLOSE_TYPE_STOP_LOSS:
-				return "s/l";
-		}
 	}
 
 private:

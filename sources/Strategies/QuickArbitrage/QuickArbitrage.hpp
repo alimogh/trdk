@@ -53,8 +53,8 @@ namespace Strategies { namespace QuickArbitrage {
 
 		virtual void Update();
 
-		virtual boost::shared_ptr<PositionBandle> OpenPositions();
-		virtual void ClosePositions(PositionBandle &);
+		virtual boost::shared_ptr<PositionBandle> TryToOpenPositions();
+		virtual void TryToClosePositions(PositionBandle &);
 		
 		virtual void ReportDecision(const Position &) const;
 
@@ -62,7 +62,6 @@ namespace Strategies { namespace QuickArbitrage {
 
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
 
-		void ReportOpen(const Position &) const;
 		void ReportStopLossTry(const Position &) const;
 		void ReportStopLossDo(const Position &) const;
 
