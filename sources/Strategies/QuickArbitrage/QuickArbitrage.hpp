@@ -62,7 +62,9 @@ namespace Strategies { namespace QuickArbitrage {
 
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
 
-		void ReportStopLoss(const Position &) const;
+		void ReportOpen(const Position &) const;
+		void ReportStopLossTry(const Position &) const;
+		void ReportStopLossDo(const Position &) const;
 
 		virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section);
 
@@ -76,8 +78,16 @@ namespace Strategies { namespace QuickArbitrage {
 		boost::shared_ptr<Position> OpenShortPosition();
 
 		void ClosePosition(Position &);
+
+		void ClosePositionStopLossTry(Position &);
+		
 		void CloseLongPosition(Position &);
+		void CloseLongPositionStopLossTry(Position &);
+		void CloseLongPositionStopLossDo(Position &);
+		
 		void CloseShortPosition(Position &);
+		void CloseShortPositionStopLossTry(Position &);
+		void CloseShortPositionStopLossDo(Position &);
 
 	private:
 

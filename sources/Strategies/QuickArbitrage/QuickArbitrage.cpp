@@ -17,8 +17,9 @@ namespace s = Strategies::QuickArbitrage;
 namespace {
 
 	enum PositionState {
-		STATE_OPENING	= 1,
-		STATE_CLOSING	= 2
+		STATE_OPENING				= 1,
+		STATE_CLOSING_TRY_STOP_LOSS	= 2,
+		STATE_CLOSING				= 3
 	};
 
 	const char *const logTag = "quick-arbitrage";
@@ -157,38 +158,79 @@ boost::shared_ptr<Position> s::Algo::OpenShortPosition() {
 
 }
 
+void s::Algo::ClosePositionStopLossTry(Position &position) {
+	ReportStopLossTry(position);
+	GetSecurity()->CancelAllOrders();
+	position.SetAlgoFlag(STATE_CLOSING_TRY_STOP_LOSS);
+}
+
+void s::Algo::CloseLongPositionStopLossDo(Position &position) {
+	Assert(position.GetType() == Position::TYPE_LONG);
+	ReportStopLossDo(position);
+	GetSecurity()->Sell(position.GetOpenedQty() - position.GetClosedQty(), position);
+	position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
+	position.SetAlgoFlag(STATE_CLOSING);
+}
+
+void s::Algo::CloseLongPositionStopLossTry(Position &position) {
+	Assert(position.GetType() == Position::TYPE_LONG);
+	ClosePositionStopLossTry(position);
+}
+
 void s::Algo::CloseLongPosition(Position &position) {
 	Assert(position.GetType() == Position::TYPE_LONG);
-	Assert(position.GetCloseType() != Position::CLOSE_TYPE_STOP_LOSS);
 	DynamicSecurity &security = *GetSecurity();
-	if (position.GetStopLoss() >= security.GetAskScaled()) {
-		security.CancelAllOrders();
-		ReportStopLoss(position);
-		security.Sell(position.GetOpenedQty() - position.GetClosedQty(), position);
-		position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
-		return;
+	const bool isLoss = position.GetStopLoss() >= security.GetAskScaled();
+	if (position.GetAlgoFlag() == STATE_OPENING) {
+		if (isLoss) {
+			CloseLongPositionStopLossDo(position);
+		} else {
+			security.Sell(position.GetOpenedQty(), position.GetTakeProfit(), position);
+			position.SetAlgoFlag(STATE_CLOSING);
+		}
+	} else if (position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS) {
+		CloseLongPositionStopLossDo(position);
+	} else if (isLoss) {
+		CloseLongPositionStopLossTry(position);
 	}
-	security.Sell(position.GetOpenedQty(), position.GetTakeProfit(), position);
+}
+
+void s::Algo::CloseShortPositionStopLossDo(Position &position) {
+	Assert(position.GetType() == Position::TYPE_SHORT);
+	ReportStopLossDo(position);
+	GetSecurity()->Buy(position.GetOpenedQty() - position.GetClosedQty(), position);
+	position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
+	position.SetAlgoFlag(STATE_CLOSING);
+}
+
+void s::Algo::CloseShortPositionStopLossTry(Position &position) {
+	Assert(position.GetType() == Position::TYPE_SHORT);
+	ClosePositionStopLossTry(position);
 }
 
 void s::Algo::CloseShortPosition(Position &position) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
-	Assert(position.GetCloseType() != Position::CLOSE_TYPE_STOP_LOSS);
 	DynamicSecurity &security = *GetSecurity();
-	if (position.GetStopLoss() <= security.GetBidScaled()) {
-		security.CancelAllOrders();
-		ReportStopLoss(position);
-		security.Buy(position.GetOpenedQty() - position.GetClosedQty(), position);
-		position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
-		return;
+	const bool isLoss = position.GetStopLoss() <= security.GetBidScaled();
+	if (position.GetAlgoFlag() == STATE_OPENING) {
+		if (isLoss) {
+			CloseShortPositionStopLossDo(position);
+		} else {
+			security.Buy(position.GetOpenedQty(), position.GetTakeProfit(), position);
+			position.SetAlgoFlag(STATE_CLOSING);
+		}
+	} else if (position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS) {
+		CloseShortPositionStopLossDo(position);
+	} else if (isLoss) {
+		CloseShortPositionStopLossTry(position);
 	}
-	security.Buy(position.GetOpenedQty(), position.GetTakeProfit(), position);
 }
 
 void s::Algo::ClosePosition(Position &position) {
 	
 	Assert(
 		position.GetAlgoFlag() == STATE_OPENING
+		|| position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS
 		|| position.GetAlgoFlag() == STATE_CLOSING);
 	
 	if (!position.IsOpened()) {
@@ -199,6 +241,10 @@ void s::Algo::ClosePosition(Position &position) {
 			position.GetAlgoFlag() == STATE_CLOSING
 			&& position.GetCloseType() == Position::CLOSE_TYPE_STOP_LOSS) {
 		return;
+	}
+
+	if (position.GetAlgoFlag() == STATE_OPENING) {
+		ReportOpen(position);
 	}
 	
 	switch (position.GetType()) {
@@ -213,6 +259,8 @@ void s::Algo::ClosePosition(Position &position) {
 			break;
 	}
 
+	Assert(position.GetAlgoFlag() != STATE_OPENING);
+
 }
 
 void s::Algo::ClosePositions(PositionBandle &positions) {
@@ -224,7 +272,7 @@ void s::Algo::ClosePositions(PositionBandle &positions) {
 void s::Algo::ReportDecision(const Position &position) const {
 	Log::Trading(
 		logTag,
-		"%1% %2% cur-ask-bid=%3%/%4% limit-used=%5% number-of-shares=%6% take-profit-price=%7% stop-loss-price=%8%",
+		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% number-of-shares=%6% take-profit-price=%7% stop-loss-price=%8%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
 		position.GetSecurity().Descale(position.GetDecisionAks()),
@@ -235,13 +283,43 @@ void s::Algo::ReportDecision(const Position &position) const {
 		position.GetSecurity().Descale(position.GetStopLoss()));
 }
 
-void s::Algo::ReportStopLoss(const Position &position) const {
+void s::Algo::ReportOpen(const Position &position) const {
 	Log::Trading(
 		logTag,
-		"%1% %2% stop-loss cur-ask-bid=%3%/%4% stop-loss-price=%5%",
+		"%1% %2% opened cur-ask-bid=%3%/%4% price=%5% number-of-shares=%6% take-profit-price=%7% stop-loss-price=%8%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
 		position.GetSecurity().Descale(position.GetDecisionAks()),
 		position.GetSecurity().Descale(position.GetDecisionBid()),
+		position.GetSecurity().Descale(position.GetOpenPrice()),
+		position.GetPlanedQty(),
+		position.GetSecurity().Descale(position.GetTakeProfit()),
 		position.GetSecurity().Descale(position.GetStopLoss()));
 }
+
+void s::Algo::ReportStopLossTry(const Position &position) const {
+	Log::Trading(
+		logTag,
+		"%1% %2% stop-loss-try cur-ask-bid=%3%/%4% stop-loss-price=%5% number-of-shares=%6%->%7%",
+		position.GetSecurity().GetSymbol(),
+		position.GetTypeStr(),
+		position.GetSecurity().Descale(position.GetDecisionAks()),
+		position.GetSecurity().Descale(position.GetDecisionBid()),
+		position.GetSecurity().Descale(position.GetStopLoss()),
+		position.GetOpenedQty(),
+		position.GetOpenedQty() - position.GetClosedQty());
+}
+
+void s::Algo::ReportStopLossDo(const Position &position) const {
+	Log::Trading(
+		logTag,
+		"%1% %2% stop-loss-do cur-ask-bid=%3%/%4% stop-loss-price=%5% number-of-shares=%6%->%7%",
+		position.GetSecurity().GetSymbol(),
+		position.GetTypeStr(),
+		position.GetSecurity().Descale(position.GetDecisionAks()),
+		position.GetSecurity().Descale(position.GetDecisionBid()),
+		position.GetSecurity().Descale(position.GetStopLoss()),
+		position.GetOpenedQty(),
+		position.GetOpenedQty() - position.GetClosedQty());
+}
+

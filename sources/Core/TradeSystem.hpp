@@ -68,8 +68,8 @@ public:
 				OrderStatus,
 				OrderQty filled,
 				OrderQty remaining,
-				OrderPrice avgPrice,
-				OrderPrice lastPrice)>
+				double avgPrice,
+				double lastPrice)>
 		OrderStatusUpdateSlot;
 
 public:

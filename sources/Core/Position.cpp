@@ -71,12 +71,10 @@ void Position::SetAlgoFlag(AlgoFlag algoFlag) {
 }
 
 bool Position::IsReported() const {
-	Assert(IsClosed());
 	return m_isReported;
 }
 
 void Position::MarkAsReported() {
-	Assert(IsClosed());
 	Assert(!m_isReported);
 	m_isReported = true;
 }
@@ -94,8 +92,8 @@ void Position::UpdateOpening(
 			TradeSystem::OrderStatus orderStatus,
 			Qty filled,
 			Qty remaining,
-			Price avgPrice,
-			Price /*lastPrice*/) {
+			double avgPrice,
+			double /*lastPrice*/) {
 
 	Assert(m_state < STATE_OPENED);
 	Assert(m_opened.orderId == 0 || m_opened.orderId == orderId);
@@ -121,7 +119,7 @@ void Position::UpdateOpening(
 			Assert(filled + remaining == m_planedQty);
 			Assert(m_opened.qty + filled <= m_planedQty);
 			Assert(avgPrice > 0);
-			m_opened.price = avgPrice;
+			m_opened.price = m_security->Scale(avgPrice);
 			m_opened.qty += filled;
 			if (remaining == 0) {
 				Assert(m_opened.qty > 0);
@@ -169,8 +167,8 @@ void Position::UpdateClosing(
 			TradeSystem::OrderStatus orderStatus,
 			Qty filled,
 			Qty remaining,
-			Price avgPrice,
-			Price /*lastPrice*/) {
+			double avgPrice,
+			double /*lastPrice*/) {
 
 	Assert(m_state == STATE_OPENED);
 	Assert(m_opened.orderId != 0);
@@ -196,7 +194,7 @@ void Position::UpdateClosing(
 			Assert(filled + remaining == m_opened.qty);
 			Assert(m_closed.qty + filled <= m_opened.qty);
 			Assert(avgPrice > 0);
-			m_closed.price = avgPrice;
+			m_closed.price = m_security->Scale(avgPrice);
 			m_closed.qty += filled;
 			if (remaining == 0) {
 				Assert(m_closed.qty > 0);
@@ -213,7 +211,7 @@ void Position::UpdateClosing(
 				GetSecurity().GetFullSymbol(),
 				orderStatus,
 				m_opened.orderId,
-				m_closed.orderId,
+				m_closed.orderId,	
 				m_opened.qty,
 				m_closed.qty);
 			break;
@@ -267,7 +265,7 @@ bool Position::IsNotOpened() const {
 }
 
 bool Position::IsClosed() const {
-	return m_state == STATE_CLOSED && IsNotClosed();
+	return m_state == STATE_CLOSED && !IsNotClosed();
 }
 
 bool Position::IsNotClosed() const {

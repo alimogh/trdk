@@ -122,15 +122,15 @@ protected:
 				TradeSystem::OrderStatus,
 				Qty filled,
 				Qty remaining,
-				Price avgPrice,
-				Price lastPrice);
+				double avgPrice,
+				double lastPrice);
 	void UpdateClosing(
 				TradeSystem::OrderId,
 				TradeSystem::OrderStatus,
 				Qty filled,
 				Qty remaining,
-				Price avgPrice,
-				Price lastPrice);
+				double avgPrice,
+				double lastPrice);
 
 private:
 
