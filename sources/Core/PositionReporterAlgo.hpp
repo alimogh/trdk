@@ -31,7 +31,7 @@ public:
 			std::list<std::string> subs;
 			boost::split(subs, algoName, boost::is_any_of(" :"));
 			filePath /= boost::join(subs, "_");
-			filePath.replace_extension("log");
+			filePath.replace_extension(".csv");
 			const bool isNew = !fs::exists(filePath);
 			if (isNew) {
 				fs::create_directories(filePath.branch_path());
@@ -68,26 +68,27 @@ public:
 		const Security &security = position.GetSecurity();
 		m_file
 			<< position.GetTypeStr()
-			<< "," << security.GetSymbol()
-			<< "," << GetCloseTypeStr(position.GetCloseType())
-			<< "," << security.Descale(position.GetOpenPrice());
+			<< ";" << security.GetSymbol()
+			<< ";" << GetCloseTypeStr(position.GetCloseType())
+			<< ";" << security.Descale(position.GetOpenPrice());
 		{
 			const lt::local_date_time esdTime(position.GetOpenTime(), Util::GetEdtTimeZone());
-			m_file << "," << esdTime;
+			m_file << ";" << esdTime;
 		}
 		m_file
-			<< "," << position.GetOpenedQty()
-			<< "," << security.Descale(position.GetClosePrice());
+			<< ";" << position.GetOpenedQty()
+			<< ";" << security.Descale(position.GetClosePrice());
 		if (position.IsClosed()) {
 			const lt::local_date_time esdTime(position.GetCloseTime(), Util::GetEdtTimeZone());
-			m_file << "," << esdTime;
+			m_file << ";" << esdTime;
 		} else {
-			m_file << ",-";
+			m_file << ";-";
 		}
-		m_file 
-			<< "," << .0 //!!!!!!!!!!!!!!!!!!!!!!!!!
-			<< "," << position.GetOpenOrderId()
-			<< "," << position.GetCloseOrderId();
+		m_file
+			<< ";" << .0 //!!!!!!!!!!!!!!!!!!!!!!!!!
+			<< ";" << position.GetOpenOrderId()
+			<< ";" << position.GetCloseOrderId();
+		m_file << std::endl;
 	}
 
 private:
