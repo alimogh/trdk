@@ -201,7 +201,7 @@ namespace {
 		}
 
 		void Send(const std::string &message) {
-			// m_service.DumpSend(message, m_port);
+			m_service.DumpSend(message, m_port);
 			io::write(*m_socket, io::buffer(message));
 		}
 
