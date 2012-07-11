@@ -7,15 +7,14 @@
  **************************************************************************/
 
 #include <assert.h>
+#include <boost/format.hpp>
+#include <iostream>
+#include <Windows.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include "Assert.hpp"
+#include "Core/Log.hpp"
 
 #if defined(BOOST_ENABLE_ASSERT_HANDLER)
-
-#	include "Assert.hpp"
-#	include <boost/format.hpp>
-#	include <iostream>
-#	include <Windows.h>
-#	include <boost/date_time/posix_time/posix_time.hpp>
-#	include "Core/Log.hpp"
 
 	namespace boost {
 		void assertion_failed(
