@@ -126,6 +126,7 @@ public:
 		r.insert(mp("PreSubmitted", TradeSystem::ORDER_STATUS_PENDIGN));
 		r.insert(mp("Submitted", TradeSystem::ORDER_STATUS_SUBMITTED));
 		r.insert(mp("Cancelled", TradeSystem::ORDER_STATUS_CANCELLED));
+		r.insert(mp("ApiCancelled", TradeSystem::ORDER_STATUS_CANCELLED));
 		r.insert(mp("Filled", TradeSystem::ORDER_STATUS_FILLED));
 		r.insert(mp("Inactive", TradeSystem::ORDER_STATUS_INACTIVE));
 		return r;
@@ -409,7 +410,7 @@ public:
 					0,
 					.0,
 					.0,
-					std::string(),
+					.0,
 					m_callBackList);
 				break;
 			case 202: // Order cancelled - Reason:
@@ -421,7 +422,7 @@ public:
 					0,
 					.0,
 					.0,
-					std::string(),
+					.0,
 					m_callBackList);
 				break;
 			case 1100: // Connectivity between IB and TWS has been lost.
@@ -731,7 +732,7 @@ void InteractiveBrokersClient::orderStatus(
 			int parentId,
 			double lastFillPrice,
 			int /*clientId*/,
-			const IBString &whyHeld) {
+			const IBString &/*whyHeld*/) {
 
 /*
 	Log::Debug(
@@ -770,7 +771,7 @@ void InteractiveBrokersClient::orderStatus(
 		remaining,
 		avgFillPrice,
 		lastFillPrice,
-		whyHeld,
+		.0,
 		m_pimpl->m_callBackList);
 }
 
@@ -855,11 +856,23 @@ void InteractiveBrokersClient::tickEFP(
 }
 
 void InteractiveBrokersClient::openOrder(
-			OrderId /*orderId*/,
+			OrderId id,
 			const Contract &,
 			const Order &,
-			const OrderState &) {
-	//...//
+			const OrderState &state) {
+	if (Util::IsEqual(state.commission, UNSET_DOUBLE)) {
+		return;
+	}
+	m_pimpl->m_orderStatusSignal(
+		id,
+		0,
+		TradeSystem::ORDER_STATUS_COMISSION,
+		0,
+		0,
+		0,
+		0,
+		state.commission,
+		m_pimpl->m_callBackList);	
 }
 
 void InteractiveBrokersClient::openOrderEnd() {
