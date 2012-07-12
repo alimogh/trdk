@@ -25,7 +25,7 @@ namespace {
 		TradeSystem::OrderId id;
 		std::string symbol;
 		TradeSystem::OrderStatusUpdateSlot callback;
-		bool comission;
+		bool commission;
 		bool completed;
 	};
 
@@ -132,15 +132,6 @@ void InteractiveBrokersTradeSystem::Connect() {
 				switch (status) {
 					default:
 						return;
-					case TradeSystem::ORDER_STATUS_COMISSION:
-// 						if (pos->completed) {
-// 							index.erase(pos);
-// 						} else if (!pos->comission) {
-// 							PlacedOrder order(*pos);
-// 							order.comission = true;
-// 							index.replace(pos, order);
-// 						}
-						break;
 					case TradeSystem::ORDER_STATUS_FILLED:
 						Assert(filled > 0);
 						if (remaining == 0) {
@@ -165,8 +156,7 @@ void InteractiveBrokersTradeSystem::Connect() {
 					filled,
 					remaining,
 					avgFillPrice,
-					lastFillPrice,
-					comission));
+					lastFillPrice));
 		});
 	client->StartData();
 	m_pimpl->client.reset(client.release());
