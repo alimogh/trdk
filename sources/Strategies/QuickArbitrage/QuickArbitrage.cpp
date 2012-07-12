@@ -22,9 +22,9 @@ namespace {
 		STATE_CLOSING				= 3
 	};
 
-	const char *const logTag = "quick-arbitrage";
+	const char *const logTag = "quick-arbitrage-old";
 
-	const std::string algoName = "Quick Arbitrage";
+	const std::string algoName = "Quick Arbitrage Old";
 
 }
 
