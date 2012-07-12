@@ -40,9 +40,6 @@ public:
 		  * ORDER_STATUS_PRE_SUBMITTED
 		  */
 		ORDER_STATUS_PENDIGN,
-		/** Internal status - comission set.
-		  */
-		ORDER_STATUS_COMISSION,
 		/** Indicates that your order has been accepted at the order destination
 		  * and is working.
 		  */
@@ -72,8 +69,7 @@ public:
 				OrderQty filled,
 				OrderQty remaining,
 				double avgPrice,
-				double lastPrice,
-				double comission)>
+				double lastPrice)>
 		OrderStatusUpdateSlot;
 
 public:

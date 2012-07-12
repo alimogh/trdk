@@ -26,7 +26,7 @@ public:
 			long remaining,
 			double avgFillPrice,
 			double lastFillPrice,
-			double comission,
+			const std::string &whyHeld,
 			CallbackList &);
 	typedef boost::function<OrderStatusSlotSignature> OrderStatusSlot;
 

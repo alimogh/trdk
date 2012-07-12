@@ -25,8 +25,8 @@ namespace {
 		TradeSystem::OrderId id;
 		std::string symbol;
 		TradeSystem::OrderStatusUpdateSlot callback;
-		bool isCommissionReceived;
-		bool isCompleted;
+		bool commission;
+		bool completed;
 	};
 
 	struct BySymbol {
@@ -87,8 +87,6 @@ const char * InteractiveBrokersTradeSystem::GetStringStatus(OrderStatus code) co
 	switch (code) {
 		case TradeSystem::ORDER_STATUS_PENDIGN:
 			return "pending";
-		case TradeSystem::ORDER_STATUS_COMISSION:
-			return "comission";
 		case TradeSystem::ORDER_STATUS_SUBMITTED:
 			return "submitted";
 		case TradeSystem::ORDER_STATUS_CANCELLED:
@@ -120,7 +118,7 @@ void InteractiveBrokersTradeSystem::Connect() {
 					long remaining,
 					double avgFillPrice,
 					double lastFillPrice,
-					double comission,
+					const std::string &/*whyHeld*/,
 					InteractiveBrokersClient::CallbackList &callBackList) {
 			TradeSystem::OrderStatusUpdateSlot callBack;
 			{
@@ -134,25 +132,10 @@ void InteractiveBrokersTradeSystem::Connect() {
 				switch (status) {
 					default:
 						return;
-					case TradeSystem::ORDER_STATUS_COMISSION:
- 						if (pos->isCompleted) {
- 							index.erase(pos);
- 						} else if (!pos->isCommissionReceived) {
- 							PlacedOrder order(*pos);
- 							order.isCommissionReceived = true;
- 							index.replace(pos, order);
- 						}
-						break;
 					case TradeSystem::ORDER_STATUS_FILLED:
 						Assert(filled > 0);
 						if (remaining == 0) {
-							if (pos->isCommissionReceived) {
-								index.erase(pos);
- 							} else if (!pos->isCompleted) {
- 								PlacedOrder order(*pos);
- 								order.isCompleted = true;
- 								index.replace(pos, order);
- 							}
+							index.erase(pos);
 						}
 						break;
 					case TradeSystem::ORDER_STATUS_CANCELLED:
@@ -173,8 +156,7 @@ void InteractiveBrokersTradeSystem::Connect() {
 					filled,
 					remaining,
 					avgFillPrice,
-					lastFillPrice,
-					comission));
+					lastFillPrice));
 		});
 	client->StartData();
 	m_pimpl->client.reset(client.release());

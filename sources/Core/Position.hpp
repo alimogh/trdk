@@ -51,7 +51,7 @@ private:
 		Time time;
 		Price price;
 		Qty qty;
-		Price comission;
+		volatile LONGLONG comission;
 
 		DynamicData();
 
@@ -126,16 +126,14 @@ protected:
 				Qty filled,
 				Qty remaining,
 				double avgPrice,
-				double lastPrice,
-				double comission);
+				double lastPrice);
 	void UpdateClosing(
 				TradeSystem::OrderId,
 				TradeSystem::OrderStatus,
 				Qty filled,
 				Qty remaining,
 				double avgPrice,
-				double lastPrice,
-				double comission);
+				double lastPrice);
 
 	void ReportOpeningUpdate(
 				const char *eventDesc,

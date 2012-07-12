@@ -13,7 +13,6 @@
 #include "Api/EWrapper.h"
 #include "Api/Contract.h"
 #include "Api/Order.h"
-#include "Api/OrderState.h"
 #include "Api/EPosixClientSocket.h"
 
 #include "Common/DisableBoostWarningsBegin.h"

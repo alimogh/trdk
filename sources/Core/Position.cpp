@@ -118,14 +118,10 @@ void Position::UpdateOpening(
 			Qty filled,
 			Qty remaining,
 			double avgPrice,
-			double /*lastPrice*/,
-			double comission) {
+			double /*lastPrice*/) {
 
 	Assert(!IsOpened());
- 	Assert(
- 		m_state == STATE_NONE
- 		|| m_state == STATE_OPENING
- 		|| (m_state == STATE_OPENED && orderStatus == TradeSystem::ORDER_STATUS_COMISSION));
+	Assert(m_state == STATE_NONE || m_state == STATE_OPENING);
 	Assert(m_opened.orderId == 0 || m_opened.orderId == orderId);
 	Assert(m_closed.orderId == 0);
 	Assert(m_closed.price == 0);
@@ -133,9 +129,6 @@ void Position::UpdateOpening(
 	Assert(m_closed.time.is_not_a_date_time());
 	Assert(m_opened.qty <= m_planedQty);
 	Assert(m_closed.qty == 0);
-	Assert(
-		(Util::IsZero(comission) && orderStatus != TradeSystem::ORDER_STATUS_COMISSION)
-		|| (!Util::IsZero(comission) && orderStatus == TradeSystem::ORDER_STATUS_COMISSION));
 
 	m_opened.orderId = orderId;
 
@@ -147,10 +140,6 @@ void Position::UpdateOpening(
 		case TradeSystem::ORDER_STATUS_SUBMITTED:
 			Assert(m_opened.qty == 0);
 			Assert(m_opened.price == 0);
-			Assert(!GetSecurity().IsCompleted());
-			return;
-		case TradeSystem::ORDER_STATUS_COMISSION:
-			Interlocking::Exchange(m_opened.comission, GetSecurity().Scale(comission));
 			return;
 		case TradeSystem::ORDER_STATUS_FILLED:
 			Assert(filled + remaining == m_planedQty);
@@ -160,9 +149,6 @@ void Position::UpdateOpening(
 			m_opened.qty += filled;
 			Assert(m_opened.qty > 0);
 			state = remaining == 0 ? STATE_OPENED : STATE_OPENING;
- 			Assert(
- 				(state == STATE_OPENED && GetSecurity().IsCompleted())
- 				|| (state != STATE_OPENED && !GetSecurity().IsCompleted()));
 			ReportOpeningUpdate("filled", orderStatus, state);
 			break;
 		case TradeSystem::ORDER_STATUS_INACTIVE:
@@ -174,7 +160,6 @@ void Position::UpdateOpening(
 				m_opened.orderId,
 				m_opened.qty);
 		case TradeSystem::ORDER_STATUS_CANCELLED:
-			Assert(GetSecurity().IsCompleted());
 			state = m_opened.qty == 0
 				?	STATE_OPEN_ERROR
 				:	STATE_OPENED;
@@ -207,16 +192,11 @@ void Position::UpdateClosing(
 			Qty filled,
 			Qty remaining,
 			double avgPrice,
-			double /*lastPrice*/,
-			double comission) {
+			double /*lastPrice*/) {
 
 	Assert(IsOpened());
 	Assert(!IsClosed());
- 	Assert(
- 		m_state == STATE_OPENED
- 		|| m_state == STATE_RECLOSING
- 		|| m_state == STATE_CLOSING
- 		|| (m_state == STATE_CLOSED && orderStatus == TradeSystem::ORDER_STATUS_COMISSION));
+	Assert(m_state == STATE_OPENED || m_state == STATE_RECLOSING || m_state == STATE_CLOSING);
 	Assert(m_opened.orderId != 0);
 	Assert(m_state == STATE_RECLOSING || (m_closed.orderId == 0 || m_closed.orderId == orderId));
 	Assert(m_opened.price != 0);
@@ -224,9 +204,6 @@ void Position::UpdateClosing(
 	Assert(m_closed.time.is_not_a_date_time());
 	Assert(m_opened.qty <= m_planedQty);
 	Assert(m_closed.qty <= m_opened.qty);
- 	Assert(
- 		(Util::IsZero(comission) && orderStatus != TradeSystem::ORDER_STATUS_COMISSION)
- 		|| (!Util::IsZero(comission) && orderStatus == TradeSystem::ORDER_STATUS_COMISSION));
 
 	m_closed.orderId = orderId;
 
@@ -238,10 +215,6 @@ void Position::UpdateClosing(
 		case TradeSystem::ORDER_STATUS_SUBMITTED:
 			Assert(m_closed.qty == 0);
 			Assert(m_closed.price == 0);
-			Assert(!GetSecurity().IsCompleted());
-			return;
-		case TradeSystem::ORDER_STATUS_COMISSION:
-			Interlocking::Exchange(m_closed.comission, GetSecurity().Scale(comission));
 			return;
 		case TradeSystem::ORDER_STATUS_FILLED:
 			Assert(filled + remaining == m_opened.qty);
@@ -251,14 +224,10 @@ void Position::UpdateClosing(
 			m_closed.qty += filled;
 			Assert(m_closed.qty > 0);
 			state = remaining == 0 ? STATE_CLOSED : STATE_CLOSING;
- 			Assert(
- 				(state == STATE_CLOSED && GetSecurity().IsCompleted())
- 				|| (state != STATE_CLOSED && !GetSecurity().IsCompleted()));
 			ReportClosingUpdate("filled", orderStatus, state);
 			break;
 		case TradeSystem::ORDER_STATUS_INACTIVE:
 		case TradeSystem::ORDER_STATUS_ERROR:
-			Assert(!GetSecurity().IsCompleted());
 			state = STATE_CLOSE_ERROR;
 			Log::Error(
 				"Position CLOSE error: symbol:"
@@ -272,7 +241,6 @@ void Position::UpdateClosing(
 			ReportClosingUpdate("error", orderStatus, state);
 			break;
 		case TradeSystem::ORDER_STATUS_CANCELLED:
-			Assert(GetSecurity().IsCompleted());
 			state = STATE_RECLOSING;
 			if (m_closed.qty > 0) {
 				ReportClosingUpdate("canceled", orderStatus, state);
@@ -320,7 +288,7 @@ const DynamicSecurity & Position::GetSecurity() const {
 }
 
 bool Position::IsOpened() const {
-	return m_state >= STATE_OPENED && m_closed.comission != 0;
+	return m_state >= STATE_OPENED;
 }
 
 bool Position::IsOpenError() const {
@@ -328,7 +296,7 @@ bool Position::IsOpenError() const {
 }
 
 bool Position::IsClosed() const {
-	return m_state >= STATE_CLOSED && m_closed.comission != 0;
+	return m_state >= STATE_CLOSED;
 }
 
 bool Position::IsCloseError() const {
@@ -344,9 +312,9 @@ Position::StateUpdateConnection Position::Subscribe(
 Security::OrderStatusUpdateSlot Position::GetSellOrderStatusUpdateSlot() {
 	switch (m_type) {
 		case TYPE_LONG:
-			return boost::bind(&Position::UpdateClosing, shared_from_this(), _1, _2, _3, _4, _5, _6, _7);
+			return boost::bind(&Position::UpdateClosing, shared_from_this(), _1, _2, _3, _4, _5, _6);
 		case  TYPE_SHORT:
-			return boost::bind(&Position::UpdateOpening, shared_from_this(), _1, _2, _3, _4, _5, _6, _7);
+			return boost::bind(&Position::UpdateOpening, shared_from_this(), _1, _2, _3, _4, _5, _6);
 		default:
 			AssertFail("Unknown position type.");
 			throw Exception("Unknown position type");
@@ -356,9 +324,9 @@ Security::OrderStatusUpdateSlot Position::GetSellOrderStatusUpdateSlot() {
 Security::OrderStatusUpdateSlot Position::GetBuyOrderStatusUpdateSlot() {
 	switch (m_type) {
 		case TYPE_LONG:
-			return boost::bind(&Position::UpdateOpening, shared_from_this(), _1, _2, _3, _4, _5, _6, _7);
+			return boost::bind(&Position::UpdateOpening, shared_from_this(), _1, _2, _3, _4, _5, _6);
 		case  TYPE_SHORT:
-			return boost::bind(&Position::UpdateClosing, shared_from_this(), _1, _2, _3, _4, _5, _6, _7);
+			return boost::bind(&Position::UpdateClosing, shared_from_this(), _1, _2, _3, _4, _5, _6);
 		default:
 			AssertFail("Unknown position type.");
 			throw Exception("Unknown position type");
