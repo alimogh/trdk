@@ -86,7 +86,7 @@ public:
 			m_file << ";-";
 		}
 		m_file
-			<< ";" << .0 //!!!!!!!!!!!!!!!!!!!!!!!!!
+			<< ";" << security.Descale(position.GetCommission())
 			<< ";" << position.GetOpenOrderId()
 			<< ";" << position.GetCloseOrderId();
 		m_file << std::endl;

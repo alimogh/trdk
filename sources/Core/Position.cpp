@@ -39,7 +39,8 @@ namespace {
 Position::DynamicData::DynamicData()
 		: orderId(0),
 		price(0),
-		qty(0) {
+		qty(0),
+		comission(0) {
 	//...//
 }
 
@@ -276,6 +277,10 @@ Position::Time Position::GetOpenTime() const {
 
 Position::Time Position::GetCloseTime() const {
 	return m_opened.time;
+}
+
+Position::Price Position::GetCommission() const {
+	return m_opened.comission + m_closed.comission;
 }
 
 const DynamicSecurity & Position::GetSecurity() const {

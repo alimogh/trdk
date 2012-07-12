@@ -51,6 +51,7 @@ private:
 		Time time;
 		Price price;
 		Qty qty;
+		volatile LONGLONG comission;
 
 		DynamicData();
 
@@ -107,6 +108,8 @@ public:
 	Price GetClosePrice() const;
 	Qty GetClosedQty() const;
 	Time GetCloseTime() const;
+
+	Price GetCommission() const;
 
 public:
 
