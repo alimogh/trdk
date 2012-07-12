@@ -24,7 +24,7 @@ namespace {
 		namespace Sections {
 			const std::string common = "Common";
 			namespace Algo {
-				const std::string quickArbitrage = "Algo.QuickArbitrage";
+				const std::string quickArbitrage = "Algo.QuickArbitrageOld";
 			}
 		}
 		namespace Key {
