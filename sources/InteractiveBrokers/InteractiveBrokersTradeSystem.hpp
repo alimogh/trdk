@@ -10,19 +10,7 @@
 
 #include "Core/TradeSystem.hpp"
 
-class InteractiveBrokersClient;
-
 class InteractiveBrokersTradeSystem : public TradeSystem {
-
-private:
-
-	typedef boost::shared_mutex Mutex;
-	typedef boost::unique_lock<Mutex> WriteLock;
-	typedef boost::shared_lock<Mutex> ReadLock;
-
-	typedef std::map<OrderId, std::pair<std::string, OrderStatusUpdateSlot>>
-		OrderToSecurity;
-	typedef std::multimap<std::string, OrderId> SecurityToOrder;
 
 public:
 
@@ -83,10 +71,7 @@ public:
 
 private:
 
-	InteractiveBrokersClient *m_client;
-
-	SecurityToOrder m_securityToOrder;
-	OrderToSecurity m_orderToSecurity;
-	mutable Mutex m_mutex;
+	class Implementation;
+	Implementation *m_pimpl;
 
 };

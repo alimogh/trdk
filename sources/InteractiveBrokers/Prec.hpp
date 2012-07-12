@@ -24,6 +24,11 @@
 #	include <boost/signals2.hpp>
 #	include <boost/thread.hpp>
 #	include <boost/algorithm/string.hpp>
+#	include <boost/multi_index_container.hpp>
+#	include <boost/multi_index/ordered_index.hpp>
+#	include <boost/multi_index/member.hpp>
+#	include <boost/multi_index/hashed_index.hpp>
+#	include <boost/multi_index/composite_key.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include <Windows.h>
