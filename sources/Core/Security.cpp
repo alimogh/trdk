@@ -60,6 +60,10 @@ void Security::CancelAllOrders() {
 	GetTradeSystem().CancelAllOrders(*this);
 }
 
+bool Security::IsCompleted() const {
+	return GetTradeSystem().IsCompleted(*this);
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 class DynamicSecurity::MarketDataLog : private boost::noncopyable {
