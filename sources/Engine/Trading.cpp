@@ -7,7 +7,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Strategies/QuickArbitrage/QuickArbitrage.hpp"
+#include "Strategies/QuickArbitrage/QuickArbitrageOld.hpp"
+#include "Strategies/QuickArbitrage/QuickArbitrageAskBid.hpp"
 #include "IqFeed/IqFeedClient.hpp"
 #include "InteractiveBrokers/InteractiveBrokersTradeSystem.hpp"
 #include "Dispatcher.hpp"
@@ -24,13 +25,20 @@ namespace {
 		namespace Sections {
 			const std::string common = "Common";
 			namespace Algo {
-				const std::string quickArbitrage = "Algo.QuickArbitrageOld";
+				namespace QuickArbitrage {
+					const std::string old = "Algo.QuickArbitrage.Old";
+					const std::string askBid = "Algo.QuickArbitrage.AskBid";
+				}
 			}
 		}
 		namespace Key {
 			const std::string symbols = "symbols";
 		}
 	}
+
+}
+
+namespace {
 
 	std::string CreateSecuritiesKey(const IniFile::Symbol &symbol) {
 		return Util::CreateSymbolFullStr(symbol.symbol, symbol.primaryExchange, symbol.exchange);
@@ -109,7 +117,8 @@ void Trade(const std::string &iniFilePath) {
 				continue;
 			}
 			Log::Info("Found section \"%1%\"...", section);
-			if (section == Ini::Sections::Algo::quickArbitrage) {
+			if (	section == Ini::Sections::Algo::QuickArbitrage::old
+					|| section == Ini::Sections::Algo::QuickArbitrage::askBid) {
 				Log::Info("Loading strategy objects...");
 				std::string symbolsFilePath;
 				try {
@@ -130,11 +139,20 @@ void Trade(const std::string &iniFilePath) {
 				foreach (const auto &symbol, symbols) {
 					Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
 					try {
-						boost::shared_ptr<Algo> algo(
-							new Strategies::QuickArbitrage::Algo(
-								securities[CreateSecuritiesKey(symbol)],
-								ini,
-								section));
+						boost::shared_ptr<Algo> algo;
+						if (section == Ini::Sections::Algo::QuickArbitrage::old) {
+							algo.reset(
+								new Strategies::QuickArbitrage::Old(
+									securities[CreateSecuritiesKey(symbol)],
+									ini,
+									section));
+						} else {
+							algo.reset(
+								new Strategies::QuickArbitrage::AskBid(
+									securities[CreateSecuritiesKey(symbol)],
+									ini,
+									section));
+						}
 						algos.push_back(algo);
 						Log::Info(
 							"Loaded strategy \"%1%\" for \"%2%\".",

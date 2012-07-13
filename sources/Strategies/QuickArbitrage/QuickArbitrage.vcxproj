@@ -70,10 +70,14 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="QuickArbitrage.cpp" />
+    <ClCompile Include="QuickArbitrageAskBid.cpp" />
+    <ClCompile Include="QuickArbitrageOld.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="QuickArbitrage.hpp" />
+    <ClInclude Include="QuickArbitrageAskBid.hpp" />
+    <ClInclude Include="QuickArbitrageOld.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Common.vcxproj">

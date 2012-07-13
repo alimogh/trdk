@@ -18,36 +18,16 @@ namespace Strategies { namespace QuickArbitrage {
 
 		typedef ::Algo Base;
 
-	private:
-
-		struct Settings {
-
-			struct Direction {
-				bool isEnabled;
-				Security::Price priceMod;
-			};
-
-			Direction shortPos;
-			Direction longPos;
-
-			Security::Price takeProfit;
-			Security::Price stopLoss;
-
-			Security::Price volume;
-
+		enum PositionState {
+			STATE_OPENING				= 1,
+			STATE_CLOSING_TRY_STOP_LOSS	= 2,
+			STATE_CLOSING				= 3
 		};
 
 	public:
 
-		explicit Algo(
-				boost::shared_ptr<DynamicSecurity>,
-				const IniFile &,
-				const std::string &section);
+		explicit Algo(boost::shared_ptr<DynamicSecurity>, const char *logTag);
 		virtual ~Algo();
-
-	public:
-
-		virtual const std::string & GetName() const;
 
 	public:
 
@@ -58,39 +38,36 @@ namespace Strategies { namespace QuickArbitrage {
 		
 		virtual void ReportDecision(const Position &) const;
 
+		virtual bool IsLongPosEnabled() const = 0;
+		virtual bool IsShortPosEnabled() const = 0;
+		virtual Security::Price GetLongPriceMod() const = 0;
+		virtual Security::Price GetShortPriceMod() const = 0;
+		virtual Security::Price GetTakeProfit() const = 0;
+		virtual Security::Price GetStopLoss() const = 0;
+		virtual Security::Price GetVolume() const = 0;
+ 
 	protected:
-
-		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
 
 		void ReportStopLossTry(const Position &) const;
 		void ReportStopLossDo(const Position &) const;
 
-		virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section);
+		virtual void ClosePosition(Position &) = 0;
+		
+		void CloseLongPositionStopLossDo(Position &);
+		void CloseShortPositionStopLossDo(Position &);
 
-	private:
-
-		void DoSettingsUpodate(const IniFile &, const std::string &section);
+		void CloseLongPositionStopLossTry(Position &);
+		void CloseShortPositionStopLossTry(Position &);
+		void ClosePositionStopLossTry(Position &);
 
 	private:
 
 		boost::shared_ptr<Position> OpenLongPosition();
 		boost::shared_ptr<Position> OpenShortPosition();
 
-		void ClosePosition(Position &);
+	protected:
 
-		void ClosePositionStopLossTry(Position &);
-		
-		void CloseLongPosition(Position &);
-		void CloseLongPositionStopLossTry(Position &);
-		void CloseLongPositionStopLossDo(Position &);
-		
-		void CloseShortPosition(Position &);
-		void CloseShortPositionStopLossTry(Position &);
-		void CloseShortPositionStopLossDo(Position &);
-
-	private:
-
-		Settings m_settings;
+		const char *const m_logTag;
 
 	};
 
