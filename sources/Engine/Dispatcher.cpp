@@ -22,15 +22,18 @@ namespace pt = boost::posix_time;
 
 class Dispatcher::Notifier : private boost::noncopyable {
 
-private:
+public:
 
+	typedef std::list<boost::shared_ptr<AlgoState>> AlgoStateList;
+	
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
+
+private:
+
 	typedef boost::condition_variable Condition;
 
 	typedef std::list<std::pair<boost::shared_ptr<AlgoState>, bool>> NotifyList;
-
-	typedef std::list<boost::shared_ptr<AlgoState>> AlgoStateList;
 
 public:
 
@@ -114,9 +117,12 @@ public:
 
 public:
 
-	void RegisterTimeoutNotification(boost::shared_ptr<AlgoState> algo) {
-		const Lock lock(m_timeoutMutex);
-		m_timeOutNotifyList.push_back(algo);
+	Mutex & GetAlgoListMutex() {
+		return m_algoListMutex;
+	}
+
+	AlgoStateList & GetAlgoList() {
+		return m_algoList;
 	}
 
 	void Signal(boost::shared_ptr<AlgoState> algoState) {
@@ -172,8 +178,8 @@ private:
 
 	boost::shared_ptr<const Options> m_options;
 
-	Mutex m_timeoutMutex;
-	AlgoStateList m_timeOutNotifyList;
+	Mutex m_algoListMutex;
+	AlgoStateList m_algoList;
 
 };
 
@@ -323,8 +329,8 @@ bool Dispatcher::Notifier::TimeoutCheckIteration() {
 
 	std::list<boost::shared_ptr<AlgoState>> algos;
 	{
-		const Lock lock(m_timeoutMutex);
-		foreach (boost::shared_ptr<AlgoState> &algo, m_timeOutNotifyList) {
+		const Lock lock(m_algoListMutex);
+		foreach (boost::shared_ptr<AlgoState> &algo, m_algoList) {
 			if (algo->IsTimeToUpdate()) {
 				algos.push_back(algo);
 			}
@@ -438,18 +444,25 @@ void Dispatcher::Stop() {
 void Dispatcher::Register(boost::shared_ptr<Algo> algo) {
 	const DynamicSecurity &security = *const_cast<const Algo &>(*algo).GetSecurity();
 	{
+		const Notifier::Lock algoListlock(m_notifier->GetAlgoListMutex());
+		Notifier::AlgoStateList &algoList = m_notifier->GetAlgoList();
 		const Slots::Lock lock(m_slots->m_dataUpdateMutex);
 		boost::shared_ptr<AlgoState> algoState(new AlgoState(algo, m_notifier, m_notifier->GetOptions()));
+		algoList.push_back(algoState);
 		m_slots->m_dataUpdateConnections.InsertSafe(
 			security.Subcribe(
 				DynamicSecurity::UpdateSlot(
 					boost::bind(&Notifier::Signal, m_notifier.get(), algoState))));
-		m_notifier->RegisterTimeoutNotification(algoState);
+		algoList.swap(m_notifier->GetAlgoList());
 	}
 	Log::Info(
 		"Registered \"%1%\" for security \"%2%\".",
 		algo->GetName(),
 		security.GetFullSymbol());
+}
+
+void Dispatcher::CloseAll() {
+	//...//
 }
 
 ////////////////////////////////////////////////////////////////////////////////

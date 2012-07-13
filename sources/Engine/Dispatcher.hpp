@@ -27,6 +27,7 @@ public:
 public:
 
 	void Register(boost::shared_ptr<Algo>);
+	void CloseAll();
 
 public:
 
