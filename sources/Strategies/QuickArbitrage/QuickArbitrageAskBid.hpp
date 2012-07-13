@@ -24,11 +24,12 @@ namespace Strategies { namespace QuickArbitrage {
 
 			struct Direction {
 				bool isEnabled;
-				Security::Price priceMod;
 			};
 
 			Direction shortPos;
 			Direction longPos;
+
+			Security::Price askBidDifference;
 
 			Security::Price takeProfit;
 			Security::Price stopLoss;

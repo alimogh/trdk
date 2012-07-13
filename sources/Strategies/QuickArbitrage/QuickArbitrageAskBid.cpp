@@ -41,18 +41,27 @@ std::auto_ptr<PositionReporter> AskBid::CreatePositionReporter() const {
 }
 
 bool AskBid::IsLongPosEnabled() const {
-	return m_settings.longPos.isEnabled;
+	if (!m_settings.longPos.isEnabled) {
+		return false;
+	}
+	const DynamicSecurity &security = *GetSecurity();
+	return security.GetBidScaled() - security.GetAskScaled() >= m_settings.askBidDifference;
+	
 }
 bool AskBid::IsShortPosEnabled() const {
-	return m_settings.shortPos.isEnabled;
+	if (!m_settings.shortPos.isEnabled) {
+		return false;
+	}
+	const DynamicSecurity &security = *GetSecurity();
+	return security.GetBidScaled() - security.GetAskScaled() >= m_settings.askBidDifference;
 }
 
 Security::Price AskBid::GetLongPriceMod() const {
-	return m_settings.longPos.priceMod;
+	return 0;
 }
 
 Security::Price AskBid::GetShortPriceMod() const {
-	return m_settings.shortPos.priceMod;
+	return 0;
 }
 
 Security::Price AskBid::GetTakeProfit() const {
@@ -74,16 +83,13 @@ void AskBid::UpdateAlogImplSettings(const IniFile &ini, const std::string &secti
 void AskBid::DoSettingsUpodate(const IniFile &ini, const std::string &section) {
 	
 	Settings settings = {};
+
 	settings.shortPos.isEnabled = ini.ReadBoolKey(section, "open_shorts");
-	if (settings.shortPos.isEnabled) {
-		settings.shortPos.priceMod
-			= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "short_open_price"));
-	}
 	settings.longPos.isEnabled = ini.ReadBoolKey(section, "open_longs");
-	if (settings.longPos.isEnabled) {
-		settings.longPos.priceMod
-			= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "long_open_price"));
-	}
+
+	settings.askBidDifference
+		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "ask_bid_difference"));
+
 	settings.takeProfit
 		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "take_profit"));
 	settings.stopLoss
@@ -98,14 +104,13 @@ void AskBid::DoSettingsUpodate(const IniFile &ini, const std::string &section) {
 
 	Log::Info(
 		"Settings: algo \"%1%\" for \"%2%\":"
-			" open_shorts = %3%; short_open_price = %4%; open_longs = %5%; long_open_price = %6%;"
-			" take_profit = %7%; stop_loss = %8%; volume = %9%; position_time = %10%",
+			" open_shorts = %3%; open_longs = %4%; ask_bid_difference = %5%;"
+			" take_profit = %6%; stop_loss = %7%; volume = %8%; position_time = %9%",
 		algoName,
 		GetSecurity()->GetFullSymbol(),
 		m_settings.shortPos.isEnabled ? "yes" : "no",
-		GetSecurity()->Descale(m_settings.shortPos.priceMod),
 		m_settings.longPos.isEnabled ? "yes" : "no",
-		GetSecurity()->Descale(m_settings.longPos.priceMod),
+		GetSecurity()->Descale(m_settings.askBidDifference),
 		GetSecurity()->Descale(m_settings.takeProfit),
 		GetSecurity()->Descale(m_settings.stopLoss),
 		GetSecurity()->Descale(m_settings.volume),
