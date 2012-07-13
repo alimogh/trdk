@@ -63,6 +63,7 @@
     <ClCompile Include="Algo.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Log.cpp" />
+    <ClCompile Include="Options.cpp" />
     <ClCompile Include="Position.cpp" />
     <ClCompile Include="PositionBundle.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -77,6 +78,7 @@
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="Instrument.hpp" />
     <ClInclude Include="Log.hpp" />
+    <ClInclude Include="Options.hpp" />
     <ClInclude Include="Position.hpp" />
     <ClInclude Include="PositionBundle.hpp" />
     <ClInclude Include="PositionReporter.hpp" />

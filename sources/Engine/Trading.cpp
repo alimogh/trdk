@@ -13,6 +13,7 @@
 #include "InteractiveBrokers/InteractiveBrokersTradeSystem.hpp"
 #include "Dispatcher.hpp"
 #include "Core/Security.hpp"
+#include "Core/Options.hpp"
 
 namespace pt = boost::posix_time;
 
@@ -88,27 +89,26 @@ namespace {
 		securititesTmp.swap(securitites);
 	}
 
+	boost::shared_ptr<Options> LoadOptions(const std::string &iniFilePath) {
+		Log::Info("Using %1% file for common options...", iniFilePath);
+		return boost::shared_ptr<Options>(new Options(IniFile(iniFilePath), Ini::Sections::common));
+	}
+
 }
 
 void Trade(const std::string &iniFilePath) {
 
+	boost::shared_ptr<Options> options = LoadOptions(iniFilePath);
+
 	boost::shared_ptr<TradeSystem> tradeSystem(new InteractiveBrokersTradeSystem);
-	Dispatcher dispatcher;
+	Dispatcher dispatcher(options);
 	IqFeedClient marketDataSource;
 
 	{
 
-		Log::Info("Using %1% file...", iniFilePath);
+		Log::Info("Using %1% file for algo options...", iniFilePath);
 		const IniFile ini(iniFilePath);
-
 		const std::list<std::string> sections = ini.ReadSectionsList();
-
-		foreach (const auto &section, sections) {
-			if (section == Ini::Sections::common) {
-				Log::Info("Found section \"%1%\", loading common options...", section);
-				break;
-			}
-		}
 
 		Securities securities;
 		Algos algos;

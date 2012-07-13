@@ -197,7 +197,6 @@ void Position::UpdateClosing(
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	Assert(m_state == STATE_OPENED || m_state == STATE_RECLOSING || m_state == STATE_CLOSING);
-	Assert(m_state == STATE_RECLOSING || (m_closed.orderId == 0 || m_closed.orderId == orderId));
 	Assert(m_opened.price != 0);
 	Assert(!m_opened.time.is_not_a_date_time());
 	Assert(m_closed.time.is_not_a_date_time());

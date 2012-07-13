@@ -9,6 +9,7 @@
 #pragma once
 
 class Algo;
+class Options;
 
 class Dispatcher : private boost::noncopyable {
 
@@ -20,7 +21,7 @@ private:
 
 public:
 
-	Dispatcher();
+	Dispatcher(boost::shared_ptr<const Options>);
 	~Dispatcher();
 
 public:
