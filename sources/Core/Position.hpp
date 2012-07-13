@@ -89,6 +89,9 @@ public:
 	bool IsClosed() const;
 	bool IsOpenError() const;
 	bool IsCloseError() const;
+	bool IsCloseCanceled() const;
+
+	void ResetState();
 
 	Type GetType() const;
 	const char * GetTypeStr() const;
@@ -144,6 +147,12 @@ protected:
 				const char *eventDesc,
 				TradeSystem::OrderStatus,
 				long state)
+			const;
+	void ReportCloseOrderChange(
+				TradeSystem::OrderStatus,
+				long state,
+				TradeSystem::OrderId prevOrderId,
+				TradeSystem::OrderId newOrderId)
 			const;
 
 private:

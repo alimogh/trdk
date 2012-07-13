@@ -197,7 +197,6 @@ void Position::UpdateClosing(
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	Assert(m_state == STATE_OPENED || m_state == STATE_RECLOSING || m_state == STATE_CLOSING);
-	Assert(m_opened.orderId != 0);
 	Assert(m_state == STATE_RECLOSING || (m_closed.orderId == 0 || m_closed.orderId == orderId));
 	Assert(m_opened.price != 0);
 	Assert(!m_opened.time.is_not_a_date_time());
@@ -205,7 +204,13 @@ void Position::UpdateClosing(
 	Assert(m_opened.qty <= m_planedQty);
 	Assert(m_closed.qty <= m_opened.qty);
 
-	m_closed.orderId = orderId;
+	if (m_closed.orderId != orderId) {
+		if (m_closed.qty > 0 && m_closed.orderId) {
+			Assert(m_state == STATE_OPENED);
+			ReportCloseOrderChange(orderStatus, m_state, m_closed.orderId, orderId);
+		}
+		m_closed.orderId = orderId;
+	}
 
 	State state = State(m_state);
 	switch (orderStatus) {
@@ -272,11 +277,11 @@ TradeSystem::OrderId Position::GetCloseOrderId() const {
 }
 
 Position::Time Position::GetOpenTime() const {
-	return m_closed.time;
+	return m_opened.time;
 }
 
 Position::Time Position::GetCloseTime() const {
-	return m_opened.time;
+	return m_closed.time;
 }
 
 Position::Price Position::GetCommission() const {
@@ -301,6 +306,32 @@ bool Position::IsClosed() const {
 
 bool Position::IsCloseError() const {
 	return m_state == STATE_CLOSED;
+}
+
+bool Position::IsCloseCanceled() const {
+	return m_state == STATE_RECLOSING;
+}
+
+void Position::ResetState() {
+	switch (m_state) {
+		case STATE_NONE:
+		case STATE_OPENING:
+		case STATE_OPEN_ERROR:
+			Interlocking::Exchange(m_state, STATE_NONE);
+			break;
+		case STATE_OPENED:
+			break;
+		case STATE_CLOSING:
+		case STATE_RECLOSING:
+		case STATE_CLOSE_ERROR:
+			Interlocking::Exchange(m_state, STATE_OPENED);
+			break;
+		case STATE_CLOSED:
+			throw Exception("Couldn't reset position state");
+			break;
+		default:
+			AssertFail("Unknown position state.");
+	}
 }
 
 Position::StateUpdateConnection Position::Subscribe(
@@ -433,6 +464,34 @@ void Position::ReportClosingUpdate(
 		GetSecurity().Descale(GetClosePrice()),
 		GetOpenOrderId(),
 		GetCloseOrderId(),
+		GetSecurity().GetTradeSystem().GetStringStatus(orderStatus),
+		state,
+		GetSecurity().GetAsk(),
+		GetSecurity().GetBid(),
+		GetSecurity().Descale(GetTakeProfit()),
+		GetSecurity().Descale(GetStopLoss()));
+}
+
+void Position::ReportCloseOrderChange(
+			TradeSystem::OrderStatus orderStatus,
+			long state,
+			TradeSystem::OrderId prevOrderId,
+			TradeSystem::OrderId newOrderId)
+		const {
+	Assert(prevOrderId != newOrderId);
+	Log::Trading(
+		"position",
+		"%1% %2% close-order-change qty=%3%->%4% price=%5% order-id=%6%->%7%->%8%"
+			" order-status=%9% state=%10% cur-ask-bid=%11%/%12%"
+			" take-profit=%13% stop-loss=%14%",
+		GetSecurity().GetSymbol(),
+		GetTypeStr(),
+		GetOpenedQty(),
+		GetClosedQty(),
+		GetSecurity().Descale(GetClosePrice()),
+		GetOpenOrderId(),
+		prevOrderId,
+		newOrderId,
 		GetSecurity().GetTradeSystem().GetStringStatus(orderStatus),
 		state,
 		GetSecurity().GetAsk(),
