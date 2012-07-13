@@ -126,6 +126,7 @@ public:
 		r.insert(mp("PreSubmitted", TradeSystem::ORDER_STATUS_PENDIGN));
 		r.insert(mp("Submitted", TradeSystem::ORDER_STATUS_SUBMITTED));
 		r.insert(mp("Cancelled", TradeSystem::ORDER_STATUS_CANCELLED));
+		r.insert(mp("ApiCancelled", TradeSystem::ORDER_STATUS_CANCELLED));
 		r.insert(mp("Filled", TradeSystem::ORDER_STATUS_FILLED));
 		r.insert(mp("Inactive", TradeSystem::ORDER_STATUS_INACTIVE));
 		return r;
