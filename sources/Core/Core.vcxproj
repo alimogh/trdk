@@ -63,7 +63,6 @@
     <ClCompile Include="Algo.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Log.cpp" />
-    <ClCompile Include="Options.cpp" />
     <ClCompile Include="Position.cpp" />
     <ClCompile Include="PositionBundle.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -72,19 +71,20 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Security.cpp" />
+    <ClCompile Include="Settings.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Algo.hpp" />
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="Instrument.hpp" />
     <ClInclude Include="Log.hpp" />
-    <ClInclude Include="Options.hpp" />
     <ClInclude Include="Position.hpp" />
     <ClInclude Include="PositionBundle.hpp" />
     <ClInclude Include="PositionReporter.hpp" />
     <ClInclude Include="PositionReporterAlgo.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Security.hpp" />
+    <ClInclude Include="Settings.hpp" />
     <ClInclude Include="TradeSystem.hpp" />
   </ItemGroup>
   <ItemGroup>

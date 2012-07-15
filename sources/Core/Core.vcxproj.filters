@@ -32,7 +32,7 @@
     <ClCompile Include="PositionBundle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Options.cpp">
+    <ClCompile Include="Settings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -70,7 +70,7 @@
     <ClInclude Include="PositionReporterAlgo.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Options.hpp">
+    <ClInclude Include="Settings.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

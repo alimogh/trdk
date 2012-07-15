@@ -13,7 +13,7 @@
 #include "Core/PositionBundle.hpp"
 #include "Core/Position.hpp"
 #include "Core/PositionReporter.hpp"
-#include "Core/Options.hpp"
+#include "Core/Settings.hpp"
 
 namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
@@ -37,20 +37,20 @@ private:
 
 public:
 
-	explicit Notifier(boost::shared_ptr<const Options> options)
+	explicit Notifier(boost::shared_ptr<const Settings> options)
 			: m_isActive(false),
 			m_isExit(false),
 			m_current(&m_queue.first),
-			m_options(options) {
+			m_settings(options) {
 		
 		{
 			const char *const threadName = "Algo";
 			Log::Info(
 				"Starting %1% thread(s) \"%2%\"...",
-				m_options->GetAlgoThreadsCount(),
+				m_settings->GetAlgoThreadsCount(),
 				threadName);
-			boost::barrier startBarrier(m_options->GetAlgoThreadsCount() + 1);
-			for (size_t i = 0; i < m_options->GetAlgoThreadsCount(); ++i) {
+			boost::barrier startBarrier(m_settings->GetAlgoThreadsCount() + 1);
+			for (size_t i = 0; i < m_settings->GetAlgoThreadsCount(); ++i) {
 				m_threads.create_thread(
 					[&]() {
 						Task(startBarrier, threadName, &Dispatcher::Notifier::AlgoIteration);
@@ -94,8 +94,8 @@ public:
 		}
 	}
 
-	boost::shared_ptr<const Options> GetOptions() const {
-		return m_options;
+	boost::shared_ptr<const Settings> GetSettings() const {
+		return m_settings;
 	}
 
 public:
@@ -176,7 +176,7 @@ private:
 	std::pair<NotifyList, NotifyList> m_queue;
 	NotifyList *m_current;
 
-	boost::shared_ptr<const Options> m_options;
+	boost::shared_ptr<const Settings> m_settings;
 
 	Mutex m_algoListMutex;
 	AlgoStateList m_algoList;
@@ -198,7 +198,7 @@ public:
 	explicit AlgoState(
 				boost::shared_ptr<Algo> algo,
 				boost::shared_ptr<Notifier> notifier,
-				boost::shared_ptr<const Options> options)
+				boost::shared_ptr<const Settings> options)
 			: m_algo(algo),
 			m_notifier(notifier),
 			m_isBlocked(false),
@@ -316,7 +316,7 @@ private:
 
 	volatile LONGLONG m_lastUpdate;
 
-	boost::shared_ptr<const Options> m_options;
+	boost::shared_ptr<const Settings> m_options;
 
 };
 
@@ -325,7 +325,7 @@ private:
 bool Dispatcher::Notifier::TimeoutCheckIteration() {
 
 	const auto nextIterationTime
-		= boost::get_system_time() + pt::milliseconds(m_options->GetUpdatePeriodMilliseconds());
+		= boost::get_system_time() + pt::milliseconds(m_settings->GetUpdatePeriodMilliseconds());
 
 	std::list<boost::shared_ptr<AlgoState>> algos;
 	{
@@ -423,7 +423,7 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Dispatcher::Dispatcher(boost::shared_ptr<const Options> options)
+Dispatcher::Dispatcher(boost::shared_ptr<const Settings> options)
 		: m_notifier(new Notifier(options)),
 		m_slots(new Slots) {
 	//...//
@@ -447,7 +447,7 @@ void Dispatcher::Register(boost::shared_ptr<Algo> algo) {
 		const Notifier::Lock algoListlock(m_notifier->GetAlgoListMutex());
 		Notifier::AlgoStateList &algoList = m_notifier->GetAlgoList();
 		const Slots::Lock lock(m_slots->m_dataUpdateMutex);
-		boost::shared_ptr<AlgoState> algoState(new AlgoState(algo, m_notifier, m_notifier->GetOptions()));
+		boost::shared_ptr<AlgoState> algoState(new AlgoState(algo, m_notifier, m_notifier->GetSettings()));
 		algoList.push_back(algoState);
 		m_slots->m_dataUpdateConnections.InsertSafe(
 			security.Subcribe(

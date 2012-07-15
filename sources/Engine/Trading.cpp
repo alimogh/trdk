@@ -13,7 +13,7 @@
 #include "InteractiveBrokers/InteractiveBrokersTradeSystem.hpp"
 #include "Dispatcher.hpp"
 #include "Core/Security.hpp"
-#include "Core/Options.hpp"
+#include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
 
@@ -89,16 +89,16 @@ namespace {
 		securititesTmp.swap(securitites);
 	}
 
-	boost::shared_ptr<Options> LoadOptions(const std::string &iniFilePath) {
+	boost::shared_ptr<Settings> LoadOptions(const std::string &iniFilePath) {
 		Log::Info("Using %1% file for common options...", iniFilePath);
-		return boost::shared_ptr<Options>(new Options(IniFile(iniFilePath), Ini::Sections::common));
+		return boost::shared_ptr<Settings>(new Settings(IniFile(iniFilePath), Ini::Sections::common));
 	}
 
 }
 
 void Trade(const std::string &iniFilePath) {
 
-	boost::shared_ptr<Options> options = LoadOptions(iniFilePath);
+	boost::shared_ptr<Settings> options = LoadOptions(iniFilePath);
 
 	boost::shared_ptr<TradeSystem> tradeSystem(new InteractiveBrokersTradeSystem);
 	Dispatcher dispatcher(options);

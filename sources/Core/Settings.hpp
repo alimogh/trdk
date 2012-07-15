@@ -10,16 +10,28 @@
 
 class IniFile;
 
-class Options {
+class Settings : private boost::noncopyable {
 
 public:
 
 	typedef boost::posix_time::ptime Time;
-	typedef boost::posix_time::time_period Period;
+
+public:
+
+	struct Values {
+
+		Time tradeSessionStartTime;
+		Time tradeSessionEndTime;
+
+		boost::uint64_t algoUpdatePeriodMilliseconds;
+
+		size_t algoThreadsCount;
+
+	};
 
 public:
 	
-	explicit Options(const IniFile &, const std::string &section);
+	explicit Settings(const IniFile &, const std::string &section);
 
 public:
 
@@ -28,6 +40,8 @@ public:
 public:
 
 	const Time & GetStartTime() const;
+	const Time & GetCurrentTradeSessionStartTime() const;
+	const Time & GetCurrentTradeSessionEndime() const;
 
 	size_t GetAlgoThreadsCount() const;
 
@@ -35,7 +49,8 @@ public:
 
 private:
 
-	Time m_startTime;
+	const Time m_startTime;
 
+	Values m_values;
 
 };
