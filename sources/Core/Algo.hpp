@@ -47,6 +47,7 @@ public:
 
 	virtual boost::shared_ptr<PositionBandle> TryToOpenPositions() = 0;
 	virtual void TryToClosePositions(PositionBandle &) = 0;
+	virtual void ClosePositionsAsIs(PositionBandle &) = 0;
 
 	virtual void ReportDecision(const Position &) const = 0;
 

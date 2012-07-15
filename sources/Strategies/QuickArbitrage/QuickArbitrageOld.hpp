@@ -64,14 +64,14 @@ namespace Strategies { namespace QuickArbitrage {
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
 
 		virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section);
-		virtual void ClosePosition(Position &);
+		virtual void ClosePosition(Position &, bool asIs);
 
 	private:
 
 		void DoSettingsUpodate(const IniFile &, const std::string &section);
 
-		void CloseLongPosition(Position &);
-		void CloseShortPosition(Position &);
+		void CloseLongPosition(Position &, bool asIs);
+		void CloseShortPosition(Position &, bool asIs);
 
 	private:
 

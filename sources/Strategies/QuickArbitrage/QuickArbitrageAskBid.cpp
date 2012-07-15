@@ -122,10 +122,10 @@ const std::string & AskBid::GetName() const {
 	return algoName;
 }
 
-void AskBid::CloseLongPosition(Position &position) {
+void AskBid::CloseLongPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_LONG);
 	DynamicSecurity &security = *GetSecurity();
-	const bool isLoss = position.GetStopLoss() >= security.GetAskScaled();
+	const bool isLoss = asIs || position.GetStopLoss() >= security.GetAskScaled();
 	if (position.GetAlgoFlag() == STATE_OPENING) {
 		if (isLoss) {
 			CloseLongPositionStopLossDo(position);
@@ -147,10 +147,10 @@ void AskBid::CloseLongPosition(Position &position) {
 	}
 }
 
-void AskBid::CloseShortPosition(Position &position) {
+void AskBid::CloseShortPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
 	DynamicSecurity &security = *GetSecurity();
-	const bool isLoss = position.GetStopLoss() <= security.GetBidScaled();
+	const bool isLoss = asIs || position.GetStopLoss() <= security.GetBidScaled();
 	if (position.GetAlgoFlag() == STATE_OPENING) {
 		if (isLoss) {
 			CloseShortPositionStopLossDo(position);
@@ -172,7 +172,7 @@ void AskBid::CloseShortPosition(Position &position) {
 	}
 }
 
-void AskBid::ClosePosition(Position &position) {
+void AskBid::ClosePosition(Position &position, bool asIs) {
 	
 	Assert(
 		position.GetAlgoFlag() == STATE_OPENING
@@ -181,6 +181,11 @@ void AskBid::ClosePosition(Position &position) {
 	
 	if (!position.IsOpened()) {
 		Assert(!position.IsClosed());
+		if (asIs) {
+			GetSecurity()->CancelAllOrders();
+		}
+		return;
+	} else if (position.IsOpenError()) {
 		return;
 	} else if (position.IsClosed()) {
 		return;
@@ -189,7 +194,7 @@ void AskBid::ClosePosition(Position &position) {
 			&& (position.GetCloseType() == Position::CLOSE_TYPE_STOP_LOSS
 				|| (!position.IsCloseCanceled() && position.IsOpened()))) {
 		return;
-	} else if (position.GetAlgoFlag() == STATE_OPENING) {
+	} else if (!asIs && position.GetAlgoFlag() == STATE_OPENING) {
 		Assert(!position.GetOpenTime().is_not_a_date_time());
 		if (	!position.GetOpenTime().is_not_a_date_time()
 				&& position.GetOpenTime() + m_settings.positionTime > boost::get_system_time()) {
@@ -199,10 +204,10 @@ void AskBid::ClosePosition(Position &position) {
 
 	switch (position.GetType()) {
 		case Position::TYPE_LONG:
-			CloseLongPosition(position);
+			CloseLongPosition(position, asIs);
 			break;
 		case Position::TYPE_SHORT:
-			CloseShortPosition(position);
+			CloseShortPosition(position, asIs);
 			break;
 		default:
 			AssertFail("Unknown position type.");

@@ -236,9 +236,10 @@ private:
 
 	bool CheckPositionsUnsafe() {
 
+		const auto now = boost::get_system_time();
 		Interlocking::Exchange(
 			m_lastUpdate,
-			(boost::get_system_time() - m_options->GetStartTime()).total_milliseconds());
+			(now - m_options->GetStartTime()).total_milliseconds());
 
 		Assert(!m_isBlocked);
 		
@@ -253,7 +254,11 @@ private:
 			ReportClosedPositon(*m_positions);
 			if (!m_positions->IsCompleted()) {
 				if (!m_positions->IsCloseError()) {
-					m_algo->TryToClosePositions(*m_positions);
+					if (m_options->GetCurrentTradeSessionEndime() <= now) {
+						m_algo->ClosePositionsAsIs(*m_positions);
+					} else {
+						m_algo->TryToClosePositions(*m_positions);
+					}
 				} else {
 					m_isBlocked = true;
 				}

@@ -112,10 +112,10 @@ const std::string & Old::GetName() const {
 	return algoName;
 }
 
-void Old::CloseLongPosition(Position &position) {
+void Old::CloseLongPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_LONG);
 	DynamicSecurity &security = *GetSecurity();
-	const bool isLoss = position.GetStopLoss() >= security.GetAskScaled();
+	const bool isLoss = asIs || position.GetStopLoss() >= security.GetAskScaled();
 	if (position.GetAlgoFlag() == STATE_OPENING) {
 		if (isLoss) {
 			CloseLongPositionStopLossDo(position);
@@ -131,10 +131,10 @@ void Old::CloseLongPosition(Position &position) {
 	}
 }
 
-void Old::CloseShortPosition(Position &position) {
+void Old::CloseShortPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
 	DynamicSecurity &security = *GetSecurity();
-	const bool isLoss = position.GetStopLoss() <= security.GetBidScaled();
+	const bool isLoss = asIs || position.GetStopLoss() <= security.GetBidScaled();
 	if (position.GetAlgoFlag() == STATE_OPENING) {
 		if (isLoss) {
 			CloseShortPositionStopLossDo(position);
@@ -150,7 +150,7 @@ void Old::CloseShortPosition(Position &position) {
 	}
 }
 
-void Old::ClosePosition(Position &position) {
+void Old::ClosePosition(Position &position, bool asIs) {
 	
 	Assert(
 		position.GetAlgoFlag() == STATE_OPENING
@@ -159,6 +159,9 @@ void Old::ClosePosition(Position &position) {
 	
 	if (!position.IsOpened()) {
 		Assert(!position.IsClosed());
+		if (asIs) {
+			GetSecurity()->CancelAllOrders();
+		}
 		return;
 	} else if (position.IsClosed()) {
 		return;
@@ -170,10 +173,10 @@ void Old::ClosePosition(Position &position) {
 
 	switch (position.GetType()) {
 		case Position::TYPE_LONG:
-			CloseLongPosition(position);
+			CloseLongPosition(position, asIs);
 			break;
 		case Position::TYPE_SHORT:
-			CloseShortPosition(position);
+			CloseShortPosition(position, asIs);
 			break;
 		default:
 			AssertFail("Unknown position type.");

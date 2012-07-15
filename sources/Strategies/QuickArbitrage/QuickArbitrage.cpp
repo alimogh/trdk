@@ -123,7 +123,13 @@ void s::Algo::CloseShortPositionStopLossTry(Position &position) {
 
 void s::Algo::TryToClosePositions(PositionBandle &positions) {
 	foreach (auto p, positions.Get()) {
-		ClosePosition(*p);
+		ClosePosition(*p, false);
+	}
+}
+
+void s::Algo::ClosePositionsAsIs(PositionBandle &positions) {
+	foreach (auto p, positions.Get()) {
+		ClosePosition(*p, true);
 	}
 }
 
