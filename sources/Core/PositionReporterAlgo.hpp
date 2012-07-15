@@ -43,7 +43,7 @@ public:
 			}
 			Log::Info("Logging \"%1%\" positions into %2%...", algo.GetName(), filePath);
 			if (isNew) {
-				m_file << "type;symbol;exit type;entry price;entry date time;number of shares;exit price;exit date time;commission paid;open order;close order" << std::endl;
+				m_file << "type,symbol,exit type,entry price,entry date time,number of shares,exit price,exit date time,commission paid,open order,close order" << std::endl;
 			}
 			m_isInited = true;
 		}
@@ -69,26 +69,26 @@ public:
 		const Security &security = position.GetSecurity();
 		m_file
 			<< position.GetTypeStr()
-			<< ";" << security.GetSymbol()
-			<< ";" << position.GetCloseTypeStr()
-			<< ";" << security.Descale(position.GetOpenPrice());
+			<< "," << security.GetSymbol()
+			<< "," << position.GetCloseTypeStr()
+			<< "," << security.Descale(position.GetOpenPrice());
 		{
 			const lt::local_date_time esdTime(position.GetOpenTime(), Util::GetEdtTimeZone());
-			m_file << ";" << esdTime;
+			m_file << "," << esdTime;
 		}
 		m_file
-			<< ";" << position.GetOpenedQty()
-			<< ";" << security.Descale(position.GetClosePrice());
+			<< "," << position.GetOpenedQty()
+			<< "," << security.Descale(position.GetClosePrice());
 		if (position.IsClosed()) {
 			const lt::local_date_time esdTime(position.GetCloseTime(), Util::GetEdtTimeZone());
-			m_file << ";" << esdTime;
+			m_file << "," << esdTime;
 		} else {
-			m_file << ";-";
+			m_file << ",-";
 		}
 		m_file
-			<< ";" << security.Descale(position.GetCommission())
-			<< ";" << position.GetOpenOrderId()
-			<< ";" << position.GetCloseOrderId();
+			<< "," << security.Descale(position.GetCommission())
+			<< "," << position.GetOpenOrderId()
+			<< "," << position.GetCloseOrderId();
 		m_file << std::endl;
 	}
 
