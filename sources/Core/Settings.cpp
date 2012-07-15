@@ -102,10 +102,18 @@ const Settings::Time & Settings::GetStartTime() const {
 	return m_startTime;
 }
 
+const Settings::Time & Settings::GetCurrentTradeSessionStartTime() const {
+	return m_values.tradeSessionStartTime;
+}
+
+const Settings::Time & Settings::GetCurrentTradeSessionEndime() const {
+	return m_values.tradeSessionEndTime;
+}
+
 size_t Settings::GetAlgoThreadsCount() const {
-	return 1;
+	return m_values.algoThreadsCount;
 }
 
 boost::uint64_t Settings::GetUpdatePeriodMilliseconds() const {
-	return 100;
+	return m_values.algoUpdatePeriodMilliseconds;
 }
