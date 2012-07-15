@@ -14,6 +14,7 @@ class PositionBandle;
 class Position;
 class PositionReporter;
 class IniFile;
+class MarketDataSource;
 
 class Algo : private boost::noncopyable {
 
@@ -42,6 +43,8 @@ public:
 	Mutex & GetMutex();
 
 public:
+
+	virtual void SubscribeToMarketData(MarketDataSource &) = 0;
 
 	virtual void Update() = 0;
 

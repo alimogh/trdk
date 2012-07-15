@@ -174,8 +174,8 @@ void Trade(const std::string &iniFilePath) {
 	
 		
 		Connect(marketDataSource);
-		foreach (auto &s, securities) {
-			marketDataSource.SubscribeToMarketData(s.second);
+		foreach (auto &a, algos) {
+			a->SubscribeToMarketData(marketDataSource);
 		}
 
 		Log::Info("Loaded %1% securities.", securities.size());

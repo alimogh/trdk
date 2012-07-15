@@ -631,10 +631,13 @@ public:
 		LookupConnection::Lock lockLookup(m_lookup->m_mutex);
 		Level1Connection::Lock lockLevel1(m_level1->m_mutex);
 
+		if (m_marketDataSubscribers.find(instrument->GetSymbol()) != m_marketDataSubscribers.end()) {
+			return;
+		}
+
 		CheckState();
 
 		UpdatesSubscribers marketDataSubscribers(m_marketDataSubscribers);
-		Assert(marketDataSubscribers.find(instrument->GetSymbol()) == marketDataSubscribers.end());
 		marketDataSubscribers[instrument->GetSymbol()] = instrument;
 
 		if (m_historySubscribers.find(instrument->GetSymbol()) == m_historySubscribers.end()) {

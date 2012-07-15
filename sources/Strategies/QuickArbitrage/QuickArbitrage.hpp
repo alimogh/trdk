@@ -31,6 +31,8 @@ namespace Strategies { namespace QuickArbitrage {
 
 	public:
 
+		virtual void SubscribeToMarketData(MarketDataSource &);
+
 		virtual void Update();
 
 		virtual boost::shared_ptr<PositionBandle> TryToOpenPositions();

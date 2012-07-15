@@ -13,6 +13,7 @@
 #include "Core/PositionBundle.hpp"
 #include "Core/Position.hpp"
 #include "Core/PositionReporterAlgo.hpp"
+#include "Core/MarketDataSource.hpp"
 
 namespace s = Strategies::QuickArbitrage;
 
@@ -173,3 +174,6 @@ void s::Algo::ReportStopLossDo(const Position &position) const {
 		position.GetOpenedQty() - position.GetClosedQty());
 }
 
+void s::Algo::SubscribeToMarketData(MarketDataSource &marketDataSource) {
+	marketDataSource.SubscribeToMarketData(GetSecurity());
+}
