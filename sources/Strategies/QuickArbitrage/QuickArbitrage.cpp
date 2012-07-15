@@ -175,5 +175,5 @@ void s::Algo::ReportStopLossDo(const Position &position) const {
 }
 
 void s::Algo::SubscribeToMarketData(MarketDataSource &marketDataSource) {
-	marketDataSource.SubscribeToMarketData(GetSecurity());
+	marketDataSource.SubscribeToMarketDataLevel1(GetSecurity());
 }

@@ -75,6 +75,13 @@ public:
 
 class DynamicSecurity : public Security {
 
+private:
+
+	struct Level2 {
+		volatile LONGLONG price;
+		volatile LONGLONG size;
+	};
+
 public:
 
 	typedef Security Base;
@@ -109,12 +116,18 @@ public:
 protected:
 
 	bool SetLast(double);
+	
 	bool SetAsk(double);
+	bool SetAskLevel2(double price, Qty size);
+	
 	bool SetBid(double);
+	bool SetBidLevel2(double price, Qty size);
 
 	bool SetLast(Price);
 	bool SetAsk(Price);
+	bool SetAskLevel2(Price price, Qty size);
 	bool SetBid(Price);
+	bool SetBidLevel2(Price price, Qty size);
 
 public:
 
@@ -124,7 +137,9 @@ public:
 
 public:
 
-	void Update(const MarketDataTime &, double last, double ask, double bid);
+	void UpdateLevel1(const MarketDataTime &, double last, double ask, double bid);
+	void UpdateBidLevel2(const MarketDataTime &, double price, size_t size);
+	void UpdateAskLevel2(const MarketDataTime &, double price, size_t size);
 
 	void OnHistoryDataStart();
 	void OnHistoryDataEnd();
@@ -136,15 +151,22 @@ public:
 private:
 
 	class MarketDataLog;
-	std::unique_ptr<MarketDataLog> m_marketDataLog;
+	std::unique_ptr<MarketDataLog> m_marketDataLevel1Log;
+
+	class MarketDataLevel2Log;
+	std::unique_ptr<MarketDataLevel2Log> m_marketDataLevel2Log;
 
 	mutable boost::signals2::signal<UpdateSlotSignature> m_updateSignal;
 
 	volatile LONGLONG m_isHistoryData;
 
 	volatile LONGLONG m_last;
+	
 	volatile LONGLONG m_ask;
+	Level2 m_askLevel2;
+	
 	volatile LONGLONG m_bid;
+	Level2 m_bidLevel2;
 
 };
 

@@ -66,6 +66,20 @@ public:
 
 public:
 
+	void Reset() {
+		SplitIterator split(
+			m_messageBegin,
+			m_messageEnd,
+			boost::first_finder(",", boost::is_equal()));
+		if (split == SplitIterator()) {
+			throw IsNotIqFeedMessageError();
+		}
+		m_split = split;
+		m_lastFieldNum = 1;
+	}
+
+public:
+
 	Iterator GetBegin() const {
 		return m_messageBegin;
 	}
@@ -76,6 +90,18 @@ public:
 
 public:
 
+	bool GetFieldAsBoolean(size_t fieldNum, bool isRequired) const {
+		std::string strVal;
+		GetStringField(fieldNum, isRequired, strVal);
+		if (strVal == "T") {
+			return true;
+		} else if (strVal == "F") {
+			return false;
+		} else {
+			throw FieldHasInvalidFormatError();
+		}
+	}
+
 	double GetFieldAsDouble(size_t fieldNum, bool isRequired) const {
 		double result = .0;
 		GetTypedField(fieldNum, isRequired, result);
@@ -84,6 +110,12 @@ public:
 
 	int GetFieldAsInt(size_t fieldNum, bool isRequired) const {
 		int result = 0;
+		GetTypedField(fieldNum, isRequired, result);
+		return result;
+	}
+
+	unsigned int GetFieldAsUnsignedInt(size_t fieldNum, bool isRequired) const {
+		unsigned int result = 0;
 		GetTypedField(fieldNum, isRequired, result);
 		return result;
 	}
@@ -100,18 +132,6 @@ public:
 	}
 
 private:
-
-	void Reset() {
-		SplitIterator split(
-			m_messageBegin,
-			m_messageEnd,
-			boost::first_finder(",", boost::is_equal()));
-		if (split == SplitIterator()) {
-			throw IsNotIqFeedMessageError();
-		}
-		m_split = split;
-		m_lastFieldNum = 1;
-	}
 
 	template<typename T>
 	void GetTypedField(size_t fieldNum, bool isRequired, T &resultAndDefVal) const {

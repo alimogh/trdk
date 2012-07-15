@@ -222,7 +222,7 @@ namespace {
 
 	protected:
 
-		virtual void HandleMessage(const MessageParser &) = 0;
+		virtual void HandleMessage(MessageParser &) = 0;
 
 
 	private:
@@ -272,7 +272,7 @@ namespace {
 				if (end == m_messagesBuffer.end()) {
 					break;
 				}
-				const MessageParser message(m_messagesBuffer.begin(), end);
+				MessageParser message(m_messagesBuffer.begin(), end);
 				if (*message.GetBegin() == 'E') {
 					Log::Error(IQFEED_CLIENT_CONNECTION_NAME ": ERROR message received.");
 					DumpReceived(message);
@@ -393,7 +393,7 @@ namespace {
 
 	protected:
 
-		virtual void HandleMessage(const MessageParser &message) {
+		virtual void HandleMessage(MessageParser &message) {
 			switch (*message.GetBegin()) {
 				case 'Q':
 					HandleUpdateMessage(message, false);
@@ -410,8 +410,8 @@ namespace {
 			const pt::ptime now = boost::get_system_time();
 			const std::string symbol = message.GetFieldAsString(2, true);
 			const UpdatesSubscribers::const_iterator subscriber
-				= m_service.m_marketDataSubscribers.find(symbol);
-			if (subscriber == m_service.m_marketDataSubscribers.end()) {
+				= m_service.m_marketDataLevel1Subscribers.find(symbol);
+			if (subscriber == m_service.m_marketDataLevel1Subscribers.end()) {
 				Log::Warn(
 					IQFEED_CLIENT_CONNECTION_NAME " connection received Update Message for unknown symbol \"%1%\".",
 					symbol);
@@ -444,9 +444,122 @@ namespace {
 			Assert(ask * 0.75 < bid);
 			Assert(ask * 1.25 > bid);
 
-			subscriber->second->Update(now, last, ask, bid);
+			subscriber->second->UpdateLevel1(now, last, ask, bid);
 
 		}
+
+	};
+
+	template<typename Service>
+	class Level2Connection : public Connection<Service> {
+
+	public:
+
+		Level2Connection(Service &service)
+				: Connection(service, 9200),
+				m_estTimeDiff(Util::GetEdtDiff()) {
+			//...//
+		}
+
+		virtual ~Level2Connection() {
+			//...//
+		}
+
+	protected:
+
+		virtual void HandleMessage(MessageParser &message) {
+			switch (*message.GetBegin()) {
+				case 'U':
+					HandleUpdateMessage(message);
+					break;
+				case 'n': // n,[SYMBOL]<CR><LF> Symbol not found message.
+					HandleNoSymbolMessage(message);
+					break;
+				case 'E': // E,[error text]<CR><LF> An error message. 
+					HandleErrorMessage(message);
+					break;
+			}
+		}
+
+	private:
+
+		void HandleNoSymbolMessage(const MessageParser &message) {
+			DumpReceived(message);
+			Log::Error(
+				IQFEED_CLIENT_CONNECTION_NAME ": Level 2 ERROR message received: Symbol \"%1%\" not found.",
+				message.GetFieldAsString(2, true));
+		}
+
+		void HandleErrorMessage(const MessageParser &message) {
+			DumpReceived(message);
+			Log::Error(
+				IQFEED_CLIENT_CONNECTION_NAME ": Level 2 ERROR message received: \"%1%\".",
+				message.GetFieldAsString(2, true));
+		}
+
+		void HandleUpdateMessage(MessageParser &message) {
+
+			const pt::ptime now = boost::get_system_time();
+			
+			const std::string symbol = message.GetFieldAsString(2, true);
+			const UpdatesSubscribers::const_iterator subscriber
+				= m_service.m_marketDataLevel2Subscribers.find(symbol);
+			if (subscriber == m_service.m_marketDataLevel2Subscribers.end()) {
+				Log::Warn(
+					IQFEED_CLIENT_CONNECTION_NAME " Level II connection received Update Message for unknown symbol \"%1%\".",
+					symbol);
+				DumpReceived(message);
+				return;
+			}
+
+			const bool isBidValid = message.GetFieldAsBoolean(14, true);
+			const bool isAskValid = message.GetFieldAsBoolean(15, true);
+			Assert(isBidValid || isAskValid);
+			if (!isBidValid && !isAskValid) {
+				return;
+			}
+			message.Reset();
+
+			const double bid = isBidValid
+				?	message.GetFieldAsDouble(3, true)
+				:	.0;
+			const double ask = isAskValid
+				?	message.GetFieldAsDouble(4, true)
+				:	.0;
+		
+			const size_t bidSize = isBidValid
+				?	message.GetFieldAsUnsignedInt(5, true)
+				:	0;
+			const size_t askSize = isAskValid
+				?	message.GetFieldAsUnsignedInt(6, true)
+				:	0;
+
+			const pt::ptime bidTime = isBidValid
+				?	(message.GetFieldAsTime(8, true) - m_estTimeDiff)
+				:	pt::not_a_date_time;
+
+			const pt::ptime askTime = isAskValid
+				?	(message.GetFieldAsTime(13, true) - m_estTimeDiff)
+				:	pt::not_a_date_time;
+
+			if (isBidValid) {
+				Assert(!Util::IsZero(bid));
+				Assert(bidSize > 0);
+				Assert(!bidTime.is_not_a_date_time());
+				subscriber->second->UpdateBidLevel2(bidTime, bid, bidSize);
+			}
+			if (isAskValid) {
+				Assert(!Util::IsZero(ask));
+				Assert(askSize > 0);
+				Assert(!askTime.is_not_a_date_time());
+				subscriber->second->UpdateAskLevel2(askTime, ask, askSize);
+			}
+
+		}
+
+	private:
+
+		const pt::time_duration m_estTimeDiff;
 
 	};
 
@@ -469,7 +582,7 @@ namespace {
 
 	protected:
 
-		virtual void HandleMessage(const MessageParser &message) {
+		virtual void HandleMessage(MessageParser &message) {
 			switch (*message.GetBegin()) {
 				case 'H':
 					{
@@ -552,7 +665,7 @@ namespace {
 			Assert(ask * 0.75 < bid);
 			Assert(ask * 1.25 > bid);
 
-			subscriber.Update(time, last, ask, bid);
+			subscriber.UpdateLevel1(time, last, ask, bid);
 
 		}
 
@@ -562,11 +675,18 @@ namespace {
 				IQFEED_CLIENT_CONNECTION_NAME ": completed history data for \"%1%\".",
 				subscriber->GetSymbol());
 			m_service.m_historySubscribers.erase(subscriberIt);
-			const UpdatesSubscribers::const_iterator mdIt
-				= m_service.m_marketDataSubscribers.find(subscriber->GetSymbol());
 			subscriber->OnHistoryDataEnd();
-			if (mdIt != m_service.m_marketDataSubscribers.end()) {
-				m_service.SendSubscribeToMarketDataRequest(*mdIt->second);
+			{
+				const auto i = m_service.m_marketDataLevel1Subscribers.find(subscriber->GetSymbol());
+				if (i != m_service.m_marketDataLevel1Subscribers.end()) {
+					m_service.SendSubscribeToMarketDataLevel1Request(*i->second);
+				}
+			}
+			{
+				const auto i = m_service.m_marketDataLevel2Subscribers.find(subscriber->GetSymbol());
+				if (i != m_service.m_marketDataLevel1Subscribers.end()) {
+					m_service.SendSubscribeToMarketDataLevel2Request(*i->second);
+				}
 			}
 		}
 
@@ -595,6 +715,7 @@ class IqFeedClient::Implementation : private boost::noncopyable {
 private:
 
 	typedef Level1Connection<IqFeedClient::Implementation> Level1Connection;
+	typedef Level2Connection<IqFeedClient::Implementation> Level2Connection;
 	typedef LookupConnection<IqFeedClient::Implementation> LookupConnection;
 
 public:
@@ -612,6 +733,7 @@ public:
 			*m_log << "Started." << std::endl;
 		}
 		m_level1.reset(new Level1Connection(*this));
+		m_level2.reset(new Level2Connection(*this));
 		m_lookup.reset(new LookupConnection(*this));
 	}
 
@@ -626,27 +748,19 @@ public:
 		m_lookup->Connect();
 	}
 
-	void SubscribeToMarketData(boost::shared_ptr<DynamicSecurity> instrument) {
-
-		LookupConnection::Lock lockLookup(m_lookup->m_mutex);
-		Level1Connection::Lock lockLevel1(m_level1->m_mutex);
-
-		if (m_marketDataSubscribers.find(instrument->GetSymbol()) != m_marketDataSubscribers.end()) {
-			return;
-		}
-
-		CheckState();
-
-		UpdatesSubscribers marketDataSubscribers(m_marketDataSubscribers);
-		marketDataSubscribers[instrument->GetSymbol()] = instrument;
-
-		if (m_historySubscribers.find(instrument->GetSymbol()) == m_historySubscribers.end()) {
-			SendSubscribeToMarketDataRequest(*marketDataSubscribers[instrument->GetSymbol()]);
-		}
-		marketDataSubscribers.swap(m_marketDataSubscribers);
-
+	void SubscribeToMarketDataLevel1(boost::shared_ptr<DynamicSecurity> instrument) {
+		SubscribeToMarketData(
+			instrument,
+			&Implementation::SendSubscribeToMarketDataLevel1Request,
+			m_marketDataLevel1Subscribers);
 	}
 
+	void SubscribeToMarketDataLevel2(boost::shared_ptr<DynamicSecurity> instrument) {
+		SubscribeToMarketData(
+			instrument,
+			&Implementation::SendSubscribeToMarketDataLevel2Request,
+			m_marketDataLevel1Subscribers);
+	}
 
 	void RequestHistory(
 				boost::shared_ptr<DynamicSecurity> instrument,
@@ -662,11 +776,12 @@ public:
 
 		const LookupConnection::Lock lockLookup(m_lookup->m_mutex);
 		const Level1Connection::Lock lockLevel1(m_level1->m_mutex);
+		const Level1Connection::Lock lockLevel2(m_level2->m_mutex);
 
 		CheckState();
 
-		Assert(m_marketDataSubscribers.find(instrument->GetSymbol()) == m_marketDataSubscribers.end());
-		if (m_marketDataSubscribers.find(instrument->GetSymbol()) != m_marketDataSubscribers.end()) {
+		Assert(m_marketDataLevel1Subscribers.find(instrument->GetSymbol()) == m_marketDataLevel1Subscribers.end());
+		if (m_marketDataLevel1Subscribers.find(instrument->GetSymbol()) != m_marketDataLevel1Subscribers.end()) {
 			throw Error("Failed to subscribe symbol to history, already subscribed to market data");
 		}
 
@@ -732,10 +847,36 @@ public:
 
 public:
 
-	void SendSubscribeToMarketDataRequest(const DynamicSecurity &subscriber) {
+	void SubscribeToMarketData(
+				boost::shared_ptr<DynamicSecurity> instrument,
+				void (Implementation::*sendSubscribeRequest)(const DynamicSecurity &),
+				UpdatesSubscribers &list) {
+		const LookupConnection::Lock lockLookup(m_lookup->m_mutex);
+		const Level1Connection::Lock lockLevel1(m_level1->m_mutex);
+		const Level2Connection::Lock lockLevel2(m_level2->m_mutex);
+		if (list.find(instrument->GetSymbol()) != list.end()) {
+			return;
+		}
+		CheckState();
+		auto subscribers(list);
+		subscribers[instrument->GetSymbol()] = instrument;
+		if (m_historySubscribers.find(instrument->GetSymbol()) == m_historySubscribers.end()) {
+			(this->*sendSubscribeRequest)(*instrument);
+		}
+		subscribers.swap(list);
+	}
+
+	void SendSubscribeToMarketDataLevel1Request(const DynamicSecurity &subscriber) {
 		m_level1->Send((boost::format("w%1%\r\n") % subscriber.GetSymbol()).str());
 		Log::Debug(
-			"Sent " IQFEED_CLIENT_CONNECTION_NAME " market data subscription request for \"%1%\".",
+			"Sent " IQFEED_CLIENT_CONNECTION_NAME " Level I market data subscription request for \"%1%\".",
+			subscriber.GetSymbol());
+	}
+
+	void SendSubscribeToMarketDataLevel2Request(const DynamicSecurity &subscriber) {
+		m_level2->Send((boost::format("w%1%\r\n") % subscriber.GetSymbol()).str());
+		Log::Debug(
+			"Sent " IQFEED_CLIENT_CONNECTION_NAME " Level II market data subscription request for \"%1%\".",
 			subscriber.GetSymbol());
 	}
 
@@ -782,7 +923,8 @@ private:
 
 public:
 
-	UpdatesSubscribers m_marketDataSubscribers;
+	UpdatesSubscribers m_marketDataLevel1Subscribers;
+	UpdatesSubscribers m_marketDataLevel2Subscribers;
 	HistorySubscribers m_historySubscribers;
 
 private:
@@ -791,6 +933,7 @@ private:
 	mutable LogMutex m_logMutex;
 
 	std::unique_ptr<Level1Connection> m_level1;
+	std::unique_ptr<Level2Connection> m_level2;
 	std::unique_ptr<LookupConnection> m_lookup;
 
 };
@@ -810,10 +953,16 @@ void IqFeedClient::Connect() {
 	m_pimpl->Connect();
 }
 
-void IqFeedClient::SubscribeToMarketData(
+void IqFeedClient::SubscribeToMarketDataLevel1(
 			boost::shared_ptr<DynamicSecurity> instrument) 
 		const {
-	m_pimpl->SubscribeToMarketData(instrument);
+	m_pimpl->SubscribeToMarketDataLevel1(instrument);
+}
+
+void IqFeedClient::SubscribeToMarketDataLevel2(
+			boost::shared_ptr<DynamicSecurity> instrument) 
+		const {
+	m_pimpl->SubscribeToMarketDataLevel2(instrument);
 }
 
 void IqFeedClient::RequestHistory(

@@ -23,7 +23,8 @@ public:
 
 public:
 
-	virtual void SubscribeToMarketData(boost::shared_ptr<DynamicSecurity>) const;
+	virtual void SubscribeToMarketDataLevel1(boost::shared_ptr<DynamicSecurity>) const;
+	virtual void SubscribeToMarketDataLevel2(boost::shared_ptr<DynamicSecurity>) const;
 
 	virtual void RequestHistory(
 			boost::shared_ptr<DynamicSecurity>,
