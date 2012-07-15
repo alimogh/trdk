@@ -84,7 +84,7 @@ namespace Util {
 	boost::filesystem::path SymbolToFilePath(
 				const boost::filesystem::path &path,
 				const std::string &symbol,
-				const char *ext);
+				const std::string &);
 
 	boost::shared_ptr<boost::local_time::posix_time_zone> GetEdtTimeZone();
 

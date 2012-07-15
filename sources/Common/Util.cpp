@@ -17,7 +17,7 @@ namespace lt = boost::local_time;
 fs::path Util::SymbolToFilePath(
 			const boost::filesystem::path &path,
 			const std::string &symbol,
-			const char *ext) {
+			const std::string &ext) {
 	std::list<std::string> subs;
 	boost::split(subs, symbol, boost::is_any_of(":"));
 	fs::path result;
