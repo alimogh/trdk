@@ -27,7 +27,7 @@ Old::Old(
 			const IniFile &ini,
 			const std::string &section)
 		: Base(security, logTag) {
-	DoSettingsUpodate(ini, section);
+	DoSettingsUpdate(ini, section);
 }
 
 Old::~Old() {
@@ -67,10 +67,10 @@ Security::Price Old::GetVolume() const {
 }
 
 void Old::UpdateAlogImplSettings(const IniFile &ini, const std::string &section) {
-	DoSettingsUpodate(ini, section);
+	DoSettingsUpdate(ini, section);
 }
 
-void Old::DoSettingsUpodate(const IniFile &ini, const std::string &section) {
+void Old::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	
 	Settings settings = {};
 	settings.shortPos.isEnabled = ini.ReadBoolKey(section, "open_shorts");

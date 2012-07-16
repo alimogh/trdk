@@ -28,7 +28,7 @@ AskBid::AskBid(
 			const IniFile &ini,
 			const std::string &section)
 		: Base(security, logTag) {
-	DoSettingsUpodate(ini, section);
+	DoSettingsUpdate(ini, section);
 }
 
 AskBid::~AskBid() {
@@ -77,10 +77,10 @@ Security::Price AskBid::GetVolume() const {
 }
 
 void AskBid::UpdateAlogImplSettings(const IniFile &ini, const std::string &section) {
-	DoSettingsUpodate(ini, section);
+	DoSettingsUpdate(ini, section);
 }
 
-void AskBid::DoSettingsUpodate(const IniFile &ini, const std::string &section) {
+void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	
 	Settings settings = {};
 

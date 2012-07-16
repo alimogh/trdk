@@ -71,7 +71,7 @@ namespace Strategies { namespace QuickArbitrage {
 
 	private:
 
-		void DoSettingsUpodate(const IniFile &, const std::string &section);
+		void DoSettingsUpdate(const IniFile &, const std::string &section);
 
 		void CloseLongPosition(Position &, bool asIs);
 		void CloseShortPosition(Position &, bool asIs);
