@@ -126,8 +126,8 @@ public:
 	explicit MarketDataLevel2Log(const std::string &fullSymbol) {
 		const fs::path filePath = Util::SymbolToFilePath(
 			Defaults::GetMarketDataLogDir(),
-			fullSymbol,
-			"level2.log");
+			fullSymbol + ":Level2",
+			"log");
 		const bool isNew = !fs::exists(filePath);
 		if (isNew) {
 			fs::create_directories(filePath.branch_path());
@@ -253,8 +253,16 @@ Security::Price DynamicSecurity::GetAskScaled() const {
 	return m_ask;
 }
 
+Security::Price DynamicSecurity::GetAskLevel2Scaled() const {
+	return m_askLevel2.price;
+}
+
 Security::Price DynamicSecurity::GetBidScaled() const {
 	return m_bid;
+}
+
+Security::Price DynamicSecurity::GetBidLevel2Scaled() const {
+	return m_bidLevel2.price;
 }
 
 double DynamicSecurity::GetLast() const {
@@ -265,8 +273,24 @@ double DynamicSecurity::GetAsk() const {
 	return Descale(GetAskScaled());
 }
 
+double DynamicSecurity::GetAskLevel2() const {
+	return Descale(GetAskLevel2Scaled());
+}
+
 double DynamicSecurity::GetBid() const {
 	return Descale(GetBidScaled());
+}
+
+double DynamicSecurity::GetBidLevel2() const {
+	return Descale(GetBidLevel2Scaled());
+}
+
+DynamicSecurity::Qty DynamicSecurity::GetAskSize() {
+	return DynamicSecurity::Qty(m_askLevel2.size);
+}
+
+DynamicSecurity::Qty DynamicSecurity::GetBidSize() {
+	return DynamicSecurity::Qty(m_bidLevel2.size);
 }
 
 bool DynamicSecurity::SetLast(double last) {

@@ -512,8 +512,8 @@ namespace {
 				return;
 			}
 
-			const bool isBidValid = message.GetFieldAsBoolean(14, true);
-			const bool isAskValid = message.GetFieldAsBoolean(15, true);
+			bool isBidValid = message.GetFieldAsBoolean(14, true);
+			bool isAskValid = message.GetFieldAsBoolean(15, true);
 			Assert(isBidValid || isAskValid);
 			if (!isBidValid && !isAskValid) {
 				return;
@@ -521,38 +521,44 @@ namespace {
 			message.Reset();
 
 			const double bid = isBidValid
-				?	message.GetFieldAsDouble(3, true)
-				:	.0;
-			const double ask = isAskValid
 				?	message.GetFieldAsDouble(4, true)
 				:	.0;
+			isBidValid = !Util::IsZero(bid);
+
+			const double ask = isAskValid
+				?	message.GetFieldAsDouble(5, true)
+				:	.0;
+			isAskValid = !Util::IsZero(ask);
 		
 			const size_t bidSize = isBidValid
-				?	message.GetFieldAsUnsignedInt(5, true)
-				:	0;
-			const size_t askSize = isAskValid
 				?	message.GetFieldAsUnsignedInt(6, true)
 				:	0;
+			isBidValid = bidSize > 0;
 
-			const pt::ptime bidTime = isBidValid
-				?	(message.GetFieldAsTime(8, true) - m_estTimeDiff)
-				:	pt::not_a_date_time;
+			const size_t askSize = isAskValid
+				?	message.GetFieldAsUnsignedInt(7, true)
+				:	0;
+			isAskValid = askSize > 0;
 
-			const pt::ptime askTime = isAskValid
-				?	(message.GetFieldAsTime(13, true) - m_estTimeDiff)
-				:	pt::not_a_date_time;
+// 			const pt::ptime bidTime = isBidValid
+// 				?	(message.GetFieldAsTime(8, true) - m_estTimeDiff)
+// 				:	pt::not_a_date_time;
+// 
+// 			const pt::ptime askTime = isAskValid
+// 				?	(message.GetFieldAsTime(13, true) - m_estTimeDiff)
+// 				:	pt::not_a_date_time;
 
 			if (isBidValid) {
 				Assert(!Util::IsZero(bid));
 				Assert(bidSize > 0);
-				Assert(!bidTime.is_not_a_date_time());
-				subscriber->second->UpdateBidLevel2(bidTime, bid, bidSize);
+//				Assert(!bidTime.is_not_a_date_time());
+				subscriber->second->UpdateBidLevel2(now, bid, bidSize);
 			}
 			if (isAskValid) {
 				Assert(!Util::IsZero(ask));
 				Assert(askSize > 0);
-				Assert(!askTime.is_not_a_date_time());
-				subscriber->second->UpdateAskLevel2(askTime, ask, askSize);
+//				Assert(!askTime.is_not_a_date_time());
+				subscriber->second->UpdateAskLevel2(now, ask, askSize);
 			}
 
 		}
@@ -745,6 +751,7 @@ public:
 
 	void Connect() {
 		m_level1->Connect();
+		m_level2->Connect();
 		m_lookup->Connect();
 	}
 
@@ -759,7 +766,7 @@ public:
 		SubscribeToMarketData(
 			instrument,
 			&Implementation::SendSubscribeToMarketDataLevel2Request,
-			m_marketDataLevel1Subscribers);
+			m_marketDataLevel2Subscribers);
 	}
 
 	void RequestHistory(
@@ -905,6 +912,7 @@ private:
 
 	void CheckState() {
 		m_level1->CheckState();
+		m_level2->CheckState();
 		m_lookup->CheckState();
 	}
 

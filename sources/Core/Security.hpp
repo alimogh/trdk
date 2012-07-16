@@ -108,10 +108,18 @@ public:
 
 	Price GetLastScaled() const;
 	Price GetAskScaled() const;
+	Price GetAskLevel2Scaled() const;
 	Price GetBidScaled() const;
+	Price GetBidLevel2Scaled() const;
+	
 	double GetLast() const;
 	double GetAsk() const;
+	double GetAskLevel2() const;
 	double GetBid() const;
+	double GetBidLevel2() const;
+
+	Qty GetAskSize();
+	Qty GetBidSize();
 
 protected:
 
