@@ -220,7 +220,7 @@ void AskBid::ClosePosition(Position &position, bool asIs) {
 
 void AskBid::ReportTakeProfitDo(const Position &position) const {
 	Log::Trading(
-		m_logTag,
+		GetLogTag().c_str(),
 		"%1% %2% take-profit-do limit-price=%3% cur-ask-bid=%4%/%5% stop-loss=%6% qty=%7%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),

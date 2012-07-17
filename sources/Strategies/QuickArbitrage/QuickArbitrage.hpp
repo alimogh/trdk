@@ -51,9 +51,6 @@ namespace Strategies { namespace QuickArbitrage {
  
 	protected:
 
-		void ReportStopLossTry(const Position &) const;
-		void ReportStopLossDo(const Position &) const;
-
 		virtual void ClosePosition(Position &, bool asIs) = 0;
 
 		void CloseLongPositionStopLossDo(Position &);
@@ -68,10 +65,6 @@ namespace Strategies { namespace QuickArbitrage {
 		boost::shared_ptr<Position> OpenShortPosition();
 
 		void ClosePositionStopLossTry(Position &);
-
-	protected:
-
-		const char *const m_logTag;
 
 	};
 

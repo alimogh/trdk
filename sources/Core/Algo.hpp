@@ -25,7 +25,7 @@ public:
 
 public:
 
-	explicit Algo(boost::shared_ptr<DynamicSecurity>);
+	explicit Algo(boost::shared_ptr<DynamicSecurity>, const std::string &logTag);
 	virtual ~Algo();
 
 public:
@@ -64,10 +64,16 @@ protected:
 
 	virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section) = 0;
 
+	const std::string & GetLogTag() const;
+
+	void ReportStopLossTry(const Position &) const;
+	void ReportStopLossDo(const Position &) const;
+
 private:
 
 	Mutex m_mutex;
 	const boost::shared_ptr<DynamicSecurity> m_security;
 	PositionReporter *m_positionReporter;
+	const std::string m_logTag;
 
 };

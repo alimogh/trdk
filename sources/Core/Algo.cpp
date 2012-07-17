@@ -10,10 +10,12 @@
 #include "Algo.hpp"
 #include "Security.hpp"
 #include "PositionReporter.hpp"
+#include "Position.hpp"
 
-Algo::Algo(boost::shared_ptr<DynamicSecurity> security)
+Algo::Algo(boost::shared_ptr<DynamicSecurity> security, const std::string &logTag)
 		: m_security(security),
-		m_positionReporter(nullptr) {
+		m_positionReporter(nullptr),
+		m_logTag(logTag) {
 	//...//
 }
 
@@ -51,4 +53,34 @@ PositionReporter & Algo::GetPositionReporter() {
 
 boost::posix_time::ptime Algo::GetLastDataTime() {
 	return boost::posix_time::not_a_date_time;
+}
+
+const std::string & Algo::GetLogTag() const {
+	return m_logTag;
+}
+
+void Algo::ReportStopLossTry(const Position &position) const {
+	Log::Trading(
+		m_logTag.c_str(),
+		"%1% %2% stop-loss-try cur-ask-bid=%3%/%4% stop-loss=%5% qty=%6%->%7%",
+		position.GetSecurity().GetSymbol(),
+		position.GetTypeStr(),
+		position.GetSecurity().GetAsk(),
+		position.GetSecurity().GetBid(),
+		position.GetSecurity().Descale(position.GetStopLoss()),
+		position.GetOpenedQty(),
+		position.GetOpenedQty() - position.GetClosedQty());
+}
+
+void Algo::ReportStopLossDo(const Position &position) const {
+	Log::Trading(
+		m_logTag.c_str(),
+		"%1% %2% stop-loss-do cur-ask-bid=%3%/%4% stop-loss=%5% qty=%6%->%7%",
+		position.GetSecurity().GetSymbol(),
+		position.GetTypeStr(),
+		position.GetSecurity().GetAsk(),
+		position.GetSecurity().GetBid(),
+		position.GetSecurity().Descale(position.GetStopLoss()),
+		position.GetOpenedQty(),
+		position.GetOpenedQty() - position.GetClosedQty());
 }

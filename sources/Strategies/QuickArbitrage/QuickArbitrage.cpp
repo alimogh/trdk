@@ -18,8 +18,7 @@
 namespace s = Strategies::QuickArbitrage;
 
 s::Algo::Algo(boost::shared_ptr<DynamicSecurity> security, const char *logTag)
-		: Base(security),
-		m_logTag(logTag) {
+		: Base(security, logTag) {
 	//...//
 }
 
@@ -136,7 +135,7 @@ void s::Algo::ClosePositionsAsIs(PositionBandle &positions) {
 
 void s::Algo::ReportDecision(const Position &position) const {
 	Log::Trading(
-		m_logTag,
+		GetLogTag().c_str(),
 		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6% take-profit=%7% stop-loss=%8%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
@@ -146,32 +145,6 @@ void s::Algo::ReportDecision(const Position &position) const {
 		position.GetPlanedQty(),
 		position.GetSecurity().Descale(position.GetTakeProfit()),
 		position.GetSecurity().Descale(position.GetStopLoss()));
-}
-
-void s::Algo::ReportStopLossTry(const Position &position) const {
-	Log::Trading(
-		m_logTag,
-		"%1% %2% stop-loss-try cur-ask-bid=%3%/%4% stop-loss=%5% qty=%6%->%7%",
-		position.GetSecurity().GetSymbol(),
-		position.GetTypeStr(),
-		position.GetSecurity().GetAsk(),
-		position.GetSecurity().GetBid(),
-		position.GetSecurity().Descale(position.GetStopLoss()),
-		position.GetOpenedQty(),
-		position.GetOpenedQty() - position.GetClosedQty());
-}
-
-void s::Algo::ReportStopLossDo(const Position &position) const {
-	Log::Trading(
-		m_logTag,
-		"%1% %2% stop-loss-do cur-ask-bid=%3%/%4% stop-loss=%5% qty=%6%->%7%",
-		position.GetSecurity().GetSymbol(),
-		position.GetTypeStr(),
-		position.GetSecurity().GetAsk(),
-		position.GetSecurity().GetBid(),
-		position.GetSecurity().Descale(position.GetStopLoss()),
-		position.GetOpenedQty(),
-		position.GetOpenedQty() - position.GetClosedQty());
 }
 
 void s::Algo::SubscribeToMarketData(MarketDataSource &marketDataSource) {
