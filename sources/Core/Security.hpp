@@ -78,8 +78,12 @@ class DynamicSecurity : public Security {
 private:
 
 	struct Level2 {
+		
 		volatile LONGLONG price;
 		volatile LONGLONG size;
+
+		Level2();
+
 	};
 
 public:

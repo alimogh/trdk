@@ -66,6 +66,11 @@ bool Security::IsCompleted() const {
 
 //////////////////////////////////////////////////////////////////////////
 
+DynamicSecurity::Level2::Level2() {
+	Interlocking::Exchange(price, 0);
+	Interlocking::Exchange(size, 0);
+}
+
 class DynamicSecurity::MarketDataLog : private boost::noncopyable {
 
 private:
