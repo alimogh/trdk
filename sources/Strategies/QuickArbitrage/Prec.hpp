@@ -11,15 +11,9 @@
 #include "Common/Assert.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/date_time/posix_time/posix_time.hpp>
-#	include <boost/noncopyable.hpp>
-#	include <boost/shared_ptr.hpp>
-#	include <boost/signals2.hpp>
-#	include <boost/thread/mutex.hpp>
-#	include <boost/algorithm/string.hpp>
-#	include <boost/enable_shared_from_this.hpp>
+#	include <boost/algorithm/string_regex.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
-#include "Common/Common.hpp"
+#include "Strategies/Prec.hpp"
 
 #include "Common/Assert.hpp"

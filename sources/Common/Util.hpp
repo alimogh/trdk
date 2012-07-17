@@ -69,10 +69,6 @@ namespace Util {
 		return RoundDouble(source, Scale::GetScale());
 	}
 
-	inline double AddPercents(double source, double percents) {
-		return Util::RoundDouble<2>(source + ((source / 100) * percents));
-	}
-
 	inline boost::int64_t Scale(double value, unsigned long scale) {
 		return long(boost::math::round(value * double(scale)));
 	}

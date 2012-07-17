@@ -12,8 +12,15 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Common", "Common\Common.vcxproj", "{A2C9BF31-4AAD-4AD2-B975-2695E30C055B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Strategies", "Strategies", "{5CA346C1-8234-4485-8B30-89ADE810555C}"
+	ProjectSection(SolutionItems) = preProject
+		Strategies\Prec.hpp = Strategies\Prec.hpp
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Quick Arbitrage", "Strategies\QuickArbitrage\QuickArbitrage.vcxproj", "{D69A5777-58F9-42D4-88DB-30F15BB83240}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Level II Market Arbitrage", "Strategies\Level2MarketArbitrage\Level2MarketArbitrage.vcxproj", "{64F2EBAD-6D80-4F85-B0FB-1AD1A638E68C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Interaction", "Interaction", "{0472C2A4-F2BB-48CC-A6FE-32B792EE621D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,11 +65,20 @@ Global
 		{D69A5777-58F9-42D4-88DB-30F15BB83240}.Release|Win32.Build.0 = Release|Win32
 		{D69A5777-58F9-42D4-88DB-30F15BB83240}.Test|Win32.ActiveCfg = Test|Win32
 		{D69A5777-58F9-42D4-88DB-30F15BB83240}.Test|Win32.Build.0 = Test|Win32
+		{64F2EBAD-6D80-4F85-B0FB-1AD1A638E68C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{64F2EBAD-6D80-4F85-B0FB-1AD1A638E68C}.Debug|Win32.Build.0 = Debug|Win32
+		{64F2EBAD-6D80-4F85-B0FB-1AD1A638E68C}.Release|Win32.ActiveCfg = Release|Win32
+		{64F2EBAD-6D80-4F85-B0FB-1AD1A638E68C}.Release|Win32.Build.0 = Release|Win32
+		{64F2EBAD-6D80-4F85-B0FB-1AD1A638E68C}.Test|Win32.ActiveCfg = Test|Win32
+		{64F2EBAD-6D80-4F85-B0FB-1AD1A638E68C}.Test|Win32.Build.0 = Test|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{D69A5777-58F9-42D4-88DB-30F15BB83240} = {5CA346C1-8234-4485-8B30-89ADE810555C}
+		{64F2EBAD-6D80-4F85-B0FB-1AD1A638E68C} = {5CA346C1-8234-4485-8B30-89ADE810555C}
+		{BEFE87AE-1376-4C4C-87D5-73E782990306} = {0472C2A4-F2BB-48CC-A6FE-32B792EE621D}
+		{9C9A77DF-2A5B-4AAC-9A94-42324D763063} = {0472C2A4-F2BB-48CC-A6FE-32B792EE621D}
 	EndGlobalSection
 EndGlobal

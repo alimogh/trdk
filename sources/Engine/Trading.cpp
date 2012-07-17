@@ -9,6 +9,7 @@
 #include "Prec.hpp"
 #include "Strategies/QuickArbitrage/QuickArbitrageOld.hpp"
 #include "Strategies/QuickArbitrage/QuickArbitrageAskBid.hpp"
+#include "Strategies/Level2MarketArbitrage/Level2MarketArbitrage.hpp"
 #include "IqFeed/IqFeedClient.hpp"
 #include "InteractiveBrokers/InteractiveBrokersTradeSystem.hpp"
 #include "Dispatcher.hpp"
@@ -30,6 +31,7 @@ namespace {
 					const std::string old = "Algo.QuickArbitrage.Old";
 					const std::string askBid = "Algo.QuickArbitrage.AskBid";
 				}
+				const std::string level2MarketArbitrage = "Algo.Level2MarketArbitrage";
 			}
 		}
 		namespace Key {
@@ -94,17 +96,88 @@ namespace {
 		return boost::shared_ptr<Settings>(new Settings(IniFile(iniFilePath), Ini::Sections::common));
 	}
 
-}
+	void InitAlgo(
+				const IniFile &ini,
+				const std::string &section,
+				boost::shared_ptr<TradeSystem> tradeSystem,
+				Securities &securities,
+				Algos &algos)  {
 
-void Trade(const std::string &iniFilePath) {
+		if (	section != Ini::Sections::Algo::QuickArbitrage::old
+				&& section != Ini::Sections::Algo::QuickArbitrage::askBid
+				&& section != Ini::Sections::Algo::level2MarketArbitrage) {
+			return;
+		}
 
-	boost::shared_ptr<Settings> options = LoadOptions(iniFilePath);
+		Log::Info("Loading strategy objects...");
 
-	boost::shared_ptr<TradeSystem> tradeSystem(new InteractiveBrokersTradeSystem);
-	Dispatcher dispatcher(options);
-	IqFeedClient marketDataSource;
+		std::string symbolsFilePath;
+		try {
+			symbolsFilePath = ini.ReadKey(section, Ini::Key::symbols, false);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to get symbols file: \"%1%\".", ex.what());
+			throw;
+		}
 
-	{
+		Log::Info("Loading symbols from %1%...", symbolsFilePath);
+		const IniFile symbolsIni(symbolsFilePath, ini.GetPath().branch_path());
+		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("SMART", "NASDAQ");
+		try {
+			LoadSecurities(symbols, tradeSystem, securities);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to load securities: \"%1%\".", ex.what());
+			throw;
+		}
+
+		foreach (const auto &symbol, symbols) {
+			
+			Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
+			
+			try {
+			
+				boost::shared_ptr<Algo> algo;
+				if (section == Ini::Sections::Algo::QuickArbitrage::old) {
+					algo.reset(
+						new Strategies::QuickArbitrage::Old(
+							securities[CreateSecuritiesKey(symbol)],
+							ini,
+							section));
+				} else if (section == Ini::Sections::Algo::QuickArbitrage::askBid) {
+					algo.reset(
+						new Strategies::QuickArbitrage::AskBid(
+							securities[CreateSecuritiesKey(symbol)],
+							ini,
+							section));
+				} else if (section == Ini::Sections::Algo::level2MarketArbitrage) {
+					algo.reset(
+						new Strategies::Level2MarketArbitrage::Algo(
+							securities[CreateSecuritiesKey(symbol)],
+							ini,
+							section));
+				} else {
+					AssertFail("Unknown algo in INI file.");
+				}
+				algos.push_back(algo);
+			
+				Log::Info(
+					"Loaded strategy \"%1%\" for \"%2%\".",
+					algo->GetName(),
+					const_cast<const Algo &>(*algo).GetSecurity()->GetFullSymbol());
+		
+			} catch (const Exception &ex) {
+				Log::Error("Failed to load strategy: \"%1%\".", ex.what());
+				throw;
+			}
+		
+		}
+
+	}
+
+	void InitTrading(
+				const std::string &iniFilePath,
+				boost::shared_ptr<TradeSystem> tradeSystem,
+				Dispatcher &dispatcher,
+				IqFeedClient &marketDataSource)  {
 
 		Log::Info("Using %1% file for algo options...", iniFilePath);
 		const IniFile ini(iniFilePath);
@@ -113,56 +186,9 @@ void Trade(const std::string &iniFilePath) {
 		Securities securities;
 		Algos algos;
 		foreach (const auto &section, sections) {
-			if (section == Ini::Sections::common) {
-				continue;
-			}
-			Log::Info("Found section \"%1%\"...", section);
-			if (	section == Ini::Sections::Algo::QuickArbitrage::old
-					|| section == Ini::Sections::Algo::QuickArbitrage::askBid) {
-				Log::Info("Loading strategy objects...");
-				std::string symbolsFilePath;
-				try {
-					symbolsFilePath = ini.ReadKey(section, Ini::Key::symbols, false);
-				} catch (const IniFile::Error &ex) {
-					Log::Error("Failed to get symbols file: \"%1%\".", ex.what());
-					throw;
-				}
-				Log::Info("Loading symbols from %1%...", symbolsFilePath);
-				const IniFile symbolsIni(symbolsFilePath, ini.GetPath().branch_path());
-				const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("SMART", "NASDAQ");
-				try {
-					LoadSecurities(symbols, tradeSystem, securities);
-				} catch (const IniFile::Error &ex) {
-					Log::Error("Failed to load securities: \"%1%\".", ex.what());
-					throw;
-				}
-				foreach (const auto &symbol, symbols) {
-					Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
-					try {
-						boost::shared_ptr<Algo> algo;
-						if (section == Ini::Sections::Algo::QuickArbitrage::old) {
-							algo.reset(
-								new Strategies::QuickArbitrage::Old(
-									securities[CreateSecuritiesKey(symbol)],
-									ini,
-									section));
-						} else {
-							algo.reset(
-								new Strategies::QuickArbitrage::AskBid(
-									securities[CreateSecuritiesKey(symbol)],
-									ini,
-									section));
-						}
-						algos.push_back(algo);
-						Log::Info(
-							"Loaded strategy \"%1%\" for \"%2%\".",
-							algo->GetName(),
-							const_cast<const Algo &>(*algo).GetSecurity()->GetFullSymbol());
-					} catch (const Exception &ex) {
-						Log::Error("Failed to load strategy: \"%1%\".", ex.what());
-						throw;
-					}
-				}
+			if (section != Ini::Sections::common) {
+				Log::Info("Found section \"%1%\"...", section);
+				InitAlgo(ini, section, tradeSystem, securities, algos);
 			}
 		}
 
@@ -171,9 +197,8 @@ void Trade(const std::string &iniFilePath) {
 		}
 
 		Connect(*tradeSystem);
-	
-		
 		Connect(marketDataSource);
+
 		foreach (auto &a, algos) {
 			a->SubscribeToMarketData(marketDataSource);
 		}
@@ -183,9 +208,18 @@ void Trade(const std::string &iniFilePath) {
 
 	}
 
-	dispatcher.Start();
-	getchar();
-
 }
 
+void Trade(const std::string &iniFilePath) {
 
+	boost::shared_ptr<Settings> options = LoadOptions(iniFilePath);
+	boost::shared_ptr<TradeSystem> tradeSystem(new InteractiveBrokersTradeSystem);
+	IqFeedClient marketDataSource;
+	Dispatcher dispatcher(options);
+	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource);
+
+	dispatcher.Start();
+	getchar();
+	dispatcher.Stop();
+
+}
