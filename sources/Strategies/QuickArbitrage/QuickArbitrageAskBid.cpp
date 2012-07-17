@@ -41,7 +41,7 @@ std::auto_ptr<PositionReporter> AskBid::CreatePositionReporter() const {
 }
 
 bool AskBid::IsLongPosEnabled() const {
-	if (!m_settings.longPos.isEnabled) {
+	if (m_settings.longPos.openMode == Settings::OPEN_MODE_NONE) {
 		return false;
 	}
 	const DynamicSecurity &security = *GetSecurity();
@@ -49,7 +49,7 @@ bool AskBid::IsLongPosEnabled() const {
 	
 }
 bool AskBid::IsShortPosEnabled() const {
-	if (!m_settings.shortPos.isEnabled) {
+	if (m_settings.longPos.openMode == Settings::OPEN_MODE_NONE) {
 		return false;
 	}
 	const DynamicSecurity &security = *GetSecurity();
@@ -81,11 +81,48 @@ void AskBid::UpdateAlogImplSettings(const IniFile &ini, const std::string &secti
 }
 
 void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
-	
+
+	struct Util {	
+		static const char * ConvertOpenModeToStr(Settings::OpenMode mode) {
+			switch (mode) {
+				default:
+					AssertFail("Unknown open mode.");
+				case Settings::OPEN_MODE_NONE:
+					return "none";
+				case Settings::OPEN_MODE_BID:
+					return "bid";
+				case Settings::OPEN_MODE_ASK:
+					return "ask";
+			}
+		}
+	};
+
 	Settings settings = {};
 
-	settings.shortPos.isEnabled = ini.ReadBoolKey(section, "open_shorts");
-	settings.longPos.isEnabled = ini.ReadBoolKey(section, "open_longs");
+	{
+		const std::string mode = ini.ReadKey(section, "open_shorts", false);
+		if (mode == "none") {
+			settings.shortPos.openMode = Settings::OPEN_MODE_NONE;
+		} else if (mode == "bid") {
+			settings.shortPos.openMode = Settings::OPEN_MODE_BID;
+		} else if (mode == "ask") {
+			settings.shortPos.openMode = Settings::OPEN_MODE_ASK;
+		} else {
+			throw IniFile::KeyFormatError("open_shorts possible values: none, ask, bid");
+		}
+	}
+	{
+		const std::string mode = ini.ReadKey(section, "open_longs", false);
+		if (mode == "none") {
+			settings.shortPos.openMode = Settings::OPEN_MODE_NONE;
+		} else if (mode == "bid") {
+			settings.shortPos.openMode = Settings::OPEN_MODE_BID;
+		} else if (mode == "ask") {
+			settings.shortPos.openMode = Settings::OPEN_MODE_ASK;
+		} else {
+			throw IniFile::KeyFormatError("possible values: none, ask, bid");
+		}
+	}
 
 	settings.askBidDifference
 		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "ask_bid_difference"));
@@ -108,14 +145,44 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 			" take_profit = %6%; stop_loss = %7%; volume = %8%; position_time = %9%",
 		algoName,
 		GetSecurity()->GetFullSymbol(),
-		m_settings.shortPos.isEnabled ? "yes" : "no",
-		m_settings.longPos.isEnabled ? "yes" : "no",
+		Util::ConvertOpenModeToStr(m_settings.shortPos.openMode),
+		Util::ConvertOpenModeToStr(m_settings.longPos.openMode),
 		GetSecurity()->Descale(m_settings.askBidDifference),
 		GetSecurity()->Descale(m_settings.takeProfit),
 		GetSecurity()->Descale(m_settings.stopLoss),
 		GetSecurity()->Descale(m_settings.volume),
 		m_settings.positionTime);
 
+}
+
+Security::Price AskBid::ChooseLongOpenPrice(
+			Security::Price ask,
+			Security::Price bid)
+		const {
+	switch (m_settings.longPos.openMode) {
+		case Settings::OPEN_MODE_BID:
+			return bid;
+		case Settings::OPEN_MODE_ASK:
+			return ask;
+		default:
+			AssertFail("Failed to get position open price.");
+			throw Exception("Failed to get position open price");
+	}
+}
+
+Security::Price AskBid::ChooseShortOpenPrice(
+			Security::Price ask,
+			Security::Price bid)
+		const {
+	switch (m_settings.shortPos.openMode) {
+		case Settings::OPEN_MODE_BID:
+			return bid;
+		case Settings::OPEN_MODE_ASK:
+			return ask;
+		default:
+			AssertFail("Failed to get position open price.");
+			throw Exception("Failed to get position open price");
+	}
 }
 
 const std::string & AskBid::GetName() const {

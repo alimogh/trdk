@@ -59,6 +59,17 @@ namespace Strategies { namespace QuickArbitrage {
 		void CloseLongPositionStopLossTry(Position &);
 		void CloseShortPositionStopLossTry(Position &);
 
+		virtual Security::Price ChooseLongOpenPrice(
+				Security::Price ask,
+				Security::Price bid)
+			const
+			= 0;
+		virtual Security::Price ChooseShortOpenPrice(
+				Security::Price ask,
+				Security::Price bid)
+			const
+			= 0;
+
 	private:
 
 		boost::shared_ptr<Position> OpenLongPosition();

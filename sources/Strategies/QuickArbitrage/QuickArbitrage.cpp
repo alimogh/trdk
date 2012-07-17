@@ -46,7 +46,7 @@ boost::shared_ptr<Position> s::Algo::OpenLongPosition() {
 	DynamicSecurity &security = *GetSecurity();
 	const auto ask = security.GetAskScaled();
 	const auto bid = security.GetBidScaled();
-	const auto price = ask - GetLongPriceMod();
+	const auto price = ChooseLongOpenPrice(ask, bid) - GetLongPriceMod();
 	
 	boost::shared_ptr<Position> result(
 		new Position(
@@ -70,7 +70,7 @@ boost::shared_ptr<Position> s::Algo::OpenShortPosition() {
 	DynamicSecurity &security = *GetSecurity();
 	const auto ask = security.GetAskScaled();
 	const auto bid = security.GetBidScaled();
-	const auto price = bid + GetShortPriceMod();
+	const auto price = ChooseShortOpenPrice(ask, bid) + GetShortPriceMod();
 
 	boost::shared_ptr<Position> result(
 		new Position(

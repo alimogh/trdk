@@ -22,8 +22,14 @@ namespace Strategies { namespace QuickArbitrage {
 
 		struct Settings {
 
+			enum OpenMode {
+				OPEN_MODE_NONE,
+				OPEN_MODE_ASK,
+				OPEN_MODE_BID
+			};
+
 			struct Direction {
-				bool isEnabled;
+				OpenMode openMode;
 			};
 
 			Direction shortPos;
@@ -68,6 +74,15 @@ namespace Strategies { namespace QuickArbitrage {
 
 		virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section);
 		virtual void ClosePosition(Position &, bool asIs);
+
+		virtual Security::Price ChooseLongOpenPrice(
+				Security::Price ask,
+				Security::Price bid)
+			const;
+		virtual Security::Price ChooseShortOpenPrice(
+				Security::Price ask,
+				Security::Price bid)
+			const;
 
 	private:
 

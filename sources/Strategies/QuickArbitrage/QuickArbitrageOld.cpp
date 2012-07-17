@@ -40,10 +40,10 @@ std::auto_ptr<PositionReporter> Old::CreatePositionReporter() const {
 }
 
 bool Old::IsLongPosEnabled() const {
-	return m_settings.longPos.isEnabled;
+	return m_settings.longPos.openMode != Settings::OPEN_MODE_NONE;
 }
 bool Old::IsShortPosEnabled() const {
-	return m_settings.shortPos.isEnabled;
+	return m_settings.shortPos.openMode != Settings::OPEN_MODE_NONE;
 }
 
 Security::Price Old::GetLongPriceMod() const {
@@ -71,18 +71,57 @@ void Old::UpdateAlogImplSettings(const IniFile &ini, const std::string &section)
 }
 
 void Old::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
-	
+
+	struct Util {	
+		static const char * ConvertOpenModeToStr(Settings::OpenMode mode) {
+			switch (mode) {
+				default:
+					AssertFail("Unknown open mode.");
+				case Settings::OPEN_MODE_NONE:
+					return "none";
+				case Settings::OPEN_MODE_BID:
+					return "bid";
+				case Settings::OPEN_MODE_ASK:
+					return "ask";
+			}
+		}
+	};
+
 	Settings settings = {};
-	settings.shortPos.isEnabled = ini.ReadBoolKey(section, "open_shorts");
-	if (settings.shortPos.isEnabled) {
-		settings.shortPos.priceMod
-			= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "short_open_price"));
+
+	{
+		const std::string mode = ini.ReadKey(section, "open_shorts", false);
+		if (mode == "none") {
+			settings.shortPos.openMode = Settings::OPEN_MODE_NONE;
+		} else if (mode == "bid") {
+			settings.shortPos.openMode = Settings::OPEN_MODE_BID;
+		} else if (mode == "ask") {
+			settings.shortPos.openMode = Settings::OPEN_MODE_ASK;
+		} else {
+			throw IniFile::KeyFormatError("open_shorts possible values: none, ask, bid");
+		}
+		if (settings.shortPos.openMode != Settings::OPEN_MODE_NONE) {
+			settings.shortPos.priceMod
+				= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "short_open_price"));
+		}
 	}
-	settings.longPos.isEnabled = ini.ReadBoolKey(section, "open_longs");
-	if (settings.longPos.isEnabled) {
-		settings.longPos.priceMod
-			= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "long_open_price"));
+	{
+		const std::string mode = ini.ReadKey(section, "open_longs", false);
+		if (mode == "none") {
+			settings.shortPos.openMode = Settings::OPEN_MODE_NONE;
+		} else if (mode == "bid") {
+			settings.shortPos.openMode = Settings::OPEN_MODE_BID;
+		} else if (mode == "ask") {
+			settings.shortPos.openMode = Settings::OPEN_MODE_ASK;
+		} else {
+			throw IniFile::KeyFormatError("possible values: none, ask, bid");
+		}
+		if (settings.longPos.openMode != Settings::OPEN_MODE_NONE) {
+			settings.longPos.priceMod
+				= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "long_open_price"));
+		}
 	}
+
 	settings.takeProfit
 		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "take_profit"));
 	settings.stopLoss
@@ -98,14 +137,44 @@ void Old::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 			" take_profit = %7%; stop_loss = %8%; volume = %9%;",
 		algoName,
 		GetSecurity()->GetFullSymbol(),
-		m_settings.shortPos.isEnabled ? "yes" : "no",
+		Util::ConvertOpenModeToStr(m_settings.shortPos.openMode),
 		GetSecurity()->Descale(m_settings.shortPos.priceMod),
-		m_settings.longPos.isEnabled ? "yes" : "no",
+		Util::ConvertOpenModeToStr(m_settings.longPos.openMode),
 		GetSecurity()->Descale(m_settings.longPos.priceMod),
 		GetSecurity()->Descale(m_settings.takeProfit),
 		GetSecurity()->Descale(m_settings.stopLoss),
 		GetSecurity()->Descale(m_settings.volume));
 
+}
+
+Security::Price Old::ChooseLongOpenPrice(
+			Security::Price ask,
+			Security::Price bid)
+		const {
+	switch (m_settings.longPos.openMode) {
+		case Settings::OPEN_MODE_BID:
+			return bid;
+		case Settings::OPEN_MODE_ASK:
+			return ask;
+		default:
+			AssertFail("Failed to get position open price.");
+			throw Exception("Failed to get position open price");
+	}
+}
+
+Security::Price Old::ChooseShortOpenPrice(
+			Security::Price ask,
+			Security::Price bid)
+		const {
+	switch (m_settings.shortPos.openMode) {
+		case Settings::OPEN_MODE_BID:
+			return bid;
+		case Settings::OPEN_MODE_ASK:
+			return ask;
+		default:
+			AssertFail("Failed to get position open price.");
+			throw Exception("Failed to get position open price");
+	}
 }
 
 const std::string & Old::GetName() const {
