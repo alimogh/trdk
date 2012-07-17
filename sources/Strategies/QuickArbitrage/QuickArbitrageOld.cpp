@@ -108,11 +108,11 @@ void Old::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	{
 		const std::string mode = ini.ReadKey(section, "open_longs", false);
 		if (mode == "none") {
-			settings.shortPos.openMode = Settings::OPEN_MODE_NONE;
+			settings.longPos.openMode = Settings::OPEN_MODE_NONE;
 		} else if (mode == "bid") {
-			settings.shortPos.openMode = Settings::OPEN_MODE_BID;
+			settings.longPos.openMode = Settings::OPEN_MODE_BID;
 		} else if (mode == "ask") {
-			settings.shortPos.openMode = Settings::OPEN_MODE_ASK;
+			settings.longPos.openMode = Settings::OPEN_MODE_ASK;
 		} else {
 			throw IniFile::KeyFormatError("possible values: none, ask, bid");
 		}
