@@ -499,8 +499,6 @@ namespace {
 
 		void HandleUpdateMessage(MessageParser &message) {
 
-			const pt::ptime now = boost::get_system_time();
-			
 			const std::string symbol = message.GetFieldAsString(2, true);
 			const UpdatesSubscribers::const_iterator subscriber
 				= m_service.m_marketDataLevel2Subscribers.find(symbol);
@@ -511,6 +509,11 @@ namespace {
 				DumpReceived(message);
 				return;
 			}
+
+			// Unused by IQFeed
+			/*if (message.GetFieldAsUnsignedIntFromHex(11, true) != 0x52) {
+				return;
+			}*/
 
 			bool isBidValid = message.GetFieldAsBoolean(14, true);
 			bool isAskValid = message.GetFieldAsBoolean(15, true);
@@ -540,26 +543,54 @@ namespace {
 				:	0;
 			isAskValid = askSize > 0;
 
-// 			const pt::ptime bidTime = isBidValid
-// 				?	(message.GetFieldAsTime(8, true) - m_estTimeDiff)
-// 				:	pt::not_a_date_time;
-// 
-// 			const pt::ptime askTime = isAskValid
-// 				?	(message.GetFieldAsTime(13, true) - m_estTimeDiff)
-// 				:	pt::not_a_date_time;
+			if (!isBidValid && !isAskValid) {
+				return;
+			}
 
-			if (isBidValid) {
-				Assert(!Util::IsZero(bid));
-				Assert(bidSize > 0);
-//				Assert(!bidTime.is_not_a_date_time());
-				subscriber->second->UpdateBidLevel2(now, bid, bidSize);
-			}
-			if (isAskValid) {
-				Assert(!Util::IsZero(ask));
-				Assert(askSize > 0);
-//				Assert(!askTime.is_not_a_date_time());
-				subscriber->second->UpdateAskLevel2(now, ask, askSize);
-			}
+			const unsigned int bidTimeTick = isBidValid
+				?	message.GetFieldAsTimeTick(8, true)
+				:	pt::not_a_date_time;
+
+			// Unused by IQFeed
+			/*const auto reason = message.GetFieldAsUnsignedIntFromHex(10, true);
+			void (DynamicSecurity::*updateBid)() = nullptr;
+			void (DynamicSecurity::*updateAsk)() = nullptr;
+			switch (reason) {
+				case 0x20: // Deleted
+					updateBid;//subscriber->second
+					updateAsk;
+					break;
+				case 0x44: // Halted
+					updateBid;
+					updateAsk;
+					break;
+				case 0x48: // No Active Market Maker
+					updateBid;
+					updateAsk;
+					break;
+				case 0x4D: // None
+					updateBid;
+					updateAsk;
+					break;
+				default:
+					Log::Error(
+						IQFEED_CLIENT_CONNECTION_NAME " Level II unknown reason \"%1%\".",
+						reason);
+					DumpReceived(message);
+					return;
+			}*/
+
+			const unsigned int askTimeTick = isAskValid
+ 				?	message.GetFieldAsTimeTick(13, true)
+ 				:	pt::not_a_date_time;
+
+			subscriber->second->UpdateLevel2(
+				askTimeTick,
+				ask,
+				askSize,
+				bidTimeTick,
+				bid,
+				bidSize);
 
 		}
 

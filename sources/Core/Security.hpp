@@ -79,6 +79,7 @@ private:
 
 	struct Level2 {
 		
+		unsigned int timeTick;
 		volatile LONGLONG price;
 		volatile LONGLONG size;
 
@@ -130,16 +131,26 @@ protected:
 	bool SetLast(double);
 	
 	bool SetAsk(double);
-	bool SetAskLevel2(double price, Qty size);
-	
 	bool SetBid(double);
-	bool SetBidLevel2(double price, Qty size);
 
 	bool SetLast(Price);
 	bool SetAsk(Price);
-	bool SetAskLevel2(Price price, Qty size);
 	bool SetBid(Price);
-	bool SetBidLevel2(Price price, Qty size);
+
+	void SetLevel2(
+			unsigned int askTimeTick,
+			double askPrice,
+			Qty askSize,
+			unsigned int bidTimeTick,
+			double bidPrice,
+			Qty bidSize);
+	void SetLevel2(
+			unsigned int askTimeTick,
+			Price askPrice,
+			Qty askSize,
+			unsigned int bidTimeTick,
+			Price bidPrice,
+			Qty bidSize);
 
 public:
 
@@ -150,8 +161,13 @@ public:
 public:
 
 	void UpdateLevel1(const MarketDataTime &, double last, double ask, double bid);
-	void UpdateBidLevel2(const MarketDataTime &, double price, size_t size);
-	void UpdateAskLevel2(const MarketDataTime &, double price, size_t size);
+	void UpdateLevel2(
+			unsigned int askTimeTick,
+			double ask,
+			size_t askSize,
+			unsigned int bidTimeTick,
+			double bid,
+			size_t bidSize);
 
 	void OnHistoryDataStart();
 	void OnHistoryDataEnd();

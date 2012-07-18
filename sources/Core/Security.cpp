@@ -66,7 +66,8 @@ bool Security::IsCompleted() const {
 
 //////////////////////////////////////////////////////////////////////////
 
-DynamicSecurity::Level2::Level2() {
+DynamicSecurity::Level2::Level2()
+		: timeTick(0) {
 	Interlocking::Exchange(price, 0);
 	Interlocking::Exchange(size, 0);
 }
@@ -146,7 +147,7 @@ public:
 		}
 		Log::Info("Logging \"%1%\" market data into %2%...", fullSymbol, filePath);
 		if (isNew) {
-			m_file << "data time,type,price,size" << std::endl;
+			m_file << "type,time tick, price,size,price,size, tick size" << std::endl;
 		} else {
 			m_file << std::endl;
 		}
@@ -154,16 +155,12 @@ public:
 
 public:
 
-	void AppendAsk(const MarketDataTime &time, double price, size_t size) {
-		const lt::local_date_time esdTime(time, Util::GetEdtTimeZone());
-		// const Lock lock(m_mutex); - not required while it uses only one IQLink thread
-		m_file << esdTime << ",ask," << price << "," << size << std::endl;
+	void AppendAsk(unsigned int timeTick, double price, size_t size, boost::int64_t tickSize) {
+		m_file << "ask," << timeTick << "," << price << "," << size << "," << tickSize << std::endl;
 	}
 
-	void AppendBid(const MarketDataTime &time, double price, size_t size) {
-		const lt::local_date_time esdTime(time, Util::GetEdtTimeZone());
-		// const Lock lock(m_mutex); - not required while it uses only one IQLink thread
-		m_file << esdTime << ",bid," << price << "," << size << std::endl;
+	void AppendBid(unsigned int timeTick, double price, size_t size, boost::int64_t tickSize) {
+		m_file << "bid," << timeTick << "," << price << "," << size << "," << tickSize << std::endl;
 	}
 
 private:
@@ -208,24 +205,25 @@ void DynamicSecurity::UpdateLevel1(
 	m_updateSignal();
 }
 
-void DynamicSecurity::UpdateBidLevel2(
-			const MarketDataTime & time,
-			double price,
-			size_t size) {
+void DynamicSecurity::UpdateLevel2(
+			unsigned int askTimeTick,
+			double askPrice,
+			size_t askSize,
+			unsigned int bidTimeTick,
+			double bidPrice,
+			size_t bidSize) {
+	SetLevel2(askTimeTick, Scale(askPrice), askSize, bidTimeTick, Scale(bidPrice), bidSize);
 	if (m_marketDataLevel2Log) {
-		m_marketDataLevel2Log->AppendBid(time, price, size);
+		if (askTimeTick) {
+			m_marketDataLevel2Log->AppendAsk(askTimeTick, askPrice, askSize, m_askLevel2.size);
+		}
+		if (bidTimeTick) {
+			m_marketDataLevel2Log->AppendBid(bidTimeTick, bidPrice, bidSize, m_bidLevel2.size);
+		}
 	}
-	SetBidLevel2(price, size);
-}
-
-void DynamicSecurity::UpdateAskLevel2(
-			const MarketDataTime &time,
-			double price,
-			size_t size) {
-	if (m_marketDataLevel2Log) {
-		m_marketDataLevel2Log->AppendAsk(time, price, size);
+	if (*this) {
+		m_updateSignal();
 	}
-	SetAskLevel2(price, size);
 }
 
 DynamicSecurity::UpdateSlotConnection DynamicSecurity::Subcribe(
@@ -306,16 +304,8 @@ bool DynamicSecurity::SetAsk(double ask) {
 	return SetAsk(Scale(ask));
 }
 
-bool DynamicSecurity::SetAskLevel2(double price, Qty size) {
-	return SetAskLevel2(Scale(price), size);
-}
-
 bool DynamicSecurity::SetBid(double bid) {
 	return SetBid(Scale(bid));
-}
-
-bool DynamicSecurity::SetBidLevel2(double price, Qty size) {
-	return SetBidLevel2(Scale(price), size);
 }
 
 bool DynamicSecurity::SetLast(Price last) {
@@ -332,19 +322,6 @@ bool DynamicSecurity::SetAsk(Price ask) {
 	return Interlocking::Exchange(m_ask, ask) != ask;
 }
 
-bool DynamicSecurity::SetAskLevel2(Price price, Qty size) {
-	Assert(price);
-	Assert(size);
-	bool isChanged = false;
-	if (Interlocking::Exchange(m_askLevel2.price, price) != price) {
-		isChanged = true;
-	}
-	if (Interlocking::Exchange(m_askLevel2.size, size) != size) {
-		isChanged = true;
-	}
-	return isChanged;
-}
-
 bool DynamicSecurity::SetBid(Price bid) {
 	if (!bid) {
 		return false;
@@ -352,15 +329,42 @@ bool DynamicSecurity::SetBid(Price bid) {
 	return Interlocking::Exchange(m_bid, bid) != bid;
 }
 
-bool DynamicSecurity::SetBidLevel2(Price price, Qty size) {
-	Assert(price);
-	Assert(size);
-	bool isChanged = false;
-	if (Interlocking::Exchange(m_bidLevel2.price, price) != price) {
-		isChanged = true;
+void DynamicSecurity::SetLevel2(
+			unsigned int askTimeTick,
+			double askPrice,
+			Qty askSize,
+			unsigned int bidTimeTick,
+			double bidPrice,
+			Qty bidSize) {
+	SetLevel2(askTimeTick, Scale(askPrice), askSize, bidTimeTick, Scale(bidPrice), bidSize);
+}
+
+void DynamicSecurity::SetLevel2(
+			unsigned int askTimeTick,
+			Price askPrice,
+			Qty askSize,
+			unsigned int bidTimeTick,
+			Price bidPrice,
+			Qty bidSize) {
+	Assert(askTimeTick || bidTimeTick);
+	if (bidTimeTick) {
+		if (m_bidLevel2.timeTick != bidTimeTick) {
+			m_bidLevel2.timeTick = bidTimeTick;
+			Interlocking::Exchange(m_bidLevel2.price, bidPrice);
+			Interlocking::Exchange(m_bidLevel2.size, bidSize);
+		} else {
+			Interlocking::Exchange(m_bidLevel2.price, bidPrice);
+			Interlocking::Exchange(m_bidLevel2.size, m_bidLevel2.size + bidSize);
+		}
 	}
-	if (Interlocking::Exchange(m_bidLevel2.size, size) != size) {
-		isChanged = true;
+	if (askTimeTick) {
+		if (m_askLevel2.timeTick != askTimeTick) {
+			m_askLevel2.timeTick = askTimeTick;
+			Interlocking::Exchange(m_askLevel2.price, askPrice);
+			Interlocking::Exchange(m_askLevel2.size, askSize);
+		} else {
+			Interlocking::Exchange(m_askLevel2.price, askPrice);
+			Interlocking::Exchange(m_askLevel2.size, m_askLevel2.size + askSize);
+		}
 	}
-	return isChanged;
 }
