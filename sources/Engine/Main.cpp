@@ -10,7 +10,7 @@
 
 namespace fs = boost::filesystem;
 
-void Trade(const std::string &);
+void Trade(const fs::path &);
 
 namespace {
 

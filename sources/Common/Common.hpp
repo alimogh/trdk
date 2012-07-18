@@ -16,6 +16,7 @@
 #include "Common/SignalConnection.hpp"
 #include "Common/Foreach.hpp"
 #include "Common/IniFile.hpp"
+#include "Common/FileSystemChangeNotificator.hpp"
 
 #include "Core/Log.hpp"
 #include "Core/Exception.hpp"

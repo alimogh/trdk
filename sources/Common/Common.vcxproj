@@ -65,6 +65,7 @@
   <ItemGroup>
     <ClCompile Include="Assert.cpp" />
     <ClCompile Include="Defaults.cpp" />
+    <ClCompile Include="FileSystemChangeNotificator.cpp" />
     <ClCompile Include="IniFile.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
@@ -74,6 +75,7 @@
     <ClInclude Include="Defaults.hpp" />
     <ClInclude Include="DisableBoostWarningsEnd.h" />
     <ClInclude Include="DisableBoostWarningsBegin.h" />
+    <ClInclude Include="FileSystemChangeNotificator.hpp" />
     <ClInclude Include="Foreach.hpp" />
     <ClInclude Include="IniFile.hpp" />
     <ClInclude Include="LockingPolicy.hpp" />

@@ -17,6 +17,7 @@
 #include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
+namespace fs = boost::filesystem;
 
 namespace {
 
@@ -91,7 +92,7 @@ namespace {
 		securititesTmp.swap(securitites);
 	}
 
-	boost::shared_ptr<Settings> LoadOptions(const std::string &iniFilePath) {
+	boost::shared_ptr<Settings> LoadOptions(const fs::path &iniFilePath) {
 		Log::Info("Using %1% file for common options...", iniFilePath);
 		return boost::shared_ptr<Settings>(new Settings(IniFile(iniFilePath), Ini::Sections::common));
 	}
@@ -174,17 +175,17 @@ namespace {
 	}
 
 	void InitTrading(
-				const std::string &iniFilePath,
+				const fs::path &iniFilePath,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Dispatcher &dispatcher,
-				IqFeedClient &marketDataSource)  {
+				IqFeedClient &marketDataSource,
+				Algos &algos)  {
 
 		Log::Info("Using %1% file for algo options...", iniFilePath);
 		const IniFile ini(iniFilePath);
 		const std::list<std::string> sections = ini.ReadSectionsList();
 
 		Securities securities;
-		Algos algos;
 		foreach (const auto &section, sections) {
 			if (section != Ini::Sections::common) {
 				Log::Info("Found section \"%1%\"...", section);
@@ -208,18 +209,63 @@ namespace {
 
 	}
 
+	void UpdateSettingsRuntime(const fs::path &iniFilePath, Algos &algos) {
+		Log::Info("Detected INI-file %1% modification, updating current settings...", iniFilePath);
+		const IniFile ini(iniFilePath);
+		const std::list<std::string> sections = ini.ReadSectionsList();
+		foreach (const auto &section, sections) {
+			bool isError = false;
+			foreach (boost::shared_ptr<Algo> &a, algos) {
+				if (section == Ini::Sections::Algo::level2MarketArbitrage) {
+					if (!dynamic_cast<Strategies::Level2MarketArbitrage::Algo *>(a.get())) {
+						continue;
+					}
+				} else if (section == Ini::Sections::Algo::QuickArbitrage::old) {
+					if (!dynamic_cast<Strategies::QuickArbitrage::Old *>(a.get())) {
+						continue;
+					}
+				} else if (section == Ini::Sections::Algo::QuickArbitrage::askBid) {
+					if (!dynamic_cast<Strategies::QuickArbitrage::AskBid *>(a.get())) {
+						continue;
+					}
+				} else {
+					continue;
+				}
+				try {
+					a->UpdateSettings(ini, section);
+				} catch (const std::exception &ex) {
+					Log::Error("Failed to update current settings: \"%1%\".", ex.what());
+					isError = true;
+					break;
+				}
+			}
+			if (isError) {
+				break;
+			}
+		}
+		Log::Info("Current settings update competed.");
+	}
+
 }
 
-void Trade(const std::string &iniFilePath) {
+void Trade(const fs::path &iniFilePath) {
 
 	boost::shared_ptr<Settings> options = LoadOptions(iniFilePath);
 	boost::shared_ptr<TradeSystem> tradeSystem(new InteractiveBrokersTradeSystem);
 	IqFeedClient marketDataSource;
 	Dispatcher dispatcher(options);
-	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource);
+	Algos algos;
+	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos);
 
+	FileSystemChangeNotificator iniChangeNotificator(
+		iniFilePath,
+		boost::bind(&UpdateSettingsRuntime, boost::cref(iniFilePath), boost::ref(algos)));
+
+	iniChangeNotificator.Start();
 	dispatcher.Start();
 	getchar();
+	iniChangeNotificator.Stop();
 	dispatcher.Stop();
+	algos.clear();
 
 }
