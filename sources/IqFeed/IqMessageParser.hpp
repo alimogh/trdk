@@ -8,6 +8,22 @@
 
 #pragma once
 
+//////////////////////////////////////////////////////////////////////////
+
+struct Hex {
+	unsigned int value;
+	operator unsigned int() const {
+		return value;
+	}
+};
+
+std::istream & operator >>(std::istream &in, Hex &out) {
+	in >> std::hex >> out.value;
+	return in;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 template<typename MessageT>
 class IqMessageParser {
 
@@ -120,6 +136,12 @@ public:
 		return result;
 	}
 
+// 	unsigned int GetFieldAsUnsignedIntFromHex(size_t fieldNum, bool isRequired) const {
+// 		Hex result;
+// 		GetTypedField(fieldNum, isRequired, result, "0x");
+// 		return result.value;
+// 	}
+
 	std::string GetFieldAsString(size_t fieldNum, bool isRequired) const {
 		std::string result;
 		GetStringField(fieldNum, isRequired, result);
@@ -131,10 +153,34 @@ public:
 			GetFieldAsString(fieldNum, isRequired));
 	}
 
+	unsigned int GetFieldAsTimeTick(size_t fieldNum, bool isRequired) const {
+		std::string result;
+		GetStringField(fieldNum, isRequired, result);
+		if (result.size() != 8) {
+			throw FieldHasInvalidFormatError();
+		}
+		boost::erase_all(result, ":");
+		if (result.size() != 6) {
+			throw FieldHasInvalidFormatError();
+		}
+		try {
+			return boost::lexical_cast<unsigned int>(result);
+		} catch (const boost::bad_lexical_cast &ex) {
+			Log::Error(
+				"IQFeed message field has invalid format: \"%1%\".",
+				ex.what());
+			throw FieldHasInvalidFormatError();
+		}
+	}
+
 private:
 
 	template<typename T>
-	void GetTypedField(size_t fieldNum, bool isRequired, T &resultAndDefVal) const {
+	void GetTypedField(
+				size_t fieldNum,
+				bool isRequired,
+				T &resultAndDefVal)
+			const {
 		std::string strVal;
 		GetStringField(fieldNum, isRequired, strVal);
 		if (strVal.empty()) {
@@ -142,7 +188,7 @@ private:
 			return;
 		}
 		try {
-			resultAndDefVal = boost::lexical_cast<T>(strVal);
+			resultAndDefVal = boost::lexical_cast<T>(/*prefix + */strVal);
 		} catch (const boost::bad_lexical_cast &ex) {
 			Log::Error(
 				"IQFeed message field has invalid format: \"%1%\".",
