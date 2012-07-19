@@ -21,10 +21,20 @@ namespace Strategies { namespace Level2MarketArbitrage {
 	private:
 
 		struct Settings {
+
+			enum OpenMode {
+				OPEN_MODE_NONE,
+				OPEN_MODE_SHORT_IF_ASK_MORE_BID,
+				OPEN_MODE_SHORT_IF_BID_MORE_ASK
+			};
+
 			double askBidDifferencePercent;
 			double takeProfitPercent;
 			double stopLossPercent;
 			DynamicSecurity::Price volume;
+			OpenMode openMode;
+			boost::posix_time::time_duration positionTimeSeconds;
+		
 		};
 
 	public:
@@ -77,6 +87,8 @@ namespace Strategies { namespace Level2MarketArbitrage {
 		void CloseLongPositionStopLossTry(Position &);
 		void CloseShortPositionStopLossDo(Position &);
 		void CloseShortPositionStopLossTry(Position &);
+
+		void ReportCloseTry(const Position &);
 	
 	private:
 
