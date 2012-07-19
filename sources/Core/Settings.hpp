@@ -37,6 +37,11 @@ public:
 
 	void Update(const IniFile &, const std::string &section);
 
+private:
+
+	void UpdateDynamic(const IniFile &, const std::string &section);
+	void UpdateStatic(const IniFile &, const std::string &section);
+
 public:
 
 	const Time & GetStartTime() const;
@@ -47,10 +52,14 @@ public:
 
 	boost::uint64_t GetUpdatePeriodMilliseconds() const;
 
+	boost::uint32_t GetLevel2PeriodSeconds() const;
+
 private:
 
 	const Time m_startTime;
 
 	Values m_values;
+
+	volatile long m_level2PeriodSeconds;
 
 };

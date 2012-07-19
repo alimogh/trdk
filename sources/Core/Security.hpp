@@ -11,6 +11,7 @@
 #include "Instrument.hpp"
 
 class Position;
+class Settings;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -75,21 +76,19 @@ public:
 
 class DynamicSecurity : public Security {
 
-private:
-
-	struct Level2 {
-		
-		unsigned int timeTick;
-		volatile LONGLONG price;
-		volatile LONGLONG size;
-
-		Level2();
-
-	};
-
 public:
 
 	typedef Security Base;
+
+	struct Quote {
+		
+		unsigned int timeTick;
+		double price;
+		Qty size;
+
+		Quote();
+
+	};
 
 	typedef void (UpdateSlotSignature)();
 	typedef boost::function<UpdateSlotSignature> UpdateSlot;
@@ -102,7 +101,21 @@ public:
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange,
+				boost::shared_ptr<Settings> settings,
 				bool logMarketData);
+
+private:
+
+	typedef std::list<boost::shared_ptr<Quote>> Quotes;
+
+	struct Level2 {
+		
+		volatile LONGLONG price;
+		volatile LONGLONG size;
+
+		Level2();
+
+	};
 
 public:
 
@@ -137,20 +150,8 @@ protected:
 	bool SetAsk(Price);
 	bool SetBid(Price);
 
-	void SetLevel2(
-			unsigned int askTimeTick,
-			double askPrice,
-			Qty askSize,
-			unsigned int bidTimeTick,
-			double bidPrice,
-			Qty bidSize);
-	void SetLevel2(
-			unsigned int askTimeTick,
-			Price askPrice,
-			Qty askSize,
-			unsigned int bidTimeTick,
-			Price bidPrice,
-			Qty bidSize);
+	void SetLevel2Ask(Price askPrice, Qty askSize);
+	void SetLevel2Bid(Price bidPrice, Qty bidSize);
 
 public:
 
@@ -161,13 +162,7 @@ public:
 public:
 
 	void UpdateLevel1(const MarketDataTime &, double last, double ask, double bid);
-	void UpdateLevel2(
-			unsigned int askTimeTick,
-			double ask,
-			size_t askSize,
-			unsigned int bidTimeTick,
-			double bid,
-			size_t bidSize);
+	void UpdateLevel2(boost::shared_ptr<Quote> ask, boost::shared_ptr<Quote> bid);
 
 	void OnHistoryDataStart();
 	void OnHistoryDataEnd();
@@ -177,6 +172,8 @@ public:
 	UpdateSlotConnection Subcribe(const UpdateSlot &) const;
 
 private:
+
+	boost::shared_ptr<Settings> m_settings;
 
 	class MarketDataLog;
 	std::unique_ptr<MarketDataLog> m_marketDataLevel1Log;
@@ -189,11 +186,12 @@ private:
 	volatile LONGLONG m_isHistoryData;
 
 	volatile LONGLONG m_last;
-	
 	volatile LONGLONG m_ask;
-	Level2 m_askLevel2;
-	
 	volatile LONGLONG m_bid;
+
+	Quotes m_askQoutes;
+	Level2 m_askLevel2;
+	Quotes m_bidQoutes;
 	Level2 m_bidLevel2;
 
 };

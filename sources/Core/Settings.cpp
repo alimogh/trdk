@@ -13,10 +13,25 @@ namespace pt = boost::posix_time;
 
 Settings::Settings(const IniFile &ini, const std::string &section)
 		: m_startTime(boost::get_system_time()) {
-	Update(ini, section);
+	UpdateDynamic(ini, section);
+	UpdateStatic(ini, section);
 }
 
 void Settings::Update(const IniFile &ini, const std::string &section) {
+	UpdateDynamic(ini, section);
+
+}
+
+void Settings::UpdateDynamic(const IniFile &ini, const std::string &section) {
+	Interlocking::Exchange(
+		m_level2PeriodSeconds,
+		ini.ReadTypedKey<unsigned short>(section, "level2_period_seconds"));
+	Log::Info(
+		"Common dynamic settings: level2_period_seconds = %1%;",
+		m_level2PeriodSeconds);
+}
+
+void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
 
 	Values values = {};
 
@@ -87,9 +102,9 @@ void Settings::Update(const IniFile &ini, const std::string &section) {
 
 	m_values = values;
 	Log::Info(
-		"Common Settings:"
+		"Common static settings:"
 			" start_time_edt: %1%; algo_threads_count = %2%; algo_update_period_ms = %3%;"
-			" trade_session_period_edt = %4% -> %5%",
+			" trade_session_period_edt = %4% -> %5%;",
 		GetStartTime() + Util::GetEdtDiff(),
 		m_values.algoThreadsCount,
 		m_values.algoUpdatePeriodMilliseconds,
@@ -116,4 +131,8 @@ size_t Settings::GetAlgoThreadsCount() const {
 
 boost::uint64_t Settings::GetUpdatePeriodMilliseconds() const {
 	return m_values.algoUpdatePeriodMilliseconds;
+}
+
+boost::uint32_t Settings::GetLevel2PeriodSeconds() const {
+	return m_level2PeriodSeconds;
 }

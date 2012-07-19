@@ -73,7 +73,8 @@ namespace {
 	void LoadSecurities(
 				const std::list<IniFile::Symbol> &symbols,
 				boost::shared_ptr<TradeSystem> tradeSystem,
-				Securities &securitites) {
+				Securities &securitites,
+				boost::shared_ptr<Settings> settings) {
 		Securities securititesTmp(securitites);
 		foreach (const IniFile::Symbol &symbol, symbols) {
 			const std::string key = CreateSecuritiesKey(symbol);
@@ -86,6 +87,7 @@ namespace {
 					symbol.symbol,
 					symbol.primaryExchange,
 					symbol.exchange,
+					settings,
 					true));
 			Log::Info("Loaded security \"%1%\".", securititesTmp[key]->GetFullSymbol());
 		}
@@ -102,7 +104,8 @@ namespace {
 				const std::string &section,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Securities &securities,
-				Algos &algos)  {
+				Algos &algos,
+				boost::shared_ptr<Settings> settings)  {
 
 		if (	section != Ini::Sections::Algo::QuickArbitrage::old
 				&& section != Ini::Sections::Algo::QuickArbitrage::askBid
@@ -124,7 +127,7 @@ namespace {
 		const IniFile symbolsIni(symbolsFilePath, ini.GetPath().branch_path());
 		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("SMART", "NASDAQ");
 		try {
-			LoadSecurities(symbols, tradeSystem, securities);
+			LoadSecurities(symbols, tradeSystem, securities, settings);
 		} catch (const IniFile::Error &ex) {
 			Log::Error("Failed to load securities: \"%1%\".", ex.what());
 			throw;
@@ -179,7 +182,8 @@ namespace {
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Dispatcher &dispatcher,
 				IqFeedClient &marketDataSource,
-				Algos &algos)  {
+				Algos &algos,
+				boost::shared_ptr<Settings> settings)  {
 
 		Log::Info("Using %1% file for algo options...", iniFilePath);
 		const IniFile ini(iniFilePath);
@@ -189,7 +193,7 @@ namespace {
 		foreach (const auto &section, sections) {
 			if (section != Ini::Sections::common) {
 				Log::Info("Found section \"%1%\"...", section);
-				InitAlgo(ini, section, tradeSystem, securities, algos);
+				InitAlgo(ini, section, tradeSystem, securities, algos, settings);
 			}
 		}
 
@@ -209,11 +213,18 @@ namespace {
 
 	}
 
-	void UpdateSettingsRuntime(const fs::path &iniFilePath, Algos &algos) {
+	void UpdateSettingsRuntime(
+				const fs::path &iniFilePath,
+				Algos &algos,
+				Settings &settings) {
 		Log::Info("Detected INI-file %1% modification, updating current settings...", iniFilePath);
 		const IniFile ini(iniFilePath);
 		const std::list<std::string> sections = ini.ReadSectionsList();
 		foreach (const auto &section, sections) {
+			if (section == Ini::Sections::common) {
+				settings.Update(ini, section);
+				continue;
+			}
 			bool isError = false;
 			foreach (boost::shared_ptr<Algo> &a, algos) {
 				if (section == Ini::Sections::Algo::level2MarketArbitrage) {
@@ -250,16 +261,20 @@ namespace {
 
 void Trade(const fs::path &iniFilePath) {
 
-	boost::shared_ptr<Settings> options = LoadOptions(iniFilePath);
+	boost::shared_ptr<Settings> settings = LoadOptions(iniFilePath);
 	boost::shared_ptr<TradeSystem> tradeSystem(new InteractiveBrokersTradeSystem);
 	IqFeedClient marketDataSource;
-	Dispatcher dispatcher(options);
+	Dispatcher dispatcher(settings);
 	Algos algos;
-	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos);
+	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings);
 
 	FileSystemChangeNotificator iniChangeNotificator(
 		iniFilePath,
-		boost::bind(&UpdateSettingsRuntime, boost::cref(iniFilePath), boost::ref(algos)));
+		boost::bind(
+			&UpdateSettingsRuntime,
+			boost::cref(iniFilePath),
+			boost::ref(algos),
+			boost::ref(*settings)));
 
 	iniChangeNotificator.Start();
 	dispatcher.Start();

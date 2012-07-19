@@ -9,6 +9,7 @@
 #include "Prec.hpp"
 #include "Security.hpp"
 #include "Position.hpp"
+#include "Settings.hpp"
 
 namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
@@ -66,8 +67,14 @@ bool Security::IsCompleted() const {
 
 //////////////////////////////////////////////////////////////////////////
 
-DynamicSecurity::Level2::Level2()
-		: timeTick(0) {
+DynamicSecurity::Quote::Quote()
+		: timeTick(0),
+		price(0),
+		size(0) {
+	//...//
+}
+
+DynamicSecurity::Level2::Level2() {
 	Interlocking::Exchange(price, 0);
 	Interlocking::Exchange(size, 0);
 }
@@ -85,7 +92,7 @@ public:
 		const fs::path filePath = Util::SymbolToFilePath(
 			Defaults::GetMarketDataLogDir(),
 			fullSymbol,
-			"log");
+			"csv");
 		const bool isNew = !fs::exists(filePath);
 		if (isNew) {
 			fs::create_directories(filePath.branch_path());
@@ -133,7 +140,7 @@ public:
 		const fs::path filePath = Util::SymbolToFilePath(
 			Defaults::GetMarketDataLogDir(),
 			fullSymbol + ":Level2",
-			"log");
+			"csv");
 		const bool isNew = !fs::exists(filePath);
 		if (isNew) {
 			fs::create_directories(filePath.branch_path());
@@ -147,7 +154,7 @@ public:
 		}
 		Log::Info("Logging \"%1%\" market data into %2%...", fullSymbol, filePath);
 		if (isNew) {
-			m_file << "type,time tick, price,size,price,size, tick size" << std::endl;
+			m_file << "type,time tick, price,size,tick size,first tick time" << std::endl;
 		} else {
 			m_file << std::endl;
 		}
@@ -155,12 +162,36 @@ public:
 
 public:
 
-	void AppendAsk(unsigned int timeTick, double price, size_t size, boost::int64_t tickSize) {
-		m_file << "ask," << timeTick << "," << price << "," << size << "," << tickSize << std::endl;
+	void AppendAsk(
+				unsigned int timeTick,
+				double price,
+				size_t size,
+				boost::int64_t tickSize,
+				unsigned int firstTickSize) {
+		m_file
+			<< "ask,"
+			<< timeTick
+			<< "," << price
+			<< "," << size
+			<< "," << tickSize
+			<< "," << firstTickSize
+			<< std::endl;
 	}
 
-	void AppendBid(unsigned int timeTick, double price, size_t size, boost::int64_t tickSize) {
-		m_file << "bid," << timeTick << "," << price << "," << size << "," << tickSize << std::endl;
+	void AppendBid(
+				unsigned int timeTick,
+				double price,
+				size_t size,
+				boost::int64_t tickSize,
+				unsigned int firstTickSize) {
+		m_file
+			<< "bid,"
+			<< timeTick
+			<< "," << price
+			<< "," << size
+			<< "," << tickSize
+			<< "," << firstTickSize
+			<< std::endl;
 	}
 
 private:
@@ -175,8 +206,10 @@ DynamicSecurity::DynamicSecurity(
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange,
+				boost::shared_ptr<Settings> settings,
 				bool logMarketData)
-		: Base(tradeSystem, symbol, primaryExchange, exchange) {
+		: Base(tradeSystem, symbol, primaryExchange, exchange),
+		m_settings(settings) {
 	if (logMarketData) {
 		m_marketDataLevel1Log.reset(new MarketDataLog(GetFullSymbol()));
 		m_marketDataLevel2Log.reset(new MarketDataLevel2Log(GetFullSymbol()));
@@ -205,20 +238,64 @@ void DynamicSecurity::UpdateLevel1(
 	m_updateSignal();
 }
 
-void DynamicSecurity::UpdateLevel2(
-			unsigned int askTimeTick,
-			double askPrice,
-			size_t askSize,
-			unsigned int bidTimeTick,
-			double bidPrice,
-			size_t bidSize) {
-	SetLevel2(askTimeTick, Scale(askPrice), askSize, bidTimeTick, Scale(bidPrice), bidSize);
-	if (m_marketDataLevel2Log) {
-		if (askTimeTick) {
-			m_marketDataLevel2Log->AppendAsk(askTimeTick, askPrice, askSize, m_askLevel2.size);
+
+namespace {
+
+	template<typename List>
+	DynamicSecurity::Qty UpdateQuoteList(
+				const Settings &settings,
+				boost::shared_ptr<DynamicSecurity::Quote> &newQuote,
+				List &quoteList) {
+		Assert(newQuote->timeTick <= 235959);
+		Assert(newQuote->timeTick > 0);
+		DynamicSecurity::Qty result = newQuote->size;
+		while (!quoteList.empty()) {
+			const auto listTime = (**quoteList.begin()).timeTick;
+			Assert(listTime <= 235959);
+			Assert(listTime >= 0);
+			const bool isNewDay = !(listTime <= newQuote->timeTick);
+			const auto period = isNewDay
+				?	(235959 - listTime) + newQuote->timeTick
+				:	newQuote->timeTick - listTime;
+			if (period <= settings.GetLevel2PeriodSeconds()) {
+				break;
+			}
+			result -= (**quoteList.begin()).size;
+			quoteList.pop_front();
 		}
-		if (bidTimeTick) {
-			m_marketDataLevel2Log->AppendBid(bidTimeTick, bidPrice, bidSize, m_bidLevel2.size);
+		quoteList.push_back(newQuote);
+		return result;
+	}
+
+}
+
+
+void DynamicSecurity::UpdateLevel2(boost::shared_ptr<Quote> ask, boost::shared_ptr<Quote> bid) {
+	Assert(ask || bid);
+	if (ask) {
+		SetLevel2Ask(
+			Scale(ask->price),
+			GetAskSize() + UpdateQuoteList(*m_settings, ask, m_askQoutes));
+		if (m_marketDataLevel2Log) {
+			m_marketDataLevel2Log->AppendAsk(
+				ask->timeTick,
+				ask->price,
+				ask->size,
+				GetAskSize(),
+				(**m_askQoutes.begin()).timeTick);
+		}
+	}
+	if (bid) {
+		SetLevel2Bid(
+			Scale(bid->price),
+			GetBidSize() + UpdateQuoteList(*m_settings, bid, m_bidQoutes));
+		if (m_marketDataLevel2Log) {
+			m_marketDataLevel2Log->AppendBid(
+				bid->timeTick,
+				bid->price,
+				bid->size,
+				GetBidSize(),
+				(**m_bidQoutes.begin()).timeTick);
 		}
 	}
 	if (*this) {
@@ -329,42 +406,12 @@ bool DynamicSecurity::SetBid(Price bid) {
 	return Interlocking::Exchange(m_bid, bid) != bid;
 }
 
-void DynamicSecurity::SetLevel2(
-			unsigned int askTimeTick,
-			double askPrice,
-			Qty askSize,
-			unsigned int bidTimeTick,
-			double bidPrice,
-			Qty bidSize) {
-	SetLevel2(askTimeTick, Scale(askPrice), askSize, bidTimeTick, Scale(bidPrice), bidSize);
+void DynamicSecurity::SetLevel2Bid(Price bidPrice, Qty bidSize) {
+	Interlocking::Exchange(m_bidLevel2.price, bidPrice);
+	Interlocking::Exchange(m_bidLevel2.size, bidSize);
 }
 
-void DynamicSecurity::SetLevel2(
-			unsigned int askTimeTick,
-			Price askPrice,
-			Qty askSize,
-			unsigned int bidTimeTick,
-			Price bidPrice,
-			Qty bidSize) {
-	Assert(askTimeTick || bidTimeTick);
-	if (bidTimeTick) {
-		if (m_bidLevel2.timeTick != bidTimeTick) {
-			m_bidLevel2.timeTick = bidTimeTick;
-			Interlocking::Exchange(m_bidLevel2.price, bidPrice);
-			Interlocking::Exchange(m_bidLevel2.size, bidSize);
-		} else {
-			Interlocking::Exchange(m_bidLevel2.price, bidPrice);
-			Interlocking::Exchange(m_bidLevel2.size, m_bidLevel2.size + bidSize);
-		}
-	}
-	if (askTimeTick) {
-		if (m_askLevel2.timeTick != askTimeTick) {
-			m_askLevel2.timeTick = askTimeTick;
-			Interlocking::Exchange(m_askLevel2.price, askPrice);
-			Interlocking::Exchange(m_askLevel2.size, askSize);
-		} else {
-			Interlocking::Exchange(m_askLevel2.price, askPrice);
-			Interlocking::Exchange(m_askLevel2.size, m_askLevel2.size + askSize);
-		}
-	}
+void DynamicSecurity::SetLevel2Ask(Price askPrice, Qty askSize) {
+	Interlocking::Exchange(m_askLevel2.price, askPrice);
+	Interlocking::Exchange(m_askLevel2.size, askSize);
 }

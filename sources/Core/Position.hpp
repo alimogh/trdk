@@ -167,7 +167,7 @@ private:
 	const Price m_startPrice;
 	const Price m_decisionAks;
 	const Price m_decisionBid;
-	Price m_takeProfit;
+	volatile LONGLONG m_takeProfit;
 	const Price m_stopLoss;
 		
 	DynamicData m_opened;

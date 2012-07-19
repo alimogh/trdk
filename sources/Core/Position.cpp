@@ -66,7 +66,7 @@ Position::Position(
 		m_closeType(CLOSE_TYPE_NONE),
 		m_isReported(false),
 		m_algoFlag(algoFlag) {
-	Interlocking::Exchange(m_takeProfit, 0);
+	SetTakeProfit(takeProfit);
 	Interlocking::Exchange(m_state, STATE_NONE);
 }
 
@@ -408,7 +408,7 @@ Position::Price Position::GetTakeProfit() const {
 }
 
 void Position::SetTakeProfit(Position::Price newTakeProfit) {
-	Interlocking::CompareExchange(m_takeProfit, newTakeProfit);
+	Interlocking::Exchange(m_takeProfit, newTakeProfit);
 }
 
 Position::Price Position::GetStopLoss() const {

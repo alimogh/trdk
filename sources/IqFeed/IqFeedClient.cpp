@@ -468,6 +468,7 @@ namespace {
 	protected:
 
 		virtual void HandleMessage(MessageParser &message) {
+			// DumpReceived(message);
 			switch (*message.GetBegin()) {
 				case 'U':
 					HandleUpdateMessage(message);
@@ -515,41 +516,53 @@ namespace {
 				return;
 			}*/
 
-			bool isBidValid = message.GetFieldAsBoolean(14, true);
-			bool isAskValid = message.GetFieldAsBoolean(15, true);
+			const bool isBidValid = message.GetFieldAsBoolean(14, true);
+			const bool isAskValid = message.GetFieldAsBoolean(15, true);
 			Assert(isBidValid || isAskValid);
 			if (!isBidValid && !isAskValid) {
 				return;
 			}
 			message.Reset();
 
-			const double bid = isBidValid
-				?	message.GetFieldAsDouble(4, true)
-				:	.0;
-			isBidValid = !Util::IsZero(bid);
+			boost::shared_ptr<DynamicSecurity::Quote> bid;
+			if (isBidValid) {
+				bid.reset(new DynamicSecurity::Quote);
+				bid->price = message.GetFieldAsDouble(4, true);
+				if (Util::IsZero(bid->price)) {
+					bid.reset();
+				}
+			}
+			
+			boost::shared_ptr<DynamicSecurity::Quote> ask;
+			if (isAskValid) {
+				ask.reset(new DynamicSecurity::Quote);
+				ask->price = message.GetFieldAsDouble(5, true);
+				if (Util::IsZero(ask->price)) {
+					ask.reset();
+				}
+			}
 
-			const double ask = isAskValid
-				?	message.GetFieldAsDouble(5, true)
-				:	.0;
-			isAskValid = !Util::IsZero(ask);
-		
-			const size_t bidSize = isBidValid
-				?	message.GetFieldAsUnsignedInt(6, true)
-				:	0;
-			isBidValid = bidSize > 0;
+			if (bid) {
+				bid->size = message.GetFieldAsUnsignedInt(6, true);
+				if (!bid->size) {
+					bid.reset();
+				}
+			}
 
-			const size_t askSize = isAskValid
-				?	message.GetFieldAsUnsignedInt(7, true)
-				:	0;
-			isAskValid = askSize > 0;
+			if (ask) {
+				ask->size = message.GetFieldAsUnsignedInt(7, true);
+				if (!ask->size) {
+					ask.reset();
+				}
+			}
 
-			if (!isBidValid && !isAskValid) {
+			if (!ask && !bid) {
 				return;
 			}
 
-			const unsigned int bidTimeTick = isBidValid
-				?	message.GetFieldAsTimeTick(8, true)
-				:	pt::not_a_date_time;
+			if (bid) {
+				bid->timeTick = message.GetFieldAsTimeTick(8, true);
+			}
 
 			// Unused by IQFeed
 			/*const auto reason = message.GetFieldAsUnsignedIntFromHex(10, true);
@@ -580,17 +593,11 @@ namespace {
 					return;
 			}*/
 
-			const unsigned int askTimeTick = isAskValid
- 				?	message.GetFieldAsTimeTick(13, true)
- 				:	pt::not_a_date_time;
+			if (ask) {
+				ask->timeTick = message.GetFieldAsTimeTick(13, true);
+			}
 
-			subscriber->second->UpdateLevel2(
-				askTimeTick,
-				ask,
-				askSize,
-				bidTimeTick,
-				bid,
-				bidSize);
+			subscriber->second->UpdateLevel2(ask, bid);
 
 		}
 
