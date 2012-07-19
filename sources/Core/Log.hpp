@@ -1215,6 +1215,28 @@ namespace Log {
 		typename Param4,
 		typename Param5,
 		typename Param6,
+		typename Param7>
+	inline void Info(
+				const char *str,
+				const Param1 &param1,
+				const Param2 &param2,
+				const Param3 &param3,
+				const Param4 &param4,
+				const Param5 &param5,
+				const Param6 &param6,
+				const Param7 &param7)
+			throw() {
+		Detail::AppendRecord(
+			str, param1, param2, param3, param4, param5, param6, param7);
+	}
+
+	template<
+		typename Param1,
+		typename Param2,
+		typename Param3,
+		typename Param4,
+		typename Param5,
+		typename Param6,
 		typename Param7,
 		typename Param8>
 	inline void Info(
