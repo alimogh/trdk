@@ -62,11 +62,11 @@ Position::Position(
 		m_startPrice(startPrice),
 		m_decisionAks(decisionAks),
 		m_decisionBid(decisionBid),
-		m_takeProfit(takeProfit),
 		m_stopLoss(stopLoss),
 		m_closeType(CLOSE_TYPE_NONE),
 		m_isReported(false),
 		m_algoFlag(algoFlag) {
+	Interlocking::Exchange(m_takeProfit, 0);
 	Interlocking::Exchange(m_state, STATE_NONE);
 }
 
@@ -230,7 +230,6 @@ void Position::UpdateClosing(
 			state = remaining == 0 ? STATE_CLOSED : STATE_CLOSING;
 			ReportClosingUpdate("filled", orderStatus, state);
 			break;
-		case TradeSystem::ORDER_STATUS_INACTIVE:
 		case TradeSystem::ORDER_STATUS_ERROR:
 			state = STATE_CLOSE_ERROR;
 			Log::Error(
@@ -244,6 +243,7 @@ void Position::UpdateClosing(
 				m_closed.qty);
 			ReportClosingUpdate("error", orderStatus, state);
 			break;
+		case TradeSystem::ORDER_STATUS_INACTIVE:
 		case TradeSystem::ORDER_STATUS_CANCELLED:
 			state = STATE_RECLOSING;
 			if (m_closed.qty > 0) {
@@ -405,6 +405,10 @@ Position::Price Position::GetDecisionBid() const {
 
 Position::Price Position::GetTakeProfit() const {
 	return m_takeProfit;
+}
+
+void Position::SetTakeProfit(Position::Price newTakeProfit) {
+	Interlocking::CompareExchange(m_takeProfit, newTakeProfit);
 }
 
 Position::Price Position::GetStopLoss() const {

@@ -99,6 +99,7 @@ public:
 	Price GetStartPrice() const;
 	Price GetDecisionAks() const;
 	Price GetDecisionBid() const;
+	void SetTakeProfit(Price);
 	Price GetTakeProfit() const;
 	Price GetStopLoss() const;
 
@@ -166,7 +167,7 @@ private:
 	const Price m_startPrice;
 	const Price m_decisionAks;
 	const Price m_decisionBid;
-	const Price m_takeProfit;
+	Price m_takeProfit;
 	const Price m_stopLoss;
 		
 	DynamicData m_opened;
