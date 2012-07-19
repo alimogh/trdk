@@ -42,7 +42,7 @@ namespace Strategies { namespace QuickArbitrage {
 
 			Security::Price volume;
 
-			boost::posix_time::time_duration positionTime;
+			boost::posix_time::time_duration positionTimeSeconds;
 
 		};
 

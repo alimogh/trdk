@@ -134,15 +134,15 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	settings.volume
 		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "volume"));
 
-	settings.positionTime
-		= pt::seconds(ini.ReadTypedKey<long>(section, "position_time_secs"));
+	settings.positionTimeSeconds
+		= pt::seconds(ini.ReadTypedKey<long>(section, "position_time_seconds"));
 
 	m_settings = settings;
 
 	Log::Info(
 		"Settings: algo \"%1%\" for \"%2%\":"
 			" open_shorts = %3%; open_longs = %4%; ask_bid_difference = %5%;"
-			" take_profit = %6%; stop_loss = %7%; volume = %8%; position_time = %9%",
+			" take_profit = %6%; stop_loss = %7%; volume = %8%; position_time_seconds = %9%",
 		algoName,
 		GetSecurity()->GetFullSymbol(),
 		Util::ConvertOpenModeToStr(m_settings.shortPos.openMode),
@@ -151,7 +151,7 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 		GetSecurity()->Descale(m_settings.takeProfit),
 		GetSecurity()->Descale(m_settings.stopLoss),
 		GetSecurity()->Descale(m_settings.volume),
-		m_settings.positionTime);
+		m_settings.positionTimeSeconds);
 
 }
 
@@ -264,7 +264,7 @@ void AskBid::ClosePosition(Position &position, bool asIs) {
 	} else if (!asIs && position.GetAlgoFlag() == STATE_OPENING) {
 		Assert(!position.GetOpenTime().is_not_a_date_time());
 		if (	!position.GetOpenTime().is_not_a_date_time()
-				&& position.GetOpenTime() + m_settings.positionTime > boost::get_system_time()) {
+				&& position.GetOpenTime() + m_settings.positionTimeSeconds > boost::get_system_time()) {
 			return;
 		}
 	}
