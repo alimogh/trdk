@@ -230,6 +230,7 @@ void Position::UpdateClosing(
 			state = remaining == 0 ? STATE_CLOSED : STATE_CLOSING;
 			ReportClosingUpdate("filled", orderStatus, state);
 			break;
+		case TradeSystem::ORDER_STATUS_INACTIVE:
 		case TradeSystem::ORDER_STATUS_ERROR:
 			state = STATE_CLOSE_ERROR;
 			Log::Error(
@@ -243,7 +244,6 @@ void Position::UpdateClosing(
 				m_closed.qty);
 			ReportClosingUpdate("error", orderStatus, state);
 			break;
-		case TradeSystem::ORDER_STATUS_INACTIVE:
 		case TradeSystem::ORDER_STATUS_CANCELLED:
 			state = STATE_RECLOSING;
 			if (m_closed.qty > 0) {
