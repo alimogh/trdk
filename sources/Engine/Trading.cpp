@@ -88,7 +88,7 @@ namespace {
 					symbol.primaryExchange,
 					symbol.exchange,
 					settings,
-					true));
+					false));
 			Log::Info("Loaded security \"%1%\".", securititesTmp[key]->GetFullSymbol());
 		}
 		securititesTmp.swap(securitites);
