@@ -58,7 +58,8 @@ boost::shared_ptr<Position> s::Algo::OpenLongPosition() {
 			bid,
 			price + GetTakeProfit(),
 			price - GetStopLoss(),
-			STATE_OPENING));
+			STATE_OPENING,
+			shared_from_this()));
 	DoOpenBuy(*result);
 
 	return result;
@@ -82,7 +83,8 @@ boost::shared_ptr<Position> s::Algo::OpenShortPosition() {
 			bid,
 			price - GetTakeProfit(),
 			price + GetStopLoss(),
-			STATE_OPENING));
+			STATE_OPENING,
+			shared_from_this()));
 	DoOpenSell(*result);
 	
 	return result;

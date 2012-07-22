@@ -162,7 +162,8 @@ boost::shared_ptr<Position> s::Algo::OpenShortPostion(
 			bidSize,
 			price - Security::Price(boost::math::round(price * m_settings.takeProfitPercent)),
 			price + Security::Price(boost::math::round(price * m_settings.stopLossPercent)),
-			STATE_OPENING));
+			STATE_OPENING,
+			shared_from_this()));
 	switch (m_settings.openOrderType) {
 		case Settings::ORDER_TYPE_IOC:
 			GetSecurity()->SellOrCancel(result->GetPlanedQty(), result->GetStartPrice(), *result);
@@ -191,7 +192,8 @@ boost::shared_ptr<Position> s::Algo::OpenLongPostion(
 			bidSize,
 			price + Security::Price(boost::math::round(price * m_settings.takeProfitPercent)),
 			price - Security::Price(boost::math::round(price * m_settings.stopLossPercent)),
-			STATE_OPENING));
+			STATE_OPENING,
+			shared_from_this()));
 	switch (m_settings.openOrderType) {
 		case Settings::ORDER_TYPE_IOC:
 			GetSecurity()->BuyOrCancel(result->GetPlanedQty(), result->GetStartPrice(), *result);

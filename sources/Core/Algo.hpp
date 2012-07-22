@@ -16,7 +16,9 @@ class PositionReporter;
 class IniFile;
 class MarketDataSource;
 
-class Algo : private boost::noncopyable {
+class Algo
+		: private boost::noncopyable,
+		public boost::enable_shared_from_this<Algo> {
 
 public:
 
@@ -35,6 +37,7 @@ public:
 	PositionReporter & GetPositionReporter();
 
 	virtual const std::string & GetName() const = 0;
+	const std::string & GetLogTag() const;
 
 	virtual boost::posix_time::ptime GetLastDataTime();
 
@@ -63,8 +66,6 @@ protected:
 	virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const = 0;
 
 	virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section) = 0;
-
-	const std::string & GetLogTag() const;
 
 	void ReportStopLossTry(const Position &) const;
 	void ReportStopLossDo(const Position &) const;

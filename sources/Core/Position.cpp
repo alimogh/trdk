@@ -8,6 +8,7 @@
 
 #include "Prec.hpp"
 #include "Position.hpp"
+#include "Algo.hpp"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -55,7 +56,8 @@ Position::Position(
 			Price decisionBid,
 			Price takeProfit,
 			Price stopLoss,
-			AlgoFlag algoFlag)
+			AlgoFlag algoFlag,
+			boost::shared_ptr<const Algo> algo)
 		: m_security(security),
 		m_type(type),
 		m_planedQty(qty),
@@ -65,7 +67,8 @@ Position::Position(
 		m_stopLoss(stopLoss),
 		m_closeType(CLOSE_TYPE_NONE),
 		m_isReported(false),
-		m_algoFlag(algoFlag) {
+		m_algoFlag(algoFlag),
+		m_algo(algo) {
 	SetTakeProfit(takeProfit);
 	Interlocking::Exchange(m_state, STATE_NONE);
 }
@@ -154,8 +157,10 @@ void Position::UpdateOpening(
 		case TradeSystem::ORDER_STATUS_INACTIVE:
 		case TradeSystem::ORDER_STATUS_ERROR:
 			Log::Error(
-				"Position OPEN error: symbol: \"%1%\", trade system state: %2%, order ID: %3%, opened qty: %4%.",
+				"Position OPEN error: symbol: \"%1%\", algo: %2%"
+					", trade system state: %3%, order ID: %4%, opened qty: %5%.",
 				GetSecurity().GetFullSymbol(),
+				m_algo->GetLogTag(),
 				orderStatus,
 				m_opened.orderId,
 				m_opened.qty);
@@ -234,9 +239,10 @@ void Position::UpdateClosing(
 		case TradeSystem::ORDER_STATUS_ERROR:
 			state = STATE_CLOSE_ERROR;
 			Log::Error(
-				"Position CLOSE error: symbol:"
-					" \"%1%\", trade system state: %2%, orders ID: %3%->%4%, qty: %5%->%6%.",
+				"Position CLOSE error: symbol: \"%1%\", algo %2%"
+					", trade system state: %3%, orders ID: %4%->%5%, qty: %6%->%7%.",
 				GetSecurity().GetFullSymbol(),
+				m_algo->GetLogTag(),
 				orderStatus,
 				m_opened.orderId,
 				m_closed.orderId,	
@@ -430,12 +436,13 @@ void Position::ReportOpeningUpdate(
 		const {
 	Log::Trading(
 		"position",
-		"%1% %2% open-%3% qty=%4%->%5% price=%6%->%7% order-id=%8%"
-			" order-status=%9% state=%10% cur-ask-bid=%11%/%12%"
-			" take-profit=%13% stop-loss=%14%",
+		"%1% %2% open-%3% %4% qty=%5%->%6% price=%7%->%8% order-id=%9%"
+			" order-status=%10% state=%11% cur-ask-bid=%12%/%13%"
+			" take-profit=%14% stop-loss=%15%",
 		GetSecurity().GetSymbol(),
 		GetTypeStr(),
 		eventDesc,
+		m_algo->GetLogTag(),
 		GetPlanedQty(),
 		GetOpenedQty(),
 		GetSecurity().Descale(GetStartPrice()),
@@ -456,12 +463,13 @@ void Position::ReportClosingUpdate(
 		const {
 	Log::Trading(
 		"position",
-		"%1% %2% close-%3% qty=%4%->%5% price=%6% order-id=%7%->%8%"
-			" order-status=%9% state=%10% cur-ask-bid=%11%/%12%"
-			" take-profit=%13% stop-loss=%14%",
+		"%1% %2% close-%3% %4% qty=%5%->%6% price=%7% order-id=%8%->%9%"
+			" order-status=%10% state=%11% cur-ask-bid=%12%/%13%"
+			" take-profit=%14% stop-loss=%15%",
 		GetSecurity().GetSymbol(),
 		GetTypeStr(),
 		eventDesc,
+		m_algo->GetLogTag(),
 		GetOpenedQty(),
 		GetClosedQty(),
 		GetSecurity().Descale(GetClosePrice()),
@@ -484,11 +492,12 @@ void Position::ReportCloseOrderChange(
 	Assert(prevOrderId != newOrderId);
 	Log::Trading(
 		"position",
-		"%1% %2% close-order-change qty=%3%->%4% price=%5% order-id=%6%->%7%->%8%"
-			" order-status=%9% state=%10% cur-ask-bid=%11%/%12%"
-			" take-profit=%13% stop-loss=%14%",
+		"%1% %2% close-order-change qty=%4%->%5% price=%6% order-id=%7%->%8%->%9%"
+			" order-status=%10% state=%11% cur-ask-bid=%12%/%13%"
+			" take-profit=%14% stop-loss=%15%",
 		GetSecurity().GetSymbol(),
 		GetTypeStr(),
+		m_algo->GetLogTag(),
 		GetOpenedQty(),
 		GetClosedQty(),
 		GetSecurity().Descale(GetClosePrice()),

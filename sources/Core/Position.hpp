@@ -11,6 +11,8 @@
 #include "Security.hpp"
 #include "TradeSystem.hpp"
 
+class Algo;
+
 class Position
 		: private boost::noncopyable,
 		public boost::enable_shared_from_this<Position> {
@@ -68,7 +70,8 @@ public:
 			Price decisionBid,
 			Price takeProfit,
 			Price stopLoss,
-			AlgoFlag algoFlag);
+			AlgoFlag algoFlag,
+			boost::shared_ptr<const Algo> algo);
 	~Position();
 
 public:
@@ -178,6 +181,8 @@ private:
 	CloseType m_closeType;
 
 	bool m_isReported;
+
 	AlgoFlag m_algoFlag;
+	boost::shared_ptr<const Algo> m_algo;
 
 };
