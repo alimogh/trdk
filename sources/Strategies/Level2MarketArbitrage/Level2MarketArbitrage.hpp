@@ -28,13 +28,24 @@ namespace Strategies { namespace Level2MarketArbitrage {
 				OPEN_MODE_SHORT_IF_BID_MORE_ASK
 			};
 
+			enum OrderType {
+				ORDER_TYPE_IOC,
+				ORDER_TYPE_MKT
+			};
+
 			double askBidDifferencePercent;
+
 			double takeProfitPercent;
 			double stopLossPercent;
+
 			DynamicSecurity::Price volume;
+
 			OpenMode openMode;
+			OrderType openOrderType;
+			OrderType closeOrderType;
+
 			boost::posix_time::time_duration positionTimeSeconds;
-		
+
 		};
 
 	public:
