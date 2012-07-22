@@ -34,6 +34,11 @@ namespace {
 				}
 				const std::string level2MarketArbitrage = "Algo.Level2MarketArbitrage";
 			}
+			namespace MarketData {
+				namespace Log {
+					const std::string symbols = "MarketData.Log.Symbols";
+				}
+			}
 		}
 		namespace Key {
 			const std::string symbols = "symbols";
@@ -74,7 +79,10 @@ namespace {
 				const std::list<IniFile::Symbol> &symbols,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Securities &securitites,
-				boost::shared_ptr<Settings> settings) {
+				boost::shared_ptr<Settings> settings,
+				const IniFile &ini) {
+		const std::list<std::string> logMdSymbols
+			= ini.ReadList(Ini::Sections::MarketData::Log::symbols, false);
 		Securities securititesTmp(securitites);
 		foreach (const IniFile::Symbol &symbol, symbols) {
 			const std::string key = CreateSecuritiesKey(symbol);
@@ -88,7 +96,7 @@ namespace {
 					symbol.primaryExchange,
 					symbol.exchange,
 					settings,
-					false));
+					find(logMdSymbols.begin(), logMdSymbols.end(), symbol.symbol) != logMdSymbols.end()));
 			Log::Info("Loaded security \"%1%\".", securititesTmp[key]->GetFullSymbol());
 		}
 		securititesTmp.swap(securitites);
@@ -127,7 +135,7 @@ namespace {
 		const IniFile symbolsIni(symbolsFilePath, ini.GetPath().branch_path());
 		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("SMART", "NASDAQ");
 		try {
-			LoadSecurities(symbols, tradeSystem, securities, settings);
+			LoadSecurities(symbols, tradeSystem, securities, settings, ini);
 		} catch (const IniFile::Error &ex) {
 			Log::Error("Failed to load securities: \"%1%\".", ex.what());
 			throw;

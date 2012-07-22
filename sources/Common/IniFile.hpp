@@ -79,7 +79,8 @@ public:
 
 	void ReadSection(
 				const std::string &section,
-				boost::function<bool(const std::string &)> readLine)
+				boost::function<bool(const std::string &)> readLine,
+				bool isMustBeExist)
 			const;
 
 	std::string ReadKey(
@@ -106,7 +107,10 @@ public:
 
 	std::list<std::string> ReadList() const;
 
-	std::list<std::string> ReadList(const std::string &section) const;
+	std::list<std::string> ReadList(
+			const std::string &section,
+			bool isMustBeExist)
+		const;
 
 	std::list<Symbol> ReadSymbols(
 			const std::string &defExchange,

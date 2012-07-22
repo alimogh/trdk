@@ -144,7 +144,8 @@ std::list<std::string> IniFile::ReadSectionsList() const {
 
 void IniFile::ReadSection(
 			const std::string &section,
-			boost::function<bool(const std::string &)> readLine)
+			boost::function<bool(const std::string &)> readLine,
+			bool isMustBeExist)
 		const {
 	const_cast<IniFile *>(this)->Reset();
 	bool isInSection = false;
@@ -163,7 +164,7 @@ void IniFile::ReadSection(
 			break;
 		}
 	}
-	if (!isInSection) {
+	if (!isInSection && isMustBeExist) {
 		throw SectionNotExistsError();
 	}
 }
@@ -193,7 +194,8 @@ std::string IniFile::ReadKey(
 			subs.pop_front();
 			result = boost::join(subs, "=");
 			return false;
-		});
+		},
+		true);
 	if (!isKeyExists || (!canBeEmpty && result.empty())) {
 		Assert(result.empty());
 		throw KeyNotExistsError();
@@ -229,7 +231,9 @@ std::list<std::string> IniFile::ReadList() const {
 	return result;
 }
 
-std::list<std::string> IniFile::ReadList(const std::string &section)
+std::list<std::string> IniFile::ReadList(
+			const std::string &section,
+			bool isMustBeExist)
 		const {
 	std::list<std::string> result;
 	ReadSection(
@@ -237,7 +241,8 @@ std::list<std::string> IniFile::ReadList(const std::string &section)
 		[&result](const std::string &line) -> bool {
 			result.push_back(line);
 			return true;
-		});
+		},
+		isMustBeExist);
 	return result;
 }
 
@@ -258,7 +263,7 @@ std::list<IniFile::Symbol> IniFile::ReadSymbols(
 			const std::string &defPrimaryExchange)
 		const {
 	std::list<Symbol> result;
-	foreach (const auto &l, ReadList(section))  {
+	foreach (const auto &l, ReadList(section, true))  {
 		result.push_back(ReadSymbolLine(l, defExchange, defPrimaryExchange));
 	}
 	return result;
