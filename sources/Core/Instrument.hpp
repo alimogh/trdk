@@ -26,6 +26,16 @@ public:
 			m_fullSymbol(Util::CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)) {
 		//...//
 	}
+	explicit Instrument(
+				const std::string &symbol,
+				const std::string &primaryExchange,
+				const std::string &exchange)
+			: m_symbol(symbol),
+			m_primaryExchange(primaryExchange),
+			m_exchange(exchange),
+			m_fullSymbol(Util::CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)) {
+		//...//
+	}
 
 	virtual ~Instrument() {
 		//...//
@@ -49,6 +59,9 @@ public:
 public:
 
 	const TradeSystem & GetTradeSystem() const {
+		if (!m_tradeSystem) {
+			throw Exception("Instrument doesn't connected to trade system");
+		}
 		return *m_tradeSystem;
 	}
 

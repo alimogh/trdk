@@ -86,17 +86,22 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Dispatcher.cpp" />
+    <ClCompile Include="Ini.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MarketData.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Trading.cpp" />
+    <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dispatcher.hpp" />
+    <ClInclude Include="Ini.hpp" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="Util.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

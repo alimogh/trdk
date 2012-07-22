@@ -25,6 +25,14 @@ Security::Security(
 	//...//
 }
 
+Security::Security(
+			const std::string &symbol,
+			const std::string &primaryExchange,
+			const std::string &exchange)
+		: Base(symbol, primaryExchange, exchange) {
+	//...//
+}
+
 void Security::Sell(Qty qty, Position &position) {
 	GetTradeSystem().Sell(*this, qty, position.GetSellOrderStatusUpdateSlot());
 }
@@ -206,9 +214,27 @@ DynamicSecurity::DynamicSecurity(
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange,
-				boost::shared_ptr<Settings> settings,
+				boost::shared_ptr<const Settings> settings,
 				bool logMarketData)
 		: Base(tradeSystem, symbol, primaryExchange, exchange),
+		m_settings(settings) {
+	if (logMarketData) {
+		m_marketDataLevel1Log.reset(new MarketDataLog(GetFullSymbol()));
+		m_marketDataLevel2Log.reset(new MarketDataLevel2Log(GetFullSymbol()));
+	}
+	Interlocking::Exchange(m_isHistoryData, false);
+	Interlocking::Exchange(m_last, 0);
+	Interlocking::Exchange(m_ask, 0);
+	Interlocking::Exchange(m_bid, 0);
+}
+
+DynamicSecurity::DynamicSecurity(
+				const std::string &symbol,
+				const std::string &primaryExchange,
+				const std::string &exchange,
+				boost::shared_ptr<const Settings> settings,
+				bool logMarketData)
+		: Base(symbol, primaryExchange, exchange),
 		m_settings(settings) {
 	if (logMarketData) {
 		m_marketDataLevel1Log.reset(new MarketDataLog(GetFullSymbol()));

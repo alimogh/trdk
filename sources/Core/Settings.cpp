@@ -11,8 +11,8 @@
 
 namespace pt = boost::posix_time;
 
-Settings::Settings(const IniFile &ini, const std::string &section)
-		: m_startTime(boost::get_system_time()) {
+Settings::Settings(const IniFile &ini, const std::string &section, const Time &now)
+		: m_startTime(now) {
 	UpdateDynamic(ini, section);
 	UpdateStatic(ini, section);
 }

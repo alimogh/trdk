@@ -7,6 +7,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Ini.hpp"
+#include "Util.hpp"
 #include "Strategies/QuickArbitrage/QuickArbitrageOld.hpp"
 #include "Strategies/QuickArbitrage/QuickArbitrageAskBid.hpp"
 #include "Strategies/Level2MarketArbitrage/Level2MarketArbitrage.hpp"
@@ -24,27 +26,6 @@ namespace {
 	typedef std::map<std::string, boost::shared_ptr<DynamicSecurity>> Securities;
 	typedef std::list<boost::shared_ptr<Algo>> Algos;
 
-	namespace Ini {
-		namespace Sections {
-			const std::string common = "Common";
-			namespace Algo {
-				namespace QuickArbitrage {
-					const std::string old = "Algo.QuickArbitrage.Old";
-					const std::string askBid = "Algo.QuickArbitrage.AskBid";
-				}
-				const std::string level2MarketArbitrage = "Algo.Level2MarketArbitrage";
-			}
-			namespace MarketData {
-				namespace Log {
-					const std::string symbols = "MarketData.Log.Symbols";
-				}
-			}
-		}
-		namespace Key {
-			const std::string symbols = "symbols";
-		}
-	}
-
 }
 
 namespace {
@@ -53,40 +34,18 @@ namespace {
 		return Util::CreateSymbolFullStr(symbol.symbol, symbol.primaryExchange, symbol.exchange);
 	}
 
-	void Connect(TradeSystem &tradeSystem) {
-		for ( ; ; ) {
-			try {
-				tradeSystem.Connect();
-				break;
-			} catch (const TradeSystem::ConnectError &) {
-				boost::this_thread::sleep(pt::seconds(5));
-			}
-		}
-	}
-
-	void Connect(IqFeedClient &marketDataSource) {
-		for ( ; ; ) {
-			try {
-				marketDataSource.Connect();
-				break;
-			} catch (const IqFeedClient::ConnectError &) {
-				boost::this_thread::sleep(pt::seconds(5));
-			}
-		}
-	}
-
 	void LoadSecurities(
 				const std::list<IniFile::Symbol> &symbols,
 				boost::shared_ptr<TradeSystem> tradeSystem,
-				Securities &securitites,
+				Securities &securities,
 				boost::shared_ptr<Settings> settings,
 				const IniFile &ini) {
 		const std::list<std::string> logMdSymbols
 			= ini.ReadList(Ini::Sections::MarketData::Log::symbols, false);
-		Securities securititesTmp(securitites);
+		Securities securititesTmp(securities);
 		foreach (const IniFile::Symbol &symbol, symbols) {
 			const std::string key = CreateSecuritiesKey(symbol);
-			if (securitites.find(key) != securitites.end()) {
+			if (securities.find(key) != securities.end()) {
 				continue;
 			}
 			securititesTmp[key] = boost::shared_ptr<DynamicSecurity>(
@@ -99,12 +58,7 @@ namespace {
 					find(logMdSymbols.begin(), logMdSymbols.end(), symbol.symbol) != logMdSymbols.end()));
 			Log::Info("Loaded security \"%1%\".", securititesTmp[key]->GetFullSymbol());
 		}
-		securititesTmp.swap(securitites);
-	}
-
-	boost::shared_ptr<Settings> LoadOptions(const fs::path &iniFilePath) {
-		Log::Info("Using %1% file for common options...", iniFilePath);
-		return boost::shared_ptr<Settings>(new Settings(IniFile(iniFilePath), Ini::Sections::common));
+		securititesTmp.swap(securities);
 	}
 
 	void InitAlgo(
@@ -269,7 +223,7 @@ namespace {
 
 void Trade(const fs::path &iniFilePath) {
 
-	boost::shared_ptr<Settings> settings = LoadOptions(iniFilePath);
+	boost::shared_ptr<Settings> settings = Ini::LoadSettings(iniFilePath, boost::get_system_time());
 	boost::shared_ptr<TradeSystem> tradeSystem(new InteractiveBrokersTradeSystem);
 	IqFeedClient marketDataSource;
 	Dispatcher dispatcher(settings);

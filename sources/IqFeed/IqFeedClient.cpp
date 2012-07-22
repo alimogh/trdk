@@ -728,7 +728,7 @@ namespace {
 			}
 			{
 				const auto i = m_service.m_marketDataLevel2Subscribers.find(subscriber->GetSymbol());
-				if (i != m_service.m_marketDataLevel1Subscribers.end()) {
+				if (i != m_service.m_marketDataLevel2Subscribers.end()) {
 					m_service.SendSubscribeToMarketDataLevel2Request(*i->second);
 				}
 			}

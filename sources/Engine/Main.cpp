@@ -11,6 +11,7 @@
 namespace fs = boost::filesystem;
 
 void Trade(const fs::path &);
+void RequestMarketData(const fs::path &, int argc, const char *argv[]);
 
 namespace {
 
@@ -30,10 +31,15 @@ namespace {
 		return path;
 	}
 
-	void InitLogs() {
+	void InitLogs(int argc, const char *argv[]) {
 		{
 			InitLogFile("events.log", eventsLog);
 			Log::EnableEvents(eventsLog);
+			std::list<std::string> cmd;
+			for (auto i = 0; i < argc; ++i) {
+				cmd.push_back(argv[i]);
+			}
+			Log::Info("Command: \"%1%\".", boost::join(cmd, " "));
 		}
 		{
 			const auto filePath = InitLogFile("trading.log", tradingLog);
@@ -44,10 +50,15 @@ namespace {
 
 }
 
-void main() {
+void main(int argc, const char *argv[]) {
 	try {
-		InitLogs();
-		Trade("Etc/trade.ini");
+		InitLogs(argc, argv);
+		const fs::path iniFilePath = "Etc/trade.ini";
+		if (argc >= 2 && std::string(argv[1]) == "market-data") {
+			RequestMarketData(iniFilePath, argc, argv);
+		} else {
+			Trade(iniFilePath);
+		}
 	} catch (const std::exception &ex) {
 		Log::Error("Unexpected error: \"%1%\".", ex.what());
 	} catch (...) {

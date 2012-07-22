@@ -31,7 +31,10 @@ public:
 
 public:
 	
-	explicit Settings(const IniFile &, const std::string &section);
+	explicit Settings(
+			const IniFile &,
+			const std::string &section,
+			const Time &now);
 
 public:
 

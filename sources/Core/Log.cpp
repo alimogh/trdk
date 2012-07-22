@@ -89,12 +89,8 @@ void Log::DisableTrading() throw() {
 
 void Log::Detail::AppendEventRecordUnsafe(const boost::posix_time::ptime &time, const char *str) {
 	Lock lock(events.mutex);
-#	ifdef DEV_VER
-	{
-		events.AppendRecordHead(time, std::cout);
-		std::cout << str << std::endl;
-	}
-#	endif
+	events.AppendRecordHead(time, std::cout);
+	std::cout << str << std::endl;
 	if (!events.log) {
 		return;
 	}

@@ -35,6 +35,10 @@ public:
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange);
+	explicit Security(
+				const std::string &symbol,
+				const std::string &primaryExchange,
+				const std::string &exchange);
 
 public:
 
@@ -101,7 +105,13 @@ public:
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange,
-				boost::shared_ptr<Settings> settings,
+				boost::shared_ptr<const Settings> settings,
+				bool logMarketData);
+	explicit DynamicSecurity(
+				const std::string &symbol,
+				const std::string &primaryExchange,
+				const std::string &exchange,
+				boost::shared_ptr<const Settings> settings,
 				bool logMarketData);
 
 private:
@@ -173,7 +183,7 @@ public:
 
 private:
 
-	boost::shared_ptr<Settings> m_settings;
+	boost::shared_ptr<const Settings> m_settings;
 
 	class MarketDataLog;
 	std::unique_ptr<MarketDataLog> m_marketDataLevel1Log;
