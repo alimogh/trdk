@@ -284,7 +284,7 @@ Position::Time Position::GetCloseTime() const {
 }
 
 Position::Price Position::GetCommission() const {
-	return m_opened.comission + m_closed.comission;
+	return m_closed.qty * GetSecurity().Scale(.01); // m_opened.comission + m_closed.comission;
 }
 
 const DynamicSecurity & Position::GetSecurity() const {
