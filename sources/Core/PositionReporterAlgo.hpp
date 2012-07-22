@@ -43,7 +43,7 @@ public:
 			}
 			Log::Info("Logging \"%1%\" positions into %2%...", algo.GetName(), filePath);
 			if (isNew) {
-				m_file << "type,symbol,exit type,entry price,entry date time,number of shares,exit price,exit date time,commission paid,open order,close order" << std::endl;
+				m_file << "type,symbol,exit type,entry price,entry date time,number of shares,exit price,exit date time,commission paid,open order,close order,P/L" << std::endl;
 			}
 			m_isInited = true;
 		}
@@ -89,6 +89,22 @@ public:
 			<< "," << security.Descale(position.GetCommission())
 			<< "," << position.GetOpenOrderId()
 			<< "," << position.GetCloseOrderId();
+		{
+			Security::Price pl = 0;
+			switch (position.GetType()) {
+				case Position::TYPE_LONG:
+					pl = position.GetClosePrice() - position.GetOpenPrice();
+					break;
+				case Position::TYPE_SHORT:
+					pl = position.GetOpenPrice() - position.GetClosePrice();
+					break;
+				default:
+					AssertFail("Unknown position type.");
+					break;
+			}
+			pl -= position.GetCommission();
+			m_file << "," << security.Descale(pl);
+		}
 		m_file << std::endl;
 	}
 
