@@ -756,6 +756,58 @@ namespace Log { namespace Detail {
 		typename Param7,
 		typename Param8,
 		typename Param9,
+		typename Param10,
+		typename Param11>
+	inline void AppendRecord(
+				const char *str,
+				const Param1 &param1,
+				const Param2 &param2,
+				const Param3 &param3,
+				const Param4 &param4,
+				const Param5 &param5,
+				const Param6 &param6,
+				const Param7 &param7,
+				const Param8 &param8,
+				const Param9 &param9,
+				const Param10 &param10,
+				const Param11 &param11)
+			throw() {
+		if (!IsTradingEnabled()) {
+			return;
+		}
+		try {
+			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			AppendEventRecordUnsafe(
+				time,
+				boost::format(str)
+					% param1 % param2 % param3 % param4 % param5 % param6
+					% param7 % param8 % param9 % param10 % param11);
+		} catch (const boost::io::format_error &ex) {
+			try {
+				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				AppendEventRecordUnsafe(
+					time,
+					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
+						% str
+						% ex.what());
+			} catch (...) {
+				AssertFail("Unhandled exception caught seconds time");
+			}
+		} catch (...) {
+			AssertFail("Unhandled exception caught");
+		}
+	}
+
+	template<
+		typename Param1,
+		typename Param2,
+		typename Param3,
+		typename Param4,
+		typename Param5,
+		typename Param6,
+		typename Param7,
+		typename Param8,
+		typename Param9,
 		typename Param10>
 	inline void AppendTaggedRecord(
 				const char *tag,
@@ -1374,8 +1426,8 @@ namespace Log {
 				const Param7 &param7,
 				const Param8 &param8,
 				const Param9 &param9,
-				const Param9 &param10,
-				const Param9 &param11)
+				const Param10 &param10,
+				const Param11 &param11)
 			throw() {
 		Detail::AppendRecord(
 			str, param1, param2, param3, param4, param5, param6, param7, param8, param9, param10, param11);

@@ -59,7 +59,7 @@ boost::shared_ptr<Position> s::Algo::OpenLongPosition() {
 			price + GetTakeProfit(),
 			price - GetStopLoss(),
 			STATE_OPENING));
-	security.BuyOrCancel(result->GetPlanedQty(), result->GetStartPrice(), *result);
+	DoOpenBuy(*result);
 
 	return result;
 
@@ -83,7 +83,7 @@ boost::shared_ptr<Position> s::Algo::OpenShortPosition() {
 			price - GetTakeProfit(),
 			price + GetStopLoss(),
 			STATE_OPENING));
-	security.SellOrCancel(result->GetPlanedQty(), result->GetStartPrice(), *result);
+	DoOpenSell(*result);
 	
 	return result;
 

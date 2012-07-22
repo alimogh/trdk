@@ -51,6 +51,9 @@ namespace Strategies { namespace QuickArbitrage {
  
 	protected:
 
+		virtual void DoOpenBuy(Position &) = 0;
+		virtual void DoOpenSell(Position &) = 0;
+
 		virtual void ClosePosition(Position &, bool asIs) = 0;
 
 		void CloseLongPositionStopLossDo(Position &);

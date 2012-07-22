@@ -83,7 +83,8 @@ void AskBid::UpdateAlogImplSettings(const IniFile &ini, const std::string &secti
 void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 
 	struct Util {	
-		static const char * ConvertOpenModeToStr(Settings::OpenMode mode) {
+
+		static const char * ConvertToStr(Settings::OpenMode mode) {
 			switch (mode) {
 				default:
 					AssertFail("Unknown open mode.");
@@ -95,6 +96,29 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 					return "ask";
 			}
 		}
+
+		static Settings::OrderType ConvertStrToOrderType(const std::string &str) {
+			if (str == "IOC") {
+				return Settings::ORDER_TYPE_IOC;
+			} else if (str == "MKT") {
+				return Settings::ORDER_TYPE_MKT;
+			} else {
+				throw IniFile::KeyFormatError("possible values: IOC, MKT");
+			}
+		}
+
+		static const char * ConvertToStr(Settings::OrderType type) {
+			switch (type) {
+				case Settings::ORDER_TYPE_IOC:
+					return "IOC";
+				case  Settings::ORDER_TYPE_MKT:
+					return "MKT";
+				default:
+					AssertFail("Unknown order type.");
+					return "";
+			}
+		}
+
 	};
 
 	Settings settings = {};
@@ -123,6 +147,11 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 			throw IniFile::KeyFormatError("possible values: none, ask, bid");
 		}
 	}
+	
+	settings.openOrderType
+		= Util::ConvertStrToOrderType(ini.ReadKey(section, "open_order_type", false));
+	settings.closeOrderType
+		= Util::ConvertStrToOrderType(ini.ReadKey(section, "close_order_type", false));
 
 	settings.askBidDifference
 		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "ask_bid_difference"));
@@ -142,16 +171,19 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	Log::Info(
 		"Settings: algo \"%1%\" for \"%2%\":"
 			" open_shorts = %3%; open_longs = %4%; ask_bid_difference = %5%;"
-			" take_profit = %6%; stop_loss = %7%; volume = %8%; position_time_seconds = %9%",
+			" take_profit = %6%; stop_loss = %7%; volume = %8%; position_time_seconds = %9%"
+			" open_order_type = %10%; close_order_type = %11%;",
 		algoName,
 		GetSecurity()->GetFullSymbol(),
-		Util::ConvertOpenModeToStr(m_settings.shortPos.openMode),
-		Util::ConvertOpenModeToStr(m_settings.longPos.openMode),
+		Util::ConvertToStr(m_settings.shortPos.openMode),
+		Util::ConvertToStr(m_settings.longPos.openMode),
 		GetSecurity()->Descale(m_settings.askBidDifference),
 		GetSecurity()->Descale(m_settings.takeProfit),
 		GetSecurity()->Descale(m_settings.stopLoss),
 		GetSecurity()->Descale(m_settings.volume),
-		m_settings.positionTimeSeconds);
+		m_settings.positionTimeSeconds,
+		Util::ConvertToStr(m_settings.openOrderType),
+		Util::ConvertToStr(m_settings.closeOrderType));
 
 }
 
@@ -192,15 +224,29 @@ const std::string & AskBid::GetName() const {
 void AskBid::CloseLongPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_LONG);
 	DynamicSecurity &security = *GetSecurity();
-	const bool isLoss = asIs || position.GetStopLoss() >= security.GetAskScaled();
+	const bool isLoss
+		= asIs
+		|| (m_settings.closeOrderType == Settings::ORDER_TYPE_IOC 
+			&& position.GetStopLoss() >= security.GetAskScaled());
 	if (position.GetAlgoFlag() == STATE_OPENING) {
 		if (isLoss) {
 			CloseLongPositionStopLossDo(position);
 		} else {
 			ReportTakeProfitDo(position);
-			security.SellOrCancel(position.GetOpenedQty(), position.GetTakeProfit(), position);
+			switch (m_settings.closeOrderType) {
+				case Settings::ORDER_TYPE_IOC:
+					security.SellOrCancel(position.GetOpenedQty(), position.GetTakeProfit(), position);
+					position.SetCloseType(Position::CLOSE_TYPE_TAKE_PROFIT);
+					break;
+				case Settings::ORDER_TYPE_MKT:
+					security.Sell(position.GetOpenedQty(), position);
+					position.SetCloseType(Position::CLOSE_TYPE_NONE);
+					break;
+				default:
+					AssertFail("Unknown close type.");
+					break;
+			}
 			position.SetAlgoFlag(STATE_CLOSING);
-			position.SetCloseType(Position::CLOSE_TYPE_TAKE_PROFIT);
 		}
 	} else if (position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS) {
 		CloseLongPositionStopLossDo(position);
@@ -208,24 +254,51 @@ void AskBid::CloseLongPosition(Position &position, bool asIs) {
 		CloseLongPositionStopLossTry(position);
 	} else if (position.GetCloseType() == Position::CLOSE_TYPE_TAKE_PROFIT) {
 		Assert(position.GetAlgoFlag() == STATE_CLOSING);
-		ReportTakeProfitDo(position);
 		position.ResetState();
-		security.SellOrCancel(position.GetOpenedQty(), position.GetTakeProfit(), position);
+		switch (m_settings.closeOrderType) {
+			case Settings::ORDER_TYPE_IOC:
+				position.SetTakeProfit(position.GetTakeProfit() - security.Scale(.01));
+				ReportTakeProfitDo(position);
+				security.SellOrCancel(position.GetOpenedQty(), position.GetTakeProfit(), position);
+				break;
+			case Settings::ORDER_TYPE_MKT:
+				ReportTakeProfitDo(position);
+				security.Sell(position.GetOpenedQty(), position);
+				position.SetCloseType(Position::CLOSE_TYPE_NONE);
+				break;
+			default:
+				AssertFail("Unknown close type.");
+				break;
+		}
 	}
 }
 
 void AskBid::CloseShortPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
 	DynamicSecurity &security = *GetSecurity();
-	const bool isLoss = asIs || position.GetStopLoss() <= security.GetBidScaled();
+	bool isLoss
+		= asIs
+		|| (m_settings.closeOrderType == Settings::ORDER_TYPE_IOC 
+			&& position.GetStopLoss() <= security.GetBidScaled());
 	if (position.GetAlgoFlag() == STATE_OPENING) {
 		if (isLoss) {
 			CloseShortPositionStopLossDo(position);
 		} else {
 			ReportTakeProfitDo(position);
-			security.BuyOrCancel(position.GetOpenedQty(), position.GetTakeProfit(), position);
+			switch (m_settings.closeOrderType) {
+				case Settings::ORDER_TYPE_IOC:
+					security.BuyOrCancel(position.GetOpenedQty(), position.GetTakeProfit(), position);
+					position.SetCloseType(Position::CLOSE_TYPE_TAKE_PROFIT);
+					break;
+				case Settings::ORDER_TYPE_MKT:
+					security.Buy(position.GetOpenedQty(), position.GetTakeProfit(), position);
+					position.SetCloseType(Position::CLOSE_TYPE_NONE);
+					break;
+				default:
+					AssertFail("Unknown close type.");
+					break;
+			}
 			position.SetAlgoFlag(STATE_CLOSING);
-			position.SetCloseType(Position::CLOSE_TYPE_TAKE_PROFIT);
 		}
 	} else if (position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS) {
 		CloseShortPositionStopLossDo(position);
@@ -233,9 +306,22 @@ void AskBid::CloseShortPosition(Position &position, bool asIs) {
 		CloseShortPositionStopLossTry(position);
 	} else if (position.GetCloseType() == Position::CLOSE_TYPE_TAKE_PROFIT) {
 		Assert(position.GetAlgoFlag() == STATE_CLOSING);
-		ReportTakeProfitDo(position);
 		position.ResetState();
-		security.BuyOrCancel(position.GetOpenedQty(), position.GetTakeProfit(), position);
+		switch (m_settings.closeOrderType) {
+			case Settings::ORDER_TYPE_IOC:
+				position.SetTakeProfit(position.GetTakeProfit() + security.Scale(.01));
+				ReportTakeProfitDo(position);
+				security.BuyOrCancel(position.GetOpenedQty(), position.GetTakeProfit(), position);
+				break;
+			case Settings::ORDER_TYPE_MKT:
+				ReportTakeProfitDo(position);
+				security.Buy(position.GetOpenedQty(), position);
+				position.SetCloseType(Position::CLOSE_TYPE_NONE);
+				break;
+			default:
+				AssertFail("Unknown close type.");
+				break;
+		}
 	}
 }
 
@@ -298,3 +384,30 @@ void AskBid::ReportTakeProfitDo(const Position &position) const {
 		position.GetOpenedQty());
 }
 
+void AskBid::DoOpenBuy(Position &position) {
+	switch (m_settings.openOrderType) {
+		case Settings::ORDER_TYPE_IOC:
+			GetSecurity()->BuyOrCancel(position.GetPlanedQty(), position.GetStartPrice(), position);
+			break;
+		case Settings::ORDER_TYPE_MKT:
+			GetSecurity()->Buy(position.GetPlanedQty(), position);
+			break;
+		default:
+			AssertFail("Unknown open order type.");
+			break;
+	}
+}
+
+void AskBid::DoOpenSell(Position &position) {
+	switch (m_settings.openOrderType) {
+		case Settings::ORDER_TYPE_IOC:
+			GetSecurity()->SellOrCancel(position.GetPlanedQty(), position.GetStartPrice(), position);
+			break;
+		case Settings::ORDER_TYPE_MKT:
+			GetSecurity()->Sell(position.GetPlanedQty(), position);
+			break;
+		default:
+			AssertFail("Unknown open order type.");
+			break;
+	}
+}

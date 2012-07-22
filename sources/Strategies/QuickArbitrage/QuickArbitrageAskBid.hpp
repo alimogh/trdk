@@ -32,8 +32,16 @@ namespace Strategies { namespace QuickArbitrage {
 				OpenMode openMode;
 			};
 
+			enum OrderType {
+				ORDER_TYPE_IOC,
+				ORDER_TYPE_MKT
+			};
+
 			Direction shortPos;
 			Direction longPos;
+
+			OrderType openOrderType;
+			OrderType closeOrderType;
 
 			Security::Price askBidDifference;
 
@@ -69,6 +77,9 @@ namespace Strategies { namespace QuickArbitrage {
 		virtual Security::Price GetVolume() const;
 
 	protected:
+
+		virtual void DoOpenBuy(Position &);
+		virtual void DoOpenSell(Position &);
 
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
 

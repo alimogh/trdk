@@ -67,6 +67,9 @@ namespace Strategies { namespace QuickArbitrage {
 
 	protected:
 
+		virtual void DoOpenBuy(Position &);
+		virtual void DoOpenSell(Position &);
+
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
 
 		virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section);

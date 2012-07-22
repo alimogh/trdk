@@ -255,3 +255,11 @@ void Old::ClosePosition(Position &position, bool asIs) {
 	Assert(position.GetAlgoFlag() != STATE_OPENING);
 
 }
+
+void Old::DoOpenBuy(Position &position) {
+	GetSecurity()->BuyOrCancel(position.GetPlanedQty(), position.GetStartPrice(), position);
+}
+
+void Old::DoOpenSell(Position &position) {
+	GetSecurity()->SellOrCancel(position.GetPlanedQty(), position.GetStartPrice(), position);
+}
