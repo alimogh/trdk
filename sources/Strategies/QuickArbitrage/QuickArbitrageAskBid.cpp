@@ -254,6 +254,7 @@ void AskBid::CloseLongPosition(Position &position, bool asIs) {
 		CloseLongPositionStopLossTry(position);
 	} else if (position.GetCloseType() == Position::CLOSE_TYPE_TAKE_PROFIT) {
 		Assert(position.GetAlgoFlag() == STATE_CLOSING);
+		Assert(position.GetCloseType() == Position::CLOSE_TYPE_TAKE_PROFIT);
 		position.ResetState();
 		switch (m_settings.closeOrderType) {
 			case Settings::ORDER_TYPE_IOC:
@@ -306,6 +307,7 @@ void AskBid::CloseShortPosition(Position &position, bool asIs) {
 		CloseShortPositionStopLossTry(position);
 	} else if (position.GetCloseType() == Position::CLOSE_TYPE_TAKE_PROFIT) {
 		Assert(position.GetAlgoFlag() == STATE_CLOSING);
+		Assert(position.GetCloseType() == Position::CLOSE_TYPE_TAKE_PROFIT);
 		position.ResetState();
 		switch (m_settings.closeOrderType) {
 			case Settings::ORDER_TYPE_IOC:
