@@ -102,6 +102,7 @@ public:
 					AssertFail("Unknown position type.");
 					break;
 			}
+			pl *= position.GetClosedQty();
 			pl -= position.GetCommission();
 			m_file << "," << security.Descale(pl);
 		}
