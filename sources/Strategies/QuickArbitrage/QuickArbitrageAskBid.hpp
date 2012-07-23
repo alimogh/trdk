@@ -43,7 +43,11 @@ namespace Strategies { namespace QuickArbitrage {
 			OrderType openOrderType;
 			OrderType closeOrderType;
 
-			Security::Price askBidDifference;
+			bool isAbsoluteSpread;
+			union {
+				Security::Price absolute;
+				double percents;
+			} spread;
 
 			Security::Price takeProfit;
 			Security::Price stopLoss;
@@ -103,6 +107,8 @@ namespace Strategies { namespace QuickArbitrage {
 		void CloseShortPosition(Position &, bool asIs);
 
 		void ReportTakeProfitDo(const Position &position) const;
+
+		bool IsValidSread() const;
 
 	private:
 

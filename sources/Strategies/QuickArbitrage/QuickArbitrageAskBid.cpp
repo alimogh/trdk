@@ -40,20 +40,27 @@ std::auto_ptr<PositionReporter> AskBid::CreatePositionReporter() const {
 	return result;
 }
 
+bool AskBid::IsValidSread() const {
+	const DynamicSecurity &security = *GetSecurity();
+	const auto spread = security.GetBidScaled() - security.GetAskScaled();
+	const auto cmpVal = m_settings.isAbsoluteSpread
+		?	m_settings.spread.absolute
+		:	Security::Price(boost::math::round(security.GetBidScaled() * m_settings.spread.percents));
+	return spread >= cmpVal;
+}
+
 bool AskBid::IsLongPosEnabled() const {
 	if (m_settings.longPos.openMode == Settings::OPEN_MODE_NONE) {
 		return false;
 	}
-	const DynamicSecurity &security = *GetSecurity();
-	return security.GetBidScaled() - security.GetAskScaled() >= m_settings.askBidDifference;
-	
+	return IsValidSread();
 }
+
 bool AskBid::IsShortPosEnabled() const {
 	if (m_settings.longPos.openMode == Settings::OPEN_MODE_NONE) {
 		return false;
 	}
-	const DynamicSecurity &security = *GetSecurity();
-	return security.GetBidScaled() - security.GetAskScaled() >= m_settings.askBidDifference;
+	return IsValidSread();
 }
 
 Security::Price AskBid::GetLongPriceMod() const {
@@ -153,8 +160,21 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	settings.closeOrderType
 		= Util::ConvertStrToOrderType(ini.ReadKey(section, "close_order_type", false));
 
-	settings.askBidDifference
-		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "ask_bid_difference"));
+	{
+		std::string spread = ini.ReadKey(section, "spread", false);
+		settings.isAbsoluteSpread = !boost::ends_with(spread, "%");
+		try {
+			if (!settings.isAbsoluteSpread) {
+				spread.pop_back();
+				settings.spread.percents = boost::lexical_cast<double>(spread) / 100;
+			} else {
+				settings.spread.absolute = GetSecurity()->Scale(boost::lexical_cast<double>(spread));
+			}
+		} catch (const boost::bad_lexical_cast &ex) {
+			Log::Error("Failed to parse \"spread\" key value (%2%): \"%1%\".", ex.what(), spread);
+			throw IniFile::KeyFormatError("Failed to parse \"spread\" key");
+		}
+	}
 
 	settings.takeProfit
 		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "take_profit"));
@@ -170,14 +190,16 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 
 	Log::Info(
 		"Settings: algo \"%1%\" for \"%2%\":"
-			" open_shorts = %3%; open_longs = %4%; ask_bid_difference = %5%;"
+			" open_shorts = %3%; open_longs = %4%; spread = %5%;"
 			" take_profit = %6%; stop_loss = %7%; volume = %8%; position_time_seconds = %9%"
 			" open_order_type = %10%; close_order_type = %11%;",
 		algoName,
 		GetSecurity()->GetFullSymbol(),
 		Util::ConvertToStr(m_settings.shortPos.openMode),
 		Util::ConvertToStr(m_settings.longPos.openMode),
-		GetSecurity()->Descale(m_settings.askBidDifference),
+		(m_settings.isAbsoluteSpread
+			?	boost::lexical_cast<std::string>(GetSecurity()->Descale(m_settings.spread.absolute))
+			:	(boost::lexical_cast<std::string>(m_settings.spread.percents * 100) + std::string("%"))),
 		GetSecurity()->Descale(m_settings.takeProfit),
 		GetSecurity()->Descale(m_settings.stopLoss),
 		GetSecurity()->Descale(m_settings.volume),
