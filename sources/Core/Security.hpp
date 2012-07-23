@@ -171,7 +171,12 @@ public:
 
 public:
 
-	void UpdateLevel1(const MarketDataTime &, double last, double ask, double bid);
+	void UpdateLevel1(
+				const MarketDataTime &,
+				double last,
+				double ask,
+				double bid,
+				size_t totalVolume);
 	void UpdateLevel2(boost::shared_ptr<Quote> ask, boost::shared_ptr<Quote> bid);
 
 	void OnHistoryDataStart();

@@ -114,7 +114,7 @@ public:
 		}
 		Log::Info("Logging \"%1%\" market data into %2%...", fullSymbol, filePath);
 		if (isNew) {
-			m_file << "data time,last price,ask,bid" << std::endl;
+			m_file << "data time,last price,ask,bid,total volume" << std::endl;
 		} else {
 			m_file << std::endl;
 		}
@@ -122,10 +122,15 @@ public:
 
 public:
 
-	void Append(const MarketDataTime &time, double last, double ask, double bid) {
+	void Append(
+				const MarketDataTime &time,
+				double last,
+				double ask,
+				double bid,
+				size_t totalVolume) {
 		const lt::local_date_time esdTime(time, Util::GetEdtTimeZone());
 		// const Lock lock(m_mutex); - not required while it uses only one IQLink thread
-		m_file << esdTime << "," << last << "," << ask << "," << bid << std::endl;
+		m_file << esdTime << "," << last << "," << ask << "," << bid << "," << totalVolume << std::endl;
 	}
 
 private:
@@ -250,9 +255,10 @@ void DynamicSecurity::UpdateLevel1(
 				const MarketDataTime &time,
 				double last,
 				double ask,
-				double bid) {
+				double bid,
+				size_t totalVolume) {
 	if (m_marketDataLevel1Log) {
-		m_marketDataLevel1Log->Append(time, last, ask, bid);
+		m_marketDataLevel1Log->Append(time, last, ask, bid, totalVolume);
 	}
 	if (!SetLast(last) || !SetAsk(ask) || !SetBid(bid)) {
 		return;

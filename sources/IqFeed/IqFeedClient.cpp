@@ -432,6 +432,8 @@ namespace {
 			const double last = message.GetFieldAsDouble(4, true);
 			Assert(last > 0);
 
+			const size_t totalVolume = message.GetFieldAsUnsignedInt(7, true);
+
 			const double ask = message.GetFieldAsDouble(11, true);
 			const double bid = message.GetFieldAsDouble(12, true);
 			if (isSummary && (Util::IsZero(ask) || Util::IsZero(bid))) {
@@ -444,7 +446,7 @@ namespace {
 			Assert(ask * 0.75 < bid);
 			Assert(ask * 1.25 > bid);
 
-			subscriber->second->UpdateLevel1(now, last, ask, bid);
+			subscriber->second->UpdateLevel1(now, last, ask, bid, totalVolume);
 
 		}
 
@@ -701,6 +703,8 @@ namespace {
 			const double last = message.GetFieldAsDouble(3, true);
 			Assert(last > 0);
 
+			const size_t totalVolume = message.GetFieldAsUnsignedInt(5, true);
+
 			const double ask = message.GetFieldAsDouble(6, true);
 			Assert(ask > 0);
 			const double bid = message.GetFieldAsDouble(7, true);
@@ -709,7 +713,7 @@ namespace {
 			Assert(ask * 0.75 < bid);
 			Assert(ask * 1.25 > bid);
 
-			subscriber.UpdateLevel1(time, last, ask, bid);
+			subscriber.UpdateLevel1(time, last, ask, bid, totalVolume);
 
 		}
 
