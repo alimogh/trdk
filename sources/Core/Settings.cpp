@@ -11,8 +11,13 @@
 
 namespace pt = boost::posix_time;
 
-Settings::Settings(const IniFile &ini, const std::string &section, const Time &now)
-		: m_startTime(now) {
+Settings::Settings(
+			const IniFile &ini,
+			const std::string &section,
+			const Time &now,
+			bool isPlayMode)
+		: m_startTime(now),
+		m_isPlayMode(isPlayMode) {
 	UpdateDynamic(ini, section);
 	UpdateStatic(ini, section);
 }

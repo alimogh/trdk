@@ -48,6 +48,10 @@ public:
 public:
 
 	virtual void SubscribeToMarketData(MarketDataSource &) = 0;
+	void RequestHistory(
+				MarketDataSource &,
+				const boost::posix_time::ptime &fromTime,
+				const boost::posix_time::ptime &toTime);
 
 	virtual void Update() = 0;
 

@@ -99,6 +99,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dispatcher.hpp" />
+    <ClInclude Include="FakeTradeSystem.hpp" />
     <ClInclude Include="Ini.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Util.hpp" />

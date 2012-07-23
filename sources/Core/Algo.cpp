@@ -11,6 +11,7 @@
 #include "Security.hpp"
 #include "PositionReporter.hpp"
 #include "Position.hpp"
+#include "IqFeed/IqFeedClient.hpp"
 
 Algo::Algo(boost::shared_ptr<DynamicSecurity> security, const std::string &logTag)
 		: m_security(security),
@@ -83,4 +84,12 @@ void Algo::ReportStopLossDo(const Position &position) const {
 		position.GetSecurity().Descale(position.GetStopLoss()),
 		position.GetOpenedQty(),
 		position.GetOpenedQty() - position.GetClosedQty());
+}
+
+void Algo::RequestHistory(
+			MarketDataSource &marketDataSource,
+			const boost::posix_time::ptime &fromTime,
+			const boost::posix_time::ptime &toTime) {
+	// remove header include
+	marketDataSource.RequestHistory(GetSecurity(), fromTime, toTime);
 }

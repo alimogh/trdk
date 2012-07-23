@@ -7,6 +7,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "FakeTradeSystem.hpp"
 #include "Ini.hpp"
 #include "Util.hpp"
 #include "Strategies/QuickArbitrage/QuickArbitrageOld.hpp"
@@ -163,15 +164,11 @@ namespace {
 			dispatcher.Register(a);
 		}
 
-		Connect(*tradeSystem);
-		Connect(marketDataSource);
-
-		foreach (auto &a, algos) {
-			a->SubscribeToMarketData(marketDataSource);
-		}
-
 		Log::Info("Loaded %1% securities.", securities.size());
 		Log::Info("Loaded %1% strategies.", algos.size());
+
+		Connect(*tradeSystem);
+		Connect(marketDataSource);
 
 	}
 
@@ -223,12 +220,18 @@ namespace {
 
 void Trade(const fs::path &iniFilePath) {
 
-	boost::shared_ptr<Settings> settings = Ini::LoadSettings(iniFilePath, boost::get_system_time());
+	boost::shared_ptr<Settings> settings
+		= Ini::LoadSettings(iniFilePath, boost::get_system_time(), false);
 	boost::shared_ptr<TradeSystem> tradeSystem(new InteractiveBrokersTradeSystem);
 	IqFeedClient marketDataSource;
 	Dispatcher dispatcher(settings);
+
 	Algos algos;
 	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings);
+	
+	foreach (auto &a, algos) {
+		a->SubscribeToMarketData(marketDataSource);
+	}
 
 	FileSystemChangeNotificator iniChangeNotificator(
 		iniFilePath,
@@ -246,3 +249,33 @@ void Trade(const fs::path &iniFilePath) {
 	algos.clear();
 
 }
+
+/*void PlayTrade(const fs::path &iniFilePath) {
+
+	Log::Info("!!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!!");
+
+	boost::shared_ptr<Settings> settings
+		= Ini::LoadSettings(iniFilePath, boost::get_system_time(), true);
+	boost::shared_ptr<TradeSystem> tradeSystem(new FakeTradeSystem);
+	IqFeedClient marketDataSource;
+	Dispatcher dispatcher(settings);
+	Algos algos;
+	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings);
+
+	foreach (auto &a, algos) {
+		a->RequestHistory(
+			marketDataSource,
+			settings->GetCurrentTradeSessionStartTime(),
+			settings->GetCurrentTradeSessionEndime());
+	}
+
+	dispatcher.Start();
+	Log::Info("!!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!!");
+	getchar();
+	dispatcher.Stop();
+	algos.clear();
+
+	Log::Info("!!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!!");
+
+}*/
+

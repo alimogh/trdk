@@ -34,7 +34,8 @@ public:
 	explicit Settings(
 			const IniFile &,
 			const std::string &section,
-			const Time &now);
+			const Time &now,
+			bool isPlayMode);
 
 public:
 
@@ -46,6 +47,10 @@ private:
 	void UpdateStatic(const IniFile &, const std::string &section);
 
 public:
+
+	bool IsPlayMode() const {
+		return m_isPlayMode;
+	}
 
 	const Time & GetStartTime() const;
 	const Time & GetCurrentTradeSessionStartTime() const;
@@ -64,5 +69,7 @@ private:
 	Values m_values;
 
 	volatile long m_level2PeriodSeconds;
+
+	const bool m_isPlayMode;
 
 };
