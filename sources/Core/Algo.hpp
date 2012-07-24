@@ -25,6 +25,10 @@ public:
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
 
+protected:
+
+	typedef std::list<std::pair<std::string, std::string>> SettingsReport;
+
 public:
 
 	explicit Algo(boost::shared_ptr<DynamicSecurity>, const std::string &logTag);
@@ -73,6 +77,38 @@ protected:
 
 	void ReportStopLossTry(const Position &) const;
 	void ReportStopLossDo(const Position &) const;
+	void ReportSettings(const SettingsReport &) const;
+
+	template<typename T>
+	static void AppendSettingsReport(
+				const std::string &name,
+				const T &val,
+				SettingsReport &report) {
+		const SettingsReport::value_type item(
+			name,
+			(boost::format("%1%") % val).str());
+		report.push_back(item);
+	}
+	
+	static void AppendSettingsReport(
+				const std::string &name,
+				double val,
+				SettingsReport &report) {
+		const SettingsReport::value_type item(
+			name,
+			(boost::format("%.4f%%") % val).str());
+		report.push_back(item);
+	}
+
+	static void AppendPercentSettingsReport(
+				const std::string &name,
+				double val,
+				SettingsReport &report) {
+		const SettingsReport::value_type item(
+			name,
+			(boost::format("%.4f%%") % val).str());
+		report.push_back(item);
+	}
 
 private:
 

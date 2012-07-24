@@ -13,6 +13,8 @@
 #include "Position.hpp"
 #include "IqFeed/IqFeedClient.hpp"
 
+namespace fs = boost::filesystem;
+
 Algo::Algo(boost::shared_ptr<DynamicSecurity> security, const std::string &logTag)
 		: m_security(security),
 		m_positionReporter(nullptr),
@@ -92,4 +94,48 @@ void Algo::RequestHistory(
 			const boost::posix_time::ptime &toTime) {
 	// remove header include
 	marketDataSource.RequestHistory(GetSecurity(), fromTime, toTime);
+}
+
+void Algo::ReportSettings(const SettingsReport &settings) const {
+
+	typedef boost::mutex Mutex;
+	typedef Mutex::scoped_lock Lock;
+	
+	static Mutex mutex;
+
+	const Lock lock(mutex);
+
+	typedef std::map<std::string, std::list<std::pair<std::string, std::string>>> Cache; 
+	static Cache cache;
+	const Cache::const_iterator cacheIt = cache.find(GetLogTag());
+	if (cacheIt != cache.end()) {
+		if (cacheIt->second == settings) {
+			return;
+		}
+	}
+
+	static fs::path path;
+	if (path.string().empty()) {
+		path = Defaults::GetLogFilePath();
+		path /= "configuration.log";
+		boost::filesystem::create_directories(path.branch_path());
+	}
+
+	{
+		std::ofstream f(path.c_str(), std::ios::out | std::ios::ate | std::ios::app);
+		if (!f) {
+			Log::Error("Failed to open log file %1%.", path);
+			throw Exception("Failed to open log file");
+		}
+		f
+			<< (boost::get_system_time() + Util::GetEdtDiff())
+			<< ' ' << GetName() << ':' << std::endl;
+		foreach (const auto &s, settings) {
+			f << "\t" << s.first << " = " << s.second << std::endl;
+		}
+		f << std::endl;
+	}
+
+	cache[GetLogTag()] = settings;
+
 }

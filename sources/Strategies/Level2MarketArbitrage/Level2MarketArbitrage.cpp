@@ -130,21 +130,17 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	settings.closeOrderType
 		= Util::ConvertStrToOrderType(ini.ReadKey(section, "close_order_type", false));
 
+	SettingsReport report;
+	AppendPercentSettingsReport("ask_bid_difference_percent", settings.askBidDifferencePercent * 100, report);
+	AppendPercentSettingsReport("take_profit_percent", settings.takeProfitPercent * 100, report);
+	AppendPercentSettingsReport("stop_loss_percent", settings.stopLossPercent * 100, report);
+	AppendSettingsReport("open_mode", Util::ConvertToStr(settings.openMode), report);
+	AppendSettingsReport("position_time_seconds", settings.positionTimeSeconds, report);
+	AppendSettingsReport("open_order_type", Util::ConvertToStr(settings.openOrderType), report);
+	AppendSettingsReport("close_order_type", Util::ConvertToStr(settings.closeOrderType), report);
+	ReportSettings(report);
+
 	m_settings = settings;
-	Log::Info(
-		"Settings: algo \"%1%\" for \"%2%\":"
-			" ask_bid_difference_percent = %3%%%; take_profit_percent = %4%%%;"
-			" stop_loss_percent = %5%%%; open_mode = %6%; position_time_seconds = %7%"
-			" open_order_type = %8%; close_order_type = %9%;",
-		algoName,
-		GetSecurity()->GetFullSymbol(),
-		m_settings.askBidDifferencePercent * 100,
-		m_settings.takeProfitPercent * 100,
-		m_settings.stopLossPercent * 100,
-		Util::ConvertToStr(m_settings.openMode),
-		m_settings.positionTimeSeconds,
-		Util::ConvertToStr(m_settings.openOrderType),
-		Util::ConvertToStr(m_settings.closeOrderType));
 
 }
 

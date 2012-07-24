@@ -186,26 +186,24 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	settings.positionTimeSeconds
 		= pt::seconds(ini.ReadTypedKey<long>(section, "position_time_seconds"));
 
-	m_settings = settings;
+	SettingsReport settingsReport;
+	AppendSettingsReport("open_shorts", Util::ConvertToStr(settings.shortPos.openMode), settingsReport);
+	AppendSettingsReport("open_longs", Util::ConvertToStr(settings.longPos.openMode), settingsReport);
+	AppendSettingsReport(
+		"spread",
+		settings.isAbsoluteSpread
+			?	boost::lexical_cast<std::string>(GetSecurity()->Descale(settings.spread.absolute))
+			:	(boost::lexical_cast<std::string>(settings.spread.percents * 100) + std::string("%")),
+		settingsReport);
+	AppendSettingsReport("take_profit", GetSecurity()->Descale(settings.takeProfit), settingsReport);
+	AppendSettingsReport("stop_loss", GetSecurity()->Descale(settings.stopLoss), settingsReport);
+	AppendSettingsReport("volume", GetSecurity()->Descale(settings.volume), settingsReport);
+	AppendSettingsReport("position_time_seconds", settings.positionTimeSeconds, settingsReport);
+	AppendSettingsReport("open_order_type", Util::ConvertToStr(settings.openOrderType), settingsReport);
+	AppendSettingsReport("close_order_type", Util::ConvertToStr(settings.closeOrderType), settingsReport);
+	ReportSettings(settingsReport);
 
-	Log::Info(
-		"Settings: algo \"%1%\" for \"%2%\":"
-			" open_shorts = %3%; open_longs = %4%; spread = %5%;"
-			" take_profit = %6%; stop_loss = %7%; volume = %8%; position_time_seconds = %9%"
-			" open_order_type = %10%; close_order_type = %11%;",
-		algoName,
-		GetSecurity()->GetFullSymbol(),
-		Util::ConvertToStr(m_settings.shortPos.openMode),
-		Util::ConvertToStr(m_settings.longPos.openMode),
-		(m_settings.isAbsoluteSpread
-			?	boost::lexical_cast<std::string>(GetSecurity()->Descale(m_settings.spread.absolute))
-			:	(boost::lexical_cast<std::string>(m_settings.spread.percents * 100) + std::string("%"))),
-		GetSecurity()->Descale(m_settings.takeProfit),
-		GetSecurity()->Descale(m_settings.stopLoss),
-		GetSecurity()->Descale(m_settings.volume),
-		m_settings.positionTimeSeconds,
-		Util::ConvertToStr(m_settings.openOrderType),
-		Util::ConvertToStr(m_settings.closeOrderType));
+	m_settings = settings;
 
 }
 
