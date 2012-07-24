@@ -26,7 +26,7 @@ namespace Strategies { namespace QuickArbitrage {
 
 	public:
 
-		explicit Algo(boost::shared_ptr<DynamicSecurity>, const char *logTag);
+		explicit Algo(boost::shared_ptr<Security>, const char *logTag);
 		virtual ~Algo();
 
 	public:

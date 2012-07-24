@@ -83,26 +83,6 @@ InteractiveBrokersTradeSystem::~InteractiveBrokersTradeSystem() {
 	delete m_pimpl;
 }
 
-const char * InteractiveBrokersTradeSystem::GetStringStatus(OrderStatus code) const {
-	switch (code) {
-		case TradeSystem::ORDER_STATUS_PENDIGN:
-			return "pending";
-		case TradeSystem::ORDER_STATUS_SUBMITTED:
-			return "submitted";
-		case TradeSystem::ORDER_STATUS_CANCELLED:
-			return "canceled";
-		case TradeSystem::ORDER_STATUS_FILLED:
-			return "filled";
-		case TradeSystem::ORDER_STATUS_INACTIVE:
-			return "inactive";
-		case TradeSystem::ORDER_STATUS_ERROR:
-			return "send error";
-		default:
-			AssertFail("Unknown order status code");
-			return "unknown";
-	}
-}
-
 void InteractiveBrokersTradeSystem::Connect() {
 	Assert(!m_pimpl->client);
 	if (m_pimpl->client) {

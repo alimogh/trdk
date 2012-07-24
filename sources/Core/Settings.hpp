@@ -35,7 +35,7 @@ public:
 			const IniFile &,
 			const std::string &section,
 			const Time &now,
-			bool isPlayMode);
+			bool isReplayMode);
 
 public:
 
@@ -48,8 +48,8 @@ private:
 
 public:
 
-	bool IsPlayMode() const {
-		return m_isPlayMode;
+	bool IsReplayMode() const {
+		return m_isReplayMode;
 	}
 
 	const Time & GetStartTime() const;
@@ -70,6 +70,6 @@ private:
 
 	volatile long m_level2PeriodSeconds;
 
-	const bool m_isPlayMode;
+	const bool m_isReplayMode;
 
 };

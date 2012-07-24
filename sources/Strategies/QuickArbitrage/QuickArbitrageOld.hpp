@@ -46,7 +46,7 @@ namespace Strategies { namespace QuickArbitrage {
 	public:
 
 		explicit Old(
-				boost::shared_ptr<DynamicSecurity>,
+				boost::shared_ptr<Security>,
 				const IniFile &,
 				const std::string &section);
 		virtual ~Old();

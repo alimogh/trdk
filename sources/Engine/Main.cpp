@@ -12,6 +12,7 @@ namespace fs = boost::filesystem;
 
 void Trade(const fs::path &);
 void RequestMarketData(const fs::path &, int argc, const char *argv[]);
+void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]);
 
 namespace {
 
@@ -56,6 +57,8 @@ void main(int argc, const char *argv[]) {
 		const fs::path iniFilePath = "Etc/trade.ini";
 		if (argc >= 2 && std::string(argv[1]) == "market-data") {
 			RequestMarketData(iniFilePath, argc, argv);
+		} else if (argc >= 2 && std::string(argv[1]) == "replay") {
+			ReplayTrading(iniFilePath, argc, argv);
 		} else {
 			Trade(iniFilePath);
 		}

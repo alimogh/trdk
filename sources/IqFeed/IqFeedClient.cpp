@@ -34,8 +34,8 @@ namespace {
 	typedef boost::circular_buffer<char> MessagesBuffer;
 	typedef IqMessageParser<MessagesBuffer> MessageParser;
 
-	typedef std::map<std::string, boost::shared_ptr<DynamicSecurity>> UpdatesSubscribers;
-	typedef std::map<std::string, boost::shared_ptr<DynamicSecurity>> HistorySubscribers;
+	typedef std::map<std::string, boost::shared_ptr<Security>> UpdatesSubscribers;
+	typedef std::map<std::string, boost::shared_ptr<Security>> HistorySubscribers;
 
 }
 
@@ -526,18 +526,18 @@ namespace {
 			}
 			message.Reset();
 
-			boost::shared_ptr<DynamicSecurity::Quote> bid;
+			boost::shared_ptr<Security::Quote> bid;
 			if (isBidValid) {
-				bid.reset(new DynamicSecurity::Quote);
+				bid.reset(new Security::Quote);
 				bid->price = message.GetFieldAsDouble(4, true);
 				if (Util::IsZero(bid->price)) {
 					bid.reset();
 				}
 			}
 			
-			boost::shared_ptr<DynamicSecurity::Quote> ask;
+			boost::shared_ptr<Security::Quote> ask;
 			if (isAskValid) {
-				ask.reset(new DynamicSecurity::Quote);
+				ask.reset(new Security::Quote);
 				ask->price = message.GetFieldAsDouble(5, true);
 				if (Util::IsZero(ask->price)) {
 					ask.reset();
@@ -568,8 +568,8 @@ namespace {
 
 			// Unused by IQFeed
 			/*const auto reason = message.GetFieldAsUnsignedIntFromHex(10, true);
-			void (DynamicSecurity::*updateBid)() = nullptr;
-			void (DynamicSecurity::*updateAsk)() = nullptr;
+			void (Security::*updateBid)() = nullptr;
+			void (Security::*updateAsk)() = nullptr;
 			switch (reason) {
 				case 0x20: // Deleted
 					updateBid;//subscriber->second
@@ -675,7 +675,7 @@ namespace {
 				DumpReceived(message);
 				return;
 			}
-			DynamicSecurity &subscriber = *subscriberIt->second;
+			Security &subscriber = *subscriberIt->second;
 
 			const std::string messageStr = message.GetFieldAsString(2, true);
 			if (messageStr == "!ENDMSG!") {
@@ -718,7 +718,7 @@ namespace {
 		}
 
 		void CompleteHistory(const HistorySubscribers::const_iterator subscriberIt) {
-			boost::shared_ptr<DynamicSecurity> subscriber = subscriberIt->second;
+			boost::shared_ptr<Security> subscriber = subscriberIt->second;
 			Log::Debug(
 				IQFEED_CLIENT_CONNECTION_NAME ": completed history data for \"%1%\".",
 				subscriber->GetSymbol());
@@ -797,14 +797,14 @@ public:
 		m_lookup->Connect();
 	}
 
-	void SubscribeToMarketDataLevel1(boost::shared_ptr<DynamicSecurity> instrument) {
+	void SubscribeToMarketDataLevel1(boost::shared_ptr<Security> instrument) {
 		SubscribeToMarketData(
 			instrument,
 			&Implementation::SendSubscribeToMarketDataLevel1Request,
 			m_marketDataLevel1Subscribers);
 	}
 
-	void SubscribeToMarketDataLevel2(boost::shared_ptr<DynamicSecurity> instrument) {
+	void SubscribeToMarketDataLevel2(boost::shared_ptr<Security> instrument) {
 		SubscribeToMarketData(
 			instrument,
 			&Implementation::SendSubscribeToMarketDataLevel2Request,
@@ -812,7 +812,7 @@ public:
 	}
 
 	void RequestHistory(
-				boost::shared_ptr<DynamicSecurity> instrument,
+				boost::shared_ptr<Security> instrument,
 				const boost::posix_time::ptime &fromTime,
 				const boost::posix_time::ptime &toTime) {
 
@@ -826,6 +826,10 @@ public:
 		const LookupConnection::Lock lockLookup(m_lookup->m_mutex);
 		const Level1Connection::Lock lockLevel1(m_level1->m_mutex);
 		const Level1Connection::Lock lockLevel2(m_level2->m_mutex);
+
+		if (m_historySubscribers.find(instrument->GetSymbol()) != m_historySubscribers.end()) {
+			return;
+		}
 
 		CheckState();
 
@@ -897,8 +901,8 @@ public:
 public:
 
 	void SubscribeToMarketData(
-				boost::shared_ptr<DynamicSecurity> instrument,
-				void (Implementation::*sendSubscribeRequest)(const DynamicSecurity &),
+				boost::shared_ptr<Security> instrument,
+				void (Implementation::*sendSubscribeRequest)(const Security &),
 				UpdatesSubscribers &list) {
 		const LookupConnection::Lock lockLookup(m_lookup->m_mutex);
 		const Level1Connection::Lock lockLevel1(m_level1->m_mutex);
@@ -915,14 +919,14 @@ public:
 		subscribers.swap(list);
 	}
 
-	void SendSubscribeToMarketDataLevel1Request(const DynamicSecurity &subscriber) {
+	void SendSubscribeToMarketDataLevel1Request(const Security &subscriber) {
 		m_level1->Send((boost::format("w%1%\r\n") % subscriber.GetSymbol()).str());
 		Log::Debug(
 			"Sent " IQFEED_CLIENT_CONNECTION_NAME " Level I market data subscription request for \"%1%\".",
 			subscriber.GetSymbol());
 	}
 
-	void SendSubscribeToMarketDataLevel2Request(const DynamicSecurity &subscriber) {
+	void SendSubscribeToMarketDataLevel2Request(const Security &subscriber) {
 		m_level2->Send((boost::format("w%1%\r\n") % subscriber.GetSymbol()).str());
 		Log::Debug(
 			"Sent " IQFEED_CLIENT_CONNECTION_NAME " Level II market data subscription request for \"%1%\".",
@@ -1004,26 +1008,26 @@ void IqFeedClient::Connect() {
 }
 
 void IqFeedClient::SubscribeToMarketDataLevel1(
-			boost::shared_ptr<DynamicSecurity> instrument) 
+			boost::shared_ptr<Security> instrument) 
 		const {
 	m_pimpl->SubscribeToMarketDataLevel1(instrument);
 }
 
 void IqFeedClient::SubscribeToMarketDataLevel2(
-			boost::shared_ptr<DynamicSecurity> instrument) 
+			boost::shared_ptr<Security> instrument) 
 		const {
 	m_pimpl->SubscribeToMarketDataLevel2(instrument);
 }
 
 void IqFeedClient::RequestHistory(
-			boost::shared_ptr<DynamicSecurity> instrument,
+			boost::shared_ptr<Security> instrument,
 			const boost::posix_time::ptime &fromTime)
 		const {
 	m_pimpl->RequestHistory(instrument, fromTime, pt::not_a_date_time);
 }
 
 void IqFeedClient::RequestHistory(
-			boost::shared_ptr<DynamicSecurity> instrument,
+			boost::shared_ptr<Security> instrument,
 			const boost::posix_time::ptime &fromTime,
 			const boost::posix_time::ptime &toTime)
 		const {

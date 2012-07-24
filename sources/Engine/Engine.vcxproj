@@ -86,6 +86,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Dispatcher.cpp" />
+    <ClCompile Include="FakeTradeSystem.cpp" />
     <ClCompile Include="Ini.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MarketData.cpp" />

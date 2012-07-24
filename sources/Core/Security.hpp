@@ -1,4 +1,4 @@
-/**************************************************************************
+	/**************************************************************************
  *   Created: May 14, 2012 9:07:07 PM
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
@@ -13,9 +13,9 @@
 class Position;
 class Settings;
 
-////////////////////////////////////////////////////////////////////////////////
-
-class Security : public Instrument {
+class Security
+	: public Instrument,
+	public boost::enable_shared_from_this<Security> {
 
 public:
 
@@ -28,19 +28,58 @@ public:
 	typedef TradeSystem::OrderQty Qty;
 	typedef TradeSystem::OrderPrice Price;
 
+	struct Quote {
+		
+		unsigned int timeTick;
+		double price;
+		Qty size;
+
+		Quote();
+
+	};
+
+	typedef void (UpdateSlotSignature)();
+	typedef boost::function<UpdateSlotSignature> UpdateSlot;
+	typedef SignalConnection<UpdateSlot, boost::signals2::connection> UpdateSlotConnection;
+
+private:
+
+	typedef std::list<boost::shared_ptr<Quote>> Quotes;
+
+	struct Level2 {
+		
+		volatile LONGLONG price;
+		volatile LONGLONG size;
+
+		Level2();
+
+	};
+
+	typedef boost::shared_mutex MarketDataTimeMutex;
+	typedef boost::shared_lock<MarketDataTimeMutex> MarketDataTimeReadLock;
+	typedef boost::unique_lock<MarketDataTimeMutex> MarketDataTimeWriteLock;
+
 public:
 
 	explicit Security(
 				boost::shared_ptr<TradeSystem>,
 				const std::string &symbol,
 				const std::string &primaryExchange,
-				const std::string &exchange);
+				const std::string &exchange,
+				boost::shared_ptr<const Settings> settings,
+				bool logMarketData);
 	explicit Security(
 				const std::string &symbol,
 				const std::string &primaryExchange,
-				const std::string &exchange);
+				const std::string &exchange,
+				boost::shared_ptr<const Settings> settings,
+				bool logMarketData);
 
 public:
+
+	const Settings & GetSettings() const {
+		return *m_settings;
+	}
 
 	const char * GetCurrency() const {
 		return "USD";
@@ -60,6 +99,8 @@ public:
 
 public:
 
+	boost::posix_time::ptime GetLastMarketDataTime() const;
+
 	void Sell(Qty, Position &);
 	void Sell(Qty, Price, Position &);
 	void SellAtMarketPrice(Qty, Price stopPrice, Position &);
@@ -73,59 +114,6 @@ public:
 	void CancelAllOrders();
 
 	bool IsCompleted() const;
-
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-class DynamicSecurity : public Security {
-
-public:
-
-	typedef Security Base;
-
-	struct Quote {
-		
-		unsigned int timeTick;
-		double price;
-		Qty size;
-
-		Quote();
-
-	};
-
-	typedef void (UpdateSlotSignature)();
-	typedef boost::function<UpdateSlotSignature> UpdateSlot;
-	typedef SignalConnection<UpdateSlot, boost::signals2::connection> UpdateSlotConnection;
-
-public:
-
-	explicit DynamicSecurity(
-				boost::shared_ptr<TradeSystem>,
-				const std::string &symbol,
-				const std::string &primaryExchange,
-				const std::string &exchange,
-				boost::shared_ptr<const Settings> settings,
-				bool logMarketData);
-	explicit DynamicSecurity(
-				const std::string &symbol,
-				const std::string &primaryExchange,
-				const std::string &exchange,
-				boost::shared_ptr<const Settings> settings,
-				bool logMarketData);
-
-private:
-
-	typedef std::list<boost::shared_ptr<Quote>> Quotes;
-
-	struct Level2 {
-		
-		volatile LONGLONG price;
-		volatile LONGLONG size;
-
-		Level2();
-
-	};
 
 public:
 
@@ -151,6 +139,8 @@ public:
 
 protected:
 
+	void SetLastMarketDataTime(const boost::posix_time::ptime &);
+
 	bool SetLast(double);
 	
 	bool SetAsk(double);
@@ -165,9 +155,7 @@ protected:
 
 public:
 
-	bool IsHistoryData() const {
-		return m_isHistoryData ? true : false;
-	}
+	bool IsHistoryData() const;
 
 public:
 
@@ -209,6 +197,7 @@ private:
 	Quotes m_bidQoutes;
 	Level2 m_bidLevel2;
 
-};
+	mutable MarketDataTimeMutex m_marketDataTimeMutex;
+	MarketDataTime m_marketDataTime;
 
-////////////////////////////////////////////////////////////////////////////////
+};

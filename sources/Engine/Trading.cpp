@@ -24,7 +24,7 @@ namespace fs = boost::filesystem;
 
 namespace {
 
-	typedef std::map<std::string, boost::shared_ptr<DynamicSecurity>> Securities;
+	typedef std::map<std::string, boost::shared_ptr<Security>> Securities;
 	typedef std::list<boost::shared_ptr<Algo>> Algos;
 
 }
@@ -49,8 +49,8 @@ namespace {
 			if (securities.find(key) != securities.end()) {
 				continue;
 			}
-			securititesTmp[key] = boost::shared_ptr<DynamicSecurity>(
-				new DynamicSecurity(
+			securititesTmp[key] = boost::shared_ptr<Security>(
+				new Security(
 					tradeSystem,
 					symbol.symbol,
 					symbol.primaryExchange,
@@ -250,12 +250,25 @@ void Trade(const fs::path &iniFilePath) {
 
 }
 
-/*void PlayTrade(const fs::path &iniFilePath) {
+void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
 
-	Log::Info("!!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!!");
+	Log::Info("!!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!!");
 
-	boost::shared_ptr<Settings> settings
-		= Ini::LoadSettings(iniFilePath, boost::get_system_time(), true);
+	Assert(argc >= 2 && std::string(argv[1]) == "replay");
+
+	if (argc != 3) {
+		throw Exception("Failed to get request parameters (replay date)");
+	}
+
+	boost::shared_ptr<Settings> settings = Ini::LoadSettings(
+		iniFilePath,
+		pt::time_from_string((boost::format("%1% 00:00:00") % argv[2]).str()),
+		true);
+	Log::Info(
+		"Replaying trade period: %1% - %2%.",
+		settings->GetCurrentTradeSessionStartTime() + Util::GetEdtDiff(),
+		settings->GetCurrentTradeSessionEndime() + Util::GetEdtDiff());
+
 	boost::shared_ptr<TradeSystem> tradeSystem(new FakeTradeSystem);
 	IqFeedClient marketDataSource;
 	Dispatcher dispatcher(settings);
@@ -270,12 +283,11 @@ void Trade(const fs::path &iniFilePath) {
 	}
 
 	dispatcher.Start();
-	Log::Info("!!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!!");
+	Log::Info("!!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!!");
 	getchar();
 	dispatcher.Stop();
 	algos.clear();
 
-	Log::Info("!!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!! PLAY MODE !!!");
+	Log::Info("!!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!!");
 
-}*/
-
+}

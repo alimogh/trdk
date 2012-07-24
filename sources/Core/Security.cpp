@@ -13,81 +13,11 @@
 
 namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
+namespace pt = boost::posix_time;
 
 //////////////////////////////////////////////////////////////////////////
 
-Security::Security(
-			boost::shared_ptr<TradeSystem> tradeSystem,
-			const std::string &symbol,
-			const std::string &primaryExchange,
-			const std::string &exchange)
-		: Base(tradeSystem, symbol, primaryExchange, exchange) {
-	//...//
-}
-
-Security::Security(
-			const std::string &symbol,
-			const std::string &primaryExchange,
-			const std::string &exchange)
-		: Base(symbol, primaryExchange, exchange) {
-	//...//
-}
-
-void Security::Sell(Qty qty, Position &position) {
-	GetTradeSystem().Sell(*this, qty, position.GetSellOrderStatusUpdateSlot());
-}
-
-void Security::Sell(Qty qty, Price price, Position &position) {
-	GetTradeSystem().Sell(*this, qty, price, position.GetSellOrderStatusUpdateSlot());
-}
-
-void Security::SellAtMarketPrice(Qty qty, Price stopPrice, Position &position) {
-	GetTradeSystem().SellAtMarketPrice(*this, qty, stopPrice, position.GetSellOrderStatusUpdateSlot());
-}
-
-void Security::SellOrCancel(Qty qty, Price price, Position &position) {
-	GetTradeSystem().SellOrCancel(*this, qty, price, position.GetSellOrderStatusUpdateSlot());
-}
-
-void Security::Buy(Qty qty, Position &position) {
-	GetTradeSystem().Buy(*this, qty, position.GetBuyOrderStatusUpdateSlot());
-}
-
-void Security::Buy(Qty qty, Price price, Position &position) {
-	GetTradeSystem().Buy(*this, qty, price, position.GetBuyOrderStatusUpdateSlot());
-}
-
-void Security::BuyAtMarketPrice(Qty qty, Price stopPrice, Position &position) {
-	GetTradeSystem().BuyAtMarketPrice(*this, qty, stopPrice, position.GetBuyOrderStatusUpdateSlot());
-}
-
-void Security::BuyOrCancel(Qty qty, Price price, Position &position) {
-	GetTradeSystem().BuyOrCancel(*this, qty, price, position.GetBuyOrderStatusUpdateSlot());
-}
-
-void Security::CancelAllOrders() {
-	GetTradeSystem().CancelAllOrders(*this);
-}
-
-bool Security::IsCompleted() const {
-	return GetTradeSystem().IsCompleted(*this);
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-DynamicSecurity::Quote::Quote()
-		: timeTick(0),
-		price(0),
-		size(0) {
-	//...//
-}
-
-DynamicSecurity::Level2::Level2() {
-	Interlocking::Exchange(price, 0);
-	Interlocking::Exchange(size, 0);
-}
-
-class DynamicSecurity::MarketDataLog : private boost::noncopyable {
+class Security::MarketDataLog : private boost::noncopyable {
 
 private:
 		
@@ -140,7 +70,7 @@ private:
 
 };
 
-class DynamicSecurity::MarketDataLevel2Log : private boost::noncopyable {
+class Security::MarketDataLevel2Log : private boost::noncopyable {
 
 private:
 		
@@ -214,7 +144,10 @@ private:
 
 };
 
-DynamicSecurity::DynamicSecurity(
+
+//////////////////////////////////////////////////////////////////////////
+
+Security::Security(
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				const std::string &symbol,
 				const std::string &primaryExchange,
@@ -233,7 +166,7 @@ DynamicSecurity::DynamicSecurity(
 	Interlocking::Exchange(m_bid, 0);
 }
 
-DynamicSecurity::DynamicSecurity(
+Security::Security(
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange,
@@ -251,7 +184,67 @@ DynamicSecurity::DynamicSecurity(
 	Interlocking::Exchange(m_bid, 0);
 }
 
-void DynamicSecurity::UpdateLevel1(
+void Security::Sell(Qty qty, Position &position) {
+	GetTradeSystem().Sell(*this, qty, position.GetSellOrderStatusUpdateSlot());
+}
+
+void Security::Sell(Qty qty, Price price, Position &position) {
+	GetTradeSystem().Sell(*this, qty, price, position.GetSellOrderStatusUpdateSlot());
+}
+
+void Security::SellAtMarketPrice(Qty qty, Price stopPrice, Position &position) {
+	GetTradeSystem().SellAtMarketPrice(*this, qty, stopPrice, position.GetSellOrderStatusUpdateSlot());
+}
+
+void Security::SellOrCancel(Qty qty, Price price, Position &position) {
+	GetTradeSystem().SellOrCancel(*this, qty, price, position.GetSellOrderStatusUpdateSlot());
+}
+
+void Security::Buy(Qty qty, Position &position) {
+	GetTradeSystem().Buy(*this, qty, position.GetBuyOrderStatusUpdateSlot());
+}
+
+void Security::Buy(Qty qty, Price price, Position &position) {
+	GetTradeSystem().Buy(*this, qty, price, position.GetBuyOrderStatusUpdateSlot());
+}
+
+void Security::BuyAtMarketPrice(Qty qty, Price stopPrice, Position &position) {
+	GetTradeSystem().BuyAtMarketPrice(*this, qty, stopPrice, position.GetBuyOrderStatusUpdateSlot());
+}
+
+void Security::BuyOrCancel(Qty qty, Price price, Position &position) {
+	GetTradeSystem().BuyOrCancel(*this, qty, price, position.GetBuyOrderStatusUpdateSlot());
+}
+
+void Security::CancelAllOrders() {
+	GetTradeSystem().CancelAllOrders(*this);
+}
+
+bool Security::IsCompleted() const {
+	return GetTradeSystem().IsCompleted(*this);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+Security::Quote::Quote()
+		: timeTick(0),
+		price(0),
+		size(0) {
+	//...//
+}
+
+Security::Level2::Level2() {
+	Interlocking::Exchange(price, 0);
+	Interlocking::Exchange(size, 0);
+}
+
+bool Security::IsHistoryData() const {
+	return m_isHistoryData
+		?	!m_settings->IsReplayMode()
+		:	false;
+}
+
+void Security::UpdateLevel1(
 				const MarketDataTime &time,
 				double last,
 				double ask,
@@ -261,7 +254,11 @@ void DynamicSecurity::UpdateLevel1(
 		m_marketDataLevel1Log->Append(time, last, ask, bid, totalVolume);
 	}
 	if (!SetLast(last) || !SetAsk(ask) || !SetBid(bid)) {
-		return;
+		if (!m_settings->IsReplayMode()) {
+			return;
+		} else {
+			m_updateSignal();
+		}
 	}
 	Assert(*this);
 	if (!*this) {
@@ -274,13 +271,13 @@ void DynamicSecurity::UpdateLevel1(
 namespace {
 
 	template<typename List>
-	DynamicSecurity::Qty UpdateQuoteList(
+	Security::Qty UpdateQuoteList(
 				const Settings &settings,
-				boost::shared_ptr<DynamicSecurity::Quote> &newQuote,
+				boost::shared_ptr<Security::Quote> &newQuote,
 				List &quoteList) {
 		Assert(newQuote->timeTick <= 235959);
 		Assert(newQuote->timeTick > 0);
-		DynamicSecurity::Qty result = newQuote->size;
+		Security::Qty result = newQuote->size;
 		while (!quoteList.empty()) {
 			const auto listTime = (**quoteList.begin()).timeTick;
 			Assert(listTime <= 235959);
@@ -302,7 +299,7 @@ namespace {
 }
 
 
-void DynamicSecurity::UpdateLevel2(boost::shared_ptr<Quote> ask, boost::shared_ptr<Quote> bid) {
+void Security::UpdateLevel2(boost::shared_ptr<Quote> ask, boost::shared_ptr<Quote> bid) {
 	Assert(ask || bid);
 	if (ask) {
 		SetLevel2Ask(
@@ -335,115 +332,130 @@ void DynamicSecurity::UpdateLevel2(boost::shared_ptr<Quote> ask, boost::shared_p
 	}
 }
 
-DynamicSecurity::UpdateSlotConnection DynamicSecurity::Subcribe(
+Security::UpdateSlotConnection Security::Subcribe(
 			const UpdateSlot &slot)
 		const {
 	return UpdateSlotConnection(m_updateSignal.connect(slot));
 }
 
-void DynamicSecurity::OnHistoryDataStart() {
+void Security::OnHistoryDataStart() {
 	if (!Interlocking::Exchange(m_isHistoryData, true) && *this) {
 		m_updateSignal();
 	}
 }
 
-void DynamicSecurity::OnHistoryDataEnd() {
+void Security::OnHistoryDataEnd() {
 	if (Interlocking::Exchange(m_isHistoryData, false) && *this) {
 		m_updateSignal();
 	}
 }
 
-DynamicSecurity::operator bool() const {
+Security::operator bool() const {
 	return m_last && m_ask && m_bid;
 }
 
-DynamicSecurity::Price DynamicSecurity::GetLastScaled() const {
+Security::Price Security::GetLastScaled() const {
 	return m_last;
 }
 
-Security::Price DynamicSecurity::GetAskScaled() const {
+Security::Price Security::GetAskScaled() const {
 	return m_ask;
 }
 
-Security::Price DynamicSecurity::GetAskLevel2Scaled() const {
+Security::Price Security::GetAskLevel2Scaled() const {
 	return m_askLevel2.price;
 }
 
-Security::Price DynamicSecurity::GetBidScaled() const {
+Security::Price Security::GetBidScaled() const {
 	return m_bid;
 }
 
-Security::Price DynamicSecurity::GetBidLevel2Scaled() const {
+Security::Price Security::GetBidLevel2Scaled() const {
 	return m_bidLevel2.price;
 }
 
-double DynamicSecurity::GetLast() const {
+double Security::GetLast() const {
 	return Descale(GetLastScaled());
 }
 
-double DynamicSecurity::GetAsk() const {
+double Security::GetAsk() const {
 	return Descale(GetAskScaled());
 }
 
-double DynamicSecurity::GetAskLevel2() const {
+double Security::GetAskLevel2() const {
 	return Descale(GetAskLevel2Scaled());
 }
 
-double DynamicSecurity::GetBid() const {
+double Security::GetBid() const {
 	return Descale(GetBidScaled());
 }
 
-double DynamicSecurity::GetBidLevel2() const {
+double Security::GetBidLevel2() const {
 	return Descale(GetBidLevel2Scaled());
 }
 
-DynamicSecurity::Qty DynamicSecurity::GetAskSize() {
-	return DynamicSecurity::Qty(m_askLevel2.size);
+Security::Qty Security::GetAskSize() {
+	return Security::Qty(m_askLevel2.size);
 }
 
-DynamicSecurity::Qty DynamicSecurity::GetBidSize() {
-	return DynamicSecurity::Qty(m_bidLevel2.size);
+Security::Qty Security::GetBidSize() {
+	return Security::Qty(m_bidLevel2.size);
 }
 
-bool DynamicSecurity::SetLast(double last) {
+pt::ptime Security::GetLastMarketDataTime() const {
+	Assert(m_settings->IsReplayMode());
+	const MarketDataTimeReadLock lock(m_marketDataTimeMutex);
+	Assert(!m_marketDataTime.is_not_a_date_time());
+	return m_marketDataTime;
+}
+
+void Security::SetLastMarketDataTime(const boost::posix_time::ptime &time) {
+	if (!m_settings->IsReplayMode()) {
+		return;
+	}
+	const MarketDataTimeWriteLock lock(m_marketDataTimeMutex);
+	m_marketDataTime = time;
+}
+
+bool Security::SetLast(double last) {
 	return SetLast(Scale(last));
 }
 
-bool DynamicSecurity::SetAsk(double ask) {
+bool Security::SetAsk(double ask) {
 	return SetAsk(Scale(ask));
 }
 
-bool DynamicSecurity::SetBid(double bid) {
+bool Security::SetBid(double bid) {
 	return SetBid(Scale(bid));
 }
 
-bool DynamicSecurity::SetLast(Price last) {
+bool Security::SetLast(Price last) {
 	if (!last) {
 		return false;
 	}
 	return Interlocking::Exchange(m_last, last) != last;
 }
 
-bool DynamicSecurity::SetAsk(Price ask) {
+bool Security::SetAsk(Price ask) {
 	if (!ask) {
 		return false;
 	}
 	return Interlocking::Exchange(m_ask, ask) != ask;
 }
 
-bool DynamicSecurity::SetBid(Price bid) {
+bool Security::SetBid(Price bid) {
 	if (!bid) {
 		return false;
 	}
 	return Interlocking::Exchange(m_bid, bid) != bid;
 }
 
-void DynamicSecurity::SetLevel2Bid(Price bidPrice, Qty bidSize) {
+void Security::SetLevel2Bid(Price bidPrice, Qty bidSize) {
 	Interlocking::Exchange(m_bidLevel2.price, bidPrice);
 	Interlocking::Exchange(m_bidLevel2.size, bidSize);
 }
 
-void DynamicSecurity::SetLevel2Ask(Price askPrice, Qty askSize) {
+void Security::SetLevel2Ask(Price askPrice, Qty askSize) {
 	Interlocking::Exchange(m_askLevel2.price, askPrice);
 	Interlocking::Exchange(m_askLevel2.size, askSize);
 }

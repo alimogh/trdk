@@ -11,11 +11,13 @@
 #include "Security.hpp"
 #include "PositionReporter.hpp"
 #include "Position.hpp"
+#include "Settings.hpp"
 #include "IqFeed/IqFeedClient.hpp"
 
 namespace fs = boost::filesystem;
+namespace pt = boost::posix_time;
 
-Algo::Algo(boost::shared_ptr<DynamicSecurity> security, const std::string &logTag)
+Algo::Algo(boost::shared_ptr<Security> security, const std::string &logTag)
 		: m_security(security),
 		m_positionReporter(nullptr),
 		m_logTag(logTag) {
@@ -39,11 +41,11 @@ Security::Qty Algo::CalcQty(Security::Price price, Security::Price volume) const
 	return std::max<Security::Qty>(1, Security::Qty(volume / price));
 }
 
-boost::shared_ptr<const DynamicSecurity> Algo::GetSecurity() const {
+boost::shared_ptr<const Security> Algo::GetSecurity() const {
 	return const_cast<Algo *>(this)->GetSecurity();
 }
 
-boost::shared_ptr<DynamicSecurity> Algo::GetSecurity() {
+boost::shared_ptr<Security> Algo::GetSecurity() {
 	return m_security;
 }
 
@@ -138,4 +140,10 @@ void Algo::ReportSettings(const SettingsReport &settings) const {
 
 	cache[GetLogTag()] = settings;
 
+}
+
+pt::ptime Algo::GetCurrentTime() const {
+	return !m_security->GetSettings().IsReplayMode()
+		?	boost::get_system_time()
+		:	m_security->GetLastMarketDataTime();
 }

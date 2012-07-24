@@ -44,9 +44,9 @@ namespace {
 					const boost::posix_time::ptime &time,
 					std::ostream &os) {
 #			ifdef _WINDOWS
-				os << time << " [" << GetCurrentThreadId() << "]: ";
+				os << (time + Util::GetEdtDiff()) << " [" << GetCurrentThreadId() << "]: ";
 #			else
-				os << time << " [" << pthread_self() << "]: ";
+				os << (time + Util::GetEdtDiff()) << " [" << pthread_self() << "]: ";
 #			endif
 		}
 

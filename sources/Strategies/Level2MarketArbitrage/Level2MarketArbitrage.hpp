@@ -38,7 +38,7 @@ namespace Strategies { namespace Level2MarketArbitrage {
 			double takeProfitPercent;
 			double stopLossPercent;
 
-			DynamicSecurity::Price volume;
+			Security::Price volume;
 
 			OpenMode openMode;
 			OrderType openOrderType;
@@ -51,7 +51,7 @@ namespace Strategies { namespace Level2MarketArbitrage {
 	public:
 
 		explicit Algo(
-				boost::shared_ptr<DynamicSecurity>,
+				boost::shared_ptr<Security>,
 				const IniFile &,
 				const std::string &section);
 		virtual ~Algo();
@@ -83,11 +83,11 @@ namespace Strategies { namespace Level2MarketArbitrage {
 		void DoSettingsUpdate(const IniFile &ini, const std::string &section);
 
 		boost::shared_ptr<Position> OpenShortPostion(
-					DynamicSecurity::Qty askSize,
-					DynamicSecurity::Qty bidSize);
+					Security::Qty askSize,
+					Security::Qty bidSize);
 		boost::shared_ptr<Position> OpenLongPostion(
-					DynamicSecurity::Qty askSize,
-					DynamicSecurity::Qty bidSize);
+					Security::Qty askSize,
+					Security::Qty bidSize);
 
 		void ClosePosition(Position &, bool asIs);
 		void CloseLongPosition(Position &, bool asIs);

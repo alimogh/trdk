@@ -76,38 +76,27 @@ public:
 
 	class Error : public Exception {
 	public:
-		explicit Error(const char *what) throw()
-				: Exception(what) {
-			//...//
-		}
+		explicit Error(const char *what) throw();
 	};
 
 	class ConnectError : public Error {
 	public:
-		ConnectError(const char *what) throw()
-				: Error(what) {
-			//...//
-		}
+		ConnectError(const char *what) throw();
 	};
 
 	class ConnectionDoesntExistError : public Error {
 	public:
-		ConnectionDoesntExistError(const char *what) throw()
-				: Error(what) {
-			//...//
-		}
+		ConnectionDoesntExistError(const char *what) throw();
 	};
 
 public:
 
-	explicit TradeSystem() {
-		//...//
-	}
+	TradeSystem();
+	virtual ~TradeSystem();
 
-	virtual ~TradeSystem() {
-		//...//
-	}
+public:
 
+	static const char * GetStringStatus(OrderStatus);
 
 public:
 
@@ -168,8 +157,4 @@ public:
 
 	virtual void CancelAllOrders(const Security &) = 0;
 
-	virtual const char * GetStringStatus(OrderStatus) const = 0;
-
 };
-
-

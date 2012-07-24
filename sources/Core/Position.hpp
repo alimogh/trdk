@@ -62,7 +62,7 @@ private:
 public:
 
 	explicit Position(
-			boost::shared_ptr<const DynamicSecurity> security,
+			boost::shared_ptr<const Security> security,
 			Type,
 			Qty,
 			Price startPrice,
@@ -76,7 +76,7 @@ public:
 
 public:
 
-	const DynamicSecurity & GetSecurity() const;
+	const Security & GetSecurity() const;
 
 	void SetCloseType(CloseType);
 	CloseType GetCloseType() const;
@@ -163,7 +163,7 @@ private:
 
 	mutable StateUpdateSignal m_stateUpdateSignal;
 
-	boost::shared_ptr<const DynamicSecurity> m_security;
+	boost::shared_ptr<const Security> m_security;
 
 	const Type m_type;
 	const Qty m_planedQty;

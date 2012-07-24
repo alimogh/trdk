@@ -23,7 +23,7 @@ namespace {
 }
 
 Old::Old(
-			boost::shared_ptr<DynamicSecurity> security,
+			boost::shared_ptr<Security> security,
 			const IniFile &ini,
 			const std::string &section)
 		: Base(security, logTag) {
@@ -183,7 +183,7 @@ const std::string & Old::GetName() const {
 
 void Old::CloseLongPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_LONG);
-	DynamicSecurity &security = *GetSecurity();
+	Security &security = *GetSecurity();
 	const bool isLoss = asIs || position.GetStopLoss() >= security.GetAskScaled();
 	if (position.GetAlgoFlag() == STATE_OPENING) {
 		if (isLoss) {
@@ -202,7 +202,7 @@ void Old::CloseLongPosition(Position &position, bool asIs) {
 
 void Old::CloseShortPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
-	DynamicSecurity &security = *GetSecurity();
+	Security &security = *GetSecurity();
 	const bool isLoss = asIs || position.GetStopLoss() <= security.GetBidScaled();
 	if (position.GetAlgoFlag() == STATE_OPENING) {
 		if (isLoss) {

@@ -15,9 +15,9 @@ Settings::Settings(
 			const IniFile &ini,
 			const std::string &section,
 			const Time &now,
-			bool isPlayMode)
+			bool isReplayMode)
 		: m_startTime(now),
-		m_isPlayMode(isPlayMode) {
+		m_isReplayMode(isReplayMode) {
 	UpdateDynamic(ini, section);
 	UpdateStatic(ini, section);
 }

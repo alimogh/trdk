@@ -1,26 +1,25 @@
 /**************************************************************************
- *   Created: May 26, 2012 9:44:37 PM
+ *   Created: 2012/07/23 23:13:12
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: HighmanTradingRobot
+ *   Project: Trading Robot
  **************************************************************************/
 
 #pragma once
 
 #include "Core/TradeSystem.hpp"
 
-class InteractiveBrokersTradeSystem : public TradeSystem {
+class FakeTradeSystem : public TradeSystem {
 
 public:
 
-	explicit InteractiveBrokersTradeSystem();
-	virtual ~InteractiveBrokersTradeSystem();
+	FakeTradeSystem();
+	virtual ~FakeTradeSystem();
 
 public:
 
 	virtual void Connect();
-
 	virtual bool IsCompleted(const Security &) const;
 
 public:

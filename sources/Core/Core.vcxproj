@@ -73,6 +73,7 @@
     </ClCompile>
     <ClCompile Include="Security.cpp" />
     <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="TradeSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Algo.hpp" />

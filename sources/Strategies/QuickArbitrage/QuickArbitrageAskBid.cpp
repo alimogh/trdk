@@ -24,7 +24,7 @@ namespace {
 }
 
 AskBid::AskBid(
-			boost::shared_ptr<DynamicSecurity> security,
+			boost::shared_ptr<Security> security,
 			const IniFile &ini,
 			const std::string &section)
 		: Base(security, logTag) {
@@ -41,7 +41,7 @@ std::auto_ptr<PositionReporter> AskBid::CreatePositionReporter() const {
 }
 
 bool AskBid::IsValidSread() const {
-	const DynamicSecurity &security = *GetSecurity();
+	const Security &security = *GetSecurity();
 	const auto spread = security.GetBidScaled() - security.GetAskScaled();
 	const auto cmpVal = m_settings.isAbsoluteSpread
 		?	m_settings.spread.absolute
@@ -243,7 +243,7 @@ const std::string & AskBid::GetName() const {
 
 void AskBid::CloseLongPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_LONG);
-	DynamicSecurity &security = *GetSecurity();
+	Security &security = *GetSecurity();
 	const bool isLoss
 		= asIs
 		|| (m_settings.closeOrderType == Settings::ORDER_TYPE_IOC 
@@ -296,7 +296,7 @@ void AskBid::CloseLongPosition(Position &position, bool asIs) {
 
 void AskBid::CloseShortPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
-	DynamicSecurity &security = *GetSecurity();
+	Security &security = *GetSecurity();
 	bool isLoss
 		= asIs
 		|| (m_settings.closeOrderType == Settings::ORDER_TYPE_IOC 
@@ -372,7 +372,7 @@ void AskBid::ClosePosition(Position &position, bool asIs) {
 	} else if (!asIs && position.GetAlgoFlag() == STATE_OPENING) {
 		Assert(!position.GetOpenTime().is_not_a_date_time());
 		if (	!position.GetOpenTime().is_not_a_date_time()
-				&& position.GetOpenTime() + m_settings.positionTimeSeconds > boost::get_system_time()) {
+				&& position.GetOpenTime() + m_settings.positionTimeSeconds > GetCurrentTime()) {
 			return;
 		}
 	}

@@ -17,7 +17,7 @@
 
 namespace s = Strategies::QuickArbitrage;
 
-s::Algo::Algo(boost::shared_ptr<DynamicSecurity> security, const char *logTag)
+s::Algo::Algo(boost::shared_ptr<Security> security, const char *logTag)
 		: Base(security, logTag) {
 	//...//
 }
@@ -43,7 +43,7 @@ boost::shared_ptr<PositionBandle> s::Algo::TryToOpenPositions() {
 
 boost::shared_ptr<Position> s::Algo::OpenLongPosition() {
 	
-	DynamicSecurity &security = *GetSecurity();
+	Security &security = *GetSecurity();
 	const auto ask = security.GetAskScaled();
 	const auto bid = security.GetBidScaled();
 	const auto price = ChooseLongOpenPrice(ask, bid) - GetLongPriceMod();
@@ -68,7 +68,7 @@ boost::shared_ptr<Position> s::Algo::OpenLongPosition() {
 
 boost::shared_ptr<Position> s::Algo::OpenShortPosition() {
 	
-	DynamicSecurity &security = *GetSecurity();
+	Security &security = *GetSecurity();
 	const auto ask = security.GetAskScaled();
 	const auto bid = security.GetBidScaled();
 	const auto price = ChooseShortOpenPrice(ask, bid) + GetShortPriceMod();

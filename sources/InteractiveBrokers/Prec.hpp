@@ -29,6 +29,7 @@
 #	include <boost/multi_index/member.hpp>
 #	include <boost/multi_index/hashed_index.hpp>
 #	include <boost/multi_index/composite_key.hpp>
+#	include <boost/enable_shared_from_this.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include <Windows.h>

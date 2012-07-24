@@ -59,7 +59,7 @@ public:
 			startBarrier.wait();
 			Log::Info("All \"%1%\" threads started.", threadName);
 		}
-		{
+		if (!m_settings->IsReplayMode()) {
 			const size_t threadsCount = 1;
 			const char *const threadName = "Timeout";
 			Log::Info(
@@ -198,15 +198,16 @@ public:
 	explicit AlgoState(
 				boost::shared_ptr<Algo> algo,
 				boost::shared_ptr<Notifier> notifier,
-				boost::shared_ptr<const Settings> options)
+				boost::shared_ptr<const Settings> settings)
 			: m_algo(algo),
 			m_notifier(notifier),
 			m_isBlocked(false),
-			m_options(options) {
+			m_settings(settings) {
 		Interlocking::Exchange(m_lastUpdate, 0);
 	}
 
 	void CheckPositions(bool byTimeout) {
+		Assert(!m_settings->IsReplayMode() || !byTimeout);
 		if (byTimeout && !IsTimeToUpdate()) {
 			return;
 		}
@@ -222,10 +223,10 @@ public:
 			return false;
 		}
 		const auto now
-			= (boost::get_system_time() - m_options->GetStartTime()).total_milliseconds();
+			= (boost::get_system_time() - m_settings->GetStartTime()).total_milliseconds();
 		Assert(now >= m_lastUpdate);
 		const auto diff = boost::uint64_t(now - m_lastUpdate);
-		return diff >= m_options->GetUpdatePeriodMilliseconds();
+		return diff >= m_settings->GetUpdatePeriodMilliseconds();
 	}
 
 	bool IsBlocked() const {
@@ -239,11 +240,11 @@ private:
 		const auto now = boost::get_system_time();
 		Interlocking::Exchange(
 			m_lastUpdate,
-			(now - m_options->GetStartTime()).total_milliseconds());
+			(now - m_settings->GetStartTime()).total_milliseconds());
 
 		Assert(!m_isBlocked);
 		
-		const DynamicSecurity &security
+		const Security &security
 			= *const_cast<const Algo &>(*m_algo).GetSecurity();
 		Assert(security); // must be checked it security object
 
@@ -254,7 +255,8 @@ private:
 			ReportClosedPositon(*m_positions);
 			if (!m_positions->IsCompleted()) {
 				if (!m_positions->IsCloseError()) {
-					if (m_options->GetCurrentTradeSessionEndime() <= now) {
+					if (	!m_settings->IsReplayMode()
+							&& m_settings->GetCurrentTradeSessionEndime() <= now) {
 						m_algo->ClosePositionsAsIs(*m_positions);
 					} else {
 						m_algo->TryToClosePositions(*m_positions);
@@ -321,7 +323,7 @@ private:
 
 	volatile LONGLONG m_lastUpdate;
 
-	boost::shared_ptr<const Settings> m_options;
+	boost::shared_ptr<const Settings> m_settings;
 
 };
 
@@ -419,7 +421,7 @@ public:
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
 
-	typedef SignalConnectionList<DynamicSecurity::UpdateSlotConnection> DataUpdateConnections;
+	typedef SignalConnectionList<Security::UpdateSlotConnection> DataUpdateConnections;
 
 	Mutex m_dataUpdateMutex;
 	DataUpdateConnections m_dataUpdateConnections;
@@ -447,7 +449,7 @@ void Dispatcher::Stop() {
 }
 
 void Dispatcher::Register(boost::shared_ptr<Algo> algo) {
-	const DynamicSecurity &security = *const_cast<const Algo &>(*algo).GetSecurity();
+	const Security &security = *const_cast<const Algo &>(*algo).GetSecurity();
 	{
 		const Notifier::Lock algoListlock(m_notifier->GetAlgoListMutex());
 		Notifier::AlgoStateList &algoList = m_notifier->GetAlgoList();
@@ -456,7 +458,7 @@ void Dispatcher::Register(boost::shared_ptr<Algo> algo) {
 		algoList.push_back(algoState);
 		m_slots->m_dataUpdateConnections.InsertSafe(
 			security.Subcribe(
-				DynamicSecurity::UpdateSlot(
+				Security::UpdateSlot(
 					boost::bind(&Notifier::Signal, m_notifier.get(), algoState))));
 		algoList.swap(m_notifier->GetAlgoList());
 	}

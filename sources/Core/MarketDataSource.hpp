@@ -8,7 +8,7 @@
 
 #pragma once
 
-class DynamicSecurity;
+class Security;
 
 class MarketDataSource : private boost::noncopyable {
 
@@ -35,16 +35,16 @@ public:
 
 public:
 
-	virtual void SubscribeToMarketDataLevel1(boost::shared_ptr<DynamicSecurity>) const = 0;
-	virtual void SubscribeToMarketDataLevel2(boost::shared_ptr<DynamicSecurity>) const = 0;
+	virtual void SubscribeToMarketDataLevel1(boost::shared_ptr<Security>) const = 0;
+	virtual void SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const = 0;
 
 	virtual void RequestHistory(
-			boost::shared_ptr<DynamicSecurity>,
+			boost::shared_ptr<Security>,
 			const boost::posix_time::ptime &fromTime)
 		const
 		= 0;
 	virtual void RequestHistory(
-			boost::shared_ptr<DynamicSecurity>,
+			boost::shared_ptr<Security>,
 			const boost::posix_time::ptime &fromTime,
 			const boost::posix_time::ptime &toTime)
 		const

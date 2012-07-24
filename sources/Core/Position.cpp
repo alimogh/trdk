@@ -9,6 +9,7 @@
 #include "Prec.hpp"
 #include "Position.hpp"
 #include "Algo.hpp"
+#include "Settings.hpp"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -48,7 +49,7 @@ Position::DynamicData::DynamicData()
 //////////////////////////////////////////////////////////////////////////
 
 Position::Position(
-			boost::shared_ptr<const DynamicSecurity> security,
+			boost::shared_ptr<const Security> security,
 			Type type,
 			Qty qty,
 			Price startPrice,
@@ -177,7 +178,9 @@ void Position::UpdateOpening(
 
 	Assert(m_opened.time.is_not_a_date_time());
 	if (state == STATE_OPENED) {
-		m_opened.time = boost::get_system_time();
+		m_opened.time = !m_security->GetSettings().IsReplayMode()
+			?	boost::get_system_time()
+			:	m_security->GetLastMarketDataTime();
 	}
 
 	if (Interlocking::Exchange(m_state, state) != state) {
@@ -261,7 +264,9 @@ void Position::UpdateClosing(
 
 	Assert(m_closed.time.is_not_a_date_time());
 	if (state == STATE_CLOSED) {
-		m_closed.time = boost::get_system_time();
+		m_closed.time = !m_security->GetSettings().IsReplayMode()
+			?	boost::get_system_time()
+			:	m_security->GetLastMarketDataTime();
 	}
 
 	if (Interlocking::Exchange(m_state, state) != state) {
@@ -293,7 +298,7 @@ Position::Price Position::GetCommission() const {
 	return m_closed.qty * GetSecurity().Scale(.01); // m_opened.comission + m_closed.comission;
 }
 
-const DynamicSecurity & Position::GetSecurity() const {
+const Security & Position::GetSecurity() const {
 	return *m_security;
 }
 

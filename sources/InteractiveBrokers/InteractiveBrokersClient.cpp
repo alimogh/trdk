@@ -19,7 +19,7 @@ namespace pt = boost::posix_time;
 namespace {
 
 	const pt::time_duration pingRequestPeriod = pt::seconds(120);
-	const pt::time_duration timeout = pt::seconds(15);
+	const pt::time_duration timeout = pt::seconds(60);
 	const pt::time_duration maxIterationTime = pt::milliseconds(10);
 
 }

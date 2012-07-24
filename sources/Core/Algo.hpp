@@ -31,12 +31,12 @@ protected:
 
 public:
 
-	explicit Algo(boost::shared_ptr<DynamicSecurity>, const std::string &logTag);
+	explicit Algo(boost::shared_ptr<Security>, const std::string &logTag);
 	virtual ~Algo();
 
 public:
 
-	boost::shared_ptr<const DynamicSecurity> GetSecurity() const;
+	boost::shared_ptr<const Security> GetSecurity() const;
 
 	PositionReporter & GetPositionReporter();
 
@@ -67,7 +67,7 @@ public:
 
 protected:
 
-	boost::shared_ptr<DynamicSecurity> GetSecurity();
+	boost::shared_ptr<Security> GetSecurity();
 
 	Security::Qty CalcQty(Security::Price, Security::Price volume) const;
 
@@ -110,10 +110,12 @@ protected:
 		report.push_back(item);
 	}
 
+	boost::posix_time::ptime GetCurrentTime() const;
+
 private:
 
 	Mutex m_mutex;
-	const boost::shared_ptr<DynamicSecurity> m_security;
+	const boost::shared_ptr<Security> m_security;
 	PositionReporter *m_positionReporter;
 	const std::string m_logTag;
 

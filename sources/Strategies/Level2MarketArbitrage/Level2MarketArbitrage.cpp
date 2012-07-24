@@ -29,7 +29,7 @@ namespace {
 }
 
 s::Algo::Algo(
-			boost::shared_ptr<DynamicSecurity> security,
+			boost::shared_ptr<Security> security,
 			const IniFile &ini,
 			const std::string &section)
 		: Base(security, logTag) {
@@ -145,8 +145,8 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 }
 
 boost::shared_ptr<Position> s::Algo::OpenShortPostion(
-			DynamicSecurity::Qty askSize,
-			DynamicSecurity::Qty bidSize) {
+			Security::Qty askSize,
+			Security::Qty bidSize) {
 	const auto price = GetSecurity()->GetAskScaled();
 	boost::shared_ptr<Position> result(
 		new Position(
@@ -175,8 +175,8 @@ boost::shared_ptr<Position> s::Algo::OpenShortPostion(
 }
 
 boost::shared_ptr<Position> s::Algo::OpenLongPostion(
-			DynamicSecurity::Qty askSize,
-			DynamicSecurity::Qty bidSize) {
+			Security::Qty askSize,
+			Security::Qty bidSize) {
 	const auto price = GetSecurity()->GetBidScaled();
 	boost::shared_ptr<Position> result(
 		new Position(
@@ -252,7 +252,7 @@ boost::shared_ptr<PositionBandle> s::Algo::TryToOpenPositions() {
 
 void s::Algo::CloseLongPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_LONG);
-	DynamicSecurity &security = *GetSecurity();
+	Security &security = *GetSecurity();
 	if (position.GetAlgoFlag() == STATE_OPENING) {
 		if (asIs) {
 			CloseLongPositionStopLossDo(position);
@@ -306,7 +306,7 @@ void s::Algo::CloseLongPosition(Position &position, bool asIs) {
 
 void s::Algo::CloseShortPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
-	DynamicSecurity &security = *GetSecurity();
+	Security &security = *GetSecurity();
 	if (position.GetAlgoFlag() == STATE_OPENING) {
 		if (asIs) {
 			CloseShortPositionStopLossDo(position);
@@ -366,7 +366,7 @@ void s::Algo::ClosePosition(Position &position, bool asIs) {
 	} else if (!asIs && position.GetAlgoFlag() == STATE_OPENING) {
 		Assert(!position.GetOpenTime().is_not_a_date_time());
 		if (	!position.GetOpenTime().is_not_a_date_time()
-				&& position.GetOpenTime() + m_settings.positionTimeSeconds > boost::get_system_time()) {
+				&& position.GetOpenTime() + m_settings.positionTimeSeconds > GetCurrentTime()) {
 			return;
 		}
 	}
@@ -405,8 +405,8 @@ void s::Algo::ReportDecision(const Position &position) const {
 		"%1% %2% open-try size-ask-bid=%3%/%4% limit-used=%5% qty=%6% take-profit=%7% stop-loss=%8%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
-		DynamicSecurity::Qty(position.GetDecisionAks()),
-		DynamicSecurity::Qty(position.GetDecisionBid()),
+		Security::Qty(position.GetDecisionAks()),
+		Security::Qty(position.GetDecisionBid()),
 		position.GetSecurity().Descale(position.GetStartPrice()),
 		position.GetPlanedQty(),
 		position.GetSecurity().Descale(position.GetTakeProfit()),
