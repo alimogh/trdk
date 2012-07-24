@@ -132,12 +132,15 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 
 	SettingsReport report;
 	AppendPercentSettingsReport("ask_bid_difference_percent", settings.askBidDifferencePercent * 100, report);
-	AppendPercentSettingsReport("take_profit_percent", settings.takeProfitPercent * 100, report);
-	AppendPercentSettingsReport("stop_loss_percent", settings.stopLossPercent * 100, report);
+	if (settings.closeOrderType == Settings::ORDER_TYPE_IOC) {
+		AppendPercentSettingsReport("take_profit_percent", settings.takeProfitPercent * 100, report);
+		AppendPercentSettingsReport("stop_loss_percent", settings.stopLossPercent * 100, report);
+	}
 	AppendSettingsReport("open_mode", Util::ConvertToStr(settings.openMode), report);
 	AppendSettingsReport("position_time_seconds", settings.positionTimeSeconds, report);
 	AppendSettingsReport("open_order_type", Util::ConvertToStr(settings.openOrderType), report);
 	AppendSettingsReport("close_order_type", Util::ConvertToStr(settings.closeOrderType), report);
+	AppendSettingsReport("volume", GetSecurity()->Descale(settings.volume), report);
 	ReportSettings(report);
 
 	m_settings = settings;

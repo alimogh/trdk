@@ -96,7 +96,7 @@ protected:
 				SettingsReport &report) {
 		const SettingsReport::value_type item(
 			name,
-			(boost::format("%.4f%%") % val).str());
+			(boost::format("%1%") % val).str());
 		report.push_back(item);
 	}
 

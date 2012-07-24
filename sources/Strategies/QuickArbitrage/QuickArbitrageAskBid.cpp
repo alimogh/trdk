@@ -193,10 +193,12 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 		"spread",
 		settings.isAbsoluteSpread
 			?	boost::lexical_cast<std::string>(GetSecurity()->Descale(settings.spread.absolute))
-			:	(boost::lexical_cast<std::string>(settings.spread.percents * 100) + std::string("%")),
+			:	(boost::format("%1%%%") % (settings.spread.percents * 100)).str(),
 		settingsReport);
-	AppendSettingsReport("take_profit", GetSecurity()->Descale(settings.takeProfit), settingsReport);
-	AppendSettingsReport("stop_loss", GetSecurity()->Descale(settings.stopLoss), settingsReport);
+	if (settings.closeOrderType == Settings::ORDER_TYPE_IOC) {
+		AppendSettingsReport("take_profit", GetSecurity()->Descale(settings.takeProfit), settingsReport);
+		AppendSettingsReport("stop_loss", GetSecurity()->Descale(settings.stopLoss), settingsReport);
+	}
 	AppendSettingsReport("volume", GetSecurity()->Descale(settings.volume), settingsReport);
 	AppendSettingsReport("position_time_seconds", settings.positionTimeSeconds, settingsReport);
 	AppendSettingsReport("open_order_type", Util::ConvertToStr(settings.openOrderType), settingsReport);
@@ -312,7 +314,7 @@ void AskBid::CloseShortPosition(Position &position, bool asIs) {
 					position.SetCloseType(Position::CLOSE_TYPE_TAKE_PROFIT);
 					break;
 				case Settings::ORDER_TYPE_MKT:
-					security.Buy(position.GetOpenedQty(), position.GetTakeProfit(), position);
+					security.Buy(position.GetOpenedQty(), position);
 					position.SetCloseType(Position::CLOSE_TYPE_NONE);
 					break;
 				default:
