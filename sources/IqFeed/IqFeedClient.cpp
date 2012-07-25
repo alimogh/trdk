@@ -434,8 +434,8 @@ namespace {
 
 			const size_t totalVolume = message.GetFieldAsUnsignedInt(7, true);
 
-			const double ask = message.GetFieldAsDouble(11, true);
-			const double bid = message.GetFieldAsDouble(12, true);
+			const double bid = message.GetFieldAsDouble(11, true);
+			const double ask = message.GetFieldAsDouble(12, true);
 			if (isSummary && (Util::IsZero(ask) || Util::IsZero(bid))) {
 				Assert(Util::IsZero(ask));
 				Assert(Util::IsZero(bid));
@@ -705,10 +705,10 @@ namespace {
 
 			const size_t totalVolume = message.GetFieldAsUnsignedInt(5, true);
 
-			const double ask = message.GetFieldAsDouble(6, true);
-			Assert(ask > 0);
-			const double bid = message.GetFieldAsDouble(7, true);
+			const double bid = message.GetFieldAsDouble(6, true);
 			Assert(bid > 0);
+			const double ask = message.GetFieldAsDouble(7, true);
+			Assert(ask > 0);
 
 			Assert(ask * 0.75 < bid);
 			Assert(ask * 1.25 > bid);
