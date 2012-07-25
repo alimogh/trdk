@@ -253,6 +253,7 @@ void Security::UpdateLevel1(
 	if (m_marketDataLevel1Log) {
 		m_marketDataLevel1Log->Append(time, last, ask, bid, totalVolume);
 	}
+	SetLastMarketDataTime(time);
 	if (!SetLast(last) || !SetAsk(ask) || !SetBid(bid)) {
 		if (!m_settings->IsReplayMode()) {
 			return;
