@@ -67,15 +67,16 @@ public:
 	void Start() {
 		Lock lock(m_mutex);
 		Assert(!m_isStarted);
-		if (!m_isStarted) {
+		if (m_isStarted) {
 			return;
 		}
-		boost::thread(boost::bind(&Implementation::Task, this));
+		m_isStarted = true;
+		boost::thread(boost::bind(&Implementation::Task, this)).swap(m_thread);
 		m_condition.wait(lock);
 	}
 
 	void SendOrder(const Order &order) {
-		if (order.callback) {
+		if (!order.callback) {
 			return;
 		}
 		const Lock lock(m_mutex);
