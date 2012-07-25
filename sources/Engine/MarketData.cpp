@@ -36,7 +36,8 @@ void RequestMarketData(const fs::path &iniFilePath, int argc, const char *argv[]
 
 		const boost::shared_ptr<const Settings> settings = Ini::LoadSettings(
 			iniFilePath,
-			pt::time_from_string((boost::format("%1% 00:00:00") % argv[2]).str()),
+			pt::time_from_string((boost::format("%1% 00:00:00") % argv[2]).str())
+				- Util::GetEdtDiff(),
 			false);
 
 		Log::Info(
