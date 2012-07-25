@@ -178,17 +178,20 @@ public:
 	}
 
 	unsigned int GetFieldAsIntTimeOfDay(size_t fieldNum, bool isRequired) const {
-		std::string result;
-		GetStringField(fieldNum, isRequired, result);
-		if (result.size() != 8) {
+		std::string resultStr;
+		GetStringField(fieldNum, isRequired, resultStr);
+		if (resultStr.size() != 8) {
 			throw FieldHasInvalidFormatError();
 		}
-		boost::erase_all(result, ":");
-		if (result.size() != 6) {
+		boost::erase_all(resultStr, ":");
+		if (resultStr.size() != 6) {
 			throw FieldHasInvalidFormatError();
 		}
 		try {
-			return boost::lexical_cast<unsigned int>(result);
+			const auto result = boost::lexical_cast<unsigned int>(resultStr);
+			Assert(result >= 0);
+			Assert(result <= 235959);
+			return result;
 		} catch (const boost::bad_lexical_cast &ex) {
 			Log::Error(
 				"IQFeed message field has invalid format: \"%1%\".",

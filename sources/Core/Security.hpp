@@ -44,7 +44,7 @@ public:
 
 private:
 
-	typedef std::list<boost::shared_ptr<Quote>> Quotes;
+	typedef std::multimap<unsigned int, boost::shared_ptr<Quote>> Quotes;
 
 	struct Level2 {
 		

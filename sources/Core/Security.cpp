@@ -104,7 +104,7 @@ public:
 		}
 		Log::Info("Logging \"%1%\" market data into %2%...", fullSymbol, filePath);
 		if (isNew) {
-			m_file << "time of reception,tick time,lag,type,price,size,tick size,first tick time" << std::endl;
+			m_file << "time of reception,tick time,lag,is skipped,lines count,type,price,size,tick size,first tick time" << std::endl;
 		} else {
 			m_file << std::endl;
 		}
@@ -118,7 +118,9 @@ public:
 				double price,
 				size_t size,
 				boost::int64_t tickSize,
-				unsigned int firstTickSize) {
+				unsigned int firstTickSize,
+				bool isSkipped,
+				size_t linesCount) {
 		Append(
 			"ask",
 			timeOfReception,
@@ -126,7 +128,9 @@ public:
 			price,
 			size,
 			tickSize,
-			firstTickSize);
+			firstTickSize,
+			isSkipped,
+			linesCount);
 	}
 
 	void AppendBid(
@@ -135,7 +139,9 @@ public:
 				double price,
 				size_t size,
 				boost::int64_t tickSize,
-				unsigned int firstTickSize) {
+				unsigned int firstTickSize,
+				bool isSkipped,
+				size_t linesCount) {
 		Append(
 			"bid",
 			timeOfReception,
@@ -143,7 +149,9 @@ public:
 			price,
 			size,
 			tickSize,
-			firstTickSize);
+			firstTickSize,
+			isSkipped,
+			linesCount);
 	}
 
 private:
@@ -155,7 +163,9 @@ private:
 				double price,
 				size_t size,
 				boost::int64_t tickSize,
-				unsigned int firstTickSize) {
+				unsigned int firstTickSize,
+				bool isSkipped,
+				size_t linesCount) {
 		const pt::ptime timeOfReceptionEdt = timeOfReception + Util::GetEdtDiff();
 		pt::ptime timeTickFull = timeOfReceptionEdt - timeOfReceptionEdt.time_of_day();
 		AddTime(timeTick, timeTickFull);
@@ -165,6 +175,8 @@ private:
 		DumpTime(timeTick);
 		m_file
 			<< "," << (timeOfReceptionEdt - timeTickFull).total_seconds()
+			<< "," << (isSkipped ? "skipped" : "-")
+			<< "," << linesCount
 			<< "," << tag
 			<< "," << price
 			<< "," << size
@@ -194,7 +206,6 @@ private:
 
 private:
 
-	// mutable Mutex m_mutex;
 	std::ofstream m_file;
 
 };
@@ -340,9 +351,15 @@ namespace {
 				List &quoteList) {
 		Assert(newQuote->timeTick <= 235959);
 		Assert(newQuote->timeTick > 0);
+		if (quoteList.empty()) {
+			quoteList.insert(std::make_pair(newQuote->timeTick, newQuote));
+			return newQuote->size;
+		} else if (quoteList.begin()->first > newQuote->timeTick) {
+			return 0;
+		}
 		Security::Qty result = newQuote->size;
 		while (!quoteList.empty()) {
-			const auto listTime = (**quoteList.begin()).timeTick;
+			const auto listTime = quoteList.begin()->second->timeTick;
 			Assert(listTime <= 235959);
 			Assert(listTime >= 0);
 			const bool isNewDay = !(listTime <= newQuote->timeTick);
@@ -352,10 +369,10 @@ namespace {
 			if (period <= settings.GetLevel2PeriodSeconds()) {
 				break;
 			}
-			result -= (**quoteList.begin()).size;
-			quoteList.pop_front();
+			result -= quoteList.begin()->second->size;
+			quoteList.erase(quoteList.begin());
 		}
-		quoteList.push_back(newQuote);
+		quoteList.insert(std::make_pair(newQuote->timeTick, newQuote));
 		return result;
 	}
 
@@ -368,31 +385,41 @@ void Security::UpdateLevel2(
 			boost::shared_ptr<Quote> bid) {
 	Assert(ask || bid);
 	if (ask) {
-		SetLevel2Ask(
-			Scale(ask->price),
-			GetAskSize() + UpdateQuoteList(*m_settings, ask, m_askQoutes));
-		if (m_marketDataLevel2Log) {
+		const auto change = UpdateQuoteList(*m_settings, ask, m_askQoutes);
+		if (change) {
+			SetLevel2Ask(
+				Scale(ask->price),
+				GetAskSize() + change);
+		}
+		if (m_marketDataLevel2Log && !m_askQoutes.empty()) {
 			m_marketDataLevel2Log->AppendAsk(
 				timeOfReception,
 				ask->timeTick,
 				ask->price,
 				ask->size,
 				GetAskSize(),
-				(**m_askQoutes.begin()).timeTick);
+				m_askQoutes.begin()->second->timeTick,
+				!change,
+				m_askQoutes.size());
 		}
 	}
 	if (bid) {
-		SetLevel2Bid(
-			Scale(bid->price),
-			GetBidSize() + UpdateQuoteList(*m_settings, bid, m_bidQoutes));
-		if (m_marketDataLevel2Log) {
+		const auto change = UpdateQuoteList(*m_settings, bid, m_bidQoutes);
+		if (change) {
+			SetLevel2Bid(
+				Scale(bid->price),
+				GetBidSize() + change);
+		}
+		if (m_marketDataLevel2Log && !m_bidQoutes.empty()) {
 			m_marketDataLevel2Log->AppendBid(
 				timeOfReception,
 				bid->timeTick,
 				bid->price,
 				bid->size,
 				GetBidSize(),
-				(**m_bidQoutes.begin()).timeTick);
+				m_bidQoutes.begin()->second->timeTick,
+				!change,
+				m_bidQoutes.size());
 		}
 	}
 	if (*this) {
