@@ -222,13 +222,15 @@ namespace {
 
 	protected:
 
-		virtual void HandleMessage(MessageParser &) = 0;
+		virtual void HandleMessage(const pt::ptime &timeOfReception, MessageParser &) = 0;
 
 
 	private:
 
 		void HandleRead(const boost::system::error_code &error, size_t size) {
 			
+			const pt::ptime timeOfReception = boost::get_system_time();
+
 			const Lock lock(m_mutex);
 			
 			if (size == 0) {
@@ -278,7 +280,7 @@ namespace {
 					DumpReceived(message);
 				} else {
 					// DumpReceived(message);
-					HandleMessage(message);
+					HandleMessage(timeOfReception, message);
 				}
 				m_messagesBuffer.erase(m_messagesBuffer.begin(), ++end);
 			}
@@ -383,7 +385,8 @@ namespace {
 	public:
 
 		Level1Connection(Service &service)
-				: Connection(service, 5009) {
+				: Connection(service, 5009),
+				m_noDataMessages(0) {
 			//...//
 		}
 
@@ -393,21 +396,35 @@ namespace {
 
 	protected:
 
-		virtual void HandleMessage(MessageParser &message) {
+		virtual void HandleMessage(
+					const pt::ptime &timeOfReception,
+					MessageParser &message) {
 			switch (*message.GetBegin()) {
 				case 'Q':
-					HandleUpdateMessage(message, false);
+					HandleUpdateMessage(timeOfReception, message, false);
+					m_noDataMessages = 0;
 					break;
 				case 'P':
-					HandleUpdateMessage(message, true);
+					HandleUpdateMessage(timeOfReception, message, true);
+					m_noDataMessages = 0;
+					break;
+				default:
+					if (++m_noDataMessages >= 30) {
+						Log::Warn(
+							IQFEED_CLIENT_CONNECTION_NAME "Level I: no data last %1% messages.",
+							m_noDataMessages);
+						m_noDataMessages = 0;
+					}
 					break;
 			}
 		}
 
 	private:
 
-		void HandleUpdateMessage(const MessageParser &message, bool isSummary) {
-			const pt::ptime now = boost::get_system_time();
+		void HandleUpdateMessage(
+					const pt::ptime &timeOfReception,
+					const MessageParser &message,
+					bool isSummary) {
 			const std::string symbol = message.GetFieldAsString(2, true);
 			const UpdatesSubscribers::const_iterator subscriber
 				= m_service.m_marketDataLevel1Subscribers.find(symbol);
@@ -446,9 +463,19 @@ namespace {
 			Assert(ask * 0.75 < bid);
 			Assert(ask * 1.25 > bid);
 
-			subscriber->second->UpdateLevel1(now, last, ask, bid, totalVolume);
+			subscriber->second->UpdateLevel1(
+				timeOfReception,
+				message.GetFieldAsTimeOfDay(66, true) - Util::GetEdtDiff(),
+				last,
+				ask,
+				bid,
+				totalVolume);
 
 		}
+
+	private:
+
+		size_t m_noDataMessages;
 
 	};
 
@@ -459,7 +486,7 @@ namespace {
 
 		Level2Connection(Service &service)
 				: Connection(service, 9200),
-				m_estTimeDiff(Util::GetEdtDiff()) {
+				m_noDataMessages(0) {
 			//...//
 		}
 
@@ -469,17 +496,30 @@ namespace {
 
 	protected:
 
-		virtual void HandleMessage(MessageParser &message) {
+		virtual void HandleMessage(
+					const pt::ptime &timeOfReception,
+					MessageParser &message) {
 			// DumpReceived(message);
 			switch (*message.GetBegin()) {
 				case 'U':
-					HandleUpdateMessage(message);
+					HandleUpdateMessage(timeOfReception, message);
+					m_noDataMessages = 0;
 					break;
 				case 'n': // n,[SYMBOL]<CR><LF> Symbol not found message.
 					HandleNoSymbolMessage(message);
+					m_noDataMessages = 0;
 					break;
 				case 'E': // E,[error text]<CR><LF> An error message. 
 					HandleErrorMessage(message);
+					m_noDataMessages = 0;
+					break;
+				default:
+					if (++m_noDataMessages >= 30) {
+						Log::Warn(
+							IQFEED_CLIENT_CONNECTION_NAME "Level II: no data last %1% messages.",
+							m_noDataMessages);
+						m_noDataMessages = 0;
+					}
 					break;
 			}
 		}
@@ -500,7 +540,9 @@ namespace {
 				message.GetFieldAsString(2, true));
 		}
 
-		void HandleUpdateMessage(MessageParser &message) {
+		void HandleUpdateMessage(
+					const pt::ptime &timeOfReception,
+					MessageParser &message) {
 
 			const std::string symbol = message.GetFieldAsString(2, true);
 			const UpdatesSubscribers::const_iterator subscriber
@@ -563,7 +605,7 @@ namespace {
 			}
 
 			if (bid) {
-				bid->timeTick = message.GetFieldAsTimeTick(8, true);
+				bid->timeTick = message.GetFieldAsIntTimeOfDay(8, true);
 			}
 
 			// Unused by IQFeed
@@ -596,16 +638,16 @@ namespace {
 			}*/
 
 			if (ask) {
-				ask->timeTick = message.GetFieldAsTimeTick(13, true);
+				ask->timeTick = message.GetFieldAsIntTimeOfDay(13, true);
 			}
 
-			subscriber->second->UpdateLevel2(ask, bid);
+			subscriber->second->UpdateLevel2(timeOfReception, ask, bid);
 
 		}
 
 	private:
 
-		const pt::time_duration m_estTimeDiff;
+		size_t m_noDataMessages;
 
 	};
 
@@ -617,8 +659,7 @@ namespace {
 	public:
 
 		LookupConnection(Service &service)
-				: Connection(service, 9100),
-				m_estTimeDiff(Util::GetEdtDiff()) {
+				: Connection(service, 9100) {
 			//...//
 		}
 
@@ -628,7 +669,9 @@ namespace {
 
 	protected:
 
-		virtual void HandleMessage(MessageParser &message) {
+		virtual void HandleMessage(
+					const pt::ptime &timeOfReception,
+					MessageParser &message) {
 			switch (*message.GetBegin()) {
 				case 'H':
 					{
@@ -656,7 +699,7 @@ namespace {
 							DumpReceived(message);
 							break;
 						}
-						HandleHistoryMessage(symbol, message);
+						HandleHistoryMessage(timeOfReception, symbol, message);
 					}
 					break;
 			}
@@ -664,7 +707,10 @@ namespace {
 
 	private:
 
-		void HandleHistoryMessage(const std::string &symbol, const MessageParser &message) {
+		void HandleHistoryMessage(
+					const pt::ptime &timeOfReception,
+					const std::string &symbol,
+					const MessageParser &message) {
 
 			const HistorySubscribers::iterator subscriberIt
 				= m_service.m_historySubscribers.find(symbol);
@@ -697,8 +743,8 @@ namespace {
 				return;
 			}
 
-			const pt::ptime timeEdt = message.GetFieldAsTime(2, true);
-			const pt::ptime time(timeEdt - m_estTimeDiff);
+			const pt::ptime time
+				= message.GetFieldAsFullTime(2, true) - Util::GetEdtDiff();
 
 			const double last = message.GetFieldAsDouble(3, true);
 			Assert(last > 0);
@@ -713,7 +759,7 @@ namespace {
 			Assert(ask * 0.75 < bid);
 			Assert(ask * 1.25 > bid);
 
-			subscriber.UpdateLevel1(time, last, ask, bid, totalVolume);
+			subscriber.UpdateLevel1(timeOfReception, time, last, ask, bid, totalVolume);
 
 		}
 
@@ -737,10 +783,6 @@ namespace {
 				}
 			}
 		}
-
-	private:
-
-		const pt::time_duration m_estTimeDiff;
 
 	};
 

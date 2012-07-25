@@ -160,12 +160,16 @@ public:
 public:
 
 	void UpdateLevel1(
-				const MarketDataTime &,
+				const MarketDataTime &timeOfReception,
+				const MarketDataTime &lastTradeTime,
 				double last,
 				double ask,
 				double bid,
 				size_t totalVolume);
-	void UpdateLevel2(boost::shared_ptr<Quote> ask, boost::shared_ptr<Quote> bid);
+	void UpdateLevel2(
+				const MarketDataTime &timeOfReception,
+				boost::shared_ptr<Quote> ask,
+				boost::shared_ptr<Quote> bid);
 
 	void OnHistoryDataStart();
 	void OnHistoryDataEnd();

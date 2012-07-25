@@ -44,7 +44,7 @@ public:
 		}
 		Log::Info("Logging \"%1%\" market data into %2%...", fullSymbol, filePath);
 		if (isNew) {
-			m_file << "data time,last price,ask,bid,total volume" << std::endl;
+			m_file << "time of reception,last trade time,lag,last price,ask,bid,total volume" << std::endl;
 		} else {
 			m_file << std::endl;
 		}
@@ -53,19 +53,26 @@ public:
 public:
 
 	void Append(
-				const MarketDataTime &time,
+				const MarketDataTime &timeOfReception,
+				const MarketDataTime &lastTradeTime,
 				double last,
 				double ask,
 				double bid,
 				size_t totalVolume) {
-		const lt::local_date_time esdTime(time, Util::GetEdtTimeZone());
-		// const Lock lock(m_mutex); - not required while it uses only one IQLink thread
-		m_file << esdTime << "," << last << "," << ask << "," << bid << "," << totalVolume << std::endl;
+		m_file
+			<< (timeOfReception + Util::GetEdtDiff()).time_of_day()
+			<< "," << (lastTradeTime + Util::GetEdtDiff()).time_of_day()
+			<< "," << (timeOfReception - lastTradeTime).total_seconds()
+			<< "," << last
+			<< "," << ask
+			<< "," << bid
+			<< ","
+			<< totalVolume
+			<< std::endl;
 	}
 
 private:
 
-	// mutable Mutex m_mutex;
 	std::ofstream m_file;
 
 };
@@ -97,7 +104,7 @@ public:
 		}
 		Log::Info("Logging \"%1%\" market data into %2%...", fullSymbol, filePath);
 		if (isNew) {
-			m_file << "type,time tick, price,size,tick size,first tick time" << std::endl;
+			m_file << "time of reception,tick time,lag,type,price,size,tick size,first tick time" << std::endl;
 		} else {
 			m_file << std::endl;
 		}
@@ -106,35 +113,83 @@ public:
 public:
 
 	void AppendAsk(
+				const MarketDataTime &timeOfReception,
 				unsigned int timeTick,
 				double price,
 				size_t size,
 				boost::int64_t tickSize,
 				unsigned int firstTickSize) {
-		m_file
-			<< "ask,"
-			<< timeTick
-			<< "," << price
-			<< "," << size
-			<< "," << tickSize
-			<< "," << firstTickSize
-			<< std::endl;
+		Append(
+			"ask",
+			timeOfReception,
+			timeTick,
+			price,
+			size,
+			tickSize,
+			firstTickSize);
 	}
 
 	void AppendBid(
+				const MarketDataTime &timeOfReception,
 				unsigned int timeTick,
 				double price,
 				size_t size,
 				boost::int64_t tickSize,
 				unsigned int firstTickSize) {
+		Append(
+			"bid",
+			timeOfReception,
+			timeTick,
+			price,
+			size,
+			tickSize,
+			firstTickSize);
+	}
+
+private:
+
+	void Append(
+				const char *tag,
+				const MarketDataTime &timeOfReception,
+				unsigned int timeTick,
+				double price,
+				size_t size,
+				boost::int64_t tickSize,
+				unsigned int firstTickSize) {
+		const pt::ptime timeOfReceptionEdt = timeOfReception + Util::GetEdtDiff();
+		pt::ptime timeTickFull = timeOfReceptionEdt - timeOfReceptionEdt.time_of_day();
+		AddTime(timeTick, timeTickFull);
 		m_file
-			<< "bid,"
-			<< timeTick
+			<< timeOfReceptionEdt.time_of_day()
+			<< ",";
+		DumpTime(timeTick);
+		m_file
+			<< "," << (timeOfReceptionEdt - timeTickFull).total_seconds()
+			<< "," << tag
 			<< "," << price
 			<< "," << size
 			<< "," << tickSize
-			<< "," << firstTickSize
-			<< std::endl;
+			<< ",";
+		DumpTime(firstTickSize);
+		m_file << std::endl;
+	}
+
+private:
+
+	void DumpTime(unsigned int time) {
+		const size_t hours = time / 10000;
+		const size_t minutes = (time - (hours * 10000)) / 100;
+		const size_t seconds = time - (hours * 10000) - (minutes * 100);
+		m_file << hours << ":" << minutes << ":" << seconds;
+	}
+
+	static void AddTime(unsigned int source, pt::ptime &destination) {
+		const size_t hours = source / 10000;
+		const size_t minutes = (source - (hours * 10000)) / 100;
+		const size_t seconds = source - (hours * 10000) - (minutes * 100);
+		destination += pt::hours(hours);
+		destination += pt::minutes(minutes);
+		destination += pt::seconds(seconds);
 	}
 
 private:
@@ -245,15 +300,22 @@ bool Security::IsHistoryData() const {
 }
 
 void Security::UpdateLevel1(
-				const MarketDataTime &time,
+				const MarketDataTime &timeOfReception,
+				const MarketDataTime &lastTradeTime,
 				double last,
 				double ask,
 				double bid,
 				size_t totalVolume) {
 	if (m_marketDataLevel1Log) {
-		m_marketDataLevel1Log->Append(time, last, ask, bid, totalVolume);
+		m_marketDataLevel1Log->Append(
+			timeOfReception,
+			lastTradeTime,
+			last,
+			ask,
+			bid,
+			totalVolume);
 	}
-	SetLastMarketDataTime(time);
+	SetLastMarketDataTime(timeOfReception);
 	if (!SetLast(last) || !SetAsk(ask) || !SetBid(bid)) {
 		if (!m_settings->IsReplayMode()) {
 			return;
@@ -300,7 +362,10 @@ namespace {
 }
 
 
-void Security::UpdateLevel2(boost::shared_ptr<Quote> ask, boost::shared_ptr<Quote> bid) {
+void Security::UpdateLevel2(
+			const MarketDataTime &timeOfReception,
+			boost::shared_ptr<Quote> ask,
+			boost::shared_ptr<Quote> bid) {
 	Assert(ask || bid);
 	if (ask) {
 		SetLevel2Ask(
@@ -308,6 +373,7 @@ void Security::UpdateLevel2(boost::shared_ptr<Quote> ask, boost::shared_ptr<Quot
 			GetAskSize() + UpdateQuoteList(*m_settings, ask, m_askQoutes));
 		if (m_marketDataLevel2Log) {
 			m_marketDataLevel2Log->AppendAsk(
+				timeOfReception,
 				ask->timeTick,
 				ask->price,
 				ask->size,
@@ -321,6 +387,7 @@ void Security::UpdateLevel2(boost::shared_ptr<Quote> ask, boost::shared_ptr<Quot
 			GetBidSize() + UpdateQuoteList(*m_settings, bid, m_bidQoutes));
 		if (m_marketDataLevel2Log) {
 			m_marketDataLevel2Log->AppendBid(
+				timeOfReception,
 				bid->timeTick,
 				bid->price,
 				bid->size,

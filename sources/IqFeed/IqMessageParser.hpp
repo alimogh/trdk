@@ -148,12 +148,36 @@ public:
 		return result;
 	}
 
-	boost::posix_time::ptime GetFieldAsTime(size_t fieldNum, bool isRequired) const {
+	boost::posix_time::ptime GetFieldAsFullTime(size_t fieldNum, bool isRequired) const {
 		return boost::posix_time::time_from_string(
 			GetFieldAsString(fieldNum, isRequired));
 	}
 
-	unsigned int GetFieldAsTimeTick(size_t fieldNum, bool isRequired) const {
+	boost::posix_time::ptime GetFieldAsTimeOfDay(size_t fieldNum, bool isRequired) const {
+		namespace pt = boost::posix_time;
+		const auto time = GetFieldAsIntTimeOfDay(fieldNum, isRequired);
+		const size_t hours = time / 10000;
+		if (hours > 23) {
+			Log::Error("IQFeed message field has invalid format: hours more then 23.");
+			throw FieldHasInvalidFormatError();
+		}
+		const size_t minutes = (time - (hours * 10000)) / 100;
+		if (minutes > 59) {
+			Log::Error("IQFeed message field has invalid format: minutes more then 59.");
+		}
+		const size_t seconds = time - (hours * 10000) - (minutes * 100);
+		if (seconds > 59) {
+			Log::Error("IQFeed message field has invalid format: seconds more then 59.");
+		}
+		pt::ptime result = boost::get_system_time();
+		result -= result.time_of_day();
+		result += pt::hours(hours);
+		result += pt::minutes(minutes);
+		result += pt::seconds(seconds);
+		return result;
+	}
+
+	unsigned int GetFieldAsIntTimeOfDay(size_t fieldNum, bool isRequired) const {
 		std::string result;
 		GetStringField(fieldNum, isRequired, result);
 		if (result.size() != 8) {
