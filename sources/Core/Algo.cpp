@@ -94,8 +94,11 @@ void Algo::RequestHistory(
 			MarketDataSource &marketDataSource,
 			const boost::posix_time::ptime &fromTime,
 			const boost::posix_time::ptime &toTime) {
-	// remove header include
 	marketDataSource.RequestHistory(GetSecurity(), fromTime, toTime);
+}
+
+bool Algo::IsValidPrice(const Settings &settings) const {
+	return settings.IsValidPrice(*m_security);
 }
 
 void Algo::ReportSettings(const SettingsReport &settings) const {

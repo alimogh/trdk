@@ -57,6 +57,8 @@ public:
 				const boost::posix_time::ptime &fromTime,
 				const boost::posix_time::ptime &toTime);
 
+	bool IsValidPrice(const Settings &) const;
+
 	virtual void Update() = 0;
 
 	virtual boost::shared_ptr<PositionBandle> TryToOpenPositions() = 0;

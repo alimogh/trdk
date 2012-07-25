@@ -8,8 +8,15 @@
 
 #include "Prec.hpp"
 #include "Settings.hpp"
+#include "Security.hpp"
 
 namespace pt = boost::posix_time;
+
+namespace {
+
+	const size_t defaultLastPriceScale = 100;
+
+}
 
 Settings::Settings(
 			const IniFile &ini,
@@ -31,9 +38,13 @@ void Settings::UpdateDynamic(const IniFile &ini, const std::string &section) {
 	Interlocking::Exchange(
 		m_level2PeriodSeconds,
 		ini.ReadTypedKey<unsigned short>(section, "level2_period_seconds"));
+	Interlocking::Exchange(
+		m_minPrice,
+		Util::Scale(ini.ReadTypedKey<double>(section, "min_price"), defaultLastPriceScale));
 	Log::Info(
-		"Common dynamic settings: level2_period_seconds = %1%;",
-		m_level2PeriodSeconds);
+		"Common dynamic settings: level2_period_seconds = %1%; min_price = %2%;",
+		m_level2PeriodSeconds,
+		Util::Descale(m_minPrice, defaultLastPriceScale));
 }
 
 void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
@@ -140,4 +151,9 @@ boost::uint64_t Settings::GetUpdatePeriodMilliseconds() const {
 
 boost::uint32_t Settings::GetLevel2PeriodSeconds() const {
 	return m_level2PeriodSeconds;
+}
+
+bool Settings::IsValidPrice(const Security &security) const {
+	Assert(security.GetScale() == defaultLastPriceScale);
+	return m_minPrice <= security.GetLastScaled();
 }

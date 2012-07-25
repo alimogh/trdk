@@ -9,6 +9,7 @@
 #pragma once
 
 class IniFile;
+class Security;
 
 class Settings : private boost::noncopyable {
 
@@ -62,6 +63,8 @@ public:
 
 	boost::uint32_t GetLevel2PeriodSeconds() const;
 
+	bool IsValidPrice(const Security &) const;
+
 private:
 
 	const Time m_startTime;
@@ -69,6 +72,7 @@ private:
 	Values m_values;
 
 	volatile long m_level2PeriodSeconds;
+	volatile LONGLONG m_minPrice;
 
 	const bool m_isReplayMode;
 

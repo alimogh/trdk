@@ -20,6 +20,89 @@ namespace pt = boost::posix_time;
 
 //////////////////////////////////////////////////////////////////////////
 
+class Dispatcher::AlgoState
+		: private boost::noncopyable,
+		public boost::enable_shared_from_this<AlgoState> {
+
+private:
+
+	typedef SignalConnectionList<Position::StateUpdateConnection> StateUpdateConnections;
+
+public:
+
+	explicit AlgoState(
+				boost::shared_ptr<Algo> algo,
+				boost::shared_ptr<Notifier> notifier,
+				boost::shared_ptr<const Settings> settings)
+			: m_algo(algo),
+			m_notifier(notifier),
+			m_settings(settings) {
+		Interlocking::Exchange(m_isBlocked, false);
+		Interlocking::Exchange(m_lastUpdate, 0);
+	}
+
+	void CheckPositions(bool byTimeout) {
+		Assert(!m_settings->IsReplayMode() || !byTimeout);
+		if (byTimeout && !IsTimeToUpdate()) {
+			return;
+		}
+		const Algo::Lock lock(m_algo->GetMutex());
+		if (m_isBlocked || (byTimeout && !IsTimeToUpdate())) {
+			return;
+		}
+		while (CheckPositionsUnsafe());
+	}
+
+	bool IsTimeToUpdate() const {
+		if (IsBlocked() || !m_lastUpdate) {
+			return false;
+		}
+		const auto now
+			= (boost::get_system_time() - m_settings->GetStartTime()).total_milliseconds();
+		Assert(now >= m_lastUpdate);
+		const auto diff = boost::uint64_t(now - m_lastUpdate);
+		return diff >= m_settings->GetUpdatePeriodMilliseconds();
+	}
+
+	bool IsBlocked() const {
+		return m_isBlocked || !m_algo->IsValidPrice(*m_settings);
+	}
+
+private:
+
+	bool CheckPositionsUnsafe();
+
+private:
+
+	void ReportClosedPositon(PositionBandle &positions) {
+		Assert(!positions.Get().empty());
+		foreach (auto &p, positions.Get()) {
+			if (	(p->IsClosed() || p->IsCloseError())
+					&& !p->IsReported()) {
+				m_algo->GetPositionReporter().ReportClosedPositon(*p);
+				p->MarkAsReported();
+			}
+		}
+	}
+
+private:
+
+	boost::shared_ptr<Algo> m_algo;
+	boost::shared_ptr<PositionBandle> m_positions;
+		
+	boost::shared_ptr<Notifier> m_notifier;
+	StateUpdateConnections m_stateUpdateConnections;
+
+	volatile LONGLONG m_isBlocked;
+
+	volatile LONGLONG m_lastUpdate;
+
+	boost::shared_ptr<const Settings> m_settings;
+
+};
+
+//////////////////////////////////////////////////////////////////////////
+
 class Dispatcher::Notifier : private boost::noncopyable {
 
 public:
@@ -127,6 +210,11 @@ public:
 	}
 
 	void Signal(boost::shared_ptr<AlgoState> algoState) {
+		
+		if (algoState->IsBlocked()) {
+			return;
+		}
+		
 		Lock lock(m_algoMutex);
 		if (m_isExit) {
 			return;
@@ -141,6 +229,7 @@ public:
 		if (m_settings->IsReplayMode()) {
 			m_positionsCheckCompletedCondition.wait(lock);
 		}
+
 	}
 
 private:
@@ -190,147 +279,71 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-class Dispatcher::AlgoState
-		: private boost::noncopyable,
-		public boost::enable_shared_from_this<AlgoState> {
+bool Dispatcher::AlgoState::CheckPositionsUnsafe() {
 
-private:
+	const auto now = boost::get_system_time();
+	Interlocking::Exchange(
+		m_lastUpdate,
+		(now - m_settings->GetStartTime()).total_milliseconds());
 
-	typedef SignalConnectionList<Position::StateUpdateConnection> StateUpdateConnections;
-
-public:
-
-	explicit AlgoState(
-				boost::shared_ptr<Algo> algo,
-				boost::shared_ptr<Notifier> notifier,
-				boost::shared_ptr<const Settings> settings)
-			: m_algo(algo),
-			m_notifier(notifier),
-			m_isBlocked(false),
-			m_settings(settings) {
-		Interlocking::Exchange(m_lastUpdate, 0);
-	}
-
-	void CheckPositions(bool byTimeout) {
-		Assert(!m_settings->IsReplayMode() || !byTimeout);
-		if (byTimeout && !IsTimeToUpdate()) {
-			return;
-		}
-		const Algo::Lock lock(m_algo->GetMutex());
-		if (byTimeout && !IsTimeToUpdate()) {
-			return;
-		}
-		while (CheckPositionsUnsafe());
-	}
-
-	bool IsTimeToUpdate() const {
-		if (IsBlocked() || !m_lastUpdate) {
-			return false;
-		}
-		const auto now
-			= (boost::get_system_time() - m_settings->GetStartTime()).total_milliseconds();
-		Assert(now >= m_lastUpdate);
-		const auto diff = boost::uint64_t(now - m_lastUpdate);
-		return diff >= m_settings->GetUpdatePeriodMilliseconds();
-	}
-
-	bool IsBlocked() const {
-		return m_isBlocked;
-	}
-
-private:
-
-	bool CheckPositionsUnsafe() {
-
-		const auto now = boost::get_system_time();
-		Interlocking::Exchange(
-			m_lastUpdate,
-			(now - m_settings->GetStartTime()).total_milliseconds());
-
-		Assert(!m_isBlocked);
+	Assert(!m_isBlocked);
 		
-		const Security &security
-			= *const_cast<const Algo &>(*m_algo).GetSecurity();
-		Assert(security); // must be checked it security object
+	const Security &security
+		= *const_cast<const Algo &>(*m_algo).GetSecurity();
+	Assert(security); // must be checked it security object
 
-		if (m_positions) {
-			Assert(!m_positions->Get().empty());
-			Assert(m_stateUpdateConnections.IsConnected());
-			Assert(!security.IsHistoryData());
-			ReportClosedPositon(*m_positions);
-			if (!m_positions->IsCompleted()) {
-				if (!m_positions->IsCloseError()) {
-					if (	!m_settings->IsReplayMode()
-							&& m_settings->GetCurrentTradeSessionEndime() <= now) {
-						m_algo->ClosePositionsAsIs(*m_positions);
-					} else {
-						m_algo->TryToClosePositions(*m_positions);
-					}
+	if (m_positions) {
+		Assert(!m_positions->Get().empty());
+		Assert(m_stateUpdateConnections.IsConnected());
+		Assert(!security.IsHistoryData());
+		ReportClosedPositon(*m_positions);
+		if (!m_positions->IsCompleted()) {
+			if (!m_positions->IsCloseError()) {
+				if (	!m_settings->IsReplayMode()
+						&& m_settings->GetCurrentTradeSessionEndime() <= now) {
+					m_algo->ClosePositionsAsIs(*m_positions);
 				} else {
-					m_isBlocked = true;
+					m_algo->TryToClosePositions(*m_positions);
 				}
-				return false;
+			} else {
+				Log::Warn(
+					"Algo \"%1%\" BLOCKED by dispatcher (CLOSE error).",
+					m_algo->GetName());
+				Interlocking::Exchange(m_isBlocked, true);
 			}
-			m_stateUpdateConnections.Diconnect();
-			m_positions.reset();
-		}
-
-		Assert(!m_stateUpdateConnections.IsConnected());
-
-		if (security.IsHistoryData()) {
-			m_algo->Update();
 			return false;
 		}
-
-		boost::shared_ptr<PositionBandle> positions = m_algo->TryToOpenPositions();
-		if (!positions || positions->Get().empty()) {
-			return false;
-		}
-
-		StateUpdateConnections stateUpdateConnections;
-		foreach (const auto &p, positions->Get()) {
-			Assert(&p->GetSecurity() == &security);
-			m_algo->ReportDecision(*p);
-			stateUpdateConnections.InsertSafe(
-				p->Subscribe(
-					boost::bind(&Notifier::Signal, m_notifier.get(), shared_from_this())));
-		}
-		Assert(stateUpdateConnections.IsConnected());
-
-		stateUpdateConnections.Swap(m_stateUpdateConnections);
-		positions.swap(m_positions);
-		return true;
-
+		m_stateUpdateConnections.Diconnect();
+		m_positions.reset();
 	}
 
-private:
+	Assert(!m_stateUpdateConnections.IsConnected());
 
-	void ReportClosedPositon(PositionBandle &positions) {
-		Assert(!positions.Get().empty());
-		foreach (auto &p, positions.Get()) {
-			if (	(p->IsClosed() || p->IsCloseError())
-					&& !p->IsReported()) {
-				m_algo->GetPositionReporter().ReportClosedPositon(*p);
-				p->MarkAsReported();
-			}
-		}
+	if (security.IsHistoryData()) {
+		m_algo->Update();
+		return false;
 	}
 
-private:
+	boost::shared_ptr<PositionBandle> positions = m_algo->TryToOpenPositions();
+	if (!positions || positions->Get().empty()) {
+		return false;
+	}
 
-	boost::shared_ptr<Algo> m_algo;
-	boost::shared_ptr<PositionBandle> m_positions;
-		
-	boost::shared_ptr<Notifier> m_notifier;
-	StateUpdateConnections m_stateUpdateConnections;
+	StateUpdateConnections stateUpdateConnections;
+	foreach (const auto &p, positions->Get()) {
+		Assert(&p->GetSecurity() == &security);
+		m_algo->ReportDecision(*p);
+		stateUpdateConnections.InsertSafe(
+			p->Subscribe(
+				boost::bind(&Notifier::Signal, m_notifier.get(), shared_from_this())));
+	}
+	Assert(stateUpdateConnections.IsConnected());
 
-	bool m_isBlocked;
+	stateUpdateConnections.Swap(m_stateUpdateConnections);
+	positions.swap(m_positions);
+	return true;
 
-	volatile LONGLONG m_lastUpdate;
-
-	boost::shared_ptr<const Settings> m_settings;
-
-};
+}
 
 //////////////////////////////////////////////////////////////////////////
 
