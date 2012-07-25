@@ -43,7 +43,7 @@ public:
 			}
 			Log::Info("Logging \"%1%\" positions into %2%...", algo.GetName(), filePath);
 			if (isNew) {
-				m_file << "type,symbol,exit type,entry price,entry date time,number of shares,exit price,exit date time,commission paid,open order,close order,P/L" << std::endl;
+				m_file << "type,symbol,exit type,start price,entry price,entry date time,number of shares,exit price,exit date time,commission paid,open order,close order,P/L" << std::endl;
 			}
 			m_isInited = true;
 		}
@@ -71,6 +71,7 @@ public:
 			<< position.GetTypeStr()
 			<< "," << security.GetSymbol()
 			<< "," << position.GetCloseTypeStr()
+			<< "," << security.Descale(position.GetStartPrice())
 			<< "," << security.Descale(position.GetOpenPrice());
 		{
 			const lt::local_date_time esdTime(position.GetOpenTime(), Util::GetEdtTimeZone());
