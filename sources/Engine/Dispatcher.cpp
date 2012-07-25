@@ -37,11 +37,11 @@ private:
 
 public:
 
-	explicit Notifier(boost::shared_ptr<const Settings> options)
+	explicit Notifier(boost::shared_ptr<const Settings> settings)
 			: m_isActive(false),
 			m_isExit(false),
 			m_current(&m_queue.first),
-			m_settings(options) {
+			m_settings(settings) {
 		
 		{
 			const char *const threadName = "Algo";
@@ -85,6 +85,7 @@ public:
 				Assert(!m_isExit);
 				m_isExit = true;
 				m_isActive = false;
+				m_positionsCheckCompletedCondition.notify_all();
 				m_positionsCheckCondition.notify_all();
 			}
 			m_threads.join_all();
@@ -137,6 +138,9 @@ public:
 		}
 		m_current->push_back(std::make_pair(algoState, false));
 		m_positionsCheckCondition.notify_one();
+		if (m_settings->IsReplayMode()) {
+			m_positionsCheckCompletedCondition.wait(lock);
+		}
 	}
 
 private:
@@ -171,6 +175,7 @@ private:
 
 	Mutex m_algoMutex;
 	Condition m_positionsCheckCondition;
+	Condition m_positionsCheckCompletedCondition;
 	boost::thread_group m_threads;
 
 	std::pair<NotifyList, NotifyList> m_queue;
@@ -397,6 +402,9 @@ bool Dispatcher::Notifier::AlgoIteration() {
 		m_current = m_current == &m_queue.first
 			?	&m_queue.second
 			:	&m_queue.first;
+		if (m_settings->IsReplayMode()) {
+			m_positionsCheckCompletedCondition.notify_all();
+		}
 	}
 
 	Assert(!notifyList->empty());
