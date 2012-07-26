@@ -47,7 +47,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			AppendEventRecordUnsafe(boost::posix_time::microsec_clock::local_time(), str);
+			AppendEventRecordUnsafe(boost::get_system_time(), str);
 		} catch (...) {
 			AssertFail("Unhandled exception caught");
 		}
@@ -57,7 +57,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			AppendEventRecordUnsafe(boost::posix_time::microsec_clock::local_time(), callback());
+			AppendEventRecordUnsafe(boost::get_system_time(), callback());
 		} catch (...) {
 			AssertFail("Unhandled exception caught");
 		}
@@ -67,7 +67,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			AppendTradingRecordUnsafe(boost::posix_time::microsec_clock::local_time(), tag, str);
+			AppendTradingRecordUnsafe(boost::get_system_time(), tag, str);
 		} catch (...) {
 			AssertFail("Unhandled exception caught");
 		}
@@ -79,11 +79,11 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendEventRecordUnsafe(time, boost::format(str) % param1);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -102,11 +102,11 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(time, tag, boost::format(str) % param1);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -126,11 +126,11 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendEventRecordUnsafe(time, boost::format(str) % param1 % param2);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -154,11 +154,11 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(time, tag, boost::format(str) % param1 % param2);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -183,11 +183,11 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendEventRecordUnsafe(time, boost::format(str) % param1 % param2 % param3);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -212,11 +212,11 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(time, tag, boost::format(str) % param1 % param2 % param3);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -242,11 +242,11 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendEventRecordUnsafe(time, boost::format(str) % param1 % param2 % param3 % param4);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -272,11 +272,11 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(time, tag, boost::format(str) % param1 % param2 % param3 % param4);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -303,11 +303,11 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendEventRecordUnsafe(time, boost::format(str) % param1 % param2 % param3 % param4 % param5);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -334,11 +334,11 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(time, tag, boost::format(str) % param1 % param2 % param3 % param4 % param5);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -366,11 +366,11 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendEventRecordUnsafe(time, boost::format(str) % param1 % param2 % param3 % param4 % param5 % param6);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -398,11 +398,11 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(time, tag, boost::format(str) % param1 % param2 % param3 % param4 % param5 % param6);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -439,7 +439,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(
 				time,
 				tag,
@@ -447,7 +447,7 @@ namespace Log { namespace Detail {
 					% param1 % param2 % param3 % param4 % param5 % param6 % param7);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -483,14 +483,14 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendEventRecordUnsafe(
 				time,
 				boost::format(str)
 					% param1 % param2 % param3 % param4 % param5 % param6 % param7);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -528,7 +528,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendEventRecordUnsafe(
 				time,
 				boost::format(str)
@@ -536,7 +536,7 @@ namespace Log { namespace Detail {
 					% param7 % param8);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -575,7 +575,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(
 				time,
 				tag,
@@ -584,7 +584,7 @@ namespace Log { namespace Detail {
 					% param7 % param8);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -624,7 +624,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendEventRecordUnsafe(
 				time,
 				boost::format(str)
@@ -632,7 +632,7 @@ namespace Log { namespace Detail {
 					% param7 % param8 % param9);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -673,7 +673,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(
 				time,
 				tag,
@@ -682,7 +682,7 @@ namespace Log { namespace Detail {
 					% param7 % param8 % param9);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -724,7 +724,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendEventRecordUnsafe(
 				time,
 				boost::format(str)
@@ -732,7 +732,7 @@ namespace Log { namespace Detail {
 					% param7 % param8 % param9 % param10);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -776,7 +776,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendEventRecordUnsafe(
 				time,
 				boost::format(str)
@@ -784,7 +784,7 @@ namespace Log { namespace Detail {
 					% param7 % param8 % param9 % param10 % param11);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -827,7 +827,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(
 				time,
 				tag,
@@ -836,7 +836,7 @@ namespace Log { namespace Detail {
 					% param7 % param8 % param9 % param10);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -881,7 +881,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(
 				time,
 				tag,
@@ -890,7 +890,7 @@ namespace Log { namespace Detail {
 					% param7 % param8 % param9 % param10 % param11);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -937,7 +937,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(
 				time,
 				tag,
@@ -946,7 +946,7 @@ namespace Log { namespace Detail {
 					% param7 % param8 % param9 % param10 % param11 % param12);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -995,7 +995,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(
 				time,
 				tag,
@@ -1004,7 +1004,7 @@ namespace Log { namespace Detail {
 					% param7 % param8 % param9 % param10 % param11 % param12 % param13);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -1055,7 +1055,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(
 				time,
 				tag,
@@ -1064,7 +1064,7 @@ namespace Log { namespace Detail {
 					% param7 % param8 % param9 % param10 % param11 % param12 % param13 %param14);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -1117,7 +1117,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(
 				time,
 				tag,
@@ -1127,7 +1127,7 @@ namespace Log { namespace Detail {
 					% param13 %param14 % param15);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -1182,7 +1182,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(
 				time,
 				tag,
@@ -1192,7 +1192,7 @@ namespace Log { namespace Detail {
 					% param13 %param14 % param15 % param16);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -1249,7 +1249,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(
 				time,
 				tag,
@@ -1259,7 +1259,7 @@ namespace Log { namespace Detail {
 					% param13 %param14 % param15 % param16 % param17);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")
@@ -1318,7 +1318,7 @@ namespace Log { namespace Detail {
 			return;
 		}
 		try {
-			const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+			const boost::posix_time::ptime time = boost::get_system_time();
 			AppendTradingRecordUnsafe(
 				time,
 				tag,
@@ -1328,7 +1328,7 @@ namespace Log { namespace Detail {
 					% param13 %param14 % param15 % param16 % param17 % param18);
 		} catch (const boost::io::format_error &ex) {
 			try {
-				const boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
+				const boost::posix_time::ptime time = boost::get_system_time();
 				AppendEventRecordUnsafe(
 					time,
 					boost::format("Failed to format log record \"%1%\" with error: \"%2%\".")

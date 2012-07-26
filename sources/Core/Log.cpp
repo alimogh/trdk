@@ -30,7 +30,7 @@ namespace {
 			const bool isStarted = !log;
 			log = &newLog;
 			if (isStarted) {
-				AppendRecordHead(boost::posix_time::microsec_clock::local_time());
+				AppendRecordHead(boost::get_system_time());
 				*log << "Started." << std::endl;
 			}
 			Interlocking::Exchange(isEnabled, true);
