@@ -316,10 +316,10 @@ private:
 					std::make_pair(
 						price,
 						isAsk
-							?	std::make_pair(line.second->size, 0)
-							:	std::make_pair(0, line.second->size)));
+							?	std::make_pair(line.second->size / 100, 0)
+							:	std::make_pair(0, line.second->size / 100)));
 			} else {
-				(isAsk ? i->second.first : i->second.second) += line.second->size;
+				(isAsk ? i->second.first : i->second.second) += line.second->size / 100;
 			}
 		}
 	}
