@@ -40,27 +40,41 @@ std::auto_ptr<PositionReporter> AskBid::CreatePositionReporter() const {
 	return result;
 }
 
-bool AskBid::IsValidSread() const {
-	const Security &security = *GetSecurity();
-	const auto spread = security.GetBidScaled() - security.GetAskScaled();
+bool AskBid::IsValidSread(Security::Price valGt, Security::Price valLs) const {
+	const auto spread = valGt - valLs;
+	if (spread < 0) {
+		return false;
+	}
 	const auto cmpVal = m_settings.isAbsoluteSpread
 		?	m_settings.spread.absolute
-		:	Security::Price(boost::math::round(security.GetBidScaled() * m_settings.spread.percents));
+		:	Security::Price(boost::math::round(valGt * m_settings.spread.percents));
 	return spread >= cmpVal;
 }
 
 bool AskBid::IsLongPosEnabled() const {
-	if (m_settings.longPos.openMode == Settings::OPEN_MODE_NONE) {
-		return false;
+	switch (m_settings.openMode) {
+		case Settings::OPEN_MODE_SHORT_IF_ASK_MORE_BID:
+			return IsValidSread(GetSecurity()->GetBidScaled(), GetSecurity()->GetAskScaled());
+		case Settings::OPEN_MODE_SHORT_IF_BID_MORE_ASK:
+			return IsValidSread(GetSecurity()->GetAskScaled(), GetSecurity()->GetBidScaled());
+		default:
+			AssertFail("Unknown open mode.");
+		case Settings::OPEN_MODE_NONE:
+			return false;
 	}
-	return IsValidSread();
 }
 
 bool AskBid::IsShortPosEnabled() const {
-	if (m_settings.longPos.openMode == Settings::OPEN_MODE_NONE) {
-		return false;
+	switch (m_settings.openMode) {
+		case Settings::OPEN_MODE_SHORT_IF_ASK_MORE_BID:
+			return IsValidSread(GetSecurity()->GetAskScaled(), GetSecurity()->GetBidScaled());
+		case Settings::OPEN_MODE_SHORT_IF_BID_MORE_ASK:
+			return IsValidSread(GetSecurity()->GetBidScaled(), GetSecurity()->GetAskScaled());
+		default:
+			AssertFail("Unknown open mode.");
+		case Settings::OPEN_MODE_NONE:
+			return false;
 	}
-	return IsValidSread();
 }
 
 Security::Price AskBid::GetLongPriceMod() const {
@@ -97,10 +111,10 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 					AssertFail("Unknown open mode.");
 				case Settings::OPEN_MODE_NONE:
 					return "none";
-				case Settings::OPEN_MODE_BID:
-					return "bid";
-				case Settings::OPEN_MODE_ASK:
-					return "ask";
+				case Settings::OPEN_MODE_SHORT_IF_ASK_MORE_BID:
+					return "short_if_ask>bid";
+				case Settings::OPEN_MODE_SHORT_IF_BID_MORE_ASK:
+					return "short_if_bid>ask";
 			}
 		}
 
@@ -131,30 +145,18 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	Settings settings = {};
 
 	{
-		const std::string mode = ini.ReadKey(section, "open_shorts", false);
+		const std::string mode = ini.ReadKey(section, "open_mode", false);
 		if (mode == "none") {
-			settings.shortPos.openMode = Settings::OPEN_MODE_NONE;
-		} else if (mode == "bid") {
-			settings.shortPos.openMode = Settings::OPEN_MODE_BID;
-		} else if (mode == "ask") {
-			settings.shortPos.openMode = Settings::OPEN_MODE_ASK;
+			settings.openMode = Settings::OPEN_MODE_NONE;
+		} else if (mode == "short_if_ask>bid") {
+			settings.openMode = Settings::OPEN_MODE_SHORT_IF_ASK_MORE_BID;
+		} else if (mode == "short_if_bid>ask") {
+			settings.openMode = Settings::OPEN_MODE_SHORT_IF_BID_MORE_ASK;
 		} else {
-			throw IniFile::KeyFormatError("open_shorts possible values: none, ask, bid");
+			throw IniFile::KeyFormatError("open_mode possible values: none, short_if_ask>bid, short_if_bid>ask");
 		}
 	}
-	{
-		const std::string mode = ini.ReadKey(section, "open_longs", false);
-		if (mode == "none") {
-			settings.longPos.openMode = Settings::OPEN_MODE_NONE;
-		} else if (mode == "bid") {
-			settings.longPos.openMode = Settings::OPEN_MODE_BID;
-		} else if (mode == "ask") {
-			settings.longPos.openMode = Settings::OPEN_MODE_ASK;
-		} else {
-			throw IniFile::KeyFormatError("possible values: none, ask, bid");
-		}
-	}
-	
+
 	settings.openOrderType
 		= Util::ConvertStrToOrderType(ini.ReadKey(section, "open_order_type", false));
 	settings.closeOrderType
@@ -187,8 +189,7 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 		= pt::seconds(ini.ReadTypedKey<long>(section, "position_time_seconds"));
 
 	SettingsReport settingsReport;
-	AppendSettingsReport("open_shorts", Util::ConvertToStr(settings.shortPos.openMode), settingsReport);
-	AppendSettingsReport("open_longs", Util::ConvertToStr(settings.longPos.openMode), settingsReport);
+	AppendSettingsReport("open_mode", Util::ConvertToStr(settings.openMode), settingsReport);
 	AppendSettingsReport(
 		"spread",
 		settings.isAbsoluteSpread
@@ -211,32 +212,26 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 
 Security::Price AskBid::ChooseLongOpenPrice(
 			Security::Price ask,
-			Security::Price bid)
+			Security::Price /*bid*/)
 		const {
-	switch (m_settings.longPos.openMode) {
-		case Settings::OPEN_MODE_BID:
-			return bid;
-		case Settings::OPEN_MODE_ASK:
-			return ask;
-		default:
-			AssertFail("Failed to get position open price.");
-			throw Exception("Failed to get position open price");
-	}
+	/* 07/25/2012:
+		[1:42:24] Eugene V. Palchukovsky: when we use IOC (now useing MKT) and open long - we use current bid for price, righ?
+		[1:42:45] Torsten Jacobi: bid/ask depening on what trade direction we go
+		[1:42:58] Torsten Jacobi: long ask, short bid
+	 */
+	return ask;
 }
 
 Security::Price AskBid::ChooseShortOpenPrice(
-			Security::Price ask,
+			Security::Price /*ask*/,
 			Security::Price bid)
 		const {
-	switch (m_settings.shortPos.openMode) {
-		case Settings::OPEN_MODE_BID:
-			return bid;
-		case Settings::OPEN_MODE_ASK:
-			return ask;
-		default:
-			AssertFail("Failed to get position open price.");
-			throw Exception("Failed to get position open price");
-	}
+	/* 07/25/2012:
+		[1:42:24] Eugene V. Palchukovsky: when we use IOC (now useing MKT) and open long - we use current bid for price, righ?
+		[1:42:45] Torsten Jacobi: bid/ask depening on what trade direction we go
+		[1:42:58] Torsten Jacobi: long ask, short bid
+	 */
+	return bid;
 }
 
 const std::string & AskBid::GetName() const {

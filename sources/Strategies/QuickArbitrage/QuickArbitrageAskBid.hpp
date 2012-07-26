@@ -24,21 +24,16 @@ namespace Strategies { namespace QuickArbitrage {
 
 			enum OpenMode {
 				OPEN_MODE_NONE,
-				OPEN_MODE_ASK,
-				OPEN_MODE_BID
+				OPEN_MODE_SHORT_IF_ASK_MORE_BID,
+				OPEN_MODE_SHORT_IF_BID_MORE_ASK
 			};
 
-			struct Direction {
-				OpenMode openMode;
-			};
+			OpenMode openMode;
 
 			enum OrderType {
 				ORDER_TYPE_IOC,
 				ORDER_TYPE_MKT
 			};
-
-			Direction shortPos;
-			Direction longPos;
 
 			OrderType openOrderType;
 			OrderType closeOrderType;
@@ -108,7 +103,7 @@ namespace Strategies { namespace QuickArbitrage {
 
 		void ReportTakeProfitDo(const Position &position) const;
 
-		bool IsValidSread() const;
+		bool IsValidSread(Security::Price valGt, Security::Price valLs) const;
 
 	private:
 
