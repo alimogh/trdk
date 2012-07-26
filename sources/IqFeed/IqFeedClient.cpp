@@ -385,8 +385,7 @@ namespace {
 	public:
 
 		Level1Connection(Service &service)
-				: Connection(service, 5009),
-				m_noDataMessages(0) {
+				: Connection(service, 5009) {
 			//...//
 		}
 
@@ -402,19 +401,9 @@ namespace {
 			switch (*message.GetBegin()) {
 				case 'Q':
 					HandleUpdateMessage(timeOfReception, message, false);
-					m_noDataMessages = 0;
 					break;
 				case 'P':
 					HandleUpdateMessage(timeOfReception, message, true);
-					m_noDataMessages = 0;
-					break;
-				default:
-					if (++m_noDataMessages >= 30) {
-						Log::Warn(
-							IQFEED_CLIENT_CONNECTION_NAME "Level I: no data last %1% messages.",
-							m_noDataMessages);
-						m_noDataMessages = 0;
-					}
 					break;
 			}
 		}
@@ -473,10 +462,6 @@ namespace {
 
 		}
 
-	private:
-
-		size_t m_noDataMessages;
-
 	};
 
 	template<typename Service>
@@ -485,8 +470,7 @@ namespace {
 	public:
 
 		Level2Connection(Service &service)
-				: Connection(service, 9200),
-				m_noDataMessages(0) {
+				: Connection(service, 9200) {
 			//...//
 		}
 
@@ -503,23 +487,14 @@ namespace {
 			switch (*message.GetBegin()) {
 				case 'U':
 					HandleUpdateMessage(timeOfReception, message);
-					m_noDataMessages = 0;
 					break;
 				case 'n': // n,[SYMBOL]<CR><LF> Symbol not found message.
 					HandleNoSymbolMessage(message);
-					m_noDataMessages = 0;
 					break;
 				case 'E': // E,[error text]<CR><LF> An error message. 
 					HandleErrorMessage(message);
-					m_noDataMessages = 0;
 					break;
 				default:
-					if (++m_noDataMessages >= 30) {
-						Log::Warn(
-							IQFEED_CLIENT_CONNECTION_NAME "Level II: no data last %1% messages.",
-							m_noDataMessages);
-						m_noDataMessages = 0;
-					}
 					break;
 			}
 		}
@@ -644,10 +619,6 @@ namespace {
 			subscriber->second->UpdateLevel2(timeOfReception, ask, bid);
 
 		}
-
-	private:
-
-		size_t m_noDataMessages;
 
 	};
 
