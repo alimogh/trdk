@@ -30,6 +30,9 @@ namespace Strategies { namespace QuickArbitrage {
 
 			OpenMode openMode;
 
+			bool isLongsEnabled;
+			bool isShortsEnabled;
+
 			enum OrderType {
 				ORDER_TYPE_IOC,
 				ORDER_TYPE_MKT

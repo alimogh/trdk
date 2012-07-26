@@ -102,6 +102,13 @@ protected:
 		report.push_back(item);
 	}
 
+	static void AppendSettingsReport(
+				const std::string &name,
+				bool val,
+				SettingsReport &report) {
+		AppendSettingsReport(name, val ? "true" : "false", report);
+	}
+
 	static void AppendPercentSettingsReport(
 				const std::string &name,
 				double val,

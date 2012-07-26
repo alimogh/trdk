@@ -52,6 +52,9 @@ bool AskBid::IsValidSread(Security::Price valGt, Security::Price valLs) const {
 }
 
 bool AskBid::IsLongPosEnabled() const {
+	if (!m_settings.isLongsEnabled) {
+		return false;
+	}
 	switch (m_settings.openMode) {
 		case Settings::OPEN_MODE_SHORT_IF_ASK_MORE_BID:
 			return IsValidSread(GetSecurity()->GetBidScaled(), GetSecurity()->GetAskScaled());
@@ -65,6 +68,9 @@ bool AskBid::IsLongPosEnabled() const {
 }
 
 bool AskBid::IsShortPosEnabled() const {
+	if (!m_settings.isShortsEnabled) {
+		return false;
+	}
 	switch (m_settings.openMode) {
 		case Settings::OPEN_MODE_SHORT_IF_ASK_MORE_BID:
 			return IsValidSread(GetSecurity()->GetAskScaled(), GetSecurity()->GetBidScaled());
@@ -157,6 +163,9 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 		}
 	}
 
+	settings.isLongsEnabled = ini.ReadBoolKey(section, "longs_enabled");
+	settings.isShortsEnabled = ini.ReadBoolKey(section, "shorts_enabled");
+
 	settings.openOrderType
 		= Util::ConvertStrToOrderType(ini.ReadKey(section, "open_order_type", false));
 	settings.closeOrderType
@@ -178,10 +187,12 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 		}
 	}
 
-	settings.takeProfit
-		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "take_profit"));
-	settings.stopLoss
-		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "stop_loss"));
+	if (settings.closeOrderType == Settings::ORDER_TYPE_IOC) {
+		settings.takeProfit
+			= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "take_profit"));
+		settings.stopLoss
+			= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "stop_loss"));
+	}
 	settings.volume
 		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "volume"));
 
@@ -190,6 +201,8 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 
 	SettingsReport settingsReport;
 	AppendSettingsReport("open_mode", Util::ConvertToStr(settings.openMode), settingsReport);
+	AppendSettingsReport("longs_enabled", settings.isLongsEnabled, settingsReport);
+	AppendSettingsReport("shorts_enabled", settings.isShortsEnabled, settingsReport);
 	AppendSettingsReport(
 		"spread",
 		settings.isAbsoluteSpread
@@ -214,6 +227,7 @@ Security::Price AskBid::ChooseLongOpenPrice(
 			Security::Price ask,
 			Security::Price /*bid*/)
 		const {
+	Assert(m_settings.isLongsEnabled);
 	/* 07/25/2012:
 		[1:42:24] Eugene V. Palchukovsky: when we use IOC (now useing MKT) and open long - we use current bid for price, righ?
 		[1:42:45] Torsten Jacobi: bid/ask depening on what trade direction we go
@@ -226,6 +240,7 @@ Security::Price AskBid::ChooseShortOpenPrice(
 			Security::Price /*ask*/,
 			Security::Price bid)
 		const {
+	Assert(m_settings.isShortsEnabled);
 	/* 07/25/2012:
 		[1:42:24] Eugene V. Palchukovsky: when we use IOC (now useing MKT) and open long - we use current bid for price, righ?
 		[1:42:45] Torsten Jacobi: bid/ask depening on what trade direction we go
