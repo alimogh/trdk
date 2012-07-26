@@ -249,6 +249,8 @@ boost::shared_ptr<PositionBandle> s::Algo::TryToOpenPositions() {
 		}
 	}
 
+	GetSecurity()->ReportLevel2Snapshot();
+
 	return result;
 
 }

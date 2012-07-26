@@ -59,6 +59,10 @@ private:
 	typedef boost::shared_lock<MarketDataTimeMutex> MarketDataTimeReadLock;
 	typedef boost::unique_lock<MarketDataTimeMutex> MarketDataTimeWriteLock;
 
+	typedef boost::shared_mutex Level2Mutex;
+	typedef boost::shared_lock<Level2Mutex> Level2ReadLock;
+	typedef boost::unique_lock<Level2Mutex> Level2WriteLock;
+
 public:
 
 	explicit Security(
@@ -122,6 +126,10 @@ public:
 
 public:
 
+	void ReportLevel2Snapshot() const;
+
+public:
+
 	Price GetLastScaled() const;
 	Price GetAskScaled() const;
 	Price GetAskLevel2Scaled() const;
@@ -137,7 +145,7 @@ public:
 	Qty GetAskSize();
 	Qty GetBidSize();
 
-protected:
+private:
 
 	void SetLastMarketDataTime(const boost::posix_time::ptime &);
 
@@ -187,6 +195,10 @@ private:
 
 	class MarketDataLevel2Log;
 	std::unique_ptr<MarketDataLevel2Log> m_marketDataLevel2Log;
+
+	class MarketDataLevel2SnapshotLog;
+	std::unique_ptr<MarketDataLevel2SnapshotLog> m_marketDataLevel2SnapshotLog;
+	mutable Level2Mutex m_level2Mutex;
 
 	mutable boost::signals2::signal<UpdateSlotSignature> m_updateSignal;
 

@@ -62,6 +62,8 @@ public:
 	boost::uint64_t GetUpdatePeriodMilliseconds() const;
 
 	boost::uint32_t GetLevel2PeriodSeconds() const;
+	bool IsLevel2SnapshotPrintEnabled() const;
+	boost::uint16_t GetLevel2SnapshotPrintTimeSeconds() const;
 
 	bool IsValidPrice(const Security &) const;
 
@@ -72,6 +74,7 @@ private:
 	Values m_values;
 
 	volatile long m_level2PeriodSeconds;
+	volatile long m_level2SnapshotPrintTimeSeconds;
 	volatile LONGLONG m_minPrice;
 
 	const bool m_isReplayMode;
