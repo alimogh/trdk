@@ -37,6 +37,10 @@ namespace {
 	typedef std::map<std::string, boost::shared_ptr<Security>> UpdatesSubscribers;
 	typedef std::map<std::string, boost::shared_ptr<Security>> HistorySubscribers;
 
+	enum Market {
+		MARKET_NASDAQ	= 5
+	};
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -532,6 +536,10 @@ namespace {
 
 			// Unused by IQFeed
 			/*if (message.GetFieldAsUnsignedIntFromHex(11, true) != 0x52) {
+				return;
+			}*/
+
+			/*if (message.GetFieldAsUnsignedInt(12, true) != MARKET_NASDAQ) {
 				return;
 			}*/
 
