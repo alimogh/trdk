@@ -942,14 +942,14 @@ public:
 
 	void SendSubscribeToMarketDataLevel1Request(const Security &subscriber) {
 		m_level1->Send((boost::format("w%1%\r\n") % subscriber.GetSymbol()).str());
-		Log::Debug(
+		Log::Info(
 			"Sent " IQFEED_CLIENT_CONNECTION_NAME " Level I market data subscription request for \"%1%\".",
 			subscriber.GetSymbol());
 	}
 
 	void SendSubscribeToMarketDataLevel2Request(const Security &subscriber) {
 		m_level2->Send((boost::format("w%1%\r\n") % subscriber.GetSymbol()).str());
-		Log::Debug(
+		Log::Info(
 			"Sent " IQFEED_CLIENT_CONNECTION_NAME " Level II market data subscription request for \"%1%\".",
 			subscriber.GetSymbol());
 	}
