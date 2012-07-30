@@ -10,6 +10,8 @@
 
 class Security;
 
+//////////////////////////////////////////////////////////////////////////
+
 class MarketDataSource : private boost::noncopyable {
 
 public:
@@ -33,10 +35,34 @@ public:
 
 	virtual void Connect() = 0;
 
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+class LiveMarketDataSource : public MarketDataSource {
+
+public:
+
+	LiveMarketDataSource();
+	virtual ~LiveMarketDataSource();
+
 public:
 
 	virtual void SubscribeToMarketDataLevel1(boost::shared_ptr<Security>) const = 0;
 	virtual void SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const = 0;
+
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+class HistoryMarketDataSource : public MarketDataSource {
+
+public:
+
+	HistoryMarketDataSource();
+	virtual ~HistoryMarketDataSource();
+
+public:
 
 	virtual void RequestHistory(
 			boost::shared_ptr<Security>,
@@ -51,3 +77,5 @@ public:
 		= 0;
 
 };
+
+//////////////////////////////////////////////////////////////////////////

@@ -9,8 +9,11 @@
 #pragma once
 
 #include "Core/TradeSystem.hpp"
+#include "Core/MarketDataSource.hpp"
 
-class InteractiveBrokersTradeSystem : public TradeSystem {
+class InteractiveBrokersTradeSystem
+	: public TradeSystem,
+	public LiveMarketDataSource {
 
 public:
 
@@ -66,6 +69,11 @@ public:
 			OrderStatusUpdateSlot = OrderStatusUpdateSlot());
 
 	virtual void CancelAllOrders(const Security &);
+
+public:
+
+	void SubscribeToMarketDataLevel1(boost::shared_ptr<Security>) const;
+	virtual void SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const;
 
 private:
 

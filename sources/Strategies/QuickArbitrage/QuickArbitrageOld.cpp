@@ -16,17 +16,16 @@ using namespace Strategies::QuickArbitrage;
 
 namespace {
 
-	const char *const logTag = "quick-arbitrage-old";
-
 	const std::string algoName = "Quick Arbitrage Old";
 
 }
 
 Old::Old(
+			const std::string &tag,
 			boost::shared_ptr<Security> security,
 			const IniFile &ini,
 			const std::string &section)
-		: Base(security, logTag) {
+		: Base(tag, security) {
 	DoSettingsUpdate(ini, section);
 }
 

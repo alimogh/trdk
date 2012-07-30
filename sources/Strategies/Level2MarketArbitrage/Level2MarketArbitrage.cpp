@@ -17,7 +17,6 @@ namespace pt = boost::posix_time;
 
 namespace {
 	
-	const char *const logTag = "level-2-arbitrage";
 	const std::string algoName = "Level II Market Arbitrage";
 
 	enum PositionState {
@@ -29,10 +28,15 @@ namespace {
 }
 
 s::Algo::Algo(
+			const std::string &tag,
 			boost::shared_ptr<Security> security,
 			const IniFile &ini,
 			const std::string &section)
-		: Base(security, logTag) {
+		: Base(tag, security) {
+	{
+		const Settings settings = {};
+		m_settings = settings;
+	}
 	DoSettingsUpdate(ini, section);
 }
 
@@ -44,9 +48,20 @@ const std::string & s::Algo::GetName() const {
 	return algoName;
 }
 
-void s::Algo::SubscribeToMarketData(MarketDataSource &marketDataSource) {
-	marketDataSource.SubscribeToMarketDataLevel1(GetSecurity());
-	marketDataSource.SubscribeToMarketDataLevel2(GetSecurity());
+void s::Algo::SubscribeToMarketData(
+			const LiveMarketDataSource &iqFeed,
+			const LiveMarketDataSource &interactiveBrokers) {
+	iqFeed.SubscribeToMarketDataLevel1(GetSecurity());
+	switch (m_settings.level2DataSource) {
+		case Settings::MARKET_DATA_SOURCE_IQFEED:
+			iqFeed.SubscribeToMarketDataLevel2(GetSecurity());
+			break;
+		case Settings::MARKET_DATA_SOURCE_INTERACTIVE_BROKERS:
+			interactiveBrokers.SubscribeToMarketDataLevel2(GetSecurity());
+			break;
+		default:
+			AssertFail("Unknown market data source.");
+	}
 }
 
 void s::Algo::UpdateAlogImplSettings(const IniFile &ini, const std::string &section) {
@@ -92,10 +107,24 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 			switch (type) {
 				case Settings::ORDER_TYPE_IOC:
 					return "IOC";
-				case  Settings::ORDER_TYPE_MKT:
+				case Settings::ORDER_TYPE_MKT:
 					return "MKT";
 				default:
 					AssertFail("Unknown order type.");
+					return "";
+			}
+		}
+		static const char * ConvertToStr(Settings::MarketDataSource marketDataSource) {
+			switch (marketDataSource) {
+				case Settings::MARKET_DATA_SOURCE_IQFEED:
+					return "IQFeed";
+				case Settings::MARKET_DATA_SOURCE_INTERACTIVE_BROKERS:
+					return "Interactive Brokers";
+				case Settings::MARKET_DATA_SOURCE_NOT_SET:
+					AssertFail("Market data source not set.");
+					return "";
+				default:
+					AssertFail("Unknown market data Level II source.");
 					return "";
 			}
 		}
@@ -104,6 +133,20 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 				return Settings::ORDER_TYPE_IOC;
 			} else if (str == "MKT") {
 				return Settings::ORDER_TYPE_MKT;
+			} else {
+				throw IniFile::KeyFormatError("possible values: IOC, MKT");
+			}
+		}
+		static Settings::MarketDataSource ConvertStrToMarketDataSource(const std::string &str) {
+			if (	boost::iequals(str, "IQFeed")
+					|| boost::iequals(str, "IQ")
+					|| boost::iequals(str, "IQFeed.net")) {
+				return Settings::MARKET_DATA_SOURCE_IQFEED;
+			} else if (
+					boost::iequals(str, "Interactive Brokers")
+					|| boost::iequals(str, "InteractiveBrokers")
+					|| boost::iequals(str, "IB")) {
+				return Settings::MARKET_DATA_SOURCE_INTERACTIVE_BROKERS;
 			} else {
 				throw IniFile::KeyFormatError("possible values: IOC, MKT");
 			}
@@ -130,6 +173,10 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	settings.closeOrderType
 		= Util::ConvertStrToOrderType(ini.ReadKey(section, "close_order_type", false));
 
+	settings.level2DataSource = m_settings.level2DataSource
+		?	m_settings.level2DataSource
+		:	Util::ConvertStrToMarketDataSource(ini.ReadKey(section, "level2_data_source", false));
+
 	SettingsReport report;
 	AppendPercentSettingsReport("ask_bid_difference_percent", settings.askBidDifferencePercent * 100, report);
 	if (settings.closeOrderType == Settings::ORDER_TYPE_IOC) {
@@ -140,10 +187,28 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	AppendSettingsReport("position_time_seconds", settings.positionTimeSeconds, report);
 	AppendSettingsReport("open_order_type", Util::ConvertToStr(settings.openOrderType), report);
 	AppendSettingsReport("close_order_type", Util::ConvertToStr(settings.closeOrderType), report);
+	AppendSettingsReport("level2_data_source", Util::ConvertToStr(settings.level2DataSource), report);
 	AppendSettingsReport("volume", GetSecurity()->Descale(settings.volume), report);
 	ReportSettings(report);
 
 	m_settings = settings;
+	UpdateCallbacks();
+
+}
+
+void s::Algo::UpdateCallbacks() {
+	switch (m_settings.level2DataSource) {
+		case Settings::MARKET_DATA_SOURCE_IQFEED:
+			m_askSizeGetter = boost::bind(&Security::GetAskSizeIqFeed, GetSecurity());
+			m_bidSizeGetter = boost::bind(&Security::GetBidSizeIqFeed, GetSecurity());
+			break;
+		case Settings::MARKET_DATA_SOURCE_INTERACTIVE_BROKERS:
+			m_askSizeGetter = boost::bind(&Security::GetAskSizeIb, GetSecurity());
+			m_bidSizeGetter = boost::bind(&Security::GetBidSizeIb, GetSecurity());
+			break;
+		default:
+			AssertFail("Unknown market data source.");
+	}
 
 }
 
@@ -210,9 +275,9 @@ boost::shared_ptr<Position> s::Algo::OpenLongPostion(
 boost::shared_ptr<PositionBandle> s::Algo::TryToOpenPositions() {
 	
 	boost::shared_ptr<PositionBandle> result;
-	
-	const auto askSize = GetSecurity()->GetAskSize();
-	const auto bidSize = GetSecurity()->GetBidSize();
+
+	const auto askSize = m_askSizeGetter();
+	const auto bidSize = m_bidSizeGetter();
 	if (	!askSize
 			|| !bidSize
 			|| m_settings.openMode == Settings::OPEN_MODE_NONE) {
@@ -406,7 +471,7 @@ void s::Algo::ClosePositionsAsIs(PositionBandle &positions) {
 
 void s::Algo::ReportDecision(const Position &position) const {
 	Log::Trading(
-		logTag,
+		GetTag().c_str(),
 		"%1% %2% open-try size-ask-bid=%3%/%4% limit-used=%5% qty=%6% take-profit=%7% stop-loss=%8%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
@@ -420,7 +485,7 @@ void s::Algo::ReportDecision(const Position &position) const {
 
 void s::Algo::ReportCloseTry(const Position &position) {
 	Log::Trading(
-		GetLogTag().c_str(),
+		GetTag().c_str(),
 		"%1% %2% close-try limit-price=%3% open-price=%4% opened-qty=%5%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),

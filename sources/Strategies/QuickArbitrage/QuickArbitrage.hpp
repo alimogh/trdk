@@ -26,12 +26,16 @@ namespace Strategies { namespace QuickArbitrage {
 
 	public:
 
-		explicit Algo(boost::shared_ptr<Security>, const char *logTag);
+		explicit Algo(
+				const std::string &tag,
+				boost::shared_ptr<Security>);
 		virtual ~Algo();
 
 	public:
 
-		virtual void SubscribeToMarketData(MarketDataSource &);
+		virtual void SubscribeToMarketData(
+					const LiveMarketDataSource &iqFeed,
+					const LiveMarketDataSource &interactiveBrokers);
 
 		virtual void Update();
 

@@ -14,7 +14,8 @@ class PositionBandle;
 class Position;
 class PositionReporter;
 class IniFile;
-class MarketDataSource;
+class LiveMarketDataSource;
+class HistoryMarketDataSource;
 
 class Algo
 		: private boost::noncopyable,
@@ -31,7 +32,7 @@ protected:
 
 public:
 
-	explicit Algo(boost::shared_ptr<Security>, const std::string &logTag);
+	explicit Algo(const std::string &tag, boost::shared_ptr<Security>);
 	virtual ~Algo();
 
 public:
@@ -41,7 +42,7 @@ public:
 	PositionReporter & GetPositionReporter();
 
 	virtual const std::string & GetName() const = 0;
-	const std::string & GetLogTag() const;
+	const std::string & GetTag() const;
 
 	virtual boost::posix_time::ptime GetLastDataTime();
 
@@ -51,9 +52,12 @@ public:
 
 public:
 
-	virtual void SubscribeToMarketData(MarketDataSource &) = 0;
+	virtual void SubscribeToMarketData(
+				const LiveMarketDataSource &iqFeed,
+				const LiveMarketDataSource &interactiveBrokers)
+			= 0;
 	void RequestHistory(
-				MarketDataSource &,
+				const HistoryMarketDataSource &iqFeed,
 				const boost::posix_time::ptime &fromTime,
 				const boost::posix_time::ptime &toTime);
 
@@ -126,6 +130,6 @@ private:
 	Mutex m_mutex;
 	const boost::shared_ptr<Security> m_security;
 	PositionReporter *m_positionReporter;
-	const std::string m_logTag;
+	const std::string m_tag;
 
 };

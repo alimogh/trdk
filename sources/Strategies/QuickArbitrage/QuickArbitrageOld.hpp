@@ -46,6 +46,7 @@ namespace Strategies { namespace QuickArbitrage {
 	public:
 
 		explicit Old(
+				const std::string &tag,
 				boost::shared_ptr<Security>,
 				const IniFile &,
 				const std::string &section);

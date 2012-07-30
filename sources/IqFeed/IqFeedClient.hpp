@@ -10,7 +10,9 @@
 
 #include "Core/MarketDataSource.hpp"
 
-class IqFeedClient : public MarketDataSource {
+class IqFeedClient
+	: public LiveMarketDataSource,
+	public HistoryMarketDataSource {
 
 public:
 

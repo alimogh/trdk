@@ -55,6 +55,8 @@ public:
 
 	typedef InteractiveBrokersClient::CallbackList CallbackList;
 
+	typedef std::map<TickerId, boost::shared_ptr<Security>> UpdatesSubscribers;
+
 public:
 
 	explicit Implementation(
@@ -460,6 +462,8 @@ public:
 
 	OrderId m_seqNumber;
 
+	UpdatesSubscribers m_updatesSubscribers;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -510,6 +514,23 @@ void InteractiveBrokersClient::Subscribe(
 			const OrderStatusSlot &orderStatusSlot)
 		const {
 	m_pimpl->m_orderStatusSignal.connect(orderStatusSlot);
+}
+
+void InteractiveBrokersClient::SubscribeToMarketDataLevel2(
+			boost::shared_ptr<Security> security)
+		const {
+	const Implementation::Lock lock(m_pimpl->m_mutex);
+	m_pimpl->CheckState();
+	const auto tickerId = m_pimpl->TakeTickerId();
+	Log::Info(
+		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level II"
+			" market data subscription request for \"%1%\" (ticker ID: %2%).",
+		security->GetSymbol(),
+		tickerId);
+	Contract contract;
+	contract << *security;
+	m_pimpl->m_client.reqMktDepth(tickerId, contract, std::numeric_limits<int>::max());
+	m_pimpl->m_updatesSubscribers.insert(std::make_pair(tickerId, security));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -952,24 +973,54 @@ void InteractiveBrokersClient::execDetailsEnd(int /*reqId*/) {
 }
 
 void InteractiveBrokersClient::updateMktDepth(
-			TickerId /*id*/,
-			int /*position*/,
-			int /*operation*/,
-			int /*side*/,
-			double /*price*/,
-			int /*size*/) {
-	//...//
+			TickerId tickerId,
+			int position,
+			int operation,
+			int side,
+			double price,
+			int size) {
+	const pt::ptime now = boost::get_system_time();
+	Implementation::UpdatesSubscribers::const_iterator i
+		= m_pimpl->m_updatesSubscribers.find(tickerId);
+	if (i == m_pimpl->m_updatesSubscribers.end()) {
+		return;
+	}
+	bool isAsk = false;
+	switch (side) {
+		case 0:
+			isAsk = true;
+			break;
+		case 1:
+			isAsk = false;
+			break;
+		default:
+			AssertFail("Unknown side.");
+			return;
+	}
+	switch (operation) {
+		case 0: // insert (insert this new order into the row identified by 'position')·
+		case 1: // update (update the existing order in the row identified by 'position')·
+			i->second->UpdateLevel2IbLine(now, position, isAsk, price, size);
+			break;
+		case 2: // delete (delete the existing order at the row identified by 'position')
+			i->second->DeleteLevel2IbLine(now, position, isAsk, price, size);
+			break;
+		default:
+			AssertFail("Unknown operation.");
+			return;
+	}
 }
 
 void InteractiveBrokersClient::updateMktDepthL2(
-			TickerId /*id*/,
-			int /*position*/,
-			IBString /*marketMaker*/,
-			int /*operation*/,
-			int /*side*/,
-			double /*price*/,
-			int /*size*/) {
-	//...//
+			TickerId tickerId,
+			int position,
+			IBString marketMaker,
+			int operation,
+			int side,
+			double price,
+			int size) {
+	AssertFail("Unexpected.");
+	updateMktDepthL2(tickerId, position, marketMaker, operation, side, price, size);
 }
 
 void InteractiveBrokersClient::updateNewsBulletin(

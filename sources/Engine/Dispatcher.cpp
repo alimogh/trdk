@@ -475,7 +475,8 @@ void Dispatcher::Register(boost::shared_ptr<Algo> algo) {
 		const Notifier::Lock algoListlock(m_notifier->GetAlgoListMutex());
 		Notifier::AlgoStateList &algoList = m_notifier->GetAlgoList();
 		const Slots::Lock lock(m_slots->m_dataUpdateMutex);
-		boost::shared_ptr<AlgoState> algoState(new AlgoState(algo, m_notifier, m_notifier->GetSettings()));
+		boost::shared_ptr<AlgoState> algoState(
+			new AlgoState(algo, m_notifier, m_notifier->GetSettings()));
 		algoList.push_back(algoState);
 		m_slots->m_dataUpdateConnections.InsertSafe(
 			security.Subcribe(
@@ -484,8 +485,9 @@ void Dispatcher::Register(boost::shared_ptr<Algo> algo) {
 		algoList.swap(m_notifier->GetAlgoList());
 	}
 	Log::Info(
-		"Registered \"%1%\" for security \"%2%\".",
+		"Registered \"%1%\" (tag: \"%2%\") for security \"%3%\".",
 		algo->GetName(),
+		algo->GetTag(),
 		security.GetFullSymbol());
 }
 

@@ -44,16 +44,30 @@ public:
 
 private:
 
-	typedef std::multimap<unsigned int, boost::shared_ptr<Quote>> Quotes;
-
 	struct Level2 {
 		
-		volatile LONGLONG price;
 		volatile LONGLONG size;
 
 		Level2();
 
 	};
+
+	struct QuotesAccumulated {
+		typedef std::multimap<unsigned int, boost::shared_ptr<Quote>> Ticks;
+		Ticks ask;
+		Ticks bid;
+		Level2 totalAsk;
+		Level2 totalBid;
+	};
+
+	struct QuotesCompleted {
+		typedef std::map<Price, Qty> Lines;
+		Lines ask;
+		Lines bid;
+		Level2 totalAsk;
+		Level2 totalBid;
+	};
+	
 
 	typedef boost::shared_mutex MarketDataTimeMutex;
 	typedef boost::shared_lock<MarketDataTimeMutex> MarketDataTimeReadLock;
@@ -132,18 +146,16 @@ public:
 
 	Price GetLastScaled() const;
 	Price GetAskScaled() const;
-	Price GetAskLevel2Scaled() const;
 	Price GetBidScaled() const;
-	Price GetBidLevel2Scaled() const;
 	
 	double GetLast() const;
 	double GetAsk() const;
-	double GetAskLevel2() const;
 	double GetBid() const;
-	double GetBidLevel2() const;
 
-	Qty GetAskSize();
-	Qty GetBidSize();
+	Qty GetAskSizeIqFeed();
+	Qty GetAskSizeIb();
+	Qty GetBidSizeIqFeed();
+	Qty GetBidSizeIb();
 
 private:
 
@@ -158,8 +170,10 @@ private:
 	bool SetAsk(Price);
 	bool SetBid(Price);
 
-	void SetLevel2Ask(Price askPrice, Qty askSize);
-	void SetLevel2Bid(Price bidPrice, Qty bidSize);
+	void SetLevel2AskIqFeed(Qty askSize);
+	void SetLevel2AskIb(Qty askSize);
+	void SetLevel2BidIqFeed(Qty bidSize);
+	void SetLevel2BidIb(Qty bidSize);
 
 public:
 
@@ -174,10 +188,23 @@ public:
 				double ask,
 				double bid,
 				size_t totalVolume);
-	void UpdateLevel2(
+	void UpdateLevel2IqFeed(
 				const MarketDataTime &timeOfReception,
 				boost::shared_ptr<Quote> ask,
 				boost::shared_ptr<Quote> bid);
+
+	void UpdateLevel2IbLine(
+				const MarketDataTime &timeOfReception,
+				int position,
+				bool isAsk,
+				double price,
+				Qty size);
+	void DeleteLevel2IbLine(
+				const MarketDataTime &timeOfReception,
+				int position,
+				bool isAsk,
+				double price,
+				Qty size);
 
 	void OnHistoryDataStart();
 	void OnHistoryDataEnd();
@@ -193,13 +220,6 @@ private:
 	class MarketDataLog;
 	std::unique_ptr<MarketDataLog> m_marketDataLevel1Log;
 
-	class MarketDataLevel2Log;
-	std::unique_ptr<MarketDataLevel2Log> m_marketDataLevel2Log;
-
-	class MarketDataLevel2SnapshotLog;
-	std::unique_ptr<MarketDataLevel2SnapshotLog> m_marketDataLevel2SnapshotLog;
-	mutable Level2Mutex m_level2Mutex;
-
 	mutable boost::signals2::signal<UpdateSlotSignature> m_updateSignal;
 
 	volatile LONGLONG m_isHistoryData;
@@ -208,11 +228,16 @@ private:
 	volatile LONGLONG m_ask;
 	volatile LONGLONG m_bid;
 
-	Quotes m_askQoutes;
-	Level2 m_askLevel2;
-	Quotes m_bidQoutes;
-	Level2 m_bidLevel2;
+	class MarketDataLevel2Log;
+	std::unique_ptr<MarketDataLevel2Log> m_marketDataLevel2Log;
 
+	class MarketDataLevel2SnapshotLog;
+	std::unique_ptr<MarketDataLevel2SnapshotLog> m_marketDataLevel2SnapshotLog;
+
+	mutable Level2Mutex m_level2Mutex;
+	QuotesAccumulated m_qoutesIqFeed;
+	QuotesCompleted m_qoutesIb;
+	
 	mutable MarketDataTimeMutex m_marketDataTimeMutex;
 	MarketDataTime m_marketDataTime;
 

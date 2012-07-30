@@ -66,6 +66,10 @@ public:
 
 	virtual void CancelAllOrders(const Security &);
 
+public:
+
+	virtual void SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const;
+
 private:
 
 	class Implementation;

@@ -295,4 +295,8 @@ void FakeTradeSystem::CancelAllOrders(const Security &security) {
 	Log::Trading("cancel", "%1% orders=[all]", security.GetSymbol());
 }
 
+void FakeTradeSystem::SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const {
+	AssertFail("Doesn't implemented.");
+}
+
 //////////////////////////////////////////////////////////////////////////

@@ -31,9 +31,7 @@
 			Log::Error(message.str().c_str());
 			Log::Trading("assert", message.str().c_str());
 #			ifdef _WINDOWS
-#				ifdef _DEBUG
-					_wassert(L"Execution stopped", _CRT_WIDE(__FILE__), __LINE__);
-#				elif defined(_TEST)
+#				if defined(_DEBUG) || defined(_TEST)
 					DebugBreak();
 #				else
 #					error "Failed to find assert-break method."

@@ -200,7 +200,7 @@ class Security::MarketDataLevel2SnapshotLog : private boost::noncopyable {
 
 private:
 
-	typedef std::map<Price, std::pair<Qty, Qty>> AllQuotes;
+	typedef std::map<Price, std::pair<Qty, Qty>, std::greater<Price>> Book;
 
 public:
 
@@ -210,55 +210,63 @@ public:
 				const Settings &settings)
 			: m_scale(scale),
 			m_settings(settings) {
-		const fs::path filePath = Util::SymbolToFilePath(
-			Defaults::GetMarketDataLogDir(),
-			fullSymbol + ":Level2",
-			"snapshot");
-		const bool isNew = !fs::exists(filePath);
-		if (isNew) {
-			fs::create_directories(filePath.branch_path());
-		}
-		m_file.open(filePath.c_str(), std::ios::out | std::ios::ate | std::ios::app);
-		if (!m_file) {
-			Log::Error(
-				"Failed to open log file %1% for security market data snapshots.",
-				filePath);
-			throw Exception("Failed to open log file for security market data snapshots");
-		}
-		Log::Info("Logging \"%1%\" market data snapshots into %2%...", fullSymbol, filePath);
+		OpenFile(fullSymbol, "IQFeed", m_fileIqFeed);
+		OpenFile(fullSymbol, "IB", m_fileIb);
 		Interlocking::Exchange(m_lastShapshotTime, 0);
 	}
 
 public:
 
-	void AppendCurrent(const Quotes &ask, const Quotes &bid) {
+	bool AppendCurrentIqFeed(
+				const pt::ptime timeStamp,
+				const QuotesAccumulated &quotes,
+				bool force) {
+		return Append(timeStamp, quotes, force, m_fileIqFeed);
+	}
 
-		const pt::ptime now = boost::get_system_time();
+	bool AppendCurrentIb(
+				const pt::ptime timeStamp,
+				const QuotesCompleted &quotes,
+				bool force) {
+		return Append(timeStamp, quotes, force, m_fileIb);
+	}
 
-		const auto nowSecondsFromStart
-			= (now - m_settings.GetStartTime()).total_seconds();
-		if (!m_lastShapshotTime) {
-			Interlocking::Exchange(m_lastShapshotTime, nowSecondsFromStart);
-			return;
-		} else if (
-				m_lastShapshotTime + m_settings.GetLevel2SnapshotPrintTimeSeconds()
-					> nowSecondsFromStart) {
-			return;
+private:
+
+	template<typename Quotes>
+	bool Append(
+				const pt::ptime &timeStamp,
+				const Quotes &quotes,
+				bool force,
+				std::ostream &out) {
+
+		if (!force) {
+			const auto nowSecondsFromStart
+				= (timeStamp - m_settings.GetStartTime()).total_seconds();
+			if (!m_lastShapshotTime) {
+				Interlocking::Exchange(m_lastShapshotTime, nowSecondsFromStart);
+				return false;
+			} else if (
+					m_lastShapshotTime + m_settings.GetLevel2SnapshotPrintTimeSeconds()
+						> nowSecondsFromStart) {
+				return false;
+			}
+			m_lastShapshotTime = nowSecondsFromStart;
 		}
 
 		const auto tabWith = 9;
 		const auto sizeColumnWidth = 10;
 		const auto priceColumnWidth = 6;
 
-		AllQuotes quotes;
-		CreateQuotes(ask, quotes, true);
-		CreateQuotes(bid, quotes, false);
+		Book book;
+		CreateBook(quotes.ask, book, true);
+		CreateBook(quotes.bid, book, false);
 
-		m_file
-			<< (now + Util::GetEdtDiff()).time_of_day()
-			<< " (bids: " << bid.size()
-			<< ", asks: " << ask.size()			
-			<< ", prices: " << quotes.size() << "):"
+		out
+			<< (timeStamp + Util::GetEdtDiff()).time_of_day()
+			<< " (bids: " << quotes.bid.size()
+			<< ", asks: " << quotes.ask.size()			
+			<< ", prices: " << book.size() << "):"
 			<< std::endl
 			<< std::setw(tabWith + sizeColumnWidth)
 			<< "BIDS:"
@@ -268,31 +276,31 @@ public:
 
 		Qty sizeAskSum = 0;
 		Qty sizeBidSum = 0;
-		foreach (const auto &line, quotes) {
-			m_file.flags(std::ios::right);
-			m_file << std::setw(tabWith + sizeColumnWidth);
+		foreach (const auto &line, book) {
+			out.flags(std::ios::right);
+			out << std::setw(tabWith + sizeColumnWidth);
 			if (line.second.second) {
 				sizeBidSum += line.second.second;
-				m_file << line.second.second;
+				out << line.second.second;
 			} else {
-				m_file << " ";
+				out << " ";
 			}
-			m_file << " | ";
-			m_file.flags(std::ios::internal);
-			m_file
+			out << " | ";
+			out.flags(std::ios::internal);
+			out
 				<< std::setw(priceColumnWidth)
 				<< Util::Descale(line.first, m_scale)
 				<< " | ";
-			m_file.flags(std::ios::left);
+			out.flags(std::ios::left);
 			if (line.second.first) {
 				sizeAskSum += line.second.first;
-				m_file << line.second.first;
+				out << line.second.first;
 			}
-			m_file << std::endl;
+			out << std::endl;
 		}
 
-		m_file.flags(std::ios::right);
-		m_file
+		out.flags(std::ios::right);
+		out
 			<< " TOTALS: "
 			<< std::setw(sizeColumnWidth)
 			<< sizeBidSum
@@ -301,18 +309,40 @@ public:
 			<< std::endl
 			<< std::endl;
 				
-		m_lastShapshotTime = nowSecondsFromStart;
+		return true;
 
+	}
+
+	void OpenFile(
+				const std::string &fullSymbol,
+				const std::string &source,
+				std::ofstream &file)  {
+		const fs::path filePath = Util::SymbolToFilePath(
+			Defaults::GetMarketDataLogDir(),
+			fullSymbol + ":Level2:" + source,
+			"snapshot");
+		const bool isNew = !fs::exists(filePath);
+		if (isNew) {
+			fs::create_directories(filePath.branch_path());
+		}
+		file.open(filePath.c_str(), std::ios::out | std::ios::ate | std::ios::app);
+		if (!file) {
+			Log::Error(
+				"Failed to open log file %1% for security market data snapshots.",
+				filePath);
+			throw Exception("Failed to open log file for security market data snapshots");
+		}
+		Log::Info("Logging \"%1%\" market data snapshots into %2%...", fullSymbol, filePath);
 	}
 
 private:
 
-	void CreateQuotes(const Quotes &directionQuotes, AllQuotes &allQuotes, bool isAsk) {
-		foreach (const auto &line, directionQuotes) {
+	void CreateBook(const QuotesAccumulated::Ticks &quotes, Book &book, bool isAsk) {
+		foreach (const auto &line, quotes) {
 			const Price price = Util::Scale(line.second->price, m_scale);
-			const AllQuotes::iterator i = allQuotes.find(price);
-			if (i == allQuotes.end()) {
-				allQuotes.insert(
+			const Book::iterator i = book.find(price);
+			if (i == book.end()) {
+				book.insert(
 					std::make_pair(
 						price,
 						isAsk
@@ -324,11 +354,30 @@ private:
 		}
 	}
 
+	void CreateBook(const QuotesCompleted::Lines &quotes, Book &book, bool isAsk) {
+		foreach (const auto &line, quotes) {
+			const Price price = line.first;
+			const Book::iterator i = book.find(price);
+			if (i == book.end()) {
+				book.insert(
+					std::make_pair(
+						price,
+						isAsk
+							?	std::make_pair(line.second, 0)
+							:	std::make_pair(0, line.second)));
+			} else {
+				(isAsk ? i->second.first : i->second.second) += line.second;
+			}
+		}
+	}
+
+
 private:
 
 	unsigned int m_scale;
 	const Settings &m_settings;
-	std::ofstream m_file;
+	std::ofstream m_fileIqFeed;
+	std::ofstream m_fileIb;
 	volatile LONGLONG m_lastShapshotTime;
 
 
@@ -427,7 +476,6 @@ Security::Quote::Quote()
 }
 
 Security::Level2::Level2() {
-	Interlocking::Exchange(price, 0);
 	Interlocking::Exchange(size, 0);
 }
 
@@ -512,54 +560,115 @@ namespace {
 }
 
 
-void Security::UpdateLevel2(
+void Security::UpdateLevel2IqFeed(
 			const MarketDataTime &timeOfReception,
 			boost::shared_ptr<Quote> ask,
 			boost::shared_ptr<Quote> bid) {
 	Assert(ask || bid);
+	auto isAskSkipped = true;
+	auto isBidSkipped = true;
 	{
 		const Level2WriteLock lock(m_level2Mutex);
 		if (ask) {
 			Qty change = 0;
-			const auto isSkipped = !UpdateQuoteList(*m_settings, ask, m_askQoutes, change);
-			Assert(!isSkipped || change == 0);
-			if (!isSkipped) {
-				SetLevel2Ask(
-					Scale(ask->price),
-					GetAskSize() + change);
-			}
-			if (m_marketDataLevel2Log && !m_askQoutes.empty()) {
-				m_marketDataLevel2Log->AppendAsk(
-					timeOfReception,
-					ask->timeTick,
-					ask->price,
-					ask->size,
-					GetAskSize(),
-					m_askQoutes.begin()->second->timeTick,
-					isSkipped,
-					m_askQoutes.size());
+			isAskSkipped = !UpdateQuoteList(*m_settings, ask, m_qoutesIqFeed.ask, change);
+			Assert(!isAskSkipped || change == 0);
+			if (!isAskSkipped) {
+				SetLevel2AskIqFeed(GetAskSizeIqFeed() + change);
 			}
 		}
 		if (bid) {
 			Qty change = 0;
-			const auto isSkipped = !UpdateQuoteList(*m_settings, bid, m_bidQoutes, change);
-			Assert(!isSkipped || change == 0);
-			if (!isSkipped) {
-				SetLevel2Bid(
-					Scale(bid->price),
-					GetBidSize() + change);
+			isBidSkipped = !UpdateQuoteList(*m_settings, bid, m_qoutesIqFeed.bid, change);
+			Assert(!isBidSkipped || change == 0);
+			if (!isBidSkipped) {
+				SetLevel2BidIqFeed(GetBidSizeIqFeed() + change);
 			}
-			if (m_marketDataLevel2Log && !m_bidQoutes.empty()) {
-				m_marketDataLevel2Log->AppendBid(
-					timeOfReception,
-					bid->timeTick,
-					bid->price,
-					bid->size,
-					GetBidSize(),
-					m_bidQoutes.begin()->second->timeTick,
-					isSkipped,
-					m_bidQoutes.size());
-			}
+		}
+	}
+	if (m_marketDataLevel2Log) {
+		// no read locking needed - only this thread can change storage
+		if (ask && !m_qoutesIqFeed.ask.empty()) {
+			m_marketDataLevel2Log->AppendAsk(
+				timeOfReception,
+				ask->timeTick,
+				ask->price,
+				ask->size,
+				GetAskSizeIqFeed(),
+				m_qoutesIqFeed.ask.begin()->second->timeTick,
+				isAskSkipped,
+				m_qoutesIqFeed.ask.size());
+		}
+		if (bid && !m_qoutesIqFeed.bid.empty()) {
+			m_marketDataLevel2Log->AppendBid(
+				timeOfReception,
+				bid->timeTick,
+				bid->price,
+				bid->size,
+				GetBidSizeIqFeed(),
+				m_qoutesIqFeed.bid.begin()->second->timeTick,
+				isBidSkipped,
+				m_qoutesIqFeed.bid.size());
+		}
+	}
+	if (*this) {
+		m_updateSignal();
+	}
+}
+
+namespace {
+
+	template<typename Quotes>
+	Security::Qty GetQuotesSize(const Quotes &quotes) {
+		Security::Qty result = 0;
+		foreach (auto &q, quotes) {
+			result += q.second;
+		}
+		return result;
+	}
+
+}
+
+void Security::UpdateLevel2IbLine(
+			const MarketDataTime &/*timeOfReception*/,
+			int /*position*/,
+			bool isAsk,
+			double price,
+			Qty size) {
+	{
+		const Level2WriteLock lock(m_level2Mutex);
+		QuotesCompleted::Lines &quotes = isAsk ? m_qoutesIb.ask : m_qoutesIb.bid;
+		quotes[Scale(price)] = size;
+		if (isAsk) {
+			SetLevel2AskIb(GetQuotesSize(quotes));
+		} else {
+			SetLevel2BidIb(GetQuotesSize(quotes));
+		}
+	}
+	if (*this) {
+		m_updateSignal();
+	}
+}
+
+void Security::DeleteLevel2IbLine(
+			const MarketDataTime &/*timeOfReception*/,
+			int /*position*/,
+			bool isAsk,
+			double price,
+			Qty size) {
+	UseUnused(size);
+	{
+		const Level2WriteLock lock(m_level2Mutex);
+		QuotesCompleted::Lines &quotes = isAsk ? m_qoutesIb.ask : m_qoutesIb.bid;
+		const auto priceScaled = Scale(price);
+		Assert(
+			quotes.find(priceScaled) == quotes.end()
+			|| quotes.find(priceScaled)->second == size);
+		quotes.erase(priceScaled);
+		if (isAsk) {
+			SetLevel2AskIb(GetQuotesSize(quotes));
+		} else {
+			SetLevel2BidIb(GetQuotesSize(quotes));
 		}
 	}
 	if (*this) {
@@ -597,16 +706,8 @@ Security::Price Security::GetAskScaled() const {
 	return m_ask;
 }
 
-Security::Price Security::GetAskLevel2Scaled() const {
-	return m_askLevel2.price;
-}
-
 Security::Price Security::GetBidScaled() const {
 	return m_bid;
-}
-
-Security::Price Security::GetBidLevel2Scaled() const {
-	return m_bidLevel2.price;
 }
 
 double Security::GetLast() const {
@@ -617,24 +718,24 @@ double Security::GetAsk() const {
 	return Descale(GetAskScaled());
 }
 
-double Security::GetAskLevel2() const {
-	return Descale(GetAskLevel2Scaled());
-}
-
 double Security::GetBid() const {
 	return Descale(GetBidScaled());
 }
 
-double Security::GetBidLevel2() const {
-	return Descale(GetBidLevel2Scaled());
+Security::Qty Security::GetAskSizeIqFeed() {
+	return Security::Qty(m_qoutesIqFeed.totalAsk.size);
 }
 
-Security::Qty Security::GetAskSize() {
-	return Security::Qty(m_askLevel2.size);
+Security::Qty Security::GetBidSizeIqFeed() {
+	return Security::Qty(m_qoutesIqFeed.totalBid.size);
 }
 
-Security::Qty Security::GetBidSize() {
-	return Security::Qty(m_bidLevel2.size);
+Security::Qty Security::GetAskSizeIb() {
+	return Security::Qty(m_qoutesIb.totalAsk.size);
+}
+
+Security::Qty Security::GetBidSizeIb() {
+	return Security::Qty(m_qoutesIb.totalBid.size);
 }
 
 pt::ptime Security::GetLastMarketDataTime() const {
@@ -685,14 +786,20 @@ bool Security::SetBid(Price bid) {
 	return Interlocking::Exchange(m_bid, bid) != bid;
 }
 
-void Security::SetLevel2Bid(Price bidPrice, Qty bidSize) {
-	Interlocking::Exchange(m_bidLevel2.price, bidPrice);
-	Interlocking::Exchange(m_bidLevel2.size, bidSize);
+void Security::SetLevel2AskIqFeed(Qty askSize) {
+	Interlocking::Exchange(m_qoutesIqFeed.totalAsk.size, askSize);
 }
 
-void Security::SetLevel2Ask(Price askPrice, Qty askSize) {
-	Interlocking::Exchange(m_askLevel2.price, askPrice);
-	Interlocking::Exchange(m_askLevel2.size, askSize);
+void Security::SetLevel2BidIqFeed(Qty bidSize) {
+	Interlocking::Exchange(m_qoutesIqFeed.totalBid.size, bidSize);
+}
+
+void Security::SetLevel2AskIb(Qty askSize) {
+	Interlocking::Exchange(m_qoutesIb.totalAsk.size, askSize);
+}
+
+void Security::SetLevel2BidIb(Qty bidSize) {
+	Interlocking::Exchange(m_qoutesIb.totalBid.size, bidSize);
 }
 
 void Security::ReportLevel2Snapshot() const {
@@ -700,5 +807,22 @@ void Security::ReportLevel2Snapshot() const {
 		return;
 	}
 	const Level2ReadLock lock(m_level2Mutex);
-	m_marketDataLevel2SnapshotLog->AppendCurrent(m_askQoutes, m_bidQoutes);
+	const auto now = boost::get_system_time();
+	const auto isIqFeedPrinted = m_marketDataLevel2SnapshotLog->AppendCurrentIqFeed(
+		now,
+		m_qoutesIqFeed,
+		false);
+	const auto isIbPrinted = m_marketDataLevel2SnapshotLog->AppendCurrentIb(
+		now,
+		m_qoutesIb,
+		isIqFeedPrinted);
+	if (isIbPrinted && !isIqFeedPrinted) {
+		Verify(
+			m_marketDataLevel2SnapshotLog->AppendCurrentIqFeed(
+				now,
+				m_qoutesIqFeed,
+				true));
+	} else {
+		Assert((isIbPrinted && isIqFeedPrinted) || (!isIbPrinted && !isIqFeedPrinted));
+	}
 }

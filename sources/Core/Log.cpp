@@ -107,6 +107,5 @@ void Log::Detail::AppendTradingRecordUnsafe(
 		return;
 	}
 	trading.AppendRecordHead(time);
-	Assert(strlen(tag) <= 19);
-	*trading.log << std::setw(19) << tag << "\t" << str << std::endl;
+	*trading.log << ' ' << tag << '\t' << str << std::endl;
 }

@@ -77,6 +77,7 @@ public:
 public:
 
 	void Subscribe(const OrderStatusSlot &) const;
+	void SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const;
 
 private:
 

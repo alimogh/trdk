@@ -17,10 +17,10 @@
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
 
-Algo::Algo(boost::shared_ptr<Security> security, const std::string &logTag)
+Algo::Algo(const std::string &tag, boost::shared_ptr<Security> security)
 		: m_security(security),
 		m_positionReporter(nullptr),
-		m_logTag(logTag) {
+		m_tag(tag) {
 	//...//
 }
 
@@ -60,13 +60,13 @@ boost::posix_time::ptime Algo::GetLastDataTime() {
 	return boost::posix_time::not_a_date_time;
 }
 
-const std::string & Algo::GetLogTag() const {
-	return m_logTag;
+const std::string & Algo::GetTag() const {
+	return m_tag;
 }
 
 void Algo::ReportStopLossTry(const Position &position) const {
 	Log::Trading(
-		m_logTag.c_str(),
+		m_tag.c_str(),
 		"%1% %2% stop-loss-try cur-ask-bid=%3%/%4% stop-loss=%5% qty=%6%->%7%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
@@ -79,7 +79,7 @@ void Algo::ReportStopLossTry(const Position &position) const {
 
 void Algo::ReportStopLossDo(const Position &position) const {
 	Log::Trading(
-		m_logTag.c_str(),
+		m_tag.c_str(),
 		"%1% %2% stop-loss-do cur-ask-bid=%3%/%4% stop-loss=%5% qty=%6%->%7%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
@@ -91,10 +91,10 @@ void Algo::ReportStopLossDo(const Position &position) const {
 }
 
 void Algo::RequestHistory(
-			MarketDataSource &marketDataSource,
+			const HistoryMarketDataSource &iqFeed,
 			const boost::posix_time::ptime &fromTime,
 			const boost::posix_time::ptime &toTime) {
-	marketDataSource.RequestHistory(GetSecurity(), fromTime, toTime);
+	iqFeed.RequestHistory(GetSecurity(), fromTime, toTime);
 }
 
 bool Algo::IsValidPrice(const Settings &settings) const {
@@ -112,7 +112,7 @@ void Algo::ReportSettings(const SettingsReport &settings) const {
 
 	typedef std::map<std::string, std::list<std::pair<std::string, std::string>>> Cache; 
 	static Cache cache;
-	const Cache::const_iterator cacheIt = cache.find(GetLogTag());
+	const Cache::const_iterator cacheIt = cache.find(GetTag());
 	if (cacheIt != cache.end()) {
 		if (cacheIt->second == settings) {
 			return;
@@ -141,7 +141,7 @@ void Algo::ReportSettings(const SettingsReport &settings) const {
 		f << std::endl;
 	}
 
-	cache[GetLogTag()] = settings;
+	cache[GetTag()] = settings;
 
 }
 

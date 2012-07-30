@@ -63,28 +63,33 @@ IniFile::Error::Error(const char *what) throw()
 	//...//
 }
 
-IniFile::FileOpenError::FileOpenError()
+IniFile::FileOpenError::FileOpenError() throw()
 		: Error("Failed to open INI-file") {
 	//...//
 }
 
-IniFile::KeyNotExistsError::KeyNotExistsError()
+IniFile::KeyNotExistsError::KeyNotExistsError() throw()
 		: Error("Key doesn't exist in INI-file") {
 	//...//
 }
 
-IniFile::SectionNotExistsError::SectionNotExistsError()
+IniFile::SectionNotExistsError::SectionNotExistsError() throw()
 		: Error("Section doesn't exist in INI-file") {
 	//...//
 }
 
-IniFile::SymbolFormatError::SymbolFormatError()
+IniFile::SymbolFormatError::SymbolFormatError() throw()
 		: Error("Wrong symbols INI-file format") {
 	//...//
 }
 
-IniFile::KeyFormatError::KeyFormatError(const char *what)
+IniFile::KeyFormatError::KeyFormatError(const char *what) throw()
 		: Error(what) {
+	//...//
+}
+
+IniFile::SectionNotUnique::SectionNotUnique() throw()
+		: Error("Section is not unique")  {
 	//...//
 }
 
@@ -129,14 +134,17 @@ std::string IniFile::ReadCurrentLine() const {
 	return result;
 }
 
-std::list<std::string> IniFile::ReadSectionsList() const {
-	std::list<std::string> result;
+std::set<std::string> IniFile::ReadSectionsList() const {
+	std::set<std::string> result;
 	const_cast<IniFile *>(this)->Reset();
 	while (!m_file.eof()) {
 		std::string line = ReadCurrentLine();
 		if (IsSection(line)) {
 			TrimSection(line);
-			result.push_back(line);
+			if (result.find(line) != result.end()) {
+				throw SectionNotUnique();
+			}
+			result.insert(line);
 		}
 	}
 	return result;
@@ -167,6 +175,26 @@ void IniFile::ReadSection(
 	if (!isInSection && isMustBeExist) {
 		throw SectionNotExistsError();
 	}
+}
+
+bool IniFile::IsKeyExist(const std::string &section,const std::string &key) const {
+	bool result = false;
+	ReadSection(
+		section,
+		[&](const std::string &line) -> bool {
+			Assert(!result);
+			std::list<std::string> subs;
+			boost::split(subs, line, boost::is_any_of("="));
+			Assert(!subs.empty());
+			if (subs.size() < 2) {
+				return true;
+			}
+			boost::trim(*subs.begin());
+			result = *subs.begin() == key;
+			return !result;
+		},
+		true);
+	return result;
 }
 
 std::string IniFile::ReadKey(

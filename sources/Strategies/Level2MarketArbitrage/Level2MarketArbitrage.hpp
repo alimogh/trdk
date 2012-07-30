@@ -23,7 +23,7 @@ namespace Strategies { namespace Level2MarketArbitrage {
 		struct Settings {
 
 			enum OpenMode {
-				OPEN_MODE_NONE,
+				OPEN_MODE_NONE						= 0,
 				OPEN_MODE_SHORT_IF_ASK_MORE_BID,
 				OPEN_MODE_SHORT_IF_BID_MORE_ASK
 			};
@@ -31,6 +31,12 @@ namespace Strategies { namespace Level2MarketArbitrage {
 			enum OrderType {
 				ORDER_TYPE_IOC,
 				ORDER_TYPE_MKT
+			};
+
+			enum MarketDataSource {
+				MARKET_DATA_SOURCE_NOT_SET				= 0,
+				MARKET_DATA_SOURCE_IQFEED,
+				MARKET_DATA_SOURCE_INTERACTIVE_BROKERS
 			};
 
 			double askBidDifferencePercent;
@@ -46,11 +52,14 @@ namespace Strategies { namespace Level2MarketArbitrage {
 
 			boost::posix_time::time_duration positionTimeSeconds;
 
+			MarketDataSource level2DataSource;
+
 		};
 
 	public:
 
 		explicit Algo(
+				const std::string &tag,
 				boost::shared_ptr<Security>,
 				const IniFile &,
 				const std::string &section);
@@ -62,7 +71,9 @@ namespace Strategies { namespace Level2MarketArbitrage {
 
 	public:
 
-		virtual void SubscribeToMarketData(MarketDataSource &);
+		virtual void SubscribeToMarketData(
+					const LiveMarketDataSource &iqFeed,
+					const LiveMarketDataSource &interactiveBrokers);
 
 		virtual void Update();
 
@@ -81,6 +92,7 @@ namespace Strategies { namespace Level2MarketArbitrage {
 	private:
 
 		void DoSettingsUpdate(const IniFile &ini, const std::string &section);
+		void UpdateCallbacks();
 
 		boost::shared_ptr<Position> OpenShortPostion(
 					Security::Qty askSize,
@@ -100,10 +112,13 @@ namespace Strategies { namespace Level2MarketArbitrage {
 		void CloseShortPositionStopLossTry(Position &);
 
 		void ReportCloseTry(const Position &);
-	
+
 	private:
 
 		Settings m_settings;
+
+		boost::function<Security::Qty()> m_askSizeGetter;
+		boost::function<Security::Qty()> m_bidSizeGetter;
 
 	};
 

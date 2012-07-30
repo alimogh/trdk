@@ -17,8 +17,10 @@
 
 namespace s = Strategies::QuickArbitrage;
 
-s::Algo::Algo(boost::shared_ptr<Security> security, const char *logTag)
-		: Base(security, logTag) {
+s::Algo::Algo(
+			const std::string &tag,
+			boost::shared_ptr<Security> security)
+		: Base(tag, security) {
 	//...//
 }
 
@@ -137,7 +139,7 @@ void s::Algo::ClosePositionsAsIs(PositionBandle &positions) {
 
 void s::Algo::ReportDecision(const Position &position) const {
 	Log::Trading(
-		GetLogTag().c_str(),
+		GetTag().c_str(),
 		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6% take-profit=%7% stop-loss=%8%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
@@ -149,6 +151,8 @@ void s::Algo::ReportDecision(const Position &position) const {
 		position.GetSecurity().Descale(position.GetStopLoss()));
 }
 
-void s::Algo::SubscribeToMarketData(MarketDataSource &marketDataSource) {
-	marketDataSource.SubscribeToMarketDataLevel1(GetSecurity());
+void s::Algo::SubscribeToMarketData(
+			const LiveMarketDataSource &iqFeed,
+			const LiveMarketDataSource &/*interactiveBrokers*/) {
+	iqFeed.SubscribeToMarketDataLevel1(GetSecurity());
 }

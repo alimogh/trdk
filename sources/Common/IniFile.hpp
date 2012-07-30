@@ -17,6 +17,7 @@
 #	include <boost/filesystem.hpp>
 #include "DisableBoostWarningsEnd.h"
 #include <list>
+#include <set>
 #include <fstream>
 #include <string>
 
@@ -54,6 +55,11 @@ public:
 		KeyFormatError(const char *what) throw();
 	};
 
+	class SectionNotUnique : public Error {
+	public:
+		SectionNotUnique() throw();
+	};
+
 	struct Symbol {
 		std::string symbol;
 		std::string exchange;
@@ -75,13 +81,15 @@ public:
 
 public:
 
-	std::list<std::string> ReadSectionsList() const;
+	std::set<std::string> ReadSectionsList() const;
 
 	void ReadSection(
 				const std::string &section,
 				boost::function<bool(const std::string &)> readLine,
 				bool isMustBeExist)
 			const;
+
+	bool IsKeyExist(const std::string &section,const std::string &key) const;
 
 	std::string ReadKey(
 				const std::string &section,

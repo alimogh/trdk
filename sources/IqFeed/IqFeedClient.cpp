@@ -624,7 +624,7 @@ namespace {
 				ask->timeTick = message.GetFieldAsIntTimeOfDay(13, true);
 			}
 
-			subscriber->second->UpdateLevel2(timeOfReception, ask, bid);
+			subscriber->second->UpdateLevel2IqFeed(timeOfReception, ask, bid);
 
 		}
 
@@ -774,7 +774,7 @@ namespace {
 
 	std::ofstream * OpenFile(const fs::path &path) {
 		fs::create_directories(path.branch_path());
-		return new std::ofstream(path.string().c_str());
+		return new std::ofstream(path.string().c_str(), std::ios::out | std::ios::ate | std::ios::app);
 	}
 
 }

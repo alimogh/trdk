@@ -26,7 +26,7 @@ public:
 		if (!m_isInited) {
 			namespace fs = boost::filesystem;
 			fs::path filePath = Defaults::GetPositionsLogDir();
-			std::string algoName = algo.GetName();
+			std::string algoName = algo.GetTag();
 			boost::to_lower(algoName);
 			std::list<std::string> subs;
 			boost::split(subs, algoName, boost::is_any_of(" :"));

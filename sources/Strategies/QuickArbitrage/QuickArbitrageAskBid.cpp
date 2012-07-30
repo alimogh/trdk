@@ -17,17 +17,16 @@ namespace pt = boost::posix_time;
 
 namespace {
 
-	const char *const logTag = "quick-arbitrage-ab";
-
 	const std::string algoName = "Quick Arbitrage AskBid";
 
 }
 
 AskBid::AskBid(
+			const std::string &tag,
 			boost::shared_ptr<Security> security,
 			const IniFile &ini,
 			const std::string &section)
-		: Base(security, logTag) {
+		: Base(tag, security) {
 	DoSettingsUpdate(ini, section);
 }
 
@@ -407,7 +406,7 @@ void AskBid::ClosePosition(Position &position, bool asIs) {
 
 void AskBid::ReportTakeProfitDo(const Position &position) const {
 	Log::Trading(
-		GetLogTag().c_str(),
+		GetTag().c_str(),
 		"%1% %2% take-profit-do limit-price=%3% cur-ask-bid=%4%/%5% stop-loss=%6% qty=%7%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),

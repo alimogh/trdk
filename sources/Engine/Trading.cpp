@@ -25,7 +25,7 @@ namespace fs = boost::filesystem;
 namespace {
 
 	typedef std::map<std::string, boost::shared_ptr<Security>> Securities;
-	typedef std::list<boost::shared_ptr<Algo>> Algos;
+	typedef std::map<std::string, boost::shared_ptr<Algo>> Algos;
 
 }
 
@@ -70,14 +70,37 @@ namespace {
 				Algos &algos,
 				boost::shared_ptr<Settings> settings)  {
 
-		if (	section != Ini::Sections::Algo::QuickArbitrage::old
-				&& section != Ini::Sections::Algo::QuickArbitrage::askBid
-				&& section != Ini::Sections::Algo::level2MarketArbitrage) {
+		std::string algoName;
+		try {
+			if (!ini.IsKeyExist(section, Ini::Key::algo)) {
+				return;
+			}
+			algoName = ini.ReadKey(section, Ini::Key::algo, false);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to get strategy algo: \"%1%\".", ex.what());
+			throw;
+		}
+		if (	algoName != Ini::Algo::QuickArbitrage::old
+				&& algoName != Ini::Algo::QuickArbitrage::askBid
+				&& algoName != Ini::Algo::level2MarketArbitrage) {
 			return;
 		}
 
-		Log::Info("Loading strategy objects...");
+		std::string tag;
+		try {
+			tag = ini.ReadKey(section, Ini::Key::tag, false);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to get strategy object tag: \"%1%\".", ex.what());
+			throw;
+		}
 
+		if (algos.find(tag) != algos.end()) {
+			Log::Error("Strategy object tag \"%1%\" is not unique.", tag);
+			throw IniFile::Error("Strategy object tag is not unique");
+		}
+
+		Log::Info("Loading strategy objects for \"%1%\"...", tag);
+		
 		std::string symbolsFilePath;
 		try {
 			symbolsFilePath = ini.ReadKey(section, Ini::Key::symbols, false);
@@ -103,28 +126,31 @@ namespace {
 			try {
 			
 				boost::shared_ptr<Algo> algo;
-				if (section == Ini::Sections::Algo::QuickArbitrage::old) {
+				if (algoName == Ini::Algo::QuickArbitrage::old) {
 					algo.reset(
 						new Strategies::QuickArbitrage::Old(
+							tag,
 							securities[CreateSecuritiesKey(symbol)],
 							ini,
 							section));
-				} else if (section == Ini::Sections::Algo::QuickArbitrage::askBid) {
+				} else if (algoName == Ini::Algo::QuickArbitrage::askBid) {
 					algo.reset(
 						new Strategies::QuickArbitrage::AskBid(
+							tag,
 							securities[CreateSecuritiesKey(symbol)],
 							ini,
 							section));
-				} else if (section == Ini::Sections::Algo::level2MarketArbitrage) {
+				} else if (algoName == Ini::Algo::level2MarketArbitrage) {
 					algo.reset(
 						new Strategies::Level2MarketArbitrage::Algo(
+							tag,
 							securities[CreateSecuritiesKey(symbol)],
 							ini,
 							section));
 				} else {
 					AssertFail("Unknown algo in INI file.");
 				}
-				algos.push_back(algo);
+				algos[tag] = algo;
 			
 				Log::Info(
 					"Loaded strategy \"%1%\" for \"%2%\".",
@@ -150,18 +176,18 @@ namespace {
 
 		Log::Info("Using %1% file for algo options...", iniFilePath);
 		const IniFile ini(iniFilePath);
-		const std::list<std::string> sections = ini.ReadSectionsList();
+		const std::set<std::string> sections = ini.ReadSectionsList();
 
 		Securities securities;
 		foreach (const auto &section, sections) {
-			if (section != Ini::Sections::common) {
+			if (boost::starts_with(section, Ini::Sections::strategy)) {
 				Log::Info("Found section \"%1%\"...", section);
 				InitAlgo(ini, section, tradeSystem, securities, algos, settings);
 			}
 		}
 
 		foreach (auto a, algos) {
-			dispatcher.Register(a);
+			dispatcher.Register(a.second);
 		}
 
 		Log::Info("Loaded %1% securities.", securities.size());
@@ -178,23 +204,33 @@ namespace {
 				Settings &settings) {
 		Log::Info("Detected INI-file %1% modification, updating current settings...", iniFilePath);
 		const IniFile ini(iniFilePath);
-		const std::list<std::string> sections = ini.ReadSectionsList();
+		const std::set<std::string> sections = ini.ReadSectionsList();
 		foreach (const auto &section, sections) {
 			if (section == Ini::Sections::common) {
 				settings.Update(ini, section);
 				continue;
+			} else if (!boost::starts_with(section, Ini::Sections::strategy)) {
+				continue;
 			}
 			bool isError = false;
-			foreach (boost::shared_ptr<Algo> &a, algos) {
-				if (section == Ini::Sections::Algo::level2MarketArbitrage) {
+			std::string algoName;
+			try {
+				algoName = ini.ReadKey(section, Ini::Key::algo, false);
+			} catch (const IniFile::Error &ex) {
+				Log::Error("Failed to get strategy algo: \"%1%\".", ex.what());
+				throw;
+			}
+			foreach (auto &v, algos) {
+				boost::shared_ptr<Algo> &a = v.second;
+				if (algoName == Ini::Algo::level2MarketArbitrage) {
 					if (!dynamic_cast<Strategies::Level2MarketArbitrage::Algo *>(a.get())) {
 						continue;
 					}
-				} else if (section == Ini::Sections::Algo::QuickArbitrage::old) {
+				} else if (algoName == Ini::Algo::QuickArbitrage::old) {
 					if (!dynamic_cast<Strategies::QuickArbitrage::Old *>(a.get())) {
 						continue;
 					}
-				} else if (section == Ini::Sections::Algo::QuickArbitrage::askBid) {
+				} else if (algoName == Ini::Algo::QuickArbitrage::askBid) {
 					if (!dynamic_cast<Strategies::QuickArbitrage::AskBid *>(a.get())) {
 						continue;
 					}
@@ -222,7 +258,8 @@ void Trade(const fs::path &iniFilePath) {
 
 	boost::shared_ptr<Settings> settings
 		= Ini::LoadSettings(iniFilePath, boost::get_system_time(), false);
-	boost::shared_ptr<TradeSystem> tradeSystem(new InteractiveBrokersTradeSystem);
+	boost::shared_ptr<InteractiveBrokersTradeSystem> tradeSystem(
+		new InteractiveBrokersTradeSystem);
 	IqFeedClient marketDataSource;
 	Dispatcher dispatcher(settings);
 
@@ -230,7 +267,7 @@ void Trade(const fs::path &iniFilePath) {
 	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings);
 	
 	foreach (auto &a, algos) {
-		a->SubscribeToMarketData(marketDataSource);
+		a.second->SubscribeToMarketData(marketDataSource, *tradeSystem);
 	}
 
 	FileSystemChangeNotificator iniChangeNotificator(
@@ -277,7 +314,7 @@ void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
 	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings);
 
 	foreach (auto &a, algos) {
-		a->RequestHistory(
+		a.second->RequestHistory(
 			marketDataSource,
 			settings->GetCurrentTradeSessionStartTime(),
 			settings->GetCurrentTradeSessionEndime());

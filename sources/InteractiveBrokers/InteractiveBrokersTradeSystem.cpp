@@ -329,3 +329,16 @@ void InteractiveBrokersTradeSystem::BuyOrCancel(
 // 		rawPrice);
 	m_pimpl->RegOrder(order);
 }
+
+void InteractiveBrokersTradeSystem::SubscribeToMarketDataLevel1(
+			boost::shared_ptr<Security>)
+		const {
+	AssertFail(__FUNCTION__ " doesn't implemented.");
+	throw Exception(__FUNCTION__ " doesn't implemented");
+}
+
+void InteractiveBrokersTradeSystem::SubscribeToMarketDataLevel2(
+			boost::shared_ptr<Security> security)
+		const {
+	m_pimpl->client->SubscribeToMarketDataLevel2(security);
+}
