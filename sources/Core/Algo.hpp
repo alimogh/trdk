@@ -123,6 +123,14 @@ protected:
 		report.push_back(item);
 	}
 
+	void AppendSettingsReport(
+				const std::string &name,
+				const IniFile::AbsoluteOrPercentsPrice &val,
+				SettingsReport &report)
+			const {
+		AppendSettingsReport(name, val.GetStr(GetSecurity()->GetScale()), report);
+	}
+
 	boost::posix_time::ptime GetCurrentTime() const;
 
 private:

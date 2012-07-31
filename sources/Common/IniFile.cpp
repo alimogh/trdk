@@ -7,6 +7,7 @@
  **************************************************************************/
 
 #include "IniFile.hpp"
+#include "Util.hpp"
 #include "DisableBoostWarningsBegin.h"
 #	include <boost/algorithm/string.hpp>
 #	include <boost/format.hpp>
@@ -91,6 +92,23 @@ IniFile::KeyFormatError::KeyFormatError(const char *what) throw()
 IniFile::SectionNotUnique::SectionNotUnique() throw()
 		: Error("Section is not unique")  {
 	//...//
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+boost::int64_t IniFile::AbsoluteOrPercentsPrice::Get(
+			boost::int64_t fullVal)
+		const {
+	return isAbsolute
+		?	value.absolute
+		:	boost::int64_t(boost::math::round(fullVal * value.percents));
+}
+
+std::string IniFile::AbsoluteOrPercentsPrice::GetStr(unsigned long priceScale)
+		const {
+	return isAbsolute
+		?	boost::lexical_cast<std::string>(Util::Descale(value.absolute, priceScale))
+		:	(boost::format("%1%%%") % (value.percents * 100)).str();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -232,6 +250,29 @@ std::string IniFile::ReadKey(
 	return result;
 }
 
+IniFile::AbsoluteOrPercentsPrice IniFile::ReadAbsoluteOrPercentsPriceKey(
+			const std::string &section,
+			const std::string &key,
+			unsigned long priceScale)
+		const {
+	AbsoluteOrPercentsPrice result = {};
+	std::string val = ReadKey(section, key, false);
+	result.isAbsolute = !boost::ends_with(val, "%");
+	try {
+		const auto dVal = boost::lexical_cast<double>(val);
+		if (!result.isAbsolute) {
+			val.pop_back();
+			result.value.percents = dVal / 100;
+		} else {
+			result.value.absolute = Util::Scale(dVal, priceScale);
+		}
+		return result;
+	} catch (const boost::bad_lexical_cast &ex) {
+		boost::format message("Wrong INI-file key (\"%1%:%2%\") format: \"%3%\"");
+		message % section % key % ex.what();
+		throw KeyFormatError(message.str().c_str());
+	}
+}
 
 bool IniFile::ReadBoolKey(const std::string &section, const std::string &key) const {
 	const std::string val = ReadKey(section, key, false);

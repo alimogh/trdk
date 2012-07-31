@@ -66,6 +66,21 @@ public:
 		std::string primaryExchange;
 	};
 
+	struct AbsoluteOrPercentsPrice {
+		
+		bool isAbsolute;
+		
+		union {
+			boost::int64_t absolute;
+			double percents;
+		} value;
+		
+		boost::int64_t Get(boost::int64_t fullVal) const;
+
+		std::string GetStr(unsigned long priceScale) const;
+
+	};
+
 public:
 
 	explicit IniFile(const boost::filesystem::path &);
@@ -110,6 +125,12 @@ public:
 			throw KeyFormatError(message.str().c_str());
 		}
 	}
+
+	AbsoluteOrPercentsPrice ReadAbsoluteOrPercentsPriceKey(
+				const std::string &section,
+				const std::string &key,
+				unsigned long priceScale)
+			const;
 
 	bool ReadBoolKey(const std::string &section, const std::string &key) const;
 
