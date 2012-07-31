@@ -522,6 +522,7 @@ namespace {
 	template<typename List>
 	bool UpdateQuoteList(
 				const Settings &settings,
+				const Security::Qty currentSize,
 				boost::shared_ptr<Security::Quote> &newQuote,
 				List &quoteList,
 				Security::Qty &change) {
@@ -529,8 +530,9 @@ namespace {
 		Assert(newQuote->timeTick > 0);
 		auto isChanged = false;
 		if (	!quoteList.empty()
-				&& newQuote->timeTick
-					< quoteList.rbegin()->second->timeTick - settings.GetLevel2PeriodSeconds()) {
+				&& (newQuote->timeTick
+					< quoteList.rbegin()->second->timeTick - settings.GetLevel2PeriodSeconds()
+					|| Security::Qty(currentSize / quoteList.size()) * 5 < newQuote->size)) {
 			change = 0;
 			return isChanged;
 		}
@@ -571,7 +573,7 @@ void Security::UpdateLevel2IqFeed(
 		const Level2WriteLock lock(m_level2Mutex);
 		if (ask) {
 			Qty change = 0;
-			isAskSkipped = !UpdateQuoteList(*m_settings, ask, m_qoutesIqFeed.ask, change);
+			isAskSkipped = !UpdateQuoteList(*m_settings, GetAskSizeIqFeed(), ask, m_qoutesIqFeed.ask, change);
 			Assert(!isAskSkipped || change == 0);
 			if (!isAskSkipped) {
 				SetLevel2AskIqFeed(GetAskSizeIqFeed() + change);
@@ -579,7 +581,7 @@ void Security::UpdateLevel2IqFeed(
 		}
 		if (bid) {
 			Qty change = 0;
-			isBidSkipped = !UpdateQuoteList(*m_settings, bid, m_qoutesIqFeed.bid, change);
+			isBidSkipped = !UpdateQuoteList(*m_settings, GetBidSizeIqFeed(), bid, m_qoutesIqFeed.bid, change);
 			Assert(!isBidSkipped || change == 0);
 			if (!isBidSkipped) {
 				SetLevel2BidIqFeed(GetBidSizeIqFeed() + change);
@@ -637,12 +639,18 @@ void Security::UpdateLevel2IbLine(
 			Qty size) {
 	{
 		const Level2WriteLock lock(m_level2Mutex);
-		QuotesCompleted::Lines &quotes = isAsk ? m_qoutesIb.ask : m_qoutesIb.bid;
-		quotes[Scale(price)] = size;
 		if (isAsk) {
-			SetLevel2AskIb(GetQuotesSize(quotes));
+			if ((m_qoutesIb.totalAsk.size / m_qoutesIb.ask.size()) * 5 < size) {
+				return;
+			}
+			m_qoutesIb.ask[Scale(price)] = size;
+			SetLevel2AskIb(GetQuotesSize(m_qoutesIb.ask));
 		} else {
-			SetLevel2BidIb(GetQuotesSize(quotes));
+			if ((m_qoutesIb.totalBid.size / m_qoutesIb.bid.size()) * 5 < size) {
+				return;
+			}
+			m_qoutesIb.bid[Scale(price)] = size;
+			SetLevel2BidIb(GetQuotesSize(m_qoutesIb.bid));
 		}
 	}
 	if (*this) {
