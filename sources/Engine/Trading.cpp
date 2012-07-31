@@ -25,7 +25,7 @@ namespace fs = boost::filesystem;
 namespace {
 
 	typedef std::map<std::string, boost::shared_ptr<Security>> Securities;
-	typedef std::map<std::string, boost::shared_ptr<Algo>> Algos;
+	typedef std::list<boost::shared_ptr<Algo>> Algos;
 
 }
 
@@ -94,11 +94,6 @@ namespace {
 			throw;
 		}
 
-		if (algos.find(tag) != algos.end()) {
-			Log::Error("Strategy object tag \"%1%\" is not unique.", tag);
-			throw IniFile::Error("Strategy object tag is not unique");
-		}
-
 		Log::Info("Loading strategy objects for \"%1%\"...", tag);
 		
 		std::string symbolsFilePath;
@@ -150,7 +145,7 @@ namespace {
 				} else {
 					AssertFail("Unknown algo in INI file.");
 				}
-				algos[tag] = algo;
+				algos.push_back(algo);
 			
 				Log::Info(
 					"Loaded strategy \"%1%\" for \"%2%\".",
@@ -187,7 +182,7 @@ namespace {
 		}
 
 		foreach (auto a, algos) {
-			dispatcher.Register(a.second);
+			dispatcher.Register(a);
 		}
 
 		Log::Info("Loaded %1% securities.", securities.size());
@@ -220,8 +215,7 @@ namespace {
 				Log::Error("Failed to get strategy algo: \"%1%\".", ex.what());
 				throw;
 			}
-			foreach (auto &v, algos) {
-				boost::shared_ptr<Algo> &a = v.second;
+			foreach (auto &a, algos) {
 				if (algoName == Ini::Algo::level2MarketArbitrage) {
 					if (!dynamic_cast<Strategies::Level2MarketArbitrage::Algo *>(a.get())) {
 						continue;
@@ -267,7 +261,7 @@ void Trade(const fs::path &iniFilePath) {
 	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings);
 	
 	foreach (auto &a, algos) {
-		a.second->SubscribeToMarketData(marketDataSource, *tradeSystem);
+		a->SubscribeToMarketData(marketDataSource, *tradeSystem);
 	}
 
 	FileSystemChangeNotificator iniChangeNotificator(
@@ -314,7 +308,7 @@ void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
 	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings);
 
 	foreach (auto &a, algos) {
-		a.second->RequestHistory(
+		a->RequestHistory(
 			marketDataSource,
 			settings->GetCurrentTradeSessionStartTime(),
 			settings->GetCurrentTradeSessionEndime());
