@@ -83,10 +83,14 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 
 	settings.askBidDifferencePercent
 		= ini.ReadTypedKey<double>(section, "ask_bid_difference_percent") / 100;
-	settings.takeProfitPercent
-		= ini.ReadTypedKey<double>(section, "take_profit_percent") / 100;
-	settings.stopLossPercent
-		= ini.ReadTypedKey<double>(section, "stop_loss_percent") / 100;
+	settings.takeProfit = ini.ReadAbsoluteOrPercentsPriceKey(
+		section,
+		"take_profit",
+		GetSecurity()->GetScale());
+	settings.stopLoss = ini.ReadAbsoluteOrPercentsPriceKey(
+		section,
+		"stop_loss",
+		GetSecurity()->GetScale());
 	settings.volume
 		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "volume"));
 	
@@ -180,8 +184,8 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	SettingsReport report;
 	AppendPercentSettingsReport("ask_bid_difference_percent", settings.askBidDifferencePercent * 100, report);
 	if (settings.closeOrderType == Settings::ORDER_TYPE_IOC) {
-		AppendPercentSettingsReport("take_profit_percent", settings.takeProfitPercent * 100, report);
-		AppendPercentSettingsReport("stop_loss_percent", settings.stopLossPercent * 100, report);
+		AppendSettingsReport("take_profit", settings.takeProfit, report);
+		AppendSettingsReport("stop_loss", settings.stopLoss, report);
 	}
 	AppendSettingsReport("open_mode", Util::ConvertToStr(settings.openMode), report);
 	AppendSettingsReport("position_time_seconds", settings.positionTimeSeconds, report);
@@ -224,8 +228,8 @@ boost::shared_ptr<Position> s::Algo::OpenShortPostion(
 			price,
 			askSize,
 			bidSize,
-			price - Security::Price(boost::math::round(price * m_settings.takeProfitPercent)),
-			price + Security::Price(boost::math::round(price * m_settings.stopLossPercent)),
+			price - m_settings.takeProfit.Get(price),
+			price + m_settings.stopLoss.Get(price),
 			STATE_OPENING,
 			shared_from_this()));
 	switch (m_settings.openOrderType) {
@@ -254,8 +258,8 @@ boost::shared_ptr<Position> s::Algo::OpenLongPostion(
 			price,
 			askSize,
 			bidSize,
-			price + Security::Price(boost::math::round(price * m_settings.takeProfitPercent)),
-			price - Security::Price(boost::math::round(price * m_settings.stopLossPercent)),
+			price + m_settings.takeProfit.Get(price),
+			price - m_settings.stopLoss.Get(price),
 			STATE_OPENING,
 			shared_from_this()));
 	switch (m_settings.openOrderType) {
@@ -327,6 +331,9 @@ void s::Algo::CloseLongPosition(Position &position, bool asIs) {
 		if (asIs) {
 			CloseLongPositionStopLossDo(position);
 		} else {
+			const Security::Price price = position.GetOpenPrice();
+			position.SetTakeProfit(price + m_settings.takeProfit.Get(price));
+			position.SetStopLoss(price - m_settings.stopLoss.Get(price));
 			ReportCloseTry(position);
 			switch (m_settings.openOrderType) {
 				case Settings::ORDER_TYPE_IOC:
@@ -341,6 +348,7 @@ void s::Algo::CloseLongPosition(Position &position, bool asIs) {
 					AssertFail("Unknown order type.");
 					break;
 			}
+			position.SetAlgoTime(GetCurrentTime());
 		}
 		position.SetAlgoFlag(STATE_CLOSING);
 	} else if (position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS) {
@@ -353,12 +361,12 @@ void s::Algo::CloseLongPosition(Position &position, bool asIs) {
 		position.ResetState();
 		switch (m_settings.openOrderType) {
 			case Settings::ORDER_TYPE_IOC:
-				position.SetTakeProfit(position.GetTakeProfit() - GetSecurity()->Scale(.01));
 				ReportCloseTry(position);
 				security.SellOrCancel(
 					position.GetOpenedQty() - position.GetClosedQty(),
 					position.GetTakeProfit(),
 					position);
+				position.SetAlgoTime(GetCurrentTime());
 				break;
 			case Settings::ORDER_TYPE_MKT:
 				ReportCloseTry(position);
@@ -381,8 +389,12 @@ void s::Algo::CloseShortPosition(Position &position, bool asIs) {
 		if (asIs) {
 			CloseShortPositionStopLossDo(position);
 		} else {
+			const Security::Price price = position.GetOpenPrice();
+			position.SetTakeProfit(price - m_settings.takeProfit.Get(price));
+			position.SetStopLoss(price + m_settings.stopLoss.Get(price));
 			ReportCloseTry(position);
 			security.Buy(position.GetOpenedQty(), position);
+			position.SetAlgoTime(GetCurrentTime());
 		}
 		position.SetAlgoFlag(STATE_CLOSING);
 	} else if (position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS) {
@@ -395,12 +407,12 @@ void s::Algo::CloseShortPosition(Position &position, bool asIs) {
 		position.ResetState();
 		switch (m_settings.openOrderType) {
 			case Settings::ORDER_TYPE_IOC:
-				position.SetTakeProfit(position.GetTakeProfit() + GetSecurity()->Scale(.01));
 				ReportCloseTry(position);
 				security.BuyOrCancel(
 					position.GetOpenedQty() - position.GetClosedQty(),
 					position.GetTakeProfit(),
 					position);
+				position.SetAlgoTime(GetCurrentTime());
 				break;
 			case Settings::ORDER_TYPE_MKT:
 				ReportCloseTry(position);
@@ -435,8 +447,11 @@ void s::Algo::ClosePosition(Position &position, bool asIs) {
 		return;
 	} else if (!asIs && position.GetAlgoFlag() == STATE_OPENING) {
 		Assert(!position.GetOpenTime().is_not_a_date_time());
-		if (	!position.GetOpenTime().is_not_a_date_time()
-				&& position.GetOpenTime() + m_settings.positionTimeSeconds > GetCurrentTime()) {
+		Assert(!position.GetAlgoTime().is_not_a_date_time());
+		const auto currentTime = GetCurrentTime();
+		if (position.GetOpenTime() + m_settings.positionTimeSeconds > currentTime) {
+			return;
+		} else if (position.GetAlgoTime() + pt::seconds(1) > currentTime) {
 			return;
 		}
 	}

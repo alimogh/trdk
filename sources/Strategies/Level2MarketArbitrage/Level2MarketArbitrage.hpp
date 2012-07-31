@@ -41,8 +41,8 @@ namespace Strategies { namespace Level2MarketArbitrage {
 
 			double askBidDifferencePercent;
 
-			double takeProfitPercent;
-			double stopLossPercent;
+			IniFile::AbsoluteOrPercentsPrice takeProfit;
+			IniFile::AbsoluteOrPercentsPrice stopLoss;
 
 			Security::Price volume;
 
