@@ -41,11 +41,7 @@ namespace Strategies { namespace QuickArbitrage {
 			OrderType openOrderType;
 			OrderType closeOrderType;
 
-			bool isAbsoluteSpread;
-			union {
-				Security::Price absolute;
-				double percents;
-			} spread;
+			IniFile::AbsoluteOrPercentsPrice spread;
 
 			Security::Price takeProfit;
 			Security::Price stopLoss;

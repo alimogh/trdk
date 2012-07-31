@@ -44,10 +44,7 @@ bool AskBid::IsValidSread(Security::Price valGt, Security::Price valLs) const {
 	if (spread < 0) {
 		return false;
 	}
-	const auto cmpVal = m_settings.isAbsoluteSpread
-		?	m_settings.spread.absolute
-		:	Security::Price(boost::math::round(valGt * m_settings.spread.percents));
-	return spread >= cmpVal;
+	return spread >= m_settings.spread.Get(valGt);
 }
 
 bool AskBid::IsLongPosEnabled() const {
@@ -170,21 +167,10 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	settings.closeOrderType
 		= Util::ConvertStrToOrderType(ini.ReadKey(section, "close_order_type", false));
 
-	{
-		std::string spread = ini.ReadKey(section, "spread", false);
-		settings.isAbsoluteSpread = !boost::ends_with(spread, "%");
-		try {
-			if (!settings.isAbsoluteSpread) {
-				spread.pop_back();
-				settings.spread.percents = boost::lexical_cast<double>(spread) / 100;
-			} else {
-				settings.spread.absolute = GetSecurity()->Scale(boost::lexical_cast<double>(spread));
-			}
-		} catch (const boost::bad_lexical_cast &ex) {
-			Log::Error("Failed to parse \"spread\" key value (%2%): \"%1%\".", ex.what(), spread);
-			throw IniFile::KeyFormatError("Failed to parse \"spread\" key");
-		}
-	}
+	settings.spread = ini.ReadAbsoluteOrPercentsPriceKey(
+		section,
+		"spread",
+		GetSecurity()->GetScale());
 
 	if (settings.closeOrderType == Settings::ORDER_TYPE_IOC) {
 		settings.takeProfit
@@ -202,12 +188,7 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	AppendSettingsReport("open_mode", Util::ConvertToStr(settings.openMode), settingsReport);
 	AppendSettingsReport("longs_enabled", settings.isLongsEnabled, settingsReport);
 	AppendSettingsReport("shorts_enabled", settings.isShortsEnabled, settingsReport);
-	AppendSettingsReport(
-		"spread",
-		settings.isAbsoluteSpread
-			?	boost::lexical_cast<std::string>(GetSecurity()->Descale(settings.spread.absolute))
-			:	(boost::format("%1%%%") % (settings.spread.percents * 100)).str(),
-		settingsReport);
+	AppendSettingsReport("spread", settings.spread, settingsReport);
 	if (settings.closeOrderType == Settings::ORDER_TYPE_IOC) {
 		AppendSettingsReport("take_profit", GetSecurity()->Descale(settings.takeProfit), settingsReport);
 		AppendSettingsReport("stop_loss", GetSecurity()->Descale(settings.stopLoss), settingsReport);
