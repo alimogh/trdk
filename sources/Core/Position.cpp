@@ -71,11 +71,20 @@ Position::Position(
 		m_algoFlag(algoFlag),
 		m_algo(algo) {
 	SetTakeProfit(takeProfit);
+	SetTakeProfit(stopLoss);
 	Interlocking::Exchange(m_state, STATE_NONE);
 }
 
 Position::~Position() {
 	//...//
+}
+
+const boost::posix_time::ptime & Position::GetAlgoTime() const {
+	return m_algoTime;
+}
+
+void Position::SetAlgoTime (const boost::posix_time::ptime &newTime) {
+	m_algoTime = newTime;
 }
 
 Position::AlgoFlag Position::GetAlgoFlag() const {
@@ -424,6 +433,10 @@ void Position::SetTakeProfit(Position::Price newTakeProfit) {
 
 Position::Price Position::GetStopLoss() const {
 	return m_stopLoss;
+}
+
+void Position::SetStopLoss(Position::Price newStopLoss) {
+	Interlocking::Exchange(m_stopLoss, newStopLoss);
 }
 
 Position::Price Position::GetOpenPrice() const {

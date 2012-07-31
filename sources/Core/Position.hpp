@@ -88,6 +88,9 @@ public:
 	AlgoFlag GetAlgoFlag() const;
 	void SetAlgoFlag(AlgoFlag);
 
+	const boost::posix_time::ptime & GetAlgoTime() const;
+	void SetAlgoTime (const boost::posix_time::ptime &);
+
 	bool IsOpened() const;
 	bool IsClosed() const;
 	bool IsOpenError() const;
@@ -105,6 +108,7 @@ public:
 	void SetTakeProfit(Price);
 	Price GetTakeProfit() const;
 	Price GetStopLoss() const;
+	void SetStopLoss(Price);
 
 	TradeSystem::OrderId GetOpenOrderId() const;
 	Qty GetOpenedQty() const;
@@ -171,7 +175,7 @@ private:
 	const Price m_decisionAks;
 	const Price m_decisionBid;
 	volatile LONGLONG m_takeProfit;
-	const Price m_stopLoss;
+	volatile LONGLONG m_stopLoss;
 		
 	DynamicData m_opened;
 	DynamicData m_closed;
@@ -183,6 +187,7 @@ private:
 	bool m_isReported;
 
 	AlgoFlag m_algoFlag;
+	boost::posix_time::ptime m_algoTime;
 	boost::shared_ptr<const Algo> m_algo;
 
 };
