@@ -573,6 +573,8 @@ namespace {
 				bid->size = message.GetFieldAsUnsignedInt(6, true);
 				if (!bid->size) {
 					bid.reset();
+				} else {
+					bid->size /= 100;
 				}
 			}
 
@@ -580,6 +582,8 @@ namespace {
 				ask->size = message.GetFieldAsUnsignedInt(7, true);
 				if (!ask->size) {
 					ask.reset();
+				} else {
+					ask->size /= 100;
 				}
 			}
 
