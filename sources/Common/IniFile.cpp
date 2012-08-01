@@ -258,10 +258,12 @@ IniFile::AbsoluteOrPercentsPrice IniFile::ReadAbsoluteOrPercentsPriceKey(
 	AbsoluteOrPercentsPrice result = {};
 	std::string val = ReadKey(section, key, false);
 	result.isAbsolute = !boost::ends_with(val, "%");
+	if (!result.isAbsolute) {
+		val.pop_back();
+	}
 	try {
 		const auto dVal = boost::lexical_cast<double>(val);
 		if (!result.isAbsolute) {
-			val.pop_back();
 			result.value.percents = dVal / 100;
 		} else {
 			result.value.absolute = Util::Scale(dVal, priceScale);
