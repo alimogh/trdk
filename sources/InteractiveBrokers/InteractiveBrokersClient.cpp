@@ -381,12 +381,25 @@ public:
 			// case 2102: // Unable to modify this order as it is still being processed.
 			// case 2103: // A market data farm is disconnected.
 			case 2104: // A market data farm is connected.
-			// case 2105: // A historical data farm is disconnected.
+			case 2105: // A historical data farm is disconnected.
 			case 2106: // A historical data farm is connected.
 			case 2107: // A historical data farm connection has become inactive but should be available upon demand.
-			// case 2108: // A market data farm connection has become inactive but should be available upon demand.
+			case 2108: // A market data farm connection has become inactive but should be available upon demand.
+				Log::Info(
+					INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection:"
+						" \"%1%\" (error code: %2%, order or ticket ID: %3%).",
+					message,
+					code,
+					id);
+				break;
 			case 2109: // Order Event Warning: Attribute “Outside Regular Trading Hours” is ignored based on the order type and destination. PlaceOrder is now processed.
-			// case 2110: // Connectivity between TWS and server is broken. It will be restored automatically.
+			case 2110: // Connectivity between TWS and server is broken. It will be restored automatically.
+				Log::Warn(
+					INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection:"
+						" \"%1%\" (error code: %2%, order or ticket ID: %3%).",
+					message,
+					code,
+					id);
 				break;
 			default:
 				Log::Error(
