@@ -346,10 +346,10 @@ private:
 					std::make_pair(
 						price,
 						isAsk
-							?	std::make_pair(line.second->size / 100, 0)
-							:	std::make_pair(0, line.second->size / 100)));
+							?	std::make_pair(line.second->size, 0)
+							:	std::make_pair(0, line.second->size)));
 			} else {
-				(isAsk ? i->second.first : i->second.second) += line.second->size / 100;
+				(isAsk ? i->second.first : i->second.second) += line.second->size;
 			}
 		}
 	}
@@ -456,6 +456,10 @@ void Security::BuyAtMarketPrice(Qty qty, Price stopPrice, Position &position) {
 
 void Security::BuyOrCancel(Qty qty, Price price, Position &position) {
 	GetTradeSystem().BuyOrCancel(*this, qty, price, position.GetBuyOrderStatusUpdateSlot());
+}
+
+void Security::CancelOrder(TradeSystem::OrderId orderId) {
+	GetTradeSystem().CancelOrder(orderId);
 }
 
 void Security::CancelAllOrders() {
@@ -640,13 +644,15 @@ void Security::UpdateLevel2IbLine(
 	{
 		const Level2WriteLock lock(m_level2Mutex);
 		if (isAsk) {
-			if ((m_qoutesIb.totalAsk.size / m_qoutesIb.ask.size()) * 5 < size) {
+			if (	!m_qoutesIb.ask.empty()
+					&& (m_qoutesIb.totalAsk.size / m_qoutesIb.ask.size()) * 5 < size) {
 				return;
 			}
 			m_qoutesIb.ask[Scale(price)] = size;
 			SetLevel2AskIb(GetQuotesSize(m_qoutesIb.ask));
 		} else {
-			if ((m_qoutesIb.totalBid.size / m_qoutesIb.bid.size()) * 5 < size) {
+			if (	!m_qoutesIb.bid.empty()
+					&& (m_qoutesIb.totalBid.size / m_qoutesIb.bid.size()) * 5 < size) {
 				return;
 			}
 			m_qoutesIb.bid[Scale(price)] = size;

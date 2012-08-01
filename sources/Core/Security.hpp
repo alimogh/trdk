@@ -129,6 +129,7 @@ public:
 	void BuyAtMarketPrice(Qty, Price stopPrice, Position &);
 	void BuyOrCancel(Qty, Price, Position &);
 
+	void CancelOrder(TradeSystem::OrderId);
 	void CancelAllOrders();
 
 	bool IsCompleted() const;
