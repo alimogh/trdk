@@ -68,6 +68,7 @@ public:
 			OrderPrice,
 			OrderStatusUpdateSlot = OrderStatusUpdateSlot());
 
+	virtual void CancelOrder(OrderId);
 	virtual void CancelAllOrders(const Security &);
 
 public:

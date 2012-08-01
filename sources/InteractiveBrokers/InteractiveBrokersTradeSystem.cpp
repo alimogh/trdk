@@ -148,6 +148,11 @@ bool InteractiveBrokersTradeSystem::IsCompleted(const Security &security) const 
 	return index.find(security.GetFullSymbol()) == index.end();
 }
 
+void InteractiveBrokersTradeSystem::CancelOrder(OrderId orderId) {
+	Log::Trading("cancel", "order=%1%", orderId);
+	m_pimpl->client->CancelOrder(orderId);
+}
+
 void InteractiveBrokersTradeSystem::CancelAllOrders(const Security &security) {
 	std::list<OrderId> ids;
 	std::list<std::string> idsStr;

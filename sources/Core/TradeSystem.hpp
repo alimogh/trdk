@@ -155,6 +155,7 @@ public:
 			OrderStatusUpdateSlot = OrderStatusUpdateSlot())
 		= 0;
 
+	virtual void CancelOrder(OrderId) = 0;
 	virtual void CancelAllOrders(const Security &) = 0;
 
 public:

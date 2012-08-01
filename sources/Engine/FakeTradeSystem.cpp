@@ -291,6 +291,10 @@ void FakeTradeSystem::BuyOrCancel(
 		security.Descale(price));
 }
 
+void FakeTradeSystem::CancelOrder(OrderId) {
+	AssertFail("Doesn't implemented.");
+}
+
 void FakeTradeSystem::CancelAllOrders(const Security &security) {
 	Log::Trading("cancel", "%1% orders=[all]", security.GetSymbol());
 }
