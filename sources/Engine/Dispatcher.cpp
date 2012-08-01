@@ -116,7 +116,7 @@ private:
 
 	typedef boost::condition_variable Condition;
 
-	typedef std::list<std::pair<boost::shared_ptr<AlgoState>, bool>> NotifyList;
+	typedef std::map<boost::shared_ptr<AlgoState>, bool> NotifyList;
 
 public:
 
@@ -191,7 +191,6 @@ public:
 		}
 		Log::Info("Starting events dispatching...");
 		m_isActive = true;
-		m_positionsCheckCondition.notify_all();
 	}
 
 	void Stop() {
@@ -218,13 +217,13 @@ public:
 		Lock lock(m_algoMutex);
 		if (m_isExit) {
 			return;
-		} else if (!m_isActive) {
-			m_positionsCheckCondition.wait(lock);
-			if (m_isExit || !m_isActive) {
-				return;
-			}
 		}
-		m_current->push_back(std::make_pair(algoState, false));
+
+		const NotifyList::const_iterator i = m_current->find(algoState);
+		if (i != m_current->end() && !i->second) {
+			return;
+		}
+		(*m_current)[algoState] = false;
 		m_positionsCheckCondition.notify_one();
 		if (m_settings->IsReplayMode()) {
 			m_positionsCheckCompletedCondition.wait(lock);
@@ -368,7 +367,10 @@ bool Dispatcher::Notifier::TimeoutCheckIteration() {
 			result = false;
 		} else if (m_isActive && !algos.empty()) {
 			foreach (boost::shared_ptr<AlgoState> &algo, algos) {
-				m_current->push_back(std::make_pair(algo, true));
+				if (m_current->find(algo) != m_current->end()) {
+					continue;
+				}
+				(*m_current)[algo] = true;
 			}
 			m_positionsCheckCondition.notify_one();
 		}
@@ -421,12 +423,9 @@ bool Dispatcher::Notifier::AlgoIteration() {
 	}
 
 	Assert(!notifyList->empty());
-	std::for_each(
-		notifyList->begin(),
-		notifyList->end(),
-		[](std::pair<boost::shared_ptr<Dispatcher::AlgoState>, bool> &notification) {
-			notification.first->CheckPositions(notification.second);
-		});
+	foreach (auto &notification, *notifyList) {
+		notification.first->CheckPositions(notification.second);
+	}
 	notifyList->clear();
 
 	return true;
