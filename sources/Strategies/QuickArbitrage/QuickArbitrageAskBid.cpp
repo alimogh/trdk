@@ -289,7 +289,7 @@ void AskBid::CloseLongPosition(Position &position, bool asIs) {
 void AskBid::CloseShortPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
 	Security &security = *GetSecurity();
-	bool isLoss
+	const bool isLoss
 		= asIs
 		|| (m_settings.closeOrderType == Settings::ORDER_TYPE_IOC 
 			&& position.GetStopLoss() <= security.GetBidScaled());
