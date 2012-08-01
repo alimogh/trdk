@@ -41,6 +41,9 @@
     <ClCompile Include="TradeSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AlgoPositionState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log.hpp">
@@ -80,6 +83,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MarketDataSource.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AlgoPositionState.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

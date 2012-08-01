@@ -20,6 +20,8 @@ namespace Strategies { namespace Level2MarketArbitrage {
 
 	private:
 
+		class State;
+
 		struct Settings {
 
 			enum OpenMode {
@@ -43,6 +45,9 @@ namespace Strategies { namespace Level2MarketArbitrage {
 
 			IniFile::AbsoluteOrPercentsPrice takeProfit;
 			IniFile::AbsoluteOrPercentsPrice stopLoss;
+			boost::posix_time::time_duration priceChangeTime;
+			Security::Price priceChange;
+			boost::posix_time::time_duration iterationTime;
 
 			Security::Price volume;
 

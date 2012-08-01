@@ -61,6 +61,7 @@
   <PropertyGroup />
   <ItemGroup>
     <ClCompile Include="Algo.cpp" />
+    <ClCompile Include="AlgoPositionState.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="MarketDataSource.cpp" />
@@ -77,6 +78,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Algo.hpp" />
+    <ClInclude Include="AlgoPositionState.hpp" />
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="Instrument.hpp" />
     <ClInclude Include="Log.hpp" />

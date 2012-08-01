@@ -58,7 +58,8 @@ Position::Position(
 			Price takeProfit,
 			Price stopLoss,
 			AlgoFlag algoFlag,
-			boost::shared_ptr<const Algo> algo)
+			boost::shared_ptr<const Algo> algo,
+			boost::shared_ptr<AlgoPositionState> state /*= boost::shared_ptr<AlgoPositionState>()*/)
 		: m_security(security),
 		m_type(type),
 		m_planedQty(qty),
@@ -69,7 +70,8 @@ Position::Position(
 		m_closeType(CLOSE_TYPE_NONE),
 		m_isReported(false),
 		m_algoFlag(algoFlag),
-		m_algo(algo) {
+		m_algo(algo),
+		m_algoState(state) {
 	SetTakeProfit(takeProfit);
 	SetTakeProfit(stopLoss);
 	Interlocking::Exchange(m_state, STATE_NONE);
@@ -77,14 +79,6 @@ Position::Position(
 
 Position::~Position() {
 	//...//
-}
-
-const boost::posix_time::ptime & Position::GetAlgoTime() const {
-	return m_algoTime;
-}
-
-void Position::SetAlgoTime (const boost::posix_time::ptime &newTime) {
-	m_algoTime = newTime;
 }
 
 Position::AlgoFlag Position::GetAlgoFlag() const {

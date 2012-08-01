@@ -12,6 +12,7 @@
 #include "TradeSystem.hpp"
 
 class Algo;
+class AlgoPositionState;
 
 class Position
 		: private boost::noncopyable,
@@ -71,10 +72,15 @@ public:
 			Price takeProfit,
 			Price stopLoss,
 			AlgoFlag algoFlag,
-			boost::shared_ptr<const Algo> algo);
+			boost::shared_ptr<const Algo> algo,
+			boost::shared_ptr<AlgoPositionState> state = boost::shared_ptr<AlgoPositionState>());
 	~Position();
 
 public:
+
+	const Algo & GetAlog() const {
+		return *m_algo;
+	}
 
 	const Security & GetSecurity() const;
 
@@ -85,11 +91,19 @@ public:
 	bool IsReported() const;
 	void MarkAsReported();
 
+	template<typename T>
+	bool IsAlgoStateSet() const {
+		return m_algoState;//  && dynamic_cast<const T *>(m_algoState.get());
+	}
+
+	template<typename T>
+	T & GetAlgoState() {
+		Assert(IsAlgoStateSet<T>());
+		return *boost::polymorphic_downcast<T *>(m_algoState.get());
+	}
+
 	AlgoFlag GetAlgoFlag() const;
 	void SetAlgoFlag(AlgoFlag);
-
-	const boost::posix_time::ptime & GetAlgoTime() const;
-	void SetAlgoTime (const boost::posix_time::ptime &);
 
 	bool IsOpened() const;
 	bool IsClosed() const;
@@ -187,7 +201,7 @@ private:
 	bool m_isReported;
 
 	AlgoFlag m_algoFlag;
-	boost::posix_time::ptime m_algoTime;
-	boost::shared_ptr<const Algo> m_algo;
+	const boost::shared_ptr<const Algo> m_algo;
+	const boost::shared_ptr<AlgoPositionState> m_algoState;
 
 };
