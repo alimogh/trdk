@@ -10,6 +10,7 @@
 
 class TradeSystem;
 class IqFeedClient;
+class Settings;
 
-void Connect(TradeSystem &);
-void Connect(IqFeedClient &);
+void Connect(TradeSystem &, const Settings &);
+void Connect(IqFeedClient &, const Settings &);

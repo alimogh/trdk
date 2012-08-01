@@ -28,6 +28,9 @@ public:
 
 		size_t algoThreadsCount;
 
+		std::string ibIpAddress;
+		std::string iqLinkIpAddress;
+
 	};
 
 public:
@@ -66,6 +69,9 @@ public:
 	boost::uint16_t GetLevel2SnapshotPrintTimeSeconds() const;
 
 	bool IsValidPrice(const Security &) const;
+
+	const std::string & GetIbTwsIpAddress() const;
+	const std::string & GetIqLinkIpAddress() const;
 
 private:
 

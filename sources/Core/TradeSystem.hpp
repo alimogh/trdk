@@ -9,6 +9,7 @@
 #pragma once
 
 class Security;
+class Settings;
 
 class TradeSystem : private boost::noncopyable {
 
@@ -100,7 +101,7 @@ public:
 
 public:
 
-	virtual void Connect() = 0;
+	virtual void Connect(const Settings &) = 0;
 
 	virtual bool IsCompleted(const Security &) const = 0;
 

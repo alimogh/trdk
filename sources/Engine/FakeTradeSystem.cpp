@@ -164,7 +164,7 @@ FakeTradeSystem::~FakeTradeSystem() {
 	delete m_pimpl;
 }
 
-void FakeTradeSystem::Connect() {
+void FakeTradeSystem::Connect(const Settings &) {
 	m_pimpl->Start();
 }
 

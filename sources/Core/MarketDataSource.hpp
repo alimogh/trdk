@@ -9,6 +9,7 @@
 #pragma once
 
 class Security;
+class Settings;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -33,7 +34,7 @@ public:
 
 public:
 
-	virtual void Connect() = 0;
+	virtual void Connect(const Settings &) = 0;
 
 };
 

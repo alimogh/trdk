@@ -12,6 +12,7 @@
 #include "IqFeedClient.hpp"
 #include "IqMessageParser.hpp"
 #include "Core/Security.hpp"
+#include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
 namespace lt = boost::local_time;
@@ -87,8 +88,7 @@ namespace {
 	public:
 
 		Connection(Service &service, unsigned short port)
-				: m_host("127.0.0.1"),
-				m_port(port),
+				: m_port(port),
 				m_isActive(false),
 				m_thread(nullptr),
 				m_service(service),
@@ -108,11 +108,11 @@ namespace {
 
 	public:
 
-		void Connect() {
+		void Connect(const Settings &settings) {
 
 			Log::Info(
 				IQFEED_CLIENT_CONNECTION_NAME ": connecting to IQLink at \"%1%:%2%...",
-				m_host,
+				settings.GetIqLinkIpAddress(),
 				m_port);
 
 			Lock lock(m_mutex);
@@ -129,7 +129,7 @@ namespace {
 		
 			Proto::resolver::query query(
 				Proto::v4(),
-				m_host,
+				settings.GetIqLinkIpAddress(),
 				boost::lexical_cast<std::string>(m_port));
 			Resolver resolver(*m_ioService);
 			resolver.async_resolve(
@@ -367,7 +367,6 @@ namespace {
 
 	private:
 
-		const std::string m_host;
 		const unsigned short m_port;
 
 		bool m_isActive;
@@ -816,10 +815,10 @@ public:
 
 public:
 
-	void Connect() {
-		m_level1->Connect();
-		m_level2->Connect();
-		m_lookup->Connect();
+	void Connect(const Settings &settings) {
+		m_level1->Connect(settings);
+		m_level2->Connect(settings);
+		m_lookup->Connect(settings);
 	}
 
 	void SubscribeToMarketDataLevel1(boost::shared_ptr<Security> instrument) {
@@ -1028,8 +1027,8 @@ IqFeedClient::~IqFeedClient() {
 	delete m_pimpl;
 }
 
-void IqFeedClient::Connect() {
-	m_pimpl->Connect();
+void IqFeedClient::Connect(const Settings &settings) {
+	m_pimpl->Connect(settings);
 }
 
 void IqFeedClient::SubscribeToMarketDataLevel1(

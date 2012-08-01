@@ -188,8 +188,8 @@ namespace {
 		Log::Info("Loaded %1% securities.", securities.size());
 		Log::Info("Loaded %1% strategies.", algos.size());
 
-		Connect(*tradeSystem);
-		Connect(marketDataSource);
+		Connect(*tradeSystem, *settings);
+		Connect(marketDataSource, *settings);
 
 	}
 

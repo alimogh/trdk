@@ -45,7 +45,7 @@ void RequestMarketData(const fs::path &iniFilePath, int argc, const char *argv[]
 			settings->GetCurrentTradeSessionStartTime() + Util::GetEdtDiff(),
 			settings->GetCurrentTradeSessionEndime() + Util::GetEdtDiff());
 
-		Connect(marketDataSource);
+		Connect(marketDataSource, *settings);
 		
 		const fs::path symbolsFilePath = ini.ReadKey(
 			Ini::Sections::MarketData::request,

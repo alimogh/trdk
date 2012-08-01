@@ -10,6 +10,7 @@
 #include "InteractiveBrokersTradeSystem.hpp"
 #include "InteractiveBrokersClient.hpp"
 #include "Core/Security.hpp"
+#include "Core/Settings.hpp"
 
 namespace mi = boost::multi_index;
 
@@ -83,12 +84,13 @@ InteractiveBrokersTradeSystem::~InteractiveBrokersTradeSystem() {
 	delete m_pimpl;
 }
 
-void InteractiveBrokersTradeSystem::Connect() {
+void InteractiveBrokersTradeSystem::Connect(const Settings &settings) {
 	Assert(!m_pimpl->client);
 	if (m_pimpl->client) {
 		return;
 	}
-	std::unique_ptr<InteractiveBrokersClient> client(new InteractiveBrokersClient);
+	std::unique_ptr<InteractiveBrokersClient> client(
+		new InteractiveBrokersClient(settings.GetIbTwsIpAddress()));
 	client->Subscribe(
 		[this](
 					TradeSystem::OrderId id,

@@ -41,13 +41,10 @@ namespace Strategies { namespace Level2MarketArbitrage {
 				MARKET_DATA_SOURCE_INTERACTIVE_BROKERS
 			};
 
-			double askBidDifferencePercent;
+			double entryAskBidDifferencePercent;
+			double stopLossAskBidDifferencePercent;
 
 			IniFile::AbsoluteOrPercentsPrice takeProfit;
-			IniFile::AbsoluteOrPercentsPrice stopLoss;
-			boost::posix_time::time_duration priceChangeTime;
-			Security::Price priceChange;
-			boost::posix_time::time_duration iterationTime;
 
 			Security::Price volume;
 
@@ -99,12 +96,37 @@ namespace Strategies { namespace Level2MarketArbitrage {
 		void DoSettingsUpdate(const IniFile &ini, const std::string &section);
 		void UpdateCallbacks();
 
+		Security::Qty GetShortStopLoss(
+					Security::Qty askSize,
+					Security::Qty bidSize)
+				const;
+		Security::Qty GetLongStopLoss(
+					Security::Qty askSize,
+					Security::Qty bidSize)
+				const;
+
 		boost::shared_ptr<Position> OpenShortPostion(
 					Security::Qty askSize,
 					Security::Qty bidSize);
 		boost::shared_ptr<Position> OpenLongPostion(
 					Security::Qty askSize,
 					Security::Qty bidSize);
+
+		template<
+			typename TakeProfitCheckMethod,
+			typename StopLossCheckMethod,
+			typename GetTakeProfitMethod>
+		void CloseAbstractPosition(
+				Position &position,
+				bool asIs,
+				TakeProfitCheckMethod takeProfitCheckMethod,
+				StopLossCheckMethod stopLossCheckMethod,
+				GetTakeProfitMethod getTakeProfitMethod,
+				Security::Qty (Algo::*getStopLossMethod)(Security::Qty, Security::Qty) const,
+				void (Security::*iocCloseMethod)(Security::Qty, Security::Price, Position &),
+				void (Security::*mktCloseMethod)(Security::Qty, Position &),
+				void (Algo::*closeLongPositionStopLossDoMethod)(Position &),
+				void (Algo::*closeLongPositionStopLossTryMethod)(Position &));
 
 		void ClosePosition(Position &, bool asIs);
 		void CloseLongPosition(Position &, bool asIs);

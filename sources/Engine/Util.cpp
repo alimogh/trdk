@@ -13,10 +13,10 @@
 
 namespace pt = boost::posix_time;
 
-void Connect(TradeSystem &tradeSystem) {
+void Connect(TradeSystem &tradeSystem, const Settings &settings) {
 	for ( ; ; ) {
 		try {
-			tradeSystem.Connect();
+			tradeSystem.Connect(settings);
 			break;
 		} catch (const TradeSystem::ConnectError &) {
 			boost::this_thread::sleep(pt::seconds(5));
@@ -24,10 +24,10 @@ void Connect(TradeSystem &tradeSystem) {
 	}
 }
 
-void Connect(IqFeedClient &marketDataSource) {
+void Connect(IqFeedClient &marketDataSource, const Settings &settings) {
 	for ( ; ; ) {
 		try {
-			marketDataSource.Connect();
+			marketDataSource.Connect(settings);
 			break;
 		} catch (const IqFeedClient::ConnectError &) {
 			boost::this_thread::sleep(pt::seconds(5));

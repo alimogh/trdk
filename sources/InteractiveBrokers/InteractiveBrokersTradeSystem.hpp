@@ -22,7 +22,7 @@ public:
 
 public:
 
-	virtual void Connect();
+	virtual void Connect(const Settings &);
 
 	virtual bool IsCompleted(const Security &) const;
 
