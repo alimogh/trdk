@@ -35,8 +35,34 @@ AskBid::~AskBid() {
 }
 
 std::auto_ptr<PositionReporter> AskBid::CreatePositionReporter() const {
-	std::auto_ptr<PositionReporter> result(new PositionReporterAlgo<decltype(*this)>(*this));
+	class Reporter : public PositionReporterAlgo<AskBid> {
+	public:
+		typedef PositionReporterAlgo<AskBid> Base;
+	public:
+		virtual ~Reporter() {
+			//...//
+		}
+	protected:
+		virtual void PrintHead(std::ostream &out) const {
+			Base::PrintHead(out);
+			out
+				<< ",t/p price"
+				<< ",s/l price";
+		}
+		virtual void PrintLine(const Position &position, std::ostream &out) const {
+			Base::PrintLine(position, out);
+			out
+				// t/p price
+				<< "," << position.GetSecurity().Descale(position.GetTakeProfit())
+				// s/l price
+				<< "," <<  position.GetSecurity().Descale(position.GetStopLoss());
+		}
+	};
+
+	std::auto_ptr<Reporter> result(new Reporter);
+	result->Init(*this);
 	return result;
+
 }
 
 bool AskBid::IsValidSread(Security::Price valGt, Security::Price valLs) const {
@@ -236,6 +262,7 @@ const std::string & AskBid::GetName() const {
 void AskBid::CloseLongPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_LONG);
 	Security &security = *GetSecurity();
+	position.SetCloseStartPrice(security.GetAskScaled());
 	const bool isLoss
 		= asIs
 		|| (m_settings.closeOrderType == Settings::ORDER_TYPE_IOC 
@@ -251,7 +278,7 @@ void AskBid::CloseLongPosition(Position &position, bool asIs) {
 					position.SetCloseType(Position::CLOSE_TYPE_TAKE_PROFIT);
 					break;
 				case Settings::ORDER_TYPE_MKT:
-					security.Sell(position.GetOpenedQty(), position);
+					security.SellAtMarketPrice(position.GetOpenedQty(), position);
 					position.SetCloseType(Position::CLOSE_TYPE_NONE);
 					break;
 				default:
@@ -276,7 +303,7 @@ void AskBid::CloseLongPosition(Position &position, bool asIs) {
 				break;
 			case Settings::ORDER_TYPE_MKT:
 				ReportTakeProfitDo(position);
-				security.Sell(position.GetOpenedQty(), position);
+				security.SellAtMarketPrice(position.GetOpenedQty(), position);
 				position.SetCloseType(Position::CLOSE_TYPE_NONE);
 				break;
 			default:
@@ -289,6 +316,7 @@ void AskBid::CloseLongPosition(Position &position, bool asIs) {
 void AskBid::CloseShortPosition(Position &position, bool asIs) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
 	Security &security = *GetSecurity();
+	position.SetCloseStartPrice(security.GetBidScaled());
 	const bool isLoss
 		= asIs
 		|| (m_settings.closeOrderType == Settings::ORDER_TYPE_IOC 
@@ -304,7 +332,7 @@ void AskBid::CloseShortPosition(Position &position, bool asIs) {
 					position.SetCloseType(Position::CLOSE_TYPE_TAKE_PROFIT);
 					break;
 				case Settings::ORDER_TYPE_MKT:
-					security.Buy(position.GetOpenedQty(), position);
+					security.BuyAtMarketPrice(position.GetOpenedQty(), position);
 					position.SetCloseType(Position::CLOSE_TYPE_NONE);
 					break;
 				default:
@@ -329,7 +357,7 @@ void AskBid::CloseShortPosition(Position &position, bool asIs) {
 				break;
 			case Settings::ORDER_TYPE_MKT:
 				ReportTakeProfitDo(position);
-				security.Buy(position.GetOpenedQty(), position);
+				security.BuyAtMarketPrice(position.GetOpenedQty(), position);
 				position.SetCloseType(Position::CLOSE_TYPE_NONE);
 				break;
 			default:
@@ -401,10 +429,10 @@ void AskBid::ReportTakeProfitDo(const Position &position) const {
 void AskBid::DoOpenBuy(Position &position) {
 	switch (m_settings.openOrderType) {
 		case Settings::ORDER_TYPE_IOC:
-			GetSecurity()->BuyOrCancel(position.GetPlanedQty(), position.GetStartPrice(), position);
+			GetSecurity()->BuyOrCancel(position.GetPlanedQty(), position.GetOpenStartPrice(), position);
 			break;
 		case Settings::ORDER_TYPE_MKT:
-			GetSecurity()->Buy(position.GetPlanedQty(), position);
+			GetSecurity()->BuyAtMarketPrice(position.GetPlanedQty(), position);
 			break;
 		default:
 			AssertFail("Unknown open order type.");
@@ -415,10 +443,10 @@ void AskBid::DoOpenBuy(Position &position) {
 void AskBid::DoOpenSell(Position &position) {
 	switch (m_settings.openOrderType) {
 		case Settings::ORDER_TYPE_IOC:
-			GetSecurity()->SellOrCancel(position.GetPlanedQty(), position.GetStartPrice(), position);
+			GetSecurity()->SellOrCancel(position.GetPlanedQty(), position.GetOpenStartPrice(), position);
 			break;
 		case Settings::ORDER_TYPE_MKT:
-			GetSecurity()->Sell(position.GetPlanedQty(), position);
+			GetSecurity()->SellAtMarketPrice(position.GetPlanedQty(), position);
 			break;
 		default:
 			AssertFail("Unknown open order type.");

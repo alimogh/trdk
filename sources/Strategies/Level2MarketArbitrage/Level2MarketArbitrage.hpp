@@ -41,8 +41,8 @@ namespace Strategies { namespace Level2MarketArbitrage {
 				MARKET_DATA_SOURCE_INTERACTIVE_BROKERS
 			};
 
-			double entryAskBidDifferencePercent;
-			double stopLossAskBidDifferencePercent;
+			double entryAskBidDifference;
+			double stopLossAskBidDifference;
 
 			IniFile::AbsoluteOrPercentsPrice takeProfit;
 
@@ -107,10 +107,12 @@ namespace Strategies { namespace Level2MarketArbitrage {
 
 		boost::shared_ptr<Position> OpenShortPostion(
 					Security::Qty askSize,
-					Security::Qty bidSize);
+					Security::Qty bidSize,
+					double ratio);
 		boost::shared_ptr<Position> OpenLongPostion(
 					Security::Qty askSize,
-					Security::Qty bidSize);
+					Security::Qty bidSize,
+					double ratio);
 
 		template<
 			typename TakeProfitCheckMethod,
@@ -139,6 +141,8 @@ namespace Strategies { namespace Level2MarketArbitrage {
 		void CloseShortPositionStopLossTry(Position &);
 
 		void ReportCloseTry(const Position &);
+		void ReportStillOpened(Position &);
+		void ReportNoDecision(Security::Qty askSize, Security::Qty bidSize);
 
 	private:
 
@@ -146,6 +150,8 @@ namespace Strategies { namespace Level2MarketArbitrage {
 
 		boost::function<Security::Qty()> m_askSizeGetter;
 		boost::function<Security::Qty()> m_bidSizeGetter;
+
+		boost::posix_time::ptime m_lastStateReport;
 
 	};
 

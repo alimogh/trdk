@@ -426,8 +426,8 @@ Security::Security(
 	Interlocking::Exchange(m_bid, 0);
 }
 
-void Security::Sell(Qty qty, Position &position) {
-	GetTradeSystem().Sell(*this, qty, position.GetSellOrderStatusUpdateSlot());
+void Security::SellAtMarketPrice(Qty qty, Position &position) {
+	GetTradeSystem().SellAtMarketPrice(*this, qty, position.GetSellOrderStatusUpdateSlot());
 }
 
 void Security::Sell(Qty qty, Price price, Position &position) {
@@ -442,8 +442,8 @@ void Security::SellOrCancel(Qty qty, Price price, Position &position) {
 	GetTradeSystem().SellOrCancel(*this, qty, price, position.GetSellOrderStatusUpdateSlot());
 }
 
-void Security::Buy(Qty qty, Position &position) {
-	GetTradeSystem().Buy(*this, qty, position.GetBuyOrderStatusUpdateSlot());
+void Security::BuyAtMarketPrice(Qty qty, Position &position) {
+	GetTradeSystem().BuyAtMarketPrice(*this, qty, position.GetBuyOrderStatusUpdateSlot());
 }
 
 void Security::Buy(Qty qty, Price price, Position &position) {
@@ -816,7 +816,7 @@ void Security::SetLevel2BidIb(Qty bidSize) {
 	Interlocking::Exchange(m_qoutesIb.totalBid.size, bidSize);
 }
 
-void Security::ReportLevel2Snapshot() const {
+void Security::ReportLevel2Snapshot(bool forced /*= false*/) const {
 	if (!m_marketDataLevel2SnapshotLog || !m_settings->IsLevel2SnapshotPrintEnabled()) {
 		return;
 	}
@@ -825,7 +825,8 @@ void Security::ReportLevel2Snapshot() const {
 	const auto isIqFeedPrinted = m_marketDataLevel2SnapshotLog->AppendCurrentIqFeed(
 		now,
 		m_qoutesIqFeed,
-		false);
+		forced);
+	Assert(!forced || isIqFeedPrinted);
 	const auto isIbPrinted = m_marketDataLevel2SnapshotLog->AppendCurrentIb(
 		now,
 		m_qoutesIb,

@@ -21,35 +21,8 @@ private:
 
 public:
 	
-	PositionReporterAlgo(const Algo &algo) {
-		const Lock lock(m_mutex);
-		if (!m_isInited) {
-			namespace fs = boost::filesystem;
-			fs::path filePath = Defaults::GetPositionsLogDir();
-			std::string algoName = algo.GetTag();
-			boost::to_lower(algoName);
-			std::list<std::string> subs;
-			boost::split(subs, algoName, boost::is_any_of(" :"));
-			filePath /= boost::join(subs, "_");
-			filePath.replace_extension(".csv");
-			const bool isNew = !fs::exists(filePath);
-			if (isNew) {
-				fs::create_directories(filePath.branch_path());
-			}
-			m_file.open(filePath.c_str(), std::ios::out | std::ios::ate | std::ios::app);
-			if (!m_file) {
-				Log::Error("Failed to open position log file %1%.", filePath);
-				throw Exception("Failed to open position log file");
-			}
-			Log::Info("Logging \"%1%\" positions into %2%...", algo.GetName(), filePath);
-			if (isNew) {
-				m_file << "type,symbol,exit type,start price,entry price,entry date time,number of shares,exit price,exit date time,commission paid,open order,close order,P/L" << std::endl;
-			}
-			m_isInited = true;
-		}
-		if (!m_file) {
-			throw Exception("Failed to open position log file");
-		}
+	PositionReporterAlgo() {
+		//...//
 	}
 
 	virtual ~PositionReporterAlgo() {
@@ -58,38 +31,130 @@ public:
 
 public:
 
+	void Init(const Algo &algo) {
+		const Lock lock(m_mutex);
+		if (m_isInited) {
+			return;
+		}
+		namespace fs = boost::filesystem;
+		fs::path filePath = Defaults::GetPositionsLogDir();
+		std::string algoName = algo.GetTag();
+		boost::to_lower(algoName);
+		std::list<std::string> subs;
+		boost::split(subs, algoName, boost::is_any_of(" :"));
+		filePath /= boost::join(subs, "_");
+		filePath.replace_extension(".csv");
+		const bool isNew = !fs::exists(filePath);
+		if (isNew) {
+			fs::create_directories(filePath.branch_path());
+		}
+		m_file.open(filePath.c_str(), std::ios::out | std::ios::ate | std::ios::app);
+		if (!m_file) {
+			Log::Error("Failed to open position log file %1%.", filePath);
+			throw Exception("Failed to open position log file");
+		}
+		Log::Info("Logging \"%1%\" positions into %2%...", algo.GetName(), filePath);
+		if (isNew) {
+			PrintHead(m_file);
+			m_file << std::endl;
+		}
+		if (!m_file) {
+			throw Exception("Failed to open position log file");
+		}
+		m_isInited = true;
+	}
+
+public:
+
 	virtual void ReportClosedPositon(const Position &position) {
-		namespace lt = boost::local_time;
+		if (!m_isInited) {
+			return;
+		}
 		Assert(position.IsOpened());
 		Assert(position.IsClosed() || position.IsCloseError());
 		Assert(!position.IsReported());
 		const Lock lock(m_mutex);
 		Assert(m_isInited);
 		Assert(m_file);
+		PrintLine(position, m_file);
+		m_file << std::endl;
+	}
+
+protected:
+
+	virtual void PrintHead(std::ostream &out) const {
+		out
+			<< "type"
+			<< ",symbol"
+			<< ",exit type"
+			<< ",entry start price"
+			<< ",entry price"
+			<< ",entry time"
+			<< ",entry order"
+			<< ",number of shares"
+			<< ",exit start price"
+			<< ",exit price"
+			<< ",exit time"
+			<< ",exit order"
+			<< ",commission paid"
+			<< ",P/L";
+	}
+
+	virtual void PrintLine(const Position &position, std::ostream &out) const {
+
+		Assert(position.GetOpenedQty() == position.GetPlanedQty());
+		Assert(position.GetOpenedQty() == position.GetClosedQty());
+		
 		const Security &security = position.GetSecurity();
-		m_file
+
+		out
+			
+			// type
 			<< position.GetTypeStr()
+			
+			// symbol
 			<< "," << security.GetSymbol()
+			
+			// exit type
 			<< "," << position.GetCloseTypeStr()
-			<< "," << security.Descale(position.GetStartPrice())
-			<< "," << security.Descale(position.GetOpenPrice());
-		{
-			const lt::local_date_time esdTime(position.GetOpenTime(), Util::GetEdtTimeZone());
-			m_file << "," << esdTime;
-		}
-		m_file
-			<< "," << position.GetOpenedQty()
-			<< "," << security.Descale(position.GetClosePrice());
-		if (position.IsClosed()) {
-			const lt::local_date_time esdTime(position.GetCloseTime(), Util::GetEdtTimeZone());
-			m_file << "," << esdTime;
-		} else {
-			m_file << ",-";
-		}
-		m_file
-			<< "," << security.Descale(position.GetCommission())
+			
+			// entry start price
+			<< "," << security.Descale(position.GetOpenStartPrice())
+			
+			// entry price
+			<< "," << security.Descale(position.GetOpenPrice())
+			
+			// entry time
+			<< "," << (position.GetOpenTime() + Util::GetEdtDiff()).time_of_day()
+
+			// entry order
 			<< "," << position.GetOpenOrderId()
-			<< "," << position.GetCloseOrderId();
+			
+			// number of shares
+			<< "," << position.GetClosedQty()
+			
+			// exit start price
+			<< "," << security.Descale(position.GetCloseStartPrice())
+			
+			// exit price
+			<< "," << security.Descale(position.GetClosePrice());
+
+		// exit time
+		out << ",";
+		if (position.IsClosed()) {
+			out << (position.GetCloseTime() + Util::GetEdtDiff()).time_of_day();
+		} else {
+			out << '-';
+		}
+
+		out
+			// exit order
+			<< "," << position.GetCloseOrderId()
+
+			// commission paid
+			<< "," << security.Descale(position.GetCommission());
+
+		// P/L
 		{
 			Security::Price pl = 0;
 			switch (position.GetType()) {
@@ -105,9 +170,9 @@ public:
 			}
 			pl *= position.GetClosedQty();
 			pl -= position.GetCommission();
-			m_file << "," << security.Descale(pl);
+			out << "," << security.Descale(pl);
 		}
-		m_file << std::endl;
+
 	}
 
 private:

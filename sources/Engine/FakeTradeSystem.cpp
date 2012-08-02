@@ -173,7 +173,7 @@ bool FakeTradeSystem::IsCompleted(const Security &) const {
 	return false;
 }
 
-void FakeTradeSystem::Sell(
+void FakeTradeSystem::SellAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
 			OrderStatusUpdateSlot stateUpdateSlot /*= OrderStatusUpdateSlot()*/) {
@@ -232,7 +232,7 @@ void FakeTradeSystem::SellOrCancel(
 		security.Descale(price));
 }
 
-void FakeTradeSystem::Buy(
+void FakeTradeSystem::BuyAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
 			OrderStatusUpdateSlot stateUpdateSlot /*= OrderStatusUpdateSlot()*/) {

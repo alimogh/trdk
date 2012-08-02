@@ -182,7 +182,7 @@ void InteractiveBrokersTradeSystem::CancelAllOrders(const Security &security) {
 		});
 }
 
-void InteractiveBrokersTradeSystem::Sell(
+void InteractiveBrokersTradeSystem::SellAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
 			OrderStatusUpdateSlot stateUpdateSlot /* = StateUpdateSlot() */) {
@@ -260,7 +260,7 @@ void InteractiveBrokersTradeSystem::SellOrCancel(
 	m_pimpl->RegOrder(order);
 }
 
-void InteractiveBrokersTradeSystem::Buy(
+void InteractiveBrokersTradeSystem::BuyAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
 			OrderStatusUpdateSlot stateUpdateSlot /* =  StateUpdateSlot() */) {

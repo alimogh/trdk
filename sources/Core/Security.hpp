@@ -119,12 +119,12 @@ public:
 
 	boost::posix_time::ptime GetLastMarketDataTime() const;
 
-	void Sell(Qty, Position &);
+	void SellAtMarketPrice(Qty, Position &);
 	void Sell(Qty, Price, Position &);
 	void SellAtMarketPrice(Qty, Price stopPrice, Position &);
 	void SellOrCancel(Qty, Price, Position &);
 
-	void Buy(Qty, Position &);
+	void BuyAtMarketPrice(Qty, Position &);
 	void Buy(Qty, Price, Position &);
 	void BuyAtMarketPrice(Qty, Price stopPrice, Position &);
 	void BuyOrCancel(Qty, Price, Position &);
@@ -141,7 +141,7 @@ public:
 
 public:
 
-	void ReportLevel2Snapshot() const;
+	void ReportLevel2Snapshot(bool forced = false) const;
 
 public:
 

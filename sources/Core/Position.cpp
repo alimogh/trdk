@@ -63,17 +63,17 @@ Position::Position(
 		: m_security(security),
 		m_type(type),
 		m_planedQty(qty),
-		m_startPrice(startPrice),
 		m_decisionAks(decisionAks),
 		m_decisionBid(decisionBid),
 		m_stopLoss(stopLoss),
+		m_openStartPrice(startPrice),
+		m_closeStartPrice(0),
 		m_closeType(CLOSE_TYPE_NONE),
 		m_isReported(false),
 		m_algoFlag(algoFlag),
 		m_algo(algo),
 		m_algoState(state) {
 	SetTakeProfit(takeProfit);
-	SetTakeProfit(stopLoss);
 	Interlocking::Exchange(m_state, STATE_NONE);
 }
 
@@ -405,8 +405,8 @@ Position::Qty Position::GetClosedQty() const {
 	return m_closed.qty;
 }
 
-Position::Price Position::GetStartPrice() const {
-	return m_startPrice;
+Position::Price Position::GetOpenStartPrice() const {
+	return m_openStartPrice;
 }
 
 Position::Price Position::GetDecisionAks() const {
@@ -429,12 +429,16 @@ Position::Price Position::GetStopLoss() const {
 	return m_stopLoss;
 }
 
-void Position::SetStopLoss(Position::Price newStopLoss) {
-	Interlocking::Exchange(m_stopLoss, newStopLoss);
-}
-
 Position::Price Position::GetOpenPrice() const {
 	return m_opened.price;
+}
+
+Position::Price Position::GetCloseStartPrice() const {
+	return m_closeStartPrice;
+}
+
+void Position::SetCloseStartPrice(Position::Price price) {
+	m_closeStartPrice = price;
 }
 
 Position::Price Position::GetClosePrice() const {
@@ -449,23 +453,20 @@ void Position::ReportOpeningUpdate(
 	Log::Trading(
 		"position",
 		"%1% %2% open-%3% %4% qty=%5%->%6% price=%7%->%8% order-id=%9%"
-			" order-status=%10% state=%11% cur-ask-bid=%12%/%13%"
-			" take-profit=%14% stop-loss=%15%",
+			" order-status=%10% state=%11% cur-ask-bid=%12%/%13%",
 		GetSecurity().GetSymbol(),
 		GetTypeStr(),
 		eventDesc,
 		m_algo->GetTag(),
 		GetPlanedQty(),
 		GetOpenedQty(),
-		GetSecurity().Descale(GetStartPrice()),
+		GetSecurity().Descale(GetOpenStartPrice()),
 		GetSecurity().Descale(GetOpenPrice()),
 		GetOpenOrderId(),
 		GetSecurity().GetTradeSystem().GetStringStatus(orderStatus),
 		state,
 		GetSecurity().GetAsk(),
-		GetSecurity().GetBid(),
-		GetSecurity().Descale(GetTakeProfit()),
-		GetSecurity().Descale(GetStopLoss()));
+		GetSecurity().GetBid());
 }
 
 void Position::ReportClosingUpdate(
@@ -476,8 +477,7 @@ void Position::ReportClosingUpdate(
 	Log::Trading(
 		"position",
 		"%1% %2% close-%3% %4% qty=%5%->%6% price=%7% order-id=%8%->%9%"
-			" order-status=%10% state=%11% cur-ask-bid=%12%/%13%"
-			" take-profit=%14% stop-loss=%15%",
+			" order-status=%10% state=%11% cur-ask-bid=%12%/%13%",
 		GetSecurity().GetSymbol(),
 		GetTypeStr(),
 		eventDesc,
@@ -490,9 +490,7 @@ void Position::ReportClosingUpdate(
 		GetSecurity().GetTradeSystem().GetStringStatus(orderStatus),
 		state,
 		GetSecurity().GetAsk(),
-		GetSecurity().GetBid(),
-		GetSecurity().Descale(GetTakeProfit()),
-		GetSecurity().Descale(GetStopLoss()));
+		GetSecurity().GetBid());
 }
 
 void Position::ReportCloseOrderChange(
@@ -505,8 +503,7 @@ void Position::ReportCloseOrderChange(
 	Log::Trading(
 		"position",
 		"%1% %2% close-order-change qty=%4%->%5% price=%6% order-id=%7%->%8%->%9%"
-			" order-status=%10% state=%11% cur-ask-bid=%12%/%13%"
-			" take-profit=%14% stop-loss=%15%",
+			" order-status=%10% state=%11% cur-ask-bid=%12%/%13%",
 		GetSecurity().GetSymbol(),
 		GetTypeStr(),
 		m_algo->GetTag(),
@@ -519,7 +516,5 @@ void Position::ReportCloseOrderChange(
 		GetSecurity().GetTradeSystem().GetStringStatus(orderStatus),
 		state,
 		GetSecurity().GetAsk(),
-		GetSecurity().GetBid(),
-		GetSecurity().Descale(GetTakeProfit()),
-		GetSecurity().Descale(GetStopLoss()));
+		GetSecurity().GetBid());
 }

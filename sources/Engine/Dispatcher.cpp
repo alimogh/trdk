@@ -287,8 +287,7 @@ bool Dispatcher::AlgoState::CheckPositionsUnsafe() {
 
 	Assert(!m_isBlocked);
 		
-	const Security &security
-		= *const_cast<const Algo &>(*m_algo).GetSecurity();
+	const Security &security = *const_cast<const Algo &>(*m_algo).GetSecurity();
 	Assert(security); // must be checked it security object
 
 	if (m_positions) {

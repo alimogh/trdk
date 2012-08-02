@@ -91,15 +91,19 @@ public:
 	bool IsReported() const;
 	void MarkAsReported();
 
-	template<typename T>
+	template<typename AlogState>
 	bool IsAlgoStateSet() const {
-		return m_algoState;//  && dynamic_cast<const T *>(m_algoState.get());
+		return m_algoState;//  && dynamic_cast<const AlogState *>(m_algoState.get());
 	}
 
-	template<typename T>
-	T & GetAlgoState() {
-		Assert(IsAlgoStateSet<T>());
-		return *boost::polymorphic_downcast<T *>(m_algoState.get());
+	template<typename AlogState>
+	AlogState & GetAlgoState() {
+		Assert(IsAlgoStateSet<AlogState>());
+		return *boost::polymorphic_downcast<AlogState *>(m_algoState.get());
+	}
+	template<typename AlogState>
+	const AlogState & GetAlgoState() const {
+		return const_cast<Position *>(this)->GetAlgoState<AlogState>();
 	}
 
 	AlgoFlag GetAlgoFlag() const;
@@ -116,13 +120,12 @@ public:
 	Type GetType() const;
 	const char * GetTypeStr() const;
 	Qty GetPlanedQty() const;
-	Price GetStartPrice() const;
+	Price GetOpenStartPrice() const;
 	Price GetDecisionAks() const;
 	Price GetDecisionBid() const;
 	void SetTakeProfit(Price);
 	Price GetTakeProfit() const;
 	Price GetStopLoss() const;
-	void SetStopLoss(Price);
 
 	TradeSystem::OrderId GetOpenOrderId() const;
 	Qty GetOpenedQty() const;
@@ -130,6 +133,8 @@ public:
 	Time GetOpenTime() const;
 	
 	TradeSystem::OrderId GetCloseOrderId() const;
+	void SetCloseStartPrice(Position::Price);
+	Price GetCloseStartPrice() const;
 	Price GetClosePrice() const;
 	Qty GetClosedQty() const;
 	Time GetCloseTime() const;
@@ -185,13 +190,15 @@ private:
 
 	const Type m_type;
 	const Qty m_planedQty;
-	const Price m_startPrice;
 	const Price m_decisionAks;
 	const Price m_decisionBid;
 	volatile LONGLONG m_takeProfit;
-	volatile LONGLONG m_stopLoss;
-		
+	const Price m_stopLoss;
+
+	const Price m_openStartPrice;
 	DynamicData m_opened;
+
+	Price m_closeStartPrice;
 	DynamicData m_closed;
 
 	volatile long m_state;

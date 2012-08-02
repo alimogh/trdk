@@ -34,7 +34,9 @@ Old::~Old() {
 }
 
 std::auto_ptr<PositionReporter> Old::CreatePositionReporter() const {
-	std::auto_ptr<PositionReporter> result(new PositionReporterAlgo<decltype(*this)>(*this));
+	typedef PositionReporterAlgo<decltype(*this)> Reporter;
+	std::auto_ptr<Reporter> result(new Reporter);
+	result->Init(*this);
 	return result;
 }
 
@@ -256,9 +258,9 @@ void Old::ClosePosition(Position &position, bool asIs) {
 }
 
 void Old::DoOpenBuy(Position &position) {
-	GetSecurity()->BuyOrCancel(position.GetPlanedQty(), position.GetStartPrice(), position);
+	GetSecurity()->BuyOrCancel(position.GetPlanedQty(), position.GetOpenStartPrice(), position);
 }
 
 void Old::DoOpenSell(Position &position) {
-	GetSecurity()->SellOrCancel(position.GetPlanedQty(), position.GetStartPrice(), position);
+	GetSecurity()->SellOrCancel(position.GetPlanedQty(), position.GetOpenStartPrice(), position);
 }

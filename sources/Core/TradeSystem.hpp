@@ -108,7 +108,7 @@ public:
 public:
 
 
-	virtual void Sell(
+	virtual void SellAtMarketPrice(
 			const Security &,
 			OrderQty,
 			OrderStatusUpdateSlot = OrderStatusUpdateSlot())
@@ -132,7 +132,7 @@ public:
 			OrderStatusUpdateSlot = OrderStatusUpdateSlot())
 		= 0;
 
-	virtual void Buy(
+	virtual void BuyAtMarketPrice(
 			const Security &,
 			OrderQty,
 			OrderStatusUpdateSlot = OrderStatusUpdateSlot())

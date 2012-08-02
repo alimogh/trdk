@@ -102,7 +102,7 @@ void s::Algo::ClosePositionStopLossTry(Position &position) {
 void s::Algo::CloseLongPositionStopLossDo(Position &position) {
 	Assert(position.GetType() == Position::TYPE_LONG);
 	ReportStopLossDo(position);
-	GetSecurity()->Sell(position.GetOpenedQty() - position.GetClosedQty(), position);
+	GetSecurity()->SellAtMarketPrice(position.GetOpenedQty() - position.GetClosedQty(), position);
 	position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
 	position.SetAlgoFlag(STATE_CLOSING);
 }
@@ -115,7 +115,7 @@ void s::Algo::CloseLongPositionStopLossTry(Position &position) {
 void s::Algo::CloseShortPositionStopLossDo(Position &position) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
 	ReportStopLossDo(position);
-	GetSecurity()->Buy(position.GetOpenedQty() - position.GetClosedQty(), position);
+	GetSecurity()->BuyAtMarketPrice(position.GetOpenedQty() - position.GetClosedQty(), position);
 	position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
 	position.SetAlgoFlag(STATE_CLOSING);
 }
@@ -145,7 +145,7 @@ void s::Algo::ReportDecision(const Position &position) const {
 		position.GetTypeStr(),
 		position.GetSecurity().Descale(position.GetDecisionAks()),
 		position.GetSecurity().Descale(position.GetDecisionBid()),
-		position.GetSecurity().Descale(position.GetStartPrice()),
+		position.GetSecurity().Descale(position.GetOpenStartPrice()),
 		position.GetPlanedQty(),
 		position.GetSecurity().Descale(position.GetTakeProfit()),
 		position.GetSecurity().Descale(position.GetStopLoss()));
