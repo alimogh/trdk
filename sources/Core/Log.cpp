@@ -107,5 +107,5 @@ void Log::Detail::AppendTradingRecordUnsafe(
 		return;
 	}
 	trading.AppendRecordHead(time);
-	*trading.log << ' ' << tag << '\t' << str << std::endl;
+	*trading.log << '\t' << tag << '\t' << str << std::endl;
 }

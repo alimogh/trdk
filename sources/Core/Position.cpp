@@ -53,19 +53,12 @@ Position::Position(
 			Type type,
 			Qty qty,
 			Price startPrice,
-			Price decisionAks,
-			Price decisionBid,
-			Price takeProfit,
-			Price stopLoss,
 			AlgoFlag algoFlag,
 			boost::shared_ptr<const Algo> algo,
 			boost::shared_ptr<AlgoPositionState> state /*= boost::shared_ptr<AlgoPositionState>()*/)
 		: m_security(security),
 		m_type(type),
 		m_planedQty(qty),
-		m_decisionAks(decisionAks),
-		m_decisionBid(decisionBid),
-		m_stopLoss(stopLoss),
 		m_openStartPrice(startPrice),
 		m_closeStartPrice(0),
 		m_closeType(CLOSE_TYPE_NONE),
@@ -73,7 +66,6 @@ Position::Position(
 		m_algoFlag(algoFlag),
 		m_algo(algo),
 		m_algoState(state) {
-	SetTakeProfit(takeProfit);
 	Interlocking::Exchange(m_state, STATE_NONE);
 }
 
@@ -116,6 +108,8 @@ const char * Position::GetCloseTypeStr() const {
 			return "t/p";
 		case CLOSE_TYPE_STOP_LOSS:
 			return "s/l";
+		case CLOSE_TYPE_TIME:
+			return "time";
 	}
 }
 
@@ -298,7 +292,7 @@ Position::Time Position::GetCloseTime() const {
 }
 
 Position::Price Position::GetCommission() const {
-	return m_closed.qty * GetSecurity().Scale(.01); // m_opened.comission + m_closed.comission;
+	return m_opened.qty * GetSecurity().Scale(.01); // m_opened.comission + m_closed.comission;
 }
 
 const Security & Position::GetSecurity() const {
@@ -407,26 +401,6 @@ Position::Qty Position::GetClosedQty() const {
 
 Position::Price Position::GetOpenStartPrice() const {
 	return m_openStartPrice;
-}
-
-Position::Price Position::GetDecisionAks() const {
-	return m_decisionAks;
-}
-
-Position::Price Position::GetDecisionBid() const {
-	return m_decisionBid;
-}
-
-Position::Price Position::GetTakeProfit() const {
-	return m_takeProfit;
-}
-
-void Position::SetTakeProfit(Position::Price newTakeProfit) {
-	Interlocking::Exchange(m_takeProfit, newTakeProfit);
-}
-
-Position::Price Position::GetStopLoss() const {
-	return m_stopLoss;
 }
 
 Position::Price Position::GetOpenPrice() const {

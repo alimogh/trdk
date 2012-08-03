@@ -43,26 +43,34 @@ public:
 		
 		double ratioIni;
 		double ratio;
-		Security::Qty asks;
-		Security::Qty bids;
+		Security::Price ask;
+		Security::Price bid;
+		Security::Qty askSize;
+		Security::Qty bidSize;
 
 		AsksBids()
 				: ratioIni(0),
 				ratio(0),
-				asks(0),
-				bids(0) {
+				ask(0),
+				bid(0),
+				askSize(0),
+				bidSize(0) {
 			//...//
 		}
 
 		explicit AsksBids(
 					double ratioIniIn,
 					double ratioIn,
-					Security::Qty asksIn,
-					Security::Qty bidsIn)
+					Security::Price askIn,
+					Security::Price bidIn,
+					Security::Qty askSizeIn,
+					Security::Qty bidSizeIn)
 				: ratioIni(ratioIniIn),
 				ratio(ratioIn),
-				asks(asksIn),
-				bids(bidsIn) {
+				ask(askIn),
+				bid(bidIn),
+				askSize(askSizeIn),
+				bidSize(bidSizeIn) {
 			//...//
 		}
 
@@ -76,11 +84,13 @@ public:
 	explicit State(
 				double entryRatioIni,
 				double entryRatio,
-				Security::Qty entryAsks,
-				Security::Qty entryBids)
+				Security::Price entryAsk,
+				Security::Price entryBid,
+				Security::Qty entryAskSize,
+				Security::Qty entryBidSize)
 			: takeProfit(0),
 			stopLoss(0),
-			entry(entryRatioIni, entryRatio, entryAsks, entryBids) {
+			entry(entryRatioIni, entryRatio, entryAsk, entryBid, entryAskSize, entryBidSize) {
 		//...//
 	}
 
@@ -148,11 +158,13 @@ std::auto_ptr<PositionReporter> s::Algo::CreatePositionReporter() const {
 			out
 				<< ",entry ratio (ini)"
 				<< ",ratio at entry"
-				<< ",asks/bids at entry"
+				<< ",ask/bid sizes at entry"
+				<< ",ask/bid at entry"
 				<< ",t/p price"
 				<< ",s/l ratio (ini)"
 				<< ",ratio at exit"
-				<< ",asks/bids at exit";
+				<< ",ask/bid sizes at exit"
+				<< ",ask/bid at exit";
 		}
 		virtual void PrintLine(const Position &position, std::ostream &out) const {
 			
@@ -163,25 +175,33 @@ std::auto_ptr<PositionReporter> s::Algo::CreatePositionReporter() const {
 			out
 				
 				// entry ratio (ini)
-				<< "," <<  state.entry.ratioIni
+				<< ',' <<  state.entry.ratioIni
 
 				// ratio at entry
-				<< "," << state.entry.ratio
+				<< ',' << state.entry.ratio
 				
-				// asks/bids at entry
-				<< "," << state.entry.asks << '/' << state.entry.bids
-				
+				// ask/bid sizes at entry
+				<< ',' << state.entry.askSize << '/' << state.entry.bidSize
+
+				// ask/bid at entry
+				<< ',' << position.GetSecurity().Descale(state.entry.ask)
+					<< '/' << position.GetSecurity().Descale(state.entry.bid)
+
 				// t/p price
-				<< "," << position.GetSecurity().Descale(state.takeProfit)
+				<< ',' << position.GetSecurity().Descale(state.takeProfit)
 				
 				// s/l ratio (ini)
-				<< "," <<  state.exit.ratioIni
+				<< ',' <<  state.exit.ratioIni
 				
 				// ratio at exit
-				<< "," << state.exit.ratio
+				<< ',' << state.exit.ratio
 				
-				// asks/bids at exit
-				<< "," << state.exit.asks << '/' << state.exit.bids;
+				// ask/bid sizes at exit
+				<< ',' << state.exit.askSize << '/' << state.exit.bidSize
+
+				// ask/bid at exit
+				<< ',' << position.GetSecurity().Descale(state.exit.ask)
+					<< '/' << position.GetSecurity().Descale(state.exit.bid);
 
 		}
 	};
@@ -290,8 +310,10 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 		}
 	}
 
-	settings.positionTimeSeconds
-		= pt::seconds(ini.ReadTypedKey<long>(section, "position_time_seconds"));
+	settings.positionMinTime
+		= pt::seconds(ini.ReadTypedKey<long>(section, "position_min_time_seconds"));
+	settings.positionMaxTime
+		= pt::seconds(ini.ReadTypedKey<long>(section, "position_max_time_seconds"));
 
 	settings.openOrderType
 		= Util::ConvertStrToOrderType(ini.ReadKey(section, "open_order_type", false));
@@ -313,7 +335,8 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 		report);
 	AppendSettingsReport("take_profit", settings.takeProfit, report);
 	AppendSettingsReport("open_mode", Util::ConvertToStr(settings.openMode), report);
-	AppendSettingsReport("position_time_seconds", settings.positionTimeSeconds, report);
+	AppendSettingsReport("position_min_time_seconds", settings.positionMinTime, report);
+	AppendSettingsReport("position_max_time_seconds", settings.positionMaxTime, report);
 	AppendSettingsReport("open_order_type", Util::ConvertToStr(settings.openOrderType), report);
 	AppendSettingsReport("close_order_type", Util::ConvertToStr(settings.closeOrderType), report);
 	AppendSettingsReport("level2_data_source", Util::ConvertToStr(settings.level2DataSource), report);
@@ -386,14 +409,16 @@ boost::shared_ptr<Position> s::Algo::OpenShortPostion(
 			Position::TYPE_SHORT,
 			CalcQty(price, m_settings.volume),
 			price,
-			0,
-			0,
-			0,
-			0,
 			STATE_OPENING,
 			shared_from_this(),
 			boost::shared_ptr<AlgoPositionState>(
-				new State(m_settings.entryAskBidDifference, ratio, askSize, bidSize))));
+				new State(
+					m_settings.entryAskBidDifference,
+					ratio,
+					GetSecurity()->GetAskScaled(),
+					GetSecurity()->GetBidScaled(),
+					askSize,
+					bidSize))));
 	switch (m_settings.openOrderType) {
 		case Settings::ORDER_TYPE_IOC:
 			GetSecurity()->SellOrCancel(result->GetPlanedQty(), result->GetOpenStartPrice(), *result);
@@ -419,14 +444,16 @@ boost::shared_ptr<Position> s::Algo::OpenLongPostion(
 			Position::TYPE_LONG,
 			CalcQty(price, m_settings.volume),
 			price,
-			0,
-			0,
-			0,
-			0,
 			STATE_OPENING,
 			shared_from_this(),
 			boost::shared_ptr<AlgoPositionState>(
-				new State(m_settings.entryAskBidDifference, ratio, askSize, bidSize))));
+				new State(
+					m_settings.entryAskBidDifference,
+					ratio,
+					GetSecurity()->GetAskScaled(),
+					GetSecurity()->GetBidScaled(),
+					askSize,
+					bidSize))));
 	switch (m_settings.openOrderType) {
 		case Settings::ORDER_TYPE_IOC:
 			GetSecurity()->BuyOrCancel(result->GetPlanedQty(), result->GetOpenStartPrice(), *result);
@@ -513,52 +540,69 @@ void s::Algo::CloseAbstractPosition(
 			void (s::Algo::*closeLongPositionStopLossTryMethod)(Position &)) {
 	
 	Security &security = *GetSecurity();
-	
 	State &state = position.GetAlgoState<State>();
-	state.exit.asks = m_askSizeGetter();
-	state.exit.bids = m_bidSizeGetter();
-	state.stopLoss = (this->*getStopLossMethod)(state.exit.asks, state.exit.bids);
+
+	state.exit.ask = security.GetAskScaled();
+	state.exit.bid = security.GetBidScaled();
+	state.exit.askSize = m_askSizeGetter();
+	state.exit.bidSize = m_bidSizeGetter();
+	state.stopLoss = (this->*getStopLossMethod)(state.exit.askSize, state.exit.bidSize);
 	state.exit.ratioIni = m_settings.stopLossAskBidDifference;
-	
-	const bool isLoss = asIs || stopLossCheckMethod();
 
 	ReportStillOpened(position);
+	
+	const bool isLoss = asIs || stopLossCheckMethod();
+	const bool isTimeOver
+		= !isLoss && position.GetOpenTime() + m_settings.positionMaxTime <= GetCurrentTime();
 
-	if (position.GetAlgoFlag() == STATE_OPENING) {
+	if (	position.GetAlgoFlag() == STATE_OPENING
+			|| position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS) {
 		if (!state.takeProfit) {
 			state.takeProfit = getTakeProfitMethod();
 		}
 		const bool isProfit = takeProfitCheckMethod();
 		if (isLoss && !isProfit) {
 			(this->*closeLongPositionStopLossDoMethod)(position);
-		} else {
+		} else if (isProfit) {
+			ReportCloseTry(position);
 			switch (m_settings.closeOrderType) {
 				case Settings::ORDER_TYPE_IOC:
-					ReportCloseTry(position);
 					(security.*iocCloseMethod)(
-						position.GetOpenedQty(),
+						position.GetActiveQty(),
 						state.takeProfit,
 						position);
-					position.SetCloseType(Position::CLOSE_TYPE_TAKE_PROFIT);
-					position.SetAlgoFlag(STATE_CLOSING);
 					break;
 				case Settings::ORDER_TYPE_MKT:
-					if (isProfit) {
-						ReportCloseTry(position);
-						(security.*mktCloseMethod)(position.GetOpenedQty(), position);
-						position.SetCloseType(Position::CLOSE_TYPE_TAKE_PROFIT);
-						position.SetAlgoFlag(STATE_CLOSING);
-						security.ReportLevel2Snapshot(true);
-					}
+					(security.*mktCloseMethod)(position.GetActiveQty(), position);
 					break;
 				default:
 					AssertFail("Unknown order type.");
 					break;
 			}
+			position.SetCloseType(Position::CLOSE_TYPE_TAKE_PROFIT);
+			Assert(position.GetAlgoFlag() != STATE_CLOSING_TRY_STOP_LOSS);
+			position.SetAlgoFlag(STATE_CLOSING);
+			security.ReportLevel2Snapshot(true);
+			return;
+		} else if (isTimeOver) {
+			ReportClosingByTime(position, false);
+			(security.*mktCloseMethod)(position.GetActiveQty(), position);
+			position.SetCloseType(Position::CLOSE_TYPE_TIME);
+			Assert(position.GetAlgoFlag() != STATE_CLOSING_TRY_STOP_LOSS);
+			position.SetAlgoFlag(STATE_CLOSING);
+			return;
+		} else if (position.GetAlgoFlag() == STATE_OPENING) {
+			return;
 		}
-	} else if (position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS) {
+	}
+
+	if (position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS) {
 		(this->*closeLongPositionStopLossDoMethod)(position);
 	} else if (isLoss) {
+		(this->*closeLongPositionStopLossTryMethod)(position);
+	} else if (isTimeOver) {
+		position.SetCloseType(Position::CLOSE_TYPE_TIME);
+		ReportClosingByTime(position, true);
 		(this->*closeLongPositionStopLossTryMethod)(position);
 	} else {
 		Assert(position.IsCloseCanceled());
@@ -568,7 +612,7 @@ void s::Algo::CloseAbstractPosition(
 		switch (m_settings.closeOrderType) {
 			case Settings::ORDER_TYPE_IOC:
 				(security.*iocCloseMethod)(
-					position.GetOpenedQty() - position.GetClosedQty(),
+					position.GetActiveQty(),
 					state.takeProfit,
 					position);
 				break;
@@ -596,11 +640,11 @@ void s::Algo::CloseLongPosition(Position &position, bool asIs) {
 			State &state = position.GetAlgoState<State>();
 			switch (m_settings.openMode) {
 				case s::Algo::Settings::OPEN_MODE_SHORT_IF_ASK_MORE_BID:
-					state.exit.ratio = double(state.exit.bids) / double(state.exit.asks);
-					return double(state.exit.bids) <= double(state.exit.asks) * state.exit.ratioIni;
+					state.exit.ratio = double(state.exit.bidSize) / double(state.exit.askSize);
+					return double(state.exit.bidSize) <= double(state.exit.askSize) * state.exit.ratioIni;
 				case s::Algo::Settings::OPEN_MODE_SHORT_IF_BID_MORE_ASK:
-					state.exit.ratio = double(state.exit.asks) / double(state.exit.bids);
-					return double(state.exit.asks) <= double(state.exit.bids) * state.exit.ratioIni;
+					state.exit.ratio = double(state.exit.askSize) / double(state.exit.bidSize);
+					return double(state.exit.askSize) <= double(state.exit.bidSize) * state.exit.ratioIni;
 				default:
 					AssertFail("Unknown open mode");
 					return true;
@@ -631,11 +675,11 @@ void s::Algo::CloseShortPosition(Position &position, bool asIs) {
 			State &state = position.GetAlgoState<State>();
 			switch (m_settings.openMode) {
 				case s::Algo::Settings::OPEN_MODE_SHORT_IF_ASK_MORE_BID:
-					state.exit.ratio = double(state.exit.asks) / double(state.exit.bids);
-					return double(state.exit.asks) <= double(state.exit.bids) * state.exit.ratioIni;
+					state.exit.ratio = double(state.exit.askSize) / double(state.exit.bidSize);
+					return double(state.exit.askSize) <= double(state.exit.bidSize) * state.exit.ratioIni;
 				case s::Algo::Settings::OPEN_MODE_SHORT_IF_BID_MORE_ASK:
-					state.exit.ratio = double(state.exit.bids) / double(state.exit.asks);
-					return double(state.exit.bids) <= double(state.exit.asks) * state.exit.ratioIni;
+					state.exit.ratio = double(state.exit.bidSize) / double(state.exit.askSize);
+					return double(state.exit.bidSize) <= double(state.exit.askSize) * state.exit.ratioIni;
 				default:
 					AssertFail("Unknown open mode");
 					return true;
@@ -667,12 +711,14 @@ void s::Algo::ClosePosition(Position &position, bool asIs) {
 		return;
 	} else if (position.IsClosed()) {
 		return;
-	} else if (position.GetAlgoFlag() == STATE_CLOSING && !position.IsCloseCanceled()) {
+	} else if (
+			(position.GetAlgoFlag() == STATE_CLOSING || position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS)
+			&& !position.IsCloseCanceled()) {
 		return;
 	} else if (!asIs && position.GetAlgoFlag() == STATE_OPENING) {
 		Assert(!position.GetOpenTime().is_not_a_date_time());
 		const auto currentTime = GetCurrentTime();
-		if (position.GetOpenTime() + m_settings.positionTimeSeconds > currentTime) {
+		if (position.GetOpenTime() + m_settings.positionMinTime > currentTime) {
 			return;
 		}
 	}
@@ -713,8 +759,8 @@ void s::Algo::ReportDecision(const Position &position) const {
 		"%1% %2% open-try asks/bids=%3%/%4% ratio-ini/ratio=%5%/%6%",
 		sec.GetSymbol(),
 		position.GetTypeStr(),
-		state.entry.asks,
-		state.entry.bids,
+		state.entry.askSize,
+		state.entry.bidSize,
 		state.entry.ratioIni,
 		state.entry.ratio);
 }
@@ -733,8 +779,8 @@ void s::Algo::ReportStillOpened(Position &position) {
 		sec.GetSymbol(),
 		position.GetTypeStr(),
 		position.GetOpenOrderId(),
-		state.exit.asks,
-		state.exit.bids,
+		state.exit.askSize,
+		state.exit.bidSize,
 		state.exit.ratioIni,
 		state.exit.ratio,
 		sec.Descale(state.takeProfit),
@@ -771,8 +817,8 @@ void s::Algo::ReportCloseTry(const Position &position) {
 		"%1% %2% close-try type=t/p asks/bids=%3%/%4% s/l-ratio-ini/ratio=%5%/%6% ask/bid=%7%/%8% t/p=%9%",
 		sec.GetSymbol(),
 		position.GetTypeStr(),
-		state.exit.asks,
-		state.exit.bids,
+		state.exit.askSize,
+		state.exit.bidSize,
 		state.exit.ratioIni,
 		state.exit.ratio,
 		sec.GetAsk(),
@@ -780,18 +826,33 @@ void s::Algo::ReportCloseTry(const Position &position) {
 		sec.Descale(state.takeProfit));
 }
 
+void s::Algo::ReportClosingByTime(const Position &position, bool isTry) {
+	const Security &sec = position.GetSecurity();
+	Log::Trading(
+		GetTag().c_str(),
+		"%1% %2% close-by-time opened=%3% open-order-id=%4% is-try=%5%",
+		sec.GetSymbol(),
+		position.GetTypeStr(),
+		position.GetOpenTime().time_of_day(),
+		position.GetOpenOrderId(),
+		isTry);
+}
+
 void s::Algo::ClosePositionStopLossTry(Position &position) {
-	position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
+	Assert(position.GetAlgoFlag() != STATE_CLOSING_TRY_STOP_LOSS);
 	ReportStopLossTry(position);
 	GetSecurity()->CancelOrder(position.GetOpenOrderId());
+	Assert(position.GetAlgoFlag() != STATE_CLOSING_TRY_STOP_LOSS);
 	position.SetAlgoFlag(STATE_CLOSING_TRY_STOP_LOSS);
 }
 
 void s::Algo::CloseLongPositionStopLossDo(Position &position) {
 	Assert(position.GetType() == Position::TYPE_LONG);
-	position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
+	if (position.GetCloseType() != Position::CLOSE_TYPE_TIME) {
+		position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
+	}
 	ReportStopLossDo(position);
-	GetSecurity()->SellAtMarketPrice(position.GetOpenedQty() - position.GetClosedQty(), position);
+	GetSecurity()->SellAtMarketPrice(position.GetActiveQty(), position);
 	position.SetAlgoFlag(STATE_CLOSING);
 }
 
@@ -802,9 +863,12 @@ void s::Algo::CloseLongPositionStopLossTry(Position &position) {
 
 void s::Algo::CloseShortPositionStopLossDo(Position &position) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
-	position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
+	if (position.GetCloseType() != Position::CLOSE_TYPE_TIME) {
+		position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
+	}
 	ReportStopLossDo(position);
-	GetSecurity()->BuyAtMarketPrice(position.GetOpenedQty() - position.GetClosedQty(), position);
+	GetSecurity()->BuyAtMarketPrice(position.GetActiveQty(), position);
+	Assert(position.GetAlgoFlag() != STATE_CLOSING_TRY_STOP_LOSS);
 	position.SetAlgoFlag(STATE_CLOSING);
 }
 

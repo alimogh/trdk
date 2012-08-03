@@ -54,12 +54,12 @@ public:
 				size_t totalVolume) {
 		m_file
 			<< (timeOfReception + Util::GetEdtDiff()).time_of_day()
-			<< "," << (lastTradeTime + Util::GetEdtDiff()).time_of_day()
-			<< "," << (timeOfReception - lastTradeTime).total_seconds()
-			<< "," << last
-			<< "," << ask
-			<< "," << bid
-			<< ","
+			<< ',' << (lastTradeTime + Util::GetEdtDiff()).time_of_day()
+			<< ',' << (timeOfReception - lastTradeTime).total_seconds()
+			<< ',' << last
+			<< ',' << ask
+			<< ',' << bid
+			<< ','
 			<< totalVolume
 			<< std::endl;
 	}
@@ -157,17 +157,17 @@ private:
 		AddTime(timeTick, timeTickFull);
 		m_file
 			<< timeOfReceptionEdt.time_of_day()
-			<< ",";
+			<< ',';
 		DumpTime(timeTick);
 		m_file
-			<< "," << (timeOfReceptionEdt - timeTickFull).total_seconds()
-			<< "," << (isSkipped ? "skipped" : "-")
-			<< "," << linesCount
-			<< "," << tag
-			<< "," << price
-			<< "," << size
-			<< "," << tickSize
-			<< ",";
+			<< ',' << (timeOfReceptionEdt - timeTickFull).total_seconds()
+			<< ',' << (isSkipped ? "skipped" : "-")
+			<< ',' << linesCount
+			<< ',' << tag
+			<< ',' << price
+			<< ',' << size
+			<< ',' << tickSize
+			<< ',';
 		DumpTime(firstTickSize);
 		m_file << std::endl;
 	}

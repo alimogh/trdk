@@ -67,27 +67,23 @@ const std::string & Algo::GetTag() const {
 void Algo::ReportStopLossTry(const Position &position) const {
 	Log::Trading(
 		m_tag.c_str(),
-		"%1% %2% stop-loss-try cur-ask-bid=%3%/%4% stop-loss=%5% qty=%6%->%7%",
+		"%1% %2% stop-loss-try qty=%3%->%4% open-order-id=%5%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
-		position.GetSecurity().GetAsk(),
-		position.GetSecurity().GetBid(),
-		position.GetSecurity().Descale(position.GetStopLoss()),
 		position.GetOpenedQty(),
-		position.GetOpenedQty() - position.GetClosedQty());
+		position.GetActiveQty(),
+		position.GetOpenOrderId());
 }
 
 void Algo::ReportStopLossDo(const Position &position) const {
 	Log::Trading(
 		m_tag.c_str(),
-		"%1% %2% stop-loss-do cur-ask-bid=%3%/%4% stop-loss=%5% qty=%6%->%7%",
+		"%1% %2% stop-loss-do qty=%3%->%4% open-order-id=%5%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
-		position.GetSecurity().GetAsk(),
-		position.GetSecurity().GetBid(),
-		position.GetSecurity().Descale(position.GetStopLoss()),
 		position.GetOpenedQty(),
-		position.GetOpenedQty() - position.GetClosedQty());
+		position.GetActiveQty(),
+		position.GetOpenOrderId());
 }
 
 void Algo::RequestHistory(

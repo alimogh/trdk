@@ -104,6 +104,7 @@ protected:
 
 		Assert(position.GetOpenedQty() == position.GetPlanedQty());
 		Assert(position.GetOpenedQty() == position.GetClosedQty());
+		Assert(position.GetActiveQty() == 0);
 		
 		const Security &security = position.GetSecurity();
 
@@ -113,34 +114,34 @@ protected:
 			<< position.GetTypeStr()
 			
 			// symbol
-			<< "," << security.GetSymbol()
+			<< ',' << security.GetSymbol()
 			
 			// exit type
-			<< "," << position.GetCloseTypeStr()
+			<< ',' << position.GetCloseTypeStr()
 			
 			// entry start price
-			<< "," << security.Descale(position.GetOpenStartPrice())
+			<< ',' << security.Descale(position.GetOpenStartPrice())
 			
 			// entry price
-			<< "," << security.Descale(position.GetOpenPrice())
+			<< ',' << security.Descale(position.GetOpenPrice())
 			
 			// entry time
-			<< "," << (position.GetOpenTime() + Util::GetEdtDiff()).time_of_day()
+			<< ',' << (position.GetOpenTime() + Util::GetEdtDiff()).time_of_day()
 
 			// entry order
-			<< "," << position.GetOpenOrderId()
+			<< ',' << position.GetOpenOrderId()
 			
 			// number of shares
-			<< "," << position.GetClosedQty()
+			<< ',' << position.GetOpenedQty() << "->" << position.GetClosedQty()
 			
 			// exit start price
-			<< "," << security.Descale(position.GetCloseStartPrice())
+			<< ',' << security.Descale(position.GetCloseStartPrice())
 			
 			// exit price
-			<< "," << security.Descale(position.GetClosePrice());
+			<< ',' << security.Descale(position.GetClosePrice());
 
 		// exit time
-		out << ",";
+		out << ',';
 		if (position.IsClosed()) {
 			out << (position.GetCloseTime() + Util::GetEdtDiff()).time_of_day();
 		} else {
@@ -149,10 +150,10 @@ protected:
 
 		out
 			// exit order
-			<< "," << position.GetCloseOrderId()
+			<< ',' << position.GetCloseOrderId()
 
 			// commission paid
-			<< "," << security.Descale(position.GetCommission());
+			<< ',' << security.Descale(position.GetCommission());
 
 		// P/L
 		{
@@ -168,9 +169,9 @@ protected:
 					AssertFail("Unknown position type.");
 					break;
 			}
-			pl *= position.GetClosedQty();
+			pl *= position.GetOpenedQty();
 			pl -= position.GetCommission();
-			out << "," << security.Descale(pl);
+			out << ',' << security.Descale(pl);
 		}
 
 	}

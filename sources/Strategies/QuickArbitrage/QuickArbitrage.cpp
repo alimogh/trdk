@@ -56,12 +56,10 @@ boost::shared_ptr<Position> s::Algo::OpenLongPosition() {
 			Position::TYPE_LONG,
 			CalcQty(price, GetVolume()),
 			price,
-			ask,
-			bid,
-			price + GetTakeProfit(),
-			price - GetStopLoss(),
 			STATE_OPENING,
-			shared_from_this()));
+			shared_from_this(),
+			boost::shared_ptr<AlgoPositionState>(
+				new State(ask, bid, price + GetTakeProfit(), price - GetStopLoss()))));
 	DoOpenBuy(*result);
 
 	return result;
@@ -81,12 +79,10 @@ boost::shared_ptr<Position> s::Algo::OpenShortPosition() {
 			Position::TYPE_SHORT,
 			CalcQty(price, GetVolume()),
 			price,
-			ask,
-			bid,
-			price - GetTakeProfit(),
-			price + GetStopLoss(),
 			STATE_OPENING,
-			shared_from_this()));
+			shared_from_this(),
+			boost::shared_ptr<AlgoPositionState>(
+				new State(ask, bid, price - GetTakeProfit(), price + GetStopLoss()))));
 	DoOpenSell(*result);
 	
 	return result;
@@ -102,7 +98,7 @@ void s::Algo::ClosePositionStopLossTry(Position &position) {
 void s::Algo::CloseLongPositionStopLossDo(Position &position) {
 	Assert(position.GetType() == Position::TYPE_LONG);
 	ReportStopLossDo(position);
-	GetSecurity()->SellAtMarketPrice(position.GetOpenedQty() - position.GetClosedQty(), position);
+	GetSecurity()->SellAtMarketPrice(position.GetActiveQty(), position);
 	position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
 	position.SetAlgoFlag(STATE_CLOSING);
 }
@@ -115,7 +111,7 @@ void s::Algo::CloseLongPositionStopLossTry(Position &position) {
 void s::Algo::CloseShortPositionStopLossDo(Position &position) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
 	ReportStopLossDo(position);
-	GetSecurity()->BuyAtMarketPrice(position.GetOpenedQty() - position.GetClosedQty(), position);
+	GetSecurity()->BuyAtMarketPrice(position.GetActiveQty(), position);
 	position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
 	position.SetAlgoFlag(STATE_CLOSING);
 }
@@ -143,12 +139,12 @@ void s::Algo::ReportDecision(const Position &position) const {
 		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6% take-profit=%7% stop-loss=%8%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
-		position.GetSecurity().Descale(position.GetDecisionAks()),
-		position.GetSecurity().Descale(position.GetDecisionBid()),
+		position.GetSecurity().Descale(position.GetAlgoState<State>().entry.ask),
+		position.GetSecurity().Descale(position.GetAlgoState<State>().entry.bid),
 		position.GetSecurity().Descale(position.GetOpenStartPrice()),
 		position.GetPlanedQty(),
-		position.GetSecurity().Descale(position.GetTakeProfit()),
-		position.GetSecurity().Descale(position.GetStopLoss()));
+		position.GetSecurity().Descale(position.GetAlgoState<State>().takeProfit),
+		position.GetSecurity().Descale(position.GetAlgoState<State>().stopLoss));
 }
 
 void s::Algo::SubscribeToMarketData(

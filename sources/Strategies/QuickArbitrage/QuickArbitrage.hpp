@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Core/Algo.hpp"
+#include "Core/AlgoPositionState.hpp"
 
 namespace Strategies { namespace QuickArbitrage {
 
@@ -22,6 +23,59 @@ namespace Strategies { namespace QuickArbitrage {
 			STATE_OPENING				= 1,
 			STATE_CLOSING_TRY_STOP_LOSS	= 2,
 			STATE_CLOSING				= 3
+		};
+
+	protected:
+
+		
+		class State : public  AlgoPositionState {
+
+		public:
+
+			struct AsksBids {
+
+				Security::Price ask;
+				Security::Price bid;
+
+				AsksBids()
+						: ask(0),
+						bid(0) {
+					//...//
+				}
+
+				explicit AsksBids(
+							Security::Price askIn,
+							Security::Price bidIn)
+						: ask(askIn),
+						bid(bidIn) {
+					//...//
+				}
+
+			};
+
+			const AsksBids entry;
+			AsksBids exit;
+
+			Security::Price takeProfit;
+			const Security::Price stopLoss;
+
+		public:
+
+			explicit State(
+						Security::Price entryAsk,
+						Security::Price entryBid,
+						Security::Price takeProfitIn,
+						Security::Price stopLossIn)
+					: entry(entryAsk, entryBid),
+					takeProfit(takeProfitIn),
+					stopLoss(stopLossIn) {
+				//...//
+			}
+
+			virtual ~State() {
+				//...//
+			}
+
 		};
 
 	public:

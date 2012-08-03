@@ -52,7 +52,8 @@ namespace Strategies { namespace Level2MarketArbitrage {
 			OrderType openOrderType;
 			OrderType closeOrderType;
 
-			boost::posix_time::time_duration positionTimeSeconds;
+			boost::posix_time::time_duration positionMinTime;
+			boost::posix_time::time_duration positionMaxTime;
 
 			MarketDataSource level2DataSource;
 
@@ -141,6 +142,7 @@ namespace Strategies { namespace Level2MarketArbitrage {
 		void CloseShortPositionStopLossTry(Position &);
 
 		void ReportCloseTry(const Position &);
+		void ReportClosingByTime(const Position &, bool isTry);
 		void ReportStillOpened(Position &);
 		void ReportNoDecision(Security::Qty askSize, Security::Qty bidSize);
 

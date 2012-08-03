@@ -14,9 +14,6 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="QuickArbitrageOld.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="QuickArbitrage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -26,9 +23,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="QuickArbitrageOld.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="QuickArbitrage.hpp">

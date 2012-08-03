@@ -10,7 +10,6 @@
 #include "FakeTradeSystem.hpp"
 #include "Ini.hpp"
 #include "Util.hpp"
-#include "Strategies/QuickArbitrage/QuickArbitrageOld.hpp"
 #include "Strategies/QuickArbitrage/QuickArbitrageAskBid.hpp"
 #include "Strategies/Level2MarketArbitrage/Level2MarketArbitrage.hpp"
 #include "IqFeed/IqFeedClient.hpp"
@@ -122,12 +121,13 @@ namespace {
 			
 				boost::shared_ptr<Algo> algo;
 				if (algoName == Ini::Algo::QuickArbitrage::old) {
-					algo.reset(
-						new Strategies::QuickArbitrage::Old(
-							tag,
-							securities[CreateSecuritiesKey(symbol)],
-							ini,
-							section));
+					AssertFail("algoName == Ini::Algo::QuickArbitrage::old");
+// 					algo.reset(
+// 						new Strategies::QuickArbitrage::Old(
+// 							tag,
+// 							securities[CreateSecuritiesKey(symbol)],
+// 							ini,
+// 							section));
 				} else if (algoName == Ini::Algo::QuickArbitrage::askBid) {
 					algo.reset(
 						new Strategies::QuickArbitrage::AskBid(
@@ -221,9 +221,10 @@ namespace {
 						continue;
 					}
 				} else if (algoName == Ini::Algo::QuickArbitrage::old) {
-					if (!dynamic_cast<Strategies::QuickArbitrage::Old *>(a.get())) {
-						continue;
-					}
+					AssertFail("algoName == Ini::Algo::QuickArbitrage::old");
+// 					if (!dynamic_cast<Strategies::QuickArbitrage::Old *>(a.get())) {
+// 						continue;
+// 					}
 				} else if (algoName == Ini::Algo::QuickArbitrage::askBid) {
 					if (!dynamic_cast<Strategies::QuickArbitrage::AskBid *>(a.get())) {
 						continue;

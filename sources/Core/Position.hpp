@@ -39,7 +39,8 @@ public:
 	enum CloseType {
 		CLOSE_TYPE_NONE,
 		CLOSE_TYPE_TAKE_PROFIT,
-		CLOSE_TYPE_STOP_LOSS
+		CLOSE_TYPE_STOP_LOSS,
+		CLOSE_TYPE_TIME
 	};
 
 	typedef boost::int64_t AlgoFlag;
@@ -67,10 +68,6 @@ public:
 			Type,
 			Qty,
 			Price startPrice,
-			Price decisionAks,
-			Price decisionBid,
-			Price takeProfit,
-			Price stopLoss,
 			AlgoFlag algoFlag,
 			boost::shared_ptr<const Algo> algo,
 			boost::shared_ptr<AlgoPositionState> state = boost::shared_ptr<AlgoPositionState>());
@@ -121,16 +118,16 @@ public:
 	const char * GetTypeStr() const;
 	Qty GetPlanedQty() const;
 	Price GetOpenStartPrice() const;
-	Price GetDecisionAks() const;
-	Price GetDecisionBid() const;
-	void SetTakeProfit(Price);
-	Price GetTakeProfit() const;
-	Price GetStopLoss() const;
 
 	TradeSystem::OrderId GetOpenOrderId() const;
 	Qty GetOpenedQty() const;
 	Price GetOpenPrice() const;
 	Time GetOpenTime() const;
+
+	Qty GetActiveQty() const {
+		Assert(GetOpenedQty() >= GetClosedQty());
+		return GetOpenedQty() - GetClosedQty();
+	}
 	
 	TradeSystem::OrderId GetCloseOrderId() const;
 	void SetCloseStartPrice(Position::Price);
@@ -190,10 +187,6 @@ private:
 
 	const Type m_type;
 	const Qty m_planedQty;
-	const Price m_decisionAks;
-	const Price m_decisionBid;
-	volatile LONGLONG m_takeProfit;
-	const Price m_stopLoss;
 
 	const Price m_openStartPrice;
 	DynamicData m_opened;
