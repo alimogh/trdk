@@ -15,6 +15,7 @@ namespace fs = boost::filesystem;
 
 const std::string Sections::common = "Common";
 const std::string Sections::strategy = "Strategy.";
+const std::string Sections::py = "Py.";
 
 const std::string Algo::QuickArbitrage::old = "QuickArbitrage.Old";
 const std::string Algo::QuickArbitrage::askBid = "QuickArbitrage.AskBid";

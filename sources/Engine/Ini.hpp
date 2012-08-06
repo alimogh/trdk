@@ -23,6 +23,7 @@ namespace Ini {
 	namespace Sections {
 		extern const std::string common;
 		extern const std::string strategy;
+		extern const std::string py;
 		namespace MarketData {
 			namespace Log {
 				extern const std::string symbols;

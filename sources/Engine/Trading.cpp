@@ -10,6 +10,7 @@
 #include "FakeTradeSystem.hpp"
 #include "Ini.hpp"
 #include "Util.hpp"
+#include "PyApi/PyApi.hpp"
 #include "Strategies/QuickArbitrage/QuickArbitrageAskBid.hpp"
 #include "Strategies/Level2MarketArbitrage/Level2MarketArbitrage.hpp"
 #include "IqFeed/IqFeedClient.hpp"
@@ -70,19 +71,23 @@ namespace {
 				boost::shared_ptr<Settings> settings)  {
 
 		std::string algoName;
-		try {
-			if (!ini.IsKeyExist(section, Ini::Key::algo)) {
+		if (boost::starts_with(section, Ini::Sections::strategy)) {
+			try {
+				if (!ini.IsKeyExist(section, Ini::Key::algo)) {
+					return;
+				}
+				algoName = ini.ReadKey(section, Ini::Key::algo, false);
+			} catch (const IniFile::Error &ex) {
+				Log::Error("Failed to get strategy algo: \"%1%\".", ex.what());
+				throw;
+			}
+			if (	algoName != Ini::Algo::QuickArbitrage::old
+					&& algoName != Ini::Algo::QuickArbitrage::askBid
+					&& algoName != Ini::Algo::level2MarketArbitrage) {
 				return;
 			}
-			algoName = ini.ReadKey(section, Ini::Key::algo, false);
-		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to get strategy algo: \"%1%\".", ex.what());
-			throw;
-		}
-		if (	algoName != Ini::Algo::QuickArbitrage::old
-				&& algoName != Ini::Algo::QuickArbitrage::askBid
-				&& algoName != Ini::Algo::level2MarketArbitrage) {
-			return;
+		} else {
+			Assert(boost::starts_with(section, Ini::Sections::py));
 		}
 
 		std::string tag;
@@ -120,7 +125,15 @@ namespace {
 			try {
 			
 				boost::shared_ptr<Algo> algo;
-				if (algoName == Ini::Algo::QuickArbitrage::old) {
+				if (algoName.empty()) {
+					Assert(boost::starts_with(section, Ini::Sections::py));
+					algo.reset(
+						new PyApi::Algo(
+							tag,
+							securities[CreateSecuritiesKey(symbol)],
+							ini,
+							section));
+				} else if (algoName == Ini::Algo::QuickArbitrage::old) {
 					AssertFail("algoName == Ini::Algo::QuickArbitrage::old");
 // 					algo.reset(
 // 						new Strategies::QuickArbitrage::Old(
@@ -178,6 +191,9 @@ namespace {
 			if (boost::starts_with(section, Ini::Sections::strategy)) {
 				Log::Info("Found section \"%1%\"...", section);
 				InitAlgo(ini, section, tradeSystem, securities, algos, settings);
+			} else if (boost::starts_with(section, Ini::Sections::py)) {
+				Log::Info("Found script section \"%1%\"...", section);
+				InitAlgo(ini, section, tradeSystem, securities, algos, settings);
 			}
 		}
 
@@ -204,32 +220,51 @@ namespace {
 			if (section == Ini::Sections::common) {
 				settings.Update(ini, section);
 				continue;
-			} else if (!boost::starts_with(section, Ini::Sections::strategy)) {
-				continue;
 			}
 			bool isError = false;
 			std::string algoName;
+			if (boost::starts_with(section, Ini::Sections::strategy)) {
+				try {
+					algoName = ini.ReadKey(section, Ini::Key::algo, false);
+				} catch (const IniFile::Error &ex) {
+					Log::Error("Failed to get strategy algo: \"%1%\".", ex.what());
+					throw;
+				}
+			} else if (!boost::starts_with(section, Ini::Sections::py)) {
+				continue;
+			}
+			std::string tag;
 			try {
-				algoName = ini.ReadKey(section, Ini::Key::algo, false);
+				tag = ini.ReadKey(section, Ini::Key::tag, false);
 			} catch (const IniFile::Error &ex) {
-				Log::Error("Failed to get strategy algo: \"%1%\".", ex.what());
+				Log::Error("Failed to get strategy object tag: \"%1%\".", ex.what());
 				throw;
 			}
 			foreach (auto &a, algos) {
-				if (algoName == Ini::Algo::level2MarketArbitrage) {
-					if (!dynamic_cast<Strategies::Level2MarketArbitrage::Algo *>(a.get())) {
+				if (a->GetTag() != tag) {
+					continue;
+				} else if (!algoName.empty()) {
+					if (algoName == Ini::Algo::level2MarketArbitrage) {
+						if (!dynamic_cast<Strategies::Level2MarketArbitrage::Algo *>(a.get())) {
+							Log::Error("Failed to update by tag \"%1%\" - object has another type.");
+							continue;
+						}
+					} else if (algoName == Ini::Algo::QuickArbitrage::old) {
+						AssertFail("algoName == Ini::Algo::QuickArbitrage::old");
+//	 					if (!dynamic_cast<Strategies::QuickArbitrage::Old *>(a.get())) {
+//							Log::Error("Failed to update by tag \"%1%\" - object has another type.");
+// 							continue;
+//	 					}
+					} else if (algoName == Ini::Algo::QuickArbitrage::askBid) {
+						if (!dynamic_cast<Strategies::QuickArbitrage::AskBid *>(a.get())) {
+							Log::Error("Failed to update by tag \"%1%\" - object has another type.");
+							continue;
+						}
+					} else {
 						continue;
 					}
-				} else if (algoName == Ini::Algo::QuickArbitrage::old) {
-					AssertFail("algoName == Ini::Algo::QuickArbitrage::old");
-// 					if (!dynamic_cast<Strategies::QuickArbitrage::Old *>(a.get())) {
-// 						continue;
-// 					}
-				} else if (algoName == Ini::Algo::QuickArbitrage::askBid) {
-					if (!dynamic_cast<Strategies::QuickArbitrage::AskBid *>(a.get())) {
-						continue;
-					}
-				} else {
+				} else if (!dynamic_cast<PyApi::Algo *>(a.get())) {
+					Log::Error("Failed to update by tag \"%1%\" - object has another type.");
 					continue;
 				}
 				try {
