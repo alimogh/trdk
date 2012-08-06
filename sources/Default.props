@@ -35,7 +35,7 @@
       <ImportLibrary>$(SolutionDir)..\output\$(PlatformShortName)\lib\$(TargetName).lib</ImportLibrary>
       <ProgramDatabaseFile>$(TargetDir)$(TargetName)$(TargetExt).pdb</ProgramDatabaseFile>
       <ProfileGuidedDatabase>$(TargetDir)$(TargetName)$(TargetExt).pgd</ProfileGuidedDatabase>
-      <AdditionalLibraryDirectories>$(BOOST_PATH)\boost_1_47\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(BOOST_DIR_X86)\boost_1_47\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
   </ItemDefinitionGroup>
