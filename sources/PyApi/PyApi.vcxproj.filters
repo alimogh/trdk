@@ -17,12 +17,18 @@
     <ClInclude Include="PyApi.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Script.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PyApi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Script.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -12,6 +12,12 @@
 
 namespace PyApi {
 
+	class Script;
+
+}
+
+namespace PyApi {
+
 	class Algo : public ::Algo {
 
 	public:
@@ -33,8 +39,6 @@ namespace PyApi {
 
 			std::string algoName;
 
-			std::string scriptFile;
-			
 			std::string positionOpenFunc;
 			std::string positionCloseFunc;
 
@@ -84,6 +88,7 @@ namespace PyApi {
 	private:
 
 		Settings m_settings;
+		Script *m_script;
 
 	};
 

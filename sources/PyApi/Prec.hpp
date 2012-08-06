@@ -11,7 +11,8 @@
 #include "Common/Assert.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/algorithm/string_regex.hpp>
+#	include <boost/algorithm/string.hpp>
+#	include <boost/python.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Strategies/Prec.hpp"

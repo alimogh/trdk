@@ -47,18 +47,24 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\Default.props" />
     <Import Project="..\Static lib.props" />
+    <Import Project="..\Python.props" />
+    <Import Project="PyApi.props" />
     <Import Project="..\Configuration Debug.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\Default.props" />
     <Import Project="..\Static lib.props" />
+    <Import Project="..\Python.props" />
+    <Import Project="PyApi.props" />
     <Import Project="..\Configuration Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\Default.props" />
     <Import Project="..\Static lib.props" />
+    <Import Project="..\Python.props" />
+    <Import Project="PyApi.props" />
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -66,6 +72,7 @@
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="PyApi.hpp" />
+    <ClInclude Include="Script.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -74,6 +81,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="PyApi.cpp" />
+    <ClCompile Include="Script.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

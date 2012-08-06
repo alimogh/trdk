@@ -8,22 +8,26 @@
 
 #include "Prec.hpp"
 #include "PyApi.hpp"
+#include "Script.hpp"
 #include "Core/PositionReporterAlgo.hpp"
 #include "Core/AlgoPositionState.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/PositionBundle.hpp"
+
+namespace fs = boost::filesystem;
 
 PyApi::Algo::Algo(
 			const std::string &tag,
 			boost::shared_ptr<Security> security,
 			const IniFile &ini,
 			const std::string &section)
-		: Base(tag, security) {
+		: Base(tag, security),
+		m_script(nullptr) {
 	DoSettingsUpdate(ini, section);
 }
 
 PyApi::Algo::~Algo() {
-	//...//
+	delete m_script;
 }
 
 const std::string & PyApi::Algo::GetName() const {
@@ -67,15 +71,18 @@ void PyApi::Algo::Update() {
 }
 
 boost::shared_ptr<PositionBandle> PyApi::Algo::TryToOpenPositions() {
+	m_script->Call(m_settings.positionOpenFunc);
 	return boost::shared_ptr<PositionBandle>();
 }
 
-void PyApi::Algo::TryToClosePositions(PositionBandle &) {
-
+void PyApi::Algo::TryToClosePositions(PositionBandle &positions) {
+	foreach (auto p, positions.Get()) {
+		m_script->Call(m_settings.positionCloseFunc);
+	}
 }
 
 void PyApi::Algo::ClosePositionsAsIs(PositionBandle &) {
-
+	//...//
 }
 
 void PyApi::Algo::ReportDecision(const Position &) const {
@@ -138,7 +145,7 @@ void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &sectio
 
 	settings.algoName = ini.ReadKey(section, "name", false);
 
-	settings.scriptFile = ini.ReadKey(section, "script_file", false);
+	const fs::path scriptFile = ini.ReadKey(section, "script_file", false);
 			
 	settings.positionOpenFunc = ini.ReadKey(section, "position_open_func", false);
 	settings.positionCloseFunc = ini.ReadKey(section, "position_close_func", false);
@@ -148,9 +155,13 @@ void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &sectio
 		?	m_settings.level2DataSource
 		:	Util::ConvertStrToMarketDataSource(ini.ReadKey(section, "level2_data_source", false), true);
 
+	const bool isNewScript
+		= !m_script || m_script->GetFilePath() != scriptFile || m_script->IsFileChanged();
+
 	SettingsReport report;
 	AppendSettingsReport("name", settings.algoName, report);
-	AppendSettingsReport("script_file", settings.scriptFile, report);
+	AppendSettingsReport("script_file", scriptFile, report);
+	AppendSettingsReport("script", isNewScript ? "RELOADED" : "not reloaded", report);
 	AppendSettingsReport("position_open_func", settings.positionOpenFunc, report);
 	AppendSettingsReport("position_close_func", settings.positionCloseFunc, report);
 	AppendSettingsReport(
@@ -163,12 +174,17 @@ void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &sectio
 		report);
 	ReportSettings(report);
 
+	std::unique_ptr<PyApi::Script> script;
+	if (isNewScript) {
+		script.reset(new PyApi::Script(scriptFile));
+	}
+
 	m_settings = settings;
+	if (script) {
+		delete m_script;
+		m_script = script.release();
+	}
 
-	UpdateCallbacks();
 
 }
 
-void PyApi::Algo::UpdateCallbacks() {
-	//...//
-}
