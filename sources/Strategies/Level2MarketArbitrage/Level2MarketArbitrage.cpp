@@ -293,7 +293,7 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 					|| boost::iequals(str, "IB")) {
 				return Settings::MARKET_DATA_SOURCE_INTERACTIVE_BROKERS;
 			} else {
-				throw IniFile::KeyFormatError("possible values: IOC, MKT");
+				throw IniFile::KeyFormatError("possible values: Interactive Brokers, IQFeed");
 			}
 		}
 	};
