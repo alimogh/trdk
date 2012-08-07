@@ -250,13 +250,13 @@ void InteractiveBrokersTradeSystem::SellOrCancel(
 		m_pimpl->client->SendIocBid(security, qty, rawPrice),
 		security.GetFullSymbol(),
 		stateUpdateSlot};
-// 	Log::Trading(
-// 		"sell",
-// 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
-// 		order.id,
-// 		security.GetSymbol(),
-// 		qty,
-// 		rawPrice);
+	Log::Trading(
+		"sell",
+		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
+		order.id,
+		security.GetSymbol(),
+		qty,
+		rawPrice);
 	m_pimpl->RegOrder(order);
 }
 
@@ -327,13 +327,13 @@ void InteractiveBrokersTradeSystem::BuyOrCancel(
 		m_pimpl->client->SendIocAsk(security, qty, rawPrice),
 		security.GetFullSymbol(),
 		stateUpdateSlot};
-// 	Log::Trading(
-// 		"buy",
-// 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
-// 		order.id,
-// 		security.GetSymbol(),
-// 		qty,
-// 		rawPrice);
+	Log::Trading(
+		"buy",
+		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
+		order.id,
+		security.GetSymbol(),
+		qty,
+		rawPrice);
 	m_pimpl->RegOrder(order);
 }
 
