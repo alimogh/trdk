@@ -124,6 +124,11 @@ public:
 	Price GetOpenPrice() const;
 	Time GetOpenTime() const;
 
+	Qty GetNotOpenedQty() const {
+		Assert(GetOpenedQty() <= GetPlanedQty());
+		return GetPlanedQty() - GetOpenedQty();
+	}
+
 	Qty GetActiveQty() const {
 		Assert(GetOpenedQty() >= GetClosedQty());
 		return GetOpenedQty() - GetClosedQty();
