@@ -215,10 +215,20 @@ namespace {
 				Settings &settings) {
 		Log::Info("Detected INI-file %1% modification, updating current settings...", iniFilePath);
 		const IniFile ini(iniFilePath);
-		const std::set<std::string> sections = ini.ReadSectionsList();
+		std::set<std::string> sections;
+		try {
+			sections = ini.ReadSectionsList();
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to get sections list: \"%1%\".", ex.what());
+			return;
+		}
 		foreach (const auto &section, sections) {
 			if (section == Ini::Sections::common) {
-				settings.Update(ini, section);
+				try {
+					settings.Update(ini, section);
+				} catch (const Exception &ex) {
+					Log::Error("Failed to update common settings: \"%1%\".", ex.what());
+				}
 				continue;
 			}
 			bool isError = false;
@@ -228,7 +238,7 @@ namespace {
 					algoName = ini.ReadKey(section, Ini::Key::algo, false);
 				} catch (const IniFile::Error &ex) {
 					Log::Error("Failed to get strategy algo: \"%1%\".", ex.what());
-					throw;
+					continue;
 				}
 			} else if (!boost::starts_with(section, Ini::Sections::py)) {
 				continue;
@@ -238,7 +248,7 @@ namespace {
 				tag = ini.ReadKey(section, Ini::Key::tag, false);
 			} catch (const IniFile::Error &ex) {
 				Log::Error("Failed to get strategy object tag: \"%1%\".", ex.what());
-				throw;
+				continue;
 			}
 			foreach (auto &a, algos) {
 				if (a->GetTag() != tag) {
@@ -269,7 +279,7 @@ namespace {
 				}
 				try {
 					a->UpdateSettings(ini, section);
-				} catch (const std::exception &ex) {
+				} catch (const Exception &ex) {
 					Log::Error("Failed to update current settings: \"%1%\".", ex.what());
 					isError = true;
 					break;
