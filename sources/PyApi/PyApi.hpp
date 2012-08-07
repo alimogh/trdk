@@ -8,12 +8,11 @@
 
 #pragma once
 
+#include "MarketDataSource.hpp"
 #include "Core/Algo.hpp"
 
 namespace PyApi {
-
-	class Script;
-
+	class ScriptEngine;
 }
 
 namespace PyApi {
@@ -30,17 +29,7 @@ namespace PyApi {
 
 		struct Settings {
 
-			enum MarketDataSource {
-				MARKET_DATA_SOURCE_NOT_SET				= 0,
-				MARKET_DATA_SOURCE_DISABLED,
-				MARKET_DATA_SOURCE_IQFEED,
-				MARKET_DATA_SOURCE_INTERACTIVE_BROKERS
-			};
-
 			std::string algoName;
-
-			std::string positionOpenFunc;
-			std::string positionCloseFunc;
 
 			MarketDataSource level1DataSource;
 			MarketDataSource level2DataSource;
@@ -85,10 +74,12 @@ namespace PyApi {
 		void DoSettingsUpdate(const IniFile &, const std::string &section);
 		void UpdateCallbacks();
 
+		PyApi::ScriptEngine & GetScriptEngine();
+
 	private:
 
 		Settings m_settings;
-		Script *m_script;
+		PyApi::ScriptEngine *m_scriptEngine;
 
 	};
 

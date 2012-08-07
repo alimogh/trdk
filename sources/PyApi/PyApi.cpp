@@ -8,7 +8,7 @@
 
 #include "Prec.hpp"
 #include "PyApi.hpp"
-#include "Script.hpp"
+#include "ScriptEngine.hpp"
 #include "Core/PositionReporterAlgo.hpp"
 #include "Core/AlgoPositionState.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -22,12 +22,16 @@ PyApi::Algo::Algo(
 			const IniFile &ini,
 			const std::string &section)
 		: Base(tag, security),
-		m_script(nullptr) {
+		m_scriptEngine(nullptr) {
+	{
+		const Settings settings = {};
+		m_settings = settings;
+	}
 	DoSettingsUpdate(ini, section);
 }
 
 PyApi::Algo::~Algo() {
-	delete m_script;
+	delete m_scriptEngine;
 }
 
 const std::string & PyApi::Algo::GetName() const {
@@ -39,26 +43,26 @@ void PyApi::Algo::SubscribeToMarketData(
 			const LiveMarketDataSource &interactiveBrokers) {
 
 	switch (m_settings.level1DataSource) {
-		case Settings::MARKET_DATA_SOURCE_IQFEED:
+		case MARKET_DATA_SOURCE_IQFEED:
 			iqFeed.SubscribeToMarketDataLevel1(GetSecurity());
 			break;
-		case Settings::MARKET_DATA_SOURCE_INTERACTIVE_BROKERS:
+		case MARKET_DATA_SOURCE_INTERACTIVE_BROKERS:
 			interactiveBrokers.SubscribeToMarketDataLevel1(GetSecurity());
 			break;
-		case Settings::MARKET_DATA_SOURCE_DISABLED:
+		case MARKET_DATA_SOURCE_DISABLED:
 			break;
 		default:
 			AssertFail("Unknown market data source.");
 	}
 
 	switch (m_settings.level2DataSource) {
-		case Settings::MARKET_DATA_SOURCE_IQFEED:
+		case MARKET_DATA_SOURCE_IQFEED:
 			iqFeed.SubscribeToMarketDataLevel2(GetSecurity());
 			break;
-		case Settings::MARKET_DATA_SOURCE_INTERACTIVE_BROKERS:
+		case MARKET_DATA_SOURCE_INTERACTIVE_BROKERS:
 			interactiveBrokers.SubscribeToMarketDataLevel2(GetSecurity());
 			break;
-		case Settings::MARKET_DATA_SOURCE_DISABLED:
+		case MARKET_DATA_SOURCE_DISABLED:
 			break;
 		default:
 			AssertFail("Unknown market data source.");
@@ -71,13 +75,13 @@ void PyApi::Algo::Update() {
 }
 
 boost::shared_ptr<PositionBandle> PyApi::Algo::TryToOpenPositions() {
-	m_script->Call(m_settings.positionOpenFunc);
+	m_scriptEngine->TryToOpenPositions();
 	return boost::shared_ptr<PositionBandle>();
 }
 
 void PyApi::Algo::TryToClosePositions(PositionBandle &positions) {
 	foreach (auto p, positions.Get()) {
-		m_script->Call(m_settings.positionCloseFunc);
+		m_scriptEngine->TryToClosePositions();
 	}
 }
 
@@ -103,39 +107,39 @@ void PyApi::Algo::UpdateAlogImplSettings(const IniFile &ini, const std::string &
 void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	
 	struct Util {	
-		static const char * ConvertToStr(Settings::MarketDataSource marketDataSource) {
+		static const char * ConvertToStr(MarketDataSource marketDataSource) {
 			switch (marketDataSource) {
-				case Settings::MARKET_DATA_SOURCE_IQFEED:
+				case MARKET_DATA_SOURCE_IQFEED:
 					return "IQFeed";
-				case Settings::MARKET_DATA_SOURCE_INTERACTIVE_BROKERS:
+				case MARKET_DATA_SOURCE_INTERACTIVE_BROKERS:
 					return "Interactive Brokers";
 				default:
 					AssertFail("Unknown market data source.");
-				case Settings::MARKET_DATA_SOURCE_NOT_SET:
+				case MARKET_DATA_SOURCE_NOT_SET:
 					AssertFail("Market data source not set.");
-				case Settings::MARKET_DATA_SOURCE_DISABLED:
+				case MARKET_DATA_SOURCE_DISABLED:
 					return "disabled";
 			}
 		}
-		static Settings::MarketDataSource ConvertStrToMarketDataSource(
+		static MarketDataSource ConvertStrToMarketDataSource(
 					const std::string &str,
 					bool isIbAvailable) {
 			if (	boost::iequals(str, "IQFeed")
 					|| boost::iequals(str, "IQ")
 					|| boost::iequals(str, "IQFeed.net")) {
-				return Settings::MARKET_DATA_SOURCE_IQFEED;
+				return MARKET_DATA_SOURCE_IQFEED;
 			} else if (
 					boost::iequals(str, "Interactive Brokers")
 					|| boost::iequals(str, "InteractiveBrokers")
 					|| boost::iequals(str, "IB")) {
 				if (isIbAvailable) {
-					return Settings::MARKET_DATA_SOURCE_INTERACTIVE_BROKERS;
+					return MARKET_DATA_SOURCE_INTERACTIVE_BROKERS;
 				}
 			} else if (
 					boost::iequals(str, "none")
 					|| boost::iequals(str, "disabled")
 					|| boost::iequals(str, "no")) {
-				return Settings::MARKET_DATA_SOURCE_DISABLED;
+				return MARKET_DATA_SOURCE_DISABLED;
 			}
 			throw IniFile::KeyFormatError("possible values: Interactive Brokers, IQFeed");
 		}
@@ -143,27 +147,29 @@ void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &sectio
 
 	Settings settings = {};
 
+	const std::string algoClassName = ini.ReadKey(section, "algo", false);
 	settings.algoName = ini.ReadKey(section, "name", false);
 
-	const fs::path scriptFile = ini.ReadKey(section, "script_file", false);
+	const fs::path scriptFilePath = ini.ReadKey(section, "script_file_path", false);
+	const std::string scriptFileStamp = ini.ReadKey(section, "script_file_stamp", true);
 			
-	settings.positionOpenFunc = ini.ReadKey(section, "position_open_func", false);
-	settings.positionCloseFunc = ini.ReadKey(section, "position_close_func", false);
-
-	settings.level1DataSource = Settings::MARKET_DATA_SOURCE_IQFEED;
+	settings.level1DataSource = MARKET_DATA_SOURCE_IQFEED;
 	settings.level2DataSource = m_settings.level2DataSource
 		?	m_settings.level2DataSource
 		:	Util::ConvertStrToMarketDataSource(ini.ReadKey(section, "level2_data_source", false), true);
 
 	const bool isNewScript
-		= !m_script || m_script->GetFilePath() != scriptFile || m_script->IsFileChanged();
+		= !m_scriptEngine
+			|| m_scriptEngine->GetFilePath() != scriptFilePath
+			|| m_scriptEngine->IsFileChanged(scriptFileStamp);
 
 	SettingsReport report;
+	AppendSettingsReport("algo", algoClassName, report);
 	AppendSettingsReport("name", settings.algoName, report);
-	AppendSettingsReport("script_file", scriptFile, report);
-	AppendSettingsReport("script", isNewScript ? "RELOADED" : "not reloaded", report);
-	AppendSettingsReport("position_open_func", settings.positionOpenFunc, report);
-	AppendSettingsReport("position_close_func", settings.positionCloseFunc, report);
+	AppendSettingsReport("tag", GetTag(), report);
+	AppendSettingsReport("script_file_path", scriptFilePath, report);
+	AppendSettingsReport("script_file_stamp", scriptFileStamp, report);
+	AppendSettingsReport("script state", isNewScript ? "RELOADED" : "not reloaded", report);
 	AppendSettingsReport(
 		"level1_data_source",
 		Util::ConvertToStr(settings.level1DataSource),
@@ -174,17 +180,28 @@ void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &sectio
 		report);
 	ReportSettings(report);
 
-	std::unique_ptr<PyApi::Script> script;
+	std::unique_ptr<PyApi::ScriptEngine> scriptEngine;
 	if (isNewScript) {
-		script.reset(new PyApi::Script(scriptFile));
+		scriptEngine.reset(
+			new PyApi::ScriptEngine(
+				scriptFilePath,
+				scriptFileStamp,
+				algoClassName,
+				*this,
+				GetSecurity(),
+				settings.level2DataSource));
 	}
 
 	m_settings = settings;
-	if (script) {
-		delete m_script;
-		m_script = script.release();
+	if (scriptEngine) {
+		delete m_scriptEngine;
+		m_scriptEngine = scriptEngine.release();
 	}
 
+}
 
+PyApi::ScriptEngine & PyApi::Algo::GetScriptEngine() {
+	Assert(m_scriptEngine);
+	return *m_scriptEngine;
 }
 

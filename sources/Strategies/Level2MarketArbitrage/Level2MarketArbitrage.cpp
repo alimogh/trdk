@@ -361,7 +361,6 @@ void s::Algo::UpdateCallbacks() {
 		default:
 			AssertFail("Unknown market data source.");
 	}
-
 }
 
 Security::Qty s::Algo::GetShortStopLoss(

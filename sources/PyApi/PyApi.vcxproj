@@ -70,12 +70,16 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
   <ItemGroup>
+    <ClInclude Include="AlgoWrapper.hpp" />
+    <ClInclude Include="MarketDataSource.hpp" />
+    <ClInclude Include=".\PositionWrapper.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="PyApi.hpp" />
     <ClInclude Include="ScriptEngine.hpp" />
-    <ClInclude Include="SecurityProxy.hpp" />
+    <ClInclude Include="SecurityWrapper.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include=".\PositionWrapper.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
