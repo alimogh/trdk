@@ -52,5 +52,3 @@ class SimpleExampleTradeAlgo(trader.Algo):
 		elif self.security.askPrice <= stopLossPrice:
 			# stop loss: trying to close with MKT
 			position.closeAtMarketPrice()
-
-		print("-------------------------")
