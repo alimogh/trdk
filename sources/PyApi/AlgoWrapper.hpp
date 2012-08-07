@@ -31,8 +31,8 @@ namespace PyApi { namespace Wrappers {
 
 	public:
 
-		virtual void TryToOpenPositions() = 0;
-		virtual void TryToClosePositions() = 0;
+		virtual boost::python::object TryToOpenPositions() = 0;
+		virtual void TryToClosePositions(boost::python::object) = 0;
 
 	};
 
@@ -54,12 +54,12 @@ namespace PyApi { namespace Wrappers {
 
 	public:
 
-		virtual void TryToOpenPositions() {
-			get_override("tryToOpenPositions")();
+		virtual boost::python::object TryToOpenPositions() {
+			return get_override("tryToOpenPositions")();
 		}
 
-		virtual void TryToClosePositions() {
-			get_override("tryToClosePositions")();
+		virtual void TryToClosePositions(boost::python::object position) {
+			get_override("tryToClosePositions")(position);
 		}
 
 	};

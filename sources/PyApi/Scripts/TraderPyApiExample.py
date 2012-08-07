@@ -32,8 +32,6 @@ class SimpleExampleTradeAlgo(trader.Algo):
 		# tryToOpenPositions will be called again):
 		position.openOrCancel(position.openStartPrice)
 
-		print("++++++++++++++++++++++++++++++")
-
 		return position
 
 
@@ -50,9 +48,9 @@ class SimpleExampleTradeAlgo(trader.Algo):
 
 		if self.security.askPrice >= takeProfitPrice:
 			# take profit: trying to close with IOC
-			self.security.closeOrCancel(takeProfitPrice)
+			position.closeOrCancel(takeProfitPrice)
 		elif self.security.askPrice <= stopLossPrice:
 			# stop loss: trying to close with MKT
-			self.security.closeAtMarketPrice()
+			position.closeAtMarketPrice()
 
 		print("-------------------------")

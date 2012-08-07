@@ -203,18 +203,54 @@ void ScriptEngine::Exec(const std::string &code) {
 	}
 }
 
-void ScriptEngine::TryToOpenPositions() {
+boost::shared_ptr<::Position> ScriptEngine::TryToOpenPositions() {
 	try {
-		m_algo->TryToOpenPositions();
+		python::object result = m_algo->TryToOpenPositions();
+		if (!result) {
+			return boost::shared_ptr<::Position>();
+		}
+		{
+			python::extract<PyApi::Wrappers::ShortPosition &> shortPos(result);
+			if (shortPos.check()) {
+				PyApi::Wrappers::ShortPosition &ref = shortPos;
+				return ref.GetPosition();
+			}
+		}
+		{
+			python::extract<PyApi::Wrappers::LongPosition &> longPos(result);
+			if (longPos.check()) {
+				PyApi::Wrappers::LongPosition &ref = longPos;
+				return ref.GetPosition();
+			}
+		}
+		throw Exception("Object with unknown type returned by Algo::TryToOpenPositions");
 	} catch (const python::error_already_set &) {
 		PyErr_Print();
 		throw Exception("Failed to call Python object method Algo::TryToOpenPositions");
 	}
 }
 
-void ScriptEngine::TryToClosePositions() {
+void ScriptEngine::TryToClosePositions(
+			boost::shared_ptr<Security> security,
+			boost::shared_ptr<Position> position) {
+	std::unique_ptr<Wrappers::LongPosition> longPos;
+	std::unique_ptr<Wrappers::ShortPosition> shortPos;
+	python::object pyPosition;
+	switch (position->GetType()) {
+		case Position::TYPE_LONG:
+			longPos.reset(new Wrappers::LongPosition(security, position));
+			pyPosition = python::object(boost::cref(*longPos));
+			break;
+		case Position::TYPE_SHORT:
+			shortPos.reset(new Wrappers::ShortPosition(security, position));
+			pyPosition = python::object(boost::cref(*shortPos));
+			break;
+		default:
+			AssertFail("Unknown position type.");
+			return;
+	}
 	try {
-		m_algo->TryToClosePositions();
+		m_algo->TryToClosePositions(pyPosition);
 	} catch (const python::error_already_set &) {
 		PyErr_Print();
 		throw Exception("Failed to call Python object method Algo::TryToClosePositions");

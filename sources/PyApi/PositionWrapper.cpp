@@ -12,6 +12,14 @@
 #include "SecurityWrapper.hpp"
 
 PyApi::Wrappers::Position::Position(
+				boost::shared_ptr<::Security> security,
+				boost::shared_ptr<::Position> position)
+		: m_security(security),
+		m_position(position) {
+	//...//
+}
+
+PyApi::Wrappers::Position::Position(
 			PyApi::Wrappers::Security &security,
 			::Position::Type type,
 			int qty,

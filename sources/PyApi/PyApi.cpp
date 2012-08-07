@@ -75,13 +75,18 @@ void PyApi::Algo::Update() {
 }
 
 boost::shared_ptr<PositionBandle> PyApi::Algo::TryToOpenPositions() {
-	m_scriptEngine->TryToOpenPositions();
-	return boost::shared_ptr<PositionBandle>();
+	boost::shared_ptr<PositionBandle> result;
+	boost::shared_ptr<Position> pos = m_scriptEngine->TryToOpenPositions();
+	if (pos) {
+		result.reset(new PositionBandle);
+		result->Get().push_back(pos);
+	}
+	return result;
 }
 
 void PyApi::Algo::TryToClosePositions(PositionBandle &positions) {
 	foreach (auto p, positions.Get()) {
-		m_scriptEngine->TryToClosePositions();
+		m_scriptEngine->TryToClosePositions(GetSecurity(), p);
 	}
 }
 

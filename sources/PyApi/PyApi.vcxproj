@@ -88,6 +88,9 @@
     <ClCompile Include="PyApi.cpp" />
     <ClCompile Include="ScriptEngine.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Scripts\TraderPyApiExample.py" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

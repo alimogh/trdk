@@ -12,6 +12,7 @@
 
 class Security;
 class Algo;
+class Position;
 
 namespace PyApi { namespace Wrappers {
 	class Algo;
@@ -55,9 +56,10 @@ namespace PyApi {
 
 	public:
 
-		void TryToOpenPositions();
-
-		void TryToClosePositions();
+		boost::shared_ptr<::Position> TryToOpenPositions();
+		void TryToClosePositions(
+				boost::shared_ptr<Security> security,
+				boost::shared_ptr<::Position>);
 
 	public:
 

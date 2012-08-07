@@ -21,12 +21,21 @@ namespace PyApi { namespace Wrappers {
 	class Position : private boost::noncopyable {
 	
 	public:
-		
+
+		explicit Position(
+				boost::shared_ptr<::Security>,
+				boost::shared_ptr<::Position>);
 		explicit Position(
 				PyApi::Wrappers::Security &security,
 				::Position::Type type,
 				int qty,
 				double startPrice);
+
+	public:
+	
+		boost::shared_ptr<::Position> GetPosition() {
+			return m_position;
+		}
 	
 	public:
 
@@ -116,10 +125,10 @@ namespace PyApi { namespace Wrappers {
 				*m_position);
 		}
 
-	private:
+	public:
 
-		const boost::shared_ptr<::Security> m_security;
-		const boost::shared_ptr<::Position> m_position;
+		boost::shared_ptr<::Security> m_security;
+		boost::shared_ptr<::Position> m_position;
 
 	};
 
@@ -128,6 +137,13 @@ namespace PyApi { namespace Wrappers {
 	class ShortPosition : public Position {
 	
 	public:
+
+		explicit ShortPosition(
+					boost::shared_ptr<::Security> security,
+					boost::shared_ptr<::Position> position)
+				: Position(security, position) {
+			Assert(position->GetType() == ::Position::TYPE_SHORT);
+		}
 
 		explicit ShortPosition(
 					PyApi::Wrappers::Security &security,
@@ -178,6 +194,13 @@ namespace PyApi { namespace Wrappers {
 	class LongPosition : public Position {
 
 	public:
+
+		explicit LongPosition(
+					boost::shared_ptr<::Security> security,
+					boost::shared_ptr<::Position> position)
+				: Position(security, position) {
+			Assert(position->GetType() == ::Position::TYPE_LONG);
+		}
 
 		explicit LongPosition(
 					PyApi::Wrappers::Security &security,
