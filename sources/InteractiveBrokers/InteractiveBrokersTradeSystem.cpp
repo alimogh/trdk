@@ -90,7 +90,7 @@ void InteractiveBrokersTradeSystem::Connect(const Settings &settings) {
 		return;
 	}
 	std::unique_ptr<InteractiveBrokersClient> client(
-		new InteractiveBrokersClient(settings.GetIbTwsIpAddress()));
+		new InteractiveBrokersClient(settings.GetIbTwsClientId(), settings.GetIbTwsIpAddress()));
 	client->Subscribe(
 		[this](
 					TradeSystem::OrderId id,

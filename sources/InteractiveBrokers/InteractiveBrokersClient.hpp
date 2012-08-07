@@ -33,9 +33,9 @@ public:
 public:
 
 	InteractiveBrokersClient(
+			int clientId = 0,
 			const std::string &host = "127.0.0.1",
-			unsigned short port = 7496,
-			int clientId = 0);
+			unsigned short port = 7496);
 	virtual ~InteractiveBrokersClient();
 
 public:
