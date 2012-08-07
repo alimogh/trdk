@@ -26,7 +26,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>Windows7.1SDK</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
@@ -72,7 +72,8 @@
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="PyApi.hpp" />
-    <ClInclude Include="Script.hpp" />
+    <ClInclude Include="ScriptEngine.hpp" />
+    <ClInclude Include="SecurityProxy.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -81,7 +82,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="PyApi.cpp" />
-    <ClCompile Include="Script.cpp" />
+    <ClCompile Include="ScriptEngine.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
