@@ -37,7 +37,7 @@ BOOST_PYTHON_MODULE(trader) {
 		.def("scalePrice", &Wrappers::Security::Scale)
 		.def("descalePrice", &Wrappers::Security::Descale)
 
-		.add_property("lastScaled", &Wrappers::Security::GetLastScaled)
+		.add_property("lastPriceScaled", &Wrappers::Security::GetLastScaled)
 		.add_property("lastPrice", &Wrappers::Security::GetLast)
 		
 		.add_property("askPriceScaled", &Wrappers::Security::GetAskScaled)
