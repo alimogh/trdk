@@ -107,53 +107,52 @@ public:
 
 public:
 
-
 	virtual void SellAtMarketPrice(
 			const Security &,
 			OrderQty,
-			OrderStatusUpdateSlot = OrderStatusUpdateSlot())
+			const OrderStatusUpdateSlot &)
 		= 0;
 	virtual void Sell(
 			const Security &,
 			OrderQty,
 			OrderPrice,
-			OrderStatusUpdateSlot = OrderStatusUpdateSlot())
+			const OrderStatusUpdateSlot &)
 		= 0;
 	virtual void SellAtMarketPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice stopPrice,
-			OrderStatusUpdateSlot = OrderStatusUpdateSlot())
+			const OrderStatusUpdateSlot &)
 		= 0;
 	virtual void SellOrCancel(
 			const Security &,
 			OrderQty,
 			OrderPrice,
-			OrderStatusUpdateSlot = OrderStatusUpdateSlot())
+			const OrderStatusUpdateSlot &)
 		= 0;
 
 	virtual void BuyAtMarketPrice(
 			const Security &,
 			OrderQty,
-			OrderStatusUpdateSlot = OrderStatusUpdateSlot())
+			const OrderStatusUpdateSlot &)
 		= 0;
 	virtual void Buy(
 			const Security &,
 			OrderQty,
 			OrderPrice,
-			OrderStatusUpdateSlot = OrderStatusUpdateSlot())
+			const OrderStatusUpdateSlot &)
 		= 0;
 	virtual void BuyAtMarketPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice stopPrice,
-			OrderStatusUpdateSlot = OrderStatusUpdateSlot())
+			const OrderStatusUpdateSlot &)
 		= 0;
 	virtual void BuyOrCancel(
 			const Security &,
 			OrderQty,
 			OrderPrice,
-			OrderStatusUpdateSlot = OrderStatusUpdateSlot())
+			const OrderStatusUpdateSlot &)
 		= 0;
 
 	virtual void CancelOrder(OrderId) = 0;

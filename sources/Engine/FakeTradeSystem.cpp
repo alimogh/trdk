@@ -1,4 +1,4 @@
-/**************************************************************************
+H/**************************************************************************
  *   Created: 2012/07/23 23:49:34
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
@@ -176,13 +176,13 @@ bool FakeTradeSystem::IsCompleted(const Security &) const {
 void FakeTradeSystem::SellAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
-			OrderStatusUpdateSlot stateUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const Order order = {
 		security.shared_from_this(),
 		true,
 		m_pimpl->TakeOrderId(),
 		security.GetFullSymbol(),
-		stateUpdateSlot,
+		statusUpdateSlot,
 		qty};
 	m_pimpl->SendOrder(order);
 	Log::Trading(
@@ -197,7 +197,7 @@ void FakeTradeSystem::Sell(
 			const Security &,
 			OrderQty,
 			OrderPrice,
-			OrderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
 }
 
@@ -205,7 +205,7 @@ void FakeTradeSystem::SellAtMarketPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice /*stopPrice*/,
-			OrderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
 }
 
@@ -213,13 +213,13 @@ void FakeTradeSystem::SellOrCancel(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
-			OrderStatusUpdateSlot stateUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const Order order = {
 		security.shared_from_this(),
 		true,
 		m_pimpl->TakeOrderId(),
 		security.GetFullSymbol(),
-		stateUpdateSlot,
+		statusUpdateSlot,
 		qty,
 		price};
 	m_pimpl->SendOrder(order);
@@ -235,13 +235,13 @@ void FakeTradeSystem::SellOrCancel(
 void FakeTradeSystem::BuyAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
-			OrderStatusUpdateSlot stateUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const Order order = {
 		security.shared_from_this(),
 		false,
 		m_pimpl->TakeOrderId(),
 		security.GetFullSymbol(),
-		stateUpdateSlot,
+		statusUpdateSlot,
 		qty};
 	m_pimpl->SendOrder(order);
 	Log::Trading(
@@ -256,7 +256,7 @@ void FakeTradeSystem::Buy(
 			const Security &,
 			OrderQty,
 			OrderPrice,
-			OrderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
 }
 
@@ -264,7 +264,7 @@ void FakeTradeSystem::BuyAtMarketPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice /*stopPrice*/,
-			OrderStatusUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
 }
 
@@ -272,13 +272,13 @@ void FakeTradeSystem::BuyOrCancel(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
-			OrderStatusUpdateSlot stateUpdateSlot /*= OrderStatusUpdateSlot()*/) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const Order order = {
 		security.shared_from_this(),
 		false,
 		m_pimpl->TakeOrderId(),
 		security.GetFullSymbol(),
-		stateUpdateSlot,
+		statusUpdateSlot,
 		qty,
 		price};
 	m_pimpl->SendOrder(order);

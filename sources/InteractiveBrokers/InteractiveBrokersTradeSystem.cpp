@@ -185,7 +185,7 @@ void InteractiveBrokersTradeSystem::CancelAllOrders(const Security &security) {
 void InteractiveBrokersTradeSystem::SellAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
-			OrderStatusUpdateSlot stateUpdateSlot /* = StateUpdateSlot() */) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	PlacedOrder order = {};
 	order.id = m_pimpl->client->SendBid(security, qty);
 	Log::Trading(
@@ -195,7 +195,7 @@ void InteractiveBrokersTradeSystem::SellAtMarketPrice(
 		security.GetSymbol(),
 		qty);
 	order.symbol = security.GetFullSymbol();
-	order.callback = stateUpdateSlot;
+	order.callback = statusUpdateSlot;
 	m_pimpl->RegOrder(order);
 }
 
@@ -204,7 +204,7 @@ void InteractiveBrokersTradeSystem::Sell(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
-			OrderStatusUpdateSlot stateUpdateSlot /* = StateUpdateSlot() */) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const auto rawPrice = security.Descale(price);
 	PlacedOrder order = {};
 	order.id = m_pimpl->client->SendBid(security, qty, rawPrice);
@@ -216,7 +216,7 @@ void InteractiveBrokersTradeSystem::Sell(
 		qty,
 		rawPrice);
 	order.symbol = security.GetFullSymbol();
-	order.callback = stateUpdateSlot;
+	order.callback = statusUpdateSlot;
 	m_pimpl->RegOrder(order);
 }
 
@@ -224,7 +224,7 @@ void InteractiveBrokersTradeSystem::SellAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice stopPrice,
-			OrderStatusUpdateSlot stateUpdateSlot /* = StateUpdateSlot()*/) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const auto rawStopPrice = security.Descale(stopPrice);
 	PlacedOrder order = {};
 	order.id = m_pimpl->client->SendBidWithMarketPrice(security, qty, rawStopPrice);
@@ -236,7 +236,7 @@ void InteractiveBrokersTradeSystem::SellAtMarketPrice(
 		qty,
 		rawStopPrice);
 	order.symbol = security.GetFullSymbol();
-	order.callback = stateUpdateSlot;
+	order.callback = statusUpdateSlot;
 	m_pimpl->RegOrder(order);
 }
 
@@ -244,12 +244,12 @@ void InteractiveBrokersTradeSystem::SellOrCancel(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
-			OrderStatusUpdateSlot stateUpdateSlot /* = StateUpdateSlot() */) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const double rawPrice = security.Descale(price);
 	const PlacedOrder order = {
 		m_pimpl->client->SendIocBid(security, qty, rawPrice),
 		security.GetFullSymbol(),
-		stateUpdateSlot};
+		statusUpdateSlot};
 	Log::Trading(
 		"sell",
 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
@@ -263,7 +263,7 @@ void InteractiveBrokersTradeSystem::SellOrCancel(
 void InteractiveBrokersTradeSystem::BuyAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
-			OrderStatusUpdateSlot stateUpdateSlot /* =  StateUpdateSlot() */) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	PlacedOrder order = {};
 	order.id = m_pimpl->client->SendAsk(security, qty);
 	Log::Trading(
@@ -273,7 +273,7 @@ void InteractiveBrokersTradeSystem::BuyAtMarketPrice(
 		security.GetSymbol(),
 		qty);
 	order.symbol = security.GetFullSymbol();
-	order.callback = stateUpdateSlot;
+	order.callback = statusUpdateSlot;
 	m_pimpl->RegOrder(order);
 }
 
@@ -281,7 +281,7 @@ void InteractiveBrokersTradeSystem::Buy(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
-			OrderStatusUpdateSlot stateUpdateSlot /* =  StateUpdateSlot() */) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const auto rawPrice = security.Descale(price);
 	PlacedOrder order = {};
 	order.id = m_pimpl->client->SendAsk(security, qty, rawPrice);
@@ -293,7 +293,7 @@ void InteractiveBrokersTradeSystem::Buy(
 		qty,
 		rawPrice);
 	order.symbol = security.GetFullSymbol();
-	order.callback = stateUpdateSlot;
+	order.callback = statusUpdateSlot;
 	m_pimpl->RegOrder(order);
 }
 
@@ -301,7 +301,7 @@ void InteractiveBrokersTradeSystem::BuyAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice stopPrice,
-			OrderStatusUpdateSlot stateUpdateSlot /* = StateUpdateSlot()*/) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const auto rawStopPrice = security.Descale(stopPrice);
 	PlacedOrder order = {};
 	order.id = m_pimpl->client->SendAskWithMarketPrice(security, qty, rawStopPrice);
@@ -313,7 +313,7 @@ void InteractiveBrokersTradeSystem::BuyAtMarketPrice(
 		qty,
 		rawStopPrice);
 	order.symbol = security.GetFullSymbol();
-	order.callback = stateUpdateSlot;
+	order.callback = statusUpdateSlot;
 	m_pimpl->RegOrder(order);
 }
 
@@ -321,12 +321,12 @@ void InteractiveBrokersTradeSystem::BuyOrCancel(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
-			OrderStatusUpdateSlot stateUpdateSlot /* =  StateUpdateSlot() */) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const double rawPrice = security.Descale(price);
 	const PlacedOrder order = {
 		m_pimpl->client->SendIocAsk(security, qty, rawPrice),
 		security.GetFullSymbol(),
-		stateUpdateSlot};
+		statusUpdateSlot};
 	Log::Trading(
 		"buy",
 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
