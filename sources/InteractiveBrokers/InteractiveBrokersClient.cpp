@@ -351,7 +351,8 @@ public:
 			case 201: // Order rejected - Reason:
 				Log::Error(INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " order rejected: %1%.", message);
 				break;
-			case 202: // Order cancelled - Reason:
+			case 202: // Order canceled - Reason:
+				// Log::Debug(INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " order canceled: %1%.", message);
 				break;
 			// case 203: The security <security> is not available or allowed for this account.
 			case 399:
@@ -996,6 +997,7 @@ void InteractiveBrokersClient::updateMktDepth(
 	Implementation::UpdatesSubscribers::const_iterator i
 		= m_pimpl->m_updatesSubscribers.find(tickerId);
 	if (i == m_pimpl->m_updatesSubscribers.end()) {
+		Log::Debug("Couldn't find Market Depth Data subscriber for ticker %1%.", tickerId);
 		return;
 	}
 	bool isAsk = false;

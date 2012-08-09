@@ -132,7 +132,7 @@ protected:
 			<< ',' << position.GetOpenOrderId()
 			
 			// number of shares
-			<< ',' << position.GetOpenedQty() << "->" << position.GetClosedQty()
+			<< ',' /*<< position.GetOpenedQty() << "->"*/ << position.GetClosedQty()
 			
 			// exit start price
 			<< ',' << security.Descale(position.GetCloseStartPrice())
