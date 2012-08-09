@@ -107,48 +107,48 @@ public:
 
 public:
 
-	virtual void SellAtMarketPrice(
+	virtual OrderId SellAtMarketPrice(
 			const Security &,
 			OrderQty,
 			const OrderStatusUpdateSlot &)
 		= 0;
-	virtual void Sell(
+	virtual OrderId Sell(
 			const Security &,
 			OrderQty,
 			OrderPrice,
 			const OrderStatusUpdateSlot &)
 		= 0;
-	virtual void SellAtMarketPriceWithStopPrice(
+	virtual OrderId SellAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice stopPrice,
 			const OrderStatusUpdateSlot &)
 		= 0;
-	virtual void SellOrCancel(
+	virtual OrderId SellOrCancel(
 			const Security &,
 			OrderQty,
 			OrderPrice,
 			const OrderStatusUpdateSlot &)
 		= 0;
 
-	virtual void BuyAtMarketPrice(
+	virtual OrderId BuyAtMarketPrice(
 			const Security &,
 			OrderQty,
 			const OrderStatusUpdateSlot &)
 		= 0;
-	virtual void Buy(
+	virtual OrderId Buy(
 			const Security &,
 			OrderQty,
 			OrderPrice,
 			const OrderStatusUpdateSlot &)
 		= 0;
-	virtual void BuyAtMarketPriceWithStopPrice(
+	virtual OrderId BuyAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice stopPrice,
 			const OrderStatusUpdateSlot &)
 		= 0;
-	virtual void BuyOrCancel(
+	virtual OrderId BuyOrCancel(
 			const Security &,
 			OrderQty,
 			OrderPrice,

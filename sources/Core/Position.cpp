@@ -119,7 +119,7 @@ void Position::UpdateOpening(
 	Assert(m_opened.qty <= m_planedQty);
 	Assert(m_closed.qty == 0);
 
-	m_opened.orderId = orderId;
+	Interlocking::Exchange(m_opened.orderId, orderId);
 
 	State state = State(m_state);
 	switch (orderStatus) {
@@ -199,9 +199,13 @@ void Position::UpdateClosing(
 	if (m_closed.orderId != orderId) {
 		if (m_closed.qty > 0 && m_closed.orderId) {
 			Assert(m_state == STATE_OPENED);
-			ReportCloseOrderChange(orderStatus, m_state, m_closed.orderId, orderId);
+			ReportCloseOrderChange(
+				orderStatus,
+				m_state,
+				TradeSystem::OrderId(m_closed.orderId),
+				orderId);
 		}
-		m_closed.orderId = orderId;
+		Interlocking::Exchange(m_closed.orderId, orderId);
 	}
 
 	State state = State(m_state);
@@ -264,11 +268,11 @@ void Position::UpdateClosing(
 }
 
 TradeSystem::OrderId Position::GetOpenOrderId() const {
-	return m_opened.orderId;
+	return TradeSystem::OrderId(m_opened.orderId);
 }
 
 TradeSystem::OrderId Position::GetCloseOrderId() const {
-	return m_closed.orderId;
+	return TradeSystem::OrderId(m_closed.orderId);
 }
 
 Position::Time Position::GetOpenTime() const {
@@ -445,6 +449,62 @@ void Position::ReportCloseOrderChange(
 		GetSecurity().GetBid());
 }
 
+TradeSystem::OrderId Position::OpenAtMarketPrice() {
+	const auto orderId = DoOpenAtMarketPrice();
+	Interlocking::Exchange(m_opened.orderId, orderId);
+	return orderId;
+}
+
+TradeSystem::OrderId Position::Open(Price price) {
+	const auto orderId = DoOpen(price);
+	Interlocking::Exchange(m_opened.orderId, orderId);
+	return orderId;
+}
+
+TradeSystem::OrderId Position::OpenAtMarketPriceWithStopPrice(Price stopPrice) {
+	const auto orderId = DoOpenAtMarketPriceWithStopPrice(stopPrice);
+	Interlocking::Exchange(m_opened.orderId, orderId);
+	return orderId;
+}
+
+TradeSystem::OrderId Position::OpenOrCancel(Price price) {
+	const auto orderId = DoOpenOrCancel(price);
+	Interlocking::Exchange(m_opened.orderId, orderId);
+	return orderId;
+}
+
+TradeSystem::OrderId Position::CloseAtMarketPrice() {
+	const auto orderId = DoCloseAtMarketPrice();
+	Interlocking::Exchange(m_closed.orderId, orderId);
+	return orderId;
+}
+
+TradeSystem::OrderId Position::Close(Price price) {
+	const auto orderId = DoClose(price);
+	Interlocking::Exchange(m_closed.orderId, orderId);
+	return orderId;
+}
+
+TradeSystem::OrderId Position::CloseAtMarketPriceWithStopPrice(Price stopPrice) {
+	const auto orderId = DoCloseAtMarketPriceWithStopPrice(stopPrice);
+	Interlocking::Exchange(m_closed.orderId, orderId);
+	return orderId;
+}
+
+TradeSystem::OrderId Position::CloseOrCancel(Price price) {
+	const auto orderId = DoCloseOrCancel(price);
+	Interlocking::Exchange(m_closed.orderId, orderId);
+	return orderId;
+}
+
+// void Position::CancelPositionAtMarketPrice() {
+// 	Assert(!IsClosed());
+// 	Assert(GetOpenOrderId());
+// 	Assert(!m_cancelMethod);
+// 	m_cancelMethod = boost::bind(&PositionState::CloseAtMarketPrice, this);
+// 	CancelAllOrders();
+// }
+
 void Position::CancelAllOrders() {
 	Assert(!IsClosed());
 	Assert(GetOpenOrderId());
@@ -487,60 +547,60 @@ Security::OrderStatusUpdateSlot LongPosition::GetBuyOrderStatusUpdateSlot() {
 	return boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3, _4, _5, _6);
 }
 
-void LongPosition::OpenAtMarketPrice() {
+TradeSystem::OrderId LongPosition::DoOpenAtMarketPrice() {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
 	Assert(GetNotOpenedQty() > 0);
-	GetSecurity().BuyAtMarketPrice(GetNotOpenedQty(), *this);
+	return GetSecurity().BuyAtMarketPrice(GetNotOpenedQty(), *this);
 }
 
-void LongPosition::Open(Price price) {
+TradeSystem::OrderId LongPosition::DoOpen(Price price) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
 	Assert(GetNotOpenedQty() > 0);
-	GetSecurity().Buy(GetNotOpenedQty(), price, *this);
+	return GetSecurity().Buy(GetNotOpenedQty(), price, *this);
 }
 
-void LongPosition::OpenAtMarketPriceWithStopPrice(Price stopPrice) {
+TradeSystem::OrderId LongPosition::DoOpenAtMarketPriceWithStopPrice(Price stopPrice) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
 	Assert(GetNotOpenedQty() > 0);
-	GetSecurity().BuyAtMarketPriceWithStopPrice(GetNotOpenedQty(), stopPrice, *this);
+	return GetSecurity().BuyAtMarketPriceWithStopPrice(GetNotOpenedQty(), stopPrice, *this);
 }
 
-void LongPosition::OpenOrCancel(Price price) {
+TradeSystem::OrderId LongPosition::DoOpenOrCancel(Price price) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
 	Assert(GetNotOpenedQty() > 0);
-	GetSecurity().BuyOrCancel(GetNotOpenedQty(), price, *this);
+	return GetSecurity().BuyOrCancel(GetNotOpenedQty(), price, *this);
 }
 
-void LongPosition::CloseAtMarketPrice() {
+TradeSystem::OrderId LongPosition::DoCloseAtMarketPrice() {
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	Assert(GetActiveQty() > 0);
-	GetSecurity().SellAtMarketPrice(GetActiveQty(), *this);
+	return GetSecurity().SellAtMarketPrice(GetActiveQty(), *this);
 }
 
-void LongPosition::Close(Price price) {
+TradeSystem::OrderId LongPosition::DoClose(Price price) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	Assert(GetActiveQty() > 0);
-	GetSecurity().Sell(GetActiveQty(), price, *this);
+	return GetSecurity().Sell(GetActiveQty(), price, *this);
 }
 
-void LongPosition::CloseAtMarketPriceWithStopPrice(Price stopPrice) {
+TradeSystem::OrderId LongPosition::DoCloseAtMarketPriceWithStopPrice(Price stopPrice) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	Assert(GetActiveQty() > 0);
-	GetSecurity().SellAtMarketPriceWithStopPrice(GetActiveQty(), stopPrice, *this);
+	return GetSecurity().SellAtMarketPriceWithStopPrice(GetActiveQty(), stopPrice, *this);
 }
 
-void LongPosition::CloseOrCancel(Price price) {
+TradeSystem::OrderId LongPosition::DoCloseOrCancel(Price price) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	Assert(GetActiveQty() > 0);
-	GetSecurity().SellOrCancel(GetActiveQty(), price, *this);
+	return GetSecurity().SellOrCancel(GetActiveQty(), price, *this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -576,60 +636,60 @@ Security::OrderStatusUpdateSlot ShortPosition::GetBuyOrderStatusUpdateSlot() {
 	return boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3, _4, _5, _6);
 }
 
-void ShortPosition::OpenAtMarketPrice() {
+TradeSystem::OrderId ShortPosition::DoOpenAtMarketPrice() {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
 	Assert(GetNotOpenedQty() > 0);
-	GetSecurity().SellAtMarketPrice(GetNotOpenedQty(), *this);
+	return GetSecurity().SellAtMarketPrice(GetNotOpenedQty(), *this);
 }
 
-void ShortPosition::Open(Price price) {
+TradeSystem::OrderId ShortPosition::DoOpen(Price price) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
 	Assert(GetNotOpenedQty() > 0);
-	GetSecurity().Sell(GetNotOpenedQty(), price, *this);
+	return GetSecurity().Sell(GetNotOpenedQty(), price, *this);
 }
 
-void ShortPosition::OpenAtMarketPriceWithStopPrice(Price stopPrice) {
+TradeSystem::OrderId ShortPosition::DoOpenAtMarketPriceWithStopPrice(Price stopPrice) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
 	Assert(GetNotOpenedQty() > 0);
-	GetSecurity().SellAtMarketPriceWithStopPrice(GetNotOpenedQty(), stopPrice, *this);
+	return GetSecurity().SellAtMarketPriceWithStopPrice(GetNotOpenedQty(), stopPrice, *this);
 }
 
-void ShortPosition::OpenOrCancel(Price price) {
+TradeSystem::OrderId ShortPosition::DoOpenOrCancel(Price price) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
 	Assert(GetNotOpenedQty() > 0);
-	GetSecurity().SellOrCancel(GetNotOpenedQty(), price, *this);
+	return GetSecurity().SellOrCancel(GetNotOpenedQty(), price, *this);
 }
 
-void ShortPosition::CloseAtMarketPrice() {
+TradeSystem::OrderId ShortPosition::DoCloseAtMarketPrice() {
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	Assert(GetActiveQty() > 0);
-	GetSecurity().BuyAtMarketPrice(GetActiveQty(), *this);
+	return GetSecurity().BuyAtMarketPrice(GetActiveQty(), *this);
 }
 
-void ShortPosition::Close(Price price) {
+TradeSystem::OrderId ShortPosition::DoClose(Price price) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	Assert(GetActiveQty() > 0);
-	GetSecurity().Buy(GetActiveQty(), price, *this);
+	return GetSecurity().Buy(GetActiveQty(), price, *this);
 }
 
-void ShortPosition::CloseAtMarketPriceWithStopPrice(Price stopPrice) {
+TradeSystem::OrderId ShortPosition::DoCloseAtMarketPriceWithStopPrice(Price stopPrice) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	Assert(GetActiveQty() > 0);
-	GetSecurity().BuyAtMarketPriceWithStopPrice(GetActiveQty(), stopPrice, *this);
+	return GetSecurity().BuyAtMarketPriceWithStopPrice(GetActiveQty(), stopPrice, *this);
 }
 
-void ShortPosition::CloseOrCancel(Price price) {
+TradeSystem::OrderId ShortPosition::DoCloseOrCancel(Price price) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	Assert(GetActiveQty() > 0);
-	GetSecurity().BuyOrCancel(GetActiveQty(), price, *this);
+	return GetSecurity().BuyOrCancel(GetActiveQty(), price, *this);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -119,15 +119,15 @@ public:
 
 	boost::posix_time::ptime GetLastMarketDataTime() const;
 
-	void SellAtMarketPrice(Qty, Position &);
-	void Sell(Qty, Price, Position &);
-	void SellAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
-	void SellOrCancel(Qty, Price, Position &);
+	TradeSystem::OrderId SellAtMarketPrice(Qty, Position &);
+	TradeSystem::OrderId Sell(Qty, Price, Position &);
+	TradeSystem::OrderId SellAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
+	TradeSystem::OrderId SellOrCancel(Qty, Price, Position &);
 
-	void BuyAtMarketPrice(Qty, Position &);
-	void Buy(Qty, Price, Position &);
-	void BuyAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
-	void BuyOrCancel(Qty, Price, Position &);
+	TradeSystem::OrderId BuyAtMarketPrice(Qty, Position &);
+	TradeSystem::OrderId Buy(Qty, Price, Position &);
+	TradeSystem::OrderId BuyAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
+	TradeSystem::OrderId BuyOrCancel(Qty, Price, Position &);
 
 	void CancelOrder(TradeSystem::OrderId);
 	void CancelAllOrders();

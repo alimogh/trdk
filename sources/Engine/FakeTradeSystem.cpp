@@ -170,10 +170,10 @@ void FakeTradeSystem::Connect(const Settings &) {
 
 bool FakeTradeSystem::IsCompleted(const Security &) const {
 	AssertFail("Doesn't implemented.");
-	return false;
+	throw Exception("Method doesn't implemented");
 }
 
-void FakeTradeSystem::SellAtMarketPrice(
+FakeTradeSystem::OrderId FakeTradeSystem::SellAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -191,25 +191,28 @@ void FakeTradeSystem::SellAtMarketPrice(
 		order.id,
 		security.GetSymbol(),
 		qty);
+	return order.id;
 }
 
-void FakeTradeSystem::Sell(
+FakeTradeSystem::OrderId FakeTradeSystem::Sell(
 			const Security &,
 			OrderQty,
 			OrderPrice,
 			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
+	throw Exception("Method doesn't implemented");
 }
 
-void FakeTradeSystem::SellAtMarketPriceWithStopPrice(
+FakeTradeSystem::OrderId FakeTradeSystem::SellAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice /*stopPrice*/,
 			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
+	throw Exception("Method doesn't implemented");
 }
 
-void FakeTradeSystem::SellOrCancel(
+FakeTradeSystem::OrderId FakeTradeSystem::SellOrCancel(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
@@ -230,9 +233,10 @@ void FakeTradeSystem::SellOrCancel(
 		security.GetSymbol(),
 		qty,
 		security.Descale(price));
+	return order.id;
 }
 
-void FakeTradeSystem::BuyAtMarketPrice(
+FakeTradeSystem::OrderId FakeTradeSystem::BuyAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -250,25 +254,28 @@ void FakeTradeSystem::BuyAtMarketPrice(
 		order.id,
 		security.GetSymbol(),
 		qty);
+	return order.id;
 }
 
-void FakeTradeSystem::Buy(
+FakeTradeSystem::OrderId FakeTradeSystem::Buy(
 			const Security &,
 			OrderQty,
 			OrderPrice,
 			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
+	throw Exception("Method doesn't implemented");
 }
 
-void FakeTradeSystem::BuyAtMarketPriceWithStopPrice(
+FakeTradeSystem::OrderId FakeTradeSystem::BuyAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice /*stopPrice*/,
 			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
+	throw Exception("Method doesn't implemented");
 }
 
-void FakeTradeSystem::BuyOrCancel(
+FakeTradeSystem::OrderId FakeTradeSystem::BuyOrCancel(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
@@ -289,10 +296,12 @@ void FakeTradeSystem::BuyOrCancel(
 		security.GetSymbol(),
 		qty,
 		security.Descale(price));
+	return order.id;
 }
 
 void FakeTradeSystem::CancelOrder(OrderId) {
 	AssertFail("Doesn't implemented.");
+	throw Exception("Method doesn't implemented");
 }
 
 void FakeTradeSystem::CancelAllOrders(const Security &security) {
@@ -301,6 +310,7 @@ void FakeTradeSystem::CancelAllOrders(const Security &security) {
 
 void FakeTradeSystem::SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const {
 	AssertFail("Doesn't implemented.");
+	throw Exception("Method doesn't implemented");
 }
 
 //////////////////////////////////////////////////////////////////////////

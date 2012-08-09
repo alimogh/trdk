@@ -53,7 +53,7 @@ private:
 
 	struct DynamicData {
 
-		TradeSystem::OrderId orderId;
+		volatile LONGLONG orderId;
 		Time time;
 		Price price;
 		Qty qty;
@@ -150,16 +150,17 @@ public:
 
 public:
 
-	virtual void OpenAtMarketPrice() = 0;
-	virtual void Open(Price) = 0;
-	virtual void OpenAtMarketPriceWithStopPrice(Price stopPrice) = 0;
-	virtual void OpenOrCancel(Price) = 0;
+	TradeSystem::OrderId OpenAtMarketPrice();
+	TradeSystem::OrderId Open(Price);
+	TradeSystem::OrderId OpenAtMarketPriceWithStopPrice(Price stopPrice);
+	TradeSystem::OrderId OpenOrCancel(Price);
 
-	virtual void CloseAtMarketPrice() = 0;
-	virtual void Close(Price) = 0;
-	virtual void CloseAtMarketPriceWithStopPrice(Price stopPrice) = 0;
-	virtual void CloseOrCancel(Price) = 0;
+	TradeSystem::OrderId CloseAtMarketPrice();
+	TradeSystem::OrderId Close(Price);
+	TradeSystem::OrderId CloseAtMarketPriceWithStopPrice(Price stopPrice);
+	TradeSystem::OrderId CloseOrCancel(Price);
 
+//	void CancelPositionAtMarketPrice();
 	void CancelAllOrders();
 
 public:
@@ -168,6 +169,18 @@ public:
 
 	virtual Security::OrderStatusUpdateSlot GetSellOrderStatusUpdateSlot() = 0;
 	virtual Security::OrderStatusUpdateSlot GetBuyOrderStatusUpdateSlot() = 0;
+
+protected:
+
+	virtual TradeSystem::OrderId DoOpenAtMarketPrice() = 0;
+	virtual TradeSystem::OrderId DoOpen(Price) = 0;
+	virtual TradeSystem::OrderId DoOpenAtMarketPriceWithStopPrice(Price stopPrice) = 0;
+	virtual TradeSystem::OrderId DoOpenOrCancel(Price) = 0;
+
+	virtual TradeSystem::OrderId DoCloseAtMarketPrice() = 0;
+	virtual TradeSystem::OrderId DoClose(Price) = 0;
+	virtual TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(Price stopPrice) = 0;
+	virtual TradeSystem::OrderId DoCloseOrCancel(Price) = 0;
 
 protected:
 
@@ -226,6 +239,8 @@ private:
 	const boost::shared_ptr<const Algo> m_algo;
 	const boost::shared_ptr<AlgoPositionState> m_algoState;
 
+	boost::function<void()> m_cancelMethod;
+
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -254,15 +269,15 @@ public:
 
 public:
 
-	virtual void OpenAtMarketPrice();
-	virtual void Open(Price);
-	virtual void OpenAtMarketPriceWithStopPrice(Price stopPrice);
-	virtual void OpenOrCancel(Price);
+	virtual TradeSystem::OrderId DoOpenAtMarketPrice();
+	virtual TradeSystem::OrderId DoOpen(Price);
+	virtual TradeSystem::OrderId DoOpenAtMarketPriceWithStopPrice(Price stopPrice);
+	virtual TradeSystem::OrderId DoOpenOrCancel(Price);
 
-	virtual void CloseAtMarketPrice();
-	virtual void Close(Price);
-	virtual void CloseAtMarketPriceWithStopPrice(Price stopPrice);
-	virtual void CloseOrCancel(Price);
+	virtual TradeSystem::OrderId DoCloseAtMarketPrice();
+	virtual TradeSystem::OrderId DoClose(Price);
+	virtual TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(Price stopPrice);
+	virtual TradeSystem::OrderId DoCloseOrCancel(Price);
 
 };
 
@@ -292,15 +307,15 @@ public:
 
 public:
 
-	virtual void OpenAtMarketPrice();
-	virtual void Open(Price);
-	virtual void OpenAtMarketPriceWithStopPrice(Price stopPrice);
-	virtual void OpenOrCancel(Price);
+	virtual TradeSystem::OrderId DoOpenAtMarketPrice();
+	virtual TradeSystem::OrderId DoOpen(Price);
+	virtual TradeSystem::OrderId DoOpenAtMarketPriceWithStopPrice(Price stopPrice);
+	virtual TradeSystem::OrderId DoOpenOrCancel(Price);
 
-	virtual void CloseAtMarketPrice();
-	virtual void Close(Price);
-	virtual void CloseAtMarketPriceWithStopPrice(Price stopPrice);
-	virtual void CloseOrCancel(Price);
+	virtual TradeSystem::OrderId DoCloseAtMarketPrice();
+	virtual TradeSystem::OrderId DoClose(Price);
+	virtual TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(Price stopPrice);
+	virtual TradeSystem::OrderId DoCloseOrCancel(Price);
 
 };
 

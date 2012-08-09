@@ -80,33 +80,33 @@ namespace PyApi { namespace Wrappers {
 
 	public:
 
-		void OpenAtMarketPrice() {
-			m_position->OpenAtMarketPrice();
+		int OpenAtMarketPrice() {
+			return m_position->OpenAtMarketPrice();
 		}
 	
-		void Open(double price) {
-			m_position->Open(m_position->GetSecurity().Scale(price));
+		int Open(double price) {
+			return m_position->Open(m_position->GetSecurity().Scale(price));
 		}
 	
-		void OpenAtMarketPriceWithStopPrice(double stopPrice) {
-			m_position->OpenAtMarketPriceWithStopPrice(
+		int OpenAtMarketPriceWithStopPrice(double stopPrice) {
+			return m_position->OpenAtMarketPriceWithStopPrice(
 				m_position->GetSecurity().Scale(stopPrice));
 		}
 	
-		void OpenOrCancel(double price) {
-			m_position->OpenOrCancel(m_position->GetSecurity().Scale(price));
+		int OpenOrCancel(double price) {
+			return m_position->OpenOrCancel(m_position->GetSecurity().Scale(price));
 		}
 
-		void CloseAtMarketPrice() {
-			m_position->CloseAtMarketPrice();
+		int CloseAtMarketPrice() {
+			return m_position->CloseAtMarketPrice();
 		}
 	
-		void Close(double price) {
-			m_position->Close(m_position->GetSecurity().Scale(price));
+		int Close(double price) {
+			return m_position->Close(m_position->GetSecurity().Scale(price));
 		}
 	
-		void CloseAtMarketPriceWithStopPrice(double stopPrice) {
-			m_position->CloseAtMarketPriceWithStopPrice(
+		int CloseAtMarketPriceWithStopPrice(double stopPrice) {
+			return m_position->CloseAtMarketPriceWithStopPrice(
 				m_position->GetSecurity().Scale(stopPrice));
 		}
 	

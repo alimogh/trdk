@@ -182,7 +182,7 @@ void InteractiveBrokersTradeSystem::CancelAllOrders(const Security &security) {
 		});
 }
 
-void InteractiveBrokersTradeSystem::SellAtMarketPrice(
+InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::SellAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -197,10 +197,11 @@ void InteractiveBrokersTradeSystem::SellAtMarketPrice(
 	order.symbol = security.GetFullSymbol();
 	order.callback = statusUpdateSlot;
 	m_pimpl->RegOrder(order);
+	return order.id;
 }
 
 
-void InteractiveBrokersTradeSystem::Sell(
+InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::Sell(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
@@ -218,9 +219,10 @@ void InteractiveBrokersTradeSystem::Sell(
 	order.symbol = security.GetFullSymbol();
 	order.callback = statusUpdateSlot;
 	m_pimpl->RegOrder(order);
+	return order.id;
 }
 
-void InteractiveBrokersTradeSystem::SellAtMarketPriceWithStopPrice(
+InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::SellAtMarketPriceWithStopPrice(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice stopPrice,
@@ -238,9 +240,10 @@ void InteractiveBrokersTradeSystem::SellAtMarketPriceWithStopPrice(
 	order.symbol = security.GetFullSymbol();
 	order.callback = statusUpdateSlot;
 	m_pimpl->RegOrder(order);
+	return order.id;
 }
 
-void InteractiveBrokersTradeSystem::SellOrCancel(
+InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::SellOrCancel(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
@@ -258,9 +261,10 @@ void InteractiveBrokersTradeSystem::SellOrCancel(
 		qty,
 		rawPrice);
 	m_pimpl->RegOrder(order);
+	return order.id;
 }
 
-void InteractiveBrokersTradeSystem::BuyAtMarketPrice(
+InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::BuyAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -275,9 +279,10 @@ void InteractiveBrokersTradeSystem::BuyAtMarketPrice(
 	order.symbol = security.GetFullSymbol();
 	order.callback = statusUpdateSlot;
 	m_pimpl->RegOrder(order);
+	return order.id;
 }
 
-void InteractiveBrokersTradeSystem::Buy(
+InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::Buy(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
@@ -295,9 +300,10 @@ void InteractiveBrokersTradeSystem::Buy(
 	order.symbol = security.GetFullSymbol();
 	order.callback = statusUpdateSlot;
 	m_pimpl->RegOrder(order);
+	return order.id;
 }
 
-void InteractiveBrokersTradeSystem::BuyAtMarketPriceWithStopPrice(
+InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::BuyAtMarketPriceWithStopPrice(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice stopPrice,
@@ -315,9 +321,10 @@ void InteractiveBrokersTradeSystem::BuyAtMarketPriceWithStopPrice(
 	order.symbol = security.GetFullSymbol();
 	order.callback = statusUpdateSlot;
 	m_pimpl->RegOrder(order);
+	return order.id;
 }
 
-void InteractiveBrokersTradeSystem::BuyOrCancel(
+InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::BuyOrCancel(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
@@ -335,6 +342,7 @@ void InteractiveBrokersTradeSystem::BuyOrCancel(
 		qty,
 		rawPrice);
 	m_pimpl->RegOrder(order);
+	return order.id;
 }
 
 void InteractiveBrokersTradeSystem::SubscribeToMarketDataLevel1(
