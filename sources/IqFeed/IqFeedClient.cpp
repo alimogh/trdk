@@ -101,7 +101,7 @@ namespace {
 			try {
 				Close();
 			} catch (...) {
-				AssertFail("Unhandled exception caught");
+				AssertFailNoException();
 				throw;
 			}
 		}
@@ -213,12 +213,8 @@ namespace {
 			Log::Info("Started " IQFEED_CLIENT_CONNECTION_NAME " connection read task.");
 			try {
 				m_ioService->run();
-			} catch (const std::exception &ex) {
-				Log::Error(IQFEED_CLIENT_CONNECTION_NAME " connection unhandled exception: \"%1%\".", ex.what());
-				AssertFail("Unhandled exception caught");
-				throw;
 			} catch (...) {
-				AssertFail("Unhandled exception caught");
+				AssertFailNoException();
 				throw;
 			}
 			Log::Info("Stopped " IQFEED_CLIENT_CONNECTION_NAME " connection read task.");

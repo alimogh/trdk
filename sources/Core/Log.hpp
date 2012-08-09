@@ -49,7 +49,7 @@ namespace Log { namespace Detail {
 		try {
 			AppendEventRecordUnsafe(boost::get_system_time(), str);
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 	inline void AppendRecord(boost::format (callback)()) throw() {
@@ -59,7 +59,7 @@ namespace Log { namespace Detail {
 		try {
 			AppendEventRecordUnsafe(boost::get_system_time(), callback());
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 	inline void AppendTaggedRecord(const char *tag, const char *str) throw() {
@@ -69,7 +69,7 @@ namespace Log { namespace Detail {
 		try {
 			AppendTradingRecordUnsafe(boost::get_system_time(), tag, str);
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -90,10 +90,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 	template<typename Param1>
@@ -113,10 +113,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -137,10 +137,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 	template<typename Param1, typename Param2>
@@ -165,10 +165,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -194,10 +194,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 	template<typename Param1, typename Param2, typename Param3>
@@ -223,10 +223,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -253,10 +253,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 	template<typename Param1, typename Param2, typename Param3, typename Param4>
@@ -283,10 +283,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -314,10 +314,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 	template<typename Param1, typename Param2, typename Param3, typename Param4, typename Param5>
@@ -345,10 +345,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -377,10 +377,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 	template<typename Param1, typename Param2, typename Param3, typename Param4, typename Param5, typename Param6>
@@ -409,10 +409,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -454,10 +454,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -497,10 +497,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -543,10 +543,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -591,10 +591,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -639,10 +639,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -689,10 +689,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -739,10 +739,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -791,10 +791,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -843,10 +843,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -897,10 +897,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -953,10 +953,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -1011,10 +1011,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -1071,10 +1071,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -1134,10 +1134,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -1199,10 +1199,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -1266,10 +1266,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 
@@ -1335,10 +1335,10 @@ namespace Log { namespace Detail {
 						% str
 						% ex.what());
 			} catch (...) {
-				AssertFail("Unhandled exception caught seconds time");
+				AssertFailNoException();
 			}
 		} catch (...) {
-			AssertFail("Unhandled exception caught");
+			AssertFailNoException();
 		}
 	}
 

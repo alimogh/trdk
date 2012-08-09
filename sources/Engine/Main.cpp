@@ -62,8 +62,6 @@ void main(int argc, const char *argv[]) {
 		} else {
 			Trade(iniFilePath);
 		}
-	} catch (const std::exception &ex) {
-		Log::Error("Unexpected error: \"%1%\".", ex.what());
 	} catch (...) {
 		AssertFailNoException();
 	}

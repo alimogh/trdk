@@ -245,13 +245,6 @@ private:
 				if (!(this->*iteration)()) {
 					break;
 				}
-			} catch (const std::exception &ex) {
-				Log::Error(
-					"Unhandled exception caught in dispatcher task \"%1%\": \"%2%\".",
-					name,
-					ex.what());
-				AssertFailNoException();
-				throw;
 			} catch (...) {
 				Log::Error("Unhandled exception caught in dispatcher task \"%1%\".", name);
 				AssertFailNoException();

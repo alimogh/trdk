@@ -86,7 +86,7 @@ public:
 				m_condition.notify_all();
 				m_thread->join();
 			} catch (...) {
-				AssertFail("Unhandled exception caught");
+				AssertFailNoException();
 				throw;
 			}
 			delete m_thread;
@@ -192,14 +192,9 @@ private:
 				if (!m_isConnected) {
 					break;
 				}
-			} catch (const std::exception &ex) {
-				lock.reset();
-				Log::Error("Unhandled exception caught: \"%1%\".", ex.what());
-				AssertFail("Unhandled exception caught");
-				throw;
 			} catch (...) {
 				lock.reset();
-				AssertFail("Unhandled exception caught");
+				AssertFailNoException();
 				throw;
 			}
 		}
@@ -515,7 +510,7 @@ InteractiveBrokersClient::~InteractiveBrokersClient() {
 			port,
 			clientId);
 	} catch (...) {
-		AssertFail("Unhandled exception caught");
+		AssertFailNoException();
 		throw;
 	}
 }

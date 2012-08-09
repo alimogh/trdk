@@ -32,4 +32,8 @@
 #	define assert(expr) Assert(expr)
 #endif
 
-#define AssertFailNoException() AssertFail("Unhandled exception caught")
+namespace Detatil {
+	void RegisterNotExpectedException(const char *, const char *, long);
+}
+
+#define AssertFailNoException() (void)(::Detatil::RegisterNotExpectedException(BOOST_CURRENT_FUNCTION, __FILE__, __LINE__))

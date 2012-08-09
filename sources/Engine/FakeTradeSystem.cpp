@@ -127,11 +127,8 @@ private:
 				}
 				orders->clear();
 			}
-		} catch (const std::exception &ex) {
-			Log::Error("Unhandled exception caught: \"%1%\".", ex.what());
-			throw;
 		} catch (...) {
-			AssertFail("Unhandled exception caught.");
+			AssertFailNoException();
 			throw;
 		}
 		Log::Info("Fake Trade System stopped.");
