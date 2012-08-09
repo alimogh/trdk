@@ -121,12 +121,12 @@ public:
 
 	void SellAtMarketPrice(Qty, Position &);
 	void Sell(Qty, Price, Position &);
-	void SellAtMarketPrice(Qty, Price stopPrice, Position &);
+	void SellAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
 	void SellOrCancel(Qty, Price, Position &);
 
 	void BuyAtMarketPrice(Qty, Position &);
 	void Buy(Qty, Price, Position &);
-	void BuyAtMarketPrice(Qty, Price stopPrice, Position &);
+	void BuyAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
 	void BuyOrCancel(Qty, Price, Position &);
 
 	void CancelOrder(TradeSystem::OrderId);

@@ -49,21 +49,17 @@ Position::DynamicData::DynamicData()
 //////////////////////////////////////////////////////////////////////////
 
 Position::Position(
-			boost::shared_ptr<const Security> security,
-			Type type,
+			boost::shared_ptr<Security> security,
 			Qty qty,
 			Price startPrice,
-			AlgoFlag algoFlag,
 			boost::shared_ptr<const Algo> algo,
 			boost::shared_ptr<AlgoPositionState> state /*= boost::shared_ptr<AlgoPositionState>()*/)
 		: m_security(security),
-		m_type(type),
 		m_planedQty(qty),
 		m_openStartPrice(startPrice),
 		m_closeStartPrice(0),
 		m_closeType(CLOSE_TYPE_NONE),
 		m_isReported(false),
-		m_algoFlag(algoFlag),
 		m_algo(algo),
 		m_algoState(state) {
 	Interlocking::Exchange(m_state, STATE_NONE);
@@ -71,14 +67,6 @@ Position::Position(
 
 Position::~Position() {
 	//...//
-}
-
-Position::AlgoFlag Position::GetAlgoFlag() const {
-	return m_algoFlag;
-}
-
-void Position::SetAlgoFlag(AlgoFlag algoFlag) {
-	m_algoFlag = algoFlag;
 }
 
 bool Position::IsReported() const {
@@ -296,6 +284,10 @@ Position::Price Position::GetCommission() const {
 }
 
 const Security & Position::GetSecurity() const {
+	return const_cast<Position *>(this)->GetSecurity();
+}
+
+Security & Position::GetSecurity() {
 	return *m_security;
 }
 
@@ -345,46 +337,6 @@ Position::StateUpdateConnection Position::Subscribe(
 			const StateUpdateSlot &slot)
 		const {
 	return StateUpdateConnection(m_stateUpdateSignal.connect(slot));
-}
-
-Security::OrderStatusUpdateSlot Position::GetSellOrderStatusUpdateSlot() {
-	switch (m_type) {
-		case TYPE_LONG:
-			return boost::bind(&Position::UpdateClosing, shared_from_this(), _1, _2, _3, _4, _5, _6);
-		case  TYPE_SHORT:
-			return boost::bind(&Position::UpdateOpening, shared_from_this(), _1, _2, _3, _4, _5, _6);
-		default:
-			AssertFail("Unknown position type.");
-			throw Exception("Unknown position type");
-	}
-}
-
-Security::OrderStatusUpdateSlot Position::GetBuyOrderStatusUpdateSlot() {
-	switch (m_type) {
-		case TYPE_LONG:
-			return boost::bind(&Position::UpdateOpening, shared_from_this(), _1, _2, _3, _4, _5, _6);
-		case  TYPE_SHORT:
-			return boost::bind(&Position::UpdateClosing, shared_from_this(), _1, _2, _3, _4, _5, _6);
-		default:
-			AssertFail("Unknown position type.");
-			throw Exception("Unknown position type");
-	}
-}
-
-Position::Type Position::GetType() const {
-	return m_type;
-}
-
-const char * Position::GetTypeStr() const {
-	switch (m_type) {
-		case TYPE_LONG:
-			return "long";
-		case TYPE_SHORT:
-			return "short";
-		default:
-			AssertFail("Unknown position type");
-			throw Exception("Unknown position type");
-	}
 }
 
 Position::Qty Position::GetPlanedQty() const {
@@ -492,3 +444,192 @@ void Position::ReportCloseOrderChange(
 		GetSecurity().GetAsk(),
 		GetSecurity().GetBid());
 }
+
+void Position::CancelAllOrders() {
+	Assert(!IsClosed());
+	Assert(GetOpenOrderId());
+	GetSecurity().CancelOrder(GetOpenOrderId());
+	if (GetCloseOrderId()) {
+		GetSecurity().CancelOrder(GetCloseOrderId());
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+LongPosition::LongPosition(
+			boost::shared_ptr<Security> security,
+			Qty qty,
+			Price startPrice,
+			boost::shared_ptr<const Algo> algo,
+			boost::shared_ptr<AlgoPositionState> state /*= boost::shared_ptr<AlgoPositionState>()*/)
+		: Position(security, qty, startPrice, algo, state) {
+	//...//
+}
+
+LongPosition::~LongPosition() {
+	//...//
+}
+
+LongPosition::Type LongPosition::GetType() const {
+	return TYPE_LONG;
+}
+
+const std::string & LongPosition::GetTypeStr() const {
+	static const std::string result = "long";
+	return result;
+}
+
+Security::OrderStatusUpdateSlot LongPosition::GetSellOrderStatusUpdateSlot() {
+	return boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3, _4, _5, _6);
+}
+
+Security::OrderStatusUpdateSlot LongPosition::GetBuyOrderStatusUpdateSlot() {
+	return boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3, _4, _5, _6);
+}
+
+void LongPosition::OpenAtMarketPrice() {
+	Assert(!IsOpened());
+	Assert(!IsClosed());
+	Assert(GetNotOpenedQty() > 0);
+	GetSecurity().BuyAtMarketPrice(GetNotOpenedQty(), *this);
+}
+
+void LongPosition::Open(Price price) {
+	Assert(!IsOpened());
+	Assert(!IsClosed());
+	Assert(GetNotOpenedQty() > 0);
+	GetSecurity().Buy(GetNotOpenedQty(), price, *this);
+}
+
+void LongPosition::OpenAtMarketPriceWithStopPrice(Price stopPrice) {
+	Assert(!IsOpened());
+	Assert(!IsClosed());
+	Assert(GetNotOpenedQty() > 0);
+	GetSecurity().BuyAtMarketPriceWithStopPrice(GetNotOpenedQty(), stopPrice, *this);
+}
+
+void LongPosition::OpenOrCancel(Price price) {
+	Assert(!IsOpened());
+	Assert(!IsClosed());
+	Assert(GetNotOpenedQty() > 0);
+	GetSecurity().BuyOrCancel(GetNotOpenedQty(), price, *this);
+}
+
+void LongPosition::CloseAtMarketPrice() {
+	Assert(IsOpened());
+	Assert(!IsClosed());
+	Assert(GetActiveQty() > 0);
+	GetSecurity().SellAtMarketPrice(GetActiveQty(), *this);
+}
+
+void LongPosition::Close(Price price) {
+	Assert(IsOpened());
+	Assert(!IsClosed());
+	Assert(GetActiveQty() > 0);
+	GetSecurity().Sell(GetActiveQty(), price, *this);
+}
+
+void LongPosition::CloseAtMarketPriceWithStopPrice(Price stopPrice) {
+	Assert(IsOpened());
+	Assert(!IsClosed());
+	Assert(GetActiveQty() > 0);
+	GetSecurity().SellAtMarketPriceWithStopPrice(GetActiveQty(), stopPrice, *this);
+}
+
+void LongPosition::CloseOrCancel(Price price) {
+	Assert(IsOpened());
+	Assert(!IsClosed());
+	Assert(GetActiveQty() > 0);
+	GetSecurity().SellOrCancel(GetActiveQty(), price, *this);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+ShortPosition::ShortPosition(
+			boost::shared_ptr<Security> security,
+			Qty qty,
+			Price startPrice,
+			boost::shared_ptr<const Algo> algo,
+			boost::shared_ptr<AlgoPositionState> state /*= boost::shared_ptr<AlgoPositionState>()*/)
+		: Position(security, qty, startPrice, algo, state) {
+	//...//
+}
+
+ShortPosition::~ShortPosition() {
+	//...//
+}
+
+LongPosition::Type ShortPosition::GetType() const {
+	return TYPE_SHORT;
+}
+
+const std::string & ShortPosition::GetTypeStr() const {
+	static const std::string result = "short";
+	return result;
+}
+
+Security::OrderStatusUpdateSlot ShortPosition::GetSellOrderStatusUpdateSlot() {
+	return boost::bind(&ShortPosition::UpdateOpening, shared_from_this(), _1, _2, _3, _4, _5, _6);
+}
+
+Security::OrderStatusUpdateSlot ShortPosition::GetBuyOrderStatusUpdateSlot() {
+	return boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3, _4, _5, _6);
+}
+
+void ShortPosition::OpenAtMarketPrice() {
+	Assert(!IsOpened());
+	Assert(!IsClosed());
+	Assert(GetNotOpenedQty() > 0);
+	GetSecurity().SellAtMarketPrice(GetNotOpenedQty(), *this);
+}
+
+void ShortPosition::Open(Price price) {
+	Assert(!IsOpened());
+	Assert(!IsClosed());
+	Assert(GetNotOpenedQty() > 0);
+	GetSecurity().Sell(GetNotOpenedQty(), price, *this);
+}
+
+void ShortPosition::OpenAtMarketPriceWithStopPrice(Price stopPrice) {
+	Assert(!IsOpened());
+	Assert(!IsClosed());
+	Assert(GetNotOpenedQty() > 0);
+	GetSecurity().SellAtMarketPriceWithStopPrice(GetNotOpenedQty(), stopPrice, *this);
+}
+
+void ShortPosition::OpenOrCancel(Price price) {
+	Assert(!IsOpened());
+	Assert(!IsClosed());
+	Assert(GetNotOpenedQty() > 0);
+	GetSecurity().SellOrCancel(GetNotOpenedQty(), price, *this);
+}
+
+void ShortPosition::CloseAtMarketPrice() {
+	Assert(IsOpened());
+	Assert(!IsClosed());
+	Assert(GetActiveQty() > 0);
+	GetSecurity().BuyAtMarketPrice(GetActiveQty(), *this);
+}
+
+void ShortPosition::Close(Price price) {
+	Assert(IsOpened());
+	Assert(!IsClosed());
+	Assert(GetActiveQty() > 0);
+	GetSecurity().Buy(GetActiveQty(), price, *this);
+}
+
+void ShortPosition::CloseAtMarketPriceWithStopPrice(Price stopPrice) {
+	Assert(IsOpened());
+	Assert(!IsClosed());
+	Assert(GetActiveQty() > 0);
+	GetSecurity().BuyAtMarketPriceWithStopPrice(GetActiveQty(), stopPrice, *this);
+}
+
+void ShortPosition::CloseOrCancel(Price price) {
+	Assert(IsOpened());
+	Assert(!IsClosed());
+	Assert(GetActiveQty() > 0);
+	GetSecurity().BuyOrCancel(GetActiveQty(), price, *this);
+}
+
+//////////////////////////////////////////////////////////////////////////

@@ -230,19 +230,17 @@ boost::shared_ptr<::Position> ScriptEngine::TryToOpenPositions() {
 	}
 }
 
-void ScriptEngine::TryToClosePositions(
-			boost::shared_ptr<Security> security,
-			boost::shared_ptr<Position> position) {
+void ScriptEngine::TryToClosePositions(boost::shared_ptr<Position> position) {
 	std::unique_ptr<Wrappers::LongPosition> longPos;
 	std::unique_ptr<Wrappers::ShortPosition> shortPos;
 	python::object pyPosition;
 	switch (position->GetType()) {
 		case Position::TYPE_LONG:
-			longPos.reset(new Wrappers::LongPosition(security, position));
+			longPos.reset(new Wrappers::LongPosition(position));
 			pyPosition = python::object(boost::cref(*longPos));
 			break;
 		case Position::TYPE_SHORT:
-			shortPos.reset(new Wrappers::ShortPosition(security, position));
+			shortPos.reset(new Wrappers::ShortPosition(position));
 			pyPosition = python::object(boost::cref(*shortPos));
 			break;
 		default:

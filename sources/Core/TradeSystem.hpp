@@ -118,7 +118,7 @@ public:
 			OrderPrice,
 			const OrderStatusUpdateSlot &)
 		= 0;
-	virtual void SellAtMarketPrice(
+	virtual void SellAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice stopPrice,
@@ -142,7 +142,7 @@ public:
 			OrderPrice,
 			const OrderStatusUpdateSlot &)
 		= 0;
-	virtual void BuyAtMarketPrice(
+	virtual void BuyAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice stopPrice,

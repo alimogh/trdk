@@ -220,7 +220,7 @@ void InteractiveBrokersTradeSystem::Sell(
 	m_pimpl->RegOrder(order);
 }
 
-void InteractiveBrokersTradeSystem::SellAtMarketPrice(
+void InteractiveBrokersTradeSystem::SellAtMarketPriceWithStopPrice(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice stopPrice,
@@ -297,7 +297,7 @@ void InteractiveBrokersTradeSystem::Buy(
 	m_pimpl->RegOrder(order);
 }
 
-void InteractiveBrokersTradeSystem::BuyAtMarketPrice(
+void InteractiveBrokersTradeSystem::BuyAtMarketPriceWithStopPrice(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice stopPrice,

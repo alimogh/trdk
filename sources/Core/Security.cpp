@@ -434,28 +434,50 @@ void Security::Sell(Qty qty, Price price, Position &position) {
 	GetTradeSystem().Sell(*this, qty, price, position.GetSellOrderStatusUpdateSlot());
 }
 
-void Security::SellAtMarketPrice(Qty qty, Price stopPrice, Position &position) {
-	GetTradeSystem().SellAtMarketPrice(*this, qty, stopPrice, position.GetSellOrderStatusUpdateSlot());
+void Security::SellAtMarketPriceWithStopPrice(Qty qty, Price stopPrice, Position &position) {
+	GetTradeSystem().SellAtMarketPriceWithStopPrice(
+		*this,
+		qty,
+		stopPrice,
+		position.GetSellOrderStatusUpdateSlot());
 }
 
 void Security::SellOrCancel(Qty qty, Price price, Position &position) {
-	GetTradeSystem().SellOrCancel(*this, qty, price, position.GetSellOrderStatusUpdateSlot());
+	GetTradeSystem().SellOrCancel(
+		*this,
+		qty,
+		price,
+		position.GetSellOrderStatusUpdateSlot());
 }
 
 void Security::BuyAtMarketPrice(Qty qty, Position &position) {
-	GetTradeSystem().BuyAtMarketPrice(*this, qty, position.GetBuyOrderStatusUpdateSlot());
+	GetTradeSystem().BuyAtMarketPrice(
+		*this,
+		qty,
+		position.GetBuyOrderStatusUpdateSlot());
 }
 
 void Security::Buy(Qty qty, Price price, Position &position) {
 	GetTradeSystem().Buy(*this, qty, price, position.GetBuyOrderStatusUpdateSlot());
 }
 
-void Security::BuyAtMarketPrice(Qty qty, Price stopPrice, Position &position) {
-	GetTradeSystem().BuyAtMarketPrice(*this, qty, stopPrice, position.GetBuyOrderStatusUpdateSlot());
+void Security::BuyAtMarketPriceWithStopPrice(
+			Qty qty,
+			Price stopPrice,
+			Position &position) {
+	GetTradeSystem().BuyAtMarketPriceWithStopPrice(
+		*this,
+		qty,
+		stopPrice,
+		position.GetBuyOrderStatusUpdateSlot());
 }
 
 void Security::BuyOrCancel(Qty qty, Price price, Position &position) {
-	GetTradeSystem().BuyOrCancel(*this, qty, price, position.GetBuyOrderStatusUpdateSlot());
+	GetTradeSystem().BuyOrCancel(
+		*this,
+		qty,
+		price,
+		position.GetBuyOrderStatusUpdateSlot());
 }
 
 void Security::CancelOrder(TradeSystem::OrderId orderId) {

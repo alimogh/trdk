@@ -44,81 +44,50 @@ boost::shared_ptr<PositionBandle> s::Algo::TryToOpenPositions() {
 }
 
 boost::shared_ptr<Position> s::Algo::OpenLongPosition() {
-	
 	Security &security = *GetSecurity();
 	const auto ask = security.GetAskScaled();
 	const auto bid = security.GetBidScaled();
 	const auto price = ChooseLongOpenPrice(ask, bid) - GetLongPriceMod();
-	
 	boost::shared_ptr<Position> result(
-		new Position(
+		new LongPosition(
 			GetSecurity(),
-			Position::TYPE_LONG,
 			CalcQty(price, GetVolume()),
 			price,
-			STATE_OPENING,
 			shared_from_this(),
 			boost::shared_ptr<AlgoPositionState>(
 				new State(ask, bid, price + GetTakeProfit(), price - GetStopLoss()))));
-	DoOpenBuy(*result);
-
+	DoOpen(*result);
 	return result;
-
 }
 
 boost::shared_ptr<Position> s::Algo::OpenShortPosition() {
-	
 	Security &security = *GetSecurity();
 	const auto ask = security.GetAskScaled();
 	const auto bid = security.GetBidScaled();
 	const auto price = ChooseShortOpenPrice(ask, bid) + GetShortPriceMod();
-
 	boost::shared_ptr<Position> result(
-		new Position(
+		new ShortPosition(
 			GetSecurity(),
-			Position::TYPE_SHORT,
 			CalcQty(price, GetVolume()),
 			price,
-			STATE_OPENING,
 			shared_from_this(),
 			boost::shared_ptr<AlgoPositionState>(
 				new State(ask, bid, price - GetTakeProfit(), price + GetStopLoss()))));
-	DoOpenSell(*result);
-	
+	DoOpen(*result);
 	return result;
-
 }
 
 void s::Algo::ClosePositionStopLossTry(Position &position) {
 	ReportStopLossTry(position);
-	GetSecurity()->CancelAllOrders();
-	position.SetAlgoFlag(STATE_CLOSING_TRY_STOP_LOSS);
+	position.CancelAllOrders();
+	position.GetAlgoState<State>().state = STATE_CLOSING_TRY_STOP_LOSS;
 }
 
-void s::Algo::CloseLongPositionStopLossDo(Position &position) {
-	Assert(position.GetType() == Position::TYPE_LONG);
+void s::Algo::ClosePositionStopLossDo(Position &position) {
 	ReportStopLossDo(position);
-	GetSecurity()->SellAtMarketPrice(position.GetActiveQty(), position);
+	position.CloseAtMarketPrice();
 	position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
-	position.SetAlgoFlag(STATE_CLOSING);
-}
-
-void s::Algo::CloseLongPositionStopLossTry(Position &position) {
-	Assert(position.GetType() == Position::TYPE_LONG);
-	ClosePositionStopLossTry(position);
-}
-
-void s::Algo::CloseShortPositionStopLossDo(Position &position) {
-	Assert(position.GetType() == Position::TYPE_SHORT);
-	ReportStopLossDo(position);
-	GetSecurity()->BuyAtMarketPrice(position.GetActiveQty(), position);
-	position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
-	position.SetAlgoFlag(STATE_CLOSING);
-}
-
-void s::Algo::CloseShortPositionStopLossTry(Position &position) {
-	Assert(position.GetType() == Position::TYPE_SHORT);
-	ClosePositionStopLossTry(position);
+	position.GetAlgoState<State>().state = STATE_CLOSING;
 }
 
 void s::Algo::TryToClosePositions(PositionBandle &positions) {

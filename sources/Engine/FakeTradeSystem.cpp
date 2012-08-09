@@ -201,7 +201,7 @@ void FakeTradeSystem::Sell(
 	AssertFail("Doesn't implemented.");
 }
 
-void FakeTradeSystem::SellAtMarketPrice(
+void FakeTradeSystem::SellAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice /*stopPrice*/,
@@ -260,7 +260,7 @@ void FakeTradeSystem::Buy(
 	AssertFail("Doesn't implemented.");
 }
 
-void FakeTradeSystem::BuyAtMarketPrice(
+void FakeTradeSystem::BuyAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice /*stopPrice*/,

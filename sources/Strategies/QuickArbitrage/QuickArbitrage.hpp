@@ -53,6 +53,8 @@ namespace Strategies { namespace QuickArbitrage {
 
 			};
 
+			PositionState state;
+
 			const AsksBids entry;
 			AsksBids exit;
 
@@ -66,13 +68,14 @@ namespace Strategies { namespace QuickArbitrage {
 						Security::Price entryBid,
 						Security::Price takeProfitIn,
 						Security::Price stopLossIn)
-					: entry(entryAsk, entryBid),
+					: state(STATE_OPENING),
+					entry(entryAsk, entryBid),
 					takeProfit(takeProfitIn),
 					stopLoss(stopLossIn) {
 				//...//
 			}
 
-			virtual ~State() {
+			~State() {
 				//...//
 			}
 
@@ -109,16 +112,11 @@ namespace Strategies { namespace QuickArbitrage {
  
 	protected:
 
-		virtual void DoOpenBuy(Position &) = 0;
-		virtual void DoOpenSell(Position &) = 0;
+		virtual void DoOpen(Position &) = 0;
 
 		virtual void ClosePosition(Position &, bool asIs) = 0;
 
-		void CloseLongPositionStopLossDo(Position &);
-		void CloseShortPositionStopLossDo(Position &);
-
-		void CloseLongPositionStopLossTry(Position &);
-		void CloseShortPositionStopLossTry(Position &);
+		void ClosePositionStopLossDo(Position &);
 
 		virtual Security::Price ChooseLongOpenPrice(
 				Security::Price ask,
@@ -131,12 +129,12 @@ namespace Strategies { namespace QuickArbitrage {
 			const
 			= 0;
 
+		void ClosePositionStopLossTry(Position &);
+
 	private:
 
 		boost::shared_ptr<Position> OpenLongPosition();
 		boost::shared_ptr<Position> OpenShortPosition();
-
-		void ClosePositionStopLossTry(Position &);
 
 	};
 

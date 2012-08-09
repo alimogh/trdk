@@ -92,7 +92,7 @@ void PyApi::Algo::TryToClosePositions(PositionBandle &positions) {
 		} else if (p->IsClosed()) {
 			continue;
 		}
-		m_scriptEngine->TryToClosePositions(GetSecurity(), p);
+		m_scriptEngine->TryToClosePositions(p);
 	}
 }
 

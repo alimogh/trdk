@@ -279,12 +279,12 @@ void AskBid::CloseLongPosition(Position &position, bool asIs) {
 		= asIs
 		|| (m_settings.closeOrderType == Settings::ORDER_TYPE_IOC 
 			&& state.stopLoss >= security.GetAskScaled());
-	if (position.GetAlgoFlag() == STATE_OPENING) {
+	if (state.state == STATE_OPENING) {
 		position.SetCloseStartPrice(security.GetAskScaled());
 		state.exit.ask = security.GetAskScaled();
 		state.exit.bid = security.GetBidScaled();
 		if (isLoss) {
-			CloseLongPositionStopLossDo(position);
+			ClosePositionStopLossDo(position);
 		} else {
 			ReportTakeProfitDo(position);
 			switch (m_settings.closeOrderType) {
@@ -300,17 +300,17 @@ void AskBid::CloseLongPosition(Position &position, bool asIs) {
 					AssertFail("Unknown close type.");
 					break;
 			}
-			position.SetAlgoFlag(STATE_CLOSING);
+			state.state = STATE_CLOSING;
 		}
-	} else if (position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS) {
-		CloseLongPositionStopLossDo(position);
+	} else if (state.state == STATE_CLOSING_TRY_STOP_LOSS) {
+		ClosePositionStopLossDo(position);
 	} else if (isLoss) {
 		position.SetCloseStartPrice(security.GetAskScaled());
 		state.exit.ask = security.GetAskScaled();
 		state.exit.bid = security.GetBidScaled();
-		CloseLongPositionStopLossTry(position);
+		ClosePositionStopLossTry(position);
 	} else if (position.GetCloseType() == Position::CLOSE_TYPE_TAKE_PROFIT) {
-		Assert(position.GetAlgoFlag() == STATE_CLOSING);
+		Assert(state.state == STATE_CLOSING);
 		Assert(position.GetCloseType() == Position::CLOSE_TYPE_TAKE_PROFIT);
 		position.SetCloseStartPrice(security.GetAskScaled());
 		state.exit.ask = security.GetAskScaled();
@@ -345,12 +345,12 @@ void AskBid::CloseShortPosition(Position &position, bool asIs) {
 		= asIs
 		|| (m_settings.closeOrderType == Settings::ORDER_TYPE_IOC 
 			&& state.stopLoss <= security.GetBidScaled());
-	if (position.GetAlgoFlag() == STATE_OPENING) {
+	if (state.state == STATE_OPENING) {
 		position.SetCloseStartPrice(security.GetBidScaled());
 		state.exit.ask = security.GetAskScaled();
 		state.exit.bid = security.GetBidScaled();
 		if (isLoss) {
-			CloseShortPositionStopLossDo(position);
+			ClosePositionStopLossDo(position);
 		} else {
 			ReportTakeProfitDo(position);
 			switch (m_settings.closeOrderType) {
@@ -366,17 +366,17 @@ void AskBid::CloseShortPosition(Position &position, bool asIs) {
 					AssertFail("Unknown close type.");
 					break;
 			}
-			position.SetAlgoFlag(STATE_CLOSING);
+			state.state = STATE_CLOSING;
 		}
-	} else if (position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS) {
-		CloseShortPositionStopLossDo(position);
+	} else if (state.state == STATE_CLOSING_TRY_STOP_LOSS) {
+		ClosePositionStopLossDo(position);
 	} else if (isLoss) {
 		position.SetCloseStartPrice(security.GetBidScaled());
 		state.exit.ask = security.GetAskScaled();
 		state.exit.bid = security.GetBidScaled();
-		CloseShortPositionStopLossTry(position);
+		ClosePositionStopLossTry(position);
 	} else if (position.GetCloseType() == Position::CLOSE_TYPE_TAKE_PROFIT) {
-		Assert(position.GetAlgoFlag() == STATE_CLOSING);
+		Assert(state.state == STATE_CLOSING);
 		Assert(position.GetCloseType() == Position::CLOSE_TYPE_TAKE_PROFIT);
 		position.SetCloseStartPrice(security.GetBidScaled());
 		state.exit.ask = security.GetAskScaled();
@@ -404,11 +404,13 @@ void AskBid::CloseShortPosition(Position &position, bool asIs) {
 }
 
 void AskBid::ClosePosition(Position &position, bool asIs) {
+
+	const State &state = position.GetAlgoState<State>();
 	
 	Assert(
-		position.GetAlgoFlag() == STATE_OPENING
-		|| position.GetAlgoFlag() == STATE_CLOSING_TRY_STOP_LOSS
-		|| position.GetAlgoFlag() == STATE_CLOSING);
+		state.state == STATE_OPENING
+		|| state.state == STATE_CLOSING_TRY_STOP_LOSS
+		|| state.state == STATE_CLOSING);
 	
 	if (!position.IsOpened()) {
 		Assert(!position.IsClosed());
@@ -421,11 +423,11 @@ void AskBid::ClosePosition(Position &position, bool asIs) {
 	} else if (position.IsClosed()) {
 		return;
 	} else if (
-			position.GetAlgoFlag() == STATE_CLOSING
+			state.state == STATE_CLOSING
 			&& (position.GetCloseType() == Position::CLOSE_TYPE_STOP_LOSS
 				|| (!position.IsCloseCanceled() && position.IsOpened()))) {
 		return;
-	} else if (!asIs && position.GetAlgoFlag() == STATE_OPENING) {
+	} else if (!asIs && state.state == STATE_OPENING) {
 		Assert(!position.GetOpenTime().is_not_a_date_time());
 		if (	!position.GetOpenTime().is_not_a_date_time()
 				&& position.GetOpenTime() + m_settings.positionTimeSeconds > GetCurrentTime()) {
@@ -445,7 +447,7 @@ void AskBid::ClosePosition(Position &position, bool asIs) {
 			break;
 	}
 
-	Assert(position.GetAlgoFlag() != STATE_OPENING);
+	Assert(state.state != STATE_OPENING);
 
 }
 
@@ -462,27 +464,13 @@ void AskBid::ReportTakeProfitDo(const Position &position) const {
 		position.GetOpenedQty());
 }
 
-void AskBid::DoOpenBuy(Position &position) {
+void AskBid::DoOpen(Position &position) {
 	switch (m_settings.openOrderType) {
 		case Settings::ORDER_TYPE_IOC:
-			GetSecurity()->BuyOrCancel(position.GetPlanedQty(), position.GetOpenStartPrice(), position);
+			position.OpenOrCancel(position.GetOpenStartPrice());
 			break;
 		case Settings::ORDER_TYPE_MKT:
-			GetSecurity()->BuyAtMarketPrice(position.GetPlanedQty(), position);
-			break;
-		default:
-			AssertFail("Unknown open order type.");
-			break;
-	}
-}
-
-void AskBid::DoOpenSell(Position &position) {
-	switch (m_settings.openOrderType) {
-		case Settings::ORDER_TYPE_IOC:
-			GetSecurity()->SellOrCancel(position.GetPlanedQty(), position.GetOpenStartPrice(), position);
-			break;
-		case Settings::ORDER_TYPE_MKT:
-			GetSecurity()->SellAtMarketPrice(position.GetPlanedQty(), position);
+			position.OpenAtMarketPrice();
 			break;
 		default:
 			AssertFail("Unknown open order type.");

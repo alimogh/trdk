@@ -106,6 +106,13 @@ namespace Strategies { namespace Level2MarketArbitrage {
 					Security::Qty bidSize)
 				const;
 
+
+		template<typename PositionT>
+		boost::shared_ptr<Position> OpenPostion(
+					Security::Price startPrice,
+					Security::Qty askSize,
+					Security::Qty bidSize,
+					double ratio);
 		boost::shared_ptr<Position> OpenShortPostion(
 					Security::Qty askSize,
 					Security::Qty bidSize,
@@ -125,21 +132,14 @@ namespace Strategies { namespace Level2MarketArbitrage {
 				TakeProfitCheckMethod takeProfitCheckMethod,
 				StopLossCheckMethod stopLossCheckMethod,
 				GetTakeProfitMethod getTakeProfitMethod,
-				Security::Qty (Algo::*getStopLossMethod)(Security::Qty, Security::Qty) const,
-				void (Security::*iocCloseMethod)(Security::Qty, Security::Price, Position &),
-				void (Security::*mktCloseMethod)(Security::Qty, Position &),
-				void (Algo::*closeLongPositionStopLossDoMethod)(Position &),
-				void (Algo::*closeLongPositionStopLossTryMethod)(Position &));
+				Security::Qty (Algo::*getStopLossMethod)(Security::Qty, Security::Qty) const);
 
 		void ClosePosition(Position &, bool asIs);
 		void CloseLongPosition(Position &, bool asIs);
 		void CloseShortPosition(Position &, bool asIs);
 
 		void ClosePositionStopLossTry(Position &);
-		void CloseLongPositionStopLossDo(Position &);
-		void CloseLongPositionStopLossTry(Position &);
-		void CloseShortPositionStopLossDo(Position &);
-		void CloseShortPositionStopLossTry(Position &);
+		void ClosePositionStopLossDo(Position &);
 
 		void ReportCloseTry(const Position &);
 		void ReportClosingByTime(const Position &, bool isTry);
