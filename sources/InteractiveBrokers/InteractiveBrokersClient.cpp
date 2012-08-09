@@ -543,6 +543,7 @@ void InteractiveBrokersClient::SubscribeToMarketDataLevel2(
 		tickerId);
 	Contract contract;
 	contract << *security;
+	contract.primaryExchange.clear();
 	m_pimpl->m_client.reqMktDepth(tickerId, contract, std::numeric_limits<int>::max());
 	m_pimpl->m_updatesSubscribers.insert(std::make_pair(tickerId, security));
 }
