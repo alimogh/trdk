@@ -74,7 +74,8 @@ BOOST_PYTHON_MODULE(trader) {
 		.def("closeAtMarketPrice", &Wrappers::LongPosition::CloseAtMarketPrice)
 		.def("close", &Wrappers::LongPosition::Close)
 		.def("closeAtMarketPriceWithStopPrice", &Wrappers::LongPosition::CloseAtMarketPriceWithStopPrice)
-		.def("closeOrCancel", &Wrappers::LongPosition::CloseOrCancel);
+		.def("closeOrCancel", &Wrappers::LongPosition::CloseOrCancel)
+		.def("cancelAllOrders", &Wrappers::LongPosition::CancelAllOrders);
 
 	python::class_<Wrappers::ShortPosition, boost::noncopyable>(
 			"ShortPosition",
@@ -99,7 +100,8 @@ BOOST_PYTHON_MODULE(trader) {
 		.def("closeAtMarketPrice", &Wrappers::ShortPosition::CloseAtMarketPrice)
 		.def("close", &Wrappers::ShortPosition::Close)
 		.def("closeAtMarketPriceWithStopPrice", &Wrappers::ShortPosition::CloseAtMarketPriceWithStopPrice)
-		.def("closeOrCancel", &Wrappers::ShortPosition::CloseOrCancel);
+		.def("closeOrCancel", &Wrappers::ShortPosition::CloseOrCancel)
+		.def("cancelAllOrders", &Wrappers::ShortPosition::CancelAllOrders);
 
 }
 

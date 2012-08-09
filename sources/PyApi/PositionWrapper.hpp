@@ -114,6 +114,10 @@ namespace PyApi { namespace Wrappers {
 			m_position->CloseOrCancel(m_position->GetSecurity().Scale(price));
 		}
 
+		void CancelAllOrders() {
+			m_position->CancelAllOrders();
+		}
+
 	private:
 
 		boost::shared_ptr<::Position> m_position;
