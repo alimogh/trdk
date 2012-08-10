@@ -59,7 +59,6 @@ namespace PyApi {
 
 		virtual boost::shared_ptr<PositionBandle> TryToOpenPositions();
 		virtual void TryToClosePositions(PositionBandle &);
-		virtual void ClosePositionsAsIs(PositionBandle &);
 
 		virtual void ReportDecision(const Position &) const;
 

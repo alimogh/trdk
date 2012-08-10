@@ -42,12 +42,18 @@ public:
 		CLOSE_TYPE_NONE,
 		CLOSE_TYPE_TAKE_PROFIT,
 		CLOSE_TYPE_STOP_LOSS,
-		CLOSE_TYPE_TIME
+		CLOSE_TYPE_TIMEOUT,
+		CLOSE_TYPE_SCHEDULE,
+		CLOSE_TYPE_ENGINE_STOP
 	};
 
 	typedef boost::int64_t AlgoFlag;
 
 private:
+
+	typedef boost::shared_mutex Mutex;
+	typedef boost::shared_lock<Mutex> ReadLock;
+	typedef boost::unique_lock<Mutex> WriteLock;
 
 	typedef boost::signals2::signal<StateUpdateSlotSignature> StateUpdateSignal;
 
@@ -55,9 +61,11 @@ private:
 
 		volatile LONGLONG orderId;
 		Time time;
-		Price price;
-		Qty qty;
+		volatile LONGLONG price;
+		volatile long qty;
 		volatile LONGLONG comission;
+		
+		volatile long hasOrder;
 
 		DynamicData();
 
@@ -76,12 +84,16 @@ public:
 public:
 
 	virtual Type GetType() const = 0;
-	virtual const std::string & GetTypeStr() const = 0;
+	virtual const std::string & GetTypeStr() const throw() = 0;
 
 public:
 
-	const Security & GetSecurity() const;
-	Security & GetSecurity();
+	const Security & GetSecurity() const throw() {
+		return const_cast<Position *>(this)->GetSecurity();
+	}
+	Security & GetSecurity() throw() {
+		return *m_security;
+	}
 
 	const Algo & GetAlgo() const {
 		return *m_algo;
@@ -104,28 +116,53 @@ public:
 
 public:
 
-	void SetCloseType(CloseType);
-	CloseType GetCloseType() const;
-	const char * GetCloseTypeStr() const;
+	CloseType GetCloseType() const throw() {
+		return CloseType(m_closeType);
+	}
+	const std::string & GetCloseTypeStr() const;
 
 	bool IsReported() const;
 	void MarkAsReported();
 
-	bool IsOpened() const;
-	bool IsClosed() const;
-	bool IsOpenError() const;
-	bool IsCloseError() const;
-	bool IsCloseCanceled() const;
+	bool IsOpened() const throw() {
+		return !HasActiveOpenOrders() && GetOpenedQty() > 0;
+	}
+	bool IsClosed() const throw() {
+		return !HasActiveCloseOrders() && GetOpenedQty() > 0 && GetActiveQty() == 0;
+	}
+
+	bool IsCompleted() const throw() {
+		return !HasActiveOrders() && GetActiveQty() == 0;
+	}
+
+	bool IsError() const throw() {
+		return m_isError ? true : false;
+	}
+	bool IsCanceled() const throw() {
+		return m_isCanceled ? true : false;
+	}
+
+	bool HasActiveOrders() const throw() {
+		return HasActiveCloseOrders() || HasActiveOpenOrders();
+	}
+	bool HasActiveOpenOrders() const throw() {
+		return m_opened.hasOrder ? true : false;
+	}
+	bool HasActiveCloseOrders() const throw() {
+		return m_closed.hasOrder ? true : false;
+	}
 
 public:
-
-	void ResetState();
 
 	Qty GetPlanedQty() const;
 	Price GetOpenStartPrice() const;
 
-	TradeSystem::OrderId GetOpenOrderId() const;
-	Qty GetOpenedQty() const;
+	TradeSystem::OrderId GetOpenOrderId() const throw() {
+		return TradeSystem::OrderId(m_opened.orderId);
+	}
+	Qty GetOpenedQty() const throw() {
+		return m_opened.qty;
+	}
 	Price GetOpenPrice() const;
 	Time GetOpenTime() const;
 
@@ -139,11 +176,15 @@ public:
 		return GetOpenedQty() - GetClosedQty();
 	}
 	
-	TradeSystem::OrderId GetCloseOrderId() const;
+	TradeSystem::OrderId GetCloseOrderId() const throw() {
+		return TradeSystem::OrderId(m_closed.orderId);
+	}
 	void SetCloseStartPrice(Position::Price);
 	Price GetCloseStartPrice() const;
 	Price GetClosePrice() const;
-	Qty GetClosedQty() const;
+	Qty GetClosedQty() const throw() {
+		return m_closed.qty;
+	}
 	Time GetCloseTime() const;
 
 	Price GetCommission() const;
@@ -155,13 +196,13 @@ public:
 	TradeSystem::OrderId OpenAtMarketPriceWithStopPrice(Price stopPrice);
 	TradeSystem::OrderId OpenOrCancel(Price);
 
-	TradeSystem::OrderId CloseAtMarketPrice();
-	TradeSystem::OrderId Close(Price);
-	TradeSystem::OrderId CloseAtMarketPriceWithStopPrice(Price stopPrice);
-	TradeSystem::OrderId CloseOrCancel(Price);
+	TradeSystem::OrderId CloseAtMarketPrice(CloseType);
+	TradeSystem::OrderId Close(CloseType, Price);
+	TradeSystem::OrderId CloseAtMarketPriceWithStopPrice(CloseType, Price stopPrice);
+	TradeSystem::OrderId CloseOrCancel(CloseType, Price);
 
-//	void CancelPositionAtMarketPrice();
-	void CancelAllOrders();
+	bool CancelAtMarketPrice(CloseType);
+	bool CancelAllOrders();
 
 public:
 
@@ -182,6 +223,8 @@ protected:
 	virtual TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(Price stopPrice) = 0;
 	virtual TradeSystem::OrderId DoCloseOrCancel(Price) = 0;
 
+	bool DoCancelAllOrders();
+
 protected:
 
 	void UpdateOpening(
@@ -199,24 +242,24 @@ protected:
 				double avgPrice,
 				double lastPrice);
 
+private:
+
+	bool CancelIfSet();
+
 	void ReportOpeningUpdate(
 				const char *eventDesc,
-				TradeSystem::OrderStatus,
-				long state)
-			const;
+				TradeSystem::OrderStatus)
+			const
+			throw();
 	void ReportClosingUpdate(
 				const char *eventDesc,
-				TradeSystem::OrderStatus,
-				long state)
-			const;
-	void ReportCloseOrderChange(
-				TradeSystem::OrderStatus,
-				long state,
-				TradeSystem::OrderId prevOrderId,
-				TradeSystem::OrderId newOrderId)
-			const;
+				TradeSystem::OrderStatus)
+			const
+			throw();
 
 private:
+
+	mutable Mutex m_mutex;
 
 	mutable StateUpdateSignal m_stateUpdateSignal;
 
@@ -230,16 +273,17 @@ private:
 	Price m_closeStartPrice;
 	DynamicData m_closed;
 
-	volatile long m_state;
-
-	CloseType m_closeType;
+	volatile long m_closeType;
 
 	bool m_isReported;
+	
+	volatile long m_isError;
+	
+	volatile long m_isCanceled;
+	boost::function<void()> m_cancelMethod;
 
 	const boost::shared_ptr<const Algo> m_algo;
 	const boost::shared_ptr<AlgoPositionState> m_algoState;
-
-	boost::function<void()> m_cancelMethod;
 
 };
 
@@ -260,7 +304,7 @@ public:
 public:
 
 	virtual Type GetType() const;
-	virtual const std::string & GetTypeStr() const;
+	virtual const std::string & GetTypeStr() const throw();
 
 public:
 	
@@ -298,7 +342,7 @@ public:
 public:
 
 	virtual Type GetType() const;
-	virtual const std::string & GetTypeStr() const;
+	virtual const std::string & GetTypeStr() const throw();
 
 public:
 

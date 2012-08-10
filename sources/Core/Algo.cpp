@@ -64,28 +64,6 @@ const std::string & Algo::GetTag() const {
 	return m_tag;
 }
 
-void Algo::ReportStopLossTry(const Position &position) const {
-	Log::Trading(
-		m_tag.c_str(),
-		"%1% %2% stop-loss-try qty=%3%->%4% open-order-id=%5%",
-		position.GetSecurity().GetSymbol(),
-		position.GetTypeStr(),
-		position.GetOpenedQty(),
-		position.GetActiveQty(),
-		position.GetOpenOrderId());
-}
-
-void Algo::ReportStopLossDo(const Position &position) const {
-	Log::Trading(
-		m_tag.c_str(),
-		"%1% %2% stop-loss-do qty=%3%->%4% open-order-id=%5%",
-		position.GetSecurity().GetSymbol(),
-		position.GetTypeStr(),
-		position.GetOpenedQty(),
-		position.GetActiveQty(),
-		position.GetOpenOrderId());
-}
-
 void Algo::RequestHistory(
 			const HistoryMarketDataSource &iqFeed,
 			const boost::posix_time::ptime &fromTime,

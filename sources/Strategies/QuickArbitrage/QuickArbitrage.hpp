@@ -19,12 +19,6 @@ namespace Strategies { namespace QuickArbitrage {
 
 		typedef ::Algo Base;
 
-		enum PositionState {
-			STATE_OPENING				= 1,
-			STATE_CLOSING_TRY_STOP_LOSS	= 2,
-			STATE_CLOSING				= 3
-		};
-
 	protected:
 
 		
@@ -53,7 +47,7 @@ namespace Strategies { namespace QuickArbitrage {
 
 			};
 
-			PositionState state;
+			bool isStarted;
 
 			const AsksBids entry;
 			AsksBids exit;
@@ -68,7 +62,7 @@ namespace Strategies { namespace QuickArbitrage {
 						Security::Price entryBid,
 						Security::Price takeProfitIn,
 						Security::Price stopLossIn)
-					: state(STATE_OPENING),
+					: isStarted(false),
 					entry(entryAsk, entryBid),
 					takeProfit(takeProfitIn),
 					stopLoss(stopLossIn) {
@@ -98,7 +92,6 @@ namespace Strategies { namespace QuickArbitrage {
 
 		virtual boost::shared_ptr<PositionBandle> TryToOpenPositions();
 		virtual void TryToClosePositions(PositionBandle &);
-		virtual void ClosePositionsAsIs(PositionBandle &);
 		
 		virtual void ReportDecision(const Position &) const;
 
@@ -114,9 +107,7 @@ namespace Strategies { namespace QuickArbitrage {
 
 		virtual void DoOpen(Position &) = 0;
 
-		virtual void ClosePosition(Position &, bool asIs) = 0;
-
-		void ClosePositionStopLossDo(Position &);
+		virtual void ClosePosition(Position &) = 0;
 
 		virtual Security::Price ChooseLongOpenPrice(
 				Security::Price ask,
@@ -129,7 +120,7 @@ namespace Strategies { namespace QuickArbitrage {
 			const
 			= 0;
 
-		void ClosePositionStopLossTry(Position &);
+		void ReportStopLoss(const Position &) const;
 
 	private:
 

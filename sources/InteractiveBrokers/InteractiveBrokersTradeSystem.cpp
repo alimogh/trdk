@@ -253,13 +253,13 @@ InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::SellOrCanc
 		m_pimpl->client->SendIocBid(security, qty, rawPrice),
 		security.GetFullSymbol(),
 		statusUpdateSlot};
-	Log::Trading(
-		"sell",
-		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
-		order.id,
-		security.GetSymbol(),
-		qty,
-		rawPrice);
+// 	Log::Trading(
+// 		"sell",
+// 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
+// 		order.id,
+// 		security.GetSymbol(),
+// 		qty,
+// 		rawPrice);
 	m_pimpl->RegOrder(order);
 	return order.id;
 }
@@ -334,13 +334,13 @@ InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::BuyOrCance
 		m_pimpl->client->SendIocAsk(security, qty, rawPrice),
 		security.GetFullSymbol(),
 		statusUpdateSlot};
-	Log::Trading(
-		"buy",
-		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
-		order.id,
-		security.GetSymbol(),
-		qty,
-		rawPrice);
+// 	Log::Trading(
+// 		"buy",
+// 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
+// 		order.id,
+// 		security.GetSymbol(),
+// 		qty,
+// 		rawPrice);
 	m_pimpl->RegOrder(order);
 	return order.id;
 }

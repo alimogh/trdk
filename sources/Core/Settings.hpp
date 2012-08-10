@@ -54,7 +54,7 @@ private:
 
 public:
 
-	bool IsReplayMode() const {
+	bool IsReplayMode() const throw() {
 		return m_isReplayMode;
 	}
 

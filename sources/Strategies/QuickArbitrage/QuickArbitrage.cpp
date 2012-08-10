@@ -77,28 +77,9 @@ boost::shared_ptr<Position> s::Algo::OpenShortPosition() {
 	return result;
 }
 
-void s::Algo::ClosePositionStopLossTry(Position &position) {
-	ReportStopLossTry(position);
-	position.CancelAllOrders();
-	position.GetAlgoState<State>().state = STATE_CLOSING_TRY_STOP_LOSS;
-}
-
-void s::Algo::ClosePositionStopLossDo(Position &position) {
-	ReportStopLossDo(position);
-	position.CloseAtMarketPrice();
-	position.SetCloseType(Position::CLOSE_TYPE_STOP_LOSS);
-	position.GetAlgoState<State>().state = STATE_CLOSING;
-}
-
 void s::Algo::TryToClosePositions(PositionBandle &positions) {
 	foreach (auto p, positions.Get()) {
-		ClosePosition(*p, false);
-	}
-}
-
-void s::Algo::ClosePositionsAsIs(PositionBandle &positions) {
-	foreach (auto p, positions.Get()) {
-		ClosePosition(*p, true);
+		ClosePosition(*p);
 	}
 }
 
@@ -120,4 +101,15 @@ void s::Algo::SubscribeToMarketData(
 			const LiveMarketDataSource &iqFeed,
 			const LiveMarketDataSource &/*interactiveBrokers*/) {
 	iqFeed.SubscribeToMarketDataLevel1(GetSecurity());
+}
+
+void s::Algo::ReportStopLoss(const Position &position) const {
+	Log::Trading(
+		GetTag().c_str(),
+		"%1% %2% stop-loss qty=%3%->%4% open-order-id=%5%",
+		position.GetSecurity().GetSymbol(),
+		position.GetTypeStr(),
+		position.GetOpenedQty(),
+		position.GetActiveQty(),
+		position.GetOpenOrderId());
 }

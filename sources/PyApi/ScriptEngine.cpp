@@ -54,53 +54,77 @@ BOOST_PYTHON_MODULE(trader) {
 	python::class_<Wrappers::LongPosition, boost::noncopyable> (
 			"LongPosition",
 			python::init<PyApi::Wrappers::Security &, int /*qty*/, double /*startPrice*/>())
+
 		.add_property("type", &Wrappers::Position::GetTypeStr)
+		
+		.add_property("hasActiveOrders", &Wrappers::Position::HasActiveOrders)
+
 		.add_property("planedQty", &Wrappers::Position::GetPlanedQty)
+
 		.add_property("openStartPrice", &Wrappers::Position::GetOpenStartPrice)
 		.add_property("openOrderId", &Wrappers::Position::GetOpenOrderId)
 		.add_property("openedQty", &Wrappers::Position::GetOpenedQty)
 		.add_property("openPrice", &Wrappers::Position::GetOpenPrice)
+
 		.add_property("notOpenedQty", &Wrappers::Position::GetNotOpenedQty)
 		.add_property("activeQty", &Wrappers::Position::GetActiveQty)
+		
 		.add_property("closeOrderId", &Wrappers::Position::GetCloseOrderId)
 		.add_property("closeStartPrice", &Wrappers::Position::GetCloseStartPrice)
 		.add_property("closePrice", &Wrappers::Position::GetClosePrice)
 		.add_property("closedQty", &Wrappers::Position::GetClosedQty)
+		
 		.add_property("commission", &Wrappers::Position::GetCommission)
+		
 		.def("openAtMarketPrice", &Wrappers::LongPosition::OpenAtMarketPrice)
 		.def("open", &Wrappers::LongPosition::Open)
 		.def("openAtMarketPriceWithStopPrice", &Wrappers::LongPosition::OpenAtMarketPriceWithStopPrice)
 		.def("openOrCancel", &Wrappers::LongPosition::OpenOrCancel)
+		
 		.def("closeAtMarketPrice", &Wrappers::LongPosition::CloseAtMarketPrice)
 		.def("close", &Wrappers::LongPosition::Close)
 		.def("closeAtMarketPriceWithStopPrice", &Wrappers::LongPosition::CloseAtMarketPriceWithStopPrice)
 		.def("closeOrCancel", &Wrappers::LongPosition::CloseOrCancel)
+		
+		.def("cancelAtMarketPrice", &Wrappers::LongPosition::CancelAtMarketPrice)
 		.def("cancelAllOrders", &Wrappers::LongPosition::CancelAllOrders);
 
 	python::class_<Wrappers::ShortPosition, boost::noncopyable>(
 			"ShortPosition",
 			python::init<PyApi::Wrappers::Security &, int /*qty*/, double /*startPrice*/>())
+
 		.add_property("type", &Wrappers::Position::GetTypeStr)
+		
+		.add_property("hasActiveOrders", &Wrappers::Position::HasActiveOrders)
+
 		.add_property("planedQty", &Wrappers::Position::GetPlanedQty)
+		
 		.add_property("openStartPrice", &Wrappers::Position::GetOpenStartPrice)
 		.add_property("openOrderId", &Wrappers::Position::GetOpenOrderId)
 		.add_property("openedQty", &Wrappers::Position::GetOpenedQty)
 		.add_property("openPrice", &Wrappers::Position::GetOpenPrice)
+		
 		.add_property("notOpenedQty", &Wrappers::Position::GetNotOpenedQty)
 		.add_property("activeQty", &Wrappers::Position::GetActiveQty)
+		
 		.add_property("closeOrderId", &Wrappers::Position::GetCloseOrderId)
 		.add_property("closeStartPrice", &Wrappers::Position::GetCloseStartPrice)
 		.add_property("closePrice", &Wrappers::Position::GetClosePrice)
 		.add_property("closedQty", &Wrappers::Position::GetClosedQty)
+		
 		.add_property("commission", &Wrappers::Position::GetCommission)
+		
 		.def("openAtMarketPrice", &Wrappers::ShortPosition::OpenAtMarketPrice)
 		.def("open", &Wrappers::ShortPosition::Open)
 		.def("openAtMarketPriceWithStopPrice", &Wrappers::ShortPosition::OpenAtMarketPriceWithStopPrice)
 		.def("openOrCancel", &Wrappers::ShortPosition::OpenOrCancel)
+		
 		.def("closeAtMarketPrice", &Wrappers::ShortPosition::CloseAtMarketPrice)
 		.def("close", &Wrappers::ShortPosition::Close)
 		.def("closeAtMarketPriceWithStopPrice", &Wrappers::ShortPosition::CloseAtMarketPriceWithStopPrice)
 		.def("closeOrCancel", &Wrappers::ShortPosition::CloseOrCancel)
+		
+		.def("cancelAtMarketPrice", &Wrappers::ShortPosition::CancelAtMarketPrice)
 		.def("cancelAllOrders", &Wrappers::ShortPosition::CancelAllOrders);
 
 }

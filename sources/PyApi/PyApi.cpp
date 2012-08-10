@@ -86,18 +86,11 @@ boost::shared_ptr<PositionBandle> PyApi::Algo::TryToOpenPositions() {
 
 void PyApi::Algo::TryToClosePositions(PositionBandle &positions) {
 	foreach (auto p, positions.Get()) {
-		if (!p->IsOpened()) {
-			Assert(!p->IsClosed());
-			continue;
-		} else if (p->IsClosed()) {
+		if (!p->IsOpened() || p->IsClosed() || p->IsCanceled()) {
 			continue;
 		}
 		m_scriptEngine->TryToClosePositions(p);
 	}
-}
-
-void PyApi::Algo::ClosePositionsAsIs(PositionBandle &) {
-	//...//
 }
 
 void PyApi::Algo::ReportDecision(const Position &) const {

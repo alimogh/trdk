@@ -82,7 +82,7 @@ namespace Strategies { namespace QuickArbitrage {
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
 
 		virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section);
-		virtual void ClosePosition(Position &, bool asIs);
+		virtual void ClosePosition(Position &);
 
 		virtual Security::Price ChooseLongOpenPrice(
 				Security::Price ask,
@@ -97,8 +97,7 @@ namespace Strategies { namespace QuickArbitrage {
 
 		void DoSettingsUpdate(const IniFile &, const std::string &section);
 
-		void CloseLongPosition(Position &, bool asIs);
-		void CloseShortPosition(Position &, bool asIs);
+		void DoClosePosition(Position &);
 
 		void ReportTakeProfitDo(const Position &position) const;
 

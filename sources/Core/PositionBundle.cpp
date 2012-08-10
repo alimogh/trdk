@@ -20,16 +20,16 @@ PositionBandle::~PositionBandle() {
 
 bool PositionBandle::IsCompleted() const {
 	foreach (const auto &pos, m_list) {
-		if (!(pos->IsOpenError() || pos->IsClosed())) {
+		if (!pos->IsCompleted()) {
 			return false;
 		}
 	}
 	return true;
 }
 
-bool PositionBandle::IsCloseError() const {
+bool PositionBandle::IsOk() const {
 	foreach (const auto &pos, m_list) {
-		if (!pos->IsCloseError()) {
+		if (pos->IsError()) {
 			return false;
 		}
 	}

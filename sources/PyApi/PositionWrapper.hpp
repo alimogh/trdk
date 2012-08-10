@@ -29,6 +29,18 @@ namespace PyApi { namespace Wrappers {
 		boost::shared_ptr<::Position> GetPosition() {
 			return m_position;
 		}
+
+	public:
+
+		bool HasActiveOrders() const throw() {
+			return m_position->HasActiveOrders();
+		}
+		bool HasActiveOpenOrders() const throw() {
+			return m_position->HasActiveOpenOrders();
+		}
+		bool HasActiveCloseOrders() const throw() {
+			return m_position->HasActiveCloseOrders();
+		}
 	
 	public:
 
@@ -98,24 +110,33 @@ namespace PyApi { namespace Wrappers {
 		}
 
 		int CloseAtMarketPrice() {
-			return m_position->CloseAtMarketPrice();
+			return m_position->CloseAtMarketPrice(::Position::CLOSE_TYPE_NONE);
 		}
 	
 		int Close(double price) {
-			return m_position->Close(m_position->GetSecurity().Scale(price));
+			return m_position->Close(
+				::Position::CLOSE_TYPE_NONE,
+				m_position->GetSecurity().Scale(price));
 		}
 	
 		int CloseAtMarketPriceWithStopPrice(double stopPrice) {
 			return m_position->CloseAtMarketPriceWithStopPrice(
+				::Position::CLOSE_TYPE_NONE,
 				m_position->GetSecurity().Scale(stopPrice));
 		}
-	
-		void CloseOrCancel(double price) {
-			m_position->CloseOrCancel(m_position->GetSecurity().Scale(price));
+
+		int CloseOrCancel(double price) {
+			return m_position->CloseOrCancel(
+				::Position::CLOSE_TYPE_NONE,
+				m_position->GetSecurity().Scale(price));
 		}
 
-		void CancelAllOrders() {
-			m_position->CancelAllOrders();
+		bool CancelAtMarketPrice() {
+			return m_position->CancelAtMarketPrice(::Position::CLOSE_TYPE_NONE);
+		}
+
+		bool CancelAllOrders() {
+			return m_position->CancelAllOrders();
 		}
 
 	private:

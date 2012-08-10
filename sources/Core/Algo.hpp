@@ -42,7 +42,7 @@ public:
 	PositionReporter & GetPositionReporter();
 
 	virtual const std::string & GetName() const = 0;
-	const std::string & GetTag() const;
+	const std::string & GetTag() const throw();
 
 	virtual boost::posix_time::ptime GetLastDataTime();
 
@@ -67,7 +67,6 @@ public:
 
 	virtual boost::shared_ptr<PositionBandle> TryToOpenPositions() = 0;
 	virtual void TryToClosePositions(PositionBandle &) = 0;
-	virtual void ClosePositionsAsIs(PositionBandle &) = 0;
 
 	virtual void ReportDecision(const Position &) const = 0;
 
@@ -81,8 +80,6 @@ protected:
 
 	virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section) = 0;
 
-	void ReportStopLossTry(const Position &) const;
-	void ReportStopLossDo(const Position &) const;
 	void ReportSettings(const SettingsReport &) const;
 
 	template<typename T>

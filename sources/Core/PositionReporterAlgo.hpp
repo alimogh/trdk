@@ -71,7 +71,7 @@ public:
 			return;
 		}
 		Assert(position.IsOpened());
-		Assert(position.IsClosed() || position.IsCloseError());
+		Assert(position.IsClosed() || position.IsError());
 		Assert(!position.IsReported());
 		const Lock lock(m_mutex);
 		Assert(m_isInited);

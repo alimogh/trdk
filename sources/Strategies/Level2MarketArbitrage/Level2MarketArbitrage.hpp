@@ -82,7 +82,6 @@ namespace Strategies { namespace Level2MarketArbitrage {
 
 		virtual boost::shared_ptr<PositionBandle> TryToOpenPositions();
 		virtual void TryToClosePositions(PositionBandle &);
-		virtual void ClosePositionsAsIs(PositionBandle &);
 
 		virtual void ReportDecision(const Position &) const;
 
@@ -128,21 +127,17 @@ namespace Strategies { namespace Level2MarketArbitrage {
 			typename GetTakeProfitMethod>
 		void CloseAbstractPosition(
 				Position &position,
-				bool asIs,
 				TakeProfitCheckMethod takeProfitCheckMethod,
 				StopLossCheckMethod stopLossCheckMethod,
 				GetTakeProfitMethod getTakeProfitMethod,
 				Security::Qty (Algo::*getStopLossMethod)(Security::Qty, Security::Qty) const);
 
-		void ClosePosition(Position &, bool asIs);
-		void CloseLongPosition(Position &, bool asIs);
-		void CloseShortPosition(Position &, bool asIs);
+		void ClosePosition(Position &);
+		void CloseLongPosition(Position &);
+		void CloseShortPosition(Position &);
 
-		void ClosePositionStopLossTry(Position &);
-		void ClosePositionStopLossDo(Position &);
-
-		void ReportCloseTry(const Position &);
-		void ReportClosingByTime(const Position &, bool isTry);
+		void ReportClosing(const Position &position, bool isTakeProfit);
+		void ReportClosingByTime(const Position &);
 		void ReportStillOpened(Position &);
 		void ReportNoDecision(Security::Qty askSize, Security::Qty bidSize);
 

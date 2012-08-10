@@ -77,8 +77,7 @@ private:
 	void ReportClosedPositon(PositionBandle &positions) {
 		Assert(!positions.Get().empty());
 		foreach (auto &p, positions.Get()) {
-			if (	(p->IsClosed() || p->IsCloseError())
-					&& !p->IsReported()) {
+			if ((p->IsClosed() || p->IsError()) && !p->IsReported()) {
 				m_algo->GetPositionReporter().ReportClosedPositon(*p);
 				p->MarkAsReported();
 			}
@@ -297,17 +296,20 @@ bool Dispatcher::AlgoState::CheckPositionsUnsafe() {
 		Assert(!security.IsHistoryData());
 		ReportClosedPositon(*m_positions);
 		if (!m_positions->IsCompleted()) {
-			if (!m_positions->IsCloseError()) {
+			if (m_positions->IsOk()) {
 				if (	!m_settings->IsReplayMode()
 						&& m_settings->GetCurrentTradeSessionEndime() <= now) {
-					m_algo->ClosePositionsAsIs(*m_positions);
+					foreach (auto &p, m_positions->Get()) {
+						if (p->IsCanceled()) {
+							continue;
+						}
+						p->CancelAtMarketPrice(Position::CLOSE_TYPE_SCHEDULE);
+					}
 				} else {
 					m_algo->TryToClosePositions(*m_positions);
 				}
 			} else {
-				Log::Warn(
-					"Algo \"%1%\" BLOCKED by dispatcher (CLOSE error).",
-					m_algo->GetName());
+				Log::Warn("Algo \"%1%\" BLOCKED by dispatcher.", m_algo->GetName());
 				Interlocking::Exchange(m_isBlocked, true);
 			}
 			return false;
