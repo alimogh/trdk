@@ -32,8 +32,10 @@
 			Log::Error(message.str().c_str());
 			Log::Trading("assert", message.str().c_str());
 #			ifdef _WINDOWS
-#				if defined(_DEBUG) || defined(_TEST)
+#				if defined(_DEBUG)
 					DebugBreak();
+#				elif defined(_TEST)
+					//...//
 #				else
 #					error "Failed to find assert-break method."
 #				endif
