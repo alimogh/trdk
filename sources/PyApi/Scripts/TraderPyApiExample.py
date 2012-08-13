@@ -1,9 +1,9 @@
 
 # Trader engine module
-import trader
+import Trader
 
 # Strategy algorithm class must be inherited from trader.Algo
-class SimpleExampleTradeAlgo(trader.Algo):
+class SimpleExampleTradeAlgo(Trader.Algo):
 
 	# Pure virtual method, must be implemented in strategy implementation.
 	# This will be called by engine every time when:
@@ -19,7 +19,7 @@ class SimpleExampleTradeAlgo(trader.Algo):
 			return
 
 		# Creating position object (long position on this case):
-		position = trader.LongPosition(
+		position = Trader.LongPosition(
 			# security object
 			self.security,			
 			# number of shares
@@ -47,8 +47,11 @@ class SimpleExampleTradeAlgo(trader.Algo):
 		stopLossPrice = position.openPrice - 0.03
 
 		if self.security.askPrice >= takeProfitPrice:
+			if position.hasActiveOrders:
+				# order already sent and still active
+				return
 			# take profit: trying to close with IOC
 			position.closeOrCancel(takeProfitPrice)
 		elif self.security.askPrice <= stopLossPrice:
-			# stop loss: trying to close with MKT
-			position.closeAtMarketPrice()
+			# stop loss: cancel all active orders and close position at market price 
+			position.cancelAtMarketPrice()

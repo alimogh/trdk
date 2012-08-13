@@ -17,7 +17,7 @@ using namespace PyApi;
 
 //////////////////////////////////////////////////////////////////////////
 
-BOOST_PYTHON_MODULE(trader) {
+BOOST_PYTHON_MODULE(Trader) {
 
 	python::class_<Wrappers::AlgoWrap, boost::noncopyable>("Algo")
 	
@@ -143,7 +143,7 @@ namespace {
 			const Lock lock(mutex);
 			if (!isInited) {
 				Py_Initialize();
-				if (PyImport_AppendInittab("trader", inittrader) == -1) {
+				if (PyImport_AppendInittab("Trader", initTrader) == -1) {
 					throw ScriptEngine::Error(
 						"Failed to add trader module to the interpreter's builtin modules");
 				}
