@@ -539,6 +539,7 @@ void InteractiveBrokersClient::SubscribeToMarketDataLevel2(
 	Contract contract;
 	contract << *security;
 	contract.primaryExchange.clear();
+	contract.exchange = "ISLAND";
 	m_pimpl->m_client.reqMktDepth(tickerId, contract, std::numeric_limits<int>::max());
 	m_pimpl->m_updatesSubscribers.insert(std::make_pair(tickerId, security));
 }
@@ -983,8 +984,19 @@ void InteractiveBrokersClient::execDetailsEnd(int /*reqId*/) {
 }
 
 void InteractiveBrokersClient::updateMktDepth(
+			TickerId /*tickerId*/,
+			int /*position*/,
+			int /*operation*/,
+			int /*side*/,
+			double /*price*/,
+			int /*size*/) {
+	//...//
+}
+
+void InteractiveBrokersClient::updateMktDepthL2(
 			TickerId tickerId,
 			int position,
+			IBString marketMaker,
 			int operation,
 			int side,
 			double price,
@@ -1020,18 +1032,6 @@ void InteractiveBrokersClient::updateMktDepth(
 			AssertFail("Unknown operation.");
 			return;
 	}
-}
-
-void InteractiveBrokersClient::updateMktDepthL2(
-			TickerId tickerId,
-			int position,
-			IBString marketMaker,
-			int operation,
-			int side,
-			double price,
-			int size) {
-	AssertFail("Unexpected.");
-	updateMktDepthL2(tickerId, position, marketMaker, operation, side, price, size);
 }
 
 void InteractiveBrokersClient::updateNewsBulletin(
