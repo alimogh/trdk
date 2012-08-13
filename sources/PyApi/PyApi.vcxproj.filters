@@ -55,5 +55,8 @@
     <None Include="Scripts\TraderPyApiExample.py">
       <Filter>Scripts</Filter>
     </None>
+    <None Include="Trader.pypredef">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

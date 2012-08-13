@@ -1,0 +1,193 @@
+
+###############################################################################
+
+class Security:
+
+	symbol = str
+	fullSymbol = str
+
+	currency = str
+
+	scale = int
+
+	lastPriceScaled = int
+	lastPrice = float
+
+	askPriceScaled = int
+	askPrice = float
+	askSize = int
+
+	bidPriceScaled = int
+	bidPrice = float
+	bidSize = int
+
+	def scalePrice(price)
+		"""
+			@type price: float
+		"""
+		return int
+
+	def descalePrice(price):
+		"""
+			@type price: int
+		"""
+		return float
+
+	def cancelOrder(orderId):
+		"""
+			Cancels order by ID.
+
+			@type position: int
+		"""
+
+	def cancelAllOrders():
+		"""
+			Cancels all active orders for this security, which were open by engine.
+		"""
+
+###############################################################################
+
+class Position:
+
+	type = str
+
+	hasActiveOrders = bool
+	""" True if position has active orders (not cancelled and not fully filled). """
+
+	planedQty = int
+
+	openStartPrice = float
+	openOrderId = int
+	openedQty = int
+	openPrice = float
+
+	notOpenedQty = int
+	activeQty = int
+
+	closeOrderId = int
+	closeStartPrice = float
+	closePrice = float
+	closedQty = int
+
+	commission = float
+
+	def __init__(security, qty, startPrice):
+		"""
+			@type startPrice: float
+			@type qty: int
+			@type security: Trade.Security
+		"""
+
+	def openAtMarketPrice():
+		"""
+			Asynchronous. Returns order ID.
+		"""
+		return int
+
+	def open(price):
+		"""
+			Asynchronous. Returns order ID.
+
+			@type price: float
+		"""
+		return int
+
+	def openAtMarketPriceWithStopPrice(stopPrice):
+		"""
+			Asynchronous. Returns order ID.
+
+			@type stopPrice: float
+		"""
+		return int
+
+	def openOrCancel(price): 
+		"""
+			Asynchronous. Returns order ID.
+
+			@type price: float
+		"""
+		return int
+
+	def  closeAtMarketPrice():
+		"""
+			Asynchronous. Returns order ID.
+		"""
+		return int
+
+	def close(price):
+		"""
+			Asynchronous. Returns order ID.
+			
+			@type price: float
+		"""
+		return int
+
+	def closeAtMarketPriceWithStopPrice(stopPrice):
+		"""
+			Asynchronous. Returns order ID.
+			
+			@type stopPrice: float
+		"""
+		return int
+
+	def closeOrCancel(price):
+		"""
+			Closes position with “Immediate or Cancel” order. Asynchronous.
+			Returns order ID.
+			
+			@type price: float
+		"""
+		return int
+
+	def cancelAtMarketPrice():
+		"""
+			Cancels all active orders for this position and close at market
+			price. Asynchronous. Returns True if position opened and order will
+			be sent.
+		"""
+		return bool
+
+	def cancelAllOrders():
+		"""
+			Cancels all active orders for this position. Asynchronous.
+			Returns True if one or more orders will be canceled.
+		"""
+		return bool
+
+###############################################################################
+
+class LongPosition(Trader.Position):
+	pass
+
+###############################################################################
+
+class ShortPosition(Trader.Position):
+	pass
+
+###############################################################################
+
+class Algo:
+	"""
+		Every strategy algorithm class must be inherited from this class.
+	"""
+
+	security = Trader.Security
+
+	def tryToOpenPositions():
+		"""
+			Returns Trader.LongPosition or Trader.ShortPosition if decides to
+			open position or returns nothing otherwise.
+			
+			pure virtual method
+		"""
+
+	def tryToClosePositions(position):
+		"""
+			Takes Trader.LongPosition or Trader.ShortPosition and tries to close it.
+			
+			@type position: Trader.Position
+			
+			pure virtual method
+		"""
+
+###############################################################################
