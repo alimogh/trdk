@@ -93,8 +93,16 @@ void PyApi::Algo::TryToClosePositions(PositionBandle &positions) {
 	}
 }
 
-void PyApi::Algo::ReportDecision(const Position &) const {
-	//...//
+void PyApi::Algo::ReportDecision(const Position &position) const {
+	Log::Trading(
+		GetTag().c_str(),
+		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6%",
+		position.GetSecurity().GetSymbol(),
+		position.GetTypeStr(),
+		position.GetSecurity().GetAsk(),
+		position.GetSecurity().GetBid(),
+		position.GetSecurity().Descale(position.GetOpenStartPrice()),
+		position.GetPlanedQty());
 }
 
 std::auto_ptr<PositionReporter> PyApi::Algo::CreatePositionReporter() const {
