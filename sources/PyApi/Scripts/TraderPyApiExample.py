@@ -13,7 +13,6 @@ class SimpleExampleTradeAlgo(Trader.Algo):
 
 		# Checking entry condition:
 		spread = self.security.bidPrice - self.security.askPrice
-		print str(self.security.bidPrice) + " - " + str(self.security.askPrice) + " = " + str(spread)
 		if spread > -0.01:
 			# not the case for trade
 			return
