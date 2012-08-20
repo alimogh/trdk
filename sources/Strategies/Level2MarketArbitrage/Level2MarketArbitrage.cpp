@@ -410,8 +410,8 @@ boost::shared_ptr<Position> s::Algo::OpenPostion(
 				new State(
 					m_settings.entryAskBidDifference,
 					ratio,
-					GetSecurity()->GetAskScaled(),
-					GetSecurity()->GetBidScaled(),
+					GetSecurity()->GetAskPriceScaled(),
+					GetSecurity()->GetBidPriceScaled(),
 					askSize,
 					bidSize))));
 	switch (m_settings.openOrderType) {
@@ -433,7 +433,7 @@ boost::shared_ptr<Position> s::Algo::OpenShortPostion(
 			Security::Qty bidSize,
 			double ratio) {
 	return OpenPostion<ShortPosition>(
-		GetSecurity()->GetAskScaled(),
+		GetSecurity()->GetAskPriceScaled(),
 		askSize,
 		bidSize,
 		ratio);
@@ -444,7 +444,7 @@ boost::shared_ptr<Position> s::Algo::OpenLongPostion(
 			Security::Qty bidSize,
 			double ratio) {
 	return OpenPostion<LongPosition>(
-		GetSecurity()->GetBidScaled(),
+		GetSecurity()->GetBidPriceScaled(),
 		askSize,
 		bidSize,
 		ratio);
@@ -520,8 +520,8 @@ void s::Algo::CloseAbstractPosition(
 	State &state = position.GetAlgoState<State>();
 
 	State::AsksBids exitAsksBids;
-	state.exit.ask = security.GetAskScaled();
-	state.exit.bid = security.GetBidScaled();
+	state.exit.ask = security.GetAskPriceScaled();
+	state.exit.bid = security.GetBidPriceScaled();
 	state.exit.askSize = m_askSizeGetter();
 	state.exit.bidSize = m_bidSizeGetter();
 	state.stopLoss = (this->*getStopLossMethod)(state.exit.askSize, state.exit.bidSize);
@@ -581,7 +581,7 @@ void s::Algo::CloseAbstractPosition(
 void s::Algo::CloseLongPosition(Position &position) {
 	Assert(position.GetType() == Position::TYPE_LONG);
 	// If we have a long position we should look at bid to determine our t/p goal, if short the ask position.
-	position.SetCloseStartPrice(GetSecurity()->GetBidScaled());
+	position.SetCloseStartPrice(GetSecurity()->GetBidPriceScaled());
 	CloseAbstractPosition(
 		position,
 		[&]() -> bool {
@@ -611,7 +611,7 @@ void s::Algo::CloseLongPosition(Position &position) {
 void s::Algo::CloseShortPosition(Position &position) {
 	Assert(position.GetType() == Position::TYPE_SHORT);
 	// If we have a long position we should look at bid to determine our t/p goal, if short the ask position.
-	position.SetCloseStartPrice(GetSecurity()->GetAskScaled());
+	position.SetCloseStartPrice(GetSecurity()->GetAskPriceScaled());
 	CloseAbstractPosition(
 		position,
 		[&]() -> bool {
@@ -704,8 +704,8 @@ void s::Algo::ReportStillOpened(Position &position) {
 		state.exit.ratioIni,
 		state.exit.ratio,
 		sec.Descale(state.takeProfit),
-		sec.GetAsk(),
-		sec.GetBid());
+		sec.GetAskPrice(),
+		sec.GetBidPrice());
 	state.lastStateReport = GetCurrentTime();
 }
 
@@ -724,8 +724,8 @@ void s::Algo::ReportNoDecision(Security::Qty askSize, Security::Qty bidSize) {
 		m_settings.entryAskBidDifference,
 		bidSize ? double(askSize) / double(bidSize) : 0,
 		askSize ? double(bidSize) / double(askSize) : 0,
-		sec.GetAsk(),
-		sec.GetBid());
+		sec.GetAskPrice(),
+		sec.GetBidPrice());
 	m_lastStateReport = GetCurrentTime();
 }
 
@@ -742,8 +742,8 @@ void s::Algo::ReportClosing(const Position &position, bool isTakeProfit) {
 		state.exit.bidSize,
 		state.exit.ratioIni,
 		state.exit.ratio,
-		sec.GetAsk(),
-		sec.GetBid(),
+		sec.GetAskPrice(),
+		sec.GetBidPrice(),
 		sec.Descale(state.takeProfit));
 }
 

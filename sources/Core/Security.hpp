@@ -145,13 +145,13 @@ public:
 
 public:
 
-	Price GetLastScaled() const;
-	Price GetAskScaled() const;
-	Price GetBidScaled() const;
+	Price GetLastPriceScaled() const;
+	Price GetAskPriceScaled() const;
+	Price GetBidPriceScaled() const;
 	
-	double GetLast() const;
-	double GetAsk() const;
-	double GetBid() const;
+	double GetLastPrice() const;
+	double GetAskPrice() const;
+	double GetBidPrice() const;
 
 	Qty GetLevel2AskSizeIqFeed();
 	Qty GetLevel2AskSizeIb();
@@ -162,14 +162,14 @@ private:
 
 	void SetLastMarketDataTime(const boost::posix_time::ptime &);
 
-	bool SetLast(double);
+	bool SetLastPrice(double);
 	
-	bool SetAsk(double);
-	bool SetBid(double);
+	bool SetAskPrice(double);
+	bool SetBidPrice(double);
 
-	bool SetLast(Price);
-	bool SetAsk(Price);
-	bool SetBid(Price);
+	bool SetLastPrice(Price);
+	bool SetAskPrice(Price);
+	bool SetBidPrice(Price);
 
 	void SetLevel2AskIqFeed(Qty askSize);
 	void SetLevel2AskIb(Qty askSize);

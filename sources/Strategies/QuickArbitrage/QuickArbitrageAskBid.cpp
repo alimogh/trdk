@@ -91,9 +91,13 @@ bool AskBid::IsLongPosEnabled() const {
 	}
 	switch (m_settings.openMode) {
 		case Settings::OPEN_MODE_SHORT_IF_ASK_MORE_BID:
-			return IsValidSread(GetSecurity()->GetBidScaled(), GetSecurity()->GetAskScaled());
+			return IsValidSread(
+				GetSecurity()->GetBidPriceScaled(),
+				GetSecurity()->GetAskPriceScaled());
 		case Settings::OPEN_MODE_SHORT_IF_BID_MORE_ASK:
-			return IsValidSread(GetSecurity()->GetAskScaled(), GetSecurity()->GetBidScaled());
+			return IsValidSread(
+				GetSecurity()->GetAskPriceScaled(),
+				GetSecurity()->GetBidPriceScaled());
 		default:
 			AssertFail("Unknown open mode.");
 		case Settings::OPEN_MODE_NONE:
@@ -107,9 +111,13 @@ bool AskBid::IsShortPosEnabled() const {
 	}
 	switch (m_settings.openMode) {
 		case Settings::OPEN_MODE_SHORT_IF_ASK_MORE_BID:
-			return IsValidSread(GetSecurity()->GetAskScaled(), GetSecurity()->GetBidScaled());
+			return IsValidSread(
+				GetSecurity()->GetAskPriceScaled(),
+				GetSecurity()->GetBidPriceScaled());
 		case Settings::OPEN_MODE_SHORT_IF_BID_MORE_ASK:
-			return IsValidSread(GetSecurity()->GetBidScaled(), GetSecurity()->GetAskScaled());
+			return IsValidSread(
+				GetSecurity()->GetBidPriceScaled(),
+				GetSecurity()->GetAskPriceScaled());
 		default:
 			AssertFail("Unknown open mode.");
 		case Settings::OPEN_MODE_NONE:
@@ -294,13 +302,13 @@ void AskBid::DoClosePosition(Position &position) {
 	bool isLoss = false;
 	switch (position.GetType()) {
 		case Position::TYPE_LONG:
-			price = security.GetAskScaled();
+			price = security.GetAskPriceScaled();
 			isLoss
 				= (m_settings.closeOrderType == Settings::ORDER_TYPE_IOC 
 					&& state.stopLoss >= price);
 			break;
 		case Position::TYPE_SHORT:
-			price = security.GetBidScaled();
+			price = security.GetBidPriceScaled();
 			isLoss
 				= m_settings.closeOrderType == Settings::ORDER_TYPE_IOC 
 					&& state.stopLoss <= price;
@@ -317,8 +325,8 @@ void AskBid::DoClosePosition(Position &position) {
 	} 
 
 	position.SetCloseStartPrice(price);
-	state.exit.ask = security.GetAskScaled();
-	state.exit.bid = security.GetBidScaled();
+	state.exit.ask = security.GetAskPriceScaled();
+	state.exit.bid = security.GetBidPriceScaled();
 
 	if (isLoss) {
 		ReportStopLoss(position);
@@ -364,8 +372,8 @@ void AskBid::ReportTakeProfitDo(const Position &position) const {
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
 		position.GetSecurity().Descale(position.GetAlgoState<State>().takeProfit),
-		position.GetSecurity().GetAsk(),
-		position.GetSecurity().GetBid(),
+		position.GetSecurity().GetAskPrice(),
+		position.GetSecurity().GetBidPrice(),
 		position.GetSecurity().Descale(position.GetAlgoState<State>().stopLoss),
 		position.GetOpenedQty());
 }

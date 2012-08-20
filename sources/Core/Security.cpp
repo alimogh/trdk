@@ -528,7 +528,7 @@ void Security::UpdateLevel1(
 			totalVolume);
 	}
 	SetLastMarketDataTime(timeOfReception);
-	if (!SetLast(last) || !SetAsk(ask) || !SetBid(bid)) {
+	if (!SetLastPrice(last) || !SetAskPrice(ask) || !SetBidPrice(bid)) {
 		if (!m_settings->IsReplayMode()) {
 			return;
 		} else {
@@ -734,28 +734,28 @@ Security::operator bool() const {
 	return m_last && m_ask && m_bid;
 }
 
-Security::Price Security::GetLastScaled() const {
+Security::Price Security::GetLastPriceScaled() const {
 	return m_last;
 }
 
-Security::Price Security::GetAskScaled() const {
+Security::Price Security::GetAskPriceScaled() const {
 	return m_ask;
 }
 
-Security::Price Security::GetBidScaled() const {
+Security::Price Security::GetBidPriceScaled() const {
 	return m_bid;
 }
 
-double Security::GetLast() const {
-	return Descale(GetLastScaled());
+double Security::GetLastPrice() const {
+	return Descale(GetLastPriceScaled());
 }
 
-double Security::GetAsk() const {
-	return Descale(GetAskScaled());
+double Security::GetAskPrice() const {
+	return Descale(GetAskPriceScaled());
 }
 
-double Security::GetBid() const {
-	return Descale(GetBidScaled());
+double Security::GetBidPrice() const {
+	return Descale(GetBidPriceScaled());
 }
 
 Security::Qty Security::GetLevel2AskSizeIqFeed() {
@@ -789,33 +789,33 @@ void Security::SetLastMarketDataTime(const boost::posix_time::ptime &time) {
 	m_marketDataTime = time;
 }
 
-bool Security::SetLast(double last) {
-	return SetLast(Scale(last));
+bool Security::SetLastPrice(double last) {
+	return SetLastPrice(Scale(last));
 }
 
-bool Security::SetAsk(double ask) {
-	return SetAsk(Scale(ask));
+bool Security::SetAskPrice(double ask) {
+	return SetAskPrice(Scale(ask));
 }
 
-bool Security::SetBid(double bid) {
-	return SetBid(Scale(bid));
+bool Security::SetBidPrice(double bid) {
+	return SetBidPrice(Scale(bid));
 }
 
-bool Security::SetLast(Price last) {
+bool Security::SetLastPrice(Price last) {
 	if (!last) {
 		return false;
 	}
 	return Interlocking::Exchange(m_last, last) != last;
 }
 
-bool Security::SetAsk(Price ask) {
+bool Security::SetAskPrice(Price ask) {
 	if (!ask) {
 		return false;
 	}
 	return Interlocking::Exchange(m_ask, ask) != ask;
 }
 
-bool Security::SetBid(Price bid) {
+bool Security::SetBidPrice(Price bid) {
 	if (!bid) {
 		return false;
 	}

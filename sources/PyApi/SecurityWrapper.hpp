@@ -100,27 +100,27 @@ namespace PyApi { namespace Wrappers {
 		}
 
 		int GetLastScaled() const {
-			return int(m_security->GetLastScaled());
+			return int(m_security->GetLastPriceScaled());
 		}
 		double GetLast() const {
-			return m_security->GetLast();
+			return m_security->GetLastPrice();
 		}
 
 		int GetAskScaled() const {
-			return int(m_security->GetAskScaled());
+			return int(m_security->GetAskPriceScaled());
 		}
 		double GetAsk() const {
-			return m_security->GetAsk();
+			return m_security->GetAskPrice();
 		}
 		double GetLevel2AskSize() const {
 			return m_level2AskSizeGetter();
 		}
 
 		int GetBidScaled() const {
-			return int(m_security->GetBidScaled());
+			return int(m_security->GetBidPriceScaled());
 		}
 		double GetBid() const {
-			return m_security->GetBid();
+			return m_security->GetBidPrice();
 		}
 		double GetLevel2BidSize() const {
 			return m_level2BidSizeGetter();

@@ -99,8 +99,8 @@ void PyApi::Algo::ReportDecision(const Position &position) const {
 		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
-		position.GetSecurity().GetAsk(),
-		position.GetSecurity().GetBid(),
+		position.GetSecurity().GetAskPrice(),
+		position.GetSecurity().GetBidPrice(),
 		position.GetSecurity().Descale(position.GetOpenStartPrice()),
 		position.GetPlanedQty());
 }
