@@ -16,10 +16,12 @@ class Security:
 	askPriceScaled = int
 	askPrice = float
 	askSize = int
+	level2AskSize = int
 
 	bidPriceScaled = int
 	bidPrice = float
 	bidSize = int
+	level2BidSize = int
 
 	def scalePrice(price)
 		"""

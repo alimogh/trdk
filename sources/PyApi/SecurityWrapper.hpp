@@ -40,20 +40,20 @@ namespace PyApi { namespace Wrappers {
 
 			Assert(!m_algo);
 			Assert(!m_security);
-			Assert(!m_askSizeGetter);
-			Assert(!m_bidSizeGetter);
+			Assert(!m_level2AskSizeGetter);
+			Assert(!m_level2BidSizeGetter);
 
-			boost::function<::Security::Qty()> askSizeGetter;
-			boost::function<::Security::Qty()> bidSizeGetter;
+			boost::function<::Security::Qty()> level2AskSizeGetter;
+			boost::function<::Security::Qty()> level2BidSizeGetter;
 
 			switch (level2DataSource) {
 				case MARKET_DATA_SOURCE_IQFEED:
-					askSizeGetter = boost::bind(&::Security::GetAskSizeIqFeed, security.get());
-					bidSizeGetter = boost::bind(&::Security::GetBidSizeIqFeed, security.get());
+					level2AskSizeGetter = boost::bind(&::Security::GetLevel2AskSizeIqFeed, security.get());
+					level2BidSizeGetter = boost::bind(&::Security::GetLevel2BidSizeIqFeed, security.get());
 					break;
 				case MARKET_DATA_SOURCE_INTERACTIVE_BROKERS:
-					askSizeGetter = boost::bind(&::Security::GetAskSizeIb, security.get());
-					bidSizeGetter = boost::bind(&::Security::GetBidSizeIb, security.get());
+					level2AskSizeGetter = boost::bind(&::Security::GetLevel2AskSizeIb, security.get());
+					level2BidSizeGetter = boost::bind(&::Security::GetLevel2BidSizeIb, security.get());
 					break;
 				default:
 					AssertFail("Unknown market data source.");
@@ -61,8 +61,8 @@ namespace PyApi { namespace Wrappers {
 
 			m_algo = &algo;
 			m_security = security;
-			m_askSizeGetter = askSizeGetter;
-			m_bidSizeGetter = bidSizeGetter;
+			m_level2AskSizeGetter = level2AskSizeGetter;
+			m_level2BidSizeGetter = level2BidSizeGetter;
 
 		}
 
@@ -112,8 +112,8 @@ namespace PyApi { namespace Wrappers {
 		double GetAsk() const {
 			return m_security->GetAsk();
 		}
-		double GetAskSize() const {
-			return m_askSizeGetter();
+		double GetLevel2AskSize() const {
+			return m_level2AskSizeGetter();
 		}
 
 		int GetBidScaled() const {
@@ -122,8 +122,8 @@ namespace PyApi { namespace Wrappers {
 		double GetBid() const {
 			return m_security->GetBid();
 		}
-		double GetBidSize() const {
-			return m_bidSizeGetter();
+		double GetLevel2BidSize() const {
+			return m_level2BidSizeGetter();
 		}
 
 	public:
@@ -141,8 +141,8 @@ namespace PyApi { namespace Wrappers {
 		const ::Algo *m_algo;
 		boost::shared_ptr<::Security> m_security;
 
-		boost::function<::Security::Qty()> m_askSizeGetter;
-		boost::function<::Security::Qty()> m_bidSizeGetter;
+		boost::function<::Security::Qty()> m_level2AskSizeGetter;
+		boost::function<::Security::Qty()> m_level2BidSizeGetter;
 
 	};
 

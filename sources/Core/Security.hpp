@@ -153,10 +153,10 @@ public:
 	double GetAsk() const;
 	double GetBid() const;
 
-	Qty GetAskSizeIqFeed();
-	Qty GetAskSizeIb();
-	Qty GetBidSizeIqFeed();
-	Qty GetBidSizeIb();
+	Qty GetLevel2AskSizeIqFeed();
+	Qty GetLevel2AskSizeIb();
+	Qty GetLevel2BidSizeIqFeed();
+	Qty GetLevel2BidSizeIb();
 
 private:
 

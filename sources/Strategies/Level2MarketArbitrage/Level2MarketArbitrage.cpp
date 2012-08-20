@@ -348,12 +348,12 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 void s::Algo::UpdateCallbacks() {
 	switch (m_settings.level2DataSource) {
 		case Settings::MARKET_DATA_SOURCE_IQFEED:
-			m_askSizeGetter = boost::bind(&Security::GetAskSizeIqFeed, GetSecurity());
-			m_bidSizeGetter = boost::bind(&Security::GetBidSizeIqFeed, GetSecurity());
+			m_askSizeGetter = boost::bind(&Security::GetLevel2AskSizeIqFeed, GetSecurity());
+			m_bidSizeGetter = boost::bind(&Security::GetLevel2BidSizeIqFeed, GetSecurity());
 			break;
 		case Settings::MARKET_DATA_SOURCE_INTERACTIVE_BROKERS:
-			m_askSizeGetter = boost::bind(&Security::GetAskSizeIb, GetSecurity());
-			m_bidSizeGetter = boost::bind(&Security::GetBidSizeIb, GetSecurity());
+			m_askSizeGetter = boost::bind(&Security::GetLevel2AskSizeIb, GetSecurity());
+			m_bidSizeGetter = boost::bind(&Security::GetLevel2BidSizeIb, GetSecurity());
 			break;
 		default:
 			AssertFail("Unknown market data source.");

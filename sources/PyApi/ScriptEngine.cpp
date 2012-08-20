@@ -42,11 +42,11 @@ BOOST_PYTHON_MODULE(Trader) {
 		
 		.add_property("askPriceScaled", &Wrappers::Security::GetAskScaled)
 		.add_property("askPrice", &Wrappers::Security::GetAsk)
-		.add_property("askSize", &Wrappers::Security::GetAskSize)
+		.add_property("level2AskSize", &Wrappers::Security::GetLevel2AskSize)
 		
 		.add_property("bidPriceScaled", &Wrappers::Security::GetBidScaled)
 		.add_property("bidPrice", &Wrappers::Security::GetBid)
-		.add_property("bidSize", &Wrappers::Security::GetBidSize)
+		.add_property("level2BidSize", &Wrappers::Security::GetLevel2BidSize)
 
 		.def("cancelOrder", &Wrappers::Security::CancelOrder)
 		.def("cancelAllOrders", &Wrappers::Security::CancelAllOrders);

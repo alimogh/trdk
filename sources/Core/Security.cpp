@@ -599,18 +599,18 @@ void Security::UpdateLevel2IqFeed(
 		const Level2WriteLock lock(m_level2Mutex);
 		if (ask) {
 			Qty change = 0;
-			isAskSkipped = !UpdateQuoteList(*m_settings, GetAskSizeIqFeed(), ask, m_qoutesIqFeed.ask, change);
+			isAskSkipped = !UpdateQuoteList(*m_settings, GetLevel2AskSizeIqFeed(), ask, m_qoutesIqFeed.ask, change);
 			Assert(!isAskSkipped || change == 0);
 			if (!isAskSkipped) {
-				SetLevel2AskIqFeed(GetAskSizeIqFeed() + change);
+				SetLevel2AskIqFeed(GetLevel2AskSizeIqFeed() + change);
 			}
 		}
 		if (bid) {
 			Qty change = 0;
-			isBidSkipped = !UpdateQuoteList(*m_settings, GetBidSizeIqFeed(), bid, m_qoutesIqFeed.bid, change);
+			isBidSkipped = !UpdateQuoteList(*m_settings, GetLevel2BidSizeIqFeed(), bid, m_qoutesIqFeed.bid, change);
 			Assert(!isBidSkipped || change == 0);
 			if (!isBidSkipped) {
-				SetLevel2BidIqFeed(GetBidSizeIqFeed() + change);
+				SetLevel2BidIqFeed(GetLevel2BidSizeIqFeed() + change);
 			}
 		}
 	}
@@ -622,7 +622,7 @@ void Security::UpdateLevel2IqFeed(
 				ask->timeTick,
 				ask->price,
 				ask->size,
-				GetAskSizeIqFeed(),
+				GetLevel2AskSizeIqFeed(),
 				m_qoutesIqFeed.ask.begin()->second->timeTick,
 				isAskSkipped,
 				m_qoutesIqFeed.ask.size());
@@ -633,7 +633,7 @@ void Security::UpdateLevel2IqFeed(
 				bid->timeTick,
 				bid->price,
 				bid->size,
-				GetBidSizeIqFeed(),
+				GetLevel2BidSizeIqFeed(),
 				m_qoutesIqFeed.bid.begin()->second->timeTick,
 				isBidSkipped,
 				m_qoutesIqFeed.bid.size());
@@ -758,19 +758,19 @@ double Security::GetBid() const {
 	return Descale(GetBidScaled());
 }
 
-Security::Qty Security::GetAskSizeIqFeed() {
+Security::Qty Security::GetLevel2AskSizeIqFeed() {
 	return Security::Qty(m_qoutesIqFeed.totalAsk.size);
 }
 
-Security::Qty Security::GetBidSizeIqFeed() {
+Security::Qty Security::GetLevel2BidSizeIqFeed() {
 	return Security::Qty(m_qoutesIqFeed.totalBid.size);
 }
 
-Security::Qty Security::GetAskSizeIb() {
+Security::Qty Security::GetLevel2AskSizeIb() {
 	return Security::Qty(m_qoutesIb.totalAsk.size);
 }
 
-Security::Qty Security::GetBidSizeIb() {
+Security::Qty Security::GetLevel2BidSizeIb() {
 	return Security::Qty(m_qoutesIb.totalBid.size);
 }
 
