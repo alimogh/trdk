@@ -147,6 +147,9 @@ public:
 
 	Price GetLastPriceScaled() const;
 	double GetLastPrice() const;
+	Qty GetLastSize() const {
+		return m_lastSize;
+	}
 	
 	Price GetAskPriceScaled() const;
 	double GetAskPrice() const;
@@ -169,12 +172,12 @@ private:
 
 	void SetLastMarketDataTime(const boost::posix_time::ptime &);
 
-	bool SetLastPrice(double);
+	bool SetLast(double, Qty);
 	
 	bool SetAsk(double, Qty);
 	bool SetBid(double, Qty);
 
-	bool SetLastPrice(Price);
+	bool SetLast(Price, Qty);
 	bool SetAsk(Price, Qty);
 	bool SetBid(Price, Qty);
 
@@ -193,6 +196,7 @@ public:
 				const MarketDataTime &timeOfReception,
 				const MarketDataTime &lastTradeTime,
 				double lastPrice,
+				size_t lastSize,
 				double askPrice,
 				size_t askSize,
 				double bidPrice,
@@ -235,8 +239,11 @@ private:
 	volatile LONGLONG m_isHistoryData;
 
 	volatile LONGLONG m_lastPrice;
+	volatile long m_lastSize;
+	
 	volatile LONGLONG m_askPrice;
 	volatile long m_askSize;
+	
 	volatile LONGLONG m_bidPrice;
 	volatile long m_bidSize;
 

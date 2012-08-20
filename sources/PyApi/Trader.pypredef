@@ -12,6 +12,7 @@ class Security:
 
 	lastPriceScaled = int
 	lastPrice = float
+	lastSize = int
 
 	askPriceScaled = int
 	askPrice = float

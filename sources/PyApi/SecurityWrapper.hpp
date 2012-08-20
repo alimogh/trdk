@@ -105,6 +105,9 @@ namespace PyApi { namespace Wrappers {
 		double GetLastPrice() const {
 			return m_security->GetLastPrice();
 		}
+		size_t GetLastSize() const {
+			return m_security->GetLastSize();
+		}
 
 		int GetAskPriceScaled() const {
 			return int(m_security->GetAskPriceScaled());

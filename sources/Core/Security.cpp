@@ -396,10 +396,12 @@ Security::Security(
 		m_settings(settings),
 		m_isHistoryData(false),
 		m_lastPrice(0),
+		m_lastSize(0),
 		m_askPrice(0),
 		m_askSize(0),
 		m_bidPrice(0),
 		m_bidSize(0) {
+	// see another ctor!
 	if (logMarketData) {
 		m_marketDataLevel1Log.reset(new MarketDataLog(GetFullSymbol()));
 		m_marketDataLevel2Log.reset(new MarketDataLevel2Log(GetFullSymbol()));
@@ -415,17 +417,20 @@ Security::Security(
 				boost::shared_ptr<const Settings> settings,
 				bool logMarketData)
 		: Base(symbol, primaryExchange, exchange),
-		m_settings(settings) {
+		m_settings(settings),
+		m_lastPrice(0),
+		m_lastSize(0),
+		m_askPrice(0),
+		m_askSize(0),
+		m_bidPrice(0),
+		m_bidSize(0) {
+	// see another ctor!
 	if (logMarketData) {
 		m_marketDataLevel1Log.reset(new MarketDataLog(GetFullSymbol()));
 		m_marketDataLevel2Log.reset(new MarketDataLevel2Log(GetFullSymbol()));
 		m_marketDataLevel2SnapshotLog.reset(
 			new MarketDataLevel2SnapshotLog(GetFullSymbol(), GetPriceScale(), *m_settings));
 	}
-	Interlocking::Exchange(m_isHistoryData, false);
-	Interlocking::Exchange(m_lastPrice, 0);
-	Interlocking::Exchange(m_askPrice, 0);
-	Interlocking::Exchange(m_bidPrice, 0);
 }
 
 TradeSystem::OrderId Security::SellAtMarketPrice(Qty qty, Position &position) {
@@ -517,6 +522,7 @@ void Security::UpdateLevel1(
 				const MarketDataTime &timeOfReception,
 				const MarketDataTime &lastTradeTime,
 				double lastPrice,
+				size_t lastSize,
 				double askPrice,
 				size_t askSize,
 				double bidPrice,
@@ -532,7 +538,7 @@ void Security::UpdateLevel1(
 			totalVolume);
 	}
 	SetLastMarketDataTime(timeOfReception);
-	if (	!SetLastPrice(lastPrice)
+	if (	!SetLast(lastPrice, lastSize)
 			|| !SetAsk(askPrice, askSize)
 			|| !SetBid(bidPrice, bidSize)) {
 		if (!m_settings->IsReplayMode()) {
@@ -795,8 +801,8 @@ void Security::SetLastMarketDataTime(const boost::posix_time::ptime &time) {
 	m_marketDataTime = time;
 }
 
-bool Security::SetLastPrice(double last) {
-	return SetLastPrice(ScalePrice(last));
+bool Security::SetLast(double price, Qty size) {
+	return SetLast(ScalePrice(price), size);
 }
 
 bool Security::SetAsk(double price, Qty size) {
@@ -807,11 +813,10 @@ bool Security::SetBid(double price, Qty size) {
 	return SetBid(ScalePrice(price), size);
 }
 
-bool Security::SetLastPrice(Price last) {
-	if (!last) {
-		return false;
-	}
-	return Interlocking::Exchange(m_lastPrice, last) != last;
+bool Security::SetLast(Price price, Qty size) {
+	bool isChanged = Interlocking::Exchange(m_lastPrice, price) != price;
+	isChanged = Interlocking::Exchange(m_lastSize, size) != size || isChanged;
+	return isChanged;
 }
 
 bool Security::SetAsk(Price price, Qty size) {

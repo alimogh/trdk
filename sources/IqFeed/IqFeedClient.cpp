@@ -438,6 +438,7 @@ namespace {
 			Assert(lastPrice > 0);
 
 			const size_t totalVolume = message.GetFieldAsUnsignedInt(7, true);
+			const size_t lastSize = message.GetFieldAsUnsignedInt(8, true);
 
 			const double bidPrice = message.GetFieldAsDouble(11, true);
 			const double askPrice = message.GetFieldAsDouble(12, true);
@@ -456,6 +457,7 @@ namespace {
 				timeOfReception,
 				message.GetFieldAsTimeOfDay(66, true) - Util::GetEdtDiff(),
 				lastPrice,
+				lastSize,
 				askPrice,
 				askSize,
 				bidPrice,
@@ -737,7 +739,16 @@ namespace {
 			const double askPrice = message.GetFieldAsDouble(7, true);
 			Assert(askPrice > 0);
 
-			subscriber.UpdateLevel1(timeOfReception, time, last, askPrice, 0, bidPrice, 0, totalVolume);
+			subscriber.UpdateLevel1(
+				timeOfReception,
+				time,
+				last,
+				0,
+				askPrice,
+				0,
+				bidPrice,
+				0,
+				totalVolume);
 
 		}
 

@@ -39,6 +39,7 @@ BOOST_PYTHON_MODULE(Trader) {
 
 		.add_property("lastPriceScaled", &Wrappers::Security::GetLastPriceScaled)
 		.add_property("lastPrice", &Wrappers::Security::GetLastPrice)
+		.add_property("lastSize", &Wrappers::Security::GetLastSize)
 		
 		.add_property("askPriceScaled", &Wrappers::Security::GetAskPriceScaled)
 		.add_property("askPrice", &Wrappers::Security::GetAskPrice)
