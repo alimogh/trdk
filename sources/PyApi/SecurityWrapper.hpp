@@ -89,38 +89,44 @@ namespace PyApi { namespace Wrappers {
 			return m_security->GetCurrency();
 		}
 
-		int GetScale() const {
-			return m_security->GetScale();
+		int GetPriceScale() const {
+			return m_security->GetPriceScale();
 		}
-		int Scale(double price) const {
-			return int(m_security->Scale(price));
+		int ScalePrice(double price) const {
+			return int(m_security->ScalePrice(price));
 		}
-		double Descale(int price) const {
-			return m_security->Descale(price);
+		double DescalePrice(int price) const {
+			return m_security->DescalePrice(price);
 		}
 
-		int GetLastScaled() const {
+		int GetLastPriceScaled() const {
 			return int(m_security->GetLastPriceScaled());
 		}
-		double GetLast() const {
+		double GetLastPrice() const {
 			return m_security->GetLastPrice();
 		}
 
-		int GetAskScaled() const {
+		int GetAskPriceScaled() const {
 			return int(m_security->GetAskPriceScaled());
 		}
-		double GetAsk() const {
+		double GetAskPrice() const {
 			return m_security->GetAskPrice();
+		}
+		size_t GetAskSize() const {
+			return m_security->GetAskSize();
 		}
 		double GetLevel2AskSize() const {
 			return m_level2AskSizeGetter();
 		}
 
-		int GetBidScaled() const {
+		int GetBidPriceScaled() const {
 			return int(m_security->GetBidPriceScaled());
 		}
-		double GetBid() const {
+		double GetBidPrice() const {
 			return m_security->GetBidPrice();
+		}
+		size_t GetBidSize() const {
+			return m_security->GetBidSize();
 		}
 		double GetLevel2BidSize() const {
 			return m_level2BidSizeGetter();

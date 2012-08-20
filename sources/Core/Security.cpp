@@ -393,17 +393,19 @@ Security::Security(
 				boost::shared_ptr<const Settings> settings,
 				bool logMarketData)
 		: Base(tradeSystem, symbol, primaryExchange, exchange),
-		m_settings(settings) {
+		m_settings(settings),
+		m_isHistoryData(false),
+		m_lastPrice(0),
+		m_askPrice(0),
+		m_askSize(0),
+		m_bidPrice(0),
+		m_bidSize(0) {
 	if (logMarketData) {
 		m_marketDataLevel1Log.reset(new MarketDataLog(GetFullSymbol()));
 		m_marketDataLevel2Log.reset(new MarketDataLevel2Log(GetFullSymbol()));
 		m_marketDataLevel2SnapshotLog.reset(
-			new MarketDataLevel2SnapshotLog(GetFullSymbol(), GetScale(), *m_settings));
+			new MarketDataLevel2SnapshotLog(GetFullSymbol(), GetPriceScale(), *m_settings));
 	}
-	Interlocking::Exchange(m_isHistoryData, false);
-	Interlocking::Exchange(m_last, 0);
-	Interlocking::Exchange(m_ask, 0);
-	Interlocking::Exchange(m_bid, 0);
 }
 
 Security::Security(
@@ -418,12 +420,12 @@ Security::Security(
 		m_marketDataLevel1Log.reset(new MarketDataLog(GetFullSymbol()));
 		m_marketDataLevel2Log.reset(new MarketDataLevel2Log(GetFullSymbol()));
 		m_marketDataLevel2SnapshotLog.reset(
-			new MarketDataLevel2SnapshotLog(GetFullSymbol(), GetScale(), *m_settings));
+			new MarketDataLevel2SnapshotLog(GetFullSymbol(), GetPriceScale(), *m_settings));
 	}
 	Interlocking::Exchange(m_isHistoryData, false);
-	Interlocking::Exchange(m_last, 0);
-	Interlocking::Exchange(m_ask, 0);
-	Interlocking::Exchange(m_bid, 0);
+	Interlocking::Exchange(m_lastPrice, 0);
+	Interlocking::Exchange(m_askPrice, 0);
+	Interlocking::Exchange(m_bidPrice, 0);
 }
 
 TradeSystem::OrderId Security::SellAtMarketPrice(Qty qty, Position &position) {
@@ -514,21 +516,25 @@ bool Security::IsHistoryData() const {
 void Security::UpdateLevel1(
 				const MarketDataTime &timeOfReception,
 				const MarketDataTime &lastTradeTime,
-				double last,
-				double ask,
-				double bid,
+				double lastPrice,
+				double askPrice,
+				size_t askSize,
+				double bidPrice,
+				size_t bidSize,
 				size_t totalVolume) {
 	if (m_marketDataLevel1Log) {
 		m_marketDataLevel1Log->Append(
 			timeOfReception,
 			lastTradeTime,
-			last,
-			ask,
-			bid,
+			lastPrice,
+			askPrice,
+			bidPrice,
 			totalVolume);
 	}
 	SetLastMarketDataTime(timeOfReception);
-	if (!SetLastPrice(last) || !SetAskPrice(ask) || !SetBidPrice(bid)) {
+	if (	!SetLastPrice(lastPrice)
+			|| !SetAsk(askPrice, askSize)
+			|| !SetBid(bidPrice, bidSize)) {
 		if (!m_settings->IsReplayMode()) {
 			return;
 		} else {
@@ -670,14 +676,14 @@ void Security::UpdateLevel2IbLine(
 					&& (m_qoutesIb.totalAsk.size / m_qoutesIb.ask.size()) * 5 < size) {
 				return;
 			}
-			m_qoutesIb.ask[Scale(price)] = size;
+			m_qoutesIb.ask[ScalePrice(price)] = size;
 			SetLevel2AskIb(GetQuotesSize(m_qoutesIb.ask));
 		} else {
 			if (	!m_qoutesIb.bid.empty()
 					&& (m_qoutesIb.totalBid.size / m_qoutesIb.bid.size()) * 5 < size) {
 				return;
 			}
-			m_qoutesIb.bid[Scale(price)] = size;
+			m_qoutesIb.bid[ScalePrice(price)] = size;
 			SetLevel2BidIb(GetQuotesSize(m_qoutesIb.bid));
 		}
 	}
@@ -696,7 +702,7 @@ void Security::DeleteLevel2IbLine(
 	{
 		const Level2WriteLock lock(m_level2Mutex);
 		QuotesCompleted::Lines &quotes = isAsk ? m_qoutesIb.ask : m_qoutesIb.bid;
-		const auto priceScaled = Scale(price);
+		const auto priceScaled = ScalePrice(price);
 		Assert(
 			quotes.find(priceScaled) == quotes.end()
 			|| quotes.find(priceScaled)->second == size);
@@ -731,31 +737,31 @@ void Security::OnHistoryDataEnd() {
 }
 
 Security::operator bool() const {
-	return m_last && m_ask && m_bid;
+	return m_lastPrice && m_askPrice && m_bidPrice;
 }
 
 Security::Price Security::GetLastPriceScaled() const {
-	return m_last;
+	return m_lastPrice;
 }
 
 Security::Price Security::GetAskPriceScaled() const {
-	return m_ask;
+	return m_askPrice;
 }
 
 Security::Price Security::GetBidPriceScaled() const {
-	return m_bid;
+	return m_bidPrice;
 }
 
 double Security::GetLastPrice() const {
-	return Descale(GetLastPriceScaled());
+	return DescalePrice(GetLastPriceScaled());
 }
 
 double Security::GetAskPrice() const {
-	return Descale(GetAskPriceScaled());
+	return DescalePrice(GetAskPriceScaled());
 }
 
 double Security::GetBidPrice() const {
-	return Descale(GetBidPriceScaled());
+	return DescalePrice(GetBidPriceScaled());
 }
 
 Security::Qty Security::GetLevel2AskSizeIqFeed() {
@@ -790,36 +796,42 @@ void Security::SetLastMarketDataTime(const boost::posix_time::ptime &time) {
 }
 
 bool Security::SetLastPrice(double last) {
-	return SetLastPrice(Scale(last));
+	return SetLastPrice(ScalePrice(last));
 }
 
-bool Security::SetAskPrice(double ask) {
-	return SetAskPrice(Scale(ask));
+bool Security::SetAsk(double price, Qty size) {
+	return SetAsk(ScalePrice(price), size);
 }
 
-bool Security::SetBidPrice(double bid) {
-	return SetBidPrice(Scale(bid));
+bool Security::SetBid(double price, Qty size) {
+	return SetBid(ScalePrice(price), size);
 }
 
 bool Security::SetLastPrice(Price last) {
 	if (!last) {
 		return false;
 	}
-	return Interlocking::Exchange(m_last, last) != last;
+	return Interlocking::Exchange(m_lastPrice, last) != last;
 }
 
-bool Security::SetAskPrice(Price ask) {
-	if (!ask) {
+bool Security::SetAsk(Price price, Qty size) {
+	Assert((!price && !size) || (price && size));
+	if (!price || !size) {
 		return false;
 	}
-	return Interlocking::Exchange(m_ask, ask) != ask;
+	bool isChanged = Interlocking::Exchange(m_askPrice, price) != price;
+	isChanged = Interlocking::Exchange(m_askSize, size) != size || isChanged;
+	return isChanged;
 }
 
-bool Security::SetBidPrice(Price bid) {
-	if (!bid) {
+bool Security::SetBid(Price price, Qty size) {
+	Assert((!price && !size) || (price && size));
+	if (!price || !size) {
 		return false;
 	}
-	return Interlocking::Exchange(m_bid, bid) != bid;
+	bool isChanged = Interlocking::Exchange(m_bidPrice, price) != price;
+	isChanged = Interlocking::Exchange(m_askSize, size) != size || isChanged;
+	return isChanged;
 }
 
 void Security::SetLevel2AskIqFeed(Qty askSize) {

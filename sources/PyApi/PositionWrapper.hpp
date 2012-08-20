@@ -52,7 +52,7 @@ namespace PyApi { namespace Wrappers {
 			return m_position->GetPlanedQty();
 		}
 		double GetOpenStartPrice() const {
-			return m_position->GetSecurity().Descale(m_position->GetOpenStartPrice());
+			return m_position->GetSecurity().DescalePrice(m_position->GetOpenStartPrice());
 		}
 
 		int GetOpenOrderId() const {
@@ -62,7 +62,7 @@ namespace PyApi { namespace Wrappers {
 			return m_position->GetOpenedQty();
 		}
 		double GetOpenPrice() const {
-			return m_position->GetSecurity().Descale(m_position->GetOpenPrice());
+			return m_position->GetSecurity().DescalePrice(m_position->GetOpenPrice());
 		}
 
 		int GetNotOpenedQty() const {
@@ -76,10 +76,10 @@ namespace PyApi { namespace Wrappers {
 			return m_position->GetCloseOrderId();
 		}
 		double GetCloseStartPrice() const {
-			return m_position->GetSecurity().Descale(m_position->GetCloseStartPrice());
+			return m_position->GetSecurity().DescalePrice(m_position->GetCloseStartPrice());
 		}
 		double GetClosePrice() const {
-			return m_position->GetSecurity().Descale(m_position->GetClosePrice());
+			return m_position->GetSecurity().DescalePrice(m_position->GetClosePrice());
 		}
 		
 		int GetClosedQty() const {
@@ -87,7 +87,7 @@ namespace PyApi { namespace Wrappers {
 		}
 	
 		double GetCommission() const {
-			return m_position->GetSecurity().Descale(m_position->GetCommission());
+			return m_position->GetSecurity().DescalePrice(m_position->GetCommission());
 		}
 
 	public:
@@ -97,16 +97,16 @@ namespace PyApi { namespace Wrappers {
 		}
 	
 		int Open(double price) {
-			return m_position->Open(m_position->GetSecurity().Scale(price));
+			return m_position->Open(m_position->GetSecurity().ScalePrice(price));
 		}
 	
 		int OpenAtMarketPriceWithStopPrice(double stopPrice) {
 			return m_position->OpenAtMarketPriceWithStopPrice(
-				m_position->GetSecurity().Scale(stopPrice));
+				m_position->GetSecurity().ScalePrice(stopPrice));
 		}
 	
 		int OpenOrCancel(double price) {
-			return m_position->OpenOrCancel(m_position->GetSecurity().Scale(price));
+			return m_position->OpenOrCancel(m_position->GetSecurity().ScalePrice(price));
 		}
 
 		int CloseAtMarketPrice() {
@@ -116,19 +116,19 @@ namespace PyApi { namespace Wrappers {
 		int Close(double price) {
 			return m_position->Close(
 				::Position::CLOSE_TYPE_NONE,
-				m_position->GetSecurity().Scale(price));
+				m_position->GetSecurity().ScalePrice(price));
 		}
 	
 		int CloseAtMarketPriceWithStopPrice(double stopPrice) {
 			return m_position->CloseAtMarketPriceWithStopPrice(
 				::Position::CLOSE_TYPE_NONE,
-				m_position->GetSecurity().Scale(stopPrice));
+				m_position->GetSecurity().ScalePrice(stopPrice));
 		}
 
 		int CloseOrCancel(double price) {
 			return m_position->CloseOrCancel(
 				::Position::CLOSE_TYPE_NONE,
-				m_position->GetSecurity().Scale(price));
+				m_position->GetSecurity().ScalePrice(price));
 		}
 
 		bool CancelAtMarketPrice() {

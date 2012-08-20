@@ -181,11 +181,11 @@ std::auto_ptr<PositionReporter> s::Algo::CreatePositionReporter() const {
 				<< ',' << state.entry.askSize << '/' << state.entry.bidSize
 
 				// ask/bid at entry
-				<< ',' << position.GetSecurity().Descale(state.entry.ask)
-					<< '/' << position.GetSecurity().Descale(state.entry.bid)
+				<< ',' << position.GetSecurity().DescalePrice(state.entry.ask)
+					<< '/' << position.GetSecurity().DescalePrice(state.entry.bid)
 
 				// t/p price
-				<< ',' << position.GetSecurity().Descale(state.takeProfit)
+				<< ',' << position.GetSecurity().DescalePrice(state.takeProfit)
 				
 				// s/l ratio (ini)
 				<< ',' <<  state.exit.ratioIni
@@ -197,8 +197,8 @@ std::auto_ptr<PositionReporter> s::Algo::CreatePositionReporter() const {
 				<< ',' << state.exit.askSize << '/' << state.exit.bidSize
 
 				// ask/bid at exit
-				<< ',' << position.GetSecurity().Descale(state.exit.ask)
-					<< '/' << position.GetSecurity().Descale(state.exit.bid);
+				<< ',' << position.GetSecurity().DescalePrice(state.exit.ask)
+					<< '/' << position.GetSecurity().DescalePrice(state.exit.bid);
 
 		}
 	};
@@ -228,9 +228,9 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	settings.takeProfit = ini.ReadAbsoluteOrPercentsPriceKey(
 		section,
 		"take_profit",
-		GetSecurity()->GetScale());
+		GetSecurity()->GetPriceScale());
 	settings.volume
-		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "volume"));
+		= GetSecurity()->ScalePrice(ini.ReadTypedKey<double>(section, "volume"));
 
 	struct Util {	
 		static const char * ConvertToStr(Settings::OpenMode mode) {
@@ -337,7 +337,7 @@ void s::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	AppendSettingsReport("open_order_type", Util::ConvertToStr(settings.openOrderType), report);
 	AppendSettingsReport("close_order_type", Util::ConvertToStr(settings.closeOrderType), report);
 	AppendSettingsReport("level2_data_source", Util::ConvertToStr(settings.level2DataSource), report);
-	AppendSettingsReport("volume", GetSecurity()->Descale(settings.volume), report);
+	AppendSettingsReport("volume", GetSecurity()->DescalePrice(settings.volume), report);
 	ReportSettings(report);
 
 	m_settings = settings;
@@ -703,7 +703,7 @@ void s::Algo::ReportStillOpened(Position &position) {
 		state.exit.bidSize,
 		state.exit.ratioIni,
 		state.exit.ratio,
-		sec.Descale(state.takeProfit),
+		sec.DescalePrice(state.takeProfit),
 		sec.GetAskPrice(),
 		sec.GetBidPrice());
 	state.lastStateReport = GetCurrentTime();
@@ -744,7 +744,7 @@ void s::Algo::ReportClosing(const Position &position, bool isTakeProfit) {
 		state.exit.ratio,
 		sec.GetAskPrice(),
 		sec.GetBidPrice(),
-		sec.Descale(state.takeProfit));
+		sec.DescalePrice(state.takeProfit));
 }
 
 void s::Algo::ReportClosingByTime(const Position &position) {

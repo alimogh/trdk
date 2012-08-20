@@ -120,10 +120,10 @@ protected:
 			<< ',' << position.GetCloseTypeStr()
 			
 			// entry start price
-			<< ',' << security.Descale(position.GetOpenStartPrice())
+			<< ',' << security.DescalePrice(position.GetOpenStartPrice())
 			
 			// entry price
-			<< ',' << security.Descale(position.GetOpenPrice())
+			<< ',' << security.DescalePrice(position.GetOpenPrice())
 			
 			// entry time
 			<< ',' << (position.GetOpenTime() + Util::GetEdtDiff()).time_of_day()
@@ -135,10 +135,10 @@ protected:
 			<< ',' /*<< position.GetOpenedQty() << "->"*/ << position.GetClosedQty()
 			
 			// exit start price
-			<< ',' << security.Descale(position.GetCloseStartPrice())
+			<< ',' << security.DescalePrice(position.GetCloseStartPrice())
 			
 			// exit price
-			<< ',' << security.Descale(position.GetClosePrice());
+			<< ',' << security.DescalePrice(position.GetClosePrice());
 
 		// exit time
 		out << ',';
@@ -153,7 +153,7 @@ protected:
 			<< ',' << position.GetCloseOrderId()
 
 			// commission paid
-			<< ',' << security.Descale(position.GetCommission());
+			<< ',' << security.DescalePrice(position.GetCommission());
 
 		// P/L
 		{
@@ -171,7 +171,7 @@ protected:
 			}
 			pl *= position.GetOpenedQty();
 			pl -= position.GetCommission();
-			out << ',' << security.Descale(pl);
+			out << ',' << security.DescalePrice(pl);
 		}
 
 	}

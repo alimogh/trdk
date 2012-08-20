@@ -113,7 +113,7 @@ private:
 				foreach (const Order &order, *orders) {
 					Assert(order.callback);
 					const auto price = order.price
-						?	order.security->Descale(order.price)
+						?	order.security->DescalePrice(order.price)
 						:	order.isSell
 							?	order.security->GetAskPrice()
 							:	order.security->GetBidPrice();
@@ -229,7 +229,7 @@ FakeTradeSystem::OrderId FakeTradeSystem::SellOrCancel(
 		order.id,
 		security.GetSymbol(),
 		qty,
-		security.Descale(price));
+		security.DescalePrice(price));
 	return order.id;
 }
 
@@ -292,7 +292,7 @@ FakeTradeSystem::OrderId FakeTradeSystem::BuyOrCancel(
 		order.id,
 		security.GetSymbol(),
 		qty,
-		security.Descale(price));
+		security.DescalePrice(price));
 	return order.id;
 }
 

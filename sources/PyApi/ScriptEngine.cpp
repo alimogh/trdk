@@ -33,19 +33,21 @@ BOOST_PYTHON_MODULE(Trader) {
 		.add_property("fullSymbol", &Wrappers::Security::GetFullSymbol)
 		.add_property("currency", &Wrappers::Security::GetCurrency)
 		
-		.add_property("scale", &Wrappers::Security::GetScale)
-		.def("scalePrice", &Wrappers::Security::Scale)
-		.def("descalePrice", &Wrappers::Security::Descale)
+		.add_property("priceScale", &Wrappers::Security::GetPriceScale)
+		.def("scalePrice", &Wrappers::Security::ScalePrice)
+		.def("descalePrice", &Wrappers::Security::DescalePrice)
 
-		.add_property("lastPriceScaled", &Wrappers::Security::GetLastScaled)
-		.add_property("lastPrice", &Wrappers::Security::GetLast)
+		.add_property("lastPriceScaled", &Wrappers::Security::GetLastPriceScaled)
+		.add_property("lastPrice", &Wrappers::Security::GetLastPrice)
 		
-		.add_property("askPriceScaled", &Wrappers::Security::GetAskScaled)
-		.add_property("askPrice", &Wrappers::Security::GetAsk)
+		.add_property("askPriceScaled", &Wrappers::Security::GetAskPriceScaled)
+		.add_property("askPrice", &Wrappers::Security::GetAskPrice)
+		.add_property("askSize", &Wrappers::Security::GetAskSize)
 		.add_property("level2AskSize", &Wrappers::Security::GetLevel2AskSize)
 		
-		.add_property("bidPriceScaled", &Wrappers::Security::GetBidScaled)
-		.add_property("bidPrice", &Wrappers::Security::GetBid)
+		.add_property("bidPriceScaled", &Wrappers::Security::GetBidPriceScaled)
+		.add_property("bidPrice", &Wrappers::Security::GetBidPrice)
+		.add_property("bidSize", &Wrappers::Security::GetBidSize)
 		.add_property("level2BidSize", &Wrappers::Security::GetLevel2BidSize)
 
 		.def("cancelOrder", &Wrappers::Security::CancelOrder)

@@ -206,7 +206,7 @@ InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::Sell(
 			OrderQty qty,
 			OrderPrice price,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	const auto rawPrice = security.Descale(price);
+	const auto rawPrice = security.DescalePrice(price);
 	PlacedOrder order = {};
 	order.id = m_pimpl->client->SendBid(security, qty, rawPrice);
 	Log::Trading(
@@ -227,7 +227,7 @@ InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::SellAtMark
 			OrderQty qty,
 			OrderPrice stopPrice,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	const auto rawStopPrice = security.Descale(stopPrice);
+	const auto rawStopPrice = security.DescalePrice(stopPrice);
 	PlacedOrder order = {};
 	order.id = m_pimpl->client->SendBidWithMarketPrice(security, qty, rawStopPrice);
 	Log::Trading(
@@ -248,7 +248,7 @@ InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::SellOrCanc
 			OrderQty qty,
 			OrderPrice price,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	const double rawPrice = security.Descale(price);
+	const double rawPrice = security.DescalePrice(price);
 	const PlacedOrder order = {
 		m_pimpl->client->SendIocBid(security, qty, rawPrice),
 		security.GetFullSymbol(),
@@ -287,7 +287,7 @@ InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::Buy(
 			OrderQty qty,
 			OrderPrice price,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	const auto rawPrice = security.Descale(price);
+	const auto rawPrice = security.DescalePrice(price);
 	PlacedOrder order = {};
 	order.id = m_pimpl->client->SendAsk(security, qty, rawPrice);
 	Log::Trading(
@@ -308,7 +308,7 @@ InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::BuyAtMarke
 			OrderQty qty,
 			OrderPrice stopPrice,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	const auto rawStopPrice = security.Descale(stopPrice);
+	const auto rawStopPrice = security.DescalePrice(stopPrice);
 	PlacedOrder order = {};
 	order.id = m_pimpl->client->SendAskWithMarketPrice(security, qty, rawStopPrice);
 	Log::Trading(
@@ -329,7 +329,7 @@ InteractiveBrokersTradeSystem::OrderId InteractiveBrokersTradeSystem::BuyOrCance
 			OrderQty qty,
 			OrderPrice price,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	const double rawPrice = security.Descale(price);
+	const double rawPrice = security.DescalePrice(price);
 	const PlacedOrder order = {
 		m_pimpl->client->SendIocAsk(security, qty, rawPrice),
 		security.GetFullSymbol(),

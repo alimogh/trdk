@@ -61,13 +61,13 @@ std::auto_ptr<PositionReporter> AskBid::CreatePositionReporter() const {
 			const Security &sec = position.GetSecurity();
 			out
 				// "ask/bid at entry"
-				<< ',' << sec.Descale(state.entry.ask) << '/' << sec.Descale(state.entry.bid)
+				<< ',' << sec.DescalePrice(state.entry.ask) << '/' << sec.DescalePrice(state.entry.bid)
 				// "ask/bid at exit"
-				<< ',' << sec.Descale(state.exit.ask) << '/' << sec.Descale(state.exit.bid)
+				<< ',' << sec.DescalePrice(state.exit.ask) << '/' << sec.DescalePrice(state.exit.bid)
 				// t/p price
-				<< ',' << sec.Descale(state.takeProfit)
+				<< ',' << sec.DescalePrice(state.takeProfit)
 				// s/l price
-				<< ',' <<  sec.Descale(state.stopLoss);
+				<< ',' <<  sec.DescalePrice(state.stopLoss);
 		}
 	};
 
@@ -216,16 +216,16 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	settings.spread = ini.ReadAbsoluteOrPercentsPriceKey(
 		section,
 		"spread",
-		GetSecurity()->GetScale());
+		GetSecurity()->GetPriceScale());
 
 	if (settings.closeOrderType == Settings::ORDER_TYPE_IOC) {
 		settings.takeProfit
-			= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "take_profit"));
+			= GetSecurity()->ScalePrice(ini.ReadTypedKey<double>(section, "take_profit"));
 		settings.stopLoss
-			= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "stop_loss"));
+			= GetSecurity()->ScalePrice(ini.ReadTypedKey<double>(section, "stop_loss"));
 	}
 	settings.volume
-		= GetSecurity()->Scale(ini.ReadTypedKey<double>(section, "volume"));
+		= GetSecurity()->ScalePrice(ini.ReadTypedKey<double>(section, "volume"));
 
 	settings.positionTimeSeconds
 		= pt::seconds(ini.ReadTypedKey<long>(section, "position_time_seconds"));
@@ -236,10 +236,10 @@ void AskBid::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 	AppendSettingsReport("shorts_enabled", settings.isShortsEnabled, settingsReport);
 	AppendSettingsReport("spread", settings.spread, settingsReport);
 	if (settings.closeOrderType == Settings::ORDER_TYPE_IOC) {
-		AppendSettingsReport("take_profit", GetSecurity()->Descale(settings.takeProfit), settingsReport);
-		AppendSettingsReport("stop_loss", GetSecurity()->Descale(settings.stopLoss), settingsReport);
+		AppendSettingsReport("take_profit", GetSecurity()->DescalePrice(settings.takeProfit), settingsReport);
+		AppendSettingsReport("stop_loss", GetSecurity()->DescalePrice(settings.stopLoss), settingsReport);
 	}
-	AppendSettingsReport("volume", GetSecurity()->Descale(settings.volume), settingsReport);
+	AppendSettingsReport("volume", GetSecurity()->DescalePrice(settings.volume), settingsReport);
 	AppendSettingsReport("position_time_seconds", settings.positionTimeSeconds, settingsReport);
 	AppendSettingsReport("open_order_type", Util::ConvertToStr(settings.openOrderType), settingsReport);
 	AppendSettingsReport("close_order_type", Util::ConvertToStr(settings.closeOrderType), settingsReport);
@@ -337,10 +337,10 @@ void AskBid::DoClosePosition(Position &position) {
 	if (state.isStarted) {
 		switch (position.GetType()) {
 			case Position::TYPE_LONG:
-				state.takeProfit -= security.Scale(.01);
+				state.takeProfit -= security.ScalePrice(.01);
 				break;
 			case Position::TYPE_SHORT:
-				state.takeProfit += security.Scale(.01);
+				state.takeProfit += security.ScalePrice(.01);
 				break;
 			default:
 				AssertFail("Unknown position type");
@@ -371,10 +371,10 @@ void AskBid::ReportTakeProfitDo(const Position &position) const {
 		"%1% %2% take-profit-do limit-price=%3% cur-ask-bid=%4%/%5% stop-loss=%6% qty=%7%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
-		position.GetSecurity().Descale(position.GetAlgoState<State>().takeProfit),
+		position.GetSecurity().DescalePrice(position.GetAlgoState<State>().takeProfit),
 		position.GetSecurity().GetAskPrice(),
 		position.GetSecurity().GetBidPrice(),
-		position.GetSecurity().Descale(position.GetAlgoState<State>().stopLoss),
+		position.GetSecurity().DescalePrice(position.GetAlgoState<State>().stopLoss),
 		position.GetOpenedQty());
 }
 

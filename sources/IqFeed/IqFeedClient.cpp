@@ -434,29 +434,32 @@ namespace {
 				return;
 			}
 
-			const double last = message.GetFieldAsDouble(4, true);
-			Assert(last > 0);
+			const double lastPrice = message.GetFieldAsDouble(4, true);
+			Assert(lastPrice > 0);
 
 			const size_t totalVolume = message.GetFieldAsUnsignedInt(7, true);
 
-			const double bid = message.GetFieldAsDouble(11, true);
-			const double ask = message.GetFieldAsDouble(12, true);
-			if (isSummary && (Util::IsZero(ask) || Util::IsZero(bid))) {
-				Assert(Util::IsZero(ask));
-				Assert(Util::IsZero(bid));
+			const double bidPrice = message.GetFieldAsDouble(11, true);
+			const double askPrice = message.GetFieldAsDouble(12, true);
+			const size_t bidSize = message.GetFieldAsUnsignedInt(13, true);
+			const size_t askSize = message.GetFieldAsUnsignedInt(14, true);
+			if (	isSummary
+					&& (bidSize || askSize || Util::IsZero(askPrice) || Util::IsZero(bidPrice))) {
+				Assert(askSize == 0);
+				Assert(bidSize == 0);
+				Assert(Util::IsZero(askPrice));
+				Assert(Util::IsZero(bidPrice));
 				return;
 			}
-			Assert(ask > 0);
-			Assert(bid > 0);
-			Assert(ask * 0.75 < bid);
-			Assert(ask * 1.25 > bid);
 
 			subscriber->second->UpdateLevel1(
 				timeOfReception,
 				message.GetFieldAsTimeOfDay(66, true) - Util::GetEdtDiff(),
-				last,
-				ask,
-				bid,
+				lastPrice,
+				askPrice,
+				askSize,
+				bidPrice,
+				bidSize,
 				totalVolume);
 
 		}
@@ -729,15 +732,12 @@ namespace {
 
 			const size_t totalVolume = message.GetFieldAsUnsignedInt(5, true);
 
-			const double bid = message.GetFieldAsDouble(6, true);
-			Assert(bid > 0);
-			const double ask = message.GetFieldAsDouble(7, true);
-			Assert(ask > 0);
+			const double bidPrice = message.GetFieldAsDouble(6, true);
+			Assert(bidPrice > 0);
+			const double askPrice = message.GetFieldAsDouble(7, true);
+			Assert(askPrice > 0);
 
-			Assert(ask * 0.75 < bid);
-			Assert(ask * 1.25 > bid);
-
-			subscriber.UpdateLevel1(timeOfReception, time, last, ask, bid, totalVolume);
+			subscriber.UpdateLevel1(timeOfReception, time, last, askPrice, 0, bidPrice, 0, totalVolume);
 
 		}
 

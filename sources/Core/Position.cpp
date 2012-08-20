@@ -120,7 +120,7 @@ void Position::UpdateOpening(
 			Assert(filled + remaining == m_planedQty);
 			Assert(m_opened.qty + filled <= m_planedQty);
 			Assert(avgPrice > 0);
-			Interlocking::Exchange(m_opened.price, m_security->Scale(avgPrice));
+			Interlocking::Exchange(m_opened.price, m_security->ScalePrice(avgPrice));
 			Interlocking::Exchange(m_opened.qty, m_opened.qty + filled);
 			Assert(m_opened.qty > 0);
 			ReportOpeningUpdate("filled", orderStatus);
@@ -208,7 +208,7 @@ void Position::UpdateClosing(
 			Assert(filled + remaining == m_opened.qty);
 			Assert(m_closed.qty + filled <= m_opened.qty);
 			Assert(avgPrice > 0);
-			Interlocking::Exchange(m_closed.price, m_security->Scale(avgPrice));
+			Interlocking::Exchange(m_closed.price, m_security->ScalePrice(avgPrice));
 			Interlocking::Exchange(m_closed.qty, m_closed.qty + filled);
 			Assert(m_closed.qty > 0);
 			isCompleted = remaining == 0;
@@ -314,7 +314,7 @@ Position::Time Position::GetCloseTime() const {
 }
 
 Position::Price Position::GetCommission() const {
-	return m_opened.qty * GetSecurity().Scale(.01); // m_opened.comission + m_closed.comission;
+	return m_opened.qty * GetSecurity().ScalePrice(.01); // m_opened.comission + m_closed.comission;
 }
 
 Position::StateUpdateConnection Position::Subscribe(
@@ -363,8 +363,8 @@ void Position::ReportOpeningUpdate(
 			m_algo->GetTag(),
 			GetPlanedQty(),
 			GetOpenedQty(),
-			GetSecurity().Descale(GetOpenStartPrice()),
-			GetSecurity().Descale(GetOpenPrice()),
+			GetSecurity().DescalePrice(GetOpenStartPrice()),
+			GetSecurity().DescalePrice(GetOpenPrice()),
 			GetOpenOrderId(),
 			GetSecurity().GetTradeSystem().GetStringStatus(orderStatus),
 			m_isError);
@@ -389,7 +389,7 @@ void Position::ReportClosingUpdate(
 			m_algo->GetTag(),
 			GetOpenedQty(),
 			GetClosedQty(),
-			GetSecurity().Descale(GetClosePrice()),
+			GetSecurity().DescalePrice(GetClosePrice()),
 			GetOpenOrderId(),
 			GetCloseOrderId(),
 			GetSecurity().GetTradeSystem().GetStringStatus(orderStatus),

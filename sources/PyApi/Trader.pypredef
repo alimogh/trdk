@@ -8,7 +8,7 @@ class Security:
 
 	currency = str
 
-	scale = int
+	priceScale = int
 
 	lastPriceScaled = int
 	lastPrice = float

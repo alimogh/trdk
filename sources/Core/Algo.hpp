@@ -125,7 +125,7 @@ protected:
 				const IniFile::AbsoluteOrPercentsPrice &val,
 				SettingsReport &report)
 			const {
-		AppendSettingsReport(name, val.GetStr(GetSecurity()->GetScale()), report);
+		AppendSettingsReport(name, val.GetStr(GetSecurity()->GetPriceScale()), report);
 	}
 
 	boost::posix_time::ptime GetCurrentTime() const;

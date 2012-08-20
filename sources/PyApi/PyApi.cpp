@@ -101,7 +101,7 @@ void PyApi::Algo::ReportDecision(const Position &position) const {
 		position.GetTypeStr(),
 		position.GetSecurity().GetAskPrice(),
 		position.GetSecurity().GetBidPrice(),
-		position.GetSecurity().Descale(position.GetOpenStartPrice()),
+		position.GetSecurity().DescalePrice(position.GetOpenStartPrice()),
 		position.GetPlanedQty());
 }
 

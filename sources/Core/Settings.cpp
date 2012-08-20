@@ -181,7 +181,7 @@ boost::uint16_t Settings::GetLevel2SnapshotPrintTimeSeconds() const {
 }
 
 bool Settings::IsValidPrice(const Security &security) const {
-	Assert(security.GetScale() == defaultLastPriceScale);
+	Assert(security.GetPriceScale() == defaultLastPriceScale);
 	return m_minPrice <= security.GetLastPriceScaled();
 }
 

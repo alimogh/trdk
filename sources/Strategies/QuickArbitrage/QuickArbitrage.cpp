@@ -89,12 +89,12 @@ void s::Algo::ReportDecision(const Position &position) const {
 		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6% take-profit=%7% stop-loss=%8%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
-		position.GetSecurity().Descale(position.GetAlgoState<State>().entry.ask),
-		position.GetSecurity().Descale(position.GetAlgoState<State>().entry.bid),
-		position.GetSecurity().Descale(position.GetOpenStartPrice()),
+		position.GetSecurity().DescalePrice(position.GetAlgoState<State>().entry.ask),
+		position.GetSecurity().DescalePrice(position.GetAlgoState<State>().entry.bid),
+		position.GetSecurity().DescalePrice(position.GetOpenStartPrice()),
 		position.GetPlanedQty(),
-		position.GetSecurity().Descale(position.GetAlgoState<State>().takeProfit),
-		position.GetSecurity().Descale(position.GetAlgoState<State>().stopLoss));
+		position.GetSecurity().DescalePrice(position.GetAlgoState<State>().takeProfit),
+		position.GetSecurity().DescalePrice(position.GetAlgoState<State>().stopLoss));
 }
 
 void s::Algo::SubscribeToMarketData(

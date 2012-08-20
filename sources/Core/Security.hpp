@@ -103,16 +103,16 @@ public:
 		return "USD";
 	}
 
-	unsigned int GetScale() const throw() {
+	unsigned int GetPriceScale() const throw() {
 		return 100;
 	}
 	
-	Price Scale(double price) const {
-		return Util::Scale(price, GetScale());
+	Price ScalePrice(double price) const {
+		return Util::Scale(price, GetPriceScale());
 	}
 
-	double Descale(Price price) const {
-		return Util::Descale(price, GetScale());
+	double DescalePrice(Price price) const {
+		return Util::Descale(price, GetPriceScale());
 	}
 
 public:
@@ -146,12 +146,19 @@ public:
 public:
 
 	Price GetLastPriceScaled() const;
-	Price GetAskPriceScaled() const;
-	Price GetBidPriceScaled() const;
-	
 	double GetLastPrice() const;
+	
+	Price GetAskPriceScaled() const;
 	double GetAskPrice() const;
+	Qty GetAskSize() const {
+		return m_askSize;
+	}
+	
+	Price GetBidPriceScaled() const;
 	double GetBidPrice() const;
+	Qty GetBidSize() const {
+		return m_bidSize;
+	}
 
 	Qty GetLevel2AskSizeIqFeed();
 	Qty GetLevel2AskSizeIb();
@@ -164,12 +171,12 @@ private:
 
 	bool SetLastPrice(double);
 	
-	bool SetAskPrice(double);
-	bool SetBidPrice(double);
+	bool SetAsk(double, Qty);
+	bool SetBid(double, Qty);
 
 	bool SetLastPrice(Price);
-	bool SetAskPrice(Price);
-	bool SetBidPrice(Price);
+	bool SetAsk(Price, Qty);
+	bool SetBid(Price, Qty);
 
 	void SetLevel2AskIqFeed(Qty askSize);
 	void SetLevel2AskIb(Qty askSize);
@@ -185,9 +192,11 @@ public:
 	void UpdateLevel1(
 				const MarketDataTime &timeOfReception,
 				const MarketDataTime &lastTradeTime,
-				double last,
-				double ask,
-				double bid,
+				double lastPrice,
+				double askPrice,
+				size_t askSize,
+				double bidPrice,
+				size_t bidSize,
 				size_t totalVolume);
 	void UpdateLevel2IqFeed(
 				const MarketDataTime &timeOfReception,
@@ -225,9 +234,11 @@ private:
 
 	volatile LONGLONG m_isHistoryData;
 
-	volatile LONGLONG m_last;
-	volatile LONGLONG m_ask;
-	volatile LONGLONG m_bid;
+	volatile LONGLONG m_lastPrice;
+	volatile LONGLONG m_askPrice;
+	volatile long m_askSize;
+	volatile LONGLONG m_bidPrice;
+	volatile long m_bidSize;
 
 	class MarketDataLevel2Log;
 	std::unique_ptr<MarketDataLevel2Log> m_marketDataLevel2Log;

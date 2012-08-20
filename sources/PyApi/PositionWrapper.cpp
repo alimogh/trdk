@@ -36,7 +36,7 @@ PyApi::Wrappers::ShortPosition::ShortPosition(
 				new ::ShortPosition(
 					security.GetSecurity(),
 					qty,
-					security.GetSecurity()->Scale(startPrice),
+					security.GetSecurity()->ScalePrice(startPrice),
 					security.GetAlgo().shared_from_this()))) {
 	//...//
 }
@@ -59,7 +59,7 @@ PyApi::Wrappers::LongPosition::LongPosition(
 				new ::LongPosition(
 					security.GetSecurity(),
 					qty,
-					security.GetSecurity()->Scale(startPrice),
+					security.GetSecurity()->ScalePrice(startPrice),
 					security.GetAlgo().shared_from_this()))) {
 	//...//
 }
