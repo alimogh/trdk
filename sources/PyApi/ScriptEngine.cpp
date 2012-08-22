@@ -19,6 +19,9 @@ using namespace PyApi;
 
 BOOST_PYTHON_MODULE(Trader) {
 
+	python::def("logInfo", &Log::Info);
+	python::def("logTrading", &Log::Trading);
+
 	python::class_<Wrappers::AlgoWrap, boost::noncopyable>("Algo")
 	
 		.def_readonly("security", &Wrappers::AlgoWrap::security)

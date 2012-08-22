@@ -1,4 +1,22 @@
 
+
+###############################################################################
+
+def logInfo(event):
+	"""
+		Adds new log record into events.log
+
+		@type event: str
+	"""
+
+def logTrading(tag, event):
+	"""
+		Adds new log record into trading.log
+
+		@type tag: str
+		@type event: str
+	"""
+
 ###############################################################################
 
 class Security:
@@ -24,7 +42,7 @@ class Security:
 	bidSize = int
 	level2BidSize = int
 
-	def scalePrice(price)
+	def scalePrice(price):
 		"""
 			@type price: float
 		"""
