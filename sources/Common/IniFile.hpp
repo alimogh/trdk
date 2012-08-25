@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Core/Exception.hpp"
+#include "Exception.hpp"
 #include "DisableBoostWarningsBegin.h"
 #	include <boost/noncopyable.hpp>
 #	include <boost/bind.hpp>

@@ -9,11 +9,12 @@
 #pragma once
 
 #include "Instrument.hpp"
+#include "Api.h"
 
 class Position;
 class Settings;
 
-class Security
+class TRADER_CORE_API Security
 	: public Instrument,
 	public boost::enable_shared_from_this<Security> {
 
@@ -28,7 +29,7 @@ public:
 	typedef TradeSystem::OrderQty Qty;
 	typedef TradeSystem::OrderPrice Price;
 
-	struct Quote {
+	struct TRADER_CORE_API Quote {
 		
 		unsigned int timeTick;
 		double price;
@@ -92,6 +93,8 @@ public:
 				const std::string &exchange,
 				boost::shared_ptr<const Settings> settings,
 				bool logMarketData);
+
+	~Security();
 
 public:
 
@@ -232,7 +235,7 @@ private:
 	boost::shared_ptr<const Settings> m_settings;
 
 	class MarketDataLog;
-	std::unique_ptr<MarketDataLog> m_marketDataLevel1Log;
+	MarketDataLog *m_marketDataLevel1Log;
 
 	mutable boost::signals2::signal<UpdateSlotSignature> m_updateSignal;
 
@@ -248,10 +251,10 @@ private:
 	volatile long m_bidSize;
 
 	class MarketDataLevel2Log;
-	std::unique_ptr<MarketDataLevel2Log> m_marketDataLevel2Log;
+	MarketDataLevel2Log *m_marketDataLevel2Log;
 
 	class MarketDataLevel2SnapshotLog;
-	std::unique_ptr<MarketDataLevel2SnapshotLog> m_marketDataLevel2SnapshotLog;
+	MarketDataLevel2SnapshotLog *m_marketDataLevel2SnapshotLog;
 
 	mutable Level2Mutex m_level2Mutex;
 	QuotesAccumulated m_qoutesIqFeed;

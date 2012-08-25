@@ -12,18 +12,9 @@ namespace Ini {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	namespace Algo {
-		namespace QuickArbitrage {
-			extern const std::string old;
-			extern const std::string askBid;
-		}
-		extern const std::string level2MarketArbitrage;
-	}
-
 	namespace Sections {
 		extern const std::string common;
-		extern const std::string strategy;
-		extern const std::string py;
+		extern const std::string algo;
 		namespace MarketData {
 			namespace Log {
 				extern const std::string symbols;
@@ -33,8 +24,7 @@ namespace Ini {
 	}
 
 	namespace Key {
-		extern const std::string algo;
-		extern const std::string tag;
+		extern const std::string module;
 		extern const std::string symbols;
 	}
 

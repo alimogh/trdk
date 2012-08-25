@@ -10,12 +10,10 @@
 #include "FakeTradeSystem.hpp"
 #include "Ini.hpp"
 #include "Util.hpp"
-#include "PyApi/PyApi.hpp"
-#include "Strategies/QuickArbitrage/QuickArbitrageAskBid.hpp"
-#include "Strategies/Level2MarketArbitrage/Level2MarketArbitrage.hpp"
 #include "IqFeed/IqFeedClient.hpp"
 #include "InteractiveBrokers/InteractiveBrokersTradeSystem.hpp"
 #include "Dispatcher.hpp"
+#include "Core/Algo.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 
@@ -25,7 +23,9 @@ namespace fs = boost::filesystem;
 namespace {
 
 	typedef std::map<std::string, boost::shared_ptr<Security>> Securities;
-	typedef std::list<boost::shared_ptr<Algo>> Algos;
+	
+	typedef DllObjectPtr<Algo> ModuleAlgo;
+	typedef std::map<std::string /*tag*/, ModuleAlgo> Algos;
 
 }
 
@@ -70,35 +70,21 @@ namespace {
 				Algos &algos,
 				boost::shared_ptr<Settings> settings)  {
 
-		std::string algoName;
-		if (boost::starts_with(section, Ini::Sections::strategy)) {
-			try {
-				if (!ini.IsKeyExist(section, Ini::Key::algo)) {
-					return;
-				}
-				algoName = ini.ReadKey(section, Ini::Key::algo, false);
-			} catch (const IniFile::Error &ex) {
-				Log::Error("Failed to get strategy algo: \"%1%\".", ex.what());
-				throw;
-			}
-			if (	algoName != Ini::Algo::QuickArbitrage::old
-					&& algoName != Ini::Algo::QuickArbitrage::askBid
-					&& algoName != Ini::Algo::level2MarketArbitrage) {
-				return;
-			}
-		} else {
-			Assert(boost::starts_with(section, Ini::Sections::py));
-		}
-
-		std::string tag;
+		fs::path module;
 		try {
-			tag = ini.ReadKey(section, Ini::Key::tag, false);
+			module = ini.ReadKey(section, Ini::Key::module, false);
 		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to get strategy object tag: \"%1%\".", ex.what());
-			throw;
+			Log::Error("Failed to get algo module: \"%1%\".", ex.what());
+			throw IniFile::Error("Failed to load algo");
 		}
 
-		Log::Info("Loading strategy objects for \"%1%\"...", tag);
+		const std::string tag = section.substr(Ini::Sections::algo.size());
+		if (tag.empty()) {
+			Log::Error("Failed to get tag for algo section \"%1%\".", section);
+			throw IniFile::Error("Failed to load algo");
+		}
+
+		Log::Info("Loading objects for \"%1%\"...", tag);
 		
 		std::string symbolsFilePath;
 		try {
@@ -108,73 +94,59 @@ namespace {
 			throw;
 		}
 
-		Log::Info("Loading symbols from %1%...", symbolsFilePath);
+		Log::Info("Loading symbols from %1% for %2%...", symbolsFilePath, tag);
 		const IniFile symbolsIni(symbolsFilePath, ini.GetPath().branch_path());
 		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("SMART", "NASDAQ");
 		try {
 			LoadSecurities(symbols, tradeSystem, securities, settings, ini);
 		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to load securities: \"%1%\".", ex.what());
-			throw;
+			Log::Error("Failed to load securities for %2%: \"%1%\".", ex.what(), tag);
+			throw IniFile::Error("Failed to load algo");
 		}
 
-		foreach (const auto &symbol, symbols) {
-			
-			Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
-			
-			try {
-			
-				boost::shared_ptr<Algo> algo;
-				if (algoName.empty()) {
-					Assert(boost::starts_with(section, Ini::Sections::py));
-					algo.reset(
-						new PyApi::Algo(
-							tag,
-							securities[CreateSecuritiesKey(symbol)],
-							ini,
-							section));
-				} else if (algoName == Ini::Algo::QuickArbitrage::old) {
-					AssertFail("algoName == Ini::Algo::QuickArbitrage::old");
-// 					algo.reset(
-// 						new Strategies::QuickArbitrage::Old(
-// 							tag,
-// 							securities[CreateSecuritiesKey(symbol)],
-// 							ini,
-// 							section));
-				} else if (algoName == Ini::Algo::QuickArbitrage::askBid) {
-					algo.reset(
-						new Strategies::QuickArbitrage::AskBid(
-							tag,
-							securities[CreateSecuritiesKey(symbol)],
-							ini,
-							section));
-				} else if (algoName == Ini::Algo::level2MarketArbitrage) {
-					algo.reset(
-						new Strategies::Level2MarketArbitrage::Algo(
-							tag,
-							securities[CreateSecuritiesKey(symbol)],
-							ini,
-							section));
-				} else {
-					AssertFail("Unknown algo in INI file.");
-				}
-				algos.push_back(algo);
-			
-				Log::Info(
-					"Loaded strategy \"%1%\" for \"%2%\".",
-					algo->GetName(),
-					const_cast<const Algo &>(*algo).GetSecurity()->GetFullSymbol());
-		
-			} catch (const Exception &ex) {
-				Log::Error("Failed to load strategy: \"%1%\".", ex.what());
-				throw;
+		boost::shared_ptr<Dll> dll;
+		foreach (auto a, algos) {
+			if (a.second.GetDll()->GetFile() == module) {
+				dll = a.second;
+				break;
 			}
-		
+		}
+		if (!dll) {
+			dll.reset(new Dll(module));
+		}
+		const auto fabric
+			= dll->GetFunction<
+					boost::shared_ptr<Algo>(
+						const std::string &tag,
+						boost::shared_ptr<Security> security,
+						const IniFile &ini,
+						const std::string &section)>
+				("CreateAlgo");
+
+		foreach (const auto &symbol, symbols) {
+			Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
+			boost::shared_ptr<Algo> newAlgo;
+			try {
+				newAlgo = fabric(
+					tag,
+ 					securities[CreateSecuritiesKey(symbol)],
+ 					ini,
+ 					section);
+			} catch (...) {
+				Log::RegisterUnhandledException(__FUNCTION__, __FILE__, __LINE__, false);
+				throw IniFile::Error("Failed to load algo");
+			}
+			algos[tag] = DllObjectPtr<Algo>(dll, newAlgo);
+			Log::Info(
+				"Loaded algo \"%1%\" for \"%2%\" with tag \"%3%\".",
+				newAlgo->GetName(),
+				const_cast<const Algo &>(*newAlgo).GetSecurity()->GetFullSymbol(),
+				tag);
 		}
 
 	}
 
-	void InitTrading(
+	bool InitTrading(
 				const fs::path &iniFilePath,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Dispatcher &dispatcher,
@@ -188,24 +160,28 @@ namespace {
 
 		Securities securities;
 		foreach (const auto &section, sections) {
-			if (boost::starts_with(section, Ini::Sections::strategy)) {
-				Log::Info("Found section \"%1%\"...", section);
-				InitAlgo(ini, section, tradeSystem, securities, algos, settings);
-			} else if (boost::starts_with(section, Ini::Sections::py)) {
-				Log::Info("Found script section \"%1%\"...", section);
+			if (boost::starts_with(section, Ini::Sections::algo)) {
+				Log::Info("Found algo section \"%1%\"...", section);
 				InitAlgo(ini, section, tradeSystem, securities, algos, settings);
 			}
 		}
 
+		if (algos.empty()) {
+			Log::Error("No algos loaded.");
+			return false;
+		}
+
 		foreach (auto a, algos) {
-			dispatcher.Register(a);
+			dispatcher.Register(a.second);
 		}
 
 		Log::Info("Loaded %1% securities.", securities.size());
-		Log::Info("Loaded %1% strategies.", algos.size());
+		Log::Info("Loaded %1% algos.", algos.size());
 
 		Connect(*tradeSystem, *settings);
 		Connect(marketDataSource, *settings);
+		
+		return true;
 
 	}
 
@@ -233,57 +209,28 @@ namespace {
 			}
 			bool isError = false;
 			std::string algoName;
-			if (boost::starts_with(section, Ini::Sections::strategy)) {
-				try {
-					algoName = ini.ReadKey(section, Ini::Key::algo, false);
-				} catch (const IniFile::Error &ex) {
-					Log::Error("Failed to get strategy algo: \"%1%\".", ex.what());
-					continue;
-				}
-			} else if (!boost::starts_with(section, Ini::Sections::py)) {
+			if (!boost::starts_with(section, Ini::Sections::algo)) {
 				continue;
 			}
-			std::string tag;
+			const std::string tag = section.substr(Ini::Sections::algo.size());
+			if (tag.empty()) {
+				Log::Error("Failed to get tag for algo section \"%1%\".", section);
+				continue;
+			}
+			const Algos::iterator pos = algos.find(tag);
+			if (pos == algos.end()) {
+				Log::Warn(
+					"Could not update current settings: could not find algo with tag \"%1%\".",
+					tag);
+				continue;
+			}
+			Assert(pos->second->GetTag() == tag);
 			try {
-				tag = ini.ReadKey(section, Ini::Key::tag, false);
-			} catch (const IniFile::Error &ex) {
-				Log::Error("Failed to get strategy object tag: \"%1%\".", ex.what());
-				continue;
-			}
-			foreach (auto &a, algos) {
-				if (a->GetTag() != tag) {
-					continue;
-				} else if (!algoName.empty()) {
-					if (algoName == Ini::Algo::level2MarketArbitrage) {
-						if (!dynamic_cast<Strategies::Level2MarketArbitrage::Algo *>(a.get())) {
-							Log::Error("Failed to update by tag \"%1%\" - object has another type.");
-							continue;
-						}
-					} else if (algoName == Ini::Algo::QuickArbitrage::old) {
-						AssertFail("algoName == Ini::Algo::QuickArbitrage::old");
-//	 					if (!dynamic_cast<Strategies::QuickArbitrage::Old *>(a.get())) {
-//							Log::Error("Failed to update by tag \"%1%\" - object has another type.");
-// 							continue;
-//	 					}
-					} else if (algoName == Ini::Algo::QuickArbitrage::askBid) {
-						if (!dynamic_cast<Strategies::QuickArbitrage::AskBid *>(a.get())) {
-							Log::Error("Failed to update by tag \"%1%\" - object has another type.");
-							continue;
-						}
-					} else {
-						continue;
-					}
-				} else if (!dynamic_cast<PyApi::Algo *>(a.get())) {
-					Log::Error("Failed to update by tag \"%1%\" - object has another type.");
-					continue;
-				}
-				try {
-					a->UpdateSettings(ini, section);
-				} catch (const Exception &ex) {
-					Log::Error("Failed to update current settings: \"%1%\".", ex.what());
-					isError = true;
-					break;
-				}
+				pos->second->UpdateSettings(ini, section);
+			} catch (const Exception &ex) {
+				Log::Error("Failed to update current settings: \"%1%\".", ex.what());
+				isError = true;
+				break;
 			}
 			if (isError) {
 				break;
@@ -304,12 +251,14 @@ void Trade(const fs::path &iniFilePath) {
 	Dispatcher dispatcher(settings);
 
 	Algos algos;
-	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings);
-	
-	foreach (auto &a, algos) {
-		a->SubscribeToMarketData(marketDataSource, *tradeSystem);
+	if (!InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings)) {
+		return;
 	}
-
+		
+	foreach (auto &a, algos) {
+		a.second->SubscribeToMarketData(marketDataSource, *tradeSystem);
+	}
+	
 	FileSystemChangeNotificator iniChangeNotificator(
 		iniFilePath,
 		boost::bind(
@@ -320,10 +269,10 @@ void Trade(const fs::path &iniFilePath) {
 
 	iniChangeNotificator.Start();
 	dispatcher.Start();
+
 	getchar();
 	iniChangeNotificator.Stop();
 	dispatcher.Stop();
-	algos.clear();
 
 }
 
@@ -351,18 +300,21 @@ void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
 	IqFeedClient marketDataSource;
 	Dispatcher dispatcher(settings);
 	Algos algos;
-	InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings);
+	if (!InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings)) {
+		return;
+	}
 
 	foreach (auto &a, algos) {
-		a->RequestHistory(
+		a.second->RequestHistory(
 			marketDataSource,
 			settings->GetCurrentTradeSessionStartTime(),
 			settings->GetCurrentTradeSessionEndime());
 	}
-
 	dispatcher.Start();
 	Log::Info("!!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!!");
+	
 	getchar();
+	
 	dispatcher.Stop();
 	algos.clear();
 

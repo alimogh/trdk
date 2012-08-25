@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Security.hpp"
+#include "Api.h"
 
 class PositionBandle;
 class Position;
@@ -17,7 +18,7 @@ class IniFile;
 class LiveMarketDataSource;
 class HistoryMarketDataSource;
 
-class Algo
+class TRADER_CORE_API Algo
 		: private boost::noncopyable,
 		public boost::enable_shared_from_this<Algo> {
 

@@ -109,3 +109,44 @@ void Log::Detail::AppendTradingRecordUnsafe(
 	trading.AppendRecordHead(time);
 	*trading.log << '\t' << tag << '\t' << str << std::endl;
 }
+
+void Log::RegisterUnhandledException(
+			const char *function,
+			const char *file,
+			long line,
+			bool tradingLog) {
+
+	struct Logger : private boost::noncopyable {
+			
+		boost::format message;
+		const bool tradingLog;
+
+		Logger(char const *function, char const *file, long line, bool tradingLog)
+				: message(
+					"Unhandled %4% exception caught"
+						" in function %1%, file %2%, line %3%: \"%5%\"."),
+				tradingLog(tradingLog) {
+			message % function % file % line;
+		}
+
+		~Logger() {
+			std::cerr << message.str() << std::endl;
+			Log::Error(message.str().c_str());
+			if (tradingLog) {
+				Log::Trading("assert", message.str().c_str());
+			}
+		}
+
+	} logger(function, file, line, tradingLog);
+
+	try {
+		throw;
+	} catch (const Exception &ex) {
+		logger.message % "LOCAL" % ex.what();
+	} catch (const std::exception &ex) {
+		logger.message % "STANDART" % ex.what();
+	} catch (...) {
+		logger.message % "UNKNOWN" % "";
+	}
+
+}

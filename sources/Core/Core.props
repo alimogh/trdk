@@ -4,9 +4,9 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
   <ItemDefinitionGroup>
-    <Link>
-      <ModuleDefinitionFile>PyApi.def</ModuleDefinitionFile>
-    </Link>
+    <ClCompile>
+      <PreprocessorDefinitions>TRADER_CORE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

@@ -8,10 +8,12 @@
 
 #pragma once
 
+#include "Api.h"
+
 class IniFile;
 class Security;
 
-class Settings : private boost::noncopyable {
+class TRADER_CORE_API Settings : private boost::noncopyable {
 
 public:
 

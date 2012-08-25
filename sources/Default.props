@@ -24,7 +24,7 @@
       <PreprocessorDefinitions>IB_USE_STD_STRING;WIN32;_WINDOWS;_WIN32_WINNT=0x0600;WINVER=0x0600;NOMINMAX;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <DisableSpecificWarnings>4503</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4503;4275;4251</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -37,6 +37,7 @@
       <ProfileGuidedDatabase>$(TargetDir)$(TargetName)$(TargetExt).pgd</ProfileGuidedDatabase>
       <AdditionalLibraryDirectories>$(BOOST_DIR_X86)\boost_1_47\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
+      <AdditionalOptions>/ignore:4217 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

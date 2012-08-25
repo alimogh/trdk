@@ -394,19 +394,28 @@ Security::Security(
 				bool logMarketData)
 		: Base(tradeSystem, symbol, primaryExchange, exchange),
 		m_settings(settings),
+		m_marketDataLevel1Log(nullptr),
 		m_isHistoryData(false),
 		m_lastPrice(0),
 		m_lastSize(0),
 		m_askPrice(0),
 		m_askSize(0),
 		m_bidPrice(0),
-		m_bidSize(0) {
+		m_bidSize(0),
+		m_marketDataLevel2Log(nullptr),
+		m_marketDataLevel2SnapshotLog(nullptr) {
 	// see another ctor!
 	if (logMarketData) {
-		m_marketDataLevel1Log.reset(new MarketDataLog(GetFullSymbol()));
-		m_marketDataLevel2Log.reset(new MarketDataLevel2Log(GetFullSymbol()));
-		m_marketDataLevel2SnapshotLog.reset(
-			new MarketDataLevel2SnapshotLog(GetFullSymbol(), GetPriceScale(), *m_settings));
+		std::unique_ptr<MarketDataLog> marketDataLevel1Log(
+			new MarketDataLog(GetFullSymbol()));
+		std::unique_ptr<MarketDataLevel2Log> marketDataLevel2Log(
+			new MarketDataLevel2Log(GetFullSymbol()));
+		m_marketDataLevel2SnapshotLog = new MarketDataLevel2SnapshotLog(
+			GetFullSymbol(),
+			GetPriceScale(),
+			*m_settings);
+		m_marketDataLevel2Log = marketDataLevel2Log.release();
+		m_marketDataLevel1Log = marketDataLevel1Log.release();
 	}
 }
 
@@ -418,19 +427,34 @@ Security::Security(
 				bool logMarketData)
 		: Base(symbol, primaryExchange, exchange),
 		m_settings(settings),
+		m_marketDataLevel1Log(nullptr),
 		m_lastPrice(0),
 		m_lastSize(0),
 		m_askPrice(0),
 		m_askSize(0),
 		m_bidPrice(0),
-		m_bidSize(0) {
+		m_bidSize(0),
+		m_marketDataLevel2Log(nullptr),
+		m_marketDataLevel2SnapshotLog(nullptr) {
 	// see another ctor!
 	if (logMarketData) {
-		m_marketDataLevel1Log.reset(new MarketDataLog(GetFullSymbol()));
-		m_marketDataLevel2Log.reset(new MarketDataLevel2Log(GetFullSymbol()));
-		m_marketDataLevel2SnapshotLog.reset(
-			new MarketDataLevel2SnapshotLog(GetFullSymbol(), GetPriceScale(), *m_settings));
+		std::unique_ptr<MarketDataLog> marketDataLevel1Log(
+			new MarketDataLog(GetFullSymbol()));
+		std::unique_ptr<MarketDataLevel2Log> marketDataLevel2Log(
+			new MarketDataLevel2Log(GetFullSymbol()));
+		m_marketDataLevel2SnapshotLog = new MarketDataLevel2SnapshotLog(
+			GetFullSymbol(),
+			GetPriceScale(),
+			*m_settings);
+		m_marketDataLevel2Log = marketDataLevel2Log.release();
+		m_marketDataLevel1Log = marketDataLevel1Log.release();
 	}
+}
+
+Security::~Security() {
+	delete m_marketDataLevel1Log;
+	delete m_marketDataLevel2Log;
+	delete m_marketDataLevel2SnapshotLog;
 }
 
 TradeSystem::OrderId Security::SellAtMarketPrice(Qty qty, Position &position) {

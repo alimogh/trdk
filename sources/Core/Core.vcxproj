@@ -20,18 +20,18 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>Windows7.1SDK</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>Windows7.1SDK</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>Windows7.1SDK</PlatformToolset>
@@ -42,19 +42,19 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\Default.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="Core.props" />
     <Import Project="..\Configuration Debug.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\Default.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="Core.props" />
     <Import Project="..\Configuration Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\Default.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="Core.props" />
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -62,11 +62,11 @@
   <ItemGroup>
     <ClCompile Include="Algo.cpp" />
     <ClCompile Include="AlgoPositionState.cpp" />
-    <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="MarketDataSource.cpp" />
     <ClCompile Include="Position.cpp" />
     <ClCompile Include="PositionBundle.cpp" />
+    <ClCompile Include="PositionReporter.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -79,7 +79,7 @@
   <ItemGroup>
     <ClInclude Include="Algo.hpp" />
     <ClInclude Include="AlgoPositionState.hpp" />
-    <ClInclude Include="Exception.hpp" />
+    <ClInclude Include="Api.h" />
     <ClInclude Include="Instrument.hpp" />
     <ClInclude Include="Log.hpp" />
     <ClInclude Include="MarketDataSource.hpp" />

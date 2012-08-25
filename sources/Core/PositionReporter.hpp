@@ -8,18 +8,16 @@
 
 #pragma once
 
+#include "Api.h"
+
 class Position;
 
-class PositionReporter : private boost::noncopyable {
+class TRADER_CORE_API PositionReporter : private boost::noncopyable {
 
 public:
 
-	PositionReporter() {
-		//...//
-	}
-	virtual ~PositionReporter() {
-		//...//
-	}
+	PositionReporter();
+	virtual ~PositionReporter();
 
 public:
 

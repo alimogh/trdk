@@ -83,12 +83,6 @@
     <ProjectReference Include="..\PyApi\PyApi.vcxproj">
       <Project>{7bd47287-4175-45ee-860b-326ae8060a16}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Strategies\Level2MarketArbitrage\Level2MarketArbitrage.vcxproj">
-      <Project>{64f2ebad-6d80-4f85-b0fb-1ad1a638e68c}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Strategies\QuickArbitrage\QuickArbitrage.vcxproj">
-      <Project>{d69a5777-58f9-42d4-88db-30f15bb83240}</Project>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Dispatcher.cpp" />

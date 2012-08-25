@@ -3,12 +3,14 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: HighmanTradingRobot
+ *   Project: Trading Robot
  **************************************************************************/
 
-#ifdef _WINDOWS
-#	undef assert
-#endif
+#include "DisableBoostWarningsBegin.h"
+#	include <boost/assert.hpp>
+#include "DisableBoostWarningsEnd.h"
+
+#undef assert
 #undef Assert
 #undef Verify
 #undef AssertFail
@@ -28,12 +30,11 @@
 #	define AssertFail(reason) (void)(::boost::assertion_failed(reason, BOOST_CURRENT_FUNCTION, __FILE__, __LINE__))
 #endif
 
-#ifdef _WINDOWS
-#	define assert(expr) Assert(expr)
-#endif
+#define assert(expr) Assert(expr)
 
 namespace Detatil {
-	void RegisterNotExpectedException(const char *, const char *, long);
+	void AssertFailNoExceptionImpl(const char *, const char *, long);
 }
 
-#define AssertFailNoException() (void)(::Detatil::RegisterNotExpectedException(BOOST_CURRENT_FUNCTION, __FILE__, __LINE__))
+#define AssertFailNoException() \
+	(void)(::Detatil::AssertFailNoExceptionImpl(BOOST_CURRENT_FUNCTION, __FILE__, __LINE__))

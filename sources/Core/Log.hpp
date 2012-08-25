@@ -3,22 +3,30 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: HighmanTradingRobot
+ *   Project: Trading Robot
  **************************************************************************/
 
 #pragma once
+
+#include "Api.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace Log {
 
-	bool IsEventsEnabled() throw();
-	void EnableEvents(std::ostream &);
-	void DisableEvents() throw();
+	bool TRADER_CORE_API IsEventsEnabled() throw();
+	void TRADER_CORE_API EnableEvents(std::ostream &);
+	void TRADER_CORE_API DisableEvents() throw();
 
-	bool IsTradingEnabled() throw();
-	void EnableTrading(std::ostream &);
-	void DisableTrading() throw();
+	bool TRADER_CORE_API IsTradingEnabled() throw();
+	void TRADER_CORE_API EnableTrading(std::ostream &);
+	void TRADER_CORE_API DisableTrading() throw();
+
+	void TRADER_CORE_API RegisterUnhandledException(
+			const char *function,
+			const char *file,
+			long line,
+			bool tradingLog);
 
 }
 
@@ -26,8 +34,11 @@ namespace Log {
 
 namespace Log { namespace Detail {
 
-	void AppendEventRecordUnsafe(const boost::posix_time::ptime &time, const char *str);
-	void AppendTradingRecordUnsafe(
+	void TRADER_CORE_API AppendEventRecordUnsafe(
+			const boost::posix_time::ptime &time,
+			const char *str);
+	
+	void TRADER_CORE_API AppendTradingRecordUnsafe(
 				const boost::posix_time::ptime &time,
 				const char *tag,
 				const char *str);
@@ -2282,4 +2293,4 @@ namespace Log {
 
 }
 
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////

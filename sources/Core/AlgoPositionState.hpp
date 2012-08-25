@@ -7,8 +7,9 @@
  **************************************************************************/
 
 #pragma once
+#include "Algo.hpp"
 
-class AlgoPositionState : private boost::noncopyable {
+class TRADER_CORE_API AlgoPositionState : private boost::noncopyable {
 
 public:
 

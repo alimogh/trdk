@@ -14,9 +14,9 @@
 #	include <boost/date_time/posix_time/posix_time.hpp>
 #	include <boost/thread/thread_time.hpp>
 #include "DisableBoostWarningsEnd.h"
+#include "Exception.hpp"
 #include "Assert.hpp"
 #include "Core/Log.hpp"
-#include "Core/Exception.hpp"
 
 #if defined(BOOST_ENABLE_ASSERT_HANDLER)
 
@@ -60,46 +60,12 @@
 
 #endif
 
-void Detatil::RegisterNotExpectedException(
+void Detatil::AssertFailNoExceptionImpl(
 			const char *function,
 			const char *file,
 			long line) {
-
-	{
-
-		struct Logger {
-			
-			boost::format message;
-
-			Logger(char const *function, char const *file, long line)
-					: message(
-						"Unhandled %4% exception caught"
-							" in function %1%, file %2%, line %3%: \"%5%\".") {
-				message % function % file % line;
-			}
-
-			~Logger() {
-				std::cerr << message.str() << std::endl;
-				Log::Error(message.str().c_str());
-				Log::Trading("assert", message.str().c_str());
-			}
-
-		} logger(function, file, line);
-
-		try {
-			throw;
-		} catch (const Exception &ex) {
-			logger.message % "LOCAL" % ex.what();
-		} catch (const std::exception &ex) {
-			logger.message % "STANDART" % ex.what();
-		} catch (...) {
-			logger.message % "UNKNOWN" % "";
-		}
-
-	}
-
+	Log::RegisterUnhandledException(function, file, line, true);
 #	if defined(_DEBUG) || defined(_TEST)
 		DebugBreak();
 #	endif
-
 }

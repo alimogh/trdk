@@ -8,10 +8,12 @@
 
 #pragma once
 
+#include "Api.h"
+
 class Security;
 class Settings;
 
-class TradeSystem : private boost::noncopyable {
+class TRADER_CORE_API TradeSystem : private boost::noncopyable {
 
 public:
 
@@ -75,17 +77,17 @@ public:
 
 public:
 
-	class Error : public Exception {
+	class TRADER_CORE_API Error : public Exception {
 	public:
 		explicit Error(const char *what) throw();
 	};
 
-	class ConnectError : public Error {
+	class TRADER_CORE_API ConnectError : public Error {
 	public:
 		ConnectError(const char *what) throw();
 	};
 
-	class ConnectionDoesntExistError : public Error {
+	class TRADER_CORE_API ConnectionDoesntExistError : public Error {
 	public:
 		ConnectionDoesntExistError(const char *what) throw();
 	};

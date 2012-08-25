@@ -3,10 +3,11 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: HighmanTradingRobot
+ *   Project: Trading Robot
  **************************************************************************/
 
-#include "Prec.hpp"
+#include "Exception.hpp"
+#include "Assert.hpp"
 
 Exception::Exception(const char *what) throw()
 		: m_doFree(false) {
@@ -17,7 +18,7 @@ Exception::Exception(const char *what) throw()
 		m_doFree = true;
 	} else {
 		m_what = "Memory allocation for exception description has been failed";
-		Log::Error(m_what);
+		AssertFail("Memory allocation for exception description has been failed.");
 	}
 }
 

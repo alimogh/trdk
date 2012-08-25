@@ -10,13 +10,14 @@
 
 #include "Security.hpp"
 #include "TradeSystem.hpp"
+#include "Api.h"
 
 class Algo;
 class AlgoPositionState;
 
 //////////////////////////////////////////////////////////////////////////
 
-class Position
+class TRADER_CORE_API Position
 		: private boost::noncopyable,
 		public boost::enable_shared_from_this<Position> {
 
@@ -289,7 +290,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-class LongPosition : public Position {
+class TRADER_CORE_API  LongPosition : public Position {
 
 public:
 
@@ -327,7 +328,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-class ShortPosition : public Position {
+class TRADER_CORE_API ShortPosition : public Position {
 
 public:
 

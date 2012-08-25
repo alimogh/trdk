@@ -14,18 +14,12 @@ using namespace Ini;
 namespace fs = boost::filesystem;
 
 const std::string Sections::common = "Common";
-const std::string Sections::strategy = "Strategy.";
-const std::string Sections::py = "Py.";
-
-const std::string Algo::QuickArbitrage::old = "QuickArbitrage.Old";
-const std::string Algo::QuickArbitrage::askBid = "QuickArbitrage.AskBid";
-const std::string Algo::level2MarketArbitrage = "Level2MarketArbitrage";
+const std::string Sections::algo = "Algo.";
 
 const std::string Sections::MarketData::Log::symbols = "MarketData.Log.Symbols";
 const std::string Sections::MarketData::request = "MarketData.Request";
 
-const std::string Key::algo = "algo";
-const std::string Key::tag = "tag";
+const std::string Key::module = "module";
 const std::string Key::symbols = "symbols";
 
 //////////////////////////////////////////////////////////////////////////

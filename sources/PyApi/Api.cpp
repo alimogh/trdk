@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/07/16 01:40:40
+ *   Created: 2012/08/25 19:48:41
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -7,3 +7,17 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "PyApi.hpp"
+
+namespace PyApi {
+
+	boost::shared_ptr<::Algo> CreateAlgo(
+				const std::string &tag,
+				boost::shared_ptr<Security> security,
+				const IniFile &ini,
+				const std::string &section) {
+		return boost::shared_ptr<::Algo>(
+			new PyApi::Algo(tag, security, ini, section));
+	}
+
+}

@@ -17,6 +17,8 @@
 #include "Common/Foreach.hpp"
 #include "Common/IniFile.hpp"
 #include "Common/FileSystemChangeNotificator.hpp"
+#include "Common/Dll.hpp"
+#include "Common/Error.hpp"
+#include "Common/Exception.hpp"
 
 #include "Core/Log.hpp"
-#include "Core/Exception.hpp"

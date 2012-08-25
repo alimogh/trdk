@@ -50,12 +50,18 @@
     <ClCompile Include=".\PositionWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Api.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Scripts\TraderPyApiExample.py">
       <Filter>Scripts</Filter>
     </None>
     <None Include="Trader.pypredef">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="PyApi.def">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

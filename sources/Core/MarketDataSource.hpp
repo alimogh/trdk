@@ -8,21 +8,23 @@
 
 #pragma once
 
+#include "Api.h"
+
 class Security;
 class Settings;
 
 //////////////////////////////////////////////////////////////////////////
 
-class MarketDataSource : private boost::noncopyable {
+class TRADER_CORE_API MarketDataSource : private boost::noncopyable {
 
 public:
 
-	class Error : public Exception {
+	class TRADER_CORE_API Error : public Exception {
 	public:
 		explicit Error(const char *what) throw();
 	};
 
-	class ConnectError : public Error {
+	class TRADER_CORE_API ConnectError : public Error {
 	public:
 		ConnectError() throw();
 	};
@@ -40,7 +42,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-class LiveMarketDataSource : public MarketDataSource {
+class TRADER_CORE_API LiveMarketDataSource : public MarketDataSource {
 
 public:
 
@@ -56,7 +58,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-class HistoryMarketDataSource : public MarketDataSource {
+class TRADER_CORE_API HistoryMarketDataSource : public MarketDataSource {
 
 public:
 

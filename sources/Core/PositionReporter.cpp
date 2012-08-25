@@ -1,19 +1,18 @@
 /**************************************************************************
- *   Created: 2012/07/16 01:40:51
+ *   Created: 2012/08/26 00:09:20
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
  *   Project: Trading Robot
  **************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "PositionReporter.hpp"
 
-#include "Common/Assert.hpp"
+PositionReporter::PositionReporter() {
+	//...//
+}
 
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/algorithm/string_regex.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
-#include "Strategies/Prec.hpp"
-
-#include "Common/Assert.hpp"
+PositionReporter::~PositionReporter() {
+	//...//
+}

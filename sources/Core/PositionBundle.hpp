@@ -8,9 +8,11 @@
 
 #pragma once
 
+#include "Api.h"
+
 class Position;
 
-class PositionBandle : private boost::noncopyable {
+class TRADER_CORE_API PositionBandle : private boost::noncopyable {
 
 public:
 
