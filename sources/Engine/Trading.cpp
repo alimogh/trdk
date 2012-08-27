@@ -10,8 +10,8 @@
 #include "FakeTradeSystem.hpp"
 #include "Ini.hpp"
 #include "Util.hpp"
-#include "IqFeed/IqFeedClient.hpp"
-#include "InteractiveBrokers/InteractiveBrokersTradeSystem.hpp"
+#include "Interaction/IqFeed/IqFeedClient.hpp"
+#include "Interaction/InteractiveBrokers/InteractiveBrokersTradeSystem.hpp"
 #include "Dispatcher.hpp"
 #include "Core/Algo.hpp"
 #include "Core/Security.hpp"
@@ -150,7 +150,7 @@ namespace {
 				const fs::path &iniFilePath,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Dispatcher &dispatcher,
-				IqFeedClient &marketDataSource,
+				MarketDataSource &marketDataSource,
 				Algos &algos,
 				boost::shared_ptr<Settings> settings)  {
 
@@ -251,7 +251,13 @@ void Trade(const fs::path &iniFilePath) {
 	Dispatcher dispatcher(settings);
 
 	Algos algos;
-	if (!InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings)) {
+	if (	!InitTrading(
+				iniFilePath,
+				tradeSystem,
+				dispatcher,
+				reinterpret_cast<MarketDataSource &>(marketDataSource),
+				algos,
+				settings)) {
 		return;
 	}
 		
@@ -300,7 +306,13 @@ void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
 	IqFeedClient marketDataSource;
 	Dispatcher dispatcher(settings);
 	Algos algos;
-	if (!InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings)) {
+	if (	!InitTrading(
+				iniFilePath,
+				tradeSystem,
+				dispatcher,
+				reinterpret_cast<MarketDataSource &>(marketDataSource),
+				algos,
+				settings)) {
 		return;
 	}
 

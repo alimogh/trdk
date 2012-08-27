@@ -9,7 +9,7 @@
 #include "Prec.hpp"
 #include "Util.hpp"
 #include "Core/TradeSystem.hpp"
-#include "IqFeed/IqFeedClient.hpp"
+#include "Core/MarketDataSource.hpp"
 
 namespace pt = boost::posix_time;
 
@@ -24,12 +24,12 @@ void Connect(TradeSystem &tradeSystem, const Settings &settings) {
 	}
 }
 
-void Connect(IqFeedClient &marketDataSource, const Settings &settings) {
+void Connect(MarketDataSource &marketDataSource, const Settings &settings) {
 	for ( ; ; ) {
 		try {
 			marketDataSource.Connect(settings);
 			break;
-		} catch (const IqFeedClient::ConnectError &) {
+		} catch (const MarketDataSource::ConnectError &) {
 			boost::this_thread::sleep(pt::seconds(5));
 		}
 	}

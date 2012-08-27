@@ -11,7 +11,7 @@
 #include "Util.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
-#include "IqFeed/IqFeedClient.hpp"
+#include "Interaction/IqFeed/IqFeedClient.hpp"
 
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
@@ -45,7 +45,7 @@ void RequestMarketData(const fs::path &iniFilePath, int argc, const char *argv[]
 			settings->GetCurrentTradeSessionStartTime() + Util::GetEdtDiff(),
 			settings->GetCurrentTradeSessionEndime() + Util::GetEdtDiff());
 
-		Connect(marketDataSource, *settings);
+		Connect(reinterpret_cast<MarketDataSource &>(marketDataSource), *settings);
 		
 		const fs::path symbolsFilePath = ini.ReadKey(
 			Ini::Sections::MarketData::request,

@@ -9,8 +9,8 @@
 #pragma once
 
 class TradeSystem;
-class IqFeedClient;
+class MarketDataSource;
 class Settings;
 
 void Connect(TradeSystem &, const Settings &);
-void Connect(IqFeedClient &, const Settings &);
+void Connect(MarketDataSource &, const Settings &);

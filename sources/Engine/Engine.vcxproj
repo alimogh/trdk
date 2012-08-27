@@ -74,10 +74,10 @@
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\InteractiveBrokers\InteractiveBrokers.vcxproj">
+    <ProjectReference Include="..\Interaction\InteractiveBrokers\InteractiveBrokers.vcxproj">
       <Project>{befe87ae-1376-4c4c-87d5-73e782990306}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\IqFeed\IqFeed.vcxproj">
+    <ProjectReference Include="..\Interaction\IqFeed\IqFeed.vcxproj">
       <Project>{9c9a77df-2a5b-4aac-9a94-42324d763063}</Project>
     </ProjectReference>
     <ProjectReference Include="..\PyApi\PyApi.vcxproj">
