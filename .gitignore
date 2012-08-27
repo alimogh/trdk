@@ -2,3 +2,6 @@
 *.suo
 *.user
 /.metadata
+/sources/Common/Debug
+/sources/Engine/Debug
+/sources/Core/Debug

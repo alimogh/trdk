@@ -1,0 +1,18 @@
+23:30:27 **** Incremental Build of configuration Debug for project Common ****
+make all 
+Building file: ../Error.cpp
+Invoking: GCC C++ Compiler
+/usr/local/bin/g++ -DBOOST_ENABLE_ASSERT_HANDLER -I"/mnt/hgfs/Projects/Trader/sources" -I/home/palchukovsky/Desktop/boost_1_51_0 -O0 -g3 -Wall -c -fmessage-length=0 -std=c++11 -MMD -MP -MF"Error.d" -MT"Error.d" -o "Error.o" "../Error.cpp"
+Finished building: ../Error.cpp
+ 
+Building file: ../Util.cpp
+Invoking: GCC C++ Compiler
+/usr/local/bin/g++ -DBOOST_ENABLE_ASSERT_HANDLER -I"/mnt/hgfs/Projects/Trader/sources" -I/home/palchukovsky/Desktop/boost_1_51_0 -O0 -g3 -Wall -c -fmessage-length=0 -std=c++11 -MMD -MP -MF"Util.d" -MT"Util.d" -o "Util.o" "../Util.cpp"
+Finished building: ../Util.cpp
+ 
+Building target: libCommon.a
+Invoking: GCC Archiver
+ar -r  "libCommon.a"  ./Assert.o ./Defaults.o ./Error.o ./Exception.o ./FileSystemChangeNotificator.o ./IniFile.o ./Util.o   
+ar: creating libCommon.a
+Finished building target: libCommon.a
+ 

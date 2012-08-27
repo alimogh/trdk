@@ -19,6 +19,7 @@
 #		include <boost/system/system_error.hpp>
 #	include "DisableBoostWarningsEnd.h"
 #endif
+#include "Assert.hpp"
 
 Error::Error(int errorNo) throw()
 		: m_errorNo(errorNo) {
@@ -30,7 +31,11 @@ Error::~Error() throw() {
 }
 
 bool Error::IsError() const {
-	return GetErrorNo() != NOERROR;
+#	ifdef BOOST_WINDOWS
+		return GetErrorNo() != NOERROR;
+#	else
+		return GetErrorNo() != 0;
+#	endif
 }
 
 bool Error::CheckError() const {
@@ -51,58 +56,62 @@ bool Error::CheckError() const {
 #	endif
 }
 
-namespace {
+#ifdef BOOST_WINDOWS
 
-	template<typename String>
-	const typename String::value_type * GetUnknownErrorTest() {
-		return "Unknown error";
-	}
-	template<>
-	const std::wstring::value_type * GetUnknownErrorTest<std::wstring>() {
-		return L"Unknown error";
-	}
-	
-	template<typename Char>
-	bool IsLineEnd(Char ch) {
-		return ch == '\n' || ch == '\r';
-	}
-	template<>
-	bool IsLineEnd<std::wstring::value_type>(std::wstring::value_type ch) {
-		return ch == L'\n' || ch == L'\r';
-	}
+	namespace {
 
-	template<typename String, typename SysGetter>
-	String GetStringFromSys(int errorNo, SysGetter &sysGetter) {
-		LPVOID buffer;
-		auto size = sysGetter(
-			FORMAT_MESSAGE_ALLOCATE_BUFFER
-				| FORMAT_MESSAGE_FROM_SYSTEM
-				| FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL,
-			errorNo,
-			0,
-			(String::value_type *)&buffer,
-			0,
-			NULL);
-		boost::shared_ptr<VOID> bufferPtr(buffer, &::LocalFree);
-		String::value_type *const pch = static_cast<String::value_type *>(buffer);
-		for ( ; size > 0 && IsLineEnd(pch[size - 1]) ; --size);
-		if (size > 0) {
-			pch[size - 1] = 0;
-			return String(pch);
-		} else {
-			return String(GetUnknownErrorTest<String>());
+		template<typename String>
+		const typename String::value_type * GetUnknownErrorTest() {
+			return "Unknown error";
 		}
+		template<>
+		const std::wstring::value_type * GetUnknownErrorTest<std::wstring>() {
+			return L"Unknown error";
+		}
+
+		template<typename Char>
+		bool IsLineEnd(Char ch) {
+			return ch == '\n' || ch == '\r';
+		}
+		template<>
+		bool IsLineEnd<std::wstring::value_type>(std::wstring::value_type ch) {
+			return ch == L'\n' || ch == L'\r';
+		}
+	
+		template<typename String, typename SysGetter>
+		String GetStringFromSys(int errorNo, SysGetter &sysGetter) {
+			LPVOID buffer;
+			auto size = sysGetter(
+				FORMAT_MESSAGE_ALLOCATE_BUFFER
+					| FORMAT_MESSAGE_FROM_SYSTEM
+					| FORMAT_MESSAGE_IGNORE_INSERTS,
+				NULL,
+				errorNo,
+				0,
+				(String::value_type *)&buffer,
+				0,
+				NULL);
+			boost::shared_ptr<VOID> bufferPtr(buffer, &::LocalFree);
+			String::value_type *const pch = static_cast<String::value_type *>(buffer);
+			for ( ; size > 0 && IsLineEnd(pch[size - 1]) ; --size);
+			if (size > 0) {
+				pch[size - 1] = 0;
+				return String(pch);
+			} else {
+				return String(GetUnknownErrorTest<String>());
+			}
+		}
+
 	}
 
-}
+#endif
 
 std::wstring Error::GetStringW() const {
 #	ifdef BOOST_WINDOWS
 		return GetStringFromSys<std::wstring>(m_errorNo, ::FormatMessageW);
 #	else // BOOST_WINDOWS
 		AssertFail("Method not implemented");
-		return "";
+		return L"";
 #	endif // BOOST_WINDOWS
 }
 
@@ -110,7 +119,7 @@ std::string Error::GetString() const {
 #	ifdef BOOST_WINDOWS
 		return GetStringFromSys<std::string>(m_errorNo, ::FormatMessageA);
 #	else // BOOST_WINDOWS
-		return boost::system::system_error(m_errorNo, fs::get_system_category()).what();
+		return boost::system::system_error(m_errorNo, boost::system::get_system_category()).what();
 #	endif // BOOST_WINDOWS
 }
 

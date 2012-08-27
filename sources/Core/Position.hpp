@@ -60,11 +60,11 @@ private:
 
 	struct DynamicData {
 
-		volatile LONGLONG orderId;
+		volatile long long orderId;
 		Time time;
-		volatile LONGLONG price;
+		volatile long long price;
 		volatile long qty;
-		volatile LONGLONG comission;
+		volatile long long comission;
 		
 		volatile long hasOrder;
 

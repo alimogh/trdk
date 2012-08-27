@@ -8,57 +8,86 @@
 
 #pragma once
 
-#include <Windows.h>
+#ifdef BOOST_WINDOWS
 
-namespace Interlocking {
+#	include <Windows.h>
 
-	inline long Increment(volatile long &destination) throw() {
-#		ifdef _WINDOWS
+	namespace Interlocking {
+
+		inline long Increment(volatile long &destination) throw() {
 			return InterlockedIncrement(&destination);
-#		else
-			static_assert(false, "Not implemented.");
-#		endif
-	}
+		}
 
-	inline long Exchange(volatile long &destination, long value) throw() {
-#		ifdef _WINDOWS
+		inline long Exchange(volatile long &destination, long value) throw() {
 			return InterlockedExchange(&destination, value);
-#		else
-			return __sync_val_compare_and_swap(&destination, destination, value);
-#		endif
-	}
+		}
 
-	inline LONGLONG Exchange(volatile LONGLONG &destination, LONGLONG value) throw() {
-#		ifdef _WINDOWS
+		inline LONGLONG Exchange(volatile LONGLONG &destination, LONGLONG value) throw() {
 			return InterlockedExchange64(&destination, value);
-#		else
-			return __sync_val_compare_and_swap(&destination, destination, value);
-#		endif
-	}
+		}
 
 
-	inline long CompareExchange(
-				volatile long &destination,
-				long exchangeValue,
-				long compareValue)
-			throw() {
-#		ifdef _WINDOWS
+		inline long CompareExchange(
+					volatile long &destination,
+					long exchangeValue,
+					long compareValue)
+				throw() {
 			return InterlockedCompareExchange(&destination, exchangeValue, compareValue);
-#		else
-			return __sync_val_compare_and_swap(&destination, compareValue, exchangeValue);
-#		endif
-	}
+		}
 
-	inline LONGLONG CompareExchange(
-				volatile LONGLONG &destination,
-				LONGLONG exchangeValue,
-				LONGLONG compareValue)
-			throw() {
-#		ifdef _WINDOWS
+		inline LONGLONG CompareExchange(
+					volatile LONGLONG &destination,
+					LONGLONG exchangeValue,
+					LONGLONG compareValue)
+				throw() {
 			return InterlockedCompareExchange64(&destination, exchangeValue, compareValue);
-#		else
-			return __sync_val_compare_and_swap(&destination, compareValue, exchangeValue);
-#		endif
+		}
+
 	}
 
-}
+#else
+
+	namespace Interlocking {
+
+		inline long Increment(volatile long &destination) throw() {
+			return ++destination;
+		}
+
+		inline long Exchange(volatile long &destination, long value) throw() {
+			const auto prevVal = destination;
+			destination = value;
+			return prevVal;
+		}
+
+		inline long long Exchange(volatile long long &destination, long long value) throw() {
+			const auto prevVal = destination;
+			destination = value;
+			return prevVal;
+		}
+
+
+		inline long CompareExchange(
+					volatile long &destination,
+					long exchangeValue,
+					long compareValue)
+				throw() {
+			if (exchangeValue == compareValue) {
+				destination = exchangeValue;
+			}
+			return compareValue;
+		}
+
+		inline long long CompareExchange(
+					volatile long long &destination,
+					long long exchangeValue,
+					long long compareValue)
+				throw() {
+			if (exchangeValue == compareValue) {
+				destination = exchangeValue;
+			}
+			return compareValue;
+		}
+
+	}
+
+#endif

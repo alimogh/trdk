@@ -15,6 +15,7 @@
 #	include <boost/function.hpp>
 #	include <boost/lexical_cast.hpp>
 #	include <boost/filesystem.hpp>
+#	include <boost/format.hpp>
 #include "DisableBoostWarningsEnd.h"
 #include <list>
 #include <set>

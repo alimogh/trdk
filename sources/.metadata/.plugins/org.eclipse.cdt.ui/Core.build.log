@@ -1,0 +1,61 @@
+23:24:20 **** Incremental Build of configuration Debug for project Core ****
+make all 
+Building file: ../Algo.cpp
+Invoking: GCC C++ Compiler
+/usr/local/bin/g++ -DBOOST_ENABLE_ASSERT_HANDLER -I/home/palchukovsky/Desktop/boost_1_51_0 -I"/mnt/hgfs/Projects/Trader/sources" -O0 -g3 -Wall -c -fmessage-length=0 -std=c++11 -MMD -MP -MF"Algo.d" -MT"Algo.d" -o "Algo.o" "../Algo.cpp"
+In file included from /mnt/hgfs/Projects/Trader/sources/Common/Common.hpp:24:0,
+                 from ../Prec.hpp:28,
+                 from ../Algo.cpp:9:
+/mnt/hgfs/Projects/Trader/sources/Core/Log.hpp:15:1: error: expected unqualified-id before ‘namespace’
+/mnt/hgfs/Projects/Trader/sources/Core/Log.hpp:35:1: error: expected unqualified-id before ‘namespace’
+../Algo.cpp:126:1: error: expected ‘}’ at end of input
+In file included from /mnt/hgfs/Projects/Trader/sources/Common/Common.hpp:20:0,
+                 from ../Prec.hpp:28,
+                 from ../Algo.cpp:9:
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp: In constructor ‘DllObjectPtr<T>::DllObjectPtr(boost::shared_ptr<Dll>, boost::shared_ptr<T>)’:
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:147:6: error: class ‘DllObjectPtr<T>’ does not have any field named ‘m_dll’
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:148:4: error: class ‘DllObjectPtr<T>’ does not have any field named ‘m_objFormDll’
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp: In member function ‘DllObjectPtr<T>::operator bool() const’:
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:159:3: error: ‘m_objFormDll’ was not declared in this scope
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:159:3: error: ‘m_dll’ was not declared in this scope
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp: In member function ‘DllObjectPtr<T>::operator boost::shared_ptr<T>()’:
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:164:17: error: there are no arguments to ‘GetObj’ that depend on a template parameter, so a declaration of ‘GetObj’ must be available [-fpermissive]
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:164:17: note: (if you use ‘-fpermissive’, G++ will accept your code, but allowing the use of an undeclared name is deprecated)
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp: In member function ‘DllObjectPtr<T>::operator boost::shared_ptr<const T>() const’:
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:168:21: error: expected type-specifier before ‘DllObject’
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:168:21: error: expected ‘>’ before ‘DllObject’
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:168:21: error: expected ‘(’ before ‘DllObject’
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:168:21: error: ‘DllObject’ was not declared in this scope
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:168:32: error: expected primary-expression before ‘>’ token
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:168:80: error: expected ‘)’ before ‘;’ token
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp: In member function ‘DllObjectPtr<T>::operator boost::shared_ptr<Dll>()’:
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:172:17: error: there are no arguments to ‘GetDll’ that depend on a template parameter, so a declaration of ‘GetDll’ must be available [-fpermissive]
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:174:40: error: there are no arguments to ‘operator boost::shared_ptr<const Dll>’ that depend on a template parameter, so a declaration of ‘operator boost::shared_ptr<const Dll>’ must be available [-fpermissive]
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:174:42: error: expected ‘;’ before ‘const’
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:178:19: error: a function-definition is not allowed here before ‘{’ token
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:181:31: error: a function-definition is not allowed here before ‘{’ token
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:185:20: error: a function-definition is not allowed here before ‘{’ token
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:189:32: error: a function-definition is not allowed here before ‘{’ token
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:193:1: error: expected primary-expression before ‘public’
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:193:1: error: expected ‘;’ before ‘public’
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:203:1: error: expected primary-expression before ‘public’
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:203:1: error: expected ‘;’ before ‘public’
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:210:52: error: a function-definition is not allowed here before ‘{’ token
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:214:34: error: a function-definition is not allowed here before ‘{’ token
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:218:46: error: a function-definition is not allowed here before ‘{’ token
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:222:1: error: expected primary-expression before ‘private’
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:222:1: error: expected ‘;’ before ‘private’
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp: At global scope:
+/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp:227:1: error: expected unqualified-id at end of input
+In file included from /home/palchukovsky/Desktop/boost_1_51_0/boost/filesystem/path_traits.hpp:23:0,
+                 from /home/palchukovsky/Desktop/boost_1_51_0/boost/filesystem/path.hpp:25,
+                 from /home/palchukovsky/Desktop/boost_1_51_0/boost/filesystem.hpp:16,
+                 from ../Prec.hpp:18,
+                 from ../Algo.cpp:9:
+/home/palchukovsky/Desktop/boost_1_51_0/boost/system/error_code.hpp:214:36: warning: ‘boost::system::posix_category’ defined but not used [-Wunused-variable]
+/home/palchukovsky/Desktop/boost_1_51_0/boost/system/error_code.hpp:215:36: warning: ‘boost::system::errno_ecat’ defined but not used [-Wunused-variable]
+/home/palchukovsky/Desktop/boost_1_51_0/boost/system/error_code.hpp:216:36: warning: ‘boost::system::native_ecat’ defined but not used [-Wunused-variable]
+make: *** [Algo.o] Error 1
+
+23:24:24 Build Finished (took 3s.646ms)
+

@@ -7,8 +7,10 @@
  **************************************************************************/
 
 #include "Util.hpp"
-#include <boost/thread/thread_time.hpp>
-#include <boost/algorithm/string.hpp>
+#include "DisableBoostWarningsBegin.h"
+#	include <boost/thread/thread_time.hpp>
+#	include <boost/algorithm/string.hpp>
+#include "DisableBoostWarningsEnd.h"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;

@@ -9,12 +9,14 @@
 #include <assert.h>
 #include <boost/format.hpp>
 #include <iostream>
-#include <Windows.h>
 #include "DisableBoostWarningsBegin.h"
 #	include <boost/date_time/posix_time/posix_time.hpp>
 #	include <boost/thread/thread_time.hpp>
 #include "DisableBoostWarningsEnd.h"
 #include "Exception.hpp"
+#ifdef BOOST_WINDOWS
+#	include <Windows.h>
+#endif
 #include "Assert.hpp"
 #include "Core/Log.hpp"
 

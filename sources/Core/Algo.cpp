@@ -60,7 +60,7 @@ boost::posix_time::ptime Algo::GetLastDataTime() {
 	return boost::posix_time::not_a_date_time;
 }
 
-const std::string & Algo::GetTag() const {
+const std::string & Algo::GetTag() const throw() {
 	return m_tag;
 }
 

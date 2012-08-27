@@ -8,6 +8,8 @@
 
 #include "Exception.hpp"
 #include "Assert.hpp"
+#include <stdlib.h>
+#include <string.h>
 
 Exception::Exception(const char *what) throw()
 		: m_doFree(false) {

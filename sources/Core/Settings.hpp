@@ -87,7 +87,7 @@ private:
 
 	volatile long m_level2PeriodSeconds;
 	volatile long m_level2SnapshotPrintTimeSeconds;
-	volatile LONGLONG m_minPrice;
+	volatile long long m_minPrice;
 
 	const bool m_isReplayMode;
 

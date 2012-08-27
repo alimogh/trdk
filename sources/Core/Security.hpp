@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Instrument.hpp"
+#include "Common/SignalConnection.hpp"
 #include "Api.h"
 
 class Position;
@@ -47,7 +48,7 @@ private:
 
 	struct Level2 {
 		
-		volatile LONGLONG size;
+		volatile long long size;
 
 		Level2();
 
@@ -239,15 +240,15 @@ private:
 
 	mutable boost::signals2::signal<UpdateSlotSignature> m_updateSignal;
 
-	volatile LONGLONG m_isHistoryData;
+	volatile long long m_isHistoryData;
 
-	volatile LONGLONG m_lastPrice;
+	volatile long long m_lastPrice;
 	volatile long m_lastSize;
 	
-	volatile LONGLONG m_askPrice;
+	volatile long long m_askPrice;
 	volatile long m_askSize;
 	
-	volatile LONGLONG m_bidPrice;
+	volatile long long m_bidPrice;
 	volatile long m_bidSize;
 
 	class MarketDataLevel2Log;

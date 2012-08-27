@@ -10,6 +10,23 @@
 #pragma once
 
 #include <string>
+#include "DisableBoostWarningsBegin.h"
+#	include <boost/config.hpp>
+#include "DisableBoostWarningsEnd.h"
+
+////////////////////////////////////////////////////////////////////////////////
+
+#ifndef BOOST_WINDOWS
+
+#	include <errno.h>
+
+	inline int GetLastError() throw() {
+		return errno;
+	}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 
 class Error {
 
@@ -37,3 +54,5 @@ private:
 
 std::ostream & operator <<(std::ostream &os, const Error &);
 std::wostream & operator <<(std::wostream &os, const Error &);
+
+////////////////////////////////////////////////////////////////////////////////
