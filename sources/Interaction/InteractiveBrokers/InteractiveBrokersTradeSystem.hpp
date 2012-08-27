@@ -12,7 +12,7 @@
 #include "Core/MarketDataSource.hpp"
 
 class InteractiveBrokersTradeSystem
-	: public TradeSystem,
+	: public Trader::TradeSystem,
 	public LiveMarketDataSource {
 
 public:
@@ -73,7 +73,7 @@ public:
 
 public:
 
-	void SubscribeToMarketDataLevel1(boost::shared_ptr<Security>) const;
+	virtual void SubscribeToMarketDataLevel1(boost::shared_ptr<Security>) const;
 	virtual void SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const;
 
 private:

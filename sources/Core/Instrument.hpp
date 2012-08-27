@@ -15,7 +15,7 @@ class Instrument : private boost::noncopyable {
 public:
 
 	explicit Instrument(
-				boost::shared_ptr<TradeSystem> tradeSystem,
+				boost::shared_ptr<Trader::TradeSystem> tradeSystem,
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange)
@@ -58,7 +58,7 @@ public:
 
 public:
 
-	const TradeSystem & GetTradeSystem() const {
+	const Trader::TradeSystem & GetTradeSystem() const {
 		if (!m_tradeSystem) {
 			throw Exception("Instrument doesn't connected to trade system");
 		}
@@ -67,13 +67,13 @@ public:
 
 protected:
 
-	TradeSystem & GetTradeSystem() {
+	Trader::TradeSystem & GetTradeSystem() {
 		return *m_tradeSystem;
 	}
 
 private:
 
-	const boost::shared_ptr<TradeSystem> m_tradeSystem;
+	const boost::shared_ptr<Trader::TradeSystem> m_tradeSystem;
 	const std::string m_symbol;
 	const std::string m_primaryExchange;
 	const std::string m_exchange;

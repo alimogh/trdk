@@ -15,6 +15,8 @@ namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
 namespace pt = boost::posix_time;
 
+using namespace Trader;
+
 //////////////////////////////////////////////////////////////////////////
 
 class Security::MarketDataLog : private boost::noncopyable {

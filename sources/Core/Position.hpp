@@ -158,8 +158,8 @@ public:
 	Qty GetPlanedQty() const;
 	Price GetOpenStartPrice() const;
 
-	TradeSystem::OrderId GetOpenOrderId() const throw() {
-		return TradeSystem::OrderId(m_opened.orderId);
+	Trader::TradeSystem::OrderId GetOpenOrderId() const throw() {
+		return Trader::TradeSystem::OrderId(m_opened.orderId);
 	}
 	Qty GetOpenedQty() const throw() {
 		return m_opened.qty;
@@ -177,8 +177,8 @@ public:
 		return GetOpenedQty() - GetClosedQty();
 	}
 	
-	TradeSystem::OrderId GetCloseOrderId() const throw() {
-		return TradeSystem::OrderId(m_closed.orderId);
+	Trader::TradeSystem::OrderId GetCloseOrderId() const throw() {
+		return Trader::TradeSystem::OrderId(m_closed.orderId);
 	}
 	void SetCloseStartPrice(Position::Price);
 	Price GetCloseStartPrice() const;
@@ -192,15 +192,15 @@ public:
 
 public:
 
-	TradeSystem::OrderId OpenAtMarketPrice();
-	TradeSystem::OrderId Open(Price);
-	TradeSystem::OrderId OpenAtMarketPriceWithStopPrice(Price stopPrice);
-	TradeSystem::OrderId OpenOrCancel(Price);
+	Trader::TradeSystem::OrderId OpenAtMarketPrice();
+	Trader::TradeSystem::OrderId Open(Price);
+	Trader::TradeSystem::OrderId OpenAtMarketPriceWithStopPrice(Price stopPrice);
+	Trader::TradeSystem::OrderId OpenOrCancel(Price);
 
-	TradeSystem::OrderId CloseAtMarketPrice(CloseType);
-	TradeSystem::OrderId Close(CloseType, Price);
-	TradeSystem::OrderId CloseAtMarketPriceWithStopPrice(CloseType, Price stopPrice);
-	TradeSystem::OrderId CloseOrCancel(CloseType, Price);
+	Trader::TradeSystem::OrderId CloseAtMarketPrice(CloseType);
+	Trader::TradeSystem::OrderId Close(CloseType, Price);
+	Trader::TradeSystem::OrderId CloseAtMarketPriceWithStopPrice(CloseType, Price stopPrice);
+	Trader::TradeSystem::OrderId CloseOrCancel(CloseType, Price);
 
 	bool CancelAtMarketPrice(CloseType);
 	bool CancelAllOrders();
@@ -214,30 +214,30 @@ public:
 
 protected:
 
-	virtual TradeSystem::OrderId DoOpenAtMarketPrice() = 0;
-	virtual TradeSystem::OrderId DoOpen(Price) = 0;
-	virtual TradeSystem::OrderId DoOpenAtMarketPriceWithStopPrice(Price stopPrice) = 0;
-	virtual TradeSystem::OrderId DoOpenOrCancel(Price) = 0;
+	virtual Trader::TradeSystem::OrderId DoOpenAtMarketPrice() = 0;
+	virtual Trader::TradeSystem::OrderId DoOpen(Price) = 0;
+	virtual Trader::TradeSystem::OrderId DoOpenAtMarketPriceWithStopPrice(Price stopPrice) = 0;
+	virtual Trader::TradeSystem::OrderId DoOpenOrCancel(Price) = 0;
 
-	virtual TradeSystem::OrderId DoCloseAtMarketPrice() = 0;
-	virtual TradeSystem::OrderId DoClose(Price) = 0;
-	virtual TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(Price stopPrice) = 0;
-	virtual TradeSystem::OrderId DoCloseOrCancel(Price) = 0;
+	virtual Trader::TradeSystem::OrderId DoCloseAtMarketPrice() = 0;
+	virtual Trader::TradeSystem::OrderId DoClose(Price) = 0;
+	virtual Trader::TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(Price stopPrice) = 0;
+	virtual Trader::TradeSystem::OrderId DoCloseOrCancel(Price) = 0;
 
 	bool DoCancelAllOrders();
 
 protected:
 
 	void UpdateOpening(
-				TradeSystem::OrderId,
-				TradeSystem::OrderStatus,
+				Trader::TradeSystem::OrderId,
+				Trader::TradeSystem::OrderStatus,
 				Qty filled,
 				Qty remaining,
 				double avgPrice,
 				double lastPrice);
 	void UpdateClosing(
-				TradeSystem::OrderId,
-				TradeSystem::OrderStatus,
+				Trader::TradeSystem::OrderId,
+				Trader::TradeSystem::OrderStatus,
 				Qty filled,
 				Qty remaining,
 				double avgPrice,
@@ -249,12 +249,12 @@ private:
 
 	void ReportOpeningUpdate(
 				const char *eventDesc,
-				TradeSystem::OrderStatus)
+				Trader::TradeSystem::OrderStatus)
 			const
 			throw();
 	void ReportClosingUpdate(
 				const char *eventDesc,
-				TradeSystem::OrderStatus)
+				Trader::TradeSystem::OrderStatus)
 			const
 			throw();
 
@@ -314,15 +314,15 @@ public:
 
 public:
 
-	virtual TradeSystem::OrderId DoOpenAtMarketPrice();
-	virtual TradeSystem::OrderId DoOpen(Price);
-	virtual TradeSystem::OrderId DoOpenAtMarketPriceWithStopPrice(Price stopPrice);
-	virtual TradeSystem::OrderId DoOpenOrCancel(Price);
+	virtual Trader::TradeSystem::OrderId DoOpenAtMarketPrice();
+	virtual Trader::TradeSystem::OrderId DoOpen(Price);
+	virtual Trader::TradeSystem::OrderId DoOpenAtMarketPriceWithStopPrice(Price stopPrice);
+	virtual Trader::TradeSystem::OrderId DoOpenOrCancel(Price);
 
-	virtual TradeSystem::OrderId DoCloseAtMarketPrice();
-	virtual TradeSystem::OrderId DoClose(Price);
-	virtual TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(Price stopPrice);
-	virtual TradeSystem::OrderId DoCloseOrCancel(Price);
+	virtual Trader::TradeSystem::OrderId DoCloseAtMarketPrice();
+	virtual Trader::TradeSystem::OrderId DoClose(Price);
+	virtual Trader::TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(Price stopPrice);
+	virtual Trader::TradeSystem::OrderId DoCloseOrCancel(Price);
 
 };
 
@@ -352,15 +352,15 @@ public:
 
 public:
 
-	virtual TradeSystem::OrderId DoOpenAtMarketPrice();
-	virtual TradeSystem::OrderId DoOpen(Price);
-	virtual TradeSystem::OrderId DoOpenAtMarketPriceWithStopPrice(Price stopPrice);
-	virtual TradeSystem::OrderId DoOpenOrCancel(Price);
+	virtual Trader::TradeSystem::OrderId DoOpenAtMarketPrice();
+	virtual Trader::TradeSystem::OrderId DoOpen(Price);
+	virtual Trader::TradeSystem::OrderId DoOpenAtMarketPriceWithStopPrice(Price stopPrice);
+	virtual Trader::TradeSystem::OrderId DoOpenOrCancel(Price);
 
-	virtual TradeSystem::OrderId DoCloseAtMarketPrice();
-	virtual TradeSystem::OrderId DoClose(Price);
-	virtual TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(Price stopPrice);
-	virtual TradeSystem::OrderId DoCloseOrCancel(Price);
+	virtual Trader::TradeSystem::OrderId DoCloseAtMarketPrice();
+	virtual Trader::TradeSystem::OrderId DoClose(Price);
+	virtual Trader::TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(Price stopPrice);
+	virtual Trader::TradeSystem::OrderId DoCloseOrCancel(Price);
 
 };
 

@@ -10,6 +10,8 @@ H/**************************************************************************
 #include "FakeTradeSystem.hpp"
 #include "Core/Security.hpp"
 
+using namespace Trader;
+
 //////////////////////////////////////////////////////////////////////////
 
 namespace {

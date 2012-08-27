@@ -11,6 +11,8 @@
 #include "Algo.hpp"
 #include "Settings.hpp"
 
+using namespace Trader;
+
 //////////////////////////////////////////////////////////////////////////
 
 Position::DynamicData::DynamicData()

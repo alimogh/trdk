@@ -10,7 +10,7 @@
 
 #include "Core/TradeSystem.hpp"
 
-class FakeTradeSystem : public TradeSystem {
+class FakeTradeSystem : public Trader::TradeSystem {
 
 public:
 

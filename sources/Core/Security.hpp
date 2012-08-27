@@ -3,7 +3,7 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: HighmanTradingRobot
+ *   Project: Trading Robot
  **************************************************************************/
 
 #pragma once
@@ -22,12 +22,12 @@ public:
 
 	typedef Instrument Base;
 
-	typedef TradeSystem::OrderStatusUpdateSlot OrderStatusUpdateSlot;
+	typedef Trader::TradeSystem::OrderStatusUpdateSlot OrderStatusUpdateSlot;
 
 	typedef boost::posix_time::ptime MarketDataTime;
 
-	typedef TradeSystem::OrderQty Qty;
-	typedef TradeSystem::OrderPrice Price;
+	typedef Trader::TradeSystem::OrderQty Qty;
+	typedef Trader::TradeSystem::OrderPrice Price;
 
 	struct TRADER_CORE_API Quote {
 		
@@ -81,7 +81,7 @@ private:
 public:
 
 	explicit Security(
-				boost::shared_ptr<TradeSystem>,
+				boost::shared_ptr<Trader::TradeSystem>,
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange,
@@ -122,17 +122,17 @@ public:
 
 	boost::posix_time::ptime GetLastMarketDataTime() const;
 
-	TradeSystem::OrderId SellAtMarketPrice(Qty, Position &);
-	TradeSystem::OrderId Sell(Qty, Price, Position &);
-	TradeSystem::OrderId SellAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
-	TradeSystem::OrderId SellOrCancel(Qty, Price, Position &);
+	Trader::TradeSystem::OrderId SellAtMarketPrice(Qty, Position &);
+	Trader::TradeSystem::OrderId Sell(Qty, Price, Position &);
+	Trader::TradeSystem::OrderId SellAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
+	Trader::TradeSystem::OrderId SellOrCancel(Qty, Price, Position &);
 
-	TradeSystem::OrderId BuyAtMarketPrice(Qty, Position &);
-	TradeSystem::OrderId Buy(Qty, Price, Position &);
-	TradeSystem::OrderId BuyAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
-	TradeSystem::OrderId BuyOrCancel(Qty, Price, Position &);
+	Trader::TradeSystem::OrderId BuyAtMarketPrice(Qty, Position &);
+	Trader::TradeSystem::OrderId Buy(Qty, Price, Position &);
+	Trader::TradeSystem::OrderId BuyAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
+	Trader::TradeSystem::OrderId BuyOrCancel(Qty, Price, Position &);
 
-	void CancelOrder(TradeSystem::OrderId);
+	void CancelOrder(Trader::TradeSystem::OrderId);
 	void CancelAllOrders();
 
 	bool IsCompleted() const;

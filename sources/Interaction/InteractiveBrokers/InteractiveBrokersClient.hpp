@@ -19,9 +19,9 @@ public:
 	typedef std::list<boost::function<void()>> CallbackList;
 
 	typedef void (OrderStatusSlotSignature)(
-			TradeSystem::OrderId id,
-			TradeSystem::OrderId parentId,
-			TradeSystem::OrderStatus,
+			Trader::TradeSystem::OrderId id,
+			Trader::TradeSystem::OrderId parentId,
+			Trader::TradeSystem::OrderStatus,
 			long filled,
 			long remaining,
 			double avgFillPrice,
@@ -44,35 +44,35 @@ public:
 
 public:
 
-	TradeSystem::OrderId SendAsk(const Security &, TradeSystem::OrderQty);
-	TradeSystem::OrderId SendAsk(
+	Trader::TradeSystem::OrderId SendAsk(const Security &, Trader::TradeSystem::OrderQty);
+	Trader::TradeSystem::OrderId SendAsk(
 			const Security &,
-			TradeSystem::OrderQty,
+			Trader::TradeSystem::OrderQty,
 			double);
-	TradeSystem::OrderId SendAskWithMarketPrice(
+	Trader::TradeSystem::OrderId SendAskWithMarketPrice(
 			const Security &,
-			TradeSystem::OrderQty,
+			Trader::TradeSystem::OrderQty,
 			double stopPrice);
-	TradeSystem::OrderId SendIocAsk(
+	Trader::TradeSystem::OrderId SendIocAsk(
 			const Security &,
-			TradeSystem::OrderQty,
+			Trader::TradeSystem::OrderQty,
 			double);
 
-	TradeSystem::OrderId SendBid(const Security &, TradeSystem::OrderQty);
-	TradeSystem::OrderId SendBid(
+	Trader::TradeSystem::OrderId SendBid(const Security &, Trader::TradeSystem::OrderQty);
+	Trader::TradeSystem::OrderId SendBid(
 			const Security &,
-			TradeSystem::OrderQty,
+			Trader::TradeSystem::OrderQty,
 			double);
-	TradeSystem::OrderId SendBidWithMarketPrice(
+	Trader::TradeSystem::OrderId SendBidWithMarketPrice(
 			const Security &,
-			TradeSystem::OrderQty,
+			Trader::TradeSystem::OrderQty,
 			double stopPrice);
-	TradeSystem::OrderId SendIocBid(
+	Trader::TradeSystem::OrderId SendIocBid(
 			const Security &,
-			TradeSystem::OrderQty,
+			Trader::TradeSystem::OrderQty,
 			double);
 
-	void CancelOrder(TradeSystem::OrderId);
+	void CancelOrder(Trader::TradeSystem::OrderId);
 
 public:
 

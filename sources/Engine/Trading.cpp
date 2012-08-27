@@ -20,6 +20,8 @@
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 
+using namespace Trader;
+
 namespace {
 
 	typedef std::map<std::string, boost::shared_ptr<Security>> Securities;

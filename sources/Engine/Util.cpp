@@ -12,6 +12,7 @@
 #include "Core/MarketDataSource.hpp"
 
 namespace pt = boost::posix_time;
+using namespace Trader;
 
 void Connect(TradeSystem &tradeSystem, const Settings &settings) {
 	for ( ; ; ) {

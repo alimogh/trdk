@@ -8,9 +8,12 @@
 
 #pragma once
 
-class TradeSystem;
+namespace Trader {
+	class TradeSystem;
+}
+
 class MarketDataSource;
 class Settings;
 
-void Connect(TradeSystem &, const Settings &);
+void Connect(Trader::TradeSystem &, const Settings &);
 void Connect(MarketDataSource &, const Settings &);

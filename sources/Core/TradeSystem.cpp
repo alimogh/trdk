@@ -9,6 +9,8 @@
 #include "Prec.hpp"
 #include "TradeSystem.hpp"
 
+using namespace Trader;
+
 //////////////////////////////////////////////////////////////////////////
 
 TradeSystem::Error::Error(const char *what) throw()
