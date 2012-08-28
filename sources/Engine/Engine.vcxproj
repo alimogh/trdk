@@ -74,11 +74,8 @@
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Interaction\InteractiveBrokers\InteractiveBrokers.vcxproj">
-      <Project>{befe87ae-1376-4c4c-87d5-73e782990306}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\IqFeed\IqFeed.vcxproj">
-      <Project>{9c9a77df-2a5b-4aac-9a94-42324d763063}</Project>
+    <ProjectReference Include="..\Interaction\Lightspeed\Lightspeed.vcxproj">
+      <Project>{ced89712-f2fd-4a0d-a97c-a43f1738d1b5}</Project>
     </ProjectReference>
     <ProjectReference Include="..\PyApi\PyApi.vcxproj">
       <Project>{7bd47287-4175-45ee-860b-326ae8060a16}</Project>
@@ -89,7 +86,6 @@
     <ClCompile Include="FakeTradeSystem.cpp" />
     <ClCompile Include="Ini.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="MarketData.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

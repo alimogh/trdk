@@ -9,42 +9,23 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Scripts">
-      <UniqueIdentifier>{589ed766-0ed9-432e-8bbe-a6792d8f82bd}</UniqueIdentifier>
-      <Extensions>py</Extensions>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Gateway.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PyApi.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ScriptEngine.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AlgoWrapper.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SecurityWrapper.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include=".\PositionWrapper.hpp">
+    <ClInclude Include="MarketData.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Gateway.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Prec.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PyApi.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ScriptEngine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include=".\PositionWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Api.cpp">
@@ -52,13 +33,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Scripts\TraderPyApiExample.py">
-      <Filter>Scripts</Filter>
-    </None>
-    <None Include="Trader.pypredef">
-      <Filter>Header Files</Filter>
-    </None>
-    <None Include="PyApi.def">
+    <None Include="Lightspeed.def">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

@@ -25,13 +25,21 @@ class Dll : private boost::noncopyable {
 
 public:
 
+	class Error : public Exception {
+	public:
+		explicit Error(const char *what) throw()
+				:	Exception(what) {
+			//...//
+		}
+	};
+
 	//! Could load DLL.
-	class DllLoadException : public Exception {
+	class DllLoadException : public Error {
 	public:
 		explicit DllLoadException(
 					const boost::filesystem::path &dllFile,
-					const Error &error)
-				: Exception(
+					const ::Error &error)
+				: Error(
 					(boost::format("Failed to load DLL file %1% (%2%)")
 							% dllFile
 							% error)
@@ -41,13 +49,13 @@ public:
 	};
 
 	//! Could find required function in DLL.
-	class DllFuncException : public Exception {
+	class DllFuncException : public Error {
 	public:
 		explicit DllFuncException(
 					const boost::filesystem::path &dllFile,
 					const char *const funcName,
-					const Error &error)
-				: Exception(
+					const ::Error &error)
+				: Error(
 					(boost::format("Failed to find function \"%2%\" in DLL %1% (%3%).")
 							% dllFile
 							% funcName
@@ -63,7 +71,7 @@ public:
 			: m_file(dllFile),
 			m_handle(LoadLibraryW(m_file.c_str())) {
 		if (m_handle == NULL) {
-			throw DllLoadException(m_file, Error(::GetLastError()));
+			throw DllLoadException(m_file, ::Error(::GetLastError()));
 		}
 	}
 
@@ -83,7 +91,7 @@ public:
 	typename Func * GetFunction(const char *const funcName) const {
 		FARPROC procAddr = GetProcAddress(m_handle, funcName);
 		if (procAddr == NULL) {
-			throw DllFuncException(m_file, funcName, Error(::GetLastError()));
+			throw DllFuncException(m_file, funcName, ::Error(::GetLastError()));
 		}
 		return reinterpret_cast<typename Func *>(procAddr);
 	}
@@ -131,8 +139,16 @@ public:
 		return m_objFormDll;
 	}
 
+	operator typename T &() {
+		return *GetObjPtr();
+	}
+
+	operator const typename T &() const {
+		return const_cast<DllObject *>(this)->operator typename T &();
+	}
+
 	operator boost::shared_ptr<typename T>() {
-		return GetObj();
+		return GetObjPtr();
 	}
 
 	operator boost::shared_ptr<const typename T>() const {
@@ -148,14 +164,14 @@ public:
 	}
 
 	T & operator *() {
-		return *GetObj();
+		return *GetObjPtr();
 	}
 	const T & operator *() const {
 		return const_cast<DllObject *>(this)->operator *();
 	}
 
 	T * operator ->() {
-		return GetObj().get();
+		return GetObjPtr().get();
 	}
 
 	const T * operator ->() const {
@@ -165,7 +181,7 @@ public:
 public:
 
 	void Reset(
-				boost::shared_ptr<const Dll> dll,
+				boost::shared_ptr<Dll> dll,
 				boost::shared_ptr<typename T> objFormDll) {
 		m_dll = dll;
 		m_objFormDll = objFormDll;
@@ -174,13 +190,13 @@ public:
 
 public:
 
-	boost::shared_ptr<typename T> GetObj() {
+	boost::shared_ptr<typename T> GetObjPtr() {
 		Assert(operator bool());
 		return m_objFormDll;
 	}
 
-	boost::shared_ptr<const typename T> GetObj() const {
-		return const_cast<DllObject *>(this)->GetObj();
+	boost::shared_ptr<const typename T> GetObjPtr() const {
+		return const_cast<DllObject *>(this)->GetObjPtr();
 	}
 
 	boost::shared_ptr<Dll> GetDll() {

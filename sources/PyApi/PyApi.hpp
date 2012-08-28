@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "MarketDataSource.hpp"
 #include "Core/Algo.hpp"
 
 namespace PyApi {
@@ -28,12 +27,7 @@ namespace PyApi {
 		class State;
 
 		struct Settings {
-
 			std::string algoName;
-
-			MarketDataSource level1DataSource;
-			MarketDataSource level2DataSource;
-
 		};
 
 	public:
@@ -51,9 +45,7 @@ namespace PyApi {
 
 	public:
 
-		virtual void SubscribeToMarketData(
-					const LiveMarketDataSource &iqFeed,
-					const LiveMarketDataSource &interactiveBrokers);
+		virtual void SubscribeToMarketData(const LiveMarketDataSource &);
 
 		virtual void Update();
 

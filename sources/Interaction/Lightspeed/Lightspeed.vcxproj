@@ -15,12 +15,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <VCTargetsPath Condition="'$(VCTargetsPath11)' != '' and '$(VSVersion)' == '' and '$(VisualStudioVersion)' == ''">$(VCTargetsPath11)</VCTargetsPath>
-  </PropertyGroup>
-  <PropertyGroup Label="Globals">
-    <ProjectGuid>{7BD47287-4175-45EE-860B-326AE8060A16}</ProjectGuid>
-    <RootNamespace>PyAPI</RootNamespace>
-    <ProjectName>Py API</ProjectName>
+    <ProjectGuid>{CED89712-F2FD-4A0D-A97C-A43F1738D1B5}</ProjectGuid>
+    <RootNamespace>Lightspeed</RootNamespace>
+    <ProjectName>Lightspeed</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -45,69 +42,51 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\Python.props" />
-    <Import Project="..\Module.props" />
-    <Import Project="PyApi.props" />
-    <Import Project="..\Configuration Debug.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="Lightspeed.props" />
+    <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\Python.props" />
-    <Import Project="..\Module.props" />
-    <Import Project="PyApi.props" />
-    <Import Project="..\Configuration Release.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="Lightspeed.props" />
+    <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\Python.props" />
-    <Import Project="..\Module.props" />
-    <Import Project="PyApi.props" />
-    <Import Project="..\Configuration Test.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="Lightspeed.props" />
+    <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <TargetName>PyApi_dbg</TargetName>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <TargetName>PyApi</TargetName>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
-    <TargetName>PyApi_test</TargetName>
-  </PropertyGroup>
+  <PropertyGroup />
   <ItemGroup>
-    <ClInclude Include="AlgoWrapper.hpp" />
-    <ClInclude Include=".\PositionWrapper.hpp" />
+    <ClInclude Include="Gateway.hpp" />
+    <ClInclude Include="MarketData.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="PyApi.hpp" />
-    <ClInclude Include="ScriptEngine.hpp" />
-    <ClInclude Include="SecurityWrapper.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include=".\PositionWrapper.cpp" />
     <ClCompile Include="Api.cpp" />
+    <ClCompile Include="Gateway.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="PyApi.cpp" />
-    <ClCompile Include="ScriptEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="PyApi.def" />
-    <None Include="Scripts\TraderPyApiExample.py" />
-    <None Include="Trader.pypredef" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Common\Common.vcxproj">
-      <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Core\Core.vcxproj">
+    <ProjectReference Include="..\..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Lightspeed.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

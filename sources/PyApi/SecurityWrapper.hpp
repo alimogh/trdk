@@ -9,7 +9,6 @@
 #pragma once
 
 #include "PositionWrapper.hpp"
-#include "MarketDataSource.hpp"
 #include "Core/Security.hpp"
 
 class Algo;
@@ -33,37 +32,11 @@ namespace PyApi { namespace Wrappers {
 
 	public:
 
-		void Init(
-					const ::Algo &algo,
-					boost::shared_ptr<::Security> security,
-					PyApi::MarketDataSource level2DataSource) {
-
+		void Init(const ::Algo &algo, boost::shared_ptr<::Security> security) {
 			Assert(!m_algo);
 			Assert(!m_security);
-			Assert(!m_level2AskSizeGetter);
-			Assert(!m_level2BidSizeGetter);
-
-			boost::function<::Security::Qty()> level2AskSizeGetter;
-			boost::function<::Security::Qty()> level2BidSizeGetter;
-
-			switch (level2DataSource) {
-				case MARKET_DATA_SOURCE_IQFEED:
-					level2AskSizeGetter = boost::bind(&::Security::GetLevel2AskSizeIqFeed, security.get());
-					level2BidSizeGetter = boost::bind(&::Security::GetLevel2BidSizeIqFeed, security.get());
-					break;
-				case MARKET_DATA_SOURCE_INTERACTIVE_BROKERS:
-					level2AskSizeGetter = boost::bind(&::Security::GetLevel2AskSizeIb, security.get());
-					level2BidSizeGetter = boost::bind(&::Security::GetLevel2BidSizeIb, security.get());
-					break;
-				default:
-					AssertFail("Unknown market data source.");
-			}
-
 			m_algo = &algo;
 			m_security = security;
-			m_level2AskSizeGetter = level2AskSizeGetter;
-			m_level2BidSizeGetter = level2BidSizeGetter;
-
 		}
 
 		boost::shared_ptr<::Security> GetSecurity() {
@@ -119,7 +92,7 @@ namespace PyApi { namespace Wrappers {
 			return m_security->GetAskSize();
 		}
 		double GetLevel2AskSize() const {
-			return m_level2AskSizeGetter();
+			return m_security->GetLevel2AskSize();
 		}
 
 		int GetBidPriceScaled() const {
@@ -132,7 +105,7 @@ namespace PyApi { namespace Wrappers {
 			return m_security->GetBidSize();
 		}
 		double GetLevel2BidSize() const {
-			return m_level2BidSizeGetter();
+			return m_security->GetLevel2BidSize();
 		}
 
 	public:
@@ -149,9 +122,6 @@ namespace PyApi { namespace Wrappers {
 
 		const ::Algo *m_algo;
 		boost::shared_ptr<::Security> m_security;
-
-		boost::function<::Security::Qty()> m_level2AskSizeGetter;
-		boost::function<::Security::Qty()> m_level2BidSizeGetter;
 
 	};
 

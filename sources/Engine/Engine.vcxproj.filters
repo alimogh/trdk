@@ -23,9 +23,6 @@
     <ClCompile Include="Trading.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MarketData.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Ini.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

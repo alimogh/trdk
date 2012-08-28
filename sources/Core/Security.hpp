@@ -166,10 +166,8 @@ public:
 		return m_bidSize;
 	}
 
-	Qty GetLevel2AskSizeIqFeed();
-	Qty GetLevel2AskSizeIb();
-	Qty GetLevel2BidSizeIqFeed();
-	Qty GetLevel2BidSizeIb();
+	Qty GetLevel2AskSize();
+	Qty GetLevel2BidSize();
 
 private:
 
@@ -184,10 +182,8 @@ private:
 	bool SetAsk(Price, Qty);
 	bool SetBid(Price, Qty);
 
-	void SetLevel2AskIqFeed(Qty askSize);
-	void SetLevel2AskIb(Qty askSize);
-	void SetLevel2BidIqFeed(Qty bidSize);
-	void SetLevel2BidIb(Qty bidSize);
+	void SetLevel2Ask(Qty askSize);
+	void SetLevel2Bid(Qty bidSize);
 
 public:
 
@@ -205,18 +201,14 @@ public:
 				double bidPrice,
 				size_t bidSize,
 				size_t totalVolume);
-	void UpdateLevel2IqFeed(
-				const MarketDataTime &timeOfReception,
-				boost::shared_ptr<Quote> ask,
-				boost::shared_ptr<Quote> bid);
 
-	void UpdateLevel2IbLine(
+	void UpdateLevel2Line(
 				const MarketDataTime &timeOfReception,
 				int position,
 				bool isAsk,
 				double price,
 				Qty size);
-	void DeleteLevel2IbLine(
+	void DeleteLevel2Line(
 				const MarketDataTime &timeOfReception,
 				int position,
 				bool isAsk,
@@ -250,16 +242,6 @@ private:
 	volatile LONGLONG m_bidPrice;
 	volatile long m_bidSize;
 
-	class MarketDataLevel2Log;
-	MarketDataLevel2Log *m_marketDataLevel2Log;
-
-	class MarketDataLevel2SnapshotLog;
-	MarketDataLevel2SnapshotLog *m_marketDataLevel2SnapshotLog;
-
-	mutable Level2Mutex m_level2Mutex;
-	QuotesAccumulated m_qoutesIqFeed;
-	QuotesCompleted m_qoutesIb;
-	
 	mutable MarketDataTimeMutex m_marketDataTimeMutex;
 	MarketDataTime m_marketDataTime;
 

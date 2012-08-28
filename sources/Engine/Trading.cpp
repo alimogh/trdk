@@ -10,8 +10,6 @@
 #include "FakeTradeSystem.hpp"
 #include "Ini.hpp"
 #include "Util.hpp"
-#include "Interaction/IqFeed/IqFeedClient.hpp"
-#include "Interaction/InteractiveBrokers/InteractiveBrokersTradeSystem.hpp"
 #include "Dispatcher.hpp"
 #include "Core/Algo.hpp"
 #include "Core/Security.hpp"
@@ -241,15 +239,36 @@ namespace {
 		Log::Info("Current settings update competed.");
 	}
 
+	DllObjectPtr<TradeSystem> LoadTradeSystem() {
+		boost::shared_ptr<Dll> dll(new Dll("Lightspeed"));
+		const auto fabric = dll->GetFunction<boost::shared_ptr<TradeSystem>()>(
+			"CreateTradeSystem");
+		return DllObjectPtr<TradeSystem>(dll, fabric());
+	}
+
 }
 
 void Trade(const fs::path &iniFilePath) {
 
 	boost::shared_ptr<Settings> settings
 		= Ini::LoadSettings(iniFilePath, boost::get_system_time(), false);
-	boost::shared_ptr<InteractiveBrokersTradeSystem> tradeSystem(
-		new InteractiveBrokersTradeSystem);
-	IqFeedClient marketDataSource;
+
+	DllObjectPtr<TradeSystem> tradeSystem;
+	DllObjectPtr<LiveMarketDataSource> marketDataSource;
+	{
+		boost::shared_ptr<Dll> dll(new Dll("Lightspeed"));
+		{
+			const auto tsFabric = dll->GetFunction<boost::shared_ptr<TradeSystem>()>(
+				"CreateTradeSystem");
+			tradeSystem.Reset(dll, tsFabric());
+		}
+		{
+			const auto mdFabric = dll->GetFunction<boost::shared_ptr<LiveMarketDataSource>()>(
+				"CreateLiveMarketDataSource");
+			marketDataSource.Reset(dll, mdFabric());
+		}
+	}
+
 	Dispatcher dispatcher(settings);
 
 	Algos algos;
@@ -264,7 +283,7 @@ void Trade(const fs::path &iniFilePath) {
 	}
 		
 	foreach (auto &a, algos) {
-		a.second->SubscribeToMarketData(marketDataSource, *tradeSystem);
+		a.second->SubscribeToMarketData(marketDataSource);
 	}
 	
 	FileSystemChangeNotificator iniChangeNotificator(
@@ -305,7 +324,14 @@ void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
 		settings->GetCurrentTradeSessionEndime() + Util::GetEdtDiff());
 
 	boost::shared_ptr<TradeSystem> tradeSystem(new FakeTradeSystem);
-	IqFeedClient marketDataSource;
+	DllObjectPtr<HistoryMarketDataSource> marketDataSource;
+	{
+		boost::shared_ptr<Dll> dll(new Dll("Lightspeed"));
+		const auto mdFabric = dll->GetFunction<boost::shared_ptr<HistoryMarketDataSource>()>(
+			"CreateHistoryMarketDataSource");
+		marketDataSource.Reset(dll, mdFabric());
+	}
+
 	Dispatcher dispatcher(settings);
 	Algos algos;
 	if (	!InitTrading(

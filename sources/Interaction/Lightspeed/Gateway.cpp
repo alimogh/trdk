@@ -1,20 +1,12 @@
 /**************************************************************************
- *   Created: 2012/08/07 16:15:58
+ *   Created: 2012/08/28 01:33:27
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
  *   Project: Trading Robot
  **************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "Gateway.hpp"
 
-namespace PyApi {
-
-	enum MarketDataSource {
-		MARKET_DATA_SOURCE_NOT_SET				= 0,
-		MARKET_DATA_SOURCE_DISABLED,
-		MARKET_DATA_SOURCE_IQFEED,
-		MARKET_DATA_SOURCE_INTERACTIVE_BROKERS
-	};
-
-}
+using namespace  Trader::Interaction::Lightspeed;

@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include "MarketDataSource.hpp"
-
 class Security;
 class Algo;
 class Position;
@@ -41,8 +39,7 @@ namespace PyApi {
 				const std::string &stamp,
 				const std::string &algoClassName,
 				const ::Algo &algo,
-				boost::shared_ptr<Security> security,
-				PyApi::MarketDataSource level2DataSource);
+				boost::shared_ptr<Security> security);
 
 	public:
 
