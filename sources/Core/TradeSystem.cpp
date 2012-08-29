@@ -18,8 +18,8 @@ TradeSystem::Error::Error(const char *what) throw()
 	//...//
 }
 
-TradeSystem::ConnectError::ConnectError(const char *what) throw()
-		: Error(what) {
+TradeSystem::ConnectError::ConnectError() throw()
+		: Error("Failed to connect to trade system") {
 	//...//
 }
 

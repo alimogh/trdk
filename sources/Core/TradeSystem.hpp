@@ -86,7 +86,7 @@ namespace Trader {
 
 		class TRADER_CORE_API ConnectError : public Error {
 		public:
-			ConnectError(const char *what) throw();
+			ConnectError() throw();
 		};
 
 		class TRADER_CORE_API ConnectionDoesntExistError : public Error {
@@ -161,10 +161,6 @@ namespace Trader {
 
 		virtual void CancelOrder(OrderId) = 0;
 		virtual void CancelAllOrders(const Security &) = 0;
-
-	public:
-
-		virtual void SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const = 0;
 
 	};
 
