@@ -67,9 +67,28 @@ public:
 
 public:
 
-	explicit Dll(const boost::filesystem::path &dllFile)
-			: m_file(dllFile),
-			m_handle(LoadLibraryW(m_file.c_str())) {
+	explicit Dll(const boost::filesystem::path &dllFile, bool autoConfName = false)
+			: m_file(dllFile) {
+		if (!m_file.has_extension()) {
+			m_file.replace_extension(".dll");
+		}
+#		if defined(_DEBUG) || defined(_TEST)
+			if (autoConfName) {
+				auto tmp = m_file;
+				tmp.replace_extension("");
+#				if defined(_DEBUG)
+					const std::string tmpStr = tmp.string() + "_dbg";
+#				elif defined(_TEST)
+					const std::string tmpStr = tmp.string() + "_test";
+#				endif
+				tmp = tmpStr;
+				tmp.replace_extension(m_file.extension());
+				m_file = tmp;
+			}
+#		else
+			UseUnused(autoConfName);
+#		endif
+		m_handle = LoadLibraryW(m_file.c_str());
 		if (m_handle == NULL) {
 			throw DllLoadException(m_file, ::Error(::GetLastError()));
 		}
@@ -98,7 +117,7 @@ public:
 
 private:
 
-	const boost::filesystem::path m_file;
+	boost::filesystem::path m_file;
 	HMODULE m_handle;
 
 };
