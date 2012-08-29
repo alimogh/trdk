@@ -112,7 +112,7 @@ namespace {
 			}
 		}
 		if (!dll) {
-			dll.reset(new Dll(module));
+			dll.reset(new Dll(module, true));
 		}
 		const auto fabric
 			= dll->GetFunction<
@@ -240,7 +240,7 @@ namespace {
 	}
 
 	DllObjectPtr<TradeSystem> LoadTradeSystem() {
-		boost::shared_ptr<Dll> dll(new Dll("Lightspeed"));
+		boost::shared_ptr<Dll> dll(new Dll("Lightspeed", true));
 		const auto fabric = dll->GetFunction<boost::shared_ptr<TradeSystem>()>(
 			"CreateTradeSystem");
 		return DllObjectPtr<TradeSystem>(dll, fabric());
@@ -256,7 +256,7 @@ void Trade(const fs::path &iniFilePath) {
 	DllObjectPtr<TradeSystem> tradeSystem;
 	DllObjectPtr<LiveMarketDataSource> marketDataSource;
 	{
-		boost::shared_ptr<Dll> dll(new Dll("Lightspeed"));
+		boost::shared_ptr<Dll> dll(new Dll("Lightspeed", true));
 		{
 			const auto tsFabric = dll->GetFunction<boost::shared_ptr<TradeSystem>()>(
 				"CreateTradeSystem");
@@ -326,7 +326,7 @@ void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
 	boost::shared_ptr<TradeSystem> tradeSystem(new FakeTradeSystem);
 	DllObjectPtr<HistoryMarketDataSource> marketDataSource;
 	{
-		boost::shared_ptr<Dll> dll(new Dll("Lightspeed"));
+		boost::shared_ptr<Dll> dll(new Dll("Lightspeed", true));
 		const auto mdFabric = dll->GetFunction<boost::shared_ptr<HistoryMarketDataSource>()>(
 			"CreateHistoryMarketDataSource");
 		marketDataSource.Reset(dll, mdFabric());
