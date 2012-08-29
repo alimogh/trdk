@@ -68,6 +68,7 @@
   <PropertyGroup />
   <ItemGroup>
     <ClInclude Include="Gateway.hpp" />
+    <ClInclude Include="GatewayTsMessage.hpp" />
     <ClInclude Include="MarketData.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
@@ -81,6 +82,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Common\Common.vcxproj">
+      <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
