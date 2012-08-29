@@ -17,7 +17,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	public:
 
-		typedef uint8_t Stage; 
+		typedef int8_t Stage; 
 
 		typedef boost::circular_buffer<char> MessagesBuffer;
 		typedef GatewayTsMessage<MessagesBuffer> TsMessage;
@@ -167,7 +167,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				Connection &,
 				const boost::system::error_code &,
 				size_t size);
-		void HandleRead(
+		bool HandleRead(
 				Connection &,
 				const boost::system::error_code &,
 				size_t size,

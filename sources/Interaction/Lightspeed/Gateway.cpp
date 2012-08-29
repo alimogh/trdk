@@ -210,7 +210,9 @@ void Gateway::HandleRead(const boost::system::error_code &error, size_t size) {
 		return;
 	}
 	Assert(m_connection->stage > 3);
-	HandleRead(*m_connection, error, size, lock);
+	if (!HandleRead(*m_connection, error, size, lock)) {
+		return;
+	}
 	m_connection->socket.async_read_some(
 		io::buffer(&m_connection->socketBuffer[0], m_connection->socketBuffer.size()),
 		boost::bind(
@@ -227,7 +229,9 @@ void Gateway::HandleRead(
 	const Lock lock(m_mutex);
 	Assert(connection.stage >= 1);
 	Assert(connection.stage <= 2);
-	HandleRead(connection, error, size, lock);
+	if (!HandleRead(connection, error, size, lock)) {
+		return;
+	}
 	connection.socket.async_read_some(
 		io::buffer(&connection.socketBuffer[0], connection.socketBuffer.size()),
 		boost::bind(
@@ -238,24 +242,23 @@ void Gateway::HandleRead(
 			io::placeholders::bytes_transferred));
 }
 
-void Gateway::HandleRead(
+bool Gateway::HandleRead(
 			Connection &connection,
 			const boost::system::error_code &error,
 			size_t size,
 			const Lock &) {
 
 	if (size == 0) {
-		Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection CLOSED.");
-		AssertFail("Bums! notify it");
-		return;
+		connection.stage = -1;
+		Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection CLOSED by server.");
+		return false;
 	} else if (error) {
+		connection.stage = -2;
 		Log::Error(
-			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection error: \"%1%\" (%2%).",
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection CLOSED with ERROR: \"%1%\" (%2%).",
 			error.message(),
 			error.value());
-		Log::Error(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection CLOSED with ERROR.");
-		AssertFail("Bums! notify it");
-		return;
+		return false;
 	}
 
 	Assert(connection.socketBuffer.size() >= size);
@@ -286,6 +289,8 @@ void Gateway::HandleRead(
 		HandleMessage(TsMessage(connection.messagesBuffer.begin(), end), connection);
 		connection.messagesBuffer.erase(connection.messagesBuffer.begin(), ++end);
 	}
+
+	return true;
 
 }
 
