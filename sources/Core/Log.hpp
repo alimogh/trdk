@@ -43,7 +43,9 @@ namespace Log { namespace Detail {
 				const char *tag,
 				const char *str);
 
-	inline void AppendEventRecordUnsafe(const boost::posix_time::ptime &time, const boost::format &format) {
+	inline void AppendEventRecordUnsafe(
+				const boost::posix_time::ptime &time,
+				const boost::format &format) {
 		AppendEventRecordUnsafe(time, format.str().c_str());
 	}
 	inline void AppendTradingRecordUnsafe(
@@ -63,7 +65,8 @@ namespace Log { namespace Detail {
 			AssertFailNoException();
 		}
 	}
-	inline void AppendRecord(boost::format (callback)()) throw() {
+	template<typename Callback>
+	inline void AppendRecordEx(Callback callback) throw() {
 		if (!IsEventsEnabled()) {
 			return;
 		}
@@ -1364,8 +1367,9 @@ namespace Log {
 		Detail::AppendRecord(str);
 	}
 
-	inline void Debug(boost::format (callback)()) throw() {
-		Detail::AppendRecord(callback);
+	template<typename Callback>
+	inline void DebugEx(Callback callback) throw() {
+		Detail::AppendRecordEx(callback);
 	}
 
 	template<typename Param1>
