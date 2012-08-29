@@ -30,10 +30,7 @@ public:
 
 		size_t algoThreadsCount;
 
-		int ibClientId;
-		std::string ibIpAddress;
-
-		std::string iqLinkIpAddress;
+		std::string tsIpAddress;
 
 	};
 
@@ -74,10 +71,7 @@ public:
 
 	bool IsValidPrice(const Security &) const;
 
-	int GetIbTwsClientId() const;
-	const std::string & GetIbTwsIpAddress() const;
-	
-	const std::string & GetIqLinkIpAddress() const;
+	const std::string & GetTradeSystemIpAddress() const;
 
 private:
 
