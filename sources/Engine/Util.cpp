@@ -25,10 +25,10 @@ void Connect(TradeSystem &tradeSystem, const Settings &settings) {
 	}
 }
 
-void Connect(MarketDataSource &marketDataSource, const Settings &settings) {
+void Connect(MarketDataSource &/*marketDataSource*/, const Settings &/*settings*/) {
 	for ( ; ; ) {
 		try {
-			marketDataSource.Connect(settings);
+			// marketDataSource.Connect(settings);
 			break;
 		} catch (const MarketDataSource::ConnectError &) {
 			boost::this_thread::sleep(pt::seconds(5));
