@@ -178,8 +178,13 @@ namespace {
 		Log::Info("Loaded %1% securities.", securities.size());
 		Log::Info("Loaded %1% algos.", algos.size());
 
-		Connect(*tradeSystem, *settings);
-		Connect(marketDataSource, *settings);
+		try {
+			Connect(*tradeSystem, *settings);
+			Connect(marketDataSource, *settings);
+		} catch (const Exception &ex) {
+			Log::Error("Failed to make trading connections: \"%1%\".", ex.what());
+			throw Exception("Failed to make trading connections");
+		}
 		
 		return true;
 
