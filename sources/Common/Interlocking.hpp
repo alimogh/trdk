@@ -20,6 +20,14 @@ namespace Interlocking {
 #		endif
 	}
 
+	inline long long Increment(volatile long long &destination) throw() {
+#		ifdef _WINDOWS
+			return InterlockedIncrement64(&destination);
+#		else
+			static_assert(false, "Not implemented.");
+#		endif
+	}
+
 	inline long Exchange(volatile long &destination, long value) throw() {
 #		ifdef _WINDOWS
 			return InterlockedExchange(&destination, value);
