@@ -8,15 +8,12 @@
 
 #pragma once
 
+#include "GatewayMessage.hpp"
+
 namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	template<typename BufferT>
-	class GatewayTsMessage {
-
-	public:
-
-		typedef BufferT Buffer;
-		typedef typename Buffer::const_iterator Iterator;
+	class GatewayTsMessage : public GatewayMessage {
 
 	public:
 
@@ -26,35 +23,34 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			TYPE_LOGIN_REJECTED	= 'J'
 		};
 
-		typedef typename Buffer::size_type Len;
-		typedef typename Buffer::size_type FieldStart;
-		typedef int64_t Numeric;
-		typedef char Char;
+		typedef BufferT Buffer;
+		typedef typename Buffer::const_iterator Iterator;
 
 	public:
 
-		class Error : public Exception {
-		public:
-			typedef std::vector<char> MessageBuffer;
+		class Error : public GatewayMessage::Error {
 		public:
 			explicit Error(const char *what, Iterator messageBegin, Iterator messageEnd)
-					: Exception(what),
+					: GatewayMessage::Error(what),
 					m_buffer(messageBegin, messageEnd) {
 				//...//
 			}
+			virtual ~Error() {
+				//...//
+			}
 		public:
-			const MessageBuffer & GetMessage() const {
+			virtual const std::string & GetSubject() const {
 				return m_buffer;
 			}
 		private:
-			MessageBuffer m_buffer;
+			std::string m_buffer;
 		};
 	
 		class MessageNotGatawayMessageError : public Error {
 		public:
 			MessageNotGatawayMessageError(Iterator messageBegin, Iterator messageEnd)
 					: Error(
-						"Message not Lightspeed Gateway message",
+						"Message not Lightspeed Gateway trade system message",
 						messageBegin,
 						messageEnd) {
 				//...//
@@ -65,7 +61,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		public:
 			FieldDoesntExistError(Iterator messageBegin, Iterator messageEnd)
 					: Error(
-						"Field doesn't exist in Lightspeed Gateway message",
+						"Field doesn't exist in Lightspeed Gateway trade system message",
 						messageBegin,
 						messageEnd) {
 				//...//
@@ -76,7 +72,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		public:
 			FieldHasInvalidFormatError(Iterator messageBegin, Iterator messageEnd)
 					: Error(
-						"Lightspeed Gateway message field has invalid format",
+						"Lightspeed Gateway trade system message field has invalid format",
 						messageBegin,
 						messageEnd) {
 				//...//
@@ -94,21 +90,25 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			}
 			switch (*m_messageBegin) {
 				case GatewayTsMessage::TYPE_DEBUG:
+				case GatewayTsMessage::TYPE_LOGIN_ACCEPTED:
+				case GatewayTsMessage::TYPE_LOGIN_REJECTED:
 					m_isLightspeedMessage = false;
 					m_type = Type(*m_messageBegin);
 					break;
 				default:
+					if (m_len < m_timestampFieldSize + 1) {
+						throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
+					}
 					{
 						const auto begin = m_messageBegin + m_timestampFieldSize;
-						switch (*begin) {
-							case GatewayTsMessage::TYPE_LOGIN_ACCEPTED:
-							case GatewayTsMessage::TYPE_LOGIN_REJECTED:
-								m_isLightspeedMessage = true;
-								m_type = Type(*begin);
-								break;
-							default:
+//						switch (*begin) {
+// 							case GatewayTsMessage::TYPE_LOGIN_ACCEPTED:
+// 								m_isLightspeedMessage = true;
+// 								m_type = Type(*begin);
+// 								break;
+//							default:
 								throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
-						}
+//						}
 					}
 					break;
 			}

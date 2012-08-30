@@ -9,6 +9,7 @@
 #pragma once
 
 #include "GatewayTsMessage.hpp"
+#include "GatewayClientMessage.hpp"
 #include "Core/TradeSystem.hpp"
 
 namespace Trader {  namespace Interaction { namespace Lightspeed {
@@ -17,23 +18,22 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	public:
 
-		typedef int8_t Stage; 
+		typedef int16_t Stage; 
 
 		typedef boost::circular_buffer<char> MessagesBuffer;
 		typedef GatewayTsMessage<MessagesBuffer> TsMessage;
 
+		typedef GatewayClientMessage<boost::asio::streambuf> ClientMessage;
+
 		class Error : public TradeSystem::Error {
 		public:
 			explicit Error(const char *what) throw()
-					: TradeSystem::Error(what)
-					{
+					: TradeSystem::Error(what) {
 				//...//
 			}
 		};
 
 		class ProtocolError : public Error {
-		public:
-			typedef std::vector<char> MessageBuffer;
 		public:
 			ProtocolError(
 						const char *what,
@@ -46,16 +46,26 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 					m_messageBuffer(messageBegin, messageEnd) {
 				//...//
 			}
+			ProtocolError(
+							const char *what,
+							const std::string &message,
+							Stage stage)
+						throw()
+					: Error(what),
+					m_stage(stage),
+					m_messageBuffer(message) {
+				//...//
+			}
 		public:
 			Stage GetStage() const {
 				return m_stage;
 			}
-			const MessageBuffer & GetMessage() const {
+			const std::string & GetMessage() const {
 				return m_messageBuffer;
 			}
 		private:
 			Stage m_stage;
-			MessageBuffer m_messageBuffer;
+			std::string m_messageBuffer;
 		};
 
 	private:
@@ -72,7 +82,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		typedef Proto::endpoint Endpoint;
 		typedef Proto::socket Socket;
 
-		typedef std::vector<char> SocketBuffer;
+		typedef std::vector<char> SocketReceiveBuffer;
+		typedef boost::asio::streambuf SocketSendBuffer;
 
 		typedef uint64_t Seqnumber;
 		
@@ -82,7 +93,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			Socket socket;
 			boost::thread task;
 			
-			SocketBuffer socketBuffer;
+			SocketReceiveBuffer socketBuffer;
 			MessagesBuffer messagesBuffer;
 
 			Stage stage;
@@ -152,6 +163,15 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	private:
 
+		void StartRead();
+		void StartInitialDataRead(Connection &);
+
+		bool IsClosed(
+					Connection &connection,
+					const boost::system::error_code &error,
+					size_t size)
+				const;
+
 		void HandleResolve(
 					Connection &,
 					const boost::system::error_code &,
@@ -161,12 +181,12 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 					const boost::system::error_code &,
 					Endpoint &,
 					ResolverIterator);
+		void HandleInitialDataRead(
+					Connection &,
+					const boost::system::error_code &,
+					size_t size);
 
 		void HandleRead(const boost::system::error_code &, size_t size);
-		void HandleRead(
-				Connection &,
-				const boost::system::error_code &,
-				size_t size);
 		bool HandleRead(
 				Connection &,
 				const boost::system::error_code &,
@@ -183,8 +203,18 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		void SendLoginRequest(
 					Connection &,
 					const std::string &login,
-					const std::string &password)
-				const;
+					const std::string &password);
+
+		void SendOrder(
+				OrderPrice price,
+				ClientMessage::Numeric timeInForce);
+
+		void Send(boost::shared_ptr<ClientMessage>, Connection &);
+
+		void HandleWrite(
+				boost::shared_ptr<const ClientMessage>,
+				const boost::system::error_code &,
+				size_t size);
 
 	private:
 
