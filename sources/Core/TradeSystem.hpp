@@ -89,6 +89,11 @@ namespace Trader {
 			ConnectError() throw();
 		};
 
+		class TRADER_CORE_API SendingError : public Error {
+		public:
+			SendingError() throw();
+		};
+
 		class TRADER_CORE_API ConnectionDoesntExistError : public Error {
 		public:
 			ConnectionDoesntExistError(const char *what) throw();
