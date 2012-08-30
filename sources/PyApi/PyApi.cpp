@@ -39,7 +39,7 @@ const std::string & PyApi::Algo::GetName() const {
 }
 
 void PyApi::Algo::SubscribeToMarketData(const LiveMarketDataSource &/*dataSource*/) {
-	AssertFail("Doesn't implemented.");
+	//...//
 }
 
 void PyApi::Algo::Update() {
