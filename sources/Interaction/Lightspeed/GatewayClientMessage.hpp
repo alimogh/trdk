@@ -18,7 +18,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 	public:
 
 		enum Type {
-			TYPE_LOGIN_REQUEST = 'L'
+			TYPE_LOGIN_REQUEST	= 'L',
+			TYPE_NEW_ORDER		= 'O'
 		};
 
 		typedef BufferT Buffer;
@@ -59,7 +60,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		explicit GatewayClientMessage(Type type)
 				: m_formatter(&m_buffer) {
-			AppendCharField(Char(type));
+			AppendField(Char(type));
 		}
 
 	public:
@@ -68,18 +69,30 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			return m_buffer;
 		}
 
+		Len GetMessageLen() const {
+			return Len(const_cast<GatewayClientMessage *>(this)->m_buffer.in_avail());
+		}
+
 	public:
 
-		void AppendCharField(Char ch) {
+		void AppendField(Char ch) {
 			m_formatter.put(ch);
 		}
 
-		void AppendAlphanumField(const std::string &val, Len len) {
-			AppendField(val, len, std::ios::left);
+		void AppendField(BuySellIndicator ch) {
+			AppendField(Char(ch));
 		}
 
-		void AppendNumericField(Numeric val, Len len) {
-			AppendField(boost::lexical_cast<std::string>(val), len, std::ios::right);
+		void AppendField(const std::string &val, Len len) {
+			AppendField(val, len, ' ', std::ios::left);
+		}
+
+		void AppendField(Numeric val, Len len) {
+			AppendField(boost::lexical_cast<std::string>(val), len, ' ', std::ios::right);
+		}
+
+		void AppendField(double val, Len len) {
+			AppendField(boost::lexical_cast<std::string>(val), len, '0', std::ios::right);
 		}
 
 		void AppendSpace(Len len) {
@@ -88,12 +101,16 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	private:
 
-		void AppendField(const std::string &val, Len len, std::ios::fmtflags flags) {
+		void AppendField(
+					const std::string &val,
+					Len len,
+					char fill,
+					std::ios::fmtflags flags) {
 			if (val.size() > len) {
 				throw FieldTooLongError(val);
 			}
 			m_formatter.flags(flags);
-			m_formatter << std::setw(len) << val;
+			m_formatter << std::setfill(fill) << std::setw(len) << val;
 		}
 
 	private:

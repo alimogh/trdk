@@ -19,6 +19,14 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		typedef int64_t Numeric;
 		typedef char Char;
 
+		enum BuySellIndicator {
+			BUY_SELL_INDICATOR_BUY			= 'B',
+			BUY_SELL_INDICATOR_SELL_LONG	= 'S',
+			BUY_SELL_INDICATOR_SELL_SHORT	= 'T'
+		};
+
+	public:
+
 		class Error : public Exception {
 		public:
 			explicit Error(const char *what)

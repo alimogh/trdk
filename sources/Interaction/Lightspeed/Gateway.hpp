@@ -85,7 +85,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		typedef std::vector<char> SocketReceiveBuffer;
 		typedef boost::asio::streambuf SocketSendBuffer;
 
-		typedef uint64_t Seqnumber;
+		typedef long long Seqnumber;
 		
 		struct Connection {
 		
@@ -98,7 +98,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 			Stage stage;
 
-			Seqnumber seqnumber;
+			volatile Seqnumber seqnumber;
 
 			explicit Connection(size_t bufferSize);
 			~Connection();
@@ -205,10 +205,14 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 					const std::string &login,
 					const std::string &password);
 
-		void SendOrder(
+		OrderId SendOrder(
+				const Security &,
+				ClientMessage::BuySellIndicator,
+				ClientMessage::Numeric,
 				OrderPrice price,
 				ClientMessage::Numeric timeInForce);
 
+		void Send(boost::shared_ptr<ClientMessage>);
 		void Send(boost::shared_ptr<ClientMessage>, Connection &);
 
 		void HandleWrite(

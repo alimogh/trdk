@@ -8,8 +8,9 @@
 
 #include "Prec.hpp"
 #include "Gateway.hpp"
+#include "Core/Security.hpp"
 #include "Core/Settings.hpp"
-#include <Common/Exception.hpp>
+#include "Common/Exception.hpp"
 
 #define TRADER_LIGHTSPEED_GATEWAY "Lightspeed Gateway"
 #define TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX TRADER_LIGHTSPEED_GATEWAY ": "
@@ -381,6 +382,7 @@ void Gateway::HandleDebugMessage(const TsMessage &message, Connection &connectio
 
 void Gateway::HandleLoginAccepted(const TsMessage &message, Connection &connection) {
 	Assert(message.GetType() == TsMessage::TYPE_LOGIN_ACCEPTED);
+	message.CheckMessageLen(21);
 	if (!m_connection) {
 		++connection.stage;
 		Assert(connection.seqnumber == 0);
@@ -401,6 +403,7 @@ void Gateway::HandleLoginAccepted(const TsMessage &message, Connection &connecti
 
 void Gateway::HandleLoginRejected(const TsMessage &message, Connection &connection) {
 	Assert(message.GetType() == TsMessage::TYPE_LOGIN_REJECTED);
+	message.CheckMessageLen(2);
 	if (!m_connection) {
 		Assert(connection.seqnumber == 0);
 		const auto reasonCode = message.GetCharField(1);
@@ -441,10 +444,11 @@ void Gateway::SendLoginRequest(
 	try {
 		boost::shared_ptr<ClientMessage> message(
 			new ClientMessage(ClientMessage::TYPE_LOGIN_REQUEST));
-		message->AppendAlphanumField(login, 6);
-		message->AppendAlphanumField(password, 10);
+		message->AppendField(login, 6);
+		message->AppendField(password, 10);
 		message->AppendSpace(10);
-		message->AppendNumericField(0, 10);
+		message->AppendField(ClientMessage::Numeric(0), 10);
+		Assert(message->GetMessageLen() == 37);
 		Send(message, connection);
 	} catch (const ClientMessage::Error &ex) {
 		Log::Error(
@@ -455,10 +459,48 @@ void Gateway::SendLoginRequest(
 	}
 }
 
+Gateway::OrderId Gateway::SendOrder(
+			const Security &security,
+			ClientMessage::BuySellIndicator buySell,
+			ClientMessage::Numeric qty,
+			OrderPrice price,
+			ClientMessage::Numeric timeInForce) {
+
+	const auto result = Interlocking::Increment(m_connection->seqnumber);
+
+	boost::shared_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_NEW_ORDER));
+	message->AppendField(result, 16);
+	message->AppendField('A');
+	message->AppendField(buySell);
+	message->AppendField(qty, 6);
+	message->AppendField(qty, 6);
+	message->AppendField(security.GetSymbol(), 6);
+	message->AppendField(security.DescalePrice(price), 10);
+	message->AppendField(.0, 5);
+	message->AppendField(timeInForce, 5);
+	message->AppendSpace(10);
+	Assert(message->GetMessageLen() == 57);
+
+	const Lock lock(m_mutex);
+	Send(message);
+
+	return Gateway::OrderId(result);
+
+}
+
+void Gateway::Send(boost::shared_ptr<ClientMessage> message) {
+	const Lock lock(m_mutex);
+	Assert(m_connection);
+	if (m_connection->stage <= 0) {
+		throw ConnectionDoesntExistError("Connection lost");
+	}
+	Send(message, *m_connection);
+}
+
 void Gateway::Send(
 			boost::shared_ptr<ClientMessage> message,
 			Connection &connection) {
-	message->AppendCharField('\n');
+	message->AppendField('\n');
 	io::async_write(
 		connection.socket,
 		message->GetMessage(),
@@ -494,11 +536,10 @@ bool Gateway::IsCompleted(const Security &) const {
 }
 
 Gateway::OrderId Gateway::SellAtMarketPrice(
-			const Security &,
-			OrderQty,
+			const Security &security,
+			OrderQty qty,
 			const OrderStatusUpdateSlot &) {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Doesn't implemented");
+	return SendOrder(security, ClientMessage::BUY_SELL_INDICATOR_SELL_LONG, qty, 0, 99999);
 }
 
 Gateway::OrderId Gateway::Sell(
@@ -529,11 +570,10 @@ Gateway::OrderId Gateway::SellOrCancel(
 }
 
 Gateway::OrderId Gateway::BuyAtMarketPrice(
-			const Security &,
-			OrderQty,
+			const Security &security,
+			OrderQty qty,
 			const OrderStatusUpdateSlot &) {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Doesn't implemented");
+	return SendOrder(security, ClientMessage::BUY_SELL_INDICATOR_BUY, qty, 0, 99999);
 }
 
 Gateway::OrderId Gateway::Buy(

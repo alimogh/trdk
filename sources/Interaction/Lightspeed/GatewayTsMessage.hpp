@@ -79,6 +79,17 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			}
 		};
 
+		class FieldHasInvalidLenError : public Error {
+		public:
+			FieldHasInvalidLenError(Iterator messageBegin, Iterator messageEnd)
+					: Error(
+						"Lightspeed Gateway trade system message has invalid length",
+						messageBegin,
+						messageEnd) {
+				//...//
+			}
+		};
+
 	public:
 
 		GatewayTsMessage(Iterator messageBegin, Iterator messageEnd)
@@ -124,12 +135,22 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			return m_messageEnd;
 		}
 
-	public:
-
 		Type GetType() const {
 			return m_type;
 		}
-		
+	
+		Len GetMessageLen() const {
+			return m_len;
+		}
+
+		void CheckMessageLen(Len expectedLen) const {
+			if (m_len != expectedLen) {
+				throw FieldHasInvalidLenError(m_messageBegin, m_messageEnd);
+			}
+		}
+			
+	public:
+
 		std::string GetAsString() const {
 			const auto begin = !m_isLightspeedMessage
 				?	m_messageBegin
