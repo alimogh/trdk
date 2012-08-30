@@ -65,10 +65,10 @@ const std::string & Algo::GetTag() const {
 }
 
 void Algo::RequestHistory(
-			const HistoryMarketDataSource &iqFeed,
-			const boost::posix_time::ptime &fromTime,
-			const boost::posix_time::ptime &toTime) {
-	iqFeed.RequestHistory(GetSecurity(), fromTime, toTime);
+			const HistoryMarketDataSource &,
+			const boost::posix_time::ptime &,
+			const boost::posix_time::ptime &) {
+	AssertFail("Doesn't implemented.");
 }
 
 bool Algo::IsValidPrice(const Settings &settings) const {
