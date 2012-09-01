@@ -21,7 +21,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			TYPE_DEBUG			= '+',
 			TYPE_LOGIN_ACCEPTED	= 'A',
 			TYPE_LOGIN_REJECTED	= 'J',
-			TYPE_HEARTBEAT		= 'H'
+			TYPE_HEARTBEAT		= 'H',
+			TYPE_ORDER_ACCEPTED
 		};
 
 		typedef BufferT Buffer;
@@ -114,14 +115,14 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 					}
 					{
 						const auto begin = m_messageBegin + m_timestampFieldSize;
-//						switch (*begin) {
-// 							case TYPE_LOGIN_ACCEPTED:
-// 								m_isLightspeedMessage = true;
-// 								m_type = Type(*begin);
-// 								break;
-//							default:
+						switch (*begin) {
+							case 'A':
+								m_isLightspeedMessage = true;
+								m_type = TYPE_ORDER_ACCEPTED;
+								break;
+							default:
 								throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
-//						}
+						}
 					}
 					break;
 			}
@@ -153,13 +154,19 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			
 	public:
 
-		std::string GetAsString() const {
-			const auto begin = !m_isLightspeedMessage
-				?	m_messageBegin
-				:	m_messageBegin + m_timestampFieldSize;
-			std::string result(begin + 1, m_messageEnd);
+		std::string GetAsString(bool contentOnly) const {
+			const auto begin = contentOnly
+				?	!m_isLightspeedMessage
+					?	m_messageBegin + 1
+					:	m_messageBegin + m_timestampFieldSize + 1
+				:	m_messageBegin;
+			std::string result(begin, m_messageEnd);
 			boost::trim(result);
 			return result;
+		}
+
+		std::string GetStringField(FieldStart offset, Len len) const {
+			return GetAlphanumField(offset, len);
 		}
 
 		Char GetCharField(FieldStart offset) const {

@@ -31,7 +31,8 @@ Gateway::Connection::Connection(
 		messagesBuffer(messagesBufferSize),
 		stage(STAGE_CONNECTING),
 		seqnumber(0),
-		timeout(timeout) {
+		timeout(timeout),
+		lastToken(0) {
 	//...//
 }
 
@@ -307,6 +308,12 @@ void Gateway::HandleRead(const boost::system::error_code &error, size_t size) {
 			ex.what(),
 			ex.GetMessage(),
 			ex.GetStage());
+	} catch (const MessageError &ex) {
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "error \"%1%\""
+				" in message \"%2%\" (stage: %3%).",
+			ex.what(),
+			ex.GetMessage());
 	}
 	StartReading();
 }
@@ -334,6 +341,12 @@ void Gateway::HandleInitialDataRead(
 			ex.what(),
 			ex.GetMessage(),
 			ex.GetStage());
+	} catch (const MessageError &ex) {
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "error \"%1%\""
+				" in message \"%2%\" (stage: %3%).",
+			ex.what(),
+			ex.GetMessage());
 	}
 	if (connection.stage >= STAGE_CONNECTED) {
 		if (connection.stage < STAGE_LOGGED_ON) {
@@ -396,41 +409,65 @@ void Gateway::HandleMessage(const TsMessage &message, Connection &connection) {
 
 	switch (message.GetType()) {
 		case TsMessage::TYPE_DEBUG:
-			HandleDebugMessage(message, connection);
+			HandleDebug(message, connection);
 			break;
 		case TsMessage::TYPE_LOGIN_ACCEPTED:
-			HandleLoginAccepted(message, connection);
+			HandleAcceptedLogin(message, connection);
 			break;
 		case TsMessage::TYPE_LOGIN_REJECTED:
-			HandleLoginRejected(message, connection);
+			HandleRejectedLogin(message, connection);
 			break;
 		case TsMessage::TYPE_HEARTBEAT:
 			break;
+		case TsMessage::TYPE_ORDER_ACCEPTED:
+			HandleAcceptedOrder(message, connection);
 		default:
 			AssertFail("Unknown message. Never reached.");
 	}
 
 }
 
-void Gateway::HandleDebugMessage(const TsMessage &message, Connection &connection) {
+void Gateway::HandleAcceptedOrder(const TsMessage &message, Connection &connection) {
+	Assert(message.GetType() == TsMessage::TYPE_ORDER_ACCEPTED);
+	const Token token = Token(message.GetNumericField(9, 16));
+	OrdersByToken &index = connection.orders.get<ByToken>();
+	const OrdersByToken::iterator order = index.find(token);
+	if (order == index.end()) {
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+				"unknown accepted order (token: %1%, order ID: %2%).",
+			token,
+			message.GetStringField(25, 9));
+		throw MessageError("Unknown accepted order", message);
+	}
+	order->callback(
+		token,
+		ORDER_STATUS_SUBMITTED,
+		0,
+		order->qty,
+		0,
+		0);
+}
+
+void Gateway::HandleDebug(const TsMessage &message, Connection &connection) {
 	Assert(message.GetType() == TsMessage::TYPE_DEBUG);
 	if (!m_connection) {
 		AssertEq(STAGE_CONNECTED, connection.stage);
 		connection.stage = STAGE_HANDSHAKED;
 		Log::Info(
 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "server protocol \"%1%\".",
-			message.GetAsString());
+			message.GetAsString(true));
 	} else {
 		Log::DebugEx(
 			[&message]() -> boost::format {
 				boost::format result(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "debug packet: \"%1%\".");
-				result % message.GetAsString();
+				result % message.GetAsString(true);
 				return result;
 			});
 	}
 }
 
-void Gateway::HandleLoginAccepted(const TsMessage &message, Connection &connection) {
+void Gateway::HandleAcceptedLogin(const TsMessage &message, Connection &connection) {
 	Assert(message.GetType() == TsMessage::TYPE_LOGIN_ACCEPTED);
 	message.CheckMessageLen(21);
 	if (!m_connection) {
@@ -452,7 +489,7 @@ void Gateway::HandleLoginAccepted(const TsMessage &message, Connection &connecti
 	}
 }
 
-void Gateway::HandleLoginRejected(const TsMessage &message, Connection &connection) {
+void Gateway::HandleRejectedLogin(const TsMessage &message, Connection &connection) {
 	Assert(message.GetType() == TsMessage::TYPE_LOGIN_REJECTED);
 	message.CheckMessageLen(2);
 	if (!m_connection) {
@@ -520,14 +557,15 @@ void Gateway::SendHeartbeat() {
 Gateway::OrderId Gateway::SendOrder(
 			const Security &security,
 			ClientMessage::BuySellIndicator buySell,
-			ClientMessage::Numeric qty,
+			OrderQty qty,
 			OrderPrice price,
-			ClientMessage::Numeric timeInForce) {
+			ClientMessage::Numeric timeInForce,
+			const OrderStatusUpdateSlot &callback) {
 
-	const auto result = Interlocking::Increment(m_connection->seqnumber);
+	const Token token = Interlocking::Increment(m_connection->lastToken);
 
 	std::auto_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_NEW_ORDER));
-	message->AppendField(result, 16);
+	message->AppendField(token, 16);
 	message->AppendField('A');
 	message->AppendField(buySell);
 	message->AppendField(qty, 6);
@@ -540,9 +578,17 @@ Gateway::OrderId Gateway::SendOrder(
 	AssertEq(57, message->GetMessageLen());
 
 	const Lock lock(m_mutex);
-	Send(message);
+	const auto pos = m_connection->orders.insert(
+		Order(OrderId(token), callback, qty));
+	try {
+		Send(message);
+	} catch (...) {
+		// copy ctor and swap is too expensive here...
+		m_connection->orders.erase(pos.first);
+		throw;
+	}
 
-	return Gateway::OrderId(result);
+	return Gateway::OrderId(token);
 
 }
 
@@ -601,8 +647,14 @@ bool Gateway::IsCompleted(const Security &) const {
 Gateway::OrderId Gateway::SellAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
-			const OrderStatusUpdateSlot &) {
-	return SendOrder(security, ClientMessage::BUY_SELL_INDICATOR_SELL_LONG, qty, 0, 99999);
+			const OrderStatusUpdateSlot &callback) {
+	return SendOrder(
+		security,
+		ClientMessage::BUY_SELL_INDICATOR_SELL_LONG,
+		qty,
+		0,
+		99999,
+		callback);
 }
 
 Gateway::OrderId Gateway::Sell(
@@ -635,8 +687,14 @@ Gateway::OrderId Gateway::SellOrCancel(
 Gateway::OrderId Gateway::BuyAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
-			const OrderStatusUpdateSlot &) {
-	return SendOrder(security, ClientMessage::BUY_SELL_INDICATOR_BUY, qty, 0, 99999);
+			const OrderStatusUpdateSlot &callback) {
+	return SendOrder(
+		security,
+		ClientMessage::BUY_SELL_INDICATOR_BUY,
+		qty,
+		0,
+		99999,
+		callback);
 }
 
 Gateway::OrderId Gateway::Buy(
