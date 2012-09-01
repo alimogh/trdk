@@ -6,7 +6,7 @@
     <IntDir>$(SolutionDir)..\output\$(PlatformShortName)\int\$(Configuration)\$(ProjectName)\</IntDir>
     <OutDir>$(SolutionDir)..\output\$(PlatformShortName)\bin\</OutDir>
     <LibraryPath>$(SolutionDir)..\output\lib;$(BOOST_DIR_X86)\boost_1_47\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir);$(BOOST_DIR_X86)\boost_1_47;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir);$(BOOST_DIR_X86)\boost_1_51;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -35,7 +35,7 @@
       <ImportLibrary>$(SolutionDir)..\output\$(PlatformShortName)\lib\$(TargetName).lib</ImportLibrary>
       <ProgramDatabaseFile>$(TargetDir)$(TargetName)$(TargetExt).pdb</ProgramDatabaseFile>
       <ProfileGuidedDatabase>$(TargetDir)$(TargetName)$(TargetExt).pgd</ProfileGuidedDatabase>
-      <AdditionalLibraryDirectories>$(BOOST_DIR_X86)\boost_1_47\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(BOOST_DIR_X86)\boost_1_51\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/ignore:4217 %(AdditionalOptions)</AdditionalOptions>
     </Link>
