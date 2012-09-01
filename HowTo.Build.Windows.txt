@@ -1,0 +1,21 @@
+
+Host To Build on MS Windows
+---------------------------
+
+1. Requirements:
+1.1. MS Visual Studio Express (or better) 10 (or later):
+     Free install: http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express
+1.2. Boost C++ libraries 1.51 32-bit:
+     Official site: http://www.boost.org/
+     Free install: http://www.boostpro.com/download/
+
+2. Setup:
+2.1. Create or change envelopment variable BOOST_DIR_X86 - set path to
+     installed Boost. Path should point to root install directory, without
+     version. Ex.: if Boost installed into
+     "c:\Program Files (x86)\Boost\boost_1_47\", BOOST_DIR_X86 should has
+     value "c:\Program Files (x86)\Boost\".
+
+3. Build:
+3.1. Open project file source "Trader.sln with" Visual Studio and build it.
+3.2. Result will be in "output\x86\bin\".
