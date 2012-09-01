@@ -78,6 +78,14 @@ namespace {
 			throw IniFile::Error("Failed to load algo");
 		}
 
+		std::string fabricName;
+		try {
+			fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to get algo fabric name module: \"%1%\".", ex.what());
+			throw IniFile::Error("Failed to load algo");
+		}
+
 		const std::string tag = section.substr(Ini::Sections::algo.size());
 		if (tag.empty()) {
 			Log::Error("Failed to get tag for algo section \"%1%\".", section);
@@ -121,7 +129,7 @@ namespace {
 						boost::shared_ptr<Security> security,
 						const IniFile &ini,
 						const std::string &section)>
-				("CreateAlgo");
+				(fabricName);
 
 		foreach (const auto &symbol, symbols) {
 			Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
@@ -147,15 +155,13 @@ namespace {
 	}
 
 	bool InitTrading(
-				const fs::path &iniFilePath,
+				const IniFile &ini,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Dispatcher &dispatcher,
 				MarketDataSource &marketDataSource,
 				Algos &algos,
 				boost::shared_ptr<Settings> settings)  {
 
-		Log::Info("Using %1% file for algo options...", iniFilePath);
-		const IniFile ini(iniFilePath);
 		const std::set<std::string> sections = ini.ReadSectionsList();
 
 		Securities securities;
@@ -179,7 +185,7 @@ namespace {
 		Log::Info("Loaded %1% algos.", algos.size());
 
 		try {
-			Connect(*tradeSystem, *settings);
+			Connect(*tradeSystem, ini, Ini::Sections::tradeSystem);
 			Connect(marketDataSource, *settings);
 		} catch (const Exception &ex) {
 			Log::Error("Failed to make trading connections: \"%1%\".", ex.what());
@@ -244,29 +250,32 @@ namespace {
 		Log::Info("Current settings update competed.");
 	}
 
-	DllObjectPtr<TradeSystem> LoadTradeSystem() {
-		boost::shared_ptr<Dll> dll(new Dll("Lightspeed", true));
-		const auto fabric = dll->GetFunction<boost::shared_ptr<TradeSystem>()>(
-			"CreateTradeSystem");
-		return DllObjectPtr<TradeSystem>(dll, fabric());
+	DllObjectPtr<TradeSystem> LoadTradeSystem(
+				const IniFile &ini,
+				const std::string &section) {
+		const std::string module = ini.ReadKey(section, Ini::Key::module, false);
+		const std::string fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
+		boost::shared_ptr<Dll> dll(new Dll(module, true));
+		return DllObjectPtr<TradeSystem>(
+			dll,
+			dll->GetFunction<boost::shared_ptr<TradeSystem>()>(fabricName)());
 	}
 
 }
 
 void Trade(const fs::path &iniFilePath) {
 
-	boost::shared_ptr<Settings> settings
-		= Ini::LoadSettings(iniFilePath, boost::get_system_time(), false);
+	Log::Info("Using %1% INI-file...", iniFilePath);
+	const IniFile ini(iniFilePath);
 
-	DllObjectPtr<TradeSystem> tradeSystem;
+	boost::shared_ptr<Settings> settings
+		= Ini::LoadSettings(ini, boost::get_system_time(), false);
+
+	DllObjectPtr<TradeSystem> tradeSystem = LoadTradeSystem(ini, Ini::Sections::tradeSystem);
 	DllObjectPtr<LiveMarketDataSource> marketDataSource;
+
 	{
 		boost::shared_ptr<Dll> dll(new Dll("Lightspeed", true));
-		{
-			const auto tsFabric = dll->GetFunction<boost::shared_ptr<TradeSystem>()>(
-				"CreateTradeSystem");
-			tradeSystem.Reset(dll, tsFabric());
-		}
 		{
 			const auto mdFabric = dll->GetFunction<boost::shared_ptr<LiveMarketDataSource>()>(
 				"CreateLiveMarketDataSource");
@@ -278,7 +287,7 @@ void Trade(const fs::path &iniFilePath) {
 
 	Algos algos;
 	if (	!InitTrading(
-				iniFilePath,
+				ini,
 				tradeSystem,
 				dispatcher,
 				reinterpret_cast<MarketDataSource &>(marketDataSource),
@@ -318,8 +327,11 @@ void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
 		throw Exception("Failed to get request parameters (replay date)");
 	}
 
+	Log::Info("Using %1% INI-file...", iniFilePath);
+	const IniFile ini(iniFilePath);
+
 	boost::shared_ptr<Settings> settings = Ini::LoadSettings(
-		iniFilePath,
+		ini,
 		pt::time_from_string((boost::format("%1% 00:00:00") % argv[2]).str())
 			- Util::GetEdtDiff(),
 		true);
@@ -340,7 +352,7 @@ void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
 	Dispatcher dispatcher(settings);
 	Algos algos;
 	if (	!InitTrading(
-				iniFilePath,
+				ini,
 				tradeSystem,
 				dispatcher,
 				reinterpret_cast<MarketDataSource &>(marketDataSource),

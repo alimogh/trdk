@@ -75,7 +75,7 @@ namespace Trader {
 
 	public:
 
-		virtual void Connect(const Settings &) = 0;
+		virtual void Connect(const IniFile &, const std::string &section) = 0;
 
 		virtual bool IsCompleted(const Security &) const = 0;
 

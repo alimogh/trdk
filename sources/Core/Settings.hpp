@@ -30,8 +30,6 @@ public:
 
 		size_t algoThreadsCount;
 
-		std::string tsIpAddress;
-
 	};
 
 public:
@@ -70,8 +68,6 @@ public:
 	boost::uint16_t GetLevel2SnapshotPrintTimeSeconds() const;
 
 	bool IsValidPrice(const Security &) const;
-
-	const std::string & GetTradeSystemIpAddress() const;
 
 private:
 

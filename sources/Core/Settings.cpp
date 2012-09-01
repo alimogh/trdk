@@ -123,20 +123,16 @@ void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
 
 	values.algoThreadsCount = ini.ReadTypedKey<size_t>(section, "algo_threads_count");
 
-	values.tsIpAddress = ini.ReadKey(section, "trade_system_ip_address", false);
-
 	m_values = values;
 	Log::Info(
 		"Common static settings:"
 			" start_time_edt: %1%; algo_threads_count = %2%; algo_update_period_ms = %3%;"
-			" trade_session_period_edt = %4% -> %5%;"
-			" trade_system_ip_address = %6%;",
+			" trade_session_period_edt = %4% -> %5%;",
 		GetStartTime() + Util::GetEdtDiff(),
 		m_values.algoThreadsCount,
 		m_values.algoUpdatePeriodMilliseconds,
 		m_values.tradeSessionStartTime + Util::GetEdtDiff(),
-		m_values.tradeSessionEndTime + Util::GetEdtDiff(),
-		m_values.tsIpAddress);
+		m_values.tradeSessionEndTime + Util::GetEdtDiff());
 
 }
 
@@ -177,8 +173,3 @@ bool Settings::IsValidPrice(const Security &security) const {
 	Assert(security.GetPriceScale() == defaultLastPriceScale);
 	return m_minPrice <= security.GetLastPriceScaled();
 }
-
-const std::string & Settings::GetTradeSystemIpAddress() const {
-	return m_values.tsIpAddress;
-}
-

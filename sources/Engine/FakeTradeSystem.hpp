@@ -19,7 +19,7 @@ public:
 
 public:
 
-	virtual void Connect(const Settings &);
+	virtual void Connect(const IniFile &, const std::string &section);
 	virtual bool IsCompleted(const Security &) const;
 
 public:
