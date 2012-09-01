@@ -19,7 +19,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		enum Type {
 			TYPE_LOGIN_REQUEST	= 'L',
-			TYPE_NEW_ORDER		= 'O'
+			TYPE_NEW_ORDER		= 'O',
+			TYPE_HEARTBEAT		= 'R'
 		};
 
 		typedef BufferT Buffer;
@@ -70,7 +71,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		}
 
 		Len GetMessageLen() const {
-			return Len(const_cast<GatewayClientMessage *>(this)->m_buffer.in_avail());
+			return m_buffer.size();
 		}
 
 	public:

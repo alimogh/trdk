@@ -20,7 +20,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		enum Type {
 			TYPE_DEBUG			= '+',
 			TYPE_LOGIN_ACCEPTED	= 'A',
-			TYPE_LOGIN_REJECTED	= 'J'
+			TYPE_LOGIN_REJECTED	= 'J',
+			TYPE_HEARTBEAT		= 'H'
 		};
 
 		typedef BufferT Buffer;
@@ -100,9 +101,10 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
 			}
 			switch (*m_messageBegin) {
-				case GatewayTsMessage::TYPE_DEBUG:
-				case GatewayTsMessage::TYPE_LOGIN_ACCEPTED:
-				case GatewayTsMessage::TYPE_LOGIN_REJECTED:
+				case TYPE_DEBUG:
+				case TYPE_LOGIN_ACCEPTED:
+				case TYPE_LOGIN_REJECTED:
+				case TYPE_HEARTBEAT:
 					m_isLightspeedMessage = false;
 					m_type = Type(*m_messageBegin);
 					break;
@@ -113,7 +115,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 					{
 						const auto begin = m_messageBegin + m_timestampFieldSize;
 //						switch (*begin) {
-// 							case GatewayTsMessage::TYPE_LOGIN_ACCEPTED:
+// 							case TYPE_LOGIN_ACCEPTED:
 // 								m_isLightspeedMessage = true;
 // 								m_type = Type(*begin);
 // 								break;

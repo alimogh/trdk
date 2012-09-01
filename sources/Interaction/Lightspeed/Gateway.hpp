@@ -18,7 +18,16 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	public:
 
-		typedef int16_t Stage; 
+		enum Stage {
+			STAGE_CLOSED_BY_LOGIN_REJECTED	= 101,
+			STAGE_CLOSED_BY_WRITE_ERROR	= 201,
+			STAGE_CLOSED_BY_READ_ERROR	= 202,
+			STAGE_CLOSED_GRACEFULLY		= 301,
+			STAGE_CONNECTING	= 1101,
+			STAGE_CONNECTED		= 1102,
+			STAGE_HANDSHAKED	= 1203,
+			STAGE_LOGGED_ON		= 1204
+		};
 
 		typedef boost::circular_buffer<char> MessagesBuffer;
 		typedef GatewayTsMessage<MessagesBuffer> TsMessage;
@@ -91,7 +100,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		
 			IoService ioService;
 			Socket socket;
-			boost::thread task;
+			boost::thread_group tasks;
 			
 			SocketReceiveBuffer socketBuffer;
 			MessagesBuffer messagesBuffer;
@@ -100,7 +109,12 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 			volatile Seqnumber seqnumber;
 
-			explicit Connection(size_t bufferSize);
+			const boost::posix_time::time_duration timeout;
+
+			explicit Connection(
+					size_t socketBufferSize,
+					size_t messagesBufferSize,
+					const boost::posix_time::time_duration &timeout);
 			~Connection();
 
 		};
@@ -112,7 +126,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	public:
 
-		virtual void Connect(const Settings &);
+		virtual void Connect(const IniFile &iniFile, const std::string &);
 
 		virtual bool IsCompleted(const Security &) const;
 
@@ -163,8 +177,9 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	private:
 
-		void StartRead();
-		void StartInitialDataRead(Connection &);
+		void StartReading();
+		void StartReading(Connection &);
+		void StartInitialDataReading(Connection &);
 
 		bool IsClosed(
 					Connection &connection,
@@ -212,8 +227,10 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				OrderPrice price,
 				ClientMessage::Numeric timeInForce);
 
-		void Send(boost::shared_ptr<ClientMessage>);
-		void Send(boost::shared_ptr<ClientMessage>, Connection &);
+		void SendHeartbeat();
+
+		void Send(std::auto_ptr<ClientMessage>);
+		void Send(std::auto_ptr<ClientMessage>, Connection &);
 
 		void HandleWrite(
 				boost::shared_ptr<const ClientMessage>,
