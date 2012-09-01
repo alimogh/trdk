@@ -5,9 +5,21 @@ Host To Build on MS Windows
 1. Requirements:
 1.1. MS Visual Studio Express (or better) 10 (or later):
      Free install: http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express
-1.2. Boost C++ libraries 1.51 32-bit:
+1.2. Boost C++ libraries 1.51 32-bit.
+     Variants:
+         1) Multithreaded
+         2) Multithreaded debug
+     Libraries:
+         1) Chrono
+         2) DateTime
+         3) Exceptions
+         4) Filesystem
+         5) Python
+         6) Signals
+         7) System
+         8) Thread
      Official site: http://www.boost.org/
-     Free install: http://www.boostpro.com/download/
+     Free install (ready builds): http://www.boostpro.com/download/
 
 2. Setup:
 2.1. Create or change envelopment variable BOOST_DIR_X86 - set path to
