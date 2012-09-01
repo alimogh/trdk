@@ -115,6 +115,11 @@ public:
 		return reinterpret_cast<typename Func *>(procAddr);
 	}
 
+	template<class Func>
+	typename Func * GetFunction(const std::string &funcName) const {
+		return GetFunction<Func>(funcName.c_str());
+	}
+
 private:
 
 	boost::filesystem::path m_file;

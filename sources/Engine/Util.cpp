@@ -14,10 +14,10 @@
 namespace pt = boost::posix_time;
 using namespace Trader;
 
-void Connect(TradeSystem &tradeSystem, const Settings &settings) {
+void Connect(TradeSystem &tradeSystem, const IniFile &ini, const std::string &section) {
 	for ( ; ; ) {
 		try {
-			tradeSystem.Connect(settings);
+			tradeSystem.Connect(ini, section);
 			break;
 		} catch (const TradeSystem::ConnectError &) {
 			boost::this_thread::sleep(pt::seconds(5));

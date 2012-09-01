@@ -69,8 +69,8 @@ IniFile::FileOpenError::FileOpenError() throw()
 	//...//
 }
 
-IniFile::KeyNotExistsError::KeyNotExistsError() throw()
-		: Error("Key doesn't exist in INI-file") {
+IniFile::KeyNotExistsError::KeyNotExistsError(const char *what) throw()
+		: Error(what) {
 	//...//
 }
 
@@ -244,7 +244,9 @@ std::string IniFile::ReadKey(
 		true);
 	if (!isKeyExists || (!canBeEmpty && result.empty())) {
 		Assert(result.empty());
-		throw KeyNotExistsError();
+		boost::format message("Failed to find INI-file key \"%1%::%2%\"");
+		message % section % key;
+		throw KeyNotExistsError(message.str().c_str());
 	}
 	boost::trim(result);
 	return result;

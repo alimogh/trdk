@@ -15,20 +15,21 @@ namespace fs = boost::filesystem;
 
 const std::string Sections::common = "Common";
 const std::string Sections::algo = "Algo.";
+const std::string Sections::tradeSystem = "TradeSystem";
 
 const std::string Sections::MarketData::Log::symbols = "MarketData.Log.Symbols";
 const std::string Sections::MarketData::request = "MarketData.Request";
 
 const std::string Key::module = "module";
+const std::string Key::fabric = "fabric";
 const std::string Key::symbols = "symbols";
 
 //////////////////////////////////////////////////////////////////////////
 
 boost::shared_ptr<Settings> Ini::LoadSettings(
-			const fs::path &iniFilePath,
+			const IniFile &ini,
 			const boost::posix_time::ptime &now,
 			bool isPlayMode) {
-	Log::Info("Using %1% file for common options...", iniFilePath);
 	return boost::shared_ptr<Settings>(
-		new Settings(IniFile(iniFilePath), Ini::Sections::common, now, isPlayMode));
+		new Settings(ini, Ini::Sections::common, now, isPlayMode));
 }

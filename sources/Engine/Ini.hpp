@@ -15,6 +15,7 @@ namespace Ini {
 	namespace Sections {
 		extern const std::string common;
 		extern const std::string algo;
+		extern const std::string tradeSystem;
 		namespace MarketData {
 			namespace Log {
 				extern const std::string symbols;
@@ -25,13 +26,14 @@ namespace Ini {
 
 	namespace Key {
 		extern const std::string module;
+		extern const std::string fabric;
 		extern const std::string symbols;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 
 	boost::shared_ptr<Settings> LoadSettings(
-			const boost::filesystem::path &,
+			const IniFile &,
 			const boost::posix_time::ptime &now,
 			bool isPlayMode);
 

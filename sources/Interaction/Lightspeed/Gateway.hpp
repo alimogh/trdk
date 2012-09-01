@@ -18,7 +18,16 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	public:
 
-		typedef int16_t Stage; 
+		enum Stage {
+			STAGE_CLOSED_BY_LOGIN_REJECTED	= 101,
+			STAGE_CLOSED_BY_WRITE_ERROR	= 201,
+			STAGE_CLOSED_BY_READ_ERROR	= 202,
+			STAGE_CLOSED_GRACEFULLY		= 301,
+			STAGE_CONNECTING	= 1101,
+			STAGE_CONNECTED		= 1102,
+			STAGE_HANDSHAKED	= 1203,
+			STAGE_LOGGED_ON		= 1204
+		};
 
 		typedef boost::circular_buffer<char> MessagesBuffer;
 		typedef GatewayTsMessage<MessagesBuffer> TsMessage;
@@ -33,39 +42,55 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			}
 		};
 
-		class ProtocolError : public Error {
+		class MessageError : public Error {
 		public:
-			ProtocolError(
+			explicit MessageError(const char *what, const std::string &message)
+						throw()
+					: Error(what),
+					m_messageBuffer(message) {
+				//...//
+			}
+			explicit MessageError(const char *what, const TsMessage &message)
+						throw()
+					: Error(what),
+					m_messageBuffer(message.GetAsString(false)) {
+				//...//
+			}
+		public:
+			const std::string & GetMessage() const {
+				return m_messageBuffer;
+			}
+		private:
+			std::string m_messageBuffer;
+		};
+
+		class ProtocolError : public MessageError {
+		public:
+			explicit ProtocolError(
 						const char *what,
 						TsMessage::Iterator messageBegin,
 						TsMessage::Iterator messageEnd,
 						Stage stage)
 					throw()
-					: Error(what),
-					m_stage(stage),
-					m_messageBuffer(messageBegin, messageEnd) {
+					: MessageError(what, std::string(messageBegin, messageEnd)),
+					m_stage(stage) {
 				//...//
 			}
-			ProtocolError(
+			explicit ProtocolError(
 							const char *what,
 							const std::string &message,
 							Stage stage)
 						throw()
-					: Error(what),
-					m_stage(stage),
-					m_messageBuffer(message) {
+					: MessageError(what, message),
+					m_stage(stage) {
 				//...//
 			}
 		public:
 			Stage GetStage() const {
 				return m_stage;
 			}
-			const std::string & GetMessage() const {
-				return m_messageBuffer;
-			}
 		private:
 			Stage m_stage;
-			std::string m_messageBuffer;
 		};
 
 	private:
@@ -85,22 +110,70 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		typedef std::vector<char> SocketReceiveBuffer;
 		typedef boost::asio::streambuf SocketSendBuffer;
 
-		typedef long long Seqnumber;
+		typedef int64_t Seqnumber;
+		typedef long Token;
+
+		//////////////////////////////////////////////////////////////////////////
+
+		struct Order {
+			
+			Token token;
+			OrderStatusUpdateSlot callback;
+			OrderQty qty;
+
+			Order() {
+				//...//
+			}
+
+			explicit Order(
+						const Token &token,
+						const OrderStatusUpdateSlot &callback,
+						const OrderQty &qty)
+					: token(token),
+					callback(callback),
+					qty(qty) {
+				//...//
+			}
+
+		};
+
+		struct ByToken {
+			//...//
+		};
+
+		typedef boost::multi_index_container<
+			Order,
+			boost::multi_index::indexed_by<
+				boost::multi_index::hashed_unique<
+					boost::multi_index::tag<ByToken>,
+					boost::multi_index::member<Order, Token, &Order::token>>>>
+			Orders;
+		
+		typedef Orders::index<ByToken>::type OrdersByToken;
+
+		//////////////////////////////////////////////////////////////////////////
 		
 		struct Connection {
 		
 			IoService ioService;
 			Socket socket;
-			boost::thread task;
+			boost::thread_group tasks;
 			
 			SocketReceiveBuffer socketBuffer;
 			MessagesBuffer messagesBuffer;
 
 			Stage stage;
 
-			volatile Seqnumber seqnumber;
+			Seqnumber seqnumber;
+			const boost::posix_time::time_duration timeout;
 
-			explicit Connection(size_t bufferSize);
+			volatile Token lastToken;
+			Orders orders;
+
+			explicit Connection(
+					size_t socketBufferSize,
+					size_t messagesBufferSize,
+					const boost::posix_time::time_duration &timeout);
 			~Connection();
 
 		};
@@ -112,7 +185,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	public:
 
-		virtual void Connect(const Settings &);
+		virtual void Connect(const IniFile &iniFile, const std::string &);
 
 		virtual bool IsCompleted(const Security &) const;
 
@@ -163,8 +236,9 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	private:
 
-		void StartRead();
-		void StartInitialDataRead(Connection &);
+		void StartReading();
+		void StartReading(Connection &);
+		void StartInitialDataReading(Connection &);
 
 		bool IsClosed(
 					Connection &connection,
@@ -194,9 +268,10 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				const Lock &);
 		
 		void HandleMessage(const TsMessage &, Connection &);
-		void HandleDebugMessage(const TsMessage &, Connection &);
-		void HandleLoginAccepted(const TsMessage &, Connection &);
-		void HandleLoginRejected(const TsMessage &, Connection &);
+		void HandleDebug(const TsMessage &, Connection &);
+		void HandleAcceptedLogin(const TsMessage &, Connection &);
+		void HandleRejectedLogin(const TsMessage &, Connection &);
+		void HandleAcceptedOrder(const TsMessage &, Connection &);
 
 	private:
 
@@ -208,12 +283,15 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		OrderId SendOrder(
 				const Security &,
 				ClientMessage::BuySellIndicator,
-				ClientMessage::Numeric,
+				OrderQty,
 				OrderPrice price,
-				ClientMessage::Numeric timeInForce);
+				ClientMessage::Numeric timeInForce,
+				const OrderStatusUpdateSlot &);
 
-		void Send(boost::shared_ptr<ClientMessage>);
-		void Send(boost::shared_ptr<ClientMessage>, Connection &);
+		void SendHeartbeat();
+
+		void Send(std::auto_ptr<ClientMessage>);
+		void Send(std::auto_ptr<ClientMessage>, Connection &);
 
 		void HandleWrite(
 				boost::shared_ptr<const ClientMessage>,

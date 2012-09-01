@@ -20,20 +20,19 @@ namespace pt = boost::posix_time;
 
 using namespace Trader::Interaction::Lightspeed;
 
-namespace {
-
-	const pt::time_duration timeout = pt::seconds(15);
-
-}
-
 //////////////////////////////////////////////////////////////////////////
 
-Gateway::Connection::Connection(size_t bufferSize)
+Gateway::Connection::Connection(
+			size_t socketBufferSize,
+			size_t messagesBufferSize,
+			const boost::posix_time::time_duration &timeout)
 		: socket(ioService),
-		socketBuffer(bufferSize),
-		messagesBuffer(socketBuffer.size()),
-		stage(0),
-		seqnumber(0) {
+		socketBuffer(socketBufferSize),
+		messagesBuffer(messagesBufferSize),
+		stage(STAGE_CONNECTING),
+		seqnumber(0),
+		timeout(timeout),
+		lastToken(0) {
 	//...//
 }
 
@@ -41,7 +40,7 @@ Gateway::Connection::~Connection() {
 	Log::Debug(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "destroying connection...");
 	socket.close();
 	ioService.stop();
-	task.join();
+	tasks.join_all();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -59,13 +58,14 @@ void Gateway::HandleConnect(
 			const boost::system::error_code &error,
 			Endpoint &endpoint,
 			ResolverIterator endpointIterator) {
-	Assert(connection.stage == 0);
+	AssertEq(STAGE_CONNECTING, connection.stage);
 	std::unique_ptr<Endpoint> endpointHolder(&endpoint);
 	const Lock lock(m_mutex);
 	if (!error) {
 		Log::Debug(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connected...");
-		++connection.stage;
-		StartInitialDataRead(connection);
+		AssertEq(STAGE_CONNECTING, connection.stage);
+		connection.stage = STAGE_CONNECTED;
+		StartInitialDataReading(connection);
 	} else if (endpointIterator != ResolverIterator()) {
 		Log::Debug(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection to next endpoint...");
 		connection.socket.close();
@@ -91,7 +91,7 @@ void Gateway::HandleResolve(
 			const boost::system::error_code &error,
 			ResolverIterator endpointIterator) {
 
-	Assert(connection.stage == 0);
+	AssertEq(STAGE_CONNECTING, connection.stage);
 	
 	const Lock lock(m_mutex);
 	if (error) {
@@ -116,9 +116,15 @@ void Gateway::HandleResolve(
 	
 }
 
-void Gateway::StartRead() {
-	m_connection->socket.async_read_some(
-		io::buffer(&m_connection->socketBuffer[0], m_connection->socketBuffer.size()),
+void Gateway::StartReading() {
+	Assert(m_connection);
+	AssertGe(m_connection->stage, STAGE_CONNECTED);
+	StartReading(*m_connection);
+}
+
+void Gateway::StartReading(Connection &connection) {
+	connection.socket.async_read_some(
+		io::buffer(&connection.socketBuffer[0], connection.socketBuffer.size()),
 		boost::bind(
 			&Gateway::HandleRead,
 			this,
@@ -126,7 +132,7 @@ void Gateway::StartRead() {
 			io::placeholders::bytes_transferred));
 }
 
-void Gateway::StartInitialDataRead(Connection &connection) {
+void Gateway::StartInitialDataReading(Connection &connection) {
 	connection.socket.async_read_some(
 		io::buffer(&connection.socketBuffer[0], connection.socketBuffer.size()),
 		boost::bind(
@@ -137,16 +143,36 @@ void Gateway::StartInitialDataRead(Connection &connection) {
 			io::placeholders::bytes_transferred));
 }
 
-void Gateway::Connect(const Settings &settings) {
+void Gateway::Connect(const IniFile &ini, const std::string &section) {
 
-	const auto port = 31001;
-	
+	std::unique_ptr<Connection> connection;
+	{
+		const auto socketBufferSize
+			= ini.ReadTypedKey<size_t>(section, "socket_buffer_size_bytes");
+		const auto messagesBufferSize
+			= ini.ReadTypedKey<size_t>(section, "messages_buffer_size_bytes");
+		const auto timeout
+			= pt::milliseconds(ini.ReadTypedKey<size_t>(section, "timeout_msec"));
+		connection.reset(
+			new Connection(socketBufferSize, messagesBufferSize, timeout));
+	}
+	const auto heartbeatPeriod
+		= pt::seconds(ini.ReadTypedKey<size_t>(section, "heartbeat_period_sec"));
+	Log::Info(
+		TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+			"socket_buffer_size_bytes = %1%; messages_buffer_size_bytes = %2%;"
+				"timeout_msec = %3%; heartbeat_period_sec = %4%;",
+		connection->socketBuffer.size(),
+		connection->messagesBuffer.max_size(),
+		connection->timeout,
+		heartbeatPeriod);
+
+	const auto ipAddress = ini.ReadKey(section, "ip_address", false);
+	const auto port = ini.ReadTypedKey<size_t>(section, "port");	
 	Log::Info(
 		TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connecting to \"%1%:%2%...",
-		settings.GetTradeSystemIpAddress(),
+		ipAddress,
 		port);
-
-	std::unique_ptr<Connection> connection(new Connection(1024));
 
 	{
 
@@ -159,7 +185,7 @@ void Gateway::Connect(const Settings &settings) {
 
 		Proto::resolver::query query(
 			Proto::v4(),
-			settings.GetTradeSystemIpAddress(),
+			ipAddress,
 			boost::lexical_cast<std::string>(port));
 		Resolver resolver(connection->ioService);
 
@@ -174,31 +200,34 @@ void Gateway::Connect(const Settings &settings) {
 
 		{
 			Connection *connectionPtr = connection.get();
-			boost::thread(
-					[connectionPtr]() {
-						Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "started reading task.");
-						try {
-							connectionPtr->ioService.run();
-						} catch (...) {
-							AssertFailNoException();
-							throw;
-						}
-						Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "stopped reading task.");
-					})
-				.swap(connection->task);
+			connection->tasks.create_thread(
+				[connectionPtr]() {
+					Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "started reading task.");
+					try {
+						connectionPtr->ioService.run();
+					} catch (...) {
+						AssertFailNoException();
+						throw;
+					}
+					Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "stopped reading task.");
+				});
 		}
 	
-		m_condition.timed_wait(lock, boost::get_system_time() + timeout);
-		if (connection->stage < 2) {
+		m_condition.timed_wait(lock, boost::get_system_time() + connection->timeout);
+		if (connection->stage != STAGE_HANDSHAKED) {
+			AssertLt(connection->stage, STAGE_HANDSHAKED);
 			Log::Error(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "CONNECTION FAILED or no handshake received.");
 			throw ConnectError();
 		}
-		Assert(connection->stage < 3);
 
-		SendLoginRequest(*connection, "test", "test"); // invalid password: drowssap
-		m_condition.timed_wait(lock, boost::get_system_time() + timeout);
-		if (connection->stage < 3) {
-			if (connection->stage > 0) {
+		SendLoginRequest(
+			*connection,
+			ini.ReadKey(section, "login", false),
+			ini.ReadKey(section, "password", false));
+		m_condition.timed_wait(lock, boost::get_system_time() + connection->timeout);
+		if (connection->stage != STAGE_LOGGED_ON) {
+			AssertLt(connection->stage, STAGE_LOGGED_ON);
+			if (connection->stage != STAGE_CLOSED_BY_LOGIN_REJECTED) {
 				Log::Error(
 					TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connected,"
 						" but logging timeout occurred");
@@ -209,7 +238,30 @@ void Gateway::Connect(const Settings &settings) {
 			}
 			throw ConnectError();
 		}
-		Assert(connection->stage == 3);
+
+		StartReading(*connection);
+
+		const boost::function<void (const pt::time_duration &)> heartbeatTask
+			= [this](const pt::time_duration &heartbeatPeriod) {
+					Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "started heartbeat task.");
+					try {
+						Lock lock(m_mutex);
+						for ( ; ; ) {
+							if (m_connection->stage < STAGE_CONNECTED) {
+								break;
+							}
+							SendHeartbeat();
+							m_condition.timed_wait(
+								lock,
+								boost::get_system_time() + heartbeatPeriod);
+						}
+					} catch (...) {
+						AssertFailNoException();
+						throw;
+					}
+					Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "stopped heartbeat task.");
+				};
+		connection->tasks.create_thread(boost::bind(heartbeatTask, heartbeatPeriod));
 
 	}
 
@@ -223,19 +275,20 @@ bool Gateway::IsClosed(
 			const boost::system::error_code &error,
 			size_t size)
 		const {
+	AssertGe(connection.stage, STAGE_CONNECTED);
 	if (size == 0) {
-		connection.stage = -1;
+		connection.stage = STAGE_CLOSED_GRACEFULLY;
 		Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection CLOSED.");
 		return true;
 	} else if (error) {
-		connection.stage = -2;
+		connection.stage = STAGE_CLOSED_BY_READ_ERROR;
 		Log::Error(
 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection CLOSED with ERROR: \"%1%\" (%2%).",
 			error.message(),
 			error.value());
 		return true;
 	}
-	return false;
+	return connection.stage < STAGE_CONNECTING;
 }
 
 void Gateway::HandleRead(const boost::system::error_code &error, size_t size) {
@@ -243,20 +296,26 @@ void Gateway::HandleRead(const boost::system::error_code &error, size_t size) {
 	if (!m_connection || IsClosed(*m_connection, error, size)) {
 		return;
 	}
-	Assert(m_connection->stage > 3);
+	AssertGe(m_connection->stage, STAGE_CONNECTED);
 	try {
 		if (!HandleRead(*m_connection, error, size, lock)) {
 			return;
 		}
 	} catch (const ProtocolError &ex) {
 		Log::Error(
-			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "PROTOCOL error: \"%1%\" for message \"%2%\" (stage: %3%).",
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "PROTOCOL error: \"%1%\""
+				" for message \"%2%\" (stage: %3%).",
 			ex.what(),
 			ex.GetMessage(),
 			ex.GetStage());
-		return;
+	} catch (const MessageError &ex) {
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "error \"%1%\""
+				" in message \"%2%\" (stage: %3%).",
+			ex.what(),
+			ex.GetMessage());
 	}
-	StartRead();
+	StartReading();
 }
 
 void Gateway::HandleInitialDataRead(
@@ -265,8 +324,8 @@ void Gateway::HandleInitialDataRead(
 			size_t size) {
 	const Lock lock(m_mutex);
 	Assert(!m_connection);
-	Assert(connection.stage >= 1);
-	Assert(connection.stage <= 2);
+	AssertGe(connection.stage, STAGE_CONNECTED);
+	AssertLt(connection.stage, STAGE_LOGGED_ON);
 	m_condition.notify_all();
 	if (IsClosed(connection, error, size)) {
 		return;
@@ -277,14 +336,24 @@ void Gateway::HandleInitialDataRead(
 		}
 	} catch (const ProtocolError &ex) {
 		Log::Error(
-			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "PROTOCOL error: \"%1%\" for message \"%2%\" (stage: %3%).",
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "PROTOCOL error: \"%1%\""
+				" for message \"%2%\" (stage: %3%).",
 			ex.what(),
 			ex.GetMessage(),
 			ex.GetStage());
-		return;
+	} catch (const MessageError &ex) {
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "error \"%1%\""
+				" in message \"%2%\" (stage: %3%).",
+			ex.what(),
+			ex.GetMessage());
 	}
-	if (connection.stage >= 0 && connection.stage < 3) {
-		StartInitialDataRead(connection);
+	if (connection.stage >= STAGE_CONNECTED) {
+		if (connection.stage < STAGE_LOGGED_ON) {
+			StartInitialDataReading(connection);
+		} else {
+			StartReading(connection);
+		}
 	}
 }
 
@@ -294,16 +363,7 @@ bool Gateway::HandleRead(
 			size_t size,
 			const Lock &) {
 
-	if (size == 0) {
-		connection.stage = -1;
-		Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection CLOSED.");
-		return false;
-	} else if (error) {
-		connection.stage = -2;
-		Log::Error(
-			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection CLOSED with ERROR: \"%1%\" (%2%).",
-			error.message(),
-			error.value());
+	if (IsClosed(connection, error, size)) {
 		return false;
 	}
 
@@ -349,42 +409,70 @@ void Gateway::HandleMessage(const TsMessage &message, Connection &connection) {
 
 	switch (message.GetType()) {
 		case TsMessage::TYPE_DEBUG:
-			HandleDebugMessage(message, connection);
+			HandleDebug(message, connection);
 			break;
 		case TsMessage::TYPE_LOGIN_ACCEPTED:
-			HandleLoginAccepted(message, connection);
+			HandleAcceptedLogin(message, connection);
 			break;
 		case TsMessage::TYPE_LOGIN_REJECTED:
-			HandleLoginRejected(message, connection);
+			HandleRejectedLogin(message, connection);
 			break;
+		case TsMessage::TYPE_HEARTBEAT:
+			break;
+		case TsMessage::TYPE_ORDER_ACCEPTED:
+			HandleAcceptedOrder(message, connection);
 		default:
 			AssertFail("Unknown message. Never reached.");
 	}
 
 }
 
-void Gateway::HandleDebugMessage(const TsMessage &message, Connection &connection) {
+void Gateway::HandleAcceptedOrder(const TsMessage &message, Connection &connection) {
+	Assert(message.GetType() == TsMessage::TYPE_ORDER_ACCEPTED);
+	const Token token = Token(message.GetNumericField(9, 16));
+	OrdersByToken &index = connection.orders.get<ByToken>();
+	const OrdersByToken::iterator order = index.find(token);
+	if (order == index.end()) {
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+				"unknown accepted order (token: %1%, order ID: %2%).",
+			token,
+			message.GetStringField(25, 9));
+		throw MessageError("Unknown accepted order", message);
+	}
+	order->callback(
+		token,
+		ORDER_STATUS_SUBMITTED,
+		0,
+		order->qty,
+		0,
+		0);
+}
+
+void Gateway::HandleDebug(const TsMessage &message, Connection &connection) {
 	Assert(message.GetType() == TsMessage::TYPE_DEBUG);
 	if (!m_connection) {
-		++connection.stage;
+		AssertEq(STAGE_CONNECTED, connection.stage);
+		connection.stage = STAGE_HANDSHAKED;
 		Log::Info(
 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "server protocol \"%1%\".",
-			message.GetAsString());
+			message.GetAsString(true));
 	} else {
 		Log::DebugEx(
 			[&message]() -> boost::format {
 				boost::format result(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "debug packet: \"%1%\".");
-				result % message.GetAsString();
+				result % message.GetAsString(true);
 				return result;
 			});
 	}
 }
 
-void Gateway::HandleLoginAccepted(const TsMessage &message, Connection &connection) {
+void Gateway::HandleAcceptedLogin(const TsMessage &message, Connection &connection) {
 	Assert(message.GetType() == TsMessage::TYPE_LOGIN_ACCEPTED);
 	message.CheckMessageLen(21);
 	if (!m_connection) {
-		++connection.stage;
+		AssertEq(STAGE_HANDSHAKED, connection.stage);
+		connection.stage = STAGE_LOGGED_ON;
 		Assert(connection.seqnumber == 0);
 		const std::string session = message.GetAlphanumField(1, 10);
 		connection.seqnumber = message.GetNumericField(11, 10);
@@ -401,7 +489,7 @@ void Gateway::HandleLoginAccepted(const TsMessage &message, Connection &connecti
 	}
 }
 
-void Gateway::HandleLoginRejected(const TsMessage &message, Connection &connection) {
+void Gateway::HandleRejectedLogin(const TsMessage &message, Connection &connection) {
 	Assert(message.GetType() == TsMessage::TYPE_LOGIN_REJECTED);
 	message.CheckMessageLen(2);
 	if (!m_connection) {
@@ -420,7 +508,8 @@ void Gateway::HandleLoginRejected(const TsMessage &message, Connection &connecti
 						" Request Packet was either invalid or not available.";
 				break;
 		}
-		connection.stage = -4;
+		AssertEq(STAGE_HANDSHAKED, connection.stage);
+		connection.stage = STAGE_CLOSED_BY_LOGIN_REJECTED;
 		Log::Error(
 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "login rejected with reason: %1% (code: %2%).",
 			reason,
@@ -442,13 +531,13 @@ void Gateway::SendLoginRequest(
 		TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "sending longing request for \"%1%\"...",
 		login);
 	try {
-		boost::shared_ptr<ClientMessage> message(
+		std::auto_ptr<ClientMessage> message(
 			new ClientMessage(ClientMessage::TYPE_LOGIN_REQUEST));
 		message->AppendField(login, 6);
 		message->AppendField(password, 10);
 		message->AppendSpace(10);
 		message->AppendField(ClientMessage::Numeric(0), 10);
-		Assert(message->GetMessageLen() == 37);
+		AssertEq(37, message->GetMessageLen());
 		Send(message, connection);
 	} catch (const ClientMessage::Error &ex) {
 		Log::Error(
@@ -459,17 +548,24 @@ void Gateway::SendLoginRequest(
 	}
 }
 
+void Gateway::SendHeartbeat() {
+	std::auto_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_HEARTBEAT));
+	AssertEq(1, message->GetMessageLen());
+	Send(message);
+}
+
 Gateway::OrderId Gateway::SendOrder(
 			const Security &security,
 			ClientMessage::BuySellIndicator buySell,
-			ClientMessage::Numeric qty,
+			OrderQty qty,
 			OrderPrice price,
-			ClientMessage::Numeric timeInForce) {
+			ClientMessage::Numeric timeInForce,
+			const OrderStatusUpdateSlot &callback) {
 
-	const auto result = Interlocking::Increment(m_connection->seqnumber);
+	const Token token = Interlocking::Increment(m_connection->lastToken);
 
-	boost::shared_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_NEW_ORDER));
-	message->AppendField(result, 16);
+	std::auto_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_NEW_ORDER));
+	message->AppendField(token, 16);
 	message->AppendField('A');
 	message->AppendField(buySell);
 	message->AppendField(qty, 6);
@@ -479,35 +575,44 @@ Gateway::OrderId Gateway::SendOrder(
 	message->AppendField(.0, 5);
 	message->AppendField(timeInForce, 5);
 	message->AppendSpace(10);
-	Assert(message->GetMessageLen() == 57);
+	AssertEq(57, message->GetMessageLen());
 
 	const Lock lock(m_mutex);
-	Send(message);
+	const auto pos = m_connection->orders.insert(
+		Order(OrderId(token), callback, qty));
+	try {
+		Send(message);
+	} catch (...) {
+		// copy ctor and swap is too expensive here...
+		m_connection->orders.erase(pos.first);
+		throw;
+	}
 
-	return Gateway::OrderId(result);
+	return Gateway::OrderId(token);
 
 }
 
-void Gateway::Send(boost::shared_ptr<ClientMessage> message) {
+void Gateway::Send(std::auto_ptr<ClientMessage> message) {
 	const Lock lock(m_mutex);
 	Assert(m_connection);
-	if (m_connection->stage <= 0) {
+	if (m_connection->stage < STAGE_CONNECTED) {
 		throw ConnectionDoesntExistError("Connection lost");
 	}
 	Send(message, *m_connection);
 }
 
 void Gateway::Send(
-			boost::shared_ptr<ClientMessage> message,
+			std::auto_ptr<ClientMessage> message,
 			Connection &connection) {
 	message->AppendField('\n');
+	boost::shared_ptr<ClientMessage> smartMessage(message.release());
 	io::async_write(
 		connection.socket,
-		message->GetMessage(),
+		smartMessage->GetMessage(),
         boost::bind(
 			&Gateway::HandleWrite,
 			this,
-			message,
+			smartMessage,
 			io::placeholders::error,
 			io::placeholders::bytes_transferred));
 }
@@ -519,15 +624,19 @@ void Gateway::HandleWrite(
 	if (!error) {
 		return;
 	}
-	const Lock lock(m_mutex);
-	if (!m_connection) {
-		return;
+	{
+		const Lock lock(m_mutex);
+		if (!m_connection) {
+			return;
+		}
+		AssertEq(STAGE_CONNECTED, m_connection->stage);
+		m_connection->stage = STAGE_CLOSED_BY_WRITE_ERROR;
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection CLOSED with write ERROR: \"%1%\" (%2%).",
+			error.message(),
+			error.value());
 	}
-	m_connection->stage = -3;
-	Log::Error(
-		TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection CLOSED with write ERROR: \"%1%\" (%2%).",
-		error.message(),
-		error.value());
+	m_condition.notify_all();
 }
 
 bool Gateway::IsCompleted(const Security &) const {
@@ -538,8 +647,14 @@ bool Gateway::IsCompleted(const Security &) const {
 Gateway::OrderId Gateway::SellAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
-			const OrderStatusUpdateSlot &) {
-	return SendOrder(security, ClientMessage::BUY_SELL_INDICATOR_SELL_LONG, qty, 0, 99999);
+			const OrderStatusUpdateSlot &callback) {
+	return SendOrder(
+		security,
+		ClientMessage::BUY_SELL_INDICATOR_SELL_LONG,
+		qty,
+		0,
+		99999,
+		callback);
 }
 
 Gateway::OrderId Gateway::Sell(
@@ -572,8 +687,14 @@ Gateway::OrderId Gateway::SellOrCancel(
 Gateway::OrderId Gateway::BuyAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
-			const OrderStatusUpdateSlot &) {
-	return SendOrder(security, ClientMessage::BUY_SELL_INDICATOR_BUY, qty, 0, 99999);
+			const OrderStatusUpdateSlot &callback) {
+	return SendOrder(
+		security,
+		ClientMessage::BUY_SELL_INDICATOR_BUY,
+		qty,
+		0,
+		99999,
+		callback);
 }
 
 Gateway::OrderId Gateway::Buy(

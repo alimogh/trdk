@@ -19,7 +19,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		enum Type {
 			TYPE_LOGIN_REQUEST	= 'L',
-			TYPE_NEW_ORDER		= 'O'
+			TYPE_NEW_ORDER		= 'O',
+			TYPE_HEARTBEAT		= 'R'
 		};
 
 		typedef BufferT Buffer;
@@ -70,7 +71,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		}
 
 		Len GetMessageLen() const {
-			return Len(const_cast<GatewayClientMessage *>(this)->m_buffer.in_avail());
+			return m_buffer.size();
 		}
 
 	public:
@@ -88,11 +89,15 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		}
 
 		void AppendField(Numeric val, Len len) {
-			AppendField(boost::lexical_cast<std::string>(val), len, ' ', std::ios::right);
+			AppendTypedField(val, len, ' ', std::ios::right);
+		}
+
+		void AppendField(int32_t val, Len len) {
+			AppendTypedField(val, len, ' ', std::ios::right);
 		}
 
 		void AppendField(double val, Len len) {
-			AppendField(boost::lexical_cast<std::string>(val), len, '0', std::ios::right);
+			AppendTypedField(val, len, '0', std::ios::right);
 		}
 
 		void AppendSpace(Len len) {
@@ -111,6 +116,15 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			}
 			m_formatter.flags(flags);
 			m_formatter << std::setfill(fill) << std::setw(len) << val;
+		}
+
+		template<typename T>
+		void AppendTypedField(
+					const T &val,
+					Len len,
+					char fill,
+					std::ios::fmtflags flags) {
+			AppendField(boost::lexical_cast<std::string>(val), len, fill, flags);
 		}
 
 	private:
