@@ -168,7 +168,14 @@ namespace {
 		foreach (const auto &section, sections) {
 			if (boost::starts_with(section, Ini::Sections::algo)) {
 				Log::Info("Found algo section \"%1%\"...", section);
-				InitAlgo(ini, section, tradeSystem, securities, algos, settings);
+				try {
+					InitAlgo(ini, section, tradeSystem, securities, algos, settings);
+				} catch (const Dll::Error &ex) {
+					Log::Error(
+						"Failed to load algo module from section \"%1%\": \"%2%\".",
+						section,
+						ex.what());
+				}
 			}
 		}
 
