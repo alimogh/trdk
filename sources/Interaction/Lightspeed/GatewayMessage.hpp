@@ -18,6 +18,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		typedef size_t FieldStart;
 		typedef int64_t Numeric;
 		typedef char Char;
+		typedef double Price;
 
 		enum BuySellIndicator {
 			BUY_SELL_INDICATOR_BUY			= 'B',

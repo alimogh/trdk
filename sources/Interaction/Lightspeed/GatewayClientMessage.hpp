@@ -96,7 +96,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			AppendTypedField(val, len, ' ', std::ios::right);
 		}
 
-		void AppendField(double val, Len len) {
+		void AppendField(Price val, Len len) {
 			AppendTypedField(val, len, '0', std::ios::right);
 		}
 

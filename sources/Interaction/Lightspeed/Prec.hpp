@@ -26,6 +26,9 @@
 #	include <boost/multi_index/member.hpp>
 #	include <boost/multi_index/hashed_index.hpp>
 #	include <boost/multi_index/composite_key.hpp>
+#	include <boost/accumulators/accumulators.hpp>
+#	include <boost/accumulators/statistics/mean.hpp>
+#	include <boost/accumulators/statistics/stats.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include <stdint.h>
