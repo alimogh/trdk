@@ -10,6 +10,8 @@ H/**************************************************************************
 #include "FakeTradeSystem.hpp"
 #include "Core/Security.hpp"
 
+using namespace Trader;
+
 //////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -161,7 +163,7 @@ FakeTradeSystem::~FakeTradeSystem() {
 	delete m_pimpl;
 }
 
-void FakeTradeSystem::Connect(const Settings &) {
+void FakeTradeSystem::Connect(const IniFile &, const std::string &/*section*/) {
 	m_pimpl->Start();
 }
 

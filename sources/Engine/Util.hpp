@@ -8,9 +8,12 @@
 
 #pragma once
 
-class TradeSystem;
-class IqFeedClient;
+namespace Trader {
+	class TradeSystem;
+}
+
+class MarketDataSource;
 class Settings;
 
-void Connect(TradeSystem &, const Settings &);
-void Connect(IqFeedClient &, const Settings &);
+void Connect(Trader::TradeSystem &, const IniFile &, const std::string &section);
+void Connect(MarketDataSource &, const Settings &);

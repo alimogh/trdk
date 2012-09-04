@@ -123,27 +123,16 @@ void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
 
 	values.algoThreadsCount = ini.ReadTypedKey<size_t>(section, "algo_threads_count");
 
-	values.ibClientId = ini.ReadTypedKey<int>(section, "interactive_brokers_tws_client_id");
-	values.ibIpAddress = ini.ReadKey(section, "interactive_brokers_tws_ip_address", false);
-	
-	
-	values.iqLinkIpAddress = ini.ReadKey(section, "iqlink_ip_address", false);
-
 	m_values = values;
 	Log::Info(
 		"Common static settings:"
 			" start_time_edt: %1%; algo_threads_count = %2%; algo_update_period_ms = %3%;"
-			" trade_session_period_edt = %4% -> %5%;"
-			" interactive_brokers_tws_client_id = %6%; interactive_brokers_tws_ip_address = %7%;"
-			" iqlink_ip_address = %8%;",
+			" trade_session_period_edt = %4% -> %5%;",
 		GetStartTime() + Util::GetEdtDiff(),
 		m_values.algoThreadsCount,
 		m_values.algoUpdatePeriodMilliseconds,
 		m_values.tradeSessionStartTime + Util::GetEdtDiff(),
-		m_values.tradeSessionEndTime + Util::GetEdtDiff(),
-		m_values.ibClientId,
-		m_values.ibIpAddress,
-		m_values.iqLinkIpAddress);
+		m_values.tradeSessionEndTime + Util::GetEdtDiff());
 
 }
 
@@ -183,16 +172,4 @@ boost::uint16_t Settings::GetLevel2SnapshotPrintTimeSeconds() const {
 bool Settings::IsValidPrice(const Security &security) const {
 	Assert(security.GetPriceScale() == defaultLastPriceScale);
 	return m_minPrice <= security.GetLastPriceScaled();
-}
-
-int Settings::GetIbTwsClientId() const {
-	return m_values.ibClientId;
-}
-
-const std::string & Settings::GetIbTwsIpAddress() const {
-	return m_values.ibIpAddress;
-}
-
-const std::string & Settings::GetIqLinkIpAddress() const {
-	return m_values.iqLinkIpAddress;
 }

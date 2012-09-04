@@ -3,8 +3,12 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IgnoreImportLibrary>true</IgnoreImportLibrary>
+    <_PropertySheetDisplayName>Lightspeed</_PropertySheetDisplayName>
   </PropertyGroup>
-  <ItemDefinitionGroup />
+  <ItemDefinitionGroup>
+    <Link>
+      <ModuleDefinitionFile>Lightspeed.def</ModuleDefinitionFile>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

@@ -30,9 +30,6 @@
     <ClInclude Include="SecurityWrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MarketDataSource.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include=".\PositionWrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

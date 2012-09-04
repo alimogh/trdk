@@ -12,7 +12,7 @@
 #include "PositionReporter.hpp"
 #include "Position.hpp"
 #include "Settings.hpp"
-#include "IqFeed/IqFeedClient.hpp"
+#include "MarketDataSource.hpp"
 
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;

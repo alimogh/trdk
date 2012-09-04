@@ -9,6 +9,8 @@
 #include "Prec.hpp"
 #include "TradeSystem.hpp"
 
+using namespace Trader;
+
 //////////////////////////////////////////////////////////////////////////
 
 TradeSystem::Error::Error(const char *what) throw()
@@ -16,8 +18,13 @@ TradeSystem::Error::Error(const char *what) throw()
 	//...//
 }
 
-TradeSystem::ConnectError::ConnectError(const char *what) throw()
-		: Error(what) {
+TradeSystem::ConnectError::ConnectError() throw()
+		: Error("Failed to connect to trade system") {
+	//...//
+}
+
+TradeSystem::SendingError::SendingError() throw()
+		: Error("Failed to send data to trade system") {
 	//...//
 }
 

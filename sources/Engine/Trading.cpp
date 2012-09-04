@@ -10,8 +10,6 @@
 #include "FakeTradeSystem.hpp"
 #include "Ini.hpp"
 #include "Util.hpp"
-#include "IqFeed/IqFeedClient.hpp"
-#include "InteractiveBrokers/InteractiveBrokersTradeSystem.hpp"
 #include "Dispatcher.hpp"
 #include "Core/Algo.hpp"
 #include "Core/Security.hpp"
@@ -19,6 +17,8 @@
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
+
+using namespace Trader;
 
 namespace {
 
@@ -78,6 +78,14 @@ namespace {
 			throw IniFile::Error("Failed to load algo");
 		}
 
+		std::string fabricName;
+		try {
+			fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to get algo fabric name module: \"%1%\".", ex.what());
+			throw IniFile::Error("Failed to load algo");
+		}
+
 		const std::string tag = section.substr(Ini::Sections::algo.size());
 		if (tag.empty()) {
 			Log::Error("Failed to get tag for algo section \"%1%\".", section);
@@ -112,7 +120,7 @@ namespace {
 			}
 		}
 		if (!dll) {
-			dll.reset(new Dll(module));
+			dll.reset(new Dll(module, true));
 		}
 		const auto fabric
 			= dll->GetFunction<
@@ -121,7 +129,7 @@ namespace {
 						boost::shared_ptr<Security> security,
 						const IniFile &ini,
 						const std::string &section)>
-				("CreateAlgo");
+				(fabricName);
 
 		foreach (const auto &symbol, symbols) {
 			Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
@@ -147,22 +155,27 @@ namespace {
 	}
 
 	bool InitTrading(
-				const fs::path &iniFilePath,
+				const IniFile &ini,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Dispatcher &dispatcher,
-				IqFeedClient &marketDataSource,
+				MarketDataSource &marketDataSource,
 				Algos &algos,
 				boost::shared_ptr<Settings> settings)  {
 
-		Log::Info("Using %1% file for algo options...", iniFilePath);
-		const IniFile ini(iniFilePath);
 		const std::set<std::string> sections = ini.ReadSectionsList();
 
 		Securities securities;
 		foreach (const auto &section, sections) {
 			if (boost::starts_with(section, Ini::Sections::algo)) {
 				Log::Info("Found algo section \"%1%\"...", section);
-				InitAlgo(ini, section, tradeSystem, securities, algos, settings);
+				try {
+					InitAlgo(ini, section, tradeSystem, securities, algos, settings);
+				} catch (const Dll::Error &ex) {
+					Log::Error(
+						"Failed to load algo module from section \"%1%\": \"%2%\".",
+						section,
+						ex.what());
+				}
 			}
 		}
 
@@ -178,8 +191,13 @@ namespace {
 		Log::Info("Loaded %1% securities.", securities.size());
 		Log::Info("Loaded %1% algos.", algos.size());
 
-		Connect(*tradeSystem, *settings);
-		Connect(marketDataSource, *settings);
+		try {
+			Connect(*tradeSystem, ini, Ini::Sections::tradeSystem);
+			Connect(marketDataSource, *settings);
+		} catch (const Exception &ex) {
+			Log::Error("Failed to make trading connections: \"%1%\".", ex.what());
+			throw Exception("Failed to make trading connections");
+		}
 		
 		return true;
 
@@ -239,24 +257,54 @@ namespace {
 		Log::Info("Current settings update competed.");
 	}
 
+	DllObjectPtr<TradeSystem> LoadTradeSystem(
+				const IniFile &ini,
+				const std::string &section) {
+		const std::string module = ini.ReadKey(section, Ini::Key::module, false);
+		const std::string fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
+		boost::shared_ptr<Dll> dll(new Dll(module, true));
+		return DllObjectPtr<TradeSystem>(
+			dll,
+			dll->GetFunction<boost::shared_ptr<TradeSystem>()>(fabricName)());
+	}
+
 }
 
 void Trade(const fs::path &iniFilePath) {
 
+	Log::Info("Using %1% INI-file...", iniFilePath);
+	const IniFile ini(iniFilePath);
+
 	boost::shared_ptr<Settings> settings
-		= Ini::LoadSettings(iniFilePath, boost::get_system_time(), false);
-	boost::shared_ptr<InteractiveBrokersTradeSystem> tradeSystem(
-		new InteractiveBrokersTradeSystem);
-	IqFeedClient marketDataSource;
+		= Ini::LoadSettings(ini, boost::get_system_time(), false);
+
+	DllObjectPtr<TradeSystem> tradeSystem = LoadTradeSystem(ini, Ini::Sections::tradeSystem);
+	DllObjectPtr<LiveMarketDataSource> marketDataSource;
+
+	{
+		boost::shared_ptr<Dll> dll(new Dll("Lightspeed", true));
+		{
+			const auto mdFabric = dll->GetFunction<boost::shared_ptr<LiveMarketDataSource>()>(
+				"CreateLiveMarketDataSource");
+			marketDataSource.Reset(dll, mdFabric());
+		}
+	}
+
 	Dispatcher dispatcher(settings);
 
 	Algos algos;
-	if (!InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings)) {
+	if (	!InitTrading(
+				ini,
+				tradeSystem,
+				dispatcher,
+				reinterpret_cast<MarketDataSource &>(marketDataSource),
+				algos,
+				settings)) {
 		return;
 	}
 		
 	foreach (auto &a, algos) {
-		a.second->SubscribeToMarketData(marketDataSource, *tradeSystem);
+		a.second->SubscribeToMarketData(marketDataSource);
 	}
 	
 	FileSystemChangeNotificator iniChangeNotificator(
@@ -286,8 +334,11 @@ void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
 		throw Exception("Failed to get request parameters (replay date)");
 	}
 
+	Log::Info("Using %1% INI-file...", iniFilePath);
+	const IniFile ini(iniFilePath);
+
 	boost::shared_ptr<Settings> settings = Ini::LoadSettings(
-		iniFilePath,
+		ini,
 		pt::time_from_string((boost::format("%1% 00:00:00") % argv[2]).str())
 			- Util::GetEdtDiff(),
 		true);
@@ -297,10 +348,23 @@ void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
 		settings->GetCurrentTradeSessionEndime() + Util::GetEdtDiff());
 
 	boost::shared_ptr<TradeSystem> tradeSystem(new FakeTradeSystem);
-	IqFeedClient marketDataSource;
+	DllObjectPtr<HistoryMarketDataSource> marketDataSource;
+	{
+		boost::shared_ptr<Dll> dll(new Dll("Lightspeed", true));
+		const auto mdFabric = dll->GetFunction<boost::shared_ptr<HistoryMarketDataSource>()>(
+			"CreateHistoryMarketDataSource");
+		marketDataSource.Reset(dll, mdFabric());
+	}
+
 	Dispatcher dispatcher(settings);
 	Algos algos;
-	if (!InitTrading(iniFilePath, tradeSystem, dispatcher, marketDataSource, algos, settings)) {
+	if (	!InitTrading(
+				ini,
+				tradeSystem,
+				dispatcher,
+				reinterpret_cast<MarketDataSource &>(marketDataSource),
+				algos,
+				settings)) {
 		return;
 	}
 

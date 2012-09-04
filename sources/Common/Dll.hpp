@@ -29,13 +29,21 @@ class Dll : private boost::noncopyable {
 
 public:
 
+	class Error : public Exception {
+	public:
+		explicit Error(const char *what) throw()
+				:	Exception(what) {
+			//...//
+		}
+	};
+
 	//! Could load DLL.
-	class DllLoadException : public Exception {
+	class DllLoadException : public Error {
 	public:
 		explicit DllLoadException(
 					const boost::filesystem::path &dllFile,
-					const Error &error)
-				: Exception(
+					const ::Error &error)
+				: Error(
 					(boost::format("Failed to load DLL file %1% (%2%)")
 							% dllFile
 							% error)
@@ -45,13 +53,13 @@ public:
 	};
 
 	//! Could find required function in DLL.
-	class DllFuncException : public Exception {
+	class DllFuncException : public Error {
 	public:
 		explicit DllFuncException(
 					const boost::filesystem::path &dllFile,
 					const char *const funcName,
-					const Error &error)
-				: Exception(
+					const ::Error &error)
+				: Error(
 					(boost::format("Failed to find function \"%2%\" in DLL %1% (%3%).")
 							% dllFile
 							% funcName
@@ -71,15 +79,34 @@ private:
 
 public:
 
-	explicit Dll(const boost::filesystem::path &dllFile)
-			: m_file(dllFile),
-#			ifdef BOOST_WINDOWS
-				m_handle(LoadLibraryW(m_file.string().c_str())) {
-#			else
-				m_handle(dlopen(m_file.string().c_str(), RTLD_NOW)) {
-#			endif
+	explicit Dll(const boost::filesystem::path &dllFile, bool autoConfName = false)
+			: m_file(dllFile) {
+		if (!m_file.has_extension()) {
+			m_file.replace_extension(".dll");
+		}
+#		if defined(_DEBUG) || defined(_TEST)
+			if (autoConfName) {
+				auto tmp = m_file;
+				tmp.replace_extension("");
+#				if defined(_DEBUG)
+					const std::string tmpStr = tmp.string() + "_dbg";
+#				elif defined(_TEST)
+					const std::string tmpStr = tmp.string() + "_test";
+#				endif
+				tmp = tmpStr;
+				tmp.replace_extension(m_file.extension());
+				m_file = tmp;
+			}
+#		else
+			UseUnused(autoConfName);
+#		endif
+#		ifdef BOOST_WINDOWS
+			m_handle(LoadLibraryW(m_file.string().c_str())) {
+#		else
+			m_handle(dlopen(m_file.string().c_str(), RTLD_NOW)) {
+#		endif
 		if (m_handle == NULL) {
-			throw DllLoadException(m_file, Error(::GetLastError()));
+			throw DllLoadException(m_file, ::Error(::GetLastError()));
 		}
 	}
 
@@ -108,14 +135,19 @@ public:
 			void *procAddr = dlsym(m_handle, funcName);
 #		endif
 		if (procAddr == NULL) {
-			throw DllFuncException(m_file, funcName, Error(::GetLastError()));
+			throw DllFuncException(m_file, funcName, ::Error(::GetLastError()));
 		}
 		return reinterpret_cast<Func *>(procAddr);
 	}
 
+	template<class Func>
+	typename Func * GetFunction(const std::string &funcName) const {
+		return GetFunction<Func>(funcName.c_str());
+	}
+
 private:
 
-	const boost::filesystem::path m_file;
+	boost::filesystem::path m_file;
 	ModuleHandle m_handle;
 
 };
@@ -160,8 +192,16 @@ public:
 		return m_objFormDll;
 	}
 
-	operator boost::shared_ptr<ValueType>() {
-		return GetObj();
+	operator typename T &() {
+		return *GetObjPtr();
+	}
+
+	operator const typename T &() const {
+		return const_cast<DllObject *>(this)->operator typename T &();
+	}
+
+	operator boost::shared_ptr<typename T>() {
+		return GetObjPtr();
 	}
 
 	operator boost::shared_ptr<const ValueType>() const {
@@ -176,14 +216,14 @@ public:
 	}
 
 	T & operator *() {
-		return *GetObj();
+		return *GetObjPtr();
 	}
 	const T & operator *() const {
 		return const_cast<DllObject *>(this)->operator *();
 	}
 
 	T * operator ->() {
-		return GetObj().get();
+		return GetObjPtr().get();
 	}
 
 	const T * operator ->() const {
@@ -194,7 +234,7 @@ public:
 
 	void Reset(
 				boost::shared_ptr<Dll> dll,
-				boost::shared_ptr<ValueType> objFormDll) {
+				boost::shared_ptr<typename T> objFormDll) {
 		m_dll = dll;
 		m_objFormDll = objFormDll;
 		Assert(operator bool());
@@ -202,13 +242,13 @@ public:
 
 public:
 
-	boost::shared_ptr<ValueType> GetObj() {
+	boost::shared_ptr<typename T> GetObjPtr() {
 		Assert(operator bool());
 		return m_objFormDll;
 	}
 
-	boost::shared_ptr<const ValueType> GetObj() const {
-		return const_cast<DllObject *>(this)->GetObj();
+	boost::shared_ptr<const typename T> GetObjPtr() const {
+		return const_cast<DllObject *>(this)->GetObjPtr();
 	}
 
 	boost::shared_ptr<Dll> GetDll() {

@@ -180,8 +180,7 @@ ScriptEngine::ScriptEngine(
 			const std::string &stamp,
 			const std::string &algoClassName,
 			const ::Algo &algo,
-			boost::shared_ptr<Security> security,
-			PyApi::MarketDataSource level2DataSource)
+			boost::shared_ptr<Security> security)
 		: m_filePath(filePath),
 		m_stamp(stamp) {
 	
@@ -214,7 +213,7 @@ ScriptEngine::ScriptEngine(
 			m_algo = &algo;
 		}
 
-		m_algo->security.Init(algo, security, level2DataSource);
+		m_algo->security.Init(algo, security);
 
 	} catch (const python::error_already_set &) {
 		PyErr_Print();

@@ -53,12 +53,9 @@ public:
 
 public:
 
-	virtual void SubscribeToMarketData(
-				const LiveMarketDataSource &iqFeed,
-				const LiveMarketDataSource &interactiveBrokers)
-			= 0;
+	virtual void SubscribeToMarketData(const LiveMarketDataSource &) = 0;
 	void RequestHistory(
-				const HistoryMarketDataSource &iqFeed,
+				const HistoryMarketDataSource &,
 				const boost::posix_time::ptime &fromTime,
 				const boost::posix_time::ptime &toTime);
 

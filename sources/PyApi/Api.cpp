@@ -11,7 +11,7 @@
 
 namespace PyApi {
 
-	boost::shared_ptr<::Algo> CreateAlgo(
+	boost::shared_ptr<::Algo> CreatePyEngine(
 				const std::string &tag,
 				boost::shared_ptr<Security> security,
 				const IniFile &ini,

@@ -12,6 +12,8 @@
 
 namespace pt = boost::posix_time;
 
+using namespace Trader;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #define INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME "Interactive Brokers"

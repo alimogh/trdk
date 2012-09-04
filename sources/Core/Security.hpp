@@ -3,7 +3,7 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: HighmanTradingRobot
+ *   Project: Trading Robot
  **************************************************************************/
 
 #pragma once
@@ -23,12 +23,12 @@ public:
 
 	typedef Instrument Base;
 
-	typedef TradeSystem::OrderStatusUpdateSlot OrderStatusUpdateSlot;
+	typedef Trader::TradeSystem::OrderStatusUpdateSlot OrderStatusUpdateSlot;
 
 	typedef boost::posix_time::ptime MarketDataTime;
 
-	typedef TradeSystem::OrderQty Qty;
-	typedef TradeSystem::OrderPrice Price;
+	typedef Trader::TradeSystem::OrderQty Qty;
+	typedef Trader::TradeSystem::OrderPrice Price;
 
 	struct TRADER_CORE_API Quote {
 		
@@ -82,7 +82,7 @@ private:
 public:
 
 	explicit Security(
-				boost::shared_ptr<TradeSystem>,
+				boost::shared_ptr<Trader::TradeSystem>,
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange,
@@ -123,17 +123,17 @@ public:
 
 	boost::posix_time::ptime GetLastMarketDataTime() const;
 
-	TradeSystem::OrderId SellAtMarketPrice(Qty, Position &);
-	TradeSystem::OrderId Sell(Qty, Price, Position &);
-	TradeSystem::OrderId SellAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
-	TradeSystem::OrderId SellOrCancel(Qty, Price, Position &);
+	Trader::TradeSystem::OrderId SellAtMarketPrice(Qty, Position &);
+	Trader::TradeSystem::OrderId Sell(Qty, Price, Position &);
+	Trader::TradeSystem::OrderId SellAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
+	Trader::TradeSystem::OrderId SellOrCancel(Qty, Price, Position &);
 
-	TradeSystem::OrderId BuyAtMarketPrice(Qty, Position &);
-	TradeSystem::OrderId Buy(Qty, Price, Position &);
-	TradeSystem::OrderId BuyAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
-	TradeSystem::OrderId BuyOrCancel(Qty, Price, Position &);
+	Trader::TradeSystem::OrderId BuyAtMarketPrice(Qty, Position &);
+	Trader::TradeSystem::OrderId Buy(Qty, Price, Position &);
+	Trader::TradeSystem::OrderId BuyAtMarketPriceWithStopPrice(Qty, Price stopPrice, Position &);
+	Trader::TradeSystem::OrderId BuyOrCancel(Qty, Price, Position &);
 
-	void CancelOrder(TradeSystem::OrderId);
+	void CancelOrder(Trader::TradeSystem::OrderId);
 	void CancelAllOrders();
 
 	bool IsCompleted() const;
@@ -167,10 +167,8 @@ public:
 		return m_bidSize;
 	}
 
-	Qty GetLevel2AskSizeIqFeed();
-	Qty GetLevel2AskSizeIb();
-	Qty GetLevel2BidSizeIqFeed();
-	Qty GetLevel2BidSizeIb();
+	Qty GetLevel2AskSize();
+	Qty GetLevel2BidSize();
 
 private:
 
@@ -185,10 +183,8 @@ private:
 	bool SetAsk(Price, Qty);
 	bool SetBid(Price, Qty);
 
-	void SetLevel2AskIqFeed(Qty askSize);
-	void SetLevel2AskIb(Qty askSize);
-	void SetLevel2BidIqFeed(Qty bidSize);
-	void SetLevel2BidIb(Qty bidSize);
+	void SetLevel2Ask(Qty askSize);
+	void SetLevel2Bid(Qty bidSize);
 
 public:
 
@@ -206,18 +202,14 @@ public:
 				double bidPrice,
 				size_t bidSize,
 				size_t totalVolume);
-	void UpdateLevel2IqFeed(
-				const MarketDataTime &timeOfReception,
-				boost::shared_ptr<Quote> ask,
-				boost::shared_ptr<Quote> bid);
 
-	void UpdateLevel2IbLine(
+	void UpdateLevel2Line(
 				const MarketDataTime &timeOfReception,
 				int position,
 				bool isAsk,
 				double price,
 				Qty size);
-	void DeleteLevel2IbLine(
+	void DeleteLevel2Line(
 				const MarketDataTime &timeOfReception,
 				int position,
 				bool isAsk,
@@ -251,16 +243,6 @@ private:
 	volatile long long m_bidPrice;
 	volatile long m_bidSize;
 
-	class MarketDataLevel2Log;
-	MarketDataLevel2Log *m_marketDataLevel2Log;
-
-	class MarketDataLevel2SnapshotLog;
-	MarketDataLevel2SnapshotLog *m_marketDataLevel2SnapshotLog;
-
-	mutable Level2Mutex m_level2Mutex;
-	QuotesAccumulated m_qoutesIqFeed;
-	QuotesCompleted m_qoutesIb;
-	
 	mutable MarketDataTimeMutex m_marketDataTimeMutex;
 	MarketDataTime m_marketDataTime;
 

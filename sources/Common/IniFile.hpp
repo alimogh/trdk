@@ -38,7 +38,7 @@ public:
 
 	class KeyNotExistsError : public Error {
 	public:
-		KeyNotExistsError() throw();
+		KeyNotExistsError(const char *what) throw();
 	};
 
 	class SectionNotExistsError : public Error {
