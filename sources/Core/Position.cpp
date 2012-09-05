@@ -120,7 +120,7 @@ void Position::UpdateOpening(
 			return;
 		case TradeSystem::ORDER_STATUS_FILLED:
 			AssertEq(filled + remaining, m_planedQty);
-			AssertLe(m_opened.qty + filled, m_planedQty);
+			AssertLe(long(m_opened.qty) + filled, m_planedQty);
 			Interlocking::Exchange(m_opened.price, m_security->ScalePrice(avgPrice));
 			Interlocking::Exchange(m_opened.qty, m_opened.qty + filled);
 			AssertGt(m_opened.qty, 0);
@@ -183,7 +183,6 @@ void Position::UpdateClosing(
 
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	AssertNe(m_opened.price, 0);
 	Assert(!m_opened.time.is_not_a_date_time());
 	Assert(m_closed.time.is_not_a_date_time());
 	AssertLe(m_opened.qty, m_planedQty);
@@ -207,7 +206,7 @@ void Position::UpdateClosing(
 			return;
 		case TradeSystem::ORDER_STATUS_FILLED:
 			AssertEq(filled + remaining, m_opened.qty);
-			AssertLe(m_closed.qty + filled, m_opened.qty);
+			AssertLe(long(m_closed.qty) + filled, m_opened.qty);
 			Interlocking::Exchange(m_closed.price, m_security->ScalePrice(avgPrice));
 			Interlocking::Exchange(m_closed.qty, m_closed.qty + filled);
 			AssertGt(m_closed.qty, 0);
