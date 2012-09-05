@@ -77,7 +77,9 @@ private:
 	void ReportClosedPositon(PositionBandle &positions) {
 		Assert(!positions.Get().empty());
 		foreach (auto &p, positions.Get()) {
-			if ((p->IsClosed() || p->IsError()) && !p->IsReported()) {
+			if (	p->IsOpened()
+					&& !p->IsReported()
+					&& (p->IsClosed() || p->IsError())) {
 				m_algo->GetPositionReporter().ReportClosedPositon(*p);
 				p->MarkAsReported();
 			}
