@@ -269,7 +269,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		void StartReading(Connection &);
 		void StartInitialDataReading(Connection &);
 
-		bool IsClosed(
+		bool IsReadingClosed(
 					Connection &connection,
 					const boost::system::error_code &error,
 					size_t size)
@@ -323,9 +323,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				ClientMessage::Numeric timeInForce,
 				const OrderStatusUpdateSlot &);
 
-		void SendHeartbeat();
+		void SendHeartbeat(Connection &);
 
-		void Send(std::auto_ptr<ClientMessage>);
 		void Send(std::auto_ptr<ClientMessage>, Connection &);
 
 		void HandleWrite(

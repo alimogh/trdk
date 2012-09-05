@@ -163,9 +163,9 @@ void Gateway::Connect(const IniFile &ini, const std::string &section) {
 	Log::Info(
 		TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
 			"socket_buffer_size_bytes = %1%; messages_buffer_size_bytes = %2%;"
-				"timeout_msec = %3%; heartbeat_period_sec = %4%;",
+				" timeout_msec = %3%; heartbeat_period_sec = %4%;",
 		connection->socketBuffer.size(),
-		connection->messagesBuffer.max_size(),
+		connection->messagesBuffer.capacity(),
 		connection->timeout,
 		heartbeatPeriod);
 
@@ -241,22 +241,19 @@ void Gateway::Connect(const IniFile &ini, const std::string &section) {
 			throw ConnectError();
 		}
 
-		StartReading(*connection);
-
 		const boost::function<void (const pt::time_duration &)> heartbeatTask
 			= [this](const pt::time_duration &heartbeatPeriod) {
 					Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "started heartbeat task.");
 					try {
 						Lock lock(m_mutex);
 						for ( ; ; ) {
-							if (m_connection->stage < STAGE_CONNECTED) {
-								break;
-							}
-							SendHeartbeat();
+							SendHeartbeat(*m_connection);
 							m_condition.timed_wait(
 								lock,
 								boost::get_system_time() + heartbeatPeriod);
 						}
+					} catch (const ConnectionDoesntExistError &) {
+						//...//
 					} catch (...) {
 						AssertFailNoException();
 						throw;
@@ -272,7 +269,7 @@ void Gateway::Connect(const IniFile &ini, const std::string &section) {
 
 }
 
-bool Gateway::IsClosed(
+bool Gateway::IsReadingClosed(
 			Connection &connection,
 			const boost::system::error_code &error,
 			size_t size)
@@ -295,7 +292,7 @@ bool Gateway::IsClosed(
 
 void Gateway::HandleRead(const boost::system::error_code &error, size_t size) {
 	const Lock lock(m_mutex);
-	if (!m_connection || IsClosed(*m_connection, error, size)) {
+	if (!m_connection || IsReadingClosed(*m_connection, error, size)) {
 		return;
 	}
 	AssertGe(m_connection->stage, STAGE_CONNECTED);
@@ -329,7 +326,7 @@ void Gateway::HandleInitialDataRead(
 	AssertGe(connection.stage, STAGE_CONNECTED);
 	AssertLt(connection.stage, STAGE_LOGGED_ON);
 	m_condition.notify_all();
-	if (IsClosed(connection, error, size)) {
+	if (IsReadingClosed(connection, error, size)) {
 		return;
 	}
 	try {
@@ -365,18 +362,18 @@ bool Gateway::HandleRead(
 			size_t size,
 			const Lock &) {
 
-	if (IsClosed(connection, error, size)) {
+	if (IsReadingClosed(connection, error, size)) {
 		return false;
 	}
 
 	Assert(connection.socketBuffer.size() >= size);
 	const auto oldSize = connection.messagesBuffer.size();
-	if (connection.messagesBuffer.max_size() < oldSize + size) {
+	if (connection.messagesBuffer.capacity() < oldSize + size) {
 		Log::Warn(
 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "exceeded the internal buffer"
 				" (current capacity: %2%, new data size: %3%)."
 				" Buffer will be reallocated.",
-			connection.messagesBuffer.max_size(),
+			connection.messagesBuffer.capacity(),
 			size);
 		MessagesBuffer newBuffer(oldSize + size);
 		newBuffer.resize(oldSize);
@@ -547,7 +544,7 @@ void Gateway::HandleOrderExecuted(const TsMessage &message, Connection &connecti
 	
 	const auto token = Token(message.GetNumericField(9, 16));
 	const auto executedQty = OrderQty(message.GetNumericField(25, 6));
-	const auto executionPrice = message.GetPriceField(25, 6);
+	const auto executionPrice = message.GetPriceField(31, 6);
 
 	auto &index = connection.orders.get<ByToken>();
 	const auto order = index.find(token);
@@ -573,7 +570,7 @@ void Gateway::HandleOrderExecuted(const TsMessage &message, Connection &connecti
 			accum::mean(order->avgExecutionPrice),
 			executionPrice);
 	} else {
-		AssertEq(order->executedQty, executedQty + order->executedQty);
+		AssertEq(order->initialQty, executedQty + order->executedQty);
 		auto avgExecutionPrice = order->avgExecutionPrice;
 		avgExecutionPrice(executionPrice);
 		const auto callback = order->callback;
@@ -663,7 +660,7 @@ void Gateway::SendLoginRequest(
 		message->AppendField(password, 10);
 		message->AppendSpace(10);
 		message->AppendField(ClientMessage::Numeric(0), 10);
-		AssertEq(37, message->GetMessageLen());
+		AssertEq(37, message->GetMessageLogicalLen());
 		Send(message, connection);
 	} catch (const ClientMessage::Error &ex) {
 		Log::Error(
@@ -674,10 +671,10 @@ void Gateway::SendLoginRequest(
 	}
 }
 
-void Gateway::SendHeartbeat() {
+void Gateway::SendHeartbeat(Connection &connection) {
 	std::auto_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_HEARTBEAT));
-	AssertEq(1, message->GetMessageLen());
-	Send(message);
+	AssertEq(1, message->GetMessageLogicalLen());
+	Send(message, connection);
 }
 
 Gateway::OrderId Gateway::SendOrder(
@@ -691,7 +688,7 @@ Gateway::OrderId Gateway::SendOrder(
 	const Token token = Interlocking::Increment(m_connection->lastToken);
 
 	std::auto_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_NEW_ORDER));
-	message->AppendField(token, 16);
+	message->AppendFieldAsAlphanum(token, 16);
 	message->AppendField('A');
 	message->AppendField(buySell);
 	message->AppendField(qty, 6);
@@ -701,13 +698,13 @@ Gateway::OrderId Gateway::SendOrder(
 	message->AppendField(.0, 5);
 	message->AppendField(timeInForce, 5);
 	message->AppendSpace(10);
-	AssertEq(57, message->GetMessageLen());
+	AssertEq(67, message->GetMessageLogicalLen());
 
 	const Lock lock(m_mutex);
 	const auto pos = m_connection->orders.insert(
 		Order(OrderId(token), callback, qty));
 	try {
-		Send(message);
+		Send(message, *m_connection);
 	} catch (...) {
 		// copy ctor and swap is too expensive here...
 		m_connection->orders.erase(pos.first);
@@ -720,18 +717,12 @@ Gateway::OrderId Gateway::SendOrder(
 
 }
 
-void Gateway::Send(std::auto_ptr<ClientMessage> message) {
-	const Lock lock(m_mutex);
-	Assert(m_connection);
-	if (m_connection->stage < STAGE_CONNECTED) {
-		throw ConnectionDoesntExistError("Connection lost");
-	}
-	Send(message, *m_connection);
-}
-
 void Gateway::Send(
 			std::auto_ptr<ClientMessage> message,
 			Connection &connection) {
+	if (connection.stage < STAGE_CONNECTED) {
+		throw ConnectionDoesntExistError("Connection lost");
+	}
 	message->AppendField('\n');
 	boost::shared_ptr<ClientMessage> smartMessage(message.release());
 	io::async_write(
@@ -757,7 +748,7 @@ void Gateway::HandleWrite(
 		if (!m_connection) {
 			return;
 		}
-		AssertEq(STAGE_CONNECTED, m_connection->stage);
+		AssertLe(STAGE_CONNECTED, m_connection->stage);
 		m_connection->stage = STAGE_CLOSED_BY_WRITE_ERROR;
 		Log::Error(
 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection CLOSED with write ERROR: \"%1%\" (%2%).",
