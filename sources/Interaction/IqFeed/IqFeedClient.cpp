@@ -250,13 +250,13 @@ namespace {
 			}
 
 			const size_t oldSize = m_messagesBuffer.size();
-			if (m_messagesBuffer.max_size() < oldSize + size) {
+			if (m_messagesBuffer.capacity() < oldSize + size) {
 				Log::Warn(
 					IQFEED_CLIENT_CONNECTION_NAME ": exceeded the internal buffer"
 						" for %1% (current capacity: %2%, new data size: %2%)."
 						" Buffer will be reallocated.",
 					m_port,
-					m_messagesBuffer.max_size(),
+					m_messagesBuffer.capacity(),
 					size);
 				MessagesBuffer newBuffer(oldSize + size);
 				newBuffer.resize(oldSize);
