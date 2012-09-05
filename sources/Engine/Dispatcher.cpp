@@ -54,12 +54,12 @@ public:
 	}
 
 	bool IsTimeToUpdate() const {
-		if (IsBlocked() || !m_lastUpdate) {
+		if ((IsBlocked() || !m_lastUpdate) && m_settings->ShouldWaitForMarketData()) {
 			return false;
 		}
 		const auto now
 			= (boost::get_system_time() - m_settings->GetStartTime()).total_milliseconds();
-		Assert(now >= m_lastUpdate);
+		AssertGe(now, m_lastUpdate);
 		const auto diff = boost::uint64_t(now - m_lastUpdate);
 		return diff >= m_settings->GetUpdatePeriodMilliseconds();
 	}
@@ -290,7 +290,7 @@ bool Dispatcher::AlgoState::CheckPositionsUnsafe() {
 	Assert(!m_isBlocked);
 		
 	const Security &security = *const_cast<const Algo &>(*m_algo).GetSecurity();
-	Assert(security); // must be checked it security object
+	Assert(security || !m_settings->ShouldWaitForMarketData()); // must be checked it security object
 
 	if (m_positions) {
 		Assert(!m_positions->Get().empty());
