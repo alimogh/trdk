@@ -44,41 +44,7 @@ namespace {
 	}
 
 	namespace Detail {
-		void ReportAssertEqFail(
-					const std::string &expected,
-					const std::string &real,
-					const char *expr,
-					char const *function,
-					const char *file,
-					int line) {
-			boost::format message(
-				"Assertion Failed:"
-					" Expecting that values are equal, but it is not: %1% != %2% (which is %3%)"
-					" in function %4%, file %5%, line %6%.");
-			message % expected % expr % real % function % file % line;
-			std::cerr << message.str() << std::endl;
-			Log::Error(message.str().c_str());
-			Log::Trading("assert", message.str().c_str());
-			Break();
-		}
-		void ReportAssertEqFail(
-					const std::string &expected,
-					const char *expr,
-					char const *function,
-					const char *file,
-					int line) {
-			boost::format message(
-				"Assertion Failed:"
-					" Expecting that values are NOT equal, but it is: %1% == %2%"
-					" in function %3%, file %4%, line %5%.");
-			message % expected % expr % function % file % line;
-			std::cerr << message.str() << std::endl;
-			Log::Error(message.str().c_str());
-			Log::Trading("assert", message.str().c_str());
-			Break();
-		}
-
-		void ReportAssertGtGeLtLeFail(
+		void ReportCompareAssertFail(
 					const std::string &val1,
 					const std::string &val2,
 					const char *compType,
@@ -98,8 +64,6 @@ namespace {
 			Log::Trading("assert", message.str().c_str());
 			Break();
 		}
-
-
 	}
 
 #else

@@ -60,7 +60,11 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 	public:
 
 		explicit GatewayClientMessage(Type type)
-				: m_formatter(&m_buffer) {
+				: m_isDataMessage(IsDataMessageType(type)),
+				m_formatter(&m_buffer) {
+			if (m_isDataMessage) {
+				AppendField('U');
+			}
 			AppendField(Char(type));
 		}
 
@@ -70,8 +74,10 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			return m_buffer;
 		}
 
-		Len GetMessageLen() const {
-			return m_buffer.size();
+		Len GetMessageLogicalLen() const {
+			return m_isDataMessage
+				?	m_buffer.size() - 1
+				:	m_buffer.size();
 		}
 
 	public:
@@ -85,19 +91,27 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		}
 
 		void AppendField(const std::string &val, Len len) {
-			AppendField(val, len, ' ', std::ios::left);
+			AppendFieldAsAlphanum(val, len);
+		}
+
+		template<typename Source>
+		void AppendFieldAsAlphanum(const Source &val, Len len) {
+			AppendTypedField(val, len, ' ', std::ios::left);
 		}
 
 		void AppendField(Numeric val, Len len) {
-			AppendTypedField(val, len, ' ', std::ios::right);
+			AppendTypedField(
+				val,
+				len,
+				' ',
+				!m_isDataMessage ? std::ios::right : std::ios::left);
 		}
-
 		void AppendField(int32_t val, Len len) {
-			AppendTypedField(val, len, ' ', std::ios::right);
+			AppendField(Numeric(val), len);
 		}
 
-		void AppendField(double val, Len len) {
-			AppendTypedField(val, len, '0', std::ios::right);
+		void AppendField(Price val, Len len) {
+			AppendField((boost::format("%1%") % val).str(), len, '0', std::ios::right);
 		}
 
 		void AppendSpace(Len len) {
@@ -129,10 +143,26 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	private:
 
+		static bool IsDataMessageType(Type type) {
+			switch (type) {
+				case TYPE_LOGIN_REQUEST:
+				case TYPE_HEARTBEAT:
+					return false;
+				case TYPE_NEW_ORDER:
+					return true;
+				default:
+					AssertFail("Unknown Lightspeed Gateway message type.");
+					return false;
+			};
+		}
+
+	private:
+
+		bool m_isDataMessage;
+
 		Buffer m_buffer;
 		MessageFormatter m_formatter;
 
 	};
 
 } } }
-

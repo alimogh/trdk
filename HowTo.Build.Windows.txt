@@ -20,6 +20,8 @@ Host To Build on MS Windows
          8) Thread
      Official site: http://www.boost.org/
      Free install (ready builds): http://www.boostpro.com/download/
+1.3. Python 2.7 32-bit.
+     http://www.python.org/download/
 
 2. Setup:
 2.1. Create or change envelopment variable BOOST_DIR_X86 - set path to

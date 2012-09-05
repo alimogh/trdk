@@ -17,6 +17,7 @@
 
 namespace io = boost::asio;
 namespace pt = boost::posix_time;
+namespace accum = boost::accumulators;
 
 using namespace Trader::Interaction::Lightspeed;
 
@@ -32,7 +33,8 @@ Gateway::Connection::Connection(
 		stage(STAGE_CONNECTING),
 		seqnumber(0),
 		timeout(timeout),
-		lastToken(0) {
+		lastToken(0),
+		orderMessagesFromLastStatCount() {
 	//...//
 }
 
@@ -161,9 +163,9 @@ void Gateway::Connect(const IniFile &ini, const std::string &section) {
 	Log::Info(
 		TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
 			"socket_buffer_size_bytes = %1%; messages_buffer_size_bytes = %2%;"
-				"timeout_msec = %3%; heartbeat_period_sec = %4%;",
+				" timeout_msec = %3%; heartbeat_period_sec = %4%;",
 		connection->socketBuffer.size(),
-		connection->messagesBuffer.max_size(),
+		connection->messagesBuffer.capacity(),
 		connection->timeout,
 		heartbeatPeriod);
 
@@ -239,22 +241,19 @@ void Gateway::Connect(const IniFile &ini, const std::string &section) {
 			throw ConnectError();
 		}
 
-		StartReading(*connection);
-
 		const boost::function<void (const pt::time_duration &)> heartbeatTask
 			= [this](const pt::time_duration &heartbeatPeriod) {
 					Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "started heartbeat task.");
 					try {
 						Lock lock(m_mutex);
 						for ( ; ; ) {
-							if (m_connection->stage < STAGE_CONNECTED) {
-								break;
-							}
-							SendHeartbeat();
+							SendHeartbeat(*m_connection);
 							m_condition.timed_wait(
 								lock,
 								boost::get_system_time() + heartbeatPeriod);
 						}
+					} catch (const ConnectionDoesntExistError &) {
+						//...//
 					} catch (...) {
 						AssertFailNoException();
 						throw;
@@ -270,7 +269,7 @@ void Gateway::Connect(const IniFile &ini, const std::string &section) {
 
 }
 
-bool Gateway::IsClosed(
+bool Gateway::IsReadingClosed(
 			Connection &connection,
 			const boost::system::error_code &error,
 			size_t size)
@@ -293,7 +292,7 @@ bool Gateway::IsClosed(
 
 void Gateway::HandleRead(const boost::system::error_code &error, size_t size) {
 	const Lock lock(m_mutex);
-	if (!m_connection || IsClosed(*m_connection, error, size)) {
+	if (!m_connection || IsReadingClosed(*m_connection, error, size)) {
 		return;
 	}
 	AssertGe(m_connection->stage, STAGE_CONNECTED);
@@ -327,7 +326,7 @@ void Gateway::HandleInitialDataRead(
 	AssertGe(connection.stage, STAGE_CONNECTED);
 	AssertLt(connection.stage, STAGE_LOGGED_ON);
 	m_condition.notify_all();
-	if (IsClosed(connection, error, size)) {
+	if (IsReadingClosed(connection, error, size)) {
 		return;
 	}
 	try {
@@ -363,18 +362,18 @@ bool Gateway::HandleRead(
 			size_t size,
 			const Lock &) {
 
-	if (IsClosed(connection, error, size)) {
+	if (IsReadingClosed(connection, error, size)) {
 		return false;
 	}
 
 	Assert(connection.socketBuffer.size() >= size);
 	const auto oldSize = connection.messagesBuffer.size();
-	if (connection.messagesBuffer.max_size() < oldSize + size) {
+	if (connection.messagesBuffer.capacity() < oldSize + size) {
 		Log::Warn(
 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "exceeded the internal buffer"
 				" (current capacity: %2%, new data size: %3%)."
 				" Buffer will be reallocated.",
-			connection.messagesBuffer.max_size(),
+			connection.messagesBuffer.capacity(),
 			size);
 		MessagesBuffer newBuffer(oldSize + size);
 		newBuffer.resize(oldSize);
@@ -412,45 +411,185 @@ void Gateway::HandleMessage(const TsMessage &message, Connection &connection) {
 			HandleDebug(message, connection);
 			break;
 		case TsMessage::TYPE_LOGIN_ACCEPTED:
-			HandleAcceptedLogin(message, connection);
+			HandleLoginAccepted(message, connection);
 			break;
 		case TsMessage::TYPE_LOGIN_REJECTED:
-			HandleRejectedLogin(message, connection);
+			HandleLoginRejected(message, connection);
 			break;
 		case TsMessage::TYPE_HEARTBEAT:
 			break;
 		case TsMessage::TYPE_ORDER_ACCEPTED:
-			HandleAcceptedOrder(message, connection);
+			HandleOrderAccepted(message, connection);
+			break;
+		case TsMessage::TYPE_ORDER_REJECTED:
+			HandleOrderReject(message, connection);
+			break;
+		case TsMessage::TYPE_ORDER_CANCELED:
+			HandleOrderCanceled(message, connection);
+			break;
+		case TsMessage::TYPE_ORDER_EXECUTED:
+			HandleOrderExecuted(message, connection);
+			break;
 		default:
-			AssertFail("Unknown message. Never reached.");
+			throw MessageError("Unknown trade system message", message);
 	}
 
 }
 
-void Gateway::HandleAcceptedOrder(const TsMessage &message, Connection &connection) {
-	Assert(message.GetType() == TsMessage::TYPE_ORDER_ACCEPTED);
-	const Token token = Token(message.GetNumericField(9, 16));
-	OrdersByToken &index = connection.orders.get<ByToken>();
-	const OrdersByToken::iterator order = index.find(token);
+void Gateway::StatOrders(Connection &connection) throw() {
+	if (++connection.orderMessagesFromLastStatCount < 100)  {
+		return;
+	}
+	connection.orderMessagesFromLastStatCount = 0;
+	Log::Debug(
+		TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "active orders storage size: %1%.",
+		connection.orders.size());
+}
+
+void Gateway::HandleOrderAccepted(const TsMessage &message, Connection &connection) {
+	
+	AssertEq(TsMessage::TYPE_ORDER_ACCEPTED, message.GetType());
+	
+	const auto token = Token(message.GetNumericField(9, 16));
+	auto &index = connection.orders.get<ByToken>();
+	const auto order = index.find(token);
 	if (order == index.end()) {
 		Log::Error(
 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
 				"unknown accepted order (token: %1%, order ID: %2%).",
 			token,
-			message.GetStringField(25, 9));
+			message.GetFieldAsString(25, 9));
 		throw MessageError("Unknown accepted order", message);
 	}
-	order->callback(
-		token,
-		ORDER_STATUS_SUBMITTED,
-		0,
-		order->qty,
-		0,
-		0);
+	
+	order->callback(token, ORDER_STATUS_SUBMITTED, 0, 0, 0, 0);
+
+	StatOrders(connection);
+
+}
+
+void Gateway::HandleOrderReject(const TsMessage &message, Connection &connection) {
+	
+	AssertEq(TsMessage::TYPE_ORDER_REJECTED, message.GetType());
+	
+	const auto token = Token(message.GetNumericField(9, 16));
+	const auto reason = message.GetOrderRejectReasonField(25);
+	
+	auto &index = connection.orders.get<ByToken>();
+	const auto order = index.find(token);
+	if (order == index.end()) {
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+				"unknown rejected order with token: %1% (reject reason: \"%2%\").",
+			token,
+			reason);
+		throw MessageError("Unknown rejected order", message);
+	} else {
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+				"order %1% rejected with reason: \"%2%\".",
+			token,
+			reason);
+	}
+	
+	const auto callback = order->callback;
+	index.erase(order);
+	callback(token, ORDER_STATUS_ERROR, 0, 0, 0, 0);
+
+	StatOrders(connection);
+
+}
+
+void Gateway::HandleOrderCanceled(const TsMessage &message, Connection &connection) {
+
+	AssertEq(TsMessage::TYPE_ORDER_CANCELED, message.GetType());
+
+	const auto token = Token(message.GetNumericField(9, 16));
+	auto &index = connection.orders.get<ByToken>();
+	const auto order = index.find(token);
+	if (order == index.end()) {
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+				"unknown order canceled (token: %1%, shares canceled: \"%2%\", reason: \"%3%\").",
+			token,
+			message.GetNumericField(25, 6), // 25 - canceled qty
+			message.GetOrderCancelReasonField(31));
+		throw MessageError("Unknown order canceled", message);
+	}
+	
+	AssertLe(message.GetNumericField(25, 6), order->initialQty); // 25 - canceled qty
+	AssertLe(message.GetNumericField(25, 6), order->initialQty - order->executedQty); // 25 - canceled qty
+	
+	const auto reason = message.GetCharField(31);
+	if (reason != 'U') {
+		Log::Warn(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+				"order %1% canceled with unusual reason: \"%2%\" (shares canceled: %3%).",
+			token,
+			message.GetOrderCancelReasonField(31),
+			message.GetNumericField(25, 6));
+	}
+
+	const auto callback = order->callback;
+	index.erase(order);
+	callback(token, ORDER_STATUS_CANCELLED, 0, 0, 0, 0);
+
+	StatOrders(connection);
+
+}
+
+void Gateway::HandleOrderExecuted(const TsMessage &message, Connection &connection) {
+	
+	AssertEq(TsMessage::TYPE_ORDER_EXECUTED, message.GetType());
+	
+	const auto token = Token(message.GetNumericField(9, 16));
+	const auto executedQty = OrderQty(message.GetNumericField(25, 6));
+	const auto executionPrice = message.GetPriceField(31, 6);
+
+	auto &index = connection.orders.get<ByToken>();
+	const auto order = index.find(token);
+	if (order == index.end()) {
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+				"unknown order executed (token: %1%, qty: \"%2%\", price: \"%3%\").",
+			token,
+			executedQty,
+			executionPrice);
+		throw MessageError("Unknown order executed", message);
+	}
+	
+	AssertLe(executedQty, order->initialQty);
+	AssertLe(executedQty, order->initialQty - order->executedQty);
+	if (executedQty + order->executedQty < order->initialQty) {
+		index.modify(order, Order::Modifers::Execution(executedQty, executionPrice));
+		order->callback(
+			token,
+			ORDER_STATUS_FILLED,
+			executedQty,
+			order->initialQty - order->executedQty,
+			accum::mean(order->avgExecutionPrice),
+			executionPrice);
+	} else {
+		AssertEq(order->initialQty, executedQty + order->executedQty);
+		auto avgExecutionPrice = order->avgExecutionPrice;
+		avgExecutionPrice(executionPrice);
+		const auto callback = order->callback;
+		index.erase(order);
+		callback(
+			token,
+			ORDER_STATUS_FILLED,
+			executedQty,
+			0,
+			accum::mean(avgExecutionPrice),
+			executionPrice);
+	}
+
+	StatOrders(connection);
+	
 }
 
 void Gateway::HandleDebug(const TsMessage &message, Connection &connection) {
-	Assert(message.GetType() == TsMessage::TYPE_DEBUG);
+	AssertEq(TsMessage::TYPE_DEBUG, message.GetType());
 	if (!m_connection) {
 		AssertEq(STAGE_CONNECTED, connection.stage);
 		connection.stage = STAGE_HANDSHAKED;
@@ -467,9 +606,8 @@ void Gateway::HandleDebug(const TsMessage &message, Connection &connection) {
 	}
 }
 
-void Gateway::HandleAcceptedLogin(const TsMessage &message, Connection &connection) {
-	Assert(message.GetType() == TsMessage::TYPE_LOGIN_ACCEPTED);
-	message.CheckMessageLen(21);
+void Gateway::HandleLoginAccepted(const TsMessage &message, Connection &connection) {
+	AssertEq(TsMessage::TYPE_LOGIN_ACCEPTED, message.GetType());
 	if (!m_connection) {
 		AssertEq(STAGE_HANDSHAKED, connection.stage);
 		connection.stage = STAGE_LOGGED_ON;
@@ -489,31 +627,16 @@ void Gateway::HandleAcceptedLogin(const TsMessage &message, Connection &connecti
 	}
 }
 
-void Gateway::HandleRejectedLogin(const TsMessage &message, Connection &connection) {
-	Assert(message.GetType() == TsMessage::TYPE_LOGIN_REJECTED);
-	message.CheckMessageLen(2);
+void Gateway::HandleLoginRejected(const TsMessage &message, Connection &connection) {
+	AssertEq(TsMessage::TYPE_LOGIN_REJECTED, message.GetType());
 	if (!m_connection) {
-		Assert(connection.seqnumber == 0);
-		const auto reasonCode = message.GetCharField(1);
-		const char *reason = "UNKNOWN reason";
-		switch (reasonCode) {
-			case 'A':
-				reason
-					= "Not Authorized. There was an invalid username"
-						" and password combination in the Login Request Message.";
-				break;
-			case 'S':
-				reason
-					= "Session not available. The Requested Session in the Login"
-						" Request Packet was either invalid or not available.";
-				break;
-		}
+		AssertEq(0, connection.seqnumber);
 		AssertEq(STAGE_HANDSHAKED, connection.stage);
 		connection.stage = STAGE_CLOSED_BY_LOGIN_REJECTED;
 		Log::Error(
 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "login rejected with reason: %1% (code: %2%).",
-			reason,
-			reasonCode);
+			message.GetLoginRejectReasonField(1),
+			message.GetCharField(1));
 	} else {
 		throw ProtocolError(
 			"Unexpected Login Rejected packet",
@@ -537,7 +660,7 @@ void Gateway::SendLoginRequest(
 		message->AppendField(password, 10);
 		message->AppendSpace(10);
 		message->AppendField(ClientMessage::Numeric(0), 10);
-		AssertEq(37, message->GetMessageLen());
+		AssertEq(37, message->GetMessageLogicalLen());
 		Send(message, connection);
 	} catch (const ClientMessage::Error &ex) {
 		Log::Error(
@@ -548,10 +671,10 @@ void Gateway::SendLoginRequest(
 	}
 }
 
-void Gateway::SendHeartbeat() {
+void Gateway::SendHeartbeat(Connection &connection) {
 	std::auto_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_HEARTBEAT));
-	AssertEq(1, message->GetMessageLen());
-	Send(message);
+	AssertEq(1, message->GetMessageLogicalLen());
+	Send(message, connection);
 }
 
 Gateway::OrderId Gateway::SendOrder(
@@ -565,7 +688,7 @@ Gateway::OrderId Gateway::SendOrder(
 	const Token token = Interlocking::Increment(m_connection->lastToken);
 
 	std::auto_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_NEW_ORDER));
-	message->AppendField(token, 16);
+	message->AppendFieldAsAlphanum(token, 16);
 	message->AppendField('A');
 	message->AppendField(buySell);
 	message->AppendField(qty, 6);
@@ -575,35 +698,31 @@ Gateway::OrderId Gateway::SendOrder(
 	message->AppendField(.0, 5);
 	message->AppendField(timeInForce, 5);
 	message->AppendSpace(10);
-	AssertEq(57, message->GetMessageLen());
+	AssertEq(67, message->GetMessageLogicalLen());
 
 	const Lock lock(m_mutex);
 	const auto pos = m_connection->orders.insert(
 		Order(OrderId(token), callback, qty));
 	try {
-		Send(message);
+		Send(message, *m_connection);
 	} catch (...) {
 		// copy ctor and swap is too expensive here...
 		m_connection->orders.erase(pos.first);
 		throw;
 	}
 
+	StatOrders(*m_connection);
+
 	return Gateway::OrderId(token);
 
-}
-
-void Gateway::Send(std::auto_ptr<ClientMessage> message) {
-	const Lock lock(m_mutex);
-	Assert(m_connection);
-	if (m_connection->stage < STAGE_CONNECTED) {
-		throw ConnectionDoesntExistError("Connection lost");
-	}
-	Send(message, *m_connection);
 }
 
 void Gateway::Send(
 			std::auto_ptr<ClientMessage> message,
 			Connection &connection) {
+	if (connection.stage < STAGE_CONNECTED) {
+		throw ConnectionDoesntExistError("Connection lost");
+	}
 	message->AppendField('\n');
 	boost::shared_ptr<ClientMessage> smartMessage(message.release());
 	io::async_write(
@@ -629,7 +748,7 @@ void Gateway::HandleWrite(
 		if (!m_connection) {
 			return;
 		}
-		AssertEq(STAGE_CONNECTED, m_connection->stage);
+		AssertLe(STAGE_CONNECTED, m_connection->stage);
 		m_connection->stage = STAGE_CLOSED_BY_WRITE_ERROR;
 		Log::Error(
 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connection CLOSED with write ERROR: \"%1%\" (%2%).",

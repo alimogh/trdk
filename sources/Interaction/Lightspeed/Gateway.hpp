@@ -116,10 +116,37 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		//////////////////////////////////////////////////////////////////////////
 
 		struct Order {
+
+			struct Modifers {
+
+				struct Execution {
+					OrderQty qty;
+					double price;
+					Execution(OrderQty qty, double price)
+							: qty(qty),
+							price(price) {
+						//...//
+					}
+					void operator ()(Order &order) {
+						AssertLe(order.executedQty + qty, order.initialQty);
+						order.avgExecutionPrice(price);
+						order.executedQty += qty;
+					}
+				};
+
+			};
 			
 			Token token;
+			
 			OrderStatusUpdateSlot callback;
-			OrderQty qty;
+			
+			OrderQty initialQty;
+			OrderQty executedQty;
+
+			boost::accumulators::accumulator_set<
+					double,
+					boost::accumulators::stats<boost::accumulators::tag::mean>>
+				avgExecutionPrice;
 
 			Order() {
 				//...//
@@ -131,7 +158,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 						const OrderQty &qty)
 					: token(token),
 					callback(callback),
-					qty(qty) {
+					initialQty(qty),
+					executedQty(0) {
 				//...//
 			}
 
@@ -169,6 +197,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 			volatile Token lastToken;
 			Orders orders;
+			size_t orderMessagesFromLastStatCount;
 
 			explicit Connection(
 					size_t socketBufferSize,
@@ -240,7 +269,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		void StartReading(Connection &);
 		void StartInitialDataReading(Connection &);
 
-		bool IsClosed(
+		bool IsReadingClosed(
 					Connection &connection,
 					const boost::system::error_code &error,
 					size_t size)
@@ -269,9 +298,15 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		
 		void HandleMessage(const TsMessage &, Connection &);
 		void HandleDebug(const TsMessage &, Connection &);
-		void HandleAcceptedLogin(const TsMessage &, Connection &);
-		void HandleRejectedLogin(const TsMessage &, Connection &);
-		void HandleAcceptedOrder(const TsMessage &, Connection &);
+		
+		void HandleLoginAccepted(const TsMessage &, Connection &);
+		void HandleLoginRejected(const TsMessage &, Connection &);
+		
+		void HandleOrderAccepted(const TsMessage &, Connection &);
+		void HandleOrderReject(const TsMessage &, Connection &);
+		void HandleOrderCanceled(const TsMessage &, Connection &);
+		void HandleOrderExecuted(const TsMessage &, Connection &);
+		void StatOrders(Connection &) throw();
 
 	private:
 
@@ -288,9 +323,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				ClientMessage::Numeric timeInForce,
 				const OrderStatusUpdateSlot &);
 
-		void SendHeartbeat();
+		void SendHeartbeat(Connection &);
 
-		void Send(std::auto_ptr<ClientMessage>);
 		void Send(std::auto_ptr<ClientMessage>, Connection &);
 
 		void HandleWrite(
