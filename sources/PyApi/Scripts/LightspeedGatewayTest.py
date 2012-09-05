@@ -11,12 +11,12 @@ class LightspeedGatewayTest(Trader.Algo):
 	#	  or timeout ${algo_update_period_ms} has expired
 	def tryToOpenPositions(self):
 
-		Trader.logInfo("try-to-open-positions")
+		Trader.logInfo("try-to-open-positions: " + self.security.symbol)
 
 		# Creating position object (long position on this case):
 		position = Trader.LongPosition(
 			# security object
-			self.security,			
+			self.security,
 			# number of shares
 			12,
 			# start price
@@ -40,16 +40,16 @@ class LightspeedGatewayTest(Trader.Algo):
 	#	- all previous orders has been canceled or filled
 	def tryToClosePositions(self, position):
 
-		Trader.logInfo("try-to-close-positions")
+		Trader.logInfo("try-to-close-positions: " + self.security.symbol)
 		
 		self.m_closeAttempts = self.m_closeAttempts + 1
 		
 		if position.hasActiveOrders:
 			# order already sent and still active
 			if self.m_closeAttempts > 10:
-				Trader.logInfo("try-to-close-positions -> can't wait more, canceling")
+				Trader.logInfo("try-to-close-positions: " + self.security.symbol + " -> can't wait more, canceling")
 				# cancel all active orders and close position at market price
 				position.cancelAtMarketPrice()
 		else:
-			Trader.logInfo("try-to-close-positions -> close")
+			Trader.logInfo("try-to-close-positions: " + self.security.symbol + " -> close")
 			position.closeAtMarketPrice()
