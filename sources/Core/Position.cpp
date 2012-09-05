@@ -313,7 +313,7 @@ Position::Time Position::GetCloseTime() const {
 }
 
 Position::Price Position::GetCommission() const {
-	return m_opened.qty * GetSecurity().ScalePrice(.01); // m_opened.comission + m_closed.comission;
+	return m_opened.comission + m_closed.comission;
 }
 
 Position::StateUpdateConnection Position::Subscribe(
