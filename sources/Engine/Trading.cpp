@@ -142,7 +142,7 @@ namespace {
  					section);
 			} catch (...) {
 				Log::RegisterUnhandledException(__FUNCTION__, __FILE__, __LINE__, false);
-				throw IniFile::Error("Failed to load algo");
+				throw Exception("Failed to load algo");
 			}
 			algos[tag] = DllObjectPtr<Algo>(dll, newAlgo);
 			Log::Info(
@@ -170,7 +170,7 @@ namespace {
 				Log::Info("Found algo section \"%1%\"...", section);
 				try {
 					InitAlgo(ini, section, tradeSystem, securities, algos, settings);
-				} catch (const Dll::Error &ex) {
+				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to load algo module from section \"%1%\": \"%2%\".",
 						section,
