@@ -25,7 +25,7 @@ namespace {
 	typedef std::map<std::string, boost::shared_ptr<Security>> Securities;
 	
 	typedef DllObjectPtr<Algo> ModuleAlgo;
-	typedef std::map<std::string /*tag*/, ModuleAlgo> Algos;
+	typedef std::map<std::string /*tag*/, std::list<ModuleAlgo>> Algos;
 
 }
 
@@ -113,10 +113,12 @@ namespace {
 		}
 
 		boost::shared_ptr<Dll> dll;
-		foreach (auto a, algos) {
-			if (a.second.GetDll()->GetFile() == module) {
-				dll = a.second;
-				break;
+		foreach (auto &as, algos) {
+			foreach (auto &a, as.second) {
+				if (a.GetDll()->GetFile() == module) {
+					dll = a;
+					break;
+				}
 			}
 		}
 		if (!dll) {
@@ -144,7 +146,7 @@ namespace {
 				Log::RegisterUnhandledException(__FUNCTION__, __FILE__, __LINE__, false);
 				throw Exception("Failed to load algo");
 			}
-			algos[tag] = DllObjectPtr<Algo>(dll, newAlgo);
+			algos[tag].push_back(DllObjectPtr<Algo>(dll, newAlgo));
 			Log::Info(
 				"Loaded algo \"%1%\" for \"%2%\" with tag \"%3%\".",
 				newAlgo->GetName(),
@@ -184,8 +186,10 @@ namespace {
 			return false;
 		}
 
-		foreach (auto a, algos) {
-			dispatcher.Register(a.second);
+		foreach (auto &as, algos) {
+			foreach (auto &a, as.second) {
+				dispatcher.Register(a);
+			}
 		}
 
 		Log::Info("Loaded %1% securities.", securities.size());
@@ -242,16 +246,18 @@ namespace {
 					tag);
 				continue;
 			}
-			Assert(pos->second->GetTag() == tag);
-			try {
-				pos->second->UpdateSettings(ini, section);
-			} catch (const Exception &ex) {
-				Log::Error("Failed to update current settings: \"%1%\".", ex.what());
-				isError = true;
-				break;
-			}
-			if (isError) {
-				break;
+			foreach (auto &a, pos->second) {
+				AssertEq(a->GetTag(), tag);
+				try {
+					a->UpdateSettings(ini, section);
+				} catch (const Exception &ex) {
+					Log::Error("Failed to update current settings: \"%1%\".", ex.what());
+					isError = true;
+					break;
+				}
+				if (isError) {
+					break;
+				}
 			}
 		}
 		Log::Info("Current settings update competed.");
@@ -303,8 +309,10 @@ void Trade(const fs::path &iniFilePath) {
 		return;
 	}
 		
-	foreach (auto &a, algos) {
-		a.second->SubscribeToMarketData(marketDataSource);
+	foreach (auto &as, algos) {
+		foreach (auto &a, as.second) {
+			a->SubscribeToMarketData(marketDataSource);
+		}
 	}
 	
 	FileSystemChangeNotificator iniChangeNotificator(
@@ -368,11 +376,13 @@ void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
 		return;
 	}
 
-	foreach (auto &a, algos) {
-		a.second->RequestHistory(
-			marketDataSource,
-			settings->GetCurrentTradeSessionStartTime(),
-			settings->GetCurrentTradeSessionEndime());
+	foreach (auto &as, algos) {
+		foreach (auto &a, as.second) {
+			a->RequestHistory(
+				marketDataSource,
+				settings->GetCurrentTradeSessionStartTime(),
+				settings->GetCurrentTradeSessionEndime());
+		}
 	}
 	dispatcher.Start();
 	Log::Info("!!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!!");
