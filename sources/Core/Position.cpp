@@ -97,14 +97,14 @@ void Position::UpdateOpening(
 
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	Assert(orderId != 0);
-	Assert(m_opened.orderId != 0);
-	Assert(m_opened.orderId == orderId);
-	Assert(m_closed.price == 0);
+	AssertNe(orderId, 0);
+	AssertNe(m_opened.orderId, 0);
+	AssertEq(m_opened.orderId, orderId);
+	AssertEq(m_closed.price, 0);
 	Assert(m_opened.time.is_not_a_date_time());
 	Assert(m_closed.time.is_not_a_date_time());
-	Assert(m_opened.qty <= m_planedQty);
-	Assert(m_closed.qty == 0);
+	AssertLe(m_opened.qty, m_planedQty);
+	AssertEq(m_closed.qty, 0);
 	Assert(m_opened.hasOrder);
 	Assert(!m_closed.hasOrder);
 
@@ -115,16 +115,15 @@ void Position::UpdateOpening(
 			return;
 		case TradeSystem::ORDER_STATUS_PENDIGN:
 		case TradeSystem::ORDER_STATUS_SUBMITTED:
-			Assert(m_opened.qty == 0);
-			Assert(m_opened.price == 0);
+			AssertEq(m_opened.qty, 0);
+			AssertEq(m_opened.price, 0);
 			return;
 		case TradeSystem::ORDER_STATUS_FILLED:
-			Assert(filled + remaining == m_planedQty);
-			Assert(m_opened.qty + filled <= m_planedQty);
-			Assert(avgPrice > 0);
+			AssertEq(filled + remaining, m_planedQty);
+			AssertLe(m_opened.qty + filled, m_planedQty);
 			Interlocking::Exchange(m_opened.price, m_security->ScalePrice(avgPrice));
 			Interlocking::Exchange(m_opened.qty, m_opened.qty + filled);
-			Assert(m_opened.qty > 0);
+			AssertGt(m_opened.qty, 0);
 			ReportOpeningUpdate("filled", orderStatus);
 			isCompleted = remaining == 0;
 			break;
@@ -142,7 +141,7 @@ void Position::UpdateOpening(
 			break;
 	}
 	
-	Assert(m_opened.qty <= m_planedQty);
+	AssertLe(m_opened.qty, m_planedQty);
 	Assert(m_opened.time.is_not_a_date_time());
 
 	if (!isCompleted) {
@@ -184,15 +183,15 @@ void Position::UpdateClosing(
 
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	Assert(m_opened.price != 0);
+	AssertNe(m_opened.price, 0);
 	Assert(!m_opened.time.is_not_a_date_time());
 	Assert(m_closed.time.is_not_a_date_time());
-	Assert(m_opened.qty <= m_planedQty);
-	Assert(m_closed.qty <= m_opened.qty);
-	Assert(orderId != 0);
-	Assert(m_closed.orderId != 0);
-	Assert(m_closed.orderId == orderId);
-	Assert(m_opened.orderId != orderId);
+	AssertLe(m_opened.qty, m_planedQty);
+	AssertLe(m_closed.qty, m_opened.qty);
+	AssertNe(orderId, 0);
+	AssertNe(m_closed.orderId, 0);
+	AssertEq(m_closed.orderId, orderId);
+	AssertNe(m_opened.orderId, orderId);
 	Assert(!m_opened.hasOrder);
 	Assert(m_closed.hasOrder);
 
@@ -203,16 +202,15 @@ void Position::UpdateClosing(
 			return;
 		case TradeSystem::ORDER_STATUS_PENDIGN:
 		case TradeSystem::ORDER_STATUS_SUBMITTED:
-			Assert(m_closed.qty == 0);
-			Assert(m_closed.price == 0);
+			AssertEq(m_closed.qty, 0);
+			AssertEq(m_closed.price, 0);
 			return;
 		case TradeSystem::ORDER_STATUS_FILLED:
-			Assert(filled + remaining == m_opened.qty);
-			Assert(m_closed.qty + filled <= m_opened.qty);
-			Assert(avgPrice > 0);
+			AssertEq(filled + remaining, m_opened.qty);
+			AssertLe(m_closed.qty + filled, m_opened.qty);
 			Interlocking::Exchange(m_closed.price, m_security->ScalePrice(avgPrice));
 			Interlocking::Exchange(m_closed.qty, m_closed.qty + filled);
-			Assert(m_closed.qty > 0);
+			AssertGt(m_closed.qty, 0);
 			isCompleted = remaining == 0;
 			ReportClosingUpdate("filled", orderStatus);
 			break;
@@ -240,7 +238,7 @@ void Position::UpdateClosing(
 			break;
 	}
 	
-	Assert(m_opened.qty <= m_planedQty);
+	AssertLe(m_opened.qty, m_planedQty);
 	Assert(m_closed.time.is_not_a_date_time());
 
 	if (!isCompleted) {
