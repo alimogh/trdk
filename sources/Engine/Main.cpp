@@ -50,7 +50,8 @@ namespace {
 
 }
 
-void main(int argc, const char *argv[]) {
+int main(int argc, const char *argv[]) {
+	int result = 0;
 	try {
 		InitLogs(argc, argv);
 		const fs::path iniFilePath = "Etc/trade.ini";
@@ -60,10 +61,12 @@ void main(int argc, const char *argv[]) {
 			Trade(iniFilePath);
 		}
 	} catch (...) {
+		result = 1;
 		AssertFailNoException();
 	}
 	Log::Info("Stopped.");
 #	ifdef DEV_VER
 		getchar();
 #	endif
+	return result;
 }

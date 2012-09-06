@@ -245,7 +245,7 @@ protected:
 
 private:
 
-	bool CancelIfSet();
+	bool CancelIfSet() throw();
 
 	void ReportOpeningUpdate(
 				const char *eventDesc,
