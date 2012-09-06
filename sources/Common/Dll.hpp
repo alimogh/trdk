@@ -84,26 +84,25 @@ public:
 		if (!m_file.has_extension()) {
 			m_file.replace_extension(".dll");
 		}
-#		if defined(_DEBUG) || defined(_TEST)
-			if (autoConfName) {
-				auto tmp = m_file;
-				tmp.replace_extension("");
-#				if defined(_DEBUG)
-					const std::string tmpStr = tmp.string() + "_dbg";
-#				elif defined(_TEST)
-					const std::string tmpStr = tmp.string() + "_test";
-#				endif
-				tmp = tmpStr;
-				tmp.replace_extension(m_file.extension());
-				m_file = tmp;
-			}
-#		else
-			UseUnused(autoConfName);
-#		endif
+		UseUnused(autoConfName);
 #		ifdef BOOST_WINDOWS
-			m_handle(LoadLibraryW(m_file.string().c_str())) {
+#			if defined(_DEBUG) || defined(_TEST)
+				if (autoConfName) {
+					auto tmp = m_file;
+					tmp.replace_extension("");
+#					if defined(_DEBUG)
+						const std::string tmpStr = tmp.string() + "_dbg";
+#					elif defined(_TEST)
+						const std::string tmpStr = tmp.string() + "_test";
+#					endif
+					tmp = tmpStr;
+					tmp.replace_extension(m_file.extension());
+					m_file = tmp;
+				}
+#			endif
+			m_handle = LoadLibraryW(m_file.c_str());
 #		else
-			m_handle(dlopen(m_file.string().c_str(), RTLD_NOW)) {
+			m_handle = dlopen(m_file.string().c_str(), RTLD_NOW);
 #		endif
 		if (m_handle == NULL) {
 			throw DllLoadException(m_file, ::Error(::GetLastError()));
@@ -210,6 +209,7 @@ public:
 
 	operator boost::shared_ptr<Dll>() {
 		return GetDll();
+	}
 
 	operator boost::shared_ptr<const Dll>() const {
 		return const_cast<DllObject *>(this)->operator boost::shared_ptr<Dll>();
