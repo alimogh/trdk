@@ -123,16 +123,19 @@ void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
 
 	values.algoThreadsCount = ini.ReadTypedKey<size_t>(section, "algo_threads_count");
 
+	m_values.shouldWaitForMarketData = ini.ReadBoolKey(section, "wait_market_data");
+
 	m_values = values;
 	Log::Info(
 		"Common static settings:"
 			" start_time_edt: %1%; algo_threads_count = %2%; algo_update_period_ms = %3%;"
-			" trade_session_period_edt = %4% -> %5%;",
+			" trade_session_period_edt = %4% -> %5%; wait_market_data = %6%;",
 		GetStartTime() + Util::GetEdtDiff(),
 		m_values.algoThreadsCount,
 		m_values.algoUpdatePeriodMilliseconds,
 		m_values.tradeSessionStartTime + Util::GetEdtDiff(),
-		m_values.tradeSessionEndTime + Util::GetEdtDiff());
+		m_values.tradeSessionEndTime + Util::GetEdtDiff(),
+		m_values.shouldWaitForMarketData ? "yes" : "no");
 
 }
 

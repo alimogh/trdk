@@ -97,20 +97,21 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 	private:
 
-		enum LightspeedType {
-			LIGHTSPEEDTYPE_TYPE_ORDER_ACCEPTED	= 'A',
-			LIGHTSPEEDTYPE_TYPE_ORDER_REJECTED	= 'J',
-			LIGHTSPEEDTYPE_TYPE_ORDER_CANCELED	= 'C',
-			LIGHTSPEEDTYPE_TYPE_ORDER_EXECUTED	= 'E'
+		enum DataType {
+			DATA_TYPE_ORDER_ACCEPTED	= 'A',
+			DATA_TYPE_ORDER_REJECTED	= 'J',
+			DATA_TYPE_ORDER_CANCELED	= 'C',
+			DATA_TYPE_ORDER_EXECUTED	= 'E'
 		};
 
 	public:
 
 		GatewayTsMessage(Iterator messageBegin, Iterator messageEnd)
 				: m_messageBegin(messageBegin),
+				m_messageLogicalBegin(m_messageBegin),
 				m_messageEnd(messageEnd),
-				m_len(std::distance(messageBegin, messageEnd)) {
-			if (!m_len) {
+				m_logicalLen(std::distance(messageBegin, messageEnd)) {
+			if (!m_logicalLen) {
 				throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
 			}
 			switch (*m_messageBegin) {
@@ -118,28 +119,35 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				case TYPE_LOGIN_ACCEPTED:
 				case TYPE_LOGIN_REJECTED:
 				case TYPE_HEARTBEAT:
-					m_isLightspeedMessage = false;
+					m_isDataMessage = false;
 					m_type = Type(*m_messageBegin);
 					break;
-				default:
-					if (m_len < m_timestampFieldSize + 1) {
-						throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
+				case 'S':
+					if (m_logicalLen < m_timestampFieldSize + 2) {
+						throw FieldHasInvalidLenError(m_messageBegin, m_messageEnd);
 					}
-					{
-						const auto begin = m_messageBegin + m_timestampFieldSize;
-						switch (*begin) {
-							case LIGHTSPEEDTYPE_TYPE_ORDER_ACCEPTED:
-							case LIGHTSPEEDTYPE_TYPE_ORDER_REJECTED:
-							case LIGHTSPEEDTYPE_TYPE_ORDER_CANCELED:
-							case LIGHTSPEEDTYPE_TYPE_ORDER_EXECUTED:
-								m_isLightspeedMessage = true;
-								m_type = Type(*begin);
-								break;
-							default:
-								throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
-						}
+					--m_logicalLen;
+					std::advance(m_messageLogicalBegin, 1);
+					m_isDataMessage = true;
+					switch (*(m_messageLogicalBegin + m_timestampFieldSize)) {
+						case DATA_TYPE_ORDER_ACCEPTED:
+							m_type = TYPE_ORDER_ACCEPTED;
+							break;
+						case DATA_TYPE_ORDER_REJECTED:
+							m_type = TYPE_ORDER_REJECTED;
+							break;
+						case DATA_TYPE_ORDER_CANCELED:
+							m_type = TYPE_ORDER_CANCELED;
+							break;
+						case DATA_TYPE_ORDER_EXECUTED:
+							m_type = TYPE_ORDER_EXECUTED;
+							break;
+						default:
+							throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
 					}
 					break;
+				default:
+					throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
 			}
 			switch (m_type) {
 				case TYPE_LOGIN_ACCEPTED:
@@ -154,7 +162,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				case TYPE_DEBUG:
 					break;
 				case TYPE_ORDER_ACCEPTED:
-					CheckMessageLen(107);
+					CheckMessageLen(106 - 10);
 					break;
 				case TYPE_ORDER_REJECTED:
 					CheckMessageLen(26);
@@ -182,17 +190,17 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			return m_type;
 		}
 	
-		Len GetMessageLen() const {
-			return m_len;
+		Len GetMessageLogicalLen() const {
+			return m_logicalLen;
 		}
 
 	public:
 
 		std::string GetAsString(bool contentOnly) const {
 			const auto begin = contentOnly
-				?	!m_isLightspeedMessage
-					?	m_messageBegin + 1
-					:	m_messageBegin + m_timestampFieldSize + 1
+				?	!m_isDataMessage
+					?	m_messageLogicalBegin + 1
+					:	m_messageLogicalBegin + m_timestampFieldSize + 1
 				:	m_messageBegin;
 			std::string result(begin, m_messageEnd);
 			boost::trim(result);
@@ -206,10 +214,10 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		}
 
 		Char GetCharField(FieldStart offset) const {
-			if (m_len < offset + 1) {
+			if (m_logicalLen < offset + 1) {
 				throw FieldHasInvalidFormatError(m_messageBegin, m_messageEnd);
 			}
-			return *(m_messageBegin + offset);
+			return *(m_messageLogicalBegin + offset);
 		}
 
 		std::string GetAlphanumField(FieldStart offset, Len len) const {
@@ -221,21 +229,21 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		Numeric GetNumericField(FieldStart offset, Len len) const {
 			std::string strVal;
 			GetTrimedField(offset, len, strVal, true, true, " ");
-			return boost::lexical_cast<Numeric>(strVal);
+			return Cast<Numeric>(strVal);
 		}
 
 		Price GetPriceField(FieldStart offset, Len len) const {
 			std::string strVal;
-			GetTrimedField(offset, len, strVal, true, false, "0");
+			GetRawField(offset, len, strVal);
 			const auto dotPos = strVal.find('.');
 			if (dotPos != std::string::npos) {
-				return boost::lexical_cast<Price>(strVal);
+				return Cast<Price>(strVal);
 			}
 			AssertGe(strVal.size(), 4);
 			Price result = strVal.size() > 4
-				?	boost::lexical_cast<Price>(strVal.substr(0, strVal.size() - 4))
+				?	Cast<Price>(strVal.substr(0, strVal.size() - 4))
 				:	.0;
-			result += boost::lexical_cast<Price>(strVal.substr(strVal.size() - 4)) / 10000;
+			result += Cast<Price>(strVal.substr(strVal.size() - 4)) / 10000;
 			return result;
 		}
 
@@ -326,14 +334,24 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			}
 		}
 
+	private:
+
+		template<typename Target>
+		inline Target Cast(const std::string &arg) const {
+			try {
+				return boost::lexical_cast<Target>(arg);
+			} catch (const boost::bad_lexical_cast &) {
+				throw FieldHasInvalidFormatError(m_messageBegin, m_messageEnd);
+			}
+		}
 
 	private:
 
 		void GetRawField(FieldStart offset, Len len, std::string &result) const {
-			if (m_len < offset + len) {
+			if (m_logicalLen < offset + len) {
 				throw FieldHasInvalidFormatError(m_messageBegin, m_messageEnd);
 			}
-			const auto fieldBegin = m_messageBegin + offset;
+			const auto fieldBegin = m_messageLogicalBegin + offset;
 			const auto fieldEnd = fieldBegin + len;
 			std::string resultTmp(fieldBegin, fieldEnd);
 			resultTmp.swap(result);
@@ -361,7 +379,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		}
 
 		void CheckMessageLen(Len expectedLen) const {
-			if (m_len != expectedLen) {
+			if (m_logicalLen != expectedLen) {
 				throw FieldHasInvalidLenError(m_messageBegin, m_messageEnd);
 			}
 		}
@@ -369,9 +387,10 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 	private:
 
 		Iterator m_messageBegin;
+		Iterator m_messageLogicalBegin;
 		Iterator m_messageEnd;
-		Len m_len;
-		bool m_isLightspeedMessage;
+		Len m_logicalLen;
+		bool m_isDataMessage;
 	
 		Type m_type;
 

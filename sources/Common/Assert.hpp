@@ -66,7 +66,7 @@
 				boost::lexical_cast<std::string>(expr1), \
 				boost::lexical_cast<std::string>(expr2), \
 				"EQUAL", \
-				"==", \
+				"!=", \
 				#expr1, \
 				#expr2, \
 				BOOST_CURRENT_FUNCTION, \
@@ -79,7 +79,7 @@
 				boost::lexical_cast<std::string>(expr1), \
 				boost::lexical_cast<std::string>(expr2), \
 				"NOT EQUAL", \
-				"!=", \
+				"==", \
 				#expr1, \
 				#expr2, \
 				BOOST_CURRENT_FUNCTION, \

@@ -30,6 +30,8 @@ public:
 
 		size_t algoThreadsCount;
 
+		bool shouldWaitForMarketData;
+
 	};
 
 public:
@@ -68,6 +70,10 @@ public:
 	boost::uint16_t GetLevel2SnapshotPrintTimeSeconds() const;
 
 	bool IsValidPrice(const Security &) const;
+
+	bool ShouldWaitForMarketData() const {
+		return m_values.shouldWaitForMarketData;
+	}
 
 private:
 
