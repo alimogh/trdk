@@ -8,6 +8,10 @@
 
 #pragma once
 
+#include "Common/DisableBoostWarningsBegin.h"
+#	include <boost/thread/thread_time.hpp>
+#include "Common/DisableBoostWarningsEnd.h"
+
 #include "Common/Interlocking.hpp"
 #include "Common/Util.hpp"
 #include "Common/Interlocking.hpp"
