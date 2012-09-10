@@ -81,6 +81,8 @@
           </makeArtifact>
         </requiredProjects>
       </compileType>
+      <item path="Prec.cpp" ex="true" tool="1" flavor2="0">
+      </item>
     </conf>
     <conf name="Release" type="2">
       <toolsSet>
@@ -125,6 +127,8 @@
           </makeArtifact>
         </requiredProjects>
       </compileType>
+      <item path="Prec.cpp" ex="true" tool="1" flavor2="0">
+      </item>
     </conf>
   </confs>
 </configurationDescriptor>

@@ -40,7 +40,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/MarketDataSource.o \
 	${OBJECTDIR}/AlgoPositionState.o \
 	${OBJECTDIR}/TradeSystem.o \
-	${OBJECTDIR}/Prec.o \
 	${OBJECTDIR}/Log.o \
 	${OBJECTDIR}/PositionReporter.o \
 	${OBJECTDIR}/PositionBundle.o \
@@ -96,11 +95,6 @@ ${OBJECTDIR}/TradeSystem.o: TradeSystem.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/TradeSystem.o TradeSystem.cpp
-
-${OBJECTDIR}/Prec.o: Prec.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Prec.o Prec.cpp
 
 ${OBJECTDIR}/Log.o: Log.cpp 
 	${MKDIR} -p ${OBJECTDIR}

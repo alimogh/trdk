@@ -72,32 +72,32 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a: ${OBJECTFILES}
 ${OBJECTDIR}/_ext/1207213382/Error.o: /mnt/hgfs/Projects/Trader/sources/Common/Error.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1207213382
 	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_COMMON -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/Error.o /mnt/hgfs/Projects/Trader/sources/Common/Error.cpp
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/Error.o /mnt/hgfs/Projects/Trader/sources/Common/Error.cpp
 
 ${OBJECTDIR}/_ext/1207213382/Exception.o: /mnt/hgfs/Projects/Trader/sources/Common/Exception.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1207213382
 	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_COMMON -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/Exception.o /mnt/hgfs/Projects/Trader/sources/Common/Exception.cpp
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/Exception.o /mnt/hgfs/Projects/Trader/sources/Common/Exception.cpp
 
 ${OBJECTDIR}/_ext/1207213382/Defaults.o: /mnt/hgfs/Projects/Trader/sources/Common/Defaults.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1207213382
 	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_COMMON -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/Defaults.o /mnt/hgfs/Projects/Trader/sources/Common/Defaults.cpp
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/Defaults.o /mnt/hgfs/Projects/Trader/sources/Common/Defaults.cpp
 
 ${OBJECTDIR}/_ext/1207213382/FileSystemChangeNotificator.o: /mnt/hgfs/Projects/Trader/sources/Common/FileSystemChangeNotificator.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1207213382
 	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_COMMON -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/FileSystemChangeNotificator.o /mnt/hgfs/Projects/Trader/sources/Common/FileSystemChangeNotificator.cpp
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/FileSystemChangeNotificator.o /mnt/hgfs/Projects/Trader/sources/Common/FileSystemChangeNotificator.cpp
 
 ${OBJECTDIR}/_ext/1207213382/IniFile.o: /mnt/hgfs/Projects/Trader/sources/Common/IniFile.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1207213382
 	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_COMMON -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/IniFile.o /mnt/hgfs/Projects/Trader/sources/Common/IniFile.cpp
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/IniFile.o /mnt/hgfs/Projects/Trader/sources/Common/IniFile.cpp
 
 ${OBJECTDIR}/_ext/1207213382/Util.o: /mnt/hgfs/Projects/Trader/sources/Common/Util.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1207213382
 	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_COMMON -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/Util.o /mnt/hgfs/Projects/Trader/sources/Common/Util.cpp
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/Util.o /mnt/hgfs/Projects/Trader/sources/Common/Util.cpp
 
 # Subprojects
 .build-subprojects:

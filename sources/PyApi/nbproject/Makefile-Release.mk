@@ -37,7 +37,6 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/ScriptEngine.o \
 	${OBJECTDIR}/PyApi.o \
-	${OBJECTDIR}/Prec.o \
 	${OBJECTDIR}/Api.o \
 	${OBJECTDIR}/PositionWrapper.o
 
@@ -79,11 +78,6 @@ ${OBJECTDIR}/PyApi.o: PyApi.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/PyApi.o PyApi.cpp
-
-${OBJECTDIR}/Prec.o: Prec.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Prec.o Prec.cpp
 
 ${OBJECTDIR}/Api.o: Api.cpp 
 	${MKDIR} -p ${OBJECTDIR}

@@ -37,7 +37,6 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/Util.o \
 	${OBJECTDIR}/Dispatcher.o \
-	${OBJECTDIR}/Prec.o \
 	${OBJECTDIR}/FakeTradeSystem.o \
 	${OBJECTDIR}/Ini.o \
 	${OBJECTDIR}/_ext/2108356922/Assert.o \
@@ -82,11 +81,6 @@ ${OBJECTDIR}/Dispatcher.o: Dispatcher.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_ENGINE -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/Dispatcher.o Dispatcher.cpp
-
-${OBJECTDIR}/Prec.o: Prec.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_ENGINE -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/Prec.o Prec.cpp
 
 ${OBJECTDIR}/FakeTradeSystem.o: FakeTradeSystem.cpp 
 	${MKDIR} -p ${OBJECTDIR}

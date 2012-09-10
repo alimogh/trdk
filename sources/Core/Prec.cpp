@@ -6,6 +6,4 @@
  *   Project: Trading Robot
  **************************************************************************/
 
-#if defined(_MSC_VER)
-#	include "Prec.hpp"
-#endif
+#include "Prec.hpp"

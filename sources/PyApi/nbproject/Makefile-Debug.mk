@@ -37,7 +37,6 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/ScriptEngine.o \
 	${OBJECTDIR}/PyApi.o \
-	${OBJECTDIR}/Prec.o \
 	${OBJECTDIR}/Api.o \
 	${OBJECTDIR}/PositionWrapper.o
 
@@ -73,27 +72,22 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}: ${OBJECTFIL
 ${OBJECTDIR}/ScriptEngine.o: ScriptEngine.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_PYAPI -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/ScriptEngine.o ScriptEngine.cpp
+	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_PYAPI -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/ScriptEngine.o ScriptEngine.cpp
 
 ${OBJECTDIR}/PyApi.o: PyApi.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_PYAPI -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/PyApi.o PyApi.cpp
-
-${OBJECTDIR}/Prec.o: Prec.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_PYAPI -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Prec.o Prec.cpp
+	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_PYAPI -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/PyApi.o PyApi.cpp
 
 ${OBJECTDIR}/Api.o: Api.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_PYAPI -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Api.o Api.cpp
+	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_PYAPI -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Api.o Api.cpp
 
 ${OBJECTDIR}/PositionWrapper.o: PositionWrapper.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_PYAPI -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/PositionWrapper.o PositionWrapper.cpp
+	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_PYAPI -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/PositionWrapper.o PositionWrapper.cpp
 
 # Subprojects
 .build-subprojects:
