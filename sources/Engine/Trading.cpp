@@ -274,6 +274,17 @@ namespace {
 			dll->GetFunction<boost::shared_ptr<TradeSystem>()>(fabricName)());
 	}
 
+	DllObjectPtr<LiveMarketDataSource> LoadLiveMarketDataSource(
+				const IniFile &ini,
+				const std::string &section) {
+		const std::string module = ini.ReadKey(section, Ini::Key::module, false);
+		const std::string fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
+		boost::shared_ptr<Dll> dll(new Dll(module, true));
+		return DllObjectPtr<LiveMarketDataSource>(
+			dll,
+			dll->GetFunction<boost::shared_ptr<LiveMarketDataSource>()>(fabricName)());
+	}
+
 }
 
 void Trade(const fs::path &iniFilePath) {
@@ -285,16 +296,8 @@ void Trade(const fs::path &iniFilePath) {
 		= Ini::LoadSettings(ini, boost::get_system_time(), false);
 
 	DllObjectPtr<TradeSystem> tradeSystem = LoadTradeSystem(ini, Ini::Sections::tradeSystem);
-	DllObjectPtr<LiveMarketDataSource> marketDataSource;
-
-	{
-		boost::shared_ptr<Dll> dll(new Dll("Lightspeed", true));
-		{
-			const auto mdFabric = dll->GetFunction<boost::shared_ptr<LiveMarketDataSource>()>(
-				"CreateLiveMarketDataSource");
-			marketDataSource.Reset(dll, mdFabric());
-		}
-	}
+	DllObjectPtr<LiveMarketDataSource> marketDataSource
+		= LoadLiveMarketDataSource(ini, Ini::Sections::MarketData::Source::live);
 
 	Dispatcher dispatcher(settings);
 

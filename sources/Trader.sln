@@ -18,6 +18,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Py API", "PyApi\PyApi.vcxpr
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Lightspeed", "Interaction\Lightspeed\Lightspeed.vcxproj", "{CED89712-F2FD-4A0D-A97C-A43F1738D1B5}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Enyx", "Interaction\Enyx\Enyx.vcxproj", "{9A49E138-AE46-46F6-9795-3BBF14F65E2D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -55,11 +57,18 @@ Global
 		{CED89712-F2FD-4A0D-A97C-A43F1738D1B5}.Release|Win32.Build.0 = Release|Win32
 		{CED89712-F2FD-4A0D-A97C-A43F1738D1B5}.Test|Win32.ActiveCfg = Test|Win32
 		{CED89712-F2FD-4A0D-A97C-A43F1738D1B5}.Test|Win32.Build.0 = Test|Win32
+		{9A49E138-AE46-46F6-9795-3BBF14F65E2D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9A49E138-AE46-46F6-9795-3BBF14F65E2D}.Debug|Win32.Build.0 = Debug|Win32
+		{9A49E138-AE46-46F6-9795-3BBF14F65E2D}.Release|Win32.ActiveCfg = Release|Win32
+		{9A49E138-AE46-46F6-9795-3BBF14F65E2D}.Release|Win32.Build.0 = Release|Win32
+		{9A49E138-AE46-46F6-9795-3BBF14F65E2D}.Test|Win32.ActiveCfg = Test|Win32
+		{9A49E138-AE46-46F6-9795-3BBF14F65E2D}.Test|Win32.Build.0 = Test|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{CED89712-F2FD-4A0D-A97C-A43F1738D1B5} = {0472C2A4-F2BB-48CC-A6FE-32B792EE621D}
+		{9A49E138-AE46-46F6-9795-3BBF14F65E2D} = {0472C2A4-F2BB-48CC-A6FE-32B792EE621D}
 	EndGlobalSection
 EndGlobal

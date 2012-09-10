@@ -105,6 +105,16 @@
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libLightspeed.${CND_DLIB_EXT}">
           </makeArtifact>
+          <makeArtifact PL="../Interaction/Enyx"
+                        CT="2"
+                        CN="Debug"
+                        AC="true"
+                        BL="true"
+                        WD="../Interaction/Enyx"
+                        BC="${MAKE}  -f Makefile CONF=Debug"
+                        CC="${MAKE}  -f Makefile CONF=Debug clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx.${CND_DLIB_EXT}">
+          </makeArtifact>
           <makeArtifact PL="../PyApi"
                         CT="2"
                         CN="Debug"
@@ -196,6 +206,16 @@
                         BC="${MAKE}  -f Makefile CONF=Release"
                         CC="${MAKE}  -f Makefile CONF=Release clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libLightspeed.${CND_DLIB_EXT}">
+          </makeArtifact>
+          <makeArtifact PL="../Interaction/Enyx"
+                        CT="2"
+                        CN="Release"
+                        AC="false"
+                        BL="true"
+                        WD="../Interaction/Enyx"
+                        BC="${MAKE}  -f Makefile CONF=Release"
+                        CC="${MAKE}  -f Makefile CONF=Release clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx.${CND_DLIB_EXT}">
           </makeArtifact>
           <makeArtifact PL="../PyApi"
                         CT="2"

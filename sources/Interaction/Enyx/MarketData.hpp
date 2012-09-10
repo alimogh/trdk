@@ -10,7 +10,7 @@
 
 #include "Core/MarketDataSource.hpp"
 
-namespace Trader {  namespace Interaction { namespace Lightspeed {
+namespace Trader {  namespace Interaction { namespace Enyx {
 
 	class MarketData : public ::LiveMarketDataSource {
 

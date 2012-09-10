@@ -112,6 +112,7 @@ ${OBJECTDIR}/Trading.o: Trading.cpp
 	cd ../Core && ${MAKE}  -f Makefile CONF=Release
 	cd ../Common && ${MAKE}  -f Makefile CONF=Release
 	cd ../Interaction/Lightspeed && ${MAKE}  -f Makefile CONF=Release
+	cd ../Interaction/Enyx && ${MAKE}  -f Makefile CONF=Release
 	cd ../PyApi && ${MAKE}  -f Makefile CONF=Release
 
 # Clean Targets
@@ -124,6 +125,7 @@ ${OBJECTDIR}/Trading.o: Trading.cpp
 	cd ../Core && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Common && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Interaction/Lightspeed && ${MAKE}  -f Makefile CONF=Release clean
+	cd ../Interaction/Enyx && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../PyApi && ${MAKE}  -f Makefile CONF=Release clean
 
 # Enable dependency checking

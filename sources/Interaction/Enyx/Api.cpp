@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/08/28 01:40:42
+ *   Created: 2012/09/11 01:34:47
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -7,12 +7,12 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Gateway.hpp"
+#include "MarketData.hpp"
 
-namespace Trader {  namespace Interaction { namespace Lightspeed {
+namespace Trader {  namespace Interaction { namespace Enyx {
 
-	boost::shared_ptr<TradeSystem> CreateLightspeedGateway() {
-		return boost::shared_ptr<TradeSystem>(new Gateway);
+	boost::shared_ptr< ::LiveMarketDataSource> CreateEnyxMarketDataSource() {
+		return boost::shared_ptr< ::LiveMarketDataSource>(new MarketData);
 	}
 
 } } }

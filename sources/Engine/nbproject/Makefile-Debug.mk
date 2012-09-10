@@ -112,6 +112,7 @@ ${OBJECTDIR}/Trading.o: Trading.cpp
 	cd ../Core && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Common && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Interaction/Lightspeed && ${MAKE}  -f Makefile CONF=Debug
+	cd ../Interaction/Enyx && ${MAKE}  -f Makefile CONF=Debug
 	cd ../PyApi && ${MAKE}  -f Makefile CONF=Debug
 
 # Clean Targets
@@ -124,6 +125,7 @@ ${OBJECTDIR}/Trading.o: Trading.cpp
 	cd ../Core && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Common && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Interaction/Lightspeed && ${MAKE}  -f Makefile CONF=Debug clean
+	cd ../Interaction/Enyx && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../PyApi && ${MAKE}  -f Makefile CONF=Debug clean
 
 # Enable dependency checking

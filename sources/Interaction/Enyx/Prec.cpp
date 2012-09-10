@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/08/28 01:40:42
+ *   Created: 2012/09/11 01:35:39
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -7,12 +7,3 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Gateway.hpp"
-
-namespace Trader {  namespace Interaction { namespace Lightspeed {
-
-	boost::shared_ptr<TradeSystem> CreateLightspeedGateway() {
-		return boost::shared_ptr<TradeSystem>(new Gateway);
-	}
-
-} } }
