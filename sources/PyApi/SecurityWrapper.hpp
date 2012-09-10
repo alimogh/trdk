@@ -55,8 +55,6 @@ namespace PyApi { namespace Wrappers {
 					level2AskSizeGetter = boost::bind(&::Security::GetLevel2AskSizeIb, security.get());
 					level2BidSizeGetter = boost::bind(&::Security::GetLevel2BidSizeIb, security.get());
 					break;
-				default:
-					AssertFail("Unknown market data source.");
 			}
 
 			m_algo = &algo;
@@ -119,7 +117,9 @@ namespace PyApi { namespace Wrappers {
 			return m_security->GetAskSize();
 		}
 		double GetLevel2AskSize() const {
-			return m_level2AskSizeGetter();
+			return m_level2AskSizeGetter
+				?	m_level2AskSizeGetter()
+				:	.0;
 		}
 
 		int GetBidPriceScaled() const {
@@ -132,7 +132,9 @@ namespace PyApi { namespace Wrappers {
 			return m_security->GetBidSize();
 		}
 		double GetLevel2BidSize() const {
-			return m_level2BidSizeGetter();
+			return m_level2BidSizeGetter
+				?	m_level2BidSizeGetter()
+				:	.0;
 		}
 
 	public:
