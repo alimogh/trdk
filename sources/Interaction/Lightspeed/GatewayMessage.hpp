@@ -30,11 +30,11 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		class Error : public Exception {
 		public:
-			explicit Error(const char *what)
+			explicit Error(const char *what) throw()
 					: Exception(what) {
 				//...//
 			}
-			virtual ~Error() {
+			virtual ~Error() throw() {
 				//...//
 			}
 		public:

@@ -135,11 +135,11 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				};
 
 			};
-			
+
 			Token token;
-			
+
 			OrderStatusUpdateSlot callback;
-			
+
 			OrderQty initialQty;
 			OrderQty executedQty;
 
@@ -176,17 +176,17 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 					boost::multi_index::tag<ByToken>,
 					boost::multi_index::member<Order, Token, &Order::token>>>>
 			Orders;
-		
+
 		typedef Orders::index<ByToken>::type OrdersByToken;
 
 		//////////////////////////////////////////////////////////////////////////
-		
+
 		struct Connection {
-		
+
 			IoService ioService;
 			Socket socket;
 			boost::thread_group tasks;
-			
+
 			SocketReceiveBuffer socketBuffer;
 			MessagesBuffer messagesBuffer;
 
@@ -295,13 +295,13 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				const boost::system::error_code &,
 				size_t size,
 				const Lock &);
-		
+
 		void HandleMessage(const TsMessage &, Connection &);
 		void HandleDebug(const TsMessage &, Connection &);
-		
+
 		void HandleLoginAccepted(const TsMessage &, Connection &);
 		void HandleLoginRejected(const TsMessage &, Connection &);
-		
+
 		void HandleOrderAccepted(const TsMessage &, Connection &);
 		void HandleOrderReject(const TsMessage &, Connection &);
 		void HandleOrderCanceled(const TsMessage &, Connection &);
@@ -325,7 +325,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		void SendHeartbeat(Connection &);
 
-		void Send(std::auto_ptr<ClientMessage>, Connection &);
+		void Send(boost::shared_ptr<ClientMessage>, Connection &);
 
 		void HandleWrite(
 				boost::shared_ptr<const ClientMessage>,
@@ -337,7 +337,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		Mutex m_mutex;
 		Condition m_condition;
 		std::unique_ptr<Connection> m_connection;
-		
+
 
 	};
 

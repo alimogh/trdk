@@ -26,7 +26,8 @@ namespace Log {
 			const char *function,
 			const char *file,
 			long line,
-			bool tradingLog);
+			bool tradingLog)
+		throw();
 
 }
 
@@ -37,7 +38,7 @@ namespace Log { namespace Detail {
 	void TRADER_CORE_API AppendEventRecordUnsafe(
 			const boost::posix_time::ptime &time,
 			const char *str);
-	
+
 	void TRADER_CORE_API AppendTradingRecordUnsafe(
 				const boost::posix_time::ptime &time,
 				const char *tag,
@@ -1562,7 +1563,7 @@ namespace Log {
 		Detail::AppendRecord(
 			str, param1, param2, param3, param4, param5, param6, param7, param8);
 	}
-	
+
 	template<
 		typename Param1,
 		typename Param2,
@@ -1883,7 +1884,7 @@ namespace Log {
 			tag, str,
 			param1, param2, param3, param4, param5, param6, param7);
 	}
-	
+
 	template<
 		typename Param1,
 		typename Param2,
@@ -1910,7 +1911,7 @@ namespace Log {
 			param1, param2, param3, param4, param5, param6,
 			param7, param8);
 	}
-	
+
 	template<
 		typename Param1,
 		typename Param2,

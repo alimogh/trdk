@@ -114,10 +114,11 @@ void Log::RegisterUnhandledException(
 			const char *function,
 			const char *file,
 			long line,
-			bool tradingLog) {
+			bool tradingLog)
+		throw() {
 
 	struct Logger : private boost::noncopyable {
-			
+
 		boost::format message;
 		const bool tradingLog;
 

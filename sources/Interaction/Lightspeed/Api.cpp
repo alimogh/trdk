@@ -16,8 +16,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		return boost::shared_ptr<TradeSystem>(new Gateway);
 	}
 
-	boost::shared_ptr<::LiveMarketDataSource> CreateLiveMarketDataSource() {
-		return boost::shared_ptr<::LiveMarketDataSource>(new MarketData);
+	boost::shared_ptr< ::LiveMarketDataSource> CreateLiveMarketDataSource() {
+		return boost::shared_ptr< ::LiveMarketDataSource>(new MarketData);
 	}
 
 } } }

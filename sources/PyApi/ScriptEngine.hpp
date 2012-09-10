@@ -53,8 +53,8 @@ namespace PyApi {
 
 	public:
 
-		boost::shared_ptr<::Position> TryToOpenPositions();
-		void TryToClosePositions(boost::shared_ptr<::Position>);
+		boost::shared_ptr< ::Position> TryToOpenPositions();
+		void TryToClosePositions(boost::shared_ptr< ::Position>);
 
 	public:
 

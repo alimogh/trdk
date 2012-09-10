@@ -94,14 +94,14 @@ void Gateway::HandleResolve(
 			ResolverIterator endpointIterator) {
 
 	AssertEq(STAGE_CONNECTING, connection.stage);
-	
+
 	const Lock lock(m_mutex);
 	if (error) {
 		Log::Error(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "server endpoint RESOLVE ERROR.");
 		m_condition.notify_all();
 		return;
 	}
-	
+
 	Log::Debug(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "server endpoint resolved...");
 
 	std::unique_ptr<Endpoint> endpoint(new Endpoint(*endpointIterator));
@@ -115,7 +115,7 @@ void Gateway::HandleResolve(
 			boost::ref(*endpoint),
 			++endpointIterator));
 	endpoint.release();
-	
+
 }
 
 void Gateway::StartReading() {
@@ -170,7 +170,7 @@ void Gateway::Connect(const IniFile &ini, const std::string &section) {
 		heartbeatPeriod);
 
 	const auto ipAddress = ini.ReadKey(section, "ip_address", false);
-	const auto port = ini.ReadTypedKey<size_t>(section, "port");	
+	const auto port = ini.ReadTypedKey<size_t>(section, "port");
 	Log::Info(
 		TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "connecting to \"%1%:%2%...",
 		ipAddress,
@@ -196,7 +196,7 @@ void Gateway::Connect(const IniFile &ini, const std::string &section) {
 			boost::bind(
 				&Gateway::HandleResolve,
 				this,
-				boost::ref(*connection), 
+				boost::ref(*connection),
 				io::placeholders::error,
 				io::placeholders::iterator));
 
@@ -214,7 +214,7 @@ void Gateway::Connect(const IniFile &ini, const std::string &section) {
 					Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "stopped reading task.");
 				});
 		}
-	
+
 		m_condition.timed_wait(lock, boost::get_system_time() + connection->timeout);
 		if (connection->stage != STAGE_HANDSHAKED) {
 			AssertLt(connection->stage, STAGE_HANDSHAKED);
@@ -382,7 +382,7 @@ bool Gateway::HandleRead(
 	}
 	connection.messagesBuffer.resize(oldSize + size);
 	memcpy(&connection.messagesBuffer[oldSize], &connection.socketBuffer[0], size);
-			
+
 	for ( ; ; ) {
 		MessagesBuffer::iterator end = std::find(
 			connection.messagesBuffer.begin() + oldSize,
@@ -447,9 +447,9 @@ void Gateway::StatOrders(Connection &connection) throw() {
 }
 
 void Gateway::HandleOrderAccepted(const TsMessage &message, Connection &connection) {
-	
+
 	AssertEq(TsMessage::TYPE_ORDER_ACCEPTED, message.GetType());
-	
+
 	const auto token = Token(message.GetNumericField(9, 16));
 	auto &index = connection.orders.get<ByToken>();
 	const auto order = index.find(token);
@@ -461,7 +461,7 @@ void Gateway::HandleOrderAccepted(const TsMessage &message, Connection &connecti
 			message.GetFieldAsString(25, 9));
 		throw MessageError("Unknown accepted order", message);
 	}
-	
+
 	order->callback(token, ORDER_STATUS_SUBMITTED, 0, 0, 0, 0);
 
 	StatOrders(connection);
@@ -469,12 +469,12 @@ void Gateway::HandleOrderAccepted(const TsMessage &message, Connection &connecti
 }
 
 void Gateway::HandleOrderReject(const TsMessage &message, Connection &connection) {
-	
+
 	AssertEq(TsMessage::TYPE_ORDER_REJECTED, message.GetType());
-	
+
 	const auto token = Token(message.GetNumericField(9, 16));
 	const auto reason = message.GetOrderRejectReasonField(25);
-	
+
 	auto &index = connection.orders.get<ByToken>();
 	const auto order = index.find(token);
 	if (order == index.end()) {
@@ -491,7 +491,7 @@ void Gateway::HandleOrderReject(const TsMessage &message, Connection &connection
 			token,
 			reason);
 	}
-	
+
 	const auto callback = order->callback;
 	index.erase(order);
 	callback(token, ORDER_STATUS_ERROR, 0, 0, 0, 0);
@@ -516,10 +516,10 @@ void Gateway::HandleOrderCanceled(const TsMessage &message, Connection &connecti
 			message.GetOrderCancelReasonField(31));
 		throw MessageError("Unknown order canceled", message);
 	}
-	
+
 	AssertLe(message.GetNumericField(25, 6), order->initialQty); // 25 - canceled qty
 	AssertLe(message.GetNumericField(25, 6), order->initialQty - order->executedQty); // 25 - canceled qty
-	
+
 	const auto reason = message.GetCharField(31);
 	if (reason != 'U') {
 		Log::Warn(
@@ -539,9 +539,9 @@ void Gateway::HandleOrderCanceled(const TsMessage &message, Connection &connecti
 }
 
 void Gateway::HandleOrderExecuted(const TsMessage &message, Connection &connection) {
-	
+
 	AssertEq(TsMessage::TYPE_ORDER_EXECUTED, message.GetType());
-	
+
 	const auto token = Token(message.GetNumericField(9, 16));
 	const auto executedQty = OrderQty(message.GetNumericField(25, 6));
 	const auto executionPrice = message.GetPriceField(31, 6);
@@ -557,7 +557,7 @@ void Gateway::HandleOrderExecuted(const TsMessage &message, Connection &connecti
 			executionPrice);
 		throw MessageError("Unknown order executed", message);
 	}
-	
+
 	AssertLe(executedQty, order->initialQty);
 	AssertLe(executedQty, order->initialQty - order->executedQty);
 	if (executedQty + order->executedQty < order->initialQty) {
@@ -585,7 +585,7 @@ void Gateway::HandleOrderExecuted(const TsMessage &message, Connection &connecti
 	}
 
 	StatOrders(connection);
-	
+
 }
 
 void Gateway::HandleDebug(const TsMessage &message, Connection &connection) {
@@ -654,7 +654,7 @@ void Gateway::SendLoginRequest(
 		TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "sending longing request for \"%1%\"...",
 		login);
 	try {
-		std::auto_ptr<ClientMessage> message(
+		boost::shared_ptr<ClientMessage> message(
 			new ClientMessage(ClientMessage::TYPE_LOGIN_REQUEST));
 		message->AppendField(login, 6);
 		message->AppendField(password, 10);
@@ -672,7 +672,7 @@ void Gateway::SendLoginRequest(
 }
 
 void Gateway::SendHeartbeat(Connection &connection) {
-	std::auto_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_HEARTBEAT));
+	boost::shared_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_HEARTBEAT));
 	AssertEq(1, message->GetMessageLogicalLen());
 	Send(message, connection);
 }
@@ -687,7 +687,7 @@ Gateway::OrderId Gateway::SendOrder(
 
 	const Token token = Interlocking::Increment(m_connection->lastToken);
 
-	std::auto_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_NEW_ORDER));
+	boost::shared_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_NEW_ORDER));
 	message->AppendFieldAsAlphanum(token, 16);
 	message->AppendField('A');
 	message->AppendField(buySell);
@@ -718,20 +718,19 @@ Gateway::OrderId Gateway::SendOrder(
 }
 
 void Gateway::Send(
-			std::auto_ptr<ClientMessage> message,
+			boost::shared_ptr<ClientMessage> message,
 			Connection &connection) {
 	if (connection.stage < STAGE_CONNECTED) {
 		throw ConnectionDoesntExistError("Connection lost");
 	}
 	message->AppendField('\n');
-	boost::shared_ptr<ClientMessage> smartMessage(message.release());
 	io::async_write(
 		connection.socket,
-		smartMessage->GetMessage(),
+		message->GetMessage(),
         boost::bind(
 			&Gateway::HandleWrite,
 			this,
-			smartMessage,
+			message,
 			io::placeholders::error,
 			io::placeholders::bytes_transferred));
 }

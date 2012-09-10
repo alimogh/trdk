@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="84">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <logicalFolder name="HeaderFiles"
+                   displayName="Header Files"
+                   projectFiles="true">
+      <itemPath>Algo.hpp</itemPath>
+      <itemPath>AlgoPositionState.hpp</itemPath>
+      <itemPath>Api.h</itemPath>
+      <itemPath>Instrument.hpp</itemPath>
+      <itemPath>Log.hpp</itemPath>
+      <itemPath>MarketDataSource.hpp</itemPath>
+      <itemPath>Position.hpp</itemPath>
+      <itemPath>PositionBundle.hpp</itemPath>
+      <itemPath>PositionReporter.hpp</itemPath>
+      <itemPath>PositionReporterAlgo.hpp</itemPath>
+      <itemPath>Prec.hpp</itemPath>
+      <itemPath>Security.hpp</itemPath>
+      <itemPath>Settings.hpp</itemPath>
+      <itemPath>TradeSystem.hpp</itemPath>
+    </logicalFolder>
+    <logicalFolder name="SourceFiles"
+                   displayName="Source Files"
+                   projectFiles="true">
+      <itemPath>Algo.cpp</itemPath>
+      <itemPath>AlgoPositionState.cpp</itemPath>
+      <itemPath>Log.cpp</itemPath>
+      <itemPath>MarketDataSource.cpp</itemPath>
+      <itemPath>Position.cpp</itemPath>
+      <itemPath>PositionBundle.cpp</itemPath>
+      <itemPath>PositionReporter.cpp</itemPath>
+      <itemPath>Prec.cpp</itemPath>
+      <itemPath>Security.cpp</itemPath>
+      <itemPath>Settings.cpp</itemPath>
+      <itemPath>TradeSystem.cpp</itemPath>
+    </logicalFolder>
+    <logicalFolder name="TestFiles"
+                   displayName="Test Files"
+                   projectFiles="false"
+                   kind="TEST_LOGICAL_FOLDER">
+    </logicalFolder>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="Debug" type="2">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>GNU_4.7.1|GNU</compilerSet>
+      </toolsSet>
+      <compileType>
+        <ccTool>
+          <standard>8</standard>
+          <incDir>
+            <pElem>..</pElem>
+            <pElem>/usr/local/boost/boost_1_51/include</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
+            <Elem>DEV_VER</Elem>
+            <Elem>TRADER_CORE</Elem>
+            <Elem>_DEBUG</Elem>
+          </preprocessorList>
+          <warningLevel>3</warningLevel>
+        </ccTool>
+        <requiredProjects>
+          <makeArtifact PL="../Common"
+                        CT="3"
+                        CN="Debug"
+                        AC="true"
+                        BL="false"
+                        WD="../Common"
+                        BC="${MAKE}  -f Makefile CONF=Debug"
+                        CC="${MAKE}  -f Makefile CONF=Debug clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
+          </makeArtifact>
+        </requiredProjects>
+      </compileType>
+    </conf>
+    <conf name="Release" type="2">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>GNU_4.7.1|GNU</compilerSet>
+      </toolsSet>
+      <compileType>
+        <cTool>
+          <developmentMode>5</developmentMode>
+        </cTool>
+        <ccTool>
+          <developmentMode>5</developmentMode>
+          <standard>8</standard>
+          <incDir>
+            <pElem>..</pElem>
+            <pElem>/usr/local/boost/boost_1_51/include</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>BOOST_DISABLE_ASSERTS</Elem>
+            <Elem>NDEBUG</Elem>
+            <Elem>NTEST</Elem>
+            <Elem>TRADER_CORE</Elem>
+          </preprocessorList>
+          <warningLevel>3</warningLevel>
+        </ccTool>
+        <fortranCompilerTool>
+          <developmentMode>5</developmentMode>
+        </fortranCompilerTool>
+        <asmTool>
+          <developmentMode>5</developmentMode>
+        </asmTool>
+        <requiredProjects>
+          <makeArtifact PL="../Common"
+                        CT="3"
+                        CN="Release"
+                        AC="false"
+                        BL="false"
+                        WD="../Common"
+                        BC="${MAKE}  -f Makefile CONF=Release"
+                        CC="${MAKE}  -f Makefile CONF=Release clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
+          </makeArtifact>
+        </requiredProjects>
+      </compileType>
+    </conf>
+  </confs>
+</configurationDescriptor>
