@@ -8,7 +8,7 @@
 
 #include "DisableBoostWarningsBegin.h"
 #	include <boost/assert.hpp>
-#	if !defined(BOOST_DISABLE_ASSERTS)
+#	if !defined(BOOST_DISABLE_ASSERTS) && defined(BOOST_ENABLE_ASSERT_HANDLER)
 #		include <boost/lexical_cast.hpp>
 #		include <string>
 #	endif
@@ -22,7 +22,7 @@
 #define Assert(expr) BOOST_ASSERT(expr)
 #define Verify(expr) BOOST_VERIFY(expr)
 
-#if defined(BOOST_DISABLE_ASSERTS)
+#if defined(BOOST_DISABLE_ASSERTS) || !defined(BOOST_ENABLE_ASSERT_HANDLER)
 #	if defined(BOOST_ENABLE_ASSERT_HANDLER)
 		static_assert(false, "Failed to find assert-break method");
 #	endif
@@ -37,7 +37,7 @@
 #	define AssertGe(expr1, expr2) ((void)0)
 #	define AssertLt(expr1, expr2) ((void)0)
 #	define AssertLe(expr1, expr2) ((void)0)
-#else
+#elif defined(BOOST_ENABLE_ASSERT_HANDLER)
 
 #	define AssertFail(reason) \
 		(void)(::boost::assertion_failed( \

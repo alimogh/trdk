@@ -35,12 +35,12 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		class Error : public GatewayMessage::Error {
 		public:
-			explicit Error(const char *what, Iterator messageBegin, Iterator messageEnd)
+			explicit Error(const char *what, Iterator messageBegin, Iterator messageEnd) throw()
 					: GatewayMessage::Error(what),
 					m_buffer(messageBegin, messageEnd) {
 				//...//
 			}
-			virtual ~Error() {
+			virtual ~Error() throw() {
 				//...//
 			}
 		public:
@@ -50,10 +50,10 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		private:
 			std::string m_buffer;
 		};
-	
+
 		class MessageNotGatawayMessageError : public Error {
 		public:
-			MessageNotGatawayMessageError(Iterator messageBegin, Iterator messageEnd)
+			MessageNotGatawayMessageError(Iterator messageBegin, Iterator messageEnd) throw()
 					: Error(
 						"Message not Lightspeed Gateway trade system message",
 						messageBegin,
@@ -64,7 +64,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		class FieldDoesntExistError : public Error {
 		public:
-			FieldDoesntExistError(Iterator messageBegin, Iterator messageEnd)
+			FieldDoesntExistError(Iterator messageBegin, Iterator messageEnd) throw()
 					: Error(
 						"Field doesn't exist in Lightspeed Gateway trade system message",
 						messageBegin,
@@ -72,10 +72,10 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				//...//
 			}
 		};
-		
+
 		class FieldHasInvalidFormatError : public Error {
 		public:
-			FieldHasInvalidFormatError(Iterator messageBegin, Iterator messageEnd)
+			FieldHasInvalidFormatError(Iterator messageBegin, Iterator messageEnd) throw()
 					: Error(
 						"Lightspeed Gateway trade system message field has invalid format",
 						messageBegin,
@@ -86,7 +86,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		class FieldHasInvalidLenError : public Error {
 		public:
-			FieldHasInvalidLenError(Iterator messageBegin, Iterator messageEnd)
+			FieldHasInvalidLenError(Iterator messageBegin, Iterator messageEnd) throw()
 					: Error(
 						"Lightspeed Gateway trade system message has invalid length",
 						messageBegin,
@@ -189,7 +189,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		Type GetType() const {
 			return m_type;
 		}
-	
+
 		Len GetMessageLogicalLen() const {
 			return m_logicalLen;
 		}
@@ -391,7 +391,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		Iterator m_messageEnd;
 		Len m_logicalLen;
 		bool m_isDataMessage;
-	
+
 		Type m_type;
 
 		static const Len m_timestampFieldSize;

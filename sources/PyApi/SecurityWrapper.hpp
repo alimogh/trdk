@@ -32,14 +32,14 @@ namespace PyApi { namespace Wrappers {
 
 	public:
 
-		void Init(const ::Algo &algo, boost::shared_ptr<::Security> security) {
+		void Init(const ::Algo &algo, boost::shared_ptr< ::Security> security) {
 			Assert(!m_algo);
 			Assert(!m_security);
 			m_algo = &algo;
 			m_security = security;
 		}
 
-		boost::shared_ptr<::Security> GetSecurity() {
+		boost::shared_ptr< ::Security> GetSecurity() {
 			return m_security;
 		}
 
@@ -113,7 +113,7 @@ namespace PyApi { namespace Wrappers {
 		void CancelOrder(int orderId) {
 			m_security->CancelOrder(orderId);
 		}
-	
+
 		void CancelAllOrders() {
 			m_security->CancelAllOrders();
 		}
@@ -121,7 +121,7 @@ namespace PyApi { namespace Wrappers {
 	private:
 
 		const ::Algo *m_algo;
-		boost::shared_ptr<::Security> m_security;
+		boost::shared_ptr< ::Security> m_security;
 
 	};
 

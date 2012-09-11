@@ -23,7 +23,11 @@
 namespace {
 
 	void Break() {
-		DebugBreak();
+#		ifdef BOOST_WINDOWS
+			DebugBreak();
+#		else
+			__assert_fail("Debug break", "", 0, "");
+#		endif
 	}
 
 }
@@ -89,7 +93,5 @@ void Detail::AssertFailNoExceptionImpl(
 			const char *file,
 			long line) {
 	Log::RegisterUnhandledException(function, file, line, true);
-#	if defined(_DEBUG) || defined(_TEST)
-		DebugBreak();
-#	endif
+	Break();
 }

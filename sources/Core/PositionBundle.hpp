@@ -16,7 +16,7 @@ class TRADER_CORE_API PositionBandle : private boost::noncopyable {
 
 public:
 
-	typedef std::list<const boost::shared_ptr<Position>> List;
+	typedef std::list<boost::shared_ptr<Position>> List;
 
 public:
 

@@ -74,6 +74,9 @@
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Interaction\Enyx\Enyx.vcxproj">
+      <Project>{9a49e138-ae46-46f6-9795-3bbf14f65e2d}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Interaction\Lightspeed\Lightspeed.vcxproj">
       <Project>{ced89712-f2fd-4a0d-a97c-a43f1738d1b5}</Project>
     </ProjectReference>

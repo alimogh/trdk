@@ -81,7 +81,7 @@ std::auto_ptr<PositionReporter> PyApi::Algo::CreatePositionReporter() const {
 	typedef PositionReporterAlgo<PyApi::Algo> Reporter;
 	std::auto_ptr<Reporter> result(new Reporter);
 	result->Init(*this);
-	return result;
+	return std::auto_ptr<PositionReporter>(result);
 }
 
 void PyApi::Algo::UpdateAlogImplSettings(const IniFile &ini, const std::string &section) {
@@ -89,7 +89,7 @@ void PyApi::Algo::UpdateAlogImplSettings(const IniFile &ini, const std::string &
 }
 
 void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
-	
+
 	Settings settings = {};
 
 	const std::string algoClassName = ini.ReadKey(section, "algo", false);
@@ -97,7 +97,7 @@ void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &sectio
 
 	const fs::path scriptFilePath = ini.ReadKey(section, "script_file_path", false);
 	const std::string scriptFileStamp = ini.ReadKey(section, "script_file_stamp", true);
-			
+
 	const bool isNewScript
 		= !m_scriptEngine
 			|| m_scriptEngine->GetFilePath() != scriptFilePath

@@ -94,9 +94,9 @@ private:
 	boost::shared_ptr<Notifier> m_notifier;
 	StateUpdateConnections m_stateUpdateConnections;
 
-	volatile LONGLONG m_isBlocked;
+	volatile int64_t m_isBlocked;
 
-	volatile LONGLONG m_lastUpdate;
+	volatile int64_t m_lastUpdate;
 
 	boost::shared_ptr<const Settings> m_settings;
 
