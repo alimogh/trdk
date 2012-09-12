@@ -50,6 +50,16 @@ public:
 						.str().c_str()) {
 			//...//
 		}
+		explicit DllLoadException(
+					const boost::filesystem::path &dllFile,
+					const char *error = nullptr)
+				: Error(
+					(boost::format("Failed to load DLL file %1% with error: \"%2%\"")
+							% dllFile
+							% (error ? error : "Success"))
+						.str().c_str()) {
+			//...//
+		}
 	};
 
 	//! Could find required function in DLL.
@@ -67,6 +77,18 @@ public:
 						.str().c_str()) {
 			//...//
 		}
+		explicit DllFuncException(
+					const boost::filesystem::path &dllFile,
+					const char *const funcName,
+					const char *error = nullptr)
+				: Error(
+					(boost::format("Failed to find function \"%2%\" in DLL %1% (%3%).")
+							% dllFile
+							% funcName
+							% (error ? error : "Success"))
+						.str().c_str()) {
+			//...//
+		}
 	};
 
 private:
@@ -79,15 +101,15 @@ private:
 
 public:
 
-	explicit Dll(const boost::filesystem::path &dllFile, bool autoConfName = false)
+	explicit Dll(const boost::filesystem::path &dllFile, bool autoName = false)
 			: m_file(dllFile) {
-		if (!m_file.has_extension()) {
-			m_file.replace_extension(".dll");
-		}
-		UseUnused(autoConfName);
+		UseUnused(autoName);
 #		ifdef BOOST_WINDOWS
+			if (!m_file.has_extension()) {
+				m_file.replace_extension(".dll");
+			}
 #			if defined(_DEBUG) || defined(_TEST)
-				if (autoConfName) {
+				if (autoName) {
 					auto tmp = m_file;
 					tmp.replace_extension("");
 #					if defined(_DEBUG)
@@ -101,12 +123,26 @@ public:
 				}
 #			endif
 			m_handle = LoadLibraryW(m_file.c_str());
+			if (m_handle == NULL) {
+				throw DllLoadException(m_file, ::Error(::GetLastError()));
+			}
 #		else
+			if (autoName) {
+				auto tmp = m_file;
+				tmp.replace_extension("");
+				const std::string tmpStr = "lib" + tmp.string();
+				tmp = tmpStr;
+				tmp.replace_extension(m_file.extension());
+				m_file = tmp;
+			}
+			if (!m_file.has_extension()) {
+				m_file.replace_extension(".so");
+			}
 			m_handle = dlopen(m_file.string().c_str(), RTLD_NOW);
+			if (m_handle == NULL) {
+				throw DllLoadException(m_file, dlerror());
+			}
 #		endif
-		if (m_handle == NULL) {
-			throw DllLoadException(m_file, ::Error(::GetLastError()));
-		}
 	}
 
 	~Dll() throw() {
@@ -130,12 +166,15 @@ public:
 	Func * GetFunction(const char *funcName) const {
 #		ifdef BOOST_WINDOWS
 			FARPROC procAddr = GetProcAddress(m_handle, funcName);
+			if (procAddr == NULL) {
+				throw DllFuncException(m_file, funcName, ::Error(::GetLastError()));
+			}
 #		else
 			void *procAddr = dlsym(m_handle, funcName);
+			if (procAddr == NULL) {
+				throw DllFuncException(m_file, funcName, dlerror());
+			}
 #		endif
-		if (procAddr == NULL) {
-			throw DllFuncException(m_file, funcName, ::Error(::GetLastError()));
-		}
 		return reinterpret_cast<Func *>(procAddr);
 	}
 
