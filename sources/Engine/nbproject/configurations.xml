@@ -195,6 +195,7 @@
             <linkerLibLibItem>boost_system</linkerLibLibItem>
             <linkerLibLibItem>boost_filesystem</linkerLibLibItem>
             <linkerLibLibItem>boost_chrono</linkerLibLibItem>
+            <linkerLibLibItem>dl</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
         <requiredProjects>

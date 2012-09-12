@@ -58,7 +58,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib -Wl,-rpath,../Core/dist/Release/GNU_4.7.1-Linux-x86 -L../Core/dist/Release/GNU_4.7.1-Linux-x86 -lCore ../Common/dist/Release/GNU_4.7.1-Linux-x86/libcommon.a -lboost_date_time -lboost_thread -lboost_system -lboost_filesystem -lboost_chrono
+LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib -Wl,-rpath,../Core/dist/Release/GNU_4.7.1-Linux-x86 -L../Core/dist/Release/GNU_4.7.1-Linux-x86 -lCore ../Common/dist/Release/GNU_4.7.1-Linux-x86/libcommon.a -lboost_date_time -lboost_thread -lboost_system -lboost_filesystem -lboost_chrono -ldl
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
