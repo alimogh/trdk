@@ -89,6 +89,7 @@
               </makeArtifact>
             </linkerLibProjectItem>
             <linkerLibLibItem>boost_python</linkerLibLibItem>
+            <linkerLibLibItem>python2.6</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -156,6 +157,7 @@
               </makeArtifact>
             </linkerLibProjectItem>
             <linkerLibLibItem>boost_python</linkerLibLibItem>
+            <linkerLibLibItem>python2.6</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

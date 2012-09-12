@@ -9,8 +9,7 @@
 #include "Prec.hpp"
 #include "PyApi.hpp"
 
-namespace PyApi {
-
+#ifdef BOOST_WINDOWS
 	boost::shared_ptr< ::Algo> CreatePyEngine(
 				const std::string &tag,
 				boost::shared_ptr<Security> security,
@@ -19,5 +18,13 @@ namespace PyApi {
 		return boost::shared_ptr< ::Algo>(
 			new PyApi::Algo(tag, security, ini, section));
 	}
-
-}
+#else
+	extern "C" boost::shared_ptr< ::Algo> CreatePyEngine(
+				const std::string &tag,
+				boost::shared_ptr<Security> security,
+				const IniFile &ini,
+				const std::string &section) {
+		return boost::shared_ptr< ::Algo>(
+			new PyApi::Algo(tag, security, ini, section));
+	}
+#endif

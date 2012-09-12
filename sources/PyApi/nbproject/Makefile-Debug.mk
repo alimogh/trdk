@@ -55,7 +55,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib -Wl,-rpath,../Core/dist/Debug/GNU_4.7.1-Linux-x86 -L../Core/dist/Debug/GNU_4.7.1-Linux-x86 -lCore ../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a -lboost_python
+LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib -Wl,-rpath,../Core/dist/Debug/GNU_4.7.1-Linux-x86 -L../Core/dist/Debug/GNU_4.7.1-Linux-x86 -lCore ../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a -lboost_python -lpython2.6
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}

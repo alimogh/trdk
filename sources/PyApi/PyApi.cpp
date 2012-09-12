@@ -38,8 +38,8 @@ const std::string & PyApi::Algo::GetName() const {
 	return m_settings.algoName;
 }
 
-void PyApi::Algo::SubscribeToMarketData(const LiveMarketDataSource &/*dataSource*/) {
-	//...//
+void PyApi::Algo::SubscribeToMarketData(const LiveMarketDataSource &dataSource) {
+	dataSource.SubscribeToMarketDataLevel1(GetSecurity());
 }
 
 void PyApi::Algo::Update() {
