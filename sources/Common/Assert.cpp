@@ -23,9 +23,9 @@
 namespace {
 
 	void Break() {
-#		ifdef BOOST_WINDOWS
+#		if defined(BOOST_WINDOWS)
 			DebugBreak();
-#		else
+#		elif defined(_DEBUG)
 			__assert_fail("Debug break", "", 0, "");
 #		endif
 	}
@@ -75,7 +75,7 @@ namespace {
 #else
 
 	namespace Detail {
-		
+
 		void ReportAssertFail(const char *expr, const char *file, int line) throw() {
 			Log::Error(
 				"Assertion Failed (predefined): \"%1%\" in file %2%, line %3%.",
