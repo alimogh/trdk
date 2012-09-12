@@ -10,6 +10,10 @@
 
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/thread/thread_time.hpp>
+#	include <boost/noncopyable.hpp>
+#	include <boost/enable_shared_from_this.hpp>
+#	include <boost/signals2.hpp>
+#	include <boost/thread/shared_mutex.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Interlocking.hpp"
