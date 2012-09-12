@@ -14,6 +14,7 @@
 #include "Core/Algo.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
+#include "Core/MarketDataSource.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -328,6 +329,7 @@ void Trade(const fs::path &iniFilePath) {
 
 	iniChangeNotificator.Start();
 	dispatcher.Start();
+	(*marketDataSource).Start();
 
 	getchar();
 	iniChangeNotificator.Stop();

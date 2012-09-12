@@ -14,9 +14,9 @@
 #	include <EnyxMD.h>
 #	include <dictionary/Dictionary.h>
 #	include <EnyxMDPcapInterface.h>
-//#	include <NXFeedHandler.h>
+#	include <NXFeedHandler.h>
 #	include <NXOrderManager.h>
-// #	include <exchanges/nasdaq_us_totalview_itch41/NasdaqUSTVITCH41NXFeedExtra.h>
+#	include <exchanges/nasdaq_us_totalview_itch41/NasdaqUSTVITCH41NXFeedExtra.h>
 #endif
 
 #include "Common/DisableBoostWarningsBegin.h"

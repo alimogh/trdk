@@ -37,6 +37,7 @@ public:
 public:
 
 	virtual void Connect(const IniFile &, const std::string &section) = 0;
+	virtual void Start() = 0;
 
 };
 

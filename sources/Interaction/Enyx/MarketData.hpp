@@ -10,8 +10,6 @@
 
 #include "Core/MarketDataSource.hpp"
 
-class EnyxMDInterface;
-
 namespace Trader {  namespace Interaction { namespace Enyx {
 
 	class MarketData : public ::LiveMarketDataSource {
@@ -24,6 +22,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 	public:
 
 		virtual void Connect(const IniFile &ini, const std::string &section);
+		virtual void Start();
 
 	public:
 
@@ -33,6 +32,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 	protected:
 
 		bool IsSupported(const Security &) const;
+		void CheckSupport(const Security &) const;
 
 	private:
 

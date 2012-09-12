@@ -10,24 +10,10 @@
 #include "MarketData.hpp"
 #include "Core/Security.hpp"
 #include "Common/IniFile.hpp"
+#include "NasdaqFeedHandler.hpp"
 
 namespace fs = boost::filesystem;
 using namespace Trader::Interaction::Enyx;
-
-namespace {
-	void callBackFirstLimitUpdate(
-				std::string instrument,
-				uint64_t price,
-				uint32_t quantity,
-				bool buy_nSell,
-				void *callBackArg) {
-		Log::Debug(
-			"new LIMIT> %1% quantity=%2% price=%3%.",
-			instrument,
-			quantity,
-			price);
-	}
-}
 
 MarketData::MarketData() {
 	//...//
@@ -100,28 +86,38 @@ void MarketData::Connect(const IniFile &ini, const std::string &section) {
     enyx->setInstrumentFiltering(true);
     enyx->setEmptyPacketDrop(true);
 
-	const auto exchange = Dictionary::getExchangeByName(/*security->GetPrimaryExchange()*/"NASDAQ-US");
-	enyx->subscribeInstrument(exchange->getInstrumentByName(/*security->GetSymbol()*/"DNN"));
-
-	NXOrderManager *nxOrderManager(new NXOrderManager(callBackFirstLimitUpdate, NULL));
+	NXFeedHandler *nxOrderManager = new NasdaqFeedHandler;
     enyx->addHandler(*nxOrderManager);
-	nxOrderManager->setSubscribedInstruments(enyx->getSetSubscribedInstrument());
 
-	enyx->start();
 	m_enyx.reset(enyx.release());
-
 	Log::Info(TRADER_ENYX_LOG_PREFFIX "connected.");
 
+}
+
+void MarketData::Start() {
+	Log::Info(TRADER_ENYX_LOG_PREFFIX "starting...");
+	Assert(m_enyx);
+	m_enyx->start();
+	Log::Info(TRADER_ENYX_LOG_PREFFIX "started.");
 }
 
 bool MarketData::IsSupported(const Security &security) const {
 	return Dictionary::isExchangeSupported(security.GetPrimaryExchange());
 }
 
-void MarketData::SubscribeToMarketDataLevel1(boost::shared_ptr<Security> security) const {
-//     const auto exchange = Dictionary::getExchangeByName(security->GetPrimaryExchange());
-//     m_enyx->subscribeInstrument(exchange->getInstrumentByName(security->GetSymbol()));
+void MarketData::CheckSupport(const Security &security) const {
+	if (!IsSupported(security)) {
+		boost::format message("Exchange \"%1%\" not supported by market data source");
+		message % security.GetPrimaryExchange();
+		throw Error(message.str().c_str());
+	}
+}
 
+void MarketData::SubscribeToMarketDataLevel1(boost::shared_ptr<Security> security) const {
+	Log::Info(TRADER_ENYX_LOG_PREFFIX "subscribing \"%1%\"...", security->GetFullSymbol());
+	CheckSupport(*security);
+	const auto exchange = Dictionary::getExchangeByName(security->GetPrimaryExchange());
+	m_enyx->subscribeInstrument(exchange->getInstrumentByName(security->GetSymbol()));
 }
 
 void MarketData::SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const {

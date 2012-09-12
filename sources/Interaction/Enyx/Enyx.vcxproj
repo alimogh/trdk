@@ -67,6 +67,11 @@
   <PropertyGroup />
   <ItemGroup>
     <ClCompile Include="Api.cpp" />
+    <ClCompile Include="NasdaqFeedHandler.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="MarketData.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -81,6 +86,7 @@
   <ItemGroup>
     <ClInclude Include="Api.hpp" />
     <ClInclude Include="FakeMarketData.hpp" />
+    <ClInclude Include="NasdaqFeedHandler.hpp" />
     <ClInclude Include="MarketData.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>

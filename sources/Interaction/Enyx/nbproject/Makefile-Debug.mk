@@ -36,7 +36,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/MarketData.o \
-	${OBJECTDIR}/Api.o
+	${OBJECTDIR}/Api.o \
+	${OBJECTDIR}/NasdaqFeedHandler.o
 
 
 # C Compiler Flags
@@ -76,6 +77,11 @@ ${OBJECTDIR}/Api.o: Api.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_INTERACTION_ENYX -D_DEBUG -I../.. -I/usr/include/libenyxmd -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Api.o Api.cpp
+
+${OBJECTDIR}/NasdaqFeedHandler.o: NasdaqFeedHandler.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_INTERACTION_ENYX -D_DEBUG -I../.. -I/usr/include/libenyxmd -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/NasdaqFeedHandler.o NasdaqFeedHandler.cpp
 
 # Subprojects
 .build-subprojects:
