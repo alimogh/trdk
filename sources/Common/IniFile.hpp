@@ -30,7 +30,7 @@ public:
 	public:
 		explicit Error(const char *what) throw();
 	};
-	
+
 	class FileOpenError : public Error {
 	public:
 		FileOpenError() throw();
@@ -43,7 +43,7 @@ public:
 
 	class SectionNotExistsError : public Error {
 	public:
-		SectionNotExistsError() throw();
+		SectionNotExistsError(const char *what) throw();
 	};
 
 	class SymbolFormatError : public Error {
@@ -68,14 +68,14 @@ public:
 	};
 
 	struct AbsoluteOrPercentsPrice {
-		
+
 		bool isAbsolute;
-		
+
 		union {
 			boost::int64_t absolute;
 			double percents;
 		} value;
-		
+
 		boost::int64_t Get(boost::int64_t fullVal) const;
 
 		std::string GetStr(unsigned long priceScale) const;
@@ -146,7 +146,7 @@ public:
 			const std::string &defExchange,
 			const std::string &defPrimaryExchange)
 		const;
-	
+
 	std::list<Symbol> ReadSymbols(
 			const std::string &section,
 			const std::string &defExchange,

@@ -74,8 +74,8 @@ IniFile::KeyNotExistsError::KeyNotExistsError(const char *what) throw()
 	//...//
 }
 
-IniFile::SectionNotExistsError::SectionNotExistsError() throw()
-		: Error("Section doesn't exist in INI-file") {
+IniFile::SectionNotExistsError::SectionNotExistsError(const char *what) throw()
+		: Error(what) {
 	//...//
 }
 
@@ -191,7 +191,9 @@ void IniFile::ReadSection(
 		}
 	}
 	if (!isInSection && isMustBeExist) {
-		throw SectionNotExistsError();
+		boost::format message("Failed to find INI-file section \"%1%\"");
+		message % section;
+		throw SectionNotExistsError(message.str().c_str());
 	}
 }
 
