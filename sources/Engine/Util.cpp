@@ -25,10 +25,10 @@ void Connect(TradeSystem &tradeSystem, const IniFile &ini, const std::string &se
 	}
 }
 
-void Connect(MarketDataSource &/*marketDataSource*/, const Settings &/*settings*/) {
+void Connect(LiveMarketDataSource &marketDataSource, const IniFile &ini, const std::string &section) {
 	for ( ; ; ) {
 		try {
-			// marketDataSource.Connect(settings);
+			marketDataSource.Connect(ini, section);
 			break;
 		} catch (const MarketDataSource::ConnectError &) {
 			boost::this_thread::sleep(pt::seconds(5));

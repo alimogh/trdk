@@ -4,7 +4,7 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>Api.hpp</itemPath>
+      <itemPath>/home/palchukovsky/Projects/Trader/sources/Interaction/Enyx/FakeMarketData.hpp</itemPath>
       <itemPath>MarketData.hpp</itemPath>
       <itemPath>Prec.hpp</itemPath>
     </logicalFolder>
@@ -12,6 +12,7 @@
                    displayName="Source Files"
                    projectFiles="true">
       <itemPath>Api.cpp</itemPath>
+      <itemPath>MarketData.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -38,8 +39,15 @@
           <standard>8</standard>
           <incDir>
             <pElem>../..</pElem>
+            <pElem>/usr/include/libenyxmd</pElem>
             <pElem>/usr/local/boost/boost_1_51/include</pElem>
           </incDir>
+          <preprocessorList>
+            <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
+            <Elem>DEV_VER</Elem>
+            <Elem>TRADER_INTERACTION_ENYX</Elem>
+            <Elem>_DEBUG</Elem>
+          </preprocessorList>
           <warningLevel>3</warningLevel>
         </ccTool>
         <linkerTool>
@@ -71,6 +79,7 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
+            <linkerLibLibItem>enyxmd</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -91,8 +100,15 @@
           <standard>8</standard>
           <incDir>
             <pElem>../..</pElem>
+            <pElem>/usr/include/libenyxmd</pElem>
             <pElem>/usr/local/boost/boost_1_51/include</pElem>
           </incDir>
+          <preprocessorList>
+            <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
+            <Elem>DEV_VER</Elem>
+            <Elem>TRADER_INTERACTION_ENYX</Elem>
+            <Elem>_DEBUG</Elem>
+          </preprocessorList>
           <warningLevel>3</warningLevel>
         </ccTool>
         <fortranCompilerTool>
@@ -130,6 +146,7 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
+            <linkerLibLibItem>enyxmd</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

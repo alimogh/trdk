@@ -12,8 +12,8 @@ namespace Trader {
 	class TradeSystem;
 }
 
-class MarketDataSource;
+class LiveMarketDataSource;
 class Settings;
 
 void Connect(Trader::TradeSystem &, const IniFile &, const std::string &section);
-void Connect(MarketDataSource &, const Settings &);
+void Connect(LiveMarketDataSource &, const IniFile &, const std::string &section);

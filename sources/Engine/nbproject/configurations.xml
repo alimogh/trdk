@@ -57,7 +57,7 @@
           <warningLevel>3</warningLevel>
         </ccTool>
         <linkerTool>
-          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine</output>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader_dbg</output>
           <linkerAddLib>
             <pElem>/usr/local/boost/boost_1_51/lib</pElem>
           </linkerAddLib>
@@ -161,6 +161,7 @@
           <developmentMode>5</developmentMode>
         </asmTool>
         <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader</output>
           <linkerAddLib>
             <pElem>/usr/local/boost/boost_1_51/lib</pElem>
           </linkerAddLib>

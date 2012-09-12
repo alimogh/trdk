@@ -11,7 +11,7 @@
 #include "Api.h"
 
 class Security;
-class Settings;
+class IniFile;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -36,7 +36,7 @@ public:
 
 public:
 
-	virtual void Connect(const Settings &) = 0;
+	virtual void Connect(const IniFile &, const std::string &section) = 0;
 
 };
 

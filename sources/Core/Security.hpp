@@ -16,12 +16,12 @@ class Position;
 class Settings;
 
 class TRADER_CORE_API Security
-	: public Instrument,
+	: public Trader::Instrument,
 	public boost::enable_shared_from_this<Security> {
 
 public:
 
-	typedef Instrument Base;
+	typedef Trader::Instrument Base;
 
 	typedef Trader::TradeSystem::OrderStatusUpdateSlot OrderStatusUpdateSlot;
 

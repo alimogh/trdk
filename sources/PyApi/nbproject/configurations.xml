@@ -88,6 +88,7 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
               </makeArtifact>
             </linkerLibProjectItem>
+            <linkerLibLibItem>boost_python</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -154,6 +155,7 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
               </makeArtifact>
             </linkerLibProjectItem>
+            <linkerLibLibItem>boost_python</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

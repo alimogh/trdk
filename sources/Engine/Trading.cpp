@@ -23,7 +23,7 @@ using namespace Trader;
 namespace {
 
 	typedef std::map<std::string, boost::shared_ptr<Security>> Securities;
-	
+
 	typedef DllObjectPtr<Algo> ModuleAlgo;
 	typedef std::map<std::string /*tag*/, std::list<ModuleAlgo>> Algos;
 
@@ -93,7 +93,7 @@ namespace {
 		}
 
 		Log::Info("Loading objects for \"%1%\"...", tag);
-		
+
 		std::string symbolsFilePath;
 		try {
 			symbolsFilePath = ini.ReadKey(section, Ini::Key::symbols, false);
@@ -160,7 +160,7 @@ namespace {
 				const IniFile &ini,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Dispatcher &dispatcher,
-				MarketDataSource &marketDataSource,
+				boost::shared_ptr<LiveMarketDataSource> marketDataSource,
 				Algos &algos,
 				boost::shared_ptr<Settings> settings)  {
 
@@ -183,7 +183,6 @@ namespace {
 
 		if (algos.empty()) {
 			Log::Error("No algos loaded.");
-			return false;
 		}
 
 		foreach (auto &as, algos) {
@@ -197,12 +196,12 @@ namespace {
 
 		try {
 			Connect(*tradeSystem, ini, Ini::Sections::tradeSystem);
-			Connect(marketDataSource, *settings);
+			Connect(*marketDataSource, ini, Ini::Sections::MarketData::Source::live);
 		} catch (const Exception &ex) {
 			Log::Error("Failed to make trading connections: \"%1%\".", ex.what());
 			throw Exception("Failed to make trading connections");
 		}
-		
+
 		return true;
 
 	}
@@ -295,7 +294,8 @@ void Trade(const fs::path &iniFilePath) {
 	boost::shared_ptr<Settings> settings
 		= Ini::LoadSettings(ini, boost::get_system_time(), false);
 
-	DllObjectPtr<TradeSystem> tradeSystem = LoadTradeSystem(ini, Ini::Sections::tradeSystem);
+	DllObjectPtr<TradeSystem> tradeSystem
+		= LoadTradeSystem(ini, Ini::Sections::tradeSystem);
 	DllObjectPtr<LiveMarketDataSource> marketDataSource
 		= LoadLiveMarketDataSource(ini, Ini::Sections::MarketData::Source::live);
 
@@ -306,18 +306,18 @@ void Trade(const fs::path &iniFilePath) {
 				ini,
 				tradeSystem,
 				dispatcher,
-				reinterpret_cast<MarketDataSource &>(marketDataSource),
+				marketDataSource,
 				algos,
 				settings)) {
 		return;
 	}
-		
+
 	foreach (auto &as, algos) {
 		foreach (auto &a, as.second) {
 			a->SubscribeToMarketData(marketDataSource);
 		}
 	}
-	
+
 	FileSystemChangeNotificator iniChangeNotificator(
 		iniFilePath,
 		boost::bind(
@@ -332,69 +332,5 @@ void Trade(const fs::path &iniFilePath) {
 	getchar();
 	iniChangeNotificator.Stop();
 	dispatcher.Stop();
-
-}
-
-void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
-
-	Log::Info("!!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!!");
-
-	Assert(argc >= 2 && std::string(argv[1]) == "replay");
-
-	if (argc != 3) {
-		throw Exception("Failed to get request parameters (replay date)");
-	}
-
-	Log::Info("Using %1% INI-file...", iniFilePath);
-	const IniFile ini(iniFilePath);
-
-	boost::shared_ptr<Settings> settings = Ini::LoadSettings(
-		ini,
-		pt::time_from_string((boost::format("%1% 00:00:00") % argv[2]).str())
-			- Util::GetEdtDiff(),
-		true);
-	Log::Info(
-		"Replaying trade period: %1% - %2%.",
-		settings->GetCurrentTradeSessionStartTime() + Util::GetEdtDiff(),
-		settings->GetCurrentTradeSessionEndime() + Util::GetEdtDiff());
-
-	boost::shared_ptr<TradeSystem> tradeSystem(new FakeTradeSystem);
-	DllObjectPtr<HistoryMarketDataSource> marketDataSource;
-	{
-		boost::shared_ptr<Dll> dll(new Dll("Lightspeed", true));
-		const auto mdFabric = dll->GetFunction<boost::shared_ptr<HistoryMarketDataSource>()>(
-			"CreateHistoryMarketDataSource");
-		marketDataSource.Reset(dll, mdFabric());
-	}
-
-	Dispatcher dispatcher(settings);
-	Algos algos;
-	if (	!InitTrading(
-				ini,
-				tradeSystem,
-				dispatcher,
-				reinterpret_cast<MarketDataSource &>(marketDataSource),
-				algos,
-				settings)) {
-		return;
-	}
-
-	foreach (auto &as, algos) {
-		foreach (auto &a, as.second) {
-			a->RequestHistory(
-				marketDataSource,
-				settings->GetCurrentTradeSessionStartTime(),
-				settings->GetCurrentTradeSessionEndime());
-		}
-	}
-	dispatcher.Start();
-	Log::Info("!!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!!");
-	
-	getchar();
-	
-	dispatcher.Stop();
-	algos.clear();
-
-	Log::Info("!!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!!");
 
 }
