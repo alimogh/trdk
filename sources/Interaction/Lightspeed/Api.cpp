@@ -9,10 +9,14 @@
 #include "Prec.hpp"
 #include "Gateway.hpp"
 
-namespace Trader {  namespace Interaction { namespace Lightspeed {
-
-	boost::shared_ptr<TradeSystem> CreateLightspeedGateway() {
-		return boost::shared_ptr<TradeSystem>(new Gateway);
+#ifdef BOOST_WINDOWS
+	boost::shared_ptr<Trader::TradeSystem> CreateLightspeedGateway() {
+		return boost::shared_ptr<Trader::TradeSystem>(
+			new Trader::Interaction::Lightspeed::Gateway);
 	}
-
-} } }
+#else
+	extern "C" boost::shared_ptr<Trader::TradeSystem> CreateLightspeedGateway() {
+		return boost::shared_ptr<Trader::TradeSystem>(
+			new Trader::Interaction::Lightspeed::Gateway);
+	}
+#endif
