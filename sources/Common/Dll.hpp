@@ -146,12 +146,24 @@ public:
 	}
 
 	~Dll() throw() {
-		Assert(m_handle != NULL);
-#		ifdef BOOST_WINDOWS
-			FreeLibrary(m_handle);
-#		else
-			dlclose(m_handle);
-#		endif
+		Reset();
+	}
+
+public:
+
+	void Reset() throw() {
+		if (m_handle) {
+#			ifdef BOOST_WINDOWS
+				FreeLibrary(m_handle);
+#			else
+				dlclose(m_handle);
+#			endif
+		}
+		m_handle = NULL;
+	}
+
+	void Release() throw() {
+		m_handle = NULL;
 	}
 
 public:
