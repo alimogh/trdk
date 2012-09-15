@@ -7,7 +7,6 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "FakeTradeSystem.hpp"
 #include "Ini.hpp"
 #include "Util.hpp"
 #include "Dispatcher.hpp"
@@ -280,9 +279,14 @@ namespace {
 		const std::string module = ini.ReadKey(section, Ini::Key::module, false);
 		const std::string fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
 		boost::shared_ptr<Dll> dll(new Dll(module, true));
-		return DllObjectPtr<LiveMarketDataSource>(
-			dll,
-			dll->GetFunction<boost::shared_ptr<LiveMarketDataSource>()>(fabricName)());
+		try {
+			return DllObjectPtr<LiveMarketDataSource>(
+				dll,
+				dll->GetFunction<boost::shared_ptr<LiveMarketDataSource>()>(fabricName)());
+		} catch (...) {
+			Log::RegisterUnhandledException(__FUNCTION__, __FILE__, __LINE__, false);
+			throw Exception("Failed to load market data source");
+		}
 	}
 
 }
