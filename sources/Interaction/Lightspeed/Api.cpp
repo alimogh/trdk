@@ -10,12 +10,12 @@
 #include "Gateway.hpp"
 
 #ifdef BOOST_WINDOWS
-	boost::shared_ptr<Trader::TradeSystem> CreateLightspeedGateway() {
+	boost::shared_ptr<Trader::TradeSystem> CreateTradeSystem() {
 		return boost::shared_ptr<Trader::TradeSystem>(
 			new Trader::Interaction::Lightspeed::Gateway);
 	}
 #else
-	extern "C" boost::shared_ptr<Trader::TradeSystem> CreateLightspeedGateway() {
+	extern "C" boost::shared_ptr<Trader::TradeSystem> CreateTradeSystem() {
 		return boost::shared_ptr<Trader::TradeSystem>(
 			new Trader::Interaction::Lightspeed::Gateway);
 	}

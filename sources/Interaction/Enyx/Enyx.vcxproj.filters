@@ -17,10 +17,10 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MarketData.cpp">
+    <ClCompile Include="NasdaqFeedHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NasdaqFeedHandler.cpp">
+    <ClCompile Include="MarketDataSource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -28,16 +28,10 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MarketData.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Api.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FakeMarketData.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="NasdaqFeedHandler.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MarketDataSource.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

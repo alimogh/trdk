@@ -12,12 +12,12 @@
 
 namespace Trader {  namespace Interaction { namespace Enyx {
 
-	class MarketData : public ::LiveMarketDataSource {
+	class MarketDataSource : public ::LiveMarketDataSource {
 
 	public:
 
-		MarketData();
-		virtual ~MarketData();
+		MarketDataSource();
+		virtual ~MarketDataSource();
 
 	public:
 

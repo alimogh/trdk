@@ -11,22 +11,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Dispatcher.cpp">
+    <ClCompile Include="Api.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Trading.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Ini.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Util.cpp">
+    <ClCompile Include="TradeSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -34,14 +25,16 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Dispatcher.hpp">
+    <ClInclude Include="TradeSystem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Ini.hpp">
+    <ClInclude Include="LiveMarketDataSource.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Util.hpp">
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Fake.def">
       <Filter>Header Files</Filter>
-    </ClInclude>
+    </None>
   </ItemGroup>
 </Project>

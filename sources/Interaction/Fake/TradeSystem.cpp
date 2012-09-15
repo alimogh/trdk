@@ -7,10 +7,10 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "FakeTradeSystem.hpp"
+#include "TradeSystem.hpp"
 #include "Core/Security.hpp"
 
-using namespace Trader;
+using namespace Trader::Interaction::Fake;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -19,7 +19,7 @@ namespace {
 	struct Order {
 		boost::shared_ptr<const Security> security;
 		bool isSell;
-		TradeSystem::OrderId id;
+		Trader::TradeSystem::OrderId id;
 		std::string symbol;
 		TradeSystem::OrderStatusUpdateSlot callback;
 		TradeSystem::OrderQty qty;
@@ -30,7 +30,7 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
-class FakeTradeSystem::Implementation : private boost::noncopyable {
+class TradeSystem::Implementation : private boost::noncopyable {
 
 private:
 
@@ -154,25 +154,25 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-FakeTradeSystem::FakeTradeSystem()
+TradeSystem::TradeSystem()
 		: m_pimpl(new Implementation) {
 	//...//
 }
 
-FakeTradeSystem::~FakeTradeSystem() {
+TradeSystem::~TradeSystem() {
 	delete m_pimpl;
 }
 
-void FakeTradeSystem::Connect(const IniFile &, const std::string &/*section*/) {
+void TradeSystem::Connect(const IniFile &, const std::string &/*section*/) {
 	m_pimpl->Start();
 }
 
-bool FakeTradeSystem::IsCompleted(const Security &) const {
+bool TradeSystem::IsCompleted(const Security &) const {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
 
-FakeTradeSystem::OrderId FakeTradeSystem::SellAtMarketPrice(
+TradeSystem::OrderId TradeSystem::SellAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -193,7 +193,7 @@ FakeTradeSystem::OrderId FakeTradeSystem::SellAtMarketPrice(
 	return order.id;
 }
 
-FakeTradeSystem::OrderId FakeTradeSystem::Sell(
+TradeSystem::OrderId TradeSystem::Sell(
 			const Security &,
 			OrderQty,
 			OrderPrice,
@@ -202,7 +202,7 @@ FakeTradeSystem::OrderId FakeTradeSystem::Sell(
 	throw Exception("Method doesn't implemented");
 }
 
-FakeTradeSystem::OrderId FakeTradeSystem::SellAtMarketPriceWithStopPrice(
+TradeSystem::OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice /*stopPrice*/,
@@ -211,7 +211,7 @@ FakeTradeSystem::OrderId FakeTradeSystem::SellAtMarketPriceWithStopPrice(
 	throw Exception("Method doesn't implemented");
 }
 
-FakeTradeSystem::OrderId FakeTradeSystem::SellOrCancel(
+TradeSystem::OrderId TradeSystem::SellOrCancel(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
@@ -235,7 +235,7 @@ FakeTradeSystem::OrderId FakeTradeSystem::SellOrCancel(
 	return order.id;
 }
 
-FakeTradeSystem::OrderId FakeTradeSystem::BuyAtMarketPrice(
+TradeSystem::OrderId TradeSystem::BuyAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -256,7 +256,7 @@ FakeTradeSystem::OrderId FakeTradeSystem::BuyAtMarketPrice(
 	return order.id;
 }
 
-FakeTradeSystem::OrderId FakeTradeSystem::Buy(
+TradeSystem::OrderId TradeSystem::Buy(
 			const Security &,
 			OrderQty,
 			OrderPrice,
@@ -265,7 +265,7 @@ FakeTradeSystem::OrderId FakeTradeSystem::Buy(
 	throw Exception("Method doesn't implemented");
 }
 
-FakeTradeSystem::OrderId FakeTradeSystem::BuyAtMarketPriceWithStopPrice(
+TradeSystem::OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
 			OrderPrice /*stopPrice*/,
@@ -274,7 +274,7 @@ FakeTradeSystem::OrderId FakeTradeSystem::BuyAtMarketPriceWithStopPrice(
 	throw Exception("Method doesn't implemented");
 }
 
-FakeTradeSystem::OrderId FakeTradeSystem::BuyOrCancel(
+TradeSystem::OrderId TradeSystem::BuyOrCancel(
 			const Security &security,
 			OrderQty qty,
 			OrderPrice price,
@@ -298,16 +298,16 @@ FakeTradeSystem::OrderId FakeTradeSystem::BuyOrCancel(
 	return order.id;
 }
 
-void FakeTradeSystem::CancelOrder(OrderId) {
+void TradeSystem::CancelOrder(OrderId) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
 
-void FakeTradeSystem::CancelAllOrders(const Security &security) {
+void TradeSystem::CancelAllOrders(const Security &security) {
 	Log::Trading("cancel", "%1% orders=[all]", security.GetSymbol());
 }
 
-void FakeTradeSystem::SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const {
+void TradeSystem::SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }

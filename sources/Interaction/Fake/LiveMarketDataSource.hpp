@@ -10,17 +10,17 @@
 
 #include "Core/MarketDataSource.hpp"
 
-namespace Trader {  namespace Interaction { namespace Enyx {
+namespace Trader { namespace Interaction { namespace Fake {
 
-	class FakeMarketData : public ::LiveMarketDataSource {
+	class LiveMarketDataSource : public ::LiveMarketDataSource {
 
 	public:
 
-		FakeMarketData() {
+		LiveMarketDataSource() {
 			//...//
 		}
 
-		virtual ~FakeMarketData() {
+		virtual ~LiveMarketDataSource() {
 			//...//
 		}
 
@@ -37,6 +37,10 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 		}
 
 		virtual void SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const {
+			//...//
+		}
+
+		virtual void Start() {
 			//...//
 		}
 

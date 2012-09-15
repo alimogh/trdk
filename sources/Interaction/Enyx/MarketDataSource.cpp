@@ -15,15 +15,15 @@
 namespace fs = boost::filesystem;
 using namespace Trader::Interaction::Enyx;
 
-MarketData::MarketData() {
+MarketDataSource::MarketDataSource() {
 	//...//
 }
 
-MarketData::~MarketData() {
+MarketDataSource::~MarketDataSource() {
 	//...///
 }
 
-void MarketData::Connect(const IniFile &ini, const std::string &section) {
+void MarketDataSource::Connect(const IniFile &ini, const std::string &section) {
 
 	Log::Info(TRADER_ENYX_LOG_PREFFIX "connecting...");
 
@@ -94,18 +94,18 @@ void MarketData::Connect(const IniFile &ini, const std::string &section) {
 
 }
 
-void MarketData::Start() {
+void MarketDataSource::Start() {
 	Log::Info(TRADER_ENYX_LOG_PREFFIX "starting...");
 	Assert(m_enyx);
 	m_enyx->start();
 	Log::Info(TRADER_ENYX_LOG_PREFFIX "started.");
 }
 
-bool MarketData::IsSupported(const Security &security) const {
+bool MarketDataSource::IsSupported(const Security &security) const {
 	return Dictionary::isExchangeSupported(security.GetPrimaryExchange());
 }
 
-void MarketData::CheckSupport(const Security &security) const {
+void MarketDataSource::CheckSupport(const Security &security) const {
 	if (!IsSupported(security)) {
 		boost::format message("Exchange \"%1%\" not supported by market data source");
 		message % security.GetPrimaryExchange();
@@ -113,14 +113,14 @@ void MarketData::CheckSupport(const Security &security) const {
 	}
 }
 
-void MarketData::SubscribeToMarketDataLevel1(boost::shared_ptr<Security> security) const {
+void MarketDataSource::SubscribeToMarketDataLevel1(boost::shared_ptr<Security> security) const {
 	Log::Info(TRADER_ENYX_LOG_PREFFIX "subscribing \"%1%\"...", security->GetFullSymbol());
 	CheckSupport(*security);
 	const auto exchange = Dictionary::getExchangeByName(security->GetPrimaryExchange());
 	m_enyx->subscribeInstrument(exchange->getInstrumentByName(security->GetSymbol()));
 }
 
-void MarketData::SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const {
+void MarketDataSource::SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const {
 // 	const auto exchange = Dictionary::getExchangeByName(security->GetPrimaryExchange());
 //     m_enyx->subscribeInstrument(exchange->getInstrumentByName(security->GetSymbol()));
 
