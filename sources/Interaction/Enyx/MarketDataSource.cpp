@@ -140,12 +140,16 @@ boost::shared_ptr<Trader::Security> MarketDataSource::CreateSecurity(
 	return result;
 }
 
-void MarketDataSource::Subscribe(boost::shared_ptr<Trader::Security> security) const {
-	Log::Info(TRADER_ENYX_LOG_PREFFIX "subscribing \"%1%\"...", security->GetFullSymbol());
+void MarketDataSource::Subscribe(const boost::shared_ptr<Security> &security) const {
+	Log::Info(
+		TRADER_ENYX_LOG_PREFFIX "subscribing \"%1%\"...",
+		security->GetFullSymbol());
 	CheckSupport(*security);
 	const auto exchange = Dictionary::getExchangeByName(security->GetPrimaryExchange());
 	if (!m_enyx->subscribeInstrument(exchange->getInstrumentByName(security->GetSymbol()))) {
-		Log::Error(TRADER_ENYX_LOG_PREFFIX "failed to subscribe \"%1%\".", security->GetFullSymbol());
+		Log::Error(
+			TRADER_ENYX_LOG_PREFFIX "failed to subscribe \"%1%\".",
+			security->GetFullSymbol());
 		return;
 	}
 	m_handler->Subscribe(security);

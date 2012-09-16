@@ -20,7 +20,7 @@ private:
 	typedef Mutex::scoped_lock Lock;
 
 public:
-	
+
 	PositionReporterAlgo() {
 		//...//
 	}
@@ -105,38 +105,38 @@ protected:
 		Assert(position.GetOpenedQty() == position.GetPlanedQty());
 		Assert(position.GetOpenedQty() == position.GetClosedQty());
 		Assert(position.GetActiveQty() == 0);
-		
-		const Security &security = position.GetSecurity();
+
+		const Trader::Security &security = position.GetSecurity();
 
 		out
-			
+
 			// type
 			<< position.GetTypeStr()
-			
+
 			// symbol
 			<< ',' << security.GetSymbol()
-			
+
 			// exit type
 			<< ',' << position.GetCloseTypeStr()
-			
+
 			// entry start price
 			<< ',' << security.DescalePrice(position.GetOpenStartPrice())
-			
+
 			// entry price
 			<< ',' << security.DescalePrice(position.GetOpenPrice())
-			
+
 			// entry time
 			<< ',' << (position.GetOpenTime() + Util::GetEdtDiff()).time_of_day()
 
 			// entry order
 			<< ',' << position.GetOpenOrderId()
-			
+
 			// number of shares
 			<< ',' /*<< position.GetOpenedQty() << "->"*/ << position.GetClosedQty()
-			
+
 			// exit start price
 			<< ',' << security.DescalePrice(position.GetCloseStartPrice())
-			
+
 			// exit price
 			<< ',' << security.DescalePrice(position.GetClosePrice());
 
@@ -157,12 +157,12 @@ protected:
 
 		// P/L
 		{
-			Security::ScaledPrice pl = 0;
+			Trader::Security::ScaledPrice pl = 0;
 			switch (position.GetType()) {
-				case Position::TYPE_LONG:
+				case Trader::Position::TYPE_LONG:
 					pl = position.GetClosePrice() - position.GetOpenPrice();
 					break;
-				case Position::TYPE_SHORT:
+				case Trader::Position::TYPE_SHORT:
 					pl = position.GetOpenPrice() - position.GetClosePrice();
 					break;
 				default:

@@ -27,10 +27,6 @@ public:
 	typedef boost::shared_lock<MarketDataTimeMutex> MarketDataTimeReadLock;
 	typedef boost::unique_lock<MarketDataTimeMutex> MarketDataTimeWriteLock;
 
-	typedef boost::shared_mutex Level2Mutex;
-	typedef boost::shared_lock<Level2Mutex> Level2ReadLock;
-	typedef boost::unique_lock<Level2Mutex> Level2WriteLock;
-
 public:
 
 	class MarketDataLog : private boost::noncopyable {

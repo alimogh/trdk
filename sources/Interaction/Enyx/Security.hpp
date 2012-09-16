@@ -37,8 +37,8 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	public:
 
-		void AddOrder();
-		void RemoveOrder();
+		void OnOrderAdd();
+		void OnOrderDel();
 
 	};
 

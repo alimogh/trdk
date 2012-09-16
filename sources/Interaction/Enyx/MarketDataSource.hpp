@@ -13,6 +13,7 @@
 namespace Trader {  namespace Interaction { namespace Enyx {
 
 	class FeedHandler;
+	class Security;
 
 } } }
 
@@ -32,7 +33,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	public:
 
-		virtual boost::shared_ptr<Security> CreateSecurity(
+		virtual boost::shared_ptr<Trader::Security> CreateSecurity(
 					boost::shared_ptr<Trader::TradeSystem>,
 					const std::string &symbol,
 					const std::string &primaryExchange,
@@ -55,7 +56,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 		void CheckState() const;
 
-		void Subscribe(boost::shared_ptr<Trader::Security> security) const;
+		void Subscribe(const boost::shared_ptr<Security> &security) const;
 
 	private:
 

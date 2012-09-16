@@ -5,7 +5,6 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>Dispatcher.hpp</itemPath>
-      <itemPath>FakeTradeSystem.hpp</itemPath>
       <itemPath>Ini.hpp</itemPath>
       <itemPath>Prec.hpp</itemPath>
       <itemPath>Util.hpp</itemPath>
@@ -15,7 +14,6 @@
                    projectFiles="true">
       <itemPath>../Common/Assert.cpp</itemPath>
       <itemPath>Dispatcher.cpp</itemPath>
-      <itemPath>FakeTradeSystem.cpp</itemPath>
       <itemPath>Ini.cpp</itemPath>
       <itemPath>Main.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>

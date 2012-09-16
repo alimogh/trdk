@@ -32,10 +32,10 @@ Security::Security(
 	//...//
 }
 
-void Security::AddOrder() {
+void Security::OnOrderAdd() {
 	//...//
 }
 
-void Security::RemoveOrder() {
+void Security::OnOrderDel() {
 	//...//
 }

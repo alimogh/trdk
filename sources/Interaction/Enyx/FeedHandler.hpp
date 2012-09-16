@@ -10,18 +10,59 @@
 
 namespace Trader {  namespace Interaction { namespace Enyx {
 
+	class Security;
+
+} } }
+
+namespace Trader {  namespace Interaction { namespace Enyx {
+
 	class FeedHandler: public NXFeedHandler {
 
 	private:
 
-		class SubscribedSecurity {
+		class SecuritySubscribtion {
+
+		private:
+
+			typedef void (OrderAddSlotSignature)();
+			typedef boost::function<OrderAddSlotSignature> OrderAddSlot;
+			typedef boost::signal<OrderAddSlotSignature> OrderAddSignal;
+
+			typedef void (OrderDelSlotSignature)();
+			typedef boost::function<OrderDelSlotSignature> OrderDelSlot;
+			typedef boost::signal<OrderDelSlotSignature> OrderDelSignal;
+
 		public:
-			explicit SubscribedSecurity(boost::shared_ptr<Security> security);
+
+			SecuritySubscribtion(const boost::shared_ptr<Security> &);
+
 		public:
+
 			const std::string & GetExchange() const;
 			const std::string & GetSymbol() const;
+
+		public:
+
+			void Subscribe(const boost::shared_ptr<Security> &);
+
+		public:
+
+			void OnOrderAdd() {
+				(*m_orderAddSignal)();
+			}
+
+			void OnOrderDel() {
+				(*m_orderDelSignal)();
+			}
+
 		private:
-			boost::shared_ptr<Security> m_security;
+
+			std::string m_exchange;
+			std::string m_symbol;
+
+			boost::shared_ptr<OrderAddSignal> m_orderAddSignal;
+			boost::shared_ptr<OrderDelSignal> m_orderDelSignal;
+
 		};
 
 		struct BySecurtiy {
@@ -29,23 +70,30 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 		};
 
 		typedef boost::multi_index_container<
-			SubscribedSecurity,
+			SecuritySubscribtion,
 			boost::multi_index::indexed_by<
 				boost::multi_index::hashed_unique<
 					boost::multi_index::tag<BySecurtiy>,
 					boost::multi_index::composite_key<
-						SubscribedSecurity,
+						SecuritySubscribtion,
 						boost::multi_index::const_mem_fun<
-							SubscribedSecurity,
+							SecuritySubscribtion,
 							const std::string &,
-							&SubscribedSecurity::GetExchange>,
+							&SecuritySubscribtion::GetExchange>,
 						boost::multi_index::const_mem_fun<
-							SubscribedSecurity,
+							SecuritySubscribtion,
 							const std::string &,
-							&SubscribedSecurity::GetSymbol>>>>>
+							&SecuritySubscribtion::GetSymbol>>>>>
 			Subscribtion;
 
-		typedef Subscribtion::index<BySecurtiy>::type SubscribedBySecurity;
+		typedef Subscribtion::index<BySecurtiy>::type SubscribtionBySecurity;
+
+		struct SubscribtionUpdate {
+			explicit SubscribtionUpdate(const boost::shared_ptr<Security> &);
+			void operator ()(SecuritySubscribtion &);
+		private:
+			const boost::shared_ptr<Security> &m_security;
+		};
 
 	public:
 
@@ -53,7 +101,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	public:
 
-		void Subscribe(boost::shared_ptr<Security>) const throw();
+		void Subscribe(const boost::shared_ptr<Security> &) const throw();
 
 	public:
 
