@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/07/22 23:40:47
+ *   Created: 2012/09/16 12:38:52
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,12 +8,19 @@
 
 #pragma once
 
-void Connect(
-			Trader::TradeSystem &,
-			const IniFile &,
-			const std::string &section);
+namespace Trader {
 
-void Connect(
-			Trader::LiveMarketDataSource &,
-			const IniFile &,
-			const std::string &section);
+	class Security;
+	
+	class LiveMarketDataSource;
+	class HistoryMarketDataSource;
+
+	class Position;
+	class LongPosition;
+	class ShortPosition;
+
+	class TradeSystem;
+
+	class Settings;
+
+}

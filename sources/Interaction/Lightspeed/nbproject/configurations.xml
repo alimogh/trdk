@@ -8,7 +8,6 @@
       <itemPath>GatewayClientMessage.hpp</itemPath>
       <itemPath>GatewayMessage.hpp</itemPath>
       <itemPath>GatewayTsMessage.hpp</itemPath>
-      <itemPath>MarketData.hpp</itemPath>
       <itemPath>Prec.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"

@@ -10,8 +10,9 @@
 #include "Ini.hpp"
 #include "Core/Settings.hpp"
 
-using namespace Ini;
 namespace fs = boost::filesystem;
+using namespace Ini;
+using namespace Trader;
 
 const std::string Sections::common = "Common";
 const std::string Sections::algo = "Algo.";

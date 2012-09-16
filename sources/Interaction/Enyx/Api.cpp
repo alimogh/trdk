@@ -12,11 +12,11 @@
 
 #	include "Core/MarketDataSource.hpp"
 
-	boost::shared_ptr< ::LiveMarketDataSource> CreateLiveMarketDataSource() {
+	boost::shared_ptr<Trader::LiveMarketDataSource> CreateLiveMarketDataSource() {
 		Log::Info("Enyx Marked Data not implemented for this platform, loading Fake Market Data Source...");
 		Dll dll("Fake", true);
-		boost::shared_ptr< ::LiveMarketDataSource> result
-			= dll.GetFunction<boost::shared_ptr< ::LiveMarketDataSource>()>(
+		boost::shared_ptr<Trader::LiveMarketDataSource> result
+			= dll.GetFunction<boost::shared_ptr<Trader::LiveMarketDataSource>()>(
 				"CreateLiveMarketDataSource")();
 		dll.Release();
 		return result;
@@ -24,12 +24,9 @@
 
 #else
 
-#	include "MarketData.hpp"
+#	include "MarketDataSource.hpp"
 
-	using namespace Trader;
-	using namespace Trader::Interaction::Enyx;
-
-	extern "C" boost::shared_ptr< ::LiveMarketDataSource> CreateLiveMarketDataSource() {
+	extern "C" boost::shared_ptr<Trader::LiveMarketDataSource> CreateLiveMarketDataSource() {
 		static volatile long isEnyxInited = false;
 		if (!Interlocking::Exchange(isEnyxInited, true)) {
 			const auto result = EnyxMD::init();
@@ -37,7 +34,8 @@
 				TRADER_ENYX_LOG_PREFFIX "%1% Market Data interfaces available on this system.",
 				result);
 		}
-		return boost::shared_ptr< ::LiveMarketDataSource>(new MarketDataSource);
+		return boost::shared_ptr<Trader::LiveMarketDataSource>(
+			new Trader::Interaction::Enyx::MarketDataSource);
 	}
 
 #endif

@@ -7,10 +7,11 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "MarketData.hpp"
+#include "MarketDataSource.hpp"
 #include "Core/Security.hpp"
 #include "Common/IniFile.hpp"
-#include "NasdaqFeedHandler.hpp"
+#include "FeedHandler.hpp"
+#include "Security.hpp"
 
 namespace fs = boost::filesystem;
 using namespace Trader::Interaction::Enyx;
@@ -70,8 +71,7 @@ void MarketDataSource::Connect(const IniFile &ini, const std::string &section) {
             EnyxMDHwInterface &hardware
 				= EnyxMD::getHardwareInterfaceForFeed("NASDAQ-ITCH");
             EnyxPort &port = hardware.getPortConfiguration();
-            port.setInterfaceForLane(ENYXMD_LANE_A, "enyxnet0");
-            port.setInterfaceForLane(ENYXMD_LANE_B, "enyxnet0");
+            port.setInterfaceForLane(ENYXMD_LANE_C, "enyxnet0");
             enyx.reset(&hardware);
         } catch (const UnsuportedFeedException &ex) {
 			Log::Error(
@@ -81,15 +81,15 @@ void MarketDataSource::Connect(const IniFile &ini, const std::string &section) {
         }
 	}
 
-    enyx->setFirstStreamLane(ENYXMD_LANE_A);
-    enyx->setSecondStreamLane(ENYXMD_LANE_B);
+    enyx->setSecondStreamLane(ENYXMD_LANE_C);
     enyx->setInstrumentFiltering(true);
     enyx->setEmptyPacketDrop(true);
 
-	NXFeedHandler *nxOrderManager = new NasdaqFeedHandler;
-    enyx->addHandler(*nxOrderManager);
+	std::unique_ptr<FeedHandler> handler(new FeedHandler);
+    enyx->addHandler(*handler);
 
 	m_enyx.reset(enyx.release());
+	m_handler.reset(handler.release());
 	Log::Info(TRADER_ENYX_LOG_PREFFIX "connected.");
 
 }
@@ -101,11 +101,11 @@ void MarketDataSource::Start() {
 	Log::Info(TRADER_ENYX_LOG_PREFFIX "started.");
 }
 
-bool MarketDataSource::IsSupported(const Security &security) const {
+bool MarketDataSource::IsSupported(const Trader::Security &security) const {
 	return Dictionary::isExchangeSupported(security.GetPrimaryExchange());
 }
 
-void MarketDataSource::CheckSupport(const Security &security) const {
+void MarketDataSource::CheckSupport(const Trader::Security &security) const {
 	if (!IsSupported(security)) {
 		boost::format message("Exchange \"%1%\" not supported by market data source");
 		message % security.GetPrimaryExchange();
@@ -113,19 +113,40 @@ void MarketDataSource::CheckSupport(const Security &security) const {
 	}
 }
 
-void MarketDataSource::SubscribeToMarketDataLevel1(boost::shared_ptr<Security> security) const {
+boost::shared_ptr<Trader::Security> MarketDataSource::CreateSecurity(
+			boost::shared_ptr<Trader::TradeSystem> ts,
+			const std::string &symbol,
+			const std::string &primaryExchange,
+			const std::string &exchange,
+			boost::shared_ptr<const Trader::Settings> settings,
+			bool logMarketData)
+		const {
+	boost::shared_ptr<Security> result(
+		new Security(ts, symbol, primaryExchange, exchange, settings, logMarketData));
+	Subscribe(result);
+	return result;
+}
+
+boost::shared_ptr<Trader::Security> MarketDataSource::CreateSecurity(
+			const std::string &symbol,
+			const std::string &primaryExchange,
+			const std::string &exchange,
+			boost::shared_ptr<const Trader::Settings> settings,
+			bool logMarketData)
+		const {
+	boost::shared_ptr<Security> result(
+		new Security(symbol, primaryExchange, exchange, settings, logMarketData));
+	Subscribe(result);
+	return result;
+}
+
+void MarketDataSource::Subscribe(boost::shared_ptr<Trader::Security> security) const {
 	Log::Info(TRADER_ENYX_LOG_PREFFIX "subscribing \"%1%\"...", security->GetFullSymbol());
 	CheckSupport(*security);
 	const auto exchange = Dictionary::getExchangeByName(security->GetPrimaryExchange());
-	m_enyx->subscribeInstrument(exchange->getInstrumentByName(security->GetSymbol()));
+	if (!m_enyx->subscribeInstrument(exchange->getInstrumentByName(security->GetSymbol()))) {
+		Log::Error(TRADER_ENYX_LOG_PREFFIX "failed to subscribe \"%1%\".", security->GetFullSymbol());
+		return;
+	}
+	m_handler->Subscribe(security);
 }
-
-void MarketDataSource::SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const {
-// 	const auto exchange = Dictionary::getExchangeByName(security->GetPrimaryExchange());
-//     m_enyx->subscribeInstrument(exchange->getInstrumentByName(security->GetSymbol()));
-
-}
-
-
-
-

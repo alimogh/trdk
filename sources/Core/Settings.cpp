@@ -11,6 +11,7 @@
 #include "Security.hpp"
 
 namespace pt = boost::posix_time;
+using namespace Trader;
 
 namespace {
 
@@ -172,7 +173,7 @@ boost::uint16_t Settings::GetLevel2SnapshotPrintTimeSeconds() const {
 	return boost::uint16_t(m_level2SnapshotPrintTimeSeconds);
 }
 
-bool Settings::IsValidPrice(const Security &security) const {
+bool Settings::IsValidPrice(const Trader::Security &security) const {
 	Assert(security.GetPriceScale() == defaultLastPriceScale);
 	return m_minPrice <= security.GetLastPriceScaled();
 }

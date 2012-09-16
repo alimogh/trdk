@@ -6,8 +6,6 @@
  *   Project: Trading Robot
  **************************************************************************/
 
-class Settings;
-
 namespace Ini {
 
 	//////////////////////////////////////////////////////////////////////////
@@ -35,7 +33,7 @@ namespace Ini {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	boost::shared_ptr<Settings> LoadSettings(
+	boost::shared_ptr<Trader::Settings> LoadSettings(
 			const IniFile &,
 			const boost::posix_time::ptime &now,
 			bool isPlayMode);

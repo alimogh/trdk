@@ -12,7 +12,13 @@
 
 namespace Trader {  namespace Interaction { namespace Enyx {
 
-	class MarketDataSource : public ::LiveMarketDataSource {
+	class FeedHandler;
+
+} } }
+
+namespace Trader {  namespace Interaction { namespace Enyx {
+
+	class MarketDataSource : public Trader::LiveMarketDataSource {
 
 	public:
 
@@ -26,17 +32,35 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	public:
 
-		virtual void SubscribeToMarketDataLevel1(boost::shared_ptr<Security>) const;
-		virtual void SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const;
+		virtual boost::shared_ptr<Security> CreateSecurity(
+					boost::shared_ptr<Trader::TradeSystem>,
+					const std::string &symbol,
+					const std::string &primaryExchange,
+					const std::string &exchange,
+					boost::shared_ptr<const Trader::Settings>,
+					bool logMarketData)
+				const;
+		virtual boost::shared_ptr<Trader::Security> CreateSecurity(
+					const std::string &symbol,
+					const std::string &primaryExchange,
+					const std::string &exchange,
+					boost::shared_ptr<const Trader::Settings>,
+					bool logMarketData)
+				const;
 
 	protected:
 
-		bool IsSupported(const Security &) const;
-		void CheckSupport(const Security &) const;
+		bool IsSupported(const Trader::Security &) const;
+		void CheckSupport(const Trader::Security &) const;
+
+		void CheckState() const;
+
+		void Subscribe(boost::shared_ptr<Trader::Security> security) const;
 
 	private:
 
 		std::unique_ptr<EnyxMDInterface> m_enyx;
+		std::unique_ptr<FeedHandler> m_handler;
 
 	};
 

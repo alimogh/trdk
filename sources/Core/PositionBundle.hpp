@@ -10,13 +10,11 @@
 
 #include "Api.h"
 
-class Position;
-
 class TRADER_CORE_API PositionBandle : private boost::noncopyable {
 
 public:
 
-	typedef std::list<boost::shared_ptr<Position>> List;
+	typedef std::list<boost::shared_ptr<Trader::Position>> List;
 
 public:
 

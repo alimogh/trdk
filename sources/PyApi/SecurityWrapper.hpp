@@ -13,7 +13,7 @@
 
 class Algo;
 
-namespace PyApi { namespace Wrappers {
+namespace Trader { namespace PyApi { namespace Wrappers {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -32,14 +32,14 @@ namespace PyApi { namespace Wrappers {
 
 	public:
 
-		void Init(const ::Algo &algo, boost::shared_ptr< ::Security> security) {
+		void Init(const ::Algo &algo, boost::shared_ptr<Trader::Security> security) {
 			Assert(!m_algo);
 			Assert(!m_security);
 			m_algo = &algo;
 			m_security = security;
 		}
 
-		boost::shared_ptr< ::Security> GetSecurity() {
+		boost::shared_ptr<Trader::Security> GetSecurity() {
 			return m_security;
 		}
 
@@ -91,9 +91,6 @@ namespace PyApi { namespace Wrappers {
 		size_t GetAskSize() const {
 			return m_security->GetAskSize();
 		}
-		double GetLevel2AskSize() const {
-			return m_security->GetLevel2AskSize();
-		}
 
 		int GetBidPriceScaled() const {
 			return int(m_security->GetBidPriceScaled());
@@ -103,9 +100,6 @@ namespace PyApi { namespace Wrappers {
 		}
 		size_t GetBidSize() const {
 			return m_security->GetBidSize();
-		}
-		double GetLevel2BidSize() const {
-			return m_security->GetLevel2BidSize();
 		}
 
 	public:
@@ -121,10 +115,10 @@ namespace PyApi { namespace Wrappers {
 	private:
 
 		const ::Algo *m_algo;
-		boost::shared_ptr< ::Security> m_security;
+		boost::shared_ptr<Trader::Security> m_security;
 
 	};
 
 	//////////////////////////////////////////////////////////////////////////
 
-} }
+} } }

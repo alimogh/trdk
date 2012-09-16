@@ -13,7 +13,6 @@
 #	include <boost/noncopyable.hpp>
 #	include <boost/enable_shared_from_this.hpp>
 #	include <boost/signals2.hpp>
-#	include <boost/thread/shared_mutex.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Interlocking.hpp"
@@ -30,3 +29,4 @@
 #include "Common/Exception.hpp"
 
 #include "Core/Log.hpp"
+#include "Core/Fwd.hpp"

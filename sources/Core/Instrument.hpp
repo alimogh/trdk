@@ -20,22 +20,26 @@ namespace Trader {
 					boost::shared_ptr<TradeSystem> tradeSystem,
 					const std::string &symbol,
 					const std::string &primaryExchange,
-					const std::string &exchange)
+					const std::string &exchange,
+					boost::shared_ptr<const Trader::Settings> settings)
 				: m_tradeSystem(tradeSystem),
 				m_symbol(symbol),
 				m_primaryExchange(primaryExchange),
 				m_exchange(exchange),
-				m_fullSymbol(Util::CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)) {
+				m_fullSymbol(Util::CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)),
+				m_settings(settings) {
 			//...//
 		}
 		explicit Instrument(
 					const std::string &symbol,
 					const std::string &primaryExchange,
-					const std::string &exchange)
+					const std::string &exchange,
+					boost::shared_ptr<const Trader::Settings> settings)
 				: m_symbol(symbol),
 				m_primaryExchange(primaryExchange),
 				m_exchange(exchange),
-				m_fullSymbol(Util::CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)) {
+				m_fullSymbol(Util::CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)),
+				m_settings(settings) {
 			//...//
 		}
 
@@ -67,6 +71,10 @@ namespace Trader {
 			return *m_tradeSystem;
 		}
 
+		const Trader::Settings & GetSettings() const {
+			return *m_settings;
+		}
+
 	protected:
 
 		TradeSystem & GetTradeSystem() {
@@ -80,6 +88,7 @@ namespace Trader {
 		const std::string m_primaryExchange;
 		const std::string m_exchange;
 		const std::string m_fullSymbol;
+		const boost::shared_ptr<const Settings> m_settings;
 
 	};
 

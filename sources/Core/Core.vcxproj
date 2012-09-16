@@ -89,6 +89,7 @@
     <ClInclude Include="PositionReporterAlgo.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Security.hpp" />
+    <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Settings.hpp" />
     <ClInclude Include="TradeSystem.hpp" />
   </ItemGroup>

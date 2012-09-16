@@ -15,7 +15,7 @@ boost::shared_ptr<Trader::TradeSystem> CreateTradeSystem() {
 		new Trader::Interaction::Fake::TradeSystem);
 }
 
-boost::shared_ptr< ::LiveMarketDataSource> CreateLiveMarketDataSource() {
-	return boost::shared_ptr< ::LiveMarketDataSource>(
+boost::shared_ptr<Trader::LiveMarketDataSource> CreateLiveMarketDataSource() {
+	return boost::shared_ptr<Trader::LiveMarketDataSource>(
 		new Trader::Interaction::Fake::LiveMarketDataSource);
 }

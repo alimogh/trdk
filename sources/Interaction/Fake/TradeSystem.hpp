@@ -33,17 +33,17 @@ namespace Trader { namespace Interaction { namespace Fake {
 		virtual OrderId Sell(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellAtMarketPriceWithStopPrice(
 				const Security &,
 				OrderQty,
-				OrderPrice stopPrice,
+				OrderScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellOrCancel(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &);
 
 		virtual OrderId BuyAtMarketPrice(
@@ -53,25 +53,21 @@ namespace Trader { namespace Interaction { namespace Fake {
 		virtual OrderId Buy(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
 				const Security &,
 				OrderQty,
-				OrderPrice stopPrice,
+				OrderScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyOrCancel(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &);
 
 		virtual void CancelOrder(OrderId);
 		virtual void CancelAllOrders(const Security &);
-
-	public:
-
-		virtual void SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const;
 
 	private:
 

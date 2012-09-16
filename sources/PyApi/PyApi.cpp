@@ -15,6 +15,7 @@
 #include "Core/PositionBundle.hpp"
 
 namespace fs = boost::filesystem;
+using namespace Trader;
 
 PyApi::Algo::Algo(
 			const std::string &tag,
@@ -36,10 +37,6 @@ PyApi::Algo::~Algo() {
 
 const std::string & PyApi::Algo::GetName() const {
 	return m_settings.algoName;
-}
-
-void PyApi::Algo::SubscribeToMarketData(const LiveMarketDataSource &dataSource) {
-	dataSource.SubscribeToMarketDataLevel1(GetSecurity());
 }
 
 void PyApi::Algo::Update() {

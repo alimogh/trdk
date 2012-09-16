@@ -12,11 +12,8 @@
 #include "Api.h"
 
 class PositionBandle;
-class Position;
 class PositionReporter;
 class IniFile;
-class LiveMarketDataSource;
-class HistoryMarketDataSource;
 
 class TRADER_CORE_API Algo
 		: private boost::noncopyable,
@@ -33,12 +30,12 @@ protected:
 
 public:
 
-	explicit Algo(const std::string &tag, boost::shared_ptr<Security>);
+	explicit Algo(const std::string &tag, boost::shared_ptr<Trader::Security>);
 	virtual ~Algo();
 
 public:
 
-	boost::shared_ptr<const Security> GetSecurity() const;
+	boost::shared_ptr<const Trader::Security> GetSecurity() const;
 
 	PositionReporter & GetPositionReporter();
 
@@ -53,30 +50,37 @@ public:
 
 public:
 
-	virtual void SubscribeToMarketData(const LiveMarketDataSource &) = 0;
 	void RequestHistory(
-				const HistoryMarketDataSource &,
+				const Trader::HistoryMarketDataSource &,
 				const boost::posix_time::ptime &fromTime,
 				const boost::posix_time::ptime &toTime);
 
-	bool IsValidPrice(const Settings &) const;
+	bool IsValidPrice(const Trader::Settings &) const;
 
 	virtual void Update() = 0;
 
 	virtual boost::shared_ptr<PositionBandle> TryToOpenPositions() = 0;
 	virtual void TryToClosePositions(PositionBandle &) = 0;
 
-	virtual void ReportDecision(const Position &) const = 0;
+	virtual void ReportDecision(const Trader::Position &) const = 0;
 
 protected:
 
-	boost::shared_ptr<Security> GetSecurity();
+	boost::shared_ptr<Trader::Security> GetSecurity();
 
-	Security::Qty CalcQty(Security::Price, Security::Price volume) const;
+	Trader::Security::Qty CalcQty(
+				Trader::Security::ScaledPrice,
+				Trader::Security::ScaledPrice volume)
+			const;
 
-	virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const = 0;
+	virtual std::auto_ptr<PositionReporter> CreatePositionReporter()
+			const
+			= 0;
 
-	virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section) = 0;
+	virtual void UpdateAlogImplSettings(
+				const IniFile &,
+				const std::string &section)
+			= 0;
 
 	void ReportSettings(const SettingsReport &) const;
 
@@ -131,7 +135,7 @@ protected:
 private:
 
 	Mutex m_mutex;
-	const boost::shared_ptr<Security> m_security;
+	const boost::shared_ptr<Trader::Security> m_security;
 	PositionReporter *m_positionReporter;
 	const std::string m_tag;
 

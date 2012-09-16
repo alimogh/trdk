@@ -9,6 +9,8 @@
 #include "Prec.hpp"
 #include "MarketDataSource.hpp"
 
+using namespace Trader;
+
 //////////////////////////////////////////////////////////////////////////
 
 MarketDataSource::Error::Error(const char *what) throw()

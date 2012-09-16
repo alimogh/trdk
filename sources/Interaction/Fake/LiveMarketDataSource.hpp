@@ -12,37 +12,35 @@
 
 namespace Trader { namespace Interaction { namespace Fake {
 
-	class LiveMarketDataSource : public ::LiveMarketDataSource {
+	class LiveMarketDataSource : public Trader::LiveMarketDataSource {
 
 	public:
 
-		LiveMarketDataSource() {
-			//...//
-		}
-
-		virtual ~LiveMarketDataSource() {
-			//...//
-		}
+		LiveMarketDataSource();
+		virtual ~LiveMarketDataSource();
 
 	public:
 
-		virtual void Connect(const IniFile &, const std::string &/*section*/) {
-			//...//
-		}
+		virtual void Connect(const IniFile &, const std::string &/*section*/);
+		virtual void Start();
 
 	public:
 
-		virtual void SubscribeToMarketDataLevel1(boost::shared_ptr<Security>) const {
-			//...//
-		}
-
-		virtual void SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const {
-			//...//
-		}
-
-		virtual void Start() {
-			//...//
-		}
+		virtual boost::shared_ptr<Security> CreateSecurity(
+					boost::shared_ptr<Trader::TradeSystem>,
+					const std::string &symbol,
+					const std::string &primaryExchange,
+					const std::string &exchange,
+					boost::shared_ptr<const Trader::Settings>,
+					bool logMarketData)
+				const;
+		virtual boost::shared_ptr<Security> CreateSecurity(
+					const std::string &symbol,
+					const std::string &primaryExchange,
+					const std::string &exchange,
+					boost::shared_ptr<const Trader::Settings>,
+					bool logMarketData)
+				const;
 
 	};
 

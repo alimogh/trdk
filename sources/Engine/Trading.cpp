@@ -38,6 +38,7 @@ namespace {
 	void LoadSecurities(
 				const std::list<IniFile::Symbol> &symbols,
 				boost::shared_ptr<TradeSystem> tradeSystem,
+				MarketDataSource &marketDataSource,
 				Securities &securities,
 				boost::shared_ptr<Settings> settings,
 				const IniFile &ini) {
@@ -49,14 +50,13 @@ namespace {
 			if (securities.find(key) != securities.end()) {
 				continue;
 			}
-			securititesTmp[key] = boost::shared_ptr<Security>(
-				new Security(
-					tradeSystem,
-					symbol.symbol,
-					symbol.primaryExchange,
-					symbol.exchange,
-					settings,
-					find(logMdSymbols.begin(), logMdSymbols.end(), symbol.symbol) != logMdSymbols.end()));
+			securititesTmp[key] = marketDataSource.CreateSecurity(
+				tradeSystem,
+				symbol.symbol,
+				symbol.primaryExchange,
+				symbol.exchange,
+				settings,
+				find(logMdSymbols.begin(), logMdSymbols.end(), symbol.symbol) != logMdSymbols.end());
 			Log::Info("Loaded security \"%1%\".", securititesTmp[key]->GetFullSymbol());
 		}
 		securititesTmp.swap(securities);
@@ -66,6 +66,7 @@ namespace {
 				const IniFile &ini,
 				const std::string &section,
 				boost::shared_ptr<TradeSystem> tradeSystem,
+				MarketDataSource &marketDataSource,
 				Securities &securities,
 				Algos &algos,
 				boost::shared_ptr<Settings> settings)  {
@@ -106,7 +107,7 @@ namespace {
 		const IniFile symbolsIni(symbolsFilePath, ini.GetPath().branch_path());
 		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("SMART", "NASDAQ");
 		try {
-			LoadSecurities(symbols, tradeSystem, securities, settings, ini);
+			LoadSecurities(symbols, tradeSystem, marketDataSource, securities, settings, ini);
 		} catch (const IniFile::Error &ex) {
 			Log::Error("Failed to load securities for %2%: \"%1%\".", ex.what(), tag);
 			throw IniFile::Error("Failed to load algo");
@@ -171,7 +172,7 @@ namespace {
 			if (boost::starts_with(section, Ini::Sections::algo)) {
 				Log::Info("Found algo section \"%1%\"...", section);
 				try {
-					InitAlgo(ini, section, tradeSystem, securities, algos, settings);
+					InitAlgo(ini, section, tradeSystem, *marketDataSource, securities, algos, settings);
 				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to load algo module from section \"%1%\": \"%2%\".",
@@ -315,12 +316,6 @@ void Trade(const fs::path &iniFilePath) {
 				algos,
 				settings)) {
 		return;
-	}
-
-	foreach (auto &as, algos) {
-		foreach (auto &a, as.second) {
-			a->SubscribeToMarketData(marketDataSource);
-		}
 	}
 
 	FileSystemChangeNotificator iniChangeNotificator(

@@ -10,11 +10,11 @@
 
 #include "Core/Algo.hpp"
 
-namespace PyApi {
+namespace Trader { namespace PyApi {
 	class ScriptEngine;
-}
+} }
 
-namespace PyApi {
+namespace Trader { namespace PyApi {
 
 	class Algo : public ::Algo {
 
@@ -45,8 +45,6 @@ namespace PyApi {
 
 	public:
 
-		virtual void SubscribeToMarketData(const LiveMarketDataSource &);
-
 		virtual void Update();
 
 		virtual boost::shared_ptr<PositionBandle> TryToOpenPositions();
@@ -74,4 +72,4 @@ namespace PyApi {
 
 	};
 
-}
+} }

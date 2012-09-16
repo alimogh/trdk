@@ -11,6 +11,8 @@
 #include "PositionWrapper.hpp"
 #include "SecurityWrapper.hpp"
 
+using namespace Trader;
+
 //////////////////////////////////////////////////////////////////////////
 
 PyApi::Wrappers::Position::Position(boost::shared_ptr< ::Position> position)

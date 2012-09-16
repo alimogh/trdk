@@ -19,7 +19,6 @@
 #	include <boost/algorithm/string.hpp>
 #	include <boost/lexical_cast.hpp>
 #	include <boost/multi_index_container.hpp>
-#	include <boost/multi_index/ordered_index.hpp>
 #	include <boost/multi_index/member.hpp>
 #	include <boost/multi_index/hashed_index.hpp>
 #	include <boost/multi_index/composite_key.hpp>

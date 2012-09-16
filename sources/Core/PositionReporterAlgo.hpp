@@ -66,7 +66,7 @@ public:
 
 public:
 
-	virtual void ReportClosedPositon(const Position &position) {
+	virtual void ReportClosedPositon(const Trader::Position &position) {
 		if (!m_isInited) {
 			return;
 		}
@@ -100,7 +100,7 @@ protected:
 			<< ",P/L";
 	}
 
-	virtual void PrintLine(const Position &position, std::ostream &out) const {
+	virtual void PrintLine(const Trader::Position &position, std::ostream &out) const {
 
 		Assert(position.GetOpenedQty() == position.GetPlanedQty());
 		Assert(position.GetOpenedQty() == position.GetClosedQty());
@@ -157,7 +157,7 @@ protected:
 
 		// P/L
 		{
-			Security::Price pl = 0;
+			Security::ScaledPrice pl = 0;
 			switch (position.GetType()) {
 				case Position::TYPE_LONG:
 					pl = position.GetClosePrice() - position.GetOpenPrice();

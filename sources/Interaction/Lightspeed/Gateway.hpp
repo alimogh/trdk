@@ -216,8 +216,6 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		virtual void Connect(const IniFile &iniFile, const std::string &);
 
-		virtual bool IsCompleted(const Security &) const;
-
 	public:
 
 		virtual OrderId SellAtMarketPrice(
@@ -227,17 +225,17 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		virtual OrderId Sell(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellAtMarketPriceWithStopPrice(
 				const Security &,
 				OrderQty,
-				OrderPrice stopPrice,
+				OrderScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellOrCancel(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &);
 
 		virtual OrderId BuyAtMarketPrice(
@@ -247,17 +245,17 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		virtual OrderId Buy(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
 				const Security &,
 				OrderQty,
-				OrderPrice stopPrice,
+				OrderScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyOrCancel(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &);
 
 		virtual void CancelOrder(OrderId);
@@ -319,7 +317,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				const Security &,
 				ClientMessage::BuySellIndicator,
 				OrderQty,
-				OrderPrice price,
+				OrderScaledPrice price,
 				ClientMessage::Numeric timeInForce,
 				const OrderStatusUpdateSlot &);
 

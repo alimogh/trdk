@@ -10,11 +10,11 @@
 
 #include "Core/Position.hpp"
 
-namespace PyApi { namespace Wrappers {
+namespace Trader { namespace PyApi { namespace Wrappers {
 	class Security;
-} }
+} } }
 
-namespace PyApi { namespace Wrappers {
+namespace Trader { namespace PyApi { namespace Wrappers {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -22,11 +22,11 @@ namespace PyApi { namespace Wrappers {
 
 	public:
 
-		explicit Position(boost::shared_ptr< ::Position>);
+		explicit Position(boost::shared_ptr<Trader::Position>);
 
 	public:
 
-		boost::shared_ptr< ::Position> GetPosition() {
+		boost::shared_ptr<Trader::Position> GetPosition() {
 			return m_position;
 		}
 
@@ -110,29 +110,29 @@ namespace PyApi { namespace Wrappers {
 		}
 
 		int CloseAtMarketPrice() {
-			return m_position->CloseAtMarketPrice(::Position::CLOSE_TYPE_NONE);
+			return m_position->CloseAtMarketPrice(Trader::Position::CLOSE_TYPE_NONE);
 		}
 
 		int Close(double price) {
 			return m_position->Close(
-				::Position::CLOSE_TYPE_NONE,
+				Trader::Position::CLOSE_TYPE_NONE,
 				m_position->GetSecurity().ScalePrice(price));
 		}
 
 		int CloseAtMarketPriceWithStopPrice(double stopPrice) {
 			return m_position->CloseAtMarketPriceWithStopPrice(
-				::Position::CLOSE_TYPE_NONE,
+				Trader::Position::CLOSE_TYPE_NONE,
 				m_position->GetSecurity().ScalePrice(stopPrice));
 		}
 
 		int CloseOrCancel(double price) {
 			return m_position->CloseOrCancel(
-				::Position::CLOSE_TYPE_NONE,
+				Trader::Position::CLOSE_TYPE_NONE,
 				m_position->GetSecurity().ScalePrice(price));
 		}
 
 		bool CancelAtMarketPrice() {
-			return m_position->CancelAtMarketPrice(::Position::CLOSE_TYPE_NONE);
+			return m_position->CancelAtMarketPrice(Trader::Position::CLOSE_TYPE_NONE);
 		}
 
 		bool CancelAllOrders() {
@@ -141,7 +141,7 @@ namespace PyApi { namespace Wrappers {
 
 	private:
 
-		boost::shared_ptr< ::Position> m_position;
+		boost::shared_ptr<Trader::Position> m_position;
 
 	};
 
@@ -149,7 +149,7 @@ namespace PyApi { namespace Wrappers {
 
 	class ShortPosition : public Position {
 	public:
-		explicit ShortPosition(boost::shared_ptr< ::Position>);
+		explicit ShortPosition(boost::shared_ptr<Trader::Position>);
 		explicit ShortPosition(
 					PyApi::Wrappers::Security &,
 					int qty,
@@ -160,7 +160,7 @@ namespace PyApi { namespace Wrappers {
 
 	class LongPosition : public Position {
 	public:
-		explicit LongPosition(boost::shared_ptr< ::Position>);
+		explicit LongPosition(boost::shared_ptr<Trader::Position>);
 		explicit LongPosition(
 					PyApi::Wrappers::Security &,
 					int qty,
@@ -169,4 +169,4 @@ namespace PyApi { namespace Wrappers {
 
 	//////////////////////////////////////////////////////////////////////////
 
-} }
+} } }

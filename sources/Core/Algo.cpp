@@ -16,6 +16,7 @@
 
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
+using namespace Trader;
 
 Algo::Algo(const std::string &tag, boost::shared_ptr<Security> security)
 		: m_security(security),
@@ -37,7 +38,7 @@ void Algo::UpdateSettings(const IniFile &ini, const std::string &section) {
 	UpdateAlogImplSettings(ini, section);
 }
 
-Security::Qty Algo::CalcQty(Security::Price price, Security::Price volume) const {
+Security::Qty Algo::CalcQty(Security::ScaledPrice price, Security::ScaledPrice volume) const {
 	return std::max<Security::Qty>(1, Security::Qty(volume / price));
 }
 

@@ -13,7 +13,8 @@
 namespace fs = boost::filesystem;
 namespace python = boost::python;
 
-using namespace PyApi;
+using namespace Trader;
+using namespace Trader::PyApi;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -59,12 +60,10 @@ BOOST_PYTHON_MODULE(Trader) {
 		.add_property("askPriceScaled", &Wrappers::Security::GetAskPriceScaled)
 		.add_property("askPrice", &Wrappers::Security::GetAskPrice)
 		.add_property("askSize", &Wrappers::Security::GetAskSize)
-		.add_property("level2AskSize", &Wrappers::Security::GetLevel2AskSize)
 
 		.add_property("bidPriceScaled", &Wrappers::Security::GetBidPriceScaled)
 		.add_property("bidPrice", &Wrappers::Security::GetBidPrice)
 		.add_property("bidSize", &Wrappers::Security::GetBidSize)
-		.add_property("level2BidSize", &Wrappers::Security::GetLevel2BidSize)
 
 		.def("cancelOrder", &Wrappers::Security::CancelOrder)
 		.def("cancelAllOrders", &Wrappers::Security::CancelAllOrders);

@@ -19,6 +19,7 @@ namespace io = boost::asio;
 namespace pt = boost::posix_time;
 namespace accum = boost::accumulators;
 
+using namespace Trader;
 using namespace Trader::Interaction::Lightspeed;
 
 //////////////////////////////////////////////////////////////////////////
@@ -681,7 +682,7 @@ Gateway::OrderId Gateway::SendOrder(
 			const Security &security,
 			ClientMessage::BuySellIndicator buySell,
 			OrderQty qty,
-			OrderPrice price,
+			OrderScaledPrice price,
 			ClientMessage::Numeric timeInForce,
 			const OrderStatusUpdateSlot &callback) {
 
@@ -703,6 +704,10 @@ Gateway::OrderId Gateway::SendOrder(
 	const Lock lock(m_mutex);
 	const auto pos = m_connection->orders.insert(
 		Order(OrderId(token), callback, qty));
+	Assert(pos.second);
+	if (!pos.second) {
+		throw Error("Failed to create order index");
+	}
 	try {
 		Send(message, *m_connection);
 	} catch (...) {
@@ -757,11 +762,6 @@ void Gateway::HandleWrite(
 	m_condition.notify_all();
 }
 
-bool Gateway::IsCompleted(const Security &) const {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Doesn't implemented");
-}
-
 Gateway::OrderId Gateway::SellAtMarketPrice(
 			const Security &security,
 			OrderQty qty,
@@ -778,7 +778,7 @@ Gateway::OrderId Gateway::SellAtMarketPrice(
 Gateway::OrderId Gateway::Sell(
 			const Security &,
 			OrderQty,
-			OrderPrice,
+			OrderScaledPrice,
 			const OrderStatusUpdateSlot &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Doesn't implemented");
@@ -787,7 +787,7 @@ Gateway::OrderId Gateway::Sell(
 Gateway::OrderId Gateway::SellAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
-			OrderPrice /*stopPrice*/,
+			OrderScaledPrice /*stopPrice*/,
 			const OrderStatusUpdateSlot &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Doesn't implemented");
@@ -796,7 +796,7 @@ Gateway::OrderId Gateway::SellAtMarketPriceWithStopPrice(
 Gateway::OrderId Gateway::SellOrCancel(
 			const Security &,
 			OrderQty,
-			OrderPrice,
+			OrderScaledPrice,
 			const OrderStatusUpdateSlot &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Doesn't implemented");
@@ -818,7 +818,7 @@ Gateway::OrderId Gateway::BuyAtMarketPrice(
 Gateway::OrderId Gateway::Buy(
 			const Security &,
 			OrderQty,
-			OrderPrice,
+			OrderScaledPrice,
 			const OrderStatusUpdateSlot &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Doesn't implemented");
@@ -827,7 +827,7 @@ Gateway::OrderId Gateway::Buy(
 Gateway::OrderId Gateway::BuyAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
-			OrderPrice /*stopPrice*/,
+			OrderScaledPrice /*stopPrice*/,
 			const OrderStatusUpdateSlot &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Doesn't implemented");
@@ -836,7 +836,7 @@ Gateway::OrderId Gateway::BuyAtMarketPriceWithStopPrice(
 Gateway::OrderId Gateway::BuyOrCancel(
 			const Security &,
 			OrderQty,
-			OrderPrice,
+			OrderScaledPrice,
 			const OrderStatusUpdateSlot &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Doesn't implemented");

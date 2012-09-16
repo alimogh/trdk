@@ -10,9 +10,10 @@
 #include "TradeSystem.hpp"
 #include "Core/Security.hpp"
 
+using Trader::Security;
 using namespace Trader::Interaction::Fake;
 
-//////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 
 namespace {
 
@@ -23,7 +24,7 @@ namespace {
 		std::string symbol;
 		TradeSystem::OrderStatusUpdateSlot callback;
 		TradeSystem::OrderQty qty;
-		TradeSystem::OrderPrice price;
+		TradeSystem::OrderScaledPrice price;
 	};
 
 }
@@ -196,7 +197,7 @@ TradeSystem::OrderId TradeSystem::SellAtMarketPrice(
 TradeSystem::OrderId TradeSystem::Sell(
 			const Security &,
 			OrderQty,
-			OrderPrice,
+			OrderScaledPrice,
 			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
@@ -205,7 +206,7 @@ TradeSystem::OrderId TradeSystem::Sell(
 TradeSystem::OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
-			OrderPrice /*stopPrice*/,
+			OrderScaledPrice /*stopPrice*/,
 			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
@@ -214,7 +215,7 @@ TradeSystem::OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 TradeSystem::OrderId TradeSystem::SellOrCancel(
 			const Security &security,
 			OrderQty qty,
-			OrderPrice price,
+			OrderScaledPrice price,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const Order order = {
 		security.shared_from_this(),
@@ -259,7 +260,7 @@ TradeSystem::OrderId TradeSystem::BuyAtMarketPrice(
 TradeSystem::OrderId TradeSystem::Buy(
 			const Security &,
 			OrderQty,
-			OrderPrice,
+			OrderScaledPrice,
 			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
@@ -268,7 +269,7 @@ TradeSystem::OrderId TradeSystem::Buy(
 TradeSystem::OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 			const Security &,
 			OrderQty,
-			OrderPrice /*stopPrice*/,
+			OrderScaledPrice /*stopPrice*/,
 			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
@@ -277,7 +278,7 @@ TradeSystem::OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 TradeSystem::OrderId TradeSystem::BuyOrCancel(
 			const Security &security,
 			OrderQty qty,
-			OrderPrice price,
+			OrderScaledPrice price,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const Order order = {
 		security.shared_from_this(),
@@ -305,11 +306,6 @@ void TradeSystem::CancelOrder(OrderId) {
 
 void TradeSystem::CancelAllOrders(const Security &security) {
 	Log::Trading("cancel", "%1% orders=[all]", security.GetSymbol());
-}
-
-void TradeSystem::SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Method doesn't implemented");
 }
 
 //////////////////////////////////////////////////////////////////////////
