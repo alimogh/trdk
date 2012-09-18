@@ -3,47 +3,136 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: HighmanTradingRobot
+ *   Project: Trading Robot
  **************************************************************************/
 
 #pragma once
 
 #ifdef BOOST_WINDOWS
 
+#	pragma warning(push)
+#	pragma warning(disable: 4800)
+
 #	include <Windows.h>
 
 	namespace Interlocking {
 
-		inline long Increment(volatile long &destination) throw() {
-			return InterlockedIncrement(&destination);
+		namespace Detail {
+
+			template<typename T, size_t typeSize>
+			struct SizedInterlocking {
+				//...//
+			};
+
+			template<typename T>
+			struct SizedInterlocking<T, 4> {
+
+				typedef T ValueType;
+				typedef LONG StorageType;
+
+				static ValueType Increment(volatile T &destination) throw() {
+					return (ValueType)InterlockedIncrement(
+						(volatile StorageType *)&destination);
+				}
+
+				static ValueType Exchange(
+							volatile T &destination,
+							const T &value)
+						throw() {
+					return (ValueType)InterlockedExchange(
+						(volatile StorageType *)&destination,
+						(StorageType)value);
+				}
+
+				static ValueType CompareExchange(
+							volatile ValueType &destination,
+							const ValueType &exchangeValue,
+							const ValueType &compareValue)
+						throw() {
+					return InterlockedCompareExchange(
+						(volatile StorageType *)&destination,
+						(StorageType)exchangeValue,
+						(StorageType)compareValue);
+				}
+
+			};
+
+			template<typename T>
+			struct SizedInterlocking<T, 8> {
+
+				typedef T ValueType;
+				typedef LONGLONG StorageType;
+
+				static ValueType Increment(volatile T &destination) throw() {
+					return (ValueType)InterlockedIncrement64(
+						(volatile StorageType *)&destination);
+				}
+
+				static ValueType Exchange(volatile T &destination, const T &value) throw() {
+					return (ValueType)InterlockedExchange64(
+						(volatile StorageType *)&destination,
+						(StorageType)value);
+				}
+
+				static ValueType CompareExchange(
+							volatile ValueType &destination,
+							const ValueType &exchangeValue,
+							const ValueType &compareValue)
+						throw() {
+					return InterlockedCompareExchange64(
+						(volatile StorageType *)&destination,
+						(StorageType)exchangeValue,
+						(StorageType)compareValue);
+				}
+
+			};
+
+			template<typename T>
+			struct TypeToSizedInterlocking {
+				typedef SizedInterlocking<T, sizeof(T)> SizedInterlocking;
+			};
+
+			template<>
+			struct TypeToSizedInterlocking<bool> {
+				typedef SizedInterlocking<bool, 4> SizedInterlocking;
+			};
+
 		}
 
-		inline long Exchange(volatile long &destination, long value) throw() {
-			return InterlockedExchange(&destination, value);
+		template<typename T>
+		inline T Increment(volatile T &destination) throw() {
+			return
+				Detail
+					::TypeToSizedInterlocking<T>
+					::SizedInterlocking
+					::Increment(destination);
 		}
 
-		inline LONGLONG Exchange(volatile LONGLONG &destination, LONGLONG value) throw() {
-			return InterlockedExchange64(&destination, value);
+		template<typename T, typename Y>
+		inline T Exchange(volatile T &destination, const Y &value) throw() {
+			return
+				Detail
+					::TypeToSizedInterlocking<T>
+					::SizedInterlocking
+					::Exchange(destination, value);
 		}
 
-
-		inline long CompareExchange(
-					volatile long &destination,
-					long exchangeValue,
-					long compareValue)
+		template<typename T, typename Y>
+		inline T CompareExchange(
+					volatile T &destination,
+					const Y &exchangeValue,
+					const Y &compareValue)
 				throw() {
-			return InterlockedCompareExchange(&destination, exchangeValue, compareValue);
-		}
-
-		inline LONGLONG CompareExchange(
-					volatile LONGLONG &destination,
-					LONGLONG exchangeValue,
-					LONGLONG compareValue)
-				throw() {
-			return InterlockedCompareExchange64(&destination, exchangeValue, compareValue);
+			return
+				Detail
+					::TypeToSizedInterlocking<T>
+					::SizedInterlocking
+					::CompareExchange(destination, exchangeValue, compareValue);
 		}
 
 	}
+
+#	pragma warning(pop)
 
 #else
 
@@ -53,34 +142,18 @@
 			return ++destination;
 		}
 
-		inline long Exchange(volatile long &destination, long value) throw() {
+		template<typename T, typename Y>
+		inline T Exchange(volatile T &destination, const Y &value) throw() {
 			const auto prevVal = destination;
 			destination = value;
 			return prevVal;
 		}
 
-		inline long long Exchange(volatile long long &destination, long long value) throw() {
-			const auto prevVal = destination;
-			destination = value;
-			return prevVal;
-		}
-
-
-		inline long CompareExchange(
-					volatile long &destination,
-					long exchangeValue,
-					long compareValue)
-				throw() {
-			if (exchangeValue == compareValue) {
-				destination = exchangeValue;
-			}
-			return compareValue;
-		}
-
-		inline long long CompareExchange(
-					volatile long long &destination,
-					long long exchangeValue,
-					long long compareValue)
+		template<typename T, typename Y>
+		inline T CompareExchange(
+					volatile T &destination,
+					const Y &exchangeValue,
+					const Y &compareValue)
 				throw() {
 			if (exchangeValue == compareValue) {
 				destination = exchangeValue;
