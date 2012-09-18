@@ -16,23 +16,74 @@
 namespace fs = boost::filesystem;
 using namespace Trader::Interaction::Enyx;
 
-MarketDataSource::MarketDataSource() {
-	//...//
+///////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+	struct IniLaneExtractor {
+
+		const IniFile &ini;
+		const std::string &section;
+
+		explicit IniLaneExtractor(const IniFile &ini, const std::string &section)
+				: ini(ini),
+				section(section) {
+			//...//
+		}
+
+		enyxmd_stream_lane Get(const unsigned int laneNumb) const {
+			const std::string key
+				= (boost::format("stream_lane_%1%") % laneNumb).str();
+			const std::string val = ini.ReadKey(section, key, false);
+			enyxmd_stream_lane result = ENYXMD_LANE_EMPTY;
+			if (boost::iequals(val, "EMPTY")) {
+				result = ENYXMD_LANE_EMPTY;
+			} else if (boost::iequals(val, "A")) {
+				result = ENYXMD_LANE_A;
+			} else if (boost::iequals(val, "B")) {
+				result = ENYXMD_LANE_B;
+			} else if (boost::iequals(val, "C")) {
+				result = ENYXMD_LANE_C;
+			} else if (boost::iequals(val, "D")) {
+				result = ENYXMD_LANE_D;
+			} else {
+				Log::Error(
+					TRADER_ENYX_LOG_PREFFIX "failed to get Enyx stream lane for %1% = \"%2%\".",
+					key,
+					val);
+				throw IniFile::KeyFormatError("Failed to get Enyx stream lane");
+			}
+			boost::format message(
+				TRADER_ENYX_LOG_PREFFIX "using %1% Lane (%2% = \"%3%\").");
+			switch (result) {
+				case ENYXMD_LANE_EMPTY:
+					message % "No";
+					break;
+				case ENYXMD_LANE_A:
+					message % "A";
+					break;
+				case ENYXMD_LANE_B:
+					message % "B";
+					break;
+				case ENYXMD_LANE_C:
+					message % "C";
+					break;
+				case ENYXMD_LANE_D:
+					message % "D";
+					break;
+				default:
+					AssertFail("Unknown Enyx Stream Lane.");
+			}
+			message % key % val;
+			Log::Info(message.str().c_str());
+			return result;
+		}
+
+	};
+
 }
 
-MarketDataSource::~MarketDataSource() {
-	//...///
-}
-
-void MarketDataSource::Connect(const IniFile &ini, const std::string &section) {
-
-	Log::Info(TRADER_ENYX_LOG_PREFFIX "connecting...");
-
-	Assert(!m_enyx);
-	if (m_enyx) {
-		Log::Warn(TRADER_ENYX_LOG_PREFFIX "already connected.");
-		return;
-	}
+MarketDataSource::MarketDataSource(const IniFile &ini, const std::string &section) {
 
     if (!Dictionary::isFeedSupported("NASDAQ-ITCH")) {
         Log::Error(TRADER_ENYX_LOG_PREFFIX "NASDAQ-ITCH Feed is not supported.");
@@ -45,18 +96,17 @@ void MarketDataSource::Connect(const IniFile &ini, const std::string &section) {
         Log::Error(TRADER_ENYX_LOG_PREFFIX "can't retrieve FeedSupport for NASDAQ");
         throw ConnectError();
     }
-    Log::Debug(
+    Log::Info(
 		TRADER_ENYX_LOG_PREFFIX "building Instrument List from \"%1%\".",
 		totalViewNasdaqFeedSupport->getListingFilePath());
 
     totalViewNasdaqFeedSupport->updateInstruments();
 
-    std::unique_ptr<EnyxMDInterface> enyx;
 	if (ini.IsKeyExist(section, "pcap")) {
 		const fs::path pcapFilePath = ini.ReadKey(section, "pcap", true);
 		Log::Info(TRADER_ENYX_LOG_PREFFIX "loading PCAP-file %1%...", pcapFilePath);
         try {
-			enyx.reset(
+			m_enyx.reset(
 				new EnyxMDPcapInterface(
 					pcapFilePath.string(),
 					totalViewNasdaqFeedSupport,
@@ -70,9 +120,11 @@ void MarketDataSource::Connect(const IniFile &ini, const std::string &section) {
         try {
             EnyxMDHwInterface &hardware
 				= EnyxMD::getHardwareInterfaceForFeed("NASDAQ-ITCH");
+			IniLaneExtractor extractor(ini, section);
             EnyxPort &port = hardware.getPortConfiguration();
-            port.setInterfaceForLane(ENYXMD_LANE_C, "enyxnet0");
-            enyx.reset(&hardware);
+            port.setInterfaceForLane(extractor.Get(1), "enyxnet0");
+            port.setInterfaceForLane(extractor.Get(2), "enyxnet0");
+            m_enyx.reset(&hardware);
         } catch (const UnsuportedFeedException &ex) {
 			Log::Error(
 				TRADER_ENYX_LOG_PREFFIX "failed to make hardware connection: \"%1%\".",
@@ -81,24 +133,28 @@ void MarketDataSource::Connect(const IniFile &ini, const std::string &section) {
         }
 	}
 
-    enyx->setSecondStreamLane(ENYXMD_LANE_C);
-    enyx->setInstrumentFiltering(true);
-    enyx->setEmptyPacketDrop(true);
+	{
+		IniLaneExtractor extractor(ini, section);
+		m_enyx->setFirstStreamLane(extractor.Get(1));
+		m_enyx->setSecondStreamLane(extractor.Get(2));
+	}
 
-	std::unique_ptr<FeedHandler> handler(new FeedHandler);
-    enyx->addHandler(*handler);
+	m_enyx->setInstrumentFiltering(true);
+	m_enyx->setEmptyPacketDrop(true);
 
-	m_enyx.reset(enyx.release());
-	m_handler.reset(handler.release());
-	Log::Info(TRADER_ENYX_LOG_PREFFIX "connected.");
+	m_handler.reset(new FeedHandler);
+    m_enyx->addHandler(*m_handler);
 
 }
 
-void MarketDataSource::Start() {
-	Log::Info(TRADER_ENYX_LOG_PREFFIX "starting...");
-	Assert(m_enyx);
+MarketDataSource::~MarketDataSource() {
+	//...///
+}
+
+void MarketDataSource::Connect() {
+	Log::Info(TRADER_ENYX_LOG_PREFFIX "connecting...");
 	m_enyx->start();
-	Log::Info(TRADER_ENYX_LOG_PREFFIX "started.");
+	Log::Info(TRADER_ENYX_LOG_PREFFIX "connected.");
 }
 
 bool MarketDataSource::IsSupported(const Trader::Security &security) const {
@@ -146,11 +202,13 @@ void MarketDataSource::Subscribe(const boost::shared_ptr<Security> &security) co
 		security->GetFullSymbol());
 	CheckSupport(*security);
 	const auto exchange = Dictionary::getExchangeByName(security->GetPrimaryExchange());
+	Assert(exchange);
 	if (!m_enyx->subscribeInstrument(exchange->getInstrumentByName(security->GetSymbol()))) {
 		Log::Error(
-			TRADER_ENYX_LOG_PREFFIX "failed to subscribe \"%1%\".",
-			security->GetFullSymbol());
-		return;
+			TRADER_ENYX_LOG_PREFFIX "failed to subscribe \"%1%\" (%2%).",
+			security->GetSymbol(),
+			security->GetPrimaryExchange());
+		throw Error("Failed to subscribe to Enyx Market Data");
 	}
 	m_handler->Subscribe(security);
 }

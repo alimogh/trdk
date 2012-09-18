@@ -20,11 +20,7 @@ LiveMarketDataSource::~LiveMarketDataSource() {
 	//...//
 }
 
-void LiveMarketDataSource::Connect(const IniFile &, const std::string &/*section*/) {
-	//...//
-}
-
-void LiveMarketDataSource::Start() {
+void LiveMarketDataSource::Connect() {
 	//...//
 }
 

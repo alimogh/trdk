@@ -13,7 +13,4 @@ void Connect(
 			const IniFile &,
 			const std::string &section);
 
-void Connect(
-			Trader::LiveMarketDataSource &,
-			const IniFile &,
-			const std::string &section);
+void Connect(Trader::LiveMarketDataSource &);

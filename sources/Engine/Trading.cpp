@@ -195,14 +195,6 @@ namespace {
 		Log::Info("Loaded %1% securities.", securities.size());
 		Log::Info("Loaded %1% algos.", algos.size());
 
-		try {
-			Connect(*tradeSystem, ini, Ini::Sections::tradeSystem);
-			Connect(*marketDataSource, ini, Ini::Sections::MarketData::Source::live);
-		} catch (const Exception &ex) {
-			Log::Error("Failed to make trading connections: \"%1%\".", ex.what());
-			throw Exception("Failed to make trading connections");
-		}
-
 		return true;
 
 	}
@@ -281,9 +273,12 @@ namespace {
 		const std::string fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
 		boost::shared_ptr<Dll> dll(new Dll(module, true));
 		try {
+			typedef boost::shared_ptr<LiveMarketDataSource> (Proto)(
+				const IniFile &,
+				const std::string &);
 			return DllObjectPtr<LiveMarketDataSource>(
 				dll,
-				dll->GetFunction<boost::shared_ptr<LiveMarketDataSource>()>(fabricName)());
+				dll->GetFunction<Proto>(fabricName)(ini, Ini::Sections::MarketData::Source::live));
 		} catch (...) {
 			Log::RegisterUnhandledException(__FUNCTION__, __FILE__, __LINE__, false);
 			throw Exception("Failed to load market data source");
@@ -328,7 +323,14 @@ void Trade(const fs::path &iniFilePath) {
 
 	iniChangeNotificator.Start();
 	dispatcher.Start();
-	(*marketDataSource).Start();
+
+	try {
+		Connect(*tradeSystem, ini, Ini::Sections::tradeSystem);
+		Connect(*marketDataSource);
+	} catch (const Exception &ex) {
+		Log::Error("Failed to make trading connections: \"%1%\".", ex.what());
+		throw Exception("Failed to make trading connections");
+	}
 
 	getchar();
 	iniChangeNotificator.Stop();

@@ -12,7 +12,8 @@
 
 #	include "Core/MarketDataSource.hpp"
 
-	boost::shared_ptr<Trader::LiveMarketDataSource> CreateLiveMarketDataSource() {
+	boost::shared_ptr<Trader::LiveMarketDataSource> CreateLiveMarketDataSource(
+				const IniFile &, const std::string &/*section*/) {
 		Log::Info("Enyx Marked Data not implemented for this platform, loading Fake Market Data Source...");
 		Dll dll("Fake", true);
 		boost::shared_ptr<Trader::LiveMarketDataSource> result
@@ -26,7 +27,9 @@
 
 #	include "MarketDataSource.hpp"
 
-	extern "C" boost::shared_ptr<Trader::LiveMarketDataSource> CreateLiveMarketDataSource() {
+	extern "C" boost::shared_ptr<Trader::LiveMarketDataSource> CreateLiveMarketDataSource(
+				const IniFile &ini,
+				const std::string &section) {
 		static volatile long isEnyxInited = false;
 		if (!Interlocking::Exchange(isEnyxInited, true)) {
 			const auto result = EnyxMD::init();
@@ -35,7 +38,7 @@
 				result);
 		}
 		return boost::shared_ptr<Trader::LiveMarketDataSource>(
-			new Trader::Interaction::Enyx::MarketDataSource);
+			new Trader::Interaction::Enyx::MarketDataSource(ini, section));
 	}
 
 #endif

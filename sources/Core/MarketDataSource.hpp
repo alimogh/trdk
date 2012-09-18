@@ -39,8 +39,7 @@ namespace Trader {
 
 	public:
 
-		virtual void Connect(const IniFile &, const std::string &section) = 0;
-		virtual void Start() = 0;
+		virtual void Connect() = 0;
 
 	public:
 

@@ -136,7 +136,7 @@ void FeedHandler::HandleOrderExec(const NXFeedOrderExecute &enyxOrder) {
 		subscribtion.OnOrderExec(isBuy, id, execQty, price);
 	} catch (const OrderNotFoundError &) {
 		Log::Error(
-			TRADER_ENYX_LOG_PREFFIX "failed to fine EXECUTED order with id %1%.",
+			TRADER_ENYX_LOG_PREFFIX "failed to fined EXECUTED order with id %1%.",
 			id);
 	}
 }
@@ -156,7 +156,7 @@ void FeedHandler::HandleOrderExec(
 		subscribtion.OnOrderExec(isBuy, id, execQty, enyxOrder.getExecutedPrice());
 	} catch (const OrderNotFoundError &) {
 		Log::Error(
-			TRADER_ENYX_LOG_PREFFIX "failed to fine EXECUTED order with id %1%.",
+			TRADER_ENYX_LOG_PREFFIX "failed to fined EXECUTED order with id %1%.",
 			id);
 	}
 }
@@ -173,7 +173,7 @@ void FeedHandler::HandleOrderDel(const NXFeedOrderDelete &enyxOrder) {
 		subscribtion.OnOrderDel(isBuy, id, qty, price);
 	} catch (const OrderNotFoundError &) {
 		Log::Error(
-			TRADER_ENYX_LOG_PREFFIX "failed to fine DELETED order with id %1%.",
+			TRADER_ENYX_LOG_PREFFIX "failed to fined DELETED order with id %1%.",
 			id);
 	}
 }
@@ -193,7 +193,7 @@ void FeedHandler::HandleOrderChange(const NXFeedOrderReduce &enyxOrder) {
 		subscribtion.OnOrderChange(isBuy, id, qty, price);
 	} catch (const OrderNotFoundError &) {
 		Log::Error(
-			TRADER_ENYX_LOG_PREFFIX "failed to fine CHANGED order with id %1%.",
+			TRADER_ENYX_LOG_PREFFIX "failed to fined CHANGED order with id %1%.",
 			id);
 	}
 }
@@ -215,33 +215,33 @@ FeedHandler::OrderById::iterator FeedHandler::FindOrderPos(Security::OrderId id)
 	return orderPos;
 }
 
-void FeedHandler::onOrderMessage(NXFeedOrder * OrderMsg) {
+void FeedHandler::onOrderMessage(NXFeedOrder *orderMsg) {
 	try {
-		switch(OrderMsg->getSubType()) {
+		switch(orderMsg->getSubType()) {
 			case  NXFEED_SUBTYPE_ORDER_ADD:
 				HandleOrderAdd(
 					*reinterpret_cast<nasdaqustvitch41::NXFeedOrderAdd *>(
-						OrderMsg));
+						orderMsg));
 				break;
 			case  NXFEED_SUBTYPE_ORDER_EXEC:
 				HandleOrderExec(
-					*reinterpret_cast<NXFeedOrderExecute *>(OrderMsg));
+					*reinterpret_cast<NXFeedOrderExecute *>(orderMsg));
 				break;
 			case  NXFEED_SUBTYPE_ORDER_EXEC_PRICE:
 				HandleOrderExec(
 					*reinterpret_cast<nasdaqustvitch41::NXFeedOrderExeWithPrice *>(
-						OrderMsg));
+						orderMsg));
 				break;
 			case  NXFEED_SUBTYPE_ORDER_REDUCE:
-				HandleOrderChange(*reinterpret_cast<NXFeedOrderReduce *>(OrderMsg));
+				HandleOrderChange(*reinterpret_cast<NXFeedOrderReduce *>(orderMsg));
 				return;
 			case  NXFEED_SUBTYPE_ORDER_DEL:
-				HandleOrderDel(*reinterpret_cast<NXFeedOrderDelete *>(OrderMsg));
+				HandleOrderDel(*reinterpret_cast<NXFeedOrderDelete *>(orderMsg));
 				break;
 			case  NXFEED_SUBTYPE_ORDER_REPLACE:
 				// NXFeedOrderReplace *
 			default:
-				Log::Error(TRADER_ENYX_LOG_PREFFIX "unknown message %1%.", OrderMsg->getSubType());
+				Log::Error(TRADER_ENYX_LOG_PREFFIX "unknown message %1%.", orderMsg->getSubType());
 				break;
 		}
 	} catch (...) {

@@ -84,6 +84,7 @@
               </makeArtifact>
             </linkerLibProjectItem>
             <linkerLibLibItem>enyxmd</linkerLibLibItem>
+            <linkerLibLibItem>boost_signals</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -151,6 +152,7 @@
               </makeArtifact>
             </linkerLibProjectItem>
             <linkerLibLibItem>enyxmd</linkerLibLibItem>
+            <linkerLibLibItem>boost_signals</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

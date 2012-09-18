@@ -23,13 +23,12 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	public:
 
-		MarketDataSource();
+		MarketDataSource(const IniFile &, const std::string &section);
 		virtual ~MarketDataSource();
 
 	public:
 
-		virtual void Connect(const IniFile &ini, const std::string &section);
-		virtual void Start();
+		virtual void Connect();
 
 	public:
 
