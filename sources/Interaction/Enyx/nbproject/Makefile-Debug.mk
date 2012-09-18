@@ -37,7 +37,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/MarketDataSource.o \
 	${OBJECTDIR}/Api.o \
-	${OBJECTDIR}/FeedHandler.o
+	${OBJECTDIR}/FeedHandler.o \
+	${OBJECTDIR}/Security.o
 
 
 # C Compiler Flags
@@ -54,19 +55,19 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib ../../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Debug/GNU_4.7.1-Linux-x86 -L../../Core/dist/Debug/GNU_4.7.1-Linux-x86 -lCore -lenyxmd
+LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib ../../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Debug/GNU_4.7.1-Linux-x86 -L../../Core/dist/Debug/GNU_4.7.1-Linux-x86 -lCore_dbg -lenyxmd
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx.${CND_DLIB_EXT}
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx_dbg.${CND_DLIB_EXT}
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx.${CND_DLIB_EXT}: ../../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx_dbg.${CND_DLIB_EXT}: ../../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx.${CND_DLIB_EXT}: ../../Core/dist/Debug/GNU_4.7.1-Linux-x86/libCore.so
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx_dbg.${CND_DLIB_EXT}: ../../Core/dist/Debug/GNU_4.7.1-Linux-x86/libCore_dbg.so
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx.${CND_DLIB_EXT}: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx_dbg.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -shared -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	${LINK.cc} -shared -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx_dbg.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
 ${OBJECTDIR}/MarketDataSource.o: MarketDataSource.cpp 
 	${MKDIR} -p ${OBJECTDIR}
@@ -83,6 +84,11 @@ ${OBJECTDIR}/FeedHandler.o: FeedHandler.cpp
 	${RM} $@.d
 	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_INTERACTION_ENYX -D_DEBUG -I../.. -I/usr/include/libenyxmd -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/FeedHandler.o FeedHandler.cpp
 
+${OBJECTDIR}/Security.o: Security.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_INTERACTION_ENYX -D_DEBUG -I../.. -I/usr/include/libenyxmd -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Security.o Security.cpp
+
 # Subprojects
 .build-subprojects:
 	cd ../../Common && ${MAKE}  -f Makefile CONF=Debug
@@ -91,7 +97,7 @@ ${OBJECTDIR}/FeedHandler.o: FeedHandler.cpp
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
 	${RM} -r ${CND_BUILDDIR}/${CND_CONF}
-	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx.${CND_DLIB_EXT}
+	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx_dbg.${CND_DLIB_EXT}
 
 # Subprojects
 .clean-subprojects:

@@ -9,8 +9,8 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU_4.7.1-Linux-x86
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU_4.7.1-Linux-x86
-CND_ARTIFACT_NAME_Debug=libEnyx.so
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU_4.7.1-Linux-x86/libEnyx.so
+CND_ARTIFACT_NAME_Debug=libEnyx_dbg.so
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU_4.7.1-Linux-x86/libEnyx_dbg.so
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU_4.7.1-Linux-x86/package
 CND_PACKAGE_NAME_Debug=libEnyx.so.tar
 CND_PACKAGE_PATH_Debug=dist/Debug/GNU_4.7.1-Linux-x86/package/libEnyx.so.tar

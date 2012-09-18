@@ -57,15 +57,15 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib -Wl,-rpath,../Core/dist/Debug/GNU_4.7.1-Linux-x86 -L../Core/dist/Debug/GNU_4.7.1-Linux-x86 -lCore ../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a -lboost_date_time -lboost_thread -lboost_system -lboost_filesystem -lboost_chrono -ldl
+LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib ../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a -Wl,-rpath,../Core/dist/Debug/GNU_4.7.1-Linux-x86 -L../Core/dist/Debug/GNU_4.7.1-Linux-x86 -lCore_dbg -lboost_date_time -lboost_thread -lboost_system -lboost_filesystem -lboost_chrono -ldl
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
 	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader_dbg
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader_dbg: ../Core/dist/Debug/GNU_4.7.1-Linux-x86/libCore.so
-
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader_dbg: ../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a
+
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader_dbg: ../Core/dist/Debug/GNU_4.7.1-Linux-x86/libCore_dbg.so
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader_dbg: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
@@ -103,8 +103,8 @@ ${OBJECTDIR}/Trading.o: Trading.cpp
 
 # Subprojects
 .build-subprojects:
-	cd ../Core && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Common && ${MAKE}  -f Makefile CONF=Debug
+	cd ../Core && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Interaction/Lightspeed && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Interaction/Enyx && ${MAKE}  -f Makefile CONF=Debug
 	cd ../PyApi && ${MAKE}  -f Makefile CONF=Debug
@@ -117,8 +117,8 @@ ${OBJECTDIR}/Trading.o: Trading.cpp
 
 # Subprojects
 .clean-subprojects:
-	cd ../Core && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Common && ${MAKE}  -f Makefile CONF=Debug clean
+	cd ../Core && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Interaction/Lightspeed && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Interaction/Enyx && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../PyApi && ${MAKE}  -f Makefile CONF=Debug clean

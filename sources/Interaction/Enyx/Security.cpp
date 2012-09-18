@@ -55,7 +55,7 @@ void Security::OnBuyOrderChange(OrderId, Qty /*newQty*/, double /*newPrice*/) {
 void Security::OnSellOrderChange(OrderId, Qty /*newQty*/, double /*newPrice*/) {
 	//...//
 }
-		
+
 void Security::OnSellOrderDel(OrderId, Qty, double /*price*/) {
 	//...//
 }

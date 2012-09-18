@@ -55,19 +55,19 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib -Wl,-rpath,../Core/dist/Debug/GNU_4.7.1-Linux-x86 -L../Core/dist/Debug/GNU_4.7.1-Linux-x86 -lCore ../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a -lboost_python -lpython2.6
+LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib ../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a -Wl,-rpath,../Core/dist/Debug/GNU_4.7.1-Linux-x86 -L../Core/dist/Debug/GNU_4.7.1-Linux-x86 -lCore_dbg -lboost_python -lpython2.6
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi_dbg.${CND_DLIB_EXT}
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}: ../Core/dist/Debug/GNU_4.7.1-Linux-x86/libCore.so
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi_dbg.${CND_DLIB_EXT}: ../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}: ../Common/dist/Debug/GNU_4.7.1-Linux-x86/libcommon.a
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi_dbg.${CND_DLIB_EXT}: ../Core/dist/Debug/GNU_4.7.1-Linux-x86/libCore_dbg.so
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi_dbg.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -shared -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	${LINK.cc} -shared -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi_dbg.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
 ${OBJECTDIR}/ScriptEngine.o: ScriptEngine.cpp 
 	${MKDIR} -p ${OBJECTDIR}
@@ -91,18 +91,18 @@ ${OBJECTDIR}/PositionWrapper.o: PositionWrapper.cpp
 
 # Subprojects
 .build-subprojects:
-	cd ../Core && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Common && ${MAKE}  -f Makefile CONF=Debug
+	cd ../Core && ${MAKE}  -f Makefile CONF=Debug
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
 	${RM} -r ${CND_BUILDDIR}/${CND_CONF}
-	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}
+	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi_dbg.${CND_DLIB_EXT}
 
 # Subprojects
 .clean-subprojects:
-	cd ../Core && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Common && ${MAKE}  -f Makefile CONF=Debug clean
+	cd ../Core && ${MAKE}  -f Makefile CONF=Debug clean
 
 # Enable dependency checking
 .dep.inc: .depcheck-impl

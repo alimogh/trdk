@@ -7,6 +7,7 @@
       <itemPath>FeedHandler.hpp</itemPath>
       <itemPath>MarketDataSource.hpp</itemPath>
       <itemPath>Prec.hpp</itemPath>
+      <itemPath>Security.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
@@ -15,6 +16,7 @@
       <itemPath>FeedHandler.cpp</itemPath>
       <itemPath>MarketDataSource.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
+      <itemPath>Security.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -52,6 +54,7 @@
           <warningLevel>3</warningLevel>
         </ccTool>
         <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx_dbg.${CND_DLIB_EXT}</output>
           <linkerAddLib>
             <pElem>/usr/local/boost/boost_1_51/lib</pElem>
           </linkerAddLib>
@@ -77,7 +80,7 @@
                             WD="../../Core"
                             BC="${MAKE}  -f Makefile CONF=Debug"
                             CC="${MAKE}  -f Makefile CONF=Debug clean"
-                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore_dbg.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
             <linkerLibLibItem>enyxmd</linkerLibLibItem>

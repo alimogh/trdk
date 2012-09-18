@@ -61,18 +61,6 @@
           </linkerAddLib>
           <linkerLibItems>
             <linkerLibProjectItem>
-              <makeArtifact PL="../Core"
-                            CT="2"
-                            CN="Debug"
-                            AC="true"
-                            BL="true"
-                            WD="../Core"
-                            BC="${MAKE}  -f Makefile CONF=Debug"
-                            CC="${MAKE}  -f Makefile CONF=Debug clean"
-                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
-              </makeArtifact>
-            </linkerLibProjectItem>
-            <linkerLibProjectItem>
               <makeArtifact PL="../Common"
                             CT="3"
                             CN="Debug"
@@ -82,6 +70,18 @@
                             BC="${MAKE}  -f Makefile CONF=Debug"
                             CC="${MAKE}  -f Makefile CONF=Debug clean"
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
+              </makeArtifact>
+            </linkerLibProjectItem>
+            <linkerLibProjectItem>
+              <makeArtifact PL="../Core"
+                            CT="2"
+                            CN="Debug"
+                            AC="true"
+                            BL="true"
+                            WD="../Core"
+                            BC="${MAKE}  -f Makefile CONF=Debug"
+                            CC="${MAKE}  -f Makefile CONF=Debug clean"
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore_dbg.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
             <linkerLibLibItem>boost_date_time</linkerLibLibItem>
@@ -101,7 +101,7 @@
                         WD="../Interaction/Lightspeed"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libLightspeed.${CND_DLIB_EXT}">
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libLightspeed_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
           <makeArtifact PL="../Interaction/Enyx"
                         CT="2"
@@ -111,7 +111,7 @@
                         WD="../Interaction/Enyx"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx.${CND_DLIB_EXT}">
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
           <makeArtifact PL="../PyApi"
                         CT="2"
@@ -121,7 +121,7 @@
                         WD="../PyApi"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}">
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
           <makeArtifact PL="../Interaction/Fake"
                         CT="2"
@@ -131,7 +131,7 @@
                         WD="../Interaction/Fake"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake.${CND_DLIB_EXT}">
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
         </requiredProjects>
       </compileType>

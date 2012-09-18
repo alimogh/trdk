@@ -51,22 +51,11 @@
           <warningLevel>3</warningLevel>
         </ccTool>
         <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake_dbg.${CND_DLIB_EXT}</output>
           <linkerAddLib>
             <pElem>/usr/local/boost/boost_1_51/lib</pElem>
           </linkerAddLib>
           <linkerLibItems>
-            <linkerLibProjectItem>
-              <makeArtifact PL="../../Core"
-                            CT="2"
-                            CN="Debug"
-                            AC="false"
-                            BL="true"
-                            WD="../../Core"
-                            BC="${MAKE}  -f Makefile CONF=Debug"
-                            CC="${MAKE}  -f Makefile CONF=Debug clean"
-                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
-              </makeArtifact>
-            </linkerLibProjectItem>
             <linkerLibProjectItem>
               <makeArtifact PL="../../Common"
                             CT="3"
@@ -77,6 +66,18 @@
                             BC="${MAKE}  -f Makefile CONF=Debug"
                             CC="${MAKE}  -f Makefile CONF=Debug clean"
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
+              </makeArtifact>
+            </linkerLibProjectItem>
+            <linkerLibProjectItem>
+              <makeArtifact PL="../../Core"
+                            CT="2"
+                            CN="Debug"
+                            AC="true"
+                            BL="true"
+                            WD="../../Core"
+                            BC="${MAKE}  -f Makefile CONF=Debug"
+                            CC="${MAKE}  -f Makefile CONF=Debug clean"
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore_dbg.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
           </linkerLibItems>
