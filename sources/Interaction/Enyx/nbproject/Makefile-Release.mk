@@ -37,8 +37,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/MarketDataSource.o \
 	${OBJECTDIR}/Api.o \
-	${OBJECTDIR}/FeedHandler.o \
-	${OBJECTDIR}/Security.o
+	${OBJECTDIR}/FeedHandler.o
 
 
 # C Compiler Flags
@@ -83,11 +82,6 @@ ${OBJECTDIR}/FeedHandler.o: FeedHandler.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_INTERACTION_ENYX -I../.. -I/usr/include/libenyxmd -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/FeedHandler.o FeedHandler.cpp
-
-${OBJECTDIR}/Security.o: Security.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_INTERACTION_ENYX -I../.. -I/usr/include/libenyxmd -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Security.o Security.cpp
 
 # Subprojects
 .build-subprojects:

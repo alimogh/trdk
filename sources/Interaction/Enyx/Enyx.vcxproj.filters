@@ -17,9 +17,6 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NasdaqFeedHandler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MarketDataSource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -41,9 +38,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Api.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FakeMarketData.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Security.hpp">

@@ -55,7 +55,7 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 			return m_position->GetSecurity().DescalePrice(m_position->GetOpenStartPrice());
 		}
 
-		int GetOpenOrderId() const {
+		boost::uint64_t GetOpenOrderId() const {
 			return m_position->GetOpenOrderId();
 		}
 		int GetOpenedQty() const {
@@ -72,7 +72,7 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 			return m_position->GetActiveQty();
 		}
 
-		int GetCloseOrderId() const {
+		boost::uint64_t GetCloseOrderId() const {
 			return m_position->GetCloseOrderId();
 		}
 		double GetCloseStartPrice() const {
@@ -92,40 +92,40 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 
 	public:
 
-		int OpenAtMarketPrice() {
+		boost::uint64_t OpenAtMarketPrice() {
 			return m_position->OpenAtMarketPrice();
 		}
 
-		int Open(double price) {
+		boost::uint64_t Open(double price) {
 			return m_position->Open(m_position->GetSecurity().ScalePrice(price));
 		}
 
-		int OpenAtMarketPriceWithStopPrice(double stopPrice) {
+		boost::uint64_t OpenAtMarketPriceWithStopPrice(double stopPrice) {
 			return m_position->OpenAtMarketPriceWithStopPrice(
 				m_position->GetSecurity().ScalePrice(stopPrice));
 		}
 
-		int OpenOrCancel(double price) {
+		boost::uint64_t OpenOrCancel(double price) {
 			return m_position->OpenOrCancel(m_position->GetSecurity().ScalePrice(price));
 		}
 
-		int CloseAtMarketPrice() {
+		boost::uint64_t CloseAtMarketPrice() {
 			return m_position->CloseAtMarketPrice(Trader::Position::CLOSE_TYPE_NONE);
 		}
 
-		int Close(double price) {
+		boost::uint64_t Close(double price) {
 			return m_position->Close(
 				Trader::Position::CLOSE_TYPE_NONE,
 				m_position->GetSecurity().ScalePrice(price));
 		}
 
-		int CloseAtMarketPriceWithStopPrice(double stopPrice) {
+		boost::uint64_t CloseAtMarketPriceWithStopPrice(double stopPrice) {
 			return m_position->CloseAtMarketPriceWithStopPrice(
 				Trader::Position::CLOSE_TYPE_NONE,
 				m_position->GetSecurity().ScalePrice(stopPrice));
 		}
 
-		int CloseOrCancel(double price) {
+		boost::uint64_t CloseOrCancel(double price) {
 			return m_position->CloseOrCancel(
 				Trader::Position::CLOSE_TYPE_NONE,
 				m_position->GetSecurity().ScalePrice(price));

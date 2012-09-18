@@ -18,8 +18,14 @@ FeedHandler::SecuritySubscribtion::SecuritySubscribtion(
 			const boost::shared_ptr<Security> &firstSecurity)
 		: m_exchange(firstSecurity->GetPrimaryExchange()),
 		m_symbol(firstSecurity->GetSymbol()),
-		m_orderAddSignal(new OrderAddSignal),
-		m_orderDelSignal(new OrderDelSignal) {
+		m_buyOrderAddSignal(new OrderAddSignal),
+		m_sellOrderAddSignal(new OrderAddSignal),
+		m_buyOrderExecSignal(new OrderExecSignal),
+		m_sellOrderExecSignal(new OrderExecSignal),
+		m_buyOrderChangeSignal(new OrderChangeSignal),
+		m_sellOrderChangeSignal(new OrderChangeSignal),
+		m_buyOrderDelSignal(new OrderDelSignal),
+		m_sellOrderDelSignal(new OrderDelSignal) {
 	Subscribe(firstSecurity);
 }
 
@@ -32,12 +38,28 @@ const std::string & FeedHandler::SecuritySubscribtion::GetSymbol() const {
 }
 
 void FeedHandler::SecuritySubscribtion::Subscribe(const boost::shared_ptr<Security> &security) {
+
 	try {
-		m_orderAddSignal->connect(boost::bind(&Security::OnOrderAdd, security));
-		m_orderDelSignal->connect(boost::bind(&Security::OnOrderDel, security));
+
+		m_buyOrderAddSignal->connect(
+			boost::bind(&Security::OnBuyOrderAdd, security, _1, _2, _3));
+		m_sellOrderAddSignal->connect(
+			boost::bind(&Security::OnSellOrderAdd, security, _1, _2, _3));
+
+		m_buyOrderExecSignal->connect(
+			boost::bind(&Security::OnBuyOrderExec, security, _1, _2, _3));
+		m_sellOrderExecSignal->connect(
+			boost::bind(&Security::OnSellOrderExec, security, _1, _2, _3));
+
+		m_buyOrderDelSignal->connect(
+			boost::bind(&Security::OnBuyOrderDel, security, _1, _2, _3));
+		m_sellOrderDelSignal->connect(
+			boost::bind(&Security::OnSellOrderDel, security, _1, _2, _3));
+
 	} catch (...) {
 		AssertFailNoException();
 	}
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -58,56 +80,173 @@ FeedHandler::~FeedHandler() {
 	//...//
 }
 
-void FeedHandler::onOrderMessage(NXFeedOrder * OrderMsg) {
+namespace {
 
-	nasdaqustvitch41::NXFeedOrderAdd * add_order = (nasdaqustvitch41::NXFeedOrderAdd *) OrderMsg;
-    NXFeedOrderExecute * exe_order = (NXFeedOrderExecute *) OrderMsg;
-    nasdaqustvitch41::NXFeedOrderExeWithPrice * exe_with_price_order = (nasdaqustvitch41::NXFeedOrderExeWithPrice *) OrderMsg;
-    NXFeedOrderReduce* reduce_order     =  (NXFeedOrderReduce *) OrderMsg;
-    NXFeedOrderDelete* delete_order     =  (NXFeedOrderDelete *) OrderMsg;
-    NXFeedOrderReplace* replace_order   =  (NXFeedOrderReplace *) OrderMsg;
+	bool IsBuy(const NXFeed_side_t &side) {
+		switch (side) {
+			case NXFEED_SIDE_BUY:
+				return true;
+			default:
+				AssertFail("Unknown NXFeed_side_t.");
+			case NXFEED_SIDE_SELL:
+				return false;
+		}
+	}
 
-	std::ostringstream oss;
+}
 
-    switch(OrderMsg->getSubType()) {
-    // generated when:
-        //      * MessageType = "A" Add order - No MPID Attribution
-        //              - add_order->getAttribution() is equal to "NSDQ"
-        //      * MessageType = "F" Add order with MPID Attribution
-        //      => instrument filtering
-    case  NXFEED_SUBTYPE_ORDER_ADD :
-		oss << "New order added: " << *add_order;
-        break;
-    // generated when:
-        //      * MessageType = "E" Order Executed Message
-    case  NXFEED_SUBTYPE_ORDER_EXEC :
-		oss << "Order exec: " << *exe_order;
-        break;
-        // generated when:
-        //      * MessageType = "C" Order Executed with price Message
-    case  NXFEED_SUBTYPE_ORDER_EXEC_PRICE  :
-		oss << "Order exec with price: " << *exe_with_price_order;
-        break;
-    // generated when:
-        //      * MessageType = "X" Order Cancel Message
-    case  NXFEED_SUBTYPE_ORDER_REDUCE :
-        return;
-    // generated when:
-        //      * MessageType = "D" Order Delete Message
-    case  NXFEED_SUBTYPE_ORDER_DEL  :
-		oss << "Order deleted: " << *delete_order;
-        break;
-    // generated when:
-        //      * MessageType = "U" Order Replace Message
-    case  NXFEED_SUBTYPE_ORDER_REPLACE  :
-        return;
-    default:
-        Log::Error(TRADER_ENYX_LOG_PREFFIX "Nasdaq Support should not produce this Trade message subtype");
+void FeedHandler::HandleOrderAdd(const nasdaqustvitch41::NXFeedOrderAdd &order) {
+
+	const auto &index = m_subscribtion.get<BySecurtiy>();
+	const std::string symbol = order.getInstrumentName();
+	const SubscribtionBySecurity::const_iterator subscribtionPos
+		= index.find(boost::make_tuple(std::string("NASDAQ-US"), symbol));
+	Assert(subscribtionPos != index.end());
+	if (subscribtionPos == index.end()) {
+		Log::Warn(
+			TRADER_ENYX_LOG_PREFFIX "no marked data handler for \"%1%\".",
+			symbol);
 		return;
-    }
+	}
+	const auto &subscribtion = *subscribtionPos;
 
-	Log::Debug(TRADER_ENYX_LOG_PREFFIX "%1%", oss.str().c_str());
+	const bool isBuy = order.getBuyNSell();
+	const auto id = order.getOrderId();
+	const auto qty = order.getQuantity();
+	const auto price = order.getPrice();
+	Assert(m_orders.get<ByOrder>().find(id) == m_orders.get<ByOrder>().end());
+	m_orders.insert(Order(id, isBuy, qty, price, subscribtion));
 
+	subscribtion.OnOrderAdd(isBuy, id, qty, price);
+
+}
+
+void FeedHandler::HandleOrderExec(const NXFeedOrderExecute &enyxOrder) {
+	const auto id = enyxOrder.getOrderId();
+	const auto execQty = enyxOrder.getExecutedQuantity();
+	try {
+		auto order = FindOrderPos(id);
+		order->DecreaseQty(execQty);
+		const bool isBuy = order->IsBuy();
+		const auto price = order->GetPrice();
+		const auto &subscribtion = order->GetSubscribtion();
+		if (order->GetQty() == 0) {
+			m_orders.erase(order);
+		}
+		subscribtion.OnOrderExec(isBuy, id, execQty, price);
+	} catch (const OrderNotFoundError &) {
+		Log::Error(
+			TRADER_ENYX_LOG_PREFFIX "failed to fine EXECUTED order with id %1%.",
+			id);
+	}
+}
+
+void FeedHandler::HandleOrderExec(
+			const nasdaqustvitch41::NXFeedOrderExeWithPrice &enyxOrder) {
+	const auto id = enyxOrder.getOrderId();
+	const auto execQty = enyxOrder.getExecutedQuantity();
+	try {
+		auto order = FindOrderPos(id);
+		order->DecreaseQty(execQty);
+		const bool isBuy = order->IsBuy();
+		const auto &subscribtion = order->GetSubscribtion();
+		if (order->GetQty() == 0) {
+			m_orders.erase(order);
+		}
+		subscribtion.OnOrderExec(isBuy, id, execQty, enyxOrder.getExecutedPrice());
+	} catch (const OrderNotFoundError &) {
+		Log::Error(
+			TRADER_ENYX_LOG_PREFFIX "failed to fine EXECUTED order with id %1%.",
+			id);
+	}
+}
+
+void FeedHandler::HandleOrderDel(const NXFeedOrderDelete &enyxOrder) {
+	const auto id = enyxOrder.getOrderId();
+	try {
+		auto order = FindOrderPos(id);
+		const auto &subscribtion = order->GetSubscribtion();
+		const bool isBuy = order->IsBuy();
+		const auto qty = order->GetQty();
+		const auto price = order->GetPrice();
+		m_orders.erase(order);
+		subscribtion.OnOrderDel(isBuy, id, qty, price);
+	} catch (const OrderNotFoundError &) {
+		Log::Error(
+			TRADER_ENYX_LOG_PREFFIX "failed to fine DELETED order with id %1%.",
+			id);
+	}
+}
+
+void FeedHandler::HandleOrderChange(const NXFeedOrderReduce &enyxOrder) {
+	const auto id = enyxOrder.getOrderId();
+	const auto reducedQty = enyxOrder.getReducedQuantity();
+	try {
+		auto order = FindOrderPos(id);
+		const bool isBuy = order->IsBuy();
+		const auto qty = order->DecreaseQty(reducedQty);
+		const auto price = order->GetPrice();
+		const auto &subscribtion = order->GetSubscribtion();
+		if (order->GetQty() == 0) {
+			m_orders.erase(order);
+		}
+		subscribtion.OnOrderChange(isBuy, id, qty, price);
+	} catch (const OrderNotFoundError &) {
+		Log::Error(
+			TRADER_ENYX_LOG_PREFFIX "failed to fine CHANGED order with id %1%.",
+			id);
+	}
+}
+
+const FeedHandler::Order & FeedHandler::FindOrder(Security::OrderId id) {
+	const FeedHandler::OrderById::iterator pos = FindOrderPos(id);
+	const FeedHandler::Order &order = *pos;
+	return order;
+}
+
+FeedHandler::OrderById::iterator FeedHandler::FindOrderPos(Security::OrderId id) {
+	const auto &index = m_orders.get<ByOrder>();
+	const auto orderPos = index.find(id);
+	Assert(orderPos != index.end());
+	if (orderPos == index.end()) {
+		throw OrderNotFoundError();
+	}
+	AssertEq(id, orderPos->GetOrderId());
+	return orderPos;
+}
+
+void FeedHandler::onOrderMessage(NXFeedOrder * OrderMsg) {
+	try {
+		switch(OrderMsg->getSubType()) {
+			case  NXFEED_SUBTYPE_ORDER_ADD:
+				HandleOrderAdd(
+					*reinterpret_cast<nasdaqustvitch41::NXFeedOrderAdd *>(
+						OrderMsg));
+				break;
+			case  NXFEED_SUBTYPE_ORDER_EXEC:
+				HandleOrderExec(
+					*reinterpret_cast<NXFeedOrderExecute *>(OrderMsg));
+				break;
+			case  NXFEED_SUBTYPE_ORDER_EXEC_PRICE:
+				HandleOrderExec(
+					*reinterpret_cast<nasdaqustvitch41::NXFeedOrderExeWithPrice *>(
+						OrderMsg));
+				break;
+			case  NXFEED_SUBTYPE_ORDER_REDUCE:
+				HandleOrderChange(*reinterpret_cast<NXFeedOrderReduce *>(OrderMsg));
+				return;
+			case  NXFEED_SUBTYPE_ORDER_DEL:
+				HandleOrderDel(*reinterpret_cast<NXFeedOrderDelete *>(OrderMsg));
+				break;
+			case  NXFEED_SUBTYPE_ORDER_REPLACE:
+				// NXFeedOrderReplace *
+			default:
+				Log::Error(TRADER_ENYX_LOG_PREFFIX "unknown message %1%.", OrderMsg->getSubType());
+				break;
+		}
+	} catch (...) {
+		AssertFailNoException();
+	}
 }
 
 void FeedHandler::Subscribe(const boost::shared_ptr<Security> &security) const throw() {

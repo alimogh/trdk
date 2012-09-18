@@ -32,10 +32,34 @@ Security::Security(
 	//...//
 }
 
-void Security::OnOrderAdd() {
+void Security::OnSellOrderAdd(OrderId, Qty, double /*price*/) {
 	//...//
 }
 
-void Security::OnOrderDel() {
+void Security::OnBuyOrderAdd(OrderId, Qty, double /*price*/) {
+	//...//
+}
+
+void Security::OnSellOrderExec(OrderId, Qty, double /*price*/) {
+	//...//
+}
+
+void Security::OnBuyOrderExec(OrderId, Qty, double /*price*/) {
+	//...//
+}
+
+void Security::OnBuyOrderChange(OrderId, Qty /*newQty*/, double /*newPrice*/) {
+	//...//
+}
+
+void Security::OnSellOrderChange(OrderId, Qty /*newQty*/, double /*newPrice*/) {
+	//...//
+}
+		
+void Security::OnSellOrderDel(OrderId, Qty, double /*price*/) {
+	//...//
+}
+
+void Security::OnBuyOrderDel(OrderId, Qty, double /*price*/) {
 	//...//
 }

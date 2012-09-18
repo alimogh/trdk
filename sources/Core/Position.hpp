@@ -32,6 +32,7 @@ namespace Trader {
 				boost::signals2::connection>
 			StateUpdateConnection;
 
+		typedef Trader::TradeSystem::OrderId OrderId;
 		typedef Trader::Security::ScaledPrice ScaledPrice;
 		typedef Trader::Security::Qty Qty;
 		typedef boost::posix_time::ptime Time;
@@ -62,13 +63,13 @@ namespace Trader {
 
 		struct DynamicData {
 
-			volatile long long orderId;
+			volatile OrderId orderId;
 			Time time;
-			volatile long long price;
-			volatile long qty;
-			volatile long long comission;
+			volatile ScaledPrice price;
+			volatile Qty qty;
+			volatile ScaledPrice comission;
 		
-			volatile long hasOrder;
+			volatile bool hasOrder;
 
 			DynamicData();
 
@@ -160,8 +161,8 @@ namespace Trader {
 		Qty GetPlanedQty() const;
 		ScaledPrice GetOpenStartPrice() const;
 
-		Trader::TradeSystem::OrderId GetOpenOrderId() const throw() {
-			return Trader::TradeSystem::OrderId(m_opened.orderId);
+		OrderId GetOpenOrderId() const throw() {
+			return m_opened.orderId;
 		}
 		Qty GetOpenedQty() const throw() {
 			return m_opened.qty;
@@ -179,8 +180,8 @@ namespace Trader {
 			return GetOpenedQty() - GetClosedQty();
 		}
 	
-		Trader::TradeSystem::OrderId GetCloseOrderId() const throw() {
-			return Trader::TradeSystem::OrderId(m_closed.orderId);
+		OrderId GetCloseOrderId() const throw() {
+			return m_closed.orderId;
 		}
 		void SetCloseStartPrice(Position::ScaledPrice);
 		ScaledPrice GetCloseStartPrice() const;
@@ -194,15 +195,15 @@ namespace Trader {
 
 	public:
 
-		Trader::TradeSystem::OrderId OpenAtMarketPrice();
-		Trader::TradeSystem::OrderId Open(ScaledPrice);
-		Trader::TradeSystem::OrderId OpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
-		Trader::TradeSystem::OrderId OpenOrCancel(ScaledPrice);
+		OrderId OpenAtMarketPrice();
+		OrderId Open(ScaledPrice);
+		OrderId OpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
+		OrderId OpenOrCancel(ScaledPrice);
 
-		Trader::TradeSystem::OrderId CloseAtMarketPrice(CloseType);
-		Trader::TradeSystem::OrderId Close(CloseType, ScaledPrice);
-		Trader::TradeSystem::OrderId CloseAtMarketPriceWithStopPrice(CloseType, ScaledPrice stopPrice);
-		Trader::TradeSystem::OrderId CloseOrCancel(CloseType, ScaledPrice);
+		OrderId CloseAtMarketPrice(CloseType);
+		OrderId Close(CloseType, ScaledPrice);
+		OrderId CloseAtMarketPriceWithStopPrice(CloseType, ScaledPrice stopPrice);
+		OrderId CloseOrCancel(CloseType, ScaledPrice);
 
 		bool CancelAtMarketPrice(CloseType);
 		bool CancelAllOrders();
@@ -216,29 +217,29 @@ namespace Trader {
 
 	protected:
 
-		virtual Trader::TradeSystem::OrderId DoOpenAtMarketPrice() = 0;
-		virtual Trader::TradeSystem::OrderId DoOpen(ScaledPrice) = 0;
-		virtual Trader::TradeSystem::OrderId DoOpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice) = 0;
-		virtual Trader::TradeSystem::OrderId DoOpenOrCancel(ScaledPrice) = 0;
+		virtual OrderId DoOpenAtMarketPrice() = 0;
+		virtual OrderId DoOpen(ScaledPrice) = 0;
+		virtual OrderId DoOpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice) = 0;
+		virtual OrderId DoOpenOrCancel(ScaledPrice) = 0;
 
-		virtual Trader::TradeSystem::OrderId DoCloseAtMarketPrice() = 0;
-		virtual Trader::TradeSystem::OrderId DoClose(ScaledPrice) = 0;
-		virtual Trader::TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice) = 0;
-		virtual Trader::TradeSystem::OrderId DoCloseOrCancel(ScaledPrice) = 0;
+		virtual OrderId DoCloseAtMarketPrice() = 0;
+		virtual OrderId DoClose(ScaledPrice) = 0;
+		virtual OrderId DoCloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice) = 0;
+		virtual OrderId DoCloseOrCancel(ScaledPrice) = 0;
 
 		bool DoCancelAllOrders();
 
 	protected:
 
 		void UpdateOpening(
-					Trader::TradeSystem::OrderId,
+					OrderId,
 					Trader::TradeSystem::OrderStatus,
 					Qty filled,
 					Qty remaining,
 					double avgPrice,
 					double lastPrice);
 		void UpdateClosing(
-					Trader::TradeSystem::OrderId,
+					OrderId,
 					Trader::TradeSystem::OrderStatus,
 					Qty filled,
 					Qty remaining,
@@ -316,15 +317,15 @@ namespace Trader {
 
 	public:
 
-		virtual Trader::TradeSystem::OrderId DoOpenAtMarketPrice();
-		virtual Trader::TradeSystem::OrderId DoOpen(ScaledPrice);
-		virtual Trader::TradeSystem::OrderId DoOpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
-		virtual Trader::TradeSystem::OrderId DoOpenOrCancel(ScaledPrice);
+		virtual OrderId DoOpenAtMarketPrice();
+		virtual OrderId DoOpen(ScaledPrice);
+		virtual OrderId DoOpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
+		virtual OrderId DoOpenOrCancel(ScaledPrice);
 
-		virtual Trader::TradeSystem::OrderId DoCloseAtMarketPrice();
-		virtual Trader::TradeSystem::OrderId DoClose(ScaledPrice);
-		virtual Trader::TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
-		virtual Trader::TradeSystem::OrderId DoCloseOrCancel(ScaledPrice);
+		virtual OrderId DoCloseAtMarketPrice();
+		virtual OrderId DoClose(ScaledPrice);
+		virtual OrderId DoCloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
+		virtual OrderId DoCloseOrCancel(ScaledPrice);
 
 	};
 
@@ -354,15 +355,15 @@ namespace Trader {
 
 	public:
 
-		virtual Trader::TradeSystem::OrderId DoOpenAtMarketPrice();
-		virtual Trader::TradeSystem::OrderId DoOpen(ScaledPrice);
-		virtual Trader::TradeSystem::OrderId DoOpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
-		virtual Trader::TradeSystem::OrderId DoOpenOrCancel(ScaledPrice);
+		virtual OrderId DoOpenAtMarketPrice();
+		virtual OrderId DoOpen(ScaledPrice);
+		virtual OrderId DoOpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
+		virtual OrderId DoOpenOrCancel(ScaledPrice);
 
-		virtual Trader::TradeSystem::OrderId DoCloseAtMarketPrice();
-		virtual Trader::TradeSystem::OrderId DoClose(ScaledPrice);
-		virtual Trader::TradeSystem::OrderId DoCloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
-		virtual Trader::TradeSystem::OrderId DoCloseOrCancel(ScaledPrice);
+		virtual OrderId DoCloseAtMarketPrice();
+		virtual OrderId DoClose(ScaledPrice);
+		virtual OrderId DoCloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
+		virtual OrderId DoCloseOrCancel(ScaledPrice);
 
 	};
 

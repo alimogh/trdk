@@ -26,6 +26,7 @@ namespace Trader {
 
 		typedef boost::posix_time::ptime MarketDataTime;
 
+		typedef Trader::TradeSystem::OrderId OrderId;
 		typedef Trader::TradeSystem::OrderQty Qty;
 		typedef Trader::TradeSystem::OrderScaledPrice ScaledPrice;
 
@@ -52,7 +53,6 @@ namespace Trader {
 					boost::shared_ptr<const Trader::Settings> settings,
 					bool logMarketData);
 
-		//! @todo: make classes "Security with market data" and "security connected to trade system" instead virtual dtor.
 		~Security();
 
 	public:
@@ -82,29 +82,29 @@ namespace Trader {
 
 		boost::posix_time::ptime GetLastMarketDataTime() const;
 
-		Trader::TradeSystem::OrderId SellAtMarketPrice(Qty, Trader::Position &);
-		Trader::TradeSystem::OrderId Sell(Qty, ScaledPrice, Trader::Position &);
-		Trader::TradeSystem::OrderId SellAtMarketPriceWithStopPrice(
+		OrderId SellAtMarketPrice(Qty, Trader::Position &);
+		OrderId Sell(Qty, ScaledPrice, Trader::Position &);
+		OrderId SellAtMarketPriceWithStopPrice(
 					Qty,
 					ScaledPrice stopPrice,
 					Trader::Position &);
-		Trader::TradeSystem::OrderId SellOrCancel(
+		OrderId SellOrCancel(
 					Qty,
 					ScaledPrice,
 					Trader::Position &);
 
-		Trader::TradeSystem::OrderId BuyAtMarketPrice(Qty, Trader::Position &);
-		Trader::TradeSystem::OrderId Buy(Qty, ScaledPrice, Trader::Position &);
-		Trader::TradeSystem::OrderId BuyAtMarketPriceWithStopPrice(
+		OrderId BuyAtMarketPrice(Qty, Trader::Position &);
+		OrderId Buy(Qty, ScaledPrice, Trader::Position &);
+		OrderId BuyAtMarketPriceWithStopPrice(
 					Qty,
 					ScaledPrice stopPrice,
 					Trader::Position &);
-		Trader::TradeSystem::OrderId BuyOrCancel(
+		OrderId BuyOrCancel(
 					Qty,
 					ScaledPrice,
 					Trader::Position &);
 
-		void CancelOrder(Trader::TradeSystem::OrderId);
+		void CancelOrder(OrderId);
 		void CancelAllOrders();
 
 	public:

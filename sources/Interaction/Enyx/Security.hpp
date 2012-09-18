@@ -37,10 +37,18 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	public:
 
-		void OnOrderAdd();
-		void OnOrderDel();
+		void OnSellOrderAdd(OrderId, Qty, double price);
+		void OnBuyOrderAdd(OrderId, Qty, double price);
+		
+		void OnSellOrderExec(OrderId, Qty, double price);
+		void OnBuyOrderExec(OrderId, Qty, double price);
+
+		void OnBuyOrderChange(OrderId, Qty newQty, double newPrice);
+		void OnSellOrderChange(OrderId, Qty newQty, double newPrice);
+
+		void OnSellOrderDel(OrderId, Qty, double price);
+		void OnBuyOrderDel(OrderId, Qty, double price);
 
 	};
-
 
 } } }

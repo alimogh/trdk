@@ -18,7 +18,7 @@ namespace Trader {
 
 	public:
 
-		typedef boost::int32_t OrderId;
+		typedef boost::uint64_t OrderId;
 		typedef boost::int32_t OrderQty;
 		typedef boost::int64_t OrderScaledPrice;
 

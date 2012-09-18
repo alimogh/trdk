@@ -77,11 +77,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="NasdaqFeedHandler.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -92,7 +87,6 @@
   <ItemGroup>
     <ClInclude Include="MarketDataSource.hpp" />
     <ClInclude Include="Api.hpp" />
-    <ClInclude Include="FakeMarketData.hpp" />
     <ClInclude Include="FeedHandler.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Security.hpp" />
