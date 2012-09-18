@@ -123,6 +123,16 @@
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}">
           </makeArtifact>
+          <makeArtifact PL="../Interaction/Fake"
+                        CT="2"
+                        CN="Debug"
+                        AC="true"
+                        BL="true"
+                        WD="../Interaction/Fake"
+                        BC="${MAKE}  -f Makefile CONF=Debug"
+                        CC="${MAKE}  -f Makefile CONF=Debug clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake.${CND_DLIB_EXT}">
+          </makeArtifact>
         </requiredProjects>
       </compileType>
       <item path="Prec.cpp" ex="true" tool="1" flavor2="0">
@@ -226,6 +236,16 @@
                         BC="${MAKE}  -f Makefile CONF=Release"
                         CC="${MAKE}  -f Makefile CONF=Release clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}">
+          </makeArtifact>
+          <makeArtifact PL="../Interaction/Fake"
+                        CT="2"
+                        CN="Release"
+                        AC="false"
+                        BL="true"
+                        WD="../Interaction/Fake"
+                        BC="${MAKE}  -f Makefile CONF=Release"
+                        CC="${MAKE}  -f Makefile CONF=Release clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake.${CND_DLIB_EXT}">
           </makeArtifact>
         </requiredProjects>
       </compileType>
