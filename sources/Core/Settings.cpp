@@ -37,21 +37,11 @@ void Settings::Update(const IniFile &ini, const std::string &section) {
 
 void Settings::UpdateDynamic(const IniFile &ini, const std::string &section) {
 	Interlocking::Exchange(
-		m_level2PeriodSeconds,
-		ini.ReadTypedKey<unsigned short>(section, "level2_period_seconds"));
-	Interlocking::Exchange(
-		m_level2SnapshotPrintTimeSeconds,
-		ini.ReadTypedKey<boost::uint16_t>(section, "level2_snapshot_print_time_seconds"));
-	Interlocking::Exchange(
 		m_minPrice,
 		Util::Scale(ini.ReadTypedKey<double>(section, "min_price"), defaultLastPriceScale));
 	Log::Info(
 		"Common dynamic settings:"
-			" level2_period_seconds = %1%;"
-			" level2_snapshot_print_time_seconds = %2%;"
-			" min_price = %3%;",
-		m_level2PeriodSeconds,
-		m_level2SnapshotPrintTimeSeconds,
+			" min_price = %1%;",
 		Util::Descale(m_minPrice, defaultLastPriceScale));
 }
 
@@ -158,19 +148,6 @@ size_t Settings::GetAlgoThreadsCount() const {
 
 boost::uint64_t Settings::GetUpdatePeriodMilliseconds() const {
 	return m_values.algoUpdatePeriodMilliseconds;
-}
-
-boost::uint32_t Settings::GetLevel2PeriodSeconds() const {
-	return m_level2PeriodSeconds;
-}
-
-bool Settings::IsLevel2SnapshotPrintEnabled() const {
-	return m_level2SnapshotPrintTimeSeconds ? true : false;
-}
-
-boost::uint16_t Settings::GetLevel2SnapshotPrintTimeSeconds() const {
-	Assert(IsLevel2SnapshotPrintEnabled());
-	return boost::uint16_t(m_level2SnapshotPrintTimeSeconds);
 }
 
 bool Settings::IsValidPrice(const Trader::Security &security) const {

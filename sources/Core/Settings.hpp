@@ -80,8 +80,6 @@ namespace Trader {
 
 		Values m_values;
 
-		volatile long m_level2PeriodSeconds;
-		volatile long m_level2SnapshotPrintTimeSeconds;
 		volatile long long m_minPrice;
 
 		const bool m_isReplayMode;
