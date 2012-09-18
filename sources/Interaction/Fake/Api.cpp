@@ -10,12 +10,18 @@
 #include "TradeSystem.hpp"
 #include "LiveMarketDataSource.hpp"
 
-boost::shared_ptr<Trader::TradeSystem> CreateTradeSystem() {
+#ifdef BOOST_WINDOWS
+#	define TRADER_INTERACTION_FAKE_API
+#else
+#	define TRADER_INTERACTION_FAKE_API extern "C"
+#endif
+
+TRADER_INTERACTION_FAKE_API boost::shared_ptr<Trader::TradeSystem> CreateTradeSystem() {
 	return boost::shared_ptr<Trader::TradeSystem>(
 		new Trader::Interaction::Fake::TradeSystem);
 }
 
-boost::shared_ptr<Trader::LiveMarketDataSource> CreateLiveMarketDataSource() {
+TRADER_INTERACTION_FAKE_API boost::shared_ptr<Trader::LiveMarketDataSource> CreateLiveMarketDataSource() {
 	return boost::shared_ptr<Trader::LiveMarketDataSource>(
 		new Trader::Interaction::Fake::LiveMarketDataSource);
 }
