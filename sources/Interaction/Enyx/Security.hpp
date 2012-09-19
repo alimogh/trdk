@@ -37,17 +37,27 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	public:
 
-		void OnSellOrderAdd(OrderId, Qty, double price);
-		void OnBuyOrderAdd(OrderId, Qty, double price);
-		
-		void OnSellOrderExec(OrderId, Qty, double price);
-		void OnBuyOrderExec(OrderId, Qty, double price);
+		void SetAsk(
+					const boost::posix_time::ptime &,
+					ScaledPrice price,
+					Qty size);
+		void SetLastAndAsk(
+					const boost::posix_time::ptime &,
+					ScaledPrice lastPrice,
+					Qty lastSize,
+					ScaledPrice askPrice,
+					Qty askSize);
 
-		void OnBuyOrderChange(OrderId, Qty newQty, double newPrice);
-		void OnSellOrderChange(OrderId, Qty newQty, double newPrice);
-
-		void OnSellOrderDel(OrderId, Qty, double price);
-		void OnBuyOrderDel(OrderId, Qty, double price);
+		void SetBid(
+					const boost::posix_time::ptime &,
+					ScaledPrice price,
+					Qty size);
+		void SetLastAndBid(
+					const boost::posix_time::ptime &,
+					ScaledPrice lastPrice,
+					Qty lastSize,
+					ScaledPrice bidPrice,
+					Qty bidSize);
 
 	};
 

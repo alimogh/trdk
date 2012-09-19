@@ -158,7 +158,9 @@ void MarketDataSource::Connect() {
 }
 
 bool MarketDataSource::IsSupported(const Trader::Security &security) const {
-	return Dictionary::isExchangeSupported(security.GetPrimaryExchange());
+	return
+		security.GetPrimaryExchange() == "NASDAQ-US"
+		&& Dictionary::isExchangeSupported(security.GetPrimaryExchange());
 }
 
 void MarketDataSource::CheckSupport(const Trader::Security &security) const {

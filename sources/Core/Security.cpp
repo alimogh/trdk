@@ -352,3 +352,16 @@ void Security::OnHistoryDataEnd() {
 Security::UpdateSlotConnection Security::Subcribe(const UpdateSlot &slot) const {
 	return UpdateSlotConnection(m_pimpl->m_updateSignal.connect(slot));
 }
+
+void Security::SignalUpdate() {
+	if (m_pimpl->m_marketDataLog) {
+		m_pimpl->m_marketDataLog->Append(
+			m_pimpl->m_marketDataTime,
+			m_pimpl->m_marketDataTime,
+			DescalePrice(m_pimpl->m_lastPrice),
+			DescalePrice(m_pimpl->m_askPrice),
+			DescalePrice(m_pimpl->m_bidPrice),
+			0);
+	}
+	m_pimpl->m_updateSignal();
+}

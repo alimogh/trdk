@@ -67,6 +67,7 @@
   <PropertyGroup />
   <ItemGroup>
     <ClCompile Include="Api.cpp" />
+    <ClCompile Include="MarketDataSnapshot.cpp" />
     <ClCompile Include="MarketDataSource.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -85,6 +86,7 @@
     <ClCompile Include="Security.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="MarketDataSnapshot.hpp" />
     <ClInclude Include="MarketDataSource.hpp" />
     <ClInclude Include="Api.hpp" />
     <ClInclude Include="FeedHandler.hpp" />

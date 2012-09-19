@@ -32,34 +32,50 @@ Security::Security(
 	//...//
 }
 
-void Security::OnSellOrderAdd(OrderId, Qty, double /*price*/) {
-	//...//
+void Security::SetAsk(
+			const boost::posix_time::ptime &time,
+			ScaledPrice price,
+			Qty size) {
+	if (!Base::SetAsk(price, size)) {
+		return;
+	}
+	SetLastMarketDataTime(time);
+	SignalUpdate();
 }
 
-void Security::OnBuyOrderAdd(OrderId, Qty, double /*price*/) {
-	//...//
+void Security::SetLastAndAsk(
+			const boost::posix_time::ptime &time,
+			ScaledPrice lastPrice,
+			Qty lastSize,
+			ScaledPrice askPrice,
+			Qty askSize) {
+	if (!Base::SetAsk(askPrice, askSize) && !Base::SetLast(lastPrice, lastSize)) {
+		return;
+	}
+	SetLastMarketDataTime(time);
+	SignalUpdate();
 }
 
-void Security::OnSellOrderExec(OrderId, Qty, double /*price*/) {
-	//...//
+void Security::SetBid(
+			const boost::posix_time::ptime &time,
+			ScaledPrice price,
+			Qty size) {
+	if (!Base::SetBid(price, size)) {
+		return;
+	}
+	SetLastMarketDataTime(time);
+	SignalUpdate();
 }
 
-void Security::OnBuyOrderExec(OrderId, Qty, double /*price*/) {
-	//...//
-}
-
-void Security::OnBuyOrderChange(OrderId, Qty /*newQty*/, double /*newPrice*/) {
-	//...//
-}
-
-void Security::OnSellOrderChange(OrderId, Qty /*newQty*/, double /*newPrice*/) {
-	//...//
-}
-
-void Security::OnSellOrderDel(OrderId, Qty, double /*price*/) {
-	//...//
-}
-
-void Security::OnBuyOrderDel(OrderId, Qty, double /*price*/) {
-	//...//
+void Security::SetLastAndBid(
+			const boost::posix_time::ptime &time,
+			ScaledPrice lastPrice,
+			Qty lastSize,
+			ScaledPrice bidPrice,
+			Qty bidSize) {
+	if (!Base::SetBid(bidPrice, bidSize) && !Base::SetLast(lastPrice, lastSize)) {
+		return;
+	}
+	SetLastMarketDataTime(time);
+	SignalUpdate();
 }

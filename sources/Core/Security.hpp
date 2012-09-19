@@ -166,6 +166,8 @@ namespace Trader {
 		  */
 		bool SetBid(ScaledPrice, Qty);
 
+		void SignalUpdate();
+
 	private:
 
 		class Implementation;

@@ -14,70 +14,12 @@ using namespace Trader::Interaction::Enyx;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-FeedHandler::SecuritySubscribtion::SecuritySubscribtion(
-			const boost::shared_ptr<Security> &firstSecurity)
-		: m_exchange(firstSecurity->GetPrimaryExchange()),
-		m_symbol(firstSecurity->GetSymbol()),
-		m_buyOrderAddSignal(new OrderAddSignal),
-		m_sellOrderAddSignal(new OrderAddSignal),
-		m_buyOrderExecSignal(new OrderExecSignal),
-		m_sellOrderExecSignal(new OrderExecSignal),
-		m_buyOrderChangeSignal(new OrderChangeSignal),
-		m_sellOrderChangeSignal(new OrderChangeSignal),
-		m_buyOrderDelSignal(new OrderDelSignal),
-		m_sellOrderDelSignal(new OrderDelSignal) {
-	Subscribe(firstSecurity);
-}
-
-const std::string & FeedHandler::SecuritySubscribtion::GetExchange() const {
-	return m_exchange;
-}
-
-const std::string & FeedHandler::SecuritySubscribtion::GetSymbol() const {
-	return m_symbol;
-}
-
-void FeedHandler::SecuritySubscribtion::Subscribe(const boost::shared_ptr<Security> &security) {
-
-	try {
-
-		m_buyOrderAddSignal->connect(
-			boost::bind(&Security::OnBuyOrderAdd, security, _1, _2, _3));
-		m_sellOrderAddSignal->connect(
-			boost::bind(&Security::OnSellOrderAdd, security, _1, _2, _3));
-
-		m_buyOrderExecSignal->connect(
-			boost::bind(&Security::OnBuyOrderExec, security, _1, _2, _3));
-		m_sellOrderExecSignal->connect(
-			boost::bind(&Security::OnSellOrderExec, security, _1, _2, _3));
-
-		m_buyOrderDelSignal->connect(
-			boost::bind(&Security::OnBuyOrderDel, security, _1, _2, _3));
-		m_sellOrderDelSignal->connect(
-			boost::bind(&Security::OnSellOrderDel, security, _1, _2, _3));
-
-	} catch (...) {
-		AssertFailNoException();
-	}
-
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-FeedHandler::SubscribtionUpdate::SubscribtionUpdate(
-			const boost::shared_ptr<Security> &security)
-		: m_security(security) {
-	//...//
-}
-
-void FeedHandler::SubscribtionUpdate::operator ()(SecuritySubscribtion &index) {
-	index.Subscribe(m_security);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 FeedHandler::~FeedHandler() {
-	//...//
+#	ifdef DEV_VER
+		foreach (const auto &order, m_orders) {
+			Assert(!m_orders.IsExecuted());
+		}
+#	endif
 }
 
 namespace {
@@ -95,29 +37,33 @@ namespace {
 
 }
 
-void FeedHandler::HandleOrderAdd(const nasdaqustvitch41::NXFeedOrderAdd &order) {
+void FeedHandler::HandleOrderAdd(const nasdaqustvitch41::NXFeedOrderAdd &enyxOrder) {
 
-	const auto &index = m_subscribtion.get<BySecurtiy>();
-	const std::string symbol = order.getInstrumentName();
-	const SubscribtionBySecurity::const_iterator subscribtionPos
-		= index.find(boost::make_tuple(std::string("NASDAQ-US"), symbol));
-	Assert(subscribtionPos != index.end());
-	if (subscribtionPos == index.end()) {
+	const auto &index = m_marketDataSnapshots.get<BySecurtiy>();
+	std::string symbol = enyxOrder.getInstrumentName().c_str();
+	boost::trim(symbol);
+	const auto snapshot = index.find(symbol);
+	Assert(snapshot != index.end());
+	if (snapshot == index.end()) {
 		Log::Warn(
-			TRADER_ENYX_LOG_PREFFIX "no marked data handler for \"%1%\".",
+			TRADER_ENYX_LOG_PREFFIX "no Marked Data Snapshot for \"%1%\".",
 			symbol);
 		return;
 	}
-	const auto &subscribtion = *subscribtionPos;
 
-	const bool isBuy = order.getBuyNSell();
-	const auto id = order.getOrderId();
-	const auto qty = order.getQuantity();
-	const auto price = order.getPrice();
-	Assert(m_orders.get<ByOrder>().find(id) == m_orders.get<ByOrder>().end());
-	m_orders.insert(Order(id, isBuy, qty, price, subscribtion));
+	const auto id = enyxOrder.getOrderId();
+	const Order order(
+		IsBuy(enyxOrder.getBuyNSell()),
+		enyxOrder.getQuantity(),
+		enyxOrder.getPrice(),
+		snapshot->ptr);
+	Assert(m_orders.find(id) == m_orders.end());
+	m_orders[id] = order;
 
-	subscribtion.OnOrderAdd(isBuy, id, qty, price);
+	order.GetMarketDataSnapshot().AddOrder(
+		order.IsBuy(),
+		order.GetQty(),
+		order.GetPrice());
 
 }
 
@@ -125,19 +71,19 @@ void FeedHandler::HandleOrderExec(const NXFeedOrderExecute &enyxOrder) {
 	const auto id = enyxOrder.getOrderId();
 	const auto execQty = enyxOrder.getExecutedQuantity();
 	try {
-		auto order = FindOrderPos(id);
-		order->DecreaseQty(execQty);
-		const bool isBuy = order->IsBuy();
-		const auto price = order->GetPrice();
-		const auto &subscribtion = order->GetSubscribtion();
-		if (order->GetQty() == 0) {
-			m_orders.erase(order);
-		}
-		subscribtion.OnOrderExec(isBuy, id, execQty, price);
+		Order &order = FindOrder(id);
+		const auto prevQty = order.GetQty();
+		order.ReduceQty(execQty);
+		order.MarkAsExecuted();
+		order.GetMarketDataSnapshot().ExecOrder(
+			order.IsBuy(),
+			prevQty,
+			order.GetQty(),
+			order.GetPrice());
 	} catch (const OrderNotFoundError &) {
-		Log::Error(
-			TRADER_ENYX_LOG_PREFFIX "failed to fined EXECUTED order with id %1%.",
-			id);
+  		Log::Error(
+  			TRADER_ENYX_LOG_PREFFIX "failed to find EXECUTED order with id %1%.",
+  			id);
 	}
 }
 
@@ -146,35 +92,19 @@ void FeedHandler::HandleOrderExec(
 	const auto id = enyxOrder.getOrderId();
 	const auto execQty = enyxOrder.getExecutedQuantity();
 	try {
-		auto order = FindOrderPos(id);
-		order->DecreaseQty(execQty);
-		const bool isBuy = order->IsBuy();
-		const auto &subscribtion = order->GetSubscribtion();
-		if (order->GetQty() == 0) {
-			m_orders.erase(order);
-		}
-		subscribtion.OnOrderExec(isBuy, id, execQty, enyxOrder.getExecutedPrice());
+		Order &order = FindOrder(id);
+		const auto prevQty = order.GetQty();
+		order.ReduceQty(execQty);
+		order.MarkAsExecuted();
+		order.GetMarketDataSnapshot().ExecOrder(
+			order.IsBuy(),
+			prevQty,
+			order.GetQty(),
+			order.GetPrice());
 	} catch (const OrderNotFoundError &) {
-		Log::Error(
-			TRADER_ENYX_LOG_PREFFIX "failed to fined EXECUTED order with id %1%.",
-			id);
-	}
-}
-
-void FeedHandler::HandleOrderDel(const NXFeedOrderDelete &enyxOrder) {
-	const auto id = enyxOrder.getOrderId();
-	try {
-		auto order = FindOrderPos(id);
-		const auto &subscribtion = order->GetSubscribtion();
-		const bool isBuy = order->IsBuy();
-		const auto qty = order->GetQty();
-		const auto price = order->GetPrice();
-		m_orders.erase(order);
-		subscribtion.OnOrderDel(isBuy, id, qty, price);
-	} catch (const OrderNotFoundError &) {
-		Log::Error(
-			TRADER_ENYX_LOG_PREFFIX "failed to fined DELETED order with id %1%.",
-			id);
+  		Log::Error(
+  			TRADER_ENYX_LOG_PREFFIX "failed to find EXECUTED with PRICE order with id %1%.",
+  			id);
 	}
 }
 
@@ -182,37 +112,50 @@ void FeedHandler::HandleOrderChange(const NXFeedOrderReduce &enyxOrder) {
 	const auto id = enyxOrder.getOrderId();
 	const auto reducedQty = enyxOrder.getReducedQuantity();
 	try {
-		auto order = FindOrderPos(id);
-		const bool isBuy = order->IsBuy();
-		const auto qty = order->DecreaseQty(reducedQty);
-		const auto price = order->GetPrice();
-		const auto &subscribtion = order->GetSubscribtion();
-		if (order->GetQty() == 0) {
-			m_orders.erase(order);
-		}
-		subscribtion.OnOrderChange(isBuy, id, qty, price);
+		Order &order = FindOrder(id);
+		const auto prevQty = order.GetQty();
+		order.ReduceQty(reducedQty);
+		order.GetMarketDataSnapshot().ChangeOrder(
+			order.IsBuy(),
+			prevQty,
+			order.GetQty(),
+			order.GetPrice(),
+			order.GetPrice());
 	} catch (const OrderNotFoundError &) {
-		Log::Error(
-			TRADER_ENYX_LOG_PREFFIX "failed to fined CHANGED order with id %1%.",
-			id);
+  		Log::Error(
+  			TRADER_ENYX_LOG_PREFFIX "failed to find CHANGED order with id %1%.",
+  			id);
 	}
 }
 
-const FeedHandler::Order & FeedHandler::FindOrder(Security::OrderId id) {
-	const FeedHandler::OrderById::iterator pos = FindOrderPos(id);
-	const FeedHandler::Order &order = *pos;
-	return order;
+void FeedHandler::HandleOrderDel(const NXFeedOrderDelete &enyxOrder) {
+	const auto id = enyxOrder.getOrderId();
+	try {
+		const auto orderIt = FindOrderPos(id);
+		const Order order = orderIt->second;
+		m_orders.erase(orderIt);
+		order.GetMarketDataSnapshot().DelOrder(
+			order.IsBuy(),
+			order.GetQty(),
+			order.GetPrice());
+	} catch (const OrderNotFoundError &) {
+  		Log::Error(
+  			TRADER_ENYX_LOG_PREFFIX "failed to find DELETED order with id %1%.",
+  			id);
+	}
 }
 
-FeedHandler::OrderById::iterator FeedHandler::FindOrderPos(Security::OrderId id) {
-	const auto &index = m_orders.get<ByOrder>();
-	const auto orderPos = index.find(id);
-	Assert(orderPos != index.end());
-	if (orderPos == index.end()) {
+FeedHandler::Order & FeedHandler::FindOrder(EnyxOrderId id) {
+	return FindOrderPos(id)->second;
+}
+
+FeedHandler::Orders::iterator FeedHandler::FindOrderPos(EnyxOrderId id) {
+	const auto result = m_orders.find(id);
+	Assert(result != m_orders.end());
+	if (result == m_orders.end()) {
 		throw OrderNotFoundError();
 	}
-	AssertEq(id, orderPos->GetOrderId());
-	return orderPos;
+	return result;
 }
 
 void FeedHandler::onOrderMessage(NXFeedOrder *orderMsg) {
@@ -249,15 +192,20 @@ void FeedHandler::onOrderMessage(NXFeedOrder *orderMsg) {
 	}
 }
 
-void FeedHandler::Subscribe(const boost::shared_ptr<Security> &security) const throw() {
+void FeedHandler::Subscribe(
+			const boost::shared_ptr<Security> &security)
+		const
+		throw() {
 	try {
-		auto &index = m_subscribtion.get<BySecurtiy>();
-		const auto &pos = index.find(
-			boost::make_tuple(security->GetPrimaryExchange(), security->GetSymbol()));
+		auto &index = m_marketDataSnapshots.get<BySecurtiy>();
+		const auto &pos = index.find(security->GetSymbol());
 		if (pos == index.end()) {
-			m_subscribtion.insert(SecuritySubscribtion(security));
+			boost::shared_ptr<MarketDataSnapshot> newSnapshot(
+				new MarketDataSnapshot(security->GetSymbol()));
+			newSnapshot->Subscribe(security);
+			m_marketDataSnapshots.insert(MarketDataSnapshotHolder(newSnapshot));
 		} else {
-			index.modify(pos, SubscribtionUpdate(security));
+			pos->ptr->Subscribe(security);
 		}
 	} catch (...) {
 		AssertFailNoException();

@@ -36,6 +36,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/MarketDataSource.o \
+	${OBJECTDIR}/MarketDataSnapshot.o \
 	${OBJECTDIR}/Api.o \
 	${OBJECTDIR}/FeedHandler.o \
 	${OBJECTDIR}/Security.o
@@ -73,6 +74,11 @@ ${OBJECTDIR}/MarketDataSource.o: MarketDataSource.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_INTERACTION_ENYX -D_DEBUG -I../.. -I/usr/include/libenyxmd -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/MarketDataSource.o MarketDataSource.cpp
+
+${OBJECTDIR}/MarketDataSnapshot.o: MarketDataSnapshot.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_INTERACTION_ENYX -D_DEBUG -I../.. -I/usr/include/libenyxmd -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/MarketDataSnapshot.o MarketDataSnapshot.cpp
 
 ${OBJECTDIR}/Api.o: Api.cpp 
 	${MKDIR} -p ${OBJECTDIR}
