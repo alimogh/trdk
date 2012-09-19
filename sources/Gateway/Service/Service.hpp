@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/08/06 12:47:42
+ *   Created: 2012/09/19 23:46:42
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,13 +8,21 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
+#include "Core/Observer.hpp"
 
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/algorithm/string.hpp>
-#	include <boost/python.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
+namespace Trader { namespace Gateway {
 
-#include "Common/Common.hpp"
+	class Service : public Trader::Observer {
 
-#include "Common/Assert.hpp"
+	public:
+
+		typedef Observer Base;
+
+	public:
+
+		explicit Service();
+		virtual ~Service();
+
+	};
+
+} }

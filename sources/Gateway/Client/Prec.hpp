@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/07/16 02:20:00
+ *   Created: 2012/09/20 00:10:41
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -11,14 +11,6 @@
 #include "Common/Assert.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/bind.hpp>
-#	include <boost/cast.hpp>
-#	include <boost/date_time/posix_time/posix_time.hpp>
-#	include <boost/date_time/local_time/local_time.hpp>
-#	include <boost/filesystem.hpp>
-#	include <boost/format.hpp>
-#	include <boost/shared_ptr.hpp>
-#	include <boost/thread.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

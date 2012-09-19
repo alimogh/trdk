@@ -1,20 +1,20 @@
 /**************************************************************************
- *   Created: 2012/08/06 12:47:42
+ *   Created: 2012/09/19 23:58:45
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
  *   Project: Trading Robot
  **************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "Observer.hpp"
 
-#include "Common/Assert.hpp"
+using namespace Trader;
 
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/algorithm/string.hpp>
-#	include <boost/python.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
+Observer::Observer() {
+	//...//
+}
 
-#include "Common/Common.hpp"
-
-#include "Common/Assert.hpp"
+Observer::~Observer() {
+	//...//
+}

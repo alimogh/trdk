@@ -1,20 +1,9 @@
 /**************************************************************************
- *   Created: 2012/08/06 12:47:42
+ *   Created: 2012/09/20 00:10:46
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
  *   Project: Trading Robot
  **************************************************************************/
 
-#pragma once
-
-#include "Common/Assert.hpp"
-
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/algorithm/string.hpp>
-#	include <boost/python.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
-#include "Common/Common.hpp"
-
-#include "Common/Assert.hpp"
+#include "Prec.hpp"

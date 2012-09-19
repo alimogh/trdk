@@ -31,10 +31,6 @@
 #	include "Common/DisableBoostWarningsEnd.h"
 #endif
 
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/shared_ptr.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
 #include "Common/Common.hpp"
 
 #include "Common/Assert.hpp"

@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/08/06 12:47:42
+ *   Created: 2012/09/19 23:57:31
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,13 +8,19 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
+#include "Api.h"
 
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/algorithm/string.hpp>
-#	include <boost/python.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
+namespace Trader {
 
-#include "Common/Common.hpp"
+	class TRADER_CORE_API Observer
+		: private boost::noncopyable,
+		public boost::enable_shared_from_this<Observer> {
 
-#include "Common/Assert.hpp"
+	public:
+
+		Observer();
+		virtual ~Observer();
+
+	};
+
+}

@@ -15,98 +15,62 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{015FB121-6122-4A00-BFBB-545E9E73ABEE}</ProjectGuid>
-    <RootNamespace>Engine</RootNamespace>
+    <ProjectGuid>{A2AB5E6A-0685-4555-BFE1-A9CE2C15646E}</ProjectGuid>
+    <RootNamespace>GatewayClient</RootNamespace>
+    <ProjectName>Gateway Client</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\Python.props" />
-    <Import Project="..\Configuration Debug.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="GatewayClient.props" />
+    <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\Python.props" />
-    <Import Project="..\Configuration Release.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="GatewayClient.props" />
+    <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\Python.props" />
-    <Import Project="..\Configuration Test.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="GatewayClient.props" />
+    <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
-    <TargetName>trader_test</TargetName>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <TargetName>trader_dbg</TargetName>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <TargetName>trader</TargetName>
-  </PropertyGroup>
+  <PropertyGroup />
   <ItemGroup>
-    <ProjectReference Include="..\Common\Common.vcxproj">
-      <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Core\Core.vcxproj">
-      <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Gateway\Service\GatewayService.vcxproj">
-      <Project>{5e6b58fd-f8d1-44fe-9686-87d3d9cae3fc}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\Enyx\Enyx.vcxproj">
-      <Project>{9a49e138-ae46-46f6-9795-3bbf14f65e2d}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\Fake\Fake.vcxproj">
-      <Project>{3e0187e3-f6e3-48e3-a0e4-1e454b0e7f40}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\Lightspeed\Lightspeed.vcxproj">
-      <Project>{ced89712-f2fd-4a0d-a97c-a43f1738d1b5}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\PyApi\PyApi.vcxproj">
-      <Project>{7bd47287-4175-45ee-860b-326ae8060a16}</Project>
-    </ProjectReference>
+    <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Dispatcher.cpp" />
-    <ClCompile Include="Ini.cpp" />
-    <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Trading.cpp" />
-    <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Dispatcher.hpp" />
-    <ClInclude Include="Ini.hpp" />
-    <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="Util.hpp" />
+    <ProjectReference Include="..\Interface\GatewayInterface.vcxproj">
+      <Project>{e792f2f5-e6f8-49ff-a1aa-47e0243e5180}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

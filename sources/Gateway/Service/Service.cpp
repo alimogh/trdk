@@ -1,20 +1,20 @@
 /**************************************************************************
- *   Created: 2012/08/06 12:47:42
+ *   Created: 2012/09/19 23:46:49
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
  *   Project: Trading Robot
  **************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "Service.hpp"
 
-#include "Common/Assert.hpp"
+using namespace Trader::Gateway;
 
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/algorithm/string.hpp>
-#	include <boost/python.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
+Service::Service() {
+	//...//
+}
 
-#include "Common/Common.hpp"
-
-#include "Common/Assert.hpp"
+Service::~Service() {
+	//...//
+}

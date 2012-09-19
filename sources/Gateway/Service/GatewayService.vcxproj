@@ -15,98 +15,94 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{015FB121-6122-4A00-BFBB-545E9E73ABEE}</ProjectGuid>
-    <RootNamespace>Engine</RootNamespace>
+    <ProjectGuid>{5E6B58FD-F8D1-44FE-9686-87D3D9CAE3FC}</ProjectGuid>
+    <RootNamespace>Gateway Service</RootNamespace>
+    <ProjectName>Gateway Service</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\Python.props" />
-    <Import Project="..\Configuration Debug.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="GatewayService.props" />
+    <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\Python.props" />
-    <Import Project="..\Configuration Release.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="GatewayService.props" />
+    <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\Python.props" />
-    <Import Project="..\Configuration Test.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="GatewayService.props" />
+    <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
-    <TargetName>trader_test</TargetName>
+    <TargetName>Gateway_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <TargetName>trader_dbg</TargetName>
+    <TargetName>Gateway_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <TargetName>trader</TargetName>
+    <TargetName>Gateway</TargetName>
   </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
+    <Link />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Link />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Link />
+  </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Common\Common.vcxproj">
+    <ProjectReference Include="..\..\Common\Common.vcxproj">
       <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Core\Core.vcxproj">
+    <ProjectReference Include="..\..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Gateway\Service\GatewayService.vcxproj">
-      <Project>{5e6b58fd-f8d1-44fe-9686-87d3d9cae3fc}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\Enyx\Enyx.vcxproj">
-      <Project>{9a49e138-ae46-46f6-9795-3bbf14f65e2d}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\Fake\Fake.vcxproj">
-      <Project>{3e0187e3-f6e3-48e3-a0e4-1e454b0e7f40}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\Lightspeed\Lightspeed.vcxproj">
-      <Project>{ced89712-f2fd-4a0d-a97c-a43f1738d1b5}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\PyApi\PyApi.vcxproj">
-      <Project>{7bd47287-4175-45ee-860b-326ae8060a16}</Project>
+    <ProjectReference Include="..\Interface\GatewayInterface.vcxproj">
+      <Project>{e792f2f5-e6f8-49ff-a1aa-47e0243e5180}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Dispatcher.cpp" />
-    <ClCompile Include="Ini.cpp" />
-    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Api.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Trading.cpp" />
-    <ClCompile Include="Util.cpp" />
+    <ClCompile Include="Service.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Dispatcher.hpp" />
-    <ClInclude Include="Ini.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="Util.hpp" />
+    <ClInclude Include="Service.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="GatewayService.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

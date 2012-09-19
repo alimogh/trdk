@@ -17,10 +17,8 @@
 #	include <boost/date_time/local_time/local_time.hpp>
 #	include <boost/filesystem.hpp>
 #	include <boost/format.hpp>
-#	include <boost/shared_ptr.hpp>
 #	include <boost/thread.hpp>
 #	include <boost/algorithm/string_regex.hpp>
-#	include <boost/thread/shared_mutex.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

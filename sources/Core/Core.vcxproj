@@ -64,6 +64,7 @@
     <ClCompile Include="AlgoPositionState.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="MarketDataSource.cpp" />
+    <ClCompile Include="Observer.cpp" />
     <ClCompile Include="Position.cpp" />
     <ClCompile Include="PositionBundle.cpp" />
     <ClCompile Include="PositionReporter.cpp" />
@@ -83,6 +84,7 @@
     <ClInclude Include="Instrument.hpp" />
     <ClInclude Include="Log.hpp" />
     <ClInclude Include="MarketDataSource.hpp" />
+    <ClInclude Include="Observer.hpp" />
     <ClInclude Include="Position.hpp" />
     <ClInclude Include="PositionBundle.hpp" />
     <ClInclude Include="PositionReporter.hpp" />
