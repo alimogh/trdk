@@ -39,25 +39,27 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 		void SetAsk(
 					const boost::posix_time::ptime &,
-					ScaledPrice price,
-					Qty size);
+					ScaledPrice,
+					Qty);
 		void SetLastAndAsk(
 					const boost::posix_time::ptime &,
 					ScaledPrice lastPrice,
-					Qty lastSize,
+					Qty lastQty,
 					ScaledPrice askPrice,
-					Qty askSize);
+					Qty askQty);
 
 		void SetBid(
 					const boost::posix_time::ptime &,
-					ScaledPrice price,
-					Qty size);
+					ScaledPrice,
+					Qty);
 		void SetLastAndBid(
 					const boost::posix_time::ptime &,
 					ScaledPrice lastPrice,
-					Qty lastSize,
+					Qty lastQty,
 					ScaledPrice bidPrice,
-					Qty bidSize);
+					Qty bidQty);
+
+		void SetLast(const boost::posix_time::ptime &, ScaledPrice, Qty);
 
 	};
 

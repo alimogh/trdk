@@ -35,9 +35,9 @@ Security::Security(
 void Security::SetAsk(
 			const boost::posix_time::ptime &time,
 			ScaledPrice price,
-			Qty size) {
+			Qty qty) {
 	SetLastMarketDataTime(time);
-	if (Base::SetAsk(price, size)) {
+	if (Base::SetAsk(price, qty)) {
 		return;
 	}
 	SignalUpdate();
@@ -46,11 +46,11 @@ void Security::SetAsk(
 void Security::SetLastAndAsk(
 			const boost::posix_time::ptime &time,
 			ScaledPrice lastPrice,
-			Qty lastSize,
+			Qty lastQty,
 			ScaledPrice askPrice,
-			Qty askSize) {
+			Qty askQty) {
 	SetLastMarketDataTime(time);
-	if (!Base::SetAsk(askPrice, askSize) && !Base::SetLast(lastPrice, lastSize)) {
+	if (!Base::SetAsk(askPrice, askQty) && !Base::SetLast(lastPrice, lastQty)) {
 		return;
 	}
 	SignalUpdate();
@@ -59,9 +59,9 @@ void Security::SetLastAndAsk(
 void Security::SetBid(
 			const boost::posix_time::ptime &time,
 			ScaledPrice price,
-			Qty size) {
+			Qty qty) {
 	SetLastMarketDataTime(time);
-	if (!Base::SetBid(price, size)) {
+	if (!Base::SetBid(price, qty)) {
 		return;
 	}
 	SignalUpdate();
@@ -70,11 +70,22 @@ void Security::SetBid(
 void Security::SetLastAndBid(
 			const boost::posix_time::ptime &time,
 			ScaledPrice lastPrice,
-			Qty lastSize,
+			Qty lastQty,
 			ScaledPrice bidPrice,
-			Qty bidSize) {
+			Qty bidQty) {
 	SetLastMarketDataTime(time);
-	if (!Base::SetBid(bidPrice, bidSize) && !Base::SetLast(lastPrice, lastSize)) {
+	if (!Base::SetBid(bidPrice, bidQty) && !Base::SetLast(lastPrice, lastQty)) {
+		return;
+	}
+	SignalUpdate();
+}
+
+void Security::SetLast(
+			const boost::posix_time::ptime &time,
+			ScaledPrice price,
+			Qty qty) {
+	SetLastMarketDataTime(time);
+	if (!Base::SetLast(price, qty)) {
 		return;
 	}
 	SignalUpdate();
