@@ -22,6 +22,8 @@ Host To Build on MS Windows
      Free install (ready builds): http://www.boostpro.com/download/
 1.3. Python 2.7 32-bit.
      http://www.python.org/download/
+1.4. gSOAP 2.8.
+     Free sources and binaries: http://www.cs.fsu.edu/~engelen/soap.html
 
 2. Setup:
 2.1. Create or change envelopment variable BOOST_DIR_X86 - set path to
@@ -29,6 +31,7 @@ Host To Build on MS Windows
      version. Ex.: if Boost installed into
      "c:\Program Files (x86)\Boost\boost_1_47\", BOOST_DIR_X86 should has
      value "c:\Program Files (x86)\Boost\".
+2.2. Unpack gSOAP, as is, into "externals".
 
 3. Build:
 3.1. Open project file source "Trader.sln with" Visual Studio and build it.

@@ -14,6 +14,7 @@ namespace Ini {
 		extern const std::string common;
 		extern const std::string algo;
 		extern const std::string tradeSystem;
+		extern const std::string observer;
 		namespace MarketData {
 			namespace Source {
 				extern const std::string live;

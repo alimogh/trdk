@@ -17,6 +17,7 @@ using namespace Trader;
 const std::string Sections::common = "Common";
 const std::string Sections::algo = "Algo.";
 const std::string Sections::tradeSystem = "TradeSystem";
+const std::string Sections::observer = "Observer.";
 const std::string Sections::MarketData::Source::live = "MarketData.Source.Live";
 
 const std::string Sections::MarketData::Log::symbols = "MarketData.Log.Symbols";

@@ -7,10 +7,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>Gateway Interface</ProjectName>
     <ProjectGuid>{E792F2F5-E6F8-49FF-A1AA-47E0243E5180}</ProjectGuid>
-    <RootNamespace>SOAPservice</RootNamespace>
-    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>GatewayInterface</RootNamespace>
+    <ProjectName>Gateway Interface</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -24,17 +23,10 @@
     <Import Project="..\..\Default.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup>
-    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)..\output\</OutDir>
-    <EnableManagedIncrementalBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</EnableManagedIncrementalBuild>
-  </PropertyGroup>
-  <ItemDefinitionGroup>
-  </ItemDefinitionGroup>
   <ItemGroup>
     <CustomBuild Include="TraderService.h">
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">@echo on
-"$(SolutionDir)..\externals\gsoap-2.7\gsoap\bin\win32\soapcpp2.exe" -L -w -x -d "%(RootDir)%(Directory)." -I "$(SolutionDir)..\externals\gsoap-2.7\gsoap\import" "%(FullPath)"
+"$(SolutionDir)..\externals\gsoap-2.8\gsoap\bin\win32\soapcpp2.exe" -L -w -x -d "%(RootDir)%(Directory)." -I "$(SolutionDir)..\externals\gsoap-2.8\gsoap\import" "%(FullPath)"
 @echo off
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\soapTraderServiceProxy.h;%(Outputs)</Outputs>
