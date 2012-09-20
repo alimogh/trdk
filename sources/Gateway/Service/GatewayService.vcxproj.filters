@@ -32,6 +32,9 @@
     <ClCompile Include="..\..\..\externals\gsoap-2.8\gsoap\stdsoap2.cpp">
       <Filter>Source Files\Interface</Filter>
     </ClCompile>
+    <ClCompile Include="Methods.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
