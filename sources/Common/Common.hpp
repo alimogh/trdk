@@ -16,6 +16,7 @@
 #	include <boost/thread/mutex.hpp>
 #	include <boost/thread/shared_mutex.hpp>
 #	include <boost/shared_ptr.hpp>
+#	include <boost/cast.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Interlocking.hpp"

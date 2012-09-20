@@ -38,8 +38,7 @@ public:
 				const MarketDataTime &lastTradeTime,
 				double last,
 				double ask,
-				double bid,
-				size_t totalVolume);
+				double bid);
 	private:
 		std::ofstream m_file;
 	};
@@ -105,7 +104,7 @@ Security::Implementation::MarketDataLog::MarketDataLog(const std::string &fullSy
 	}
 	Log::Info("Logging \"%1%\" market data into %2%...", fullSymbol, filePath);
 	if (isNew) {
-		m_file << "time of reception,last trade time,lag,last price,ask,bid,total volume" << std::endl;
+		m_file << "time of reception,last trade time,last price,ask,bid" << std::endl;
 	}
 }
 
@@ -114,17 +113,13 @@ void Security::Implementation::MarketDataLog::Append(
 			const MarketDataTime &lastTradeTime,
 			double last,
 			double ask,
-			double bid,
-			size_t totalVolume) {
+			double bid) {
 	m_file
 		<< (timeOfReception + Util::GetEdtDiff()).time_of_day()
-		<< ',' << (lastTradeTime + Util::GetEdtDiff()).time_of_day()
-		<< ',' << (timeOfReception - lastTradeTime).total_seconds()
+		<< ',' << (lastTradeTime + Util::GetEdtDiff())
 		<< ',' << last
 		<< ',' << ask
 		<< ',' << bid
-		<< ','
-		<< totalVolume
 		<< std::endl;
 }
 
@@ -157,7 +152,6 @@ Security::~Security() {
 }
 
 boost::posix_time::ptime Security::GetLastMarketDataTime() const {
-	Assert(GetSettings().IsReplayMode());
 	const Implementation::MarketDataTimeReadLock lock(m_pimpl->m_marketDataTimeMutex);
 	Assert(!m_pimpl->m_marketDataTime.is_not_a_date_time());
 	return m_pimpl->m_marketDataTime;
@@ -254,9 +248,6 @@ Security::ScaledPrice Security::GetLastPriceScaled() const {
 }
 
 void Security::SetLastMarketDataTime(const boost::posix_time::ptime &time) {
-	if (!GetSettings().IsReplayMode()) {
-		return;
-	}
 	const Implementation::MarketDataTimeWriteLock lock(m_pimpl->m_marketDataTimeMutex);
 	m_pimpl->m_marketDataTime = time;
 }
@@ -356,12 +347,11 @@ Security::UpdateSlotConnection Security::Subcribe(const UpdateSlot &slot) const 
 void Security::SignalUpdate() {
 	if (m_pimpl->m_marketDataLog) {
 		m_pimpl->m_marketDataLog->Append(
-			m_pimpl->m_marketDataTime,
-			m_pimpl->m_marketDataTime,
+			boost::get_system_time(),
+			GetLastMarketDataTime(),
 			DescalePrice(m_pimpl->m_lastPrice),
 			DescalePrice(m_pimpl->m_askPrice),
-			DescalePrice(m_pimpl->m_bidPrice),
-			0);
+			DescalePrice(m_pimpl->m_bidPrice));
 	}
 	m_pimpl->m_updateSignal();
 }

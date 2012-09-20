@@ -16,6 +16,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	public:
 
+		typedef Security::OrderId OrderId;
 		typedef Security::Qty Qty;
 		typedef Security::ScaledPrice ScaledPrice;
 
@@ -40,15 +41,39 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	public:
 
-		void AddOrder(bool isBuy, Qty, double price);
-		void ExecOrder(bool isBuy, Qty prevQty, Qty newQty, double price);
-		void ChangeOrder(
+		void AddOrder(
 				bool isBuy,
+				const boost::posix_time::ptime &,
+				Qty,
+				double price);
+		
+		void ExecOrder(
+				bool isBuy,
+				OrderId,
+				const boost::posix_time::ptime &,
 				Qty prevQty,
 				Qty newQty,
-				double prevPrice,
-				double newPrice);
-		void DelOrder(bool isBuy, Qty, double price);
+				double price);
+		
+		void ChangeOrder(
+				bool isBuy,
+				OrderId,
+				const boost::posix_time::ptime &,
+				Qty prevQty,
+				Qty newQty,
+				double price);
+
+		void DelOrder(
+				bool isBuy,
+				OrderId,
+				const boost::posix_time::ptime &,
+				Qty,
+				double price);
+
+	protected:
+
+		void UpdateBid(const boost::posix_time::ptime &time);
+		void UpdateAsk(const boost::posix_time::ptime &time);
 
 	private:
 

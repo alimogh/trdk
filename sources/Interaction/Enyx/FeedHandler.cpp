@@ -17,7 +17,7 @@ using namespace Trader::Interaction::Enyx;
 FeedHandler::~FeedHandler() {
 #	ifdef DEV_VER
 		foreach (const auto &order, m_orders) {
-			Assert(!m_orders.IsExecuted());
+			Assert(!order.second.IsExecuted());
 		}
 #	endif
 }
@@ -33,6 +33,11 @@ namespace {
 			case NXFEED_SIDE_SELL:
 				return false;
 		}
+	}
+
+	boost::posix_time::ptime GetMarketDataTimestamp(const NXFeedMessage &meesage) {
+		return boost::posix_time::from_time_t(
+			const_cast<NXFeedMessage &>(meesage).getMarketDataTimestamp());
 	}
 
 }
@@ -62,6 +67,7 @@ void FeedHandler::HandleOrderAdd(const nasdaqustvitch41::NXFeedOrderAdd &enyxOrd
 
 	order.GetMarketDataSnapshot().AddOrder(
 		order.IsBuy(),
+		GetMarketDataTimestamp(enyxOrder),
 		order.GetQty(),
 		order.GetPrice());
 
@@ -77,13 +83,15 @@ void FeedHandler::HandleOrderExec(const NXFeedOrderExecute &enyxOrder) {
 		order.MarkAsExecuted();
 		order.GetMarketDataSnapshot().ExecOrder(
 			order.IsBuy(),
+			id,
+			GetMarketDataTimestamp(enyxOrder),
 			prevQty,
 			order.GetQty(),
 			order.GetPrice());
 	} catch (const OrderNotFoundError &) {
-  		Log::Error(
-  			TRADER_ENYX_LOG_PREFFIX "failed to find EXECUTED order with id %1%.",
-  			id);
+//   		Log::Error(
+//   			TRADER_ENYX_LOG_PREFFIX "failed to find EXECUTED order with id %1%.",
+//   			id);
 	}
 }
 
@@ -98,13 +106,15 @@ void FeedHandler::HandleOrderExec(
 		order.MarkAsExecuted();
 		order.GetMarketDataSnapshot().ExecOrder(
 			order.IsBuy(),
+			id,
+			GetMarketDataTimestamp(enyxOrder),
 			prevQty,
 			order.GetQty(),
 			order.GetPrice());
 	} catch (const OrderNotFoundError &) {
-  		Log::Error(
-  			TRADER_ENYX_LOG_PREFFIX "failed to find EXECUTED with PRICE order with id %1%.",
-  			id);
+//   		Log::Error(
+//   			TRADER_ENYX_LOG_PREFFIX "failed to find EXECUTED with PRICE order with id %1%.",
+//   			id);
 	}
 }
 
@@ -117,14 +127,15 @@ void FeedHandler::HandleOrderChange(const NXFeedOrderReduce &enyxOrder) {
 		order.ReduceQty(reducedQty);
 		order.GetMarketDataSnapshot().ChangeOrder(
 			order.IsBuy(),
+			id,
+			GetMarketDataTimestamp(enyxOrder),
 			prevQty,
 			order.GetQty(),
-			order.GetPrice(),
 			order.GetPrice());
 	} catch (const OrderNotFoundError &) {
-  		Log::Error(
-  			TRADER_ENYX_LOG_PREFFIX "failed to find CHANGED order with id %1%.",
-  			id);
+//   		Log::Error(
+//   			TRADER_ENYX_LOG_PREFFIX "failed to find CHANGED order with id %1%.",
+//   			id);
 	}
 }
 
@@ -136,12 +147,14 @@ void FeedHandler::HandleOrderDel(const NXFeedOrderDelete &enyxOrder) {
 		m_orders.erase(orderIt);
 		order.GetMarketDataSnapshot().DelOrder(
 			order.IsBuy(),
+			id,
+			GetMarketDataTimestamp(enyxOrder),
 			order.GetQty(),
 			order.GetPrice());
 	} catch (const OrderNotFoundError &) {
-  		Log::Error(
-  			TRADER_ENYX_LOG_PREFFIX "failed to find DELETED order with id %1%.",
-  			id);
+//   		Log::Error(
+//   			TRADER_ENYX_LOG_PREFFIX "failed to find DELETED order with id %1%.",
+//   			id);
 	}
 }
 
@@ -184,7 +197,7 @@ void FeedHandler::onOrderMessage(NXFeedOrder *orderMsg) {
 			case  NXFEED_SUBTYPE_ORDER_REPLACE:
 				// NXFeedOrderReplace *
 			default:
-				Log::Error(TRADER_ENYX_LOG_PREFFIX "unknown message %1%.", orderMsg->getSubType());
+//				Log::Error(TRADER_ENYX_LOG_PREFFIX "unknown message %1%.", orderMsg->getSubType());
 				break;
 		}
 	} catch (...) {
