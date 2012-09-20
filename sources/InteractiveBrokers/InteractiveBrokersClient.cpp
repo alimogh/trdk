@@ -203,8 +203,8 @@ private:
 
 	void CheckTimeout() {
 		if (m_timeoutTime != pt::not_a_date_time && m_timeoutTime <= m_clientNow) {
-			Log::Error(INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection CLOSED by timeout.");
-			m_isConnected = false;
+			Log::Error(INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection TIMEOUT!");
+			// m_isConnected = false; - trying to work
 			return;
 		}
 		switch (m_state) {
