@@ -130,7 +130,13 @@ public:
 			if (autoName) {
 				auto tmp = m_file;
 				tmp.replace_extension("");
-				const std::string tmpStr = "lib" + tmp.string();
+#				if defined(_DEBUG)
+					const std::string tmpStr = "lib" + tmp.string() + "_dbg";
+#				elif defined(_TEST)
+					const std::string tmpStr = "lib" + tmp.string() + "_test";
+#				else
+					const std::string tmpStr = "lib" + tmp.string();
+#				endif
 				tmp = tmpStr;
 				tmp.replace_extension(m_file.extension());
 				m_file = tmp;
