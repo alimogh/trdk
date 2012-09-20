@@ -1,35 +1,38 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
+    <ProjectConfiguration Include="Common|Win32">
+      <Configuration>Common</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{E792F2F5-E6F8-49FF-A1AA-47E0243E5180}</ProjectGuid>
+    <ProjectGuid>{2CECB3FA-A5EB-4CB4-AEE3-9625D9C56E3F}</ProjectGuid>
     <RootNamespace>GatewayInterface</RootNamespace>
     <ProjectName>Gateway Interface</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Common|Win32'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
     <ConfigurationType>Utility</ConfigurationType>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Common|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\Default.props" />
+    <Import Project="..\Gateway.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Common|Win32'" />
   <ItemGroup>
     <CustomBuild Include="TraderService.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">@echo on
+      <Command Condition="'$(Configuration)|$(Platform)'=='Common|Win32'">@echo on
 "$(SolutionDir)..\externals\gsoap-2.8\gsoap\bin\win32\soapcpp2.exe" -L -w -x -d "%(RootDir)%(Directory)." -I "$(SolutionDir)..\externals\gsoap-2.8\gsoap\import" "%(FullPath)"
 @echo off
 </Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\soapTraderServiceProxy.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Common|Win32'">.\soapTraderServiceProxy.h;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

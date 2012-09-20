@@ -88,7 +88,7 @@
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Interface\GatewayInterface.vcxproj">
-      <Project>{e792f2f5-e6f8-49ff-a1aa-47e0243e5180}</Project>
+      <Project>{2cecb3fa-a5eb-4cb4-aee3-9625d9c56e3f}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

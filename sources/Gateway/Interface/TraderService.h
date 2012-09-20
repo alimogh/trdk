@@ -59,7 +59,6 @@ public:
 
 //gsoap trader service method-action: trader__GetCurrentMarketData "urn:#getCurrentMarketData"
 int trader__GetCurrentMarketData(
-        xsd__positiveInteger &revisionResult,
         std::list<trader__MarketData> &currentMarketDataResult);
 
 //////////////////////////////////////////////////////////////////////////
