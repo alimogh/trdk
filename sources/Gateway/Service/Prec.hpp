@@ -11,8 +11,15 @@
 #include "Common/Assert.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
+#	include <boost/thread.hpp>
+#	include <boost/regex.hpp>
+#	include <boost/algorithm/string.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
+
+#include <stdsoap2.h>
 
 #include "Common/Common.hpp"
 
 #include "Common/Assert.hpp"
+
+#define TRADER_GATEWAY_LOG_PREFFIX "Gateway: "
