@@ -116,7 +116,7 @@ void Security::Implementation::MarketDataLog::Append(
 			double bid) {
 	m_file
 		<< (timeOfReception + Util::GetEdtDiff()).time_of_day()
-		<< ',' << (lastTradeTime + Util::GetEdtDiff())
+		<< ',' << (lastTradeTime + Util::GetEdtDiff()).time_of_day()
 		<< ',' << last
 		<< ',' << ask
 		<< ',' << bid

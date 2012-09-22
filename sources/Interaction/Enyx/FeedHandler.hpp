@@ -152,14 +152,20 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 	public:
 
 		virtual void onOrderMessage(NXFeedOrder *);
+		virtual void onMiscMessage(NXFeedMisc *);
+
+	protected:
+
+		boost::posix_time::ptime GetMessageTime(const NXFeedMessage &) const;
 
 	private:
 
-		void HandleOrderAdd(const nasdaqustvitch41::NXFeedOrderAdd &);
-		void HandleOrderExec(const NXFeedOrderExecute &);
-		void HandleOrderExec(const nasdaqustvitch41::NXFeedOrderExeWithPrice &);
-		void HandleOrderChange(const NXFeedOrderReduce &);
-		void HandleOrderDel(const NXFeedOrderDelete &);
+		void HandleMessage(const nasdaqustvitch41::NXFeedOrderAdd &);
+		void HandleMessage(const NXFeedOrderExecute &);
+		void HandleMessage(const nasdaqustvitch41::NXFeedOrderExeWithPrice &);
+		void HandleMessage(const NXFeedOrderReduce &);
+		void HandleMessage(const NXFeedOrderDelete &);
+		void HandleMessage(const NXFeedMiscTime &);
 
 		Orders::iterator FindOrderPos(EnyxOrderId);
 		Order & FindOrder(EnyxOrderId);
@@ -168,6 +174,9 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 		mutable MarketDataSnapshots m_marketDataSnapshots;
 		Orders m_orders;
+
+		boost::posix_time::ptime m_serverTime;
+		boost::posix_time::ptime m_prevServerLogTime;
 
 	};
 
