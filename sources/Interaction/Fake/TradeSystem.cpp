@@ -106,6 +106,9 @@ private:
 					if (m_currentOrders->empty()) {
 						m_condition.wait(lock);
 					}
+					if (!m_isStarted) {
+						break;
+					}
 					if (!m_currentOrders) {
 						continue;
 					}
