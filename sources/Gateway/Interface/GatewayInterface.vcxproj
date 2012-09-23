@@ -22,6 +22,7 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Common|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\Default.props" />
+    <Import Project="..\..\gSoap.props" />
     <Import Project="..\Gateway.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />

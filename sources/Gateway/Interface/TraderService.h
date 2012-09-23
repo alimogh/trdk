@@ -18,16 +18,7 @@
 
 typedef unsigned long long xsd__positiveInteger;
 typedef std::string xsd__string;
-
-//////////////////////////////////////////////////////////////////////////
-
-class trader__State {
-public:
-    xsd__positiveInteger revision;
-};
-
-//gsoap trader service method-action: GetState "urn:#getState"
-int trader__GetState(trader__State &getStateResult);
+typedef bool xsd__boolean;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -43,22 +34,15 @@ int trader__GetSecurityList(std::list<trader__Security> &getSecurityListResult);
 
 //////////////////////////////////////////////////////////////////////////
 
-class trader__MarketDataParameter {
-public:
-    xsd__positiveInteger qty;
-    xsd__positiveInteger price;
+class trader__FirstUpdate {
+	xsd__positiveInteger price;
+	xsd__positiveInteger qty;
+	xsd__boolean isBuy;
 };
 
-class trader__MarketData {
-public:
-	unsigned int securityId;
-	trader__MarketDataParameter ask;
-    trader__MarketDataParameter bid;
-    trader__MarketDataParameter last;
-};
-
-//gsoap trader service method-action: trader__GetCurrentMarketData "urn:#getCurrentMarketData"
-int trader__GetCurrentMarketData(
-        std::list<trader__MarketData> &currentMarketDataResult);
+//gsoap trader service method-action: GetFirstUpdate "urn:#getFirstUpdate"
+int trader__GetFirstUpdate(
+		xsd__string symbol,
+		std::list<trader__FirstUpdate> &getFirstUpdateResult);
 
 //////////////////////////////////////////////////////////////////////////

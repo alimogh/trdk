@@ -8,9 +8,11 @@
 
 #pragma once
 
-#pragma warning(push, 3)
+#include "Common/Exception.hpp"
 
+#pragma warning(push, 3)
 #include <QMainWindow>
+#include <QMessageBox>
 #include <QtCore/QVariant>
 #include <QtGui/QApplication>
 #include <QtGui/QAction>
@@ -27,5 +29,10 @@
 #include <QtGui/QTableView>
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QWidget>
-
 #pragma warning(pop)
+
+#include "Common/DisableBoostWarningsBegin.h"
+#	include <boost/noncopyable.hpp>
+#include "Common/DisableBoostWarningsEnd.h"
+
+#include <stdint.h>

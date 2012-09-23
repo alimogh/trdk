@@ -37,6 +37,13 @@ namespace Trader { namespace Gateway {
 
 		void Trader::Observer::OnUpdate(const Trader::Security &);
 
+	public:
+
+		void GetSecurityList(std::list<trader__Security> &result);
+		void GetFirstUpdate(
+					const std::string &symbol,
+					std::list<trader__FirstUpdate> &result);
+
 	private:
 
 		void LogSoapError() const;

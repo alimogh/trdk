@@ -8,11 +8,14 @@
 
 #pragma once
 
+#include "ServiceAdapter.hpp"
+
 namespace Ui {
 	class MainWindow;
 }
 
 class MainWindow : public QMainWindow {
+		
 	Q_OBJECT
 
 public:
@@ -26,5 +29,8 @@ private slots:
 private:
 
 	Ui::MainWindow *ui;
+
+	std::unique_ptr<ServiceAdapter> m_service;
+	ServiceAdapter::SecurityList m_securityList;
 
 };

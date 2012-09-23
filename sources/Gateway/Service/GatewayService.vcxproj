@@ -41,6 +41,7 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\Module.props" />
+    <Import Project="..\..\gSoap.props" />
     <Import Project="..\Gateway.props" />
     <Import Project="GatewayService.props" />
     <Import Project="..\..\Configuration Debug.props" />
@@ -49,6 +50,7 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\Module.props" />
+    <Import Project="..\..\gSoap.props" />
     <Import Project="..\Gateway.props" />
     <Import Project="GatewayService.props" />
     <Import Project="..\..\Configuration Release.props" />
@@ -57,6 +59,7 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\Module.props" />
+    <Import Project="..\..\gSoap.props" />
     <Import Project="..\Gateway.props" />
     <Import Project="GatewayService.props" />
     <Import Project="..\..\Configuration Test.props" />

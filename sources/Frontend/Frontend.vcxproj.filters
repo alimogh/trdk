@@ -67,6 +67,9 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ServiceAdapter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="MainWindow.hpp">
@@ -83,6 +86,9 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="Prec.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServiceAdapter.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

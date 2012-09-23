@@ -8,6 +8,7 @@
 
 #include "Prec.hpp"
 #include "Service.hpp"
+#include "Core/Security.hpp"
 
 using namespace Trader::Gateway;
 
@@ -18,6 +19,7 @@ Service::Service(
 		m_stopFlag(false) {
 	try {
 		soap_init2(&m_soap, SOAP_IO_KEEPALIVE, SOAP_IO_KEEPALIVE);
+		m_soap.user = this;
 		m_soap.max_keep_alive = 1000;
 		StartSoapDispatcherThread();
 	} catch (...) {
@@ -173,4 +175,34 @@ void Service::SoapDispatcherThread() {
 
 void Service::OnUpdate(const Trader::Security &) {
 	//...//
+}
+
+void Service::GetSecurityList(std::list<trader__Security> &result) {
+	std::list<trader__Security> resultTmp;
+	foreach (const auto &serviceSecurity, GetNotifyList()) {
+		trader__Security security;
+		static_assert(
+			sizeof(decltype(security.id)) >= sizeof(void *),
+			"trader__Security::id too small.");
+		typedef decltype(security.id) Id;
+		security.id = Id(serviceSecurity.get());
+		security.symbol = serviceSecurity->GetSymbol();
+		security.scale = serviceSecurity->GetPriceScale();
+		resultTmp.push_back(security);
+	}
+	resultTmp.swap(result);
+}
+
+void Service::GetFirstUpdate(
+			const std::string &/*symbol*/,
+			std::list<trader__FirstUpdate> &result) {
+	std::list<trader__FirstUpdate> resultTmp;
+	for (size_t i = 0; i < 100; ++i) {
+		trader__FirstUpdate item;
+		item.price = i + 1;
+		item.qty = i + 50;
+		item.isBuy = i % 3 ? true : false;
+		resultTmp.push_back(item);
+	}
+	resultTmp.swap(result);
 }

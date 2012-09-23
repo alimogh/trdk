@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
+ <author>Eugene V. Palchukovsky</author>
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
@@ -20,7 +21,11 @@
       <item>
        <layout class="QHBoxLayout" name="connectionLayout">
         <item>
-         <widget class="QLineEdit" name="serviceAddress"/>
+         <widget class="QLineEdit" name="serviceAddress">
+          <property name="text">
+           <string>localhost:80</string>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QPushButton" name="connectButton">
@@ -77,8 +82,6 @@
      </layout>
     </item>
    </layout>
-   <zorder>verticalLayoutWidget</zorder>
-   <zorder>horizontalLayoutWidget</zorder>
   </widget>
   <action name="actionExit">
    <property name="text">

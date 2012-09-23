@@ -7,20 +7,19 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "../Interface/soapStub.h"
-#include "../Interface/TraderService.nsmap"
+#include "Service.hpp"
 
-int trader__GetState(soap *, trader__State &result) {
-	UseUnused(result);
+using namespace Trader::Gateway;
+
+int trader__GetSecurityList(soap *soap, std::list<trader__Security >&result) {
+	reinterpret_cast<Service *>(soap->user)->GetSecurityList(result);
 	return SOAP_OK;
 }
 
-int trader__GetSecurityList(soap *, std::list<trader__Security >&result) {
-	UseUnused(result);
-	return SOAP_OK;
-}
-
-int trader__GetCurrentMarketData(soap *, std::list<trader__MarketData >&result) {
-	UseUnused(result);
+int trader__GetFirstUpdate(
+			soap *soap,
+			std::string symbol,
+			std::list<trader__FirstUpdate> &result) {
+	reinterpret_cast<Service *>(soap->user)->GetFirstUpdate(symbol, result);
 	return SOAP_OK;
 }
