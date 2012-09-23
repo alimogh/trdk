@@ -59,13 +59,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
-    <TargetName>trader_test</TargetName>
+    <TargetName>Trader_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <TargetName>trader_dbg</TargetName>
+    <TargetName>Trader_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <TargetName>trader</TargetName>
+    <TargetName>Trader</TargetName>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.vcxproj">
