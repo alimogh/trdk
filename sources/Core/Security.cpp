@@ -60,6 +60,13 @@ public:
 	mutable MarketDataTimeMutex m_marketDataTimeMutex;
 	MarketDataTime m_marketDataTime;
 
+	// Custom /////////////////////////////////////////////////////////////
+	volatile long long m_firstUpdateBuyPrice;
+	volatile long m_firstUpdateBuyQty;
+	volatile long long m_firstUpdateSellPrice;
+	volatile long m_firstUpdateSellQty;
+	///////////////////////////////////////////////////////////////////////
+
 public:
 
 	Implementation(
@@ -72,7 +79,11 @@ public:
 			m_askPrice(0),
 			m_askSize(0),
 			m_bidPrice(0),
-			m_bidSize(0) {
+			m_bidSize(0),
+			m_firstUpdateBuyPrice(0),
+			m_firstUpdateBuyQty(0),
+			m_firstUpdateSellPrice(0),
+			m_firstUpdateSellQty(0) {
 		if (logMarketData) {
 			m_marketDataLog = new MarketDataLog(instrument.GetFullSymbol());
 		}
@@ -354,4 +365,44 @@ void Security::SignalUpdate() {
 			DescalePrice(m_pimpl->m_bidPrice));
 	}
 	m_pimpl->m_updateSignal();
+}
+
+void Security::SetFirstUpdate(bool isBuy, ScaledPrice price, Qty qty) {
+	if (isBuy) {
+		Interlocking::Exchange(m_pimpl->m_firstUpdateBuyPrice, price);
+		Interlocking::Exchange(m_pimpl->m_firstUpdateBuyQty, qty);
+	} else {
+		Interlocking::Exchange(m_pimpl->m_firstUpdateSellPrice, price);
+		Interlocking::Exchange(m_pimpl->m_firstUpdateSellQty, qty);
+	}
+//	Log::Debug(
+//		"NEW: %1%: BUY - %2%/%3%; SELL - %4%/%5%;",
+//		GetSymbol(),
+//		GetFirstUpdateBuyPrice(), GetFirstUpdateBuySize(),
+//		GetFirstUpdateSellPrice(), GetFirstUpdateSellSize());
+	m_pimpl->m_updateSignal();
+}
+
+Security::ScaledPrice Security::GetFirstUpdateBuyPriceScaled() const {
+	return m_pimpl->m_firstUpdateBuyPrice;
+}
+
+double Security::GetFirstUpdateBuyPrice() const {
+	return DescalePrice(GetFirstUpdateBuyPriceScaled());
+}
+
+Security::Qty Security::GetFirstUpdateBuySize() const {
+	return m_pimpl->m_firstUpdateBuyQty;
+}
+
+Security::ScaledPrice Security::GetFirstUpdateSellPriceScaled() const {
+	return m_pimpl->m_firstUpdateSellPrice;
+}
+
+double Security::GetFirstUpdateSellPrice() const {
+	return DescalePrice(GetFirstUpdateSellPriceScaled());
+}
+
+Security::Qty Security::GetFirstUpdateSellSize() const {
+	return m_pimpl->m_firstUpdateSellQty;
 }

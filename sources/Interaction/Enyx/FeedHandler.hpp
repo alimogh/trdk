@@ -10,14 +10,13 @@
 
 #include "MarketDataSnapshot.hpp"
 #include "Security.hpp"
+#include "EnyxTypes.h"
 
 namespace Trader {  namespace Interaction { namespace Enyx {
 
 	class FeedHandler: public NXFeedHandler {
 
 	private:
-
-		typedef uint64_t EnyxOrderId;
 
 		//////////////////////////////////////////////////////////////////////////
 

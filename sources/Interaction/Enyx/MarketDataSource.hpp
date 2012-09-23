@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Core/MarketDataSource.hpp"
+#include "FirstLimitUpdateHandler.hpp"
 
 namespace Trader {  namespace Interaction { namespace Enyx {
 
@@ -20,6 +21,18 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 namespace Trader {  namespace Interaction { namespace Enyx {
 
 	class MarketDataSource : public Trader::LiveMarketDataSource {
+
+	private:
+
+		struct OrderHandler {
+
+			NXOrderManager manager;
+			FirstLimitUpdateHandler handler;
+
+			OrderHandler();
+
+		};
+
 
 	public:
 
@@ -60,7 +73,9 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 	private:
 
 		std::unique_ptr<EnyxMDInterface> m_enyx;
-		std::unique_ptr<FeedHandler> m_handler;
+
+		std::unique_ptr<FeedHandler> m_feedHandler;
+		std::unique_ptr<OrderHandler> m_orderHandler;
 
 	};
 

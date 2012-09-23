@@ -90,3 +90,7 @@ void Security::SetLast(
 	}
 	SignalUpdate();
 }
+
+void Security::SetFirstUpdate(bool isBuy, ScaledPrice price, Qty qty) {
+	Base::SetFirstUpdate(isBuy, price, qty);
+}

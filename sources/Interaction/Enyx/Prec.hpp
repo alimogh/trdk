@@ -22,14 +22,16 @@
 #	include <NXOrderManager.h>
 #	include <exchanges/nasdaq_us_totalview_itch41/NasdaqUSTVITCH41NXFeedExtra.h>
 #	include "Common/DisableBoostWarningsBegin.h"
-#		include <boost/multi_index_container.hpp>
-#		include <boost/multi_index/mem_fun.hpp>
-#		include <boost/multi_index/hashed_index.hpp>
-#		include <boost/multi_index/composite_key.hpp>
-#		include <boost/signal.hpp>
 #		include <boost/algorithm/string.hpp>
 #	include "Common/DisableBoostWarningsEnd.h"
 #endif
+
+#include "Common/DisableBoostWarningsBegin.h"
+#	include <boost/multi_index_container.hpp>
+#	include <boost/multi_index/mem_fun.hpp>
+#	include <boost/multi_index/hashed_index.hpp>
+#	include <boost/multi_index/composite_key.hpp>
+#include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
 

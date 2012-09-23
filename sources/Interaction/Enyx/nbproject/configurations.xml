@@ -5,6 +5,7 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>FeedHandler.hpp</itemPath>
+      <itemPath>FirstLimitUpdateHandler.hpp</itemPath>
       <itemPath>MarketDataSnapshot.hpp</itemPath>
       <itemPath>MarketDataSource.hpp</itemPath>
       <itemPath>Prec.hpp</itemPath>
@@ -15,6 +16,7 @@
                    projectFiles="true">
       <itemPath>Api.cpp</itemPath>
       <itemPath>FeedHandler.cpp</itemPath>
+      <itemPath>FirstLimitUpdateHandler.cpp</itemPath>
       <itemPath>MarketDataSnapshot.cpp</itemPath>
       <itemPath>MarketDataSource.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>

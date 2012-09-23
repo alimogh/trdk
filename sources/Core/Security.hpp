@@ -121,6 +121,15 @@ namespace Trader {
 		double GetBidPrice() const;
 		Qty GetBidSize() const;
 
+		// Custom ////////////////////////////////////////////////////////////////
+		ScaledPrice GetFirstUpdateBuyPriceScaled() const;
+		double GetFirstUpdateBuyPrice() const;
+		Qty GetFirstUpdateBuySize() const;
+		ScaledPrice GetFirstUpdateSellPriceScaled() const;
+		double GetFirstUpdateSellPrice() const;
+		Qty GetFirstUpdateSellSize() const;
+		//////////////////////////////////////////////////////////////////////////
+
 	public:
 
 		bool IsHistoryData() const;
@@ -165,6 +174,8 @@ namespace Trader {
 		/**	@return true if values ​​differ from the current, false otherwise
 		  */
 		bool SetBid(ScaledPrice, Qty);
+
+		void SetFirstUpdate(bool isBuy, ScaledPrice, Qty);
 
 		void SignalUpdate();
 

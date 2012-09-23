@@ -19,6 +19,33 @@ using namespace Trader::Interaction::Enyx;
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace {
+	void FirstLimitUpdateCallback(
+				std::string instrument,
+				uint64_t price,
+				uint32_t quantity,
+				bool buy_nSell,
+				void *callBackArg) {
+		try {
+			boost::trim(instrument);
+			static_cast<FirstLimitUpdateHandler *>(callBackArg)->HandleUpdate(
+				instrument,
+				price,
+				quantity,
+				buy_nSell);
+		} catch (...) {
+			AssertFailNoException();
+		}
+	}
+}
+
+MarketDataSource::OrderHandler::OrderHandler()
+		: manager(&FirstLimitUpdateCallback, &handler) {
+	//...//
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+namespace {
 
 	struct IniLaneExtractor {
 
@@ -142,8 +169,26 @@ MarketDataSource::MarketDataSource(const IniFile &ini, const std::string &sectio
 	m_enyx->setInstrumentFiltering(true);
 	m_enyx->setEmptyPacketDrop(true);
 
-	m_handler.reset(new FeedHandler);
-    m_enyx->addHandler(*m_handler);
+	const bool isFeedHandlerOn = ini.ReadBoolKey(section, "feed_handler");
+	const bool isOrderHandlerOn = ini.ReadBoolKey(section, "order_handler");
+	Log::Info(
+		TRADER_ENYX_LOG_PREFFIX "feed_handler = %1%; order_handler = %2%;",
+		isFeedHandlerOn ? "yes" : "no",
+		isOrderHandlerOn ? "yes" : "no");
+	if (!isFeedHandlerOn && !isOrderHandlerOn) {
+		Log::Error(TRADER_ENYX_LOG_PREFFIX "failed to init handler: no handler set.");
+		throw ConnectError();
+	}
+
+	if (isFeedHandlerOn) {
+		m_feedHandler.reset(new FeedHandler);
+		m_enyx->addHandler(*m_feedHandler);
+	}
+
+	if (isOrderHandlerOn) {
+		m_orderHandler.reset(new OrderHandler);
+		m_enyx->addHandler(m_orderHandler->manager);
+	}
 
 }
 
@@ -199,10 +244,15 @@ boost::shared_ptr<Trader::Security> MarketDataSource::CreateSecurity(
 }
 
 void MarketDataSource::Subscribe(const boost::shared_ptr<Security> &security) const {
+
+	Assert(m_orderHandler || m_feedHandler);
+
 	Log::Info(
 		TRADER_ENYX_LOG_PREFFIX "subscribing \"%1%\"...",
 		security->GetFullSymbol());
+
 	CheckSupport(*security);
+
 	const auto exchange = Dictionary::getExchangeByName(security->GetPrimaryExchange());
 	Assert(exchange);
 	if (!m_enyx->subscribeInstrument(exchange->getInstrumentByName(security->GetSymbol()))) {
@@ -212,5 +262,15 @@ void MarketDataSource::Subscribe(const boost::shared_ptr<Security> &security) co
 			security->GetPrimaryExchange());
 		throw Error("Failed to subscribe to Enyx Market Data");
 	}
-	m_handler->Subscribe(security);
+
+	if (m_orderHandler) {
+		m_orderHandler->manager.setSubscribedInstruments(
+			m_enyx->getSetSubscribedInstrument());
+		m_orderHandler->handler.Register(security);
+	}
+
+	if (m_feedHandler) {
+		m_feedHandler->Subscribe(security);
+	}
+
 }
