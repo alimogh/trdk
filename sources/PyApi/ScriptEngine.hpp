@@ -8,8 +8,6 @@
 
 #pragma once
 
-class Algo;
-
 namespace Trader { namespace PyApi { namespace Wrappers {
 	class Algo;
 } } }
@@ -36,7 +34,7 @@ namespace Trader { namespace PyApi {
 				const boost::filesystem::path &filePath,
 				const std::string &stamp,
 				const std::string &algoClassName,
-				const ::Algo &algo,
+				const Trader::Algo &algo,
 				boost::shared_ptr<Security> security);
 
 	public:

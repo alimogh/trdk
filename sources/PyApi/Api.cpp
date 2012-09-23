@@ -10,21 +10,21 @@
 #include "PyApi.hpp"
 
 #ifdef BOOST_WINDOWS
-	boost::shared_ptr< ::Algo> CreatePyEngine(
+	boost::shared_ptr<Trader::Algo> CreatePyEngine(
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security> security,
 				const IniFile &ini,
 				const std::string &section) {
-		return boost::shared_ptr< ::Algo>(
+		return boost::shared_ptr<Trader::Algo>(
 			new Trader::PyApi::Algo(tag, security, ini, section));
 	}
 #else
-	extern "C" boost::shared_ptr< ::Algo> CreatePyEngine(
+	extern "C" boost::shared_ptr<Trader::Algo> CreatePyEngine(
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security> security,
 				const IniFile &ini,
 				const std::string &section) {
-		return boost::shared_ptr< ::Algo>(
+		return boost::shared_ptr<Trader::Algo>(
 			new Trader::PyApi::Algo(tag, security, ini, section));
 	}
 #endif

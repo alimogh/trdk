@@ -11,6 +11,7 @@
 #include "Util.hpp"
 #include "Dispatcher.hpp"
 #include "Core/Algo.hpp"
+#include "Core/Observer.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -19,6 +20,7 @@ namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 
 using namespace Trader;
+using namespace Trader::Engine;
 
 namespace {
 
@@ -26,6 +28,9 @@ namespace {
 
 	typedef DllObjectPtr<Algo> ModuleAlgo;
 	typedef std::map<std::string /*tag*/, std::list<ModuleAlgo>> Algos;
+	
+	typedef DllObjectPtr<Observer> ModuleObserver;
+	typedef std::map<std::string /*tag*/, std::list<ModuleObserver>> Observers;
 
 }
 
@@ -105,7 +110,7 @@ namespace {
 
 		Log::Info("Loading symbols from %1% for %2%...", symbolsFilePath, tag);
 		const IniFile symbolsIni(symbolsFilePath, ini.GetPath().branch_path());
-		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("SMART", "NASDAQ");
+		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("ALL", "NASDAQ-US");
 		try {
 			LoadSecurities(symbols, tradeSystem, marketDataSource, securities, settings, ini);
 		} catch (const IniFile::Error &ex) {
@@ -157,12 +162,94 @@ namespace {
 
 	}
 
+	void InitObservers(
+				const IniFile &ini,
+				const std::string &section,
+				boost::shared_ptr<TradeSystem> tradeSystem,
+				MarketDataSource &marketDataSource,
+				Securities &securities,
+				Observers &observers,
+				boost::shared_ptr<Settings> settings)  {
+
+		fs::path module;
+		try {
+			module = ini.ReadKey(section, Ini::Key::module, false);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to get observer module: \"%1%\".", ex.what());
+			throw IniFile::Error("Failed to load observer");
+		}
+
+		std::string fabricName;
+		try {
+			fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to get observer fabric name module: \"%1%\".", ex.what());
+			throw IniFile::Error("Failed to load observer");
+		}
+
+		const std::string tag = section.substr(Ini::Sections::observer.size());
+		if (tag.empty()) {
+			Log::Error("Failed to get tag for observer section \"%1%\".", section);
+			throw IniFile::Error("Failed to load observer");
+		}
+
+		Log::Info("Loading objects for \"%1%\"...", tag);
+
+		std::string symbolsFilePath;
+		try {
+			symbolsFilePath = ini.ReadKey(section, Ini::Key::symbols, false);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to get symbols file: \"%1%\".", ex.what());
+			throw;
+		}
+
+		Log::Info("Loading symbols from %1% for %2%...", symbolsFilePath, tag);
+		const IniFile symbolsIni(symbolsFilePath, ini.GetPath().branch_path());
+		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("ALL", "NASDAQ-US");
+		try {
+			LoadSecurities(symbols, tradeSystem, marketDataSource, securities, settings, ini);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to load securities for %2%: \"%1%\".", ex.what(), tag);
+			throw IniFile::Error("Failed to load algo");
+		}
+
+		Observer::NotifyList notifyList;
+		foreach (const auto &symbol, symbols) {
+			Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
+			notifyList.push_back(securities[CreateSecuritiesKey(symbol)]);
+		}
+
+		boost::shared_ptr<Dll> dll(new Dll(module, true));
+		const auto fabric
+			= dll->GetFunction<
+					boost::shared_ptr<Trader::Observer>(
+						const std::string &tag,
+						const Observer::NotifyList &)>
+				(fabricName);
+
+		boost::shared_ptr<Observer> newObserver;
+		try {
+			newObserver = fabric(tag, notifyList);
+		} catch (...) {
+			Log::RegisterUnhandledException(__FUNCTION__, __FILE__, __LINE__, false);
+			throw Exception("Failed to load observer");
+		}
+
+		observers[tag].push_back(DllObjectPtr<Observer>(dll, newObserver));
+		Log::Info(
+			"Loaded observer \"%1%\" with tag \"%2%\".",
+			newObserver->GetName(),
+			tag);
+	
+	}
+
 	bool InitTrading(
 				const IniFile &ini,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Dispatcher &dispatcher,
 				boost::shared_ptr<LiveMarketDataSource> marketDataSource,
 				Algos &algos,
+				Observers &observers,
 				boost::shared_ptr<Settings> settings)  {
 
 		const std::set<std::string> sections = ini.ReadSectionsList();
@@ -173,6 +260,16 @@ namespace {
 				Log::Info("Found algo section \"%1%\"...", section);
 				try {
 					InitAlgo(ini, section, tradeSystem, *marketDataSource, securities, algos, settings);
+				} catch (const Exception &ex) {
+					Log::Error(
+						"Failed to load algo module from section \"%1%\": \"%2%\".",
+						section,
+						ex.what());
+				}
+			} else if (boost::starts_with(section, Ini::Sections::observer)) {
+				Log::Info("Found observer section \"%1%\"...", section);
+				try {
+					InitObservers(ini, section, tradeSystem, *marketDataSource, securities, observers, settings);
 				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to load algo module from section \"%1%\": \"%2%\".",
@@ -194,6 +291,7 @@ namespace {
 
 		Log::Info("Loaded %1% securities.", securities.size());
 		Log::Info("Loaded %1% algos.", algos.size());
+		Log::Info("Loaded %1% observers.", observers.size());
 
 		return true;
 
@@ -303,12 +401,14 @@ void Trade(const fs::path &iniFilePath) {
 	Dispatcher dispatcher(settings);
 
 	Algos algos;
+	Observers observers;
 	if (	!InitTrading(
 				ini,
 				tradeSystem,
 				dispatcher,
 				marketDataSource,
 				algos,
+				observers,
 				settings)) {
 		return;
 	}

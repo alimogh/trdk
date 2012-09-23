@@ -11,10 +11,41 @@
 
 using namespace Trader;
 
-Observer::Observer() {
+//////////////////////////////////////////////////////////////////////////
+
+class Observer::Implementation {
+
+public:
+
+	NotifyList m_notifyList;
+
+public:
+
+	explicit Implementation(const Observer::NotifyList &notifyList)
+			: m_notifyList(notifyList) {
+		//...//
+	}
+
+	~Implementation() {
+		//...//
+	}
+
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+Observer::Observer(
+			const std::string &tag,
+			const Observer::NotifyList &notifyList)
+		: Module(tag),
+		m_pimpl(new Implementation(notifyList)) {
 	//...//
 }
 
 Observer::~Observer() {
-	//...//
+	delete m_pimpl;
+}
+
+const Observer::NotifyList & Observer::GetNotifyList() const {
+	return m_pimpl->m_notifyList;
 }

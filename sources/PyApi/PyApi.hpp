@@ -16,11 +16,11 @@ namespace Trader { namespace PyApi {
 
 namespace Trader { namespace PyApi {
 
-	class Algo : public ::Algo {
+	class Algo : public Trader::Algo {
 
 	public:
 
-		typedef ::Algo Base;
+		typedef Trader::Algo Base;
 
 	private:
 

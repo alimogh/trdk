@@ -18,6 +18,8 @@ using namespace Trader::Gateway;
 #	define TRADER_GATEWAY_SERVICE_API extern "C"
 #endif
 
-TRADER_GATEWAY_SERVICE_API boost::shared_ptr<Observer> CreateGateway() {
-	return boost::shared_ptr<Observer>(new Service);
+TRADER_GATEWAY_SERVICE_API boost::shared_ptr<Observer> CreateGateway(
+			const std::string &tag,
+			const Observer::NotifyList &notifyList) {
+	return boost::shared_ptr<Observer>(new Service(tag, notifyList));
 }

@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "Module.hpp"
 #include "Security.hpp"
 #include "Api.h"
 
@@ -15,128 +16,129 @@ class PositionBandle;
 class PositionReporter;
 class IniFile;
 
-class TRADER_CORE_API Algo
-		: private boost::noncopyable,
-		public boost::enable_shared_from_this<Algo> {
+namespace Trader {
 
-public:
+	class TRADER_CORE_API Algo
+			: public Trader::Module,
+			public boost::enable_shared_from_this<Trader::Algo> {
 
-	typedef boost::mutex Mutex;
-	typedef Mutex::scoped_lock Lock;
+	public:
 
-protected:
+		typedef boost::mutex Mutex;
+		typedef Mutex::scoped_lock Lock;
 
-	typedef std::list<std::pair<std::string, std::string>> SettingsReport;
+	protected:
 
-public:
+		typedef std::list<std::pair<std::string, std::string>> SettingsReport;
 
-	explicit Algo(const std::string &tag, boost::shared_ptr<Trader::Security>);
-	virtual ~Algo();
+	public:
 
-public:
+		explicit Algo(const std::string &tag, boost::shared_ptr<Trader::Security>);
+		virtual ~Algo();
 
-	boost::shared_ptr<const Trader::Security> GetSecurity() const;
+	public:
 
-	PositionReporter & GetPositionReporter();
+		boost::shared_ptr<const Trader::Security> GetSecurity() const;
 
-	virtual const std::string & GetName() const = 0;
-	const std::string & GetTag() const throw();
+		PositionReporter & GetPositionReporter();
 
-	virtual boost::posix_time::ptime GetLastDataTime();
+		virtual boost::posix_time::ptime GetLastDataTime();
 
-	void UpdateSettings(const IniFile &, const std::string &section);
+		void UpdateSettings(const IniFile &, const std::string &section);
 
-	Mutex & GetMutex();
+		Mutex & GetMutex();
 
-public:
+	public:
 
-	void RequestHistory(
-				const Trader::HistoryMarketDataSource &,
-				const boost::posix_time::ptime &fromTime,
-				const boost::posix_time::ptime &toTime);
+		void RequestHistory(
+					const Trader::HistoryMarketDataSource &,
+					const boost::posix_time::ptime &fromTime,
+					const boost::posix_time::ptime &toTime);
 
-	bool IsValidPrice(const Trader::Settings &) const;
+		bool IsValidPrice(const Trader::Settings &) const;
 
-	virtual void Update() = 0;
+		virtual void Update() = 0;
 
-	virtual boost::shared_ptr<PositionBandle> TryToOpenPositions() = 0;
-	virtual void TryToClosePositions(PositionBandle &) = 0;
+		virtual boost::shared_ptr<PositionBandle> TryToOpenPositions() = 0;
+		virtual void TryToClosePositions(PositionBandle &) = 0;
 
-	virtual void ReportDecision(const Trader::Position &) const = 0;
+		virtual void ReportDecision(const Trader::Position &) const = 0;
 
-protected:
+	protected:
 
-	boost::shared_ptr<Trader::Security> GetSecurity();
+		boost::shared_ptr<Trader::Security> GetSecurity();
 
-	Trader::Security::Qty CalcQty(
-				Trader::Security::ScaledPrice,
-				Trader::Security::ScaledPrice volume)
-			const;
+		Trader::Security::Qty CalcQty(
+					Trader::Security::ScaledPrice,
+					Trader::Security::ScaledPrice volume)
+				const;
 
-	virtual std::auto_ptr<PositionReporter> CreatePositionReporter()
-			const
-			= 0;
+		virtual std::auto_ptr<PositionReporter> CreatePositionReporter()
+				const
+				= 0;
 
-	virtual void UpdateAlogImplSettings(
-				const IniFile &,
-				const std::string &section)
-			= 0;
+		virtual void UpdateAlogImplSettings(
+					const IniFile &,
+					const std::string &section)
+				= 0;
 
-	void ReportSettings(const SettingsReport &) const;
+		void ReportSettings(const SettingsReport &) const;
 
-	template<typename T>
-	static void AppendSettingsReport(
-				const std::string &name,
-				const T &val,
-				SettingsReport &report) {
-		const SettingsReport::value_type item(
-			name,
-			(boost::format("%1%") % val).str());
-		report.push_back(item);
-	}
+		template<typename T>
+		static void AppendSettingsReport(
+					const std::string &name,
+					const T &val,
+					SettingsReport &report) {
+			const SettingsReport::value_type item(
+				name,
+				(boost::format("%1%") % val).str());
+			report.push_back(item);
+		}
 	
-	static void AppendSettingsReport(
-				const std::string &name,
-				double val,
-				SettingsReport &report) {
-		const SettingsReport::value_type item(
-			name,
-			(boost::format("%1%") % val).str());
-		report.push_back(item);
-	}
+		static void AppendSettingsReport(
+					const std::string &name,
+					double val,
+					SettingsReport &report) {
+			const SettingsReport::value_type item(
+				name,
+				(boost::format("%1%") % val).str());
+			report.push_back(item);
+		}
 
-	static void AppendSettingsReport(
-				const std::string &name,
-				bool val,
-				SettingsReport &report) {
-		AppendSettingsReport(name, val ? "true" : "false", report);
-	}
+		static void AppendSettingsReport(
+					const std::string &name,
+					bool val,
+					SettingsReport &report) {
+			AppendSettingsReport(name, val ? "true" : "false", report);
+		}
 
-	static void AppendPercentSettingsReport(
-				const std::string &name,
-				double val,
-				SettingsReport &report) {
-		const SettingsReport::value_type item(
-			name,
-			(boost::format("%.4f%%") % val).str());
-		report.push_back(item);
-	}
+		static void AppendPercentSettingsReport(
+					const std::string &name,
+					double val,
+					SettingsReport &report) {
+			const SettingsReport::value_type item(
+				name,
+				(boost::format("%.4f%%") % val).str());
+			report.push_back(item);
+		}
 
-	void AppendSettingsReport(
-				const std::string &name,
-				const IniFile::AbsoluteOrPercentsPrice &val,
-				SettingsReport &report)
-			const {
-		AppendSettingsReport(name, val.GetStr(GetSecurity()->GetPriceScale()), report);
-	}
+		void AppendSettingsReport(
+					const std::string &name,
+					const IniFile::AbsoluteOrPercentsPrice &val,
+					SettingsReport &report)
+				const {
+			AppendSettingsReport(name, val.GetStr(GetSecurity()->GetPriceScale()), report);
+		}
 
-	boost::posix_time::ptime GetCurrentTime() const;
+		boost::posix_time::ptime GetCurrentTime() const;
 
-private:
+	private:
 
-	Mutex m_mutex;
-	const boost::shared_ptr<Trader::Security> m_security;
-	PositionReporter *m_positionReporter;
-	const std::string m_tag;
+		Mutex m_mutex;
+		const boost::shared_ptr<Trader::Security> m_security;
+		PositionReporter *m_positionReporter;
 
-};
+	};
+
+}
+

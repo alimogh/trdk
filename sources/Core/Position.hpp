@@ -12,7 +12,6 @@
 #include "TradeSystem.hpp"
 #include "Api.h"
 
-class Algo;
 class AlgoPositionState;
 
 namespace Trader {

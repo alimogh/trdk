@@ -26,16 +26,26 @@ namespace Trader { namespace Gateway {
 
 	public:
 
-		explicit Service();
+		explicit Service(
+					const std::string &tag,
+					const Observer::NotifyList &notifyList);
 		virtual ~Service();
+
+	public:
+
+		virtual const std::string & GetName() const;
+
+		void Trader::Observer::OnUpdate(const Trader::Security &);
 
 	private:
 
 		void LogSoapError() const;
 
 		void HandleSoapRequest();
-		void RunSoapServer();
-		void SoapServeThread(soap &);
+		
+		void StartSoapDispatcherThread();
+		void SoapDispatcherThread();
+		void SoapServeThread(soap *);
 
 	private:
 
@@ -43,7 +53,7 @@ namespace Trader { namespace Gateway {
 
 		volatile long m_stopFlag;
 		
-		boost::thread_group m_clientThreads;
+		boost::thread_group m_threads;
 
 		Connections m_connections;
 		ConnectionRemoveMutex m_connectionRemoveMutex;

@@ -11,8 +11,6 @@
 #include "PositionWrapper.hpp"
 #include "Core/Security.hpp"
 
-class Algo;
-
 namespace Trader { namespace PyApi { namespace Wrappers {
 
 	//////////////////////////////////////////////////////////////////////////
@@ -32,7 +30,7 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 
 	public:
 
-		void Init(const ::Algo &algo, boost::shared_ptr<Trader::Security> security) {
+		void Init(const Trader::Algo &algo, boost::shared_ptr<Trader::Security> security) {
 			Assert(!m_algo);
 			Assert(!m_security);
 			m_algo = &algo;
@@ -43,7 +41,7 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 			return m_security;
 		}
 
-		const ::Algo & GetAlgo() const {
+		const Trader::Algo & GetAlgo() const {
 			Assert(m_algo);
 			return *m_algo;
 		}
@@ -114,7 +112,7 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 
 	private:
 
-		const ::Algo *m_algo;
+		const Trader::Algo *m_algo;
 		boost::shared_ptr<Trader::Security> m_security;
 
 	};

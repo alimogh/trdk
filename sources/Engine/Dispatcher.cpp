@@ -9,6 +9,7 @@
 #include "Prec.hpp"
 #include "Dispatcher.hpp"
 #include "Core/Algo.hpp"
+#include "Core/Observer.hpp"
 #include "Core/Security.hpp"
 #include "Core/PositionBundle.hpp"
 #include "Core/Position.hpp"
@@ -19,6 +20,7 @@ namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
 
 using namespace Trader;
+using namespace Trader::Engine;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -38,9 +40,10 @@ public:
 				boost::shared_ptr<const Settings> settings)
 			: m_algo(algo),
 			m_notifier(notifier),
+			m_isBlocked(false),
+			m_lastUpdate(0),
 			m_settings(settings) {
-		Interlocking::Exchange(m_isBlocked, false);
-		Interlocking::Exchange(m_lastUpdate, 0);
+		//...//
 	}
 
 	void CheckPositions(bool byTimeout) {
@@ -106,11 +109,35 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
+class Dispatcher::ObserverState
+		: private boost::noncopyable,
+		public boost::enable_shared_from_this<ObserverState> {
+
+public:
+
+	explicit ObserverState(boost::shared_ptr<Observer> observer)
+			: m_observer(observer) {
+		//...//
+	}
+
+	void NotifyUpdate(const Security &security) {
+		m_observer->OnUpdate(security);
+	}
+
+private:
+
+	boost::shared_ptr<Observer> m_observer;
+
+};
+
+//////////////////////////////////////////////////////////////////////////
+
 class Dispatcher::Notifier : private boost::noncopyable {
 
 public:
 
 	typedef std::list<boost::shared_ptr<AlgoState>> AlgoStateList;
+	typedef std::list<boost::shared_ptr<ObserverState>> ObserversStateList;
 	
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
@@ -119,14 +146,20 @@ private:
 
 	typedef boost::condition_variable Condition;
 
-	typedef std::map<boost::shared_ptr<AlgoState>, bool> NotifyList;
+	typedef std::map<boost::shared_ptr<AlgoState>, bool> AlgoNotifyList;
+	typedef std::list<
+			std::pair<
+				boost::shared_ptr<ObserverState>,
+				boost::shared_ptr<const Security>>>
+		ObserverNotifyList;
 
 public:
 
 	explicit Notifier(boost::shared_ptr<const Settings> settings)
 			: m_isActive(false),
 			m_isExit(false),
-			m_current(&m_queue.first),
+			m_currentAlgos(&m_algoQueue.first),
+			m_currentObservers(&m_observerQueue.first),
 			m_settings(settings) {
 		
 		{
@@ -167,12 +200,13 @@ public:
 	~Notifier() {
 		try {
 			{
-				const Lock lock(m_algoMutex);
+				const Lock lock(m_mutex);
 				Assert(!m_isExit);
 				m_isExit = true;
 				m_isActive = false;
 				m_positionsCheckCompletedCondition.notify_all();
 				m_positionsCheckCondition.notify_all();
+				m_securityUpdateCondition.notify_all();
 			}
 			m_threads.join_all();
 		} catch (...) {
@@ -188,7 +222,7 @@ public:
 public:
 
 	void Start() {
-		const Lock lock(m_algoMutex);
+		const Lock lock(m_mutex);
 		if (m_isActive) {
 			return;
 		}
@@ -197,7 +231,7 @@ public:
 	}
 
 	void Stop() {
-		const Lock lock(m_algoMutex);
+		const Lock lock(m_mutex);
 		m_isActive = false;
 	}
 
@@ -211,27 +245,44 @@ public:
 		return m_algoList;
 	}
 
+	ObserversStateList & GetObserversStateList() {
+		return m_observerList;
+	}
+
 	void Signal(boost::shared_ptr<AlgoState> algoState) {
 		
 		if (algoState->IsBlocked()) {
 			return;
 		}
 		
-		Lock lock(m_algoMutex);
+		Lock lock(m_mutex);
 		if (m_isExit) {
 			return;
 		}
 
-		const NotifyList::const_iterator i = m_current->find(algoState);
-		if (i != m_current->end() && !i->second) {
+		const AlgoNotifyList::const_iterator i = m_currentAlgos->find(algoState);
+		if (i != m_currentAlgos->end() && !i->second) {
 			return;
 		}
-		(*m_current)[algoState] = false;
+		(*m_currentAlgos)[algoState] = false;
 		m_positionsCheckCondition.notify_one();
 		if (m_settings->IsReplayMode()) {
 			m_positionsCheckCompletedCondition.wait(lock);
 		}
 
+	}
+
+	void Signal(
+				boost::shared_ptr<ObserverState> observerState,
+				const boost::shared_ptr<const Security> &security) {
+		
+		Lock lock(m_mutex);
+		if (m_isExit) {
+			return;
+		}
+
+		m_currentObservers->push_back(std::make_pair(observerState, security));
+		m_securityUpdateCondition.notify_one();
 	}
 
 private:
@@ -259,24 +310,33 @@ private:
 
 	bool TimeoutCheckIteration();
 	bool AlgoIteration();
+	bool ObserverIteration();
 
 private:
 
 	bool m_isActive;
 	bool m_isExit;
 
-	Mutex m_algoMutex;
+	Mutex m_mutex;
 	Condition m_positionsCheckCondition;
 	Condition m_positionsCheckCompletedCondition;
-	boost::thread_group m_threads;
 
-	std::pair<NotifyList, NotifyList> m_queue;
-	NotifyList *m_current;
+	Condition m_securityUpdateCondition;
+
+	std::pair<AlgoNotifyList, AlgoNotifyList> m_algoQueue;
+	AlgoNotifyList *m_currentAlgos;
+
+	std::pair<ObserverNotifyList, ObserverNotifyList> m_observerQueue;
+	ObserverNotifyList *m_currentObservers;
 
 	boost::shared_ptr<const Settings> m_settings;
 
 	Mutex m_algoListMutex;
 	AlgoStateList m_algoList;
+	
+	ObserversStateList m_observerList;
+
+	boost::thread_group m_threads;
 
 };
 
@@ -368,15 +428,15 @@ bool Dispatcher::Notifier::TimeoutCheckIteration() {
 	}
 	bool result = true;
 	{
-		Lock lock(m_algoMutex);
+		Lock lock(m_mutex);
 		if (m_isExit) {
 			result = false;
 		} else if (m_isActive && !algos.empty()) {
 			foreach (boost::shared_ptr<AlgoState> &algo, algos) {
-				if (m_current->find(algo) != m_current->end()) {
+				if (m_currentAlgos->find(algo) != m_currentAlgos->end()) {
 					continue;
 				}
-				(*m_current)[algo] = true;
+				(*m_currentAlgos)[algo] = true;
 			}
 			m_positionsCheckCondition.notify_one();
 		}
@@ -402,27 +462,27 @@ bool Dispatcher::Notifier::TimeoutCheckIteration() {
 
 bool Dispatcher::Notifier::AlgoIteration() {
 
-	NotifyList *notifyList = nullptr;
+	AlgoNotifyList *notifyList = nullptr;
 	{
-		Lock lock(m_algoMutex);
+		Lock lock(m_mutex);
 		if (m_isExit) {
 			return false;
 		}
-		Assert(m_current == &m_queue.first || m_current == &m_queue.second);
-		if (m_current->empty()) {
+		Assert(m_currentAlgos == &m_algoQueue.first || m_currentAlgos == &m_algoQueue.second);
+		if (m_currentAlgos->empty()) {
 			m_positionsCheckCondition.wait(lock);
 			if (m_isExit) {
 				return false;
-			} else if (m_current->empty() || !m_isActive) {
+			} else if (m_currentAlgos->empty() || !m_isActive) {
 				return true;
 			}
 		} else {
 			// Log::Warn("Dispatcher algos thread is heavy loaded!");
 		}
-		notifyList = m_current;
-		m_current = m_current == &m_queue.first
-			?	&m_queue.second
-			:	&m_queue.first;
+		notifyList = m_currentAlgos;
+		m_currentAlgos = m_currentAlgos == &m_algoQueue.first
+			?	&m_algoQueue.second
+			:	&m_algoQueue.first;
 		if (m_settings->IsReplayMode()) {
 			m_positionsCheckCompletedCondition.notify_all();
 		}
@@ -431,6 +491,43 @@ bool Dispatcher::Notifier::AlgoIteration() {
 	Assert(!notifyList->empty());
 	foreach (auto &notification, *notifyList) {
 		notification.first->CheckPositions(notification.second);
+	}
+	notifyList->clear();
+
+	return true;
+
+}
+
+bool Dispatcher::Notifier::ObserverIteration() {
+
+	ObserverNotifyList *notifyList = nullptr;
+	{
+		Lock lock(m_mutex);
+		if (m_isExit) {
+			return false;
+		}
+		Assert(
+			m_currentObservers == &m_observerQueue.first
+			|| m_currentObservers == &m_observerQueue.second);
+		if (m_currentObservers->empty()) {
+			m_securityUpdateCondition.wait(lock);
+			if (m_isExit) {
+				return false;
+			} else if (m_currentObservers->empty() || !m_isActive) {
+				return true;
+			}
+		} else {
+			// Log::Warn("Dispatcher algos thread is heavy loaded!");
+		}
+		notifyList = m_currentObservers;
+		m_currentObservers = m_currentObservers == &m_observerQueue.first
+			?	&m_observerQueue.second
+			:	&m_observerQueue.first;
+	}
+
+	Assert(!notifyList->empty());
+	foreach (auto &notification, *notifyList) {
+		notification.first->NotifyUpdate(*notification.second);
 	}
 	notifyList->clear();
 
@@ -490,10 +587,33 @@ void Dispatcher::Register(boost::shared_ptr<Algo> algo) {
 		algoList.swap(m_notifier->GetAlgoList());
 	}
 	Log::Info(
-		"Registered \"%1%\" (tag: \"%2%\") for security \"%3%\".",
+		"Registered ALGO \"%1%\" (tag: \"%2%\") for security \"%3%\".",
 		algo->GetName(),
 		algo->GetTag(),
 		security.GetFullSymbol());
+}
+
+void Dispatcher::Register(boost::shared_ptr<Observer> observer) {
+	boost::shared_ptr<ObserverState> state(new ObserverState(observer));
+	m_notifier->GetObserversStateList().push_back(state);
+	const Slots::Lock lock(m_slots->m_dataUpdateMutex);
+	std::for_each(
+		observer->GetNotifyList().begin(),
+		observer->GetNotifyList().end(),
+		[this, &state] (boost::shared_ptr<const Security> security) {
+			m_slots->m_dataUpdateConnections.InsertSafe(
+				security->Subcribe(
+					Security::UpdateSlot(
+						boost::bind(
+							&Dispatcher::Notifier::Signal,
+							m_notifier.get(),
+							state,
+							security))));
+		});
+	Log::Info(
+		"Registered OBSERVER \"%1%\" (tag: \"%2%\").",
+		observer->GetName(),
+		observer->GetTag());
 }
 
 void Dispatcher::CloseAll() {

@@ -19,9 +19,9 @@ namespace pt = boost::posix_time;
 using namespace Trader;
 
 Algo::Algo(const std::string &tag, boost::shared_ptr<Security> security)
-		: m_security(security),
-		m_positionReporter(nullptr),
-		m_tag(tag) {
+		: Module(tag),
+		m_security(security),
+		m_positionReporter(nullptr) {
 	//...//
 }
 
@@ -59,10 +59,6 @@ PositionReporter & Algo::GetPositionReporter() {
 
 boost::posix_time::ptime Algo::GetLastDataTime() {
 	return boost::posix_time::not_a_date_time;
-}
-
-const std::string & Algo::GetTag() const throw() {
-	return m_tag;
 }
 
 void Algo::RequestHistory(

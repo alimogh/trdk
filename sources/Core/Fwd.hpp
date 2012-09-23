@@ -23,4 +23,7 @@ namespace Trader {
 
 	class Settings;
 
+	class Algo;
+	class Observer;
+
 }
