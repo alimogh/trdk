@@ -20,3 +20,5 @@
 /sources/Interaction/Fake/build/
 /sources/Interaction/Fake/dist/
 /externals
+/sources/Gateway/Service/build/
+/sources/Gateway/Service/dist/

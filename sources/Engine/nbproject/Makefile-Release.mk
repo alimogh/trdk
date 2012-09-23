@@ -109,6 +109,7 @@ ${OBJECTDIR}/Trading.o: Trading.cpp
 	cd ../Interaction/Enyx && ${MAKE}  -f Makefile CONF=Release
 	cd ../PyApi && ${MAKE}  -f Makefile CONF=Release
 	cd ../Interaction/Fake && ${MAKE}  -f Makefile CONF=Release
+	cd ../Gateway/Service && ${MAKE}  -f Makefile CONF=Release
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
@@ -123,6 +124,7 @@ ${OBJECTDIR}/Trading.o: Trading.cpp
 	cd ../Interaction/Enyx && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../PyApi && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Interaction/Fake && ${MAKE}  -f Makefile CONF=Release clean
+	cd ../Gateway/Service && ${MAKE}  -f Makefile CONF=Release clean
 
 # Enable dependency checking
 .dep.inc: .depcheck-impl

@@ -19,9 +19,11 @@
 #include <stdsoap2.h>
 
 #include "../Interface/soapStub.h"
-#include "../Interface/TraderService.nsmap"
 
 #include "Common/Common.hpp"
+
+#include <list>
+#include <map>
 
 #include "Common/Assert.hpp"
 

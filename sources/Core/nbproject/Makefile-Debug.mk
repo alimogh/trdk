@@ -38,6 +38,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/Algo.o \
 	${OBJECTDIR}/Settings.o \
 	${OBJECTDIR}/MarketDataSource.o \
+	${OBJECTDIR}/Module.o \
 	${OBJECTDIR}/AlgoPositionState.o \
 	${OBJECTDIR}/TradeSystem.o \
 	${OBJECTDIR}/Log.o \
@@ -87,6 +88,11 @@ ${OBJECTDIR}/MarketDataSource.o: MarketDataSource.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_CORE -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/MarketDataSource.o MarketDataSource.cpp
+
+${OBJECTDIR}/Module.o: Module.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_CORE -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Module.o Module.cpp
 
 ${OBJECTDIR}/AlgoPositionState.o: AlgoPositionState.cpp 
 	${MKDIR} -p ${OBJECTDIR}

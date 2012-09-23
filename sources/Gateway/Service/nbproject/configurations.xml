@@ -4,37 +4,16 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>Algo.hpp</itemPath>
-      <itemPath>AlgoPositionState.hpp</itemPath>
-      <itemPath>Api.h</itemPath>
-      <itemPath>Instrument.hpp</itemPath>
-      <itemPath>Log.hpp</itemPath>
-      <itemPath>MarketDataSource.hpp</itemPath>
-      <itemPath>Module.hpp</itemPath>
-      <itemPath>Position.hpp</itemPath>
-      <itemPath>PositionBundle.hpp</itemPath>
-      <itemPath>PositionReporter.hpp</itemPath>
-      <itemPath>PositionReporterAlgo.hpp</itemPath>
       <itemPath>Prec.hpp</itemPath>
-      <itemPath>Security.hpp</itemPath>
-      <itemPath>Settings.hpp</itemPath>
-      <itemPath>TradeSystem.hpp</itemPath>
+      <itemPath>Service.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>Algo.cpp</itemPath>
-      <itemPath>AlgoPositionState.cpp</itemPath>
-      <itemPath>Log.cpp</itemPath>
-      <itemPath>MarketDataSource.cpp</itemPath>
-      <itemPath>Module.cpp</itemPath>
-      <itemPath>Position.cpp</itemPath>
-      <itemPath>PositionBundle.cpp</itemPath>
-      <itemPath>PositionReporter.cpp</itemPath>
+      <itemPath>Api.cpp</itemPath>
+      <itemPath>Methods.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
-      <itemPath>Security.cpp</itemPath>
-      <itemPath>Settings.cpp</itemPath>
-      <itemPath>TradeSystem.cpp</itemPath>
+      <itemPath>Service.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -59,46 +38,47 @@
         <ccTool>
           <standard>8</standard>
           <incDir>
-            <pElem>..</pElem>
+            <pElem>../..</pElem>
             <pElem>/usr/local/boost/boost_1_51/include</pElem>
           </incDir>
           <preprocessorList>
             <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
             <Elem>DEV_VER</Elem>
-            <Elem>TRADER_CORE</Elem>
+            <Elem>TRADER_GATEWAY_SERVICE</Elem>
             <Elem>_DEBUG</Elem>
           </preprocessorList>
-          <warningLevel>3</warningLevel>
         </ccTool>
         <linkerTool>
-          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore_dbg.${CND_DLIB_EXT}</output>
+          <linkerAddLib>
+            <pElem>/usr/local/boost/boost_1_51/lib</pElem>
+          </linkerAddLib>
           <linkerLibItems>
             <linkerLibProjectItem>
-              <makeArtifact PL="../Common"
+              <makeArtifact PL="../../Common"
                             CT="3"
                             CN="Debug"
                             AC="true"
                             BL="true"
-                            WD="../Common"
+                            WD="../../Common"
                             BC="${MAKE}  -f Makefile CONF=Debug"
                             CC="${MAKE}  -f Makefile CONF=Debug clean"
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
               </makeArtifact>
             </linkerLibProjectItem>
+            <linkerLibProjectItem>
+              <makeArtifact PL="../../Core"
+                            CT="2"
+                            CN="Release"
+                            AC="true"
+                            BL="true"
+                            WD="../../Core"
+                            BC="${MAKE}  -f Makefile CONF=Release"
+                            CC="${MAKE}  -f Makefile CONF=Release clean"
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
+              </makeArtifact>
+            </linkerLibProjectItem>
           </linkerLibItems>
         </linkerTool>
-        <requiredProjects>
-          <makeArtifact PL="../Common"
-                        CT="3"
-                        CN="Debug"
-                        AC="true"
-                        BL="false"
-                        WD="../Common"
-                        BC="${MAKE}  -f Makefile CONF=Debug"
-                        CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
-          </makeArtifact>
-        </requiredProjects>
       </compileType>
       <item path="Prec.cpp" ex="true" tool="1" flavor2="0">
       </item>
@@ -116,16 +96,15 @@
           <developmentMode>5</developmentMode>
           <standard>8</standard>
           <incDir>
-            <pElem>..</pElem>
+            <pElem>../..</pElem>
             <pElem>/usr/local/boost/boost_1_51/include</pElem>
           </incDir>
           <preprocessorList>
             <Elem>BOOST_DISABLE_ASSERTS</Elem>
             <Elem>NDEBUG</Elem>
             <Elem>NTEST</Elem>
-            <Elem>TRADER_CORE</Elem>
+            <Elem>TRADER_GATEWAY_SERVICE</Elem>
           </preprocessorList>
-          <warningLevel>3</warningLevel>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -134,33 +113,36 @@
           <developmentMode>5</developmentMode>
         </asmTool>
         <linkerTool>
+          <linkerAddLib>
+            <pElem>/usr/local/boost/boost_1_51/lib</pElem>
+          </linkerAddLib>
           <linkerLibItems>
             <linkerLibProjectItem>
-              <makeArtifact PL="../Common"
+              <makeArtifact PL="../../Common"
                             CT="3"
                             CN="Release"
                             AC="false"
                             BL="true"
-                            WD="../Common"
+                            WD="../../Common"
                             BC="${MAKE}  -f Makefile CONF=Release"
                             CC="${MAKE}  -f Makefile CONF=Release clean"
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
               </makeArtifact>
             </linkerLibProjectItem>
+            <linkerLibProjectItem>
+              <makeArtifact PL="../../Core"
+                            CT="2"
+                            CN="Release"
+                            AC="true"
+                            BL="true"
+                            WD="../../Core"
+                            BC="${MAKE}  -f Makefile CONF=Release"
+                            CC="${MAKE}  -f Makefile CONF=Release clean"
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
+              </makeArtifact>
+            </linkerLibProjectItem>
           </linkerLibItems>
         </linkerTool>
-        <requiredProjects>
-          <makeArtifact PL="../Common"
-                        CT="3"
-                        CN="Release"
-                        AC="false"
-                        BL="false"
-                        WD="../Common"
-                        BC="${MAKE}  -f Makefile CONF=Release"
-                        CC="${MAKE}  -f Makefile CONF=Release clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
-          </makeArtifact>
-        </requiredProjects>
       </compileType>
       <item path="Prec.cpp" ex="true" tool="1" flavor2="0">
       </item>

@@ -20,6 +20,11 @@ namespace Trader { namespace Gateway {
 		typedef ConnectionRemoveMutex::scoped_lock ConnectionRemoveLock;
 		typedef std::set<soap *> Connections;
 
+		typedef std::map<
+				std::string,
+				std::list<boost::shared_ptr<trader__FirstUpdate>>>
+			FirstUpdateCache;
+
 	public:
 
 		typedef Observer Base;
@@ -35,7 +40,7 @@ namespace Trader { namespace Gateway {
 
 		virtual const std::string & GetName() const;
 
-		void Trader::Observer::OnUpdate(const Trader::Security &);
+		virtual void OnUpdate(const Trader::Security &);
 
 	public:
 
@@ -49,7 +54,7 @@ namespace Trader { namespace Gateway {
 		void LogSoapError() const;
 
 		void HandleSoapRequest();
-		
+
 		void StartSoapDispatcherThread();
 		void SoapDispatcherThread();
 		void SoapServeThread(soap *);
@@ -59,11 +64,13 @@ namespace Trader { namespace Gateway {
 		mutable soap m_soap;
 
 		volatile long m_stopFlag;
-		
+
 		boost::thread_group m_threads;
 
 		Connections m_connections;
 		ConnectionRemoveMutex m_connectionRemoveMutex;
+
+		FirstUpdateCache m_firstUpdateCache;
 
 
 	};

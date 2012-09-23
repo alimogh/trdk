@@ -19,3 +19,5 @@ cp ./Interaction/Enyx/dist/Release/GNU_4.7.1-Linux-x86/* ../output/Linux/
 cp ./Interaction/Lightspeed/dist/Debug/GNU_4.7.1-Linux-x86/* ../output/Linux/
 cp ./Interaction/Lightspeed/dist/Release/GNU_4.7.1-Linux-x86/* ../output/Linux/
 
+cp ./Gateway/Service/dist/Debug/GNU_4.7.1-Linux-x86/* ../output/Linux/
+cp ./Gateway/Service/dist/Release/GNU_4.7.1-Linux-x86/* ../output/Linux/

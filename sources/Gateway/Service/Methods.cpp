@@ -8,6 +8,7 @@
 
 #include "Prec.hpp"
 #include "Service.hpp"
+#include "../Interface/TraderService.nsmap"
 
 using namespace Trader::Gateway;
 

@@ -63,7 +63,7 @@ void Service::LogSoapError() const {
 }
 
 void Service::SoapServeThread(::soap *soap) {
-	
+
 	class Cleaner : private boost::noncopyable {
 	public:
 		Cleaner(::soap &soap, Connections &connections, ConnectionRemoveMutex &connectionsMutex)
@@ -97,7 +97,7 @@ void Service::SoapServeThread(::soap *soap) {
 		Connections &m_connections;
 		ConnectionRemoveMutex &m_connectionsMutex;
 	} cleaner(*soap, m_connections, m_connectionRemoveMutex);
-	
+
 	const int serveResult = soap_serve(soap);
 	if (	serveResult != SOAP_OK
 			&& serveResult != SOAP_EOF
@@ -113,19 +113,19 @@ void Service::HandleSoapRequest() {
 	if (m_stopFlag) {
 		return;
 	}
-	
+
 	if (acceptedSocket < 0) {
 		LogSoapError();
 		return;
 	}
-	
+
 	Log::Info(
 		TRADER_GATEWAY_LOG_PREFFIX "accepted connection from %d.%d.%d.%d.",
 		(m_soap.ip >> 24) & 0xFF,
 		(m_soap.ip >> 16) & 0xFF,
 		(m_soap.ip >> 8) & 0xFF,
-		m_soap.ip & 0xFF); 
-   
+		m_soap.ip & 0xFF);
+
 	soap *connection = soap_copy(&m_soap);
 	m_connections.insert(connection);
 	m_threads.create_thread(boost::bind(&Service::SoapServeThread, this, connection));
@@ -141,7 +141,7 @@ void Service::StartSoapDispatcherThread() {
 	SOAP_SOCKET masterSocket = SOAP_INVALID_SOCKET;
 	for (
 			int port = 80, i = 0;
-			i < 2 && !soap_valid_socket(masterSocket) && (!i || m_soap.error != WSAEACCES);
+			i < 2 && !soap_valid_socket(masterSocket) && (!i /*|| m_soap.error != WSAEACCES*/);
 			port = 0, ++i) {
 		masterSocket = soap_bind(&m_soap, serviceHost, port, 100);
 	}
@@ -152,7 +152,7 @@ void Service::StartSoapDispatcherThread() {
 
 	{
 		sockaddr_in hostInfo;
-		int hostInfoSize = sizeof(hostInfo);
+		socklen_t hostInfoSize = sizeof(hostInfo);
 		if (getsockname(masterSocket, reinterpret_cast<sockaddr *>(&hostInfo), &hostInfoSize)) {
 			const Error error(GetLastError());
 			Log::Error(
