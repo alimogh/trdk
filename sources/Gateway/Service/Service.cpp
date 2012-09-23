@@ -197,7 +197,8 @@ void Service::GetFirstUpdate(
 			const std::string &/*symbol*/,
 			std::list<trader__FirstUpdate> &result) {
 	std::list<trader__FirstUpdate> resultTmp;
-	for (size_t i = 0; i < 100; ++i) {
+	volatile static uint64_t i = 0;
+	for (auto ii = 0; ii < 100; ++i, ++ii) {
 		trader__FirstUpdate item;
 		item.price = i + 1;
 		item.qty = i + 50;

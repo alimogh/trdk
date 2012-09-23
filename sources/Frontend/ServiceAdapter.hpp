@@ -33,6 +33,8 @@ public:
 	};
 	typedef std::map<uint64_t, Security> SecurityList;
 
+	typedef std::list<trader__FirstUpdate> FirstUpdateData;
+
 public:
 	
 	explicit ServiceAdapter(const QString &endpoint);
@@ -45,6 +47,10 @@ public:
 public:
 
 	void GetSecurityList(SecurityList &result) const;
+	void GetFirstUpdateData(
+			const QString &symbol,
+			FirstUpdateData &result)
+		const;
 
 private:
 

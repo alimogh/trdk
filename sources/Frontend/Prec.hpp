@@ -8,11 +8,18 @@
 
 #pragma once
 
+#include "Gateway/Interface/soapStub.h"
+#include "Gateway/Interface/soapTraderServiceProxy.h"
+#include "Gateway/Interface/TraderService.nsmap"
+
 #include "Common/Exception.hpp"
 
 #pragma warning(push, 3)
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QTimer>
+#include <QList>
+#include <QStandardItemModel>
 #include <QtCore/QVariant>
 #include <QtGui/QApplication>
 #include <QtGui/QAction>

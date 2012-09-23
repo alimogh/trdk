@@ -10,9 +10,6 @@
 
 #include "Prec.hpp"
 #include "ServiceAdapter.hpp"
-#include "Gateway/Interface/soapStub.h"
-#include "Gateway/Interface/soapTraderServiceProxy.h"
-#include "Gateway/Interface/TraderService.nsmap"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -84,4 +81,16 @@ void ServiceAdapter::GetSecurityList(SecurityList &result) const {
 
 }
 
-
+void ServiceAdapter::GetFirstUpdateData(
+			const QString &symbol,
+			FirstUpdateData &result)
+		const {
+	std::list<trader__FirstUpdate> resultTmp;
+	const int resultCode = m_pimpl->m_service.trader__GetFirstUpdate(
+		symbol.toStdString(),
+		resultTmp);
+	if (resultCode != SOAP_OK) {
+		throw ConnectionError("Failed to get First Update Data");
+	}
+	resultTmp.swap(result);
+}

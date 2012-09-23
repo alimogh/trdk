@@ -25,10 +25,22 @@ public:
 private slots:
 
 	void on_connectButton_clicked();
+	void UpdateData();
+	void ClearSymbol();
+
+private:
+
+	void Connect();
+	void Diconnect();
 
 private:
 
 	Ui::MainWindow *ui;
+	
+	QStandardItemModel *m_firstUpdateHistoryModel;
+	uint64_t m_firstUpdateHistoryCounter;
+
+	QTimer *m_updateTimer;
 
 	std::unique_ptr<ServiceAdapter> m_service;
 	ServiceAdapter::SecurityList m_securityList;
