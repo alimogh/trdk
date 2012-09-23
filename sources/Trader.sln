@@ -27,6 +27,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Gateway Client", "Gateway\C
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Gateway Interface", "Gateway\Interface\GatewayInterface.vcxproj", "{2CECB3FA-A5EB-4CB4-AEE3-9625D9C56E3F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Frontend", "Frontend\Frontend.vcxproj", "{A873D403-8BF1-4323-94D8-3CE4DAAA7B61}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -94,6 +96,12 @@ Global
 		{2CECB3FA-A5EB-4CB4-AEE3-9625D9C56E3F}.Release|Win32.Build.0 = Common|Win32
 		{2CECB3FA-A5EB-4CB4-AEE3-9625D9C56E3F}.Test|Win32.ActiveCfg = Common|Win32
 		{2CECB3FA-A5EB-4CB4-AEE3-9625D9C56E3F}.Test|Win32.Build.0 = Common|Win32
+		{A873D403-8BF1-4323-94D8-3CE4DAAA7B61}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A873D403-8BF1-4323-94D8-3CE4DAAA7B61}.Debug|Win32.Build.0 = Debug|Win32
+		{A873D403-8BF1-4323-94D8-3CE4DAAA7B61}.Release|Win32.ActiveCfg = Release|Win32
+		{A873D403-8BF1-4323-94D8-3CE4DAAA7B61}.Release|Win32.Build.0 = Release|Win32
+		{A873D403-8BF1-4323-94D8-3CE4DAAA7B61}.Test|Win32.ActiveCfg = Test|Win32
+		{A873D403-8BF1-4323-94D8-3CE4DAAA7B61}.Test|Win32.Build.0 = Test|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
