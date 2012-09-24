@@ -8,7 +8,6 @@
 
 #include "Prec.hpp"
 #include "LiveMarketDataSource.hpp"
-#include "Core/Security.hpp"
 
 using namespace Trader::Interaction::Fake;
 
@@ -21,7 +20,21 @@ LiveMarketDataSource::~LiveMarketDataSource() {
 }
 
 void LiveMarketDataSource::Connect() {
-	//...//
+	m_threads.create_thread([this](){NotificationThread();});
+}
+
+void LiveMarketDataSource::NotificationThread() {
+	try {
+		for ( ; ; ) {
+			foreach (boost::shared_ptr<Security> s, m_securityList) {
+				s->SetFirstUpdate(true, 10, 20);
+			}
+			boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+		}
+	} catch (...) {
+		AssertFailNoException();
+		throw;
+	}
 }
 
 boost::shared_ptr<Trader::Security> LiveMarketDataSource::CreateSecurity(
@@ -32,7 +45,7 @@ boost::shared_ptr<Trader::Security> LiveMarketDataSource::CreateSecurity(
 			boost::shared_ptr<const Trader::Settings> settings,
 			bool logMarketData)
 		const {
-	return boost::shared_ptr<Trader::Security>(
+	auto result = boost::shared_ptr<Security>(
 		new Security(
 			tradeSystem,
 			symbol,
@@ -40,6 +53,8 @@ boost::shared_ptr<Trader::Security> LiveMarketDataSource::CreateSecurity(
 			exchange,
 			settings,
 			logMarketData));
+	m_securityList.push_back(result);
+	return result;
 }
 
 boost::shared_ptr<Trader::Security> LiveMarketDataSource::CreateSecurity(
@@ -49,11 +64,13 @@ boost::shared_ptr<Trader::Security> LiveMarketDataSource::CreateSecurity(
 			boost::shared_ptr<const Trader::Settings> settings,
 			bool logMarketData)
 		const {
-	return boost::shared_ptr<Trader::Security>(
+	auto result = boost::shared_ptr<Security>(
 		new Security(
 			symbol,
 			primaryExchange,
 			exchange,
 			settings,
 			logMarketData));
+	m_securityList.push_back(result);
+	return result;
 }
