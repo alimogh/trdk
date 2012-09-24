@@ -36,7 +36,10 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/Methods.o \
+	${OBJECTDIR}/_ext/1847122038/soapC.o \
+	${OBJECTDIR}/_ext/1847122038/soapServer.o \
 	${OBJECTDIR}/Service.o \
+	${OBJECTDIR}/_ext/654616206/stdsoap2.o \
 	${OBJECTDIR}/Api.o
 
 
@@ -54,29 +57,44 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib ../../Common/dist/Release/GNU_4.7.1-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Release/GNU_4.7.1-Linux-x86 -L../../Core/dist/Release/GNU_4.7.1-Linux-x86 -lCore
+LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib ../../Common/dist/Release/GNU_4.7.1-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Release/GNU_4.7.1-Linux-x86 -L../../Core/dist/Release/GNU_4.7.1-Linux-x86 -lCore -lboost_regex
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libService.${CND_DLIB_EXT}
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libGateway.${CND_DLIB_EXT}
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libService.${CND_DLIB_EXT}: ../../Common/dist/Release/GNU_4.7.1-Linux-x86/libcommon.a
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libGateway.${CND_DLIB_EXT}: ../../Common/dist/Release/GNU_4.7.1-Linux-x86/libcommon.a
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libService.${CND_DLIB_EXT}: ../../Core/dist/Release/GNU_4.7.1-Linux-x86/libCore.so
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libGateway.${CND_DLIB_EXT}: ../../Core/dist/Release/GNU_4.7.1-Linux-x86/libCore.so
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libService.${CND_DLIB_EXT}: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libGateway.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -shared -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libService.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	${LINK.cc} -shared -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libGateway.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
 ${OBJECTDIR}/Methods.o: Methods.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Methods.o Methods.cpp
 
+${OBJECTDIR}/_ext/1847122038/soapC.o: ../Interface/soapC.cpp 
+	${MKDIR} -p ${OBJECTDIR}/_ext/1847122038
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1847122038/soapC.o ../Interface/soapC.cpp
+
+${OBJECTDIR}/_ext/1847122038/soapServer.o: ../Interface/soapServer.cpp 
+	${MKDIR} -p ${OBJECTDIR}/_ext/1847122038
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1847122038/soapServer.o ../Interface/soapServer.cpp
+
 ${OBJECTDIR}/Service.o: Service.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Service.o Service.cpp
+
+${OBJECTDIR}/_ext/654616206/stdsoap2.o: ../../../externals/gsoap-2.8/gsoap/stdsoap2.cpp 
+	${MKDIR} -p ${OBJECTDIR}/_ext/654616206
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/654616206/stdsoap2.o ../../../externals/gsoap-2.8/gsoap/stdsoap2.cpp
 
 ${OBJECTDIR}/Api.o: Api.cpp 
 	${MKDIR} -p ${OBJECTDIR}
@@ -91,7 +109,7 @@ ${OBJECTDIR}/Api.o: Api.cpp
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
 	${RM} -r ${CND_BUILDDIR}/${CND_CONF}
-	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libService.${CND_DLIB_EXT}
+	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libGateway.${CND_DLIB_EXT}
 
 # Subprojects
 .clean-subprojects:
