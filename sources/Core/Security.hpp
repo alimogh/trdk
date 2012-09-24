@@ -37,6 +37,13 @@ namespace Trader {
 				boost::signals2::connection>
 			UpdateSlotConnection;
 
+		typedef void (FirstUpdateSlotSignature)(ScaledPrice, Qty, bool isBuy);
+		typedef boost::function<FirstUpdateSlotSignature> FirstUpdateSlot;
+		typedef SignalConnection<
+				FirstUpdateSlot,
+				boost::signals2::connection>
+			FirstUpdateSlotConnection;
+
 	public:
 
 		explicit Security(
@@ -142,6 +149,7 @@ namespace Trader {
 	public:
 
 		UpdateSlotConnection Subcribe(const UpdateSlot &) const;
+		FirstUpdateSlotConnection Subcribe(const FirstUpdateSlot &) const;
 
 	protected:
 

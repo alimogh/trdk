@@ -90,7 +90,7 @@ void ServiceAdapter::GetFirstUpdateData(
 		symbol.toStdString(),
 		resultTmp);
 	if (resultCode != SOAP_OK) {
-		throw ConnectionError("Failed to get First Update Data");
+		throw ConnectionError("Failed to get data from server");
 	}
 	resultTmp.swap(result);
 }

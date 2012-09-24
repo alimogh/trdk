@@ -27,6 +27,11 @@ namespace {
 				void *callBackArg) {
 		try {
 			boost::trim(instrument);
+			if (price > 1000000) {
+				price /= 1000000;
+			} else {
+				price *= 100;
+			}
 			static_cast<FirstLimitUpdateHandler *>(callBackArg)->HandleUpdate(
 				instrument,
 				price,

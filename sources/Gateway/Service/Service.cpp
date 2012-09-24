@@ -175,8 +175,21 @@ void Service::SoapDispatcherThread() {
 	}
 }
 
-void Service::OnUpdate(const Trader::Security &) {
-	//...//
+void Service::OnUpdate(
+			const Trader::Security &security,
+			Trader::Security::ScaledPrice price,
+			Trader::Security::Qty qty,
+			bool isBuy) {
+	boost::shared_ptr<trader__FirstUpdate> update(new trader__FirstUpdate);
+	update->price = price;
+	update->qty = qty;
+	update->isBuy = isBuy;
+	const FirstUpdateCacheLock lock(m_firstUpdateCacheMutex);
+	auto &cache = m_firstUpdateCache[security.GetSymbol()];
+	while (cache.size() >= 500) {
+		cache.pop_front();
+	}
+	cache.push_back(update);
 }
 
 void Service::GetSecurityList(std::list<trader__Security> &result) {
@@ -196,16 +209,19 @@ void Service::GetSecurityList(std::list<trader__Security> &result) {
 }
 
 void Service::GetFirstUpdate(
-			const std::string &/*symbol*/,
+			const std::string &symbol,
 			std::list<trader__FirstUpdate> &result) {
 	std::list<trader__FirstUpdate> resultTmp;
-	volatile static uint64_t i = 0;
-	for (auto ii = 0; ii < 100; ++i, ++ii) {
-		trader__FirstUpdate item;
-		item.price = i + 1;
-		item.qty = i + 50;
-		item.isBuy = i % 3 ? true : false;
-		resultTmp.push_back(item);
+	std::list<boost::shared_ptr<trader__FirstUpdate>> cache;
+	{
+		const FirstUpdateCacheLock lock(m_firstUpdateCacheMutex);
+		const FirstUpdateCache::iterator it = m_firstUpdateCache.find(symbol);
+		if (it != m_firstUpdateCache.end()) {
+			it->second.swap(cache);
+		}
+	}
+	foreach (const auto &update, cache) {
+		resultTmp.push_back(*update);
 	}
 	resultTmp.swap(result);
 }

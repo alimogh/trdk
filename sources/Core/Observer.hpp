@@ -8,12 +8,9 @@
 
 #pragma once
 
+#include "Security.hpp"
 #include "Module.hpp"
 #include "Api.h"
-
-namespace Trader {
-	class Security;
-}
 
 namespace Trader {
 
@@ -36,7 +33,12 @@ namespace Trader {
 
 	public:
 
-		virtual void OnUpdate(const Trader::Security &) = 0;
+		virtual void OnUpdate(
+					const Trader::Security &,
+					Trader::Security::ScaledPrice price,
+					Trader::Security::Qty qty,
+					bool isBuy)
+				= 0;
 
 	private:
 

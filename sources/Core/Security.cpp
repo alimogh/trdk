@@ -45,6 +45,7 @@ public:
 	MarketDataLog *m_marketDataLog;
 
 	mutable boost::signals2::signal<UpdateSlotSignature> m_updateSignal;
+	mutable boost::signals2::signal<FirstUpdateSlotSignature> m_firstUpdateSignal;
 
 	volatile long long m_isHistoryData;
 
@@ -355,6 +356,10 @@ Security::UpdateSlotConnection Security::Subcribe(const UpdateSlot &slot) const 
 	return UpdateSlotConnection(m_pimpl->m_updateSignal.connect(slot));
 }
 
+Security::FirstUpdateSlotConnection Security::Subcribe(const FirstUpdateSlot &slot) const {
+	return FirstUpdateSlotConnection(m_pimpl->m_firstUpdateSignal.connect(slot));
+}
+
 void Security::SignalUpdate() {
 	if (m_pimpl->m_marketDataLog) {
 		m_pimpl->m_marketDataLog->Append(
@@ -375,12 +380,8 @@ void Security::SetFirstUpdate(bool isBuy, ScaledPrice price, Qty qty) {
 		Interlocking::Exchange(m_pimpl->m_firstUpdateSellPrice, price);
 		Interlocking::Exchange(m_pimpl->m_firstUpdateSellQty, qty);
 	}
-//	Log::Debug(
-//		"NEW: %1%: BUY - %2%/%3%; SELL - %4%/%5%;",
-//		GetSymbol(),
-//		GetFirstUpdateBuyPrice(), GetFirstUpdateBuySize(),
-//		GetFirstUpdateSellPrice(), GetFirstUpdateSellSize());
 	m_pimpl->m_updateSignal();
+	m_pimpl->m_firstUpdateSignal(price, qty, isBuy);
 }
 
 Security::ScaledPrice Security::GetFirstUpdateBuyPriceScaled() const {

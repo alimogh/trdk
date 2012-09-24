@@ -24,6 +24,8 @@ namespace Trader { namespace Gateway {
 				std::string,
 				std::list<boost::shared_ptr<trader__FirstUpdate>>>
 			FirstUpdateCache;
+		typedef boost::mutex FirstUpdateCacheMutex;
+		typedef FirstUpdateCacheMutex::scoped_lock FirstUpdateCacheLock;
 
 	public:
 
@@ -42,7 +44,11 @@ namespace Trader { namespace Gateway {
 
 		virtual const std::string & GetName() const;
 
-		virtual void OnUpdate(const Trader::Security &);
+		virtual void OnUpdate(
+				const Trader::Security &,
+				Trader::Security::ScaledPrice,
+				Trader::Security::Qty,
+				bool isBuy);
 
 	public:
 
@@ -75,6 +81,7 @@ namespace Trader { namespace Gateway {
 		ConnectionRemoveMutex m_connectionRemoveMutex;
 
 		FirstUpdateCache m_firstUpdateCache;
+		FirstUpdateCacheMutex m_firstUpdateCacheMutex;
 
 
 	};

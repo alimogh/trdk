@@ -105,8 +105,12 @@ void MainWindow::UpdateData() {
 		QList<QStandardItem *> historyItems;
 		historyItems.push_back(
 			new QStandardItem(QString("%1").arg(++m_firstUpdateHistoryCounter)));
-		historyItems.push_back(
-			new QStandardItem(QString("%1").arg(double(dataItem.price) / 2)));
+		if (dataItem.price == 0) {
+			historyItems.push_back(new QStandardItem(QString("-")));
+		} else {
+			historyItems.push_back(
+				new QStandardItem(QString("%1").arg(double(dataItem.price) / 100)));
+		}
 		historyItems.push_back(
 			new QStandardItem(QString("%1").arg(dataItem.qty)));
 		historyItems.push_back(

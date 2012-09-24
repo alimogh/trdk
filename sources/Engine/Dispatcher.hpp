@@ -18,6 +18,7 @@ namespace Trader { namespace Engine {
 		class ObserverState;
 		class Notifier;
 		class Slots;
+		class FuSlots;
 
 	public:
 
@@ -40,6 +41,7 @@ namespace Trader { namespace Engine {
 	
 		boost::shared_ptr<Notifier> m_notifier;
 		std::unique_ptr<Slots> m_slots;
+		std::unique_ptr<FuSlots> m_fuSlots;
 	
 	};
 

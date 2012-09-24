@@ -290,6 +290,11 @@ namespace {
 				dispatcher.Register(a);
 			}
 		}
+		foreach (auto &os, observers) {
+			foreach (auto &o, os.second) {
+				dispatcher.Register(o);
+			}
+		}
 
 		Log::Info("Loaded %1% securities.", securities.size());
 		Log::Info("Loaded %1% algos.", algos.size());

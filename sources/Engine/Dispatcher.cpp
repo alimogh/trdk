@@ -120,8 +120,12 @@ public:
 		//...//
 	}
 
-	void NotifyUpdate(const Security &security) {
-		m_observer->OnUpdate(security);
+	void NotifyUpdate(
+				const Security &security,
+				Trader::Security::ScaledPrice price,
+				Trader::Security::Qty qty,
+				bool isBuy) {
+		m_observer->OnUpdate(security, price, qty, isBuy);
 	}
 
 private:
@@ -147,11 +151,15 @@ private:
 	typedef boost::condition_variable Condition;
 
 	typedef std::map<boost::shared_ptr<AlgoState>, bool> AlgoNotifyList;
-	typedef std::list<
-			std::pair<
-				boost::shared_ptr<ObserverState>,
-				boost::shared_ptr<const Security>>>
-		ObserverNotifyList;
+
+	struct ObservationEvent {
+		boost::shared_ptr<ObserverState> state;
+		boost::shared_ptr<const Security> security;
+		Security::ScaledPrice price;
+		Security::Qty qty;
+		bool isBuy;
+	};
+	typedef std::list<ObservationEvent> ObserverNotifyList;
 
 public:
 
@@ -177,6 +185,14 @@ public:
 			}
 			startBarrier.wait();
 			Log::Info("All \"%1%\" threads started.", threadName);
+		}
+		{
+			boost::barrier startBarrier(1 + 1);
+			m_threads.create_thread(
+				[&]() {
+					Task(startBarrier, "Observer", &Dispatcher::Notifier::ObserverIteration);
+				});
+			startBarrier.wait();
 		}
 		if (!m_settings->IsReplayMode()) {
 			const size_t threadsCount = 1;
@@ -274,15 +290,26 @@ public:
 
 	void Signal(
 				boost::shared_ptr<ObserverState> observerState,
-				const boost::shared_ptr<const Security> &security) {
-		
+				const boost::shared_ptr<const Security> &security,
+				Security::ScaledPrice price,
+				Security::Qty qty,
+				bool isBuy) {
+
+		ObservationEvent observationEvent = {};
+		observationEvent.state = observerState;
+		observationEvent.security = security;
+		observationEvent.price = price;
+		observationEvent.qty = qty;
+		observationEvent.isBuy = isBuy;
+
 		Lock lock(m_mutex);
 		if (m_isExit) {
 			return;
 		}
 
-		m_currentObservers->push_back(std::make_pair(observerState, security));
+		m_currentObservers->push_back(observationEvent);
 		m_securityUpdateCondition.notify_one();
+
 	}
 
 private:
@@ -502,6 +529,7 @@ bool Dispatcher::Notifier::ObserverIteration() {
 
 	ObserverNotifyList *notifyList = nullptr;
 	{
+
 		Lock lock(m_mutex);
 		if (m_isExit) {
 			return false;
@@ -526,8 +554,12 @@ bool Dispatcher::Notifier::ObserverIteration() {
 	}
 
 	Assert(!notifyList->empty());
-	foreach (auto &notification, *notifyList) {
-		notification.first->NotifyUpdate(*notification.second);
+	foreach (auto &observationEvent, *notifyList) {
+		observationEvent.state->NotifyUpdate(
+			*observationEvent.security,
+			observationEvent.price,
+			observationEvent.qty,
+			observationEvent.isBuy);
 	}
 	notifyList->clear();
 
@@ -551,11 +583,26 @@ public:
 
 };
 
+class Dispatcher::FuSlots : private boost::noncopyable {
+
+public:
+
+	typedef boost::mutex Mutex;
+	typedef Mutex::scoped_lock Lock;
+
+	typedef SignalConnectionList<Security::FirstUpdateSlotConnection> DataUpdateConnections;
+
+	Mutex m_dataUpdateMutex;
+	DataUpdateConnections m_dataUpdateConnections;
+
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 Dispatcher::Dispatcher(boost::shared_ptr<const Settings> options)
 		: m_notifier(new Notifier(options)),
-		m_slots(new Slots) {
+		m_slots(new Slots),
+		m_fuSlots(new FuSlots) {
 	//...//
 }
 
@@ -596,19 +643,22 @@ void Dispatcher::Register(boost::shared_ptr<Algo> algo) {
 void Dispatcher::Register(boost::shared_ptr<Observer> observer) {
 	boost::shared_ptr<ObserverState> state(new ObserverState(observer));
 	m_notifier->GetObserversStateList().push_back(state);
-	const Slots::Lock lock(m_slots->m_dataUpdateMutex);
+	const Slots::Lock lock(m_fuSlots->m_dataUpdateMutex);
 	std::for_each(
 		observer->GetNotifyList().begin(),
 		observer->GetNotifyList().end(),
 		[this, &state] (boost::shared_ptr<const Security> security) {
-			m_slots->m_dataUpdateConnections.InsertSafe(
+			m_fuSlots->m_dataUpdateConnections.InsertSafe(
 				security->Subcribe(
-					Security::UpdateSlot(
+					Security::FirstUpdateSlot(
 						boost::bind(
 							&Dispatcher::Notifier::Signal,
 							m_notifier.get(),
 							state,
-							security))));
+							security,
+							_1,
+							_2,
+							_3))));
 		});
 	Log::Info(
 		"Registered OBSERVER \"%1%\" (tag: \"%2%\").",
