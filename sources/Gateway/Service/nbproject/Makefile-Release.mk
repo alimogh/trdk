@@ -39,8 +39,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/_ext/1847122038/soapC.o \
 	${OBJECTDIR}/_ext/1847122038/soapServer.o \
 	${OBJECTDIR}/Service.o \
-	${OBJECTDIR}/_ext/654616206/stdsoap2.o \
-	${OBJECTDIR}/Api.o
+	${OBJECTDIR}/Api.o \
+	${OBJECTDIR}/_ext/654616206/stdsoap2.o
 
 
 # C Compiler Flags
@@ -91,15 +91,15 @@ ${OBJECTDIR}/Service.o: Service.cpp
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Service.o Service.cpp
 
-${OBJECTDIR}/_ext/654616206/stdsoap2.o: ../../../externals/gsoap-2.8/gsoap/stdsoap2.cpp 
-	${MKDIR} -p ${OBJECTDIR}/_ext/654616206
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/654616206/stdsoap2.o ../../../externals/gsoap-2.8/gsoap/stdsoap2.cpp
-
 ${OBJECTDIR}/Api.o: Api.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Api.o Api.cpp
+
+${OBJECTDIR}/_ext/654616206/stdsoap2.o: ../../../externals/gsoap-2.8/gsoap/stdsoap2.cpp 
+	${MKDIR} -p ${OBJECTDIR}/_ext/654616206
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/654616206/stdsoap2.o ../../../externals/gsoap-2.8/gsoap/stdsoap2.cpp
 
 # Subprojects
 .build-subprojects:

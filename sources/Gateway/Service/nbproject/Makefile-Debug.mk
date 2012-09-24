@@ -39,8 +39,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/_ext/1847122038/soapC.o \
 	${OBJECTDIR}/_ext/1847122038/soapServer.o \
 	${OBJECTDIR}/Service.o \
-	${OBJECTDIR}/_ext/654616206/stdsoap2.o \
-	${OBJECTDIR}/Api.o
+	${OBJECTDIR}/Api.o \
+	${OBJECTDIR}/_ext/654616206/stdsoap2.o
 
 
 # C Compiler Flags
@@ -74,32 +74,32 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libGateway_dbg.${CND_DLIB_EXT}: ${OBJ
 ${OBJECTDIR}/Methods.o: Methods.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Methods.o Methods.cpp
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_GATEWAY_SERVICE -D_DEBUG -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Methods.o Methods.cpp
 
 ${OBJECTDIR}/_ext/1847122038/soapC.o: ../Interface/soapC.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1847122038
 	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1847122038/soapC.o ../Interface/soapC.cpp
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_GATEWAY_SERVICE -D_DEBUG -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1847122038/soapC.o ../Interface/soapC.cpp
 
 ${OBJECTDIR}/_ext/1847122038/soapServer.o: ../Interface/soapServer.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1847122038
 	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1847122038/soapServer.o ../Interface/soapServer.cpp
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_GATEWAY_SERVICE -D_DEBUG -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1847122038/soapServer.o ../Interface/soapServer.cpp
 
 ${OBJECTDIR}/Service.o: Service.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Service.o Service.cpp
-
-${OBJECTDIR}/_ext/654616206/stdsoap2.o: ../../../externals/gsoap-2.8/gsoap/stdsoap2.cpp 
-	${MKDIR} -p ${OBJECTDIR}/_ext/654616206
-	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/654616206/stdsoap2.o ../../../externals/gsoap-2.8/gsoap/stdsoap2.cpp
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_GATEWAY_SERVICE -D_DEBUG -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Service.o Service.cpp
 
 ${OBJECTDIR}/Api.o: Api.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -DTRADER_GATEWAY_SERVICE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Api.o Api.cpp
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_GATEWAY_SERVICE -D_DEBUG -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Api.o Api.cpp
+
+${OBJECTDIR}/_ext/654616206/stdsoap2.o: ../../../externals/gsoap-2.8/gsoap/stdsoap2.cpp 
+	${MKDIR} -p ${OBJECTDIR}/_ext/654616206
+	${RM} $@.d
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_GATEWAY_SERVICE -D_DEBUG -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/654616206/stdsoap2.o ../../../externals/gsoap-2.8/gsoap/stdsoap2.cpp
 
 # Subprojects
 .build-subprojects:
