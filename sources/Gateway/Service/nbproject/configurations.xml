@@ -7,6 +7,14 @@
       <itemPath>Prec.hpp</itemPath>
       <itemPath>Service.hpp</itemPath>
     </logicalFolder>
+    <logicalFolder name="f1"
+                   displayName="Interface"
+                   projectFiles="true"
+                   kind="ROOT">
+      <itemPath>../Interface/soapC.cpp</itemPath>
+      <itemPath>../Interface/soapServer.cpp</itemPath>
+      <itemPath>../../../externals/gsoap-2.8/gsoap/stdsoap2.cpp</itemPath>
+    </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
@@ -50,7 +58,7 @@
           <warningLevel>3</warningLevel>
         </ccTool>
         <linkerTool>
-          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libService.${CND_DLIB_EXT}_dbg</output>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libGateway_dbg.${CND_DLIB_EXT}</output>
           <linkerAddLib>
             <pElem>/usr/local/boost/boost_1_51/lib</pElem>
           </linkerAddLib>
@@ -79,6 +87,7 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore_dbg.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
+            <linkerLibLibItem>boost_regex</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -116,6 +125,7 @@
           <developmentMode>5</developmentMode>
         </asmTool>
         <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libGateway.${CND_DLIB_EXT}</output>
           <linkerAddLib>
             <pElem>/usr/local/boost/boost_1_51/lib</pElem>
           </linkerAddLib>
@@ -144,6 +154,7 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
+            <linkerLibLibItem>boost_regex</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
