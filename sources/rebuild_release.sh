@@ -1,7 +1,8 @@
 #!/bin/bash
 
-conf="Debug"
+conf="Release"
 
 cd ./Engine
+make CONF=${conf} clean
 make CONF=${conf}
 cd ..

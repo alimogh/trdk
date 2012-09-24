@@ -3,5 +3,5 @@
 conf="Release"
 
 cd ./Engine
-make CONF=${conf}
+make CONF=${conf} clean
 cd ..
