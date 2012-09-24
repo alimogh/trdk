@@ -9,8 +9,8 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU_4.7.1-Linux-x86
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU_4.7.1-Linux-x86
-CND_ARTIFACT_NAME_Debug=libService.so
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU_4.7.1-Linux-x86/libService.so
+CND_ARTIFACT_NAME_Debug=libService.so_dbg
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU_4.7.1-Linux-x86/libService.so_dbg
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU_4.7.1-Linux-x86/package
 CND_PACKAGE_NAME_Debug=libService.so.tar
 CND_PACKAGE_PATH_Debug=dist/Debug/GNU_4.7.1-Linux-x86/package/libService.so.tar

@@ -161,7 +161,7 @@ void FeedHandler::HandleMessage(const NXFeedMiscTime &time) {
 	auto serverTime = currentTime + Util::GetEdtDiff();
 	serverTime -= serverTime.time_of_day();
 	serverTime += timeSinceMidnight;
-	Assert(m_serverTime == pt::not_a_date_time() || m_serverTime <= serverTime);
+	Assert(m_serverTime == pt::not_a_date_time || m_serverTime <= serverTime);
 	static const auto maxDiffForLog = pt::minutes(1);
 	const bool isFirstSet
 		= m_serverTime == pt::not_a_date_time

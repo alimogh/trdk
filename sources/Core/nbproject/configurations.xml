@@ -28,6 +28,7 @@
       <itemPath>Log.cpp</itemPath>
       <itemPath>MarketDataSource.cpp</itemPath>
       <itemPath>Module.cpp</itemPath>
+      <itemPath>Observer.cpp</itemPath>
       <itemPath>Position.cpp</itemPath>
       <itemPath>PositionBundle.cpp</itemPath>
       <itemPath>PositionReporter.cpp</itemPath>

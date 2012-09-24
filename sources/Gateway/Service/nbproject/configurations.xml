@@ -47,8 +47,10 @@
             <Elem>TRADER_GATEWAY_SERVICE</Elem>
             <Elem>_DEBUG</Elem>
           </preprocessorList>
+          <warningLevel>3</warningLevel>
         </ccTool>
         <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libService.${CND_DLIB_EXT}_dbg</output>
           <linkerAddLib>
             <pElem>/usr/local/boost/boost_1_51/lib</pElem>
           </linkerAddLib>
@@ -68,13 +70,13 @@
             <linkerLibProjectItem>
               <makeArtifact PL="../../Core"
                             CT="2"
-                            CN="Release"
-                            AC="true"
+                            CN="Debug"
+                            AC="false"
                             BL="true"
                             WD="../../Core"
-                            BC="${MAKE}  -f Makefile CONF=Release"
-                            CC="${MAKE}  -f Makefile CONF=Release clean"
-                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
+                            BC="${MAKE}  -f Makefile CONF=Debug"
+                            CC="${MAKE}  -f Makefile CONF=Debug clean"
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore_dbg.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
           </linkerLibItems>
@@ -105,6 +107,7 @@
             <Elem>NTEST</Elem>
             <Elem>TRADER_GATEWAY_SERVICE</Elem>
           </preprocessorList>
+          <warningLevel>3</warningLevel>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>

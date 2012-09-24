@@ -45,7 +45,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/PositionReporter.o \
 	${OBJECTDIR}/PositionBundle.o \
 	${OBJECTDIR}/Position.o \
-	${OBJECTDIR}/Security.o
+	${OBJECTDIR}/Security.o \
+	${OBJECTDIR}/Observer.o
 
 
 # C Compiler Flags
@@ -128,6 +129,11 @@ ${OBJECTDIR}/Security.o: Security.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Security.o Security.cpp
+
+${OBJECTDIR}/Observer.o: Observer.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Observer.o Observer.cpp
 
 # Subprojects
 .build-subprojects:
