@@ -15,6 +15,7 @@ cp /usr/local/boost/boost_1_51/lib/libboost_system.so.1.51.0 ${sysDir}
 cp /usr/local/boost/boost_1_51/lib/libboost_filesystem.so.1.51.0 ${sysDir}
 cp /usr/local/boost/boost_1_51/lib/libboost_chrono.so.1.51.0 ${sysDir}
 cp /usr/local/boost/boost_1_51/lib/libboost_signals.so.1.51.0 ${sysDir}
+cp /usr/local/boost/boost_1_51/lib/libboost_regex.so.1.51.0 ${sysDir}
 cp /usr/local/lib64/libstdc++.so.6.0.17 ${sysDir}libstdc++.so.6
 
 cp ./Engine/dist/${conf}/GNU_4.7.1-Linux-x86/* ${outputDir}
