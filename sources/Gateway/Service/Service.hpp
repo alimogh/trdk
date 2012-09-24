@@ -33,7 +33,9 @@ namespace Trader { namespace Gateway {
 
 		explicit Service(
 					const std::string &tag,
-					const Observer::NotifyList &notifyList);
+					const Observer::NotifyList &notifyList,
+					const IniFile &ini,
+					const std::string &section);
 		virtual ~Service();
 
 	public:
@@ -60,6 +62,8 @@ namespace Trader { namespace Gateway {
 		void SoapServeThread(soap *);
 
 	private:
+
+		int m_port;
 
 		mutable soap m_soap;
 

@@ -29,10 +29,10 @@
     <ClCompile Include="Methods.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Interface\xxx_hC.cpp">
+    <ClCompile Include="..\Interface\soapC.cpp">
       <Filter>Source Files\Interface</Filter>
     </ClCompile>
-    <ClCompile Include="..\Interface\xxx_hServer.cpp">
+    <ClCompile Include="..\Interface\soapServer.cpp">
       <Filter>Source Files\Interface</Filter>
     </ClCompile>
   </ItemGroup>

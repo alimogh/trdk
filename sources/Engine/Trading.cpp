@@ -224,12 +224,14 @@ namespace {
 			= dll->GetFunction<
 					boost::shared_ptr<Trader::Observer>(
 						const std::string &tag,
-						const Observer::NotifyList &)>
+						const Observer::NotifyList &,
+						const IniFile &,
+						const std::string &section)>
 				(fabricName);
 
 		boost::shared_ptr<Observer> newObserver;
 		try {
-			newObserver = fabric(tag, notifyList);
+			newObserver = fabric(tag, notifyList, ini, section);
 		} catch (...) {
 			Log::RegisterUnhandledException(__FUNCTION__, __FILE__, __LINE__, false);
 			throw Exception("Failed to load observer");

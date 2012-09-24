@@ -20,6 +20,9 @@ using namespace Trader::Gateway;
 
 TRADER_GATEWAY_SERVICE_API boost::shared_ptr<Observer> CreateGateway(
 			const std::string &tag,
-			const Observer::NotifyList &notifyList) {
-	return boost::shared_ptr<Observer>(new Service(tag, notifyList));
+			const Observer::NotifyList &notifyList,
+			const IniFile &ini,
+			const std::string &section) {
+	return boost::shared_ptr<Observer>(
+		new Service(tag, notifyList, ini, section));
 }

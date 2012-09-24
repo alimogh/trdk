@@ -14,9 +14,14 @@ using namespace Trader::Gateway;
 
 Service::Service(
 			const std::string &tag,
-			const Observer::NotifyList &notifyList)
+			const Observer::NotifyList &notifyList,
+			const IniFile &ini,
+			const std::string &section)
 		: Observer(tag, notifyList),
 		m_stopFlag(false) {
+
+	m_port = ini.ReadTypedKey<unsigned short>(section, "port");
+			
 	try {
 		soap_init2(&m_soap, SOAP_IO_KEEPALIVE, SOAP_IO_KEEPALIVE);
 		m_soap.user = this;
@@ -26,6 +31,7 @@ Service::Service(
 		soap_done(&m_soap);
 		throw;
 	}
+
 }
 
 Service::~Service() {
@@ -138,17 +144,13 @@ void Service::HandleSoapRequest() {
 void Service::StartSoapDispatcherThread() {
 
 	const char *const serviceHost = NULL;
-	SOAP_SOCKET masterSocket = SOAP_INVALID_SOCKET;
-	for (
-			int port = 80, i = 0;
-			i < 2 && !soap_valid_socket(masterSocket) && (!i /*|| m_soap.error != WSAEACCES*/);
-			port = 0, ++i) {
-		masterSocket = soap_bind(&m_soap, serviceHost, port, 100);
-	}
-	if (masterSocket < 0) {
+	SOAP_SOCKET masterSocket = soap_bind(&m_soap, serviceHost, m_port, 100);
+	if (!soap_valid_socket(masterSocket)) {
 		LogSoapError();
 		throw Exception("Failed to start Gateway SOAP Server");
 	}
+
+	Log::Info(TRADER_GATEWAY_LOG_PREFFIX "started at port %1%.", m_port);
 
 	{
 		sockaddr_in hostInfo;

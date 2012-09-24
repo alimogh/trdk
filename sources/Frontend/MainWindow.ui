@@ -23,7 +23,7 @@
         <item>
          <widget class="QLineEdit" name="serviceAddress">
           <property name="text">
-           <string>localhost:80</string>
+           <string>localhost:8080</string>
           </property>
          </widget>
         </item>
