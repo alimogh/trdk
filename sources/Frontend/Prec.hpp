@@ -38,6 +38,14 @@
 #include <QtGui/QWidget>
 #pragma warning(pop)
 
+#pragma warning(push, 2)
+#include <QtGui/QApplication>
+#include <QtDeclarative/QDeclarativeView>
+#include <QtDeclarative/QDeclarativeComponent>
+#include <QtDeclarative/QDeclarativeEngine>
+#include <QtDeclarative/QDeclarativeContext>
+#pragma warning(pop)
+
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/noncopyable.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
