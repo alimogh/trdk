@@ -93,7 +93,8 @@ namespace {
 				m_thread(nullptr),
 				m_service(service),
 				m_socketBuffer(1024 * 4),
-				m_messagesBuffer(1024 * 8) {
+				m_messagesBuffer(1024 * 8),
+				m_dump(false) {
 			//...//
 		}
 
@@ -116,6 +117,8 @@ namespace {
 				m_port);
 
 			Lock lock(m_mutex);
+
+			m_dump = settings.IsIqFeedDumpOn();
 
 			Assert(!m_isActive);
 			Assert(!m_thread);
@@ -279,7 +282,9 @@ namespace {
 					Log::Error(IQFEED_CLIENT_CONNECTION_NAME ": ERROR message received.");
 					DumpReceived(message);
 				} else {
-					// DumpReceived(message);
+					if (m_dump) {
+						DumpReceived(message);
+					}
 					HandleMessage(timeOfReception, message);
 				}
 				m_messagesBuffer.erase(m_messagesBuffer.begin(), ++end);
@@ -375,6 +380,8 @@ namespace {
 		SocketBuffer m_socketBuffer;
 
 		MessagesBuffer m_messagesBuffer;
+
+		bool m_dump;
 
 	};
 

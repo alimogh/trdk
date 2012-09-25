@@ -33,6 +33,8 @@ public:
 
 		std::string iqLinkIpAddress;
 
+		bool isIqFeedDumpOn;
+
 	};
 
 public:
@@ -77,6 +79,10 @@ public:
 	
 	const std::string & GetIqLinkIpAddress() const;
 
+	bool IsIqFeedDumpOn() const {
+		return m_values.isIqFeedDumpOn;
+	}
+
 private:
 
 	const Time m_startTime;
@@ -88,5 +94,5 @@ private:
 	volatile LONGLONG m_minPrice;
 
 	const bool m_isReplayMode;
-
+	
 };

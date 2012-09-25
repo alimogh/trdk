@@ -129,13 +129,15 @@ void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
 	
 	values.iqLinkIpAddress = ini.ReadKey(section, "iqlink_ip_address", false);
 
+	values.isIqFeedDumpOn = ini.ReadBoolKey(section, "iqlink_full_log");
+
 	m_values = values;
 	Log::Info(
 		"Common static settings:"
 			" start_time_edt: %1%; algo_threads_count = %2%; algo_update_period_ms = %3%;"
 			" trade_session_period_edt = %4% -> %5%;"
 			" interactive_brokers_tws_client_id = %6%; interactive_brokers_tws_ip_address = %7%;"
-			" iqlink_ip_address = %8%;",
+			" iqlink_ip_address = %8%; iqlink_full_log = %9%;",
 		GetStartTime() + Util::GetEdtDiff(),
 		m_values.algoThreadsCount,
 		m_values.algoUpdatePeriodMilliseconds,
@@ -143,7 +145,8 @@ void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
 		m_values.tradeSessionEndTime + Util::GetEdtDiff(),
 		m_values.ibClientId,
 		m_values.ibIpAddress,
-		m_values.iqLinkIpAddress);
+		m_values.iqLinkIpAddress,
+		values.isIqFeedDumpOn);
 
 }
 
