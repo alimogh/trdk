@@ -7,16 +7,14 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "ApplicationViewer.hpp"
+#include "MainWindow.hpp"
 
 int main(int argc, char *argv[]) {
 
-	QScopedPointer<QApplication> app(createApplication(argc, argv));
+	QApplication a(argc, argv);
+	MainWindow w;
+	w.show();
 
-	ApplicationViewer viewer;
-	viewer.setMainQmlFile(QLatin1String("main.qml"));
-	viewer.showExpanded();
-
-	return app->exec();
+	return a.exec();
 
 }
