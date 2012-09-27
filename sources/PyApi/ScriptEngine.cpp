@@ -55,15 +55,15 @@ BOOST_PYTHON_MODULE(Trader) {
 
 		.add_property("lastPriceScaled", &Wrappers::Security::GetLastPriceScaled)
 		.add_property("lastPrice", &Wrappers::Security::GetLastPrice)
-		.add_property("lastSize", &Wrappers::Security::GetLastSize)
+		.add_property("lastSize", &Wrappers::Security::GetLastQty)
 
 		.add_property("askPriceScaled", &Wrappers::Security::GetAskPriceScaled)
 		.add_property("askPrice", &Wrappers::Security::GetAskPrice)
-		.add_property("askSize", &Wrappers::Security::GetAskSize)
+		.add_property("askSize", &Wrappers::Security::GetAskQty)
 
 		.add_property("bidPriceScaled", &Wrappers::Security::GetBidPriceScaled)
 		.add_property("bidPrice", &Wrappers::Security::GetBidPrice)
-		.add_property("bidSize", &Wrappers::Security::GetBidSize)
+		.add_property("bidSize", &Wrappers::Security::GetBidQty)
 
 		.def("cancelOrder", &Wrappers::Security::CancelOrder)
 		.def("cancelAllOrders", &Wrappers::Security::CancelAllOrders);

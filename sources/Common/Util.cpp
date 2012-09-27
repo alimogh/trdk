@@ -30,7 +30,7 @@ fs::path Util::SymbolToFilePath(
 }
 
 boost::shared_ptr<lt::posix_time_zone> Util::GetEdtTimeZone() {
-	boost::shared_ptr<lt::posix_time_zone> edtTimeZone(
+	static boost::shared_ptr<lt::posix_time_zone> edtTimeZone(
 		new lt::posix_time_zone("EST-05EDT+01,M4.1.0/02:00,M10.5.0/02:00"));
 	return edtTimeZone;
 }

@@ -76,8 +76,8 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 		double GetLastPrice() const {
 			return m_security->GetLastPrice();
 		}
-		size_t GetLastSize() const {
-			return m_security->GetLastSize();
+		size_t GetLastQty() const {
+			return m_security->GetLastQty();
 		}
 
 		int GetAskPriceScaled() const {
@@ -86,8 +86,8 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 		double GetAskPrice() const {
 			return m_security->GetAskPrice();
 		}
-		size_t GetAskSize() const {
-			return m_security->GetAskSize();
+		size_t GetAskQty() const {
+			return m_security->GetAskQty();
 		}
 
 		int GetBidPriceScaled() const {
@@ -96,8 +96,8 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 		double GetBidPrice() const {
 			return m_security->GetBidPrice();
 		}
-		size_t GetBidSize() const {
-			return m_security->GetBidSize();
+		size_t GetBidQty() const {
+			return m_security->GetBidQty();
 		}
 
 	public:

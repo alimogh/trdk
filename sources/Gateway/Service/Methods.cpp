@@ -17,10 +17,28 @@ int trader__GetSecurityList(soap *soap, std::list<trader__Security >&result) {
 	return SOAP_OK;
 }
 
-int trader__GetFirstUpdate(
+int trader__GetLastTrades(
 			soap *soap,
 			std::string symbol,
-			std::list<trader__FirstUpdate> &result) {
-	reinterpret_cast<Service *>(soap->user)->GetFirstUpdate(symbol, result);
+			std::string exchange,
+			std::list<trader__Trade> &result) {
+	reinterpret_cast<Service *>(soap->user)->GetLastTrades(symbol, exchange, result);
+	return SOAP_OK;
+}
+
+int trader__GetParams(
+			soap *soap,
+			std::string symbol,
+			std::string exchange,
+			trader__ExchangeParams &result) {
+	reinterpret_cast<Service *>(soap->user)->GetParams(symbol, exchange, result);
+	return SOAP_OK;
+}
+
+int trader__GetCommonParams(
+			soap *soap,
+			std::string symbol,
+			trader__CommonParams &result) {
+	reinterpret_cast<Service *>(soap->user)->GetCommonParams(symbol, result);
 	return SOAP_OK;
 }

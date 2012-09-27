@@ -19,26 +19,35 @@ class MainWindow : public QMainWindow {
 	Q_OBJECT
 
 public:
+
 	explicit MainWindow(QWidget *parent = 0);
 	~MainWindow();
 
 private slots:
 
 	void on_connectButton_clicked();
+	void on_pauseButton_clicked();
 	void UpdateData();
-	void ClearSymbol();
+	void ChangeSymbol(const QString &symbols);
 
 private:
 
 	void Connect();
 	void Diconnect();
 
+	void CreateCurrentBidAsk();
+
+	void CreateTreades(QStandardItemModel *&model, QTableView &widget);
+	void ClearTrades(QStandardItemModel &model);
+	void UpdateTrades(const ServiceAdapter::Trades &, QStandardItemModel &model);
+
 private:
 
 	Ui::MainWindow *ui;
-	
-	QStandardItemModel *m_firstUpdateHistoryModel;
-	uint64_t m_firstUpdateHistoryCounter;
+
+	QStandardItemModel *m_currentBidAskModel;
+	QStandardItemModel *m_nasdaqTradesModel;
+	QStandardItemModel *m_bxTradesModel;
 
 	QTimer *m_updateTimer;
 

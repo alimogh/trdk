@@ -51,8 +51,12 @@ namespace Trader { namespace Interaction { namespace Fake {
 				//...//
 			}
 
-			void SetFirstUpdate(bool isBuy, ScaledPrice price, Qty qty) {
-				Base::SetFirstUpdate(isBuy, price, qty);
+			void SignaleNewTrade(
+						const boost::posix_time::ptime &time,
+						bool isBuy,
+						ScaledPrice price,
+						Qty qty) {
+				Base::SignaleNewTrade(time, isBuy, price, qty);
 			}
 
 		};

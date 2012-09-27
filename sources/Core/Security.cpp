@@ -45,7 +45,7 @@ public:
 	MarketDataLog *m_marketDataLog;
 
 	mutable boost::signals2::signal<UpdateSlotSignature> m_updateSignal;
-	mutable boost::signals2::signal<FirstUpdateSlotSignature> m_firstUpdateSignal;
+	mutable boost::signals2::signal<NewTradeSlotSignature> m_newTradeSignal;
 
 	volatile long long m_isHistoryData;
 
@@ -53,20 +53,13 @@ public:
 	volatile long m_lastSize;
 
 	volatile long long m_askPrice;
-	volatile long m_askSize;
+	volatile long m_askQty;
 
 	volatile long long m_bidPrice;
-	volatile long m_bidSize;
+	volatile long m_bidQty;
 
 	mutable MarketDataTimeMutex m_marketDataTimeMutex;
 	MarketDataTime m_marketDataTime;
-
-	// Custom /////////////////////////////////////////////////////////////
-	volatile long long m_firstUpdateBuyPrice;
-	volatile long m_firstUpdateBuyQty;
-	volatile long long m_firstUpdateSellPrice;
-	volatile long m_firstUpdateSellQty;
-	///////////////////////////////////////////////////////////////////////
 
 public:
 
@@ -78,13 +71,9 @@ public:
 			m_lastPrice(0),
 			m_lastSize(0),
 			m_askPrice(0),
-			m_askSize(0),
+			m_askQty(0),
 			m_bidPrice(0),
-			m_bidSize(0),
-			m_firstUpdateBuyPrice(0),
-			m_firstUpdateBuyQty(0),
-			m_firstUpdateSellPrice(0),
-			m_firstUpdateSellQty(0) {
+			m_bidQty(0) {
 		if (logMarketData) {
 			m_marketDataLog = new MarketDataLog(instrument.GetFullSymbol());
 		}
@@ -288,7 +277,7 @@ bool Security::SetAsk(ScaledPrice price, Qty size) {
 		return false;
 	}
 	bool isChanged = Interlocking::Exchange(m_pimpl->m_askPrice, price) != price;
-	isChanged = Interlocking::Exchange(m_pimpl->m_askSize, size) != size || isChanged;
+	isChanged = Interlocking::Exchange(m_pimpl->m_askQty, size) != size || isChanged;
 	return isChanged;
 }
 
@@ -298,7 +287,7 @@ bool Security::SetBid(ScaledPrice price, Qty size) {
 		return false;
 	}
 	bool isChanged = Interlocking::Exchange(m_pimpl->m_bidPrice, price) != price;
-	isChanged = Interlocking::Exchange(m_pimpl->m_askSize, size) != size || isChanged;
+	isChanged = Interlocking::Exchange(m_pimpl->m_askQty, size) != size || isChanged;
 	return isChanged;
 }
 
@@ -306,8 +295,12 @@ double Security::GetLastPrice() const {
 	return DescalePrice(GetLastPriceScaled());
 }
 
-Security::Qty Security::GetLastSize() const {
+Security::Qty Security::GetLastQty() const {
 	return m_pimpl->m_lastSize;
+}
+
+Security::Qty Security::GetTradedVolume() const {
+	return 0;
 }
 
 Security::ScaledPrice Security::GetAskPriceScaled() const {
@@ -318,8 +311,8 @@ double Security::GetAskPrice() const {
 	return DescalePrice(GetAskPriceScaled());
 }
 
-Security::Qty Security::GetAskSize() const {
-	return m_pimpl->m_askSize;
+Security::Qty Security::GetAskQty() const {
+	return m_pimpl->m_askQty;
 }
 
 Security::ScaledPrice Security::GetBidPriceScaled() const {
@@ -330,8 +323,8 @@ double Security::GetBidPrice() const {
 	return DescalePrice(GetBidPriceScaled());
 }
 
-Security::Qty Security::GetBidSize() const {
-	return m_pimpl->m_bidSize;
+Security::Qty Security::GetBidQty() const {
+	return m_pimpl->m_bidQty;
 }
 
 bool Security::IsHistoryData() const {
@@ -356,8 +349,8 @@ Security::UpdateSlotConnection Security::Subcribe(const UpdateSlot &slot) const 
 	return UpdateSlotConnection(m_pimpl->m_updateSignal.connect(slot));
 }
 
-Security::FirstUpdateSlotConnection Security::Subcribe(const FirstUpdateSlot &slot) const {
-	return FirstUpdateSlotConnection(m_pimpl->m_firstUpdateSignal.connect(slot));
+Security::NewTradeSlotConnection Security::Subcribe(const NewTradeSlot &slot) const {
+	return NewTradeSlotConnection(m_pimpl->m_newTradeSignal.connect(slot));
 }
 
 void Security::SignalUpdate() {
@@ -372,38 +365,10 @@ void Security::SignalUpdate() {
 	m_pimpl->m_updateSignal();
 }
 
-void Security::SetFirstUpdate(bool isBuy, ScaledPrice price, Qty qty) {
-	if (isBuy) {
-		Interlocking::Exchange(m_pimpl->m_firstUpdateBuyPrice, price);
-		Interlocking::Exchange(m_pimpl->m_firstUpdateBuyQty, qty);
-	} else {
-		Interlocking::Exchange(m_pimpl->m_firstUpdateSellPrice, price);
-		Interlocking::Exchange(m_pimpl->m_firstUpdateSellQty, qty);
-	}
-	m_pimpl->m_updateSignal();
-	m_pimpl->m_firstUpdateSignal(price, qty, isBuy);
-}
-
-Security::ScaledPrice Security::GetFirstUpdateBuyPriceScaled() const {
-	return m_pimpl->m_firstUpdateBuyPrice;
-}
-
-double Security::GetFirstUpdateBuyPrice() const {
-	return DescalePrice(GetFirstUpdateBuyPriceScaled());
-}
-
-Security::Qty Security::GetFirstUpdateBuySize() const {
-	return m_pimpl->m_firstUpdateBuyQty;
-}
-
-Security::ScaledPrice Security::GetFirstUpdateSellPriceScaled() const {
-	return m_pimpl->m_firstUpdateSellPrice;
-}
-
-double Security::GetFirstUpdateSellPrice() const {
-	return DescalePrice(GetFirstUpdateSellPriceScaled());
-}
-
-Security::Qty Security::GetFirstUpdateSellSize() const {
-	return m_pimpl->m_firstUpdateSellQty;
+void Security::SignaleNewTrade(
+			const boost::posix_time::ptime &time,
+			bool isBuy,
+			ScaledPrice price,
+			Qty qty) {
+	m_pimpl->m_newTradeSignal(time, price, qty, isBuy);
 }

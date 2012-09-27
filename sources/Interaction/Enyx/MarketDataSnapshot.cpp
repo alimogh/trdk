@@ -84,6 +84,7 @@ void MarketDataSnapshot::ExecOrder(
 	const auto scaledPrice = m_security->ScalePrice(price);
 	Assert(newQty <= prevQty);
 	const auto orderQty = prevQty - newQty;
+	m_security->SignaleNewTrade(time, isBuy, scaledPrice, orderQty);
 	if (isBuy) {
 		if (!::ChangeOrder(prevQty, newQty, scaledPrice, m_bid)) {
 /*			Log::Error(

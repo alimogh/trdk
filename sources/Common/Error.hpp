@@ -28,31 +28,39 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class Error {
+namespace Trader { namespace Lib {	 
 
-public:
+	class Error {
 
-	explicit Error(int errorNo) throw();
-	~Error() throw();
+	public:
 
-public:
+		explicit Error(int errorNo) throw();
+		~Error() throw();
 
-	std::wstring GetStringW() const;
-	std::string GetString() const;
-	int GetErrorNo() const;
+	public:
 
-	bool IsError() const;
+		std::wstring GetStringW() const;
+		std::string GetString() const;
+		int GetErrorNo() const;
 
-	//! Returns true if error could be resolved to string.
-	bool CheckError() const;
+		bool IsError() const;
 
-private:
+		//! Returns true if error could be resolved to string.
+		bool CheckError() const;
 
-	int m_errorNo;
+	private:
 
-};
+		int m_errorNo;
 
-std::ostream & operator <<(std::ostream &os, const Error &);
-std::wostream & operator <<(std::wostream &os, const Error &);
+	};
+
+} }
+
+namespace std {
+
+	std::ostream & operator <<(std::ostream &, const Trader::Lib::Error &);
+	std::wostream & operator <<(std::wostream &, const Trader::Lib::Error &);
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////

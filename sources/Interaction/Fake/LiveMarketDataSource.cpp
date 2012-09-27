@@ -27,7 +27,7 @@ void LiveMarketDataSource::NotificationThread() {
 	try {
 		for ( ; ; ) {
 			foreach (boost::shared_ptr<Security> s, m_securityList) {
-				s->SetFirstUpdate(true, 10, 20);
+				s->SignaleNewTrade(boost::get_system_time(), true, 10, 20);
 			}
 			boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 		}

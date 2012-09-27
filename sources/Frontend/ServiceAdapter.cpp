@@ -14,7 +14,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 ServiceAdapter::Error::Error(const char *what)
-		: Exception(what) {
+		: std::exception(what) {
 	//...//
 }
 
@@ -36,7 +36,9 @@ public:
 
 	QByteArray m_endpoint;
 
-	TraderService m_service;
+	mutable TraderService m_service;
+
+	std::string m_symbol;
 
 public:
 
@@ -46,6 +48,22 @@ public:
 		soap_set_imode(m_service.soap, SOAP_IO_KEEPALIVE);
 		m_service.soap->max_keep_alive = 1000;
 		m_service.endpoint = m_endpoint.constData();
+	}
+
+	void CheckSoapResult(int resultCode) const {
+		if (resultCode != SOAP_OK) {
+			throw ConnectionError("Failed to get data from server");
+		}
+	}
+
+	void GetLastTrades(const std::string &exchange, Trades &result) const {
+		CheckSoapResult(
+			m_service.trader__GetLastTrades(m_symbol, exchange, result));
+	}
+
+	void GetParams(const std::string &exchange, ExchangeParams &result) const {
+		CheckSoapResult(
+			m_service.trader__GetParams(m_symbol, exchange, result));
 	}
 
 };
@@ -61,14 +79,17 @@ ServiceAdapter::~ServiceAdapter() {
 	delete m_pimpl;
 }
 
+QString ServiceAdapter::DescaleAndConvert(const xsd__positiveInteger price) const {
+	return QString("%1").arg(double(price) / 100);
+}
+
+void ServiceAdapter::SetCurrentSymbol(const QString &symbol) {
+	m_pimpl->m_symbol = symbol.toStdString();
+}
+
 void ServiceAdapter::GetSecurityList(SecurityList &result) const {
-		
 	std::list<trader__Security> serviceList;
-	const int resultCode = m_pimpl->m_service.trader__GetSecurityList(serviceList);
-	if (resultCode != SOAP_OK) {
-		throw ConnectionError("Failed to get Security List");
-	}
-		
+	m_pimpl->CheckSoapResult(m_pimpl->m_service.trader__GetSecurityList(serviceList));
 	SecurityList resultTmp;
 	foreach (const trader__Security &serviceSecurity, serviceList) {
 		Security security = {};
@@ -76,21 +97,27 @@ void ServiceAdapter::GetSecurityList(SecurityList &result) const {
 		security.scale = uint16_t(serviceSecurity.scale);
 		resultTmp[serviceSecurity.id] = security;
 	}
-
 	resultTmp.swap(result);
-
 }
 
-void ServiceAdapter::GetFirstUpdateData(
-			const QString &symbol,
-			FirstUpdateData &result)
-		const {
-	std::list<trader__FirstUpdate> resultTmp;
-	const int resultCode = m_pimpl->m_service.trader__GetFirstUpdate(
-		symbol.toStdString(),
-		resultTmp);
-	if (resultCode != SOAP_OK) {
-		throw ConnectionError("Failed to get data from server");
-	}
-	resultTmp.swap(result);
+void ServiceAdapter::GetLastNasdaqTrades(Trades &result) const {
+	m_pimpl->GetLastTrades("nasdaq", result);
+}
+void ServiceAdapter::GetLastBxTrades(Trades &result) const {
+	m_pimpl->GetLastTrades("bx", result);
+}
+
+void ServiceAdapter::GetNasdaqParams(ExchangeParams &result) const {
+	m_pimpl->GetParams("nasdaq", result);
+}
+
+void ServiceAdapter::GetBxParams(ExchangeParams &result) const {
+	m_pimpl->GetParams("bx", result);
+}
+
+void ServiceAdapter::GetCommonParams(CommonParams &result) const {
+	m_pimpl->CheckSoapResult(
+		m_pimpl->m_service.trader__GetCommonParams(
+			m_pimpl->m_symbol,
+			result));
 }

@@ -61,7 +61,11 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 		void SetLast(const boost::posix_time::ptime &, ScaledPrice, Qty);
 
-		void SetFirstUpdate(bool isBuy, ScaledPrice, Qty);
+		void SignaleNewTrade(
+					const boost::posix_time::ptime &,
+					bool isBuy,
+					ScaledPrice,
+					Qty);
 
 	};
 

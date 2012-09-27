@@ -34,15 +34,56 @@ int trader__GetSecurityList(std::list<trader__Security> &getSecurityListResult);
 
 //////////////////////////////////////////////////////////////////////////
 
-class trader__FirstUpdate {
+class trader__Param {
 	xsd__positiveInteger price;
 	xsd__positiveInteger qty;
-	xsd__boolean isBuy;
 };
 
-//gsoap trader service method-action: GetFirstUpdate "urn:#getFirstUpdate"
-int trader__GetFirstUpdate(
+class trader__ExchangeParams {
+	trader__Param ask;
+	trader__Param bid;
+};
+
+class trader__Time {
+	xsd__positiveInteger date;
+	xsd__positiveInteger time;
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+class trader__Trade {
+	trader__Time time;
+	trader__Param param;
+	xsd__boolean isBuy;
+};
+typedef std::list<trader__Trade> trader__TradeList;
+
+//gsoap trader service method-action: GetLastTrades "urn:#getLastTrades"
+int trader__GetLastTrades(
 		xsd__string symbol,
-		std::list<trader__FirstUpdate> &getFirstUpdateResult);
+		xsd__string exchange,
+		trader__TradeList &getLastTradesResult);
+
+//////////////////////////////////////////////////////////////////////////
+
+//gsoap trader service method-action: GetParams "urn:#getParams"
+int trader__GetParams(
+		xsd__string symbol,
+		xsd__string exchange,
+		trader__ExchangeParams &getParamsResult);
+
+
+//////////////////////////////////////////////////////////////////////////
+
+class trader__CommonParams {
+	trader__Param last;
+	trader__ExchangeParams best;
+	xsd__positiveInteger volumeTraded;
+};
+
+//gsoap trader service method-action: GetCommonParams "urn:#getCommonParams"
+int trader__GetCommonParams(
+		xsd__string symbol,
+		trader__CommonParams &getCommonParamsResult);
 
 //////////////////////////////////////////////////////////////////////////

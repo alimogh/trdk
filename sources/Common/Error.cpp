@@ -21,6 +21,8 @@
 #endif
 #include "Assert.hpp"
 
+using namespace Trader::Lib;
+
 Error::Error(int errorNo) throw()
 		: m_errorNo(errorNo) {
 	//...//
@@ -127,12 +129,12 @@ int Error::GetErrorNo() const {
 	return m_errorNo;
 }
 
-std::ostream & operator <<(std::ostream &os, const Error &error) {
+std::ostream & std::operator <<(std::ostream &os, const Error &error) {
 	os << error.GetString() << " (code: " << error.GetErrorNo() << ")";
 	return os;
 }
 
-std::wostream & operator <<(std::wostream &os, const Error &error) {
+std::wostream & std::operator <<(std::wostream &os, const Error &error) {
 	os << error.GetStringW() << " (code: " << error.GetErrorNo() << ")";
 	return os;
 }

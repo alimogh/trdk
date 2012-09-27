@@ -7,77 +7,230 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>666</width>
-    <height>300</height>
+    <width>1006</width>
+    <height>541</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Trader Front end</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
+     <layout class="QHBoxLayout" name="connectionLayout">
       <item>
-       <layout class="QHBoxLayout" name="connectionLayout">
+       <widget class="QLineEdit" name="serviceAddress">
+        <property name="text">
+         <string>localhost:8080</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="connectButton">
+        <property name="text">
+         <string>Connect</string>
+        </property>
+        <property name="default">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pauseButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Pause</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="symbolLayout">
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Symbol</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="symbol"/>
+      </item>
+      <item>
+       <spacer name="symbolSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="level1CommonDataLayout">
+      <item>
+       <layout class="QVBoxLayout" name="lastTradePriceLayout">
         <item>
-         <widget class="QLineEdit" name="serviceAddress">
+         <widget class="QLabel" name="lastTradePriceLabel">
           <property name="text">
-           <string>localhost:8080</string>
+           <string>Last Trade</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="connectButton">
-          <property name="text">
-           <string>Connect</string>
+         <widget class="QLineEdit" name="lastTradePrice">
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
           </property>
          </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
         </item>
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="symbolLayout">
+       <layout class="QVBoxLayout" name="lastTradeQtyLayout">
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="lastTradeQtyLabel">
           <property name="text">
-           <string>Symbol</string>
+           <string>Trade Size</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="symbol"/>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+         <widget class="QLineEdit" name="lastTradeQty">
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
+          <property name="readOnly">
+           <bool>true</bool>
           </property>
-         </spacer>
+         </widget>
         </item>
        </layout>
       </item>
       <item>
-       <widget class="QTableView" name="firstUpdateHistory">
+       <layout class="QVBoxLayout" name="bestBidPriceLayout">
+        <item>
+         <widget class="QLabel" name="bestBidPriceLabel">
+          <property name="text">
+           <string>Bid</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="bestBidPrice">
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="bestAskLayout">
+        <item>
+         <widget class="QLabel" name="bestAskPriceLabel">
+          <property name="text">
+           <string>Ask</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="bestAskPrice">
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="volumeTradedLayout">
+        <item>
+         <widget class="QLabel" name="volumeTradedLabel">
+          <property name="text">
+           <string>Volume</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="volumeTraded">
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <spacer name="level1CommonDataSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="marketDataLayout">
+      <item>
+       <widget class="QTableView" name="currentBidAsk">
         <property name="autoScroll">
          <bool>false</bool>
         </property>
@@ -85,6 +238,52 @@
          <bool>false</bool>
         </attribute>
        </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="tradesLayout">
+        <item>
+         <layout class="QVBoxLayout" name="nasdaqTradesLayout">
+          <item>
+           <widget class="QLabel" name="nasdaqTradesLabel">
+            <property name="text">
+             <string>NASDAQ</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTableView" name="nasdaqTrades">
+            <property name="autoScroll">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="bxTradesLayout">
+          <item>
+           <widget class="QLabel" name="bxTradesLabel">
+            <property name="text">
+             <string>BX</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTableView" name="bxTrades">
+            <property name="autoScroll">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>

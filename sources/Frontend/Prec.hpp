@@ -12,8 +12,6 @@
 #include "Gateway/Interface/soapTraderServiceProxy.h"
 #include "Gateway/Interface/TraderService.nsmap"
 
-#include "Common/Exception.hpp"
-
 #pragma warning(push, 3)
 #include <QMainWindow>
 #include <QMessageBox>
@@ -40,6 +38,8 @@
 
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/noncopyable.hpp>
+#	include <boost/date_time.hpp>
+#	include <boost/thread/thread_time.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include <stdint.h>

@@ -7,7 +7,6 @@
  **************************************************************************/
 
 #include "Exception.hpp"
-#include "Assert.hpp"
 #include <stdlib.h>
 #include <string.h>
 

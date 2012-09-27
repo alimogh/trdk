@@ -42,7 +42,7 @@ public:
 	public:
 		explicit DllLoadException(
 					const boost::filesystem::path &dllFile,
-					const ::Error &error)
+					const Trader::Lib::Error &error)
 				: Error(
 					(boost::format("Failed to load DLL file %1% (%2%)")
 							% dllFile
@@ -68,7 +68,7 @@ public:
 		explicit DllFuncException(
 					const boost::filesystem::path &dllFile,
 					const char *const funcName,
-					const ::Error &error)
+					const Trader::Lib::Error &error)
 				: Error(
 					(boost::format("Failed to find function \"%2%\" in DLL %1% (%3%).")
 							% dllFile
@@ -124,7 +124,7 @@ public:
 #			endif
 			m_handle = LoadLibraryW(m_file.c_str());
 			if (m_handle == NULL) {
-				throw DllLoadException(m_file, ::Error(::GetLastError()));
+				throw DllLoadException(m_file, Trader::Lib::Error(::GetLastError()));
 			}
 #		else
 			if (autoName) {
@@ -185,7 +185,10 @@ public:
 #		ifdef BOOST_WINDOWS
 			FARPROC procAddr = GetProcAddress(m_handle, funcName);
 			if (procAddr == NULL) {
-				throw DllFuncException(m_file, funcName, ::Error(::GetLastError()));
+				throw DllFuncException(
+					m_file,
+					funcName,
+					Trader::Lib::Error(::GetLastError()));
 			}
 #		else
 			void *procAddr = dlsym(m_handle, funcName);

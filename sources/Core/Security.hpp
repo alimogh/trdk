@@ -37,12 +37,16 @@ namespace Trader {
 				boost::signals2::connection>
 			UpdateSlotConnection;
 
-		typedef void (FirstUpdateSlotSignature)(ScaledPrice, Qty, bool isBuy);
-		typedef boost::function<FirstUpdateSlotSignature> FirstUpdateSlot;
+		typedef void (NewTradeSlotSignature)(
+					const boost::posix_time::ptime &,
+					ScaledPrice,
+					Qty,
+					bool isBuy);
+		typedef boost::function<NewTradeSlotSignature> NewTradeSlot;
 		typedef SignalConnection<
-				FirstUpdateSlot,
+				NewTradeSlot,
 				boost::signals2::connection>
-			FirstUpdateSlotConnection;
+			NewTradeSlotConnection;
 
 	public:
 
@@ -118,24 +122,17 @@ namespace Trader {
 
 		ScaledPrice GetLastPriceScaled() const;
 		double GetLastPrice() const;
-		Qty GetLastSize() const;
+		Qty GetLastQty() const;
 
 		ScaledPrice GetAskPriceScaled() const;
 		double GetAskPrice() const;
-		Qty GetAskSize() const;
+		Qty GetAskQty() const;
 
 		ScaledPrice GetBidPriceScaled() const;
 		double GetBidPrice() const;
-		Qty GetBidSize() const;
+		Qty GetBidQty() const;
 
-		// Custom ////////////////////////////////////////////////////////////////
-		ScaledPrice GetFirstUpdateBuyPriceScaled() const;
-		double GetFirstUpdateBuyPrice() const;
-		Qty GetFirstUpdateBuySize() const;
-		ScaledPrice GetFirstUpdateSellPriceScaled() const;
-		double GetFirstUpdateSellPrice() const;
-		Qty GetFirstUpdateSellSize() const;
-		//////////////////////////////////////////////////////////////////////////
+		Qty GetTradedVolume() const;
 
 	public:
 
@@ -149,7 +146,7 @@ namespace Trader {
 	public:
 
 		UpdateSlotConnection Subcribe(const UpdateSlot &) const;
-		FirstUpdateSlotConnection Subcribe(const FirstUpdateSlot &) const;
+		NewTradeSlotConnection Subcribe(const NewTradeSlot &) const;
 
 	protected:
 
@@ -183,9 +180,12 @@ namespace Trader {
 		  */
 		bool SetBid(ScaledPrice, Qty);
 
-		void SetFirstUpdate(bool isBuy, ScaledPrice, Qty);
-
 		void SignalUpdate();
+		void SignaleNewTrade(
+				const boost::posix_time::ptime &,
+				bool isBuy,
+				ScaledPrice,
+				Qty);
 
 	private:
 

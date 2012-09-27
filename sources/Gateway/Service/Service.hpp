@@ -14,6 +14,10 @@ namespace Trader { namespace Gateway {
 
 	class Service : public Trader::Observer {
 
+	public:
+
+		typedef Observer Base;
+
 	private:
 
 		typedef boost::mutex ConnectionRemoveMutex;
@@ -22,14 +26,27 @@ namespace Trader { namespace Gateway {
 
 		typedef std::map<
 				std::string,
-				std::list<boost::shared_ptr<trader__FirstUpdate>>>
-			FirstUpdateCache;
-		typedef boost::mutex FirstUpdateCacheMutex;
-		typedef FirstUpdateCacheMutex::scoped_lock FirstUpdateCacheLock;
+				std::list<boost::shared_ptr<trader__Trade>>>
+			TradesCache;
+		typedef boost::mutex TradesCacheMutex;
+		typedef TradesCacheMutex::scoped_lock TradesCacheLock;
 
-	public:
+		class Error : public Exception {
+		public:
+			explicit Error(const char *what)
+					: Exception(what) {
+				//...//
+			}
+		};
 
-		typedef Observer Base;
+		class UnknownSecurityError : public Error {
+		public:
+			explicit UnknownSecurityError(const char *what)
+					: Error(what) {
+				//...//
+			}
+		};
+
 
 	public:
 
@@ -46,6 +63,7 @@ namespace Trader { namespace Gateway {
 
 		virtual void OnUpdate(
 				const Trader::Security &,
+				const boost::posix_time::ptime &,
 				Trader::Security::ScaledPrice,
 				Trader::Security::Qty,
 				bool isBuy);
@@ -53,9 +71,21 @@ namespace Trader { namespace Gateway {
 	public:
 
 		void GetSecurityList(std::list<trader__Security> &result);
-		void GetFirstUpdate(
+		void GetLastTrades(
 					const std::string &symbol,
-					std::list<trader__FirstUpdate> &result);
+					const std::string &exchange,
+					trader__TradeList &result);
+		void GetParams(
+					const std::string &symbol,
+					const std::string &exchange,
+					trader__ExchangeParams &result);
+		void GetCommonParams(
+					const std::string &symbol,
+					trader__CommonParams &result);\
+
+	protected:
+
+		const Trader::Security & FindSecurity(const std::string &symbol) const;
 
 	private:
 
@@ -66,6 +96,7 @@ namespace Trader { namespace Gateway {
 		void StartSoapDispatcherThread();
 		void SoapDispatcherThread();
 		void SoapServeThread(soap *);
+
 
 	private:
 
@@ -80,8 +111,8 @@ namespace Trader { namespace Gateway {
 		Connections m_connections;
 		ConnectionRemoveMutex m_connectionRemoveMutex;
 
-		FirstUpdateCache m_firstUpdateCache;
-		FirstUpdateCacheMutex m_firstUpdateCacheMutex;
+		TradesCache m_tradesCache;
+		TradesCacheMutex m_tradesCacheMutex;
 
 
 	};

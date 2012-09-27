@@ -35,6 +35,7 @@ namespace Trader {
 
 		virtual void OnUpdate(
 					const Trader::Security &,
+					const boost::posix_time::ptime &,
 					Trader::Security::ScaledPrice price,
 					Trader::Security::Qty qty,
 					bool isBuy)

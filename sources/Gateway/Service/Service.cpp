@@ -156,7 +156,7 @@ void Service::StartSoapDispatcherThread() {
 		sockaddr_in hostInfo;
 		socklen_t hostInfoSize = sizeof(hostInfo);
 		if (getsockname(masterSocket, reinterpret_cast<sockaddr *>(&hostInfo), &hostInfoSize)) {
-			const Error error(GetLastError());
+			const Trader::Lib::Error error(GetLastError());
 			Log::Error(
 				TRADER_GATEWAY_LOG_PREFFIX "failed to get to get local network port info: %1%.",
 				error);
@@ -175,20 +175,38 @@ void Service::SoapDispatcherThread() {
 	}
 }
 
+namespace {
+
+	time_t ConvertPosixTimeToTimeT(
+				const boost::posix_time::ptime &posixTime) {
+		namespace pt = boost::posix_time;
+		Assert(!posixTime.is_special());
+		static const pt::ptime timeTEpoch(boost::gregorian::date(1970, 1, 1));
+		Assert(!(posixTime < timeTEpoch));
+		if (posixTime < timeTEpoch) {
+			return 0;
+		}
+		const pt::time_duration durationFromTEpoch(posixTime - timeTEpoch);
+		return static_cast<time_t>(durationFromTEpoch.total_seconds());
+	}
+
+}
+
 void Service::OnUpdate(
 			const Trader::Security &security,
+			const boost::posix_time::ptime &time,
 			Trader::Security::ScaledPrice price,
 			Trader::Security::Qty qty,
 			bool isBuy) {
-	boost::shared_ptr<trader__FirstUpdate> update(new trader__FirstUpdate);
-	update->price = price;
-	update->qty = qty;
+	boost::shared_ptr<trader__Trade> update(new trader__Trade);
+	const auto date = time - time.time_of_day();
+	update->time.date = ConvertPosixTimeToTimeT(date);
+	update->time.time = (time - date).total_milliseconds();
+	update->param.price = price;
+	update->param.qty = qty;
 	update->isBuy = isBuy;
-	const FirstUpdateCacheLock lock(m_firstUpdateCacheMutex);
-	auto &cache = m_firstUpdateCache[security.GetSymbol()];
-	while (cache.size() >= 500) {
-		cache.pop_front();
-	}
+	const TradesCacheLock lock(m_tradesCacheMutex);
+	auto &cache = m_tradesCache[security.GetSymbol()];
 	cache.push_back(update);
 }
 
@@ -208,15 +226,16 @@ void Service::GetSecurityList(std::list<trader__Security> &result) {
 	resultTmp.swap(result);
 }
 
-void Service::GetFirstUpdate(
-			const std::string &symbol,
-			std::list<trader__FirstUpdate> &result) {
-	std::list<trader__FirstUpdate> resultTmp;
-	std::list<boost::shared_ptr<trader__FirstUpdate>> cache;
-	{
-		const FirstUpdateCacheLock lock(m_firstUpdateCacheMutex);
-		const FirstUpdateCache::iterator it = m_firstUpdateCache.find(symbol);
-		if (it != m_firstUpdateCache.end()) {
+void Service::GetLastTrades(
+					const std::string &symbol,
+					const std::string &exchange,
+					trader__TradeList &result) {
+	std::list<trader__Trade> resultTmp;
+	std::list<boost::shared_ptr<trader__Trade>> cache;
+	if (boost::iequals(exchange, "nasdaq")) {
+		const TradesCacheLock lock(m_tradesCacheMutex);
+		const auto it = m_tradesCache.find(symbol);
+		if (it != m_tradesCache.end()) {
 			it->second.swap(cache);
 		}
 	}
@@ -224,4 +243,51 @@ void Service::GetFirstUpdate(
 		resultTmp.push_back(*update);
 	}
 	resultTmp.swap(result);
+}
+
+const Trader::Security & Service::FindSecurity(const std::string &symbol) const {
+	foreach (const auto &security, GetNotifyList()) {
+		if (boost::iequals(security->GetSymbol(), symbol)) {
+			return *security;
+		}
+	}
+	boost::format error("Failed to find security \"%1%\" in notify list");
+	error % symbol;
+	throw UnknownSecurityError(error.str().c_str());
+}
+
+void Service::GetParams(
+			const std::string &symbol,
+			const std::string &exchange,
+			trader__ExchangeParams &result) {
+	if (!boost::iequals(exchange, "nasdaq")) {
+		result = trader__ExchangeParams();
+		return;
+	}
+	try {
+		const Security &security = FindSecurity(symbol);
+		result.ask.price = security.GetAskPriceScaled();
+		result.ask.qty = security.GetAskQty();
+		result.bid.price = security.GetBidPriceScaled();
+		result.bid.qty = security.GetBidQty();
+	} catch (const UnknownSecurityError &) {
+		return;
+	}
+}
+
+void Service::GetCommonParams(
+			const std::string &symbol,
+			trader__CommonParams &result) {
+	try {
+		const Security &security = FindSecurity(symbol);
+		result.last.price = security.GetLastPriceScaled();
+		result.last.qty = security.GetLastQty();
+		result.best.ask.price = security.GetAskPriceScaled();
+		result.best.ask.qty = security.GetAskQty();
+		result.best.bid.price = security.GetBidPriceScaled();
+		result.best.bid.qty = security.GetBidQty();
+		result.volumeTraded = security.GetTradedVolume();
+	} catch (const UnknownSecurityError &) {
+		return;
+	}
 }

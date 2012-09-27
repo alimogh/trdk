@@ -12,7 +12,7 @@ class ServiceAdapter : private boost::noncopyable {
 
 public:
 
-	class Error : public Exception {
+	class Error : public std::exception {
 	public:
 		explicit Error(const char *what);
 	};
@@ -33,7 +33,11 @@ public:
 	};
 	typedef std::map<uint64_t, Security> SecurityList;
 
-	typedef std::list<trader__FirstUpdate> FirstUpdateData;
+	typedef std::list<trader__Trade> Trades;
+
+	typedef trader__ExchangeParams ExchangeParams;
+
+	typedef trader__CommonParams CommonParams;
 
 public:
 	
@@ -44,13 +48,23 @@ public:
 
 	const QString & GetEndpoint() const;
 
+	void SetCurrentSymbol(const QString &);
+
+public:
+
+	QString DescaleAndConvert(const xsd__positiveInteger) const;
+
 public:
 
 	void GetSecurityList(SecurityList &result) const;
-	void GetFirstUpdateData(
-			const QString &symbol,
-			FirstUpdateData &result)
-		const;
+	
+	void GetLastNasdaqTrades(Trades &result) const;
+	void GetLastBxTrades(Trades &result) const;
+
+	void GetNasdaqParams(ExchangeParams &result) const;
+	void GetBxParams(ExchangeParams &result) const;
+
+	void GetCommonParams(CommonParams &result) const;
 
 private:
 

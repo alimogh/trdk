@@ -122,10 +122,11 @@ public:
 
 	void NotifyUpdate(
 				const Security &security,
+				const boost::posix_time::ptime &time,
 				Trader::Security::ScaledPrice price,
 				Trader::Security::Qty qty,
 				bool isBuy) {
-		m_observer->OnUpdate(security, price, qty, isBuy);
+		m_observer->OnUpdate(security, time, price, qty, isBuy);
 	}
 
 private:
@@ -155,6 +156,7 @@ private:
 	struct ObservationEvent {
 		boost::shared_ptr<ObserverState> state;
 		boost::shared_ptr<const Security> security;
+		boost::posix_time::ptime time;
 		Security::ScaledPrice price;
 		Security::Qty qty;
 		bool isBuy;
@@ -291,6 +293,7 @@ public:
 	void Signal(
 				boost::shared_ptr<ObserverState> observerState,
 				const boost::shared_ptr<const Security> &security,
+				const boost::posix_time::ptime &time,
 				Security::ScaledPrice price,
 				Security::Qty qty,
 				bool isBuy) {
@@ -298,6 +301,7 @@ public:
 		ObservationEvent observationEvent = {};
 		observationEvent.state = observerState;
 		observationEvent.security = security;
+		observationEvent.time = time;
 		observationEvent.price = price;
 		observationEvent.qty = qty;
 		observationEvent.isBuy = isBuy;
@@ -557,6 +561,7 @@ bool Dispatcher::Notifier::ObserverIteration() {
 	foreach (auto &observationEvent, *notifyList) {
 		observationEvent.state->NotifyUpdate(
 			*observationEvent.security,
+			observationEvent.time,
 			observationEvent.price,
 			observationEvent.qty,
 			observationEvent.isBuy);
@@ -590,7 +595,7 @@ public:
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
 
-	typedef SignalConnectionList<Security::FirstUpdateSlotConnection> DataUpdateConnections;
+	typedef SignalConnectionList<Security::NewTradeSlotConnection> DataUpdateConnections;
 
 	Mutex m_dataUpdateMutex;
 	DataUpdateConnections m_dataUpdateConnections;
@@ -650,7 +655,7 @@ void Dispatcher::Register(boost::shared_ptr<Observer> observer) {
 		[this, &state] (boost::shared_ptr<const Security> security) {
 			m_fuSlots->m_dataUpdateConnections.InsertSafe(
 				security->Subcribe(
-					Security::FirstUpdateSlot(
+					Security::NewTradeSlot(
 						boost::bind(
 							&Dispatcher::Notifier::Signal,
 							m_notifier.get(),
@@ -658,7 +663,8 @@ void Dispatcher::Register(boost::shared_ptr<Observer> observer) {
 							security,
 							_1,
 							_2,
-							_3))));
+							_3,
+							_4))));
 		});
 	Log::Info(
 		"Registered OBSERVER \"%1%\" (tag: \"%2%\").",
