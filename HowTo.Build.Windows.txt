@@ -24,6 +24,8 @@ Host To Build on MS Windows
      http://www.python.org/download/
 1.4. gSOAP 2.8.
      Free sources and binaries: http://www.cs.fsu.edu/~engelen/soap.html
+1.5. Qt
+     Free sources and binaries: http://qt-project.org/downloads
 
 2. Setup:
 2.1. Create or change envelopment variable BOOST_DIR_X86 - set path to
@@ -32,6 +34,7 @@ Host To Build on MS Windows
      "c:\Program Files (x86)\Boost\boost_1_47\", BOOST_DIR_X86 should has
      value "c:\Program Files (x86)\Boost\".
 2.2. Unpack gSOAP, as is, into "externals".
+2.3. Install Qt.
 
 3. Build:
 3.1. Open project file source "Trader.sln with" Visual Studio and build it.
