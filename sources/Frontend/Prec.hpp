@@ -40,6 +40,7 @@
 #	include <boost/noncopyable.hpp>
 #	include <boost/date_time.hpp>
 #	include <boost/thread/thread_time.hpp>
+#	include <boost/format.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include <stdint.h>
