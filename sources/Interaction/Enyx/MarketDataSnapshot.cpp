@@ -76,7 +76,6 @@ namespace {
 
 void MarketDataSnapshot::ExecOrder(
 			bool isBuy,
-			OrderId /*orderId*/,
 			const boost::posix_time::ptime &time,
 			Qty prevQty,
 			Qty newQty,
@@ -118,7 +117,6 @@ void MarketDataSnapshot::ExecOrder(
 
 void MarketDataSnapshot::ChangeOrder(
 			bool isBuy,
-			OrderId /*orderId*/,
 			const boost::posix_time::ptime &time,
 			Qty prevQty,
 			Qty newQty,
@@ -164,9 +162,36 @@ namespace {
 
 }
 
+void MarketDataSnapshot::ChangeOrder(
+			bool isBuy,
+			const boost::posix_time::ptime &time,
+			Qty prevQty,
+			Qty newQty,
+			double prevPrice,
+			double newPrice) {
+
+	if (Util::IsEqual(prevPrice, newPrice)) {
+		ChangeOrder(isBuy, time, prevQty, newQty, newPrice);
+		return;
+	}
+
+	const auto scaledPrevPrice = m_security->ScalePrice(prevPrice);
+	const auto scaledNewPrice = m_security->ScalePrice(newPrice);
+
+	if (isBuy) {
+		::DelOrder(prevQty, scaledPrevPrice, m_bid);
+		m_bid[scaledNewPrice] += newQty;
+		UpdateBid(time);
+	} else {
+		::DelOrder(prevQty, scaledPrevPrice, m_ask);
+		m_ask[scaledNewPrice] += newQty;
+		UpdateAsk(time);
+	}
+
+}
+
 void MarketDataSnapshot::DelOrder(
 			bool isBuy,
-			OrderId /*orderId*/,
 			const boost::posix_time::ptime &time,
 			Qty qty,
 			double price) {

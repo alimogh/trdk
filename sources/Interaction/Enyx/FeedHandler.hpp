@@ -89,6 +89,9 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 			Security::Qty GetQty() const {
 				return m_qty;
 			}
+			void SetQty(Security::Qty qty) {
+				m_qty = qty;
+			}
 			Security::Qty ReduceQty(Security::Qty qty) {
 				AssertGe(m_qty, qty);
 				m_qty -= qty;
@@ -96,6 +99,9 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 			}
 			double GetPrice() const {
 				return m_price;
+			}
+			void SetPrice(double price) {
+				m_price = price;
 			}
 			MarketDataSnapshot & GetMarketDataSnapshot() const {
 				return *m_marketDataSnapshot;

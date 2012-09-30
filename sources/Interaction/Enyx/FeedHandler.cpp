@@ -117,7 +117,6 @@ void FeedHandler::HandleMessage(const NXFeedOrderExecute &enyxOrder) {
 		m_orders.erase(orderPos);
 		order.GetMarketDataSnapshot().ExecOrder(
 			order.IsBuy(),
-			id,
 			GetMessageTime(enyxOrder),
 			prevQty,
 			order.GetQty(),
@@ -126,7 +125,6 @@ void FeedHandler::HandleMessage(const NXFeedOrderExecute &enyxOrder) {
 		const Order &order = orderPos->second;
 		order.GetMarketDataSnapshot().ExecOrder(
 			order.IsBuy(),
-			id,
 			GetMessageTime(enyxOrder),
 			prevQty,
 			order.GetQty(),
@@ -145,7 +143,6 @@ void FeedHandler::HandleMessage(
 		m_orders.erase(orderPos);
 		order.GetMarketDataSnapshot().ExecOrder(
 			order.IsBuy(),
-			id,
 			GetMessageTime(enyxOrder),
 			prevQty,
 			order.GetQty(),
@@ -154,7 +151,6 @@ void FeedHandler::HandleMessage(
 		const Order &order = orderPos->second;
 		order.GetMarketDataSnapshot().ExecOrder(
 			order.IsBuy(),
-			id,
 			GetMessageTime(enyxOrder),
 			prevQty,
 			order.GetQty(),
@@ -172,7 +168,6 @@ void FeedHandler::HandleMessage(const NXFeedOrderReduce &enyxOrder) {
 		m_orders.erase(orderPos);
 		order.GetMarketDataSnapshot().ChangeOrder(
 			order.IsBuy(),
-			id,
 			GetMessageTime(enyxOrder),
 			prevQty,
 			order.GetQty(),
@@ -181,7 +176,6 @@ void FeedHandler::HandleMessage(const NXFeedOrderReduce &enyxOrder) {
 		const Order &order = orderPos->second;
 		order.GetMarketDataSnapshot().ChangeOrder(
 			order.IsBuy(),
-			id,
 			GetMessageTime(enyxOrder),
 			prevQty,
 			order.GetQty(),
@@ -192,10 +186,20 @@ void FeedHandler::HandleMessage(const NXFeedOrderReduce &enyxOrder) {
 void FeedHandler::HandleMessage(const NXFeedOrderReplace &enyxOrder) {
 	Assert(enyxOrder.getNewOrderId() != enyxOrder.getOrderId());
 	const auto orderPos = FindOrderPos(enyxOrder.getOrderId());
-	const Order order = orderPos->second;
+	const Order oldOrder = orderPos->second;
+	Order newOrder = oldOrder;
+	newOrder.SetQty(enyxOrder.getNewQuantity());
+	newOrder.SetPrice(enyxOrder.getNewPrice());
 	m_orders.erase(orderPos);
 	Assert(m_orders.find(enyxOrder.getNewOrderId()) == m_orders.end());
-	m_orders[enyxOrder.getNewOrderId()] = order;
+	m_orders[enyxOrder.getNewOrderId()] = newOrder;
+	newOrder.GetMarketDataSnapshot().ChangeOrder(
+		newOrder.IsBuy(),
+		GetMessageTime(enyxOrder),
+		oldOrder.GetQty(),
+		newOrder.GetQty(),
+		oldOrder.GetPrice(),
+		newOrder.GetPrice());
 }
 
 void FeedHandler::HandleMessage(const NXFeedOrderDelete &enyxOrder) {
@@ -205,7 +209,6 @@ void FeedHandler::HandleMessage(const NXFeedOrderDelete &enyxOrder) {
 	m_orders.erase(orderIt);
 	order.GetMarketDataSnapshot().DelOrder(
 		order.IsBuy(),
-		id,
 		GetMessageTime(enyxOrder),
 		order.GetQty(),
 		order.GetPrice());
