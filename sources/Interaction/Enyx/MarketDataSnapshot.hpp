@@ -27,7 +27,9 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	public:
 
-		explicit MarketDataSnapshot(const std::string &symbol);
+		explicit MarketDataSnapshot(
+				const std::string &symbol,
+				bool handlFirstLimitUpdate);
 
 	public:
 
@@ -76,6 +78,8 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 		void UpdateAsk(const boost::posix_time::ptime &time);
 
 	private:
+
+		const bool m_handlFirstLimitUpdate;
 
 		std::string m_symbol;
 		mutable boost::shared_ptr<Security> m_security;

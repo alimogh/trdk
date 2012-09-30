@@ -15,6 +15,11 @@ using namespace Trader::Interaction::Enyx;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+FeedHandler::FeedHandler(bool handlFirstLimitUpdate)
+		: m_handlFirstLimitUpdate(handlFirstLimitUpdate) {
+	//...//
+}
+
 FeedHandler::~FeedHandler() {
 #	ifdef DEV_VER
 		foreach (const auto &order, m_orders) {
@@ -255,7 +260,7 @@ void FeedHandler::Subscribe(
 		const auto &pos = index.find(security->GetSymbol());
 		if (pos == index.end()) {
 			boost::shared_ptr<MarketDataSnapshot> newSnapshot(
-				new MarketDataSnapshot(security->GetSymbol()));
+				new MarketDataSnapshot(security->GetSymbol(), m_handlFirstLimitUpdate));
 			newSnapshot->Subscribe(security);
 			m_marketDataSnapshots.insert(MarketDataSnapshotHolder(newSnapshot));
 		} else {

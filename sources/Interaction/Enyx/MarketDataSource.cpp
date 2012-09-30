@@ -183,13 +183,10 @@ MarketDataSource::MarketDataSource(const IniFile &ini, const std::string &sectio
 	if (!isFeedHandlerOn && !isOrderHandlerOn) {
 		Log::Error(TRADER_ENYX_LOG_PREFFIX "failed to init handler: no handler set.");
 		throw ConnectError();
-	} else if (isFeedHandlerOn && isOrderHandlerOn) {
-		Log::Error(TRADER_ENYX_LOG_PREFFIX "failed to init handler: all handlers set.");
-		throw ConnectError();
 	}
 
 	if (isFeedHandlerOn) {
-		m_feedHandler.reset(new FeedHandler);
+		m_feedHandler.reset(new FeedHandler(!isOrderHandlerOn));
 		m_enyx->addHandler(*m_feedHandler);
 	}
 

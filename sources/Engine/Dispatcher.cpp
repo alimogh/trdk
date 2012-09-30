@@ -588,14 +588,14 @@ public:
 
 };
 
-class Dispatcher::FuSlots : private boost::noncopyable {
+class Dispatcher::ObservationSlots : private boost::noncopyable {
 
 public:
 
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
 
-	typedef SignalConnectionList<Security::NewTradeSlotConnection> DataUpdateConnections;
+	typedef SignalConnectionList<Security::NewOrderSlotConnection> DataUpdateConnections;
 
 	Mutex m_dataUpdateMutex;
 	DataUpdateConnections m_dataUpdateConnections;
@@ -607,7 +607,7 @@ public:
 Dispatcher::Dispatcher(boost::shared_ptr<const Settings> options)
 		: m_notifier(new Notifier(options)),
 		m_slots(new Slots),
-		m_fuSlots(new FuSlots) {
+		m_observationSlots(new ObservationSlots) {
 	//...//
 }
 
@@ -648,14 +648,14 @@ void Dispatcher::Register(boost::shared_ptr<Algo> algo) {
 void Dispatcher::Register(boost::shared_ptr<Observer> observer) {
 	boost::shared_ptr<ObserverState> state(new ObserverState(observer));
 	m_notifier->GetObserversStateList().push_back(state);
-	const Slots::Lock lock(m_fuSlots->m_dataUpdateMutex);
+	const Slots::Lock lock(m_observationSlots->m_dataUpdateMutex);
 	std::for_each(
 		observer->GetNotifyList().begin(),
 		observer->GetNotifyList().end(),
 		[this, &state] (boost::shared_ptr<const Security> security) {
-			m_fuSlots->m_dataUpdateConnections.InsertSafe(
+			m_observationSlots->m_dataUpdateConnections.InsertSafe(
 				security->Subcribe(
-					Security::NewTradeSlot(
+					Security::NewOrderSlot(
 						boost::bind(
 							&Dispatcher::Notifier::Signal,
 							m_notifier.get(),

@@ -56,9 +56,9 @@ public:
 		}
 	}
 
-	void GetLastTrades(const std::string &exchange, Trades &result) const {
+	void GetLastOrders(const std::string &exchange, Orders &result) const {
 		CheckSoapResult(
-			m_service.trader__GetLastTrades(m_symbol, exchange, result));
+			m_service.trader__GetLastOrders(m_symbol, exchange, result));
 	}
 
 	void GetParams(const std::string &exchange, ExchangeParams &result) const {
@@ -100,11 +100,11 @@ void ServiceAdapter::GetSecurityList(SecurityList &result) const {
 	resultTmp.swap(result);
 }
 
-void ServiceAdapter::GetLastNasdaqTrades(Trades &result) const {
-	m_pimpl->GetLastTrades("nasdaq", result);
+void ServiceAdapter::GetLastNasdaqTrades(Orders &result) const {
+	m_pimpl->GetLastOrders("nasdaq", result);
 }
-void ServiceAdapter::GetLastBxTrades(Trades &result) const {
-	m_pimpl->GetLastTrades("bx", result);
+void ServiceAdapter::GetLastBxTrades(Orders &result) const {
+	m_pimpl->GetLastOrders("bx", result);
 }
 
 void ServiceAdapter::GetNasdaqParams(ExchangeParams &result) const {

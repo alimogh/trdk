@@ -17,15 +17,15 @@ namespace lt = boost::local_time;
 MainWindow::MainWindow(QWidget *parent)
 		: QMainWindow(parent),
 		ui(new Ui::MainWindow),
-		m_nasdaqTradesModel(nullptr),
-		m_bxTradesModel(nullptr) {
+		m_nasdaqOrdersModel(nullptr),
+		m_bxOrdersModel(nullptr) {
 	
 	ui->setupUi(this);
 
 	CreateCurrentBidAsk();
 
-	CreateTreades(m_nasdaqTradesModel, *ui->nasdaqTrades);
-	CreateTreades(m_bxTradesModel, *ui->bxTrades);
+	CreateOrders(m_nasdaqOrdersModel, *ui->nasdaqOrders);
+	CreateOrders(m_bxOrdersModel, *ui->bxOrders);
 
 	m_updateTimer = new QTimer(this);
 	connect(m_updateTimer, SIGNAL(timeout()), this, SLOT(UpdateData()));
@@ -43,8 +43,8 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::ChangeSymbol(const QString &symbols) {
-	ClearTrades(*m_nasdaqTradesModel);
-	ClearTrades(*m_bxTradesModel);
+	ClearTrades(*m_nasdaqOrdersModel);
+	ClearTrades(*m_bxOrdersModel);
 	if (m_service) {
 		m_service->SetCurrentSymbol(symbols);
 	}
@@ -72,7 +72,7 @@ void MainWindow::CreateCurrentBidAsk() {
 	m_currentBidAskModel->appendRow(new QStandardItem(QString("BX")));
 }
 
-void MainWindow::CreateTreades(QStandardItemModel *&model, QTableView &widget) {
+void MainWindow::CreateOrders(QStandardItemModel *&model, QTableView &widget) {
 	model = new QStandardItemModel(0, 3, this);
 	model->setHorizontalHeaderItem(
 		0,
@@ -157,7 +157,7 @@ namespace {
 }
 
 void MainWindow::UpdateTrades(
-			const ServiceAdapter::Trades &trades,
+			const ServiceAdapter::Orders &trades,
 			QStandardItemModel &model) {
 
 	foreach (const auto &trade, trades) {
@@ -191,7 +191,7 @@ void MainWindow::UpdateTrades(
 				!trade.isBuy ? QColor(255, 204, 204) : QColor(204, 255, 204),
 				Qt::BackgroundRole);
 			if (row < 50) {
-				ui->nasdaqTrades->resizeColumnToContents(i);
+				ui->nasdaqOrders->resizeColumnToContents(i);
 			}
 		}
 
@@ -208,15 +208,15 @@ void MainWindow::UpdateData() {
 	try {
 
 		{
-			ServiceAdapter::Trades nasdaqTrades;
+			ServiceAdapter::Orders nasdaqTrades;
 			m_service->GetLastNasdaqTrades(nasdaqTrades);
-			UpdateTrades(nasdaqTrades, *m_nasdaqTradesModel);
+			UpdateTrades(nasdaqTrades, *m_nasdaqOrdersModel);
 		}
 
 		{
-			ServiceAdapter::Trades bxTrades;
+			ServiceAdapter::Orders bxTrades;
 			m_service->GetLastBxTrades(bxTrades);
-			UpdateTrades(bxTrades, *m_bxTradesModel);
+			UpdateTrades(bxTrades, *m_bxOrdersModel);
 		}
 
 		{

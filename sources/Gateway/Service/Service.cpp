@@ -198,15 +198,15 @@ void Service::OnUpdate(
 			Trader::Security::ScaledPrice price,
 			Trader::Security::Qty qty,
 			bool isBuy) {
-	boost::shared_ptr<trader__Trade> update(new trader__Trade);
+	boost::shared_ptr<trader__Order> update(new trader__Order);
 	const auto date = time - time.time_of_day();
 	update->time.date = ConvertPosixTimeToTimeT(date);
 	update->time.time = (time - date).total_milliseconds();
 	update->param.price = price;
 	update->param.qty = qty;
 	update->isBuy = isBuy;
-	const TradesCacheLock lock(m_tradesCacheMutex);
-	auto &cache = m_tradesCache[security.GetSymbol()];
+	const OrdersCacheLock lock(m_ordersCacheMutex);
+	auto &cache = m_ordersCache[security.GetSymbol()];
 	cache.push_back(update);
 }
 
@@ -226,16 +226,16 @@ void Service::GetSecurityList(std::list<trader__Security> &result) {
 	resultTmp.swap(result);
 }
 
-void Service::GetLastTrades(
+void Service::GetLastOrders(
 					const std::string &symbol,
 					const std::string &exchange,
-					trader__TradeList &result) {
-	std::list<trader__Trade> resultTmp;
-	std::list<boost::shared_ptr<trader__Trade>> cache;
+					trader__OrderList &result) {
+	std::list<trader__Order> resultTmp;
+	std::list<boost::shared_ptr<trader__Order>> cache;
 	if (boost::iequals(exchange, "nasdaq")) {
-		const TradesCacheLock lock(m_tradesCacheMutex);
-		const auto it = m_tradesCache.find(symbol);
-		if (it != m_tradesCache.end()) {
+		const OrdersCacheLock lock(m_ordersCacheMutex);
+		const auto it = m_ordersCache.find(symbol);
+		if (it != m_ordersCache.end()) {
 			it->second.swap(cache);
 		}
 	}

@@ -240,11 +240,11 @@
        </widget>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="tradesLayout">
+       <layout class="QHBoxLayout" name="ordersLayout">
         <item>
-         <layout class="QVBoxLayout" name="nasdaqTradesLayout">
+         <layout class="QVBoxLayout" name="nasdaqOrdersLayout">
           <item>
-           <widget class="QLabel" name="nasdaqTradesLabel">
+           <widget class="QLabel" name="nasdaqOrdersLabel">
             <property name="text">
              <string>NASDAQ</string>
             </property>
@@ -254,7 +254,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QTableView" name="nasdaqTrades">
+           <widget class="QTableView" name="nasdaqOrders">
             <property name="autoScroll">
              <bool>true</bool>
             </property>
@@ -263,9 +263,9 @@
          </layout>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="bxTradesLayout">
+         <layout class="QVBoxLayout" name="bxOrdersLayout">
           <item>
-           <widget class="QLabel" name="bxTradesLabel">
+           <widget class="QLabel" name="bxOrdersLabel">
             <property name="text">
              <string>BX</string>
             </property>
@@ -275,7 +275,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QTableView" name="bxTrades">
+           <widget class="QTableView" name="bxOrders">
             <property name="autoScroll">
              <bool>true</bool>
             </property>

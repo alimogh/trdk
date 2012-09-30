@@ -91,10 +91,10 @@ void Security::SetLast(
 	SignalUpdate();
 }
 
-void Security::SignaleNewTrade(
+void Security::SignalNewOrder(
 			const boost::posix_time::ptime &time,
 			bool isBuy,
 			ScaledPrice price,
 			Qty qty) {
-	Base::SignaleNewTrade(time, isBuy, price, qty);
+	Base::SignalNewOrder(time, isBuy, price, qty);
 }

@@ -142,6 +142,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	public:
 
+		explicit FeedHandler(bool handlFirstLimitUpdate);
 		virtual ~FeedHandler();
 
 	public:
@@ -170,6 +171,8 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 		Order & FindOrder(EnyxOrderId);
 
 	private:
+
+		const bool m_handlFirstLimitUpdate;
 
 		mutable MarketDataSnapshots m_marketDataSnapshots;
 		Orders m_orders;

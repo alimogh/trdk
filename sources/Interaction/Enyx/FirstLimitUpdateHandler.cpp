@@ -48,5 +48,5 @@ void FirstLimitUpdateHandler::HandleUpdate(
 			isBuy);
 		return;
 	}
-	pos->security->SignaleNewTrade(boost::get_system_time(), isBuy, price, qty);
+	pos->security->SignalNewOrder(boost::get_system_time(), isBuy, price, qty);
 }

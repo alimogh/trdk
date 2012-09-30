@@ -17,12 +17,12 @@ int trader__GetSecurityList(soap *soap, std::list<trader__Security >&result) {
 	return SOAP_OK;
 }
 
-int trader__GetLastTrades(
+int trader__GetLastOrders(
 			soap *soap,
 			std::string symbol,
 			std::string exchange,
-			std::list<trader__Trade> &result) {
-	reinterpret_cast<Service *>(soap->user)->GetLastTrades(symbol, exchange, result);
+			trader__OrderList &result) {
+	reinterpret_cast<Service *>(soap->user)->GetLastOrders(symbol, exchange, result);
 	return SOAP_OK;
 }
 

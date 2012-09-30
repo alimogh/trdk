@@ -26,10 +26,10 @@ namespace Trader { namespace Gateway {
 
 		typedef std::map<
 				std::string,
-				std::list<boost::shared_ptr<trader__Trade>>>
-			TradesCache;
-		typedef boost::mutex TradesCacheMutex;
-		typedef TradesCacheMutex::scoped_lock TradesCacheLock;
+				std::list<boost::shared_ptr<trader__Order>>>
+			OrdersCache;
+		typedef boost::mutex OrdersCacheMutex;
+		typedef OrdersCacheMutex::scoped_lock OrdersCacheLock;
 
 		class Error : public Exception {
 		public:
@@ -71,10 +71,10 @@ namespace Trader { namespace Gateway {
 	public:
 
 		void GetSecurityList(std::list<trader__Security> &result);
-		void GetLastTrades(
+		void GetLastOrders(
 					const std::string &symbol,
 					const std::string &exchange,
-					trader__TradeList &result);
+					trader__OrderList &result);
 		void GetParams(
 					const std::string &symbol,
 					const std::string &exchange,
@@ -111,8 +111,8 @@ namespace Trader { namespace Gateway {
 		Connections m_connections;
 		ConnectionRemoveMutex m_connectionRemoveMutex;
 
-		TradesCache m_tradesCache;
-		TradesCacheMutex m_tradesCacheMutex;
+		OrdersCache m_ordersCache;
+		OrdersCacheMutex m_ordersCacheMutex;
 
 
 	};

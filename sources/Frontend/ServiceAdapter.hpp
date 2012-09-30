@@ -33,7 +33,7 @@ public:
 	};
 	typedef std::map<uint64_t, Security> SecurityList;
 
-	typedef std::list<trader__Trade> Trades;
+	typedef std::list<trader__Order> Orders;
 
 	typedef trader__ExchangeParams ExchangeParams;
 
@@ -58,8 +58,8 @@ public:
 
 	void GetSecurityList(SecurityList &result) const;
 	
-	void GetLastNasdaqTrades(Trades &result) const;
-	void GetLastBxTrades(Trades &result) const;
+	void GetLastNasdaqTrades(Orders &result) const;
+	void GetLastBxTrades(Orders &result) const;
 
 	void GetNasdaqParams(ExchangeParams &result) const;
 	void GetBxParams(ExchangeParams &result) const;
