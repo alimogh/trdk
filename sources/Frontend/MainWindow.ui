@@ -7,7 +7,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1006</width>
+    <width>779</width>
     <height>541</height>
    </rect>
   </property>
@@ -231,6 +231,12 @@
      <layout class="QHBoxLayout" name="marketDataLayout">
       <item>
        <widget class="QTableView" name="currentBidAsk">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="autoScroll">
          <bool>false</bool>
         </property>
