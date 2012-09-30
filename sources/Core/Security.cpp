@@ -53,10 +53,14 @@ public:
 	volatile long m_lastSize;
 
 	volatile long long m_askPrice;
+	volatile long long m_askPrice2;
 	volatile long m_askQty;
+	volatile long m_askQty2;
 
 	volatile long long m_bidPrice;
+	volatile long long m_bidPrice2;
 	volatile long m_bidQty;
+	volatile long m_bidQty2;
 
 	volatile long m_tradedVolume;
 
@@ -73,9 +77,13 @@ public:
 			m_lastPrice(0),
 			m_lastSize(0),
 			m_askPrice(0),
+			m_askPrice2(0),
 			m_askQty(0),
+			m_askQty2(0),
 			m_bidPrice(0),
+			m_bidPrice2(0),
 			m_bidQty(0),
+			m_bidQty2(0),
 			m_tradedVolume(0) {
 		if (logMarketData) {
 			m_marketDataLog = new MarketDataLog(instrument.GetFullSymbol());
@@ -260,12 +268,12 @@ bool Security::SetLast(double price, Qty size) {
 	return SetLast(ScalePrice(price), size);
 }
 
-bool Security::SetAsk(double price, Qty size) {
-	return SetAsk(ScalePrice(price), size);
+bool Security::SetAsk(double price, Qty size, size_t pos) {
+	return SetAsk(ScalePrice(price), size, pos);
 }
 
-bool Security::SetBid(double price, Qty size) {
-	return SetBid(ScalePrice(price), size);
+bool Security::SetBid(double price, Qty size, size_t pos) {
+	return SetBid(ScalePrice(price), size, pos);
 }
 
 bool Security::SetLast(ScaledPrice price, Qty size) {
@@ -274,23 +282,19 @@ bool Security::SetLast(ScaledPrice price, Qty size) {
 	return isChanged;
 }
 
-bool Security::SetAsk(ScaledPrice price, Qty size) {
-	Assert((!price && !size) || (price && size));
-	if (!price || !size) {
-		return false;
-	}
-	bool isChanged = Interlocking::Exchange(m_pimpl->m_askPrice, price) != price;
-	isChanged = Interlocking::Exchange(m_pimpl->m_askQty, size) != size || isChanged;
+bool Security::SetAsk(ScaledPrice price, Qty qty, size_t pos) {
+	volatile long long &pricePlace = pos == 1 ? m_pimpl->m_askPrice : m_pimpl->m_askPrice2;
+	volatile long &qtyPlace = pos == 1 ? m_pimpl->m_askQty : m_pimpl->m_askQty2;
+	bool isChanged = Interlocking::Exchange(pricePlace, price) != price;
+	isChanged = Interlocking::Exchange(qtyPlace, qty) != qty || isChanged;
 	return isChanged;
 }
 
-bool Security::SetBid(ScaledPrice price, Qty size) {
-	Assert((!price && !size) || (price && size));
-	if (!price || !size) {
-		return false;
-	}
-	bool isChanged = Interlocking::Exchange(m_pimpl->m_bidPrice, price) != price;
-	isChanged = Interlocking::Exchange(m_pimpl->m_bidQty, size) != size || isChanged;
+bool Security::SetBid(ScaledPrice price, Qty qty, size_t pos) {
+	volatile long long &pricePlace = pos == 1 ? m_pimpl->m_bidPrice : m_pimpl->m_bidPrice2;
+	volatile long &qtyPlace = pos == 1 ? m_pimpl->m_bidQty : m_pimpl->m_bidQty2;
+	bool isChanged = Interlocking::Exchange(pricePlace, price) != price;
+	isChanged = Interlocking::Exchange(qtyPlace, qty) != qty || isChanged;
 	return isChanged;
 }
 
@@ -306,28 +310,28 @@ Security::Qty Security::GetTradedVolume() const {
 	return m_pimpl->m_tradedVolume;
 }
 
-Security::ScaledPrice Security::GetAskPriceScaled() const {
-	return m_pimpl->m_askPrice;
+Security::ScaledPrice Security::GetAskPriceScaled(size_t pos) const {
+	return pos == 1 ? m_pimpl->m_askPrice : m_pimpl->m_askPrice2;
 }
 
-double Security::GetAskPrice() const {
-	return DescalePrice(GetAskPriceScaled());
+double Security::GetAskPrice(size_t pos) const {
+	return DescalePrice(GetAskPriceScaled(pos));
 }
 
-Security::Qty Security::GetAskQty() const {
-	return m_pimpl->m_askQty;
+Security::Qty Security::GetAskQty(size_t pos) const {
+	return pos == 1 ? m_pimpl->m_askQty : m_pimpl->m_askQty2;
 }
 
-Security::ScaledPrice Security::GetBidPriceScaled() const {
-	return m_pimpl->m_bidPrice;
+Security::ScaledPrice Security::GetBidPriceScaled(size_t pos) const {
+	return pos == 1 ? m_pimpl->m_bidPrice : m_pimpl->m_bidPrice2;
 }
 
-double Security::GetBidPrice() const {
-	return DescalePrice(GetBidPriceScaled());
+double Security::GetBidPrice(size_t pos) const {
+	return DescalePrice(GetBidPriceScaled(pos));
 }
 
-Security::Qty Security::GetBidQty() const {
-	return m_pimpl->m_bidQty;
+Security::Qty Security::GetBidQty(size_t pos) const {
+	return pos == 1 ? m_pimpl->m_bidQty : m_pimpl->m_bidQty2;
 }
 
 bool Security::IsHistoryData() const {

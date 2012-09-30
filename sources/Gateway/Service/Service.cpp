@@ -259,17 +259,21 @@ const Trader::Security & Service::FindSecurity(const std::string &symbol) const 
 void Service::GetParams(
 			const std::string &symbol,
 			const std::string &exchange,
-			trader__ExchangeParams &result) {
+			trader__ExchangeBook &result) {
 	if (!boost::iequals(exchange, "nasdaq")) {
-		result = trader__ExchangeParams();
+		result = trader__ExchangeBook();
 		return;
 	}
 	try {
 		const Security &security = FindSecurity(symbol);
-		result.ask.price = security.GetAskPriceScaled();
-		result.ask.qty = security.GetAskQty();
-		result.bid.price = security.GetBidPriceScaled();
-		result.bid.qty = security.GetBidQty();
+		result.params1.ask.price = security.GetAskPriceScaled(1);
+		result.params1.ask.qty = security.GetAskQty(1);
+		result.params1.bid.price = security.GetBidPriceScaled(1);
+		result.params1.bid.qty = security.GetBidQty(1);
+		result.params2.ask.price = security.GetAskPriceScaled(2);
+		result.params2.ask.qty = security.GetAskQty(2);
+		result.params2.bid.price = security.GetBidPriceScaled(2);
+		result.params2.bid.qty = security.GetBidQty(2);
 	} catch (const UnknownSecurityError &) {
 		return;
 	}
@@ -282,10 +286,10 @@ void Service::GetCommonParams(
 		const Security &security = FindSecurity(symbol);
 		result.last.price = security.GetLastPriceScaled();
 		result.last.qty = security.GetLastQty();
-		result.best.ask.price = security.GetAskPriceScaled();
-		result.best.ask.qty = security.GetAskQty();
-		result.best.bid.price = security.GetBidPriceScaled();
-		result.best.bid.qty = security.GetBidQty();
+		result.best.ask.price = security.GetAskPriceScaled(1);
+		result.best.ask.qty = security.GetAskQty(1);
+		result.best.bid.price = security.GetBidPriceScaled(1);
+		result.best.bid.qty = security.GetBidQty(1);
 		result.volumeTraded = security.GetTradedVolume();
 	} catch (const UnknownSecurityError &) {
 		return;

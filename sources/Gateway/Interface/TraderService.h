@@ -66,11 +66,16 @@ int trader__GetLastTrades(
 
 //////////////////////////////////////////////////////////////////////////
 
+class trader__ExchangeBook {
+	trader__ExchangeParams params1;
+	trader__ExchangeParams params2;
+};
+
 //gsoap trader service method-action: GetParams "urn:#getParams"
 int trader__GetParams(
 		xsd__string symbol,
 		xsd__string exchange,
-		trader__ExchangeParams &getParamsResult);
+		trader__ExchangeBook &getParamsResult);
 
 
 //////////////////////////////////////////////////////////////////////////

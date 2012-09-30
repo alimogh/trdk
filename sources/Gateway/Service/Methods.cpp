@@ -30,7 +30,7 @@ int trader__GetParams(
 			soap *soap,
 			std::string symbol,
 			std::string exchange,
-			trader__ExchangeParams &result) {
+			trader__ExchangeBook &result) {
 	reinterpret_cast<Service *>(soap->user)->GetParams(symbol, exchange, result);
 	return SOAP_OK;
 }

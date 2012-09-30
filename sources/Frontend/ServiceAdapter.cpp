@@ -61,7 +61,7 @@ public:
 			m_service.trader__GetLastTrades(m_symbol, exchange, result));
 	}
 
-	void GetParams(const std::string &exchange, ExchangeParams &result) const {
+	void GetParams(const std::string &exchange, ExchangeBook &result) const {
 		CheckSoapResult(
 			m_service.trader__GetParams(m_symbol, exchange, result));
 	}
@@ -107,11 +107,11 @@ void ServiceAdapter::GetLastBxTrades(Trades &result) const {
 	m_pimpl->GetLastTrades("bx", result);
 }
 
-void ServiceAdapter::GetNasdaqParams(ExchangeParams &result) const {
+void ServiceAdapter::GetNasdaqBook(ExchangeBook &result) const {
 	m_pimpl->GetParams("nasdaq", result);
 }
 
-void ServiceAdapter::GetBxParams(ExchangeParams &result) const {
+void ServiceAdapter::GetBxBook(ExchangeBook &result) const {
 	m_pimpl->GetParams("bx", result);
 }
 

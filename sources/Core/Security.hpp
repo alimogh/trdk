@@ -124,13 +124,13 @@ namespace Trader {
 		double GetLastPrice() const;
 		Qty GetLastQty() const;
 
-		ScaledPrice GetAskPriceScaled() const;
-		double GetAskPrice() const;
-		Qty GetAskQty() const;
+		ScaledPrice GetAskPriceScaled(size_t pos) const;
+		double GetAskPrice(size_t pos) const;
+		Qty GetAskQty(size_t pos) const;
 
-		ScaledPrice GetBidPriceScaled() const;
-		double GetBidPrice() const;
-		Qty GetBidQty() const;
+		ScaledPrice GetBidPriceScaled(size_t pos) const;
+		double GetBidPrice(size_t pos) const;
+		Qty GetBidQty(size_t pos) const;
 
 		Qty GetTradedVolume() const;
 
@@ -165,20 +165,20 @@ namespace Trader {
 		//! Set current unscaled ask price and ask size.
 		/**	@return true if values ​​differ from the current, false otherwise
 		  */
-		bool SetAsk(double price, Qty size);
+		bool SetAsk(double price, Qty size, size_t pos);
 		//! Set current scaled ask price and ask size.
 		/**	@return true if values ​​differ from the current, false otherwise
 		  */
-		bool SetAsk(ScaledPrice, Qty);
+		bool SetAsk(ScaledPrice, Qty, size_t pos);
 
 		//! Set current unscaled bid price and bid size.
 		/**	@return true if values ​​differ from the current, false otherwise
 		  */
-		bool SetBid(double price, Qty size);
+		bool SetBid(double price, Qty size, size_t pos);
 		//! Set current scaled bid price and bid size.
 		/**	@return true if values ​​differ from the current, false otherwise
 		  */
-		bool SetBid(ScaledPrice, Qty);
+		bool SetBid(ScaledPrice, Qty, size_t pos);
 
 		void SignalUpdate();
 		void SignalNewTrade(

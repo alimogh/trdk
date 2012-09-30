@@ -35,7 +35,7 @@ public:
 
 	typedef std::list<trader__Trade> Trades;
 
-	typedef trader__ExchangeParams ExchangeParams;
+	typedef trader__ExchangeBook ExchangeBook;
 
 	typedef trader__CommonParams CommonParams;
 
@@ -61,8 +61,8 @@ public:
 	void GetLastNasdaqTrades(Trades &result) const;
 	void GetLastBxTrades(Trades &result) const;
 
-	void GetNasdaqParams(ExchangeParams &result) const;
-	void GetBxParams(ExchangeParams &result) const;
+	void GetNasdaqBook(ExchangeBook &result) const;
+	void GetBxBook(ExchangeBook &result) const;
 
 	void GetCommonParams(CommonParams &result) const;
 

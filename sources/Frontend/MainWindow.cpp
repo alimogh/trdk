@@ -74,6 +74,8 @@ void MainWindow::CreateCurrentBidAsk() {
 	ui->currentBidAsk->setModel(m_currentBidAskModel);
 	m_currentBidAskModel->appendRow(new QStandardItem(QString("NASDAQ")));
 	m_currentBidAskModel->appendRow(new QStandardItem(QString("BX")));
+	m_currentBidAskModel->appendRow(new QStandardItem(QString("NASDAQ")));
+	m_currentBidAskModel->appendRow(new QStandardItem(QString("BX")));
 }
 
 void MainWindow::CreateTreades(QStandardItemModel *&model, QTableView &widget) {
@@ -237,24 +239,45 @@ void MainWindow::UpdateData() {
 		}
 
 		{
-			ServiceAdapter::ExchangeParams params;
-			m_service->GetNasdaqParams(params);
+			ServiceAdapter::ExchangeBook book;
+			m_service->GetNasdaqBook(book);
 			m_currentBidAskModel->setItem(
 				0,
 				1,
-				new QStandardItem(QString("%1").arg(params.bid.qty)));
+				new QStandardItem(QString("%1").arg(book.params1.bid.qty)));
 			m_currentBidAskModel->setItem(
 				0,
 				2,
-				new QStandardItem(m_service->DescaleAndConvert(params.bid.price)));
+				new QStandardItem(m_service->DescaleAndConvert(book.params1.bid.price)));
 			m_currentBidAskModel->setItem(
 				0,
 				3,
-				new QStandardItem(m_service->DescaleAndConvert(params.ask.price)));
+				new QStandardItem(m_service->DescaleAndConvert(book.params1.ask.price)));
 			m_currentBidAskModel->setItem(
 				0,
 				4,
-				new QStandardItem(QString("%1").arg(params.ask.qty)));
+				new QStandardItem(QString("%1").arg(book.params1.ask.qty)));
+			m_currentBidAskModel->setItem(
+				2,
+				1,
+				new QStandardItem(QString("%1").arg(book.params2.bid.qty)));
+			m_currentBidAskModel->setItem(
+				2,
+				2,
+				new QStandardItem(m_service->DescaleAndConvert(book.params2.bid.price)));
+			if (book.params2.ask.price || book.params2.ask.qty) {
+				m_currentBidAskModel->setItem(
+					2,
+					3,
+					new QStandardItem(m_service->DescaleAndConvert(book.params2.ask.price)));
+				m_currentBidAskModel->setItem(
+					2,
+					4,
+					new QStandardItem(QString("%1").arg(book.params2.ask.qty)));
+			} else {
+				m_currentBidAskModel->setItem(2, 3, new QStandardItem(QString()));
+				m_currentBidAskModel->setItem(2, 4, new QStandardItem(QString()));
+			}
 			for (auto i = 0; i < m_currentBidAskModel->columnCount(); ++i) {
 				ui->currentBidAsk->resizeColumnToContents(i);
 			}

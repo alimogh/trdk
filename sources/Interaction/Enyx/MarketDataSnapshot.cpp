@@ -27,13 +27,25 @@ void MarketDataSnapshot::Subscribe(
 }
 
 void MarketDataSnapshot::UpdateBid(const boost::posix_time::ptime &time) {
-	const Bid::const_iterator begin = m_bid.begin();
-	m_security->SetBid(time, begin->first, begin->second);
+	Bid::const_iterator i = m_bid.begin();
+	const auto bestPrice = i->first;
+	m_security->SetBid(time, bestPrice, i->second, 1);
+	if (++i != m_bid.end() /*&& i->first - 1 == bestPrice*/) {
+		m_security->SetBid(time, i->first, i->second, 2);
+	} else {
+		m_security->SetBid(time, 0, 0, 2);
+	}
 }
 
 void MarketDataSnapshot::UpdateAsk(const boost::posix_time::ptime &time) {
-	const Ask::const_iterator begin = m_ask.begin();
-	m_security->SetAsk(time, begin->first, begin->second);
+	Ask::const_iterator i = m_ask.begin();
+	const auto bestPrice = i->first;
+	m_security->SetAsk(time, bestPrice, i->second, 1);
+	if (++i != m_ask.end() /*&& i->first + 1 == bestPrice*/) {
+		m_security->SetAsk(time, i->first, i->second, 2);
+	} else {
+		m_security->SetAsk(time, 0, 0, 2);
+	}
 }
 
 void MarketDataSnapshot::SignalNewTrade(
@@ -108,26 +120,40 @@ void MarketDataSnapshot::ExecOrder(
 			m_security->SetLast(time, scaledPrice, orderQty);
 		} else {
 			ScaledPrice bestPrice = 0;
+			ScaledPrice bestPrice2 = 0;
 			Qty bestQty = 0;
-			 if (!m_bid.empty()) {
-				 Bid::const_iterator begin = m_bid.begin();
-				 bestPrice = begin->first;
-				 bestQty = begin->second;
-			 }
+			Qty bestQty2 = 0;
+			if (!m_bid.empty()) {
+				Bid::const_iterator i = m_bid.begin();
+				bestPrice = i->first;
+				bestQty = i->second;
+				if (++i != m_bid.end() /*&& i->first - 1 == bestPrice*/) {
+					bestPrice2 = i->first;
+					bestQty2 = i->second;
+				}
+			}
 			m_security->SetLastAndBid(time, scaledPrice, orderQty, bestPrice, bestQty);
+			m_security->SetBid(time, bestPrice2, bestQty2, 2);
 		}
 	} else {
 		if (!::ChangeOrder(prevQty, newQty, scaledPrice, m_ask)) {
 			m_security->SetLast(time, scaledPrice, orderQty);
 		} else {
 			ScaledPrice bestPrice = 0;
+			ScaledPrice bestPrice2 = 0;
 			Qty bestQty = 0;
+			Qty bestQty2 = 0;
 			 if (!m_ask.empty()) {
-				 Ask::const_iterator begin = m_ask.begin();
-				 bestPrice = begin->first;
-				 bestQty = begin->second;
+				 Ask::const_iterator i = m_ask.begin();
+				 bestPrice = i->first;
+				 bestQty = i->second;
+ 				if (++i != m_ask.end() /*&& i->first + 1 == bestPrice*/) {
+					bestPrice2 = i->first;
+					bestQty2 = i->second;
+				}
 			 }
 			m_security->SetLastAndAsk(time, scaledPrice, orderQty, bestPrice, bestQty);
+			m_security->SetAsk(time, bestPrice2, bestQty2, 2);
 		}
 	}
 }
@@ -143,7 +169,8 @@ void MarketDataSnapshot::ChangeOrder(
 		if (!::ChangeOrder(prevQty, newQty, scaledPrice, m_bid)) {
 			return;
 		} else if (m_bid.empty()) {
-			m_security->SetBid(time, 0, 0);
+			m_security->SetBid(time, 0, 0, 1);
+			m_security->SetBid(time, 0, 0, 2);
 		} else {
 			UpdateBid(time);
 		}
@@ -151,7 +178,8 @@ void MarketDataSnapshot::ChangeOrder(
 		if (!::ChangeOrder(prevQty, newQty, scaledPrice, m_ask)) {
 			return;
 		} else if (m_ask.empty()) {
-			m_security->SetAsk(time, 0, 0);
+			m_security->SetAsk(time, 0, 0, 1);
+			m_security->SetAsk(time, 0, 0, 2);
 		} else {
 			UpdateAsk(time);
 		}
@@ -217,7 +245,8 @@ void MarketDataSnapshot::DelOrder(
 		if (!::DelOrder(qty, scaledPrice, m_bid)) {
 			return;
 		} else if (m_bid.empty()) {
-			m_security->SetBid(time, 0, 0);
+			m_security->SetBid(time, 0, 0, 1);
+			m_security->SetBid(time, 0, 0, 2);
 		} else {
 			UpdateBid(time);
 		}
@@ -225,7 +254,8 @@ void MarketDataSnapshot::DelOrder(
 		if (!::DelOrder(qty, scaledPrice, m_ask)) {
 			return;
 		} else if (m_ask.empty()) {
-			m_security->SetAsk(time, 0, 0);
+			m_security->SetAsk(time, 0, 0, 1);
+			m_security->SetAsk(time, 0, 0, 2);
 		} else {
 			UpdateAsk(time);
 		}

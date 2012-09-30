@@ -78,7 +78,7 @@ namespace Trader { namespace Gateway {
 		void GetParams(
 					const std::string &symbol,
 					const std::string &exchange,
-					trader__ExchangeParams &result);
+					trader__ExchangeBook &result);
 		void GetCommonParams(
 					const std::string &symbol,
 					trader__CommonParams &result);\

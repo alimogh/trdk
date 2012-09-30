@@ -81,23 +81,23 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 		}
 
 		int GetAskPriceScaled() const {
-			return int(m_security->GetAskPriceScaled());
+			return int(m_security->GetAskPriceScaled(1));
 		}
 		double GetAskPrice() const {
-			return m_security->GetAskPrice();
+			return m_security->GetAskPrice(1);
 		}
 		size_t GetAskQty() const {
-			return m_security->GetAskQty();
+			return m_security->GetAskQty(1);
 		}
 
 		int GetBidPriceScaled() const {
-			return int(m_security->GetBidPriceScaled());
+			return int(m_security->GetBidPriceScaled(1));
 		}
 		double GetBidPrice() const {
-			return m_security->GetBidPrice();
+			return m_security->GetBidPrice(1);
 		}
 		size_t GetBidQty() const {
-			return m_security->GetBidQty();
+			return m_security->GetBidQty(1);
 		}
 
 	public:

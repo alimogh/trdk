@@ -38,7 +38,7 @@ private:
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
 	typedef boost::condition_variable Condition;
-	
+
 	typedef std::list<Order> Orders;
 
 public:
@@ -121,8 +121,8 @@ private:
 					const auto price = order.price
 						?	order.security->DescalePrice(order.price)
 						:	order.isSell
-							?	order.security->GetAskPrice()
-							:	order.security->GetBidPrice();
+							?	order.security->GetAskPrice(1)
+							:	order.security->GetBidPrice(1);
 					order.callback(
 						order.id,
 						TradeSystem::ORDER_STATUS_FILLED,
@@ -144,7 +144,7 @@ private:
 
 	volatile long m_id;
 	bool m_isStarted;
-	
+
 	Mutex m_mutex;
 	Condition m_condition;
 	boost::thread m_thread;
