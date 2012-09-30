@@ -290,7 +290,7 @@ bool Security::SetBid(ScaledPrice price, Qty size) {
 		return false;
 	}
 	bool isChanged = Interlocking::Exchange(m_pimpl->m_bidPrice, price) != price;
-	isChanged = Interlocking::Exchange(m_pimpl->m_askQty, size) != size || isChanged;
+	isChanged = Interlocking::Exchange(m_pimpl->m_bidQty, size) != size || isChanged;
 	return isChanged;
 }
 
