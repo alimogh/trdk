@@ -56,7 +56,7 @@ namespace Trader { namespace Interaction { namespace Fake {
 						bool isBuy,
 						ScaledPrice price,
 						Qty qty) {
-				Base::SignalNewOrder(time, isBuy, price, qty);
+				Base::SignalNewTrade(time, isBuy, price, qty);
 			}
 
 		};

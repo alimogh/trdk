@@ -51,18 +51,18 @@ class trader__Time {
 
 //////////////////////////////////////////////////////////////////////////
 
-class trader__Order {
+class trader__Trade {
 	trader__Time time;
 	trader__Param param;
 	xsd__boolean isBuy;
 };
-typedef std::list<trader__Order> trader__OrderList;
+typedef std::list<trader__Trade> trader__TradeList;
 
-//gsoap trader service method-action: GetLastOrders "urn:#getLastOrders"
-int trader__GetLastOrders(
+//gsoap trader service method-action: GetLastTrades "urn:#getLastTrades"
+int trader__GetLastTrades(
 		xsd__string symbol,
 		xsd__string exchange,
-		trader__OrderList &getLastOrdersResult);
+		trader__TradeList &getLastTradesResult);
 
 //////////////////////////////////////////////////////////////////////////
 

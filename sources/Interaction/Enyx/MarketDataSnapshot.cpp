@@ -85,10 +85,9 @@ void MarketDataSnapshot::ExecOrder(
 	AssertLe(newQty, prevQty);
 	const auto orderQty = prevQty - newQty;
 	if (m_handlFirstLimitUpdate) {
-		m_security->SignalNewOrder(time, isBuy, scaledPrice, orderQty);
+		m_security->SignalNewTrade(time, isBuy, scaledPrice, orderQty);
 	}
 	if (isBuy) {
-		m_security->SignalTrade(time, scaledPrice, orderQty);
 		if (!::ChangeOrder(prevQty, newQty, scaledPrice, m_bid)) {
 			m_security->SetLast(time, scaledPrice, orderQty);
 		} else {

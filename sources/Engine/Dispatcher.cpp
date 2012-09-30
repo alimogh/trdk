@@ -595,7 +595,7 @@ public:
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
 
-	typedef SignalConnectionList<Security::NewOrderSlotConnection> DataUpdateConnections;
+	typedef SignalConnectionList<Security::NewTradeSlotConnection> DataUpdateConnections;
 
 	Mutex m_dataUpdateMutex;
 	DataUpdateConnections m_dataUpdateConnections;
@@ -655,7 +655,7 @@ void Dispatcher::Register(boost::shared_ptr<Observer> observer) {
 		[this, &state] (boost::shared_ptr<const Security> security) {
 			m_observationSlots->m_dataUpdateConnections.InsertSafe(
 				security->Subcribe(
-					Security::NewOrderSlot(
+					Security::NewTradeSlot(
 						boost::bind(
 							&Dispatcher::Notifier::Signal,
 							m_notifier.get(),

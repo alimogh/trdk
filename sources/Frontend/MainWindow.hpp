@@ -37,17 +37,17 @@ private:
 
 	void CreateCurrentBidAsk();
 
-	void CreateOrders(QStandardItemModel *&model, QTableView &widget);
+	void CreateTreades(QStandardItemModel *&model, QTableView &widget);
 	void ClearTrades(QStandardItemModel &model);
-	void UpdateTrades(const ServiceAdapter::Orders &, QStandardItemModel &model);
+	void UpdateTrades(const ServiceAdapter::Trades &, QStandardItemModel &model);
 
 private:
 
 	Ui::MainWindow *ui;
 
 	QStandardItemModel *m_currentBidAskModel;
-	QStandardItemModel *m_nasdaqOrdersModel;
-	QStandardItemModel *m_bxOrdersModel;
+	QStandardItemModel *m_nasdaqTradesModel;
+	QStandardItemModel *m_bxTradesModel;
 
 	QTimer *m_updateTimer;
 

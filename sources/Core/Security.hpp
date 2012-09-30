@@ -37,16 +37,16 @@ namespace Trader {
 				boost::signals2::connection>
 			UpdateSlotConnection;
 
-		typedef void (NewOrderSlotSignature)(
+		typedef void (NewTradeSlotSignature)(
 					const boost::posix_time::ptime &,
 					ScaledPrice,
 					Qty,
 					bool isBuy);
-		typedef boost::function<NewOrderSlotSignature> NewOrderSlot;
+		typedef boost::function<NewTradeSlotSignature> NewTradeSlot;
 		typedef SignalConnection<
-				NewOrderSlot,
+				NewTradeSlot,
 				boost::signals2::connection>
-			NewOrderSlotConnection;
+			NewTradeSlotConnection;
 
 	public:
 
@@ -146,7 +146,7 @@ namespace Trader {
 	public:
 
 		UpdateSlotConnection Subcribe(const UpdateSlot &) const;
-		NewOrderSlotConnection Subcribe(const NewOrderSlot &) const;
+		NewTradeSlotConnection Subcribe(const NewTradeSlot &) const;
 
 	protected:
 
@@ -181,13 +181,9 @@ namespace Trader {
 		bool SetBid(ScaledPrice, Qty);
 
 		void SignalUpdate();
-		void SignalNewOrder(
+		void SignalNewTrade(
 				const boost::posix_time::ptime &,
 				bool isBuy,
-				ScaledPrice,
-				Qty);
-		void SignalTrade(
-				const boost::posix_time::ptime &,
 				ScaledPrice,
 				Qty);
 

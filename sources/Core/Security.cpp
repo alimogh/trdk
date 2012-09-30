@@ -45,7 +45,7 @@ public:
 	MarketDataLog *m_marketDataLog;
 
 	mutable boost::signals2::signal<UpdateSlotSignature> m_updateSignal;
-	mutable boost::signals2::signal<NewOrderSlotSignature> m_newOrderSignal;
+	mutable boost::signals2::signal<NewTradeSlotSignature> m_newTradeSignal;
 
 	volatile long long m_isHistoryData;
 
@@ -352,8 +352,8 @@ Security::UpdateSlotConnection Security::Subcribe(const UpdateSlot &slot) const 
 	return UpdateSlotConnection(m_pimpl->m_updateSignal.connect(slot));
 }
 
-Security::NewOrderSlotConnection Security::Subcribe(const NewOrderSlot &slot) const {
-	return NewOrderSlotConnection(m_pimpl->m_newOrderSignal.connect(slot));
+Security::NewTradeSlotConnection Security::Subcribe(const NewTradeSlot &slot) const {
+	return NewTradeSlotConnection(m_pimpl->m_newTradeSignal.connect(slot));
 }
 
 void Security::SignalUpdate() {
@@ -368,17 +368,10 @@ void Security::SignalUpdate() {
 	m_pimpl->m_updateSignal();
 }
 
-void Security::SignalNewOrder(
+void Security::SignalNewTrade(
 			const boost::posix_time::ptime &time,
 			bool isBuy,
 			ScaledPrice price,
-			Qty qty) {
-	m_pimpl->m_newOrderSignal(time, price, qty, isBuy);
-}
-
-void Security::SignalTrade(
-			const boost::posix_time::ptime &,
-			ScaledPrice,
 			Qty qty) {
 	for ( ; ; ) {
 		const auto prevVal = m_pimpl->m_tradedVolume;
@@ -387,4 +380,6 @@ void Security::SignalTrade(
 			break;
 		}
 	}
+	m_pimpl->m_newTradeSignal(time, price, qty, isBuy);
 }
+
