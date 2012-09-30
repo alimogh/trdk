@@ -52,8 +52,8 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-FeedHandler::FeedHandler(bool handlFirstLimitUpdate)
-		: m_handlFirstLimitUpdate(handlFirstLimitUpdate),
+FeedHandler::FeedHandler(bool handleFirstLimitUpdate)
+		: m_handleFirstLimitUpdate(handleFirstLimitUpdate),
 		m_rawLog(nullptr) {
 	//...//
 }
@@ -75,13 +75,19 @@ namespace {
 		}
 	}
 
+	template<typename Message>
+	std::string GetSymbol(const Message &message) {
+		std::string result = message.getInstrumentName().c_str();
+		boost::trim(result);
+		return result;
+	}
+
 }
 
 void FeedHandler::HandleMessage(const nasdaqustvitch41::NXFeedOrderAdd &enyxOrder) {
 
 	const auto &index = m_marketDataSnapshots.get<BySecurtiy>();
-	std::string symbol = enyxOrder.getInstrumentName().c_str();
-	boost::trim(symbol);
+	const std::string symbol = GetSymbol(enyxOrder);
 	const auto snapshot = index.find(symbol);
 	if (snapshot == index.end()) {
 		Log::Warn(
@@ -239,6 +245,23 @@ void FeedHandler::HandleMessage(const NXFeedMiscTime &time) {
 	m_serverTime = serverTime;
 }
 
+void FeedHandler::HandleMessage(const NXFeedTradeReport &enyxTrade) {
+	const auto &index = m_marketDataSnapshots.get<BySecurtiy>();
+	const std::string symbol = GetSymbol(enyxTrade);
+	const auto snapshot = index.find(symbol);
+	if (snapshot == index.end()) {
+		Log::Warn(
+			TRADER_ENYX_LOG_PREFFIX "no Marked Data Snapshot for \"%1%\".",
+			symbol);
+		throw Exception("Marked Data Snapshot not found");
+	}
+	snapshot->ptr->SignalNewTrade(
+		enyxTrade.getBuyNSell() ? true : false,
+		GetMessageTime(enyxTrade),
+		enyxTrade.getQuantity(),
+		enyxTrade.getPrice());
+}
+
 pt::ptime FeedHandler::GetMessageTime(const NXFeedMessage &time) const {
 	if (m_serverTime.is_not_a_date_time()) {
 		throw ServerTimeNotSetError();
@@ -271,29 +294,29 @@ void FeedHandler::LogAndHandleMessage(const Message &message) {
 void FeedHandler::onOrderMessage(NXFeedOrder *message) {
 	try {
 		switch(message->getSubType()) {
-			case  NXFEED_SUBTYPE_ORDER_ADD:
+			case NXFEED_SUBTYPE_ORDER_ADD:
 				LogAndHandleMessage(
 					*reinterpret_cast<nasdaqustvitch41::NXFeedOrderAdd *>(
 						message));
 				break;
-			case  NXFEED_SUBTYPE_ORDER_EXEC:
+			case NXFEED_SUBTYPE_ORDER_EXEC:
 				LogAndHandleMessage(
 					*reinterpret_cast<NXFeedOrderExecute *>(message));
 				break;
-			case  NXFEED_SUBTYPE_ORDER_EXEC_PRICE:
+			case NXFEED_SUBTYPE_ORDER_EXEC_PRICE:
 				LogAndHandleMessage(
 					*reinterpret_cast<nasdaqustvitch41::NXFeedOrderExeWithPrice *>(
 						message));
 				break;
-			case  NXFEED_SUBTYPE_ORDER_REDUCE:
+			case NXFEED_SUBTYPE_ORDER_REDUCE:
 				LogAndHandleMessage(
 					*reinterpret_cast<NXFeedOrderReduce *>(message));
 				return;
-			case  NXFEED_SUBTYPE_ORDER_DEL:
+			case NXFEED_SUBTYPE_ORDER_DEL:
 				LogAndHandleMessage(
 					*reinterpret_cast<NXFeedOrderDelete *>(message));
 				break;
-			case  NXFEED_SUBTYPE_ORDER_REPLACE:
+			case NXFEED_SUBTYPE_ORDER_REPLACE:
 				LogAndHandleMessage(
 					*reinterpret_cast<NXFeedOrderReplace *>(message));
 				break;
@@ -313,6 +336,23 @@ void FeedHandler::onOrderMessage(NXFeedOrder *message) {
 	}
 }
 
+void FeedHandler::onTradeMessage(NXFeedTrade *message) {
+	if (!m_handleFirstLimitUpdate) {
+		return;
+	}
+	try {
+		switch(message->getSubType()) {
+			case NXFEED_SUBTYPE_TRADE_REPORT:
+				LogAndHandleMessage(
+					*reinterpret_cast<NXFeedTradeReport *>(message));
+				break;
+		}
+	} catch (const ServerTimeNotSetError &) {
+		//...//
+	} catch (...) {
+		AssertFailNoException();
+	}
+}
 
 void FeedHandler::onMiscMessage(NXFeedMisc *message) {
 	try {
@@ -335,7 +375,7 @@ void FeedHandler::Subscribe(
 		const auto &pos = index.find(security->GetSymbol());
 		if (pos == index.end()) {
 			boost::shared_ptr<MarketDataSnapshot> newSnapshot(
-				new MarketDataSnapshot(security->GetSymbol(), m_handlFirstLimitUpdate));
+				new MarketDataSnapshot(security->GetSymbol(), m_handleFirstLimitUpdate));
 			newSnapshot->Subscribe(security);
 			m_marketDataSnapshots.insert(MarketDataSnapshotHolder(newSnapshot));
 		} else {

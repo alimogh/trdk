@@ -13,8 +13,8 @@ using namespace Trader::Interaction::Enyx;
 
 MarketDataSnapshot::MarketDataSnapshot(
 			const std::string &symbol,
-			bool handlFirstLimitUpdate)
-		: m_handlFirstLimitUpdate(handlFirstLimitUpdate),
+			bool handleFirstLimitUpdate)
+		: m_handleFirstLimitUpdate(handleFirstLimitUpdate),
 		m_symbol(symbol) {
 	//...//
 }
@@ -34,6 +34,23 @@ void MarketDataSnapshot::UpdateBid(const boost::posix_time::ptime &time) {
 void MarketDataSnapshot::UpdateAsk(const boost::posix_time::ptime &time) {
 	const Ask::const_iterator begin = m_ask.begin();
 	m_security->SetAsk(time, begin->first, begin->second);
+}
+
+void MarketDataSnapshot::SignalNewTrade(
+			bool isBuy,
+			const boost::posix_time::ptime &time,
+			Qty qty,
+			ScaledPrice price) {
+	Assert(m_handleFirstLimitUpdate);
+	m_security->SignalNewTrade(time, isBuy, price, qty);
+}
+
+void MarketDataSnapshot::SignalNewTrade(
+			bool isBuy,
+			const boost::posix_time::ptime &time,
+			Qty qty,
+			double price) {
+	SignalNewTrade(isBuy, time, qty, m_security->ScalePrice(price));
 }
 
 void MarketDataSnapshot::AddOrder(
@@ -83,8 +100,8 @@ void MarketDataSnapshot::ExecOrder(
 	const auto scaledPrice = m_security->ScalePrice(price);
 	AssertLe(newQty, prevQty);
 	const auto orderQty = prevQty - newQty;
-	if (m_handlFirstLimitUpdate) {
-		m_security->SignalNewTrade(time, isBuy, scaledPrice, orderQty);
+	if (m_handleFirstLimitUpdate) {
+		SignalNewTrade(isBuy, time, orderQty, scaledPrice);
 	}
 	if (isBuy) {
 		if (!::ChangeOrder(prevQty, newQty, scaledPrice, m_bid)) {

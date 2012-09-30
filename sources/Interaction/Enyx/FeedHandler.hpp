@@ -139,7 +139,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	public:
 
-		explicit FeedHandler(bool handlFirstLimitUpdate);
+		explicit FeedHandler(bool handleFirstLimitUpdate);
 		virtual ~FeedHandler();
 
 	public:
@@ -151,6 +151,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 	public:
 
 		virtual void onOrderMessage(NXFeedOrder *);
+		virtual void onTradeMessage(NXFeedTrade *);
 		virtual void onMiscMessage(NXFeedMisc *);
 
 	protected:
@@ -165,6 +166,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 		void HandleMessage(const NXFeedOrderReduce &);
 		void HandleMessage(const NXFeedOrderReplace &);
 		void HandleMessage(const NXFeedOrderDelete &);
+		void HandleMessage(const NXFeedTradeReport &);
 		void HandleMessage(const NXFeedMiscTime &);
 
 		template<typename Message>
@@ -175,7 +177,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 	private:
 
-		const bool m_handlFirstLimitUpdate;
+		const bool m_handleFirstLimitUpdate;
 
 		mutable MarketDataSnapshots m_marketDataSnapshots;
 		Orders m_orders;
