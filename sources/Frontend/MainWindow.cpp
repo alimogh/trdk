@@ -254,7 +254,7 @@ void MainWindow::UpdateData() {
 			m_currentBidAskModel->setItem(
 				0,
 				4,
-				new QStandardItem((QString("%1").arg(params.ask.qty))));
+				new QStandardItem(QString("%1").arg(params.ask.qty)));
 			for (auto i = 0; i < m_currentBidAskModel->columnCount(); ++i) {
 				ui->currentBidAsk->resizeColumnToContents(i);
 			}

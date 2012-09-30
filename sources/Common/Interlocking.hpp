@@ -155,10 +155,11 @@
 					const Y &exchangeValue,
 					const Y &compareValue)
 				throw() {
-			if (exchangeValue == compareValue) {
+			const auto prevVal = destination;
+			if (prevVal == compareValue) {
 				destination = exchangeValue;
 			}
-			return compareValue;
+			return prevVal;
 		}
 
 	}
