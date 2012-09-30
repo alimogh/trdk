@@ -11,21 +11,55 @@
 #include "Security.hpp"
 
 namespace pt = boost::posix_time;
+namespace fs = boost::filesystem;
 using namespace Trader::Interaction::Enyx;
+
+//////////////////////////////////////////////////////////////////////////
+
+class FeedHandler::RawLog : private boost::noncopyable {
+
+public:
+
+	RawLog() {
+		fs::path filePath = Defaults::GetRawDataLogDir();
+		filePath /= "Enyx.log";
+		const bool isNew = !fs::exists(filePath);
+		if (isNew) {
+			fs::create_directories(filePath.branch_path());
+		}
+		m_file.open(filePath.c_str(), std::ios::out | std::ios::trunc);
+		if (!m_file) {
+			Log::Error(
+				TRADER_ENYX_LOG_PREFFIX "failed to open raw log file %1%.",
+				filePath);
+			throw Exception("Failed to open Enyx raw log file");
+		}
+		Log::Info(
+			TRADER_ENYX_LOG_PREFFIX "opened log file for raw messages %1%.",
+			filePath);
+	}
+
+	template<typename Message>
+	void Append(const pt::ptime &time, Message &message) {
+		m_file << (time + Util::GetEdtDiff()).time_of_day() << "\t" << message << std::endl;
+	}
+
+private:
+
+	std::ofstream m_file;
+
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
 FeedHandler::FeedHandler(bool handlFirstLimitUpdate)
-		: m_handlFirstLimitUpdate(handlFirstLimitUpdate) {
+		: m_handlFirstLimitUpdate(handlFirstLimitUpdate),
+		m_rawLog(nullptr) {
 	//...//
 }
 
 FeedHandler::~FeedHandler() {
-#	ifdef DEV_VER
-		foreach (const auto &order, m_orders) {
-			Assert(!order.second.IsExecuted());
-		}
-#	endif
+	delete m_rawLog;
 }
 
 namespace {
@@ -49,12 +83,11 @@ void FeedHandler::HandleMessage(const nasdaqustvitch41::NXFeedOrderAdd &enyxOrde
 	std::string symbol = enyxOrder.getInstrumentName().c_str();
 	boost::trim(symbol);
 	const auto snapshot = index.find(symbol);
-	Assert(snapshot != index.end());
 	if (snapshot == index.end()) {
 		Log::Warn(
 			TRADER_ENYX_LOG_PREFFIX "no Marked Data Snapshot for \"%1%\".",
 			symbol);
-		return;
+		throw Exception("Marked Data Snapshot not found");
 	}
 
 	const auto id = enyxOrder.getOrderId();
@@ -77,11 +110,11 @@ void FeedHandler::HandleMessage(const nasdaqustvitch41::NXFeedOrderAdd &enyxOrde
 void FeedHandler::HandleMessage(const NXFeedOrderExecute &enyxOrder) {
 	const auto id = enyxOrder.getOrderId();
 	const auto execQty = enyxOrder.getExecutedQuantity();
-	try {
-		Order &order = FindOrder(id);
-		const auto prevQty = order.GetQty();
-		order.ReduceQty(execQty);
-		order.MarkAsExecuted();
+	auto orderPos = FindOrderPos(id);
+	const auto prevQty = orderPos->second.GetQty();
+	if (orderPos->second.ReduceQty(execQty) <= 0) {
+		const Order order = orderPos->second;
+		m_orders.erase(orderPos);
 		order.GetMarketDataSnapshot().ExecOrder(
 			order.IsBuy(),
 			id,
@@ -89,10 +122,15 @@ void FeedHandler::HandleMessage(const NXFeedOrderExecute &enyxOrder) {
 			prevQty,
 			order.GetQty(),
 			order.GetPrice());
-	} catch (const OrderNotFoundError &) {
-//   		Log::Error(
-//   			TRADER_ENYX_LOG_PREFFIX "failed to find EXECUTED order with id %1%.",
-//   			id);
+	} else {
+		const Order &order = orderPos->second;
+		order.GetMarketDataSnapshot().ExecOrder(
+			order.IsBuy(),
+			id,
+			GetMessageTime(enyxOrder),
+			prevQty,
+			order.GetQty(),
+			order.GetPrice());
 	}
 }
 
@@ -100,11 +138,11 @@ void FeedHandler::HandleMessage(
 			const nasdaqustvitch41::NXFeedOrderExeWithPrice &enyxOrder) {
 	const auto id = enyxOrder.getOrderId();
 	const auto execQty = enyxOrder.getExecutedQuantity();
-	try {
-		Order &order = FindOrder(id);
-		const auto prevQty = order.GetQty();
-		order.ReduceQty(execQty);
-		order.MarkAsExecuted();
+	auto orderPos = FindOrderPos(id);
+	const auto prevQty = orderPos->second.GetQty();
+	if (orderPos->second.ReduceQty(execQty) <= 0) {
+		const Order order = orderPos->second;
+		m_orders.erase(orderPos);
 		order.GetMarketDataSnapshot().ExecOrder(
 			order.IsBuy(),
 			id,
@@ -112,20 +150,26 @@ void FeedHandler::HandleMessage(
 			prevQty,
 			order.GetQty(),
 			order.GetPrice());
-	} catch (const OrderNotFoundError &) {
-//   		Log::Error(
-//   			TRADER_ENYX_LOG_PREFFIX "failed to find EXECUTED with PRICE order with id %1%.",
-//   			id);
+	} else {
+		const Order &order = orderPos->second;
+		order.GetMarketDataSnapshot().ExecOrder(
+			order.IsBuy(),
+			id,
+			GetMessageTime(enyxOrder),
+			prevQty,
+			order.GetQty(),
+			order.GetPrice());
 	}
 }
 
 void FeedHandler::HandleMessage(const NXFeedOrderReduce &enyxOrder) {
 	const auto id = enyxOrder.getOrderId();
 	const auto reducedQty = enyxOrder.getReducedQuantity();
-	try {
-		Order &order = FindOrder(id);
-		const auto prevQty = order.GetQty();
-		order.ReduceQty(reducedQty);
+	auto orderPos = FindOrderPos(id);
+	const auto prevQty = orderPos->second.GetQty();
+	if (orderPos->second.ReduceQty(reducedQty) <= 0) {
+		const Order order = orderPos->second;
+		m_orders.erase(orderPos);
 		order.GetMarketDataSnapshot().ChangeOrder(
 			order.IsBuy(),
 			id,
@@ -133,30 +177,38 @@ void FeedHandler::HandleMessage(const NXFeedOrderReduce &enyxOrder) {
 			prevQty,
 			order.GetQty(),
 			order.GetPrice());
-	} catch (const OrderNotFoundError &) {
-//   		Log::Error(
-//   			TRADER_ENYX_LOG_PREFFIX "failed to find CHANGED order with id %1%.",
-//   			id);
+	} else {
+		const Order &order = orderPos->second;
+		order.GetMarketDataSnapshot().ChangeOrder(
+			order.IsBuy(),
+			id,
+			GetMessageTime(enyxOrder),
+			prevQty,
+			order.GetQty(),
+			order.GetPrice());
 	}
+}
+
+void FeedHandler::HandleMessage(const NXFeedOrderReplace &enyxOrder) {
+	Assert(enyxOrder.getNewOrderId() != enyxOrder.getOrderId());
+	const auto orderPos = FindOrderPos(enyxOrder.getOrderId());
+	const Order order = orderPos->second;
+	m_orders.erase(orderPos);
+	Assert(m_orders.find(enyxOrder.getNewOrderId()) == m_orders.end());
+	m_orders[enyxOrder.getNewOrderId()] = order;
 }
 
 void FeedHandler::HandleMessage(const NXFeedOrderDelete &enyxOrder) {
 	const auto id = enyxOrder.getOrderId();
-	try {
-		const auto orderIt = FindOrderPos(id);
-		const Order order = orderIt->second;
-		m_orders.erase(orderIt);
-		order.GetMarketDataSnapshot().DelOrder(
-			order.IsBuy(),
-			id,
-			GetMessageTime(enyxOrder),
-			order.GetQty(),
-			order.GetPrice());
-	} catch (const OrderNotFoundError &) {
-//   		Log::Error(
-//   			TRADER_ENYX_LOG_PREFFIX "failed to find DELETED order with id %1%.",
-//   			id);
-	}
+	const auto orderIt = FindOrderPos(id);
+	const Order order = orderIt->second;
+	m_orders.erase(orderIt);
+	order.GetMarketDataSnapshot().DelOrder(
+		order.IsBuy(),
+		id,
+		GetMessageTime(enyxOrder),
+		order.GetQty(),
+		order.GetPrice());
 }
 
 void FeedHandler::HandleMessage(const NXFeedMiscTime &time) {
@@ -185,7 +237,9 @@ void FeedHandler::HandleMessage(const NXFeedMiscTime &time) {
 }
 
 pt::ptime FeedHandler::GetMessageTime(const NXFeedMessage &time) const {
-	AssertNe(pt::not_a_date_time, m_serverTime);
+	if (m_serverTime.is_not_a_date_time()) {
+		throw ServerTimeNotSetError();
+	}
 	pt::ptime result = m_serverTime;
 	result += pt::microseconds(const_cast<NXFeedMessage &>(time).getMarketDataTimestamp() / 1000);
 	return result;
@@ -197,42 +251,60 @@ FeedHandler::Order & FeedHandler::FindOrder(EnyxOrderId id) {
 
 FeedHandler::Orders::iterator FeedHandler::FindOrderPos(EnyxOrderId id) {
 	const auto result = m_orders.find(id);
-	Assert(result != m_orders.end());
 	if (result == m_orders.end()) {
 		throw OrderNotFoundError();
 	}
 	return result;
 }
 
+template<typename Message>
+void FeedHandler::LogAndHandleMessage(const Message &message) {
+	if (m_rawLog) {
+		m_rawLog->Append(GetMessageTime(message), message);
+	}
+	HandleMessage(message);
+}
+
 void FeedHandler::onOrderMessage(NXFeedOrder *message) {
 	try {
 		switch(message->getSubType()) {
 			case  NXFEED_SUBTYPE_ORDER_ADD:
-				HandleMessage(
+				LogAndHandleMessage(
 					*reinterpret_cast<nasdaqustvitch41::NXFeedOrderAdd *>(
 						message));
 				break;
 			case  NXFEED_SUBTYPE_ORDER_EXEC:
-				HandleMessage(
+				LogAndHandleMessage(
 					*reinterpret_cast<NXFeedOrderExecute *>(message));
 				break;
 			case  NXFEED_SUBTYPE_ORDER_EXEC_PRICE:
-				HandleMessage(
+				LogAndHandleMessage(
 					*reinterpret_cast<nasdaqustvitch41::NXFeedOrderExeWithPrice *>(
 						message));
 				break;
 			case  NXFEED_SUBTYPE_ORDER_REDUCE:
-				HandleMessage(*reinterpret_cast<NXFeedOrderReduce *>(message));
+				LogAndHandleMessage(
+					*reinterpret_cast<NXFeedOrderReduce *>(message));
 				return;
 			case  NXFEED_SUBTYPE_ORDER_DEL:
-				HandleMessage(*reinterpret_cast<NXFeedOrderDelete *>(message));
+				LogAndHandleMessage(
+					*reinterpret_cast<NXFeedOrderDelete *>(message));
 				break;
 			case  NXFEED_SUBTYPE_ORDER_REPLACE:
-				// NXFeedOrderReplace *
+				LogAndHandleMessage(
+					*reinterpret_cast<NXFeedOrderReplace *>(message));
+				break;
 			default:
-//				Log::Error(TRADER_ENYX_LOG_PREFFIX "unknown message %1%.", orderMsg->getSubType());
+				Log::Error(
+					TRADER_ENYX_LOG_PREFFIX "unknown message %1%.",
+					message->getSubType());
+				AssertFail("Unknown message.");
 				break;
 		}
+	} catch (const OrderNotFoundError &) {
+		//...//
+	} catch (const ServerTimeNotSetError &) {
+		//...//
 	} catch (...) {
 		AssertFailNoException();
 	}
@@ -269,4 +341,11 @@ void FeedHandler::Subscribe(
 	} catch (...) {
 		AssertFailNoException();
 	}
+}
+
+void FeedHandler::EnableRawLog() {
+	if (m_rawLog) {
+		return;
+	}
+	m_rawLog = new RawLog;
 }

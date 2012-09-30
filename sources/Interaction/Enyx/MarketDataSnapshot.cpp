@@ -42,9 +42,6 @@ void MarketDataSnapshot::AddOrder(
 			Qty qty,
 			double price) {
 	const auto scaledPrice = m_security->ScalePrice(price);
-	if (m_handlFirstLimitUpdate) {
-		m_security->SignalNewOrder(time, isBuy, scaledPrice, qty);
-	}
 	if (isBuy) {
 		m_bid[scaledPrice] += qty;
 		UpdateBid(time);
@@ -63,13 +60,10 @@ namespace {
 				MarketDataSnapshot::ScaledPrice price,
 				Snapshot &snapshot) {
 		const auto pos = snapshot.find(price);
-		Assert(pos != snapshot.end());
-		Assert(pos->second >= prevQty);
 		if (pos == snapshot.end()) {
 			return false;
 		}
 		const auto deltaQty = prevQty + newQty;
-		Assert(pos->second > deltaQty);
 		if (pos->second <= deltaQty) {
 			snapshot.erase(pos);
 		} else {
@@ -88,20 +82,14 @@ void MarketDataSnapshot::ExecOrder(
 			Qty newQty,
 			double price) {
 	const auto scaledPrice = m_security->ScalePrice(price);
-	Assert(newQty <= prevQty);
+	AssertLe(newQty, prevQty);
 	const auto orderQty = prevQty - newQty;
+	if (m_handlFirstLimitUpdate) {
+		m_security->SignalNewOrder(time, isBuy, scaledPrice, orderQty);
+	}
 	if (isBuy) {
+		m_security->SignalTrade(time, scaledPrice, orderQty);
 		if (!::ChangeOrder(prevQty, newQty, scaledPrice, m_bid)) {
-/*			Log::Error(
-				TRADER_ENYX_LOG_PREFFIX "failed to EXEC snapshot buy-order"
-					" (order: %1%; symbol: %2%, qty: %3% -> %4%, price: %5%; time: %6%, snapshot size: %7%).",
-				orderId,
-				m_symbol,
-				prevQty,
-				newQty,
-				price,
-				time,
-				m_bid.size()); */
 			m_security->SetLast(time, scaledPrice, orderQty);
 		} else {
 			ScaledPrice bestPrice = 0;
@@ -115,16 +103,6 @@ void MarketDataSnapshot::ExecOrder(
 		}
 	} else {
 		if (!::ChangeOrder(prevQty, newQty, scaledPrice, m_ask)) {
-/*			Log::Error(
-				TRADER_ENYX_LOG_PREFFIX "failed to EXEC snapshot sell-order"
-					" (order: %1%; symbol: %2%, qty: %3% -> %4%, price: %5%; time: %6%, snapshot size: %7%).",
-				orderId,
-				m_symbol,
-				prevQty,
-				newQty,
-				price,
-				time,
-				m_ask.size()); */
 			m_security->SetLast(time, scaledPrice, orderQty);
 		} else {
 			ScaledPrice bestPrice = 0;
@@ -149,16 +127,6 @@ void MarketDataSnapshot::ChangeOrder(
 	const auto scaledPrice = m_security->ScalePrice(price);
 	if (isBuy) {
 		if (!::ChangeOrder(prevQty, newQty, scaledPrice, m_bid)) {
-/*			Log::Error(
-				TRADER_ENYX_LOG_PREFFIX "failed to CHANGE snapshot buy-order"
-					" (order: %1%; symbol: %2%, qty: %3% -> %4%, price: %5%; time: %6%, snapshot size: %7%).",
-				orderId,
-				m_symbol,
-				prevQty,
-				newQty,
-				price,
-				time,
-				m_bid.size());*/
 			return;
 		} else if (m_bid.empty()) {
 			m_security->SetBid(time, 0, 0);
@@ -167,16 +135,6 @@ void MarketDataSnapshot::ChangeOrder(
 		}
 	} else {
 		if (!::ChangeOrder(prevQty, newQty, scaledPrice, m_ask)) {
-/*			Log::Error(
-				TRADER_ENYX_LOG_PREFFIX "failed to CHANGE snapshot sell-order"
-					" (order: %1%; symbol: %2%, qty: %3% -> %4%, price: %5%; time: %6%, snapshot size: %7%).",
-				orderId,
-				m_symbol,
-				prevQty,
-				newQty,
-				price,
-				time,
-				m_ask.size());*/
 			return;
 		} else if (m_ask.empty()) {
 			m_security->SetAsk(time, 0, 0);
@@ -194,8 +152,6 @@ namespace {
 				MarketDataSnapshot::ScaledPrice price,
 				Snapshot &snapshot) {
 		const auto pos = snapshot.find(price);
-		Assert(pos != snapshot.end());
-		Assert(pos->second >= qty);
 		if (pos == snapshot.end()) {
 			return false;
 		}
@@ -218,15 +174,6 @@ void MarketDataSnapshot::DelOrder(
 	const auto scaledPrice = m_security->ScalePrice(price);
 	if (isBuy) {
 		if (!::DelOrder(qty, scaledPrice, m_bid)) {
-/*			Log::Error(
-				TRADER_ENYX_LOG_PREFFIX "failed to DELETE buy-order from snapshot"
-					" (order: %1%; symbol: %2%, qty: %3%, price: %4%; time: %5%, snapshot size: %6%).",
-				orderId,
-				m_symbol,
-				qty,
-				price,
-				time,
-				m_bid.size());*/
 			return;
 		} else if (m_bid.empty()) {
 			m_security->SetBid(time, 0, 0);
@@ -235,15 +182,6 @@ void MarketDataSnapshot::DelOrder(
 		}
 	} else {
 		if (!::DelOrder(qty, scaledPrice, m_ask)) {
-/*			Log::Error(
-				TRADER_ENYX_LOG_PREFFIX "failed to DELETE sell-order from snapshot"
-					" (order: %1%; symbol: %2%, qty: %3%, price: %4%; time: %5%, snapshot size: %6%).",
-				orderId,
-				m_symbol,
-				qty,
-				price,
-				time,
-				m_ask.size());*/
 			return;
 		} else if (m_ask.empty()) {
 			m_security->SetAsk(time, 0, 0);

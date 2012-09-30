@@ -98,3 +98,10 @@ void Security::SignalNewOrder(
 			Qty qty) {
 	Base::SignalNewOrder(time, isBuy, price, qty);
 }
+
+void Security::SignalTrade(
+			const boost::posix_time::ptime &time,
+			ScaledPrice price,
+			Qty qty) {
+	Base::SignalTrade(time, price, qty);
+}

@@ -36,6 +36,10 @@ MainWindow::MainWindow(QWidget *parent)
 		this,
 		SLOT(ChangeSymbol(const QString &)));
 
+#	ifdef DEV_VER
+		ui->serviceAddress->setText("192.168.132.129:8080");
+#	endif
+
 }
 
 MainWindow::~MainWindow() {

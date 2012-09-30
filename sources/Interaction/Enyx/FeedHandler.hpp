@@ -69,9 +69,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 					: m_isBuy(false),
 					m_qty(0),
 					m_price(0) {
-#				ifdef DEV_VER
-					m_isExecuted = false;
-#				endif
+				//...//
 			}
 			explicit Order(
 						bool isBuy,
@@ -82,9 +80,7 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 					m_qty(qty),
 					m_price(price),
 					m_marketDataSnapshot(marketDataSnapshot) {
-#				ifdef DEV_VER
-					m_isExecuted = false;
-#				endif
+				//...//
 			}
 		public:
 			bool IsBuy() const {
@@ -93,9 +89,10 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 			Security::Qty GetQty() const {
 				return m_qty;
 			}
-			void ReduceQty(Security::Qty qty) {
+			Security::Qty ReduceQty(Security::Qty qty) {
 				AssertGe(m_qty, qty);
 				m_qty -= qty;
+				return m_qty;
 			}
 			double GetPrice() const {
 				return m_price;
@@ -103,27 +100,11 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 			MarketDataSnapshot & GetMarketDataSnapshot() const {
 				return *m_marketDataSnapshot;
 			}
-			void MarkAsExecuted() {
-#				ifdef DEV_VER
-					Assert(!m_isExecuted);
-					if (m_qty == 0) {
-						m_isExecuted = true;
-					}
-#				endif
-			}
-#			ifdef DEV_VER
-				bool IsExecuted() const {
-					return m_isExecuted;
-				}
-#			endif
 		private:
 			bool m_isBuy;
 			mutable Security::Qty m_qty;
 			double m_price;
 			boost::shared_ptr<MarketDataSnapshot> m_marketDataSnapshot;
-#			ifdef DEV_VER
-				bool m_isExecuted;
-#			endif
 		};
 
 		typedef std::map<EnyxOrderId, Order> Orders;
@@ -138,7 +119,17 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 			}
 		};
 
+		class ServerTimeNotSetError : public Exception {
+		public:
+			ServerTimeNotSetError()
+					: Exception("Server time not set") {
+				//...//
+			}
+		};
+
 		//////////////////////////////////////////////////////////////////////////
+
+		class RawLog;
 
 	public:
 
@@ -148,6 +139,8 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 	public:
 
 		void Subscribe(const boost::shared_ptr<Security> &) const throw();
+
+		void EnableRawLog();
 
 	public:
 
@@ -164,8 +157,12 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 		void HandleMessage(const NXFeedOrderExecute &);
 		void HandleMessage(const nasdaqustvitch41::NXFeedOrderExeWithPrice &);
 		void HandleMessage(const NXFeedOrderReduce &);
+		void HandleMessage(const NXFeedOrderReplace &);
 		void HandleMessage(const NXFeedOrderDelete &);
 		void HandleMessage(const NXFeedMiscTime &);
+
+		template<typename Message>
+		void LogAndHandleMessage(const Message &);
 
 		Orders::iterator FindOrderPos(EnyxOrderId);
 		Order & FindOrder(EnyxOrderId);
@@ -179,6 +176,8 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 
 		boost::posix_time::ptime m_serverTime;
 		boost::posix_time::ptime m_prevServerLogTime;
+
+		RawLog *m_rawLog;
 
 	};
 

@@ -66,6 +66,10 @@ namespace Trader {  namespace Interaction { namespace Enyx {
 					bool isBuy,
 					ScaledPrice,
 					Qty);
+		void SignalTrade(
+					const boost::posix_time::ptime &,
+					ScaledPrice,
+					Qty);
 
 	};
 

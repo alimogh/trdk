@@ -58,6 +58,8 @@ public:
 	volatile long long m_bidPrice;
 	volatile long m_bidQty;
 
+	volatile long m_tradedVolume;
+
 	mutable MarketDataTimeMutex m_marketDataTimeMutex;
 	MarketDataTime m_marketDataTime;
 
@@ -73,7 +75,8 @@ public:
 			m_askPrice(0),
 			m_askQty(0),
 			m_bidPrice(0),
-			m_bidQty(0) {
+			m_bidQty(0),
+			m_tradedVolume(0) {
 		if (logMarketData) {
 			m_marketDataLog = new MarketDataLog(instrument.GetFullSymbol());
 		}
@@ -300,7 +303,7 @@ Security::Qty Security::GetLastQty() const {
 }
 
 Security::Qty Security::GetTradedVolume() const {
-	return 0;
+	return m_pimpl->m_tradedVolume;
 }
 
 Security::ScaledPrice Security::GetAskPriceScaled() const {
@@ -371,4 +374,17 @@ void Security::SignalNewOrder(
 			ScaledPrice price,
 			Qty qty) {
 	m_pimpl->m_newOrderSignal(time, price, qty, isBuy);
+}
+
+void Security::SignalTrade(
+			const boost::posix_time::ptime &,
+			ScaledPrice,
+			Qty qty) {
+	for ( ; ; ) {
+		const auto prevVal = m_pimpl->m_tradedVolume;
+		const auto newVal = prevVal + qty;
+		if (Interlocking::CompareExchange(m_pimpl->m_tradedVolume, newVal, prevVal) == prevVal) {
+			break;
+		}
+	}
 }

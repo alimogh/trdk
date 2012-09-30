@@ -14,12 +14,6 @@ fs::path Defaults::GetLogFilePath() {
 	return fs::path("Logs");
 }
 
-fs::path Defaults::GetIqFeedLogFilePath() {
-	auto result = GetLogFilePath();
-	result /= "iqfeed.log";
-	return result;
-}
-
 fs::path Defaults::GetMarketDataLogDir() {
 	auto result = GetLogFilePath();
 	result /= "MarketData";
@@ -29,5 +23,11 @@ fs::path Defaults::GetMarketDataLogDir() {
 fs::path Defaults::GetPositionsLogDir() {
 	auto result = GetLogFilePath();
 	result /= "Positions";
+	return result;
+}
+
+fs::path Defaults::GetRawDataLogDir() {
+	auto result = GetLogFilePath();
+	result /= "Raw";
 	return result;
 }

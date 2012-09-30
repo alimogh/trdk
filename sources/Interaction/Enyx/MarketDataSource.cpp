@@ -187,6 +187,9 @@ MarketDataSource::MarketDataSource(const IniFile &ini, const std::string &sectio
 
 	if (isFeedHandlerOn) {
 		m_feedHandler.reset(new FeedHandler(!isOrderHandlerOn));
+		if (ini.ReadBoolKey(section, "raw_log")) {
+			m_feedHandler->EnableRawLog();
+		}
 		m_enyx->addHandler(*m_feedHandler);
 	}
 

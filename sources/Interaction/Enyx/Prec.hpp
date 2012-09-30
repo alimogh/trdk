@@ -23,6 +23,7 @@
 #	include <exchanges/nasdaq_us_totalview_itch41/NasdaqUSTVITCH41NXFeedExtra.h>
 #	include "Common/DisableBoostWarningsBegin.h"
 #		include <boost/algorithm/string.hpp>
+#		include <boost/filesystem.hpp>
 #	include "Common/DisableBoostWarningsEnd.h"
 #endif
 

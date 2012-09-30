@@ -14,10 +14,10 @@ struct Defaults {
 
 	static boost::filesystem::path GetLogFilePath();
 
-	static boost::filesystem::path GetIqFeedLogFilePath();
-
 	static boost::filesystem::path GetMarketDataLogDir();
 
 	static boost::filesystem::path GetPositionsLogDir();
+
+	static boost::filesystem::path GetRawDataLogDir();
 
 };
