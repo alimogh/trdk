@@ -9,7 +9,9 @@
 #include "Prec.hpp"
 #include "Service.hpp"
 #include "Core/Security.hpp"
+#include "Core/Position.hpp"
 
+using namespace Trader;
 using namespace Trader::Gateway;
 
 Service::Service(
@@ -246,7 +248,11 @@ void Service::GetLastTrades(
 }
 
 const Trader::Security & Service::FindSecurity(const std::string &symbol) const {
-	foreach (const auto &security, GetNotifyList()) {
+	return const_cast<Service *>(this)->FindSecurity(symbol);
+}
+
+Trader::Security & Service::FindSecurity(const std::string &symbol) {
+	foreach (auto &security, GetNotifyList()) {
 		if (boost::iequals(security->GetSymbol(), symbol)) {
 			return *security;
 		}
@@ -293,5 +299,85 @@ void Service::GetCommonParams(
 		result.volumeTraded = security.GetTradedVolume();
 	} catch (const UnknownSecurityError &) {
 		return;
+	}
+}
+
+void Service::OrderBuy(
+			const std::string &symbol,
+			Security::ScaledPrice price,
+			Security::Qty qty,
+			std::string &resultMessage) {
+	try {
+		Security &security = FindSecurity(symbol);
+		security.Buy(
+			qty,
+			price,
+			*new LongPosition(security.shared_from_this(), qty, price));
+		boost::format message("Buy Order for %1% (price %2%, quantity %3%) successfully sent.");
+		message % symbol % security.DescalePrice(price) % qty;
+		resultMessage = message.str();
+	} catch (const UnknownSecurityError &) {
+		boost::format message("Failed to send Buy Order for %1% - unknown instrument.");
+		message % symbol;
+		resultMessage = message.str();
+	}
+}
+
+void Service::OrderBuyMkt(
+			const std::string &symbol,
+			Security::Qty qty,
+			std::string &resultMessage) {
+	try {
+		Security &security = FindSecurity(symbol);
+		security.BuyAtMarketPrice(
+			qty,
+			*new LongPosition(security.shared_from_this(), qty, 0));
+		boost::format message("Buy Market Order for %1% (quantity %2%) successfully sent.");
+		message % symbol % qty;
+		resultMessage = message.str();
+	} catch (const UnknownSecurityError &) {
+		boost::format message("Failed to send Buy Market Order for %1% - unknown instrument.");
+		message % symbol;
+		resultMessage = message.str();
+	}
+}
+
+void Service::OrderSell(
+			const std::string &symbol,
+			Security::ScaledPrice price,
+			Security::Qty qty,
+			std::string &resultMessage) {
+	try {
+		Security &security = FindSecurity(symbol);
+		security.Buy(
+			qty,
+			price,
+			*new ShortPosition(security.shared_from_this(), qty, price));
+		boost::format message("Sell Order for %1% (price %2%, quantity %3%) successfully sent.");
+		message % symbol % security.DescalePrice(price) % qty;
+		resultMessage = message.str();
+	} catch (const UnknownSecurityError &) {
+		boost::format message("Failed to send Sell Order for %1% - unknown instrument.");
+		message % symbol;
+		resultMessage = message.str();
+	}
+}
+
+void Service::OrderSellMkt(
+			const std::string &symbol,
+			Security::Qty qty,
+			std::string &resultMessage) {
+	try {
+		Security &security = FindSecurity(symbol);
+		security.SellAtMarketPrice(
+			qty,
+			*new ShortPosition(security.shared_from_this(), qty, 0));
+		boost::format message("Sell Market Order for %1% (quantity %2%) successfully sent.");
+		message % symbol % qty;
+		resultMessage = message.str();
+	} catch (const UnknownSecurityError &) {
+		boost::format message("Failed to send Sell Market Order for %1% - unknown instrument.");
+		message % symbol;
+		resultMessage = message.str();
 	}
 }

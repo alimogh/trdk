@@ -27,10 +27,26 @@ private slots:
 
 	void on_connectButton_clicked();
 	void on_pauseButton_clicked();
+	void on_buyButton_clicked();
+	void on_buyMktButton_clicked();
+	void on_sellButton_clicked();
+	void on_sellMktButton_clicked();
+	void on_buyBidButton_clicked();
+	void on_sellBidButton_clicked();
+	void on_buyOfferButton_clicked();
+	void on_sellOfferButton_clicked();
+	void on_shortButton_clicked();
+
+	void on_profitTargetResetButton_clicked();
+	void on_stopLossResetButton_clicked();
+
 	void UpdateData();
 	void ChangeSymbol(const QString &symbols);
 
 private:
+
+	bool CheckPrice();
+	bool CheckQty();
 
 	void Connect();
 	void Diconnect();

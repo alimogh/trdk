@@ -83,9 +83,31 @@ namespace Trader { namespace Gateway {
 					const std::string &symbol,
 					trader__CommonParams &result);\
 
+	public:
+			
+		void OrderBuy(
+					const std::string &symbol,
+					Security::ScaledPrice,
+					Security::Qty,
+					std::string &resultMessage);
+		void OrderBuyMkt(
+					const std::string &symbol,
+					Security::Qty,
+					std::string &resultMessage);
+		void OrderSell(
+					const std::string &symbol,
+					Security::ScaledPrice,
+					Security::Qty,
+					std::string &resultMessage);
+		void OrderSellMkt(
+					const std::string &,
+					Security::Qty,
+					std::string &resultMessage);
+
 	protected:
 
 		const Trader::Security & FindSecurity(const std::string &symbol) const;
+		Trader::Security & FindSecurity(const std::string &symbol);
 
 	private:
 

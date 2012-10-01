@@ -80,8 +80,8 @@ namespace Trader {
 				boost::shared_ptr<Trader::Security> security,
 				Qty,
 				ScaledPrice startPrice,
-				boost::shared_ptr<const Algo> algo,
-				boost::shared_ptr<AlgoPositionState> state = boost::shared_ptr<AlgoPositionState>());
+				boost::shared_ptr<const Algo> = boost::shared_ptr<const Algo>(),
+				boost::shared_ptr<AlgoPositionState> = boost::shared_ptr<AlgoPositionState>());
 		virtual ~Position();
 
 	public:
@@ -300,8 +300,8 @@ namespace Trader {
 				boost::shared_ptr<Trader::Security> security,
 				Qty,
 				ScaledPrice startPrice,
-				boost::shared_ptr<const Algo> algo,
-				boost::shared_ptr<AlgoPositionState> state = boost::shared_ptr<AlgoPositionState>());
+				boost::shared_ptr<const Algo> = boost::shared_ptr<const Algo>(),
+				boost::shared_ptr<AlgoPositionState> = boost::shared_ptr<AlgoPositionState>());
 		virtual ~LongPosition();
 
 	public:
@@ -338,8 +338,8 @@ namespace Trader {
 				boost::shared_ptr<Trader::Security> security,
 				Qty,
 				ScaledPrice startPrice,
-				boost::shared_ptr<const Algo> algo,
-				boost::shared_ptr<AlgoPositionState> state = boost::shared_ptr<AlgoPositionState>());
+				boost::shared_ptr<const Algo> = boost::shared_ptr<const Algo>(),
+				boost::shared_ptr<AlgoPositionState> = boost::shared_ptr<AlgoPositionState>());
 		virtual ~ShortPosition();
 
 	public:

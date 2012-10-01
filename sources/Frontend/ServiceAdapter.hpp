@@ -52,7 +52,9 @@ public:
 
 public:
 
-	QString DescaleAndConvert(const xsd__positiveInteger) const;
+	double DescalePrice(xsd__positiveInteger) const;
+	QString DescalePriceAndConvert(xsd__positiveInteger) const;
+	xsd__positiveInteger ScalePrice(double) const;
 
 public:
 
@@ -65,6 +67,14 @@ public:
 	void GetBxBook(ExchangeBook &result) const;
 
 	void GetCommonParams(CommonParams &result) const;
+
+public:
+
+	void OrderBuy(double price, uint64_t qty);
+	void OrderBuyMkt(uint64_t qty);
+	void OrderSell(double price, uint64_t qty);
+	void OrderSellMkt(uint64_t qty);
+	void OrderShort(double price, uint64_t qty);
 
 private:
 

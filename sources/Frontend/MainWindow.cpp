@@ -40,6 +40,9 @@ MainWindow::MainWindow(QWidget *parent)
 		ui->serviceAddress->setText("192.168.132.129:8080");
 #	endif
 
+	ui->profitTarget->clear();
+	ui->stopLoss->clear();
+
 }
 
 MainWindow::~MainWindow() {
@@ -119,22 +122,62 @@ void MainWindow::Connect() {
 		ui->symbol->addItem(security.second.symbol);
 	}
 	ui->connectButton->setText(tr("Disconnect"));
-	if (ui->symbol->count() > 0) {
+	bool isEnabled = ui->symbol->count() > 0;
+	if (isEnabled) {
 		m_updateTimer->start(500);
-		ui->pauseButton->setEnabled(true);
 	} else {
 		m_updateTimer->stop();
-		ui->pauseButton->setEnabled(false);
 	}
+
+	ui->symbol->setEnabled(isEnabled);
+	ui->pauseButton->setEnabled(isEnabled);
+	ui->price->setEnabled(isEnabled);
+	ui->qty->setEnabled(isEnabled);
+	ui->profitTarget->setEnabled(isEnabled);
+	ui->profitTargetResetButton->setEnabled(isEnabled);
+	ui->stopLoss->setEnabled(isEnabled);
+	ui->stopLossResetButton->setEnabled(isEnabled);
+	ui->buyButton->setEnabled(isEnabled);
+	ui->sellButton->setEnabled(isEnabled);
+	ui->shortButton->setEnabled(isEnabled);
+	ui->buyMktButton->setEnabled(isEnabled);
+	ui->buyBidButton->setEnabled(isEnabled);
+	ui->sellMktButton->setEnabled(isEnabled);
+	ui->sellBidButton->setEnabled(isEnabled);
+	ui->sellOfferButton->setEnabled(isEnabled);
+	ui->buyOfferButton->setEnabled(isEnabled);
+
 	setCursor(Qt::ArrowCursor);
 }
 
 void MainWindow::Diconnect() {
+	
 	m_updateTimer->stop();
+	
+	ui->symbol->setEnabled(false);
 	ui->pauseButton->setEnabled(false);
+	ui->price->setEnabled(false);
+	ui->qty->setEnabled(false);
+	ui->profitTarget->setEnabled(false);
+	ui->profitTargetResetButton->setEnabled(false);
+	ui->stopLoss->setEnabled(false);
+	ui->stopLossResetButton->setEnabled(false);
+	ui->buyButton->setEnabled(false);
+	ui->sellButton->setEnabled(false);
+	ui->shortButton->setEnabled(false);
+	ui->buyMktButton->setEnabled(false);
+	ui->buyBidButton->setEnabled(false);
+	ui->sellMktButton->setEnabled(false);
+	ui->sellBidButton->setEnabled(false);
+	ui->sellOfferButton->setEnabled(false);
+	ui->buyOfferButton->setEnabled(false);
+	
 	m_service.reset();
+	
+	ui->price->clear();
 	ui->serviceAddress->setEnabled(true);
 	ui->connectButton->setText(tr("Connect"));
+
 }
 
 void MainWindow::on_connectButton_clicked() {
@@ -182,7 +225,7 @@ void MainWindow::UpdateTrades(
 			historyItems.push_back(new QStandardItem(QString("-")));
 		} else {
 			historyItems.push_back(
-				new QStandardItem(m_service->DescaleAndConvert(trade.param.price)));
+				new QStandardItem(m_service->DescalePriceAndConvert(trade.param.price)));
 		}
 		historyItems.push_back(
 			new QStandardItem(QString("%1").arg(trade.param.qty)));
@@ -228,14 +271,11 @@ void MainWindow::UpdateData() {
 		{
 			ServiceAdapter::CommonParams params;
 			m_service->GetCommonParams(params);
-			ui->lastTradePrice->setText(
-				m_service->DescaleAndConvert(params.last.price));
-			ui->lastTradeQty->setText(QString("%1").arg(params.last.qty));
-			ui->bestBidPrice->setText(
-				m_service->DescaleAndConvert(params.best.bid.price));
-			ui->bestAskPrice->setText(
-				m_service->DescaleAndConvert(params.best.ask.price));
-			ui->volumeTraded->setText(QString("%1").arg(params.volumeTraded));
+			ui->lastTradePrice->setValue(m_service->DescalePrice(params.last.price));
+			ui->lastTradeQty->setValue(int(params.last.qty));
+			ui->bestBidPrice->setValue(m_service->DescalePrice(params.best.bid.price));
+			ui->bestAskPrice->setValue(m_service->DescalePrice(params.best.ask.price));
+			ui->volumeTraded->setValue(int(params.volumeTraded));
 		}
 
 		{
@@ -248,11 +288,11 @@ void MainWindow::UpdateData() {
 			m_currentBidAskModel->setItem(
 				0,
 				2,
-				new QStandardItem(m_service->DescaleAndConvert(book.params1.bid.price)));
+				new QStandardItem(m_service->DescalePriceAndConvert(book.params1.bid.price)));
 			m_currentBidAskModel->setItem(
 				0,
 				3,
-				new QStandardItem(m_service->DescaleAndConvert(book.params1.ask.price)));
+				new QStandardItem(m_service->DescalePriceAndConvert(book.params1.ask.price)));
 			m_currentBidAskModel->setItem(
 				0,
 				4,
@@ -264,12 +304,12 @@ void MainWindow::UpdateData() {
 			m_currentBidAskModel->setItem(
 				2,
 				2,
-				new QStandardItem(m_service->DescaleAndConvert(book.params2.bid.price)));
+				new QStandardItem(m_service->DescalePriceAndConvert(book.params2.bid.price)));
 			if (book.params2.ask.price || book.params2.ask.qty) {
 				m_currentBidAskModel->setItem(
 					2,
 					3,
-					new QStandardItem(m_service->DescaleAndConvert(book.params2.ask.price)));
+					new QStandardItem(m_service->DescalePriceAndConvert(book.params2.ask.price)));
 				m_currentBidAskModel->setItem(
 					2,
 					4,
@@ -290,4 +330,119 @@ void MainWindow::UpdateData() {
 		return;
 	}
 
+}
+
+bool MainWindow::CheckPrice() {
+	if (!(ui->price->value() > 0)) {
+		ui->price->setFocus(Qt::OtherFocusReason);
+		ui->price->selectAll();
+		QMessageBox::critical(this, tr("Order Error"), tr("Please provide an order price."));
+		return false;
+	}
+	return true;
+}
+bool MainWindow::CheckQty() {
+	if (!(ui->qty->value() > 0)) {
+		ui->qty->setFocus(Qt::OtherFocusReason);
+		ui->qty->selectAll();
+		QMessageBox::critical(this, tr("Order Error"), tr("Please provide an order quantity."));
+		return false;
+	}
+	return true;
+}
+
+void MainWindow::on_shortButton_clicked() {
+	on_sellButton_clicked();
+}
+
+void MainWindow::on_buyButton_clicked() {
+	if (!CheckPrice() || !CheckQty()) {
+		return;
+	}
+	try {
+		m_service->OrderBuy(ui->price->value(), ui->qty->value());
+	} catch (const ServiceAdapter::Error &ex) {
+		setCursor(Qt::ArrowCursor);
+		QMessageBox::critical(this, tr("Service Error"), ex.what());
+		Diconnect();
+	}
+}
+
+void MainWindow::on_buyMktButton_clicked() {
+	if (!CheckQty()) {
+		return;
+	}
+	try {
+		m_service->OrderBuyMkt(ui->qty->value());
+	} catch (const ServiceAdapter::Error &ex) {
+		setCursor(Qt::ArrowCursor);
+		QMessageBox::critical(this, tr("Service Error"), ex.what());
+		Diconnect();
+	}
+}
+
+void MainWindow::on_sellButton_clicked() {
+	if (!CheckPrice() || !CheckQty()) {
+		return;
+	}
+	try {
+		m_service->OrderSell(ui->price->value(), ui->qty->value());
+	} catch (const ServiceAdapter::Error &ex) {
+		setCursor(Qt::ArrowCursor);
+		QMessageBox::critical(this, tr("Service Error"), ex.what());
+		Diconnect();
+	}
+}
+
+void MainWindow::on_sellMktButton_clicked() {
+	if (!m_service || !CheckQty()) {
+		return;
+	}
+	try {
+		m_service->OrderSellMkt(ui->qty->value());
+	} catch (const ServiceAdapter::Error &ex) {
+		setCursor(Qt::ArrowCursor);
+		QMessageBox::critical(this, tr("Service Error"), ex.what());
+		Diconnect();
+	}
+}
+
+void MainWindow::on_buyBidButton_clicked() {
+	if (!CheckQty()) {
+		return;
+	}
+	ui->price->setValue(ui->bestBidPrice->value());
+	on_buyButton_clicked();
+}
+
+void MainWindow::on_sellBidButton_clicked() {
+	if (!CheckQty()) {
+		return;
+	}
+	ui->price->setValue(ui->bestBidPrice->value());
+	on_sellButton_clicked();
+}
+
+void MainWindow::on_buyOfferButton_clicked() {
+	if (!CheckQty()) {
+		return;
+	}
+	ui->price->setValue(ui->bestAskPrice->value());
+	on_buyButton_clicked();
+}
+
+void MainWindow::on_sellOfferButton_clicked() {
+	if (!CheckQty()) {
+		return;
+	}
+	ui->price->setValue(ui->bestAskPrice->value());
+	on_sellButton_clicked();
+}
+
+void MainWindow::on_profitTargetResetButton_clicked() {
+	ui->profitTarget->clear();
+}
+
+void MainWindow::on_stopLossResetButton_clicked() {
+	ui->stopLoss->clear();
 }

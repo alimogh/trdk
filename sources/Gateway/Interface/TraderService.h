@@ -92,3 +92,29 @@ int trader__GetCommonParams(
 		trader__CommonParams &getCommonParamsResult);
 
 //////////////////////////////////////////////////////////////////////////
+
+//gsoap trader service method-action: OrderBuy "urn:#orderBuy"
+int trader__OrderBuy(
+		xsd__string symbol,
+		xsd__positiveInteger price,
+		xsd__positiveInteger qty,
+		xsd__string *orderBuyResult);
+//gsoap trader service method-action: OrderBuyMkt "urn:#orderBuyMkt"
+int trader__OrderBuyMkt(
+		xsd__string symbol,
+		xsd__positiveInteger qty,
+		xsd__string *orderBuyResult);
+
+//gsoap trader service method-action: OrderSell "urn:#orderSell"
+int trader__OrderSell(
+		xsd__string symbol,
+		xsd__positiveInteger price,
+		xsd__positiveInteger qty,
+		xsd__string *orderSellResult);
+//gsoap trader service method-action: OrderSellMkt "urn:#orderSellMkt"
+int trader__OrderSellMkt(
+		xsd__string symbol,
+		xsd__positiveInteger qty,
+		xsd__string *orderSellResult);
+
+//////////////////////////////////////////////////////////////////////////

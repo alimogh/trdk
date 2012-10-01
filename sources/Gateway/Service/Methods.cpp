@@ -42,3 +42,55 @@ int trader__GetCommonParams(
 	reinterpret_cast<Service *>(soap->user)->GetCommonParams(symbol, result);
 	return SOAP_OK;
 }
+
+int trader__OrderBuy(
+			soap *soap,
+			std::string symbol,
+			ULONG64 price,
+			ULONG64 qty,
+			std::string *result) {
+	reinterpret_cast<Service *>(soap->user)->OrderBuy(
+		symbol,
+		price,
+		Trader::Security::Qty(qty),
+		*result);
+	return SOAP_OK;
+}
+
+int trader__OrderBuyMkt(
+			soap *soap,
+			std::string symbol,
+			ULONG64 qty,
+			std::string *result) {
+	reinterpret_cast<Service *>(soap->user)->OrderBuyMkt(
+		symbol,
+		Trader::Security::Qty(qty),
+		*result);
+	return SOAP_OK;
+}
+
+int trader__OrderSell(
+			soap *soap,
+			std::string symbol,
+			ULONG64 price,
+			ULONG64 qty,
+			std::string *result) {
+	reinterpret_cast<Service *>(soap->user)->OrderSell(
+		symbol,
+		price,
+		Trader::Security::Qty(qty),
+		*result);
+	return SOAP_OK;
+}
+
+int trader__OrderSellMkt(
+			soap *soap,
+			std::string symbol,
+			ULONG64 qty,
+			std::string *result) {
+	reinterpret_cast<Service *>(soap->user)->OrderSellMkt(
+		symbol,
+		Trader::Security::Qty(qty),
+		*result);
+	return SOAP_OK;
+}

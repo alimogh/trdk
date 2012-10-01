@@ -79,8 +79,16 @@ ServiceAdapter::~ServiceAdapter() {
 	delete m_pimpl;
 }
 
-QString ServiceAdapter::DescaleAndConvert(const xsd__positiveInteger price) const {
-	return QString("%1").arg(double(price) / 100);
+double ServiceAdapter::DescalePrice(const xsd__positiveInteger price) const {
+	return double(price) / 100;
+}
+
+QString ServiceAdapter::DescalePriceAndConvert(const xsd__positiveInteger price) const {
+	return QString("%1").arg(DescalePrice(price));
+}
+
+xsd__positiveInteger ServiceAdapter::ScalePrice(double price) const {
+	return xsd__positiveInteger(price * 100);
 }
 
 void ServiceAdapter::SetCurrentSymbol(const QString &symbol) {
@@ -120,4 +128,62 @@ void ServiceAdapter::GetCommonParams(CommonParams &result) const {
 		m_pimpl->m_service.trader__GetCommonParams(
 			m_pimpl->m_symbol,
 			result));
+}
+
+void ServiceAdapter::OrderBuy(double price, uint64_t qty) {
+	std::string result;
+	m_pimpl->CheckSoapResult(
+		m_pimpl->m_service.trader__OrderBuy(
+			m_pimpl->m_symbol,
+			ScalePrice(price),
+			qty,
+			&result));
+	QMessageBox::information(
+		nullptr,
+		QObject::tr("Buy Order"),
+		QString::fromStdString(result),
+		QMessageBox::Ok);
+}
+
+void ServiceAdapter::OrderBuyMkt(uint64_t qty) {
+	std::string result;
+	m_pimpl->CheckSoapResult(
+		m_pimpl->m_service.trader__OrderBuyMkt(
+			m_pimpl->m_symbol,
+			qty,
+			&result));
+	QMessageBox::information(
+		nullptr,
+		QObject::tr("Market Buy Order"),
+		QString::fromStdString(result),
+		QMessageBox::Ok);
+}
+
+void ServiceAdapter::OrderSell(double price, uint64_t qty) {
+	std::string result;
+	m_pimpl->CheckSoapResult(
+		m_pimpl->m_service.trader__OrderSell(
+			m_pimpl->m_symbol,
+			ScalePrice(price),
+			qty,
+			&result));
+	QMessageBox::information(
+		nullptr,
+		QObject::tr("Sell Order"),
+		QString::fromStdString(result),
+		QMessageBox::Ok);
+}
+
+void ServiceAdapter::OrderSellMkt(uint64_t qty) {
+	std::string result;
+	m_pimpl->CheckSoapResult(
+		m_pimpl->m_service.trader__OrderSellMkt(
+			m_pimpl->m_symbol,
+			qty,
+			&result));
+	QMessageBox::information(
+		nullptr,
+		QObject::tr("Market Sell Order"),
+		QString::fromStdString(result),
+		QMessageBox::Ok);
 }

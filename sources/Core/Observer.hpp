@@ -20,7 +20,7 @@ namespace Trader {
 
 	public:
 
-		typedef std::list<boost::shared_ptr<const Trader::Security>> NotifyList;
+		typedef std::list<boost::shared_ptr<Trader::Security>> NotifyList;
 
 	public:
 
