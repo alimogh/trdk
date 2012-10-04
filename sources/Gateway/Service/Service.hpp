@@ -47,6 +47,10 @@ namespace Trader { namespace Gateway {
 			}
 		};
 
+		typedef std::map<
+				const Security *,
+				boost::shared_ptr<Trader::Position>>
+			Positions;
 
 	public:
 
@@ -104,10 +108,17 @@ namespace Trader { namespace Gateway {
 					Security::Qty,
 					std::string &resultMessage);
 
+	public:
+
+		void GetPositionInfo(const std::string &symbol, trader__Position &result) const;
+
 	protected:
 
 		const Trader::Security & FindSecurity(const std::string &symbol) const;
 		Trader::Security & FindSecurity(const std::string &symbol);
+		
+		Trader::Position & GetPosition(Trader::Security &, bool isLong);
+		Trader::Position & ResetPosition(Trader::Security &, bool isLong);
 
 	private:
 
@@ -135,6 +146,8 @@ namespace Trader { namespace Gateway {
 
 		TradesCache m_tradesCache;
 		TradesCacheMutex m_tradesCacheMutex;
+
+		Positions m_positions;
 
 
 	};

@@ -39,6 +39,8 @@ public:
 
 	typedef trader__CommonParams CommonParams;
 
+	typedef trader__Position Position;
+
 public:
 	
 	explicit ServiceAdapter(const QString &endpoint);
@@ -67,6 +69,8 @@ public:
 	void GetBxBook(ExchangeBook &result) const;
 
 	void GetCommonParams(CommonParams &result) const;
+
+	void GetPositionInfo(Position &result) const;
 
 public:
 

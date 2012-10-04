@@ -19,6 +19,7 @@
 typedef unsigned long long xsd__positiveInteger;
 typedef std::string xsd__string;
 typedef bool xsd__boolean;
+typedef char xsd__byte;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -116,5 +117,16 @@ int trader__OrderSellMkt(
 		xsd__string symbol,
 		xsd__positiveInteger qty,
 		xsd__string *orderSellResult);
+
+//////////////////////////////////////////////////////////////////////////
+
+class trader__Position {
+	xsd__byte side;
+	xsd__positiveInteger price;
+	xsd__positiveInteger qty;
+};
+
+//gsoap trader service method-action: GetPositionInfo "urn:#getPositionInfo"
+int trader__GetPositionInfo(xsd__string symbol, trader__Position *positionResult);
 
 //////////////////////////////////////////////////////////////////////////

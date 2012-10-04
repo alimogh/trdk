@@ -195,12 +195,16 @@ namespace Trader {
 	public:
 
 		OrderId OpenAtMarketPrice();
+		OrderId OpenAtMarketPrice(Qty);
 		OrderId Open(ScaledPrice);
+		OrderId Open(ScaledPrice, Qty);
 		OrderId OpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
 		OrderId OpenOrCancel(ScaledPrice);
 
 		OrderId CloseAtMarketPrice(CloseType);
+		OrderId CloseAtMarketPrice(CloseType, Qty);
 		OrderId Close(CloseType, ScaledPrice);
+		OrderId Close(CloseType, ScaledPrice, Qty);
 		OrderId CloseAtMarketPriceWithStopPrice(CloseType, ScaledPrice stopPrice);
 		OrderId CloseOrCancel(CloseType, ScaledPrice);
 
@@ -216,13 +220,13 @@ namespace Trader {
 
 	protected:
 
-		virtual OrderId DoOpenAtMarketPrice() = 0;
-		virtual OrderId DoOpen(ScaledPrice) = 0;
+		virtual OrderId DoOpenAtMarketPrice(Qty) = 0;
+		virtual OrderId DoOpen(ScaledPrice, Qty) = 0;
 		virtual OrderId DoOpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice) = 0;
 		virtual OrderId DoOpenOrCancel(ScaledPrice) = 0;
 
-		virtual OrderId DoCloseAtMarketPrice() = 0;
-		virtual OrderId DoClose(ScaledPrice) = 0;
+		virtual OrderId DoCloseAtMarketPrice(Qty) = 0;
+		virtual OrderId DoClose(ScaledPrice, Qty) = 0;
 		virtual OrderId DoCloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice) = 0;
 		virtual OrderId DoCloseOrCancel(ScaledPrice) = 0;
 
@@ -260,6 +264,8 @@ namespace Trader {
 				const
 				throw();
 
+		void AddPlanedQty(Qty);
+
 	private:
 
 		mutable Mutex m_mutex;
@@ -268,7 +274,7 @@ namespace Trader {
 
 		boost::shared_ptr<Trader::Security> m_security;
 
-		const Qty m_planedQty;
+		volatile long m_planedQty;
 
 		const ScaledPrice m_openStartPrice;
 		DynamicData m_opened;
@@ -316,13 +322,13 @@ namespace Trader {
 
 	public:
 
-		virtual OrderId DoOpenAtMarketPrice();
-		virtual OrderId DoOpen(ScaledPrice);
+		virtual OrderId DoOpenAtMarketPrice(Qty);
+		virtual OrderId DoOpen(ScaledPrice, Qty);
 		virtual OrderId DoOpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
 		virtual OrderId DoOpenOrCancel(ScaledPrice);
 
-		virtual OrderId DoCloseAtMarketPrice();
-		virtual OrderId DoClose(ScaledPrice);
+		virtual OrderId DoCloseAtMarketPrice(Qty);
+		virtual OrderId DoClose(ScaledPrice, Qty);
 		virtual OrderId DoCloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
 		virtual OrderId DoCloseOrCancel(ScaledPrice);
 
@@ -354,13 +360,13 @@ namespace Trader {
 
 	public:
 
-		virtual OrderId DoOpenAtMarketPrice();
-		virtual OrderId DoOpen(ScaledPrice);
+		virtual OrderId DoOpenAtMarketPrice(Qty);
+		virtual OrderId DoOpen(ScaledPrice, Qty);
 		virtual OrderId DoOpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
 		virtual OrderId DoOpenOrCancel(ScaledPrice);
 
-		virtual OrderId DoCloseAtMarketPrice();
-		virtual OrderId DoClose(ScaledPrice);
+		virtual OrderId DoCloseAtMarketPrice(Qty);
+		virtual OrderId DoClose(ScaledPrice, Qty);
 		virtual OrderId DoCloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
 		virtual OrderId DoCloseOrCancel(ScaledPrice);
 

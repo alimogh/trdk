@@ -94,3 +94,11 @@ int trader__OrderSellMkt(
 		*result);
 	return SOAP_OK;
 }
+
+int trader__GetPositionInfo(
+			soap *soap,
+			std::string symbol,
+			trader__Position *result) {
+	reinterpret_cast<Service *>(soap->user)->GetPositionInfo(symbol, *result);
+	return SOAP_OK;
+}

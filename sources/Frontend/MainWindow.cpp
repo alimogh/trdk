@@ -323,6 +323,19 @@ void MainWindow::UpdateData() {
 			}
 		}
 
+		{
+			ServiceAdapter::Position position;
+			m_service->GetPositionInfo(position);
+			ui->positionPrice->setValue(m_service->DescalePrice(position.price));
+			ui->positionQty->setValue(int(position.qty));
+			ui->positionSide->setText(
+				position.side < 0
+					?	tr("short")
+					:	position.side > 0
+						?	tr("long")
+						:	tr("none"));
+		}
+
 	} catch (const ServiceAdapter::Error &ex) {
 		setCursor(Qt::ArrowCursor);
 		QMessageBox::critical(this, tr("Service Error"), ex.what());

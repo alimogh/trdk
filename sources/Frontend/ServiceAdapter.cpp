@@ -187,3 +187,8 @@ void ServiceAdapter::OrderSellMkt(uint64_t qty) {
 		QString::fromStdString(result),
 		QMessageBox::Ok);
 }
+
+void ServiceAdapter::GetPositionInfo(Position &result) const {
+	m_pimpl->CheckSoapResult(
+		m_pimpl->m_service.trader__GetPositionInfo(m_pimpl->m_symbol, &result));
+}
