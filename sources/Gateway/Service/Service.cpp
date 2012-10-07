@@ -309,16 +309,13 @@ void Service::OrderBuy(
 			std::string &resultMessage) {
 	try {
 		Security &security = FindSecurity(symbol);
-		Position *position = &GetPosition(security, true);
-		if (position->IsClosed()) {
-			position = &ResetPosition(security, true);
-		}
-		if (dynamic_cast<LongPosition *>(position)) {
-			position->Open(price, qty);
-		} else if (position->GetOpenedQty() >= qty) {
-			position->Close(Position::CLOSE_TYPE_NONE, price, qty);
+		ShortPosition &shortPosition = GetShortPosition(security);
+		if (shortPosition.GetPlanedQty() < qty) {
+			LongPosition &longPosition = GetLongPosition(security);
+			longPosition.IncreasePlanedQty(qty);
+			longPosition.Open(price);
 		} else {
-			position->Close(Position::CLOSE_TYPE_NONE, price);
+			shortPosition.Close(Position::CLOSE_TYPE_NONE, price, qty);
 		}
 		boost::format message("Buy Order for %1% (price %2%, quantity %3%) successfully sent.");
 		message % symbol % security.DescalePrice(price) % qty;
@@ -336,16 +333,13 @@ void Service::OrderBuyMkt(
 			std::string &resultMessage) {
 	try {
 		Security &security = FindSecurity(symbol);
-		Position *position = &GetPosition(security, true);
-		if (position->IsClosed()) {
-			position = &ResetPosition(security, true);
-		}
-		if (dynamic_cast<LongPosition *>(position)) {
-			position->OpenAtMarketPrice(qty);
-		} else if (position->GetOpenedQty() >= qty) {
-			position->CloseAtMarketPrice(Position::CLOSE_TYPE_NONE, qty);
+		ShortPosition &shortPosition = GetShortPosition(security);
+		if (shortPosition.GetPlanedQty() < qty) {
+			LongPosition &longPosition = GetLongPosition(security);
+			longPosition.IncreasePlanedQty(qty);
+			longPosition.OpenAtMarketPrice();
 		} else {
-			position->CloseAtMarketPrice(Position::CLOSE_TYPE_NONE);
+			shortPosition.CloseAtMarketPrice(Position::CLOSE_TYPE_NONE, qty);
 		}
 		boost::format message("Buy Market Order for %1% (quantity %2%) successfully sent.");
 		message % symbol % qty;
@@ -364,16 +358,13 @@ void Service::OrderSell(
 			std::string &resultMessage) {
 	try {
 		Security &security = FindSecurity(symbol);
-		Position *position = &GetPosition(security, false);
-		if (position->IsClosed()) {
-			position = &ResetPosition(security, false);
-		}
-		if (dynamic_cast<ShortPosition *>(position)) {
-			position->Open(price, qty);
-		} else if (position->GetOpenedQty() >= qty) {
-			position->Close(Position::CLOSE_TYPE_NONE, price, qty);
+		LongPosition &longPosition = GetLongPosition(security);
+		if (longPosition.GetPlanedQty() < qty) {
+			ShortPosition &shortPosition = GetShortPosition(security);
+			shortPosition.IncreasePlanedQty(qty);
+			shortPosition.Open(price);
 		} else {
-			position->Close(Position::CLOSE_TYPE_NONE, price);
+			longPosition.Close(Position::CLOSE_TYPE_NONE, price, qty);
 		}
 		boost::format message("Sell Order for %1% (price %2%, quantity %3%) successfully sent.");
 		message % symbol % security.DescalePrice(price) % qty;
@@ -391,16 +382,13 @@ void Service::OrderSellMkt(
 			std::string &resultMessage) {
 	try {
 		Security &security = FindSecurity(symbol);
-		Position *position = &GetPosition(security, false);
-		if (position->IsClosed()) {
-			position = &ResetPosition(security, false);
-		}
-		if (dynamic_cast<ShortPosition *>(position)) {
-			position->OpenAtMarketPrice(qty);
-		} else if (position->GetOpenedQty() >= qty) {
-			position->CloseAtMarketPrice(Position::CLOSE_TYPE_NONE, qty);
+		LongPosition &longPosition = GetLongPosition(security);
+		if (longPosition.GetPlanedQty() < qty) {
+			ShortPosition &shortPosition = GetShortPosition(security);
+			shortPosition.IncreasePlanedQty(qty);
+			shortPosition.OpenAtMarketPrice();
 		} else {
-			position->CloseAtMarketPrice(Position::CLOSE_TYPE_NONE);
+			longPosition.CloseAtMarketPrice(Position::CLOSE_TYPE_NONE, qty);
 		}
 		boost::format message("Sell Market Order for %1% (quantity %2%) successfully sent.");
 		message % symbol % qty;
@@ -412,19 +400,18 @@ void Service::OrderSellMkt(
 	}
 }
 
-Position & Service::GetPosition(Trader::Security &security, bool isLong) {
-	boost::shared_ptr<Position> &result = m_positions[&security];
-	return result
-		?	*result
-		:	ResetPosition(security, isLong);
+ShortPosition & Service::GetShortPosition(Trader::Security &security) {
+	boost::shared_ptr<ShortPosition> &result = m_positions[&security].first;
+	if (!result || result->IsClosed()) {
+		result.reset(new ShortPosition(security.shared_from_this()));
+	}
+	return *result;
 }
 
-Position & Service::ResetPosition(Trader::Security &security, bool isLong) {
-	boost::shared_ptr<Position> &result = m_positions[&security];
-	if (isLong) {
-		result.reset(new LongPosition(security.shared_from_this(), 0, 0));
-	} else {
-		result.reset(new ShortPosition(security.shared_from_this(), 0, 0));
+LongPosition & Service::GetLongPosition(Trader::Security &security) {
+	boost::shared_ptr<LongPosition> &result = m_positions[&security].second;
+	if (!result || result->IsClosed()) {
+		result.reset(new LongPosition(security.shared_from_this()));
 	}
 	return *result;
 }
@@ -435,16 +422,30 @@ void Service::GetPositionInfo(
 		const {
 	try {
 		const Security &security = FindSecurity(symbol);
-		const auto position = m_positions.find(&security);
-		if (	position == m_positions.end()
-				|| !position->second
-				|| position->second->IsClosed()) {
+		const Positions::const_iterator positionIt = m_positions.find(&security);
+		if (positionIt == m_positions.end()) {
 			result = trader__Position();
 			return;
 		}
-		result.side = dynamic_cast<LongPosition *>(position->second.get()) ? 1 : -1;
-		result.price = position->second->GetOpenPrice();
-		result.qty = position->second->GetActiveQty();
+		const auto position = positionIt->second;
+		const auto shortSideQty = !position.first
+			?	0
+			:	position.first->GetActiveQty();
+		const auto longSideQty = !position.second
+			?	0
+			:	position.second->GetActiveQty();
+		const auto qty = abs(longSideQty - abs(shortSideQty));
+		if (qty == 0) {
+			result = trader__Position();
+			return;
+		}
+		result.side = qty > 0
+			?	1
+			: -1;
+		result.price = qty > 0 && longSideQty > 0
+			?	position.first->GetOpenPrice()
+			:	position.second->GetOpenPrice();
+		result.qty = abs(qty);
 	} catch (const UnknownSecurityError &) {
 		Log::Error(
 			"Failed to send position info: unknown instrument \"%1%\".",

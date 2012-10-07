@@ -49,7 +49,9 @@ namespace Trader { namespace Gateway {
 
 		typedef std::map<
 				const Security *,
-				boost::shared_ptr<Trader::Position>>
+				std::pair<
+					boost::shared_ptr<Trader::ShortPosition>,
+					boost::shared_ptr<Trader::LongPosition>>>
 			Positions;
 
 	public:
@@ -117,9 +119,9 @@ namespace Trader { namespace Gateway {
 		const Trader::Security & FindSecurity(const std::string &symbol) const;
 		Trader::Security & FindSecurity(const std::string &symbol);
 		
-		Trader::Position & GetPosition(Trader::Security &, bool isLong);
-		Trader::Position & ResetPosition(Trader::Security &, bool isLong);
-
+		Trader::ShortPosition & GetShortPosition(Trader::Security &);
+		Trader::LongPosition & GetLongPosition(Trader::Security &);
+		
 	private:
 
 		void LogSoapError() const;

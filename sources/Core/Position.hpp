@@ -62,12 +62,16 @@ namespace Trader {
 
 		struct DynamicData {
 
-			volatile OrderId orderId;
+			volatile OrderId lastOrderId;
 			Time time;
-			volatile ScaledPrice price;
+			struct Price {
+				volatile long long total;
+				volatile long count;
+				Price();
+			} price;
 			volatile Qty qty;
 			volatile ScaledPrice comission;
-		
+
 			volatile bool hasOrder;
 
 			DynamicData();
@@ -76,11 +80,14 @@ namespace Trader {
 
 	public:
 
+		//! Creates position with dynamic planed qty
+		explicit Position(boost::shared_ptr<Trader::Security>);
+		//! Creates position with fixed planed qty and open price
 		explicit Position(
-				boost::shared_ptr<Trader::Security> security,
+				boost::shared_ptr<Trader::Security>,
 				Qty,
 				ScaledPrice startPrice,
-				boost::shared_ptr<const Algo> = boost::shared_ptr<const Algo>(),
+				boost::shared_ptr<const Algo>,
 				boost::shared_ptr<AlgoPositionState> = boost::shared_ptr<AlgoPositionState>());
 		virtual ~Position();
 
@@ -161,7 +168,7 @@ namespace Trader {
 		ScaledPrice GetOpenStartPrice() const;
 
 		OrderId GetOpenOrderId() const throw() {
-			return m_opened.orderId;
+			return m_opened.lastOrderId;
 		}
 		Qty GetOpenedQty() const throw() {
 			return m_opened.qty;
@@ -174,13 +181,13 @@ namespace Trader {
 			return GetPlanedQty() - GetOpenedQty();
 		}
 
-		Qty GetActiveQty() const {
+		Qty GetActiveQty() const throw() {
 			Assert(GetOpenedQty() >= GetClosedQty());
 			return GetOpenedQty() - GetClosedQty();
 		}
-	
+
 		OrderId GetCloseOrderId() const throw() {
-			return m_closed.orderId;
+			return m_closed.lastOrderId;
 		}
 		void SetCloseStartPrice(Position::ScaledPrice);
 		ScaledPrice GetCloseStartPrice() const;
@@ -194,10 +201,12 @@ namespace Trader {
 
 	public:
 
+		void IncreasePlanedQty(Qty) throw();
+
+	public:
+
 		OrderId OpenAtMarketPrice();
-		OrderId OpenAtMarketPrice(Qty);
 		OrderId Open(ScaledPrice);
-		OrderId Open(ScaledPrice, Qty);
 		OrderId OpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
 		OrderId OpenOrCancel(ScaledPrice);
 
@@ -249,6 +258,8 @@ namespace Trader {
 					double avgPrice,
 					double lastPrice);
 
+		void DecreasePlanedQty(Qty) throw();
+
 	private:
 
 		bool CancelIfSet() throw();
@@ -264,8 +275,6 @@ namespace Trader {
 				const
 				throw();
 
-		void AddPlanedQty(Qty);
-
 	private:
 
 		mutable Mutex m_mutex;
@@ -274,6 +283,7 @@ namespace Trader {
 
 		boost::shared_ptr<Trader::Security> m_security;
 
+		const bool m_isPlanedQtyDynamic;
 		volatile long m_planedQty;
 
 		const ScaledPrice m_openStartPrice;
@@ -285,9 +295,9 @@ namespace Trader {
 		volatile long m_closeType;
 
 		bool m_isReported;
-	
+
 		volatile long m_isError;
-	
+
 		volatile long m_isCanceled;
 		boost::function<void()> m_cancelMethod;
 
@@ -302,8 +312,11 @@ namespace Trader {
 
 	public:
 
+		//! Creates position with dynamic planed qty
+		explicit LongPosition(boost::shared_ptr<Trader::Security>);
+		//! Creates position with fixed planed qty and open price
 		explicit LongPosition(
-				boost::shared_ptr<Trader::Security> security,
+				boost::shared_ptr<Trader::Security>,
 				Qty,
 				ScaledPrice startPrice,
 				boost::shared_ptr<const Algo> = boost::shared_ptr<const Algo>(),
@@ -316,7 +329,7 @@ namespace Trader {
 		virtual const std::string & GetTypeStr() const throw();
 
 	public:
-	
+
 		virtual Trader::Security::OrderStatusUpdateSlot GetSellOrderStatusUpdateSlot();
 		virtual Trader::Security::OrderStatusUpdateSlot GetBuyOrderStatusUpdateSlot();
 
@@ -340,8 +353,11 @@ namespace Trader {
 
 	public:
 
+		//! Creates position with dynamic planed qty
+		explicit ShortPosition(boost::shared_ptr<Trader::Security>);
+		//! Creates position with fixed planed qty and open price
 		explicit ShortPosition(
-				boost::shared_ptr<Trader::Security> security,
+				boost::shared_ptr<Trader::Security>,
 				Qty,
 				ScaledPrice startPrice,
 				boost::shared_ptr<const Algo> = boost::shared_ptr<const Algo>(),

@@ -219,8 +219,9 @@ void Gateway::Connect(const IniFile &ini, const std::string &section) {
 		m_condition.timed_wait(lock, boost::get_system_time() + connection->timeout);
 		if (connection->stage != STAGE_HANDSHAKED) {
 			AssertLt(connection->stage, STAGE_HANDSHAKED);
-			Log::Error(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "CONNECTION FAILED or no handshake received.");
-			throw ConnectError();
+			Log::Warn(
+				TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "NO HANDSHAKE received,"
+				" trying to login without handshake packet.");
 		}
 
 		SendLoginRequest(
@@ -463,6 +464,14 @@ void Gateway::HandleOrderAccepted(const TsMessage &message, Connection &connecti
 		throw MessageError("Unknown accepted order", message);
 	}
 
+	Log::DebugEx(
+		[&message, &token]() -> boost::format {
+			boost::format result(
+				TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "order accepted (token: \"%1%\"; raw: \"%2%\").");
+			result % token % message.GetAsString(false);
+			return result;
+		});
+
 	order->callback(token, ORDER_STATUS_SUBMITTED, 0, 0, 0, 0);
 
 	StatOrders(connection);
@@ -492,6 +501,14 @@ void Gateway::HandleOrderReject(const TsMessage &message, Connection &connection
 			token,
 			reason);
 	}
+
+	Log::DebugEx(
+		[&message, &token]() -> boost::format {
+			boost::format result(
+				TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "order rejected (token \"%1%\"; raw: \"%2%\").");
+			result % token % message.GetAsString(false);
+			return result;
+		});
 
 	const auto callback = order->callback;
 	index.erase(order);
@@ -531,6 +548,14 @@ void Gateway::HandleOrderCanceled(const TsMessage &message, Connection &connecti
 			message.GetNumericField(25, 6));
 	}
 
+	Log::DebugEx(
+		[&message, &token]() -> boost::format {
+			boost::format result(
+				TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "order canceled (token: \"%1%\"; raw: \"%2%\").");
+			result % token % message.GetAsString(false);
+			return result;
+		});
+
 	const auto callback = order->callback;
 	index.erase(order);
 	callback(token, ORDER_STATUS_CANCELLED, 0, 0, 0, 0);
@@ -558,6 +583,15 @@ void Gateway::HandleOrderExecuted(const TsMessage &message, Connection &connecti
 			executionPrice);
 		throw MessageError("Unknown order executed", message);
 	}
+
+	Log::DebugEx(
+		[&message, &token, &executedQty, &executionPrice]() -> boost::format {
+			boost::format result(
+				TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+					"order executed (token: \"%1%\", qty: %2%, price: %3%, raw: \"%4%\").");
+			result % token % executedQty % executionPrice % message.GetAsString(false);
+			return result;
+		});
 
 	AssertLe(executedQty, order->initialQty);
 	AssertLe(executedQty, order->initialQty - order->executedQty);
@@ -776,12 +810,17 @@ Gateway::OrderId Gateway::SellAtMarketPrice(
 }
 
 Gateway::OrderId Gateway::Sell(
-			const Security &,
-			OrderQty,
-			OrderScaledPrice,
-			const OrderStatusUpdateSlot &) {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Doesn't implemented");
+			const Security &security,
+			OrderQty qty,
+			OrderScaledPrice price,
+			const OrderStatusUpdateSlot &callback) {
+	return SendOrder(
+		security,
+		ClientMessage::BUY_SELL_INDICATOR_SELL_LONG,
+		qty,
+		price,
+		99999,
+		callback);
 }
 
 Gateway::OrderId Gateway::SellAtMarketPriceWithStopPrice(
@@ -789,8 +828,7 @@ Gateway::OrderId Gateway::SellAtMarketPriceWithStopPrice(
 			OrderQty,
 			OrderScaledPrice /*stopPrice*/,
 			const OrderStatusUpdateSlot &) {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Doesn't implemented");
+	throw Exception("Failed to find order method");
 }
 
 Gateway::OrderId Gateway::SellOrCancel(
@@ -798,8 +836,7 @@ Gateway::OrderId Gateway::SellOrCancel(
 			OrderQty,
 			OrderScaledPrice,
 			const OrderStatusUpdateSlot &) {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Doesn't implemented");
+	throw Exception("Failed to find order method");
 }
 
 Gateway::OrderId Gateway::BuyAtMarketPrice(
@@ -816,12 +853,17 @@ Gateway::OrderId Gateway::BuyAtMarketPrice(
 }
 
 Gateway::OrderId Gateway::Buy(
-			const Security &,
-			OrderQty,
-			OrderScaledPrice,
-			const OrderStatusUpdateSlot &) {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Doesn't implemented");
+			const Security &security,
+			OrderQty qty,
+			OrderScaledPrice price,
+			const OrderStatusUpdateSlot &callback) {
+	return SendOrder(
+		security,
+		ClientMessage::BUY_SELL_INDICATOR_BUY,
+		qty,
+		price,
+		99999,
+		callback);
 }
 
 Gateway::OrderId Gateway::BuyAtMarketPriceWithStopPrice(
@@ -829,8 +871,7 @@ Gateway::OrderId Gateway::BuyAtMarketPriceWithStopPrice(
 			OrderQty,
 			OrderScaledPrice /*stopPrice*/,
 			const OrderStatusUpdateSlot &) {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Doesn't implemented");
+	throw Exception("Failed to find order method");
 }
 
 Gateway::OrderId Gateway::BuyOrCancel(
@@ -838,8 +879,7 @@ Gateway::OrderId Gateway::BuyOrCancel(
 			OrderQty,
 			OrderScaledPrice,
 			const OrderStatusUpdateSlot &) {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Doesn't implemented");
+	throw Exception("Failed to find order method");
 }
 
 void Gateway::CancelOrder(OrderId) {
