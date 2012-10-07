@@ -74,11 +74,11 @@ public:
 
 public:
 
-	void OrderBuy(double price, uint64_t qty);
-	void OrderBuyMkt(uint64_t qty);
-	void OrderSell(double price, uint64_t qty);
-	void OrderSellMkt(uint64_t qty);
-	void OrderShort(double price, uint64_t qty);
+	void OrderBuy(const QString &venue, double price, uint64_t qty);
+	void OrderBuyMkt(const QString &venue, uint64_t qty);
+	void OrderSell(const QString &venue, double price, uint64_t qty);
+	void OrderSellMkt(const QString &venue, uint64_t qty);
+	void OrderShort(const QString &venue, double price, uint64_t qty);
 
 private:
 

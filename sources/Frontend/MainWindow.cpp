@@ -146,6 +146,7 @@ void MainWindow::Connect() {
 	ui->sellBidButton->setEnabled(isEnabled);
 	ui->sellOfferButton->setEnabled(isEnabled);
 	ui->buyOfferButton->setEnabled(isEnabled);
+	ui->venue->setEnabled(isEnabled);
 
 	setCursor(Qt::ArrowCursor);
 }
@@ -171,6 +172,7 @@ void MainWindow::Diconnect() {
 	ui->sellBidButton->setEnabled(false);
 	ui->sellOfferButton->setEnabled(false);
 	ui->buyOfferButton->setEnabled(false);
+	ui->venue->setEnabled(false);
 	
 	m_service.reset();
 	
@@ -373,7 +375,10 @@ void MainWindow::on_buyButton_clicked() {
 		return;
 	}
 	try {
-		m_service->OrderBuy(ui->price->value(), ui->qty->value());
+		m_service->OrderBuy(
+			ui->venue->currentText(),
+			ui->price->value(),
+			ui->qty->value());
 	} catch (const ServiceAdapter::Error &ex) {
 		setCursor(Qt::ArrowCursor);
 		QMessageBox::critical(this, tr("Service Error"), ex.what());
@@ -386,7 +391,9 @@ void MainWindow::on_buyMktButton_clicked() {
 		return;
 	}
 	try {
-		m_service->OrderBuyMkt(ui->qty->value());
+		m_service->OrderBuyMkt(
+			ui->venue->currentText(),
+			ui->qty->value());
 	} catch (const ServiceAdapter::Error &ex) {
 		setCursor(Qt::ArrowCursor);
 		QMessageBox::critical(this, tr("Service Error"), ex.what());
@@ -399,7 +406,10 @@ void MainWindow::on_sellButton_clicked() {
 		return;
 	}
 	try {
-		m_service->OrderSell(ui->price->value(), ui->qty->value());
+		m_service->OrderSell(
+			ui->venue->currentText(),
+			ui->price->value(),
+			ui->qty->value());
 	} catch (const ServiceAdapter::Error &ex) {
 		setCursor(Qt::ArrowCursor);
 		QMessageBox::critical(this, tr("Service Error"), ex.what());
@@ -412,7 +422,9 @@ void MainWindow::on_sellMktButton_clicked() {
 		return;
 	}
 	try {
-		m_service->OrderSellMkt(ui->qty->value());
+		m_service->OrderSellMkt(
+			ui->venue->currentText(),
+			ui->qty->value());
 	} catch (const ServiceAdapter::Error &ex) {
 		setCursor(Qt::ArrowCursor);
 		QMessageBox::critical(this, tr("Service Error"), ex.what());

@@ -304,6 +304,7 @@ void Service::GetCommonParams(
 
 void Service::OrderBuy(
 			const std::string &symbol,
+			const std::string &/*venue*/,
 			Security::ScaledPrice price,
 			Security::Qty qty,
 			std::string &resultMessage) {
@@ -329,6 +330,7 @@ void Service::OrderBuy(
 
 void Service::OrderBuyMkt(
 			const std::string &symbol,
+			const std::string &/*venue*/,
 			Security::Qty qty,
 			std::string &resultMessage) {
 	try {
@@ -353,6 +355,7 @@ void Service::OrderBuyMkt(
 
 void Service::OrderSell(
 			const std::string &symbol,
+			const std::string &/*venue*/,
 			Security::ScaledPrice price,
 			Security::Qty qty,
 			std::string &resultMessage) {
@@ -378,6 +381,7 @@ void Service::OrderSell(
 
 void Service::OrderSellMkt(
 			const std::string &symbol,
+			const std::string &/*venue*/,
 			Security::Qty qty,
 			std::string &resultMessage) {
 	try {
@@ -434,14 +438,14 @@ void Service::GetPositionInfo(
 		const auto longSideQty = !position.second
 			?	0
 			:	position.second->GetActiveQty();
-		const auto qty = abs(longSideQty - abs(shortSideQty));
+		const auto qty = longSideQty - abs(shortSideQty);
 		if (qty == 0) {
 			result = trader__Position();
 			return;
 		}
 		result.side = qty > 0
 			?	1
-			: -1;
+			:	-1;
 		result.price = qty > 0 && longSideQty > 0
 			?	position.first->GetOpenPrice()
 			:	position.second->GetOpenPrice();

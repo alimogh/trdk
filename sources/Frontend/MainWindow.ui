@@ -132,6 +132,12 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>60</width>
+                   <height>0</height>
+                  </size>
+                 </property>
                  <property name="alignment">
                   <set>Qt::AlignCenter</set>
                  </property>
@@ -140,6 +146,12 @@
                  </property>
                  <property name="buttonSymbols">
                   <enum>QAbstractSpinBox::NoButtons</enum>
+                 </property>
+                 <property name="maximum">
+                  <double>1000000000.000000000000000</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.010000000000000</double>
                  </property>
                 </widget>
                </item>
@@ -165,6 +177,12 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>60</width>
+                   <height>0</height>
+                  </size>
+                 </property>
                  <property name="alignment">
                   <set>Qt::AlignCenter</set>
                  </property>
@@ -173,6 +191,9 @@
                  </property>
                  <property name="buttonSymbols">
                   <enum>QAbstractSpinBox::NoButtons</enum>
+                 </property>
+                 <property name="maximum">
+                  <number>1000000000</number>
                  </property>
                 </widget>
                </item>
@@ -198,6 +219,12 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>60</width>
+                   <height>0</height>
+                  </size>
+                 </property>
                  <property name="alignment">
                   <set>Qt::AlignCenter</set>
                  </property>
@@ -211,7 +238,7 @@
                   <double>1000000000.000000000000000</double>
                  </property>
                  <property name="singleStep">
-                  <double>0.000000000000000</double>
+                  <double>0.010000000000000</double>
                  </property>
                 </widget>
                </item>
@@ -237,6 +264,12 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>60</width>
+                   <height>0</height>
+                  </size>
+                 </property>
                  <property name="alignment">
                   <set>Qt::AlignCenter</set>
                  </property>
@@ -245,6 +278,12 @@
                  </property>
                  <property name="buttonSymbols">
                   <enum>QAbstractSpinBox::NoButtons</enum>
+                 </property>
+                 <property name="maximum">
+                  <double>1000000000.000000000000000</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.010000000000000</double>
                  </property>
                 </widget>
                </item>
@@ -270,6 +309,12 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>60</width>
+                   <height>0</height>
+                  </size>
+                 </property>
                  <property name="alignment">
                   <set>Qt::AlignCenter</set>
                  </property>
@@ -278,6 +323,9 @@
                  </property>
                  <property name="buttonSymbols">
                   <enum>QAbstractSpinBox::NoButtons</enum>
+                 </property>
+                 <property name="maximum">
+                  <number>1000000000</number>
                  </property>
                 </widget>
                </item>
@@ -377,6 +425,9 @@
                <property name="text">
                 <string>Qty</string>
                </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
               </widget>
              </item>
              <item row="1" column="0">
@@ -415,12 +466,18 @@
                <property name="text">
                 <string>Side</string>
                </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
               </widget>
              </item>
              <item row="0" column="0">
               <widget class="QLabel" name="label_6">
                <property name="text">
                 <string>Price</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
                </property>
               </widget>
              </item>
@@ -501,7 +558,7 @@
      </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_6">
+     <layout class="QHBoxLayout" name="horizontalLayout_10">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
@@ -603,7 +660,7 @@
              <item row="0" column="0">
               <widget class="QLabel" name="label_4">
                <property name="text">
-                <string>Profit Traget</string>
+                <string>Profit Target</string>
                </property>
               </widget>
              </item>
@@ -728,6 +785,22 @@
            </item>
            <item>
             <layout class="QGridLayout" name="gridLayout_2">
+             <item row="2" column="1">
+              <widget class="QPushButton" name="buyOfferButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Buy Offer</string>
+               </property>
+              </widget>
+             </item>
              <item row="3" column="1">
               <widget class="QPushButton" name="buyMktButton">
                <property name="enabled">
@@ -741,22 +814,6 @@
                </property>
                <property name="text">
                 <string>Buy MKT</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="0">
-              <widget class="QPushButton" name="buyBidButton">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Buy Bid</string>
                </property>
               </widget>
              </item>
@@ -808,8 +865,8 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="1">
-              <widget class="QPushButton" name="buyOfferButton">
+             <item row="0" column="0">
+              <widget class="QPushButton" name="buyBidButton">
                <property name="enabled">
                 <bool>false</bool>
                </property>
@@ -820,9 +877,121 @@
                 </sizepolicy>
                </property>
                <property name="text">
-                <string>Buy Offer</string>
+                <string>Buy Bid</string>
                </property>
               </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <item>
+              <widget class="QLabel" name="label_9">
+               <property name="text">
+                <string>Venue</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="venue">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="currentIndex">
+                <number>6</number>
+               </property>
+               <property name="maxVisibleItems">
+                <number>20</number>
+               </property>
+               <item>
+                <property name="text">
+                 <string>Arca</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Bats with Pegging</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Credit Suisse Cross Finder</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>SuperDot</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>EDGX</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>EDGA</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>INET/NASDAQ OUCH</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Arca with Pegging</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Boston OUCH/NASDAQ BX</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>BATS Y</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Rash</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>BATS Z</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>SuperDot with DirectPlus</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>NYSE/AMEX Hidden</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>NYSE BBSS</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_5">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
              </item>
             </layout>
            </item>

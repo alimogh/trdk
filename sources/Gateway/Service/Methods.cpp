@@ -46,11 +46,13 @@ int trader__GetCommonParams(
 int trader__OrderBuy(
 			soap *soap,
 			std::string symbol,
+			std::string venue,
 			ULONG64 price,
 			ULONG64 qty,
 			std::string *result) {
 	reinterpret_cast<Service *>(soap->user)->OrderBuy(
 		symbol,
+		venue,
 		price,
 		Trader::Security::Qty(qty),
 		*result);
@@ -60,10 +62,12 @@ int trader__OrderBuy(
 int trader__OrderBuyMkt(
 			soap *soap,
 			std::string symbol,
+			std::string venue,
 			ULONG64 qty,
 			std::string *result) {
 	reinterpret_cast<Service *>(soap->user)->OrderBuyMkt(
 		symbol,
+		venue,
 		Trader::Security::Qty(qty),
 		*result);
 	return SOAP_OK;
@@ -72,11 +76,13 @@ int trader__OrderBuyMkt(
 int trader__OrderSell(
 			soap *soap,
 			std::string symbol,
+			std::string venue,
 			ULONG64 price,
 			ULONG64 qty,
 			std::string *result) {
 	reinterpret_cast<Service *>(soap->user)->OrderSell(
 		symbol,
+		venue,
 		price,
 		Trader::Security::Qty(qty),
 		*result);
@@ -86,10 +92,12 @@ int trader__OrderSell(
 int trader__OrderSellMkt(
 			soap *soap,
 			std::string symbol,
+			std::string venue,
 			ULONG64 qty,
 			std::string *result) {
 	reinterpret_cast<Service *>(soap->user)->OrderSellMkt(
 		symbol,
+		venue,
 		Trader::Security::Qty(qty),
 		*result);
 	return SOAP_OK;

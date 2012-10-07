@@ -130,11 +130,12 @@ void ServiceAdapter::GetCommonParams(CommonParams &result) const {
 			result));
 }
 
-void ServiceAdapter::OrderBuy(double price, uint64_t qty) {
+void ServiceAdapter::OrderBuy(const QString &venue, double price, uint64_t qty) {
 	std::string result;
 	m_pimpl->CheckSoapResult(
 		m_pimpl->m_service.trader__OrderBuy(
 			m_pimpl->m_symbol,
+			venue.toStdString(),
 			ScalePrice(price),
 			qty,
 			&result));
@@ -145,11 +146,12 @@ void ServiceAdapter::OrderBuy(double price, uint64_t qty) {
 		QMessageBox::Ok);
 }
 
-void ServiceAdapter::OrderBuyMkt(uint64_t qty) {
+void ServiceAdapter::OrderBuyMkt(const QString &venue, uint64_t qty) {
 	std::string result;
 	m_pimpl->CheckSoapResult(
 		m_pimpl->m_service.trader__OrderBuyMkt(
 			m_pimpl->m_symbol,
+			venue.toStdString(),
 			qty,
 			&result));
 	QMessageBox::information(
@@ -159,11 +161,12 @@ void ServiceAdapter::OrderBuyMkt(uint64_t qty) {
 		QMessageBox::Ok);
 }
 
-void ServiceAdapter::OrderSell(double price, uint64_t qty) {
+void ServiceAdapter::OrderSell(const QString &venue, double price, uint64_t qty) {
 	std::string result;
 	m_pimpl->CheckSoapResult(
 		m_pimpl->m_service.trader__OrderSell(
 			m_pimpl->m_symbol,
+			venue.toStdString(),
 			ScalePrice(price),
 			qty,
 			&result));
@@ -174,11 +177,12 @@ void ServiceAdapter::OrderSell(double price, uint64_t qty) {
 		QMessageBox::Ok);
 }
 
-void ServiceAdapter::OrderSellMkt(uint64_t qty) {
+void ServiceAdapter::OrderSellMkt(const QString &venue, uint64_t qty) {
 	std::string result;
 	m_pimpl->CheckSoapResult(
 		m_pimpl->m_service.trader__OrderSellMkt(
 			m_pimpl->m_symbol,
+			venue.toStdString(),
 			qty,
 			&result));
 	QMessageBox::information(

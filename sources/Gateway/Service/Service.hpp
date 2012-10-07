@@ -93,20 +93,24 @@ namespace Trader { namespace Gateway {
 			
 		void OrderBuy(
 					const std::string &symbol,
+					const std::string &venue,
 					Security::ScaledPrice,
 					Security::Qty,
 					std::string &resultMessage);
 		void OrderBuyMkt(
 					const std::string &symbol,
+					const std::string &venue,
 					Security::Qty,
 					std::string &resultMessage);
 		void OrderSell(
 					const std::string &symbol,
+					const std::string &venue,
 					Security::ScaledPrice,
 					Security::Qty,
 					std::string &resultMessage);
 		void OrderSellMkt(
-					const std::string &,
+					const std::string &symbol,
+					const std::string &venue,
 					Security::Qty,
 					std::string &resultMessage);
 
