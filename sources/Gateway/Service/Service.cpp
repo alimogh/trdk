@@ -13,6 +13,7 @@
 
 using namespace Trader;
 using namespace Trader::Gateway;
+namespace pt = boost::posix_time;
 
 Service::Service(
 			const std::string &tag,
@@ -145,29 +146,40 @@ void Service::HandleSoapRequest() {
 
 void Service::StartSoapDispatcherThread() {
 
-	const char *const serviceHost = NULL;
-	SOAP_SOCKET masterSocket = soap_bind(&m_soap, serviceHost, m_port, 100);
-	if (!soap_valid_socket(masterSocket)) {
-		LogSoapError();
-		throw Exception("Failed to start Gateway SOAP Server");
-	}
+	for (auto i = 0; ; ++i) {
 
-	Log::Info(TRADER_GATEWAY_LOG_PREFFIX "started at port %1%.", m_port);
-
-	{
-		sockaddr_in hostInfo;
-		socklen_t hostInfoSize = sizeof(hostInfo);
-		if (getsockname(masterSocket, reinterpret_cast<sockaddr *>(&hostInfo), &hostInfoSize)) {
-			const Trader::Lib::Error error(GetLastError());
-			Log::Error(
-				TRADER_GATEWAY_LOG_PREFFIX "failed to get to get local network port info: %1%.",
-				error);
+		const char *const serviceHost = NULL;
+		SOAP_SOCKET masterSocket = soap_bind(&m_soap, serviceHost, m_port, 100);
+		if (!soap_valid_socket(masterSocket)) {
+			if (m_soap.error == 28 && i < 12) {
+				Log::Warn("SOAP port %1% is busy, waiting...", m_port);
+				boost::this_thread::sleep(pt::seconds(5));
+				continue;
+			}
+			LogSoapError();
 			throw Exception("Failed to start Gateway SOAP Server");
 		}
-		m_soap.port = ntohs(hostInfo.sin_port);
-	}
 
-	m_threads.create_thread(boost::bind(&Service::SoapDispatcherThread, this));
+		Log::Info(TRADER_GATEWAY_LOG_PREFFIX "started at port %1%.", m_port);
+
+		{
+			sockaddr_in hostInfo;
+			socklen_t hostInfoSize = sizeof(hostInfo);
+			if (getsockname(masterSocket, reinterpret_cast<sockaddr *>(&hostInfo), &hostInfoSize)) {
+				const Trader::Lib::Error error(GetLastError());
+				Log::Error(
+					TRADER_GATEWAY_LOG_PREFFIX "failed to get to get local network port info: %1%.",
+					error);
+				throw Exception("Failed to start Gateway SOAP Server");
+			}
+			m_soap.port = ntohs(hostInfo.sin_port);
+		}
+
+		m_threads.create_thread(boost::bind(&Service::SoapDispatcherThread, this));
+
+		break;
+
+	}
 
 }
 
@@ -304,12 +316,13 @@ void Service::GetCommonParams(
 
 void Service::OrderBuy(
 			const std::string &symbol,
-			const std::string &/*venue*/,
+			const std::string &venue,
 			Security::ScaledPrice price,
 			Security::Qty qty,
 			std::string &resultMessage) {
 	try {
 		Security &security = FindSecurity(symbol);
+		security.SetExchange(venue);
 		ShortPosition &shortPosition = GetShortPosition(security);
 		if (shortPosition.GetPlanedQty() < qty) {
 			LongPosition &longPosition = GetLongPosition(security);
@@ -330,11 +343,12 @@ void Service::OrderBuy(
 
 void Service::OrderBuyMkt(
 			const std::string &symbol,
-			const std::string &/*venue*/,
+			const std::string &venue,
 			Security::Qty qty,
 			std::string &resultMessage) {
 	try {
 		Security &security = FindSecurity(symbol);
+		security.SetExchange(venue);
 		ShortPosition &shortPosition = GetShortPosition(security);
 		if (shortPosition.GetPlanedQty() < qty) {
 			LongPosition &longPosition = GetLongPosition(security);
@@ -355,12 +369,13 @@ void Service::OrderBuyMkt(
 
 void Service::OrderSell(
 			const std::string &symbol,
-			const std::string &/*venue*/,
+			const std::string &venue,
 			Security::ScaledPrice price,
 			Security::Qty qty,
 			std::string &resultMessage) {
 	try {
 		Security &security = FindSecurity(symbol);
+		security.SetExchange(venue);
 		LongPosition &longPosition = GetLongPosition(security);
 		if (longPosition.GetPlanedQty() < qty) {
 			ShortPosition &shortPosition = GetShortPosition(security);
@@ -381,11 +396,12 @@ void Service::OrderSell(
 
 void Service::OrderSellMkt(
 			const std::string &symbol,
-			const std::string &/*venue*/,
+			const std::string &venue,
 			Security::Qty qty,
 			std::string &resultMessage) {
 	try {
 		Security &security = FindSecurity(symbol);
+		security.SetExchange(venue);
 		LongPosition &longPosition = GetLongPosition(security);
 		if (longPosition.GetPlanedQty() < qty) {
 			ShortPosition &shortPosition = GetShortPosition(security);

@@ -243,6 +243,15 @@ void Gateway::Connect(const IniFile &ini, const std::string &section) {
 			throw ConnectError();
 		}
 
+// 		SendPositionsRequest(*connection);
+// 		m_condition.timed_wait(lock, boost::get_system_time() + connection->timeout);
+// 		if (connection->stage != STAGE_POSITIONS) {
+// 			AssertLt(connection->stage, STAGE_POSITIONS);
+// 			Log::Warn(
+// 				TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+// 				"failed to get current positions, continue to work without initial positions.");
+// 		}
+
 		const boost::function<void (const pt::time_duration &)> heartbeatTask
 			= [this](const pt::time_duration &heartbeatPeriod) {
 					Log::Info(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "started heartbeat task.");
@@ -432,6 +441,9 @@ void Gateway::HandleMessage(const TsMessage &message, Connection &connection) {
 		case TsMessage::TYPE_ORDER_EXECUTED:
 			HandleOrderExecuted(message, connection);
 			break;
+		case TsMessage::TYPE_OPEN_POSITIONS:
+			HandleOpenPositions(message, connection);
+			break;
 		default:
 			throw MessageError("Unknown trade system message", message);
 	}
@@ -570,7 +582,7 @@ void Gateway::HandleOrderExecuted(const TsMessage &message, Connection &connecti
 
 	const auto token = Token(message.GetNumericField(9, 16));
 	const auto executedQty = OrderQty(message.GetNumericField(25, 6));
-	const auto executionPrice = message.GetPriceField(31, 6);
+	double executionPrice = message.GetPriceField(31, 6);
 
 	auto &index = connection.orders.get<ByToken>();
 	const auto order = index.find(token);
@@ -592,6 +604,13 @@ void Gateway::HandleOrderExecuted(const TsMessage &message, Connection &connecti
 			result % token % executedQty % executionPrice % message.GetAsString(false);
 			return result;
 		});
+
+	if (Util::IsZero(executionPrice)) {
+		Log::Warn(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+				"no execution price received from Trade System, using order price for it.");
+		executionPrice = order->price;
+	}
 
 	AssertLe(executedQty, order->initialQty);
 	AssertLe(executedQty, order->initialQty - order->executedQty);
@@ -681,6 +700,26 @@ void Gateway::HandleLoginRejected(const TsMessage &message, Connection &connecti
 	}
 }
 
+void Gateway::HandleOpenPositions(const TsMessage &message, Connection &connection) {
+	AssertEq(TsMessage::TYPE_OPEN_POSITIONS, message.GetType());
+	if (!m_connection) {
+		AssertEq(STAGE_LOGGED_ON, connection.stage);
+		connection.stage = STAGE_POSITIONS;
+		Log::Info(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "POSITIONS: more %1%; long-short %2%; shares %3%; symbol %4%",
+			message.GetNumericField(20, 6),
+			message.GetCharField(26),
+			message.GetNumericField(27, 6),
+			message.GetFieldAsString(33, 6));
+	} else {
+		throw ProtocolError(
+			"Unexpected Positions packet",
+			message.GetBegin(),
+			message.GetEnd(),
+			connection.stage);
+	}
+}
+
 void Gateway::SendLoginRequest(
 			Connection &connection,
 			const std::string &login,
@@ -706,6 +745,26 @@ void Gateway::SendLoginRequest(
 	}
 }
 
+void Gateway::SendPositionsRequest(Connection &connection) {
+	Log::Debug(TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "sending positions request...");
+	try {
+		boost::shared_ptr<ClientMessage> message(
+			new ClientMessage(ClientMessage::TYPE_POSITIONS_REQUEST));
+		message->AppendField('P');
+		message->AppendField(1, 10);
+		message->AppendField("*", 6);
+		message->AppendField("0", 10);
+		AssertEq(28, message->GetMessageLogicalLen());
+		Send(message, connection);
+	} catch (const ClientMessage::Error &ex) {
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "failed to send positions request: \"%1%\" (\"%2%\").",
+			ex.what(),
+			ex.GetSubject());
+		throw SendingError();
+	}
+}
+
 void Gateway::SendHeartbeat(Connection &connection) {
 	boost::shared_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_HEARTBEAT));
 	AssertEq(1, message->GetMessageLogicalLen());
@@ -716,28 +775,97 @@ Gateway::OrderId Gateway::SendOrder(
 			const Security &security,
 			ClientMessage::BuySellIndicator buySell,
 			OrderQty qty,
-			OrderScaledPrice price,
+			OrderScaledPrice priceScaled,
 			ClientMessage::Numeric timeInForce,
 			const OrderStatusUpdateSlot &callback) {
 
+	const double price = security.DescalePrice(priceScaled);
+
 	const Token token = Interlocking::Increment(m_connection->lastToken);
 
-	boost::shared_ptr<ClientMessage> message(new ClientMessage(ClientMessage::TYPE_NEW_ORDER));
+	char venue;
+	if (boost::iequals("Arca", security.GetExchange())) {
+		venue = 'A';
+	} else if (boost::iequals("Bats with Pegging", security.GetExchange())) {
+		venue = 'B';
+	} else if (boost::iequals("Credit Suisse Cross Finder", security.GetExchange())) {
+		venue = 'C';
+	} else if (boost::iequals("SuperDot", security.GetExchange())) {
+		venue = 'D';
+	} else if (boost::iequals("EDGX", security.GetExchange())) {
+		venue = 'G';
+	} else if (boost::iequals("EDGA", security.GetExchange())) {
+		venue = 'H';
+	} else if (boost::iequals("INET/NASDAQ OUCH", security.GetExchange())) {
+		venue = 'I';
+	} else if (boost::iequals("Arca with Pegging", security.GetExchange())) {
+		venue = 'L';
+	} else if (boost::iequals("Boston OUCH/NASDAQ BX", security.GetExchange())) {
+		venue = 'O';
+	} else if (boost::iequals("BATS Y", security.GetExchange())) {
+		venue = 'P';
+	} else if (boost::iequals("Rash", security.GetExchange())) {
+		venue = 'R';
+	} else if (boost::iequals("BATS Z", security.GetExchange())) {
+		venue = 'T';
+	} else if (boost::iequals("SuperDot with DirectPlus", security.GetExchange())) {
+		venue = 'X';
+	} else if (boost::iequals("NYSE/AMEX Hidden", security.GetExchange())) {
+		venue = 'Y';
+	} else if (boost::iequals("NYSE BBSS", security.GetExchange())) {
+		venue = 'Z';
+	} else {
+		Log::Error(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "unknown VENUE: \"%1%\".",
+			security.GetExchange());
+		throw Exception("Unknown venue");
+	}
+	
+	boost::shared_ptr<ClientMessage> message(
+		new ClientMessage(ClientMessage::TYPE_NEW_ORDER));
 	message->AppendFieldAsAlphanum(token, 16);
-	message->AppendField('A');
+	message->AppendField(venue);
 	message->AppendField(buySell);
 	message->AppendField(qty, 6);
 	message->AppendField(qty, 6);
 	message->AppendField(security.GetSymbol(), 6);
-	message->AppendField(security.DescalePrice(price), 10);
-	message->AppendField(.0, 5);
-	message->AppendField(timeInForce, 5);
+	message->AppendField(price, 10);
+	
+	size_t messageLen = 0;
+	switch (venue) {
+		case 'G':
+			message->AppendField(timeInForce, 5);
+			message->AppendField('P');
+			message->AppendField(.0, 5);
+			message->AppendField('Y');
+			message->AppendField("EDGX", 4);
+			messageLen = 73;
+			break;
+		case 'I':
+			message->AppendField(.0, 5);
+			message->AppendField(timeInForce, 5);
+			message->AppendField('Y');
+			messageLen = 68;
+			break;
+		case 'L':
+			message->AppendField(.0, 5);
+			message->AppendField(timeInForce, 5);
+			message->AppendField('R');
+			messageLen = 68;
+			break;
+		default:
+			message->AppendField(.0, 5);
+			message->AppendField(timeInForce, 5);
+			messageLen = 67;
+			break;
+	}
+	
 	message->AppendSpace(10);
-	AssertEq(67, message->GetMessageLogicalLen());
+	AssertEq(messageLen, message->GetMessageLogicalLen());
 
 	const Lock lock(m_mutex);
 	const auto pos = m_connection->orders.insert(
-		Order(OrderId(token), callback, qty));
+		Order(OrderId(token), callback, qty, price));
 	Assert(pos.second);
 	if (!pos.second) {
 		throw Error("Failed to create order index");

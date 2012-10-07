@@ -61,6 +61,10 @@ namespace Trader {
 		const std::string & GetExchange() const {
 			return m_exchange;
 		}
+		//! @todo: remove!
+		void SetExchange(const std::string &exchange) {
+			m_exchange = exchange;
+		}
 
 	public:
 
@@ -86,7 +90,7 @@ namespace Trader {
 		const boost::shared_ptr<TradeSystem> m_tradeSystem;
 		const std::string m_symbol;
 		const std::string m_primaryExchange;
-		const std::string m_exchange;
+		std::string m_exchange;
 		const std::string m_fullSymbol;
 		const boost::shared_ptr<const Settings> m_settings;
 

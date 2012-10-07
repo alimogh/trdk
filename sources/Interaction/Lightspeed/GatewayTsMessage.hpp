@@ -25,7 +25,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			TYPE_ORDER_ACCEPTED,
 			TYPE_ORDER_REJECTED,
 			TYPE_ORDER_CANCELED,
-			TYPE_ORDER_EXECUTED
+			TYPE_ORDER_EXECUTED,
+			TYPE_OPEN_POSITIONS
 		};
 
 		typedef BufferT Buffer;
@@ -101,7 +102,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			DATA_TYPE_ORDER_ACCEPTED	= 'A',
 			DATA_TYPE_ORDER_REJECTED	= 'J',
 			DATA_TYPE_ORDER_CANCELED	= 'C',
-			DATA_TYPE_ORDER_EXECUTED	= 'E'
+			DATA_TYPE_ORDER_EXECUTED	= 'E',
+			DATA_TYPE_OPEN_POSITIONS	= 'P'
 		};
 
 	public:
@@ -122,6 +124,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 					m_isDataMessage = false;
 					m_type = Type(*m_messageBegin);
 					break;
+				case 'I':
 				case 'S':
 					if (m_logicalLen < m_timestampFieldSize + 2) {
 						throw FieldHasInvalidLenError(m_messageBegin, m_messageEnd);
@@ -141,6 +144,9 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 							break;
 						case DATA_TYPE_ORDER_EXECUTED:
 							m_type = TYPE_ORDER_EXECUTED;
+							break;
+						case DATA_TYPE_OPEN_POSITIONS:
+							m_type = TYPE_OPEN_POSITIONS;
 							break;
 						default:
 							throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);

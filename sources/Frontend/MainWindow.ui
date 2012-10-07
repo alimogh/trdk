@@ -898,7 +898,7 @@
                 <bool>false</bool>
                </property>
                <property name="currentIndex">
-                <number>6</number>
+                <number>0</number>
                </property>
                <property name="maxVisibleItems">
                 <number>20</number>

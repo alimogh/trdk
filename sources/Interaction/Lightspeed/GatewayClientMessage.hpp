@@ -18,9 +18,10 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 	public:
 
 		enum Type {
-			TYPE_LOGIN_REQUEST	= 'L',
-			TYPE_NEW_ORDER		= 'O',
-			TYPE_HEARTBEAT		= 'R'
+			TYPE_LOGIN_REQUEST		= 'L',
+			TYPE_NEW_ORDER			= 'O',
+			TYPE_POSITIONS_REQUEST	= 'I',
+			TYPE_HEARTBEAT			= 'R'
 		};
 
 		typedef BufferT Buffer;
@@ -147,6 +148,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			switch (type) {
 				case TYPE_LOGIN_REQUEST:
 				case TYPE_HEARTBEAT:
+				case TYPE_POSITIONS_REQUEST:
 					return false;
 				case TYPE_NEW_ORDER:
 					return true;

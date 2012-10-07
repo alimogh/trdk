@@ -26,7 +26,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			STAGE_CONNECTING	= 1101,
 			STAGE_CONNECTED		= 1102,
 			STAGE_HANDSHAKED	= 1203,
-			STAGE_LOGGED_ON		= 1204
+			STAGE_LOGGED_ON		= 1204,
+			STAGE_POSITIONS		= 2001
 		};
 
 		typedef boost::circular_buffer<char> MessagesBuffer;
@@ -142,6 +143,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 			OrderQty initialQty;
 			OrderQty executedQty;
+			double price;
 
 			boost::accumulators::accumulator_set<
 					double,
@@ -155,11 +157,13 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			explicit Order(
 						const Token &token,
 						const OrderStatusUpdateSlot &callback,
-						const OrderQty &qty)
+						const OrderQty &qty,
+						const double price)
 					: token(token),
 					callback(callback),
 					initialQty(qty),
-					executedQty(0) {
+					executedQty(0),
+					price(price) {
 				//...//
 			}
 
@@ -306,12 +310,16 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		void HandleOrderExecuted(const TsMessage &, Connection &);
 		void StatOrders(Connection &) throw();
 
+		void HandleOpenPositions(const TsMessage &, Connection &);
+
 	private:
 
 		void SendLoginRequest(
 					Connection &,
 					const std::string &login,
 					const std::string &password);
+
+		void SendPositionsRequest(Connection &);
 
 		OrderId SendOrder(
 				const Security &,
