@@ -725,7 +725,7 @@ void Gateway::SendLoginRequest(
 			const std::string &login,
 			const std::string &password) {
 	Log::Info(
-		TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "sending longing request for \"%1%\"...",
+		TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "sending Login Request for \"%1%\"...",
 		login);
 	try {
 		boost::shared_ptr<ClientMessage> message(
@@ -839,28 +839,28 @@ Gateway::OrderId Gateway::SendOrder(
 			message->AppendField(.0, 5);
 			message->AppendField('Y');
 			message->AppendField("EDGX", 4);
-			messageLen = 73;
+			messageLen = 63;
 			break;
 		case 'I':
 			message->AppendField(.0, 5);
 			message->AppendField(timeInForce, 5);
 			message->AppendField('Y');
-			messageLen = 68;
+			messageLen = 58;
 			break;
 		case 'L':
 			message->AppendField(.0, 5);
 			message->AppendField(timeInForce, 5);
 			message->AppendField('R');
-			messageLen = 68;
+			messageLen = 58;
 			break;
 		default:
 			message->AppendField(.0, 5);
 			message->AppendField(timeInForce, 5);
+			message->AppendSpace(10);
 			messageLen = 67;
 			break;
 	}
 	
-	message->AppendSpace(10);
 	AssertEq(messageLen, message->GetMessageLogicalLen());
 
 	const Lock lock(m_mutex);
