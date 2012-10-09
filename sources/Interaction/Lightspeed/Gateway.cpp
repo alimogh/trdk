@@ -35,7 +35,8 @@ Gateway::Connection::Connection(
 		seqnumber(0),
 		timeout(timeout),
 		lastToken(0),
-		orderMessagesFromLastStatCount() {
+		messageCount(0),
+		orderMessagesFromLastStatCount(0) {
 	//...//
 }
 
@@ -320,8 +321,7 @@ void Gateway::HandleRead(const boost::system::error_code &error, size_t size) {
 			ex.GetStage());
 	} catch (const MessageError &ex) {
 		Log::Error(
-			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "error \"%1%\""
-				" in message \"%2%\" (stage: %3%).",
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "error \"%1%\" in message \"%2%\".",
 			ex.what(),
 			ex.GetMessage());
 	}
@@ -382,7 +382,7 @@ bool Gateway::HandleRead(
 	if (connection.messagesBuffer.capacity() < oldSize + size) {
 		Log::Warn(
 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "exceeded the internal buffer"
-				" (current capacity: %2%, new data size: %3%)."
+				" (current capacity: %1%, new data size: %2%)."
 				" Buffer will be reallocated.",
 			connection.messagesBuffer.capacity(),
 			size);
@@ -396,7 +396,7 @@ bool Gateway::HandleRead(
 
 	for ( ; ; ) {
 		MessagesBuffer::iterator end = std::find(
-			connection.messagesBuffer.begin() + oldSize,
+			connection.messagesBuffer.begin() /*+ oldSize*/,
 			connection.messagesBuffer.end(),
 			'\n');
 		if (end == connection.messagesBuffer.end()) {
@@ -444,8 +444,19 @@ void Gateway::HandleMessage(const TsMessage &message, Connection &connection) {
 		case TsMessage::TYPE_OPEN_POSITIONS:
 			HandleOpenPositions(message, connection);
 			break;
+		case TsMessage::TYPE_VENUE_STATUS:
+			HandleVenueStatus(message, connection);
+			break;
 		default:
-			throw MessageError("Unknown trade system message", message);
+			// throw MessageError("Unknown trade system message", message);
+			break;
+	}
+
+	if (	message.GetType() != TsMessage::TYPE_HEARTBEAT
+			&& !((++connection.messageCount) % 100)) {
+		Log::Debug(
+			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "received %1% messages.",
+			connection.messageCount);
 	}
 
 }
@@ -500,12 +511,13 @@ void Gateway::HandleOrderReject(const TsMessage &message, Connection &connection
 	auto &index = connection.orders.get<ByToken>();
 	const auto order = index.find(token);
 	if (order == index.end()) {
-		Log::Error(
-			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
-				"unknown rejected order with token: %1% (reject reason: \"%2%\").",
-			token,
-			reason);
-		throw MessageError("Unknown rejected order", message);
+// 		Log::Error(
+// 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+// 				"unknown rejected order with token: %1% (reject reason: \"%2%\").",
+// 			token,
+// 			reason);
+// 		throw MessageError("Unknown rejected order", message);
+		return;
 	} else {
 		Log::Error(
 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
@@ -587,13 +599,14 @@ void Gateway::HandleOrderExecuted(const TsMessage &message, Connection &connecti
 	auto &index = connection.orders.get<ByToken>();
 	const auto order = index.find(token);
 	if (order == index.end()) {
-		Log::Error(
-			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
-				"unknown order executed (token: %1%, qty: \"%2%\", price: \"%3%\").",
-			token,
-			executedQty,
-			executionPrice);
-		throw MessageError("Unknown order executed", message);
+// 		Log::Error(
+// 			TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX
+// 				"unknown order executed (token: %1%, qty: \"%2%\", price: \"%3%\").",
+// 			token,
+// 			executedQty,
+// 			executionPrice);
+// 		throw MessageError("Unknown order executed", message);
+		return;
 	}
 
 	Log::DebugEx(
@@ -712,12 +725,13 @@ void Gateway::HandleOpenPositions(const TsMessage &message, Connection &connecti
 			message.GetNumericField(27, 6),
 			message.GetFieldAsString(33, 6));
 	} else {
-		throw ProtocolError(
-			"Unexpected Positions packet",
-			message.GetBegin(),
-			message.GetEnd(),
-			connection.stage);
+		//...//
 	}
+}
+
+void Gateway::HandleVenueStatus(const TsMessage &message, Connection &connection) {
+	AssertEq(TsMessage::TYPE_VENUE_STATUS, message.GetType());
+	UseUnused(message, connection);
 }
 
 void Gateway::SendLoginRequest(
@@ -733,7 +747,7 @@ void Gateway::SendLoginRequest(
 		message->AppendField(login, 6);
 		message->AppendField(password, 10);
 		message->AppendSpace(10);
-		message->AppendField(ClientMessage::Numeric(0), 10);
+		message->AppendField(ClientMessage::Numeric(1), 10);
 		AssertEq(37, message->GetMessageLogicalLen());
 		Send(message, connection);
 	} catch (const ClientMessage::Error &ex) {

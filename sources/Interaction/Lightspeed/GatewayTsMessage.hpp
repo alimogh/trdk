@@ -23,10 +23,15 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			TYPE_HEARTBEAT		= 'H',
 			TYPE_DEBUG			= '+',
 			TYPE_ORDER_ACCEPTED,
+			TYPE_STATUS_ORDER_ACCEPTED,
 			TYPE_ORDER_REJECTED,
 			TYPE_ORDER_CANCELED,
+			TYPE_STATUS_ORDER_CANCELED,
 			TYPE_ORDER_EXECUTED,
-			TYPE_OPEN_POSITIONS
+			TYPE_OPEN_POSITIONS,
+			TYPE_STATUS_OPEN_POSITIONS,
+			TYPE_VENUE_STATUS,
+			TYPE_STATUS_START_OF_DAY_DAY_TRADING_BUYING_POWER
 		};
 
 		typedef BufferT Buffer;
@@ -100,10 +105,12 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		enum DataType {
 			DATA_TYPE_ORDER_ACCEPTED	= 'A',
-			DATA_TYPE_ORDER_REJECTED	= 'J',
 			DATA_TYPE_ORDER_CANCELED	= 'C',
+			DATA_TYPE_START_OF_DAY_DAY_TRADING_BUYING_POWER	= 'D',
+			DATA_TYPE_ORDER_REJECTED	= 'J',
 			DATA_TYPE_ORDER_EXECUTED	= 'E',
-			DATA_TYPE_OPEN_POSITIONS	= 'P'
+			DATA_TYPE_OPEN_POSITIONS	= 'P',
+			DATA_TYPE_VENUE_STATUS		= 'V'
 		};
 
 	public:
@@ -116,7 +123,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			if (!m_logicalLen) {
 				throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
 			}
-			switch (*m_messageBegin) {
+			const auto rawType = *m_messageBegin;
+			switch (rawType) {
 				case TYPE_DEBUG:
 				case TYPE_LOGIN_ACCEPTED:
 				case TYPE_LOGIN_REJECTED:
@@ -126,6 +134,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 					break;
 				case 'I':
 				case 'S':
+				case 'V':
 					if (m_logicalLen < m_timestampFieldSize + 2) {
 						throw FieldHasInvalidLenError(m_messageBegin, m_messageEnd);
 					}
@@ -134,19 +143,31 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 					m_isDataMessage = true;
 					switch (*(m_messageLogicalBegin + m_timestampFieldSize)) {
 						case DATA_TYPE_ORDER_ACCEPTED:
-							m_type = TYPE_ORDER_ACCEPTED;
+							m_type = rawType == 'S'
+								?	TYPE_STATUS_ORDER_ACCEPTED
+								:	TYPE_ORDER_ACCEPTED;
 							break;
 						case DATA_TYPE_ORDER_REJECTED:
 							m_type = TYPE_ORDER_REJECTED;
 							break;
 						case DATA_TYPE_ORDER_CANCELED:
-							m_type = TYPE_ORDER_CANCELED;
+							m_type = rawType == 'S'
+								?	TYPE_STATUS_ORDER_CANCELED
+								:	TYPE_ORDER_CANCELED;
 							break;
 						case DATA_TYPE_ORDER_EXECUTED:
 							m_type = TYPE_ORDER_EXECUTED;
 							break;
 						case DATA_TYPE_OPEN_POSITIONS:
-							m_type = TYPE_OPEN_POSITIONS;
+							m_type =  rawType == 'S'
+								?	TYPE_STATUS_OPEN_POSITIONS
+								:	TYPE_OPEN_POSITIONS;
+							break;
+						case DATA_TYPE_VENUE_STATUS:
+							m_type = TYPE_VENUE_STATUS;
+							break;
+						case DATA_TYPE_START_OF_DAY_DAY_TRADING_BUYING_POWER:
+							m_type = TYPE_STATUS_START_OF_DAY_DAY_TRADING_BUYING_POWER;
 							break;
 						default:
 							throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
@@ -170,14 +191,20 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				case TYPE_ORDER_ACCEPTED:
 					CheckMessageLen(106 - 10);
 					break;
+				case TYPE_STATUS_ORDER_ACCEPTED:
+//					CheckMessageLen(107);
+					break;
 				case TYPE_ORDER_REJECTED:
-					CheckMessageLen(26);
+//					CheckMessageLen(26);
 					break;
 				case TYPE_ORDER_CANCELED:
 					CheckMessageLen(32);
 					break;
+				case TYPE_STATUS_ORDER_CANCELED:
+//					CheckMessageLen(32);
+					break;
 				case TYPE_ORDER_EXECUTED:
-					CheckMessageLen(70);
+//					CheckMessageLen(70);
 					break;
 			};
 		}

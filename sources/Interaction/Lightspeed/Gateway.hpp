@@ -201,6 +201,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 			volatile Token lastToken;
 			Orders orders;
+			size_t messageCount;
 			size_t orderMessagesFromLastStatCount;
 
 			explicit Connection(
@@ -308,9 +309,12 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		void HandleOrderReject(const TsMessage &, Connection &);
 		void HandleOrderCanceled(const TsMessage &, Connection &);
 		void HandleOrderExecuted(const TsMessage &, Connection &);
-		void StatOrders(Connection &) throw();
 
 		void HandleOpenPositions(const TsMessage &, Connection &);
+
+		void HandleVenueStatus(const TsMessage &, Connection &);
+
+		void StatOrders(Connection &) throw();
 
 	private:
 
