@@ -18,11 +18,15 @@ class Observer::Implementation {
 public:
 
 	NotifyList m_notifyList;
+	boost::shared_ptr<Trader::TradeSystem> tradeSystem;
 
 public:
 
-	explicit Implementation(const Observer::NotifyList &notifyList)
-			: m_notifyList(notifyList) {
+	explicit Implementation(
+				const Observer::NotifyList &notifyList,
+				boost::shared_ptr<Trader::TradeSystem> tradeSystem)
+			: m_notifyList(notifyList),
+			tradeSystem(tradeSystem) {
 		//...//
 	}
 
@@ -36,9 +40,10 @@ public:
 
 Observer::Observer(
 			const std::string &tag,
-			const Observer::NotifyList &notifyList)
+			const Observer::NotifyList &notifyList,
+			boost::shared_ptr<Trader::TradeSystem> tradeSystem)
 		: Module(tag),
-		m_pimpl(new Implementation(notifyList)) {
+		m_pimpl(new Implementation(notifyList, tradeSystem)) {
 	//...//
 }
 
@@ -48,4 +53,8 @@ Observer::~Observer() {
 
 const Observer::NotifyList & Observer::GetNotifyList() const {
 	return m_pimpl->m_notifyList;
+}
+
+TradeSystem & Observer::GetTradeSystem() {
+	return *m_pimpl->tradeSystem;
 }

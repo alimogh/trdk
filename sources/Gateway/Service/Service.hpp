@@ -59,6 +59,7 @@ namespace Trader { namespace Gateway {
 		explicit Service(
 					const std::string &tag,
 					const Observer::NotifyList &notifyList,
+					boost::shared_ptr<Trader::TradeSystem>,
 					const IniFile &ini,
 					const std::string &section);
 		virtual ~Service();

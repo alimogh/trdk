@@ -18,9 +18,10 @@ namespace pt = boost::posix_time;
 Service::Service(
 			const std::string &tag,
 			const Observer::NotifyList &notifyList,
+			boost::shared_ptr<Trader::TradeSystem> tradeSystem,
 			const IniFile &ini,
 			const std::string &section)
-		: Observer(tag, notifyList),
+		: Observer(tag, notifyList, tradeSystem),
 		m_stopFlag(false) {
 
 	m_port = ini.ReadTypedKey<unsigned short>(section, "port");

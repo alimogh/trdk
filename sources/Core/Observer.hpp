@@ -24,7 +24,10 @@ namespace Trader {
 
 	public:
 
-		Observer(const std::string &tag, const Observer::NotifyList &notifyList);
+		Observer(
+				const std::string &tag,
+				const Trader::Observer::NotifyList &,
+				boost::shared_ptr<Trader::TradeSystem>);
 		virtual ~Observer();
 
 	public:
@@ -40,6 +43,10 @@ namespace Trader {
 					Trader::Security::Qty qty,
 					bool isBuy)
 				= 0;
+
+	protected:
+
+		Trader::TradeSystem & GetTradeSystem();
 
 	private:
 
