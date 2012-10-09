@@ -462,7 +462,7 @@ void Service::GetPositionInfo(
 		result.side = qty > 0
 			?	1
 			:	-1;
-		result.price = qty > 0 && longSideQty > 0
+		result.price = qty < 0 || longSideQty <= 0
 			?	position.first->GetOpenPrice()
 			:	position.second->GetOpenPrice();
 		result.qty = abs(qty);
