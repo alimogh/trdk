@@ -321,7 +321,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		void SendLoginRequest(
 					Connection &,
 					const std::string &login,
-					const std::string &password);
+					const std::string &password,
+					const std::string &session);
 
 		void SendPositionsRequest(Connection &);
 

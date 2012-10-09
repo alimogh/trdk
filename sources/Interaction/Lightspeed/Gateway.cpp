@@ -228,7 +228,8 @@ void Gateway::Connect(const IniFile &ini, const std::string &section) {
 		SendLoginRequest(
 			*connection,
 			ini.ReadKey(section, "login", false),
-			ini.ReadKey(section, "password", false));
+			ini.ReadKey(section, "password", false),
+			ini.ReadKey(section, "session", true));
 		m_condition.timed_wait(lock, boost::get_system_time() + connection->timeout);
 		if (connection->stage != STAGE_LOGGED_ON) {
 			AssertLt(connection->stage, STAGE_LOGGED_ON);
@@ -737,7 +738,8 @@ void Gateway::HandleVenueStatus(const TsMessage &message, Connection &connection
 void Gateway::SendLoginRequest(
 			Connection &connection,
 			const std::string &login,
-			const std::string &password) {
+			const std::string &password,
+			const std::string &session) {
 	Log::Info(
 		TRADER_LIGHTSPEED_GATEWAY_LOG_PREFFIX "sending Login Request for \"%1%\"...",
 		login);
@@ -746,7 +748,7 @@ void Gateway::SendLoginRequest(
 			new ClientMessage(ClientMessage::TYPE_LOGIN_REQUEST));
 		message->AppendField(login, 6);
 		message->AppendField(password, 10);
-		message->AppendSpace(10);
+		message->AppendField(session, 10);
 		message->AppendField(ClientMessage::Numeric(1), 10);
 		AssertEq(37, message->GetMessageLogicalLen());
 		Send(message, connection);
