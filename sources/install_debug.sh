@@ -23,6 +23,4 @@ cp ./Engine/run_trader_dbg.sh ${outputDir}
 cp ./Core/dist/${conf}/GNU_4.7.1-Linux-x86/* ${outputLibDir}
 cp ./PyApi/dist/${conf}/GNU_4.7.1-Linux-x86/* ${outputLibDir}
 cp ./Interaction/Fake/dist/${conf}/GNU_4.7.1-Linux-x86/* ${outputLibDir}
-cp ./Interaction/Enyx/dist/${conf}/GNU_4.7.1-Linux-x86/* ${outputLibDir}
-cp ./Interaction/Lightspeed/dist/${conf}/GNU_4.7.1-Linux-x86/* ${outputLibDir}
 cp ./Gateway/Service/dist/${conf}/GNU_4.7.1-Linux-x86/* ${outputLibDir}

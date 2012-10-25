@@ -77,14 +77,8 @@
     <ProjectReference Include="..\Gateway\Service\GatewayService.vcxproj">
       <Project>{5e6b58fd-f8d1-44fe-9686-87d3d9cae3fc}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Interaction\Enyx\Enyx.vcxproj">
-      <Project>{9a49e138-ae46-46f6-9795-3bbf14f65e2d}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\Interaction\Fake\Fake.vcxproj">
       <Project>{3e0187e3-f6e3-48e3-a0e4-1e454b0e7f40}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\Lightspeed\Lightspeed.vcxproj">
-      <Project>{ced89712-f2fd-4a0d-a97c-a43f1738d1b5}</Project>
     </ProjectReference>
     <ProjectReference Include="..\PyApi\PyApi.vcxproj">
       <Project>{7bd47287-4175-45ee-860b-326ae8060a16}</Project>
