@@ -8,12 +8,9 @@
 
 #pragma once
 
-namespace Trader {
-	class TradeSystem;
-}
+void Connect(
+			Trader::TradeSystem &,
+			const IniFile &,
+			const std::string &section);
 
-class MarketDataSource;
-class Settings;
-
-void Connect(Trader::TradeSystem &, const IniFile &, const std::string &section);
-void Connect(MarketDataSource &, const Settings &);
+void Connect(Trader::LiveMarketDataSource &);

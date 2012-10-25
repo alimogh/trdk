@@ -59,13 +59,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
-    <TargetName>trader_test</TargetName>
+    <TargetName>Trader_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <TargetName>trader_dbg</TargetName>
+    <TargetName>Trader_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <TargetName>trader</TargetName>
+    <TargetName>Trader</TargetName>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.vcxproj">
@@ -73,6 +73,15 @@
     </ProjectReference>
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Gateway\Service\GatewayService.vcxproj">
+      <Project>{5e6b58fd-f8d1-44fe-9686-87d3d9cae3fc}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Interaction\Enyx\Enyx.vcxproj">
+      <Project>{9a49e138-ae46-46f6-9795-3bbf14f65e2d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Interaction\Fake\Fake.vcxproj">
+      <Project>{3e0187e3-f6e3-48e3-a0e4-1e454b0e7f40}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Interaction\Lightspeed\Lightspeed.vcxproj">
       <Project>{ced89712-f2fd-4a0d-a97c-a43f1738d1b5}</Project>
@@ -83,7 +92,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Dispatcher.cpp" />
-    <ClCompile Include="FakeTradeSystem.cpp" />
     <ClCompile Include="Ini.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -96,7 +104,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dispatcher.hpp" />
-    <ClInclude Include="FakeTradeSystem.hpp" />
     <ClInclude Include="Ini.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Util.hpp" />

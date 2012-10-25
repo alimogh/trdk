@@ -8,6 +8,17 @@
 
 #pragma once
 
+#include "Common/DisableBoostWarningsBegin.h"
+#	include <boost/thread/thread_time.hpp>
+#	include <boost/noncopyable.hpp>
+#	include <boost/enable_shared_from_this.hpp>
+#	include <boost/signals2.hpp>
+#	include <boost/thread/mutex.hpp>
+#	include <boost/thread/shared_mutex.hpp>
+#	include <boost/shared_ptr.hpp>
+#	include <boost/cast.hpp>
+#include "Common/DisableBoostWarningsEnd.h"
+
 #include "Common/Interlocking.hpp"
 #include "Common/Util.hpp"
 #include "Common/Interlocking.hpp"
@@ -22,3 +33,4 @@
 #include "Common/Exception.hpp"
 
 #include "Core/Log.hpp"
+#include "Core/Fwd.hpp"

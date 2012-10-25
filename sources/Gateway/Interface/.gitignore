@@ -1,0 +1,8 @@
+/TraderService.nsmap
+/soapC.cpp
+/soapClient.cpp
+/soapH.h
+/soapServer.cpp
+/soapStub.h
+/soapTraderServiceObject.h
+/soapTraderServiceProxy.h

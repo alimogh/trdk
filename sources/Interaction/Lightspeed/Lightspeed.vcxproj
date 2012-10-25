@@ -71,7 +71,6 @@
     <ClInclude Include="GatewayClientMessage.hpp" />
     <ClInclude Include="GatewayMessage.hpp" />
     <ClInclude Include="GatewayTsMessage.hpp" />
-    <ClInclude Include="MarketData.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>

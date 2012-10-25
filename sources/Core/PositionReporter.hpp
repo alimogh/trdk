@@ -10,8 +10,6 @@
 
 #include "Api.h"
 
-class Position;
-
 class TRADER_CORE_API PositionReporter : private boost::noncopyable {
 
 public:
@@ -21,6 +19,6 @@ public:
 
 public:
 
-	virtual void ReportClosedPositon(const Position &) = 0;
+	virtual void ReportClosedPositon(const Trader::Position &) = 0;
 
 };

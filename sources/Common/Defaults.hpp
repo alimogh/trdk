@@ -18,4 +18,6 @@ struct Defaults {
 
 	static boost::filesystem::path GetPositionsLogDir();
 
+	static boost::filesystem::path GetRawDataLogDir();
+
 };

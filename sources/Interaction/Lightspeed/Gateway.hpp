@@ -26,7 +26,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			STAGE_CONNECTING	= 1101,
 			STAGE_CONNECTED		= 1102,
 			STAGE_HANDSHAKED	= 1203,
-			STAGE_LOGGED_ON		= 1204
+			STAGE_LOGGED_ON		= 1204,
+			STAGE_POSITIONS		= 2001
 		};
 
 		typedef boost::circular_buffer<char> MessagesBuffer;
@@ -135,13 +136,14 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				};
 
 			};
-			
+
 			Token token;
-			
+
 			OrderStatusUpdateSlot callback;
-			
+
 			OrderQty initialQty;
 			OrderQty executedQty;
+			double price;
 
 			boost::accumulators::accumulator_set<
 					double,
@@ -155,11 +157,13 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			explicit Order(
 						const Token &token,
 						const OrderStatusUpdateSlot &callback,
-						const OrderQty &qty)
+						const OrderQty &qty,
+						const double price)
 					: token(token),
 					callback(callback),
 					initialQty(qty),
-					executedQty(0) {
+					executedQty(0),
+					price(price) {
 				//...//
 			}
 
@@ -176,17 +180,17 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 					boost::multi_index::tag<ByToken>,
 					boost::multi_index::member<Order, Token, &Order::token>>>>
 			Orders;
-		
+
 		typedef Orders::index<ByToken>::type OrdersByToken;
 
 		//////////////////////////////////////////////////////////////////////////
-		
+
 		struct Connection {
-		
+
 			IoService ioService;
 			Socket socket;
 			boost::thread_group tasks;
-			
+
 			SocketReceiveBuffer socketBuffer;
 			MessagesBuffer messagesBuffer;
 
@@ -197,6 +201,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 			volatile Token lastToken;
 			Orders orders;
+			size_t messageCount;
 			size_t orderMessagesFromLastStatCount;
 
 			explicit Connection(
@@ -216,8 +221,6 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		virtual void Connect(const IniFile &iniFile, const std::string &);
 
-		virtual bool IsCompleted(const Security &) const;
-
 	public:
 
 		virtual OrderId SellAtMarketPrice(
@@ -227,17 +230,17 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		virtual OrderId Sell(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellAtMarketPriceWithStopPrice(
 				const Security &,
 				OrderQty,
-				OrderPrice stopPrice,
+				OrderScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellOrCancel(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &);
 
 		virtual OrderId BuyAtMarketPrice(
@@ -247,17 +250,17 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		virtual OrderId Buy(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
 				const Security &,
 				OrderQty,
-				OrderPrice stopPrice,
+				OrderScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyOrCancel(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &);
 
 		virtual void CancelOrder(OrderId);
@@ -295,17 +298,22 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				const boost::system::error_code &,
 				size_t size,
 				const Lock &);
-		
+
 		void HandleMessage(const TsMessage &, Connection &);
 		void HandleDebug(const TsMessage &, Connection &);
-		
+
 		void HandleLoginAccepted(const TsMessage &, Connection &);
 		void HandleLoginRejected(const TsMessage &, Connection &);
-		
+
 		void HandleOrderAccepted(const TsMessage &, Connection &);
 		void HandleOrderReject(const TsMessage &, Connection &);
 		void HandleOrderCanceled(const TsMessage &, Connection &);
 		void HandleOrderExecuted(const TsMessage &, Connection &);
+
+		void HandleOpenPositions(const TsMessage &, Connection &);
+
+		void HandleVenueStatus(const TsMessage &, Connection &);
+
 		void StatOrders(Connection &) throw();
 
 	private:
@@ -313,19 +321,22 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		void SendLoginRequest(
 					Connection &,
 					const std::string &login,
-					const std::string &password);
+					const std::string &password,
+					const std::string &session);
+
+		void SendPositionsRequest(Connection &);
 
 		OrderId SendOrder(
 				const Security &,
 				ClientMessage::BuySellIndicator,
 				OrderQty,
-				OrderPrice price,
+				OrderScaledPrice price,
 				ClientMessage::Numeric timeInForce,
 				const OrderStatusUpdateSlot &);
 
 		void SendHeartbeat(Connection &);
 
-		void Send(std::auto_ptr<ClientMessage>, Connection &);
+		void Send(boost::shared_ptr<ClientMessage>, Connection &);
 
 		void HandleWrite(
 				boost::shared_ptr<const ClientMessage>,
@@ -337,7 +348,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		Mutex m_mutex;
 		Condition m_condition;
 		std::unique_ptr<Connection> m_connection;
-		
+
 
 	};
 

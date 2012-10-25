@@ -17,9 +17,6 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MarketData.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GatewayTsMessage.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

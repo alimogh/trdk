@@ -10,30 +10,57 @@
 #pragma once
 
 #include <string>
+#include "DisableBoostWarningsBegin.h"
+#	include <boost/config.hpp>
+#include "DisableBoostWarningsEnd.h"
 
-class Error {
+////////////////////////////////////////////////////////////////////////////////
 
-public:
+#ifndef BOOST_WINDOWS
 
-	explicit Error(int errorNo) throw();
-	~Error() throw();
+#	include <errno.h>
 
-public:
+	inline int GetLastError() throw() {
+		return errno;
+	}
 
-	std::wstring GetStringW() const;
-	std::string GetString() const;
-	int GetErrorNo() const;
+#endif
 
-	bool IsError() const;
+////////////////////////////////////////////////////////////////////////////////
 
-	//! Returns true if error could be resolved to string.
-	bool CheckError() const;
+namespace Trader { namespace Lib {	 
 
-private:
+	class Error {
 
-	int m_errorNo;
+	public:
 
-};
+		explicit Error(int errorNo) throw();
+		~Error() throw();
 
-std::ostream & operator <<(std::ostream &os, const Error &);
-std::wostream & operator <<(std::wostream &os, const Error &);
+	public:
+
+		std::wstring GetStringW() const;
+		std::string GetString() const;
+		int GetErrorNo() const;
+
+		bool IsError() const;
+
+		//! Returns true if error could be resolved to string.
+		bool CheckError() const;
+
+	private:
+
+		int m_errorNo;
+
+	};
+
+} }
+
+namespace std {
+
+	std::ostream & operator <<(std::ostream &, const Trader::Lib::Error &);
+	std::wostream & operator <<(std::wostream &, const Trader::Lib::Error &);
+
+}
+
+////////////////////////////////////////////////////////////////////////////////

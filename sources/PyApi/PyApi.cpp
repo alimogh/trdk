@@ -15,6 +15,7 @@
 #include "Core/PositionBundle.hpp"
 
 namespace fs = boost::filesystem;
+using namespace Trader;
 
 PyApi::Algo::Algo(
 			const std::string &tag,
@@ -36,10 +37,6 @@ PyApi::Algo::~Algo() {
 
 const std::string & PyApi::Algo::GetName() const {
 	return m_settings.algoName;
-}
-
-void PyApi::Algo::SubscribeToMarketData(const LiveMarketDataSource &/*dataSource*/) {
-	//...//
 }
 
 void PyApi::Algo::Update() {
@@ -71,8 +68,8 @@ void PyApi::Algo::ReportDecision(const Position &position) const {
 		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
-		position.GetSecurity().GetAskPrice(),
-		position.GetSecurity().GetBidPrice(),
+		position.GetSecurity().GetAskPrice(1),
+		position.GetSecurity().GetBidPrice(1),
 		position.GetSecurity().DescalePrice(position.GetOpenStartPrice()),
 		position.GetPlanedQty());
 }
@@ -81,7 +78,7 @@ std::auto_ptr<PositionReporter> PyApi::Algo::CreatePositionReporter() const {
 	typedef PositionReporterAlgo<PyApi::Algo> Reporter;
 	std::auto_ptr<Reporter> result(new Reporter);
 	result->Init(*this);
-	return result;
+	return std::auto_ptr<PositionReporter>(result);
 }
 
 void PyApi::Algo::UpdateAlogImplSettings(const IniFile &ini, const std::string &section) {
@@ -89,7 +86,7 @@ void PyApi::Algo::UpdateAlogImplSettings(const IniFile &ini, const std::string &
 }
 
 void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
-	
+
 	Settings settings = {};
 
 	const std::string algoClassName = ini.ReadKey(section, "algo", false);
@@ -97,7 +94,7 @@ void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &sectio
 
 	const fs::path scriptFilePath = ini.ReadKey(section, "script_file_path", false);
 	const std::string scriptFileStamp = ini.ReadKey(section, "script_file_stamp", true);
-			
+
 	const bool isNewScript
 		= !m_scriptEngine
 			|| m_scriptEngine->GetFilePath() != scriptFilePath

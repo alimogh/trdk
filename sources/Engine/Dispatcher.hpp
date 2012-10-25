@@ -8,36 +8,41 @@
 
 #pragma once
 
-class Algo;
-class Settings;
+namespace Trader { namespace Engine {
 
-class Dispatcher : private boost::noncopyable {
+	class Dispatcher : private boost::noncopyable {
 
-private:
+	private:
 
-	class AlgoState;
-	class Notifier;
-	class Slots;
+		class AlgoState;
+		class ObserverState;
+		class Notifier;
+		class Slots;
+		class ObservationSlots;
 
-public:
+	public:
 
-	Dispatcher(boost::shared_ptr<const Settings>);
-	~Dispatcher();
+		Dispatcher(boost::shared_ptr<const Trader::Settings>);
+		~Dispatcher();
 
-public:
+	public:
 
-	void Register(boost::shared_ptr<Algo>);
-	void CloseAll();
+		void Register(boost::shared_ptr<Algo>);
+		void Register(boost::shared_ptr<Observer>);
+		void CloseAll();
 
-public:
+	public:
 
-	void Start();
-	void Stop();
+		void Start();
+		void Stop();
 
-private:
+	private:
 
 	
-	boost::shared_ptr<Notifier> m_notifier;
-	std::unique_ptr<Slots> m_slots;
+		boost::shared_ptr<Notifier> m_notifier;
+		std::unique_ptr<Slots> m_slots;
+		std::unique_ptr<ObservationSlots> m_observationSlots;
 	
-};
+	};
+
+} }

@@ -11,9 +11,7 @@
 #include "PositionWrapper.hpp"
 #include "Core/Security.hpp"
 
-class Algo;
-
-namespace PyApi { namespace Wrappers {
+namespace Trader { namespace PyApi { namespace Wrappers {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -32,18 +30,18 @@ namespace PyApi { namespace Wrappers {
 
 	public:
 
-		void Init(const ::Algo &algo, boost::shared_ptr<::Security> security) {
+		void Init(const Trader::Algo &algo, boost::shared_ptr<Trader::Security> security) {
 			Assert(!m_algo);
 			Assert(!m_security);
 			m_algo = &algo;
 			m_security = security;
 		}
 
-		boost::shared_ptr<::Security> GetSecurity() {
+		boost::shared_ptr<Trader::Security> GetSecurity() {
 			return m_security;
 		}
 
-		const ::Algo & GetAlgo() const {
+		const Trader::Algo & GetAlgo() const {
 			Assert(m_algo);
 			return *m_algo;
 		}
@@ -78,34 +76,28 @@ namespace PyApi { namespace Wrappers {
 		double GetLastPrice() const {
 			return m_security->GetLastPrice();
 		}
-		size_t GetLastSize() const {
-			return m_security->GetLastSize();
+		size_t GetLastQty() const {
+			return m_security->GetLastQty();
 		}
 
 		int GetAskPriceScaled() const {
-			return int(m_security->GetAskPriceScaled());
+			return int(m_security->GetAskPriceScaled(1));
 		}
 		double GetAskPrice() const {
-			return m_security->GetAskPrice();
+			return m_security->GetAskPrice(1);
 		}
-		size_t GetAskSize() const {
-			return m_security->GetAskSize();
-		}
-		double GetLevel2AskSize() const {
-			return m_security->GetLevel2AskSize();
+		size_t GetAskQty() const {
+			return m_security->GetAskQty(1);
 		}
 
 		int GetBidPriceScaled() const {
-			return int(m_security->GetBidPriceScaled());
+			return int(m_security->GetBidPriceScaled(1));
 		}
 		double GetBidPrice() const {
-			return m_security->GetBidPrice();
+			return m_security->GetBidPrice(1);
 		}
-		size_t GetBidSize() const {
-			return m_security->GetBidSize();
-		}
-		double GetLevel2BidSize() const {
-			return m_security->GetLevel2BidSize();
+		size_t GetBidQty() const {
+			return m_security->GetBidQty(1);
 		}
 
 	public:
@@ -113,18 +105,18 @@ namespace PyApi { namespace Wrappers {
 		void CancelOrder(int orderId) {
 			m_security->CancelOrder(orderId);
 		}
-	
+
 		void CancelAllOrders() {
 			m_security->CancelAllOrders();
 		}
 
 	private:
 
-		const ::Algo *m_algo;
-		boost::shared_ptr<::Security> m_security;
+		const Trader::Algo *m_algo;
+		boost::shared_ptr<Trader::Security> m_security;
 
 	};
 
 	//////////////////////////////////////////////////////////////////////////
 
-} }
+} } }

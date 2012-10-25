@@ -25,3 +25,9 @@ fs::path Defaults::GetPositionsLogDir() {
 	result /= "Positions";
 	return result;
 }
+
+fs::path Defaults::GetRawDataLogDir() {
+	auto result = GetLogFilePath();
+	result /= "Raw";
+	return result;
+}

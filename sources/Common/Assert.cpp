@@ -9,19 +9,25 @@
 #include <assert.h>
 #include <boost/format.hpp>
 #include <iostream>
-#include <Windows.h>
 #include "DisableBoostWarningsBegin.h"
 #	include <boost/date_time/posix_time/posix_time.hpp>
 #	include <boost/thread/thread_time.hpp>
 #include "DisableBoostWarningsEnd.h"
 #include "Exception.hpp"
+#ifdef BOOST_WINDOWS
+#	include <Windows.h>
+#endif
 #include "Assert.hpp"
 #include "Core/Log.hpp"
 
 namespace {
 
 	void Break() {
-		DebugBreak();
+#		if defined(BOOST_WINDOWS)
+			DebugBreak();
+#		elif defined(_DEBUG)
+			__assert_fail("Debug break", "", 0, "");
+#		endif
 	}
 
 }
@@ -55,7 +61,7 @@ namespace {
 					const char *file,
 					int line) {
 			boost::format message(
-				"Assertion Failed: Expecting that values are %1%, but it is not:"
+				"Assertion Failed: Expecting that value %1%, but it is not:"
 					" %2% (which is %3%) %4% %5% (which is %6%)"
 					" in function %7%, file %8%, line %9%.");
 			message % compType % expr1 % val1 % compOp % expr2 % val2 % function % file % line;
@@ -69,7 +75,7 @@ namespace {
 #else
 
 	namespace Detail {
-		
+
 		void ReportAssertFail(const char *expr, const char *file, int line) throw() {
 			Log::Error(
 				"Assertion Failed (predefined): \"%1%\" in file %2%, line %3%.",
@@ -87,7 +93,5 @@ void Detail::AssertFailNoExceptionImpl(
 			const char *file,
 			long line) {
 	Log::RegisterUnhandledException(function, file, line, true);
-#	if defined(_DEBUG) || defined(_TEST)
-		DebugBreak();
-#	endif
+	Break();
 }

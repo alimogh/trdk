@@ -15,6 +15,6 @@
 #	include <boost/python.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
-#include "Strategies/Prec.hpp"
+#include "Common/Common.hpp"
 
 #include "Common/Assert.hpp"

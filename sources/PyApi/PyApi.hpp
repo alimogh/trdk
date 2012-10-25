@@ -10,17 +10,17 @@
 
 #include "Core/Algo.hpp"
 
-namespace PyApi {
+namespace Trader { namespace PyApi {
 	class ScriptEngine;
-}
+} }
 
-namespace PyApi {
+namespace Trader { namespace PyApi {
 
-	class Algo : public ::Algo {
+	class Algo : public Trader::Algo {
 
 	public:
 
-		typedef ::Algo Base;
+		typedef Trader::Algo Base;
 
 	private:
 
@@ -44,8 +44,6 @@ namespace PyApi {
 		virtual const std::string & GetName() const;
 
 	public:
-
-		virtual void SubscribeToMarketData(const LiveMarketDataSource &);
 
 		virtual void Update();
 
@@ -74,4 +72,4 @@ namespace PyApi {
 
 	};
 
-}
+} }

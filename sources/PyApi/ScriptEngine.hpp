@@ -8,15 +8,11 @@
 
 #pragma once
 
-class Security;
-class Algo;
-class Position;
-
-namespace PyApi { namespace Wrappers {
+namespace Trader { namespace PyApi { namespace Wrappers {
 	class Algo;
-} }
+} } }
 
-namespace PyApi {
+namespace Trader { namespace PyApi {
 
 	class ScriptEngine : private boost::noncopyable {
 
@@ -38,7 +34,7 @@ namespace PyApi {
 				const boost::filesystem::path &filePath,
 				const std::string &stamp,
 				const std::string &algoClassName,
-				const ::Algo &algo,
+				const Trader::Algo &algo,
 				boost::shared_ptr<Security> security);
 
 	public:
@@ -53,8 +49,8 @@ namespace PyApi {
 
 	public:
 
-		boost::shared_ptr<::Position> TryToOpenPositions();
-		void TryToClosePositions(boost::shared_ptr<::Position>);
+		boost::shared_ptr<Trader::Position> TryToOpenPositions();
+		void TryToClosePositions(boost::shared_ptr<Trader::Position>);
 
 	public:
 
@@ -73,4 +69,4 @@ namespace PyApi {
 
 	};
 
-}
+} }

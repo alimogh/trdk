@@ -9,15 +9,22 @@
 #include "Prec.hpp"
 #include "PyApi.hpp"
 
-namespace PyApi {
-
-	boost::shared_ptr<::Algo> CreatePyEngine(
+#ifdef BOOST_WINDOWS
+	boost::shared_ptr<Trader::Algo> CreatePyEngine(
 				const std::string &tag,
-				boost::shared_ptr<Security> security,
+				boost::shared_ptr<Trader::Security> security,
 				const IniFile &ini,
 				const std::string &section) {
-		return boost::shared_ptr<::Algo>(
-			new PyApi::Algo(tag, security, ini, section));
+		return boost::shared_ptr<Trader::Algo>(
+			new Trader::PyApi::Algo(tag, security, ini, section));
 	}
-
-}
+#else
+	extern "C" boost::shared_ptr<Trader::Algo> CreatePyEngine(
+				const std::string &tag,
+				boost::shared_ptr<Trader::Security> security,
+				const IniFile &ini,
+				const std::string &section) {
+		return boost::shared_ptr<Trader::Algo>(
+			new Trader::PyApi::Algo(tag, security, ini, section));
+	}
+#endif

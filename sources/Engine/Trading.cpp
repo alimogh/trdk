@@ -7,25 +7,30 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "FakeTradeSystem.hpp"
 #include "Ini.hpp"
 #include "Util.hpp"
 #include "Dispatcher.hpp"
 #include "Core/Algo.hpp"
+#include "Core/Observer.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
+#include "Core/MarketDataSource.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 
 using namespace Trader;
+using namespace Trader::Engine;
 
 namespace {
 
 	typedef std::map<std::string, boost::shared_ptr<Security>> Securities;
-	
+
 	typedef DllObjectPtr<Algo> ModuleAlgo;
 	typedef std::map<std::string /*tag*/, std::list<ModuleAlgo>> Algos;
+	
+	typedef DllObjectPtr<Observer> ModuleObserver;
+	typedef std::map<std::string /*tag*/, std::list<ModuleObserver>> Observers;
 
 }
 
@@ -38,6 +43,7 @@ namespace {
 	void LoadSecurities(
 				const std::list<IniFile::Symbol> &symbols,
 				boost::shared_ptr<TradeSystem> tradeSystem,
+				MarketDataSource &marketDataSource,
 				Securities &securities,
 				boost::shared_ptr<Settings> settings,
 				const IniFile &ini) {
@@ -49,14 +55,13 @@ namespace {
 			if (securities.find(key) != securities.end()) {
 				continue;
 			}
-			securititesTmp[key] = boost::shared_ptr<Security>(
-				new Security(
-					tradeSystem,
-					symbol.symbol,
-					symbol.primaryExchange,
-					symbol.exchange,
-					settings,
-					find(logMdSymbols.begin(), logMdSymbols.end(), symbol.symbol) != logMdSymbols.end()));
+			securititesTmp[key] = marketDataSource.CreateSecurity(
+				tradeSystem,
+				symbol.symbol,
+				symbol.primaryExchange,
+				symbol.exchange,
+				settings,
+				find(logMdSymbols.begin(), logMdSymbols.end(), symbol.symbol) != logMdSymbols.end());
 			Log::Info("Loaded security \"%1%\".", securititesTmp[key]->GetFullSymbol());
 		}
 		securititesTmp.swap(securities);
@@ -66,6 +71,7 @@ namespace {
 				const IniFile &ini,
 				const std::string &section,
 				boost::shared_ptr<TradeSystem> tradeSystem,
+				MarketDataSource &marketDataSource,
 				Securities &securities,
 				Algos &algos,
 				boost::shared_ptr<Settings> settings)  {
@@ -93,7 +99,7 @@ namespace {
 		}
 
 		Log::Info("Loading objects for \"%1%\"...", tag);
-		
+
 		std::string symbolsFilePath;
 		try {
 			symbolsFilePath = ini.ReadKey(section, Ini::Key::symbols, false);
@@ -104,9 +110,9 @@ namespace {
 
 		Log::Info("Loading symbols from %1% for %2%...", symbolsFilePath, tag);
 		const IniFile symbolsIni(symbolsFilePath, ini.GetPath().branch_path());
-		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("SMART", "NASDAQ");
+		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("ALL", "NASDAQ-US");
 		try {
-			LoadSecurities(symbols, tradeSystem, securities, settings, ini);
+			LoadSecurities(symbols, tradeSystem, marketDataSource, securities, settings, ini);
 		} catch (const IniFile::Error &ex) {
 			Log::Error("Failed to load securities for %2%: \"%1%\".", ex.what(), tag);
 			throw IniFile::Error("Failed to load algo");
@@ -156,12 +162,97 @@ namespace {
 
 	}
 
+	void InitObservers(
+				const IniFile &ini,
+				const std::string &section,
+				boost::shared_ptr<TradeSystem> tradeSystem,
+				MarketDataSource &marketDataSource,
+				Securities &securities,
+				Observers &observers,
+				boost::shared_ptr<Settings> settings)  {
+
+		fs::path module;
+		try {
+			module = ini.ReadKey(section, Ini::Key::module, false);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to get observer module: \"%1%\".", ex.what());
+			throw IniFile::Error("Failed to load observer");
+		}
+
+		std::string fabricName;
+		try {
+			fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to get observer fabric name module: \"%1%\".", ex.what());
+			throw IniFile::Error("Failed to load observer");
+		}
+
+		const std::string tag = section.substr(Ini::Sections::observer.size());
+		if (tag.empty()) {
+			Log::Error("Failed to get tag for observer section \"%1%\".", section);
+			throw IniFile::Error("Failed to load observer");
+		}
+
+		Log::Info("Loading objects for \"%1%\"...", tag);
+
+		std::string symbolsFilePath;
+		try {
+			symbolsFilePath = ini.ReadKey(section, Ini::Key::symbols, false);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to get symbols file: \"%1%\".", ex.what());
+			throw;
+		}
+
+		Log::Info("Loading symbols from %1% for %2%...", symbolsFilePath, tag);
+		const IniFile symbolsIni(symbolsFilePath, ini.GetPath().branch_path());
+		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("ALL", "NASDAQ-US");
+		try {
+			LoadSecurities(symbols, tradeSystem, marketDataSource, securities, settings, ini);
+		} catch (const IniFile::Error &ex) {
+			Log::Error("Failed to load securities for %2%: \"%1%\".", ex.what(), tag);
+			throw IniFile::Error("Failed to load algo");
+		}
+
+		Observer::NotifyList notifyList;
+		foreach (const auto &symbol, symbols) {
+			Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
+			notifyList.push_back(securities[CreateSecuritiesKey(symbol)]);
+		}
+
+		boost::shared_ptr<Dll> dll(new Dll(module, true));
+		const auto fabric
+			= dll->GetFunction<
+					boost::shared_ptr<Trader::Observer>(
+						const std::string &tag,
+						const Observer::NotifyList &,
+						boost::shared_ptr<Trader::TradeSystem>,
+						const IniFile &,
+						const std::string &section)>
+				(fabricName);
+
+		boost::shared_ptr<Observer> newObserver;
+		try {
+			newObserver = fabric(tag, notifyList, tradeSystem, ini, section);
+		} catch (...) {
+			Log::RegisterUnhandledException(__FUNCTION__, __FILE__, __LINE__, false);
+			throw Exception("Failed to load observer");
+		}
+
+		observers[tag].push_back(DllObjectPtr<Observer>(dll, newObserver));
+		Log::Info(
+			"Loaded observer \"%1%\" with tag \"%2%\".",
+			newObserver->GetName(),
+			tag);
+	
+	}
+
 	bool InitTrading(
 				const IniFile &ini,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Dispatcher &dispatcher,
-				MarketDataSource &marketDataSource,
+				boost::shared_ptr<LiveMarketDataSource> marketDataSource,
 				Algos &algos,
+				Observers &observers,
 				boost::shared_ptr<Settings> settings)  {
 
 		const std::set<std::string> sections = ini.ReadSectionsList();
@@ -171,7 +262,17 @@ namespace {
 			if (boost::starts_with(section, Ini::Sections::algo)) {
 				Log::Info("Found algo section \"%1%\"...", section);
 				try {
-					InitAlgo(ini, section, tradeSystem, securities, algos, settings);
+					InitAlgo(ini, section, tradeSystem, *marketDataSource, securities, algos, settings);
+				} catch (const Exception &ex) {
+					Log::Error(
+						"Failed to load algo module from section \"%1%\": \"%2%\".",
+						section,
+						ex.what());
+				}
+			} else if (boost::starts_with(section, Ini::Sections::observer)) {
+				Log::Info("Found observer section \"%1%\"...", section);
+				try {
+					InitObservers(ini, section, tradeSystem, *marketDataSource, securities, observers, settings);
 				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to load algo module from section \"%1%\": \"%2%\".",
@@ -183,7 +284,6 @@ namespace {
 
 		if (algos.empty()) {
 			Log::Error("No algos loaded.");
-			return false;
 		}
 
 		foreach (auto &as, algos) {
@@ -191,18 +291,16 @@ namespace {
 				dispatcher.Register(a);
 			}
 		}
+		foreach (auto &os, observers) {
+			foreach (auto &o, os.second) {
+				dispatcher.Register(o);
+			}
+		}
 
 		Log::Info("Loaded %1% securities.", securities.size());
 		Log::Info("Loaded %1% algos.", algos.size());
+		Log::Info("Loaded %1% observers.", observers.size());
 
-		try {
-			Connect(*tradeSystem, ini, Ini::Sections::tradeSystem);
-			Connect(marketDataSource, *settings);
-		} catch (const Exception &ex) {
-			Log::Error("Failed to make trading connections: \"%1%\".", ex.what());
-			throw Exception("Failed to make trading connections");
-		}
-		
 		return true;
 
 	}
@@ -274,6 +372,25 @@ namespace {
 			dll->GetFunction<boost::shared_ptr<TradeSystem>()>(fabricName)());
 	}
 
+	DllObjectPtr<LiveMarketDataSource> LoadLiveMarketDataSource(
+				const IniFile &ini,
+				const std::string &section) {
+		const std::string module = ini.ReadKey(section, Ini::Key::module, false);
+		const std::string fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
+		boost::shared_ptr<Dll> dll(new Dll(module, true));
+		try {
+			typedef boost::shared_ptr<LiveMarketDataSource> (Proto)(
+				const IniFile &,
+				const std::string &);
+			return DllObjectPtr<LiveMarketDataSource>(
+				dll,
+				dll->GetFunction<Proto>(fabricName)(ini, Ini::Sections::MarketData::Source::live));
+		} catch (...) {
+			Log::RegisterUnhandledException(__FUNCTION__, __FILE__, __LINE__, false);
+			throw Exception("Failed to load market data source");
+		}
+	}
+
 }
 
 void Trade(const fs::path &iniFilePath) {
@@ -284,37 +401,26 @@ void Trade(const fs::path &iniFilePath) {
 	boost::shared_ptr<Settings> settings
 		= Ini::LoadSettings(ini, boost::get_system_time(), false);
 
-	DllObjectPtr<TradeSystem> tradeSystem = LoadTradeSystem(ini, Ini::Sections::tradeSystem);
-	DllObjectPtr<LiveMarketDataSource> marketDataSource;
-
-	{
-		boost::shared_ptr<Dll> dll(new Dll("Lightspeed", true));
-		{
-			const auto mdFabric = dll->GetFunction<boost::shared_ptr<LiveMarketDataSource>()>(
-				"CreateLiveMarketDataSource");
-			marketDataSource.Reset(dll, mdFabric());
-		}
-	}
+	DllObjectPtr<TradeSystem> tradeSystem
+		= LoadTradeSystem(ini, Ini::Sections::tradeSystem);
+	DllObjectPtr<LiveMarketDataSource> marketDataSource
+		= LoadLiveMarketDataSource(ini, Ini::Sections::MarketData::Source::live);
 
 	Dispatcher dispatcher(settings);
 
 	Algos algos;
+	Observers observers;
 	if (	!InitTrading(
 				ini,
 				tradeSystem,
 				dispatcher,
-				reinterpret_cast<MarketDataSource &>(marketDataSource),
+				marketDataSource,
 				algos,
+				observers,
 				settings)) {
 		return;
 	}
-		
-	foreach (auto &as, algos) {
-		foreach (auto &a, as.second) {
-			a->SubscribeToMarketData(marketDataSource);
-		}
-	}
-	
+
 	FileSystemChangeNotificator iniChangeNotificator(
 		iniFilePath,
 		boost::bind(
@@ -326,72 +432,16 @@ void Trade(const fs::path &iniFilePath) {
 	iniChangeNotificator.Start();
 	dispatcher.Start();
 
+	try {
+		Connect(*tradeSystem, ini, Ini::Sections::tradeSystem);
+		Connect(*marketDataSource);
+	} catch (const Exception &ex) {
+		Log::Error("Failed to make trading connections: \"%1%\".", ex.what());
+		throw Exception("Failed to make trading connections");
+	}
+
 	getchar();
 	iniChangeNotificator.Stop();
 	dispatcher.Stop();
-
-}
-
-void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]) {
-
-	Log::Info("!!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!!");
-
-	Assert(argc >= 2 && std::string(argv[1]) == "replay");
-
-	if (argc != 3) {
-		throw Exception("Failed to get request parameters (replay date)");
-	}
-
-	Log::Info("Using %1% INI-file...", iniFilePath);
-	const IniFile ini(iniFilePath);
-
-	boost::shared_ptr<Settings> settings = Ini::LoadSettings(
-		ini,
-		pt::time_from_string((boost::format("%1% 00:00:00") % argv[2]).str())
-			- Util::GetEdtDiff(),
-		true);
-	Log::Info(
-		"Replaying trade period: %1% - %2%.",
-		settings->GetCurrentTradeSessionStartTime() + Util::GetEdtDiff(),
-		settings->GetCurrentTradeSessionEndime() + Util::GetEdtDiff());
-
-	boost::shared_ptr<TradeSystem> tradeSystem(new FakeTradeSystem);
-	DllObjectPtr<HistoryMarketDataSource> marketDataSource;
-	{
-		boost::shared_ptr<Dll> dll(new Dll("Lightspeed", true));
-		const auto mdFabric = dll->GetFunction<boost::shared_ptr<HistoryMarketDataSource>()>(
-			"CreateHistoryMarketDataSource");
-		marketDataSource.Reset(dll, mdFabric());
-	}
-
-	Dispatcher dispatcher(settings);
-	Algos algos;
-	if (	!InitTrading(
-				ini,
-				tradeSystem,
-				dispatcher,
-				reinterpret_cast<MarketDataSource &>(marketDataSource),
-				algos,
-				settings)) {
-		return;
-	}
-
-	foreach (auto &as, algos) {
-		foreach (auto &a, as.second) {
-			a->RequestHistory(
-				marketDataSource,
-				settings->GetCurrentTradeSessionStartTime(),
-				settings->GetCurrentTradeSessionEndime());
-		}
-	}
-	dispatcher.Start();
-	Log::Info("!!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!!");
-	
-	getchar();
-	
-	dispatcher.Stop();
-	algos.clear();
-
-	Log::Info("!!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!! REPLAY MODE !!!");
 
 }

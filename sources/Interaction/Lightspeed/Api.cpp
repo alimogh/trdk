@@ -8,16 +8,15 @@
 
 #include "Prec.hpp"
 #include "Gateway.hpp"
-#include "MarketData.hpp"
 
-namespace Trader {  namespace Interaction { namespace Lightspeed {
-
-	boost::shared_ptr<TradeSystem> CreateLightspeedGateway() {
-		return boost::shared_ptr<TradeSystem>(new Gateway);
+#ifdef BOOST_WINDOWS
+	boost::shared_ptr<Trader::TradeSystem> CreateTradeSystem() {
+		return boost::shared_ptr<Trader::TradeSystem>(
+			new Trader::Interaction::Lightspeed::Gateway);
 	}
-
-	boost::shared_ptr<::LiveMarketDataSource> CreateLiveMarketDataSource() {
-		return boost::shared_ptr<::LiveMarketDataSource>(new MarketData);
+#else
+	extern "C" boost::shared_ptr<Trader::TradeSystem> CreateTradeSystem() {
+		return boost::shared_ptr<Trader::TradeSystem>(
+			new Trader::Interaction::Lightspeed::Gateway);
 	}
-
-} } }
+#endif

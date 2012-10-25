@@ -11,9 +11,11 @@
 #include "PositionWrapper.hpp"
 #include "SecurityWrapper.hpp"
 
+using namespace Trader;
+
 //////////////////////////////////////////////////////////////////////////
 
-PyApi::Wrappers::Position::Position(boost::shared_ptr<::Position> position)
+PyApi::Wrappers::Position::Position(boost::shared_ptr< ::Position> position)
 		: m_position(position) {
 	//...//
 }
@@ -21,10 +23,10 @@ PyApi::Wrappers::Position::Position(boost::shared_ptr<::Position> position)
 //////////////////////////////////////////////////////////////////////////
 
 PyApi::Wrappers::ShortPosition::ShortPosition(
-			boost::shared_ptr<::Position> position)
+			boost::shared_ptr< ::Position> position)
 		: Position(position) {
 	Assert(position->GetType() == ::Position::TYPE_SHORT);
-	Assert(dynamic_cast<::ShortPosition *>(position.get()));
+	Assert(dynamic_cast< ::ShortPosition *>(position.get()));
 }
 
 PyApi::Wrappers::ShortPosition::ShortPosition(
@@ -32,7 +34,7 @@ PyApi::Wrappers::ShortPosition::ShortPosition(
 			int qty,
 			double startPrice)
 		: Position(
-			boost::shared_ptr<::Position>(
+			boost::shared_ptr< ::Position>(
 				new ::ShortPosition(
 					security.GetSecurity(),
 					qty,
@@ -44,10 +46,10 @@ PyApi::Wrappers::ShortPosition::ShortPosition(
 //////////////////////////////////////////////////////////////////////////
 
 PyApi::Wrappers::LongPosition::LongPosition(
-			boost::shared_ptr<::Position> position)
+			boost::shared_ptr< ::Position> position)
 		: Position(position) {
 	Assert(position->GetType() == ::Position::TYPE_LONG);
-	Assert(dynamic_cast<::LongPosition *>(position.get()));
+	Assert(dynamic_cast< ::LongPosition *>(position.get()));
 }
 
 PyApi::Wrappers::LongPosition::LongPosition(
@@ -55,7 +57,7 @@ PyApi::Wrappers::LongPosition::LongPosition(
 			int qty,
 			double startPrice)
 		: Position(
-			boost::shared_ptr<::Position>(
+			boost::shared_ptr< ::Position>(
 				new ::LongPosition(
 					security.GetSecurity(),
 					qty,

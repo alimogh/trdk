@@ -9,6 +9,8 @@
 #include "Prec.hpp"
 #include "MarketDataSource.hpp"
 
+using namespace Trader;
+
 //////////////////////////////////////////////////////////////////////////
 
 MarketDataSource::Error::Error(const char *what) throw()
@@ -16,7 +18,7 @@ MarketDataSource::Error::Error(const char *what) throw()
 	//...//
 }
 
-MarketDataSource::ConnectError::ConnectError()
+MarketDataSource::ConnectError::ConnectError() throw()
 		: Error("Failed to connect to Market Data Source") {
 	//...//
 }

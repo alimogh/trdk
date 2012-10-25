@@ -18,9 +18,10 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 	public:
 
 		enum Type {
-			TYPE_LOGIN_REQUEST	= 'L',
-			TYPE_NEW_ORDER		= 'O',
-			TYPE_HEARTBEAT		= 'R'
+			TYPE_LOGIN_REQUEST		= 'L',
+			TYPE_NEW_ORDER			= 'O',
+			TYPE_POSITIONS_REQUEST	= 'I',
+			TYPE_HEARTBEAT			= 'R'
 		};
 
 		typedef BufferT Buffer;
@@ -31,12 +32,12 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		class Error : public GatewayMessage::Error {
 		public:
-			explicit Error(const char *what, const std::string &subject)
+			explicit Error(const char *what, const std::string &subject) throw()
 					: GatewayMessage::Error(what),
 					m_subject(subject) {
 				//...//
 			}
-			virtual ~Error() {
+			virtual ~Error() throw() {
 				//...//
 			}
 		public:
@@ -49,7 +50,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		class FieldTooLongError : public Error {
 		public:
-			FieldTooLongError(const std::string &field)
+			FieldTooLongError(const std::string &field) throw()
 					: Error(
 						"Lightspeed Gateway client message field too long",
 						field) {
@@ -147,6 +148,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			switch (type) {
 				case TYPE_LOGIN_REQUEST:
 				case TYPE_HEARTBEAT:
+				case TYPE_POSITIONS_REQUEST:
 					return false;
 				case TYPE_NEW_ORDER:
 					return true;

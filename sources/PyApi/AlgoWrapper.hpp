@@ -10,7 +10,7 @@
 
 #include "SecurityWrapper.hpp"
 
-namespace PyApi { namespace Wrappers {
+namespace Trader { namespace PyApi { namespace Wrappers {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -66,4 +66,4 @@ namespace PyApi { namespace Wrappers {
 
 	//////////////////////////////////////////////////////////////////////////
 
-} }
+} } }

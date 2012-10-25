@@ -11,7 +11,6 @@
 namespace fs = boost::filesystem;
 
 void Trade(const fs::path &);
-void ReplayTrading(const fs::path &iniFilePath, int argc, const char *argv[]);
 
 namespace {
 
@@ -50,20 +49,19 @@ namespace {
 
 }
 
-void main(int argc, const char *argv[]) {
+int main(int argc, const char *argv[]) {
+	int result = 0;
 	try {
 		InitLogs(argc, argv);
 		const fs::path iniFilePath = "Etc/trade.ini";
-		if (argc >= 2 && std::string(argv[1]) == "replay") {
-			ReplayTrading(iniFilePath, argc, argv);
-		} else {
-			Trade(iniFilePath);
-		}
+		Trade(iniFilePath);
 	} catch (...) {
+		result = 1;
 		AssertFailNoException();
 	}
 	Log::Info("Stopped.");
 #	ifdef DEV_VER
 		getchar();
 #	endif
+	return result;
 }

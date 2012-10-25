@@ -83,6 +83,7 @@
     <ClInclude Include="FileSystemChangeNotificator.hpp" />
     <ClInclude Include="Foreach.hpp" />
     <ClInclude Include="IniFile.hpp" />
+    <ClInclude Include="Interlocking.hpp" />
     <ClInclude Include="LockingPolicy.hpp" />
     <ClInclude Include="SignalConnection.hpp" />
     <ClInclude Include="UseUnused.hpp" />

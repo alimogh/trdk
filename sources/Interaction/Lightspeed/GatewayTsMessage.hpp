@@ -23,9 +23,15 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			TYPE_HEARTBEAT		= 'H',
 			TYPE_DEBUG			= '+',
 			TYPE_ORDER_ACCEPTED,
+			TYPE_STATUS_ORDER_ACCEPTED,
 			TYPE_ORDER_REJECTED,
 			TYPE_ORDER_CANCELED,
-			TYPE_ORDER_EXECUTED
+			TYPE_STATUS_ORDER_CANCELED,
+			TYPE_ORDER_EXECUTED,
+			TYPE_OPEN_POSITIONS,
+			TYPE_STATUS_OPEN_POSITIONS,
+			TYPE_VENUE_STATUS,
+			TYPE_STATUS_START_OF_DAY_DAY_TRADING_BUYING_POWER
 		};
 
 		typedef BufferT Buffer;
@@ -35,12 +41,12 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		class Error : public GatewayMessage::Error {
 		public:
-			explicit Error(const char *what, Iterator messageBegin, Iterator messageEnd)
+			explicit Error(const char *what, Iterator messageBegin, Iterator messageEnd) throw()
 					: GatewayMessage::Error(what),
 					m_buffer(messageBegin, messageEnd) {
 				//...//
 			}
-			virtual ~Error() {
+			virtual ~Error() throw() {
 				//...//
 			}
 		public:
@@ -50,10 +56,10 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		private:
 			std::string m_buffer;
 		};
-	
+
 		class MessageNotGatawayMessageError : public Error {
 		public:
-			MessageNotGatawayMessageError(Iterator messageBegin, Iterator messageEnd)
+			MessageNotGatawayMessageError(Iterator messageBegin, Iterator messageEnd) throw()
 					: Error(
 						"Message not Lightspeed Gateway trade system message",
 						messageBegin,
@@ -64,7 +70,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		class FieldDoesntExistError : public Error {
 		public:
-			FieldDoesntExistError(Iterator messageBegin, Iterator messageEnd)
+			FieldDoesntExistError(Iterator messageBegin, Iterator messageEnd) throw()
 					: Error(
 						"Field doesn't exist in Lightspeed Gateway trade system message",
 						messageBegin,
@@ -72,10 +78,10 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				//...//
 			}
 		};
-		
+
 		class FieldHasInvalidFormatError : public Error {
 		public:
-			FieldHasInvalidFormatError(Iterator messageBegin, Iterator messageEnd)
+			FieldHasInvalidFormatError(Iterator messageBegin, Iterator messageEnd) throw()
 					: Error(
 						"Lightspeed Gateway trade system message field has invalid format",
 						messageBegin,
@@ -86,7 +92,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		class FieldHasInvalidLenError : public Error {
 		public:
-			FieldHasInvalidLenError(Iterator messageBegin, Iterator messageEnd)
+			FieldHasInvalidLenError(Iterator messageBegin, Iterator messageEnd) throw()
 					: Error(
 						"Lightspeed Gateway trade system message has invalid length",
 						messageBegin,
@@ -99,9 +105,12 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 
 		enum DataType {
 			DATA_TYPE_ORDER_ACCEPTED	= 'A',
-			DATA_TYPE_ORDER_REJECTED	= 'J',
 			DATA_TYPE_ORDER_CANCELED	= 'C',
-			DATA_TYPE_ORDER_EXECUTED	= 'E'
+			DATA_TYPE_START_OF_DAY_DAY_TRADING_BUYING_POWER	= 'D',
+			DATA_TYPE_ORDER_REJECTED	= 'J',
+			DATA_TYPE_ORDER_EXECUTED	= 'E',
+			DATA_TYPE_OPEN_POSITIONS	= 'P',
+			DATA_TYPE_VENUE_STATUS		= 'V'
 		};
 
 	public:
@@ -114,7 +123,8 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 			if (!m_logicalLen) {
 				throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
 			}
-			switch (*m_messageBegin) {
+			const auto rawType = *m_messageBegin;
+			switch (rawType) {
 				case TYPE_DEBUG:
 				case TYPE_LOGIN_ACCEPTED:
 				case TYPE_LOGIN_REJECTED:
@@ -122,7 +132,9 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 					m_isDataMessage = false;
 					m_type = Type(*m_messageBegin);
 					break;
+				case 'I':
 				case 'S':
+				case 'V':
 					if (m_logicalLen < m_timestampFieldSize + 2) {
 						throw FieldHasInvalidLenError(m_messageBegin, m_messageEnd);
 					}
@@ -131,16 +143,31 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 					m_isDataMessage = true;
 					switch (*(m_messageLogicalBegin + m_timestampFieldSize)) {
 						case DATA_TYPE_ORDER_ACCEPTED:
-							m_type = TYPE_ORDER_ACCEPTED;
+							m_type = rawType == 'S'
+								?	TYPE_STATUS_ORDER_ACCEPTED
+								:	TYPE_ORDER_ACCEPTED;
 							break;
 						case DATA_TYPE_ORDER_REJECTED:
 							m_type = TYPE_ORDER_REJECTED;
 							break;
 						case DATA_TYPE_ORDER_CANCELED:
-							m_type = TYPE_ORDER_CANCELED;
+							m_type = rawType == 'S'
+								?	TYPE_STATUS_ORDER_CANCELED
+								:	TYPE_ORDER_CANCELED;
 							break;
 						case DATA_TYPE_ORDER_EXECUTED:
 							m_type = TYPE_ORDER_EXECUTED;
+							break;
+						case DATA_TYPE_OPEN_POSITIONS:
+							m_type =  rawType == 'S'
+								?	TYPE_STATUS_OPEN_POSITIONS
+								:	TYPE_OPEN_POSITIONS;
+							break;
+						case DATA_TYPE_VENUE_STATUS:
+							m_type = TYPE_VENUE_STATUS;
+							break;
+						case DATA_TYPE_START_OF_DAY_DAY_TRADING_BUYING_POWER:
+							m_type = TYPE_STATUS_START_OF_DAY_DAY_TRADING_BUYING_POWER;
 							break;
 						default:
 							throw MessageNotGatawayMessageError(m_messageBegin, m_messageEnd);
@@ -164,14 +191,20 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 				case TYPE_ORDER_ACCEPTED:
 					CheckMessageLen(106 - 10);
 					break;
+				case TYPE_STATUS_ORDER_ACCEPTED:
+//					CheckMessageLen(107);
+					break;
 				case TYPE_ORDER_REJECTED:
-					CheckMessageLen(26);
+//					CheckMessageLen(26);
 					break;
 				case TYPE_ORDER_CANCELED:
 					CheckMessageLen(32);
 					break;
+				case TYPE_STATUS_ORDER_CANCELED:
+//					CheckMessageLen(32);
+					break;
 				case TYPE_ORDER_EXECUTED:
-					CheckMessageLen(70);
+//					CheckMessageLen(70);
 					break;
 			};
 		}
@@ -189,7 +222,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		Type GetType() const {
 			return m_type;
 		}
-	
+
 		Len GetMessageLogicalLen() const {
 			return m_logicalLen;
 		}
@@ -391,7 +424,7 @@ namespace Trader {  namespace Interaction { namespace Lightspeed {
 		Iterator m_messageEnd;
 		Len m_logicalLen;
 		bool m_isDataMessage;
-	
+
 		Type m_type;
 
 		static const Len m_timestampFieldSize;

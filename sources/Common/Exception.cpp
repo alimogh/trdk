@@ -7,7 +7,8 @@
  **************************************************************************/
 
 #include "Exception.hpp"
-#include "Assert.hpp"
+#include <stdlib.h>
+#include <string.h>
 
 Exception::Exception(const char *what) throw()
 		: m_doFree(false) {
@@ -18,7 +19,6 @@ Exception::Exception(const char *what) throw()
 		m_doFree = true;
 	} else {
 		m_what = "Memory allocation for exception description has been failed";
-		AssertFail("Memory allocation for exception description has been failed.");
 	}
 }
 
@@ -48,7 +48,6 @@ const char * Exception::what() const throw() {
 }
 
 Exception & Exception::operator =(const Exception &rhs) throw() {
-	Assert(this != &rhs);
 	if (this == &rhs) {
 		return *this;
 	}

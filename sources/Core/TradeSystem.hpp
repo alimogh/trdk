@@ -10,8 +10,7 @@
 
 #include "Api.h"
 
-class Security;
-class Settings;
+//////////////////////////////////////////////////////////////////////////
 
 namespace Trader {
 
@@ -19,9 +18,9 @@ namespace Trader {
 
 	public:
 
-		typedef boost::int32_t OrderId;
+		typedef boost::uint64_t OrderId;
 		typedef boost::int32_t OrderQty;
-		typedef boost::int64_t OrderPrice;
+		typedef boost::int64_t OrderScaledPrice;
 
 		enum OrderStatus {
 			ORDER_STATUS_PENDIGN,
@@ -77,8 +76,6 @@ namespace Trader {
 
 		virtual void Connect(const IniFile &, const std::string &section) = 0;
 
-		virtual bool IsCompleted(const Security &) const = 0;
-
 	public:
 
 		virtual OrderId SellAtMarketPrice(
@@ -89,19 +86,19 @@ namespace Trader {
 		virtual OrderId Sell(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId SellAtMarketPriceWithStopPrice(
 				const Security &,
 				OrderQty,
-				OrderPrice stopPrice,
+				OrderScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId SellOrCancel(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 
@@ -113,19 +110,19 @@ namespace Trader {
 		virtual OrderId Buy(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
 				const Security &,
 				OrderQty,
-				OrderPrice stopPrice,
+				OrderScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId BuyOrCancel(
 				const Security &,
 				OrderQty,
-				OrderPrice,
+				OrderScaledPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 
@@ -135,3 +132,5 @@ namespace Trader {
 	};
 
 }
+
+//////////////////////////////////////////////////////////////////////////
