@@ -13,7 +13,7 @@
 
 namespace Trader { namespace Interaction { namespace Fake {
 
-	class LiveMarketDataSource : public Trader::LiveMarketDataSource {
+	class MarketDataSource : public Trader::MarketDataSource {
 
 	public:
 
@@ -63,8 +63,8 @@ namespace Trader { namespace Interaction { namespace Fake {
 
 	public:
 
-		LiveMarketDataSource();
-		virtual ~LiveMarketDataSource();
+		MarketDataSource();
+		virtual ~MarketDataSource();
 
 	public:
 
@@ -95,7 +95,7 @@ namespace Trader { namespace Interaction { namespace Fake {
 	private:
 
 		boost::thread_group m_threads;
-		mutable std::list<boost::shared_ptr<Security>> m_securityList;
+		std::list<boost::shared_ptr<Security>> m_securityList;
 
 	};
 

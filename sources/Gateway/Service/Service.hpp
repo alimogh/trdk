@@ -31,7 +31,7 @@ namespace Trader { namespace Gateway {
 		typedef boost::mutex TradesCacheMutex;
 		typedef TradesCacheMutex::scoped_lock TradesCacheLock;
 
-		class Error : public Exception {
+		class Error : public Trader::Lib::Exception {
 		public:
 			explicit Error(const char *what)
 					: Exception(what) {
@@ -60,7 +60,7 @@ namespace Trader { namespace Gateway {
 					const std::string &tag,
 					const Observer::NotifyList &notifyList,
 					boost::shared_ptr<Trader::TradeSystem>,
-					const IniFile &ini,
+					const Trader::Lib::IniFile &ini,
 					const std::string &section);
 		virtual ~Service();
 

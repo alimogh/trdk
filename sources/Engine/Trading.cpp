@@ -20,6 +20,7 @@ namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 
 using namespace Trader;
+using namespace Trader::Lib;
 using namespace Trader::Engine;
 
 namespace {
@@ -250,7 +251,7 @@ namespace {
 				const IniFile &ini,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Dispatcher &dispatcher,
-				boost::shared_ptr<LiveMarketDataSource> marketDataSource,
+				boost::shared_ptr<MarketDataSource> marketDataSource,
 				Algos &algos,
 				Observers &observers,
 				boost::shared_ptr<Settings> settings)  {
@@ -262,7 +263,14 @@ namespace {
 			if (boost::starts_with(section, Ini::Sections::algo)) {
 				Log::Info("Found algo section \"%1%\"...", section);
 				try {
-					InitAlgo(ini, section, tradeSystem, *marketDataSource, securities, algos, settings);
+					InitAlgo(
+						ini,
+						section,
+						tradeSystem,
+						*marketDataSource,
+						securities,
+						algos,
+						settings);
 				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to load algo module from section \"%1%\": \"%2%\".",
@@ -272,7 +280,14 @@ namespace {
 			} else if (boost::starts_with(section, Ini::Sections::observer)) {
 				Log::Info("Found observer section \"%1%\"...", section);
 				try {
-					InitObservers(ini, section, tradeSystem, *marketDataSource, securities, observers, settings);
+					InitObservers(
+						ini,
+						section,
+						tradeSystem,
+						*marketDataSource,
+						securities,
+						observers,
+						settings);
 				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to load algo module from section \"%1%\": \"%2%\".",
@@ -372,21 +387,33 @@ namespace {
 			dll->GetFunction<boost::shared_ptr<TradeSystem>()>(fabricName)());
 	}
 
-	DllObjectPtr<LiveMarketDataSource> LoadLiveMarketDataSource(
+	DllObjectPtr<MarketDataSource> LoadMarketDataSource(
 				const IniFile &ini,
 				const std::string &section) {
-		const std::string module = ini.ReadKey(section, Ini::Key::module, false);
-		const std::string fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
+		const std::string module = ini.ReadKey(
+			section,
+			Ini::Key::module,
+			false);
+		const std::string fabricName = ini.ReadKey(
+			section,
+			Ini::Key::fabric,
+			false);
 		boost::shared_ptr<Dll> dll(new Dll(module, true));
 		try {
-			typedef boost::shared_ptr<LiveMarketDataSource> (Proto)(
+			typedef boost::shared_ptr<MarketDataSource> (Proto)(
 				const IniFile &,
 				const std::string &);
-			return DllObjectPtr<LiveMarketDataSource>(
+			return DllObjectPtr<MarketDataSource>(
 				dll,
-				dll->GetFunction<Proto>(fabricName)(ini, Ini::Sections::MarketData::Source::live));
+				dll->GetFunction<Proto>(fabricName)(
+					ini,
+					Ini::Sections::MarketData::source));
 		} catch (...) {
-			Log::RegisterUnhandledException(__FUNCTION__, __FILE__, __LINE__, false);
+			Log::RegisterUnhandledException(
+				__FUNCTION__,
+				__FILE__,
+				__LINE__,
+				false);
 			throw Exception("Failed to load market data source");
 		}
 	}
@@ -403,8 +430,10 @@ void Trade(const fs::path &iniFilePath) {
 
 	DllObjectPtr<TradeSystem> tradeSystem
 		= LoadTradeSystem(ini, Ini::Sections::tradeSystem);
-	DllObjectPtr<LiveMarketDataSource> marketDataSource
-		= LoadLiveMarketDataSource(ini, Ini::Sections::MarketData::Source::live);
+	DllObjectPtr<MarketDataSource> marketDataSource
+		= LoadMarketDataSource(
+			ini,
+			Ini::Sections::MarketData::source);
 
 	Dispatcher dispatcher(settings);
 

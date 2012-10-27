@@ -10,23 +10,27 @@
 
 #include <exception>
 
-class Exception : public std::exception {
+namespace Trader { namespace Lib {
 
-public:
+	class Exception : public std::exception {
 
-	explicit Exception(const char *what) throw();
-	Exception(const Exception &) throw();
-	virtual ~Exception() throw();
+	public:
 
-	Exception & operator =(const Exception &) throw();
+		explicit Exception(const char *what) throw();
+		Exception(const Exception &) throw();
+		virtual ~Exception() throw();
 
-public:
+		Exception & operator =(const Exception &) throw();
 
-	virtual const char * what() const throw();
+	public:
 
-private:
+		virtual const char * what() const throw();
 
-	const char *m_what;
-	bool m_doFree;
+	private:
 
-};
+		const char *m_what;
+		bool m_doFree;
+
+	};
+
+} }

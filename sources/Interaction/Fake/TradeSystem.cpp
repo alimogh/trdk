@@ -11,6 +11,7 @@
 #include "Core/Security.hpp"
 
 using Trader::Security;
+using namespace Trader::Lib;
 using namespace Trader::Interaction::Fake;
 
 /////////////////////////////////////////////////////////////////////////

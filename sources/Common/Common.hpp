@@ -19,6 +19,7 @@
 #	include <boost/cast.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
+#include "Common/Dll.hpp"
 #include "Common/Interlocking.hpp"
 #include "Common/Util.hpp"
 #include "Common/Interlocking.hpp"
@@ -28,7 +29,6 @@
 #include "Common/Foreach.hpp"
 #include "Common/IniFile.hpp"
 #include "Common/FileSystemChangeNotificator.hpp"
-#include "Common/Dll.hpp"
 #include "Common/Error.hpp"
 #include "Common/Exception.hpp"
 

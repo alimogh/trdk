@@ -8,6 +8,8 @@
 
 #include "Prec.hpp"
 
+using namespace Trader::Lib;
+
 namespace {
 
 	typedef boost::mutex Mutex;
@@ -142,7 +144,7 @@ void Log::RegisterUnhandledException(
 
 	try {
 		throw;
-	} catch (const Exception &ex) {
+	} catch (const Trader::Lib::Exception &ex) {
 		logger.message % "LOCAL" % ex.what();
 	} catch (const std::exception &ex) {
 		logger.message % "STANDART" % ex.what();

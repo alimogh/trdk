@@ -21,7 +21,9 @@ namespace Trader { namespace Interaction { namespace Fake {
 
 	public:
 
-		virtual void Connect(const IniFile &, const std::string &section);
+		virtual void Connect(
+				const Trader::Lib::IniFile &,
+				const std::string &section);
 		virtual bool IsCompleted(const Security &) const;
 
 	public:

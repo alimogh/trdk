@@ -16,6 +16,7 @@ namespace lt = boost::local_time;
 namespace pt = boost::posix_time;
 
 using namespace Trader;
+using namespace Trader::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 

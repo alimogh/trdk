@@ -13,8 +13,12 @@
 
 namespace pt = boost::posix_time;
 using namespace Trader;
+using namespace Trader::Lib;
 
-void Connect(TradeSystem &tradeSystem, const IniFile &ini, const std::string &section) {
+void Engine::Connect(
+			TradeSystem &tradeSystem,
+			const IniFile &ini,
+			const std::string &section) {
 	for ( ; ; ) {
 		try {
 			tradeSystem.Connect(ini, section);
@@ -25,7 +29,7 @@ void Connect(TradeSystem &tradeSystem, const IniFile &ini, const std::string &se
 	}
 }
 
-void Connect(LiveMarketDataSource &marketDataSource) {
+void Engine::Connect(MarketDataSource &marketDataSource) {
 	for ( ; ; ) {
 		try {
 			marketDataSource.Connect();

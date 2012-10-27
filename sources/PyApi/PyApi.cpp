@@ -16,6 +16,7 @@
 
 namespace fs = boost::filesystem;
 using namespace Trader;
+using namespace Trader::Lib;
 
 PyApi::Algo::Algo(
 			const std::string &tag,

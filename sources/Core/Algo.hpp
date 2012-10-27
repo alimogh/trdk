@@ -14,7 +14,6 @@
 
 class PositionBandle;
 class PositionReporter;
-class IniFile;
 
 namespace Trader {
 
@@ -44,16 +43,13 @@ namespace Trader {
 
 		virtual boost::posix_time::ptime GetLastDataTime();
 
-		void UpdateSettings(const IniFile &, const std::string &section);
+		void UpdateSettings(
+					const Trader::Lib::IniFile &,
+					const std::string &section);
 
 		Mutex & GetMutex();
 
 	public:
-
-		void RequestHistory(
-					const Trader::HistoryMarketDataSource &,
-					const boost::posix_time::ptime &fromTime,
-					const boost::posix_time::ptime &toTime);
 
 		bool IsValidPrice(const Trader::Settings &) const;
 
@@ -78,7 +74,7 @@ namespace Trader {
 				= 0;
 
 		virtual void UpdateAlogImplSettings(
-					const IniFile &,
+					const Trader::Lib::IniFile &,
 					const std::string &section)
 				= 0;
 
@@ -124,7 +120,7 @@ namespace Trader {
 
 		void AppendSettingsReport(
 					const std::string &name,
-					const IniFile::AbsoluteOrPercentsPrice &val,
+					const Trader::Lib::IniFile::AbsoluteOrPercentsPrice &val,
 					SettingsReport &report)
 				const {
 			AppendSettingsReport(name, val.GetStr(GetSecurity()->GetPriceScale()), report);

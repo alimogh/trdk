@@ -12,6 +12,7 @@
 #include "Core/Position.hpp"
 
 using namespace Trader;
+using namespace Trader::Lib;
 using namespace Trader::Gateway;
 namespace pt = boost::posix_time;
 

@@ -11,6 +11,7 @@
 
 using namespace Trader;
 using namespace Trader::Gateway;
+using namespace Trader::Lib;
 
 #ifdef BOOST_WINDOWS
 #	define TRADER_GATEWAY_SERVICE_API

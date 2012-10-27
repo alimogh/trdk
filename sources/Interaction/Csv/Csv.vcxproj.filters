@@ -11,16 +11,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Prec.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Api.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TradeSystem.cpp">
+    <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MarketDataSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Security.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -28,15 +28,15 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TradeSystem.hpp">
+    <ClInclude Include="MarketDataSource.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MarketDataSource.hpp">
+    <ClInclude Include="Security.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Fake.def">
+    <None Include="Csv.def">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

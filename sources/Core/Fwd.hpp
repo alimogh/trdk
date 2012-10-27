@@ -12,8 +12,7 @@ namespace Trader {
 
 	class Security;
 	
-	class LiveMarketDataSource;
-	class HistoryMarketDataSource;
+	class MarketDataSource;
 
 	class Position;
 	class LongPosition;

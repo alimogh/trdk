@@ -15,26 +15,18 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{3E0187E3-F6E3-48E3-A0E4-1E454B0E7F40}</ProjectGuid>
-    <RootNamespace>Fake</RootNamespace>
+    <ProjectGuid>{2E95108D-1AF3-4AAE-909E-F380C264D4A4}</ProjectGuid>
+    <RootNamespace>Csv</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v100</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v100</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -44,32 +36,35 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Fake.props" />
     <Import Project="..\..\Configuration Debug.props" />
+    <Import Project="Csv.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Fake.props" />
     <Import Project="..\..\Configuration Release.props" />
+    <Import Project="Csv.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Fake.props" />
     <Import Project="..\..\Configuration Test.props" />
+    <Import Project="Csv.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <TargetName>$(ProjectName)_dbg</TargetName>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
-    <TargetName>$(ProjectName)_test</TargetName>
-  </PropertyGroup>
+  <PropertyGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\Common.vcxproj">
+      <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Core\Core.vcxproj">
+      <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Api.cpp" />
     <ClCompile Include="MarketDataSource.cpp" />
@@ -78,23 +73,15 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="TradeSystem.cpp" />
+    <ClCompile Include="Security.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Csv.def" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MarketDataSource.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="TradeSystem.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Fake.def" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Common\Common.vcxproj">
-      <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Core\Core.vcxproj">
-      <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
-    </ProjectReference>
+    <ClInclude Include="Security.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -9,6 +9,8 @@
 #include "Prec.hpp"
 #include "PyApi.hpp"
 
+using namespace Trader::Lib;
+
 #ifdef BOOST_WINDOWS
 	boost::shared_ptr<Trader::Algo> CreatePyEngine(
 				const std::string &tag,

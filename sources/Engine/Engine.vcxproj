@@ -42,19 +42,16 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\Default.props" />
-    <Import Project="..\Python.props" />
     <Import Project="..\Configuration Debug.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\Default.props" />
-    <Import Project="..\Python.props" />
     <Import Project="..\Configuration Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\Default.props" />
-    <Import Project="..\Python.props" />
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -76,6 +73,9 @@
     </ProjectReference>
     <ProjectReference Include="..\Gateway\Service\GatewayService.vcxproj">
       <Project>{5e6b58fd-f8d1-44fe-9686-87d3d9cae3fc}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Interaction\Csv\Csv.vcxproj">
+      <Project>{2e95108d-1af3-4aae-909e-f380c264d4a4}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Interaction\Fake\Fake.vcxproj">
       <Project>{3e0187e3-f6e3-48e3-a0e4-1e454b0e7f40}</Project>

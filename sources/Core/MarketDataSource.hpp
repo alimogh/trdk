@@ -10,19 +10,13 @@
 
 #include "Api.h"
 
-class IniFile;
-
-//////////////////////////////////////////////////////////////////////////
-
 namespace Trader {
-
-	//////////////////////////////////////////////////////////////////////////
 
 	class TRADER_CORE_API MarketDataSource : private boost::noncopyable {
 
 	public:
 
-		class TRADER_CORE_API Error : public Exception {
+		class TRADER_CORE_API Error : public Trader::Lib::Exception {
 		public:
 			explicit Error(const char *what) throw();
 		};
@@ -62,43 +56,5 @@ namespace Trader {
 				= 0;
 
 	};
-
-	//////////////////////////////////////////////////////////////////////////
-
-	class TRADER_CORE_API LiveMarketDataSource : public MarketDataSource {
-
-	public:
-
-		LiveMarketDataSource();
-		virtual ~LiveMarketDataSource();
-
-	};
-
-	//////////////////////////////////////////////////////////////////////////
-
-	class TRADER_CORE_API HistoryMarketDataSource : public MarketDataSource {
-
-	public:
-
-		HistoryMarketDataSource();
-		virtual ~HistoryMarketDataSource();
-
-	public:
-
-		virtual void RequestHistory(
-				boost::shared_ptr<Trader::Security>,
-				const boost::posix_time::ptime &fromTime)
-			const
-			= 0;
-		virtual void RequestHistory(
-				boost::shared_ptr<Trader::Security>,
-				const boost::posix_time::ptime &fromTime,
-				const boost::posix_time::ptime &toTime)
-			const
-			= 0;
-
-	};
-
-	//////////////////////////////////////////////////////////////////////////
 
 }

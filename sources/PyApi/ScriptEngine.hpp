@@ -18,7 +18,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		class Error : public Exception {
+		class Error : public Trader::Lib::Exception {
 		public:
 			explicit Error(const char *what) throw();
 		};

@@ -70,7 +70,7 @@ namespace Trader {
 
 		const TradeSystem & GetTradeSystem() const {
 			if (!m_tradeSystem) {
-				throw Exception("Instrument doesn't connected to trade system");
+				throw Trader::Lib::Exception("Instrument doesn't connected to trade system");
 			}
 			return *m_tradeSystem;
 		}

@@ -6,7 +6,7 @@
  *   Project: Trading Robot
  **************************************************************************/
 
-namespace Ini {
+namespace Trader { namespace Engine { namespace Ini {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -16,9 +16,7 @@ namespace Ini {
 		extern const std::string tradeSystem;
 		extern const std::string observer;
 		namespace MarketData {
-			namespace Source {
-				extern const std::string live;
-			}
+			extern const std::string source;
 			namespace Log {
 				extern const std::string symbols;
 			}
@@ -35,10 +33,10 @@ namespace Ini {
 	//////////////////////////////////////////////////////////////////////////
 
 	boost::shared_ptr<Trader::Settings> LoadSettings(
-			const IniFile &,
+			const Trader::Lib::IniFile &,
 			const boost::posix_time::ptime &now,
 			bool isPlayMode);
 
 	//////////////////////////////////////////////////////////////////////////
 
-}
+} } }

@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+using namespace Trader::Lib;
+
 Exception::Exception(const char *what) throw()
 		: m_doFree(false) {
 	const size_t buffSize = (strlen(what) + 1) * sizeof(char);

@@ -35,7 +35,7 @@ namespace Trader { namespace PyApi {
 		explicit Algo(
 				const std::string &tag,
 				boost::shared_ptr<Security>,
-				const IniFile &,
+				const Trader::Lib::IniFile &,
 				const std::string &section);
 		virtual ~Algo();
 
@@ -54,13 +54,18 @@ namespace Trader { namespace PyApi {
 
 	protected:
 
-		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
+		virtual std::auto_ptr<PositionReporter> CreatePositionReporter()
+				const;
 
-		virtual void UpdateAlogImplSettings(const IniFile &, const std::string &section);
+		virtual void UpdateAlogImplSettings(
+					const Trader::Lib::IniFile &,
+					const std::string &section);
 
 	private:
 
-		void DoSettingsUpdate(const IniFile &, const std::string &section);
+		void DoSettingsUpdate(
+					const Trader::Lib::IniFile &,
+					const std::string &section);
 		void UpdateCallbacks();
 
 		PyApi::ScriptEngine & GetScriptEngine();

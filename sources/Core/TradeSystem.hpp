@@ -43,7 +43,7 @@ namespace Trader {
 
 	public:
 
-		class TRADER_CORE_API Error : public Exception {
+		class TRADER_CORE_API Error : public Trader::Lib::Exception {
 		public:
 			explicit Error(const char *what) throw();
 		};
@@ -74,7 +74,10 @@ namespace Trader {
 
 	public:
 
-		virtual void Connect(const IniFile &, const std::string &section) = 0;
+		virtual void Connect(
+				const Trader::Lib::IniFile &,
+				const std::string &section)
+			= 0;
 
 	public:
 

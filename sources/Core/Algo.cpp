@@ -17,6 +17,7 @@
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
 using namespace Trader;
+using namespace Trader::Lib;
 
 Algo::Algo(const std::string &tag, boost::shared_ptr<Security> security)
 		: Module(tag),
@@ -61,13 +62,6 @@ boost::posix_time::ptime Algo::GetLastDataTime() {
 	return boost::posix_time::not_a_date_time;
 }
 
-void Algo::RequestHistory(
-			const HistoryMarketDataSource &,
-			const boost::posix_time::ptime &,
-			const boost::posix_time::ptime &) {
-	AssertFail("Doesn't implemented.");
-}
-
 bool Algo::IsValidPrice(const Settings &settings) const {
 	return settings.IsValidPrice(*m_security);
 }
@@ -101,7 +95,7 @@ void Algo::ReportSettings(const SettingsReport &settings) const {
 		std::ofstream f(path.c_str(), std::ios::out | std::ios::ate | std::ios::app);
 		if (!f) {
 			Log::Error("Failed to open log file %1%.", path);
-			throw Exception("Failed to open log file");
+			throw Trader::Lib::Exception("Failed to open log file");
 		}
 		f
 			<< (boost::get_system_time() + Util::GetEdtDiff())
