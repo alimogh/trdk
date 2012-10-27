@@ -581,7 +581,7 @@ public:
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
 
-	typedef SignalConnectionList<Security::UpdateSlotConnection> DataUpdateConnections;
+	typedef SignalConnectionList<Security::Level1UpdateSlotConnection> DataUpdateConnections;
 
 	Mutex m_dataUpdateMutex;
 	DataUpdateConnections m_dataUpdateConnections;
@@ -633,8 +633,8 @@ void Dispatcher::Register(boost::shared_ptr<Algo> algo) {
 			new AlgoState(algo, m_notifier, m_notifier->GetSettings()));
 		algoList.push_back(algoState);
 		m_slots->m_dataUpdateConnections.InsertSafe(
-			security.Subcribe(
-				Security::UpdateSlot(
+			security.SubcribeToLevel1(
+				Security::Level1UpdateSlot(
 					boost::bind(&Notifier::Signal, m_notifier.get(), algoState))));
 		algoList.swap(m_notifier->GetAlgoList());
 	}
@@ -654,7 +654,7 @@ void Dispatcher::Register(boost::shared_ptr<Observer> observer) {
 		observer->GetNotifyList().end(),
 		[this, &state] (boost::shared_ptr<const Security> security) {
 			m_observationSlots->m_dataUpdateConnections.InsertSafe(
-				security->Subcribe(
+				security->SubcribeToTrades(
 					Security::NewTradeSlot(
 						boost::bind(
 							&Dispatcher::Notifier::Signal,
@@ -670,10 +670,6 @@ void Dispatcher::Register(boost::shared_ptr<Observer> observer) {
 		"Registered OBSERVER \"%1%\" (tag: \"%2%\").",
 		observer->GetName(),
 		observer->GetTag());
-}
-
-void Dispatcher::CloseAll() {
-	//...//
 }
 
 ////////////////////////////////////////////////////////////////////////////////

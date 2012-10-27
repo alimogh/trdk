@@ -29,7 +29,6 @@ namespace Trader { namespace Engine {
 
 		void Register(boost::shared_ptr<Algo>);
 		void Register(boost::shared_ptr<Observer>);
-		void CloseAll();
 
 	public:
 

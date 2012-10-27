@@ -44,8 +44,8 @@ public:
 	};
 	MarketDataLog *m_marketDataLog;
 
-	mutable boost::signals2::signal<UpdateSlotSignature> m_updateSignal;
-	mutable boost::signals2::signal<NewTradeSlotSignature> m_newTradeSignal;
+	mutable boost::signals2::signal<Level1UpdateSlotSignature> m_level1UpdateSignal;
+	mutable boost::signals2::signal<NewTradeSlotSignature> m_tradeSignal;
 
 	volatile long long m_isHistoryData;
 
@@ -342,25 +342,30 @@ bool Security::IsHistoryData() const {
 
 void Security::OnHistoryDataStart() {
 	if (!Interlocking::Exchange(m_pimpl->m_isHistoryData, true) && *this) {
-		m_pimpl->m_updateSignal();
+		m_pimpl->m_level1UpdateSignal();
 	}
 }
 
 void Security::OnHistoryDataEnd() {
 	if (Interlocking::Exchange(m_pimpl->m_isHistoryData, false) && *this) {
-		m_pimpl->m_updateSignal();
+		m_pimpl->m_level1UpdateSignal();
 	}
 }
 
-Security::UpdateSlotConnection Security::Subcribe(const UpdateSlot &slot) const {
-	return UpdateSlotConnection(m_pimpl->m_updateSignal.connect(slot));
+Security::Level1UpdateSlotConnection Security::SubcribeToLevel1(
+			const Level1UpdateSlot &slot)
+		const {
+	return Level1UpdateSlotConnection(
+		m_pimpl->m_level1UpdateSignal.connect(slot));
 }
 
-Security::NewTradeSlotConnection Security::Subcribe(const NewTradeSlot &slot) const {
-	return NewTradeSlotConnection(m_pimpl->m_newTradeSignal.connect(slot));
+Security::NewTradeSlotConnection Security::SubcribeToTrades(
+			const NewTradeSlot &slot)
+		const {
+	return NewTradeSlotConnection(m_pimpl->m_tradeSignal.connect(slot));
 }
 
-void Security::SignalUpdate() {
+void Security::SignalLevel1Update() {
 	if (m_pimpl->m_marketDataLog) {
 		m_pimpl->m_marketDataLog->Append(
 			boost::get_system_time(),
@@ -369,7 +374,7 @@ void Security::SignalUpdate() {
 			DescalePrice(m_pimpl->m_askPrice),
 			DescalePrice(m_pimpl->m_bidPrice));
 	}
-	m_pimpl->m_updateSignal();
+	m_pimpl->m_level1UpdateSignal();
 }
 
 void Security::SignalNewTrade(
@@ -377,13 +382,14 @@ void Security::SignalNewTrade(
 			bool isBuy,
 			ScaledPrice price,
 			Qty qty) {
+	using namespace Interlocking;
 	for ( ; ; ) {
 		const auto prevVal = m_pimpl->m_tradedVolume;
 		const auto newVal = prevVal + qty;
-		if (Interlocking::CompareExchange(m_pimpl->m_tradedVolume, newVal, prevVal) == prevVal) {
+		if (CompareExchange(m_pimpl->m_tradedVolume, newVal, prevVal) == prevVal) {
 			break;
 		}
 	}
-	m_pimpl->m_newTradeSignal(time, price, qty, isBuy);
+	m_pimpl->m_tradeSignal(time, price, qty, isBuy);
 }
 

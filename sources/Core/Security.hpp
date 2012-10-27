@@ -30,12 +30,12 @@ namespace Trader {
 		typedef Trader::TradeSystem::OrderQty Qty;
 		typedef Trader::TradeSystem::OrderScaledPrice ScaledPrice;
 
-		typedef void (UpdateSlotSignature)();
-		typedef boost::function<UpdateSlotSignature> UpdateSlot;
+		typedef void (Level1UpdateSlotSignature)();
+		typedef boost::function<Level1UpdateSlotSignature> Level1UpdateSlot;
 		typedef SignalConnection<
-				UpdateSlot,
+				Level1UpdateSlot,
 				boost::signals2::connection>
-			UpdateSlotConnection;
+			Level1UpdateSlotConnection;
 
 		typedef void (NewTradeSlotSignature)(
 					const boost::posix_time::ptime &,
@@ -145,8 +145,8 @@ namespace Trader {
 
 	public:
 
-		UpdateSlotConnection Subcribe(const UpdateSlot &) const;
-		NewTradeSlotConnection Subcribe(const NewTradeSlot &) const;
+		Level1UpdateSlotConnection SubcribeToLevel1(const Level1UpdateSlot &) const;
+		NewTradeSlotConnection SubcribeToTrades(const NewTradeSlot &) const;
 
 	protected:
 
@@ -180,7 +180,7 @@ namespace Trader {
 		  */
 		bool SetBid(ScaledPrice, Qty, size_t pos);
 
-		void SignalUpdate();
+		void SignalLevel1Update();
 		void SignalNewTrade(
 				const boost::posix_time::ptime &,
 				bool isBuy,
