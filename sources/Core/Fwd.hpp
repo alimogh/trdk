@@ -22,7 +22,7 @@ namespace Trader {
 
 	class Settings;
 
-	class Algo;
+	class Strategy;
 	class Observer;
 
 }

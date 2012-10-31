@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Core/Algo.hpp"
+#include "Core/Strategy.hpp"
 
 namespace Trader { namespace PyApi {
 	class ScriptEngine;
@@ -16,28 +16,28 @@ namespace Trader { namespace PyApi {
 
 namespace Trader { namespace PyApi {
 
-	class Algo : public Trader::Algo {
+	class Strategy : public Trader::Strategy {
 
 	public:
 
-		typedef Trader::Algo Base;
+		typedef Trader::Strategy Base;
 
 	private:
 
 		class State;
 
 		struct Settings {
-			std::string algoName;
+			std::string strategyName;
 		};
 
 	public:
 
-		explicit Algo(
+		explicit Strategy(
 				const std::string &tag,
 				boost::shared_ptr<Security>,
 				const Trader::Lib::IniFile &,
 				const std::string &section);
-		virtual ~Algo();
+		virtual ~Strategy();
 
 	public:
 

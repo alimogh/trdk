@@ -60,8 +60,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
   <ItemGroup>
-    <ClCompile Include="Algo.cpp" />
-    <ClCompile Include="AlgoPositionState.cpp" />
+    <ClCompile Include="Strategy.cpp" />
+    <ClCompile Include="StrategyPositionState.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="MarketDataSource.cpp" />
     <ClCompile Include="Module.cpp" />
@@ -79,8 +79,8 @@
     <ClCompile Include="TradeSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Algo.hpp" />
-    <ClInclude Include="AlgoPositionState.hpp" />
+    <ClInclude Include="Strategy.hpp" />
+    <ClInclude Include="StrategyPositionState.hpp" />
     <ClInclude Include="Api.h" />
     <ClInclude Include="Instrument.hpp" />
     <ClInclude Include="Log.hpp" />
@@ -90,7 +90,7 @@
     <ClInclude Include="Position.hpp" />
     <ClInclude Include="PositionBundle.hpp" />
     <ClInclude Include="PositionReporter.hpp" />
-    <ClInclude Include="PositionReporterAlgo.hpp" />
+    <ClInclude Include="StrategyPositionReporter.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Security.hpp" />
     <ClInclude Include="Fwd.hpp" />

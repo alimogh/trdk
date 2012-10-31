@@ -11,8 +11,8 @@
 #include "PositionReporter.hpp"
 #include "Position.hpp"
 
-template<typename Algo>
-class PositionReporterAlgo : public PositionReporter {
+template<typename Strategy>
+class StrategyPositionReporter : public PositionReporter {
 
 private:
 
@@ -21,39 +21,44 @@ private:
 
 public:
 
-	PositionReporterAlgo() {
+	StrategyPositionReporter() {
 		//...//
 	}
 
-	virtual ~PositionReporterAlgo() {
+	virtual ~StrategyPositionReporter() {
 		//...//
 	}
 
 public:
 
-	void Init(const Algo &algo) {
+	void Init(const Strategy &strategy) {
 		const Lock lock(m_mutex);
 		if (m_isInited) {
 			return;
 		}
 		namespace fs = boost::filesystem;
 		fs::path filePath = Defaults::GetPositionsLogDir();
-		std::string algoName = algo.GetTag();
-		boost::to_lower(algoName);
+		std::string strategyName = strategy.GetTag();
+		boost::to_lower(strategyName);
 		std::list<std::string> subs;
-		boost::split(subs, algoName, boost::is_any_of(" :"));
+		boost::split(subs, strategyName, boost::is_any_of(" :"));
 		filePath /= boost::join(subs, "_");
 		filePath.replace_extension(".csv");
 		const bool isNew = !fs::exists(filePath);
 		if (isNew) {
 			fs::create_directories(filePath.branch_path());
 		}
-		m_file.open(filePath.c_str(), std::ios::out | std::ios::ate | std::ios::app);
+		m_file.open(
+			filePath.c_str(),
+			std::ios::out | std::ios::ate | std::ios::app);
 		if (!m_file) {
 			Log::Error("Failed to open position log file %1%.", filePath);
 			throw Exception("Failed to open position log file");
 		}
-		Log::Info("Logging \"%1%\" positions into %2%...", algo.GetName(), filePath);
+		Log::Info(
+			"Logging \"%1%\" positions into %2%...",
+			strategy.GetName(),
+			filePath);
 		if (isNew) {
 			PrintHead(m_file);
 			m_file << std::endl;
@@ -184,11 +189,11 @@ private:
 
 };
 
-template<typename Algo>
-bool PositionReporterAlgo<Algo>::m_isInited = false;
+template<typename Strategy>
+bool StrategyPositionReporter<Strategy>::m_isInited = false;
 
-template<typename Algo>
-typename PositionReporterAlgo<Algo>::Mutex PositionReporterAlgo<Algo>::m_mutex;
+template<typename Strategy>
+typename StrategyPositionReporter<Strategy>::Mutex StrategyPositionReporter<Strategy>::m_mutex;
 
-template<typename Algo>
-std::ofstream PositionReporterAlgo<Algo>::m_file;
+template<typename Strategy>
+std::ofstream StrategyPositionReporter<Strategy>::m_file;

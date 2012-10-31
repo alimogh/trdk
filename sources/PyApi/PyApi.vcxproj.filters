@@ -24,13 +24,13 @@
     <ClInclude Include="ScriptEngine.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AlgoWrapper.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SecurityWrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include=".\PositionWrapper.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StrategyWrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

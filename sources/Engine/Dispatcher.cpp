@@ -8,7 +8,7 @@
 
 #include "Prec.hpp"
 #include "Dispatcher.hpp"
-#include "Core/Algo.hpp"
+#include "Core/Strategy.hpp"
 #include "Core/Observer.hpp"
 #include "Core/Security.hpp"
 #include "Core/PositionBundle.hpp"
@@ -25,9 +25,9 @@ using namespace Trader::Engine;
 
 //////////////////////////////////////////////////////////////////////////
 
-class Dispatcher::AlgoState
+class Dispatcher::StrategyState
 		: private boost::noncopyable,
-		public boost::enable_shared_from_this<AlgoState> {
+		public boost::enable_shared_from_this<StrategyState> {
 
 private:
 
@@ -35,11 +35,11 @@ private:
 
 public:
 
-	explicit AlgoState(
-				boost::shared_ptr<Algo> algo,
+	explicit StrategyState(
+				boost::shared_ptr<Strategy> startegy,
 				boost::shared_ptr<Notifier> notifier,
 				boost::shared_ptr<const Settings> settings)
-			: m_algo(algo),
+			: m_strategy(startegy),
 			m_notifier(notifier),
 			m_isBlocked(false),
 			m_lastUpdate(0),
@@ -52,7 +52,7 @@ public:
 		if (byTimeout && !IsTimeToUpdate()) {
 			return;
 		}
-		const Algo::Lock lock(m_algo->GetMutex());
+		const Strategy::Lock lock(m_strategy->GetMutex());
 		if (m_isBlocked || (byTimeout && !IsTimeToUpdate())) {
 			return;
 		}
@@ -71,7 +71,7 @@ public:
 	}
 
 	bool IsBlocked() const {
-		return m_isBlocked || !m_algo->IsValidPrice(*m_settings);
+		return m_isBlocked || !m_strategy->IsValidPrice(*m_settings);
 	}
 
 private:
@@ -86,7 +86,7 @@ private:
 			if (	p->IsOpened()
 					&& !p->IsReported()
 					&& (p->IsClosed() || p->IsError())) {
-				m_algo->GetPositionReporter().ReportClosedPositon(*p);
+				m_strategy->GetPositionReporter().ReportClosedPositon(*p);
 				p->MarkAsReported();
 			}
 		}
@@ -94,7 +94,7 @@ private:
 
 private:
 
-	boost::shared_ptr<Algo> m_algo;
+	boost::shared_ptr<Strategy> m_strategy;
 	boost::shared_ptr<PositionBandle> m_positions;
 		
 	boost::shared_ptr<Notifier> m_notifier;
@@ -142,7 +142,7 @@ class Dispatcher::Notifier : private boost::noncopyable {
 
 public:
 
-	typedef std::list<boost::shared_ptr<AlgoState>> AlgoStateList;
+	typedef std::list<boost::shared_ptr<StrategyState>> StrategyStateList;
 	typedef std::list<boost::shared_ptr<ObserverState>> ObserversStateList;
 	
 	typedef boost::mutex Mutex;
@@ -152,7 +152,10 @@ private:
 
 	typedef boost::condition_variable Condition;
 
-	typedef std::map<boost::shared_ptr<AlgoState>, bool> AlgoNotifyList;
+	typedef std::map<
+			boost::shared_ptr<StrategyState>,
+			bool>
+		StrategyNotifyList;
 
 	struct ObservationEvent {
 		boost::shared_ptr<ObserverState> state;
@@ -169,21 +172,24 @@ public:
 	explicit Notifier(boost::shared_ptr<const Settings> settings)
 			: m_isActive(false),
 			m_isExit(false),
-			m_currentAlgos(&m_algoQueue.first),
+			m_currentStrategies(&m_strategyQueue.first),
 			m_currentObservers(&m_observerQueue.first),
 			m_settings(settings) {
 		
 		{
-			const char *const threadName = "Algo";
+			const char *const threadName = "Strategy";
 			Log::Info(
 				"Starting %1% thread(s) \"%2%\"...",
-				m_settings->GetAlgoThreadsCount(),
+				m_settings->GetThreadsCount(),
 				threadName);
-			boost::barrier startBarrier(m_settings->GetAlgoThreadsCount() + 1);
-			for (size_t i = 0; i < m_settings->GetAlgoThreadsCount(); ++i) {
+			boost::barrier startBarrier(m_settings->GetThreadsCount() + 1);
+			for (size_t i = 0; i < m_settings->GetThreadsCount(); ++i) {
 				m_threads.create_thread(
 					[&]() {
-						Task(startBarrier, threadName, &Dispatcher::Notifier::AlgoIteration);
+						Task(
+							startBarrier,
+							threadName,
+							&Dispatcher::Notifier::StrategyIteration);
 					});
 			}
 			startBarrier.wait();
@@ -256,21 +262,21 @@ public:
 
 public:
 
-	Mutex & GetAlgoListMutex() {
-		return m_algoListMutex;
+	Mutex & GetStrategyListMutex() {
+		return m_strategyListMutex;
 	}
 
-	AlgoStateList & GetAlgoList() {
-		return m_algoList;
+	StrategyStateList & GetStrategyList() {
+		return m_strategyList;
 	}
 
 	ObserversStateList & GetObserversStateList() {
 		return m_observerList;
 	}
 
-	void Signal(boost::shared_ptr<AlgoState> algoState) {
+	void Signal(boost::shared_ptr<StrategyState> strategyState) {
 		
-		if (algoState->IsBlocked()) {
+		if (strategyState->IsBlocked()) {
 			return;
 		}
 		
@@ -279,11 +285,11 @@ public:
 			return;
 		}
 
-		const AlgoNotifyList::const_iterator i = m_currentAlgos->find(algoState);
-		if (i != m_currentAlgos->end() && !i->second) {
+		const StrategyNotifyList::const_iterator i = m_currentStrategies->find(strategyState);
+		if (i != m_currentStrategies->end() && !i->second) {
 			return;
 		}
-		(*m_currentAlgos)[algoState] = false;
+		(*m_currentStrategies)[strategyState] = false;
 		m_positionsCheckCondition.notify_one();
 		if (m_settings->IsReplayMode()) {
 			m_positionsCheckCompletedCondition.wait(lock);
@@ -341,7 +347,7 @@ private:
 	}
 
 	bool TimeoutCheckIteration();
-	bool AlgoIteration();
+	bool StrategyIteration();
 	bool ObserverIteration();
 
 private:
@@ -355,16 +361,16 @@ private:
 
 	Condition m_securityUpdateCondition;
 
-	std::pair<AlgoNotifyList, AlgoNotifyList> m_algoQueue;
-	AlgoNotifyList *m_currentAlgos;
+	std::pair<StrategyNotifyList, StrategyNotifyList> m_strategyQueue;
+	StrategyNotifyList *m_currentStrategies;
 
 	std::pair<ObserverNotifyList, ObserverNotifyList> m_observerQueue;
 	ObserverNotifyList *m_currentObservers;
 
 	boost::shared_ptr<const Settings> m_settings;
 
-	Mutex m_algoListMutex;
-	AlgoStateList m_algoList;
+	Mutex m_strategyListMutex;
+	StrategyStateList m_strategyList;
 	
 	ObserversStateList m_observerList;
 
@@ -374,7 +380,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-bool Dispatcher::AlgoState::CheckPositionsUnsafe() {
+bool Dispatcher::StrategyState::CheckPositionsUnsafe() {
 
 	const auto now = boost::get_system_time();
 	Interlocking::Exchange(
@@ -383,7 +389,7 @@ bool Dispatcher::AlgoState::CheckPositionsUnsafe() {
 
 	Assert(!m_isBlocked);
 		
-	const Security &security = *const_cast<const Algo &>(*m_algo).GetSecurity();
+	const Security &security = *const_cast<const Strategy &>(*m_strategy).GetSecurity();
 	Assert(security || !m_settings->ShouldWaitForMarketData()); // must be checked it security object
 
 	if (m_positions) {
@@ -399,13 +405,16 @@ bool Dispatcher::AlgoState::CheckPositionsUnsafe() {
 						if (p->IsCanceled()) {
 							continue;
 						}
-						p->CancelAtMarketPrice(Position::CLOSE_TYPE_SCHEDULE);
+						p->CancelAtMarketPrice(
+							Position::CLOSE_TYPE_SCHEDULE);
 					}
 				} else {
-					m_algo->TryToClosePositions(*m_positions);
+					m_strategy->TryToClosePositions(*m_positions);
 				}
 			} else {
-				Log::Warn("Algo \"%1%\" BLOCKED by dispatcher.", m_algo->GetName());
+				Log::Warn(
+					"Strategy \"%1%\" BLOCKED by dispatcher.",
+					m_strategy->GetName());
 				Interlocking::Exchange(m_isBlocked, true);
 			}
 			return false;
@@ -417,11 +426,11 @@ bool Dispatcher::AlgoState::CheckPositionsUnsafe() {
 	Assert(!m_stateUpdateConnections.IsConnected());
 
 	if (security.IsHistoryData()) {
-		m_algo->Update();
+		m_strategy->Update();
 		return false;
 	}
 
-	boost::shared_ptr<PositionBandle> positions = m_algo->TryToOpenPositions();
+	boost::shared_ptr<PositionBandle> positions = m_strategy->TryToOpenPositions();
 	if (!positions || positions->Get().empty()) {
 		return false;
 	}
@@ -429,7 +438,7 @@ bool Dispatcher::AlgoState::CheckPositionsUnsafe() {
 	StateUpdateConnections stateUpdateConnections;
 	foreach (const auto &p, positions->Get()) {
 		Assert(&p->GetSecurity() == &security);
-		m_algo->ReportDecision(*p);
+		m_strategy->ReportDecision(*p);
 		stateUpdateConnections.InsertSafe(
 			p->Subscribe(
 				boost::bind(&Notifier::Signal, m_notifier.get(), shared_from_this())));
@@ -449,12 +458,12 @@ bool Dispatcher::Notifier::TimeoutCheckIteration() {
 	const auto nextIterationTime
 		= boost::get_system_time() + pt::milliseconds(m_settings->GetUpdatePeriodMilliseconds());
 
-	std::list<boost::shared_ptr<AlgoState>> algos;
+	std::list<boost::shared_ptr<StrategyState>> strategies;
 	{
-		const Lock lock(m_algoListMutex);
-		foreach (boost::shared_ptr<AlgoState> &algo, m_algoList) {
-			if (algo->IsTimeToUpdate()) {
-				algos.push_back(algo);
+		const Lock lock(m_strategyListMutex);
+		foreach (boost::shared_ptr<StrategyState> &strategy, m_strategyList) {
+			if (strategy->IsTimeToUpdate()) {
+				strategies.push_back(strategy);
 			}
 		}
 	}
@@ -463,12 +472,15 @@ bool Dispatcher::Notifier::TimeoutCheckIteration() {
 		Lock lock(m_mutex);
 		if (m_isExit) {
 			result = false;
-		} else if (m_isActive && !algos.empty()) {
-			foreach (boost::shared_ptr<AlgoState> &algo, algos) {
-				if (m_currentAlgos->find(algo) != m_currentAlgos->end()) {
+		} else if (m_isActive && !strategies.empty()) {
+			foreach (
+					boost::shared_ptr<StrategyState> &strategy,
+					strategies) {
+				if (	m_currentStrategies->find(strategy)
+							!= m_currentStrategies->end()) {
 					continue;
 				}
-				(*m_currentAlgos)[algo] = true;
+				(*m_currentStrategies)[strategy] = true;
 			}
 			m_positionsCheckCondition.notify_one();
 		}
@@ -476,7 +488,8 @@ bool Dispatcher::Notifier::TimeoutCheckIteration() {
 
 	if (nextIterationTime <= boost::get_system_time()) {
 		static volatile long reportsCount = 0;
-		const auto currentReportCount = Interlocking::Increment(reportsCount);
+		const auto currentReportCount
+			= Interlocking::Increment(reportsCount);
 		if (currentReportCount == 1 || currentReportCount > 50000) {
 			Log::Warn("Dispatcher timeout thread is heavy loaded!");
 			if (currentReportCount > 1) {
@@ -492,29 +505,31 @@ bool Dispatcher::Notifier::TimeoutCheckIteration() {
 
 }
 
-bool Dispatcher::Notifier::AlgoIteration() {
+bool Dispatcher::Notifier::StrategyIteration() {
 
-	AlgoNotifyList *notifyList = nullptr;
+	StrategyNotifyList *notifyList = nullptr;
 	{
 		Lock lock(m_mutex);
 		if (m_isExit) {
 			return false;
 		}
-		Assert(m_currentAlgos == &m_algoQueue.first || m_currentAlgos == &m_algoQueue.second);
-		if (m_currentAlgos->empty()) {
+		Assert(
+			m_currentStrategies == &m_strategyQueue.first
+			|| m_currentStrategies == &m_strategyQueue.second);
+		if (m_currentStrategies->empty()) {
 			m_positionsCheckCondition.wait(lock);
 			if (m_isExit) {
 				return false;
-			} else if (m_currentAlgos->empty() || !m_isActive) {
+			} else if (m_currentStrategies->empty() || !m_isActive) {
 				return true;
 			}
 		} else {
-			// Log::Warn("Dispatcher algos thread is heavy loaded!");
+			// Log::Warn("Dispatcher strategies thread is heavy loaded!");
 		}
-		notifyList = m_currentAlgos;
-		m_currentAlgos = m_currentAlgos == &m_algoQueue.first
-			?	&m_algoQueue.second
-			:	&m_algoQueue.first;
+		notifyList = m_currentStrategies;
+		m_currentStrategies = m_currentStrategies == &m_strategyQueue.first
+			?	&m_strategyQueue.second
+			:	&m_strategyQueue.first;
 		if (m_settings->IsReplayMode()) {
 			m_positionsCheckCompletedCondition.notify_all();
 		}
@@ -550,7 +565,7 @@ bool Dispatcher::Notifier::ObserverIteration() {
 				return true;
 			}
 		} else {
-			// Log::Warn("Dispatcher algos thread is heavy loaded!");
+			// Log::Warn("Dispatcher strategies thread is heavy loaded!");
 		}
 		notifyList = m_currentObservers;
 		m_currentObservers = m_currentObservers == &m_observerQueue.first
@@ -624,25 +639,33 @@ void Dispatcher::Stop() {
 	m_notifier->Stop();
 }
 
-void Dispatcher::Register(boost::shared_ptr<Algo> algo) {
-	const Security &security = *const_cast<const Algo &>(*algo).GetSecurity();
+void Dispatcher::Register(boost::shared_ptr<Strategy> strategy) {
+	const Security &security = *const_cast<const Strategy &>(*strategy).GetSecurity();
 	{
-		const Notifier::Lock algoListlock(m_notifier->GetAlgoListMutex());
-		Notifier::AlgoStateList &algoList = m_notifier->GetAlgoList();
+		const Notifier::Lock strategyListlock(
+			m_notifier->GetStrategyListMutex());
+		Notifier::StrategyStateList &strategyList
+			= m_notifier->GetStrategyList();
 		const Slots::Lock lock(m_slots->m_dataUpdateMutex);
-		boost::shared_ptr<AlgoState> algoState(
-			new AlgoState(algo, m_notifier, m_notifier->GetSettings()));
-		algoList.push_back(algoState);
+		boost::shared_ptr<StrategyState> strategyState(
+			new StrategyState(
+				strategy,
+				m_notifier,
+				m_notifier->GetSettings()));
+		strategyList.push_back(strategyState);
 		m_slots->m_dataUpdateConnections.InsertSafe(
 			security.SubcribeToLevel1(
 				Security::Level1UpdateSlot(
-					boost::bind(&Notifier::Signal, m_notifier.get(), algoState))));
-		algoList.swap(m_notifier->GetAlgoList());
+					boost::bind(
+						&Notifier::Signal,
+						m_notifier.get(),
+						strategyState))));
+		strategyList.swap(m_notifier->GetStrategyList());
 	}
 	Log::Info(
-		"Registered ALGO \"%1%\" (tag: \"%2%\") for security \"%3%\".",
-		algo->GetName(),
-		algo->GetTag(),
+		"Registered STRATEGY \"%1%\" (tag: \"%2%\") for security \"%3%\".",
+		strategy->GetName(),
+		strategy->GetTag(),
 		security.GetFullSymbol());
 }
 

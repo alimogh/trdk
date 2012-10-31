@@ -185,7 +185,7 @@ class ShortPosition(Trader.Position):
 
 ###############################################################################
 
-class Algo:
+class Strategy:
 	"""
 		Every strategy algorithm class must be inherited from this class.
 	"""

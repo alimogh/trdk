@@ -12,7 +12,7 @@
 #include "TradeSystem.hpp"
 #include "Api.h"
 
-class AlgoPositionState;
+class StrategyPositionState;
 
 namespace Trader {
 
@@ -50,8 +50,6 @@ namespace Trader {
 			CLOSE_TYPE_ENGINE_STOP
 		};
 
-		typedef boost::int64_t AlgoFlag;
-
 	private:
 
 		typedef boost::shared_mutex Mutex;
@@ -87,8 +85,8 @@ namespace Trader {
 				boost::shared_ptr<Trader::Security>,
 				Qty,
 				ScaledPrice startPrice,
-				boost::shared_ptr<const Algo>,
-				boost::shared_ptr<AlgoPositionState> = boost::shared_ptr<AlgoPositionState>());
+				boost::shared_ptr<const Strategy>,
+				boost::shared_ptr<StrategyPositionState> = boost::shared_ptr<StrategyPositionState>());
 		virtual ~Position();
 
 	public:
@@ -105,23 +103,27 @@ namespace Trader {
 			return *m_security;
 		}
 
-		const Algo & GetAlgo() const {
-			return *m_algo;
+		const Strategy & GetStrategy() const {
+			return *m_strategy;
 		}
 
-		template<typename AlogState>
-		bool IsAlgoStateSet() const {
-			return m_algoState && dynamic_cast<const AlogState *>(m_algoState.get());
+		template<typename StrategyState>
+		bool IsStrategyStateSet() const {
+			return
+				m_strategyState
+				&& dynamic_cast<const StrategyState *>(m_strategyState.get());
 		}
 
-		template<typename AlogState>
-		AlogState & GetAlgoState() {
-			Assert(IsAlgoStateSet<AlogState>());
-			return *boost::polymorphic_downcast<AlogState *>(m_algoState.get());
+		template<typename StrategyState>
+		StrategyState & GetStrategyState() {
+			Assert(IsStrategyStateSet<StrategyState>());
+			return *boost::polymorphic_downcast<StrategyState *>(
+				m_strategyState.get());
 		}
-		template<typename AlogState>
-		const AlogState & GetAlgoState() const {
-			return const_cast<Position *>(this)->GetAlgoState<AlogState>();
+		template<typename StrategyState>
+		const StrategyState & GetStrategyState() const {
+			return const_cast<Position *>(this)
+				->GetStrategyState<StrategyState>();
 		}
 
 	public:
@@ -301,8 +303,8 @@ namespace Trader {
 		volatile long m_isCanceled;
 		boost::function<void()> m_cancelMethod;
 
-		const boost::shared_ptr<const Algo> m_algo;
-		const boost::shared_ptr<AlgoPositionState> m_algoState;
+		const boost::shared_ptr<const Strategy> m_strategy;
+		const boost::shared_ptr<StrategyPositionState> m_strategyState;
 
 	};
 
@@ -319,8 +321,8 @@ namespace Trader {
 				boost::shared_ptr<Trader::Security>,
 				Qty,
 				ScaledPrice startPrice,
-				boost::shared_ptr<const Algo> = boost::shared_ptr<const Algo>(),
-				boost::shared_ptr<AlgoPositionState> = boost::shared_ptr<AlgoPositionState>());
+				boost::shared_ptr<const Strategy> = boost::shared_ptr<const Strategy>(),
+				boost::shared_ptr<StrategyPositionState> = boost::shared_ptr<StrategyPositionState>());
 		virtual ~LongPosition();
 
 	public:
@@ -360,8 +362,8 @@ namespace Trader {
 				boost::shared_ptr<Trader::Security>,
 				Qty,
 				ScaledPrice startPrice,
-				boost::shared_ptr<const Algo> = boost::shared_ptr<const Algo>(),
-				boost::shared_ptr<AlgoPositionState> = boost::shared_ptr<AlgoPositionState>());
+				boost::shared_ptr<const Strategy> = boost::shared_ptr<const Strategy>(),
+				boost::shared_ptr<StrategyPositionState> = boost::shared_ptr<StrategyPositionState>());
 		virtual ~ShortPosition();
 
 	public:

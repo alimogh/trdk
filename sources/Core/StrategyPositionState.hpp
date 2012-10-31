@@ -7,13 +7,13 @@
  **************************************************************************/
 
 #pragma once
-#include "Algo.hpp"
+#include "Strategy.hpp"
 
-class TRADER_CORE_API AlgoPositionState : private boost::noncopyable {
+class TRADER_CORE_API StrategyPositionState : private boost::noncopyable {
 
 public:
 
-	AlgoPositionState();
-	virtual ~AlgoPositionState();
+	StrategyPositionState();
+	virtual ~StrategyPositionState();
 
 };

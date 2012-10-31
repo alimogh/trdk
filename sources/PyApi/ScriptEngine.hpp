@@ -9,7 +9,7 @@
 #pragma once
 
 namespace Trader { namespace PyApi { namespace Wrappers {
-	class Algo;
+	class Strategy;
 } } }
 
 namespace Trader { namespace PyApi {
@@ -33,8 +33,8 @@ namespace Trader { namespace PyApi {
 		explicit ScriptEngine(
 				const boost::filesystem::path &filePath,
 				const std::string &stamp,
-				const std::string &algoClassName,
-				const Trader::Algo &algo,
+				const std::string &strategyClassName,
+				const Trader::Strategy &strategy,
 				boost::shared_ptr<Security> security);
 
 	public:
@@ -64,8 +64,8 @@ namespace Trader { namespace PyApi {
 		boost::python::object m_main;
 		boost::python::object m_global;
 
-		boost::python::object m_algoPy;
-		PyApi::Wrappers::Algo *m_algo;
+		boost::python::object m_strategyPy;
+		PyApi::Wrappers::Strategy *m_strategy;
 
 	};
 

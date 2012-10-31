@@ -8,7 +8,7 @@
 
 #include "Prec.hpp"
 #include "Position.hpp"
-#include "Algo.hpp"
+#include "Strategy.hpp"
 #include "Settings.hpp"
 
 using namespace Trader;
@@ -50,8 +50,9 @@ Position::Position(
 			boost::shared_ptr<Security> security,
 			Qty qty,
 			ScaledPrice startPrice,
-			boost::shared_ptr<const Algo> algo,
-			boost::shared_ptr<AlgoPositionState> state /*= boost::shared_ptr<AlgoPositionState>()*/)
+			boost::shared_ptr<const Strategy> strategy,
+			boost::shared_ptr<StrategyPositionState> state
+				/*= boost::shared_ptr<StrategyPositionState>()*/)
 		: m_security(security),
 		m_isPlanedQtyDynamic(false),
 		m_planedQty(qty),
@@ -61,8 +62,8 @@ Position::Position(
 		m_isReported(false),
 		m_isError(false),
 		m_isCanceled(false),
-		m_algo(algo),
-		m_algoState(state) {
+		m_strategy(strategy),
+		m_strategyState(state) {
 	AssertGt(m_planedQty, 0);
 }
 
@@ -229,10 +230,10 @@ void Position::UpdateClosing(
 		case TradeSystem::ORDER_STATUS_INACTIVE:
 		case TradeSystem::ORDER_STATUS_ERROR:
 			Log::Error(
-				"Position CLOSE error: symbol: \"%1%\", algo %2%"
+				"Position CLOSE error: symbol: \"%1%\", strategy %2%"
 					", trade system state: %3%, orders ID: %4%->%5%, qty: %6%->%7%.",
 				GetSecurity().GetFullSymbol(),
-				m_algo ? m_algo->GetTag() : "user",
+				m_strategy ? m_strategy->GetTag() : "user",
 				orderStatus,
 				m_opened.lastOrderId,
 				m_closed.lastOrderId,	
@@ -288,7 +289,7 @@ bool Position::CancelIfSet() throw() {
 			" has-orders=%8%/%9% is-error=%10%",
 		GetSecurity().GetSymbol(),
 		GetTypeStr(),
-		m_algo ? m_algo->GetTag() : "user",
+		m_strategy ? m_strategy->GetTag() : "user",
 		GetOpenedQty(),
 		GetClosedQty(),
 		GetOpenOrderId(),
@@ -375,7 +376,7 @@ void Position::ReportOpeningUpdate(
 			GetSecurity().GetSymbol(),
 			GetTypeStr(),
 			eventDesc,
-			m_algo ? m_algo->GetTag() : "user",
+			m_strategy ? m_strategy->GetTag() : "user",
 			GetPlanedQty(),
 			GetOpenedQty(),
 			GetSecurity().DescalePrice(GetOpenStartPrice()),
@@ -401,7 +402,7 @@ void Position::ReportClosingUpdate(
 			GetSecurity().GetSymbol(),
 			GetTypeStr(),
 			eventDesc,
-			m_algo ? m_algo->GetTag() : "user",
+			m_strategy ? m_strategy->GetTag() : "user",
 			GetOpenedQty(),
 			GetClosedQty(),
 			GetSecurity().DescalePrice(GetClosePrice()),
@@ -564,7 +565,7 @@ bool Position::CancelAtMarketPrice(CloseType closeType) {
 			" has-orders=%8%/%9% is-error=%10%",
 		GetSecurity().GetSymbol(),
 		GetTypeStr(),
-		m_algo ? m_algo->GetTag() : "user",
+		m_strategy ? m_strategy->GetTag() : "user",
 		GetOpenedQty(),
 		GetClosedQty(),
 		GetOpenOrderId(),
@@ -621,9 +622,10 @@ LongPosition::LongPosition(
 			boost::shared_ptr<Security> security,
 			Qty qty,
 			ScaledPrice startPrice,
-			boost::shared_ptr<const Algo> algo,
-			boost::shared_ptr<AlgoPositionState> state /*= boost::shared_ptr<AlgoPositionState>()*/)
-		: Position(security, qty, startPrice, algo, state) {
+			boost::shared_ptr<const Strategy> strategy,
+			boost::shared_ptr<StrategyPositionState> state
+				/*= boost::shared_ptr<StrategyPositionState>()*/)
+		: Position(security, qty, startPrice, strategy, state) {
 	//...//
 }
 
@@ -699,9 +701,10 @@ ShortPosition::ShortPosition(
 			boost::shared_ptr<Security> security,
 			Qty qty,
 			ScaledPrice startPrice,
-			boost::shared_ptr<const Algo> algo,
-			boost::shared_ptr<AlgoPositionState> state /*= boost::shared_ptr<AlgoPositionState>()*/)
-		: Position(security, qty, startPrice, algo, state) {
+			boost::shared_ptr<const Strategy> strategy,
+			boost::shared_ptr<StrategyPositionState> state
+				/*= boost::shared_ptr<StrategyPositionState>()*/)
+		: Position(security, qty, startPrice, strategy, state) {
 	//...//
 }
 

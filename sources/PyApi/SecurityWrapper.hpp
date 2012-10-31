@@ -20,7 +20,7 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 	public:
 
 		Security()
-				: m_algo(nullptr) {
+				: m_strategy(nullptr) {
 			//...//
 		}
 
@@ -30,10 +30,12 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 
 	public:
 
-		void Init(const Trader::Algo &algo, boost::shared_ptr<Trader::Security> security) {
-			Assert(!m_algo);
+		void Init(
+					const Trader::Strategy &strategy,
+					boost::shared_ptr<Trader::Security> security) {
+			Assert(!m_strategy);
 			Assert(!m_security);
-			m_algo = &algo;
+			m_strategy = &strategy;
 			m_security = security;
 		}
 
@@ -41,9 +43,9 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 			return m_security;
 		}
 
-		const Trader::Algo & GetAlgo() const {
-			Assert(m_algo);
-			return *m_algo;
+		const Trader::Strategy & GetStrategy() const {
+			Assert(m_strategy);
+			return *m_strategy;
 		}
 
 	public:
@@ -112,7 +114,7 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 
 	private:
 
-		const Trader::Algo *m_algo;
+		const Trader::Strategy *m_strategy;
 		boost::shared_ptr<Trader::Security> m_security;
 
 	};

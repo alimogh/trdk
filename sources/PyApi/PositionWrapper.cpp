@@ -7,7 +7,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Core/Algo.hpp"
+#include "Core/Strategy.hpp"
 #include "PositionWrapper.hpp"
 #include "SecurityWrapper.hpp"
 
@@ -39,7 +39,7 @@ PyApi::Wrappers::ShortPosition::ShortPosition(
 					security.GetSecurity(),
 					qty,
 					security.GetSecurity()->ScalePrice(startPrice),
-					security.GetAlgo().shared_from_this()))) {
+					security.GetStrategy().shared_from_this()))) {
 	//...//
 }
 
@@ -62,7 +62,7 @@ PyApi::Wrappers::LongPosition::LongPosition(
 					security.GetSecurity(),
 					qty,
 					security.GetSecurity()->ScalePrice(startPrice),
-					security.GetAlgo().shared_from_this()))) {
+					security.GetStrategy().shared_from_this()))) {
 	//...//
 }
 

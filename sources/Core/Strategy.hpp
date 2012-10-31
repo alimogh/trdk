@@ -17,9 +17,9 @@ class PositionReporter;
 
 namespace Trader {
 
-	class TRADER_CORE_API Algo
+	class TRADER_CORE_API Strategy
 			: public Trader::Module,
-			public boost::enable_shared_from_this<Trader::Algo> {
+			public boost::enable_shared_from_this<Trader::Strategy> {
 
 	public:
 
@@ -32,8 +32,8 @@ namespace Trader {
 
 	public:
 
-		explicit Algo(const std::string &tag, boost::shared_ptr<Trader::Security>);
-		virtual ~Algo();
+		explicit Strategy(const std::string &tag, boost::shared_ptr<Trader::Security>);
+		virtual ~Strategy();
 
 	public:
 

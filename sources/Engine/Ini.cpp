@@ -17,7 +17,7 @@ using namespace Trader::Engine;
 using namespace Trader::Engine::Ini;
 
 const std::string Sections::common = "Common";
-const std::string Sections::algo = "Algo.";
+const std::string Sections::strategy = "Strategy.";
 const std::string Sections::tradeSystem = "TradeSystem";
 const std::string Sections::observer = "Observer.";
 const std::string Sections::MarketData::source = "MarketData.Source";

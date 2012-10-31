@@ -25,9 +25,7 @@ namespace Trader {
 			Time tradeSessionStartTime;
 			Time tradeSessionEndTime;
 
-			boost::uint64_t algoUpdatePeriodMilliseconds;
-
-			size_t algoThreadsCount;
+			boost::uint64_t strategyUpdatePeriodMilliseconds;
 
 			bool shouldWaitForMarketData;
 
@@ -66,7 +64,7 @@ namespace Trader {
 		const Time & GetCurrentTradeSessionStartTime() const;
 		const Time & GetCurrentTradeSessionEndime() const;
 
-		size_t GetAlgoThreadsCount() const;
+		size_t GetThreadsCount() const;
 
 		boost::uint64_t GetUpdatePeriodMilliseconds() const;
 

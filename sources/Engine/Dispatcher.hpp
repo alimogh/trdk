@@ -14,7 +14,7 @@ namespace Trader { namespace Engine {
 
 	private:
 
-		class AlgoState;
+		class StrategyState;
 		class ObserverState;
 		class Notifier;
 		class Slots;
@@ -27,7 +27,7 @@ namespace Trader { namespace Engine {
 
 	public:
 
-		void Register(boost::shared_ptr<Algo>);
+		void Register(boost::shared_ptr<Strategy>);
 		void Register(boost::shared_ptr<Observer>);
 
 	public:

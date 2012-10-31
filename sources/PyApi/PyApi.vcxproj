@@ -78,7 +78,7 @@
     <TargetName>PyApi_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
-    <ClInclude Include="AlgoWrapper.hpp" />
+    <ClInclude Include="StrategyWrapper.hpp" />
     <ClInclude Include=".\PositionWrapper.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="PyApi.hpp" />

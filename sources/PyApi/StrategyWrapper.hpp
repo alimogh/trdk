@@ -14,7 +14,7 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class Algo : private boost::noncopyable {
+	class Strategy : private boost::noncopyable {
 
 	public:
 
@@ -22,10 +22,10 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 
 	public:
 
-		Algo() {
+		Strategy() {
 			//...//
 		}
-		virtual ~Algo() {
+		virtual ~Strategy() {
 			//...//
 		}
 
@@ -38,17 +38,17 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	struct AlgoWrap
-			: public Algo,
-			public boost::python::wrapper<Algo> {
+	struct StrategyWrap
+			: public Strategy,
+			public boost::python::wrapper<Strategy> {
 
 	public:
 
-		AlgoWrap() {
+		StrategyWrap() {
 			//...//
 		}
 
-		virtual ~AlgoWrap() {
+		virtual ~StrategyWrap() {
 			//...///
 		}
 

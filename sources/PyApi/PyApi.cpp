@@ -9,8 +9,8 @@
 #include "Prec.hpp"
 #include "PyApi.hpp"
 #include "ScriptEngine.hpp"
-#include "Core/PositionReporterAlgo.hpp"
-#include "Core/AlgoPositionState.hpp"
+#include "Core/StrategyPositionReporter.hpp"
+#include "Core/StrategyPositionState.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/PositionBundle.hpp"
 
@@ -18,7 +18,7 @@ namespace fs = boost::filesystem;
 using namespace Trader;
 using namespace Trader::Lib;
 
-PyApi::Algo::Algo(
+PyApi::Strategy::Strategy(
 			const std::string &tag,
 			boost::shared_ptr<Security> security,
 			const IniFile &ini,
@@ -32,19 +32,19 @@ PyApi::Algo::Algo(
 	DoSettingsUpdate(ini, section);
 }
 
-PyApi::Algo::~Algo() {
+PyApi::Strategy::~Strategy() {
 	delete m_scriptEngine;
 }
 
-const std::string & PyApi::Algo::GetName() const {
-	return m_settings.algoName;
+const std::string & PyApi::Strategy::GetName() const {
+	return m_settings.strategyName;
 }
 
-void PyApi::Algo::Update() {
+void PyApi::Strategy::Update() {
 	AssertFail("Strategy logic error - method \"Update\" has been called");
 }
 
-boost::shared_ptr<PositionBandle> PyApi::Algo::TryToOpenPositions() {
+boost::shared_ptr<PositionBandle> PyApi::Strategy::TryToOpenPositions() {
 	boost::shared_ptr<PositionBandle> result;
 	boost::shared_ptr<Position> pos = m_scriptEngine->TryToOpenPositions();
 	if (pos) {
@@ -54,7 +54,7 @@ boost::shared_ptr<PositionBandle> PyApi::Algo::TryToOpenPositions() {
 	return result;
 }
 
-void PyApi::Algo::TryToClosePositions(PositionBandle &positions) {
+void PyApi::Strategy::TryToClosePositions(PositionBandle &positions) {
 	foreach (auto p, positions.Get()) {
 		if (!p->IsOpened() || p->IsClosed() || p->IsCanceled()) {
 			continue;
@@ -63,7 +63,7 @@ void PyApi::Algo::TryToClosePositions(PositionBandle &positions) {
 	}
 }
 
-void PyApi::Algo::ReportDecision(const Position &position) const {
+void PyApi::Strategy::ReportDecision(const Position &position) const {
 	Log::Trading(
 		GetTag().c_str(),
 		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6%",
@@ -75,26 +75,29 @@ void PyApi::Algo::ReportDecision(const Position &position) const {
 		position.GetPlanedQty());
 }
 
-std::auto_ptr<PositionReporter> PyApi::Algo::CreatePositionReporter() const {
-	typedef PositionReporterAlgo<PyApi::Algo> Reporter;
+std::auto_ptr<PositionReporter> PyApi::Strategy::CreatePositionReporter() const {
+	typedef StrategyPositionReporter<PyApi::Strategy> Reporter;
 	std::auto_ptr<Reporter> result(new Reporter);
 	result->Init(*this);
 	return std::auto_ptr<PositionReporter>(result);
 }
 
-void PyApi::Algo::UpdateAlogImplSettings(const IniFile &ini, const std::string &section) {
+void PyApi::Strategy::UpdateAlogImplSettings(const IniFile &ini, const std::string &section) {
 	DoSettingsUpdate(ini, section);
 }
 
-void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
+void PyApi::Strategy::DoSettingsUpdate(const IniFile &ini, const std::string &section) {
 
 	Settings settings = {};
 
-	const std::string algoClassName = ini.ReadKey(section, "algo", false);
-	settings.algoName = ini.ReadKey(section, "name", false);
+	const std::string strategyClassName
+		= ini.ReadKey(section, "strategy", false);
+	settings.strategyName = ini.ReadKey(section, "name", false);
 
-	const fs::path scriptFilePath = ini.ReadKey(section, "script_file_path", false);
-	const std::string scriptFileStamp = ini.ReadKey(section, "script_file_stamp", true);
+	const fs::path scriptFilePath
+		= ini.ReadKey(section, "script_file_path", false);
+	const std::string scriptFileStamp
+		= ini.ReadKey(section, "script_file_stamp", true);
 
 	const bool isNewScript
 		= !m_scriptEngine
@@ -102,12 +105,14 @@ void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &sectio
 			|| m_scriptEngine->IsFileChanged(scriptFileStamp);
 
 	SettingsReport report;
-	AppendSettingsReport("algo", algoClassName, report);
-	AppendSettingsReport("name", settings.algoName, report);
+	AppendSettingsReport("strategy", strategyClassName, report);
+	AppendSettingsReport("name", settings.strategyName, report);
 	AppendSettingsReport("tag", GetTag(), report);
 	AppendSettingsReport("script_file_path", scriptFilePath, report);
 	AppendSettingsReport("script_file_stamp", scriptFileStamp, report);
-	AppendSettingsReport("script state", isNewScript ? "RELOADED" : "not reloaded", report);
+	AppendSettingsReport(
+		"script state",
+		isNewScript ? "RELOADED" : "not reloaded", report);
 	ReportSettings(report);
 
 	std::unique_ptr<PyApi::ScriptEngine> scriptEngine;
@@ -116,7 +121,7 @@ void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &sectio
 			new PyApi::ScriptEngine(
 				scriptFilePath,
 				scriptFileStamp,
-				algoClassName,
+				strategyClassName,
 				*this,
 				GetSecurity()));
 	}
@@ -129,7 +134,7 @@ void PyApi::Algo::DoSettingsUpdate(const IniFile &ini, const std::string &sectio
 
 }
 
-PyApi::ScriptEngine & PyApi::Algo::GetScriptEngine() {
+PyApi::ScriptEngine & PyApi::Strategy::GetScriptEngine() {
 	Assert(m_scriptEngine);
 	return *m_scriptEngine;
 }
@@ -137,22 +142,22 @@ PyApi::ScriptEngine & PyApi::Algo::GetScriptEngine() {
 //////////////////////////////////////////////////////////////////////////
 
 #ifdef BOOST_WINDOWS
-	boost::shared_ptr<Trader::Algo> CreatePyEngine(
+	boost::shared_ptr<Trader::Strategy> CreatePyEngine(
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security> security,
 				const IniFile &ini,
 				const std::string &section) {
-		return boost::shared_ptr<Trader::Algo>(
-			new Trader::PyApi::Algo(tag, security, ini, section));
+		return boost::shared_ptr<Trader::Strategy>(
+			new Trader::PyApi::Strategy(tag, security, ini, section));
 	}
 #else
-	extern "C" boost::shared_ptr<Trader::Algo> CreatePyEngine(
+	extern "C" boost::shared_ptr<Trader::Strategy> CreatePyEngine(
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security> security,
 				const IniFile &ini,
 				const std::string &section) {
-		return boost::shared_ptr<Trader::Algo>(
-			new Trader::PyApi::Algo(tag, security, ini, section));
+		return boost::shared_ptr<Trader::Strategy>(
+			new Trader::PyApi::Strategy(tag, security, ini, section));
 	}
 #endif
 

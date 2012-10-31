@@ -2,13 +2,13 @@
 # Trader engine module
 import Trader
 
-# Strategy algorithm class must be inherited from trader.Algo
-class SimpleExampleTradeAlgo(Trader.Algo):
+# Strategy algorithm class must be inherited from trader.Strategy
+class SimpleExampleTradeStrategy(Trader.Strategy):
 
 	# Pure virtual method, must be implemented in strategy implementation.
 	# This will be called by engine every time when:
 	# 	- arrives new data for symbol
-	#	  or timeout ${algo_update_period_ms} has expired
+	#	  or timeout ${strategy_update_period_ms} has expired
 	def tryToOpenPositions(self):
 
 		# Checking entry condition:
@@ -37,7 +37,7 @@ class SimpleExampleTradeAlgo(Trader.Algo):
 	# Pure virtual method, must be implemented in strategy implementation.
 	# This will be called by engine every time when:
 	# 	- arrives new data for symbol
-	#	  or timeout ${algo_update_period_ms} has expired
+	#	  or timeout ${strategy_update_period_ms} has expired
 	#	- strategy has opened position
 	#	- all previous orders has been canceled or filled
 	def tryToClosePositions(self, position):
@@ -56,7 +56,7 @@ class SimpleExampleTradeAlgo(Trader.Algo):
 			position.cancelAtMarketPrice()
 
 # Last trade price example:
-class LastTradeLogginAlgo(Trader.Algo):
+class LastTradeLogginStrategy(Trader.Strategy):
 	
 	def tryToOpenPositions(self):
 		message = 'Last {0} symbol trade: price = {1}, quantity = {2}.'.format(

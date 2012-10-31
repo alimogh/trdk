@@ -7,12 +7,12 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "AlgoPositionState.hpp"
+#include "StrategyPositionState.hpp"
 
-AlgoPositionState::AlgoPositionState() {
+StrategyPositionState::StrategyPositionState() {
 	//...//
 }
 
-AlgoPositionState::~AlgoPositionState() {
+StrategyPositionState::~StrategyPositionState() {
 	//...//
 }

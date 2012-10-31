@@ -10,7 +10,7 @@
 #include "Ini.hpp"
 #include "Util.hpp"
 #include "Dispatcher.hpp"
-#include "Core/Algo.hpp"
+#include "Core/Strategy.hpp"
 #include "Core/Observer.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
@@ -27,11 +27,17 @@ namespace {
 
 	typedef std::map<std::string, boost::shared_ptr<Security>> Securities;
 
-	typedef DllObjectPtr<Algo> ModuleAlgo;
-	typedef std::map<std::string /*tag*/, std::list<ModuleAlgo>> Algos;
-	
+	typedef DllObjectPtr<Strategy> ModuleStrategy;
+	typedef std::map<
+			std::string /*tag*/,
+			std::list<ModuleStrategy>>
+		Strategies;
+
 	typedef DllObjectPtr<Observer> ModuleObserver;
-	typedef std::map<std::string /*tag*/, std::list<ModuleObserver>> Observers;
+	typedef std::map<
+			std::string /*tag*/,
+			std::list<ModuleObserver>>
+		Observers;
 
 }
 
@@ -68,35 +74,35 @@ namespace {
 		securititesTmp.swap(securities);
 	}
 
-	void InitAlgo(
+	void InitStrategy(
 				const IniFile &ini,
 				const std::string &section,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				MarketDataSource &marketDataSource,
 				Securities &securities,
-				Algos &algos,
+				Strategies &strategies,
 				boost::shared_ptr<Settings> settings)  {
 
 		fs::path module;
 		try {
 			module = ini.ReadKey(section, Ini::Key::module, false);
 		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to get algo module: \"%1%\".", ex.what());
-			throw IniFile::Error("Failed to load algo");
+			Log::Error("Failed to get strategy module: \"%1%\".", ex.what());
+			throw IniFile::Error("Failed to load strategy");
 		}
 
 		std::string fabricName;
 		try {
 			fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
 		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to get algo fabric name module: \"%1%\".", ex.what());
-			throw IniFile::Error("Failed to load algo");
+			Log::Error("Failed to get strategy fabric name module: \"%1%\".", ex.what());
+			throw IniFile::Error("Failed to load strategy");
 		}
 
-		const std::string tag = section.substr(Ini::Sections::algo.size());
+		const std::string tag = section.substr(Ini::Sections::strategy.size());
 		if (tag.empty()) {
-			Log::Error("Failed to get tag for algo section \"%1%\".", section);
-			throw IniFile::Error("Failed to load algo");
+			Log::Error("Failed to get tag for strategy section \"%1%\".", section);
+			throw IniFile::Error("Failed to load strategy");
 		}
 
 		Log::Info("Loading objects for \"%1%\"...", tag);
@@ -116,11 +122,11 @@ namespace {
 			LoadSecurities(symbols, tradeSystem, marketDataSource, securities, settings, ini);
 		} catch (const IniFile::Error &ex) {
 			Log::Error("Failed to load securities for %2%: \"%1%\".", ex.what(), tag);
-			throw IniFile::Error("Failed to load algo");
+			throw IniFile::Error("Failed to load strategy");
 		}
 
 		boost::shared_ptr<Dll> dll;
-		foreach (auto &as, algos) {
+		foreach (auto &as, strategies) {
 			foreach (auto &a, as.second) {
 				if (a.GetDll()->GetFile() == module) {
 					dll = a;
@@ -133,7 +139,7 @@ namespace {
 		}
 		const auto fabric
 			= dll->GetFunction<
-					boost::shared_ptr<Algo>(
+					boost::shared_ptr<Strategy>(
 						const std::string &tag,
 						boost::shared_ptr<Security> security,
 						const IniFile &ini,
@@ -142,22 +148,29 @@ namespace {
 
 		foreach (const auto &symbol, symbols) {
 			Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
-			boost::shared_ptr<Algo> newAlgo;
+			boost::shared_ptr<Strategy> newStrategy;
 			try {
-				newAlgo = fabric(
+				newStrategy = fabric(
 					tag,
  					securities[CreateSecuritiesKey(symbol)],
  					ini,
  					section);
 			} catch (...) {
-				Log::RegisterUnhandledException(__FUNCTION__, __FILE__, __LINE__, false);
-				throw Exception("Failed to load algo");
+				Log::RegisterUnhandledException(
+					__FUNCTION__,
+					__FILE__,
+					__LINE__,
+					false);
+				throw Exception("Failed to load strategy");
 			}
-			algos[tag].push_back(DllObjectPtr<Algo>(dll, newAlgo));
+			strategies[tag].push_back(
+				DllObjectPtr<Strategy>(dll, newStrategy));
 			Log::Info(
-				"Loaded algo \"%1%\" for \"%2%\" with tag \"%3%\".",
-				newAlgo->GetName(),
-				const_cast<const Algo &>(*newAlgo).GetSecurity()->GetFullSymbol(),
+				"Loaded strategy \"%1%\" for \"%2%\" with tag \"%3%\".",
+				newStrategy->GetName(),
+				const_cast<const Strategy &>(*newStrategy)
+					.GetSecurity()
+					->GetFullSymbol(),
 				tag);
 		}
 
@@ -210,8 +223,11 @@ namespace {
 		try {
 			LoadSecurities(symbols, tradeSystem, marketDataSource, securities, settings, ini);
 		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to load securities for %2%: \"%1%\".", ex.what(), tag);
-			throw IniFile::Error("Failed to load algo");
+			Log::Error(
+				"Failed to load securities for %2%: \"%1%\".",
+				ex.what(),
+				tag);
+			throw IniFile::Error("Failed to load strategy");
 		}
 
 		Observer::NotifyList notifyList;
@@ -252,7 +268,7 @@ namespace {
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Dispatcher &dispatcher,
 				boost::shared_ptr<MarketDataSource> marketDataSource,
-				Algos &algos,
+				Strategies &strategies,
 				Observers &observers,
 				boost::shared_ptr<Settings> settings)  {
 
@@ -260,20 +276,22 @@ namespace {
 
 		Securities securities;
 		foreach (const auto &section, sections) {
-			if (boost::starts_with(section, Ini::Sections::algo)) {
-				Log::Info("Found algo section \"%1%\"...", section);
+			if (boost::starts_with(section, Ini::Sections::strategy)) {
+				Log::Info(
+					"Found strategy section \"%1%\"...",
+					section);
 				try {
-					InitAlgo(
+					InitStrategy(
 						ini,
 						section,
 						tradeSystem,
 						*marketDataSource,
 						securities,
-						algos,
+						strategies,
 						settings);
 				} catch (const Exception &ex) {
 					Log::Error(
-						"Failed to load algo module from section \"%1%\": \"%2%\".",
+						"Failed to load strategy module from section \"%1%\": \"%2%\".",
 						section,
 						ex.what());
 				}
@@ -290,18 +308,18 @@ namespace {
 						settings);
 				} catch (const Exception &ex) {
 					Log::Error(
-						"Failed to load algo module from section \"%1%\": \"%2%\".",
+						"Failed to load strategy module from section \"%1%\": \"%2%\".",
 						section,
 						ex.what());
 				}
 			}
 		}
 
-		if (algos.empty()) {
-			Log::Error("No algos loaded.");
+		if (strategies.empty()) {
+			Log::Error("No strategies loaded.");
 		}
 
-		foreach (auto &as, algos) {
+		foreach (auto &as, strategies) {
 			foreach (auto &a, as.second) {
 				dispatcher.Register(a);
 			}
@@ -313,7 +331,7 @@ namespace {
 		}
 
 		Log::Info("Loaded %1% securities.", securities.size());
-		Log::Info("Loaded %1% algos.", algos.size());
+		Log::Info("Loaded %1% strategies.", strategies.size());
 		Log::Info("Loaded %1% observers.", observers.size());
 
 		return true;
@@ -322,9 +340,11 @@ namespace {
 
 	void UpdateSettingsRuntime(
 				const fs::path &iniFilePath,
-				Algos &algos,
+				Strategies &strategies,
 				Settings &settings) {
-		Log::Info("Detected INI-file %1% modification, updating current settings...", iniFilePath);
+		Log::Info(
+			"Detected INI-file %1% modification, updating current settings...",
+			iniFilePath);
 		const IniFile ini(iniFilePath);
 		std::set<std::string> sections;
 		try {
@@ -338,24 +358,26 @@ namespace {
 				try {
 					settings.Update(ini, section);
 				} catch (const Exception &ex) {
-					Log::Error("Failed to update common settings: \"%1%\".", ex.what());
+					Log::Error(
+						"Failed to update common settings: \"%1%\".",
+						ex.what());
 				}
 				continue;
 			}
 			bool isError = false;
-			std::string algoName;
-			if (!boost::starts_with(section, Ini::Sections::algo)) {
+			std::string strategyName;
+			if (!boost::starts_with(section, Ini::Sections::strategy)) {
 				continue;
 			}
-			const std::string tag = section.substr(Ini::Sections::algo.size());
+			const std::string tag = section.substr(Ini::Sections::strategy.size());
 			if (tag.empty()) {
-				Log::Error("Failed to get tag for algo section \"%1%\".", section);
+				Log::Error("Failed to get tag for strategy section \"%1%\".", section);
 				continue;
 			}
-			const Algos::iterator pos = algos.find(tag);
-			if (pos == algos.end()) {
+			const Strategies::iterator pos = strategies.find(tag);
+			if (pos == strategies.end()) {
 				Log::Warn(
-					"Could not update current settings: could not find algo with tag \"%1%\".",
+					"Could not update current settings: could not find strategy with tag \"%1%\".",
 					tag);
 				continue;
 			}
@@ -437,14 +459,14 @@ void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 
 	Dispatcher dispatcher(settings);
 
-	Algos algos;
+	Strategies strategies;
 	Observers observers;
 	if (	!InitTrading(
 				ini,
 				tradeSystem,
 				dispatcher,
 				marketDataSource,
-				algos,
+				strategies,
 				observers,
 				settings)) {
 		return;
@@ -455,7 +477,7 @@ void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 		boost::bind(
 			&UpdateSettingsRuntime,
 			boost::cref(iniFilePath),
-			boost::ref(algos),
+			boost::ref(strategies),
 			boost::ref(*settings)));
 
 	iniChangeNotificator.Start();

@@ -7,7 +7,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Algo.hpp"
+#include "Strategy.hpp"
 #include "Security.hpp"
 #include "PositionReporter.hpp"
 #include "Position.hpp"
@@ -19,54 +19,54 @@ namespace pt = boost::posix_time;
 using namespace Trader;
 using namespace Trader::Lib;
 
-Algo::Algo(const std::string &tag, boost::shared_ptr<Security> security)
+Strategy::Strategy(const std::string &tag, boost::shared_ptr<Security> security)
 		: Module(tag),
 		m_security(security),
 		m_positionReporter(nullptr) {
 	//...//
 }
 
-Algo::~Algo() {
+Strategy::~Strategy() {
 	delete m_positionReporter;
 }
 
-Algo::Mutex & Algo::GetMutex() {
+Strategy::Mutex & Strategy::GetMutex() {
 	return m_mutex;
 }
 
-void Algo::UpdateSettings(const IniFile &ini, const std::string &section) {
+void Strategy::UpdateSettings(const IniFile &ini, const std::string &section) {
 	const Lock lock(m_mutex);
 	UpdateAlogImplSettings(ini, section);
 }
 
-Security::Qty Algo::CalcQty(Security::ScaledPrice price, Security::ScaledPrice volume) const {
+Security::Qty Strategy::CalcQty(Security::ScaledPrice price, Security::ScaledPrice volume) const {
 	return std::max<Security::Qty>(1, Security::Qty(volume / price));
 }
 
-boost::shared_ptr<const Security> Algo::GetSecurity() const {
-	return const_cast<Algo *>(this)->GetSecurity();
+boost::shared_ptr<const Security> Strategy::GetSecurity() const {
+	return const_cast<Strategy *>(this)->GetSecurity();
 }
 
-boost::shared_ptr<Security> Algo::GetSecurity() {
+boost::shared_ptr<Security> Strategy::GetSecurity() {
 	return m_security;
 }
 
-PositionReporter & Algo::GetPositionReporter() {
+PositionReporter & Strategy::GetPositionReporter() {
 	if (!m_positionReporter) {
 		m_positionReporter = CreatePositionReporter().release();
 	}
 	return *m_positionReporter;
 }
 
-boost::posix_time::ptime Algo::GetLastDataTime() {
+boost::posix_time::ptime Strategy::GetLastDataTime() {
 	return boost::posix_time::not_a_date_time;
 }
 
-bool Algo::IsValidPrice(const Settings &settings) const {
+bool Strategy::IsValidPrice(const Settings &settings) const {
 	return settings.IsValidPrice(*m_security);
 }
 
-void Algo::ReportSettings(const SettingsReport &settings) const {
+void Strategy::ReportSettings(const SettingsReport &settings) const {
 
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
@@ -110,7 +110,7 @@ void Algo::ReportSettings(const SettingsReport &settings) const {
 
 }
 
-pt::ptime Algo::GetCurrentTime() const {
+pt::ptime Strategy::GetCurrentTime() const {
 	return !m_security->GetSettings().IsReplayMode()
 		?	boost::get_system_time()
 		:	m_security->GetLastMarketDataTime();

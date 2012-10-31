@@ -12,7 +12,7 @@ namespace Trader { namespace Engine { namespace Ini {
 
 	namespace Sections {
 		extern const std::string common;
-		extern const std::string algo;
+		extern const std::string strategy;
 		extern const std::string tradeSystem;
 		extern const std::string observer;
 		namespace MarketData {

@@ -8,7 +8,7 @@
 
 #include "Prec.hpp"
 #include "ScriptEngine.hpp"
-#include "AlgoWrapper.hpp"
+#include "StrategyWrapper.hpp"
 
 namespace fs = boost::filesystem;
 namespace python = boost::python;
@@ -36,12 +36,12 @@ BOOST_PYTHON_MODULE(Trader) {
 	python::def("logInfo", &LogInfo);
 	python::def("logTrading", &LogTrading);
 
-	python::class_<Wrappers::AlgoWrap, boost::noncopyable>("Algo")
+	python::class_<Wrappers::StrategyWrap, boost::noncopyable>("Strategy")
 
-		.def_readonly("security", &Wrappers::AlgoWrap::security)
+		.def_readonly("security", &Wrappers::StrategyWrap::security)
 
-		.def("tryToOpenPositions", python::pure_virtual(&Wrappers::Algo::TryToOpenPositions))
-		.def("tryToClosePositions", python::pure_virtual(&Wrappers::Algo::TryToClosePositions));
+		.def("tryToOpenPositions", python::pure_virtual(&Wrappers::Strategy::TryToOpenPositions))
+		.def("tryToClosePositions", python::pure_virtual(&Wrappers::Strategy::TryToClosePositions));
 
 
 	python::class_<Wrappers::Security, boost::noncopyable>("Security",  python::no_init)
@@ -190,8 +190,8 @@ ScriptEngine::ExecError::ExecError(const char *what) throw()
 ScriptEngine::ScriptEngine(
 			const boost::filesystem::path &filePath,
 			const std::string &stamp,
-			const std::string &algoClassName,
-			const ::Algo &algo,
+			const std::string &strategyClassName,
+			const ::Strategy &strategy,
 			boost::shared_ptr<Security> security)
 		: m_filePath(filePath),
 		m_stamp(stamp) {
@@ -219,19 +219,20 @@ ScriptEngine::ScriptEngine(
 
 	try {
 
-		m_algoPy = m_global[algoClassName]();
+		m_strategyPy = m_global[strategyClassName]();
 		{
-			PyApi::Wrappers::Algo &algo = python::extract<PyApi::Wrappers::Algo &>(m_algoPy);
-			m_algo = &algo;
+			PyApi::Wrappers::Strategy &strategy
+				= python::extract<PyApi::Wrappers::Strategy &>(m_strategyPy);
+			m_strategy = &strategy;
 		}
 
-		m_algo->security.Init(algo, security);
+		m_strategy->security.Init(strategy, security);
 
 	} catch (const python::error_already_set &) {
 		PyErr_Print();
 		throw Exception(
-			(boost::format("Failed to create Python algo object \"%1%\"")
-					% algoClassName)
+			(boost::format("Failed to create Python strategy object \"%1%\"")
+					% strategyClassName)
 				.str().c_str());
 	}
 
@@ -248,7 +249,7 @@ void ScriptEngine::Exec(const std::string &code) {
 
 boost::shared_ptr< ::Position> ScriptEngine::TryToOpenPositions() {
 	try {
-		python::object result = m_algo->TryToOpenPositions();
+		python::object result = m_strategy->TryToOpenPositions();
 		if (!result) {
 			return boost::shared_ptr< ::Position>();
 		}
@@ -266,10 +267,12 @@ boost::shared_ptr< ::Position> ScriptEngine::TryToOpenPositions() {
 				return ref.GetPosition();
 			}
 		}
-		throw Exception("Object with unknown type returned by Algo::TryToOpenPositions");
+		throw Exception(
+			"Object with unknown type returned by Strategy::TryToOpenPositions");
 	} catch (const python::error_already_set &) {
 		PyErr_Print();
-		throw Exception("Failed to call Python object method Algo::TryToOpenPositions");
+		throw Exception(
+			"Failed to call Python object method Strategy::TryToOpenPositions");
 	}
 }
 
@@ -291,7 +294,7 @@ void ScriptEngine::TryToClosePositions(boost::shared_ptr<Position> position) {
 			return;
 	}
 	try {
-		m_algo->TryToClosePositions(pyPosition);
+		m_strategy->TryToClosePositions(pyPosition);
 	} catch (const python::error_already_set &) {
 		PyErr_Print();
 		throw Exception("Failed to call Python object method Algo::TryToClosePositions");
