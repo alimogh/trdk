@@ -10,7 +10,7 @@
 
 namespace fs = boost::filesystem;
 
-void Trade(const fs::path &);
+void Trade(const fs::path &, bool isReplayMode);
 
 namespace {
 
@@ -47,6 +47,15 @@ namespace {
 		}
 	}
 
+	bool IsReplayMode(int argc, const char *argv[]) {
+		for (auto i = 1; i < argc; ++i) {
+			if (!_stricmp(argv[i], "replay")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 }
 
 int main(int argc, const char *argv[]) {
@@ -54,7 +63,7 @@ int main(int argc, const char *argv[]) {
 	try {
 		InitLogs(argc, argv);
 		const fs::path iniFilePath = "Etc/trade.ini";
-		Trade(iniFilePath);
+		Trade(iniFilePath, IsReplayMode(argc, argv));
 	} catch (...) {
 		result = 1;
 		AssertFailNoException();

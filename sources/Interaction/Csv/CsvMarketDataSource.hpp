@@ -9,13 +9,19 @@
 #pragma once
 
 #include "Core/MarketDataSource.hpp"
-#include "Security.hpp"
+#include "CsvSecurity.hpp"
 
 namespace Trader { namespace Interaction { namespace Csv { 
 
 	class MarketDataSource : public Trader::MarketDataSource {
 
 	private:
+
+		enum Side {
+			SIDE_NOT_SET,
+			SIDE_BUY,
+			SIDE_SELL
+		};
 
 		struct ByInstrument {
 			//...//
@@ -102,7 +108,19 @@ namespace Trader { namespace Interaction { namespace Csv {
 
 		void ReadFile();
 
+		bool ParseTradeLine(
+				const std::string &line,
+				boost::posix_time::ptime &,
+				Side &,
+				std::string &symbol,
+				std::string &exchange,
+				Security::ScaledPrice &,
+				Security::Qty &)
+			const;
+
 	private:
+
+		const std::string m_pimaryExchange;
 
 		std::ifstream m_file;
 		SecurityList m_securityList;

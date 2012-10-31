@@ -134,3 +134,26 @@ PyApi::ScriptEngine & PyApi::Algo::GetScriptEngine() {
 	return *m_scriptEngine;
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+#ifdef BOOST_WINDOWS
+	boost::shared_ptr<Trader::Algo> CreatePyEngine(
+				const std::string &tag,
+				boost::shared_ptr<Trader::Security> security,
+				const IniFile &ini,
+				const std::string &section) {
+		return boost::shared_ptr<Trader::Algo>(
+			new Trader::PyApi::Algo(tag, security, ini, section));
+	}
+#else
+	extern "C" boost::shared_ptr<Trader::Algo> CreatePyEngine(
+				const std::string &tag,
+				boost::shared_ptr<Trader::Security> security,
+				const IniFile &ini,
+				const std::string &section) {
+		return boost::shared_ptr<Trader::Algo>(
+			new Trader::PyApi::Algo(tag, security, ini, section));
+	}
+#endif
+
+//////////////////////////////////////////////////////////////////////////

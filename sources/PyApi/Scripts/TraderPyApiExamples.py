@@ -54,3 +54,17 @@ class SimpleExampleTradeAlgo(Trader.Algo):
 		elif self.security.askPrice <= stopLossPrice:
 			# stop loss: cancel all active orders and close position at market price 
 			position.cancelAtMarketPrice()
+
+# Last trade price example:
+class LastTradeLogginAlgo(Trader.Algo):
+	
+	def tryToOpenPositions(self):
+		message = 'Last {0} symbol trade: price = {1}, quantity = {2}.'.format(
+			self.security.symbol,
+			self.security.lastPrice,
+			self.security.lastSize)
+		Trader.logInfo(message)
+		return
+
+	def tryToClosePositions(self, position):
+		pass

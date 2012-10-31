@@ -66,22 +66,22 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Api.cpp" />
-    <ClCompile Include="MarketDataSource.cpp" />
+    <ClCompile Include="CsvApi.cpp" />
+    <ClCompile Include="CsvMarketDataSource.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Security.cpp" />
+    <ClCompile Include="CsvSecurity.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Csv.def" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MarketDataSource.hpp" />
+    <ClInclude Include="CsvMarketDataSource.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="Security.hpp" />
+    <ClInclude Include="CsvSecurity.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

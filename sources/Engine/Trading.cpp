@@ -420,13 +420,13 @@ namespace {
 
 }
 
-void Trade(const fs::path &iniFilePath) {
+void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 
 	Log::Info("Using %1% INI-file...", iniFilePath);
 	const IniFile ini(iniFilePath);
 
 	boost::shared_ptr<Settings> settings
-		= Ini::LoadSettings(ini, boost::get_system_time(), false);
+		= Ini::LoadSettings(ini, boost::get_system_time(), isReplayMode);
 
 	DllObjectPtr<TradeSystem> tradeSystem
 		= LoadTradeSystem(ini, Ini::Sections::tradeSystem);

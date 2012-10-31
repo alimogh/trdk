@@ -7,7 +7,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "MarketDataSource.hpp"
+#include "CsvMarketDataSource.hpp"
 
 boost::shared_ptr<Trader::MarketDataSource> CreateMarketDataSource(
 			const Trader::Lib::IniFile &ini,

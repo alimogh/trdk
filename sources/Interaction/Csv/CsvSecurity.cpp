@@ -7,7 +7,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Security.hpp"
+#include "CsvSecurity.hpp"
 
 using namespace Trader::Interaction::Csv;
 
@@ -38,4 +38,6 @@ void Security::SignalNewTrade(
 			ScaledPrice price,
 			Qty qty) {
 	Base::SignalNewTrade(time, isBuy, price, qty);
+	SetLast(price, qty);
+	Base::SignalLevel1Update();
 }
