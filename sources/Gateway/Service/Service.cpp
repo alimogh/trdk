@@ -208,7 +208,7 @@ namespace {
 
 }
 
-void Service::OnUpdate(
+void Service::OnNewTrade(
 			const Trader::Security &security,
 			const boost::posix_time::ptime &time,
 			Trader::Security::ScaledPrice price,

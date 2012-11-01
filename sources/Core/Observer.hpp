@@ -36,7 +36,7 @@ namespace Trader {
 
 	public:
 
-		virtual void OnUpdate(
+		virtual void OnNewTrade(
 					const Trader::Security &,
 					const boost::posix_time::ptime &,
 					Trader::Security::ScaledPrice price,

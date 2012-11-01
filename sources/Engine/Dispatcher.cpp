@@ -121,13 +121,13 @@ public:
 		//...//
 	}
 
-	void NotifyUpdate(
+	void NotifyNewTrade(
 				const Security &security,
 				const boost::posix_time::ptime &time,
 				Trader::Security::ScaledPrice price,
 				Trader::Security::Qty qty,
 				bool isBuy) {
-		m_observer->OnUpdate(security, time, price, qty, isBuy);
+		m_observer->OnNewTrade(security, time, price, qty, isBuy);
 	}
 
 private:
@@ -565,7 +565,7 @@ bool Dispatcher::Notifier::ObserverIteration() {
 				return true;
 			}
 		} else {
-			// Log::Warn("Dispatcher strategies thread is heavy loaded!");
+			// Log::Warn("Dispatcher observer thread is heavy loaded!");
 		}
 		notifyList = m_currentObservers;
 		m_currentObservers = m_currentObservers == &m_observerQueue.first
@@ -575,7 +575,7 @@ bool Dispatcher::Notifier::ObserverIteration() {
 
 	Assert(!notifyList->empty());
 	foreach (auto &observationEvent, *notifyList) {
-		observationEvent.state->NotifyUpdate(
+		observationEvent.state->NotifyNewTrade(
 			*observationEvent.security,
 			observationEvent.time,
 			observationEvent.price,
