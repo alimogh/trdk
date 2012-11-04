@@ -16,7 +16,7 @@ using namespace Trader::Lib;
 using namespace Trader::Gateway;
 namespace pt = boost::posix_time;
 
-Service::Service(
+Gateway::Service::Service(
 			const std::string &tag,
 			const Observer::NotifyList &notifyList,
 			boost::shared_ptr<Trader::TradeSystem> tradeSystem,
@@ -39,7 +39,7 @@ Service::Service(
 
 }
 
-Service::~Service() {
+Gateway::Service::~Service() {
 	Interlocking::Exchange(m_stopFlag, true);
 	soap_done(&m_soap);
 	{
@@ -52,12 +52,12 @@ Service::~Service() {
 	m_threads.join_all();
 }
 
-const std::string & Service::GetName() const {
+const std::string & Gateway::Service::GetName() const {
 	static const std::string name = "Gateway";
 	return name;
 }
 
-void Service::LogSoapError() const {
+void Gateway::Service::LogSoapError() const {
 	std::ostringstream oss;
 	soap_stream_fault(&m_soap, oss);
 	std::string soapError(
@@ -73,7 +73,7 @@ void Service::LogSoapError() const {
 	Log::Error(TRADER_GATEWAY_LOG_PREFFIX "%1%", soapError);
 }
 
-void Service::SoapServeThread(::soap *soap) {
+void Gateway::Service::SoapServeThread(::soap *soap) {
 
 	class Cleaner : private boost::noncopyable {
 	public:
@@ -118,7 +118,7 @@ void Service::SoapServeThread(::soap *soap) {
 
 }
 
-void Service::HandleSoapRequest() {
+void Gateway::Service::HandleSoapRequest() {
 
 	SOAP_SOCKET acceptedSocket = soap_accept(&m_soap);
 	if (m_stopFlag) {
@@ -146,7 +146,7 @@ void Service::HandleSoapRequest() {
 
 }
 
-void Service::StartSoapDispatcherThread() {
+void Gateway::Service::StartSoapDispatcherThread() {
 
 	for (auto i = 0; ; ++i) {
 
@@ -185,7 +185,7 @@ void Service::StartSoapDispatcherThread() {
 
 }
 
-void Service::SoapDispatcherThread() {
+void Gateway::Service::SoapDispatcherThread() {
 	while (!m_stopFlag) {
 		HandleSoapRequest();
 	}
@@ -208,7 +208,7 @@ namespace {
 
 }
 
-void Service::OnNewTrade(
+void Gateway::Service::OnNewTrade(
 			const Trader::Security &security,
 			const boost::posix_time::ptime &time,
 			Trader::Security::ScaledPrice price,
@@ -226,7 +226,7 @@ void Service::OnNewTrade(
 	cache.push_back(update);
 }
 
-void Service::GetSecurityList(std::list<trader__Security> &result) {
+void Gateway::Service::GetSecurityList(std::list<trader__Security> &result) {
 	std::list<trader__Security> resultTmp;
 	foreach (const auto &serviceSecurity, GetNotifyList()) {
 		trader__Security security;
@@ -242,7 +242,7 @@ void Service::GetSecurityList(std::list<trader__Security> &result) {
 	resultTmp.swap(result);
 }
 
-void Service::GetLastTrades(
+void Gateway::Service::GetLastTrades(
 					const std::string &symbol,
 					const std::string &exchange,
 					trader__TradeList &result) {
@@ -261,11 +261,14 @@ void Service::GetLastTrades(
 	resultTmp.swap(result);
 }
 
-const Trader::Security & Service::FindSecurity(const std::string &symbol) const {
+const Trader::Security & Gateway::Service::FindSecurity(
+			const std::string &symbol)
+		const {
 	return const_cast<Service *>(this)->FindSecurity(symbol);
 }
 
-Trader::Security & Service::FindSecurity(const std::string &symbol) {
+Trader::Security & Gateway::Service::FindSecurity(
+			const std::string &symbol) {
 	foreach (auto &security, GetNotifyList()) {
 		if (boost::iequals(security->GetSymbol(), symbol)) {
 			return *security;
@@ -276,7 +279,7 @@ Trader::Security & Service::FindSecurity(const std::string &symbol) {
 	throw UnknownSecurityError(error.str().c_str());
 }
 
-void Service::GetParams(
+void Gateway::Service::GetParams(
 			const std::string &symbol,
 			const std::string &exchange,
 			trader__ExchangeBook &result) {
@@ -299,7 +302,7 @@ void Service::GetParams(
 	}
 }
 
-void Service::GetCommonParams(
+void Gateway::Service::GetCommonParams(
 			const std::string &symbol,
 			trader__CommonParams &result) {
 	try {
@@ -316,7 +319,7 @@ void Service::GetCommonParams(
 	}
 }
 
-void Service::OrderBuy(
+void Gateway::Service::OrderBuy(
 			const std::string &symbol,
 			const std::string &venue,
 			Security::ScaledPrice price,
@@ -343,7 +346,7 @@ void Service::OrderBuy(
 	}
 }
 
-void Service::OrderBuyMkt(
+void Gateway::Service::OrderBuyMkt(
 			const std::string &symbol,
 			const std::string &venue,
 			Security::Qty qty,
@@ -369,7 +372,7 @@ void Service::OrderBuyMkt(
 	}
 }
 
-void Service::OrderSell(
+void Gateway::Service::OrderSell(
 			const std::string &symbol,
 			const std::string &venue,
 			Security::ScaledPrice price,
@@ -396,7 +399,7 @@ void Service::OrderSell(
 	}
 }
 
-void Service::OrderSellMkt(
+void Gateway::Service::OrderSellMkt(
 			const std::string &symbol,
 			const std::string &venue,
 			Security::Qty qty,
@@ -422,7 +425,8 @@ void Service::OrderSellMkt(
 	}
 }
 
-ShortPosition & Service::GetShortPosition(Trader::Security &security) {
+ShortPosition & Gateway::Service::GetShortPosition(
+			Trader::Security &security) {
 	boost::shared_ptr<ShortPosition> &result = m_positions[&security].first;
 	if (!result || result->IsClosed()) {
 		result.reset(new ShortPosition(security.shared_from_this()));
@@ -430,7 +434,8 @@ ShortPosition & Service::GetShortPosition(Trader::Security &security) {
 	return *result;
 }
 
-LongPosition & Service::GetLongPosition(Trader::Security &security) {
+LongPosition & Gateway::Service::GetLongPosition(
+			Trader::Security &security) {
 	boost::shared_ptr<LongPosition> &result = m_positions[&security].second;
 	if (!result || result->IsClosed()) {
 		result.reset(new LongPosition(security.shared_from_this()));
@@ -438,7 +443,7 @@ LongPosition & Service::GetLongPosition(Trader::Security &security) {
 	return *result;
 }
 
-void Service::GetPositionInfo(
+void Gateway::Service::GetPositionInfo(
 			const std::string &symbol,
 			trader__Position &result)
 		const {

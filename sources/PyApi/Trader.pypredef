@@ -192,6 +192,13 @@ class Strategy:
 
 	security = Trader.Security
 
+	def getName():
+		"""
+			Returns algorithm method.
+			
+			pure virtual method
+		"""
+
 	def tryToOpenPositions():
 		"""
 			Returns Trader.LongPosition or Trader.ShortPosition if decides to

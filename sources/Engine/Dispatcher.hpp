@@ -29,6 +29,7 @@ namespace Trader { namespace Engine {
 
 		void Register(boost::shared_ptr<Strategy>);
 		void Register(boost::shared_ptr<Observer>);
+		void Register(boost::shared_ptr<Service>);
 
 	public:
 

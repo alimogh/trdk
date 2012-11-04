@@ -40,6 +40,8 @@ BOOST_PYTHON_MODULE(Trader) {
 
 		.def_readonly("security", &Wrappers::StrategyWrap::security)
 
+		.def("getName", python::pure_virtual(&Wrappers::Strategy::GetName))
+
 		.def("tryToOpenPositions", python::pure_virtual(&Wrappers::Strategy::TryToOpenPositions))
 		.def("tryToClosePositions", python::pure_virtual(&Wrappers::Strategy::TryToClosePositions));
 
@@ -245,6 +247,18 @@ void ScriptEngine::Exec(const std::string &code) {
 		PyErr_Print();
 		throw Exception("Failed to exec Python code");
 	}
+}
+
+std::string ScriptEngine::GetName() const {
+	std::string result;
+	try {
+		result = boost::python::extract<std::string>(m_strategy->GetName());
+	} catch (const python::error_already_set &) {
+		PyErr_Print();
+		throw Exception(
+			"Failed to call Python object method Strategy::GetName");
+	}
+	return result;
 }
 
 boost::shared_ptr< ::Position> ScriptEngine::TryToOpenPositions() {

@@ -10,6 +10,7 @@
 #include "Dispatcher.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/Observer.hpp"
+#include "Core/Service.hpp"
 #include "Core/Security.hpp"
 #include "Core/PositionBundle.hpp"
 #include "Core/Position.hpp"
@@ -395,7 +396,6 @@ bool Dispatcher::StrategyState::CheckPositionsUnsafe() {
 	if (m_positions) {
 		Assert(!m_positions->Get().empty());
 		Assert(m_stateUpdateConnections.IsConnected());
-		Assert(!security.IsHistoryData());
 		ReportClosedPositon(*m_positions);
 		if (!m_positions->IsCompleted()) {
 			if (m_positions->IsOk()) {
@@ -424,11 +424,6 @@ bool Dispatcher::StrategyState::CheckPositionsUnsafe() {
 	}
 
 	Assert(!m_stateUpdateConnections.IsConnected());
-
-	if (security.IsHistoryData()) {
-		m_strategy->Update();
-		return false;
-	}
 
 	boost::shared_ptr<PositionBandle> positions = m_strategy->TryToOpenPositions();
 	if (!positions || positions->Get().empty()) {
@@ -694,6 +689,13 @@ void Dispatcher::Register(boost::shared_ptr<Observer> observer) {
 		"Registered OBSERVER \"%1%\" (tag: \"%2%\").",
 		observer->GetName(),
 		observer->GetTag());
+}
+
+void Dispatcher::Register(boost::shared_ptr<Service> service) {
+	Log::Info(
+		"Registered SERVICE \"%1%\" (tag: \"%2%\").",
+		service->GetName(),
+		service->GetTag());
 }
 
 ////////////////////////////////////////////////////////////////////////////////

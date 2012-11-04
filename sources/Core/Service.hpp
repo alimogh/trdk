@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/09/16 12:38:52
+ *   Created: 2012/11/03 00:19:15
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,22 +8,20 @@
 
 #pragma once
 
+#include "SecurityAlgo.hpp"
+#include "Api.h"
+
 namespace Trader {
 
-	class Security;
-	
-	class MarketDataSource;
+	class TRADER_CORE_API Service : public Trader::SecurityAlgo {
 
-	class Position;
-	class LongPosition;
-	class ShortPosition;
+	public:
 
-	class TradeSystem;
+		explicit Service(
+				const std::string &tag,
+				boost::shared_ptr<Trader::Security>);
+		virtual ~Service();
 
-	class Settings;
-
-	class Strategy;
-	class Observer;
-	class Service;
+	};
 
 }

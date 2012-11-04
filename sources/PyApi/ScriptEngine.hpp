@@ -49,6 +49,8 @@ namespace Trader { namespace PyApi {
 
 	public:
 
+		std::string GetName() const;
+
 		boost::shared_ptr<Trader::Position> TryToOpenPositions();
 		void TryToClosePositions(boost::shared_ptr<Trader::Position>);
 

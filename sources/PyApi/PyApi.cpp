@@ -37,11 +37,7 @@ PyApi::Strategy::~Strategy() {
 }
 
 const std::string & PyApi::Strategy::GetName() const {
-	return m_settings.strategyName;
-}
-
-void PyApi::Strategy::Update() {
-	AssertFail("Strategy logic error - method \"Update\" has been called");
+	return m_name;
 }
 
 boost::shared_ptr<PositionBandle> PyApi::Strategy::TryToOpenPositions() {
@@ -90,9 +86,7 @@ void PyApi::Strategy::DoSettingsUpdate(const IniFile &ini, const std::string &se
 
 	Settings settings = {};
 
-	const std::string strategyClassName
-		= ini.ReadKey(section, "strategy", false);
-	settings.strategyName = ini.ReadKey(section, "name", false);
+	const std::string className = ini.ReadKey(section, "class", false);
 
 	const fs::path scriptFilePath
 		= ini.ReadKey(section, "script_file_path", false);
@@ -105,8 +99,7 @@ void PyApi::Strategy::DoSettingsUpdate(const IniFile &ini, const std::string &se
 			|| m_scriptEngine->IsFileChanged(scriptFileStamp);
 
 	SettingsReport report;
-	AppendSettingsReport("strategy", strategyClassName, report);
-	AppendSettingsReport("name", settings.strategyName, report);
+	AppendSettingsReport("class", className, report);
 	AppendSettingsReport("tag", GetTag(), report);
 	AppendSettingsReport("script_file_path", scriptFilePath, report);
 	AppendSettingsReport("script_file_stamp", scriptFileStamp, report);
@@ -121,15 +114,17 @@ void PyApi::Strategy::DoSettingsUpdate(const IniFile &ini, const std::string &se
 			new PyApi::ScriptEngine(
 				scriptFilePath,
 				scriptFileStamp,
-				strategyClassName,
+				className,
 				*this,
 				GetSecurity()));
 	}
 
 	m_settings = settings;
 	if (scriptEngine) {
+		std::string name = scriptEngine->GetName();
 		delete m_scriptEngine;
 		m_scriptEngine = scriptEngine.release();
+		name.swap(m_name);
 	}
 
 }

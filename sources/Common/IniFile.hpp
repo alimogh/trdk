@@ -64,9 +64,21 @@ namespace Trader { namespace Lib {
 		};
 
 		struct Symbol {
+			
 			std::string symbol;
 			std::string exchange;
 			std::string primaryExchange;
+
+			bool operator <(const Symbol &rhs) const {
+				return
+					primaryExchange < rhs.primaryExchange
+						|| (primaryExchange == rhs.primaryExchange
+							&& exchange < rhs.exchange)
+						|| (primaryExchange == rhs.primaryExchange
+								&& exchange == rhs.exchange
+								&& symbol < rhs.symbol);
+			}
+
 		};
 
 		struct AbsoluteOrPercentsPrice {
@@ -144,12 +156,17 @@ namespace Trader { namespace Lib {
 				bool isMustBeExist)
 			const;
 
-		std::list<Symbol> ReadSymbols(
+		static Symbol ParseSymbol(
+				const std::string &strSymbol,
+				const std::string &defExchange,
+				const std::string &defPrimaryExchange);
+
+		std::set<Symbol> ReadSymbols(
 				const std::string &defExchange,
 				const std::string &defPrimaryExchange)
 			const;
 
-		std::list<Symbol> ReadSymbols(
+		std::set<Symbol> ReadSymbols(
 				const std::string &section,
 				const std::string &defExchange,
 				const std::string &defPrimaryExchange)
@@ -168,3 +185,12 @@ namespace Trader { namespace Lib {
 	};
 
 } }
+
+namespace std {
+	inline std::ostream & operator <<(
+				std::ostream &os,
+				const Trader::Lib::IniFile::Symbol &symbol) {
+		os << symbol.symbol << ':' << symbol.primaryExchange << ':' << symbol.exchange;
+		return os;
+	}
+}

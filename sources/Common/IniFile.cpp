@@ -33,29 +33,6 @@ namespace {
 		boost::trim_left_if(line, boost::is_any_of("["));
 	}
 
-	IniFile::Symbol ReadSymbolLine(
-				const std::string &line,
-				const std::string &defExchange,
-				const std::string &defPrimaryExchange) {
-		std::vector<std::string> subs;
-		boost::split(subs, line, boost::is_any_of(":"));
-		foreach (auto &s, subs) {
-			boost::trim(s);
-		}
-		IniFile::Symbol result;
-		result.symbol = subs[0];
-		if (result.symbol.empty()) {
-			throw IniFile::SymbolFormatError();
-		}
-		result.exchange = subs.size() == 3 && !subs[2].empty()
-			?	subs[2]
-			:	defExchange;
-		result.primaryExchange = subs.size() >= 2 && !subs[1].empty()
-			?	subs[1]
-			:	defPrimaryExchange;
-		return result;
-	}
-
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -322,25 +299,48 @@ std::list<std::string> IniFile::ReadList(
 	return result;
 }
 
-std::list<IniFile::Symbol> IniFile::ReadSymbols(
+IniFile::Symbol IniFile::ParseSymbol(
+			const std::string &line,
+			const std::string &defExchange,
+			const std::string &defPrimaryExchange) {
+	std::vector<std::string> subs;
+	boost::split(subs, line, boost::is_any_of(":"));
+	foreach (auto &s, subs) {
+		boost::trim(s);
+	}
+	IniFile::Symbol result;
+	result.symbol = subs[0];
+	if (result.symbol.empty()) {
+		throw IniFile::SymbolFormatError();
+	}
+	result.exchange = subs.size() == 3 && !subs[2].empty()
+		?	subs[2]
+		:	defExchange;
+	result.primaryExchange = subs.size() >= 2 && !subs[1].empty()
+		?	subs[1]
+		:	defPrimaryExchange;
+	return result;
+}
+
+std::set<IniFile::Symbol> IniFile::ReadSymbols(
 			const std::string &defExchange,
 			const std::string &defPrimaryExchange)
 		const {
-	std::list<Symbol> result;
+	std::set<Symbol> result;
 	foreach (const auto &l, ReadList())  {
-		result.push_back(ReadSymbolLine(l, defExchange, defPrimaryExchange));
+		result.insert(ParseSymbol(l, defExchange, defPrimaryExchange));
 	}
 	return result;
 }
 
-std::list<IniFile::Symbol> IniFile::ReadSymbols(
+std::set<IniFile::Symbol> IniFile::ReadSymbols(
 			const std::string &section,
 			const std::string &defExchange,
 			const std::string &defPrimaryExchange)
 		const {
-	std::list<Symbol> result;
+	std::set<Symbol> result;
 	foreach (const auto &l, ReadList(section, true))  {
-		result.push_back(ReadSymbolLine(l, defExchange, defPrimaryExchange));
+		result.insert(ParseSymbol(l, defExchange, defPrimaryExchange));
 	}
 	return result;
 }

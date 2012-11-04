@@ -1,4 +1,4 @@
-﻿	/**************************************************************************
+﻿/**************************************************************************
  *   Created: May 14, 2012 9:07:07 PM
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
@@ -133,15 +133,6 @@ namespace Trader {
 		Qty GetBidQty(size_t pos) const;
 
 		Qty GetTradedVolume() const;
-
-	public:
-
-		bool IsHistoryData() const;
-
-	public:
-
-		void OnHistoryDataStart();
-		void OnHistoryDataEnd();
 
 	public:
 

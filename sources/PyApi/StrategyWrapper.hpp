@@ -31,6 +31,8 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 
 	public:
 
+		virtual boost::python::object GetName() const = 0;
+
 		virtual boost::python::object TryToOpenPositions() = 0;
 		virtual void TryToClosePositions(boost::python::object) = 0;
 
@@ -53,6 +55,10 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 		}
 
 	public:
+
+		virtual boost::python::object GetName() const {
+			return get_override("getName")();
+		}
 
 		virtual boost::python::object TryToOpenPositions() {
 			return get_override("tryToOpenPositions")();

@@ -27,7 +27,7 @@ namespace Trader { namespace PyApi {
 		class State;
 
 		struct Settings {
-			std::string strategyName;
+			//...//
 		};
 
 	public:
@@ -44,8 +44,6 @@ namespace Trader { namespace PyApi {
 		virtual const std::string & GetName() const;
 
 	public:
-
-		virtual void Update();
 
 		virtual boost::shared_ptr<PositionBandle> TryToOpenPositions();
 		virtual void TryToClosePositions(PositionBandle &);
@@ -74,6 +72,8 @@ namespace Trader { namespace PyApi {
 
 		Settings m_settings;
 		PyApi::ScriptEngine *m_scriptEngine;
+
+		std::string m_name;
 
 	};
 

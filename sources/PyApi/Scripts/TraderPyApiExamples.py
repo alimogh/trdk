@@ -6,6 +6,11 @@ import Trader
 class SimpleExampleTradeStrategy(Trader.Strategy):
 
 	# Pure virtual method, must be implemented in strategy implementation.
+	# Returns algorith name.
+	def getName(self):
+		return self.__class__.__name__
+
+	# Pure virtual method, must be implemented in strategy implementation.
 	# This will be called by engine every time when:
 	# 	- arrives new data for symbol
 	#	  or timeout ${strategy_update_period_ms} has expired
@@ -57,6 +62,9 @@ class SimpleExampleTradeStrategy(Trader.Strategy):
 
 # Last trade price example:
 class LastTradeLogginStrategy(Trader.Strategy):
+
+	def getName(self):
+		return self.__class__.__name__
 	
 	def tryToOpenPositions(self):
 		message = 'Last {0} symbol trade: price = {1}, quantity = {2}.'.format(

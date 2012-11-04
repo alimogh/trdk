@@ -17,9 +17,11 @@ using namespace Trader::Engine;
 using namespace Trader::Engine::Ini;
 
 const std::string Sections::common = "Common";
+const std::string Sections::defaults = "Defaults";
 const std::string Sections::strategy = "Strategy.";
 const std::string Sections::tradeSystem = "TradeSystem";
 const std::string Sections::observer = "Observer.";
+const std::string Sections::service = "Service.";
 const std::string Sections::MarketData::source = "MarketData.Source";
 
 const std::string Sections::MarketData::Log::symbols = "MarketData.Log.Symbols";
@@ -28,6 +30,11 @@ const std::string Sections::MarketData::request = "MarketData.Request";
 const std::string Key::module = "module";
 const std::string Key::fabric = "fabric";
 const std::string Key::symbols = "symbols";
+const std::string Key::primaryExchange = "primary_exchange";
+const std::string Key::exchange = "exchange";
+const std::string Key::services = "services";
+
+const std::string Variables::currentSymbol = "CURRENT_SYMBOL";
 
 //////////////////////////////////////////////////////////////////////////
 

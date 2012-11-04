@@ -26,5 +26,5 @@ TRADER_GATEWAY_SERVICE_API boost::shared_ptr<Observer> CreateGateway(
 			const IniFile &ini,
 			const std::string &section) {
 	return boost::shared_ptr<Observer>(
-		new Service(tag, notifyList, tradeSystem, ini, section));
+		new Gateway::Service(tag, notifyList, tradeSystem, ini, section));
 }

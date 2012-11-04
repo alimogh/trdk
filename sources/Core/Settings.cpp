@@ -33,7 +33,6 @@ Settings::Settings(
 
 void Settings::Update(const IniFile &ini, const std::string &section) {
 	UpdateDynamic(ini, section);
-
 }
 
 void Settings::UpdateDynamic(const IniFile &ini, const std::string &section) {

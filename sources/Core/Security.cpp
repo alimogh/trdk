@@ -48,8 +48,6 @@ public:
 	mutable boost::signals2::signal<Level1UpdateSlotSignature> m_level1UpdateSignal;
 	mutable boost::signals2::signal<NewTradeSlotSignature> m_tradeSignal;
 
-	volatile long long m_isHistoryData;
-
 	volatile long long m_lastPrice;
 	volatile long m_lastSize;
 
@@ -74,7 +72,6 @@ public:
 					const Instrument &instrument,
 					bool logMarketData)
 			: m_marketDataLog(nullptr),
-			m_isHistoryData(false),
 			m_lastPrice(0),
 			m_lastSize(0),
 			m_askPrice(0),
@@ -333,24 +330,6 @@ double Security::GetBidPrice(size_t pos) const {
 
 Security::Qty Security::GetBidQty(size_t pos) const {
 	return pos == 1 ? m_pimpl->m_bidQty : m_pimpl->m_bidQty2;
-}
-
-bool Security::IsHistoryData() const {
-	return m_pimpl->m_isHistoryData
-		?	!GetSettings().IsReplayMode()
-		:	false;
-}
-
-void Security::OnHistoryDataStart() {
-	if (!Interlocking::Exchange(m_pimpl->m_isHistoryData, true) && *this) {
-		m_pimpl->m_level1UpdateSignal();
-	}
-}
-
-void Security::OnHistoryDataEnd() {
-	if (Interlocking::Exchange(m_pimpl->m_isHistoryData, false) && *this) {
-		m_pimpl->m_level1UpdateSignal();
-	}
 }
 
 Security::Level1UpdateSlotConnection Security::SubcribeToLevel1(

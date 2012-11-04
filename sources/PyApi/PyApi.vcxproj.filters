@@ -58,5 +58,8 @@
     <None Include="Scripts\TraderPyApiExamples.py">
       <Filter>Scripts</Filter>
     </None>
+    <None Include="Scripts\Frame.py">
+      <Filter>Scripts</Filter>
+    </None>
   </ItemGroup>
 </Project>

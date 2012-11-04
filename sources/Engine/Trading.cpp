@@ -12,6 +12,7 @@
 #include "Dispatcher.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/Observer.hpp"
+#include "Core/Service.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -25,31 +26,40 @@ using namespace Trader::Engine;
 
 namespace {
 
-	typedef std::map<std::string, boost::shared_ptr<Security>> Securities;
+	typedef std::map<
+			IniFile::Symbol,
+			boost::shared_ptr<Security>>
+		Securities;
 
 	typedef DllObjectPtr<Strategy> ModuleStrategy;
 	typedef std::map<
 			std::string /*tag*/,
-			std::list<ModuleStrategy>>
+			std::map<IniFile::Symbol, ModuleStrategy>>
 		Strategies;
 
-	typedef DllObjectPtr<Observer> ModuleObserver;
+	struct StrategyService {
+		std::string tag;
+		std::string symbol;
+	};
 	typedef std::map<
-			std::string /*tag*/,
-			std::list<ModuleObserver>>
-		Observers;
+			std::string /* strategy tag */,
+			std::list<StrategyService>>
+		StrategyServices;
+
+	typedef DllObjectPtr<Observer> ModuleObserver;
+	typedef std::map<std::string /*tag*/, ModuleObserver> Observers;
+
+	typedef DllObjectPtr<Service> ModuleService;
+	typedef std::map<IniFile::Symbol, ModuleService> ServicesBySymbol;
+	typedef std::map<std::string /*tag*/, ServicesBySymbol> Services;
 
 }
 
 namespace {
-
-	std::string CreateSecuritiesKey(const IniFile::Symbol &symbol) {
-		return Util::CreateSymbolFullStr(symbol.symbol, symbol.primaryExchange, symbol.exchange);
-	}
-
+	
 	void LoadSecurities(
-				const std::list<IniFile::Symbol> &symbols,
-				boost::shared_ptr<TradeSystem> tradeSystem,
+				const std::set<IniFile::Symbol> &symbols,
+				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
 				Securities &securities,
 				boost::shared_ptr<Settings> settings,
@@ -58,88 +68,147 @@ namespace {
 			= ini.ReadList(Ini::Sections::MarketData::Log::symbols, false);
 		Securities securititesTmp(securities);
 		foreach (const IniFile::Symbol &symbol, symbols) {
-			const std::string key = CreateSecuritiesKey(symbol);
-			if (securities.find(key) != securities.end()) {
+			if (securities.find(symbol) != securities.end()) {
 				continue;
 			}
-			securititesTmp[key] = marketDataSource.CreateSecurity(
+			securititesTmp[symbol] = marketDataSource.CreateSecurity(
 				tradeSystem,
 				symbol.symbol,
 				symbol.primaryExchange,
 				symbol.exchange,
 				settings,
-				find(logMdSymbols.begin(), logMdSymbols.end(), symbol.symbol) != logMdSymbols.end());
-			Log::Info("Loaded security \"%1%\".", securititesTmp[key]->GetFullSymbol());
+				find(logMdSymbols.begin(), logMdSymbols.end(), symbol.symbol)
+					!= logMdSymbols.end());
+			Log::Info(
+				"Loaded security \"%1%\".",
+				securititesTmp[symbol]->GetFullSymbol());
 		}
 		securititesTmp.swap(securities);
 	}
 
-	void InitStrategy(
+	std::string LoadModule(
 				const IniFile &ini,
 				const std::string &section,
-				boost::shared_ptr<TradeSystem> tradeSystem,
+				const std::string &tag,
+				const char *moduleType,
+				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
+				std::set<IniFile::Symbol> &symbols,
 				Securities &securities,
-				Strategies &strategies,
-				boost::shared_ptr<Settings> settings)  {
+				boost::shared_ptr<Settings> settings,
+				boost::shared_ptr<Dll> &dll) {
+
+		if (tag.empty()) {
+			Log::Error(
+				"Failed to get tag for %1% section \"%2%\".",
+				moduleType,
+				section);
+			throw IniFile::Error("Failed to load module");
+		}
 
 		fs::path module;
 		try {
 			module = ini.ReadKey(section, Ini::Key::module, false);
 		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to get strategy module: \"%1%\".", ex.what());
-			throw IniFile::Error("Failed to load strategy");
+			Log::Error(
+				"Failed to get %1% module: \"%2%\".",
+				moduleType,
+				ex.what());
+			throw IniFile::Error("Failed to load module");
 		}
 
 		std::string fabricName;
 		try {
 			fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
 		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to get strategy fabric name module: \"%1%\".", ex.what());
-			throw IniFile::Error("Failed to load strategy");
+			Log::Error(
+				"Failed to get %1% fabric name module: \"%2%\".",
+				moduleType,
+				ex.what());
+			throw IniFile::Error("Failed to load module");
 		}
 
-		const std::string tag = section.substr(Ini::Sections::strategy.size());
-		if (tag.empty()) {
-			Log::Error("Failed to get tag for strategy section \"%1%\".", section);
-			throw IniFile::Error("Failed to load strategy");
-		}
-
-		Log::Info("Loading objects for \"%1%\"...", tag);
+		Log::Info("Loading %1% objects for \"%2%\"...", moduleType, tag);
 
 		std::string symbolsFilePath;
 		try {
-			symbolsFilePath = ini.ReadKey(section, Ini::Key::symbols, false);
+			symbolsFilePath
+				= ini.ReadKey(section, Ini::Key::symbols, false);
 		} catch (const IniFile::Error &ex) {
 			Log::Error("Failed to get symbols file: \"%1%\".", ex.what());
 			throw;
 		}
 
-		Log::Info("Loading symbols from %1% for %2%...", symbolsFilePath, tag);
-		const IniFile symbolsIni(symbolsFilePath, ini.GetPath().branch_path());
-		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("ALL", "NASDAQ-US");
+		Log::Info(
+			"Loading symbols from \"%1%\" for %2% \"%3%\"...",
+			symbolsFilePath,
+			moduleType,
+			tag);
+		const IniFile symbolsIni(
+			symbolsFilePath,
+			ini.GetPath().branch_path());
+		symbols = symbolsIni.ReadSymbols(
+			ini.ReadKey(
+				Ini::Sections::defaults,
+				Ini::Key::exchange,
+				false),
+			ini.ReadKey(
+				Ini::Sections::defaults,
+				Ini::Key::primaryExchange,
+				false));
 		try {
-			LoadSecurities(symbols, tradeSystem, marketDataSource, securities, settings, ini);
+			LoadSecurities(
+				symbols,
+				tradeSystem,
+				marketDataSource,
+				securities,
+				settings,
+				ini);
 		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to load securities for %2%: \"%1%\".", ex.what(), tag);
+			Log::Error(
+				"Failed to load securities for %2%: \"%1%\".",
+				ex.what(),
+				tag);
 			throw IniFile::Error("Failed to load strategy");
 		}
+	
+		dll.reset(new Dll(module, true));
+		return fabricName;
 
+	}
+
+	template<typename Module>
+	void InitModuleBySymbol(
+				const IniFile &ini,
+				const std::string &section,
+				const char *moduleType,
+				const std::string &tag,
+				boost::shared_ptr<TradeSystem> &tradeSystem,
+				MarketDataSource &marketDataSource,
+				Securities &securities,
+				std::map<
+						std::string,
+						std::map<IniFile::Symbol, DllObjectPtr<Module>>>
+					&modules,
+				boost::shared_ptr<Settings> settings) {
+
+		std::set<IniFile::Symbol> symbols;
 		boost::shared_ptr<Dll> dll;
-		foreach (auto &as, strategies) {
-			foreach (auto &a, as.second) {
-				if (a.GetDll()->GetFile() == module) {
-					dll = a;
-					break;
-				}
-			}
-		}
-		if (!dll) {
-			dll.reset(new Dll(module, true));
-		}
+		const auto fabricName = LoadModule(
+			ini,
+			section,
+			tag,
+			moduleType,
+			tradeSystem,
+			marketDataSource,
+			symbols,
+			securities,
+			settings,
+			dll);
+
 		const auto fabric
 			= dll->GetFunction<
-					boost::shared_ptr<Strategy>(
+					boost::shared_ptr<Module>(
 						const std::string &tag,
 						boost::shared_ptr<Security> security,
 						const IniFile &ini,
@@ -147,12 +216,12 @@ namespace {
 				(fabricName);
 
 		foreach (const auto &symbol, symbols) {
-			Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
-			boost::shared_ptr<Strategy> newStrategy;
+			Assert(securities.find(symbol) != securities.end());
+			boost::shared_ptr<Module> symbolInstance;
 			try {
-				newStrategy = fabric(
+				symbolInstance = fabric(
 					tag,
- 					securities[CreateSecuritiesKey(symbol)],
+ 					securities[symbol],
  					ini,
  					section);
 			} catch (...) {
@@ -161,82 +230,107 @@ namespace {
 					__FILE__,
 					__LINE__,
 					false);
-				throw Exception("Failed to load strategy");
+				throw Exception("Failed to create mode instance");
 			}
-			strategies[tag].push_back(
-				DllObjectPtr<Strategy>(dll, newStrategy));
+			Assert(
+				modules[symbolInstance->GetTag()].find(symbol)
+					== modules[symbolInstance->GetTag()].end());
+			modules[symbolInstance->GetTag()][symbol]
+				= DllObjectPtr<Module>(dll, symbolInstance);
 			Log::Info(
-				"Loaded strategy \"%1%\" for \"%2%\" with tag \"%3%\".",
-				newStrategy->GetName(),
-				const_cast<const Strategy &>(*newStrategy)
+				"Loaded %1% \"%2%\" for \"%3%\" with tag \"%4%\".",
+				moduleType,
+				symbolInstance->GetName(),
+				const_cast<const Module &>(*symbolInstance)
 					.GetSecurity()
 					->GetFullSymbol(),
-				tag);
+				symbolInstance->GetTag());
 		}
-
+	
 	}
 
-	void InitObservers(
+	void InitStrategy(
 				const IniFile &ini,
 				const std::string &section,
-				boost::shared_ptr<TradeSystem> tradeSystem,
+				boost::shared_ptr<TradeSystem> &tradeSystem,
+				MarketDataSource &marketDataSource,
+				Securities &securities,
+				Strategies &strategies,
+				StrategyServices &strategyServices,
+				boost::shared_ptr<Settings> settings) {
+		const std::string tag = section.substr(Ini::Sections::strategy.size());
+		InitModuleBySymbol(
+			ini,
+			section,
+			"strategy",
+			tag,
+			tradeSystem,
+			marketDataSource,
+			securities,
+			strategies,
+			settings);
+		{
+			const std::string strList
+				= ini.ReadKey(section, Ini::Key::services, true);
+			std::list<std::string> list;
+			boost::split(list, strList, boost::is_any_of(","));
+			const boost::regex expr("([^\\[]+)\\[(.+)\\]");
+			foreach (std::string &serviceRequest, list) {
+				boost::smatch what;
+				const auto cleanRequest = boost::trim_copy(serviceRequest);
+				if (!boost::regex_match(cleanRequest, what, expr)) {
+					Log::Error(
+						"Failed to parse service request \"%1%\" for \"%2%\".",
+						serviceRequest,
+						tag);
+					throw Exception("Failed to load strategy");
+				}
+				if (what.str(2)[0] == '$') {
+					if (	!boost::equal(
+								what.str(2).substr(1),
+								Ini::Variables::currentSymbol)) {
+						Log::Error(
+							"Failed to parse service request \"%1%\""
+								" (unknown variable) for \"%2%\".",
+							serviceRequest,
+							tag);
+						throw Exception("Failed to load strategy");
+					}
+				}
+				StrategyService service = {};
+				service.tag = what.str(1);
+				service.symbol = what.str(2);
+				strategyServices[tag].push_back(service);
+			}
+		}
+	}
+
+	void InitObserver(
+				const IniFile &ini,
+				const std::string &section,
+				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
 				Securities &securities,
 				Observers &observers,
 				boost::shared_ptr<Settings> settings)  {
 
-		fs::path module;
-		try {
-			module = ini.ReadKey(section, Ini::Key::module, false);
-		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to get observer module: \"%1%\".", ex.what());
-			throw IniFile::Error("Failed to load observer");
-		}
+		const std::string tag
+			= section.substr(Ini::Sections::observer.size());
 
-		std::string fabricName;
-		try {
-			fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
-		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to get observer fabric name module: \"%1%\".", ex.what());
-			throw IniFile::Error("Failed to load observer");
-		}
+		std::set<IniFile::Symbol> symbols;
+		boost::shared_ptr<Dll> dll;
+		const auto fabricName = LoadModule(
+			ini,
+			section,
+			tag,
+			"observer",
+			tradeSystem,
+			marketDataSource,
+			symbols,
+			securities,
+			settings,
+			dll);
 
-		const std::string tag = section.substr(Ini::Sections::observer.size());
-		if (tag.empty()) {
-			Log::Error("Failed to get tag for observer section \"%1%\".", section);
-			throw IniFile::Error("Failed to load observer");
-		}
-
-		Log::Info("Loading objects for \"%1%\"...", tag);
-
-		std::string symbolsFilePath;
-		try {
-			symbolsFilePath = ini.ReadKey(section, Ini::Key::symbols, false);
-		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to get symbols file: \"%1%\".", ex.what());
-			throw;
-		}
-
-		Log::Info("Loading symbols from %1% for %2%...", symbolsFilePath, tag);
-		const IniFile symbolsIni(symbolsFilePath, ini.GetPath().branch_path());
-		const std::list<IniFile::Symbol> symbols = symbolsIni.ReadSymbols("ALL", "NASDAQ-US");
-		try {
-			LoadSecurities(symbols, tradeSystem, marketDataSource, securities, settings, ini);
-		} catch (const IniFile::Error &ex) {
-			Log::Error(
-				"Failed to load securities for %2%: \"%1%\".",
-				ex.what(),
-				tag);
-			throw IniFile::Error("Failed to load strategy");
-		}
-
-		Observer::NotifyList notifyList;
-		foreach (const auto &symbol, symbols) {
-			Assert(securities.find(CreateSecuritiesKey(symbol)) != securities.end());
-			notifyList.push_back(securities[CreateSecuritiesKey(symbol)]);
-		}
-
-		boost::shared_ptr<Dll> dll(new Dll(module, true));
 		const auto fabric
 			= dll->GetFunction<
 					boost::shared_ptr<Trader::Observer>(
@@ -247,34 +341,123 @@ namespace {
 						const std::string &section)>
 				(fabricName);
 
+		Observer::NotifyList notifyList;
+		foreach (const auto &symbol, symbols) {
+			Assert(securities.find(symbol) != securities.end());
+			notifyList.push_back(securities[symbol]);
+		}
+
 		boost::shared_ptr<Observer> newObserver;
 		try {
 			newObserver = fabric(tag, notifyList, tradeSystem, ini, section);
 		} catch (...) {
-			Log::RegisterUnhandledException(__FUNCTION__, __FILE__, __LINE__, false);
+			Log::RegisterUnhandledException(
+				__FUNCTION__,
+				__FILE__,
+				__LINE__,
+				false);
 			throw Exception("Failed to load observer");
 		}
 
-		observers[tag].push_back(DllObjectPtr<Observer>(dll, newObserver));
+		Assert(observers.find(tag) == observers.end());
+		observers[tag] = DllObjectPtr<Observer>(dll, newObserver);
 		Log::Info(
 			"Loaded observer \"%1%\" with tag \"%2%\".",
 			newObserver->GetName(),
-			tag);
+			newObserver->GetTag());
 	
 	}
 
-	bool InitTrading(
+	void InitService(
+				const IniFile &ini,
+				const std::string &section,
+				boost::shared_ptr<TradeSystem> &tradeSystem,
+				MarketDataSource &marketDataSource,
+				Securities &securities,
+				Services &services,
+				boost::shared_ptr<Settings> settings)  {
+		InitModuleBySymbol(
+			ini,
+			section,
+			"service",
+			section.substr(Ini::Sections::service.size()),
+			tradeSystem,
+			marketDataSource,
+			securities,
+			services,
+			settings);
+	}
+
+	void BindStrategyWithService(
+				const StrategyServices &binding,
+				const Services &services,
+				const IniFile &ini,
+				const IniFile::Symbol &strategySymbol,
+				Strategy &strategy) {
+		const auto bindingInfo = binding.find(strategy.GetTag());
+		if (bindingInfo == binding.end()) {
+			return;
+		}
+		foreach (const auto &info, bindingInfo->second) {
+			const auto service = services.find(info.tag);
+			if (service == services.end()) {
+				Log::Error(
+					"Unknown service \"%1%\" provided for strategy \"%2%\".",
+					info.tag,
+					strategy.GetTag());
+				throw Exception("Failed to init trading");
+			}
+			IniFile::Symbol bindedSymbol;
+			Assert(!info.symbol.empty());
+			if (info.symbol[0] == '$') {
+				if (	!boost::equal(
+							info.symbol.substr(1),
+							Ini::Variables::currentSymbol)) {
+					Log::Error(
+						"Unknown service symbol \"%1%\" provided for strategy \"%2%\".",
+						info.symbol,
+						strategy.GetTag());
+					throw Exception("Failed to init trading");
+				}
+				bindedSymbol = strategySymbol;
+			} else {
+				bindedSymbol = IniFile::ParseSymbol(
+					info.symbol,
+					ini.ReadKey(
+						Ini::Sections::defaults,
+						Ini::Key::exchange,
+						false),
+					ini.ReadKey(
+						Ini::Sections::defaults,
+						Ini::Key::primaryExchange,
+						false));
+			}
+			const auto serviceSymbol = service->second.find(bindedSymbol);
+			if (serviceSymbol == service->second.end()) {
+				Log::Error(
+					"Unknown service symbol \"%1%\" provided for strategy \"%2%\".",
+					bindedSymbol,
+					strategy.GetTag());
+				throw Exception("Failed to init trading");
+			}
+			strategy.NotifyServiceStart(serviceSymbol->second);
+		}
+	}
+
+	void InitTrading(
 				const IniFile &ini,
 				boost::shared_ptr<TradeSystem> tradeSystem,
 				Dispatcher &dispatcher,
 				boost::shared_ptr<MarketDataSource> marketDataSource,
 				Strategies &strategies,
 				Observers &observers,
+				Services &services,
 				boost::shared_ptr<Settings> settings)  {
 
 		const std::set<std::string> sections = ini.ReadSectionsList();
 
 		Securities securities;
+		StrategyServices strategyServices;
 		foreach (const auto &section, sections) {
 			if (boost::starts_with(section, Ini::Sections::strategy)) {
 				Log::Info(
@@ -288,17 +471,19 @@ namespace {
 						*marketDataSource,
 						securities,
 						strategies,
+						strategyServices,
 						settings);
 				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to load strategy module from section \"%1%\": \"%2%\".",
 						section,
 						ex.what());
+					throw Exception("Failed to init trading");
 				}
 			} else if (boost::starts_with(section, Ini::Sections::observer)) {
 				Log::Info("Found observer section \"%1%\"...", section);
 				try {
-					InitObservers(
+					InitObserver(
 						ini,
 						section,
 						tradeSystem,
@@ -308,33 +493,61 @@ namespace {
 						settings);
 				} catch (const Exception &ex) {
 					Log::Error(
-						"Failed to load strategy module from section \"%1%\": \"%2%\".",
+						"Failed to load observer module from section \"%1%\": \"%2%\".",
 						section,
 						ex.what());
+					throw Exception("Failed to init trading");
+				}
+			} else if (boost::starts_with(section, Ini::Sections::service)) {
+				Log::Info("Found service section \"%1%\"...", section);
+				try {
+					InitService(
+						ini,
+						section,
+						tradeSystem,
+						*marketDataSource,
+						securities,
+						services,
+						settings);
+				} catch (const Exception &ex) {
+					Log::Error(
+						"Failed to load service module from section \"%1%\": \"%2%\".",
+						section,
+						ex.what());
+					throw Exception("Failed to init trading");
 				}
 			}
 		}
 
 		if (strategies.empty()) {
 			Log::Error("No strategies loaded.");
+			throw Exception("Failed to init trading");
 		}
 
-		foreach (auto &as, strategies) {
-			foreach (auto &a, as.second) {
-				dispatcher.Register(a);
+		foreach (auto &ss, strategies) {
+			foreach (auto &strategy, ss.second) {
+				BindStrategyWithService(
+					strategyServices,
+					services,
+					ini,
+					strategy.first,
+					strategy.second);
+				dispatcher.Register(strategy.second);
 			}
 		}
-		foreach (auto &os, observers) {
-			foreach (auto &o, os.second) {
-				dispatcher.Register(o);
+		foreach (auto &o, observers) {
+			dispatcher.Register(o.second);
+		}
+		foreach (auto &ss, services) {
+			foreach (auto &s, ss.second) {
+				dispatcher.Register(s.second);
 			}
 		}
 
 		Log::Info("Loaded %1% securities.", securities.size());
 		Log::Info("Loaded %1% strategies.", strategies.size());
 		Log::Info("Loaded %1% observers.", observers.size());
-
-		return true;
+		Log::Info("Loaded %1% services.", services.size());
 
 	}
 
@@ -369,24 +582,30 @@ namespace {
 			if (!boost::starts_with(section, Ini::Sections::strategy)) {
 				continue;
 			}
-			const std::string tag = section.substr(Ini::Sections::strategy.size());
+			const std::string tag
+				= section.substr(Ini::Sections::strategy.size());
 			if (tag.empty()) {
-				Log::Error("Failed to get tag for strategy section \"%1%\".", section);
+				Log::Error(
+					"Failed to get tag for strategy section \"%1%\".",
+					section);
 				continue;
 			}
 			const Strategies::iterator pos = strategies.find(tag);
 			if (pos == strategies.end()) {
 				Log::Warn(
-					"Could not update current settings: could not find strategy with tag \"%1%\".",
+					"Could not update current settings:"
+						" could not find strategy with tag \"%1%\".",
 					tag);
 				continue;
 			}
 			foreach (auto &a, pos->second) {
-				AssertEq(a->GetTag(), tag);
+				AssertEq(a.second->GetTag(), tag);
 				try {
-					a->UpdateSettings(ini, section);
+					a.second->UpdateSettings(ini, section);
 				} catch (const Exception &ex) {
-					Log::Error("Failed to update current settings: \"%1%\".", ex.what());
+					Log::Error(
+						"Failed to update current settings: \"%1%\".",
+						ex.what());
 					isError = true;
 					break;
 				}
@@ -461,14 +680,19 @@ void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 
 	Strategies strategies;
 	Observers observers;
-	if (	!InitTrading(
-				ini,
-				tradeSystem,
-				dispatcher,
-				marketDataSource,
-				strategies,
-				observers,
-				settings)) {
+	Services services;
+	try {
+		InitTrading(
+			ini,
+			tradeSystem,
+			dispatcher,
+			marketDataSource,
+			strategies,
+			observers,
+			services,
+			settings);
+	} catch (const Exception &ex) {
+		Log::Error("%1%.", ex.what());
 		return;
 	}
 

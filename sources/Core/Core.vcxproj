@@ -60,6 +60,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
   <ItemGroup>
+    <ClCompile Include="SecurityAlgo.cpp" />
+    <ClCompile Include="Service.cpp" />
     <ClCompile Include="Strategy.cpp" />
     <ClCompile Include="StrategyPositionState.cpp" />
     <ClCompile Include="Log.cpp" />
@@ -79,6 +81,8 @@
     <ClCompile Include="TradeSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SecurityAlgo.hpp" />
+    <ClInclude Include="Service.hpp" />
     <ClInclude Include="Strategy.hpp" />
     <ClInclude Include="StrategyPositionState.hpp" />
     <ClInclude Include="Api.h" />
