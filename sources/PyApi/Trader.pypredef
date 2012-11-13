@@ -90,11 +90,12 @@ class Position:
 
 	commission = float
 
-	def __init__(security, qty, startPrice):
+	def __init__(security, qty, startPrice, tag):
 		"""
+			@type security: Trade.Security
 			@type startPrice: float
 			@type qty: int
-			@type security: Trade.Security
+			@type tag: str
 		"""
 
 	def openAtMarketPrice():
@@ -176,27 +177,75 @@ class Position:
 ###############################################################################
 
 class LongPosition(Trader.Position):
-	pass
+
+	def __init__(security, qty, startPrice, tag):
+		"""
+			@type security: Trade.Security
+			@type startPrice: float
+			@type qty: int
+			@type tag: str
+		"""
 
 ###############################################################################
 
 class ShortPosition(Trader.Position):
-	pass
+
+	def __init__(security, qty, startPrice, tag):
+		"""
+			@type security: Trade.Security
+			@type startPrice: float
+			@type qty: int
+			@type tag: str
+		"""
 
 ###############################################################################
 
-class Strategy:
-	"""
-		Every strategy algorithm class must be inherited from this class.
-	"""
+class SecurityAlgo:
+
+	tag = str
 
 	security = Trader.Security
+
+	def __init__(param):
+		"""
+			@type param: int
+		"""
 
 	def getName():
 		"""
 			Returns algorithm method.
 			
 			pure virtual method
+		"""
+
+###############################################################################
+
+class Service(Trader.SecurityAlgo):
+	
+	def __init__(param):
+		"""
+			@type param: int
+		"""
+
+###############################################################################
+
+class Strategy(Trader.SecurityAlgo):
+	"""
+		Every strategy algorithm class must be inherited from this class.
+	"""
+
+	def __init__(param):
+		"""
+			@type param: int
+		"""
+
+	void notifyServiceStart(service):
+		"""
+			Method notifies about new service start.
+			
+			@type service: Trader.Service
+			
+			virtual method
 		"""
 
 	def tryToOpenPositions():

@@ -16,6 +16,16 @@ using namespace Trader::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
+StrategyPositionState::StrategyPositionState() {
+	//...//
+}
+
+StrategyPositionState::~StrategyPositionState() {
+	//...//
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 Position::DynamicData::DynamicData()
 		: lastOrderId(0),
 		qty(0),
@@ -32,7 +42,9 @@ Position::DynamicData::Price::Price()
 
 //////////////////////////////////////////////////////////////////////////
 
-Position::Position(boost::shared_ptr<Security> security)
+Position::Position(
+			boost::shared_ptr<Security> security,
+			const std::string &tag)
 		: m_security(security),
 		m_isPlanedQtyDynamic(true),
 		m_planedQty(0),
@@ -41,7 +53,8 @@ Position::Position(boost::shared_ptr<Security> security)
 		m_closeType(CLOSE_TYPE_NONE),
 		m_isReported(false),
 		m_isError(false),
-		m_isCanceled(false) {
+		m_isCanceled(false),
+		m_tag(tag) {
 	//...//
 }
 
@@ -50,7 +63,7 @@ Position::Position(
 			boost::shared_ptr<Security> security,
 			Qty qty,
 			ScaledPrice startPrice,
-			boost::shared_ptr<const Strategy> strategy,
+			const std::string &tag,
 			boost::shared_ptr<StrategyPositionState> state
 				/*= boost::shared_ptr<StrategyPositionState>()*/)
 		: m_security(security),
@@ -62,7 +75,7 @@ Position::Position(
 		m_isReported(false),
 		m_isError(false),
 		m_isCanceled(false),
-		m_strategy(strategy),
+		m_tag(tag),
 		m_strategyState(state) {
 	AssertGt(m_planedQty, 0);
 }
@@ -233,7 +246,7 @@ void Position::UpdateClosing(
 				"Position CLOSE error: symbol: \"%1%\", strategy %2%"
 					", trade system state: %3%, orders ID: %4%->%5%, qty: %6%->%7%.",
 				GetSecurity().GetFullSymbol(),
-				m_strategy ? m_strategy->GetTag() : "user",
+				m_tag,
 				orderStatus,
 				m_opened.lastOrderId,
 				m_closed.lastOrderId,	
@@ -289,7 +302,7 @@ bool Position::CancelIfSet() throw() {
 			" has-orders=%8%/%9% is-error=%10%",
 		GetSecurity().GetSymbol(),
 		GetTypeStr(),
-		m_strategy ? m_strategy->GetTag() : "user",
+		m_tag,
 		GetOpenedQty(),
 		GetClosedQty(),
 		GetOpenOrderId(),
@@ -376,7 +389,7 @@ void Position::ReportOpeningUpdate(
 			GetSecurity().GetSymbol(),
 			GetTypeStr(),
 			eventDesc,
-			m_strategy ? m_strategy->GetTag() : "user",
+			m_tag,
 			GetPlanedQty(),
 			GetOpenedQty(),
 			GetSecurity().DescalePrice(GetOpenStartPrice()),
@@ -402,7 +415,7 @@ void Position::ReportClosingUpdate(
 			GetSecurity().GetSymbol(),
 			GetTypeStr(),
 			eventDesc,
-			m_strategy ? m_strategy->GetTag() : "user",
+			m_tag,
 			GetOpenedQty(),
 			GetClosedQty(),
 			GetSecurity().DescalePrice(GetClosePrice()),
@@ -565,7 +578,7 @@ bool Position::CancelAtMarketPrice(CloseType closeType) {
 			" has-orders=%8%/%9% is-error=%10%",
 		GetSecurity().GetSymbol(),
 		GetTypeStr(),
-		m_strategy ? m_strategy->GetTag() : "user",
+		m_tag,
 		GetOpenedQty(),
 		GetClosedQty(),
 		GetOpenOrderId(),
@@ -613,8 +626,10 @@ bool Position::DoCancelAllOrders() {
 
 //////////////////////////////////////////////////////////////////////////
 
-LongPosition::LongPosition(boost::shared_ptr<Security> security)
-		: Position(security) {
+LongPosition::LongPosition(
+			boost::shared_ptr<Security> security,
+			const std::string &tag)
+		: Position(security, tag) {
 	//...//
 }
 
@@ -622,10 +637,10 @@ LongPosition::LongPosition(
 			boost::shared_ptr<Security> security,
 			Qty qty,
 			ScaledPrice startPrice,
-			boost::shared_ptr<const Strategy> strategy,
+			const std::string &tag,
 			boost::shared_ptr<StrategyPositionState> state
 				/*= boost::shared_ptr<StrategyPositionState>()*/)
-		: Position(security, qty, startPrice, strategy, state) {
+		: Position(security, qty, startPrice, tag, state) {
 	//...//
 }
 
@@ -692,8 +707,10 @@ Position::OrderId LongPosition::DoCloseOrCancel(ScaledPrice price) {
 
 //////////////////////////////////////////////////////////////////////////
 
-ShortPosition::ShortPosition(boost::shared_ptr<Security> security)
-		: Position(security) {
+ShortPosition::ShortPosition(
+			boost::shared_ptr<Security> security,
+			const std::string &tag)
+		: Position(security, tag) {
 	//...//
 }
 
@@ -701,10 +718,10 @@ ShortPosition::ShortPosition(
 			boost::shared_ptr<Security> security,
 			Qty qty,
 			ScaledPrice startPrice,
-			boost::shared_ptr<const Strategy> strategy,
+			const std::string &tag,
 			boost::shared_ptr<StrategyPositionState> state
 				/*= boost::shared_ptr<StrategyPositionState>()*/)
-		: Position(security, qty, startPrice, strategy, state) {
+		: Position(security, qty, startPrice, tag, state) {
 	//...//
 }
 

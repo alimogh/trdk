@@ -24,6 +24,8 @@
 
 namespace Trader { namespace Lib {
 
+	//////////////////////////////////////////////////////////////////////////
+
 	class IniFile : private boost::noncopyable {
 
 	public:
@@ -116,7 +118,7 @@ namespace Trader { namespace Lib {
 		void ReadSection(
 					const std::string &section,
 					boost::function<bool(const std::string &)> readLine,
-					bool isMustBeExist)
+					bool mustExist)
 				const;
 
 		bool IsKeyExist(const std::string &section,const std::string &key) const;
@@ -153,7 +155,7 @@ namespace Trader { namespace Lib {
 
 		std::list<std::string> ReadList(
 				const std::string &section,
-				bool isMustBeExist)
+				bool mustExist)
 			const;
 
 		static Symbol ParseSymbol(
@@ -184,7 +186,56 @@ namespace Trader { namespace Lib {
 
 	};
 
+	//////////////////////////////////////////////////////////////////////////
+
+	class IniFileSectionRef : private boost::noncopyable {
+
+	public:
+
+		explicit IniFileSectionRef(
+					const Trader::Lib::IniFile &fileRef,
+					const std::string &sectionNameRef);
+
+	public:
+
+		bool IsKeyExist(const std::string &key) const;
+
+		std::string ReadKey(const std::string &key, bool canBeEmpty) const;
+
+		template<typename T>
+		T ReadTypedKey(const std::string &key) const {
+			return m_file.ReadTypedKey<T>(m_name, key);
+		}
+
+		Trader::Lib::IniFile::AbsoluteOrPercentsPrice
+		ReadAbsoluteOrPercentsPriceKey(
+					const std::string &key,
+					unsigned long priceScale)
+				const;
+
+		bool ReadBoolKey(const std::string &key) const;
+
+		std::list<std::string> ReadList(
+				bool mustExist)
+			const;
+
+		std::set<Trader::Lib::IniFile::Symbol> ReadSymbols(
+				const std::string &defExchange,
+				const std::string &defPrimaryExchange)
+			const;
+
+	private:
+
+		const Trader::Lib::IniFile &m_file;
+		const std::string &m_name;
+
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+
 } }
+
+//////////////////////////////////////////////////////////////////////////
 
 namespace std {
 	inline std::ostream & operator <<(
@@ -194,3 +245,5 @@ namespace std {
 		return os;
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////

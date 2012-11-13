@@ -19,33 +19,15 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 
 	public:
 
-		Security()
-				: m_strategy(nullptr) {
-			//...//
-		}
-
-		~Security() {
+		explicit Security(boost::shared_ptr<Trader::Security> security)
+				: m_security(security) {
 			//...//
 		}
 
 	public:
 
-		void Init(
-					const Trader::Strategy &strategy,
-					boost::shared_ptr<Trader::Security> security) {
-			Assert(!m_strategy);
-			Assert(!m_security);
-			m_strategy = &strategy;
-			m_security = security;
-		}
-
-		boost::shared_ptr<Trader::Security> GetSecurity() {
-			return m_security;
-		}
-
-		const Trader::Strategy & GetStrategy() const {
-			Assert(m_strategy);
-			return *m_strategy;
+		Trader::Security & GetSecurity() {
+			return *m_security;
 		}
 
 	public:
@@ -114,7 +96,6 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 
 	private:
 
-		const Trader::Strategy *m_strategy;
 		boost::shared_ptr<Trader::Security> m_security;
 
 	};

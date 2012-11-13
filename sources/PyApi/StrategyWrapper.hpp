@@ -8,68 +8,38 @@
 
 #pragma once
 
-#include "SecurityWrapper.hpp"
+#include "SecurityAlgoWrapper.hpp"
 
 namespace Trader { namespace PyApi { namespace Wrappers {
 
-	//////////////////////////////////////////////////////////////////////////
-
-	class Strategy : private boost::noncopyable {
+	class Strategy : public SecurityAlgo {
 
 	public:
 
-		PyApi::Wrappers::Security security;
+		explicit Strategy(
+					Trader::Strategy &,
+					boost::shared_ptr<Trader::Security>);
 
 	public:
 
-		Strategy() {
-			//...//
-		}
-		virtual ~Strategy() {
-			//...//
+		Trader::Strategy & GetStrategy() {
+			return m_strategy;
 		}
 
 	public:
 
-		virtual boost::python::object GetName() const = 0;
+		boost::python::str GetTag() const;
 
-		virtual boost::python::object TryToOpenPositions() = 0;
-		virtual void TryToClosePositions(boost::python::object) = 0;
+		void PyNotifyServiceStart(boost::python::object service);
+
+		boost::python::object PyTryToOpenPositions();
+
+		void PyTryToClosePositions(boost::python::object);
+
+	private:
+
+		Trader::Strategy &m_strategy;
 
 	};
-
-	//////////////////////////////////////////////////////////////////////////
-
-	struct StrategyWrap
-			: public Strategy,
-			public boost::python::wrapper<Strategy> {
-
-	public:
-
-		StrategyWrap() {
-			//...//
-		}
-
-		virtual ~StrategyWrap() {
-			//...///
-		}
-
-	public:
-
-		virtual boost::python::object GetName() const {
-			return get_override("getName")();
-		}
-
-		virtual boost::python::object TryToOpenPositions() {
-			return get_override("tryToOpenPositions")();
-		}
-
-		virtual void TryToClosePositions(boost::python::object position) {
-			get_override("tryToClosePositions")(position);
-		}
-
-	};
-
-	//////////////////////////////////////////////////////////////////////////
 
 } } }

@@ -31,11 +31,9 @@ SecurityAlgo::Mutex & SecurityAlgo::GetMutex() {
 	return m_mutex;
 }
 
-void SecurityAlgo::UpdateSettings(
-			const IniFile &ini,
-			const std::string &section) {
+void SecurityAlgo::UpdateSettings(const IniFileSectionRef &ini) {
 	const Lock lock(m_mutex);
-	UpdateAlogImplSettings(ini, section);
+	UpdateAlogImplSettings(ini);
 }
 
 Security::Qty SecurityAlgo::CalcQty(
@@ -57,7 +55,9 @@ bool SecurityAlgo::IsValidPrice(const Settings &settings) const {
 	return settings.IsValidPrice(*m_security);
 }
 
-void SecurityAlgo::ReportSettings(const SettingsReport &settings) const {
+void SecurityAlgo::ReportSettings(
+			const SettingsReport::Report &settings)
+		const {
 
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;

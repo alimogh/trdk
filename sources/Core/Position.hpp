@@ -12,9 +12,15 @@
 #include "TradeSystem.hpp"
 #include "Api.h"
 
-class StrategyPositionState;
-
 namespace Trader {
+
+	//////////////////////////////////////////////////////////////////////////
+
+	class TRADER_CORE_API StrategyPositionState {
+	public:
+		StrategyPositionState();
+		virtual ~StrategyPositionState();
+	};
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -38,7 +44,8 @@ namespace Trader {
 
 		enum Type {
 			TYPE_LONG,
-			TYPE_SHORT
+			TYPE_SHORT,
+			numberOfTypes
 		};
 
 		enum CloseType {
@@ -56,7 +63,8 @@ namespace Trader {
 		typedef boost::shared_lock<Mutex> ReadLock;
 		typedef boost::unique_lock<Mutex> WriteLock;
 
-		typedef boost::signals2::signal<StateUpdateSlotSignature> StateUpdateSignal;
+		typedef boost::signals2::signal<StateUpdateSlotSignature>
+			StateUpdateSignal;
 
 		struct DynamicData {
 
@@ -79,14 +87,17 @@ namespace Trader {
 	public:
 
 		//! Creates position with dynamic planed qty
-		explicit Position(boost::shared_ptr<Trader::Security>);
+		explicit Position(
+				boost::shared_ptr<Trader::Security>,
+				const std::string &tag);
 		//! Creates position with fixed planed qty and open price
 		explicit Position(
 				boost::shared_ptr<Trader::Security>,
 				Qty,
 				ScaledPrice startPrice,
-				boost::shared_ptr<const Strategy>,
-				boost::shared_ptr<StrategyPositionState> = boost::shared_ptr<StrategyPositionState>());
+				const std::string &tag,
+				boost::shared_ptr<StrategyPositionState>
+					= boost::shared_ptr<StrategyPositionState>());
 		virtual ~Position();
 
 	public:
@@ -101,10 +112,6 @@ namespace Trader {
 		}
 		Trader::Security & GetSecurity() throw() {
 			return *m_security;
-		}
-
-		const Strategy & GetStrategy() const {
-			return *m_strategy;
 		}
 
 		template<typename StrategyState>
@@ -126,6 +133,11 @@ namespace Trader {
 				->GetStrategyState<StrategyState>();
 		}
 
+		void SetStrategyState(
+					boost::shared_ptr<StrategyPositionState> strategyState) {
+			m_strategyState = strategyState;
+		}
+
 	public:
 
 		CloseType GetCloseType() const throw() {
@@ -140,7 +152,10 @@ namespace Trader {
 			return !HasActiveOpenOrders() && GetOpenedQty() > 0;
 		}
 		bool IsClosed() const throw() {
-			return !HasActiveCloseOrders() && GetOpenedQty() > 0 && GetActiveQty() == 0;
+			return
+				!HasActiveCloseOrders()
+				&& GetOpenedQty() > 0
+				&& GetActiveQty() == 0;
 		}
 
 		bool IsCompleted() const throw() {
@@ -216,7 +231,9 @@ namespace Trader {
 		OrderId CloseAtMarketPrice(CloseType, Qty);
 		OrderId Close(CloseType, ScaledPrice);
 		OrderId Close(CloseType, ScaledPrice, Qty);
-		OrderId CloseAtMarketPriceWithStopPrice(CloseType, ScaledPrice stopPrice);
+		OrderId CloseAtMarketPriceWithStopPrice(
+					CloseType,
+					ScaledPrice stopPrice);
 		OrderId CloseOrCancel(CloseType, ScaledPrice);
 
 		bool CancelAtMarketPrice(CloseType);
@@ -226,19 +243,26 @@ namespace Trader {
 
 		StateUpdateConnection Subscribe(const StateUpdateSlot &) const;
 
-		virtual Trader::Security::OrderStatusUpdateSlot GetSellOrderStatusUpdateSlot() = 0;
-		virtual Trader::Security::OrderStatusUpdateSlot GetBuyOrderStatusUpdateSlot() = 0;
+		virtual Trader::Security::OrderStatusUpdateSlot
+		GetSellOrderStatusUpdateSlot() = 0;
+		
+		virtual Trader::Security::OrderStatusUpdateSlot
+		GetBuyOrderStatusUpdateSlot() = 0;
 
 	protected:
 
 		virtual OrderId DoOpenAtMarketPrice(Qty) = 0;
 		virtual OrderId DoOpen(ScaledPrice, Qty) = 0;
-		virtual OrderId DoOpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice) = 0;
+		virtual OrderId DoOpenAtMarketPriceWithStopPrice(
+					ScaledPrice stopPrice)
+				= 0;
 		virtual OrderId DoOpenOrCancel(ScaledPrice) = 0;
 
 		virtual OrderId DoCloseAtMarketPrice(Qty) = 0;
 		virtual OrderId DoClose(ScaledPrice, Qty) = 0;
-		virtual OrderId DoCloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice) = 0;
+		virtual OrderId DoCloseAtMarketPriceWithStopPrice(
+					ScaledPrice stopPrice)
+				= 0;
 		virtual OrderId DoCloseOrCancel(ScaledPrice) = 0;
 
 		bool DoCancelAllOrders();
@@ -303,8 +327,8 @@ namespace Trader {
 		volatile long m_isCanceled;
 		boost::function<void()> m_cancelMethod;
 
-		const boost::shared_ptr<const Strategy> m_strategy;
-		const boost::shared_ptr<StrategyPositionState> m_strategyState;
+		const std::string m_tag;
+		boost::shared_ptr<StrategyPositionState> m_strategyState;
 
 	};
 
@@ -315,14 +339,17 @@ namespace Trader {
 	public:
 
 		//! Creates position with dynamic planed qty
-		explicit LongPosition(boost::shared_ptr<Trader::Security>);
+		explicit LongPosition(
+				boost::shared_ptr<Trader::Security>,
+				const std::string &tag);
 		//! Creates position with fixed planed qty and open price
 		explicit LongPosition(
 				boost::shared_ptr<Trader::Security>,
 				Qty,
 				ScaledPrice startPrice,
-				boost::shared_ptr<const Strategy> = boost::shared_ptr<const Strategy>(),
-				boost::shared_ptr<StrategyPositionState> = boost::shared_ptr<StrategyPositionState>());
+				const std::string &tag,
+				boost::shared_ptr<StrategyPositionState>
+					= boost::shared_ptr<StrategyPositionState>());
 		virtual ~LongPosition();
 
 	public:
@@ -332,19 +359,24 @@ namespace Trader {
 
 	public:
 
-		virtual Trader::Security::OrderStatusUpdateSlot GetSellOrderStatusUpdateSlot();
-		virtual Trader::Security::OrderStatusUpdateSlot GetBuyOrderStatusUpdateSlot();
+		virtual Trader::Security::OrderStatusUpdateSlot
+		GetSellOrderStatusUpdateSlot();
+		
+		virtual Trader::Security::OrderStatusUpdateSlot
+		GetBuyOrderStatusUpdateSlot();
 
 	public:
 
 		virtual OrderId DoOpenAtMarketPrice(Qty);
 		virtual OrderId DoOpen(ScaledPrice, Qty);
-		virtual OrderId DoOpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
+		virtual OrderId DoOpenAtMarketPriceWithStopPrice(
+					ScaledPrice stopPrice);
 		virtual OrderId DoOpenOrCancel(ScaledPrice);
 
 		virtual OrderId DoCloseAtMarketPrice(Qty);
 		virtual OrderId DoClose(ScaledPrice, Qty);
-		virtual OrderId DoCloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
+		virtual OrderId DoCloseAtMarketPriceWithStopPrice(
+					ScaledPrice stopPrice);
 		virtual OrderId DoCloseOrCancel(ScaledPrice);
 
 	};
@@ -356,14 +388,17 @@ namespace Trader {
 	public:
 
 		//! Creates position with dynamic planed qty
-		explicit ShortPosition(boost::shared_ptr<Trader::Security>);
+		explicit ShortPosition(
+				boost::shared_ptr<Trader::Security>,
+				const std::string &tag);
 		//! Creates position with fixed planed qty and open price
 		explicit ShortPosition(
 				boost::shared_ptr<Trader::Security>,
 				Qty,
 				ScaledPrice startPrice,
-				boost::shared_ptr<const Strategy> = boost::shared_ptr<const Strategy>(),
-				boost::shared_ptr<StrategyPositionState> = boost::shared_ptr<StrategyPositionState>());
+				const std::string &tag,
+				boost::shared_ptr<StrategyPositionState>
+					= boost::shared_ptr<StrategyPositionState>());
 		virtual ~ShortPosition();
 
 	public:
@@ -373,19 +408,24 @@ namespace Trader {
 
 	public:
 
-		virtual Trader::Security::OrderStatusUpdateSlot GetSellOrderStatusUpdateSlot();
-		virtual Trader::Security::OrderStatusUpdateSlot GetBuyOrderStatusUpdateSlot();
+		virtual Trader::Security::OrderStatusUpdateSlot
+		GetSellOrderStatusUpdateSlot();
+		
+		virtual Trader::Security::OrderStatusUpdateSlot
+		GetBuyOrderStatusUpdateSlot();
 
 	public:
 
 		virtual OrderId DoOpenAtMarketPrice(Qty);
 		virtual OrderId DoOpen(ScaledPrice, Qty);
-		virtual OrderId DoOpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
+		virtual OrderId DoOpenAtMarketPriceWithStopPrice(
+					ScaledPrice stopPrice);
 		virtual OrderId DoOpenOrCancel(ScaledPrice);
 
 		virtual OrderId DoCloseAtMarketPrice(Qty);
 		virtual OrderId DoClose(ScaledPrice, Qty);
-		virtual OrderId DoCloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
+		virtual OrderId DoCloseAtMarketPriceWithStopPrice(
+					ScaledPrice stopPrice);
 		virtual OrderId DoCloseOrCancel(ScaledPrice);
 
 	};

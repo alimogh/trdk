@@ -211,8 +211,7 @@ namespace {
 					boost::shared_ptr<Module>(
 						const std::string &tag,
 						boost::shared_ptr<Security> security,
-						const IniFile &ini,
-						const std::string &section)>
+						const IniFileSectionRef &ini)>
 				(fabricName);
 
 		foreach (const auto &symbol, symbols) {
@@ -222,15 +221,14 @@ namespace {
 				symbolInstance = fabric(
 					tag,
  					securities[symbol],
- 					ini,
- 					section);
+					IniFileSectionRef(ini, section));
 			} catch (...) {
 				Log::RegisterUnhandledException(
 					__FUNCTION__,
 					__FILE__,
 					__LINE__,
 					false);
-				throw Exception("Failed to create mode instance");
+				throw Exception("Failed to create module instance");
 			}
 			Assert(
 				modules[symbolInstance->GetTag()].find(symbol)
@@ -247,6 +245,49 @@ namespace {
 				symbolInstance->GetTag());
 		}
 	
+	}
+
+	void ReadServicesRequest(
+				const IniFileSectionRef &ini,
+				const std::string &tag,
+				StrategyServices &strategyServices) {
+		
+		const std::string strList = ini.ReadKey(Ini::Key::services, true);
+		if (strList.empty()) {
+			return;
+		}
+		
+		std::list<std::string> list;
+		boost::split(list, strList, boost::is_any_of(","));
+		const boost::regex expr("([^\\[]+)\\[(.+)\\]");
+		foreach (std::string &serviceRequest, list) {
+			boost::smatch what;
+			const auto cleanRequest = boost::trim_copy(serviceRequest);
+			if (!boost::regex_match(cleanRequest, what, expr)) {
+				Log::Error(
+					"Failed to parse service request \"%1%\" for \"%2%\".",
+					serviceRequest,
+					tag);
+				throw Exception("Failed to load strategy");
+			}
+			if (what.str(2)[0] == '$') {
+				if (	!boost::equal(
+							what.str(2).substr(1),
+							Ini::Variables::currentSymbol)) {
+					Log::Error(
+						"Failed to parse service request \"%1%\""
+							" (unknown variable) for \"%2%\".",
+						serviceRequest,
+						tag);
+					throw Exception("Failed to load strategy");
+				}
+			}
+			StrategyService service = {};
+			service.tag = what.str(1);
+			service.symbol = what.str(2);
+			strategyServices[tag].push_back(service);
+		}
+
 	}
 
 	void InitStrategy(
@@ -269,40 +310,10 @@ namespace {
 			securities,
 			strategies,
 			settings);
-		{
-			const std::string strList
-				= ini.ReadKey(section, Ini::Key::services, true);
-			std::list<std::string> list;
-			boost::split(list, strList, boost::is_any_of(","));
-			const boost::regex expr("([^\\[]+)\\[(.+)\\]");
-			foreach (std::string &serviceRequest, list) {
-				boost::smatch what;
-				const auto cleanRequest = boost::trim_copy(serviceRequest);
-				if (!boost::regex_match(cleanRequest, what, expr)) {
-					Log::Error(
-						"Failed to parse service request \"%1%\" for \"%2%\".",
-						serviceRequest,
-						tag);
-					throw Exception("Failed to load strategy");
-				}
-				if (what.str(2)[0] == '$') {
-					if (	!boost::equal(
-								what.str(2).substr(1),
-								Ini::Variables::currentSymbol)) {
-						Log::Error(
-							"Failed to parse service request \"%1%\""
-								" (unknown variable) for \"%2%\".",
-							serviceRequest,
-							tag);
-						throw Exception("Failed to load strategy");
-					}
-				}
-				StrategyService service = {};
-				service.tag = what.str(1);
-				service.symbol = what.str(2);
-				strategyServices[tag].push_back(service);
-			}
-		}
+		ReadServicesRequest(
+			IniFileSectionRef(ini, section),
+			tag,
+			strategyServices);
 	}
 
 	void InitObserver(
@@ -405,7 +416,7 @@ namespace {
 					"Unknown service \"%1%\" provided for strategy \"%2%\".",
 					info.tag,
 					strategy.GetTag());
-				throw Exception("Failed to init trading");
+				throw Exception("Unknown service provided for strategy");
 			}
 			IniFile::Symbol bindedSymbol;
 			Assert(!info.symbol.empty());
@@ -417,7 +428,7 @@ namespace {
 						"Unknown service symbol \"%1%\" provided for strategy \"%2%\".",
 						info.symbol,
 						strategy.GetTag());
-					throw Exception("Failed to init trading");
+					throw Exception("Unknown service symbol provided for strategy");
 				}
 				bindedSymbol = strategySymbol;
 			} else {
@@ -438,7 +449,7 @@ namespace {
 					"Unknown service symbol \"%1%\" provided for strategy \"%2%\".",
 					bindedSymbol,
 					strategy.GetTag());
-				throw Exception("Failed to init trading");
+				throw Exception("Unknown service symbol provided for strategy");
 			}
 			strategy.NotifyServiceStart(serviceSymbol->second);
 		}
@@ -478,7 +489,7 @@ namespace {
 						"Failed to load strategy module from section \"%1%\": \"%2%\".",
 						section,
 						ex.what());
-					throw Exception("Failed to init trading");
+					throw Exception("Failed to load strategy module");
 				}
 			} else if (boost::starts_with(section, Ini::Sections::observer)) {
 				Log::Info("Found observer section \"%1%\"...", section);
@@ -496,7 +507,7 @@ namespace {
 						"Failed to load observer module from section \"%1%\": \"%2%\".",
 						section,
 						ex.what());
-					throw Exception("Failed to init trading");
+					throw Exception("Failed to load observer module");
 				}
 			} else if (boost::starts_with(section, Ini::Sections::service)) {
 				Log::Info("Found service section \"%1%\"...", section);
@@ -514,14 +525,13 @@ namespace {
 						"Failed to load service module from section \"%1%\": \"%2%\".",
 						section,
 						ex.what());
-					throw Exception("Failed to init trading");
+					throw Exception("Failed to load service module");
 				}
 			}
 		}
 
 		if (strategies.empty()) {
-			Log::Error("No strategies loaded.");
-			throw Exception("Failed to init trading");
+			throw Exception("No strategies loaded");
 		}
 
 		foreach (auto &ss, strategies) {
@@ -566,10 +576,10 @@ namespace {
 			Log::Error("Failed to get sections list: \"%1%\".", ex.what());
 			return;
 		}
-		foreach (const auto &section, sections) {
-			if (section == Ini::Sections::common) {
+		foreach (const auto &sectionName, sections) {
+			if (sectionName == Ini::Sections::common) {
 				try {
-					settings.Update(ini, section);
+					settings.Update(ini, sectionName);
 				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to update common settings: \"%1%\".",
@@ -579,15 +589,15 @@ namespace {
 			}
 			bool isError = false;
 			std::string strategyName;
-			if (!boost::starts_with(section, Ini::Sections::strategy)) {
+			if (!boost::starts_with(sectionName, Ini::Sections::strategy)) {
 				continue;
 			}
 			const std::string tag
-				= section.substr(Ini::Sections::strategy.size());
+				= sectionName.substr(Ini::Sections::strategy.size());
 			if (tag.empty()) {
 				Log::Error(
 					"Failed to get tag for strategy section \"%1%\".",
-					section);
+					sectionName);
 				continue;
 			}
 			const Strategies::iterator pos = strategies.find(tag);
@@ -601,7 +611,8 @@ namespace {
 			foreach (auto &a, pos->second) {
 				AssertEq(a.second->GetTag(), tag);
 				try {
-					a.second->UpdateSettings(ini, section);
+					a.second->UpdateSettings(
+						IniFileSectionRef(ini, sectionName));
 				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to update current settings: \"%1%\".",
@@ -692,7 +703,7 @@ void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 			services,
 			settings);
 	} catch (const Exception &ex) {
-		Log::Error("%1%.", ex.what());
+		Log::Error("Failed to init trading: \"%1%\".", ex.what());
 		return;
 	}
 

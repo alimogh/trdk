@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "SettingsReport.hpp"
 #include "Module.hpp"
 #include "Security.hpp"
 #include "Api.h"
@@ -21,10 +22,6 @@ namespace Trader {
 		typedef boost::mutex Mutex;
 		typedef Mutex::scoped_lock Lock;
 
-	protected:
-
-		typedef std::list<std::pair<std::string, std::string>> SettingsReport;
-
 	public:
 
 		explicit SecurityAlgo(
@@ -36,9 +33,7 @@ namespace Trader {
 
 		boost::shared_ptr<const Trader::Security> GetSecurity() const;
 
-		void UpdateSettings(
-					const Trader::Lib::IniFile &,
-					const std::string &section);
+		void UpdateSettings(const Trader::Lib::IniFileSectionRef &);
 
 		Mutex & GetMutex();
 
@@ -56,57 +51,10 @@ namespace Trader {
 				const;
 
 		virtual void UpdateAlogImplSettings(
-					const Trader::Lib::IniFile &,
-					const std::string &section)
+					const Trader::Lib::IniFileSectionRef &)
 				= 0;
 
-		void ReportSettings(const SettingsReport &) const;
-
-		template<typename T>
-		static void AppendSettingsReport(
-					const std::string &name,
-					const T &val,
-					SettingsReport &report) {
-			const SettingsReport::value_type item(
-				name,
-				(boost::format("%1%") % val).str());
-			report.push_back(item);
-		}
-	
-		static void AppendSettingsReport(
-					const std::string &name,
-					double val,
-					SettingsReport &report) {
-			const SettingsReport::value_type item(
-				name,
-				(boost::format("%1%") % val).str());
-			report.push_back(item);
-		}
-
-		static void AppendSettingsReport(
-					const std::string &name,
-					bool val,
-					SettingsReport &report) {
-			AppendSettingsReport(name, val ? "true" : "false", report);
-		}
-
-		static void AppendPercentSettingsReport(
-					const std::string &name,
-					double val,
-					SettingsReport &report) {
-			const SettingsReport::value_type item(
-				name,
-				(boost::format("%.4f%%") % val).str());
-			report.push_back(item);
-		}
-
-		void AppendSettingsReport(
-					const std::string &name,
-					const Trader::Lib::IniFile::AbsoluteOrPercentsPrice &val,
-					SettingsReport &report)
-				const {
-			AppendSettingsReport(name, val.GetStr(GetSecurity()->GetPriceScale()), report);
-		}
+		void ReportSettings(const SettingsReport::Report &) const;
 
 		boost::posix_time::ptime GetCurrentTime() const;
 

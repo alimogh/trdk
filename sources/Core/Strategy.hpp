@@ -12,7 +12,6 @@
 #include "Api.h"
 
 class PositionBandle;
-class PositionReporter;
 
 namespace Trader {
 

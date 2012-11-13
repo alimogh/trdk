@@ -9,6 +9,8 @@
 #include "Prec.hpp"
 #include "PositionReporter.hpp"
 
+using namespace Trader;
+
 PositionReporter::PositionReporter() {
 	//...//
 }

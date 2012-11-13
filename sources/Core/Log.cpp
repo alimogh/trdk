@@ -7,6 +7,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "PyApi/Errors.hpp"
 
 using namespace Trader::Lib;
 
@@ -119,37 +120,59 @@ void Log::RegisterUnhandledException(
 			bool tradingLog)
 		throw() {
 
-	struct Logger : private boost::noncopyable {
-
-		boost::format message;
-		const bool tradingLog;
-
-		Logger(char const *function, char const *file, long line, bool tradingLog)
-				: message(
-					"Unhandled %4% exception caught"
-						" in function %1%, file %2%, line %3%: \"%5%\"."),
-				tradingLog(tradingLog) {
-			message % function % file % line;
-		}
-
-		~Logger() {
-			std::cerr << message.str() << std::endl;
-			Log::Error(message.str().c_str());
-			if (tradingLog) {
-				Log::Trading("assert", message.str().c_str());
-			}
-		}
-
-	} logger(function, file, line, tradingLog);
-
 	try {
-		throw;
-	} catch (const Trader::Lib::Exception &ex) {
-		logger.message % "LOCAL" % ex.what();
-	} catch (const std::exception &ex) {
-		logger.message % "STANDART" % ex.what();
+
+		struct Logger : private boost::noncopyable {
+
+			std::unique_ptr<boost::format> message;
+			const bool tradingLog;
+
+			Logger(bool tradingLog)
+					: tradingLog(tradingLog) {
+				//...//
+			}
+
+			boost::format & CreateStandard() {
+				return Create(
+					"Unhandled %1% exception caught"
+						" in function %3%, file %4%, line %5%: \"%2%\".");
+			}
+
+			boost::format & Create(const char *format) {
+				Assert(!message);
+				message.reset(new boost::format(format));
+				return *message;
+			}
+
+			~Logger() {
+				try {
+					Assert(message);
+					std::cerr << message->str() << std::endl;
+					Log::Error(message->str().c_str());
+					if (tradingLog) {
+						Log::Trading("assert", message->str().c_str());
+					}
+				} catch (...) {
+					AssertFail("Unexpected exception");
+				}
+			}
+
+		} logger(tradingLog);
+
+		try {
+			throw;
+		} catch (const Trader::PyApi::ClientError &ex) {
+			logger.Create("Py API error, please check your Python script: \"%1%\".") % ex.what();
+		} catch (const Trader::Lib::Exception &ex) {
+			logger.CreateStandard() % "LOCAL" % ex.what() % function % file % line;
+		} catch (const std::exception &ex) {
+			logger.CreateStandard() % "STANDART" % ex.what() % function % file % line;
+		} catch (...) {
+			logger.CreateStandard() % "UNKNOWN" % "" % function % file % line;
+		}
+
 	} catch (...) {
-		logger.message % "UNKNOWN" % "";
+		AssertFail("Unexpected exception");
 	}
 
 }

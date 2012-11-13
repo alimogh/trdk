@@ -10,15 +10,19 @@
 
 #include "Api.h"
 
-class TRADER_CORE_API PositionReporter : private boost::noncopyable {
+namespace Trader {
 
-public:
+	class TRADER_CORE_API PositionReporter : private boost::noncopyable {
 
-	PositionReporter();
-	virtual ~PositionReporter();
+	public:
 
-public:
+		PositionReporter();
+		virtual ~PositionReporter();
 
-	virtual void ReportClosedPositon(const Trader::Position &) = 0;
+	public:
 
-};
+		virtual void ReportClosedPositon(const Trader::Position &) = 0;
+
+	};
+
+}

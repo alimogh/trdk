@@ -17,6 +17,7 @@ namespace Trader {
 	class Position;
 	class LongPosition;
 	class ShortPosition;
+	class PositionReporter;
 
 	class TradeSystem;
 

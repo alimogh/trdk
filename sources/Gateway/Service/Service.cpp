@@ -429,7 +429,7 @@ ShortPosition & Gateway::Service::GetShortPosition(
 			Trader::Security &security) {
 	boost::shared_ptr<ShortPosition> &result = m_positions[&security].first;
 	if (!result || result->IsClosed()) {
-		result.reset(new ShortPosition(security.shared_from_this()));
+		result.reset(new ShortPosition(security.shared_from_this(), "user"));
 	}
 	return *result;
 }
@@ -438,7 +438,7 @@ LongPosition & Gateway::Service::GetLongPosition(
 			Trader::Security &security) {
 	boost::shared_ptr<LongPosition> &result = m_positions[&security].second;
 	if (!result || result->IsClosed()) {
-		result.reset(new LongPosition(security.shared_from_this()));
+		result.reset(new LongPosition(security.shared_from_this(), "user"));
 	}
 	return *result;
 }

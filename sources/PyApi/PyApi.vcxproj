@@ -78,27 +78,35 @@
     <TargetName>PyApi_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
+    <ClInclude Include="Detail.hpp" />
+    <ClInclude Include="Position.hpp" />
+    <ClInclude Include="Service.hpp" />
+    <ClInclude Include="SecurityAlgoWrapper.hpp" />
+    <ClInclude Include="ServiceWrapper.hpp" />
     <ClInclude Include="StrategyWrapper.hpp" />
     <ClInclude Include=".\PositionWrapper.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="PyApi.hpp" />
-    <ClInclude Include="ScriptEngine.hpp" />
+    <ClInclude Include="Strategy.hpp" />
+    <ClInclude Include="Script.hpp" />
     <ClInclude Include="SecurityWrapper.hpp" />
+    <ClInclude Include="Errors.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include=".\PositionWrapper.cpp" />
+    <ClCompile Include="Position.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="PyApi.cpp" />
-    <ClCompile Include="ScriptEngine.cpp" />
+    <ClCompile Include="Service.cpp" />
+    <ClCompile Include="Strategy.cpp" />
+    <ClCompile Include="Script.cpp" />
+    <ClCompile Include="StrategyWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyApi.def" />
     <None Include="Scripts\Frame.py" />
-    <None Include="Scripts\TraderPyApiExamples.py" />
+    <None Include="Scripts\TraderPyApiExampleStrategies.py" />
     <None Include="Trader.pypredef" />
   </ItemGroup>
   <ItemGroup>

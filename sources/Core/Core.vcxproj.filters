@@ -115,5 +115,8 @@
     <ClInclude Include="SecurityAlgo.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SettingsReport.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

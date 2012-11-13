@@ -18,3 +18,7 @@
 #include "Common/Common.hpp"
 
 #include "Common/Assert.hpp"
+
+#ifdef CreateService
+#	undef CreateService
+#endif

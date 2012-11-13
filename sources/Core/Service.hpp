@@ -13,7 +13,9 @@
 
 namespace Trader {
 
-	class TRADER_CORE_API Service : public Trader::SecurityAlgo {
+	class TRADER_CORE_API Service
+			: public Trader::SecurityAlgo,
+			public boost::enable_shared_from_this<Trader::Service> {
 
 	public:
 

@@ -13,24 +13,45 @@
       <UniqueIdentifier>{589ed766-0ed9-432e-8bbe-a6792d8f82bd}</UniqueIdentifier>
       <Extensions>py</Extensions>
     </Filter>
+    <Filter Include="Header Files\Wrappers">
+      <UniqueIdentifier>{bedc3aa9-0c6d-48c3-a6c2-9a0b3c020831}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PyApi.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ScriptEngine.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include=".\PositionWrapper.hpp">
+      <Filter>Header Files\Wrappers</Filter>
     </ClInclude>
     <ClInclude Include="SecurityWrapper.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Wrappers</Filter>
     </ClInclude>
-    <ClInclude Include=".\PositionWrapper.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="ServiceWrapper.hpp">
+      <Filter>Header Files\Wrappers</Filter>
     </ClInclude>
     <ClInclude Include="StrategyWrapper.hpp">
+      <Filter>Header Files\Wrappers</Filter>
+    </ClInclude>
+    <ClInclude Include="Strategy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Service.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Detail.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Errors.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SecurityAlgoWrapper.hpp">
+      <Filter>Header Files\Wrappers</Filter>
+    </ClInclude>
+    <ClInclude Include="Script.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Position.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -38,13 +59,19 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PyApi.cpp">
+    <ClCompile Include="Service.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ScriptEngine.cpp">
+    <ClCompile Include="Strategy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include=".\PositionWrapper.cpp">
+    <ClCompile Include="Script.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Position.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StrategyWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -55,10 +82,10 @@
     <None Include="PyApi.def">
       <Filter>Header Files</Filter>
     </None>
-    <None Include="Scripts\TraderPyApiExamples.py">
+    <None Include="Scripts\Frame.py">
       <Filter>Scripts</Filter>
     </None>
-    <None Include="Scripts\Frame.py">
+    <None Include="Scripts\TraderPyApiExampleStrategies.py">
       <Filter>Scripts</Filter>
     </None>
   </ItemGroup>

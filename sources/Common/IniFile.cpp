@@ -149,7 +149,7 @@ std::set<std::string> IniFile::ReadSectionsList() const {
 void IniFile::ReadSection(
 			const std::string &section,
 			boost::function<bool(const std::string &)> readLine,
-			bool isMustBeExist)
+			bool mustExist)
 		const {
 	const_cast<IniFile *>(this)->Reset();
 	bool isInSection = false;
@@ -168,7 +168,7 @@ void IniFile::ReadSection(
 			break;
 		}
 	}
-	if (!isInSection && isMustBeExist) {
+	if (!isInSection && mustExist) {
 		boost::format message("Failed to find INI-file section \"%1%\"");
 		message % section;
 		throw SectionNotExistsError(message.str().c_str());
@@ -286,7 +286,7 @@ std::list<std::string> IniFile::ReadList() const {
 
 std::list<std::string> IniFile::ReadList(
 			const std::string &section,
-			bool isMustBeExist)
+			bool mustExist)
 		const {
 	std::list<std::string> result;
 	ReadSection(
@@ -295,7 +295,7 @@ std::list<std::string> IniFile::ReadList(
 			result.push_back(line);
 			return true;
 		},
-		isMustBeExist);
+		mustExist);
 	return result;
 }
 
@@ -344,3 +344,51 @@ std::set<IniFile::Symbol> IniFile::ReadSymbols(
 	}
 	return result;
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+IniFileSectionRef::IniFileSectionRef(
+			const Trader::Lib::IniFile &file,
+			const std::string &name)
+		: m_file(file),
+		m_name(name) {
+	//...//
+}
+
+bool IniFileSectionRef::IsKeyExist(const std::string &key) const {
+	return m_file.IsKeyExist(m_name, key);
+}
+
+std::string IniFileSectionRef::ReadKey(
+				const std::string &key,
+				bool canBeEmpty)
+			const {
+	return m_file.ReadKey(m_name, key, canBeEmpty);
+}
+
+IniFile::AbsoluteOrPercentsPrice
+IniFileSectionRef::ReadAbsoluteOrPercentsPriceKey(
+			const std::string &key,
+			unsigned long priceScale)
+		const {
+	return m_file.ReadAbsoluteOrPercentsPriceKey(m_name, key, priceScale);
+}
+
+bool IniFileSectionRef::ReadBoolKey(const std::string &key) const {
+	return m_file.ReadBoolKey(m_name, key);
+}
+
+std::list<std::string> IniFileSectionRef::ReadList(
+			bool mustExist)
+		const {
+	return m_file.ReadList(m_name, mustExist);
+}
+
+std::set<Trader::Lib::IniFile::Symbol> IniFileSectionRef::ReadSymbols(
+			const std::string &defExchange,
+			const std::string &defPrimaryExchange)
+		const {
+	return m_file.ReadSymbols(m_name, defExchange, defPrimaryExchange);
+}
+
+//////////////////////////////////////////////////////////////////////////
