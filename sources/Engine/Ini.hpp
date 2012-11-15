@@ -39,6 +39,13 @@ namespace Trader { namespace Engine { namespace Ini {
 		extern const std::string currentSymbol;
 	}
 
+	namespace Constants {
+		namespace Services {
+			extern const std::string level1;
+			extern const std::string trades;
+		}
+	}
+
 	//////////////////////////////////////////////////////////////////////////
 
 	boost::shared_ptr<Trader::Settings> LoadSettings(

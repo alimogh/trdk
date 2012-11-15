@@ -21,24 +21,17 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 					boost::shared_ptr<Trader::Security>);
 
 	public:
-
-		Trader::Strategy & GetStrategy() {
-			return m_strategy;
-		}
+		
+		Trader::Strategy & GetStrategy();
+		const Trader::Strategy & GetStrategy() const;
 
 	public:
 
 		boost::python::str GetTag() const;
 
-		void PyNotifyServiceStart(boost::python::object service);
-
 		boost::python::object PyTryToOpenPositions();
 
 		void PyTryToClosePositions(boost::python::object);
-
-	private:
-
-		Trader::Strategy &m_strategy;
 
 	};
 

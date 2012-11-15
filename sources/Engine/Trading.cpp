@@ -41,11 +41,20 @@ namespace {
 		std::string tag;
 		std::string symbol;
 	};
+	
+	enum SystemService {
+		SYSTEM_SERVICE_LEVEL1,
+		SYSTEM_SERVICE_TRADES,
+		numberOfSystemServices
+	};
+
 	typedef std::map<
 			std::string /* strategy tag */,
-			std::list<StrategyService>>
+			std::tuple<
+				std::list<StrategyService>,
+				std::bitset<numberOfSystemServices>>>
 		StrategyServices;
-
+	
 	typedef DllObjectPtr<Observer> ModuleObserver;
 	typedef std::map<std::string /*tag*/, ModuleObserver> Observers;
 
@@ -90,7 +99,7 @@ namespace {
 				const IniFile &ini,
 				const std::string &section,
 				const std::string &tag,
-				const char *moduleType,
+				const char *const moduleType,
 				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
 				std::set<IniFile::Symbol> &symbols,
@@ -181,7 +190,6 @@ namespace {
 	void InitModuleBySymbol(
 				const IniFile &ini,
 				const std::string &section,
-				const char *moduleType,
 				const std::string &tag,
 				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
@@ -198,7 +206,7 @@ namespace {
 			ini,
 			section,
 			tag,
-			moduleType,
+			ModuleNamePolicy<Module>::GetName(),
 			tradeSystem,
 			marketDataSource,
 			symbols,
@@ -237,7 +245,7 @@ namespace {
 				= DllObjectPtr<Module>(dll, symbolInstance);
 			Log::Info(
 				"Loaded %1% \"%2%\" for \"%3%\" with tag \"%4%\".",
-				moduleType,
+				ModuleNamePolicy<Module>::GetName(),
 				symbolInstance->GetName(),
 				const_cast<const Module &>(*symbolInstance)
 					.GetSecurity()
@@ -250,7 +258,7 @@ namespace {
 	void ReadServicesRequest(
 				const IniFileSectionRef &ini,
 				const std::string &tag,
-				StrategyServices &strategyServices) {
+				StrategyServices &services) {
 		
 		const std::string strList = ini.ReadKey(Ini::Key::services, true);
 		if (strList.empty()) {
@@ -261,31 +269,42 @@ namespace {
 		boost::split(list, strList, boost::is_any_of(","));
 		const boost::regex expr("([^\\[]+)\\[(.+)\\]");
 		foreach (std::string &serviceRequest, list) {
-			boost::smatch what;
-			const auto cleanRequest = boost::trim_copy(serviceRequest);
-			if (!boost::regex_match(cleanRequest, what, expr)) {
-				Log::Error(
-					"Failed to parse service request \"%1%\" for \"%2%\".",
-					serviceRequest,
-					tag);
-				throw Exception("Failed to load strategy");
-			}
-			if (what.str(2)[0] == '$') {
-				if (	!boost::equal(
-							what.str(2).substr(1),
-							Ini::Variables::currentSymbol)) {
+			if (	boost::iequals(
+						serviceRequest,
+						Ini::Constants::Services::level1)) {
+				std::get<1>(services[tag]).set(SYSTEM_SERVICE_LEVEL1);
+			} else if (
+					boost::iequals(
+						serviceRequest,
+						Ini::Constants::Services::trades)) {
+				std::get<1>(services[tag]).set(SYSTEM_SERVICE_TRADES);
+			} else {
+				boost::smatch what;
+				const auto cleanRequest = boost::trim_copy(serviceRequest);
+				if (!boost::regex_match(cleanRequest, what, expr)) {
 					Log::Error(
-						"Failed to parse service request \"%1%\""
-							" (unknown variable) for \"%2%\".",
+						"Failed to parse service request \"%1%\" for \"%2%\".",
 						serviceRequest,
 						tag);
 					throw Exception("Failed to load strategy");
 				}
+				if (what.str(2)[0] == '$') {
+					if (	!boost::equal(
+								what.str(2).substr(1),
+								Ini::Variables::currentSymbol)) {
+						Log::Error(
+							"Failed to parse service request \"%1%\""
+								" (unknown variable) for \"%2%\".",
+							serviceRequest,
+							tag);
+						throw Exception("Failed to load strategy");
+					}
+				}
+				StrategyService service = {};
+				service.tag = what.str(1);
+				service.symbol = what.str(2);
+				std::get<0>(services[tag]).push_back(service);
 			}
-			StrategyService service = {};
-			service.tag = what.str(1);
-			service.symbol = what.str(2);
-			strategyServices[tag].push_back(service);
 		}
 
 	}
@@ -303,7 +322,6 @@ namespace {
 		InitModuleBySymbol(
 			ini,
 			section,
-			"strategy",
 			tag,
 			tradeSystem,
 			marketDataSource,
@@ -334,7 +352,7 @@ namespace {
 			ini,
 			section,
 			tag,
-			"observer",
+			ModuleNamePolicy<Observer>::GetName(),
 			tradeSystem,
 			marketDataSource,
 			symbols,
@@ -387,11 +405,20 @@ namespace {
 				Securities &securities,
 				Services &services,
 				boost::shared_ptr<Settings> settings)  {
+		const std::string tag
+			= section.substr(Ini::Sections::service.size());
+		if (	boost::iequals(tag, Ini::Constants::Services::level1)
+				|| boost::iequals(tag, Ini::Constants::Services::trades)) {
+			Log::Info(
+				"System predefined service name used for section %1%: \"%2%\".",
+				section,
+				tag);
+			throw Exception("System predefined service name used");
+		}
 		InitModuleBySymbol(
 			ini,
 			section,
-			"service",
-			section.substr(Ini::Sections::service.size()),
+			tag,
 			tradeSystem,
 			marketDataSource,
 			securities,
@@ -399,24 +426,35 @@ namespace {
 			settings);
 	}
 
-	void BindStrategyWithService(
+	template<typename Module>
+	void BindWithServices(
 				const StrategyServices &binding,
 				const Services &services,
 				const IniFile &ini,
-				const IniFile::Symbol &strategySymbol,
-				Strategy &strategy) {
-		const auto bindingInfo = binding.find(strategy.GetTag());
+				const IniFile::Symbol &symbol,
+				Module &module,
+				Dispatcher & dispatcher) {
+		
+		const auto bindingInfo = binding.find(module.GetTag());
 		if (bindingInfo == binding.end()) {
-			return;
+			Log::Error(
+				"No services provided for %1% \"%2%\".",
+				ModuleNamePolicy<Module>::GetName(),
+				module.GetTag());
+			throw Exception("No services provided");
 		}
-		foreach (const auto &info, bindingInfo->second) {
+
+		bool isAnyService = false;
+
+		foreach (const auto &info, std::get<0>(bindingInfo->second)) {
 			const auto service = services.find(info.tag);
 			if (service == services.end()) {
 				Log::Error(
-					"Unknown service \"%1%\" provided for strategy \"%2%\".",
+					"Unknown service \"%1%\" provided for %2% \"%3%\".",
 					info.tag,
-					strategy.GetTag());
-				throw Exception("Unknown service provided for strategy");
+					ModuleNamePolicy<Module>::GetName(),
+					module.GetTag());
+				throw Exception("Unknown service provided");
 			}
 			IniFile::Symbol bindedSymbol;
 			Assert(!info.symbol.empty());
@@ -425,12 +463,13 @@ namespace {
 							info.symbol.substr(1),
 							Ini::Variables::currentSymbol)) {
 					Log::Error(
-						"Unknown service symbol \"%1%\" provided for strategy \"%2%\".",
+						"Unknown service symbol \"%1%\" provided for %2% \"%3%\".",
 						info.symbol,
-						strategy.GetTag());
-					throw Exception("Unknown service symbol provided for strategy");
+						ModuleNamePolicy<Module>::GetName(),
+						module.GetTag());
+					throw Exception("Unknown service symbol provided");
 				}
-				bindedSymbol = strategySymbol;
+				bindedSymbol = symbol;
 			} else {
 				bindedSymbol = IniFile::ParseSymbol(
 					info.symbol,
@@ -446,13 +485,34 @@ namespace {
 			const auto serviceSymbol = service->second.find(bindedSymbol);
 			if (serviceSymbol == service->second.end()) {
 				Log::Error(
-					"Unknown service symbol \"%1%\" provided for strategy \"%2%\".",
+					"Unknown service symbol \"%1%\" provided for %2% \"%3%\".",
 					bindedSymbol,
-					strategy.GetTag());
-				throw Exception("Unknown service symbol provided for strategy");
+					ModuleNamePolicy<Module>::GetName(),
+					module.GetTag());
+				throw Exception("Unknown service symbol provided");
 			}
-			strategy.NotifyServiceStart(serviceSymbol->second);
+			module.NotifyServiceStart(serviceSymbol->second);
+			isAnyService = true;
 		}
+
+		if (std::get<1>(bindingInfo->second)[SYSTEM_SERVICE_LEVEL1]) {
+			dispatcher.SubscribeToLevel1(module);
+			isAnyService = true;
+		}
+
+		if (std::get<1>(bindingInfo->second)[SYSTEM_SERVICE_TRADES]) {
+			dispatcher.SubscribeToNewTrades(module);
+			isAnyService = true;
+		}
+
+		if (!isAnyService) {
+			Log::Error(
+				"No services provided for %1% \"%2%\".",
+				ModuleNamePolicy<Module>::GetName(),
+				module.GetTag());
+			throw Exception("No services provided");
+		}
+
 	}
 
 	void InitTrading(
@@ -536,21 +596,27 @@ namespace {
 
 		foreach (auto &ss, strategies) {
 			foreach (auto &strategy, ss.second) {
-				BindStrategyWithService(
+				BindWithServices(
 					strategyServices,
 					services,
 					ini,
 					strategy.first,
-					strategy.second);
-				dispatcher.Register(strategy.second);
+					*strategy.second,
+					dispatcher);
 			}
 		}
 		foreach (auto &o, observers) {
-			dispatcher.Register(o.second);
+			dispatcher.SubscribeToNewTrades(o.second);
 		}
 		foreach (auto &ss, services) {
-			foreach (auto &s, ss.second) {
-				dispatcher.Register(s.second);
+			foreach (auto &service, ss.second) {
+				BindWithServices(
+					strategyServices,
+					services,
+					ini,
+					service.first,
+					*service.second,
+					dispatcher);
 			}
 		}
 

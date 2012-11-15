@@ -19,9 +19,9 @@ namespace Trader { namespace PyApi {
 			public Wrappers::Strategy,
 			public boost::python::wrapper<Trader::PyApi::Strategy> {
 
-		template<typename Algo>
+		template<typename Module>
 		friend void Trader::PyApi::Detail::UpdateAlgoSettings(
-				Algo &,
+				Module &,
 				const Trader::Lib::IniFileSectionRef &);
 
 	public:

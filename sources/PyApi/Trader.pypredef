@@ -218,6 +218,15 @@ class SecurityAlgo:
 			pure virtual method
 		"""
 
+	void notifyServiceStart(service):
+		"""
+			Method notifies about new service start.
+			
+			@type service: Trader.Service
+			
+			virtual method
+		"""
+
 ###############################################################################
 
 class Service(Trader.SecurityAlgo):
@@ -237,15 +246,6 @@ class Strategy(Trader.SecurityAlgo):
 	def __init__(param):
 		"""
 			@type param: int
-		"""
-
-	void notifyServiceStart(service):
-		"""
-			Method notifies about new service start.
-			
-			@type service: Trader.Service
-			
-			virtual method
 		"""
 
 	def tryToOpenPositions():

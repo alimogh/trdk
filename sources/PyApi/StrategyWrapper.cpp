@@ -8,35 +8,20 @@
 
 #include "Prec.hpp"
 #include "StrategyWrapper.hpp"
-#include "Service.hpp"
 #include "Core/Strategy.hpp"
-#include "Core/Service.hpp"
 
-using namespace  Trader::PyApi::Wrappers;
+using namespace Trader::PyApi::Wrappers;
 namespace py = boost::python;
 
 Strategy::Strategy(
 			Trader::Strategy &strategy,
 			boost::shared_ptr<Trader::Security> security)
-		: SecurityAlgo(security),
-		m_strategy(strategy) {
+		: SecurityAlgo(strategy, security) {
 	//...//
 }
 
 py::str Strategy::GetTag() const {
-	return m_strategy.GetTag().c_str();
-}
-
-void Strategy::PyNotifyServiceStart(py::object pyService) {
-	Assert(pyService);
-	try {
-		const Trader::PyApi::Service &service
-			= py::extract<const Trader::PyApi::Service &>(pyService);
-		m_strategy.Trader::Strategy::NotifyServiceStart(service);
-	} catch (const py::error_already_set &) {
-		Detail::RethrowPythonClientException(
-			"Failed to convert object to Trader.Service");
-	}
+	return GetStrategy().GetTag().c_str();
 }
 
 py::object Strategy::PyTryToOpenPositions() {
@@ -47,4 +32,12 @@ py::object Strategy::PyTryToOpenPositions() {
 void Strategy::PyTryToClosePositions(py::object) {
 	throw PureVirtualMethodHasNoImplementation(
 		"Pure virtual method Trader.Strategy.tryToClosePositions has no implementation");
+}
+
+Trader::Strategy & Strategy::GetStrategy() {
+	return Get<Trader::Strategy>();
+}
+
+const Trader::Strategy & Strategy::GetStrategy() const {
+	return Get<Trader::Strategy>();
 }

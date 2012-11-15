@@ -23,6 +23,10 @@ namespace Trader {
 		virtual const std::string & GetName() const = 0;
 		const std::string & GetTag() const throw();
 
+	public:
+
+		virtual void NotifyServiceStart(const Trader::Service &);
+
 	private:
 
 		const std::string m_tag;

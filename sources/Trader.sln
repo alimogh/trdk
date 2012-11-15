@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2010
+# Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Engine\Engine.vcxproj", "{015FB121-6122-4A00-BFBB-545E9E73ABEE}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "Core\Core.vcxproj", "{48CE7676-DCB3-41F2-BED9-313D6FF57A97}"
@@ -26,6 +26,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Frontend", "Frontend\Frontend.vcxproj", "{A873D403-8BF1-4323-94D8-3CE4DAAA7B61}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Csv", "Interaction\Csv\Csv.vcxproj", "{2E95108D-1AF3-4AAE-909E-F380C264D4A4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Services", "Services\Services.vcxproj", "{4F025D92-8F15-4A05-97B6-CA680CB090D9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -94,6 +96,12 @@ Global
 		{2E95108D-1AF3-4AAE-909E-F380C264D4A4}.Release|Win32.Build.0 = Release|Win32
 		{2E95108D-1AF3-4AAE-909E-F380C264D4A4}.Test|Win32.ActiveCfg = Test|Win32
 		{2E95108D-1AF3-4AAE-909E-F380C264D4A4}.Test|Win32.Build.0 = Test|Win32
+		{4F025D92-8F15-4A05-97B6-CA680CB090D9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4F025D92-8F15-4A05-97B6-CA680CB090D9}.Debug|Win32.Build.0 = Debug|Win32
+		{4F025D92-8F15-4A05-97B6-CA680CB090D9}.Release|Win32.ActiveCfg = Release|Win32
+		{4F025D92-8F15-4A05-97B6-CA680CB090D9}.Release|Win32.Build.0 = Release|Win32
+		{4F025D92-8F15-4A05-97B6-CA680CB090D9}.Test|Win32.ActiveCfg = Test|Win32
+		{4F025D92-8F15-4A05-97B6-CA680CB090D9}.Test|Win32.Build.0 = Test|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

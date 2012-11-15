@@ -19,6 +19,8 @@ namespace Trader { namespace PyApi { namespace Detail {
 		throw Trader::PyApi::Error(what);
 	}
 
+#	pragma warning(push)
+#	pragma warning(disable: 4702)
 	inline Script * LoadScript(const Trader::Lib::IniFileSectionRef &ini) {
 		try {
 			return new Script(ini.ReadKey("script_file_path", false));
@@ -27,6 +29,7 @@ namespace Trader { namespace PyApi { namespace Detail {
 			throw;
 		}
 	}
+#	pragma warning(pop)
 
 	inline boost::python::object GetPyClass(
 				Script &script,
@@ -40,9 +43,9 @@ namespace Trader { namespace PyApi { namespace Detail {
 		}
 	}
 
-	template<typename Algo>
+	template<typename Module>
 	void UpdateAlgoSettings(
-				Algo &algo,
+				Module &algo,
 				const Trader::Lib::IniFileSectionRef &ini) {
 		AssertEq(
 			ini.ReadKey("script_file_path", false),

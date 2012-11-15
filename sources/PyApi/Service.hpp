@@ -10,6 +10,7 @@
 
 #include "ServiceWrapper.hpp"
 #include "Detail.hpp"
+#include "Core/Service.hpp"
 
 namespace Trader { namespace PyApi {
 
@@ -18,9 +19,9 @@ namespace Trader { namespace PyApi {
 			public Wrappers::Service,
 			public boost::python::wrapper<Trader::PyApi::Service> {
 
-		template<typename Algo>
+		template<typename Module>
 		friend void Trader::PyApi::Detail::UpdateAlgoSettings(
-				Algo &,
+				Module &,
 				const Trader::Lib::IniFileSectionRef &);
 
 	public:
@@ -36,6 +37,7 @@ namespace Trader { namespace PyApi {
 	public:
 
 		virtual boost::python::str Service::PyGetName() const;
+		virtual void PyNotifyServiceStart(boost::python::object);
 
 	public:
 
@@ -44,6 +46,8 @@ namespace Trader { namespace PyApi {
 		virtual const std::string & GetName() const {
 			return m_name;
 		}
+
+		virtual void NotifyServiceStart(const Trader::Service &);
 
 		operator boost::python::object &() const {
 			Assert(m_self);

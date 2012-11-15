@@ -36,6 +36,9 @@ const std::string Key::services = "services";
 
 const std::string Variables::currentSymbol = "CURRENT_SYMBOL";
 
+const std::string Constants::Services::level1 = "Level 1";
+const std::string Constants::Services::trades = "Trades";
+
 //////////////////////////////////////////////////////////////////////////
 
 boost::shared_ptr<Settings> Ini::LoadSettings(

@@ -32,8 +32,6 @@ namespace Trader {
 
 	public:
 
-		virtual void NotifyServiceStart(const Trader::Service &);
-
 		virtual boost::shared_ptr<PositionBandle> TryToOpenPositions() = 0;
 		virtual void TryToClosePositions(PositionBandle &) = 0;
 

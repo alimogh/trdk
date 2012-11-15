@@ -83,6 +83,9 @@
     <ProjectReference Include="..\PyApi\PyApi.vcxproj">
       <Project>{7bd47287-4175-45ee-860b-326ae8060a16}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Services\Services.vcxproj">
+      <Project>{4f025d92-8f15-4a05-97b6-ca680cb090d9}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Dispatcher.cpp" />

@@ -25,4 +25,6 @@
 
 #include "Common/Common.hpp"
 
+#include <bitset>
+
 #include "Common/Assert.hpp"

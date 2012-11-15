@@ -8,6 +8,7 @@
 
 #include "Prec.hpp"
 #include "Dispatcher.hpp"
+#include "Util.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/Observer.hpp"
 #include "Core/Service.hpp"
@@ -37,10 +38,10 @@ private:
 public:
 
 	explicit StrategyState(
-				boost::shared_ptr<Strategy> startegy,
+				Strategy &startegy,
 				boost::shared_ptr<Notifier> notifier,
 				boost::shared_ptr<const Settings> settings)
-			: m_strategy(startegy),
+			: m_strategy(startegy.shared_from_this()),
 			m_notifier(notifier),
 			m_isBlocked(false),
 			m_lastUpdate(0),
@@ -117,8 +118,8 @@ class Dispatcher::ObserverState
 
 public:
 
-	explicit ObserverState(boost::shared_ptr<Observer> observer)
-			: m_observer(observer) {
+	explicit ObserverState(Observer &observer)
+			: m_observer(observer.shared_from_this()) {
 		//...//
 	}
 
@@ -174,7 +175,9 @@ public:
 			: m_isActive(false),
 			m_isExit(false),
 			m_currentStrategies(&m_strategyQueue.first),
+			m_heavyLoadedUpdatesCount(0),
 			m_currentObservers(&m_observerQueue.first),
+			m_heavyLoadedObservationsCount(0),
 			m_settings(settings) {
 		
 		{
@@ -190,7 +193,7 @@ public:
 						Task(
 							startBarrier,
 							threadName,
-							&Dispatcher::Notifier::StrategyIteration);
+							&Dispatcher::Notifier::NotifyUpdate);
 					});
 			}
 			startBarrier.wait();
@@ -200,7 +203,10 @@ public:
 			boost::barrier startBarrier(1 + 1);
 			m_threads.create_thread(
 				[&]() {
-					Task(startBarrier, "Observer", &Dispatcher::Notifier::ObserverIteration);
+					Task(
+						startBarrier,
+						"Observer",
+						&Dispatcher::Notifier::NotifyNewObservationData);
 				});
 			startBarrier.wait();
 		}
@@ -215,7 +221,10 @@ public:
 			for (size_t i = 0; i < threadsCount; ++i) {
 				m_threads.create_thread(
 					[&]() {
-						Task(startBarrier, threadName, &Dispatcher::Notifier::TimeoutCheckIteration);
+						Task(
+							startBarrier,
+							threadName,
+							&Dispatcher::Notifier::NotifyTimeout);
 					});
 			}
 			startBarrier.wait();
@@ -347,9 +356,9 @@ private:
 		Log::Info("Dispatcher task \"%1%\" stopped.", name);
 	}
 
-	bool TimeoutCheckIteration();
-	bool StrategyIteration();
-	bool ObserverIteration();
+	bool NotifyTimeout();
+	bool NotifyUpdate();
+	bool NotifyNewObservationData();
 
 private:
 
@@ -364,9 +373,11 @@ private:
 
 	std::pair<StrategyNotifyList, StrategyNotifyList> m_strategyQueue;
 	StrategyNotifyList *m_currentStrategies;
+	size_t m_heavyLoadedUpdatesCount;
 
 	std::pair<ObserverNotifyList, ObserverNotifyList> m_observerQueue;
 	ObserverNotifyList *m_currentObservers;
+	size_t m_heavyLoadedObservationsCount;
 
 	boost::shared_ptr<const Settings> m_settings;
 
@@ -448,7 +459,7 @@ bool Dispatcher::StrategyState::CheckPositionsUnsafe() {
 
 //////////////////////////////////////////////////////////////////////////
 
-bool Dispatcher::Notifier::TimeoutCheckIteration() {
+bool Dispatcher::Notifier::NotifyTimeout() {
 
 	const auto nextIterationTime
 		= boost::get_system_time() + pt::milliseconds(m_settings->GetUpdatePeriodMilliseconds());
@@ -500,7 +511,7 @@ bool Dispatcher::Notifier::TimeoutCheckIteration() {
 
 }
 
-bool Dispatcher::Notifier::StrategyIteration() {
+bool Dispatcher::Notifier::NotifyUpdate() {
 
 	StrategyNotifyList *notifyList = nullptr;
 	{
@@ -512,14 +523,17 @@ bool Dispatcher::Notifier::StrategyIteration() {
 			m_currentStrategies == &m_strategyQueue.first
 			|| m_currentStrategies == &m_strategyQueue.second);
 		if (m_currentStrategies->empty()) {
+			m_heavyLoadedUpdatesCount = 0;
 			m_positionsCheckCondition.wait(lock);
 			if (m_isExit) {
 				return false;
 			} else if (m_currentStrategies->empty() || !m_isActive) {
 				return true;
 			}
-		} else {
-			// Log::Warn("Dispatcher strategies thread is heavy loaded!");
+		} else if (!(++m_heavyLoadedUpdatesCount % 100)) {
+			Log::Warn(
+				"Dispatcher updates thread is heavy loaded (%1% iterations)!",
+				m_heavyLoadedUpdatesCount);
 		}
 		notifyList = m_currentStrategies;
 		m_currentStrategies = m_currentStrategies == &m_strategyQueue.first
@@ -540,7 +554,7 @@ bool Dispatcher::Notifier::StrategyIteration() {
 
 }
 
-bool Dispatcher::Notifier::ObserverIteration() {
+bool Dispatcher::Notifier::NotifyNewObservationData() {
 
 	ObserverNotifyList *notifyList = nullptr;
 	{
@@ -553,14 +567,17 @@ bool Dispatcher::Notifier::ObserverIteration() {
 			m_currentObservers == &m_observerQueue.first
 			|| m_currentObservers == &m_observerQueue.second);
 		if (m_currentObservers->empty()) {
+			m_heavyLoadedObservationsCount = 0;
 			m_securityUpdateCondition.wait(lock);
 			if (m_isExit) {
 				return false;
 			} else if (m_currentObservers->empty() || !m_isActive) {
 				return true;
 			}
-		} else {
-			// Log::Warn("Dispatcher observer thread is heavy loaded!");
+		} else if (!(++m_heavyLoadedUpdatesCount % 100)) {
+			Log::Warn(
+				"Dispatcher observers thread is heavy loaded (%1% iterations)!",
+				m_heavyLoadedUpdatesCount);
 		}
 		notifyList = m_currentObservers;
 		m_currentObservers = m_currentObservers == &m_observerQueue.first
@@ -585,7 +602,7 @@ bool Dispatcher::Notifier::ObserverIteration() {
 
 //////////////////////////////////////////////////////////////////////////
 
-class Dispatcher::Slots : private boost::noncopyable {
+class Dispatcher::UpdateSlots : private boost::noncopyable {
 
 public:
 
@@ -613,11 +630,29 @@ public:
 
 };
 
+namespace {
+
+	template<typename Module>
+	void Report(
+				const Module &module,
+				const Security &security,
+				const char *type) {
+		Log::Info(
+			"%1% \"%2%\" (tag: \"%3%\") subscribed to \"%4%\" %5%.",
+			ModuleNamePolicy<Module>::GetNameFirstCapital(),
+			module.GetName(),
+			module.GetTag(),
+			security.GetFullSymbol(),
+			type);
+	}
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 Dispatcher::Dispatcher(boost::shared_ptr<const Settings> options)
 		: m_notifier(new Notifier(options)),
-		m_slots(new Slots),
+		m_updateSlots(new UpdateSlots),
 		m_observationSlots(new ObservationSlots) {
 	//...//
 }
@@ -634,21 +669,22 @@ void Dispatcher::Stop() {
 	m_notifier->Stop();
 }
 
-void Dispatcher::Register(boost::shared_ptr<Strategy> strategy) {
-	const Security &security = *const_cast<const Strategy &>(*strategy).GetSecurity();
+void Dispatcher::SubscribeToLevel1(Strategy &strategy) {
+	const Security &security
+		= *const_cast<const Strategy &>(strategy).GetSecurity();
 	{
 		const Notifier::Lock strategyListlock(
 			m_notifier->GetStrategyListMutex());
 		Notifier::StrategyStateList &strategyList
 			= m_notifier->GetStrategyList();
-		const Slots::Lock lock(m_slots->m_dataUpdateMutex);
+		const UpdateSlots::Lock lock(m_updateSlots->m_dataUpdateMutex);
 		boost::shared_ptr<StrategyState> strategyState(
 			new StrategyState(
 				strategy,
 				m_notifier,
 				m_notifier->GetSettings()));
 		strategyList.push_back(strategyState);
-		m_slots->m_dataUpdateConnections.InsertSafe(
+		m_updateSlots->m_dataUpdateConnections.InsertSafe(
 			security.SubcribeToLevel1(
 				Security::Level1UpdateSlot(
 					boost::bind(
@@ -657,21 +693,41 @@ void Dispatcher::Register(boost::shared_ptr<Strategy> strategy) {
 						strategyState))));
 		strategyList.swap(m_notifier->GetStrategyList());
 	}
-	Log::Info(
-		"Registered STRATEGY \"%1%\" (tag: \"%2%\") for security \"%3%\".",
-		strategy->GetName(),
-		strategy->GetTag(),
-		security.GetFullSymbol());
+	Report(strategy, security, "Level 1");
 }
 
-void Dispatcher::Register(boost::shared_ptr<Observer> observer) {
+void Dispatcher::SubscribeToLevel1(Service &service) {
+	const Security &security
+		= *const_cast<const Service &>(service).GetSecurity();
+	{
+
+	}
+	Report(service, security, "Level 1");
+}
+
+void Dispatcher::SubscribeToLevel1(Observer &) {
+	throw Exception(
+		"Level 1 updates for observers doesn't implemented yet");
+}
+
+void Dispatcher::SubscribeToNewTrades(Strategy &) {
+	throw Exception(
+		"New trades observation for strategies doesn't implemented yet");
+}
+
+void Dispatcher::SubscribeToNewTrades(Service &) {
+	throw Exception(
+		"New trades observation for services doesn't implemented yet");
+}
+
+void Dispatcher::SubscribeToNewTrades(Observer &observer) {
 	boost::shared_ptr<ObserverState> state(new ObserverState(observer));
 	m_notifier->GetObserversStateList().push_back(state);
-	const Slots::Lock lock(m_observationSlots->m_dataUpdateMutex);
+	const UpdateSlots::Lock lock(m_observationSlots->m_dataUpdateMutex);
 	std::for_each(
-		observer->GetNotifyList().begin(),
-		observer->GetNotifyList().end(),
-		[this, &state] (boost::shared_ptr<const Security> security) {
+		observer.GetNotifyList().begin(),
+		observer.GetNotifyList().end(),
+		[&] (boost::shared_ptr<const Security> security) {
 			m_observationSlots->m_dataUpdateConnections.InsertSafe(
 				security->SubcribeToTrades(
 					Security::NewTradeSlot(
@@ -684,18 +740,8 @@ void Dispatcher::Register(boost::shared_ptr<Observer> observer) {
 							_2,
 							_3,
 							_4))));
+				Report(observer, *security, "Level 1");
 		});
-	Log::Info(
-		"Registered OBSERVER \"%1%\" (tag: \"%2%\").",
-		observer->GetName(),
-		observer->GetTag());
-}
-
-void Dispatcher::Register(boost::shared_ptr<Service> service) {
-	Log::Info(
-		"Registered SERVICE \"%1%\" (tag: \"%2%\").",
-		service->GetName(),
-		service->GetTag());
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -8,8 +8,7 @@
 
 #pragma once
 
-#include "StrategyWrapper.hpp"
-#include "Core/Service.hpp"
+#include "SecurityAlgoWrapper.hpp"
 
 namespace Trader { namespace PyApi { namespace Wrappers {
 
@@ -18,26 +17,19 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 	public:
 
 		explicit Service(
-					Trader::Service &service,
-					boost::shared_ptr<Trader::Security> security)
-				: SecurityAlgo(security),
-				m_service(service) {
-			//...//
-		}
+					Trader::Service &,
+					boost::shared_ptr<Trader::Security>);
 
-		virtual ~Service() {
-			//...//
-		}
+		virtual ~Service();
 
 	public:
 
-		virtual boost::python::str GetTag() const {
-			return m_service.GetTag().c_str();
-		}
+		Trader::Service & GetService();
+		const Trader::Service & GetService() const;
 
-	private:
+	public:
 
-		Trader::Service &m_service;
+		virtual boost::python::str GetTag() const;
 
 	};
 

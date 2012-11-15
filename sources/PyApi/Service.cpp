@@ -95,6 +95,16 @@ void Service::DoSettingsUpdate(const IniFileSectionRef &ini) {
 	Detail::UpdateAlgoSettings(*this, ini);
 }
 
+void Service::NotifyServiceStart(const Trader::Service &service) {
+	try {
+		Assert(dynamic_cast<const Service *>(&service));
+		PyNotifyServiceStart(dynamic_cast<const Service &>(service));
+	} catch (const py::error_already_set &) {
+		RethrowPythonClientException(
+			"Failed to call method Trader.Service.notifyServiceStart");
+	}
+}
+
 py::str Service::PyGetName() const {
 	const auto f = get_override("getName");
 	if (f) {
@@ -107,6 +117,22 @@ py::str Service::PyGetName() const {
 		}
 	} else {
 		return Wrappers::Service::PyGetName();
+	}
+}
+
+void Service::PyNotifyServiceStart(py::object service) {
+	Assert(service);
+	const auto f = get_override("notifyServiceStart");
+	if (f) {
+		try {
+			f(service);
+		} catch (const py::error_already_set &) {
+			RethrowPythonClientException(
+				"Failed to call method Trader.Service.notifyServiceStart");
+			throw;
+		}
+	} else {
+		Wrappers::Service::PyNotifyServiceStart(service);
 	}
 }
 

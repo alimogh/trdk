@@ -25,6 +25,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4503;4275;4251</DisableSpecificWarnings>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

@@ -10,6 +10,7 @@
 
 #include "SecurityWrapper.hpp"
 #include "Detail.hpp"
+#include "Core/SecurityAlgo.hpp"
 
 namespace Trader { namespace PyApi { namespace Wrappers {
 
@@ -21,8 +22,11 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 
 	public:
 
-		explicit SecurityAlgo(boost::shared_ptr<Trader::Security> security)
-				: security(security) {
+		explicit SecurityAlgo(
+					Trader::SecurityAlgo &algo,
+					boost::shared_ptr<Trader::Security> &security)
+				: security(security),
+				m_algo(algo) {
 			//...//
 		}
 
@@ -38,6 +42,24 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 			throw PureVirtualMethodHasNoImplementation(
 				"Pure virtual method Trader.SecurityAlgo.getName has no implementation");
 		}
+
+		void PyNotifyServiceStart(boost::python::object service);
+
+	protected:
+
+		template<typename T>
+		T & Get() {
+			return *boost::polymorphic_downcast<T *>(&m_algo);
+		}
+
+		template<typename T>
+		const T & Get() const {
+			return const_cast<SecurityAlgo *>(this)->Get<T>();
+		}
+
+	private:
+
+		Trader::SecurityAlgo &m_algo;
 
 	};
 
