@@ -373,3 +373,11 @@ void Security::SignalNewTrade(
 	m_pimpl->m_tradeSignal(time, price, qty, isBuy);
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+std::ostream & std::operator <<(std::ostream &oss, const Security &security) {
+	oss << security.GetFullSymbol();
+	return oss;
+}
+
+//////////////////////////////////////////////////////////////////////////

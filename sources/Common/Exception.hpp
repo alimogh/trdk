@@ -9,8 +9,11 @@
 #pragma once
 
 #include <exception>
+#include <iosfwd>
 
 namespace Trader { namespace Lib {
+
+	//////////////////////////////////////////////////////////////////////////
 
 	class Exception : public std::exception {
 
@@ -33,4 +36,24 @@ namespace Trader { namespace Lib {
 
 	};
 
+	//////////////////////////////////////////////////////////////////////////
+
+	class MethodDoesNotImplementedError : public Trader::Lib::Exception {
+
+	public:
+
+		explicit MethodDoesNotImplementedError(const char *what) throw();
+
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+
 } }
+
+namespace std {
+
+	std::ostream & operator <<(
+			std::ostream &,
+			const Trader::Lib::Exception &);
+
+}

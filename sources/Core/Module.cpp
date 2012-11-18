@@ -28,13 +28,46 @@ const std::string & Module::GetTag() const throw() {
 
 void Module::NotifyServiceStart(const Service &service) {
 	Log::Error(
-		"Module \"%1%\" (tag \"%2%\") has been configured to work with"
-			" service \"%3%\" (tag \"%4%\"), but can't work with it.",
-		GetName(),
-		GetTag(),
-		service.GetName(),
-		service.GetTag());
-	throw Exception(
-		"Module has been configured to work with service,"
-			" but can't work with it");
+		"\"%1%\" subscribed to \"%2%\", but can't work with it"
+			" (hasn't implementation of NotifyServiceStart).",
+		*this,
+		service);
+ 	throw MethodDoesNotImplementedError(
+		"Module subscribed to service, but can't work with it");
 }
+
+void Module::OnNewTrade(
+					const Trader::Security &,
+					const boost::posix_time::ptime &,
+					Trader::Security::ScaledPrice,
+					Trader::Security::Qty,
+					bool) {
+	Log::Error(
+		"\"%1%\" subscribed to new trades, but can't work with it"
+			" (hasn't implementation of OnNewTrade).",
+		*this);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to new trades, but can't work with it");
+}
+
+void Module::OnServiceDataUpdate(const Trader::Service &service) {
+	Log::Error(
+		"\"%1%\" subscribed to \"%2%\", but can't work with it"
+			" (hasn't implementation of OnServiceDataUpdate).",
+		*this,
+		service);
+ 	throw MethodDoesNotImplementedError(
+ 		"Module subscribed to service, but can't work with it");
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+std::ostream & std::operator <<(std::ostream &oss, const Module &module) {
+	oss
+		<< module.GetTypeName()
+		<< '.' << module.GetName()
+		<< '.' << module.GetTag();
+	return oss;
+}
+
+//////////////////////////////////////////////////////////////////////////

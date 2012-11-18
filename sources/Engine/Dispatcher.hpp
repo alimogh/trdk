@@ -15,10 +15,10 @@ namespace Trader { namespace Engine {
 	private:
 
 		class StrategyState;
-		class ObserverState;
+		class TradeObserverState;
 		class Notifier;
 		class UpdateSlots;
-		class ObservationSlots;
+		class TradesObservationSlots;
 
 	public:
 
@@ -27,13 +27,13 @@ namespace Trader { namespace Engine {
 
 	public:
 
-		void SubscribeToLevel1(Strategy &);
-		void SubscribeToLevel1(Service &);
-		void SubscribeToLevel1(Observer &);
+		void SubscribeToLevel1(Trader::Strategy &);
+		void SubscribeToLevel1(Trader::Service &);
+		void SubscribeToLevel1(Trader::Observer &);
 
-		void SubscribeToNewTrades(Strategy &);
-		void SubscribeToNewTrades(Service &);
-		void SubscribeToNewTrades(Observer &);
+		void SubscribeToNewTrades(Trader::Strategy &);
+		void SubscribeToNewTrades(Trader::Service &);
+		void SubscribeToNewTrades(Trader::Observer &);
 
 	public:
 
@@ -42,9 +42,15 @@ namespace Trader { namespace Engine {
 
 	private:
 
+		void SubscribeToNewTrades(
+				boost::shared_ptr<TradeObserverState> &,
+				const Trader::Security &);
+
+	private:
+
 		boost::shared_ptr<Notifier> m_notifier;
 		std::unique_ptr<UpdateSlots> m_updateSlots;
-		std::unique_ptr<ObservationSlots> m_observationSlots;
+		std::unique_ptr<TradesObservationSlots> m_tradesObservationSlots;
 	
 	};
 

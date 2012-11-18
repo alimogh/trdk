@@ -51,6 +51,11 @@ Observer::~Observer() {
 	delete m_pimpl;
 }
 
+const std::string & Observer::GetTypeName() const {
+	static const std::string typeName = "Observer";
+	return typeName;
+}
+
 const Observer::NotifyList & Observer::GetNotifyList() const {
 	return m_pimpl->m_notifyList;
 }

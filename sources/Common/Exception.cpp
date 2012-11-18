@@ -9,8 +9,11 @@
 #include "Exception.hpp"
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
 
 using namespace Trader::Lib;
+
+//////////////////////////////////////////////////////////////////////////
 
 Exception::Exception(const char *what) throw()
 		: m_doFree(false) {
@@ -67,3 +70,22 @@ Exception & Exception::operator =(const Exception &rhs) throw() {
 	}
 	return *this;
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+MethodDoesNotImplementedError::MethodDoesNotImplementedError(
+			const char *what)
+		: Exception(what) {
+	//...//
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+std::ostream & std::operator <<(
+			std::ostream &oss,
+			const Trader::Lib::Exception &ex) {
+	oss << ex.what();
+	return oss;
+}
+
+//////////////////////////////////////////////////////////////////////////

@@ -21,41 +21,4 @@ namespace Trader { namespace Engine {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	template<typename T>
-	struct ModuleNamePolicy {
-		//...//
-	};
-	
-	template<>
-	struct ModuleNamePolicy<Strategy> {
-		static const char * GetName() {
-			return "strategy";
-		}
-		static const char * GetNameFirstCapital() {
-			return "Strategy";
-		}
-	};
-	
-	template<>
-	struct ModuleNamePolicy<Observer> {
-		static const char * GetName() {
-			return "observer";
-		}
-		static const char * GetNameFirstCapital() {
-			return "Observer";
-		}
-	};
-
-	template<>
-	struct ModuleNamePolicy<Service> {
-		static const char * GetName() {
-			return "service";
-		}
-		static const char * GetNameFirstCapital() {
-			return "Service";
-		}
-	};
-
-	//////////////////////////////////////////////////////////////////////////
-
 } }

@@ -23,6 +23,7 @@ namespace Trader {
 
 	class Settings;
 
+	class Module;
 	class Strategy;
 	class Observer;
 	class Service;

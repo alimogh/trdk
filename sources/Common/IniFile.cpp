@@ -85,7 +85,8 @@ boost::int64_t IniFile::AbsoluteOrPercentsPrice::Get(
 std::string IniFile::AbsoluteOrPercentsPrice::GetStr(unsigned long priceScale)
 		const {
 	return isAbsolute
-		?	boost::lexical_cast<std::string>(Util::Descale(value.absolute, priceScale))
+		?	boost::lexical_cast<std::string>(
+				Util::Descale(value.absolute, priceScale))
 		:	(boost::format("%1%%%") % (value.percents * 100)).str();
 }
 
@@ -99,7 +100,9 @@ IniFile::IniFile(const fs::path &path)
 	}
 }
 
-IniFile::IniFile(const fs::path &path, const boost::filesystem::path &searchPath)
+IniFile::IniFile(
+			const fs::path &path,
+			const boost::filesystem::path &searchPath)
 		: m_path(path),
 		m_file(m_path.c_str()) {
 	if (!m_file) {
@@ -130,8 +133,8 @@ std::string IniFile::ReadCurrentLine() const {
 	return result;
 }
 
-std::set<std::string> IniFile::ReadSectionsList() const {
-	std::set<std::string> result;
+IniFile::SectionList IniFile::ReadSectionsList() const {
+	SectionList result;
 	const_cast<IniFile *>(this)->Reset();
 	while (!m_file.eof()) {
 		std::string line = ReadCurrentLine();
@@ -162,7 +165,7 @@ void IniFile::ReadSection(
 				break;
 			} else {
 				TrimSection(line);
-				isInSection = line == section;
+				isInSection = boost::iequals(line, section);
 			}
 		} else if (isInSection && !readLine(line)) {
 			break;
@@ -175,7 +178,10 @@ void IniFile::ReadSection(
 	}
 }
 
-bool IniFile::IsKeyExist(const std::string &section,const std::string &key) const {
+bool IniFile::IsKeyExist(
+			const std::string &section,
+			const std::string &key)
+		const {
 	bool result = false;
 	ReadSection(
 		section,
@@ -188,7 +194,7 @@ bool IniFile::IsKeyExist(const std::string &section,const std::string &key) cons
 				return true;
 			}
 			boost::trim(*subs.begin());
-			result = *subs.begin() == key;
+			result = boost::iequals(*subs.begin(), key);
 			return !result;
 		},
 		true);
@@ -213,7 +219,7 @@ std::string IniFile::ReadKey(
 				return true;
 			}
 			boost::trim(*subs.begin());
-			isKeyExists = *subs.begin() == key;
+			isKeyExists = boost::iequals(*subs.begin(), key);
 			if (!isKeyExists) {
 				return true;
 			}
@@ -252,7 +258,8 @@ IniFile::AbsoluteOrPercentsPrice IniFile::ReadAbsoluteOrPercentsPriceKey(
 		}
 		return result;
 	} catch (const boost::bad_lexical_cast &ex) {
-		boost::format message("Wrong INI-file key (\"%1%:%2%\") format: \"%3%\"");
+		boost::format message(
+			"Wrong INI-file key (\"%1%:%2%\") format: \"%3%\"");
 		message % section % key % ex.what();
 		throw KeyFormatError(message.str().c_str());
 	}
@@ -260,10 +267,17 @@ IniFile::AbsoluteOrPercentsPrice IniFile::ReadAbsoluteOrPercentsPriceKey(
 
 bool IniFile::ReadBoolKey(const std::string &section, const std::string &key) const {
 	const std::string val = ReadKey(section, key, false);
-	if (boost::iequals(val, "true") || boost::iequals(val, "yes") || val == "1") {
+	if (	boost::iequals(val, "true")
+			|| boost::iequals(val, "yes")
+			|| val == "1") {
 		return true;
-	} else if (!boost::iequals(val, "false") && !boost::iequals(val, "no") && val != "0") {
-		boost::format message("Wrong INI-file key (\"%1%:%2%\") format: \"for boolean available values: true/false, yes/no, 1/0");
+	} else if (
+				!boost::iequals(val, "false")
+				&& !boost::iequals(val, "no")
+				&& val != "0") {
+		boost::format message(
+			"Wrong INI-file key (\"%1%:%2%\") format:"
+				" \"for boolean available values: true/false, yes/no, 1/0");
 		message % section % key;
 		throw KeyFormatError(message.str().c_str());
 	} else {

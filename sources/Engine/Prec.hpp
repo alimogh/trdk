@@ -21,6 +21,8 @@
 #	include <boost/thread.hpp>
 #	include <boost/algorithm/string.hpp>
 #	include <boost/regex.hpp>
+#	include <boost/variant/apply_visitor.hpp>
+#	include <boost/variant/variant.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

@@ -186,3 +186,9 @@ namespace Trader {
 	};
 
 }
+
+namespace std {
+	TRADER_CORE_API std::ostream & operator <<(
+				std::ostream &,
+				const Trader::Security &);
+}

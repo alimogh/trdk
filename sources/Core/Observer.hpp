@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "Security.hpp"
 #include "Module.hpp"
 #include "Api.h"
 
@@ -24,6 +23,10 @@ namespace Trader {
 
 	public:
 
+		using boost::enable_shared_from_this<Trader::Observer>::shared_from_this;
+
+	public:
+
 		Observer(
 				const std::string &tag,
 				const Trader::Observer::NotifyList &,
@@ -32,17 +35,11 @@ namespace Trader {
 
 	public:
 
-		const NotifyList & GetNotifyList() const;
+		virtual const std::string & GetTypeName() const;
 
 	public:
 
-		virtual void OnNewTrade(
-					const Trader::Security &,
-					const boost::posix_time::ptime &,
-					Trader::Security::ScaledPrice price,
-					Trader::Security::Qty qty,
-					bool isBuy)
-				= 0;
+		const NotifyList & GetNotifyList() const;
 
 	protected:
 

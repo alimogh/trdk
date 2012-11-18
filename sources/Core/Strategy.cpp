@@ -29,3 +29,8 @@ PositionReporter & Strategy::GetPositionReporter() {
 	}
 	return *m_positionReporter;
 }
+
+const std::string & Strategy::GetTypeName() const {
+	static const std::string typeName = "Strategy";
+	return typeName;
+}

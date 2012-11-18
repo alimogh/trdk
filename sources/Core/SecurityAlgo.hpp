@@ -43,16 +43,18 @@ namespace Trader {
 
 	protected:
 
+		virtual void UpdateAlogImplSettings(
+					const Trader::Lib::IniFileSectionRef &)
+				= 0;
+
+	protected:
+
 		boost::shared_ptr<Trader::Security> GetSecurity();
 
 		Trader::Security::Qty CalcQty(
 					Trader::Security::ScaledPrice,
 					Trader::Security::ScaledPrice volume)
 				const;
-
-		virtual void UpdateAlogImplSettings(
-					const Trader::Lib::IniFileSectionRef &)
-				= 0;
 
 		void ReportSettings(const SettingsReport::Report &) const;
 

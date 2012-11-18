@@ -7,6 +7,8 @@
  **************************************************************************/
 
 #pragma once
+
+#include "Security.hpp"
 #include "Api.h"
 
 namespace Trader {
@@ -20,12 +22,24 @@ namespace Trader {
 
 	public:
 
+		virtual const std::string & GetTypeName() const = 0;
 		virtual const std::string & GetName() const = 0;
 		const std::string & GetTag() const throw();
 
 	public:
 
 		virtual void NotifyServiceStart(const Trader::Service &);
+
+	public:
+
+		virtual void OnNewTrade(
+					const Trader::Security &,
+					const boost::posix_time::ptime &,
+					Trader::Security::ScaledPrice price,
+					Trader::Security::Qty qty,
+					bool isBuy);
+
+		virtual void OnServiceDataUpdate(const Trader::Service &);
 
 	private:
 
@@ -35,3 +49,8 @@ namespace Trader {
 
 }
 
+namespace std {
+	TRADER_CORE_API std::ostream & operator <<(
+				std::ostream &,
+				const Trader::Module &);
+}

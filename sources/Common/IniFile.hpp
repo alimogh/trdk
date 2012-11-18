@@ -16,6 +16,7 @@
 #	include <boost/lexical_cast.hpp>
 #	include <boost/filesystem.hpp>
 #	include <boost/format.hpp>
+#	include <boost/algorithm/string/predicate.hpp>
 #include "DisableBoostWarningsEnd.h"
 #include <list>
 #include <set>
@@ -98,6 +99,15 @@ namespace Trader { namespace Lib {
 
 		};
 
+		struct SectionLess
+				: public std::binary_function<std::string, std::string, bool> {
+			bool operator ()(const std::string &l, const std::string& r) const {
+				return boost::ilexicographical_compare(l, r);
+			}
+		};
+
+		typedef std::set<std::string, SectionLess> SectionList;
+
 	public:
 
 		explicit IniFile(const boost::filesystem::path &);
@@ -113,7 +123,7 @@ namespace Trader { namespace Lib {
 
 	public:
 
-		std::set<std::string> ReadSectionsList() const;
+		SectionList ReadSectionsList() const;
 
 		void ReadSection(
 					const std::string &section,

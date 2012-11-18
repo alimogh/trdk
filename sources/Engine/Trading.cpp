@@ -62,6 +62,57 @@ namespace {
 	typedef std::map<IniFile::Symbol, ModuleService> ServicesBySymbol;
 	typedef std::map<std::string /*tag*/, ServicesBySymbol> Services;
 
+	template<typename T>
+	struct ModuleNamePolicy {
+		//...//
+	};
+	template<>
+	struct ModuleNamePolicy<Strategy> {
+		static const char * GetName() {
+			return "strategy";
+		}
+	};
+	template<>
+	struct ModuleNamePolicy<Observer> {
+		static const char * GetName() {
+			return "observer";
+		}
+	};
+	template<>
+	struct ModuleNamePolicy<Service> {
+		static const char * GetName() {
+			return "service";
+		}
+	};
+
+	bool GetModuleSection(
+				const std::string &section,
+				std::string &typeResult,
+				std::string &tagResult) {
+		std::list<std::string> subs;
+		boost::split(subs, section, boost::is_any_of("."));
+		if (subs.empty()) {
+			return false;
+		} else if (
+				!boost::iequals(*subs.begin(), Ini::Sections::strategy)
+				&& !boost::iequals(*subs.begin(), Ini::Sections::observer)
+				&& !boost::iequals(*subs.begin(), Ini::Sections::service)) {
+			return false;
+		} else if (subs.size() != 2 || subs.rbegin()->empty()) {
+			char *detail = subs.size() < 2 || subs.rbegin()->empty()
+				?	"Expected tag name after dot"
+				:	"No extra dots allowed";
+			Log::Error(
+				"Wrong module section name format: \"%1%\". %2%.",
+				section,
+				detail);
+			throw Exception("Wrong module section name format");
+		}
+		subs.begin()->swap(typeResult);
+		subs.rbegin()->swap(tagResult);
+		return true;
+	}
+
 }
 
 namespace {
@@ -88,9 +139,7 @@ namespace {
 				settings,
 				find(logMdSymbols.begin(), logMdSymbols.end(), symbol.symbol)
 					!= logMdSymbols.end());
-			Log::Info(
-				"Loaded security \"%1%\".",
-				securititesTmp[symbol]->GetFullSymbol());
+			Log::Info("Loaded security \"%1%\".", *securititesTmp[symbol]);
 		}
 		securititesTmp.swap(securities);
 	}
@@ -122,7 +171,7 @@ namespace {
 			Log::Error(
 				"Failed to get %1% module: \"%2%\".",
 				moduleType,
-				ex.what());
+				ex);
 			throw IniFile::Error("Failed to load module");
 		}
 
@@ -133,7 +182,7 @@ namespace {
 			Log::Error(
 				"Failed to get %1% fabric name module: \"%2%\".",
 				moduleType,
-				ex.what());
+				ex);
 			throw IniFile::Error("Failed to load module");
 		}
 
@@ -144,7 +193,7 @@ namespace {
 			symbolsFilePath
 				= ini.ReadKey(section, Ini::Key::symbols, false);
 		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to get symbols file: \"%1%\".", ex.what());
+			Log::Error("Failed to get symbols file: \"%1%\".", ex);
 			throw;
 		}
 
@@ -174,10 +223,7 @@ namespace {
 				settings,
 				ini);
 		} catch (const IniFile::Error &ex) {
-			Log::Error(
-				"Failed to load securities for %2%: \"%1%\".",
-				ex.what(),
-				tag);
+			Log::Error("Failed to load securities for %2%: \"%1%\".", ex, tag);
 			throw IniFile::Error("Failed to load strategy");
 		}
 	
@@ -244,13 +290,9 @@ namespace {
 			modules[symbolInstance->GetTag()][symbol]
 				= DllObjectPtr<Module>(dll, symbolInstance);
 			Log::Info(
-				"Loaded %1% \"%2%\" for \"%3%\" with tag \"%4%\".",
-				ModuleNamePolicy<Module>::GetName(),
-				symbolInstance->GetName(),
-				const_cast<const Module &>(*symbolInstance)
-					.GetSecurity()
-					->GetFullSymbol(),
-				symbolInstance->GetTag());
+				"Loaded \"%1%\" for \"%2%\".",
+				*symbolInstance,
+				*const_cast<const Module &>(*symbolInstance).GetSecurity());
 		}
 	
 	}
@@ -283,9 +325,11 @@ namespace {
 				const auto cleanRequest = boost::trim_copy(serviceRequest);
 				if (!boost::regex_match(cleanRequest, what, expr)) {
 					Log::Error(
-						"Failed to parse service request \"%1%\" for \"%2%\".",
+						"Failed to parse service request \"%1%\" for \"%2%\"."
+							" Expected: \"%1%[$%3%]\".",
 						serviceRequest,
-						tag);
+						tag,
+						Ini::Variables::currentSymbol);
 					throw Exception("Failed to load strategy");
 				}
 				if (what.str(2)[0] == '$') {
@@ -312,13 +356,14 @@ namespace {
 	void InitStrategy(
 				const IniFile &ini,
 				const std::string &section,
+				const std::string &tag,
 				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
 				Securities &securities,
 				Strategies &strategies,
 				StrategyServices &strategyServices,
 				boost::shared_ptr<Settings> settings) {
-		const std::string tag = section.substr(Ini::Sections::strategy.size());
+		Log::Info("Found strategy section \"%1%\"...", section);
 		InitModuleBySymbol(
 			ini,
 			section,
@@ -337,14 +382,14 @@ namespace {
 	void InitObserver(
 				const IniFile &ini,
 				const std::string &section,
+				const std::string &tag,
 				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
 				Securities &securities,
 				Observers &observers,
 				boost::shared_ptr<Settings> settings)  {
 
-		const std::string tag
-			= section.substr(Ini::Sections::observer.size());
+		Log::Info("Found observer section \"%1%\"...", section);
 
 		std::set<IniFile::Symbol> symbols;
 		boost::shared_ptr<Dll> dll;
@@ -390,23 +435,21 @@ namespace {
 
 		Assert(observers.find(tag) == observers.end());
 		observers[tag] = DllObjectPtr<Observer>(dll, newObserver);
-		Log::Info(
-			"Loaded observer \"%1%\" with tag \"%2%\".",
-			newObserver->GetName(),
-			newObserver->GetTag());
+		Log::Info("Loaded \"%1%\".", *newObserver);
 	
 	}
 
 	void InitService(
 				const IniFile &ini,
 				const std::string &section,
+				const std::string &tag,
 				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
 				Securities &securities,
 				Services &services,
+				StrategyServices &strategyServices,
 				boost::shared_ptr<Settings> settings)  {
-		const std::string tag
-			= section.substr(Ini::Sections::service.size());
+		Log::Info("Found service section \"%1%\"...", section);
 		if (	boost::iequals(tag, Ini::Constants::Services::level1)
 				|| boost::iequals(tag, Ini::Constants::Services::trades)) {
 			Log::Info(
@@ -424,12 +467,16 @@ namespace {
 			securities,
 			services,
 			settings);
+		ReadServicesRequest(
+			IniFileSectionRef(ini, section),
+			tag,
+			strategyServices);
 	}
 
 	template<typename Module>
 	void BindWithServices(
 				const StrategyServices &binding,
-				const Services &services,
+				Services &services,
 				const IniFile &ini,
 				const IniFile::Symbol &symbol,
 				Module &module,
@@ -437,10 +484,7 @@ namespace {
 		
 		const auto bindingInfo = binding.find(module.GetTag());
 		if (bindingInfo == binding.end()) {
-			Log::Error(
-				"No services provided for %1% \"%2%\".",
-				ModuleNamePolicy<Module>::GetName(),
-				module.GetTag());
+			Log::Error("No services provided for \"%1%\".", module);
 			throw Exception("No services provided");
 		}
 
@@ -450,10 +494,9 @@ namespace {
 			const auto service = services.find(info.tag);
 			if (service == services.end()) {
 				Log::Error(
-					"Unknown service \"%1%\" provided for %2% \"%3%\".",
+					"Unknown service \"%1%\" provided for \"%2%\".",
 					info.tag,
-					ModuleNamePolicy<Module>::GetName(),
-					module.GetTag());
+					module);
 				throw Exception("Unknown service provided");
 			}
 			IniFile::Symbol bindedSymbol;
@@ -463,10 +506,9 @@ namespace {
 							info.symbol.substr(1),
 							Ini::Variables::currentSymbol)) {
 					Log::Error(
-						"Unknown service symbol \"%1%\" provided for %2% \"%3%\".",
+						"Unknown service symbol \"%1%\" provided for \"%2%\".",
 						info.symbol,
-						ModuleNamePolicy<Module>::GetName(),
-						module.GetTag());
+						module);
 					throw Exception("Unknown service symbol provided");
 				}
 				bindedSymbol = symbol;
@@ -485,12 +527,12 @@ namespace {
 			const auto serviceSymbol = service->second.find(bindedSymbol);
 			if (serviceSymbol == service->second.end()) {
 				Log::Error(
-					"Unknown service symbol \"%1%\" provided for %2% \"%3%\".",
+					"Unknown service symbol \"%1%\" provided for \"%2%\".",
 					bindedSymbol,
-					ModuleNamePolicy<Module>::GetName(),
-					module.GetTag());
+					module);
 				throw Exception("Unknown service symbol provided");
 			}
+			serviceSymbol->second->RegisterSubscriber(module);
 			module.NotifyServiceStart(serviceSymbol->second);
 			isAnyService = true;
 		}
@@ -506,10 +548,7 @@ namespace {
 		}
 
 		if (!isAnyService) {
-			Log::Error(
-				"No services provided for %1% \"%2%\".",
-				ModuleNamePolicy<Module>::GetName(),
-				module.GetTag());
+			Log::Error("No services provided for \"%1%\".", module);
 			throw Exception("No services provided");
 		}
 
@@ -525,19 +564,22 @@ namespace {
 				Services &services,
 				boost::shared_ptr<Settings> settings)  {
 
-		const std::set<std::string> sections = ini.ReadSectionsList();
+		const auto sections = ini.ReadSectionsList();
 
 		Securities securities;
 		StrategyServices strategyServices;
 		foreach (const auto &section, sections) {
-			if (boost::starts_with(section, Ini::Sections::strategy)) {
-				Log::Info(
-					"Found strategy section \"%1%\"...",
-					section);
+			std::string type;
+			std::string tag;
+			if (!GetModuleSection(section, type, tag)) {
+				continue;
+			}
+			if (boost::iequals(type, Ini::Sections::strategy)) {
 				try {
 					InitStrategy(
 						ini,
 						section,
+						tag,
 						tradeSystem,
 						*marketDataSource,
 						securities,
@@ -546,17 +588,18 @@ namespace {
 						settings);
 				} catch (const Exception &ex) {
 					Log::Error(
-						"Failed to load strategy module from section \"%1%\": \"%2%\".",
+						"Failed to load strategy module from section \"%1%\":"
+							" \"%2%\".",
 						section,
-						ex.what());
+						ex);
 					throw Exception("Failed to load strategy module");
 				}
-			} else if (boost::starts_with(section, Ini::Sections::observer)) {
-				Log::Info("Found observer section \"%1%\"...", section);
+			} else if (boost::iequals(type, Ini::Sections::observer)) {
 				try {
 					InitObserver(
 						ini,
 						section,
+						tag,
 						tradeSystem,
 						*marketDataSource,
 						securities,
@@ -564,29 +607,33 @@ namespace {
 						settings);
 				} catch (const Exception &ex) {
 					Log::Error(
-						"Failed to load observer module from section \"%1%\": \"%2%\".",
+						"Failed to load observer module from section \"%1%\":"
+							" \"%2%\".",
 						section,
-						ex.what());
+						ex);
 					throw Exception("Failed to load observer module");
 				}
-			} else if (boost::starts_with(section, Ini::Sections::service)) {
-				Log::Info("Found service section \"%1%\"...", section);
+			} else if (boost::iequals(type, Ini::Sections::service)) {
 				try {
 					InitService(
 						ini,
 						section,
+						tag,
 						tradeSystem,
 						*marketDataSource,
 						securities,
 						services,
+						strategyServices,
 						settings);
 				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to load service module from section \"%1%\": \"%2%\".",
 						section,
-						ex.what());
+						ex);
 					throw Exception("Failed to load service module");
 				}
+			} else {
+				AssertFail("Unknown module type");
 			}
 		}
 
@@ -635,37 +682,31 @@ namespace {
 			"Detected INI-file %1% modification, updating current settings...",
 			iniFilePath);
 		const IniFile ini(iniFilePath);
-		std::set<std::string> sections;
+		IniFile::SectionList sections;
 		try {
 			sections = ini.ReadSectionsList();
 		} catch (const IniFile::Error &ex) {
-			Log::Error("Failed to get sections list: \"%1%\".", ex.what());
+			Log::Error("Failed to get sections list: \"%1%\".", ex);
 			return;
 		}
 		foreach (const auto &sectionName, sections) {
-			if (sectionName == Ini::Sections::common) {
+			if (boost::iequals(sectionName, Ini::Sections::common)) {
 				try {
 					settings.Update(ini, sectionName);
 				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to update common settings: \"%1%\".",
-						ex.what());
+						ex);
 				}
 				continue;
 			}
+			std::string type;
+			std::string tag;
+			if (	!GetModuleSection(sectionName, type, tag)
+					|| !boost::iequals(tag, Ini::Sections::strategy)) {
+				continue;
+			}
 			bool isError = false;
-			std::string strategyName;
-			if (!boost::starts_with(sectionName, Ini::Sections::strategy)) {
-				continue;
-			}
-			const std::string tag
-				= sectionName.substr(Ini::Sections::strategy.size());
-			if (tag.empty()) {
-				Log::Error(
-					"Failed to get tag for strategy section \"%1%\".",
-					sectionName);
-				continue;
-			}
 			const Strategies::iterator pos = strategies.find(tag);
 			if (pos == strategies.end()) {
 				Log::Warn(
@@ -682,7 +723,7 @@ namespace {
 				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to update current settings: \"%1%\".",
-						ex.what());
+						ex);
 					isError = true;
 					break;
 				}
@@ -769,7 +810,7 @@ void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 			services,
 			settings);
 	} catch (const Exception &ex) {
-		Log::Error("Failed to init trading: \"%1%\".", ex.what());
+		Log::Error("Failed to init trading: \"%1%\".", ex);
 		return;
 	}
 
@@ -788,7 +829,7 @@ void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 		Connect(*tradeSystem, ini, Ini::Sections::tradeSystem);
 		Connect(*marketDataSource);
 	} catch (const Exception &ex) {
-		Log::Error("Failed to make trading connections: \"%1%\".", ex.what());
+		Log::Error("Failed to make trading connections: \"%1%\".", ex);
 		throw Exception("Failed to make trading connections");
 	}
 

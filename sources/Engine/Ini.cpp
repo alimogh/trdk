@@ -18,10 +18,10 @@ using namespace Trader::Engine::Ini;
 
 const std::string Sections::common = "Common";
 const std::string Sections::defaults = "Defaults";
-const std::string Sections::strategy = "Strategy.";
+const std::string Sections::strategy = "Strategy";
 const std::string Sections::tradeSystem = "TradeSystem";
-const std::string Sections::observer = "Observer.";
-const std::string Sections::service = "Service.";
+const std::string Sections::observer = "Observer";
+const std::string Sections::service = "Service";
 const std::string Sections::MarketData::source = "MarketData.Source";
 
 const std::string Sections::MarketData::Log::symbols = "MarketData.Log.Symbols";

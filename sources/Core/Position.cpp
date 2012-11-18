@@ -245,7 +245,7 @@ void Position::UpdateClosing(
 			Log::Error(
 				"Position CLOSE error: symbol: \"%1%\", strategy %2%"
 					", trade system state: %3%, orders ID: %4%->%5%, qty: %6%->%7%.",
-				GetSecurity().GetFullSymbol(),
+				GetSecurity(),
 				m_tag,
 				orderStatus,
 				m_opened.lastOrderId,
