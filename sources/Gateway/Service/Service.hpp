@@ -69,11 +69,11 @@ namespace Trader { namespace Gateway {
 		virtual const std::string & GetName() const;
 
 		virtual void OnNewTrade(
-				const Trader::Security &,
-				const boost::posix_time::ptime &,
-				Trader::Security::ScaledPrice,
-				Trader::Security::Qty,
-				bool isBuy);
+					const Trader::Security &,
+					const boost::posix_time::ptime &,
+					Trader::ScaledPrice,
+					Trader::Qty,
+					bool isBuy);
 
 	public:
 
@@ -95,24 +95,24 @@ namespace Trader { namespace Gateway {
 		void OrderBuy(
 					const std::string &symbol,
 					const std::string &venue,
-					Security::ScaledPrice,
-					Security::Qty,
+					Trader::ScaledPrice,
+					Trader::Qty,
 					std::string &resultMessage);
 		void OrderBuyMkt(
 					const std::string &symbol,
 					const std::string &venue,
-					Security::Qty,
+					Trader::Qty,
 					std::string &resultMessage);
 		void OrderSell(
 					const std::string &symbol,
 					const std::string &venue,
-					Security::ScaledPrice,
-					Security::Qty,
+					Trader::ScaledPrice,
+					Trader::Qty,
 					std::string &resultMessage);
 		void OrderSellMkt(
 					const std::string &symbol,
 					const std::string &venue,
-					Security::Qty,
+					Trader::Qty,
 					std::string &resultMessage);
 
 	public:

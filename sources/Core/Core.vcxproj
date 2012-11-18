@@ -101,6 +101,7 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Settings.hpp" />
     <ClInclude Include="TradeSystem.hpp" />
+    <ClInclude Include="Types.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.vcxproj">

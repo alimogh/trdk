@@ -53,10 +53,10 @@ namespace Trader { namespace Interaction { namespace Fake {
 
 			void SignaleNewTrade(
 						const boost::posix_time::ptime &time,
-						bool isBuy,
+						OrderSide side,
 						ScaledPrice price,
 						Qty qty) {
-				Base::SignalNewTrade(time, isBuy, price, qty);
+				Base::SignalNewTrade(time, side, price, qty);
 			}
 
 		};

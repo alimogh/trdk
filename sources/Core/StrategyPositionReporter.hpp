@@ -164,7 +164,7 @@ namespace Trader {
 
 			// P/L
 			{
-				Trader::Security::ScaledPrice pl = 0;
+				Trader::ScaledPrice pl = 0;
 				switch (position.GetType()) {
 					case Trader::Position::TYPE_LONG:
 						pl = position.GetClosePrice() - position.GetOpenPrice();

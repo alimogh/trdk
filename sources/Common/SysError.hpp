@@ -30,12 +30,12 @@
 
 namespace Trader { namespace Lib {	 
 
-	class Error {
+	class SysError {
 
 	public:
 
-		explicit Error(int errorNo) throw();
-		~Error() throw();
+		explicit SysError(int errorNo) throw();
+		~SysError() throw();
 
 	public:
 
@@ -58,8 +58,8 @@ namespace Trader { namespace Lib {
 
 namespace std {
 
-	std::ostream & operator <<(std::ostream &, const Trader::Lib::Error &);
-	std::wostream & operator <<(std::wostream &, const Trader::Lib::Error &);
+	std::ostream & operator <<(std::ostream &, const Trader::Lib::SysError &);
+	std::wostream & operator <<(std::wostream &, const Trader::Lib::SysError &);
 
 }
 

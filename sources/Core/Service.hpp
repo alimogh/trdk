@@ -26,6 +26,24 @@ namespace Trader {
 			Subscriber;
 		typedef std::list<Subscriber> Subscribers;
 
+		//! Data state revision number.
+		/** 
+		  * Can only grow.
+		  * 
+		  * Use Trader::Service::initialRevision for initial data, and
+		  * Trader::Service::nRevision if no data exists immediately after
+		  * creation.
+		  * 
+		  * @sa Trader::Service::nRevision
+		  * @sa Trader::Service::initialRevision
+		  */
+		typedef long long Revision;
+
+	public:
+
+		static const Revision nRevision;
+		static const Revision initialRevision;
+
 	public:
 
 		using boost::enable_shared_from_this<Trader::Service>::shared_from_this;
@@ -48,9 +66,11 @@ namespace Trader {
 		void RegisterSubscriber(Trader::Observer &);
 		const Subscribers & GetSubscribers() const;
 
-		bool HasNewData() const throw();
-		void SetNewDataState() throw();
-		void ResetNewDataState() throw();
+		//! Returns current data state revision.
+		/** Engine dispatcher will notify service subscribers only if revision
+		  * has been changed from last call. Must be thread-safe.
+		  */
+		virtual Revision GetCurrentRevision() const = 0;
 
 	private:
 

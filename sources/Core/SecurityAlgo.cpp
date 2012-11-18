@@ -27,20 +27,13 @@ SecurityAlgo::~SecurityAlgo() {
 	//...//
 }
 
-SecurityAlgo::Mutex & SecurityAlgo::GetMutex() {
-	return m_mutex;
-}
-
 void SecurityAlgo::UpdateSettings(const IniFileSectionRef &ini) {
-	const Lock lock(m_mutex);
+	const Lock lock(GetMutex());
 	UpdateAlogImplSettings(ini);
 }
 
-Security::Qty SecurityAlgo::CalcQty(
-			Security::ScaledPrice price,
-			Security::ScaledPrice volume)
-		const {
-	return std::max<Security::Qty>(1, Security::Qty(volume / price));
+Qty SecurityAlgo::CalcQty(ScaledPrice price, ScaledPrice volume) const {
+	return std::max<Qty>(1, Qty(volume / price));
 }
 
 boost::shared_ptr<const Security> SecurityAlgo::GetSecurity() const {

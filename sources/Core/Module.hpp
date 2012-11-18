@@ -8,12 +8,18 @@
 
 #pragma once
 
-#include "Security.hpp"
+#include "Types.hpp"
+#include "Fwd.hpp"
 #include "Api.h"
 
 namespace Trader {
 
 	class TRADER_CORE_API Module : private boost::noncopyable {
+
+	public:
+
+		typedef boost::mutex Mutex;
+		typedef Mutex::scoped_lock Lock;
 		
 	public:
 
@@ -28,6 +34,10 @@ namespace Trader {
 
 	public:
 
+		Mutex & GetMutex();
+
+	public:
+
 		virtual void NotifyServiceStart(const Trader::Service &);
 
 	public:
@@ -35,15 +45,16 @@ namespace Trader {
 		virtual void OnNewTrade(
 					const Trader::Security &,
 					const boost::posix_time::ptime &,
-					Trader::Security::ScaledPrice price,
-					Trader::Security::Qty qty,
-					bool isBuy);
+					Trader::ScaledPrice price,
+					Trader::Qty qty,
+					Trader::OrderSide);
 
 		virtual void OnServiceDataUpdate(const Trader::Service &);
 
 	private:
 
-		const std::string m_tag;
+		class Implementation;
+		Implementation *m_pimpl;
 
 	};
 

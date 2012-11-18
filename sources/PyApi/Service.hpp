@@ -49,6 +49,11 @@ namespace Trader { namespace PyApi {
 
 		virtual void NotifyServiceStart(const Trader::Service &);
 
+		virtual Revision GetCurrentRevision() const {
+			//! @todo Implement services support for Py API
+			throw Error("Method doesn't implemented");
+		}
+
 		operator boost::python::object &() const {
 			Assert(m_self);
 			return m_self;

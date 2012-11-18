@@ -19,7 +19,7 @@ namespace pt = boost::posix_time;
 Gateway::Service::Service(
 			const std::string &tag,
 			const Observer::NotifyList &notifyList,
-			boost::shared_ptr<Trader::TradeSystem> tradeSystem,
+			boost::shared_ptr<TradeSystem> tradeSystem,
 			const IniFile &ini,
 			const std::string &section)
 		: Observer(tag, notifyList, tradeSystem),
@@ -168,7 +168,7 @@ void Gateway::Service::StartSoapDispatcherThread() {
 			sockaddr_in hostInfo;
 			socklen_t hostInfoSize = sizeof(hostInfo);
 			if (getsockname(masterSocket, reinterpret_cast<sockaddr *>(&hostInfo), &hostInfoSize)) {
-				const Trader::Lib::Error error(GetLastError());
+				const SysError error(GetLastError());
 				Log::Error(
 					TRADER_GATEWAY_LOG_PREFFIX "failed to get to get local network port info: %1%.",
 					error);
@@ -193,9 +193,7 @@ void Gateway::Service::SoapDispatcherThread() {
 
 namespace {
 
-	time_t ConvertPosixTimeToTimeT(
-				const boost::posix_time::ptime &posixTime) {
-		namespace pt = boost::posix_time;
+	time_t ConvertPosixTimeToTimeT(const pt::ptime &posixTime) {
 		Assert(!posixTime.is_special());
 		static const pt::ptime timeTEpoch(boost::gregorian::date(1970, 1, 1));
 		Assert(!(posixTime < timeTEpoch));
@@ -209,10 +207,10 @@ namespace {
 }
 
 void Gateway::Service::OnNewTrade(
-			const Trader::Security &security,
-			const boost::posix_time::ptime &time,
-			Trader::Security::ScaledPrice price,
-			Trader::Security::Qty qty,
+			const Security &security,
+			const pt::ptime &time,
+			ScaledPrice price,
+			Qty qty,
 			bool isBuy) {
 	boost::shared_ptr<trader__Trade> update(new trader__Trade);
 	const auto date = time - time.time_of_day();
@@ -261,13 +259,13 @@ void Gateway::Service::GetLastTrades(
 	resultTmp.swap(result);
 }
 
-const Trader::Security & Gateway::Service::FindSecurity(
+const Security & Gateway::Service::FindSecurity(
 			const std::string &symbol)
 		const {
 	return const_cast<Service *>(this)->FindSecurity(symbol);
 }
 
-Trader::Security & Gateway::Service::FindSecurity(
+Security & Gateway::Service::FindSecurity(
 			const std::string &symbol) {
 	foreach (auto &security, GetNotifyList()) {
 		if (boost::iequals(security->GetSymbol(), symbol)) {
@@ -322,8 +320,8 @@ void Gateway::Service::GetCommonParams(
 void Gateway::Service::OrderBuy(
 			const std::string &symbol,
 			const std::string &venue,
-			Security::ScaledPrice price,
-			Security::Qty qty,
+			ScaledPrice price,
+			Qty qty,
 			std::string &resultMessage) {
 	try {
 		Security &security = FindSecurity(symbol);
@@ -349,7 +347,7 @@ void Gateway::Service::OrderBuy(
 void Gateway::Service::OrderBuyMkt(
 			const std::string &symbol,
 			const std::string &venue,
-			Security::Qty qty,
+			Qty qty,
 			std::string &resultMessage) {
 	try {
 		Security &security = FindSecurity(symbol);
@@ -375,8 +373,8 @@ void Gateway::Service::OrderBuyMkt(
 void Gateway::Service::OrderSell(
 			const std::string &symbol,
 			const std::string &venue,
-			Security::ScaledPrice price,
-			Security::Qty qty,
+			ScaledPrice price,
+			Qty qty,
 			std::string &resultMessage) {
 	try {
 		Security &security = FindSecurity(symbol);
@@ -402,7 +400,7 @@ void Gateway::Service::OrderSell(
 void Gateway::Service::OrderSellMkt(
 			const std::string &symbol,
 			const std::string &venue,
-			Security::Qty qty,
+			Qty qty,
 			std::string &resultMessage) {
 	try {
 		Security &security = FindSecurity(symbol);
@@ -426,7 +424,7 @@ void Gateway::Service::OrderSellMkt(
 }
 
 ShortPosition & Gateway::Service::GetShortPosition(
-			Trader::Security &security) {
+			Security &security) {
 	boost::shared_ptr<ShortPosition> &result = m_positions[&security].first;
 	if (!result || result->IsClosed()) {
 		result.reset(new ShortPosition(security.shared_from_this(), "user"));
@@ -435,7 +433,7 @@ ShortPosition & Gateway::Service::GetShortPosition(
 }
 
 LongPosition & Gateway::Service::GetLongPosition(
-			Trader::Security &security) {
+			Security &security) {
 	boost::shared_ptr<LongPosition> &result = m_positions[&security].second;
 	if (!result || result->IsClosed()) {
 		result.reset(new LongPosition(security.shared_from_this(), "user"));

@@ -30,42 +30,42 @@ namespace Trader { namespace Interaction { namespace Fake {
 
 		virtual OrderId SellAtMarketPrice(
 				const Security &,
-				OrderQty,
+				Trader::Qty,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId Sell(
 				const Security &,
-				OrderQty,
-				OrderScaledPrice,
+				Trader::Qty,
+				Trader::ScaledPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellAtMarketPriceWithStopPrice(
 				const Security &,
-				OrderQty,
-				OrderScaledPrice stopPrice,
+				Trader::Qty,
+				Trader::ScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellOrCancel(
 				const Security &,
-				OrderQty,
-				OrderScaledPrice,
+				Trader::Qty,
+				Trader::ScaledPrice,
 				const OrderStatusUpdateSlot &);
 
 		virtual OrderId BuyAtMarketPrice(
 				const Security &,
-				OrderQty,
+				Trader::Qty,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId Buy(
 				const Security &,
-				OrderQty,
-				OrderScaledPrice,
+				Trader::Qty,
+				Trader::ScaledPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
 				const Security &,
-				OrderQty,
-				OrderScaledPrice stopPrice,
+				Trader::Qty,
+				Trader::ScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyOrCancel(
 				const Security &,
-				OrderQty,
-				OrderScaledPrice,
+				Trader::Qty,
+				Trader::ScaledPrice,
 				const OrderStatusUpdateSlot &);
 
 		virtual void CancelOrder(OrderId);

@@ -29,7 +29,7 @@
 #include "Common/Foreach.hpp"
 #include "Common/IniFile.hpp"
 #include "Common/FileSystemChangeNotificator.hpp"
-#include "Common/Error.hpp"
+#include "Common/SysError.hpp"
 #include "Common/Exception.hpp"
 
 #include "Core/Log.hpp"

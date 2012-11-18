@@ -35,8 +35,8 @@ public:
 		explicit MarketDataLog(const std::string &fullSymbol);
 	public:
 		void Append(
-				const MarketDataTime &timeOfReception,
-				const MarketDataTime &lastTradeTime,
+				const pt::ptime &timeOfReception,
+				const pt::ptime &lastTradeTime,
 				double last,
 				double ask,
 				double bid);
@@ -64,7 +64,7 @@ public:
 	volatile long m_tradedVolume;
 
 	mutable MarketDataTimeMutex m_marketDataTimeMutex;
-	MarketDataTime m_marketDataTime;
+	pt::ptime m_marketDataTime;
 
 public:
 
@@ -96,7 +96,8 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-Security::Implementation::MarketDataLog::MarketDataLog(const std::string &fullSymbol) {
+Security::Implementation::MarketDataLog::MarketDataLog(
+			const std::string &fullSymbol) {
 	const fs::path filePath = Util::SymbolToFilePath(
 		Defaults::GetMarketDataLogDir(),
 		fullSymbol,
@@ -105,7 +106,9 @@ Security::Implementation::MarketDataLog::MarketDataLog(const std::string &fullSy
 	if (isNew) {
 		fs::create_directories(filePath.branch_path());
 	}
-	m_file.open(filePath.c_str(), std::ios::out | std::ios::ate | std::ios::app);
+	m_file.open(
+		filePath.c_str(),
+		std::ios::out | std::ios::ate | std::ios::app);
 	if (!m_file) {
 		Log::Error(
 			"Failed to open log file %1% for security market data.",
@@ -114,13 +117,15 @@ Security::Implementation::MarketDataLog::MarketDataLog(const std::string &fullSy
 	}
 	Log::Info("Logging \"%1%\" market data into %2%...", fullSymbol, filePath);
 	if (isNew) {
-		m_file << "time of reception,last trade time,last price,ask,bid" << std::endl;
+		m_file
+			<< "time of reception,last trade time,last price,ask,bid"
+			<< std::endl;
 	}
 }
 
 void Security::Implementation::MarketDataLog::Append(
-			const MarketDataTime &timeOfReception,
-			const MarketDataTime &lastTradeTime,
+			const pt::ptime &timeOfReception,
+			const pt::ptime &lastTradeTime,
 			double last,
 			double ask,
 			double bid) {
@@ -162,19 +167,23 @@ Security::~Security() {
 }
 
 boost::posix_time::ptime Security::GetLastMarketDataTime() const {
-	const Implementation::MarketDataTimeReadLock lock(m_pimpl->m_marketDataTimeMutex);
+	const Implementation::MarketDataTimeReadLock lock(
+		m_pimpl->m_marketDataTimeMutex);
 	Assert(!m_pimpl->m_marketDataTime.is_not_a_date_time());
 	return m_pimpl->m_marketDataTime;
 }
 
-Security::OrderId Security::SellAtMarketPrice(Qty qty, Position &position) {
+OrderId Security::SellAtMarketPrice(Qty qty, Position &position) {
 	return GetTradeSystem().SellAtMarketPrice(
 		*this,
 		qty,
 		position.GetSellOrderStatusUpdateSlot());
 }
 
-Security::OrderId Security::Sell(Qty qty, ScaledPrice price, Position &position) {
+OrderId Security::Sell(
+			Qty qty,
+			ScaledPrice price,
+			Position &position) {
 	return GetTradeSystem().Sell(
 		*this,
 		qty,
@@ -182,7 +191,7 @@ Security::OrderId Security::Sell(Qty qty, ScaledPrice price, Position &position)
 		position.GetSellOrderStatusUpdateSlot());
 }
 
-Security::OrderId Security::SellAtMarketPriceWithStopPrice(
+OrderId Security::SellAtMarketPriceWithStopPrice(
 			Qty qty,
 			ScaledPrice stopPrice,
 			Position &position) {
@@ -193,7 +202,7 @@ Security::OrderId Security::SellAtMarketPriceWithStopPrice(
 		position.GetSellOrderStatusUpdateSlot());
 }
 
-Security::OrderId Security::SellOrCancel(
+OrderId Security::SellOrCancel(
 			Qty qty,
 			ScaledPrice price,
 			Position &position) {
@@ -204,14 +213,17 @@ Security::OrderId Security::SellOrCancel(
 		position.GetSellOrderStatusUpdateSlot());
 }
 
-Security::OrderId Security::BuyAtMarketPrice(Qty qty, Position &position) {
+OrderId Security::BuyAtMarketPrice(Qty qty, Position &position) {
 	return GetTradeSystem().BuyAtMarketPrice(
 		*this,
 		qty,
 		position.GetBuyOrderStatusUpdateSlot());
 }
 
-Security::OrderId Security::Buy(Qty qty, ScaledPrice price, Position &position) {
+OrderId Security::Buy(
+			Qty qty,
+			ScaledPrice price,
+			Position &position) {
 	return GetTradeSystem().Buy(
 		*this,
 		qty,
@@ -219,7 +231,7 @@ Security::OrderId Security::Buy(Qty qty, ScaledPrice price, Position &position) 
 		position.GetBuyOrderStatusUpdateSlot());
 }
 
-Security::OrderId Security::BuyAtMarketPriceWithStopPrice(
+OrderId Security::BuyAtMarketPriceWithStopPrice(
 			Qty qty,
 			ScaledPrice stopPrice,
 			Position &position) {
@@ -230,7 +242,7 @@ Security::OrderId Security::BuyAtMarketPriceWithStopPrice(
 		position.GetBuyOrderStatusUpdateSlot());
 }
 
-Security::OrderId Security::BuyOrCancel(
+OrderId Security::BuyOrCancel(
 			Qty qty,
 			ScaledPrice price,
 			Position &position) {
@@ -241,7 +253,7 @@ Security::OrderId Security::BuyOrCancel(
 		position.GetBuyOrderStatusUpdateSlot());
 }
 
-void Security::CancelOrder(Security::OrderId orderId) {
+void Security::CancelOrder(OrderId orderId) {
 	GetTradeSystem().CancelOrder(orderId);
 }
 
@@ -253,12 +265,13 @@ Security::operator bool() const {
 	return m_pimpl->m_lastPrice && m_pimpl->m_askPrice && m_pimpl->m_bidPrice;
 }
 
-Security::ScaledPrice Security::GetLastPriceScaled() const {
+ScaledPrice Security::GetLastPriceScaled() const {
 	return m_pimpl->m_lastPrice;
 }
 
 void Security::SetLastMarketDataTime(const boost::posix_time::ptime &time) {
-	const Implementation::MarketDataTimeWriteLock lock(m_pimpl->m_marketDataTimeMutex);
+	const Implementation::MarketDataTimeWriteLock lock(
+		m_pimpl->m_marketDataTimeMutex);
 	m_pimpl->m_marketDataTime = time;
 }
 
@@ -276,12 +289,17 @@ bool Security::SetBid(double price, Qty size, size_t pos) {
 
 bool Security::SetLast(ScaledPrice price, Qty size) {
 	bool isChanged = Interlocking::Exchange(m_pimpl->m_lastPrice, price) != price;
-	isChanged = Interlocking::Exchange(m_pimpl->m_lastSize, size) != size || isChanged;
+	isChanged = Interlocking::Exchange(
+				m_pimpl->m_lastSize,
+				size)
+			!= size
+		|| isChanged;
 	return isChanged;
 }
 
 bool Security::SetAsk(ScaledPrice price, Qty qty, size_t pos) {
-	volatile long long &pricePlace = pos == 1 ? m_pimpl->m_askPrice : m_pimpl->m_askPrice2;
+	volatile long long &pricePlace
+		= pos == 1 ? m_pimpl->m_askPrice : m_pimpl->m_askPrice2;
 	volatile long &qtyPlace = pos == 1 ? m_pimpl->m_askQty : m_pimpl->m_askQty2;
 	bool isChanged = Interlocking::Exchange(pricePlace, price) != price;
 	isChanged = Interlocking::Exchange(qtyPlace, qty) != qty || isChanged;
@@ -289,7 +307,8 @@ bool Security::SetAsk(ScaledPrice price, Qty qty, size_t pos) {
 }
 
 bool Security::SetBid(ScaledPrice price, Qty qty, size_t pos) {
-	volatile long long &pricePlace = pos == 1 ? m_pimpl->m_bidPrice : m_pimpl->m_bidPrice2;
+	volatile long long &pricePlace
+		= pos == 1 ? m_pimpl->m_bidPrice : m_pimpl->m_bidPrice2;
 	volatile long &qtyPlace = pos == 1 ? m_pimpl->m_bidQty : m_pimpl->m_bidQty2;
 	bool isChanged = Interlocking::Exchange(pricePlace, price) != price;
 	isChanged = Interlocking::Exchange(qtyPlace, qty) != qty || isChanged;
@@ -300,15 +319,15 @@ double Security::GetLastPrice() const {
 	return DescalePrice(GetLastPriceScaled());
 }
 
-Security::Qty Security::GetLastQty() const {
+Qty Security::GetLastQty() const {
 	return m_pimpl->m_lastSize;
 }
 
-Security::Qty Security::GetTradedVolume() const {
+Qty Security::GetTradedVolume() const {
 	return m_pimpl->m_tradedVolume;
 }
 
-Security::ScaledPrice Security::GetAskPriceScaled(size_t pos) const {
+ScaledPrice Security::GetAskPriceScaled(size_t pos) const {
 	return pos == 1 ? m_pimpl->m_askPrice : m_pimpl->m_askPrice2;
 }
 
@@ -316,11 +335,11 @@ double Security::GetAskPrice(size_t pos) const {
 	return DescalePrice(GetAskPriceScaled(pos));
 }
 
-Security::Qty Security::GetAskQty(size_t pos) const {
+Qty Security::GetAskQty(size_t pos) const {
 	return pos == 1 ? m_pimpl->m_askQty : m_pimpl->m_askQty2;
 }
 
-Security::ScaledPrice Security::GetBidPriceScaled(size_t pos) const {
+ScaledPrice Security::GetBidPriceScaled(size_t pos) const {
 	return pos == 1 ? m_pimpl->m_bidPrice : m_pimpl->m_bidPrice2;
 }
 
@@ -328,7 +347,7 @@ double Security::GetBidPrice(size_t pos) const {
 	return DescalePrice(GetBidPriceScaled(pos));
 }
 
-Security::Qty Security::GetBidQty(size_t pos) const {
+Qty Security::GetBidQty(size_t pos) const {
 	return pos == 1 ? m_pimpl->m_bidQty : m_pimpl->m_bidQty2;
 }
 
@@ -359,7 +378,7 @@ void Security::SignalLevel1Update() {
 
 void Security::SignalNewTrade(
 			const boost::posix_time::ptime &time,
-			bool isBuy,
+			OrderSide side,
 			ScaledPrice price,
 			Qty qty) {
 	using namespace Interlocking;
@@ -370,7 +389,7 @@ void Security::SignalNewTrade(
 			break;
 		}
 	}
-	m_pimpl->m_tradeSignal(time, price, qty, isBuy);
+	m_pimpl->m_tradeSignal(time, price, qty, side);
 }
 
 //////////////////////////////////////////////////////////////////////////

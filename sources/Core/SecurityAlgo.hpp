@@ -10,17 +10,11 @@
 
 #include "SettingsReport.hpp"
 #include "Module.hpp"
-#include "Security.hpp"
 #include "Api.h"
 
 namespace Trader {
 
 	class TRADER_CORE_API SecurityAlgo : public Trader::Module {
-
-	public:
-
-		typedef boost::mutex Mutex;
-		typedef Mutex::scoped_lock Lock;
 
 	public:
 
@@ -34,8 +28,6 @@ namespace Trader {
 		boost::shared_ptr<const Trader::Security> GetSecurity() const;
 
 		void UpdateSettings(const Trader::Lib::IniFileSectionRef &);
-
-		Mutex & GetMutex();
 
 	public:
 
@@ -51,9 +43,9 @@ namespace Trader {
 
 		boost::shared_ptr<Trader::Security> GetSecurity();
 
-		Trader::Security::Qty CalcQty(
-					Trader::Security::ScaledPrice,
-					Trader::Security::ScaledPrice volume)
+		Trader::Qty CalcQty(
+					Trader::ScaledPrice,
+					Trader::ScaledPrice volume)
 				const;
 
 		void ReportSettings(const SettingsReport::Report &) const;
@@ -62,7 +54,6 @@ namespace Trader {
 
 	private:
 
-		Mutex m_mutex;
 		const boost::shared_ptr<Trader::Security> m_security;
 
 	};

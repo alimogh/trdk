@@ -22,7 +22,8 @@ int trader__GetLastTrades(
 			std::string symbol,
 			std::string exchange,
 			std::list<trader__Trade> &result) {
-	reinterpret_cast<Service *>(soap->user)->GetLastTrades(symbol, exchange, result);
+	reinterpret_cast<Service *>(soap->user)
+		->GetLastTrades(symbol, exchange, result);
 	return SOAP_OK;
 }
 
@@ -31,7 +32,8 @@ int trader__GetParams(
 			std::string symbol,
 			std::string exchange,
 			trader__ExchangeBook &result) {
-	reinterpret_cast<Service *>(soap->user)->GetParams(symbol, exchange, result);
+	reinterpret_cast<Service *>(soap->user)
+		->GetParams(symbol, exchange, result);
 	return SOAP_OK;
 }
 
@@ -54,7 +56,7 @@ int trader__OrderBuy(
 		symbol,
 		venue,
 		price,
-		Trader::Security::Qty(qty),
+		Trader::Qty(qty),
 		*result);
 	return SOAP_OK;
 }
@@ -68,7 +70,7 @@ int trader__OrderBuyMkt(
 	reinterpret_cast<Service *>(soap->user)->OrderBuyMkt(
 		symbol,
 		venue,
-		Trader::Security::Qty(qty),
+		Trader::Qty(qty),
 		*result);
 	return SOAP_OK;
 }
@@ -84,7 +86,7 @@ int trader__OrderSell(
 		symbol,
 		venue,
 		price,
-		Trader::Security::Qty(qty),
+		Trader::Qty(qty),
 		*result);
 	return SOAP_OK;
 }
@@ -98,7 +100,7 @@ int trader__OrderSellMkt(
 	reinterpret_cast<Service *>(soap->user)->OrderSellMkt(
 		symbol,
 		venue,
-		Trader::Security::Qty(qty),
+		Trader::Qty(qty),
 		*result);
 	return SOAP_OK;
 }

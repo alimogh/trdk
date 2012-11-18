@@ -27,7 +27,11 @@ void MarketDataSource::NotificationThread() {
 	try {
 		for ( ; ; ) {
 			foreach (boost::shared_ptr<Security> s, m_securityList) {
-				s->SignaleNewTrade(boost::get_system_time(), true, 10, 20);
+				s->SignaleNewTrade(
+					boost::get_system_time(),
+					ORDER_SIDE_BUY,
+					10,
+					20);
 			}
 			boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 		}

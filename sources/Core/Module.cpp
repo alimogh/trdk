@@ -13,17 +13,35 @@
 using namespace Trader;
 using namespace Trader::Lib;
 
+class Module::Implementation : private boost::noncopyable {
+
+public:
+
+	Mutex m_mutex;
+	const std::string m_tag;
+
+	explicit Implementation(const std::string &tag)
+			: m_tag(tag) {
+		//...//
+	}
+
+};
+
 Module::Module(const std::string &tag)
-		: m_tag(tag) {
+		: m_pimpl(new Implementation(tag)) {
 	//...//
 }
 
 Module::~Module() {
-	//...//
+	delete m_pimpl;
+}
+
+Module::Mutex & Module::GetMutex() {
+	return m_pimpl->m_mutex;
 }
 
 const std::string & Module::GetTag() const throw() {
-	return m_tag;
+	return m_pimpl->m_tag;
 }
 
 void Module::NotifyServiceStart(const Service &service) {
@@ -39,9 +57,9 @@ void Module::NotifyServiceStart(const Service &service) {
 void Module::OnNewTrade(
 					const Trader::Security &,
 					const boost::posix_time::ptime &,
-					Trader::Security::ScaledPrice,
-					Trader::Security::Qty,
-					bool) {
+					ScaledPrice,
+					Qty,
+					OrderSide) {
 	Log::Error(
 		"\"%1%\" subscribed to new trades, but can't work with it"
 			" (hasn't implementation of OnNewTrade).",

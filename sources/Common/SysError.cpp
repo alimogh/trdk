@@ -7,7 +7,7 @@
  *       URL: http://tunnelex.net
  **************************************************************************/
 
-#include "Error.hpp"
+#include "SysError.hpp"
 #include "DisableBoostWarningsBegin.h"
 #	include <boost/config.hpp>
 #	include <boost/shared_ptr.hpp>
@@ -23,16 +23,16 @@
 
 using namespace Trader::Lib;
 
-Error::Error(int errorNo) throw()
+SysError::SysError(int errorNo) throw()
 		: m_errorNo(errorNo) {
 	//...//
 }
 
-Error::~Error() throw() {
+SysError::~SysError() throw() {
 	//...//
 }
 
-bool Error::IsError() const {
+bool SysError::IsError() const {
 #	ifdef BOOST_WINDOWS
 		return GetErrorNo() != NOERROR;
 #	else
@@ -40,7 +40,7 @@ bool Error::IsError() const {
 #	endif
 }
 
-bool Error::CheckError() const {
+bool SysError::CheckError() const {
 #	ifdef BOOST_WINDOWS
 		LPVOID buffer;
 		const auto formatResult = ::FormatMessageW(
@@ -108,7 +108,7 @@ bool Error::CheckError() const {
 
 #endif
 
-std::wstring Error::GetStringW() const {
+std::wstring SysError::GetStringW() const {
 #	ifdef BOOST_WINDOWS
 		return GetStringFromSys<std::wstring>(m_errorNo, ::FormatMessageW);
 #	else // BOOST_WINDOWS
@@ -117,7 +117,7 @@ std::wstring Error::GetStringW() const {
 #	endif // BOOST_WINDOWS
 }
 
-std::string Error::GetString() const {
+std::string SysError::GetString() const {
 #	ifdef BOOST_WINDOWS
 		return GetStringFromSys<std::string>(m_errorNo, ::FormatMessageA);
 #	else // BOOST_WINDOWS
@@ -125,16 +125,16 @@ std::string Error::GetString() const {
 #	endif // BOOST_WINDOWS
 }
 
-int Error::GetErrorNo() const {
+int SysError::GetErrorNo() const {
 	return m_errorNo;
 }
 
-std::ostream & std::operator <<(std::ostream &os, const Error &error) {
+std::ostream & std::operator <<(std::ostream &os, const SysError &error) {
 	os << error.GetString() << " (code: " << error.GetErrorNo() << ")";
 	return os;
 }
 
-std::wostream & std::operator <<(std::wostream &os, const Error &error) {
+std::wostream & std::operator <<(std::wostream &os, const SysError &error) {
 	os << error.GetStringW() << " (code: " << error.GetErrorNo() << ")";
 	return os;
 }

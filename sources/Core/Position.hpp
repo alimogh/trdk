@@ -37,9 +37,6 @@ namespace Trader {
 				boost::signals2::connection>
 			StateUpdateConnection;
 
-		typedef Trader::TradeSystem::OrderId OrderId;
-		typedef Trader::Security::ScaledPrice ScaledPrice;
-		typedef Trader::Security::Qty Qty;
 		typedef boost::posix_time::ptime Time;
 
 		enum Type {
@@ -68,15 +65,15 @@ namespace Trader {
 
 		struct DynamicData {
 
-			volatile OrderId lastOrderId;
+			volatile Trader::OrderId lastOrderId;
 			Time time;
 			struct Price {
 				volatile long long total;
 				volatile long count;
 				Price();
 			} price;
-			volatile Qty qty;
-			volatile ScaledPrice comission;
+			volatile Trader::Qty qty;
+			volatile Trader::ScaledPrice comission;
 
 			volatile bool hasOrder;
 
@@ -93,8 +90,8 @@ namespace Trader {
 		//! Creates position with fixed planed qty and open price
 		explicit Position(
 				boost::shared_ptr<Trader::Security>,
-				Qty,
-				ScaledPrice startPrice,
+				Trader::Qty,
+				Trader::ScaledPrice startPrice,
 				const std::string &tag,
 				boost::shared_ptr<StrategyPositionState>
 					= boost::shared_ptr<StrategyPositionState>());
@@ -181,60 +178,61 @@ namespace Trader {
 
 	public:
 
-		Qty GetPlanedQty() const;
-		ScaledPrice GetOpenStartPrice() const;
+		Trader::Qty GetPlanedQty() const;
+		Trader::ScaledPrice GetOpenStartPrice() const;
 
-		OrderId GetOpenOrderId() const throw() {
+		Trader::OrderId GetOpenOrderId() const throw() {
 			return m_opened.lastOrderId;
 		}
-		Qty GetOpenedQty() const throw() {
+		Trader::Qty GetOpenedQty() const throw() {
 			return m_opened.qty;
 		}
-		ScaledPrice GetOpenPrice() const;
+		Trader::ScaledPrice GetOpenPrice() const;
 		Time GetOpenTime() const;
 
-		Qty GetNotOpenedQty() const {
+		Trader::Qty GetNotOpenedQty() const {
 			Assert(GetOpenedQty() <= GetPlanedQty());
 			return GetPlanedQty() - GetOpenedQty();
 		}
 
-		Qty GetActiveQty() const throw() {
+		Trader::Qty GetActiveQty() const throw() {
 			Assert(GetOpenedQty() >= GetClosedQty());
 			return GetOpenedQty() - GetClosedQty();
 		}
 
-		OrderId GetCloseOrderId() const throw() {
+		Trader::OrderId GetCloseOrderId() const throw() {
 			return m_closed.lastOrderId;
 		}
-		void SetCloseStartPrice(Position::ScaledPrice);
-		ScaledPrice GetCloseStartPrice() const;
-		ScaledPrice GetClosePrice() const;
-		Qty GetClosedQty() const throw() {
+		void SetCloseStartPrice(Trader::ScaledPrice);
+		Trader::ScaledPrice GetCloseStartPrice() const;
+		Trader::ScaledPrice GetClosePrice() const;
+		Trader::Qty GetClosedQty() const throw() {
 			return m_closed.qty;
 		}
 		Time GetCloseTime() const;
 
-		ScaledPrice GetCommission() const;
+		Trader::ScaledPrice GetCommission() const;
 
 	public:
 
-		void IncreasePlanedQty(Qty) throw();
+		void IncreasePlanedQty(Trader::Qty) throw();
 
 	public:
 
-		OrderId OpenAtMarketPrice();
-		OrderId Open(ScaledPrice);
-		OrderId OpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
-		OrderId OpenOrCancel(ScaledPrice);
+		Trader::OrderId OpenAtMarketPrice();
+		Trader::OrderId Open(Trader::ScaledPrice);
+		Trader::OrderId OpenAtMarketPriceWithStopPrice(
+					Trader::ScaledPrice stopPrice);
+		Trader::OrderId OpenOrCancel(Trader::ScaledPrice);
 
-		OrderId CloseAtMarketPrice(CloseType);
-		OrderId CloseAtMarketPrice(CloseType, Qty);
-		OrderId Close(CloseType, ScaledPrice);
-		OrderId Close(CloseType, ScaledPrice, Qty);
-		OrderId CloseAtMarketPriceWithStopPrice(
+		Trader::OrderId CloseAtMarketPrice(CloseType);
+		Trader::OrderId CloseAtMarketPrice(CloseType, Trader::Qty);
+		Trader::OrderId Close(CloseType, Trader::ScaledPrice);
+		Trader::OrderId Close(CloseType, Trader::ScaledPrice, Trader::Qty);
+		Trader::OrderId CloseAtMarketPriceWithStopPrice(
 					CloseType,
-					ScaledPrice stopPrice);
-		OrderId CloseOrCancel(CloseType, ScaledPrice);
+					Trader::ScaledPrice stopPrice);
+		Trader::OrderId CloseOrCancel(CloseType, Trader::ScaledPrice);
 
 		bool CancelAtMarketPrice(CloseType);
 		bool CancelAllOrders();
@@ -251,40 +249,40 @@ namespace Trader {
 
 	protected:
 
-		virtual OrderId DoOpenAtMarketPrice(Qty) = 0;
-		virtual OrderId DoOpen(ScaledPrice, Qty) = 0;
-		virtual OrderId DoOpenAtMarketPriceWithStopPrice(
-					ScaledPrice stopPrice)
+		virtual Trader::OrderId DoOpenAtMarketPrice(Trader::Qty) = 0;
+		virtual Trader::OrderId DoOpen(Trader::ScaledPrice, Trader::Qty) = 0;
+		virtual Trader::OrderId DoOpenAtMarketPriceWithStopPrice(
+					Trader::ScaledPrice stopPrice)
 				= 0;
-		virtual OrderId DoOpenOrCancel(ScaledPrice) = 0;
+		virtual Trader::OrderId DoOpenOrCancel(Trader::ScaledPrice) = 0;
 
-		virtual OrderId DoCloseAtMarketPrice(Qty) = 0;
-		virtual OrderId DoClose(ScaledPrice, Qty) = 0;
-		virtual OrderId DoCloseAtMarketPriceWithStopPrice(
-					ScaledPrice stopPrice)
+		virtual Trader::OrderId DoCloseAtMarketPrice(Trader::Qty) = 0;
+		virtual Trader::OrderId DoClose(Trader::ScaledPrice, Trader::Qty) = 0;
+		virtual Trader::OrderId DoCloseAtMarketPriceWithStopPrice(
+					Trader::ScaledPrice stopPrice)
 				= 0;
-		virtual OrderId DoCloseOrCancel(ScaledPrice) = 0;
+		virtual Trader::OrderId DoCloseOrCancel(Trader::ScaledPrice) = 0;
 
 		bool DoCancelAllOrders();
 
 	protected:
 
 		void UpdateOpening(
-					OrderId,
+					Trader::OrderId,
 					Trader::TradeSystem::OrderStatus,
-					Qty filled,
-					Qty remaining,
+					Trader::Qty filled,
+					Trader::Qty remaining,
 					double avgPrice,
 					double lastPrice);
 		void UpdateClosing(
-					OrderId,
+					Trader::OrderId,
 					Trader::TradeSystem::OrderStatus,
-					Qty filled,
-					Qty remaining,
+					Trader::Qty filled,
+					Trader::Qty remaining,
 					double avgPrice,
 					double lastPrice);
 
-		void DecreasePlanedQty(Qty) throw();
+		void DecreasePlanedQty(Trader::Qty) throw();
 
 	private:
 
@@ -312,10 +310,10 @@ namespace Trader {
 		const bool m_isPlanedQtyDynamic;
 		volatile long m_planedQty;
 
-		const ScaledPrice m_openStartPrice;
+		const Trader::ScaledPrice m_openStartPrice;
 		DynamicData m_opened;
 
-		ScaledPrice m_closeStartPrice;
+		Trader::ScaledPrice m_closeStartPrice;
 		DynamicData m_closed;
 
 		volatile long m_closeType;
@@ -345,8 +343,8 @@ namespace Trader {
 		//! Creates position with fixed planed qty and open price
 		explicit LongPosition(
 				boost::shared_ptr<Trader::Security>,
-				Qty,
-				ScaledPrice startPrice,
+				Trader::Qty,
+				Trader::ScaledPrice startPrice,
 				const std::string &tag,
 				boost::shared_ptr<StrategyPositionState>
 					= boost::shared_ptr<StrategyPositionState>());
@@ -367,17 +365,17 @@ namespace Trader {
 
 	public:
 
-		virtual OrderId DoOpenAtMarketPrice(Qty);
-		virtual OrderId DoOpen(ScaledPrice, Qty);
-		virtual OrderId DoOpenAtMarketPriceWithStopPrice(
-					ScaledPrice stopPrice);
-		virtual OrderId DoOpenOrCancel(ScaledPrice);
+		virtual Trader::OrderId DoOpenAtMarketPrice(Trader::Qty);
+		virtual Trader::OrderId DoOpen(Trader::ScaledPrice, Trader::Qty);
+		virtual Trader::OrderId DoOpenAtMarketPriceWithStopPrice(
+					Trader::ScaledPrice stopPrice);
+		virtual Trader::OrderId DoOpenOrCancel(Trader::ScaledPrice);
 
-		virtual OrderId DoCloseAtMarketPrice(Qty);
-		virtual OrderId DoClose(ScaledPrice, Qty);
-		virtual OrderId DoCloseAtMarketPriceWithStopPrice(
-					ScaledPrice stopPrice);
-		virtual OrderId DoCloseOrCancel(ScaledPrice);
+		virtual Trader::OrderId DoCloseAtMarketPrice(Trader::Qty);
+		virtual Trader::OrderId DoClose(Trader::ScaledPrice, Trader::Qty);
+		virtual Trader::OrderId DoCloseAtMarketPriceWithStopPrice(
+					Trader::ScaledPrice stopPrice);
+		virtual Trader::OrderId DoCloseOrCancel(Trader::ScaledPrice);
 
 	};
 
@@ -394,8 +392,8 @@ namespace Trader {
 		//! Creates position with fixed planed qty and open price
 		explicit ShortPosition(
 				boost::shared_ptr<Trader::Security>,
-				Qty,
-				ScaledPrice startPrice,
+				Trader::Qty,
+				Trader::ScaledPrice startPrice,
 				const std::string &tag,
 				boost::shared_ptr<StrategyPositionState>
 					= boost::shared_ptr<StrategyPositionState>());
@@ -416,17 +414,17 @@ namespace Trader {
 
 	public:
 
-		virtual OrderId DoOpenAtMarketPrice(Qty);
-		virtual OrderId DoOpen(ScaledPrice, Qty);
-		virtual OrderId DoOpenAtMarketPriceWithStopPrice(
-					ScaledPrice stopPrice);
-		virtual OrderId DoOpenOrCancel(ScaledPrice);
+		virtual Trader::OrderId DoOpenAtMarketPrice(Trader::Qty);
+		virtual Trader::OrderId DoOpen(Trader::ScaledPrice, Trader::Qty);
+		virtual Trader::OrderId DoOpenAtMarketPriceWithStopPrice(
+					Trader::ScaledPrice stopPrice);
+		virtual Trader::OrderId DoOpenOrCancel(Trader::ScaledPrice);
 
-		virtual OrderId DoCloseAtMarketPrice(Qty);
-		virtual OrderId DoClose(ScaledPrice, Qty);
-		virtual OrderId DoCloseAtMarketPriceWithStopPrice(
-					ScaledPrice stopPrice);
-		virtual OrderId DoCloseOrCancel(ScaledPrice);
+		virtual Trader::OrderId DoCloseAtMarketPrice(Trader::Qty);
+		virtual Trader::OrderId DoClose(Trader::ScaledPrice, Trader::Qty);
+		virtual Trader::OrderId DoCloseAtMarketPriceWithStopPrice(
+					Trader::ScaledPrice stopPrice);
+		virtual Trader::OrderId DoCloseOrCancel(Trader::ScaledPrice);
 
 	};
 

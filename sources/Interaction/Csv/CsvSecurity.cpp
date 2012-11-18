@@ -34,10 +34,10 @@ Security::Security(
 
 void Security::SignalNewTrade(
 			const boost::posix_time::ptime &time,
-			bool isBuy,
-			ScaledPrice price,
-			Qty qty) {
-	Base::SignalNewTrade(time, isBuy, price, qty);
+			Trader::OrderSide side,
+			Trader::ScaledPrice price,
+			Trader::Qty qty) {
+	Base::SignalNewTrade(time, side, price, qty);
 	SetLast(price, qty);
 	Base::SignalLevel1Update();
 }

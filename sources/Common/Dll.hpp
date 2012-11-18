@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "Error.hpp"
+#include "SysError.hpp"
 #include "Exception.hpp"
 #include "UseUnused.hpp"
 #include "DisableBoostWarningsBegin.h"
@@ -45,7 +45,7 @@ namespace Trader { namespace Lib {
 		public:
 			explicit DllLoadException(
 						const boost::filesystem::path &dllFile,
-						const Trader::Lib::Error &error)
+						const Trader::Lib::SysError &error)
 					: Error(
 						(boost::format("Failed to load DLL file %1% (%2%)")
 								% dllFile
@@ -71,7 +71,7 @@ namespace Trader { namespace Lib {
 			explicit DllFuncException(
 						const boost::filesystem::path &dllFile,
 						const char *const funcName,
-						const Trader::Lib::Error &error)
+						const Trader::Lib::SysError &error)
 					: Error(
 						(boost::format("Failed to find function \"%2%\" in DLL %1% (%3%).")
 								% dllFile
@@ -127,7 +127,9 @@ namespace Trader { namespace Lib {
 	#			endif
 				m_handle = LoadLibraryW(m_file.c_str());
 				if (m_handle == NULL) {
-					throw DllLoadException(m_file, Trader::Lib::Error(::GetLastError()));
+					throw DllLoadException(
+						m_file,
+						Trader::Lib::SysError(::GetLastError()));
 				}
 	#		else
 				if (autoName) {
@@ -191,7 +193,7 @@ namespace Trader { namespace Lib {
 					throw DllFuncException(
 						m_file,
 						funcName,
-						Trader::Lib::Error(::GetLastError()));
+						Trader::Lib::SysError(::GetLastError()));
 				}
 	#		else
 				void *procAddr = dlsym(m_handle, funcName);

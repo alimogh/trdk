@@ -25,6 +25,11 @@ namespace {
 
 }
 
+const Service::Revision Service::nRevision
+	= std::numeric_limits<Service::Revision>::min();
+const Service::Revision Service::initialRevision
+	= std::numeric_limits<Service::Revision>::min();
+
 class Service::Implementation : private boost::noncopyable {
 
 private:
@@ -176,17 +181,4 @@ void Service::RegisterSubscriber(Observer &module) {
 
 const Service::Subscribers & Service::GetSubscribers() const {
 	return m_pimpl->m_subscribers;
-}
-
-bool Service::HasNewData() const throw() {
-	return m_pimpl->m_hasNewData;
-}
-
-void Service::SetNewDataState() throw() {
-	AssertEq(0, GetSubscribers().size());
-	m_pimpl->m_hasNewData = true;
-}
-
-void Service::ResetNewDataState() throw() {
-	m_pimpl->m_hasNewData = false;
 }

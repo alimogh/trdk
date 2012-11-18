@@ -54,21 +54,24 @@ namespace {
 	public:		
 		template<typename Module>
 		void operator ()(const boost::shared_ptr<Module> &module) const {
-			module->OnServiceDataUpdate(m_service);
+			NotifyObserver(*module);
 		}
 		template<>
 		void operator ()(const boost::shared_ptr<Service> &module) const {
-			module->OnServiceDataUpdate(m_service);
+			NotifyObserver(*module);
 			NotifyServiceDataUpdateSubscribers(*module);
+		}
+	public:
+		template<typename Module>
+		void NotifyObserver(Module &module) const {
+			const Module::Lock lock(module.GetMutex());
+			module.OnServiceDataUpdate(m_service);
 		}
 	private:
 		const Service &m_service;
 	};
 
 	void NotifyServiceDataUpdateSubscribers(const Service &service) {
-		if (!service.HasNewData()) {
-			return;
-		}
 		const NotifyServiceDataUpdateVisitor visitor(service);
 		foreach (auto subscriber, service.GetSubscribers()) {
 			try {
@@ -90,7 +93,6 @@ namespace {
 					boost::apply_visitor(GetModuleVisitor(), subscriber));
 			}
 		}
-//		service.ResetNewDataState();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -195,9 +197,9 @@ public:
 		boost::shared_ptr<TradeObserverState> state;
 		boost::shared_ptr<const Security> security;
 		boost::posix_time::ptime time;
-		Security::ScaledPrice price;
-		Security::Qty qty;
-		bool isBuy;
+		ScaledPrice price;
+		Qty qty;
+		OrderSide side;
 	};
 
 private:
@@ -220,13 +222,15 @@ private:
 			NotifyServiceDataUpdateSubscribers(*observer);
 		}
 	private:
+		template<typename Module>
 		void NotifyObserver(Module &observer) const {
+			const Module::Lock lock(observer.GetMutex());
 			observer.OnNewTrade(
 				*m_trade.security,
 				m_trade.time,
 				m_trade.price,
 				m_trade.qty,
-				m_trade.isBuy);
+				m_trade.side);
 		}
 	private:
 		const Trade &m_trade;
@@ -244,7 +248,7 @@ public:
 		boost::apply_visitor(NotifyVisitor(trade), m_observer);
 	}
 
-	Module & GetObserver() const {
+	Module & GetObserver() {
 		return boost::apply_visitor(GetModuleVisitor(), m_observer);
 	}
 
@@ -426,16 +430,16 @@ public:
 				boost::shared_ptr<TradeObserverState> state,
 				const boost::shared_ptr<const Security> &security,
 				const boost::posix_time::ptime &time,
-				Security::ScaledPrice price,
-				Security::Qty qty,
-				bool isBuy) {
+				ScaledPrice price,
+				Qty qty,
+				OrderSide side) {
 		const TradeObserverState::Trade trade = {
 			state,
 			security,
 			time,
 			price,
 			qty,
-			isBuy};
+			side};
 		Lock lock(m_mutex);
 		if (m_isExit) {
 			return;

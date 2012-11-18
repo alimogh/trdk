@@ -10,6 +10,7 @@
 
 #include "Instrument.hpp"
 #include "Common/SignalConnection.hpp"
+#include "Types.hpp"
 #include "Api.h"
 
 namespace Trader {
@@ -24,12 +25,6 @@ namespace Trader {
 
 		typedef Trader::TradeSystem::OrderStatusUpdateSlot OrderStatusUpdateSlot;
 
-		typedef boost::posix_time::ptime MarketDataTime;
-
-		typedef Trader::TradeSystem::OrderId OrderId;
-		typedef Trader::TradeSystem::OrderQty Qty;
-		typedef Trader::TradeSystem::OrderScaledPrice ScaledPrice;
-
 		typedef void (Level1UpdateSlotSignature)();
 		typedef boost::function<Level1UpdateSlotSignature> Level1UpdateSlot;
 		typedef SignalConnection<
@@ -39,9 +34,9 @@ namespace Trader {
 
 		typedef void (NewTradeSlotSignature)(
 					const boost::posix_time::ptime &,
-					ScaledPrice,
-					Qty,
-					bool isBuy);
+					Trader::ScaledPrice,
+					Trader::Qty,
+					Trader::OrderSide);
 		typedef boost::function<NewTradeSlotSignature> NewTradeSlot;
 		typedef SignalConnection<
 				NewTradeSlot,
@@ -81,11 +76,11 @@ namespace Trader {
 			return 100;
 		}
 
-		ScaledPrice ScalePrice(double price) const {
+		Trader::ScaledPrice ScalePrice(double price) const {
 			return Util::Scale(price, GetPriceScale());
 		}
 
-		double DescalePrice(ScaledPrice price) const {
+		double DescalePrice(Trader::ScaledPrice price) const {
 			return Util::Descale(price, GetPriceScale());
 		}
 
@@ -93,46 +88,52 @@ namespace Trader {
 
 		boost::posix_time::ptime GetLastMarketDataTime() const;
 
-		OrderId SellAtMarketPrice(Qty, Trader::Position &);
-		OrderId Sell(Qty, ScaledPrice, Trader::Position &);
-		OrderId SellAtMarketPriceWithStopPrice(
-					Qty,
+		Trader::OrderId SellAtMarketPrice(Trader::Qty, Trader::Position &);
+		Trader::OrderId Sell(
+					Trader::Qty,
+					Trader::ScaledPrice,
+					Trader::Position &);
+		Trader::OrderId SellAtMarketPriceWithStopPrice(
+					Trader::Qty,
 					ScaledPrice stopPrice,
 					Trader::Position &);
-		OrderId SellOrCancel(
-					Qty,
-					ScaledPrice,
+		Trader::OrderId SellOrCancel(
+					Trader::Qty,
+					Trader::ScaledPrice,
 					Trader::Position &);
 
-		OrderId BuyAtMarketPrice(Qty, Trader::Position &);
-		OrderId Buy(Qty, ScaledPrice, Trader::Position &);
-		OrderId BuyAtMarketPriceWithStopPrice(
-					Qty,
+		Trader::OrderId BuyAtMarketPrice(Trader::Qty, Trader::Position &);
+		Trader::OrderId Buy(
+					Trader::Qty,
+					Trader::ScaledPrice,
+					Trader::Position &);
+		Trader::OrderId BuyAtMarketPriceWithStopPrice(
+					Trader::Qty,
 					ScaledPrice stopPrice,
 					Trader::Position &);
-		OrderId BuyOrCancel(
-					Qty,
-					ScaledPrice,
+		Trader::OrderId BuyOrCancel(
+					Trader::Qty,
+					Trader::ScaledPrice,
 					Trader::Position &);
 
-		void CancelOrder(OrderId);
+		void CancelOrder(Trader::OrderId);
 		void CancelAllOrders();
 
 	public:
 
-		ScaledPrice GetLastPriceScaled() const;
+		Trader::ScaledPrice GetLastPriceScaled() const;
 		double GetLastPrice() const;
-		Qty GetLastQty() const;
+		Trader::Qty GetLastQty() const;
 
-		ScaledPrice GetAskPriceScaled(size_t pos) const;
+		Trader::ScaledPrice GetAskPriceScaled(size_t pos) const;
 		double GetAskPrice(size_t pos) const;
-		Qty GetAskQty(size_t pos) const;
+		Trader::Qty GetAskQty(size_t pos) const;
 
-		ScaledPrice GetBidPriceScaled(size_t pos) const;
+		Trader::ScaledPrice GetBidPriceScaled(size_t pos) const;
 		double GetBidPrice(size_t pos) const;
-		Qty GetBidQty(size_t pos) const;
+		Trader::Qty GetBidQty(size_t pos) const;
 
-		Qty GetTradedVolume() const;
+		Trader::Qty GetTradedVolume() const;
 
 	public:
 
@@ -147,36 +148,36 @@ namespace Trader {
 		//! Set last trade unscaled price and size.
 		/**	@return true if values ​​differ from the current, false otherwise
 		  */
-		bool SetLast(double price, Qty size);
+		bool SetLast(double price, Trader::Qty size);
 		//! Set last trade scaled price and size.
 		/**	@return true if values ​​differ from the current, false otherwise
 		  */
-		bool SetLast(ScaledPrice, Qty);
+		bool SetLast(Trader::ScaledPrice, Trader::Qty);
 
 		//! Set current unscaled ask price and ask size.
 		/**	@return true if values ​​differ from the current, false otherwise
 		  */
-		bool SetAsk(double price, Qty size, size_t pos);
+		bool SetAsk(double price, Trader::Qty size, size_t pos);
 		//! Set current scaled ask price and ask size.
 		/**	@return true if values ​​differ from the current, false otherwise
 		  */
-		bool SetAsk(ScaledPrice, Qty, size_t pos);
+		bool SetAsk(Trader::ScaledPrice, Trader::Qty, size_t pos);
 
 		//! Set current unscaled bid price and bid size.
 		/**	@return true if values ​​differ from the current, false otherwise
 		  */
-		bool SetBid(double price, Qty size, size_t pos);
+		bool SetBid(double price, Trader::Qty size, size_t pos);
 		//! Set current scaled bid price and bid size.
 		/**	@return true if values ​​differ from the current, false otherwise
 		  */
-		bool SetBid(ScaledPrice, Qty, size_t pos);
+		bool SetBid(Trader::ScaledPrice, Trader::Qty, size_t pos);
 
 		void SignalLevel1Update();
 		void SignalNewTrade(
 				const boost::posix_time::ptime &,
-				bool isBuy,
-				ScaledPrice,
-				Qty);
+				Trader::OrderSide,
+				Trader::ScaledPrice,
+				Trader::Qty);
 
 	private:
 

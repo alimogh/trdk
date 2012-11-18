@@ -57,15 +57,15 @@ void MarketDataSource::Connect() {
 bool MarketDataSource::ParseTradeLine(
 			const std::string &line,
 			pt::ptime &time,
-			Side &side,
+			Trader::OrderSide &side,
 			std::string &symbol,
 			std::string &exchange,
-			Security::ScaledPrice &price,
-			Security::Qty &qty)
+			Trader::ScaledPrice &price,
+			Trader::Qty &qty)
 		const {
 
 	size_t field = 0;
-	side = SIDE_NOT_SET;
+	side = numberOfOrderSides;
 
 	auto i = boost::make_split_iterator(
 		line,
@@ -120,7 +120,7 @@ bool MarketDataSource::ParseTradeLine(
 					auto val = boost::copy_range<std::string>(*i);
 					boost::trim(val);
 					try {
-						price = boost::lexical_cast<Security::ScaledPrice>(val);
+						price = boost::lexical_cast<Trader::ScaledPrice>(val);
 					} catch (const boost::bad_lexical_cast &ex) {
 						Log::Error(
 							TRADER_INTERACTION_CSV_LOG_PREFFIX
@@ -144,7 +144,7 @@ bool MarketDataSource::ParseTradeLine(
 					auto val = boost::copy_range<std::string>(*i);
 					boost::trim(val);
 					try {
-						qty = boost::lexical_cast<Security::Qty>(val);
+						qty = boost::lexical_cast<Trader::Qty>(val);
 					} catch (const boost::bad_lexical_cast &ex) {
 						Log::Error(
 							TRADER_INTERACTION_CSV_LOG_PREFFIX
@@ -169,9 +169,9 @@ bool MarketDataSource::ParseTradeLine(
 					boost::trim(val);
 					Assert(val == "S" || val == "B");
 					if (val == "S") {
-						side = SIDE_SELL;
+						side = ORDER_SIDE_SELL;
 					} else if (val == "B") {
-						side = SIDE_BUY;
+						side = ORDER_SIDE_BUY;
 					} else {
 						Log::Error(
 							TRADER_INTERACTION_CSV_LOG_PREFFIX
@@ -188,7 +188,7 @@ bool MarketDataSource::ParseTradeLine(
 	if (field != 16) {
 		Log::Error(
 			TRADER_INTERACTION_CSV_LOG_PREFFIX
-				"format mismatch: wrong field number (%1%) for pimary exchange \"%2%\".",
+				"format mismatch: wrong field number (%1%) for primary exchange \"%2%\".",
 			field,
 			m_pimaryExchange);
 		return false;
@@ -211,11 +211,11 @@ void MarketDataSource::ReadFile() {
 		++lineCount;
 
 		pt::ptime time;
-		Side side = SIDE_NOT_SET;
+		OrderSide side = numberOfOrderSides;
 		std::string symbol;
 		std::string exchange;
-		Security::ScaledPrice price = 0;
-		Security::Qty qty = 0;
+		Trader::ScaledPrice price = 0;
+		Trader::Qty qty = 0;
 		if (!ParseTradeLine(line, time, side, symbol, exchange, price, qty)) {
 			break;
 		}
@@ -231,7 +231,8 @@ void MarketDataSource::ReadFile() {
 					return message;
 				});
 		} else {
-			security->security->SignalNewTrade(time, side == SIDE_BUY, price, qty);
+			AssertNe(int(Trader::numberOfOrderSides), int(side));
+			security->security->SignalNewTrade(time, side, price, qty);
 		}
 
     }

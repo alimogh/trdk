@@ -17,12 +17,6 @@ namespace Trader { namespace Interaction { namespace Csv {
 
 	private:
 
-		enum Side {
-			SIDE_NOT_SET,
-			SIDE_BUY,
-			SIDE_SELL
-		};
-
 		struct ByInstrument {
 			//...//
 		};
@@ -111,11 +105,11 @@ namespace Trader { namespace Interaction { namespace Csv {
 		bool ParseTradeLine(
 				const std::string &line,
 				boost::posix_time::ptime &,
-				Side &,
+				Trader::OrderSide &,
 				std::string &symbol,
 				std::string &exchange,
-				Security::ScaledPrice &,
-				Security::Qty &)
+				Trader::ScaledPrice &,
+				Trader::Qty &)
 			const;
 
 	private:

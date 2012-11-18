@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "Types.hpp"
 #include "Api.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -18,25 +19,22 @@ namespace Trader {
 
 	public:
 
-		typedef boost::uint64_t OrderId;
-		typedef boost::int32_t OrderQty;
-		typedef boost::int64_t OrderScaledPrice;
-
 		enum OrderStatus {
 			ORDER_STATUS_PENDIGN,
 			ORDER_STATUS_SUBMITTED,
 			ORDER_STATUS_CANCELLED,
 			ORDER_STATUS_FILLED,
 			ORDER_STATUS_INACTIVE,
-			ORDER_STATUS_ERROR
+			ORDER_STATUS_ERROR,
+			numberOfOrderStatuses
 		};
 
 		typedef boost::function<
 				void(
-					OrderId,
+					Trader::OrderId,
 					OrderStatus,
-					OrderQty filled,
-					OrderQty remaining,
+					Trader::Qty filled,
+					Trader::Qty remaining,
 					double avgPrice,
 					double lastPrice)>
 			OrderStatusUpdateSlot;
@@ -83,49 +81,49 @@ namespace Trader {
 
 		virtual OrderId SellAtMarketPrice(
 				const Security &,
-				OrderQty,
+				Trader::Qty,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId Sell(
 				const Security &,
-				OrderQty,
-				OrderScaledPrice,
+				Trader::Qty,
+				Trader::ScaledPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId SellAtMarketPriceWithStopPrice(
 				const Security &,
-				OrderQty,
-				OrderScaledPrice stopPrice,
+				Trader::Qty,
+				Trader::ScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId SellOrCancel(
 				const Security &,
-				OrderQty,
-				OrderScaledPrice,
+				Trader::Qty,
+				Trader::ScaledPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 
 		virtual OrderId BuyAtMarketPrice(
 				const Security &,
-				OrderQty,
+				Trader::Qty,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId Buy(
 				const Security &,
-				OrderQty,
-				OrderScaledPrice,
+				Trader::Qty,
+				Trader::ScaledPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
 				const Security &,
-				OrderQty,
-				OrderScaledPrice stopPrice,
+				Trader::Qty,
+				Trader::ScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId BuyOrCancel(
 				const Security &,
-				OrderQty,
-				OrderScaledPrice,
+				Trader::Qty,
+				Trader::ScaledPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 
