@@ -90,7 +90,14 @@ bool MarketDataSource::ParseTradeLine(
 			case 15:
 				break;
 			case 2:
-				time;
+				{
+					std::string timeStr = boost::copy_range<std::string>(*i);
+					boost::trim(timeStr);
+					//! @todo Local time, not UTC
+					time = pt::second_clock::local_time();
+					time -= time.time_of_day();
+					time += pt::duration_from_string(timeStr);
+				}
 				break;
 			case 3:
 				symbol = boost::copy_range<std::string>(*i);
