@@ -18,7 +18,7 @@ namespace {
 	std::ofstream eventsLog;
 
 	fs::path InitLogFile(const std::string &fileName, std::ofstream &file) {
-		fs::path path = Defaults::GetLogFilePath();
+		fs::path path = Trader::Defaults::GetLogFilePath();
 		path /= fileName;
 		boost::filesystem::create_directories(path.branch_path());
 		file.open(

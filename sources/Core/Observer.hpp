@@ -37,6 +37,13 @@ namespace Trader {
 
 		virtual const std::string & GetTypeName() const;
 
+		virtual void OnNewTrade(
+				const Trader::Security &,
+				const boost::posix_time::ptime &,
+				Trader::ScaledPrice price,
+				Trader::Qty qty,
+				Trader::OrderSide);
+
 	public:
 
 		const NotifyList & GetNotifyList() const;

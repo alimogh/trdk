@@ -36,7 +36,7 @@ Module::~Module() {
 	delete m_pimpl;
 }
 
-Module::Mutex & Module::GetMutex() {
+Module::Mutex & Module::GetMutex() const {
 	return m_pimpl->m_mutex;
 }
 
@@ -52,20 +52,6 @@ void Module::NotifyServiceStart(const Service &service) {
 		service);
  	throw MethodDoesNotImplementedError(
 		"Module subscribed to service, but can't work with it");
-}
-
-void Module::OnNewTrade(
-					const Trader::Security &,
-					const boost::posix_time::ptime &,
-					ScaledPrice,
-					Qty,
-					OrderSide) {
-	Log::Error(
-		"\"%1%\" subscribed to new trades, but can't work with it"
-			" (hasn't implementation of OnNewTrade).",
-		*this);
-	throw MethodDoesNotImplementedError(
-		"Module subscribed to new trades, but can't work with it");
 }
 
 void Module::OnServiceDataUpdate(const Trader::Service &service) {

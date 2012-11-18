@@ -222,8 +222,20 @@ private:
 			NotifyServiceDataUpdateSubscribers(*observer);
 		}
 	private:
-		template<typename Module>
-		void NotifyObserver(Module &observer) const {
+		void NotifyObserver(SecurityAlgo &observer) const {
+			AssertEq(
+				m_trade.security->GetFullSymbol(),
+				const_cast<const SecurityAlgo &>(observer)
+					.GetSecurity()
+					->GetFullSymbol());
+			const Module::Lock lock(observer.GetMutex());
+			observer.OnNewTrade(
+				m_trade.time,
+				m_trade.price,
+				m_trade.qty,
+				m_trade.side);
+		}
+		void NotifyObserver(Observer &observer) const {
 			const Module::Lock lock(observer.GetMutex());
 			observer.OnNewTrade(
 				*m_trade.security,
@@ -358,6 +370,7 @@ public:
 				m_isExit = true;
 				m_isActive = false;
 				m_positionsCheckCompletedCondition.notify_all();
+				m_tradeReadCompletedCondition.notify_all();
 				m_positionsCheckCondition.notify_all();
 				m_newTradesCondition.notify_all();
 			}
@@ -446,6 +459,9 @@ public:
 		}
 		m_currentTradeObservervation->push_back(trade);
 		m_newTradesCondition.notify_one();
+		if (m_settings->IsReplayMode()) {
+			m_tradeReadCompletedCondition.wait(lock);
+		}
 	}
 
 private:
@@ -483,6 +499,7 @@ private:
 	Mutex m_mutex;
 	Condition m_positionsCheckCondition;
 	Condition m_positionsCheckCompletedCondition;
+	Condition m_tradeReadCompletedCondition;
 
 	Condition m_newTradesCondition;
 
@@ -704,6 +721,9 @@ bool Dispatcher::Notifier::NotifyNewTrades() {
 		m_currentTradeObservervation = m_currentTradeObservervation == &m_tradeObservervationQueue.first
 			?	&m_tradeObservervationQueue.second
 			:	&m_tradeObservervationQueue.first;
+		if (m_settings->IsReplayMode()) {
+			m_tradeReadCompletedCondition.notify_all();
+		}
 	}
 
 	Assert(!notifyList->empty());

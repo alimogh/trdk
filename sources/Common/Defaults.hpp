@@ -10,14 +10,20 @@
 
 #include <boost/filesystem.hpp>
 
-struct Defaults {
+namespace Trader {
 
-	static boost::filesystem::path GetLogFilePath();
+	struct Defaults {
 
-	static boost::filesystem::path GetMarketDataLogDir();
+		static boost::filesystem::path GetLogFilePath();
 
-	static boost::filesystem::path GetPositionsLogDir();
+		static boost::filesystem::path GetMarketDataLogDir();
+		
+		static boost::filesystem::path GetBarsDataLogDir();
 
-	static boost::filesystem::path GetRawDataLogDir();
+		static boost::filesystem::path GetPositionsLogDir();
 
-};
+		static boost::filesystem::path GetRawDataLogDir();
+
+	};
+
+}

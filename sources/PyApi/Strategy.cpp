@@ -231,14 +231,16 @@ void Strategy::PyTryToClosePositions(py::object positions) {
 	boost::shared_ptr<Trader::Strategy> CreateStrategy(
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security> security,
-				const IniFileSectionRef &ini) {
+				const IniFileSectionRef &ini,
+				boost::shared_ptr<const Trader::Settings>) {
 		return Strategy::CreateClientInstance(tag, security, ini);
 	}
 #else
 	extern "C" boost::shared_ptr<Trader::Strategy> CreateStrategy(
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security> security,
-				const IniFileSectionRef &ini) {
+				const IniFileSectionRef &ini,
+				boost::shared_ptr<const Trader::Settings>) {
 		return Strategy::CreateClientInstance(tag, security, ini);
 	}
 #endif

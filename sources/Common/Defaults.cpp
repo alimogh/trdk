@@ -8,6 +8,7 @@
 
 #include "Defaults.hpp"
 
+using namespace Trader;
 namespace fs = boost::filesystem;
 
 fs::path Defaults::GetLogFilePath() {
@@ -17,6 +18,12 @@ fs::path Defaults::GetLogFilePath() {
 fs::path Defaults::GetMarketDataLogDir() {
 	auto result = GetLogFilePath();
 	result /= "MarketData";
+	return result;
+}
+
+fs::path Defaults::GetBarsDataLogDir() {
+	auto result = GetLogFilePath();
+	result /= "Bars";
 	return result;
 }
 

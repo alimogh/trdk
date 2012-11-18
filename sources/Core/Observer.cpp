@@ -10,6 +10,7 @@
 #include "Observer.hpp"
 
 using namespace Trader;
+using namespace Trader::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -49,6 +50,20 @@ Observer::Observer(
 
 Observer::~Observer() {
 	delete m_pimpl;
+}
+
+void Observer::OnNewTrade(
+					const Trader::Security &,
+					const boost::posix_time::ptime &,
+					ScaledPrice,
+					Qty,
+					OrderSide) {
+	Log::Error(
+		"\"%1%\" subscribed to new trades, but can't work with it"
+			" (hasn't implementation of OnNewTrade).",
+		*this);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to new trades, but can't work with it");
 }
 
 const std::string & Observer::GetTypeName() const {

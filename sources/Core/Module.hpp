@@ -34,20 +34,13 @@ namespace Trader {
 
 	public:
 
-		Mutex & GetMutex();
+		Mutex & GetMutex() const;
 
 	public:
 
 		virtual void NotifyServiceStart(const Trader::Service &);
 
 	public:
-
-		virtual void OnNewTrade(
-					const Trader::Security &,
-					const boost::posix_time::ptime &,
-					Trader::ScaledPrice price,
-					Trader::Qty qty,
-					Trader::OrderSide);
 
 		virtual void OnServiceDataUpdate(const Trader::Service &);
 

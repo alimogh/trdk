@@ -142,14 +142,16 @@ void Service::PyNotifyServiceStart(py::object service) {
 	boost::shared_ptr<Trader::Service> CreateService(
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security> security,
-				const IniFileSectionRef &ini) {
+				const IniFileSectionRef &ini,
+				boost::shared_ptr<const Trader::Settings>) {
 		return Service::CreateClientInstance(tag, security, ini);
 	}
 #else
 	extern "C" boost::shared_ptr<Trader::Service> CreateService(
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security> security,
-				const IniFileSectionRef &ini) {
+				const IniFileSectionRef &ini,
+				boost::shared_ptr<const Trader::Settings>) {
 		return Service::CreateClientInstance(tag, security, ini);
 	}
 #endif

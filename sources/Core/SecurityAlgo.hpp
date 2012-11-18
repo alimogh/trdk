@@ -25,6 +25,14 @@ namespace Trader {
 
 	public:
 
+		virtual void OnNewTrade(
+				const boost::posix_time::ptime &,
+				Trader::ScaledPrice price,
+				Trader::Qty qty,
+				Trader::OrderSide);
+
+	public:
+
 		boost::shared_ptr<const Trader::Security> GetSecurity() const;
 
 		void UpdateSettings(const Trader::Lib::IniFileSectionRef &);

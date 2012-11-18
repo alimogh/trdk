@@ -122,7 +122,7 @@ namespace {
 				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
 				Securities &securities,
-				boost::shared_ptr<Settings> settings,
+				boost::shared_ptr<const Settings> settings,
 				const IniFile &ini) {
 		const std::list<std::string> logMdSymbols
 			= ini.ReadList(Ini::Sections::MarketData::Log::symbols, false);
@@ -153,7 +153,7 @@ namespace {
 				MarketDataSource &marketDataSource,
 				std::set<IniFile::Symbol> &symbols,
 				Securities &securities,
-				boost::shared_ptr<Settings> settings,
+				boost::shared_ptr<const Settings> settings,
 				boost::shared_ptr<Dll> &dll) {
 
 		if (tag.empty()) {
@@ -244,7 +244,7 @@ namespace {
 						std::string,
 						std::map<IniFile::Symbol, DllObjectPtr<Module>>>
 					&modules,
-				boost::shared_ptr<Settings> settings) {
+				boost::shared_ptr<const Settings> settings) {
 
 		std::set<IniFile::Symbol> symbols;
 		boost::shared_ptr<Dll> dll;
@@ -265,7 +265,8 @@ namespace {
 					boost::shared_ptr<Module>(
 						const std::string &tag,
 						boost::shared_ptr<Security> security,
-						const IniFileSectionRef &ini)>
+						const IniFileSectionRef &ini,
+						boost::shared_ptr<const Settings>)>
 				(fabricName);
 
 		foreach (const auto &symbol, symbols) {
@@ -275,7 +276,8 @@ namespace {
 				symbolInstance = fabric(
 					tag,
  					securities[symbol],
-					IniFileSectionRef(ini, section));
+					IniFileSectionRef(ini, section),
+					settings);
 			} catch (...) {
 				Log::RegisterUnhandledException(
 					__FUNCTION__,
@@ -309,7 +311,9 @@ namespace {
 		
 		std::list<std::string> list;
 		boost::split(list, strList, boost::is_any_of(","));
-		const boost::regex expr("([^\\[]+)\\[(.+)\\]");
+		const boost::regex expr(
+			"([^\\[]+)\\[(.+)\\]",
+			boost::regex_constants::icase);
 		foreach (std::string &serviceRequest, list) {
 			if (	boost::iequals(
 						serviceRequest,

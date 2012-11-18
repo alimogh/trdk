@@ -12,7 +12,7 @@
 
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/date_time.hpp>
-#	include <boost/algorithm/string.hpp>
+#	include <boost/regex.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
