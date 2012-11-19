@@ -208,22 +208,22 @@ void BarService::LogCurrentBar() const {
 }
 
 pt::ptime BarService::GetBarEnd(
-			const boost::posix_time::ptime &barTime)
+			const boost::posix_time::ptime &tradeTime)
 		const {
-	AssertNe(pt::not_a_date_time, barTime);
+	AssertNe(pt::not_a_date_time, tradeTime);
 	static_assert(numberOfOrderSides, "Units list changed.");
 	switch (m_units) {
 		case UNITS_SECONDS:
 			return
-				barTime
-				- pt::seconds(barTime.time_of_day().seconds())
+				tradeTime
+				- pt::seconds(tradeTime.time_of_day().seconds())
 				+ pt::seconds(m_barSize);
 		case UNITS_MINUTES:
 			return
-				pt::ptime(barTime.date())
-				+ pt::hours(barTime.time_of_day().hours())
+				pt::ptime(tradeTime.date())
+				+ pt::hours(tradeTime.time_of_day().hours())
 				+ pt::minutes(
-					((barTime.time_of_day().minutes() / m_barSize) + 1)
+					((tradeTime.time_of_day().minutes() / m_barSize) + 1)
 					* m_barSize);
 		case UNITS_HOURS:
 			throw Error("Days units doesn't yet implemented");
