@@ -15,6 +15,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Api.h" />
     <ClInclude Include="BarService.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>

@@ -8,8 +8,6 @@
 
 #include "Prec.hpp"
 #include "Strategy.hpp"
-#include "Service.hpp"
-#include "ServiceWrapper.hpp"
 #include "Core/StrategyPositionReporter.hpp"
 #include "Core/PositionBundle.hpp"
 
@@ -53,9 +51,7 @@ Strategy::Strategy(uintmax_t params)
 		: Trader::Strategy(
 			reinterpret_cast<Params *>(params)->tag,
 			reinterpret_cast<Params *>(params)->security),
-		Wrappers::Strategy(
-			*this,
-			reinterpret_cast<Params *>(params)->security),
+		Import::Strategy(static_cast<Trader::Strategy &>(*this)),
 		m_script(reinterpret_cast<Params *>(params)->script.release()) {
 	DoSettingsUpdate(reinterpret_cast<Params *>(params)->ini);
 }
@@ -82,7 +78,7 @@ boost::shared_ptr<Trader::Strategy> Strategy::CreateClientInstance(
 		auto pyObject = clientClass(reinterpret_cast<uintmax_t>(&params));
 		Strategy &strategy = py::extract<Strategy &>(pyObject);
 		strategy.m_self = pyObject;
-		const py::str namePyObject = strategy.PyGetName();
+		const py::str namePyObject = strategy.CallGetNamePyMethod();
 		strategy.m_name = py::extract<std::string>(namePyObject);
 		Assert(!strategy.m_name.empty());
 		return strategy.shared_from_this();
@@ -95,8 +91,26 @@ boost::shared_ptr<Trader::Strategy> Strategy::CreateClientInstance(
 
 void Strategy::NotifyServiceStart(const Trader::Service &service) {
 	try {
-		Assert(dynamic_cast<const Service *>(&service));
-		PyNotifyServiceStart(dynamic_cast<const Service &>(service));
+// 		const Service *const pyService
+// 			= dynamic_cast<const Service *>(&service);
+// 		if (pyService) {
+// 			PyNotifyServiceStart(*pyService);
+// 		} else {
+		py::object object;
+		if (dynamic_cast<const Trader::Services::BarService *>(&service)) {
+			//! @todo fixme
+			auto *serviceExport = new Export::Services::BarService(
+				*boost::polymorphic_downcast<
+						const Trader::Services::BarService *>(
+					&service));
+			object = py::object(boost::cref(*serviceExport));
+		}
+		if (object) {
+			m_pyCache.push_back(object);
+			CallNotifyServiceStartPyMethod(object);
+		} else {
+			Trader::Strategy::NotifyServiceStart(service);
+		}
 	} catch (const py::error_already_set &) {
 		RethrowPythonClientException(
 			"Failed to call method Trader.Strategy.notifyServiceStart");
@@ -106,12 +120,11 @@ void Strategy::NotifyServiceStart(const Trader::Service &service) {
 boost::shared_ptr<PositionBandle> Strategy::TryToOpenPositions() {
 	boost::shared_ptr<PositionBandle> result;
 	try {
-		auto pyPosition = PyTryToOpenPositions();
+		auto pyPosition = CallTryToOpenPositionsPyMethod();
 		if (!pyPosition) {
 			return result;
 		}
-		Wrappers::Position &position
-			= py::extract<Wrappers::Position &>(pyPosition);
+		Import::Position &position = py::extract<Import::Position &>(pyPosition);
 		position.Bind(pyPosition);
 		result.reset(new PositionBandle);
 		result->Get().push_back(position.GetPosition().shared_from_this());
@@ -128,11 +141,11 @@ void Strategy::TryToClosePositions(PositionBandle &positions) {
 		if (!p->IsOpened() || p->IsClosed() || p->IsCanceled()) {
  			continue;
  		}
-		Assert(dynamic_cast<Wrappers::Position *>(&*p));
+		Assert(dynamic_cast<Import::Position *>(&*p));
 		Assert(
 			dynamic_cast<LongPosition *>(&*p)
 			|| dynamic_cast<ShortPosition *>(&*p));
-		PyTryToClosePositions(dynamic_cast<Wrappers::Position &>(*p));
+		CallTryToClosePositionsPyMethod(dynamic_cast<Import::Position &>(*p));
 	}
 }
 
@@ -163,7 +176,7 @@ void Strategy::DoSettingsUpdate(const IniFileSectionRef &ini) {
 	UpdateAlgoSettings(*this, ini);
 }
 
-py::str Strategy::PyGetName() const {
+py::str Strategy::CallGetNamePyMethod() const {
 	const auto f = get_override("getName");
 	if (f) {
 		try {
@@ -174,11 +187,11 @@ py::str Strategy::PyGetName() const {
 			throw;
 		}
 	} else {
-		return Wrappers::Strategy::PyGetName();
+		return Import::Strategy::CallGetNamePyMethod();
 	}
 }
 
-void Strategy::PyNotifyServiceStart(py::object service) {
+void Strategy::CallNotifyServiceStartPyMethod(const py::object &service) {
 	Assert(service);
 	const auto f = get_override("notifyServiceStart");
 	if (f) {
@@ -190,11 +203,11 @@ void Strategy::PyNotifyServiceStart(py::object service) {
 			throw;
 		}
 	} else {
-		Wrappers::Strategy::PyNotifyServiceStart(service);
+		Import::Strategy::CallNotifyServiceStartPyMethod(service);
 	}
 }
 
-py::object Strategy::PyTryToOpenPositions() {
+py::object Strategy::CallTryToOpenPositionsPyMethod() {
 	const auto f = get_override("tryToOpenPositions");
 	if (f) {
 		try {
@@ -205,11 +218,11 @@ py::object Strategy::PyTryToOpenPositions() {
 			throw;
 		}
 	} else {
-		return Wrappers::Strategy::PyTryToOpenPositions();
+		return Import::Strategy::CallTryToOpenPositionsPyMethod();
 	}
 }
 
-void Strategy::PyTryToClosePositions(py::object positions) {
+void Strategy::CallTryToClosePositionsPyMethod(const py::object &positions) {
 	Assert(positions);
 	const auto f = get_override("tryToClosePositions");
 	if (f) {
@@ -221,7 +234,7 @@ void Strategy::PyTryToClosePositions(py::object positions) {
 			throw;
 		}
 	} else {
-		Wrappers::Strategy::PyTryToClosePositions(positions);
+		Import::Strategy::CallTryToClosePositionsPyMethod(positions);
 	}
 }
 

@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/08/07 16:48:47
+ *   Created: 2012/11/21 09:23:40
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,9 +8,14 @@
 
 #pragma once
 
+#include "Export.hpp"
+#include "Core/Security.hpp"
 #include "Core/Position.hpp"
+#include "Core/Service.hpp"
+#include "Core/Strategy.hpp"
+#include "Errors.hpp"
 
-namespace Trader { namespace PyApi { namespace Wrappers {
+namespace Trader { namespace PyApi { namespace Import {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -62,7 +67,8 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 			return m_position.GetPlanedQty();
 		}
 		double GetOpenStartPrice() const {
-			return m_position.GetSecurity().DescalePrice(m_position.GetOpenStartPrice());
+			return m_position.GetSecurity()
+				.DescalePrice(m_position.GetOpenStartPrice());
 		}
 
 		boost::uint64_t GetOpenOrderId() const {
@@ -72,7 +78,8 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 			return m_position.GetOpenedQty();
 		}
 		double GetOpenPrice() const {
-			return m_position.GetSecurity().DescalePrice(m_position.GetOpenPrice());
+			return m_position.GetSecurity()
+				.DescalePrice(m_position.GetOpenPrice());
 		}
 
 		int GetNotOpenedQty() const {
@@ -86,10 +93,12 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 			return m_position.GetCloseOrderId();
 		}
 		double GetCloseStartPrice() const {
-			return m_position.GetSecurity().DescalePrice(m_position.GetCloseStartPrice());
+			return m_position.GetSecurity()
+				.DescalePrice(m_position.GetCloseStartPrice());
 		}
 		double GetClosePrice() const {
-			return m_position.GetSecurity().DescalePrice(m_position.GetClosePrice());
+			return m_position.GetSecurity()
+				.DescalePrice(m_position.GetClosePrice());
 		}
 
 		int GetClosedQty() const {
@@ -97,7 +106,8 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 		}
 
 		double GetCommission() const {
-			return m_position.GetSecurity().DescalePrice(m_position.GetCommission());
+			return m_position.GetSecurity()
+				.DescalePrice(m_position.GetCommission());
 		}
 
 	public:
@@ -116,11 +126,13 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 		}
 
 		boost::uint64_t OpenOrCancel(double price) {
-			return m_position.OpenOrCancel(m_position.GetSecurity().ScalePrice(price));
+			return m_position.OpenOrCancel(
+				m_position.GetSecurity().ScalePrice(price));
 		}
 
 		boost::uint64_t CloseAtMarketPrice() {
-			return m_position.CloseAtMarketPrice(Trader::Position::CLOSE_TYPE_NONE);
+			return m_position.CloseAtMarketPrice(
+				Trader::Position::CLOSE_TYPE_NONE);
 		}
 
 		boost::uint64_t Close(double price) {
@@ -142,7 +154,8 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 		}
 
 		bool CancelAtMarketPrice() {
-			return m_position.CancelAtMarketPrice(Trader::Position::CLOSE_TYPE_NONE);
+			return m_position.CancelAtMarketPrice(
+				Trader::Position::CLOSE_TYPE_NONE);
 		}
 
 		bool CancelAllOrders() {
@@ -155,5 +168,100 @@ namespace Trader { namespace PyApi { namespace Wrappers {
 		mutable boost::python::object m_self;
 
 	};
+
+	//////////////////////////////////////////////////////////////////////////
+
+	class SecurityAlgo : boost::noncopyable {
+
+	public:
+
+		Export::Security security;
+
+	public:
+
+		explicit SecurityAlgo(Trader::SecurityAlgo &algo)
+				: security(algo.GetSecurity()),
+				m_algo(algo) {
+			//...//
+		}
+
+	public:
+
+		boost::python::str GetTag() const {
+			return m_algo.GetTag().c_str();
+		}
+
+		boost::python::str CallGetNamePyMethod() const {
+			throw PureVirtualMethodHasNoImplementation(
+				"Pure virtual method Trader.SecurityAlgo.getName"
+					" has no implementation");
+		}
+
+		void CallNotifyServiceStartPyMethod(
+					const boost::python::object &service);
+
+	protected:
+
+		template<typename T>
+		T & Get() {
+			return *boost::polymorphic_downcast<T *>(&m_algo);
+		}
+
+		template<typename T>
+		const T & Get() const {
+			return const_cast<SecurityAlgo *>(this)->Get<T>();
+		}
+
+	private:
+
+		Trader::SecurityAlgo &m_algo;
+
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+
+	class Service : public Import::SecurityAlgo {
+
+	public:
+
+		explicit Service(Trader::Service &service)
+				: SecurityAlgo(service) {
+			//...//
+		}
+		
+		virtual ~Service() {
+			//...//
+		}
+
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+
+	class Strategy : public SecurityAlgo {
+
+	public:
+
+		explicit Strategy(Trader::Strategy &strategy)
+				: SecurityAlgo(strategy) {
+			//...//
+		}
+
+	public:
+
+		boost::python::object CallTryToOpenPositionsPyMethod() {
+			throw PureVirtualMethodHasNoImplementation(
+				"Pure virtual method Trader.Strategy.tryToOpenPositions"
+					" has no implementation");
+		}
+
+		void CallTryToClosePositionsPyMethod(const boost::python::object &) {
+			throw PureVirtualMethodHasNoImplementation(
+				"Pure virtual method Trader.Strategy.tryToClosePositions"
+					" has no implementation");
+		}
+
+	};
+
+	//////////////////////////////////////////////////////////////////////////
 
 } } }

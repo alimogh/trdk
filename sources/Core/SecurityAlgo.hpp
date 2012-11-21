@@ -34,6 +34,7 @@ namespace Trader {
 	public:
 
 		boost::shared_ptr<const Trader::Security> GetSecurity() const;
+		boost::shared_ptr<Trader::Security> GetSecurity();
 
 		void UpdateSettings(const Trader::Lib::IniFileSectionRef &);
 
@@ -48,8 +49,6 @@ namespace Trader {
 				= 0;
 
 	protected:
-
-		boost::shared_ptr<Trader::Security> GetSecurity();
 
 		Trader::Qty CalcQty(
 					Trader::ScaledPrice,

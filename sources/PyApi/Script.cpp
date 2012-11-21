@@ -8,10 +8,11 @@
 
 #include "Prec.hpp"
 #include "Script.hpp"
+#include "Import.hpp"
+#include "Export.hpp"
 #include "Service.hpp"
 #include "Strategy.hpp"
 #include "Position.hpp"
-#include "SecurityWrapper.hpp"
 
 namespace fs = boost::filesystem;
 namespace py = boost::python;
@@ -41,114 +42,162 @@ BOOST_PYTHON_MODULE(Trader) {
 	def("logInfo", &LogInfo);
 	def("logTrading", &LogTrading);
 
-	class_<Wrappers::SecurityAlgo, boost::noncopyable>("SecurityAlgo", no_init)
-		.add_property("tag", &Wrappers::SecurityAlgo::GetTag)
- 		.def_readonly("security", &Wrappers::SecurityAlgo::security)
- 		.def("getName", pure_virtual(&Wrappers::SecurityAlgo::PyGetName));
+	class_<Import::SecurityAlgo, boost::noncopyable>("SecurityAlgo", no_init)
+		.add_property(
+			"tag",
+			&Import::SecurityAlgo::GetTag)
+ 		.def_readonly(
+			"security",
+			&Import::SecurityAlgo::security)
+ 		.def(
+			"getName",
+			pure_virtual(&Import::SecurityAlgo::CallGetNamePyMethod));
 
 	typedef class_<
 			Service,
-			bases<Wrappers::SecurityAlgo>,
+			bases<Import::SecurityAlgo>,
 			boost::shared_ptr<Service>,
 			boost::noncopyable>
-		PyService;
- 	PyService("Service", init<uintmax_t>());
+		ServiceImport;
+ 	ServiceImport("Service", no_init);
 
 	typedef class_<
 			Strategy,
-			bases<Wrappers::SecurityAlgo>,
+			bases<Import::SecurityAlgo>,
 			boost::shared_ptr<Strategy>,
 			boost::noncopyable>
-		PyStrategy;
-	PyStrategy("Strategy", init<uintmax_t>())
-		.def("notifyServiceStart", &Wrappers::Strategy::PyNotifyServiceStart)
-		.def("tryToOpenPositions", pure_virtual(&Wrappers::Strategy::PyTryToOpenPositions))
-		.def("tryToClosePositions", pure_virtual(&Wrappers::Strategy::PyTryToClosePositions));
+		StrategyImport;
+	StrategyImport("Strategy", init<uintmax_t>())
+		.def(
+			"notifyServiceStart",
+			&Import::Strategy::CallNotifyServiceStartPyMethod)
+		.def(
+			"tryToOpenPositions",
+			pure_virtual(&Import::Strategy::CallTryToOpenPositionsPyMethod))
+		.def(
+			"tryToClosePositions",
+			pure_virtual(&Import::Strategy::CallTryToClosePositionsPyMethod));
 
-	class_<Wrappers::Security, boost::noncopyable>("Security",  no_init)
+	class_<Export::Security, boost::noncopyable>("Security",  no_init)
 
-		.add_property("symbol", &Wrappers::Security::GetSymbol)
-		.add_property("fullSymbol", &Wrappers::Security::GetFullSymbol)
-		.add_property("currency", &Wrappers::Security::GetCurrency)
+		.add_property("symbol", &Export::Security::GetSymbol)
+		.add_property("fullSymbol", &Export::Security::GetFullSymbol)
+		.add_property("currency", &Export::Security::GetCurrency)
 
-		.add_property("priceScale", &Wrappers::Security::GetPriceScale)
-		.def("scalePrice", &Wrappers::Security::ScalePrice)
-		.def("descalePrice", &Wrappers::Security::DescalePrice)
+		.add_property("priceScale", &Export::Security::GetPriceScale)
+		.def("scalePrice", &Export::Security::ScalePrice)
+		.def("descalePrice", &Export::Security::DescalePrice)
 
-		.add_property("lastPriceScaled", &Wrappers::Security::GetLastPriceScaled)
-		.add_property("lastPrice", &Wrappers::Security::GetLastPrice)
-		.add_property("lastSize", &Wrappers::Security::GetLastQty)
+		.add_property(
+			"lastPriceScaled",
+			&Export::Security::GetLastPriceScaled)
+		.add_property("lastPrice", &Export::Security::GetLastPrice)
+		.add_property("lastSize", &Export::Security::GetLastQty)
 
-		.add_property("askPriceScaled", &Wrappers::Security::GetAskPriceScaled)
-		.add_property("askPrice", &Wrappers::Security::GetAskPrice)
-		.add_property("askSize", &Wrappers::Security::GetAskQty)
+		.add_property("askPriceScaled", &Export::Security::GetAskPriceScaled)
+		.add_property("askPrice", &Export::Security::GetAskPrice)
+		.add_property("askSize", &Export::Security::GetAskQty)
 
-		.add_property("bidPriceScaled", &Wrappers::Security::GetBidPriceScaled)
-		.add_property("bidPrice", &Wrappers::Security::GetBidPrice)
-		.add_property("bidSize", &Wrappers::Security::GetBidQty)
+		.add_property("bidPriceScaled", &Export::Security::GetBidPriceScaled)
+		.add_property("bidPrice", &Export::Security::GetBidPrice)
+		.add_property("bidSize", &Export::Security::GetBidQty)
 
-		.def("cancelOrder", &Wrappers::Security::CancelOrder)
-		.def("cancelAllOrders", &Wrappers::Security::CancelAllOrders);
+		.def("cancelOrder", &Export::Security::CancelOrder)
+		.def("cancelAllOrders", &Export::Security::CancelAllOrders);
 
-	typedef class_<Wrappers::Position, boost::noncopyable> PyPosition;
-	PyPosition("Position", no_init)
+	typedef class_<Import::Position, boost::noncopyable> PositionImport;
+	PositionImport("Position", no_init)
 
-		.add_property("type", &Wrappers::Position::GetTypeStr)
+		.add_property("type", &Import::Position::GetTypeStr)
 
-		.add_property("hasActiveOrders", &Wrappers::Position::HasActiveOrders)
+		.add_property("hasActiveOrders", &Import::Position::HasActiveOrders)
 
-		.add_property("planedQty", &Wrappers::Position::GetPlanedQty)
+		.add_property("planedQty", &Import::Position::GetPlanedQty)
 
-		.add_property("openStartPrice", &Wrappers::Position::GetOpenStartPrice)
-		.add_property("openOrderId", &Wrappers::Position::GetOpenOrderId)
-		.add_property("openedQty", &Wrappers::Position::GetOpenedQty)
-		.add_property("openPrice", &Wrappers::Position::GetOpenPrice)
+		.add_property("openStartPrice", &Import::Position::GetOpenStartPrice)
+		.add_property("openOrderId", &Import::Position::GetOpenOrderId)
+		.add_property("openedQty", &Import::Position::GetOpenedQty)
+		.add_property("openPrice", &Import::Position::GetOpenPrice)
 
-		.add_property("notOpenedQty", &Wrappers::Position::GetNotOpenedQty)
-		.add_property("activeQty", &Wrappers::Position::GetActiveQty)
+		.add_property("notOpenedQty", &Import::Position::GetNotOpenedQty)
+		.add_property("activeQty", &Import::Position::GetActiveQty)
 
-		.add_property("closeOrderId", &Wrappers::Position::GetCloseOrderId)
-		.add_property("closeStartPrice", &Wrappers::Position::GetCloseStartPrice)
-		.add_property("closePrice", &Wrappers::Position::GetClosePrice)
-		.add_property("closedQty", &Wrappers::Position::GetClosedQty)
+		.add_property("closeOrderId", &Import::Position::GetCloseOrderId)
+		.add_property("closeStartPrice", &Import::Position::GetCloseStartPrice)
+		.add_property("closePrice", &Import::Position::GetClosePrice)
+		.add_property("closedQty", &Import::Position::GetClosedQty)
 
-		.add_property("commission", &Wrappers::Position::GetCommission)
+		.add_property("commission", &Import::Position::GetCommission)
 
-		.def("openAtMarketPrice", &Wrappers::Position::OpenAtMarketPrice)
-		.def("open", &Wrappers::Position::Open)
-		.def("openAtMarketPriceWithStopPrice", &Wrappers::Position::OpenAtMarketPriceWithStopPrice)
-		.def("openOrCancel", &Wrappers::Position::OpenOrCancel)
+		.def("openAtMarketPrice", &Import::Position::OpenAtMarketPrice)
+		.def("open", &Import::Position::Open)
+		.def(
+			"openAtMarketPriceWithStopPrice",
+			&Import::Position::OpenAtMarketPriceWithStopPrice)
+		.def("openOrCancel", &Import::Position::OpenOrCancel)
 
-		.def("closeAtMarketPrice", &Wrappers::Position::CloseAtMarketPrice)
-		.def("close", &Wrappers::Position::Close)
-		.def("closeAtMarketPriceWithStopPrice", &Wrappers::Position::CloseAtMarketPriceWithStopPrice)
-		.def("closeOrCancel", &Wrappers::Position::CloseOrCancel)
+		.def("closeAtMarketPrice", &Import::Position::CloseAtMarketPrice)
+		.def("close", &Import::Position::Close)
+		.def(
+			"closeAtMarketPriceWithStopPrice",
+			&Import::Position::CloseAtMarketPriceWithStopPrice)
+		.def("closeOrCancel", &Import::Position::CloseOrCancel)
 
-		.def("cancelAtMarketPrice", &Wrappers::Position::CancelAtMarketPrice)
-		.def("cancelAllOrders", &Wrappers::Position::CancelAllOrders);
+		.def("cancelAtMarketPrice", &Import::Position::CancelAtMarketPrice)
+		.def("cancelAllOrders", &Import::Position::CancelAllOrders);
 
 	typedef init<
-			Wrappers::Security &,
+			Export::Security &,
 			int /*qty*/,
 			double /*startPrice*/,
 			const std::string &>
-		PyPositionInit;
+		PositionImportInit;
 
 	typedef class_<
 			LongPosition,
-			bases<Wrappers::Position>,
+			bases<Import::Position>,
 			boost::shared_ptr<LongPosition>,
 			boost::noncopyable>
-		PyLongPosition;
-	PyLongPosition("LongPosition", PyPositionInit());
+		LongPositionImport;
+	LongPositionImport("LongPosition", PositionImportInit());
 
 	typedef class_<
 			ShortPosition,
-			bases<Wrappers::Position>,
+			bases<Import::Position>,
 			boost::shared_ptr<ShortPosition>,
 			boost::noncopyable>
-		PyShortPosition;
-	PyShortPosition("ShortPosition", PyPositionInit());
+		ShortPositionImport;
+	ShortPositionImport("ShortPosition", PositionImportInit());
+
+	//! @todo Move to detail namespace 
+	typedef class_<Export::Service, boost::noncopyable>("CoreService", no_init)
+		.add_property("tag", &Export::Service::GetTag)
+ 		.def_readonly("security", &Export::Service::security)
+ 		.def("getName", &Export::Service::GetName);
+
+	typedef class_<
+			Export::Services::BarService,
+			bases<Export::Service>,
+			boost::noncopyable>
+		BarServiceExport;
+	//! @todo Move to Services namespace 
+	BarServiceExport("BarService", no_init)
+		.add_property("barSize", &Export::Services::BarService::GetBarSize)
+		.add_property(
+			"barSizeInMinutes",
+			&Export::Services::BarService::GetBarSizeInMinutes)
+		.add_property(
+			"barSizeInHours",
+			&Export::Services::BarService::GetBarSizeInHours)
+		.add_property(
+			"barSizeInDays",
+			&Export::Services::BarService::GetBarSizeInDays)
+		.add_property("size", &Export::Services::BarService::GetSize)
+		.add_property("isEmpty", &Export::Services::BarService::IsEmpty)
+ 		.def("getBarByIndex", &Export::Services::BarService::GetBarByIndex)
+ 		.def(
+			"getBarByReversedIndex",
+			&Export::Services::BarService::GetBarByReversedIndex);
 
 }
 

@@ -13,25 +13,13 @@
       <UniqueIdentifier>{589ed766-0ed9-432e-8bbe-a6792d8f82bd}</UniqueIdentifier>
       <Extensions>py</Extensions>
     </Filter>
-    <Filter Include="Header Files\Wrappers">
-      <UniqueIdentifier>{bedc3aa9-0c6d-48c3-a6c2-9a0b3c020831}</UniqueIdentifier>
+    <Filter Include="Lib Files">
+      <UniqueIdentifier>{0dc04927-2ec5-4467-9cd2-1f5977fcad7d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include=".\PositionWrapper.hpp">
-      <Filter>Header Files\Wrappers</Filter>
-    </ClInclude>
-    <ClInclude Include="SecurityWrapper.hpp">
-      <Filter>Header Files\Wrappers</Filter>
-    </ClInclude>
-    <ClInclude Include="ServiceWrapper.hpp">
-      <Filter>Header Files\Wrappers</Filter>
-    </ClInclude>
-    <ClInclude Include="StrategyWrapper.hpp">
-      <Filter>Header Files\Wrappers</Filter>
     </ClInclude>
     <ClInclude Include="Strategy.hpp">
       <Filter>Header Files</Filter>
@@ -45,13 +33,16 @@
     <ClInclude Include="Errors.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SecurityAlgoWrapper.hpp">
-      <Filter>Header Files\Wrappers</Filter>
-    </ClInclude>
     <ClInclude Include="Script.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Position.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Import.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Export.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -71,13 +62,7 @@
     <ClCompile Include="Position.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SecurityAlgoWrapper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ServiceWrapper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StrategyWrapper.cpp">
+    <ClCompile Include="Import.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -94,5 +79,16 @@
     <None Include="Scripts\TraderPyApiExampleStrategies.py">
       <Filter>Scripts</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\output\x86\lib\Services.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Services_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Services_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
   </ItemGroup>
 </Project>

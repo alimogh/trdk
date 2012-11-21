@@ -49,7 +49,7 @@ Service::Service(uintmax_t params)
 		: Trader::Service(
 			reinterpret_cast<Params *>(params)->tag,
 			reinterpret_cast<Params *>(params)->security),
-		Wrappers::Service(*this, reinterpret_cast<Params *>(params)->security),
+		Wrappers::Service(static_cast<Trader::Service &>(*this)),
 		m_script(reinterpret_cast<Params *>(params)->script.release()) {
 	DoSettingsUpdate(reinterpret_cast<Params *>(params)->ini);
 }

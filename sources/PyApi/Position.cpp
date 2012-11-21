@@ -8,7 +8,6 @@
 
 #include "Prec.hpp"
 #include "Position.hpp"
-#include "SecurityWrapper.hpp"
 
 using namespace Trader::PyApi;
 
@@ -20,32 +19,32 @@ using namespace Trader::PyApi;
 //////////////////////////////////////////////////////////////////////////
 
 ShortPosition::ShortPosition(
-			Wrappers::Security &security,
+			Export::Security &security,
 			int qty,
 			double startPrice,
 			const std::string &tag)
 		: Trader::ShortPosition(
-			security.GetSecurity().shared_from_this(),
+			security.GetSecurity(),
 			qty,
-			security.GetSecurity().ScalePrice(startPrice),
+			security.GetSecurity()->ScalePrice(startPrice),
 			tag),
-		Wrappers::Position(static_cast<Trader::ShortPosition &>(*this)) {
+		Import::Position(static_cast<Trader::ShortPosition &>(*this)) {
 	//...//
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 LongPosition::LongPosition(
-			Wrappers::Security &security,
+			Export::Security &security,
 			int qty,
 			double startPrice,
 			const std::string &tag)
 		: Trader::LongPosition(
-			security.GetSecurity().shared_from_this(),
+			security.GetSecurity(),
 			qty,
-			security.GetSecurity().ScalePrice(startPrice),
+			security.GetSecurity()->ScalePrice(startPrice),
 			tag),
-		Wrappers::Position(static_cast<Trader::LongPosition&>(*this)) {
+		Import::Position(static_cast<Trader::LongPosition &>(*this)) {
 	//...//
 }
 

@@ -294,7 +294,7 @@ namespace {
 			Log::Info(
 				"Loaded \"%1%\" for \"%2%\".",
 				*symbolInstance,
-				*const_cast<const Module &>(*symbolInstance).GetSecurity());
+				*symbolInstance->GetSecurity());
 		}
 	
 	}

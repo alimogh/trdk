@@ -229,15 +229,6 @@ class SecurityAlgo:
 
 ###############################################################################
 
-class Service(Trader.SecurityAlgo):
-	
-	def __init__(param):
-		"""
-			@type param: int
-		"""
-
-###############################################################################
-
 class Strategy(Trader.SecurityAlgo):
 	"""
 		Every strategy algorithm class must be inherited from this class.
@@ -258,11 +249,47 @@ class Strategy(Trader.SecurityAlgo):
 
 	def tryToClosePositions(position):
 		"""
-			Takes Trader.LongPosition or Trader.ShortPosition and tries to close it.
+			Takes Trader.LongPosition or Trader.ShortPosition and tries to
+			close it.
 			
 			@type position: Trader.Position
 			
 			pure virtual method
+		"""
+
+###############################################################################
+
+class Service(Trader.SecurityAlgo):
+	
+	def __init__(param):
+		"""
+			@type param: int
+		"""
+
+class BarService(Trader.Service):
+	
+	barSize = int
+	""" Each bar size, seconds """
+	barSizeInMinutes = int
+	""" Each bar size, minutes """
+	barSizeInHours = int
+	""" Each bar size, hours """
+	barSizeInDays = int
+	""" Each bar size, days """
+
+	size = int
+	""" Number of bars. """
+	isEmpty = bool
+
+	def getBarByIndex(index):
+		"""
+			Returns bar (Trader.Bar) by index. First bar has index "zero".
+		"""
+
+	def getBarByReversedIndex(size_t index):
+		"""
+			Returns bar (Trader.Bar) by reversed index. Last bar has index
+			"zero".
 		"""
 
 ###############################################################################

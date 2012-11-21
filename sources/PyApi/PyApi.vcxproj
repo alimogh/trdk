@@ -77,18 +77,18 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
     <TargetName>PyApi_test</TargetName>
   </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Link />
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Detail.hpp" />
     <ClInclude Include="Position.hpp" />
+    <ClInclude Include="Import.hpp" />
     <ClInclude Include="Service.hpp" />
-    <ClInclude Include="SecurityAlgoWrapper.hpp" />
-    <ClInclude Include="ServiceWrapper.hpp" />
-    <ClInclude Include="StrategyWrapper.hpp" />
-    <ClInclude Include=".\PositionWrapper.hpp" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="Export.hpp" />
     <ClInclude Include="Strategy.hpp" />
     <ClInclude Include="Script.hpp" />
-    <ClInclude Include="SecurityWrapper.hpp" />
     <ClInclude Include="Errors.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -98,12 +98,14 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="SecurityAlgoWrapper.cpp" />
-    <ClCompile Include="Service.cpp" />
-    <ClCompile Include="ServiceWrapper.cpp" />
+    <ClCompile Include="Import.cpp" />
+    <ClCompile Include="Service.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Strategy.cpp" />
     <ClCompile Include="Script.cpp" />
-    <ClCompile Include="StrategyWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyApi.def" />
@@ -118,6 +120,23 @@
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Services\Services.vcxproj">
+      <Project>{4f025d92-8f15-4a05-97b6-ca680cb090d9}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\output\x86\lib\Services.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Services_dbg.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Services_test.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Library>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

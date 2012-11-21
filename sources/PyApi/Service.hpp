@@ -8,15 +8,14 @@
 
 #pragma once
 
-#include "ServiceWrapper.hpp"
+#include "Import.hpp"
 #include "Detail.hpp"
-#include "Core/Service.hpp"
 
 namespace Trader { namespace PyApi {
 
 	class Service
 			: public Trader::Service,
-			public Wrappers::Service,
+			public Import::Service,
 			public boost::python::wrapper<Trader::PyApi::Service> {
 
 		template<typename Module>

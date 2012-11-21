@@ -8,8 +8,7 @@
 
 #pragma once
 
-#include "PositionWrapper.hpp"
-#include "Core/Position.hpp"
+#include "Import.hpp"
 
 namespace Trader { namespace PyApi { namespace Wrappers {
 
@@ -23,10 +22,10 @@ namespace Trader { namespace PyApi {
 
 	class ShortPosition
 		: public Trader::ShortPosition,
-		public Wrappers::Position {
+		public Import::Position {
 	public:
 		explicit ShortPosition(
-					Wrappers::Security &,
+					Export::Security &,
 					int qty,
 					double startPrice,
 					const std::string &);
@@ -36,10 +35,10 @@ namespace Trader { namespace PyApi {
 
 	class LongPosition
 		: public Trader::LongPosition,
-		public Wrappers::Position {
+		public Import::Position {
 	public:
 		explicit LongPosition(
-					Wrappers::Security &,
+					Export::Security &,
 					int qty,
 					double startPrice,
 					const std::string &);

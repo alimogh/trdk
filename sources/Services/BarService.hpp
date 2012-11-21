@@ -9,11 +9,12 @@
 #pragma once
 
 #include "Core/Service.hpp"
+#include "Api.h"
 
 namespace Trader { namespace Services {
 
 	//! Bars collection service.
-	class BarService : public Trader::Service {
+	class TRADER_SERVICES_API BarService : public Trader::Service {
 
 	public:
 
@@ -78,28 +79,8 @@ namespace Trader { namespace Services {
 
 		bool IsEmpty() const;
 
-// 		//! First bar time.
-// 		/** @throw Trader::Services::BarService::BarDoesNotExistError
-// 		*/
-// 		const TimeUtc & GetFirstTime() const;
-// 
-// 		//! First bar date.
-// 		/** @throw Trader::Services::BarService::BarDoesNotExistError
-// 		*/
-// 		const DateUtc & GetFirstDate() const;
-// 
-// 		//! Last bar time.
-// 		/** @throw Trader::Services::BarService::BarDoesNotExistError
-// 		*/
-// 		const TimeUtc & GetLastTime() const;
-// 
-// 		//! Last bar date.
-// 		/** @throw Trader::Services::BarService::BarDoesNotExistError
-// 		*/
-// 		const DateUtc & GetLastDate() const;
-// 
-// 	public:
-// 
+	public:
+
 		//! Returns bar by index.
 		/** First bar has index "zero".
 		  * @throw Trader::Services::BarService::BarDoesNotExistError
@@ -114,20 +95,10 @@ namespace Trader { namespace Services {
 		  */
 		const Bar & GetBarByReversedIndex(size_t index) const;
 
-// 		//! Returns bar whose period falls in the requested time (current
-// 		//! session).
-// 		/** @throw Trader::Services::BarService::BarDoesNotExistError
-// 		*/
+ 		//! Returns bar whose period falls in the requested time.
+ 		/** @throw Trader::Services::BarService::BarDoesNotExistError
+ 		  */
 // 		const Bar & GetBar(const TimeUtc &) const;
-// 
-		//! Returns bar whose period falls in the requested date and time.
-		/** @throw Trader::Services::BarService::BarDoesNotExistError
-		*/
-// 		const Bar & GetBar(const TimeUtc &, const DateUtc &) const {
-// 			if (IsEmpty()) {
-// 				throw BarDoesNotExistError();
-// 			}
-// 		}
 
 	protected:
 

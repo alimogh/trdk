@@ -8,15 +8,14 @@
 
 #pragma once
 
-#include "StrategyWrapper.hpp"
+#include "Import.hpp"
 #include "Detail.hpp"
-#include "Core/Strategy.hpp"
 
 namespace Trader { namespace PyApi {
 
 	class Strategy
 			: public Trader::Strategy,
-			public Wrappers::Strategy,
+			public Import::Strategy,
 			public boost::python::wrapper<Trader::PyApi::Strategy> {
 
 		template<typename Module>
@@ -36,10 +35,10 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		boost::python::str PyGetName() const;
-		void PyNotifyServiceStart(boost::python::object);
-		boost::python::object PyTryToOpenPositions();
-		void PyTryToClosePositions(boost::python::object);
+		boost::python::str CallGetNamePyMethod() const;
+		void CallNotifyServiceStartPyMethod(const boost::python::object &);
+		boost::python::object CallTryToOpenPositionsPyMethod();
+		void CallTryToClosePositionsPyMethod(const boost::python::object &);
 
 	public:
 
@@ -76,6 +75,9 @@ namespace Trader { namespace PyApi {
 		std::unique_ptr<Script> m_script;
 		std::string m_name;
 		boost::python::object m_self;
+
+		//! @todo remove
+		std::list<boost::python::object> m_pyCache;
 
 	};
 
