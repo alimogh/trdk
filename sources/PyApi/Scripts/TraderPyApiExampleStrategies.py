@@ -94,8 +94,8 @@ class Example_2(Trader.Strategy):
 		return self.__class__.__name__
 
 	def notifyServiceStart(self, service):
-		if service.tag == '1 second frame':
-			self._frame1Sec = service
+		if service.tag == '5 minute bar':
+			self._fiveMinsBars = service
 		else:
 			super(self.__class__, self).notifyServiceStart(service)
 	
@@ -103,10 +103,8 @@ class Example_2(Trader.Strategy):
 		if self._stop == True:
 			return
 		self._testCount = 0
-		Trader.logInfo('Open position...')
- 		position = Trader.LongPosition(self.security, 1, 9.95, self.tag)
-		position.openAtMarketPrice()
-		return position
+		Trader.logInfo('Open position...' + self._fiveMinsBars.size)
+		return
 
 	def tryToClosePositions(self, position):
 		if position.hasActiveOrders:

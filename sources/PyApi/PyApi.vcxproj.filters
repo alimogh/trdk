@@ -73,9 +73,6 @@
     <None Include="PyApi.def">
       <Filter>Header Files</Filter>
     </None>
-    <None Include="Scripts\Frame.py">
-      <Filter>Scripts</Filter>
-    </None>
     <None Include="Scripts\TraderPyApiExampleStrategies.py">
       <Filter>Scripts</Filter>
     </None>

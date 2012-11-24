@@ -8,15 +8,14 @@
 
 #pragma once
 
+#include "Fwd.hpp"
+
 namespace Trader { namespace Engine {
 
 	class Dispatcher : private boost::noncopyable {
 
 	private:
 
-		class StrategyState;
-		class TradeObserverState;
-		class Notifier;
 		class UpdateSlots;
 		class TradesObservationSlots;
 

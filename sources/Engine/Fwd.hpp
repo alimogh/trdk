@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/09/16 12:38:52
+ *   Created: 2012/11/22 13:38:47
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,25 +8,9 @@
 
 #pragma once
 
-namespace Trader {
+namespace Trader { namespace Engine {
 
-	class Security;
-	
-	class MarketDataSource;
+	class Notifier;
+	class TradeObserverState;
 
-	class Position;
-	class LongPosition;
-	class ShortPosition;
-	class PositionReporter;
-
-	class TradeSystem;
-
-	class Settings;
-
-	class Module;
-	class SecurityAlgo;
-	class Strategy;
-	class Observer;
-	class Service;
-
-}
+} }

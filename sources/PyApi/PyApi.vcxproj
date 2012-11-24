@@ -109,7 +109,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="PyApi.def" />
-    <None Include="Scripts\Frame.py" />
     <None Include="Scripts\TraderPyApiExampleStrategies.py" />
     <None Include="Trader.pypredef" />
   </ItemGroup>
