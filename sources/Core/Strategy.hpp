@@ -21,6 +21,17 @@ namespace Trader {
 
 	public:
 
+		class TRADER_CORE_API Notifier
+				: private boost::noncopyable {
+		public:
+			Notifier();
+			virtual ~Notifier();
+		public:
+			virtual void Signal(boost::shared_ptr<Strategy>) = 0;
+		};
+
+	public:
+
 		using boost::enable_shared_from_this<Trader::Strategy>::shared_from_this;
 
 	public:
@@ -39,7 +50,7 @@ namespace Trader {
 
 		bool IsBlocked() const;
 
-		void CheckPositions();
+		void CheckPositions(Notifier &);
 
 		PositionReporter & GetPositionReporter();
 

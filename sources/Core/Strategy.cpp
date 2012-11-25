@@ -18,6 +18,16 @@ using namespace Trader::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
+Strategy::Notifier::Notifier() {
+	//...//
+}
+
+Strategy::Notifier::~Notifier() {
+	//...//
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 class Strategy::Implementation : private boost::noncopyable {
 
 public:
@@ -52,7 +62,7 @@ public:
 		delete m_positionReporter;
 	}
 
-	bool CheckPositionsUnsafe() {
+	bool CheckPositionsUnsafe(Notifier &notifier) {
 
 		const auto now = boost::get_system_time();
 
@@ -106,12 +116,12 @@ public:
 		foreach (const auto &p, positions->Get()) {
 			Assert(&p->GetSecurity() == &m_strategy.GetSecurity());
 			m_strategy.ReportDecision(*p);
-// 			stateUpdateConnections.InsertSafe(
-// 				p->Subscribe(
-// 					boost::bind(
-// 						&Notifier::Signal,
-// 						m_notifier.get(),
-// 						shared_from_this())));
+			stateUpdateConnections.InsertSafe(
+				p->Subscribe(
+					boost::bind(
+						&Notifier::Signal,
+						&notifier,
+						m_strategy.shared_from_this())));
 		}
 		Assert(stateUpdateConnections.IsConnected());
 
@@ -165,12 +175,12 @@ bool Strategy::IsBlocked() const {
 	return m_pimpl->m_isBlocked || !GetSettings().IsValidPrice(GetSecurity());
 }
 
-void Strategy::CheckPositions() {
+void Strategy::CheckPositions(Notifier &notifier) {
 	const Lock lock(GetMutex());
 	if (m_pimpl->m_isBlocked) {
 		return;
 	}
-	while (m_pimpl->CheckPositionsUnsafe());
+	while (m_pimpl->CheckPositionsUnsafe(notifier));
 }
 
 //////////////////////////////////////////////////////////////////////////

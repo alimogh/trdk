@@ -37,14 +37,19 @@ namespace {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	void NotifyServiceDataUpdateSubscribers(const Service &);
+	void NotifyServiceDataUpdateSubscribers(
+				const Service &,
+				Strategy::Notifier &);
 
 	class NotifyServiceDataUpdateVisitor
 			: public boost::static_visitor<void>,
 			private boost::noncopyable {
 	public:
-		explicit NotifyServiceDataUpdateVisitor(const Service &service)
-				: m_service(service) {
+		explicit NotifyServiceDataUpdateVisitor(
+					const Service &service,
+					Strategy::Notifier &notifier)
+				: m_service(service),
+				m_notifier(notifier) {
 			//...//
 		}
 	public:		
@@ -61,7 +66,7 @@ namespace {
 					return;
 				}
 			}
-			module->CheckPositions();
+			module->CheckPositions(m_notifier);
 		}
 		template<>
 		void operator ()(const boost::shared_ptr<Service> &module) const {
@@ -71,14 +76,17 @@ namespace {
 					return;
 				}
 			}
-			NotifyServiceDataUpdateSubscribers(*module);
+			NotifyServiceDataUpdateSubscribers(*module, m_notifier);
 		}
 	private:
 		const Service &m_service;
+		Strategy::Notifier &m_notifier;
 	};
 
-	void NotifyServiceDataUpdateSubscribers(const Service &service) {
-		const NotifyServiceDataUpdateVisitor visitor(service);
+	void NotifyServiceDataUpdateSubscribers(
+				const Service &service,
+				Strategy::Notifier &notifier) {
+		const NotifyServiceDataUpdateVisitor visitor(service, notifier);
 		foreach (auto subscriber, service.GetSubscribers()) {
 			try {
 				boost::apply_visitor(visitor, subscriber);
@@ -102,8 +110,9 @@ namespace {
 	
 	public:		
 	
-		explicit NotifyVisitor(const Trade &trade)
-				: m_trade(trade) {
+		explicit NotifyVisitor(const Trade &trade, Strategy::Notifier &notifier)
+				: m_trade(trade),
+				m_notifier(notifier) {
 			//...//
 		}
 		
@@ -113,14 +122,14 @@ namespace {
 			if (!Notify(*strategy)) {
 				return;
 			}
-			strategy->CheckPositions();
+			strategy->CheckPositions(m_notifier);
 		}
 
 		void operator ()(const boost::shared_ptr<Service> &service) const {
 			if (!Notify(*service)) {
 				return;
 			}
-			NotifyServiceDataUpdateSubscribers(*service);
+			NotifyServiceDataUpdateSubscribers(*service, m_notifier);
 		}
 	
 		void operator ()(const boost::shared_ptr<Observer> &observer) const {
@@ -154,6 +163,7 @@ namespace {
 	private:
 	
 		const Trade &m_trade;
+		Strategy::Notifier &m_notifier;
 	
 	};
 
@@ -165,8 +175,10 @@ Module & TradeObserverState::GetObserver() {
 	return boost::apply_visitor(GetModuleVisitor(), m_observer);
 }
 
-void TradeObserverState::NotifyNewTrades(const Trade &trade) {
-	boost::apply_visitor(NotifyVisitor(trade), m_observer);
+void TradeObserverState::NotifyNewTrades(
+			const Trade &trade,
+			Strategy::Notifier &notifier) {
+	boost::apply_visitor(NotifyVisitor(trade, notifier), m_observer);
 }
 
 //////////////////////////////////////////////////////////////////////////

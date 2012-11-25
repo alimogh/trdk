@@ -263,7 +263,10 @@ class Strategy(Trader.SecurityAlgo):
 		"""
 			Returns Trader.LongPosition or Trader.ShortPosition if decides to
 			open position or returns nothing otherwise.
-			
+
+			Will be called by engine each time when binded service has changed
+			its state (ex.: received new market data for strategy symbol).
+
 			pure virtual method
 		"""
 
@@ -271,6 +274,12 @@ class Strategy(Trader.SecurityAlgo):
 		"""
 			Takes Trader.LongPosition or Trader.ShortPosition and tries to
 			close it.
+
+			Will be called by engine every time when:
+				- binded service has changed its state (ex.: received new market
+				  data for strategy symbol);
+				- strategy has opened position;
+				- all previous orders has been canceled or filled.
 			
 			@type position: Trader.Position
 			

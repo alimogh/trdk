@@ -111,7 +111,7 @@ bool Notifier::NotifyLevel1Update() {
 
 	Assert(!notifyList->empty());
 	foreach (auto &notification, *notifyList) {
-		notification->CheckPositions();
+		notification->CheckPositions(*this);
 	}
 	notifyList->clear();
 
@@ -155,7 +155,7 @@ bool Notifier::NotifyNewTrades() {
 
 	Assert(!notifyList->empty());
 	foreach (auto &observationEvent, *notifyList) {
-		observationEvent.state->NotifyNewTrades(observationEvent);
+		observationEvent.state->NotifyNewTrades(observationEvent, *this);
 	}
 	notifyList->clear();
 

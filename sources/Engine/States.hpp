@@ -10,6 +10,7 @@
 
 #include "Fwd.hpp"
 #include "Core/Types.hpp"
+#include "Core/Strategy.hpp"
 
 namespace Trader { namespace Engine {
 
@@ -38,7 +39,7 @@ namespace Trader { namespace Engine {
 			//...//
 		}
 
-		void NotifyNewTrades(const Trade &trade);
+		void NotifyNewTrades(const Trade &trade, Strategy::Notifier &notifier);
 
 		Module & GetObserver();
 

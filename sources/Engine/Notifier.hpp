@@ -9,10 +9,11 @@
 #pragma once
 
 #include "States.hpp"
+#include "Core/Strategy.hpp"
 
 namespace Trader { namespace Engine {
 
-	class Notifier : private boost::noncopyable {
+	class Notifier : public Trader::Strategy::Notifier {
 
 	public:
 
@@ -36,7 +37,7 @@ namespace Trader { namespace Engine {
 
 		explicit Notifier(boost::shared_ptr<const Settings> settings);
 
-		~Notifier();
+		virtual ~Notifier();
 
 		boost::shared_ptr<const Settings> GetSettings() const {
 			return m_settings;
@@ -72,7 +73,7 @@ namespace Trader { namespace Engine {
 			return m_tradeObserverStateList;
 		}
 
-		void Signal(boost::shared_ptr<Strategy> strategyState);
+		virtual void Signal(boost::shared_ptr<Strategy> strategyState);
 
 		void Signal(
 					boost::shared_ptr<TradeObserverState> state,

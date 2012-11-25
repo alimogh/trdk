@@ -272,6 +272,10 @@ ScaledPrice Security::GetLastPriceScaled() const {
 void Security::SetLastMarketDataTime(const boost::posix_time::ptime &time) {
 	const Implementation::MarketDataTimeWriteLock lock(
 		m_pimpl->m_marketDataTimeMutex);
+	if (	m_pimpl->m_marketDataTime >= time
+			&& !m_pimpl->m_marketDataTime.is_not_a_date_time()) {
+		return;
+	}
 	m_pimpl->m_marketDataTime = time;
 }
 
@@ -388,6 +392,9 @@ void Security::SignalNewTrade(
 		if (CompareExchange(m_pimpl->m_tradedVolume, newVal, prevVal) == prevVal) {
 			break;
 		}
+	}
+	if (GetSettings().IsReplayMode()) {
+		SetLastMarketDataTime(time);
 	}
 	m_pimpl->m_tradeSignal(time, price, qty, side);
 }

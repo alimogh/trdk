@@ -29,10 +29,8 @@ class Example_1(Trader.Strategy):
 			super(self.__class__, self).notifyServiceStart(service)
 
 	# Pure virtual method, must be implemented in strategy implementation.
-	# This will be called by engine every time when:
-	#   - arrives new data for symbol
-	#     or timeout ${strategy_update_period_ms} has expired
-	#     or one of binded service has changed its state
+	# Will be called by engine each time when binded service has changed its
+	# state (ex.: received new market data for strategy symbol).
 	def tryToOpenPositions(self):
 
 		# Checking entry condition:
@@ -60,12 +58,11 @@ class Example_1(Trader.Strategy):
 		return position
 
 	# Pure virtual method, must be implemented in strategy implementation.
-	# This will be called by engine every time when:
-	#   - arrives new data for symbol
-	#	  or timeout ${strategy_update_period_ms} has expired
-	#     or one of binded service has changed its state
-	#   - strategy has opened position
-	#   - all previous orders has been canceled or filled
+	# Will be called by engine every time when:
+	#	- binded service has changed its state (ex.: received new market data
+	#	  for strategy symbol);
+	#	- strategy has opened position;
+	#	- all previous orders has been canceled or filled.
 	def tryToClosePositions(self, position):
 		
 		takeProfitPrice = position.openPrice + 0.03
