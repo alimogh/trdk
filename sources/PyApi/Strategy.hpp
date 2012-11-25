@@ -31,14 +31,25 @@ namespace Trader { namespace PyApi {
 		static boost::shared_ptr<Trader::Strategy> CreateClientInstance(
 					const std::string &tag,
 					boost::shared_ptr<Trader::Security>,
-					const Trader::Lib::IniFileSectionRef &);
+					const Trader::Lib::IniFileSectionRef &,
+					boost::shared_ptr<const Trader::Settings>);
 
 	public:
 
 		boost::python::str CallGetNamePyMethod() const;
+		
 		void CallNotifyServiceStartPyMethod(const boost::python::object &);
+		
 		boost::python::object CallTryToOpenPositionsPyMethod();
 		void CallTryToClosePositionsPyMethod(const boost::python::object &);
+		
+		bool CallOnNewTradePyMethod(
+					const boost::python::object &time,
+					const boost::python::object &price,
+					const boost::python::object &qty,
+					const boost::python::object &side);
+		bool CallOnServiceDataUpdatePyMethod(
+					const boost::python::object &service);
 
 	public:
 
@@ -49,6 +60,14 @@ namespace Trader { namespace PyApi {
 		}
 
 		virtual void NotifyServiceStart(const Trader::Service &);
+
+		virtual bool OnNewTrade(
+					const boost::posix_time::ptime &,
+					Trader::ScaledPrice,
+					Trader::Qty,
+					Trader::OrderSide);
+
+		virtual bool OnServiceDataUpdate(const Trader::Service &);
 
 	public:
 
@@ -77,7 +96,7 @@ namespace Trader { namespace PyApi {
 		boost::python::object m_self;
 
 		//! @todo remove
-		std::list<boost::python::object> m_pyCache;
+		std::map<const void *, boost::python::object> m_pyCache;
 
 	};
 

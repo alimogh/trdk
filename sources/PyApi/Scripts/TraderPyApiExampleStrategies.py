@@ -99,11 +99,18 @@ class Example_2(Trader.Strategy):
 		else:
 			super(self.__class__, self).notifyServiceStart(service)
 	
+	def onServiceDataUpdate(self, service):
+		assert(service == self._fiveMinsBars)
+		Trader.logInfo('5 minute bar: new data...')
+		return True
+
 	def tryToOpenPositions(self):
 		if self._stop == True:
 			return
 		self._testCount = 0
-		Trader.logInfo('Open position...' + self._fiveMinsBars.size)
+		Trader.logInfo(
+			'Open position (bar service size {0})...'
+				.format(self._fiveMinsBars.size))
 		return
 
 	def tryToClosePositions(self, position):

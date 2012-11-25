@@ -63,94 +63,89 @@ namespace Trader { namespace PyApi { namespace Import {
 			return m_position.GetTypeStr().c_str();
 		}
 
-		int GetPlanedQty() const {
+		Trader::Qty GetPlanedQty() const {
 			return m_position.GetPlanedQty();
 		}
-		double GetOpenStartPrice() const {
-			return m_position.GetSecurity()
-				.DescalePrice(m_position.GetOpenStartPrice());
+		Trader::ScaledPrice GetOpenStartPrice() const {
+			return m_position.GetOpenStartPrice();
 		}
 
-		boost::uint64_t GetOpenOrderId() const {
+		Trader::OrderId GetOpenOrderId() const {
 			return m_position.GetOpenOrderId();
 		}
-		int GetOpenedQty() const {
+		Trader::Qty GetOpenedQty() const {
 			return m_position.GetOpenedQty();
 		}
-		double GetOpenPrice() const {
-			return m_position.GetSecurity()
-				.DescalePrice(m_position.GetOpenPrice());
+		Trader::ScaledPrice GetOpenPrice() const {
+			return m_position.GetOpenPrice();
 		}
 
-		int GetNotOpenedQty() const {
+		Trader::Qty GetNotOpenedQty() const {
 			return m_position.GetNotOpenedQty();
 		}
-		int GetActiveQty() const {
+		Trader::Qty GetActiveQty() const {
 			return m_position.GetActiveQty();
 		}
 
-		boost::uint64_t GetCloseOrderId() const {
+		Trader::OrderId GetCloseOrderId() const {
 			return m_position.GetCloseOrderId();
 		}
-		double GetCloseStartPrice() const {
-			return m_position.GetSecurity()
-				.DescalePrice(m_position.GetCloseStartPrice());
+		Trader::ScaledPrice GetCloseStartPrice() const {
+			return m_position.GetCloseStartPrice();
 		}
-		double GetClosePrice() const {
-			return m_position.GetSecurity()
-				.DescalePrice(m_position.GetClosePrice());
+		Trader::ScaledPrice GetClosePrice() const {
+			return m_position.GetClosePrice();
 		}
 
-		int GetClosedQty() const {
+		Trader::Qty GetClosedQty() const {
 			return m_position.GetClosedQty();
 		}
 
-		double GetCommission() const {
-			return m_position.GetSecurity()
-				.DescalePrice(m_position.GetCommission());
+		Trader::ScaledPrice GetCommission() const {
+			return m_position.GetCommission();
 		}
 
 	public:
 
-		boost::uint64_t OpenAtMarketPrice() {
+		Trader::OrderId OpenAtMarketPrice() {
 			return m_position.OpenAtMarketPrice();
 		}
 
-		boost::uint64_t Open(double price) {
-			return m_position.Open(m_position.GetSecurity().ScalePrice(price));
+		Trader::OrderId Open(Trader::ScaledPrice price) {
+			return m_position.Open(price);
 		}
 
-		boost::uint64_t OpenAtMarketPriceWithStopPrice(double stopPrice) {
-			return m_position.OpenAtMarketPriceWithStopPrice(
-				m_position.GetSecurity().ScalePrice(stopPrice));
+		Trader::OrderId OpenAtMarketPriceWithStopPrice(
+					Trader::ScaledPrice stopPrice) {
+			return m_position.OpenAtMarketPriceWithStopPrice(stopPrice);
 		}
 
-		boost::uint64_t OpenOrCancel(double price) {
-			return m_position.OpenOrCancel(
-				m_position.GetSecurity().ScalePrice(price));
+		Trader::OrderId OpenOrCancel(Trader::ScaledPrice price) {
+			return m_position.OpenOrCancel(price);
 		}
 
-		boost::uint64_t CloseAtMarketPrice() {
+		Trader::OrderId CloseAtMarketPrice() {
 			return m_position.CloseAtMarketPrice(
 				Trader::Position::CLOSE_TYPE_NONE);
 		}
 
-		boost::uint64_t Close(double price) {
+		Trader::OrderId Close(Trader::ScaledPrice price) {
 			return m_position.Close(
 				Trader::Position::CLOSE_TYPE_NONE,
-				m_position.GetSecurity().ScalePrice(price));
+				price);
 		}
 
-		boost::uint64_t CloseAtMarketPriceWithStopPrice(double stopPrice) {
+		Trader::OrderId CloseAtMarketPriceWithStopPrice(
+					Trader::ScaledPrice stopPrice) {
 			return m_position.CloseAtMarketPriceWithStopPrice(
 				Trader::Position::CLOSE_TYPE_NONE,
-				m_position.GetSecurity().ScalePrice(stopPrice));
+				stopPrice);
 		}
 
-		boost::uint64_t CloseOrCancel(double price) {
+		Trader::OrderId CloseOrCancel(Trader::ScaledPrice price) {
 			return m_position.CloseOrCancel(
 				Trader::Position::CLOSE_TYPE_NONE,
-				m_position.GetSecurity().ScalePrice(price));
+				price);
 		}
 
 		bool CancelAtMarketPrice() {
@@ -180,7 +175,7 @@ namespace Trader { namespace PyApi { namespace Import {
 	public:
 
 		explicit SecurityAlgo(Trader::SecurityAlgo &algo)
-				: security(algo.GetSecurity()),
+				: security(algo.GetSecurity().shared_from_this()),
 				m_algo(algo) {
 			//...//
 		}
@@ -198,6 +193,16 @@ namespace Trader { namespace PyApi { namespace Import {
 		}
 
 		void CallNotifyServiceStartPyMethod(
+					const boost::python::object &service);
+
+		
+		bool CallOnNewTradePyMethod(
+					const boost::python::object &time,
+					const boost::python::object &price,
+					const boost::python::object &qty,
+					const boost::python::object &side);
+
+		bool CallOnServiceDataUpdatePyMethod(
 					const boost::python::object &service);
 
 	protected:

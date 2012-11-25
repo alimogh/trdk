@@ -27,7 +27,8 @@ namespace Trader {
 
 		explicit Strategy(
 				const std::string &tag,
-				boost::shared_ptr<Trader::Security>);
+				boost::shared_ptr<Trader::Security>,
+				boost::shared_ptr<const Settings>);
 		virtual ~Strategy();
 
 	public:
@@ -35,6 +36,11 @@ namespace Trader {
 		virtual const std::string & GetTypeName() const;
 
 	public:
+
+		bool IsTimeToUpdate() const;
+		bool IsBlocked() const;
+
+		void CheckPositions(bool byTimeout);
 
 		PositionReporter & GetPositionReporter();
 
@@ -53,7 +59,8 @@ namespace Trader {
 
 	private:
 
-		PositionReporter *m_positionReporter;
+ 		class Implementation;
+ 		Implementation *m_pimpl;
 
 	};
 

@@ -88,18 +88,13 @@ BOOST_PYTHON_MODULE(Trader) {
 		.def("scalePrice", &Export::Security::ScalePrice)
 		.def("descalePrice", &Export::Security::DescalePrice)
 
-		.add_property(
-			"lastPriceScaled",
-			&Export::Security::GetLastPriceScaled)
-		.add_property("lastPrice", &Export::Security::GetLastPrice)
+		.add_property("lastPrice", &Export::Security::GetLastPriceScaled)
 		.add_property("lastSize", &Export::Security::GetLastQty)
 
-		.add_property("askPriceScaled", &Export::Security::GetAskPriceScaled)
-		.add_property("askPrice", &Export::Security::GetAskPrice)
+		.add_property("askPrice", &Export::Security::GetAskPriceScaled)
 		.add_property("askSize", &Export::Security::GetAskQty)
 
-		.add_property("bidPriceScaled", &Export::Security::GetBidPriceScaled)
-		.add_property("bidPrice", &Export::Security::GetBidPrice)
+		.add_property("bidPrice", &Export::Security::GetBidPriceScaled)
 		.add_property("bidSize", &Export::Security::GetBidQty)
 
 		.def("cancelOrder", &Export::Security::CancelOrder)

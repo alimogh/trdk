@@ -25,11 +25,6 @@ namespace {
 
 }
 
-const Service::Revision Service::nRevision
-	= std::numeric_limits<Service::Revision>::min();
-const Service::Revision Service::initialRevision
-	= std::numeric_limits<Service::Revision>::min();
-
 class Service::Implementation : private boost::noncopyable {
 
 private:
@@ -153,8 +148,11 @@ public:
 
 };
 
-Service::Service(const std::string &tag, boost::shared_ptr<Security> security)
-		: SecurityAlgo(tag, security) {
+Service::Service(
+			const std::string &tag,
+			boost::shared_ptr<Security> security,
+			boost::shared_ptr<const Settings> settings)
+		: SecurityAlgo(tag, security, settings) {
 	m_pimpl = new Implementation(*this);
 }
 

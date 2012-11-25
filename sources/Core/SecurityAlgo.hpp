@@ -20,27 +20,26 @@ namespace Trader {
 
 		explicit SecurityAlgo(
 				const std::string &tag,
-				boost::shared_ptr<Trader::Security>);
+				boost::shared_ptr<Trader::Security>,
+				boost::shared_ptr<const Settings>);
 		virtual ~SecurityAlgo();
 
 	public:
 
-		virtual void OnNewTrade(
-				const boost::posix_time::ptime &,
-				Trader::ScaledPrice price,
-				Trader::Qty qty,
-				Trader::OrderSide);
+		virtual bool OnNewTrade(
+					const boost::posix_time::ptime &,
+					Trader::ScaledPrice,
+					Trader::Qty,
+					Trader::OrderSide);
+
+		virtual bool OnServiceDataUpdate(const Trader::Service &);
 
 	public:
 
-		boost::shared_ptr<const Trader::Security> GetSecurity() const;
-		boost::shared_ptr<Trader::Security> GetSecurity();
+		const Trader::Security & GetSecurity() const;
+		Trader::Security & GetSecurity();
 
 		void UpdateSettings(const Trader::Lib::IniFileSectionRef &);
-
-	public:
-
-		bool IsValidPrice(const Trader::Settings &) const;
 
 	protected:
 

@@ -8,6 +8,7 @@
 
 #include "Prec.hpp"
 #include "SecurityAlgo.hpp"
+#include "Service.hpp"
 #include "Settings.hpp"
 
 namespace fs = boost::filesystem;
@@ -17,8 +18,9 @@ using namespace Trader::Lib;
 
 SecurityAlgo::SecurityAlgo(
 			const std::string &tag,
-			boost::shared_ptr<Security> security)
-		: Module(tag),
+			boost::shared_ptr<Security> security,
+			boost::shared_ptr<const Settings> settings)
+		: Module(tag, settings),
 		m_security(security) {
 	//...//
 }
@@ -27,7 +29,7 @@ SecurityAlgo::~SecurityAlgo() {
 	//...//
 }
 
-void SecurityAlgo::OnNewTrade(
+bool SecurityAlgo::OnNewTrade(
 					const boost::posix_time::ptime &,
 					ScaledPrice,
 					Qty,
@@ -40,6 +42,16 @@ void SecurityAlgo::OnNewTrade(
 		"Module subscribed to new trades, but can't work with it");
 }
 
+bool SecurityAlgo::OnServiceDataUpdate(const Trader::Service &service) {
+	Log::Error(
+		"\"%1%\" subscribed to \"%2%\", but can't work with it"
+			" (hasn't implementation of OnServiceDataUpdate).",
+		*this,
+		service);
+ 	throw MethodDoesNotImplementedError(
+ 		"Module subscribed to service, but can't work with it");
+}
+
 void SecurityAlgo::UpdateSettings(const IniFileSectionRef &ini) {
 	const Lock lock(GetMutex());
 	UpdateAlogImplSettings(ini);
@@ -49,16 +61,12 @@ Qty SecurityAlgo::CalcQty(ScaledPrice price, ScaledPrice volume) const {
 	return std::max<Qty>(1, Qty(volume / price));
 }
 
-boost::shared_ptr<const Security> SecurityAlgo::GetSecurity() const {
+const Security & SecurityAlgo::GetSecurity() const {
 	return const_cast<SecurityAlgo *>(this)->GetSecurity();
 }
 
-boost::shared_ptr<Security> SecurityAlgo::GetSecurity() {
-	return m_security;
-}
-
-bool SecurityAlgo::IsValidPrice(const Settings &settings) const {
-	return settings.IsValidPrice(*m_security);
+Security & SecurityAlgo::GetSecurity() {
+	return *m_security;
 }
 
 void SecurityAlgo::ReportSettings(

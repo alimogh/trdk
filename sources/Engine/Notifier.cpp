@@ -8,6 +8,7 @@
 
 #include "Prec.hpp"
 #include "Notifier.hpp"
+#include "Core/Strategy.hpp"
 #include "Core/Settings.hpp"
 
 namespace mi = boost::multi_index;
@@ -97,10 +98,10 @@ bool Notifier::NotifyTimeout() {
 	const auto nextIterationTime
 		= boost::get_system_time() + pt::milliseconds(m_settings->GetUpdatePeriodMilliseconds());
 
-	std::list<boost::shared_ptr<StrategyState>> strategies;
+	std::list<boost::shared_ptr<Strategy>> strategies;
 	{
 		const Lock lock(m_strategyListMutex);
-		foreach (boost::shared_ptr<StrategyState> &strategy, m_strategyList) {
+		foreach (boost::shared_ptr<Strategy> &strategy, m_strategyList) {
 			if (strategy->IsTimeToUpdate()) {
 				strategies.push_back(strategy);
 			}
@@ -112,9 +113,7 @@ bool Notifier::NotifyTimeout() {
 		if (m_isExit) {
 			result = false;
 		} else if (m_isActive && !strategies.empty()) {
-			foreach (
-					boost::shared_ptr<StrategyState> &strategy,
-					strategies) {
+			foreach (boost::shared_ptr<Strategy> &strategy, strategies) {
 				if (	m_currentLevel1Updates->find(strategy)
 							!= m_currentLevel1Updates->end()) {
 					continue;
@@ -231,9 +230,9 @@ bool Notifier::NotifyNewTrades() {
 
 }
 
-void Notifier::Signal(boost::shared_ptr<StrategyState> strategyState) {
+void Notifier::Signal(boost::shared_ptr<Strategy> strategy) {
 		
-	if (strategyState->IsBlocked()) {
+	if (strategy->IsBlocked()) {
 		return;
 	}
 		
@@ -243,11 +242,11 @@ void Notifier::Signal(boost::shared_ptr<StrategyState> strategyState) {
 	}
 
 	const Level1UpdateNotifyList::const_iterator i
-		= m_currentLevel1Updates->find(strategyState);
+		= m_currentLevel1Updates->find(strategy);
 	if (i != m_currentLevel1Updates->end() && !i->second) {
 		return;
 	}
-	(*m_currentLevel1Updates)[strategyState] = false;
+	(*m_currentLevel1Updates)[strategy] = false;
 	m_positionsCheckCondition.notify_one();
 	if (m_settings->IsReplayMode()) {
 		m_positionsCheckCompletedCondition.wait(lock);
@@ -262,7 +261,7 @@ void Notifier::Signal(
 			ScaledPrice price,
 			Qty qty,
 			OrderSide side) {
-	const TradeObserverState::Trade trade = {
+	const Trade trade = {
 		state,
 		security,
 		time,

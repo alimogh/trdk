@@ -59,9 +59,7 @@ namespace Trader { namespace Services {
 
 		virtual const std::string & GetName() const;
 
-		virtual Revision GetCurrentRevision() const;
-
-		virtual void OnNewTrade(
+		virtual bool OnNewTrade(
 					const boost::posix_time::ptime &,
 					ScaledPrice,
 					Qty,

@@ -92,6 +92,7 @@
     <ClInclude Include="Errors.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Detail.cpp" />
     <ClCompile Include="Position.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

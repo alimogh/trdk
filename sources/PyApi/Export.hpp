@@ -40,43 +40,34 @@ namespace Trader { namespace PyApi { namespace Export {
 			return m_security->GetCurrency();
 		}
 
-		int GetPriceScale() const {
+		Trader::ScaledPrice GetPriceScale() const {
 			return m_security->GetPriceScale();
 		}
-		int ScalePrice(double price) const {
+		Trader::ScaledPrice ScalePrice(double price) const {
 			return int(m_security->ScalePrice(price));
 		}
-		double DescalePrice(int price) const {
+		double DescalePrice(Trader::ScaledPrice price) const {
 			return m_security->DescalePrice(price);
 		}
 
-		int GetLastPriceScaled() const {
-			return int(m_security->GetLastPriceScaled());
+		Trader::ScaledPrice GetLastPriceScaled() const {
+			return m_security->GetLastPriceScaled();
 		}
-		double GetLastPrice() const {
-			return m_security->GetLastPrice();
-		}
-		size_t GetLastQty() const {
+		Trader::Qty GetLastQty() const {
 			return m_security->GetLastQty();
 		}
 
-		int GetAskPriceScaled() const {
-			return int(m_security->GetAskPriceScaled(1));
+		Trader::ScaledPrice GetAskPriceScaled() const {
+			return m_security->GetAskPriceScaled(1);
 		}
-		double GetAskPrice() const {
-			return m_security->GetAskPrice(1);
-		}
-		size_t GetAskQty() const {
+		Trader::Qty GetAskQty() const {
 			return m_security->GetAskQty(1);
 		}
 
-		int GetBidPriceScaled() const {
-			return int(m_security->GetBidPriceScaled(1));
+		Trader::ScaledPrice GetBidPriceScaled() const {
+			return m_security->GetBidPriceScaled(1);
 		}
-		double GetBidPrice() const {
-			return m_security->GetBidPrice(1);
-		}
-		size_t GetBidQty() const {
+		Trader::Qty GetBidQty() const {
 			return m_security->GetBidQty(1);
 		}
 
@@ -129,7 +120,7 @@ namespace Trader { namespace PyApi { namespace Export {
 	public:
 
 		explicit Service(const Trader::Service &service)
-				: security(service.GetSecurity()),
+				: security(service.GetSecurity().shared_from_this()),
 				m_service(service) {
 			//...//
 		}

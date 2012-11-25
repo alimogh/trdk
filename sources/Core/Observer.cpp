@@ -8,6 +8,7 @@
 
 #include "Prec.hpp"
 #include "Observer.hpp"
+#include "Service.hpp"
 
 using namespace Trader;
 using namespace Trader::Lib;
@@ -42,8 +43,9 @@ public:
 Observer::Observer(
 			const std::string &tag,
 			const Observer::NotifyList &notifyList,
-			boost::shared_ptr<Trader::TradeSystem> tradeSystem)
-		: Module(tag),
+			boost::shared_ptr<Trader::TradeSystem> tradeSystem,
+			boost::shared_ptr<const Settings> settings)
+		: Module(tag, settings),
 		m_pimpl(new Implementation(notifyList, tradeSystem)) {
 	//...//
 }
@@ -64,6 +66,16 @@ void Observer::OnNewTrade(
 		*this);
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to new trades, but can't work with it");
+}
+
+void Observer::OnServiceDataUpdate(const Trader::Service &service) {
+	Log::Error(
+		"\"%1%\" subscribed to \"%2%\", but can't work with it"
+			" (hasn't implementation of OnServiceDataUpdate).",
+		*this,
+		service);
+ 	throw MethodDoesNotImplementedError(
+ 		"Module subscribed to service, but can't work with it");
 }
 
 const std::string & Observer::GetTypeName() const {

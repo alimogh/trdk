@@ -30,7 +30,8 @@ namespace Trader {
 		Observer(
 				const std::string &tag,
 				const Trader::Observer::NotifyList &,
-				boost::shared_ptr<Trader::TradeSystem>);
+				boost::shared_ptr<Trader::TradeSystem>,
+				boost::shared_ptr<const Settings>);
 		virtual ~Observer();
 
 	public:
@@ -43,6 +44,8 @@ namespace Trader {
 				Trader::ScaledPrice price,
 				Trader::Qty qty,
 				Trader::OrderSide);
+
+		virtual void OnServiceDataUpdate(const Trader::Service &);
 
 	public:
 

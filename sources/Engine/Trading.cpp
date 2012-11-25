@@ -294,7 +294,7 @@ namespace {
 			Log::Info(
 				"Loaded \"%1%\" for \"%2%\".",
 				*symbolInstance,
-				*symbolInstance->GetSecurity());
+				symbolInstance->GetSecurity());
 		}
 	
 	}
@@ -415,8 +415,8 @@ namespace {
 						const std::string &tag,
 						const Observer::NotifyList &,
 						boost::shared_ptr<Trader::TradeSystem>,
-						const IniFile &,
-						const std::string &section)>
+						const IniFileSectionRef &,
+						boost::shared_ptr<const Settings>)>
 				(fabricName);
 
 		Observer::NotifyList notifyList;
@@ -427,7 +427,12 @@ namespace {
 
 		boost::shared_ptr<Observer> newObserver;
 		try {
-			newObserver = fabric(tag, notifyList, tradeSystem, ini, section);
+			newObserver = fabric(
+				tag,
+				notifyList,
+				tradeSystem,
+				IniFileSectionRef(ini, section),
+				settings);
 		} catch (...) {
 			Log::RegisterUnhandledException(
 				__FUNCTION__,

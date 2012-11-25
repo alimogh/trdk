@@ -19,16 +19,22 @@ public:
 
 	Mutex m_mutex;
 	const std::string m_tag;
+	boost::shared_ptr<const Settings> m_settings;
 
-	explicit Implementation(const std::string &tag)
-			: m_tag(tag) {
+	explicit Implementation(
+				const std::string &tag,
+				boost::shared_ptr<const Settings> &settings)
+			: m_tag(tag),
+			m_settings(settings) {
 		//...//
 	}
 
 };
 
-Module::Module(const std::string &tag)
-		: m_pimpl(new Implementation(tag)) {
+Module::Module(
+			const std::string &tag,
+			boost::shared_ptr<const Settings> settings)
+		: m_pimpl(new Implementation(tag, settings)) {
 	//...//
 }
 
@@ -54,14 +60,8 @@ void Module::NotifyServiceStart(const Service &service) {
 		"Module subscribed to service, but can't work with it");
 }
 
-void Module::OnServiceDataUpdate(const Trader::Service &service) {
-	Log::Error(
-		"\"%1%\" subscribed to \"%2%\", but can't work with it"
-			" (hasn't implementation of OnServiceDataUpdate).",
-		*this,
-		service);
- 	throw MethodDoesNotImplementedError(
- 		"Module subscribed to service, but can't work with it");
+const Settings & Module::GetSettings() const {
+	return *m_pimpl->m_settings;
 }
 
 //////////////////////////////////////////////////////////////////////////

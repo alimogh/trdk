@@ -42,7 +42,6 @@ public:
 
 	BarService &m_service;
 
-	volatile Revision m_revision;
 	volatile long m_size;
 
 	std::string m_unitsStr;
@@ -61,10 +60,8 @@ public:
 
 	explicit Implementation(
 				BarService &service,
-				const Trader::Lib::IniFileSectionRef &ini,
-				const boost::shared_ptr<const Settings> &settings)
+				const Trader::Lib::IniFileSectionRef &ini)
 			: m_service(service),
-			m_revision(nRevision),
 			m_size(0),
 			m_currentBar(nullptr),
 			m_log(nullptr) {
@@ -118,8 +115,11 @@ public:
 			m_units = UNITS_MINUTES;
 		} else if (boost::iequals(m_unitsStr, "hours")) {
 			size_t tradeSessionMinuteCount
-				=	(settings->GetCurrentTradeSessionEndime()
-						- settings->GetCurrentTradeSessionStartTime()).minutes();
+				=	(m_service.GetSettings().GetCurrentTradeSessionEndime()
+							- m_service
+								.GetSettings()
+								.GetCurrentTradeSessionStartTime())
+						.minutes();
 			if (tradeSessionMinuteCount % 60) {
 				tradeSessionMinuteCount
 					= ((tradeSessionMinuteCount / 60) + 1) * 60;
@@ -180,7 +180,7 @@ public:
 			(boost::format("%1%_%2%_%3%")
 					% m_unitsStr
 					% m_barSizeStr
-					% *m_service.GetSecurity())
+					% m_service.GetSecurity())
 				.str(),
 			logType);
 		if (m_log && m_log->path == log->path) {
@@ -291,7 +291,7 @@ public:
 		}
 	}
 
-	void OnNewTrade(const pt::ptime &time, ScaledPrice price, Qty qty) {
+	bool OnNewTrade(const pt::ptime &time, ScaledPrice price, Qty qty) {
 		AssertLe(size_t(m_size), m_bars.size());
 		if (m_currentBar && m_currentBarEnd > time) {
 			Assert(!m_bars.empty());
@@ -300,6 +300,7 @@ public:
 			m_currentBar->low = std::min(m_currentBar->low, price);
 			m_currentBar->closePrice = price;
 			m_currentBar->volume += qty;
+			return false;
 		} else {
 			LogCurrentBar();
 			m_currentBarEnd = GetBarEnd(time);
@@ -312,7 +313,7 @@ public:
 			m_currentBar->volume = qty;
 			Interlocking::Increment(m_size);
 			AssertEq(size_t(m_size), m_bars.size());
-			Interlocking::Increment(m_revision);
+			return true;
 		}
 	}
 
@@ -325,8 +326,8 @@ BarService::BarService(
 			boost::shared_ptr<Trader::Security> &security,
 			const Trader::Lib::IniFileSectionRef &ini,
 			const boost::shared_ptr<const Settings> &settings)
-		: Service(tag, security) {
-	m_pimpl = new Implementation(*this, ini, settings);
+		: Service(tag, security, settings) {
+	m_pimpl = new Implementation(*this, ini);
 }
 
 BarService::~BarService() {
@@ -338,16 +339,12 @@ const std::string & BarService::GetName() const {
 	return name;
 }
 
-BarService::Revision BarService::GetCurrentRevision() const {
-	return m_pimpl->m_revision;
-}
-
-void BarService::OnNewTrade(
+bool BarService::OnNewTrade(
 			const pt::ptime &time,
 			ScaledPrice price,
 			Qty qty,
 			OrderSide) {
-	m_pimpl->OnNewTrade(time, price, qty);
+	return m_pimpl->OnNewTrade(time, price, qty);
 }
 
 pt::time_duration BarService::GetBarSize() const {

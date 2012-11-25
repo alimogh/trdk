@@ -23,7 +23,9 @@ namespace Trader {
 		
 	public:
 
-		explicit Module(const std::string &tag);
+		explicit Module(
+					const std::string &tag,
+					boost::shared_ptr<const Trader::Settings>);
 		virtual ~Module();
 
 	public:
@@ -32,17 +34,15 @@ namespace Trader {
 		virtual const std::string & GetName() const = 0;
 		const std::string & GetTag() const throw();
 
-	public:
-
 		Mutex & GetMutex() const;
 
 	public:
 
-		virtual void NotifyServiceStart(const Trader::Service &);
+		const Trader::Settings & GetSettings() const;
 
 	public:
 
-		virtual void OnServiceDataUpdate(const Trader::Service &);
+		virtual void NotifyServiceStart(const Trader::Service &);
 
 	private:
 

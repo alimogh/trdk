@@ -28,21 +28,18 @@ class Security:
 
 	priceScale = int
 
-	lastPriceScaled = int
-	lastPrice = float
+	lastPrice = int
 	lastSize = int
 
-	askPriceScaled = int
-	askPrice = float
+	askPrice = int
 	askSize = int
 
-	bidPriceScaled = int
-	bidPrice = float
+	bidPrice = int
 	bidSize = int
 
 	def scalePrice(price):
 		"""
-			@type price: float
+			@type price: int
 		"""
 		return int
 
@@ -50,7 +47,7 @@ class Security:
 		"""
 			@type price: int
 		"""
-		return float
+		return int
 
 	def cancelOrder(orderId):
 		"""
@@ -75,25 +72,25 @@ class Position:
 
 	planedQty = int
 
-	openStartPrice = float
+	openStartPrice = int
 	openOrderId = int
 	openedQty = int
-	openPrice = float
+	openPrice = int
 
 	notOpenedQty = int
 	activeQty = int
 
 	closeOrderId = int
-	closeStartPrice = float
-	closePrice = float
+	closeStartPrice = int
+	closePrice = int
 	closedQty = int
 
-	commission = float
+	commission = int
 
 	def __init__(security, qty, startPrice, tag):
 		"""
 			@type security: Trade.Security
-			@type startPrice: float
+			@type startPrice: int
 			@type qty: int
 			@type tag: str
 		"""
@@ -108,7 +105,7 @@ class Position:
 		"""
 			Asynchronous. Returns order ID.
 
-			@type price: float
+			@type price: int
 		"""
 		return int
 
@@ -116,7 +113,7 @@ class Position:
 		"""
 			Asynchronous. Returns order ID.
 
-			@type stopPrice: float
+			@type stopPrice: int
 		"""
 		return int
 
@@ -124,7 +121,7 @@ class Position:
 		"""
 			Asynchronous. Returns order ID.
 
-			@type price: float
+			@type price: int
 		"""
 		return int
 
@@ -138,7 +135,7 @@ class Position:
 		"""
 			Asynchronous. Returns order ID.
 			
-			@type price: float
+			@type price: int
 		"""
 		return int
 
@@ -146,7 +143,7 @@ class Position:
 		"""
 			Asynchronous. Returns order ID.
 			
-			@type stopPrice: float
+			@type stopPrice: int
 		"""
 		return int
 
@@ -155,7 +152,7 @@ class Position:
 			Closes position with “Immediate or Cancel” order. Asynchronous.
 			Returns order ID.
 			
-			@type price: float
+			@type price: int
 		"""
 		return int
 
@@ -181,7 +178,7 @@ class LongPosition(Trader.Position):
 	def __init__(security, qty, startPrice, tag):
 		"""
 			@type security: Trade.Security
-			@type startPrice: float
+			@type startPrice: int
 			@type qty: int
 			@type tag: str
 		"""
@@ -193,7 +190,7 @@ class ShortPosition(Trader.Position):
 	def __init__(security, qty, startPrice, tag):
 		"""
 			@type security: Trade.Security
-			@type startPrice: float
+			@type startPrice: int
 			@type qty: int
 			@type tag: str
 		"""
@@ -218,11 +215,34 @@ class SecurityAlgo:
 			pure virtual method
 		"""
 
-	void notifyServiceStart(service):
+	def notifyServiceStart(service):
 		"""
 			Method notifies about new service start.
 			
 			@type service: Trader.Service
+			
+			virtual method
+		"""
+
+	def onServiceDataUpdate(service):
+		"""
+			Method notifies about service data update. Method returns True if
+			object state has changed, False otherwise.
+			
+			@type service: Trader.Service
+			
+			virtual method
+		"""
+
+	def onNewTrade(time, price, qty, side):
+		"""
+			Method notifies about new trade (price tick). Method returns True
+			if object state has changed, False otherwise.
+		
+			@type time: int
+			@type price: int
+			@type qty: int
+			@type side: 'S' (sell) or 'B' (buy)
 			
 			virtual method
 		"""

@@ -24,16 +24,19 @@ namespace {
 		const std::string &tag;
 		boost::shared_ptr<Trader::Security> &security;
 		const Trader::Lib::IniFileSectionRef &ini;
+		boost::shared_ptr<const Trader::Settings> &settings;
 		std::unique_ptr<Script> &script;
 	
 		explicit Params(
 					const std::string &tag,
 					boost::shared_ptr<Trader::Security> &security,
 					const Trader::Lib::IniFileSectionRef &ini,
+					boost::shared_ptr<const Trader::Settings> &settings,
 					std::unique_ptr<Script> &script)
 				: tag(tag),
 				security(security),
 				ini(ini),
+				settings(settings),
 				script(script) {
 			//...//
 		}
@@ -50,7 +53,8 @@ namespace {
 Strategy::Strategy(uintmax_t params)
 		: Trader::Strategy(
 			reinterpret_cast<Params *>(params)->tag,
-			reinterpret_cast<Params *>(params)->security),
+			reinterpret_cast<Params *>(params)->security,
+			reinterpret_cast<Params *>(params)->settings),
 		Import::Strategy(static_cast<Trader::Strategy &>(*this)),
 		m_script(reinterpret_cast<Params *>(params)->script.release()) {
 	DoSettingsUpdate(reinterpret_cast<Params *>(params)->ini);
@@ -67,13 +71,14 @@ Strategy::~Strategy() {
 boost::shared_ptr<Trader::Strategy> Strategy::CreateClientInstance(
 			const std::string &tag,
 			boost::shared_ptr<Trader::Security> security,
-			const Trader::Lib::IniFileSectionRef &ini) {
+			const Trader::Lib::IniFileSectionRef &ini,
+			boost::shared_ptr<const Trader::Settings> settings) {
 	std::unique_ptr<Script> script(LoadScript(ini));
 	auto clientClass = GetPyClass(
 		*script,
 		ini,
 		"Failed to find Trader.Strategy implementation");
-	const Params params(tag, security, ini, script);
+	const Params params(tag, security, ini, settings, script);
 	try {
 		auto pyObject = clientClass(reinterpret_cast<uintmax_t>(&params));
 		Strategy &strategy = py::extract<Strategy &>(pyObject);
@@ -106,8 +111,8 @@ void Strategy::NotifyServiceStart(const Trader::Service &service) {
 			object = py::object(boost::cref(*serviceExport));
 		}
 		if (object) {
-			m_pyCache.push_back(object);
 			CallNotifyServiceStartPyMethod(object);
+			m_pyCache[&service] = object;
 		} else {
 			Trader::Strategy::NotifyServiceStart(service);
 		}
@@ -176,6 +181,30 @@ void Strategy::DoSettingsUpdate(const IniFileSectionRef &ini) {
 	UpdateAlgoSettings(*this, ini);
 }
 
+bool Strategy::OnNewTrade(
+			const boost::posix_time::ptime &time,
+			Trader::ScaledPrice price,
+			Trader::Qty qty,
+			Trader::OrderSide side) {
+	boost::shared_ptr<PositionBandle> result;
+	try {
+		return CallOnNewTradePyMethod(
+			Detail::Time::Convert(time),
+			py::object(price),
+			py::object(qty),
+			Detail::OrderSide::Convert(side));
+	} catch (const py::error_already_set &) {
+		RethrowPythonClientException(
+			"Failed to call method Trader.Strategy.onNewTrade");
+		throw;
+	}
+}
+
+bool Strategy::OnServiceDataUpdate(const Trader::Service &service) {
+	Assert(m_pyCache.find(&service) != m_pyCache.end());
+	return CallOnServiceDataUpdatePyMethod(m_pyCache[&service]);
+}
+
 py::str Strategy::CallGetNamePyMethod() const {
 	const auto f = get_override("getName");
 	if (f) {
@@ -238,6 +267,46 @@ void Strategy::CallTryToClosePositionsPyMethod(const py::object &positions) {
 	}
 }
 
+bool Strategy::CallOnNewTradePyMethod(
+			const boost::python::object &time,
+			const boost::python::object &price,
+			const boost::python::object &qty,
+			const boost::python::object &side) {
+	Assert(time);
+	Assert(price);
+	Assert(qty);
+	Assert(side);
+	const auto f = get_override("onNewTrade");
+	if (f) {
+		try {
+			return f(time, price, qty, side);
+		} catch (const py::error_already_set &) {
+			RethrowPythonClientException(
+				"Failed to call method Trader.Strategy.onNewTrade");
+			throw;
+		}
+	} else {
+		return Import::Strategy::CallOnNewTradePyMethod(time, price, qty, side);
+	}
+}
+
+bool Strategy::CallOnServiceDataUpdatePyMethod(
+			const boost::python::object &service) {
+	Assert(service);
+	const auto f = get_override("onServiceDataUpdate");
+	if (f) {
+		try {
+			return f(service);
+		} catch (const py::error_already_set &) {
+			RethrowPythonClientException(
+				"Failed to call method Trader.Strategy.onServiceDataUpdate");
+			throw;
+		}
+	} else {
+		return Import::Strategy::CallOnServiceDataUpdatePyMethod(service);
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 #ifdef BOOST_WINDOWS
@@ -245,16 +314,16 @@ void Strategy::CallTryToClosePositionsPyMethod(const py::object &positions) {
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security> security,
 				const IniFileSectionRef &ini,
-				boost::shared_ptr<const Trader::Settings>) {
-		return Strategy::CreateClientInstance(tag, security, ini);
+				boost::shared_ptr<const Trader::Settings> settings) {
+		return Strategy::CreateClientInstance(tag, security, ini, settings);
 	}
 #else
 	extern "C" boost::shared_ptr<Trader::Strategy> CreateStrategy(
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security> security,
 				const IniFileSectionRef &ini,
-				boost::shared_ptr<const Trader::Settings>) {
-		return Strategy::CreateClientInstance(tag, security, ini);
+				boost::shared_ptr<const Trader::Settings> settings) {
+		return Strategy::CreateClientInstance(tag, security, ini, settings);
 	}
 #endif
 

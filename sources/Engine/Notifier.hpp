@@ -16,7 +16,7 @@ namespace Trader { namespace Engine {
 
 	public:
 
-		typedef std::list<boost::shared_ptr<StrategyState>> StrategyStateList;
+		typedef std::list<boost::shared_ptr<Strategy>> StrategyList;
 		typedef std::list<
 				boost::shared_ptr<TradeObserverState>>
 			TradeObserverStateList;
@@ -28,12 +28,10 @@ namespace Trader { namespace Engine {
 
 		typedef boost::condition_variable Condition;
 
-		typedef std::map<
-				boost::shared_ptr<StrategyState>,
-				bool>
+		typedef std::map<boost::shared_ptr<Strategy>, bool>
 			Level1UpdateNotifyList;
 
-		typedef std::list<TradeObserverState::Trade> TradeNotifyList;
+		typedef std::list<Trade> TradeNotifyList;
 
 	public:
 
@@ -67,7 +65,7 @@ namespace Trader { namespace Engine {
 			return m_strategyListMutex;
 		}
 
-		StrategyStateList & GetStrategyList() {
+		StrategyList & GetStrategyList() {
 			return m_strategyList;
 		}
 
@@ -75,7 +73,7 @@ namespace Trader { namespace Engine {
 			return m_tradeObserverStateList;
 		}
 
-		void Signal(boost::shared_ptr<StrategyState> strategyState);
+		void Signal(boost::shared_ptr<Strategy> strategyState);
 
 		void Signal(
 					boost::shared_ptr<TradeObserverState> state,
@@ -138,7 +136,7 @@ namespace Trader { namespace Engine {
 		boost::shared_ptr<const Settings> m_settings;
 
 		Mutex m_strategyListMutex;
-		StrategyStateList m_strategyList;
+		StrategyList m_strategyList;
 	
 		TradeObserverStateList m_tradeObserverStateList;
 

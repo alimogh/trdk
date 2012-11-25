@@ -22,16 +22,19 @@ namespace {
 		const std::string &tag;
 		boost::shared_ptr<Trader::Security> &security;
 		const Trader::Lib::IniFileSectionRef &ini;
+		const boost::shared_ptr<Trade::Settings> &settings;
 		std::unique_ptr<Script> &script;
 	
 		explicit Params(
 					const std::string &tag,
 					boost::shared_ptr<Trader::Security> &security,
 					const Trader::Lib::IniFileSectionRef &ini,
+					const boost::shared_ptr<Trade::Settings> &settings,
 					std::unique_ptr<Script> &script)
 				: tag(tag),
 				security(security),
 				ini(ini),
+				settings(settings),
 				script(script) {
 			//...//
 		}

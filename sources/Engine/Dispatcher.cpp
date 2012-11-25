@@ -11,6 +11,7 @@
 #include "Dispatcher.hpp"
 #include "Util.hpp"
 #include "Core/Strategy.hpp"
+#include "Core/Service.hpp"
 #include "Core/Observer.hpp"
 
 namespace mi = boost::multi_index;
@@ -94,25 +95,19 @@ void Dispatcher::SubscribeToLevel1(Strategy &strategy) {
 	{
 		const Notifier::Lock strategyListlock(
 			m_notifier->GetStrategyListMutex());
-		Notifier::StrategyStateList &strategyList
-			= m_notifier->GetStrategyList();
+		Notifier::StrategyList &strategyList = m_notifier->GetStrategyList();
 		const UpdateSlots::Lock lock(m_updateSlots->m_dataUpdateMutex);
-		boost::shared_ptr<StrategyState> strategyState(
-			new StrategyState(
-				strategy,
-				m_notifier,
-				m_notifier->GetSettings()));
-		strategyList.push_back(strategyState);
+		strategyList.push_back(strategy.shared_from_this());
 		m_updateSlots->m_dataUpdateConnections.InsertSafe(
-			strategy.GetSecurity()->SubcribeToLevel1(
+			strategy.GetSecurity().SubcribeToLevel1(
 				Security::Level1UpdateSlot(
 					boost::bind(
 						&Notifier::Signal,
 						m_notifier.get(),
-						strategyState))));
+						strategy.shared_from_this()))));
 		strategyList.swap(m_notifier->GetStrategyList());
 	}
-	Report(strategy, *strategy.GetSecurity(), "Level 1");
+	Report(strategy, strategy.GetSecurity(), "Level 1");
 }
 
 void Dispatcher::SubscribeToLevel1(Service &) {
@@ -144,25 +139,12 @@ void Dispatcher::SubscribeToNewTrades(
 }
 
 void Dispatcher::SubscribeToNewTrades(Strategy &observer) {
-	boost::shared_ptr<TradeObserverState> state;
-	{
-		const Notifier::Lock strategyListlock(
-			m_notifier->GetStrategyListMutex());
-		Notifier::StrategyStateList strategyList(
-			m_notifier->GetStrategyList());
-		boost::shared_ptr<StrategyState> strategyState(
-			new StrategyState(
-				observer,
-				m_notifier,
-				m_notifier->GetSettings()));
-		strategyList.push_back(strategyState);
-		state.reset(new TradeObserverState(strategyState));
-		m_notifier->GetTradeObserverStateList().push_back(state);
-		strategyList.swap(m_notifier->GetStrategyList());
-	}
+	boost::shared_ptr<TradeObserverState> state(
+		new TradeObserverState(observer.shared_from_this()));
+	m_notifier->GetTradeObserverStateList().push_back(state);
 	const TradesObservationSlots::Lock lock(
 		m_tradesObservationSlots->m_dataUpdateMutex);
-	SubscribeToNewTrades(state, *observer.GetSecurity());
+	SubscribeToNewTrades(state, observer.GetSecurity());
 }
 
 void Dispatcher::SubscribeToNewTrades(Service &observer) {
@@ -171,7 +153,7 @@ void Dispatcher::SubscribeToNewTrades(Service &observer) {
 	m_notifier->GetTradeObserverStateList().push_back(state);
 	const TradesObservationSlots::Lock lock(
 		m_tradesObservationSlots->m_dataUpdateMutex);
-	SubscribeToNewTrades(state, *observer.GetSecurity());
+	SubscribeToNewTrades(state, observer.GetSecurity());
 }
 
 void Dispatcher::SubscribeToNewTrades(Observer &observer) {

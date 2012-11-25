@@ -20,12 +20,12 @@ Gateway::Service::Service(
 			const std::string &tag,
 			const Observer::NotifyList &notifyList,
 			boost::shared_ptr<TradeSystem> tradeSystem,
-			const IniFile &ini,
-			const std::string &section)
-		: Observer(tag, notifyList, tradeSystem),
+			const IniFileSectionRef &ini,
+			boost::shared_ptr<const Settings> settings)
+		: Observer(tag, notifyList, tradeSystem, settings),
 		m_stopFlag(false) {
 
-	m_port = ini.ReadTypedKey<unsigned short>(section, "port");
+	m_port = ini.ReadTypedKey<unsigned short>("port");
 			
 	try {
 		soap_init2(&m_soap, SOAP_IO_KEEPALIVE, SOAP_IO_KEEPALIVE);
