@@ -110,19 +110,14 @@ void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
 		Assert(values.tradeSessionStartTime < values.tradeSessionEndTime);
 	}
 
-	values.strategyUpdatePeriodMilliseconds = ini.ReadTypedKey<boost::uint64_t>(
-		section,
-		"strategy_update_period_ms");
-
 	m_values.shouldWaitForMarketData = ini.ReadBoolKey(section, "wait_market_data");
 
 	m_values = values;
 	Log::Info(
 		"Common static settings:"
-			" start_time_edt: %1%; strategy_update_period_ms = %2%;"
-			" trade_session_period_edt = %3% -> %4%; wait_market_data = %5%;",
+			" start_time_edt: %1%;"
+			" trade_session_period_edt = %2% -> %3%; wait_market_data = %4%;",
 		GetStartTime() + Util::GetEdtDiff(),
-		m_values.strategyUpdatePeriodMilliseconds,
 		m_values.tradeSessionStartTime + Util::GetEdtDiff(),
 		m_values.tradeSessionEndTime + Util::GetEdtDiff(),
 		m_values.shouldWaitForMarketData ? "yes" : "no");
@@ -143,10 +138,6 @@ const Settings::Time & Settings::GetCurrentTradeSessionEndime() const {
 
 size_t Settings::GetThreadsCount() const {
 	return 1;
-}
-
-boost::uint64_t Settings::GetUpdatePeriodMilliseconds() const {
-	return m_values.strategyUpdatePeriodMilliseconds;
 }
 
 bool Settings::IsValidPrice(const Trader::Security &security) const {

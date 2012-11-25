@@ -61,7 +61,7 @@ namespace {
 					return;
 				}
 			}
-			module->CheckPositions(false);
+			module->CheckPositions();
 		}
 		template<>
 		void operator ()(const boost::shared_ptr<Service> &module) const {
@@ -113,7 +113,7 @@ namespace {
 			if (!Notify(*strategy)) {
 				return;
 			}
-			strategy->CheckPositions(false);
+			strategy->CheckPositions();
 		}
 
 		void operator ()(const boost::shared_ptr<Service> &service) const {

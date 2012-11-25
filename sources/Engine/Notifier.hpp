@@ -28,8 +28,7 @@ namespace Trader { namespace Engine {
 
 		typedef boost::condition_variable Condition;
 
-		typedef std::map<boost::shared_ptr<Strategy>, bool>
-			Level1UpdateNotifyList;
+		typedef std::set<boost::shared_ptr<Strategy>> Level1UpdateNotifyList;
 
 		typedef std::list<Trade> TradeNotifyList;
 
@@ -106,7 +105,6 @@ namespace Trader { namespace Engine {
 			Log::Info("Dispatcher task \"%1%\" stopped.", name);
 		}
 
-		bool NotifyTimeout();
 		bool NotifyLevel1Update();
 		bool NotifyNewTrades();
 

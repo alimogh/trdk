@@ -37,10 +37,9 @@ namespace Trader {
 
 	public:
 
-		bool IsTimeToUpdate() const;
 		bool IsBlocked() const;
 
-		void CheckPositions(bool byTimeout);
+		void CheckPositions();
 
 		PositionReporter & GetPositionReporter();
 

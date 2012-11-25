@@ -55,23 +55,6 @@ Notifier::Notifier(boost::shared_ptr<const Settings> settings)
 			});
 		startBarrier.wait();
 	}
-	if (!m_settings->IsReplayMode()) {
-		const size_t threadsCount = 1;
-		const char *const threadName = "Timeout";
-		Log::Info(
-			"Starting %1% thread(s) \"%2%\"...",
-			threadsCount,
-			threadName);
-		boost::barrier startBarrier(threadsCount + 1);
-		for (size_t i = 0; i < threadsCount; ++i) {
-			m_threads.create_thread(
-				[&]() {
-					Task(startBarrier, threadName, &Notifier::NotifyTimeout);
-				});
-		}
-		startBarrier.wait();
-		Log::Info("All \"%1%\" threads started.", threadName);
-	}
 }
 
 Notifier::~Notifier() {
@@ -91,56 +74,6 @@ Notifier::~Notifier() {
 		AssertFailNoException();
 		throw;
 	}
-}
-
-bool Notifier::NotifyTimeout() {
-
-	const auto nextIterationTime
-		= boost::get_system_time() + pt::milliseconds(m_settings->GetUpdatePeriodMilliseconds());
-
-	std::list<boost::shared_ptr<Strategy>> strategies;
-	{
-		const Lock lock(m_strategyListMutex);
-		foreach (boost::shared_ptr<Strategy> &strategy, m_strategyList) {
-			if (strategy->IsTimeToUpdate()) {
-				strategies.push_back(strategy);
-			}
-		}
-	}
-	bool result = true;
-	{
-		Lock lock(m_mutex);
-		if (m_isExit) {
-			result = false;
-		} else if (m_isActive && !strategies.empty()) {
-			foreach (boost::shared_ptr<Strategy> &strategy, strategies) {
-				if (	m_currentLevel1Updates->find(strategy)
-							!= m_currentLevel1Updates->end()) {
-					continue;
-				}
-				(*m_currentLevel1Updates)[strategy] = true;
-			}
-			m_positionsCheckCondition.notify_one();
-		}
-	}
-
-	if (nextIterationTime <= boost::get_system_time()) {
-		static volatile long reportsCount = 0;
-		const auto currentReportCount
-			= Interlocking::Increment(reportsCount);
-		if (currentReportCount == 1 || currentReportCount > 50000) {
-			Log::Warn("Dispatcher timeout thread is heavy loaded!");
-			if (currentReportCount > 1) {
-				Interlocking::Exchange(reportsCount, 0);
-			}
-		}
-		return result;
-	}
-
-	boost::this_thread::sleep(nextIterationTime);
-
-	return result;
-
 }
 
 bool Notifier::NotifyLevel1Update() {
@@ -178,7 +111,7 @@ bool Notifier::NotifyLevel1Update() {
 
 	Assert(!notifyList->empty());
 	foreach (auto &notification, *notifyList) {
-		notification.first->CheckPositions(notification.second);
+		notification->CheckPositions();
 	}
 	notifyList->clear();
 
@@ -240,13 +173,12 @@ void Notifier::Signal(boost::shared_ptr<Strategy> strategy) {
 	if (m_isExit) {
 		return;
 	}
-
-	const Level1UpdateNotifyList::const_iterator i
-		= m_currentLevel1Updates->find(strategy);
-	if (i != m_currentLevel1Updates->end() && !i->second) {
+	//! @todo place for optimization
+	if (	m_currentLevel1Updates->find(strategy)
+			!= m_currentLevel1Updates->end()) {
 		return;
 	}
-	(*m_currentLevel1Updates)[strategy] = false;
+	m_currentLevel1Updates->insert(strategy);
 	m_positionsCheckCondition.notify_one();
 	if (m_settings->IsReplayMode()) {
 		m_positionsCheckCompletedCondition.wait(lock);

@@ -35,7 +35,6 @@ public:
 	StateUpdateConnections m_stateUpdateConnections;
 
 	volatile int64_t m_isBlocked;
-	volatile int64_t m_lastUpdate;
 
 	PositionReporter *m_positionReporter;
 
@@ -45,7 +44,6 @@ public:
 				Strategy &strategy)
 			: m_strategy(strategy),
 			m_isBlocked(false),
-			m_lastUpdate(0),
 			m_positionReporter(nullptr) {
 		//...//
 	}
@@ -57,10 +55,6 @@ public:
 	bool CheckPositionsUnsafe() {
 
 		const auto now = boost::get_system_time();
-		Interlocking::Exchange(
-			m_lastUpdate,
-			(now - m_strategy.GetSettings().GetStartTime())
-				.total_milliseconds());
 
 		Assert(!m_isBlocked);
 		
@@ -167,30 +161,13 @@ const std::string & Strategy::GetTypeName() const {
 	return typeName;
 }
 
-bool Strategy::IsTimeToUpdate() const {
-	if (	(IsBlocked() || !m_pimpl->m_lastUpdate)
-			&& GetSettings().ShouldWaitForMarketData()) {
-		return false;
-	}
-	const auto now
-		= (boost::get_system_time() - GetSettings().GetStartTime())
-			.total_milliseconds();
-	AssertGe(now, m_pimpl->m_lastUpdate);
-	const auto diff = boost::uint64_t(now - m_pimpl->m_lastUpdate);
-	return diff >= GetSettings().GetUpdatePeriodMilliseconds();
-}
-
 bool Strategy::IsBlocked() const {
 	return m_pimpl->m_isBlocked || !GetSettings().IsValidPrice(GetSecurity());
 }
 
-void Strategy::CheckPositions(bool byTimeout) {
-	Assert(!GetSettings().IsReplayMode() || !byTimeout);
-	if (byTimeout && !IsTimeToUpdate()) {
-		return;
-	}
+void Strategy::CheckPositions() {
 	const Lock lock(GetMutex());
-	if (m_pimpl->m_isBlocked || (byTimeout && !IsTimeToUpdate())) {
+	if (m_pimpl->m_isBlocked) {
 		return;
 	}
 	while (m_pimpl->CheckPositionsUnsafe());

@@ -25,8 +25,6 @@ namespace Trader {
 			Time tradeSessionStartTime;
 			Time tradeSessionEndTime;
 
-			boost::uint64_t strategyUpdatePeriodMilliseconds;
-
 			bool shouldWaitForMarketData;
 
 		};
@@ -65,8 +63,6 @@ namespace Trader {
 		const Time & GetCurrentTradeSessionEndime() const;
 
 		size_t GetThreadsCount() const;
-
-		boost::uint64_t GetUpdatePeriodMilliseconds() const;
 
 		boost::uint32_t GetLevel2PeriodSeconds() const;
 		bool IsLevel2SnapshotPrintEnabled() const;
