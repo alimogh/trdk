@@ -265,23 +265,27 @@ public:
 	pt::ptime GetBarEnd(const pt::ptime &tradeTime)
 			const {
 		AssertNe(pt::not_a_date_time, tradeTime);
+		const auto time = tradeTime.time_of_day();
 		static_assert(numberOfOrderSides, "Units list changed.");
 		switch (m_units) {
 			case UNITS_SECONDS:
 				return
-					tradeTime
-					- pt::seconds(tradeTime.time_of_day().seconds())
-					+ pt::seconds(m_barSize);
+					pt::ptime(tradeTime.date())
+					+ pt::hours(time.hours())
+					+ pt::minutes(time.minutes())
+					+ pt::seconds(
+						((time.seconds() / m_barSize) + 1) * m_barSize);
 			case UNITS_MINUTES:
 				return
 					pt::ptime(tradeTime.date())
-					+ pt::hours(tradeTime.time_of_day().hours())
+					+ pt::hours(time.hours())
 					+ pt::minutes(
-						((tradeTime.time_of_day().minutes() / m_barSize) + 1)
-						* m_barSize);
+						((time.minutes() / m_barSize) + 1) * m_barSize);
 			case UNITS_HOURS:
-				throw Error("Days units doesn't yet implemented");
+				//! @todo Implement hours bar service 
+				throw Error("Hours units doesn't yet implemented");
 			case UNITS_DAYS:
+				//! @todo Implement days bar service
 				throw Error("Days units doesn't yet implemented");
 			default:
 				AssertFail("Unknown units type");
