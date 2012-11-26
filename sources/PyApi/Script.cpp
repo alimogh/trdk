@@ -194,6 +194,27 @@ BOOST_PYTHON_MODULE(Trader) {
 			"getBarByReversedIndex",
 			&Export::Services::BarService::GetBarByReversedIndex);
 
+	typedef class_<
+			Export::Services::BarStatService,
+			bases<Export::Service>,
+			boost::noncopyable>
+		BarStatServiceExport;
+	//! @todo Move to Services namespace 
+	BarStatServiceExport("BarStatService", no_init)
+		.add_property("statSize", &Export::Services::BarStatService::GetStatSize)
+		.add_property("isEmpty", &Export::Services::BarStatService::IsEmpty)
+//		.add_property("source", &Export::Services::BarStatService::GetSource)
+		.add_property("maxOpenPrice", &Export::Services::BarStatService::GetMaxOpenPrice)
+		.add_property("minOpenPrice", &Export::Services::BarStatService::GetMinOpenPrice)
+		.add_property("maxClosePrice", &Export::Services::BarStatService::GetMaxClosePrice)
+		.add_property("minClosePrice", &Export::Services::BarStatService::GetMinClosePrice)
+		.add_property("maxHigh", &Export::Services::BarStatService::GetMaxHigh)
+		.add_property("minHigh", &Export::Services::BarStatService::GetMinHigh)
+		.add_property("maxLow", &Export::Services::BarStatService::GetMaxLow)
+		.add_property("minLow", &Export::Services::BarStatService::GetMinLow)
+		.add_property("maxVolume", &Export::Services::BarStatService::GetMaxVolume)
+		.add_property("minVolume", &Export::Services::BarStatService::GetMinVolume);
+
 }
 
 namespace {

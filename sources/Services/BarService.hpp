@@ -38,11 +38,11 @@ namespace Trader { namespace Services {
 
  		//! Bar data.
  		struct Bar {
-			ScaledPrice openPrice;
-			ScaledPrice closePrice;
-			ScaledPrice high;
-			ScaledPrice low;
-			Qty volume;
+			Trader::ScaledPrice openPrice;
+			Trader::ScaledPrice closePrice;
+			Trader::ScaledPrice high;
+			Trader::ScaledPrice low;
+			Trader::Qty volume;
  		};
 
 	public:

@@ -58,9 +58,7 @@ public:
 
 public:
 
-	explicit Implementation(
-				BarService &service,
-				const Trader::Lib::IniFileSectionRef &ini)
+	explicit Implementation(BarService &service, const IniFileSectionRef &ini)
 			: m_service(service),
 			m_size(0),
 			m_currentBar(nullptr),
@@ -323,8 +321,8 @@ public:
 
 BarService::BarService(
 			const std::string &tag,
-			boost::shared_ptr<Trader::Security> &security,
-			const Trader::Lib::IniFileSectionRef &ini,
+			boost::shared_ptr<Security> &security,
+			const IniFileSectionRef &ini,
 			const boost::shared_ptr<const Settings> &settings)
 		: Service(tag, security, settings) {
 	m_pimpl = new Implementation(*this, ini);

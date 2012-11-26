@@ -298,13 +298,13 @@ class Service(Trader.SecurityAlgo):
 class BarService(Trader.Service):
 	
 	barSize = int
-	""" Each bar size, seconds """
+	""" Each bar size, seconds. """
 	barSizeInMinutes = int
-	""" Each bar size, minutes """
+	""" Each bar size, minutes. """
 	barSizeInHours = int
-	""" Each bar size, hours """
+	""" Each bar size, hours. """
 	barSizeInDays = int
-	""" Each bar size, days """
+	""" Each bar size, days. """
 
 	size = int
 	""" Number of bars. """
@@ -320,5 +320,29 @@ class BarService(Trader.Service):
 			Returns bar (Trader.Bar) by reversed index. Last bar has index
 			"zero".
 		"""
+
+class BarStatService(Trader.Service):
+
+	statSize = int
+	""" Number of bars for statistic. """
+
+	isEmpty = bool
+
+	source = Trader.BarService
+
+	maxOpenPrice = int
+	minOpenPrice = int
+
+	maxClosePrice = int
+	minClosePrice = int
+
+	maxHigh = int
+	minHigh = int
+
+	maxLow = int
+	minLow = int
+
+	maxVolume = int
+	minVolume = int
 
 ###############################################################################

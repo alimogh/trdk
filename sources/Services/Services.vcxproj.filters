@@ -20,12 +20,21 @@
     <ClInclude Include="Api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BarStatService.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BarService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Prec.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BarStatService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Services/BarService.hpp"
+#include "Services/BarStatService.hpp"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -219,6 +220,72 @@ namespace Trader { namespace PyApi { namespace Export { namespace Services {
 
 		const Trader::Services::BarService & GetService() const {
 			return Get<Trader::Services::BarService>();
+		}
+
+	};
+
+	class BarStatService : public Export::Service {
+
+	public:
+
+		explicit BarStatService(const Trader::Services::BarStatService &service)
+				: Export::Service(service) {
+			//...//
+		}
+
+	public:
+
+		size_t GetStatSize() const {
+			return GetService().GetStatSize();
+		}
+
+		bool IsEmpty() const {
+			return GetService().IsEmpty();
+		}
+
+// 		const Trader::Services::BarService & GetSource() {
+// 			return GetService().GetSource();
+// 		}
+
+		Trader::ScaledPrice GetMaxOpenPrice() const {
+			return GetService().GetMaxOpenPrice();
+		}
+		Trader::ScaledPrice GetMinOpenPrice() const {
+			return GetService().GetMinOpenPrice();
+		}
+
+		Trader::ScaledPrice GetMaxClosePrice() const {
+			return GetService().GetMaxClosePrice();
+		}
+		Trader::ScaledPrice GetMinClosePrice() const {
+			return GetService().GetMinClosePrice();
+		}
+
+		Trader::ScaledPrice GetMaxHigh() const {
+			return GetService().GetMaxHigh();
+		}
+		Trader::ScaledPrice GetMinHigh() const {
+			return GetService().GetMinHigh();
+		}
+
+		Trader::ScaledPrice GetMaxLow() const {
+			return GetService().GetMaxLow();
+		}
+		Trader::ScaledPrice GetMinLow() const {
+			return GetService().GetMinLow();
+		}
+
+		Trader::Qty GetMaxVolume() const {
+			return GetService().GetMaxVolume();
+		}
+		Trader::Qty GetMinVolume() const {
+			return GetService().GetMinVolume();
+		}
+
+	protected:
+
+		const Trader::Services::BarStatService & GetService() const {
+			return Get<Trader::Services::BarStatService>();
 		}
 
 	};

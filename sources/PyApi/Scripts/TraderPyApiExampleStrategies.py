@@ -85,37 +85,60 @@ class Example_2(Trader.Strategy):
 
 	def __init__(self, param):
 		super(self.__class__, self).__init__(param)
-		self._stop = False
+		self._barsStat = None
 
 	def getName(self):
 		return self.__class__.__name__
 
 	def notifyServiceStart(self, service):
-		if service.tag == '5 minute bar':
-			self._fiveMinsBars = service
+		if service.tag == '24 bars by 5 minutes':
+			self._barsStat = service
 		else:
 			super(self.__class__, self).notifyServiceStart(service)
 	
 	def onServiceDataUpdate(self, service):
-		assert(service == self._fiveMinsBars)
-		Trader.logInfo('5 minute bar: new data...')
+		assert(service == self._barsStat)
+		assert(self._barsStat.isEmpty == False)
+		Trader.logInfo('24 bars by 5 minutes: new data...')
 		return True
 
 	def tryToOpenPositions(self):
-		if self._stop == True:
+		
+		# Check condition:
+		if self._barsStat.maxOpenPrice <= 137449:
+			Trader.logInfo(
+				'Skip opening as max open price {0}.'
+					.format(self._barsStat.maxOpenPrice))
 			return
-		self._testCount = 0
+
 		Trader.logInfo(
-			'Open position (bar service size {0})...'
-				.format(self._fiveMinsBars.size))
-		return
+			'Opening as max open price {0}.'.format(self._barsStat.maxOpenPrice))
+		
+		self._testCount = 0
+		position = Trader.LongPosition(
+			# security object
+			self.security,			
+			# number of shares
+			10000,
+			# start price
+			self._barsStat.maxOpenPrice,
+			# strategy tag for statistic
+			self.tag)
+		
+		# Sending IOC order (if order will be filled:
+		# tryToClosePositions-method will be called, if not:
+		# tryToOpenPositions will be called again):
+		position.openOrCancel(position.openStartPrice)
+
+		return position
+
 
 	def tryToClosePositions(self, position):
 		if position.hasActiveOrders:
 			return
 		self._testCount = self._testCount + 1
 		if self._testCount < 10:
-			Trader.logInfo('Skip...')
+			Trader.logInfo('Skip closing...')
 		else:
 			Trader.logInfo('Close position...')
 			position.cancelAtMarketPrice()

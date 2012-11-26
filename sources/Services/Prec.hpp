@@ -13,6 +13,8 @@
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/date_time.hpp>
 #	include <boost/regex.hpp>
+#	include <boost/accumulators/accumulators.hpp>
+#	include <boost/accumulators/statistics.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
