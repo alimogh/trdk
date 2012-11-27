@@ -97,7 +97,7 @@ public:
 					"%1%: Wrong size specified: \"%2%\". 1 minute must be"
 						" a multiple specified size.",
 					m_service,
-					m_unitsStr);
+					m_barSizeStr);
 				throw Error("Wrong bar size settings");
 			}
 			m_units = UNITS_SECONDS;
@@ -107,32 +107,12 @@ public:
 					"%1%: Wrong size specified: \"%2%\". 1 hour must be"
 						" a multiple specified size.",
 					m_service,
-					m_unitsStr);
+					m_barSizeStr);
 				throw Error("Wrong bar size settings");
 			}
 			m_units = UNITS_MINUTES;
 		} else if (boost::iequals(m_unitsStr, "hours")) {
-			size_t tradeSessionMinuteCount
-				=	(m_service.GetSettings().GetCurrentTradeSessionEndime()
-							- m_service
-								.GetSettings()
-								.GetCurrentTradeSessionStartTime())
-						.minutes();
-			if (tradeSessionMinuteCount % 60) {
-				tradeSessionMinuteCount
-					= ((tradeSessionMinuteCount / 60) + 1) * 60;
-			}
-			if (tradeSessionMinuteCount / 60 % m_barSize) {
-				Log::Error(
-					"%1%: Wrong size specified: \"%2%\"."
-						" Trade session period must be"
-						" a multiple specified size.",
-					m_service,
-					m_unitsStr);
-				throw Error("Wrong bar size settings");
-			}
 			m_units = UNITS_HOURS;
-			throw Error("Hours units doesn't yet implemented");
 		} else if (boost::iequals(m_unitsStr, "days")) {
 			m_units = UNITS_DAYS;
 			throw Error("Days units doesn't yet implemented");
@@ -282,8 +262,10 @@ public:
 					+ pt::minutes(
 						((time.minutes() / m_barSize) + 1) * m_barSize);
 			case UNITS_HOURS:
-				//! @todo Implement hours bar service 
-				throw Error("Hours units doesn't yet implemented");
+				return
+					pt::ptime(tradeTime.date())
+					+ pt::hours(
+						((time.hours() / m_barSize) + 1) * m_barSize);
 			case UNITS_DAYS:
 				//! @todo Implement days bar service
 				throw Error("Days units doesn't yet implemented");
