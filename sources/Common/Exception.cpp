@@ -81,6 +81,13 @@ MethodDoesNotImplementedError::MethodDoesNotImplementedError(
 
 //////////////////////////////////////////////////////////////////////////
 
+ModuleError::ModuleError(const char *what)
+		: Exception(what) {
+	//...//
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 std::ostream & std::operator <<(
 			std::ostream &oss,
 			const Trader::Lib::Exception &ex) {

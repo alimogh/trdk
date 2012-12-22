@@ -15,7 +15,10 @@
 namespace Trader { namespace PyApi { namespace Detail {
 
 	inline void RethrowPythonClientException(const char *what) {
-		PyErr_Print();
+		{
+			const Log::Lock logLock(Log::GetEventsMutex());
+			PyErr_Print();
+		}
 		throw Trader::PyApi::Error(what);
 	}
 

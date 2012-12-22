@@ -22,7 +22,7 @@ namespace Trader { namespace PyApi {
 
 	class ShortPosition
 		: public Trader::ShortPosition,
-		public Import::Position {
+		public Import::ShortPosition {
 	public:
 		explicit ShortPosition(
 					Export::Security &,
@@ -35,7 +35,7 @@ namespace Trader { namespace PyApi {
 
 	class LongPosition
 		: public Trader::LongPosition,
-		public Import::Position {
+		public Import::LongPosition {
 	public:
 		explicit LongPosition(
 					Export::Security &,

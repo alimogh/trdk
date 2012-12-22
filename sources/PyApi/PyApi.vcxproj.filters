@@ -9,10 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Scripts">
-      <UniqueIdentifier>{589ed766-0ed9-432e-8bbe-a6792d8f82bd}</UniqueIdentifier>
-      <Extensions>py</Extensions>
-    </Filter>
     <Filter Include="Lib Files">
       <UniqueIdentifier>{0dc04927-2ec5-4467-9cd2-1f5977fcad7d}</UniqueIdentifier>
     </Filter>
@@ -70,14 +66,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Trader.pypredef">
-      <Filter>Header Files</Filter>
-    </None>
     <None Include="PyApi.def">
       <Filter>Header Files</Filter>
-    </None>
-    <None Include="Scripts\TraderPyApiExampleStrategies.py">
-      <Filter>Scripts</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

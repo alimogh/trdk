@@ -30,6 +30,10 @@ namespace Trader { namespace PyApi { namespace Import {
 
 	public:
 
+		static void Export(const char *className);
+
+	public:
+
 		void Bind(boost::python::object &self) {
 			Assert(self);
 			Assert(!m_self);
@@ -164,6 +168,26 @@ namespace Trader { namespace PyApi { namespace Import {
 
 	};
 
+	class LongPosition : public Position {
+	public:
+		explicit LongPosition(Trader::Position &position)
+				: Position(position) {
+			//...//
+		}
+	public:
+		static void Export(const char *className);
+	};
+
+	class ShortPosition : public Position {
+	public:
+		explicit ShortPosition(Trader::Position &position)
+				: Position(position) {
+			//...//
+		}
+	public:
+		static void Export(const char *className);
+	};
+
 	//////////////////////////////////////////////////////////////////////////
 
 	class SecurityAlgo : boost::noncopyable {
@@ -178,6 +202,16 @@ namespace Trader { namespace PyApi { namespace Import {
 				: security(algo.GetSecurity().shared_from_this()),
 				m_algo(algo) {
 			//...//
+		}
+
+	public:
+
+		static void Export(const char *className) {
+			namespace py = boost::python;
+			py::class_<SecurityAlgo, boost::noncopyable>(className, py::no_init)
+				.add_property("tag", &SecurityAlgo::GetTag)
+ 				.def_readonly("security", &SecurityAlgo::security)
+ 				.def("getName", pure_virtual(&SecurityAlgo::CallGetNamePyMethod));
 		}
 
 	public:
@@ -238,6 +272,10 @@ namespace Trader { namespace PyApi { namespace Import {
 			//...//
 		}
 
+	public:
+
+		static void Export(const char *className);
+
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -250,6 +288,10 @@ namespace Trader { namespace PyApi { namespace Import {
 				: SecurityAlgo(strategy) {
 			//...//
 		}
+
+	public:
+
+		static void Export(const char *className);
 
 	public:
 

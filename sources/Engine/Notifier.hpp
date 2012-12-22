@@ -92,11 +92,19 @@ namespace Trader { namespace Engine {
 					Iteration iteration) {
 			startBarrier.wait();
 			Log::Info("Dispatcher task \"%1%\" started...", name);
+			bool isError = false;
 			for ( ; ; ) {
 				try {
 					if (!(this->*iteration)()) {
 						break;
 					}
+				} catch (const Trader::Lib::ModuleError &ex) {
+					Log::Error(
+						"Module error in dispatcher task \"%1%\": \"%2%\".",
+						name,
+						ex);
+					isError = true;
+					break;
 				} catch (...) {
 					Log::Error("Unhandled exception caught in dispatcher task \"%1%\".", name);
 					AssertFailNoException();
@@ -104,6 +112,10 @@ namespace Trader { namespace Engine {
 				}
 			}
 			Log::Info("Dispatcher task \"%1%\" stopped.", name);
+			if (isError) {
+				//! @todo: Call engine instance stop instead.
+				exit(1);
+			}
 		}
 
 		bool NotifyLevel1Update();

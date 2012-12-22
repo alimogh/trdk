@@ -32,10 +32,6 @@ namespace Trader {
 
 	public:
 
-		using boost::enable_shared_from_this<Trader::Strategy>::shared_from_this;
-
-	public:
-
 		explicit Strategy(
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security>,

@@ -17,13 +17,11 @@
   <ItemGroup>
     <ClInclude Include="Api.h" />
     <ClInclude Include="BarService.hpp" />
-    <ClInclude Include="BarStatService.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BarService.cpp" />
-    <ClCompile Include="BarStatService.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

@@ -28,7 +28,7 @@ ShortPosition::ShortPosition(
 			qty,
 			security.GetSecurity()->ScalePrice(startPrice),
 			tag),
-		Import::Position(static_cast<Trader::ShortPosition &>(*this)) {
+		Import::ShortPosition(static_cast<Trader::ShortPosition &>(*this)) {
 	//...//
 }
 
@@ -44,7 +44,7 @@ LongPosition::LongPosition(
 			qty,
 			security.GetSecurity()->ScalePrice(startPrice),
 			tag),
-		Import::Position(static_cast<Trader::LongPosition &>(*this)) {
+		Import::LongPosition(static_cast<Trader::LongPosition &>(*this)) {
 	//...//
 }
 

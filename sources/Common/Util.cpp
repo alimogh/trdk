@@ -11,6 +11,7 @@
 #	include <boost/thread/thread_time.hpp>
 #	include <boost/algorithm/string.hpp>
 #include "DisableBoostWarningsEnd.h"
+#include "Assert.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -29,10 +30,14 @@ fs::path Util::SymbolToFilePath(
 	return result;
 }
 
+namespace {
+	const lt::posix_time_zone edtTimeZone(
+		"EST-05EDT+01,M4.1.0/02:00,M10.5.0/02:00");
+}
+
 boost::shared_ptr<lt::posix_time_zone> Util::GetEdtTimeZone() {
-	static boost::shared_ptr<lt::posix_time_zone> edtTimeZone(
-		new lt::posix_time_zone("EST-05EDT+01,M4.1.0/02:00,M10.5.0/02:00"));
-	return edtTimeZone;
+	return boost::shared_ptr<lt::posix_time_zone>(
+		new  lt::posix_time_zone(edtTimeZone));
 }
 
 pt::time_duration Util::GetEdtDiff() {
@@ -45,4 +50,18 @@ std::string Util::CreateSymbolFullStr(
 			const std::string &primaryExchange,
 			const std::string &exchange) {
 	return (boost::format("%1%:%2%:%3%") % symbol % primaryExchange % exchange).str();
+}
+
+namespace {
+	const pt::ptime unixEpochStart(boost::gregorian::date(1970, 1, 1));
+}
+
+time_t Util::ConvertToTimeT(const pt::ptime &source) {
+	Assert(!source.is_special());
+	AssertGe(source, unixEpochStart);
+	if (source < unixEpochStart) {
+		return 0;
+	}
+	const pt::time_duration durationFromTEpoch(source - unixEpochStart);
+	return static_cast<time_t>(durationFromTEpoch.total_seconds());
 }

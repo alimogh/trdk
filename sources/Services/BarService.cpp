@@ -16,6 +16,118 @@ using namespace Trader::Lib;
 
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
+namespace accs = boost::accumulators;
+
+//////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+	template<typename Tag>
+	struct TagToExtractor {
+		//...//
+	};
+
+	template<>
+	struct TagToExtractor<accs::tag::max> {
+		typedef accs::tag::max Tag;
+		static const accs::extractor<Tag> & Get() {
+			return accs::max;
+		}
+	};
+
+	template<>
+	struct TagToExtractor<accs::tag::min> {
+		typedef accs::tag::min Tag;
+		static const accs::extractor<Tag> & Get() {
+			return accs::min;
+		}
+	};
+
+	template<typename StatT, size_t fieldOffset>
+	class StatAccumulator : public StatT {
+
+	public:
+
+		typedef StatT Base;
+		typedef typename Base::ValueType ValueType;
+
+	private:
+
+		typedef accs::accumulator_set<
+			ValueType,
+			accs::stats<
+					accs::tag::min,
+					accs::tag::max>>
+				Accumulator;
+
+	public:
+
+		explicit StatAccumulator(
+					boost::shared_ptr<const BarService> source,
+					size_t size) {
+			size = std::min(size, source->GetSize());
+			for (size_t i = 0; i < size; ++i) {
+				const int8_t *const bar
+					= reinterpret_cast<const int8_t *>(
+						&source->GetBarByReversedIndex(i));
+				m_accumulator(
+					*reinterpret_cast<const ValueType *>(
+						bar + fieldOffset));
+			}
+		}
+
+		virtual ~StatAccumulator() {
+			//...//
+		}
+
+	public:
+
+		virtual ValueType GetMax() const {
+			return GetValue<accs::tag::max>();
+		}
+
+		virtual ValueType GetMin() const {
+			return GetValue<accs::tag::min>();
+		}
+
+	private:
+
+		template<typename Tag>
+		ValueType GetValue() const {
+			typedef TagToExtractor<Tag> Extractor;
+			return Extractor::Get()(m_accumulator);
+		}
+
+	private:
+
+		Accumulator m_accumulator;
+
+	};
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+BarService::Stat::Stat() {
+	//...//
+}
+BarService::Stat::~Stat() {
+	//...//
+}
+
+BarService::ScaledPriceStat::ScaledPriceStat() {
+	//...//
+}
+BarService::ScaledPriceStat::~ScaledPriceStat() {
+	//...//
+}
+
+BarService::QtyStat::QtyStat() {
+	//...//
+}
+BarService::QtyStat::~QtyStat() {
+	//...//
+}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -54,7 +166,7 @@ public:
 	Bar *m_currentBar;
 	boost::posix_time::ptime m_currentBarEnd;
 
-	std::unique_ptr<BarsLog> m_log;
+	std::unique_ptr<BarsLog> m_barsLog;
 
 public:
 
@@ -62,7 +174,7 @@ public:
 			: m_service(service),
 			m_size(0),
 			m_currentBar(nullptr),
-			m_log(nullptr) {
+			m_barsLog(nullptr) {
 
 		{
 			const std::string sizeStr = ini.ReadKey("size", false);
@@ -134,11 +246,15 @@ public:
 	
 	}
 
+	char GetCsvDelimeter() const {
+		return ',';
+	}
+
 	void ReopenLog(const IniFileSectionRef &ini, bool isCritical) {
 
 		const std::string logType = ini.ReadKey("log", false);
 		if (boost::iequals(logType, "none")) {
-			m_log.reset();
+			m_barsLog.reset();
 			return;
 		} else if (!boost::iequals(logType, "csv")) {
 			Log::Error(
@@ -161,7 +277,7 @@ public:
 					% m_service.GetSecurity())
 				.str(),
 			logType);
-		if (m_log && m_log->path == log->path) {
+		if (m_barsLog && m_barsLog->path == log->path) {
 			return;
 		}
 
@@ -184,13 +300,19 @@ public:
 		}
 		if (isNew) {
 			log->file
-				<< "<DATE>\t<TIME>\t<OPEN>\t<HIGH>\t<LOW>\t<CLOSE>\t<VOL>"
+				<< "Date"
+				<< GetCsvDelimeter() << "Time"
+				<< GetCsvDelimeter() << "Open"
+				<< GetCsvDelimeter() << "High"
+				<< GetCsvDelimeter() << "Low"
+				<< GetCsvDelimeter() << "Close"
+				<< GetCsvDelimeter() << "Volume"
 				<< std::endl;
 		}
 		log->file << std::setfill('0');
 
 		Log::Info("%1%: Logging bars into %2%.", m_service, log->path);
-		std::swap(log, m_log);
+		std::swap(log, m_barsLog);
 
 	}
 
@@ -213,32 +335,31 @@ public:
 	}
 
 	void LogCurrentBar() const {
-		if (!m_log || !m_currentBar) {
+		if (!m_barsLog || !m_currentBar) {
 			return;
 		}
-		AssertNe(pt::not_a_date_time, m_currentBarEnd);
 		const auto barStartTime = m_currentBarEnd - GetBarSize();
 		{
-			const auto date = barStartTime.date();
-			m_log->file
+			const auto date = m_currentBar->time.date();
+			m_barsLog->file
 				<< date.year()
 				<< std::setw(2) << date.month().as_number()
 				<< std::setw(2) << date.day();
 		}
 		{
-			const auto time = barStartTime.time_of_day();
-			m_log->file
-				<< "\t"
+			const auto time = m_currentBar->time.time_of_day();
+			m_barsLog->file
+				<< GetCsvDelimeter()
 				<< std::setw(2) << time.hours()
 				<< std::setw(2) << time.minutes()
 				<< std::setw(2) << time.seconds();
 		}
-		m_log->file
-			<< "\t" << m_currentBar->openPrice
-			<< "\t" << m_currentBar->high
-			<< "\t" << m_currentBar->low
-			<< "\t" << m_currentBar->closePrice
-			<< "\t" << m_currentBar->volume
+		m_barsLog->file
+			<< GetCsvDelimeter() << m_currentBar->openPrice
+			<< GetCsvDelimeter() << m_currentBar->highPrice
+			<< GetCsvDelimeter() << m_currentBar->lowPrice
+			<< GetCsvDelimeter() << m_currentBar->closePrice
+			<< GetCsvDelimeter() << m_currentBar->volume
 			<< std::endl;
 	}
 
@@ -280,8 +401,8 @@ public:
 		if (m_currentBar && m_currentBarEnd > time) {
 			Assert(!m_bars.empty());
 			AssertNe(pt::not_a_date_time, m_currentBarEnd);
-			m_currentBar->high = std::max(m_currentBar->high, price);
-			m_currentBar->low = std::min(m_currentBar->low, price);
+			m_currentBar->highPrice = std::max(m_currentBar->highPrice, price);
+			m_currentBar->lowPrice = std::min(m_currentBar->lowPrice, price);
 			m_currentBar->closePrice = price;
 			m_currentBar->volume += qty;
 			return false;
@@ -289,16 +410,25 @@ public:
 			LogCurrentBar();
 			m_currentBarEnd = GetBarEnd(time);
 			m_currentBar = &m_bars[size_t(m_size)];
+			m_currentBar->time = time;
 			m_currentBar->openPrice
 				= m_currentBar->closePrice
-				= m_currentBar->high
-				= m_currentBar->low
+				= m_currentBar->highPrice
+				= m_currentBar->lowPrice
 				= price;
 			m_currentBar->volume = qty;
 			Interlocking::Increment(m_size);
 			AssertEq(size_t(m_size), m_bars.size());
 			return true;
 		}
+	}
+
+	template<typename Stat>
+	boost::shared_ptr<typename Stat> CreateStat(size_t size) const {
+		return boost::shared_ptr<typename Stat>(
+			new Stat(
+				m_service.shared_from_this(),
+				size));
 	}
 
 };
@@ -316,6 +446,14 @@ BarService::BarService(
 
 BarService::~BarService() {
 	delete m_pimpl;
+}
+
+boost::shared_ptr<BarService> BarService::shared_from_this() {
+	return boost::static_pointer_cast<BarService>(Base::shared_from_this());
+}
+
+boost::shared_ptr<const BarService> BarService::shared_from_this() const {
+	return boost::static_pointer_cast<const BarService>(Base::shared_from_this());
 }
 
 const std::string & BarService::GetName() const {
@@ -372,6 +510,55 @@ bool BarService::IsEmpty() const {
 	return m_pimpl->m_size == 0;
 }
 
+boost::shared_ptr<BarService::ScaledPriceStat> BarService::GetOpenPriceStat(
+			size_t numberOfBars)
+		const {
+	typedef StatAccumulator<
+			ScaledPriceStat,
+			offsetof(BarService::Bar, BarService::Bar::openPrice)>
+		Stat;
+	return m_pimpl->CreateStat<Stat>(numberOfBars);
+}
+
+boost::shared_ptr<BarService::ScaledPriceStat> BarService::GetClosePriceStat(
+			size_t numberOfBars)
+		const {
+	typedef StatAccumulator<
+			ScaledPriceStat,
+			offsetof(BarService::Bar, BarService::Bar::closePrice)>
+		Stat;
+	return m_pimpl->CreateStat<Stat>(numberOfBars);
+}
+
+boost::shared_ptr<BarService::ScaledPriceStat> BarService::GetHighPriceStat(
+			size_t numberOfBars)
+		const {
+	typedef StatAccumulator<
+			ScaledPriceStat,
+			offsetof(BarService::Bar, BarService::Bar::highPrice)>
+		Stat;
+	return m_pimpl->CreateStat<Stat>(numberOfBars);
+}
+
+boost::shared_ptr<BarService::ScaledPriceStat> BarService::GetLowPriceStat(
+			size_t numberOfBars)
+		const {
+	typedef StatAccumulator<
+			ScaledPriceStat,
+			offsetof(BarService::Bar, BarService::Bar::lowPrice)>
+		Stat;
+	return m_pimpl->CreateStat<Stat>(numberOfBars);
+}
+
+boost::shared_ptr<BarService::QtyStat> BarService::GetVolumeStat(
+			size_t numberOfBars)
+		const {
+	typedef StatAccumulator<
+			QtyStat,
+			offsetof(BarService::Bar, BarService::Bar::volume)>
+		Stat;
+	return m_pimpl->CreateStat<Stat>(numberOfBars);
+}
 
 //////////////////////////////////////////////////////////////////////////
 

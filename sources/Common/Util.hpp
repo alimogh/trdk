@@ -90,5 +90,7 @@ namespace Util {
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange);
-	
+
+	time_t ConvertToTimeT(const boost::posix_time::ptime &);
+
 }

@@ -10,10 +10,10 @@
 
 namespace Trader { namespace PyApi {
 
-	class Error : public Trader::Lib::Exception {
+	class Error : public Trader::Lib::ModuleError {
 	public:
 		explicit Error(const char *what) throw()
-				: Exception(what) {
+				: ModuleError(what) {
 			//...//
 		}
 	};

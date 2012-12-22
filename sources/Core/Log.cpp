@@ -13,12 +13,9 @@ using namespace Trader::Lib;
 
 namespace {
 
-	typedef boost::mutex Mutex;
-	typedef Mutex::scoped_lock Lock;
-
 	struct State {
 
-		Mutex mutex;
+		Log::Mutex mutex;
 		volatile long isEnabled;
 
 		std::ostream *log;
@@ -29,7 +26,7 @@ namespace {
 		}
 
 		void Enable(std::ostream &newLog) {
-			Lock lock(mutex);
+			Log::Lock lock(mutex);
 			const bool isStarted = !log;
 			log = &newLog;
 			if (isStarted) {
@@ -63,6 +60,14 @@ namespace {
 	State events;
 	State trading;
 
+}
+
+Log::Mutex & Log::GetEventsMutex() {
+	return events.mutex;
+}
+
+Log::Mutex & Log::GetTradingMutex() {
+	return trading.mutex;
 }
 
 bool Log::IsEventsEnabled() throw() {

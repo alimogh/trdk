@@ -18,6 +18,8 @@ namespace Trader { namespace Services {
 
 	public:
 
+		typedef Trader::Service Base;
+
 		//! General service error.
 		class Error : public Trader::Lib::Exception {
 		public:
@@ -38,12 +40,41 @@ namespace Trader { namespace Services {
 
  		//! Bar data.
  		struct Bar {
+			boost::posix_time::ptime time;
 			Trader::ScaledPrice openPrice;
 			Trader::ScaledPrice closePrice;
-			Trader::ScaledPrice high;
-			Trader::ScaledPrice low;
+			Trader::ScaledPrice highPrice;
+			Trader::ScaledPrice lowPrice;
 			Trader::Qty volume;
  		};
+
+		class Stat : private boost::noncopyable {
+		public:
+			Stat();
+			~Stat();
+		};
+
+		class ScaledPriceStat : public Stat {
+		public:
+			typedef Trader::ScaledPrice ValueType;
+		public:
+			ScaledPriceStat();
+			virtual ~ScaledPriceStat();
+		public:
+			virtual ValueType GetMax() const = 0;
+			virtual ValueType GetMin() const = 0;
+		};
+
+		class QtyStat : public Stat {
+		public:
+			typedef Trader::ScaledPrice ValueType;
+		public:
+			QtyStat();
+			virtual ~QtyStat();
+		public:
+			virtual ValueType GetMax() const = 0;
+			virtual ValueType GetMin() const = 0;
+		};
 
 	public:
 
@@ -52,8 +83,13 @@ namespace Trader { namespace Services {
 					boost::shared_ptr<Trader::Security> &,
 					const Trader::Lib::IniFileSectionRef &,
 					const boost::shared_ptr<const Settings> &);
-		
+
 		virtual ~BarService();
+
+	public:
+
+		boost::shared_ptr<BarService> shared_from_this();
+		boost::shared_ptr<const BarService> shared_from_this() const;
 
 	public:
 
@@ -97,6 +133,24 @@ namespace Trader { namespace Services {
  		/** @throw Trader::Services::BarService::BarDoesNotExistError
  		  */
 // 		const Bar & GetBar(const TimeUtc &) const;
+
+	public:
+
+		boost::shared_ptr<ScaledPriceStat> GetOpenPriceStat(
+					size_t numberOfBars)
+				const;
+		boost::shared_ptr<ScaledPriceStat> GetClosePriceStat(
+					size_t numberOfBars)
+				const;
+		boost::shared_ptr<ScaledPriceStat> GetHighPriceStat(
+					size_t numberOfBars)
+				const;
+		boost::shared_ptr<ScaledPriceStat> GetLowPriceStat(
+					size_t numberOfBars)
+				const;
+		boost::shared_ptr<QtyStat> GetVolumeStat(
+					size_t numberOfBars)
+				const;
 
 	protected:
 

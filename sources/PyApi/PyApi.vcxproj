@@ -110,8 +110,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="PyApi.def" />
-    <None Include="Scripts\TraderPyApiExampleStrategies.py" />
-    <None Include="Trader.pypredef" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.vcxproj">

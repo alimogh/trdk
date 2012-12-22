@@ -14,15 +14,21 @@
 
 namespace Log {
 
-	bool TRADER_CORE_API IsEventsEnabled() throw();
-	void TRADER_CORE_API EnableEvents(std::ostream &);
-	void TRADER_CORE_API DisableEvents() throw();
+	typedef boost::mutex Mutex;
+	typedef Mutex::scoped_lock Lock;
 
-	bool TRADER_CORE_API IsTradingEnabled() throw();
-	void TRADER_CORE_API EnableTrading(std::ostream &);
-	void TRADER_CORE_API DisableTrading() throw();
+	TRADER_CORE_API Mutex & GetEventsMutex();
+	TRADER_CORE_API Mutex & GetTradingMutex();
 
-	void TRADER_CORE_API RegisterUnhandledException(
+	TRADER_CORE_API bool IsEventsEnabled() throw();
+	TRADER_CORE_API void EnableEvents(std::ostream &);
+	TRADER_CORE_API void DisableEvents() throw();
+
+	TRADER_CORE_API bool IsTradingEnabled() throw();
+	TRADER_CORE_API void EnableTrading(std::ostream &);
+	TRADER_CORE_API void DisableTrading() throw();
+
+	TRADER_CORE_API void RegisterUnhandledException(
 			const char *function,
 			const char *file,
 			long line,

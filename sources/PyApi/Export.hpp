@@ -9,7 +9,6 @@
 #pragma once
 
 #include "Services/BarService.hpp"
-#include "Services/BarStatService.hpp"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -90,6 +89,36 @@ namespace Trader { namespace PyApi { namespace Export {
 
 	public:
 
+		static void Export(const char *className) {
+
+			namespace py = boost::python;
+			
+			py::class_<Security, boost::noncopyable>(className,  py::no_init)
+
+				.add_property("symbol", &Security::GetSymbol)
+				.add_property("fullSymbol", &Security::GetFullSymbol)
+				.add_property("currency", &Security::GetCurrency)
+
+				.add_property("priceScale", &Security::GetPriceScale)
+				.def("scalePrice", &Security::ScalePrice)
+				.def("descalePrice", &Security::DescalePrice)
+
+				.add_property("lastPrice", &Security::GetLastPriceScaled)
+				.add_property("lastSize", &Security::GetLastQty)
+
+				.add_property("askPrice", &Security::GetAskPriceScaled)
+				.add_property("askSize", &Security::GetAskQty)
+
+				.add_property("bidPrice", &Security::GetBidPriceScaled)
+				.add_property("bidSize", &Security::GetBidQty)
+
+				.def("cancelOrder", &Security::CancelOrder)
+				.def("cancelAllOrders", &Security::CancelAllOrders);
+
+		}
+
+	public:
+
 		boost::shared_ptr<Trader::Security> GetSecurity() {
 			return m_security;
 		}
@@ -128,6 +157,16 @@ namespace Trader { namespace PyApi { namespace Export {
 
 		virtual ~Service() {
 			//...//
+		}
+
+	public:
+
+		static void Export(const char *className) {
+			namespace py = boost::python;
+			py::class_<Service, boost::noncopyable>(className, py::no_init)
+				.add_property("tag", &Service::GetTag)
+ 				.def_readonly("security", &Service::security)
+ 				.def("getName", &Service::GetName);
 		}
 
 	public:
@@ -173,9 +212,171 @@ namespace Trader { namespace PyApi { namespace Export { namespace Services {
 
 	public:
 
+		class Bar {
+			
+		public:
+
+			explicit Bar(
+						const Trader::Services::BarService &service,
+						const Trader::Services::BarService::Bar &bar)
+					: m_service(&service),
+					m_bar(&bar) {
+				//...//
+			}
+
+		public:
+			
+			static void Export(const char *className) {
+				namespace py = boost::python;
+				py::class_<Bar>(className, py::no_init)
+					.add_property("time", &Bar::GetTime)
+					.add_property("size", &Bar::GetSize)
+					.add_property("openPrice", &Bar::GetOpenPrice)
+					.add_property("closePrice", &Bar::GetClosePrice)
+					.add_property("highPrice", &Bar::GetHighPrice)
+					.add_property("lowPrice", &Bar::GetLowPrice)
+					.add_property("volume", &Bar::GetVolume);
+			}
+
+		public:
+
+			time_t GetTime() const {
+				return Util::ConvertToTimeT(m_bar->time);
+			}
+
+			size_t GetSize() const {
+				return m_service->GetBarSize().total_seconds();
+			}
+
+			boost::intmax_t GetOpenPrice() const {
+				return m_bar->openPrice;
+			}
+			boost::intmax_t GetClosePrice() const {
+				return m_bar->closePrice;
+			}
+			
+			boost::intmax_t GetHighPrice() const {
+				return m_bar->highPrice;
+			}
+			boost::intmax_t GetLowPrice() const {
+				return m_bar->lowPrice;
+			}
+			
+			boost::intmax_t GetVolume() const {
+				return m_bar->volume;
+			}
+
+		private:
+
+			const Trader::Services::BarService *m_service;
+			const Trader::Services::BarService::Bar *m_bar;
+
+		};
+
+	    class Stat {
+		public:
+			static void Export(const char *className) {
+				namespace py = boost::python;
+				py::class_<Stat, boost::noncopyable>(className, py::no_init);
+			}
+		};
+        
+		class PriceStat : public Stat {
+		public:
+			typedef Trader::Services::BarService::ScaledPriceStat::ValueType
+				ValueType;
+		public:
+			explicit PriceStat(
+						const boost::shared_ptr<const Trader::Services::BarService::ScaledPriceStat> &stat)
+					: m_stat(stat) {
+				//...//
+			}
+		public:
+			static void Export(const char *className) {
+				namespace py = boost::python;
+				py::class_<PriceStat>(className, py::no_init)
+					.add_property("max", &PriceStat::GetMax)
+					.add_property("min", &PriceStat::GetMin);
+			}
+		public:
+			ValueType GetMax() const {
+				return m_stat->GetMax();
+			}
+			ValueType GetMin() const {
+				return m_stat->GetMin();
+			}
+		private:
+			boost::shared_ptr<const Trader::Services::BarService::ScaledPriceStat> m_stat;
+		};
+
+        class QtyStat : public Stat {
+		public:
+			typedef Trader::Services::BarService::QtyStat::ValueType
+				ValueType;
+		public:
+			explicit QtyStat(
+						const boost::shared_ptr<const Trader::Services::BarService::QtyStat> &stat)
+					: m_stat(stat) {
+				//...//
+			}
+		public:
+			static void Export(const char *className) {
+				namespace py = boost::python;
+				py::class_<QtyStat>(className, py::no_init)
+					.add_property("max", &QtyStat::GetMax)
+					.add_property("min", &QtyStat::GetMin);
+			}
+		public:
+			ValueType GetMax() const {
+				return m_stat->GetMax();
+			}
+			ValueType GetMin() const {
+				return m_stat->GetMin();
+			}
+		private:
+			boost::shared_ptr<const Trader::Services::BarService::QtyStat> m_stat;
+		};
+	
+	public:
+
 		explicit BarService(const Trader::Services::BarService &barService)
 				: Export::Service(barService) {
 			//...//
+		}
+
+	public:
+
+		static void Export(const char *className) {
+
+			namespace py = boost::python;
+
+			typedef py::class_<
+					BarService,
+					py::bases<Service>,
+					boost::noncopyable>
+				BarServiceExport;
+			const boost::python::scope barServiceClass
+				= BarServiceExport(className, py::no_init)
+					
+					.add_property("barSize", &BarService::GetBarSize)
+					.add_property("size", &BarService::GetSize)
+					.add_property("isEmpty", &BarService::IsEmpty)
+ 					
+					.def("getBarByIndex", &BarService::GetBarByIndex)
+ 					.def("getBarByReversedIndex", &BarService::GetBarByReversedIndex)
+
+ 					.def("getOpenPriceStat", &BarService::GetOpenPriceStat)
+ 					.def("getClosePriceStat", &BarService::GetClosePriceStat)
+ 					.def("getHighPriceStat", &BarService::GetHighPriceStat)
+ 					.def("getHighPriceStat", &BarService::GetHighPriceStat)
+ 					.def("getVolumeStat", &BarService::GetVolumeStat);
+
+			Bar::Export("Bar");
+
+			Stat::Export("Stat");
+			PriceStat::Export("PriceStat");
+			QtyStat::Export("QtyStat");
+
 		}
 
 	public:
@@ -188,18 +389,6 @@ namespace Trader { namespace PyApi { namespace Export { namespace Services {
 			return GetService().GetBarSize().total_seconds();
 		}
 		
-		size_t GetBarSizeInMinutes() const {
-			return GetService().GetBarSize().total_seconds() / 60;
-		}
-		
-		size_t GetBarSizeInHours() const {
-			return GetService().GetBarSize().total_seconds() / (60 * 60);
-		}
-		
-		size_t GetBarSizeInDays() const {
-			return GetService().GetBarSize().total_seconds() / ((60 * 60) * 24);
-		}
-		
 		size_t GetSize() const {
 			return GetService().GetSize();
 		}
@@ -208,84 +397,38 @@ namespace Trader { namespace PyApi { namespace Export { namespace Services {
 			return GetService().IsEmpty();
 		}
  		
-		void GetBarByIndex(size_t index) const {
-			GetService().GetBar(index);
+		Bar GetBarByIndex(size_t index) const {
+			return Bar(GetService(), GetService().GetBar(index));
 		}
  		
-		void GetBarByReversedIndex(size_t index) const {
-			GetService().GetBarByReversedIndex(index);
+		Bar GetBarByReversedIndex(size_t index) const {
+			return Bar(GetService(), GetService().GetBarByReversedIndex(index));
+		}
+
+		PriceStat GetOpenPriceStat(size_t numberOfBars) const {
+			return PriceStat(GetService().GetOpenPriceStat(numberOfBars));
+		}
+        
+		PriceStat GetClosePriceStat(size_t numberOfBars) const {
+			return PriceStat(GetService().GetClosePriceStat(numberOfBars));
+		}
+        
+		PriceStat GetHighPriceStat(size_t numberOfBars) const {
+			return PriceStat(GetService().GetHighPriceStat(numberOfBars));
+		}
+        
+		PriceStat GetLowPriceStat(size_t numberOfBars) const {
+			return PriceStat(GetService().GetLowPriceStat(numberOfBars));
+		}
+        
+		QtyStat GetVolumeStat(size_t numberOfBars) const {
+			return QtyStat(GetService().GetVolumeStat(numberOfBars));
 		}
 
 	protected:
 
 		const Trader::Services::BarService & GetService() const {
 			return Get<Trader::Services::BarService>();
-		}
-
-	};
-
-	class BarStatService : public Export::Service {
-
-	public:
-
-		explicit BarStatService(const Trader::Services::BarStatService &service)
-				: Export::Service(service) {
-			//...//
-		}
-
-	public:
-
-		size_t GetStatSize() const {
-			return GetService().GetStatSize();
-		}
-
-		bool IsEmpty() const {
-			return GetService().IsEmpty();
-		}
-
-// 		const Trader::Services::BarService & GetSource() {
-// 			return GetService().GetSource();
-// 		}
-
-		Trader::ScaledPrice GetMaxOpenPrice() const {
-			return GetService().GetMaxOpenPrice();
-		}
-		Trader::ScaledPrice GetMinOpenPrice() const {
-			return GetService().GetMinOpenPrice();
-		}
-
-		Trader::ScaledPrice GetMaxClosePrice() const {
-			return GetService().GetMaxClosePrice();
-		}
-		Trader::ScaledPrice GetMinClosePrice() const {
-			return GetService().GetMinClosePrice();
-		}
-
-		Trader::ScaledPrice GetMaxHigh() const {
-			return GetService().GetMaxHigh();
-		}
-		Trader::ScaledPrice GetMinHigh() const {
-			return GetService().GetMinHigh();
-		}
-
-		Trader::ScaledPrice GetMaxLow() const {
-			return GetService().GetMaxLow();
-		}
-		Trader::ScaledPrice GetMinLow() const {
-			return GetService().GetMinLow();
-		}
-
-		Trader::Qty GetMaxVolume() const {
-			return GetService().GetMaxVolume();
-		}
-		Trader::Qty GetMinVolume() const {
-			return GetService().GetMinVolume();
-		}
-
-	protected:
-
-		const Trader::Services::BarStatService & GetService() const {
-			return Get<Trader::Services::BarStatService>();
 		}
 
 	};

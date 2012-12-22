@@ -23,10 +23,6 @@ namespace Trader {
 
 	public:
 
-		using boost::enable_shared_from_this<Trader::Observer>::shared_from_this;
-
-	public:
-
 		Observer(
 				const std::string &tag,
 				const Trader::Observer::NotifyList &,

@@ -7,12 +7,7 @@
  **************************************************************************/
 
 #include <assert.h>
-#include <boost/format.hpp>
-#include <iostream>
-#include "DisableBoostWarningsBegin.h"
-#	include <boost/date_time/posix_time/posix_time.hpp>
-#	include <boost/thread/thread_time.hpp>
-#include "DisableBoostWarningsEnd.h"
+#include "Common.hpp"
 #include "Exception.hpp"
 #ifdef BOOST_WINDOWS
 #	include <Windows.h>

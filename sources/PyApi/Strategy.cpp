@@ -109,13 +109,6 @@ void Strategy::NotifyServiceStart(const Trader::Service &service) {
 						const Trader::Services::BarService *>(
 					&service));
 			object = py::object(boost::cref(*serviceExport));
-		} else if (dynamic_cast<const Trader::Services::BarStatService *>(&service)) {
-			//! @todo fixme
-			auto *serviceExport = new Export::Services::BarStatService(
-				*boost::polymorphic_downcast<
-						const Trader::Services::BarStatService *>(
-					&service));
-			object = py::object(boost::cref(*serviceExport));
 		}
 		if (object) {
 			CallNotifyServiceStartPyMethod(object);
