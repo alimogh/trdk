@@ -9,7 +9,7 @@
 #include "Prec.hpp"
 #include "Ini.hpp"
 #include "Util.hpp"
-#include "Dispatcher.hpp"
+#include "SubscriptionsManager.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/Observer.hpp"
 #include "Core/Service.hpp"
@@ -50,7 +50,7 @@ namespace {
 
 	typedef std::map<
 			std::string /* strategy tag */,
-			std::tuple<
+			boost::tuple<
 				std::list<StrategyService>,
 				std::bitset<numberOfSystemServices>>>
 		StrategyServices;
@@ -318,12 +318,12 @@ namespace {
 			if (	boost::iequals(
 						serviceRequest,
 						Ini::Constants::Services::level1)) {
-				std::get<1>(services[tag]).set(SYSTEM_SERVICE_LEVEL1);
+				boost::get<1>(services[tag]).set(SYSTEM_SERVICE_LEVEL1);
 			} else if (
 					boost::iequals(
 						serviceRequest,
 						Ini::Constants::Services::trades)) {
-				std::get<1>(services[tag]).set(SYSTEM_SERVICE_TRADES);
+				boost::get<1>(services[tag]).set(SYSTEM_SERVICE_TRADES);
 			} else {
 				boost::smatch what;
 				const auto cleanRequest = boost::trim_copy(serviceRequest);
@@ -351,7 +351,7 @@ namespace {
 				StrategyService service = {};
 				service.tag = what.str(1);
 				service.symbol = what.str(2);
-				std::get<0>(services[tag]).push_back(service);
+				boost::get<0>(services[tag]).push_back(service);
 			}
 		}
 
@@ -489,7 +489,7 @@ namespace {
 				const IniFile &ini,
 				const IniFile::Symbol &symbol,
 				Module &module,
-				Dispatcher & dispatcher) {
+				SubscriptionsManager &subscriptionsManager) {
 		
 		const auto bindingInfo = binding.find(module.GetTag());
 		if (bindingInfo == binding.end()) {
@@ -499,7 +499,7 @@ namespace {
 
 		bool isAnyService = false;
 
-		foreach (const auto &info, std::get<0>(bindingInfo->second)) {
+		foreach (const auto &info, boost::get<0>(bindingInfo->second)) {
 			const auto service = services.find(info.tag);
 			if (service == services.end()) {
 				Log::Error(
@@ -542,17 +542,17 @@ namespace {
 				throw Exception("Unknown service symbol provided");
 			}
 			serviceSymbol->second->RegisterSubscriber(module);
-			module.NotifyServiceStart(serviceSymbol->second);
+			module.OnServiceStart(serviceSymbol->second);
 			isAnyService = true;
 		}
 
-		if (std::get<1>(bindingInfo->second)[SYSTEM_SERVICE_LEVEL1]) {
-			dispatcher.SubscribeToLevel1(module);
+		if (boost::get<1>(bindingInfo->second)[SYSTEM_SERVICE_LEVEL1]) {
+			subscriptionsManager.SubscribeToLevel1(module);
 			isAnyService = true;
 		}
 
-		if (std::get<1>(bindingInfo->second)[SYSTEM_SERVICE_TRADES]) {
-			dispatcher.SubscribeToNewTrades(module);
+		if (boost::get<1>(bindingInfo->second)[SYSTEM_SERVICE_TRADES]) {
+			subscriptionsManager.SubscribeToTrades(module);
 			isAnyService = true;
 		}
 
@@ -566,7 +566,7 @@ namespace {
 	void InitTrading(
 				const IniFile &ini,
 				boost::shared_ptr<TradeSystem> tradeSystem,
-				Dispatcher &dispatcher,
+				SubscriptionsManager &subscriptionsManager,
 				boost::shared_ptr<MarketDataSource> marketDataSource,
 				Strategies &strategies,
 				Observers &observers,
@@ -658,11 +658,11 @@ namespace {
 					ini,
 					strategy.first,
 					*strategy.second,
-					dispatcher);
+					subscriptionsManager);
 			}
 		}
 		foreach (auto &o, observers) {
-			dispatcher.SubscribeToNewTrades(o.second);
+			subscriptionsManager.SubscribeToTrades(o.second);
 		}
 		foreach (auto &ss, services) {
 			foreach (auto &service, ss.second) {
@@ -672,7 +672,7 @@ namespace {
 					ini,
 					service.first,
 					*service.second,
-					dispatcher);
+					subscriptionsManager);
 			}
 		}
 
@@ -803,7 +803,7 @@ void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 			ini,
 			Ini::Sections::MarketData::source);
 
-	Dispatcher dispatcher(settings);
+	SubscriptionsManager subscriptionsManager(settings);
 
 	Strategies strategies;
 	Observers observers;
@@ -812,7 +812,7 @@ void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 		InitTrading(
 			ini,
 			tradeSystem,
-			dispatcher,
+			subscriptionsManager,
 			marketDataSource,
 			strategies,
 			observers,
@@ -832,7 +832,7 @@ void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 			boost::ref(*settings)));
 
 	iniChangeNotificator.Start();
-	dispatcher.Start();
+	subscriptionsManager.Start();
 
 	try {
 		Connect(*tradeSystem, ini, Ini::Sections::tradeSystem);
@@ -844,6 +844,6 @@ void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 
 	getchar();
 	iniChangeNotificator.Stop();
-	dispatcher.Stop();
+	subscriptionsManager.Stop();
 
 }

@@ -51,13 +51,27 @@ namespace Trader { namespace PyApi { namespace Import {
 
 	public:
 
-		bool HasActiveOrders() const throw() {
+		bool IsStarted() const {
+			return m_position.IsStarted();
+		}
+		bool IsCompleted() const {
+			return m_position.IsCompleted();
+		}
+
+		bool IsOpened() const {
+			return m_position.IsOpened();
+		}
+		bool IsClosed() const {
+			return m_position.IsClosed();
+		}
+
+		bool HasActiveOrders() const {
 			return m_position.HasActiveOrders();
 		}
-		bool HasActiveOpenOrders() const throw() {
+		bool HasActiveOpenOrders() const {
 			return m_position.HasActiveOpenOrders();
 		}
-		bool HasActiveCloseOrders() const throw() {
+		bool HasActiveCloseOrders() const {
 			return m_position.HasActiveCloseOrders();
 		}
 
@@ -222,23 +236,13 @@ namespace Trader { namespace PyApi { namespace Import {
 
 		boost::python::str CallGetNamePyMethod() const {
 			throw PureVirtualMethodHasNoImplementation(
-				"Pure virtual method Trader.SecurityAlgo.getName"
+				"Pure virtual method trader.SecurityAlgo.getName"
 					" has no implementation");
 		}
 
-		void CallNotifyServiceStartPyMethod(
-					const boost::python::object &service);
+		void CallOnServiceStartPyMethod(const boost::python::object &service);
 
 		
-		bool CallOnNewTradePyMethod(
-					const boost::python::object &time,
-					const boost::python::object &price,
-					const boost::python::object &qty,
-					const boost::python::object &side);
-
-		bool CallOnServiceDataUpdatePyMethod(
-					const boost::python::object &service);
-
 	protected:
 
 		template<typename T>
@@ -263,18 +267,32 @@ namespace Trader { namespace PyApi { namespace Import {
 
 	public:
 
-		explicit Service(Trader::Service &service)
-				: SecurityAlgo(service) {
-			//...//
-		}
+		explicit Service(Trader::Service &);
 		
-		virtual ~Service() {
-			//...//
-		}
-
 	public:
 
 		static void Export(const char *className);
+
+	public:
+
+		bool CallOnLevel1UpdatePyMethod();
+		bool CallOnNewTradePyMethod(
+					const boost::python::object &time,
+					const boost::python::object &price,
+					const boost::python::object &qty,
+					const boost::python::object &side);
+		bool CallOnServiceDataUpdatePyMethod(
+					const boost::python::object &service);
+
+	protected:
+
+		Trader::Service & GetService() {
+			return Get<Trader::Service>();
+		}
+
+		const Trader::Service & GetService() const {
+			return Get<Trader::Service>();
+		}
 
 	};
 
@@ -284,10 +302,25 @@ namespace Trader { namespace PyApi { namespace Import {
 
 	public:
 
-		explicit Strategy(Trader::Strategy &strategy)
-				: SecurityAlgo(strategy) {
-			//...//
-		}
+		class PositionList {
+		public:
+			typedef Trader::Strategy::PositionList::Iterator iterator;
+		public:
+			explicit PositionList(Trader::Strategy::PositionList &);
+		public:
+			static void Export(const char *className);
+		public:
+			size_t GetSize() const;
+		public:
+			iterator begin();
+			iterator end();
+		private:
+			Trader::Strategy::PositionList *m_list;
+		};
+
+	public:
+
+		explicit Strategy(Trader::Strategy &);
 
 	public:
 
@@ -295,16 +328,29 @@ namespace Trader { namespace PyApi { namespace Import {
 
 	public:
 
-		boost::python::object CallTryToOpenPositionsPyMethod() {
-			throw PureVirtualMethodHasNoImplementation(
-				"Pure virtual method Trader.Strategy.tryToOpenPositions"
-					" has no implementation");
+		void CallOnLevel1UpdatePyMethod();
+		void CallOnNewTradePyMethod(
+					const boost::python::object &time,
+					const boost::python::object &price,
+					const boost::python::object &qty,
+					const boost::python::object &side);
+		void CallOnServiceDataUpdatePyMethod(
+					const boost::python::object &service);
+		void CallOnPositionUpdatePyMethod(
+					const boost::python::object &position);
+
+	public:
+
+		PositionList GetPositions();
+
+	public:
+
+		Trader::Strategy & GetStrategy() {
+			return Get<Trader::Strategy>();
 		}
 
-		void CallTryToClosePositionsPyMethod(const boost::python::object &) {
-			throw PureVirtualMethodHasNoImplementation(
-				"Pure virtual method Trader.Strategy.tryToClosePositions"
-					" has no implementation");
+		const Trader::Strategy & GetStrategy() const {
+			return Get<Trader::Strategy>();
 		}
 
 	};

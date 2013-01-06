@@ -19,6 +19,7 @@
 #	include <boost/format.hpp>
 #	include <boost/thread.hpp>
 #	include <boost/algorithm/string_regex.hpp>
+#	include <boost/tuple/tuple.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

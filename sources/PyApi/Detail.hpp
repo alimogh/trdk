@@ -66,12 +66,7 @@ namespace Trader { namespace PyApi { namespace Detail {
 	struct Time {
 
 		static boost::python::object Convert(
-					const boost::posix_time::ptime &time) {
-			static const boost::posix_time::ptime epochStart
-				= boost::posix_time::from_time_t(0);
-			AssertNe(epochStart, time);
-			return boost::python::object((time - epochStart).total_seconds());
-		}
+					const boost::posix_time::ptime &time);
 		
 		static boost::posix_time::ptime Convert(
 					const boost::python::object &time) {

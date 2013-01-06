@@ -59,7 +59,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Bscmake>
+      <PreserveSBR>true</PreserveSBR>
+    </Bscmake>
+  </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="SecurityAlgo.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="Strategy.cpp" />
@@ -69,7 +78,6 @@
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="Observer.cpp" />
     <ClCompile Include="Position.cpp" />
-    <ClCompile Include="PositionBundle.cpp" />
     <ClCompile Include="PositionReporter.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
@@ -93,7 +101,6 @@
     <ClInclude Include="Module.hpp" />
     <ClInclude Include="Observer.hpp" />
     <ClInclude Include="Position.hpp" />
-    <ClInclude Include="PositionBundle.hpp" />
     <ClInclude Include="PositionReporter.hpp" />
     <ClInclude Include="StrategyPositionReporter.hpp" />
     <ClInclude Include="Prec.hpp" />

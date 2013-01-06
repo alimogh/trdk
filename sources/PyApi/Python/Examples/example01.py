@@ -2,12 +2,10 @@
 # Trader engine module
 import trader
 
-################################################################################
-
-# Strategy algorithm class must be inherited from Trader.Strategy
+# Strategy algorithm class must be inherited from trader.Strategy
 class Example01(trader.Strategy):
 
-    # Constructor doesn't required, here just for example.
+    # Constructor is not required by API, here just for example.
     def __init__(self, param):
         # Pass parameter to base class:
         super(self.__class__, self).__init__(param)
@@ -15,66 +13,72 @@ class Example01(trader.Strategy):
         self._foo = 10
 
     # Pure virtual method, must be implemented in strategy implementation.
-    # Returns algorithm name.
+    # Returns algorithm name (any string unique name).
     def getName(self):
         return self.__class__.__name__
 
-    # Virtual method. Not pure. Not required, if algorithm doesn't use services.
-    def notifyServiceStart(self, service):
+    # Virtual method. Not pure. Not required, even if algorithm uses services.
+    def onServiceStart(self, service):
         if service.getName() == 'Nonexistent service':
-            # Using service object if algorithm requires it...
+            # Here can be some logic at service start...
             pass
-        else:
-            # Send service object to base if algorithm doesn't required it...
-            super(self.__class__, self).notifyServiceStart(service)
 
     # Pure virtual method, must be implemented in strategy implementation.
-    # Will be called by engine each time when binded service has changed its
-    # state (ex.: received new market data for strategy symbol).
-    def tryToOpenPositions(self):
+    # Will be called each time when engine has received Level 1 data update
+    # (such as best bid, best ask or last trade).
+    def onLevel1Update(self):
+        if self.positions.count() == 0:
+            # No positions currently opened, so trying to open one...
+            self.tryToOpenPosition()
+        else:
+            # Some positions are opened, checking each for closing...
+            map(self.tryToClosePosition, self.positions)
+
+    # Example method: how position can be opened. See onLevel1Update for call.
+    def tryToOpenPosition(self):
 
         # Checking entry condition:
         spread = self.security.bidPrice - self.security.askPrice
         if spread > -0.01:
-            # not the case for trade
+            # Not the case for order:
             return
 
-        # Creating position object (long position on this case):
+        # Creating position object (long position in this case):
         position = trader.LongPosition(
-            # security object
-            self.security,
+            # strategy object
+            self,
             # number of shares
             int(10000 / self.security.askPrice),
             # start price
-            self.security.bidPrice,
-            # strategy tag for statistic
-            self.tag)
+            self.security.bidPrice)
 
-        # Sending IOC order (if order will be filled:
-        # tryToClosePositions-method will be called, if not:
-        # tryToOpenPositions will be called again):
+        # Sending IOC order (method onPositionUpdate will be called at each
+        # position state update):
         position.openOrCancel(position.openStartPrice)
 
-        return position
+    # Example method: how position can be closed. See onLevel1Update for call.
+    def tryToClosePosition(self, position):
 
-    # Pure virtual method, must be implemented in strategy implementation.
-    # Will be called by engine every time when:
-    #	- binded service has changed its state (ex.: received new market data
-    #	  for strategy symbol);
-    #	- strategy has opened position;
-    #	- all previous orders has been canceled or filled.
-    def tryToClosePositions(self, position):
+        if isinstance(position, trader.LongPosition):
+            # Here can be special logic for long position.
+            pass
+        else:
+            assert(isinstance(position, trader.ShortPosition))
+            # Here can be special logic for short position.
+            pass
 
         takeProfitPrice = position.openPrice + 0.03
         stopLossPrice = position.openPrice - 0.03
 
         if self.security.askPrice >= takeProfitPrice:
             if position.hasActiveOrders:
-                # order already sent and still active
+                # Order already sent and still active:
                 return
-            # take profit: trying to close with IOC
+            # Take profit: trying to close with IOC (method onPositionUpdate
+            # will be called at each position state update):
             position.closeOrCancel(takeProfitPrice)
         elif self.security.askPrice <= stopLossPrice:
-            # stop loss: cancel all active orders and close
-            # position at market price
+            # Stop loss: cancel all active orders and close position at market
+            # price (method onPositionUpdate will be called at each position
+            # state update):
             position.cancelAtMarketPrice()

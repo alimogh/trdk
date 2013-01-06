@@ -55,9 +55,6 @@
     <ClInclude Include="Common.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SignalConnection.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Foreach.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

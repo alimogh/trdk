@@ -71,12 +71,139 @@ class Security(object):
 
 ###############################################################################
 
+class SecurityAlgo(object):
+
+    tag = str
+
+    security = Security
+
+    def __init__(self, param):
+        """
+        :type param: int
+        """
+        pass
+
+    def getName(self):
+        """ Pure virtual method. Returns algorithm method.
+        :rtype: str
+        """
+        pass
+
+    def onServiceStart(self, service):
+        """ Notifies about new service start. Virtual.
+        :type service: trader.Service
+        """
+        pass
+
+class Strategy(SecurityAlgo):
+    """ Every strategy algorithm class must be inherited from this class.
+    """
+
+    class PositionList(object):
+        """ Iterable position list.
+        """
+        def count(self):
+            """
+            :rtype: int
+            """
+            pass
+
+    positions = PositionList # active positions
+
+    def __init__(self, param):
+        """
+        :type param: int
+        """
+        pass
+
+    def onLevel1Update(self):
+        """
+        Virtual. Notifies about Level 1 data update (best bid, best ask or
+        last trade). Required if strategy subscribed to Level 1 updates.
+        """
+        pass
+
+    def onNewTrade(self, time, price, qty, side):
+        """
+        Virtual. Notifies about new trade (price tick). Required if strategy
+        subscribed to new trades.
+        :type time: int
+        :type price: int
+        :type qty: int
+        :type side: char 'S' (sell) or 'B' (buy)
+        """
+        pass
+
+    def onServiceDataUpdate(self, service):
+        """
+        Virtual. Notifies about service data update. Required if strategy
+        subscribed to at least one service.
+        :type service: trader.Service
+        """
+        pass
+
+    def onPositionUpdate(self, position):
+        """
+        Virtual. Notifies about position state update. Optional.
+        :type position: trader.Position
+        """
+        pass
+
+class Service(SecurityAlgo):
+
+    def __init__(self, param):
+        """
+        :type param: int
+        """
+        pass
+
+    def onLevel1Update(self):
+        """
+        Virtual. Notifies about Level 1 data update. Required if service
+        subscribed to Level 1 updates. Method returns True if service state has
+        changed, False otherwise.
+        :rtype: bool
+        """
+        pass
+
+    def onServiceDataUpdate(self, service):
+        """
+        Virtual. Notifies about service data update. Required if service
+        subscribed to at least one service. Method returns True if service
+        state has changed, False otherwise.
+        :type service: trader.Service
+        :rtype: bool
+        """
+        pass
+
+    def onNewTrade(self, time, price, qty, side):
+        """
+        Virtual. Notifies about new trade (price tick). Required if service
+        subscribed to new trades. Method returns True if service state has
+        changed, False otherwise.
+        :type time: int
+        :type price: int
+        :type qty: int
+        :type side: char 'S' (sell) or 'B' (buy)
+        :rtype: bool
+        """
+        pass
+
+###############################################################################
+
 class Position(object):
 
     type = str
 
+    isStarted = bool    # Started - one of open-orders sent.
+    isCompleted = bool  # Started and now hasn't any orders and active qty.
+
+    isOpened = bool # Has opened qty and hasn't active open-orders.
+    isClosed = bool # Has opened qty and the same closed qty. Hasn't active
+                    # close-orders.
+
     hasActiveOrders = bool  # True if position has active orders (not cancelled
-    # and not fully filled).
+                            # and not fully filled).
 
     planedQty = int
 
@@ -95,9 +222,9 @@ class Position(object):
 
     commission = int
 
-    def __init__(self, security, qty, startPrice, tag):
+    def __init__(self, strategy, qty, startPrice, tag):
         """
-        :type security: Trade.Security
+        :type strategy: trader.Strategy
         :type startPrice: int
         :type qty: int
         :type tag: str
@@ -176,9 +303,9 @@ class Position(object):
 
 class LongPosition(Position):
 
-    def __init__(self, security, qty, startPrice, tag):
+    def __init__(self, strategy, qty, startPrice, tag):
         """
-        :type security: Trade.Security
+        :type strategy: trader.Strategy
         :type startPrice: int
         :type qty: int
         :type tag: str
@@ -187,110 +314,12 @@ class LongPosition(Position):
 
 class ShortPosition(Position):
 
-    def __init__(self, security, qty, startPrice, tag):
+    def __init__(self, strategy, qty, startPrice, tag):
         """
-        :type security: Trade.Security
+        :type strategy: trader.Strategy
         :type startPrice: int
         :type qty: int
         :type tag: str
-        """
-        pass
-
-###############################################################################
-
-class SecurityAlgo(object):
-
-    tag = str
-
-    security = Security
-
-    def __init__(self, param):
-        """
-        :type param: int
-        """
-        pass
-
-    def getName(self):
-        """ Pure virtual method. Returns algorithm method.
-        :rtype: str
-        """
-        pass
-
-    def notifyServiceStart(self, service):
-        """ Method notifies about new service start. Virtual.
-        :type service: trader.Service
-        """
-        pass
-
-    def onServiceDataUpdate(self, service):
-        """
-        Method notifies about service data update. Method returns True if
-        object state has changed, False otherwise. Virtual.
-        :type service: trader.Service
-        :rtype: bool
-        """
-        pass
-
-    def onNewTrade(self, time, price, qty, side):
-        """
-        Method notifies about new trade (price tick). Method returns True
-        if object state has changed, False otherwise. Virtual.
-        :type time: int
-        :type price: int
-        :type qty: int
-        :type side: char 'S' (sell) or 'B' (buy)
-        :rtype: bool
-        """
-        pass
-
-class Strategy(SecurityAlgo):
-    """ Every strategy algorithm class must be inherited from this class.
-    """
-
-    def __init__(self, param):
-        """
-        :type param: int
-        """
-        pass
-
-    def tryToOpenPositions(self):
-        """
-
-        Pure virtual method
-
-        Returns Trader.LongPosition or Trader.ShortPosition if decides to
-        open position or returns nothing otherwise.
-
-        Will be called by engine each time when binded service has changed
-        its state (ex.: received new market data for strategy symbol).
-
-        :rtype: trader.Position
-        """
-        pass
-
-    def tryToClosePositions(self, position):
-        """
-
-        Pure virtual method.
-
-        Takes Trader.LongPosition or Trader.ShortPosition and tries to
-        close it.
-
-        Will be called by engine every time when:
-        - binded service has changed its state (ex.: received new market
-          data for strategy symbol);
-        - strategy has opened position;
-        - all previous orders has been canceled or filled.
-
-        :type position: trader.Position
-        """
-        pass
-
-class Service(SecurityAlgo):
-
-    def __init__(self, param):
-        """
-        :type param: int
         """
         pass
 

@@ -38,12 +38,30 @@ namespace Trader {
 
 		virtual const std::string & GetTypeName() const;
 
+		virtual bool OnLevel1Update();
+		virtual bool OnNewTrade(
+					const boost::posix_time::ptime &,
+					Trader::ScaledPrice,
+					Trader::Qty,
+					Trader::OrderSide);
+		virtual bool OnServiceDataUpdate(const Trader::Service &);
+
 	public:
 
 		void RegisterSubscriber(Trader::Strategy &);
 		void RegisterSubscriber(Trader::Service &);
 		void RegisterSubscriber(Trader::Observer &);
 		const Subscribers & GetSubscribers() const;
+
+	public:
+
+		bool RaiseLevel1UpdateEvent();
+		bool RaiseNewTradeEvent(
+					const boost::posix_time::ptime &,
+					Trader::ScaledPrice,
+					Trader::Qty,
+					Trader::OrderSide);
+		bool RaiseServiceDataUpdateEvent(const Trader::Service &);
 
 	private:
 

@@ -37,7 +37,7 @@ namespace Trader {  namespace Interaction { namespace Csv {
 
 	public:
 
-		void SignalNewTrade(
+		void AddTrade(
 					const boost::posix_time::ptime &,
 					Trader::OrderSide,
 					ScaledPrice,

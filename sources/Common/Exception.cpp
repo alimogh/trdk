@@ -73,6 +73,13 @@ Exception & Exception::operator =(const Exception &rhs) throw() {
 
 //////////////////////////////////////////////////////////////////////////
 
+LogicError::LogicError(const char *what)
+		: Exception(what) {
+	//...//
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 MethodDoesNotImplementedError::MethodDoesNotImplementedError(
 			const char *what)
 		: Exception(what) {

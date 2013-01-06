@@ -8,6 +8,7 @@
 
 #include "Prec.hpp"
 #include "Position.hpp"
+#include "Import.hpp"
 
 using namespace Trader::PyApi;
 
@@ -19,15 +20,13 @@ using namespace Trader::PyApi;
 //////////////////////////////////////////////////////////////////////////
 
 ShortPosition::ShortPosition(
-			Export::Security &security,
+			Strategy &strategy,
 			int qty,
-			double startPrice,
-			const std::string &tag)
+			double startPrice)
 		: Trader::ShortPosition(
-			security.GetSecurity(),
+			strategy.GetStrategy(),
 			qty,
-			security.GetSecurity()->ScalePrice(startPrice),
-			tag),
+			strategy.GetStrategy().GetSecurity().ScalePrice(startPrice)),
 		Import::ShortPosition(static_cast<Trader::ShortPosition &>(*this)) {
 	//...//
 }
@@ -35,15 +34,13 @@ ShortPosition::ShortPosition(
 //////////////////////////////////////////////////////////////////////////
 
 LongPosition::LongPosition(
-			Export::Security &security,
+			Strategy &strategy,
 			int qty,
-			double startPrice,
-			const std::string &tag)
+			double startPrice)
 		: Trader::LongPosition(
-			security.GetSecurity(),
+			strategy.GetStrategy(),
 			qty,
-			security.GetSecurity()->ScalePrice(startPrice),
-			tag),
+			strategy.GetStrategy().GetSecurity().ScalePrice(startPrice)),
 		Import::LongPosition(static_cast<Trader::LongPosition &>(*this)) {
 	//...//
 }

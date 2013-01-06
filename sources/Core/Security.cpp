@@ -45,21 +45,18 @@ public:
 	};
 	MarketDataLog *m_marketDataLog;
 
-	mutable boost::signals2::signal<Level1UpdateSlotSignature> m_level1UpdateSignal;
+	mutable boost::signals2::signal<Level1UpdateSlotSignature>
+		m_level1UpdateSignal;
 	mutable boost::signals2::signal<NewTradeSlotSignature> m_tradeSignal;
 
 	volatile long long m_lastPrice;
-	volatile long m_lastSize;
+	volatile long m_lastQty;
 
 	volatile long long m_askPrice;
-	volatile long long m_askPrice2;
 	volatile long m_askQty;
-	volatile long m_askQty2;
 
 	volatile long long m_bidPrice;
-	volatile long long m_bidPrice2;
 	volatile long m_bidQty;
-	volatile long m_bidQty2;
 
 	volatile long m_tradedVolume;
 
@@ -73,15 +70,11 @@ public:
 					bool logMarketData)
 			: m_marketDataLog(nullptr),
 			m_lastPrice(0),
-			m_lastSize(0),
+			m_lastQty(0),
 			m_askPrice(0),
-			m_askPrice2(0),
 			m_askQty(0),
-			m_askQty2(0),
 			m_bidPrice(0),
-			m_bidPrice2(0),
 			m_bidQty(0),
-			m_bidQty2(0),
 			m_tradedVolume(0) {
 		if (logMarketData) {
 			m_marketDataLog = new MarketDataLog(instrument.GetFullSymbol());
@@ -90,6 +83,70 @@ public:
 
 	~Implementation() {
 		delete m_marketDataLog;
+	}
+
+	unsigned int GetPriceScale() const throw() {
+		return 100;
+	}
+
+	ScaledPrice ScalePrice(double price) const {
+		return Util::Scale(price, GetPriceScale());
+	}
+
+	double DescalePrice(ScaledPrice price) const {
+		return Util::Descale(price, GetPriceScale());
+	}
+
+	pt::ptime GetLastMarketDataTime() const {
+		const MarketDataTimeReadLock lock(m_marketDataTimeMutex);
+		Assert(!m_marketDataTime.is_not_a_date_time());
+		return m_marketDataTime;
+	}
+
+	void SignalLevel1Update() {
+		if (m_marketDataLog) {
+			m_marketDataLog->Append(
+				boost::get_system_time(),
+				GetLastMarketDataTime(),
+				DescalePrice(m_lastPrice),
+				DescalePrice(m_askPrice),
+				DescalePrice(m_bidPrice));
+		}
+		m_level1UpdateSignal();
+	}
+
+	bool SetBidAsk(
+				ScaledPrice bidPrice,
+				Qty bidQty,
+				ScaledPrice askPrice,
+				Qty askQty) {
+		using namespace Interlocking;
+		bool isChanged = false;
+		if (Exchange(m_bidPrice, bidPrice) != bidPrice) {
+			isChanged = true;
+		}
+		if (Exchange(m_bidQty, bidQty) != bidQty) {
+			isChanged = true;
+		}
+		if (Exchange(m_askPrice, askPrice) != askPrice) {
+			isChanged = true;
+		}
+		if (Exchange(m_askQty, askQty) != askQty) {
+			isChanged = true;
+		}
+		return isChanged;
+	}
+
+	bool SetLast(ScaledPrice price, Qty qty) {
+		using namespace Interlocking;
+		bool isChanged = false;
+		if (Exchange(m_lastPrice, price) != price) {
+			isChanged = true;
+		}
+		if (Exchange(m_lastQty, qty) != qty) {
+			isChanged = true;
+		}
+		return isChanged;
 	}
 
 };
@@ -166,11 +223,20 @@ Security::~Security() {
 	delete m_pimpl;
 }
 
-boost::posix_time::ptime Security::GetLastMarketDataTime() const {
-	const Implementation::MarketDataTimeReadLock lock(
-		m_pimpl->m_marketDataTimeMutex);
-	Assert(!m_pimpl->m_marketDataTime.is_not_a_date_time());
-	return m_pimpl->m_marketDataTime;
+unsigned int Security::GetPriceScale() const throw() {
+	return m_pimpl->GetPriceScale();
+}
+
+ScaledPrice Security::ScalePrice(double price) const {
+	return m_pimpl->ScalePrice(price);
+}
+
+double Security::DescalePrice(ScaledPrice price) const {
+	return m_pimpl->DescalePrice(price);
+}
+
+pt::ptime Security::GetLastMarketDataTime() const {
+	return m_pimpl->GetLastMarketDataTime();
 }
 
 OrderId Security::SellAtMarketPrice(Qty qty, Position &position) {
@@ -279,124 +345,143 @@ void Security::SetLastMarketDataTime(const boost::posix_time::ptime &time) {
 	m_pimpl->m_marketDataTime = time;
 }
 
-bool Security::SetLast(double price, Qty size) {
-	return SetLast(ScalePrice(price), size);
-}
-
-bool Security::SetAsk(double price, Qty size, size_t pos) {
-	return SetAsk(ScalePrice(price), size, pos);
-}
-
-bool Security::SetBid(double price, Qty size, size_t pos) {
-	return SetBid(ScalePrice(price), size, pos);
-}
-
-bool Security::SetLast(ScaledPrice price, Qty size) {
-	bool isChanged = Interlocking::Exchange(m_pimpl->m_lastPrice, price) != price;
-	isChanged = Interlocking::Exchange(
-				m_pimpl->m_lastSize,
-				size)
-			!= size
-		|| isChanged;
-	return isChanged;
-}
-
-bool Security::SetAsk(ScaledPrice price, Qty qty, size_t pos) {
-	volatile long long &pricePlace
-		= pos == 1 ? m_pimpl->m_askPrice : m_pimpl->m_askPrice2;
-	volatile long &qtyPlace = pos == 1 ? m_pimpl->m_askQty : m_pimpl->m_askQty2;
-	bool isChanged = Interlocking::Exchange(pricePlace, price) != price;
-	isChanged = Interlocking::Exchange(qtyPlace, qty) != qty || isChanged;
-	return isChanged;
-}
-
-bool Security::SetBid(ScaledPrice price, Qty qty, size_t pos) {
-	volatile long long &pricePlace
-		= pos == 1 ? m_pimpl->m_bidPrice : m_pimpl->m_bidPrice2;
-	volatile long &qtyPlace = pos == 1 ? m_pimpl->m_bidQty : m_pimpl->m_bidQty2;
-	bool isChanged = Interlocking::Exchange(pricePlace, price) != price;
-	isChanged = Interlocking::Exchange(qtyPlace, qty) != qty || isChanged;
-	return isChanged;
-}
-
 double Security::GetLastPrice() const {
 	return DescalePrice(GetLastPriceScaled());
 }
 
 Qty Security::GetLastQty() const {
-	return m_pimpl->m_lastSize;
+	return m_pimpl->m_lastQty;
 }
 
 Qty Security::GetTradedVolume() const {
 	return m_pimpl->m_tradedVolume;
 }
 
-ScaledPrice Security::GetAskPriceScaled(size_t pos) const {
-	return pos == 1 ? m_pimpl->m_askPrice : m_pimpl->m_askPrice2;
+ScaledPrice Security::GetAskPriceScaled() const {
+	return m_pimpl->m_askPrice;
 }
 
-double Security::GetAskPrice(size_t pos) const {
-	return DescalePrice(GetAskPriceScaled(pos));
+double Security::GetAskPrice() const {
+	return DescalePrice(GetAskPriceScaled());
 }
 
-Qty Security::GetAskQty(size_t pos) const {
-	return pos == 1 ? m_pimpl->m_askQty : m_pimpl->m_askQty2;
+Qty Security::GetAskQty() const {
+	return m_pimpl->m_askQty;
 }
 
-ScaledPrice Security::GetBidPriceScaled(size_t pos) const {
-	return pos == 1 ? m_pimpl->m_bidPrice : m_pimpl->m_bidPrice2;
+ScaledPrice Security::GetBidPriceScaled() const {
+	return m_pimpl->m_bidPrice;
 }
 
-double Security::GetBidPrice(size_t pos) const {
-	return DescalePrice(GetBidPriceScaled(pos));
+double Security::GetBidPrice() const {
+	return DescalePrice(GetBidPriceScaled());
 }
 
-Qty Security::GetBidQty(size_t pos) const {
-	return pos == 1 ? m_pimpl->m_bidQty : m_pimpl->m_bidQty2;
+Qty Security::GetBidQty() const {
+	return m_pimpl->m_bidQty;
 }
 
 Security::Level1UpdateSlotConnection Security::SubcribeToLevel1(
 			const Level1UpdateSlot &slot)
 		const {
-	return Level1UpdateSlotConnection(
-		m_pimpl->m_level1UpdateSignal.connect(slot));
+	return m_pimpl->m_level1UpdateSignal.connect(slot);
 }
 
 Security::NewTradeSlotConnection Security::SubcribeToTrades(
 			const NewTradeSlot &slot)
 		const {
-	return NewTradeSlotConnection(m_pimpl->m_tradeSignal.connect(slot));
+	return m_pimpl->m_tradeSignal.connect(slot);
 }
 
-void Security::SignalLevel1Update() {
-	if (m_pimpl->m_marketDataLog) {
-		m_pimpl->m_marketDataLog->Append(
-			boost::get_system_time(),
-			GetLastMarketDataTime(),
-			DescalePrice(m_pimpl->m_lastPrice),
-			DescalePrice(m_pimpl->m_askPrice),
-			DescalePrice(m_pimpl->m_bidPrice));
+bool Security::SetBidAsk(
+			ScaledPrice bidPrice,
+			Qty bidQty,
+			ScaledPrice askPrice,
+			Qty askQty) {
+	if (!m_pimpl->SetBidAsk(bidPrice, bidQty, askPrice, askQty)) {
+		return false;
 	}
-	m_pimpl->m_level1UpdateSignal();
+	m_pimpl->SignalLevel1Update();
+	return true;
 }
 
-void Security::SignalNewTrade(
+bool Security::SetBidAsk(
+			double bidPrice,
+			Qty bidQty,
+			double askPrice,
+			Qty askQty) {
+	return SetBidAsk(
+		ScalePrice(bidPrice),
+		bidQty,
+		ScalePrice(askPrice),
+		askQty);
+}
+
+bool Security::SetBidAskLast(
+			ScaledPrice bidPrice,
+			Qty bidQty,
+			ScaledPrice askPrice,
+			Qty askQty,
+			ScaledPrice lastTradePrice,
+			Qty lastTradeQty) {
+	bool isChanged = false;
+	if (m_pimpl->SetBidAsk(bidPrice, bidQty, askPrice, askQty)) {
+		isChanged = true;
+	}
+	if (m_pimpl->SetLast(lastTradePrice, lastTradeQty)) {
+		isChanged = true;
+	}
+	if (isChanged) {
+		m_pimpl->SignalLevel1Update();
+	}
+	return isChanged;
+}
+
+bool Security::SetBidAskLast(
+			double bidPrice,
+			Qty bidQty,
+			double askPrice,
+			Qty askQty,
+			double lastPrice,
+			Qty lastQty) {
+	return SetBidAskLast(
+		ScalePrice(bidPrice),
+		bidQty,
+		ScalePrice(askPrice),
+		askQty,
+		ScalePrice(lastPrice),
+		lastQty);
+}
+
+void Security::AddTrade(
 			const boost::posix_time::ptime &time,
 			OrderSide side,
 			ScaledPrice price,
-			Qty qty) {
-	using namespace Interlocking;
+			Qty qty,
+			bool useAsLastTrade) {
+
 	for ( ; ; ) {
 		const auto prevVal = m_pimpl->m_tradedVolume;
 		const auto newVal = prevVal + qty;
-		if (CompareExchange(m_pimpl->m_tradedVolume, newVal, prevVal) == prevVal) {
+		if (	Interlocking::CompareExchange(
+						m_pimpl->m_tradedVolume,
+						newVal,
+						prevVal)
+					== prevVal) {
 			break;
 		}
 	}
+	
 	if (GetSettings().IsReplayMode()) {
 		SetLastMarketDataTime(time);
 	}
+
+	if (useAsLastTrade && m_pimpl->SetLast(price, qty)) {
+		m_pimpl->SignalLevel1Update();
+	}
+
 	m_pimpl->m_tradeSignal(time, price, qty, side);
+
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -62,6 +62,14 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Bscmake>
+      <PreserveSBR>true</PreserveSBR>
+    </Bscmake>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Assert.cpp" />
     <ClCompile Include="Defaults.cpp" />
@@ -85,7 +93,6 @@
     <ClInclude Include="IniFile.hpp" />
     <ClInclude Include="Interlocking.hpp" />
     <ClInclude Include="LockingPolicy.hpp" />
-    <ClInclude Include="SignalConnection.hpp" />
     <ClInclude Include="UseUnused.hpp" />
     <ClInclude Include="Util.hpp" />
   </ItemGroup>

@@ -22,6 +22,11 @@ namespace Util {
 		return ::abs(v1 - v2) <= std::max(Nm::epsilon(), Nm::epsilon());
 	};
 
+	inline bool IsEqual(const float v1, const float v2) {
+		typedef std::numeric_limits<float> Nm;
+		return ::abs(v1 - v2) <= std::max(Nm::epsilon(), Nm::epsilon());
+	};
+
 	inline bool IsEqual(const std::string &v1, const std::string &v2) {
 		return v1 == v2;
 	};
@@ -69,6 +74,8 @@ namespace Util {
 		return RoundDouble(source, Scale::GetScale());
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	inline boost::int64_t Scale(double value, unsigned long scale) {
 		return long(boost::math::round(value * double(scale)));
 	}
@@ -77,20 +84,26 @@ namespace Util {
 		return RoundDouble(double(value) / scale, scale);
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	boost::filesystem::path SymbolToFilePath(
 				const boost::filesystem::path &path,
 				const std::string &symbol,
 				const std::string &);
-
-	boost::shared_ptr<boost::local_time::posix_time_zone> GetEdtTimeZone();
-
-	boost::posix_time::time_duration GetEdtDiff();
 
 	std::string CreateSymbolFullStr(
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange);
 
+	//////////////////////////////////////////////////////////////////////////
+
+	boost::shared_ptr<boost::local_time::posix_time_zone> GetEdtTimeZone();
+
+	boost::posix_time::time_duration GetEdtDiff();
+
 	time_t ConvertToTimeT(const boost::posix_time::ptime &);
+
+	//////////////////////////////////////////////////////////////////////////
 
 }

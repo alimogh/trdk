@@ -73,7 +73,7 @@ boost::shared_ptr<Trader::Service> Service::CreateClientInstance(
 	auto clientClass = GetPyClass(
 		*script,
 		ini,
-		"Failed to find Trader.Service implementation");
+		"Failed to find trader.Service implementation");
 	const Params params(tag, security, ini, script);
 	try {
 		auto pyObject = clientClass(reinterpret_cast<uintmax_t>(&params));
@@ -85,7 +85,7 @@ boost::shared_ptr<Trader::Service> Service::CreateClientInstance(
 		return service.shared_from_this();
 	} catch (const boost::python::error_already_set &) {
 		RethrowPythonClientException(
-			"Failed to create instance of Trader.Service");
+			"Failed to create instance of trader.Service");
 		throw;
 	}
 }
@@ -98,13 +98,13 @@ void Service::DoSettingsUpdate(const IniFileSectionRef &ini) {
 	Detail::UpdateAlgoSettings(*this, ini);
 }
 
-void Service::NotifyServiceStart(const Trader::Service &service) {
+void Service::OnServiceStart(const Trader::Service &service) {
 	try {
 		Assert(dynamic_cast<const Service *>(&service));
-		PyNotifyServiceStart(dynamic_cast<const Service &>(service));
+		PyOnServiceStart(dynamic_cast<const Service &>(service));
 	} catch (const py::error_already_set &) {
 		RethrowPythonClientException(
-			"Failed to call method Trader.Service.notifyServiceStart");
+			"Failed to call method trader.Service.onServiceStart");
 	}
 }
 
@@ -115,7 +115,7 @@ py::str Service::PyGetName() const {
 			return f();
 		} catch (const py::error_already_set &) {
 			RethrowPythonClientException(
-				"Failed to call method Trader.Service.getName");
+				"Failed to call method trader.Service.getName");
 			throw;
 		}
 	} else {
@@ -123,19 +123,19 @@ py::str Service::PyGetName() const {
 	}
 }
 
-void Service::PyNotifyServiceStart(py::object service) {
+void Service::PyOnServiceStart(py::object service) {
 	Assert(service);
-	const auto f = get_override("notifyServiceStart");
+	const auto f = get_override("onServiceStart");
 	if (f) {
 		try {
 			f(service);
 		} catch (const py::error_already_set &) {
 			RethrowPythonClientException(
-				"Failed to call method Trader.Service.notifyServiceStart");
+				"Failed to call method trader.Service.onServiceStart");
 			throw;
 		}
 	} else {
-		Wrappers::Service::PyNotifyServiceStart(service);
+		Wrappers::Service::PyOnServiceStart(service);
 	}
 }
 

@@ -29,29 +29,6 @@ SecurityAlgo::~SecurityAlgo() {
 	//...//
 }
 
-bool SecurityAlgo::OnNewTrade(
-					const boost::posix_time::ptime &,
-					ScaledPrice,
-					Qty,
-					OrderSide) {
-	Log::Error(
-		"\"%1%\" subscribed to new trades, but can't work with it"
-			" (hasn't implementation of OnNewTrade).",
-		*this);
-	throw MethodDoesNotImplementedError(
-		"Module subscribed to new trades, but can't work with it");
-}
-
-bool SecurityAlgo::OnServiceDataUpdate(const Trader::Service &service) {
-	Log::Error(
-		"\"%1%\" subscribed to \"%2%\", but can't work with it"
-			" (hasn't implementation of OnServiceDataUpdate).",
-		*this,
-		service);
- 	throw MethodDoesNotImplementedError(
- 		"Module subscribed to service, but can't work with it");
-}
-
 void SecurityAlgo::UpdateSettings(const IniFileSectionRef &ini) {
 	const Lock lock(GetMutex());
 	UpdateAlogImplSettings(ini);

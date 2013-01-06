@@ -17,6 +17,7 @@
 #	include <boost/thread/shared_mutex.hpp>
 #	include <boost/shared_ptr.hpp>
 #	include <boost/cast.hpp>
+#	include <boost/iterator/iterator_facade.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Dll.hpp"
@@ -25,7 +26,6 @@
 #include "Common/Interlocking.hpp"
 #include "Common/Defaults.hpp"
 #include "Common/UseUnused.hpp"
-#include "Common/SignalConnection.hpp"
 #include "Common/Foreach.hpp"
 #include "Common/IniFile.hpp"
 #include "Common/FileSystemChangeNotificator.hpp"

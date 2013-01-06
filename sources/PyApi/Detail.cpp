@@ -13,3 +13,12 @@ namespace py = boost::python;
 namespace pt = boost::posix_time;
 
 using namespace Trader::PyApi::Detail;
+
+namespace {
+	const pt::ptime epochStart = pt::from_time_t(0);
+}
+
+py::object Time::Convert(const pt::ptime &time) {
+	AssertNe(epochStart, time);
+	return py::object((time - epochStart).total_seconds());
+}

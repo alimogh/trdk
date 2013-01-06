@@ -9,7 +9,6 @@
 #include "Prec.hpp"
 #include "Strategy.hpp"
 #include "Core/StrategyPositionReporter.hpp"
-#include "Core/PositionBundle.hpp"
 
 using namespace Trader::Lib;
 using namespace Trader::PyApi;
@@ -77,7 +76,7 @@ boost::shared_ptr<Trader::Strategy> Strategy::CreateClientInstance(
 	auto clientClass = GetPyClass(
 		*script,
 		ini,
-		"Failed to find Trader.Strategy implementation");
+		"Failed to find trader.Strategy implementation");
 	const Params params(tag, security, ini, settings, script);
 	try {
 		auto pyObject = clientClass(reinterpret_cast<uintmax_t>(&params));
@@ -89,17 +88,17 @@ boost::shared_ptr<Trader::Strategy> Strategy::CreateClientInstance(
 		return strategy.shared_from_this();
 	} catch (const py::error_already_set &) {
 		RethrowPythonClientException(
-			"Failed to create instance of Trader.Strategy");
+			"Failed to create instance of trader.Strategy");
 		throw;
 	}
 }
 
-void Strategy::NotifyServiceStart(const Trader::Service &service) {
+void Strategy::OnServiceStart(const Trader::Service &service) {
 	try {
 // 		const Service *const pyService
 // 			= dynamic_cast<const Service *>(&service);
 // 		if (pyService) {
-// 			PyNotifyServiceStart(*pyService);
+// 			PyOnServiceStart(*pyService);
 // 		} else {
 		py::object object;
 		if (dynamic_cast<const Trader::Services::BarService *>(&service)) {
@@ -111,46 +110,14 @@ void Strategy::NotifyServiceStart(const Trader::Service &service) {
 			object = py::object(boost::cref(*serviceExport));
 		}
 		if (object) {
-			CallNotifyServiceStartPyMethod(object);
+			CallOnServiceStartPyMethod(object);
 			m_pyCache[&service] = object;
 		} else {
-			Trader::Strategy::NotifyServiceStart(service);
+			Trader::Strategy::OnServiceStart(service);
 		}
 	} catch (const py::error_already_set &) {
 		RethrowPythonClientException(
-			"Failed to call method Trader.Strategy.notifyServiceStart");
-	}
-}
-
-boost::shared_ptr<PositionBandle> Strategy::TryToOpenPositions() {
-	boost::shared_ptr<PositionBandle> result;
-	try {
-		auto pyPosition = CallTryToOpenPositionsPyMethod();
-		if (!pyPosition) {
-			return result;
-		}
-		Import::Position &position = py::extract<Import::Position &>(pyPosition);
-		position.Bind(pyPosition);
-		result.reset(new PositionBandle);
-		result->Get().push_back(position.GetPosition().shared_from_this());
-	} catch (const py::error_already_set &) {
-		RethrowPythonClientException(
-			"Failed to call method Trader.Strategy.tryToOpenPositions");
-		throw;
-	}
-	return result;
-}
-
-void Strategy::TryToClosePositions(PositionBandle &positions) {
-	foreach (auto p, positions.Get()) {
-		if (!p->IsOpened() || p->IsClosed() || p->IsCanceled()) {
- 			continue;
- 		}
-		Assert(dynamic_cast<Import::Position *>(&*p));
-		Assert(
-			dynamic_cast<LongPosition *>(&*p)
-			|| dynamic_cast<ShortPosition *>(&*p));
-		CallTryToClosePositionsPyMethod(dynamic_cast<Import::Position &>(*p));
+			"Failed to call method trader.Strategy.onServiceStart");
 	}
 }
 
@@ -160,8 +127,8 @@ void Strategy::ReportDecision(const Trader::Position &position) const {
 		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6%",
 		position.GetSecurity().GetSymbol(),
 		position.GetTypeStr(),
-		position.GetSecurity().GetAskPrice(1),
-		position.GetSecurity().GetBidPrice(1),
+		position.GetSecurity().GetAskPrice(),
+		position.GetSecurity().GetBidPrice(),
 		position.GetSecurity().DescalePrice(position.GetOpenStartPrice()),
 		position.GetPlanedQty());
 }
@@ -181,12 +148,15 @@ void Strategy::DoSettingsUpdate(const IniFileSectionRef &ini) {
 	UpdateAlgoSettings(*this, ini);
 }
 
-bool Strategy::OnNewTrade(
+void Strategy::OnLevel1Update() {
+	CallOnLevel1UpdatePyMethod();
+}
+
+void Strategy::OnNewTrade(
 			const boost::posix_time::ptime &time,
 			Trader::ScaledPrice price,
 			Trader::Qty qty,
 			Trader::OrderSide side) {
-	boost::shared_ptr<PositionBandle> result;
 	try {
 		return CallOnNewTradePyMethod(
 			Detail::Time::Convert(time),
@@ -195,14 +165,19 @@ bool Strategy::OnNewTrade(
 			Detail::OrderSide::Convert(side));
 	} catch (const py::error_already_set &) {
 		RethrowPythonClientException(
-			"Failed to call method Trader.Strategy.onNewTrade");
+			"Failed to call method trader.Strategy.onNewTrade");
 		throw;
 	}
 }
 
-bool Strategy::OnServiceDataUpdate(const Trader::Service &service) {
+void Strategy::OnServiceDataUpdate(const Trader::Service &service) {
 	Assert(m_pyCache.find(&service) != m_pyCache.end());
-	return CallOnServiceDataUpdatePyMethod(m_pyCache[&service]);
+	CallOnServiceDataUpdatePyMethod(m_pyCache[&service]);
+}
+
+void Strategy::OnPositionUpdate(const Trader::Position &position) {
+	Assert(m_pyCache.find(&position) != m_pyCache.end());
+	CallOnPositionUpdatePyMethod(m_pyCache[&position]);
 }
 
 py::str Strategy::CallGetNamePyMethod() const {
@@ -212,7 +187,7 @@ py::str Strategy::CallGetNamePyMethod() const {
 			return f();
 		} catch (const py::error_already_set &) {
 			RethrowPythonClientException(
-				"Failed to call method Trader.Strategy.getName");
+				"Failed to call method trader.Strategy.getName");
 			throw;
 		}
 	} else {
@@ -220,54 +195,38 @@ py::str Strategy::CallGetNamePyMethod() const {
 	}
 }
 
-void Strategy::CallNotifyServiceStartPyMethod(const py::object &service) {
+void Strategy::CallOnServiceStartPyMethod(const py::object &service) {
 	Assert(service);
-	const auto f = get_override("notifyServiceStart");
+	const auto f = get_override("onServiceStart");
 	if (f) {
 		try {
 			f(service);
 		} catch (const py::error_already_set &) {
 			RethrowPythonClientException(
-				"Failed to call method Trader.Strategy.notifyServiceStart");
+				"Failed to call method trader.Strategy.onServiceStart");
 			throw;
 		}
 	} else {
-		Import::Strategy::CallNotifyServiceStartPyMethod(service);
+		Import::Strategy::CallOnServiceStartPyMethod(service);
 	}
 }
 
-py::object Strategy::CallTryToOpenPositionsPyMethod() {
-	const auto f = get_override("tryToOpenPositions");
+void Strategy::CallOnLevel1UpdatePyMethod() {
+	const auto f = get_override("onLevel1Update");
 	if (f) {
 		try {
-			return f();
+			f();
 		} catch (const py::error_already_set &) {
 			RethrowPythonClientException(
-				"Failed to call method Trader.Strategy.tryToOpenPositions");
+				"Failed to call method trader.Strategy.onLevel1Update");
 			throw;
 		}
 	} else {
-		return Import::Strategy::CallTryToOpenPositionsPyMethod();
+		Import::Strategy::CallOnLevel1UpdatePyMethod();
 	}
 }
 
-void Strategy::CallTryToClosePositionsPyMethod(const py::object &positions) {
-	Assert(positions);
-	const auto f = get_override("tryToClosePositions");
-	if (f) {
-		try {
-			f(positions);
-		} catch (const py::error_already_set &) {
-			RethrowPythonClientException(
-				"Failed to call method Trader.Strategy.tryToClosePositions");
-			throw;
-		}
-	} else {
-		Import::Strategy::CallTryToClosePositionsPyMethod(positions);
-	}
-}
-
-bool Strategy::CallOnNewTradePyMethod(
+void Strategy::CallOnNewTradePyMethod(
 			const boost::python::object &time,
 			const boost::python::object &price,
 			const boost::python::object &qty,
@@ -279,31 +238,48 @@ bool Strategy::CallOnNewTradePyMethod(
 	const auto f = get_override("onNewTrade");
 	if (f) {
 		try {
-			return f(time, price, qty, side);
+			f(time, price, qty, side);
 		} catch (const py::error_already_set &) {
 			RethrowPythonClientException(
-				"Failed to call method Trader.Strategy.onNewTrade");
+				"Failed to call method trader.Strategy.onNewTrade");
 			throw;
 		}
 	} else {
-		return Import::Strategy::CallOnNewTradePyMethod(time, price, qty, side);
+		Import::Strategy::CallOnNewTradePyMethod(time, price, qty, side);
 	}
 }
 
-bool Strategy::CallOnServiceDataUpdatePyMethod(
+void Strategy::CallOnServiceDataUpdatePyMethod(
 			const boost::python::object &service) {
 	Assert(service);
 	const auto f = get_override("onServiceDataUpdate");
 	if (f) {
 		try {
-			return f(service);
+			f(service);
 		} catch (const py::error_already_set &) {
 			RethrowPythonClientException(
-				"Failed to call method Trader.Strategy.onServiceDataUpdate");
+				"Failed to call method trader.Strategy.onServiceDataUpdate");
 			throw;
 		}
 	} else {
-		return Import::Strategy::CallOnServiceDataUpdatePyMethod(service);
+		Import::Strategy::CallOnServiceDataUpdatePyMethod(service);
+	}
+}
+
+void Strategy::CallOnPositionUpdatePyMethod(
+				const boost::python::object &position) {
+	Assert(position);
+	const auto f = get_override("onPositionUpdate");
+	if (f) {
+		try {
+			f(position);
+		} catch (const py::error_already_set &) {
+			RethrowPythonClientException(
+				"Failed to call method trader.Strategy.onPositionUpdate");
+			throw;
+		}
+	} else {
+		Import::Strategy::CallOnPositionUpdatePyMethod(position);
 	}
 }
 

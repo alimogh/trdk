@@ -58,17 +58,17 @@ namespace Trader { namespace PyApi { namespace Export {
 		}
 
 		Trader::ScaledPrice GetAskPriceScaled() const {
-			return m_security->GetAskPriceScaled(1);
+			return m_security->GetAskPriceScaled();
 		}
 		Trader::Qty GetAskQty() const {
-			return m_security->GetAskQty(1);
+			return m_security->GetAskQty();
 		}
 
 		Trader::ScaledPrice GetBidPriceScaled() const {
-			return m_security->GetBidPriceScaled(1);
+			return m_security->GetBidPriceScaled();
 		}
 		Trader::Qty GetBidQty() const {
-			return m_security->GetBidQty(1);
+			return m_security->GetBidQty();
 		}
 
 	private:

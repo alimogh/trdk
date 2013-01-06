@@ -38,18 +38,18 @@ namespace Trader { namespace PyApi {
 
 		boost::python::str CallGetNamePyMethod() const;
 		
-		void CallNotifyServiceStartPyMethod(const boost::python::object &);
+		void CallOnServiceStartPyMethod(const boost::python::object &);
 		
-		boost::python::object CallTryToOpenPositionsPyMethod();
-		void CallTryToClosePositionsPyMethod(const boost::python::object &);
-		
-		bool CallOnNewTradePyMethod(
+		void CallOnLevel1UpdatePyMethod();
+		void CallOnNewTradePyMethod(
 					const boost::python::object &time,
 					const boost::python::object &price,
 					const boost::python::object &qty,
 					const boost::python::object &side);
-		bool CallOnServiceDataUpdatePyMethod(
+		void CallOnServiceDataUpdatePyMethod(
 					const boost::python::object &service);
+		void CallOnPositionUpdatePyMethod(
+					const boost::python::object &position);
 
 	public:
 
@@ -59,20 +59,18 @@ namespace Trader { namespace PyApi {
 			return m_name;
 		}
 
-		virtual void NotifyServiceStart(const Trader::Service &);
+		virtual void OnServiceStart(const Trader::Service &);
 
-		virtual bool OnNewTrade(
+		virtual void OnLevel1Update();
+		virtual void OnNewTrade(
 					const boost::posix_time::ptime &,
 					Trader::ScaledPrice,
 					Trader::Qty,
 					Trader::OrderSide);
-
-		virtual bool OnServiceDataUpdate(const Trader::Service &);
+		virtual void OnServiceDataUpdate(const Trader::Service &);
+		virtual void OnPositionUpdate(const Trader::Position &);
 
 	public:
-
-		virtual boost::shared_ptr<PositionBandle> TryToOpenPositions();
-		virtual void TryToClosePositions(PositionBandle &);
 
 		virtual void ReportDecision(const Trader::Position &) const;
 

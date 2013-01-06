@@ -9,12 +9,7 @@
 #pragma once
 
 #include "Import.hpp"
-
-namespace Trader { namespace PyApi { namespace Wrappers {
-
-	class Security;
-
-} } }
+#include "Strategy.hpp"
 
 namespace Trader { namespace PyApi {
 
@@ -25,10 +20,9 @@ namespace Trader { namespace PyApi {
 		public Import::ShortPosition {
 	public:
 		explicit ShortPosition(
-					Export::Security &,
+					PyApi::Strategy &,
 					int qty,
-					double startPrice,
-					const std::string &);
+					double startPrice);
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -38,10 +32,9 @@ namespace Trader { namespace PyApi {
 		public Import::LongPosition {
 	public:
 		explicit LongPosition(
-					Export::Security &,
+					PyApi::Strategy &,
 					int qty,
-					double startPrice,
-					const std::string &);
+					double startPrice);
 	};
 
 	//////////////////////////////////////////////////////////////////////////

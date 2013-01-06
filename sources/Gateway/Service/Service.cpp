@@ -52,8 +52,11 @@ Gateway::Service::~Service() {
 	m_threads.join_all();
 }
 
-const std::string & Gateway::Service::GetName() const {
+namespace {
 	static const std::string name = "Gateway";
+}
+
+const std::string & Gateway::Service::GetName() const {
 	return name;
 }
 
@@ -287,14 +290,14 @@ void Gateway::Service::GetParams(
 	}
 	try {
 		const Security &security = FindSecurity(symbol);
-		result.params1.ask.price = security.GetAskPriceScaled(1);
-		result.params1.ask.qty = security.GetAskQty(1);
-		result.params1.bid.price = security.GetBidPriceScaled(1);
-		result.params1.bid.qty = security.GetBidQty(1);
-		result.params2.ask.price = security.GetAskPriceScaled(2);
-		result.params2.ask.qty = security.GetAskQty(2);
-		result.params2.bid.price = security.GetBidPriceScaled(2);
-		result.params2.bid.qty = security.GetBidQty(2);
+		result.params1.ask.price = security.GetAskPriceScaled();
+		result.params1.ask.qty = security.GetAskQty();
+		result.params1.bid.price = security.GetBidPriceScaled();
+		result.params1.bid.qty = security.GetBidQty();
+		result.params2.ask.price = 0;
+		result.params2.ask.qty = 0;
+		result.params2.bid.price = 0;
+		result.params2.bid.qty = 0;
 	} catch (const UnknownSecurityError &) {
 		return;
 	}
@@ -307,10 +310,10 @@ void Gateway::Service::GetCommonParams(
 		const Security &security = FindSecurity(symbol);
 		result.last.price = security.GetLastPriceScaled();
 		result.last.qty = security.GetLastQty();
-		result.best.ask.price = security.GetAskPriceScaled(1);
-		result.best.ask.qty = security.GetAskQty(1);
-		result.best.bid.price = security.GetBidPriceScaled(1);
-		result.best.bid.qty = security.GetBidQty(1);
+		result.best.ask.price = security.GetAskPriceScaled();
+		result.best.ask.qty = security.GetAskQty();
+		result.best.bid.price = security.GetBidPriceScaled();
+		result.best.bid.qty = security.GetBidQty();
 		result.volumeTraded = security.GetTradedVolume();
 	} catch (const UnknownSecurityError &) {
 		return;
@@ -318,127 +321,51 @@ void Gateway::Service::GetCommonParams(
 }
 
 void Gateway::Service::OrderBuy(
-			const std::string &symbol,
-			const std::string &venue,
-			ScaledPrice price,
-			Qty qty,
-			std::string &resultMessage) {
-	try {
-		Security &security = FindSecurity(symbol);
-		security.SetExchange(venue);
-		ShortPosition &shortPosition = GetShortPosition(security);
-		if (shortPosition.GetPlanedQty() < qty) {
-			LongPosition &longPosition = GetLongPosition(security);
-			longPosition.IncreasePlanedQty(qty);
-			longPosition.Open(price);
-		} else {
-			shortPosition.Close(Position::CLOSE_TYPE_NONE, price, qty);
-		}
-		boost::format message("Buy Order for %1% (price %2%, quantity %3%) successfully sent.");
-		message % symbol % security.DescalePrice(price) % qty;
-		resultMessage = message.str();
-	} catch (const UnknownSecurityError &) {
-		boost::format message("Failed to send Buy Order for %1% - unknown instrument.");
-		message % symbol;
-		resultMessage = message.str();
-	}
+			const std::string &/*symbol*/,
+			const std::string &/*venue*/,
+			ScaledPrice /*price*/,
+			Qty /*qty*/,
+			std::string &/*resultMessage*/) {
+	AssertFail("Gateway::Service::OrderBuy doesn't implemented.");
 }
 
 void Gateway::Service::OrderBuyMkt(
-			const std::string &symbol,
-			const std::string &venue,
-			Qty qty,
-			std::string &resultMessage) {
-	try {
-		Security &security = FindSecurity(symbol);
-		security.SetExchange(venue);
-		ShortPosition &shortPosition = GetShortPosition(security);
-		if (shortPosition.GetPlanedQty() < qty) {
-			LongPosition &longPosition = GetLongPosition(security);
-			longPosition.IncreasePlanedQty(qty);
-			longPosition.OpenAtMarketPrice();
-		} else {
-			shortPosition.CloseAtMarketPrice(Position::CLOSE_TYPE_NONE, qty);
-		}
-		boost::format message("Buy Market Order for %1% (quantity %2%) successfully sent.");
-		message % symbol % qty;
-		resultMessage = message.str();
-	} catch (const UnknownSecurityError &) {
-		boost::format message("Failed to send Buy Market Order for %1% - unknown instrument.");
-		message % symbol;
-		resultMessage = message.str();
-	}
+			const std::string &/*symbol*/,
+			const std::string &/*venue*/,
+			Qty /*qty*/,
+			std::string &/*resultMessage*/) {
+	AssertFail("Gateway::Service::OrderBuyMkt doesn't implemented.");
 }
 
 void Gateway::Service::OrderSell(
-			const std::string &symbol,
-			const std::string &venue,
-			ScaledPrice price,
-			Qty qty,
-			std::string &resultMessage) {
-	try {
-		Security &security = FindSecurity(symbol);
-		security.SetExchange(venue);
-		LongPosition &longPosition = GetLongPosition(security);
-		if (longPosition.GetPlanedQty() < qty) {
-			ShortPosition &shortPosition = GetShortPosition(security);
-			shortPosition.IncreasePlanedQty(qty);
-			shortPosition.Open(price);
-		} else {
-			longPosition.Close(Position::CLOSE_TYPE_NONE, price, qty);
-		}
-		boost::format message("Sell Order for %1% (price %2%, quantity %3%) successfully sent.");
-		message % symbol % security.DescalePrice(price) % qty;
-		resultMessage = message.str();
-	} catch (const UnknownSecurityError &) {
-		boost::format message("Failed to send Sell Order for %1% - unknown instrument.");
-		message % symbol;
-		resultMessage = message.str();
-	}
+			const std::string &/*symbol*/,
+			const std::string &/*venue*/,
+			ScaledPrice /*price*/,
+			Qty /*qty*/,
+			std::string &/*resultMessage*/) {
+	AssertFail("Gateway::Service::OrderSell doesn't implemented.");
 }
 
 void Gateway::Service::OrderSellMkt(
-			const std::string &symbol,
-			const std::string &venue,
-			Qty qty,
-			std::string &resultMessage) {
-	try {
-		Security &security = FindSecurity(symbol);
-		security.SetExchange(venue);
-		LongPosition &longPosition = GetLongPosition(security);
-		if (longPosition.GetPlanedQty() < qty) {
-			ShortPosition &shortPosition = GetShortPosition(security);
-			shortPosition.IncreasePlanedQty(qty);
-			shortPosition.OpenAtMarketPrice();
-		} else {
-			longPosition.CloseAtMarketPrice(Position::CLOSE_TYPE_NONE, qty);
-		}
-		boost::format message("Sell Market Order for %1% (quantity %2%) successfully sent.");
-		message % symbol % qty;
-		resultMessage = message.str();
-	} catch (const UnknownSecurityError &) {
-		boost::format message("Failed to send Sell Market Order for %1% - unknown instrument.");
-		message % symbol;
-		resultMessage = message.str();
-	}
+			const std::string &/*symbol*/,
+			const std::string &/*venue*/,
+			Qty /*qty*/,
+			std::string &/*resultMessage*/) {
+	AssertFail("Gateway::Service::OrderSellMkt doesn't implemented.");
 }
 
 ShortPosition & Gateway::Service::GetShortPosition(
-			Security &security) {
-	boost::shared_ptr<ShortPosition> &result = m_positions[&security].first;
-	if (!result || result->IsClosed()) {
-		result.reset(new ShortPosition(security.shared_from_this(), "user"));
-	}
-	return *result;
+			Security &/*security*/) {
+	AssertFail("Gateway::Service::GetShortPosition not implemented.");
+	throw MethodDoesNotImplementedError(
+		"Gateway::Service::GetShortPosition doesn't implemented");
 }
 
 LongPosition & Gateway::Service::GetLongPosition(
-			Security &security) {
-	boost::shared_ptr<LongPosition> &result = m_positions[&security].second;
-	if (!result || result->IsClosed()) {
-		result.reset(new LongPosition(security.shared_from_this(), "user"));
-	}
-	return *result;
+			Security &/*security*/) {
+	AssertFail("Gateway::Service::GetLongPosition not implemented.");
+	throw MethodDoesNotImplementedError(
+		"Gateway::Service::GetLongPosition doesn't implemented");
 }
 
 void Gateway::Service::GetPositionInfo(

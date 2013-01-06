@@ -136,10 +136,6 @@ const Settings::Time & Settings::GetCurrentTradeSessionEndime() const {
 	return m_values.tradeSessionEndTime;
 }
 
-size_t Settings::GetThreadsCount() const {
-	return 1;
-}
-
 bool Settings::IsValidPrice(const Trader::Security &security) const {
 	Assert(security.GetPriceScale() == defaultLastPriceScale);
 	return m_minPrice <= security.GetLastPriceScaled();

@@ -16,7 +16,7 @@ namespace Trader {
 
 	class TRADER_CORE_API Module : private boost::noncopyable {
 
-	public:
+	protected:
 
 		typedef boost::mutex Mutex;
 		typedef Mutex::scoped_lock Lock;
@@ -34,15 +34,17 @@ namespace Trader {
 		virtual const std::string & GetName() const = 0;
 		const std::string & GetTag() const throw();
 
-		Mutex & GetMutex() const;
-
 	public:
 
 		const Trader::Settings & GetSettings() const;
 
 	public:
 
-		virtual void NotifyServiceStart(const Trader::Service &);
+		virtual void OnServiceStart(const Trader::Service &);
+
+	protected:
+
+		Mutex & GetMutex() const;
 
 	private:
 
@@ -56,5 +58,6 @@ namespace Trader {
 namespace std {
 	TRADER_CORE_API std::ostream & operator <<(
 				std::ostream &,
-				const Trader::Module &);
+				const Trader::Module &)
+			throw();
 }

@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/11/22 11:48:56
+ *   Created: 2012/11/22 11:46:12
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,7 +9,9 @@
 #include "Prec.hpp"
 #include "Notifier.hpp"
 #include "Core/Strategy.hpp"
-#include "Core/Settings.hpp"
+#include "Core/Service.hpp"
+#include "Core/Observer.hpp"
+#include "Core/Position.hpp"
 
 namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
@@ -18,195 +20,234 @@ using namespace Trader;
 using namespace Trader::Lib;
 using namespace Trader::Engine;
 
+//////////////////////////////////////////////////////////////////////////
 
-Notifier::Notifier(boost::shared_ptr<const Settings> settings)
-			: m_isActive(false),
-			m_isExit(false),
-			m_currentLevel1Updates(&m_level1UpdatesQueue.first),
-			m_heavyLoadedUpdatesCount(0),
-			m_currentTradeObservervation(&m_tradeObservervationQueue.first),
-			m_heavyLoadedObservationsCount(0),
-			m_settings(settings) {
-		
-	{
-		const char *const threadName = "Strategy";
-		Log::Info(
-			"Starting %1% thread(s) \"%2%\"...",
-			m_settings->GetThreadsCount(),
-			threadName);
-		boost::barrier startBarrier(m_settings->GetThreadsCount() + 1);
-		for (size_t i = 0; i < m_settings->GetThreadsCount(); ++i) {
-			m_threads.create_thread(
-				[&]() {
-					Task(
-						startBarrier,
-						threadName,
-						&Notifier::NotifyLevel1Update);
-				});
+namespace {
+
+	//////////////////////////////////////////////////////////////////////////
+
+	struct GetModuleVisitor : public boost::static_visitor<Module &> {
+		template<typename ModulePtr>
+		Module & operator ()(ModulePtr &module) const {
+			return *module;
 		}
-		startBarrier.wait();
-		Log::Info("All \"%1%\" threads started.", threadName);
-	}
-	{
-		boost::barrier startBarrier(1 + 1);
-		m_threads.create_thread(
-			[&]() {
-				Task(startBarrier, "Observer", &Notifier::NotifyNewTrades);
-			});
-		startBarrier.wait();
-	}
-}
+	};
 
-Notifier::~Notifier() {
-	try {
-		{
-			const Lock lock(m_mutex);
-			Assert(!m_isExit);
-			m_isExit = true;
-			m_isActive = false;
-			m_positionsCheckCompletedCondition.notify_all();
-			m_tradeReadCompletedCondition.notify_all();
-			m_positionsCheckCondition.notify_all();
-			m_newTradesCondition.notify_all();
+	//////////////////////////////////////////////////////////////////////////
+
+	void NotifyServiceDataUpdateSubscribers(const Service &);
+
+	class NotifyServiceDataUpdateVisitor
+			: public boost::static_visitor<void>,
+			private boost::noncopyable {
+	public:
+		explicit NotifyServiceDataUpdateVisitor(const Service &service)
+				: m_service(service) {
+			//...//
 		}
-		m_threads.join_all();
-	} catch (...) {
-		AssertFailNoException();
-		throw;
-	}
-}
-
-bool Notifier::NotifyLevel1Update() {
-
-	Level1UpdateNotifyList *notifyList = nullptr;
-	{
-		Lock lock(m_mutex);
-		if (m_isExit) {
-			return false;
+	public:		
+		void operator ()(const boost::shared_ptr<Strategy> &strategy) const {
+			strategy->RaiseServiceDataUpdateEvent(m_service);
 		}
-		Assert(
-			m_currentLevel1Updates == &m_level1UpdatesQueue.first
-			|| m_currentLevel1Updates == &m_level1UpdatesQueue.second);
-		if (m_currentLevel1Updates->empty()) {
-			m_heavyLoadedUpdatesCount = 0;
-			m_positionsCheckCondition.wait(lock);
-			if (m_isExit) {
-				return false;
-			} else if (m_currentLevel1Updates->empty() || !m_isActive) {
-				return true;
+		void operator ()(const boost::shared_ptr<Service> &service) const {
+			if (!service->RaiseServiceDataUpdateEvent(m_service)) {
+				return;
 			}
-		} else if (!(++m_heavyLoadedUpdatesCount % 100)) {
-			Log::Warn(
-				"Dispatcher updates thread is heavy loaded (%1% iterations)!",
-				m_heavyLoadedUpdatesCount);
+			NotifyServiceDataUpdateSubscribers(*service);
 		}
-		notifyList = m_currentLevel1Updates;
-		m_currentLevel1Updates = m_currentLevel1Updates == &m_level1UpdatesQueue.first
-			?	&m_level1UpdatesQueue.second
-			:	&m_level1UpdatesQueue.first;
-		if (m_settings->IsReplayMode()) {
-			m_positionsCheckCompletedCondition.notify_all();
+		void operator ()(const boost::shared_ptr<Observer> &observer) const {
+			observer->RaiseServiceDataUpdateEvent(m_service);
 		}
-	}
+	private:
+		const Service &m_service;
+	};
 
-	Assert(!notifyList->empty());
-	foreach (auto &notification, *notifyList) {
-		notification->CheckPositions(*this);
-	}
-	notifyList->clear();
-
-	return true;
-
-}
-
-bool Notifier::NotifyNewTrades() {
-
-	TradeNotifyList *notifyList = nullptr;
-	{
-
-		Lock lock(m_mutex);
-		if (m_isExit) {
-			return false;
-		}
-		Assert(
-			m_currentTradeObservervation == &m_tradeObservervationQueue.first
-			|| m_currentTradeObservervation == &m_tradeObservervationQueue.second);
-		if (m_currentTradeObservervation->empty()) {
-			m_heavyLoadedObservationsCount = 0;
-			m_newTradesCondition.wait(lock);
-			if (m_isExit) {
-				return false;
-			} else if (m_currentTradeObservervation->empty() || !m_isActive) {
-				return true;
+	void NotifyServiceDataUpdateSubscribers(const Service &service) {
+		const NotifyServiceDataUpdateVisitor visitor(service);
+		foreach (auto subscriber, service.GetSubscribers()) {
+			try {
+				boost::apply_visitor(visitor, subscriber);
+			} catch (const Exception &ex) {
+				Log::Error(
+					"Error at service subscribers notification:"
+						" \"%1%\" (service: \"%2%\", subscriber: \"%3%\").",
+					ex,
+					service,
+					boost::apply_visitor(GetModuleVisitor(), subscriber));
+				throw;
 			}
-		} else if (!(++m_heavyLoadedUpdatesCount % 100)) {
-			Log::Warn(
-				"Dispatcher observers thread is heavy loaded (%1% iterations)!",
-				m_heavyLoadedUpdatesCount);
-		}
-		notifyList = m_currentTradeObservervation;
-		m_currentTradeObservervation = m_currentTradeObservervation == &m_tradeObservervationQueue.first
-			?	&m_tradeObservervationQueue.second
-			:	&m_tradeObservervationQueue.first;
-		if (m_settings->IsReplayMode()) {
-			m_tradeReadCompletedCondition.notify_all();
 		}
 	}
 
-	Assert(!notifyList->empty());
-	foreach (auto &observationEvent, *notifyList) {
-		observationEvent.state->NotifyNewTrades(observationEvent, *this);
-	}
-	notifyList->clear();
+	//////////////////////////////////////////////////////////////////////////
 
-	return true;
+	class SignalAvailabilityCheckVisitor : public boost::static_visitor<bool> {
+	public:
+		template<typename Module>
+		bool operator ()(const boost::shared_ptr<Module> &) const {
+			return true;
+		}
+		template<>
+		bool operator ()(const boost::shared_ptr<Strategy> &strategy) const {
+			return !strategy->IsBlocked();
+		}
+	};
 
-}
 
-void Notifier::Signal(boost::shared_ptr<Strategy> strategy) {
-		
-	if (strategy->IsBlocked()) {
-		return;
-	}
-		
-	Lock lock(m_mutex);
-	if (m_isExit) {
-		return;
-	}
-	//! @todo place for optimization
-	if (	m_currentLevel1Updates->find(strategy)
-			!= m_currentLevel1Updates->end()) {
-		return;
-	}
-	m_currentLevel1Updates->insert(strategy);
-	m_positionsCheckCondition.notify_one();
-	if (m_settings->IsReplayMode()) {
-		m_positionsCheckCompletedCondition.wait(lock);
-	}
+	//////////////////////////////////////////////////////////////////////////
 
 }
 
-void Notifier::Signal(
-			boost::shared_ptr<TradeObserverState> state,
-			const boost::shared_ptr<const Security> &security,
-			const boost::posix_time::ptime &time,
-			ScaledPrice price,
-			Qty qty,
-			OrderSide side) {
-	const Trade trade = {
-		state,
-		security,
-		time,
-		price,
-		qty,
-		side};
-	Lock lock(m_mutex);
-	if (m_isExit) {
-		return;
-	}
-	m_currentTradeObservervation->push_back(trade);
-	m_newTradesCondition.notify_one();
-	if (m_settings->IsReplayMode()) {
-		m_tradeReadCompletedCondition.wait(lock);
-	}
+//////////////////////////////////////////////////////////////////////////
+
+const Module & Notifier::GetObserver() const {
+	return boost::apply_visitor(GetModuleVisitor(), m_observer);
 }
+
+bool Notifier::IsBlocked() const {
+	return !boost::apply_visitor(SignalAvailabilityCheckVisitor(), m_observer);
+}
+
+void Notifier::RaiseLevel1UpdateEvent(const Security &security) {
+
+	const class Visitor
+			: public boost::static_visitor<void>,
+			private boost::noncopyable {
+	public:		
+		explicit Visitor(const Security &security)
+				: m_security(security) {
+			//...//
+		}
+	public:
+		void operator ()(const boost::shared_ptr<Strategy> &strategy) const {
+			AssertEq(
+				m_security.GetFullSymbol(),
+				strategy->GetSecurity().GetFullSymbol());
+			strategy->RaiseLevel1UpdateEvent();
+		}
+		void operator ()(const boost::shared_ptr<Service> &service) const {
+			AssertEq(
+				m_security.GetFullSymbol(),
+				service->GetSecurity().GetFullSymbol());
+			if (service->RaiseLevel1UpdateEvent()) {
+				NotifyServiceDataUpdateSubscribers(*service);
+			}
+		}
+		void operator ()(const boost::shared_ptr<Observer> &observer) const {
+#			ifdef DEV_VER
+			{
+				bool isExists = false;
+				foreach (const auto &securityPtr, observer->GetNotifyList()) {
+					if (&*securityPtr == &m_security) {
+						isExists = true;
+						break;
+					}
+				}
+				Assert(isExists);
+			}
+#			endif
+			observer->RaiseLevel1UpdateEvent(m_security);
+		}
+	private:
+		const Security &m_security;
+	};
+
+	boost::apply_visitor(Visitor(security), m_observer);
+
+}
+
+void Notifier::RaiseNewTradeEvent(const Trade &trade) {
+
+	const class Visitor
+			: public boost::static_visitor<void>,
+			private boost::noncopyable {
+	public:		
+		explicit Visitor(const Trade &trade)
+				: m_trade(trade) {
+			//...//
+		}
+	public:
+		void operator ()(const boost::shared_ptr<Strategy> &strategy) const {
+			AssertEq(
+				m_trade.security->GetFullSymbol(),
+				strategy->GetSecurity().GetFullSymbol());
+			strategy->RaiseNewTradeEvent(
+				m_trade.time,
+				m_trade.price,
+				m_trade.qty,
+				m_trade.side);
+		}
+		void operator ()(const boost::shared_ptr<Service> &service) const {
+			AssertEq(
+				m_trade.security->GetFullSymbol(),
+				service->GetSecurity().GetFullSymbol());
+			if (	service->RaiseNewTradeEvent(
+						m_trade.time,
+						m_trade.price,
+						m_trade.qty,
+						m_trade.side)) {
+				NotifyServiceDataUpdateSubscribers(*service);
+			}
+		}
+		void operator ()(const boost::shared_ptr<Observer> &observer) const {
+#			ifdef DEV_VER
+			{
+				bool isExists = false;
+				foreach (const auto &securityPtr, observer->GetNotifyList()) {
+					if (&*securityPtr == m_trade.security) {
+						isExists = true;
+						break;
+					}
+				}
+				Assert(isExists);
+			}
+#			endif
+			observer->RaiseNewTradeEvent(
+				*m_trade.security,
+				m_trade.time,
+				m_trade.price,
+				m_trade.qty,
+				m_trade.side);
+		}
+	private:
+		const Trade &m_trade;
+	};
+
+	boost::apply_visitor(Visitor(trade), m_observer);
+
+}
+
+void Notifier::RaisePositionUpdateEvent(Position &position) {
+
+	const class Visitor
+			: public boost::static_visitor<void>,
+			private boost::noncopyable {
+	public:		
+		explicit Visitor(Position &position)
+				: m_position(position) {
+			//...//
+		}
+	public:
+		void operator ()(const boost::shared_ptr<Strategy> &strategy) const {
+			AssertEq(
+				m_position.GetSecurity().GetFullSymbol(),
+				strategy->GetSecurity().GetFullSymbol());
+			strategy->RaisePositionUpdateEvent(m_position);
+		}
+		void operator ()(const boost::shared_ptr<Service> &) const {
+			throw LogicError(
+				"Failed to raise position update event for service");
+		}
+		void operator ()(const boost::shared_ptr<Observer> &) const {
+			throw LogicError(
+				"Failed to raise position update event for observer");
+		}
+	private:
+		Position &m_position;
+	};
+
+	boost::apply_visitor(Visitor(position), m_observer);
+
+}
+
+//////////////////////////////////////////////////////////////////////////

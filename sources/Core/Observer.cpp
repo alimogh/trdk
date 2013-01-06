@@ -15,6 +15,12 @@ using namespace Trader::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
+namespace {
+	const std::string typeName = "Observer";
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 class Observer::Implementation {
 
 public:
@@ -54,6 +60,15 @@ Observer::~Observer() {
 	delete m_pimpl;
 }
 
+void Observer::OnLevel1Update(const Trader::Security &) {
+	Log::Error(
+		"\"%1%\" subscribed to Level 1 updates, but can't work with it"
+			" (hasn't implementation of OnLevel1Update).",
+		*this);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to Level 1 updates, but can't work with it");
+}
+
 void Observer::OnNewTrade(
 					const Trader::Security &,
 					const boost::posix_time::ptime &,
@@ -78,8 +93,27 @@ void Observer::OnServiceDataUpdate(const Trader::Service &service) {
  		"Module subscribed to service, but can't work with it");
 }
 
+void Observer::RaiseLevel1UpdateEvent(const Security &security) {
+	const Lock lock(GetMutex());
+	OnLevel1Update(security);
+}
+
+void Observer::RaiseNewTradeEvent(
+			const Security &security,
+			const boost::posix_time::ptime &time,
+			Trader::ScaledPrice price,
+			Trader::Qty qty,
+			Trader::OrderSide side) {
+	const Lock lock(GetMutex());
+	OnNewTrade(security, time, price, qty, side);
+}
+
+void Observer::RaiseServiceDataUpdateEvent(const Service &service) {
+	const Lock lock(GetMutex());
+	OnServiceDataUpdate(service);
+}
+
 const std::string & Observer::GetTypeName() const {
-	static const std::string typeName = "Observer";
 	return typeName;
 }
 

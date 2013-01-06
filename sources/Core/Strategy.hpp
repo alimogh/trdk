@@ -8,10 +8,9 @@
 
 #pragma once
 
+#include "Position.hpp"
 #include "SecurityAlgo.hpp"
 #include "Api.h"
-
-class PositionBandle;
 
 namespace Trader {
 
@@ -21,13 +20,77 @@ namespace Trader {
 
 	public:
 
-		class TRADER_CORE_API Notifier
-				: private boost::noncopyable {
+		typedef void (PositionUpdateSlotSignature)(Trader::Position &);
+		typedef boost::function<PositionUpdateSlotSignature> PositionUpdateSlot;
+		typedef boost::signals2::connection PositionUpdateSlotConnection;
+
+		class TRADER_CORE_API PositionList {
+
 		public:
-			Notifier();
-			virtual ~Notifier();
+
+			class ConstIterator;
+		
+			class TRADER_CORE_API Iterator
+					: public boost::iterator_facade<
+						Iterator,
+						Trader::Position,
+						boost::bidirectional_traversal_tag> {
+				friend class Trader::Strategy::PositionList::ConstIterator;
+			public:
+				class Implementation;
+			public:
+				explicit Iterator(Implementation *) throw();
+				~Iterator();
+			public:
+				Trader::Position & dereference() const;
+				bool equal(const Iterator &) const;
+				bool equal(const ConstIterator &) const;
+				void increment();
+				void decrement();
+				void advance(difference_type);
+			private:
+				Implementation *m_pimpl;
+			};
+
+			class TRADER_CORE_API ConstIterator
+					: public boost::iterator_facade<
+						ConstIterator,
+						const Trader::Position,
+						boost::bidirectional_traversal_tag> {
+				friend class Trader::Strategy::PositionList::Iterator;
+			public:
+				class Implementation;
+			public:
+				explicit ConstIterator(Implementation *) throw();
+				explicit ConstIterator(const Iterator &) throw();
+				~ConstIterator();
+			public:
+				const Trader::Position & dereference() const;
+				bool equal(const Iterator &) const;
+				bool equal(const ConstIterator &) const;
+				void increment();
+				void decrement();
+				void advance(difference_type);
+			private:
+				Implementation *m_pimpl;
+			};
+		
 		public:
-			virtual void Signal(boost::shared_ptr<Strategy>) = 0;
+
+			PositionList();
+			virtual ~PositionList();
+
+		public:
+
+			virtual size_t GetSize() const = 0;
+			virtual bool IsEmpty() const = 0;
+
+			virtual Iterator GetBegin() = 0;
+			virtual ConstIterator GetBegin() const = 0;
+
+			virtual Iterator GetEnd() = 0;
+			virtual ConstIterator GetEnd() const = 0;
+
 		};
 
 	public:
@@ -40,22 +103,49 @@ namespace Trader {
 
 	public:
 
+		bool IsBlocked() const;
+
+	public:
+
 		virtual const std::string & GetTypeName() const;
 
 	public:
 
-		bool IsBlocked() const;
-
-		void CheckPositions(Notifier &);
-
-		PositionReporter & GetPositionReporter();
+		virtual void OnLevel1Update();
+		virtual void OnNewTrade(
+					const boost::posix_time::ptime &,
+					Trader::ScaledPrice,
+					Trader::Qty,
+					Trader::OrderSide);
+		virtual void OnServiceDataUpdate(const Trader::Service &);
+		virtual void OnPositionUpdate(const Trader::Position &);
 
 	public:
 
-		virtual boost::shared_ptr<PositionBandle> TryToOpenPositions() = 0;
-		virtual void TryToClosePositions(PositionBandle &) = 0;
+		void RaiseLevel1UpdateEvent();
+		void RaiseNewTradeEvent(
+					const boost::posix_time::ptime &,
+					Trader::ScaledPrice,
+					Trader::Qty,
+					Trader::OrderSide);
+		void RaiseServiceDataUpdateEvent(const Trader::Service &);
+		void RaisePositionUpdateEvent(Trader::Position &);
 
+	public:
+
+		void Register(Position &);
+
+		PositionList & GetPositions();
+		const PositionList & GetPositions() const;
+
+		PositionReporter & GetPositionReporter();
 		virtual void ReportDecision(const Trader::Position &) const = 0;
+
+	public:
+
+		PositionUpdateSlotConnection SubscribeToPositionsUpdates(
+					const PositionUpdateSlot &)
+				const;
 
 	protected:
 
@@ -72,3 +162,38 @@ namespace Trader {
 
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+namespace Trader {
+
+	inline Trader::Strategy::PositionList::Iterator range_begin(
+				Trader::Strategy::PositionList &list) {
+		return list.GetBegin();
+	}
+	inline Trader::Strategy::PositionList::Iterator range_end(
+				Trader::Strategy::PositionList &list) {
+		return list.GetEnd();
+	}
+	inline Trader::Strategy::PositionList::ConstIterator range_begin(
+				const Trader::Strategy::PositionList &list) {
+		return list.GetBegin();
+	}
+	inline Trader::Strategy::PositionList::ConstIterator range_end(
+				const Trader::Strategy::PositionList &list) {
+		return list.GetEnd();
+	}
+
+}
+
+namespace boost {
+    template<>
+    struct range_mutable_iterator<Trader::Strategy::PositionList> {
+        typedef Trader::Strategy::PositionList::Iterator type;
+    };
+    template<>
+    struct range_const_iterator<Trader::Strategy::PositionList> {
+        typedef Trader::Strategy::PositionList::ConstIterator type;
+    };
+}
+
+//////////////////////////////////////////////////////////////////////////

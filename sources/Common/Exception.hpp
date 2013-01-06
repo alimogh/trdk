@@ -38,22 +38,23 @@ namespace Trader { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class MethodDoesNotImplementedError : public Trader::Lib::Exception {
-
+	class LogicError : public Trader::Lib::Exception {
 	public:
+		explicit LogicError(const char *what) throw();
+	};
 
+	//////////////////////////////////////////////////////////////////////////
+
+	class MethodDoesNotImplementedError : public Trader::Lib::Exception {
+	public:
 		explicit MethodDoesNotImplementedError(const char *what) throw();
-
 	};
 
 	//////////////////////////////////////////////////////////////////////////
 
 	class ModuleError : public Trader::Lib::Exception {
-
 	public:
-
 		explicit ModuleError(const char *what) throw();
-
 	};
 
 	//////////////////////////////////////////////////////////////////////////

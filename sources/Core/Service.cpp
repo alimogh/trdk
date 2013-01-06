@@ -16,6 +16,12 @@ using namespace Trader::Lib;
 
 namespace {
 
+	const std::string typeName = "Service";
+
+}
+
+namespace {
+
 	struct GetModuleVisitor : public boost::static_visitor<const Module &> {
 		template<typename ModulePtr>
 		const Module & operator ()(const ModulePtr &module) const {
@@ -161,8 +167,58 @@ Service::~Service() {
 }
 
 const std::string & Service::GetTypeName() const {
-	static const std::string typeName = "Service";
 	return typeName;
+}
+
+bool Service::RaiseLevel1UpdateEvent() {
+	const Lock lock(GetMutex());
+	return OnLevel1Update();
+}
+
+bool Service::RaiseNewTradeEvent(
+			const boost::posix_time::ptime &time,
+			Trader::ScaledPrice price,
+			Trader::Qty qty,
+			Trader::OrderSide side) {
+	const Lock lock(GetMutex());
+	return OnNewTrade(time, price, qty, side);
+}
+
+bool Service::RaiseServiceDataUpdateEvent(const Trader::Service &service) {
+	const Lock lock(GetMutex());
+	return OnServiceDataUpdate(service);
+}
+
+bool Service::OnLevel1Update() {
+	Log::Error(
+		"\"%1%\" subscribed to Level 1 updates, but can't work with it"
+			" (hasn't implementation of OnLevel1Update).",
+		*this);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to Level 1 updates, but can't work with it");
+}
+
+bool Service::OnNewTrade(
+					const boost::posix_time::ptime &,
+					ScaledPrice,
+					Qty,
+					OrderSide) {
+	Log::Error(
+		"\"%1%\" subscribed to new trades, but can't work with it"
+			" (hasn't implementation of OnNewTrade).",
+		*this);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to new trades, but can't work with it");
+}
+
+bool Service::OnServiceDataUpdate(const Trader::Service &service) {
+	Log::Error(
+		"\"%1%\" subscribed to \"%2%\", but can't work with it"
+			" (hasn't implementation of OnServiceDataUpdate).",
+		*this,
+		service);
+ 	throw MethodDoesNotImplementedError(
+ 		"Module subscribed to service, but can't work with it");
 }
 
 void Service::RegisterSubscriber(Strategy &module) {

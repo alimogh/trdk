@@ -26,16 +26,6 @@ namespace Trader {
 
 	public:
 
-		virtual bool OnNewTrade(
-					const boost::posix_time::ptime &,
-					Trader::ScaledPrice,
-					Trader::Qty,
-					Trader::OrderSide);
-
-		virtual bool OnServiceDataUpdate(const Trader::Service &);
-
-	public:
-
 		const Trader::Security & GetSecurity() const;
 		Trader::Security & GetSecurity();
 

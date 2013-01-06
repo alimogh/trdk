@@ -32,12 +32,10 @@ Security::Security(
 	//...//
 }
 
-void Security::SignalNewTrade(
+void Security::AddTrade(
 			const boost::posix_time::ptime &time,
 			Trader::OrderSide side,
 			Trader::ScaledPrice price,
 			Trader::Qty qty) {
-	Base::SignalNewTrade(time, side, price, qty);
-	SetLast(price, qty);
-	Base::SignalLevel1Update();
+	Base::AddTrade(time, side, price, qty, true);
 }

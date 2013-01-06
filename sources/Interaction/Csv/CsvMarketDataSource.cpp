@@ -239,7 +239,7 @@ void MarketDataSource::ReadFile() {
 				});
 		} else {
 			AssertNe(int(Trader::numberOfOrderSides), int(side));
-			security->security->SignalNewTrade(time, side, price, qty);
+			security->security->AddTrade(time, side, price, qty);
 		}
 
     }

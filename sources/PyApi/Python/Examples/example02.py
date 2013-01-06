@@ -9,19 +9,22 @@ class Example02(trader.Strategy):
     def getName(self):
         return self.__class__.__name__
 
-    def notifyServiceStart(self, service):
+    def onServiceStart(self, service):
         assert(self._bars is None)
+        # INI-file has configuration only for this service:
         if service.tag == "5 minute bar":
+            # Caching service reference:
             self._bars = service
-        else:
-            super(self.__class__, self).notifyServiceStart(service)
 
     def onServiceDataUpdate(self, service):
 
         # Events only for registered services
-        assert(self._bars is not None)
         assert(service == self._bars)
-        assert(self._bars.isEmpty == False)
+
+        if self.positions.count() > 0:
+            # Some positions are opened, checking each for closing...
+            map(self.tryToClosePosition, self.positions)
+            return
 
         lastBar = self._bars.getBarByReversedIndex(0)
         openPrice = self._bars.getOpenPriceStat(10)
@@ -32,41 +35,26 @@ class Example02(trader.Strategy):
                     self.security.descalePrice(lastBar.openPrice),
                     self.security.descalePrice(openPrice.max)))
 
-        # Check condition (price scaled):
+        # Check condition (price "scaled"):
         if openPrice.max <= 137449:
-            # Skip opening as max open price less then required...
-            return False    # Method returns False - no another events will be
-                            # called for this event
-
-        return True # True initiates positions methods call
-
-    def tryToOpenPositions(self):
-
-        maxOpenPrice = self._bars.getOpenPriceStat(10).max
-
-        trader.logInfo(
-            "Opening as max open price {0}."
-                .format(self.security.descalePrice(maxOpenPrice)))
+            # Skip opening as max open price less then required:
+            return
 
         self._testCount = 0
         position = trader.LongPosition(
-            # security object
-            self.security,
+            # strategy
+            self,
             # number of shares
             10000,
             # start price
-            maxOpenPrice,
-            # strategy tag for statistic
-            self.tag)
+            openPrice.max)
 
-        # Sending IOC order (if order will be filled:
-        # tryToClosePositions-method will be called, if not:
-        # tryToOpenPositions will be called again):
-        position.openOrCancel(position.openStartPrice)
+        # Sending MKT-order (method onPositionUpdate will be called at each
+        # position state update):
+        position.openAtMarketPrice()
 
-        return position
-
-    def tryToClosePositions(self, position):
+    # Example method: how position can be closed. See onLevel1Update for call.
+    def tryToClosePosition(self, position):
         if position.hasActiveOrders:
             return
         self._testCount = self._testCount + 1

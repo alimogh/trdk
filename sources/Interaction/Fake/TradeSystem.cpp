@@ -122,8 +122,8 @@ private:
 					const auto price = order.price
 						?	order.security->DescalePrice(order.price)
 						:	order.isSell
-							?	order.security->GetAskPrice(1)
-							:	order.security->GetBidPrice(1);
+							?	order.security->GetAskPrice()
+							:	order.security->GetBidPrice();
 					order.callback(
 						order.id,
 						TradeSystem::ORDER_STATUS_FILLED,

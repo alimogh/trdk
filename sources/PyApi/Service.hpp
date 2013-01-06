@@ -36,7 +36,7 @@ namespace Trader { namespace PyApi {
 	public:
 
 		virtual boost::python::str Service::PyGetName() const;
-		virtual void PyNotifyServiceStart(boost::python::object);
+		virtual void PyOnServiceStart(boost::python::object);
 
 	public:
 
@@ -46,7 +46,7 @@ namespace Trader { namespace PyApi {
 			return m_name;
 		}
 
-		virtual void NotifyServiceStart(const Trader::Service &);
+		virtual void OnServiceStart(const Trader::Service &);
 
 		operator boost::python::object &() const {
 			Assert(m_self);

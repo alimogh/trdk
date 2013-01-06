@@ -62,8 +62,6 @@ namespace Trader {
 		const Time & GetCurrentTradeSessionStartTime() const;
 		const Time & GetCurrentTradeSessionEndime() const;
 
-		size_t GetThreadsCount() const;
-
 		boost::uint32_t GetLevel2PeriodSeconds() const;
 		bool IsLevel2SnapshotPrintEnabled() const;
 		boost::uint16_t GetLevel2SnapshotPrintTimeSeconds() const;

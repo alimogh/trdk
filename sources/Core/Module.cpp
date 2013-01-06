@@ -50,14 +50,8 @@ const std::string & Module::GetTag() const throw() {
 	return m_pimpl->m_tag;
 }
 
-void Module::NotifyServiceStart(const Service &service) {
-	Log::Error(
-		"\"%1%\" subscribed to \"%2%\", but can't work with it"
-			" (hasn't implementation of NotifyServiceStart).",
-		*this,
-		service);
- 	throw MethodDoesNotImplementedError(
-		"Module subscribed to service, but can't work with it");
+void Module::OnServiceStart(const Service &) {
+	//...//
 }
 
 const Settings & Module::GetSettings() const {
@@ -66,11 +60,18 @@ const Settings & Module::GetSettings() const {
 
 //////////////////////////////////////////////////////////////////////////
 
-std::ostream & std::operator <<(std::ostream &oss, const Module &module) {
-	oss
-		<< module.GetTypeName()
-		<< '.' << module.GetName()
-		<< '.' << module.GetTag();
+std::ostream & std::operator <<(
+			std::ostream &oss,
+			const Module &module)
+		throw() {
+	try {
+		oss
+			<< module.GetTypeName()
+			<< '.' << module.GetName()
+			<< '.' << module.GetTag();
+	} catch (...) {
+		AssertFailNoException();
+	}
 	return oss;
 }
 
