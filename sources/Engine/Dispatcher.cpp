@@ -12,7 +12,6 @@
 #include "Core/Observer.hpp"
 #include "Core/Settings.hpp"
 
-namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
 
 using namespace Trader;
@@ -54,20 +53,32 @@ void Dispatcher::SignalNewTrade(
 			ScaledPrice price,
 			Qty qty,
 			OrderSide side) {
-	if (notifier->IsBlocked()) {
-		return;
+	try {
+		if (notifier->IsBlocked()) {
+			return;
+		}
+		boost::shared_ptr<Notifier::Trade> trade(new Notifier::Trade);
+		trade->security = &security;
+		trade->time = time;
+		trade->price = price;
+		trade->qty = qty;
+		trade->side = side;
+		m_newTrades.Queue(boost::make_tuple(trade, notifier));
+	} catch (...) {
+		//! Blocking as irreversible error, data loss.
+		notifier->Block();
+		throw;
 	}
-	boost::shared_ptr<Notifier::Trade> trade(new Notifier::Trade);
-	trade->security = &security;
-	trade->time = time;
-	trade->price = price;
-	trade->qty = qty;
-	trade->side = side;
-	m_newTrades.Queue(boost::make_tuple(trade, notifier));
 }
 
 void Dispatcher::SignalPositionUpdate(
 			boost::shared_ptr<Notifier> &notifier,
 			Position &position) {
-	m_positionUpdates.Queue(boost::make_tuple(&position, notifier));
+	try {
+		m_positionUpdates.Queue(boost::make_tuple(&position, notifier));
+	} catch (...) {
+		//! Blocking as irreversible error, data loss.
+		notifier->Block();
+		throw;
+	}
 }

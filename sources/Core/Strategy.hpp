@@ -104,6 +104,7 @@ namespace Trader {
 	public:
 
 		bool IsBlocked() const;
+		void Block();
 
 	public:
 
@@ -118,7 +119,7 @@ namespace Trader {
 					Trader::Qty,
 					Trader::OrderSide);
 		virtual void OnServiceDataUpdate(const Trader::Service &);
-		virtual void OnPositionUpdate(const Trader::Position &);
+		virtual void OnPositionUpdate(Trader::Position &);
 
 	public:
 

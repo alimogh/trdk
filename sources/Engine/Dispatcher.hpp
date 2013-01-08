@@ -289,7 +289,8 @@ namespace Trader { namespace Engine {
 							" notification task \"%1%\".",
 						eventList.GetName());
 					AssertFailNoException();
-					throw;
+					isError = true;
+					break;
 				}
 			}
 			Log::Info(

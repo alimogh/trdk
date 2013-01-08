@@ -16,11 +16,6 @@ namespace Trader {
 	template<typename Strategy>
 	class StrategyPositionReporter : public PositionReporter {
 
-	private:
-
-		typedef boost::mutex Mutex;
-		typedef Mutex::scoped_lock Lock;
-
 	public:
 
 		StrategyPositionReporter() {
@@ -34,7 +29,6 @@ namespace Trader {
 	public:
 
 		void Init(const Strategy &strategy) {
-			const Lock lock(m_mutex);
 			if (m_isInited) {
 				return;
 			}
@@ -79,7 +73,6 @@ namespace Trader {
 			}
 			Assert(position.IsOpened());
 			Assert(position.IsClosed() || position.IsError());
-			const Lock lock(m_mutex);
 			Assert(m_isInited);
 			Assert(m_file);
 			PrintLine(position, m_file);
@@ -185,7 +178,6 @@ namespace Trader {
 	private:
 
 		static bool m_isInited;
-		static Mutex m_mutex;
 		static std::ofstream m_file;
 
 	};
@@ -194,10 +186,6 @@ namespace Trader {
 
 template<typename Strategy>
 bool Trader::StrategyPositionReporter<Strategy>::m_isInited = false;
-
-template<typename Strategy>
-typename Trader::StrategyPositionReporter<Strategy>::Mutex
-Trader::StrategyPositionReporter<Strategy>::m_mutex;
 
 template<typename Strategy>
 std::ofstream Trader::StrategyPositionReporter<Strategy>::m_file;

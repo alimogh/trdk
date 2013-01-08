@@ -12,6 +12,8 @@
 #include "PositionReporter.hpp"
 #include "Settings.hpp"
 
+namespace mi = boost::multi_index;
+
 using namespace Trader;
 using namespace Trader::Lib;
 
@@ -24,10 +26,79 @@ namespace {
 //////////////////////////////////////////////////////////////////////////
 
 namespace {
-	typedef std::map<
-			boost::shared_ptr<Position>,
-			Position::StateUpdateConnection>
-		PositionListStorage;
+	
+	class PositionHolder {
+
+	public:
+
+		explicit PositionHolder(
+					Position &position,
+					const Position::StateUpdateConnection &stateUpdateConnection)
+				: m_refCount(new size_t(1)),
+				m_position(position.shared_from_this()),
+				m_stateUpdateConnection(stateUpdateConnection) {
+			Assert(m_stateUpdateConnection.connected());
+		}
+
+		PositionHolder(const PositionHolder &rhs)
+				: m_refCount(rhs.m_refCount),
+				m_position(rhs.m_position),
+				m_stateUpdateConnection(rhs.m_stateUpdateConnection) {
+			Verify(++*m_refCount > 1);
+		}
+		
+		~PositionHolder() {
+			Assert(m_stateUpdateConnection.connected());
+			AssertLt(0, *m_refCount);
+			if (!--*m_refCount) {
+				try {
+					m_stateUpdateConnection.disconnect();
+				} catch (...) {
+					AssertFailNoException();
+					throw;
+				}
+				delete m_refCount;
+			}
+		}
+
+	private:
+
+		PositionHolder & operator =(const PositionHolder &);
+
+	public:
+
+		Position & operator *() const {
+			return *m_position;
+		}
+
+		Position * operator ->() const {
+			return &*m_position;
+		}
+
+	private:
+
+		size_t *m_refCount;
+		boost::shared_ptr<Position> m_position;
+		Position::StateUpdateConnection m_stateUpdateConnection;
+
+	};
+
+	struct ByPtr {
+		//...//
+	};
+
+	typedef boost::multi_index_container<
+			PositionHolder,
+			mi::indexed_by<
+				mi::ordered_unique<
+					mi::tag<ByPtr>,
+					mi::const_mem_fun<
+						PositionHolder,
+						Position *,
+						&PositionHolder::operator ->>>>>
+		PositionHolderList;
+	typedef PositionHolderList::index<ByPtr>::type PositionHolderByPtr;
+
 }
 
 Strategy::PositionList::PositionList() {
@@ -41,9 +112,9 @@ Strategy::PositionList::~PositionList() {
 class Strategy::PositionList::Iterator::Implementation
 		: private boost::noncopyable {
 public:
-	PositionListStorage::iterator iterator;
+	PositionHolderList::iterator iterator;
 public:
-	explicit Implementation(PositionListStorage::iterator iterator)
+	explicit Implementation(PositionHolderList::iterator iterator)
 			: iterator(iterator) {
 		//...//
 	}
@@ -52,9 +123,9 @@ public:
 class Strategy::PositionList::ConstIterator::Implementation
 		: private boost::noncopyable {
 public:
-	PositionListStorage::const_iterator iterator;
+	PositionHolderList::const_iterator iterator;
 public:
-	explicit Implementation(PositionListStorage::const_iterator iterator)
+	explicit Implementation(PositionHolderList::const_iterator iterator)
 				throw()
 			: iterator(iterator) {
 		//...//
@@ -69,15 +140,15 @@ Strategy::PositionList::Iterator::~Iterator() {
 	delete m_pimpl;
 }
 Position & Strategy::PositionList::Iterator::dereference() const {
-	return *m_pimpl->iterator->first;
+	return **m_pimpl->iterator;
 }
 bool Strategy::PositionList::Iterator::equal(const Iterator &rhs) const {
-	return m_pimpl->iterator->first == rhs.m_pimpl->iterator->first;
+	return m_pimpl->iterator == rhs.m_pimpl->iterator;
 }
 bool Strategy::PositionList::Iterator::equal(
 			const ConstIterator &rhs)
 		const {
-	return m_pimpl->iterator->first == rhs.m_pimpl->iterator->first;
+	return m_pimpl->iterator == rhs.m_pimpl->iterator;
 }
 void Strategy::PositionList::Iterator::increment() {
 	++m_pimpl->iterator;
@@ -101,15 +172,15 @@ Strategy::PositionList::ConstIterator::~ConstIterator() {
 	delete m_pimpl;
 }
 const Position & Strategy::PositionList::ConstIterator::dereference() const {
-	return *m_pimpl->iterator->first;
+	return **m_pimpl->iterator;
 }
 bool Strategy::PositionList::ConstIterator::equal(
 			const ConstIterator &rhs)
 		const {
-	return m_pimpl->iterator->first == rhs.m_pimpl->iterator->first;
+	return m_pimpl->iterator == rhs.m_pimpl->iterator;
 }
 bool Strategy::PositionList::ConstIterator::equal(const Iterator &rhs) const {
-	return m_pimpl->iterator->first == rhs.m_pimpl->iterator->first;
+	return m_pimpl->iterator == rhs.m_pimpl->iterator;
 }
 void Strategy::PositionList::ConstIterator::increment() {
 	++m_pimpl->iterator;
@@ -131,44 +202,64 @@ public:
 
 	public:
 		
-		typedef PositionListStorage Storage;
-		typedef std::list<boost::shared_ptr<Position>> NotAccepted;
-
-	public:
-
-		Storage m_storage;
-		NotAccepted m_notAccepted;
-
-	public:
-		
 		virtual ~PositionList() {
 			//...//
 		}
 
 	public:
 
+		void Insert(const PositionHolder &holder) {
+			Assert(!IsExists(*holder));
+			m_impl.insert(holder);
+		}
+
+		void Erase(const Position &position) {
+			auto &index = m_impl.get<ByPtr>();
+			const auto it = index.find(const_cast<Position *>(&position));
+			Assert(it != index.end());
+			index.erase(it);
+		}
+
+		bool IsExists(const Position &position) const {
+			const auto &index = m_impl.get<ByPtr>();
+			return index.find(const_cast<Position *>(&position)) != index.end();
+		}
+
+		Position & Get(const Position &position) {
+			const auto &index = m_impl.get<ByPtr>();
+			const auto result = index.find(const_cast<Position *>(&position));
+			Assert(result != index.end());
+			return **result;
+		}
+
+	public:
+
 		virtual size_t GetSize() const {
-			return m_storage.size();
+			return m_impl.size();
 		}
 		
 		virtual bool IsEmpty() const {
-			return m_storage.empty();
+			return m_impl.empty();
 		}
 		
 		virtual Iterator GetBegin() {
-			return Iterator(new Iterator::Implementation(m_storage.begin()));
+			return Iterator(new Iterator::Implementation(m_impl.begin()));
 		}
 		virtual ConstIterator GetBegin() const {
 			return ConstIterator(
-				new ConstIterator::Implementation(m_storage.begin()));
+				new ConstIterator::Implementation(m_impl.begin()));
 		}
 		virtual Iterator GetEnd() {
-			return Iterator(new Iterator::Implementation(m_storage.end()));
+			return Iterator(new Iterator::Implementation(m_impl.end()));
 		}
 		virtual ConstIterator GetEnd() const {
 			return ConstIterator(
-				new ConstIterator::Implementation(m_storage.end()));
+				new ConstIterator::Implementation(m_impl.end()));
 		}
+
+	private:
+
+		PositionHolderList m_impl;
 
 	};
 
@@ -191,68 +282,7 @@ public:
 		//...//
 	}
 
-	~Implementation() {
-		delete m_positionReporter;
-		try {
-			foreach (const auto &position, m_positions.m_storage) {
-				position.second.disconnect();
-			}
-		} catch (...) {
-			AssertFailNoException();
-			throw;
-		}
-	}
-
 public:
-
-	template<typename RaiseEventImpl>
-	void RaiseEvent(const RaiseEventImpl &raiseEventImpl) {
-		
-		const Lock lock(m_strategy.GetMutex());
-		AssertEq(0, m_positions.m_notAccepted.size());
-
-		raiseEventImpl();
-
-		AssertLe(m_positions.m_notAccepted.size(), m_positions.m_storage.size());
-		while (!m_positions.m_notAccepted.empty()) {
-			const auto position = m_positions.m_notAccepted.front();
-			Assert(
-				m_positions.m_storage.find(position)
-				!= m_positions.m_storage.end());
-			if (!position->IsStarted()) {
-				m_positions.m_storage.erase(position);
-				Assert(
-					m_positions.m_storage.find(position)
-					== m_positions.m_storage.end());
-			}
-			m_positions.m_notAccepted.pop_front();
-		}
-
-	}
-
-	bool CheckCompleted(Position &position) {
-		if (!position.IsCompleted()) {
-			return false;
-		}
-		try {
-			const auto posIt
-				= m_positions.m_storage.find(position.shared_from_this());
-			Assert(posIt != m_positions.m_storage.end());
-			if (posIt == m_positions.m_storage.end()) {
-				return false;
-			}
-			Position::StateUpdateConnection connection = posIt->second;
-			m_positions.m_storage.erase(posIt);
-			connection.disconnect();
-			return true;
-		} catch (...) {
-			AssertFailNoException();
-			Log::Error(
-				"\"%1%\": failed to delete and/or disconnect position object.",
-				m_strategy);
-			throw;
-		}
-	}
 
 	bool IsTradingTime() const {
 		if (m_strategy.GetSettings().IsReplayMode()) {
@@ -262,6 +292,11 @@ public:
 		return
 			m_strategy.GetSettings().GetCurrentTradeSessionStartTime() <= now
 			&& now < m_strategy.GetSettings().GetCurrentTradeSessionEndime();
+	}
+
+	void ForgetPosition(const Position &position) {
+		m_positions.Erase(position);
+		m_strategy.GetPositionReporter().ReportClosedPositon(position);
 	}
 
 };
@@ -280,40 +315,19 @@ Strategy::~Strategy() {
 	Log::Info(
 		"\"%1%\" has %2% active position.",
 		*this,
-		m_pimpl->m_positions.m_storage.size());
-	AssertEq(0, m_pimpl->m_positions.m_notAccepted.size());
+		m_pimpl->m_positions.GetSize());
 	delete m_pimpl;
 }
 
 void Strategy::Register(Position &position) {
-	
 	Assert(!GetMutex().try_lock());
-	Assert(
-		m_pimpl->m_positions.m_storage.find(position.shared_from_this())
-		== m_pimpl->m_positions.m_storage.end());
-
-	auto notAccepted(m_pimpl->m_positions.m_notAccepted);
-	notAccepted.push_back(position.shared_from_this());
-
-	const auto signalConnection = position.Subscribe(
+	const PositionHolder holder(
+		position,
+		position.Subscribe(
 		[this, &position]() {
 			m_pimpl->m_positionUpdateSignal(position);
-		});
-	try {
-		m_pimpl->m_positions.m_storage.insert(
-			std::make_pair(position.shared_from_this(), signalConnection));
-	} catch (...) {
-		try {
-			signalConnection.disconnect();
-		} catch (...) {
-			AssertFailNoException();
-			throw;
-		}
-		throw;
-	}
-
-	notAccepted.swap(m_pimpl->m_positions.m_notAccepted);
-
+		}));
+	m_pimpl->m_positions.Insert(holder);
 }
 
 PositionReporter & Strategy::GetPositionReporter() {
@@ -359,18 +373,16 @@ void Strategy::OnServiceDataUpdate(const Service &service) {
  		"Module subscribed to service, but can't work with it");
 }
 
-void Strategy::OnPositionUpdate(const Position &) {
+void Strategy::OnPositionUpdate(Position &) {
 	//...//
 }
 
 void Strategy::RaiseLevel1UpdateEvent() {
-	m_pimpl->RaiseEvent(
-		[&]() {
-			if (IsBlocked()) {
-				return;
-			}
-			OnLevel1Update();
-		});
+	const Lock lock(GetMutex());
+	if (IsBlocked()) {
+		return;
+	}
+	OnLevel1Update();
 }
 
 void Strategy::RaiseNewTradeEvent(
@@ -378,55 +390,49 @@ void Strategy::RaiseNewTradeEvent(
 			ScaledPrice price,
 			Qty qty,
 			OrderSide side) {
-	m_pimpl->RaiseEvent(
-		[&]() {
-			if (IsBlocked()) {
-				return;
-			}
-			OnNewTrade(time, price, qty, side);
-		});
+	const Lock lock(GetMutex());
+	if (IsBlocked()) {
+		return;
+	}
+	OnNewTrade(time, price, qty, side);
 }
 
 void Strategy::RaiseServiceDataUpdateEvent(const Service &service) {
-	m_pimpl->RaiseEvent(
-		[&]() {
-			if (IsBlocked()) {
-				return;
-			}
-			OnServiceDataUpdate(service);
-		});
+	const Lock lock(GetMutex());
+	if (IsBlocked()) {
+		return;
+	}
+	OnServiceDataUpdate(service);
 }
 
 void Strategy::RaisePositionUpdateEvent(Position &position) {
 	
 	Assert(position.IsStarted());
 	Assert(position.IsOpened() || position.IsError());
-	Assert(
-		m_pimpl->m_positions.m_storage.find(position.shared_from_this())
-		!= m_pimpl->m_positions.m_storage.end());
+
+	const Lock lock(GetMutex());
+	Assert(m_pimpl->m_positions.IsExists(position));
 	
 	if (position.IsError()) {
-		Interlocking::Exchange(m_pimpl->m_isBlocked, true);
-		Log::Warn("\"%1%\" BLOCKED by dispatcher.", *this);
-		m_pimpl->CheckCompleted(position);
-		GetPositionReporter().ReportClosedPositon(position);
+		Log::Warn("\"%1%\" will be blocked by position error...", *this);
+		Block();
+		m_pimpl->ForgetPosition(position);
 		//! @todo notify engine here
 		return;
 	}
 	
-	m_pimpl->RaiseEvent(
-		[&]() {
-			const bool isTradingTime = m_pimpl->IsTradingTime();
-			if (isTradingTime) {
-				OnPositionUpdate(position);
-			}
-			if (m_pimpl->CheckCompleted(position)) {
-				GetPositionReporter().ReportClosedPositon(position);
-			} else if (!isTradingTime) {
-				// @todo move to strategy implementation
-				position.CancelAtMarketPrice(Position::CLOSE_TYPE_SCHEDULE);
-			}
-		});
+	const bool isTradingTime = m_pimpl->IsTradingTime();
+	if (isTradingTime) {
+		OnPositionUpdate(position);
+	}
+		
+	if (position.IsCompleted()) {
+		m_pimpl->ForgetPosition(position);
+		return;
+	} else if (!isTradingTime) {
+		// @todo move to strategy implementation (ex.: OnSessionStart/OnSessionStop)
+		position.CancelAtMarketPrice(Position::CLOSE_TYPE_SCHEDULE);
+	}
 
 }
 
@@ -435,6 +441,11 @@ bool Strategy::IsBlocked() const {
 		m_pimpl->m_isBlocked
 		|| !GetSettings().IsValidPrice(GetSecurity())
 		|| !m_pimpl->IsTradingTime();
+}
+
+void Strategy::Block() {
+	Interlocking::Exchange(m_pimpl->m_isBlocked, true);
+	Log::Error("\"%1%\": Blocked.", *this);
 }
 
 Strategy::PositionUpdateSlotConnection Strategy::SubscribeToPositionsUpdates(

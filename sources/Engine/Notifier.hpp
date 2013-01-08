@@ -35,6 +35,8 @@ namespace Trader { namespace Engine {
 	public:
 
 		bool IsBlocked() const;
+		void Block() throw();
+
 		const Module & GetObserver() const;
 
 	public:

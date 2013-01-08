@@ -13,7 +13,6 @@
 #include "Core/Service.hpp"
 #include "Core/Observer.hpp"
 
-namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
 
 using namespace Trader;

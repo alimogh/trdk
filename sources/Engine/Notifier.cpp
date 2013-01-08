@@ -13,7 +13,6 @@
 #include "Core/Observer.hpp"
 #include "Core/Position.hpp"
 
-namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
 
 using namespace Trader;
@@ -81,7 +80,7 @@ namespace {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class SignalAvailabilityCheckVisitor : public boost::static_visitor<bool> {
+	class AvailabilityCheckVisitor : public boost::static_visitor<bool> {
 	public:
 		template<typename Module>
 		bool operator ()(const boost::shared_ptr<Module> &) const {
@@ -93,6 +92,20 @@ namespace {
 		}
 	};
 
+	class BlockVisitor : public boost::static_visitor<void> {
+	public:
+		template<typename Module>
+		void operator ()(const boost::shared_ptr<Module> &) const throw() {
+			//...//
+		}
+		template<>
+		void operator ()(
+					const boost::shared_ptr<Strategy> &strategy)
+				const
+				throw() {
+			strategy->Block();
+		}
+	};
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -105,7 +118,11 @@ const Module & Notifier::GetObserver() const {
 }
 
 bool Notifier::IsBlocked() const {
-	return !boost::apply_visitor(SignalAvailabilityCheckVisitor(), m_observer);
+	return !boost::apply_visitor(AvailabilityCheckVisitor(), m_observer);
+}
+
+void Notifier::Block() throw() {
+	boost::apply_visitor(BlockVisitor(), m_observer);
 }
 
 void Notifier::RaiseLevel1UpdateEvent(const Security &security) {

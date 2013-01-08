@@ -92,6 +92,7 @@ public:
 
 	mutable StateUpdateSignal m_stateUpdateSignal;
 
+	boost::shared_ptr<Strategy> m_strategy;
 	boost::shared_ptr<Security> m_security;
 
 	volatile long m_planedQty;
@@ -115,20 +116,30 @@ public:
 
 	explicit Implementation(
 				Position &position,
-				boost::shared_ptr<Security> security,
+				Strategy &strategy,
 				Qty qty,
-				ScaledPrice startPrice,
-				const std::string &tag)
+				ScaledPrice startPrice)
 			: m_position(position),
-			m_security(security),
+			m_strategy(strategy.shared_from_this()),
+			m_security(m_strategy->GetSecurity().shared_from_this()),
 			m_planedQty(qty),
 			m_openStartPrice(startPrice),
 			m_closeStartPrice(0),
 			m_closeType(CLOSE_TYPE_NONE),
 			m_isError(false),
 			m_isCanceled(0),
-			m_tag(tag) {
+			m_tag(m_strategy->GetTag()) {
 		//...//
+	}
+
+public:
+
+	void CheckStrategyRegistration() {
+		if (!m_strategy) {
+			return;
+		}
+		m_strategy->Register(m_position);
+		m_strategy.reset();
 	}
 
 public:
@@ -140,6 +151,8 @@ public:
 				Qty remaining,
 				double avgPrice,
 				double /*lastPrice*/) {
+
+		UseUnused(orderId);
 
 		WriteLock lock(m_mutex);
 
@@ -430,6 +443,8 @@ public:
 		Assert(!m_position.IsClosed());
 		Assert(!m_position.IsCompleted());
 		Assert(!m_position.HasActiveOrders());
+
+		CheckStrategyRegistration();
 		
 		const auto orderId = openImpl(m_position.GetNotOpenedQty());
 		Exchange(m_opened.hasOrder, true);
@@ -451,6 +466,7 @@ public:
 			throw AlreadyClosedError();
 		}
 
+		Assert(!m_strategy);
 		Assert(m_position.IsStarted());
 		Assert(!m_position.IsError());
 		Assert(!m_position.HasActiveOrders());
@@ -494,14 +510,8 @@ Position::Position(
 			Strategy &strategy,
 			Qty qty,
 			ScaledPrice startPrice) {
-	m_pimpl = new Implementation(
-		*this,
-		strategy.GetSecurity().shared_from_this(),
-		qty,
-		startPrice,
-		strategy.GetTag());
+	m_pimpl = new Implementation(*this, strategy, qty, startPrice);
 	AssertGt(m_pimpl->m_planedQty, 0);
-	strategy.Register(*this);
 }
 
 Position::~Position() {

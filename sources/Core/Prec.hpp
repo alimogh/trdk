@@ -20,6 +20,9 @@
 #	include <boost/thread.hpp>
 #	include <boost/algorithm/string_regex.hpp>
 #	include <boost/tuple/tuple.hpp>
+#	include <boost/multi_index_container.hpp>
+#	include <boost/multi_index/ordered_index.hpp>
+#	include <boost/multi_index/mem_fun.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
