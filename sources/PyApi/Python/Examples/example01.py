@@ -17,15 +17,15 @@ class Example01(trader.Strategy):
     def getName(self):
         return self.__class__.__name__
 
-    # Virtual method. Not pure. Not required, even if algorithm uses services.
+    # Virtual method. Not required, even if algorithm uses services.
     def onServiceStart(self, service):
         if service.getName() == 'Nonexistent service':
             # Here can be some logic at service start...
             pass
 
-    # Pure virtual method, must be implemented in strategy implementation.
-    # Will be called each time when engine has received Level 1 data update
-    # (such as best bid, best ask or last trade).
+    # Virtual method, must be implemented in strategy implementation. Will be
+    # called each time when engine has received Level 1 data update (such as
+    # best bid, best ask or last trade).
     def onLevel1Update(self):
         if self.positions.count() == 0:
             # No positions currently opened, so trying to open one...
@@ -33,6 +33,11 @@ class Example01(trader.Strategy):
         else:
             # Some positions are opened, checking each for closing...
             map(self.tryToClosePosition, self.positions)
+
+    # Virtual method. Notifies about position state update. Optional.
+    def onPositionUpdate(self, position):
+        # Here can be logic for new position state.
+        trader.logInfo("Position state has been updated.")
 
     # Example method: how position can be opened. See onLevel1Update for call.
     def tryToOpenPosition(self):

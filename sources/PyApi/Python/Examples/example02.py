@@ -49,9 +49,16 @@ class Example02(trader.Strategy):
             # start price
             openPrice.max)
 
-        # Sending MKT-order (method onPositionUpdate will be called at each
-        # position state update):
+        trader.logInfo('Opening position...')
+        # Opening new position for current strategy instance: Sending MKT-order
+        # (method onPositionUpdate will be called at each position state
+        # update):
         position.openAtMarketPrice()
+
+    # Virtual method. Notifies about position state update. Optional.
+    def onPositionUpdate(self, position):
+        # Here can be logic for new position state.
+        trader.logInfo("Position state has been updated.")
 
     # Example method: how position can be closed. See onLevel1Update for call.
     def tryToClosePosition(self, position):
