@@ -126,6 +126,7 @@ public:
 			m_openStartPrice(startPrice),
 			m_closeStartPrice(0),
 			m_closeType(CLOSE_TYPE_NONE),
+			m_isStarted(false),
 			m_isError(false),
 			m_isCanceled(0),
 			m_tag(m_strategy->GetTag()) {
