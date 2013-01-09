@@ -114,16 +114,22 @@ private:
 						continue;
 					}
 					orders = m_currentOrders;
-					m_currentOrders = orders == &m_orders1 ? &m_orders2 : &m_orders1;
+					m_currentOrders = orders == &m_orders1
+						? &m_orders2
+						: &m_orders1;
 				}
 				Assert(!orders->empty());
 				foreach (const Order &order, *orders) {
 					Assert(order.callback);
-					const auto price = order.price
+					auto price = order.price
 						?	order.security->DescalePrice(order.price)
 						:	order.isSell
 							?	order.security->GetAskPrice()
 							:	order.security->GetBidPrice();
+					if (Util::IsZero(price)) {
+						price = order.security->GetLastPrice();
+					}
+					Assert(!Util::IsZero(price));
 					order.callback(
 						order.id,
 						TradeSystem::ORDER_STATUS_FILLED,
