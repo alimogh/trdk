@@ -40,7 +40,11 @@ namespace Trader {
 				class Implementation;
 			public:
 				explicit Iterator(Implementation *) throw();
+				Iterator(const Iterator &);
 				~Iterator();
+			public:
+				Iterator & operator =(const Iterator &);
+				void Swap(Iterator &);
 			public:
 				Trader::Position & dereference() const;
 				bool equal(const Iterator &) const;
@@ -63,7 +67,11 @@ namespace Trader {
 			public:
 				explicit ConstIterator(Implementation *) throw();
 				explicit ConstIterator(const Iterator &) throw();
+				ConstIterator(const ConstIterator &);
 				~ConstIterator();
+			public:
+				ConstIterator & operator =(const ConstIterator &);
+				void Swap(ConstIterator &);
 			public:
 				const Trader::Position & dereference() const;
 				bool equal(const Iterator &) const;
@@ -195,6 +203,21 @@ namespace boost {
     struct range_const_iterator<Trader::Strategy::PositionList> {
         typedef Trader::Strategy::PositionList::ConstIterator type;
     };
+}
+
+namespace std {
+	template<>
+	inline void swap(
+				Trader::Strategy::PositionList::Iterator &lhs,
+				Trader::Strategy::PositionList::Iterator &rhs) {
+		lhs.Swap(rhs);
+	}
+	template<>
+	inline void swap(
+				Trader::Strategy::PositionList::ConstIterator &lhs,
+				Trader::Strategy::PositionList::ConstIterator &rhs) {
+		lhs.Swap(rhs);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

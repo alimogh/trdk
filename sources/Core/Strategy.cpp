@@ -109,8 +109,7 @@ Strategy::PositionList::~PositionList() {
 	//...//
 }
 
-class Strategy::PositionList::Iterator::Implementation
-		: private boost::noncopyable {
+class Strategy::PositionList::Iterator::Implementation {
 public:
 	PositionHolderList::iterator iterator;
 public:
@@ -120,8 +119,7 @@ public:
 	}
 };
 
-class Strategy::PositionList::ConstIterator::Implementation
-		: private boost::noncopyable {
+class Strategy::PositionList::ConstIterator::Implementation {
 public:
 	PositionHolderList::const_iterator iterator;
 public:
@@ -136,8 +134,22 @@ Strategy::PositionList::Iterator::Iterator(Implementation *pimpl) throw()
 		: m_pimpl(pimpl) {
 	Assert(m_pimpl);
 }
+Strategy::PositionList::Iterator::Iterator(const Iterator &rhs)
+		: m_pimpl(new Implementation(*rhs.m_pimpl)) {
+	//...//
+}
 Strategy::PositionList::Iterator::~Iterator() {
 	delete m_pimpl;
+}
+Strategy::PositionList::Iterator &
+Strategy::PositionList::Iterator::operator =(const Iterator &rhs) {
+	Assert(this != &rhs);
+	Iterator(rhs).Swap(*this);
+	return *this;
+}
+void Strategy::PositionList::Iterator::Swap(Iterator &rhs) {
+	Assert(this != &rhs);
+	std::swap(m_pimpl, rhs.m_pimpl);
 }
 Position & Strategy::PositionList::Iterator::dereference() const {
 	return **m_pimpl->iterator;
@@ -168,8 +180,22 @@ Strategy::PositionList::ConstIterator::ConstIterator(const Iterator &rhs)
 		: m_pimpl(new Implementation(rhs.m_pimpl->iterator)) {
 	//...//
 }
+Strategy::PositionList::ConstIterator::ConstIterator(const ConstIterator &rhs)
+		: m_pimpl(new Implementation(*rhs.m_pimpl)) {
+	//...//
+}
 Strategy::PositionList::ConstIterator::~ConstIterator() {
 	delete m_pimpl;
+}
+Strategy::PositionList::ConstIterator &
+Strategy::PositionList::ConstIterator::operator =(const ConstIterator &rhs) {
+	Assert(this != &rhs);
+	ConstIterator(rhs).Swap(*this);
+	return *this;
+}
+void Strategy::PositionList::ConstIterator::Swap(ConstIterator &rhs) {
+	Assert(this != &rhs);
+	std::swap(m_pimpl, rhs.m_pimpl);
 }
 const Position & Strategy::PositionList::ConstIterator::dereference() const {
 	return **m_pimpl->iterator;
@@ -177,6 +203,7 @@ const Position & Strategy::PositionList::ConstIterator::dereference() const {
 bool Strategy::PositionList::ConstIterator::equal(
 			const ConstIterator &rhs)
 		const {
+	Assert(this != &rhs);
 	return m_pimpl->iterator == rhs.m_pimpl->iterator;
 }
 bool Strategy::PositionList::ConstIterator::equal(const Iterator &rhs) const {
