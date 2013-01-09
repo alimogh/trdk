@@ -106,7 +106,8 @@ Script::Script(const boost::filesystem::path &filePath)
 					% ex.what())
 				.str().c_str());
 	} catch (const py::error_already_set &) {
-		Detail::RethrowPythonClientException(
+		Detail::LogPythonClientException();
+		throw Trader::PyApi::Error(
 			(boost::format("Failed to compile Python script from %1%")
 					% filePath)
 				.str().c_str());
@@ -118,7 +119,8 @@ void Script::Exec(const std::string &code) {
 	try {
 		py::exec(code.c_str(), m_global, m_global);
 	} catch (const py::error_already_set &) {
-		Detail::RethrowPythonClientException("Failed to execute Python code");
+		Detail::LogPythonClientException();
+		throw Trader::PyApi::Error("Failed to execute Python code");
 	}
 }
 

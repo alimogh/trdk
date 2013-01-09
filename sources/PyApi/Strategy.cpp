@@ -87,9 +87,9 @@ boost::shared_ptr<Trader::Strategy> Strategy::CreateClientInstance(
 		Assert(!strategy.m_name.empty());
 		return strategy.shared_from_this();
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException(
+		LogPythonClientException();
+		throw Trader::PyApi::Error(
 			"Failed to create instance of trader.Strategy");
-		throw;
 	}
 }
 
@@ -116,7 +116,8 @@ void Strategy::OnServiceStart(const Trader::Service &service) {
 			Trader::Strategy::OnServiceStart(service);
 		}
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException(
+		LogPythonClientException();
+		throw Trader::PyApi::Error(
 			"Failed to call method trader.Strategy.onServiceStart");
 	}
 }
@@ -164,9 +165,9 @@ void Strategy::OnNewTrade(
 			py::object(qty),
 			Detail::OrderSide::Convert(side));
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException(
+		LogPythonClientException();
+		throw Trader::PyApi::Error(
 			"Failed to call method trader.Strategy.onNewTrade");
-		throw;
 	}
 }
 
@@ -175,7 +176,7 @@ void Strategy::OnServiceDataUpdate(const Trader::Service &service) {
 	CallOnServiceDataUpdatePyMethod(m_pyCache[&service]);
 }
 
-void Strategy::OnPositionUpdate(const Trader::Position &position) {
+void Strategy::OnPositionUpdate(Trader::Position &position) {
 	Assert(m_pyCache.find(&position) != m_pyCache.end());
 	CallOnPositionUpdatePyMethod(m_pyCache[&position]);
 }
@@ -186,9 +187,9 @@ py::str Strategy::CallGetNamePyMethod() const {
 		try {
 			return f();
 		} catch (const py::error_already_set &) {
-			RethrowPythonClientException(
+			LogPythonClientException();
+			throw Trader::PyApi::Error(
 				"Failed to call method trader.Strategy.getName");
-			throw;
 		}
 	} else {
 		return Import::Strategy::CallGetNamePyMethod();
@@ -202,9 +203,9 @@ void Strategy::CallOnServiceStartPyMethod(const py::object &service) {
 		try {
 			f(service);
 		} catch (const py::error_already_set &) {
-			RethrowPythonClientException(
+			LogPythonClientException();
+			throw Trader::PyApi::Error(
 				"Failed to call method trader.Strategy.onServiceStart");
-			throw;
 		}
 	} else {
 		Import::Strategy::CallOnServiceStartPyMethod(service);
@@ -217,9 +218,9 @@ void Strategy::CallOnLevel1UpdatePyMethod() {
 		try {
 			f();
 		} catch (const py::error_already_set &) {
-			RethrowPythonClientException(
+			LogPythonClientException();
+			throw Trader::PyApi::Error(
 				"Failed to call method trader.Strategy.onLevel1Update");
-			throw;
 		}
 	} else {
 		Import::Strategy::CallOnLevel1UpdatePyMethod();
@@ -240,9 +241,9 @@ void Strategy::CallOnNewTradePyMethod(
 		try {
 			f(time, price, qty, side);
 		} catch (const py::error_already_set &) {
-			RethrowPythonClientException(
+			LogPythonClientException();
+			throw Trader::PyApi::Error(
 				"Failed to call method trader.Strategy.onNewTrade");
-			throw;
 		}
 	} else {
 		Import::Strategy::CallOnNewTradePyMethod(time, price, qty, side);
@@ -257,9 +258,9 @@ void Strategy::CallOnServiceDataUpdatePyMethod(
 		try {
 			f(service);
 		} catch (const py::error_already_set &) {
-			RethrowPythonClientException(
+			LogPythonClientException();
+			throw Trader::PyApi::Error(
 				"Failed to call method trader.Strategy.onServiceDataUpdate");
-			throw;
 		}
 	} else {
 		Import::Strategy::CallOnServiceDataUpdatePyMethod(service);
@@ -274,9 +275,9 @@ void Strategy::CallOnPositionUpdatePyMethod(
 		try {
 			f(position);
 		} catch (const py::error_already_set &) {
-			RethrowPythonClientException(
+			LogPythonClientException();
+			throw Trader::PyApi::Error(
 				"Failed to call method trader.Strategy.onPositionUpdate");
-			throw;
 		}
 	} else {
 		Import::Strategy::CallOnPositionUpdatePyMethod(position);

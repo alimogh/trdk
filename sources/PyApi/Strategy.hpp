@@ -68,7 +68,7 @@ namespace Trader { namespace PyApi {
 					Trader::Qty,
 					Trader::OrderSide);
 		virtual void OnServiceDataUpdate(const Trader::Service &);
-		virtual void OnPositionUpdate(const Trader::Position &);
+		virtual void OnPositionUpdate(Trader::Position &);
 
 	public:
 

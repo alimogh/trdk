@@ -14,25 +14,19 @@
 
 namespace Trader { namespace PyApi { namespace Detail {
 
-	inline void RethrowPythonClientException(const char *what) {
-		{
-			const Log::Lock logLock(Log::GetEventsMutex());
-			PyErr_Print();
-		}
-		throw Trader::PyApi::Error(what);
+	inline void LogPythonClientException() {
+		const Log::Lock logLock(Log::GetEventsMutex());
+		PyErr_Print();
 	}
 
-#	pragma warning(push)
-#	pragma warning(disable: 4702)
 	inline Script * LoadScript(const Trader::Lib::IniFileSectionRef &ini) {
 		try {
 			return new Script(ini.ReadKey("script_file_path", false));
 		} catch (const boost::python::error_already_set &) {
-			RethrowPythonClientException("Failed to load script");
-			throw;
+			LogPythonClientException();
+			throw Trader::PyApi::Error("Failed to load script");
 		}
 	}
-#	pragma warning(pop)
 
 	inline boost::python::object GetPyClass(
 				Script &script,
@@ -41,8 +35,8 @@ namespace Trader { namespace PyApi { namespace Detail {
 		try {
 			return script.GetGlobal()[ini.ReadKey("class", false)];
 		} catch (const boost::python::error_already_set &) {
-			RethrowPythonClientException(errorWhat);
-			throw;
+			LogPythonClientException();
+			throw Trader::PyApi::Error(errorWhat);
 		}
 	}
 
@@ -75,9 +69,8 @@ namespace Trader { namespace PyApi { namespace Detail {
 				return boost::posix_time::from_time_t(
 					boost::python::extract<time_t>(time));
 			} catch (const boost::python::error_already_set &) {
-				RethrowPythonClientException(
-					"Failed to convert time to time_t");
-				throw;
+				LogPythonClientException();
+				throw Trader::PyApi::Error("Failed to convert time to time_t");
 			}
 		}
 
@@ -113,9 +106,9 @@ namespace Trader { namespace PyApi { namespace Detail {
 							"Order side can be 'B' (buy) or 'S' (sell)");
 				}
 			} catch (const boost::python::error_already_set &) {
-				RethrowPythonClientException(
+				LogPythonClientException();
+				throw Trader::PyApi::Error(
 					"Failed to convert order side to Trader::OrderSide");
-				throw;
 			}
 		}
 

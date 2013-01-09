@@ -84,9 +84,9 @@ boost::shared_ptr<Trader::Service> Service::CreateClientInstance(
 		Assert(!service.m_name.empty());
 		return service.shared_from_this();
 	} catch (const boost::python::error_already_set &) {
-		RethrowPythonClientException(
+		LogPythonClientException();
+		throw Trader::PyApi::Error(
 			"Failed to create instance of trader.Service");
-		throw;
 	}
 }
 
@@ -103,7 +103,8 @@ void Service::OnServiceStart(const Trader::Service &service) {
 		Assert(dynamic_cast<const Service *>(&service));
 		PyOnServiceStart(dynamic_cast<const Service &>(service));
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException(
+		LogPythonClientException();
+		throw Trader::PyApi::Error(
 			"Failed to call method trader.Service.onServiceStart");
 	}
 }
@@ -114,9 +115,9 @@ py::str Service::PyGetName() const {
 		try {
 			return f();
 		} catch (const py::error_already_set &) {
-			RethrowPythonClientException(
+			LogPythonClientException();
+			throw Trader::PyApi::Error(
 				"Failed to call method trader.Service.getName");
-			throw;
 		}
 	} else {
 		return Wrappers::Service::PyGetName();
@@ -130,9 +131,9 @@ void Service::PyOnServiceStart(py::object service) {
 		try {
 			f(service);
 		} catch (const py::error_already_set &) {
-			RethrowPythonClientException(
+			LogPythonClientException();
+			throw Trader::PyApi::Error(
 				"Failed to call method trader.Service.onServiceStart");
-			throw;
 		}
 	} else {
 		Wrappers::Service::PyOnServiceStart(service);

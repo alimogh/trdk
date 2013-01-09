@@ -113,9 +113,9 @@ void SecurityAlgo::CallOnServiceStartPyMethod(
 				service.GetService());
 		}
 	} catch (const py::error_already_set &) {
-		Detail::RethrowPythonClientException(
+		Detail::LogPythonClientException();
+		throw Trader::PyApi::Error(
 			"Failed to convert object to Trader::Service");
-		throw;
 	}
 }
 
@@ -154,17 +154,17 @@ bool Service::CallOnNewTradePyMethod(
 	try {
 		price = py::extract<decltype(price)>(pyPriceObject);
 	} catch (const py::error_already_set &) {
-		Detail::RethrowPythonClientException(
+		Detail::LogPythonClientException();
+		throw Trader::PyApi::Error(
 			"Failed to convert price to Trader::ScaledPrice");
-		throw;
 	}
 	Trader::Qty qty;
 	try {
 		qty = py::extract<decltype(qty)>(pyQtyObject);
 	} catch (const py::error_already_set &) {
-		Detail::RethrowPythonClientException(
+		Detail::LogPythonClientException();
+		throw Trader::PyApi::Error(
 			"Failed to convert qty to Trader::Qty");
-		throw;
 	}
 	const Trader::OrderSide side = Detail::OrderSide::Convert(pySideObject);
 	return GetService().OnNewTrade(time, price, qty, side);
@@ -184,9 +184,9 @@ bool Service::CallOnServiceDataUpdatePyMethod(
 				service.GetService());
 		}
 	} catch (const py::error_already_set &) {
-		Detail::RethrowPythonClientException(
+		Detail::LogPythonClientException();
+		throw Trader::PyApi::Error(
 			"Failed to convert object to Trader::Service");
-		throw;
 	}
 }
 
@@ -261,17 +261,16 @@ void Strategy::CallOnNewTradePyMethod(
 	try {
 		price = py::extract<decltype(price)>(pyPriceObject);
 	} catch (const py::error_already_set &) {
-		Detail::RethrowPythonClientException(
+		Detail::LogPythonClientException();
+		throw Trader::PyApi::Error(
 			"Failed to convert price to Trader::ScaledPrice");
-		throw;
 	}
 	Trader::Qty qty;
 	try {
 		qty = py::extract<decltype(qty)>(pyQtyObject);
 	} catch (const py::error_already_set &) {
-		Detail::RethrowPythonClientException(
-			"Failed to convert qty to Trader::Qty");
-		throw;
+		Detail::LogPythonClientException();
+		throw Trader::PyApi::Error("Failed to convert qty to Trader::Qty");
 	}
 	const Trader::OrderSide side = Detail::OrderSide::Convert(pySideObject);
 	GetStrategy().OnNewTrade(time, price, qty, side);
@@ -290,9 +289,9 @@ void Strategy::CallOnServiceDataUpdatePyMethod(
 			GetStrategy().Trader::Strategy::OnServiceDataUpdate(service.GetService());
 		}
 	} catch (const py::error_already_set &) {
-		Detail::RethrowPythonClientException(
+		Detail::LogPythonClientException();
+		throw Trader::PyApi::Error(
 			"Failed to convert object to Trader::Service");
-		throw;
 	}
 }
 
