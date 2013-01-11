@@ -8,15 +8,16 @@
 
 #pragma once
 
-#include "Import.hpp"
+#include "Core/Strategy.hpp"
+#include "StrategyExport.hpp"
 #include "Detail.hpp"
 
 namespace Trader { namespace PyApi {
 
 	class Strategy
 			: public Trader::Strategy,
-			public Import::Strategy,
-			public boost::python::wrapper<Trader::PyApi::Strategy> {
+			public StrategyExport,
+			public boost::python::wrapper<Strategy> {
 
 		template<typename Module>
 		friend void Trader::PyApi::Detail::UpdateAlgoSettings(
@@ -71,6 +72,9 @@ namespace Trader { namespace PyApi {
 		virtual void OnPositionUpdate(Trader::Position &);
 
 	public:
+
+		virtual void Register(Trader::Position &);
+		virtual void Unregister(Trader::Position &) throw();
 
 		virtual void ReportDecision(const Trader::Position &) const;
 

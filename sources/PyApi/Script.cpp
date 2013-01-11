@@ -8,6 +8,9 @@
 
 #include "Prec.hpp"
 #include "Script.hpp"
+#include "PositionExport.hpp"
+#include "StrategyExport.hpp"
+#include "SecurityExport.hpp"
 #include "Import.hpp"
 #include "Export.hpp"
 #include "Detail.hpp"
@@ -32,14 +35,14 @@ BOOST_PYTHON_MODULE(trader) {
 	py::def("logInfo", &Log::Info);
 	py::def("logTrading", &Log::Trading);
 
-	Export::Security::Export("Security");
+	SecurityExport::Export("Security");
 
-	Import::Position::Export("Position");
-	Import::ShortPosition::Export("ShortPosition");
-	Import::LongPosition::Export("LongPosition");
+	PositionExport::Export("Position");
+	ShortPositionExport::Export("ShortPosition");
+	LongPositionExport::Export("LongPosition");
 
-	Import::SecurityAlgo::Export("SecurityAlgo");
-	Import::Strategy::Export("Strategy");
+	SecurityAlgoExport::Export("SecurityAlgo");
+	StrategyExport::Export("Strategy");
 	Import::Service::Export("Service");
 	{
 		py::object detailsModule = py::scope();

@@ -10,7 +10,6 @@
 
 #include "Instrument.hpp"
 #include "TradeSystem.hpp"
-#include "Types.hpp"
 #include "Api.h"
 
 namespace Trader {

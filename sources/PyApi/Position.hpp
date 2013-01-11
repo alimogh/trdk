@@ -8,8 +8,10 @@
 
 #pragma once
 
-#include "Import.hpp"
 #include "Strategy.hpp"
+#include "PositionExport.hpp"
+#include "PythonToCoreTransit.hpp"
+#include "Core/Position.hpp"
 
 namespace Trader { namespace PyApi {
 
@@ -17,9 +19,12 @@ namespace Trader { namespace PyApi {
 
 	class ShortPosition
 		: public Trader::ShortPosition,
-		public Import::ShortPosition {
+		public Detail::CorePositionToExport<Trader::ShortPosition>::Export,
+		public boost::python::wrapper<ShortPosition>,
+		public Detail::PythonToCoreTransit<ShortPosition> {
 	public:
 		explicit ShortPosition(
+					PyObject *,
 					PyApi::Strategy &,
 					int qty,
 					double startPrice);
@@ -29,9 +34,12 @@ namespace Trader { namespace PyApi {
 
 	class LongPosition
 		: public Trader::LongPosition,
-		public Import::LongPosition {
+		public Detail::CorePositionToExport<Trader::LongPosition>::Export,
+		public boost::python::wrapper<LongPosition>,
+		public Detail::PythonToCoreTransit<LongPosition> {
 	public:
 		explicit LongPosition(
+					PyObject *,
 					PyApi::Strategy &,
 					int qty,
 					double startPrice);

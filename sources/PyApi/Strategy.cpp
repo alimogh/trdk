@@ -7,7 +7,9 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Position.hpp"
 #include "Strategy.hpp"
+#include "Import.hpp"
 #include "Core/StrategyPositionReporter.hpp"
 
 using namespace Trader::Lib;
@@ -54,7 +56,7 @@ Strategy::Strategy(uintmax_t params)
 			reinterpret_cast<Params *>(params)->tag,
 			reinterpret_cast<Params *>(params)->security,
 			reinterpret_cast<Params *>(params)->settings),
-		Import::Strategy(static_cast<Trader::Strategy &>(*this)),
+		StrategyExport(static_cast<Trader::Strategy &>(*this)),
 		m_script(reinterpret_cast<Params *>(params)->script.release()) {
 	DoSettingsUpdate(reinterpret_cast<Params *>(params)->ini);
 }
@@ -119,6 +121,68 @@ void Strategy::OnServiceStart(const Trader::Service &service) {
 		LogPythonClientException();
 		throw Trader::PyApi::Error(
 			"Failed to call method trader.Strategy.onServiceStart");
+	}
+}
+
+namespace {
+
+	template<typename PyPosition>
+	void MovePositionRefToCore(Trader::Position &position) throw() {
+		PyPosition *const pyPosition = dynamic_cast<PyPosition *>(&position);
+		if (!pyPosition) {
+			return;
+		}
+		pyPosition->MoveRefToCore();
+	}
+
+}
+
+void Strategy::Register(Trader::Position &position) {
+	Trader::Strategy::Register(position);
+	static_assert(
+		Position::numberOfTypes == 2,
+		"Position type list changed.");
+	switch (position.GetType()) {
+ 		case Position::TYPE_LONG:
+			MovePositionRefToCore<LongPosition>(position);
+			break;
+ 		case Position::TYPE_SHORT:
+ 			MovePositionRefToCore<ShortPosition>(position);
+			break;
+		default:
+			AssertNe(int(Position::numberOfTypes), int(position.GetType()));
+			break;
+	}
+}
+
+namespace {
+
+	template<typename PyPosition>
+	void MovePositionRefToPython(Trader::Position &position) throw() {
+		PyPosition *const pyPosition = dynamic_cast<PyPosition *>(&position);
+		if (!pyPosition) {
+			return;
+		}
+		pyPosition->MoveRefToPython();
+	}
+
+}
+
+void Strategy::Unregister(Trader::Position &position) throw() {
+	Trader::Strategy::Unregister(position);
+	static_assert(
+		Position::numberOfTypes == 2,
+		"Position type list changed.");
+	switch (position.GetType()) {
+ 		case Position::TYPE_LONG:
+			MovePositionRefToPython<LongPosition>(position);
+			break;
+ 		case Position::TYPE_SHORT:
+ 			MovePositionRefToPython<ShortPosition>(position);
+			break;
+		default:
+			AssertNe(int(Position::numberOfTypes), int(position.GetType()));
+			break;
 	}
 }
 
@@ -192,7 +256,7 @@ py::str Strategy::CallGetNamePyMethod() const {
 				"Failed to call method trader.Strategy.getName");
 		}
 	} else {
-		return Import::Strategy::CallGetNamePyMethod();
+		return StrategyExport::CallGetNamePyMethod();
 	}
 }
 
@@ -208,7 +272,7 @@ void Strategy::CallOnServiceStartPyMethod(const py::object &service) {
 				"Failed to call method trader.Strategy.onServiceStart");
 		}
 	} else {
-		Import::Strategy::CallOnServiceStartPyMethod(service);
+		StrategyExport::CallOnServiceStartPyMethod(service);
 	}
 }
 
@@ -223,15 +287,15 @@ void Strategy::CallOnLevel1UpdatePyMethod() {
 				"Failed to call method trader.Strategy.onLevel1Update");
 		}
 	} else {
-		Import::Strategy::CallOnLevel1UpdatePyMethod();
+		StrategyExport::CallOnLevel1UpdatePyMethod();
 	}
 }
 
 void Strategy::CallOnNewTradePyMethod(
-			const boost::python::object &time,
-			const boost::python::object &price,
-			const boost::python::object &qty,
-			const boost::python::object &side) {
+			const py::object &time,
+			const py::object &price,
+			const py::object &qty,
+			const py::object &side) {
 	Assert(time);
 	Assert(price);
 	Assert(qty);
@@ -246,12 +310,12 @@ void Strategy::CallOnNewTradePyMethod(
 				"Failed to call method trader.Strategy.onNewTrade");
 		}
 	} else {
-		Import::Strategy::CallOnNewTradePyMethod(time, price, qty, side);
+		StrategyExport::CallOnNewTradePyMethod(time, price, qty, side);
 	}
 }
 
 void Strategy::CallOnServiceDataUpdatePyMethod(
-			const boost::python::object &service) {
+			const py::object &service) {
 	Assert(service);
 	const auto f = get_override("onServiceDataUpdate");
 	if (f) {
@@ -263,12 +327,12 @@ void Strategy::CallOnServiceDataUpdatePyMethod(
 				"Failed to call method trader.Strategy.onServiceDataUpdate");
 		}
 	} else {
-		Import::Strategy::CallOnServiceDataUpdatePyMethod(service);
+		StrategyExport::CallOnServiceDataUpdatePyMethod(service);
 	}
 }
 
 void Strategy::CallOnPositionUpdatePyMethod(
-				const boost::python::object &position) {
+				const py::object &position) {
 	Assert(position);
 	const auto f = get_override("onPositionUpdate");
 	if (f) {
@@ -280,7 +344,7 @@ void Strategy::CallOnPositionUpdatePyMethod(
 				"Failed to call method trader.Strategy.onPositionUpdate");
 		}
 	} else {
-		Import::Strategy::CallOnPositionUpdatePyMethod(position);
+		StrategyExport::CallOnPositionUpdatePyMethod(position);
 	}
 }
 

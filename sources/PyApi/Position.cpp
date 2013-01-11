@@ -8,9 +8,10 @@
 
 #include "Prec.hpp"
 #include "Position.hpp"
-#include "Import.hpp"
 
+using namespace Trader;
 using namespace Trader::PyApi;
+using namespace Trader::PyApi::Detail;
 
 #ifdef BOOST_WINDOWS
 #	pragma warning(push)
@@ -19,7 +20,8 @@ using namespace Trader::PyApi;
 
 //////////////////////////////////////////////////////////////////////////
 
-ShortPosition::ShortPosition(
+PyApi::ShortPosition::ShortPosition(
+			PyObject *self,
 			Strategy &strategy,
 			int qty,
 			double startPrice)
@@ -27,13 +29,16 @@ ShortPosition::ShortPosition(
 			strategy.GetStrategy(),
 			qty,
 			strategy.GetStrategy().GetSecurity().ScalePrice(startPrice)),
-		Import::ShortPosition(static_cast<Trader::ShortPosition &>(*this)) {
+		CorePositionToExport<Trader::ShortPosition>::Export(
+			static_cast<Trader::ShortPosition &>(*this)),
+		PythonToCoreTransit(self) {
 	//...//
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-LongPosition::LongPosition(
+PyApi::LongPosition::LongPosition(
+			PyObject *self,
 			Strategy &strategy,
 			int qty,
 			double startPrice)
@@ -41,7 +46,9 @@ LongPosition::LongPosition(
 			strategy.GetStrategy(),
 			qty,
 			strategy.GetStrategy().GetSecurity().ScalePrice(startPrice)),
-		Import::LongPosition(static_cast<Trader::LongPosition &>(*this)) {
+		CorePositionToExport<Trader::LongPosition>::Export(
+			static_cast<Trader::LongPosition &>(*this)),
+		PythonToCoreTransit(self) {
 	//...//
 }
 

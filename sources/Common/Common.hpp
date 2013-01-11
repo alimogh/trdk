@@ -32,5 +32,6 @@
 #include "Common/SysError.hpp"
 #include "Common/Exception.hpp"
 
+#include "Core/Types.hpp"
 #include "Core/Log.hpp"
 #include "Core/Fwd.hpp"

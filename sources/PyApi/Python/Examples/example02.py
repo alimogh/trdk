@@ -54,6 +54,7 @@ class Example02(trader.Strategy):
         # (method onPositionUpdate will be called at each position state
         # update):
         position.openAtMarketPrice()
+        assert(self.positions.count() == 1) # Position object now in list
 
     # Virtual method. Notifies about position state update. Optional.
     def onPositionUpdate(self, position):
@@ -62,8 +63,18 @@ class Example02(trader.Strategy):
 
     # Example method: how position can be closed. See onLevel1Update for call.
     def tryToClosePosition(self, position):
+
         if position.hasActiveOrders:
             return
+
+        if isinstance(position, trader.LongPosition):
+            # Here can be special logic for long position.
+            pass
+        else:
+            assert(isinstance(position, trader.ShortPosition))
+            # Here can be special logic for short position.
+            pass
+
         self._testCount = self._testCount + 1
         if self._testCount < 10:
             trader.logInfo('Skip closing...')

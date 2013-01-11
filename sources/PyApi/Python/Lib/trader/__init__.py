@@ -195,7 +195,6 @@ class Position(object):
 
     type = str
 
-    isStarted = bool    # Started - one of open-orders sent.
     isCompleted = bool  # Started and now hasn't any orders and active qty.
 
     isOpened = bool # Has opened qty and hasn't active open-orders.

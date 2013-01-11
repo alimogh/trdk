@@ -142,7 +142,8 @@ namespace Trader {
 
 	public:
 
-		void Register(Position &);
+		virtual void Register(Position &);
+		virtual void Unregister(Position &) throw();
 
 		PositionList & GetPositions();
 		const PositionList & GetPositions() const;

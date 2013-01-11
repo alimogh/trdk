@@ -13,6 +13,7 @@
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/algorithm/string.hpp>
 #	include <boost/python.hpp>
+#	include <boost/iterator/iterator_adaptor.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

@@ -60,6 +60,7 @@ class Example01(trader.Strategy):
         # Sending IOC order (method onPositionUpdate will be called at each
         # position state update):
         position.openOrCancel(position.openStartPrice)
+        assert(self.positions.count() == 1) # Position object now in list
 
     # Example method: how position can be closed. See onLevel1Update for call.
     def tryToClosePosition(self, position):

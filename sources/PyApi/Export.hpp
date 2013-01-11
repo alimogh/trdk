@@ -9,143 +9,19 @@
 #pragma once
 
 #include "Services/BarService.hpp"
+#include "SecurityExport.hpp"
 
 //////////////////////////////////////////////////////////////////////////
 
 namespace Trader { namespace PyApi { namespace Export {
 
 	//////////////////////////////////////////////////////////////////////////
-	
-	class ConstSecurity : private boost::noncopyable {
-
-	public:
-
-		explicit ConstSecurity(
-					boost::shared_ptr<const Trader::Security> security)
-				: m_security(security) {
-			//...//
-		}
-
-	public:
-
-		boost::python::str GetSymbol() const {
-			return m_security->GetSymbol().c_str();
-		}
-
-		boost::python::str GetFullSymbol() const {
-			return m_security->GetFullSymbol().c_str();
-		}
-
-		boost::python::str GetCurrency() const {
-			return m_security->GetCurrency();
-		}
-
-		Trader::ScaledPrice GetPriceScale() const {
-			return m_security->GetPriceScale();
-		}
-		Trader::ScaledPrice ScalePrice(double price) const {
-			return int(m_security->ScalePrice(price));
-		}
-		double DescalePrice(Trader::ScaledPrice price) const {
-			return m_security->DescalePrice(price);
-		}
-
-		Trader::ScaledPrice GetLastPriceScaled() const {
-			return m_security->GetLastPriceScaled();
-		}
-		Trader::Qty GetLastQty() const {
-			return m_security->GetLastQty();
-		}
-
-		Trader::ScaledPrice GetAskPriceScaled() const {
-			return m_security->GetAskPriceScaled();
-		}
-		Trader::Qty GetAskQty() const {
-			return m_security->GetAskQty();
-		}
-
-		Trader::ScaledPrice GetBidPriceScaled() const {
-			return m_security->GetBidPriceScaled();
-		}
-		Trader::Qty GetBidQty() const {
-			return m_security->GetBidQty();
-		}
-
-	private:
-
-		const boost::shared_ptr<const Trader::Security> m_security;
-
-	};
-
-	class Security : public Export::ConstSecurity {
-
-	public:
-
-		explicit Security(boost::shared_ptr<Trader::Security> security)
-				: ConstSecurity(security),
-				m_security(security) {
-			//...//
-		}
-
-	public:
-
-		static void Export(const char *className) {
-
-			namespace py = boost::python;
-			
-			py::class_<Security, boost::noncopyable>(className,  py::no_init)
-
-				.add_property("symbol", &Security::GetSymbol)
-				.add_property("fullSymbol", &Security::GetFullSymbol)
-				.add_property("currency", &Security::GetCurrency)
-
-				.add_property("priceScale", &Security::GetPriceScale)
-				.def("scalePrice", &Security::ScalePrice)
-				.def("descalePrice", &Security::DescalePrice)
-
-				.add_property("lastPrice", &Security::GetLastPriceScaled)
-				.add_property("lastSize", &Security::GetLastQty)
-
-				.add_property("askPrice", &Security::GetAskPriceScaled)
-				.add_property("askSize", &Security::GetAskQty)
-
-				.add_property("bidPrice", &Security::GetBidPriceScaled)
-				.add_property("bidSize", &Security::GetBidQty)
-
-				.def("cancelOrder", &Security::CancelOrder)
-				.def("cancelAllOrders", &Security::CancelAllOrders);
-
-		}
-
-	public:
-
-		boost::shared_ptr<Trader::Security> GetSecurity() {
-			return m_security;
-		}
-
-	public:
-
-		void CancelOrder(int orderId) {
-			m_security->CancelOrder(orderId);
-		}
-
-		void CancelAllOrders() {
-			m_security->CancelAllOrders();
-		}
-
-	private:
-
-		const boost::shared_ptr<Trader::Security> m_security;
-
-	};
-	
-	//////////////////////////////////////////////////////////////////////////
 
 	class Service : private boost::noncopyable {
 
 	public:
 
-		Export::ConstSecurity security;
+		ConstSecurityExport security;
 
 	public:
 

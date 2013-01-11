@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include "Core/Types.hpp"
-
 namespace Trader { namespace Engine {
 
 	class Notifier {

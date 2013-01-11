@@ -357,6 +357,16 @@ void Strategy::Register(Position &position) {
 	m_pimpl->m_positions.Insert(holder);
 }
 
+void Strategy::Unregister(Position &position) throw() {
+	try {
+		Assert(m_pimpl->m_positions.IsExists(position));
+		m_pimpl->m_positions.Erase(position);
+	} catch (...) {
+		AssertFailNoException();
+		Block();
+	}
+}
+
 PositionReporter & Strategy::GetPositionReporter() {
 	if (!m_pimpl->m_positionReporter) {
 		m_pimpl->m_positionReporter = CreatePositionReporter().release();

@@ -135,16 +135,6 @@ public:
 
 public:
 
-	void CheckStrategyRegistration() {
-		if (!m_strategy) {
-			return;
-		}
-		m_strategy->Register(m_position);
-		m_strategy.reset();
-	}
-
-public:
-
 	void UpdateOpening(
 				OrderId orderId,
 				TradeSystem::OrderStatus orderStatus,
@@ -445,14 +435,22 @@ public:
 		Assert(!m_position.IsCompleted());
 		Assert(!m_position.HasActiveOrders());
 
-		CheckStrategyRegistration();
-		
-		const auto orderId = openImpl(m_position.GetNotOpenedQty());
-		Exchange(m_opened.hasOrder, true);
-		Verify(Exchange(m_opened.orderId, orderId) == nOrderId);
-		Verify(Exchange(m_isStarted, true) == false);
-	
-		return orderId;
+		if (m_strategy) {
+			m_strategy->Register(m_position);
+		}
+		try {
+			const auto orderId = openImpl(m_position.GetNotOpenedQty());
+			m_strategy.reset();
+			Exchange(m_opened.hasOrder, true);
+			Verify(Exchange(m_opened.orderId, orderId) == nOrderId);
+			Verify(Exchange(m_isStarted, true) == false);
+			return orderId;
+		} catch (...) {
+			if (m_strategy) {
+				m_strategy->Unregister(m_position);
+			}
+			throw;
+		}
 	
 	}
 
