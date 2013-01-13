@@ -37,7 +37,7 @@ class Example01(trader.Strategy):
     # Virtual method. Notifies about position state update. Optional.
     def onPositionUpdate(self, position):
         # Here can be logic for new position state.
-        trader.logInfo("Position state has been updated.")
+        trader.logInfo(self.getName() + ": Position state changed.")
 
     # Example method: how position can be opened. See onLevel1Update for call.
     def tryToOpenPosition(self):

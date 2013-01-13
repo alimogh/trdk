@@ -29,7 +29,7 @@ class Example02(trader.Strategy):
         lastBar = self._bars.getBarByReversedIndex(0)
         openPrice = self._bars.getOpenPriceStat(10)
         trader.logInfo(
-            "{0}: new data ({1} / {2})..."
+            self.getName() + ": {0}: new data ({1} / {2})..."
                 .format(
                     time.ctime(lastBar.time),
                     self.security.descalePrice(lastBar.openPrice),
@@ -49,7 +49,7 @@ class Example02(trader.Strategy):
             # start price
             openPrice.max)
 
-        trader.logInfo('Opening position...')
+        trader.logInfo(self.getName() + ': Opening position...')
         # Opening new position for current strategy instance: Sending MKT-order
         # (method onPositionUpdate will be called at each position state
         # update):
@@ -59,7 +59,7 @@ class Example02(trader.Strategy):
     # Virtual method. Notifies about position state update. Optional.
     def onPositionUpdate(self, position):
         # Here can be logic for new position state.
-        trader.logInfo("Position state has been updated.")
+        trader.logInfo(self.getName() + ": Position state changed.")
 
     # Example method: how position can be closed. See onLevel1Update for call.
     def tryToClosePosition(self, position):
@@ -77,8 +77,8 @@ class Example02(trader.Strategy):
 
         self._testCount = self._testCount + 1
         if self._testCount < 10:
-            trader.logInfo('Skip closing...')
+            trader.logInfo(self.getName() + ': Skip closing...')
         else:
-            trader.logInfo('Close position...')
+            trader.logInfo(self.getName() + ': Close position...')
             position.cancelAtMarketPrice()
             self._stop = True
