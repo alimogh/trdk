@@ -74,7 +74,18 @@ void SubscriptionsManager::SubscribeToLevel1(
 			&m_dispatcher,
 			notifier,
 			boost::cref(security)));
-	slotConnections.push_back(security.SubcribeToLevel1(slot));
+	const auto connection = security.SubcribeToLevel1(slot);
+	try {
+		slotConnections.push_back(connection);
+	} catch (...) {
+		try {
+			connection.disconnect();
+		} catch (...) {
+			AssertFailNoException();
+			throw;
+		}
+		throw;
+	}
 	Report(notifier->GetObserver(), security, "Level 1");
 }
 
@@ -92,26 +103,45 @@ void SubscriptionsManager::SubscribeToTrades(
 			_2,
 			_3,
 			_4));
-	slotConnections.push_back(security.SubcribeToTrades(slot));
+	const auto connection = security.SubcribeToTrades(slot);
+	try {
+		slotConnections.push_back(connection);
+	} catch (...) {
+		try {
+			connection.disconnect();
+		} catch (...) {
+			AssertFailNoException();
+			throw;
+		}
+		throw;
+	}
 	Report(notifier->GetObserver(), security, "new trades");
 }
 
 void SubscriptionsManager::SubscribeToLevel1(Strategy &strategy) {
-	SubscribeToLevel1(
-		boost::shared_ptr<Notifier>(new Notifier(strategy.shared_from_this())),
-		strategy.GetSecurity(),
-		m_slotConnections);
+	Subscribe(
+		strategy,
+		[this](
+					boost::shared_ptr<Notifier> notifier,
+					const Security &security,
+					std::list<boost::signals2::connection> &slotConnections) {
+			SubscribeToLevel1(notifier, security, slotConnections);
+		});
 }
 
 void SubscriptionsManager::SubscribeToLevel1(Service &service) {
-	SubscribeToLevel1(
-		boost::shared_ptr<Notifier>(new Notifier(service.shared_from_this())),
-		service.GetSecurity(),
-		m_slotConnections);
+	Subscribe(
+		service,
+		[this](
+					boost::shared_ptr<Notifier> notifier,
+					const Security &security,
+					std::list<boost::signals2::connection> &slotConnections) {
+			SubscribeToLevel1(notifier, security, slotConnections);
+		});
 }
 
 void SubscriptionsManager::SubscribeToLevel1(Observer &observer) {
-	SubscribeToTrades(
+	Subscribe(
 		observer,
 		[this](
 				boost::shared_ptr<Notifier> notifier,
@@ -122,7 +152,7 @@ void SubscriptionsManager::SubscribeToLevel1(Observer &observer) {
 }
 
 void SubscriptionsManager::SubscribeToTrades(Strategy &observer) {
-	SubscribeToTrades(
+	Subscribe(
 		observer,
 		[this](
 					boost::shared_ptr<Notifier> notifier,
@@ -133,14 +163,7 @@ void SubscriptionsManager::SubscribeToTrades(Strategy &observer) {
 }
 
 void SubscriptionsManager::SubscribeToTrades(Service &observer) {
-	SubscribeToTrades(
-		boost::shared_ptr<Notifier>(new Notifier(observer.shared_from_this())),
-		observer.GetSecurity(),
-		m_slotConnections);
-}
-
-void SubscriptionsManager::SubscribeToTrades(Observer &observer) {
-	SubscribeToTrades(
+	Subscribe(
 		observer,
 		[this](
 					boost::shared_ptr<Notifier> notifier,
@@ -150,7 +173,18 @@ void SubscriptionsManager::SubscribeToTrades(Observer &observer) {
 		});
 }
 
-void SubscriptionsManager::SubscribeToTrades(
+void SubscriptionsManager::SubscribeToTrades(Observer &observer) {
+	Subscribe(
+		observer,
+		[this](
+					boost::shared_ptr<Notifier> notifier,
+					const Security &security,
+					std::list<boost::signals2::connection> &slotConnections) {
+			SubscribeToTrades(notifier, security, slotConnections);
+		});
+}
+
+void SubscriptionsManager::Subscribe(
 			Strategy &observer,
 			const SubscribeImpl &subscribeImpl) {
 	boost::shared_ptr<Notifier> notifier(
@@ -161,18 +195,19 @@ void SubscriptionsManager::SubscribeToTrades(
 		auto subscribedStrategies = m_subscribedStrategies;
 		subscribedStrategies.insert(&observer);
 		auto slotConnections = m_slotConnections;
-		const auto positionUpdateSignal = observer.SubscribeToPositionsUpdates(
-			boost::bind(
-				&Dispatcher::SignalPositionUpdate,
-				&m_dispatcher,
-				notifier,
-				_1));
-		slotConnections.push_back(positionUpdateSignal);
+		const auto positionUpdateConnection
+			= observer.SubscribeToPositionsUpdates(
+				boost::bind(
+					&Dispatcher::SignalPositionUpdate,
+					&m_dispatcher,
+					notifier,
+					_1));
 		try {
+			slotConnections.push_back(positionUpdateConnection);
 			subscribeImpl(notifier, observer.GetSecurity(), slotConnections);
 		} catch (...) {
 			try {
-				positionUpdateSignal.disconnect();
+				positionUpdateConnection.disconnect();
 			} catch (...) {
 				AssertFailNoException();
 				throw;
@@ -184,7 +219,108 @@ void SubscriptionsManager::SubscribeToTrades(
 	}
 }
 
-void SubscriptionsManager::SubscribeToTrades(
+void SubscriptionsManager::Subscribe(
+			Service &service,
+			const SubscribeImpl &subscribeImpl) {
+
+	struct ServiceSubscriberVisitor
+			: public boost::static_visitor<void>,
+			private boost::noncopyable {
+
+	public:
+
+		explicit ServiceSubscriberVisitor(
+					Dispatcher &dispatcher,
+					std::list<boost::signals2::connection> &connections,
+					std::set<const Strategy *> &subscribedStrategies)
+				: m_dispatcher(dispatcher),
+				m_connections(connections),
+				m_subscribed(subscribedStrategies) {
+			//...//
+		}
+
+	public:
+
+		void operator ()(const boost::shared_ptr<Strategy> &strategy) const {
+			if (m_subscribed.find(&*strategy) != m_subscribed.end()) {
+				return;
+			}
+			boost::shared_ptr<Notifier> notifier(new Notifier(strategy));
+			const auto positionUpdateConnection
+				= strategy->SubscribeToPositionsUpdates(
+					boost::bind(
+						&Dispatcher::SignalPositionUpdate,
+						&m_dispatcher,
+						notifier,
+						_1));
+			try {
+				m_connections.push_back(positionUpdateConnection);
+			} catch (...) {
+				try {
+					positionUpdateConnection.disconnect();
+				} catch (...) {
+					AssertFailNoException();
+					throw;
+				}
+				throw;
+			}
+			m_subscribed.insert(&*strategy);
+		}
+		void operator ()(const boost::shared_ptr<Service> &service) const {
+			foreach (const auto &serviceSubscriber, service->GetSubscribers()) {
+				boost::apply_visitor(*this, serviceSubscriber);
+			}
+		}
+		void operator ()(const boost::shared_ptr<Observer> &) const {
+			//...//
+		}
+
+	private:
+
+		Dispatcher &m_dispatcher;
+		std::list<boost::signals2::connection> &m_connections;
+		std::set<const Strategy *> &m_subscribed;
+
+	};
+
+	boost::shared_ptr<Notifier> notifier(
+		new Notifier(service.shared_from_this()));
+
+	decltype(m_slotConnections) newSlotConnections;
+	auto slotConnections = m_slotConnections;
+	auto subscribedStrategies = m_subscribedStrategies;
+	
+	ServiceSubscriberVisitor serviceSubscriberVisitor(
+		m_dispatcher,
+		newSlotConnections,
+		m_subscribedStrategies);
+	try {
+		foreach (const auto &serviceSubscriber, service.GetSubscribers()) {
+			boost::apply_visitor(serviceSubscriberVisitor, serviceSubscriber);
+		}
+		subscribeImpl(notifier, service.GetSecurity(), newSlotConnections);
+		std::copy(
+			newSlotConnections.begin(),
+			newSlotConnections.end(),
+			std::back_inserter(slotConnections));
+	} catch (...) {
+		try {
+			foreach (const auto &connection, newSlotConnections) {
+				connection.disconnect();
+			}
+		} catch (...) {
+			AssertFailNoException();
+			throw;
+		}
+		throw;
+	}
+
+	subscribedStrategies.swap(m_subscribedStrategies);
+	slotConnections.swap(m_slotConnections);
+
+}
+
+void SubscriptionsManager::Subscribe(
 			Observer &observer,
 			const SubscribeImpl &subscribeImpl) {
 	auto globalSlotConnections = m_slotConnections;

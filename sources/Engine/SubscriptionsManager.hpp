@@ -56,8 +56,9 @@ namespace Trader { namespace Engine {
 					const Security &,
 					std::list<boost::signals2::connection> &);
 
-		void SubscribeToTrades(Strategy &, const SubscribeImpl &);
-		void SubscribeToTrades(Observer &, const SubscribeImpl &);
+		void Subscribe(Strategy &, const SubscribeImpl &);
+		void Subscribe(Service &, const SubscribeImpl &);
+		void Subscribe(Observer &, const SubscribeImpl &);
 
 	private:
 
