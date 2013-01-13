@@ -13,7 +13,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace Log {
+namespace Trader { namespace Log {
 
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
@@ -36,11 +36,11 @@ namespace Log {
 			bool tradingLog)
 		throw();
 
-}
+} }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace Log { namespace Detail {
+namespace Trader { namespace Log { namespace Detail {
 
 	void TRADER_CORE_API AppendEventRecordUnsafe(
 			const boost::posix_time::ptime &time,
@@ -1364,12 +1364,12 @@ namespace Log { namespace Detail {
 		}
 	}
 
-} }
+} } }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Debug
 
-namespace Log {
+namespace Trader { namespace Log {
 
 	inline void Debug(const char *str) throw() {
 		Detail::AppendRecord(str);
@@ -1447,12 +1447,12 @@ namespace Log {
 		Detail::AppendRecord(str, param1, param2, param3, param4, param5, param6);
 	}
 
-}
+} }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Info
 
-namespace Log {
+namespace Trader { namespace Log {
 
 	inline void Info(const char *str) throw() {
 		Detail::AppendRecord(str);
@@ -1655,12 +1655,12 @@ namespace Log {
 			str, param1, param2, param3, param4, param5, param6, param7, param8, param9, param10, param11);
 	}
 
-}
+} }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Warn
 
-namespace Log {
+namespace Trader { namespace Log {
 
 	inline void Warn(const char *str) throw() {
 		Detail::AppendRecord(str);
@@ -1697,12 +1697,12 @@ namespace Log {
 		Detail::AppendRecord(str, param1, param2, param3, param4);
 	}
 
-}
+} }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Error
 
-namespace Log {
+namespace Trader { namespace Log {
 
 	inline void Error(const char *str) throw() {
 		Detail::AppendRecord(str);
@@ -1792,12 +1792,12 @@ namespace Log {
 		Detail::AppendRecord(str, param1, param2, param3, param4, param5, param6, param7);
 	}
 
-}
+} }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Trading
 
-namespace Log {
+namespace Trader { namespace Log {
 
 	inline void Trading(const char *tag, const char *str) throw() {
 		Detail::AppendTaggedRecord(tag, str);
@@ -2303,6 +2303,6 @@ namespace Log {
 			param15, param16, param17, param18);
 	}
 
-}
+} }
 
 //////////////////////////////////////////////////////////////////////////

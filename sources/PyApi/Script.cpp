@@ -18,6 +18,7 @@
 namespace fs = boost::filesystem;
 namespace py = boost::python;
 
+using namespace Trader;
 using namespace Trader::Lib;
 using namespace Trader::PyApi;
 

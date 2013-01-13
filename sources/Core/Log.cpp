@@ -9,6 +9,7 @@
 #include "Prec.hpp"
 #include "PyApi/Errors.hpp"
 
+using namespace Trader;
 using namespace Trader::Lib;
 
 namespace {

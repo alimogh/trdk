@@ -10,6 +10,8 @@
 
 namespace fs = boost::filesystem;
 
+using namespace Trader;
+
 void Trade(const fs::path &, bool isReplayMode);
 
 namespace {
