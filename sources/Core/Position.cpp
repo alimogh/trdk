@@ -330,7 +330,6 @@ public:
 	}
 
 	void SignalUpdate() {
-		const auto refCopy = m_position.shared_from_this();
 		m_stateUpdateSignal();
 	}
 
@@ -515,6 +514,7 @@ Position::Position(
 
 Position::~Position() {
 	delete m_pimpl;
+	Log::Info(__FUNCTION__);
 }
 
 const Security & Position::GetSecurity() const throw() {

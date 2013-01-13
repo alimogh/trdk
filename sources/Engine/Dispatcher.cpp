@@ -75,7 +75,8 @@ void Dispatcher::SignalPositionUpdate(
 			boost::shared_ptr<Notifier> &notifier,
 			Position &position) {
 	try {
-		m_positionUpdates.Queue(boost::make_tuple(&position, notifier));
+		m_positionUpdates.Queue(
+			boost::make_tuple(position.shared_from_this(), notifier));
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		notifier->Block();

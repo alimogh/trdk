@@ -155,7 +155,11 @@ namespace Trader { namespace Engine {
 		//!			std::list.
 		typedef EventQueue<std::list<NewTradeEvent>> NewTradeEventQueue;
 
-		typedef boost::tuple<Position *, boost::shared_ptr<Notifier>>
+		//! Increasing position references count for safety work in core (which
+		//! can lost owning references at event handling).
+		typedef boost::tuple<
+				boost::shared_ptr<Position>,
+				boost::shared_ptr<Notifier>>
 			PositionUpdateEvent;
 		typedef EventQueue<std::set<PositionUpdateEvent>>
 			PositionUpdateEventQueue;
