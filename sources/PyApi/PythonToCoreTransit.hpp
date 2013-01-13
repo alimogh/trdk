@@ -126,7 +126,18 @@ namespace Trader { namespace PyApi { namespace Detail {
 				DecRef();
 			}
 			if (m_holder) {
-				Assert(!m_coreOwns);
+				if (m_coreOwns) {
+					Log::Error(
+						"Python environment has one or more references to"
+							" object that has been destroyed by core objects"
+							" management system. Python interpreter will crash"
+							" at usage attempt. To fix this issue don't store"
+							" references to API objects, use API method for"
+							" retrieving.");
+					AssertFail(
+						"Python environment has one or more references to"
+							" object that has been destroyed by core objects");
+				}
 				m_holder->Reset();
 			}
 		}
