@@ -241,8 +241,7 @@ void Strategy::OnServiceDataUpdate(const Trader::Service &service) {
 }
 
 void Strategy::OnPositionUpdate(Trader::Position &position) {
-	Assert(m_pyCache.find(&position) != m_pyCache.end());
-	CallOnPositionUpdatePyMethod(m_pyCache[&position]);
+	CallOnPositionUpdatePyMethod(Extract(position));
 }
 
 py::str Strategy::CallGetNamePyMethod() const {

@@ -29,44 +29,9 @@ StrategyExport::PositionListExport::IteratorExport::IteratorExport(
 	//...//
 }
 
-namespace {
-
-	template<typename PyApiPosition, typename CorePosition>
-	py::object GetPyPosition(Position &source) {
-		static_assert(
-			boost::is_base_of<CorePosition, PyApiPosition>::value,
-			"CorePosition must be base of PyApiPosition.");
-		Assert(
-			dynamic_cast<PyApiPosition *>(&source)
-			|| dynamic_cast<CorePosition *>(&source));
-		PyApiPosition *const pyApiPosition
-			= dynamic_cast<PyApiPosition *>(&source);
-		if (!pyApiPosition) {
-			CorePositionToExport<CorePosition>::Export positionExport(
-				dynamic_cast<CorePosition &>(source));
-			return py::object(boost::ref(positionExport));
-		} else {
-			return pyApiPosition->GetSelf();
-		}
-	}
-
-}
-
 py::object StrategyExport::PositionListExport::IteratorExport::dereference()
 		const {
- 	Position &position = *base_reference();
- 	static_assert(Position::numberOfTypes == 2, "Position type list changed.");
- 	switch (position.GetType()) {
-  		case Position::TYPE_LONG:
-  			return GetPyPosition<PyApi::LongPosition, Trader::LongPosition>(
-				position);
-  		case Position::TYPE_SHORT:
-  			return GetPyPosition<PyApi::ShortPosition, Trader::ShortPosition>(
-				position);
- 		default:
- 			AssertNe(int(Position::numberOfTypes), int(position.GetType()));
- 			throw Lib::Exception("Unknown position type");
- 	}
+	return Extract(*base_reference());
 }
 
 //////////////////////////////////////////////////////////////////////////
