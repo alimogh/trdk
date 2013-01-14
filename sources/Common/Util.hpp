@@ -3,7 +3,7 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: HighmanTradingRobot
+ *   Project: Trading Robot
  **************************************************************************/
 
 #pragma once
@@ -13,9 +13,12 @@
 #	include <boost/date_time/local_time/local_time.hpp>
 #	include <boost/math/special_functions/round.hpp>
 #	include <boost/filesystem.hpp>
+#	include <boost/tuple/tuple.hpp>
 #include "DisableBoostWarningsEnd.h"
 
-namespace Util {
+namespace Trader { namespace Util {
+
+	//////////////////////////////////////////////////////////////////////////
 
 	inline bool IsEqual(const double v1, const double v2) {
 		typedef std::numeric_limits<double> Nm;
@@ -105,5 +108,122 @@ namespace Util {
 	time_t ConvertToTimeT(const boost::posix_time::ptime &);
 
 	//////////////////////////////////////////////////////////////////////////
+	
+	template<typename Param>
+	inline void Format(const Param &param, boost::format &format) {
+		format % param;
+	}
 
-}
+	template<typename T1>
+	inline void Format(
+				const boost::tuple<T1> &params,
+				boost::format &format) {
+		format % boost::get<0>(params);
+	}
+
+	template<typename T1, typename T2>
+	inline void Format(
+				const boost::tuple<T1, T2> &params,
+				boost::format &format) {
+		format % boost::get<0>(params) % boost::get<1>(params);
+	}
+
+	template<typename T1, typename T2, typename T3>
+	inline void Format(
+				const boost::tuple<T1, T2, T3> &params,
+				boost::format &format) {
+		format
+			% boost::get<0>(params) % boost::get<1>(params)
+			% boost::get<2>(params);
+	}
+
+	template<typename T1, typename T2, typename T3, typename T4>
+	inline void Format(
+				const boost::tuple<T1, T2, T3, T4> &params,
+				boost::format &format) {
+		format
+			% boost::get<0>(params) % boost::get<1>(params)
+			% boost::get<2>(params) % boost::get<3>(params);
+	}
+
+	template<typename T1, typename T2, typename T3, typename T4, typename T5>
+	inline void Format(
+				const boost::tuple<T1, T2, T3, T4, T5> &params,
+				boost::format &format) {
+		format
+			% boost::get<0>(params) % boost::get<1>(params)
+			% boost::get<2>(params) % boost::get<3>(params)
+			% boost::get<4>(params);
+	}
+
+	template<
+		typename T1, typename T2, typename T3, typename T4, typename T5,
+		typename T6>
+	inline void Format(
+				const boost::tuple<T1, T2, T3, T4, T5, T6> &params,
+				boost::format &format) {
+		format
+			% boost::get<0>(params) % boost::get<1>(params)
+			% boost::get<2>(params) % boost::get<3>(params)
+			% boost::get<4>(params) % boost::get<5>(params);
+	}
+
+	template<
+		typename T1, typename T2, typename T3, typename T4, typename T5,
+		typename T6, typename T7>
+	inline void Format(
+				const boost::tuple<T1, T2, T3, T4, T5, T6, T7> &params,
+				boost::format &format) {
+		format
+			% boost::get<0>(params) % boost::get<1>(params)
+			% boost::get<2>(params) % boost::get<3>(params)
+			% boost::get<4>(params) % boost::get<5>(params)
+			% boost::get<6>(params);
+	}
+
+	template<
+		typename T1, typename T2, typename T3, typename T4, typename T5,
+		typename T6, typename T7, typename T8>
+	inline void Format(
+				const boost::tuple<T1, T2, T3, T4, T5, T6, T7, T8> &params,
+				boost::format &format) {
+		format
+			% boost::get<0>(params) % boost::get<1>(params)
+			% boost::get<2>(params) % boost::get<3>(params)
+			% boost::get<4>(params) % boost::get<5>(params)
+			% boost::get<6>(params) % boost::get<7>(params);
+	}
+
+	template<
+		typename T1, typename T2, typename T3, typename T4, typename T5,
+		typename T6, typename T7, typename T8, typename T9>
+	inline void Format(
+				const boost::tuple<T1, T2, T3, T4, T5, T6, T7, T8, T9> &params,
+				boost::format &format) {
+		format
+			% boost::get<0>(params) % boost::get<1>(params)
+			% boost::get<2>(params) % boost::get<3>(params)
+			% boost::get<4>(params) % boost::get<5>(params)
+			% boost::get<6>(params) % boost::get<7>(params)
+			% boost::get<8>(params);
+	}
+
+	template<
+		typename T1, typename T2, typename T3, typename T4, typename T5,
+		typename T6, typename T7, typename T8, typename T9, typename T10>
+	inline void Format(
+				const boost::tuple<
+						T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
+					&params,
+				boost::format &format) {
+		format
+			% boost::get<0>(params) % boost::get<1>(params)
+			% boost::get<2>(params) % boost::get<3>(params)
+			% boost::get<4>(params) % boost::get<5>(params)
+			% boost::get<6>(params) % boost::get<7>(params)
+			% boost::get<8>(params) % boost::get<9>(params);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
+} }

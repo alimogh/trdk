@@ -42,10 +42,6 @@ namespace Trader { namespace PyApi {
 
 		using Trader::Service::GetTag;
 
-		virtual const std::string & GetName() const {
-			return m_name;
-		}
-
 		virtual void OnServiceStart(const Trader::Service &);
 
 		operator boost::python::object &() const {
@@ -66,7 +62,6 @@ namespace Trader { namespace PyApi {
 	private:
 
 		std::unique_ptr<Script> m_script;
-		std::string m_name;
 		mutable boost::python::object m_self;
 
 	};

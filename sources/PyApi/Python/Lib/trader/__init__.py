@@ -12,21 +12,6 @@ __all__ = [
 
 ###############################################################################
 
-def logInfo(event):
-    """ Adds new log record into events.log
-    :type event: str
-    """
-    pass
-
-def logTrading(tag, event):
-    """Adds new log record into trading.log
-    :type tag: str
-    :type event: str
-    """
-    pass
-
-###############################################################################
-
 class Security(object):
 
     symbol = str
@@ -73,19 +58,48 @@ class Security(object):
 
 class SecurityAlgo(object):
 
+    class Log(object):
+
+        def debug(self, eventMessage):
+            """ Adds new debug record into events.log
+            :type eventMessage: str
+            """
+            pass
+
+        def info(self, eventMessage):
+            """ Adds new information record into events.log
+            :type eventMessage: str
+            """
+            pass
+
+        def warn(self, eventMessage):
+            """ Adds new warning record into events.log
+            :type eventMessage: str
+            """
+            pass
+
+        def error(self, eventMessage):
+            """ Adds new error record into events.log
+            :type eventMessage: str
+            """
+            pass
+
+        def trading(self, eventMessage):
+            """Adds new record into trading.log
+            :type eventMessage: str
+            """
+            pass
+
+    name = str
     tag = str
 
     security = Security
 
+    log = Log
+
     def __init__(self, param):
         """
         :type param: int
-        """
-        pass
-
-    def getName(self):
-        """ Pure virtual method. Returns algorithm method.
-        :rtype: str
         """
         pass
 

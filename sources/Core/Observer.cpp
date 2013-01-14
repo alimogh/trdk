@@ -15,12 +15,6 @@ using namespace Trader::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace {
-	const std::string typeName = "Observer";
-}
-
-//////////////////////////////////////////////////////////////////////////
-
 class Observer::Implementation {
 
 public:
@@ -47,11 +41,12 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Observer::Observer(
+			const std::string &name,
 			const std::string &tag,
 			const Observer::NotifyList &notifyList,
 			boost::shared_ptr<Trader::TradeSystem> tradeSystem,
 			boost::shared_ptr<const Settings> settings)
-		: Module(tag, settings),
+		: Module("Observer", name, tag, settings),
 		m_pimpl(new Implementation(notifyList, tradeSystem)) {
 	//...//
 }
@@ -61,10 +56,9 @@ Observer::~Observer() {
 }
 
 void Observer::OnLevel1Update(const Trader::Security &) {
-	Log::Error(
-		"\"%1%\" subscribed to Level 1 updates, but can't work with it"
-			" (hasn't implementation of OnLevel1Update).",
-		*this);
+	GetLog().Error(
+		"Subscribed to Level 1 updates, but can't work with it"
+			" (hasn't OnLevel1Update method implementation).");
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to Level 1 updates, but can't work with it");
 }
@@ -75,19 +69,17 @@ void Observer::OnNewTrade(
 					ScaledPrice,
 					Qty,
 					OrderSide) {
-	Log::Error(
-		"\"%1%\" subscribed to new trades, but can't work with it"
-			" (hasn't implementation of OnNewTrade).",
-		*this);
+	GetLog().Error(
+		"Subscribed to new trades, but can't work with it"
+			" (hasn't OnNewTrade method implementation).");
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to new trades, but can't work with it");
 }
 
 void Observer::OnServiceDataUpdate(const Trader::Service &service) {
-	Log::Error(
-		"\"%1%\" subscribed to \"%2%\", but can't work with it"
-			" (hasn't implementation of OnServiceDataUpdate).",
-		*this,
+	GetLog().Error(
+		"Subscribed to \"%1%\", but can't work with it"
+			" (hasn't OnServiceDataUpdate method implementation).",
 		service);
  	throw MethodDoesNotImplementedError(
  		"Module subscribed to service, but can't work with it");
@@ -111,10 +103,6 @@ void Observer::RaiseNewTradeEvent(
 void Observer::RaiseServiceDataUpdateEvent(const Service &service) {
 	const Lock lock(GetMutex());
 	OnServiceDataUpdate(service);
-}
-
-const std::string & Observer::GetTypeName() const {
-	return typeName;
 }
 
 const Observer::NotifyList & Observer::GetNotifyList() const {

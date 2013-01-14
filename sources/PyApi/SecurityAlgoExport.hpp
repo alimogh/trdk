@@ -9,10 +9,28 @@
 #pragma once
 
 #include "SecurityExport.hpp"
+#include "Core/SecurityAlgo.hpp"
 
 namespace Trader { namespace PyApi {
 
 	class SecurityAlgoExport : private boost::noncopyable {
+
+	public:
+
+		class LogExport {
+		public:
+			explicit LogExport(Trader::SecurityAlgo::Log &);
+		public:
+			static void Export(const char *className);
+		public:
+			void Debug(const char *);
+			void Info(const char *);
+			void Warn(const char *);
+			void Error(const char *);
+			void Trading(const char *);
+		private:
+			Trader::SecurityAlgo::Log *m_log;
+		};
 
 	public:
 
@@ -29,9 +47,12 @@ namespace Trader { namespace PyApi {
 	public:
 
 		boost::python::str GetTag() const;
-		boost::python::str CallGetNamePyMethod() const;
+		boost::python::str GetName() const;
+		LogExport GetLog() const;
+		
+	public:
+		
 		void CallOnServiceStartPyMethod(const boost::python::object &service);
-
 		
 	protected:
 

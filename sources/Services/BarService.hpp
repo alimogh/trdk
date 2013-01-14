@@ -93,8 +93,6 @@ namespace Trader { namespace Services {
 
 	public:
 
-		virtual const std::string & GetName() const;
-
 		virtual bool OnNewTrade(
 					const boost::posix_time::ptime &,
 					ScaledPrice,

@@ -33,9 +33,6 @@ BOOST_PYTHON_MODULE(trader) {
 	py::object traderModule = py::scope();
 	traderModule.attr("__path__") = "trader";
 
-	py::def("logInfo", &Log::Info);
-	py::def("logTrading", &Log::Trading);
-
 	SecurityExport::Export("Security");
 
 	PositionExport::Export("Position");

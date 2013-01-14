@@ -18,6 +18,9 @@ using namespace Trader::Interaction::Fake;
 
 namespace {
 
+	const std::string sellLogTag = "sell";
+	const std::string buyLogTag = "buy";
+
 	struct Order {
 		boost::shared_ptr<const Security> security;
 		bool isSell;
@@ -196,11 +199,12 @@ Trader::OrderId TradeSystem::SellAtMarketPrice(
 		qty};
 	m_pimpl->SendOrder(order);
 	Log::Trading(
-		"sell",
+		sellLogTag,
 		"%2% order-id=%1% qty=%3% price=market",
-		order.id,
-		security.GetSymbol(),
-		qty);
+		boost::make_tuple(
+			order.id,
+			boost::cref(security.GetSymbol()),
+			qty));
 	return order.id;
 }
 
@@ -237,12 +241,13 @@ Trader::OrderId TradeSystem::SellOrCancel(
 		price};
 	m_pimpl->SendOrder(order);
 	Log::Trading(
-		"sell",
+		sellLogTag,
 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
-		order.id,
-		security.GetSymbol(),
-		qty,
-		security.DescalePrice(price));
+		boost::make_tuple(
+			order.id,
+			boost::cref(security.GetSymbol()),
+			qty,
+			security.DescalePrice(price)));
 	return order.id;
 }
 
@@ -259,11 +264,12 @@ Trader::OrderId TradeSystem::BuyAtMarketPrice(
 		qty};
 	m_pimpl->SendOrder(order);
 	Log::Trading(
-		"buy",
+		buyLogTag,
 		"%2% order-id=%1% qty=%3% price=market",
-		order.id,
-		security.GetSymbol(),
-		qty);
+		boost::make_tuple(
+			order.id,
+			boost::cref(security.GetSymbol()),
+			qty));
 	return order.id;
 }
 
@@ -300,12 +306,13 @@ Trader::OrderId TradeSystem::BuyOrCancel(
 		price};
 	m_pimpl->SendOrder(order);
 	Log::Trading(
-		"buy",
+		buyLogTag,
 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
-		order.id,
-		security.GetSymbol(),
-		qty,
-		security.DescalePrice(price));
+		boost::make_tuple(
+			order.id,
+			boost::cref(security.GetSymbol()),
+			qty,
+			security.DescalePrice(price)));
 	return order.id;
 }
 

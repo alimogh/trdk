@@ -183,9 +183,8 @@ public:
 				boost::regex_constants::icase);
 			boost::smatch what;
 			if (!boost::regex_match(sizeStr , what, expr)) {
-				Log::Error(
-					"%1%: Wrong size size format: \"%2%\". Example: \"5 minutes\".",
-					m_service,
+				m_service.GetLog().Error(
+					"Wrong size size format: \"%1%\". Example: \"5 minutes\".",
 					what.str(0));
 				throw Error("Wrong bar size settings");
 			}
@@ -195,30 +194,27 @@ public:
 
 		m_barSize = boost::lexical_cast<decltype(m_barSize)>(m_barSizeStr);
 		if (m_barSize <= 0) {
-			Log::Error(
-				"%1%: Wrong size specified: \"%2%\"."
+			m_service.GetLog().Error(
+				"Wrong size specified: \"%1%\"."
 					" Size can't be zero or less.",
-				m_service,
 				m_barSizeStr);
 			throw Error("Wrong bar size settings");
 		}
 
 		if (boost::iequals(m_unitsStr, "seconds")) {
 			if (60 % m_barSize) {
-				Log::Error(
-					"%1%: Wrong size specified: \"%2%\". 1 minute must be"
+				m_service.GetLog().Error(
+					"Wrong size specified: \"%1%\". 1 minute must be"
 						" a multiple specified size.",
-					m_service,
 					m_barSizeStr);
 				throw Error("Wrong bar size settings");
 			}
 			m_units = UNITS_SECONDS;
 		} else if (boost::iequals(m_unitsStr, "minutes")) {
 			if (60 % m_barSize) {
-				Log::Error(
-					"%1%: Wrong size specified: \"%2%\". 1 hour must be"
+				m_service.GetLog().Error(
+					"Wrong size specified: \"%1%\". 1 hour must be"
 						" a multiple specified size.",
-					m_service,
 					m_barSizeStr);
 				throw Error("Wrong bar size settings");
 			}
@@ -229,20 +225,16 @@ public:
 			m_units = UNITS_DAYS;
 			throw Error("Days units doesn't yet implemented");
 		} else {
-			Log::Error(
-				"%1%: Wrong size specified: \"%2%\". Unknown units."
+			m_service.GetLog().Error(
+				"Wrong size specified: \"%1%\". Unknown units."
 					"Supported: seconds, minutes, hours and days.",
-				m_service,
 				m_unitsStr);
 			throw Error("Wrong bar size settings");
 		}
 
 		ReopenLog(ini, false);
 
-		Log::Info(
-			"%1%: stated for \"%1%\" with size %2%.",
-			m_service,
-			m_barSize);
+		m_service.GetLog().Info("Stated with size %1%.", m_barSize);
 	
 	}
 
@@ -257,10 +249,9 @@ public:
 			m_barsLog.reset();
 			return;
 		} else if (!boost::iequals(logType, "csv")) {
-			Log::Error(
-				"%1%: Wrong log type settings: \"%2%\". Unknown type."
+			m_service.GetLog().Error(
+				"Wrong log type settings: \"%1%\". Unknown type."
 					" Supported: none and CSV.",
-				m_service,
 				logType);
 			if (!isCritical) {
 				throw Error("Wrong bars log type");
@@ -289,10 +280,7 @@ public:
 			log->path.string(),
 			std::ios::out | std::ios::ate | std::ios::app);
 		if (!log->file) {
-			Log::Error(
-				"%1%: Failed to open log file %2%",
-				m_service,
-				log->path);
+			m_service.GetLog().Error("Failed to open log file %1%", log->path);
 			if (!isCritical) {
 				throw Error("Failed to open log file");
 			}
@@ -311,7 +299,7 @@ public:
 		}
 		log->file << std::setfill('0');
 
-		Log::Info("%1%: Logging bars into %2%.", m_service, log->path);
+		m_service.GetLog().Info("Logging bars into %1%.", log->path);
 		std::swap(log, m_barsLog);
 
 	}
@@ -440,7 +428,7 @@ BarService::BarService(
 			boost::shared_ptr<Security> &security,
 			const IniFileSectionRef &ini,
 			const boost::shared_ptr<const Settings> &settings)
-		: Service(tag, security, settings) {
+		: Service("BarService", tag, security, settings) {
 	m_pimpl = new Implementation(*this, ini);
 }
 
@@ -454,11 +442,6 @@ boost::shared_ptr<BarService> BarService::shared_from_this() {
 
 boost::shared_ptr<const BarService> BarService::shared_from_this() const {
 	return boost::static_pointer_cast<const BarService>(Base::shared_from_this());
-}
-
-const std::string & BarService::GetName() const {
-	static const std::string name = "BarService";
-	return name;
 }
 
 bool BarService::OnNewTrade(

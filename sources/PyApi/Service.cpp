@@ -19,19 +19,22 @@ namespace {
 
 	struct Params : private boost::noncopyable {
 		
+		const std::string &name;
 		const std::string &tag;
 		boost::shared_ptr<Trader::Security> &security;
 		const Trader::Lib::IniFileSectionRef &ini;
 		const boost::shared_ptr<Trade::Settings> &settings;
-		std::unique_ptr<Script> &script;
+		boost::scoped_ptr<Script> &script;
 	
 		explicit Params(
+					const std::string &name,
 					const std::string &tag,
 					boost::shared_ptr<Trader::Security> &security,
 					const Trader::Lib::IniFileSectionRef &ini,
 					const boost::shared_ptr<Trade::Settings> &settings,
-					std::unique_ptr<Script> &script)
-				: tag(tag),
+					boost::scoped_ptr<Script> &script)
+				: name(name),
+				tag(tag),
 				security(security),
 				ini(ini),
 				settings(settings),

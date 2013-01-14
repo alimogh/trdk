@@ -37,8 +37,6 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		boost::python::str CallGetNamePyMethod() const;
-		
 		void CallOnServiceStartPyMethod(const boost::python::object &);
 		
 		void CallOnLevel1UpdatePyMethod();
@@ -55,10 +53,7 @@ namespace Trader { namespace PyApi {
 	public:
 
 		using Trader::Strategy::GetTag;
-
-		virtual const std::string & GetName() const {
-			return m_name;
-		}
+		using Trader::Strategy::GetLog;
 
 		virtual void OnServiceStart(const Trader::Service &);
 
@@ -94,7 +89,6 @@ namespace Trader { namespace PyApi {
 	private:
 
 		std::unique_ptr<Script> m_script;
-		std::string m_name;
 		boost::python::object m_self;
 
 		//! @todo remove

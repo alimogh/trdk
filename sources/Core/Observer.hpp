@@ -24,6 +24,7 @@ namespace Trader {
 	public:
 
 		Observer(
+				const std::string &name,
 				const std::string &tag,
 				const Trader::Observer::NotifyList &,
 				boost::shared_ptr<Trader::TradeSystem>,
@@ -32,8 +33,6 @@ namespace Trader {
 
 	public:
 
-		virtual const std::string & GetTypeName() const;
-		
 		virtual void OnLevel1Update(const Trader::Security &);
 		virtual void OnNewTrade(
 				const Trader::Security &,

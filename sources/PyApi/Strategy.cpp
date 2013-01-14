@@ -22,6 +22,7 @@ namespace {
 
 	struct Params : private boost::noncopyable {
 		
+		const std::string &name;
 		const std::string &tag;
 		boost::shared_ptr<Trader::Security> &security;
 		const Trader::Lib::IniFileSectionRef &ini;
@@ -29,12 +30,14 @@ namespace {
 		std::unique_ptr<Script> &script;
 	
 		explicit Params(
+					const std::string &name,
 					const std::string &tag,
 					boost::shared_ptr<Trader::Security> &security,
 					const Trader::Lib::IniFileSectionRef &ini,
 					boost::shared_ptr<const Trader::Settings> &settings,
 					std::unique_ptr<Script> &script)
-				: tag(tag),
+				: name(name),
+				tag(tag),
 				security(security),
 				ini(ini),
 				settings(settings),
@@ -53,6 +56,7 @@ namespace {
 
 Strategy::Strategy(uintmax_t params)
 		: Trader::Strategy(
+			reinterpret_cast<Params *>(params)->name,
 			reinterpret_cast<Params *>(params)->tag,
 			reinterpret_cast<Params *>(params)->security,
 			reinterpret_cast<Params *>(params)->settings),
@@ -79,14 +83,19 @@ boost::shared_ptr<Trader::Strategy> Strategy::CreateClientInstance(
 		*script,
 		ini,
 		"Failed to find trader.Strategy implementation");
-	const Params params(tag, security, ini, settings, script);
+	const std::string className
+		= py::extract<std::string>(clientClass.attr("__name__"));
+	const Params params(
+		className,
+		tag,
+		security,
+		ini,
+		settings,
+		script);
 	try {
 		auto pyObject = clientClass(reinterpret_cast<uintmax_t>(&params));
 		Strategy &strategy = py::extract<Strategy &>(pyObject);
 		strategy.m_self = pyObject;
-		const py::str namePyObject = strategy.CallGetNamePyMethod();
-		strategy.m_name = py::extract<std::string>(namePyObject);
-		Assert(!strategy.m_name.empty());
 		return strategy.shared_from_this();
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
@@ -187,15 +196,15 @@ void Strategy::Unregister(Trader::Position &position) throw() {
 }
 
 void Strategy::ReportDecision(const Trader::Position &position) const {
-	Log::Trading(
-		GetTag().c_str(),
+	GetLog().Trading(
 		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6%",
-		position.GetSecurity().GetSymbol(),
-		position.GetTypeStr(),
-		position.GetSecurity().GetAskPrice(),
-		position.GetSecurity().GetBidPrice(),
-		position.GetSecurity().DescalePrice(position.GetOpenStartPrice()),
-		position.GetPlanedQty());
+		boost::make_tuple(
+			boost::cref(position.GetSecurity().GetSymbol()),
+			boost::cref(position.GetTypeStr()),
+			position.GetSecurity().GetAskPrice(),
+			position.GetSecurity().GetBidPrice(),
+			position.GetSecurity().DescalePrice(position.GetOpenStartPrice()),
+			position.GetPlanedQty()));
 }
 
 std::auto_ptr<Trader::PositionReporter> Strategy::CreatePositionReporter() const {
@@ -242,21 +251,6 @@ void Strategy::OnServiceDataUpdate(const Trader::Service &service) {
 
 void Strategy::OnPositionUpdate(Trader::Position &position) {
 	CallOnPositionUpdatePyMethod(Extract(position));
-}
-
-py::str Strategy::CallGetNamePyMethod() const {
-	const auto f = get_override("getName");
-	if (f) {
-		try {
-			return f();
-		} catch (const py::error_already_set &) {
-			LogPythonClientException();
-			throw Trader::PyApi::Error(
-				"Failed to call method trader.Strategy.getName");
-		}
-	} else {
-		return StrategyExport::CallGetNamePyMethod();
-	}
 }
 
 void Strategy::CallOnServiceStartPyMethod(const py::object &service) {

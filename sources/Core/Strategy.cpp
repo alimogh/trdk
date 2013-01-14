@@ -20,12 +20,6 @@ using namespace Trader::Lib;
 //////////////////////////////////////////////////////////////////////////
 
 namespace {
-	const std::string typeName = "Strategy";
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-namespace {
 	
 	class PositionHolder {
 
@@ -331,18 +325,16 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Strategy::Strategy(
+			const std::string &name,
 			const std::string &tag,
 			boost::shared_ptr<Security> security,
 			boost::shared_ptr<const Settings> settings)
-		: SecurityAlgo(tag, security, settings) {
+		: SecurityAlgo("Strategy", name, tag, security, settings) {
 	m_pimpl = new Implementation(*this);
 }
 
 Strategy::~Strategy() {
-	Log::Info(
-		"\"%1%\" has %2% active position.",
-		*this,
-		m_pimpl->m_positions.GetSize());
+	GetLog().Info("%1% active position.", m_pimpl->m_positions.GetSize());
 	delete m_pimpl;
 }
 
@@ -374,15 +366,10 @@ PositionReporter & Strategy::GetPositionReporter() {
 	return *m_pimpl->m_positionReporter;
 }
 
-const std::string & Strategy::GetTypeName() const {
-	return typeName;
-}
-
 void Strategy::OnLevel1Update() {
-	Log::Error(
-		"\"%1%\" subscribed to Level 1 updates, but can't work with it"
-			" (hasn't implementation of OnLevel1Update).",
-		*this);
+	GetLog().Error(
+		"Subscribed to Level 1 updates, but can't work with it"
+			" (hasn't OnLevel1Update method implementation).");
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to Level 1 updates, but can't work with it");
 }
@@ -392,19 +379,17 @@ void Strategy::OnNewTrade(
 					ScaledPrice,
 					Qty,
 					OrderSide) {
-	Log::Error(
-		"\"%1%\" subscribed to new trades, but can't work with it"
-			" (hasn't implementation of OnNewTrade).",
-		*this);
+	GetLog().Error(
+		"Subscribed to new trades, but can't work with it"
+			" (hasn't OnNewTrade method implementation).");
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to new trades, but can't work with it");
 }
 
 void Strategy::OnServiceDataUpdate(const Service &service) {
-	Log::Error(
-		"\"%1%\" subscribed to \"%2%\", but can't work with it"
-			" (hasn't implementation of OnServiceDataUpdate).",
-		*this,
+	GetLog().Error(
+		"Subscribed to \"%1%\", but can't work with it"
+			" (hasn't OnServiceDataUpdate method implementation).",
 		service);
  	throw MethodDoesNotImplementedError(
  		"Module subscribed to service, but can't work with it");
@@ -451,7 +436,7 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 	Assert(m_pimpl->m_positions.IsExists(position));
 	
 	if (position.IsError()) {
-		Log::Warn("\"%1%\" will be blocked by position error...", *this);
+		GetLog().Error("Will be blocked by position error...");
 		Block();
 		m_pimpl->ForgetPosition(position);
 		//! @todo notify engine here
@@ -482,7 +467,7 @@ bool Strategy::IsBlocked() const {
 
 void Strategy::Block() {
 	Interlocking::Exchange(m_pimpl->m_isBlocked, true);
-	Log::Error("\"%1%\": Blocked.", *this);
+	GetLog().Error("Blocked.");
 }
 
 Strategy::PositionUpdateSlotConnection Strategy::SubscribeToPositionsUpdates(

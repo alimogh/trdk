@@ -17,6 +17,44 @@
 using namespace Trader::PyApi;
 namespace py = boost::python;
 
+//////////////////////////////////////////////////////////////////////////
+
+SecurityAlgoExport::LogExport::LogExport(Trader::SecurityAlgo::Log &log)
+		: m_log(&log) {
+	//...//
+}
+
+void SecurityAlgoExport::LogExport::Export(const char *className) {
+	py::class_<LogExport>(className, py::no_init)
+		.def("debug", &LogExport::Debug)
+		.def("info", &LogExport::Info)
+		.def("warn", &LogExport::Warn)
+		.def("error", &LogExport::Error)
+		.def("trading", &LogExport::Trading);
+}
+
+void SecurityAlgoExport::LogExport::Debug(const char *message) {
+	m_log->Debug(message);
+}
+
+void SecurityAlgoExport::LogExport::Info(const char *message) {
+	m_log->Info(message);
+}
+
+void SecurityAlgoExport::LogExport::Warn(const char *message) {
+	m_log->Warn(message);
+}
+
+void SecurityAlgoExport::LogExport::Error(const char *message) {
+	m_log->Error(message);
+}
+
+void SecurityAlgoExport::LogExport::Trading(const char *message) {
+	m_log->Trading(message);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 SecurityAlgoExport::SecurityAlgoExport(Trader::SecurityAlgo &algo)
 		: m_security(algo.GetSecurity().shared_from_this()),
 		m_algo(algo) {
@@ -24,20 +62,24 @@ SecurityAlgoExport::SecurityAlgoExport(Trader::SecurityAlgo &algo)
 }
 
 void SecurityAlgoExport::Export(const char *className) {
-	py::class_<SecurityAlgoExport, boost::noncopyable>(className, py::no_init)
+	
+	typedef py::class_<SecurityAlgoExport, boost::noncopyable> SecurityAlgo;
+	const py::scope securityAlgoClass = SecurityAlgo(className, py::no_init)
+		.add_property("name", &SecurityAlgoExport::GetName)
 		.add_property("tag", &SecurityAlgoExport::GetTag)
  		.def_readonly("security", &SecurityAlgoExport::m_security)
- 		.def("getName", pure_virtual(&SecurityAlgoExport::CallGetNamePyMethod));
+		.add_property("log", &SecurityAlgoExport::GetLog);
+	
+	LogExport::Export("Log");
+
 }
 
 py::str SecurityAlgoExport::GetTag() const {
 	return m_algo.GetTag().c_str();
 }
 
-py::str SecurityAlgoExport::CallGetNamePyMethod() const {
-	throw PureVirtualMethodHasNoImplementation(
-		"Pure virtual method trader.SecurityAlgo.getName"
-			" has no implementation");
+py::str SecurityAlgoExport::GetName() const {
+	return m_algo.GetName().c_str();
 }
 
 void SecurityAlgoExport::CallOnServiceStartPyMethod(
@@ -57,4 +99,8 @@ void SecurityAlgoExport::CallOnServiceStartPyMethod(
 		Detail::LogPythonClientException();
 		throw PyApi::Error("Failed to convert object to Trader::Service");
 	}
+}
+
+SecurityAlgoExport::LogExport SecurityAlgoExport::GetLog() const {
+	return LogExport(m_algo.GetLog());
 }

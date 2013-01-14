@@ -104,6 +104,7 @@ namespace Trader {
 	public:
 
 		explicit Strategy(
+				const std::string &name,
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security>,
 				boost::shared_ptr<const Settings>);
@@ -113,10 +114,6 @@ namespace Trader {
 
 		bool IsBlocked() const;
 		void Block();
-
-	public:
-
-		virtual const std::string & GetTypeName() const;
 
 	public:
 

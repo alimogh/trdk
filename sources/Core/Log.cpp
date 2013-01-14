@@ -3,16 +3,40 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: HighmanTradingRobot
+ *   Project: Trading Robot
  **************************************************************************/
 
 #include "Prec.hpp"
 #include "PyApi/Errors.hpp"
 
 using namespace Trader;
+using namespace Trader::Log;
 using namespace Trader::Lib;
 
+namespace pt = boost::posix_time;
+
 namespace {
+
+	const std::string debugTag = "Debug";
+	const std::string infoTag = "Info";
+	const std::string warnTag = "Warn";
+	const std::string errorTag = "Error";
+
+	const std::string & GetLevelTag(Level level) {
+		static_assert(numberOfLevels == 4, "Log levels list changed.");
+		switch (level) {
+			case LEVEL_DEBUG:
+				return debugTag;
+			case LEVEL_INFO:
+				return infoTag;
+			case LEVEL_WARN:
+				return warnTag;
+			default:
+				AssertFail("Unknown log level.");
+			case LEVEL_ERROR:
+				return errorTag;
+		}
+	}
 
 	struct State {
 
@@ -41,20 +65,37 @@ namespace {
 			Interlocking::Exchange(isEnabled, false);
 		}
 
-		static void AppendRecordHead(
-					const boost::posix_time::ptime &time,
-					std::ostream &os) {
-#			ifdef _WINDOWS
+		static void AppendRecordHead(const pt::ptime &time, std::ostream &os) {
+#			ifdef BOOST_WINDOWS
 				os << (time + Util::GetEdtDiff()) << " [" << GetCurrentThreadId() << "]: ";
 #			else
 				os << (time + Util::GetEdtDiff()) << " [" << pthread_self() << "]: ";
 #			endif
 		}
 
-		void AppendRecordHead(const boost::posix_time::ptime &time) {
+		void AppendRecordHead(const pt::ptime &time) {
 			Assert(log);
 			AppendRecordHead(time, *log);
 		}
+
+		void AppendLevelTag(Level level, std::ostream &os) {
+			os << std::setw(6) << std::left << GetLevelTag(level);
+		}
+
+		void AppendRecordHead(
+					Level level,
+					const pt::ptime &time,
+					std::ostream &os) {
+			AppendLevelTag(level, os);
+			AppendRecordHead(time, os);
+		}
+
+		void AppendRecordHead(Level level, const pt::ptime &time) {
+			Assert(log);
+			AppendLevelTag(level, *log);
+			AppendRecordHead(time, *log);
+		}
+
 
 	};
 
@@ -71,7 +112,7 @@ Log::Mutex & Log::GetTradingMutex() {
 	return trading.mutex;
 }
 
-bool Log::IsEventsEnabled() throw() {
+bool Log::IsEventsEnabled(Level /*level*/) throw() {
 	return events.isEnabled ? true : false;
 }
 
@@ -96,28 +137,74 @@ void Log::DisableTrading() throw() {
 	trading.Disable();
 }
 
-void Log::Detail::AppendEventRecordUnsafe(const boost::posix_time::ptime &time, const char *str) {
-	Lock lock(events.mutex);
-	events.AppendRecordHead(time, std::cout);
-	std::cout << str << std::endl;
-	if (!events.log) {
-		return;
+//////////////////////////////////////////////////////////////////////////
+
+namespace {
+	
+	template<typename Str>
+	void AppendEventRecordImpl(
+				Level level,
+				const pt::ptime &time,
+				const Str &str) {
+		Lock lock(events.mutex);
+		events.AppendRecordHead(level, time, std::cout);
+		std::cout << str << std::endl;
+		if (!events.log) {
+			return;
+		}
+ 		events.AppendRecordHead(level, time);
+ 		*events.log << str << std::endl;
 	}
-	events.AppendRecordHead(time);
-	*events.log << str << std::endl;
+
+}
+
+void Log::Detail::AppendEventRecordUnsafe(
+			Level level,
+			const pt::ptime &time,
+			const char *str) {
+	AppendEventRecordImpl(level, time, str);
+}
+
+void Log::Detail::AppendEventRecordUnsafe(
+			Level level,
+			const pt::ptime &time,
+			const std::string &str) {
+	AppendEventRecordImpl(level, time, str);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+namespace {
+	
+	template<typename Str>
+	void AppendTradingRecordImpl(
+				const pt::ptime &time,
+				const std::string &tag,
+				const Str &str) {
+		Lock lock(trading.mutex);
+		if (!trading.log) {
+			return;
+		}
+		trading.AppendRecordHead(time);
+		*trading.log << '\t' << tag << '\t' << str << std::endl;
+	}
 }
 
 void Log::Detail::AppendTradingRecordUnsafe(
-			const boost::posix_time::ptime &time,
-			const char *tag,
+			const pt::ptime &time,
+			const std::string &tag,
 			const char *str) {
-	Lock lock(trading.mutex);
-	if (!trading.log) {
-		return;
-	}
-	trading.AppendRecordHead(time);
-	*trading.log << '\t' << tag << '\t' << str << std::endl;
+	AppendTradingRecordImpl(time, tag, str);
 }
+
+void Log::Detail::AppendTradingRecordUnsafe(
+			const pt::ptime &time,
+			const std::string &tag,
+			const std::string &str) {
+	AppendTradingRecordImpl(time, tag, str);
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 void Log::RegisterUnhandledException(
 			const char *function,

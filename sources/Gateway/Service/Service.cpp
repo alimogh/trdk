@@ -22,7 +22,7 @@ Gateway::Service::Service(
 			boost::shared_ptr<TradeSystem> tradeSystem,
 			const IniFileSectionRef &ini,
 			boost::shared_ptr<const Settings> settings)
-		: Observer(tag, notifyList, tradeSystem, settings),
+		: Observer("Gateway", tag, notifyList, tradeSystem, settings),
 		m_stopFlag(false) {
 
 	m_port = ini.ReadTypedKey<unsigned short>("port");
@@ -52,14 +52,6 @@ Gateway::Service::~Service() {
 	m_threads.join_all();
 }
 
-namespace {
-	static const std::string name = "Gateway";
-}
-
-const std::string & Gateway::Service::GetName() const {
-	return name;
-}
-
 void Gateway::Service::LogSoapError() const {
 	std::ostringstream oss;
 	soap_stream_fault(&m_soap, oss);
@@ -70,18 +62,24 @@ void Gateway::Service::LogSoapError() const {
 			" ",
 			boost::match_default | boost::format_all));
 	boost::trim(soapError);
-	if (soapError.empty()) {
-		soapError = "Unknown SOAP error.";
+	if (!soapError.empty()) {
+		GetLog().Error(soapError.c_str());
+	} else {
+		GetLog().Error("Unknown SOAP error.");
 	}
-	Log::Error(TRADER_GATEWAY_LOG_PREFFIX "%1%", soapError);
 }
 
 void Gateway::Service::SoapServeThread(::soap *soap) {
 
 	class Cleaner : private boost::noncopyable {
 	public:
-		Cleaner(::soap &soap, Connections &connections, ConnectionRemoveMutex &connectionsMutex)
-				: m_soap(soap),
+		Cleaner(
+					const Gateway::Service &gateway,
+					::soap &soap,
+					Connections &connections,
+					ConnectionRemoveMutex &connectionsMutex)
+				: m_gateway(gateway),
+				m_soap(soap),
 				m_connections(connections),
 				m_connectionsMutex(connectionsMutex) {
 			//...//
@@ -99,18 +97,20 @@ void Gateway::Service::SoapServeThread(::soap *soap) {
 				}
 			}
 			free(&m_soap);
-			Log::Info(
-				TRADER_GATEWAY_LOG_PREFFIX "closed connection from %d.%d.%d.%d.",
-				(ip >> 24) & 0xFF,
-				(ip >> 16) & 0xFF,
-				(ip >> 8) & 0xFF,
-				ip & 0xFF);
+			m_gateway.GetLog().Info(
+				"Closed connection from %d.%d.%d.%d.",
+				boost::make_tuple(
+					(ip >> 24) & 0xFF,
+					(ip >> 16) & 0xFF,
+					(ip >> 8) & 0xFF,
+					ip & 0xFF));
 		}
 	private:
+		const Gateway::Service &m_gateway;
 		::soap &m_soap;
 		Connections &m_connections;
 		ConnectionRemoveMutex &m_connectionsMutex;
-	} cleaner(*soap, m_connections, m_connectionRemoveMutex);
+	} cleaner(*this, *soap, m_connections, m_connectionRemoveMutex);
 
 	const int serveResult = soap_serve(soap);
 	if (	serveResult != SOAP_OK
@@ -133,12 +133,13 @@ void Gateway::Service::HandleSoapRequest() {
 		return;
 	}
 
-	Log::Info(
-		TRADER_GATEWAY_LOG_PREFFIX "accepted connection from %d.%d.%d.%d.",
-		(m_soap.ip >> 24) & 0xFF,
-		(m_soap.ip >> 16) & 0xFF,
-		(m_soap.ip >> 8) & 0xFF,
-		m_soap.ip & 0xFF);
+	GetLog().Info(
+		"Accepted connection from %d.%d.%d.%d.",
+		boost::make_tuple(
+			(m_soap.ip >> 24) & 0xFF,
+			(m_soap.ip >> 16) & 0xFF,
+			(m_soap.ip >> 8) & 0xFF,
+			m_soap.ip & 0xFF));
 
 	soap *connection = soap_copy(&m_soap);
 	m_connections.insert(connection);
@@ -157,7 +158,7 @@ void Gateway::Service::StartSoapDispatcherThread() {
 		SOAP_SOCKET masterSocket = soap_bind(&m_soap, serviceHost, m_port, 100);
 		if (!soap_valid_socket(masterSocket)) {
 			if (m_soap.error == 28 && i < 12) {
-				Log::Warn("SOAP port %1% is busy, waiting...", m_port);
+				GetLog().Warn("SOAP port %1% is busy, waiting...", m_port);
 				boost::this_thread::sleep(pt::seconds(5));
 				continue;
 			}
@@ -165,15 +166,15 @@ void Gateway::Service::StartSoapDispatcherThread() {
 			throw Exception("Failed to start Gateway SOAP Server");
 		}
 
-		Log::Info(TRADER_GATEWAY_LOG_PREFFIX "started at port %1%.", m_port);
+		GetLog().Info("Started at port %1%.", m_port);
 
 		{
 			sockaddr_in hostInfo;
 			socklen_t hostInfoSize = sizeof(hostInfo);
 			if (getsockname(masterSocket, reinterpret_cast<sockaddr *>(&hostInfo), &hostInfoSize)) {
 				const SysError error(GetLastError());
-				Log::Error(
-					TRADER_GATEWAY_LOG_PREFFIX "failed to get to get local network port info: %1%.",
+				GetLog().Error(
+					"Failed to get to get local network port info: %1%.",
 					error);
 				throw Exception("Failed to start Gateway SOAP Server");
 			}
@@ -399,7 +400,7 @@ void Gateway::Service::GetPositionInfo(
 			:	position.second->GetOpenPrice();
 		result.qty = abs(qty);
 	} catch (const UnknownSecurityError &) {
-		Log::Error(
+		GetLog().Error(
 			"Failed to send position info: unknown instrument \"%1%\".",
 			symbol);
 	}

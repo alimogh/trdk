@@ -3,7 +3,7 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: HighmanTradingRobot
+ *   Project: Trading Robot
  **************************************************************************/
 
 #include "Util.hpp"
@@ -16,6 +16,8 @@
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
+
+using namespace Trader;
 
 fs::path Util::SymbolToFilePath(
 			const boost::filesystem::path &path,

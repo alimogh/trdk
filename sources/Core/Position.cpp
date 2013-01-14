@@ -16,6 +16,12 @@ using namespace Trader::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
+namespace {
+	const std::string logTag = "position";
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 Position::LogicError::LogicError(const char *what) throw()
 		: Trader::Lib::LogicError(what) {
 	//...//
@@ -341,19 +347,20 @@ public:
 			return false;
 		}
 		Log::Trading(
-			"position",
+			logTag,
 			"%1% %2% close-cancel-post %3% qty=%4%->%5% price=market order-id=%6%->%7%"
 				" has-orders=%8%/%9% is-error=%10%",
-			m_security->GetSymbol(),
-			m_position.GetTypeStr(),
-			m_tag,
-			m_position.GetOpenedQty(),
-			m_position.GetClosedQty(),
-			m_position.GetOpenOrderId(),
-			m_position.GetCloseOrderId(),
-			m_position.HasActiveOpenOrders(),
-			m_position.HasActiveCloseOrders(),
-			m_isError);
+			boost::make_tuple(
+				boost::cref(m_security->GetSymbol()),
+				boost::cref(m_position.GetTypeStr()),
+				boost::cref(m_tag),
+				m_position.GetOpenedQty(),
+				m_position.GetClosedQty(),
+				m_position.GetOpenOrderId(),
+				m_position.GetCloseOrderId(),
+				m_position.HasActiveOpenOrders(),
+				m_position.HasActiveCloseOrders(),
+				m_isError ? true : false));
 		try {
 			m_cancelMethod();
 			return true;
@@ -371,20 +378,20 @@ public:
 			throw() {
 		try {
 			Log::Trading(
-				"position",
+				logTag,
 				"%1% %2% open-%3% %4% qty=%5%->%6% price=%7%->%8% order-id=%9%"
-					" order-status=%10% is-error=%11%",
-				m_security->GetSymbol(),
-				m_position.GetTypeStr(),
-				eventDesc,
-				m_tag,
-				m_position.GetPlanedQty(),
-				m_position.GetOpenedQty(),
-				m_security->DescalePrice(m_position.GetOpenStartPrice()),
-				m_security->DescalePrice(m_position.GetOpenPrice()),
-				m_position.GetOpenOrderId(),
-				m_security->GetTradeSystem().GetStringStatus(orderStatus),
-				m_isError);
+					" order-status=%10%",
+				boost::make_tuple(
+					boost::cref(m_security->GetSymbol()),
+					boost::cref(m_position.GetTypeStr()),
+					eventDesc,
+					boost::cref(m_tag),
+					m_position.GetPlanedQty(),
+					m_position.GetOpenedQty(),
+					m_security->DescalePrice(m_position.GetOpenStartPrice()),
+					m_security->DescalePrice(m_position.GetOpenPrice()),
+					m_position.GetOpenOrderId(),
+					m_security->GetTradeSystem().GetStringStatus(orderStatus)));
 		} catch (...) {
 			AssertFailNoException();
 		}
@@ -397,20 +404,25 @@ public:
 			throw() {
 		try {
 			Log::Trading(
-				"position",
+				logTag,
 				"%1% %2% close-%3% %4% qty=%5%->%6% price=%7% order-id=%8%->%9%"
-					" order-status=%10% is-error=%11%",
-				m_position.GetSecurity().GetSymbol(),
-				m_position.GetTypeStr(),
-				eventDesc,
-				m_tag,
-				m_position.GetOpenedQty(),
-				m_position.GetClosedQty(),
-				m_position.GetSecurity().DescalePrice(m_position.GetClosePrice()),
-				m_position.GetOpenOrderId(),
-				m_position.GetCloseOrderId(),
-				m_position.GetSecurity().GetTradeSystem().GetStringStatus(orderStatus),
-				m_isError);
+					" order-status=%10%",
+				boost::make_tuple(
+					boost::cref(m_position.GetSecurity().GetSymbol()),
+					boost::cref(m_position.GetTypeStr()),
+					eventDesc,
+					boost::cref(m_tag),
+					m_position.GetOpenedQty(),
+					m_position.GetClosedQty(),
+					m_position
+						.GetSecurity()
+						.DescalePrice(m_position.GetClosePrice()),
+					m_position.GetOpenOrderId(),
+					m_position.GetCloseOrderId(),
+					m_position
+						.GetSecurity()
+						.GetTradeSystem()
+						.GetStringStatus(orderStatus)));
 		} catch (...) {
 			AssertFailNoException();
 		}
@@ -514,7 +526,6 @@ Position::Position(
 
 Position::~Position() {
 	delete m_pimpl;
-	Log::Info(__FUNCTION__);
 }
 
 const Security & Position::GetSecurity() const throw() {
@@ -773,19 +784,20 @@ bool Position::CancelAtMarketPrice(CloseType closeType) {
 		return false;
 	}
 	Log::Trading(
-		"position",
+		logTag,
 		"%1% %2% close-cancel-pre %3% qty=%4%->%5% price=market order-id=%6%->%7%"
 			" has-orders=%8%/%9% is-error=%10%",
-		GetSecurity().GetSymbol(),
-		GetTypeStr(),
-		m_pimpl->m_tag,
-		GetOpenedQty(),
-		GetClosedQty(),
-		GetOpenOrderId(),
-		GetCloseOrderId(),
-		HasActiveOpenOrders(),
-		HasActiveCloseOrders(),
-		m_pimpl->m_isError);
+		boost::make_tuple(
+			boost::cref(GetSecurity().GetSymbol()),
+			boost::cref(GetTypeStr()),
+			boost::cref(m_pimpl->m_tag),
+			GetOpenedQty(),
+			GetClosedQty(),
+			GetOpenOrderId(),
+			GetCloseOrderId(),
+			HasActiveOpenOrders(),
+			HasActiveCloseOrders(),
+			m_pimpl->m_isError ? true : false));
 	if (IsClosed() || (!IsOpened() && !HasActiveOpenOrders())) {
 		return false;
 	}

@@ -29,14 +29,13 @@ namespace Trader {
 	public:
 
 		explicit Service(
+				const std::string &name,
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security>,
 				boost::shared_ptr<const Settings>);
 		virtual ~Service();
 
 	public:
-
-		virtual const std::string & GetTypeName() const;
 
 		virtual bool OnLevel1Update();
 		virtual bool OnNewTrade(

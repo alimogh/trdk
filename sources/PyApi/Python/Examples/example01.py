@@ -12,14 +12,9 @@ class Example01(trader.Strategy):
         # Place here initial procedure for this instance:
         self._foo = 10
 
-    # Pure virtual method, must be implemented in strategy implementation.
-    # Returns algorithm name (any string unique name).
-    def getName(self):
-        return self.__class__.__name__
-
     # Virtual method. Not required, even if algorithm uses services.
     def onServiceStart(self, service):
-        if service.getName() == 'Nonexistent service':
+        if service.name == 'Nonexistent service':
             # Here can be some logic at service start...
             pass
 
@@ -37,7 +32,7 @@ class Example01(trader.Strategy):
     # Virtual method. Notifies about position state update. Optional.
     def onPositionUpdate(self, position):
         # Here can be logic for new position state.
-        trader.logInfo(self.getName() + ": Position state changed.")
+        self.log.info("Position state changed.")
 
     # Example method: how position can be opened. See onLevel1Update for call.
     def tryToOpenPosition(self):

@@ -17,10 +17,12 @@ using namespace Trader;
 using namespace Trader::Lib;
 
 SecurityAlgo::SecurityAlgo(
+			const std::string &typeName,
+			const std::string &name,
 			const std::string &tag,
 			boost::shared_ptr<Security> security,
 			boost::shared_ptr<const Settings> settings)
-		: Module(tag, settings),
+		: Module(typeName, name, tag, settings),
 		m_security(security) {
 	//...//
 }
@@ -81,7 +83,7 @@ void SecurityAlgo::ReportSettings(
 			path.c_str(),
 			std::ios::out | std::ios::ate | std::ios::app);
 		if (!f) {
-			Log::Error("Failed to open log file %1%.", path);
+			GetLog().Error("Failed to open log file %1%.", path);
 			throw Trader::Lib::Exception("Failed to open log file");
 		}
 		f

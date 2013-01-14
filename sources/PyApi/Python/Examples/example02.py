@@ -6,9 +6,6 @@ class Example02(trader.Strategy):
 
     _bars = None
 
-    def getName(self):
-        return self.__class__.__name__
-
     def onServiceStart(self, service):
         assert(self._bars is None)
         # INI-file has configuration only for this service:
@@ -28,8 +25,8 @@ class Example02(trader.Strategy):
 
         lastBar = self._bars.getBarByReversedIndex(0)
         openPrice = self._bars.getOpenPriceStat(10)
-        trader.logInfo(
-            self.getName() + ": {0}: new data ({1} / {2})..."
+        self.log.debug(
+            "{0}: new data ({1} / {2})..."
                 .format(
                     time.ctime(lastBar.time),
                     self.security.descalePrice(lastBar.openPrice),
@@ -49,7 +46,7 @@ class Example02(trader.Strategy):
             # start price
             openPrice.max)
 
-        trader.logInfo(self.getName() + ': Opening position...')
+        self.log.info('Opening position...')
         # Opening new position for current strategy instance: Sending MKT-order
         # (method onPositionUpdate will be called at each position state
         # update):
@@ -59,7 +56,7 @@ class Example02(trader.Strategy):
     # Virtual method. Notifies about position state update. Optional.
     def onPositionUpdate(self, position):
         # Here can be logic for new position state.
-        trader.logInfo(self.getName() + ": Position state changed.")
+        self.log.debug("Position state changed.")
 
     # Example method: how position can be closed. See onLevel1Update for call.
     def tryToClosePosition(self, position):
@@ -77,8 +74,8 @@ class Example02(trader.Strategy):
 
         self._testCount = self._testCount + 1
         if self._testCount < 10:
-            trader.logInfo(self.getName() + ': Skip closing...')
+            self.log.debug('Skip closing...')
         else:
-            trader.logInfo(self.getName() + ': Close position...')
+            self.log.info('Close position...')
             position.cancelAtMarketPrice()
             self._stop = True

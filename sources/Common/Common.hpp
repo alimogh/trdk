@@ -18,6 +18,7 @@
 #	include <boost/shared_ptr.hpp>
 #	include <boost/cast.hpp>
 #	include <boost/iterator/iterator_facade.hpp>
+#	include <boost/tuple/tuple_io.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Dll.hpp"

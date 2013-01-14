@@ -26,5 +26,3 @@
 #include <map>
 
 #include "Common/Assert.hpp"
-
-#define TRADER_GATEWAY_LOG_PREFFIX "Gateway: "

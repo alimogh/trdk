@@ -66,8 +66,6 @@ namespace Trader { namespace Gateway {
 
 	public:
 
-		virtual const std::string & GetName() const;
-
 		virtual void OnNewTrade(
 					const Trader::Security &,
 					const boost::posix_time::ptime &,

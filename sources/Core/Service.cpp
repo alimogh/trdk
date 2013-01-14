@@ -16,12 +16,6 @@ using namespace Trader::Lib;
 
 namespace {
 
-	const std::string typeName = "Service";
-
-}
-
-namespace {
-
 	struct GetModuleVisitor : public boost::static_visitor<const Module &> {
 		template<typename ModulePtr>
 		const Module & operator ()(const ModulePtr &module) const {
@@ -132,13 +126,14 @@ public:
 			path.push_back(oss.str());
 		}
 		path.reverse();
-		Log::Error(
+		m_service.GetLog().Error(
 			"Recursive service reference detected:"
 				" trying to make subscription \"%1%\" -> \"%2%\","
 				" but already exists subscription %3%.",
-			boost::apply_visitor(GetModuleVisitor(), subscriber),
-			m_service,
-			boost::join(path, " -> "));
+			boost::make_tuple(
+				boost::cref(boost::apply_visitor(GetModuleVisitor(), subscriber)),
+				boost::cref(m_service),
+				boost::cref(boost::join(path, " -> "))));
 		throw Exception("Recursive service reference detected");
 	}
 
@@ -155,19 +150,16 @@ public:
 };
 
 Service::Service(
+			const std::string &name,
 			const std::string &tag,
 			boost::shared_ptr<Security> security,
 			boost::shared_ptr<const Settings> settings)
-		: SecurityAlgo(tag, security, settings) {
+		: SecurityAlgo("Service", name, tag, security, settings) {
 	m_pimpl = new Implementation(*this);
 }
 
 Service::~Service() {
 	delete m_pimpl;
-}
-
-const std::string & Service::GetTypeName() const {
-	return typeName;
 }
 
 bool Service::RaiseLevel1UpdateEvent() {
@@ -190,10 +182,9 @@ bool Service::RaiseServiceDataUpdateEvent(const Trader::Service &service) {
 }
 
 bool Service::OnLevel1Update() {
-	Log::Error(
-		"\"%1%\" subscribed to Level 1 updates, but can't work with it"
-			" (hasn't implementation of OnLevel1Update).",
-		*this);
+	GetLog().Error(
+		"Subscribed to Level 1 updates, but can't work with it"
+			" (hasn't OnLevel1Update method implementation).");
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to Level 1 updates, but can't work with it");
 }
@@ -203,19 +194,17 @@ bool Service::OnNewTrade(
 					ScaledPrice,
 					Qty,
 					OrderSide) {
-	Log::Error(
-		"\"%1%\" subscribed to new trades, but can't work with it"
-			" (hasn't implementation of OnNewTrade).",
-		*this);
+	GetLog().Error(
+		"Subscribed to new trades, but can't work with it"
+			" (hasn't OnNewTrade method implementation).");
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to new trades, but can't work with it");
 }
 
 bool Service::OnServiceDataUpdate(const Trader::Service &service) {
-	Log::Error(
-		"\"%1%\" subscribed to \"%2%\", but can't work with it"
-			" (hasn't implementation of OnServiceDataUpdate).",
-		*this,
+	GetLog().Error(
+		"Subscribed to \"%1%\", but can't work with it"
+			" (hasn't OnServiceDataUpdate method implementation).",
 		service);
  	throw MethodDoesNotImplementedError(
  		"Module subscribed to service, but can't work with it");

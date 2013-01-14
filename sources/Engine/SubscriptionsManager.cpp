@@ -28,11 +28,11 @@ namespace {
 				const Security &security,
 				const char *type)
 			throw () {
-		Log::Info(
-			"\"%1%\" subscribed to %2% from \"%3%\".",
-			module,
-			type,
-			security);
+		module.GetLog().Info(
+			"Subscribed to %1% from \"%2%\".",
+			boost::make_tuple(
+				type,
+				boost::cref(security)));
 	}
 
 }

@@ -40,9 +40,9 @@ namespace Trader { namespace PyApi { namespace Export {
 		static void Export(const char *className) {
 			namespace py = boost::python;
 			py::class_<Service, boost::noncopyable>(className, py::no_init)
+				.add_property("name", &Service::GetName)
 				.add_property("tag", &Service::GetTag)
- 				.def_readonly("security", &Service::security)
- 				.def("getName", &Service::GetName);
+ 				.def_readonly("security", &Service::security);
 		}
 
 	public:

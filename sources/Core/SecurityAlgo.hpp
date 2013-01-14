@@ -19,6 +19,8 @@ namespace Trader {
 	public:
 
 		explicit SecurityAlgo(
+				const std::string &typeName,
+				const std::string &name,
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security>,
 				boost::shared_ptr<const Settings>);

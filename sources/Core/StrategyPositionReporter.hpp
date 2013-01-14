@@ -48,13 +48,12 @@ namespace Trader {
 				filePath.c_str(),
 				std::ios::out | std::ios::ate | std::ios::app);
 			if (!m_file) {
-				Log::Error("Failed to open position log file %1%.", filePath);
+				strategy.GetLog().Error(
+					"Failed to open position log file %1%.",
+					filePath);
 				throw Exception("Failed to open position log file");
 			}
-			Log::Info(
-				"Logging \"%1%\" positions into %2%...",
-				strategy.GetName(),
-				filePath);
+			strategy.GetLog().Info("Logging positions into %1%...", filePath);
 			if (isNew) {
 				PrintHead(m_file);
 				m_file << std::endl;
