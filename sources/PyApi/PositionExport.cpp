@@ -68,6 +68,18 @@ py::object Trader::PyApi::Extract(Trader::Position &position) {
  	}
 }
 
+Trader::Position & Trader::PyApi::Extract(const py::object &position) {
+	try {
+		Assert(position);
+		PositionExport &positionExport
+			= py::extract<PositionExport &>(position);
+		return positionExport.GetPosition();
+	} catch (const py::error_already_set &) {
+		Detail::LogPythonClientException();
+		throw PyApi::Error("Failed to convert object to Trader::Position");
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 PositionExport::PositionExport(Position &position)

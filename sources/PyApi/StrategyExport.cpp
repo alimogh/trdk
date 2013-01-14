@@ -143,9 +143,9 @@ void StrategyExport::CallOnServiceDataUpdatePyMethod(
 	}
 }
 
-void StrategyExport::CallOnPositionUpdatePyMethod(const py::object &/*position*/) {
-	//! @todo: not implemented method! translate call to the core implementation!
-	AssertFail("StrategyExport::CallOnPositionUpdatePyMethod");
+void StrategyExport::CallOnPositionUpdatePyMethod(const py::object &position) {
+	Assert(position);
+	GetStrategy().Trader::Strategy::OnPositionUpdate(Extract(position));
 }
 
 Trader::Strategy & StrategyExport::GetStrategy() {
