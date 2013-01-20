@@ -153,7 +153,8 @@ namespace {
 				MarketDataSource &marketDataSource,
 				std::set<IniFile::Symbol> &symbols,
 				Securities &securities,
-				boost::shared_ptr<const Settings> settings,
+				const boost::shared_ptr<const Settings> &settings,
+				const std::string &defaultFabricName,
 				boost::shared_ptr<Dll> &dll) {
 
 		if (tag.empty()) {
@@ -166,7 +167,7 @@ namespace {
 
 		fs::path module;
 		try {
-			module = ini.ReadKey(section, Ini::Key::module, false);
+			module = ini.ReadKey(section, Ini::Keys::module, false);
 		} catch (const IniFile::Error &ex) {
 			Log::Error(
 				"Failed to get %1% module: \"%2%\".",
@@ -176,14 +177,18 @@ namespace {
 		}
 
 		std::string fabricName;
-		try {
-			fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
-		} catch (const IniFile::Error &ex) {
-			Log::Error(
-				"Failed to get %1% fabric name module: \"%2%\".",
-				moduleType,
-				ex);
-			throw IniFile::Error("Failed to load module");
+		if (ini.IsKeyExist(section, Ini::Keys::fabric)) {
+			try {
+				fabricName = ini.ReadKey(section, Ini::Keys::fabric, false);
+			} catch (const IniFile::Error &ex) {
+				Log::Error(
+					"Failed to get %1% fabric name module: \"%2%\".",
+					moduleType,
+					ex);
+				throw IniFile::Error("Failed to load module");
+			}
+		} else {
+			fabricName = defaultFabricName;
 		}
 
 		Log::Info("Loading %1% objects for \"%2%\"...", moduleType, tag);
@@ -191,7 +196,7 @@ namespace {
 		std::string symbolsFilePath;
 		try {
 			symbolsFilePath
-				= ini.ReadKey(section, Ini::Key::symbols, false);
+				= ini.ReadKey(section, Ini::Keys::symbols, false);
 		} catch (const IniFile::Error &ex) {
 			Log::Error("Failed to get symbols file: \"%1%\".", ex);
 			throw;
@@ -208,11 +213,11 @@ namespace {
 		symbols = symbolsIni.ReadSymbols(
 			ini.ReadKey(
 				Ini::Sections::defaults,
-				Ini::Key::exchange,
+				Ini::Keys::exchange,
 				false),
 			ini.ReadKey(
 				Ini::Sections::defaults,
-				Ini::Key::primaryExchange,
+				Ini::Keys::primaryExchange,
 				false));
 		try {
 			LoadSecurities(
@@ -244,7 +249,8 @@ namespace {
 						std::string,
 						std::map<IniFile::Symbol, DllObjectPtr<Module>>>
 					&modules,
-				boost::shared_ptr<const Settings> settings) {
+				boost::shared_ptr<const Settings> settings,
+				const std::string &defaultFabricName) {
 
 		std::set<IniFile::Symbol> symbols;
 		boost::shared_ptr<Dll> dll;
@@ -258,6 +264,7 @@ namespace {
 			symbols,
 			securities,
 			settings,
+			defaultFabricName,
 			dll);
 
 		const auto fabric
@@ -304,7 +311,7 @@ namespace {
 				const std::string &tag,
 				StrategyServices &services) {
 		
-		const std::string strList = ini.ReadKey(Ini::Key::services, true);
+		const std::string strList = ini.ReadKey(Ini::Keys::services, true);
 		if (strList.empty()) {
 			return;
 		}
@@ -376,7 +383,8 @@ namespace {
 			marketDataSource,
 			securities,
 			strategies,
-			settings);
+			settings,
+			Ini::DefaultValues::Fabrics::strategy);
 		ReadServicesRequest(
 			IniFileSectionRef(ini, section),
 			tag,
@@ -407,6 +415,7 @@ namespace {
 			symbols,
 			securities,
 			settings,
+			Ini::DefaultValues::Fabrics::observer,
 			dll);
 
 		const auto fabric
@@ -475,7 +484,8 @@ namespace {
 			marketDataSource,
 			securities,
 			services,
-			settings);
+			settings,
+			Ini::DefaultValues::Fabrics::service);
 		ReadServicesRequest(
 			IniFileSectionRef(ini, section),
 			tag,
@@ -526,11 +536,11 @@ namespace {
 					info.symbol,
 					ini.ReadKey(
 						Ini::Sections::defaults,
-						Ini::Key::exchange,
+						Ini::Keys::exchange,
 						false),
 					ini.ReadKey(
 						Ini::Sections::defaults,
-						Ini::Key::primaryExchange,
+						Ini::Keys::primaryExchange,
 						false));
 			}
 			const auto serviceSymbol = service->second.find(bindedSymbol);
@@ -747,8 +757,8 @@ namespace {
 	DllObjectPtr<TradeSystem> LoadTradeSystem(
 				const IniFile &ini,
 				const std::string &section) {
-		const std::string module = ini.ReadKey(section, Ini::Key::module, false);
-		const std::string fabricName = ini.ReadKey(section, Ini::Key::fabric, false);
+		const std::string module = ini.ReadKey(section, Ini::Keys::module, false);
+		const std::string fabricName = ini.ReadKey(section, Ini::Keys::fabric, false);
 		boost::shared_ptr<Dll> dll(new Dll(module, true));
 		return DllObjectPtr<TradeSystem>(
 			dll,
@@ -760,11 +770,11 @@ namespace {
 				const std::string &section) {
 		const std::string module = ini.ReadKey(
 			section,
-			Ini::Key::module,
+			Ini::Keys::module,
 			false);
 		const std::string fabricName = ini.ReadKey(
 			section,
-			Ini::Key::fabric,
+			Ini::Keys::fabric,
 			false);
 		boost::shared_ptr<Dll> dll(new Dll(module, true));
 		try {

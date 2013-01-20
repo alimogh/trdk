@@ -26,7 +26,7 @@ namespace Trader { namespace Engine { namespace Ini {
 		}
 	}
 
-	namespace Key {
+	namespace Keys {
 		extern const std::string module;
 		extern const std::string fabric;
 		extern const std::string symbols;
@@ -43,6 +43,14 @@ namespace Trader { namespace Engine { namespace Ini {
 		namespace Services {
 			extern const std::string level1;
 			extern const std::string trades;
+		}
+	}
+
+	namespace DefaultValues {
+		namespace Fabrics {
+			extern const std::string strategy;
+			extern const std::string service;
+			extern const std::string observer;
 		}
 	}
 
