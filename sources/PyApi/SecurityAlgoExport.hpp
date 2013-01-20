@@ -13,7 +13,7 @@
 
 namespace Trader { namespace PyApi {
 
-	class SecurityAlgoExport : private boost::noncopyable {
+	class SecurityAlgoExport {
 
 	public:
 
@@ -34,11 +34,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		SecurityExport m_security;
-
-	public:
-
-		explicit SecurityAlgoExport(Trader::SecurityAlgo &);
+		explicit SecurityAlgoExport(const SecurityAlgo &);
 
 	public:
 
@@ -49,26 +45,10 @@ namespace Trader { namespace PyApi {
 		boost::python::str GetTag() const;
 		boost::python::str GetName() const;
 		LogExport GetLog() const;
-		
-	public:
-		
-		void CallOnServiceStartPyMethod(const boost::python::object &service);
-		
-	protected:
-
-		template<typename T>
-		T & Get() {
-			return *boost::polymorphic_downcast<T *>(&m_algo);
-		}
-
-		template<typename T>
-		const T & Get() const {
-			return const_cast<SecurityAlgoExport *>(this)->Get<T>();
-		}
 
 	private:
 
-		Trader::SecurityAlgo &m_algo;
+		const Trader::SecurityAlgo *m_algo;
 
 	};
 

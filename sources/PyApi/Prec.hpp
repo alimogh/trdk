@@ -18,6 +18,8 @@
 
 #include "Common/Common.hpp"
 
+#include "Core/Fwd.hpp"
+
 #include "Common/Assert.hpp"
 
 #ifdef CreateService

@@ -7,16 +7,20 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "PositionExport.hpp"
 #include "Position.hpp"
+#include "ServiceExport.hpp"
 #include "Strategy.hpp"
-#include "Import.hpp"
+#include "BaseExport.hpp"
 #include "Core/StrategyPositionReporter.hpp"
 
+namespace py = boost::python;
+namespace pt = boost::posix_time;
+
+using namespace Trader;
 using namespace Trader::Lib;
 using namespace Trader::PyApi;
 using namespace Trader::PyApi::Detail;
-
-namespace py = boost::python;
 
 namespace {
 
@@ -24,17 +28,17 @@ namespace {
 		
 		const std::string &name;
 		const std::string &tag;
-		boost::shared_ptr<Trader::Security> &security;
-		const Trader::Lib::IniFileSectionRef &ini;
-		boost::shared_ptr<const Trader::Settings> &settings;
+		const boost::shared_ptr<Security> &security;
+		const IniFileSectionRef &ini;
+		const boost::shared_ptr<const Settings> &settings;
 		std::unique_ptr<Script> &script;
 	
 		explicit Params(
 					const std::string &name,
 					const std::string &tag,
-					boost::shared_ptr<Trader::Security> &security,
-					const Trader::Lib::IniFileSectionRef &ini,
-					boost::shared_ptr<const Trader::Settings> &settings,
+					const boost::shared_ptr<Security> &security,
+					const IniFileSectionRef &ini,
+					const boost::shared_ptr<const Settings> &settings,
 					std::unique_ptr<Script> &script)
 				: name(name),
 				tag(tag),
@@ -54,7 +58,7 @@ namespace {
 #	pragma warning(disable: 4355)
 #endif
 
-Strategy::Strategy(uintmax_t params)
+PyApi::Strategy::Strategy(uintmax_t params)
 		: Trader::Strategy(
 			reinterpret_cast<Params *>(params)->name,
 			reinterpret_cast<Params *>(params)->tag,
@@ -69,15 +73,16 @@ Strategy::Strategy(uintmax_t params)
 #	pragma warning(pop)
 #endif
 
-Strategy::~Strategy() {
+
+PyApi::Strategy::~Strategy() {
 	AssertFail("Strategy::~Strategy");
 }
 
-boost::shared_ptr<Trader::Strategy> Strategy::CreateClientInstance(
+boost::shared_ptr<Trader::Strategy> PyApi::Strategy::CreateClientInstance(
 			const std::string &tag,
-			boost::shared_ptr<Trader::Security> security,
-			const Trader::Lib::IniFileSectionRef &ini,
-			boost::shared_ptr<const Trader::Settings> settings) {
+			boost::shared_ptr<Security> security,
+			const IniFileSectionRef &ini,
+			boost::shared_ptr<const Settings> settings) {
 	std::unique_ptr<Script> script(LoadScript(ini));
 	auto clientClass = GetPyClass(
 		*script,
@@ -99,54 +104,38 @@ boost::shared_ptr<Trader::Strategy> Strategy::CreateClientInstance(
 		return strategy.shared_from_this();
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
-		throw Trader::PyApi::Error(
-			"Failed to create instance of trader.Strategy");
+		throw Error("Failed to create instance of trader.Strategy");
 	}
 }
 
-void Strategy::OnServiceStart(const Trader::Service &service) {
+void PyApi::Strategy::OnServiceStart(const Trader::Service &service) {
+	const auto f = get_override("onServiceStart");
+	if (!f) {
+		Trader::Strategy::OnServiceStart(service);
+		return;
+	}
 	try {
-// 		const Service *const pyService
-// 			= dynamic_cast<const Service *>(&service);
-// 		if (pyService) {
-// 			PyOnServiceStart(*pyService);
-// 		} else {
-		py::object object;
-		if (dynamic_cast<const Trader::Services::BarService *>(&service)) {
-			//! @todo fixme
-			auto *serviceExport = new Export::Services::BarService(
-				*boost::polymorphic_downcast<
-						const Trader::Services::BarService *>(
-					&service));
-			object = py::object(boost::cref(*serviceExport));
-		}
-		if (object) {
-			CallOnServiceStartPyMethod(object);
-			m_pyCache[&service] = object;
-		} else {
-			Trader::Strategy::OnServiceStart(service);
-		}
+		f(PyApi::Export(service));
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
-		throw Trader::PyApi::Error(
-			"Failed to call method trader.Strategy.onServiceStart");
+		throw Error("Failed to call method trader.Strategy.onServiceStart");
 	}
 }
 
 namespace {
 
 	template<typename PyPosition>
-	void MovePositionRefToCore(Trader::Position &position) throw() {
+	void MovePositionRefToCore(Position &position) throw() {
 		PyPosition *const pyPosition = dynamic_cast<PyPosition *>(&position);
 		if (!pyPosition) {
 			return;
 		}
-		pyPosition->MoveRefToCore();
+		pyPosition->TakeExportObjectOwnership();
 	}
 
 }
 
-void Strategy::Register(Trader::Position &position) {
+void PyApi::Strategy::Register(Position &position) {
 	Trader::Strategy::Register(position);
 	static_assert(
 		Position::numberOfTypes == 2,
@@ -167,17 +156,17 @@ void Strategy::Register(Trader::Position &position) {
 namespace {
 
 	template<typename PyPosition>
-	void MovePositionRefToPython(Trader::Position &position) throw() {
+	void MovePositionRefToPython(Position &position) throw() {
 		PyPosition *const pyPosition = dynamic_cast<PyPosition *>(&position);
 		if (!pyPosition) {
 			return;
 		}
-		pyPosition->MoveRefToPython();
+		pyPosition->GetExport().MoveRefToPython();
 	}
 
 }
 
-void Strategy::Unregister(Trader::Position &position) throw() {
+void PyApi::Strategy::Unregister(Position &position) throw() {
 	Trader::Strategy::Unregister(position);
 	static_assert(
 		Position::numberOfTypes == 2,
@@ -195,7 +184,7 @@ void Strategy::Unregister(Trader::Position &position) throw() {
 	}
 }
 
-void Strategy::ReportDecision(const Trader::Position &position) const {
+void PyApi::Strategy::ReportDecision(const Position &position) const {
 	GetLog().Trading(
 		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6%",
 		boost::make_tuple(
@@ -207,137 +196,84 @@ void Strategy::ReportDecision(const Trader::Position &position) const {
 			position.GetPlanedQty()));
 }
 
-std::auto_ptr<Trader::PositionReporter> Strategy::CreatePositionReporter() const {
-	typedef Trader::StrategyPositionReporter<Strategy> Reporter;
+std::auto_ptr<PositionReporter> PyApi::Strategy::CreatePositionReporter() const {
+	typedef StrategyPositionReporter<Strategy> Reporter;
 	std::auto_ptr<Reporter> result(new Reporter);
 	result->Init(*this);
-	return std::auto_ptr<Trader::PositionReporter>(result);
+	return std::auto_ptr<PositionReporter>(result);
 }
 
-void Strategy::UpdateAlogImplSettings(const IniFileSectionRef &ini) {
+void PyApi::Strategy::UpdateAlogImplSettings(const IniFileSectionRef &ini) {
 	DoSettingsUpdate(ini);
 }
 
-void Strategy::DoSettingsUpdate(const IniFileSectionRef &ini) {
+void PyApi::Strategy::DoSettingsUpdate(const IniFileSectionRef &ini) {
 	UpdateAlgoSettings(*this, ini);
 }
 
-void Strategy::OnLevel1Update() {
-	CallOnLevel1UpdatePyMethod();
-}
-
-void Strategy::OnNewTrade(
-			const boost::posix_time::ptime &time,
-			Trader::ScaledPrice price,
-			Trader::Qty qty,
-			Trader::OrderSide side) {
+void PyApi::Strategy::OnLevel1Update() {
+	const auto f = get_override("onLevel1Update");
+	if (!f) {
+		Trader::Strategy::OnLevel1Update();
+		return;
+	}
 	try {
-		return CallOnNewTradePyMethod(
-			Detail::Time::Convert(time),
-			py::object(price),
-			py::object(qty),
-			Detail::OrderSide::Convert(side));
+		f();
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
-		throw Trader::PyApi::Error(
-			"Failed to call method trader.Strategy.onNewTrade");
+		throw Error("Failed to call method trader.Strategy.onLevel1Update");
 	}
 }
 
-void Strategy::OnServiceDataUpdate(const Trader::Service &service) {
-	Assert(m_pyCache.find(&service) != m_pyCache.end());
-	CallOnServiceDataUpdatePyMethod(m_pyCache[&service]);
-}
-
-void Strategy::OnPositionUpdate(Trader::Position &position) {
-	CallOnPositionUpdatePyMethod(Extract(position));
-}
-
-void Strategy::CallOnServiceStartPyMethod(const py::object &service) {
-	Assert(service);
-	const auto f = get_override("onServiceStart");
-	if (f) {
-		try {
-			f(service);
-		} catch (const py::error_already_set &) {
-			LogPythonClientException();
-			throw Trader::PyApi::Error(
-				"Failed to call method trader.Strategy.onServiceStart");
-		}
-	} else {
-		StrategyExport::CallOnServiceStartPyMethod(service);
-	}
-}
-
-void Strategy::CallOnLevel1UpdatePyMethod() {
-	const auto f = get_override("onLevel1Update");
-	if (f) {
-		try {
-			f();
-		} catch (const py::error_already_set &) {
-			LogPythonClientException();
-			throw Trader::PyApi::Error(
-				"Failed to call method trader.Strategy.onLevel1Update");
-		}
-	} else {
-		StrategyExport::CallOnLevel1UpdatePyMethod();
-	}
-}
-
-void Strategy::CallOnNewTradePyMethod(
-			const py::object &time,
-			const py::object &price,
-			const py::object &qty,
-			const py::object &side) {
-	Assert(time);
-	Assert(price);
-	Assert(qty);
-	Assert(side);
+void PyApi::Strategy::OnNewTrade(
+			const pt::ptime &time,
+			ScaledPrice price,
+			Qty qty,
+			OrderSide side) {
 	const auto f = get_override("onNewTrade");
-	if (f) {
-		try {
-			f(time, price, qty, side);
-		} catch (const py::error_already_set &) {
-			LogPythonClientException();
-			throw Trader::PyApi::Error(
-				"Failed to call method trader.Strategy.onNewTrade");
-		}
-	} else {
-		StrategyExport::CallOnNewTradePyMethod(time, price, qty, side);
+	if (!f) {
+		Trader::Strategy::OnNewTrade(time, price, qty, side);
+		return;
+	}
+	try {
+		f(
+			PyApi::Export(time),
+			PyApi::Export(price),
+			PyApi::Export(qty),
+			PyApi::Export(side));
+	} catch (const py::error_already_set &) {
+		LogPythonClientException();
+		throw Error("Failed to call method trader.Strategy.onNewTrade");
 	}
 }
 
-void Strategy::CallOnServiceDataUpdatePyMethod(
-			const py::object &service) {
-	Assert(service);
+void PyApi::Strategy::OnServiceDataUpdate(const Trader::Service &service) {
 	const auto f = get_override("onServiceDataUpdate");
-	if (f) {
-		try {
-			f(service);
-		} catch (const py::error_already_set &) {
-			LogPythonClientException();
-			throw Trader::PyApi::Error(
-				"Failed to call method trader.Strategy.onServiceDataUpdate");
-		}
-	} else {
-		StrategyExport::CallOnServiceDataUpdatePyMethod(service);
+	if (!f) {
+		Trader::Strategy::OnServiceDataUpdate(service);
+		return;
+	}
+	try {
+		f(PyApi::Export(service));
+	} catch (const py::error_already_set &) {
+		LogPythonClientException();
+		throw Error(
+			"Failed to call method trader.Strategy.onServiceDataUpdate");
 	}
 }
 
-void Strategy::CallOnPositionUpdatePyMethod(
-				const py::object &position) {
-	Assert(position);
+void PyApi::Strategy::OnPositionUpdate(Position &position) {
 	const auto f = get_override("onPositionUpdate");
-	if (f) {
-		try {
-			f(position);
-		} catch (const py::error_already_set &) {
-			LogPythonClientException();
-			throw Trader::PyApi::Error(
-				"Failed to call method trader.Strategy.onPositionUpdate");
-		}
-	} else {
-		StrategyExport::CallOnPositionUpdatePyMethod(position);
+	if (!f) {
+		Trader::Strategy::OnPositionUpdate(position);
+		return;
+	}
+	try {
+		f(PyApi::Export(position));
+	} catch (const py::error_already_set &) {
+		LogPythonClientException();
+		throw Error(
+			"Failed to call method trader.Strategy.onPositionUpdate");
 	}
 }
 
@@ -346,18 +282,26 @@ void Strategy::CallOnPositionUpdatePyMethod(
 #ifdef BOOST_WINDOWS
 	boost::shared_ptr<Trader::Strategy> CreateStrategy(
 				const std::string &tag,
-				boost::shared_ptr<Trader::Security> security,
+				boost::shared_ptr<Security> security,
 				const IniFileSectionRef &ini,
-				boost::shared_ptr<const Trader::Settings> settings) {
-		return Strategy::CreateClientInstance(tag, security, ini, settings);
+				boost::shared_ptr<const Settings> settings) {
+		return PyApi::Strategy::CreateClientInstance(
+			tag,
+			security,
+			ini,
+			settings);
 	}
 #else
 	extern "C" boost::shared_ptr<Trader::Strategy> CreateStrategy(
 				const std::string &tag,
-				boost::shared_ptr<Trader::Security> security,
+				boost::shared_ptr<Security> security,
 				const IniFileSectionRef &ini,
-				boost::shared_ptr<const Trader::Settings> settings) {
-		return Strategy::CreateClientInstance(tag, security, ini, settings);
+				boost::shared_ptr<const Settings> settings) {
+		return PyApi::Strategy::CreateClientInstance(
+			tag,
+			security,
+			ini,
+			settings);
 	}
 #endif
 

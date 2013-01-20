@@ -8,7 +8,7 @@
 
 #include "Prec.hpp"
 #include "PositionExport.hpp"
-#include "Position.hpp"
+#include "Detail.hpp"
 
 using namespace Trader;
 using namespace Trader::PyApi;
@@ -20,70 +20,50 @@ namespace py = boost::python;
 
 namespace {
 
-	typedef py::init<
-			PyApi::Strategy &,
-			int /*qty*/,
-			double /*startPrice*/>
-		PositionPyInit;
-
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-namespace {
-
-	template<typename PyApiPosition, typename CorePosition>
-	py::object GetPyPosition(Position &source) {
-		static_assert(
-			boost::is_base_of<CorePosition, PyApiPosition>::value,
-			"CorePosition must be base of PyApiPosition.");
-		Assert(
-			dynamic_cast<PyApiPosition *>(&source)
-			|| dynamic_cast<CorePosition *>(&source));
-		PyApiPosition *const pyApiPosition
-			= dynamic_cast<PyApiPosition *>(&source);
-		if (!pyApiPosition) {
-			CorePositionToExport<CorePosition>::Export positionExport(
-				dynamic_cast<CorePosition &>(source));
-			return py::object(boost::ref(positionExport));
+	template<typename PyApiImpl>
+	py::object GetPyPosition(Trader::Position &source) {
+		auto *const pyApiImpl = dynamic_cast<PyApiImpl *>(&source);
+		if (!pyApiImpl) {
+			AssertFail("Use cache for Python objects.");
+			throw Error("Failed to export position");
 		} else {
-			return pyApiPosition->GetSelf();
+			return pyApiImpl->GetExport().GetSelf();
 		}
 	}
 
 }
 
-py::object Trader::PyApi::Extract(Trader::Position &position) {
+py::object PyApi::Export(Trader::Position &position) {
  	static_assert(Position::numberOfTypes == 2, "Position type list changed.");
  	switch (position.GetType()) {
   		case Position::TYPE_LONG:
-  			return GetPyPosition<PyApi::LongPosition, Trader::LongPosition>(
-				position);
+  			return GetPyPosition<PyApi::LongPosition>(position);
   		case Position::TYPE_SHORT:
-  			return GetPyPosition<PyApi::ShortPosition, Trader::ShortPosition>(
-				position);
+  			return GetPyPosition<PyApi::ShortPosition>(position);
  		default:
  			AssertNe(int(Position::numberOfTypes), int(position.GetType()));
  			throw Lib::Exception("Unknown position type");
  	}
 }
 
-Trader::Position & Trader::PyApi::Extract(const py::object &position) {
+Position & PyApi::ExtractPosition(const py::object &position) {
 	try {
 		Assert(position);
 		PositionExport &positionExport
 			= py::extract<PositionExport &>(position);
 		return positionExport.GetPosition();
 	} catch (const py::error_already_set &) {
-		Detail::LogPythonClientException();
-		throw PyApi::Error("Failed to convert object to Trader::Position");
+		LogPythonClientException();
+		throw PyApi::Error("Failed to extract position");
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-PositionExport::PositionExport(Position &position)
-		: m_position(&position) {
+PositionExport::PositionExport(
+			const boost::shared_ptr<Position> &position)
+		: m_positionRefHolder(position),
+		m_position(&*m_positionRefHolder) {
 	//...//
 }
 
@@ -136,13 +116,17 @@ void PositionExport::Export(const char *className) {
 		
 }
 
-
 Position & PositionExport::GetPosition() {
 	return *m_position;
 }
 
 const Position & PositionExport::GetPosition() const {
 	return const_cast<PositionExport *>(this)->GetPosition();
+}
+
+void PositionExport::ResetRefHolder() throw() {
+	Assert(m_positionRefHolder);
+	m_positionRefHolder.reset();
 }
 
 bool PositionExport::IsCompleted() const {
@@ -261,58 +245,6 @@ bool PositionExport::CancelAtMarketPrice() {
 
 bool PositionExport::CancelAllOrders() {
 	return GetPosition().CancelAllOrders();
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-LongPositionExport::LongPositionExport(Trader::Position &position)
-		: PositionExport(position) {
-	Assert(dynamic_cast<Trader::LongPosition *>(&position));
-}
-
-namespace boost { namespace python {
-
-	template<>
-	struct has_back_reference<PyApi::LongPosition> : public mpl::true_ {
-		//...//
-	};
-
-} }
-
-void LongPositionExport::Export(const char *className) {
-	typedef py::class_<
-			PyApi::LongPosition,
-			py::bases<PositionExport>,
-			PythonToCoreTransitHolder<PyApi::LongPosition>,
-			boost::noncopyable>
-		LongPositionImport;
-	LongPositionImport(className, PositionPyInit());
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-ShortPositionExport::ShortPositionExport(Trader::Position &position)
-		: PositionExport(position) {
-	Assert(dynamic_cast<Trader::ShortPosition *>(&position));
-}
-
-namespace boost { namespace python {
-
-	template<>
-	struct has_back_reference<PyApi::ShortPosition> : public mpl::true_ {
-		//...//
-	};
-
-} }
-
-void ShortPositionExport::Export(const char *className) {
-	typedef py::class_<
-			PyApi::ShortPosition,
-			py::bases<PositionExport>,
-			PythonToCoreTransitHolder<PyApi::ShortPosition>,
-			boost::noncopyable>
-		ShortPositionImport;
-	ShortPositionImport(className, PositionPyInit());
 }
 
 //////////////////////////////////////////////////////////////////////////

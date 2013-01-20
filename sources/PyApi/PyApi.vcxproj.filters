@@ -32,12 +32,6 @@
     <ClInclude Include="Script.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Import.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Export.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="PositionExport.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -50,10 +44,19 @@
     <ClInclude Include="SecurityExport.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PythonToCoreTransit.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServiceExport.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseExport.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Position.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PythonToCoreTransit.hpp">
+    <ClInclude Include="ObjectCache.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -70,12 +73,6 @@
     <ClCompile Include="Script.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Import.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Detail.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="PositionExport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -88,7 +85,10 @@
     <ClCompile Include="StrategyExport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Position.cpp">
+    <ClCompile Include="ServiceExport.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseExport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

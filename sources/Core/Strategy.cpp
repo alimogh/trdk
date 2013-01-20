@@ -287,6 +287,8 @@ public:
 public:
 
 	Strategy &m_strategy;
+	
+	boost::shared_ptr<Security> m_security;
 
 	volatile long m_isBlocked;
 	
@@ -296,8 +298,11 @@ public:
 
 public:
 
-	explicit Implementation(Strategy &strategy)
+	explicit Implementation(
+				Strategy &strategy,
+				const boost::shared_ptr<Security> &security)
 			: m_strategy(strategy),
+			m_security(security),
 			m_isBlocked(false),
 			m_positionReporter(nullptr) {
 		//...//
@@ -329,13 +334,21 @@ Strategy::Strategy(
 			const std::string &tag,
 			boost::shared_ptr<Security> security,
 			boost::shared_ptr<const Settings> settings)
-		: SecurityAlgo("Strategy", name, tag, security, settings) {
-	m_pimpl = new Implementation(*this);
+		: SecurityAlgo("Strategy", name, tag, settings) {
+	m_pimpl = new Implementation(*this, security);
 }
 
 Strategy::~Strategy() {
 	GetLog().Info("%1% active position.", m_pimpl->m_positions.GetSize());
 	delete m_pimpl;
+}
+
+const Security & Strategy::GetSecurity() const {
+	return const_cast<Strategy *>(this)->GetSecurity();
+}
+
+Security & Strategy::GetSecurity() {
+	return *m_pimpl->m_security;
 }
 
 void Strategy::Register(Position &position) {

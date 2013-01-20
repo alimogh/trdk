@@ -31,9 +31,13 @@ namespace Trader {
 		explicit Service(
 				const std::string &name,
 				const std::string &tag,
-				boost::shared_ptr<Trader::Security>,
+				boost::shared_ptr<const Trader::Security>,
 				boost::shared_ptr<const Settings>);
 		virtual ~Service();
+
+	public:
+
+		virtual const Trader::Security & GetSecurity() const;
 
 	public:
 

@@ -88,7 +88,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Detail.hpp" />
-    <ClInclude Include="Import.hpp" />
+    <ClInclude Include="BaseExport.hpp" />
+    <ClInclude Include="ObjectCache.hpp" />
     <ClInclude Include="Position.hpp" />
     <ClInclude Include="PositionExport.hpp" />
     <ClInclude Include="PythonToCoreTransit.hpp" />
@@ -96,29 +97,24 @@
     <ClInclude Include="SecurityExport.hpp" />
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="Export.hpp" />
+    <ClInclude Include="ServiceExport.hpp" />
     <ClInclude Include="Strategy.hpp" />
     <ClInclude Include="Script.hpp" />
     <ClInclude Include="Errors.hpp" />
     <ClInclude Include="StrategyExport.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Detail.cpp" />
-    <ClCompile Include="Position.cpp" />
+    <ClCompile Include="BaseExport.cpp" />
     <ClCompile Include="PositionExport.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Import.cpp" />
     <ClCompile Include="SecurityAlgoExport.cpp" />
     <ClCompile Include="SecurityExport.cpp" />
-    <ClCompile Include="Service.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="Service.cpp" />
+    <ClCompile Include="ServiceExport.cpp" />
     <ClCompile Include="Strategy.cpp" />
     <ClCompile Include="Script.cpp" />
     <ClCompile Include="StrategyExport.cpp" />

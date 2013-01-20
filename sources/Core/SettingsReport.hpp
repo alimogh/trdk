@@ -9,10 +9,9 @@
 #pragma once
 
 #include "Security.hpp"
+#include "Fwd.hpp"
 
 namespace Trader { namespace SettingsReport {
-
-	typedef std::list<std::pair<std::string, std::string>> Report;
 
 	template<typename T>
 	void Append(

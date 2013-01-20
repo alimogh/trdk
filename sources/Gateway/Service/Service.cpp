@@ -405,3 +405,8 @@ void Gateway::Service::GetPositionInfo(
 			symbol);
 	}
 }
+
+void Gateway::Service::UpdateAlogImplSettings(
+			const Trader::Lib::IniFileSectionRef &) {
+	//! @todo: Trader::Gateway::Service
+}

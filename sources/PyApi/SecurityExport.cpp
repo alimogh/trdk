@@ -16,99 +16,109 @@ namespace py = boost::python;
 
 //////////////////////////////////////////////////////////////////////////
 
-ConstSecurityExport::ConstSecurityExport(
-			const boost::shared_ptr<const Security> &security)
-		: m_security(security) {
+SecurityInfoExport::SecurityInfoExport(const Security &security)
+		: m_security(&security) {
 	//...//
 }
 
-py::str ConstSecurityExport::GetSymbol() const {
+void SecurityInfoExport::Export(const char *className) {
+
+	py::class_<SecurityInfoExport>(className,  py::no_init)
+
+		.add_property("symbol", &SecurityInfoExport::GetSymbol)
+		.add_property("fullSymbol", &SecurityInfoExport::GetFullSymbol)
+		.add_property("currency", &SecurityInfoExport::GetCurrency)
+
+		.add_property("priceScale", &SecurityInfoExport::GetPriceScale)
+		.def("scalePrice", &SecurityInfoExport::ScalePrice)
+		.def("descalePrice", &SecurityInfoExport::DescalePrice)
+
+		.add_property("lastPrice", &SecurityInfoExport::GetLastPriceScaled)
+		.add_property("lastSize", &SecurityInfoExport::GetLastQty)
+
+		.add_property("askPrice", &SecurityInfoExport::GetAskPriceScaled)
+		.add_property("askSize", &SecurityInfoExport::GetAskQty)
+
+		.add_property("bidPrice", &SecurityInfoExport::GetBidPriceScaled)
+		.add_property("bidSize", &SecurityInfoExport::GetBidQty);
+
+}
+
+const Security & SecurityInfoExport::GetSecurity() const {
+	return *m_security;
+}
+
+py::str SecurityInfoExport::GetSymbol() const {
 	return m_security->GetSymbol().c_str();
 }
 
-py::str ConstSecurityExport::GetFullSymbol() const {
+py::str SecurityInfoExport::GetFullSymbol() const {
 	return m_security->GetFullSymbol().c_str();
 }
 
-py::str ConstSecurityExport::GetCurrency() const {
+py::str SecurityInfoExport::GetCurrency() const {
 	return m_security->GetCurrency();
 }
 
-ScaledPrice ConstSecurityExport::GetPriceScale() const {
+ScaledPrice SecurityInfoExport::GetPriceScale() const {
 	return m_security->GetPriceScale();
 }
-ScaledPrice ConstSecurityExport::ScalePrice(double price) const {
+ScaledPrice SecurityInfoExport::ScalePrice(double price) const {
 	return int(m_security->ScalePrice(price));
 }
-double ConstSecurityExport::DescalePrice(ScaledPrice price) const {
+double SecurityInfoExport::DescalePrice(ScaledPrice price) const {
 	return m_security->DescalePrice(price);
 }
 
-ScaledPrice ConstSecurityExport::GetLastPriceScaled() const {
+ScaledPrice SecurityInfoExport::GetLastPriceScaled() const {
 	return m_security->GetLastPriceScaled();
 }
-Qty ConstSecurityExport::GetLastQty() const {
+Qty SecurityInfoExport::GetLastQty() const {
 	return m_security->GetLastQty();
 }
 
-ScaledPrice ConstSecurityExport::GetAskPriceScaled() const {
+ScaledPrice SecurityInfoExport::GetAskPriceScaled() const {
 	return m_security->GetAskPriceScaled();
 }
-Qty ConstSecurityExport::GetAskQty() const {
+Qty SecurityInfoExport::GetAskQty() const {
 	return m_security->GetAskQty();
 }
 
-ScaledPrice ConstSecurityExport::GetBidPriceScaled() const {
+ScaledPrice SecurityInfoExport::GetBidPriceScaled() const {
 	return m_security->GetBidPriceScaled();
 }
-Qty ConstSecurityExport::GetBidQty() const {
+Qty SecurityInfoExport::GetBidQty() const {
 	return m_security->GetBidQty();
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-SecurityExport::SecurityExport(const boost::shared_ptr<Security> &security)
-		: ConstSecurityExport(security),
-		m_security(security) {
+SecurityExport::SecurityExport(Security &security)
+		: SecurityInfoExport(security) {
 	//...//
 }
 
 void SecurityExport::Export(const char *className) {
-
-	py::class_<SecurityExport, boost::noncopyable>(className,  py::no_init)
-
-		.add_property("symbol", &SecurityExport::GetSymbol)
-		.add_property("fullSymbol", &SecurityExport::GetFullSymbol)
-		.add_property("currency", &SecurityExport::GetCurrency)
-
-		.add_property("priceScale", &SecurityExport::GetPriceScale)
-		.def("scalePrice", &SecurityExport::ScalePrice)
-		.def("descalePrice", &SecurityExport::DescalePrice)
-
-		.add_property("lastPrice", &SecurityExport::GetLastPriceScaled)
-		.add_property("lastSize", &SecurityExport::GetLastQty)
-
-		.add_property("askPrice", &SecurityExport::GetAskPriceScaled)
-		.add_property("askSize", &SecurityExport::GetAskQty)
-
-		.add_property("bidPrice", &SecurityExport::GetBidPriceScaled)
-		.add_property("bidSize", &SecurityExport::GetBidQty)
-
+	typedef py::class_<
+			SecurityExport,
+			py::bases<SecurityInfoExport>,
+			boost::noncopyable>
+		Export;
+	Export(className, py::no_init)
 		.def("cancelOrder", &SecurityExport::CancelOrder)
 		.def("cancelAllOrders", &SecurityExport::CancelAllOrders);
-
 }
 
-boost::shared_ptr<Security> SecurityExport::GetSecurity() {
-	return m_security;
+Security & SecurityExport::GetSecurity() {
+	return const_cast<Security &>(SecurityInfoExport::GetSecurity());
 }
 
 void SecurityExport::CancelOrder(int orderId) {
-	m_security->CancelOrder(orderId);
+	GetSecurity().CancelOrder(orderId);
 }
 
 void SecurityExport::CancelAllOrders() {
-	m_security->CancelAllOrders();
+	GetSecurity().CancelAllOrders();
 }
 
 //////////////////////////////////////////////////////////////////////////

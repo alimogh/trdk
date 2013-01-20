@@ -101,11 +101,15 @@ private:
 public:
 
 	Service &m_service;
+	boost::shared_ptr<const Trader::Security> m_security;
 	bool m_hasNewData;
 	Subscribers m_subscribers;
 
-	explicit Implementation(Service &service)
-			: m_service(service) {
+	explicit Implementation(
+				Service &service,
+				const boost::shared_ptr<const Trader::Security> &security)
+			: m_service(service),
+			m_security(security) {
 		//...//
 	}
 
@@ -152,14 +156,18 @@ public:
 Service::Service(
 			const std::string &name,
 			const std::string &tag,
-			boost::shared_ptr<Security> security,
+			boost::shared_ptr<const Security> security,
 			boost::shared_ptr<const Settings> settings)
-		: SecurityAlgo("Service", name, tag, security, settings) {
-	m_pimpl = new Implementation(*this);
+		: SecurityAlgo("Service", name, tag, settings) {
+	m_pimpl = new Implementation(*this, security);
 }
 
 Service::~Service() {
 	delete m_pimpl;
+}
+
+const Security & Service::GetSecurity() const {
+	return *m_pimpl->m_security;
 }
 
 bool Service::RaiseLevel1UpdateEvent() {

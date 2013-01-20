@@ -9,6 +9,27 @@
 #pragma once
 
 #include "Strategy.hpp"
+#include "Position.hpp"
+#include "PythonToCoreTransit.hpp"
+
+namespace Trader { namespace PyApi {
+
+	template<typename PyApiImpl>
+	class SidePositionExport;
+
+	class Strategy;
+
+} }
+
+namespace boost { namespace python {
+
+	template<typename PyApiImpl>
+	struct has_back_reference<Trader::PyApi::SidePositionExport<PyApiImpl>>
+			: public mpl::true_ {
+		//...//
+	};
+
+} }
 
 namespace Trader { namespace PyApi {
 
@@ -18,11 +39,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		//! C-tor.
-		/*  @param positionRef	Reference to position, must be alive all time
-		 *						while export object exists.
-		 */
-		explicit PositionExport(Trader::Position &positionRef);
+		explicit PositionExport(const boost::shared_ptr<Trader::Position> &);
 
 	public:
 
@@ -30,8 +47,10 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		Position & GetPosition();
-		const Position & GetPosition() const;
+		Trader::Position & GetPosition();
+		const Trader::Position & GetPosition() const;
+
+		void ResetRefHolder() throw();
 
 	public:
 
@@ -81,61 +100,97 @@ namespace Trader { namespace PyApi {
 
 	private:
 
+		boost::shared_ptr<Position> m_positionRefHolder;
 		Position *m_position;
 
 	};
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class LongPositionExport : public PositionExport {
+#	ifdef BOOST_WINDOWS
+#		pragma warning(push)
+#		pragma warning(disable: 4355)
+#	endif
+
+	template<typename PyApiImpl>
+	class SidePositionExport
+		: public PositionExport,
+		public boost::python::wrapper<SidePositionExport<PyApiImpl>>,
+		public Detail::PythonToCoreTransit<SidePositionExport<PyApiImpl>>,
+		public boost::enable_shared_from_this<SidePositionExport<PyApiImpl>> {
+
 	public:
-		//! C-tor.
-		/*  @param positionRef	Reference to position, must be alive all time
-		 *						while export object exists.
-		 */
-		explicit LongPositionExport(Trader::Position &positionRef);
-	public:
-		static void Export(const char *className);
-	};
 
-	//////////////////////////////////////////////////////////////////////////
-
-	class ShortPositionExport : public PositionExport {
-	public:
-		//! C-tor.
-		/*  @param positionRef	Reference to position, must be alive all time
-		 *						while export object exists.
-		 */
-		explicit ShortPositionExport(Trader::Position &positionRef);
-	public:
-		static void Export(const char *className);
-	};
-
-	//////////////////////////////////////////////////////////////////////////
-
-	namespace Detail {
-
-		template<typename CorePostion>
-		struct CorePositionToExport {
+		explicit SidePositionExport(typename PyApiImpl::Impl &positionRef)
+				: PositionExport(positionRef.shared_from_this()) {
 			//...//
-		};
+		}
 
-		template<>
-		struct CorePositionToExport<Trader::LongPosition> {
-			typedef LongPositionExport Export;
-		};
+		//! Creates new instance.
+		explicit SidePositionExport(
+					PyObject *self,
+					PyApi::Strategy &strategy,
+					int qty,
+					double startPrice)
+				: PositionExport(
+					boost::shared_ptr<PyApiImpl>(
+						new PyApiImpl(
+							strategy.GetStrategy(),
+							qty,
+							strategy.GetStrategy()
+								.GetSecurity()
+								.ScalePrice(startPrice),
+							*this))),
+				PythonToCoreTransit<SidePositionExport>(self) {
+			//...//
+		}
 
-		template<>
-		struct CorePositionToExport<Trader::ShortPosition> {
-			typedef ShortPositionExport Export;
-		};
+	public:
+		
+		static void Export(const char *className) {
+			namespace py = boost::python;
+			typedef py::class_<
+					SidePositionExport,
+					py::bases<PositionExport>,
+					Detail::PythonToCoreTransitHolder<SidePositionExport>,
+					boost::noncopyable>
+				Export;
+			typedef py::init<
+					PyApi::Strategy &,
+					int /*qty*/,
+					double /*startPrice*/>
+				Init;
+			Export(className, Init());
+		}
+	
+	public:
+	
+		typename PyApiImpl::Impl & GetPosition() {
+			return *boost::polymorphic_downcast<PyApiImpl::Impl *>(
+				&PyApi::Position::GetPosition());
+		}
+		
+		const typename PyApiImpl::Impl & GetPosition() const {
+			return const_cast<SidePositionExport *>(this)->GetPosition();
+		}
+		
+		boost::python::override GetOverride(const char *name) const {
+			return get_override(name);
+		}
+	
+	};
 
-	}
+	typedef SidePositionExport<PyApi::LongPosition> LongPositionExport;
+	typedef SidePositionExport<PyApi::ShortPosition> ShortPositionExport;
+
+#	ifdef BOOST_WINDOWS
+#		pragma warning(pop)
+#	endif
 
 	//////////////////////////////////////////////////////////////////////////
 
-	boost::python::object Extract(Trader::Position &);
-	Trader::Position & Extract(const boost::python::object &);
+	boost::python::object Export(Trader::Position &);
+	Trader::Position & ExtractPosition(const boost::python::object &);
 
 	//////////////////////////////////////////////////////////////////////////
 

@@ -29,4 +29,8 @@ namespace Trader {
 	class Observer;
 	class Service;
 
+	namespace SettingsReport {
+		typedef std::list<std::pair<std::string, std::string>> Report;
+	}
+
 }

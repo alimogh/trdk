@@ -8,12 +8,16 @@
 
 #include "Prec.hpp"
 #include "Service.hpp"
+#include "ServiceExport.hpp"
+#include "BaseExport.hpp"
 
+using namespace Trader;
 using namespace Trader::Lib;
 using namespace Trader::PyApi;
 using namespace Trader::PyApi::Detail;
 
 namespace py = boost::python;
+namespace pt = boost::posix_time;
 
 namespace {
 
@@ -21,24 +25,21 @@ namespace {
 		
 		const std::string &name;
 		const std::string &tag;
-		boost::shared_ptr<Trader::Security> &security;
-		const Trader::Lib::IniFileSectionRef &ini;
-		const boost::shared_ptr<Trade::Settings> &settings;
-		boost::scoped_ptr<Script> &script;
+		const boost::shared_ptr<Security> &security;
+		const IniFileSectionRef &ini;
+		const boost::shared_ptr<const Settings> &settings;
 	
 		explicit Params(
 					const std::string &name,
 					const std::string &tag,
-					boost::shared_ptr<Trader::Security> &security,
-					const Trader::Lib::IniFileSectionRef &ini,
-					const boost::shared_ptr<Trade::Settings> &settings,
-					boost::scoped_ptr<Script> &script)
+					const boost::shared_ptr<Security> &security,
+					const IniFileSectionRef &ini,
+					const boost::shared_ptr<const Settings> &settings)
 				: name(name),
 				tag(tag),
 				security(security),
 				ini(ini),
-				settings(settings),
-				script(script) {
+				settings(settings) {
 			//...//
 		}
 
@@ -46,100 +47,136 @@ namespace {
 
 }
 
-#ifdef BOOST_WINDOWS
-#	pragma warning(push)
-#	pragma warning(disable: 4355)
-#endif
-
-Service::Service(uintmax_t params)
-		: Trader::Service(
+PyApi::Service::Service(uintptr_t params, ServiceExport &serviceExport)
+		: Base(
+			reinterpret_cast<Params *>(params)->name,
 			reinterpret_cast<Params *>(params)->tag,
-			reinterpret_cast<Params *>(params)->security),
-		Wrappers::Service(static_cast<Trader::Service &>(*this)),
-		m_script(reinterpret_cast<Params *>(params)->script.release()) {
+			reinterpret_cast<Params *>(params)->security,
+			reinterpret_cast<Params *>(params)->settings),
+		m_serviceExport(serviceExport) {
 	DoSettingsUpdate(reinterpret_cast<Params *>(params)->ini);
 }
 
-#ifdef BOOST_WINDOWS
-#	pragma warning(pop)
-#endif
-
-Service::~Service() {
+PyApi::Service::~Service() {
 	AssertFail("Service::~Service");
 }
 
-boost::shared_ptr<Trader::Service> Service::CreateClientInstance(
+void PyApi::Service::TakeExportObjectOwnership() {
+	Assert(!m_serviceExportRefHolder);
+	m_serviceExportRefHolder = m_serviceExport.shared_from_this();
+	m_serviceExport.MoveRefToCore();
+	m_serviceExport.ResetRefHolder();
+}
+
+ServiceExport & PyApi::Service::GetExport() {
+	Assert(m_serviceExportRefHolder);
+	return m_serviceExport;
+}
+
+const ServiceExport & PyApi::Service::GetExport() const {
+	Assert(m_serviceExportRefHolder);
+	return const_cast<PyApi::Service *>(this)->GetExport();
+}
+
+boost::shared_ptr<Trader::Service> PyApi::Service::CreateClientInstance(
 			const std::string &tag,
-			boost::shared_ptr<Trader::Security> security,
-			const Trader::Lib::IniFileSectionRef &ini) {
+			boost::shared_ptr<Security> security,
+			const IniFileSectionRef &ini,
+			const boost::shared_ptr<const Settings> &settings) {
 	std::unique_ptr<Script> script(LoadScript(ini));
 	auto clientClass = GetPyClass(
 		*script,
 		ini,
 		"Failed to find trader.Service implementation");
-	const Params params(tag, security, ini, script);
 	try {
-		auto pyObject = clientClass(reinterpret_cast<uintmax_t>(&params));
-		Service &service = py::extract<Service &>(pyObject);
-		service.m_self = pyObject;
-		const py::str namePyObject = service.PyGetName();
-		service.m_name = py::extract<std::string>(namePyObject);
-		Assert(!service.m_name.empty());
-		return service.shared_from_this();
-	} catch (const boost::python::error_already_set &) {
+		const std::string className
+			= py::extract<std::string>(clientClass.attr("__name__"));
+		const Params params(
+			className,
+			tag,
+			security,
+			ini,
+			settings);
+		auto pyObject = clientClass(reinterpret_cast<uintptr_t>(&params));
+		ServiceExport &service = py::extract<ServiceExport &>(pyObject);
+		service.MoveRefToCore();
+		return service.GetService().shared_from_this();
+	} catch (const py::error_already_set &) {
 		LogPythonClientException();
-		throw Trader::PyApi::Error(
-			"Failed to create instance of trader.Service");
+		throw Error("Failed to create instance of trader.Service");
 	}
 }
 
-void Service::UpdateAlogImplSettings(const IniFileSectionRef &ini) {
+void PyApi::Service::UpdateAlogImplSettings(const IniFileSectionRef &ini) {
 	DoSettingsUpdate(ini);
 }
 
-void Service::DoSettingsUpdate(const IniFileSectionRef &ini) {
-	Detail::UpdateAlgoSettings(*this, ini);
+void PyApi::Service::DoSettingsUpdate(const IniFileSectionRef &ini) {
+	UpdateAlgoSettings(*this, ini);
 }
 
-void Service::OnServiceStart(const Trader::Service &service) {
+py::override PyApi::Service::GetOverride(const char *) const {
+	return GetExport().GetOverride("onServiceStart");
+}
+
+void PyApi::Service::OnServiceStart(const Trader::Service &service) {
+	const auto f = GetOverride("onServiceStart");
+	if (!f) {
+		Base::OnServiceStart(service);
+		return;
+	}
 	try {
-		Assert(dynamic_cast<const Service *>(&service));
-		PyOnServiceStart(dynamic_cast<const Service &>(service));
+		f(PyApi::Export(service));
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
-		throw Trader::PyApi::Error(
-			"Failed to call method trader.Service.onServiceStart");
+		throw Error("Failed to call method trader.Service.onServiceStart");
 	}
 }
 
-py::str Service::PyGetName() const {
-	const auto f = get_override("getName");
-	if (f) {
-		try {
-			return f();
-		} catch (const py::error_already_set &) {
-			LogPythonClientException();
-			throw Trader::PyApi::Error(
-				"Failed to call method trader.Service.getName");
-		}
-	} else {
-		return Wrappers::Service::PyGetName();
+bool PyApi::Service::OnLevel1Update() {
+	const auto f = GetOverride("onLevel1Update");
+	if (!f) {
+		return Base::OnLevel1Update();
+	}
+	try {
+		return f();
+	} catch (const py::error_already_set &) {
+		LogPythonClientException();
+		throw Error("Failed to call method trader.Service.onLevel1Update");
 	}
 }
 
-void Service::PyOnServiceStart(py::object service) {
-	Assert(service);
-	const auto f = get_override("onServiceStart");
-	if (f) {
-		try {
-			f(service);
-		} catch (const py::error_already_set &) {
-			LogPythonClientException();
-			throw Trader::PyApi::Error(
-				"Failed to call method trader.Service.onServiceStart");
-		}
-	} else {
-		Wrappers::Service::PyOnServiceStart(service);
+bool PyApi::Service::OnNewTrade(
+			const pt::ptime &time,
+			ScaledPrice price,
+			Qty qty,
+			OrderSide side) {
+	const auto f = GetOverride("onNewTrade");
+	if (!f) {
+		return Base::OnNewTrade(time, price, qty, side);
+	}
+	try {
+		return f(
+			PyApi::Export(time),
+			PyApi::Export(price),
+			PyApi::Export(qty),
+			PyApi::Export(side));
+	} catch (const py::error_already_set &) {
+		LogPythonClientException();
+		throw Error("Failed to call method trader.Service.onNewTrade");
+	}
+}
+
+bool PyApi::Service::OnServiceDataUpdate(const Trader::Service &service) {
+	const auto f = GetOverride("onServiceDataUpdate");
+	if (!f) {
+		return Base::OnServiceDataUpdate(service);
+	}
+	try {
+		return f(PyApi::Export(service));
+	} catch (const py::error_already_set &) {
+		LogPythonClientException();
+		throw Error("Failed to call method trader.Service.onServiceDataUpdate");
 	}
 }
 
@@ -148,18 +185,26 @@ void Service::PyOnServiceStart(py::object service) {
 #ifdef BOOST_WINDOWS
 	boost::shared_ptr<Trader::Service> CreateService(
 				const std::string &tag,
-				boost::shared_ptr<Trader::Security> security,
+				boost::shared_ptr<Security> security,
 				const IniFileSectionRef &ini,
-				boost::shared_ptr<const Trader::Settings>) {
-		return Service::CreateClientInstance(tag, security, ini);
+				boost::shared_ptr<const Settings> settings) {
+		return PyApi::Service::CreateClientInstance(
+			tag,
+			security,
+			ini,
+			settings);
 	}
 #else
 	extern "C" boost::shared_ptr<Trader::Service> CreateService(
 				const std::string &tag,
-				boost::shared_ptr<Trader::Security> security,
+				boost::shared_ptr<Security> security,
 				const IniFileSectionRef &ini,
-				boost::shared_ptr<const Trader::Settings>) {
-		return Service::CreateClientInstance(tag, security, ini);
+				boost::shared_ptr<const Settings>) {
+		return PyApi::Service::CreateClientInstance(
+			tag,
+			security,
+			ini,
+			settings);
 	}
 #endif
 

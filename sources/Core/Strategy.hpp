@@ -112,6 +112,11 @@ namespace Trader {
 
 	public:
 
+		virtual const Trader::Security & GetSecurity() const;
+		Trader::Security & GetSecurity();
+
+	public:
+
 		bool IsBlocked() const;
 		void Block();
 

@@ -8,7 +8,7 @@
 
 #include "Prec.hpp"
 #include "SecurityAlgo.hpp"
-#include "Service.hpp"
+#include "Security.hpp"
 #include "Settings.hpp"
 
 namespace fs = boost::filesystem;
@@ -20,10 +20,8 @@ SecurityAlgo::SecurityAlgo(
 			const std::string &typeName,
 			const std::string &name,
 			const std::string &tag,
-			boost::shared_ptr<Security> security,
 			boost::shared_ptr<const Settings> settings)
-		: Module(typeName, name, tag, settings),
-		m_security(security) {
+		: Module(typeName, name, tag, settings) {
 	//...//
 }
 
@@ -31,76 +29,9 @@ SecurityAlgo::~SecurityAlgo() {
 	//...//
 }
 
-void SecurityAlgo::UpdateSettings(const IniFileSectionRef &ini) {
-	const Lock lock(GetMutex());
-	UpdateAlogImplSettings(ini);
-}
-
-Qty SecurityAlgo::CalcQty(ScaledPrice price, ScaledPrice volume) const {
-	return std::max<Qty>(1, Qty(volume / price));
-}
-
-const Security & SecurityAlgo::GetSecurity() const {
-	return const_cast<SecurityAlgo *>(this)->GetSecurity();
-}
-
-Security & SecurityAlgo::GetSecurity() {
-	return *m_security;
-}
-
-void SecurityAlgo::ReportSettings(
-			const SettingsReport::Report &settings)
-		const {
-
-	typedef boost::mutex Mutex;
-	typedef Mutex::scoped_lock Lock;
-	
-	static Mutex mutex;
-
-	const Lock lock(mutex);
-
-	typedef std::map<
-			std::string,
-			std::list<std::pair<std::string, std::string>>>
-		Cache; 
-	static Cache cache;
-	const Cache::const_iterator cacheIt = cache.find(GetTag());
-	if (cacheIt != cache.end()) {
-		if (cacheIt->second == settings) {
-			return;
-		}
-	}
-
-	static fs::path path;
-	if (path.string().empty()) {
-		path = Defaults::GetLogFilePath();
-		path /= "configuration.log";
-		boost::filesystem::create_directories(path.branch_path());
-	}
-
-	{
-		std::ofstream f(
-			path.c_str(),
-			std::ios::out | std::ios::ate | std::ios::app);
-		if (!f) {
-			GetLog().Error("Failed to open log file %1%.", path);
-			throw Trader::Lib::Exception("Failed to open log file");
-		}
-		f
-			<< (boost::get_system_time() + Util::GetEdtDiff())
-			<< ' ' << GetName() << ':' << std::endl;
-		foreach (const auto &s, settings) {
-			f << "\t" << s.first << " = " << s.second << std::endl;
-		}
-		f << std::endl;
-	}
-
-	cache[GetTag()] = settings;
-
-}
-
 pt::ptime SecurityAlgo::GetCurrentTime() const {
-	return !m_security->GetSettings().IsReplayMode()
+	const auto &security = GetSecurity();
+	return security.GetSettings().IsReplayMode()
 		?	boost::get_system_time()
-		:	m_security->GetLastMarketDataTime();
+		:	security.GetLastMarketDataTime();
 }

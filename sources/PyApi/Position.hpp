@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/11/11 03:25:57
+ *   Created: 2013/01/18 03:06:02
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,43 +8,63 @@
 
 #pragma once
 
-#include "Strategy.hpp"
-#include "PositionExport.hpp"
-#include "PythonToCoreTransit.hpp"
 #include "Core/Position.hpp"
 
 namespace Trader { namespace PyApi {
 
+	template<typename Impl>
+	class SidePositionExport;
+
 	//////////////////////////////////////////////////////////////////////////
 
-	class ShortPosition
-		: public Trader::ShortPosition,
-		public Detail::CorePositionToExport<Trader::ShortPosition>::Export,
-		public boost::python::wrapper<ShortPosition>,
-		public Detail::PythonToCoreTransit<ShortPosition> {
+	template<typename ImplT>
+	class SidePosition : public ImplT {
+
 	public:
-		explicit ShortPosition(
-					PyObject *,
-					PyApi::Strategy &,
-					int qty,
-					double startPrice);
+
+		typedef ImplT Impl;
+
+	private:
+
+		typedef SidePositionExport<SidePosition<Impl>> Export;
+
+	public:
+
+		explicit SidePosition(
+					Trader::Strategy &strategy,
+					Trader::Qty qty,
+					Trader::ScaledPrice startPrice,
+					SidePositionExport<SidePosition<Impl>> &positionExport)
+				: Impl(strategy, qty, startPrice),
+				m_positionExport(positionExport) {
+			//....//
+		}
+
+	public:
+
+		void TakeExportObjectOwnership() {
+			Assert(!m_positionExportRefHolder);
+			m_positionExportRefHolder = m_positionExport.shared_from_this();
+			m_positionExport.MoveRefToCore();
+			m_positionExport.ResetRefHolder();
+		}
+		
+		SidePositionExport<SidePosition<Impl>> & GetExport() {
+			Assert(m_positionExportRefHolder);
+			return m_positionExport;
+		}
+		const SidePositionExport<SidePosition<Impl>> & GetExport() const {
+			return const_cast<SidePosition *>(this)->GetExport();
+		}
+
+	private:
+
+		Export &m_positionExport;
+		boost::shared_ptr<Export> m_positionExportRefHolder;
+
 	};
 
-	//////////////////////////////////////////////////////////////////////////
-
-	class LongPosition
-		: public Trader::LongPosition,
-		public Detail::CorePositionToExport<Trader::LongPosition>::Export,
-		public boost::python::wrapper<LongPosition>,
-		public Detail::PythonToCoreTransit<LongPosition> {
-	public:
-		explicit LongPosition(
-					PyObject *,
-					PyApi::Strategy &,
-					int qty,
-					double startPrice);
-	};
-
-	//////////////////////////////////////////////////////////////////////////
+	typedef SidePosition<Trader::LongPosition> LongPosition;
+	typedef SidePosition<Trader::ShortPosition> ShortPosition;
 
 } }

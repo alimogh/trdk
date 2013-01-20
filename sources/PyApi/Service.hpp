@@ -8,15 +8,15 @@
 
 #pragma once
 
-#include "Import.hpp"
+#include "Core/Service.hpp"
+#include "PythonToCoreTransit.hpp"
 #include "Detail.hpp"
 
 namespace Trader { namespace PyApi {
 
-	class Service
-			: public Trader::Service,
-			public Import::Service,
-			public boost::python::wrapper<Trader::PyApi::Service> {
+	class ServiceExport;
+
+	class Service : public Trader::Service {
 
 		template<typename Module>
 		friend void Trader::PyApi::Detail::UpdateAlgoSettings(
@@ -25,29 +25,37 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		explicit Service(uintmax_t);
+		typedef Trader::Service Base;
+
+	public:
+
+		explicit Service(uintptr_t, ServiceExport &serviceExport);
 		virtual ~Service();
+
+	public:
 
 		static boost::shared_ptr<Trader::Service> CreateClientInstance(
 				const std::string &tag,
 				boost::shared_ptr<Trader::Security>,
-				const Trader::Lib::IniFileSectionRef &);
+				const Trader::Lib::IniFileSectionRef &,
+				const boost::shared_ptr<const Trader::Settings> &);
 
-	public:
-
-		virtual boost::python::str Service::PyGetName() const;
-		virtual void PyOnServiceStart(boost::python::object);
+		void TakeExportObjectOwnership();
+		ServiceExport & GetExport();
+		const ServiceExport & GetExport() const;
 
 	public:
 
 		using Trader::Service::GetTag;
 
 		virtual void OnServiceStart(const Trader::Service &);
-
-		operator boost::python::object &() const {
-			Assert(m_self);
-			return m_self;
-		}
+		virtual bool OnLevel1Update();
+		virtual bool OnNewTrade(
+					const boost::posix_time::ptime &,
+					Trader::ScaledPrice,
+					Trader::Qty,
+					Trader::OrderSide);
+		virtual bool OnServiceDataUpdate(const Trader::Service &);
 
 	protected:
 
@@ -57,12 +65,13 @@ namespace Trader { namespace PyApi {
 	private:
 
 		void DoSettingsUpdate(const Trader::Lib::IniFileSectionRef &);
-		void UpdateCallbacks();
+
+		boost::python::override GetOverride(const char *) const;
 
 	private:
-
-		std::unique_ptr<Script> m_script;
-		mutable boost::python::object m_self;
+		
+		ServiceExport &m_serviceExport;
+		boost::shared_ptr<ServiceExport> m_serviceExportRefHolder;
 
 	};
 

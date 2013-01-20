@@ -9,10 +9,9 @@
 #include "Prec.hpp"
 #include "Script.hpp"
 #include "PositionExport.hpp"
+#include "ServiceExport.hpp"
 #include "StrategyExport.hpp"
 #include "SecurityExport.hpp"
-#include "Import.hpp"
-#include "Export.hpp"
 #include "Detail.hpp"
 
 namespace fs = boost::filesystem;
@@ -33,6 +32,7 @@ BOOST_PYTHON_MODULE(trader) {
 	py::object traderModule = py::scope();
 	traderModule.attr("__path__") = "trader";
 
+	SecurityInfoExport::Export("SecurityInfo");
 	SecurityExport::Export("Security");
 
 	PositionExport::Export("Position");
@@ -41,19 +41,16 @@ BOOST_PYTHON_MODULE(trader) {
 
 	SecurityAlgoExport::Export("SecurityAlgo");
 	StrategyExport::Export("Strategy");
-	Import::Service::Export("Service");
-	{
-		py::object detailsModule = py::scope();
-		detailsModule.attr("__path__") = "details";
-		Export::Service::Export("CoreService");
-	}
+	
+	ServiceInfoExport::Export("ServiceInfoExport");
+	ServiceExport::Export("Service");
 	{
 		//! @todo: export __all__
 		py::object servicesModule(
 			py::handle<>(py::borrowed(PyImport_AddModule("trader.services"))));
 		py::scope().attr("services") = servicesModule;
 		py::scope servicesScope = servicesModule;
-		Export::Services::BarService::Export("BarService");
+		BarServiceExport::Export("BarService");
 	}
 
 }

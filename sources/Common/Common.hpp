@@ -35,4 +35,3 @@
 
 #include "Core/Types.hpp"
 #include "Core/Log.hpp"
-#include "Core/Fwd.hpp"

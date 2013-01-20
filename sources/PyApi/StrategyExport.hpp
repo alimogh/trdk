@@ -11,12 +11,11 @@
 #include "SecurityAlgoExport.hpp"
 #include "Core/Strategy.hpp"
 
-
 namespace Trader { namespace PyApi {
 
 	class StrategyExport : public SecurityAlgoExport {
 
-	public:
+	private:
 
 		class PositionListExport {
 
@@ -44,7 +43,7 @@ namespace Trader { namespace PyApi {
 
 		public:
 
-			explicit PositionListExport(Strategy::PositionList &);
+			explicit PositionListExport(Trader::Strategy::PositionList &);
 
 		public:
 
@@ -61,7 +60,7 @@ namespace Trader { namespace PyApi {
 
 		private:
 
-			Strategy::PositionList *m_list;
+			Trader::Strategy::PositionList *m_list;
 
 		};
 
@@ -75,25 +74,17 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		void CallOnLevel1UpdatePyMethod();
-		void CallOnNewTradePyMethod(
-					const boost::python::object &time,
-					const boost::python::object &price,
-					const boost::python::object &qty,
-					const boost::python::object &side);
-		void CallOnServiceDataUpdatePyMethod(
-					const boost::python::object &service);
-		void CallOnPositionUpdatePyMethod(
-					const boost::python::object &position);
+		Trader::Strategy & GetStrategy();
+		const Trader::Strategy & GetStrategy() const;
 
-	public:
+	private:
 
 		PositionListExport GetPositions();
 
-	public:
+	private:
 
-		Trader::Strategy & GetStrategy();
-		const Trader::Strategy & GetStrategy() const;
+		Trader::Strategy *m_strategy;
+		SecurityExport m_securityExport;
 
 	};
 

@@ -45,15 +45,24 @@ namespace Trader {
 
 		Trader::Module::Log & GetLog() const throw();
 
+		//! @todo: Move ref to engine.
 		const Trader::Settings & GetSettings() const;
 
 	public:
 
 		virtual void OnServiceStart(const Trader::Service &);
 
+		void UpdateSettings(const Trader::Lib::IniFileSectionRef &);
+
 	protected:
 
+		virtual void UpdateAlogImplSettings(
+					const Trader::Lib::IniFileSectionRef &)
+				= 0;
+
 		Mutex & GetMutex() const;
+
+		void ReportSettings(const Trader::SettingsReport::Report &) const;
 
 	private:
 

@@ -124,6 +124,8 @@ namespace Trader { namespace Gateway {
 		
 		Trader::ShortPosition & GetShortPosition(Trader::Security &);
 		Trader::LongPosition & GetLongPosition(Trader::Security &);
+
+		void UpdateAlogImplSettings(const Trader::Lib::IniFileSectionRef &);
 		
 	private:
 

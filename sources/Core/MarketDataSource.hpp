@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "Fwd.hpp"
 #include "Api.h"
 
 namespace Trader {
@@ -37,7 +38,7 @@ namespace Trader {
 
 	public:
 
-		virtual boost::shared_ptr<Security> CreateSecurity(
+		virtual boost::shared_ptr<Trader::Security> CreateSecurity(
 					boost::shared_ptr<Trader::TradeSystem>,
 					const std::string &symbol,
 					const std::string &primaryExchange,

@@ -12,7 +12,7 @@
 #include "PositionExport.hpp"
 #include "Position.hpp"
 #include "Service.hpp"
-#include "Detail.hpp"
+#include "BaseExport.hpp"
 
 using namespace Trader;
 using namespace Trader::PyApi;
@@ -31,7 +31,7 @@ StrategyExport::PositionListExport::IteratorExport::IteratorExport(
 
 py::object StrategyExport::PositionListExport::IteratorExport::dereference()
 		const {
-	return Extract(*base_reference());
+	return PyApi::Export(*base_reference());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -65,7 +65,9 @@ StrategyExport::PositionListExport::end() {
 //////////////////////////////////////////////////////////////////////////
 
 StrategyExport::StrategyExport(Trader::Strategy &strategy)
-		: SecurityAlgoExport(strategy) {
+		: SecurityAlgoExport(strategy),
+		m_strategy(&strategy),
+		m_securityExport(strategy.GetSecurity()) {
 	//...//
 }
 
@@ -81,6 +83,7 @@ void StrategyExport::Export(const char *className) {
 	const py::scope strategyClass = StrategyImport(
 			className,
 			py::init<uintmax_t>())
+		.def_readonly("security", &StrategyExport::m_securityExport)
 		.add_property("positions", &StrategyExport::GetPositions);
 
 	PositionListExport::Export("PositionList");
@@ -91,69 +94,11 @@ StrategyExport::PositionListExport StrategyExport::GetPositions() {
 	return PositionListExport(GetStrategy().GetPositions());
 }
 
-void StrategyExport::CallOnLevel1UpdatePyMethod() {
-	GetStrategy().OnLevel1Update();
-}
-
-void StrategyExport::CallOnNewTradePyMethod(
-			const py::object &pyTimeObject,
-			const py::object &pyPriceObject,
-			const py::object &pyQtyObject,
-			const py::object &pySideObject) {
-	Assert(pyTimeObject);
-	Assert(pyPriceObject);
-	Assert(pyQtyObject);
-	Assert(pySideObject);
-	const pt::ptime time = Detail::Time::Convert(pyTimeObject);
-	ScaledPrice price;
-	try {
-		price = py::extract<decltype(price)>(pyPriceObject);
-	} catch (const py::error_already_set &) {
-		Detail::LogPythonClientException();
-		throw PyApi::Error(
-			"Failed to convert price to Trader::ScaledPrice");
-	}
-	Qty qty;
-	try {
-		qty = py::extract<decltype(qty)>(pyQtyObject);
-	} catch (const py::error_already_set &) {
-		Detail::LogPythonClientException();
-		throw PyApi::Error("Failed to convert qty to Trader::Qty");
-	}
-	const OrderSide side = Detail::OrderSide::Convert(pySideObject);
-	GetStrategy().OnNewTrade(time, price, qty, side);
-}
-
-void StrategyExport::CallOnServiceDataUpdatePyMethod(
-			const py::object &servicePyObject) {
-	Assert(servicePyObject);
-	try {
-		 py::extract<PyApi::Service> getPyServiceImpl(servicePyObject);
-		if (getPyServiceImpl.check()) {
-			GetStrategy().Trader::Strategy::OnServiceDataUpdate(getPyServiceImpl());
-		} else {
-			const Export::Service &service
-				= py::extract<const Export::Service &>(servicePyObject);
-			GetStrategy().Trader::Strategy::OnServiceDataUpdate(service.GetService());
-		}
-	} catch (const py::error_already_set &) {
-		Detail::LogPythonClientException();
-		throw PyApi::Error(
-			"Failed to convert object to Trader::Service");
-	}
-}
-
-void StrategyExport::CallOnPositionUpdatePyMethod(const py::object &position) {
-	Assert(position);
-	GetStrategy().Trader::Strategy::OnPositionUpdate(Extract(position));
-}
-
 Trader::Strategy & StrategyExport::GetStrategy() {
-	return Get<Trader::Strategy>();
+	return *m_strategy;
 }
-
 const Trader::Strategy & StrategyExport::GetStrategy() const {
-	return Get<Trader::Strategy>();
+	return const_cast<StrategyExport *>(this)->GetStrategy();
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "SettingsReport.hpp"
 #include "Module.hpp"
 #include "Api.h"
 
@@ -22,37 +21,16 @@ namespace Trader {
 				const std::string &typeName,
 				const std::string &name,
 				const std::string &tag,
-				boost::shared_ptr<Trader::Security>,
 				boost::shared_ptr<const Settings>);
 		virtual ~SecurityAlgo();
 
 	public:
 
-		const Trader::Security & GetSecurity() const;
-		Trader::Security & GetSecurity();
-
-		void UpdateSettings(const Trader::Lib::IniFileSectionRef &);
+		virtual const Trader::Security & GetSecurity() const = 0;
 
 	protected:
-
-		virtual void UpdateAlogImplSettings(
-					const Trader::Lib::IniFileSectionRef &)
-				= 0;
-
-	protected:
-
-		Trader::Qty CalcQty(
-					Trader::ScaledPrice,
-					Trader::ScaledPrice volume)
-				const;
-
-		void ReportSettings(const SettingsReport::Report &) const;
 
 		boost::posix_time::ptime GetCurrentTime() const;
-
-	private:
-
-		const boost::shared_ptr<Trader::Security> m_security;
 
 	};
 

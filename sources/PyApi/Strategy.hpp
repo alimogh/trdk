@@ -37,21 +37,6 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		void CallOnServiceStartPyMethod(const boost::python::object &);
-		
-		void CallOnLevel1UpdatePyMethod();
-		void CallOnNewTradePyMethod(
-					const boost::python::object &time,
-					const boost::python::object &price,
-					const boost::python::object &qty,
-					const boost::python::object &side);
-		void CallOnServiceDataUpdatePyMethod(
-					const boost::python::object &service);
-		void CallOnPositionUpdatePyMethod(
-					const boost::python::object &position);
-
-	public:
-
 		using Trader::Strategy::GetTag;
 		using Trader::Strategy::GetLog;
 
@@ -90,9 +75,6 @@ namespace Trader { namespace PyApi {
 
 		std::unique_ptr<Script> m_script;
 		boost::python::object m_self;
-
-		//! @todo remove
-		std::map<const void *, boost::python::object> m_pyCache;
 
 	};
 

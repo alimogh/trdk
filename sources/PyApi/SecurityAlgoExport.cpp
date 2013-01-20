@@ -8,11 +8,7 @@
 
 #include "Prec.hpp"
 #include "SecurityAlgoExport.hpp"
-#include "Import.hpp"
 #include "Core/SecurityAlgo.hpp"
-#include "Service.hpp"
-#include "Errors.hpp"
-#include "Detail.hpp"
 
 using namespace Trader::PyApi;
 namespace py = boost::python;
@@ -55,9 +51,8 @@ void SecurityAlgoExport::LogExport::Trading(const char *message) {
 
 //////////////////////////////////////////////////////////////////////////
 
-SecurityAlgoExport::SecurityAlgoExport(Trader::SecurityAlgo &algo)
-		: m_security(algo.GetSecurity().shared_from_this()),
-		m_algo(algo) {
+SecurityAlgoExport::SecurityAlgoExport(const Trader::SecurityAlgo &algo)
+		: m_algo(&algo) {
 	//...//
 }
 
@@ -67,7 +62,6 @@ void SecurityAlgoExport::Export(const char *className) {
 	const py::scope securityAlgoClass = SecurityAlgo(className, py::no_init)
 		.add_property("name", &SecurityAlgoExport::GetName)
 		.add_property("tag", &SecurityAlgoExport::GetTag)
- 		.def_readonly("security", &SecurityAlgoExport::m_security)
 		.add_property("log", &SecurityAlgoExport::GetLog);
 	
 	LogExport::Export("Log");
@@ -75,32 +69,13 @@ void SecurityAlgoExport::Export(const char *className) {
 }
 
 py::str SecurityAlgoExport::GetTag() const {
-	return m_algo.GetTag().c_str();
+	return m_algo->GetTag().c_str();
 }
 
 py::str SecurityAlgoExport::GetName() const {
-	return m_algo.GetName().c_str();
-}
-
-void SecurityAlgoExport::CallOnServiceStartPyMethod(
-			const py::object &servicePyObject) {
-	Assert(servicePyObject);
-	try {
-		py::extract<PyApi::Service> getPyServiceImpl(servicePyObject);
-		if (getPyServiceImpl.check()) {
-			m_algo.Trader::SecurityAlgo::OnServiceStart(getPyServiceImpl());
-		} else {
-			const Export::Service &service
-				= py::extract<const Export::Service &>(servicePyObject);
-			m_algo.Trader::SecurityAlgo::OnServiceStart(
-				service.GetService());
-		}
-	} catch (const py::error_already_set &) {
-		Detail::LogPythonClientException();
-		throw PyApi::Error("Failed to convert object to Trader::Service");
-	}
+	return m_algo->GetName().c_str();
 }
 
 SecurityAlgoExport::LogExport SecurityAlgoExport::GetLog() const {
-	return LogExport(m_algo.GetLog());
+	return LogExport(m_algo->GetLog());
 }

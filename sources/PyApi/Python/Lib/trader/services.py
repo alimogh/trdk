@@ -10,7 +10,7 @@ __all__ = [
 
 ###############################################################################
 
-class BarService(trader.Service):
+class BarService(trader.ServiceInfo):
 
     class Bar(object):
         time = int # Bar start time.

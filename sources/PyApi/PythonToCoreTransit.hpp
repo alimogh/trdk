@@ -114,11 +114,11 @@ namespace Trader { namespace PyApi { namespace Detail {
 
 	public:
 
-		explicit PythonToCoreTransit(PyObject *self)
+		explicit PythonToCoreTransit(PyObject *self = nullptr)
 				: m_coreOwns(false),
 				m_self(self),
 				m_holder(nullptr) {
-			Assert(m_self);
+			//...//
 		}
 
 		~PythonToCoreTransit() {
@@ -144,8 +144,12 @@ namespace Trader { namespace PyApi { namespace Detail {
 
 	public:
 
-		boost::python::object GetSelf() {
+		//! Self.
+		/** Method is "const" as Python doesn't support constants.
+		  */
+		boost::python::object GetSelf() const {
 			namespace py = boost::python;
+			Assert(m_self);
 			return boost::python::object(py::handle<>(py::borrowed(m_self)));
 		}
 
@@ -156,6 +160,7 @@ namespace Trader { namespace PyApi { namespace Detail {
 		}
 
 		void Bind(PythonToCoreTransitHolder<ValueType> &holder) throw() {
+			Assert(m_self);
 			Assert(holder.IsPythonOwns());
 			Assert(!m_holder);
 			m_holder = &holder;
@@ -163,12 +168,14 @@ namespace Trader { namespace PyApi { namespace Detail {
 
 		void Unbind(PythonToCoreTransitHolder<ValueType> &holder) throw() {
 			Lib::UseUnused(holder);
+			Assert(m_self);
 			Assert(m_holder);
 			Assert(m_holder == &holder);
 			m_holder = nullptr;
 		}
 
 		void MoveRefToCore() throw() {
+			Assert(m_self);
 			Assert(!IsCoreOwns());
 			Assert(m_holder);
 			if (!m_holder) {
@@ -181,6 +188,7 @@ namespace Trader { namespace PyApi { namespace Detail {
 		}
 
 		void MoveRefToPython() throw() {
+			Assert(m_self);
 			Assert(IsCoreOwns());
 			Assert(m_holder);
 			if (!m_holder) {

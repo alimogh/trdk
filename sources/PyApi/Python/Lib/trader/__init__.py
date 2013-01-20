@@ -2,8 +2,7 @@
 ###############################################################################
 
 __all__ = [
-    "logInfo",
-    "logTrading",
+    "SecurityInfo",
     "Security",
     "LongPosition",
     "ShortPosition",
@@ -12,7 +11,7 @@ __all__ = [
 
 ###############################################################################
 
-class Security(object):
+class SecurityInfo(object):
 
     symbol = str
     fullSymbol = str
@@ -44,14 +43,16 @@ class Security(object):
         """
         pass
 
+class Security(SecurityInfo):
+
     def cancelOrder(self, orderId):
-        """ Cancels order by ID.
+        """ Cancels order by ID. Asynchronous.
         :type orderId: int
         """
 
     def cancelAllOrders(self):
         """ Cancels all active orders for this security, which were open by
-        engine.
+        engine. Asynchronous.
         """
 
 ###############################################################################
@@ -93,8 +94,6 @@ class SecurityAlgo(object):
     name = str
     tag = str
 
-    security = Security
-
     log = Log
 
     def __init__(self, param):
@@ -121,6 +120,8 @@ class Strategy(SecurityAlgo):
             :rtype: int
             """
             pass
+
+    security = Security
 
     positions = PositionList # active positions
 
@@ -163,7 +164,17 @@ class Strategy(SecurityAlgo):
         """
         pass
 
-class Service(SecurityAlgo):
+class ServiceInfo(SecurityAlgo):
+
+    security = SecurityInfo
+
+    def __init__(self, param):
+        """
+        :type param: int
+        """
+        pass
+
+class Service(ServiceInfo):
 
     def __init__(self, param):
         """
@@ -244,55 +255,54 @@ class Position(object):
         """
 
     def openAtMarketPrice(self):
-        """ Asynchronous. Returns order ID.
+        """ Sends market order. Asynchronous. Returns order ID.
         :rtype: int
         """
         pass
 
     def open(self, price):
-        """ Asynchronous. Returns order ID.
+        """ Sends limit order. Asynchronous. Returns order ID.
         :type price: int
         :rtype: int
         """
 
     def openAtMarketPriceWithStopPrice(self, stopPrice):
-        """ Asynchronous. Returns order ID.
+        """ Sends market order. Asynchronous. Returns order ID.
         :type stopPrice: int
         :rtype: int
         """
         pass
 
     def openOrCancel(self, price):
-        """ Asynchronous. Returns order ID.
+        """ Sends "Immediate or Cancel" order. Asynchronous. Returns order ID.
         :type price: int
         :rtype: int
         """
         pass
 
     def  closeAtMarketPrice(self):
-        """ Asynchronous. Returns order ID.
+        """ Sends market order. Asynchronous. Returns order ID.
         :rtype: int
         """
         pass
 
     def close(self, price):
-        """ Asynchronous. Returns order ID.
+        """ Sends limit order. Asynchronous. Returns order ID.
         :type price: int
         :rtype: int
         """
         pass
 
     def closeAtMarketPriceWithStopPrice(self, stopPrice):
-        """ Asynchronous. Returns order ID.
+        """
+        Sends market order. Asynchronous. Returns order ID.
         :type stopPrice: int
         :rtype: int
         """
         pass
 
     def closeOrCancel(self, price):
-        """
-        Closes position with "Immediate or Cancel" order. Asynchronous.
-        Returns order ID.
+        """ Sends "Immediate or Cancel" order. Asynchronous. Returns order ID.
         :type price: int
         :rtype: int
         """

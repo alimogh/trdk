@@ -12,11 +12,19 @@ namespace Trader { namespace PyApi {
 
 	//////////////////////////////////////////////////////////////////////////
 	
-	class ConstSecurityExport : private boost::noncopyable {
+	class SecurityInfoExport {
 
 	public:
 
-		explicit ConstSecurityExport(const boost::shared_ptr<const Security> &);
+		explicit SecurityInfoExport(const Security &);
+
+	public:
+
+		static void Export(const char *className);
+
+	public:
+
+		const Security & GetSecurity() const;
 
 	public:
 
@@ -40,17 +48,17 @@ namespace Trader { namespace PyApi {
 
 	private:
 
-		const boost::shared_ptr<const Security> m_security;
+		const Security *m_security;
 
 	};
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class SecurityExport : public ConstSecurityExport {
+	class SecurityExport : public SecurityInfoExport {
 
 	public:
 
-		explicit SecurityExport(const boost::shared_ptr<Security> &);
+		explicit SecurityExport(Security &);
 
 	public:
 
@@ -58,16 +66,12 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		boost::shared_ptr<Security> GetSecurity();
+		Security & GetSecurity();
 
 	public:
 
 		void CancelOrder(int orderId);
 		void CancelAllOrders();
-
-	private:
-
-		const boost::shared_ptr<Security> m_security;
 
 	};
 

@@ -8,6 +8,7 @@
 
 #include "Prec.hpp"
 #include "BarService.hpp"
+#include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 
 using namespace Trader;
