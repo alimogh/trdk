@@ -16,6 +16,8 @@
 
 namespace Trader { namespace PyApi {
 
+	class Service;
+
 	//////////////////////////////////////////////////////////////////////////
 
 	class ServiceInfoExport : public SecurityAlgoExport {
@@ -56,7 +58,6 @@ namespace Trader { namespace PyApi {
 
 	class ServiceExport
 		: public ServiceInfoExport,
-		public boost::python::wrapper<ServiceExport>,
 		public Detail::PythonToCoreTransit<ServiceExport>,
 		public boost::enable_shared_from_this<ServiceExport> {
 
@@ -71,9 +72,8 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		Trader::Service & GetService();
-
-		boost::python::override GetOverride(const char *name) const;
+		PyApi::Service & GetService();
+		const PyApi::Service & GetService() const;
 
 	};
 

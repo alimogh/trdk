@@ -9,11 +9,40 @@
 #pragma once
 
 #include "SecurityAlgoExport.hpp"
+#include "PythonToCoreTransit.hpp"
 #include "Core/Strategy.hpp"
 
 namespace Trader { namespace PyApi {
 
-	class StrategyExport : public SecurityAlgoExport {
+	class Strategy;
+
+	//////////////////////////////////////////////////////////////////////////
+
+	class StrategyInfoExport : public SecurityAlgoExport {
+
+	public:
+
+		explicit StrategyInfoExport(const boost::shared_ptr<PyApi::Strategy> &);
+
+	public:
+
+		PyApi::Strategy & GetStrategy();
+		const PyApi::Strategy & GetStrategy() const;
+
+		void ResetRefHolder() throw();
+
+	private:
+
+		boost::shared_ptr<PyApi::Strategy> m_strategyRefHolder;
+		PyApi::Strategy *m_strategy;
+
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+
+	class StrategyExport : public StrategyInfoExport,
+		public Detail::PythonToCoreTransit<StrategyExport>,
+		public boost::enable_shared_from_this<StrategyExport> {
 
 	private:
 
@@ -66,16 +95,12 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		explicit StrategyExport(Strategy &);
+		//! Creates new strategy instance.
+		explicit StrategyExport(PyObject *self, uintptr_t instanceParam);
 
 	public:
 
 		static void Export(const char *className);
-
-	public:
-
-		Trader::Strategy & GetStrategy();
-		const Trader::Strategy & GetStrategy() const;
 
 	private:
 
@@ -83,9 +108,10 @@ namespace Trader { namespace PyApi {
 
 	private:
 
-		Trader::Strategy *m_strategy;
 		SecurityExport m_securityExport;
 
 	};
+
+	//////////////////////////////////////////////////////////////////////////
 
 } }

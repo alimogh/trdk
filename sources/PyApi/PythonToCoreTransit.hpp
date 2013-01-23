@@ -26,13 +26,13 @@ namespace Trader { namespace PyApi { namespace Detail {
 				m_holder(m_ptr),
 				m_weak(m_holder) {
 			Assert(m_ptr);
-			m_ptr->Bind(*this);
+			m_ptr->AttachPythonRefHolder(*this);
 		}
 
 		~PythonToCoreTransitHolder() {
 			Assert(m_ptr || m_weak.expired());
 			if (m_ptr) {
-				m_ptr->Unbind(*this);
+				m_ptr->DettachPythonRefHolder(*this);
 			}
 		}
 
@@ -106,7 +106,9 @@ namespace boost { namespace python {
 namespace Trader { namespace PyApi { namespace Detail {
 
 	template<typename T>
-	class PythonToCoreTransit : private boost::noncopyable {
+	class PythonToCoreTransit
+			: private boost::noncopyable,
+			public boost::python::wrapper<T> {
 
 	public:
 
@@ -159,14 +161,19 @@ namespace Trader { namespace PyApi { namespace Detail {
 			return m_coreOwns;
 		}
 
-		void Bind(PythonToCoreTransitHolder<ValueType> &holder) throw() {
+		void AttachPythonRefHolder(
+					PythonToCoreTransitHolder<ValueType> &holder) 
+				throw() {
 			Assert(m_self);
 			Assert(holder.IsPythonOwns());
 			Assert(!m_holder);
+			boost::python::detail::initialize_wrapper(m_self, this);
 			m_holder = &holder;
 		}
 
-		void Unbind(PythonToCoreTransitHolder<ValueType> &holder) throw() {
+		void DettachPythonRefHolder(
+					const PythonToCoreTransitHolder<ValueType> &holder)
+				throw() {
 			Lib::UseUnused(holder);
 			Assert(m_self);
 			Assert(m_holder);
@@ -178,9 +185,6 @@ namespace Trader { namespace PyApi { namespace Detail {
 			Assert(m_self);
 			Assert(!IsCoreOwns());
 			Assert(m_holder);
-			if (!m_holder) {
-				return;
-			}
 			Assert(m_holder->IsPythonOwns());
 			m_holder->Take();
 			IncRef();
@@ -191,16 +195,45 @@ namespace Trader { namespace PyApi { namespace Detail {
 			Assert(m_self);
 			Assert(IsCoreOwns());
 			Assert(m_holder);
-			if (!m_holder) {
-				return;
-			}
 			Assert(!m_holder->IsPythonOwns());
 			m_holder->Return();
 			DecRef();
 			m_coreOwns = false;
 		}
 
+		bool CallVirtualMethod(
+					const char *name,
+					const boost::function<void (const boost::python::override &)> &call)
+				const {
+			namespace py = boost::python;
+			Assert(m_self);
+			//! @todo:	Check in new Boost.Python (after 1.51) and new Python
+			//!			(after 2.7.3). Old versions makes error if attribute
+			//!			doesn't defined in Python class implementation. So we
+			//!			call PyObject_HasAttrString before Boost.Python will
+			//!			call PyObject_GetAttrString:
+			if (!PyObject_HasAttrString(m_self, name)) {
+				return false;
+			} 
+			const auto f = get_override(name);
+			Assert(f);
+			if (!f) {
+				return false;
+			}
+			try {
+				call(f);
+			} catch (const boost::python::error_already_set &) {
+				LogPythonClientException();
+				boost::format message("Failed to call virtual method %1%");
+				message % name;
+				throw Trader::PyApi::Error(message.str().c_str());
+			}
+			return true;
+		}
+
 	private:
+
+		using  boost::python::wrapper<T>::get_override;
 
 		void IncRef() throw() {
 			try {

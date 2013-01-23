@@ -7,10 +7,10 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "PositionExport.hpp"
-#include "Position.hpp"
-#include "ServiceExport.hpp"
 #include "Strategy.hpp"
+#include "StrategyExport.hpp"
+#include "PositionExport.hpp"
+#include "ServiceExport.hpp"
 #include "BaseExport.hpp"
 #include "Core/StrategyPositionReporter.hpp"
 
@@ -53,26 +53,16 @@ namespace {
 
 }
 
-#ifdef BOOST_WINDOWS
-#	pragma warning(push)
-#	pragma warning(disable: 4355)
-#endif
-
-PyApi::Strategy::Strategy(uintmax_t params)
+PyApi::Strategy::Strategy(uintptr_t params, StrategyExport &strategyExport)
 		: Trader::Strategy(
 			reinterpret_cast<Params *>(params)->name,
 			reinterpret_cast<Params *>(params)->tag,
 			reinterpret_cast<Params *>(params)->security,
 			reinterpret_cast<Params *>(params)->settings),
-		StrategyExport(static_cast<Trader::Strategy &>(*this)),
+		m_strategyExport(strategyExport),
 		m_script(reinterpret_cast<Params *>(params)->script.release()) {
 	DoSettingsUpdate(reinterpret_cast<Params *>(params)->ini);
 }
-
-#ifdef BOOST_WINDOWS
-#	pragma warning(pop)
-#endif
-
 
 PyApi::Strategy::~Strategy() {
 	AssertFail("Strategy::~Strategy");
@@ -88,38 +78,45 @@ boost::shared_ptr<Trader::Strategy> PyApi::Strategy::CreateClientInstance(
 		*script,
 		ini,
 		"Failed to find trader.Strategy implementation");
-	const std::string className
-		= py::extract<std::string>(clientClass.attr("__name__"));
-	const Params params(
-		className,
-		tag,
-		security,
-		ini,
-		settings,
-		script);
 	try {
-		auto pyObject = clientClass(reinterpret_cast<uintmax_t>(&params));
-		Strategy &strategy = py::extract<Strategy &>(pyObject);
-		strategy.m_self = pyObject;
-		return strategy.shared_from_this();
+		const std::string className
+			= py::extract<std::string>(clientClass.attr("__name__"));
+		const Params params(
+			className,
+			tag,
+			security,
+			ini,
+			settings,
+			script);
+		auto pyObject = clientClass(reinterpret_cast<uintptr_t>(&params));
+		StrategyExport &strategyExport
+			= py::extract<StrategyExport &>(pyObject);
+		// first increasing core object ref counter...
+		const auto strategy = strategyExport.GetStrategy().shared_from_this();
+		// then move py-object ref to core:
+		strategyExport.GetStrategy().TakeExportObjectOwnership();
+		return strategy;
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
 		throw Error("Failed to create instance of trader.Strategy");
 	}
 }
 
-void PyApi::Strategy::OnServiceStart(const Trader::Service &service) {
-	const auto f = get_override("onServiceStart");
-	if (!f) {
-		Trader::Strategy::OnServiceStart(service);
-		return;
-	}
-	try {
-		f(PyApi::Export(service));
-	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error("Failed to call method trader.Strategy.onServiceStart");
-	}
+void PyApi::Strategy::TakeExportObjectOwnership() {
+	Assert(!m_strategyExportRefHolder);
+	m_strategyExportRefHolder = m_strategyExport.shared_from_this();
+	m_strategyExport.MoveRefToCore();
+	m_strategyExport.ResetRefHolder();
+}
+
+StrategyExport & PyApi::Strategy::GetExport() {
+	Assert(m_strategyExportRefHolder);
+	return m_strategyExport;
+}
+
+const StrategyExport & PyApi::Strategy::GetExport() const {
+	Assert(m_strategyExportRefHolder);
+	return const_cast<PyApi::Strategy *>(this)->GetExport();
 }
 
 namespace {
@@ -211,17 +208,32 @@ void PyApi::Strategy::DoSettingsUpdate(const IniFileSectionRef &ini) {
 	UpdateAlgoSettings(*this, ini);
 }
 
-void PyApi::Strategy::OnLevel1Update() {
-	const auto f = get_override("onLevel1Update");
-	if (!f) {
-		Trader::Strategy::OnLevel1Update();
-		return;
+bool PyApi::Strategy::CallVirtualMethod(
+			const char *name,
+			const boost::function<void (const py::override &)> &call)
+		const {
+	return GetExport().CallVirtualMethod(name, call);
+}
+
+void PyApi::Strategy::OnServiceStart(const Trader::Service &service) {
+	const bool isExists = CallVirtualMethod(
+		"onServiceStart",
+		[&](const py::override &f) {
+			f(PyApi::Export(service));
+		});
+	if (!isExists) {
+		Base::OnServiceStart(service);
 	}
-	try {
-		f();
-	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error("Failed to call method trader.Strategy.onLevel1Update");
+}
+
+void PyApi::Strategy::OnLevel1Update() {
+	const bool isExists = CallVirtualMethod(
+		"onLevel1Update",
+		[&](const py::override &f) {
+			f();
+		});
+	if (!isExists) {
+		Base::OnLevel1Update();
 	}
 }
 
@@ -230,50 +242,39 @@ void PyApi::Strategy::OnNewTrade(
 			ScaledPrice price,
 			Qty qty,
 			OrderSide side) {
-	const auto f = get_override("onNewTrade");
-	if (!f) {
-		Trader::Strategy::OnNewTrade(time, price, qty, side);
-		return;
-	}
-	try {
-		f(
-			PyApi::Export(time),
-			PyApi::Export(price),
-			PyApi::Export(qty),
-			PyApi::Export(side));
-	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error("Failed to call method trader.Strategy.onNewTrade");
+	const bool isExists = CallVirtualMethod(
+		"onNewTrade",
+		[&](const py::override &f) {
+			f(
+				PyApi::Export(time),
+				PyApi::Export(price),
+				PyApi::Export(qty),
+				PyApi::Export(side));
+		});
+	if (!isExists) {
+		Base::OnNewTrade(time, price, qty, side);
 	}
 }
 
 void PyApi::Strategy::OnServiceDataUpdate(const Trader::Service &service) {
-	const auto f = get_override("onServiceDataUpdate");
-	if (!f) {
-		Trader::Strategy::OnServiceDataUpdate(service);
-		return;
-	}
-	try {
-		f(PyApi::Export(service));
-	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error(
-			"Failed to call method trader.Strategy.onServiceDataUpdate");
+	const bool isExists = CallVirtualMethod(
+		"onServiceDataUpdate",
+		[&](const py::override &f) {
+			f(PyApi::Export(service));
+		});
+	if (!isExists) {
+		Base::OnServiceDataUpdate(service);
 	}
 }
 
 void PyApi::Strategy::OnPositionUpdate(Position &position) {
-	const auto f = get_override("onPositionUpdate");
-	if (!f) {
-		Trader::Strategy::OnPositionUpdate(position);
-		return;
-	}
-	try {
-		f(PyApi::Export(position));
-	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error(
-			"Failed to call method trader.Strategy.onPositionUpdate");
+	const bool isExists = CallVirtualMethod(
+		"onPositionUpdate",
+		[&](const py::override &f) {
+			f(PyApi::Export(position));
+		});
+	if (!isExists) {
+		Base::OnPositionUpdate(position);
 	}
 }
 

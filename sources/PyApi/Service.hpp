@@ -9,7 +9,6 @@
 #pragma once
 
 #include "Core/Service.hpp"
-#include "PythonToCoreTransit.hpp"
 #include "Detail.hpp"
 
 namespace Trader { namespace PyApi {
@@ -40,7 +39,6 @@ namespace Trader { namespace PyApi {
 				const Trader::Lib::IniFileSectionRef &,
 				const boost::shared_ptr<const Trader::Settings> &);
 
-		void TakeExportObjectOwnership();
 		ServiceExport & GetExport();
 		const ServiceExport & GetExport() const;
 
@@ -65,8 +63,12 @@ namespace Trader { namespace PyApi {
 	private:
 
 		void DoSettingsUpdate(const Trader::Lib::IniFileSectionRef &);
-
-		boost::python::override GetOverride(const char *) const;
+		
+		bool CallVirtualMethod(
+					const char *name,
+					const boost::function<void (const boost::python::override &)> &)
+				const;
+		void TakeExportObjectOwnership();
 
 	private:
 		

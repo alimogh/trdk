@@ -9,15 +9,13 @@
 #pragma once
 
 #include "Core/Strategy.hpp"
-#include "StrategyExport.hpp"
 #include "Detail.hpp"
 
 namespace Trader { namespace PyApi {
 
-	class Strategy
-			: public Trader::Strategy,
-			public StrategyExport,
-			public boost::python::wrapper<Strategy> {
+	class StrategyExport;
+
+	class Strategy : public Trader::Strategy {
 
 		template<typename Module>
 		friend void Trader::PyApi::Detail::UpdateAlgoSettings(
@@ -26,7 +24,11 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		explicit Strategy(uintmax_t);
+		typedef Trader::Strategy Base;
+
+	public:
+
+		explicit Strategy(uintptr_t, StrategyExport &);
 		virtual ~Strategy();
 
 		static boost::shared_ptr<Trader::Strategy> CreateClientInstance(
@@ -34,6 +36,11 @@ namespace Trader { namespace PyApi {
 					boost::shared_ptr<Trader::Security>,
 					const Trader::Lib::IniFileSectionRef &,
 					boost::shared_ptr<const Trader::Settings>);
+
+	public:
+
+		StrategyExport & GetExport();
+		const StrategyExport & GetExport() const;
 
 	public:
 
@@ -71,10 +78,18 @@ namespace Trader { namespace PyApi {
 		void DoSettingsUpdate(const Trader::Lib::IniFileSectionRef &);
 		void UpdateCallbacks();
 
+		bool CallVirtualMethod(
+					const char *name,
+					const boost::function<void (const boost::python::override &)> &)
+				const;
+		void TakeExportObjectOwnership();
+
 	private:
 
+		StrategyExport &m_strategyExport;
+		boost::shared_ptr<StrategyExport> m_strategyExportRefHolder;
+
 		std::unique_ptr<Script> m_script;
-		boost::python::object m_self;
 
 	};
 

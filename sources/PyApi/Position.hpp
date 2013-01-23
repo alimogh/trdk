@@ -32,8 +32,8 @@ namespace Trader { namespace PyApi {
 
 		explicit SidePosition(
 					Trader::Strategy &strategy,
-					Trader::Qty qty,
-					Trader::ScaledPrice startPrice,
+					Qty qty,
+					ScaledPrice startPrice,
 					SidePositionExport<SidePosition<Impl>> &positionExport)
 				: Impl(strategy, qty, startPrice),
 				m_positionExport(positionExport) {

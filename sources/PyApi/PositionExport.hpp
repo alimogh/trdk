@@ -8,16 +8,15 @@
 
 #pragma once
 
-#include "Strategy.hpp"
 #include "Position.hpp"
+#include "StrategyExport.hpp"
+#include "Strategy.hpp"
 #include "PythonToCoreTransit.hpp"
 
 namespace Trader { namespace PyApi {
 
 	template<typename PyApiImpl>
 	class SidePositionExport;
-
-	class Strategy;
 
 } }
 
@@ -115,7 +114,6 @@ namespace Trader { namespace PyApi {
 	template<typename PyApiImpl>
 	class SidePositionExport
 		: public PositionExport,
-		public boost::python::wrapper<SidePositionExport<PyApiImpl>>,
 		public Detail::PythonToCoreTransit<SidePositionExport<PyApiImpl>>,
 		public boost::enable_shared_from_this<SidePositionExport<PyApiImpl>> {
 
@@ -129,17 +127,15 @@ namespace Trader { namespace PyApi {
 		//! Creates new instance.
 		explicit SidePositionExport(
 					PyObject *self,
-					PyApi::Strategy &strategy,
-					int qty,
-					double startPrice)
+					StrategyExport &strategy,
+					Qty qty,
+					ScaledPrice startPrice)
 				: PositionExport(
 					boost::shared_ptr<PyApiImpl>(
 						new PyApiImpl(
 							strategy.GetStrategy(),
 							qty,
-							strategy.GetStrategy()
-								.GetSecurity()
-								.ScalePrice(startPrice),
+							startPrice,
 							*this))),
 				PythonToCoreTransit<SidePositionExport>(self) {
 			//...//
@@ -156,9 +152,9 @@ namespace Trader { namespace PyApi {
 					boost::noncopyable>
 				Export;
 			typedef py::init<
-					PyApi::Strategy &,
-					int /*qty*/,
-					double /*startPrice*/>
+					StrategyExport &,
+					Qty /*qty*/,
+					ScaledPrice /*startPrice*/>
 				Init;
 			Export(className, Init());
 		}
@@ -172,10 +168,6 @@ namespace Trader { namespace PyApi {
 		
 		const typename PyApiImpl::Impl & GetPosition() const {
 			return const_cast<SidePositionExport *>(this)->GetPosition();
-		}
-		
-		boost::python::override GetOverride(const char *name) const {
-			return get_override(name);
 		}
 	
 	};

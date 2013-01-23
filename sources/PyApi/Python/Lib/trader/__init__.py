@@ -326,23 +326,21 @@ class Position(object):
 
 class LongPosition(Position):
 
-    def __init__(self, strategy, qty, startPrice, tag):
+    def __init__(self, strategy, qty, startPrice):
         """
         :type strategy: trader.Strategy
-        :type startPrice: int
         :type qty: int
-        :type tag: str
+        :type startPrice: int
         """
         pass
 
 class ShortPosition(Position):
 
-    def __init__(self, strategy, qty, startPrice, tag):
+    def __init__(self, strategy, qty, startPrice:
         """
         :type strategy: trader.Strategy
-        :type startPrice: int
         :type qty: int
-        :type tag: str
+        :type startPrice: int
         """
         pass
 

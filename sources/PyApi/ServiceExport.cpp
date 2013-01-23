@@ -125,17 +125,19 @@ void ServiceExport::Export(const char *className) {
 	typedef py::class_<
 			ServiceExport,
 			py::bases<ServiceInfoExport>,
+			Detail::PythonToCoreTransitHolder<ServiceExport>,
 			boost::noncopyable>
 		Export;
 	Export(className, py::init<boost::uintmax_t>());
 }
 
-Trader::Service & ServiceExport::GetService() {
-	return const_cast<Trader::Service &>(ServiceInfoExport::GetService());
+const PyApi::Service & ServiceExport::GetService() const {
+	return const_cast<ServiceExport *>(this)->GetService();
 }
 
-py::override ServiceExport::GetOverride(const char *name) const {
-	return get_override(name);
+PyApi::Service & ServiceExport::GetService() {
+	return *boost::polymorphic_downcast<PyApi::Service *>(
+		&const_cast<Trader::Service &>(ServiceInfoExport::GetService()));
 }
 
 //////////////////////////////////////////////////////////////////////////

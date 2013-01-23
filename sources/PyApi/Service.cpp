@@ -98,9 +98,12 @@ boost::shared_ptr<Trader::Service> PyApi::Service::CreateClientInstance(
 			ini,
 			settings);
 		auto pyObject = clientClass(reinterpret_cast<uintptr_t>(&params));
-		ServiceExport &service = py::extract<ServiceExport &>(pyObject);
-		service.MoveRefToCore();
-		return service.GetService().shared_from_this();
+		ServiceExport &serviceExport = py::extract<ServiceExport &>(pyObject);
+		// first increasing core object ref counter...
+		const auto service = serviceExport.GetService().shared_from_this();
+		// then move py-object ref to core:
+		serviceExport.GetService().TakeExportObjectOwnership();
+		return service;
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
 		throw Error("Failed to create instance of trader.Service");
@@ -115,35 +118,35 @@ void PyApi::Service::DoSettingsUpdate(const IniFileSectionRef &ini) {
 	UpdateAlgoSettings(*this, ini);
 }
 
-py::override PyApi::Service::GetOverride(const char *) const {
-	return GetExport().GetOverride("onServiceStart");
+bool PyApi::Service::CallVirtualMethod(
+			const char *name,
+			const boost::function<void (const py::override &)> &call)
+		const {
+	return GetExport().CallVirtualMethod(name, call);
 }
 
 void PyApi::Service::OnServiceStart(const Trader::Service &service) {
-	const auto f = GetOverride("onServiceStart");
-	if (!f) {
+	const bool isExists = CallVirtualMethod(
+		"onServiceStart",
+		[&](const py::override &f) {
+			f(PyApi::Export(service));
+		});
+	if (!isExists) {
 		Base::OnServiceStart(service);
-		return;
-	}
-	try {
-		f(PyApi::Export(service));
-	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error("Failed to call method trader.Service.onServiceStart");
 	}
 }
 
 bool PyApi::Service::OnLevel1Update() {
-	const auto f = GetOverride("onLevel1Update");
-	if (!f) {
-		return Base::OnLevel1Update();
+	bool stateChanged = false;
+	const bool isExists = CallVirtualMethod(
+		"onLevel1Update",
+		[&](const py::override &f) {
+			stateChanged = f();
+		});
+	if (!isExists) {
+		stateChanged = Base::OnLevel1Update();
 	}
-	try {
-		return f();
-	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error("Failed to call method trader.Service.onLevel1Update");
-	}
+	return stateChanged;
 }
 
 bool PyApi::Service::OnNewTrade(
@@ -151,33 +154,33 @@ bool PyApi::Service::OnNewTrade(
 			ScaledPrice price,
 			Qty qty,
 			OrderSide side) {
-	const auto f = GetOverride("onNewTrade");
-	if (!f) {
-		return Base::OnNewTrade(time, price, qty, side);
+	bool stateChanged = false;
+	const bool isExists = CallVirtualMethod(
+		"onNewTrade",
+		[&](const py::override &f) {
+			stateChanged = f(
+				PyApi::Export(time),
+				PyApi::Export(price),
+				PyApi::Export(qty),
+				PyApi::Export(side));
+		});
+	if (!isExists) {
+		stateChanged = Base::OnNewTrade(time, price, qty, side);
 	}
-	try {
-		return f(
-			PyApi::Export(time),
-			PyApi::Export(price),
-			PyApi::Export(qty),
-			PyApi::Export(side));
-	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error("Failed to call method trader.Service.onNewTrade");
-	}
+	return stateChanged;
 }
 
 bool PyApi::Service::OnServiceDataUpdate(const Trader::Service &service) {
-	const auto f = GetOverride("onServiceDataUpdate");
-	if (!f) {
-		return Base::OnServiceDataUpdate(service);
+	bool stateChanged = false;
+	const bool isExists = CallVirtualMethod(
+		"onServiceDataUpdate",
+		[&](const py::override &f) {
+			stateChanged = f(PyApi::Export(service));
+		});
+	if (!isExists) {
+		stateChanged = Base::OnServiceDataUpdate(service);
 	}
-	try {
-		return f(PyApi::Export(service));
-	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error("Failed to call method trader.Service.onServiceDataUpdate");
-	}
+	return stateChanged;
 }
 
 //////////////////////////////////////////////////////////////////////////
