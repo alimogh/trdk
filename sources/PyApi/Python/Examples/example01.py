@@ -45,11 +45,11 @@ class Example01(trader.Strategy):
 
         # Creating position object (long position in this case):
         position = trader.LongPosition(
-            # strategy object
+            # strategy object:
             self,
-            # number of shares
+            # number of shares:
             int(10000 / self.security.askPrice),
-            # start price
+            # start price (used in reports):
             self.security.bidPrice)
 
         # Sending IOC order (method onPositionUpdate will be called at each
