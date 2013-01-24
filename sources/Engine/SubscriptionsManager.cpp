@@ -60,8 +60,8 @@ void SubscriptionsManager::Start() {
 	m_dispatcher.Start();
 }
 
-void SubscriptionsManager::Stop() {
-	m_dispatcher.Stop();
+void SubscriptionsManager::Suspend() {
+	m_dispatcher.Suspend();
 }
 
 void SubscriptionsManager::SubscribeToLevel1(

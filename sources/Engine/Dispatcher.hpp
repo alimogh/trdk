@@ -29,6 +29,12 @@ namespace Trader { namespace Engine {
 			typedef Mutex::scoped_lock Lock;
 			typedef boost::condition_variable Condition;
 
+			enum TaskState {
+				TASK_STATE_INACTIVE,
+				TASK_STATE_ACTIVE,
+				TASK_STATE_STOPPED,
+			};
+
 		public:
 			
 			EventQueue(
@@ -37,8 +43,7 @@ namespace Trader { namespace Engine {
 					: m_name(name),
 					m_current(&m_lists.first),
 					m_heavyLoadsCount(0),
-					m_isExit(false),
-					m_isActive(false) {
+					m_taksState(TASK_STATE_INACTIVE) {
 				if (settings->IsReplayMode()) {
 					m_readyToReadCondition.reset(new Condition);
 				}
@@ -52,18 +57,32 @@ namespace Trader { namespace Engine {
 
 			void Start() {
 				const Lock lock(m_mutex);
-				m_isActive = true;
+				AssertEq(int(TASK_STATE_INACTIVE), int(m_taksState));
+				m_taksState = TASK_STATE_ACTIVE;
+			}
+
+			void Suspend() {
+				const Lock lock(m_mutex);
+				AssertNe(int(TASK_STATE_STOPPED), int(m_taksState));
+				m_taksState = TASK_STATE_INACTIVE;
 			}
 
 			void Stop() {
-				const Lock lock(m_mutex);
-				m_isActive = false;
+				{
+					const Lock lock(m_mutex);
+					AssertNe(int(TASK_STATE_STOPPED), int(m_taksState));
+					m_taksState = TASK_STATE_STOPPED;
+				}
+				m_newDataCondition.notify_all();
+				if (m_readyToReadCondition) {
+					m_readyToReadCondition->notify_all();
+				}
 			}
 
 			template<typename Event>
 			void Queue(const Event &event) {
 				Lock lock(m_mutex);
-				if (m_isExit) {
+				if (m_taksState == TASK_STATE_STOPPED) {
 					return;
 				}
 				Assert(
@@ -86,7 +105,7 @@ namespace Trader { namespace Engine {
 
 					Lock lock(m_mutex);
 				
-					if (m_isExit) {
+					if (m_taksState == TASK_STATE_STOPPED) {
 						return false;
 					}
 				
@@ -94,9 +113,9 @@ namespace Trader { namespace Engine {
 					if (m_current->empty()) {
 						m_heavyLoadsCount = 0;
 						m_newDataCondition.wait(lock);
-						if (m_isExit) {
-							return false;
-						} else if (m_current->empty() || !m_isActive) {
+						if (m_taksState != TASK_STATE_ACTIVE) {
+							return m_taksState == TASK_STATE_INACTIVE;
+						} else if (m_current->empty()) {
 							return true;
 						}
 					} else if (!(++m_heavyLoadsCount % 100)) {
@@ -138,8 +157,7 @@ namespace Trader { namespace Engine {
 			Condition m_newDataCondition;
 			std::unique_ptr<Condition> m_readyToReadCondition;
 
-			bool m_isExit;
-			bool m_isActive;
+			TaskState m_taksState;
 
 		};
 
@@ -172,19 +190,19 @@ namespace Trader { namespace Engine {
 	public:
 
 		void Start() {
-			Log::Info("Starting events dispatching...");
+			Log::Debug("Starting events dispatching...");
 			m_positionUpdates.Start();
 			m_level1Updates.Start();
 			m_newTrades.Start();
-			Log::Info("Events dispatching started.");
+			Log::Debug("Events dispatching started.");
 		}
 
-		void Stop() {
-			Log::Info("Stopping events dispatching...");
-			m_newTrades.Stop();
-			m_level1Updates.Stop();
-			m_positionUpdates.Stop();
-			Log::Info("Events dispatching stopped.");
+		void Suspend() {
+			Log::Debug("Suspending events dispatching...");
+			m_newTrades.Suspend();
+			m_level1Updates.Suspend();
+			m_positionUpdates.Suspend();
+			Log::Debug("Events dispatching suspended.");
 		}
 
 	public:

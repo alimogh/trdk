@@ -854,6 +854,5 @@ void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 
 	getchar();
 	iniChangeNotificator.Stop();
-	subscriptionsManager.Stop();
 
 }

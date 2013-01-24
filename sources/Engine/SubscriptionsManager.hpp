@@ -43,7 +43,7 @@ namespace Trader { namespace Engine {
 	public:
 
 		void Start();
-		void Stop();
+		void Suspend();
 
 	private:
 

@@ -20,17 +20,21 @@ using namespace Trader::Engine;
 
 Dispatcher::Dispatcher(boost::shared_ptr<const Settings> &settings)
 			: m_level1Updates("Level 1", settings),
-			m_positionUpdates("Position", settings),
-			m_newTrades("New Trades", settings) {
+			m_newTrades("New Trades", settings),
+			m_positionUpdates("Position", settings) {
 	StartNotificationTask(m_level1Updates);
-	StartNotificationTask(m_positionUpdates);
 	StartNotificationTask(m_newTrades);
+	StartNotificationTask(m_positionUpdates);
 }
 
 Dispatcher::~Dispatcher() {
 	try {
-		Stop();
+		Log::Debug("Stopping events dispatching...");
+		m_newTrades.Stop();
+		m_level1Updates.Stop();
+		m_positionUpdates.Stop();
 		m_threads.join_all();
+		Log::Debug("Events dispatching stopped.");
 	} catch (...) {
 		AssertFailNoException();
 		throw;
