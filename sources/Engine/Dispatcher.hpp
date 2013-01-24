@@ -288,7 +288,7 @@ namespace Trader { namespace Engine {
 
 		template<typename EventList>
 		void NotificationTask(EventList &eventList) {
-			Log::Info(
+			Log::Debug(
 				"Dispatcher notification task \"%1%\" started...",
 				eventList.GetName());
 			bool isError = false;
@@ -315,7 +315,7 @@ namespace Trader { namespace Engine {
 					break;
 				}
 			}
-			Log::Info(
+			Log::Debug(
 				"Dispatcher notification task \"%1%\" stopped.",
 				eventList.GetName());
 			if (isError) {
