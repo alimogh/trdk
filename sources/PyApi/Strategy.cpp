@@ -65,7 +65,7 @@ PyApi::Strategy::Strategy(uintptr_t params, StrategyExport &strategyExport)
 }
 
 PyApi::Strategy::~Strategy() {
-	AssertFail("Strategy::~Strategy");
+	//...//
 }
 
 boost::shared_ptr<Trader::Strategy> PyApi::Strategy::CreateClientInstance(

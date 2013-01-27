@@ -58,7 +58,7 @@ PyApi::Service::Service(uintptr_t params, ServiceExport &serviceExport)
 }
 
 PyApi::Service::~Service() {
-	AssertFail("Service::~Service");
+	//...//
 }
 
 boost::shared_ptr<PyApi::Service> PyApi::Service::TakeExportObjectOwnership() {
