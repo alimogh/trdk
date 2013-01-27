@@ -124,7 +124,7 @@ namespace Trader { namespace Engine {
 						}
 					} else if (!(++m_heavyLoadsCount % 100)) {
 						Log::Warn(
-							"Dispatcher task \"%1%\" is heavy loaded (%1% iterations)!",
+							"Dispatcher task \"%1%\" is heavy loaded (%2% iterations)!",
 							m_name,
 							m_heavyLoadsCount);
 					}
