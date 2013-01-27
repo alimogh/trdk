@@ -1,3 +1,34 @@
+"""
+
+INI-file:
+
+; Initializing 5 minutes bar service:
+[Service.5 minute bar]
+    symbols = symbols.ini
+    services = Trades
+    module = Services
+    fabric = CreateBarService
+    size = 5 minutes ; seconds / minutes / hours / days
+    log = none
+
+; Initializing example strategy:
+[Strategy.Test]
+
+    symbols = symbols.ini   ; symbols collection (instance of Example02 will be
+                            ; created for each symbol from symbols.ini)
+
+    services = 5 minute bar[$CURRENT_SYMBOL]    ; strategy depends from bar
+                                                ; service that uses the same
+                                                ; symbol as strategy
+
+    module = PyApi  ; PyApi module (for each service or strategy that
+                    ; implemented in Python)
+
+    class = Example02 ; strategy Python class name
+
+    script_file_path = D:\TradingRobotDK\Examples\example02.py ; path to script
+
+"""
 
 import trader
 import time
@@ -7,16 +38,16 @@ class Example02(trader.Strategy):
     _bars = None
 
     def onServiceStart(self, service):
-        assert(self._bars is None)
-        # INI-file has configuration only for this service:
-        if service.tag == "5 minute bar":
-            # Caching service reference:
-            self._bars = service
+        assert self._bars is None, "Subscribed only to one service."
+        assert \
+            service.tag == "5 minute bar", \
+            "INI-file has configuration only for this service."
+        # Caching service reference:
+        self._bars = service
 
     def onServiceDataUpdate(self, service):
 
-        # Events only for registered services
-        assert(service == self._bars)
+        assert service == self._bars, "Events only for registered services."
 
         if self.positions.count() > 0:
             # Some positions are opened, checking each for closing...
@@ -39,11 +70,11 @@ class Example02(trader.Strategy):
 
         self._testCount = 0
         position = trader.LongPosition(
-            # strategy
+            # strategy:
             self,
-            # number of shares
+            # number of shares:
             10000,
-            # start price
+            # start price (used in reports):
             openPrice.max)
 
         self.log.info('Opening position...')
@@ -51,7 +82,7 @@ class Example02(trader.Strategy):
         # (method onPositionUpdate will be called at each position state
         # update):
         position.openAtMarketPrice()
-        assert(self.positions.count() == 1) # Position object now in list
+        assert(self.positions.count() == 1) # Position object now in list.
 
     # Virtual method. Notifies about position state update. Optional.
     def onPositionUpdate(self, position):
