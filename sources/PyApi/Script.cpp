@@ -8,10 +8,8 @@
 
 #include "Prec.hpp"
 #include "Script.hpp"
-#include "PositionExport.hpp"
-#include "ServiceExport.hpp"
-#include "StrategyExport.hpp"
-#include "SecurityExport.hpp"
+#include "BaseExport.hpp"
+#include "Errors.hpp"
 #include "Detail.hpp"
 
 namespace fs = boost::filesystem;
@@ -20,80 +18,67 @@ namespace py = boost::python;
 using namespace Trader;
 using namespace Trader::Lib;
 using namespace Trader::PyApi;
+using namespace Trader::PyApi::Detail;
 
 //////////////////////////////////////////////////////////////////////////
-
-BOOST_PYTHON_MODULE(trader) {
-
-	using namespace Trader::PyApi;
-
-	//! @todo: export __all__
-
-	py::object traderModule = py::scope();
-	traderModule.attr("__path__") = "trader";
-
-	SecurityInfoExport::Export("SecurityInfo");
-	SecurityExport::Export("Security");
-
-	PositionExport::Export("Position");
-	ShortPositionExport::Export("ShortPosition");
-	LongPositionExport::Export("LongPosition");
-
-	SecurityAlgoExport::Export("SecurityAlgo");
-	StrategyExport::Export("Strategy");
-	
-	ServiceInfoExport::Export("ServiceInfoExport");
-	ServiceExport::Export("Service");
-	{
-		//! @todo: export __all__
-		py::object servicesModule(
-			py::handle<>(py::borrowed(PyImport_AddModule("trader.services"))));
-		py::scope().attr("services") = servicesModule;
-		py::scope servicesScope = servicesModule;
-		BarServiceExport::Export("BarService");
-	}
-
-}
 
 namespace {
 
-	typedef boost::mutex PythonInitMutex;
-	typedef PythonInitMutex::scoped_lock PythonInitLock;
+	typedef boost::mutex Mutex;
+	typedef Mutex::scoped_lock Lock;
 
-	volatile long isInited = false;
-	PythonInitMutex pythonInitMutex;
+	Mutex mutex;
 
-	void InitPython() {
+	std::map<fs::path, boost::shared_ptr<Script>> cache;
 
-		if (isInited) {
-			return;
-		}
-		
-		const PythonInitLock lock(pythonInitMutex);
-		if (isInited) {
-			return;
-		}
-		
-		Py_Initialize();
-		if (PyImport_AppendInittab("trader", inittrader) == -1) {
-			throw Trader::PyApi::Error(
-				"Failed to add trader module to the interpreter's builtin modules");
-		}
-		Verify(Interlocking::Exchange(isInited, true) == false);
-
-	}
+	boost::python::object global;
 
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-Script::Script(const boost::filesystem::path &filePath)
+Script & Script::Load(const Lib::IniFileSectionRef &ini) {
+	return Load(ini.ReadKey("script_file_path", false));
+}
+
+Script & Script::Load(const boost::filesystem::path &path) {
+	const Lock lock(mutex);
+	const auto it = cache.find(path);
+	if (it != cache.end()) {
+		return *it->second;
+	}
+	if (!global) {
+		try {
+			Py_Initialize();
+		} catch (const py::error_already_set &) {
+			LogPythonClientException();
+			throw Error("Internal error: Failed to initialize Python engine");
+		}
+		ExportApi();
+		try {
+			global = py::import("__main__");
+			Assert(global);
+		} catch (const py::error_already_set &) {
+			LogPythonClientException();
+			throw Error("Internal error: Failed to get __main__");
+		}
+	}
+	boost::shared_ptr<Script> script(new Script(global, path));
+	AssertEq(path, script->GetFilePath());
+	cache[script->GetFilePath()] = script;
+	return *script;
+	
+}
+
+Script::Script(py::object &main, const fs::path &filePath)
 		: m_filePath(filePath) {
 
-	InitPython();
-
-	m_main = py::import("__main__");
-	m_global = m_main.attr("__dict__");
+	try {
+		m_global = main.attr("__dict__");
+	} catch (const py::error_already_set &) {
+		LogPythonClientException();
+		throw Error("Internal error: Failed to get __main__.__dict__");
+	}
 
 	try {
 		py::exec_file(filePath.string().c_str(), m_global, m_global);
@@ -104,8 +89,8 @@ Script::Script(const boost::filesystem::path &filePath)
 					% ex.what())
 				.str().c_str());
 	} catch (const py::error_already_set &) {
-		Detail::LogPythonClientException();
-		throw Trader::PyApi::Error(
+		LogPythonClientException();
+		throw Error(
 			(boost::format("Failed to compile Python script from %1%")
 					% filePath)
 				.str().c_str());
@@ -118,8 +103,37 @@ void Script::Exec(const std::string &code) {
 		py::exec(code.c_str(), m_global, m_global);
 	} catch (const py::error_already_set &) {
 		Detail::LogPythonClientException();
-		throw Trader::PyApi::Error("Failed to execute Python code");
+		throw Error("Failed to execute Python code");
 	}
+}
+
+py::object Script::GetClass(
+			const IniFileSectionRef &ini,
+			const char *errorWhat /*= nullptr*/) {
+	try {
+		return GetClass(ini.ReadKey("class", false));
+	} catch (const Error &ex) {
+		if (!errorWhat) {
+			throw;
+		}
+		Log::Error(ex.what());
+		throw Error(errorWhat);
+	}
+}
+
+py::object Script::GetClass(const std::string &name) {
+	try {
+		return m_global[name];
+	} catch (const py::error_already_set &) {
+		LogPythonClientException();
+		boost::format message("Failed to load Python class %1%");
+		message % name;
+		throw Error(message.str().c_str());
+	}
+}
+
+const fs::path & Script::GetFilePath() const {
+	return m_filePath;
 }
 
 //////////////////////////////////////////////////////////////////////////

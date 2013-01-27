@@ -12,11 +12,6 @@
 
 namespace Trader { namespace PyApi {
 
-	template<typename Impl>
-	class SidePositionExport;
-
-	//////////////////////////////////////////////////////////////////////////
-
 	template<typename ImplT>
 	class SidePosition : public ImplT {
 

@@ -13,8 +13,6 @@
 
 namespace Trader { namespace PyApi {
 
-	class ServiceExport;
-
 	class Service : public Trader::Service {
 
 		template<typename Module>

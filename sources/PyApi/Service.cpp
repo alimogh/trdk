@@ -9,6 +9,7 @@
 #include "Prec.hpp"
 #include "Service.hpp"
 #include "ServiceExport.hpp"
+#include "Script.hpp"
 #include "BaseExport.hpp"
 
 using namespace Trader;
@@ -83,9 +84,7 @@ boost::shared_ptr<Trader::Service> PyApi::Service::CreateClientInstance(
 			boost::shared_ptr<Security> security,
 			const IniFileSectionRef &ini,
 			const boost::shared_ptr<const Settings> &settings) {
-	std::unique_ptr<Script> script(LoadScript(ini));
-	auto clientClass = GetPyClass(
-		*script,
+	auto clientClass = Script::Load(ini).GetClass(
 		ini,
 		"Failed to find trader.Service implementation");
 	try {

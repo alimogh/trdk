@@ -11,6 +11,7 @@
 #include "StrategyExport.hpp"
 #include "PositionExport.hpp"
 #include "ServiceExport.hpp"
+#include "Script.hpp"
 #include "BaseExport.hpp"
 #include "Core/StrategyPositionReporter.hpp"
 
@@ -31,21 +32,18 @@ namespace {
 		const boost::shared_ptr<Security> &security;
 		const IniFileSectionRef &ini;
 		const boost::shared_ptr<const Settings> &settings;
-		std::unique_ptr<Script> &script;
 	
 		explicit Params(
 					const std::string &name,
 					const std::string &tag,
 					const boost::shared_ptr<Security> &security,
 					const IniFileSectionRef &ini,
-					const boost::shared_ptr<const Settings> &settings,
-					std::unique_ptr<Script> &script)
+					const boost::shared_ptr<const Settings> &settings)
 				: name(name),
 				tag(tag),
 				security(security),
 				ini(ini),
-				settings(settings),
-				script(script) {
+				settings(settings) {
 			//...//
 		}
 
@@ -59,8 +57,7 @@ PyApi::Strategy::Strategy(uintptr_t params, StrategyExport &strategyExport)
 			reinterpret_cast<Params *>(params)->tag,
 			reinterpret_cast<Params *>(params)->security,
 			reinterpret_cast<Params *>(params)->settings),
-		m_strategyExport(strategyExport),
-		m_script(reinterpret_cast<Params *>(params)->script.release()) {
+		m_strategyExport(strategyExport) {
 	DoSettingsUpdate(reinterpret_cast<Params *>(params)->ini);
 }
 
@@ -73,9 +70,7 @@ boost::shared_ptr<Trader::Strategy> PyApi::Strategy::CreateClientInstance(
 			boost::shared_ptr<Security> security,
 			const IniFileSectionRef &ini,
 			boost::shared_ptr<const Settings> settings) {
-	std::unique_ptr<Script> script(LoadScript(ini));
-	auto clientClass = GetPyClass(
-		*script,
+	auto clientClass = Script::Load(ini).GetClass(
 		ini,
 		"Failed to find trader.Strategy implementation");
 	try {
@@ -86,8 +81,7 @@ boost::shared_ptr<Trader::Strategy> PyApi::Strategy::CreateClientInstance(
 			tag,
 			security,
 			ini,
-			settings,
-			script);
+			settings);
 		auto pyObject = clientClass(reinterpret_cast<uintptr_t>(&params));
 		StrategyExport &strategyExport
 			= py::extract<StrategyExport &>(pyObject);

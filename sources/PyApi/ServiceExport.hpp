@@ -16,8 +16,6 @@
 
 namespace Trader { namespace PyApi {
 
-	class Service;
-
 	//////////////////////////////////////////////////////////////////////////
 
 	class ServiceInfoExport : public SecurityAlgoExport {

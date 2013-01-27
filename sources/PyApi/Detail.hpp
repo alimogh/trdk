@@ -9,7 +9,6 @@
 #pragma once
 
 #include "Core/SettingsReport.hpp"
-#include "Script.hpp"
 #include "Errors.hpp"
 
 namespace Trader { namespace PyApi { namespace Detail {
@@ -17,27 +16,6 @@ namespace Trader { namespace PyApi { namespace Detail {
 	inline void LogPythonClientException() {
 		const Log::Lock logLock(Log::GetEventsMutex());
 		PyErr_Print();
-	}
-
-	inline Script * LoadScript(const Trader::Lib::IniFileSectionRef &ini) {
-		try {
-			return new Script(ini.ReadKey("script_file_path", false));
-		} catch (const boost::python::error_already_set &) {
-			LogPythonClientException();
-			throw Trader::PyApi::Error("Failed to load script");
-		}
-	}
-
-	inline boost::python::object GetPyClass(
-				Script &script,
-				const Trader::Lib::IniFileSectionRef &ini,
-				const char *errorWhat) {
-		try {
-			return script.GetGlobal()[ini.ReadKey("class", false)];
-		} catch (const boost::python::error_already_set &) {
-			LogPythonClientException();
-			throw Trader::PyApi::Error(errorWhat);
-		}
 	}
 
 	template<typename Module>

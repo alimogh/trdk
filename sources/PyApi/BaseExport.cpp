@@ -8,6 +8,10 @@
 
 #include "Prec.hpp"
 #include "BaseExport.hpp"
+#include "PositionExport.hpp"
+#include "ServiceExport.hpp"
+#include "StrategyExport.hpp"
+#include "SecurityExport.hpp"
 #include "Detail.hpp"
 
 namespace py = boost::python;
@@ -16,6 +20,48 @@ namespace pt = boost::posix_time;
 using namespace Trader;
 using namespace Trader::PyApi;
 using namespace Trader::PyApi::Detail;
+
+//////////////////////////////////////////////////////////////////////////
+
+BOOST_PYTHON_MODULE(trader) {
+
+	using namespace Trader::PyApi;
+
+	//! @todo: export __all__
+
+	py::object traderModule = py::scope();
+	traderModule.attr("__path__") = "trader";
+
+	SecurityInfoExport::Export("SecurityInfo");
+	SecurityExport::Export("Security");
+
+	PositionExport::Export("Position");
+	ShortPositionExport::Export("ShortPosition");
+	LongPositionExport::Export("LongPosition");
+
+	SecurityAlgoExport::Export("SecurityAlgo");
+	StrategyExport::Export("Strategy");
+	
+	ServiceInfoExport::Export("ServiceInfoExport");
+	ServiceExport::Export("Service");
+	{
+		//! @todo: export __all__
+		py::object servicesModule(
+			py::handle<>(py::borrowed(PyImport_AddModule("trader.services"))));
+		py::scope().attr("services") = servicesModule;
+		py::scope servicesScope = servicesModule;
+		BarServiceExport::Export("BarService");
+	}
+
+}
+
+void PyApi::ExportApi() {
+	if (PyImport_AppendInittab("trader", inittrader) == -1) {
+		throw Error("Failed to export Python API.");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 namespace {
 
@@ -141,3 +187,5 @@ OrderSide ExtractOrderSide(const py::object &orderSide) {
 				" order side can be 'B' (buy) or 'S' (sell)");
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////

@@ -13,8 +13,6 @@
 
 namespace Trader { namespace PyApi {
 
-	class StrategyExport;
-
 	class Strategy : public Trader::Strategy {
 
 		template<typename Module>
@@ -88,8 +86,6 @@ namespace Trader { namespace PyApi {
 
 		StrategyExport &m_strategyExport;
 		boost::shared_ptr<StrategyExport> m_strategyExportRefHolder;
-
-		std::unique_ptr<Script> m_script;
 
 	};
 

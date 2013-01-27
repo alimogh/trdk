@@ -89,6 +89,7 @@
   <ItemGroup>
     <ClInclude Include="Detail.hpp" />
     <ClInclude Include="BaseExport.hpp" />
+    <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="ObjectCache.hpp" />
     <ClInclude Include="Position.hpp" />
     <ClInclude Include="PositionExport.hpp" />

@@ -10,6 +10,8 @@
 
 namespace Trader { namespace PyApi {
 
+	void ExportApi();
+
 	boost::python::object Export(boost::int64_t);
 	boost::python::object Export(boost::int32_t);
 

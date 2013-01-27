@@ -14,8 +14,6 @@
 
 namespace Trader { namespace PyApi {
 
-	class Strategy;
-
 	//////////////////////////////////////////////////////////////////////////
 
 	class StrategyInfoExport : public SecurityAlgoExport {

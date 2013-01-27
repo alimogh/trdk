@@ -13,13 +13,6 @@
 #include "Strategy.hpp"
 #include "PythonToCoreTransit.hpp"
 
-namespace Trader { namespace PyApi {
-
-	template<typename PyApiImpl>
-	class SidePositionExport;
-
-} }
-
 namespace boost { namespace python {
 
 	template<typename PyApiImpl>
