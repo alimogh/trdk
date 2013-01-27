@@ -134,7 +134,7 @@ namespace Trader { namespace PyApi { namespace Detail {
 							" object that has been destroyed by core objects"
 							" management system. Python interpreter will crash"
 							" at usage attempt. To fix this issue don't store"
-							" references to API objects, use API method for"
+							" references to API objects and use API methods for"
 							" retrieving.");
 					AssertFail(
 						"Python environment has one or more references to"
