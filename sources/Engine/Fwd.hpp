@@ -11,6 +11,6 @@
 namespace Trader { namespace Engine {
 
 	class Dispatcher;
-	class Notifier;
+	class SubscriberPtrWrapper;
 
 } }

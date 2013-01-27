@@ -19,15 +19,14 @@ namespace Trader { namespace Engine {
 
 		typedef std::function<
 				void (
-					boost::shared_ptr<Notifier>,
+					const SubscriberPtrWrapper &,
 					const Security &,
 					std::list<boost::signals2::connection> &)>
 			SubscribeImpl;
 
-
 	public:
 
-		SubscriptionsManager(boost::shared_ptr<const Trader::Settings>);
+		explicit SubscriptionsManager(boost::shared_ptr<const Trader::Settings>);
 		~SubscriptionsManager();
 
 	public:
@@ -42,17 +41,18 @@ namespace Trader { namespace Engine {
 
 	public:
 
-		void Start();
+		bool IsActive() const;
+		void Activate();
 		void Suspend();
 
 	private:
 
 		void SubscribeToLevel1(
-					boost::shared_ptr<Notifier>,
+					const SubscriberPtrWrapper &,
 					const Security &,
 					std::list<boost::signals2::connection> &);
 		void SubscribeToTrades(
-					boost::shared_ptr<Notifier>,
+					const SubscriberPtrWrapper &,
 					const Security &,
 					std::list<boost::signals2::connection> &);
 

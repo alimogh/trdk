@@ -14,17 +14,6 @@
 using namespace Trader;
 using namespace Trader::Lib;
 
-namespace {
-
-	struct GetModuleVisitor : public boost::static_visitor<const Module &> {
-		template<typename ModulePtr>
-		const Module & operator ()(const ModulePtr &module) const {
-			return *module;
-		}
-	};
-
-}
-
 class Service::Implementation : private boost::noncopyable {
 
 private:
@@ -33,12 +22,7 @@ private:
 			: public boost::static_visitor<bool>,
 			private boost::noncopyable {
 	public:
-		typedef std::list<
-			boost::variant<
-				boost::shared_ptr<const Trader::Strategy>,
-				boost::shared_ptr<const Trader::Service>,
-				boost::shared_ptr<const Trader::Observer>>>
-		Path;
+		typedef std::list<Subscriber> Path;
 	public:
 		explicit FindSubscribedModule(const Subscriber &subscriberToFind)
 				: m_subscriberToFind(subscriberToFind),
@@ -66,20 +50,20 @@ private:
 		}
 	public:
 		template<typename Module>
-		bool operator ()(const boost::shared_ptr<Module> &) const {
+		bool operator ()(Module &) const {
 			return false;
 		}
 		template<>
-		bool operator ()(const boost::shared_ptr<Service> &service) const {
+		bool operator ()(Service &service) const {
 			return Find(service, m_subscriberToFind, m_path);
 		}
 	private:
 		static bool Find(
-					const boost::shared_ptr<const Service> &service,
+					Service &service,
 					const Subscriber &subscriberToFind,
 					Path &path) {
-			path.push_back(service);
-			foreach (const auto &subscriber, service->GetSubscribers()) {
+			path.push_back(ModuleRef(service));
+			foreach (const auto &subscriber, service.GetSubscribers()) {
 				if (subscriber == subscriberToFind) {
 					path.push_back(subscriber);
 					return true;
@@ -114,8 +98,7 @@ public:
 	}
 
 	void CheckRecursiveSubscription(const Subscriber &subscriber) const {
-		const FindSubscribedModule find(
-			Subscriber(m_service.shared_from_this()));
+		const FindSubscribedModule find(ModuleRef(m_service));
  		if (!boost::apply_visitor(find, subscriber)) {
 			return;
 		}
@@ -125,7 +108,7 @@ public:
 			std::ostringstream oss;
 			oss
 				<< '"'
-				<< boost::apply_visitor(GetModuleVisitor(), i)
+				<< boost::apply_visitor(Visitors::GetModule(), i)
 				<< '"';
 			path.push_back(oss.str());
 		}
@@ -135,7 +118,7 @@ public:
 				" trying to make subscription \"%1%\" -> \"%2%\","
 				" but already exists subscription %3%.",
 			boost::make_tuple(
-				boost::cref(boost::apply_visitor(GetModuleVisitor(), subscriber)),
+				boost::cref(boost::apply_visitor(Visitors::GetModule(), subscriber)),
 				boost::cref(m_service),
 				boost::cref(boost::join(path, " -> "))));
 		throw Exception("Recursive service reference detected");
@@ -143,7 +126,7 @@ public:
 
 	template<typename Module>
 	void RegisterSubscriber(Module &module) {
-		const Subscriber subscriber(module.shared_from_this());
+		const Subscriber subscriber(ModuleRef(module));
 		CheckRecursiveSubscription(subscriber);
 		Assert(
 			std::find(m_subscribers.begin(), m_subscribers.end(), subscriber)
@@ -230,6 +213,6 @@ void Service::RegisterSubscriber(Observer &module) {
 	m_pimpl->RegisterSubscriber(module);
 }
 
-const Service::Subscribers & Service::GetSubscribers() const {
+const Service::Subscribers & Service::GetSubscribers() {
 	return m_pimpl->m_subscribers;
 }

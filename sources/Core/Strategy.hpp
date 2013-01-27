@@ -14,9 +14,7 @@
 
 namespace Trader {
 
-	class TRADER_CORE_API Strategy
-			: public Trader::SecurityAlgo,
-			public boost::enable_shared_from_this<Trader::Strategy> {
+	class TRADER_CORE_API Strategy : public Trader::SecurityAlgo {
 
 	public:
 
@@ -118,7 +116,7 @@ namespace Trader {
 	public:
 
 		bool IsBlocked() const;
-		void Block();
+		void Block() throw();
 
 	public:
 

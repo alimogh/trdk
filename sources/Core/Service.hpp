@@ -8,22 +8,17 @@
 
 #pragma once
 
+#include "ModuleVariant.hpp"
 #include "SecurityAlgo.hpp"
 #include "Api.h"
 
 namespace Trader {
 
-	class TRADER_CORE_API Service
-			: public Trader::SecurityAlgo,
-			public boost::enable_shared_from_this<Trader::Service> {
+	class TRADER_CORE_API Service : public Trader::SecurityAlgo {
 
 	public:
 
-		typedef boost::variant<
-				boost::shared_ptr<Trader::Strategy>,
-				boost::shared_ptr<Trader::Service>,
-				boost::shared_ptr<Trader::Observer>>
-			Subscriber;
+		typedef Trader::ModuleRefVariant Subscriber;
 		typedef std::list<Subscriber> Subscribers;
 
 	public:
@@ -54,7 +49,7 @@ namespace Trader {
 		void RegisterSubscriber(Trader::Strategy &);
 		void RegisterSubscriber(Trader::Service &);
 		void RegisterSubscriber(Trader::Observer &);
-		const Subscribers & GetSubscribers() const;
+		const Subscribers & GetSubscribers();
 
 	public:
 

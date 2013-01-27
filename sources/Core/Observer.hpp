@@ -13,9 +13,7 @@
 
 namespace Trader {
 
-	class TRADER_CORE_API Observer
-		: public Trader::Module,
-		public boost::enable_shared_from_this<Trader::Observer> {
+	class TRADER_CORE_API Observer : public Trader::Module {
 
 	public:
 

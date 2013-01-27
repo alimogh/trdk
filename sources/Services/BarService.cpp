@@ -63,14 +63,12 @@ namespace {
 
 	public:
 
-		explicit StatAccumulator(
-					boost::shared_ptr<const BarService> source,
-					size_t size) {
-			size = std::min(size, source->GetSize());
+		explicit StatAccumulator(const BarService &source, size_t size) {
+			size = std::min(size, source.GetSize());
 			for (size_t i = 0; i < size; ++i) {
 				const int8_t *const bar
 					= reinterpret_cast<const int8_t *>(
-						&source->GetBarByReversedIndex(i));
+						&source.GetBarByReversedIndex(i));
 				m_accumulator(
 					*reinterpret_cast<const ValueType *>(
 						bar + fieldOffset));
@@ -414,10 +412,7 @@ public:
 
 	template<typename Stat>
 	boost::shared_ptr<typename Stat> CreateStat(size_t size) const {
-		return boost::shared_ptr<typename Stat>(
-			new Stat(
-				m_service.shared_from_this(),
-				size));
+		return boost::shared_ptr<typename Stat>(new Stat(m_service, size));
 	}
 
 };
@@ -435,14 +430,6 @@ BarService::BarService(
 
 BarService::~BarService() {
 	delete m_pimpl;
-}
-
-boost::shared_ptr<BarService> BarService::shared_from_this() {
-	return boost::static_pointer_cast<BarService>(Base::shared_from_this());
-}
-
-boost::shared_ptr<const BarService> BarService::shared_from_this() const {
-	return boost::static_pointer_cast<const BarService>(Base::shared_from_this());
 }
 
 bool BarService::OnNewTrade(

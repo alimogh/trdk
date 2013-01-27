@@ -32,7 +32,7 @@
     <ClCompile Include="Dispatcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Notifier.cpp">
+    <ClCompile Include="SubscriberPtrWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -55,7 +55,7 @@
     <ClInclude Include="Dispatcher.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Notifier.hpp">
+    <ClInclude Include="SubscriberPtrWrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Notifier.hpp"
+#include "SubscriberPtrWrapper.hpp"
 
 namespace Trader { namespace Engine {
 
@@ -55,7 +55,11 @@ namespace Trader { namespace Engine {
 				return m_name;
 			}
 
-			void Start() {
+			bool IsActive() const {
+				return m_taksState == TASK_STATE_ACTIVE;
+			}
+
+			void Activate() {
 				const Lock lock(m_mutex);
 				AssertEq(int(TASK_STATE_INACTIVE), int(m_taksState));
 				m_taksState = TASK_STATE_ACTIVE;
@@ -161,13 +165,14 @@ namespace Trader { namespace Engine {
 
 		};
 
-		typedef boost::tuple<const Security *, boost::shared_ptr<Notifier>>
+		typedef boost::tuple<const Security *, SubscriberPtrWrapper>
 			Level1UpdateEvent;
+		//! @todo: Check performance: set or list + find
 		typedef EventQueue<std::set<Level1UpdateEvent>> Level1UpdateEventQueue;
 
 		typedef boost::tuple<
-				boost::shared_ptr<Notifier::Trade>,
-				boost::shared_ptr<Notifier>>
+				boost::shared_ptr<SubscriberPtrWrapper::Trade>,
+				SubscriberPtrWrapper>
 			NewTradeEvent;
 		//! @todo	HAVY OPTIMIZATION!!! Use preallocated buffer here instead
 		//!			std::list.
@@ -177,8 +182,9 @@ namespace Trader { namespace Engine {
 		//! can lost owning references at event handling).
 		typedef boost::tuple<
 				boost::shared_ptr<Position>,
-				boost::shared_ptr<Notifier>>
+				SubscriberPtrWrapper>
 			PositionUpdateEvent;
+		//! @todo: Check performance: set or list
 		typedef EventQueue<std::set<PositionUpdateEvent>>
 			PositionUpdateEventQueue;
 
@@ -189,11 +195,18 @@ namespace Trader { namespace Engine {
 
 	public:
 
-		void Start() {
+		bool IsActive() const {
+			return
+				m_positionUpdates.IsActive()
+				|| m_level1Updates.IsActive()
+				|| m_newTrades.IsActive();
+		}
+
+		void Activate() {
 			Log::Debug("Starting events dispatching...");
-			m_positionUpdates.Start();
-			m_level1Updates.Start();
-			m_newTrades.Start();
+			m_positionUpdates.Activate();
+			m_level1Updates.Activate();
+			m_newTrades.Activate();
 			Log::Debug("Events dispatching started.");
 		}
 
@@ -207,17 +220,15 @@ namespace Trader { namespace Engine {
 
 	public:
 
-		void SignalLevel1Update(boost::shared_ptr<Notifier> &, const Security &);
+		void SignalLevel1Update(SubscriberPtrWrapper &, const Security &);
 		void SignalNewTrade(
-					boost::shared_ptr<Notifier> &,
+					SubscriberPtrWrapper &,
 					const Security &,
 					const boost::posix_time::ptime &,
 					ScaledPrice,
 					Qty,
 					OrderSide);
-		virtual void SignalPositionUpdate(
-					boost::shared_ptr<Notifier> &,
-					Position &);
+		virtual void SignalPositionUpdate(SubscriberPtrWrapper &, Position &);
 
 	private:
 
@@ -227,17 +238,17 @@ namespace Trader { namespace Engine {
 		}
 		template<>
 		static void RaiseEvent(const Level1UpdateEvent &level1Update) {
-			boost::get<1>(level1Update)->RaiseLevel1UpdateEvent(
+			boost::get<1>(level1Update).RaiseLevel1UpdateEvent(
 				*boost::get<0>(level1Update));
 		}
 		template<>
 		static void RaiseEvent(const NewTradeEvent &newTradeEvent) {
-			boost::get<1>(newTradeEvent)->RaiseNewTradeEvent(
+			boost::get<1>(newTradeEvent).RaiseNewTradeEvent(
 				*boost::get<0>(newTradeEvent));
 		}
 		template<>
 		static void RaiseEvent(const PositionUpdateEvent &positionUpdateEvent) {
-			boost::get<1>(positionUpdateEvent)->RaisePositionUpdateEvent(
+			boost::get<1>(positionUpdateEvent).RaisePositionUpdateEvent(
 				*boost::get<0>(positionUpdateEvent));
 		}
 

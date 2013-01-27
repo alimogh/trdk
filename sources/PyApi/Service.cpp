@@ -61,11 +61,11 @@ PyApi::Service::~Service() {
 	AssertFail("Service::~Service");
 }
 
-void PyApi::Service::TakeExportObjectOwnership() {
+boost::shared_ptr<PyApi::Service> PyApi::Service::TakeExportObjectOwnership() {
 	Assert(!m_serviceExportRefHolder);
 	m_serviceExportRefHolder = m_serviceExport.shared_from_this();
 	m_serviceExport.MoveRefToCore();
-	m_serviceExport.ResetRefHolder();
+	return m_serviceExport.ReleaseRefHolder();
 }
 
 ServiceExport & PyApi::Service::GetExport() {
@@ -99,11 +99,7 @@ boost::shared_ptr<Trader::Service> PyApi::Service::CreateClientInstance(
 			settings);
 		auto pyObject = clientClass(reinterpret_cast<uintptr_t>(&params));
 		ServiceExport &serviceExport = py::extract<ServiceExport &>(pyObject);
-		// first increasing core object ref counter...
-		const auto service = serviceExport.GetService().shared_from_this();
-		// then move py-object ref to core:
-		serviceExport.GetService().TakeExportObjectOwnership();
-		return service;
+		return serviceExport.GetService().TakeExportObjectOwnership();
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
 		throw Error("Failed to create instance of trader.Service");

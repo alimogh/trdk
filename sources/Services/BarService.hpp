@@ -88,11 +88,6 @@ namespace Trader { namespace Services {
 
 	public:
 
-		boost::shared_ptr<BarService> shared_from_this();
-		boost::shared_ptr<const BarService> shared_from_this() const;
-
-	public:
-
 		virtual bool OnNewTrade(
 					const boost::posix_time::ptime &,
 					ScaledPrice,

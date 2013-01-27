@@ -478,7 +478,7 @@ bool Strategy::IsBlocked() const {
 		|| !m_pimpl->IsTradingTime();
 }
 
-void Strategy::Block() {
+void Strategy::Block() throw() {
 	Interlocking::Exchange(m_pimpl->m_isBlocked, true);
 	GetLog().Error("Blocked.");
 }

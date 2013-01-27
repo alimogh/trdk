@@ -91,22 +91,18 @@ boost::shared_ptr<Trader::Strategy> PyApi::Strategy::CreateClientInstance(
 		auto pyObject = clientClass(reinterpret_cast<uintptr_t>(&params));
 		StrategyExport &strategyExport
 			= py::extract<StrategyExport &>(pyObject);
-		// first increasing core object ref counter...
-		const auto strategy = strategyExport.GetStrategy().shared_from_this();
-		// then move py-object ref to core:
-		strategyExport.GetStrategy().TakeExportObjectOwnership();
-		return strategy;
+		return strategyExport.GetStrategy().TakeExportObjectOwnership();
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
 		throw Error("Failed to create instance of trader.Strategy");
 	}
 }
 
-void PyApi::Strategy::TakeExportObjectOwnership() {
+boost::shared_ptr<PyApi::Strategy> PyApi::Strategy::TakeExportObjectOwnership() {
 	Assert(!m_strategyExportRefHolder);
 	m_strategyExportRefHolder = m_strategyExport.shared_from_this();
 	m_strategyExport.MoveRefToCore();
-	m_strategyExport.ResetRefHolder();
+	return m_strategyExport.ReleaseRefHolder();
 }
 
 StrategyExport & PyApi::Strategy::GetExport() {

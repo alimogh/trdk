@@ -71,7 +71,7 @@ ServiceInfoExport::ServiceInfoExport(const Trader::Service &service)
 }
 
 ServiceInfoExport::ServiceInfoExport(
-			const boost::shared_ptr<const Trader::Service> &service)
+			const boost::shared_ptr<PyApi::Service> &service)
 		: SecurityAlgoExport(*service),
 		m_serviceRefHolder(service),
 		m_service(&*m_serviceRefHolder),
@@ -88,9 +88,12 @@ void ServiceInfoExport::Export(const char *className) {
 		.def_readonly("security", &ServiceInfoExport::m_securityExport);
 }
 
-void ServiceInfoExport::ResetRefHolder() throw() {
+boost::shared_ptr<PyApi::Service> ServiceInfoExport::ReleaseRefHolder()
+		throw() {
 	Assert(m_serviceRefHolder);
+	const auto serviceRefHolder = m_serviceRefHolder;
 	m_serviceRefHolder.reset();
+	return serviceRefHolder;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -102,7 +105,7 @@ void ServiceInfoExport::ResetRefHolder() throw() {
 
 ServiceExport::ServiceExport(PyObject *self, uintptr_t instanceParam)
 		: ServiceInfoExport(
-			boost::shared_ptr<const Trader::Service>(
+			boost::shared_ptr<PyApi::Service>(
 				new PyApi::Service(instanceParam, *this))),
 		Detail::PythonToCoreTransit<ServiceExport>(self) {
 	//...//

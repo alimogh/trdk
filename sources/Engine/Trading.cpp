@@ -813,46 +813,50 @@ void Trade(const fs::path &iniFilePath, bool isReplayMode) {
 			ini,
 			Ini::Sections::MarketData::source);
 
-	SubscriptionsManager subscriptionsManager(settings);
-
 	Strategies strategies;
 	Observers observers;
 	Services services;
-	try {
-		InitTrading(
-			ini,
-			tradeSystem,
-			subscriptionsManager,
-			marketDataSource,
-			strategies,
-			observers,
-			services,
-			settings);
-	} catch (const Exception &ex) {
-		Log::Error("Failed to init trading: \"%1%\".", ex);
-		return;
+
+	{
+
+		SubscriptionsManager subscriptionsManager(settings);
+
+		try {
+			InitTrading(
+				ini,
+				tradeSystem,
+				subscriptionsManager,
+				marketDataSource,
+				strategies,
+				observers,
+				services,
+				settings);
+		} catch (const Exception &ex) {
+			Log::Error("Failed to init trading: \"%1%\".", ex);
+			return;
+		}
+
+		FileSystemChangeNotificator iniChangeNotificator(
+			iniFilePath,
+			boost::bind(
+				&UpdateSettingsRuntime,
+				boost::cref(iniFilePath),
+				boost::ref(strategies),
+				boost::ref(*settings)));
+
+		iniChangeNotificator.Start();
+		subscriptionsManager.Activate();
+
+		try {
+			Connect(*tradeSystem, ini, Ini::Sections::tradeSystem);
+			Connect(*marketDataSource);
+		} catch (const Exception &ex) {
+			Log::Error("Failed to make trading connections: \"%1%\".", ex);
+			throw Exception("Failed to make trading connections");
+		}
+
+		getchar();
+
 	}
-
-	FileSystemChangeNotificator iniChangeNotificator(
-		iniFilePath,
-		boost::bind(
-			&UpdateSettingsRuntime,
-			boost::cref(iniFilePath),
-			boost::ref(strategies),
-			boost::ref(*settings)));
-
-	iniChangeNotificator.Start();
-	subscriptionsManager.Start();
-
-	try {
-		Connect(*tradeSystem, ini, Ini::Sections::tradeSystem);
-		Connect(*marketDataSource);
-	} catch (const Exception &ex) {
-		Log::Error("Failed to make trading connections: \"%1%\".", ex);
-		throw Exception("Failed to make trading connections");
-	}
-
-	getchar();
-	iniChangeNotificator.Stop();
 
 }

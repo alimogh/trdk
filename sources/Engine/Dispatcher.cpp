@@ -42,48 +42,48 @@ Dispatcher::~Dispatcher() {
 }
 
 void Dispatcher::SignalLevel1Update(
-			boost::shared_ptr<Notifier> &notifier,
+			SubscriberPtrWrapper &subscriber,
 			const Security &security) {
-	if (notifier->IsBlocked()) {
+	if (subscriber.IsBlocked()) {
 		return;
 	}
-	m_level1Updates.Queue(boost::make_tuple(&security, notifier));
+	m_level1Updates.Queue(boost::make_tuple(&security, subscriber));
 }
 
 void Dispatcher::SignalNewTrade(
-			boost::shared_ptr<Notifier> &notifier,
+			SubscriberPtrWrapper &subscriber,
 			const Security &security,
 			const pt::ptime &time,
 			ScaledPrice price,
 			Qty qty,
 			OrderSide side) {
 	try {
-		if (notifier->IsBlocked()) {
+		if (subscriber.IsBlocked()) {
 			return;
 		}
-		boost::shared_ptr<Notifier::Trade> trade(new Notifier::Trade);
+		boost::shared_ptr<SubscriberPtrWrapper::Trade> trade(new SubscriberPtrWrapper::Trade);
 		trade->security = &security;
 		trade->time = time;
 		trade->price = price;
 		trade->qty = qty;
 		trade->side = side;
-		m_newTrades.Queue(boost::make_tuple(trade, notifier));
+		m_newTrades.Queue(boost::make_tuple(trade, subscriber));
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
-		notifier->Block();
+		subscriber.Block();
 		throw;
 	}
 }
 
 void Dispatcher::SignalPositionUpdate(
-			boost::shared_ptr<Notifier> &notifier,
+			SubscriberPtrWrapper &subscriber,
 			Position &position) {
 	try {
 		m_positionUpdates.Queue(
-			boost::make_tuple(position.shared_from_this(), notifier));
+			boost::make_tuple(position.shared_from_this(), subscriber));
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
-		notifier->Block();
+		subscriber.Block();
 		throw;
 	}
 }

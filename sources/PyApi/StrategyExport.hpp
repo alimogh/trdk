@@ -29,7 +29,7 @@ namespace Trader { namespace PyApi {
 		PyApi::Strategy & GetStrategy();
 		const PyApi::Strategy & GetStrategy() const;
 
-		void ResetRefHolder() throw();
+		boost::shared_ptr<PyApi::Strategy> ReleaseRefHolder() throw();
 
 	private:
 

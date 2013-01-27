@@ -30,8 +30,7 @@ namespace Trader { namespace PyApi {
 		 */
 		explicit ServiceInfoExport(const Trader::Service &);
 
-		explicit ServiceInfoExport(
-						const boost::shared_ptr<const Trader::Service> &);
+		explicit ServiceInfoExport(const boost::shared_ptr<PyApi::Service> &);
 
 	public:
 
@@ -43,11 +42,11 @@ namespace Trader { namespace PyApi {
 			return *m_service;
 		}
 
-		void ResetRefHolder() throw();
+		boost::shared_ptr<PyApi::Service> ReleaseRefHolder() throw();
 
 	private:
 
-		boost::shared_ptr<const Trader::Service> m_serviceRefHolder;
+		boost::shared_ptr<PyApi::Service> m_serviceRefHolder;
 		const Trader::Service *m_service;
 
 		SecurityInfoExport m_securityExport;

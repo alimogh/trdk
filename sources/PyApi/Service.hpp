@@ -68,7 +68,7 @@ namespace Trader { namespace PyApi {
 					const char *name,
 					const boost::function<void (const boost::python::override &)> &)
 				const;
-		void TakeExportObjectOwnership();
+		boost::shared_ptr<PyApi::Service> TakeExportObjectOwnership();
 
 	private:
 		

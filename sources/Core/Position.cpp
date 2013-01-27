@@ -98,7 +98,7 @@ public:
 
 	mutable StateUpdateSignal m_stateUpdateSignal;
 
-	boost::shared_ptr<Strategy> m_strategy;
+	Strategy *m_strategy;
 	boost::shared_ptr<Security> m_security;
 
 	volatile long m_planedQty;
@@ -126,7 +126,7 @@ public:
 				Qty qty,
 				ScaledPrice startPrice)
 			: m_position(position),
-			m_strategy(strategy.shared_from_this()),
+			m_strategy(&strategy),
 			m_security(m_strategy->GetSecurity().shared_from_this()),
 			m_planedQty(qty),
 			m_openStartPrice(startPrice),
@@ -451,7 +451,7 @@ public:
 		}
 		try {
 			const auto orderId = openImpl(m_position.GetNotOpenedQty());
-			m_strategy.reset();
+			m_strategy = nullptr;
 			Exchange(m_opened.hasOrder, true);
 			Verify(Exchange(m_opened.orderId, orderId) == nOrderId);
 			Verify(Exchange(m_isStarted, true) == false);

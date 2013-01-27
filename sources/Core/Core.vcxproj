@@ -89,6 +89,8 @@
     <ClCompile Include="TradeSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ModuleRef.hpp" />
+    <ClInclude Include="ModuleVariant.hpp" />
     <ClInclude Include="SecurityAlgo.hpp" />
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="SettingsReport.hpp" />

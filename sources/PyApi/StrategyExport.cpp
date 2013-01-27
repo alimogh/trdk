@@ -39,9 +39,12 @@ const PyApi::Strategy & StrategyInfoExport::GetStrategy() const {
 	return const_cast<StrategyInfoExport *>(this)->GetStrategy();
 }
 
-void StrategyInfoExport::ResetRefHolder() throw() {
+boost::shared_ptr<PyApi::Strategy> StrategyInfoExport::ReleaseRefHolder()
+		throw() {
 	Assert(m_strategyRefHolder);
+	const auto strategyRefHolder = m_strategyRefHolder;
 	m_strategyRefHolder.reset();
+	return strategyRefHolder;
 }
 
 //////////////////////////////////////////////////////////////////////////

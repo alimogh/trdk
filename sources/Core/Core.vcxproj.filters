@@ -118,5 +118,11 @@
     <ClInclude Include="Types.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ModuleVariant.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModuleRef.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
