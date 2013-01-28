@@ -259,7 +259,7 @@ public:
 		}
 
 		std::unique_ptr<BarsLog> log(new BarsLog);
-		log->path = Util::SymbolToFilePath(
+		log->path = SymbolToFilePath(
 			Defaults::GetBarsDataLogDir(),
 			(boost::format("%1%_%2%_%3%")
 					% m_unitsStr
@@ -316,8 +316,7 @@ public:
 				return boost::posix_time::hours(m_barSize * 24);
 			default:
 				AssertFail("Unknown units type");
-				throw Trader::Lib::Exception(
-					"Unknown bar service units type");
+				throw Exception("Unknown bar service units type");
 		}
 	}
 
@@ -444,8 +443,7 @@ pt::time_duration BarService::GetBarSize() const {
 	return m_pimpl->GetBarSize();
 }
 
-void BarService::UpdateAlogImplSettings(
-			const Trader::Lib::IniFileSectionRef &ini) {
+void BarService::UpdateAlogImplSettings(const IniFileSectionRef &ini) {
 	m_pimpl->ReopenLog(ini, true);
 }
 

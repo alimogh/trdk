@@ -86,7 +86,7 @@ std::string IniFile::AbsoluteOrPercentsPrice::GetStr(unsigned long priceScale)
 		const {
 	return isAbsolute
 		?	boost::lexical_cast<std::string>(
-				Util::Descale(value.absolute, priceScale))
+				Descale(value.absolute, priceScale))
 		:	(boost::format("%1%%%") % (value.percents * 100)).str();
 }
 
@@ -238,6 +238,14 @@ std::string IniFile::ReadKey(
 	return result;
 }
 
+fs::path IniFile::ReadFileSystemPath(
+			const std::string &section,
+			const std::string &key,
+			bool canBeEmpty)
+		const {
+	return Normalize(fs::path(ReadKey(section, key, canBeEmpty)));
+}
+
 IniFile::AbsoluteOrPercentsPrice IniFile::ReadAbsoluteOrPercentsPriceKey(
 			const std::string &section,
 			const std::string &key,
@@ -254,7 +262,7 @@ IniFile::AbsoluteOrPercentsPrice IniFile::ReadAbsoluteOrPercentsPriceKey(
 		if (!result.isAbsolute) {
 			result.value.percents = dVal / 100;
 		} else {
-			result.value.absolute = Util::Scale(dVal, priceScale);
+			result.value.absolute = Scale(dVal, priceScale);
 		}
 		return result;
 	} catch (const boost::bad_lexical_cast &ex) {
@@ -362,7 +370,7 @@ std::set<IniFile::Symbol> IniFile::ReadSymbols(
 //////////////////////////////////////////////////////////////////////////
 
 IniFileSectionRef::IniFileSectionRef(
-			const Trader::Lib::IniFile &file,
+			const IniFile &file,
 			const std::string &name)
 		: m_file(file),
 		m_name(name) {
@@ -378,6 +386,13 @@ std::string IniFileSectionRef::ReadKey(
 				bool canBeEmpty)
 			const {
 	return m_file.ReadKey(m_name, key, canBeEmpty);
+}
+
+fs::path IniFileSectionRef::ReadFileSystemPath(
+			const std::string &key,
+			bool canBeEmpty)
+		const {
+	return m_file.ReadFileSystemPath(m_name, key, canBeEmpty);
 }
 
 IniFile::AbsoluteOrPercentsPrice
@@ -398,7 +413,7 @@ std::list<std::string> IniFileSectionRef::ReadList(
 	return m_file.ReadList(m_name, mustExist);
 }
 
-std::set<Trader::Lib::IniFile::Symbol> IniFileSectionRef::ReadSymbols(
+std::set<IniFile::Symbol> IniFileSectionRef::ReadSymbols(
 			const std::string &defExchange,
 			const std::string &defPrimaryExchange)
 		const {

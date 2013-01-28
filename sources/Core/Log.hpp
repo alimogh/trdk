@@ -107,7 +107,7 @@ namespace Trader { namespace Log { namespace Detail {
 		try {
 			const auto time = boost::get_system_time();
 			boost::format message(str);
-			Trader::Util::Format(params, message);
+			Trader::Lib::Format(params, message);
 			AppendEventRecordUnsafe(level, time, message);
 		} catch (const boost::io::format_error &ex) {
 			try {
@@ -177,7 +177,7 @@ namespace Trader { namespace Log { namespace Detail {
 		try {
 			const boost::posix_time::ptime time = boost::get_system_time();
 			boost::format message(str);
-			Trader::Util::Format(params, message);
+			Trader::Lib::Format(params, message);
 			AppendTradingRecordUnsafe(time, tag, message);
 		} catch (const boost::io::format_error &ex) {
 			try {

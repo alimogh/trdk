@@ -10,6 +10,7 @@
 #include "CsvMarketDataSource.hpp"
 
 namespace pt = boost::posix_time;
+namespace fs = boost::filesystem;
 using namespace Trader::Lib;
 using namespace Trader::Interaction::Csv;
 
@@ -18,13 +19,13 @@ MarketDataSource::MarketDataSource(
 			const std::string &section)
 		: m_pimaryExchange(ini.ReadKey(section, "exchange", false)),
 		m_isStopped(true) {
-	const std::string filePath = ini.ReadKey(section, "source", false);
+	const auto filePath = ini.ReadFileSystemPath(section, "source", false);
 	Log::Info(
 		TRADER_INTERACTION_CSV_LOG_PREFFIX
-			"loading file \"%1%\" for exchange \"%2%\"...",
+			"loading file %1% for exchange \"%2%\"...",
 		filePath,
 		m_pimaryExchange);
-	m_file.open(filePath.c_str());
+	m_file.open(filePath.string().c_str());
 	if (!m_file) {
 		throw Exception("Failed to open CSV file");
 	}

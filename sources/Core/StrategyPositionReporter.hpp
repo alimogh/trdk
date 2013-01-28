@@ -124,7 +124,7 @@ namespace Trader {
 				<< ',' << security.DescalePrice(position.GetOpenPrice())
 
 				// entry time
-				<< ',' << (position.GetOpenTime() + Util::GetEdtDiff()).time_of_day()
+				<< ',' << (position.GetOpenTime() + Trader::Lib::GetEdtDiff()).time_of_day()
 
 				// entry order
 				<< ',' << position.GetOpenOrderId()
@@ -141,7 +141,7 @@ namespace Trader {
 			// exit time
 			out << ',';
 			if (position.IsClosed()) {
-				out << (position.GetCloseTime() + Util::GetEdtDiff()).time_of_day();
+				out << (position.GetCloseTime() + Trader::Lib::GetEdtDiff()).time_of_day();
 			} else {
 				out << '-';
 			}

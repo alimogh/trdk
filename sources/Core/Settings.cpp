@@ -38,11 +38,11 @@ void Settings::Update(const IniFile &ini, const std::string &section) {
 void Settings::UpdateDynamic(const IniFile &ini, const std::string &section) {
 	Interlocking::Exchange(
 		m_minPrice,
-		Util::Scale(ini.ReadTypedKey<double>(section, "min_price"), defaultLastPriceScale));
+		Scale(ini.ReadTypedKey<double>(section, "min_price"), defaultLastPriceScale));
 	Log::Info(
 		"Common dynamic settings:"
 			" min_price = %1%;",
-		Util::Descale(m_minPrice, defaultLastPriceScale));
+		Descale(m_minPrice, defaultLastPriceScale));
 }
 
 void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
@@ -73,13 +73,13 @@ void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
 			}
 			if (values.tradeSessionStartTime.is_not_a_date_time()) {
 				Assert(values.tradeSessionEndTime.is_not_a_date_time());
-				values.tradeSessionStartTime = GetStartTime() + Util::GetEdtDiff();
+				values.tradeSessionStartTime = GetStartTime() + GetEdtDiff();
 				values.tradeSessionStartTime -= values.tradeSessionStartTime.time_of_day();
 				values.tradeSessionStartTime += pt::hours(atoi(subSubs[0].c_str()));
 				values.tradeSessionStartTime += pt::minutes(atoi(subSubs[1].c_str()));
 				values.tradeSessionStartTime += pt::seconds(atoi(subSubs[2].c_str()));
 			} else if (values.tradeSessionEndTime.is_not_a_date_time()) {
-				values.tradeSessionEndTime = GetStartTime() + Util::GetEdtDiff();
+				values.tradeSessionEndTime = GetStartTime() + GetEdtDiff();
 				values.tradeSessionEndTime -= values.tradeSessionEndTime.time_of_day();
 				values.tradeSessionEndTime += pt::hours(atoi(subSubs[0].c_str()));
 				values.tradeSessionEndTime += pt::minutes(atoi(subSubs[1].c_str()));
@@ -97,8 +97,8 @@ void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
 			message % section % "trade_session_period_edt";
 			throw IniFile::KeyFormatError(message.str().c_str());
 		}
-		values.tradeSessionStartTime -= Util::GetEdtDiff();
-		values.tradeSessionEndTime -= Util::GetEdtDiff();
+		values.tradeSessionStartTime -= GetEdtDiff();
+		values.tradeSessionEndTime -= GetEdtDiff();
 		if (values.tradeSessionStartTime >= values.tradeSessionEndTime) {
 			if (values.tradeSessionStartTime <= GetStartTime()) {
 				values.tradeSessionEndTime += pt::hours(24);
@@ -117,9 +117,9 @@ void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
 		"Common static settings:"
 			" start_time_edt: %1%;"
 			" trade_session_period_edt = %2% -> %3%; wait_market_data = %4%;",
-		GetStartTime() + Util::GetEdtDiff(),
-		m_values.tradeSessionStartTime + Util::GetEdtDiff(),
-		m_values.tradeSessionEndTime + Util::GetEdtDiff(),
+		GetStartTime() + GetEdtDiff(),
+		m_values.tradeSessionStartTime + GetEdtDiff(),
+		m_values.tradeSessionEndTime + GetEdtDiff(),
 		m_values.shouldWaitForMarketData ? "yes" : "no");
 
 }

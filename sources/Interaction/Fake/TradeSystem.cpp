@@ -129,10 +129,10 @@ private:
 						:	order.isSell
 							?	order.security->GetAskPrice()
 							:	order.security->GetBidPrice();
-					if (Util::IsZero(price)) {
+					if (IsZero(price)) {
 						price = order.security->GetLastPrice();
 					}
-					Assert(!Util::IsZero(price));
+					Assert(!IsZero(price));
 					order.callback(
 						order.id,
 						TradeSystem::ORDER_STATUS_FILLED,

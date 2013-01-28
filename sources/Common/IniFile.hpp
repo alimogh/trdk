@@ -153,6 +153,12 @@ namespace Trader { namespace Lib {
 			}
 		}
 
+		boost::filesystem::path ReadFileSystemPath(
+					const std::string &section,
+					const std::string &key,
+					bool canBeEmpty)
+				const;
+
 		AbsoluteOrPercentsPrice ReadAbsoluteOrPercentsPriceKey(
 					const std::string &section,
 					const std::string &key,
@@ -216,6 +222,11 @@ namespace Trader { namespace Lib {
 		T ReadTypedKey(const std::string &key) const {
 			return m_file.ReadTypedKey<T>(m_name, key);
 		}
+
+		boost::filesystem::path ReadFileSystemPath(
+					const std::string &key,
+					bool canBeEmpty)
+				const;
 
 		Trader::Lib::IniFile::AbsoluteOrPercentsPrice
 		ReadAbsoluteOrPercentsPriceKey(

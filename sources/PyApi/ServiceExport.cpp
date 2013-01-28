@@ -16,6 +16,7 @@ namespace py = boost::python;
 namespace pt = boost::posix_time;
 
 using namespace Trader;
+using namespace Trader::Lib;
 using namespace Trader::Services;
 using namespace Trader::PyApi;
 using namespace Trader::PyApi::Detail;
@@ -165,7 +166,7 @@ void BarServiceExport::BarExport::Export(const char *className) {
 }
 
 time_t BarServiceExport::BarExport::GetTime() const {
-	return Util::ConvertToTimeT(m_bar->time);
+	return ConvertToTimeT(m_bar->time);
 }
 
 size_t BarServiceExport::BarExport::GetSize() const {

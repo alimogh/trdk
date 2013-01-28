@@ -37,7 +37,7 @@ public:
 			m_symbol(symbol),
 			m_primaryExchange(primaryExchange),
 			m_exchange(exchange),
-			m_fullSymbol(Util::CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)),
+			m_fullSymbol(CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)),
 			m_settings(settings) {
 		//...//
 	}
@@ -50,7 +50,7 @@ public:
 			: m_symbol(symbol),
 			m_primaryExchange(primaryExchange),
 			m_exchange(exchange),
-			m_fullSymbol(Util::CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)),
+			m_fullSymbol(CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)),
 			m_settings(settings) {
 		//...//
 	}

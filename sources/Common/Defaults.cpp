@@ -7,12 +7,14 @@
  **************************************************************************/
 
 #include "Defaults.hpp"
+#include "Util.hpp"
 
 using namespace Trader;
+using namespace Trader::Lib;
 namespace fs = boost::filesystem;
 
 fs::path Defaults::GetLogFilePath() {
-	return fs::path("Logs");
+	return GetExeWorkingDir() / fs::path("logs");
 }
 
 fs::path Defaults::GetMarketDataLogDir() {

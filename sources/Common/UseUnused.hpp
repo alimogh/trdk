@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: HighmanTradingRobot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once

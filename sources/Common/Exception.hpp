@@ -45,6 +45,13 @@ namespace Trader { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
+	class SystemException : public Trader::Lib::Exception {
+	public:
+		explicit SystemException(const char *what) throw();
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+
 	class MethodDoesNotImplementedError : public Trader::Lib::Exception {
 	public:
 		explicit MethodDoesNotImplementedError(const char *what) throw();

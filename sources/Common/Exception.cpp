@@ -80,6 +80,13 @@ LogicError::LogicError(const char *what)
 
 //////////////////////////////////////////////////////////////////////////
 
+SystemException::SystemException(const char *what)
+		: Exception(what) {
+	//...//
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 MethodDoesNotImplementedError::MethodDoesNotImplementedError(
 			const char *what)
 		: Exception(what) {

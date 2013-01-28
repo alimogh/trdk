@@ -5,6 +5,10 @@
  * -------------------------------------------------------------------
  *   Project: TunnelEx
  *       URL: http://tunnelex.net
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once

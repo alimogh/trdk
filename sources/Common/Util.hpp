@@ -16,7 +16,7 @@
 #	include <boost/tuple/tuple.hpp>
 #include "DisableBoostWarningsEnd.h"
 
-namespace Trader { namespace Util {
+namespace Trader { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -98,6 +98,12 @@ namespace Trader { namespace Util {
 				const std::string &symbol,
 				const std::string &primaryExchange,
 				const std::string &exchange);
+
+	//////////////////////////////////////////////////////////////////////////
+
+	boost::filesystem::path GetExeFilePath();
+	boost::filesystem::path GetExeWorkingDir();
+	boost::filesystem::path Normalize(const boost::filesystem::path &);
 
 	//////////////////////////////////////////////////////////////////////////
 

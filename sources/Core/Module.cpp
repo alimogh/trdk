@@ -141,10 +141,10 @@ void Module::ReportSettings(
 			std::ios::out | std::ios::ate | std::ios::app);
 		if (!f) {
 			GetLog().Error("Failed to open log file %1%.", path);
-			throw Trader::Lib::Exception("Failed to open log file");
+			throw Exception("Failed to open log file");
 		}
 		f
-			<< (boost::get_system_time() + Util::GetEdtDiff())
+			<< (boost::get_system_time() + GetEdtDiff())
 			<< ' ' << GetName() << ':' << std::endl;
 		foreach (const auto &s, settings) {
 			f << "\t" << s.first << " = " << s.second << std::endl;

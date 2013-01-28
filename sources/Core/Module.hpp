@@ -89,7 +89,7 @@ namespace Trader {
 			Trader::Log::DebugEx(
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
-					Trader::Util::Format(params, result);
+					Trader::Lib::Format(params, result);
 					return result;
 				});
 		}
@@ -112,7 +112,7 @@ namespace Trader {
 			Trader::Log::InfoEx(
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
-					Trader::Util::Format(params, result);
+					Trader::Lib::Format(params, result);
 					return result;
 				});
 		}
@@ -135,7 +135,7 @@ namespace Trader {
 			Trader::Log::WarnEx(
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
-					Trader::Util::Format(params, result);
+					Trader::Lib::Format(params, result);
 					return result;
 				});
 		}
@@ -158,7 +158,7 @@ namespace Trader {
 			Trader::Log::ErrorEx(
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
-					Trader::Util::Format(params, result);
+					Trader::Lib::Format(params, result);
 					return result;
 				});
 		}
@@ -183,7 +183,7 @@ namespace Trader {
 				m_tag.c_str(),
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
-					Trader::Util::Format(params, result);
+					Trader::Lib::Format(params, result);
 					return result;
 				});
 		}

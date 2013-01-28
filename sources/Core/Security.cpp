@@ -90,11 +90,11 @@ public:
 	}
 
 	ScaledPrice ScalePrice(double price) const {
-		return Util::Scale(price, GetPriceScale());
+		return Scale(price, GetPriceScale());
 	}
 
 	double DescalePrice(ScaledPrice price) const {
-		return Util::Descale(price, GetPriceScale());
+		return Descale(price, GetPriceScale());
 	}
 
 	pt::ptime GetLastMarketDataTime() const {
@@ -155,7 +155,7 @@ public:
 
 Security::Implementation::MarketDataLog::MarketDataLog(
 			const std::string &fullSymbol) {
-	const fs::path filePath = Util::SymbolToFilePath(
+	const fs::path filePath = SymbolToFilePath(
 		Defaults::GetMarketDataLogDir(),
 		fullSymbol,
 		"csv");
@@ -187,8 +187,8 @@ void Security::Implementation::MarketDataLog::Append(
 			double ask,
 			double bid) {
 	m_file
-		<< (timeOfReception + Util::GetEdtDiff()).time_of_day()
-		<< ',' << (lastTradeTime + Util::GetEdtDiff()).time_of_day()
+		<< (timeOfReception + GetEdtDiff()).time_of_day()
+		<< ',' << (lastTradeTime + GetEdtDiff()).time_of_day()
 		<< ',' << last
 		<< ',' << ask
 		<< ',' << bid

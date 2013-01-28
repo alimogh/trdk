@@ -31,17 +31,17 @@ namespace {
 
 	std::map<fs::path, boost::shared_ptr<Script>> cache;
 
-	boost::python::object global;
+	py::object global;
 
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-Script & Script::Load(const Lib::IniFileSectionRef &ini) {
-	return Load(ini.ReadKey("script_file_path", false));
+Script & Script::Load(const IniFileSectionRef &ini) {
+	return Load(ini.ReadFileSystemPath("script_file_path", false));
 }
 
-Script & Script::Load(const boost::filesystem::path &path) {
+Script & Script::Load(const fs::path &path) {
 	const Lock lock(mutex);
 	const auto it = cache.find(path);
 	if (it != cache.end()) {
@@ -102,7 +102,7 @@ void Script::Exec(const std::string &code) {
 	try {
 		py::exec(code.c_str(), m_global, m_global);
 	} catch (const py::error_already_set &) {
-		Detail::LogPythonClientException();
+		LogPythonClientException();
 		throw Error("Failed to execute Python code");
 	}
 }
