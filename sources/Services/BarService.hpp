@@ -89,6 +89,7 @@ namespace Trader { namespace Services {
 	public:
 
 		virtual bool OnNewTrade(
+					const Security &,
 					const boost::posix_time::ptime &,
 					ScaledPrice,
 					Qty,
@@ -121,11 +122,6 @@ namespace Trader { namespace Services {
 		  * @sa Trader::Services::BarService::GetBarByIndex 
 		  */
 		const Bar & GetBarByReversedIndex(size_t index) const;
-
- 		//! Returns bar whose period falls in the requested time.
- 		/** @throw Trader::Services::BarService::BarDoesNotExistError
- 		  */
-// 		const Bar & GetBar(const TimeUtc &) const;
 
 	public:
 

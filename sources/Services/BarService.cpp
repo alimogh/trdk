@@ -382,7 +382,11 @@ public:
 		}
 	}
 
-	bool OnNewTrade(const pt::ptime &time, ScaledPrice price, Qty qty) {
+	bool OnNewTrade(
+				const Security &,
+				const pt::ptime &time,
+				ScaledPrice price,
+				Qty qty) {
 		AssertLe(size_t(m_size), m_bars.size());
 		if (m_currentBar && m_currentBarEnd > time) {
 			Assert(!m_bars.empty());
@@ -432,11 +436,13 @@ BarService::~BarService() {
 }
 
 bool BarService::OnNewTrade(
+			const Security &security,
 			const pt::ptime &time,
 			ScaledPrice price,
 			Qty qty,
 			OrderSide) {
-	return m_pimpl->OnNewTrade(time, price, qty);
+	Assert(&security == &GetSecurity());
+	return m_pimpl->OnNewTrade(security, time, price, qty);
 }
 
 pt::time_duration BarService::GetBarSize() const {
