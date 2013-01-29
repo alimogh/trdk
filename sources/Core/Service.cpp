@@ -49,13 +49,14 @@ private:
 			return m_path;
 		}
 	public:
-		template<typename Module>
-		bool operator ()(Module &) const {
+		bool operator ()(const Strategy &) const {
 			return false;
 		}
-		template<>
 		bool operator ()(Service &service) const {
 			return Find(service, m_subscriberToFind, m_path);
+		}
+		bool operator ()(const Observer &) const {
+			return false;
 		}
 	private:
 		static bool Find(
