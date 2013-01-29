@@ -32,7 +32,7 @@ namespace Trader { namespace Engine { namespace Ini {
 		extern const std::string symbols;
 		extern const std::string primaryExchange;
 		extern const std::string exchange;
-		extern const std::string services;
+		extern const std::string uses;
 	}
 
 	namespace Constants {

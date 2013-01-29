@@ -91,7 +91,7 @@ namespace {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	struct Subscribed {
+	struct Use {
 		
 		ModuleType subscriberType;
 		std::string subscriberTag;
@@ -117,39 +117,39 @@ namespace {
 	};
 
 	typedef boost::multi_index_container<
-			Subscribed,
+			Use,
 			mi::indexed_by<
 				mi::ordered_unique<
 					mi::tag<BySubscriber>,
 						mi::composite_key<
-							Subscribed,
+							Use,
 							mi::member<
-								Subscribed,
+								Use,
 								ModuleType,
-								&Subscribed::subscriberType>,
+								&Use::subscriberType>,
 							mi::member<
-								Subscribed,
+								Use,
 								std::string,
-								&Subscribed::subscriberTag>>>>>
-		SubscribedList;
-	typedef SubscribedList::index<BySubscriber>::type SubscribedBySubcriber;
+								&Use::subscriberTag>>>>>
+		Uses;
+	typedef Uses::index<BySubscriber>::type SubscribedBySubcriber;
 
 	namespace Detail {
 		void Update(
 					ModuleType type,
 					const std::string &tag,
-					const boost::function<void (Subscribed &)> &modifier,
-					SubscribedList &list) {
+					const boost::function<void (Use &)> &modifier,
+					Uses &list) {
 			auto &index = list.get<BySubscriber>();
 			auto pos = index.find(boost::make_tuple(type, tag));
 			if (pos != index.end()) {
 				Verify(index.modify(pos, modifier));
 			} else {
-				Subscribed subscribed = {};
-				subscribed.subscriberType = type;
-				subscribed.subscriberTag = tag;
-				modifier(subscribed);
-				list.insert(subscribed);
+				Use use = {};
+				use.subscriberType = type;
+				use.subscriberTag = tag;
+				modifier(use);
+				list.insert(use);
 			}
 		}
 	}
@@ -159,12 +159,12 @@ namespace {
 				ModuleType type,
 				const std::string &tag,
 				SystemService service,
-				SubscribedList &list) {
+				Uses &list) {
 		Detail::Update(
 			type,
 			tag,
-			[&service](Subscribed &subscribed) {
-				subscribed.systemServices.set(service);
+			[&service](Use &use) {
+				use.systemServices.set(service);
 			},
 			list);
 	}
@@ -174,16 +174,16 @@ namespace {
 				const std::string &tag,
 				const std::string &moduleTag,
 				const std::string &moduleSymbol,
-				SubscribedList &list) {
-		Subscribed::Module module = {
+				Uses &list) {
+		Use::Module module = {
 				moduleTag,
 				moduleSymbol
 			};
 		Detail::Update(
 			type,
 			tag,
-			[&module](Subscribed &subscribed) {
-				subscribed.modules.insert(module);
+			[&module](Use &use) {
+				use.modules.insert(module);
 			},
 			list);
 	}
@@ -421,13 +421,13 @@ namespace {
 	
 	}
 
-	void ReadSubscriptionRequest(
+	void ReadUses(
 				const IniFileSectionRef &ini,
 				const std::string &tag,
 				ModuleType moduleType,
- 				SubscribedList &subscribed) {
+ 				Uses &uses) {
 		
-		const std::string strList = ini.ReadKey(Ini::Keys::services, true);
+		const std::string strList = ini.ReadKey(Ini::Keys::uses, true);
 		if (strList.empty()) {
 			return;
 		}
@@ -439,14 +439,14 @@ namespace {
 			if (	boost::iequals(
 						request,
 						Ini::Constants::Services::level1)) {
-				Update(moduleType, tag, SYSTEM_SERVICE_LEVEL1, subscribed);
+				Update(moduleType, tag, SYSTEM_SERVICE_LEVEL1, uses);
 			} else if (
 					boost::iequals(
 						request,
 						Ini::Constants::Services::trades)) {
-				Update(moduleType, tag, SYSTEM_SERVICE_TRADES, subscribed);
+				Update(moduleType, tag, SYSTEM_SERVICE_TRADES, uses);
 			} else {
-				Update(moduleType, tag, request, std::string(), subscribed);
+				Update(moduleType, tag, request, std::string(), uses);
 			}
 		}
 
@@ -460,7 +460,7 @@ namespace {
 				MarketDataSource &marketDataSource,
 				Securities &securities,
 				Strategies &strategies,
-				SubscribedList &subscribed,
+				Uses &uses,
 				boost::shared_ptr<Settings> settings) {
 		Log::Debug("Found strategy section \"%1%\"...", section);
 		InitModuleBySymbol(
@@ -473,11 +473,11 @@ namespace {
 			strategies,
 			settings,
 			Ini::DefaultValues::Fabrics::strategy);
-		ReadSubscriptionRequest(
+		ReadUses(
 			IniFileSectionRef(ini, section),
 			tag,
 			ModuleTrait<Strategy>::GetType(),
-			subscribed);
+			uses);
 	}
 
 	void InitObserver(
@@ -554,7 +554,7 @@ namespace {
 				MarketDataSource &marketDataSource,
 				Securities &securities,
 				Services &services,
-				SubscribedList &subscribed,
+				Uses &uses,
 				boost::shared_ptr<Settings> settings)  {
 		Log::Debug("Found service section \"%1%\"...", section);
 		if (	boost::iequals(tag, Ini::Constants::Services::level1)
@@ -575,16 +575,16 @@ namespace {
 			services,
 			settings,
 			Ini::DefaultValues::Fabrics::service);
-		ReadSubscriptionRequest(
+		ReadUses(
 			IniFileSectionRef(ini, section),
 			tag,
 			ModuleTrait<Service>::GetType(),
-			subscribed);
+			uses);
 	}
 
 	template<typename Module>
 	void BindWithServices(
-				const SubscribedList &binding,
+				const Uses &binding,
 				Services &services,
 				const IniFile &ini,
 				const IniFile::Symbol &symbol,
@@ -665,7 +665,7 @@ namespace {
 		const auto sections = ini.ReadSectionsList();
 
 		Securities securities;
-		SubscribedList subscribedList;
+		Uses uses;
 		foreach (const auto &section, sections) {
 			std::string type;
 			std::string tag;
@@ -682,7 +682,7 @@ namespace {
 						*marketDataSource,
 						securities,
 						strategies,
-						subscribedList,
+						uses,
 						settings);
 				} catch (const Exception &ex) {
 					Log::Error(
@@ -721,7 +721,7 @@ namespace {
 						*marketDataSource,
 						securities,
 						services,
-						subscribedList,
+						uses,
 						settings);
 				} catch (const Exception &ex) {
 					Log::Error(
@@ -742,7 +742,7 @@ namespace {
 		foreach (auto &ss, strategies) {
 			foreach (auto &strategy, ss.second) {
 				BindWithServices(
-					subscribedList,
+					uses,
 					services,
 					ini,
 					strategy.first,
@@ -756,7 +756,7 @@ namespace {
 		foreach (auto &ss, services) {
 			foreach (auto &service, ss.second) {
 				BindWithServices(
-					subscribedList,
+					uses,
 					services,
 					ini,
 					service.first,

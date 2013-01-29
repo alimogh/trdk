@@ -8,9 +8,9 @@ INI-file:
     symbols = symbols.ini   ; symbols collection (instance of TestService will
                             ; be created for each symbol from symbols.ini)
 
-    services = Trades   ; service uses trades and will be subscribed to new
-                        ; trades: on each new trade method
-                        ; TestService.onNewTrade will be called
+    uses = Trades   ; service uses trades and will be subscribed to new
+                    ; trades: on each new trade method
+                    ; TestService.onNewTrade will be called
 
     module = PyApi  ; PyApi module (for each service or strategy that
                     ; implemented in Python)
@@ -25,7 +25,7 @@ INI-file:
     symbols = symbols.ini   ; symbols collection (instance of Example02 will be
                             ; created for each symbol from symbols.ini)
 
-    services = Example03    ; strategy uses service Example03
+    uses = Example03    ; strategy uses service Example03
 
     module = PyApi  ; PyApi module (for each service or strategy that
                     ; implemented in Python)

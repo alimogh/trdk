@@ -32,7 +32,7 @@ const std::string Keys::fabric = "fabric";
 const std::string Keys::symbols = "symbols";
 const std::string Keys::primaryExchange = "primary_exchange";
 const std::string Keys::exchange = "exchange";
-const std::string Keys::services = "services";
+const std::string Keys::uses = "uses";
 
 const std::string Constants::Services::level1 = "Level 1";
 const std::string Constants::Services::trades = "Trades";
