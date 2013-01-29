@@ -34,8 +34,6 @@ const std::string Keys::primaryExchange = "primary_exchange";
 const std::string Keys::exchange = "exchange";
 const std::string Keys::services = "services";
 
-const std::string Variables::currentSymbol = "CURRENT_SYMBOL";
-
 const std::string Constants::Services::level1 = "Level 1";
 const std::string Constants::Services::trades = "Trades";
 

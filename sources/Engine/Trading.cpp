@@ -434,44 +434,19 @@ namespace {
 		
 		std::list<std::string> list;
 		boost::split(list, strList, boost::is_any_of(","));
-		const boost::regex expr(
-			"([^\\[]+)\\[(.+)\\]",
-			boost::regex_constants::icase);
-		foreach (std::string &serviceRequest, list) {
+		foreach (std::string &request, list) {
+			boost::trim(request);
 			if (	boost::iequals(
-						serviceRequest,
+						request,
 						Ini::Constants::Services::level1)) {
 				Update(moduleType, tag, SYSTEM_SERVICE_LEVEL1, subscribed);
 			} else if (
 					boost::iequals(
-						serviceRequest,
+						request,
 						Ini::Constants::Services::trades)) {
 				Update(moduleType, tag, SYSTEM_SERVICE_TRADES, subscribed);
 			} else {
-				boost::smatch what;
-				const auto cleanRequest = boost::trim_copy(serviceRequest);
-				if (!boost::regex_match(cleanRequest, what, expr)) {
-					Log::Error(
-						"Failed to parse service request \"%1%\" for \"%2%\"."
-							" Expected: \"%1%[$%3%]\".",
-						serviceRequest,
-						tag,
-						Ini::Variables::currentSymbol);
-					throw Exception("Failed to load strategy");
-				}
-				if (what.str(2)[0] == '$') {
-					if (	!boost::equal(
-								what.str(2).substr(1),
-								Ini::Variables::currentSymbol)) {
-						Log::Error(
-							"Failed to parse service request \"%1%\""
-								" (unknown variable) for \"%2%\".",
-							serviceRequest,
-							tag);
-						throw Exception("Failed to load strategy");
-					}
-				}
-				Update(moduleType, tag, what.str(1), what.str(2), subscribed);
+				Update(moduleType, tag, request, std::string(), subscribed);
 			}
 		}
 
@@ -635,31 +610,18 @@ namespace {
 					module);
 				throw Exception("Unknown service provided");
 			}
-			IniFile::Symbol bindedSymbol;
-			Assert(!info.symbol.empty());
-			if (info.symbol[0] == '$') {
-				if (	!boost::equal(
-							info.symbol.substr(1),
-							Ini::Variables::currentSymbol)) {
-					Log::Error(
-						"Unknown service symbol \"%1%\" provided for \"%2%\".",
+			const IniFile::Symbol bindedSymbol = info.symbol.empty()
+				?	symbol
+				:	IniFile::ParseSymbol(
 						info.symbol,
-						module);
-					throw Exception("Unknown service symbol provided");
-				}
-				bindedSymbol = symbol;
-			} else {
-				bindedSymbol = IniFile::ParseSymbol(
-					info.symbol,
-					ini.ReadKey(
-						Ini::Sections::defaults,
-						Ini::Keys::exchange,
-						false),
-					ini.ReadKey(
-						Ini::Sections::defaults,
-						Ini::Keys::primaryExchange,
-						false));
-			}
+						ini.ReadKey(
+							Ini::Sections::defaults,
+							Ini::Keys::exchange,
+							false),
+						ini.ReadKey(
+							Ini::Sections::defaults,
+							Ini::Keys::primaryExchange,
+							false));
 			const auto serviceSymbol = service->second.find(bindedSymbol);
 			if (serviceSymbol == service->second.end()) {
 				Log::Error(

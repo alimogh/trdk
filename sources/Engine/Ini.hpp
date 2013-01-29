@@ -35,10 +35,6 @@ namespace Trader { namespace Engine { namespace Ini {
 		extern const std::string services;
 	}
 
-	namespace Variables {
-		extern const std::string currentSymbol;
-	}
-
 	namespace Constants {
 		namespace Services {
 			extern const std::string level1;

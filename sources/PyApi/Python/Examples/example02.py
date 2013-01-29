@@ -17,9 +17,7 @@ INI-file:
     symbols = symbols.ini   ; symbols collection (instance of Example02 will be
                             ; created for each symbol from symbols.ini)
 
-    services = 5 minute bar[$CURRENT_SYMBOL]    ; strategy depends from bar
-                                                ; service that uses the same
-                                                ; symbol as strategy
+    services = 5 minute bar ; strategy uses bar service
 
     module = PyApi  ; PyApi module (for each service or strategy that
                     ; implemented in Python)
