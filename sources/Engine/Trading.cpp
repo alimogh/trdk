@@ -307,12 +307,11 @@ namespace {
 			fabricName = defaultFabricName;
 		}
 
-		Log::Info("Loading %1% objects for \"%2%\"...", moduleType, tag);
+		Log::Debug("Loading %1% objects for \"%2%\"...", moduleType, tag);
 
 		std::string symbolsFilePath;
 		try {
-			symbolsFilePath
-				= ini.ReadKey(section, Ini::Keys::symbols, false);
+			symbolsFilePath = ini.ReadKey(section, Ini::Keys::symbols, false);
 		} catch (const IniFile::Error &ex) {
 			Log::Error("Failed to get symbols file: \"%1%\".", ex);
 			throw;
@@ -488,7 +487,7 @@ namespace {
 				Strategies &strategies,
 				SubscribedList &subscribed,
 				boost::shared_ptr<Settings> settings) {
-		Log::Info("Found strategy section \"%1%\"...", section);
+		Log::Debug("Found strategy section \"%1%\"...", section);
 		InitModuleBySymbol(
 			ini,
 			section,
@@ -516,7 +515,7 @@ namespace {
 				Observers &observers,
 				boost::shared_ptr<Settings> settings)  {
 
-		Log::Info("Found observer section \"%1%\"...", section);
+		Log::Debug("Found observer section \"%1%\"...", section);
 
 		std::set<IniFile::Symbol> symbols;
 		boost::shared_ptr<Dll> dll;
@@ -582,10 +581,10 @@ namespace {
 				Services &services,
 				SubscribedList &subscribed,
 				boost::shared_ptr<Settings> settings)  {
-		Log::Info("Found service section \"%1%\"...", section);
+		Log::Debug("Found service section \"%1%\"...", section);
 		if (	boost::iequals(tag, Ini::Constants::Services::level1)
 				|| boost::iequals(tag, Ini::Constants::Services::trades)) {
-			Log::Info(
+			Log::Error(
 				"System predefined service name used for section %1%: \"%2%\".",
 				section,
 				tag);
@@ -869,7 +868,7 @@ namespace {
 				}
 			}
 		}
-		Log::Info("Current settings update competed.");
+		Log::Debug("Current settings update competed.");
 	}
 
 	DllObjectPtr<TradeSystem> LoadTradeSystem(
