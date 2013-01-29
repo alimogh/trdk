@@ -74,7 +74,7 @@ namespace Trader { namespace PyApi {
 
 		public:
 
-			static void Export(const char *className);
+			static void ExportClass(const char *className);
 
 		public:
 
@@ -98,7 +98,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		static void Export(const char *className);
+		static void ExportClass(const char *className);
 
 	private:
 

@@ -20,7 +20,7 @@ ModuleExport::LogExport::LogExport(Trader::SecurityAlgo::Log &log)
 	//...//
 }
 
-void ModuleExport::LogExport::Export(const char *className) {
+void ModuleExport::LogExport::ExportClass(const char *className) {
 	py::class_<LogExport>(className, py::no_init)
 		.def("debug", &LogExport::Debug)
 		.def("info", &LogExport::Info)
@@ -56,7 +56,7 @@ ModuleExport::ModuleExport(const Trader::SecurityAlgo &algo)
 	//...//
 }
 
-void ModuleExport::Export(const char *className) {
+void ModuleExport::ExportClass(const char *className) {
 	
 	typedef py::class_<ModuleExport, boost::noncopyable> SecurityAlgo;
 	const py::scope securityAlgoClass = SecurityAlgo(className, py::no_init)
@@ -64,7 +64,7 @@ void ModuleExport::Export(const char *className) {
 		.add_property("tag", &ModuleExport::GetTag)
 		.add_property("log", &ModuleExport::GetLog);
 	
-	LogExport::Export("Log");
+	LogExport::ExportClass("Log");
 
 }
 

@@ -68,7 +68,7 @@ StrategyExport::PositionListExport::PositionListExport(
 	//...//
 }
 
-void StrategyExport::PositionListExport::Export(const char *className) {
+void StrategyExport::PositionListExport::ExportClass(const char *className) {
 	py::class_<PositionListExport>(className, py::no_init)
 	    .def("__iter__", py::iterator<PositionListExport>())
 		.def("count", &PositionListExport::GetSize);
@@ -117,7 +117,7 @@ namespace boost { namespace python {
 
 } }
 
-void StrategyExport::Export(const char *className) {
+void StrategyExport::ExportClass(const char *className) {
 	
 	typedef py::class_<
 			StrategyExport,
@@ -130,7 +130,7 @@ void StrategyExport::Export(const char *className) {
 		.def_readonly("security", &StrategyExport::m_securityExport)
 		.add_property("positions", &StrategyExport::GetPositions);
 
-	PositionListExport::Export("PositionList");
+	PositionListExport::ExportClass("PositionList");
 
 }
 

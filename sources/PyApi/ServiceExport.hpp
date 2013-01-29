@@ -32,7 +32,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		static void Export(const char *className);
+		static void ExportClass(const char *className);
 
 	public:
 
@@ -63,7 +63,7 @@ namespace Trader { namespace PyApi {
 		
 	public:
 
-		static void Export(const char *className);
+		static void ExportClass(const char *className);
 
 	public:
 
@@ -101,7 +101,7 @@ namespace Trader { namespace PyApi {
 						const Implementation &,
 						const Implementation::Bar &);
 		public:
-			static void Export(const char *className);
+			static void ExportClass(const char *className);
 		public:
 			time_t GetTime() const;
 			size_t GetSize() const;
@@ -117,7 +117,7 @@ namespace Trader { namespace PyApi {
 
 	    class StatExport {
 		public:
-			static void Export(const char *className);
+			static void ExportClass(const char *className);
 		};
         
 		class PriceStatExport : public StatExport {
@@ -127,7 +127,7 @@ namespace Trader { namespace PyApi {
 			explicit PriceStatExport(
 					const boost::shared_ptr<const Implementation::ScaledPriceStat> &);
 		public:
-			static void Export(const char *className);
+			static void ExportClass(const char *className);
 		public:
 			ValueType GetMax() const;
 			ValueType GetMin() const;
@@ -142,7 +142,7 @@ namespace Trader { namespace PyApi {
 			explicit QtyStatExport(
 					const boost::shared_ptr<const Implementation::QtyStat> &);
 		public:
-			static void Export(const char *className);
+			static void ExportClass(const char *className);
 		public:
 			ValueType GetMax() const;
 			ValueType GetMin() const;
@@ -160,7 +160,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		static void Export(const char *className);
+		static void ExportClass(const char *className);
 
 	public:
 

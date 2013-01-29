@@ -24,7 +24,7 @@ SecurityInfoExport::SecurityInfoExport(const Security &security)
 	//...//
 }
 
-void SecurityInfoExport::Export(const char *className) {
+void SecurityInfoExport::ExportClass(const char *className) {
 
 	py::class_<SecurityInfoExport>(className,  py::no_init)
 
@@ -101,7 +101,7 @@ SecurityExport::SecurityExport(Security &security)
 	//...//
 }
 
-void SecurityExport::Export(const char *className) {
+void SecurityExport::ExportClass(const char *className) {
 	typedef py::class_<
 			SecurityExport,
 			py::bases<SecurityInfoExport>,

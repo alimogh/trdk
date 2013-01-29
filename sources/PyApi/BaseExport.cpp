@@ -32,26 +32,26 @@ BOOST_PYTHON_MODULE(trader) {
 	py::object traderModule = py::scope();
 	traderModule.attr("__path__") = "trader";
 
-	SecurityInfoExport::Export("SecurityInfo");
-	SecurityExport::Export("Security");
+	SecurityInfoExport::ExportClass("SecurityInfo");
+	SecurityExport::ExportClass("Security");
 
-	PositionExport::Export("Position");
-	ShortPositionExport::Export("ShortPosition");
-	LongPositionExport::Export("LongPosition");
+	PositionExport::ExportClass("Position");
+	ShortPositionExport::ExportClass("ShortPosition");
+	LongPositionExport::ExportClass("LongPosition");
 
-	ModuleExport::Export("Module");
+	ModuleExport::ExportClass("Module");
 
-	StrategyExport::Export("Strategy");
+	StrategyExport::ExportClass("Strategy");
 
-	ServiceInfoExport::Export("ServiceInfoExport");
-	ServiceExport::Export("Service");
+	ServiceInfoExport::ExportClass("ServiceInfoExport");
+	ServiceExport::ExportClass("Service");
 	{
 		//! @todo: export __all__
 		py::object servicesModule(
 			py::handle<>(py::borrowed(PyImport_AddModule("trader.services"))));
 		py::scope().attr("services") = servicesModule;
 		py::scope servicesScope = servicesModule;
-		BarServiceExport::Export("BarService");
+		BarServiceExport::ExportClass("BarService");
 	}
 
 }

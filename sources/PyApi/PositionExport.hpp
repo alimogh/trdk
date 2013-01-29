@@ -35,7 +35,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		static void Export(const char *className);
+		static void ExportClass(const char *className);
 
 	public:
 
@@ -136,7 +136,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 		
-		static void Export(const char *className) {
+		static void ExportClass(const char *className) {
 			namespace py = boost::python;
 			typedef py::class_<
 					SidePositionExport,

@@ -21,7 +21,7 @@ namespace Trader { namespace PyApi {
 		public:
 			explicit LogExport(Trader::SecurityAlgo::Log &);
 		public:
-			static void Export(const char *className);
+			static void ExportClass(const char *className);
 		public:
 			void Debug(const char *);
 			void Info(const char *);
@@ -38,7 +38,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		static void Export(const char *className);
+		static void ExportClass(const char *className);
 
 	public:
 

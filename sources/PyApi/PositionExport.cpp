@@ -67,7 +67,7 @@ PositionExport::PositionExport(
 	//...//
 }
 
-void PositionExport::Export(const char *className) {
+void PositionExport::ExportClass(const char *className) {
 
 	py::class_<PositionExport>(className, py::no_init)
 

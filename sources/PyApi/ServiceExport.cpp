@@ -78,7 +78,7 @@ ServiceInfoExport::ServiceInfoExport(
 	//...//
 }
 
-void ServiceInfoExport::Export(const char *className) {
+void ServiceInfoExport::ExportClass(const char *className) {
 	typedef py::class_<
 			ServiceInfoExport,
 			py::bases<ModuleExport>>
@@ -122,7 +122,7 @@ namespace boost { namespace python {
 
 } }
 
-void ServiceExport::Export(const char *className) {
+void ServiceExport::ExportClass(const char *className) {
 	typedef py::class_<
 			ServiceExport,
 			py::bases<ServiceInfoExport>,
@@ -151,7 +151,7 @@ BarServiceExport::BarExport::BarExport(
 	//...//
 }
 
-void BarServiceExport::BarExport::Export(const char *className) {
+void BarServiceExport::BarExport::ExportClass(const char *className) {
 	py::class_<BarExport>(className, py::no_init)
 		.add_property("time", &BarExport::GetTime)
 		.add_property("size", &BarExport::GetSize)
@@ -190,7 +190,7 @@ boost::intmax_t BarServiceExport::BarExport::GetVolume() const {
 	return m_bar->volume;
 }
 
-void BarServiceExport::StatExport::Export(const char *className) {
+void BarServiceExport::StatExport::ExportClass(const char *className) {
 	py::class_<StatExport>(className, py::no_init);
 }
         
@@ -200,7 +200,7 @@ BarServiceExport::PriceStatExport::PriceStatExport(
 	//...//
 }
 
-void BarServiceExport::PriceStatExport::Export(const char *className) {
+void BarServiceExport::PriceStatExport::ExportClass(const char *className) {
 	typedef py::class_<
 			PriceStatExport,
 			py::bases<StatExport>>
@@ -228,7 +228,7 @@ BarServiceExport::QtyStatExport::QtyStatExport(
 	//...//
 }
 
-void BarServiceExport::QtyStatExport::Export(const char *className) {
+void BarServiceExport::QtyStatExport::ExportClass(const char *className) {
 	typedef py::class_<
 			QtyStatExport,
 			py::bases<StatExport>>
@@ -256,7 +256,7 @@ BarServiceExport::BarServiceExport(const BarService &barService)
 	//...//
 }
 
-void BarServiceExport::Export(const char *className) {
+void BarServiceExport::ExportClass(const char *className) {
 
 	typedef py::class_<
 			BarServiceExport,
@@ -280,11 +280,11 @@ void BarServiceExport::Export(const char *className) {
  		.def("getHighPriceStat", &BarServiceExport::GetHighPriceStat)
  		.def("getVolumeStat", &BarServiceExport::GetVolumeStat);
 
-	BarExport::Export("Bar");
+	BarExport::ExportClass("Bar");
 
-	StatExport::Export("Stat");
-	PriceStatExport::Export("PriceStat");
-	QtyStatExport::Export("QtyStat");
+	StatExport::ExportClass("Stat");
+	PriceStatExport::ExportClass("PriceStat");
+	QtyStatExport::ExportClass("QtyStat");
 
 }
 
