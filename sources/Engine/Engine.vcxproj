@@ -96,6 +96,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Engine.cpp" />
     <ClCompile Include="SubscriptionsManager.cpp" />
     <ClCompile Include="Ini.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -106,7 +107,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="SubscriberPtrWrapper.cpp" />
-    <ClCompile Include="Trading.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>

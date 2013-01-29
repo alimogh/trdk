@@ -877,7 +877,7 @@ namespace {
 
 }
 
-void Trade(const fs::path &iniFilePath, bool isReplayMode) {
+void RunEngine(const fs::path &iniFilePath, bool isReplayMode) {
 
 	Log::Info("Using %1% INI-file...", iniFilePath);
 	const IniFile ini(iniFilePath);

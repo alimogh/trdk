@@ -13,7 +13,7 @@ namespace fs = boost::filesystem;
 using namespace Trader;
 using namespace Trader::Lib;
 
-void Trade(const fs::path &, bool isReplayMode);
+void RunEngine(const fs::path &, bool isReplayMode);
 
 namespace {
 
@@ -66,7 +66,7 @@ int main(int argc, const char *argv[]) {
 	try {
 		InitLogs(argc, argv);
 		const fs::path iniFilePath = GetExeWorkingDir() / "etc/trade.ini";
-		Trade(iniFilePath, IsReplayMode(argc, argv));
+		RunEngine(iniFilePath, IsReplayMode(argc, argv));
 	} catch (...) {
 		result = 1;
 		AssertFailNoException();
