@@ -69,6 +69,12 @@ namespace {
 		static const char * GetName() {
 			return "strategy";
 		}
+		static const std::string & GetDefaultFabric() {
+			return Ini::DefaultValues::Fabrics::strategy;
+		}
+		static std::string GetDefaultModule() {
+			return std::string();
+		}
 	};
 	template<>
 	struct ModuleTrait<Service> {
@@ -78,6 +84,12 @@ namespace {
 		static const char * GetName() {
 			return "service";
 		}
+		static const std::string & GetDefaultFabric() {
+			return Ini::DefaultValues::Fabrics::service;
+		}
+		static const std::string & GetDefaultModule() {
+			return Ini::DefaultValues::Modules::service;
+		}
 	};
 	template<>
 	struct ModuleTrait<Observer> {
@@ -86,6 +98,12 @@ namespace {
 		}
 		static const char * GetName() {
 			return "observer";
+		}
+		static const std::string & GetDefaultFabric() {
+			return Ini::DefaultValues::Fabrics::observer;
+		}
+		static std::string GetDefaultModule() {
+			return std::string();
 		}
 	};
 
@@ -200,11 +218,11 @@ namespace {
 	//////////////////////////////////////////////////////////////////////////
 
 	bool GetModuleSection(
-				const std::string &section,
+				const std::string &sectionName,
 				std::string &typeResult,
 				std::string &tagResult) {
 		std::list<std::string> subs;
-		boost::split(subs, section, boost::is_any_of("."));
+		boost::split(subs, sectionName, boost::is_any_of("."));
 		if (subs.empty()) {
 			return false;
 		} else if (
@@ -218,13 +236,24 @@ namespace {
 				:	"No extra dots allowed";
 			Log::Error(
 				"Wrong module section name format: \"%1%\". %2%.",
-				section,
+				sectionName,
 				detail);
 			throw Exception("Wrong module section name format");
 		}
 		subs.begin()->swap(typeResult);
 		subs.rbegin()->swap(tagResult);
 		return true;
+	}
+
+	//! Returns nullptr at fail.
+	const IniFileSectionRef * GetModuleSection(
+				const IniFile &ini,
+				const std::string &sectionName,
+				std::string &typeResult,
+				std::string &tagResult) {
+		return GetModuleSection(sectionName, typeResult, tagResult)
+			?	new IniFileSectionRef(ini, sectionName)
+			:	nullptr;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -238,7 +267,7 @@ namespace {
 				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
 				Securities &securities,
-				boost::shared_ptr<const Settings> settings,
+				boost::shared_ptr<const Settings> &settings,
 				const IniFile &ini) {
 		const std::list<std::string> logMdSymbols
 			= ini.ReadList(Ini::Sections::MarketData::Log::symbols, false);
@@ -260,58 +289,65 @@ namespace {
 		securititesTmp.swap(securities);
 	}
 
+	template<typename Module>
 	std::string LoadModule(
-				const IniFile &ini,
-				const std::string &section,
+				const IniFileSectionRef &section,
 				const std::string &tag,
-				const char *const moduleType,
 				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
 				std::set<IniFile::Symbol> &symbols,
 				Securities &securities,
-				const boost::shared_ptr<const Settings> &settings,
-				const std::string &defaultFabricName,
+				boost::shared_ptr<const Settings> &settings,
 				boost::shared_ptr<Dll> &dll) {
+
+		typedef ModuleTrait<Module> Trait;
 
 		if (tag.empty()) {
 			Log::Error(
 				"Failed to get tag for %1% section \"%2%\".",
-				moduleType,
+				Trait::GetName(),
 				section);
 			throw IniFile::Error("Failed to load module");
 		}
 
 		fs::path module;
 		try {
-			module = ini.ReadKey(section, Ini::Keys::module, false);
+			if (	!section.IsKeyExist(Ini::Keys::module)
+					&& !Trait::GetDefaultModule().empty()) {
+				module = Normalize(Trait::GetDefaultModule());
+			} else {
+				module = section.ReadFileSystemPath(
+					Ini::Keys::module,
+					false);
+			}
 		} catch (const IniFile::Error &ex) {
 			Log::Error(
 				"Failed to get %1% module: \"%2%\".",
-				moduleType,
+				Trait::GetName(),
 				ex);
 			throw IniFile::Error("Failed to load module");
 		}
 
 		std::string fabricName;
-		if (ini.IsKeyExist(section, Ini::Keys::fabric)) {
+		if (section.IsKeyExist(Ini::Keys::fabric)) {
 			try {
-				fabricName = ini.ReadKey(section, Ini::Keys::fabric, false);
+				fabricName = section.ReadKey(Ini::Keys::fabric, false);
 			} catch (const IniFile::Error &ex) {
 				Log::Error(
 					"Failed to get %1% fabric name module: \"%2%\".",
-					moduleType,
+					Trait::GetName(),
 					ex);
 				throw IniFile::Error("Failed to load module");
 			}
 		} else {
-			fabricName = defaultFabricName;
+			fabricName = Trait::GetDefaultFabric();
 		}
 
-		Log::Debug("Loading %1% objects for \"%2%\"...", moduleType, tag);
+		Log::Debug("Loading %1% objects for \"%2%\"...", Trait::GetName(), tag);
 
 		std::string symbolsFilePath;
 		try {
-			symbolsFilePath = ini.ReadKey(section, Ini::Keys::symbols, false);
+			symbolsFilePath = section.ReadKey(Ini::Keys::symbols, false);
 		} catch (const IniFile::Error &ex) {
 			Log::Error("Failed to get symbols file: \"%1%\".", ex);
 			throw;
@@ -320,17 +356,17 @@ namespace {
 		Log::Info(
 			"Loading symbols from \"%1%\" for %2% \"%3%\"...",
 			symbolsFilePath,
-			moduleType,
+			Trait::GetName(),
 			tag);
 		const IniFile symbolsIni(
 			symbolsFilePath,
-			ini.GetPath().branch_path());
+			section.GetBase().GetPath().branch_path());
 		symbols = symbolsIni.ReadSymbols(
-			ini.ReadKey(
+			section.GetBase().ReadKey(
 				Ini::Sections::defaults,
 				Ini::Keys::exchange,
 				false),
-			ini.ReadKey(
+			section.GetBase().ReadKey(
 				Ini::Sections::defaults,
 				Ini::Keys::primaryExchange,
 				false));
@@ -341,7 +377,7 @@ namespace {
 				marketDataSource,
 				securities,
 				settings,
-				ini);
+				section.GetBase());
 		} catch (const IniFile::Error &ex) {
 			Log::Error("Failed to load securities for %2%: \"%1%\".", ex, tag);
 			throw IniFile::Error("Failed to load strategy");
@@ -354,8 +390,7 @@ namespace {
 
 	template<typename Module>
 	void InitModuleBySymbol(
-				const IniFile &ini,
-				const std::string &section,
+				const IniFileSectionRef &section,
 				const std::string &tag,
 				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
@@ -364,22 +399,18 @@ namespace {
 						std::string,
 						std::map<IniFile::Symbol, DllObjectPtr<Module>>>
 					&modules,
-				boost::shared_ptr<const Settings> settings,
-				const std::string &defaultFabricName) {
+				boost::shared_ptr<const Settings> settings) {
 
 		std::set<IniFile::Symbol> symbols;
 		boost::shared_ptr<Dll> dll;
-		const auto fabricName = LoadModule(
-			ini,
+		const auto fabricName = LoadModule<Module>(
 			section,
 			tag,
-			ModuleTrait<Module>::GetName(),
 			tradeSystem,
 			marketDataSource,
 			symbols,
 			securities,
 			settings,
-			defaultFabricName,
 			dll);
 
 		const auto fabric
@@ -398,7 +429,7 @@ namespace {
 				symbolInstance = fabric(
 					tag,
  					securities[symbol],
-					IniFileSectionRef(ini, section),
+					section,
 					settings);
 			} catch (...) {
 				Log::RegisterUnhandledException(
@@ -453,58 +484,47 @@ namespace {
 	}
 
 	void InitStrategy(
-				const IniFile &ini,
-				const std::string &section,
+				const IniFileSectionRef &section,
 				const std::string &tag,
 				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
 				Securities &securities,
 				Strategies &strategies,
 				Uses &uses,
-				boost::shared_ptr<Settings> settings) {
+				boost::shared_ptr<const Settings> settings) {
 		Log::Debug("Found strategy section \"%1%\"...", section);
 		InitModuleBySymbol(
-			ini,
 			section,
 			tag,
 			tradeSystem,
 			marketDataSource,
 			securities,
 			strategies,
-			settings,
-			Ini::DefaultValues::Fabrics::strategy);
-		ReadUses(
-			IniFileSectionRef(ini, section),
-			tag,
-			ModuleTrait<Strategy>::GetType(),
-			uses);
+			settings);
+		ReadUses(section, tag, ModuleTrait<Strategy>::GetType(), uses);
 	}
 
 	void InitObserver(
-				const IniFile &ini,
-				const std::string &section,
+				const IniFileSectionRef &section,
 				const std::string &tag,
 				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
 				Securities &securities,
 				Observers &observers,
-				boost::shared_ptr<Settings> settings)  {
+				boost::shared_ptr<const Settings> &settings)  {
 
 		Log::Debug("Found observer section \"%1%\"...", section);
 
 		std::set<IniFile::Symbol> symbols;
 		boost::shared_ptr<Dll> dll;
-		const auto fabricName = LoadModule(
-			ini,
+		const auto fabricName = LoadModule<Observer>(
 			section,
 			tag,
-			ModuleTrait<Observer>::GetName(),
 			tradeSystem,
 			marketDataSource,
 			symbols,
 			securities,
 			settings,
-			Ini::DefaultValues::Fabrics::observer,
 			dll);
 
 		const auto fabric
@@ -529,7 +549,7 @@ namespace {
 				tag,
 				notifyList,
 				tradeSystem,
-				IniFileSectionRef(ini, section),
+				section,
 				settings);
 		} catch (...) {
 			Log::RegisterUnhandledException(
@@ -547,15 +567,14 @@ namespace {
 	}
 
 	void InitService(
-				const IniFile &ini,
-				const std::string &section,
+				const IniFileSectionRef &section,
 				const std::string &tag,
 				boost::shared_ptr<TradeSystem> &tradeSystem,
 				MarketDataSource &marketDataSource,
 				Securities &securities,
 				Services &services,
 				Uses &uses,
-				boost::shared_ptr<Settings> settings)  {
+				boost::shared_ptr<const Settings> settings)  {
 		Log::Debug("Found service section \"%1%\"...", section);
 		if (	boost::iequals(tag, Ini::Constants::Services::level1)
 				|| boost::iequals(tag, Ini::Constants::Services::trades)) {
@@ -566,20 +585,14 @@ namespace {
 			throw Exception("System predefined service name used");
 		}
 		InitModuleBySymbol(
-			ini,
 			section,
 			tag,
 			tradeSystem,
 			marketDataSource,
 			securities,
 			services,
-			settings,
-			Ini::DefaultValues::Fabrics::service);
-		ReadUses(
-			IniFileSectionRef(ini, section),
-			tag,
-			ModuleTrait<Service>::GetType(),
-			uses);
+			settings);
+		ReadUses(section, tag, ModuleTrait<Service>::GetType(), uses);
 	}
 
 	template<typename Module>
@@ -660,23 +673,24 @@ namespace {
 				Strategies &strategies,
 				Observers &observers,
 				Services &services,
-				boost::shared_ptr<Settings> settings)  {
+				boost::shared_ptr<const Settings> settings)  {
 
 		const auto sections = ini.ReadSectionsList();
 
 		Securities securities;
 		Uses uses;
-		foreach (const auto &section, sections) {
+		foreach (const auto &sectionName, sections) {
 			std::string type;
 			std::string tag;
-			if (!GetModuleSection(section, type, tag)) {
+			std::unique_ptr<const IniFileSectionRef> section(
+				GetModuleSection(ini, sectionName, type, tag));
+			if (!section) {
 				continue;
 			}
 			if (boost::iequals(type, Ini::Sections::strategy)) {
 				try {
 					InitStrategy(
-						ini,
-						section,
+						*section,
 						tag,
 						tradeSystem,
 						*marketDataSource,
@@ -688,15 +702,14 @@ namespace {
 					Log::Error(
 						"Failed to load strategy module from section \"%1%\":"
 							" \"%2%\".",
-						section,
+						*section,
 						ex);
 					throw Exception("Failed to load strategy module");
 				}
 			} else if (boost::iequals(type, Ini::Sections::observer)) {
 				try {
 					InitObserver(
-						ini,
-						section,
+						*section,
 						tag,
 						tradeSystem,
 						*marketDataSource,
@@ -707,15 +720,14 @@ namespace {
 					Log::Error(
 						"Failed to load observer module from section \"%1%\":"
 							" \"%2%\".",
-						section,
+						*section,
 						ex);
 					throw Exception("Failed to load observer module");
 				}
 			} else if (boost::iequals(type, Ini::Sections::service)) {
 				try {
 					InitService(
-						ini,
-						section,
+						*section,
 						tag,
 						tradeSystem,
 						*marketDataSource,
@@ -726,7 +738,7 @@ namespace {
 				} catch (const Exception &ex) {
 					Log::Error(
 						"Failed to load service module from section \"%1%\": \"%2%\".",
-						section,
+						*section,
 						ex);
 					throw Exception("Failed to load service module");
 				}

@@ -41,6 +41,8 @@ const std::string DefaultValues::Fabrics::strategy = "CreateStrategy";
 const std::string DefaultValues::Fabrics::service = "CreateService";
 const std::string DefaultValues::Fabrics::observer = "CreateObserver";
 
+const std::string DefaultValues::Modules::service = "Services";
+
 //////////////////////////////////////////////////////////////////////////
 
 boost::shared_ptr<Settings> Ini::LoadSettings(

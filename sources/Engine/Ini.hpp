@@ -48,6 +48,9 @@ namespace Trader { namespace Engine { namespace Ini {
 			extern const std::string service;
 			extern const std::string observer;
 		}
+		namespace Modules {
+			extern const std::string service;
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////

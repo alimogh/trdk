@@ -367,6 +367,10 @@ std::set<IniFile::Symbol> IniFile::ReadSymbols(
 	return result;
 }
 
+const fs::path & IniFile::GetPath() const {
+	return m_path;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 IniFileSectionRef::IniFileSectionRef(
@@ -418,6 +422,33 @@ std::set<IniFile::Symbol> IniFileSectionRef::ReadSymbols(
 			const std::string &defPrimaryExchange)
 		const {
 	return m_file.ReadSymbols(m_name, defExchange, defPrimaryExchange);
+}
+
+const std::string & IniFileSectionRef::GetName() const {
+	return m_name;
+}
+
+const IniFile & IniFileSectionRef::GetBase() const {
+	return m_file;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+std::ostream & std::operator <<(
+			std::ostream &os,
+			const IniFile::Symbol &symbol) {
+	os
+		<< symbol.symbol
+		<< ':' << symbol.primaryExchange
+		<< ':' << symbol.exchange;
+	return os;
+}
+
+std::ostream & std::operator <<(
+			std::ostream &os,
+			const IniFileSectionRef &section) {
+	os << section.GetName();
+	return os;
 }
 
 //////////////////////////////////////////////////////////////////////////

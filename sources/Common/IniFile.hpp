@@ -117,9 +117,7 @@ namespace Trader { namespace Lib {
 
 	public:
 
-		const boost::filesystem::path & GetPath() const {
-			return m_path;
-		}
+		const boost::filesystem::path & GetPath() const;
 
 	public:
 
@@ -214,6 +212,9 @@ namespace Trader { namespace Lib {
 
 	public:
 
+		const std::string & GetName() const;
+		const IniFile & GetBase() const;
+
 		bool IsKeyExist(const std::string &key) const;
 
 		std::string ReadKey(const std::string &key, bool canBeEmpty) const;
@@ -259,12 +260,15 @@ namespace Trader { namespace Lib {
 //////////////////////////////////////////////////////////////////////////
 
 namespace std {
-	inline std::ostream & operator <<(
-				std::ostream &os,
-				const Trader::Lib::IniFile::Symbol &symbol) {
-		os << symbol.symbol << ':' << symbol.primaryExchange << ':' << symbol.exchange;
-		return os;
-	}
+	
+	std::ostream & operator <<(
+				std::ostream &,
+				const Trader::Lib::IniFile::Symbol &);
+	
+	std::ostream & operator <<(
+				std::ostream &,
+				const Trader::Lib::IniFileSectionRef &);
+
 }
 
 //////////////////////////////////////////////////////////////////////////
