@@ -620,8 +620,8 @@ namespace {
 		const auto bindingInfo = bindingIndex.find(
 			boost::make_tuple(ModuleTrait<Module>::GetType(), module.GetTag()));
 		if (bindingInfo == bindingIndex.end()) {
-			Log::Error("No services provided for \"%1%\".", module);
-			throw Exception("No services provided");
+			Log::Error("No data sources specified for \"%1%\".", module);
+			throw Exception("No data sources specified");
 		}
 
 		bool isAnyService = false;
