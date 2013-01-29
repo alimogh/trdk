@@ -3,7 +3,7 @@
 INI-file:
 
 ; Initializing test service:
-[Service.Test_Example03]
+[Service.Example03]
 
     symbols = symbols.ini   ; symbols collection (instance of TestService will
                             ; be created for each symbol from symbols.ini)
@@ -17,25 +17,24 @@ INI-file:
 
     class = ExampleService ; service Python class name
 
-    script_file_path = D:\TradingRobotDK\Examples\example03.py ; path to script
+    script_file_path = Examples/example03.py ; path to script
 
 ; Initializing example strategy:
-[Strategy.Test_Example03]
+[Strategy.Example03]
 
     symbols = symbols.ini   ; symbols collection (instance of Example02 will be
                             ; created for each symbol from symbols.ini)
 
-    services = Test_Example03[$CURRENT_SYMBOL]  ; strategy depends from
-                                                ; TestService_Example03 that
-                                                ; uses the same symbol as
-                                                ; strategy
+    services = Example03[$CURRENT_SYMBOL]   ; strategy depends from service
+                                            ; Example03 that uses the same
+                                            ; symbol as strategy
 
     module = PyApi  ; PyApi module (for each service or strategy that
                     ; implemented in Python)
 
     class = ExampleStrategy ; strategy Python class name
 
-    script_file_path = D:\TradingRobotDK\Examples\example03.py ; path to script
+    script_file_path = Examples/example03.py ; path to script
 
 """
 
