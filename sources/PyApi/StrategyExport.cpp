@@ -25,7 +25,7 @@ namespace pt = boost::posix_time;
 
 StrategyInfoExport::StrategyInfoExport(
 			const boost::shared_ptr<PyApi::Strategy> &strategy)
-		: SecurityAlgoExport(*strategy),
+		: ModuleExport(*strategy),
 		m_strategyRefHolder(strategy),
 		m_strategy(&*m_strategyRefHolder) {
 	//...//
@@ -121,7 +121,7 @@ void StrategyExport::Export(const char *className) {
 	
 	typedef py::class_<
 			StrategyExport,
-			py::bases<SecurityAlgoExport>,
+			py::bases<ModuleExport>,
 			Detail::PythonToCoreTransitHolder<StrategyExport>,
 			boost::noncopyable>
 		Export;

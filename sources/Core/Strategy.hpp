@@ -120,8 +120,9 @@ namespace Trader {
 
 	public:
 
-		virtual void OnLevel1Update();
+		virtual void OnLevel1Update(const Trader::Security &);
 		virtual void OnNewTrade(
+					const Trader::Security &,
 					const boost::posix_time::ptime &,
 					Trader::ScaledPrice,
 					Trader::Qty,
@@ -131,8 +132,9 @@ namespace Trader {
 
 	public:
 
-		void RaiseLevel1UpdateEvent();
+		void RaiseLevel1UpdateEvent(const Trader::Security &);
 		void RaiseNewTradeEvent(
+					const Trader::Security &,
 					const boost::posix_time::ptime &,
 					Trader::ScaledPrice,
 					Trader::Qty,

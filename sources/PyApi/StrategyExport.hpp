@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "SecurityAlgoExport.hpp"
+#include "ModuleExport.hpp"
 #include "PythonToCoreTransit.hpp"
 #include "Core/Strategy.hpp"
 
@@ -16,7 +16,7 @@ namespace Trader { namespace PyApi {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class StrategyInfoExport : public SecurityAlgoExport {
+	class StrategyInfoExport : public ModuleExport {
 
 	public:
 

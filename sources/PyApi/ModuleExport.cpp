@@ -7,7 +7,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "SecurityAlgoExport.hpp"
+#include "ModuleExport.hpp"
 #include "Core/SecurityAlgo.hpp"
 
 using namespace Trader::PyApi;
@@ -15,12 +15,12 @@ namespace py = boost::python;
 
 //////////////////////////////////////////////////////////////////////////
 
-SecurityAlgoExport::LogExport::LogExport(Trader::SecurityAlgo::Log &log)
+ModuleExport::LogExport::LogExport(Trader::SecurityAlgo::Log &log)
 		: m_log(&log) {
 	//...//
 }
 
-void SecurityAlgoExport::LogExport::Export(const char *className) {
+void ModuleExport::LogExport::Export(const char *className) {
 	py::class_<LogExport>(className, py::no_init)
 		.def("debug", &LogExport::Debug)
 		.def("info", &LogExport::Info)
@@ -29,53 +29,53 @@ void SecurityAlgoExport::LogExport::Export(const char *className) {
 		.def("trading", &LogExport::Trading);
 }
 
-void SecurityAlgoExport::LogExport::Debug(const char *message) {
+void ModuleExport::LogExport::Debug(const char *message) {
 	m_log->Debug(message);
 }
 
-void SecurityAlgoExport::LogExport::Info(const char *message) {
+void ModuleExport::LogExport::Info(const char *message) {
 	m_log->Info(message);
 }
 
-void SecurityAlgoExport::LogExport::Warn(const char *message) {
+void ModuleExport::LogExport::Warn(const char *message) {
 	m_log->Warn(message);
 }
 
-void SecurityAlgoExport::LogExport::Error(const char *message) {
+void ModuleExport::LogExport::Error(const char *message) {
 	m_log->Error(message);
 }
 
-void SecurityAlgoExport::LogExport::Trading(const char *message) {
+void ModuleExport::LogExport::Trading(const char *message) {
 	m_log->Trading(message);
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-SecurityAlgoExport::SecurityAlgoExport(const Trader::SecurityAlgo &algo)
+ModuleExport::ModuleExport(const Trader::SecurityAlgo &algo)
 		: m_algo(&algo) {
 	//...//
 }
 
-void SecurityAlgoExport::Export(const char *className) {
+void ModuleExport::Export(const char *className) {
 	
-	typedef py::class_<SecurityAlgoExport, boost::noncopyable> SecurityAlgo;
+	typedef py::class_<ModuleExport, boost::noncopyable> SecurityAlgo;
 	const py::scope securityAlgoClass = SecurityAlgo(className, py::no_init)
-		.add_property("name", &SecurityAlgoExport::GetName)
-		.add_property("tag", &SecurityAlgoExport::GetTag)
-		.add_property("log", &SecurityAlgoExport::GetLog);
+		.add_property("name", &ModuleExport::GetName)
+		.add_property("tag", &ModuleExport::GetTag)
+		.add_property("log", &ModuleExport::GetLog);
 	
 	LogExport::Export("Log");
 
 }
 
-py::str SecurityAlgoExport::GetTag() const {
+py::str ModuleExport::GetTag() const {
 	return m_algo->GetTag().c_str();
 }
 
-py::str SecurityAlgoExport::GetName() const {
+py::str ModuleExport::GetName() const {
 	return m_algo->GetName().c_str();
 }
 
-SecurityAlgoExport::LogExport SecurityAlgoExport::GetLog() const {
+ModuleExport::LogExport ModuleExport::GetLog() const {
 	return LogExport(m_algo->GetLog());
 }

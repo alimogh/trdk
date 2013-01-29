@@ -131,20 +131,21 @@ void PyApi::Service::OnServiceStart(const Trader::Service &service) {
 	}
 }
 
-bool PyApi::Service::OnLevel1Update() {
+bool PyApi::Service::OnLevel1Update(const Security &security) {
 	bool stateChanged = false;
 	const bool isExists = CallVirtualMethod(
 		"onLevel1Update",
 		[&](const py::override &f) {
-			stateChanged = f();
+			stateChanged = f(security);
 		});
 	if (!isExists) {
-		stateChanged = Base::OnLevel1Update();
+		stateChanged = Base::OnLevel1Update(security);
 	}
 	return stateChanged;
 }
 
 bool PyApi::Service::OnNewTrade(
+			const Security &security,
 			const pt::ptime &time,
 			ScaledPrice price,
 			Qty qty,
@@ -154,13 +155,14 @@ bool PyApi::Service::OnNewTrade(
 		"onNewTrade",
 		[&](const py::override &f) {
 			stateChanged = f(
+				PyApi::Export(security),
 				PyApi::Export(time),
 				PyApi::Export(price),
 				PyApi::Export(qty),
 				PyApi::Export(side));
 		});
 	if (!isExists) {
-		stateChanged = Base::OnNewTrade(time, price, qty, side);
+		stateChanged = Base::OnNewTrade(security, time, price, qty, side);
 	}
 	return stateChanged;
 }

@@ -36,8 +36,9 @@ namespace Trader {
 
 	public:
 
-		virtual bool OnLevel1Update();
+		virtual bool OnLevel1Update(const Trader::Security &);
 		virtual bool OnNewTrade(
+					const Trader::Security &,
 					const boost::posix_time::ptime &,
 					Trader::ScaledPrice,
 					Trader::Qty,
@@ -53,8 +54,9 @@ namespace Trader {
 
 	public:
 
-		bool RaiseLevel1UpdateEvent();
+		bool RaiseLevel1UpdateEvent(const Trader::Security &);
 		bool RaiseNewTradeEvent(
+					const Trader::Security &,
 					const boost::posix_time::ptime &,
 					Trader::ScaledPrice,
 					Trader::Qty,

@@ -327,7 +327,7 @@ void Security::CancelAllOrders() {
 	GetTradeSystem().CancelAllOrders(*this);
 }
 
-Security::operator bool() const {
+bool Security::IsStarted() const {
 	return m_pimpl->m_lastPrice && m_pimpl->m_askPrice && m_pimpl->m_bidPrice;
 }
 

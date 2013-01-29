@@ -21,7 +21,10 @@ class Example01(trader.Strategy):
     # Virtual method, must be implemented in strategy implementation. Will be
     # called each time when engine has received Level 1 data update (such as
     # best bid, best ask or last trade).
-    def onLevel1Update(self):
+    def onLevel1Update(self, security):
+        assert \
+            self.security == security, \
+            "Strategy subscribed only to this security."
         if self.positions.count() == 0:
             # No positions currently opened, so trying to open one...
             self.tryToOpenPosition()

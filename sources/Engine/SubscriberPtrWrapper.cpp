@@ -142,13 +142,13 @@ void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
 			AssertEq(
 				m_security.GetFullSymbol(),
 				strategy.GetSecurity().GetFullSymbol());
-			strategy.RaiseLevel1UpdateEvent();
+			strategy.RaiseLevel1UpdateEvent(m_security);
 		}
 		void operator ()(Service &service) const {
 			AssertEq(
 				m_security.GetFullSymbol(),
 				service.GetSecurity().GetFullSymbol());
-			if (service.RaiseLevel1UpdateEvent()) {
+			if (service.RaiseLevel1UpdateEvent(m_security)) {
 				RaiseServiceDataUpdateEvent(service);
 			}
 		}
@@ -191,6 +191,7 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(const Trade &trade) const {
 				m_trade.security->GetFullSymbol(),
 				strategy.GetSecurity().GetFullSymbol());
 			strategy.RaiseNewTradeEvent(
+				*m_trade.security,
 				m_trade.time,
 				m_trade.price,
 				m_trade.qty,
@@ -201,6 +202,7 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(const Trade &trade) const {
 				m_trade.security->GetFullSymbol(),
 				service.GetSecurity().GetFullSymbol());
 			if (	service.RaiseNewTradeEvent(
+						*m_trade.security,
 						m_trade.time,
 						m_trade.price,
 						m_trade.qty,

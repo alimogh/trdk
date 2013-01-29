@@ -13,7 +13,7 @@
 
 namespace Trader { namespace PyApi {
 
-	class SecurityAlgoExport {
+	class ModuleExport {
 
 	public:
 
@@ -34,7 +34,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		explicit SecurityAlgoExport(const SecurityAlgo &);
+		explicit ModuleExport(const SecurityAlgo &);
 
 	public:
 

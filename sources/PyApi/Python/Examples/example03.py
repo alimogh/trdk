@@ -49,7 +49,7 @@ class ExampleService(trader.Service):
     lastTickPrice = 0
     priceDirection = None
 
-    def onNewTrade(self, time, price, qty, side):
+    def onNewTrade(self, security, time, price, qty, side):
 
         isServiceStateChanged = False
         if int(self.lastTickPrice) == 0:
@@ -60,7 +60,7 @@ class ExampleService(trader.Service):
 
             deviation = self._lastDirectionChangePrice - price
 
-            if self.security.descalePrice(deviation) < 0.50:
+            if security.descalePrice(deviation) < 0.50:
                 # Do nothing - too small a price deviation, less the 0.50.
                 pass
 
@@ -68,9 +68,9 @@ class ExampleService(trader.Service):
                 self.log.debug(
                     'Price now "growing" ({0} -> {1}: +{2}).'
                         .format(
-                            self.security.descalePrice(self._lastDirectionChangePrice),
-                            self.security.descalePrice(price),
-                            self.security.descalePrice(deviation)))
+                            security.descalePrice(self._lastDirectionChangePrice),
+                            security.descalePrice(price),
+                            security.descalePrice(deviation)))
                 self.priceDirection = 'growing'
                 self._lastDirectionChangePrice = price
                 # Direction changed, need notify service subscribers:
@@ -80,7 +80,7 @@ class ExampleService(trader.Service):
 
             deviation = price - self._lastDirectionChangePrice
 
-            if self.security.descalePrice(deviation) < 0.50:
+            if security.descalePrice(deviation) < 0.50:
                 # Do nothing - too small a price deviation, less the 0.50.
                 pass
 
@@ -88,9 +88,9 @@ class ExampleService(trader.Service):
                 self.log.debug(
                     'Price now "falls" ({0} -> {1}: -{2}).'
                         .format(
-                            self.security.descalePrice(self._lastDirectionChangePrice),
-                            self.security.descalePrice(price),
-                            self.security.descalePrice(deviation)))
+                            security.descalePrice(self._lastDirectionChangePrice),
+                            security.descalePrice(price),
+                            security.descalePrice(deviation)))
                 self._lastDirectionChangePrice = price
                 self.priceDirection = 'falls'
                 # Direction changed, need notify service subscribers:

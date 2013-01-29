@@ -39,9 +39,10 @@ BOOST_PYTHON_MODULE(trader) {
 	ShortPositionExport::Export("ShortPosition");
 	LongPositionExport::Export("LongPosition");
 
-	SecurityAlgoExport::Export("SecurityAlgo");
+	ModuleExport::Export("Module");
+
 	StrategyExport::Export("Strategy");
-	
+
 	ServiceInfoExport::Export("ServiceInfoExport");
 	ServiceExport::Export("Service");
 	{

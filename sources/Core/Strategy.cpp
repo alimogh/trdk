@@ -379,7 +379,7 @@ PositionReporter & Strategy::GetPositionReporter() {
 	return *m_pimpl->m_positionReporter;
 }
 
-void Strategy::OnLevel1Update() {
+void Strategy::OnLevel1Update(const Security &) {
 	GetLog().Error(
 		"Subscribed to Level 1 updates, but can't work with it"
 			" (hasn't OnLevel1Update method implementation).");
@@ -388,6 +388,7 @@ void Strategy::OnLevel1Update() {
 }
 
 void Strategy::OnNewTrade(
+					const Security &,
 					const boost::posix_time::ptime &,
 					ScaledPrice,
 					Qty,
@@ -412,15 +413,16 @@ void Strategy::OnPositionUpdate(Position &) {
 	//...//
 }
 
-void Strategy::RaiseLevel1UpdateEvent() {
+void Strategy::RaiseLevel1UpdateEvent(const Security &service) {
 	const Lock lock(GetMutex());
 	if (IsBlocked()) {
 		return;
 	}
-	OnLevel1Update();
+	OnLevel1Update(service);
 }
 
 void Strategy::RaiseNewTradeEvent(
+			const Security &service,
 			const boost::posix_time::ptime &time,
 			ScaledPrice price,
 			Qty qty,
@@ -429,7 +431,7 @@ void Strategy::RaiseNewTradeEvent(
 	if (IsBlocked()) {
 		return;
 	}
-	OnNewTrade(time, price, qty, side);
+	OnNewTrade(service, time, price, qty, side);
 }
 
 void Strategy::RaiseServiceDataUpdateEvent(const Service &service) {

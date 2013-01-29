@@ -47,8 +47,9 @@ namespace Trader { namespace PyApi {
 
 		virtual void OnServiceStart(const Trader::Service &);
 
-		virtual void OnLevel1Update();
+		virtual void OnLevel1Update(const Trader::Security &);
 		virtual void OnNewTrade(
+					const Trader::Security &,
 					const boost::posix_time::ptime &,
 					Trader::ScaledPrice,
 					Trader::Qty,

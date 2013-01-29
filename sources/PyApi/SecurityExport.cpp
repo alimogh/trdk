@@ -9,9 +9,12 @@
 #include "Prec.hpp"
 #include "SecurityExport.hpp"
 #include "Core/Security.hpp"
+#include "Detail.hpp"
 
 using namespace Trader;
+using namespace Trader::Lib;
 using namespace Trader::PyApi;
+using namespace Trader::PyApi::Detail;
 namespace py = boost::python;
 
 //////////////////////////////////////////////////////////////////////////
@@ -119,6 +122,17 @@ void SecurityExport::CancelOrder(int orderId) {
 
 void SecurityExport::CancelAllOrders() {
 	GetSecurity().CancelAllOrders();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+py::object PyApi::Export(const Security &security) {
+	try {
+		return py::object(SecurityInfoExport(security));
+	} catch (const py::error_already_set &) {
+		LogPythonClientException();
+		throw Error("Failed to export security info");
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

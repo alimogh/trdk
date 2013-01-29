@@ -60,7 +60,7 @@ namespace Trader {
 	public:
 
 		//! Check security for valid market data and state.
-		operator bool() const;
+		bool IsStarted() const;
 
 	public:
 

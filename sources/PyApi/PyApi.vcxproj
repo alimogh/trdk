@@ -94,7 +94,7 @@
     <ClInclude Include="Position.hpp" />
     <ClInclude Include="PositionExport.hpp" />
     <ClInclude Include="PythonToCoreTransit.hpp" />
-    <ClInclude Include="SecurityAlgoExport.hpp" />
+    <ClInclude Include="ModuleExport.hpp" />
     <ClInclude Include="SecurityExport.hpp" />
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="Prec.hpp" />
@@ -112,7 +112,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="SecurityAlgoExport.cpp" />
+    <ClCompile Include="ModuleExport.cpp" />
     <ClCompile Include="SecurityExport.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="ServiceExport.cpp" />

@@ -65,28 +65,25 @@ py::object PyApi::Export(const Trader::Service &service) {
 //////////////////////////////////////////////////////////////////////////
 
 ServiceInfoExport::ServiceInfoExport(const Trader::Service &service)
-		: SecurityAlgoExport(service),
-		m_service(&service),
-		m_securityExport(GetService().GetSecurity()) {
+		: ModuleExport(service),
+		m_service(&service) {
 	//...//
 }
 
 ServiceInfoExport::ServiceInfoExport(
 			const boost::shared_ptr<PyApi::Service> &service)
-		: SecurityAlgoExport(*service),
+		: ModuleExport(*service),
 		m_serviceRefHolder(service),
-		m_service(&*m_serviceRefHolder),
-		m_securityExport(GetService().GetSecurity()) {
+		m_service(&*m_serviceRefHolder) {
 	//...//
 }
 
 void ServiceInfoExport::Export(const char *className) {
 	typedef py::class_<
 			ServiceInfoExport,
-			py::bases<SecurityAlgoExport>>
+			py::bases<ModuleExport>>
 		Export;
-	Export(className, py::no_init)
-		.def_readonly("security", &ServiceInfoExport::m_securityExport);
+	Export(className, py::no_init);
 }
 
 boost::shared_ptr<PyApi::Service> ServiceInfoExport::ReleaseRefHolder()
@@ -254,7 +251,8 @@ BarServiceExport::QtyStatExport::GetMin()
 }
 
 BarServiceExport::BarServiceExport(const BarService &barService)
-		: ServiceInfoExport(barService) {
+		: ServiceInfoExport(barService),
+		m_securityExport(GetService().GetSecurity()) {
 	//...//
 }
 
@@ -270,6 +268,8 @@ void BarServiceExport::Export(const char *className) {
 		.add_property("barSize", &BarServiceExport::GetBarSize)
 		.add_property("size", &BarServiceExport::GetSize)
 		.add_property("isEmpty", &BarServiceExport::IsEmpty)
+
+		.def_readonly("security", &BarServiceExport::m_securityExport)
  					
 		.def("getBarByIndex", &BarServiceExport::GetBarByIndex)
  		.def("getBarByReversedIndex", &BarServiceExport::GetBarByReversedIndex)

@@ -216,18 +216,19 @@ void PyApi::Strategy::OnServiceStart(const Trader::Service &service) {
 	}
 }
 
-void PyApi::Strategy::OnLevel1Update() {
+void PyApi::Strategy::OnLevel1Update(const Security &security) {
 	const bool isExists = CallVirtualMethod(
 		"onLevel1Update",
 		[&](const py::override &f) {
-			f();
+			f(security);
 		});
 	if (!isExists) {
-		Base::OnLevel1Update();
+		Base::OnLevel1Update(security);
 	}
 }
 
 void PyApi::Strategy::OnNewTrade(
+			const Security &security,
 			const pt::ptime &time,
 			ScaledPrice price,
 			Qty qty,
@@ -236,13 +237,14 @@ void PyApi::Strategy::OnNewTrade(
 		"onNewTrade",
 		[&](const py::override &f) {
 			f(
+				PyApi::Export(security),
 				PyApi::Export(time),
 				PyApi::Export(price),
 				PyApi::Export(qty),
 				PyApi::Export(side));
 		});
 	if (!isExists) {
-		Base::OnNewTrade(time, price, qty, side);
+		Base::OnNewTrade(security, time, price, qty, side);
 	}
 }
 

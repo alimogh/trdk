@@ -57,7 +57,7 @@ class Security(SecurityInfo):
 
 ###############################################################################
 
-class SecurityAlgo(object):
+class Module(object):
 
     class Log(object):
 
@@ -108,7 +108,7 @@ class SecurityAlgo(object):
         """
         pass
 
-class Strategy(SecurityAlgo):
+class Strategy(Module):
     """ Every strategy algorithm class must be inherited from this class.
     """
 
@@ -131,17 +131,19 @@ class Strategy(SecurityAlgo):
         """
         pass
 
-    def onLevel1Update(self):
+    def onLevel1Update(self, security):
         """
         Virtual. Notifies about Level 1 data update (best bid, best ask or
         last trade). Required if strategy subscribed to Level 1 updates.
+        :type security: trader.Security
         """
         pass
 
-    def onNewTrade(self, time, price, qty, side):
+    def onNewTrade(self, security, time, price, qty, side):
         """
         Virtual. Notifies about new trade (price tick). Required if strategy
         subscribed to new trades.
+        :type security: trader.Security
         :type time: int
         :type price: int
         :type qty: int
@@ -164,9 +166,7 @@ class Strategy(SecurityAlgo):
         """
         pass
 
-class ServiceInfo(SecurityAlgo):
-
-    security = SecurityInfo
+class ServiceInfo(Module):
 
     def __init__(self, param):
         """
@@ -182,11 +182,12 @@ class Service(ServiceInfo):
         """
         pass
 
-    def onLevel1Update(self):
+    def onLevel1Update(self, security):
         """
         Virtual. Notifies about Level 1 data update. Required if service
         subscribed to Level 1 updates. Method returns True if service state has
         changed, False otherwise.
+        :type security: trader.Security
         :rtype: bool
         """
         pass
@@ -201,11 +202,12 @@ class Service(ServiceInfo):
         """
         pass
 
-    def onNewTrade(self, time, price, qty, side):
+    def onNewTrade(self, security, time, price, qty, side):
         """
         Virtual. Notifies about new trade (price tick). Required if service
         subscribed to new trades. Method returns True if service state has
         changed, False otherwise.
+        :type security: trader.Security
         :type time: int
         :type price: int
         :type qty: int
@@ -336,7 +338,7 @@ class LongPosition(Position):
 
 class ShortPosition(Position):
 
-    def __init__(self, strategy, qty, startPrice:
+    def __init__(self, strategy, qty, startPrice):
         """
         :type strategy: trader.Strategy
         :type qty: int

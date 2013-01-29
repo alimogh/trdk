@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "SecurityAlgoExport.hpp"
+#include "ModuleExport.hpp"
 #include "PythonToCoreTransit.hpp"
 #include "Services/BarService.hpp"
 
@@ -18,7 +18,7 @@ namespace Trader { namespace PyApi {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class ServiceInfoExport : public SecurityAlgoExport {
+	class ServiceInfoExport : public ModuleExport {
 
 	public:
 
@@ -46,8 +46,6 @@ namespace Trader { namespace PyApi {
 
 		boost::shared_ptr<PyApi::Service> m_serviceRefHolder;
 		const Trader::Service *m_service;
-
-		SecurityInfoExport m_securityExport;
 
 	};
 
@@ -181,6 +179,10 @@ namespace Trader { namespace PyApi {
 	protected:
 
 		const Implementation & GetService() const;
+
+	private:
+
+		SecurityInfoExport m_securityExport;
 
 	};
 

@@ -33,6 +33,7 @@ class BarService(trader.ServiceInfo):
     barSize = int # Each bar size, seconds.
     size = int # Number of bars.
     isEmpty = bool
+    security = trader.SecurityInfo
 
     def getBarByIndex(self, index):
         """ Returns bar by index. First bar has index "zero".

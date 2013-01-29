@@ -86,13 +86,13 @@ private:
 public:
 
 	Service &m_service;
-	boost::shared_ptr<const Trader::Security> m_security;
+	boost::shared_ptr<const Security> m_security;
 	bool m_hasNewData;
 	Subscribers m_subscribers;
 
 	explicit Implementation(
 				Service &service,
-				const boost::shared_ptr<const Trader::Security> &security)
+				const boost::shared_ptr<const Security> &security)
 			: m_service(service),
 			m_security(security) {
 		//...//
@@ -154,26 +154,27 @@ const Security & Service::GetSecurity() const {
 	return *m_pimpl->m_security;
 }
 
-bool Service::RaiseLevel1UpdateEvent() {
+bool Service::RaiseLevel1UpdateEvent(const Security &security) {
 	const Lock lock(GetMutex());
-	return OnLevel1Update();
+	return OnLevel1Update(security);
 }
 
 bool Service::RaiseNewTradeEvent(
+			const Security &security,
 			const boost::posix_time::ptime &time,
-			Trader::ScaledPrice price,
-			Trader::Qty qty,
-			Trader::OrderSide side) {
+			ScaledPrice price,
+			Qty qty,
+			OrderSide side) {
 	const Lock lock(GetMutex());
-	return OnNewTrade(time, price, qty, side);
+	return OnNewTrade(security, time, price, qty, side);
 }
 
-bool Service::RaiseServiceDataUpdateEvent(const Trader::Service &service) {
+bool Service::RaiseServiceDataUpdateEvent(const Service &service) {
 	const Lock lock(GetMutex());
 	return OnServiceDataUpdate(service);
 }
 
-bool Service::OnLevel1Update() {
+bool Service::OnLevel1Update(const Security &) {
 	GetLog().Error(
 		"Subscribed to Level 1 updates, but can't work with it"
 			" (hasn't OnLevel1Update method implementation).");
@@ -182,6 +183,7 @@ bool Service::OnLevel1Update() {
 }
 
 bool Service::OnNewTrade(
+					const Security &,
 					const boost::posix_time::ptime &,
 					ScaledPrice,
 					Qty,
@@ -193,7 +195,7 @@ bool Service::OnNewTrade(
 		"Module subscribed to new trades, but can't work with it");
 }
 
-bool Service::OnServiceDataUpdate(const Trader::Service &service) {
+bool Service::OnServiceDataUpdate(const Service &service) {
 	GetLog().Error(
 		"Subscribed to \"%1%\", but can't work with it"
 			" (hasn't OnServiceDataUpdate method implementation).",
