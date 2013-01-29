@@ -222,7 +222,7 @@ void MarketDataSource::ReadFile() {
 
 	std::string line;
 	size_t lineCount = 0;
-	while (getline(m_file, line)) {
+	while (!m_isStopped && getline(m_file, line)) {
 
 		++lineCount;
 
