@@ -61,7 +61,8 @@ void Dispatcher::SignalNewTrade(
 		if (subscriber.IsBlocked()) {
 			return;
 		}
-		boost::shared_ptr<SubscriberPtrWrapper::Trade> trade(new SubscriberPtrWrapper::Trade);
+		boost::shared_ptr<SubscriberPtrWrapper::Trade> trade(
+			new SubscriberPtrWrapper::Trade);
 		trade->security = &security;
 		trade->time = time;
 		trade->price = price;

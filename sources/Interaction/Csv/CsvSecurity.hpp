@@ -37,6 +37,8 @@ namespace Trader {  namespace Interaction { namespace Csv {
 
 	public:
 
+		using Base::IsTradesRequired;
+
 		void AddTrade(
 					const boost::posix_time::ptime &,
 					Trader::OrderSide,

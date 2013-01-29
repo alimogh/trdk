@@ -21,9 +21,18 @@ namespace Trader { namespace Interaction { namespace Csv {
 			//...//
 		};
 
+		struct ByTradesRequirements {
+			//...//
+		};
+
 		struct SecurityHolder {
 			
 			boost::shared_ptr<Security> security;
+
+			explicit SecurityHolder(const boost::shared_ptr<Security> &security)
+					: security(security) {
+				//...//
+			}
 
 			const std::string & GetSymbol() const {
 				return security->GetSymbol();
@@ -37,9 +46,8 @@ namespace Trader { namespace Interaction { namespace Csv {
 				return security->GetExchange();
 			}
 
-			explicit SecurityHolder(boost::shared_ptr<Security> security)
-					: security(security) {
-				//...//
+			bool IsTradesRequired() const {
+				return security->IsTradesRequired();
 			}
 
 		};
@@ -62,9 +70,17 @@ namespace Trader { namespace Interaction { namespace Csv {
 						boost::multi_index::const_mem_fun<
 							SecurityHolder,
 							const std::string &,
-							&SecurityHolder::GetExchange>>>>>
+							&SecurityHolder::GetExchange>>>,
+				boost::multi_index::ordered_non_unique<
+					boost::multi_index::tag<ByTradesRequirements>,
+					boost::multi_index::const_mem_fun<
+						SecurityHolder,
+						bool,
+						&SecurityHolder::IsTradesRequired>>>>
 			SecurityList;
 		typedef SecurityList::index<ByInstrument>::type SecurityByInstrument;
+		typedef SecurityList::index<ByTradesRequirements>::type
+			SecurityByTradesRequirements;
 
 	public:
 
@@ -98,7 +114,7 @@ namespace Trader { namespace Interaction { namespace Csv {
 
 	private:
 
-		void Subscribe(boost::shared_ptr<Security>) const;
+		void Subscribe(const boost::shared_ptr<Security> &) const;
 
 		void ReadFile();
 

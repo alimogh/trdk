@@ -393,11 +393,16 @@ Security::NewTradeSlotConnection Security::SubcribeToTrades(
 	return m_pimpl->m_tradeSignal.connect(slot);
 }
 
+bool Security::IsLevel1Required() const {
+	return !m_pimpl->m_level1UpdateSignal.empty();
+}
+
 bool Security::SetBidAsk(
 			ScaledPrice bidPrice,
 			Qty bidQty,
 			ScaledPrice askPrice,
 			Qty askQty) {
+	Assert(IsLevel1Required());
 	if (!m_pimpl->SetBidAsk(bidPrice, bidQty, askPrice, askQty)) {
 		return false;
 	}
@@ -424,6 +429,7 @@ bool Security::SetBidAskLast(
 			Qty askQty,
 			ScaledPrice lastTradePrice,
 			Qty lastTradeQty) {
+	Assert(IsLevel1Required());
 	bool isChanged = false;
 	if (m_pimpl->SetBidAsk(bidPrice, bidQty, askPrice, askQty)) {
 		isChanged = true;
@@ -453,13 +459,17 @@ bool Security::SetBidAskLast(
 		lastQty);
 }
 
+bool Security::IsTradesRequired() const {
+	return !m_pimpl->m_tradeSignal.empty();
+}
+
 void Security::AddTrade(
 			const boost::posix_time::ptime &time,
 			OrderSide side,
 			ScaledPrice price,
 			Qty qty,
 			bool useAsLastTrade) {
-
+	Assert(IsTradesRequired());
 	for ( ; ; ) {
 		const auto prevVal = m_pimpl->m_tradedVolume;
 		const auto newVal = prevVal + qty;

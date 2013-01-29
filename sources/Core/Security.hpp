@@ -136,6 +136,7 @@ namespace Trader {
 		//! Updates the current data time.
 		void SetLastMarketDataTime(const boost::posix_time::ptime &);
 
+		bool IsLevel1Required() const;
 		bool SetBidAsk(
 				Trader::ScaledPrice bestBidPrice,
 				Trader::Qty bestBidQty,
@@ -146,7 +147,6 @@ namespace Trader {
 				Trader::Qty bidQty,
 				double askPrice,
 				Trader::Qty askQty);
-
 		bool SetBidAskLast(
 				Trader::ScaledPrice bidPrice,
 				Trader::Qty bidQty,
@@ -162,6 +162,7 @@ namespace Trader {
 				double lastTradePrice,
 				Trader::Qty lastTradeQty);
 
+		bool IsTradesRequired() const;
 		void AddTrade(
 				const boost::posix_time::ptime &,
 				Trader::OrderSide,

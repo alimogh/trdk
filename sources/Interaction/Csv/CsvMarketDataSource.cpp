@@ -208,6 +208,14 @@ bool MarketDataSource::ParseTradeLine(
 
 void MarketDataSource::ReadFile() {
 
+	const auto &securityList = m_securityList.get<ByTradesRequirements>();
+	if (securityList.find(true) == securityList.end()) {
+		Log::Info(
+			TRADER_INTERACTION_CSV_LOG_PREFFIX
+				"reading stopped because it's not necessary.");
+		return;
+	}
+
 	AssertLt(0, m_securityList.size());
 
 	const SecurityByInstrument &index = m_securityList.get<ByInstrument>();
@@ -238,7 +246,7 @@ void MarketDataSource::ReadFile() {
 					message % symbol % m_pimaryExchange % exchange;
 					return message;
 				});
-		} else {
+		} else if (security->security->IsTradesRequired()) {
 			AssertNe(int(Trader::numberOfOrderSides), int(side));
 			security->security->AddTrade(time, side, price, qty);
 		}
@@ -292,7 +300,7 @@ boost::shared_ptr<Trader::Security> MarketDataSource::CreateSecurity(
 }
 
 void MarketDataSource::Subscribe(
-			boost::shared_ptr<Security> security)
+			const boost::shared_ptr<Security> &security)
 		const {
 	Assert(
 		m_securityList.get<ByInstrument>().find(
