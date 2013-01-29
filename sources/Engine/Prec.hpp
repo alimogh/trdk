@@ -25,6 +25,10 @@
 #	include <boost/variant/variant.hpp>
 #	include <boost/tuple/tuple.hpp>
 #	include <boost/tuple/tuple_comparison.hpp>
+#	include <boost/multi_index_container.hpp>
+#	include <boost/multi_index/member.hpp>
+#	include <boost/multi_index/composite_key.hpp>
+#	include <boost/multi_index/ordered_index.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
