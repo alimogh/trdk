@@ -37,5 +37,6 @@ Host To Build on MS Windows
 2.3. Install Qt.
 
 3. Build:
-3.1. Open project file source "Trader.sln with" Visual Studio and build it.
+3.1. Open project file source "sources\RobotDK.sln" with Visual Studio and
+     build it.
 3.2. Result will be in "output\x86\bin\".
