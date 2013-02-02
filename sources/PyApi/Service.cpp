@@ -86,6 +86,7 @@ boost::shared_ptr<Trader::Service> PyApi::Service::CreateClientInstance(
 			const IniFileSectionRef &configuration) {
 	auto clientClass = Script::Load(configuration).GetClass(
 		configuration,
+		context,
 		"Failed to find trader.Service implementation");
 	try {
 		const std::string className

@@ -285,16 +285,18 @@ public:
 				break;
 			case TradeSystem::ORDER_STATUS_INACTIVE:
 			case TradeSystem::ORDER_STATUS_ERROR:
-				Log::Error(
-					"Position CLOSE error: symbol: \"%1%\", strategy %2%"
-						", trade system state: %3%, orders ID: %4%->%5%, qty: %6%->%7%.",
-					m_position.GetSecurity(),
-					m_tag,
-					orderStatus,
-					m_opened.orderId,
-					m_closed.orderId,	
-					m_opened.qty,
-					m_closed.qty);
+//! @todo Log THIS!!!
+// 				m_security.GetContext().GetLog().Error(
+// 					"Position CLOSE error: symbol: \"%1%\", strategy %2%"
+// 						", trade system state: %3%, orders ID: %4%->%5%, qty: %6%->%7%.",
+// 					boost::make_tuple(
+// 						boost::cref(m_position.GetSecurity()),
+// 						boost::cref(m_tag),
+// 						orderStatus,
+// 						m_opened.orderId,
+// 						m_closed.orderId,	
+// 						m_opened.qty,
+// 						m_closed.qty));
 				ReportClosingUpdate("error", orderStatus);
 				Interlocking::Exchange(m_isError, true);
 				isCompleted = true;
@@ -348,21 +350,22 @@ public:
 				|| Interlocking::CompareExchange(m_isCanceled, 2, 1) != 1) {
 			return false;
 		}
-		Log::Trading(
-			logTag,
-			"%1% %2% close-cancel-post %3% qty=%4%->%5% price=market order-id=%6%->%7%"
-				" has-orders=%8%/%9% is-error=%10%",
-			boost::make_tuple(
-				boost::cref(m_security.GetSymbol()),
-				boost::cref(m_position.GetTypeStr()),
-				boost::cref(m_tag),
-				m_position.GetOpenedQty(),
-				m_position.GetClosedQty(),
-				m_position.GetOpenOrderId(),
-				m_position.GetCloseOrderId(),
-				m_position.HasActiveOpenOrders(),
-				m_position.HasActiveCloseOrders(),
-				m_isError ? true : false));
+//! @todo Log THIS!!!
+// 		m_security.GetContext().GetLog().Trading(
+// 			logTag,
+// 			"%1% %2% close-cancel-post %3% qty=%4%->%5% price=market order-id=%6%->%7%"
+// 				" has-orders=%8%/%9% is-error=%10%",
+// 			boost::make_tuple(
+// 				boost::cref(m_security.GetSymbol()),
+// 				boost::cref(m_position.GetTypeStr()),
+// 				boost::cref(m_tag),
+// 				m_position.GetOpenedQty(),
+// 				m_position.GetClosedQty(),
+// 				m_position.GetOpenOrderId(),
+// 				m_position.GetCloseOrderId(),
+// 				m_position.HasActiveOpenOrders(),
+// 				m_position.HasActiveCloseOrders(),
+// 				m_isError ? true : false));
 		try {
 			m_cancelMethod();
 			return true;
@@ -784,7 +787,7 @@ bool Position::CancelAtMarketPrice(CloseType closeType) {
 	if (IsCanceled()) {
 		return false;
 	}
-	Log::Trading(
+	m_pimpl->m_security.GetContext().GetLog().Trading(
 		logTag,
 		"%1% %2% close-cancel-pre %3% qty=%4%->%5% price=market order-id=%6%->%7%"
 			" has-orders=%8%/%9% is-error=%10%",

@@ -23,30 +23,37 @@ namespace {
 Settings::Settings(
 			const IniFileSectionRef &confSection,
 			const Time &now,
-			bool isReplayMode)
+			bool isReplayMode,
+			Context::Log &log)
 		: m_startTime(now),
 		m_isReplayMode(isReplayMode) {
-	UpdateDynamic(confSection);
-	UpdateStatic(confSection);
+	UpdateDynamic(confSection, log);
+	UpdateStatic(confSection, log);
 }
 
-void Settings::Update(const IniFileSectionRef &confSection) {
-	UpdateDynamic(confSection);
+void Settings::Update(
+			const IniFileSectionRef &confSection,
+			Context::Log &log) {
+	UpdateDynamic(confSection, log);
 }
 
-void Settings::UpdateDynamic(const IniFileSectionRef &confSection) {
+void Settings::UpdateDynamic(
+			const IniFileSectionRef &confSection,
+			Context::Log &log) {
 	Interlocking::Exchange(
 		m_minPrice,
 		Scale(
 			confSection.ReadTypedKey<double>("min_price"),
 			defaultLastPriceScale));
-	Log::Info(
+	log.Info(
 		"Common dynamic settings:"
 			" min_price = %1%;",
 		Descale(m_minPrice, defaultLastPriceScale));
 }
 
-void Settings::UpdateStatic(const IniFileSectionRef &confSection) {
+void Settings::UpdateStatic(
+			const IniFileSectionRef &confSection,
+			Context::Log &log) {
 
 	Values values = {};
 
@@ -116,14 +123,15 @@ void Settings::UpdateStatic(const IniFileSectionRef &confSection) {
 		= confSection.ReadBoolKey("wait_market_data");
 
 	m_values = values;
-	Log::Info(
+	log.Info(
 		"Common static settings:"
 			" start_time_edt: %1%;"
 			" trade_session_period_edt = %2% -> %3%; wait_market_data = %4%;",
-		GetStartTime() + GetEdtDiff(),
-		m_values.tradeSessionStartTime + GetEdtDiff(),
-		m_values.tradeSessionEndTime + GetEdtDiff(),
-		m_values.shouldWaitForMarketData ? "yes" : "no");
+		boost::make_tuple(
+			boost::cref(GetStartTime() + GetEdtDiff()),
+			boost::cref(m_values.tradeSessionStartTime + GetEdtDiff()),
+			boost::cref(m_values.tradeSessionEndTime + GetEdtDiff()),
+			m_values.shouldWaitForMarketData ? "yes" : "no"));
 
 }
 

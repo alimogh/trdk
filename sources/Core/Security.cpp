@@ -33,7 +33,9 @@ public:
 
 	class MarketDataLog : private boost::noncopyable {
 	public:
-		explicit MarketDataLog(const std::string &fullSymbol);
+		explicit MarketDataLog(
+					const Context &context,
+					const std::string &fullSymbol);
 	public:
 		void Append(
 				const pt::ptime &timeOfReception,
@@ -42,6 +44,7 @@ public:
 				double ask,
 				double bid);
 	private:
+		const Context &m_context;
 		std::ofstream m_file;
 	};
 	MarketDataLog *m_marketDataLog;
@@ -78,7 +81,9 @@ public:
 			m_bidQty(0),
 			m_tradedVolume(0) {
 		if (logMarketData) {
-			m_marketDataLog = new MarketDataLog(instrument.GetFullSymbol());
+			m_marketDataLog = new MarketDataLog(
+				instrument.GetContext(),
+				instrument.GetFullSymbol());
 		}
 	}
 
@@ -155,7 +160,9 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Security::Implementation::MarketDataLog::MarketDataLog(
-			const std::string &fullSymbol) {
+			const Context &context,
+			const std::string &fullSymbol)
+		: m_context(context) {
 	const fs::path filePath = SymbolToFilePath(
 		Defaults::GetMarketDataLogDir(),
 		fullSymbol,
@@ -168,12 +175,14 @@ Security::Implementation::MarketDataLog::MarketDataLog(
 		filePath.c_str(),
 		std::ios::out | std::ios::ate | std::ios::app);
 	if (!m_file) {
-		Log::Error(
+		m_context.GetLog().Error(
 			"Failed to open log file %1% for security market data.",
 			filePath);
 		throw Exception("Failed to open log file for security market data");
 	}
-	Log::Info("Logging \"%1%\" market data into %2%...", fullSymbol, filePath);
+	m_context.GetLog().Info(
+		"Logging \"%1%\" market data into %2%...",
+		boost::make_tuple(boost::cref(fullSymbol), boost::cref(filePath)));
 	if (isNew) {
 		m_file
 			<< "time of reception,last trade time,last price,ask,bid"

@@ -85,7 +85,7 @@ namespace Trader {
 		}
 		template<typename Params>
 		void Warn(const char *str, const Params &params) throw() {
-			Trader::Log::WarnEx(str, params);
+			Trader::Log::Warn(str, params);
 		}
 		template<typename Callback>
 		void WarnEx(Callback callback) throw() {

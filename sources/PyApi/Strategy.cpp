@@ -72,6 +72,7 @@ boost::shared_ptr<Trader::Strategy> PyApi::Strategy::CreateClientInstance(
 			const IniFileSectionRef &configuration) {
 	auto clientClass = Script::Load(configuration).GetClass(
 		configuration,
+		context,
 		"Failed to find trader.Strategy implementation");
 	try {
 		const std::string className

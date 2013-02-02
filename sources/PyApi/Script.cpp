@@ -11,6 +11,7 @@
 #include "BaseExport.hpp"
 #include "Errors.hpp"
 #include "Detail.hpp"
+#include "Core/Context.hpp"
 
 namespace fs = boost::filesystem;
 namespace py = boost::python;
@@ -108,15 +109,16 @@ void Script::Exec(const std::string &code) {
 }
 
 py::object Script::GetClass(
-			const IniFileSectionRef &ini,
+			const IniFileSectionRef &conf,
+			Context &context,
 			const char *errorWhat /*= nullptr*/) {
 	try {
-		return GetClass(ini.ReadKey("class", false));
+		return GetClass(conf.ReadKey("class", false));
 	} catch (const Error &ex) {
 		if (!errorWhat) {
 			throw;
 		}
-		Log::Error(ex.what());
+		context.GetLog().Error(ex.what());
 		throw Error(errorWhat);
 	}
 }

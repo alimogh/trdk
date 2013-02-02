@@ -20,9 +20,10 @@ using namespace Trader::Lib;
 using namespace Trader::Engine;
 
 Dispatcher::Dispatcher(Engine::Context &context)
-			: m_level1Updates("Level 1", context.GetSettings()),
-			m_newTrades("New Trades", context.GetSettings()),
-			m_positionUpdates("Position", context.GetSettings()) {
+			: m_context(context),
+			m_level1Updates("Level 1", m_context),
+			m_newTrades("New Trades", m_context),
+			m_positionUpdates("Position", m_context) {
 	StartNotificationTask(m_level1Updates);
 	StartNotificationTask(m_newTrades);
 	StartNotificationTask(m_positionUpdates);
@@ -30,16 +31,32 @@ Dispatcher::Dispatcher(Engine::Context &context)
 
 Dispatcher::~Dispatcher() {
 	try {
-		Log::Debug("Stopping events dispatching...");
+		m_context.GetLog().Debug("Stopping events dispatching...");
 		m_newTrades.Stop();
 		m_level1Updates.Stop();
 		m_positionUpdates.Stop();
 		m_threads.join_all();
-		Log::Debug("Events dispatching stopped.");
+		m_context.GetLog().Debug("Events dispatching stopped.");
 	} catch (...) {
 		AssertFailNoException();
 		throw;
 	}
+}
+
+void Dispatcher::Activate() {
+	m_context.GetLog().Debug("Starting events dispatching...");
+	m_positionUpdates.Activate();
+	m_level1Updates.Activate();
+	m_newTrades.Activate();
+	m_context.GetLog().Debug("Events dispatching started.");
+}
+
+void Dispatcher::Suspend() {
+	m_context.GetLog().Debug("Suspending events dispatching...");
+	m_newTrades.Suspend();
+	m_level1Updates.Suspend();
+	m_positionUpdates.Suspend();
+	m_context.GetLog().Debug("Events dispatching suspended.");
 }
 
 void Dispatcher::SignalLevel1Update(
@@ -89,3 +106,5 @@ void Dispatcher::SignalPositionUpdate(
 		throw;
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////

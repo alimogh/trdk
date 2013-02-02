@@ -33,6 +33,7 @@ namespace Trader { namespace PyApi {
 
 		boost::python::object GetClass(
 					const Lib::IniFileSectionRef &,
+					Context &,
 					const char *errorWhat = nullptr);
 		boost::python::object GetClass(const std::string &name);
 

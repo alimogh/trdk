@@ -288,7 +288,8 @@ public:
 			m_settings(
 				IniFileSectionRef(m_configurationFile, Ini::Sections::common),
 				boost::get_system_time(),
-				isReplayMode),
+				isReplayMode,
+				m_context.GetLog()),
 			m_tradeSystem(LoadTradeSystem()),
 			m_marketDataSource(LoadMarketDataSource()) {
 		//...//

@@ -9,6 +9,7 @@
 #pragma once
 
 #include "SubscriberPtrWrapper.hpp"
+#include "Context.hpp"
 #include "Fwd.hpp"
 
 namespace Trader { namespace Engine {
@@ -38,12 +39,13 @@ namespace Trader { namespace Engine {
 
 		public:
 			
-			EventQueue(const char *name, const Settings &settings)
-					: m_name(name),
+			EventQueue(const char *name, const Context &context)
+					: m_context(context),
+					m_name(name),
 					m_current(&m_lists.first),
 					m_heavyLoadsCount(0),
 					m_taksState(TASK_STATE_INACTIVE) {
-				if (settings.IsReplayMode()) {
+				if (m_context.GetSettings().IsReplayMode()) {
 					m_readyToReadCondition.reset(new Condition);
 				}
 			}
@@ -122,10 +124,11 @@ namespace Trader { namespace Engine {
 							return true;
 						}
 					} else if (!(++m_heavyLoadsCount % 100)) {
-						Log::Warn(
+						m_context.GetLog().Warn(
 							"Dispatcher task \"%1%\" is heavy loaded (%2% iterations)!",
-							m_name,
-							m_heavyLoadsCount);
+							boost::make_tuple(
+								boost::cref(m_name),
+								m_heavyLoadsCount));
 					}
 
 					listToRead = m_current;
@@ -149,6 +152,8 @@ namespace Trader { namespace Engine {
 			}
 
 		private:
+
+			const Context &m_context;
 
 			const char *const m_name;
 
@@ -201,21 +206,8 @@ namespace Trader { namespace Engine {
 				|| m_newTrades.IsActive();
 		}
 
-		void Activate() {
-			Log::Debug("Starting events dispatching...");
-			m_positionUpdates.Activate();
-			m_level1Updates.Activate();
-			m_newTrades.Activate();
-			Log::Debug("Events dispatching started.");
-		}
-
-		void Suspend() {
-			Log::Debug("Suspending events dispatching...");
-			m_newTrades.Suspend();
-			m_level1Updates.Suspend();
-			m_positionUpdates.Suspend();
-			Log::Debug("Events dispatching suspended.");
-		}
+		void Activate();
+		void Suspend();
 
 	public:
 
@@ -298,7 +290,7 @@ namespace Trader { namespace Engine {
 
 		template<typename EventList>
 		void NotificationTask(EventList &eventList) {
-			Log::Debug(
+			m_context.GetLog().Debug(
 				"Dispatcher notification task \"%1%\" started...",
 				eventList.GetName());
 			bool isError = false;
@@ -308,15 +300,16 @@ namespace Trader { namespace Engine {
 						break;
 					}
 				} catch (const Trader::Lib::ModuleError &ex) {
-					Log::Error(
+					m_context.GetLog().Error(
 						"Module error in dispatcher notification task"
 							" \"%1%\": \"%2%\".",
-						eventList.GetName(),
-						ex);
+						boost::make_tuple(
+							boost::cref(eventList.GetName()),
+							boost::cref(ex)));
 					isError = true;
 					break;
 				} catch (...) {
-					Log::Error(
+					m_context.GetLog().Error(
 						"Unhandled exception caught in dispatcher"
 							" notification task \"%1%\".",
 						eventList.GetName());
@@ -325,7 +318,7 @@ namespace Trader { namespace Engine {
 					break;
 				}
 			}
-			Log::Debug(
+			m_context.GetLog().Debug(
 				"Dispatcher notification task \"%1%\" stopped.",
 				eventList.GetName());
 			if (isError) {
@@ -335,6 +328,8 @@ namespace Trader { namespace Engine {
 		}
 
 	private:
+
+		Engine::Context &m_context;
 
 		boost::thread_group m_threads;
 

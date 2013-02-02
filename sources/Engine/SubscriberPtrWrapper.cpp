@@ -58,12 +58,16 @@ namespace {
 			try {
 				boost::apply_visitor(visitor, subscriber);
 			} catch (const Exception &ex) {
-				Log::Error(
+				service.GetContext().GetLog().Error(
 					"Error at service subscribers notification:"
 						" \"%1%\" (service: \"%2%\", subscriber: \"%3%\").",
-					ex,
-					service,
-					boost::apply_visitor(Visitors::GetModule(), subscriber));
+					boost::make_tuple(
+						boost::cref(ex),
+						boost::cref(service),
+						boost::cref(
+							boost::apply_visitor(
+								Visitors::GetModule(),
+								subscriber))));
 				throw;
 			}
 		}

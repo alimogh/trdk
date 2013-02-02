@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "Context.hpp"
 #include "Fwd.hpp"
 #include "Api.h"
 
@@ -35,16 +36,23 @@ namespace Trader {
 		explicit Settings(
 				const Trader::Lib::IniFileSectionRef &,
 				const Time &now,
-				bool isReplayMode);
+				bool isReplayMode,
+				Trader::Context::Log &);
 
 	public:
 
-		void Update(const Trader::Lib::IniFileSectionRef &);
+		void Update(
+					const Trader::Lib::IniFileSectionRef &,
+					Trader::Context::Log &);
 
 	private:
 
-		void UpdateDynamic(const Trader::Lib::IniFileSectionRef &);
-		void UpdateStatic(const Trader::Lib::IniFileSectionRef &);
+		void UpdateDynamic(
+					const Trader::Lib::IniFileSectionRef &,
+					Trader::Context::Log &);
+		void UpdateStatic(
+					const Trader::Lib::IniFileSectionRef &,
+					Trader::Context::Log &);
 
 	public:
 
