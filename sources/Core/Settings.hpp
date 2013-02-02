@@ -33,25 +33,18 @@ namespace Trader {
 	public:
 	
 		explicit Settings(
-				const Trader::Lib::IniFile &,
-				const std::string &section,
+				const Trader::Lib::IniFileSectionRef &,
 				const Time &now,
 				bool isReplayMode);
 
 	public:
 
-		void Update(
-				const Trader::Lib::IniFile &,
-				const std::string &section);
+		void Update(const Trader::Lib::IniFileSectionRef &);
 
 	private:
 
-		void UpdateDynamic(
-				const Trader::Lib::IniFile &,
-				const std::string &section);
-		void UpdateStatic(
-				const Trader::Lib::IniFile &,
-				const std::string &section);
+		void UpdateDynamic(const Trader::Lib::IniFileSectionRef &);
+		void UpdateStatic(const Trader::Lib::IniFileSectionRef &);
 
 	public:
 

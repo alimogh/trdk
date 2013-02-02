@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "Context.hpp"
 #include "Fwd.hpp"
 #include "Api.h"
 
@@ -29,13 +30,16 @@ namespace Trader {
 	public:
 
 		explicit Module(
+					Trader::Context &,
 					const std::string &typeName,
 					const std::string &name,
-					const std::string &tag,
-					boost::shared_ptr<const Trader::Settings>);
+					const std::string &tag);
 		virtual ~Module();
 
 	public:
+
+		Trader::Context & GetContext();
+		const Trader::Context & GetContext() const;
 
 		const std::string & GetTypeName() const throw();
 		const std::string & GetName() const throw();
@@ -44,9 +48,6 @@ namespace Trader {
 	public:
 
 		Trader::Module::Log & GetLog() const throw();
-
-		//! @todo: Move ref to engine.
-		const Trader::Settings & GetSettings() const;
 
 	public:
 
@@ -79,14 +80,14 @@ namespace Trader {
 		~Log();
 	public:
 		void Debug(const char *str) throw() {
-			Trader::Log::DebugEx(
+			m_log.DebugEx(
 				[this, str]() -> boost::format {
 					return GetFormat() % str;
 				});
 		}
 		template<typename Params>
 		void Debug(const char *str, const Params &params) throw() {
-			Trader::Log::DebugEx(
+			m_log.DebugEx(
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
 					Trader::Lib::Format(params, result);
@@ -95,21 +96,21 @@ namespace Trader {
 		}
 		template<typename Callback>
 		void DebugEx(Callback callback) throw() {
-			Trader::Log::DebugEx(
+			m_log.DebugEx(
 				[this, &callback]() -> boost::format {
 					return GetFormat() % callback().str();
 				});
 		}
 	public:
 		void Info(const char *str) throw() {
-			Trader::Log::InfoEx(
+			m_log.InfoEx(
 				[this, str]() -> boost::format {
 					return GetFormat() % str;
 				});
 		}
 		template<typename Params>
 		void Info(const char *str, const Params &params) throw() {
-			Trader::Log::InfoEx(
+			m_log.InfoEx(
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
 					Trader::Lib::Format(params, result);
@@ -118,21 +119,21 @@ namespace Trader {
 		}
 		template<typename Callback>
 		void InfoEx(Callback callback) throw() {
-			Trader::Log::InfoEx(
+			m_log.InfoEx(
 				[this, &callback]() -> boost::format {
 					return GetFormat() % callback().str();
 				});
 		}
 	public:
 		void Warn(const char *str) throw() {
-			Trader::Log::WarnEx(
+			m_log.WarnEx(
 				[this, str]() -> boost::format {
 					return GetFormat() % str;
 				});
 		}
 		template<typename Params>
 		void Warn(const char *str, const Params &params) throw() {
-			Trader::Log::WarnEx(
+			m_log.WarnEx(
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
 					Trader::Lib::Format(params, result);
@@ -141,21 +142,21 @@ namespace Trader {
 		}
 		template<typename Callback>
 		void WarnEx(Callback callback) throw() {
-			Trader::Log::WarnEx(
+			m_log.WarnEx(
 				[this, &callback]() -> boost::format {
 					return GetFormat() % callback().str();
 				});
 		}
 	public:
 		void Error(const char *str) throw() {
-			Trader::Log::ErrorEx(
+			m_log.ErrorEx(
 				[this, str]() -> boost::format {
 					return GetFormat() % str;
 				});
 		}
 		template<typename Params>
 		void Error(const char *str, const Params &params) throw() {
-			Trader::Log::ErrorEx(
+			m_log.ErrorEx(
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
 					Trader::Lib::Format(params, result);
@@ -164,33 +165,7 @@ namespace Trader {
 		}
 		template<typename Callback>
 		void ErrorEx(Callback callback) throw() {
-			Trader::Log::ErrorEx(
-				[this, &callback]() -> boost::format {
-					return GetFormat() % callback().str();
-				});
-		}
-	public:
-		void Trading(const char *str) throw() {
-			Trader::Log::TradingEx(
-				m_tag.c_str(),
-				[this, str]() -> boost::format {
-					return GetFormat() % str;
-				});
-		}
-		template<typename Params>
-		void Trading(const char *str, const Params &params) throw() {
-			Trader::Log::TradingEx(
-				m_tag.c_str(),
-				[this, str, &params]() -> boost::format {
-					boost::format result((GetFormat() % str).str());
-					Trader::Lib::Format(params, result);
-					return result;
-				});
-		}
-		template<typename Callback>
-		void TradingEx(Callback callback) throw() {
-			Trader::Log::TradingEx(
-				m_tag.c_str(),
+			m_log.ErrorEx(
 				[this, &callback]() -> boost::format {
 					return GetFormat() % callback().str();
 				});
@@ -200,8 +175,8 @@ namespace Trader {
 			return m_format;
 		}
 	private:
+		Trader::Context::Log &m_log;
 		const boost::format m_format;
-		const std::string &m_tag;
 	};
 
 	//////////////////////////////////////////////////////////////////////////

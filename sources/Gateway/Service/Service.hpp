@@ -57,11 +57,10 @@ namespace Trader { namespace Gateway {
 	public:
 
 		explicit Service(
+					Context &context,
 					const std::string &tag,
 					const Observer::NotifyList &notifyList,
-					boost::shared_ptr<Trader::TradeSystem>,
-					const Trader::Lib::IniFileSectionRef &,
-					boost::shared_ptr<const Settings>);
+					const Lib::IniFileSectionRef &);
 		virtual ~Service();
 
 	public:

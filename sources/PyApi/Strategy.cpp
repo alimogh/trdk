@@ -26,24 +26,24 @@ using namespace Trader::PyApi::Detail;
 namespace {
 
 	struct Params : private boost::noncopyable {
-		
+
+		Context &context;
 		const std::string &name;
 		const std::string &tag;
-		const boost::shared_ptr<Security> &security;
-		const IniFileSectionRef &ini;
-		const boost::shared_ptr<const Settings> &settings;
+		Security &security;
+		const IniFileSectionRef &configuration;
 	
 		explicit Params(
+					Context &context,
 					const std::string &name,
 					const std::string &tag,
-					const boost::shared_ptr<Security> &security,
-					const IniFileSectionRef &ini,
-					const boost::shared_ptr<const Settings> &settings)
-				: name(name),
+					Security &security,
+					const IniFileSectionRef &configuration)
+				: context(context),
+				name(name),
 				tag(tag),
 				security(security),
-				ini(ini),
-				settings(settings) {
+				configuration(configuration) {
 			//...//
 		}
 
@@ -53,12 +53,12 @@ namespace {
 
 PyApi::Strategy::Strategy(uintptr_t params, StrategyExport &strategyExport)
 		: Trader::Strategy(
+			reinterpret_cast<Params *>(params)->context,
 			reinterpret_cast<Params *>(params)->name,
 			reinterpret_cast<Params *>(params)->tag,
-			reinterpret_cast<Params *>(params)->security,
-			reinterpret_cast<Params *>(params)->settings),
+			reinterpret_cast<Params *>(params)->security),
 		m_strategyExport(strategyExport) {
-	DoSettingsUpdate(reinterpret_cast<Params *>(params)->ini);
+	DoSettingsUpdate(reinterpret_cast<Params *>(params)->configuration);
 }
 
 PyApi::Strategy::~Strategy() {
@@ -66,22 +66,22 @@ PyApi::Strategy::~Strategy() {
 }
 
 boost::shared_ptr<Trader::Strategy> PyApi::Strategy::CreateClientInstance(
+			Context &context,
 			const std::string &tag,
-			boost::shared_ptr<Security> security,
-			const IniFileSectionRef &ini,
-			boost::shared_ptr<const Settings> settings) {
-	auto clientClass = Script::Load(ini).GetClass(
-		ini,
+			Security &security,
+			const IniFileSectionRef &configuration) {
+	auto clientClass = Script::Load(configuration).GetClass(
+		configuration,
 		"Failed to find trader.Strategy implementation");
 	try {
 		const std::string className
 			= py::extract<std::string>(clientClass.attr("__name__"));
 		const Params params(
+			context,
 			className,
 			tag,
 			security,
-			ini,
-			settings);
+			configuration);
 		auto pyObject = clientClass(reinterpret_cast<uintptr_t>(&params));
 		StrategyExport &strategyExport
 			= py::extract<StrategyExport &>(pyObject);
@@ -172,7 +172,8 @@ void PyApi::Strategy::Unregister(Position &position) throw() {
 }
 
 void PyApi::Strategy::ReportDecision(const Position &position) const {
-	GetLog().Trading(
+	GetContext().GetLog().Trading(
+		GetTag(),
 		"%1% %2% open-try cur-ask-bid=%3%/%4% limit-used=%5% qty=%6%",
 		boost::make_tuple(
 			boost::cref(position.GetSecurity().GetSymbol()),
@@ -274,27 +275,27 @@ void PyApi::Strategy::OnPositionUpdate(Position &position) {
 
 #ifdef BOOST_WINDOWS
 	boost::shared_ptr<Trader::Strategy> CreateStrategy(
+				Context &context,
 				const std::string &tag,
-				boost::shared_ptr<Security> security,
-				const IniFileSectionRef &ini,
-				boost::shared_ptr<const Settings> settings) {
+				Security &security,
+				const IniFileSectionRef &configuration) {
 		return PyApi::Strategy::CreateClientInstance(
+			context,
 			tag,
 			security,
-			ini,
-			settings);
+			configuration);
 	}
 #else
 	extern "C" boost::shared_ptr<Trader::Strategy> CreateStrategy(
+				Context &context,
 				const std::string &tag,
-				boost::shared_ptr<Security> security,
-				const IniFileSectionRef &ini,
-				boost::shared_ptr<const Settings> settings) {
+				Security &security,
+				const IniFileSectionRef &configuration) {
 		return PyApi::Strategy::CreateClientInstance(
+			context,
 			tag,
 			security,
-			ini,
-			settings);
+			configuration);
 	}
 #endif
 

@@ -11,27 +11,32 @@
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
+
+using namespace Trader;
 using namespace Trader::Lib;
+using namespace Trader::Interaction;
 using namespace Trader::Interaction::Csv;
 
-MarketDataSource::MarketDataSource(
-			const Trader::Lib::IniFile &ini,
-			const std::string &section)
-		: m_pimaryExchange(ini.ReadKey(section, "exchange", false)),
+Csv::MarketDataSource::MarketDataSource(
+			const IniFileSectionRef &configuration,
+			Context::Log &log)
+		: m_log(log),
+		m_pimaryExchange(configuration.ReadKey("exchange", false)),
 		m_isStopped(true) {
-	const auto filePath = ini.ReadFileSystemPath(section, "source", false);
-	Log::Info(
+	const auto filePath = configuration.ReadFileSystemPath("source", false);
+	m_log.Info(
 		TRADER_INTERACTION_CSV_LOG_PREFFIX
 			"loading file %1% for exchange \"%2%\"...",
-		filePath,
-		m_pimaryExchange);
+		boost::make_tuple(
+			boost::cref(filePath),
+			boost::cref(m_pimaryExchange)));
 	m_file.open(filePath.string().c_str());
 	if (!m_file) {
 		throw Exception("Failed to open CSV file");
 	}
 }
 
-MarketDataSource::~MarketDataSource() {
+Csv::MarketDataSource::~MarketDataSource() {
 	if (m_thread) {
 		Verify(!Interlocking::Exchange(m_isStopped, true));
 		try {
@@ -42,7 +47,7 @@ MarketDataSource::~MarketDataSource() {
 	}
 }
 
-void MarketDataSource::Connect() {
+void Csv::MarketDataSource::Connect() {
 	Verify(Interlocking::Exchange(m_isStopped, false));
 	m_thread.reset(
 		new boost::thread([this]() {
@@ -55,14 +60,14 @@ void MarketDataSource::Connect() {
 		}));
 }
 
-bool MarketDataSource::ParseTradeLine(
+bool Csv::MarketDataSource::ParseTradeLine(
 			const std::string &line,
 			pt::ptime &time,
-			Trader::OrderSide &side,
+			OrderSide &side,
 			std::string &symbol,
 			std::string &exchange,
-			Trader::ScaledPrice &price,
-			Trader::Qty &qty)
+			ScaledPrice &price,
+			Qty &qty)
 		const {
 
 	size_t field = 0;
@@ -75,7 +80,7 @@ bool MarketDataSource::ParseTradeLine(
 	for ( ; !i.eof(); ++i) {
 		switch (++field) {
 			default:
-				Log::Error(
+				m_log.Error(
 					TRADER_INTERACTION_CSV_LOG_PREFFIX
 						"format mismatch: unknown field #%1%.",
 					field);
@@ -104,7 +109,7 @@ bool MarketDataSource::ParseTradeLine(
 				symbol = boost::copy_range<std::string>(*i);
 				boost::trim(symbol);
 				if (symbol.empty()) {
-					Log::Error(
+					m_log.Error(
 						TRADER_INTERACTION_CSV_LOG_PREFFIX
 							"format mismatch: empty symbol field.");
 					return false;
@@ -114,7 +119,7 @@ bool MarketDataSource::ParseTradeLine(
 				exchange = boost::copy_range<std::string>(*i);
 				boost::trim(exchange);
 				if (exchange.empty()) {
-					Log::Error(
+					m_log.Error(
 						TRADER_INTERACTION_CSV_LOG_PREFFIX
 							"format mismatch: empty exchange field.");
 					return false;
@@ -128,18 +133,17 @@ bool MarketDataSource::ParseTradeLine(
 					auto val = boost::copy_range<std::string>(*i);
 					boost::trim(val);
 					try {
-						price = boost::lexical_cast<Trader::ScaledPrice>(val);
+						price = boost::lexical_cast<ScaledPrice>(val);
 					} catch (const boost::bad_lexical_cast &ex) {
-						Log::Error(
+						m_log.Error(
 							TRADER_INTERACTION_CSV_LOG_PREFFIX
 								"format mismatch: wrong price field value:"
 								" %1% (%2%).",
-							val,
-							ex.what());
+							boost::make_tuple(boost::cref(val), ex.what()));
 						return false;
 					}
 					if (price == 0) {
-						Log::Error(
+						m_log.Error(
 							TRADER_INTERACTION_CSV_LOG_PREFFIX
 								"format mismatch: wrong price field value: %1%.",
 							val);
@@ -152,17 +156,16 @@ bool MarketDataSource::ParseTradeLine(
 					auto val = boost::copy_range<std::string>(*i);
 					boost::trim(val);
 					try {
-						qty = boost::lexical_cast<Trader::Qty>(val);
+						qty = boost::lexical_cast<Qty>(val);
 					} catch (const boost::bad_lexical_cast &ex) {
-						Log::Error(
+						m_log.Error(
 							TRADER_INTERACTION_CSV_LOG_PREFFIX
 								"format mismatch:"
 									" wrong quantity field value: %1% (%2%).",
-							val,
-							ex.what());
+							boost::make_tuple(boost::cref(val), ex.what()));
 					}
 					if (qty == 0) {
-						Log::Error(
+						m_log.Error(
 							TRADER_INTERACTION_CSV_LOG_PREFFIX
 								"format mismatch:"
 								" wrong quantity field value: %1%.",
@@ -181,7 +184,7 @@ bool MarketDataSource::ParseTradeLine(
 					} else if (val == "B") {
 						side = ORDER_SIDE_BUY;
 					} else {
-						Log::Error(
+						m_log.Error(
 							TRADER_INTERACTION_CSV_LOG_PREFFIX
 								"format mismatch:"
 								" unknown side field value: \"%1%\".",
@@ -194,11 +197,11 @@ bool MarketDataSource::ParseTradeLine(
 	}
 
 	if (field != 16) {
-		Log::Error(
+		m_log.Error(
 			TRADER_INTERACTION_CSV_LOG_PREFFIX
-				"format mismatch: wrong field number (%1%) for primary exchange \"%2%\".",
-			field,
-			m_pimaryExchange);
+				"format mismatch: wrong field number (%1%)"
+				" for primary exchange \"%2%\".",
+			boost::make_tuple(field, boost::cref(m_pimaryExchange)));
 		return false;
 	}
 
@@ -206,11 +209,11 @@ bool MarketDataSource::ParseTradeLine(
 
 }
 
-void MarketDataSource::ReadFile() {
+void Csv::MarketDataSource::ReadFile() {
 
 	const auto &securityList = m_securityList.get<ByTradesRequirements>();
 	if (securityList.find(true) == securityList.end()) {
-		Log::Info(
+		m_log.Info(
 			TRADER_INTERACTION_CSV_LOG_PREFFIX
 				"reading stopped because it's not necessary.");
 		return;
@@ -230,8 +233,8 @@ void MarketDataSource::ReadFile() {
 		OrderSide side = numberOfOrderSides;
 		std::string symbol;
 		std::string exchange;
-		Trader::ScaledPrice price = 0;
-		Trader::Qty qty = 0;
+		ScaledPrice price = 0;
+		Qty qty = 0;
 		if (!ParseTradeLine(line, time, side, symbol, exchange, price, qty)) {
 			break;
 		}
@@ -239,7 +242,7 @@ void MarketDataSource::ReadFile() {
 		const SecurityByInstrument::const_iterator security
 			= index.find(boost::make_tuple(symbol, m_pimaryExchange, exchange));
 		if (security == index.end()) {
-			Log::DebugEx(
+			m_log.DebugEx(
 				[&]() -> boost::format {
 					boost::format message(
 						"Found unknown instrument: %1%:%2%:%3%.");
@@ -247,59 +250,38 @@ void MarketDataSource::ReadFile() {
 					return message;
 				});
 		} else if (security->security->IsTradesRequired()) {
-			AssertNe(int(Trader::numberOfOrderSides), int(side));
+			AssertNe(int(numberOfOrderSides), int(side));
 			security->security->AddTrade(time, side, price, qty);
 		}
 
     }
 
-	Log::Info(
+	m_log.Info(
 		TRADER_INTERACTION_CSV_LOG_PREFFIX
 			"reading for exchange \"%1%\" is completed (line count: %2%).",
-		m_pimaryExchange,
-		lineCount);
+		boost::make_tuple(boost::cref(m_pimaryExchange), lineCount));
 
 }
 
-boost::shared_ptr<Trader::Security> MarketDataSource::CreateSecurity(
-			boost::shared_ptr<Trader::TradeSystem> tradeSystem,
+boost::shared_ptr<Trader::Security> Csv::MarketDataSource::CreateSecurity(
+			Context &context,
 			const std::string &symbol,
 			const std::string &primaryExchange,
 			const std::string &exchange,
-			boost::shared_ptr<const Trader::Settings> settings,
 			bool logMarketData)
 		const {
-	boost::shared_ptr<Security> result(
+	boost::shared_ptr<Csv::Security> result(
 		new Security(
-			tradeSystem,
+			context,
 			symbol,
 			primaryExchange,
 			exchange,
-			settings,
 			logMarketData));
 	Subscribe(result);
 	return result;
 }
 		
-boost::shared_ptr<Trader::Security> MarketDataSource::CreateSecurity(
-			const std::string &symbol,
-			const std::string &primaryExchange,
-			const std::string &exchange,
-			boost::shared_ptr<const Trader::Settings> settings,
-			bool logMarketData)
-		const {
-	boost::shared_ptr<Security> result(
-		new Security(
-			symbol,
-			primaryExchange,
-			exchange,
-			settings,
-			logMarketData));	
-	Subscribe(result);
-	return result;
-}
-
-void MarketDataSource::Subscribe(
+void Csv::MarketDataSource::Subscribe(
 			const boost::shared_ptr<Security> &security)
 		const {
 	Assert(

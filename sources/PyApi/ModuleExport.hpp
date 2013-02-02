@@ -27,7 +27,6 @@ namespace Trader { namespace PyApi {
 			void Info(const char *);
 			void Warn(const char *);
 			void Error(const char *);
-			void Trading(const char *);
 		private:
 			Trader::SecurityAlgo::Log *m_log;
 		};

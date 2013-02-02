@@ -18,18 +18,11 @@ namespace Trader {
 	public:
 
 		explicit Instrument(
-					boost::shared_ptr<TradeSystem>,
+					Trader::Context &,
 					const std::string &symbol,
 					const std::string &primaryExchange,
-					const std::string &exchange,
-					boost::shared_ptr<const Trader::Settings>);
-		explicit Instrument(
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange,
-					boost::shared_ptr<const Trader::Settings>);
-
-		virtual ~Instrument();
+					const std::string &exchange);
+		~Instrument();
 
 	public:
 
@@ -40,10 +33,8 @@ namespace Trader {
 
 	public:
 
-		const Trader::TradeSystem & GetTradeSystem() const;
-		Trader::TradeSystem & GetTradeSystem();
-
-		const Trader::Settings & GetSettings() const;
+		const Trader::Context & GetContext() const;
+		Trader::Context & GetContext();
 
 	private:
 

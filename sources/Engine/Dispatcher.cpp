@@ -8,6 +8,7 @@
 
 #include "Prec.hpp"
 #include "Dispatcher.hpp"
+#include "Context.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/Observer.hpp"
 #include "Core/Settings.hpp"
@@ -18,10 +19,10 @@ using namespace Trader;
 using namespace Trader::Lib;
 using namespace Trader::Engine;
 
-Dispatcher::Dispatcher(boost::shared_ptr<const Settings> &settings)
-			: m_level1Updates("Level 1", settings),
-			m_newTrades("New Trades", settings),
-			m_positionUpdates("Position", settings) {
+Dispatcher::Dispatcher(Engine::Context &context)
+			: m_level1Updates("Level 1", context.GetSettings()),
+			m_newTrades("New Trades", context.GetSettings()),
+			m_positionUpdates("Position", context.GetSettings()) {
 	StartNotificationTask(m_level1Updates);
 	StartNotificationTask(m_newTrades);
 	StartNotificationTask(m_positionUpdates);

@@ -22,17 +22,10 @@ namespace Trader {  namespace Interaction { namespace Csv {
 	public:
 
 		explicit Security(
-					boost::shared_ptr<Trader::TradeSystem>,
+					Context &,
 					const std::string &symbol,
 					const std::string &primaryExchange,
 					const std::string &exchange,
-					boost::shared_ptr<const Trader::Settings> settings,
-					bool logMarketData);
-		explicit Security(
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange,
-					boost::shared_ptr<const Trader::Settings> settings,
 					bool logMarketData);
 
 	public:

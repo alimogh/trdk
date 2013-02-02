@@ -9,21 +9,26 @@
 #include "Prec.hpp"
 #include "MarketDataSource.hpp"
 
+using namespace Trader;
+using namespace Trader::Lib;
+using namespace Trader::Interaction;
 using namespace Trader::Interaction::Fake;
 
-MarketDataSource::MarketDataSource() {
+Fake::MarketDataSource::MarketDataSource(
+			const IniFileSectionRef &,
+			Context::Log &) {
 	//...//
 }
 
-MarketDataSource::~MarketDataSource() {
+Fake::MarketDataSource::~MarketDataSource() {
 	//...//
 }
 
-void MarketDataSource::Connect() {
+void Fake::MarketDataSource::Connect() {
 	m_threads.create_thread([this](){NotificationThread();});
 }
 
-void MarketDataSource::NotificationThread() {
+void Fake::MarketDataSource::NotificationThread() {
 	try {
 		for ( ; ; ) {
 			foreach (boost::shared_ptr<Security> s, m_securityList) {
@@ -41,40 +46,19 @@ void MarketDataSource::NotificationThread() {
 	}
 }
 
-boost::shared_ptr<Trader::Security> MarketDataSource::CreateSecurity(
-			boost::shared_ptr<Trader::TradeSystem> tradeSystem,
+boost::shared_ptr<Security> Fake::MarketDataSource::CreateSecurity(
+			Context &context,
 			const std::string &symbol,
 			const std::string &primaryExchange,
 			const std::string &exchange,
-			boost::shared_ptr<const Trader::Settings> settings,
 			bool logMarketData)
 		const {
 	auto result = boost::shared_ptr<Security>(
 		new Security(
-			tradeSystem,
+			context,
 			symbol,
 			primaryExchange,
 			exchange,
-			settings,
-			logMarketData));
-	const_cast<MarketDataSource *>(this)
-		->m_securityList.push_back(result);
-	return result;
-}
-
-boost::shared_ptr<Trader::Security> MarketDataSource::CreateSecurity(
-			const std::string &symbol,
-			const std::string &primaryExchange,
-			const std::string &exchange,
-			boost::shared_ptr<const Trader::Settings> settings,
-			bool logMarketData)
-		const {
-	auto result = boost::shared_ptr<Security>(
-		new Security(
-			symbol,
-			primaryExchange,
-			exchange,
-			settings,
 			logMarketData));
 	const_cast<MarketDataSource *>(this)
 		->m_securityList.push_back(result);

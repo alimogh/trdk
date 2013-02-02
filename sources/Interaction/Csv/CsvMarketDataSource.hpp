@@ -10,6 +10,7 @@
 
 #include "Core/MarketDataSource.hpp"
 #include "CsvSecurity.hpp"
+#include "Core/Context.hpp"
 
 namespace Trader { namespace Interaction { namespace Csv { 
 
@@ -85,8 +86,8 @@ namespace Trader { namespace Interaction { namespace Csv {
 	public:
 
 		explicit MarketDataSource(
-					const Trader::Lib::IniFile &,
-					const std::string &section);
+				const Trader::Lib::IniFileSectionRef &,
+				Trader::Context::Log &);
 		virtual ~MarketDataSource();
 
 	public:
@@ -96,19 +97,10 @@ namespace Trader { namespace Interaction { namespace Csv {
 	public:
 
 		virtual boost::shared_ptr<Trader::Security> CreateSecurity(
-					boost::shared_ptr<Trader::TradeSystem>,
+					Context &,
 					const std::string &symbol,
 					const std::string &primaryExchange,
 					const std::string &exchange,
-					boost::shared_ptr<const Trader::Settings>,
-					bool logMarketData)
-				const;
-		
-		virtual boost::shared_ptr<Trader::Security> CreateSecurity(
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange,
-					boost::shared_ptr<const Trader::Settings>,
 					bool logMarketData)
 				const;
 
@@ -129,6 +121,8 @@ namespace Trader { namespace Interaction { namespace Csv {
 			const;
 
 	private:
+
+		Context::Log &m_log;
 
 		const std::string m_pimaryExchange;
 

@@ -32,10 +32,10 @@ namespace Trader { namespace PyApi {
 	public:
 
 		static boost::shared_ptr<Trader::Service> CreateClientInstance(
+				Context &context,
 				const std::string &tag,
-				boost::shared_ptr<Trader::Security>,
-				const Trader::Lib::IniFileSectionRef &,
-				const boost::shared_ptr<const Trader::Settings> &);
+				Security &security,
+				const Lib::IniFileSectionRef &configuration);
 
 		ServiceExport & GetExport();
 		const ServiceExport & GetExport() const;

@@ -10,6 +10,7 @@
 
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
+#include "Core/Context.hpp"
 
 namespace Trader { namespace Interaction { namespace Fake {
 
@@ -26,28 +27,17 @@ namespace Trader { namespace Interaction { namespace Fake {
 		public:
 				
 			explicit Security(
-						boost::shared_ptr<Trader::TradeSystem> ts,
+						Context &context,
 						const std::string &symbol,
 						const std::string &primaryExchange,
 						const std::string &exchange,
-						boost::shared_ptr<const Trader::Settings> settings,
 						bool logMarketData)
-					: Base(ts, symbol, primaryExchange, exchange, settings, logMarketData) {
-				//...//
-			}
-			
-			explicit Security(
-						const std::string &symbol,
-						const std::string &primaryExchange,
-						const std::string &exchange,
-						boost::shared_ptr<const Trader::Settings> settings,
-						bool logMarketData)
-					: Base(symbol, primaryExchange, exchange, settings, logMarketData) {
-				//...//
-			}
-
-
-			~Security() {
+					: Base(
+						context,
+						symbol,
+						primaryExchange,
+						exchange,
+						logMarketData) {
 				//...//
 			}
 
@@ -63,7 +53,7 @@ namespace Trader { namespace Interaction { namespace Fake {
 
 	public:
 
-		MarketDataSource();
+		MarketDataSource(const Lib::IniFileSectionRef &, Context::Log &);
 		virtual ~MarketDataSource();
 
 	public:
@@ -73,18 +63,10 @@ namespace Trader { namespace Interaction { namespace Fake {
 	public:
 
 		virtual boost::shared_ptr<Trader::Security> CreateSecurity(
-					boost::shared_ptr<Trader::TradeSystem>,
+					Context &,
 					const std::string &symbol,
 					const std::string &primaryExchange,
 					const std::string &exchange,
-					boost::shared_ptr<const Trader::Settings>,
-					bool logMarketData)
-				const;
-		virtual boost::shared_ptr<Trader::Security> CreateSecurity(
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange,
-					boost::shared_ptr<const Trader::Settings>,
 					bool logMarketData)
 				const;
 

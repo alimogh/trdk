@@ -26,7 +26,7 @@ namespace Trader { namespace Engine {
 
 	public:
 
-		explicit SubscriptionsManager(boost::shared_ptr<const Trader::Settings>);
+		explicit SubscriptionsManager(Context &);
 		~SubscriptionsManager();
 
 	public:

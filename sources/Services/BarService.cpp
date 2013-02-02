@@ -169,14 +169,16 @@ public:
 
 public:
 
-	explicit Implementation(BarService &service, const IniFileSectionRef &ini)
+	explicit Implementation(
+				BarService &service,
+				const IniFileSectionRef &configuration)
 			: m_service(service),
 			m_size(0),
 			m_currentBar(nullptr),
 			m_barsLog(nullptr) {
 
 		{
-			const std::string sizeStr = ini.ReadKey("size", false);
+			const std::string sizeStr = configuration.ReadKey("size", false);
 			const boost::regex expr(
 				"(\\d+)\\s+([a-z]+)",
 				boost::regex_constants::icase);
@@ -231,7 +233,7 @@ public:
 			throw Error("Wrong bar size settings");
 		}
 
-		ReopenLog(ini, false);
+		ReopenLog(configuration, false);
 
 		m_service.GetLog().Info("Stated with size %1%.", m_barSize);
 	
@@ -241,9 +243,9 @@ public:
 		return ',';
 	}
 
-	void ReopenLog(const IniFileSectionRef &ini, bool isCritical) {
+	void ReopenLog(const IniFileSectionRef &configuration, bool isCritical) {
 
-		const std::string logType = ini.ReadKey("log", false);
+		const std::string logType = configuration.ReadKey("log", false);
 		if (boost::iequals(logType, "none")) {
 			m_barsLog.reset();
 			return;
@@ -423,12 +425,12 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 BarService::BarService(
+			Context &context,
 			const std::string &tag,
-			boost::shared_ptr<Security> &security,
-			const IniFileSectionRef &ini,
-			const boost::shared_ptr<const Settings> &settings)
-		: Service("BarService", tag, security, settings) {
-	m_pimpl = new Implementation(*this, ini);
+			Security &security,
+			const IniFileSectionRef &configuration)
+		: Service(context, "BarService", tag, security) {
+	m_pimpl = new Implementation(*this, configuration);
 }
 
 BarService::~BarService() {
@@ -449,8 +451,8 @@ pt::time_duration BarService::GetBarSize() const {
 	return m_pimpl->GetBarSize();
 }
 
-void BarService::UpdateAlogImplSettings(const IniFileSectionRef &ini) {
-	m_pimpl->ReopenLog(ini, true);
+void BarService::UpdateAlogImplSettings(const IniFileSectionRef &configuration) {
+	m_pimpl->ReopenLog(configuration, true);
 }
 
 const BarService::Bar & BarService::GetBar(size_t index) const {
@@ -539,21 +541,21 @@ boost::shared_ptr<BarService::QtyStat> BarService::GetVolumeStat(
 
 #ifdef BOOST_WINDOWS
 	boost::shared_ptr<Trader::Service> CreateBarService(
+				Context &context,
 				const std::string &tag,
-				boost::shared_ptr<Trader::Security> security,
-				const IniFileSectionRef &ini,
-				boost::shared_ptr<const Settings> settings) {
+				Security &security,
+				const IniFileSectionRef &configuration) {
 		return boost::shared_ptr<Trader::Service>(
-			new BarService(tag, security, ini, settings));
+			new BarService(context, tag, security, configuration));
 	}
 #else
 	extern "C" boost::shared_ptr<Trader::Service> CreateBarService(
+				Context &context,
 				const std::string &tag,
-				boost::shared_ptr<Trader::Security> security,
-				const IniFileSectionRef &ini,
-				boost::shared_ptr<const Settings> settings) {
+				Security &security,
+				const IniFileSectionRef &configuration) {
 		return boost::shared_ptr<Trader::Service>(
-			new BarService(tag, security, ini, settings));
+			new BarService(context, tag, security, configuration));
 	}
 #endif
 

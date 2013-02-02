@@ -10,8 +10,9 @@
 #include "TradeSystem.hpp"
 #include "Core/Security.hpp"
 
-using Trader::Security;
+using namespace Trader;
 using namespace Trader::Lib;
+using namespace Trader::Interaction;
 using namespace Trader::Interaction::Fake;
 
 /////////////////////////////////////////////////////////////////////////
@@ -22,20 +23,20 @@ namespace {
 	const std::string buyLogTag = "buy";
 
 	struct Order {
-		boost::shared_ptr<const Security> security;
+		Security *security;
 		bool isSell;
-		Trader::OrderId id;
+		OrderId id;
 		std::string symbol;
-		TradeSystem::OrderStatusUpdateSlot callback;
-		Trader::Qty qty;
-		Trader::ScaledPrice price;
+		Fake::TradeSystem::OrderStatusUpdateSlot callback;
+		Qty qty;
+		ScaledPrice price;
 	};
 
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-class TradeSystem::Implementation : private boost::noncopyable {
+class Fake::TradeSystem::Implementation : private boost::noncopyable {
 
 private:
 
@@ -47,15 +48,16 @@ private:
 
 public:
 
-	Implementation()
-			: m_isStarted(0),
+	Implementation(Context::Log &log)
+			: m_log(log),
+			m_isStarted(0),
 			m_currentOrders(&m_orders1) {
 		Interlocking::Exchange(m_id, 0);
 	}
 
 	~Implementation() {
 		if (m_isStarted) {
-			Log::Debug("Stopping Fake Trade System task...");
+			m_log.Debug("Stopping Fake Trade System task...");
 			{
 				const Lock lock(m_mutex);
 				m_isStarted = false;
@@ -67,7 +69,11 @@ public:
 
 public:
 
-	Trader::OrderId TakeOrderId() {
+	Context::Log & GetLog() {
+		return m_log;
+	}
+
+	OrderId TakeOrderId() {
 		return Interlocking::Increment(m_id);
 	}
 
@@ -99,7 +105,7 @@ private:
 				Lock lock(m_mutex);
 				m_condition.notify_all();
 			}
-			Log::Info("Stated Fake Trade System task...");
+			m_log.Info("Stated Fake Trade System task...");
 			for ( ; ; ) {
 				Orders *orders = nullptr;
 				{
@@ -147,10 +153,12 @@ private:
 			AssertFailNoException();
 			throw;
 		}
-		Log::Info("Fake Trade System stopped.");
+		m_log.Info("Fake Trade System stopped.");
 	}
 
 private:
+
+	Context::Log &m_log;
 
 	volatile long m_id;
 	bool m_isStarted;
@@ -168,37 +176,37 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-TradeSystem::TradeSystem()
-		: m_pimpl(new Implementation) {
+Fake::TradeSystem::TradeSystem(const IniFileSectionRef &, Context::Log &log)
+		: m_pimpl(new Implementation(log)) {
 	//...//
 }
 
-TradeSystem::~TradeSystem() {
+Fake::TradeSystem::~TradeSystem() {
 	delete m_pimpl;
 }
 
-void TradeSystem::Connect(const IniFile &, const std::string &/*section*/) {
+void Fake::TradeSystem::Connect(const IniFile &, const std::string &/*section*/) {
 	m_pimpl->Start();
 }
 
-bool TradeSystem::IsCompleted(const Security &) const {
+bool Fake::TradeSystem::IsCompleted(const Security &) const {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
 
-Trader::OrderId TradeSystem::SellAtMarketPrice(
-			const Security &security,
-			Trader::Qty qty,
+OrderId Fake::TradeSystem::SellAtMarketPrice(
+			Security &security,
+			Qty qty,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const Order order = {
-		security.shared_from_this(),
+		&security,
 		true,
 		m_pimpl->TakeOrderId(),
 		security.GetFullSymbol(),
 		statusUpdateSlot,
 		qty};
 	m_pimpl->SendOrder(order);
-	Log::Trading(
+	m_pimpl->GetLog().Trading(
 		sellLogTag,
 		"%2% order-id=%1% qty=%3% price=market",
 		boost::make_tuple(
@@ -208,31 +216,31 @@ Trader::OrderId TradeSystem::SellAtMarketPrice(
 	return order.id;
 }
 
-Trader::OrderId TradeSystem::Sell(
-			const Security &,
-			Trader::Qty,
-			Trader::ScaledPrice,
+OrderId Fake::TradeSystem::Sell(
+			Security &,
+			Qty,
+			ScaledPrice,
 			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
 
-Trader::OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
-			const Security &,
-			Trader::Qty,
-			Trader::ScaledPrice /*stopPrice*/,
+OrderId Fake::TradeSystem::SellAtMarketPriceWithStopPrice(
+			Security &,
+			Qty,
+			ScaledPrice /*stopPrice*/,
 			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
 
-Trader::OrderId TradeSystem::SellOrCancel(
-			const Security &security,
-			Trader::Qty qty,
-			Trader::ScaledPrice price,
+OrderId Fake::TradeSystem::SellOrCancel(
+			Security &security,
+			Qty qty,
+			ScaledPrice price,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const Order order = {
-		security.shared_from_this(),
+		&security,
 		true,
 		m_pimpl->TakeOrderId(),
 		security.GetFullSymbol(),
@@ -240,7 +248,7 @@ Trader::OrderId TradeSystem::SellOrCancel(
 		qty,
 		price};
 	m_pimpl->SendOrder(order);
-	Log::Trading(
+	m_pimpl->GetLog().Trading(
 		sellLogTag,
 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
 		boost::make_tuple(
@@ -251,19 +259,19 @@ Trader::OrderId TradeSystem::SellOrCancel(
 	return order.id;
 }
 
-Trader::OrderId TradeSystem::BuyAtMarketPrice(
-			const Security &security,
-			Trader::Qty qty,
+OrderId Fake::TradeSystem::BuyAtMarketPrice(
+			Security &security,
+			Qty qty,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const Order order = {
-		security.shared_from_this(),
+		&security,
 		false,
 		m_pimpl->TakeOrderId(),
 		security.GetFullSymbol(),
 		statusUpdateSlot,
 		qty};
 	m_pimpl->SendOrder(order);
-	Log::Trading(
+	m_pimpl->GetLog().Trading(
 		buyLogTag,
 		"%2% order-id=%1% qty=%3% price=market",
 		boost::make_tuple(
@@ -273,31 +281,31 @@ Trader::OrderId TradeSystem::BuyAtMarketPrice(
 	return order.id;
 }
 
-Trader::OrderId TradeSystem::Buy(
-			const Security &,
-			Trader::Qty,
-			Trader::ScaledPrice,
+OrderId Fake::TradeSystem::Buy(
+			Security &,
+			Qty,
+			ScaledPrice,
 			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
 
-Trader::OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
-			const Security &,
-			Trader::Qty,
-			Trader::ScaledPrice /*stopPrice*/,
+OrderId Fake::TradeSystem::BuyAtMarketPriceWithStopPrice(
+			Security &,
+			Qty,
+			ScaledPrice /*stopPrice*/,
 			const OrderStatusUpdateSlot  &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
 
-Trader::OrderId TradeSystem::BuyOrCancel(
-			const Security &security,
-			Trader::Qty qty,
-			Trader::ScaledPrice price,
+OrderId Fake::TradeSystem::BuyOrCancel(
+			Security &security,
+			Qty qty,
+			ScaledPrice price,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	const Order order = {
-		security.shared_from_this(),
+		&security,
 		false,
 		m_pimpl->TakeOrderId(),
 		security.GetFullSymbol(),
@@ -305,7 +313,7 @@ Trader::OrderId TradeSystem::BuyOrCancel(
 		qty,
 		price};
 	m_pimpl->SendOrder(order);
-	Log::Trading(
+	m_pimpl->GetLog().Trading(
 		buyLogTag,
 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
 		boost::make_tuple(
@@ -316,13 +324,13 @@ Trader::OrderId TradeSystem::BuyOrCancel(
 	return order.id;
 }
 
-void TradeSystem::CancelOrder(Trader::OrderId) {
+void Fake::TradeSystem::CancelOrder(OrderId) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
 
-void TradeSystem::CancelAllOrders(const Security &security) {
-	Log::Trading("cancel", "%1% orders=[all]", security.GetSymbol());
+void Fake::TradeSystem::CancelAllOrders(Security &security) {
+	m_pimpl->GetLog().Trading("cancel", "%1% orders=[all]", security.GetSymbol());
 }
 
 //////////////////////////////////////////////////////////////////////////

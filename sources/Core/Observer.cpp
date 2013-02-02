@@ -15,24 +15,16 @@ using namespace Trader::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
-class Observer::Implementation {
+class Observer::Implementation : private boost::noncopyable {
 
 public:
 
 	NotifyList m_notifyList;
-	boost::shared_ptr<Trader::TradeSystem> tradeSystem;
 
 public:
 
-	explicit Implementation(
-				const Observer::NotifyList &notifyList,
-				boost::shared_ptr<Trader::TradeSystem> tradeSystem)
-			: m_notifyList(notifyList),
-			tradeSystem(tradeSystem) {
-		//...//
-	}
-
-	~Implementation() {
+	explicit Implementation(const Observer::NotifyList &notifyList)
+			:  m_notifyList(notifyList) {
 		//...//
 	}
 
@@ -41,13 +33,12 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Observer::Observer(
+			Context &context,
 			const std::string &name,
 			const std::string &tag,
-			const Observer::NotifyList &notifyList,
-			boost::shared_ptr<Trader::TradeSystem> tradeSystem,
-			boost::shared_ptr<const Settings> settings)
-		: Module("Observer", name, tag, settings),
-		m_pimpl(new Implementation(notifyList, tradeSystem)) {
+			const Observer::NotifyList &notifyList)
+		: Module(context, "Observer", name, tag),
+		m_pimpl(new Implementation(notifyList)) {
 	//...//
 }
 
@@ -107,8 +98,4 @@ void Observer::RaiseServiceDataUpdateEvent(const Service &service) {
 
 const Observer::NotifyList & Observer::GetNotifyList() const {
 	return m_pimpl->m_notifyList;
-}
-
-TradeSystem & Observer::GetTradeSystem() {
-	return *m_pimpl->tradeSystem;
 }

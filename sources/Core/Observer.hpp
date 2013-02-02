@@ -22,11 +22,10 @@ namespace Trader {
 	public:
 
 		Observer(
+				Trader::Context &,
 				const std::string &name,
 				const std::string &tag,
-				const Trader::Observer::NotifyList &,
-				boost::shared_ptr<Trader::TradeSystem>,
-				boost::shared_ptr<const Settings>);
+				const Trader::Observer::NotifyList &);
 		virtual ~Observer();
 
 	public:
@@ -54,10 +53,6 @@ namespace Trader {
 	public:
 
 		const NotifyList & GetNotifyList() const;
-
-	protected:
-
-		Trader::TradeSystem & GetTradeSystem();
 
 	private:
 

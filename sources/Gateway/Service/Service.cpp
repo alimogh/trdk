@@ -17,15 +17,14 @@ using namespace Trader::Gateway;
 namespace pt = boost::posix_time;
 
 Gateway::Service::Service(
+			Context &context,
 			const std::string &tag,
 			const Observer::NotifyList &notifyList,
-			boost::shared_ptr<TradeSystem> tradeSystem,
-			const IniFileSectionRef &ini,
-			boost::shared_ptr<const Settings> settings)
-		: Observer("Gateway", tag, notifyList, tradeSystem, settings),
+			const IniFileSectionRef &configuration)
+		: Observer(context, "Gateway", tag, notifyList),
 		m_stopFlag(false) {
 
-	m_port = ini.ReadTypedKey<unsigned short>("port");
+	m_port = configuration.ReadTypedKey<unsigned short>("port");
 			
 	try {
 		soap_init2(&m_soap, SOAP_IO_KEEPALIVE, SOAP_IO_KEEPALIVE);

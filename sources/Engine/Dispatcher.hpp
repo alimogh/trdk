@@ -9,6 +9,7 @@
 #pragma once
 
 #include "SubscriberPtrWrapper.hpp"
+#include "Fwd.hpp"
 
 namespace Trader { namespace Engine {
 
@@ -37,14 +38,12 @@ namespace Trader { namespace Engine {
 
 		public:
 			
-			EventQueue(
-						const char *name,
-						boost::shared_ptr<const Settings> &settings)
+			EventQueue(const char *name, const Settings &settings)
 					: m_name(name),
 					m_current(&m_lists.first),
 					m_heavyLoadsCount(0),
 					m_taksState(TASK_STATE_INACTIVE) {
-				if (settings->IsReplayMode()) {
+				if (settings.IsReplayMode()) {
 					m_readyToReadCondition.reset(new Condition);
 				}
 			}
@@ -190,7 +189,7 @@ namespace Trader { namespace Engine {
 
 	public:
 
-		explicit Dispatcher(boost::shared_ptr<const Settings> &settings);
+		explicit Dispatcher(Engine::Context &);
 		~Dispatcher();
 
 	public:

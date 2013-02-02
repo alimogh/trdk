@@ -20,11 +20,10 @@ using namespace Trader::Lib;
 #endif
 
 TRADER_GATEWAY_SERVICE_API boost::shared_ptr<Observer> CreateGateway(
+			Context &context,
 			const std::string &tag,
 			const Observer::NotifyList &notifyList,
-			boost::shared_ptr<Trader::TradeSystem> tradeSystem,
-			const IniFileSectionRef &ini,
-			boost::shared_ptr<const Settings> settings) {
+			const IniFileSectionRef &configuration) {
 	return boost::shared_ptr<Observer>(
-		new Gateway::Service(tag, notifyList, tradeSystem, ini, settings));
+		new Gateway::Service(context, tag, notifyList, configuration));
 }

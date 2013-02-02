@@ -30,10 +30,10 @@ namespace Trader { namespace PyApi {
 		virtual ~Strategy();
 
 		static boost::shared_ptr<Trader::Strategy> CreateClientInstance(
+					Context &,
 					const std::string &tag,
-					boost::shared_ptr<Trader::Security>,
-					const Trader::Lib::IniFileSectionRef &,
-					boost::shared_ptr<const Trader::Settings>);
+					Security &security,
+					const Lib::IniFileSectionRef &);
 
 	public:
 

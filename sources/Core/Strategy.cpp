@@ -288,7 +288,7 @@ public:
 
 	Strategy &m_strategy;
 	
-	boost::shared_ptr<Security> m_security;
+	Security &m_security;
 
 	volatile long m_isBlocked;
 	
@@ -300,7 +300,7 @@ public:
 
 	explicit Implementation(
 				Strategy &strategy,
-				const boost::shared_ptr<Security> &security)
+				Security &security)
 			: m_strategy(strategy),
 			m_security(security),
 			m_isBlocked(false),
@@ -311,13 +311,14 @@ public:
 public:
 
 	bool IsTradingTime() const {
-		if (m_strategy.GetSettings().IsReplayMode()) {
+		const Settings &settings = m_strategy.GetContext().GetSettings();
+		if (settings.IsReplayMode()) {
 			return true;
 		}
 		const auto now = boost::get_system_time();
 		return
-			m_strategy.GetSettings().GetCurrentTradeSessionStartTime() <= now
-			&& now < m_strategy.GetSettings().GetCurrentTradeSessionEndime();
+			settings.GetCurrentTradeSessionStartTime() <= now
+			&& now < settings.GetCurrentTradeSessionEndime();
 	}
 
 	void ForgetPosition(const Position &position) {
@@ -330,11 +331,11 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Strategy::Strategy(
+			Trader::Context &context,
 			const std::string &name,
 			const std::string &tag,
-			boost::shared_ptr<Security> security,
-			boost::shared_ptr<const Settings> settings)
-		: SecurityAlgo("Strategy", name, tag, settings) {
+			Security &security)
+		: SecurityAlgo(context, "Strategy", name, tag) {
 	m_pimpl = new Implementation(*this, security);
 }
 
@@ -348,7 +349,7 @@ const Security & Strategy::GetSecurity() const {
 }
 
 Security & Strategy::GetSecurity() {
-	return *m_pimpl->m_security;
+	return m_pimpl->m_security;
 }
 
 void Strategy::Register(Position &position) {
@@ -476,7 +477,7 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 bool Strategy::IsBlocked() const {
 	return
 		m_pimpl->m_isBlocked
-		|| !GetSettings().IsValidPrice(GetSecurity())
+		|| !GetContext().GetSettings().IsValidPrice(GetSecurity())
 		|| !m_pimpl->IsTradingTime();
 }
 

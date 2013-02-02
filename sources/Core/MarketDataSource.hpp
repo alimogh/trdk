@@ -39,19 +39,10 @@ namespace Trader {
 	public:
 
 		virtual boost::shared_ptr<Trader::Security> CreateSecurity(
-					boost::shared_ptr<Trader::TradeSystem>,
+					Trader::Context &,
 					const std::string &symbol,
 					const std::string &primaryExchange,
 					const std::string &exchange,
-					boost::shared_ptr<const Trader::Settings>,
-					bool logMarketData)
-				const
-				= 0;
-		virtual boost::shared_ptr<Trader::Security> CreateSecurity(
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange,
-					boost::shared_ptr<const Trader::Settings>,
 					bool logMarketData)
 				const
 				= 0;

@@ -68,6 +68,7 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Context.cpp" />
     <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="SecurityAlgo.cpp" />
     <ClCompile Include="Service.cpp" />
@@ -89,6 +90,7 @@
     <ClCompile Include="TradeSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Context.hpp" />
     <ClInclude Include="ModuleRef.hpp" />
     <ClInclude Include="ModuleVariant.hpp" />
     <ClInclude Include="SecurityAlgo.hpp" />

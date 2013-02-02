@@ -42,13 +42,3 @@ const std::string DefaultValues::Fabrics::service = "CreateService";
 const std::string DefaultValues::Fabrics::observer = "CreateObserver";
 
 const std::string DefaultValues::Modules::service = "Services";
-
-//////////////////////////////////////////////////////////////////////////
-
-boost::shared_ptr<Settings> Ini::LoadSettings(
-			const IniFile &ini,
-			const boost::posix_time::ptime &now,
-			bool isPlayMode) {
-	return boost::shared_ptr<Settings>(
-		new Settings(ini, Ini::Sections::common, now, isPlayMode));
-}

@@ -10,6 +10,8 @@
 
 namespace Trader {
 
+	class Context;
+
 	class Security;
 	
 	class MarketDataSource;

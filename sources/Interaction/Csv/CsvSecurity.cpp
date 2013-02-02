@@ -9,33 +9,24 @@
 #include "Prec.hpp"
 #include "CsvSecurity.hpp"
 
+using namespace Trader;
+using namespace Trader::Interaction;
 using namespace Trader::Interaction::Csv;
 
-Security::Security(
-			boost::shared_ptr<Trader::TradeSystem> ts,
+Csv::Security::Security(
+			Context &context,
 			const std::string &symbol,
 			const std::string &primaryExchange,
 			const std::string &exchange,
-			boost::shared_ptr<const Trader::Settings> settings,
 			bool logMarketData)
-		: Base(ts, symbol, primaryExchange, exchange, settings, logMarketData) {
+		: Base(context, symbol, primaryExchange, exchange, logMarketData) {
 	//...//
 }
 
-Security::Security(
-			const std::string &symbol,
-			const std::string &primaryExchange,
-			const std::string &exchange,
-			boost::shared_ptr<const Trader::Settings> settings,
-			bool logMarketData)
-		: Base(symbol, primaryExchange, exchange, settings, logMarketData) {
-	//...//
-}
-
-void Security::AddTrade(
+void Csv::Security::AddTrade(
 			const boost::posix_time::ptime &time,
-			Trader::OrderSide side,
-			Trader::ScaledPrice price,
+			OrderSide side,
+			ScaledPrice price,
 			Trader::Qty qty) {
 	Base::AddTrade(time, side, price, qty, true);
 }

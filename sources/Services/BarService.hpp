@@ -79,11 +79,10 @@ namespace Trader { namespace Services {
 	public:
 
 		explicit BarService(
+					Context &context,
 					const std::string &tag,
-					boost::shared_ptr<Trader::Security> &,
-					const Trader::Lib::IniFileSectionRef &,
-					const boost::shared_ptr<const Settings> &);
-
+					Security &security,
+					const Lib::IniFileSectionRef &);
 		virtual ~BarService();
 
 	public:

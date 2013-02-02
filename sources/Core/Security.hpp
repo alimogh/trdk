@@ -14,9 +14,7 @@
 
 namespace Trader {
 
-	class TRADER_CORE_API Security
-		: public Trader::Instrument,
-		public boost::enable_shared_from_this<Security> {
+	class TRADER_CORE_API Security : public Trader::Instrument {
 
 	public:
 
@@ -42,19 +40,11 @@ namespace Trader {
 	public:
 
 		explicit Security(
-					boost::shared_ptr<Trader::TradeSystem>,
+					Trader::Context &,
 					const std::string &symbol,
 					const std::string &primaryExchange,
 					const std::string &exchange,
-					boost::shared_ptr<const Trader::Settings> settings,
 					bool logMarketData);
-		explicit Security(
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange,
-					boost::shared_ptr<const Trader::Settings> settings,
-					bool logMarketData);
-
 		~Security();
 
 	public:

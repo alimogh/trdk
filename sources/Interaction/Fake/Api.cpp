@@ -17,13 +17,17 @@
 #endif
 
 TRADER_INTERACTION_FAKE_API
-boost::shared_ptr<Trader::TradeSystem> CreateTradeSystem() {
+boost::shared_ptr<Trader::TradeSystem> CreateTradeSystem(
+			const Trader::Lib::IniFileSectionRef &configuration,
+			Trader::Context::Log &log) {
 	return boost::shared_ptr<Trader::TradeSystem>(
-		new Trader::Interaction::Fake::TradeSystem);
+		new Trader::Interaction::Fake::TradeSystem(configuration, log));
 }
 
 TRADER_INTERACTION_FAKE_API
-boost::shared_ptr<Trader::MarketDataSource> CreateMarketDataSource() {
+boost::shared_ptr<Trader::MarketDataSource> CreateMarketDataSource(
+			const Trader::Lib::IniFileSectionRef &configuration,
+			Trader::Context::Log &log) {
 	return boost::shared_ptr<Trader::MarketDataSource>(
-		new Trader::Interaction::Fake::MarketDataSource);
+		new Trader::Interaction::Fake::MarketDataSource(configuration, log));
 }

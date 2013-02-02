@@ -10,6 +10,8 @@
 
 namespace Trader { namespace Engine {
 
+	class Context;
+		
 	class Dispatcher;
 	class SubscriberPtrWrapper;
 

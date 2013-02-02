@@ -18,75 +18,42 @@ class Instrument::Implementation : private boost::noncopyable {
 
 public:
 
-	const boost::shared_ptr<TradeSystem> m_tradeSystem;
+	Context &m_context;
 	const std::string m_symbol;
 	const std::string m_primaryExchange;
 	std::string m_exchange;
 	const std::string m_fullSymbol;
-	const boost::shared_ptr<const Settings> m_settings;
 
 public:
 
 	explicit Implementation(
-				boost::shared_ptr<TradeSystem> tradeSystem,
+				Context &context,
 				const std::string &symbol,
 				const std::string &primaryExchange,
-				const std::string &exchange,
-				boost::shared_ptr<const Settings> settings)
-			: m_tradeSystem(tradeSystem),
+				const std::string &exchange)
+			: m_context(context),
 			m_symbol(symbol),
 			m_primaryExchange(primaryExchange),
 			m_exchange(exchange),
-			m_fullSymbol(CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)),
-			m_settings(settings) {
+			m_fullSymbol(CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)) {
 		//...//
 	}
-
-	explicit Implementation(
-				const std::string &symbol,
-				const std::string &primaryExchange,
-				const std::string &exchange,
-				boost::shared_ptr<const Settings> settings)
-			: m_symbol(symbol),
-			m_primaryExchange(primaryExchange),
-			m_exchange(exchange),
-			m_fullSymbol(CreateSymbolFullStr(m_symbol, m_primaryExchange, m_exchange)),
-			m_settings(settings) {
-		//...//
-	}
-
 
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 Instrument::Instrument(
-			boost::shared_ptr<TradeSystem> tradeSystem,
+			Context &context,
 			const std::string &symbol,
 			const std::string &primaryExchange,
-			const std::string &exchange,
-			boost::shared_ptr<const Settings> settings)
+			const std::string &exchange)
 		: m_pimpl(
 			new Implementation(
-				tradeSystem,
+				context,
 				symbol,
 				primaryExchange,
-				exchange,
-				settings)) {
-	//...//
-}
-
-Instrument::Instrument(
-			const std::string &symbol,
-			const std::string &primaryExchange,
-			const std::string &exchange,
-			boost::shared_ptr<const Settings> settings)
-		: m_pimpl(
-			new Implementation(
-				symbol,
-				primaryExchange,
-				exchange,
-				settings)) {
+				exchange)) {
 	//...//
 }
 
@@ -110,19 +77,12 @@ const std::string & Instrument::GetExchange() const {
 	return m_pimpl->m_exchange;
 }
 
-const TradeSystem & Instrument::GetTradeSystem() const {
-	return const_cast<Instrument *>(this)->GetTradeSystem();
+const Context & Instrument::GetContext() const {
+	return const_cast<Instrument *>(this)->GetContext();
 }
 
-TradeSystem & Instrument::GetTradeSystem() {
-	if (!m_pimpl->m_tradeSystem) {
-		throw Exception("Instrument doesn't connected to trade system");
-	}
-	return *m_pimpl->m_tradeSystem;
-}
-
-const Settings & Instrument::GetSettings() const {
-	return *m_pimpl->m_settings;
+Context & Instrument::GetContext() {
+	return m_pimpl->m_context;
 }
 
 //////////////////////////////////////////////////////////////////////////

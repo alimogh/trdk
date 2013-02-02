@@ -17,21 +17,14 @@ using namespace Trader;
 using namespace Trader::Lib;
 
 SecurityAlgo::SecurityAlgo(
+			Trader::Context &context,
 			const std::string &typeName,
 			const std::string &name,
-			const std::string &tag,
-			boost::shared_ptr<const Settings> settings)
-		: Module(typeName, name, tag, settings) {
+			const std::string &tag)
+		: Module(context, typeName, name, tag) {
 	//...//
 }
 
 SecurityAlgo::~SecurityAlgo() {
 	//...//
-}
-
-pt::ptime SecurityAlgo::GetCurrentTime() const {
-	const auto &security = GetSecurity();
-	return security.GetSettings().IsReplayMode()
-		?	boost::get_system_time()
-		:	security.GetLastMarketDataTime();
 }

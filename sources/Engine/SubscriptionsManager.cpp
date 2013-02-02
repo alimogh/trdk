@@ -39,9 +39,8 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-SubscriptionsManager::SubscriptionsManager(
-			boost::shared_ptr<const Settings> options)
-		: m_dispatcher(options) {
+SubscriptionsManager::SubscriptionsManager(Engine::Context &context)
+		: m_dispatcher(context) {
 	//...//
 }
 

@@ -25,8 +25,7 @@ void ModuleExport::LogExport::ExportClass(const char *className) {
 		.def("debug", &LogExport::Debug)
 		.def("info", &LogExport::Info)
 		.def("warn", &LogExport::Warn)
-		.def("error", &LogExport::Error)
-		.def("trading", &LogExport::Trading);
+		.def("error", &LogExport::Error);
 }
 
 void ModuleExport::LogExport::Debug(const char *message) {
@@ -43,10 +42,6 @@ void ModuleExport::LogExport::Warn(const char *message) {
 
 void ModuleExport::LogExport::Error(const char *message) {
 	m_log->Error(message);
-}
-
-void ModuleExport::LogExport::Trading(const char *message) {
-	m_log->Trading(message);
 }
 
 //////////////////////////////////////////////////////////////////////////

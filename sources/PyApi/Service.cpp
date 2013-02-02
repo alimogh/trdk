@@ -23,24 +23,24 @@ namespace pt = boost::posix_time;
 namespace {
 
 	struct Params : private boost::noncopyable {
-		
+
+		Context &context;
 		const std::string &name;
 		const std::string &tag;
-		const boost::shared_ptr<Security> &security;
-		const IniFileSectionRef &ini;
-		const boost::shared_ptr<const Settings> &settings;
+		const Security &security;
+		const IniFileSectionRef &configuration;
 	
 		explicit Params(
+					Context &context,
 					const std::string &name,
 					const std::string &tag,
-					const boost::shared_ptr<Security> &security,
-					const IniFileSectionRef &ini,
-					const boost::shared_ptr<const Settings> &settings)
-				: name(name),
+					const Security &security,
+					const IniFileSectionRef &configuration)
+				: context(context),
+				name(name),
 				tag(tag),
 				security(security),
-				ini(ini),
-				settings(settings) {
+				configuration(configuration) {
 			//...//
 		}
 
@@ -50,12 +50,12 @@ namespace {
 
 PyApi::Service::Service(uintptr_t params, ServiceExport &serviceExport)
 		: Base(
+			reinterpret_cast<Params *>(params)->context,
 			reinterpret_cast<Params *>(params)->name,
 			reinterpret_cast<Params *>(params)->tag,
-			reinterpret_cast<Params *>(params)->security,
-			reinterpret_cast<Params *>(params)->settings),
+			reinterpret_cast<Params *>(params)->security),
 		m_serviceExport(serviceExport) {
-	DoSettingsUpdate(reinterpret_cast<Params *>(params)->ini);
+	DoSettingsUpdate(reinterpret_cast<Params *>(params)->configuration);
 }
 
 PyApi::Service::~Service() {
@@ -80,22 +80,22 @@ const ServiceExport & PyApi::Service::GetExport() const {
 }
 
 boost::shared_ptr<Trader::Service> PyApi::Service::CreateClientInstance(
+			Context &context,
 			const std::string &tag,
-			boost::shared_ptr<Security> security,
-			const IniFileSectionRef &ini,
-			const boost::shared_ptr<const Settings> &settings) {
-	auto clientClass = Script::Load(ini).GetClass(
-		ini,
+			Security &security,
+			const IniFileSectionRef &configuration) {
+	auto clientClass = Script::Load(configuration).GetClass(
+		configuration,
 		"Failed to find trader.Service implementation");
 	try {
 		const std::string className
 			= py::extract<std::string>(clientClass.attr("__name__"));
 		const Params params(
+			context,
 			className,
 			tag,
 			security,
-			ini,
-			settings);
+			configuration);
 		auto pyObject = clientClass(reinterpret_cast<uintptr_t>(&params));
 		ServiceExport &serviceExport = py::extract<ServiceExport &>(pyObject);
 		return serviceExport.GetService().TakeExportObjectOwnership();
@@ -184,27 +184,27 @@ bool PyApi::Service::OnServiceDataUpdate(const Trader::Service &service) {
 
 #ifdef BOOST_WINDOWS
 	boost::shared_ptr<Trader::Service> CreateService(
+				Context &context,
 				const std::string &tag,
-				boost::shared_ptr<Security> security,
-				const IniFileSectionRef &ini,
-				boost::shared_ptr<const Settings> settings) {
+				Security &security,
+				const IniFileSectionRef &configuration) {
 		return PyApi::Service::CreateClientInstance(
+			context,
 			tag,
 			security,
-			ini,
-			settings);
+			configuration);
 	}
 #else
 	extern "C" boost::shared_ptr<Trader::Service> CreateService(
+				Context &context,
 				const std::string &tag,
-				boost::shared_ptr<Security> security,
-				const IniFileSectionRef &ini,
-				boost::shared_ptr<const Settings>) {
+				Security &security,
+				const IniFileSectionRef &configuration) {
 		return PyApi::Service::CreateClientInstance(
+			context,
 			tag,
 			security,
-			ini,
-			settings);
+			configuration);
 	}
 #endif
 

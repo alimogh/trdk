@@ -55,11 +55,4 @@ namespace Trader { namespace Engine { namespace Ini {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	boost::shared_ptr<Trader::Settings> LoadSettings(
-			const Trader::Lib::IniFile &,
-			const boost::posix_time::ptime &now,
-			bool isPlayMode);
-
-	//////////////////////////////////////////////////////////////////////////
-
 } } }

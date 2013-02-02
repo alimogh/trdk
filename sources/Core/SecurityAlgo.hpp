@@ -18,19 +18,15 @@ namespace Trader {
 	public:
 
 		explicit SecurityAlgo(
+				Trader::Context &,
 				const std::string &typeName,
 				const std::string &name,
-				const std::string &tag,
-				boost::shared_ptr<const Settings>);
+				const std::string &tag);
 		virtual ~SecurityAlgo();
 
 	public:
 
 		virtual const Trader::Security & GetSecurity() const = 0;
-
-	protected:
-
-		boost::posix_time::ptime GetCurrentTime() const;
 
 	};
 

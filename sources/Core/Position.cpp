@@ -99,7 +99,7 @@ public:
 	mutable StateUpdateSignal m_stateUpdateSignal;
 
 	Strategy *m_strategy;
-	boost::shared_ptr<Security> m_security;
+	Security &m_security;
 
 	volatile long m_planedQty;
 
@@ -127,7 +127,7 @@ public:
 				ScaledPrice startPrice)
 			: m_position(position),
 			m_strategy(&strategy),
-			m_security(m_strategy->GetSecurity().shared_from_this()),
+			m_security(m_strategy->GetSecurity()),
 			m_planedQty(qty),
 			m_openStartPrice(startPrice),
 			m_closeStartPrice(0),
@@ -184,7 +184,7 @@ public:
 				Assert(avgPrice > 0);
 				Interlocking::Exchange(
 					m_opened.price.total,
-					m_opened.price.total + m_security->ScalePrice(avgPrice));
+					m_opened.price.total + m_security.ScalePrice(avgPrice));
 				Interlocking::Increment(m_opened.price.count);
 				Interlocking::Exchange(m_opened.qty, m_opened.qty + filled);
 				AssertGt(m_opened.qty, 0);
@@ -214,9 +214,10 @@ public:
 
 		if (m_position.GetOpenedQty() > 0) {
 			try {
-				m_opened.time = !m_security->GetSettings().IsReplayMode()
-					?	boost::get_system_time()
-					:	m_security->GetLastMarketDataTime();
+				m_opened.time
+					= !m_security.GetContext().GetSettings().IsReplayMode()
+						?	boost::get_system_time()
+						:	m_security.GetLastMarketDataTime();
 			} catch (...) {
 				AssertFailNoException();
 			}
@@ -275,7 +276,7 @@ public:
 				Assert(avgPrice > 0);
 				Interlocking::Exchange(
 					m_closed.price.total,
-					m_closed.price.total + m_security->ScalePrice(avgPrice));
+					m_closed.price.total + m_security.ScalePrice(avgPrice));
 				Interlocking::Increment(m_closed.price.count);
 				Interlocking::Exchange(m_closed.qty, m_closed.qty + filled);
 				AssertGt(m_closed.qty, 0);
@@ -315,9 +316,10 @@ public:
 
 		if (m_position.GetActiveQty() == 0) {
 			try {
-				m_closed.time = !m_security->GetSettings().IsReplayMode()
-					?	boost::get_system_time()
-					:	m_security->GetLastMarketDataTime();
+				m_closed.time
+					= !m_security.GetContext().GetSettings().IsReplayMode()
+						?	boost::get_system_time()
+						:	m_security.GetLastMarketDataTime();
 			} catch (...) {
 				Interlocking::Exchange(m_isError, true);
 				AssertFailNoException();
@@ -351,7 +353,7 @@ public:
 			"%1% %2% close-cancel-post %3% qty=%4%->%5% price=market order-id=%6%->%7%"
 				" has-orders=%8%/%9% is-error=%10%",
 			boost::make_tuple(
-				boost::cref(m_security->GetSymbol()),
+				boost::cref(m_security.GetSymbol()),
 				boost::cref(m_position.GetTypeStr()),
 				boost::cref(m_tag),
 				m_position.GetOpenedQty(),
@@ -377,21 +379,22 @@ public:
 			const
 			throw() {
 		try {
-			Log::Trading(
+			const auto &context = m_security.GetContext();
+			context.GetLog().Trading(
 				logTag,
 				"%1% %2% open-%3% %4% qty=%5%->%6% price=%7%->%8% order-id=%9%"
 					" order-status=%10%",
 				boost::make_tuple(
-					boost::cref(m_security->GetSymbol()),
+					boost::cref(m_security.GetSymbol()),
 					boost::cref(m_position.GetTypeStr()),
 					eventDesc,
 					boost::cref(m_tag),
 					m_position.GetPlanedQty(),
 					m_position.GetOpenedQty(),
-					m_security->DescalePrice(m_position.GetOpenStartPrice()),
-					m_security->DescalePrice(m_position.GetOpenPrice()),
+					m_security.DescalePrice(m_position.GetOpenStartPrice()),
+					m_security.DescalePrice(m_position.GetOpenPrice()),
 					m_position.GetOpenOrderId(),
-					m_security->GetTradeSystem().GetStringStatus(orderStatus)));
+					context.GetTradeSystem().GetStringStatus(orderStatus)));
 		} catch (...) {
 			AssertFailNoException();
 		}
@@ -403,7 +406,8 @@ public:
 			const
 			throw() {
 		try {
-			Log::Trading(
+			const auto &context = m_security.GetContext();
+			context.GetLog().Trading(
 				logTag,
 				"%1% %2% close-%3% %4% qty=%5%->%6% price=%7% order-id=%8%->%9%"
 					" order-status=%10%",
@@ -419,10 +423,7 @@ public:
 						.DescalePrice(m_position.GetClosePrice()),
 					m_position.GetOpenOrderId(),
 					m_position.GetCloseOrderId(),
-					m_position
-						.GetSecurity()
-						.GetTradeSystem()
-						.GetStringStatus(orderStatus)));
+					context.GetTradeSystem().GetStringStatus(orderStatus)));
 		} catch (...) {
 			AssertFailNoException();
 		}
@@ -500,12 +501,12 @@ public:
 	bool CancelAllOrders() {
 		bool isCanceled = false;
 		if (m_opened.hasOrder) {
-			m_security->CancelOrder(m_opened.orderId);
+			m_security.CancelOrder(m_opened.orderId);
 			isCanceled = true;
 		}
 		if (m_closed.hasOrder) {
 			Assert(!isCanceled);
-			m_security->CancelOrder(m_closed.orderId);
+			m_security.CancelOrder(m_closed.orderId);
 			isCanceled = true;
 		}
 		return isCanceled;
@@ -532,7 +533,7 @@ const Security & Position::GetSecurity() const throw() {
 	return const_cast<Position *>(this)->GetSecurity();
 }
 Security & Position::GetSecurity() throw() {
-	return *m_pimpl->m_security;
+	return m_pimpl->m_security;
 }
 
 Position::CloseType Position::GetCloseType() const throw() {

@@ -24,10 +24,10 @@ namespace Trader {
 	public:
 
 		explicit Service(
+				Trader::Context &,
 				const std::string &name,
 				const std::string &tag,
-				boost::shared_ptr<const Trader::Security>,
-				boost::shared_ptr<const Settings>);
+				const Trader::Security &);
 		virtual ~Service();
 
 	public:

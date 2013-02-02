@@ -102,10 +102,10 @@ namespace Trader {
 	public:
 
 		explicit Strategy(
+				Trader::Context &,
 				const std::string &name,
 				const std::string &tag,
-				boost::shared_ptr<Trader::Security>,
-				boost::shared_ptr<const Settings>);
+				Trader::Security &);
 		virtual ~Strategy();
 
 	public:

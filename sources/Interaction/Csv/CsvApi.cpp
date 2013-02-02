@@ -10,8 +10,8 @@
 #include "CsvMarketDataSource.hpp"
 
 boost::shared_ptr<Trader::MarketDataSource> CreateMarketDataSource(
-			const Trader::Lib::IniFile &ini,
-			const std::string &section) {
+			const Trader::Lib::IniFileSectionRef &configuration,
+			Trader::Context::Log &log) {
  	return boost::shared_ptr<Trader::MarketDataSource>(
- 		new Trader::Interaction::Csv::MarketDataSource(ini, section));
+ 		new Trader::Interaction::Csv::MarketDataSource(configuration, log));
 }

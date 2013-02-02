@@ -10,6 +10,7 @@
 #include "Security.hpp"
 #include "Position.hpp"
 #include "Settings.hpp"
+#include "Context.hpp"
 
 namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
@@ -199,23 +200,12 @@ void Security::Implementation::MarketDataLog::Append(
 
 
 Security::Security(
-			boost::shared_ptr<TradeSystem> tradeSystem,
+			Context &context,
 			const std::string &symbol,
 			const std::string &primaryExchange,
 			const std::string &exchange,
-			boost::shared_ptr<const Settings> settings,
 			bool logMarketData)
-		: Base(tradeSystem, symbol, primaryExchange, exchange, settings) {
-	m_pimpl = new Implementation(*this, logMarketData);
-}
-
-Security::Security(
-			const std::string &symbol,
-			const std::string &primaryExchange,
-			const std::string &exchange,
-			boost::shared_ptr<const Settings> settings,
-			bool logMarketData)
-		: Base(symbol, primaryExchange, exchange, settings) {
+		: Base(context, symbol, primaryExchange, exchange) {
 	m_pimpl = new Implementation(*this, logMarketData);
 }
 
@@ -240,7 +230,7 @@ pt::ptime Security::GetLastMarketDataTime() const {
 }
 
 OrderId Security::SellAtMarketPrice(Qty qty, Position &position) {
-	return GetTradeSystem().SellAtMarketPrice(
+	return GetContext().GetTradeSystem().SellAtMarketPrice(
 		*this,
 		qty,
 		position.GetSellOrderStatusUpdateSlot());
@@ -250,7 +240,7 @@ OrderId Security::Sell(
 			Qty qty,
 			ScaledPrice price,
 			Position &position) {
-	return GetTradeSystem().Sell(
+	return GetContext().GetTradeSystem().Sell(
 		*this,
 		qty,
 		price,
@@ -261,7 +251,7 @@ OrderId Security::SellAtMarketPriceWithStopPrice(
 			Qty qty,
 			ScaledPrice stopPrice,
 			Position &position) {
-	return GetTradeSystem().SellAtMarketPriceWithStopPrice(
+	return GetContext().GetTradeSystem().SellAtMarketPriceWithStopPrice(
 		*this,
 		qty,
 		stopPrice,
@@ -272,7 +262,7 @@ OrderId Security::SellOrCancel(
 			Qty qty,
 			ScaledPrice price,
 			Position &position) {
-	return GetTradeSystem().SellOrCancel(
+	return GetContext().GetTradeSystem().SellOrCancel(
 		*this,
 		qty,
 		price,
@@ -280,7 +270,7 @@ OrderId Security::SellOrCancel(
 }
 
 OrderId Security::BuyAtMarketPrice(Qty qty, Position &position) {
-	return GetTradeSystem().BuyAtMarketPrice(
+	return GetContext().GetTradeSystem().BuyAtMarketPrice(
 		*this,
 		qty,
 		position.GetBuyOrderStatusUpdateSlot());
@@ -290,7 +280,7 @@ OrderId Security::Buy(
 			Qty qty,
 			ScaledPrice price,
 			Position &position) {
-	return GetTradeSystem().Buy(
+	return GetContext().GetTradeSystem().Buy(
 		*this,
 		qty,
 		price,
@@ -301,7 +291,7 @@ OrderId Security::BuyAtMarketPriceWithStopPrice(
 			Qty qty,
 			ScaledPrice stopPrice,
 			Position &position) {
-	return GetTradeSystem().BuyAtMarketPriceWithStopPrice(
+	return GetContext().GetTradeSystem().BuyAtMarketPriceWithStopPrice(
 		*this,
 		qty,
 		stopPrice,
@@ -312,7 +302,7 @@ OrderId Security::BuyOrCancel(
 			Qty qty,
 			ScaledPrice price,
 			Position &position) {
-	return GetTradeSystem().BuyOrCancel(
+	return GetContext().GetTradeSystem().BuyOrCancel(
 		*this,
 		qty,
 		price,
@@ -320,11 +310,11 @@ OrderId Security::BuyOrCancel(
 }
 
 void Security::CancelOrder(OrderId orderId) {
-	GetTradeSystem().CancelOrder(orderId);
+	GetContext().GetTradeSystem().CancelOrder(orderId);
 }
 
 void Security::CancelAllOrders() {
-	GetTradeSystem().CancelAllOrders(*this);
+	GetContext().GetTradeSystem().CancelAllOrders(*this);
 }
 
 bool Security::IsStarted() const {
@@ -482,7 +472,7 @@ void Security::AddTrade(
 		}
 	}
 	
-	if (GetSettings().IsReplayMode()) {
+	if (GetContext().GetSettings().IsReplayMode()) {
 		SetLastMarketDataTime(time);
 	}
 

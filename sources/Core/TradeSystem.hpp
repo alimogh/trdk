@@ -80,55 +80,55 @@ namespace Trader {
 	public:
 
 		virtual OrderId SellAtMarketPrice(
-				const Security &,
+				Trader::Security &,
 				Trader::Qty,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId Sell(
-				const Security &,
+				Trader::Security &,
 				Trader::Qty,
 				Trader::ScaledPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId SellAtMarketPriceWithStopPrice(
-				const Security &,
+				Trader::Security &,
 				Trader::Qty,
 				Trader::ScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId SellOrCancel(
-				const Security &,
+				Trader::Security &,
 				Trader::Qty,
 				Trader::ScaledPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 
 		virtual OrderId BuyAtMarketPrice(
-				const Security &,
+				Trader::Security &,
 				Trader::Qty,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId Buy(
-				const Security &,
+				Trader::Security &,
 				Trader::Qty,
 				Trader::ScaledPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
-				const Security &,
+				Trader::Security &,
 				Trader::Qty,
 				Trader::ScaledPrice stopPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId BuyOrCancel(
-				const Security &,
+				Trader::Security &,
 				Trader::Qty,
 				Trader::ScaledPrice,
 				const OrderStatusUpdateSlot &)
 			= 0;
 
 		virtual void CancelOrder(OrderId) = 0;
-		virtual void CancelAllOrders(const Security &) = 0;
+		virtual void CancelAllOrders(Trader::Security &) = 0;
 
 	};
 

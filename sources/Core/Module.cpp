@@ -18,8 +18,8 @@ using namespace Trader::Lib;
 //////////////////////////////////////////////////////////////////////////
 
 Module::Log::Log(const Module &module)
-		: m_format(boost::format("[%1%] %2%") % module),
-		m_tag(module.GetTag()) {
+		: m_log(module.GetContext().GetLog()),
+		m_format(boost::format("[%1%] %2%") % module) {
 	//...//
 }
 
@@ -34,35 +34,35 @@ class Module::Implementation : private boost::noncopyable {
 public:
 
 	Mutex m_mutex;
+
+	Context &m_context;
 	
 	const std::string m_typeName;
 	const std::string m_name;
 	const std::string m_tag;
-	
-	boost::shared_ptr<const Settings> m_settings;
 
 	boost::scoped_ptr<Log> m_log;
 
 	explicit Implementation(
+				Context &context,
 				const std::string &typeName,
 				const std::string &name,
-				const std::string &tag,
-				boost::shared_ptr<const Settings> &settings)
-			: m_typeName(typeName),
+				const std::string &tag)
+			: m_context(context),
+			m_typeName(typeName),
 			m_name(name),
-			m_tag(tag),
-			m_settings(settings) {
+			m_tag(tag) {
 		//...//
 	}
 
 };
 
 Module::Module(
+			Context &context,
 			const std::string &typeName,
 			const std::string &name,
-			const std::string &tag,
-			boost::shared_ptr<const Settings> settings)
-		: m_pimpl(new Implementation(typeName, name, tag, settings)) {
+			const std::string &tag)
+		: m_pimpl(new Implementation(context, typeName, name, tag)) {
 	m_pimpl->m_log.reset(new Log(*this));
 }
 
@@ -90,8 +90,12 @@ void Module::OnServiceStart(const Service &) {
 	//...//
 }
 
-const Settings & Module::GetSettings() const {
-	return *m_pimpl->m_settings;
+Context & Module::GetContext() {
+	return m_pimpl->m_context;
+}
+
+const Context & Module::GetContext() const {
+	return const_cast<Module *>(this)->GetContext();
 }
 
 Module::Log & Module::GetLog() const throw() {

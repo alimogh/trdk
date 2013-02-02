@@ -21,37 +21,39 @@ namespace {
 }
 
 Settings::Settings(
-			const IniFile &ini,
-			const std::string &section,
+			const IniFileSectionRef &confSection,
 			const Time &now,
 			bool isReplayMode)
 		: m_startTime(now),
 		m_isReplayMode(isReplayMode) {
-	UpdateDynamic(ini, section);
-	UpdateStatic(ini, section);
+	UpdateDynamic(confSection);
+	UpdateStatic(confSection);
 }
 
-void Settings::Update(const IniFile &ini, const std::string &section) {
-	UpdateDynamic(ini, section);
+void Settings::Update(const IniFileSectionRef &confSection) {
+	UpdateDynamic(confSection);
 }
 
-void Settings::UpdateDynamic(const IniFile &ini, const std::string &section) {
+void Settings::UpdateDynamic(const IniFileSectionRef &confSection) {
 	Interlocking::Exchange(
 		m_minPrice,
-		Scale(ini.ReadTypedKey<double>(section, "min_price"), defaultLastPriceScale));
+		Scale(
+			confSection.ReadTypedKey<double>("min_price"),
+			defaultLastPriceScale));
 	Log::Info(
 		"Common dynamic settings:"
 			" min_price = %1%;",
 		Descale(m_minPrice, defaultLastPriceScale));
 }
 
-void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
+void Settings::UpdateStatic(const IniFileSectionRef &confSection) {
 
 	Values values = {};
 
 	{
 		std::list<std::string> subs;
-		const std::string keyValue = ini.ReadKey(section, "trade_session_period_edt", false);
+		const std::string keyValue
+			= confSection.ReadKey("trade_session_period_edt", false);
 		boost::split(subs, keyValue, boost::is_any_of("-"));
 		foreach (std::string &t, subs) {
 			boost::trim(t);
@@ -94,7 +96,7 @@ void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
 				|| values.tradeSessionEndTime.is_not_a_date_time()) {
 			boost::format message(
 				"Wrong INI-file key (\"%1%:%2%\") format: \"trade session period EDT example: 09:30:00-15:58:00");
-			message % section % "trade_session_period_edt";
+			message % confSection % "trade_session_period_edt";
 			throw IniFile::KeyFormatError(message.str().c_str());
 		}
 		values.tradeSessionStartTime -= GetEdtDiff();
@@ -110,7 +112,8 @@ void Settings::UpdateStatic(const IniFile &ini, const std::string &section) {
 		Assert(values.tradeSessionStartTime < values.tradeSessionEndTime);
 	}
 
-	m_values.shouldWaitForMarketData = ini.ReadBoolKey(section, "wait_market_data");
+	m_values.shouldWaitForMarketData
+		= confSection.ReadBoolKey("wait_market_data");
 
 	m_values = values;
 	Log::Info(

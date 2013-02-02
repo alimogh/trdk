@@ -85,12 +85,6 @@ class Module(object):
             """
             pass
 
-        def trading(self, eventMessage):
-            """Adds new record into trading.log
-            :type eventMessage: str
-            """
-            pass
-
     name = str
     tag = str
 
