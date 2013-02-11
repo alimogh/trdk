@@ -340,8 +340,14 @@ Strategy::Strategy(
 }
 
 Strategy::~Strategy() {
-	if (!m_pimpl->m_positions.IsEmpty()) {
-		GetLog().Info("%1% active position(s).", m_pimpl->m_positions.GetSize());
+	try {
+		if (!m_pimpl->m_positions.IsEmpty()) {
+			GetLog().Info(
+				"%1% active position(s).",
+				m_pimpl->m_positions.GetSize());
+		}
+	} catch (...) {
+		AssertFailNoException();
 	}
 	delete m_pimpl;
 }
