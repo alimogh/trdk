@@ -729,7 +729,7 @@ private:
 							logMdSymbols.end(),
 							symbol.symbol)
 						!= logMdSymbols.end());
-			GetLog().Info("Loaded security \"%1%\".", m_securities[symbol]);
+			GetLog().Info("Loaded security \"%1%\".", *m_securities[symbol]);
 		}
 	}
 
@@ -790,24 +790,23 @@ private:
 				boost::cref(Trait::GetName()),
 				boost::cref(tag)));
 
-		std::string symbolsFilePath;
+		fs::path symbolsFilePath;
 		try {
-			symbolsFilePath
-				= configurationSection.ReadKey(Ini::Keys::symbols, false);
+			symbolsFilePath = configurationSection.ReadFileSystemPath(
+				Ini::Keys::symbols,
+				false);
 		} catch (const IniFile::Error &ex) {
 			GetLog().Error("Failed to get symbols file: \"%1%\".", ex);
 			throw;
 		}
 
 		GetLog().Info(
-			"Loading symbols from \"%1%\" for %2% \"%3%\"...",
+			"Loading symbols from %1% for %2% \"%3%\"...",
 			boost::make_tuple(
 				boost::cref(symbolsFilePath),
 				boost::cref(Trait::GetName()),
 				boost::cref(tag)));
-		const IniFile symbolsIni(
-			symbolsFilePath,
-			configurationSection.GetBase().GetPath().branch_path());
+		const IniFile symbolsIni(symbolsFilePath);
 		symbols = symbolsIni.ReadSymbols(
 			configurationSection.GetBase().ReadKey(
 				Ini::Sections::defaults,
@@ -856,6 +855,9 @@ Engine::Context::Context(
 }
 
 Engine::Context::~Context() {
+	if (m_pimpl->m_state) {
+		Stop();
+	}
 	delete m_pimpl;
 }
 

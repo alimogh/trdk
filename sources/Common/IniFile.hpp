@@ -111,9 +111,6 @@ namespace Trader { namespace Lib {
 	public:
 
 		explicit IniFile(const boost::filesystem::path &);
-		explicit IniFile(
-				const boost::filesystem::path &filePath,
-				const boost::filesystem::path &searchPath);
 
 	public:
 

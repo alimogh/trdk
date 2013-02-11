@@ -16,8 +16,6 @@
 #	include <boost/date_time/posix_time/posix_time.hpp>
 #	include <boost/date_time/local_time/local_time.hpp>
 #	include <boost/filesystem.hpp>
-#	include <boost/format.hpp>
-#	include <boost/shared_ptr.hpp>
 #	include <boost/thread.hpp>
 #	include <boost/algorithm/string.hpp>
 #	include <boost/regex.hpp>

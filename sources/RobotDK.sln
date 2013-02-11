@@ -29,6 +29,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Csv", "Interaction\Csv\Csv.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Services", "Services\Services.vcxproj", "{4F025D92-8F15-4A05-97B6-CA680CB090D9}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine Server", "EngineServer\EngineServer.vcxproj", "{333A992A-036E-4C3B-A116-C44E748CBF21}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -102,6 +104,12 @@ Global
 		{4F025D92-8F15-4A05-97B6-CA680CB090D9}.Release|Win32.Build.0 = Release|Win32
 		{4F025D92-8F15-4A05-97B6-CA680CB090D9}.Test|Win32.ActiveCfg = Test|Win32
 		{4F025D92-8F15-4A05-97B6-CA680CB090D9}.Test|Win32.Build.0 = Test|Win32
+		{333A992A-036E-4C3B-A116-C44E748CBF21}.Debug|Win32.ActiveCfg = Debug|Win32
+		{333A992A-036E-4C3B-A116-C44E748CBF21}.Debug|Win32.Build.0 = Debug|Win32
+		{333A992A-036E-4C3B-A116-C44E748CBF21}.Release|Win32.ActiveCfg = Release|Win32
+		{333A992A-036E-4C3B-A116-C44E748CBF21}.Release|Win32.Build.0 = Release|Win32
+		{333A992A-036E-4C3B-A116-C44E748CBF21}.Test|Win32.ActiveCfg = Test|Win32
+		{333A992A-036E-4C3B-A116-C44E748CBF21}.Test|Win32.Build.0 = Test|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

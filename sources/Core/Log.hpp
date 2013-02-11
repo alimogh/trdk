@@ -31,7 +31,9 @@ namespace Trader { namespace Log {
 
 	TRADER_CORE_API bool IsEventsEnabled(Trader::Log::Level) throw();
 	TRADER_CORE_API void EnableEvents(std::ostream &);
+	TRADER_CORE_API void EnableEventsToStdOut();
 	TRADER_CORE_API void DisableEvents() throw();
+	TRADER_CORE_API void DisableEventsToStdOut() throw();
 
 	TRADER_CORE_API bool IsTradingEnabled() throw();
 	TRADER_CORE_API void EnableTrading(std::ostream &);

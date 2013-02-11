@@ -100,21 +100,6 @@ IniFile::IniFile(const fs::path &path)
 	}
 }
 
-IniFile::IniFile(
-			const fs::path &path,
-			const boost::filesystem::path &searchPath)
-		: m_path(path),
-		m_file(m_path.c_str()) {
-	if (!m_file) {
-		m_path = searchPath;
-		m_path /= path;
-		m_file.open(m_path.c_str());
-		if (!m_file) {
-			throw FileOpenError();
-		}
-	}
-}
-
 void IniFile::Reset() {
 	m_file.clear();
 	m_file.seekg(0);

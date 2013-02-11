@@ -41,16 +41,19 @@ namespace {
 	struct State {
 
 		Log::Mutex mutex;
-		volatile long isEnabled;
+		volatile long isStreamEnabled;
+		volatile long isStdOutEnabled;
 
 		std::ostream *log;
 
 		State()
-				: log(nullptr) {
-			Interlocking::Exchange(isEnabled, false);
+				: log(nullptr),
+				isStreamEnabled(false),
+				isStdOutEnabled(false) {
+			//...//
 		}
 
-		void Enable(std::ostream &newLog) {
+		void EnableStream(std::ostream &newLog) {
 			Log::Lock lock(mutex);
 			const bool isStarted = !log;
 			log = &newLog;
@@ -58,11 +61,19 @@ namespace {
 				AppendRecordHead(boost::get_system_time());
 				*log << "Started." << std::endl;
 			}
-			Interlocking::Exchange(isEnabled, true);
+			Interlocking::Exchange(isStreamEnabled, true);
 		}
 
-		void Disable() throw() {
-			Interlocking::Exchange(isEnabled, false);
+		void DisableStream() throw() {
+			Interlocking::Exchange(isStreamEnabled, false);
+		}
+
+		void EnableStdOut() {
+			Interlocking::Exchange(isStdOutEnabled, true);
+		}
+
+		void DisableStdOut() throw() {
+			Interlocking::Exchange(isStdOutEnabled, false);
 		}
 
 		static void AppendRecordHead(const pt::ptime &time, std::ostream &os) {
@@ -113,28 +124,36 @@ Log::Mutex & Log::GetTradingMutex() {
 }
 
 bool Log::IsEventsEnabled(Level /*level*/) throw() {
-	return events.isEnabled ? true : false;
+	return events.isStreamEnabled || events.isStdOutEnabled ? true : false;
 }
 
 bool Log::IsTradingEnabled() throw() {
-	return trading.isEnabled ? true : false;
+	return trading.isStreamEnabled ? true : false;
 }
 
 void Log::EnableEvents(std::ostream &log) {
-	events.Enable(log);
+	events.EnableStream(log);
+}
+
+void Log::EnableEventsToStdOut() {
+	events.EnableStdOut();
 }
 
 void Log::EnableTrading(std::ostream &log) {
 	log.setf(std::ios::left);
-	trading.Enable(log);
+	trading.EnableStream(log);
 }
 
 void Log::DisableEvents() throw() {
-	events.Disable();
+	events.DisableStream();
+}
+
+void Log::DisableEventsToStdOut() throw() {
+	events.DisableStdOut();
 }
 
 void Log::DisableTrading() throw() {
-	trading.Disable();
+	trading.DisableStream();
 }
 
 //////////////////////////////////////////////////////////////////////////
