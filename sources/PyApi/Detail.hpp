@@ -14,8 +14,11 @@
 namespace Trader { namespace PyApi { namespace Detail {
 
 	inline void LogPythonClientException() {
-		const Log::Lock logLock(Log::GetEventsMutex());
-		PyErr_Print();
+		{
+			const Log::Lock logLock(Log::GetEventsMutex());
+			PyErr_PrintEx(0);
+		}
+		PyErr_Clear();
 	}
 
 	template<typename Module>
