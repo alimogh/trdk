@@ -341,7 +341,7 @@ Strategy::Strategy(
 
 Strategy::~Strategy() {
 	if (!m_pimpl->m_positions.IsEmpty()) {
-		GetLog().Info("%1% active positions.", m_pimpl->m_positions.GetSize());
+		GetLog().Info("%1% active position(s).", m_pimpl->m_positions.GetSize());
 	}
 	delete m_pimpl;
 }
