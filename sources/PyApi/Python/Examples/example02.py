@@ -5,7 +5,7 @@ INI-file:
 ; Initializing 5 minutes bar service:
 [Service.5 minute bar]
     symbols = symbols.ini
-    services = Trades
+    uses = Trades
     module = Services
     fabric = CreateBarService
     size = 5 minutes ; seconds / minutes / hours / days
