@@ -2,6 +2,7 @@
 # Trader engine module
 import trader
 
+
 # Strategy algorithm class must be inherited from trader.Strategy
 class Example01(trader.Strategy):
 

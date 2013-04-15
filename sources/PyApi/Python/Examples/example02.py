@@ -31,6 +31,7 @@ INI-file:
 import trader
 import time
 
+
 class Example02(trader.Strategy):
 
     _bars = None

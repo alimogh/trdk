@@ -40,6 +40,7 @@ import trader
 
 ###############################################################################
 
+
 class ExampleService(trader.Service):
 
     _lastDirectionChangePrice = 0
@@ -98,6 +99,7 @@ class ExampleService(trader.Service):
         return isServiceStateChanged
 
 ###############################################################################
+
 
 class ExampleStrategy(trader.Strategy):
 
