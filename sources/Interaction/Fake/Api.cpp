@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -17,17 +19,17 @@
 #endif
 
 TRADER_INTERACTION_FAKE_API
-boost::shared_ptr<Trader::TradeSystem> CreateTradeSystem(
-			const Trader::Lib::IniFileSectionRef &configuration,
-			Trader::Context::Log &log) {
-	return boost::shared_ptr<Trader::TradeSystem>(
-		new Trader::Interaction::Fake::TradeSystem(configuration, log));
+boost::shared_ptr<trdk::TradeSystem> CreateTradeSystem(
+			const trdk::Lib::IniFileSectionRef &configuration,
+			trdk::Context::Log &log) {
+	return boost::shared_ptr<trdk::TradeSystem>(
+		new trdk::Interaction::Fake::TradeSystem(configuration, log));
 }
 
 TRADER_INTERACTION_FAKE_API
-boost::shared_ptr<Trader::MarketDataSource> CreateMarketDataSource(
-			const Trader::Lib::IniFileSectionRef &configuration,
-			Trader::Context::Log &log) {
-	return boost::shared_ptr<Trader::MarketDataSource>(
-		new Trader::Interaction::Fake::MarketDataSource(configuration, log));
+boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
+			const trdk::Lib::IniFileSectionRef &configuration,
+			trdk::Context::Log &log) {
+	return boost::shared_ptr<trdk::MarketDataSource>(
+		new trdk::Interaction::Fake::MarketDataSource(configuration, log));
 }

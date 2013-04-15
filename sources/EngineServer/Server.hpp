@@ -10,7 +10,7 @@
 
 #pragma once
 
-namespace Trader { namespace EngineServer {
+namespace trdk { namespace EngineServer {
 
 	class Server : private boost::noncopyable {
 
@@ -21,7 +21,7 @@ namespace Trader { namespace EngineServer {
 
 		struct EngineInfo {
 			std::string uuid;
-			boost::shared_ptr<Trader::Engine::Context> engine;
+			boost::shared_ptr<trdk::Engine::Context> engine;
 		};
 
 		struct ByUuid {

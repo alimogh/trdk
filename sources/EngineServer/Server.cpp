@@ -14,9 +14,9 @@
 
 namespace fs = boost::filesystem;
 
-using namespace Trader;
-using namespace Trader::EngineServer;
-using namespace Trader::Lib;
+using namespace trdk;
+using namespace trdk::EngineServer;
+using namespace trdk::Lib;
 
 Server::Server() {
 	//..//

@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,13 +13,13 @@
 #include "Fwd.hpp"
 #include "Api.h"
 
-namespace Trader {
+namespace trdk {
 
 	class TRADER_CORE_API MarketDataSource : private boost::noncopyable {
 
 	public:
 
-		class TRADER_CORE_API Error : public Trader::Lib::Exception {
+		class TRADER_CORE_API Error : public trdk::Lib::Exception {
 		public:
 			explicit Error(const char *what) throw();
 		};
@@ -38,8 +40,8 @@ namespace Trader {
 
 	public:
 
-		virtual boost::shared_ptr<Trader::Security> CreateSecurity(
-					Trader::Context &,
+		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
+					trdk::Context &,
 					const std::string &symbol,
 					const std::string &primaryExchange,
 					const std::string &exchange,

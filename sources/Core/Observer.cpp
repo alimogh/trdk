@@ -3,15 +3,17 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
 #include "Observer.hpp"
 #include "Service.hpp"
 
-using namespace Trader;
-using namespace Trader::Lib;
+using namespace trdk;
+using namespace trdk::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -46,7 +48,7 @@ Observer::~Observer() {
 	delete m_pimpl;
 }
 
-void Observer::OnLevel1Update(const Trader::Security &) {
+void Observer::OnLevel1Update(const trdk::Security &) {
 	GetLog().Error(
 		"Subscribed to Level 1 updates, but can't work with it"
 			" (hasn't OnLevel1Update method implementation).");
@@ -55,7 +57,7 @@ void Observer::OnLevel1Update(const Trader::Security &) {
 }
 
 void Observer::OnNewTrade(
-					const Trader::Security &,
+					const trdk::Security &,
 					const boost::posix_time::ptime &,
 					ScaledPrice,
 					Qty,
@@ -67,7 +69,7 @@ void Observer::OnNewTrade(
 		"Module subscribed to new trades, but can't work with it");
 }
 
-void Observer::OnServiceDataUpdate(const Trader::Service &service) {
+void Observer::OnServiceDataUpdate(const trdk::Service &service) {
 	GetLog().Error(
 		"Subscribed to \"%1%\", but can't work with it"
 			" (hasn't OnServiceDataUpdate method implementation).",
@@ -84,9 +86,9 @@ void Observer::RaiseLevel1UpdateEvent(const Security &security) {
 void Observer::RaiseNewTradeEvent(
 			const Security &security,
 			const boost::posix_time::ptime &time,
-			Trader::ScaledPrice price,
-			Trader::Qty qty,
-			Trader::OrderSide side) {
+			trdk::ScaledPrice price,
+			trdk::Qty qty,
+			trdk::OrderSide side) {
 	const Lock lock(GetMutex());
 	OnNewTrade(security, time, price, qty, side);
 }

@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -12,15 +14,15 @@
 #include "TradeSystem.hpp"
 #include "Api.h"
 
-namespace Trader {
+namespace trdk {
 
-	class TRADER_CORE_API Security : public Trader::Instrument {
+	class TRADER_CORE_API Security : public trdk::Instrument {
 
 	public:
 
-		typedef Trader::Instrument Base;
+		typedef trdk::Instrument Base;
 
-		typedef Trader::TradeSystem::OrderStatusUpdateSlot
+		typedef trdk::TradeSystem::OrderStatusUpdateSlot
 			OrderStatusUpdateSlot;
 
 		typedef void (Level1UpdateSlotSignature)();
@@ -31,16 +33,16 @@ namespace Trader {
 
 		typedef void (NewTradeSlotSignature)(
 					const boost::posix_time::ptime &,
-					Trader::ScaledPrice,
-					Trader::Qty,
-					Trader::OrderSide);
+					trdk::ScaledPrice,
+					trdk::Qty,
+					trdk::OrderSide);
 		typedef boost::function<NewTradeSlotSignature> NewTradeSlot;
 		typedef boost::signals2::connection NewTradeSlotConnection;
 
 	public:
 
 		explicit Security(
-					Trader::Context &,
+					trdk::Context &,
 					const std::string &symbol,
 					const std::string &primaryExchange,
 					const std::string &exchange,
@@ -60,59 +62,59 @@ namespace Trader {
 
 		unsigned int GetPriceScale() const throw();
 
-		Trader::ScaledPrice ScalePrice(double price) const;
-		double DescalePrice(Trader::ScaledPrice price) const;
+		trdk::ScaledPrice ScalePrice(double price) const;
+		double DescalePrice(trdk::ScaledPrice price) const;
 
 	public:
 
 		boost::posix_time::ptime GetLastMarketDataTime() const;
 
-		Trader::OrderId SellAtMarketPrice(Trader::Qty, Trader::Position &);
-		Trader::OrderId Sell(
-					Trader::Qty,
-					Trader::ScaledPrice,
-					Trader::Position &);
-		Trader::OrderId SellAtMarketPriceWithStopPrice(
-					Trader::Qty,
+		trdk::OrderId SellAtMarketPrice(trdk::Qty, trdk::Position &);
+		trdk::OrderId Sell(
+					trdk::Qty,
+					trdk::ScaledPrice,
+					trdk::Position &);
+		trdk::OrderId SellAtMarketPriceWithStopPrice(
+					trdk::Qty,
 					ScaledPrice stopPrice,
-					Trader::Position &);
-		Trader::OrderId SellOrCancel(
-					Trader::Qty,
-					Trader::ScaledPrice,
-					Trader::Position &);
+					trdk::Position &);
+		trdk::OrderId SellOrCancel(
+					trdk::Qty,
+					trdk::ScaledPrice,
+					trdk::Position &);
 
-		Trader::OrderId BuyAtMarketPrice(Trader::Qty, Trader::Position &);
-		Trader::OrderId Buy(
-					Trader::Qty,
-					Trader::ScaledPrice,
-					Trader::Position &);
-		Trader::OrderId BuyAtMarketPriceWithStopPrice(
-					Trader::Qty,
+		trdk::OrderId BuyAtMarketPrice(trdk::Qty, trdk::Position &);
+		trdk::OrderId Buy(
+					trdk::Qty,
+					trdk::ScaledPrice,
+					trdk::Position &);
+		trdk::OrderId BuyAtMarketPriceWithStopPrice(
+					trdk::Qty,
 					ScaledPrice stopPrice,
-					Trader::Position &);
-		Trader::OrderId BuyOrCancel(
-					Trader::Qty,
-					Trader::ScaledPrice,
-					Trader::Position &);
+					trdk::Position &);
+		trdk::OrderId BuyOrCancel(
+					trdk::Qty,
+					trdk::ScaledPrice,
+					trdk::Position &);
 
-		void CancelOrder(Trader::OrderId);
+		void CancelOrder(trdk::OrderId);
 		void CancelAllOrders();
 
 	public:
 
-		Trader::ScaledPrice GetLastPriceScaled() const;
+		trdk::ScaledPrice GetLastPriceScaled() const;
 		double GetLastPrice() const;
-		Trader::Qty GetLastQty() const;
+		trdk::Qty GetLastQty() const;
 
-		Trader::ScaledPrice GetAskPriceScaled() const;
+		trdk::ScaledPrice GetAskPriceScaled() const;
 		double GetAskPrice() const;
-		Trader::Qty GetAskQty() const;
+		trdk::Qty GetAskQty() const;
 
-		Trader::ScaledPrice GetBidPriceScaled() const;
+		trdk::ScaledPrice GetBidPriceScaled() const;
 		double GetBidPrice() const;
-		Trader::Qty GetBidQty() const;
+		trdk::Qty GetBidQty() const;
 
-		Trader::Qty GetTradedVolume() const;
+		trdk::Qty GetTradedVolume() const;
 
 	public:
 
@@ -128,36 +130,36 @@ namespace Trader {
 
 		bool IsLevel1Required() const;
 		bool SetBidAsk(
-				Trader::ScaledPrice bestBidPrice,
-				Trader::Qty bestBidQty,
-				Trader::ScaledPrice bestAskPrice,
-				Trader::Qty bestAskQty);
+				trdk::ScaledPrice bestBidPrice,
+				trdk::Qty bestBidQty,
+				trdk::ScaledPrice bestAskPrice,
+				trdk::Qty bestAskQty);
 		bool SetBidAsk(
 				double bidPrice,
-				Trader::Qty bidQty,
+				trdk::Qty bidQty,
 				double askPrice,
-				Trader::Qty askQty);
+				trdk::Qty askQty);
 		bool SetBidAskLast(
-				Trader::ScaledPrice bidPrice,
-				Trader::Qty bidQty,
-				Trader::ScaledPrice askPrice,
-				Trader::Qty askQty,
-				Trader::ScaledPrice lastTradePrice,
-				Trader::Qty lastTradeQty);
+				trdk::ScaledPrice bidPrice,
+				trdk::Qty bidQty,
+				trdk::ScaledPrice askPrice,
+				trdk::Qty askQty,
+				trdk::ScaledPrice lastTradePrice,
+				trdk::Qty lastTradeQty);
 		bool SetBidAskLast(
 				double bidPrice,
-				Trader::Qty bidQty,
+				trdk::Qty bidQty,
 				double askPrice,
-				Trader::Qty askQty,
+				trdk::Qty askQty,
 				double lastTradePrice,
-				Trader::Qty lastTradeQty);
+				trdk::Qty lastTradeQty);
 
 		bool IsTradesRequired() const;
 		void AddTrade(
 				const boost::posix_time::ptime &,
-				Trader::OrderSide,
-				Trader::ScaledPrice,
-				Trader::Qty,
+				trdk::OrderSide,
+				trdk::ScaledPrice,
+				trdk::Qty,
 				bool useAsLastTrade);
 
 	private:
@@ -172,5 +174,5 @@ namespace Trader {
 namespace std {
 	TRADER_CORE_API std::ostream & operator <<(
 				std::ostream &,
-				const Trader::Security &);
+				const trdk::Security &);
 }

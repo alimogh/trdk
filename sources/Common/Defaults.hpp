@@ -3,14 +3,16 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
 
 #include <boost/filesystem.hpp>
 
-namespace Trader {
+namespace trdk {
 
 	struct Defaults {
 

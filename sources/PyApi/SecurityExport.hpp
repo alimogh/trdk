@@ -3,12 +3,14 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
 
-namespace Trader { namespace PyApi {
+namespace trdk { namespace PyApi {
 
 	//////////////////////////////////////////////////////////////////////////
 	
@@ -77,7 +79,7 @@ namespace Trader { namespace PyApi {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	boost::python::object Export(const Trader::Security &);
+	boost::python::object Export(const trdk::Security &);
 
 	//////////////////////////////////////////////////////////////////////////
 

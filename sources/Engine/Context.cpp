@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -22,9 +24,9 @@ namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 namespace mi = boost::multi_index;
 
-using namespace Trader;
-using namespace Trader::Lib;
-using namespace Trader::Engine;
+using namespace trdk;
+using namespace trdk::Lib;
+using namespace trdk::Engine;
 
 namespace {
 
@@ -316,7 +318,7 @@ private:
 					configurationSection,
 					m_context.GetLog()));
 		} catch (...) {
-			Trader::Log::RegisterUnhandledException(
+			trdk::Log::RegisterUnhandledException(
 				__FUNCTION__,
 				__FILE__,
 				__LINE__,
@@ -344,7 +346,7 @@ private:
 					configurationSection,
 					m_context.GetLog()));
 		} catch (...) {
-			Trader::Log::RegisterUnhandledException(
+			trdk::Log::RegisterUnhandledException(
 				__FUNCTION__,
 				__FILE__,
 				__LINE__,
@@ -499,8 +501,8 @@ private:
 
 		const auto fabric
 			= dll->GetFunction<
-					boost::shared_ptr<Trader::Observer>(
-						Trader::Context &,
+					boost::shared_ptr<trdk::Observer>(
+						trdk::Context &,
 						const std::string &tag,
 						const Observer::NotifyList &,
 						const IniFileSectionRef &)>
@@ -516,7 +518,7 @@ private:
 		try {
 			newObserver = fabric(m_context, tag, notifyList, section);
 		} catch (...) {
-			Trader::Log::RegisterUnhandledException(
+			trdk::Log::RegisterUnhandledException(
 				__FUNCTION__,
 				__FILE__,
 				__LINE__,
@@ -566,7 +568,7 @@ private:
 		const auto fabric
 			= dll->GetFunction<
 					boost::shared_ptr<Module>(
-						Trader::Context &,
+						trdk::Context &,
 						const std::string &tag,
 						Security &security,
 						const IniFileSectionRef &configuration)>
@@ -583,7 +585,7 @@ private:
 					*securityIt->second,
 					section);
 			} catch (...) {
-				Trader::Log::RegisterUnhandledException(
+				trdk::Log::RegisterUnhandledException(
 					__FUNCTION__,
 					__FILE__,
 					__LINE__,

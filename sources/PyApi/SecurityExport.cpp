@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -11,10 +13,10 @@
 #include "Core/Security.hpp"
 #include "Detail.hpp"
 
-using namespace Trader;
-using namespace Trader::Lib;
-using namespace Trader::PyApi;
-using namespace Trader::PyApi::Detail;
+using namespace trdk;
+using namespace trdk::Lib;
+using namespace trdk::PyApi;
+using namespace trdk::PyApi::Detail;
 namespace py = boost::python;
 
 //////////////////////////////////////////////////////////////////////////

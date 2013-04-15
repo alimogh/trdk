@@ -1,5 +1,15 @@
 """
 
+ Trading Robot Development Kit strategy script example
+
+    Author: Eugene V. Palchukovsky
+    E-mail: eugene@palchukovsky.com
+   Project: Trading Robot Development Kit
+       URL: http://robotdk.com
+ Copyright: Eugene V. Palchukovsky
+
+-------------------------------------------------------------------------------
+
 INI-file:
 
 ; Initializing 5 minutes bar service:
@@ -28,11 +38,11 @@ INI-file:
 
 """
 
-import trader
+import trdk
 import time
 
 
-class Example02(trader.Strategy):
+class Example02(trdk.Strategy):
 
     _bars = None
 
@@ -68,7 +78,7 @@ class Example02(trader.Strategy):
             return
 
         self._testCount = 0
-        position = trader.LongPosition(
+        position = trdk.LongPosition(
             # strategy:
             self,
             # number of shares:
@@ -94,15 +104,15 @@ class Example02(trader.Strategy):
         if position.hasActiveOrders:
             return
 
-        if isinstance(position, trader.LongPosition):
+        if isinstance(position, trdk.LongPosition):
             # Here can be special logic for long position.
             pass
         else:
-            assert(isinstance(position, trader.ShortPosition))
+            assert(isinstance(position, trdk.ShortPosition))
             # Here can be special logic for short position.
             pass
 
-        self._testCount = self._testCount + 1
+        self._testCount += 1
         if self._testCount < 10:
             self.log.debug('Skip closing...')
         else:

@@ -3,15 +3,17 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
 #include "Service.hpp"
 
-using namespace Trader;
-using namespace Trader::Gateway;
-using namespace Trader::Lib;
+using namespace trdk;
+using namespace trdk::Gateway;
+using namespace trdk::Lib;
 
 #ifdef BOOST_WINDOWS
 #	define TRADER_GATEWAY_SERVICE_API

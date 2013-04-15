@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -12,7 +14,7 @@
 #include "Fwd.hpp"
 #include "Api.h"
 
-namespace Trader {
+namespace trdk {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -30,7 +32,7 @@ namespace Trader {
 	public:
 
 		explicit Module(
-					Trader::Context &,
+					trdk::Context &,
 					const std::string &typeName,
 					const std::string &name,
 					const std::string &tag);
@@ -38,8 +40,8 @@ namespace Trader {
 
 	public:
 
-		Trader::Context & GetContext();
-		const Trader::Context & GetContext() const;
+		trdk::Context & GetContext();
+		const trdk::Context & GetContext() const;
 
 		const std::string & GetTypeName() const throw();
 		const std::string & GetName() const throw();
@@ -47,23 +49,23 @@ namespace Trader {
 
 	public:
 
-		Trader::Module::Log & GetLog() const throw();
+		trdk::Module::Log & GetLog() const throw();
 
 	public:
 
-		virtual void OnServiceStart(const Trader::Service &);
+		virtual void OnServiceStart(const trdk::Service &);
 
-		void UpdateSettings(const Trader::Lib::IniFileSectionRef &);
+		void UpdateSettings(const trdk::Lib::IniFileSectionRef &);
 
 	protected:
 
 		virtual void UpdateAlogImplSettings(
-					const Trader::Lib::IniFileSectionRef &)
+					const trdk::Lib::IniFileSectionRef &)
 				= 0;
 
 		Mutex & GetMutex() const;
 
-		void ReportSettings(const Trader::SettingsReport::Report &) const;
+		void ReportSettings(const trdk::SettingsReport::Report &) const;
 
 	private:
 
@@ -74,7 +76,7 @@ namespace Trader {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class Trader::Module::Log : private boost::noncopyable {
+	class trdk::Module::Log : private boost::noncopyable {
 	public:
 		explicit Log(const Module &);
 		~Log();
@@ -90,7 +92,7 @@ namespace Trader {
 			m_log.DebugEx(
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
-					Trader::Lib::Format(params, result);
+					trdk::Lib::Format(params, result);
 					return result;
 				});
 		}
@@ -113,7 +115,7 @@ namespace Trader {
 			m_log.InfoEx(
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
-					Trader::Lib::Format(params, result);
+					trdk::Lib::Format(params, result);
 					return result;
 				});
 		}
@@ -136,7 +138,7 @@ namespace Trader {
 			m_log.WarnEx(
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
-					Trader::Lib::Format(params, result);
+					trdk::Lib::Format(params, result);
 					return result;
 				});
 		}
@@ -159,7 +161,7 @@ namespace Trader {
 			m_log.ErrorEx(
 				[this, str, &params]() -> boost::format {
 					boost::format result((GetFormat() % str).str());
-					Trader::Lib::Format(params, result);
+					trdk::Lib::Format(params, result);
 					return result;
 				});
 		}
@@ -175,7 +177,7 @@ namespace Trader {
 			return m_format;
 		}
 	private:
-		Trader::Context::Log &m_log;
+		trdk::Context::Log &m_log;
 		const boost::format m_format;
 	};
 
@@ -188,7 +190,7 @@ namespace Trader {
 namespace std {
 	TRADER_CORE_API std::ostream & operator <<(
 				std::ostream &,
-				const Trader::Module &)
+				const trdk::Module &)
 			throw();
 }
 

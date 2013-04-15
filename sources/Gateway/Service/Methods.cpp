@@ -3,14 +3,16 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
 #include "Service.hpp"
 #include "../Interface/TraderService.nsmap"
 
-using namespace Trader::Gateway;
+using namespace trdk::Gateway;
 
 int trader__GetSecurityList(soap *soap, std::list<trader__Security >&result) {
 	reinterpret_cast<Service *>(soap->user)->GetSecurityList(result);
@@ -56,7 +58,7 @@ int trader__OrderBuy(
 		symbol,
 		venue,
 		price,
-		Trader::Qty(qty),
+		trdk::Qty(qty),
 		*result);
 	return SOAP_OK;
 }
@@ -70,7 +72,7 @@ int trader__OrderBuyMkt(
 	reinterpret_cast<Service *>(soap->user)->OrderBuyMkt(
 		symbol,
 		venue,
-		Trader::Qty(qty),
+		trdk::Qty(qty),
 		*result);
 	return SOAP_OK;
 }
@@ -86,7 +88,7 @@ int trader__OrderSell(
 		symbol,
 		venue,
 		price,
-		Trader::Qty(qty),
+		trdk::Qty(qty),
 		*result);
 	return SOAP_OK;
 }
@@ -100,7 +102,7 @@ int trader__OrderSellMkt(
 	reinterpret_cast<Service *>(soap->user)->OrderSellMkt(
 		symbol,
 		venue,
-		Trader::Qty(qty),
+		trdk::Qty(qty),
 		*result);
 	return SOAP_OK;
 }

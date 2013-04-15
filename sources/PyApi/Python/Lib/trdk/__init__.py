@@ -1,3 +1,15 @@
+"""
+
+ Trading Robot Development Kit module
+
+    Author: Eugene V. Palchukovsky
+    E-mail: eugene@palchukovsky.com
+   Project: Trading Robot Development Kit
+       URL: http://robotdk.com
+ Copyright: Eugene V. Palchukovsky
+
+"""
+
 
 ###############################################################################
 
@@ -10,6 +22,7 @@ __all__ = [
     "Strategy"]
 
 ###############################################################################
+
 
 class SecurityInfo(object):
 
@@ -43,6 +56,7 @@ class SecurityInfo(object):
         """
         pass
 
+
 class Security(SecurityInfo):
 
     def cancelOrder(self, orderId):
@@ -56,6 +70,7 @@ class Security(SecurityInfo):
         """
 
 ###############################################################################
+
 
 class Module(object):
 
@@ -98,9 +113,10 @@ class Module(object):
 
     def onServiceStart(self, service):
         """ Notifies about new service start. Virtual.
-        :type service: trader.Service
+        :type service: trdk.Service
         """
         pass
+
 
 class Strategy(Module):
     """ Every strategy algorithm class must be inherited from this class.
@@ -117,7 +133,7 @@ class Strategy(Module):
 
     security = Security
 
-    positions = PositionList # active positions
+    positions = PositionList  # active positions
 
     def __init__(self, param):
         """
@@ -129,7 +145,7 @@ class Strategy(Module):
         """
         Virtual. Notifies about Level 1 data update (best bid, best ask or
         last trade). Required if strategy subscribed to Level 1 updates.
-        :type security: trader.Security
+        :type security: trdk.Security
         """
         pass
 
@@ -137,7 +153,7 @@ class Strategy(Module):
         """
         Virtual. Notifies about new trade (price tick). Required if strategy
         subscribed to new trades.
-        :type security: trader.Security
+        :type security: trdk.Security
         :type time: int
         :type price: int
         :type qty: int
@@ -149,16 +165,17 @@ class Strategy(Module):
         """
         Virtual. Notifies about service data update. Required if strategy
         subscribed to at least one service.
-        :type service: trader.Service
+        :type service: trdk.Service
         """
         pass
 
     def onPositionUpdate(self, position):
         """
         Virtual. Notifies about position state update. Optional.
-        :type position: trader.Position
+        :type position: trdk.Position
         """
         pass
+
 
 class ServiceInfo(Module):
 
@@ -167,6 +184,7 @@ class ServiceInfo(Module):
         :type param: int
         """
         pass
+
 
 class Service(ServiceInfo):
 
@@ -181,7 +199,7 @@ class Service(ServiceInfo):
         Virtual. Notifies about Level 1 data update. Required if service
         subscribed to Level 1 updates. Method returns True if service state has
         changed, False otherwise.
-        :type security: trader.Security
+        :type security: trdk.Security
         :rtype: bool
         """
         pass
@@ -191,7 +209,7 @@ class Service(ServiceInfo):
         Virtual. Notifies about service data update. Required if service
         subscribed to at least one service. Method returns True if service
         state has changed, False otherwise.
-        :type service: trader.Service
+        :type service: trdk.Service
         :rtype: bool
         """
         pass
@@ -201,7 +219,7 @@ class Service(ServiceInfo):
         Virtual. Notifies about new trade (price tick). Required if service
         subscribed to new trades. Method returns True if service state has
         changed, False otherwise.
-        :type security: trader.Security
+        :type security: trdk.Security
         :type time: int
         :type price: int
         :type qty: int
@@ -211,6 +229,7 @@ class Service(ServiceInfo):
         pass
 
 ###############################################################################
+
 
 class Position(object):
 
@@ -244,7 +263,7 @@ class Position(object):
 
     def __init__(self, strategy, qty, startPrice, tag):
         """
-        :type strategy: trader.Strategy
+        :type strategy: trdk.Strategy
         :type startPrice: int
         :type qty: int
         :type tag: str
@@ -320,21 +339,23 @@ class Position(object):
         """
         pass
 
+
 class LongPosition(Position):
 
     def __init__(self, strategy, qty, startPrice):
         """
-        :type strategy: trader.Strategy
+        :type strategy: trdk.Strategy
         :type qty: int
         :type startPrice: int
         """
         pass
 
+
 class ShortPosition(Position):
 
     def __init__(self, strategy, qty, startPrice):
         """
-        :type strategy: trader.Strategy
+        :type strategy: trdk.Strategy
         :type qty: int
         :type startPrice: int
         """

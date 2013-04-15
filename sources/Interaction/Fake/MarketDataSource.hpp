@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -12,17 +14,17 @@
 #include "Core/Security.hpp"
 #include "Core/Context.hpp"
 
-namespace Trader { namespace Interaction { namespace Fake {
+namespace trdk { namespace Interaction { namespace Fake {
 
-	class MarketDataSource : public Trader::MarketDataSource {
+	class MarketDataSource : public trdk::MarketDataSource {
 
 	public:
 
-		class Security : public Trader::Security {
+		class Security : public trdk::Security {
 
 		public:
 
-			typedef Trader::Security Base;
+			typedef trdk::Security Base;
 
 		public:
 				
@@ -62,7 +64,7 @@ namespace Trader { namespace Interaction { namespace Fake {
 
 	public:
 
-		virtual boost::shared_ptr<Trader::Security> CreateSecurity(
+		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
 					Context &,
 					const std::string &symbol,
 					const std::string &primaryExchange,

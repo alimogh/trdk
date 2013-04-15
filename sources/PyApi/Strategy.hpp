@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,25 +13,25 @@
 #include "Core/Strategy.hpp"
 #include "Detail.hpp"
 
-namespace Trader { namespace PyApi {
+namespace trdk { namespace PyApi {
 
-	class Strategy : public Trader::Strategy {
+	class Strategy : public trdk::Strategy {
 
 		template<typename Module>
-		friend void Trader::PyApi::Detail::UpdateAlgoSettings(
+		friend void trdk::PyApi::Detail::UpdateAlgoSettings(
 				Module &,
-				const Trader::Lib::IniFileSectionRef &);
+				const trdk::Lib::IniFileSectionRef &);
 
 	public:
 
-		typedef Trader::Strategy Base;
+		typedef trdk::Strategy Base;
 
 	public:
 
 		explicit Strategy(uintptr_t, StrategyExport &);
 		virtual ~Strategy();
 
-		static boost::shared_ptr<Trader::Strategy> CreateClientInstance(
+		static boost::shared_ptr<trdk::Strategy> CreateClientInstance(
 					Context &,
 					const std::string &tag,
 					Security &security,
@@ -42,39 +44,39 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		using Trader::Strategy::GetTag;
-		using Trader::Strategy::GetLog;
+		using trdk::Strategy::GetTag;
+		using trdk::Strategy::GetLog;
 
-		virtual void OnServiceStart(const Trader::Service &);
+		virtual void OnServiceStart(const trdk::Service &);
 
-		virtual void OnLevel1Update(const Trader::Security &);
+		virtual void OnLevel1Update(const trdk::Security &);
 		virtual void OnNewTrade(
-					const Trader::Security &,
+					const trdk::Security &,
 					const boost::posix_time::ptime &,
-					Trader::ScaledPrice,
-					Trader::Qty,
-					Trader::OrderSide);
-		virtual void OnServiceDataUpdate(const Trader::Service &);
-		virtual void OnPositionUpdate(Trader::Position &);
+					trdk::ScaledPrice,
+					trdk::Qty,
+					trdk::OrderSide);
+		virtual void OnServiceDataUpdate(const trdk::Service &);
+		virtual void OnPositionUpdate(trdk::Position &);
 
 	public:
 
-		virtual void Register(Trader::Position &);
-		virtual void Unregister(Trader::Position &) throw();
+		virtual void Register(trdk::Position &);
+		virtual void Unregister(trdk::Position &) throw();
 
-		virtual void ReportDecision(const Trader::Position &) const;
+		virtual void ReportDecision(const trdk::Position &) const;
 
 	protected:
 
-		virtual std::auto_ptr<Trader::PositionReporter> CreatePositionReporter()
+		virtual std::auto_ptr<trdk::PositionReporter> CreatePositionReporter()
 				const;
 
 		virtual void UpdateAlogImplSettings(
-					const Trader::Lib::IniFileSectionRef &);
+					const trdk::Lib::IniFileSectionRef &);
 
 	private:
 
-		void DoSettingsUpdate(const Trader::Lib::IniFileSectionRef &);
+		void DoSettingsUpdate(const trdk::Lib::IniFileSectionRef &);
 		void UpdateCallbacks();
 
 		bool CallVirtualMethod(

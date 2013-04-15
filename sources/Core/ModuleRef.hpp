@@ -11,7 +11,7 @@
 
 #include "Fwd.hpp"
 
-namespace Trader {
+namespace trdk {
 	
 	template<typename Module>
 	class ModuleReferenceWrapper : public boost::reference_wrapper<Module> {
@@ -28,37 +28,37 @@ namespace Trader {
 		}
 	};
 
-	typedef Trader::ModuleReferenceWrapper<const Trader::Strategy>
+	typedef trdk::ModuleReferenceWrapper<const trdk::Strategy>
 		ConstStrategyRefWrapper;
-	typedef Trader::ModuleReferenceWrapper<Trader::Strategy>
+	typedef trdk::ModuleReferenceWrapper<trdk::Strategy>
 		StrategyRefWrapper;
 		
-	typedef Trader::ModuleReferenceWrapper<const Trader::Service>
+	typedef trdk::ModuleReferenceWrapper<const trdk::Service>
 		ConstServiceRefWrapper;
-	typedef Trader::ModuleReferenceWrapper<Trader::Service>
+	typedef trdk::ModuleReferenceWrapper<trdk::Service>
 		ServiceRefWrapper;
 		
-	typedef Trader::ModuleReferenceWrapper<const Trader::Observer>
+	typedef trdk::ModuleReferenceWrapper<const trdk::Observer>
 		ConstObserverRefWrapper;
-	typedef Trader::ModuleReferenceWrapper<Trader::Observer>
+	typedef trdk::ModuleReferenceWrapper<trdk::Observer>
 		ObserverRefWrapper;
 
 	template<typename Module>
-	inline Trader::ModuleReferenceWrapper<const Module> ConstModuleRef(
+	inline trdk::ModuleReferenceWrapper<const Module> ConstModuleRef(
 				const Module &module) {
 		static_assert(
-			boost::is_base_of<Trader::Module, Module>::value,
-			"Template parameter must be derived from Trader::Module.");
-		return Trader::ModuleReferenceWrapper<const Module>(module);
+			boost::is_base_of<trdk::Module, Module>::value,
+			"Template parameter must be derived from trdk::Module.");
+		return trdk::ModuleReferenceWrapper<const Module>(module);
 	}
 
 	template<typename Module>
-	inline Trader::ModuleReferenceWrapper<Module> ModuleRef(
+	inline trdk::ModuleReferenceWrapper<Module> ModuleRef(
 				Module &module) {
 		static_assert(
-			boost::is_base_of<Trader::Module, Module>::value,
-			"Template parameter must be derived from Trader::Module.");
-		return Trader::ModuleReferenceWrapper<Module>(module);
+			boost::is_base_of<trdk::Module, Module>::value,
+			"Template parameter must be derived from trdk::Module.");
+		return trdk::ModuleReferenceWrapper<Module>(module);
 	}
 
 }

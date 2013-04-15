@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -11,9 +13,9 @@
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 
-using namespace Trader;
-using namespace Trader::Services;
-using namespace Trader::Lib;
+using namespace trdk;
+using namespace trdk::Services;
+using namespace trdk::Lib;
 
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
@@ -540,21 +542,21 @@ boost::shared_ptr<BarService::QtyStat> BarService::GetVolumeStat(
 //////////////////////////////////////////////////////////////////////////
 
 #ifdef BOOST_WINDOWS
-	boost::shared_ptr<Trader::Service> CreateBarService(
+	boost::shared_ptr<trdk::Service> CreateBarService(
 				Context &context,
 				const std::string &tag,
 				Security &security,
 				const IniFileSectionRef &configuration) {
-		return boost::shared_ptr<Trader::Service>(
+		return boost::shared_ptr<trdk::Service>(
 			new BarService(context, tag, security, configuration));
 	}
 #else
-	extern "C" boost::shared_ptr<Trader::Service> CreateBarService(
+	extern "C" boost::shared_ptr<trdk::Service> CreateBarService(
 				Context &context,
 				const std::string &tag,
 				Security &security,
 				const IniFileSectionRef &configuration) {
-		return boost::shared_ptr<Trader::Service>(
+		return boost::shared_ptr<trdk::Service>(
 			new BarService(context, tag, security, configuration));
 	}
 #endif

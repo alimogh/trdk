@@ -3,14 +3,16 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace Trader { namespace PyApi { namespace Detail {
+namespace trdk { namespace PyApi { namespace Detail {
 
 	template<typename T>
 	class PythonToCoreTransitHolder : private boost::noncopyable {
@@ -80,9 +82,9 @@ namespace Trader { namespace PyApi { namespace Detail {
 namespace boost { 
 
 	template<typename T>
-	typename Trader::PyApi::Detail::PythonToCoreTransitHolder<T>::ValueType *
+	typename trdk::PyApi::Detail::PythonToCoreTransitHolder<T>::ValueType *
 	get_pointer(
-				const Trader::PyApi::Detail::PythonToCoreTransitHolder<T> &ptr) {
+				const trdk::PyApi::Detail::PythonToCoreTransitHolder<T> &ptr) {
 		return ptr.Get();
 	}
 
@@ -93,8 +95,8 @@ namespace boost {
 namespace boost { namespace python {
 
 	template<typename T>
-	struct pointee<Trader::PyApi::Detail::PythonToCoreTransitHolder<T>> {
-		typedef typename Trader::PyApi::Detail::PythonToCoreTransitHolder<T>
+	struct pointee<trdk::PyApi::Detail::PythonToCoreTransitHolder<T>> {
+		typedef typename trdk::PyApi::Detail::PythonToCoreTransitHolder<T>
 				::ValueType
 			type;
 	};
@@ -103,7 +105,7 @@ namespace boost { namespace python {
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace Trader { namespace PyApi { namespace Detail {
+namespace trdk { namespace PyApi { namespace Detail {
 
 	template<typename T>
 	class PythonToCoreTransit
@@ -226,7 +228,7 @@ namespace Trader { namespace PyApi { namespace Detail {
 				LogPythonClientException();
 				boost::format message("Failed to call virtual method %1%");
 				message % name;
-				throw Trader::PyApi::Error(message.str().c_str());
+				throw trdk::PyApi::Error(message.str().c_str());
 			}
 			return true;
 		}

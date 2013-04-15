@@ -5,6 +5,11 @@
  * -------------------------------------------------------------------
  *   Project: TunnelEx
  *       URL: http://tunnelex.net
+ * Copyright: Eugene V. Palchukovsky
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "SysError.hpp"
@@ -21,7 +26,7 @@
 #endif
 #include "Assert.hpp"
 
-using namespace Trader::Lib;
+using namespace trdk::Lib;
 
 SysError::SysError(int errorNo) throw()
 		: m_errorNo(errorNo) {

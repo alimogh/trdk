@@ -1,5 +1,15 @@
 """
 
+ Trading Robot Development Kit strategy script example
+
+    Author: Eugene V. Palchukovsky
+    E-mail: eugene@palchukovsky.com
+   Project: Trading Robot Development Kit
+       URL: http://robotdk.com
+ Copyright: Eugene V. Palchukovsky
+
+-------------------------------------------------------------------------------
+
 INI-file:
 
 ; Initializing test service:
@@ -36,12 +46,12 @@ INI-file:
 
 """
 
-import trader
+import trdk
 
 ###############################################################################
 
 
-class ExampleService(trader.Service):
+class ExampleService(trdk.Service):
 
     _lastDirectionChangePrice = 0
 
@@ -67,7 +77,8 @@ class ExampleService(trader.Service):
                 self.log.debug(
                     'Price now "growing" ({0} -> {1}: +{2}).'
                         .format(
-                            security.descalePrice(self._lastDirectionChangePrice),
+                            security.descalePrice(
+                                self._lastDirectionChangePrice),
                             security.descalePrice(price),
                             security.descalePrice(deviation)))
                 self.priceDirection = 'growing'
@@ -87,7 +98,8 @@ class ExampleService(trader.Service):
                 self.log.debug(
                     'Price now "falls" ({0} -> {1}: -{2}).'
                         .format(
-                            security.descalePrice(self._lastDirectionChangePrice),
+                            security.descalePrice(
+                                self._lastDirectionChangePrice),
                             security.descalePrice(price),
                             security.descalePrice(deviation)))
                 self._lastDirectionChangePrice = price
@@ -101,7 +113,7 @@ class ExampleService(trader.Service):
 ###############################################################################
 
 
-class ExampleStrategy(trader.Strategy):
+class ExampleStrategy(trdk.Strategy):
 
     def onServiceDataUpdate(self, service):
 
@@ -121,10 +133,11 @@ class ExampleStrategy(trader.Strategy):
             # Checking conditions for each active position:
             for position in self.positions:
                 assert \
-                    isinstance(position, trader.LongPosition), \
+                    isinstance(position, trdk.LongPosition), \
                     'This strategy works only with "long" positions.'
                 if position.openStartPrice >= service.lastTickPrice:
-                    self.log.debug('Opening long position as price "growing"...')
+                    self.log.debug(
+                        'Opening long position as price "growing"...')
                     position.cancelAtMarketPrice()
                 elif position.isOpened:
                     # Price falling, but not yet too low, so just canceling
@@ -133,7 +146,7 @@ class ExampleStrategy(trader.Strategy):
 
         elif service.priceDirection == 'growing':
             self.log.debug('Opening long position as price "growing"...')
-            position = trader.LongPosition(
+            position = trdk.LongPosition(
                 # strategy:
                 self,
                 # number of shares:

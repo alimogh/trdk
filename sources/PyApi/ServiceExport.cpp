@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -15,15 +17,15 @@
 namespace py = boost::python;
 namespace pt = boost::posix_time;
 
-using namespace Trader;
-using namespace Trader::Lib;
-using namespace Trader::Services;
-using namespace Trader::PyApi;
-using namespace Trader::PyApi::Detail;
+using namespace trdk;
+using namespace trdk::Lib;
+using namespace trdk::Services;
+using namespace trdk::PyApi;
+using namespace trdk::PyApi::Detail;
 
 //////////////////////////////////////////////////////////////////////////
 
-const Trader::Service & PyApi::ExtractService(const py::object &service) {
+const trdk::Service & PyApi::ExtractService(const py::object &service) {
 	try {
 		Assert(service);
 		ServiceExport &serviceExport = py::extract<ServiceExport &>(service);
@@ -36,11 +38,11 @@ const Trader::Service & PyApi::ExtractService(const py::object &service) {
 
 namespace {
 
-	ObjectCache<const Trader::Service> objectCache;
+	ObjectCache<const trdk::Service> objectCache;
 
 }
 
-py::object PyApi::Export(const Trader::Service &service) {
+py::object PyApi::Export(const trdk::Service &service) {
 	auto *const pyService = dynamic_cast<const PyApi::Service *>(&service);
 	if (pyService) {
 		return pyService->GetExport().GetSelf();
@@ -64,7 +66,7 @@ py::object PyApi::Export(const Trader::Service &service) {
 
 //////////////////////////////////////////////////////////////////////////
 
-ServiceInfoExport::ServiceInfoExport(const Trader::Service &service)
+ServiceInfoExport::ServiceInfoExport(const trdk::Service &service)
 		: ModuleExport(service),
 		m_service(&service) {
 	//...//
@@ -138,7 +140,7 @@ const PyApi::Service & ServiceExport::GetService() const {
 
 PyApi::Service & ServiceExport::GetService() {
 	return *boost::polymorphic_downcast<PyApi::Service *>(
-		&const_cast<Trader::Service &>(ServiceInfoExport::GetService()));
+		&const_cast<trdk::Service &>(ServiceInfoExport::GetService()));
 }
 
 //////////////////////////////////////////////////////////////////////////

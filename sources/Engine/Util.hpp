@@ -3,21 +3,23 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
 
-namespace Trader { namespace Engine {
+namespace trdk { namespace Engine {
 
 	//////////////////////////////////////////////////////////////////////////
 
 	void Connect(
-				Trader::TradeSystem &,
-				const Trader::Lib::IniFile &,
+				trdk::TradeSystem &,
+				const trdk::Lib::IniFile &,
 				const std::string &section);
 
-	void Connect(Trader::MarketDataSource &);
+	void Connect(trdk::MarketDataSource &);
 
 	//////////////////////////////////////////////////////////////////////////
 

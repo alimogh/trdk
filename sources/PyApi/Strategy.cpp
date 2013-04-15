@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -18,10 +20,10 @@
 namespace py = boost::python;
 namespace pt = boost::posix_time;
 
-using namespace Trader;
-using namespace Trader::Lib;
-using namespace Trader::PyApi;
-using namespace Trader::PyApi::Detail;
+using namespace trdk;
+using namespace trdk::Lib;
+using namespace trdk::PyApi;
+using namespace trdk::PyApi::Detail;
 
 namespace {
 
@@ -52,7 +54,7 @@ namespace {
 }
 
 PyApi::Strategy::Strategy(uintptr_t params, StrategyExport &strategyExport)
-		: Trader::Strategy(
+		: trdk::Strategy(
 			reinterpret_cast<Params *>(params)->context,
 			reinterpret_cast<Params *>(params)->name,
 			reinterpret_cast<Params *>(params)->tag,
@@ -65,7 +67,7 @@ PyApi::Strategy::~Strategy() {
 	//...//
 }
 
-boost::shared_ptr<Trader::Strategy> PyApi::Strategy::CreateClientInstance(
+boost::shared_ptr<trdk::Strategy> PyApi::Strategy::CreateClientInstance(
 			Context &context,
 			const std::string &tag,
 			Security &security,
@@ -124,7 +126,7 @@ namespace {
 }
 
 void PyApi::Strategy::Register(Position &position) {
-	Trader::Strategy::Register(position);
+	trdk::Strategy::Register(position);
 	static_assert(
 		Position::numberOfTypes == 2,
 		"Position type list changed.");
@@ -155,7 +157,7 @@ namespace {
 }
 
 void PyApi::Strategy::Unregister(Position &position) throw() {
-	Trader::Strategy::Unregister(position);
+	trdk::Strategy::Unregister(position);
 	static_assert(
 		Position::numberOfTypes == 2,
 		"Position type list changed.");
@@ -207,7 +209,7 @@ bool PyApi::Strategy::CallVirtualMethod(
 	return GetExport().CallVirtualMethod(name, call);
 }
 
-void PyApi::Strategy::OnServiceStart(const Trader::Service &service) {
+void PyApi::Strategy::OnServiceStart(const trdk::Service &service) {
 	const bool isExists = CallVirtualMethod(
 		"onServiceStart",
 		[&](const py::override &f) {
@@ -250,7 +252,7 @@ void PyApi::Strategy::OnNewTrade(
 	}
 }
 
-void PyApi::Strategy::OnServiceDataUpdate(const Trader::Service &service) {
+void PyApi::Strategy::OnServiceDataUpdate(const trdk::Service &service) {
 	const bool isExists = CallVirtualMethod(
 		"onServiceDataUpdate",
 		[&](const py::override &f) {
@@ -275,7 +277,7 @@ void PyApi::Strategy::OnPositionUpdate(Position &position) {
 //////////////////////////////////////////////////////////////////////////
 
 #ifdef BOOST_WINDOWS
-	boost::shared_ptr<Trader::Strategy> CreateStrategy(
+	boost::shared_ptr<trdk::Strategy> CreateStrategy(
 				Context &context,
 				const std::string &tag,
 				Security &security,
@@ -287,7 +289,7 @@ void PyApi::Strategy::OnPositionUpdate(Position &position) {
 			configuration);
 	}
 #else
-	extern "C" boost::shared_ptr<Trader::Strategy> CreateStrategy(
+	extern "C" boost::shared_ptr<trdk::Strategy> CreateStrategy(
 				Context &context,
 				const std::string &tag,
 				Security &security,

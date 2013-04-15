@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -12,13 +14,13 @@
 #include "SecurityAlgo.hpp"
 #include "Api.h"
 
-namespace Trader {
+namespace trdk {
 
-	class TRADER_CORE_API Strategy : public Trader::SecurityAlgo {
+	class TRADER_CORE_API Strategy : public trdk::SecurityAlgo {
 
 	public:
 
-		typedef void (PositionUpdateSlotSignature)(Trader::Position &);
+		typedef void (PositionUpdateSlotSignature)(trdk::Position &);
 		typedef boost::function<PositionUpdateSlotSignature> PositionUpdateSlot;
 		typedef boost::signals2::connection PositionUpdateSlotConnection;
 
@@ -31,9 +33,9 @@ namespace Trader {
 			class TRADER_CORE_API Iterator
 					: public boost::iterator_facade<
 						Iterator,
-						Trader::Position,
+						trdk::Position,
 						boost::bidirectional_traversal_tag> {
-				friend class Trader::Strategy::PositionList::ConstIterator;
+				friend class trdk::Strategy::PositionList::ConstIterator;
 			public:
 				class Implementation;
 			public:
@@ -44,7 +46,7 @@ namespace Trader {
 				Iterator & operator =(const Iterator &);
 				void Swap(Iterator &);
 			public:
-				Trader::Position & dereference() const;
+				trdk::Position & dereference() const;
 				bool equal(const Iterator &) const;
 				bool equal(const ConstIterator &) const;
 				void increment();
@@ -57,9 +59,9 @@ namespace Trader {
 			class TRADER_CORE_API ConstIterator
 					: public boost::iterator_facade<
 						ConstIterator,
-						const Trader::Position,
+						const trdk::Position,
 						boost::bidirectional_traversal_tag> {
-				friend class Trader::Strategy::PositionList::Iterator;
+				friend class trdk::Strategy::PositionList::Iterator;
 			public:
 				class Implementation;
 			public:
@@ -71,7 +73,7 @@ namespace Trader {
 				ConstIterator & operator =(const ConstIterator &);
 				void Swap(ConstIterator &);
 			public:
-				const Trader::Position & dereference() const;
+				const trdk::Position & dereference() const;
 				bool equal(const Iterator &) const;
 				bool equal(const ConstIterator &) const;
 				void increment();
@@ -102,16 +104,16 @@ namespace Trader {
 	public:
 
 		explicit Strategy(
-				Trader::Context &,
+				trdk::Context &,
 				const std::string &name,
 				const std::string &tag,
-				Trader::Security &);
+				trdk::Security &);
 		virtual ~Strategy();
 
 	public:
 
-		virtual const Trader::Security & GetSecurity() const;
-		Trader::Security & GetSecurity();
+		virtual const trdk::Security & GetSecurity() const;
+		trdk::Security & GetSecurity();
 
 	public:
 
@@ -120,27 +122,27 @@ namespace Trader {
 
 	public:
 
-		virtual void OnLevel1Update(const Trader::Security &);
+		virtual void OnLevel1Update(const trdk::Security &);
 		virtual void OnNewTrade(
-					const Trader::Security &,
+					const trdk::Security &,
 					const boost::posix_time::ptime &,
-					Trader::ScaledPrice,
-					Trader::Qty,
-					Trader::OrderSide);
-		virtual void OnServiceDataUpdate(const Trader::Service &);
-		virtual void OnPositionUpdate(Trader::Position &);
+					trdk::ScaledPrice,
+					trdk::Qty,
+					trdk::OrderSide);
+		virtual void OnServiceDataUpdate(const trdk::Service &);
+		virtual void OnPositionUpdate(trdk::Position &);
 
 	public:
 
-		void RaiseLevel1UpdateEvent(const Trader::Security &);
+		void RaiseLevel1UpdateEvent(const trdk::Security &);
 		void RaiseNewTradeEvent(
-					const Trader::Security &,
+					const trdk::Security &,
 					const boost::posix_time::ptime &,
-					Trader::ScaledPrice,
-					Trader::Qty,
-					Trader::OrderSide);
-		void RaiseServiceDataUpdateEvent(const Trader::Service &);
-		void RaisePositionUpdateEvent(Trader::Position &);
+					trdk::ScaledPrice,
+					trdk::Qty,
+					trdk::OrderSide);
+		void RaiseServiceDataUpdateEvent(const trdk::Service &);
+		void RaisePositionUpdateEvent(trdk::Position &);
 
 	public:
 
@@ -151,7 +153,7 @@ namespace Trader {
 		const PositionList & GetPositions() const;
 
 		PositionReporter & GetPositionReporter();
-		virtual void ReportDecision(const Trader::Position &) const = 0;
+		virtual void ReportDecision(const trdk::Position &) const = 0;
 
 	public:
 
@@ -176,22 +178,22 @@ namespace Trader {
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace Trader {
+namespace trdk {
 
-	inline Trader::Strategy::PositionList::Iterator range_begin(
-				Trader::Strategy::PositionList &list) {
+	inline trdk::Strategy::PositionList::Iterator range_begin(
+				trdk::Strategy::PositionList &list) {
 		return list.GetBegin();
 	}
-	inline Trader::Strategy::PositionList::Iterator range_end(
-				Trader::Strategy::PositionList &list) {
+	inline trdk::Strategy::PositionList::Iterator range_end(
+				trdk::Strategy::PositionList &list) {
 		return list.GetEnd();
 	}
-	inline Trader::Strategy::PositionList::ConstIterator range_begin(
-				const Trader::Strategy::PositionList &list) {
+	inline trdk::Strategy::PositionList::ConstIterator range_begin(
+				const trdk::Strategy::PositionList &list) {
 		return list.GetBegin();
 	}
-	inline Trader::Strategy::PositionList::ConstIterator range_end(
-				const Trader::Strategy::PositionList &list) {
+	inline trdk::Strategy::PositionList::ConstIterator range_end(
+				const trdk::Strategy::PositionList &list) {
 		return list.GetEnd();
 	}
 
@@ -199,26 +201,26 @@ namespace Trader {
 
 namespace boost {
     template<>
-    struct range_mutable_iterator<Trader::Strategy::PositionList> {
-        typedef Trader::Strategy::PositionList::Iterator type;
+    struct range_mutable_iterator<trdk::Strategy::PositionList> {
+        typedef trdk::Strategy::PositionList::Iterator type;
     };
     template<>
-    struct range_const_iterator<Trader::Strategy::PositionList> {
-        typedef Trader::Strategy::PositionList::ConstIterator type;
+    struct range_const_iterator<trdk::Strategy::PositionList> {
+        typedef trdk::Strategy::PositionList::ConstIterator type;
     };
 }
 
 namespace std {
 	template<>
 	inline void swap(
-				Trader::Strategy::PositionList::Iterator &lhs,
-				Trader::Strategy::PositionList::Iterator &rhs) {
+				trdk::Strategy::PositionList::Iterator &lhs,
+				trdk::Strategy::PositionList::Iterator &rhs) {
 		lhs.Swap(rhs);
 	}
 	template<>
 	inline void swap(
-				Trader::Strategy::PositionList::ConstIterator &lhs,
-				Trader::Strategy::PositionList::ConstIterator &rhs) {
+				trdk::Strategy::PositionList::ConstIterator &lhs,
+				trdk::Strategy::PositionList::ConstIterator &rhs) {
 		lhs.Swap(rhs);
 	}
 }

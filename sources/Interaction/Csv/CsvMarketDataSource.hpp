@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -12,9 +14,9 @@
 #include "CsvSecurity.hpp"
 #include "Core/Context.hpp"
 
-namespace Trader { namespace Interaction { namespace Csv { 
+namespace trdk { namespace Interaction { namespace Csv { 
 
-	class MarketDataSource : public Trader::MarketDataSource {
+	class MarketDataSource : public trdk::MarketDataSource {
 
 	private:
 
@@ -86,8 +88,8 @@ namespace Trader { namespace Interaction { namespace Csv {
 	public:
 
 		explicit MarketDataSource(
-				const Trader::Lib::IniFileSectionRef &,
-				Trader::Context::Log &);
+				const trdk::Lib::IniFileSectionRef &,
+				trdk::Context::Log &);
 		virtual ~MarketDataSource();
 
 	public:
@@ -96,7 +98,7 @@ namespace Trader { namespace Interaction { namespace Csv {
 
 	public:
 
-		virtual boost::shared_ptr<Trader::Security> CreateSecurity(
+		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
 					Context &,
 					const std::string &symbol,
 					const std::string &primaryExchange,
@@ -113,11 +115,11 @@ namespace Trader { namespace Interaction { namespace Csv {
 		bool ParseTradeLine(
 				const std::string &line,
 				boost::posix_time::ptime &,
-				Trader::OrderSide &,
+				trdk::OrderSide &,
 				std::string &symbol,
 				std::string &exchange,
-				Trader::ScaledPrice &,
-				Trader::Qty &)
+				trdk::ScaledPrice &,
+				trdk::Qty &)
 			const;
 
 	private:

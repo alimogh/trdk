@@ -3,15 +3,17 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
 #include "PyApi/Errors.hpp"
 
-using namespace Trader;
-using namespace Trader::Log;
-using namespace Trader::Lib;
+using namespace trdk;
+using namespace trdk::Log;
+using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
 
@@ -273,7 +275,7 @@ void Log::RegisterUnhandledException(
 
 		try {
 			throw;
-		} catch (const Trader::PyApi::ClientError &ex) {
+		} catch (const trdk::PyApi::ClientError &ex) {
 			logger.Create("Py API error, please check your Python script: \"%1%\".") % ex.what();
 		} catch (const Exception &ex) {
 			logger.CreateStandard() % "LOCAL" % ex.what() % function % file % line;

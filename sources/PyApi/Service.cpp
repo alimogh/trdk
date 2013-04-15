@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -12,10 +14,10 @@
 #include "Script.hpp"
 #include "BaseExport.hpp"
 
-using namespace Trader;
-using namespace Trader::Lib;
-using namespace Trader::PyApi;
-using namespace Trader::PyApi::Detail;
+using namespace trdk;
+using namespace trdk::Lib;
+using namespace trdk::PyApi;
+using namespace trdk::PyApi::Detail;
 
 namespace py = boost::python;
 namespace pt = boost::posix_time;
@@ -79,7 +81,7 @@ const ServiceExport & PyApi::Service::GetExport() const {
 	return const_cast<PyApi::Service *>(this)->GetExport();
 }
 
-boost::shared_ptr<Trader::Service> PyApi::Service::CreateClientInstance(
+boost::shared_ptr<trdk::Service> PyApi::Service::CreateClientInstance(
 			Context &context,
 			const std::string &tag,
 			Security &security,
@@ -121,7 +123,7 @@ bool PyApi::Service::CallVirtualMethod(
 	return GetExport().CallVirtualMethod(name, call);
 }
 
-void PyApi::Service::OnServiceStart(const Trader::Service &service) {
+void PyApi::Service::OnServiceStart(const trdk::Service &service) {
 	const bool isExists = CallVirtualMethod(
 		"onServiceStart",
 		[&](const py::override &f) {
@@ -168,7 +170,7 @@ bool PyApi::Service::OnNewTrade(
 	return stateChanged;
 }
 
-bool PyApi::Service::OnServiceDataUpdate(const Trader::Service &service) {
+bool PyApi::Service::OnServiceDataUpdate(const trdk::Service &service) {
 	bool stateChanged = false;
 	const bool isExists = CallVirtualMethod(
 		"onServiceDataUpdate",
@@ -184,7 +186,7 @@ bool PyApi::Service::OnServiceDataUpdate(const Trader::Service &service) {
 //////////////////////////////////////////////////////////////////////////
 
 #ifdef BOOST_WINDOWS
-	boost::shared_ptr<Trader::Service> CreateService(
+	boost::shared_ptr<trdk::Service> CreateService(
 				Context &context,
 				const std::string &tag,
 				Security &security,
@@ -196,7 +198,7 @@ bool PyApi::Service::OnServiceDataUpdate(const Trader::Service &service) {
 			configuration);
 	}
 #else
-	extern "C" boost::shared_ptr<Trader::Service> CreateService(
+	extern "C" boost::shared_ptr<trdk::Service> CreateService(
 				Context &context,
 				const std::string &tag,
 				Security &security,

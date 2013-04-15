@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Util.hpp"
@@ -22,7 +24,7 @@ namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
 
-using namespace Trader;
+using namespace trdk;
 
 fs::path Lib::SymbolToFilePath(
 			const boost::filesystem::path &path,

@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "Context.hpp"
 
-using namespace Trader;
+using namespace trdk;
 
 namespace pt = boost::posix_time;
 

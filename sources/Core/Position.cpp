@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -11,8 +13,8 @@
 #include "Strategy.hpp"
 #include "Settings.hpp"
 
-using namespace Trader;
-using namespace Trader::Lib;
+using namespace trdk;
+using namespace trdk::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -23,7 +25,7 @@ namespace {
 //////////////////////////////////////////////////////////////////////////
 
 Position::LogicError::LogicError(const char *what) throw()
-		: Trader::Lib::LogicError(what) {
+		: trdk::Lib::LogicError(what) {
 	//...//
 }
 		

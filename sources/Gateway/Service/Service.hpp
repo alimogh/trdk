@@ -3,16 +3,18 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
 
 #include "Core/Observer.hpp"
 
-namespace Trader { namespace Gateway {
+namespace trdk { namespace Gateway {
 
-	class Service : public Trader::Observer {
+	class Service : public trdk::Observer {
 
 	public:
 
@@ -31,7 +33,7 @@ namespace Trader { namespace Gateway {
 		typedef boost::mutex TradesCacheMutex;
 		typedef TradesCacheMutex::scoped_lock TradesCacheLock;
 
-		class Error : public Trader::Lib::Exception {
+		class Error : public trdk::Lib::Exception {
 		public:
 			explicit Error(const char *what)
 					: Exception(what) {
@@ -50,8 +52,8 @@ namespace Trader { namespace Gateway {
 		typedef std::map<
 				const Security *,
 				std::pair<
-					boost::shared_ptr<Trader::ShortPosition>,
-					boost::shared_ptr<Trader::LongPosition>>>
+					boost::shared_ptr<trdk::ShortPosition>,
+					boost::shared_ptr<trdk::LongPosition>>>
 			Positions;
 
 	public:
@@ -66,10 +68,10 @@ namespace Trader { namespace Gateway {
 	public:
 
 		virtual void OnNewTrade(
-					const Trader::Security &,
+					const trdk::Security &,
 					const boost::posix_time::ptime &,
-					Trader::ScaledPrice,
-					Trader::Qty,
+					trdk::ScaledPrice,
+					trdk::Qty,
 					bool isBuy);
 
 	public:
@@ -92,24 +94,24 @@ namespace Trader { namespace Gateway {
 		void OrderBuy(
 					const std::string &symbol,
 					const std::string &venue,
-					Trader::ScaledPrice,
-					Trader::Qty,
+					trdk::ScaledPrice,
+					trdk::Qty,
 					std::string &resultMessage);
 		void OrderBuyMkt(
 					const std::string &symbol,
 					const std::string &venue,
-					Trader::Qty,
+					trdk::Qty,
 					std::string &resultMessage);
 		void OrderSell(
 					const std::string &symbol,
 					const std::string &venue,
-					Trader::ScaledPrice,
-					Trader::Qty,
+					trdk::ScaledPrice,
+					trdk::Qty,
 					std::string &resultMessage);
 		void OrderSellMkt(
 					const std::string &symbol,
 					const std::string &venue,
-					Trader::Qty,
+					trdk::Qty,
 					std::string &resultMessage);
 
 	public:
@@ -118,13 +120,13 @@ namespace Trader { namespace Gateway {
 
 	protected:
 
-		const Trader::Security & FindSecurity(const std::string &symbol) const;
-		Trader::Security & FindSecurity(const std::string &symbol);
+		const trdk::Security & FindSecurity(const std::string &symbol) const;
+		trdk::Security & FindSecurity(const std::string &symbol);
 		
-		Trader::ShortPosition & GetShortPosition(Trader::Security &);
-		Trader::LongPosition & GetLongPosition(Trader::Security &);
+		trdk::ShortPosition & GetShortPosition(trdk::Security &);
+		trdk::LongPosition & GetLongPosition(trdk::Security &);
 
-		void UpdateAlogImplSettings(const Trader::Lib::IniFileSectionRef &);
+		void UpdateAlogImplSettings(const trdk::Lib::IniFileSectionRef &);
 		
 	private:
 

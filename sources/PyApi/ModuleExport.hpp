@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,7 +13,7 @@
 #include "SecurityExport.hpp"
 #include "Core/SecurityAlgo.hpp"
 
-namespace Trader { namespace PyApi {
+namespace trdk { namespace PyApi {
 
 	class ModuleExport {
 
@@ -19,7 +21,7 @@ namespace Trader { namespace PyApi {
 
 		class LogExport {
 		public:
-			explicit LogExport(Trader::SecurityAlgo::Log &);
+			explicit LogExport(trdk::SecurityAlgo::Log &);
 		public:
 			static void ExportClass(const char *className);
 		public:
@@ -28,7 +30,7 @@ namespace Trader { namespace PyApi {
 			void Warn(const char *);
 			void Error(const char *);
 		private:
-			Trader::SecurityAlgo::Log *m_log;
+			trdk::SecurityAlgo::Log *m_log;
 		};
 
 	public:
@@ -47,7 +49,7 @@ namespace Trader { namespace PyApi {
 
 	private:
 
-		const Trader::SecurityAlgo *m_algo;
+		const trdk::SecurityAlgo *m_algo;
 
 	};
 

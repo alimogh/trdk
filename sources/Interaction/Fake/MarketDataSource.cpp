@@ -3,16 +3,18 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
 #include "MarketDataSource.hpp"
 
-using namespace Trader;
-using namespace Trader::Lib;
-using namespace Trader::Interaction;
-using namespace Trader::Interaction::Fake;
+using namespace trdk;
+using namespace trdk::Lib;
+using namespace trdk::Interaction;
+using namespace trdk::Interaction::Fake;
 
 Fake::MarketDataSource::MarketDataSource(
 			const IniFileSectionRef &,

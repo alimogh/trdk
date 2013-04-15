@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: HighmanTradingRobot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include <assert.h>
@@ -15,8 +17,8 @@
 #include "Assert.hpp"
 #include "Core/Log.hpp"
 
-using namespace Trader;
-using namespace Trader::Debug;
+using namespace trdk;
+using namespace trdk::Debug;
 
 namespace {
 

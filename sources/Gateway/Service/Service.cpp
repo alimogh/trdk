@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -11,9 +13,9 @@
 #include "Core/Security.hpp"
 #include "Core/Position.hpp"
 
-using namespace Trader;
-using namespace Trader::Lib;
-using namespace Trader::Gateway;
+using namespace trdk;
+using namespace trdk::Lib;
+using namespace trdk::Gateway;
 namespace pt = boost::posix_time;
 
 Gateway::Service::Service(
@@ -406,6 +408,6 @@ void Gateway::Service::GetPositionInfo(
 }
 
 void Gateway::Service::UpdateAlogImplSettings(
-			const Trader::Lib::IniFileSectionRef &) {
-	//! @todo: Trader::Gateway::Service
+			const trdk::Lib::IniFileSectionRef &) {
+	//! @todo: trdk::Gateway::Service
 }

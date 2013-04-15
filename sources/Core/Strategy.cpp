@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -14,8 +16,8 @@
 
 namespace mi = boost::multi_index;
 
-using namespace Trader;
-using namespace Trader::Lib;
+using namespace trdk;
+using namespace trdk::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -331,7 +333,7 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Strategy::Strategy(
-			Trader::Context &context,
+			trdk::Context &context,
 			const std::string &name,
 			const std::string &tag,
 			Security &security)

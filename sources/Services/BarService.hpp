@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,17 +13,17 @@
 #include "Core/Service.hpp"
 #include "Api.h"
 
-namespace Trader { namespace Services {
+namespace trdk { namespace Services {
 
 	//! Bars collection service.
-	class TRADER_SERVICES_API BarService : public Trader::Service {
+	class TRADER_SERVICES_API BarService : public trdk::Service {
 
 	public:
 
-		typedef Trader::Service Base;
+		typedef trdk::Service Base;
 
 		//! General service error.
-		class Error : public Trader::Lib::Exception {
+		class Error : public trdk::Lib::Exception {
 		public:
 			explicit Error(const char *what) throw()
 					:  Exception(what) {
@@ -41,11 +43,11 @@ namespace Trader { namespace Services {
  		//! Bar data.
  		struct Bar {
 			boost::posix_time::ptime time;
-			Trader::ScaledPrice openPrice;
-			Trader::ScaledPrice closePrice;
-			Trader::ScaledPrice highPrice;
-			Trader::ScaledPrice lowPrice;
-			Trader::Qty volume;
+			trdk::ScaledPrice openPrice;
+			trdk::ScaledPrice closePrice;
+			trdk::ScaledPrice highPrice;
+			trdk::ScaledPrice lowPrice;
+			trdk::Qty volume;
  		};
 
 		class Stat : private boost::noncopyable {
@@ -56,7 +58,7 @@ namespace Trader { namespace Services {
 
 		class ScaledPriceStat : public Stat {
 		public:
-			typedef Trader::ScaledPrice ValueType;
+			typedef trdk::ScaledPrice ValueType;
 		public:
 			ScaledPriceStat();
 			virtual ~ScaledPriceStat();
@@ -67,7 +69,7 @@ namespace Trader { namespace Services {
 
 		class QtyStat : public Stat {
 		public:
-			typedef Trader::ScaledPrice ValueType;
+			typedef trdk::ScaledPrice ValueType;
 		public:
 			QtyStat();
 			virtual ~QtyStat();
@@ -110,15 +112,15 @@ namespace Trader { namespace Services {
 
 		//! Returns bar by index.
 		/** First bar has index "zero".
-		  * @throw Trader::Services::BarService::BarDoesNotExistError
-		  * @sa Trader::Services::BarService::GetBarByReversedIndex
+		  * @throw trdk::Services::BarService::BarDoesNotExistError
+		  * @sa trdk::Services::BarService::GetBarByReversedIndex
 		  */
 		const Bar & GetBar(size_t index) const;
 
 		//! Returns bar by reversed index.
 		/** Last bar has index "zero".
-		  * @throw Trader::Services::BarService::BarDoesNotExistError
-		  * @sa Trader::Services::BarService::GetBarByIndex 
+		  * @throw trdk::Services::BarService::BarDoesNotExistError
+		  * @sa trdk::Services::BarService::GetBarByIndex 
 		  */
 		const Bar & GetBarByReversedIndex(size_t index) const;
 
@@ -143,7 +145,7 @@ namespace Trader { namespace Services {
 	protected:
 
 		virtual void UpdateAlogImplSettings(
-					const Trader::Lib::IniFileSectionRef &);
+					const trdk::Lib::IniFileSectionRef &);
 
 	private:
 

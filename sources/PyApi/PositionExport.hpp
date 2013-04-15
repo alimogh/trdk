@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -16,14 +18,14 @@
 namespace boost { namespace python {
 
 	template<typename PyApiImpl>
-	struct has_back_reference<Trader::PyApi::SidePositionExport<PyApiImpl>>
+	struct has_back_reference<trdk::PyApi::SidePositionExport<PyApiImpl>>
 			: public mpl::true_ {
 		//...//
 	};
 
 } }
 
-namespace Trader { namespace PyApi {
+namespace trdk { namespace PyApi {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -31,7 +33,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		explicit PositionExport(const boost::shared_ptr<Trader::Position> &);
+		explicit PositionExport(const boost::shared_ptr<trdk::Position> &);
 
 	public:
 
@@ -39,8 +41,8 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		Trader::Position & GetPosition();
-		const Trader::Position & GetPosition() const;
+		trdk::Position & GetPosition();
+		const trdk::Position & GetPosition() const;
 
 		void ResetRefHolder() throw();
 
@@ -174,8 +176,8 @@ namespace Trader { namespace PyApi {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	boost::python::object Export(Trader::Position &);
-	Trader::Position & ExtractPosition(const boost::python::object &);
+	boost::python::object Export(trdk::Position &);
+	trdk::Position & ExtractPosition(const boost::python::object &);
 
 	//////////////////////////////////////////////////////////////////////////
 

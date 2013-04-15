@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Exception.hpp"
@@ -11,7 +13,7 @@
 #include <string.h>
 #include <iostream>
 
-using namespace Trader::Lib;
+using namespace trdk::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -104,7 +106,7 @@ ModuleError::ModuleError(const char *what)
 
 std::ostream & std::operator <<(
 			std::ostream &oss,
-			const Trader::Lib::Exception &ex) {
+			const trdk::Lib::Exception &ex) {
 	oss << ex.what();
 	return oss;
 }

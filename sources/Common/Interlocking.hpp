@@ -3,12 +3,14 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
 
-namespace Trader { namespace Lib { namespace Interlocking {
+namespace trdk { namespace Lib { namespace Interlocking {
 
 #ifdef BOOST_WINDOWS
 

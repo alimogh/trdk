@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -12,7 +14,7 @@
 #include "Fwd.hpp"
 #include "Api.h"
 
-namespace Trader {
+namespace trdk {
 
 	class TRADER_CORE_API Settings : private boost::noncopyable {
 
@@ -34,25 +36,25 @@ namespace Trader {
 	public:
 	
 		explicit Settings(
-				const Trader::Lib::IniFileSectionRef &,
+				const trdk::Lib::IniFileSectionRef &,
 				const Time &now,
 				bool isReplayMode,
-				Trader::Context::Log &);
+				trdk::Context::Log &);
 
 	public:
 
 		void Update(
-					const Trader::Lib::IniFileSectionRef &,
-					Trader::Context::Log &);
+					const trdk::Lib::IniFileSectionRef &,
+					trdk::Context::Log &);
 
 	private:
 
 		void UpdateDynamic(
-					const Trader::Lib::IniFileSectionRef &,
-					Trader::Context::Log &);
+					const trdk::Lib::IniFileSectionRef &,
+					trdk::Context::Log &);
 		void UpdateStatic(
-					const Trader::Lib::IniFileSectionRef &,
-					Trader::Context::Log &);
+					const trdk::Lib::IniFileSectionRef &,
+					trdk::Context::Log &);
 
 	public:
 
@@ -68,7 +70,7 @@ namespace Trader {
 		bool IsLevel2SnapshotPrintEnabled() const;
 		boost::uint16_t GetLevel2SnapshotPrintTimeSeconds() const;
 
-		bool IsValidPrice(const Trader::Security &) const;
+		bool IsValidPrice(const trdk::Security &) const;
 
 		bool ShouldWaitForMarketData() const {
 			return m_values.shouldWaitForMarketData;

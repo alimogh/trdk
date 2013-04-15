@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -12,13 +14,13 @@
 #include "Fwd.hpp"
 #include "Api.h"
 
-namespace Trader {
+namespace trdk {
 
 	//////////////////////////////////////////////////////////////////////////
 
 	class TRADER_CORE_API Position
 			: private boost::noncopyable,
-			public boost::enable_shared_from_this<Trader::Position> {
+			public boost::enable_shared_from_this<trdk::Position> {
 
 	public:
 
@@ -43,7 +45,7 @@ namespace Trader {
 			CLOSE_TYPE_ENGINE_STOP
 		};
 
-		class TRADER_CORE_API LogicError : public Trader::Lib::LogicError {
+		class TRADER_CORE_API LogicError : public trdk::Lib::LogicError {
 		public:
 			explicit LogicError(const char *what) throw();
 		};
@@ -65,9 +67,9 @@ namespace Trader {
 	public:
 
 		explicit Position(
-				Trader::Strategy &,
-				Trader::Qty,
-				Trader::ScaledPrice startPrice);
+				trdk::Strategy &,
+				trdk::Qty,
+				trdk::ScaledPrice startPrice);
 		virtual ~Position();
 
 	public:
@@ -77,8 +79,8 @@ namespace Trader {
 
 	public:
 
-		const Trader::Security & GetSecurity() const throw();
-		Trader::Security & GetSecurity() throw();
+		const trdk::Security & GetSecurity() const throw();
+		trdk::Security & GetSecurity() throw();
 
 	public:
 
@@ -110,40 +112,40 @@ namespace Trader {
 
 	public:
 
-		Trader::Qty GetPlanedQty() const;
-		Trader::ScaledPrice GetOpenStartPrice() const;
+		trdk::Qty GetPlanedQty() const;
+		trdk::ScaledPrice GetOpenStartPrice() const;
 
-		Trader::OrderId GetOpenOrderId() const throw();
-		Trader::Qty GetOpenedQty() const throw();
-		Trader::ScaledPrice GetOpenPrice() const;
+		trdk::OrderId GetOpenOrderId() const throw();
+		trdk::Qty GetOpenedQty() const throw();
+		trdk::ScaledPrice GetOpenPrice() const;
 		Time GetOpenTime() const;
 
-		Trader::Qty GetNotOpenedQty() const;
-		Trader::Qty GetActiveQty() const throw();
+		trdk::Qty GetNotOpenedQty() const;
+		trdk::Qty GetActiveQty() const throw();
 
-		Trader::OrderId GetCloseOrderId() const throw();
-		void SetCloseStartPrice(Trader::ScaledPrice);
-		Trader::ScaledPrice GetCloseStartPrice() const;
-		Trader::ScaledPrice GetClosePrice() const;
-		Trader::Qty GetClosedQty() const throw();
+		trdk::OrderId GetCloseOrderId() const throw();
+		void SetCloseStartPrice(trdk::ScaledPrice);
+		trdk::ScaledPrice GetCloseStartPrice() const;
+		trdk::ScaledPrice GetClosePrice() const;
+		trdk::Qty GetClosedQty() const throw();
 		Time GetCloseTime() const;
 
-		Trader::ScaledPrice GetCommission() const;
+		trdk::ScaledPrice GetCommission() const;
 
 	public:
 
-		Trader::OrderId OpenAtMarketPrice();
-		Trader::OrderId Open(Trader::ScaledPrice);
-		Trader::OrderId OpenAtMarketPriceWithStopPrice(
-					Trader::ScaledPrice stopPrice);
-		Trader::OrderId OpenOrCancel(Trader::ScaledPrice);
+		trdk::OrderId OpenAtMarketPrice();
+		trdk::OrderId Open(trdk::ScaledPrice);
+		trdk::OrderId OpenAtMarketPriceWithStopPrice(
+					trdk::ScaledPrice stopPrice);
+		trdk::OrderId OpenOrCancel(trdk::ScaledPrice);
 
-		Trader::OrderId CloseAtMarketPrice(CloseType);
-		Trader::OrderId Close(CloseType, Trader::ScaledPrice);
-		Trader::OrderId CloseAtMarketPriceWithStopPrice(
+		trdk::OrderId CloseAtMarketPrice(CloseType);
+		trdk::OrderId Close(CloseType, trdk::ScaledPrice);
+		trdk::OrderId CloseAtMarketPriceWithStopPrice(
 					CloseType,
-					Trader::ScaledPrice stopPrice);
-		Trader::OrderId CloseOrCancel(CloseType, Trader::ScaledPrice);
+					trdk::ScaledPrice stopPrice);
+		trdk::OrderId CloseOrCancel(CloseType, trdk::ScaledPrice);
 
 		bool CancelAtMarketPrice(CloseType);
 		bool CancelAllOrders();
@@ -152,50 +154,50 @@ namespace Trader {
 
 		StateUpdateConnection Subscribe(const StateUpdateSlot &) const;
 
-		virtual Trader::Security::OrderStatusUpdateSlot
+		virtual trdk::Security::OrderStatusUpdateSlot
 		GetSellOrderStatusUpdateSlot() = 0;
 		
-		virtual Trader::Security::OrderStatusUpdateSlot
+		virtual trdk::Security::OrderStatusUpdateSlot
 		GetBuyOrderStatusUpdateSlot() = 0;
 
 	protected:
 
-		virtual Trader::OrderId DoOpenAtMarketPrice(Trader::Qty) = 0;
-		virtual Trader::OrderId DoOpen(Trader::Qty, Trader::ScaledPrice) = 0;
-		virtual Trader::OrderId DoOpenAtMarketPriceWithStopPrice(
-					Trader::Qty,
-					Trader::ScaledPrice stopPrice)
+		virtual trdk::OrderId DoOpenAtMarketPrice(trdk::Qty) = 0;
+		virtual trdk::OrderId DoOpen(trdk::Qty, trdk::ScaledPrice) = 0;
+		virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
+					trdk::Qty,
+					trdk::ScaledPrice stopPrice)
 				= 0;
-		virtual Trader::OrderId DoOpenOrCancel(
-					Trader::Qty,
-					Trader::ScaledPrice)
+		virtual trdk::OrderId DoOpenOrCancel(
+					trdk::Qty,
+					trdk::ScaledPrice)
 				= 0;
 
-		virtual Trader::OrderId DoCloseAtMarketPrice(Trader::Qty) = 0;
-		virtual Trader::OrderId DoClose(Trader::Qty, Trader::ScaledPrice) = 0;
-		virtual Trader::OrderId DoCloseAtMarketPriceWithStopPrice(
-					Trader::Qty,
-					Trader::ScaledPrice stopPrice)
+		virtual trdk::OrderId DoCloseAtMarketPrice(trdk::Qty) = 0;
+		virtual trdk::OrderId DoClose(trdk::Qty, trdk::ScaledPrice) = 0;
+		virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
+					trdk::Qty,
+					trdk::ScaledPrice stopPrice)
 				= 0;
-		virtual Trader::OrderId DoCloseOrCancel(
-					Trader::Qty,
-					Trader::ScaledPrice)
+		virtual trdk::OrderId DoCloseOrCancel(
+					trdk::Qty,
+					trdk::ScaledPrice)
 				= 0;
 
 	protected:
 
 		void UpdateOpening(
-					Trader::OrderId,
-					Trader::TradeSystem::OrderStatus,
-					Trader::Qty filled,
-					Trader::Qty remaining,
+					trdk::OrderId,
+					trdk::TradeSystem::OrderStatus,
+					trdk::Qty filled,
+					trdk::Qty remaining,
 					double avgPrice,
 					double lastPrice);
 		void UpdateClosing(
-					Trader::OrderId,
-					Trader::TradeSystem::OrderStatus,
-					Trader::Qty filled,
-					Trader::Qty remaining,
+					trdk::OrderId,
+					trdk::TradeSystem::OrderStatus,
+					trdk::Qty filled,
+					trdk::Qty remaining,
 					double avgPrice,
 					double lastPrice);
 
@@ -213,9 +215,9 @@ namespace Trader {
 	public:
 
 		explicit LongPosition(
-				Trader::Strategy &,
-				Trader::Qty,
-				Trader::ScaledPrice startPrice);
+				trdk::Strategy &,
+				trdk::Qty,
+				trdk::ScaledPrice startPrice);
 		virtual ~LongPosition();
 
 	public:
@@ -225,31 +227,31 @@ namespace Trader {
 
 	public:
 
-		virtual Trader::Security::OrderStatusUpdateSlot
+		virtual trdk::Security::OrderStatusUpdateSlot
 		GetSellOrderStatusUpdateSlot();
 		
-		virtual Trader::Security::OrderStatusUpdateSlot
+		virtual trdk::Security::OrderStatusUpdateSlot
 		GetBuyOrderStatusUpdateSlot();
 
 	protected:
 
-		virtual Trader::OrderId DoOpenAtMarketPrice(Trader::Qty);
-		virtual Trader::OrderId DoOpen(Trader::Qty, Trader::ScaledPrice);
-		virtual Trader::OrderId DoOpenAtMarketPriceWithStopPrice(
-					Trader::Qty,
-					Trader::ScaledPrice stopPrice);
-		virtual Trader::OrderId DoOpenOrCancel(
-					Trader::Qty,
-					Trader::ScaledPrice);
+		virtual trdk::OrderId DoOpenAtMarketPrice(trdk::Qty);
+		virtual trdk::OrderId DoOpen(trdk::Qty, trdk::ScaledPrice);
+		virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
+					trdk::Qty,
+					trdk::ScaledPrice stopPrice);
+		virtual trdk::OrderId DoOpenOrCancel(
+					trdk::Qty,
+					trdk::ScaledPrice);
 
-		virtual Trader::OrderId DoCloseAtMarketPrice(Trader::Qty);
-		virtual Trader::OrderId DoClose(Trader::Qty, Trader::ScaledPrice);
-		virtual Trader::OrderId DoCloseAtMarketPriceWithStopPrice(
-					Trader::Qty,
-					Trader::ScaledPrice stopPrice);
-		virtual Trader::OrderId DoCloseOrCancel(
-					Trader::Qty,
-					Trader::ScaledPrice);
+		virtual trdk::OrderId DoCloseAtMarketPrice(trdk::Qty);
+		virtual trdk::OrderId DoClose(trdk::Qty, trdk::ScaledPrice);
+		virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
+					trdk::Qty,
+					trdk::ScaledPrice stopPrice);
+		virtual trdk::OrderId DoCloseOrCancel(
+					trdk::Qty,
+					trdk::ScaledPrice);
 
 	};
 
@@ -260,9 +262,9 @@ namespace Trader {
 	public:
 
 		explicit ShortPosition(
-				Trader::Strategy &,
-				Trader::Qty,
-				Trader::ScaledPrice startPrice);
+				trdk::Strategy &,
+				trdk::Qty,
+				trdk::ScaledPrice startPrice);
 		virtual ~ShortPosition();
 
 	public:
@@ -272,31 +274,31 @@ namespace Trader {
 
 	public:
 
-		virtual Trader::Security::OrderStatusUpdateSlot
+		virtual trdk::Security::OrderStatusUpdateSlot
 		GetSellOrderStatusUpdateSlot();
 		
-		virtual Trader::Security::OrderStatusUpdateSlot
+		virtual trdk::Security::OrderStatusUpdateSlot
 		GetBuyOrderStatusUpdateSlot();
 
 	protected:
 
-		virtual Trader::OrderId DoOpenAtMarketPrice(Trader::Qty);
-		virtual Trader::OrderId DoOpen(Trader::Qty, Trader::ScaledPrice);
-		virtual Trader::OrderId DoOpenAtMarketPriceWithStopPrice(
-					Trader::Qty,
-					Trader::ScaledPrice stopPrice);
-		virtual Trader::OrderId DoOpenOrCancel(
-					Trader::Qty,
-					Trader::ScaledPrice);
+		virtual trdk::OrderId DoOpenAtMarketPrice(trdk::Qty);
+		virtual trdk::OrderId DoOpen(trdk::Qty, trdk::ScaledPrice);
+		virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
+					trdk::Qty,
+					trdk::ScaledPrice stopPrice);
+		virtual trdk::OrderId DoOpenOrCancel(
+					trdk::Qty,
+					trdk::ScaledPrice);
 
-		virtual Trader::OrderId DoCloseAtMarketPrice(Trader::Qty);
-		virtual Trader::OrderId DoClose(Trader::Qty, Trader::ScaledPrice);
-		virtual Trader::OrderId DoCloseAtMarketPriceWithStopPrice(
-					Trader::Qty,
-					Trader::ScaledPrice stopPrice);
-		virtual Trader::OrderId DoCloseOrCancel(
-					Trader::Qty,
-					Trader::ScaledPrice);
+		virtual trdk::OrderId DoCloseAtMarketPrice(trdk::Qty);
+		virtual trdk::OrderId DoClose(trdk::Qty, trdk::ScaledPrice);
+		virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
+					trdk::Qty,
+					trdk::ScaledPrice stopPrice);
+		virtual trdk::OrderId DoCloseOrCancel(
+					trdk::Qty,
+					trdk::ScaledPrice);
 
 	};
 

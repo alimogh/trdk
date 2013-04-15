@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -17,15 +19,15 @@
 namespace py = boost::python;
 namespace pt = boost::posix_time;
 
-using namespace Trader;
-using namespace Trader::PyApi;
-using namespace Trader::PyApi::Detail;
+using namespace trdk;
+using namespace trdk::PyApi;
+using namespace trdk::PyApi::Detail;
 
 //////////////////////////////////////////////////////////////////////////
 
 BOOST_PYTHON_MODULE(trader) {
 
-	using namespace Trader::PyApi;
+	using namespace trdk::PyApi;
 
 	//! @todo: export __all__
 
@@ -136,7 +138,7 @@ ScaledPrice PyApi::ExtractScaledPrice(const py::object &price) {
 		return py::extract<ScaledPrice>(price);
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
-		throw Error("Failed to extract Trader::ScaledPrice");
+		throw Error("Failed to extract trdk::ScaledPrice");
 	}
 }
 
@@ -146,7 +148,7 @@ Qty PyApi::ExtractQty(const py::object &qty) {
 		return py::extract<Qty>(qty);
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
-		throw Error("Failed to extract Trader::Qty");
+		throw Error("Failed to extract trdk::Qty");
 	}
 }
 
@@ -154,17 +156,17 @@ py::object PyApi::Export(OrderSide side) {
 	try {
 		static_assert(numberOfOrderSides == 2, "Changed order side list.");
 		switch (side) {
-			case Trader::ORDER_SIDE_SELL:
+			case trdk::ORDER_SIDE_SELL:
 				return py::object('S');
-			case Trader::ORDER_SIDE_BUY:
+			case trdk::ORDER_SIDE_BUY:
 				return py::object('B');
 			default:
-				AssertNe(int(Trader::numberOfOrderSides), side);
+				AssertNe(int(trdk::numberOfOrderSides), side);
 				return py::object(' ');
 		}
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
-		throw Error("Failed to export Trader::OrderSide");
+		throw Error("Failed to export trdk::OrderSide");
 	}
 }
 
@@ -174,17 +176,17 @@ OrderSide ExtractOrderSide(const py::object &orderSide) {
 		static_assert(numberOfOrderSides == 2, "Changed order side list.");
 		switch (py::extract<char>(orderSide)) {
 			case 'S':
-				return Trader::ORDER_SIDE_SELL;
+				return trdk::ORDER_SIDE_SELL;
 			case 'B':
-				return Trader::ORDER_SIDE_BUY;
+				return trdk::ORDER_SIDE_BUY;
 			default:
-				throw Trader::PyApi::Error(
+				throw trdk::PyApi::Error(
 					"Order side can be 'B' (buy) or 'S' (sell)");
 		}
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
 		throw Error(
-			"Failed to extract Trader::OrderSide:"
+			"Failed to extract trdk::OrderSide:"
 				" order side can be 'B' (buy) or 'S' (sell)");
 	}
 }

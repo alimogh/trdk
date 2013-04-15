@@ -5,6 +5,7 @@
  * -------------------------------------------------------------------
  *   Project: TunnelEx
  *       URL: http://tunnelex.net
+ * Copyright: Eugene V. Palchukovsky
  * -------------------------------------------------------------------
  *   Project: Trading Robot Development Kit
  *       URL: http://robotdk.com
@@ -28,7 +29,7 @@
 #	include <dlfcn.h>
 #endif
 
-namespace Trader { namespace Lib {
+namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -49,7 +50,7 @@ namespace Trader { namespace Lib {
 		public:
 			explicit DllLoadException(
 						const boost::filesystem::path &dllFile,
-						const Trader::Lib::SysError &error)
+						const trdk::Lib::SysError &error)
 					: Error(
 						(boost::format("Failed to load DLL file %1% (%2%)")
 								% dllFile
@@ -75,7 +76,7 @@ namespace Trader { namespace Lib {
 			explicit DllFuncException(
 						const boost::filesystem::path &dllFile,
 						const char *const funcName,
-						const Trader::Lib::SysError &error)
+						const trdk::Lib::SysError &error)
 					: Error(
 						(boost::format("Failed to find function \"%2%\" in DLL %1% (%3%).")
 								% dllFile
@@ -133,7 +134,7 @@ namespace Trader { namespace Lib {
 				if (m_handle == NULL) {
 					throw DllLoadException(
 						m_file,
-						Trader::Lib::SysError(::GetLastError()));
+						trdk::Lib::SysError(::GetLastError()));
 				}
 	#		else
 				if (autoName) {
@@ -197,7 +198,7 @@ namespace Trader { namespace Lib {
 					throw DllFuncException(
 						m_file,
 						funcName,
-						Trader::Lib::SysError(::GetLastError()));
+						trdk::Lib::SysError(::GetLastError()));
 				}
 	#		else
 				void *procAddr = dlsym(m_handle, funcName);

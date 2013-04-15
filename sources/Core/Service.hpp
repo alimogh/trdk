@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -12,56 +14,56 @@
 #include "SecurityAlgo.hpp"
 #include "Api.h"
 
-namespace Trader {
+namespace trdk {
 
-	class TRADER_CORE_API Service : public Trader::SecurityAlgo {
+	class TRADER_CORE_API Service : public trdk::SecurityAlgo {
 
 	public:
 
-		typedef Trader::ModuleRefVariant Subscriber;
+		typedef trdk::ModuleRefVariant Subscriber;
 		typedef std::list<Subscriber> Subscribers;
 
 	public:
 
 		explicit Service(
-				Trader::Context &,
+				trdk::Context &,
 				const std::string &name,
 				const std::string &tag,
-				const Trader::Security &);
+				const trdk::Security &);
 		virtual ~Service();
 
 	public:
 
-		virtual const Trader::Security & GetSecurity() const;
+		virtual const trdk::Security & GetSecurity() const;
 
 	public:
 
-		virtual bool OnLevel1Update(const Trader::Security &);
+		virtual bool OnLevel1Update(const trdk::Security &);
 		virtual bool OnNewTrade(
-					const Trader::Security &,
+					const trdk::Security &,
 					const boost::posix_time::ptime &,
-					Trader::ScaledPrice,
-					Trader::Qty,
-					Trader::OrderSide);
-		virtual bool OnServiceDataUpdate(const Trader::Service &);
+					trdk::ScaledPrice,
+					trdk::Qty,
+					trdk::OrderSide);
+		virtual bool OnServiceDataUpdate(const trdk::Service &);
 
 	public:
 
-		void RegisterSubscriber(Trader::Strategy &);
-		void RegisterSubscriber(Trader::Service &);
-		void RegisterSubscriber(Trader::Observer &);
+		void RegisterSubscriber(trdk::Strategy &);
+		void RegisterSubscriber(trdk::Service &);
+		void RegisterSubscriber(trdk::Observer &);
 		const Subscribers & GetSubscribers();
 
 	public:
 
-		bool RaiseLevel1UpdateEvent(const Trader::Security &);
+		bool RaiseLevel1UpdateEvent(const trdk::Security &);
 		bool RaiseNewTradeEvent(
-					const Trader::Security &,
+					const trdk::Security &,
 					const boost::posix_time::ptime &,
-					Trader::ScaledPrice,
-					Trader::Qty,
-					Trader::OrderSide);
-		bool RaiseServiceDataUpdateEvent(const Trader::Service &);
+					trdk::ScaledPrice,
+					trdk::Qty,
+					trdk::OrderSide);
+		bool RaiseServiceDataUpdateEvent(const trdk::Service &);
 
 	private:
 

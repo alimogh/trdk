@@ -3,16 +3,18 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
 #include "PositionExport.hpp"
 #include "Detail.hpp"
 
-using namespace Trader;
-using namespace Trader::PyApi;
-using namespace Trader::PyApi::Detail;
+using namespace trdk;
+using namespace trdk::PyApi;
+using namespace trdk::PyApi::Detail;
 
 namespace py = boost::python;
 
@@ -21,7 +23,7 @@ namespace py = boost::python;
 namespace {
 
 	template<typename PyApiImpl>
-	py::object GetPyPosition(Trader::Position &source) {
+	py::object GetPyPosition(trdk::Position &source) {
 		auto *const pyApiImpl = dynamic_cast<PyApiImpl *>(&source);
 		if (!pyApiImpl) {
 			AssertFail("Use cache for Python objects.");
@@ -33,7 +35,7 @@ namespace {
 
 }
 
-py::object PyApi::Export(Trader::Position &position) {
+py::object PyApi::Export(trdk::Position &position) {
  	static_assert(Position::numberOfTypes == 2, "Position type list changed.");
  	switch (position.GetType()) {
   		case Position::TYPE_LONG:

@@ -11,19 +11,19 @@
 
 #include "ModuleRef.hpp"
 
-namespace Trader {
+namespace trdk {
 
 	//////////////////////////////////////////////////////////////////////////
 
 	typedef boost::variant<
-			Trader::ConstStrategyRefWrapper,
-			Trader::ConstServiceRefWrapper,
-			Trader::ConstObserverRefWrapper>
+			trdk::ConstStrategyRefWrapper,
+			trdk::ConstServiceRefWrapper,
+			trdk::ConstObserverRefWrapper>
 		ConstModuleRefVariant;
 	typedef boost::variant<
-			Trader::StrategyRefWrapper,
-			Trader::ServiceRefWrapper,
-			Trader::ObserverRefWrapper>
+			trdk::StrategyRefWrapper,
+			trdk::ServiceRefWrapper,
+			trdk::ObserverRefWrapper>
 		ModuleRefVariant;
 
 	//////////////////////////////////////////////////////////////////////////
@@ -33,32 +33,32 @@ namespace Trader {
 		//////////////////////////////////////////////////////////////////////////
 
 		struct GetConstModule
-				: public boost::static_visitor<const Trader::Module &> {
-			const Trader::Strategy & operator ()(
-						const Trader::Strategy &module)
+				: public boost::static_visitor<const trdk::Module &> {
+			const trdk::Strategy & operator ()(
+						const trdk::Strategy &module)
 					const {
 				return module;
 			}
-			const Trader::Service & operator ()(
-						const Trader::Service &module)
+			const trdk::Service & operator ()(
+						const trdk::Service &module)
 					const {
 				return module;
 			}
-			const Trader::Observer & operator ()(
-						const Trader::Observer &module)
+			const trdk::Observer & operator ()(
+						const trdk::Observer &module)
 					const {
 				return module;
 			}
 		};
 
-		struct GetModule : public boost::static_visitor<Trader::Module &> {
-			Trader::Strategy & operator ()(Trader::Strategy &module) const {
+		struct GetModule : public boost::static_visitor<trdk::Module &> {
+			trdk::Strategy & operator ()(trdk::Strategy &module) const {
 				return module;
 			}
-			Trader::Service & operator ()(Trader::Service &module) const {
+			trdk::Service & operator ()(trdk::Service &module) const {
 				return module;
 			}
-			Trader::Observer & operator ()(Trader::Observer &module) const {
+			trdk::Observer & operator ()(trdk::Observer &module) const {
 				return module;
 			}
 		};

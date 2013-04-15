@@ -13,9 +13,9 @@
 #include "Core/Context.hpp"
 #include "Api.h"
 
-namespace Trader { namespace Engine {
+namespace trdk { namespace Engine {
 
-	class TRADER_ENGINE_API Context : public Trader::Context {
+	class TRADER_ENGINE_API Context : public trdk::Context {
 
 	public:
 
@@ -31,13 +31,13 @@ namespace Trader { namespace Engine {
 
 	public:
 
-		virtual const Trader::Settings & GetSettings() const;
+		virtual const trdk::Settings & GetSettings() const;
 
-		virtual Trader::MarketDataSource & GetMarketDataSource();
-		virtual const Trader::MarketDataSource & GetMarketDataSource() const;
+		virtual trdk::MarketDataSource & GetMarketDataSource();
+		virtual const trdk::MarketDataSource & GetMarketDataSource() const;
 
-		virtual Trader::TradeSystem & GetTradeSystem();
-		virtual const Trader::TradeSystem & GetTradeSystem() const;
+		virtual trdk::TradeSystem & GetTradeSystem();
+		virtual const trdk::TradeSystem & GetTradeSystem() const;
 
 	private:
 

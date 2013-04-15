@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,7 +13,7 @@
 #include "Core/SettingsReport.hpp"
 #include "Errors.hpp"
 
-namespace Trader { namespace PyApi { namespace Detail {
+namespace trdk { namespace PyApi { namespace Detail {
 
 	inline void LogPythonClientException() {
 		{
@@ -24,7 +26,7 @@ namespace Trader { namespace PyApi { namespace Detail {
 	template<typename Module>
 	void UpdateAlgoSettings(
 				Module &algo,
-				const Trader::Lib::IniFileSectionRef &ini) {
+				const trdk::Lib::IniFileSectionRef &ini) {
 		SettingsReport::Report report;
 		SettingsReport::Append("tag", algo.GetTag(), report);
 		SettingsReport::Append(

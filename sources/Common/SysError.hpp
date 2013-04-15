@@ -5,6 +5,7 @@
  * -------------------------------------------------------------------
  *   Project: TunnelEx
  *       URL: http://tunnelex.net
+ * Copyright: Eugene V. Palchukovsky
  * -------------------------------------------------------------------
  *   Project: Trading Robot Development Kit
  *       URL: http://robotdk.com
@@ -32,7 +33,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace Trader { namespace Lib {	 
+namespace trdk { namespace Lib {	 
 
 	class SysError {
 
@@ -62,8 +63,8 @@ namespace Trader { namespace Lib {
 
 namespace std {
 
-	std::ostream & operator <<(std::ostream &, const Trader::Lib::SysError &);
-	std::wostream & operator <<(std::wostream &, const Trader::Lib::SysError &);
+	std::ostream & operator <<(std::ostream &, const trdk::Lib::SysError &);
+	std::wostream & operator <<(std::wostream &, const trdk::Lib::SysError &);
 
 }
 

@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -14,9 +16,9 @@
 #include "Service.hpp"
 #include "BaseExport.hpp"
 
-using namespace Trader;
-using namespace Trader::PyApi;
-using namespace Trader::PyApi::Detail;
+using namespace trdk;
+using namespace trdk::PyApi;
+using namespace trdk::PyApi::Detail;
 
 namespace py = boost::python;
 namespace pt = boost::posix_time;
@@ -50,7 +52,7 @@ boost::shared_ptr<PyApi::Strategy> StrategyInfoExport::ReleaseRefHolder()
 //////////////////////////////////////////////////////////////////////////
 
 StrategyExport::PositionListExport::IteratorExport::IteratorExport(
-			const Trader::Strategy::PositionList::Iterator &iterator)
+			const trdk::Strategy::PositionList::Iterator &iterator)
 		: iterator_adaptor(iterator) {
 	//...//
 }
@@ -63,7 +65,7 @@ py::object StrategyExport::PositionListExport::IteratorExport::dereference()
 //////////////////////////////////////////////////////////////////////////
 
 StrategyExport::PositionListExport::PositionListExport(
-			Trader::Strategy::PositionList &list)
+			trdk::Strategy::PositionList &list)
 		: m_list(&list) {
 	//...//
 }

@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,18 +13,18 @@
 #include "Core/Service.hpp"
 #include "Detail.hpp"
 
-namespace Trader { namespace PyApi {
+namespace trdk { namespace PyApi {
 
-	class Service : public Trader::Service {
+	class Service : public trdk::Service {
 
 		template<typename Module>
-		friend void Trader::PyApi::Detail::UpdateAlgoSettings(
+		friend void trdk::PyApi::Detail::UpdateAlgoSettings(
 				Module &,
-				const Trader::Lib::IniFileSectionRef &);
+				const trdk::Lib::IniFileSectionRef &);
 
 	public:
 
-		typedef Trader::Service Base;
+		typedef trdk::Service Base;
 
 	public:
 
@@ -31,7 +33,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		static boost::shared_ptr<Trader::Service> CreateClientInstance(
+		static boost::shared_ptr<trdk::Service> CreateClientInstance(
 				Context &context,
 				const std::string &tag,
 				Security &security,
@@ -42,26 +44,26 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		using Trader::Service::GetTag;
+		using trdk::Service::GetTag;
 
-		virtual void OnServiceStart(const Trader::Service &);
-		virtual bool OnLevel1Update(const Trader::Security &);
+		virtual void OnServiceStart(const trdk::Service &);
+		virtual bool OnLevel1Update(const trdk::Security &);
 		virtual bool OnNewTrade(
-					const Trader::Security &,
+					const trdk::Security &,
 					const boost::posix_time::ptime &,
-					Trader::ScaledPrice,
-					Trader::Qty,
-					Trader::OrderSide);
-		virtual bool OnServiceDataUpdate(const Trader::Service &);
+					trdk::ScaledPrice,
+					trdk::Qty,
+					trdk::OrderSide);
+		virtual bool OnServiceDataUpdate(const trdk::Service &);
 
 	protected:
 
 		virtual void UpdateAlogImplSettings(
-					const Trader::Lib::IniFileSectionRef &);
+					const trdk::Lib::IniFileSectionRef &);
 
 	private:
 
-		void DoSettingsUpdate(const Trader::Lib::IniFileSectionRef &);
+		void DoSettingsUpdate(const trdk::Lib::IniFileSectionRef &);
 		
 		bool CallVirtualMethod(
 					const char *name,

@@ -3,10 +3,12 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-namespace Trader { namespace Engine { namespace Ini {
+namespace trdk { namespace Engine { namespace Ini {
 
 	//////////////////////////////////////////////////////////////////////////
 

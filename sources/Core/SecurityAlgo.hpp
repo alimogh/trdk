@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,14 +13,14 @@
 #include "Module.hpp"
 #include "Api.h"
 
-namespace Trader {
+namespace trdk {
 
-	class TRADER_CORE_API SecurityAlgo : public Trader::Module {
+	class TRADER_CORE_API SecurityAlgo : public trdk::Module {
 
 	public:
 
 		explicit SecurityAlgo(
-				Trader::Context &,
+				trdk::Context &,
 				const std::string &typeName,
 				const std::string &name,
 				const std::string &tag);
@@ -26,7 +28,7 @@ namespace Trader {
 
 	public:
 
-		virtual const Trader::Security & GetSecurity() const = 0;
+		virtual const trdk::Security & GetSecurity() const = 0;
 
 	};
 

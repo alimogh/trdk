@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,9 +13,9 @@
 #include "Core/TradeSystem.hpp"
 #include "Core/Context.hpp"
 
-namespace Trader { namespace Interaction { namespace Fake {
+namespace trdk { namespace Interaction { namespace Fake {
 
-	class TradeSystem : public Trader::TradeSystem {
+	class TradeSystem : public trdk::TradeSystem {
 
 	public:
 

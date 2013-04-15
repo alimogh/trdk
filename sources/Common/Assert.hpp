@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "DisableBoostWarningsBegin.h"
@@ -26,11 +28,11 @@
 #	if defined(BOOST_ENABLE_ASSERT_HANDLER)
 		static_assert(false, "Failed to find assert-break method");
 #	endif
-	namespace Trader { namespace Debug { namespace Detail {
+	namespace trdk { namespace Debug { namespace Detail {
 		void ReportAssertFail(const char *, const char *, int) throw();
 	} } }
 #	define AssertFail(reason) \
-		(void)(::Trader::Debug::Detail::ReportAssertFail(reason, __FILE__, __LINE__))
+		(void)(::trdk::Debug::Detail::ReportAssertFail(reason, __FILE__, __LINE__))
 #	define AssertEq(expr1, expr2) ((void)0)
 #	define AssertNe(expr1, expr2) ((void)0)
 #	define AssertGt(expr1, expr2) ((void)0)
@@ -46,7 +48,7 @@
 			__FILE__, \
 			__LINE__))
 
-	namespace Trader { namespace Debug { namespace Detail {
+	namespace trdk { namespace Debug { namespace Detail {
 		void ReportCompareAssertFail(
 				const std::string &val1,
 				const std::string &val2,
@@ -62,7 +64,7 @@
 #	define AssertEq(expr1, expr2) \
 		((expr1) == (expr2) \
 			? (void)0 \
-			: (void)::Trader::Debug::Detail::ReportCompareAssertFail( \
+			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
 				boost::lexical_cast<std::string>(expr1), \
 				boost::lexical_cast<std::string>(expr2), \
 				"EQUAL", \
@@ -75,7 +77,7 @@
 #	define AssertNe(expr1, expr2) \
 		((expr1) != (expr2) \
 			? (void)0 \
-			: (void)::Trader::Debug::Detail::ReportCompareAssertFail( \
+			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
 				boost::lexical_cast<std::string>(expr1), \
 				boost::lexical_cast<std::string>(expr2), \
 				"NOT EQUAL", \
@@ -88,7 +90,7 @@
 #	define AssertGt(expr1, expr2) \
 		((expr1) > (expr2) \
 			? (void)0 \
-			: (void)::Trader::Debug::Detail::ReportCompareAssertFail( \
+			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
 				boost::lexical_cast<std::string>(expr1), \
 				boost::lexical_cast<std::string>(expr2), \
 				"GREATER THAN", \
@@ -101,7 +103,7 @@
 #	define AssertGe(expr1, expr2) \
 		((expr1) >= (expr2) \
 			? (void)0 \
-			: (void)::Trader::Debug::Detail::ReportCompareAssertFail( \
+			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
 				boost::lexical_cast<std::string>(expr1), \
 				boost::lexical_cast<std::string>(expr2), \
 				"GREATER THAN or EQUAL", \
@@ -114,7 +116,7 @@
 #	define AssertLt(expr1, expr2) \
 		((expr1) < (expr2) \
 			? (void)0 \
-			: (void)::Trader::Debug::Detail::ReportCompareAssertFail( \
+			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
 				boost::lexical_cast<std::string>(expr1), \
 				boost::lexical_cast<std::string>(expr2), \
 				"LESS THAN", \
@@ -127,7 +129,7 @@
 #	define AssertLe(expr1, expr2) \
 		((expr1) <= (expr2) \
 			? (void)0 \
-			: (void)::Trader::Debug::Detail::ReportCompareAssertFail( \
+			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
 				boost::lexical_cast<std::string>(expr1), \
 				boost::lexical_cast<std::string>(expr2), \
 				"LESS THAN or EQUAL", \
@@ -142,9 +144,9 @@
 
 #define assert(expr) Assert(expr)
 
-namespace Trader { namespace Debug { namespace Detail {
+namespace trdk { namespace Debug { namespace Detail {
 	void AssertFailNoExceptionImpl(const char *, const char *, long);
 } } }
 
 #define AssertFailNoException() \
-	(void)(::Trader::Debug::Detail::AssertFailNoExceptionImpl(BOOST_CURRENT_FUNCTION, __FILE__, __LINE__))
+	(void)(::trdk::Debug::Detail::AssertFailNoExceptionImpl(BOOST_CURRENT_FUNCTION, __FILE__, __LINE__))

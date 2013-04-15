@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -13,11 +15,11 @@
 
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
-using namespace Trader;
-using namespace Trader::Lib;
+using namespace trdk;
+using namespace trdk::Lib;
 
 SecurityAlgo::SecurityAlgo(
-			Trader::Context &context,
+			trdk::Context &context,
 			const std::string &typeName,
 			const std::string &name,
 			const std::string &tag)

@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -14,7 +16,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace Trader { namespace PyApi {
+namespace trdk { namespace PyApi {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -26,7 +28,7 @@ namespace Trader { namespace PyApi {
 		/*  @param serviceRef	Reference to service, must be alive all time
 		 *						while export object exists.
 		 */
-		explicit ServiceInfoExport(const Trader::Service &);
+		explicit ServiceInfoExport(const trdk::Service &);
 
 		explicit ServiceInfoExport(const boost::shared_ptr<PyApi::Service> &);
 
@@ -36,7 +38,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		const Trader::Service & GetService() const {
+		const trdk::Service & GetService() const {
 			return *m_service;
 		}
 
@@ -45,7 +47,7 @@ namespace Trader { namespace PyApi {
 	private:
 
 		boost::shared_ptr<PyApi::Service> m_serviceRefHolder;
-		const Trader::Service *m_service;
+		const trdk::Service *m_service;
 
 	};
 
@@ -74,8 +76,8 @@ namespace Trader { namespace PyApi {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	const Trader::Service & ExtractService(const boost::python::object &);
-	boost::python::object Export(const Trader::Service &);
+	const trdk::Service & ExtractService(const boost::python::object &);
+	boost::python::object Export(const trdk::Service &);
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -83,7 +85,7 @@ namespace Trader { namespace PyApi {
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace Trader { namespace PyApi {
+namespace trdk { namespace PyApi {
 
 	//////////////////////////////////////////////////////////////////////////
 	
@@ -91,7 +93,7 @@ namespace Trader { namespace PyApi {
 
 	public:
 
-		typedef Trader::Services::BarService Implementation;
+		typedef trdk::Services::BarService Implementation;
 
 	public:
 

@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -23,7 +25,7 @@
 #include <fstream>
 #include <string>
 
-namespace Trader { namespace Lib {
+namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -204,7 +206,7 @@ namespace Trader { namespace Lib {
 	public:
 
 		explicit IniFileSectionRef(
-					const Trader::Lib::IniFile &fileRef,
+					const trdk::Lib::IniFile &fileRef,
 					const std::string &sectionNameRef);
 
 	public:
@@ -226,7 +228,7 @@ namespace Trader { namespace Lib {
 					bool canBeEmpty)
 				const;
 
-		Trader::Lib::IniFile::AbsoluteOrPercentsPrice
+		trdk::Lib::IniFile::AbsoluteOrPercentsPrice
 		ReadAbsoluteOrPercentsPriceKey(
 					const std::string &key,
 					unsigned long priceScale)
@@ -238,14 +240,14 @@ namespace Trader { namespace Lib {
 				bool mustExist)
 			const;
 
-		std::set<Trader::Lib::IniFile::Symbol> ReadSymbols(
+		std::set<trdk::Lib::IniFile::Symbol> ReadSymbols(
 				const std::string &defExchange,
 				const std::string &defPrimaryExchange)
 			const;
 
 	private:
 
-		const Trader::Lib::IniFile &m_file;
+		const trdk::Lib::IniFile &m_file;
 		const std::string &m_name;
 
 	};
@@ -260,11 +262,11 @@ namespace std {
 	
 	std::ostream & operator <<(
 				std::ostream &,
-				const Trader::Lib::IniFile::Symbol &);
+				const trdk::Lib::IniFile::Symbol &);
 	
 	std::ostream & operator <<(
 				std::ostream &,
-				const Trader::Lib::IniFileSectionRef &);
+				const trdk::Lib::IniFileSectionRef &);
 
 }
 

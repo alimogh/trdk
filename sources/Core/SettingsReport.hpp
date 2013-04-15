@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,7 +13,7 @@
 #include "Security.hpp"
 #include "Fwd.hpp"
 
-namespace Trader { namespace SettingsReport {
+namespace trdk { namespace SettingsReport {
 
 	template<typename T>
 	void Append(
@@ -53,8 +55,8 @@ namespace Trader { namespace SettingsReport {
 
 	inline void Append(
 				const std::string &name,
-				const Trader::Lib::IniFile::AbsoluteOrPercentsPrice &val,
-				const Trader::Security &security,
+				const trdk::Lib::IniFile::AbsoluteOrPercentsPrice &val,
+				const trdk::Security &security,
 				Report &report) {
 		Append(name, val.GetStr(security.GetPriceScale()), report);
 	}

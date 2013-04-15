@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -12,7 +14,7 @@
 #include "PythonToCoreTransit.hpp"
 #include "Core/Strategy.hpp"
 
-namespace Trader { namespace PyApi {
+namespace trdk { namespace PyApi {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -51,7 +53,7 @@ namespace Trader { namespace PyApi {
 			class IteratorExport
 				: public boost::iterator_adaptor<
 					IteratorExport,
-					Trader::Strategy::PositionList::Iterator,
+					trdk::Strategy::PositionList::Iterator,
 					boost::python::object,
 					boost::use_default,
 					boost::python::object> {
@@ -59,7 +61,7 @@ namespace Trader { namespace PyApi {
 			public:
 
 				explicit IteratorExport(
-							const Trader::Strategy::PositionList::Iterator &);
+							const trdk::Strategy::PositionList::Iterator &);
 
 			public:
       
@@ -70,7 +72,7 @@ namespace Trader { namespace PyApi {
 
 		public:
 
-			explicit PositionListExport(Trader::Strategy::PositionList &);
+			explicit PositionListExport(trdk::Strategy::PositionList &);
 
 		public:
 
@@ -87,7 +89,7 @@ namespace Trader { namespace PyApi {
 
 		private:
 
-			Trader::Strategy::PositionList *m_list;
+			trdk::Strategy::PositionList *m_list;
 
 		};
 

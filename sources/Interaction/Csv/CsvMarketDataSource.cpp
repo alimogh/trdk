@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -12,10 +14,10 @@
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 
-using namespace Trader;
-using namespace Trader::Lib;
-using namespace Trader::Interaction;
-using namespace Trader::Interaction::Csv;
+using namespace trdk;
+using namespace trdk::Lib;
+using namespace trdk::Interaction;
+using namespace trdk::Interaction::Csv;
 
 Csv::MarketDataSource::MarketDataSource(
 			const IniFileSectionRef &configuration,
@@ -263,7 +265,7 @@ void Csv::MarketDataSource::ReadFile() {
 
 }
 
-boost::shared_ptr<Trader::Security> Csv::MarketDataSource::CreateSecurity(
+boost::shared_ptr<trdk::Security> Csv::MarketDataSource::CreateSecurity(
 			Context &context,
 			const std::string &symbol,
 			const std::string &primaryExchange,

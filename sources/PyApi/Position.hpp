@@ -3,14 +3,16 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
 
 #include "Core/Position.hpp"
 
-namespace Trader { namespace PyApi {
+namespace trdk { namespace PyApi {
 
 	template<typename ImplT>
 	class SidePosition : public ImplT {
@@ -26,7 +28,7 @@ namespace Trader { namespace PyApi {
 	public:
 
 		explicit SidePosition(
-					Trader::Strategy &strategy,
+					trdk::Strategy &strategy,
 					Qty qty,
 					ScaledPrice startPrice,
 					SidePositionExport<SidePosition<Impl>> &positionExport)
@@ -59,7 +61,7 @@ namespace Trader { namespace PyApi {
 
 	};
 
-	typedef SidePosition<Trader::LongPosition> LongPosition;
-	typedef SidePosition<Trader::ShortPosition> ShortPosition;
+	typedef SidePosition<trdk::LongPosition> LongPosition;
+	typedef SidePosition<trdk::ShortPosition> ShortPosition;
 
 } }

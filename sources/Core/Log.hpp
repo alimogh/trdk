@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -13,7 +15,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace Trader { namespace Log {
+namespace trdk { namespace Log {
 
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
@@ -29,7 +31,7 @@ namespace Trader { namespace Log {
 	TRADER_CORE_API Mutex & GetEventsMutex();
 	TRADER_CORE_API Mutex & GetTradingMutex();
 
-	TRADER_CORE_API bool IsEventsEnabled(Trader::Log::Level) throw();
+	TRADER_CORE_API bool IsEventsEnabled(trdk::Log::Level) throw();
 	TRADER_CORE_API void EnableEvents(std::ostream &);
 	TRADER_CORE_API void EnableEventsToStdOut();
 	TRADER_CORE_API void DisableEvents() throw();
@@ -50,7 +52,7 @@ namespace Trader { namespace Log {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace Trader { namespace Log { namespace Detail {
+namespace trdk { namespace Log { namespace Detail {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -109,7 +111,7 @@ namespace Trader { namespace Log { namespace Detail {
 		try {
 			const auto time = boost::get_system_time();
 			boost::format message(str);
-			Trader::Lib::Format(params, message);
+			trdk::Lib::Format(params, message);
 			AppendEventRecordUnsafe(level, time, message);
 		} catch (const boost::io::format_error &ex) {
 			try {
@@ -179,7 +181,7 @@ namespace Trader { namespace Log { namespace Detail {
 		try {
 			const boost::posix_time::ptime time = boost::get_system_time();
 			boost::format message(str);
-			Trader::Lib::Format(params, message);
+			trdk::Lib::Format(params, message);
 			AppendTradingRecordUnsafe(time, tag, message);
 		} catch (const boost::io::format_error &ex) {
 			try {
@@ -232,11 +234,11 @@ namespace Trader { namespace Log { namespace Detail {
 ////////////////////////////////////////////////////////////////////////////////
 // Debug
 
-namespace Trader { namespace Log {
+namespace trdk { namespace Log {
 
 	inline void Debug(const char *str) throw() {
 		const auto level = LEVEL_DEBUG;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(level, str);
@@ -245,7 +247,7 @@ namespace Trader { namespace Log {
 	template<typename Callback>
 	inline void DebugEx(const Callback &callback) throw() {
 		const auto level = LEVEL_DEBUG;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecordEx(level, callback);
@@ -254,7 +256,7 @@ namespace Trader { namespace Log {
 	template<typename Params>
 	inline void Debug(const char *str, const Params &params) throw() {
 		const auto level = LEVEL_DEBUG;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(level, str, params);
@@ -267,7 +269,7 @@ namespace Trader { namespace Log {
 				const Param2 &param2)
 			throw() {
 		const auto level = LEVEL_DEBUG;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -284,7 +286,7 @@ namespace Trader { namespace Log {
 				const Param3 &param3)
 			throw() {
 		const auto level = LEVEL_DEBUG;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -305,7 +307,7 @@ namespace Trader { namespace Log {
 				const Param4 &param4)
 			throw() {
 		const auto level = LEVEL_DEBUG;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -333,7 +335,7 @@ namespace Trader { namespace Log {
 				const Param5 &param5)
 			throw() {
 		const auto level = LEVEL_DEBUG;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -364,7 +366,7 @@ namespace Trader { namespace Log {
 				const Param6 &param6)
 			throw() {
 		const auto level = LEVEL_DEBUG;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -398,7 +400,7 @@ namespace Trader { namespace Log {
 				const Param7 &param7)
 			throw() {
 		const auto level = LEVEL_DEBUG;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -435,7 +437,7 @@ namespace Trader { namespace Log {
 				const Param8 &param8)
 			throw() {
 		const auto level = LEVEL_DEBUG;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -475,7 +477,7 @@ namespace Trader { namespace Log {
 				const Param9 &param9)
 			throw() {
 		const auto level = LEVEL_DEBUG;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -518,7 +520,7 @@ namespace Trader { namespace Log {
 				const Param10 &param10)
 			throw() {
 		const auto level = LEVEL_DEBUG;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -542,11 +544,11 @@ namespace Trader { namespace Log {
 ////////////////////////////////////////////////////////////////////////////////
 // Info
 
-namespace Trader { namespace Log {
+namespace trdk { namespace Log {
 
 	inline void Info(const char *str) throw() {
 		const auto level = LEVEL_INFO;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(level, str);
@@ -555,7 +557,7 @@ namespace Trader { namespace Log {
 	template<typename Callback>
 	inline void InfoEx(const Callback &callback) throw() {
 		const auto level = LEVEL_INFO;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecordEx(level, callback);
@@ -564,7 +566,7 @@ namespace Trader { namespace Log {
 	template<typename Params>
 	inline void Info(const char *str, const Params &params) throw() {
 		const auto level = LEVEL_INFO;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(level, str, params);
@@ -577,7 +579,7 @@ namespace Trader { namespace Log {
 				const Param2 &param2)
 			throw() {
 		const auto level = LEVEL_INFO;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -594,7 +596,7 @@ namespace Trader { namespace Log {
 				const Param3 &param3)
 			throw() {
 		const auto level = LEVEL_INFO;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -615,7 +617,7 @@ namespace Trader { namespace Log {
 				const Param4 &param4)
 			throw() {
 		const auto level = LEVEL_INFO;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -643,7 +645,7 @@ namespace Trader { namespace Log {
 				const Param5 &param5)
 			throw() {
 		const auto level = LEVEL_INFO;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -674,7 +676,7 @@ namespace Trader { namespace Log {
 				const Param6 &param6)
 			throw() {
 		const auto level = LEVEL_INFO;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -708,7 +710,7 @@ namespace Trader { namespace Log {
 				const Param7 &param7)
 			throw() {
 		const auto level = LEVEL_INFO;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -745,7 +747,7 @@ namespace Trader { namespace Log {
 				const Param8 &param8)
 			throw() {
 		const auto level = LEVEL_INFO;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -785,7 +787,7 @@ namespace Trader { namespace Log {
 				const Param9 &param9)
 			throw() {
 		const auto level = LEVEL_INFO;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -828,7 +830,7 @@ namespace Trader { namespace Log {
 				const Param10 &param10)
 			throw() {
 		const auto level = LEVEL_INFO;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -852,11 +854,11 @@ namespace Trader { namespace Log {
 ////////////////////////////////////////////////////////////////////////////////
 // Warn
 
-namespace Trader { namespace Log {
+namespace trdk { namespace Log {
 
 	inline void Warn(const char *str) throw() {
 		const auto level = LEVEL_WARN;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(level, str);
@@ -865,7 +867,7 @@ namespace Trader { namespace Log {
 	template<typename Callback>
 	inline void WarnEx(const Callback &callback) throw() {
 		const auto level = LEVEL_WARN;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecordEx(level, callback);
@@ -874,7 +876,7 @@ namespace Trader { namespace Log {
 	template<typename Params>
 	inline void Warn(const char *str, const Params &params) throw() {
 		const auto level = LEVEL_WARN;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(level, str, params);
@@ -887,7 +889,7 @@ namespace Trader { namespace Log {
 				const Param2 &param2)
 			throw() {
 		const auto level = LEVEL_WARN;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -904,7 +906,7 @@ namespace Trader { namespace Log {
 				const Param3 &param3)
 			throw() {
 		const auto level = LEVEL_WARN;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -925,7 +927,7 @@ namespace Trader { namespace Log {
 				const Param4 &param4)
 			throw() {
 		const auto level = LEVEL_WARN;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -953,7 +955,7 @@ namespace Trader { namespace Log {
 				const Param5 &param5)
 			throw() {
 		const auto level = LEVEL_WARN;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -984,7 +986,7 @@ namespace Trader { namespace Log {
 				const Param6 &param6)
 			throw() {
 		const auto level = LEVEL_WARN;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1018,7 +1020,7 @@ namespace Trader { namespace Log {
 				const Param7 &param7)
 			throw() {
 		const auto level = LEVEL_WARN;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1055,7 +1057,7 @@ namespace Trader { namespace Log {
 				const Param8 &param8)
 			throw() {
 		const auto level = LEVEL_WARN;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1095,7 +1097,7 @@ namespace Trader { namespace Log {
 				const Param9 &param9)
 			throw() {
 		const auto level = LEVEL_WARN;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1138,7 +1140,7 @@ namespace Trader { namespace Log {
 				const Param10 &param10)
 			throw() {
 		const auto level = LEVEL_WARN;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1162,11 +1164,11 @@ namespace Trader { namespace Log {
 ////////////////////////////////////////////////////////////////////////////////
 // Error
 
-namespace Trader { namespace Log {
+namespace trdk { namespace Log {
 
 	inline void Error(const char *str) throw() {
 		const auto level = LEVEL_ERROR;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(level, str);
@@ -1175,7 +1177,7 @@ namespace Trader { namespace Log {
 	template<typename Callback>
 	inline void ErrorEx(const Callback &callback) throw() {
 		const auto level = LEVEL_ERROR;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecordEx(level, callback);
@@ -1184,7 +1186,7 @@ namespace Trader { namespace Log {
 	template<typename Params>
 	inline void Error(const char *str, const Params &params) throw() {
 		const auto level = LEVEL_ERROR;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(level, str, params);
@@ -1197,7 +1199,7 @@ namespace Trader { namespace Log {
 				const Param2 &param2)
 			throw() {
 		const auto level = LEVEL_ERROR;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1214,7 +1216,7 @@ namespace Trader { namespace Log {
 				const Param3 &param3)
 			throw() {
 		const auto level = LEVEL_ERROR;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1235,7 +1237,7 @@ namespace Trader { namespace Log {
 				const Param4 &param4)
 			throw() {
 		const auto level = LEVEL_ERROR;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1263,7 +1265,7 @@ namespace Trader { namespace Log {
 				const Param5 &param5)
 			throw() {
 		const auto level = LEVEL_ERROR;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1294,7 +1296,7 @@ namespace Trader { namespace Log {
 				const Param6 &param6)
 			throw() {
 		const auto level = LEVEL_ERROR;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1328,7 +1330,7 @@ namespace Trader { namespace Log {
 				const Param7 &param7)
 			throw() {
 		const auto level = LEVEL_ERROR;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1365,7 +1367,7 @@ namespace Trader { namespace Log {
 				const Param8 &param8)
 			throw() {
 		const auto level = LEVEL_ERROR;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1405,7 +1407,7 @@ namespace Trader { namespace Log {
 				const Param9 &param9)
 			throw() {
 		const auto level = LEVEL_ERROR;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1448,7 +1450,7 @@ namespace Trader { namespace Log {
 				const Param10 &param10)
 			throw() {
 		const auto level = LEVEL_ERROR;
-		if (!Trader::Log::IsEventsEnabled(level)) {
+		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
 		Detail::AppendRecord(
@@ -1472,7 +1474,7 @@ namespace Trader { namespace Log {
 ////////////////////////////////////////////////////////////////////////////////
 // Trading
 
-namespace Trader { namespace Log {
+namespace trdk { namespace Log {
 
 	inline void Trading(const std::string &tag, const char *str) throw() {
 		if (!IsTradingEnabled()) {

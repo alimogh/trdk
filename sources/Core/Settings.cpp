@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
@@ -11,8 +13,8 @@
 #include "Security.hpp"
 
 namespace pt = boost::posix_time;
-using namespace Trader;
-using namespace Trader::Lib;
+using namespace trdk;
+using namespace trdk::Lib;
 
 namespace {
 
@@ -147,7 +149,7 @@ const Settings::Time & Settings::GetCurrentTradeSessionEndime() const {
 	return m_values.tradeSessionEndTime;
 }
 
-bool Settings::IsValidPrice(const Trader::Security &security) const {
+bool Settings::IsValidPrice(const trdk::Security &security) const {
 	Assert(security.GetPriceScale() == defaultLastPriceScale);
 	return m_minPrice <= security.GetLastPriceScaled();
 }

@@ -3,21 +3,23 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
 
 #include "Core/Security.hpp"
 
-namespace Trader {  namespace Interaction { namespace Csv {
+namespace trdk {  namespace Interaction { namespace Csv {
 
 
-	class Security : public Trader::Security {
+	class Security : public trdk::Security {
 
 	public:
 
-		typedef Trader::Security Base;
+		typedef trdk::Security Base;
 
 	public:
 
@@ -34,7 +36,7 @@ namespace Trader {  namespace Interaction { namespace Csv {
 
 		void AddTrade(
 					const boost::posix_time::ptime &,
-					Trader::OrderSide,
+					trdk::OrderSide,
 					ScaledPrice,
 					Qty);
 

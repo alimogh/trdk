@@ -5,11 +5,12 @@
  * -------------------------------------------------------------------
  *   Project: Trading Robot Development Kit
  *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
 
-namespace Trader { namespace PyApi {
+namespace trdk { namespace PyApi {
 
 	class Script;
 

@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,7 +13,7 @@
 #include "Fwd.hpp"
 #include "Api.h"
 
-namespace Trader {
+namespace trdk {
 
 	class TRADER_CORE_API PositionReporter : private boost::noncopyable {
 
@@ -22,7 +24,7 @@ namespace Trader {
 
 	public:
 
-		virtual void ReportClosedPositon(const Trader::Position &) = 0;
+		virtual void ReportClosedPositon(const trdk::Position &) = 0;
 
 	};
 

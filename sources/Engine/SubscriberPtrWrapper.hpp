@@ -3,14 +3,16 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
 
 #include "Core/ModuleVariant.hpp"
 
-namespace Trader { namespace Engine {
+namespace trdk { namespace Engine {
 
 	//! Subscriber pointer wrapper.
 	class SubscriberPtrWrapper {
@@ -18,7 +20,7 @@ namespace Trader { namespace Engine {
 	public:
 
 		struct Trade {
-			const Trader::Security *security;
+			const trdk::Security *security;
 			boost::posix_time::ptime time;
 			ScaledPrice price;
 			Qty qty;

@@ -1,10 +1,21 @@
+"""
 
-# Trader engine module
-import trader
+ Trading Robot Development Kit strategy script example
+
+    Author: Eugene V. Palchukovsky
+    E-mail: eugene@palchukovsky.com
+   Project: Trading Robot Development Kit
+       URL: http://robotdk.com
+ Copyright: Eugene V. Palchukovsky
+
+"""
+
+# Trading Robot Development Kit engine module
+import trdk
 
 
 # Strategy algorithm class must be inherited from trader.Strategy
-class Example01(trader.Strategy):
+class Example01(trdk.Strategy):
 
     # Constructor is not required by API, here just for example.
     def __init__(self, param):
@@ -48,7 +59,7 @@ class Example01(trader.Strategy):
             return
 
         # Creating position object (long position in this case):
-        position = trader.LongPosition(
+        position = trdk.LongPosition(
             # strategy object:
             self,
             # number of shares:
@@ -59,16 +70,16 @@ class Example01(trader.Strategy):
         # Sending IOC order (method onPositionUpdate will be called at each
         # position state update):
         position.openOrCancel(position.openStartPrice)
-        assert(self.positions.count() == 1) # Position object now in list
+        assert(self.positions.count() == 1)  # Position object now in list
 
     # Example method: how position can be closed. See onLevel1Update for call.
     def tryToClosePosition(self, position):
 
-        if isinstance(position, trader.LongPosition):
+        if isinstance(position, trdk.LongPosition):
             # Here can be special logic for long position.
             pass
         else:
-            assert(isinstance(position, trader.ShortPosition))
+            assert(isinstance(position, trdk.ShortPosition))
             # Here can be special logic for short position.
             pass
 

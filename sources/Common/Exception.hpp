@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,7 +13,7 @@
 #include <exception>
 #include <iosfwd>
 
-namespace Trader { namespace Lib {
+namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -38,28 +40,28 @@ namespace Trader { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class LogicError : public Trader::Lib::Exception {
+	class LogicError : public trdk::Lib::Exception {
 	public:
 		explicit LogicError(const char *what) throw();
 	};
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class SystemException : public Trader::Lib::Exception {
+	class SystemException : public trdk::Lib::Exception {
 	public:
 		explicit SystemException(const char *what) throw();
 	};
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class MethodDoesNotImplementedError : public Trader::Lib::Exception {
+	class MethodDoesNotImplementedError : public trdk::Lib::Exception {
 	public:
 		explicit MethodDoesNotImplementedError(const char *what) throw();
 	};
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class ModuleError : public Trader::Lib::Exception {
+	class ModuleError : public trdk::Lib::Exception {
 	public:
 		explicit ModuleError(const char *what) throw();
 	};
@@ -72,6 +74,6 @@ namespace std {
 
 	std::ostream & operator <<(
 			std::ostream &,
-			const Trader::Lib::Exception &);
+			const trdk::Lib::Exception &);
 
 }

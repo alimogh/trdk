@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,7 +13,7 @@
 #include "PositionReporter.hpp"
 #include "Position.hpp"
 
-namespace Trader {
+namespace trdk {
 
 	template<typename Strategy>
 	class StrategyPositionReporter : public PositionReporter {
@@ -66,7 +68,7 @@ namespace Trader {
 
 	public:
 
-		virtual void ReportClosedPositon(const Trader::Position &position) {
+		virtual void ReportClosedPositon(const trdk::Position &position) {
 			if (!m_isInited) {
 				return;
 			}
@@ -98,13 +100,13 @@ namespace Trader {
 				<< ",P/L";
 		}
 
-		virtual void PrintLine(const Trader::Position &position, std::ostream &out) const {
+		virtual void PrintLine(const trdk::Position &position, std::ostream &out) const {
 
 			Assert(position.GetOpenedQty() == position.GetPlanedQty());
 			Assert(position.GetOpenedQty() == position.GetClosedQty());
 			Assert(position.GetActiveQty() == 0);
 
-			const Trader::Security &security = position.GetSecurity();
+			const trdk::Security &security = position.GetSecurity();
 
 			out
 
@@ -124,7 +126,7 @@ namespace Trader {
 				<< ',' << security.DescalePrice(position.GetOpenPrice())
 
 				// entry time
-				<< ',' << (position.GetOpenTime() + Trader::Lib::GetEdtDiff()).time_of_day()
+				<< ',' << (position.GetOpenTime() + trdk::Lib::GetEdtDiff()).time_of_day()
 
 				// entry order
 				<< ',' << position.GetOpenOrderId()
@@ -141,7 +143,7 @@ namespace Trader {
 			// exit time
 			out << ',';
 			if (position.IsClosed()) {
-				out << (position.GetCloseTime() + Trader::Lib::GetEdtDiff()).time_of_day();
+				out << (position.GetCloseTime() + trdk::Lib::GetEdtDiff()).time_of_day();
 			} else {
 				out << '-';
 			}
@@ -155,12 +157,12 @@ namespace Trader {
 
 			// P/L
 			{
-				Trader::ScaledPrice pl = 0;
+				trdk::ScaledPrice pl = 0;
 				switch (position.GetType()) {
-					case Trader::Position::TYPE_LONG:
+					case trdk::Position::TYPE_LONG:
 						pl = position.GetClosePrice() - position.GetOpenPrice();
 						break;
-					case Trader::Position::TYPE_SHORT:
+					case trdk::Position::TYPE_SHORT:
 						pl = position.GetOpenPrice() - position.GetClosePrice();
 						break;
 					default:
@@ -184,7 +186,7 @@ namespace Trader {
 }
 
 template<typename Strategy>
-bool Trader::StrategyPositionReporter<Strategy>::m_isInited = false;
+bool trdk::StrategyPositionReporter<Strategy>::m_isInited = false;
 
 template<typename Strategy>
-std::ofstream Trader::StrategyPositionReporter<Strategy>::m_file;
+std::ofstream trdk::StrategyPositionReporter<Strategy>::m_file;

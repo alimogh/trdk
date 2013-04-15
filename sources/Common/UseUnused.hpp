@@ -10,7 +10,7 @@
 
 #pragma once
 
-namespace Trader { namespace Lib {
+namespace trdk { namespace Lib {
 
 	template<typename T>
 	inline void UseUnused(const T &) throw() {

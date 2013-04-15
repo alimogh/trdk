@@ -3,19 +3,21 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
 #include "ModuleExport.hpp"
 #include "Core/SecurityAlgo.hpp"
 
-using namespace Trader::PyApi;
+using namespace trdk::PyApi;
 namespace py = boost::python;
 
 //////////////////////////////////////////////////////////////////////////
 
-ModuleExport::LogExport::LogExport(Trader::SecurityAlgo::Log &log)
+ModuleExport::LogExport::LogExport(trdk::SecurityAlgo::Log &log)
 		: m_log(&log) {
 	//...//
 }
@@ -46,7 +48,7 @@ void ModuleExport::LogExport::Error(const char *message) {
 
 //////////////////////////////////////////////////////////////////////////
 
-ModuleExport::ModuleExport(const Trader::SecurityAlgo &algo)
+ModuleExport::ModuleExport(const trdk::SecurityAlgo &algo)
 		: m_algo(&algo) {
 	//...//
 }

@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,14 +13,14 @@
 #include "Fwd.hpp"
 #include "Api.h"
 
-namespace Trader {
+namespace trdk {
 
 	class TRADER_CORE_API Instrument : private boost::noncopyable {
 
 	public:
 
 		explicit Instrument(
-					Trader::Context &,
+					trdk::Context &,
 					const std::string &symbol,
 					const std::string &primaryExchange,
 					const std::string &exchange);
@@ -33,8 +35,8 @@ namespace Trader {
 
 	public:
 
-		const Trader::Context & GetContext() const;
-		Trader::Context & GetContext();
+		const trdk::Context & GetContext() const;
+		trdk::Context & GetContext();
 
 	private:
 

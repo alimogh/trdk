@@ -3,14 +3,16 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
 
-namespace Trader { namespace PyApi {
+namespace trdk { namespace PyApi {
 
-	class Error : public Trader::Lib::ModuleError {
+	class Error : public trdk::Lib::ModuleError {
 	public:
 		explicit Error(const char *what) throw()
 				: ModuleError(what) {

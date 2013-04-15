@@ -3,15 +3,17 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #include "Prec.hpp"
 #include "CsvSecurity.hpp"
 
-using namespace Trader;
-using namespace Trader::Interaction;
-using namespace Trader::Interaction::Csv;
+using namespace trdk;
+using namespace trdk::Interaction;
+using namespace trdk::Interaction::Csv;
 
 Csv::Security::Security(
 			Context &context,
@@ -27,6 +29,6 @@ void Csv::Security::AddTrade(
 			const boost::posix_time::ptime &time,
 			OrderSide side,
 			ScaledPrice price,
-			Trader::Qty qty) {
+			trdk::Qty qty) {
 	Base::AddTrade(time, side, price, qty, true);
 }

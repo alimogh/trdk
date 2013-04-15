@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,7 +13,7 @@
 #include "Dispatcher.hpp"
 #include "Fwd.hpp"
 
-namespace Trader { namespace Engine {
+namespace trdk { namespace Engine {
 
 	class SubscriptionsManager : private boost::noncopyable {
 
@@ -31,13 +33,13 @@ namespace Trader { namespace Engine {
 
 	public:
 
-		void SubscribeToLevel1(Trader::Strategy &);
-		void SubscribeToLevel1(Trader::Service &);
-		void SubscribeToLevel1(Trader::Observer &);
+		void SubscribeToLevel1(trdk::Strategy &);
+		void SubscribeToLevel1(trdk::Service &);
+		void SubscribeToLevel1(trdk::Observer &);
 
-		void SubscribeToTrades(Trader::Strategy &);
-		void SubscribeToTrades(Trader::Service &);
-		void SubscribeToTrades(Trader::Observer &);
+		void SubscribeToTrades(trdk::Strategy &);
+		void SubscribeToTrades(trdk::Service &);
+		void SubscribeToTrades(trdk::Observer &);
 
 	public:
 

@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -11,44 +13,44 @@
 #include "Module.hpp"
 #include "Api.h"
 
-namespace Trader {
+namespace trdk {
 
-	class TRADER_CORE_API Observer : public Trader::Module {
+	class TRADER_CORE_API Observer : public trdk::Module {
 
 	public:
 
-		typedef std::list<boost::shared_ptr<Trader::Security>> NotifyList;
+		typedef std::list<boost::shared_ptr<trdk::Security>> NotifyList;
 
 	public:
 
 		Observer(
-				Trader::Context &,
+				trdk::Context &,
 				const std::string &name,
 				const std::string &tag,
-				const Trader::Observer::NotifyList &);
+				const trdk::Observer::NotifyList &);
 		virtual ~Observer();
 
 	public:
 
-		virtual void OnLevel1Update(const Trader::Security &);
+		virtual void OnLevel1Update(const trdk::Security &);
 		virtual void OnNewTrade(
-				const Trader::Security &,
+				const trdk::Security &,
 				const boost::posix_time::ptime &,
-				Trader::ScaledPrice price,
-				Trader::Qty qty,
-				Trader::OrderSide);
-		virtual void OnServiceDataUpdate(const Trader::Service &);
+				trdk::ScaledPrice price,
+				trdk::Qty qty,
+				trdk::OrderSide);
+		virtual void OnServiceDataUpdate(const trdk::Service &);
 
 	public:
 
 		void RaiseLevel1UpdateEvent(const Security &);
 		void RaiseNewTradeEvent(
-					const Trader::Security &,
+					const trdk::Security &,
 					const boost::posix_time::ptime &,
-					Trader::ScaledPrice,
-					Trader::Qty,
-					Trader::OrderSide);
-		void RaiseServiceDataUpdateEvent(const Trader::Service &);
+					trdk::ScaledPrice,
+					trdk::Qty,
+					trdk::OrderSide);
+		void RaiseServiceDataUpdateEvent(const trdk::Service &);
 
 	public:
 

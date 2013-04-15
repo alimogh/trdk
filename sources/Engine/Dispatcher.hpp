@@ -3,7 +3,9 @@
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
- *   Project: Trading Robot
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
 #pragma once
@@ -12,7 +14,7 @@
 #include "Context.hpp"
 #include "Fwd.hpp"
 
-namespace Trader { namespace Engine {
+namespace trdk { namespace Engine {
 
 	class Dispatcher : private boost::noncopyable {
 
@@ -299,7 +301,7 @@ namespace Trader { namespace Engine {
 					if (!eventList.Enqueue()) {
 						break;
 					}
-				} catch (const Trader::Lib::ModuleError &ex) {
+				} catch (const trdk::Lib::ModuleError &ex) {
 					m_context.GetLog().Error(
 						"Module error in dispatcher notification task"
 							" \"%1%\": \"%2%\".",
