@@ -5,8 +5,8 @@
   <PropertyGroup>
     <IntDir>$(SolutionDir)..\output\$(PlatformShortName)\int\$(Configuration)\$(ProjectName)\</IntDir>
     <OutDir>$(SolutionDir)..\output\$(PlatformShortName)\bin\</OutDir>
-    <LibraryPath>$(SolutionDir)..\output\lib;$(BOOST_DIR_X86)\boost_1_47\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir);$(BOOST_DIR_X86)\boost_1_51;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\output\lib;$(BOOST_DIR_X86)\lib\;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir);$(BOOST_DIR_X86)\include\boost-1_53\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

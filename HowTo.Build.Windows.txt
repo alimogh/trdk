@@ -5,21 +5,9 @@ Host To Build on MS Windows
 1. Requirements:
 1.1. MS Visual Studio Express (or better) 10:
      Free install: http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express
-1.2. Boost C++ libraries 1.51 32-bit.
-     Variants:
-         1) Multithreaded
-         2) Multithreaded debug
-     Libraries:
-         1) Chrono
-         2) DateTime
-         3) Exceptions
-         4) Filesystem
-         5) Python
-         6) Signals
-         7) System
-         8) Thread
+1.2. Boost C++ libraries 1.53 32-bit.
      Official site: http://www.boost.org/
-     Free install (ready builds): http://www.boostpro.com/download/
+     Free install (ready build): http://download.robotdk.com/externals/Boost.1.53_msvc-10.0.x86_msvc-11.0.x86.7z
 1.3. Python 2.7 32-bit.
      http://www.python.org/download/
 1.4. Protocol Buffers 2.4.1.
@@ -32,10 +20,8 @@ Host To Build on MS Windows
 
 2. Setup:
 2.1. Create or change envelopment variable BOOST_DIR_X86 - set path to
-     installed Boost. Path should point to root install directory, without
-     version. Ex.: if Boost installed into
-     "c:\Program Files (x86)\Boost\boost_1_47\", BOOST_DIR_X86 should has
-     value "c:\Program Files (x86)\Boost\".
+     installed Boost. Path should point to root install directory.
+     Ex.: "c:\Program Files (x86)\Boost\".
 2.2. Unpack Protocol Buffers compiler. Add path to protoc.exe to the PATH
      envelopment variable.
 2.3. Install Qt.
@@ -45,6 +31,6 @@ Host To Build on MS Windows
      with sources.
 
 3. Build:
-3.1. Open "sources\RobotDK.sln" with Visual Studio and build it for
+3.1. Open "sources\TRDK.sln" with Visual Studio and build it for
      required configurations.
 3.2. Result will be in "output\x86\bin\".
