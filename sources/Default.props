@@ -21,7 +21,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Prec.hpp</PrecompiledHeaderFile>
       <ExceptionHandling>Async</ExceptionHandling>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_WIN32_WINNT=0x0600;WINVER=0x0600;NOMINMAX;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_WIN32_WINNT=0x0600;WINVER=0x0600;NOMINMAX;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;BOOST_LIB_DIAGNOSTIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4503;4275;4251</DisableSpecificWarnings>
