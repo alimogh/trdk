@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/07/22 23:40:47
+ *   Created: 2012/07/09 14:33:22
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,16 +8,4 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#pragma once
-
-namespace trdk { namespace Engine {
-
-	//////////////////////////////////////////////////////////////////////////
-
-	void Connect(trdk::TradeSystem &, const trdk::Lib::IniFileSectionRef &);
-
-	void Connect(trdk::MarketDataSource &);
-
-	//////////////////////////////////////////////////////////////////////////
-
-} }
+#include "Prec.hpp"

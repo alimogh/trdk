@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/07/22 23:40:47
+ *   Created: 2013/04/23 16:00:37
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,14 +10,9 @@
 
 #pragma once
 
-namespace trdk { namespace Engine {
+namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
-	//////////////////////////////////////////////////////////////////////////
+	class TradeSystem;
+	class Client;
 
-	void Connect(trdk::TradeSystem &, const trdk::Lib::IniFileSectionRef &);
-
-	void Connect(trdk::MarketDataSource &);
-
-	//////////////////////////////////////////////////////////////////////////
-
-} }
+} } }

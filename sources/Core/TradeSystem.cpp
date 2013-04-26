@@ -25,6 +25,11 @@ TradeSystem::ConnectError::ConnectError() throw()
 	//...//
 }
 
+TradeSystem::ConnectError::ConnectError(const char *what) throw()
+		: Error(what) {
+	//...//
+}
+
 TradeSystem::SendingError::SendingError() throw()
 		: Error("Failed to send data to trade system") {
 	//...//

@@ -135,6 +135,11 @@ namespace trdk { namespace Lib {
 					const std::string &key,
 					bool canBeEmpty)
 				const;
+		std::string ReadKey(
+					const std::string &section,
+					const std::string &key,
+					const std::string &defaultValue)
+				const;
 
 		template<typename T>
 		T ReadTypedKey(
@@ -144,9 +149,28 @@ namespace trdk { namespace Lib {
 			try {
 				return boost::lexical_cast<T>(ReadKey(section, key, false));
 			} catch (const boost::bad_lexical_cast &ex) {
-				boost::format message("Wrong INI-file key (\"%1%:%2%\") format: \"%3%\"");
+				boost::format message(
+					"Wrong INI-file key (\"%1%:%2%\") format: \"%3%\"");
 				message % section % key % ex.what();
 				throw KeyFormatError(message.str().c_str());
+			}
+		}
+
+		template<typename T>
+		T ReadTypedKey(
+					const std::string &section,
+					const std::string &key,
+					const T &defaultValue)
+				const {
+			try {
+				return boost::lexical_cast<T>(ReadKey(section, key, false));
+			} catch (const boost::bad_lexical_cast &ex) {
+				boost::format message(
+					"Wrong INI-file key (\"%1%:%2%\") format: \"%3%\"");
+				message % section % key % ex.what();
+				throw KeyFormatError(message.str().c_str());
+			} catch (const KeyNotExistsError &) {
+				return defaultValue;
 			}
 		}
 
@@ -217,10 +241,22 @@ namespace trdk { namespace Lib {
 		bool IsKeyExist(const std::string &key) const;
 
 		std::string ReadKey(const std::string &key, bool canBeEmpty) const;
+		std::string ReadKey(
+					const std::string &key,
+					const std::string &defaultValue)
+				const;
 
 		template<typename T>
 		T ReadTypedKey(const std::string &key) const {
 			return m_file.ReadTypedKey<T>(m_name, key);
+		}
+
+		template<typename T>
+		T ReadTypedKey(
+					const std::string &key,
+					const T &defaultValue)
+				const {
+			return m_file.ReadTypedKey<T>(m_name, key, defaultValue);
 		}
 
 		boost::filesystem::path ReadFileSystemPath(

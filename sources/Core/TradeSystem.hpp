@@ -51,6 +51,7 @@ namespace trdk {
 		class TRADER_CORE_API ConnectError : public Error {
 		public:
 			ConnectError() throw();
+			explicit ConnectError(const char *what) throw();
 		};
 
 		class TRADER_CORE_API SendingError : public Error {
@@ -74,10 +75,7 @@ namespace trdk {
 
 	public:
 
-		virtual void Connect(
-				const trdk::Lib::IniFile &,
-				const std::string &section)
-			= 0;
+		virtual void Connect(const trdk::Lib::IniFileSectionRef &) = 0;
 
 	public:
 

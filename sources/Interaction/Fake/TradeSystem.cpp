@@ -187,13 +187,8 @@ Fake::TradeSystem::~TradeSystem() {
 	delete m_pimpl;
 }
 
-void Fake::TradeSystem::Connect(const IniFile &, const std::string &/*section*/) {
+void Fake::TradeSystem::Connect(const IniFileSectionRef &) {
 	m_pimpl->Start();
-}
-
-bool Fake::TradeSystem::IsCompleted(const Security &) const {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Method doesn't implemented");
 }
 
 OrderId Fake::TradeSystem::SellAtMarketPrice(

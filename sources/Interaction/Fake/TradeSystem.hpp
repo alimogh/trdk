@@ -24,10 +24,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	public:
 
-		virtual void Connect(
-				const Lib::IniFile &,
-				const std::string &section);
-		virtual bool IsCompleted(const Security &) const;
+		virtual void Connect(const Lib::IniFileSectionRef &);
 
 	public:
 

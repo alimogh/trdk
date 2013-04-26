@@ -877,8 +877,9 @@ void Engine::Context::Start() {
 	try {
 		Connect(
 			GetTradeSystem(),
-			m_pimpl->m_configurationFile,
-			Ini::Sections::tradeSystem);
+			IniFileSectionRef(
+				m_pimpl->m_configurationFile,
+				Ini::Sections::tradeSystem));
 		Connect(GetMarketDataSource());
 	} catch (const Exception &ex) {
 		GetLog().Error("Failed to make trading connections: \"%1%\".", ex);

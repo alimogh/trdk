@@ -225,6 +225,18 @@ std::string IniFile::ReadKey(
 	return result;
 }
 
+std::string IniFile::ReadKey(
+			const std::string &section,
+			const std::string &key,
+			const std::string &defaultValue)
+		const {
+	try {
+		return ReadKey(section, key, defaultValue);
+	} catch (const KeyNotExistsError &) {
+		return defaultValue;
+	}
+}
+
 fs::path IniFile::ReadFileSystemPath(
 			const std::string &section,
 			const std::string &key,
@@ -377,6 +389,13 @@ std::string IniFileSectionRef::ReadKey(
 				bool canBeEmpty)
 			const {
 	return m_file.ReadKey(m_name, key, canBeEmpty);
+}
+
+std::string IniFileSectionRef::ReadKey(
+				const std::string &key,
+				const std::string &defaultValue)
+			const {
+	return m_file.ReadKey(m_name, key, defaultValue);
 }
 
 fs::path IniFileSectionRef::ReadFileSystemPath(

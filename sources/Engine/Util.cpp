@@ -19,11 +19,10 @@ using namespace trdk::Lib;
 
 void Engine::Connect(
 			TradeSystem &tradeSystem,
-			const IniFile &ini,
-			const std::string &section) {
+			const IniFileSectionRef &settings) {
 	for ( ; ; ) {
 		try {
-			tradeSystem.Connect(ini, section);
+			tradeSystem.Connect(settings);
 			break;
 		} catch (const TradeSystem::ConnectError &) {
 			boost::this_thread::sleep(pt::seconds(5));
