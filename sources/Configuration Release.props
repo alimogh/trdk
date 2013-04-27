@@ -5,6 +5,7 @@
   <PropertyGroup>
     <LinkIncremental>false</LinkIncremental>
     <_PropertySheetDisplayName>Configuration Release</_PropertySheetDisplayName>
+    <TargetName>$(MSBuildProjectName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

@@ -4,7 +4,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>$(ProjectName)_test</TargetName>
+    <TargetName>$(MSBuildProjectName)_test</TargetName>
     <_PropertySheetDisplayName>Configuration Test</_PropertySheetDisplayName>
   </PropertyGroup>
   <ItemDefinitionGroup>
