@@ -68,6 +68,14 @@ namespace {
 		}
 	}
 
+	fs::path GetIniFilePath(const char *inputValue) {
+		fs::path result = Normalize(GetExeWorkingDir() / inputValue);
+		if (fs::is_directory(result)) {
+			result /= "default.ini";
+		}
+		return result;
+	}
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -110,7 +118,7 @@ namespace {
 			std::cout << "No configuration file specified." << std::endl;
 			return false;
 		}
-		const fs::path confFilePath = Normalize(GetExeWorkingDir() / argv[2]);
+		const fs::path confFilePath = GetIniFilePath(argv[2]);
 		{
 			//! @todo Hardcoded INI-key name.
 			const auto dataPath = IniFile(confFilePath)
@@ -129,7 +137,7 @@ namespace {
 		}
 	
 		//! @todo read configuration from std in
-		const fs::path confFilePath = Normalize(GetExeWorkingDir() / argv[2]);
+		const fs::path confFilePath = GetIniFilePath(argv[2]);
 		{
 			IniFile iniFile(confFilePath);
 			InitLogs(false, true, false, argc, argv);
@@ -139,7 +147,7 @@ namespace {
 		bool result = true;
 
 		try {
-			server.Run(std::string(), confFilePath, true);
+			server.Run("DEBUG", confFilePath, true);
 		} catch (const Exception &ex) {
 			Log::Error("Failed to start engine: \"%1%\".", ex.what());
 			result = false;
@@ -204,6 +212,11 @@ int main(int argc, const char *argv[]) {
 					<< "No command specified." << std::endl
 					<< "Usage: " << argv[0]
 					<< " [ " << boost::join(commandsStr, " ] | [ ") << " ]"
+					<< std::endl
+					<< std::endl
+					<< "Debug:" << std::endl
+					<< "    d, debug \"path to INI-file"
+						<< " or path to default.ini directory\"" << std::endl
 					<< std::endl
 					<< std::endl;
 			}

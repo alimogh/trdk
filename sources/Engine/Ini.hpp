@@ -30,7 +30,7 @@ namespace trdk { namespace Engine { namespace Ini {
 
 	namespace Keys {
 		extern const std::string module;
-		extern const std::string fabric;
+		extern const std::string factory;
 		extern const std::string symbols;
 		extern const std::string primaryExchange;
 		extern const std::string exchange;
@@ -45,7 +45,10 @@ namespace trdk { namespace Engine { namespace Ini {
 	}
 
 	namespace DefaultValues {
-		namespace Fabrics {
+		namespace Factories {
+			extern const std::string factoryNameStart;
+			extern const std::string tradeSystem;
+			extern const std::string marketDataSource;
 			extern const std::string strategy;
 			extern const std::string service;
 			extern const std::string observer;

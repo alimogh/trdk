@@ -30,7 +30,7 @@ const std::string Sections::MarketData::Log::symbols = "MarketData.Log.Symbols";
 const std::string Sections::MarketData::request = "MarketData.Request";
 
 const std::string Keys::module = "module";
-const std::string Keys::fabric = "fabric";
+const std::string Keys::factory = "factory";
 const std::string Keys::symbols = "symbols";
 const std::string Keys::primaryExchange = "primary_exchange";
 const std::string Keys::exchange = "exchange";
@@ -39,8 +39,16 @@ const std::string Keys::uses = "uses";
 const std::string Constants::Services::level1 = "Level 1";
 const std::string Constants::Services::trades = "Trades";
 
-const std::string DefaultValues::Fabrics::strategy = "CreateStrategy";
-const std::string DefaultValues::Fabrics::service = "CreateService";
-const std::string DefaultValues::Fabrics::observer = "CreateObserver";
+const std::string DefaultValues::Factories::factoryNameStart = "Create";
+const std::string DefaultValues::Factories::tradeSystem
+	= DefaultValues::Factories::factoryNameStart + "TradeSystem";
+const std::string DefaultValues::Factories::marketDataSource
+	= DefaultValues::Factories::factoryNameStart + "MarketDataSource";
+const std::string DefaultValues::Factories::strategy
+	= DefaultValues::Factories::factoryNameStart + "Strategy";
+const std::string DefaultValues::Factories::service
+	= DefaultValues::Factories::factoryNameStart + "Service";
+const std::string DefaultValues::Factories::observer
+	= DefaultValues::Factories::factoryNameStart + "Observer";
 
 const std::string DefaultValues::Modules::service = "Services";

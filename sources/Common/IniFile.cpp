@@ -231,7 +231,7 @@ std::string IniFile::ReadKey(
 			const std::string &defaultValue)
 		const {
 	try {
-		return ReadKey(section, key, defaultValue);
+		return ReadKey(section, key, false);
 	} catch (const KeyNotExistsError &) {
 		return defaultValue;
 	}

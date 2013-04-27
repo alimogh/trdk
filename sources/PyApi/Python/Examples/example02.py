@@ -17,7 +17,7 @@ INI-file:
     symbols = symbols.ini
     uses = Trades
     module = Services
-    fabric = CreateBarService
+    factory = BarService
     size = 5 minutes ; seconds / minutes / hours / days
     log = none
 

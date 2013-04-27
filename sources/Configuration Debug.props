@@ -4,7 +4,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>$(ProjectName)_dbg</TargetName>
+    <TargetName>$(MSBuildProjectName)_dbg</TargetName>
     <_PropertySheetDisplayName>Configuration Debug</_PropertySheetDisplayName>
   </PropertyGroup>
   <ItemDefinitionGroup>

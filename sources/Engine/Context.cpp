@@ -67,8 +67,8 @@ namespace {
 		static const char * GetName() {
 			return "strategy";
 		}
-		static const std::string & GetDefaultFabric() {
-			return Ini::DefaultValues::Fabrics::strategy;
+		static const std::string & GetDefaultFactory() {
+			return Ini::DefaultValues::Factories::strategy;
 		}
 		static std::string GetDefaultModule() {
 			return std::string();
@@ -82,8 +82,8 @@ namespace {
 		static const char * GetName() {
 			return "service";
 		}
-		static const std::string & GetDefaultFabric() {
-			return Ini::DefaultValues::Fabrics::service;
+		static const std::string & GetDefaultFactory() {
+			return Ini::DefaultValues::Factories::service;
 		}
 		static const std::string & GetDefaultModule() {
 			return Ini::DefaultValues::Modules::service;
@@ -97,8 +97,8 @@ namespace {
 		static const char * GetName() {
 			return "observer";
 		}
-		static const std::string & GetDefaultFabric() {
-			return Ini::DefaultValues::Fabrics::observer;
+		static const std::string & GetDefaultFactory() {
+			return Ini::DefaultValues::Factories::observer;
 		}
 		static std::string GetDefaultModule() {
 			return std::string();
@@ -305,18 +305,36 @@ private:
 			Ini::Sections::tradeSystem);
 		const std::string module
 			= configurationSection.ReadKey(Ini::Keys::module, false);
-		const std::string fabricName
-			= configurationSection.ReadKey(Ini::Keys::fabric, false);
+		std::string factoryName = configurationSection.ReadKey(
+			Ini::Keys::factory,
+			Ini::DefaultValues::Factories::tradeSystem);
 		boost::shared_ptr<Dll> dll(new Dll(module, true));
 		typedef boost::shared_ptr<TradeSystem> (Proto)(
 			const IniFileSectionRef &,
 			Log &);
 		try {
-			return DllObjectPtr<TradeSystem>(
-				dll,
-				dll->GetFunction<Proto>(fabricName)(
-					configurationSection,
-					m_context.GetLog()));
+			try {
+				return DllObjectPtr<TradeSystem>(
+					dll,
+					dll->GetFunction<Proto>(factoryName)(
+						configurationSection,
+						m_context.GetLog()));
+			} catch (const Dll::DllFuncException &) {
+				if (	!boost::istarts_with(
+						factoryName,
+						Ini::DefaultValues::Factories::factoryNameStart)) {
+					factoryName
+						= Ini::DefaultValues::Factories::factoryNameStart
+							+ factoryName;
+					return DllObjectPtr<TradeSystem>(
+						dll,
+						dll->GetFunction<Proto>(factoryName)(
+							configurationSection,
+							m_context.GetLog()));
+				} else {
+					throw;
+				}
+			}
 		} catch (...) {
 			trdk::Log::RegisterUnhandledException(
 				__FUNCTION__,
@@ -333,18 +351,36 @@ private:
 			Ini::Sections::MarketData::source);
 		const std::string module
 			= configurationSection.ReadKey(Ini::Keys::module, false);
-		const std::string fabricName
-			= configurationSection.ReadKey(Ini::Keys::fabric, false);
+		std::string factoryName = configurationSection.ReadKey(
+			Ini::Keys::factory,
+			Ini::DefaultValues::Factories::marketDataSource);
 		boost::shared_ptr<Dll> dll(new Dll(module, true));
 		typedef boost::shared_ptr<MarketDataSource> (Proto)(
 			const IniFileSectionRef &,
 			Log &);
 		try {
-			return DllObjectPtr<MarketDataSource>(
-				dll,
-				dll->GetFunction<Proto>(fabricName)(
-					configurationSection,
-					m_context.GetLog()));
+			try {
+				return DllObjectPtr<MarketDataSource>(
+					dll,
+					dll->GetFunction<Proto>(factoryName)(
+						configurationSection,
+						m_context.GetLog()));
+			} catch (const Dll::DllFuncException &) {
+				if (	!boost::istarts_with(
+						factoryName,
+						Ini::DefaultValues::Factories::factoryNameStart)) {
+					factoryName
+						= Ini::DefaultValues::Factories::factoryNameStart
+							+ factoryName;
+					return DllObjectPtr<MarketDataSource>(
+						dll,
+						dll->GetFunction<Proto>(factoryName)(
+							configurationSection,
+							m_context.GetLog()));
+				} else {
+					throw;
+				}
+			}
 		} catch (...) {
 			trdk::Log::RegisterUnhandledException(
 				__FUNCTION__,
@@ -493,20 +529,20 @@ private:
 
 		std::set<IniFile::Symbol> symbols;
 		boost::shared_ptr<Dll> dll;
-		const auto fabricName = LoadModule<Observer>(
+		const auto factoryName = LoadModule<Observer>(
 			section,
 			tag,
 			symbols,
 			dll);
 
-		const auto fabric
+		const auto factory
 			= dll->GetFunction<
 					boost::shared_ptr<trdk::Observer>(
 						trdk::Context &,
 						const std::string &tag,
 						const Observer::NotifyList &,
 						const IniFileSectionRef &)>
-				(fabricName);
+				(factoryName);
 
 		Observer::NotifyList notifyList;
 		foreach (const auto &symbol, symbols) {
@@ -516,7 +552,7 @@ private:
 
 		boost::shared_ptr<Observer> newObserver;
 		try {
-			newObserver = fabric(m_context, tag, notifyList, section);
+			newObserver = factory(m_context, tag, notifyList, section);
 		} catch (...) {
 			trdk::Log::RegisterUnhandledException(
 				__FUNCTION__,
@@ -559,27 +595,39 @@ private:
 
 		std::set<IniFile::Symbol> symbols;
 		boost::shared_ptr<Dll> dll;
-		const auto fabricName = LoadModule<Module>(
+		auto factoryName = LoadModule<Module>(
 			section,
 			tag,
 			symbols,
 			dll);
 
-		const auto fabric
-			= dll->GetFunction<
-					boost::shared_ptr<Module>(
-						trdk::Context &,
-						const std::string &tag,
-						Security &security,
-						const IniFileSectionRef &configuration)>
-				(fabricName);
+		typedef boost::shared_ptr<Module> (Factory)(
+			Context &,
+			const std::string &tag,
+			Security &security,
+			const IniFileSectionRef &configuration);
+		Factory *factory = nullptr;
+		try {
+			factory = dll->GetFunction<Factory>(factoryName);
+		} catch (const Dll::DllFuncException &) {
+			if (	!boost::istarts_with(
+						factoryName,
+						Ini::DefaultValues::Factories::factoryNameStart)) {
+				factoryName
+					= Ini::DefaultValues::Factories::factoryNameStart
+						+ factoryName;
+				factory = dll->GetFunction<Factory>(factoryName);
+			} else {
+				throw;
+			}
+		}
 
 		foreach (const auto &symbol, symbols) {
 			const auto securityIt = m_securities.find(symbol);
 			Assert(securityIt != m_securities.end());
 			boost::shared_ptr<Module> symbolInstance;
 			try {
-				symbolInstance = fabric(
+				symbolInstance = factory(
 					m_context,
 					tag,
 					*securityIt->second,
@@ -759,7 +807,9 @@ private:
 					&& !Trait::GetDefaultModule().empty()) {
 				module = Normalize(Trait::GetDefaultModule());
 			} else {
-				module = configurationSection.ReadFileSystemPath(Ini::Keys::module, false);
+				module = configurationSection.ReadFileSystemPath(
+					Ini::Keys::module,
+					false);
 			}
 		} catch (const IniFile::Error &ex) {
 			GetLog().Error(
@@ -770,21 +820,9 @@ private:
 			throw IniFile::Error("Failed to load module");
 		}
 
-		std::string fabricName;
-		if (configurationSection.IsKeyExist(Ini::Keys::fabric)) {
-			try {
-				fabricName = configurationSection.ReadKey(Ini::Keys::fabric, false);
-			} catch (const IniFile::Error &ex) {
-				GetLog().Error(
-					"Failed to get %1% fabric name module: \"%2%\".",
-					boost::make_tuple(
-						boost::cref(Trait::GetName()),
-						boost::cref(ex)));
-				throw IniFile::Error("Failed to load module");
-			}
-		} else {
-			fabricName = Trait::GetDefaultFabric();
-		}
+		const std::string factoryName = configurationSection.ReadKey(
+			Ini::Keys::factory,
+			Trait::GetDefaultFactory());
 
 		GetLog().Debug(
 			"Loading %1% objects for \"%2%\"...",
@@ -830,7 +868,7 @@ private:
 		}
 	
 		dll.reset(new Dll(module, true));
-		return fabricName;
+		return factoryName;
 
 	}
 

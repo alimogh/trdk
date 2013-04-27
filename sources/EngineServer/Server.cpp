@@ -36,10 +36,10 @@ void Server::Run(
 		}
 	}
 	EngineInfo info = {
-			uuid,
-			boost::shared_ptr<Engine::Context>(
-				new Engine::Context(path, isReplayMode))
-		};
+		uuid,
+		boost::shared_ptr<Engine::Context>(
+			new Engine::Context(path, isReplayMode))
+	};
 	info.engine->Start();
 	m_engines.insert(info);
 }
