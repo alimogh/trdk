@@ -8,14 +8,9 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#include <assert.h>
-#include "Common.hpp"
-#include "Exception.hpp"
-#ifdef BOOST_WINDOWS
-#	include <Windows.h>
-#endif
-#include "Assert.hpp"
+#include "Prec.hpp"
 #include "Core/Log.hpp"
+#include "Assert.hpp"
 
 using namespace trdk;
 using namespace trdk::Debug;

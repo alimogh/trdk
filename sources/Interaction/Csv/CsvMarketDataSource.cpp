@@ -23,9 +23,9 @@ Csv::MarketDataSource::MarketDataSource(
 			const IniFileSectionRef &configuration,
 			Context::Log &log)
 		: m_log(log),
-		m_pimaryExchange(configuration.ReadKey("exchange", false)),
+		m_pimaryExchange(configuration.ReadKey("exchange")),
 		m_isStopped(true) {
-	const auto filePath = configuration.ReadFileSystemPath("source", false);
+	const auto filePath = configuration.ReadFileSystemPath("source");
 	m_log.Info(
 		TRDK_INTERACTION_CSV_LOG_PREFFIX
 			"loading file %1% for exchange \"%2%\"...",

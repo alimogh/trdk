@@ -9,6 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Defaults.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

@@ -8,16 +8,8 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#include "Assert.hpp"
+#include "Prec.hpp"
 #include "FileSystemChangeNotificator.hpp"
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/thread.hpp>
-#	include <boost/filesystem.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-#ifdef BOOST_WINDOWS
-#	include <Windows.h>
-#endif
-#include "Assert.hpp"
 
 namespace fs = boost::filesystem;
 

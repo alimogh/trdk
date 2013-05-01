@@ -132,8 +132,7 @@ namespace trdk { namespace Lib {
 
 		std::string ReadKey(
 					const std::string &section,
-					const std::string &key,
-					bool canBeEmpty)
+					const std::string &key)
 				const;
 		std::string ReadKey(
 					const std::string &section,
@@ -147,7 +146,7 @@ namespace trdk { namespace Lib {
 					const std::string &key)
 				const {
 			try {
-				return boost::lexical_cast<T>(ReadKey(section, key, false));
+				return boost::lexical_cast<T>(ReadKey(section, key));
 			} catch (const boost::bad_lexical_cast &ex) {
 				boost::format message(
 					"Wrong INI-file key (\"%1%:%2%\") format: \"%3%\"");
@@ -163,7 +162,7 @@ namespace trdk { namespace Lib {
 					const T &defaultValue)
 				const {
 			try {
-				return boost::lexical_cast<T>(ReadKey(section, key, false));
+				return boost::lexical_cast<T>(ReadKey(section, key));
 			} catch (const boost::bad_lexical_cast &ex) {
 				boost::format message(
 					"Wrong INI-file key (\"%1%:%2%\") format: \"%3%\"");
@@ -176,8 +175,7 @@ namespace trdk { namespace Lib {
 
 		boost::filesystem::path ReadFileSystemPath(
 					const std::string &section,
-					const std::string &key,
-					bool canBeEmpty)
+					const std::string &key)
 				const;
 
 		AbsoluteOrPercentsPrice ReadAbsoluteOrPercentsPriceKey(
@@ -240,7 +238,7 @@ namespace trdk { namespace Lib {
 
 		bool IsKeyExist(const std::string &key) const;
 
-		std::string ReadKey(const std::string &key, bool canBeEmpty) const;
+		std::string ReadKey(const std::string &key) const;
 		std::string ReadKey(
 					const std::string &key,
 					const std::string &defaultValue)
@@ -260,8 +258,7 @@ namespace trdk { namespace Lib {
 		}
 
 		boost::filesystem::path ReadFileSystemPath(
-					const std::string &key,
-					bool canBeEmpty)
+					const std::string &key)
 				const;
 
 		trdk::Lib::IniFile::AbsoluteOrPercentsPrice

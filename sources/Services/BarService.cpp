@@ -180,7 +180,7 @@ public:
 			m_barsLog(nullptr) {
 
 		{
-			const std::string sizeStr = configuration.ReadKey("size", false);
+			const std::string sizeStr = configuration.ReadKey("size");
 			const boost::regex expr(
 				"(\\d+)\\s+([a-z]+)",
 				boost::regex_constants::icase);
@@ -247,7 +247,7 @@ public:
 
 	void ReopenLog(const IniFileSectionRef &configuration, bool isCritical) {
 
-		const std::string logType = configuration.ReadKey("log", false);
+		const std::string logType = configuration.ReadKey("log");
 		if (boost::iequals(logType, "none")) {
 			m_barsLog.reset();
 			return;

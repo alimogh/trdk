@@ -41,7 +41,7 @@ namespace {
 //////////////////////////////////////////////////////////////////////////
 
 Script & Script::Load(const IniFileSectionRef &ini) {
-	return Load(ini.ReadFileSystemPath("script_file_path", false));
+	return Load(ini.ReadFileSystemPath("script_file_path"));
 }
 
 Script & Script::Load(const fs::path &path) {
@@ -115,7 +115,7 @@ py::object Script::GetClass(
 			Context &context,
 			const char *errorWhat /*= nullptr*/) {
 	try {
-		return GetClass(conf.ReadKey("class", false));
+		return GetClass(Detail::GetModuleClassName(conf));
 	} catch (const Error &ex) {
 		if (!errorWhat) {
 			throw;

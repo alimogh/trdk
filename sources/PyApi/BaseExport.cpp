@@ -25,14 +25,14 @@ using namespace trdk::PyApi::Detail;
 
 //////////////////////////////////////////////////////////////////////////
 
-BOOST_PYTHON_MODULE(trader) {
+BOOST_PYTHON_MODULE(trdk) {
 
 	using namespace trdk::PyApi;
 
 	//! @todo: export __all__
 
-	py::object traderModule = py::scope();
-	traderModule.attr("__path__") = "trader";
+	py::object module = py::scope();
+	module.attr("__path__") = "trdk";
 
 	SecurityInfoExport::ExportClass("SecurityInfo");
 	SecurityExport::ExportClass("Security");
@@ -50,7 +50,7 @@ BOOST_PYTHON_MODULE(trader) {
 	{
 		//! @todo: export __all__
 		py::object servicesModule(
-			py::handle<>(py::borrowed(PyImport_AddModule("trader.services"))));
+			py::handle<>(py::borrowed(PyImport_AddModule("trdk.services"))));
 		py::scope().attr("services") = servicesModule;
 		py::scope servicesScope = servicesModule;
 		BarServiceExport::ExportClass("BarService");
@@ -59,7 +59,7 @@ BOOST_PYTHON_MODULE(trader) {
 }
 
 void PyApi::ExportApi() {
-	if (PyImport_AppendInittab("trader", inittrader) == -1) {
+	if (PyImport_AppendInittab("trdk", inittrdk) == -1) {
 		throw Error("Failed to export Python API.");
 	}
 }

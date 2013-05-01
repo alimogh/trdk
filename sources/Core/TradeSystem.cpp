@@ -54,7 +54,7 @@ const char * TradeSystem::GetStringStatus(OrderStatus code) {
 
 	static_assert(
 		numberOfOrderStatuses == 6,
-		"Changed trader system order status list.");
+		"Changed trade system order status list.");
 
 	switch (code) {
 		case TradeSystem::ORDER_STATUS_PENDIGN:

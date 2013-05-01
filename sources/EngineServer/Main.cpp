@@ -122,7 +122,7 @@ namespace {
 		{
 			//! @todo Hardcoded INI-key name.
 			const auto dataPath = IniFile(confFilePath)
-				.ReadFileSystemPath("Common", "data_dir", false);
+				.ReadFileSystemPath("Common", "data_dir");
 			InitLogs(true, true, true, argc, argv, dataPath);
 		}
 		//! @todo Implement run standalone command

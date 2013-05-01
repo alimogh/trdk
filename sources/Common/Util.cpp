@@ -9,6 +9,9 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Util.hpp"
+#include "SysError.hpp"
+#include "Exception.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -99,6 +102,16 @@ fs::path Lib::Normalize(const fs::path &path) {
 	fs::path result = GetExeWorkingDir() / path;
 	Assert(result.has_root_name());
 	return result;
+}
+
+fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
+	Assert(workingDir.has_root_name());
+	if (path.empty() || path.has_root_name()) {
+		return path;
+	}
+	fs::path result = workingDir / path;
+	Assert(result.has_root_name());
+	return result;	
 }
 
 //////////////////////////////////////////////////////////////////////////

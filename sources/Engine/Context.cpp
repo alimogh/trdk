@@ -311,7 +311,7 @@ private:
 			m_configurationFile,
 			Ini::Sections::tradeSystem);
 		const std::string module
-			= configurationSection.ReadKey(Ini::Keys::module, false);
+			= configurationSection.ReadKey(Ini::Keys::module);
 		std::string factoryName = configurationSection.ReadKey(
 			Ini::Keys::factory,
 			Ini::DefaultValues::Factories::tradeSystem);
@@ -379,7 +379,7 @@ private:
 			m_configurationFile,
 			Ini::Sections::MarketData::source);
 		const std::string module
-			= configurationSection.ReadKey(Ini::Keys::module, false);
+			= configurationSection.ReadKey(Ini::Keys::module);
 		std::string factoryName = configurationSection.ReadKey(
 			Ini::Keys::factory,
 			Ini::DefaultValues::Factories::marketDataSource);
@@ -697,7 +697,7 @@ private:
  				Uses &uses)
 			const {
 		
-		const std::string strList = ini.ReadKey(Ini::Keys::uses, true);
+		const std::string strList = ini.ReadKey(Ini::Keys::uses, std::string());
 		if (strList.empty()) {
 			return;
 		}
@@ -755,12 +755,10 @@ private:
 						info.symbol,
 						configurationFile.ReadKey(
 							Ini::Sections::defaults,
-							Ini::Keys::exchange,
-							false),
+							Ini::Keys::exchange),
 						configurationFile.ReadKey(
 							Ini::Sections::defaults,
-							Ini::Keys::primaryExchange,
-							false));
+							Ini::Keys::primaryExchange));
 			const auto serviceSymbol = service->second.find(bindedSymbol);
 			if (serviceSymbol == service->second.end()) {
 				GetLog().Error(
@@ -844,8 +842,7 @@ private:
 				module = Normalize(Trait::GetDefaultModule());
 			} else {
 				module = configurationSection.ReadFileSystemPath(
-					Ini::Keys::module,
-					false);
+					Ini::Keys::module);
 			}
 		} catch (const IniFile::Error &ex) {
 			GetLog().Error(
@@ -868,9 +865,9 @@ private:
 
 		fs::path symbolsFilePath;
 		try {
-			symbolsFilePath = configurationSection.ReadFileSystemPath(
-				Ini::Keys::symbols,
-				false);
+			symbolsFilePath = Normalize(
+				configurationSection.ReadKey(Ini::Keys::symbols),
+				configurationSection.GetBase().GetPath().branch_path());
 		} catch (const IniFile::Error &ex) {
 			GetLog().Error("Failed to get symbols file: \"%1%\".", ex);
 			throw;
@@ -886,12 +883,10 @@ private:
 		symbols = symbolsIni.ReadSymbols(
 			configurationSection.GetBase().ReadKey(
 				Ini::Sections::defaults,
-				Ini::Keys::exchange,
-				false),
+				Ini::Keys::exchange),
 			configurationSection.GetBase().ReadKey(
 				Ini::Sections::defaults,
-				Ini::Keys::primaryExchange,
-				false));
+				Ini::Keys::primaryExchange));
 		try {
 			LoadSecurities(configurationSection.GetBase(), symbols);
 		} catch (const IniFile::Error &ex) {

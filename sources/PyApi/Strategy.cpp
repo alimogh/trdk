@@ -75,7 +75,7 @@ boost::shared_ptr<trdk::Strategy> PyApi::Strategy::CreateClientInstance(
 	auto clientClass = Script::Load(configuration).GetClass(
 		configuration,
 		context,
-		"Failed to find trader.Strategy implementation");
+		"Failed to find trdk.Strategy implementation");
 	try {
 		const std::string className
 			= py::extract<std::string>(clientClass.attr("__name__"));
@@ -91,7 +91,7 @@ boost::shared_ptr<trdk::Strategy> PyApi::Strategy::CreateClientInstance(
 		return strategyExport.GetStrategy().TakeExportObjectOwnership();
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
-		throw Error("Failed to create instance of trader.Strategy");
+		throw Error("Failed to create instance of trdk.Strategy");
 	}
 }
 

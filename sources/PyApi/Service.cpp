@@ -89,7 +89,7 @@ boost::shared_ptr<trdk::Service> PyApi::Service::CreateClientInstance(
 	auto clientClass = Script::Load(configuration).GetClass(
 		configuration,
 		context,
-		"Failed to find trader.Service implementation");
+		"Failed to find trdk.Service implementation");
 	try {
 		const std::string className
 			= py::extract<std::string>(clientClass.attr("__name__"));
@@ -104,7 +104,7 @@ boost::shared_ptr<trdk::Service> PyApi::Service::CreateClientInstance(
 		return serviceExport.GetService().TakeExportObjectOwnership();
 	} catch (const py::error_already_set &) {
 		LogPythonClientException();
-		throw Error("Failed to create instance of trader.Service");
+		throw Error("Failed to create instance of trdk.Service");
 	}
 }
 

@@ -62,7 +62,7 @@ void Settings::UpdateStatic(
 	{
 		std::list<std::string> subs;
 		const std::string keyValue
-			= confSection.ReadKey("trade_session_period_edt", false);
+			= confSection.ReadKey("trade_session_period_edt");
 		boost::split(subs, keyValue, boost::is_any_of("-"));
 		foreach (std::string &t, subs) {
 			boost::trim(t);

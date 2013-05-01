@@ -8,10 +8,8 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
+#include "Prec.hpp"
 #include "Exception.hpp"
-#include <stdlib.h>
-#include <string.h>
-#include <iostream>
 
 using namespace trdk::Lib;
 

@@ -23,17 +23,31 @@ namespace trdk { namespace PyApi { namespace Detail {
 		PyErr_Clear();
 	}
 
+	inline std::string GetModuleClassName(
+				const trdk::Lib::IniFileSectionRef &conf) {
+		try {
+			return conf.ReadKey("class");
+		} catch (const trdk::Lib::IniFile::KeyNotExistsError &) {
+			const auto dotPos = conf.GetName().find('.');
+			AssertNe(std::string::npos, dotPos);
+			if (std::string::npos == dotPos) {
+				return conf.GetName();
+			}
+			return conf.GetName().substr(dotPos + 1);
+		}
+	}
+
 	template<typename Module>
 	void UpdateAlgoSettings(
 				Module &algo,
-				const trdk::Lib::IniFileSectionRef &ini) {
+				const trdk::Lib::IniFileSectionRef &conf) {
 		SettingsReport::Report report;
 		SettingsReport::Append("tag", algo.GetTag(), report);
 		SettingsReport::Append(
 			"script_file_path",
-			ini.ReadKey("script_file_path", false),
+			conf.ReadKey("script_file_path"),
 			report);
-		SettingsReport::Append("class", ini.ReadKey("class", false), report);
+		SettingsReport::Append("class", GetModuleClassName(conf), report);
 		algo.ReportSettings(report);
 	}
 

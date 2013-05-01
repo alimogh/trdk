@@ -105,6 +105,9 @@ namespace trdk { namespace Lib {
 	boost::filesystem::path GetExeFilePath();
 	boost::filesystem::path GetExeWorkingDir();
 	boost::filesystem::path Normalize(const boost::filesystem::path &);
+	boost::filesystem::path Normalize(
+				const boost::filesystem::path &pathToNormilize,
+				const boost::filesystem::path &workingDir);
 
 	//////////////////////////////////////////////////////////////////////////
 

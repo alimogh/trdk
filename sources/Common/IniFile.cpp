@@ -9,6 +9,9 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "IniFile.hpp"
+#include "Util.hpp"
+#include "Foreach.hpp"
 
 namespace fs = boost::filesystem;
 using namespace trdk::Lib;
@@ -182,8 +185,7 @@ bool IniFile::IsKeyExist(
 
 std::string IniFile::ReadKey(
 			const std::string &section,
-			const std::string &key,
-			bool canBeEmpty)
+			const std::string &key)
 		const {
 	bool isKeyExists = false;
 	std::string result;
@@ -204,16 +206,16 @@ std::string IniFile::ReadKey(
 			}
 			subs.pop_front();
 			result = boost::join(subs, "=");
+			boost::trim(result);
 			return false;
 		},
 		true);
-	if (!isKeyExists || (!canBeEmpty && result.empty())) {
+	if (!isKeyExists || result.empty()) {
 		Assert(result.empty());
 		boost::format message("Failed to find INI-file key \"%1%::%2%\"");
 		message % section % key;
 		throw KeyNotExistsError(message.str().c_str());
 	}
-	boost::trim(result);
 	return result;
 }
 
@@ -223,7 +225,7 @@ std::string IniFile::ReadKey(
 			const std::string &defaultValue)
 		const {
 	try {
-		return ReadKey(section, key, false);
+		return ReadKey(section, key);
 	} catch (const KeyNotExistsError &) {
 		return defaultValue;
 	}
@@ -231,10 +233,9 @@ std::string IniFile::ReadKey(
 
 fs::path IniFile::ReadFileSystemPath(
 			const std::string &section,
-			const std::string &key,
-			bool canBeEmpty)
+			const std::string &key)
 		const {
-	return Normalize(fs::path(ReadKey(section, key, canBeEmpty)));
+	return Normalize(fs::path(ReadKey(section, key)));
 }
 
 IniFile::AbsoluteOrPercentsPrice IniFile::ReadAbsoluteOrPercentsPriceKey(
@@ -243,7 +244,7 @@ IniFile::AbsoluteOrPercentsPrice IniFile::ReadAbsoluteOrPercentsPriceKey(
 			unsigned long priceScale)
 		const {
 	AbsoluteOrPercentsPrice result = {};
-	std::string val = ReadKey(section, key, false);
+	std::string val = ReadKey(section, key);
 	result.isAbsolute = !boost::ends_with(val, "%");
 	if (!result.isAbsolute) {
 		val.pop_back();
@@ -265,7 +266,7 @@ IniFile::AbsoluteOrPercentsPrice IniFile::ReadAbsoluteOrPercentsPriceKey(
 }
 
 bool IniFile::ReadBoolKey(const std::string &section, const std::string &key) const {
-	const std::string val = ReadKey(section, key, false);
+	const std::string val = ReadKey(section, key);
 	if (	boost::iequals(val, "true")
 			|| boost::iequals(val, "yes")
 			|| val == "1") {
@@ -376,11 +377,8 @@ bool IniFileSectionRef::IsKeyExist(const std::string &key) const {
 	return m_file.IsKeyExist(m_name, key);
 }
 
-std::string IniFileSectionRef::ReadKey(
-				const std::string &key,
-				bool canBeEmpty)
-			const {
-	return m_file.ReadKey(m_name, key, canBeEmpty);
+std::string IniFileSectionRef::ReadKey(const std::string &key) const {
+	return m_file.ReadKey(m_name, key);
 }
 
 std::string IniFileSectionRef::ReadKey(
@@ -390,11 +388,8 @@ std::string IniFileSectionRef::ReadKey(
 	return m_file.ReadKey(m_name, key, defaultValue);
 }
 
-fs::path IniFileSectionRef::ReadFileSystemPath(
-			const std::string &key,
-			bool canBeEmpty)
-		const {
-	return m_file.ReadFileSystemPath(m_name, key, canBeEmpty);
+fs::path IniFileSectionRef::ReadFileSystemPath(const std::string &key) const {
+	return m_file.ReadFileSystemPath(m_name, key);
 }
 
 IniFile::AbsoluteOrPercentsPrice

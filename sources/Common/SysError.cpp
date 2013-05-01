@@ -12,19 +12,8 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
+#include "Prec.hpp"
 #include "SysError.hpp"
-#include "DisableBoostWarningsBegin.h"
-#	include <boost/config.hpp>
-#	include <boost/shared_ptr.hpp>
-#include "DisableBoostWarningsEnd.h"
-#ifdef BOOST_WINDOWS
-#	include <Windows.h>
-#else
-#	include "DisableBoostWarningsBegin.h"
-#		include <boost/system/system_error.hpp>
-#	include "DisableBoostWarningsEnd.h"
-#endif
-#include "Assert.hpp"
 
 using namespace trdk::Lib;
 
