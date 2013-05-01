@@ -17,11 +17,11 @@ namespace trdk {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class TRADER_CORE_API Context : private boost::noncopyable {
+	class TRDK_CORE_API Context : private boost::noncopyable {
 
 	public:
 
-		class TRADER_CORE_API Log;
+		class TRDK_CORE_API Log;
 
 	public:
 

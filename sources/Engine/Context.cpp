@@ -291,15 +291,22 @@ public:
 				IniFileSectionRef(m_configurationFile, Ini::Sections::common),
 				boost::get_system_time(),
 				isReplayMode,
-				m_context.GetLog()),
-			m_tradeSystem(LoadTradeSystem()),
-			m_marketDataSource(LoadMarketDataSource()) {
-		//...//
+				m_context.GetLog()) {
+		LoadTradeSystem();
+		if (!m_marketDataSource) {
+			LoadMarketDataSource();
+		}
+		Assert(m_tradeSystem);
+		Assert(m_marketDataSource);
 	}
 
 private:
 
-	DllObjectPtr<TradeSystem> LoadTradeSystem() {
+	void LoadTradeSystem() {
+		
+		Assert(!m_tradeSystem);
+		Assert(!m_marketDataSource);
+		
 		const IniFileSectionRef configurationSection(
 			m_configurationFile,
 			Ini::Sections::tradeSystem);
@@ -308,33 +315,34 @@ private:
 		std::string factoryName = configurationSection.ReadKey(
 			Ini::Keys::factory,
 			Ini::DefaultValues::Factories::tradeSystem);
+		
 		boost::shared_ptr<Dll> dll(new Dll(module, true));
-		typedef boost::shared_ptr<TradeSystem> (Proto)(
-			const IniFileSectionRef &,
-			Log &);
+
+		typedef TradeSystemFactoryResult FactoryResult;
+		typedef TradeSystemFactory Factory;
+		FactoryResult factoryResult;
+		
 		try {
+			
 			try {
-				return DllObjectPtr<TradeSystem>(
-					dll,
-					dll->GetFunction<Proto>(factoryName)(
-						configurationSection,
-						m_context.GetLog()));
+				factoryResult = dll->GetFunction<Factory>(factoryName)(
+					configurationSection,
+					m_context.GetLog());
 			} catch (const Dll::DllFuncException &) {
 				if (	!boost::istarts_with(
-						factoryName,
-						Ini::DefaultValues::Factories::factoryNameStart)) {
+							factoryName,
+							Ini::DefaultValues::Factories::factoryNameStart)) {
 					factoryName
 						= Ini::DefaultValues::Factories::factoryNameStart
 							+ factoryName;
-					return DllObjectPtr<TradeSystem>(
-						dll,
-						dll->GetFunction<Proto>(factoryName)(
-							configurationSection,
-							m_context.GetLog()));
+					factoryResult = dll->GetFunction<Factory>(factoryName)(
+						configurationSection,
+						m_context.GetLog());
 				} else {
 					throw;
 				}
 			}
+		
 		} catch (...) {
 			trdk::Log::RegisterUnhandledException(
 				__FUNCTION__,
@@ -343,9 +351,30 @@ private:
 				false);
 			throw Exception("Failed to load trade system module");
 		}
+	
+		Assert(boost::get<0>(factoryResult));
+		if (!boost::get<0>(factoryResult)) {
+			throw Exception(
+				"Failed to load trade system module - no object returned");
+		}
+		m_tradeSystem = DllObjectPtr<TradeSystem>(
+			dll,
+			boost::get<0>(factoryResult));
+
+		if (boost::get<1>(factoryResult)) {
+			m_context.GetLog().Info(
+				"Using trade system as market data source.");
+			m_marketDataSource = DllObjectPtr<MarketDataSource>(
+				dll,
+				boost::get<1>(factoryResult));
+		}
+
 	}
 
-	DllObjectPtr<MarketDataSource> LoadMarketDataSource() {
+	void LoadMarketDataSource() {
+		
+		Assert(!m_marketDataSource);
+
 		const IniFileSectionRef configurationSection(
 			m_configurationFile,
 			Ini::Sections::MarketData::source);
@@ -354,33 +383,32 @@ private:
 		std::string factoryName = configurationSection.ReadKey(
 			Ini::Keys::factory,
 			Ini::DefaultValues::Factories::marketDataSource);
+		
 		boost::shared_ptr<Dll> dll(new Dll(module, true));
-		typedef boost::shared_ptr<MarketDataSource> (Proto)(
-			const IniFileSectionRef &,
-			Log &);
+
+		typedef boost::shared_ptr<MarketDataSource> FactoryResult;
+		typedef MarketDataSourceFactory Factory;
+		FactoryResult factoryResult;
+		
 		try {
+		
 			try {
-				return DllObjectPtr<MarketDataSource>(
-					dll,
-					dll->GetFunction<Proto>(factoryName)(
-						configurationSection,
-						m_context.GetLog()));
+				factoryResult = dll->GetFunction<Factory>(factoryName)(
+					configurationSection);
 			} catch (const Dll::DllFuncException &) {
 				if (	!boost::istarts_with(
-						factoryName,
-						Ini::DefaultValues::Factories::factoryNameStart)) {
+							factoryName,
+							Ini::DefaultValues::Factories::factoryNameStart)) {
 					factoryName
 						= Ini::DefaultValues::Factories::factoryNameStart
 							+ factoryName;
-					return DllObjectPtr<MarketDataSource>(
-						dll,
-						dll->GetFunction<Proto>(factoryName)(
-							configurationSection,
-							m_context.GetLog()));
+					factoryResult = dll->GetFunction<Factory>(factoryName)(
+						configurationSection);
 				} else {
 					throw;
 				}
 			}
+	
 		} catch (...) {
 			trdk::Log::RegisterUnhandledException(
 				__FUNCTION__,
@@ -389,6 +417,14 @@ private:
 				false);
 			throw Exception("Failed to load market data source module");
 		}
+	
+		Assert(factoryResult);
+		if (!factoryResult) {
+			throw Exception(
+				"Failed to load market data source module - no object returned");
+		}
+		m_marketDataSource = DllObjectPtr<MarketDataSource>(dll, factoryResult);
+
 	}
 
 };
@@ -912,13 +948,21 @@ void Engine::Context::Start() {
 	}
 	std::unique_ptr<Implementation::State> state(
 		new Implementation::State(*this, m_pimpl->m_configurationFile));
+	auto &tradeSystem = GetTradeSystem();
+	auto &marketDataSource = GetMarketDataSource();
 	try {
 		Connect(
-			GetTradeSystem(),
+			tradeSystem,
 			IniFileSectionRef(
 				m_pimpl->m_configurationFile,
 				Ini::Sections::tradeSystem));
-		Connect(GetMarketDataSource());
+		if (static_cast<void *>(&tradeSystem) != &marketDataSource) {
+			Connect(
+				marketDataSource,
+				IniFileSectionRef(
+					m_pimpl->m_configurationFile,
+					Ini::Sections::tradeSystem));
+		}
 	} catch (const Exception &ex) {
 		GetLog().Error("Failed to make trading connections: \"%1%\".", ex);
 		throw Exception("Failed to make trading connections");

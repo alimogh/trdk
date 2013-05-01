@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Core/TradeSystem.hpp"
+#include "Core/Context.hpp"
 
 namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
@@ -53,6 +54,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 	public:
 
 		Client(
+				Context::Log &,
 				int clientId = 0,
 				const std::string &host = "127.0.0.1",
 				unsigned short port = 7496);
@@ -64,21 +66,21 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
-		trdk::OrderId SendAsk(const Security &, Qty);
-		trdk::OrderId SendAsk(const Security &, Qty, double);
+		trdk::OrderId SendAsk(const trdk::Security &, Qty);
+		trdk::OrderId SendAsk(const trdk::Security &, Qty, double);
 		trdk::OrderId SendAskWithMarketPrice(
-				const Security &,
+				const trdk::Security &,
 				Qty,
 				double stopPrice);
-		trdk::OrderId SendIocAsk(const Security &, Qty, double);
+		trdk::OrderId SendIocAsk(const trdk::Security &, Qty, double);
 
-		trdk::OrderId SendBid(const Security &, Qty);
-		trdk::OrderId SendBid(const Security &, Qty, double);
+		trdk::OrderId SendBid(const trdk::Security &, Qty);
+		trdk::OrderId SendBid(const trdk::Security &, Qty, double);
 		trdk::OrderId SendBidWithMarketPrice(
-				const Security &,
+				const trdk::Security &,
 				Qty,
 				double stopPrice);
-		trdk::OrderId SendIocBid(const Security &, Qty, double);
+		trdk::OrderId SendIocBid(const trdk::Security &, Qty, double);
 
 		void CancelOrder(trdk::OrderId);
 
@@ -238,6 +240,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		virtual void marketDataType(TickerId, int);
 
 	private:
+
+		Context::Log &m_log;
 
 		const std::string m_host;
 		const unsigned short m_port;

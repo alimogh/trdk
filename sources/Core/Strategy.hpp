@@ -16,7 +16,7 @@
 
 namespace trdk {
 
-	class TRADER_CORE_API Strategy : public trdk::SecurityAlgo {
+	class TRDK_CORE_API Strategy : public trdk::SecurityAlgo {
 
 	public:
 
@@ -24,13 +24,13 @@ namespace trdk {
 		typedef boost::function<PositionUpdateSlotSignature> PositionUpdateSlot;
 		typedef boost::signals2::connection PositionUpdateSlotConnection;
 
-		class TRADER_CORE_API PositionList {
+		class TRDK_CORE_API PositionList {
 
 		public:
 
 			class ConstIterator;
 		
-			class TRADER_CORE_API Iterator
+			class TRDK_CORE_API Iterator
 					: public boost::iterator_facade<
 						Iterator,
 						trdk::Position,
@@ -56,7 +56,7 @@ namespace trdk {
 				Implementation *m_pimpl;
 			};
 
-			class TRADER_CORE_API ConstIterator
+			class TRDK_CORE_API ConstIterator
 					: public boost::iterator_facade<
 						ConstIterator,
 						const trdk::Position,

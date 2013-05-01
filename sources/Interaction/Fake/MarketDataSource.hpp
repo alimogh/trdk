@@ -55,12 +55,12 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	public:
 
-		MarketDataSource(const Lib::IniFileSectionRef &, Context::Log &);
+		MarketDataSource(const Lib::IniFileSectionRef &);
 		virtual ~MarketDataSource();
 
 	public:
 
-		virtual void Connect();
+		virtual void Connect(const trdk::Lib::IniFileSectionRef &);
 
 	public:
 

@@ -15,6 +15,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Api.cpp" />
     <ClCompile Include="Api\EClientSocket.cpp">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Level3</WarningLevel>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Level3</WarningLevel>
@@ -40,6 +41,7 @@
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">4800;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="Client.cpp" />
+    <ClCompile Include="Security.cpp" />
     <ClCompile Include="TradeSystem.cpp" />
     <ClCompile Include="Prec.cpp" />
   </ItemGroup>
@@ -65,11 +67,13 @@
     <ClInclude Include="Api\TwsSocketClientErrors.h" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Client.hpp" />
+    <ClInclude Include="Security.hpp" />
     <ClInclude Include="TradeSystem.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Api\version" />
+    <None Include="InteractiveBrokers.def" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Common.vcxproj">
@@ -128,6 +132,11 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Link>
+      <ModuleDefinitionFile>InteractiveBrokers.def</ModuleDefinitionFile>
+    </Link>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

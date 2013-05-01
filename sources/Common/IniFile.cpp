@@ -8,15 +8,7 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#include "IniFile.hpp"
-#include "Util.hpp"
-#include "DisableBoostWarningsBegin.h"
-#	include <boost/algorithm/string.hpp>
-#	include <boost/format.hpp>
-#include "DisableBoostWarningsEnd.h"
-#include "Assert.hpp"
-#include "Foreach.hpp"
-#include <vector>
+#include "Prec.hpp"
 
 namespace fs = boost::filesystem;
 using namespace trdk::Lib;

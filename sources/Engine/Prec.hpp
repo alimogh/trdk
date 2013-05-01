@@ -23,7 +23,6 @@
 #	include <boost/regex.hpp>
 #	include <boost/variant/apply_visitor.hpp>
 #	include <boost/variant/variant.hpp>
-#	include <boost/tuple/tuple.hpp>
 #	include <boost/tuple/tuple_comparison.hpp>
 #	include <boost/multi_index_container.hpp>
 #	include <boost/multi_index/member.hpp>

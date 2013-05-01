@@ -14,9 +14,13 @@ namespace trdk { namespace Engine {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	void Connect(trdk::TradeSystem &, const trdk::Lib::IniFileSectionRef &);
+	void Connect(
+				trdk::TradeSystem &,
+				const trdk::Lib::IniFileSectionRef &);
 
-	void Connect(trdk::MarketDataSource &);
+	void Connect(
+				trdk::MarketDataSource &,
+				const trdk::Lib::IniFileSectionRef &);
 
 	//////////////////////////////////////////////////////////////////////////
 

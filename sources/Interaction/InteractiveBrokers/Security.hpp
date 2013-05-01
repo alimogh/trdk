@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/11/04 12:33:45
+ *   Created: 2013/05/01 16:43:56
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,27 +10,26 @@
 
 #pragma once
 
-#include "Module.hpp"
-#include "Api.h"
+#include "Core/Security.hpp"
 
-namespace trdk {
+namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
-	class TRDK_CORE_API SecurityAlgo : public trdk::Module {
 
-	public:
-
-		explicit SecurityAlgo(
-				trdk::Context &,
-				const std::string &typeName,
-				const std::string &name,
-				const std::string &tag);
-		virtual ~SecurityAlgo();
+	class Security : public trdk::Security {
 
 	public:
 
-		virtual const trdk::Security & GetSecurity() const = 0;
+		typedef trdk::Security Base;
+
+	public:
+
+		explicit Security(
+					Context &,
+					const std::string &symbol,
+					const std::string &primaryExchange,
+					const std::string &exchange,
+					bool logMarketData);
 
 	};
 
-}
-
+} } }

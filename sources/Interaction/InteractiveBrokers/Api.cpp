@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/09/15 23:34:19
+ *   Created: 2013/04/28 22:54:08
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,27 +10,23 @@
 
 #include "Prec.hpp"
 #include "TradeSystem.hpp"
-#include "MarketDataSource.hpp"
 
 #ifdef BOOST_WINDOWS
-#	define TRDK_INTERACTION_FAKE_API
+#	define TRDK_INTERACTION_INTERACTIVEBROKERS_API
 #else
-#	define TRDK_INTERACTION_FAKE_API extern "C"
+#	define TRDK_INTERACTION_INTERACTIVEBROKERS_API extern "C"
 #endif
 
-TRDK_INTERACTION_FAKE_API
+namespace ib = trdk::Interaction::InteractiveBrokers;
+
+TRDK_INTERACTION_INTERACTIVEBROKERS_API
 trdk::TradeSystemFactoryResult CreateTradeSystem(
 			const trdk::Lib::IniFileSectionRef &configuration,
 			trdk::Context::Log &log) {
 	trdk::TradeSystemFactoryResult result;
-	boost::get<0>(result).reset(
-		new trdk::Interaction::Fake::TradeSystem(configuration, log));
+	boost::shared_ptr<ib::TradeSystem> tradeSystem(
+		new ib::TradeSystem(configuration, log));
+	boost::get<0>(result) = tradeSystem;
+	boost::get<1>(result) = tradeSystem;
 	return result;
-}
-
-TRDK_INTERACTION_FAKE_API
-boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
-			const trdk::Lib::IniFileSectionRef &configuration) {
-	return boost::shared_ptr<trdk::MarketDataSource>(
-		new trdk::Interaction::Fake::MarketDataSource(configuration));
 }

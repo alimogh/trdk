@@ -15,7 +15,7 @@
 
 namespace trdk {
 
-	class TRADER_CORE_API Instrument : private boost::noncopyable {
+	class TRDK_CORE_API Instrument : private boost::noncopyable {
 
 	public:
 

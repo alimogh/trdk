@@ -32,6 +32,9 @@
     <ClCompile Include="SysError.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Prec.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assert.hpp">
@@ -77,6 +80,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SysError.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

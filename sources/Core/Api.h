@@ -11,11 +11,11 @@
 #pragma once
 
 #if defined(_MSC_VER)
-#	ifdef TRADER_CORE
-#		define TRADER_CORE_API __declspec(dllexport)
+#	ifdef TRDK_CORE
+#		define TRDK_CORE_API __declspec(dllexport)
 #	else
-#		define TRADER_CORE_API __declspec(dllimport)
+#		define TRDK_CORE_API __declspec(dllimport)
 #	endif
 #else
-#	define TRADER_CORE_API
+#	define TRDK_CORE_API
 #endif

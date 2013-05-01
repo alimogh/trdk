@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/07/31 20:48:59
+ *   Created: 2013/05/01 02:31:57
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,14 +8,4 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#pragma once
-#include "Strategy.hpp"
-
-class TRDK_CORE_API StrategyPositionState : private boost::noncopyable {
-
-public:
-
-	StrategyPositionState();
-	virtual ~StrategyPositionState();
-
-};
+#include "Prec.hpp"

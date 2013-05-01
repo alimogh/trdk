@@ -18,7 +18,7 @@ namespace trdk {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class TRADER_CORE_API Position
+	class TRDK_CORE_API Position
 			: private boost::noncopyable,
 			public boost::enable_shared_from_this<trdk::Position> {
 
@@ -45,21 +45,21 @@ namespace trdk {
 			CLOSE_TYPE_ENGINE_STOP
 		};
 
-		class TRADER_CORE_API LogicError : public trdk::Lib::LogicError {
+		class TRDK_CORE_API LogicError : public trdk::Lib::LogicError {
 		public:
 			explicit LogicError(const char *what) throw();
 		};
 		
-		class TRADER_CORE_API AlreadyStartedError : public LogicError {
+		class TRDK_CORE_API AlreadyStartedError : public LogicError {
 		public:
 			AlreadyStartedError() throw();
 		};
-		class TRADER_CORE_API NotOpenedError : public LogicError {
+		class TRDK_CORE_API NotOpenedError : public LogicError {
 		public:
 			NotOpenedError() throw();
 		};
 		
-		class TRADER_CORE_API AlreadyClosedError : public LogicError {
+		class TRDK_CORE_API AlreadyClosedError : public LogicError {
 		public:
 			AlreadyClosedError() throw();
 		};
@@ -210,7 +210,7 @@ namespace trdk {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class TRADER_CORE_API LongPosition : public Position {
+	class TRDK_CORE_API LongPosition : public Position {
 
 	public:
 
@@ -257,7 +257,7 @@ namespace trdk {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class TRADER_CORE_API ShortPosition : public Position {
+	class TRDK_CORE_API ShortPosition : public Position {
 
 	public:
 

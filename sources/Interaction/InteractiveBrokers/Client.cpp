@@ -41,10 +41,12 @@ namespace {
 ///////////////////////////////////////////////////////////////////////////////
 
 Client::Client(
+			Context::Log &log,
 			int clientId /*= 0*/,
 			const std::string &host /*= "127.0.0.1"*/,
 			unsigned short port /*= 7496*/)
-		: m_host(host),
+		: m_log(log),
+		m_host(host),
 		m_port(port),
 		m_clientId(clientId),
 		m_isConnected(false),
@@ -87,12 +89,13 @@ Client::~Client() {
 			delete m_thread;
 		}
 
-		Log::Info(
+		m_log.Info(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 				" connection CLOSED (\"%1%:%2%\", client ID %3%).",
-			host,
-			port,
-			clientId);
+			boost::make_tuple(
+				boost::cref(host),
+				boost::cref(port),
+				boost::cref(clientId)));
 
 	} catch (...) {
 		AssertFailNoException();
@@ -102,7 +105,7 @@ Client::~Client() {
 }
 
 void Client::Task() {
-	Log::Info(
+	m_log.Info(
 		"Started "
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 			" connection read task.");
@@ -124,7 +127,7 @@ void Client::Task() {
 						heavyCount == 5
 						|| (heavyCount > 5 && !(++heavyCount % 10))) {
 					lock->unlock();
-					Log::Warn(
+					m_log.Warn(
 						INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 							" connection task is heavily loaded"
 							" (iterations without sleep: %1%).",
@@ -155,7 +158,7 @@ void Client::Task() {
 					m_condition.notify_all();
 				} else {
 					lock->unlock();
-					Log::Debug(
+					m_log.Debug(
 						"Waiting for "
 							INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 							" seqnumber...");
@@ -172,7 +175,7 @@ void Client::Task() {
 			throw;
 		}
 	}
-	Log::Info(
+	m_log.Info(
 		"Stopped "
 		INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 		" connection read task.");
@@ -190,7 +193,9 @@ void Client::StartData() {
 			Task();
 		});
 	if (!m_condition.timed_wait(lock, boost::get_system_time() + timeout)) {
-		Log::Error(INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection error: no seqnumber received.");
+		m_log.Error(
+			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
+				" connection error: no seqnumber received.");
 		m_isConnected = false;
 		m_condition.notify_all();
 		throw TradeSystem::ConnectError("No seqnumber received");
@@ -234,7 +239,7 @@ bool Client::ProcessMessages() {
 	if (selectResult == 0) { // timeout
 		return false;
 	} else  if (selectResult < 0) {
-		Log::Debug(
+		m_log.Debug(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 				" connection process operation returned DISCONNECT.");
 		m_isConnected = false;
@@ -268,11 +273,12 @@ void Client::SubscribeToMarketDataLevel2(
 	const Lock lock(m_mutex);
 	CheckState();
 	const auto tickerId = const_cast<Client *>(this)->TakeTickerId();
-	Log::Info(
+	m_log.Info(
 		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level II"
 			" market data subscription request for \"%1%\" (ticker ID: %2%).",
-		security->GetSymbol(),
-		tickerId);
+		boost::make_tuple(
+			boost::cref(security->GetSymbol()),
+			boost::cref(tickerId)));
 	Contract contract;
 	contract << *security;
 	contract.primaryExchange.clear();
@@ -486,45 +492,48 @@ void Client::CancelOrder(trdk::OrderId id) {
 }
 
 void Client::LogConnectionAttempt() const throw() {
-	Log::Info(
+	m_log.Info(
 		"Connecting to "
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 			" at \"%1%:%2%\" with client ID %3%...",
-		m_host,
-		m_port,
-		m_clientId);
+		boost::make_tuple(
+			boost::cref(m_host),
+			boost::cref(m_port),
+			boost::cref(m_clientId)));
 }
 void Client::LogConnect() const throw() {
-	Log::Info(
+	m_log.Info(
 		INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 			" connection successfully CREATED (\"%1%:%2%\", client ID %3%).",
-		m_host,
-		m_port,
-		m_clientId);
+		boost::make_tuple(
+			boost::cref(m_host),
+			boost::cref(m_port),
+			boost::cref(m_clientId)));
 }
 
 void Client::LogDisconnectAttempt() const throw() {
-	Log::Info(
+	m_log.Info(
 		"Disconnecting from "
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 			" at \"%1%:%2%\" with client ID %3%...",
-		m_host,
-		m_port,
-		m_clientId);
+		boost::make_tuple(
+			boost::cref(m_host),
+			boost::cref(m_port),
+			boost::cref(m_clientId)));
 }
 
 void Client::LogError(const int id, const int code, const IBString &message) {
 	switch (code) {
 		// case 200: // No security definition has been found for the request.
 		case 201: // Order rejected - Reason:
-			Log::Error(
+			m_log.Error(
 				INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 					" order rejected: %1%.",
 				message);
 			break;
 		case 202: // Order canceled - Reason:
 			/*
-			Log::Debug(
+			m_log.Debug(
 				INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 					" order canceled: %1%.",
 				message);
@@ -543,15 +552,16 @@ void Client::LogError(const int id, const int code, const IBString &message) {
 							ch = ' ';
 						}
 					});
-				Log::Error(
+				m_log.Error(
 					INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 						" order (ID %1%) error: \"%2%\".",
-					id,
-					messageCopy);
+					boost::make_tuple(
+						boost::cref(id),
+						boost::cref(messageCopy)));
 			}
 			break;
 		case 502: // Couldn't connect to TWS.
-			Log::Error(
+			m_log.Error(
 				INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME ": %1%.",
 				message);
 			break;
@@ -569,33 +579,36 @@ void Client::LogError(const int id, const int code, const IBString &message) {
 					// but should be available upon demand.
 		case 2108:	// A market data farm connection has become inactive but
 					// should be available upon demand.
-			Log::Info(
+			m_log.Info(
 				INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection:"
 					" \"%1%\" (error code: %2%, order or ticket ID: %3%).",
-				message,
-				code,
-				id);
+				boost::make_tuple(
+					boost::cref(message),
+					boost::cref(code),
+					boost::cref(id)));
 			break;
 		case 2109:	// Order Event Warning: Attribute “Outside Regular Trading
 					// Hours” is ignored based on the order type and
 					// destination. PlaceOrder is now processed.
 		case 2110:	// Connectivity between TWS and server is broken. It will
 					// be restored automatically.
-			Log::Warn(
+			m_log.Warn(
 				INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection:"
 					" \"%1%\" (error code: %2%, order or ticket ID: %3%).",
-				message,
-				code,
-				id);
+				boost::make_tuple(
+					boost::cref(message),
+					boost::cref(code),
+					boost::cref(id)));
 			break;
 		default:
-			Log::Error(
+			m_log.Error(
 				"Error occurred in "
 					INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection:"
 					" \"%1%\" (error code: %2%, order or ticket ID: %3%).",
-				message,
-				code,
-				id);
+				boost::make_tuple(
+					boost::cref(message),
+					boost::cref(code),
+					boost::cref(id)));
 			break;
 	}
 }
@@ -694,7 +707,7 @@ void Client::HandleError(
 
 void Client::CheckState() const {
 	if (m_seqNumber < 0) {
-		Log::Error(
+		m_log.Error(
 			"No " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 				" seqnumber specified.");
 	}
@@ -707,7 +720,7 @@ void Client::CheckState() const {
 
 void Client::CheckTimeout() const {
 	if (m_timeoutTime != pt::not_a_date_time && m_timeoutTime <= m_clientNow) {
-		Log::Error(
+		m_log.Error(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection TIMEOUT!");
 		// m_isConnected = false; - trying to work
 		return;
@@ -747,7 +760,7 @@ void Client::orderStatus(
 			const IBString &whyHeld) {
 
 /*
-	Log::Debug(
+	m_log.Debug(
 		"Order status: "
 			" ID: %1%"
 			", status: %2%"
@@ -767,11 +780,12 @@ void Client::orderStatus(
 		= m_orderStatusesMap.find(statusText);
 	Assert(statusPos != m_orderStatusesMap.end());
 	if (statusPos == m_orderStatusesMap.end()) {
-		Log::Error(
+		m_log.Error(
 			"Failed to decode status order (ID: %1%, status: \"%2%\", parent ID: %3%).",
-			id,
-			statusText,
-			parentId);
+			boost::make_tuple(
+				boost::cref(id),
+				boost::cref(statusText),
+				boost::cref(parentId)));
 		return;
 	}
 	Assert(m_seqNumber < 0 || m_seqNumber > id);
@@ -790,13 +804,13 @@ void Client::orderStatus(
 void Client::currentTime(long time) {
 	AssertEq(STATE_PING_ACK, m_state);
 	if (m_state != STATE_PING_ACK) {
-		Log::Debug(
+		m_log.Debug(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " server current time"
 				" arrived without request: %1%.",
 			pt::from_time_t(time));
 		return;
 	}
-	Log::Info(
+	m_log.Info(
 		INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " server current time: %1%.",
 		pt::from_time_t(time));
 	UpdateNextPingRequestTime();
@@ -880,11 +894,12 @@ void Client::openOrderEnd() {
 }
 
 void Client::winError(const IBString &message, int code) {
-	Log::Error(
+	m_log.Error(
 		"Error occurred on " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection client side:"
 			" \"%1%\" (error code: %2%, order or ticket ID: %3%).",
-		message,
-		code);
+		boost::make_tuple(
+			boost::cref(message),
+			boost::cref(code)));
 }
 
 void Client::connectionClosed() {
@@ -924,13 +939,16 @@ void Client::nextValidId(::OrderId id) {
 	const auto prevVal = m_seqNumber;
 	m_seqNumber = id;
 	if (prevVal != -1) {
-		Log::Info(
-			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection changed next order ID %1% -> %2%.",
-			prevVal,
-			m_seqNumber);
+		m_log.Info(
+			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
+				" connection changed next order ID %1% -> %2%.",
+			boost::make_tuple(
+				boost::cref(prevVal),
+				boost::cref(m_seqNumber)));
 	} else {
-		Log::Info(
-			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection set next order ID %1%.",
+		m_log.Info(
+			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
+				" connection set next order ID %1%.",
 			m_seqNumber);
 	}
 	Assert(m_seqNumber >= 0);
@@ -984,7 +1002,7 @@ void Client::updateMktDepthL2(
 	const pt::ptime now = boost::get_system_time();
 	UpdatesSubscribers::const_iterator i = m_updatesSubscribers.find(tickerId);
 	if (i == m_updatesSubscribers.end()) {
-		Log::Debug(
+		m_log.Debug(
 			"Couldn't find Market Depth Data subscriber for ticker %1%.",
 			tickerId);
 		return;

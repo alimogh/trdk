@@ -15,16 +15,26 @@
 
 namespace trdk {
 
-	class TRADER_CORE_API MarketDataSource : private boost::noncopyable {
+	////////////////////////////////////////////////////////////////////////////////
+
+	//!	Market data source factory.
+	/** Result can't be nullptr.
+	  */
+	typedef boost::shared_ptr<trdk::MarketDataSource> (MarketDataSourceFactory)(
+			const trdk::Lib::IniFileSectionRef &);
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	class TRDK_CORE_API MarketDataSource : private boost::noncopyable {
 
 	public:
 
-		class TRADER_CORE_API Error : public trdk::Lib::Exception {
+		class TRDK_CORE_API Error : public trdk::Lib::Exception {
 		public:
 			explicit Error(const char *what) throw();
 		};
 
-		class TRADER_CORE_API ConnectError : public Error {
+		class TRDK_CORE_API ConnectError : public Error {
 		public:
 			ConnectError() throw();
 		};
@@ -36,7 +46,7 @@ namespace trdk {
 
 	public:
 
-		virtual void Connect() = 0;
+		virtual void Connect(const trdk::Lib::IniFileSectionRef &) = 0;
 
 	public:
 
@@ -50,5 +60,7 @@ namespace trdk {
 				= 0;
 
 	};
+
+	////////////////////////////////////////////////////////////////////////////////
 
 }

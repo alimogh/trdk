@@ -16,7 +16,7 @@
 
 namespace trdk {
 
-	class TRADER_CORE_API Service : public trdk::SecurityAlgo {
+	class TRDK_CORE_API Service : public trdk::SecurityAlgo {
 
 	public:
 

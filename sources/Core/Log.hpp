@@ -28,20 +28,20 @@ namespace trdk { namespace Log {
 		numberOfLevels
 	};
 
-	TRADER_CORE_API Mutex & GetEventsMutex();
-	TRADER_CORE_API Mutex & GetTradingMutex();
+	TRDK_CORE_API Mutex & GetEventsMutex();
+	TRDK_CORE_API Mutex & GetTradingMutex();
 
-	TRADER_CORE_API bool IsEventsEnabled(trdk::Log::Level) throw();
-	TRADER_CORE_API void EnableEvents(std::ostream &);
-	TRADER_CORE_API void EnableEventsToStdOut();
-	TRADER_CORE_API void DisableEvents() throw();
-	TRADER_CORE_API void DisableEventsToStdOut() throw();
+	TRDK_CORE_API bool IsEventsEnabled(trdk::Log::Level) throw();
+	TRDK_CORE_API void EnableEvents(std::ostream &);
+	TRDK_CORE_API void EnableEventsToStdOut();
+	TRDK_CORE_API void DisableEvents() throw();
+	TRDK_CORE_API void DisableEventsToStdOut() throw();
 
-	TRADER_CORE_API bool IsTradingEnabled() throw();
-	TRADER_CORE_API void EnableTrading(std::ostream &);
-	TRADER_CORE_API void DisableTrading() throw();
+	TRDK_CORE_API bool IsTradingEnabled() throw();
+	TRDK_CORE_API void EnableTrading(std::ostream &);
+	TRDK_CORE_API void DisableTrading() throw();
 
-	TRADER_CORE_API void RegisterUnhandledException(
+	TRDK_CORE_API void RegisterUnhandledException(
 			const char *function,
 			const char *file,
 			long line,
@@ -56,20 +56,20 @@ namespace trdk { namespace Log { namespace Detail {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	void TRADER_CORE_API AppendEventRecordUnsafe(
+	void TRDK_CORE_API AppendEventRecordUnsafe(
 				Level,
 				const boost::posix_time::ptime &time,
 				const char *str);
-	void TRADER_CORE_API AppendEventRecordUnsafe(
+	void TRDK_CORE_API AppendEventRecordUnsafe(
 				Level,
 				const boost::posix_time::ptime &time,
 				const std::string &str);
 
-	void TRADER_CORE_API AppendTradingRecordUnsafe(
+	void TRDK_CORE_API AppendTradingRecordUnsafe(
 				const boost::posix_time::ptime &time,
 				const std::string &tag,
 				const char *str);
-	void TRADER_CORE_API AppendTradingRecordUnsafe(
+	void TRDK_CORE_API AppendTradingRecordUnsafe(
 				const boost::posix_time::ptime &time,
 				const std::string &tag,
 				const std::string &str);

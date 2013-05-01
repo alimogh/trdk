@@ -11,11 +11,15 @@
 #pragma once
 
 #include "Core/TradeSystem.hpp"
+#include "Core/MarketDataSource.hpp"
+#include "Core/Context.hpp"
 #include "Fwd.hpp"
 
 namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
-	class TradeSystem : public trdk::TradeSystem {
+	class TradeSystem
+		: public trdk::TradeSystem,
+		public trdk::MarketDataSource {
 
 	private:
 
@@ -62,12 +66,22 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
-		explicit TradeSystem();
+		explicit TradeSystem(const Lib::IniFileSectionRef &, Context::Log &);
 		virtual ~TradeSystem();
 
 	public:
 
 		virtual void Connect(const trdk::Lib::IniFileSectionRef &);
+
+	public:
+
+		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
+				trdk::Context &,
+				const std::string &symbol,
+				const std::string &primaryExchange,
+				const std::string &exchange,
+				bool logMarketData)
+			const;
 
 	public:
 
@@ -119,6 +133,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		void RegOrder(const PlacedOrder &);
 
 	private:
+
+		Context::Log &m_log;
 
 		Mutex m_mutex;
 		std::unique_ptr<Client> m_client;

@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "TradeSystem.hpp"
+#include "Security.hpp"
 #include "Client.hpp"
 #include "Core/Security.hpp"
 
@@ -20,7 +21,10 @@ using namespace trdk::Interaction::InteractiveBrokers;
 namespace ib = trdk::Interaction::InteractiveBrokers;
 
 
-ib::TradeSystem::TradeSystem() {
+ib::TradeSystem::TradeSystem(
+			const Lib::IniFileSectionRef &,
+			Context::Log &log)
+		: m_log(log) {
 	//...//
 }
 
@@ -37,6 +41,7 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 
 	std::unique_ptr<Client> client(
 		new Client(
+			m_log,
 			settings.ReadTypedKey<int>("client_id", 0),
 			settings.ReadKey("ip_address", "127.0.0.1")));
 	client->Subscribe(
@@ -95,11 +100,28 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 
 }
 
+boost::shared_ptr<trdk::Security> ib::TradeSystem::CreateSecurity(
+			Context &context,
+			const std::string &symbol,
+			const std::string &primaryExchange,
+			const std::string &exchange,
+			bool logMarketData)
+		const {
+	boost::shared_ptr<ib::Security> result(
+		new ib::Security(
+			context,
+			symbol,
+			primaryExchange,
+			exchange,
+			logMarketData));
+	return result;
+}
+
 void ib::TradeSystem::CancelOrder(trdk::OrderId orderId) {
 	m_client->CancelOrder(orderId);
 }
 
-void ib::TradeSystem::CancelAllOrders(Security &security) {
+void ib::TradeSystem::CancelAllOrders(trdk::Security &security) {
 	std::list<trdk::OrderId> ids;
 	std::list<std::string> idsStr;
 	{
@@ -122,7 +144,7 @@ void ib::TradeSystem::CancelAllOrders(Security &security) {
 }
 
 trdk::OrderId ib::TradeSystem::SellAtMarketPrice(
-			Security &security,
+			trdk::Security &security,
 			Qty qty,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	PlacedOrder order = {};
@@ -135,7 +157,7 @@ trdk::OrderId ib::TradeSystem::SellAtMarketPrice(
 
 
 trdk::OrderId ib::TradeSystem::Sell(
-			Security &security,
+			trdk::Security &security,
 			Qty qty,
 			ScaledPrice price,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -149,7 +171,7 @@ trdk::OrderId ib::TradeSystem::Sell(
 }
 
 trdk::OrderId ib::TradeSystem::SellAtMarketPriceWithStopPrice(
-			Security &security,
+			trdk::Security &security,
 			Qty qty,
 			ScaledPrice stopPrice,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -163,7 +185,7 @@ trdk::OrderId ib::TradeSystem::SellAtMarketPriceWithStopPrice(
 }
 
 trdk::OrderId ib::TradeSystem::SellOrCancel(
-			Security &security,
+			trdk::Security &security,
 			Qty qty,
 			ScaledPrice price,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -177,7 +199,7 @@ trdk::OrderId ib::TradeSystem::SellOrCancel(
 }
 
 trdk::OrderId ib::TradeSystem::BuyAtMarketPrice(
-			Security &security,
+			trdk::Security &security,
 			Qty qty,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	PlacedOrder order = {};
@@ -189,7 +211,7 @@ trdk::OrderId ib::TradeSystem::BuyAtMarketPrice(
 }
 
 trdk::OrderId ib::TradeSystem::Buy(
-			Security &security,
+			trdk::Security &security,
 			Qty qty,
 			ScaledPrice price,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -203,7 +225,7 @@ trdk::OrderId ib::TradeSystem::Buy(
 }
 
 trdk::OrderId ib::TradeSystem::BuyAtMarketPriceWithStopPrice(
-			Security &security,
+			trdk::Security &security,
 			Qty qty,
 			ScaledPrice stopPrice,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -217,7 +239,7 @@ trdk::OrderId ib::TradeSystem::BuyAtMarketPriceWithStopPrice(
 }
 
 trdk::OrderId ib::TradeSystem::BuyOrCancel(
-			Security &security,
+			trdk::Security &security,
 			Qty qty,
 			ScaledPrice price,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {

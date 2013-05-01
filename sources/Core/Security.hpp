@@ -16,7 +16,7 @@
 
 namespace trdk {
 
-	class TRADER_CORE_API Security : public trdk::Instrument {
+	class TRDK_CORE_API Security : public trdk::Instrument {
 
 	public:
 
@@ -172,7 +172,7 @@ namespace trdk {
 }
 
 namespace std {
-	TRADER_CORE_API std::ostream & operator <<(
+	TRDK_CORE_API std::ostream & operator <<(
 				std::ostream &,
 				const trdk::Security &);
 }

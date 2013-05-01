@@ -94,7 +94,7 @@ namespace trdk { namespace Interaction { namespace Csv {
 
 	public:
 
-		virtual void Connect();
+		virtual void Connect(const trdk::Lib::IniFileSectionRef &);
 
 	public:
 

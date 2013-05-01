@@ -35,6 +35,7 @@ namespace trdk { namespace Engine { namespace Ini {
 		extern const std::string primaryExchange;
 		extern const std::string exchange;
 		extern const std::string uses;
+		extern const std::string isMarketDataSource;
 	}
 
 	namespace Constants {

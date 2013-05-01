@@ -8,8 +8,7 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#include "Defaults.hpp"
-#include "Util.hpp"
+#include "Prec.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

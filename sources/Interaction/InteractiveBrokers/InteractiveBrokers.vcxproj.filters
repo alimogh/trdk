@@ -32,6 +32,12 @@
     <ClCompile Include="Api\EPosixClientSocket.cpp">
       <Filter>API</Filter>
     </ClCompile>
+    <ClCompile Include="Api.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Security.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -103,10 +109,16 @@
     <ClInclude Include="Api\TwsSocketClientErrors.h">
       <Filter>API</Filter>
     </ClInclude>
+    <ClInclude Include="Security.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Api\version">
       <Filter>API</Filter>
+    </None>
+    <None Include="InteractiveBrokers.def">
+      <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
 </Project>

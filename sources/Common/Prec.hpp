@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/11/04 12:33:45
+ *   Created: 2013/05/01 02:29:37
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,27 +10,13 @@
 
 #pragma once
 
-#include "Module.hpp"
-#include "Api.h"
+#include "Common/Assert.hpp"
 
-namespace trdk {
+#include "DisableBoostWarningsBegin.h"
+#	include <boost/algorithm/string.hpp>
+#include "DisableBoostWarningsEnd.h"
 
-	class TRDK_CORE_API SecurityAlgo : public trdk::Module {
+#include "Common/Common.hpp"
 
-	public:
-
-		explicit SecurityAlgo(
-				trdk::Context &,
-				const std::string &typeName,
-				const std::string &name,
-				const std::string &tag);
-		virtual ~SecurityAlgo();
-
-	public:
-
-		virtual const trdk::Security & GetSecurity() const = 0;
-
-	};
-
-}
+#include "Common/Assert.hpp"
 

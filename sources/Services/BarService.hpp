@@ -16,7 +16,7 @@
 namespace trdk { namespace Services {
 
 	//! Bars collection service.
-	class TRADER_SERVICES_API BarService : public trdk::Service {
+	class TRDK_SERVICES_API BarService : public trdk::Service {
 
 	public:
 

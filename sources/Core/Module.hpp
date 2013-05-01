@@ -18,11 +18,11 @@ namespace trdk {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class TRADER_CORE_API Module : private boost::noncopyable {
+	class TRDK_CORE_API Module : private boost::noncopyable {
 
 	public:
 
-		class TRADER_CORE_API Log;
+		class TRDK_CORE_API Log;
 
 	protected:
 
@@ -188,7 +188,7 @@ namespace trdk {
 //////////////////////////////////////////////////////////////////////////
 
 namespace std {
-	TRADER_CORE_API std::ostream & operator <<(
+	TRDK_CORE_API std::ostream & operator <<(
 				std::ostream &,
 				const trdk::Module &)
 			throw();

@@ -15,7 +15,6 @@
 #	include <boost/date_time/local_time/local_time.hpp>
 #	include <boost/math/special_functions/round.hpp>
 #	include <boost/filesystem.hpp>
-#	include <boost/tuple/tuple.hpp>
 #include "DisableBoostWarningsEnd.h"
 
 namespace trdk { namespace Lib {

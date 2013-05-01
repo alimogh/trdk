@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "Context.hpp"	//! @todo	remove context from TradeSystem as it can be
+						//!			one for all contexts.
 #include "Fwd.hpp"
 #include "Api.h"
 
@@ -17,7 +19,22 @@
 
 namespace trdk {
 
-	class TRADER_CORE_API TradeSystem : private boost::noncopyable {
+	////////////////////////////////////////////////////////////////////////////////
+
+	typedef boost::tuple<
+			boost::shared_ptr<trdk::TradeSystem> /* can't be nullptr */,
+			boost::shared_ptr<trdk::MarketDataSource> /* can be nullptr */ >
+		TradeSystemFactoryResult;
+
+	typedef trdk::TradeSystemFactoryResult (TradeSystemFactory)(
+			const trdk::Lib::IniFileSectionRef &,
+			trdk::Context::Log &);	//! @todo	remove context from TradeSystem
+									//!			as it can be one for all
+									//!			contexts.
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	class TRDK_CORE_API TradeSystem : private boost::noncopyable {
 
 	public:
 
@@ -43,23 +60,23 @@ namespace trdk {
 
 	public:
 
-		class TRADER_CORE_API Error : public trdk::Lib::Exception {
+		class TRDK_CORE_API Error : public trdk::Lib::Exception {
 		public:
 			explicit Error(const char *what) throw();
 		};
 
-		class TRADER_CORE_API ConnectError : public Error {
+		class TRDK_CORE_API ConnectError : public Error {
 		public:
 			ConnectError() throw();
 			explicit ConnectError(const char *what) throw();
 		};
 
-		class TRADER_CORE_API SendingError : public Error {
+		class TRDK_CORE_API SendingError : public Error {
 		public:
 			SendingError() throw();
 		};
 
-		class TRADER_CORE_API ConnectionDoesntExistError : public Error {
+		class TRDK_CORE_API ConnectionDoesntExistError : public Error {
 		public:
 			ConnectionDoesntExistError(const char *what) throw();
 		};
@@ -131,6 +148,8 @@ namespace trdk {
 		virtual void CancelAllOrders(trdk::Security &) = 0;
 
 	};
+
+	////////////////////////////////////////////////////////////////////////////////
 
 }
 

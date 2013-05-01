@@ -17,26 +17,26 @@ namespace pt = boost::posix_time;
 using namespace trdk;
 using namespace trdk::Lib;
 
-void Engine::Connect(
-			TradeSystem &tradeSystem,
-			const IniFileSectionRef &settings) {
-	for ( ; ; ) {
-		try {
-			tradeSystem.Connect(settings);
-			break;
-		} catch (const TradeSystem::ConnectError &) {
-			boost::this_thread::sleep(pt::seconds(5));
+namespace {
+
+	template<typename T>
+	void ConnectUntilSuccess(T &obj, const IniFileSectionRef &settings) {
+		for ( ; ; ) {
+			try {
+				obj.Connect(settings);
+				break;
+			} catch (const T::ConnectError &) {
+				boost::this_thread::sleep(pt::seconds(5));
+			}
 		}
 	}
+
 }
 
-void Engine::Connect(MarketDataSource &marketDataSource) {
-	for ( ; ; ) {
-		try {
-			marketDataSource.Connect();
-			break;
-		} catch (const MarketDataSource::ConnectError &) {
-			boost::this_thread::sleep(pt::seconds(5));
-		}
-	}
+void Engine::Connect(TradeSystem &ts, const IniFileSectionRef &settings) {
+	ConnectUntilSuccess(ts, settings);
+}
+
+void Engine::Connect(MarketDataSource &md, const IniFileSectionRef &settings) {
+	ConnectUntilSuccess(md, settings);
 }

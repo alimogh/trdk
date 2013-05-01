@@ -8,17 +8,7 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#include "Util.hpp"
-#include "Exception.hpp"
-#include "SysError.hpp"
-#include "DisableBoostWarningsBegin.h"
-#	include <boost/thread/thread_time.hpp>
-#	include <boost/algorithm/string.hpp>
-#	include <boost/format.hpp>
-#include "DisableBoostWarningsEnd.h"
-#include <vector>
-#include <Windows.h>
-#include "Assert.hpp"
+#include "Prec.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;

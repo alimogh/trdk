@@ -15,7 +15,7 @@
 
 namespace trdk { namespace Engine {
 
-	class TRADER_ENGINE_API Context : public trdk::Context {
+	class TRDK_ENGINE_API Context : public trdk::Context {
 
 	public:
 

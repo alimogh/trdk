@@ -15,7 +15,7 @@
 
 namespace trdk {
 
-	class TRADER_CORE_API Observer : public trdk::Module {
+	class TRDK_CORE_API Observer : public trdk::Module {
 
 	public:
 
