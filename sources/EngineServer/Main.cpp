@@ -121,9 +121,9 @@ namespace {
 		const fs::path confFilePath = GetIniFilePath(argv[2]);
 		{
 			//! @todo Hardcoded INI-key name.
-			const auto dataPath = IniFile(confFilePath)
-				.ReadFileSystemPath("Common", "data_dir");
-			InitLogs(true, true, true, argc, argv, dataPath);
+			const auto logsPath = IniFile(confFilePath)
+				.ReadFileSystemPath("Common", "logs_dir");
+			InitLogs(true, true, true, argc, argv, logsPath);
 		}
 		//! @todo Implement run standalone command
 		return false;
@@ -135,19 +135,24 @@ namespace {
 			std::cout << "No configuration file specified." << std::endl;
 			return false;
 		}
+
+		const char *const uuid = "DEBUG";
 	
 		//! @todo read configuration from std in
 		const fs::path confFilePath = GetIniFilePath(argv[2]);
 		{
-			IniFile iniFile(confFilePath);
-			InitLogs(false, true, false, argc, argv);
+			//! @todo Hardcoded INI-key name.
+			auto logsPath = IniFile(confFilePath)
+				.ReadFileSystemPath("Common", "logs_dir");
+			logsPath /= uuid;
+			InitLogs(true, true, false, argc, argv, logsPath);
 		}
 
 		Server server;
 		bool result = true;
 
 		try {
-			server.Run("DEBUG", confFilePath, true);
+			server.Run(uuid, confFilePath, true);
 		} catch (const Exception &ex) {
 			Log::Error("Failed to start engine: \"%1%\".", ex.what());
 			result = false;
