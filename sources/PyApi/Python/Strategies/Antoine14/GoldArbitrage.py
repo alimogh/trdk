@@ -1,7 +1,7 @@
 
 import trdk
 
-class Test(trdk.Strategy):
+class GoldArbitrage(trdk.Strategy):
 
     _bars = None
 
