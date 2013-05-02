@@ -34,7 +34,6 @@ ib::TradeSystem::~TradeSystem() {
 
 void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 
-	Assert(!m_client);
 	if (m_client) {
 		return;
 	}

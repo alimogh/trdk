@@ -943,21 +943,17 @@ void Engine::Context::Start() {
 	}
 	std::unique_ptr<Implementation::State> state(
 		new Implementation::State(*this, m_pimpl->m_configurationFile));
-	auto &tradeSystem = GetTradeSystem();
-	auto &marketDataSource = GetMarketDataSource();
 	try {
 		Connect(
-			tradeSystem,
+			GetTradeSystem(),
 			IniFileSectionRef(
 				m_pimpl->m_configurationFile,
 				Ini::Sections::tradeSystem));
-		if (static_cast<void *>(&tradeSystem) != &marketDataSource) {
-			Connect(
-				marketDataSource,
-				IniFileSectionRef(
-					m_pimpl->m_configurationFile,
-					Ini::Sections::tradeSystem));
-		}
+		Connect(
+			GetMarketDataSource(),
+			IniFileSectionRef(
+				m_pimpl->m_configurationFile,
+				Ini::Sections::tradeSystem));
 	} catch (const Exception &ex) {
 		GetLog().Error("Failed to make trading connections: \"%1%\".", ex);
 		throw Exception("Failed to make trading connections");
