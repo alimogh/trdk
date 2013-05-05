@@ -43,6 +43,8 @@ namespace trdk { namespace Services {
  		//! Bar data.
  		struct Bar {
 			boost::posix_time::ptime time;
+			trdk::ScaledPrice maxAskPrice;
+			trdk::ScaledPrice minBidPrice;
 			trdk::ScaledPrice openPrice;
 			trdk::ScaledPrice closePrice;
 			trdk::ScaledPrice highPrice;
@@ -88,6 +90,8 @@ namespace trdk { namespace Services {
 		virtual ~BarService();
 
 	public:
+
+		virtual bool OnLevel1Update(const Security &);
 
 		virtual bool OnNewTrade(
 					const Security &,

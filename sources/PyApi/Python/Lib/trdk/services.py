@@ -27,6 +27,8 @@ class BarService(trdk.ServiceInfo):
     class Bar(object):
         time = int  # Bar start time.
         size = int  # Bar size, seconds.
+        maxAskPrice = int
+        minBidPrice = int
         openPrice = int
         closePrice = int
         highPrice = int

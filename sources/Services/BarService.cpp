@@ -386,35 +386,68 @@ public:
 		}
 	}
 
+	template<typename Pred>
+	bool ContinueBar(const Pred &pred) {
+		Assert(!m_bars.empty());
+		AssertNe(pt::not_a_date_time, m_currentBarEnd);
+		pred(*m_currentBar);
+		return false;
+	}
+
+	template<typename Pred>
+	bool StartNewBar(const pt::ptime &time, const Pred &pred) {
+		LogCurrentBar();
+		m_currentBarEnd = GetBarEnd(time);
+		m_currentBar = &m_bars[size_t(m_size)];
+		m_currentBar->time = time;
+		pred(*m_currentBar);
+		Interlocking::Increment(m_size);
+		AssertEq(size_t(m_size), m_bars.size());
+		return m_size > 1;
+	}
+
+	template<typename Pred>
+	bool AppendStat(const pt::ptime &time, const Pred &pred) {
+		AssertLe(size_t(m_size), m_bars.size());
+		return m_currentBar && m_currentBarEnd > time
+			?	ContinueBar(pred)
+			:	StartNewBar(time, pred);
+	}
+
+	bool OnLevel1Update(const Security &security) {
+		return AppendStat(
+			boost::get_system_time(),
+			[&security](Bar &bar) {
+				bar.maxAskPrice = std::max(
+					bar.maxAskPrice,
+					security.GetAskPriceScaled());
+				bar.minBidPrice = std::min(
+					bar.minBidPrice,
+					security.GetBidPriceScaled());
+			});
+	}
+
 	bool OnNewTrade(
 				const Security &,
 				const pt::ptime &time,
 				ScaledPrice price,
 				Qty qty) {
-		AssertLe(size_t(m_size), m_bars.size());
-		if (m_currentBar && m_currentBarEnd > time) {
-			Assert(!m_bars.empty());
-			AssertNe(pt::not_a_date_time, m_currentBarEnd);
-			m_currentBar->highPrice = std::max(m_currentBar->highPrice, price);
-			m_currentBar->lowPrice = std::min(m_currentBar->lowPrice, price);
-			m_currentBar->closePrice = price;
-			m_currentBar->volume += qty;
-			return false;
-		} else {
-			LogCurrentBar();
-			m_currentBarEnd = GetBarEnd(time);
-			m_currentBar = &m_bars[size_t(m_size)];
-			m_currentBar->time = time;
-			m_currentBar->openPrice
-				= m_currentBar->closePrice
-				= m_currentBar->highPrice
-				= m_currentBar->lowPrice
-				= price;
-			m_currentBar->volume = qty;
-			Interlocking::Increment(m_size);
-			AssertEq(size_t(m_size), m_bars.size());
-			return true;
-		}
+		return AppendStat(
+			time,
+			[&](Bar &bar) {
+				if (!bar.openPrice) {
+					AssertEq(0, bar.highPrice);
+					AssertEq(0, bar.lowPrice);
+					AssertEq(0, bar.closePrice);
+					AssertEq(0, bar.volume);
+					AssertNe(0, price);
+					bar.openPrice = price;
+				}
+				bar.highPrice = std::max(bar.highPrice, price);
+				bar.lowPrice = std::min(bar.lowPrice, price);
+				bar.closePrice = price;
+				bar.volume += qty;
+			});
 	}
 
 	template<typename Stat>
@@ -437,6 +470,11 @@ BarService::BarService(
 
 BarService::~BarService() {
 	delete m_pimpl;
+}
+
+bool BarService::OnLevel1Update(const Security &security) {
+	Assert(&security == &GetSecurity());
+	return m_pimpl->OnLevel1Update(security);
 }
 
 bool BarService::OnNewTrade(

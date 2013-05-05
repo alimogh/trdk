@@ -157,6 +157,8 @@ void BarServiceExport::BarExport::ExportClass(const char *className) {
 	py::class_<BarExport>(className, py::no_init)
 		.add_property("time", &BarExport::GetTime)
 		.add_property("size", &BarExport::GetSize)
+		.add_property("maxAskPrice", &BarExport::GetMaxAskPrice)
+		.add_property("minBidPrice", &BarExport::GetMinBidPrice)
 		.add_property("openPrice", &BarExport::GetOpenPrice)
 		.add_property("closePrice", &BarExport::GetClosePrice)
 		.add_property("highPrice", &BarExport::GetHighPrice)
@@ -170,6 +172,14 @@ time_t BarServiceExport::BarExport::GetTime() const {
 
 size_t BarServiceExport::BarExport::GetSize() const {
 	return m_service->GetBarSize().total_seconds();
+}
+
+boost::intmax_t BarServiceExport::BarExport::GetMaxAskPrice() const {
+	return m_bar->maxAskPrice;
+}
+
+boost::intmax_t BarServiceExport::BarExport::GetMinBidPrice() const {
+	return m_bar->minBidPrice;
 }
 
 boost::intmax_t BarServiceExport::BarExport::GetOpenPrice() const {
