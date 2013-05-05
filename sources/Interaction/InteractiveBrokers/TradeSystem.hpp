@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Security.hpp"
 #include "Core/TradeSystem.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Context.hpp"
@@ -63,6 +64,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 			PlacedOrderSet;
 		typedef PlacedOrderSet::index<BySymbol>::type PlacedOrderBySymbol;
 		typedef PlacedOrderSet::index<ByOrder>::type PlacedOrderById;
+
+		typedef std::list<boost::shared_ptr<Security>> Securities;
 
 	public:
 
@@ -139,6 +142,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		Mutex m_mutex;
 		std::unique_ptr<Client> m_client;
 		PlacedOrderSet m_placedOrders;
+
+		mutable Securities m_unsubscribedSecurities;
 
 	};
 

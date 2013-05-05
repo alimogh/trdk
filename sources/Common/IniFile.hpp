@@ -155,6 +155,14 @@ namespace trdk { namespace Lib {
 			}
 		}
 
+		template<>
+		bool ReadTypedKey(
+					const std::string &section,
+					const std::string &key)
+				const {
+			return ReadBoolKey(section, key);
+		}
+
 		template<typename T>
 		T ReadTypedKey(
 					const std::string &section,
@@ -173,6 +181,15 @@ namespace trdk { namespace Lib {
 			}
 		}
 
+		template<>
+		bool ReadTypedKey(
+					const std::string &section,
+					const std::string &key,
+					const bool &defaultValue)
+				const {
+			return ReadBoolKey(section, key, defaultValue);
+		}
+
 		boost::filesystem::path ReadFileSystemPath(
 					const std::string &section,
 					const std::string &key)
@@ -184,30 +201,38 @@ namespace trdk { namespace Lib {
 					unsigned long priceScale)
 				const;
 
-		bool ReadBoolKey(const std::string &section, const std::string &key) const;
+		bool ReadBoolKey(
+					const std::string &section,
+					const std::string &key)
+				const;
+		bool ReadBoolKey(
+					const std::string &section,
+					const std::string &key,
+					bool defaultValue)
+				const;
 
 		std::list<std::string> ReadList() const;
 
 		std::list<std::string> ReadList(
-				const std::string &section,
-				bool mustExist)
-			const;
+					const std::string &section,
+					bool mustExist)
+				const;
 
 		static Symbol ParseSymbol(
-				const std::string &strSymbol,
-				const std::string &defExchange,
-				const std::string &defPrimaryExchange);
+					const std::string &strSymbol,
+					const std::string &defExchange,
+					const std::string &defPrimaryExchange);
 
 		std::set<Symbol> ReadSymbols(
-				const std::string &defExchange,
-				const std::string &defPrimaryExchange)
-			const;
+					const std::string &defExchange,
+					const std::string &defPrimaryExchange)
+				const;
 
 		std::set<Symbol> ReadSymbols(
-				const std::string &section,
-				const std::string &defExchange,
-				const std::string &defPrimaryExchange)
-			const;
+					const std::string &section,
+					const std::string &defExchange,
+					const std::string &defPrimaryExchange)
+				const;
 
 	private:
 
@@ -268,6 +293,7 @@ namespace trdk { namespace Lib {
 				const;
 
 		bool ReadBoolKey(const std::string &key) const;
+		bool ReadBoolKey(const std::string &key, bool defaultValue) const;
 
 		std::list<std::string> ReadList(
 				bool mustExist)

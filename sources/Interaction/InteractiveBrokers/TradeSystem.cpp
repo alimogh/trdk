@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "TradeSystem.hpp"
-#include "Security.hpp"
 #include "Client.hpp"
 #include "Core/Security.hpp"
 
@@ -43,6 +42,7 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 			m_log,
 			settings.ReadTypedKey<int>("client_id", 0),
 			settings.ReadKey("ip_address", "127.0.0.1")));
+
 	client->Subscribe(
 		[this](
 					trdk::OrderId id,
@@ -53,7 +53,7 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 					double avgFillPrice,
 					double lastFillPrice,
 					const std::string &/*whyHeld*/,
-					Client::CallbackList &callBackList) {
+					Client::OrderCallbackList &callBackList) {
 			OrderStatusUpdateSlot callBack;
 			{
 				PlacedOrderById &index = m_placedOrders.get<ByOrder>();
@@ -95,6 +95,13 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 
 	client->StartData();
 
+	foreach (
+			boost::shared_ptr<ib::Security> security,
+			m_unsubscribedSecurities) {
+		client->SubscribeToMarketData(security);
+	}
+
+	Securities().swap(m_unsubscribedSecurities);
 	client.swap(m_client);
 
 }
@@ -113,6 +120,7 @@ boost::shared_ptr<trdk::Security> ib::TradeSystem::CreateSecurity(
 			primaryExchange,
 			exchange,
 			logMarketData));
+	m_unsubscribedSecurities.push_back(result);
 	return result;
 }
 

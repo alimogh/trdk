@@ -265,7 +265,10 @@ IniFile::AbsoluteOrPercentsPrice IniFile::ReadAbsoluteOrPercentsPriceKey(
 	}
 }
 
-bool IniFile::ReadBoolKey(const std::string &section, const std::string &key) const {
+bool IniFile::ReadBoolKey(
+			const std::string &section,
+			const std::string &key)
+		const {
 	const std::string val = ReadKey(section, key);
 	if (	boost::iequals(val, "true")
 			|| boost::iequals(val, "yes")
@@ -282,6 +285,18 @@ bool IniFile::ReadBoolKey(const std::string &section, const std::string &key) co
 		throw KeyFormatError(message.str().c_str());
 	} else {
 		return false;
+	}
+}
+
+bool IniFile::ReadBoolKey(
+			const std::string &section,
+			const std::string &key,
+			bool defaultValue)
+		const {
+	try {
+		return ReadBoolKey(section, key, defaultValue);
+	} catch (const KeyNotExistsError &) {
+		return defaultValue;
 	}
 }
 
@@ -402,6 +417,13 @@ IniFileSectionRef::ReadAbsoluteOrPercentsPriceKey(
 
 bool IniFileSectionRef::ReadBoolKey(const std::string &key) const {
 	return m_file.ReadBoolKey(m_name, key);
+}
+
+bool IniFileSectionRef::ReadBoolKey(
+			const std::string &key,
+			bool defaultValue)
+		const {
+	return m_file.ReadBoolKey(m_name, key, defaultValue);
 }
 
 std::list<std::string> IniFileSectionRef::ReadList(

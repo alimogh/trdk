@@ -20,6 +20,28 @@ namespace pt = boost::posix_time;
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::Lib::Interlocking;
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+	
+	template<typename T>
+	bool IsSet(const T &val) {
+		return val != std::numeric_limits<T>::max();
+	}
+
+	template<typename T>
+	typename std::remove_volatile<T>::type GetIfSet(const T &val) {
+		return IsSet(val) ? val : 0;
+	}
+
+	template<typename T>
+	void Unset(T &val) {
+		val = std::numeric_limits<T>::max();
+	}
+
+}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -74,14 +96,14 @@ public:
 	Implementation(
 					const Instrument &instrument,
 					bool logMarketData)
-			: m_marketDataLog(nullptr),
-			m_lastPrice(0),
-			m_lastQty(0),
-			m_askPrice(0),
-			m_askQty(0),
-			m_bidPrice(0),
-			m_bidQty(0),
-			m_tradedVolume(0) {
+			: m_marketDataLog(nullptr) {
+		Unset(m_lastPrice);
+		Unset(m_lastQty);
+		Unset(m_askPrice);
+		Unset(m_askQty);
+		Unset(m_bidPrice);
+		Unset(m_bidQty);
+		Unset(m_tradedVolume);
 		if (logMarketData) {
 			m_marketDataLog = new MarketDataLog(
 				instrument.GetContext(),
@@ -111,14 +133,24 @@ public:
 		return m_marketDataTime;
 	}
 
+	bool IsLevel1Started() const {
+		return
+			IsSet(m_lastPrice) && IsSet(m_lastQty)
+			&& IsSet(m_askPrice) && IsSet(m_askQty)
+			&& IsSet(m_bidPrice) && IsSet(m_bidQty);
+	}
+
 	void SignalLevel1Update() {
+		if (!IsLevel1Started()) {
+			return;
+		}
 		if (m_marketDataLog) {
 			m_marketDataLog->Append(
 				boost::get_system_time(),
 				GetLastMarketDataTime(),
-				DescalePrice(m_lastPrice),
-				DescalePrice(m_askPrice),
-				DescalePrice(m_bidPrice));
+				DescalePrice(GetIfSet(m_lastPrice)),
+				DescalePrice(GetIfSet(m_askPrice)),
+				DescalePrice(GetIfSet(m_bidPrice)));
 		}
 		m_level1UpdateSignal();
 	}
@@ -128,7 +160,6 @@ public:
 				Qty bidQty,
 				ScaledPrice askPrice,
 				Qty askQty) {
-		using namespace Interlocking;
 		bool isChanged = false;
 		if (Exchange(m_bidPrice, bidPrice) != bidPrice) {
 			isChanged = true;
@@ -146,7 +177,6 @@ public:
 	}
 
 	bool SetLast(ScaledPrice price, Qty qty) {
-		using namespace Interlocking;
 		bool isChanged = false;
 		if (Exchange(m_lastPrice, price) != price) {
 			isChanged = true;
@@ -329,11 +359,11 @@ void Security::CancelAllOrders() {
 }
 
 bool Security::IsStarted() const {
-	return m_pimpl->m_lastPrice && m_pimpl->m_askPrice && m_pimpl->m_bidPrice;
+	return m_pimpl->IsLevel1Started();
 }
 
 ScaledPrice Security::GetLastPriceScaled() const {
-	return m_pimpl->m_lastPrice;
+	return GetIfSet(m_pimpl->m_lastPrice);
 }
 
 void Security::SetLastMarketDataTime(const boost::posix_time::ptime &time) {
@@ -351,15 +381,15 @@ double Security::GetLastPrice() const {
 }
 
 Qty Security::GetLastQty() const {
-	return m_pimpl->m_lastQty;
+	return GetIfSet(m_pimpl->m_lastQty);
 }
 
 Qty Security::GetTradedVolume() const {
-	return m_pimpl->m_tradedVolume;
+	return GetIfSet(m_pimpl->m_tradedVolume);
 }
 
 ScaledPrice Security::GetAskPriceScaled() const {
-	return m_pimpl->m_askPrice;
+	return GetIfSet(m_pimpl->m_askPrice);
 }
 
 double Security::GetAskPrice() const {
@@ -367,11 +397,11 @@ double Security::GetAskPrice() const {
 }
 
 Qty Security::GetAskQty() const {
-	return m_pimpl->m_askQty;
+	return GetIfSet(m_pimpl->m_askQty);
 }
 
 ScaledPrice Security::GetBidPriceScaled() const {
-	return m_pimpl->m_bidPrice;
+	return GetIfSet(m_pimpl->m_bidPrice);
 }
 
 double Security::GetBidPrice() const {
@@ -379,7 +409,7 @@ double Security::GetBidPrice() const {
 }
 
 Qty Security::GetBidQty() const {
-	return m_pimpl->m_bidQty;
+	return GetIfSet(m_pimpl->m_bidQty);
 }
 
 Security::Level1UpdateSlotConnection Security::SubcribeToLevel1(
@@ -396,6 +426,73 @@ Security::NewTradeSlotConnection Security::SubcribeToTrades(
 
 bool Security::IsLevel1Required() const {
 	return !m_pimpl->m_level1UpdateSignal.empty();
+}
+
+bool Security::SetLastPrice(double price) {
+	Assert(IsLevel1Required());
+	const ScaledPrice scaledPrice = ScalePrice(price);
+	if (Exchange(m_pimpl->m_lastPrice, scaledPrice) == scaledPrice) {
+		return false;
+	}
+	m_pimpl->SignalLevel1Update();
+	return true;
+}
+
+bool Security::SetLastQty(Qty qty) {
+	Assert(IsLevel1Required());
+	if (Exchange(m_pimpl->m_lastQty, qty) == qty) {
+		return false;
+	}
+	m_pimpl->SignalLevel1Update();
+	return true;
+}
+
+bool Security::SetVolume(Qty qty) {
+	Assert(qty == 0 || IsLevel1Required());
+	AssertLe(GetIfSet(m_pimpl->m_tradedVolume), qty);
+	if (Exchange(m_pimpl->m_tradedVolume, qty) == qty) {
+		return false;
+	}
+	m_pimpl->SignalLevel1Update();
+	return true;
+}
+
+bool Security::SetBidPrice(double price) {
+	Assert(IsLevel1Required());
+	const ScaledPrice scaledPrice = ScalePrice(price);
+	if (Exchange(m_pimpl->m_bidPrice, scaledPrice) == scaledPrice) {
+		return false;
+	}
+	m_pimpl->SignalLevel1Update();
+	return true;
+}
+
+bool Security::SetBidQty(Qty qty) {
+	Assert(IsLevel1Required());
+	if (Exchange(m_pimpl->m_bidQty, qty) == qty) {
+		return false;
+	}
+	m_pimpl->SignalLevel1Update();
+	return true;
+}
+
+bool Security::SetAskPrice(double price) {
+	Assert(IsLevel1Required());
+	const ScaledPrice scaledPrice = ScalePrice(price);
+	if (Exchange(m_pimpl->m_askPrice, scaledPrice) == scaledPrice) {
+		return false;
+	}
+	m_pimpl->SignalLevel1Update();
+	return true;
+}
+
+bool Security::SetAskQty(Qty qty) {
+	Assert(IsLevel1Required());
+	if (Exchange(m_pimpl->m_askQty, qty) == qty) {
+		return false;
+	}
+	m_pimpl->SignalLevel1Update();
+	return true;
 }
 
 bool Security::SetBidAsk(
@@ -469,17 +566,19 @@ void Security::AddTrade(
 			OrderSide side,
 			ScaledPrice price,
 			Qty qty,
-			bool useAsLastTrade) {
+			bool useAsLastTrade,
+			bool useForTradedVolume) {
+	
 	Assert(IsTradesRequired());
-	for ( ; ; ) {
-		const auto prevVal = m_pimpl->m_tradedVolume;
-		const auto newVal = prevVal + qty;
-		if (	Interlocking::CompareExchange(
-						m_pimpl->m_tradedVolume,
-						newVal,
-						prevVal)
+	
+	if (useForTradedVolume) {
+		for ( ; ; ) {
+			const auto prevVal = m_pimpl->m_tradedVolume;
+			const auto newVal = prevVal + qty;
+			if (	CompareExchange(m_pimpl->m_tradedVolume, newVal, prevVal)
 					== prevVal) {
-			break;
+				break;
+			}
 		}
 	}
 	

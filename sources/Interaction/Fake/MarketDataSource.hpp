@@ -48,7 +48,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 						OrderSide side,
 						ScaledPrice price,
 						Qty qty) {
-				Base::AddTrade(time, side, price, qty, true);
+				Base::AddTrade(time, side, price, qty, true, true);
 			}
 
 		};

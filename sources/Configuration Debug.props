@@ -6,6 +6,7 @@
     <LinkIncremental>true</LinkIncremental>
     <TargetName>$(MSBuildProjectName)_dbg</TargetName>
     <_PropertySheetDisplayName>Configuration Debug</_PropertySheetDisplayName>
+    <EnableManagedIncrementalBuild>true</EnableManagedIncrementalBuild>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

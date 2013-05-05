@@ -47,7 +47,7 @@ namespace trdk {
 					const std::string &primaryExchange,
 					const std::string &exchange,
 					bool logMarketData);
-		~Security();
+		virtual ~Security();
 
 	public:
 
@@ -127,8 +127,42 @@ namespace trdk {
 
 		//! Updates the current data time.
 		void SetLastMarketDataTime(const boost::posix_time::ptime &);
-
-		bool IsLevel1Required() const;
+		virtual bool IsLevel1Required() const;
+		//! Sets last trade price.
+		/** @return	"true" if values change and all subscribers will be
+		  *			notified.
+		  */
+		bool SetLastPrice(double);
+		//! Sets last trade size.
+		/** @return	"true" if values change and all subscribers will be
+		  *			notified.
+		  */
+		bool SetLastQty(trdk::Qty);
+		//! Sets traded volume.
+		/** @return	"true" if values change and all subscribers will be
+		  *			notified.
+		  */
+		bool SetVolume(trdk::Qty);
+		//! Sets bid price only.
+		/** @return	"true" if values change and all subscribers will be
+		  *			notified.
+		  */
+		bool SetBidPrice(double);
+		//! Sets bid size only.
+		/** @return	"true" if values change and all subscribers will be
+		  *			notified.
+		  */
+		bool SetBidQty(trdk::Qty);
+		//! Sets ask price only.
+		/** @return	"true" if values change and all subscribers will be
+		  *			notified.
+		  */
+		bool SetAskPrice(double);
+		//! Sets ask size only.
+		/** @return	"true" if values change and all subscribers will be
+		  *			notified.
+		  */
+		bool SetAskQty(trdk::Qty);
 		bool SetBidAsk(
 				trdk::ScaledPrice bestBidPrice,
 				trdk::Qty bestBidQty,
@@ -160,7 +194,8 @@ namespace trdk {
 				trdk::OrderSide,
 				trdk::ScaledPrice,
 				trdk::Qty,
-				bool useAsLastTrade);
+				bool useAsLastTrade,
+				bool useForTradedVolume);
 
 	private:
 

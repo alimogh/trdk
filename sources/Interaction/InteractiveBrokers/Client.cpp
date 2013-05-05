@@ -10,11 +10,11 @@
 
 #include "Prec.hpp"
 #include "Client.hpp"
-#include "Core/Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Interaction::InteractiveBrokers;
 
+namespace ib = trdk::Interaction::InteractiveBrokers;
 namespace pt = boost::posix_time;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -27,7 +27,7 @@ namespace {
 	const pt::time_duration timeout = pt::seconds(60);
 	const pt::time_duration maxIterationTime = pt::milliseconds(10);
 
-	Contract & operator <<(Contract &contract, const Security &security) {
+	Contract & operator <<(Contract &contract, const trdk::Security &security) {
 		contract.symbol = security.GetSymbol();
 		contract.secType = "STK";
 		contract.primaryExchange = security.GetPrimaryExchange();
@@ -140,13 +140,13 @@ void Client::Task() {
 			CheckTimeout();
 			while (m_isConnected && ProcessMessages()) {
 				if (m_callBackList.size() > 0) {
-					CallbackList callBackList;
+					OrderCallbackList callBackList;
 					callBackList.swap(m_callBackList);
 					lock.reset();
 					std::for_each(
 						callBackList.begin(),
 						callBackList.end(),
-						[] (CallbackList::value_type &callBack) {
+						[] (OrderCallbackList::value_type &callBack) {
 							callBack();
 						});
 					lock.reset(new Lock(m_mutex));
@@ -267,29 +267,88 @@ void Client::Subscribe(const OrderStatusSlot &orderStatusSlot) const {
 	m_orderStatusSignal.connect(orderStatusSlot);
 }
 
-void Client::SubscribeToMarketDataLevel2(
-			boost::shared_ptr<Security> security)
+void Client::SubscribeToMarketData(
+			boost::shared_ptr<ib::Security> security)
 		const {
+
+	if (!security->IsLevel1Required() && !security->IsTradesRequired()) {
+		return;
+	}
+
 	const Lock lock(m_mutex);
+	if (IsSubscribed(m_marketDataRequest, *security)) {
+		return;
+	}
 	CheckState();
-	const auto tickerId = const_cast<Client *>(this)->TakeTickerId();
+
+	const SecurityRequest level1Request(
+		security,
+		const_cast<Client *>(this)->TakeTickerId());
+	auto requests(m_marketDataRequest);
+	requests.insert(level1Request);
+
+	std::list<IBString> genericTicklist;
+	if (level1Request.security->IsTradesRequired()) {
+		genericTicklist.push_back("233");
+	}
+	
+	Contract contract;
+	contract << *level1Request.security;
+	m_client->reqMktData(
+		level1Request.tickerId,
+		contract,
+		boost::join(genericTicklist, ","),
+		false);
 	m_log.Info(
-		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level II"
+		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level I"
 			" market data subscription request for \"%1%\" (ticker ID: %2%).",
 		boost::make_tuple(
-			boost::cref(security->GetSymbol()),
-			boost::cref(tickerId)));
+			boost::cref(*level1Request.security),
+			boost::cref(level1Request.tickerId)));
+
+	requests.swap(m_marketDataRequest);
+
+}
+
+void Client::SubscribeToMarketDepthLevel2(
+			boost::shared_ptr<ib::Security> security)
+		const {
+
+	AssertFail("Market Depth Level II not yet supported by security.");
+
+	const Lock lock(m_mutex);
+	if (IsSubscribed(m_marketDepthLevel2Requests, *security)) {
+		return;
+	}
+	CheckState();
+
+	const SecurityRequest request(
+		security,
+		const_cast<Client *>(this)->TakeTickerId());
+	auto requests(m_marketDepthLevel2Requests);
+	requests.insert(request);
+
 	Contract contract;
-	contract << *security;
-	contract.primaryExchange.clear();
-	contract.exchange = "ISLAND";
-	m_client->reqMktDepth(tickerId, contract, std::numeric_limits<int>::max());
-	m_updatesSubscribers.insert(std::make_pair(tickerId, security));
+	contract << *request.security;
+	m_client->reqMktDepth(
+		request.tickerId,
+		contract,
+		std::numeric_limits<int>::max());
+
+	m_log.Info(
+		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level II"
+			" market depth subscription request for \"%1%\" (ticker ID: %2%).",
+		boost::make_tuple(
+			boost::cref(*request.security),
+			boost::cref(request.tickerId)));
+
+	requests.swap(m_marketDepthLevel2Requests);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-trdk::OrderId Client::SendAsk(const Security &security, Qty qty) {
+trdk::OrderId Client::SendAsk(const trdk::Security &security, Qty qty) {
 
 	Contract contract;
 	contract << security;
@@ -310,7 +369,10 @@ trdk::OrderId Client::SendAsk(const Security &security, Qty qty) {
 
 }
 
-trdk::OrderId Client::SendAsk(const Security &security,Qty qty, double price) {
+trdk::OrderId Client::SendAsk(
+			const trdk::Security &security,
+			Qty qty,
+			double price) {
 
 	Contract contract;
 	contract << security;
@@ -333,7 +395,7 @@ trdk::OrderId Client::SendAsk(const Security &security,Qty qty, double price) {
 }
 
 trdk::OrderId Client::SendAskWithMarketPrice(
-			const Security &security,
+			const trdk::Security &security,
 			Qty qty,
 			double stopPrice) {
 
@@ -358,7 +420,7 @@ trdk::OrderId Client::SendAskWithMarketPrice(
 }
 
 trdk::OrderId Client::SendIocAsk(
-			const Security &security,
+			const trdk::Security &security,
 			Qty qty,
 			double price) {
 
@@ -384,7 +446,7 @@ trdk::OrderId Client::SendIocAsk(
 }
 
 trdk::OrderId Client::SendBid(
-			const Security &security,
+			const trdk::Security &security,
 			Qty qty) {
 
 	Contract contract;
@@ -407,7 +469,7 @@ trdk::OrderId Client::SendBid(
 }
 
 trdk::OrderId Client::SendBid(
-			const Security &security,
+			const trdk::Security &security,
 			Qty qty,
 			double price) {
 
@@ -432,7 +494,7 @@ trdk::OrderId Client::SendBid(
 }
 
 trdk::OrderId Client::SendBidWithMarketPrice(
-			const Security &security,
+			const trdk::Security &security,
 			Qty qty,
 			double stopPrice) {
 
@@ -457,7 +519,7 @@ trdk::OrderId Client::SendBidWithMarketPrice(
 }
 
 trdk::OrderId Client::SendIocBid(
-			const Security &security,
+			const trdk::Security &security,
 			Qty qty,
 			double price) {
 
@@ -741,6 +803,30 @@ void Client::CheckTimeout() const {
 	}
 }
 
+ib::Security * Client::GetMarketDataRequest(TickerId tickerId) {
+	const auto &index = m_marketDataRequest.get<ByTicker>();
+	const auto pos = index.find(tickerId);
+	if (pos == index.end()) {
+		m_log.Debug(
+			"Couldn't find Market Data Request for ticker %1%.",
+			tickerId);
+		return nullptr;
+	}
+	return &*pos->security;
+}
+
+bool Client::IsSubscribed(
+			const SecurityRequestList &list,
+			const ib::Security &security) {
+	const auto &index = list.get<ByInstrument>();
+	const auto pos = index.find(
+		boost::make_tuple(
+			security.GetSymbol(),
+			security.GetPrimaryExchange(),
+			security.GetExchange()));
+	return pos != index.end();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Client::commissionReport(const CommissionReport &) {
@@ -826,18 +912,60 @@ void Client::error(
 }
 
 void Client::tickPrice(
-			TickerId /*tickerId*/,
-			TickType /*field*/,
-			double /*price*/,
+			TickerId tickerId,
+			TickType field,
+			double price,
 			int /*canAutoExecute*/) {
-	//...//
+	bool (ib::Security::*set)(double);
+	switch (field) {
+		default:
+			return;
+		case LAST:
+			set = &ib::Security::SetLastPrice;
+			break;
+		case BID:
+			set = &ib::Security::SetBidPrice;
+			break;
+		case ASK:
+			set = &ib::Security::SetAskPrice;
+			break;
+	}
+	const auto now = boost::get_system_time();
+	ib::Security *const security = GetMarketDataRequest(tickerId);
+	if (!security) {
+		return;
+	}
+	(security->*set)(price);
 }
 
 void Client::tickSize(
-			TickerId /*tickerId*/,
-			TickType /*field*/,
-			int /*size*/) {
-	//...//
+			TickerId tickerId,
+			TickType field,
+			int size) {
+	bool (ib::Security::*set)(Qty);
+	switch (field) {
+		default:
+			return;
+		case VOLUME:
+			AssertNe(VOLUME, field); // untested, see ib::Security c-tor
+			set = &ib::Security::SetVolume;
+			break;
+		case LAST_SIZE:
+			set = &ib::Security::SetLastQty;
+			break;
+		case BID_SIZE:
+			set = &ib::Security::SetBidQty;
+			break;
+		case ASK_SIZE:
+			set = &ib::Security::SetAskQty;
+			break;
+	}
+	const auto now = boost::get_system_time();
+	ib::Security *const security = GetMarketDataRequest(tickerId);
+	if (!security) {
+		return;
+	}
+	(security->*set)(size);
 }
 
 void Client::tickOptionComputation(
@@ -999,11 +1127,13 @@ void Client::updateMktDepthL2(
 			int side,
 			double /*price*/,
 			int /*size*/) {
+	AssertFail("Market Depth Level II not yet supported by security.");
 	const pt::ptime now = boost::get_system_time();
-	UpdatesSubscribers::const_iterator i = m_updatesSubscribers.find(tickerId);
-	if (i == m_updatesSubscribers.end()) {
+	const auto &requestsIndex = m_marketDepthLevel2Requests.get<ByTicker>();
+	const auto  i = requestsIndex.find(tickerId);
+	if (i == requestsIndex.end()) {
 		m_log.Debug(
-			"Couldn't find Market Depth Data subscriber for ticker %1%.",
+			"Couldn't find Market Depth Data Request for ticker %1%.",
 			tickerId);
 		return;
 	}

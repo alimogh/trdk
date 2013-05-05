@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Security.hpp"
 #include "Core/TradeSystem.hpp"
 #include "Core/Context.hpp"
 
@@ -19,7 +20,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
-		typedef std::list<boost::function<void()>> CallbackList;
+		typedef std::list<boost::function<void()>> OrderCallbackList;
 
 		typedef void (OrderStatusSlotSignature)(
 				trdk::OrderId id,
@@ -30,7 +31,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 				double avgFillPrice,
 				double lastFillPrice,
 				const std::string &whyHeld,
-				CallbackList &);
+				OrderCallbackList &);
 		typedef boost::function<OrderStatusSlotSignature> OrderStatusSlot;
 
 	private:
@@ -48,8 +49,75 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		typedef std::map<std::string, TradeSystem::OrderStatus>
 			OrderStatusesMap;
 
-		typedef std::map<TickerId, boost::shared_ptr<Security>>
-			UpdatesSubscribers;
+		struct SecurityRequest {
+			
+			boost::shared_ptr<Security> security;
+			TickerId tickerId;
+
+			explicit SecurityRequest(
+						const boost::shared_ptr<Security> &security,
+						TickerId tickerId)
+					: security(security),
+					tickerId(tickerId) {
+				//...//
+			}
+
+			const std::string & GetSymbol() const {
+				return security->GetSymbol();
+			}
+
+			const std::string & GetPrimaryExchange() const {
+				return security->GetPrimaryExchange();
+			}
+
+			const std::string & GetExchange() const {
+				return security->GetExchange();
+			}
+
+		};
+
+		struct ByInstrument {
+			//...//
+		};
+
+		struct ByTicker {
+			//...//
+		};
+
+		typedef boost::multi_index_container<
+			SecurityRequest,
+			boost::multi_index::indexed_by<
+				boost::multi_index::hashed_unique<
+					boost::multi_index::tag<ByInstrument>,
+					boost::multi_index::composite_key<
+						SecurityRequest,
+						boost::multi_index::const_mem_fun<
+							SecurityRequest,
+							const std::string &,
+							&SecurityRequest::GetSymbol>,
+						boost::multi_index::const_mem_fun<
+							SecurityRequest,
+							const std::string &,
+							&SecurityRequest::GetPrimaryExchange>,
+						boost::multi_index::const_mem_fun<
+							SecurityRequest,
+							const std::string &,
+							&SecurityRequest::GetExchange>>>,
+				boost::multi_index::ordered_unique<
+					boost::multi_index::tag<ByTicker>,
+					boost::multi_index::member<
+						SecurityRequest,
+						TickerId,
+						&SecurityRequest::tickerId>>>>
+			SecurityRequestList;
+		typedef SecurityRequestList::index<ByInstrument>::type
+			SecurityRequestByInstrument;
+		typedef SecurityRequestList::index<ByTicker>::type
+			SecurityRequestByTicker;
+
+		typedef SecurityRequestList MarketLevel1Request;
+		typedef SecurityRequestList MarketDepthLevel2Requests;
+		typedef SecurityRequestList TicksRequests;
 
 	public:
 
@@ -87,7 +155,9 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 	public:
 
 		void Subscribe(const OrderStatusSlot &) const;
-		void SubscribeToMarketDataLevel2(boost::shared_ptr<Security>) const;
+		
+		void SubscribeToMarketData(boost::shared_ptr<Security>) const;
+		void SubscribeToMarketDepthLevel2(boost::shared_ptr<Security>) const;
 
 	private:
 
@@ -115,6 +185,10 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		void CheckTimeout() const;
 
 		void HandleError(const int id, const int code, const IBString &);
+
+		Security * GetMarketDataRequest(TickerId);
+
+		static bool IsSubscribed(const SecurityRequestList &, const Security &);
 
 	private:
 
@@ -260,7 +334,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		mutable boost::signals2::signal<OrderStatusSlotSignature>
 			m_orderStatusSignal;
-		CallbackList m_callBackList;
+		OrderCallbackList m_callBackList;
 
 		const OrderStatusesMap m_orderStatusesMap;
 
@@ -268,7 +342,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		::OrderId m_seqNumber;
 
-		mutable UpdatesSubscribers m_updatesSubscribers;
+		mutable MarketLevel1Request m_marketDataRequest;
+		mutable MarketDepthLevel2Requests m_marketDepthLevel2Requests;
 
 	};
 

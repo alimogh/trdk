@@ -30,5 +30,5 @@ void Csv::Security::AddTrade(
 			OrderSide side,
 			ScaledPrice price,
 			trdk::Qty qty) {
-	Base::AddTrade(time, side, price, qty, true);
+	Base::AddTrade(time, side, price, qty, true, true);
 }
