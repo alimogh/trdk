@@ -10,25 +10,11 @@ Host To Build on MS Windows
      Free install (ready build): http://download.robotdk.com/externals/Boost.1.53_msvc-10.0.x86_msvc-11.0.x86.7z
 1.3. Python 2.7 32-bit.
      http://www.python.org/download/
-1.4. Protocol Buffers 2.4.1.
-     Free compiler for Windows: http://code.google.com/p/protobuf/downloads/list/
-1.5. Qt
-     Free sources and binaries: http://qt-project.org/downloads
-1.6  VMime 0.9.1
-     Free sources: http://www.vmime.org/downloads.html
-     Compilded by Visual Studio 2010 binaries: http://download.robotdk.com/externals/vmime_vs2010_0.9.1.bz2
 
 2. Setup:
 2.1. Create or change envelopment variable BOOST_DIR_X86 - set path to
      installed Boost. Path should point to root install directory.
      Ex.: "c:\Program Files (x86)\Boost\".
-2.2. Unpack Protocol Buffers compiler. Add path to protoc.exe to the PATH
-     envelopment variable.
-2.3. Install Qt.
-2.4. Unpack VMime archive into "externals\VMime\" as it distributed in
-     archive (path to sources will looks like
-     "externals\VMime\libvmime-x.x.x\"). Build library if you use archive
-     with sources.
 
 3. Build:
 3.1. Open "sources\TRDK.sln" with Visual Studio and build it for
