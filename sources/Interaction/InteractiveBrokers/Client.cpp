@@ -1094,7 +1094,7 @@ void Client::bondContractDetails(
 	//...//
 }
 
-void Client::contractDetailsEnd( int /*reqId*/) {
+void Client::contractDetailsEnd(int /*reqId*/) {
 	//...//
 }
 
@@ -1229,7 +1229,7 @@ void Client::realtimeBar(
 
 void Client::fundamentalData(
 			TickerId /*reqId*/,
-			const IBString& /*data*/) {
+			const IBString &/*data*/) {
 	//...//
 }
 
