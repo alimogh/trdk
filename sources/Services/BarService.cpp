@@ -107,6 +107,19 @@ namespace {
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+BarService::Bar::Bar()
+		: maxAskPrice(0),
+		minBidPrice(0),
+		openPrice(0),
+		closePrice(0),
+		highPrice(0),
+		lowPrice(0),
+		volume(0) {
+	//...//
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 BarService::Stat::Stat() {
@@ -421,9 +434,9 @@ public:
 				bar.maxAskPrice = std::max(
 					bar.maxAskPrice,
 					security.GetAskPriceScaled());
-				bar.minBidPrice = std::min(
-					bar.minBidPrice,
-					security.GetBidPriceScaled());
+				bar.minBidPrice = bar.minBidPrice
+					?	std::min(bar.minBidPrice, security.GetBidPriceScaled())
+					:	security.GetBidPriceScaled();
 			});
 	}
 
@@ -444,7 +457,9 @@ public:
 					bar.openPrice = price;
 				}
 				bar.highPrice = std::max(bar.highPrice, price);
-				bar.lowPrice = std::min(bar.lowPrice, price);
+				bar.lowPrice = bar.lowPrice
+					?	std::min(bar.lowPrice, price)
+					:	price;
 				bar.closePrice = price;
 				bar.volume += qty;
 			});

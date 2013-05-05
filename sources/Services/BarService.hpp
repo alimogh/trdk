@@ -42,6 +42,7 @@ namespace trdk { namespace Services {
 
  		//! Bar data.
  		struct Bar {
+			
 			boost::posix_time::ptime time;
 			trdk::ScaledPrice maxAskPrice;
 			trdk::ScaledPrice minBidPrice;
@@ -50,6 +51,9 @@ namespace trdk { namespace Services {
 			trdk::ScaledPrice highPrice;
 			trdk::ScaledPrice lowPrice;
 			trdk::Qty volume;
+
+			Bar();
+
  		};
 
 		class Stat : private boost::noncopyable {
