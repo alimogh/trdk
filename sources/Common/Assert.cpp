@@ -9,6 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Util.hpp"
 #include "Core/Log.hpp"
 #include "Assert.hpp"
 

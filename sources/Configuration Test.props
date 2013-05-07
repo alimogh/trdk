@@ -3,7 +3,6 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <LinkIncremental>true</LinkIncremental>
     <TargetName>$(MSBuildProjectName)_test</TargetName>
     <_PropertySheetDisplayName>Configuration Test</_PropertySheetDisplayName>
     <EnableManagedIncrementalBuild>true</EnableManagedIncrementalBuild>
