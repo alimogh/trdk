@@ -158,6 +158,22 @@ void Log::DisableTrading() throw() {
 	trading.DisableStream();
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+	
+	template<typename Str, typename Stream>
+	void DumpMultiLineString(const Str &str, Stream &stream) {
+		foreach (char ch, str) {
+			stream << ch;
+			if (ch == stream.widen('\n')) {
+				stream << "\t\t\t\t\t\t";
+			}
+		}
+		stream << std::endl;
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -169,12 +185,12 @@ namespace {
 				const Str &str) {
 		Lock lock(events.mutex);
 		events.AppendRecordHead(level, time, std::cout);
-		std::cout << str << std::endl;
+		DumpMultiLineString(str, std::cout);
 		if (!events.log) {
 			return;
 		}
  		events.AppendRecordHead(level, time);
- 		*events.log << str << std::endl;
+		DumpMultiLineString(str, *events.log);
 	}
 
 }
@@ -207,7 +223,8 @@ namespace {
 			return;
 		}
 		trading.AppendRecordHead(time);
-		*trading.log << '\t' << tag << '\t' << str << std::endl;
+		*trading.log << '\t' << tag << '\t';
+		DumpMultiLineString(str, *trading.log);
 	}
 }
 
