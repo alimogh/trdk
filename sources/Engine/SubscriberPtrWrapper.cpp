@@ -181,6 +181,63 @@ void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
 
 }
 
+void SubscriberPtrWrapper::RaiseLevel1TickEvent(const Level1Tick &tick) const {
+
+	const class Visitor
+			: public boost::static_visitor<void>,
+			private boost::noncopyable {
+	public:		
+		explicit Visitor(const Level1Tick &tick)
+				: m_tick(tick) {
+			//...//
+		}
+	public:
+		void operator ()(Strategy &strategy) const {
+			AssertEq(
+				m_tick.security->GetFullSymbol(),
+				strategy.GetSecurity().GetFullSymbol());
+			strategy.RaiseLevel1TickEvent(
+				*m_tick.security,
+				m_tick.time,
+				m_tick.value);
+		}
+		void operator ()(Service &service) const {
+			AssertEq(
+				m_tick.security->GetFullSymbol(),
+				service.GetSecurity().GetFullSymbol());
+			if (	service.RaiseLevel1TickEvent(
+						*m_tick.security,
+						m_tick.time,
+						m_tick.value)) {
+				RaiseServiceDataUpdateEvent(service);
+			}
+		}
+		void operator ()(Observer &observer) const {
+#			ifdef DEV_VER
+			{
+				bool isExists = false;
+				foreach (const auto &securityPtr, observer.GetNotifyList()) {
+					if (&*securityPtr == m_tick.security) {
+						isExists = true;
+						break;
+					}
+				}
+				Assert(isExists);
+			}
+#			endif
+			observer.RaiseLevel1TickEvent(
+				*m_tick.security,
+				m_tick.time,
+				m_tick.value);
+		}
+	private:
+		const Level1Tick &m_tick;
+	};
+
+	boost::apply_visitor(Visitor(tick), m_subscriber);
+
+}
+
 void SubscriberPtrWrapper::RaiseNewTradeEvent(const Trade &trade) const {
 
 	const class Visitor

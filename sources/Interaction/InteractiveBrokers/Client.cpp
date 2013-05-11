@@ -306,6 +306,11 @@ void Client::SubscribeToMarketData(
 			boost::cref(*level1Request.security),
 			boost::cref(level1Request.tickerId)));
 
+	// Can't get volume from IB at this stage, see also method tickSize
+	security->SetLevel1(
+		boost::get_system_time(),
+		Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>(0));
+
 	requests.swap(m_marketDataRequest);
 
 }
@@ -916,18 +921,18 @@ void Client::tickPrice(
 			TickType field,
 			double price,
 			int /*canAutoExecute*/) {
-	bool (ib::Security::*set)(double);
+	Level1TickValue (*valueCtor)(ScaledPrice);
 	switch (field) {
 		default:
 			return;
 		case LAST:
-			set = &ib::Security::SetLastPrice;
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>;
 			break;
 		case BID:
-			set = &ib::Security::SetBidPrice;
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>;
 			break;
 		case ASK:
-			set = &ib::Security::SetAskPrice;
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>;
 			break;
 	}
 	const auto now = boost::get_system_time();
@@ -935,29 +940,30 @@ void Client::tickPrice(
 	if (!security) {
 		return;
 	}
-	(security->*set)(price);
+	security->AddLevel1Tick(now, valueCtor(security->ScalePrice(price)));
 }
 
 void Client::tickSize(
 			TickerId tickerId,
 			TickType field,
 			int size) {
-	bool (ib::Security::*set)(Qty);
+	Level1TickValue (*valueCtor)(Qty);
 	switch (field) {
 		default:
 			return;
 		case VOLUME:
-			AssertNe(VOLUME, field); // untested, see ib::Security c-tor
-			set = &ib::Security::SetVolume;
+			AssertNe(VOLUME, field); // untested, see SubscribeToMarketData
+			valueCtor
+				= Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>;
 			break;
 		case LAST_SIZE:
-			set = &ib::Security::SetLastQty;
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_LAST_QTY>;
 			break;
 		case BID_SIZE:
-			set = &ib::Security::SetBidQty;
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_BID_QTY>;
 			break;
 		case ASK_SIZE:
-			set = &ib::Security::SetAskQty;
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>;
 			break;
 	}
 	const auto now = boost::get_system_time();
@@ -965,7 +971,7 @@ void Client::tickSize(
 	if (!security) {
 		return;
 	}
-	(security->*set)(size);
+	security->AddLevel1Tick(now, valueCtor(size));
 }
 
 void Client::tickOptionComputation(

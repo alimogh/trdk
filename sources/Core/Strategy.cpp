@@ -393,10 +393,21 @@ PositionReporter & Strategy::GetPositionReporter() {
 
 void Strategy::OnLevel1Update(const Security &) {
 	GetLog().Error(
-		"Subscribed to Level 1 updates, but can't work with it"
+		"Subscribed to Level 1 Updates, but can't work with it"
 			" (hasn't OnLevel1Update method implementation).");
 	throw MethodDoesNotImplementedError(
-		"Module subscribed to Level 1 updates, but can't work with it");
+		"Module subscribed to Level 1 Updates, but can't work with it");
+}
+
+void Strategy::OnLevel1Tick(
+					const Security &,
+					const boost::posix_time::ptime &,
+					const Level1TickValue &) {
+	GetLog().Error(
+		"Subscribed to Level 1 Ticks, but can't work with it"
+			" (hasn't OnLevel1Tick method implementation).");
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to Level 1 ticks, but can't work with it");
 }
 
 void Strategy::OnNewTrade(
@@ -425,12 +436,23 @@ void Strategy::OnPositionUpdate(Position &) {
 	//...//
 }
 
-void Strategy::RaiseLevel1UpdateEvent(const Security &service) {
+void Strategy::RaiseLevel1UpdateEvent(const Security &security) {
 	const Lock lock(GetMutex());
 	if (IsBlocked()) {
 		return;
 	}
-	OnLevel1Update(service);
+	OnLevel1Update(security);
+}
+
+void Strategy::RaiseLevel1TickEvent(
+			const trdk::Security &security,
+			const boost::posix_time::ptime &time,
+			const Level1TickValue &value) {
+	const Lock lock(GetMutex());
+	if (IsBlocked()) {
+		return;
+	}
+	OnLevel1Tick(security, time, value);
 }
 
 void Strategy::RaiseNewTradeEvent(

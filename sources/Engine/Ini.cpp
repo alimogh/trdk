@@ -36,7 +36,8 @@ const std::string Keys::primaryExchange = "primary_exchange";
 const std::string Keys::exchange = "exchange";
 const std::string Keys::uses = "uses";
 
-const std::string Constants::Services::level1 = "Level 1";
+const std::string Constants::Services::level1Updates = "Level 1 Updates";
+const std::string Constants::Services::level1Ticks = "Level 1 Ticks";
 const std::string Constants::Services::trades = "Trades";
 
 const std::string DefaultValues::Factories::factoryNameStart = "Create";

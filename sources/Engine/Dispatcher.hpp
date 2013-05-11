@@ -87,7 +87,7 @@ namespace trdk { namespace Engine {
 			}
 
 			template<typename Event>
-			void Queue(const Event &event) {
+			void Queue(const Event &event, bool flush) {
 				Lock lock(m_mutex);
 				if (m_taksState == TASK_STATE_STOPPED) {
 					return;
@@ -95,7 +95,7 @@ namespace trdk { namespace Engine {
 				Assert(
 					m_current == &m_lists.first
 					|| m_current == &m_lists.second);
-				if (!Dispatcher::QueueEvent(event, *m_current)) {
+				if (!Dispatcher::QueueEvent(event, *m_current) || !flush) {
 					return;
 				}
 				m_newDataCondition.notify_one();
@@ -177,6 +177,14 @@ namespace trdk { namespace Engine {
 		typedef EventQueue<std::set<Level1UpdateEvent>> Level1UpdateEventQueue;
 
 		typedef boost::tuple<
+				SubscriberPtrWrapper::Level1Tick,
+				SubscriberPtrWrapper>
+			Level1TickEvent;
+		//! @todo	HAVY OPTIMIZATION!!! Use preallocated buffer here instead
+		//!			std::list.
+		typedef EventQueue<std::list<Level1TickEvent>> Level1TicksEventQueue;
+
+		typedef boost::tuple<
 				boost::shared_ptr<SubscriberPtrWrapper::Trade>,
 				SubscriberPtrWrapper>
 			NewTradeEvent;
@@ -214,6 +222,12 @@ namespace trdk { namespace Engine {
 	public:
 
 		void SignalLevel1Update(SubscriberPtrWrapper &, const Security &);
+		void SignalLevel1Tick(
+					SubscriberPtrWrapper &,
+					const Security &,
+					const boost::posix_time::ptime &,
+					const trdk::Level1TickValue &,
+					bool flush);
 		void SignalNewTrade(
 					SubscriberPtrWrapper &,
 					const Security &,
@@ -233,6 +247,10 @@ namespace trdk { namespace Engine {
 		static void RaiseEvent(const Level1UpdateEvent &level1Update) {
 			boost::get<1>(level1Update).RaiseLevel1UpdateEvent(
 				*boost::get<0>(level1Update));
+		}
+		template<>
+		static void RaiseEvent(const Level1TickEvent &tick) {
+			boost::get<1>(tick).RaiseLevel1TickEvent(boost::get<0>(tick));
 		}
 		template<>
 		static void RaiseEvent(const NewTradeEvent &newTradeEvent) {
@@ -258,6 +276,13 @@ namespace trdk { namespace Engine {
 				return false;
 			}
 			eventList.insert(level1UpdateEvent);
+			return true;
+		}
+		template<typename EventList>
+		static bool QueueEvent(
+					const Level1TickEvent &tick,
+					EventList &eventList) {
+			eventList.push_back(tick);
 			return true;
 		}
 		template<typename EventList>
@@ -336,6 +361,7 @@ namespace trdk { namespace Engine {
 		boost::thread_group m_threads;
 
 		Level1UpdateEventQueue m_level1Updates;
+		Level1TicksEventQueue m_level1Ticks;
 		NewTradeEventQueue m_newTrades;
 		PositionUpdateEventQueue m_positionUpdates;
 

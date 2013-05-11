@@ -33,7 +33,7 @@ class BarService(trdk.ServiceInfo):
         closePrice = int
         highPrice = int
         lowPrice = int
-        volume = int
+        tradingVolume = int
 
     class Stat(object):
         pass
@@ -93,7 +93,7 @@ class BarService(trdk.ServiceInfo):
         """
         pass
 
-    def getVolumeStat(self, numberOfBars):
+    def getTradingVolumeStat(self, numberOfBars):
         """
         :type numberOfBars: int
         :rtype: trdk.BarService.QtyStat

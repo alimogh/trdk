@@ -23,10 +23,12 @@ using namespace trdk::Engine;
 
 Dispatcher::Dispatcher(Engine::Context &context)
 			: m_context(context),
-			m_level1Updates("Level 1", m_context),
+			m_level1Updates("Level 1 Updates", m_context),
+			m_level1Ticks("Level 1 Ticks", m_context),
 			m_newTrades("New Trades", m_context),
 			m_positionUpdates("Position", m_context) {
 	StartNotificationTask(m_level1Updates);
+	StartNotificationTask(m_level1Ticks);
 	StartNotificationTask(m_newTrades);
 	StartNotificationTask(m_positionUpdates);
 }
@@ -67,7 +69,28 @@ void Dispatcher::SignalLevel1Update(
 	if (subscriber.IsBlocked()) {
 		return;
 	}
-	m_level1Updates.Queue(boost::make_tuple(&security, subscriber));
+	m_level1Updates.Queue(boost::make_tuple(&security, subscriber), true);
+}
+
+void Dispatcher::SignalLevel1Tick(
+			SubscriberPtrWrapper &subscriber,
+			const Security &security,
+			const boost::posix_time::ptime &time,
+			const Level1TickValue &value,
+			bool flush) {
+	try {
+		if (subscriber.IsBlocked()) {
+			return;
+		}
+		const SubscriberPtrWrapper::Level1Tick tick(security, time, value);
+		m_level1Ticks.Queue(
+			boost::make_tuple(tick, subscriber),
+			flush);
+	} catch (...) {
+		//! Blocking as irreversible error, data loss.
+		subscriber.Block();
+		throw;
+	}
 }
 
 void Dispatcher::SignalNewTrade(
@@ -81,6 +104,7 @@ void Dispatcher::SignalNewTrade(
 		if (subscriber.IsBlocked()) {
 			return;
 		}
+		//! @todo Check profit from ptr.
 		boost::shared_ptr<SubscriberPtrWrapper::Trade> trade(
 			new SubscriberPtrWrapper::Trade);
 		trade->security = &security;
@@ -88,7 +112,7 @@ void Dispatcher::SignalNewTrade(
 		trade->price = price;
 		trade->qty = qty;
 		trade->side = side;
-		m_newTrades.Queue(boost::make_tuple(trade, subscriber));
+		m_newTrades.Queue(boost::make_tuple(trade, subscriber), true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		subscriber.Block();
@@ -101,7 +125,7 @@ void Dispatcher::SignalPositionUpdate(
 			Position &position) {
 	try {
 		m_positionUpdates.Queue(
-			boost::make_tuple(position.shared_from_this(), subscriber));
+			boost::make_tuple(position.shared_from_this(), subscriber), true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		subscriber.Block();

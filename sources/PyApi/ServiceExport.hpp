@@ -113,7 +113,7 @@ namespace trdk { namespace PyApi {
 			boost::intmax_t GetClosePrice() const;
 			boost::intmax_t GetHighPrice() const;
 			boost::intmax_t GetLowPrice() const;
-			boost::intmax_t GetVolume() const;
+			boost::intmax_t GetTradingVolume() const;
 		private:
 			const Implementation *m_service;
 			const Implementation::Bar *m_bar;
@@ -178,7 +178,7 @@ namespace trdk { namespace PyApi {
 		PriceStatExport GetClosePriceStat(size_t numberOfBars) const;
 		PriceStatExport GetHighPriceStat(size_t numberOfBars) const;
 		PriceStatExport GetLowPriceStat(size_t numberOfBars) const;
-		QtyStatExport GetVolumeStat(size_t numberOfBars) const;
+		QtyStatExport GetTradingVolumeStat(size_t numberOfBars) const;
 
 	protected:
 

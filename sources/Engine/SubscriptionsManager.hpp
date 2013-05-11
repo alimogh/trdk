@@ -33,9 +33,13 @@ namespace trdk { namespace Engine {
 
 	public:
 
-		void SubscribeToLevel1(trdk::Strategy &);
-		void SubscribeToLevel1(trdk::Service &);
-		void SubscribeToLevel1(trdk::Observer &);
+		void SubscribeToLevel1Updates(trdk::Strategy &);
+		void SubscribeToLevel1Updates(trdk::Service &);
+		void SubscribeToLevel1Updates(trdk::Observer &);
+
+		void SubscribeToLevel1Ticks(trdk::Strategy &);
+		void SubscribeToLevel1Ticks(trdk::Service &);
+		void SubscribeToLevel1Ticks(trdk::Observer &);
 
 		void SubscribeToTrades(trdk::Strategy &);
 		void SubscribeToTrades(trdk::Service &);
@@ -49,7 +53,11 @@ namespace trdk { namespace Engine {
 
 	private:
 
-		void SubscribeToLevel1(
+		void SubscribeToLevel1Updates(
+					const SubscriberPtrWrapper &,
+					const Security &,
+					std::list<boost::signals2::connection> &);
+		void SubscribeToLevel1Ticks(
 					const SubscriberPtrWrapper &,
 					const Security &,
 					std::list<boost::signals2::connection> &);

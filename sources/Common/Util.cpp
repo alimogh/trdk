@@ -68,6 +68,51 @@ time_t Lib::ConvertToTimeT(const pt::ptime &source) {
 	return static_cast<time_t>(durationFromTEpoch.total_seconds());
 }
 
+FILETIME Lib::ConvertToFileTime(const pt::ptime &source) {
+    
+	SYSTEMTIME st;
+    boost::gregorian::date::ymd_type ymd = source.date().year_month_day();
+    st.wYear = ymd.year;
+    st.wMonth = ymd.month;
+    st.wDay = ymd.day;
+    st.wDayOfWeek = source.date().day_of_week();
+ 
+    pt::time_duration td = source.time_of_day();
+    st.wHour = static_cast<WORD>(td.hours());
+    st.wMinute = static_cast<WORD>(td.minutes());
+    st.wSecond = static_cast<WORD>(td.seconds());
+    st.wMilliseconds = 0;
+ 
+    FILETIME ft;
+    SystemTimeToFileTime(&st, &ft);
+ 
+    boost::uint64_t _100nsSince1601 = ft.dwHighDateTime;
+    _100nsSince1601 <<= 32;
+    _100nsSince1601 |= ft.dwLowDateTime;
+    _100nsSince1601 += td.fractional_seconds() * 10;
+
+	ft.dwHighDateTime = _100nsSince1601 >> 32;
+    ft.dwLowDateTime = _100nsSince1601 & 0x00000000FFFFFFFF;
+ 
+    return ft;
+
+}
+
+int64_t Lib::ConvertToInt64(const pt::ptime &source) {
+	const FILETIME ft = ConvertToFileTime(source);
+	LARGE_INTEGER li;
+	li.LowPart = ft.dwLowDateTime;
+	li.HighPart = ft.dwHighDateTime;
+	return li.QuadPart;
+}
+
+pt::ptime Lib::ConvertToPTime(int64_t source) {
+	LARGE_INTEGER li;
+	li.QuadPart = source;
+	const FILETIME ft = {li.LowPart, li.HighPart};
+	return pt::from_ftime<pt::ptime>(ft);
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 fs::path Lib::GetExeFilePath() {

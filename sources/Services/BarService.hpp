@@ -50,7 +50,7 @@ namespace trdk { namespace Services {
 			trdk::ScaledPrice closePrice;
 			trdk::ScaledPrice highPrice;
 			trdk::ScaledPrice lowPrice;
-			trdk::Qty volume;
+			trdk::Qty tradingVolume;
 
 			Bar();
 
@@ -95,7 +95,10 @@ namespace trdk { namespace Services {
 
 	public:
 
-		virtual bool OnLevel1Update(const Security &);
+		virtual bool OnLevel1Tick(
+					const Security &,
+					const boost::posix_time::ptime &,
+					const trdk::Level1TickValue &);
 
 		virtual bool OnNewTrade(
 					const Security &,
@@ -146,7 +149,7 @@ namespace trdk { namespace Services {
 		boost::shared_ptr<ScaledPriceStat> GetLowPriceStat(
 					size_t numberOfBars)
 				const;
-		boost::shared_ptr<QtyStat> GetVolumeStat(
+		boost::shared_ptr<QtyStat> GetTradingVolumeStat(
 					size_t numberOfBars)
 				const;
 

@@ -90,8 +90,9 @@ boost::shared_ptr<trdk::Strategy> PyApi::Strategy::CreateClientInstance(
 			= py::extract<StrategyExport &>(pyObject);
 		return strategyExport.GetStrategy().TakeExportObjectOwnership();
 	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error("Failed to create instance of trdk.Strategy");
+		RethrowPythonClientException(
+			"Failed to create instance of trdk.Strategy");
+		throw std::logic_error("Never throws");
 	}
 }
 

@@ -116,6 +116,10 @@ namespace trdk { namespace Lib {
 	boost::posix_time::time_duration GetEdtDiff();
 
 	time_t ConvertToTimeT(const boost::posix_time::ptime &);
+	FILETIME ConvertToFileTime(const boost::posix_time::ptime &);
+	int64_t ConvertToInt64(const boost::posix_time::ptime &);
+
+	boost::posix_time::ptime ConvertToPTime(int64_t);
 
 	//////////////////////////////////////////////////////////////////////////
 	

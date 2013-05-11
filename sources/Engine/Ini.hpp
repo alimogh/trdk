@@ -40,7 +40,8 @@ namespace trdk { namespace Engine { namespace Ini {
 
 	namespace Constants {
 		namespace Services {
-			extern const std::string level1;
+			extern const std::string level1Updates;
+			extern const std::string level1Ticks;
 			extern const std::string trades;
 		}
 	}

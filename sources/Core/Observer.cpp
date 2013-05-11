@@ -50,10 +50,21 @@ Observer::~Observer() {
 
 void Observer::OnLevel1Update(const trdk::Security &) {
 	GetLog().Error(
-		"Subscribed to Level 1 updates, but can't work with it"
+		"Subscribed to Level 1 Updates, but can't work with it"
 			" (hasn't OnLevel1Update method implementation).");
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to Level 1 updates, but can't work with it");
+}
+
+void Observer::OnLevel1Tick(
+				const Security &,
+				const boost::posix_time::ptime &,
+				const Level1TickValue &) {
+	GetLog().Error(
+		"Subscribed to Level 1 Ticks, but can't work with it"
+			" (hasn't OnLevel1Tick method implementation).");
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to Level 1 Ticks, but can't work with it");
 }
 
 void Observer::OnNewTrade(
@@ -81,6 +92,14 @@ void Observer::OnServiceDataUpdate(const trdk::Service &service) {
 void Observer::RaiseLevel1UpdateEvent(const Security &security) {
 	const Lock lock(GetMutex());
 	OnLevel1Update(security);
+}
+
+void Observer::RaiseLevel1TickEvent(
+			const Security &security,
+			const boost::posix_time::ptime &time,
+			const Level1TickValue &value) {
+	const Lock lock(GetMutex());
+	OnLevel1Tick(security, time, value);
 }
 
 void Observer::RaiseNewTradeEvent(
