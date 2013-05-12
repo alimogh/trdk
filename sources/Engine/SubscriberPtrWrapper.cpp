@@ -313,9 +313,6 @@ void SubscriberPtrWrapper::RaisePositionUpdateEvent(Position &position) const {
 		}
 	public:
 		void operator ()(Strategy &strategy) const {
-			AssertEq(
-				m_position.GetSecurity().GetFullSymbol(),
-				strategy.GetSecurity().GetFullSymbol());
 			strategy.RaisePositionUpdateEvent(m_position);
 		}
 		void operator ()(const Service &) const {
