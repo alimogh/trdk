@@ -363,7 +363,7 @@ Security & Strategy::GetSecurity() {
 }
 
 void Strategy::Register(Position &position) {
-	Assert(!GetMutex().try_lock());
+//	Assert(!GetMutex().try_lock());
 	const PositionHolder holder(
 		position,
 		position.Subscribe(
