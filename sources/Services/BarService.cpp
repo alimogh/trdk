@@ -116,7 +116,7 @@ BarService::Bar::Bar()
 		closePrice(0),
 		highPrice(0),
 		lowPrice(0),
-		volume(0) {
+		tradingVolume(0) {
 	//...//
 }
 
@@ -362,34 +362,43 @@ public:
 			<< GetCsvDelimeter() << m_currentBar->highPrice
 			<< GetCsvDelimeter() << m_currentBar->lowPrice
 			<< GetCsvDelimeter() << m_currentBar->closePrice
-			<< GetCsvDelimeter() << m_currentBar->volume
+			<< GetCsvDelimeter() << m_currentBar->tradingVolume
 			<< std::endl;
 	}
 
-	pt::ptime GetBarEnd(const pt::ptime &tradeTime)
+	void GetBarTimePoints(
+				const pt::ptime &tradeTime,
+				pt::ptime &startTime,
+				pt::ptime &endTime)
 			const {
 		AssertNe(pt::not_a_date_time, tradeTime);
 		const auto time = tradeTime.time_of_day();
 		static_assert(numberOfOrderSides, "Units list changed.");
 		switch (m_units) {
 			case UNITS_SECONDS:
-				return
-					pt::ptime(tradeTime.date())
+				endTime
+					= pt::ptime(tradeTime.date())
 					+ pt::hours(time.hours())
 					+ pt::minutes(time.minutes())
 					+ pt::seconds(
 						((time.seconds() / m_barSize) + 1) * m_barSize);
+				startTime = endTime - pt::seconds(m_barSize);
+				break;
 			case UNITS_MINUTES:
-				return
-					pt::ptime(tradeTime.date())
+				endTime
+					= pt::ptime(tradeTime.date())
 					+ pt::hours(time.hours())
 					+ pt::minutes(
 						((time.minutes() / m_barSize) + 1) * m_barSize);
+				startTime = endTime - pt::minutes(m_barSize);
+				break;
 			case UNITS_HOURS:
-				return
-					pt::ptime(tradeTime.date())
+				endTime
+					= pt::ptime(tradeTime.date())
 					+ pt::hours(
 						((time.hours() / m_barSize) + 1) * m_barSize);
+				startTime = endTime - pt::hours(m_barSize);
+				break;
 			case UNITS_DAYS:
 				//! @todo Implement days bar service
 				throw Error("Days units doesn't yet implemented");
@@ -410,9 +419,8 @@ public:
 	template<typename Pred>
 	bool StartNewBar(const pt::ptime &time, const Pred &pred) {
 		LogCurrentBar();
-		m_currentBarEnd = GetBarEnd(time);
 		m_currentBar = &m_bars[size_t(m_size)];
-		m_currentBar->time = time;
+		GetBarTimePoints(time, m_currentBar->time, m_currentBarEnd);
 		pred(*m_currentBar);
 		Interlocking::Increment(m_size);
 		AssertEq(size_t(m_size), m_bars.size());
@@ -427,16 +435,47 @@ public:
 			:	StartNewBar(time, pred);
 	}
 
-	bool OnLevel1Update(const Security &security) {
+	bool OnLevel1Tick(
+				const Security &/*security*/,
+				const pt::ptime &time,
+				const Level1TickValue &value) {
+		switch (value.type) {
+			case LEVEL1_TICK_BID_PRICE:
+			case LEVEL1_TICK_ASK_PRICE:
+				break;
+			default:
+				return false;
+		};
 		return AppendStat(
-			boost::get_system_time(),
-			[&security](Bar &bar) {
-				bar.maxAskPrice = std::max(
-					bar.maxAskPrice,
-					security.GetAskPriceScaled());
-				bar.minBidPrice = bar.minBidPrice
-					?	std::min(bar.minBidPrice, security.GetBidPriceScaled())
-					:	security.GetBidPriceScaled();
+			time,
+			[&](Bar &bar) {
+				switch (value.type) {
+					default:
+						AssertEq(LEVEL1_TICK_BID_PRICE, value.type);
+						return;
+					case LEVEL1_TICK_BID_PRICE:
+						bar.minBidPrice = bar.minBidPrice
+							?	std::min(
+									bar.minBidPrice,
+									value.value.bidPrice)
+							:	value.value.bidPrice;
+						break;
+					case LEVEL1_TICK_ASK_PRICE:
+						bar.maxAskPrice = std::max(
+							bar.maxAskPrice,
+							value.value.askPrice);
+						break;
+				}
+				if (!bar.minBidPrice) {
+					bar.minBidPrice = m_size > 0
+						?	m_bars[m_size - 1].minBidPrice
+						:	m_service.GetSecurity().GetBidPriceScaled();
+				}
+				if (!bar.maxAskPrice) {
+					bar.maxAskPrice = m_size > 0
+						?	m_bars[m_size - 1].maxAskPrice
+						:	m_service.GetSecurity().GetAskPriceScaled();
+				}
 			});
 	}
 
@@ -452,7 +491,7 @@ public:
 					AssertEq(0, bar.highPrice);
 					AssertEq(0, bar.lowPrice);
 					AssertEq(0, bar.closePrice);
-					AssertEq(0, bar.volume);
+					AssertEq(0, bar.tradingVolume);
 					AssertNe(0, price);
 					bar.openPrice = price;
 				}
@@ -461,7 +500,7 @@ public:
 					?	std::min(bar.lowPrice, price)
 					:	price;
 				bar.closePrice = price;
-				bar.volume += qty;
+				bar.tradingVolume += qty;
 			});
 	}
 
@@ -487,9 +526,12 @@ BarService::~BarService() {
 	delete m_pimpl;
 }
 
-bool BarService::OnLevel1Update(const Security &security) {
+bool BarService::OnLevel1Tick(
+			const Security &security,
+			const pt::ptime &time,
+			const Level1TickValue &value) {
 	Assert(&security == &GetSecurity());
-	return m_pimpl->OnLevel1Update(security);
+	return m_pimpl->OnLevel1Tick(security, time, value);
 }
 
 bool BarService::OnNewTrade(
@@ -582,12 +624,12 @@ boost::shared_ptr<BarService::ScaledPriceStat> BarService::GetLowPriceStat(
 	return m_pimpl->CreateStat<Stat>(numberOfBars);
 }
 
-boost::shared_ptr<BarService::QtyStat> BarService::GetVolumeStat(
+boost::shared_ptr<BarService::QtyStat> BarService::GetTradingVolumeStat(
 			size_t numberOfBars)
 		const {
 	typedef StatAccumulator<
 			QtyStat,
-			offsetof(BarService::Bar, BarService::Bar::volume)>
+			offsetof(BarService::Bar, BarService::Bar::tradingVolume)>
 		Stat;
 	return m_pimpl->CreateStat<Stat>(numberOfBars);
 }

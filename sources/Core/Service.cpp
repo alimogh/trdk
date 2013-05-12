@@ -159,6 +159,14 @@ bool Service::RaiseLevel1UpdateEvent(const Security &security) {
 	return OnLevel1Update(security);
 }
 
+bool Service::RaiseLevel1TickEvent(
+			const Security &security,
+			const boost::posix_time::ptime &time,
+			const Level1TickValue &value) {
+	const Lock lock(GetMutex());
+	return OnLevel1Tick(security, time, value);
+}
+
 bool Service::RaiseNewTradeEvent(
 			const Security &security,
 			const boost::posix_time::ptime &time,
@@ -176,10 +184,21 @@ bool Service::RaiseServiceDataUpdateEvent(const Service &service) {
 
 bool Service::OnLevel1Update(const Security &) {
 	GetLog().Error(
-		"Subscribed to Level 1 updates, but can't work with it"
+		"Subscribed to Level 1 Updates, but can't work with it"
 			" (hasn't OnLevel1Update method implementation).");
 	throw MethodDoesNotImplementedError(
-		"Module subscribed to Level 1 updates, but can't work with it");
+		"Module subscribed to Level 1 Updates, but can't work with it");
+}
+
+bool Service::OnLevel1Tick(
+			const Security &,
+			const boost::posix_time::ptime &,
+			const Level1TickValue &) {
+	GetLog().Error(
+		"Subscribed to Level 1 Ticks, but can't work with it"
+			" (hasn't OnLevel1Tick method implementation).");
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to Level 1 Ticks, but can't work with it");
 }
 
 bool Service::OnNewTrade(

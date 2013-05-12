@@ -36,4 +36,12 @@ namespace trdk { namespace PyApi {
 		}
 	};
 
+	class ScriptError : public ClientError {
+	public:
+		explicit ScriptError(const char *what) throw()
+				: ClientError(what) {
+			//...//
+		}
+	};
+
 } }

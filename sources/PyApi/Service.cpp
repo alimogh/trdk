@@ -103,8 +103,9 @@ boost::shared_ptr<trdk::Service> PyApi::Service::CreateClientInstance(
 		ServiceExport &serviceExport = py::extract<ServiceExport &>(pyObject);
 		return serviceExport.GetService().TakeExportObjectOwnership();
 	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error("Failed to create instance of trdk.Service");
+		RethrowPythonClientException(
+			"Failed to create instance of trdk.Service");
+		throw std::logic_error("Never throws");
 	}
 }
 

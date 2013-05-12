@@ -71,7 +71,7 @@ void SubscriptionsManager::Suspend() {
 	m_dispatcher.Suspend();
 }
 
-void SubscriptionsManager::SubscribeToLevel1(
+void SubscriptionsManager::SubscribeToLevel1Updates(
 			const SubscriberPtrWrapper &subscriber,
 			const Security &security,
 			std::list<boost::signals2::connection> &slotConnections) {
@@ -81,7 +81,7 @@ void SubscriptionsManager::SubscribeToLevel1(
 			&m_dispatcher,
 			subscriber,
 			boost::cref(security)));
-	const auto connection = security.SubcribeToLevel1(slot);
+	const auto connection = security.SubcribeToLevel1Updates(slot);
 	try {
 		slotConnections.push_back(connection);
 	} catch (...) {
@@ -93,7 +93,35 @@ void SubscriptionsManager::SubscribeToLevel1(
 		}
 		throw;
 	}
-	Report(*subscriber, security, "Level 1");
+	Report(*subscriber, security, "Level 1 Updates");
+}
+
+void SubscriptionsManager::SubscribeToLevel1Ticks(
+			const SubscriberPtrWrapper &subscriber,
+			const Security &security,
+			std::list<boost::signals2::connection> &slotConnections) {
+	const auto slot = Security::Level1TickSlot(
+		boost::bind(
+			&Dispatcher::SignalLevel1Tick,
+			&m_dispatcher,
+			subscriber,
+			boost::cref(security),
+			_1,
+			_2,
+			_3));
+	const auto connection = security.SubcribeToLevel1Ticks(slot);
+	try {
+		slotConnections.push_back(connection);
+	} catch (...) {
+		try {
+			connection.disconnect();
+		} catch (...) {
+			AssertFailNoException();
+			throw;
+		}
+		throw;
+	}
+	Report(*subscriber, security, "Level 1 Ticks");
 }
 
 void SubscriptionsManager::SubscribeToTrades(
@@ -125,7 +153,7 @@ void SubscriptionsManager::SubscribeToTrades(
 	Report(*subscriber, security, "new trades");
 }
 
-void SubscriptionsManager::SubscribeToLevel1(Strategy &strategy) {
+void SubscriptionsManager::SubscribeToLevel1Updates(Strategy &strategy) {
 	Assert(!IsActive());
 	Subscribe(
 		strategy,
@@ -133,11 +161,11 @@ void SubscriptionsManager::SubscribeToLevel1(Strategy &strategy) {
 					const SubscriberPtrWrapper &subscriber,
 					const Security &security,
 					std::list<boost::signals2::connection> &slotConnections) {
-			SubscribeToLevel1(subscriber, security, slotConnections);
+			SubscribeToLevel1Updates(subscriber, security, slotConnections);
 		});
 }
 
-void SubscriptionsManager::SubscribeToLevel1(Service &service) {
+void SubscriptionsManager::SubscribeToLevel1Updates(Service &service) {
 	Assert(!IsActive());
 	Subscribe(
 		service,
@@ -145,11 +173,11 @@ void SubscriptionsManager::SubscribeToLevel1(Service &service) {
 					const SubscriberPtrWrapper &subscriber,
 					const Security &security,
 					std::list<boost::signals2::connection> &slotConnections) {
-			SubscribeToLevel1(subscriber, security, slotConnections);
+			SubscribeToLevel1Updates(subscriber, security, slotConnections);
 		});
 }
 
-void SubscriptionsManager::SubscribeToLevel1(Observer &observer) {
+void SubscriptionsManager::SubscribeToLevel1Updates(Observer &observer) {
 	Assert(!IsActive());
 	Subscribe(
 		observer,
@@ -157,7 +185,43 @@ void SubscriptionsManager::SubscribeToLevel1(Observer &observer) {
 				const SubscriberPtrWrapper &subscriber,
 				const Security &security,
 				std::list<boost::signals2::connection> &slotConnections) {
-			SubscribeToLevel1(subscriber, security, slotConnections);
+			SubscribeToLevel1Updates(subscriber, security, slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToLevel1Ticks(Strategy &strategy) {
+	Assert(!IsActive());
+	Subscribe(
+		strategy,
+		[this](
+					const SubscriberPtrWrapper &subscriber,
+					const Security &security,
+					std::list<boost::signals2::connection> &slotConnections) {
+			SubscribeToLevel1Ticks(subscriber, security, slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToLevel1Ticks(Service &service) {
+	Assert(!IsActive());
+	Subscribe(
+		service,
+		[this](
+					const SubscriberPtrWrapper &subscriber,
+					const Security &security,
+					std::list<boost::signals2::connection> &slotConnections) {
+			SubscribeToLevel1Ticks(subscriber, security, slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToLevel1Ticks(Observer &observer) {
+	Assert(!IsActive());
+	Subscribe(
+		observer,
+		[this](
+				const SubscriberPtrWrapper &subscriber,
+				const Security &security,
+				std::list<boost::signals2::connection> &slotConnections) {
+			SubscribeToLevel1Ticks(subscriber, security, slotConnections);
 		});
 }
 

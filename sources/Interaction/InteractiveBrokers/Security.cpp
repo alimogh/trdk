@@ -23,13 +23,5 @@ ib::Security::Security(
 			const std::string &exchange,
 			bool logMarketData)
 		: Base(context, symbol, primaryExchange, exchange, logMarketData) {
-	// Can't get volume from IB at this stage, so set zero to security:
-	SetVolume(0);
-}
-
-bool ib::Security::IsLevel1Required() const {
-	return
-		Base::IsLevel1Required()
-		//! In IB we need have Level 1 to know trade side:
-		|| IsTradesRequired();
+	//...//
 }

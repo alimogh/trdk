@@ -39,6 +39,10 @@ namespace trdk {
 	public:
 
 		virtual bool OnLevel1Update(const trdk::Security &);
+		virtual bool OnLevel1Tick(
+					const trdk::Security &,
+					const boost::posix_time::ptime &,
+					const trdk::Level1TickValue &);
 		virtual bool OnNewTrade(
 					const trdk::Security &,
 					const boost::posix_time::ptime &,
@@ -57,6 +61,10 @@ namespace trdk {
 	public:
 
 		bool RaiseLevel1UpdateEvent(const trdk::Security &);
+		bool RaiseLevel1TickEvent(
+					const trdk::Security &,
+					const boost::posix_time::ptime &,
+					const trdk::Level1TickValue &);
 		bool RaiseNewTradeEvent(
 					const trdk::Security &,
 					const boost::posix_time::ptime &,

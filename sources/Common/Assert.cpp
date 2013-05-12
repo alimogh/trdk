@@ -9,6 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Util.hpp"
 #include "Core/Log.hpp"
 #include "Assert.hpp"
 
@@ -92,10 +93,18 @@ namespace {
 
 #endif
 
+void Detail::RegisterUnhandledException(
+			const char *function,
+			const char *file,
+			long line,
+			bool tradingLog) {
+	Log::RegisterUnhandledException(function, file, line, tradingLog);
+}
+
 void Detail::AssertFailNoExceptionImpl(
 			const char *function,
 			const char *file,
 			long line) {
-	Log::RegisterUnhandledException(function, file, line, true);
+	RegisterUnhandledException(function, file, line, true);
 	Break();
 }

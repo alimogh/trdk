@@ -41,7 +41,8 @@ namespace {
 	//////////////////////////////////////////////////////////////////////////
 	
 	enum SystemService {
-		SYSTEM_SERVICE_LEVEL1,
+		SYSTEM_SERVICE_LEVEL1_UPDATES,
+		SYSTEM_SERVICE_LEVEL1_TICKS,
 		SYSTEM_SERVICE_TRADES,
 		numberOfSystemServices
 	};
@@ -609,7 +610,8 @@ private:
 				const std::string &tag,
 				Uses &uses) {
 		GetLog().Debug("Found service section \"%1%\"...", section);
-		if (	boost::iequals(tag, Ini::Constants::Services::level1)
+		if (	boost::iequals(tag, Ini::Constants::Services::level1Updates)
+				|| boost::iequals(tag, Ini::Constants::Services::level1Ticks)
 				|| boost::iequals(tag, Ini::Constants::Services::trades)) {
 			GetLog().Error(
 				"System predefined service name used for section %1%: \"%2%\".",
@@ -708,8 +710,12 @@ private:
 			boost::trim(request);
 			if (	boost::iequals(
 						request,
-						Ini::Constants::Services::level1)) {
-				Update(moduleType, tag, SYSTEM_SERVICE_LEVEL1, uses);
+						Ini::Constants::Services::level1Updates)) {
+				Update(moduleType, tag, SYSTEM_SERVICE_LEVEL1_UPDATES, uses);
+			} else if (	boost::iequals(
+							request,
+							Ini::Constants::Services::level1Ticks)) {
+				Update(moduleType, tag, SYSTEM_SERVICE_LEVEL1_TICKS, uses);
 			} else if (
 					boost::iequals(
 						request,
@@ -773,8 +779,13 @@ private:
 			isAnyService = true;
 		}
 
-		if (bindingInfo->systemServices[SYSTEM_SERVICE_LEVEL1]) {
-			m_subscriptionsManager.SubscribeToLevel1(module);
+		if (bindingInfo->systemServices[SYSTEM_SERVICE_LEVEL1_UPDATES]) {
+			m_subscriptionsManager.SubscribeToLevel1Updates(module);
+			isAnyService = true;
+		}
+
+		if (bindingInfo->systemServices[SYSTEM_SERVICE_LEVEL1_TICKS]) {
+			m_subscriptionsManager.SubscribeToLevel1Ticks(module);
 			isAnyService = true;
 		}
 

@@ -31,8 +31,8 @@ const trdk::Service & PyApi::ExtractService(const py::object &service) {
 		ServiceExport &serviceExport = py::extract<ServiceExport &>(service);
 		return serviceExport.GetService();
 	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error("Failed to extract service");
+		RethrowPythonClientException("Failed to extract service");
+		throw std::logic_error("Never throws");
 	}
 }
 
@@ -58,8 +58,8 @@ py::object PyApi::Export(const trdk::Service &service) {
 			return objectCache.Get<BarServiceExport>(service);
 		}
 	} catch (const py::error_already_set &) {
-		LogPythonClientException();
-		throw Error("Failed to export service");
+		RethrowPythonClientException("Failed to export service");
+		throw std::logic_error("Never throws");
 	}
 	throw Error("Failed to export service: Unknown service type");
 }
@@ -163,7 +163,7 @@ void BarServiceExport::BarExport::ExportClass(const char *className) {
 		.add_property("closePrice", &BarExport::GetClosePrice)
 		.add_property("highPrice", &BarExport::GetHighPrice)
 		.add_property("lowPrice", &BarExport::GetLowPrice)
-		.add_property("volume", &BarExport::GetVolume);
+		.add_property("tradingVolume", &BarExport::GetTradingVolume);
 }
 
 time_t BarServiceExport::BarExport::GetTime() const {
@@ -198,8 +198,8 @@ boost::intmax_t BarServiceExport::BarExport::GetLowPrice() const {
 	return m_bar->lowPrice;
 }
 			
-boost::intmax_t BarServiceExport::BarExport::GetVolume() const {
-	return m_bar->volume;
+boost::intmax_t BarServiceExport::BarExport::GetTradingVolume() const {
+	return m_bar->tradingVolume;
 }
 
 void BarServiceExport::StatExport::ExportClass(const char *className) {
@@ -290,7 +290,7 @@ void BarServiceExport::ExportClass(const char *className) {
  		.def("getClosePriceStat", &BarServiceExport::GetClosePriceStat)
  		.def("getHighPriceStat", &BarServiceExport::GetHighPriceStat)
  		.def("getHighPriceStat", &BarServiceExport::GetHighPriceStat)
- 		.def("getVolumeStat", &BarServiceExport::GetVolumeStat);
+ 		.def("getTradingVolumeStat", &BarServiceExport::GetTradingVolumeStat);
 
 	BarExport::ExportClass("Bar");
 
@@ -352,10 +352,10 @@ BarServiceExport::PriceStatExport BarServiceExport::GetLowPriceStat(
 	return PriceStatExport(GetService().GetLowPriceStat(numberOfBars));
 }
         
-BarServiceExport::QtyStatExport BarServiceExport::GetVolumeStat(
+BarServiceExport::QtyStatExport BarServiceExport::GetTradingVolumeStat(
 			size_t numberOfBars)
 		const {
-	return QtyStatExport(GetService().GetVolumeStat(numberOfBars));
+	return QtyStatExport(GetService().GetTradingVolumeStat(numberOfBars));
 }
 
 const BarService & BarServiceExport::GetService() const {
