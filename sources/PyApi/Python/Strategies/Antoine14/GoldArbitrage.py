@@ -58,7 +58,7 @@ class GoldArbitrage(trdk.Strategy):
             # Short GLD @ Ask, Long DGL @ Bid
             self.log.info('Opening positions by "Entry 1"...')
             gldPos = trdk.ShortPosition(self, 1, gld.maxAskPrice)
-            dglPos = trdk.LongPosition(strategies["DGL"], dgl.minBidPrice, 1)
+            dglPos = trdk.LongPosition(self, 1, dgl.minBidPrice)
             gldPos.open(gldPos.openStartPrice)
             dglPos.open(dglPos.openStartPrice)
         
@@ -67,7 +67,7 @@ class GoldArbitrage(trdk.Strategy):
             # Long GLD @ Bid, Short DGL @ Ask
             self.log.info('Opening positions by "Entry 2"...')
             gldPos = trdk.LongPosition(self, 1, gld.minBidPrice)
-            dglPos = trdk.ShortPosition(strategies["DGL"], dgl.maxAskPrice, 1)
+            dglPos = trdk.ShortPosition(self, 1, dgl.maxAskPrice)
             gldPos.open(gldPos.openStartPrice)
             dglPos.open(dglPos.openStartPrice)
 
