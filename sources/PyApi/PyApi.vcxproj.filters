@@ -94,6 +94,9 @@
     <ClCompile Include="ModuleExport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Detail.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="PyApi.def">

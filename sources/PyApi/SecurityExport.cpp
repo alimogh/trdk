@@ -132,8 +132,7 @@ py::object PyApi::Export(const Security &security) {
 	try {
 		return py::object(SecurityInfoExport(security));
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to export security info");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to export security info");
 	}
 }
 

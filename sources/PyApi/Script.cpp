@@ -54,18 +54,16 @@ Script & Script::Load(const fs::path &path) {
 		try {
 			Py_Initialize();
 		} catch (const py::error_already_set &) {
-			RethrowPythonClientException(
+			throw GetPythonClientException(
 				"Internal error: Failed to initialize Python engine");
-			throw std::logic_error("Never throws");
 		}
 		ExportApi();
 		try {
 			global = py::import("__main__");
 			Assert(global);
 		} catch (const py::error_already_set &) {
-			RethrowPythonClientException(
+			throw GetPythonClientException(
 				"Internal error: Failed to get __main__");
-			throw std::logic_error("Never throws");
 		}
 	}
 	boost::shared_ptr<Script> script(new Script(global, path));
@@ -81,9 +79,8 @@ Script::Script(py::object &main, const fs::path &filePath)
 	try {
 		m_global = main.attr("__dict__");
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException(
+		throw GetPythonClientException(
 			"Internal error: Failed to get __main__.__dict__");
-		throw std::logic_error("Never throws");
 	}
 
 	try {
@@ -95,11 +92,10 @@ Script::Script(py::object &main, const fs::path &filePath)
 					% ex.what())
 				.str().c_str());
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException(
+		throw GetPythonClientException(
 			(boost::format("Failed to compile Python script from %1%")
 					% filePath)
 				.str().c_str());
-		throw std::logic_error("Never throws");
 	}
 
 }
@@ -108,8 +104,7 @@ void Script::Exec(const std::string &code) {
 	try {
 		py::exec(code.c_str(), m_global, m_global);
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to execute Python code");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to execute Python code");
 	}
 }
 
@@ -134,8 +129,7 @@ py::object Script::GetClass(const std::string &name) {
 	} catch (const py::error_already_set &) {
 		boost::format message("Failed to load Python class %1%");
 		message % name;
-		RethrowPythonClientException(message.str().c_str());
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException(message.str().c_str());
 	}
 }
 

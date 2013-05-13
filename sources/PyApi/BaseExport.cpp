@@ -94,8 +94,7 @@ namespace {
 		} catch (const py::error_already_set &) {
 			boost::format error("Failed to export %1%");
 			error % TypeTrait<T>::GetName();
-			RethrowPythonClientException(error.str().c_str());
-			throw std::logic_error("Never throws");
+			throw GetPythonClientException(error.str().c_str());
 		}
 	}
 
@@ -117,8 +116,7 @@ py::object PyApi::Export(const pt::ptime &time) {
 	try {
 		return py::object((time - epochStart).total_seconds());
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to export posix time");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to export posix time");
 	}
 }
 
@@ -127,8 +125,7 @@ pt::ptime PyApi::ExtractPosixTime(const py::object &time) {
 	try {
 		return pt::from_time_t(py::extract<time_t>(time));
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to extract posix time");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to extract posix time");
 	}
 }
 
@@ -137,9 +134,8 @@ ScaledPrice PyApi::ExtractScaledPrice(const py::object &price) {
 	try {
 		return py::extract<ScaledPrice>(price);
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException(
+		throw GetPythonClientException(
 			"Failed to extract trdk::ScaledPrice");
-		throw std::logic_error("Never throws");
 	}
 }
 
@@ -148,8 +144,7 @@ Qty PyApi::ExtractQty(const py::object &qty) {
 	try {
 		return py::extract<Qty>(qty);
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to extract trdk::Qty");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to extract trdk::Qty");
 	}
 }
 
@@ -166,8 +161,7 @@ py::object PyApi::Export(OrderSide side) {
 				return py::object(' ');
 		}
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to export trdk::OrderSide");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to export trdk::OrderSide");
 	}
 }
 
@@ -185,10 +179,9 @@ OrderSide ExtractOrderSide(const py::object &orderSide) {
 					"Order side can be 'B' (buy) or 'S' (sell)");
 		}
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException(
+		throw GetPythonClientException(
 			"Failed to extract trdk::OrderSide:"
 				" order side can be 'B' (buy) or 'S' (sell)");
-		throw std::logic_error("Never throws");
 	}
 }
 

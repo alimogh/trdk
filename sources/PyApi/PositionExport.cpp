@@ -55,8 +55,7 @@ Position & PyApi::ExtractPosition(const py::object &position) {
 			= py::extract<PositionExport &>(position);
 		return positionExport.GetPosition();
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to extract position");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to extract position");
 	}
 }
 

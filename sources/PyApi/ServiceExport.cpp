@@ -31,8 +31,7 @@ const trdk::Service & PyApi::ExtractService(const py::object &service) {
 		ServiceExport &serviceExport = py::extract<ServiceExport &>(service);
 		return serviceExport.GetService();
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to extract service");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to extract service");
 	}
 }
 
@@ -58,8 +57,7 @@ py::object PyApi::Export(const trdk::Service &service) {
 			return objectCache.Get<BarServiceExport>(service);
 		}
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to export service");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to export service");
 	}
 	throw Error("Failed to export service: Unknown service type");
 }

@@ -227,8 +227,7 @@ namespace trdk { namespace PyApi { namespace Detail {
 			} catch (const boost::python::error_already_set &) {
 				boost::format message("Failed to call virtual method %1%");
 				message % name;
-				RethrowPythonClientException(message.str().c_str());
-				throw std::logic_error("Never throws");
+				throw GetPythonClientException(message.str().c_str());
 			}
 			return true;
 		}
