@@ -36,6 +36,7 @@ Dispatcher::Dispatcher(Engine::Context &context)
 Dispatcher::~Dispatcher() {
 	try {
 		m_context.GetLog().Debug("Stopping events dispatching...");
+		m_level1Ticks.Stop();
 		m_newTrades.Stop();
 		m_level1Updates.Stop();
 		m_positionUpdates.Stop();
