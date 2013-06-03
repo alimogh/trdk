@@ -13,29 +13,19 @@ namespace trdk { namespace Engine { namespace Ini {
 	//////////////////////////////////////////////////////////////////////////
 
 	namespace Sections {
-		extern const std::string common;
-		extern const std::string defaults;
 		extern const std::string strategy;
 		extern const std::string tradeSystem;
+		extern const std::string marketDataSource;
 		extern const std::string observer;
 		extern const std::string service;
-		namespace MarketData {
-			extern const std::string source;
-			namespace Log {
-				extern const std::string symbols;
-			}
-			extern const std::string request;
-		}
 	}
 
 	namespace Keys {
 		extern const std::string module;
 		extern const std::string factory;
-		extern const std::string symbols;
-		extern const std::string primaryExchange;
-		extern const std::string exchange;
-		extern const std::string uses;
-		extern const std::string isMarketDataSource;
+		extern const std::string instances;
+		extern const std::string requires;
+		extern const std::string isStandalone;
 	}
 
 	namespace Constants {

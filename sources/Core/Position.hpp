@@ -68,6 +68,7 @@ namespace trdk {
 
 		explicit Position(
 				trdk::Strategy &,
+				trdk::Security &,
 				trdk::Qty,
 				trdk::ScaledPrice startPrice);
 		virtual ~Position();
@@ -216,6 +217,7 @@ namespace trdk {
 
 		explicit LongPosition(
 				trdk::Strategy &,
+				trdk::Security &,
 				trdk::Qty,
 				trdk::ScaledPrice startPrice);
 		virtual ~LongPosition();
@@ -263,6 +265,7 @@ namespace trdk {
 
 		explicit ShortPosition(
 				trdk::Strategy &,
+				trdk::Security &,
 				trdk::Qty,
 				trdk::ScaledPrice startPrice);
 		virtual ~ShortPosition();

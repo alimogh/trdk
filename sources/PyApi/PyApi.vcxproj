@@ -84,6 +84,7 @@
     <ClInclude Include="Detail.hpp" />
     <ClInclude Include="BaseExport.hpp" />
     <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="ModuleSecurityListExport.hpp" />
     <ClInclude Include="ObjectCache.hpp" />
     <ClInclude Include="Position.hpp" />
     <ClInclude Include="PositionExport.hpp" />
@@ -101,6 +102,7 @@
   <ItemGroup>
     <ClCompile Include="BaseExport.cpp" />
     <ClCompile Include="Detail.cpp" />
+    <ClCompile Include="ModuleSecurityListExport.cpp" />
     <ClCompile Include="PositionExport.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

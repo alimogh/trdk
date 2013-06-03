@@ -10,14 +10,14 @@
 
 #include "Prec.hpp"
 #include "ModuleExport.hpp"
-#include "Core/SecurityAlgo.hpp"
 
+using namespace trdk::Lib;
 using namespace trdk::PyApi;
 namespace py = boost::python;
 
 //////////////////////////////////////////////////////////////////////////
 
-ModuleExport::LogExport::LogExport(trdk::SecurityAlgo::Log &log)
+ModuleExport::LogExport::LogExport(trdk::Module::Log &log)
 		: m_log(&log) {
 	//...//
 }
@@ -46,17 +46,17 @@ void ModuleExport::LogExport::Error(const char *message) {
 	m_log->Error(message);
 }
 
-//////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-ModuleExport::ModuleExport(const trdk::SecurityAlgo &algo)
-		: m_algo(&algo) {
+ModuleExport::ModuleExport(const trdk::Module &module)
+		: m_module(&module) {
 	//...//
 }
 
 void ModuleExport::ExportClass(const char *className) {
 	
-	typedef py::class_<ModuleExport, boost::noncopyable> SecurityAlgo;
-	const py::scope securityAlgoClass = SecurityAlgo(className, py::no_init)
+	typedef py::class_<ModuleExport, boost::noncopyable> Module;
+	const py::scope moduleClass = Module(className, py::no_init)
 		.add_property("name", &ModuleExport::GetName)
 		.add_property("tag", &ModuleExport::GetTag)
 		.add_property("log", &ModuleExport::GetLog);
@@ -66,13 +66,19 @@ void ModuleExport::ExportClass(const char *className) {
 }
 
 py::str ModuleExport::GetTag() const {
-	return m_algo->GetTag().c_str();
+	return m_module->GetTag().c_str();
 }
 
 py::str ModuleExport::GetName() const {
-	return m_algo->GetName().c_str();
+	return m_module->GetName().c_str();
 }
 
 ModuleExport::LogExport ModuleExport::GetLog() const {
-	return LogExport(m_algo->GetLog());
+	return LogExport(m_module->GetLog());
 }
+
+const trdk::Module & ModuleExport::GetModule() const {
+	return *m_module;
+}
+
+////////////////////////////////////////////////////////////////////////////////

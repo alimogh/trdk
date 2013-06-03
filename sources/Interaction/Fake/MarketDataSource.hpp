@@ -28,18 +28,8 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 		public:
 				
-			explicit Security(
-						Context &context,
-						const std::string &symbol,
-						const std::string &primaryExchange,
-						const std::string &exchange,
-						bool logMarketData)
-					: Base(
-						context,
-						symbol,
-						primaryExchange,
-						exchange,
-						logMarketData) {
+			explicit Security(Context &context, const Lib::Symbol &symbol)
+					: Base(context, symbol) {
 				//...//
 			}
 
@@ -66,10 +56,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
 					Context &,
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange,
-					bool logMarketData)
+					const trdk::Lib::Symbol &)
 				const;
 
 	private:

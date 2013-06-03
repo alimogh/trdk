@@ -27,7 +27,8 @@ __all__ = [
 class SecurityInfo(object):
 
     symbol = str
-    fullSymbol = str
+    exchange = str
+    primaryExchange = str
 
     currency = str
 
@@ -44,14 +45,16 @@ class SecurityInfo(object):
 
     def scalePrice(self, price):
         """
-        :type price: float
+
+        :param price: float
         :rtype: int
         """
         pass
 
     def descalePrice(self, price):
         """
-        :type price: int
+
+        :param price: int
         :rtype: float
         """
         pass
@@ -61,7 +64,8 @@ class Security(SecurityInfo):
 
     def cancelOrder(self, orderId):
         """ Cancels order by ID. Asynchronous.
-        :type orderId: int
+
+        :param orderId: int
         """
 
     def cancelAllOrders(self):
@@ -78,25 +82,29 @@ class Module(object):
 
         def debug(self, eventMessage):
             """ Adds new debug record into events.log
-            :type eventMessage: str
+
+            :param eventMessage: str
             """
             pass
 
         def info(self, eventMessage):
             """ Adds new information record into events.log
-            :type eventMessage: str
+
+            :param eventMessage: str
             """
             pass
 
         def warn(self, eventMessage):
             """ Adds new warning record into events.log
-            :type eventMessage: str
+
+            :param eventMessage: str
             """
             pass
 
         def error(self, eventMessage):
             """ Adds new error record into events.log
-            :type eventMessage: str
+
+            :param eventMessage: str
             """
             pass
 
@@ -107,13 +115,15 @@ class Module(object):
 
     def __init__(self, param):
         """
-        :type param: int
+
+        :param param: int
         """
         pass
 
     def onServiceStart(self, service):
         """ Notifies about new service start. Virtual.
-        :type service: trdk.Service
+
+        :param service: trdk.ServiceInfo
         """
         pass
 
@@ -125,19 +135,58 @@ class Strategy(Module):
     class PositionList(object):
         """ Iterable position list.
         """
+
+        def __iter__(self):
+            pass
+
         def count(self):
             """
+
             :rtype: int
             """
             pass
 
-    security = Security
+    class SecurityList(object):
+        """ Iterable security list.
+        """
+
+        def __iter__(self):
+            pass
+
+        def count(self):
+            """
+
+            :rtype: int
+            """
+            pass
+
+        def find(self, symbol, exchange=None, primaryExchange=None):
+            """ Finds security or return None if security doesn't exist in list.
+
+            :rtype: trdk.Security
+            """
+            pass
 
     positions = PositionList  # active positions
 
     def __init__(self, param):
         """
-        :type param: int
+
+        :param param: int
+        """
+        super(self.__class__, self).__init__(param)
+
+    def findSecurity(self, symbol, exchange=None, primaryExchange=None):
+        """ Finds security or return None if security doesn't exist.
+
+        :rtype: trdk.Security
+        """
+        pass
+
+    def onSecurityStart(self, security):
+        """ Notifies about new security start. Virtual.
+
+        :param security: trdk.Security
         """
         pass
 
@@ -145,7 +194,8 @@ class Strategy(Module):
         """
         Virtual. Notifies about Level 1 data update (best bid, best ask or
         last trade). Required if strategy subscribed to Level 1 updates.
-        :type security: trdk.Security
+
+        :param security: trdk.Security
         """
         pass
 
@@ -153,11 +203,12 @@ class Strategy(Module):
         """
         Virtual. Notifies about new trade (price tick). Required if strategy
         subscribed to new trades.
-        :type security: trdk.Security
-        :type time: int
-        :type price: int
-        :type qty: int
-        :type side: char 'S' (sell) or 'B' (buy)
+
+        :param security: trdk.Security
+        :param time: int
+        :param price: int
+        :param qty: int
+        :param side: char 'S' (sell) or 'B' (buy)
         """
         pass
 
@@ -165,32 +216,64 @@ class Strategy(Module):
         """
         Virtual. Notifies about service data update. Required if strategy
         subscribed to at least one service.
-        :type service: trdk.Service
+
+        :param service: trdk.ServiceInfo
         """
         pass
 
     def onPositionUpdate(self, position):
         """
         Virtual. Notifies about position state update. Optional.
-        :type position: trdk.Position
+
+        :param position: trdk.Position
         """
         pass
 
 
 class ServiceInfo(Module):
 
+    class SecurityList(object):
+        """ Iterable security list.
+        """
+
+        def __iter__(self):
+            pass
+
+        def count(self):
+            """
+
+            :rtype: int
+            """
+            pass
+
+        def find(self, symbol, exchange=None, primaryExchange=None):
+            """ Finds security or return None if security doesn't exist in list.
+
+            :rtype: trdk.SecurityInfo
+            """
+            pass
+
     def __init__(self, param):
         """
-        :type param: int
+
+        :param param: int
         """
-        pass
+        super(self.__class__, self).__init__(param)
 
 
 class Service(ServiceInfo):
 
     def __init__(self, param):
         """
-        :type param: int
+
+        :param param: int
+        """
+        pass
+
+    def onSecurityStart(self, security):
+        """ Notifies about new security start. Virtual.
+
+        :param security: trdk.SecurityInfo
         """
         pass
 
@@ -199,7 +282,8 @@ class Service(ServiceInfo):
         Virtual. Notifies about Level 1 data update. Required if service
         subscribed to Level 1 updates. Method returns True if service state has
         changed, False otherwise.
-        :type security: trdk.Security
+
+        :param security: trdk.SecurityInfo
         :rtype: bool
         """
         pass
@@ -209,7 +293,8 @@ class Service(ServiceInfo):
         Virtual. Notifies about service data update. Required if service
         subscribed to at least one service. Method returns True if service
         state has changed, False otherwise.
-        :type service: trdk.Service
+
+        :param service: trdk.ServiceInfo
         :rtype: bool
         """
         pass
@@ -219,11 +304,12 @@ class Service(ServiceInfo):
         Virtual. Notifies about new trade (price tick). Required if service
         subscribed to new trades. Method returns True if service state has
         changed, False otherwise.
-        :type security: trdk.Security
-        :type time: int
-        :type price: int
-        :type qty: int
-        :type side: char 'S' (sell) or 'B' (buy)
+
+        :param security: trdk.SecurityInfo
+        :param time: int
+        :param price: int
+        :param qty: int
+        :param side: char 'S' (sell) or 'B' (buy)
         :rtype: bool
         """
         pass
@@ -237,9 +323,9 @@ class Position(object):
 
     isCompleted = bool  # Started and now hasn't any orders and active qty.
 
-    isOpened = bool # Has opened qty and hasn't active open-orders.
-    isClosed = bool # Has opened qty and the same closed qty. Hasn't active
-                    # close-orders.
+    isOpened = bool  # Has opened qty and hasn't active open-orders.
+    isClosed = bool  # Has opened qty and the same closed qty. Hasn't active
+                     # close-orders.
 
     hasActiveOrders = bool  # True if position has active orders (not cancelled
                             # and not fully filled).
@@ -261,49 +347,59 @@ class Position(object):
 
     commission = int
 
-    def __init__(self, strategy, qty, startPrice, tag):
+    security = Security
+
+    def __init__(self, strategy, security, qty, startPrice):
         """
-        :type strategy: trdk.Strategy
-        :type startPrice: int
-        :type qty: int
-        :type tag: str
+
+        :param strategy: trdk.Strategy
+        :param security: trdk.Security
+        :param startPrice: int
+        :param qty: int
         """
+        pass
 
     def openAtMarketPrice(self):
         """ Sends market order. Asynchronous. Returns order ID.
+
         :rtype: int
         """
         pass
 
     def open(self, price):
         """ Sends limit order. Asynchronous. Returns order ID.
-        :type price: int
+
+        :param price: int
         :rtype: int
         """
 
     def openAtMarketPriceWithStopPrice(self, stopPrice):
         """ Sends market order. Asynchronous. Returns order ID.
-        :type stopPrice: int
+
+        :param stopPrice: int
         :rtype: int
         """
         pass
 
     def openOrCancel(self, price):
         """ Sends "Immediate or Cancel" order. Asynchronous. Returns order ID.
-        :type price: int
+
+        :param price: int
         :rtype: int
         """
         pass
 
-    def  closeAtMarketPrice(self):
+    def closeAtMarketPrice(self):
         """ Sends market order. Asynchronous. Returns order ID.
+
         :rtype: int
         """
         pass
 
     def close(self, price):
         """ Sends limit order. Asynchronous. Returns order ID.
-        :type price: int
+
+        :param price: int
         :rtype: int
         """
         pass
@@ -311,14 +407,16 @@ class Position(object):
     def closeAtMarketPriceWithStopPrice(self, stopPrice):
         """
         Sends market order. Asynchronous. Returns order ID.
-        :type stopPrice: int
+
+        :param stopPrice: int
         :rtype: int
         """
         pass
 
     def closeOrCancel(self, price):
         """ Sends "Immediate or Cancel" order. Asynchronous. Returns order ID.
-        :type price: int
+        :param price: int
+
         :rtype: int
         """
         pass
@@ -327,6 +425,7 @@ class Position(object):
         """
         Cancels all active orders for this position and close at market price.
         Asynchronous. Returns True if position opened and order will be sent.
+
         :rtype: int
         """
         pass
@@ -335,6 +434,7 @@ class Position(object):
         """
         Cancels all active orders for this position. Asynchronous.
         Returns True if one or more orders will be canceled.
+
         :rtype: bool
         """
         pass
@@ -342,23 +442,29 @@ class Position(object):
 
 class LongPosition(Position):
 
-    def __init__(self, strategy, qty, startPrice):
+    def __init__(self, strategy, security, qty, startPrice):
         """
-        :type strategy: trdk.Strategy
-        :type qty: int
-        :type startPrice: int
+
+        :param strategy: trdk.Strategy
+        :param security: trdk.Security
+        :param startPrice: int
+        :param qty: int
         """
-        pass
+        super(self.__class__, self)\
+            .__init__(strategy, security, qty, startPrice)
 
 
 class ShortPosition(Position):
 
-    def __init__(self, strategy, qty, startPrice):
+    def __init__(self, strategy, security, qty, startPrice):
         """
-        :type strategy: trdk.Strategy
-        :type qty: int
-        :type startPrice: int
+
+        :param strategy: trdk.Strategy
+        :param security: trdk.Security
+        :param startPrice: int
+        :param qty: int
         """
-        pass
+        super(self.__class__, self)\
+            .__init__(strategy, security, qty, startPrice)
 
 ###############################################################################

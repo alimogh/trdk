@@ -93,7 +93,6 @@ namespace {
 						Position *,
 						&PositionHolder::operator ->>>>>
 		PositionHolderList;
-	typedef PositionHolderList::index<ByPtr>::type PositionHolderByPtr;
 
 }
 
@@ -120,7 +119,6 @@ public:
 	PositionHolderList::const_iterator iterator;
 public:
 	explicit Implementation(PositionHolderList::const_iterator iterator)
-				throw()
 			: iterator(iterator) {
 		//...//
 	}
@@ -248,13 +246,6 @@ public:
 			return index.find(const_cast<Position *>(&position)) != index.end();
 		}
 
-		Position & Get(const Position &position) {
-			const auto &index = m_impl.get<ByPtr>();
-			const auto result = index.find(const_cast<Position *>(&position));
-			Assert(result != index.end());
-			return **result;
-		}
-
 	public:
 
 		virtual size_t GetSize() const {
@@ -290,8 +281,6 @@ public:
 
 	Strategy &m_strategy;
 	
-	Security &m_security;
-
 	volatile long m_isBlocked;
 	
 	PositionList m_positions;
@@ -300,11 +289,8 @@ public:
 
 public:
 
-	explicit Implementation(
-				Strategy &strategy,
-				Security &security)
+	explicit Implementation(Strategy &strategy)
 			: m_strategy(strategy),
-			m_security(security),
 			m_isBlocked(false),
 			m_positionReporter(nullptr) {
 		//...//
@@ -335,10 +321,9 @@ public:
 Strategy::Strategy(
 			trdk::Context &context,
 			const std::string &name,
-			const std::string &tag,
-			Security &security)
-		: SecurityAlgo(context, "Strategy", name, tag) {
-	m_pimpl = new Implementation(*this, security);
+			const std::string &tag)
+		: Consumer(context, "Strategy", name, tag) {
+	m_pimpl = new Implementation(*this);
 }
 
 Strategy::~Strategy() {
@@ -354,16 +339,8 @@ Strategy::~Strategy() {
 	delete m_pimpl;
 }
 
-const Security & Strategy::GetSecurity() const {
-	return const_cast<Strategy *>(this)->GetSecurity();
-}
-
-Security & Strategy::GetSecurity() {
-	return m_pimpl->m_security;
-}
-
 void Strategy::Register(Position &position) {
-//	Assert(!GetMutex().try_lock());
+	const Lock lock(GetMutex());
 	const PositionHolder holder(
 		position,
 		position.Subscribe(
@@ -374,6 +351,7 @@ void Strategy::Register(Position &position) {
 }
 
 void Strategy::Unregister(Position &position) throw() {
+	const Lock lock(GetMutex());
 	try {
 		Assert(m_pimpl->m_positions.IsExists(position));
 		m_pimpl->m_positions.Erase(position);
@@ -390,52 +368,7 @@ PositionReporter & Strategy::GetPositionReporter() {
 	return *m_pimpl->m_positionReporter;
 }
 
-void Strategy::OnLevel1Update(const Security &) {
-	GetLog().Error(
-		"Subscribed to Level 1 Updates, but can't work with it"
-			" (hasn't OnLevel1Update method implementation).");
-	throw MethodDoesNotImplementedError(
-		"Module subscribed to Level 1 Updates, but can't work with it");
-}
-
-void Strategy::OnLevel1Tick(
-					const Security &,
-					const boost::posix_time::ptime &,
-					const Level1TickValue &) {
-	GetLog().Error(
-		"Subscribed to Level 1 Ticks, but can't work with it"
-			" (hasn't OnLevel1Tick method implementation).");
-	throw MethodDoesNotImplementedError(
-		"Module subscribed to Level 1 ticks, but can't work with it");
-}
-
-void Strategy::OnNewTrade(
-					const Security &,
-					const boost::posix_time::ptime &,
-					ScaledPrice,
-					Qty,
-					OrderSide) {
-	GetLog().Error(
-		"Subscribed to new trades, but can't work with it"
-			" (hasn't OnNewTrade method implementation).");
-	throw MethodDoesNotImplementedError(
-		"Module subscribed to new trades, but can't work with it");
-}
-
-void Strategy::OnServiceDataUpdate(const Service &service) {
-	GetLog().Error(
-		"Subscribed to \"%1%\", but can't work with it"
-			" (hasn't OnServiceDataUpdate method implementation).",
-		service);
- 	throw MethodDoesNotImplementedError(
- 		"Module subscribed to service, but can't work with it");
-}
-
-void Strategy::OnPositionUpdate(Position &) {
-	//...//
-}
-
-void Strategy::RaiseLevel1UpdateEvent(const Security &security) {
+void Strategy::RaiseLevel1UpdateEvent(Security &security) {
 	const Lock lock(GetMutex());
 	if (IsBlocked()) {
 		return;
@@ -444,7 +377,7 @@ void Strategy::RaiseLevel1UpdateEvent(const Security &security) {
 }
 
 void Strategy::RaiseLevel1TickEvent(
-			const trdk::Security &security,
+			trdk::Security &security,
 			const boost::posix_time::ptime &time,
 			const Level1TickValue &value) {
 	const Lock lock(GetMutex());
@@ -455,7 +388,7 @@ void Strategy::RaiseLevel1TickEvent(
 }
 
 void Strategy::RaiseNewTradeEvent(
-			const Security &service,
+			Security &service,
 			const boost::posix_time::ptime &time,
 			ScaledPrice price,
 			Qty qty,
@@ -507,10 +440,7 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 }
 
 bool Strategy::IsBlocked() const {
-	return
-		m_pimpl->m_isBlocked
-		|| !GetContext().GetSettings().IsValidPrice(GetSecurity())
-		|| !m_pimpl->IsTradingTime();
+	return m_pimpl->m_isBlocked || !m_pimpl->IsTradingTime();
 }
 
 void Strategy::Block() throw() {

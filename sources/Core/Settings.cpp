@@ -16,53 +16,40 @@ namespace pt = boost::posix_time;
 using namespace trdk;
 using namespace trdk::Lib;
 
-namespace {
-
-	const size_t defaultLastPriceScale = 100;
-
-}
-
 Settings::Settings(
-			const IniFileSectionRef &confSection,
+			const IniFile &conf,
 			const Time &now,
 			bool isReplayMode,
 			Context::Log &log)
 		: m_startTime(now),
 		m_isReplayMode(isReplayMode) {
-	UpdateDynamic(confSection, log);
-	UpdateStatic(confSection, log);
+	UpdateDynamic(conf, log);
+	UpdateStatic(conf, log);
 }
 
-void Settings::Update(
-			const IniFileSectionRef &confSection,
-			Context::Log &log) {
-	UpdateDynamic(confSection, log);
+void Settings::Update(const IniFile &conf, Context::Log &log) {
+	UpdateDynamic(conf, log);
 }
 
-void Settings::UpdateDynamic(
-			const IniFileSectionRef &confSection,
-			Context::Log &log) {
-	Interlocking::Exchange(
-		m_minPrice,
-		Scale(
-			confSection.ReadTypedKey<double>("min_price"),
-			defaultLastPriceScale));
-	log.Info(
-		"Common dynamic settings:"
-			" min_price = %1%;",
-		Descale(m_minPrice, defaultLastPriceScale));
+void Settings::UpdateDynamic(const IniFile &, Context::Log &) {
+	//...//
 }
 
-void Settings::UpdateStatic(
-			const IniFileSectionRef &confSection,
-			Context::Log &log) {
+void Settings::UpdateStatic(const IniFile &conf, Context::Log &log) {
 
 	Values values = {};
+
+	log.Info("Using configuration %1%...", conf.GetPath());
+
+	const IniFileSectionRef commonConf(conf, "Common");
+
+	const char *const tradeSessionPeriodEdtKey = "trade_session_period_edt";
+	const char *const waitMarketDataKey = "wait_market_data";
 
 	{
 		std::list<std::string> subs;
 		const std::string keyValue
-			= confSection.ReadKey("trade_session_period_edt");
+			= commonConf.ReadKey(tradeSessionPeriodEdtKey);
 		boost::split(subs, keyValue, boost::is_any_of("-"));
 		foreach (std::string &t, subs) {
 			boost::trim(t);
@@ -104,8 +91,9 @@ void Settings::UpdateStatic(
 		if (	values.tradeSessionStartTime.is_not_a_date_time()
 				|| values.tradeSessionEndTime.is_not_a_date_time()) {
 			boost::format message(
-				"Wrong INI-file key (\"%1%:%2%\") format: \"trade session period EDT example: 09:30:00-15:58:00");
-			message % confSection % "trade_session_period_edt";
+				"Wrong INI-file key (\"%1%:%2%\") format:"
+					" \"trade session period EDT example: 09:30:00-15:58:00");
+			message % commonConf % tradeSessionPeriodEdtKey;
 			throw IniFile::KeyFormatError(message.str().c_str());
 		}
 		values.tradeSessionStartTime -= GetEdtDiff();
@@ -121,19 +109,39 @@ void Settings::UpdateStatic(
 		Assert(values.tradeSessionStartTime < values.tradeSessionEndTime);
 	}
 
-	m_values.shouldWaitForMarketData
-		= confSection.ReadBoolKey("wait_market_data");
+	values.shouldWaitForMarketData
+		= commonConf.ReadBoolKey(waitMarketDataKey);
 
-	m_values = values;
 	log.Info(
 		"Common static settings:"
-			" start_time_edt: %1%;"
-			" trade_session_period_edt = %2% -> %3%; wait_market_data = %4%;",
+			" start_time_edt = %1%;"
+			" %2% = %3% -> %4%; %5% = %6%;",
 		boost::make_tuple(
 			boost::cref(GetStartTime() + GetEdtDiff()),
-			boost::cref(m_values.tradeSessionStartTime + GetEdtDiff()),
-			boost::cref(m_values.tradeSessionEndTime + GetEdtDiff()),
-			m_values.shouldWaitForMarketData ? "yes" : "no"));
+			tradeSessionPeriodEdtKey,
+			boost::cref(values.tradeSessionStartTime + GetEdtDiff()),
+			boost::cref(values.tradeSessionEndTime + GetEdtDiff()),
+			waitMarketDataKey,
+			values.shouldWaitForMarketData ? "yes" : "no"));
+
+	{
+		const char *const exchangeKey = "exchange";
+		const char *const primaryExchangeKey = "primary_exchange";
+		const IniFileSectionRef defaultsConf(conf, "Defaults");
+		values.defaultExchange = defaultsConf.ReadKey(exchangeKey);
+		values.defaultPrimaryExchange
+			= defaultsConf.ReadKey(primaryExchangeKey);
+		log.Info(
+			"Default settings:"
+				" %1% = \"%2%\"; %3% = \"%4%\";",
+			boost::make_tuple(
+				exchangeKey,
+				boost::cref(values.defaultExchange),
+				primaryExchangeKey,
+				boost::cref(values.defaultPrimaryExchange)));
+	}
+
+	m_values = values;
 
 }
 
@@ -147,9 +155,4 @@ const Settings::Time & Settings::GetCurrentTradeSessionStartTime() const {
 
 const Settings::Time & Settings::GetCurrentTradeSessionEndime() const {
 	return m_values.tradeSessionEndTime;
-}
-
-bool Settings::IsValidPrice(const trdk::Security &security) const {
-	Assert(security.GetPriceScale() == defaultLastPriceScale);
-	return m_minPrice <= security.GetLastPriceScaled();
 }

@@ -89,7 +89,6 @@ namespace trdk { namespace Services {
 		explicit BarService(
 					Context &context,
 					const std::string &tag,
-					Security &security,
 					const Lib::IniFileSectionRef &);
 		virtual ~BarService();
 

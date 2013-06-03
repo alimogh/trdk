@@ -50,13 +50,13 @@
     <ClCompile Include="Service.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SecurityAlgo.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Instrument.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Context.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Consumer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -112,9 +112,6 @@
     <ClInclude Include="Service.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SecurityAlgo.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SettingsReport.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -128,6 +125,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Context.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Consumer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModuleSecurityList.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

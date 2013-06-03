@@ -51,32 +51,22 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		struct SecurityRequest {
 			
-			boost::shared_ptr<Security> security;
+			Security *security;
 			TickerId tickerId;
 
-			explicit SecurityRequest(
-						const boost::shared_ptr<Security> &security,
-						TickerId tickerId)
-					: security(security),
+			explicit SecurityRequest(Security &security, TickerId tickerId)
+					: security(&security),
 					tickerId(tickerId) {
 				//...//
 			}
 
-			const std::string & GetSymbol() const {
+			const Lib::Symbol & GetSymbol() const {
 				return security->GetSymbol();
-			}
-
-			const std::string & GetPrimaryExchange() const {
-				return security->GetPrimaryExchange();
-			}
-
-			const std::string & GetExchange() const {
-				return security->GetExchange();
 			}
 
 		};
 
-		struct ByInstrument {
+		struct BySecurity {
 			//...//
 		};
 
@@ -87,22 +77,12 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		typedef boost::multi_index_container<
 			SecurityRequest,
 			boost::multi_index::indexed_by<
-				boost::multi_index::hashed_unique<
-					boost::multi_index::tag<ByInstrument>,
-					boost::multi_index::composite_key<
+				boost::multi_index::ordered_unique<
+					boost::multi_index::tag<BySecurity>,
+					boost::multi_index::member<
 						SecurityRequest,
-						boost::multi_index::const_mem_fun<
-							SecurityRequest,
-							const std::string &,
-							&SecurityRequest::GetSymbol>,
-						boost::multi_index::const_mem_fun<
-							SecurityRequest,
-							const std::string &,
-							&SecurityRequest::GetPrimaryExchange>,
-						boost::multi_index::const_mem_fun<
-							SecurityRequest,
-							const std::string &,
-							&SecurityRequest::GetExchange>>>,
+						Security *,
+						&SecurityRequest::security>>,
 				boost::multi_index::ordered_unique<
 					boost::multi_index::tag<ByTicker>,
 					boost::multi_index::member<
@@ -110,10 +90,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 						TickerId,
 						&SecurityRequest::tickerId>>>>
 			SecurityRequestList;
-		typedef SecurityRequestList::index<ByInstrument>::type
-			SecurityRequestByInstrument;
-		typedef SecurityRequestList::index<ByTicker>::type
-			SecurityRequestByTicker;
 
 		typedef SecurityRequestList MarketLevel1Request;
 		typedef SecurityRequestList MarketDepthLevel2Requests;
@@ -156,8 +132,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		void Subscribe(const OrderStatusSlot &) const;
 		
-		void SubscribeToMarketData(boost::shared_ptr<Security>) const;
-		void SubscribeToMarketDepthLevel2(boost::shared_ptr<Security>) const;
+		void SubscribeToMarketData(Security &) const;
+		void SubscribeToMarketDepthLevel2(Security &) const;
 
 	private:
 

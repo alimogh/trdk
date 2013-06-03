@@ -28,7 +28,6 @@ namespace {
 		Security *security;
 		bool isSell;
 		OrderId id;
-		std::string symbol;
 		Fake::TradeSystem::OrderStatusUpdateSlot callback;
 		Qty qty;
 		ScaledPrice price;
@@ -199,7 +198,6 @@ OrderId Fake::TradeSystem::SellAtMarketPrice(
 		&security,
 		true,
 		m_pimpl->TakeOrderId(),
-		security.GetFullSymbol(),
 		statusUpdateSlot,
 		qty};
 	m_pimpl->SendOrder(order);
@@ -240,7 +238,6 @@ OrderId Fake::TradeSystem::SellOrCancel(
 		&security,
 		true,
 		m_pimpl->TakeOrderId(),
-		security.GetFullSymbol(),
 		statusUpdateSlot,
 		qty,
 		price};
@@ -264,7 +261,6 @@ OrderId Fake::TradeSystem::BuyAtMarketPrice(
 		&security,
 		false,
 		m_pimpl->TakeOrderId(),
-		security.GetFullSymbol(),
 		statusUpdateSlot,
 		qty};
 	m_pimpl->SendOrder(order);
@@ -305,7 +301,6 @@ OrderId Fake::TradeSystem::BuyOrCancel(
 		&security,
 		false,
 		m_pimpl->TakeOrderId(),
-		security.GetFullSymbol(),
 		statusUpdateSlot,
 		qty,
 		price};

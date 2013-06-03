@@ -29,19 +29,16 @@ namespace {
 		Context &context;
 		const std::string &name;
 		const std::string &tag;
-		const Security &security;
 		const IniFileSectionRef &configuration;
 	
 		explicit Params(
 					Context &context,
 					const std::string &name,
 					const std::string &tag,
-					const Security &security,
 					const IniFileSectionRef &configuration)
 				: context(context),
 				name(name),
 				tag(tag),
-				security(security),
 				configuration(configuration) {
 			//...//
 		}
@@ -54,8 +51,7 @@ PyApi::Service::Service(uintptr_t params, ServiceExport &serviceExport)
 		: Base(
 			reinterpret_cast<Params *>(params)->context,
 			reinterpret_cast<Params *>(params)->name,
-			reinterpret_cast<Params *>(params)->tag,
-			reinterpret_cast<Params *>(params)->security),
+			reinterpret_cast<Params *>(params)->tag),
 		m_serviceExport(serviceExport) {
 	DoSettingsUpdate(reinterpret_cast<Params *>(params)->configuration);
 }
@@ -84,7 +80,6 @@ const ServiceExport & PyApi::Service::GetExport() const {
 boost::shared_ptr<trdk::Service> PyApi::Service::CreateClientInstance(
 			Context &context,
 			const std::string &tag,
-			Security &security,
 			const IniFileSectionRef &configuration) {
 	auto clientClass = Script::Load(configuration).GetClass(
 		configuration,
@@ -97,7 +92,6 @@ boost::shared_ptr<trdk::Service> PyApi::Service::CreateClientInstance(
 			context,
 			className,
 			tag,
-			security,
 			configuration);
 		auto pyObject = clientClass(reinterpret_cast<uintptr_t>(&params));
 		ServiceExport &serviceExport = py::extract<ServiceExport &>(pyObject);
@@ -121,6 +115,17 @@ bool PyApi::Service::CallVirtualMethod(
 			const boost::function<void (const py::override &)> &call)
 		const {
 	return GetExport().CallVirtualMethod(name, call);
+}
+
+void PyApi::Service::OnSecurityStart(const trdk::Security &security) {
+	const bool isExists = CallVirtualMethod(
+		"onSecurityStart",
+		[&](const py::override &f) {
+			f(PyApi::Export(security));
+		});
+	if (!isExists) {
+		Base::OnSecurityStart(security);
+	}
 }
 
 void PyApi::Service::OnServiceStart(const trdk::Service &service) {
@@ -189,19 +194,16 @@ bool PyApi::Service::OnServiceDataUpdate(const trdk::Service &service) {
 	boost::shared_ptr<trdk::Service> CreateService(
 				Context &context,
 				const std::string &tag,
-				Security &security,
 				const IniFileSectionRef &configuration) {
 		return PyApi::Service::CreateClientInstance(
 			context,
 			tag,
-			security,
 			configuration);
 	}
 #else
 	extern "C" boost::shared_ptr<trdk::Service> CreateService(
 				Context &context,
 				const std::string &tag,
-				Security &security,
 				const IniFileSectionRef &configuration) {
 		return PyApi::Service::CreateClientInstance(
 			context,

@@ -49,7 +49,6 @@ class BarService(trdk.ServiceInfo):
     barSize = int  # Each bar size, seconds.
     size = int  # Number of bars.
     isEmpty = bool
-    security = trdk.SecurityInfo
 
     def getBarByIndex(self, index):
         """ Returns bar by index. First bar has index "zero".

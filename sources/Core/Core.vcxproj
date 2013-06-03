@@ -70,7 +70,7 @@
   <ItemGroup>
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="Instrument.cpp" />
-    <ClCompile Include="SecurityAlgo.cpp" />
+    <ClCompile Include="Consumer.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="Strategy.cpp" />
     <ClCompile Include="StrategyPositionState.cpp" />
@@ -92,8 +92,9 @@
   <ItemGroup>
     <ClInclude Include="Context.hpp" />
     <ClInclude Include="ModuleRef.hpp" />
+    <ClInclude Include="ModuleSecurityList.hpp" />
     <ClInclude Include="ModuleVariant.hpp" />
-    <ClInclude Include="SecurityAlgo.hpp" />
+    <ClInclude Include="Consumer.hpp" />
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="SettingsReport.hpp" />
     <ClInclude Include="Strategy.hpp" />

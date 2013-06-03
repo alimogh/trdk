@@ -47,13 +47,6 @@ pt::time_duration Lib::GetEdtDiff() {
 	return estTime.local_time() - estTime.utc_time();
 }
 
-std::string Lib::CreateSymbolFullStr(
-			const std::string &symbol,
-			const std::string &primaryExchange,
-			const std::string &exchange) {
-	return (boost::format("%1%:%2%:%3%") % symbol % primaryExchange % exchange).str();
-}
-
 namespace {
 	const pt::ptime unixEpochStart(boost::gregorian::date(1970, 1, 1));
 }

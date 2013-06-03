@@ -48,12 +48,7 @@ namespace trdk {
 
 	public:
 
-		explicit Security(
-					trdk::Context &,
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange,
-					bool logMarketData);
+		explicit Security(trdk::Context &, const trdk::Lib::Symbol &);
 		~Security();
 
 	public:
@@ -213,10 +208,4 @@ namespace trdk {
 
 	};
 
-}
-
-namespace std {
-	TRDK_CORE_API std::ostream & operator <<(
-				std::ostream &,
-				const trdk::Security &);
 }

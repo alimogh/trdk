@@ -98,6 +98,8 @@ void PositionExport::ExportClass(const char *className) {
 
 		.add_property("commission", &PositionExport::GetCommission)
 
+		.add_property("security", &PositionExport::GetSecurity)
+
 		.def("openAtMarketPrice", &PositionExport::OpenAtMarketPrice)
 		.def("open", &PositionExport::Open)
 		.def(
@@ -204,6 +206,10 @@ Qty PositionExport::GetClosedQty() const {
 
 ScaledPrice PositionExport::GetCommission() const {
 	return GetPosition().GetCommission();
+}
+
+py::object PositionExport::GetSecurity() {
+	return PyApi::Export(GetPosition().GetSecurity());
 }
 
 OrderId PositionExport::OpenAtMarketPrice() {

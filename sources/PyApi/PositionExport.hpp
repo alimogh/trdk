@@ -76,6 +76,8 @@ namespace trdk { namespace PyApi {
 
 		ScaledPrice GetCommission() const;
 
+		boost::python::object GetSecurity();
+
 	public:
 
 		OrderId OpenAtMarketPrice();
@@ -123,12 +125,14 @@ namespace trdk { namespace PyApi {
 		explicit SidePositionExport(
 					PyObject *self,
 					StrategyExport &strategy,
+					SecurityExport &security,
 					Qty qty,
 					ScaledPrice startPrice)
 				: PositionExport(
 					boost::shared_ptr<PyApiImpl>(
 						new PyApiImpl(
 							strategy.GetStrategy(),
+							security.GetSecurity(),
 							qty,
 							startPrice,
 							*this))),
@@ -148,6 +152,7 @@ namespace trdk { namespace PyApi {
 				Export;
 			typedef py::init<
 					StrategyExport &,
+					SecurityExport &,
 					Qty /*qty*/,
 					ScaledPrice /*startPrice*/>
 				Init;

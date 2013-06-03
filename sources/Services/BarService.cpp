@@ -277,11 +277,12 @@ public:
 
 		std::unique_ptr<BarsLog> log(new BarsLog);
 		log->path = SymbolToFilePath(
+			//! @todo Use context log dir
 			Defaults::GetBarsDataLogDir(),
-			(boost::format("%1%_%2%_%3%")
+			//! @todo Generate unique filename
+			(boost::format("%1%_%2%")
 					% m_unitsStr
-					% m_barSizeStr
-					% m_service.GetSecurity())
+					% m_barSizeStr)
 				.str(),
 			logType);
 		if (m_barsLog && m_barsLog->path == log->path) {
@@ -436,7 +437,7 @@ public:
 	}
 
 	bool OnLevel1Tick(
-				const Security &/*security*/,
+				const Security &security,
 				const pt::ptime &time,
 				const Level1TickValue &value) {
 		switch (value.type) {
@@ -469,12 +470,12 @@ public:
 				if (!bar.minBidPrice) {
 					bar.minBidPrice = m_size > 0
 						?	m_bars[m_size - 1].minBidPrice
-						:	m_service.GetSecurity().GetBidPriceScaled();
+						:	security.GetBidPriceScaled();
 				}
 				if (!bar.maxAskPrice) {
 					bar.maxAskPrice = m_size > 0
 						?	m_bars[m_size - 1].maxAskPrice
-						:	m_service.GetSecurity().GetAskPriceScaled();
+						:	security.GetAskPriceScaled();
 				}
 			});
 	}
@@ -516,9 +517,8 @@ public:
 BarService::BarService(
 			Context &context,
 			const std::string &tag,
-			Security &security,
 			const IniFileSectionRef &configuration)
-		: Service(context, "BarService", tag, security) {
+		: Service(context, "BarService", tag) {
 	m_pimpl = new Implementation(*this, configuration);
 }
 
@@ -530,7 +530,6 @@ bool BarService::OnLevel1Tick(
 			const Security &security,
 			const pt::ptime &time,
 			const Level1TickValue &value) {
-	Assert(&security == &GetSecurity());
 	return m_pimpl->OnLevel1Tick(security, time, value);
 }
 
@@ -540,7 +539,6 @@ bool BarService::OnNewTrade(
 			ScaledPrice price,
 			Qty qty,
 			OrderSide) {
-	Assert(&security == &GetSecurity());
 	return m_pimpl->OnNewTrade(security, time, price, qty);
 }
 
@@ -640,19 +638,17 @@ boost::shared_ptr<BarService::QtyStat> BarService::GetTradingVolumeStat(
 	boost::shared_ptr<trdk::Service> CreateBarService(
 				Context &context,
 				const std::string &tag,
-				Security &security,
 				const IniFileSectionRef &configuration) {
 		return boost::shared_ptr<trdk::Service>(
-			new BarService(context, tag, security, configuration));
+			new BarService(context, tag, configuration));
 	}
 #else
 	extern "C" boost::shared_ptr<trdk::Service> CreateBarService(
 				Context &context,
 				const std::string &tag,
-				Security &security,
 				const IniFileSectionRef &configuration) {
 		return boost::shared_ptr<trdk::Service>(
-			new BarService(context, tag, security, configuration));
+			new BarService(context, tag, configuration));
 	}
 #endif
 

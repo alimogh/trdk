@@ -34,7 +34,6 @@ namespace trdk { namespace PyApi {
 		static boost::shared_ptr<trdk::Strategy> CreateClientInstance(
 					Context &,
 					const std::string &tag,
-					Security &security,
 					const Lib::IniFileSectionRef &);
 
 	public:
@@ -47,11 +46,12 @@ namespace trdk { namespace PyApi {
 		using trdk::Strategy::GetTag;
 		using trdk::Strategy::GetLog;
 
+		virtual void OnSecurityStart(trdk::Security &);
 		virtual void OnServiceStart(const trdk::Service &);
 
-		virtual void OnLevel1Update(const trdk::Security &);
+		virtual void OnLevel1Update(trdk::Security &);
 		virtual void OnNewTrade(
-					const trdk::Security &,
+					trdk::Security &,
 					const boost::posix_time::ptime &,
 					trdk::ScaledPrice,
 					trdk::Qty,

@@ -171,7 +171,7 @@ namespace trdk { namespace Engine {
 
 		};
 
-		typedef boost::tuple<const Security *, SubscriberPtrWrapper>
+		typedef boost::tuple<Security *, SubscriberPtrWrapper>
 			Level1UpdateEvent;
 		//! @todo: Check performance: set or list + find
 		typedef EventQueue<std::set<Level1UpdateEvent>> Level1UpdateEventQueue;
@@ -221,16 +221,16 @@ namespace trdk { namespace Engine {
 
 	public:
 
-		void SignalLevel1Update(SubscriberPtrWrapper &, const Security &);
+		void SignalLevel1Update(SubscriberPtrWrapper &, Security &);
 		void SignalLevel1Tick(
 					SubscriberPtrWrapper &,
-					const Security &,
+					Security &,
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &,
 					bool flush);
 		void SignalNewTrade(
 					SubscriberPtrWrapper &,
-					const Security &,
+					Security &,
 					const boost::posix_time::ptime &,
 					ScaledPrice,
 					Qty,

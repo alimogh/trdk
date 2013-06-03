@@ -10,14 +10,16 @@
 
 #include "Prec.hpp"
 #include "Module.hpp"
+#include "ModuleSecurityList.hpp"
 #include "Service.hpp"
+#include "Security.hpp"
 
 namespace fs = boost::filesystem;
 
 using namespace trdk;
 using namespace trdk::Lib;
 
-//////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 Module::Log::Log(const Module &module)
 		: m_log(module.GetContext().GetLog()),
@@ -27,6 +29,126 @@ Module::Log::Log(const Module &module)
 
 Module::Log::~Log() {
 	//...//
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+Module::SecurityList::SecurityList() {
+	//...//
+}
+
+Module::SecurityList::~SecurityList() {
+	//...//
+}
+
+Module::SecurityList::Iterator::Iterator(Implementation *pimpl)
+		: m_pimpl(pimpl) {
+	Assert(m_pimpl);
+}
+
+Module::SecurityList::Iterator::Iterator(const Iterator &rhs)
+		: m_pimpl(new Implementation(*rhs.m_pimpl)) {
+	//...//
+}
+
+Module::SecurityList::Iterator::~Iterator() {
+	delete m_pimpl;
+}
+
+Module::SecurityList::Iterator &
+Module::SecurityList::Iterator::operator =(const Iterator &rhs) {
+	Assert(this != &rhs);
+	Iterator(rhs).Swap(*this);
+	return *this;
+}
+
+void Module::SecurityList::Iterator::Swap(Iterator &rhs) {
+	Assert(this != &rhs);
+	std::swap(m_pimpl, rhs.m_pimpl);
+}
+
+Security & Module::SecurityList::Iterator::dereference() const {
+	return *m_pimpl->iterator->second;
+}
+
+bool Module::SecurityList::Iterator::equal(const Iterator &rhs) const {
+	return m_pimpl->iterator == rhs.m_pimpl->iterator;
+}
+
+bool Module::SecurityList::Iterator::equal(
+			const ConstIterator &rhs)
+		const {
+	return m_pimpl->iterator == rhs.m_pimpl->iterator;
+}
+
+void Module::SecurityList::Iterator::increment() {
+	++m_pimpl->iterator;
+}
+
+void Module::SecurityList::Iterator::decrement() {
+	--m_pimpl->iterator;
+}
+
+void Module::SecurityList::Iterator::advance(difference_type n) {
+	std::advance(m_pimpl->iterator, n);
+}
+
+Module::SecurityList::ConstIterator::ConstIterator(Implementation *pimpl)
+		: m_pimpl(pimpl) {
+	Assert(m_pimpl);
+}
+
+Module::SecurityList::ConstIterator::ConstIterator(const Iterator &rhs)
+		: m_pimpl(new Implementation(rhs.m_pimpl->iterator)) {
+	//...//
+}
+
+Module::SecurityList::ConstIterator::ConstIterator(const ConstIterator &rhs)
+		: m_pimpl(new Implementation(*rhs.m_pimpl)) {
+	//...//
+}
+
+Module::SecurityList::ConstIterator::~ConstIterator() {
+	delete m_pimpl;
+}
+
+Module::SecurityList::ConstIterator &
+Module::SecurityList::ConstIterator::operator =(const ConstIterator &rhs) {
+	Assert(this != &rhs);
+	ConstIterator(rhs).Swap(*this);
+	return *this;
+}
+
+void Module::SecurityList::ConstIterator::Swap(ConstIterator &rhs) {
+	Assert(this != &rhs);
+	std::swap(m_pimpl, rhs.m_pimpl);
+}
+
+const Security & Module::SecurityList::ConstIterator::dereference() const {
+	return *m_pimpl->iterator->second;
+}
+
+bool Module::SecurityList::ConstIterator::equal(
+			const ConstIterator &rhs)
+		const {
+	Assert(this != &rhs);
+	return m_pimpl->iterator == rhs.m_pimpl->iterator;
+}
+
+bool Module::SecurityList::ConstIterator::equal(const Iterator &rhs) const {
+	return m_pimpl->iterator == rhs.m_pimpl->iterator;
+}
+
+void Module::SecurityList::ConstIterator::increment() {
+	++m_pimpl->iterator;
+}
+
+void Module::SecurityList::ConstIterator::decrement() {
+	--m_pimpl->iterator;
+}
+
+void Module::SecurityList::ConstIterator::advance(difference_type n) {
+	std::advance(m_pimpl->iterator, n);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -88,10 +210,6 @@ const std::string & Module::GetTag() const throw() {
 	return m_pimpl->m_tag;
 }
 
-void Module::OnServiceStart(const Service &) {
-	//...//
-}
-
 Context & Module::GetContext() {
 	return m_pimpl->m_context;
 }
@@ -107,6 +225,10 @@ Module::Log & Module::GetLog() const throw() {
 void Module::UpdateSettings(const IniFileSectionRef &ini) {
 	const Lock lock(GetMutex());
 	UpdateAlogImplSettings(ini);
+}
+
+void Module::OnServiceStart(const trdk::Service &) {
+	//...//
 }
 
 namespace {

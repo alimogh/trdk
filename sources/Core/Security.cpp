@@ -55,24 +55,6 @@ class Security::Implementation : private boost::noncopyable {
 
 public:
 
-	class MarketDataLog : private boost::noncopyable {
-	public:
-		explicit MarketDataLog(
-					const Context &context,
-					const std::string &fullSymbol);
-	public:
-		void Append(
-				const pt::ptime &timeOfReception,
-				const pt::ptime &lastTradeTime,
-				double last,
-				double ask,
-				double bid);
-	private:
-		const Context &m_context;
-		std::ofstream m_file;
-	};
-	MarketDataLog *m_marketDataLog;
-
 	mutable boost::signals2::signal<Level1UpdateSlotSignature>
 		m_level1UpdateSignal;
 	mutable boost::signals2::signal<Level1TickSlotSignature>
@@ -85,24 +67,12 @@ public:
 
 public:
 
-	Implementation(
-					const Instrument &instrument,
-					bool logMarketData)
-			: m_marketDataLog(nullptr),
-			m_marketDataTime(0),
+	Implementation()
+			: m_marketDataTime(0),
 			m_isLevel1Started(false) {
 		foreach (auto &item, m_level1) {
 			Unset(item);
 		}
-		if (logMarketData) {
-			m_marketDataLog = new MarketDataLog(
-				instrument.GetContext(),
-				instrument.GetFullSymbol());
-		}
-	}
-
-	~Implementation() {
-		delete m_marketDataLog;
 	}
 
 	unsigned int GetPriceScale() const throw() {
@@ -193,15 +163,6 @@ public:
 
 		m_level1UpdateSignal();
 
-		if (m_marketDataLog) {
-			m_marketDataLog->Append(
-				boost::get_system_time(),
-				GetLastMarketDataTime(),
-				DescalePrice(GetIfSet<LEVEL1_TICK_LAST_PRICE>(m_level1)),
-				DescalePrice(GetIfSet<LEVEL1_TICK_ASK_PRICE>(m_level1)),
-				DescalePrice(GetIfSet<LEVEL1_TICK_BID_PRICE>(m_level1)));
-		}
-
 	}
 
 	pt::ptime GetLastMarketDataTime() const {
@@ -214,63 +175,10 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-Security::Implementation::MarketDataLog::MarketDataLog(
-			const Context &context,
-			const std::string &fullSymbol)
-		: m_context(context) {
-	const fs::path filePath = SymbolToFilePath(
-		Defaults::GetMarketDataLogDir(),
-		fullSymbol,
-		"csv");
-	const bool isNew = !fs::exists(filePath);
-	if (isNew) {
-		fs::create_directories(filePath.branch_path());
-	}
-	m_file.open(
-		filePath.c_str(),
-		std::ios::out | std::ios::ate | std::ios::app);
-	if (!m_file) {
-		m_context.GetLog().Error(
-			"Failed to open log file %1% for security market data.",
-			filePath);
-		throw Exception("Failed to open log file for security market data");
-	}
-	m_context.GetLog().Info(
-		"Logging \"%1%\" market data into %2%...",
-		boost::make_tuple(boost::cref(fullSymbol), boost::cref(filePath)));
-	if (isNew) {
-		m_file
-			<< "time of reception,last trade time,last price,ask,bid"
-			<< std::endl;
-	}
-}
-
-void Security::Implementation::MarketDataLog::Append(
-			const pt::ptime &timeOfReception,
-			const pt::ptime &lastTradeTime,
-			double last,
-			double ask,
-			double bid) {
-	m_file
-		<< (timeOfReception + GetEdtDiff()).time_of_day()
-		<< ',' << (lastTradeTime + GetEdtDiff()).time_of_day()
-		<< ',' << last
-		<< ',' << ask
-		<< ',' << bid
-		<< std::endl;
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-
-Security::Security(
-			Context &context,
-			const std::string &symbol,
-			const std::string &primaryExchange,
-			const std::string &exchange,
-			bool logMarketData)
-		: Base(context, symbol, primaryExchange, exchange) {
-	m_pimpl = new Implementation(*this, logMarketData);
+Security::Security(Context &context, const Symbol &symbol)
+		: Base(context, symbol),
+		m_pimpl(new Implementation) {
+	//...//
 }
 
 Security::~Security() {
@@ -593,11 +501,5 @@ void Security::AddTrade(
 
 }
 
-//////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-std::ostream & std::operator <<(std::ostream &oss, const Security &security) {
-	oss << security.GetFullSymbol();
-	return oss;
-}
-
-//////////////////////////////////////////////////////////////////////////

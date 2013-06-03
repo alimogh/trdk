@@ -4,55 +4,54 @@ import trdk
 import time
 
 
-strategies = dict()
-
-
+# noinspection PyCallByClass,PyTypeChecker
 class GoldArbitrage(trdk.Strategy):
 
-    bars = None
-
-
-    def __init__(self, param):
-        super(self.__class__, self).__init__(param)
-        strategies[self.security.symbol] = self
-
+    gldBars = None
+    dglBars = None
 
     def onServiceStart(self, service):
-        self.bars = service
-
+        security = service.securities.find('GLD')
+        if security is not None:
+            assert self.gldBars is None
+            self.gldBars = service
+            return
+        security = service.securities.find('DGL')
+        if security is not None:
+            assert self.dglBars is None
+            self.dglBars = service
+            return
+        assert False
 
     def onServiceDataUpdate(self, service):
-        oppName = "GLD"
-        if self.security.symbol == "GLD":
-            oppName = "DGL"
-        oppService = strategies[oppName].bars
-        if oppService.size < 1:
-            return
-        lastBar = service.getBarByReversedIndex(0)
-        oppLastBar = oppService.getBarByReversedIndex(0)
+#        if self.checkOnline() is False:
+#            return
+        self.checkEntry()
+
+    def checkOnline(self):
+        if self.gldBars.size < 1 or self.dglBars.size < 1:
+            return False
+        gld = self.gldBars.getBarByReversedIndex(0)
+        dgl = self.dglBars.getBarByReversedIndex(0)
         # Trade restrictions:
-        # Obviously if DGL and/or GLD are not open for trading then do not trade.
-        # Possible that GLD opens before DGL in premarket trading
-        isOnline = oppLastBar.time == lastBar.time
+        # Obviously if DGL and/or GLD are not open for trading then do not
+        # trade. Possible that GLD opens before DGL in premarket trading
+        isOnline = gld.time == dgl.time
         self.log.debug(
-            "Online check: {0}({1}) == {2}({3}) = {4}"
+            'Online check: GLD({0}) == DGL({1}) = {2}'
                 .format(
-                    self.security.symbol,
-                    time.ctime(lastBar.time),
-                    oppName,
-                    time.ctime(oppLastBar.time),
+                    time.ctime(gld.time),
+                    time.ctime(dgl.time),
                     isOnline))
-        if isOnline == True:
-            if service.security.symbol == "GLD":
-                strategies["GLD"].checkEntry(lastBar, oppLastBar)
-            else:
-                strategies["GLD"].checkEntry(oppLastBar, lastBar)
+        return isOnline
 
+    def checkEntry(self):
 
-    def checkEntry(self, gld, dgl):
+        gld = self.gldBars.getBarByReversedIndex(0)
+        dgl = self.dglBars.getBarByReversedIndex(0)
 
         if self.positions.count() > 0:
-            self.log.debug("Has open positions...")
+            self.log.debug('Has open positions...')
             return
 
         ratioGe = 0
@@ -64,33 +63,53 @@ class GoldArbitrage(trdk.Strategy):
             ratioLe = float(gld.minBidPrice) / float(dgl.maxAskPrice)
 
         self.log.debug(
-            "Entry 1: GLD(Ask {0}) / DGL(Bid {1}) = {2}; Entry 2: GLD(Bid {3}) / DGL(Ask {4}) = {5};"
+            "Entry 1: GLD(Ask {0}) / DGL(Bid {1}) = {2};"
+            + " Entry 2: GLD(Bid {3}) / DGL(Ask {4}) = {5};"
                 .format(
-                    self.security.descalePrice(gld.maxAskPrice), self.security.descalePrice(dgl.minBidPrice), ratioGe,
-                    self.security.descalePrice(gld.minBidPrice), self.security.descalePrice(dgl.maxAskPrice), ratioLe))
+                    self.findSecurity('GLD').descalePrice(gld.maxAskPrice),
+                    self.findSecurity('DGL').descalePrice(dgl.minBidPrice),
+                    ratioGe,
+                    self.findSecurity('GLD').descalePrice(gld.minBidPrice),
+                    self.findSecurity('DGL').descalePrice(dgl.maxAskPrice),
+                    ratioLe))
 
         # If opening of 5 minute candlestick GLD(Ask)/DGL(BID)>=2.850 .. 
         if ratioGe >= 2.850:
             # Short GLD @ Ask, Long DGL @ Bid
             self.log.info('Opening positions by "Entry 1"...')
-            gldPos = trdk.ShortPosition(self, 1, gld.maxAskPrice)
-            dglPos = trdk.LongPosition(self, 1, dgl.minBidPrice)
+            gldPos = trdk.ShortPosition(
+                self,
+                self.findSecurity('GLD'),
+                1,
+                gld.maxAskPrice)
+            dglPos = trdk.LongPosition(
+                self,
+                self.findSecurity('DGL'),
+                1,
+                dgl.minBidPrice)
             gldPos.openAtMarketPrice()
             dglPos.openAtMarketPrice()
 #            gldPos.open(gldPos.openStartPrice)
 #            dglPos.open(dglPos.openStartPrice)
         
         # If opening of 5 minute candlestick GLD(Bid)/DGL(Ask)<=2.842 .. 
-        if ratioLe > 0 and ratioLe <= 2.842:
+        if 0 < ratioLe <= 2.842:
             # Long GLD @ Bid, Short DGL @ Ask
             self.log.info('Opening positions by "Entry 2"...')
-            gldPos = trdk.LongPosition(self, 1, gld.minBidPrice)
-            dglPos = trdk.ShortPosition(self, 1, dgl.maxAskPrice)
+            gldPos = trdk.LongPosition(
+                self,
+                self.findSecurity('GLD'),
+                1,
+                gld.minBidPrice)
+            dglPos = trdk.ShortPosition(
+                self,
+                self.findSecurity('DGL'),
+                1,
+                dgl.maxAskPrice)
             gldPos.openAtMarketPrice()
             dglPos.openAtMarketPrice()
 #            gldPos.open(gldPos.openStartPrice)
 #            dglPos.open(dglPos.openStartPrice)
-
 
     def onPositionUpdate(self, position):
         if position.isOpened:
@@ -98,21 +117,18 @@ class GoldArbitrage(trdk.Strategy):
             # Sell positions @ GLD/DGL ratio of 2.847
             closePrice = int(position.openStartPrice * 2.847)
             self.log.debug(
-                "Closing {0} with {1}."
+                'Closing {0} with {1}.'
                     .format(
-                        self.security.symbol,
-                        self.security.descalePrice(closePrice)))
+                        position.security.symbol,
+                        position.security.descalePrice(closePrice)))
             position.close(closePrice)
         elif position.isClosed:
             # Risk Management:
             # If one order gets filled without the other, sell
             # immediately at market order.
             self.log.debug(
-                "Closing all at market price."
-                    .format(
-                        self.security.symbol,
-                        self.security.descalePrice(closePrice)))
+                'Closing all at market price as {0} closed.'
+                    .format(position.security.symbol))
             map(
                 lambda position: position.cancelAtMarketPrice(),
                 self.positions)
-

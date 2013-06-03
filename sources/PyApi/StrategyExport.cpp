@@ -15,8 +15,10 @@
 #include "Position.hpp"
 #include "Service.hpp"
 #include "BaseExport.hpp"
+#include "Core/Settings.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::PyApi;
 using namespace trdk::PyApi::Detail;
 
@@ -28,17 +30,17 @@ namespace pt = boost::posix_time;
 StrategyInfoExport::StrategyInfoExport(
 			const boost::shared_ptr<PyApi::Strategy> &strategy)
 		: ModuleExport(*strategy),
-		m_strategyRefHolder(strategy),
-		m_strategy(&*m_strategyRefHolder) {
+		m_strategyRefHolder(strategy) {
 	//...//
 }
 
 PyApi::Strategy & StrategyInfoExport::GetStrategy() {
-	return *m_strategy;
+	return const_cast<PyApi::Strategy &>(
+		*boost::polymorphic_cast<const PyApi::Strategy *>(&GetModule()));
 }
 
 const PyApi::Strategy & StrategyInfoExport::GetStrategy() const {
-	return const_cast<StrategyInfoExport *>(this)->GetStrategy();
+	return *boost::polymorphic_cast<const PyApi::Strategy *>(&GetModule());
 }
 
 boost::shared_ptr<PyApi::Strategy> StrategyInfoExport::ReleaseRefHolder()
@@ -101,8 +103,7 @@ StrategyExport::StrategyExport(PyObject *self, uintptr_t instanceParam)
 		: StrategyInfoExport(
 			boost::shared_ptr<PyApi::Strategy>(
 				new PyApi::Strategy(instanceParam, *this))),
-		Detail::PythonToCoreTransit<StrategyExport>(self),
-		m_securityExport(GetStrategy().GetSecurity())  {
+		Detail::PythonToCoreTransit<StrategyExport>(self) {
 	//...//
 }
 
@@ -129,15 +130,69 @@ void StrategyExport::ExportClass(const char *className) {
 		Export;
 
 	const py::scope strategyClass = Export(className, py::init<uintptr_t>())
-		.def_readonly("security", &StrategyExport::m_securityExport)
-		.add_property("positions", &StrategyExport::GetPositions);
+		.add_property("positions", &StrategyExport::GetPositions)
+		.add_property("securities", &StrategyExport::GetSecurities)
+		.def("findSecurity", &StrategyExport::FindSecurityBySymbol)
+		.def("findSecurity", &StrategyExport::FindSecurityBySymbolAndExchange)
+		.def(
+			"findSecurity",
+			&StrategyExport::FindSecurityBySymbolAndPrimaryExchange);
 
 	PositionListExport::ExportClass("PositionList");
+	ConsumerSecurityListExport::ExportClass("SecurityList");
 
+}
+
+py::object StrategyExport::FindSecurityBySymbol(const py::str &symbol) {
+	const Symbol key(
+		py::extract<std::string>(symbol),
+		GetModule().GetContext().GetSettings().GetDefaultExchange(),
+		GetModule().GetContext().GetSettings().GetDefaultPrimaryExchange());
+	try {
+		return PyApi::Export(GetStrategy().GetContext().GetSecurity(key));
+	} catch (const Context::UnknownSecurity &) {
+		return py::object();
+	}
+}
+
+py::object StrategyExport::FindSecurityBySymbolAndExchange(
+			const py::str &symbol,
+			const py::str &exchange) {
+	const Symbol key(
+		py::extract<std::string>(symbol),
+		py::extract<std::string>(exchange),
+		GetModule().GetContext().GetSettings().GetDefaultPrimaryExchange());
+	try {
+		return PyApi::Export(GetStrategy().GetContext().GetSecurity(key));
+	} catch (const Context::UnknownSecurity &) {
+		return py::object();
+	}
+}
+
+py::object StrategyExport::FindSecurityBySymbolAndPrimaryExchange(
+			const py::str &symbol,
+			const py::str &exchange,
+			const py::str &primaryExchange) {
+	try {
+		return PyApi::Export(
+			GetStrategy()
+				.GetContext()
+				.GetSecurity(
+					Symbol(
+						py::extract<std::string>(symbol),
+						py::extract<std::string>(exchange),
+						py::extract<std::string>(primaryExchange))));
+	} catch (const Context::UnknownSecurity &) {
+		return py::object();
+	}
 }
 
 StrategyExport::PositionListExport StrategyExport::GetPositions() {
 	return PositionListExport(GetStrategy().GetPositions());
+}
+
+ConsumerSecurityListExport StrategyExport::GetSecurities() {
+	return ConsumerSecurityListExport(GetStrategy());
 }
 
 //////////////////////////////////////////////////////////////////////////

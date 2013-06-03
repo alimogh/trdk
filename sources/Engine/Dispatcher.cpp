@@ -66,7 +66,7 @@ void Dispatcher::Suspend() {
 
 void Dispatcher::SignalLevel1Update(
 			SubscriberPtrWrapper &subscriber,
-			const Security &security) {
+			Security &security) {
 	if (subscriber.IsBlocked()) {
 		return;
 	}
@@ -75,7 +75,7 @@ void Dispatcher::SignalLevel1Update(
 
 void Dispatcher::SignalLevel1Tick(
 			SubscriberPtrWrapper &subscriber,
-			const Security &security,
+			Security &security,
 			const boost::posix_time::ptime &time,
 			const Level1TickValue &value,
 			bool flush) {
@@ -96,7 +96,7 @@ void Dispatcher::SignalLevel1Tick(
 
 void Dispatcher::SignalNewTrade(
 			SubscriberPtrWrapper &subscriber,
-			const Security &security,
+			Security &security,
 			const pt::ptime &time,
 			ScaledPrice price,
 			Qty qty,

@@ -30,23 +30,15 @@ namespace trdk { namespace Interaction { namespace Csv {
 
 		struct SecurityHolder {
 			
-			boost::shared_ptr<Security> security;
+			Security *security;
 
-			explicit SecurityHolder(const boost::shared_ptr<Security> &security)
-					: security(security) {
+			explicit SecurityHolder(Security &security)
+					: security(&security) {
 				//...//
 			}
 
-			const std::string & GetSymbol() const {
+			const Lib::Symbol & GetSymbol() const {
 				return security->GetSymbol();
-			}
-
-			const std::string & GetPrimaryExchange() const {
-				return security->GetPrimaryExchange();
-			}
-
-			const std::string & GetExchange() const {
-				return security->GetExchange();
 			}
 
 			bool IsTradesRequired() const {
@@ -60,20 +52,10 @@ namespace trdk { namespace Interaction { namespace Csv {
 			boost::multi_index::indexed_by<
 				boost::multi_index::hashed_unique<
 					boost::multi_index::tag<ByInstrument>,
-					boost::multi_index::composite_key<
+					boost::multi_index::const_mem_fun<
 						SecurityHolder,
-						boost::multi_index::const_mem_fun<
-							SecurityHolder,
-							const std::string &,
-							&SecurityHolder::GetSymbol>,
-						boost::multi_index::const_mem_fun<
-							SecurityHolder,
-							const std::string &,
-							&SecurityHolder::GetPrimaryExchange>,
-						boost::multi_index::const_mem_fun<
-							SecurityHolder,
-							const std::string &,
-							&SecurityHolder::GetExchange>>>,
+						const Lib::Symbol &,
+						&SecurityHolder::GetSymbol>>,
 				boost::multi_index::ordered_non_unique<
 					boost::multi_index::tag<ByTradesRequirements>,
 					boost::multi_index::const_mem_fun<
@@ -100,15 +82,12 @@ namespace trdk { namespace Interaction { namespace Csv {
 
 		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
 					Context &,
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange,
-					bool logMarketData)
+					const trdk::Lib::Symbol &)
 				const;
 
 	private:
 
-		void Subscribe(const boost::shared_ptr<Security> &) const;
+		void Subscribe(Security &) const;
 
 		void ReadFile();
 

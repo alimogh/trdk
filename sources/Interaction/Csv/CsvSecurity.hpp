@@ -23,12 +23,7 @@ namespace trdk {  namespace Interaction { namespace Csv {
 
 	public:
 
-		explicit Security(
-					Context &,
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange,
-					bool logMarketData);
+		explicit Security(Context &, const trdk::Lib::Symbol &);
 
 	public:
 

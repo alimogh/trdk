@@ -11,6 +11,7 @@
 #pragma once
 
 #include "ModuleExport.hpp"
+#include "ModuleSecurityListExport.hpp"
 #include "PythonToCoreTransit.hpp"
 #include "Core/Strategy.hpp"
 
@@ -34,7 +35,6 @@ namespace trdk { namespace PyApi {
 	private:
 
 		boost::shared_ptr<PyApi::Strategy> m_strategyRefHolder;
-		PyApi::Strategy *m_strategy;
 
 	};
 
@@ -105,10 +105,17 @@ namespace trdk { namespace PyApi {
 	private:
 
 		PositionListExport GetPositions();
+		ConsumerSecurityListExport GetSecurities();
 
-	private:
-
-		SecurityExport m_securityExport;
+		boost::python::object FindSecurityBySymbol(
+					const boost::python::str &symbol);
+		boost::python::object FindSecurityBySymbolAndExchange(
+					const boost::python::str &symbol,
+					const boost::python::str &exchange);
+		boost::python::object FindSecurityBySymbolAndPrimaryExchange(
+					const boost::python::str &symbol,
+					const boost::python::str &exchange,
+					const boost::python::str &primaryExchange);
 
 	};
 

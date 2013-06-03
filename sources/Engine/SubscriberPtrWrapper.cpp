@@ -132,49 +132,31 @@ void SubscriberPtrWrapper::Block() const throw() {
 }
 
 void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
-			const Security &security)
+			Security &security)
 		const {
 
 	const class Visitor
 			: public boost::static_visitor<void>,
 			private boost::noncopyable {
 	public:		
-		explicit Visitor(const Security &security)
+		explicit Visitor(Security &security)
 				: m_security(security) {
 			//...//
 		}
 	public:
 		void operator ()(Strategy &strategy) const {
-			AssertEq(
-				m_security.GetFullSymbol(),
-				strategy.GetSecurity().GetFullSymbol());
 			strategy.RaiseLevel1UpdateEvent(m_security);
 		}
 		void operator ()(Service &service) const {
-			AssertEq(
-				m_security.GetFullSymbol(),
-				service.GetSecurity().GetFullSymbol());
 			if (service.RaiseLevel1UpdateEvent(m_security)) {
 				RaiseServiceDataUpdateEvent(service);
 			}
 		}
 		void operator ()(Observer &observer) const {
-#			ifdef DEV_VER
-			{
-				bool isExists = false;
-				foreach (const auto &securityPtr, observer.GetNotifyList()) {
-					if (&*securityPtr == &m_security) {
-						isExists = true;
-						break;
-					}
-				}
-				Assert(isExists);
-			}
-#			endif
 			observer.RaiseLevel1UpdateEvent(m_security);
 		}
 	private:
-		const Security &m_security;
+		Security &m_security;
 	};
 
 	boost::apply_visitor(Visitor(security), m_subscriber);
@@ -193,18 +175,12 @@ void SubscriberPtrWrapper::RaiseLevel1TickEvent(const Level1Tick &tick) const {
 		}
 	public:
 		void operator ()(Strategy &strategy) const {
-			AssertEq(
-				m_tick.security->GetFullSymbol(),
-				strategy.GetSecurity().GetFullSymbol());
 			strategy.RaiseLevel1TickEvent(
 				*m_tick.security,
 				m_tick.time,
 				m_tick.value);
 		}
 		void operator ()(Service &service) const {
-			AssertEq(
-				m_tick.security->GetFullSymbol(),
-				service.GetSecurity().GetFullSymbol());
 			if (	service.RaiseLevel1TickEvent(
 						*m_tick.security,
 						m_tick.time,
@@ -213,18 +189,6 @@ void SubscriberPtrWrapper::RaiseLevel1TickEvent(const Level1Tick &tick) const {
 			}
 		}
 		void operator ()(Observer &observer) const {
-#			ifdef DEV_VER
-			{
-				bool isExists = false;
-				foreach (const auto &securityPtr, observer.GetNotifyList()) {
-					if (&*securityPtr == m_tick.security) {
-						isExists = true;
-						break;
-					}
-				}
-				Assert(isExists);
-			}
-#			endif
 			observer.RaiseLevel1TickEvent(
 				*m_tick.security,
 				m_tick.time,
@@ -250,9 +214,6 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(const Trade &trade) const {
 		}
 	public:
 		void operator ()(Strategy &strategy) const {
-			AssertEq(
-				m_trade.security->GetFullSymbol(),
-				strategy.GetSecurity().GetFullSymbol());
 			strategy.RaiseNewTradeEvent(
 				*m_trade.security,
 				m_trade.time,
@@ -261,9 +222,6 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(const Trade &trade) const {
 				m_trade.side);
 		}
 		void operator ()(Service &service) const {
-			AssertEq(
-				m_trade.security->GetFullSymbol(),
-				service.GetSecurity().GetFullSymbol());
 			if (	service.RaiseNewTradeEvent(
 						*m_trade.security,
 						m_trade.time,
@@ -274,18 +232,6 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(const Trade &trade) const {
 			}
 		}
 		void operator ()(Observer &observer) const {
-#			ifdef DEV_VER
-			{
-				bool isExists = false;
-				foreach (const auto &securityPtr, observer.GetNotifyList()) {
-					if (&*securityPtr == m_trade.security) {
-						isExists = true;
-						break;
-					}
-				}
-				Assert(isExists);
-			}
-#			endif
 			observer.RaiseNewTradeEvent(
 				*m_trade.security,
 				m_trade.time,

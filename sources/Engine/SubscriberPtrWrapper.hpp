@@ -21,12 +21,12 @@ namespace trdk { namespace Engine {
 
 		struct Level1Tick {
 			
-			const trdk::Security *security;
+			trdk::Security *security;
 			boost::posix_time::ptime time;
 			trdk::Level1TickValue value;
 			
 			explicit Level1Tick(
-						const trdk::Security &security,
+						trdk::Security &security,
 						const boost::posix_time::ptime &time,
 						const trdk::Level1TickValue &value)
 					: security(&security),
@@ -38,7 +38,7 @@ namespace trdk { namespace Engine {
 		};
 
 		struct Trade {
-			const trdk::Security *security;
+			trdk::Security *security;
 			boost::posix_time::ptime time;
 			ScaledPrice price;
 			Qty qty;
@@ -68,7 +68,7 @@ namespace trdk { namespace Engine {
 
 	public:
 
-		void RaiseLevel1UpdateEvent(const Security &) const;
+		void RaiseLevel1UpdateEvent(Security &) const;
 		void RaiseLevel1TickEvent(const Level1Tick &) const;
 		void RaiseNewTradeEvent(const Trade &) const;
 		void RaisePositionUpdateEvent(Position &) const;

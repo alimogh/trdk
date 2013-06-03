@@ -223,7 +223,7 @@ void Csv::MarketDataSource::ReadFile() {
 
 	AssertLt(0, m_securityList.size());
 
-	const SecurityByInstrument &index = m_securityList.get<ByInstrument>();
+	const auto &index = m_securityList.get<ByInstrument>();
 
 	std::string line;
 	size_t lineCount = 0;
@@ -241,8 +241,10 @@ void Csv::MarketDataSource::ReadFile() {
 			break;
 		}
 
+		//! @todo Place for optimization: 3 string objects copies every time
+		Symbol instrumnet(symbol, exchange, m_pimaryExchange);
 		const SecurityByInstrument::const_iterator security
-			= index.find(boost::make_tuple(symbol, m_pimaryExchange, exchange));
+			= index.find(instrumnet);
 		if (security == index.end()) {
 			m_log.DebugEx(
 				[&]() -> boost::format {
@@ -267,31 +269,16 @@ void Csv::MarketDataSource::ReadFile() {
 
 boost::shared_ptr<trdk::Security> Csv::MarketDataSource::CreateSecurity(
 			Context &context,
-			const std::string &symbol,
-			const std::string &primaryExchange,
-			const std::string &exchange,
-			bool logMarketData)
+			const Symbol &symbol)
 		const {
-	boost::shared_ptr<Csv::Security> result(
-		new Security(
-			context,
-			symbol,
-			primaryExchange,
-			exchange,
-			logMarketData));
-	Subscribe(result);
+	boost::shared_ptr<Csv::Security> result(new Security(context, symbol));
+	Subscribe(*result);
 	return result;
 }
 		
-void Csv::MarketDataSource::Subscribe(
-			const boost::shared_ptr<Security> &security)
-		const {
+void Csv::MarketDataSource::Subscribe(Security &security) const {
 	Assert(
-		m_securityList.get<ByInstrument>().find(
-				boost::make_tuple(
-					security->GetSymbol(),
-					security->GetPrimaryExchange(),
-					security->GetExchange()))
+		m_securityList.get<ByInstrument>().find(security.GetSymbol())
 			== m_securityList.get<ByInstrument>().end());
  	const_cast<MarketDataSource *>(this)
  		->m_securityList.insert(SecurityHolder(security));

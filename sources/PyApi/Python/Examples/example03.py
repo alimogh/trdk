@@ -94,7 +94,8 @@ class ExampleService(trdk.Service):
                 # Do nothing - too small a price deviation, less the 0.50.
                 pass
 
-            elif self.priceDirection == 'growing' or self.priceDirection is None:
+            elif self.priceDirection == 'growing'\
+                    or self.priceDirection is None:
                 self.log.debug(
                     'Price now "falls" ({0} -> {1}: -{2}).'
                         .format(

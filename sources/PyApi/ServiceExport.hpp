@@ -11,8 +11,9 @@
 #pragma once
 
 #include "ModuleExport.hpp"
-#include "PythonToCoreTransit.hpp"
+#include "ModuleSecurityListExport.hpp"
 #include "Services/BarService.hpp"
+#include "PythonToCoreTransit.hpp"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -38,16 +39,17 @@ namespace trdk { namespace PyApi {
 
 	public:
 
-		const trdk::Service & GetService() const {
-			return *m_service;
-		}
+		const trdk::Service & GetService() const;
 
 		boost::shared_ptr<PyApi::Service> ReleaseRefHolder() throw();
 
 	private:
 
+		ServiceSecurityListExport GetSecurities() const;
+
+	private:
+
 		boost::shared_ptr<PyApi::Service> m_serviceRefHolder;
-		const trdk::Service *m_service;
 
 	};
 
@@ -183,10 +185,6 @@ namespace trdk { namespace PyApi {
 	protected:
 
 		const Implementation & GetService() const;
-
-	private:
-
-		SecurityInfoExport m_securityExport;
 
 	};
 

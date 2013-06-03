@@ -28,10 +28,10 @@ namespace {
 	const pt::time_duration maxIterationTime = pt::milliseconds(10);
 
 	Contract & operator <<(Contract &contract, const trdk::Security &security) {
-		contract.symbol = security.GetSymbol();
+		contract.symbol = security.GetSymbol().GetSymbol();
 		contract.secType = "STK";
-		contract.primaryExchange = security.GetPrimaryExchange();
-		contract.exchange = security.GetExchange();
+		contract.primaryExchange = security.GetSymbol().GetPrimaryExchange();
+		contract.exchange = security.GetSymbol().GetExchange();
 		contract.currency = security.GetCurrency();
 		return contract;
 	}
@@ -267,16 +267,14 @@ void Client::Subscribe(const OrderStatusSlot &orderStatusSlot) const {
 	m_orderStatusSignal.connect(orderStatusSlot);
 }
 
-void Client::SubscribeToMarketData(
-			boost::shared_ptr<ib::Security> security)
-		const {
+void Client::SubscribeToMarketData(ib::Security &security) const {
 
-	if (!security->IsLevel1Required() && !security->IsTradesRequired()) {
+	if (!security.IsLevel1Required() && !security.IsTradesRequired()) {
 		return;
 	}
 
 	const Lock lock(m_mutex);
-	if (IsSubscribed(m_marketDataRequest, *security)) {
+	if (IsSubscribed(m_marketDataRequest, security)) {
 		return;
 	}
 	CheckState();
@@ -307,22 +305,21 @@ void Client::SubscribeToMarketData(
 			boost::cref(level1Request.tickerId)));
 
 	// Can't get volume from IB at this stage, see also method tickSize
-	security->SetLevel1(
-		boost::get_system_time(),
-		Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>(0));
+	// remove it later
+// 	security.SetLevel1(
+// 		boost::get_system_time(),
+// 		Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>(0));
 
 	requests.swap(m_marketDataRequest);
 
 }
 
-void Client::SubscribeToMarketDepthLevel2(
-			boost::shared_ptr<ib::Security> security)
-		const {
+void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
 
 	AssertFail("Market Depth Level II not yet supported by security.");
 
 	const Lock lock(m_mutex);
-	if (IsSubscribed(m_marketDepthLevel2Requests, *security)) {
+	if (IsSubscribed(m_marketDepthLevel2Requests, security)) {
 		return;
 	}
 	CheckState();
@@ -823,13 +820,8 @@ ib::Security * Client::GetMarketDataRequest(TickerId tickerId) {
 bool Client::IsSubscribed(
 			const SecurityRequestList &list,
 			const ib::Security &security) {
-	const auto &index = list.get<ByInstrument>();
-	const auto pos = index.find(
-		boost::make_tuple(
-			security.GetSymbol(),
-			security.GetPrimaryExchange(),
-			security.GetExchange()));
-	return pos != index.end();
+	const auto &index = list.get<BySecurity>();
+	return index.find(const_cast<ib::Security *>(&security)) != index.end();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -952,7 +944,7 @@ void Client::tickSize(
 		default:
 			return;
 		case VOLUME:
-			AssertNe(VOLUME, field); // untested, see SubscribeToMarketData
+//			AssertNe(VOLUME, field); // untested, see SubscribeToMarketData, remove it later
 			valueCtor
 				= Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>;
 			break;

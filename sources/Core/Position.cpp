@@ -125,11 +125,12 @@ public:
 	explicit Implementation(
 				Position &position,
 				Strategy &strategy,
+				Security &security,
 				Qty qty,
 				ScaledPrice startPrice)
 			: m_position(position),
 			m_strategy(&strategy),
-			m_security(m_strategy->GetSecurity()),
+			m_security(security),
 			m_planedQty(qty),
 			m_openStartPrice(startPrice),
 			m_closeStartPrice(0),
@@ -524,9 +525,15 @@ public:
 
 Position::Position(
 			Strategy &strategy,
+			Security &security,
 			Qty qty,
 			ScaledPrice startPrice) {
-	m_pimpl = new Implementation(*this, strategy, qty, startPrice);
+	m_pimpl = new Implementation(
+		*this,
+		strategy,
+		security,
+		qty,
+		startPrice);
 	AssertGt(m_pimpl->m_planedQty, 0);
 }
 
@@ -835,9 +842,10 @@ bool Position::CancelAllOrders() {
 
 LongPosition::LongPosition(
 			Strategy &strategy,
+			Security &security,
 			Qty qty,
 			ScaledPrice startPrice)
-		: Position(strategy, qty, startPrice) {
+		: Position(strategy, security, qty, startPrice) {
 	//...//
 }
 
@@ -944,9 +952,10 @@ OrderId LongPosition::DoCloseOrCancel(Qty qty, ScaledPrice price) {
 
 ShortPosition::ShortPosition(
 			Strategy &strategy,
+			Security &security,
 			Qty qty,
 			ScaledPrice startPrice)
-		: Position(strategy, qty, startPrice) {
+		: Position(strategy, security, qty, startPrice) {
 	//...//
 }
 

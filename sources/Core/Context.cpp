@@ -12,8 +12,21 @@
 #include "Context.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
+
+////////////////////////////////////////////////////////////////////////////////
+
+Context::Exception::Exception(const char *what) throw()
+		: Lib::Exception(what) {
+	//...//
+}
+
+Context::UnknownSecurity::UnknownSecurity() throw()
+		: Exception("Unknown security") {
+	//...//
+}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -52,6 +65,22 @@ Context::~Context() {
 
 Context::Log & Context::GetLog() const throw() {
 	return m_pimpl->m_log;
+}
+
+Security & Context::GetSecurity(const Symbol &symbol) {
+	auto result = FindSecurity(symbol);
+	if (!result) {
+		throw UnknownSecurity();
+	}
+	return *result;
+}
+
+const Security & Context::GetSecurity(const Symbol &symbol) const {
+	auto result = FindSecurity(symbol);
+	if (!result) {
+		throw UnknownSecurity();
+	}
+	return *result;	
 }
 
 //////////////////////////////////////////////////////////////////////////
