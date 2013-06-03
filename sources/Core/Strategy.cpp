@@ -340,7 +340,6 @@ Strategy::~Strategy() {
 }
 
 void Strategy::Register(Position &position) {
-	const Lock lock(GetMutex());
 	const PositionHolder holder(
 		position,
 		position.Subscribe(
@@ -351,7 +350,6 @@ void Strategy::Register(Position &position) {
 }
 
 void Strategy::Unregister(Position &position) throw() {
-	const Lock lock(GetMutex());
 	try {
 		Assert(m_pimpl->m_positions.IsExists(position));
 		m_pimpl->m_positions.Erase(position);

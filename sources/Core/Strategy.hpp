@@ -132,7 +132,15 @@ namespace trdk {
 
 	public:
 
+		//! Registers position for this strategy.
+		/** Thread-unsafe method! Must be call only from event-methods, or if
+		  * strategy locked by GetMutex().
+		  */
 		virtual void Register(Position &);
+		//! Unregisters position for this strategy.
+		/** Thread-unsafe method! Must be call only from event-methods, or if
+		  * strategy locked by GetMutex().
+		  */
 		virtual void Unregister(Position &) throw();
 
 		PositionList & GetPositions();
