@@ -79,7 +79,16 @@ void PositionExport::ExportClass(const char *className) {
 		.add_property("isOpened", &PositionExport::IsOpened)
 		.add_property("isClosed", &PositionExport::IsClosed)
 
+		.add_property("isError", &PositionExport::IsError)
+		.add_property("isCanceled", &PositionExport::IsCanceled)
+
 		.add_property("hasActiveOrders", &PositionExport::HasActiveOrders)
+		.add_property(
+			"hasActiveOpenOrders",
+			&PositionExport::HasActiveOpenOrders)
+		.add_property(
+			"hasActiveCloseOrders",
+			&PositionExport::HasActiveCloseOrders)
 
 		.add_property("planedQty", &PositionExport::GetPlanedQty)
 
@@ -142,6 +151,14 @@ bool PositionExport::IsOpened() const {
 
 bool PositionExport::IsClosed() const {
 	return GetPosition().IsClosed();
+}
+
+bool PositionExport::IsError() const {
+	return GetPosition().IsError();
+}
+
+bool PositionExport::IsCanceled() const {
+	return GetPosition().IsCanceled();
 }
 
 bool PositionExport::HasActiveOrders() const {

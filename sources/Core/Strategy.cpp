@@ -343,9 +343,9 @@ void Strategy::Register(Position &position) {
 	const PositionHolder holder(
 		position,
 		position.Subscribe(
-		[this, &position]() {
-			m_pimpl->m_positionUpdateSignal(position);
-		}));
+			[this, &position]() {
+				m_pimpl->m_positionUpdateSignal(position);
+			}));
 	m_pimpl->m_positions.Insert(holder);
 }
 
@@ -412,6 +412,9 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 	Assert(position.IsOpened() || position.IsError());
 
 	const Lock lock(GetMutex());
+	if (position.IsCompleted() && !m_pimpl->m_positions.IsExists(position)) {
+		return;
+	}
 	Assert(m_pimpl->m_positions.IsExists(position));
 	
 	if (position.IsError()) {
@@ -429,7 +432,6 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 		
 	if (position.IsCompleted()) {
 		m_pimpl->ForgetPosition(position);
-		return;
 	} else if (!isTradingTime) {
 		// @todo move to strategy implementation (ex.: OnSessionStart/OnSessionStop)
 		position.CancelAtMarketPrice(Position::CLOSE_TYPE_SCHEDULE);

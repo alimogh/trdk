@@ -158,6 +158,7 @@ public:
 
 		Assert(!m_position.IsOpened());
 		Assert(!m_position.IsClosed());
+		Assert(!m_position.IsCompleted());
 		AssertNe(orderId, 0);
 		AssertNe(m_opened.orderId, 0);
 		AssertEq(m_opened.orderId, orderId);
@@ -251,6 +252,7 @@ public:
 
 		Assert(m_position.IsOpened());
 		Assert(!m_position.IsClosed());
+		Assert(!m_position.IsCompleted());
 		Assert(!m_opened.time.is_not_a_date_time());
 		Assert(m_closed.time.is_not_a_date_time());
 		AssertLe(m_opened.qty, m_planedQty);
@@ -557,7 +559,7 @@ bool Position::IsOpened() const throw() {
 }
 bool Position::IsClosed() const throw() {
 	return
-		!HasActiveCloseOrders()
+		!HasActiveOrders()
 		&& GetOpenedQty() > 0
 		&& GetActiveQty() == 0;
 }
@@ -658,12 +660,12 @@ Position::Time Position::GetOpenTime() const {
 }
 
 Qty Position::GetNotOpenedQty() const {
-	Assert(GetOpenedQty() <= GetPlanedQty());
+	AssertLt(GetOpenedQty(), GetPlanedQty());
 	return GetPlanedQty() - GetOpenedQty();
 }
 
 Qty Position::GetActiveQty() const throw() {
-	Assert(GetOpenedQty() >= GetClosedQty());
+	AssertGe(GetOpenedQty(), GetClosedQty());
 	return GetOpenedQty() - GetClosedQty();
 }
 

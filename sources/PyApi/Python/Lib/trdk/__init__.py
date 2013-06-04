@@ -324,11 +324,20 @@ class Position(object):
     isCompleted = bool  # Started and now hasn't any orders and active qty.
 
     isOpened = bool  # Has opened qty and hasn't active open-orders.
-    isClosed = bool  # Has opened qty and the same closed qty. Hasn't active
-                     # close-orders.
+    isClosed = bool     # First was opened, then closed, hasn't active quantity
+                        # and active orders.
+
+    isError = bool  # Open operation started, but error occurred at opening or
+                    # closing.
+    isCanceled = bool   # All orders canceled, position will be closed or
+                        # already closed.
 
     hasActiveOrders = bool  # True if position has active orders (not cancelled
                             # and not fully filled).
+    hasActiveOpenOrders = bool  # True if position has active open-orders
+                                # (not cancelled and not fully filled).
+    hasActiveCloseOrders = bool     # True if position has active close-orders
+                                    # (not cancelled and not fully filled).
 
     planedQty = int
 

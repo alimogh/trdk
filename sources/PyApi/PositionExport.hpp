@@ -51,6 +51,8 @@ namespace trdk { namespace PyApi {
 		bool IsCompleted() const;
 		bool IsOpened() const;
 		bool IsClosed() const;
+		bool IsError() const;
+		bool IsCanceled() const;
 
 		bool HasActiveOrders() const;
 		bool HasActiveOpenOrders() const;

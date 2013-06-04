@@ -89,11 +89,18 @@ namespace trdk {
 		const std::string & GetCloseTypeStr() const;
 
 		//! Has opened qty and hasn't active open-orders.
+		/** @sa	IsClosed
+		  */
 		bool IsOpened() const throw();
-		//! Has opened qty and the same closed qty. Hasn't active close-orders.
+		//! Closed.
+		/** First was opened, then closed, hasn't active quantity and active
+		  * orders.
+		  * @sa	IsOpened
+		  */
 		bool IsClosed() const throw();
 
-		//! Started - one of open-orders sent.
+		//! Started.
+		/** True if at least one of open-orders was sent.
 		/** @sa	IsCompleted
 		  */
 		bool IsStarted() const throw();

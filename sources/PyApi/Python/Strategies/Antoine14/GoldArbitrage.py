@@ -51,7 +51,6 @@ class GoldArbitrage(trdk.Strategy):
         dgl = self.dglBars.getBarByReversedIndex(0)
 
         if self.positions.count() > 0:
-            self.log.debug('Has open positions...')
             return
 
         ratioGe = 0
@@ -64,7 +63,7 @@ class GoldArbitrage(trdk.Strategy):
 
         self.log.debug(
             "Entry 1: GLD(Ask {0}) / DGL(Bid {1}) = {2};"
-            + " Entry 2: GLD(Bid {3}) / DGL(Ask {4}) = {5};"
+            " Entry 2: GLD(Bid {3}) / DGL(Ask {4}) = {5};"
                 .format(
                     self.findSecurity('GLD').descalePrice(gld.maxAskPrice),
                     self.findSecurity('DGL').descalePrice(dgl.minBidPrice),
@@ -112,23 +111,24 @@ class GoldArbitrage(trdk.Strategy):
 #            dglPos.open(dglPos.openStartPrice)
 
     def onPositionUpdate(self, position):
-        if position.isOpened:
+        if position.isCompleted:
+            if position.isCanceled is not True:
+                self.log.info(
+                    '{0} closed first.'.format(position.security.symbol))
+            # Risk Management:
+            # If one order gets filled without the other, sell
+            # immediately at market order.
+            map(
+                lambda position: position.cancelAtMarketPrice(),
+                self.positions)
+        elif position.isOpened and position.hasActiveCloseOrders is False:
             # Profit Targets:
             # Sell positions @ GLD/DGL ratio of 2.847
             closePrice = int(position.openStartPrice * 2.847)
-            self.log.debug(
+            self.log.info(
                 'Closing {0} with {1}.'
                     .format(
                         position.security.symbol,
                         position.security.descalePrice(closePrice)))
-            position.close(closePrice)
-        elif position.isClosed:
-            # Risk Management:
-            # If one order gets filled without the other, sell
-            # immediately at market order.
-            self.log.debug(
-                'Closing all at market price as {0} closed.'
-                    .format(position.security.symbol))
-            map(
-                lambda position: position.cancelAtMarketPrice(),
-                self.positions)
+            position.closeAtMarketPrice()
+#            position.close(closePrice)
