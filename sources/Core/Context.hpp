@@ -21,6 +21,15 @@ namespace trdk {
 
 	public:
 
+		class TRDK_CORE_API Exception : public trdk::Lib::Exception {
+		public:
+			explicit Exception(const char *what) throw();
+		};
+		class TRDK_CORE_API UnknownSecurity : public trdk::Context::Exception {
+		public:
+			explicit UnknownSecurity() throw();
+		};
+
 		class TRDK_CORE_API Log;
 
 	public:
@@ -32,6 +41,9 @@ namespace trdk {
 
 		trdk::Context::Log & GetLog() const throw();
 
+		trdk::Security & GetSecurity(const trdk::Lib::Symbol &);
+		const trdk::Security & GetSecurity(const trdk::Lib::Symbol &) const;
+
 	public:
 
 		virtual const trdk::Settings & GetSettings() const = 0;
@@ -41,6 +53,14 @@ namespace trdk {
 
 		virtual trdk::TradeSystem & GetTradeSystem() = 0;
 		virtual const trdk::TradeSystem & GetTradeSystem() const = 0;
+
+	protected:
+
+		virtual trdk::Security * FindSecurity(const trdk::Lib::Symbol &) = 0;
+		virtual const trdk::Security * FindSecurity(
+					const trdk::Lib::Symbol &)
+				const
+				= 0;
 
 	private:
 

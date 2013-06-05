@@ -11,12 +11,12 @@
 #pragma once
 
 #include "Position.hpp"
-#include "SecurityAlgo.hpp"
+#include "Consumer.hpp"
 #include "Api.h"
 
 namespace trdk {
 
-	class TRDK_CORE_API Strategy : public trdk::SecurityAlgo {
+	class TRDK_CORE_API Strategy : public trdk::Consumer {
 
 	public:
 
@@ -106,14 +106,8 @@ namespace trdk {
 		explicit Strategy(
 				trdk::Context &,
 				const std::string &name,
-				const std::string &tag,
-				trdk::Security &);
+				const std::string &tag);
 		virtual ~Strategy();
-
-	public:
-
-		virtual const trdk::Security & GetSecurity() const;
-		trdk::Security & GetSecurity();
 
 	public:
 
@@ -122,29 +116,13 @@ namespace trdk {
 
 	public:
 
-		virtual void OnLevel1Update(const trdk::Security &);
-		virtual void OnLevel1Tick(
-					const trdk::Security &,
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &);
-		virtual void OnNewTrade(
-					const trdk::Security &,
-					const boost::posix_time::ptime &,
-					trdk::ScaledPrice,
-					trdk::Qty,
-					trdk::OrderSide);
-		virtual void OnServiceDataUpdate(const trdk::Service &);
-		virtual void OnPositionUpdate(trdk::Position &);
-
-	public:
-
-		void RaiseLevel1UpdateEvent(const trdk::Security &);
+		void RaiseLevel1UpdateEvent(trdk::Security &);
 		void RaiseLevel1TickEvent(
-					const trdk::Security &,
+					trdk::Security &,
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &);
 		void RaiseNewTradeEvent(
-					const trdk::Security &,
+					trdk::Security &,
 					const boost::posix_time::ptime &,
 					trdk::ScaledPrice,
 					trdk::Qty,
@@ -154,7 +132,15 @@ namespace trdk {
 
 	public:
 
+		//! Registers position for this strategy.
+		/** Thread-unsafe method! Must be call only from event-methods, or if
+		  * strategy locked by GetMutex().
+		  */
 		virtual void Register(Position &);
+		//! Unregisters position for this strategy.
+		/** Thread-unsafe method! Must be call only from event-methods, or if
+		  * strategy locked by GetMutex().
+		  */
 		virtual void Unregister(Position &) throw();
 
 		PositionList & GetPositions();

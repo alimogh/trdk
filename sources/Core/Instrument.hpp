@@ -19,20 +19,13 @@ namespace trdk {
 
 	public:
 
-		explicit Instrument(
-					trdk::Context &,
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange);
+		explicit Instrument(trdk::Context &, const trdk::Lib::Symbol &);
 		~Instrument();
 
 	public:
 
-		const std::string & GetFullSymbol() const throw();
-		const std::string & GetSymbol() const throw();
-		const std::string & GetPrimaryExchange() const;
-		const std::string & GetExchange() const;
-
+		const trdk::Lib::Symbol & GetSymbol() const throw();
+	
 	public:
 
 		const trdk::Context & GetContext() const;
@@ -45,4 +38,10 @@ namespace trdk {
 
 	};
 
+}
+
+namespace std {
+	TRDK_CORE_API std::ostream & operator <<(
+				std::ostream &,
+				const trdk::Instrument &);
 }

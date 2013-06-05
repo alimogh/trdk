@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/11/04 15:48:28
+ *   Created: 2012/10/27 15:40:39
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,24 +9,21 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "SecurityAlgo.hpp"
-#include "Security.hpp"
-#include "Settings.hpp"
+#include "CsvSecurity.hpp"
 
-namespace fs = boost::filesystem;
-namespace pt = boost::posix_time;
 using namespace trdk;
-using namespace trdk::Lib;
+using namespace trdk::Interaction;
+using namespace trdk::Interaction::Csv;
 
-SecurityAlgo::SecurityAlgo(
-			trdk::Context &context,
-			const std::string &typeName,
-			const std::string &name,
-			const std::string &tag)
-		: Module(context, typeName, name, tag) {
+Csv::Security::Security(Context &context, const Lib::Symbol &symbol)
+		: Base(context, symbol) {
 	//...//
 }
 
-SecurityAlgo::~SecurityAlgo() {
-	//...//
+void Csv::Security::AddTrade(
+			const boost::posix_time::ptime &time,
+			OrderSide side,
+			ScaledPrice price,
+			trdk::Qty qty) {
+	Base::AddTrade(time, side, price, qty, true, true);
 }

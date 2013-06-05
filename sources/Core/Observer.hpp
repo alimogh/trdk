@@ -10,64 +10,35 @@
 
 #pragma once
 
-#include "Module.hpp"
+#include "Consumer.hpp"
 #include "Api.h"
 
 namespace trdk {
 
-	class TRDK_CORE_API Observer : public trdk::Module {
-
-	public:
-
-		typedef std::list<boost::shared_ptr<trdk::Security>> NotifyList;
+	class TRDK_CORE_API Observer : public trdk::Consumer {
 
 	public:
 
 		Observer(
 				trdk::Context &,
 				const std::string &name,
-				const std::string &tag,
-				const trdk::Observer::NotifyList &);
-		virtual ~Observer();
+				const std::string &tag);
+		~Observer();
 
 	public:
 
-		virtual void OnLevel1Update(const trdk::Security &);
-		virtual void OnLevel1Tick(
-				const trdk::Security &,
-				const boost::posix_time::ptime &,
-				const trdk::Level1TickValue &);
-		virtual void OnNewTrade(
-				const trdk::Security &,
-				const boost::posix_time::ptime &,
-				trdk::ScaledPrice price,
-				trdk::Qty qty,
-				trdk::OrderSide);
-		virtual void OnServiceDataUpdate(const trdk::Service &);
-
-	public:
-
-		void RaiseLevel1UpdateEvent(const Security &);
+		void RaiseLevel1UpdateEvent(Security &);
 		void RaiseLevel1TickEvent(
-					const trdk::Security &,
+					trdk::Security &,
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &);
 		void RaiseNewTradeEvent(
-					const trdk::Security &,
+					trdk::Security &,
 					const boost::posix_time::ptime &,
 					trdk::ScaledPrice,
 					trdk::Qty,
 					trdk::OrderSide);
 		void RaiseServiceDataUpdateEvent(const trdk::Service &);
-
-	public:
-
-		const NotifyList & GetNotifyList() const;
-
-	private:
-
-		class Implementation;
-		Implementation *m_pimpl;
 
 	};
 

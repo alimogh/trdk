@@ -56,7 +56,7 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 					Client::OrderCallbackList &callBackList) {
 			OrderStatusUpdateSlot callBack;
 			{
-				PlacedOrderById &index = m_placedOrders.get<ByOrder>();
+				auto &index = m_placedOrders.get<ByOrder>();
 				const WriteLock lock(m_mutex);
 				const auto pos = index.find(id);
 				if (pos == index.end()) {
@@ -95,10 +95,8 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 
 	client->StartData();
 
-	foreach (
-			boost::shared_ptr<ib::Security> security,
-			m_unsubscribedSecurities) {
-		client->SubscribeToMarketData(security);
+	foreach (auto *security, m_unsubscribedSecurities) {
+		client->SubscribeToMarketData(*security);
 	}
 
 	Securities().swap(m_unsubscribedSecurities);
@@ -108,19 +106,10 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 
 boost::shared_ptr<trdk::Security> ib::TradeSystem::CreateSecurity(
 			Context &context,
-			const std::string &symbol,
-			const std::string &primaryExchange,
-			const std::string &exchange,
-			bool logMarketData)
+			const Symbol &symbol)
 		const {
-	boost::shared_ptr<ib::Security> result(
-		new ib::Security(
-			context,
-			symbol,
-			primaryExchange,
-			exchange,
-			logMarketData));
-	m_unsubscribedSecurities.push_back(result);
+	boost::shared_ptr<ib::Security> result(new ib::Security(context, symbol));
+	m_unsubscribedSecurities.push_back(&*result);
 	return result;
 }
 
@@ -133,11 +122,10 @@ void ib::TradeSystem::CancelAllOrders(trdk::Security &security) {
 	std::list<std::string> idsStr;
 	{
 		const ReadLock lock(m_mutex);
-		const PlacedOrderBySymbol &index = m_placedOrders.get<BySymbol>();
-		const auto symbol = security.GetFullSymbol();
-		for (	PlacedOrderBySymbol::const_iterator i = index.find(security.GetFullSymbol());
-				i != index.end() && i->symbol == symbol;
-				++i) {
+		const auto &index = m_placedOrders.get<BySymbol>();
+		for (	auto i = index.find(&security)
+				; i != index.end() && i->security == &security
+				; ++i) {
 			ids.push_back(i->id);
 			idsStr.push_back(boost::lexical_cast<std::string>(i->id));
 		}
@@ -156,7 +144,7 @@ trdk::OrderId ib::TradeSystem::SellAtMarketPrice(
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	PlacedOrder order = {};
 	order.id = m_client->SendBid(security, qty);
-	order.symbol = security.GetFullSymbol();
+	order.security = &security;
 	order.callback = statusUpdateSlot;
 	RegOrder(order);
 	return order.id;
@@ -171,7 +159,7 @@ trdk::OrderId ib::TradeSystem::Sell(
 	const auto rawPrice = security.DescalePrice(price);
 	PlacedOrder order = {};
 	order.id = m_client->SendBid(security, qty, rawPrice);
-	order.symbol = security.GetFullSymbol();
+	order.security = &security;
 	order.callback = statusUpdateSlot;
 	RegOrder(order);
 	return order.id;
@@ -185,7 +173,7 @@ trdk::OrderId ib::TradeSystem::SellAtMarketPriceWithStopPrice(
 	const auto rawStopPrice = security.DescalePrice(stopPrice);
 	PlacedOrder order = {};
 	order.id = m_client->SendBidWithMarketPrice(security, qty, rawStopPrice);
-	order.symbol = security.GetFullSymbol();
+	order.security = &security;
 	order.callback = statusUpdateSlot;
 	RegOrder(order);
 	return order.id;
@@ -199,8 +187,9 @@ trdk::OrderId ib::TradeSystem::SellOrCancel(
 	const double rawPrice = security.DescalePrice(price);
 	const PlacedOrder order = {
 		m_client->SendIocBid(security, qty, rawPrice),
-		security.GetFullSymbol(),
-		statusUpdateSlot};
+		&security,
+		statusUpdateSlot
+	};
 	RegOrder(order);
 	return order.id;
 }
@@ -211,7 +200,7 @@ trdk::OrderId ib::TradeSystem::BuyAtMarketPrice(
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	PlacedOrder order = {};
 	order.id = m_client->SendAsk(security, qty);
-	order.symbol = security.GetFullSymbol();
+	order.security = &security;
 	order.callback = statusUpdateSlot;
 	RegOrder(order);
 	return order.id;
@@ -225,7 +214,7 @@ trdk::OrderId ib::TradeSystem::Buy(
 	const auto rawPrice = security.DescalePrice(price);
 	PlacedOrder order = {};
 	order.id = m_client->SendAsk(security, qty, rawPrice);
-	order.symbol = security.GetFullSymbol();
+	order.security = &security;
 	order.callback = statusUpdateSlot;
 	RegOrder(order);
 	return order.id;
@@ -239,7 +228,7 @@ trdk::OrderId ib::TradeSystem::BuyAtMarketPriceWithStopPrice(
 	const auto rawStopPrice = security.DescalePrice(stopPrice);
 	PlacedOrder order = {};
 	order.id = m_client->SendAskWithMarketPrice(security, qty, rawStopPrice);
-	order.symbol = security.GetFullSymbol();
+	order.security = &security;
 	order.callback = statusUpdateSlot;
 	RegOrder(order);
 	return order.id;
@@ -253,7 +242,7 @@ trdk::OrderId ib::TradeSystem::BuyOrCancel(
 	const double rawPrice = security.DescalePrice(price);
 	const PlacedOrder order = {
 		m_client->SendIocAsk(security, qty, rawPrice),
-		security.GetFullSymbol(),
+		&security,
 		statusUpdateSlot};
 	RegOrder(order);
 	return order.id;

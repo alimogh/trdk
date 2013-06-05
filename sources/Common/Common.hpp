@@ -32,6 +32,7 @@
 #include "Common/UseUnused.hpp"
 #include "Common/Foreach.hpp"
 #include "Common/IniFile.hpp"
+#include "Common/Symbol.hpp"
 #include "Common/FileSystemChangeNotificator.hpp"
 #include "Common/SysError.hpp"
 #include "Common/Exception.hpp"

@@ -28,12 +28,14 @@
 #	include <boost/multi_index/member.hpp>
 #	include <boost/multi_index/composite_key.hpp>
 #	include <boost/multi_index/ordered_index.hpp>
+#	include <boost/unordered_map.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
 
 #include "Core/Fwd.hpp"
 
+#include <hash_map>
 #include <bitset>
 
 #include "Common/Assert.hpp"

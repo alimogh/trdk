@@ -16,12 +16,7 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::InteractiveBrokers;
 namespace ib = trdk::Interaction::InteractiveBrokers;
 
-ib::Security::Security(
-			Context &context,
-			const std::string &symbol,
-			const std::string &primaryExchange,
-			const std::string &exchange,
-			bool logMarketData)
-		: Base(context, symbol, primaryExchange, exchange, logMarketData) {
+ib::Security::Security(Context &context, const Lib::Symbol &symbol)
+		: Base(context, symbol) {
 	//...//
 }

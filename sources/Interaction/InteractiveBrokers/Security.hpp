@@ -23,12 +23,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
-		explicit Security(
-					Context &,
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange,
-					bool logMarketData);
+		explicit Security(Context &, const Lib::Symbol &);
 
 	public:
 

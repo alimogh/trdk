@@ -11,32 +11,29 @@
 #pragma once
 
 #include "ModuleVariant.hpp"
-#include "SecurityAlgo.hpp"
+#include "Module.hpp"
 #include "Api.h"
 
 namespace trdk {
 
-	class TRDK_CORE_API Service : public trdk::SecurityAlgo {
+	class TRDK_CORE_API Service : public trdk::Module {
 
 	public:
 
 		typedef trdk::ModuleRefVariant Subscriber;
-		typedef std::list<Subscriber> Subscribers;
+		typedef std::list<Subscriber> SubscriberList;
 
 	public:
 
 		explicit Service(
 				trdk::Context &,
 				const std::string &name,
-				const std::string &tag,
-				const trdk::Security &);
+				const std::string &tag);
 		virtual ~Service();
 
 	public:
 
-		virtual const trdk::Security & GetSecurity() const;
-
-	public:
+		virtual void OnSecurityStart(const trdk::Security &);
 
 		virtual bool OnLevel1Update(const trdk::Security &);
 		virtual bool OnLevel1Tick(
@@ -53,10 +50,13 @@ namespace trdk {
 
 	public:
 
+		void RegisterSource(trdk::Security &);
+		const SecurityList & GetSecurities() const;
+
 		void RegisterSubscriber(trdk::Strategy &);
 		void RegisterSubscriber(trdk::Service &);
 		void RegisterSubscriber(trdk::Observer &);
-		const Subscribers & GetSubscribers();
+		const SubscriberList & GetSubscribers();
 
 	public:
 

@@ -30,7 +30,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		struct PlacedOrder {
 			OrderId id;
-			std::string symbol;
+			trdk::Security *security;
 			OrderStatusUpdateSlot callback;
 			bool commission;
 			bool completed;
@@ -53,19 +53,17 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 					boost::multi_index::tag<BySymbol>,
 					boost::multi_index::member<
 						PlacedOrder,
-						std::string,
-						&PlacedOrder::symbol>>,
-				boost::multi_index::hashed_unique<
+						trdk::Security *,
+						&PlacedOrder::security>>,
+				boost::multi_index::ordered_unique<
 					boost::multi_index::tag<ByOrder>,
 					boost::multi_index::member<
 						PlacedOrder,
 						TradeSystem::OrderId,
 						&PlacedOrder::id>>>>
 			PlacedOrderSet;
-		typedef PlacedOrderSet::index<BySymbol>::type PlacedOrderBySymbol;
-		typedef PlacedOrderSet::index<ByOrder>::type PlacedOrderById;
 
-		typedef std::list<boost::shared_ptr<Security>> Securities;
+		typedef std::list<Security *> Securities;
 
 	public:
 
@@ -80,10 +78,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
 				trdk::Context &,
-				const std::string &symbol,
-				const std::string &primaryExchange,
-				const std::string &exchange,
-				bool logMarketData)
+				const trdk::Lib::Symbol &)
 			const;
 
 	public:

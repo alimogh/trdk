@@ -52,10 +52,7 @@ namespace trdk {
 
 		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
 					trdk::Context &,
-					const std::string &symbol,
-					const std::string &primaryExchange,
-					const std::string &exchange,
-					bool logMarketData)
+					const trdk::Lib::Symbol &)
 				const
 				= 0;
 

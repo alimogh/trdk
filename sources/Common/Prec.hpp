@@ -16,7 +16,6 @@
 #	include <boost/algorithm/string.hpp>
 #	include <boost/thread/thread_time.hpp>
 #	include <boost/noncopyable.hpp>
-#	include <boost/enable_shared_from_this.hpp>
 #	include <boost/signals2.hpp>
 #	include <boost/thread/thread.hpp>
 #	include <boost/shared_ptr.hpp>

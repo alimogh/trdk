@@ -29,10 +29,11 @@ namespace trdk { namespace PyApi {
 
 		explicit SidePosition(
 					trdk::Strategy &strategy,
+					trdk::Security &security,
 					Qty qty,
 					ScaledPrice startPrice,
 					SidePositionExport<SidePosition<Impl>> &positionExport)
-				: Impl(strategy, qty, startPrice),
+				: Impl(strategy, security, qty, startPrice),
 				m_positionExport(positionExport) {
 			//....//
 		}

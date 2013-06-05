@@ -32,19 +32,16 @@ namespace {
 		Context &context;
 		const std::string &name;
 		const std::string &tag;
-		Security &security;
 		const IniFileSectionRef &configuration;
 	
 		explicit Params(
 					Context &context,
 					const std::string &name,
 					const std::string &tag,
-					Security &security,
 					const IniFileSectionRef &configuration)
 				: context(context),
 				name(name),
 				tag(tag),
-				security(security),
 				configuration(configuration) {
 			//...//
 		}
@@ -57,8 +54,7 @@ PyApi::Strategy::Strategy(uintptr_t params, StrategyExport &strategyExport)
 		: trdk::Strategy(
 			reinterpret_cast<Params *>(params)->context,
 			reinterpret_cast<Params *>(params)->name,
-			reinterpret_cast<Params *>(params)->tag,
-			reinterpret_cast<Params *>(params)->security),
+			reinterpret_cast<Params *>(params)->tag),
 		m_strategyExport(strategyExport) {
 	DoSettingsUpdate(reinterpret_cast<Params *>(params)->configuration);
 }
@@ -70,7 +66,6 @@ PyApi::Strategy::~Strategy() {
 boost::shared_ptr<trdk::Strategy> PyApi::Strategy::CreateClientInstance(
 			Context &context,
 			const std::string &tag,
-			Security &security,
 			const IniFileSectionRef &configuration) {
 	auto clientClass = Script::Load(configuration).GetClass(
 		configuration,
@@ -83,16 +78,14 @@ boost::shared_ptr<trdk::Strategy> PyApi::Strategy::CreateClientInstance(
 			context,
 			className,
 			tag,
-			security,
 			configuration);
 		auto pyObject = clientClass(reinterpret_cast<uintptr_t>(&params));
 		StrategyExport &strategyExport
 			= py::extract<StrategyExport &>(pyObject);
 		return strategyExport.GetStrategy().TakeExportObjectOwnership();
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException(
+		throw GetPythonClientException(
 			"Failed to create instance of trdk.Strategy");
-		throw std::logic_error("Never throws");
 	}
 }
 
@@ -210,6 +203,17 @@ bool PyApi::Strategy::CallVirtualMethod(
 	return GetExport().CallVirtualMethod(name, call);
 }
 
+void PyApi::Strategy::OnSecurityStart(trdk::Security &security) {
+	const bool isExists = CallVirtualMethod(
+		"onSecurityStart",
+		[&](const py::override &f) {
+			f(PyApi::Export(security));
+		});
+	if (!isExists) {
+		Base::OnSecurityStart(security);
+	}
+}
+
 void PyApi::Strategy::OnServiceStart(const trdk::Service &service) {
 	const bool isExists = CallVirtualMethod(
 		"onServiceStart",
@@ -221,7 +225,7 @@ void PyApi::Strategy::OnServiceStart(const trdk::Service &service) {
 	}
 }
 
-void PyApi::Strategy::OnLevel1Update(const Security &security) {
+void PyApi::Strategy::OnLevel1Update(Security &security) {
 	const bool isExists = CallVirtualMethod(
 		"onLevel1Update",
 		[&](const py::override &f) {
@@ -233,7 +237,7 @@ void PyApi::Strategy::OnLevel1Update(const Security &security) {
 }
 
 void PyApi::Strategy::OnNewTrade(
-			const Security &security,
+			Security &security,
 			const pt::ptime &time,
 			ScaledPrice price,
 			Qty qty,
@@ -281,24 +285,20 @@ void PyApi::Strategy::OnPositionUpdate(Position &position) {
 	boost::shared_ptr<trdk::Strategy> CreateStrategy(
 				Context &context,
 				const std::string &tag,
-				Security &security,
 				const IniFileSectionRef &configuration) {
 		return PyApi::Strategy::CreateClientInstance(
 			context,
 			tag,
-			security,
 			configuration);
 	}
 #else
 	extern "C" boost::shared_ptr<trdk::Strategy> CreateStrategy(
 				Context &context,
 				const std::string &tag,
-				Security &security,
 				const IniFileSectionRef &configuration) {
 		return PyApi::Strategy::CreateClientInstance(
 			context,
 			tag,
-			security,
 			configuration);
 	}
 #endif

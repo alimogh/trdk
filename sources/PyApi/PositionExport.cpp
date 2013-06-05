@@ -55,8 +55,7 @@ Position & PyApi::ExtractPosition(const py::object &position) {
 			= py::extract<PositionExport &>(position);
 		return positionExport.GetPosition();
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to extract position");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to extract position");
 	}
 }
 
@@ -80,7 +79,16 @@ void PositionExport::ExportClass(const char *className) {
 		.add_property("isOpened", &PositionExport::IsOpened)
 		.add_property("isClosed", &PositionExport::IsClosed)
 
+		.add_property("isError", &PositionExport::IsError)
+		.add_property("isCanceled", &PositionExport::IsCanceled)
+
 		.add_property("hasActiveOrders", &PositionExport::HasActiveOrders)
+		.add_property(
+			"hasActiveOpenOrders",
+			&PositionExport::HasActiveOpenOrders)
+		.add_property(
+			"hasActiveCloseOrders",
+			&PositionExport::HasActiveCloseOrders)
 
 		.add_property("planedQty", &PositionExport::GetPlanedQty)
 
@@ -98,6 +106,8 @@ void PositionExport::ExportClass(const char *className) {
 		.add_property("closedQty", &PositionExport::GetClosedQty)
 
 		.add_property("commission", &PositionExport::GetCommission)
+
+		.add_property("security", &PositionExport::GetSecurity)
 
 		.def("openAtMarketPrice", &PositionExport::OpenAtMarketPrice)
 		.def("open", &PositionExport::Open)
@@ -141,6 +151,14 @@ bool PositionExport::IsOpened() const {
 
 bool PositionExport::IsClosed() const {
 	return GetPosition().IsClosed();
+}
+
+bool PositionExport::IsError() const {
+	return GetPosition().IsError();
+}
+
+bool PositionExport::IsCanceled() const {
+	return GetPosition().IsCanceled();
 }
 
 bool PositionExport::HasActiveOrders() const {
@@ -205,6 +223,10 @@ Qty PositionExport::GetClosedQty() const {
 
 ScaledPrice PositionExport::GetCommission() const {
 	return GetPosition().GetCommission();
+}
+
+py::object PositionExport::GetSecurity() {
+	return PyApi::Export(GetPosition().GetSecurity());
 }
 
 OrderId PositionExport::OpenAtMarketPrice() {

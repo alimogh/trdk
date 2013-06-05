@@ -21,8 +21,8 @@ namespace trdk { namespace Engine {
 
 		typedef std::function<
 				void (
+					Security &,
 					const SubscriberPtrWrapper &,
-					const Security &,
 					std::list<boost::signals2::connection> &)>
 			SubscribeImpl;
 
@@ -33,17 +33,17 @@ namespace trdk { namespace Engine {
 
 	public:
 
-		void SubscribeToLevel1Updates(trdk::Strategy &);
-		void SubscribeToLevel1Updates(trdk::Service &);
-		void SubscribeToLevel1Updates(trdk::Observer &);
+		void SubscribeToLevel1Updates(trdk::Security &, trdk::Strategy &);
+		void SubscribeToLevel1Updates(trdk::Security &, trdk::Service &);
+		void SubscribeToLevel1Updates(trdk::Security &, trdk::Observer &);
 
-		void SubscribeToLevel1Ticks(trdk::Strategy &);
-		void SubscribeToLevel1Ticks(trdk::Service &);
-		void SubscribeToLevel1Ticks(trdk::Observer &);
+		void SubscribeToLevel1Ticks(trdk::Security &, trdk::Strategy &);
+		void SubscribeToLevel1Ticks(trdk::Security &, trdk::Service &);
+		void SubscribeToLevel1Ticks(trdk::Security &, trdk::Observer &);
 
-		void SubscribeToTrades(trdk::Strategy &);
-		void SubscribeToTrades(trdk::Service &);
-		void SubscribeToTrades(trdk::Observer &);
+		void SubscribeToTrades(trdk::Security &, trdk::Strategy &);
+		void SubscribeToTrades(trdk::Security &, trdk::Service &);
+		void SubscribeToTrades(trdk::Security &, trdk::Observer &);
 
 	public:
 
@@ -54,21 +54,21 @@ namespace trdk { namespace Engine {
 	private:
 
 		void SubscribeToLevel1Updates(
+					Security &,		
 					const SubscriberPtrWrapper &,
-					const Security &,
 					std::list<boost::signals2::connection> &);
 		void SubscribeToLevel1Ticks(
+					Security &,
 					const SubscriberPtrWrapper &,
-					const Security &,
 					std::list<boost::signals2::connection> &);
 		void SubscribeToTrades(
+					Security &,
 					const SubscriberPtrWrapper &,
-					const Security &,
 					std::list<boost::signals2::connection> &);
 
-		void Subscribe(Strategy &, const SubscribeImpl &);
-		void Subscribe(Service &, const SubscribeImpl &);
-		void Subscribe(Observer &, const SubscribeImpl &);
+		void Subscribe(Security &, Strategy &, const SubscribeImpl &);
+		void Subscribe(Security &, Service &, const SubscribeImpl &);
+		void Subscribe(Security &, Observer &, const SubscribeImpl &);
 
 	private:
 

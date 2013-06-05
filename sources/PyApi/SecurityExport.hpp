@@ -31,7 +31,8 @@ namespace trdk { namespace PyApi {
 	public:
 
 		boost::python::str GetSymbol() const;
-		boost::python::str GetFullSymbol() const;
+		boost::python::str GetExchange() const;
+		boost::python::str GetPrimaryExchange() const;
 
 		boost::python::str GetCurrency() const;
 
@@ -80,6 +81,7 @@ namespace trdk { namespace PyApi {
 	//////////////////////////////////////////////////////////////////////////
 
 	boost::python::object Export(const trdk::Security &);
+	boost::python::object Export(trdk::Security &);
 
 	//////////////////////////////////////////////////////////////////////////
 

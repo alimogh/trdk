@@ -24,7 +24,10 @@
 #	include <boost/multi_index_container.hpp>
 #	include <boost/multi_index/ordered_index.hpp>
 #	include <boost/multi_index/mem_fun.hpp>
+#	include <boost/unordered_map.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
+
+#include <hash_map>
 
 #include "Common/Common.hpp"
 

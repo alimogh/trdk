@@ -95,11 +95,6 @@ namespace trdk { namespace Lib {
 				const std::string &symbol,
 				const std::string &);
 
-	std::string CreateSymbolFullStr(
-				const std::string &symbol,
-				const std::string &primaryExchange,
-				const std::string &exchange);
-
 	//////////////////////////////////////////////////////////////////////////
 
 	boost::filesystem::path GetExeFilePath();

@@ -54,11 +54,6 @@ IniFile::SectionNotExistsError::SectionNotExistsError(const char *what) throw()
 	//...//
 }
 
-IniFile::SymbolFormatError::SymbolFormatError() throw()
-		: Error("Wrong symbols INI-file format") {
-	//...//
-}
-
 IniFile::KeyFormatError::KeyFormatError(const char *what) throw()
 		: Error(what) {
 	//...//
@@ -294,7 +289,7 @@ bool IniFile::ReadBoolKey(
 			bool defaultValue)
 		const {
 	try {
-		return ReadBoolKey(section, key, defaultValue);
+		return ReadBoolKey(section, key);
 	} catch (const KeyNotExistsError &) {
 		return defaultValue;
 	}
@@ -328,48 +323,25 @@ std::list<std::string> IniFile::ReadList(
 	return result;
 }
 
-IniFile::Symbol IniFile::ParseSymbol(
-			const std::string &line,
-			const std::string &defExchange,
-			const std::string &defPrimaryExchange) {
-	std::vector<std::string> subs;
-	boost::split(subs, line, boost::is_any_of(":"));
-	foreach (auto &s, subs) {
-		boost::trim(s);
-	}
-	IniFile::Symbol result;
-	result.symbol = subs[0];
-	if (result.symbol.empty()) {
-		throw IniFile::SymbolFormatError();
-	}
-	result.exchange = subs.size() == 3 && !subs[2].empty()
-		?	subs[2]
-		:	defExchange;
-	result.primaryExchange = subs.size() >= 2 && !subs[1].empty()
-		?	subs[1]
-		:	defPrimaryExchange;
-	return result;
-}
-
-std::set<IniFile::Symbol> IniFile::ReadSymbols(
+std::set<Symbol> IniFile::ReadSymbols(
 			const std::string &defExchange,
 			const std::string &defPrimaryExchange)
 		const {
 	std::set<Symbol> result;
 	foreach (const auto &l, ReadList())  {
-		result.insert(ParseSymbol(l, defExchange, defPrimaryExchange));
+		result.insert(Symbol::Parse(l, defExchange, defPrimaryExchange));
 	}
 	return result;
 }
 
-std::set<IniFile::Symbol> IniFile::ReadSymbols(
+std::set<Symbol> IniFile::ReadSymbols(
 			const std::string &section,
 			const std::string &defExchange,
 			const std::string &defPrimaryExchange)
 		const {
 	std::set<Symbol> result;
 	foreach (const auto &l, ReadList(section, true))  {
-		result.insert(ParseSymbol(l, defExchange, defPrimaryExchange));
+		result.insert(Symbol::Parse(l, defExchange, defPrimaryExchange));
 	}
 	return result;
 }
@@ -383,28 +355,28 @@ const fs::path & IniFile::GetPath() const {
 IniFileSectionRef::IniFileSectionRef(
 			const IniFile &file,
 			const std::string &name)
-		: m_file(file),
+		: m_file(&file),
 		m_name(name) {
 	//...//
 }
 
 bool IniFileSectionRef::IsKeyExist(const std::string &key) const {
-	return m_file.IsKeyExist(m_name, key);
+	return GetBase().IsKeyExist(GetName(), key);
 }
 
 std::string IniFileSectionRef::ReadKey(const std::string &key) const {
-	return m_file.ReadKey(m_name, key);
+	return GetBase().ReadKey(GetName(), key);
 }
 
 std::string IniFileSectionRef::ReadKey(
 				const std::string &key,
 				const std::string &defaultValue)
 			const {
-	return m_file.ReadKey(m_name, key, defaultValue);
+	return GetBase().ReadKey(GetName(), key, defaultValue);
 }
 
 fs::path IniFileSectionRef::ReadFileSystemPath(const std::string &key) const {
-	return m_file.ReadFileSystemPath(m_name, key);
+	return GetBase().ReadFileSystemPath(GetName(), key);
 }
 
 IniFile::AbsoluteOrPercentsPrice
@@ -412,31 +384,31 @@ IniFileSectionRef::ReadAbsoluteOrPercentsPriceKey(
 			const std::string &key,
 			unsigned long priceScale)
 		const {
-	return m_file.ReadAbsoluteOrPercentsPriceKey(m_name, key, priceScale);
+	return GetBase().ReadAbsoluteOrPercentsPriceKey(GetName(), key, priceScale);
 }
 
 bool IniFileSectionRef::ReadBoolKey(const std::string &key) const {
-	return m_file.ReadBoolKey(m_name, key);
+	return GetBase().ReadBoolKey(GetName(), key);
 }
 
 bool IniFileSectionRef::ReadBoolKey(
 			const std::string &key,
 			bool defaultValue)
 		const {
-	return m_file.ReadBoolKey(m_name, key, defaultValue);
+	return GetBase().ReadBoolKey(GetName(), key, defaultValue);
 }
 
 std::list<std::string> IniFileSectionRef::ReadList(
 			bool mustExist)
 		const {
-	return m_file.ReadList(m_name, mustExist);
+	return GetBase().ReadList(GetName(), mustExist);
 }
 
-std::set<IniFile::Symbol> IniFileSectionRef::ReadSymbols(
+std::set<Symbol> IniFileSectionRef::ReadSymbols(
 			const std::string &defExchange,
 			const std::string &defPrimaryExchange)
 		const {
-	return m_file.ReadSymbols(m_name, defExchange, defPrimaryExchange);
+	return GetBase().ReadSymbols(GetName(), defExchange, defPrimaryExchange);
 }
 
 const std::string & IniFileSectionRef::GetName() const {
@@ -444,20 +416,10 @@ const std::string & IniFileSectionRef::GetName() const {
 }
 
 const IniFile & IniFileSectionRef::GetBase() const {
-	return m_file;
+	return *m_file;
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-std::ostream & std::operator <<(
-			std::ostream &os,
-			const IniFile::Symbol &symbol) {
-	os
-		<< symbol.symbol
-		<< ':' << symbol.primaryExchange
-		<< ':' << symbol.exchange;
-	return os;
-}
 
 std::ostream & std::operator <<(
 			std::ostream &os,

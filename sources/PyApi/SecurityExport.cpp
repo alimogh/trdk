@@ -31,7 +31,9 @@ void SecurityInfoExport::ExportClass(const char *className) {
 	py::class_<SecurityInfoExport>(className,  py::no_init)
 
 		.add_property("symbol", &SecurityInfoExport::GetSymbol)
-		.add_property("fullSymbol", &SecurityInfoExport::GetFullSymbol)
+		.add_property("exchange", &SecurityInfoExport::GetExchange)
+		.add_property("primaryExchange", &SecurityInfoExport::GetPrimaryExchange)
+
 		.add_property("currency", &SecurityInfoExport::GetCurrency)
 
 		.add_property("priceScale", &SecurityInfoExport::GetPriceScale)
@@ -54,11 +56,15 @@ const Security & SecurityInfoExport::GetSecurity() const {
 }
 
 py::str SecurityInfoExport::GetSymbol() const {
-	return m_security->GetSymbol().c_str();
+	return m_security->GetSymbol().GetSymbol().c_str();
 }
 
-py::str SecurityInfoExport::GetFullSymbol() const {
-	return m_security->GetFullSymbol().c_str();
+py::str SecurityInfoExport::GetExchange() const {
+	return m_security->GetSymbol().GetExchange().c_str();
+}
+
+py::str SecurityInfoExport::GetPrimaryExchange() const {
+	return m_security->GetSymbol().GetPrimaryExchange().c_str();
 }
 
 py::str SecurityInfoExport::GetCurrency() const {
@@ -106,8 +112,7 @@ SecurityExport::SecurityExport(Security &security)
 void SecurityExport::ExportClass(const char *className) {
 	typedef py::class_<
 			SecurityExport,
-			py::bases<SecurityInfoExport>,
-			boost::noncopyable>
+			py::bases<SecurityInfoExport>>
 		Export;
 	Export(className, py::no_init)
 		.def("cancelOrder", &SecurityExport::CancelOrder)
@@ -132,8 +137,15 @@ py::object PyApi::Export(const Security &security) {
 	try {
 		return py::object(SecurityInfoExport(security));
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to export security info");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to export security info");
+	}
+}
+
+py::object PyApi::Export(Security &security) {
+	try {
+		return py::object(SecurityExport(security));
+	} catch (const py::error_already_set &) {
+		throw GetPythonClientException("Failed to export security");
 	}
 }
 

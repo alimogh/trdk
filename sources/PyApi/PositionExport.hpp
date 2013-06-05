@@ -51,6 +51,8 @@ namespace trdk { namespace PyApi {
 		bool IsCompleted() const;
 		bool IsOpened() const;
 		bool IsClosed() const;
+		bool IsError() const;
+		bool IsCanceled() const;
 
 		bool HasActiveOrders() const;
 		bool HasActiveOpenOrders() const;
@@ -75,6 +77,8 @@ namespace trdk { namespace PyApi {
 		Qty GetClosedQty() const;
 
 		ScaledPrice GetCommission() const;
+
+		boost::python::object GetSecurity();
 
 	public:
 
@@ -123,12 +127,14 @@ namespace trdk { namespace PyApi {
 		explicit SidePositionExport(
 					PyObject *self,
 					StrategyExport &strategy,
+					SecurityExport &security,
 					Qty qty,
 					ScaledPrice startPrice)
 				: PositionExport(
 					boost::shared_ptr<PyApiImpl>(
 						new PyApiImpl(
 							strategy.GetStrategy(),
+							security.GetSecurity(),
 							qty,
 							startPrice,
 							*this))),
@@ -148,6 +154,7 @@ namespace trdk { namespace PyApi {
 				Export;
 			typedef py::init<
 					StrategyExport &,
+					SecurityExport &,
 					Qty /*qty*/,
 					ScaledPrice /*startPrice*/>
 				Init;

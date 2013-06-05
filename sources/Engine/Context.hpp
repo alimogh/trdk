@@ -39,6 +39,13 @@ namespace trdk { namespace Engine {
 		virtual trdk::TradeSystem & GetTradeSystem();
 		virtual const trdk::TradeSystem & GetTradeSystem() const;
 
+	protected:
+
+		virtual trdk::Security * FindSecurity(const trdk::Lib::Symbol &);
+		virtual const trdk::Security * FindSecurity(
+					const trdk::Lib::Symbol &)
+				const;
+
 	private:
 
 		class Implementation;

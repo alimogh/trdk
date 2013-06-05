@@ -11,7 +11,7 @@
 #pragma once
 
 #include "SecurityExport.hpp"
-#include "Core/SecurityAlgo.hpp"
+#include "Core/Module.hpp"
 
 namespace trdk { namespace PyApi {
 
@@ -21,7 +21,7 @@ namespace trdk { namespace PyApi {
 
 		class LogExport {
 		public:
-			explicit LogExport(trdk::SecurityAlgo::Log &);
+			explicit LogExport(trdk::Module::Log &);
 		public:
 			static void ExportClass(const char *className);
 		public:
@@ -30,12 +30,12 @@ namespace trdk { namespace PyApi {
 			void Warn(const char *);
 			void Error(const char *);
 		private:
-			trdk::SecurityAlgo::Log *m_log;
+			trdk::Module::Log *m_log;
 		};
 
 	public:
 
-		explicit ModuleExport(const SecurityAlgo &);
+		explicit ModuleExport(const Module &);
 
 	public:
 
@@ -47,9 +47,13 @@ namespace trdk { namespace PyApi {
 		boost::python::str GetName() const;
 		LogExport GetLog() const;
 
+	public:
+
+		const trdk::Module & GetModule() const;
+
 	private:
 
-		const trdk::SecurityAlgo *m_algo;
+		const trdk::Module *m_module;
 
 	};
 

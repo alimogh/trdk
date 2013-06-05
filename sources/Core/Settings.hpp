@@ -16,7 +16,7 @@
 
 namespace trdk {
 
-	class TRDK_CORE_API Settings : private boost::noncopyable {
+	class TRDK_CORE_API Settings {
 
 	public:
 
@@ -31,12 +31,23 @@ namespace trdk {
 
 			bool shouldWaitForMarketData;
 
+			//! Default security Exchange.
+			/** Path: Defaults::exchange
+			  * Ex.: exchange = SMART
+			  */
+			std::string defaultExchange;
+			//! Default security Primary Exchange.
+			/** Path: Defaults::primary_exchange
+			  * Ex.: primary_exchange = ARCA
+			  */
+			std::string defaultPrimaryExchange;
+
 		};
 
 	public:
 	
 		explicit Settings(
-				const trdk::Lib::IniFileSectionRef &,
+				const trdk::Lib::IniFile &,
 				const Time &now,
 				bool isReplayMode,
 				trdk::Context::Log &);
@@ -44,17 +55,13 @@ namespace trdk {
 	public:
 
 		void Update(
-					const trdk::Lib::IniFileSectionRef &,
+					const trdk::Lib::IniFile &,
 					trdk::Context::Log &);
 
 	private:
 
-		void UpdateDynamic(
-					const trdk::Lib::IniFileSectionRef &,
-					trdk::Context::Log &);
-		void UpdateStatic(
-					const trdk::Lib::IniFileSectionRef &,
-					trdk::Context::Log &);
+		void UpdateDynamic(const trdk::Lib::IniFile&, trdk::Context::Log &);
+		void UpdateStatic(const trdk::Lib::IniFile &, trdk::Context::Log &);
 
 	public:
 
@@ -70,21 +77,32 @@ namespace trdk {
 		bool IsLevel2SnapshotPrintEnabled() const;
 		boost::uint16_t GetLevel2SnapshotPrintTimeSeconds() const;
 
-		bool IsValidPrice(const trdk::Security &) const;
-
 		bool ShouldWaitForMarketData() const {
 			return m_values.shouldWaitForMarketData;
 		}
 
+		//! Default security Exchange.
+		/** Path: Defaults::exchange
+		  * Ex.: exchange = SMART
+		  * @sa trdk::Settings::GetDefaultPrimaryExchange
+		  */
+		const std::string & GetDefaultExchange() const {
+			return m_values.defaultExchange;
+		}
+		//! Default security Primary Exchange.
+		/** Path: Defaults::primary_exchange
+		  * Ex.: primary_exchange = ARCA
+		  * @sa trdk::Settings::GetDefaultExchange
+		  */
+		const std::string & GetDefaultPrimaryExchange() const {
+			return m_values.defaultPrimaryExchange;
+		}
+
 	private:
 
-		const Time m_startTime;
-
+		Time m_startTime;
 		Values m_values;
-
-		volatile long long m_minPrice;
-
-		const bool m_isReplayMode;
+		bool m_isReplayMode;
 
 	};
 

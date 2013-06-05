@@ -31,8 +31,7 @@ const trdk::Service & PyApi::ExtractService(const py::object &service) {
 		ServiceExport &serviceExport = py::extract<ServiceExport &>(service);
 		return serviceExport.GetService();
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to extract service");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to extract service");
 	}
 }
 
@@ -58,8 +57,7 @@ py::object PyApi::Export(const trdk::Service &service) {
 			return objectCache.Get<BarServiceExport>(service);
 		}
 	} catch (const py::error_already_set &) {
-		RethrowPythonClientException("Failed to export service");
-		throw std::logic_error("Never throws");
+		throw GetPythonClientException("Failed to export service");
 	}
 	throw Error("Failed to export service: Unknown service type");
 }
@@ -67,25 +65,28 @@ py::object PyApi::Export(const trdk::Service &service) {
 //////////////////////////////////////////////////////////////////////////
 
 ServiceInfoExport::ServiceInfoExport(const trdk::Service &service)
-		: ModuleExport(service),
-		m_service(&service) {
+		: ModuleExport(service) {
 	//...//
 }
 
 ServiceInfoExport::ServiceInfoExport(
 			const boost::shared_ptr<PyApi::Service> &service)
 		: ModuleExport(*service),
-		m_serviceRefHolder(service),
-		m_service(&*m_serviceRefHolder) {
+		m_serviceRefHolder(service) {
 	//...//
 }
 
 void ServiceInfoExport::ExportClass(const char *className) {
+	
 	typedef py::class_<
 			ServiceInfoExport,
 			py::bases<ModuleExport>>
 		Export;
-	Export(className, py::no_init);
+	const py::scope serviceInfoClass = Export(className, py::no_init)
+		.add_property("securities", &ServiceInfoExport::GetSecurities);
+	
+	ServiceSecurityListExport::ExportClass("SecurityList");
+
 }
 
 boost::shared_ptr<PyApi::Service> ServiceInfoExport::ReleaseRefHolder()
@@ -94,6 +95,14 @@ boost::shared_ptr<PyApi::Service> ServiceInfoExport::ReleaseRefHolder()
 	const auto serviceRefHolder = m_serviceRefHolder;
 	m_serviceRefHolder.reset();
 	return serviceRefHolder;
+}
+
+const trdk::Service & ServiceInfoExport::GetService() const {
+	return *boost::polymorphic_downcast<const trdk::Service *>(&GetModule());
+}
+
+ServiceSecurityListExport ServiceInfoExport::GetSecurities() const {
+	return ServiceSecurityListExport(GetService());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -263,8 +272,7 @@ BarServiceExport::QtyStatExport::GetMin()
 }
 
 BarServiceExport::BarServiceExport(const BarService &barService)
-		: ServiceInfoExport(barService),
-		m_securityExport(GetService().GetSecurity()) {
+		: ServiceInfoExport(barService) {
 	//...//
 }
 
@@ -281,8 +289,6 @@ void BarServiceExport::ExportClass(const char *className) {
 		.add_property("size", &BarServiceExport::GetSize)
 		.add_property("isEmpty", &BarServiceExport::IsEmpty)
 
-		.def_readonly("security", &BarServiceExport::m_securityExport)
- 					
 		.def("getBarByIndex", &BarServiceExport::GetBarByIndex)
  		.def("getBarByReversedIndex", &BarServiceExport::GetBarByReversedIndex)
 

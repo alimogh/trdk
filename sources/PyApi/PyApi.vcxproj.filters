@@ -62,6 +62,9 @@
     <ClInclude Include="ModuleExport.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ModuleSecurityListExport.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -92,6 +95,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ModuleExport.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Detail.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ModuleSecurityListExport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

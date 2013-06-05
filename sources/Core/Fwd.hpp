@@ -28,7 +28,7 @@ namespace trdk {
 	class Settings;
 
 	class Module;
-	class SecurityAlgo;
+	class Consumer;
 	class Strategy;
 	class Observer;
 	class Service;

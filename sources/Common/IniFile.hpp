@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Symbol.hpp"
 #include "Exception.hpp"
 #include "DisableBoostWarningsBegin.h"
 #	include <boost/noncopyable.hpp>
@@ -53,11 +54,6 @@ namespace trdk { namespace Lib {
 			SectionNotExistsError(const char *what) throw();
 		};
 
-		class SymbolFormatError : public Error {
-		public:
-			SymbolFormatError() throw();
-		};
-
 		class KeyFormatError : public Error {
 		public:
 			KeyFormatError(const char *what) throw();
@@ -66,24 +62,6 @@ namespace trdk { namespace Lib {
 		class SectionNotUnique : public Error {
 		public:
 			SectionNotUnique() throw();
-		};
-
-		struct Symbol {
-			
-			std::string symbol;
-			std::string exchange;
-			std::string primaryExchange;
-
-			bool operator <(const Symbol &rhs) const {
-				return
-					primaryExchange < rhs.primaryExchange
-						|| (primaryExchange == rhs.primaryExchange
-							&& exchange < rhs.exchange)
-						|| (primaryExchange == rhs.primaryExchange
-								&& exchange == rhs.exchange
-								&& symbol < rhs.symbol);
-			}
-
 		};
 
 		struct AbsoluteOrPercentsPrice {
@@ -218,17 +196,12 @@ namespace trdk { namespace Lib {
 					bool mustExist)
 				const;
 
-		static Symbol ParseSymbol(
-					const std::string &strSymbol,
-					const std::string &defExchange,
-					const std::string &defPrimaryExchange);
-
-		std::set<Symbol> ReadSymbols(
+		std::set<trdk::Lib::Symbol> ReadSymbols(
 					const std::string &defExchange,
 					const std::string &defPrimaryExchange)
 				const;
 
-		std::set<Symbol> ReadSymbols(
+		std::set<trdk::Lib::Symbol> ReadSymbols(
 					const std::string &section,
 					const std::string &defExchange,
 					const std::string &defPrimaryExchange)
@@ -248,7 +221,7 @@ namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class IniFileSectionRef : private boost::noncopyable {
+	class IniFileSectionRef {
 
 	public:
 
@@ -271,7 +244,7 @@ namespace trdk { namespace Lib {
 
 		template<typename T>
 		T ReadTypedKey(const std::string &key) const {
-			return m_file.ReadTypedKey<T>(m_name, key);
+			return GetBase().ReadTypedKey<T>(GetName(), key);
 		}
 
 		template<typename T>
@@ -279,7 +252,7 @@ namespace trdk { namespace Lib {
 					const std::string &key,
 					const T &defaultValue)
 				const {
-			return m_file.ReadTypedKey<T>(m_name, key, defaultValue);
+			return GetBase().ReadTypedKey<T>(GetName(), key, defaultValue);
 		}
 
 		boost::filesystem::path ReadFileSystemPath(
@@ -299,15 +272,15 @@ namespace trdk { namespace Lib {
 				bool mustExist)
 			const;
 
-		std::set<trdk::Lib::IniFile::Symbol> ReadSymbols(
+		std::set<trdk::Lib::Symbol> ReadSymbols(
 				const std::string &defExchange,
 				const std::string &defPrimaryExchange)
 			const;
 
 	private:
 
-		const trdk::Lib::IniFile &m_file;
-		const std::string &m_name;
+		const trdk::Lib::IniFile *m_file;
+		std::string m_name;
 
 	};
 
@@ -318,10 +291,6 @@ namespace trdk { namespace Lib {
 //////////////////////////////////////////////////////////////////////////
 
 namespace std {
-	
-	std::ostream & operator <<(
-				std::ostream &,
-				const trdk::Lib::IniFile::Symbol &);
 	
 	std::ostream & operator <<(
 				std::ostream &,

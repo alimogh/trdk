@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Service.hpp"
+#include "ModuleSecurityList.hpp"
 #include "Observer.hpp"
 #include "Strategy.hpp"
 
@@ -88,13 +89,13 @@ private:
 public:
 
 	Service &m_service;
-	const Security &m_security;
 	bool m_hasNewData;
-	Subscribers m_subscribers;
 
-	explicit Implementation(Service &service, const Security &security)
-			: m_service(service),
-			m_security(security) {
+	ModuleSecurityList m_securities;
+	SubscriberList m_subscribers;
+
+	explicit Implementation(Service &service)
+			: m_service(service) {
 		//...//
 	}
 
@@ -133,6 +134,7 @@ public:
 			std::find(m_subscribers.begin(), m_subscribers.end(), subscriber)
 			== m_subscribers.end());
 		m_subscribers.push_back(subscriber);
+		module.OnServiceStart(m_service);
 	}
 
 };
@@ -140,18 +142,17 @@ public:
 Service::Service(
 			Context &context,
 			const std::string &name,
-			const std::string &tag,
-			const Security &security)
-		: SecurityAlgo(context, "Service", name, tag) {
-	m_pimpl = new Implementation(*this, security);
+			const std::string &tag)
+		: Module(context, "Service", name, tag) {
+	m_pimpl = new Implementation(*this);
 }
 
 Service::~Service() {
 	delete m_pimpl;
 }
 
-const Security & Service::GetSecurity() const {
-	return m_pimpl->m_security;
+void Service::OnSecurityStart(const Security &) {
+	//...//
 }
 
 bool Service::RaiseLevel1UpdateEvent(const Security &security) {
@@ -182,34 +183,37 @@ bool Service::RaiseServiceDataUpdateEvent(const Service &service) {
 	return OnServiceDataUpdate(service);
 }
 
-bool Service::OnLevel1Update(const Security &) {
+bool Service::OnLevel1Update(const Security &security) {
 	GetLog().Error(
-		"Subscribed to Level 1 Updates, but can't work with it"
-			" (hasn't OnLevel1Update method implementation).");
+		"Subscribed to %1% Level 1 Updates, but can't work with it"
+			" (hasn't OnLevel1Update method implementation).",
+		security);
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to Level 1 Updates, but can't work with it");
 }
 
 bool Service::OnLevel1Tick(
-			const Security &,
+			const Security &security,
 			const boost::posix_time::ptime &,
 			const Level1TickValue &) {
 	GetLog().Error(
-		"Subscribed to Level 1 Ticks, but can't work with it"
-			" (hasn't OnLevel1Tick method implementation).");
+		"Subscribed to %1% Level 1 Ticks, but can't work with it"
+			" (hasn't OnLevel1Tick method implementation).",
+			security);
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to Level 1 Ticks, but can't work with it");
 }
 
 bool Service::OnNewTrade(
-					const Security &,
+					const Security &security,
 					const boost::posix_time::ptime &,
 					ScaledPrice,
 					Qty,
 					OrderSide) {
 	GetLog().Error(
-		"Subscribed to new trades, but can't work with it"
-			" (hasn't OnNewTrade method implementation).");
+		"Subscribed to %1% new trades, but can't work with it"
+			" (hasn't OnNewTrade method implementation).",
+		security);
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to new trades, but can't work with it");
 }
@@ -235,6 +239,16 @@ void Service::RegisterSubscriber(Observer &module) {
 	m_pimpl->RegisterSubscriber(module);
 }
 
-const Service::Subscribers & Service::GetSubscribers() {
+const Service::SubscriberList & Service::GetSubscribers() {
 	return m_pimpl->m_subscribers;
+}
+
+void Service::RegisterSource(Security &security) {
+	if (m_pimpl->m_securities.Insert(security)) {
+		OnSecurityStart(security);
+	}
+}
+
+const Service::SecurityList & Service::GetSecurities() const {
+	return m_pimpl->m_securities;
 }
