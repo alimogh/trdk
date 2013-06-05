@@ -4,6 +4,10 @@ import trdk
 import time
 
 
+ratio = 2.850
+positionVolume = 20000
+
+
 # noinspection PyCallByClass,PyTypeChecker
 class GoldArbitrage(trdk.Strategy):
 
@@ -24,11 +28,11 @@ class GoldArbitrage(trdk.Strategy):
         assert False
 
     def onServiceDataUpdate(self, service):
-#        if self.checkOnline() is False:
-#            return
-        self.checkEntry()
+        if self._checkOnline() is False:
+            return
+        self._checkEntry()
 
-    def checkOnline(self):
+    def _checkOnline(self):
         if self.gldBars.size < 1 or self.dglBars.size < 1:
             return False
         gld = self.gldBars.getBarByReversedIndex(0)
@@ -45,7 +49,7 @@ class GoldArbitrage(trdk.Strategy):
                     isOnline))
         return isOnline
 
-    def checkEntry(self):
+    def _checkEntry(self):
 
         gld = self.gldBars.getBarByReversedIndex(0)
         dgl = self.dglBars.getBarByReversedIndex(0)
@@ -53,57 +57,66 @@ class GoldArbitrage(trdk.Strategy):
         if self.positions.count() > 0:
             return
 
-        ratioGe = 0
+        shortGldLongDlgRatio = 0
+        shortGldLongDlg = False
+        # When GLD (ask)/DGL (bid) > ratio * 1.001% -> Short GLD, Long DGL
         if dgl.minBidPrice != 0:
-            ratioGe = float(gld.maxAskPrice) / float(dgl.minBidPrice)
+            shortGldLongDlgRatio\
+                = float(gld.maxAskPrice) / float(dgl.minBidPrice)
+            shortGldLongDlg = shortGldLongDlgRatio > (ratio * (1.001 / 100))
 
-        ratioLe = 0
+        longGldShortDglRatio = 0
+        longGldShortDgl = False
         if dgl.maxAskPrice != 0:
-            ratioLe = float(gld.minBidPrice) / float(dgl.maxAskPrice)
+            # When GLD (bid)/DGL (ask) < ratio * 0.999% -> Long GLD, Short DGL
+            longGldShortDglRatio\
+                = float(gld.minBidPrice) / float(dgl.maxAskPrice)
+            longGldShortDgl = longGldShortDglRatio < (ratio * (0.999 / 100))
 
         self.log.debug(
-            "Entry 1: GLD(Ask {0}) / DGL(Bid {1}) = {2};"
-            " Entry 2: GLD(Bid {3}) / DGL(Ask {4}) = {5};"
+            "Entry 1: GLD(Ask {0}) / DGL(Bid {1}) = {2} - {3};"
+            " Entry 2: GLD(Bid {4}) / DGL(Ask {5}) = {6} - {7};"
                 .format(
                     self.findSecurity('GLD').descalePrice(gld.maxAskPrice),
                     self.findSecurity('DGL').descalePrice(dgl.minBidPrice),
-                    ratioGe,
+                    shortGldLongDlgRatio,
+                    shortGldLongDlg,
                     self.findSecurity('GLD').descalePrice(gld.minBidPrice),
                     self.findSecurity('DGL').descalePrice(dgl.maxAskPrice),
-                    ratioLe))
+                    longGldShortDglRatio,
+                    longGldShortDgl))
 
-        # If opening of 5 minute candlestick GLD(Ask)/DGL(BID)>=2.850 .. 
-        if ratioGe >= 2.850:
-            # Short GLD @ Ask, Long DGL @ Bid
-            self.log.info('Opening positions by "Entry 1"...')
+        def calcQty(price):
+            return positionVolume / price
+
+        if shortGldLongDlg:
+            self.log.info('Opening positions "Short GLD, Long DGL"...')
             gldPos = trdk.ShortPosition(
                 self,
                 self.findSecurity('GLD'),
-                1,
+                calcQty(gld.maxAskPrice),
                 gld.maxAskPrice)
             dglPos = trdk.LongPosition(
                 self,
                 self.findSecurity('DGL'),
-                1,
+                calcQty(dgl.minBidPrice),
                 dgl.minBidPrice)
             gldPos.openAtMarketPrice()
             dglPos.openAtMarketPrice()
 #            gldPos.open(gldPos.openStartPrice)
 #            dglPos.open(dglPos.openStartPrice)
         
-        # If opening of 5 minute candlestick GLD(Bid)/DGL(Ask)<=2.842 .. 
-        if 0 < ratioLe <= 2.842:
-            # Long GLD @ Bid, Short DGL @ Ask
-            self.log.info('Opening positions by "Entry 2"...')
+        if longGldShortDgl:
+            self.log.info('Opening positions "Long GLD, Short DGL"...')
             gldPos = trdk.LongPosition(
                 self,
                 self.findSecurity('GLD'),
-                1,
+                calcQty(gld.minBidPrice),
                 gld.minBidPrice)
             dglPos = trdk.ShortPosition(
                 self,
                 self.findSecurity('DGL'),
-                1,
+                calcQty(dgl.maxAskPrice),
                 dgl.maxAskPrice)
             gldPos.openAtMarketPrice()
             dglPos.openAtMarketPrice()
