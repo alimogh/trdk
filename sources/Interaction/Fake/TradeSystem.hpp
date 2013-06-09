@@ -29,47 +29,53 @@ namespace trdk { namespace Interaction { namespace Fake {
 	public:
 
 		virtual OrderId SellAtMarketPrice(
-				Security &,
-				Qty,
+				trdk::Security &,
+				trdk::Qty qty,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId Sell(
-				Security &,
-				Qty,
-				ScaledPrice,
+				trdk::Security &,
+				trdk::Qty qty,
+				trdk::ScaledPrice,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellAtMarketPriceWithStopPrice(
-				Security &,
-				Qty,
-				ScaledPrice stopPrice,
+				trdk::Security &,
+				trdk::Qty qty,
+				trdk::ScaledPrice stopPrice,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellOrCancel(
-				Security &,
-				Qty,
-				ScaledPrice,
+				trdk::Security &,
+				trdk::Qty,
+				trdk::ScaledPrice,
 				const OrderStatusUpdateSlot &);
 
 		virtual OrderId BuyAtMarketPrice(
-				Security &,
-				Qty,
+				trdk::Security &,
+				trdk::Qty qty,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId Buy(
-				Security &,
-				Qty,
-				ScaledPrice,
+				trdk::Security &,
+				trdk::Qty qty,
+				trdk::ScaledPrice,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
-				Security &,
-				Qty,
-				ScaledPrice stopPrice,
+				trdk::Security &,
+				trdk::Qty qty,
+				trdk::ScaledPrice stopPrice,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyOrCancel(
-				Security &,
-				Qty,
-				ScaledPrice,
+				trdk::Security &,
+				trdk::Qty,
+				trdk::ScaledPrice,
 				const OrderStatusUpdateSlot &);
 
 		virtual void CancelOrder(OrderId);
-		virtual void CancelAllOrders(Security &);
+		virtual void CancelAllOrders(trdk::Security &);
 
 	private:
 

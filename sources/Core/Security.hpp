@@ -72,28 +72,38 @@ namespace trdk {
 
 		boost::posix_time::ptime GetLastMarketDataTime() const;
 
-		trdk::OrderId SellAtMarketPrice(trdk::Qty, trdk::Position &);
+		trdk::OrderId SellAtMarketPrice(
+					trdk::Qty qty,
+					trdk::Qty displaySize,
+					trdk::Position &);
 		trdk::OrderId Sell(
-					trdk::Qty,
+					trdk::Qty qty,
 					trdk::ScaledPrice,
+					trdk::Qty displaySize,
 					trdk::Position &);
 		trdk::OrderId SellAtMarketPriceWithStopPrice(
-					trdk::Qty,
+					trdk::Qty qty,
 					ScaledPrice stopPrice,
+					trdk::Qty displaySize,
 					trdk::Position &);
 		trdk::OrderId SellOrCancel(
 					trdk::Qty,
 					trdk::ScaledPrice,
 					trdk::Position &);
 
-		trdk::OrderId BuyAtMarketPrice(trdk::Qty, trdk::Position &);
+		trdk::OrderId BuyAtMarketPrice(
+					trdk::Qty qty,
+					trdk::Qty displaySize,
+					trdk::Position &);
 		trdk::OrderId Buy(
 					trdk::Qty,
 					trdk::ScaledPrice,
+					trdk::Qty displaySize,
 					trdk::Position &);
 		trdk::OrderId BuyAtMarketPriceWithStopPrice(
-					trdk::Qty,
+					trdk::Qty qty,
 					ScaledPrice stopPrice,
+					trdk::Qty displaySize,
 					trdk::Position &);
 		trdk::OrderId BuyOrCancel(
 					trdk::Qty,

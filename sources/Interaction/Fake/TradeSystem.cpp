@@ -193,7 +193,12 @@ void Fake::TradeSystem::Connect(const IniFileSectionRef &) {
 OrderId Fake::TradeSystem::SellAtMarketPrice(
 			Security &security,
 			Qty qty,
+			Qty displaySize,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	UseUnused(displaySize);
+	AssertLe(displaySize, qty);
+	AssertLt(0, qty);
+	AssertLt(0, displaySize);
 	const Order order = {
 		&security,
 		true,
@@ -213,18 +218,28 @@ OrderId Fake::TradeSystem::SellAtMarketPrice(
 
 OrderId Fake::TradeSystem::Sell(
 			Security &,
-			Qty,
+			Qty qty,
 			ScaledPrice,
+			Qty displaySize,
 			const OrderStatusUpdateSlot  &) {
+	UseUnused(qty, displaySize);
+	AssertLe(displaySize, qty);
+	AssertLt(0, qty);
+	AssertLt(0, displaySize);
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
 
 OrderId Fake::TradeSystem::SellAtMarketPriceWithStopPrice(
 			Security &,
-			Qty,
+			Qty qty,
 			ScaledPrice /*stopPrice*/,
+			Qty displaySize,
 			const OrderStatusUpdateSlot  &) {
+	UseUnused(qty, displaySize);
+	AssertLe(displaySize, qty);
+	AssertLt(0, qty);
+	AssertLt(0, displaySize);
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
@@ -256,7 +271,12 @@ OrderId Fake::TradeSystem::SellOrCancel(
 OrderId Fake::TradeSystem::BuyAtMarketPrice(
 			Security &security,
 			Qty qty,
+			Qty displaySize,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	UseUnused(displaySize);
+	AssertLe(displaySize, qty);
+	AssertLt(0, qty);
+	AssertLt(0, displaySize);
 	const Order order = {
 		&security,
 		false,
@@ -276,18 +296,28 @@ OrderId Fake::TradeSystem::BuyAtMarketPrice(
 
 OrderId Fake::TradeSystem::Buy(
 			Security &,
-			Qty,
+			Qty qty,
 			ScaledPrice,
+			Qty displaySize,
 			const OrderStatusUpdateSlot  &) {
+	UseUnused(qty, displaySize);
+	AssertLe(displaySize, qty);
+	AssertLt(0, qty);
+	AssertLt(0, displaySize);
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
 
 OrderId Fake::TradeSystem::BuyAtMarketPriceWithStopPrice(
 			Security &,
-			Qty,
+			Qty qty,
 			ScaledPrice /*stopPrice*/,
+			Qty displaySize,
 			const OrderStatusUpdateSlot  &) {
+	UseUnused(qty, displaySize);
+	AssertLe(displaySize, qty);
+	AssertLt(0, qty);
+	AssertLt(0, displaySize);
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }

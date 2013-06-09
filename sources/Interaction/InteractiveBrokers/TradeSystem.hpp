@@ -85,17 +85,20 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		virtual OrderId SellAtMarketPrice(
 				trdk::Security &,
-				trdk::Qty,
+				trdk::Qty qty,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId Sell(
 				trdk::Security &,
-				trdk::Qty,
+				trdk::Qty qty,
 				trdk::ScaledPrice,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellAtMarketPriceWithStopPrice(
 				trdk::Security &,
-				trdk::Qty,
+				trdk::Qty qty,
 				trdk::ScaledPrice stopPrice,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellOrCancel(
 				trdk::Security &,
@@ -105,17 +108,20 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		virtual OrderId BuyAtMarketPrice(
 				trdk::Security &,
-				trdk::Qty,
+				trdk::Qty qty,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId Buy(
 				trdk::Security &,
-				trdk::Qty,
+				trdk::Qty qty,
 				trdk::ScaledPrice,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
 				trdk::Security &,
-				trdk::Qty,
+				trdk::Qty qty,
 				trdk::ScaledPrice stopPrice,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyOrCancel(
 				trdk::Security &,

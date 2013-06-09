@@ -98,19 +98,22 @@ namespace trdk {
 
 		virtual OrderId SellAtMarketPrice(
 				trdk::Security &,
-				trdk::Qty,
+				trdk::Qty qty,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId Sell(
 				trdk::Security &,
-				trdk::Qty,
+				trdk::Qty qty,
 				trdk::ScaledPrice,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId SellAtMarketPriceWithStopPrice(
 				trdk::Security &,
-				trdk::Qty,
+				trdk::Qty qty,
 				trdk::ScaledPrice stopPrice,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId SellOrCancel(
@@ -122,19 +125,22 @@ namespace trdk {
 
 		virtual OrderId BuyAtMarketPrice(
 				trdk::Security &,
-				trdk::Qty,
+				trdk::Qty qty,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId Buy(
 				trdk::Security &,
-				trdk::Qty,
+				trdk::Qty qty,
 				trdk::ScaledPrice,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
 				trdk::Security &,
-				trdk::Qty,
+				trdk::Qty qty,
 				trdk::ScaledPrice stopPrice,
+				trdk::Qty displaySize,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId BuyOrCancel(

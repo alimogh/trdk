@@ -368,24 +368,27 @@ class Position(object):
         """
         pass
 
-    def openAtMarketPrice(self):
+    def openAtMarketPrice(self, displaySize=None):
         """ Sends market order. Asynchronous. Returns order ID.
 
+        :param displaySize: int
         :rtype: int
         """
         pass
 
-    def open(self, price):
+    def open(self, price, displaySize=None):
         """ Sends limit order. Asynchronous. Returns order ID.
 
         :param price: int
+        :param displaySize: int
         :rtype: int
         """
 
-    def openAtMarketPriceWithStopPrice(self, stopPrice):
+    def openAtMarketPriceWithStopPrice(self, stopPrice, displaySize=None):
         """ Sends market order. Asynchronous. Returns order ID.
 
         :param stopPrice: int
+        :param displaySize: int
         :rtype: int
         """
         pass
@@ -398,43 +401,47 @@ class Position(object):
         """
         pass
 
-    def closeAtMarketPrice(self):
+    def closeAtMarketPrice(self, displaySize=None):
         """ Sends market order. Asynchronous. Returns order ID.
 
+        :param displaySize: int
         :rtype: int
         """
         pass
 
-    def close(self, price):
+    def close(self, price, displaySize=None):
         """ Sends limit order. Asynchronous. Returns order ID.
 
         :param price: int
+        :param displaySize: int
         :rtype: int
         """
         pass
 
-    def closeAtMarketPriceWithStopPrice(self, stopPrice):
+    def closeAtMarketPriceWithStopPrice(self, stopPrice, displaySize=None):
         """
         Sends market order. Asynchronous. Returns order ID.
 
         :param stopPrice: int
+        :param displaySize: int
         :rtype: int
         """
         pass
 
     def closeOrCancel(self, price):
         """ Sends "Immediate or Cancel" order. Asynchronous. Returns order ID.
-        :param price: int
 
+        :param price: int
         :rtype: int
         """
         pass
 
-    def cancelAtMarketPrice(self):
+    def cancelAtMarketPrice(self, displaySize=None):
         """
         Cancels all active orders for this position and close at market price.
         Asynchronous. Returns True if position opened and order will be sent.
 
+        :param displaySize: int
         :rtype: int
         """
         pass

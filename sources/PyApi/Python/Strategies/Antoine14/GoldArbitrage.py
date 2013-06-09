@@ -6,6 +6,7 @@ import time
 
 ratio = 2.850
 positionVolume = 20000
+orderDisplaySize = 3
 
 
 # noinspection PyCallByClass,PyTypeChecker
@@ -28,6 +29,8 @@ class GoldArbitrage(trdk.Strategy):
         assert False
 
     def onServiceDataUpdate(self, service):
+        if self.positions.count() > 0:
+            return
         if self._checkOnline() is False:
             return
         self._checkEntry()
@@ -56,9 +59,6 @@ class GoldArbitrage(trdk.Strategy):
 
         dgl = self.findSecurity('DGL')
         dglBar = self.dglBars.getBarByReversedIndex(0)
-
-        if self.positions.count() > 0:
-            return
 
         shortGldLongDlgRatio = 0
         shortGldLongDlg = False
@@ -104,8 +104,8 @@ class GoldArbitrage(trdk.Strategy):
                 dgl,
                 calcQty(dgl, dglBar.minBidPrice),
                 dglBar.minBidPrice)
-            gldPos.open(gldPos.openStartPrice)
-            dglPos.open(dglPos.openStartPrice)
+            gldPos.open(gldPos.openStartPrice, orderDisplaySize)
+            dglPos.open(dglPos.openStartPrice, orderDisplaySize)
         
         if longGldShortDgl:
             self.log.info('Opening positions "Long GLD, Short DGL"...')
@@ -119,8 +119,8 @@ class GoldArbitrage(trdk.Strategy):
                 dgl,
                 calcQty(dgl, dglBar.maxAskPrice),
                 dglBar.maxAskPrice)
-            gldPos.open(gldPos.openStartPrice)
-            dglPos.open(dglPos.openStartPrice)
+            gldPos.open(gldPos.openStartPrice, orderDisplaySize)
+            dglPos.open(dglPos.openStartPrice, orderDisplaySize)
 
     def onPositionUpdate(self, position):
         if position.isCompleted:
@@ -142,4 +142,4 @@ class GoldArbitrage(trdk.Strategy):
                     .format(
                         position.security.symbol,
                         position.security.descalePrice(closePrice)))
-            position.close(closePrice)
+            position.close(closePrice, orderDisplaySize)
