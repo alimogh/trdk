@@ -110,21 +110,37 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
-		trdk::OrderId SendAsk(const trdk::Security &, Qty);
-		trdk::OrderId SendAsk(const trdk::Security &, Qty, double);
-		trdk::OrderId SendAskWithMarketPrice(
+		trdk::OrderId PlaceBuyOrder(
 				const trdk::Security &,
-				Qty,
-				double stopPrice);
-		trdk::OrderId SendIocAsk(const trdk::Security &, Qty, double);
+				Qty qty,
+				Qty displaySize);
+		trdk::OrderId PlaceBuyOrder(
+				const trdk::Security &,
+				Qty qty,
+				double price,
+				Qty displaySize);
+		trdk::OrderId PlaceBuyOrderWithMarketPrice(
+				const trdk::Security &,
+				Qty qty,
+				double stopPrice,
+				Qty displaySize);
+		trdk::OrderId PlaceBuyIocOrder(const trdk::Security &, Qty, double);
 
-		trdk::OrderId SendBid(const trdk::Security &, Qty);
-		trdk::OrderId SendBid(const trdk::Security &, Qty, double);
-		trdk::OrderId SendBidWithMarketPrice(
+		trdk::OrderId PlaceSellOrder(
 				const trdk::Security &,
-				Qty,
-				double stopPrice);
-		trdk::OrderId SendIocBid(const trdk::Security &, Qty, double);
+				Qty qty,
+				Qty displaySize);
+		trdk::OrderId PlaceSellOrder(
+				const trdk::Security &,
+				Qty quantity,
+				double price,
+				Qty displaySize);
+		trdk::OrderId PlaceSellOrderWithMarketPrice(
+				const trdk::Security &,
+				Qty qty,
+				double stopPrice,
+				Qty displaySize);
+		trdk::OrderId PlaceSellIocOrder(const trdk::Security &, Qty, double);
 
 		void CancelOrder(trdk::OrderId);
 

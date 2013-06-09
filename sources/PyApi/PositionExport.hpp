@@ -83,16 +83,27 @@ namespace trdk { namespace PyApi {
 	public:
 
 		OrderId OpenAtMarketPrice();
+		OrderId OpenAtMarketPriceByIceberg(Qty displaySize);
 		OrderId Open(ScaledPrice);
+		OrderId OpenByIceberg(ScaledPrice, Qty displaySize);
 		OrderId OpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
+		OrderId OpenAtMarketPriceWithStopPriceByIceberg(
+					ScaledPrice stopPrice,
+					Qty displaySize);
 		OrderId OpenOrCancel(ScaledPrice);
 
 		OrderId CloseAtMarketPrice();
+		OrderId CloseAtMarketPriceByIceberg(Qty displaySize);
 		OrderId Close(ScaledPrice);
+		OrderId CloseByIceberg(ScaledPrice, Qty displaySize);
 		OrderId CloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
+		OrderId CloseAtMarketPriceWithStopPriceByIceberg(
+					ScaledPrice stopPrice,
+					Qty displaySize);
 		OrderId CloseOrCancel(ScaledPrice);
 
 		bool CancelAtMarketPrice();
+		bool CancelAtMarketPriceByIceberg(Qty displaySize);
 
 		bool CancelAllOrders();
 

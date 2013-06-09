@@ -350,7 +350,14 @@ void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-trdk::OrderId Client::SendAsk(const trdk::Security &security, Qty qty) {
+trdk::OrderId Client::PlaceBuyOrder(
+			const trdk::Security &security,
+			Qty qty,
+			Qty displaySize) {
+
+	AssertLe(displaySize, qty);
+	AssertLt(0, qty);
+	AssertLt(0, displaySize);
 
 	Contract contract;
 	contract << security;
@@ -358,6 +365,7 @@ trdk::OrderId Client::SendAsk(const trdk::Security &security, Qty qty) {
 	Order order;
 	order.action = "BUY";
 	order.totalQuantity = qty;
+	order.displaySize = displaySize;
 	order.orderType = "MKT";
 
 	const Lock lock(m_mutex);
@@ -371,10 +379,15 @@ trdk::OrderId Client::SendAsk(const trdk::Security &security, Qty qty) {
 
 }
 
-trdk::OrderId Client::SendAsk(
+trdk::OrderId Client::PlaceBuyOrder(
 			const trdk::Security &security,
 			Qty qty,
-			double price) {
+			double price,
+			Qty displaySize) {
+
+	AssertLe(displaySize, qty);
+	AssertLt(0, qty);
+	AssertLt(0, displaySize);
 
 	Contract contract;
 	contract << security;
@@ -382,6 +395,7 @@ trdk::OrderId Client::SendAsk(
 	Order order;
 	order.action = "BUY";
 	order.totalQuantity = qty;
+	order.displaySize = displaySize;
 	order.orderType = "LMT";
 	order.lmtPrice = price;
 
@@ -396,10 +410,15 @@ trdk::OrderId Client::SendAsk(
 
 }
 
-trdk::OrderId Client::SendAskWithMarketPrice(
+trdk::OrderId Client::PlaceBuyOrderWithMarketPrice(
 			const trdk::Security &security,
 			Qty qty,
-			double stopPrice) {
+			double stopPrice,
+			Qty displaySize) {
+
+	AssertLe(displaySize, qty);
+	AssertLt(0, qty);
+	AssertLt(0, displaySize);
 
 	Contract contract;
 	contract << security;
@@ -407,6 +426,7 @@ trdk::OrderId Client::SendAskWithMarketPrice(
 	Order order;
 	order.action = "BUY";
 	order.totalQuantity = qty;
+	order.displaySize = displaySize;
 	order.orderType = "STP";
 	order.auxPrice = stopPrice;
 
@@ -421,7 +441,7 @@ trdk::OrderId Client::SendAskWithMarketPrice(
 
 }
 
-trdk::OrderId Client::SendIocAsk(
+trdk::OrderId Client::PlaceBuyIocOrder(
 			const trdk::Security &security,
 			Qty qty,
 			double price) {
@@ -447,9 +467,14 @@ trdk::OrderId Client::SendIocAsk(
 
 }
 
-trdk::OrderId Client::SendBid(
+trdk::OrderId Client::PlaceSellOrder(
 			const trdk::Security &security,
-			Qty qty) {
+			Qty qty,
+			Qty displaySize) {
+
+	AssertLe(displaySize, qty);
+	AssertLt(0, qty);
+	AssertLt(0, displaySize);
 
 	Contract contract;
 	contract << security;
@@ -457,6 +482,7 @@ trdk::OrderId Client::SendBid(
 	Order order;
 	order.action = "SELL";
 	order.totalQuantity = qty;
+	order.displaySize = displaySize;
 	order.orderType = "MKT";
 
 	const Lock lock(m_mutex);
@@ -470,10 +496,15 @@ trdk::OrderId Client::SendBid(
 
 }
 
-trdk::OrderId Client::SendBid(
+trdk::OrderId Client::PlaceSellOrder(
 			const trdk::Security &security,
 			Qty qty,
-			double price) {
+			double price,
+			Qty displaySize) {
+
+	AssertLe(displaySize, qty);
+	AssertLt(0, qty);
+	AssertLt(0, displaySize);
 
 	Contract contract;
 	contract << security;
@@ -481,6 +512,7 @@ trdk::OrderId Client::SendBid(
 	Order order;
 	order.action = "SELL";
 	order.totalQuantity = qty;
+	order.displaySize = displaySize;
 	order.orderType = "LMT";
 	order.lmtPrice = price;
 
@@ -495,10 +527,15 @@ trdk::OrderId Client::SendBid(
 
 }
 
-trdk::OrderId Client::SendBidWithMarketPrice(
+trdk::OrderId Client::PlaceSellOrderWithMarketPrice(
 			const trdk::Security &security,
 			Qty qty,
-			double stopPrice) {
+			double stopPrice,
+			Qty displaySize) {
+
+	AssertLe(displaySize, qty);
+	AssertLt(0, qty);
+	AssertLt(0, displaySize);
 
 	Contract contract;
 	contract << security;
@@ -506,6 +543,7 @@ trdk::OrderId Client::SendBidWithMarketPrice(
 	Order order;
 	order.action = "SELL";
 	order.totalQuantity = qty;
+	order.displaySize = displaySize;
 	order.orderType = "STP";
 	order.auxPrice = stopPrice;
 
@@ -520,7 +558,7 @@ trdk::OrderId Client::SendBidWithMarketPrice(
 
 }
 
-trdk::OrderId Client::SendIocBid(
+trdk::OrderId Client::PlaceSellIocOrder(
 			const trdk::Security &security,
 			Qty qty,
 			double price) {
