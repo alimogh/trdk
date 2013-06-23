@@ -135,8 +135,8 @@ class GoldArbitrage(trdk.Strategy):
                 self.positions)
         elif position.isOpened and position.hasActiveCloseOrders is False:
             # Profit Targets:
-            # Sell positions @ GLD/DGL ratio of 2.847
-            closePrice = int(position.openStartPrice * 2.847)
+            # Sell positions @ GLD/DGL ratio of ratio
+            closePrice = int(position.openStartPrice * ratio)
             self.log.info(
                 'Closing {0} with {1}.'
                     .format(
