@@ -432,9 +432,6 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 		
 	if (position.IsCompleted()) {
 		m_pimpl->ForgetPosition(position);
-	} else if (!isTradingTime) {
-		// @todo move to strategy implementation (ex.: OnSessionStart/OnSessionStop)
-		position.CancelAtMarketPrice(Position::CLOSE_TYPE_SCHEDULE);
 	}
 
 }
