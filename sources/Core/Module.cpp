@@ -227,7 +227,7 @@ void Module::UpdateSettings(const IniFileSectionRef &ini) {
 	UpdateAlogImplSettings(ini);
 }
 
-void Module::OnServiceStart(const trdk::Service &) {
+void Module::OnServiceStart(const Service &) {
 	//...//
 }
 

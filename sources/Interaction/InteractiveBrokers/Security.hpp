@@ -51,6 +51,12 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 					const Level1TickValue &tick) {
 			return Base::AddLevel1Tick(time, tick);
 		}
+		void AddLevel1Tick(
+					const boost::posix_time::ptime &time,
+					const Level1TickValue &tick1,
+					const Level1TickValue &tick2) {
+			return Base::AddLevel1Tick(time, tick1, tick2);
+		}
 
 	};
 

@@ -94,6 +94,9 @@ namespace trdk { namespace Services {
 
 	public:
 
+		virtual boost::posix_time::ptime OnSecurityStart(
+					const trdk::Security &);
+
 		virtual bool OnLevel1Tick(
 					const Security &,
 					const boost::posix_time::ptime &,

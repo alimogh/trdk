@@ -92,6 +92,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 			SecurityRequestList;
 
 		typedef SecurityRequestList MarketLevel1Request;
+		typedef SecurityRequestList MarketLevel1HistoryRequest;
 		typedef SecurityRequestList MarketDepthLevel2Requests;
 		typedef SecurityRequestList TicksRequests;
 
@@ -153,6 +154,9 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	private:
 
+		void SendMarketDataRequest(Security &) const;
+		bool SendMarketDataHistoryRequest(Security &) const;
+
 		void Task();
 
 		bool ProcessMessages();
@@ -179,6 +183,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		void HandleError(const int id, const int code, const IBString &);
 
 		Security * GetMarketDataRequest(TickerId);
+		Security * GetHistoryRequest(TickerId);
 
 		static bool IsSubscribed(const SecurityRequestList &, const Security &);
 
@@ -336,6 +341,10 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		mutable MarketLevel1Request m_marketDataRequest;
 		mutable MarketDepthLevel2Requests m_marketDepthLevel2Requests;
+
+		//! @todo Check data type at history finish
+		//! @todo Check data type at error.
+		mutable MarketLevel1HistoryRequest m_historyRequest;
 
 	};
 

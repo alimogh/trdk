@@ -14,6 +14,8 @@
 #include "Observer.hpp"
 #include "Strategy.hpp"
 
+namespace pt = boost::posix_time;
+
 using namespace trdk;
 using namespace trdk::Lib;
 
@@ -151,8 +153,8 @@ Service::~Service() {
 	delete m_pimpl;
 }
 
-void Service::OnSecurityStart(const Security &) {
-	//...//
+pt::ptime Service::OnSecurityStart(const Security &) {
+	return pt::not_a_date_time;
 }
 
 bool Service::RaiseLevel1UpdateEvent(const Security &security) {
@@ -244,8 +246,12 @@ const Service::SubscriberList & Service::GetSubscribers() {
 }
 
 void Service::RegisterSource(Security &security) {
-	if (m_pimpl->m_securities.Insert(security)) {
-		OnSecurityStart(security);
+	if (!m_pimpl->m_securities.Insert(security)) {
+		return;
+	}
+	const auto dataStart = OnSecurityStart(security);
+	if (dataStart != pt::not_a_date_time) {
+		security.SetRequestedDataStartTime(dataStart);
 	}
 }
 

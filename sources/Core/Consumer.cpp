@@ -43,8 +43,8 @@ Consumer::~Consumer() {
 	delete m_pimpl;
 }
 
-void Consumer::OnSecurityStart(Security &) {
-	//...//
+pt::ptime Consumer::OnSecurityStart(Security &) {
+	return pt::not_a_date_time;
 }
 
 void Consumer::OnLevel1Update(Security &security) {
@@ -96,8 +96,12 @@ void Consumer::OnPositionUpdate(Position &) {
 }
 
 void Consumer::RegisterSource(Security &security) {
-	if (m_pimpl->m_securities.Insert(security)) {
-		OnSecurityStart(security);
+	if (!m_pimpl->m_securities.Insert(security)) {
+		return;
+	}
+	const auto dataStart = OnSecurityStart(security);
+	if (dataStart != pt::not_a_date_time) {
+		security.SetRequestedDataStartTime(dataStart);
 	}
 }
 

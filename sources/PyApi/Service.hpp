@@ -45,7 +45,8 @@ namespace trdk { namespace PyApi {
 
 		using trdk::Service::GetTag;
 
-		virtual void OnSecurityStart(const trdk::Security &);
+		virtual boost::posix_time::ptime OnSecurityStart(
+					const trdk::Security &);
 		virtual void OnServiceStart(const trdk::Service &);
 
 		virtual bool OnLevel1Update(const trdk::Security &);

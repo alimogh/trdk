@@ -12,6 +12,7 @@
 #include "Client.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::Interaction::InteractiveBrokers;
 
 namespace ib = trdk::Interaction::InteractiveBrokers;
@@ -279,39 +280,131 @@ void Client::SubscribeToMarketData(ib::Security &security) const {
 	}
 	CheckState();
 
-	const SecurityRequest level1Request(
+	if (!SendMarketDataHistoryRequest(security)) {
+		SendMarketDataRequest(security);
+	}
+
+}
+
+void Client::SendMarketDataRequest(ib::Security &security) const {
+
+	Assert(!m_mutex.try_lock());
+	Assert(security.IsLevel1Required() || security.IsTradesRequired());
+	Assert(!IsSubscribed(m_marketDataRequest, security));
+
+	const SecurityRequest request(
 		security,
 		const_cast<Client *>(this)->TakeTickerId());
+	Contract contract;
+	contract << *request.security;
+
 	auto requests(m_marketDataRequest);
-	requests.insert(level1Request);
+	requests.insert(request);
 
 	std::list<IBString> genericTicklist;
-	if (level1Request.security->IsTradesRequired()) {
+	if (request.security->IsTradesRequired()) {
 		genericTicklist.push_back("233");
 	}
-	
-	Contract contract;
-	contract << *level1Request.security;
+
 	m_client->reqMktData(
-		level1Request.tickerId,
+		request.tickerId,
 		contract,
 		boost::join(genericTicklist, ","),
 		false);
+		
 	m_log.Info(
 		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level I"
-			" market data subscription request for \"%1%\" (ticker ID: %2%).",
+			" market data subscription request for \"%1%\""
+			" (ticker ID: %2%).",
 		boost::make_tuple(
-			boost::cref(*level1Request.security),
-			boost::cref(level1Request.tickerId)));
-
+			boost::cref(*request.security),
+			boost::cref(request.tickerId)));
+		
 	// Can't get volume from IB at this stage, see also method tickSize
 	// remove it later
-// 	security.SetLevel1(
-// 		boost::get_system_time(),
-// 		Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>(0));
+	// 	security.SetLevel1(
+	// 		boost::get_system_time(),
+	// 		Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>(0));
 
 	requests.swap(m_marketDataRequest);
 
+}
+
+bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
+
+	if (security.GetRequestedDataStartTime() == pt::not_a_date_time) {
+		return false;
+	}
+			
+	const SecurityRequest request(
+		security,
+		const_cast<Client *>(this)->TakeTickerId());
+
+	Contract contract;
+	contract << *request.security;
+
+	// not yet implemented:
+	Assert(!request.security->IsTradesRequired());
+
+	const pt::ptime now = boost::get_system_time();
+	if (now <= security.GetRequestedDataStartTime() ) {
+		return false;
+	}
+
+	auto requests(m_historyRequest);
+	requests.insert(request);
+
+	const pt::ptime edtNow = now + GetEdtDiff();
+	const pt::ptime edtRequestStart
+		= security.GetRequestedDataStartTime() + GetEdtDiff();
+
+	std::ostringstream oss;
+	oss
+		<< edtNow.date().year()
+		<< std::setw(2) << std::setfill('0')
+			<< unsigned short(now.date().month())
+		<< std::setw(2) << std::setfill('0')
+			<< edtNow.date().day()
+		<< ' '
+		<< std::setw(2) << std::setfill('0')
+			<< edtNow.time_of_day().hours()
+		<< ':'
+		<< std::setw(2) << std::setfill('0')
+			<< edtNow.time_of_day().minutes()
+		<< ':'
+		<< std::setw(2) << std::setfill('0')
+		<< edtNow.time_of_day().seconds();
+
+	const auto period
+		= (boost::format("%1% S")
+				% std::max(60, (edtNow - edtRequestStart).total_seconds()))
+			.str();
+
+	m_client->reqHistoricalData(
+		request.tickerId,
+		contract,
+		oss.str(),
+		period,
+		"1 secs",
+		"BID_ASK",
+		0,
+		1);
+	
+	m_log.Info(
+		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level I"
+			" market data history request for \"%1%\": %2% - %3%"
+			" (period: %4%, ticker ID: %5%).",
+		boost::make_tuple(
+			boost::cref(*request.security),
+			boost::cref(security.GetRequestedDataStartTime()),
+			boost::cref(now),
+			boost::cref(period),
+			boost::cref(request.tickerId)));
+
+	requests.swap(m_historyRequest);
+			
+	return true;
+	
 }
 
 void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
@@ -771,6 +864,16 @@ void Client::HandleError(
 			const int code,
 			const IBString &/*message*/) {
 	switch (code) {
+		case 162:	// Historical market data Service error message.
+		case 321:	// Server error when validating an API client request.
+			{
+				ib::Security *const security = GetHistoryRequest(id);
+				if (security) {
+					//! @todo Check data type.
+					SendMarketDataRequest(*security);
+				}
+			}
+			break;
 		case 103:	// Duplicate order ID.
 		case 110:	// The price does not conform to the minimum price
 					// variation for this contract.
@@ -849,6 +952,18 @@ ib::Security * Client::GetMarketDataRequest(TickerId tickerId) {
 	if (pos == index.end()) {
 		m_log.Debug(
 			"Couldn't find Market Data Request for ticker %1%.",
+			tickerId);
+		return nullptr;
+	}
+	return &*pos->security;
+}
+
+ib::Security * Client::GetHistoryRequest(TickerId tickerId) {
+	const auto &index = m_historyRequest.get<ByTicker>();
+	const auto pos = index.find(tickerId);
+	if (pos == index.end()) {
+		m_log.Debug(
+			"Couldn't find History Request for ticker %1%.",
 			tickerId);
 		return nullptr;
 	}
@@ -982,9 +1097,7 @@ void Client::tickSize(
 		default:
 			return;
 		case VOLUME:
-//			AssertNe(VOLUME, field); // untested, see SubscribeToMarketData, remove it later
-			valueCtor
-				= Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>;
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>;
 			break;
 		case LAST_SIZE:
 			valueCtor = Level1TickValue::Create<LEVEL1_TICK_LAST_QTY>;
@@ -1217,18 +1330,81 @@ void Client::receiveFA(
 	//...//
 }
 
+namespace {
+
+	pt::ptime ParseHistoryPointTime(
+				const std::string &source,
+				Context::Log &log,
+				bool isFinished) {
+		
+		boost::smatch match;
+		const boost::regex regex(
+			!isFinished
+				? "(\\d{4})(\\d{2})(\\d{2}) +(\\d{2}):(\\d{2}):(\\d{2})"
+				: "finished-\\d{4}\\d{2}\\d{2} +\\d{2}:\\d{2}:\\d{2}"
+					"-(\\d{4})(\\d{2})(\\d{2}) +(\\d{2}):(\\d{2}):(\\d{2})");
+		if (!boost::regex_match(source, match, regex)) {
+			log.Error(
+				INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
+					": failed to extract history point date time from \"%1%\".",
+				source);
+			throw Exception("Failed to extract history point date time from");
+		}
+		
+		try {
+			return pt::ptime(
+					pt::ptime::date_type(
+						boost::lexical_cast<unsigned short>(match.str(1)),
+						boost::lexical_cast<unsigned short>(match.str(2)),
+						boost::lexical_cast<unsigned short>(match.str(3))),
+					pt::ptime::time_duration_type(
+						boost::lexical_cast<unsigned short>(match.str(4)),
+						boost::lexical_cast<unsigned short>(match.str(5)),
+						boost::lexical_cast<unsigned short>(match.str(6))))
+				- GetEdtDiff();
+		} catch (const boost::bad_lexical_cast &) {
+			log.Error(
+				INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
+					": failed to extract history point date time from \"%1%\".",
+				source);
+			throw Exception("Failed to extract history point date time from");
+		}
+	
+	}
+
+}
+
 void Client::historicalData(
-			TickerId /*reqId*/,
-			const IBString &/*date*/,
+			TickerId tickerId,
+			const IBString &time,
 			double /*open*/,
-			double /*high*/,
-			double /*low*/,
+			double highPrice,
+			double lowPrice,
 			double /*close*/,
 			int /*volume*/,
 			int /*barCount*/,
 			double /*WAP*/,
 			int /*hasGaps*/) {
-	//...//
+
+	ib::Security *const security = GetHistoryRequest(tickerId);
+	if (!security) {
+		return;
+	}
+	
+	const bool isFinished = boost::starts_with(time, "f");
+	Assert(!isFinished || boost::starts_with(time, "finished-"));
+
+	security->AddLevel1Tick(
+		ParseHistoryPointTime(time, m_log, isFinished),
+		Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+			security->ScalePrice(lowPrice)),
+		Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+			security->ScalePrice(highPrice)));
+
+	if (isFinished) {
+		SendMarketDataRequest(*security);
+	}
+
 }
 
 void Client::scannerParameters(const IBString &/*xml*/) {
@@ -1286,3 +1462,4 @@ void Client::marketDataType(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
