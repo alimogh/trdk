@@ -203,14 +203,16 @@ bool PyApi::Strategy::CallVirtualMethod(
 	return GetExport().CallVirtualMethod(name, call);
 }
 
-void PyApi::Strategy::OnSecurityStart(trdk::Security &security) {
+pt::ptime PyApi::Strategy::OnSecurityStart(trdk::Security &security) {
 	const bool isExists = CallVirtualMethod(
 		"onSecurityStart",
 		[&](const py::override &f) {
 			f(PyApi::Export(security));
 		});
-	if (!isExists) {
-		Base::OnSecurityStart(security);
+	if (isExists) {
+		return pt::not_a_date_time;
+	} else{
+		return Base::OnSecurityStart(security);
 	}
 }
 

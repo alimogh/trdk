@@ -65,6 +65,8 @@ public:
 	volatile int64_t m_marketDataTime;
 	volatile long m_isLevel1Started;
 
+	pt::ptime m_requestedDataStartTime;
+
 public:
 
 	Implementation()
@@ -331,6 +333,18 @@ bool Security::IsLevel1Started() const {
 
 bool Security::IsStarted() const {
 	return IsLevel1Started();
+}
+
+void Security::SetRequestedDataStartTime(const pt::ptime &newTime) {
+	if (	m_pimpl->m_requestedDataStartTime != pt::not_a_date_time
+			&& m_pimpl->m_requestedDataStartTime <= newTime) {
+		return;
+	}
+	m_pimpl->m_requestedDataStartTime = newTime;
+}
+
+const pt::ptime & Security::GetRequestedDataStartTime() const {
+	return m_pimpl->m_requestedDataStartTime;
 }
 
 double Security::GetLastPrice() const {

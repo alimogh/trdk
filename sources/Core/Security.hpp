@@ -57,6 +57,14 @@ namespace trdk {
 		bool IsStarted() const;
 		bool IsLevel1Started() const;
 
+		//! Sets requested data start time if it not later than existing.
+		void SetRequestedDataStartTime(const boost::posix_time::ptime &);
+		//! Returns requested data start time.
+		/** @return	Requested time or boost::posix_time::not_a_date_time if not
+		  *			set.
+		  */
+		const boost::posix_time::ptime & GetRequestedDataStartTime() const;
+
 	public:
 
 		const char * GetCurrency() const {

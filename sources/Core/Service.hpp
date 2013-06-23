@@ -33,7 +33,12 @@ namespace trdk {
 
 	public:
 
-		virtual void OnSecurityStart(const trdk::Security &);
+		//! Notifies about new security start.
+		/** @return Return desired security data start. Can be
+		  * boost::posix_time::not_a_date_time.
+		  */
+		virtual boost::posix_time::ptime OnSecurityStart(
+					const trdk::Security &);
 
 		virtual bool OnLevel1Update(const trdk::Security &);
 		virtual bool OnLevel1Tick(

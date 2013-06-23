@@ -526,6 +526,11 @@ BarService::~BarService() {
 	delete m_pimpl;
 }
 
+pt::ptime BarService::OnSecurityStart(
+			const Security &) {
+	return boost::get_system_time() - GetBarSize();
+}
+
 bool BarService::OnLevel1Tick(
 			const Security &security,
 			const pt::ptime &time,
