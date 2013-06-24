@@ -116,7 +116,9 @@ namespace trdk { namespace Engine {
 						return false;
 					}
 				
-					Assert(m_current == &m_lists.first || m_current == &m_lists.second);
+					Assert(
+						m_current == &m_lists.first
+						|| m_current == &m_lists.second);
 					if (m_current->empty()) {
 						m_heavyLoadsCount = 0;
 						m_newDataCondition.wait(lock);
@@ -127,7 +129,8 @@ namespace trdk { namespace Engine {
 						}
 					} else if (!(++m_heavyLoadsCount % 100)) {
 						m_context.GetLog().Warn(
-							"Dispatcher task \"%1%\" is heavy loaded (%2% iterations)!",
+							"Dispatcher task \"%1%\" is heavy loaded"
+								" (%2% iterations)!",
 							boost::make_tuple(
 								boost::cref(m_name),
 								m_heavyLoadsCount));
@@ -306,48 +309,125 @@ namespace trdk { namespace Engine {
 
 	private:
 
-		template<typename EventList>
-		void StartNotificationTask(EventList &list) {
-			m_threads.create_thread(
-				boost::bind(
-					&Dispatcher::NotificationTask<EventList>,
-					this,
-					boost::ref(list)));
-		}
+		////////////////////////////////////////////////////////////////////////////////
 
 		template<typename EventList>
-		void NotificationTask(EventList &eventList) {
+		void StartNotificationTask(EventList &list) {
+			const auto lists = boost::make_tuple(boost::ref(list));
+			m_threads.create_thread(
+				boost::bind(
+					&Dispatcher::NotificationTask<decltype(lists)>,
+					this,
+					lists));
+		}
+
+		template<typename ListWithHighPriority, typename ListWithLowPriority>
+		void StartNotificationTask(
+					ListWithHighPriority &listWithHighPriority,
+					ListWithLowPriority &listWithLowPriority) {
+			const auto lists = boost::make_tuple(
+				boost::ref(listWithHighPriority),
+				boost::ref(listWithLowPriority));
+			m_threads.create_thread(
+				boost::bind(
+					&Dispatcher::NotificationTask<decltype(lists)>,
+					this,
+					lists));
+		}
+
+
+		////////////////////////////////////////////////////////////////////////////////
+
+		template<typename EventList>
+		bool EnqueueEvents(EventList &list) const {
+			try {
+				return list.Enqueue();
+			} catch (const trdk::Lib::ModuleError &ex) {
+				m_context.GetLog().Error(
+					"Module error in dispatcher notification task"
+						" \"%1%\": \"%2%\".",
+					boost::make_tuple(
+					boost::cref(list.GetName()),
+					boost::cref(ex)));
+				throw;
+			} catch (...) {
+				m_context.GetLog().Error(
+					"Unhandled exception caught in dispatcher"
+						" notification task \"%1%\".",
+					list.GetName());
+				AssertFailNoException();
+				throw;
+			}
+		}
+
+		template<size_t index, typename EventLists>
+		void EnqueueEventList(
+					EventLists &lists,
+					std::bitset<boost::tuples::length<EventLists>::value>
+						&deactivationMask)
+				const {
+			if (deactivationMask[index]) {
+				return;
+			}
+			deactivationMask[index] = !EnqueueEvents(lists.get<index>());
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+		
+		template<typename T1>
+		void EnqueueEventListsCollection(
+					const boost::tuple<T1> &lists,
+					std::bitset<1> &deactivationMask)
+				const {
+			EnqueueEventList<0>(lists, deactivationMask);
+		}
+		
+		template<typename T1, typename T2>
+		void EnqueueEventListsCollection(
+					const boost::tuple<T1, T2> &lists,
+					std::bitset<2> &deactivationMask)
+				const {
+			EnqueueEventList<0>(lists, deactivationMask);
+			EnqueueEventList<1>(lists, deactivationMask);
+		}
+		
+		////////////////////////////////////////////////////////////////////////////////
+		
+		template<typename T1>
+		static std::string GetEventListsName(
+					const boost::tuple<T1> &lists) {
+			return lists.get<0>().GetName();
+		}
+		
+		template<typename T1, typename T2>
+		static std::string GetEventListsName(
+					const boost::tuple<T1, T2> &lists) {
+			boost::format result("%1%, %2%");
+			result % lists.get<0>().GetName() % lists.get<1>().GetName();
+			return result.str();
+		}
+		
+		////////////////////////////////////////////////////////////////////////////////
+
+		template<typename EventLists>
+		void NotificationTask(EventLists &lists) const {
 			m_context.GetLog().Debug(
 				"Dispatcher notification task \"%1%\" started...",
-				eventList.GetName());
+				GetEventListsName(lists));
 			bool isError = false;
-			for ( ; ; ) {
-				try {
-					if (!eventList.Enqueue()) {
-						break;
-					}
-				} catch (const trdk::Lib::ModuleError &ex) {
-					m_context.GetLog().Error(
-						"Module error in dispatcher notification task"
-							" \"%1%\": \"%2%\".",
-						boost::make_tuple(
-							boost::cref(eventList.GetName()),
-							boost::cref(ex)));
-					isError = true;
-					break;
-				} catch (...) {
-					m_context.GetLog().Error(
-						"Unhandled exception caught in dispatcher"
-							" notification task \"%1%\".",
-						eventList.GetName());
-					AssertFailNoException();
-					isError = true;
-					break;
-				}
+			try {
+				std::bitset<boost::tuples::length<EventLists>::value>
+					deactivationMask;
+				do {
+					EnqueueEventListsCollection(lists, deactivationMask);
+				} while (!deactivationMask.all());
+			} catch (...) {
+				// error already logged
+				isError = true;
 			}
 			m_context.GetLog().Debug(
 				"Dispatcher notification task \"%1%\" stopped.",
-				eventList.GetName());
+				GetEventListsName(lists));
 			if (isError) {
 				//! @todo: Call engine instance stop instead.
 				exit(1);
