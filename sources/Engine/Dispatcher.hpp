@@ -240,10 +240,7 @@ namespace trdk { namespace Engine {
 	public:
 
 		bool IsActive() const {
-			return
-				m_positionUpdates.IsActive()
-				|| m_level1Updates.IsActive()
-				|| m_newTrades.IsActive();
+			return m_positionUpdates.IsActive();
 		}
 
 		void Activate();
@@ -274,18 +271,8 @@ namespace trdk { namespace Engine {
 			static_assert(false, "Failed to find event raise specialization.");
 		}
 		template<>
-		static void RaiseEvent(const Level1UpdateEvent &level1Update) {
-			boost::get<1>(level1Update).RaiseLevel1UpdateEvent(
-				*boost::get<0>(level1Update));
-		}
-		template<>
 		static void RaiseEvent(const Level1TickEvent &tick) {
 			boost::get<1>(tick).RaiseLevel1TickEvent(boost::get<0>(tick));
-		}
-		template<>
-		static void RaiseEvent(const NewTradeEvent &newTradeEvent) {
-			boost::get<1>(newTradeEvent).RaiseNewTradeEvent(
-				*boost::get<0>(newTradeEvent));
 		}
 		template<>
 		static void RaiseEvent(const PositionUpdateEvent &positionUpdateEvent) {
@@ -299,27 +286,9 @@ namespace trdk { namespace Engine {
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-					const Level1UpdateEvent &level1UpdateEvent,
-					EventList &eventList) {
-			//! @todo place for optimization
-			if (eventList.find(level1UpdateEvent) != eventList.end()) {
-				return false;
-			}
-			eventList.insert(level1UpdateEvent);
-			return true;
-		}
-		template<typename EventList>
-		static bool QueueEvent(
 					const Level1TickEvent &tick,
 					EventList &eventList) {
 			eventList.push_back(tick);
-			return true;
-		}
-		template<typename EventList>
-		static bool QueueEvent(
-					const NewTradeEvent &newTradeEvent,
-					EventList &eventList) {
-			eventList.push_back(newTradeEvent);
 			return true;
 		}
 		template<typename EventList>
@@ -702,9 +671,7 @@ namespace trdk { namespace Engine {
 
 		boost::thread_group m_threads;
 
-		Level1UpdateEventQueue m_level1Updates;
 		Level1TicksEventQueue m_level1Ticks;
-		NewTradeEventQueue m_newTrades;
 		PositionUpdateEventQueue m_positionUpdates;
 
 	};

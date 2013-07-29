@@ -23,23 +23,15 @@ using namespace trdk::Engine;
 
 Dispatcher::Dispatcher(Engine::Context &context)
 			: m_context(context),
-			m_level1Updates("Level 1 Updates", m_context),
 			m_level1Ticks("Level 1 Ticks", m_context),
-			m_newTrades("New Trades", m_context),
 			m_positionUpdates("Position", m_context) {
-	StartNotificationTask(
-		m_level1Updates,
-		m_level1Ticks,
-		m_newTrades,
-		m_positionUpdates);
+	StartNotificationTask(m_level1Ticks, m_positionUpdates);
 }
 
 Dispatcher::~Dispatcher() {
 	try {
 		m_context.GetLog().Debug("Stopping events dispatching...");
 		m_level1Ticks.Stop();
-		m_newTrades.Stop();
-		m_level1Updates.Stop();
 		m_positionUpdates.Stop();
 		m_threads.join_all();
 		m_context.GetLog().Debug("Events dispatching stopped.");
@@ -52,8 +44,6 @@ Dispatcher::~Dispatcher() {
 void Dispatcher::Activate() {
 	m_context.GetLog().Debug("Starting events dispatching...");
 	m_positionUpdates.Activate();
-	m_level1Updates.Activate();
-	m_newTrades.Activate();
 	m_level1Ticks.Activate();
 	m_context.GetLog().Debug("Events dispatching started.");
 }
@@ -61,19 +51,14 @@ void Dispatcher::Activate() {
 void Dispatcher::Suspend() {
 	m_context.GetLog().Debug("Suspending events dispatching...");
 	m_level1Ticks.Suspend();
-	m_newTrades.Suspend();
-	m_level1Updates.Suspend();
 	m_positionUpdates.Suspend();
 	m_context.GetLog().Debug("Events dispatching suspended.");
 }
 
 void Dispatcher::SignalLevel1Update(
-			SubscriberPtrWrapper &subscriber,
-			Security &security) {
-	if (subscriber.IsBlocked()) {
-		return;
-	}
-	m_level1Updates.Queue(boost::make_tuple(&security, subscriber), true);
+			SubscriberPtrWrapper &,
+			Security &) {
+	AssertFail("Not implemented!");
 }
 
 void Dispatcher::SignalLevel1Tick(
@@ -98,30 +83,13 @@ void Dispatcher::SignalLevel1Tick(
 }
 
 void Dispatcher::SignalNewTrade(
-			SubscriberPtrWrapper &subscriber,
-			Security &security,
-			const pt::ptime &time,
-			ScaledPrice price,
-			Qty qty,
-			OrderSide side) {
-	try {
-		if (subscriber.IsBlocked()) {
-			return;
-		}
-		//! @todo Check profit from ptr.
-		boost::shared_ptr<SubscriberPtrWrapper::Trade> trade(
-			new SubscriberPtrWrapper::Trade);
-		trade->security = &security;
-		trade->time = time;
-		trade->price = price;
-		trade->qty = qty;
-		trade->side = side;
-		m_newTrades.Queue(boost::make_tuple(trade, subscriber), true);
-	} catch (...) {
-		//! Blocking as irreversible error, data loss.
-		subscriber.Block();
-		throw;
-	}
+			SubscriberPtrWrapper &,
+			Security &,
+			const pt::ptime &,
+			ScaledPrice,
+			Qty,
+			OrderSide) {
+	AssertFail("Not implemented!");
 }
 
 void Dispatcher::SignalPositionUpdate(
