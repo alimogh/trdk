@@ -54,6 +54,8 @@
 #	define AssertGe(expr1, expr2) ((void)0)
 #	define AssertLt(expr1, expr2) ((void)0)
 #	define AssertLe(expr1, expr2) ((void)0)
+#	define AssertBitSet(bit, var) ((void)0)
+#	define AssertBitNotSet(bit, var) ((void)0)
 #elif defined(BOOST_ENABLE_ASSERT_HANDLER)
 
 #	define AssertFail(reason) \
@@ -169,6 +171,33 @@
 				">", \
 				#expr1, \
 				#expr2, \
+				BOOST_CURRENT_FUNCTION, \
+				__FILE__, \
+				__LINE__))
+
+#	define AssertBitSet(bit, var) \
+		(bit & var \
+			? (void)0 \
+			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
+				trdk::Debug::Detail::CastToString(bit), \
+				trdk::Debug::Detail::CastToString(var), \
+				"bit IS SET", \
+				"&", \
+				"!(" #bit, \
+				#var ")", \
+				BOOST_CURRENT_FUNCTION, \
+				__FILE__, \
+				__LINE__))
+#	define AssertBitNotSet(bit, var) \
+		(!(bit & var) \
+			? (void)0 \
+			: (void)trdk::Debug::Detail::ReportCompareAssertFail( \
+				trdk::Debug::Detail::CastToString(bit), \
+				trdk::Debug::Detail::CastToString(var), \
+				"bit IS NOT set", \
+				"&", \
+				#bit, \
+				#var, \
 				BOOST_CURRENT_FUNCTION, \
 				__FILE__, \
 				__LINE__))
