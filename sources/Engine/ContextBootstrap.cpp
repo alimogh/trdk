@@ -319,17 +319,17 @@ namespace {
 			mi::indexed_by<
 				mi::ordered_unique<
 					mi::tag<BySubscriber>,
-						mi::composite_key<
+					mi::composite_key<
+						TagRequirementsList,
+						mi::member<
 							TagRequirementsList,
-							mi::member<
-								TagRequirementsList,
-								ModuleType,
-								// Order is important, @sa ModuleType
-								&TagRequirementsList::subscriberType>,
-							mi::member<
-								TagRequirementsList,
-								std::string,
-								&TagRequirementsList::subscriberTag>>>>>
+							ModuleType,
+							// Order is important, @sa ModuleType
+							&TagRequirementsList::subscriberType>,
+						mi::member<
+							TagRequirementsList,
+							std::string,
+							&TagRequirementsList::subscriberTag>>>>>
 		RequirementsList;
 
 	void ApplyRequirementsListModifier(

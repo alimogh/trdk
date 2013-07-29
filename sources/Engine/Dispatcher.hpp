@@ -20,6 +20,10 @@ namespace trdk { namespace Engine {
 
 	private:
 
+		typedef boost::mutex EventQueueMutex;
+		typedef EventQueueMutex::scoped_lock EventQueueLock;
+		typedef boost::condition_variable EventQueueCondition;
+
 		template<typename ListT>
 		class EventQueue : private boost::noncopyable {
 
@@ -27,11 +31,11 @@ namespace trdk { namespace Engine {
 
 			typedef ListT List;
 
-		private:
+			typedef EventQueueMutex Mutex;
+			typedef EventQueueLock Lock;
+			typedef EventQueueCondition Condition;
 
-			typedef boost::mutex Mutex;
-			typedef Mutex::scoped_lock Lock;
-			typedef boost::condition_variable Condition;
+		private:
 
 			enum TaskState {
 				TASK_STATE_INACTIVE,
@@ -45,7 +49,8 @@ namespace trdk { namespace Engine {
 					: m_context(context),
 					m_name(name),
 					m_current(&m_lists.first),
-					m_heavyLoadsCount(0),
+					m_mutex(nullptr),
+					m_newDataCondition(nullptr),
 					m_taksState(TASK_STATE_INACTIVE) {
 				if (m_context.GetSettings().IsReplayMode()) {
 					m_readyToReadCondition.reset(new Condition);
@@ -53,6 +58,15 @@ namespace trdk { namespace Engine {
 			}
 
 		public:
+
+			void AssignSyncObjects(
+						Mutex &mutex,
+						Condition &newDataCondition) {
+				Assert(!m_mutex);
+				Assert(!m_newDataCondition);
+				m_mutex = &mutex;
+				m_newDataCondition = &newDataCondition;
+			}
 
 			const char * GetName() const {
 				return m_name;
@@ -63,96 +77,110 @@ namespace trdk { namespace Engine {
 			}
 
 			void Activate() {
-				const Lock lock(m_mutex);
+				Assert(m_mutex);
+				const Lock lock(*m_mutex);
 				AssertEq(int(TASK_STATE_INACTIVE), int(m_taksState));
 				m_taksState = TASK_STATE_ACTIVE;
 			}
 
 			void Suspend() {
-				const Lock lock(m_mutex);
+				Assert(m_mutex);
+				const Lock lock(*m_mutex);
 				AssertNe(int(TASK_STATE_STOPPED), int(m_taksState));
 				m_taksState = TASK_STATE_INACTIVE;
 			}
 
 			void Stop() {
+				Assert(m_mutex);
+				Assert(m_newDataCondition);
 				{
-					const Lock lock(m_mutex);
+					const Lock lock(*m_mutex);
 					AssertNe(int(TASK_STATE_STOPPED), int(m_taksState));
 					m_taksState = TASK_STATE_STOPPED;
 				}
-				m_newDataCondition.notify_all();
+				m_newDataCondition->notify_all();
 				if (m_readyToReadCondition) {
 					m_readyToReadCondition->notify_all();
 				}
 			}
 
+			bool IsStopped(const Lock &lock) const {
+				Assert(m_mutex);
+				Assert(m_mutex == lock.mutex());
+				Assert(lock);
+				UseUnused(lock);
+				return m_taksState == TASK_STATE_STOPPED;
+			}
+
 			template<typename Event>
 			void Queue(const Event &event, bool flush) {
-				Lock lock(m_mutex);
+				Assert(m_mutex);
+				Assert(m_newDataCondition);
+				Lock lock(*m_mutex);
 				if (m_taksState == TASK_STATE_STOPPED) {
 					return;
 				}
 				Assert(
 					m_current == &m_lists.first
 					|| m_current == &m_lists.second);
-				if (!Dispatcher::QueueEvent(event, *m_current) || !flush) {
-					return;
+				if (Dispatcher::QueueEvent(event, *m_current) || !flush) {
+					m_newDataCondition->notify_one();
+					if (m_readyToReadCondition) {
+						m_readyToReadCondition->wait(lock);
+					}
 				}
-				m_newDataCondition.notify_one();
-				if (m_readyToReadCondition) {
-					m_readyToReadCondition->wait(lock);
+				if (!(m_current->size() % 50)) {
+					m_context.GetLog().Warn(
+						"Dispatcher queue \"%1%\" is too long (%2% events)!",
+						boost::make_tuple(
+							boost::cref(m_name),
+							m_current->size()));
 				}
 			}
 
-			bool Enqueue() {
+			bool Enqueue(Lock &lock) {
 
-				List *listToRead;
-				
-				{
+				Assert(m_mutex);
+				Assert(m_mutex == lock.mutex());
+				Assert(lock);
+				Assert(m_newDataCondition);
+				Assert(
+					m_current == &m_lists.first
+					|| m_current == &m_lists.second);
 
-					Lock lock(m_mutex);
-				
-					if (m_taksState == TASK_STATE_STOPPED) {
-						return false;
-					}
-				
-					Assert(
-						m_current == &m_lists.first
-						|| m_current == &m_lists.second);
-					if (m_current->empty()) {
-						m_heavyLoadsCount = 0;
-						m_newDataCondition.wait(lock);
-						if (m_taksState != TASK_STATE_ACTIVE) {
-							return m_taksState == TASK_STATE_INACTIVE;
-						} else if (m_current->empty()) {
-							return true;
-						}
-					} else if (!(++m_heavyLoadsCount % 100)) {
+				size_t heavyLoadsCount = 0;
+				while (	!m_current->empty()
+						&& m_taksState == TASK_STATE_ACTIVE) {
+
+					if (!(++heavyLoadsCount % 10)) {
 						m_context.GetLog().Warn(
 							"Dispatcher task \"%1%\" is heavy loaded"
 								" (%2% iterations)!",
 							boost::make_tuple(
 								boost::cref(m_name),
-								m_heavyLoadsCount));
+								heavyLoadsCount));
 					}
 
-					listToRead = m_current;
+					List *listToRead = m_current;
 					m_current = m_current == &m_lists.first
 						?	&m_lists.second
 						:	&m_lists.first;
+
+					lock.unlock();
+					Assert(!listToRead->empty());
+					foreach (const auto &event, *listToRead) {
+						Dispatcher::RaiseEvent(event);
+					}
+					listToRead->clear();
+					lock.lock();
+
 					if (m_readyToReadCondition) {
 						m_readyToReadCondition->notify_all();
 					}
 
 				}
 
-				Assert(!listToRead->empty());
-				foreach(const auto &event, *listToRead) {
-					Dispatcher::RaiseEvent(event);
-				}
-				listToRead->clear();
-			
-				return true;
+				return heavyLoadsCount > 0;
 
 			}
 
@@ -164,10 +192,9 @@ namespace trdk { namespace Engine {
 
 			std::pair<List, List> m_lists;
 			List *m_current;
-			size_t m_heavyLoadsCount;
 			
-			Mutex m_mutex;
-			Condition m_newDataCondition;
+			Mutex *m_mutex;
+			Condition *m_newDataCondition;
 			std::unique_ptr<Condition> m_readyToReadCondition;
 
 			TaskState m_taksState;
@@ -312,36 +339,9 @@ namespace trdk { namespace Engine {
 		////////////////////////////////////////////////////////////////////////////////
 
 		template<typename EventList>
-		void StartNotificationTask(EventList &list) {
-			const auto lists = boost::make_tuple(boost::ref(list));
-			m_threads.create_thread(
-				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
-					this,
-					lists));
-		}
-
-		template<typename ListWithHighPriority, typename ListWithLowPriority>
-		void StartNotificationTask(
-					ListWithHighPriority &listWithHighPriority,
-					ListWithLowPriority &listWithLowPriority) {
-			const auto lists = boost::make_tuple(
-				boost::ref(listWithHighPriority),
-				boost::ref(listWithLowPriority));
-			m_threads.create_thread(
-				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
-					this,
-					lists));
-		}
-
-
-		////////////////////////////////////////////////////////////////////////////////
-
-		template<typename EventList>
-		bool EnqueueEvents(EventList &list) const {
+		bool EnqueueEvents(EventList &list, EventQueueLock &lock) const {
 			try {
-				return list.Enqueue();
+				return list.Enqueue(lock);
 			} catch (const trdk::Lib::ModuleError &ex) {
 				m_context.GetLog().Error(
 					"Module error in dispatcher notification task"
@@ -361,44 +361,74 @@ namespace trdk { namespace Engine {
 		}
 
 		template<size_t index, typename EventLists>
-		void EnqueueEventList(
+		bool EnqueueEventList(
 					EventLists &lists,
 					std::bitset<boost::tuples::length<EventLists>::value>
-						&deactivationMask)
+						&deactivationMask,
+					EventQueueLock &lock)
 				const {
 			if (deactivationMask[index]) {
-				return;
+				return false;
 			}
-			deactivationMask[index] = !EnqueueEvents(lists.get<index>());
+			auto &list = lists.get<index>();
+			if (EnqueueEvents(list, lock)) {
+				return true;
+			}
+			deactivationMask[index] = list.IsStopped(lock);
+			return false;
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
-		
-		template<typename T1>
-		void EnqueueEventListsCollection(
-					const boost::tuple<T1> &lists,
-					std::bitset<1> &deactivationMask)
-				const {
-			EnqueueEventList<0>(lists, deactivationMask);
+
+		template<typename EventList>
+		void StartNotificationTask(EventList &list) {
+			const auto lists = boost::make_tuple(boost::ref(list));
+			m_threads.create_thread(
+				boost::bind(
+					&Dispatcher::NotificationTask<decltype(lists)>,
+					this,
+					lists));
 		}
-		
-		template<typename T1, typename T2>
-		void EnqueueEventListsCollection(
-					const boost::tuple<T1, T2> &lists,
-					std::bitset<2> &deactivationMask)
-				const {
-			EnqueueEventList<0>(lists, deactivationMask);
-			EnqueueEventList<1>(lists, deactivationMask);
-		}
-		
-		////////////////////////////////////////////////////////////////////////////////
-		
+
 		template<typename T1>
 		static std::string GetEventListsName(
 					const boost::tuple<T1> &lists) {
 			return lists.get<0>().GetName();
 		}
 		
+		template<typename T1>
+		static void AssignEventListsSyncObjects(
+					EventQueueMutex &mutex,
+					EventQueueCondition &newDataCondition,
+					const boost::tuple<T1> &lists) {
+			lists.get<0>().AssignSyncObjects(mutex, newDataCondition);
+		}
+
+		template<typename T1>
+		void EnqueueEventListsCollection(
+					const boost::tuple<T1> &lists,
+					std::bitset<1> &deactivationMask,
+					EventQueueLock &lock)
+				const {
+			EnqueueEventList<0>(lists, deactivationMask, lock);
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+
+		template<typename ListWithHighPriority, typename ListWithLowPriority>
+		void StartNotificationTask(
+					ListWithHighPriority &listWithHighPriority,
+					ListWithLowPriority &listWithLowPriority) {
+			const auto lists = boost::make_tuple(
+				boost::ref(listWithHighPriority),
+				boost::ref(listWithLowPriority));
+			m_threads.create_thread(
+				boost::bind(
+					&Dispatcher::NotificationTask<decltype(lists)>,
+					this,
+					lists));
+		}
+
 		template<typename T1, typename T2>
 		static std::string GetEventListsName(
 					const boost::tuple<T1, T2> &lists) {
@@ -406,7 +436,230 @@ namespace trdk { namespace Engine {
 			result % lists.get<0>().GetName() % lists.get<1>().GetName();
 			return result.str();
 		}
+
+		template<typename T1, typename T2>
+		static void AssignEventListsSyncObjects(
+					EventQueueMutex &mutex,
+					EventQueueCondition &newDataCondition,
+					const boost::tuple<T1, T2> &lists) {
+			lists.get<0>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<1>().AssignSyncObjects(mutex, newDataCondition);
+		}
 		
+		template<typename T1, typename T2>
+		void EnqueueEventListsCollection(
+					const boost::tuple<T1, T2> &lists,
+					std::bitset<2> &deactivationMask,
+					EventQueueLock &lock)
+				const {
+			do {
+				EnqueueEventList<0>(lists, deactivationMask, lock);
+			} while (EnqueueEventList<1>(lists, deactivationMask, lock));
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+
+		template<
+			typename ListWithHighPriority,
+			typename ListWithLowPriority,
+			typename ListWithExtraLowPriority>
+		void StartNotificationTask(
+					ListWithHighPriority &listWithHighPriority,
+					ListWithLowPriority &listWithLowPriority,
+					ListWithExtraLowPriority &listWithExtraLowPriority) {
+			const auto lists = boost::make_tuple(
+				boost::ref(listWithHighPriority),
+				boost::ref(listWithLowPriority),
+				boost::ref(listWithExtraLowPriority));
+			m_threads.create_thread(
+				boost::bind(
+					&Dispatcher::NotificationTask<decltype(lists)>,
+					this,
+					lists));
+		}
+
+		template<typename T1, typename T2, typename T3>
+		static std::string GetEventListsName(
+					const boost::tuple<T1, T2, T3> &lists) {
+			boost::format result("%1%, %2%, %3%");
+			result
+				% lists.get<0>().GetName()
+				% lists.get<1>().GetName()
+				% lists.get<2>().GetName();
+			return result.str();
+		}
+
+		template<typename T1, typename T2, typename T3>
+		static void AssignEventListsSyncObjects(
+					EventQueueMutex &mutex,
+					EventQueueCondition &newDataCondition,
+					const boost::tuple<T1, T2, T3> &lists) {
+			lists.get<0>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<1>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<2>().AssignSyncObjects(mutex, newDataCondition);
+		}
+
+		template<typename T1, typename T2, typename T3>
+		void EnqueueEventListsCollection(
+					const boost::tuple<T1, T2, T3> &lists,
+					std::bitset<3> &deactivationMask,
+					EventQueueLock &lock)
+				const {
+			do {
+				do {
+					EnqueueEventList<0>(lists, deactivationMask, lock);
+				} while (EnqueueEventList<1>(lists, deactivationMask, lock));
+			} while (EnqueueEventList<2>(lists, deactivationMask, lock));
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+
+		template<
+			typename ListWithHighPriority,
+			typename ListWithLowPriority,
+			typename ListWithExtraLowPriority,
+			typename ListWithExtraLowPriority2>
+		void StartNotificationTask(
+					ListWithHighPriority &listWithHighPriority,
+					ListWithLowPriority &listWithLowPriority,
+					ListWithExtraLowPriority &listWithExtraLowPriority,
+					ListWithExtraLowPriority2 &listWithExtraLowPriority2) {
+			const auto lists = boost::make_tuple(
+				boost::ref(listWithHighPriority),
+				boost::ref(listWithLowPriority),
+				boost::ref(listWithExtraLowPriority),
+				boost::ref(listWithExtraLowPriority2));
+			m_threads.create_thread(
+				boost::bind(
+					&Dispatcher::NotificationTask<decltype(lists)>,
+					this,
+					lists));
+		}
+
+		template<typename T1, typename T2, typename T3, typename T4>
+		static std::string GetEventListsName(
+					const boost::tuple<T1, T2, T3, T4> &lists) {
+			boost::format result("%1%, %2%, %3%, %4%");
+			result
+				% lists.get<0>().GetName()
+				% lists.get<1>().GetName()
+				% lists.get<2>().GetName()
+				% lists.get<3>().GetName();
+			return result.str();
+		}
+
+		template<typename T1, typename T2, typename T3, typename T4>
+		static void AssignEventListsSyncObjects(
+					EventQueueMutex &mutex,
+					EventQueueCondition &newDataCondition,
+					const boost::tuple<T1, T2, T3, T4> &lists) {
+			lists.get<0>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<1>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<2>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<3>().AssignSyncObjects(mutex, newDataCondition);
+		}
+
+		template<typename T1, typename T2, typename T3, typename T4>
+		void EnqueueEventListsCollection(
+					const boost::tuple<T1, T2, T3, T4> &lists,
+					std::bitset<4> &deactivationMask,
+					EventQueueLock &lock)
+				const {
+			do {
+				do {
+					do {
+						EnqueueEventList<0>(lists, deactivationMask, lock);
+					} while (EnqueueEventList<1>(lists, deactivationMask, lock));
+				} while (EnqueueEventList<2>(lists, deactivationMask, lock));
+			} while (EnqueueEventList<3>(lists, deactivationMask, lock));
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+
+		template<
+			typename ListWithHighPriority,
+			typename ListWithLowPriority,
+			typename ListWithExtraLowPriority,
+			typename ListWithExtraLowPriority2,
+			typename ListWithExtraLowPriority3>
+		void StartNotificationTask(
+					ListWithHighPriority &listWithHighPriority,
+					ListWithLowPriority &listWithLowPriority,
+					ListWithExtraLowPriority &listWithExtraLowPriority,
+					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
+					ListWithExtraLowPriority3 &listWithExtraLowPriority3) {
+			const auto lists = boost::make_tuple(
+				boost::ref(listWithHighPriority),
+				boost::ref(listWithLowPriority),
+				boost::ref(listWithExtraLowPriority),
+				boost::ref(listWithExtraLowPriority2),
+				boost::ref(listWithExtraLowPriority3));
+			m_threads.create_thread(
+				boost::bind(
+					&Dispatcher::NotificationTask<decltype(lists)>,
+					this,
+					lists));
+		}
+
+		template<
+			typename T1,
+			typename T2,
+			typename T3,
+			typename T4,
+			typename T5>
+		static std::string GetEventListsName(
+					const boost::tuple<T1, T2, T3, T4, T5> &lists) {
+			boost::format result("%1%, %2%, %3%, %4%, %5%");
+			result
+				% lists.get<0>().GetName()
+				% lists.get<1>().GetName()
+				% lists.get<2>().GetName()
+				% lists.get<3>().GetName()
+				% lists.get<4>().GetName();
+			return result.str();
+		}
+
+		template<
+			typename T1,
+			typename T2,
+			typename T3,
+			typename T4,
+			typename T5>
+		static void AssignEventListsSyncObjects(
+					EventQueueMutex &mutex,
+					EventQueueCondition &newDataCondition,
+					const boost::tuple<T1, T2, T3, T4, T5> &lists) {
+			lists.get<0>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<1>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<2>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<3>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<4>().AssignSyncObjects(mutex, newDataCondition);
+		}
+
+		template<
+			typename T1,
+			typename T2,
+			typename T3,
+			typename T4,
+			typename T5>
+		void EnqueueEventListsCollection(
+					const boost::tuple<T1, T2, T3, T4, T5> &lists,
+					std::bitset<5> &deactivationMask,
+					EventQueueLock &lock)
+				const {
+			do {
+				do {
+					do {
+						do {
+							EnqueueEventList<0>(lists, deactivationMask, lock);
+						} while (
+							EnqueueEventList<1>(lists, deactivationMask, lock));
+					} while (
+						EnqueueEventList<2>(lists, deactivationMask, lock));
+				} while (EnqueueEventList<3>(lists, deactivationMask, lock));
+			} while (EnqueueEventList<4>(lists, deactivationMask, lock));
+		}
+
 		////////////////////////////////////////////////////////////////////////////////
 
 		template<typename EventLists>
@@ -418,12 +671,21 @@ namespace trdk { namespace Engine {
 			try {
 				std::bitset<boost::tuples::length<EventLists>::value>
 					deactivationMask;
-				do {
-					EnqueueEventListsCollection(lists, deactivationMask);
-				} while (!deactivationMask.all());
+				EventQueueMutex mutex;
+				EventQueueCondition newDataCondition;
+				AssignEventListsSyncObjects(mutex, newDataCondition, lists);
+				EventQueueLock lock(mutex);
+				for ( ; ; ) {
+					EnqueueEventListsCollection(lists, deactivationMask, lock);
+					if (deactivationMask.all()) {
+						break;
+					}
+					newDataCondition.wait(lock);
+				}
 			} catch (...) {
 				// error already logged
 				isError = true;
+				AssertFailNoException();
 			}
 			m_context.GetLog().Debug(
 				"Dispatcher notification task \"%1%\" stopped.",

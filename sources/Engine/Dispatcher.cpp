@@ -27,10 +27,11 @@ Dispatcher::Dispatcher(Engine::Context &context)
 			m_level1Ticks("Level 1 Ticks", m_context),
 			m_newTrades("New Trades", m_context),
 			m_positionUpdates("Position", m_context) {
-	StartNotificationTask(m_level1Updates);
-	StartNotificationTask(m_level1Ticks);
-	StartNotificationTask(m_newTrades);
-	StartNotificationTask(m_positionUpdates);
+	StartNotificationTask(
+		m_level1Updates,
+		m_level1Ticks,
+		m_newTrades,
+		m_positionUpdates);
 }
 
 Dispatcher::~Dispatcher() {
@@ -53,11 +54,13 @@ void Dispatcher::Activate() {
 	m_positionUpdates.Activate();
 	m_level1Updates.Activate();
 	m_newTrades.Activate();
+	m_level1Ticks.Activate();
 	m_context.GetLog().Debug("Events dispatching started.");
 }
 
 void Dispatcher::Suspend() {
 	m_context.GetLog().Debug("Suspending events dispatching...");
+	m_level1Ticks.Suspend();
 	m_newTrades.Suspend();
 	m_level1Updates.Suspend();
 	m_positionUpdates.Suspend();
