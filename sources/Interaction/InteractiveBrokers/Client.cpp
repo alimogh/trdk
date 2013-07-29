@@ -1393,15 +1393,18 @@ void Client::historicalData(
 	
 	const bool isFinished = boost::starts_with(time, "f");
 	Assert(!isFinished || boost::starts_with(time, "finished-"));
+	Assert(
+		!isFinished
+		|| (IsEqual(lowPrice, -1.0) && IsEqual(highPrice, -1.0)));
 
-	security->AddLevel1Tick(
-		ParseHistoryPointTime(time, m_log, isFinished),
-		Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-			security->ScalePrice(lowPrice)),
-		Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-			security->ScalePrice(highPrice)));
-
-	if (isFinished) {
+	if (!isFinished) {
+		security->AddLevel1Tick(
+			ParseHistoryPointTime(time, m_log, isFinished),
+			Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+				security->ScalePrice(lowPrice)),
+			Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+				security->ScalePrice(highPrice)));
+	} else {
 		SendMarketDataRequest(*security);
 	}
 
