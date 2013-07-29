@@ -6,7 +6,7 @@ import time
 
 ratio = 2.850
 positionVolume = 20000
-orderDisplaySize = 3
+orderDisplaySize = 30
 
 
 # noinspection PyCallByClass,PyTypeChecker
