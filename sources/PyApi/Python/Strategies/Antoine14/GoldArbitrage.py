@@ -4,7 +4,7 @@ import trdk
 import time
 
 
-ratio = 2.850
+ratio = 2.860
 positionVolume = 20000
 orderDisplaySize = 30
 
@@ -90,7 +90,12 @@ class GoldArbitrage(trdk.Strategy):
                     longGldShortDgl))
 
         def calcQty(security, price):
-            return security.scalePrice(positionVolume) / price
+            result = security.scalePrice(positionVolume) / price
+            # Resolving error: "The Display Size should be a multiple of the
+            # round lot size for this security:
+            result -= result % orderDisplaySize
+            assert result % orderDisplaySize == 0
+            return result
 
         if shortGldLongDlg:
             self.log.info('Opening positions "Short GLD, Long DGL"...')
