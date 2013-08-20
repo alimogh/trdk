@@ -50,11 +50,34 @@ namespace trdk {
 
 	public:
 
+		//! Returns security, creates new object if it doesn't exist yet.
+		/** Requires thread synchronization with FindSecurity.
+		  * @sa trdk::MarketDataSource::FindSecurity
+		  */
+		trdk::Security & GetSecurity(
+					trdk::Context &,
+					const trdk::Lib::Symbol &)
+				const;
+
+		//! Finds security.
+		/** Requires thread synchronization with GetSecurity.
+		  * @sa trdk::MarketDataSource::GetSecurity
+		  * @return nullptr if security object doesn't exist.
+		  */
+		trdk::Security * FindSecurity(const trdk::Lib::Symbol &) const;
+
+	protected:
+
 		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
 					trdk::Context &,
 					const trdk::Lib::Symbol &)
 				const
 				= 0;
+
+	private:
+
+		class Implementation;
+		Implementation *const m_pimpl;
 
 	};
 

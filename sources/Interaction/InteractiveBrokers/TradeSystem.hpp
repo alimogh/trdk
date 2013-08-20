@@ -76,13 +76,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
-		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
-				trdk::Context &,
-				const trdk::Lib::Symbol &)
-			const;
-
-	public:
-
 		virtual OrderId SellAtMarketPrice(
 				trdk::Security &,
 				trdk::Qty qty,
@@ -131,6 +124,13 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		virtual void CancelOrder(OrderId);
 		virtual void CancelAllOrders(trdk::Security &);
+
+	protected:
+
+		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
+				trdk::Context &,
+				const trdk::Lib::Symbol &)
+			const;
 
 	private:
 

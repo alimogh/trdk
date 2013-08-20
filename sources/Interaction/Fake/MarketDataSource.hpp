@@ -52,7 +52,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 		virtual void Connect(const trdk::Lib::IniFileSectionRef &);
 
-	public:
+	protected:
 
 		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
 					Context &,

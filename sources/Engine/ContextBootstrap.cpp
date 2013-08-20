@@ -398,13 +398,11 @@ public:
 				const IniFile &confRef,
 				Engine::Context &context,
 				SubscriptionsManager &subscriptionsManagerRef,
-				Securities &securitiesRef,
 				Strategies &strategiesRef,
 				Observers &observersRef,
 				Services &servicesRef)
 			: m_context(context),
 			m_subscriptionsManager(subscriptionsManagerRef),
-			m_securitiesResult(securitiesRef),
 			m_strategiesResult(strategiesRef),
 			m_observersResult(observersRef),
 			m_servicesResult(servicesRef),
@@ -616,9 +614,9 @@ private:
 		if (!symbols.empty()) {
 			std::list<std::string> securities;
 			foreach (auto symbol, symbols) {
-				const auto security = LoadSecurity(symbol);
+				auto &security = LoadSecurity(symbol);
 				try {
-					instance->RegisterSource(*security);
+					instance->RegisterSource(security);
 				} catch (...) {
 					trdk::Log::RegisterUnhandledException(
 						__FUNCTION__,
@@ -628,7 +626,7 @@ private:
 					throw Exception("Failed to attach security");
 				}
 				std::ostringstream oss;
-				oss << *security;
+				oss << security;
 				securities.push_back(oss.str());
 			}
 			Assert(
@@ -998,9 +996,9 @@ private:
 				continue;
 			}
 			foreach (const Symbol &symbol, requirement.second) {
-				boost::shared_ptr<Security> security;
+				Security *security = nullptr;
 				if (!IsMagicSymbolCurrentSecurity(symbol)) {
-					security = LoadSecurity(symbol);
+					security = &LoadSecurity(symbol);
 				}
 				foreach (auto &instance, module.standaloneInstances) {
 					if (security) {
@@ -1106,25 +1104,15 @@ private:
 		const auto end = module.GetSecurities().GetEnd();
 		for (auto i = begin; i != end; ++i) {
 			Assert(
-				m_securitiesResult.find(i->GetSymbol())
-				!= m_securitiesResult.end());
-			pred(*m_securitiesResult[i->GetSymbol()]);
+				m_context.GetMarketDataSource().FindSecurity(i->GetSymbol()));
+			pred(LoadSecurity(i->GetSymbol()));
 		}
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	boost::shared_ptr<Security> LoadSecurity(const Symbol &symbol) {
-		const auto pos = m_securitiesResult.find(symbol);
-		if (pos != m_securitiesResult.end()) {
-			return pos->second;
-		}
-		auto security = m_context.GetMarketDataSource().CreateSecurity(
-			m_context,
-			symbol);
-		m_securitiesResult[symbol] = security;
-		m_context.GetLog().Debug("Loaded security \"%1%\".", *security);
-		return security;
+	Security & LoadSecurity(const Symbol &symbol) {
+		return m_context.GetMarketDataSource().GetSecurity(m_context, symbol);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -1262,7 +1250,6 @@ private:
 
 	SubscriptionsManager &m_subscriptionsManager;
 
-	Securities &m_securitiesResult;
 	Strategies &m_strategiesResult;
 	Observers &m_observersResult;
 	Services &m_servicesResult;
@@ -1296,7 +1283,6 @@ void Engine::BootstrapContextState(
 			const IniFile &conf,
 			Context &context,
 			SubscriptionsManager &subscriptionsManagerRef,
-			Securities &securitiesRef,
 			Strategies &strategiesRef,
 			Observers &observersRef,
 			Services &servicesRef) {
@@ -1304,7 +1290,6 @@ void Engine::BootstrapContextState(
 			conf,
 			context,
 			subscriptionsManagerRef,
-			securitiesRef,
 			strategiesRef,
 			observersRef,
 			servicesRef)

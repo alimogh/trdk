@@ -78,13 +78,6 @@ namespace trdk { namespace Interaction { namespace Csv {
 
 		virtual void Connect(const trdk::Lib::IniFileSectionRef &);
 
-	public:
-
-		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
-					Context &,
-					const trdk::Lib::Symbol &)
-				const;
-
 	private:
 
 		void Subscribe(Security &) const;
@@ -100,6 +93,13 @@ namespace trdk { namespace Interaction { namespace Csv {
 				trdk::ScaledPrice &,
 				trdk::Qty &)
 			const;
+
+	protected:
+
+		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
+					Context &,
+					const trdk::Lib::Symbol &)
+				const;
 
 	private:
 
