@@ -98,32 +98,26 @@ class GoldArbitrage(trdk.Strategy):
             return result
 
         if shortGldLongDlg:
-            self.log.info('Opening positions "Short GLD, Long DGL"...')
-            gldPos = trdk.ShortPosition(
-                self,
-                gld,
-                calcQty(gld, gldBar.maxAskPrice),
-                gldBar.maxAskPrice)
-            dglPos = trdk.LongPosition(
-                self,
-                dgl,
-                calcQty(dgl, dglBar.minBidPrice),
-                dglBar.minBidPrice)
+            gldQty = calcQty(gld, gldBar.maxAskPrice)
+            dglQty = calcQty(dgl, dglBar.minBidPrice)
+            self.log.info(
+                'Opening positions "Short GLD {0}, Long DGL {1}"'
+                ' (volume: {2}, visible qty: {3})...'
+                    .format(gldQty, dglQty, positionVolume, orderDisplaySize))
+            gldPos = trdk.ShortPosition(self, gld, gldQty, gldBar.maxAskPrice)
+            dglPos = trdk.LongPosition(self, dgl, dglQty, dglBar.minBidPrice)
             gldPos.open(gldPos.openStartPrice, orderDisplaySize)
             dglPos.open(dglPos.openStartPrice, orderDisplaySize)
         
         if longGldShortDgl:
-            self.log.info('Opening positions "Long GLD, Short DGL"...')
-            gldPos = trdk.LongPosition(
-                self,
-                gld,
-                calcQty(gld, gldBar.minBidPrice),
-                gldBar.minBidPrice)
-            dglPos = trdk.ShortPosition(
-                self,
-                dgl,
-                calcQty(dgl, dglBar.maxAskPrice),
-                dglBar.maxAskPrice)
+            gldQty = calcQty(gld, gldBar.minBidPrice)
+            dglQty = calcQty(dgl, dglBar.maxAskPrice)
+            self.log.info(
+                'Opening positions "Short GLD {0}, Long DGL {1}"'
+                ' (volume: {2}, visible qty: {3})...'
+                    .format(gldQty, dglQty, positionVolume, orderDisplaySize))
+            gldPos = trdk.LongPosition(self, gld, gldQty, gldBar.minBidPrice)
+            dglPos = trdk.ShortPosition(self, dgl, dglQty, dglBar.maxAskPrice)
             gldPos.open(gldPos.openStartPrice, orderDisplaySize)
             dglPos.open(dglPos.openStartPrice, orderDisplaySize)
 
