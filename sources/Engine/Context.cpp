@@ -109,7 +109,9 @@ public:
 			throw Exception("Failed to init engine context");
 		}
 		
-//		m_context.GetLog().Info("Loaded %1% securities.", m_securities.size());
+		m_context.GetLog().Info(
+			"Loaded %1% securities.",
+			m_context.GetMarketDataSource().GetActiveSecurityCount());
 		m_context.GetLog().Info("Loaded %1% observers.", m_observers.size());
 		m_context.GetLog().Info(
 			"Loaded %1% strategies (%2% instances).",
@@ -217,7 +219,8 @@ Security * Engine::Context::FindSecurity(const Symbol &symbol) {
 }
 
 const Security * Engine::Context::FindSecurity(const Symbol &symbol) const {
-	return const_cast<Context *>(this)->FindSecurity(symbol);
+	Assert(m_pimpl->m_state);
+	return m_pimpl->m_state->FindSecurity(symbol);
 }
 
 //////////////////////////////////////////////////////////////////////////

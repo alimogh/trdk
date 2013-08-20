@@ -53,18 +53,28 @@ namespace trdk {
 		//! Returns security, creates new object if it doesn't exist yet.
 		/** Requires thread synchronization with FindSecurity.
 		  * @sa trdk::MarketDataSource::FindSecurity
+		  * @sa trdk::MarketDataSource::GetActiveSecurityCount
 		  */
 		trdk::Security & GetSecurity(
 					trdk::Context &,
-					const trdk::Lib::Symbol &)
-				const;
+					const trdk::Lib::Symbol &);
 
 		//! Finds security.
 		/** Requires thread synchronization with GetSecurity.
 		  * @sa trdk::MarketDataSource::GetSecurity
+		  * @sa trdk::MarketDataSource::GetActiveSecurityCount
 		  * @return nullptr if security object doesn't exist.
 		  */
-		trdk::Security * FindSecurity(const trdk::Lib::Symbol &) const;
+		trdk::Security * FindSecurity(const trdk::Lib::Symbol &);
+		//! Finds security.
+		/** Requires thread synchronization with GetSecurity.
+		  * @sa trdk::MarketDataSource::GetSecurity
+		  * @sa trdk::MarketDataSource::GetActiveSecurityCount
+		  * @return nullptr if security object doesn't exist.
+		  */
+		const trdk::Security * FindSecurity(const trdk::Lib::Symbol &) const;
+
+		size_t GetActiveSecurityCount() const;
 
 	protected:
 

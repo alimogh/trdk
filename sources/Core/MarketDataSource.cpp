@@ -56,8 +56,7 @@ MarketDataSource::~MarketDataSource() {
 
 Security & MarketDataSource::GetSecurity(
 			Context &context,
-			const Symbol &symbol)
-		const {
+			const Symbol &symbol) {
 	{
 		auto *existSecurity = FindSecurity(symbol);
 		if (existSecurity) {
@@ -71,11 +70,19 @@ Security & MarketDataSource::GetSecurity(
 	return *newSecurity;
 }
 
-Security * MarketDataSource::FindSecurity(const Symbol &symbol) const {
+Security * MarketDataSource::FindSecurity(const Symbol &symbol) {
 	const auto &result = m_pimpl->m_securities.find(symbol);
 	return result != m_pimpl->m_securities.end()
 		?	&*result->second
 		:	nullptr;
+}
+
+const Security * MarketDataSource::FindSecurity(const Symbol &symbol) const {
+	return const_cast<MarketDataSource *>(this)->FindSecurity(symbol);
+}
+
+size_t MarketDataSource::GetActiveSecurityCount() const {
+	return m_pimpl->m_securities.size();
 }
 
 //////////////////////////////////////////////////////////////////////////
