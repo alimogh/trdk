@@ -1464,5 +1464,29 @@ void Client::marketDataType(
 	//...//
 }
 
-///////////////////////////////////////////////////////////////////////////////
+void Client::position(
+			const IBString &/*account*/,
+			const Contract &/*contract*/,
+			int /*position*/,
+			double /*avgCost*/) {
+	//...//
+}
 
+void Client::positionEnd() {
+	//...//
+}
+
+void Client::accountSummary(
+			int,
+			const IBString &,
+			const IBString &,
+			const IBString &,
+			const IBString &) {
+	//...//
+}
+
+void Client::accountSummaryEnd(int) {
+	//...//
+}
+
+///////////////////////////////////////////////////////////////////////////////

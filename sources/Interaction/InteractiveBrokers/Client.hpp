@@ -310,6 +310,16 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		virtual void tickSnapshotEnd(int);
 		virtual void marketDataType(TickerId, int);
 
+		virtual void position(const IBString &, const Contract &, int, double);
+		virtual void positionEnd(void);
+		virtual void accountSummary(
+				int,
+				const IBString &,
+				const IBString &,
+				const IBString &,
+				const IBString &);
+		virtual void accountSummaryEnd(int);
+
 	private:
 
 		Context::Log &m_log;
