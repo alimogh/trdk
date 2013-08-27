@@ -93,8 +93,8 @@ class GoldArbitrage(trdk.Strategy):
             result = security.scalePrice(positionVolume) / price
             # Resolving error: "The Display Size should be a multiple of the
             # round lot size for this security:
-            result -= result % orderDisplaySize
-            assert result % orderDisplaySize == 0
+            result -= result % 100
+            assert result % 100 == 0
             return result
 
         if shortGldLongDlg:
