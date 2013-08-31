@@ -229,6 +229,17 @@ class Strategy(Module):
         """
         pass
 
+    def onBrokerPositionUpdate(self, security, qty, isInitial):
+        """
+        Virtual. Notifies about broker position update. Position size "qty"
+        may differ from current "trdk::Security::GetBrokerPosition". Optional.
+
+        :param security: trdk.Security
+        :param qty: int
+        :param isInitial: bool
+        """
+        pass
+
 
 class ServiceInfo(Module):
 
@@ -368,8 +379,18 @@ class Position(object):
         """
         pass
 
+    def restoreOpenState(self, openOrderId=0):
+        """
+        Restores position in open-state. Just creates position in open state at
+        current strategy, doesn't make any trading actions. Order ID can be any
+        user-defined ID, it doesn't affect the engine logic.
+
+        :param openOrderId: int
+        """
+
     def openAtMarketPrice(self, displaySize=None):
-        """ Sends market order. Asynchronous. Returns order ID.
+        """
+        Sends market order. Asynchronous. Returns order ID.
 
         :param displaySize: int
         :rtype: int
@@ -377,7 +398,8 @@ class Position(object):
         pass
 
     def open(self, price, displaySize=None):
-        """ Sends limit order. Asynchronous. Returns order ID.
+        """
+        Sends limit order. Asynchronous. Returns order ID.
 
         :param price: int
         :param displaySize: int
@@ -385,7 +407,8 @@ class Position(object):
         """
 
     def openAtMarketPriceWithStopPrice(self, stopPrice, displaySize=None):
-        """ Sends market order. Asynchronous. Returns order ID.
+        """
+        Sends market order. Asynchronous. Returns order ID.
 
         :param stopPrice: int
         :param displaySize: int
@@ -394,7 +417,8 @@ class Position(object):
         pass
 
     def openOrCancel(self, price):
-        """ Sends "Immediate or Cancel" order. Asynchronous. Returns order ID.
+        """
+        Sends "Immediate or Cancel" order. Asynchronous. Returns order ID.
 
         :param price: int
         :rtype: int
@@ -402,7 +426,8 @@ class Position(object):
         pass
 
     def closeAtMarketPrice(self, displaySize=None):
-        """ Sends market order. Asynchronous. Returns order ID.
+        """
+        Sends market order. Asynchronous. Returns order ID.
 
         :param displaySize: int
         :rtype: int
@@ -410,7 +435,8 @@ class Position(object):
         pass
 
     def close(self, price, displaySize=None):
-        """ Sends limit order. Asynchronous. Returns order ID.
+        """
+        Sends limit order. Asynchronous. Returns order ID.
 
         :param price: int
         :param displaySize: int
@@ -429,7 +455,8 @@ class Position(object):
         pass
 
     def closeOrCancel(self, price):
-        """ Sends "Immediate or Cancel" order. Asynchronous. Returns order ID.
+        """
+        Sends "Immediate or Cancel" order. Asynchronous. Returns order ID.
 
         :param price: int
         :rtype: int

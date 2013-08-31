@@ -42,16 +42,18 @@ namespace {
 ///////////////////////////////////////////////////////////////////////////////
 
 Client::Client(
+			const ib::TradeSystem::Securities &securities,
 			Context::Log &log,
 			int clientId /*= 0*/,
 			const std::string &host /*= "127.0.0.1"*/,
 			unsigned short port /*= 7496*/)
-		: m_log(log),
+		: m_securities(securities),
+		m_log(log),
 		m_host(host),
 		m_port(port),
 		m_clientId(clientId),
-		m_isConnected(false),
-		m_state(STATE_PING),
+		m_connectionState(CONNECTION_STATE_NOT_CONNECTED),
+		m_state(PING_STATE_REQ),
 		m_thread(nullptr),
 		m_orderStatusesMap(GetOrderStatusesMap()),
 		m_seqNumber(-1) {
@@ -63,10 +65,10 @@ Client::Client(
 		m_clientId);
 	AssertEq(connectResult, m_client->isConnected());
 	if (!connectResult || !m_client->isConnected()) {
-		throw TradeSystem::ConnectError(
+		throw trdk::TradeSystem::ConnectError(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME ": failed to connect");
 	}
-	m_isConnected = true;
+	m_connectionState = CONNECTION_STATE_CONNECTED;
 	LogConnect();
 }
 
@@ -83,7 +85,7 @@ Client::~Client() {
 		if (m_thread) {
 			{
 				const Lock lock(m_mutex);
-				m_isConnected = false;
+				m_connectionState = CONNECTION_STATE_NOT_CONNECTED;
 			}
 			m_condition.notify_all();
 			m_thread->join();
@@ -118,7 +120,7 @@ void Client::Task() {
 		try {
 			m_clientNow = boost::get_system_time();
 			if (isInited) {
-				if (!m_isConnected) {
+				if (!m_connectionState) {
 					break;
 				}
 				if (nextIterationTime > m_clientNow) {
@@ -139,7 +141,7 @@ void Client::Task() {
 			}
 			nextIterationTime = m_clientNow + maxIterationTime;
 			CheckTimeout();
-			while (m_isConnected && ProcessMessages()) {
+			while (m_connectionState && ProcessMessages()) {
 				if (m_callBackList.size() > 0) {
 					OrderCallbackList callBackList;
 					callBackList.swap(m_callBackList);
@@ -167,7 +169,7 @@ void Client::Task() {
 					lock->lock();
 				}
 			}
-			if (!m_isConnected) {
+			if (!m_connectionState) {
 				break;
 			}
 		} catch (...) {
@@ -178,17 +180,36 @@ void Client::Task() {
 	}
 	m_log.Info(
 		"Stopped "
-		INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
-		" connection read task.");
+			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
+			" connection read task.");
 }
 
 
 void Client::StartData() {
+	
 	Lock lock(m_mutex);
 	Assert(!m_thread);
+	AssertEq(CONNECTION_STATE_CONNECTED, m_connectionState);
 	if (m_thread) {
 		return;
 	}
+
+	bool isBrokerPositionsRequred = false;
+	foreach (const Security *security, m_securities) {
+		if (security->IsBrokerPositionRequired()) {
+			isBrokerPositionsRequred = true;
+			break;
+		}
+	}
+	if (isBrokerPositionsRequred) {
+		m_log.Debug(
+			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
+				": requesting positions info...");
+		m_client->reqPositions();
+	} else {
+		m_connectionState = CONNECTION_STATE_READY;
+	}
+
 	m_thread = new boost::thread(
 		[this]() {
 			Task();
@@ -196,11 +217,12 @@ void Client::StartData() {
 	if (!m_condition.timed_wait(lock, boost::get_system_time() + timeout)) {
 		m_log.Error(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
-				" connection error: no seqnumber received.");
-		m_isConnected = false;
+				": no seqnumber received.");
+		m_connectionState = CONNECTION_STATE_NOT_CONNECTED;
 		m_condition.notify_all();
-		throw TradeSystem::ConnectError("No seqnumber received");
+		throw trdk::TradeSystem::ConnectError("No seqnumber received");
 	}
+
 }
 
 bool Client::ProcessMessages() {
@@ -243,7 +265,7 @@ bool Client::ProcessMessages() {
 		m_log.Debug(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 				" connection process operation returned DISCONNECT.");
-		m_isConnected = false;
+		m_connectionState = CONNECTION_STATE_NOT_CONNECTED;
 		return false;
 	} else if (m_client->fd() < 0) {
 		return false;
@@ -270,27 +292,58 @@ void Client::Subscribe(const OrderStatusSlot &orderStatusSlot) const {
 
 void Client::SubscribeToMarketData(ib::Security &security) const {
 
+	Assert(m_securities.find(&security) != m_securities.end());
+
 	if (!security.IsLevel1Required() && !security.IsTradesRequired()) {
 		return;
 	}
 
 	const Lock lock(m_mutex);
-	if (IsSubscribed(m_marketDataRequest, security)) {
+	if (	IsSubscribed(
+				m_marketDataRequests,
+				m_postponedMarketDataRequests,
+				security)) {
 		return;
 	}
 	CheckState();
 
+	m_connectionState < CONNECTION_STATE_READY
+		?	PostponeMarketDataSubscription(security)
+		:	DoMarketDataSubscription(security);
+
+}
+
+void Client::PostponeMarketDataSubscription(ib::Security &security) const {
+	Assert(
+		std::find(
+				m_postponedMarketDataRequests.begin(),
+				m_postponedMarketDataRequests.end(),
+				&security)
+			== m_postponedMarketDataRequests.end());
+	m_postponedMarketDataRequests.push_back(&security);
+}
+
+void Client::FlushPostponedMarketDataSubscription() const {
+	AssertLe(CONNECTION_STATE_READY, m_connectionState);
+	while (!m_postponedMarketDataRequests.empty()) {
+		DoMarketDataSubscription(**m_postponedMarketDataRequests.begin());
+		m_postponedMarketDataRequests.pop_front();
+	}
+}
+
+void Client::DoMarketDataSubscription(ib::Security &security) const {
+	Assert(!IsSubscribed(m_marketDataRequests, security));
+	Assert(security.IsLevel1Required() || security.IsTradesRequired());
 	if (!SendMarketDataHistoryRequest(security)) {
 		SendMarketDataRequest(security);
 	}
-
 }
 
 void Client::SendMarketDataRequest(ib::Security &security) const {
 
 	Assert(!m_mutex.try_lock());
 	Assert(security.IsLevel1Required() || security.IsTradesRequired());
-	Assert(!IsSubscribed(m_marketDataRequest, security));
+	Assert(!IsSubscribed(m_marketDataRequests, security));
 
 	const SecurityRequest request(
 		security,
@@ -298,7 +351,7 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 	Contract contract;
 	contract << *request.security;
 
-	auto requests(m_marketDataRequest);
+	auto requests(m_marketDataRequests);
 	requests.insert(request);
 
 	std::list<IBString> genericTicklist;
@@ -320,13 +373,7 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 			boost::cref(*request.security),
 			boost::cref(request.tickerId)));
 		
-	// Can't get volume from IB at this stage, see also method tickSize
-	// remove it later
-	// 	security.SetLevel1(
-	// 		boost::get_system_time(),
-	// 		Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>(0));
-
-	requests.swap(m_marketDataRequest);
+	requests.swap(m_marketDataRequests);
 
 }
 
@@ -409,7 +456,11 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 
 void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
 
+	//! @todo support postponed Level 2 subscription 
+
 	AssertFail("Market Depth Level II not yet supported by security.");
+
+	Assert(m_securities.find(&security) != m_securities.end());
 
 	const Lock lock(m_mutex);
 	if (IsSubscribed(m_marketDepthLevel2Requests, security)) {
@@ -844,7 +895,7 @@ void Client::UpdateLastResponseTime() {
 }
 
 void Client::RequestCurrentTime() {
-	m_state = STATE_PING_ACK;
+	m_state = PING_STATE_ACK;
 	m_client->reqCurrentTime();
 	UpdateLastRequestTime();
 }
@@ -905,7 +956,7 @@ void Client::HandleError(
 		case 1300:	// TWS socket port has been reset and this connection is
 					// being dropped.
 			AssertEq(-1, id);
-			m_isConnected = false;
+			m_connectionState = CONNECTION_STATE_NOT_CONNECTED;
 			break;
 	}
 }
@@ -916,7 +967,7 @@ void Client::CheckState() const {
 			"No " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 				" seqnumber specified.");
 	}
-	if (m_seqNumber < 0 || !m_isConnected) {
+	if (m_seqNumber < 0 || !m_connectionState) {
 		throw TradeSystem::ConnectionDoesntExistError(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 				" connection doesn't exist");
@@ -931,23 +982,23 @@ void Client::CheckTimeout() const {
 		return;
 	}
 	switch (m_state) {
-		case STATE_IDLE:
+		case PING_STATE_IDLE:
 			Assert(m_nextPingTime != pt::not_a_date_time);
 			if (m_nextPingTime > m_clientNow) {
 				break;
 			}
 			/* no break! */
-		case STATE_PING:
+		case PING_STATE_REQ:
 			const_cast<Client *>(this)->RequestCurrentTime();
 			break;
 		default:
-			Assert(m_state == STATE_PING_ACK);
+			Assert(m_state == PING_STATE_ACK);
 			break;
 	}
 }
 
 ib::Security * Client::GetMarketDataRequest(TickerId tickerId) {
-	const auto &index = m_marketDataRequest.get<ByTicker>();
+	const auto &index = m_marketDataRequests.get<ByTicker>();
 	const auto pos = index.find(tickerId);
 	if (pos == index.end()) {
 		m_log.Debug(
@@ -975,6 +1026,16 @@ bool Client::IsSubscribed(
 			const ib::Security &security) {
 	const auto &index = list.get<BySecurity>();
 	return index.find(const_cast<ib::Security *>(&security)) != index.end();
+}
+
+bool Client::IsSubscribed(
+			const SecurityRequestList &requested,
+			const PostponedSecurityRequestList &postponed,
+			const ib::Security &security) {
+	return
+		IsSubscribed(requested, security)
+		|| std::find(postponed.begin(), postponed.end(), &security)
+				!= postponed.end();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1038,8 +1099,8 @@ void Client::orderStatus(
 }
 
 void Client::currentTime(long time) {
-	AssertEq(STATE_PING_ACK, m_state);
-	if (m_state != STATE_PING_ACK) {
+	AssertEq(PING_STATE_ACK, m_state);
+	if (m_state != PING_STATE_ACK) {
 		m_log.Debug(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " server current time"
 				" arrived without request: %1%.",
@@ -1050,7 +1111,7 @@ void Client::currentTime(long time) {
 		INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " server current time: %1%.",
 		pt::from_time_t(time));
 	UpdateNextPingRequestTime();
-	m_state = STATE_IDLE;
+	m_state = PING_STATE_IDLE;
 }
 
 void Client::error(
@@ -1172,7 +1233,9 @@ void Client::openOrderEnd() {
 
 void Client::winError(const IBString &message, int code) {
 	m_log.Error(
-		"Error occurred on " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " connection client side:"
+		"Error occurred on"
+			" " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
+			" connection client side:"
 			" \"%1%\" (error code: %2%, order or ticket ID: %3%).",
 		boost::make_tuple(
 			boost::cref(message),
@@ -1218,14 +1281,14 @@ void Client::nextValidId(::OrderId id) {
 	if (prevVal != -1) {
 		m_log.Info(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
-				" connection changed next order ID %1% -> %2%.",
+				": next order ID %1% -> %2%.",
 			boost::make_tuple(
 				boost::cref(prevVal),
 				boost::cref(m_seqNumber)));
 	} else {
 		m_log.Info(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
-				" connection set next order ID %1%.",
+				": next order ID %1%.",
 			m_seqNumber);
 	}
 	Assert(m_seqNumber >= 0);
@@ -1465,15 +1528,50 @@ void Client::marketDataType(
 }
 
 void Client::position(
-			const IBString &/*account*/,
-			const Contract &/*contract*/,
-			int /*position*/,
-			double /*avgCost*/) {
-	//...//
+			const IBString &account,
+			const Contract &contract,
+			int position,
+			double avgCost) {
+
+	const bool isInitial = m_connectionState < CONNECTION_STATE_READY;
+
+	{
+		const char *const text
+			= INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME ":"
+				" position info for account \"%1%\" -"
+				" \"%2%\" = %3% (average cost: %4%).";
+		const auto &params = boost::make_tuple(
+			boost::cref(account),
+			boost::cref(contract.symbol),
+			position,
+			avgCost);
+		if (position == 0 && isInitial) {
+			m_log.Debug(text, params);
+			return;
+		} else {
+			m_log.Info(text, params);
+		}
+	}
+
+	//! @todo place for optimization (if position will be used not only at
+	//! start):
+	foreach (ib::Security *security, m_securities) {
+		if (security->GetSymbol().GetSymbol() == contract.symbol) {
+			security->SetBrokerPosition(position, isInitial);
+			break;
+		}
+	}
+
 }
 
 void Client::positionEnd() {
-	//...//
+	AssertGt(CONNECTION_STATE_READY, m_connectionState);
+	m_log.Debug(
+		INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
+			": positions info completed.");
+	m_client->cancelPositions();
+	m_connectionState = CONNECTION_STATE_READY;
+	FlushPostponedMarketDataSubscription();
 }
 
 void Client::accountSummary(

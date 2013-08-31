@@ -109,6 +109,11 @@ void PositionExport::ExportClass(const char *className) {
 
 		.add_property("security", &PositionExport::GetSecurity)
 
+		.def("RestoreOpenState", &PositionExport::RestoreOpenState)
+		.def(
+			"RestoreOpenState",
+			&PositionExport::RestoreOpenStateWithOpenOrderId)
+
 		.def("openAtMarketPrice", &PositionExport::OpenAtMarketPrice)
 		.def("openAtMarketPrice", &PositionExport::OpenAtMarketPriceByIceberg)
 		.def("open", &PositionExport::Open)
@@ -240,6 +245,15 @@ ScaledPrice PositionExport::GetCommission() const {
 
 py::object PositionExport::GetSecurity() {
 	return PyApi::Export(GetPosition().GetSecurity());
+}
+
+void PositionExport::RestoreOpenState() {
+	GetPosition().RestoreOpenState();
+}
+
+void PositionExport::RestoreOpenStateWithOpenOrderId(
+			trdk::OrderId openOrderId) {
+	GetPosition().RestoreOpenState(openOrderId);
 }
 
 OrderId PositionExport::OpenAtMarketPrice() {

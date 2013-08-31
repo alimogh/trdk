@@ -82,7 +82,7 @@ void SubscriptionsManager::SubscribeToLevel1Updates(
 			&m_dispatcher,
 			subscriber,
 			boost::ref(security)));
-	const auto connection = security.SubcribeToLevel1Updates(slot);
+	const auto connection = security.SubscribeToLevel1Updates(slot);
 	try {
 		slotConnections.push_back(connection);
 	} catch (...) {
@@ -110,7 +110,7 @@ void SubscriptionsManager::SubscribeToLevel1Ticks(
 			_1,
 			_2,
 			_3));
-	const auto connection = security.SubcribeToLevel1Ticks(slot);
+	const auto &connection = security.SubscribeToLevel1Ticks(slot);
 	try {
 		slotConnections.push_back(connection);
 	} catch (...) {
@@ -139,7 +139,7 @@ void SubscriptionsManager::SubscribeToTrades(
 			_2,
 			_3,
 			_4));
-	const auto connection = security.SubcribeToTrades(slot);
+	const auto &connection = security.SubscribeToTrades(slot);
 	try {
 		slotConnections.push_back(connection);
 	} catch (...) {
@@ -152,6 +152,33 @@ void SubscriptionsManager::SubscribeToTrades(
 		throw;
 	}
 	Report(*subscriber, security, "new trades");
+}
+
+void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
+			Security &security,
+			const SubscriberPtrWrapper &subscriber,
+			std::list<ss::connection> &slotConnections) {
+	const auto slot = Security::BrokerPositionUpdateSlot(
+		boost::bind(
+			&Dispatcher::SignalBrokerPositionUpdate,
+			&m_dispatcher,
+			subscriber,
+			boost::ref(security),
+			_1,
+			_2));
+	const auto &connection = security.SubscribeToBrokerPositionUpdates(slot);
+	try {
+		slotConnections.push_back(connection);
+	} catch (...) {
+		try {
+			connection.disconnect();
+		} catch (...) {
+			AssertFailNoException();
+			throw;
+		}
+		throw;
+	}
+	Report(*subscriber, security, "Broker Position Updates");
 }
 
 void SubscriptionsManager::SubscribeToLevel1Updates(
@@ -297,6 +324,61 @@ void SubscriptionsManager::SubscribeToTrades(
 			SubscribeToTrades(security, subscriber, slotConnections);
 		});
 }
+
+void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
+			Security &security,
+			Strategy &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+					Security &security,
+					const SubscriberPtrWrapper &subscriber,
+					std::list<ss::connection> &slotConnections) {
+			SubscribeToBrokerPositionUpdates(
+				security,
+				subscriber,
+				slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
+			Security &security,
+			Service &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+					Security &security,
+					const SubscriberPtrWrapper &subscriber,
+					std::list<ss::connection> &slotConnections) {
+			SubscribeToBrokerPositionUpdates(
+				security,
+				subscriber,
+				slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
+			Security &security,
+			Observer &observer) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		observer,
+		[this](
+					Security &security,
+					const SubscriberPtrWrapper &subscriber,
+					std::list<ss::connection> &slotConnections) {
+			SubscribeToBrokerPositionUpdates(
+				security,
+				subscriber,
+				slotConnections);
+		});
+}
+
 
 void SubscriptionsManager::Subscribe(
 			Security &security,

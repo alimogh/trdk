@@ -207,6 +207,7 @@ namespace {
 		SYSTEM_SERVICE_LEVEL1_UPDATES,
 		SYSTEM_SERVICE_LEVEL1_TICKS,
 		SYSTEM_SERVICE_TRADES,
+		SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES,
 		numberOfSystemServices
 	};
 
@@ -376,10 +377,10 @@ namespace {
 	}
 
 	bool IsMagicSymbolCurrentSecurity(const Symbol &symbol) {
-		Assert(
-			(symbol.GetSymbol() == "$")
-			== (symbol.GetExchange() == "$")
-			== (symbol.GetPrimaryExchange() == "$"));
+		AssertEq(symbol.GetSymbol() == "$", symbol.GetExchange() == "$");
+		AssertEq(
+			symbol.GetExchange() == "$",
+			symbol.GetPrimaryExchange() == "$");
 		return
 			symbol.GetSymbol() == "$"
 			&& symbol.GetExchange() == "$"
@@ -488,7 +489,10 @@ private:
 	template<typename Module>
 	void MakeModulesResult(
 				const std::map<std::string /*tag*/, ModuleDll<Module>> &source,
-				std::map<std::string /*tag*/, std::list<DllObjectPtr<Module>>> &result) {
+				std::map<
+						std::string /*tag*/,
+						std::list<DllObjectPtr<Module>>> &
+					result) {
 		foreach (const auto &module, source) {
 			const std::string &tag = module.first;
 			const ModuleDll<Module> &moduleDll = module.second;
@@ -542,7 +546,10 @@ private:
 
 		if (	boost::iequals(tag, Ini::Constants::Services::level1Updates)
 				|| boost::iequals(tag, Ini::Constants::Services::level1Ticks)
-				|| boost::iequals(tag, Ini::Constants::Services::trades)) {
+				|| boost::iequals(tag, Ini::Constants::Services::trades)
+				|| boost::iequals(
+						tag,
+						Ini::Constants::Services::brokerPositionsUpdates)) {
 			m_context.GetLog().Error(
 				"System predefined module name used in %1%: \"%2%\".",
 				boost::make_tuple(boost::cref(conf), boost::cref(tag)));
@@ -741,7 +748,32 @@ private:
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	SupplierRequest ParseSupplierRequest(const std::string &request) {
+	std::string ParseSupplierRequestTag(const std::string &request) const {
+
+		boost::smatch match;
+		if (	!boost::regex_match(
+					request,
+					match,
+					boost::regex("([^\\[]+)(\\[([^\\]]+)\\])?"))) {
+			m_context.GetLog().Error(
+				"Requirements syntax error: \"%1%\".",
+				request);
+			throw Exception("Requirements syntax error");
+		}
+
+		const std::string result = boost::trim_copy(match[1].str());
+		if (result.empty()) {
+			m_context.GetLog().Error(
+				"Requirements syntax error: empty requirement tag in \"%1%\".",
+				request);
+			throw Exception("Requirements syntax error");
+		}
+
+		return result;
+
+	}
+
+	SupplierRequest ParseSupplierRequest(const std::string &request) const {
 
 		SupplierRequest result;
 
@@ -773,9 +805,9 @@ private:
 		typedef boost::split_iterator<std::string::const_iterator> It;
 		for (	It i = boost::make_split_iterator(
 					symbolList,
-					boost::first_finder(",", boost::is_iequal()))
-				; i != It()
-				; ++i) {
+					boost::first_finder(",", boost::is_iequal()));
+				i != It();
+				++i) {
 			const std::string symbolRequest
 				= boost::copy_range<std::string>(*i);
 			Symbol symbol = Symbol::Parse(
@@ -850,8 +882,9 @@ private:
 
 		foreach (std::string &request, list) {
 			boost::trim(request);
+			const std::string &requestTag = ParseSupplierRequestTag(request);
 			if (	boost::iequals(
-						request,
+						requestTag,
 						Ini::Constants::Services::level1Updates)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
@@ -860,7 +893,7 @@ private:
 					ParseSupplierRequest(request),
 					result);
 			} else if (	boost::iequals(
-							request,
+							requestTag,
 							Ini::Constants::Services::level1Ticks)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
@@ -868,14 +901,22 @@ private:
 					SYSTEM_SERVICE_LEVEL1_TICKS,
 					ParseSupplierRequest(request),
 					result);
-			} else if (
-					boost::iequals(
-						request,
-						Ini::Constants::Services::trades)) {
+			} else if (	boost::iequals(
+							requestTag,
+							Ini::Constants::Services::trades)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
 					SYSTEM_SERVICE_TRADES,
+					ParseSupplierRequest(request),
+					result);
+			} else if (	boost::iequals(
+							requestTag,
+							Ini::Constants::Services::brokerPositionsUpdates)) {
+				UpdateRequirementsList(
+					Trait::GetType(),
+					tag,
+					SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES,
 					ParseSupplierRequest(request),
 					result);
 			} else {
@@ -973,7 +1014,7 @@ private:
 			void (SubscriptionsManager::*subscribe)(Security &, Module &)
 				= nullptr;
 			static_assert(
-				numberOfSystemServices == 3,
+				numberOfSystemServices == 4,
 				"System service list changed.");
 			switch (requirement.first) {
 				case SYSTEM_SERVICE_LEVEL1_UPDATES:
@@ -987,6 +1028,10 @@ private:
 				case SYSTEM_SERVICE_TRADES:
 					subscribe
 						= &SubscriptionsManager::SubscribeToLevel1Ticks;
+					break;
+				case SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES:
+					subscribe
+						= &SubscriptionsManager::SubscribeToBrokerPositionUpdates;
 					break;
 				default:
 					AssertEq(SYSTEM_SERVICE_LEVEL1_UPDATES, requirement.first);
@@ -1038,9 +1083,11 @@ private:
 		foreach (const auto &requirement, requirements.requiredModules) {
 			const auto &requirementTag = requirement.first;
 			const auto requredModulePos = m_services.find(requirementTag);
-			Assert(requredModulePos != m_services.end());
 			if (requredModulePos == m_services.end()) {
-				continue;
+				m_context.GetLog().Error(
+					"Unknown service with tag \"%1%\" in requirement list.",
+					requirementTag);
+				throw Exception("Unknown service in requirement list");
 			}
  			ModuleDll<Service> &requredModule = requredModulePos->second;
  			foreach (const std::set<Symbol> &symbols, requirement.second) {

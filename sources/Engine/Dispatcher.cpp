@@ -26,12 +26,14 @@ Dispatcher::Dispatcher(Engine::Context &context)
 			m_level1Updates("Level 1 Updates", m_context),
 			m_level1Ticks("Level 1 Ticks", m_context),
 			m_newTrades("New Trades", m_context),
-			m_positionUpdates("Position", m_context) {
+			m_positionsUpdates("Positions", m_context),
+			m_brokerPositionsUpdates("Broker Positions", m_context) {
 	StartNotificationTask(
 		m_level1Updates,
 		m_level1Ticks,
 		m_newTrades,
-		m_positionUpdates);
+		m_positionsUpdates,
+		m_brokerPositionsUpdates);
 }
 
 Dispatcher::~Dispatcher() {
@@ -40,7 +42,8 @@ Dispatcher::~Dispatcher() {
 		m_level1Ticks.Stop();
 		m_newTrades.Stop();
 		m_level1Updates.Stop();
-		m_positionUpdates.Stop();
+		m_positionsUpdates.Stop();
+		m_brokerPositionsUpdates.Stop();
 		m_threads.join_all();
 		m_context.GetLog().Debug("Events dispatching stopped.");
 	} catch (...) {
@@ -51,7 +54,8 @@ Dispatcher::~Dispatcher() {
 
 void Dispatcher::Activate() {
 	m_context.GetLog().Debug("Starting events dispatching...");
-	m_positionUpdates.Activate();
+	m_brokerPositionsUpdates.Activate();
+	m_positionsUpdates.Activate();
 	m_level1Updates.Activate();
 	m_newTrades.Activate();
 	m_level1Ticks.Activate();
@@ -63,7 +67,7 @@ void Dispatcher::Suspend() {
 	m_level1Ticks.Suspend();
 	m_newTrades.Suspend();
 	m_level1Updates.Suspend();
-	m_positionUpdates.Suspend();
+	m_positionsUpdates.Suspend();
 	m_context.GetLog().Debug("Events dispatching suspended.");
 }
 
@@ -128,8 +132,30 @@ void Dispatcher::SignalPositionUpdate(
 			SubscriberPtrWrapper &subscriber,
 			Position &position) {
 	try {
-		m_positionUpdates.Queue(
-			boost::make_tuple(position.shared_from_this(), subscriber), true);
+		m_positionsUpdates.Queue(
+			boost::make_tuple(position.shared_from_this(), subscriber),
+			true);
+	} catch (...) {
+		//! Blocking as irreversible error, data loss.
+		subscriber.Block();
+		throw;
+	}
+}
+
+void Dispatcher::SignalBrokerPositionUpdate(
+			SubscriberPtrWrapper &subscriber,
+			Security &security,
+			Qty qty,
+			bool isInitial) {
+	try {
+		const SubscriberPtrWrapper::BrokerPosition position = {
+			&security,
+			qty,
+			isInitial
+		};
+		m_brokerPositionsUpdates.Queue(
+			boost::make_tuple(position , subscriber),
+			true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		subscriber.Block();

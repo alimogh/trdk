@@ -45,6 +45,16 @@ namespace trdk { namespace Engine {
 		void SubscribeToTrades(trdk::Security &, trdk::Service &);
 		void SubscribeToTrades(trdk::Security &, trdk::Observer &);
 
+		void SubscribeToBrokerPositionUpdates(
+					trdk::Security &,
+					trdk::Strategy &);
+		void SubscribeToBrokerPositionUpdates(
+					trdk::Security &,
+					trdk::Service &);
+		void SubscribeToBrokerPositionUpdates(
+					trdk::Security &,
+					trdk::Observer &);
+
 	public:
 
 		bool IsActive() const;
@@ -62,6 +72,10 @@ namespace trdk { namespace Engine {
 					const SubscriberPtrWrapper &,
 					std::list<boost::signals2::connection> &);
 		void SubscribeToTrades(
+					Security &,
+					const SubscriberPtrWrapper &,
+					std::list<boost::signals2::connection> &);
+		void SubscribeToBrokerPositionUpdates(
 					Security &,
 					const SubscriberPtrWrapper &,
 					std::list<boost::signals2::connection> &);

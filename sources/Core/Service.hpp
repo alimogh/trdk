@@ -41,17 +41,31 @@ namespace trdk {
 					const trdk::Security &);
 
 		virtual bool OnLevel1Update(const trdk::Security &);
+
 		virtual bool OnLevel1Tick(
 					const trdk::Security &,
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &);
+
 		virtual bool OnNewTrade(
 					const trdk::Security &,
 					const boost::posix_time::ptime &,
 					trdk::ScaledPrice,
 					trdk::Qty,
 					trdk::OrderSide);
+
 		virtual bool OnServiceDataUpdate(const trdk::Service &);
+		
+		//! Notifies about broker position update.
+		/** @param security		Security.
+		  * @param qty			Position size (may differ from current
+		  *						trdk::Security::GetBrokerPosition).
+		  * @param isInitial	true if it initial data at start.
+		  */
+		virtual bool OnBrokerPositionUpdate(
+					trdk::Security &security,
+					trdk::Qty qty,
+					bool isInitial);
 
 	public:
 
@@ -77,6 +91,10 @@ namespace trdk {
 					trdk::Qty,
 					trdk::OrderSide);
 		bool RaiseServiceDataUpdateEvent(const trdk::Service &);
+		bool RaiseBrokerPositionUpdateEvent(
+					trdk::Security &security,
+					trdk::Qty qty,
+					bool isInitial);
 
 	private:
 

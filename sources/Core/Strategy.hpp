@@ -111,6 +111,10 @@ namespace trdk {
 
 	public:
 
+		virtual void OnPositionUpdate(trdk::Position &);
+
+	public:
+
 		bool IsBlocked() const;
 		void Block() throw();
 

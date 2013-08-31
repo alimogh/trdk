@@ -439,6 +439,38 @@ public:
 
 public:
 
+	void RestoreOpenState(OrderId openOrderId) {
+		
+		const WriteLock lock(m_mutex);
+		
+		Assert(!m_position.IsOpened());
+		Assert(!m_position.IsError());
+		Assert(!m_position.IsClosed());
+		Assert(!m_position.IsCompleted());
+		Assert(!m_position.HasActiveOrders());
+		Assert(m_strategy);
+		AssertLt(0, m_planedQty);
+		AssertEq(0, m_opened.qty);
+		AssertEq(0, m_closed.qty);
+		Assert(m_opened.time.is_not_a_date_time());
+		Assert(m_closed.time.is_not_a_date_time());
+
+		if (m_position.IsStarted()) {
+			throw AlreadyStartedError();
+		}
+
+		m_opened.qty = m_planedQty;
+		m_opened.orderId = openOrderId;
+
+		if (m_strategy) {
+			m_strategy->Register(m_position);
+		}
+		ReportOpeningUpdate("restored", TradeSystem::ORDER_STATUS_FILLED);
+
+		SignalUpdate();
+	
+	}
+
 	template<typename OpenImpl>
 	OrderId Open(const OpenImpl &openImpl) {
 		
@@ -913,6 +945,10 @@ bool Position::CancelAtMarketPrice(CloseType closeType, Qty displaySize) {
 bool Position::CancelAllOrders() {
 	const Implementation::WriteLock lock(m_pimpl->m_mutex);
 	return m_pimpl->CancelAllOrders();
+}
+
+void Position::RestoreOpenState(OrderId openOrderId) {
+	m_pimpl->RestoreOpenState(openOrderId);
 }
 
 //////////////////////////////////////////////////////////////////////////

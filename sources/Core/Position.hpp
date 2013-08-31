@@ -142,6 +142,14 @@ namespace trdk {
 
 	public:
 
+		//! Restores position in open-state.
+		/** Just creates position in open state at current strategy, doesn't
+		  * make any trading actions.
+		  * @param openOrderId	User-defined ID for open-order, doesn't affect
+		  *						the engine logic.
+		  */
+		void RestoreOpenState(trdk::OrderId openOrderId = 0);
+
 		trdk::OrderId OpenAtMarketPrice();
 		trdk::OrderId OpenAtMarketPrice(trdk::Qty displaySize);
 		trdk::OrderId Open(trdk::ScaledPrice);

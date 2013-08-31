@@ -22,6 +22,10 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		: public trdk::TradeSystem,
 		public trdk::MarketDataSource {
 
+	public:
+
+		typedef std::set<Security *> Securities;
+
 	private:
 
 		typedef boost::shared_mutex Mutex;
@@ -62,8 +66,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 						TradeSystem::OrderId,
 						&PlacedOrder::id>>>>
 			PlacedOrderSet;
-
-		typedef std::list<Security *> Securities;
 
 	public:
 
@@ -144,7 +146,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		std::unique_ptr<Client> m_client;
 		PlacedOrderSet m_placedOrders;
 
-		mutable Securities m_unsubscribedSecurities;
+		mutable Securities m_securities;
 
 	};
 

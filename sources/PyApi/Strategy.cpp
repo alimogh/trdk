@@ -281,6 +281,23 @@ void PyApi::Strategy::OnPositionUpdate(Position &position) {
 	}
 }
 
+void PyApi::Strategy::OnBrokerPositionUpdate(
+			Security &security,
+			Qty qty,
+			bool isInitial) {
+	const bool isExists = CallVirtualMethod(
+		"onBrokerPositionUpdate",
+		[&](const py::override &f) {
+			f(
+				PyApi::Export(security),
+				PyApi::Export(qty),
+				PyApi::Export(isInitial));
+		});
+	if (!isExists) {
+		Base::OnBrokerPositionUpdate(security, qty, isInitial);
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 #ifdef BOOST_WINDOWS

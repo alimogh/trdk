@@ -339,6 +339,10 @@ Strategy::~Strategy() {
 	delete m_pimpl;
 }
 
+void Strategy::OnPositionUpdate(Position &) {
+	//...//
+}
+
 void Strategy::Register(Position &position) {
 	const PositionHolder holder(
 		position,
@@ -459,4 +463,4 @@ const Strategy::PositionList & Strategy::GetPositions() const {
 	return const_cast<Strategy *>(this)->GetPositions();
 }
 
-//////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////

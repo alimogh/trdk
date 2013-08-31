@@ -82,6 +82,9 @@ namespace trdk { namespace PyApi {
 
 	public:
 
+		void RestoreOpenState();
+		void RestoreOpenStateWithOpenOrderId(trdk::OrderId openOrderId);
+
 		OrderId OpenAtMarketPrice();
 		OrderId OpenAtMarketPriceByIceberg(Qty displaySize);
 		OrderId Open(ScaledPrice);

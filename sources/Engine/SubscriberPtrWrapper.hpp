@@ -45,6 +45,12 @@ namespace trdk { namespace Engine {
 			OrderSide side;
 		};
 
+		struct BrokerPosition {
+			trdk::Security *security;
+			Qty qty;
+			bool isInitial;
+		};
+
 	public:
 
 		template<typename Module>
@@ -72,6 +78,7 @@ namespace trdk { namespace Engine {
 		void RaiseLevel1TickEvent(const Level1Tick &) const;
 		void RaiseNewTradeEvent(const Trade &) const;
 		void RaisePositionUpdateEvent(Position &) const;
+		void RaiseBrokerPositionUpdateEvent(const BrokerPosition &) const;
 
 	private:
 

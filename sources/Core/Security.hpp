@@ -46,6 +46,15 @@ namespace trdk {
 		typedef boost::function<NewTradeSlotSignature> NewTradeSlot;
 		typedef boost::signals2::connection NewTradeSlotConnection;
 
+		//! Security broker position info.
+		/** Information from broker, not relevant to trdk::Position.
+		  */
+		typedef void (BrokerPositionUpdateSlotSignature)(
+					trdk::Qty,
+					bool isInitial);
+		typedef boost::function<BrokerPositionUpdateSlotSignature> BrokerPositionUpdateSlot;
+		typedef boost::signals2::connection BrokerPositionUpdateSlotConnection;
+
 	public:
 
 		explicit Security(trdk::Context &, const trdk::Lib::Symbol &);
@@ -137,15 +146,23 @@ namespace trdk {
 
 		trdk::Qty GetTradedVolume() const;
 
+		//! Position size.
+		/** Information from broker, not relevant to trdk::Position.
+		  */
+		trdk::Qty GetBrokerPosition() const;
+
 	public:
 
-		Level1UpdateSlotConnection SubcribeToLevel1Updates(
+		Level1UpdateSlotConnection SubscribeToLevel1Updates(
 					const Level1UpdateSlot &)
 				const;
-		Level1UpdateSlotConnection SubcribeToLevel1Ticks(
+		Level1UpdateSlotConnection SubscribeToLevel1Ticks(
 					const Level1TickSlot &)
 				const;
-		NewTradeSlotConnection SubcribeToTrades(const NewTradeSlot &) const;
+		NewTradeSlotConnection SubscribeToTrades(const NewTradeSlot &) const;
+		BrokerPositionUpdateSlotConnection SubscribeToBrokerPositionUpdates(
+					const BrokerPositionUpdateSlot &)
+				const;
 
 	protected:
 
@@ -153,27 +170,28 @@ namespace trdk {
 		bool IsLevel1UpdatesRequired() const;
 		bool IsLevel1TicksRequired() const;
 		bool IsTradesRequired() const;
+		bool IsBrokerPositionRequired() const;
 
 		//! Sets one Level I parameter.
-		/** @return	Subscribers will be notified about Level I Update only
-		  *			if parameter will bee changed.
+		/** Subscribers will be notified about Level I Update only if parameter
+		  * will bee changed.
 		  */
 		void SetLevel1(
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &);
 		//! Sets two Level I parameters and one operation.
-		/** More optimal than call "set one parameter" two times.
-		  * @return	Subscribers will be notified about Level I Update only
-		  *			if parameter will bee changed.
+		/** More optimal than call "set one parameter" two times. Subscribers
+		  * will be notified about Level I Update only if parameter will be
+		  * changed.
 		  */
 		void SetLevel1(
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &,
 					const trdk::Level1TickValue &);
 		//! Sets three Level I parameters and one operation.
-		/** More optimal than call "set one parameter" three times.
-		  * @return	Subscribers will be notified about Level I Update only
-		  *			if parameter will bee changed.
+		/** More optimal than call "set one parameter" three times. Subscribers
+		  * will be notified about Level I Update only if parameter will bee
+		  * changed.
 		  */
 		void SetLevel1(
 					const boost::posix_time::ptime &,
@@ -182,28 +200,25 @@ namespace trdk {
 					const trdk::Level1TickValue &);
 
 		//! Adds one Level I parameter tick.
-		/** @return	Subscribers will be notified about Level I Update only
-		  *			if parameter will bee changed. Level I Tick event will
-		  *			be generated in any case.
+		/** Subscribers will be notified about Level I Update only if parameter
+		  * will bee changed. Level I Tick event will be generated in any case.
 		  */
 		void AddLevel1Tick(
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &);
 		//! Adds two Level I parameter ticks.
-		/** More optimal than call "add one tick" two times.
-		  * @return	Subscribers will be notified about Level I Update only
-		  *			if parameter will bee changed. Level I Tick event will
-		  *			be generated in any case.
+		/** More optimal than call "add one tick" two times. Subscribers will
+		  * be notified about Level I Update only if parameter will be changed.
+		  * Level I Tick event will be generated in any case.
 		  */
 		void AddLevel1Tick(
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &,
 					const trdk::Level1TickValue &);
 		//! Adds three Level I parameter ticks.
-		/** More optimal than call "add one tick" three times.
-		  * @return	Subscribers will be notified about Level I Update only
-		  *			if parameter will bee changed. Level I Tick event will
-		  *			be generated in any case.
+		/** More optimal than call "add one tick" three times. Subscribers will
+		  * be notified about Level I Update only if parameter will be changed.
+		  * Level I Tick event will be generated in any case.
 		  */
 		void AddLevel1Tick(
 					const boost::posix_time::ptime &,
@@ -218,6 +233,13 @@ namespace trdk {
 				trdk::Qty,
 				bool useAsLastTrade,
 				bool useForTradedVolume);
+
+		//! Sets security broker position info.
+		/** Subscribers will be notified only if parameter will be changed.
+		  * @param qty			Position size.
+		  * @param isInitial	true if it initial data at start.
+		  */
+		void SetBrokerPosition(trdk::Qty qty, bool isInitial);
 
 	private:
 
