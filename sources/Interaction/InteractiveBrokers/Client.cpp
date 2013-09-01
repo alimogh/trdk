@@ -358,8 +358,8 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 	const pt::ptime edtRequestStart
 		= security.GetRequestedDataStartTime() + GetEdtDiff();
 
-	std::ostringstream oss;
-	oss
+	std::ostringstream endTimeOss;
+	endTimeOss
 		<< edtNow.date().year()
 		<< std::setw(2) << std::setfill('0')
 			<< unsigned short(now.date().month())
@@ -374,6 +374,7 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 		<< ':'
 		<< std::setw(2) << std::setfill('0')
 		<< edtNow.time_of_day().seconds();
+	const auto &endTime = endTimeOss.str();
 
 	const auto period
 		= (boost::format("%1% S")
@@ -383,7 +384,7 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 	m_client->reqHistoricalData(
 		request.tickerId,
 		contract,
-		oss.str(),
+		endTime,
 		period,
 		"1 secs",
 		"BID_ASK",
@@ -393,11 +394,12 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 	m_log.Info(
 		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level I"
 			" market data history request for \"%1%\": %2% - %3%"
-			" (period: %4%, ticker ID: %5%).",
+			" (end time: \"%4%\", period: \"%5%\", ticker ID: %6%).",
 		boost::make_tuple(
 			boost::cref(*request.security),
 			boost::cref(security.GetRequestedDataStartTime()),
 			boost::cref(now),
+			boost::cref(endTime),
 			boost::cref(period),
 			boost::cref(request.tickerId)));
 
