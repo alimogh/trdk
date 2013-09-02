@@ -80,9 +80,9 @@ namespace {
 
 		static void AppendRecordHead(const pt::ptime &time, std::ostream &os) {
 #			ifdef BOOST_WINDOWS
-				os << (time + GetEdtDiff()) << " [" << GetCurrentThreadId() << "]: ";
+				os << time << " [" << GetCurrentThreadId() << "]: ";
 #			else
-				os << (time + GetEdtDiff()) << " [" << pthread_self() << "]: ";
+				os << time << " [" << pthread_self() << "]: ";
 #			endif
 		}
 

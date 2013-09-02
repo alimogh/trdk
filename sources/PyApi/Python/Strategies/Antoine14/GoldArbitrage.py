@@ -6,7 +6,35 @@ import time
 
 ratio = 2.860
 positionVolume = 20000
-orderDisplaySize = 30
+orderDisplaySize = 100
+
+assert \
+    orderDisplaySize % 100 == 0, \
+    "The Display Size should be a multiple of the round lot size for this security."
+
+
+class LongPosition(trdk.LongPosition):
+    entryType = None
+
+    def __init__(self, strategy, security, qty, startPrice, entryType):
+        super(self.__class__, self).__init__(
+            strategy,
+            security,
+            qty,
+            startPrice)
+        self.entryType = entryType
+
+
+class ShortPosition(trdk.ShortPosition):
+    entryType = None
+
+    def __init__(self, strategy, security, qty, startPrice, entryType):
+        super(self.__class__, self).__init__(
+            strategy,
+            security,
+            qty,
+            startPrice)
+        self.entryType = entryType
 
 
 # noinspection PyCallByClass,PyTypeChecker
@@ -46,10 +74,10 @@ class GoldArbitrage(trdk.Strategy):
         isOnline = gld.time == dgl.time
         self.log.debug(
             'Online check: GLD({0}) == DGL({1}) = {2}'
-                .format(
-                    time.ctime(gld.time),
-                    time.ctime(dgl.time),
-                    isOnline))
+            .format(
+                time.ctime(gld.time),
+                time.ctime(dgl.time),
+                isOnline))
         return isOnline
 
     def _checkEntry(self):
@@ -64,7 +92,7 @@ class GoldArbitrage(trdk.Strategy):
         shortGldLongDlg = False
         # When GLD (ask)/DGL (bid) > ratio * 1.001% -> Short GLD, Long DGL
         if dglBar.minBidPrice != 0:
-            shortGldLongDlgRatio\
+            shortGldLongDlgRatio \
                 = float(gldBar.maxAskPrice) / float(dglBar.minBidPrice)
             shortGldLongDlg = shortGldLongDlgRatio > (ratio * (1.001 / 100))
 
@@ -72,56 +100,84 @@ class GoldArbitrage(trdk.Strategy):
         longGldShortDgl = False
         if dglBar.maxAskPrice != 0:
             # When GLD (bid)/DGL (ask) < ratio * 0.999% -> Long GLD, Short DGL
-            longGldShortDglRatio\
+            longGldShortDglRatio \
                 = float(gldBar.minBidPrice) / float(dglBar.maxAskPrice)
             longGldShortDgl = longGldShortDglRatio < (ratio * (0.999 / 100))
 
         self.log.debug(
             "Entry 1: GLD(Ask {0}) / DGL(Bid {1}) = {2} - {3};"
             " Entry 2: GLD(Bid {4}) / DGL(Ask {5}) = {6} - {7};"
-                .format(
-                    gld.descalePrice(gldBar.maxAskPrice),
-                    dgl.descalePrice(dglBar.minBidPrice),
-                    shortGldLongDlgRatio,
-                    shortGldLongDlg,
-                    gld.descalePrice(gldBar.minBidPrice),
-                    dgl.descalePrice(dglBar.maxAskPrice),
-                    longGldShortDglRatio,
-                    longGldShortDgl))
+            .format(
+                gld.descalePrice(gldBar.maxAskPrice),
+                dgl.descalePrice(dglBar.minBidPrice),
+                shortGldLongDlgRatio,
+                shortGldLongDlg,
+                gld.descalePrice(gldBar.minBidPrice),
+                dgl.descalePrice(dglBar.maxAskPrice),
+                longGldShortDglRatio,
+                longGldShortDgl))
 
         def calcQty(security, price):
-            result = security.scalePrice(positionVolume) / price
-            # Resolving error: "The Display Size should be a multiple of the
-            # round lot size for this security:
-            result -= result % 100
-            assert result % 100 == 0
-            return result
+            return security.scalePrice(positionVolume) / price
 
         if shortGldLongDlg:
             gldQty = calcQty(gld, gldBar.maxAskPrice)
             dglQty = calcQty(dgl, dglBar.minBidPrice)
+            gldPos = ShortPosition(
+                self,
+                gld,
+                gldQty,
+                gldBar.maxAskPrice,
+                'shortGldLongDlg')
+            dglPos = LongPosition(
+                self,
+                dgl,
+                dglQty,
+                dglBar.minBidPrice,
+                'shortGldLongDlg')
             self.log.info(
-                'Opening positions "Short GLD {0}, Long DGL {1}"'
+                'Opening positions "Short GLD {0}/{4}, Long DGL {1}/{5}"'
                 ' (volume: {2}, visible qty: {3})...'
-                    .format(gldQty, dglQty, positionVolume, orderDisplaySize))
-            gldPos = trdk.ShortPosition(self, gld, gldQty, gldBar.maxAskPrice)
-            dglPos = trdk.LongPosition(self, dgl, dglQty, dglBar.minBidPrice)
+                .format(
+                    gldQty,
+                    dglQty,
+                    positionVolume,
+                    orderDisplaySize,
+                    gld.descalePrice(gldPos.openStartPrice),
+                    dgl.descalePrice(dglPos.openStartPrice)))
             gldPos.open(gldPos.openStartPrice, orderDisplaySize)
             dglPos.open(dglPos.openStartPrice, orderDisplaySize)
-        
+
         if longGldShortDgl:
             gldQty = calcQty(gld, gldBar.minBidPrice)
             dglQty = calcQty(dgl, dglBar.maxAskPrice)
+            gldPos = LongPosition(
+                self,
+                gld,
+                gldQty,
+                gldBar.minBidPrice,
+                'longGldShortDgl')
+            dglPos = ShortPosition(
+                self,
+                dgl,
+                dglQty,
+                dglBar.maxAskPrice,
+                'longGldShortDgl')
             self.log.info(
-                'Opening positions "Short GLD {0}, Long DGL {1}"'
+                'Opening positions "Short GLD {0}/{4}, Long DGL {1}/{5}"'
                 ' (volume: {2}, visible qty: {3})...'
-                    .format(gldQty, dglQty, positionVolume, orderDisplaySize))
-            gldPos = trdk.LongPosition(self, gld, gldQty, gldBar.minBidPrice)
-            dglPos = trdk.ShortPosition(self, dgl, dglQty, dglBar.maxAskPrice)
+                .format(
+                    gldQty,
+                    dglQty,
+                    positionVolume,
+                    orderDisplaySize,
+                    gld.descalePrice(gldPos.openStartPrice),
+                    dgl.descalePrice(dglPos.openStartPrice)))
             gldPos.open(gldPos.openStartPrice, orderDisplaySize)
             dglPos.open(dglPos.openStartPrice, orderDisplaySize)
 
     def onPositionUpdate(self, position):
+
         if position.isCompleted:
             if position.isCanceled is not True:
                 self.log.info(
@@ -132,13 +188,25 @@ class GoldArbitrage(trdk.Strategy):
             map(
                 lambda position: position.cancelAtMarketPrice(),
                 self.positions)
+
         elif position.isOpened and position.hasActiveCloseOrders is False:
-            # Profit Targets:
-            # Sell positions @ GLD/DGL ratio of ratio
-            closePrice = int(position.openStartPrice * ratio)
+
+            if position.entryType == 'shortGldLongDlg':
+                # Exit trade when GLD (bid)/DGL (ask) = ratio
+                gldPrice = self.gldBars.getBarByReversedIndex(0).minBidPrice
+                dglPrice = self.dglBars.getBarByReversedIndex(0).maxAskPrice
+                message = 'Exit 1: GLD(Bid {0}) / DGL(Ask {1}) = {2} - {3};"'
+            else:
+                # Exit trade when GLD (ask)/DGL (bid) = ratio
+                assert position.entryType == 'longGldShortDgl'
+                gldPrice = self.gldBars.getBarByReversedIndex(0).maxAskPrice
+                dglPrice = self.dglBars.getBarByReversedIndex(0).minBidPrice
+                message = 'Exit 2: GLD(Ask {0}) / DGL(Bid {1}) = {2} - {3};"'
+
+            isExitTime = gldPrice / dglPrice == ratio
             self.log.info(
-                'Closing {0} with {1}.'
-                    .format(
-                        position.security.symbol,
-                        position.security.descalePrice(closePrice)))
-            position.close(closePrice, orderDisplaySize)
+                message.format(gldPrice, dglPrice, ratio, isExitTime))
+            if isExitTime is not True:
+                return
+
+            position.closeAtMarketPrice(orderDisplaySize)

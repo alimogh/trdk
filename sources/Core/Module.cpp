@@ -222,6 +222,10 @@ Module::Log & Module::GetLog() const throw() {
 	return *m_pimpl->m_log;
 }
 
+std::string Module::GetRequiredSuppliers() const {
+	return std::string();
+}
+
 void Module::UpdateSettings(const IniFileSectionRef &ini) {
 	const Lock lock(GetMutex());
 	UpdateAlogImplSettings(ini);

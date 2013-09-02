@@ -18,7 +18,8 @@ namespace trdk { namespace PyApi {
 	boost::python::object Export(boost::int32_t);
 
 	boost::python::object Export(const boost::posix_time::ptime &);
-	boost::posix_time::ptime ExtractPosixTime(const boost::python::object &time);
+	boost::posix_time::ptime ExtractPosixTime(
+				const boost::python::object &time);
 	
 	ScaledPrice ExtractScaledPrice(const boost::python::object &price);
 	Qty ExtractQty(const boost::python::object &qty);

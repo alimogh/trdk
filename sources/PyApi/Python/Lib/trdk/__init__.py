@@ -63,14 +63,16 @@ class SecurityInfo(object):
 class Security(SecurityInfo):
 
     def cancelOrder(self, orderId):
-        """ Cancels order by ID. Asynchronous.
+        """
+        Cancels order by ID. Asynchronous.
 
         :param orderId: int
         """
 
     def cancelAllOrders(self):
-        """ Cancels all active orders for this security, which were open by
-        engine. Asynchronous.
+        """
+        Cancels all active orders for this security, which were open by engine.
+        Asynchronous.
         """
 
 ###############################################################################
@@ -81,28 +83,32 @@ class Module(object):
     class Log(object):
 
         def debug(self, eventMessage):
-            """ Adds new debug record into events.log
+            """
+            Adds new debug record into events.log
 
             :param eventMessage: str
             """
             pass
 
         def info(self, eventMessage):
-            """ Adds new information record into events.log
+            """
+            Adds new information record into events.log
 
             :param eventMessage: str
             """
             pass
 
         def warn(self, eventMessage):
-            """ Adds new warning record into events.log
+            """
+            Adds new warning record into events.log
 
             :param eventMessage: str
             """
             pass
 
         def error(self, eventMessage):
-            """ Adds new error record into events.log
+            """
+            Adds new error record into events.log
 
             :param eventMessage: str
             """
@@ -120,8 +126,18 @@ class Module(object):
         """
         pass
 
+    def getRequiredSuppliers(self):
+        """
+        Virtual. Returns required service list. Calls once at engine start.
+        Optional.
+
+        :rtype: str
+        """
+        pass
+
     def onServiceStart(self, service):
-        """ Notifies about new service start. Virtual.
+        """
+        Notifies about new service start. Virtual.
 
         :param service: trdk.ServiceInfo
         """
@@ -129,11 +145,13 @@ class Module(object):
 
 
 class Strategy(Module):
-    """ Every strategy algorithm class must be inherited from this class.
+    """
+    Every strategy algorithm class must be inherited from this class.
     """
 
     class PositionList(object):
-        """ Iterable position list.
+        """
+        Iterable position list.
         """
 
         def __iter__(self):
@@ -147,7 +165,8 @@ class Strategy(Module):
             pass
 
     class SecurityList(object):
-        """ Iterable security list.
+        """
+        Iterable security list.
         """
 
         def __iter__(self):
@@ -161,7 +180,8 @@ class Strategy(Module):
             pass
 
         def find(self, symbol, exchange=None, primaryExchange=None):
-            """ Finds security or return None if security doesn't exist in list.
+            """
+            Finds security or return None if security doesn't exist in list.
 
             :rtype: trdk.Security
             """
@@ -177,14 +197,16 @@ class Strategy(Module):
         super(self.__class__, self).__init__(param)
 
     def findSecurity(self, symbol, exchange=None, primaryExchange=None):
-        """ Finds security or return None if security doesn't exist.
+        """
+        Finds security or return None if security doesn't exist.
 
         :rtype: trdk.Security
         """
         pass
 
     def onSecurityStart(self, security):
-        """ Notifies about new security start. Virtual.
+        """
+        Notifies about new security start. Virtual.
 
         :param security: trdk.Security
         """
@@ -258,7 +280,8 @@ class ServiceInfo(Module):
             pass
 
         def find(self, symbol, exchange=None, primaryExchange=None):
-            """ Finds security or return None if security doesn't exist in list.
+            """
+            Finds security or return None if security doesn't exist in list.
 
             :rtype: trdk.SecurityInfo
             """
@@ -282,7 +305,8 @@ class Service(ServiceInfo):
         pass
 
     def onSecurityStart(self, security):
-        """ Notifies about new security start. Virtual.
+        """
+        Notifies about new security start. Virtual.
 
         :param security: trdk.SecurityInfo
         """
