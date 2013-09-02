@@ -117,6 +117,26 @@ bool PyApi::Service::CallVirtualMethod(
 	return GetExport().CallVirtualMethod(name, call);
 }
 
+std::string PyApi::Service::GetRequiredSuppliers() const {
+	
+	std::string result = Base::GetRequiredSuppliers();
+
+	CallVirtualMethod(
+		"getRequiredSuppliers",
+		[&](const py::override &f) {
+			const py::str &callResult = f();
+			const std::string &scriptRequest
+				= py::extract<std::string>(callResult);
+			if (!result.empty() && !scriptRequest.empty()) {
+				result.push_back(',');
+			}
+			result += scriptRequest;
+		});
+
+	return result;
+
+}
+
 pt::ptime PyApi::Service::OnSecurityStart(const trdk::Security &security) {
 	const bool isExists = CallVirtualMethod(
 		"onSecurityStart",

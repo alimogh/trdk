@@ -297,6 +297,7 @@ namespace {
 		
 		ModuleType subscriberType;
 		std::string subscriberTag;
+		Module *uniqueInstance;
 	
 		std::map<
 				std::string /* tag */,
@@ -329,12 +330,17 @@ namespace {
 						mi::member<
 							TagRequirementsList,
 							std::string,
-							&TagRequirementsList::subscriberTag>>>>>
+							&TagRequirementsList::subscriberTag>,
+						mi::member<
+							TagRequirementsList,
+							Module *,
+							&TagRequirementsList::uniqueInstance>>>>>
 		RequirementsList;
 
 	void ApplyRequirementsListModifier(
 				ModuleType type,
 				const std::string &tag,
+				Module *uniqueInstance,
 				const boost::function<void (TagRequirementsList &)> &modifier,
 				RequirementsList &list) {
 		auto &index = list.get<BySubscriber>();
@@ -345,6 +351,7 @@ namespace {
 			TagRequirementsList requirements = {};
 			requirements.subscriberType = type;
 			requirements.subscriberTag = tag;
+			requirements.uniqueInstance = uniqueInstance;
 			modifier(requirements);
 			list.insert(requirements);
 		}
@@ -366,6 +373,22 @@ namespace {
 			symbolInstances;
 		std::list<DllObjectPtr<Module>> standaloneInstances;
 	};
+
+	template<
+		typename Module,
+		typename PredForStandalone,
+		typename PredForSymbols>
+	void ForEachModuleInstance(
+				ModuleDll<Module> &module,
+				const PredForStandalone &predForStandalone,
+				const PredForSymbols &predForSymbols) {
+		foreach (auto &instance, module.standaloneInstances) {
+			predForStandalone(*instance);
+		}
+		foreach (auto &instance, module.symbolInstances) {
+			predForSymbols(*instance.second);
+		}
+	}
 
 	typedef std::map<std::string /*tag*/, ModuleDll<Strategy>> StrategyModules;
 	typedef std::map<std::string /*tag*/, ModuleDll<Observer>> ObserverModules;
@@ -581,11 +604,11 @@ private:
 			CreateStandaloneModuleInstance(tag, module);
 		}
 
-		std::map<std::string , ModuleDll<Module>> modulesTmp(modules);
+		std::map<std::string, ModuleDll<Module>> modulesTmp(modules);
 		modulesTmp[tag] = module;
 		
-		ReadRequirementsList<Module>(*module.conf, tag, requirementList);
-		
+		ReadRequirementsList<Module>(module, tag, requirementList);
+
 		modulesTmp.swap(modules);
 
 	}
@@ -741,7 +764,63 @@ private:
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	SupplierRequest ParseSupplierRequest(const std::string &request) {
+	std::list<std::string> ParseSupplierRequestList(
+				const std::string &request)
+			const {
+
+		std::list<std::string> result;
+		
+		bool isSymbolListOpened = false;
+		typedef boost::split_iterator<std::string::const_iterator> It;
+		for (	It i = boost::make_split_iterator(
+					request,
+					boost::first_finder(",", boost::is_iequal()));
+				i != It();
+				++i) {
+			bool isNewRequirement = !isSymbolListOpened;
+			if (!isSymbolListOpened) {
+ 				isSymbolListOpened
+ 					= std::find(boost::begin(*i), boost::end(*i), '[')
+ 						!= boost::end(*i);
+			}
+			if (
+					isSymbolListOpened
+					&& std::find(boost::begin(*i), boost::end(*i), ']')
+							!= boost::end(*i)) {
+				isSymbolListOpened = false;
+			}
+			if (isNewRequirement || result.empty()) {
+				result.push_back(boost::copy_range<std::string>(*i));
+				boost::trim(result.back());
+				if (result.back().empty()) {
+					result.pop_back();
+				}
+			} else {
+				auto &line = result.back();
+				line.push_back(',');
+				line.insert(line.end(), boost::begin(*i), boost::end(*i));
+				boost::trim(line);
+				if (result.back().empty()) {
+					result.pop_back();
+				}
+			}
+		}
+
+		if (isSymbolListOpened) {
+			m_context.GetLog().Error(
+				"Requirements syntax error:"
+					" expected closing \"]\" for \"%1%\" in \"%2%\".",
+					boost::make_tuple(
+						boost::cref(*result.rbegin()),
+						boost::cref(request)));
+			throw Exception("Requirements syntax error");
+		}
+
+		return result;
+
+	}
+
+	SupplierRequest ParseSupplierRequest(const std::string &request) const {
 
 		SupplierRequest result;
 
@@ -800,104 +879,100 @@ private:
 
 	template<typename Module>
 	void ReadRequirementsList(
-				const IniFileSectionRef &conf,
+				ModuleDll<Module> &module,
 				const std::string &tag,
  				RequirementsList &result) {
 		
 		typedef ModuleTrait<Module> Trait;
 
-		const std::string strList
-			= conf.ReadKey(Ini::Keys::requires, std::string());
-		std::list<std::string> list;
-		bool isSymbolListOpened = false;
-		typedef boost::split_iterator<std::string::const_iterator> It;
-		for (	It i = boost::make_split_iterator(
-					strList,
-					boost::first_finder(",", boost::is_iequal()))
-				; i != It()
-				; ++i) {
-			bool isNewRequirement = !isSymbolListOpened;
-			if (!isSymbolListOpened) {
- 				isSymbolListOpened
- 					= std::find(boost::begin(*i), boost::end(*i), '[')
- 						!= boost::end(*i);
-			}
-			if (
-					isSymbolListOpened
-					&& std::find(boost::begin(*i), boost::end(*i), ']')
-							!= boost::end(*i)) {
-				isSymbolListOpened = false;
-			}
-			if (isNewRequirement || list.empty()) {
-				list.push_back(boost::copy_range<std::string>(*i));
-			} else {
-				list.rbegin()->push_back(',');
-				list.rbegin()->insert(
-					list.rbegin()->end(),
-					boost::begin(*i),
-					boost::end(*i));
-			}
-		}
-		if (isSymbolListOpened) {
-			m_context.GetLog().Error(
-				"Requirements syntax error:"
-					" expected closing \"]\" for \"%1%\" in \"%2%\".",
-					boost::make_tuple(
-						boost::cref(*list.rbegin()),
-						boost::cref(strList)));
-			throw Exception("Requirements syntax error");
-		}
-
-		foreach (std::string &request, list) {
-			boost::trim(request);
+		const auto &parseRequest = [&](
+					const SupplierRequest &request,
+					Module *uniqueInstance) {
+			typedef ModuleTrait<Module> Trait;
 			if (	boost::iequals(
-						request,
+						request.tag,
 						Ini::Constants::Services::level1Updates)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
+					uniqueInstance,
 					SYSTEM_SERVICE_LEVEL1_UPDATES,
-					ParseSupplierRequest(request),
+					request,
 					result);
 			} else if (	boost::iequals(
-							request,
+							request.tag,
 							Ini::Constants::Services::level1Ticks)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
+					uniqueInstance,
 					SYSTEM_SERVICE_LEVEL1_TICKS,
-					ParseSupplierRequest(request),
+					request,
 					result);
-			} else if (
-					boost::iequals(
-						request,
-						Ini::Constants::Services::trades)) {
+			} else if (	boost::iequals(
+							request.tag,
+							Ini::Constants::Services::trades)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
+					uniqueInstance,
 					SYSTEM_SERVICE_TRADES,
-					ParseSupplierRequest(request),
+					request,
 					result);
 			} else {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
-					ParseSupplierRequest(request),
+					uniqueInstance,
+					request,
 					result);
 			}
+		};
+
+		{
+			const auto &list = ParseSupplierRequestList(
+				module.conf->ReadKey(Ini::Keys::requires, std::string()));
+			foreach (const std::string &request, list) {
+				parseRequest(ParseSupplierRequest(request), nullptr);
+			}
 		}
+
+		const auto &parseInstanceRequest = [&](Module &instance) {
+			std::string strList;
+			try {
+				strList = instance.GetRequiredSuppliers();
+			} catch (...) {
+				trdk::Log::RegisterUnhandledException(
+					__FUNCTION__,
+					__FILE__,
+					__LINE__,
+					false);
+				// DLL will be unloaded, replacing exception:
+				throw Exception("Failed to read module requirement list");
+			}
+			const auto &list = ParseSupplierRequestList(strList);
+			foreach (const auto &request, list) {
+				parseRequest(ParseSupplierRequest(request), &instance);
+			}
+		};
+		ForEachModuleInstance(
+			module,
+			parseInstanceRequest,
+			parseInstanceRequest);
 
 	}
 
 	void UpdateRequirementsList(
 				ModuleType type,
 				const std::string &tag,
+				Module *uniqueInstance,
 				SystemService requiredService,
 				const SupplierRequest &supplierRequest,
 				RequirementsList &list) {
 		ApplyRequirementsListModifier(
 			type,
 			tag,
+			uniqueInstance,
 			[&](TagRequirementsList &requirements) {
 				requirements.requiredSystemServices[requiredService].insert(
 					supplierRequest.symbols.begin(),
@@ -909,11 +984,13 @@ private:
 	void UpdateRequirementsList(
 				ModuleType type,
 				const std::string &tag,
+				Module *uniqueInstance,
 				const SupplierRequest &supplierRequest,
 				RequirementsList &list) {
 		ApplyRequirementsListModifier(
 			type,
 			tag,
+			uniqueInstance,
 			[&](TagRequirementsList &requirements) {
 				auto &module = requirements.requiredModules[supplierRequest.tag];
 				module.insert(supplierRequest.symbols);
@@ -960,12 +1037,39 @@ private:
 
 		typedef ModuleTrait<Module> Trait;
 		AssertEq(Trait::Type, requirements.subscriberType);
+
 		const auto modulePos = modules.find(requirements.subscriberTag);
 		Assert(modulePos != modules.end());
 		if (modulePos == modules.end()) {
 			return;
 		}
 		ModuleDll<Module> &module = modulePos->second;
+
+		Module *uniqueInstance = nullptr;
+		bool isUniqueInstanceStandalone = false;
+		if (requirements.uniqueInstance) {
+			uniqueInstance = boost::polymorphic_downcast<Module *>(
+				requirements.uniqueInstance);
+			isUniqueInstanceStandalone = false;
+			foreach (auto &instance, module.standaloneInstances) {
+				if (&*instance == uniqueInstance) {
+					isUniqueInstanceStandalone = true;
+					break;
+				}
+			}
+#			ifdef DEV_VER
+				if (!isUniqueInstanceStandalone) {
+					bool isExist = false;
+					foreach (auto &instance, module.symbolInstances) {
+						if (&*instance.second == uniqueInstance) {
+							isExist = true;
+							break;
+						}
+					}
+					Assert(isExist);
+				}
+#			endif
+		}
 
 		foreach (
 				const auto &requirement,
@@ -1000,37 +1104,31 @@ private:
 				if (!IsMagicSymbolCurrentSecurity(symbol)) {
 					security = &LoadSecurity(symbol);
 				}
-				foreach (auto &instance, module.standaloneInstances) {
-					if (security) {
-						(m_subscriptionsManager.*subscribe)(
-							*security,
-							*instance);
-						instance->RegisterSource(*security);
-					} else {
-						SubscribeForEachSubscribedSecurity(
-							*instance,
-							[&](Security &subscribedSecurity) {
-								(m_subscriptionsManager.*subscribe)(
-									subscribedSecurity,
-									*instance);
-							});
-					}
-				}
-				foreach (auto &instance, module.symbolInstances) {
-					if (security) {
-						(m_subscriptionsManager.*subscribe)(
-							*security,
-							*instance.second);
-						instance.second->RegisterSource(*security);
-					} else {
-						SubscribeForEachSubscribedSecurity(
-							*instance.second,
-							[&](Security &subscribedSecurity) {
-								(m_subscriptionsManager.*subscribe)(
-									subscribedSecurity,
-									*instance.second);
-							});
-					}
+				if (!uniqueInstance) {
+					ForEachModuleInstance(
+						module,
+						[&](Module &instance) {
+							SubscribeModuleStandaloneInstance(
+								instance,
+								subscribe,
+								security);
+						},
+						[&](Module &instance) {
+							SubscribeModuleSymbolInstance(
+								instance,
+								subscribe,
+								security);
+						});
+				} else if (isUniqueInstanceStandalone) {
+					SubscribeModuleStandaloneInstance(
+						*uniqueInstance,
+						subscribe,
+						security);
+				} else {
+					SubscribeModuleSymbolInstance(
+						*uniqueInstance,
+						subscribe,
+						security);
 				}
 			}
 		}
@@ -1106,6 +1204,46 @@ private:
 			Assert(
 				m_context.GetMarketDataSource().FindSecurity(i->GetSymbol()));
 			pred(LoadSecurity(i->GetSymbol()));
+		}
+	}
+
+	template<typename Module>
+	void SubscribeModuleStandaloneInstance(
+				Module &instance,
+				void (SubscriptionsManager::*subscribe)(Security &, Module &),
+				Security *security = nullptr) {
+		if (security) {
+			(m_subscriptionsManager.*subscribe)(*security, instance);
+			instance.RegisterSource(*security);
+		} else {
+			SubscribeForEachSubscribedSecurity(
+				instance,
+				[&](Security &subscribedSecurity) {
+					(m_subscriptionsManager.*subscribe)(
+						subscribedSecurity,
+						instance);
+				});
+		}
+	}
+
+	template<typename Module>
+	void SubscribeModuleSymbolInstance(
+				Module &instance,
+				void (SubscriptionsManager::*subscribe)(Security &, Module &),
+				Security *security = nullptr) {
+		if (security) {
+			(m_subscriptionsManager.*subscribe)(
+				*security,
+				instance);
+			instance.RegisterSource(*security);
+		} else {
+			SubscribeForEachSubscribedSecurity(
+				instance,
+				[&](Security &subscribedSecurity) {
+					(m_subscriptionsManager.*subscribe)(
+						subscribedSecurity,
+						instance);
+				});
 		}
 	}
 
