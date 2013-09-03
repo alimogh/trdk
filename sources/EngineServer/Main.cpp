@@ -145,7 +145,7 @@ namespace {
 			auto logsPath = IniFile(confFilePath)
 				.ReadFileSystemPath("Common", "logs_dir");
 			logsPath /= uuid;
-			InitLogs(true, true, false, argc, argv, logsPath);
+			InitLogs(true, true, true, argc, argv, logsPath);
 		}
 
 		Server server;
