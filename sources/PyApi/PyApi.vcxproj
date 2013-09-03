@@ -86,15 +86,15 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="ModuleSecurityListExport.hpp" />
     <ClInclude Include="ObjectCache.hpp" />
-    <ClInclude Include="Position.hpp" />
     <ClInclude Include="PositionExport.hpp" />
+    <ClInclude Include="PyPosition.hpp" />
+    <ClInclude Include="PyService.hpp" />
+    <ClInclude Include="PyStrategy.hpp" />
     <ClInclude Include="PythonToCoreTransit.hpp" />
     <ClInclude Include="ModuleExport.hpp" />
     <ClInclude Include="SecurityExport.hpp" />
-    <ClInclude Include="Service.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="ServiceExport.hpp" />
-    <ClInclude Include="Strategy.hpp" />
     <ClInclude Include="Script.hpp" />
     <ClInclude Include="Errors.hpp" />
     <ClInclude Include="StrategyExport.hpp" />
@@ -110,10 +110,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="ModuleExport.cpp" />
+    <ClCompile Include="PyService.cpp" />
+    <ClCompile Include="PyStrategy.cpp" />
     <ClCompile Include="SecurityExport.cpp" />
-    <ClCompile Include="Service.cpp" />
     <ClCompile Include="ServiceExport.cpp" />
-    <ClCompile Include="Strategy.cpp" />
     <ClCompile Include="Script.cpp" />
     <ClCompile Include="StrategyExport.cpp" />
   </ItemGroup>

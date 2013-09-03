@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Strategy.hpp"
+#include "PyStrategy.hpp"
 #include "StrategyExport.hpp"
 #include "PositionExport.hpp"
 #include "ServiceExport.hpp"

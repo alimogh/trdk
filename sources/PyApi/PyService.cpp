@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Service.hpp"
+#include "PyService.hpp"
 #include "ServiceExport.hpp"
 #include "Script.hpp"
 #include "BaseExport.hpp"

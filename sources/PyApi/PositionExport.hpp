@@ -10,9 +10,9 @@
 
 #pragma once
 
-#include "Position.hpp"
+#include "PyPosition.hpp"
 #include "StrategyExport.hpp"
-#include "Strategy.hpp"
+#include "PyStrategy.hpp"
 #include "PythonToCoreTransit.hpp"
 
 namespace boost { namespace python {

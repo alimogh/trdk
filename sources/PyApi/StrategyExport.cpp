@@ -10,10 +10,10 @@
 
 #include "Prec.hpp"
 #include "StrategyExport.hpp"
-#include "Strategy.hpp"
+#include "PyStrategy.hpp"
 #include "PositionExport.hpp"
-#include "Position.hpp"
-#include "Service.hpp"
+#include "PyPosition.hpp"
+#include "PyService.hpp"
 #include "BaseExport.hpp"
 #include "Core/Settings.hpp"
 
