@@ -109,9 +109,9 @@ void PositionExport::ExportClass(const char *className) {
 
 		.add_property("security", &PositionExport::GetSecurity)
 
-		.def("RestoreOpenState", &PositionExport::RestoreOpenState)
+		.def("restoreOpenState", &PositionExport::RestoreOpenState)
 		.def(
-			"RestoreOpenState",
+			"restoreOpenState",
 			&PositionExport::RestoreOpenStateWithOpenOrderId)
 
 		.def("openAtMarketPrice", &PositionExport::OpenAtMarketPrice)
