@@ -57,7 +57,9 @@ namespace {
 				for (auto i = 0; i < argc; ++i) {
 					cmd.push_back(argv[i]);
 				}
-				Log::Info("Started: \"%1%\".", boost::join(cmd, " "));
+				Log::Info(
+					"Started: \"%1%\". Build time: " __TIME__ " " __DATE__ ".",
+					boost::join(cmd, " "));
 			}
 		}
 		if (useTrading) {
