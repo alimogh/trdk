@@ -53,9 +53,12 @@ namespace trdk {
 		virtual void OnServiceDataUpdate(const trdk::Service &);
 
 		//! Notifies about broker position update.
-		/** @param security		Security.
-		  * @param qty			Position size (may differ from current
-		  *						trdk::Security::GetBrokerPosition).
+		/** @sa trdk::Security::GetBrokerPosition
+		  * @param security		Security.
+		  * @param qty			Position size. Negative value means "short
+		  *						position", positive - "long position". May
+		  *						differ from current
+		  *						trdk::Security::GetBrokerPosition.
 		  * @param isInitial	true if it initial data at start.
 		  */
 		virtual void OnBrokerPositionUpdate(

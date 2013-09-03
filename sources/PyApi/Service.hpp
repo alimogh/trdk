@@ -59,6 +59,10 @@ namespace trdk { namespace PyApi {
 					trdk::Qty,
 					trdk::OrderSide);
 		virtual bool OnServiceDataUpdate(const trdk::Service &);
+		virtual bool OnBrokerPositionUpdate(
+					trdk::Security &,
+					trdk::Qty,
+					bool isInitial);
 
 	protected:
 

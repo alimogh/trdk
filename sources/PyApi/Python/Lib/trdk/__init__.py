@@ -254,7 +254,8 @@ class Strategy(Module):
     def onBrokerPositionUpdate(self, security, qty, isInitial):
         """
         Virtual. Notifies about broker position update. Position size "qty"
-        may differ from current "trdk::Security::GetBrokerPosition". Optional.
+        may differ from current "trdk::Security::GetBrokerPosition". Negative
+        value means "short position", positive - "long position". Optional.
 
         :param security: trdk.Security
         :param qty: int
@@ -345,6 +346,20 @@ class Service(ServiceInfo):
         :param price: int
         :param qty: int
         :param side: char 'S' (sell) or 'B' (buy)
+        :rtype: bool
+        """
+        pass
+
+    def onBrokerPositionUpdate(self, security, qty, isInitial):
+        """
+        Virtual. Notifies about broker position update. Position size "qty"
+        may differ from current "trdk::Security::GetBrokerPosition". Negative
+        value means "short position", positive - "long position". Method
+        returns True if service state has changed, False otherwise. Optional.
+
+        :param security: trdk.Security
+        :param qty: int
+        :param isInitial: bool
         :rtype: bool
         """
         pass

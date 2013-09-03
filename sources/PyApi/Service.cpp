@@ -162,16 +162,16 @@ void PyApi::Service::OnServiceStart(const trdk::Service &service) {
 }
 
 bool PyApi::Service::OnLevel1Update(const Security &security) {
-	bool stateChanged = false;
+	bool isStateChanged = false;
 	const bool isExists = CallVirtualMethod(
 		"onLevel1Update",
 		[&](const py::override &f) {
-			stateChanged = f(security);
+			isStateChanged = f(security);
 		});
 	if (!isExists) {
-		stateChanged = Base::OnLevel1Update(security);
+		isStateChanged = Base::OnLevel1Update(security);
 	}
-	return stateChanged;
+	return isStateChanged;
 }
 
 bool PyApi::Service::OnNewTrade(
@@ -180,11 +180,11 @@ bool PyApi::Service::OnNewTrade(
 			ScaledPrice price,
 			Qty qty,
 			OrderSide side) {
-	bool stateChanged = false;
+	bool isStateChanged = false;
 	const bool isExists = CallVirtualMethod(
 		"onNewTrade",
 		[&](const py::override &f) {
-			stateChanged = f(
+			isStateChanged = f(
 				PyApi::Export(security),
 				PyApi::Export(time),
 				PyApi::Export(price),
@@ -192,22 +192,41 @@ bool PyApi::Service::OnNewTrade(
 				PyApi::Export(side));
 		});
 	if (!isExists) {
-		stateChanged = Base::OnNewTrade(security, time, price, qty, side);
+		isStateChanged = Base::OnNewTrade(security, time, price, qty, side);
 	}
-	return stateChanged;
+	return isStateChanged;
 }
 
 bool PyApi::Service::OnServiceDataUpdate(const trdk::Service &service) {
-	bool stateChanged = false;
+	bool isStateChanged = false;
 	const bool isExists = CallVirtualMethod(
 		"onServiceDataUpdate",
 		[&](const py::override &f) {
-			stateChanged = f(PyApi::Export(service));
+			isStateChanged = f(PyApi::Export(service));
 		});
 	if (!isExists) {
-		stateChanged = Base::OnServiceDataUpdate(service);
+		isStateChanged = Base::OnServiceDataUpdate(service);
 	}
-	return stateChanged;
+	return isStateChanged;
+}
+
+bool PyApi::Service::OnBrokerPositionUpdate(
+			Security &security,
+			Qty qty,
+			bool isInitial) {
+	bool isStateChanged = false;
+	const bool isExists = CallVirtualMethod(
+		"onBrokerPositionUpdate",
+		[&](const py::override &f) {
+			isStateChanged = f(
+				PyApi::Export(security),
+				PyApi::Export(qty),
+				PyApi::Export(isInitial));
+		});
+	if (!isExists) {
+		Base::OnBrokerPositionUpdate(security, qty, isInitial);
+	}
+	return isStateChanged;
 }
 
 //////////////////////////////////////////////////////////////////////////
