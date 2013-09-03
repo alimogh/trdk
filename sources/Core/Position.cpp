@@ -448,7 +448,6 @@ public:
 		Assert(!m_position.IsClosed());
 		Assert(!m_position.IsCompleted());
 		Assert(!m_position.HasActiveOrders());
-		Assert(m_strategy);
 		AssertLt(0, m_planedQty);
 		AssertEq(0, m_opened.qty);
 		AssertEq(0, m_closed.qty);
@@ -459,12 +458,15 @@ public:
 			throw AlreadyStartedError();
 		}
 
+		m_opened.time = boost::get_system_time();
 		m_opened.qty = m_planedQty;
 		m_opened.orderId = openOrderId;
 
 		if (m_strategy) {
 			m_strategy->Register(m_position);
+			m_strategy = nullptr;
 		}
+
 		ReportOpeningUpdate("restored", TradeSystem::ORDER_STATUS_FILLED);
 
 		SignalUpdate();
@@ -1071,7 +1073,7 @@ ShortPosition::ShortPosition(
 			Security &security,
 			Qty qty,
 			ScaledPrice startPrice)
-		: Position(strategy, security, qty, startPrice) {
+		: Position(strategy, security, abs(qty), startPrice) {
 	//...//
 }
 
