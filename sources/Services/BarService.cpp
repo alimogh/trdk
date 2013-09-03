@@ -250,8 +250,12 @@ public:
 
 		ReopenLog(configuration, false);
 
-		m_service.GetLog().Info("Stated with size %1%.", m_barSize);
-	
+		m_service.GetLog().Info(
+			"Stated with size %1% %2%.",
+			boost::make_tuple(
+				boost::cref(m_barSize),
+				boost::cref(m_unitsStr)));
+
 	}
 
 	char GetCsvDelimeter() const {
