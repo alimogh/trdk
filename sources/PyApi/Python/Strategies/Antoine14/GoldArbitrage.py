@@ -67,6 +67,32 @@ class GoldArbitrage(trdk.Strategy):
                 self.positions)
 
     def onPositionUpdate(self, position):
+
+        if position.isCompleted is True:
+            isCompletedStr = "completed"
+        else:
+            isCompletedStr = "not completed"
+        if position.isCanceled is True:
+            isCanceledStr = "canceled"
+        else:
+            isCanceledStr = "not canceled"
+
+        self.log.debug(
+            "{0} {1} position changed:"
+            " {2} -> {3}({4}) -> {5}({6}) = {7}"
+            " ({8}, {9})"
+            .format(
+                position.security.symbol,
+                position.type,
+                position.planedQty,
+                position.openedQty,
+                position.security.descalePrice(position.openPrice),
+                position.closedQty,
+                position.security.descalePrice(position.closePrice),
+                position.activeQty,
+                isCompletedStr,
+                isCanceledStr))
+
         if position.isCompleted is False or position.isCanceled is True:
             return
         self.log.info('{0} closed first.'.format(position.security.symbol))
@@ -96,13 +122,12 @@ class GoldArbitrage(trdk.Strategy):
         # Obviously if DGL and/or GLD are not open for trading then do not
         # trade. Possible that GLD opens before DGL in premarket trading
         isOnline = gld.time == dgl.time
-        if self.positions.count() == 0:
-            self.log.debug(
-                'Online check: GLD({0}) == DGL({1}) = {2}'
-                .format(
-                    time.ctime(gld.time),
-                    time.ctime(dgl.time),
-                    isOnline))
+        self.log.debug(
+            'Online check: GLD({0}) == DGL({1}) = {2}'
+            .format(
+                time.ctime(gld.time),
+                time.ctime(dgl.time),
+                isOnline))
         return isOnline
 
     def _checkEntry(self):
@@ -113,35 +138,46 @@ class GoldArbitrage(trdk.Strategy):
         dgl = self.findDgl()
         dglBar = self.dglBars.getBarByReversedIndex(0)
 
-        shortGldLongDlgRatio = 0
+        currentShortGldLongDlgRatio = 0
+        checkShortGldLongDlgRatio = 0
         shortGldLongDlg = False
         # When GLD (ask)/DGL (bid) > ratio * 1.001% -> Short GLD, Long DGL
         if dglBar.minBidPrice != 0:
-            shortGldLongDlgRatio \
+            currentShortGldLongDlgRatio \
                 = float(gldBar.maxAskPrice) / float(dglBar.minBidPrice)
-            shortGldLongDlg = shortGldLongDlgRatio > (ratio * (1.001 / 100))
-
-        longGldShortDglRatio = 0
-        longGldShortDgl = False
-        if dglBar.maxAskPrice != 0:
-            # When GLD (bid)/DGL (ask) < ratio * 0.999% -> Long GLD, Short DGL
-            longGldShortDglRatio \
-                = float(gldBar.minBidPrice) / float(dglBar.maxAskPrice)
-            longGldShortDgl = longGldShortDglRatio < (ratio * (0.999 / 100))
-
+            checkShortGldLongDlgRatio = ratio * (1.001 / 100)
+            shortGldLongDlg \
+                = currentShortGldLongDlgRatio > checkShortGldLongDlgRatio
         self.log.debug(
-            "Entry 1: GLD(Ask {0}) / DGL(Bid {1}) = {2} == {3} - {4};"
-            " Entry 2: GLD(Bid {5}) / DGL(Ask {6}) = {7} == {8} - {9};"
+            'Entry 1: "GLD(Ask {0}) / DGL(Bid {1}) = {2}"'
+            ' < "{3} * 1.001% = {4}" -> {5}'
             .format(
                 gld.descalePrice(gldBar.maxAskPrice),
                 dgl.descalePrice(dglBar.minBidPrice),
-                shortGldLongDlgRatio,
+                currentShortGldLongDlgRatio,
                 ratio,
-                shortGldLongDlg,
+                checkShortGldLongDlgRatio,
+                shortGldLongDlg))
+
+        currentLongGldShortDglRatio = 0
+        checkLongGldShortDglRatio = 0
+        longGldShortDgl = False
+        if dglBar.maxAskPrice != 0:
+            # When GLD (bid)/DGL (ask) < ratio * 0.999% -> Long GLD, Short DGL
+            currentLongGldShortDglRatio \
+                = float(gldBar.minBidPrice) / float(dglBar.maxAskPrice)
+            checkLongGldShortDglRatio = ratio * (0.999 / 100)
+            longGldShortDgl \
+                = currentLongGldShortDglRatio < checkLongGldShortDglRatio
+        self.log.debug(
+            'Entry 2: "GLD(Bid {0}) / DGL(Ask {1}) = {2}"'
+            ' > "{3} * 0.999% = {4}" -> {5}'
+            .format(
                 gld.descalePrice(gldBar.minBidPrice),
                 dgl.descalePrice(dglBar.maxAskPrice),
-                longGldShortDglRatio,
+                currentLongGldShortDglRatio,
                 ratio,
+                checkLongGldShortDglRatio,
                 longGldShortDgl))
 
         def calcQty(security, price):
@@ -206,21 +242,24 @@ class GoldArbitrage(trdk.Strategy):
     def _checkExit(self, position):
 
         if position.isOpened is False or position.hasActiveCloseOrders is True:
+            self.log.debug(
+                '{0} {1} position has active orders...'
+                .format(position.security.symbol, position.type))
             return
 
         if position.entryType == 'shortGldLongDlg':
             # Exit trade when GLD (bid)/DGL (ask) = ratio
             gldPrice = self.gldBars.getBarByReversedIndex(0).minBidPrice
             dglPrice = self.dglBars.getBarByReversedIndex(0).maxAskPrice
-            message = 'Exit 1: GLD(Bid {0}) / DGL(Ask {1})'
-            message += ' = {2} == {3} - {4};'
+            message = 'Exit 1: "GLD(Bid {0}) / DGL(Ask {1}) = {2}"'
+            message += ' == {3} -> {4};'
         else:
             # Exit trade when GLD (ask)/DGL (bid) = ratio
             assert position.entryType == 'longGldShortDgl'
             gldPrice = self.gldBars.getBarByReversedIndex(0).maxAskPrice
             dglPrice = self.dglBars.getBarByReversedIndex(0).minBidPrice
-            message = 'Exit 2: GLD(Ask {0}) / DGL(Bid {1})'
-            message += ' = {2} == {3} - {4};'
+            message = 'Exit 2: "GLD(Ask {0}) / DGL(Bid {1}) = {2}"'
+            message += ' == {3} -> {4};'
 
         currentRatio = float(gldPrice) / float(dglPrice)
         currentRatio = round(currentRatio, 2)
