@@ -12,17 +12,38 @@
 #include "Util.hpp"
 #include "Core/Log.hpp"
 #include "Assert.hpp"
+#include "Common/Constants.h"
 
 using namespace trdk;
 using namespace trdk::Debug;
 
+#if defined(_DEBUG)
+#	define IS_DEBUG_BREAK_ENABLED 1
+#elif defined(DEV_VER)
+#	define IS_DEBUG_BREAK_ENABLED 1
+#else
+#	define IS_DEBUG_BREAK_ENABLED 0
+#endif
+
 namespace {
 
-	void Break() {
-#		if defined(BOOST_WINDOWS)
-			DebugBreak();
-#		elif defined(_DEBUG)
-			__assert_fail("Debug break", "", 0, "");
+	void BreakDebug() {
+#		if IS_DEBUG_BREAK_ENABLED == 1
+#			if defined(BOOST_WINDOWS)
+				DebugBreak();
+#			elif defined(_DEBUG)
+				__assert_fail("Debug break", "", 0, "");
+#			endif
+#		else
+		{
+			const char *message
+				= "An unexpected program failure occurred! Please send this"
+					" and other product log files at " TRDK_SUPPORT_EMAIL
+					" with descriptions of actions that you have made during"
+					" the occurrence of the failure.";
+			Log::Error(message);
+			Log::Trading("error", message);
+		}
 #		endif
 	}
 
@@ -43,7 +64,7 @@ namespace {
 			std::cerr << message.str() << std::endl;
 			Log::Error(message.str().c_str());
 			Log::Trading("assert", message.str().c_str());
-			Break();
+			BreakDebug();
 		}
 	}
 
@@ -74,24 +95,23 @@ namespace {
 		std::cerr << message.str() << std::endl;
 		Log::Error(message.str().c_str());
 		Log::Trading("assert", message.str().c_str());
-		Break();
-	}
-
-#else
-
-	void Detail::ReportAssertFail(
-				const char *expr,
-				const char *file,
-				int line)
-			throw() {
-		Log::Error(
-			"Assertion Failed (predefined): \"%1%\" in file %2%, line %3%.",
-			expr,
-			file,
-			line);
+		BreakDebug();
 	}
 
 #endif
+
+void Detail::ReportAssertFail(
+			const char *expr,
+			const char *file,
+			int line)
+		throw() {
+	Log::Error(
+		"Assertion Failed (predefined): \"%1%\" in file %2%, line %3%.",
+		expr,
+		file,
+		line);
+	BreakDebug();
+}
 
 void Detail::RegisterUnhandledException(
 			const char *function,
@@ -106,5 +126,5 @@ void Detail::AssertFailNoExceptionImpl(
 			const char *file,
 			long line) {
 	RegisterUnhandledException(function, file, line, true);
-	Break();
+	BreakDebug();
 }

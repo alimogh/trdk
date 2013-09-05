@@ -58,7 +58,9 @@ namespace {
 					cmd.push_back(argv[i]);
 				}
 				Log::Info(
-					"Started: \"%1%\". Build time: " __TIME__ " " __DATE__ ".",
+					"Started: \"%1%\"."
+						" Build: " TRDK_BUILD_IDENTITY "."
+						" Build time: " __TIME__ " " __DATE__ ".",
 					boost::join(cmd, " "));
 			}
 		}
