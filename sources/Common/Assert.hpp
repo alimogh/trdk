@@ -31,23 +31,20 @@
 				const char *,
 				long,
 				bool);
+		void ReportAssertFail(const char *, const char *, int) throw();
 	} } }
 #endif
+
+#define AssertFail(reason) \
+	(void)(::trdk::Debug::Detail::ReportAssertFail( \
+		reason, \
+		__FILE__, \
+		__LINE__))
 
 #if defined(BOOST_DISABLE_ASSERTS) || !defined(BOOST_ENABLE_ASSERT_HANDLER)
 #	if defined(BOOST_ENABLE_ASSERT_HANDLER)
 		static_assert(false, "Failed to find assert-break method");
 #	endif
-#	ifndef FILE_ASSERT_HPP_INCLUDED
-		namespace trdk { namespace Debug { namespace Detail {
-			void ReportAssertFail(const char *, const char *, int) throw();
-		} } }
-#	endif
-#	define AssertFail(reason) \
-		(void)(::trdk::Debug::Detail::ReportAssertFail( \
-			reason, \
-			__FILE__, \
-			__LINE__))
 #	define AssertEq(expr1, expr2) ((void)0)
 #	define AssertNe(expr1, expr2) ((void)0)
 #	define AssertGt(expr1, expr2) ((void)0)
@@ -57,13 +54,6 @@
 #	define AssertBitSet(bit, var) ((void)0)
 #	define AssertBitNotSet(bit, var) ((void)0)
 #elif defined(BOOST_ENABLE_ASSERT_HANDLER)
-
-#	define AssertFail(reason) \
-		(void)(::boost::assertion_failed( \
-			reason, \
-			BOOST_CURRENT_FUNCTION, \
-			__FILE__, \
-			__LINE__))
 
 #	ifndef FILE_ASSERT_HPP_INCLUDED
 		namespace trdk { namespace Debug { namespace Detail {
@@ -102,7 +92,7 @@
 			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
 				trdk::Debug::Detail::CastToString(expr1), \
 				trdk::Debug::Detail::CastToString(expr2), \
-				"EQUAL", \
+				"value EQUAL", \
 				"!=", \
 				#expr1, \
 				#expr2, \
@@ -115,7 +105,7 @@
 			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
 				trdk::Debug::Detail::CastToString(expr1), \
 				trdk::Debug::Detail::CastToString(expr2), \
-				"NOT EQUAL", \
+				"value NOT EQUAL", \
 				"==", \
 				#expr1, \
 				#expr2, \
@@ -128,7 +118,7 @@
 			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
 				trdk::Debug::Detail::CastToString(expr1), \
 				trdk::Debug::Detail::CastToString(expr2), \
-				"GREATER THAN", \
+				"value GREATER THAN", \
 				"<=", \
 				#expr1, \
 				#expr2, \
@@ -141,7 +131,7 @@
 			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
 				trdk::Debug::Detail::CastToString(expr1), \
 				trdk::Debug::Detail::CastToString(expr2), \
-				"GREATER THAN or EQUAL", \
+				"value GREATER THAN or EQUAL", \
 				"<", \
 				#expr1, \
 				#expr2, \
@@ -154,7 +144,7 @@
 			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
 				trdk::Debug::Detail::CastToString(expr1), \
 				trdk::Debug::Detail::CastToString(expr2), \
-				"LESS THAN", \
+				"value LESS THAN", \
 				">=", \
 				#expr1, \
 				#expr2, \
@@ -167,7 +157,7 @@
 			: (void)::trdk::Debug::Detail::ReportCompareAssertFail( \
 				trdk::Debug::Detail::CastToString(expr1), \
 				trdk::Debug::Detail::CastToString(expr2), \
-				"LESS THAN or EQUAL", \
+				"value LESS THAN or EQUAL", \
 				">", \
 				#expr1, \
 				#expr2, \

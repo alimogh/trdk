@@ -57,7 +57,11 @@ namespace {
 				for (auto i = 0; i < argc; ++i) {
 					cmd.push_back(argv[i]);
 				}
-				Log::Info("Started: \"%1%\".", boost::join(cmd, " "));
+				Log::Info(
+					"Started: \"%1%\"."
+						" Build: " TRDK_BUILD_IDENTITY "."
+						" Build time: " __TIME__ " " __DATE__ ".",
+					boost::join(cmd, " "));
 			}
 		}
 		if (useTrading) {
@@ -145,7 +149,7 @@ namespace {
 			auto logsPath = IniFile(confFilePath)
 				.ReadFileSystemPath("Common", "logs_dir");
 			logsPath /= uuid;
-			InitLogs(true, true, false, argc, argv, logsPath);
+			InitLogs(true, true, true, argc, argv, logsPath);
 		}
 
 		Server server;

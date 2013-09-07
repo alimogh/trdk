@@ -220,8 +220,8 @@ public:
 		if (boost::iequals(m_unitsStr, "seconds")) {
 			if (60 % m_barSize) {
 				m_service.GetLog().Error(
-					"Wrong size specified: \"%1%\". 1 minute must be"
-						" a multiple specified size.",
+					"Wrong size specified: \"%1%\"."
+						" Should be a multiple of 1 minute.",
 					m_barSizeStr);
 				throw Error("Wrong bar size settings");
 			}
@@ -229,8 +229,8 @@ public:
 		} else if (boost::iequals(m_unitsStr, "minutes")) {
 			if (60 % m_barSize) {
 				m_service.GetLog().Error(
-					"Wrong size specified: \"%1%\". 1 hour must be"
-						" a multiple specified size.",
+					"Wrong size specified: \"%1%\"."
+						" Should be a multiple of 1 hour.",
 					m_barSizeStr);
 				throw Error("Wrong bar size settings");
 			}
@@ -250,8 +250,12 @@ public:
 
 		ReopenLog(configuration, false);
 
-		m_service.GetLog().Info("Stated with size %1%.", m_barSize);
-	
+		m_service.GetLog().Info(
+			"Stated with size %1% %2%.",
+			boost::make_tuple(
+				boost::cref(m_barSize),
+				boost::cref(m_unitsStr)));
+
 	}
 
 	char GetCsvDelimeter() const {

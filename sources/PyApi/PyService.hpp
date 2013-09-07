@@ -45,6 +45,8 @@ namespace trdk { namespace PyApi {
 
 		using trdk::Service::GetTag;
 
+		virtual std::string GetRequiredSuppliers() const;
+
 		virtual boost::posix_time::ptime OnSecurityStart(
 					const trdk::Security &);
 		virtual void OnServiceStart(const trdk::Service &);
@@ -57,6 +59,10 @@ namespace trdk { namespace PyApi {
 					trdk::Qty,
 					trdk::OrderSide);
 		virtual bool OnServiceDataUpdate(const trdk::Service &);
+		virtual bool OnBrokerPositionUpdate(
+					trdk::Security &,
+					trdk::Qty,
+					bool isInitial);
 
 	protected:
 

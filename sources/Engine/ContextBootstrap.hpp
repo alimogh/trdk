@@ -27,7 +27,6 @@ namespace trdk { namespace Engine {
 				const trdk::Lib::IniFile &,
 				Context &,
 				SubscriptionsManager &subscriptionsManagerRef,
-				Securities &securitiesRef,
 				Strategies &strategiesRef,
 				Observers &observersRef,
 				Services &servicesRef);

@@ -65,6 +65,15 @@ namespace trdk {
 			explicit Error(const char *what) throw();
 		};
 
+		class TRDK_CORE_API OrderParamsError : public Error {
+		public:
+			OrderParamsError(
+						const char *what,
+						trdk::Qty,
+						const trdk::OrderParams &)
+					throw();
+		};
+
 		class TRDK_CORE_API ConnectError : public Error {
 		public:
 			ConnectError() throw();
@@ -99,59 +108,68 @@ namespace trdk {
 		virtual OrderId SellAtMarketPrice(
 				trdk::Security &,
 				trdk::Qty qty,
-				trdk::Qty displaySize,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId Sell(
 				trdk::Security &,
 				trdk::Qty qty,
 				trdk::ScaledPrice,
-				trdk::Qty displaySize,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId SellAtMarketPriceWithStopPrice(
 				trdk::Security &,
 				trdk::Qty qty,
 				trdk::ScaledPrice stopPrice,
-				trdk::Qty displaySize,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId SellOrCancel(
 				trdk::Security &,
 				trdk::Qty,
 				trdk::ScaledPrice,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
 
 		virtual OrderId BuyAtMarketPrice(
 				trdk::Security &,
 				trdk::Qty qty,
-				trdk::Qty displaySize,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId Buy(
 				trdk::Security &,
 				trdk::Qty qty,
 				trdk::ScaledPrice,
-				trdk::Qty displaySize,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
 				trdk::Security &,
 				trdk::Qty qty,
 				trdk::ScaledPrice stopPrice,
-				trdk::Qty displaySize,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId BuyOrCancel(
 				trdk::Security &,
 				trdk::Qty,
 				trdk::ScaledPrice,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
 
 		virtual void CancelOrder(OrderId) = 0;
 		virtual void CancelAllOrders(trdk::Security &) = 0;
+
+	protected:
+
+		//! Validates order parameters and throws an exception if it has errors.
+		/** @throw trdk::OrderPatams
+		  */
+		virtual void Validate(Qty, const trdk::OrderParams &, bool isIoc) const;
 
 	};
 

@@ -88,6 +88,7 @@
   <ItemGroup>
     <ClInclude Include="Assert.hpp" />
     <ClInclude Include="Common.hpp" />
+    <ClInclude Include="Constants.h" />
     <ClInclude Include="Defaults.hpp" />
     <ClInclude Include="DisableBoostWarningsEnd.h" />
     <ClInclude Include="DisableBoostWarningsBegin.h" />

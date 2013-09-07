@@ -12,9 +12,6 @@
 
 namespace trdk { namespace Engine {
 
-	typedef boost::unordered_map<trdk::Lib::Symbol, boost::shared_ptr<Security>>
-		Securities;
-
 	typedef trdk::Lib::DllObjectPtr<Strategy> ModuleStrategy;
 	typedef std::map<std::string /*tag*/, std::list<ModuleStrategy>> Strategies;
 

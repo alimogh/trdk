@@ -17,16 +17,26 @@
 #	define TRDK_INTERACTION_INTERACTIVEBROKERS_API extern "C"
 #endif
 
+using namespace trdk;
+using namespace trdk::Lib;
 namespace ib = trdk::Interaction::InteractiveBrokers;
 
 TRDK_INTERACTION_INTERACTIVEBROKERS_API
-trdk::TradeSystemFactoryResult CreateTradeSystem(
-			const trdk::Lib::IniFileSectionRef &configuration,
-			trdk::Context::Log &log) {
-	trdk::TradeSystemFactoryResult result;
+TradeSystemFactoryResult CreateTradeSystem(
+			const IniFileSectionRef &configuration,
+			Context::Log &log) {
+	TradeSystemFactoryResult result;
 	boost::shared_ptr<ib::TradeSystem> tradeSystem(
 		new ib::TradeSystem(configuration, log));
 	boost::get<0>(result) = tradeSystem;
 	boost::get<1>(result) = tradeSystem;
 	return result;
+}
+
+TRDK_INTERACTION_INTERACTIVEBROKERS_API
+boost::shared_ptr<MarketDataSource> CreateMarketDataSource(
+			const IniFileSectionRef &configuration,
+			Context::Log &log) {
+	return boost::shared_ptr<MarketDataSource>(
+		new ib::TradeSystem(configuration, log));
 }

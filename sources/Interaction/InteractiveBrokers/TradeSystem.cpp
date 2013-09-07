@@ -39,6 +39,7 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 
 	std::unique_ptr<Client> client(
 		new Client(
+			m_securities,
 			m_log,
 			settings.ReadTypedKey<int>("client_id", 0),
 			settings.ReadKey("ip_address", "127.0.0.1")));
@@ -95,11 +96,10 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 
 	client->StartData();
 
-	foreach (auto *security, m_unsubscribedSecurities) {
+	foreach (auto *security, m_securities) {
 		client->SubscribeToMarketData(*security);
 	}
 
-	Securities().swap(m_unsubscribedSecurities);
 	client.swap(m_client);
 
 }
@@ -109,7 +109,7 @@ boost::shared_ptr<trdk::Security> ib::TradeSystem::CreateSecurity(
 			const Symbol &symbol)
 		const {
 	boost::shared_ptr<ib::Security> result(new ib::Security(context, symbol));
-	m_unsubscribedSecurities.push_back(&*result);
+	m_securities.insert(&*result);
 	return result;
 }
 
@@ -141,10 +141,11 @@ void ib::TradeSystem::CancelAllOrders(trdk::Security &security) {
 trdk::OrderId ib::TradeSystem::SellAtMarketPrice(
 			trdk::Security &security,
 			Qty qty,
-			Qty displaySize,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Validate(qty, params, false);
 	PlacedOrder order = {};
-	order.id = m_client->PlaceSellOrder(security, qty, displaySize);
+	order.id = m_client->PlaceSellOrder(security, qty, params);
 	order.security = &security;
 	order.callback = statusUpdateSlot;
 	RegOrder(order);
@@ -156,11 +157,12 @@ trdk::OrderId ib::TradeSystem::Sell(
 			trdk::Security &security,
 			Qty qty,
 			ScaledPrice price,
-			Qty displaySize,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Validate(qty, params, false);
 	const auto rawPrice = security.DescalePrice(price);
 	PlacedOrder order = {};
-	order.id = m_client->PlaceSellOrder(security, qty, rawPrice, displaySize);
+	order.id = m_client->PlaceSellOrder(security, qty, rawPrice, params);
 	order.security = &security;
 	order.callback = statusUpdateSlot;
 	RegOrder(order);
@@ -171,15 +173,16 @@ trdk::OrderId ib::TradeSystem::SellAtMarketPriceWithStopPrice(
 			trdk::Security &security,
 			Qty qty,
 			ScaledPrice stopPrice,
-			Qty displaySize,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Validate(qty, params, false);
 	const auto rawStopPrice = security.DescalePrice(stopPrice);
 	PlacedOrder order = {};
 	order.id = m_client->PlaceSellOrderWithMarketPrice(
 		security,
 		qty,
 		rawStopPrice,
-		displaySize);
+		params);
 	order.security = &security;
 	order.callback = statusUpdateSlot;
 	RegOrder(order);
@@ -190,10 +193,12 @@ trdk::OrderId ib::TradeSystem::SellOrCancel(
 			trdk::Security &security,
 			Qty qty,
 			ScaledPrice price,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Validate(qty, params, true);
 	const double rawPrice = security.DescalePrice(price);
 	const PlacedOrder order = {
-		m_client->PlaceSellIocOrder(security, qty, rawPrice),
+		m_client->PlaceSellIocOrder(security, qty, rawPrice, params),
 		&security,
 		statusUpdateSlot
 	};
@@ -204,10 +209,11 @@ trdk::OrderId ib::TradeSystem::SellOrCancel(
 trdk::OrderId ib::TradeSystem::BuyAtMarketPrice(
 			trdk::Security &security,
 			Qty qty,
-			Qty displaySize,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Validate(qty, params, false);
 	PlacedOrder order = {};
-	order.id = m_client->PlaceBuyOrder(security, qty, displaySize);
+	order.id = m_client->PlaceBuyOrder(security, qty, params);
 	order.security = &security;
 	order.callback = statusUpdateSlot;
 	RegOrder(order);
@@ -218,11 +224,12 @@ trdk::OrderId ib::TradeSystem::Buy(
 			trdk::Security &security,
 			Qty qty,
 			ScaledPrice price,
-			Qty displaySize,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Validate(qty, params, false);
 	const auto rawPrice = security.DescalePrice(price);
 	PlacedOrder order = {};
-	order.id = m_client->PlaceBuyOrder(security, qty, rawPrice, displaySize);
+	order.id = m_client->PlaceBuyOrder(security, qty, rawPrice, params);
 	order.security = &security;
 	order.callback = statusUpdateSlot;
 	RegOrder(order);
@@ -233,15 +240,16 @@ trdk::OrderId ib::TradeSystem::BuyAtMarketPriceWithStopPrice(
 			trdk::Security &security,
 			Qty qty,
 			ScaledPrice stopPrice,
-			Qty displaySize,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Validate(qty, params, false);
 	const auto rawStopPrice = security.DescalePrice(stopPrice);
 	PlacedOrder order = {};
 	order.id = m_client->PlaceBuyOrderWithMarketPrice(
 		security,
 		qty,
 		rawStopPrice,
-		displaySize);
+		params);
 	order.security = &security;
 	order.callback = statusUpdateSlot;
 	RegOrder(order);
@@ -252,10 +260,12 @@ trdk::OrderId ib::TradeSystem::BuyOrCancel(
 			trdk::Security &security,
 			Qty qty,
 			ScaledPrice price,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Validate(qty, params, true);
 	const double rawPrice = security.DescalePrice(price);
 	const PlacedOrder order = {
-		m_client->PlaceBuyIocOrder(security, qty, rawPrice),
+		m_client->PlaceBuyIocOrder(security, qty, rawPrice, params),
 		&security,
 		statusUpdateSlot};
 	RegOrder(order);

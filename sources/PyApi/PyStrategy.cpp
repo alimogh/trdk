@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Strategy.hpp"
+#include "PyStrategy.hpp"
 #include "StrategyExport.hpp"
 #include "PositionExport.hpp"
 #include "ServiceExport.hpp"
@@ -203,6 +203,26 @@ bool PyApi::Strategy::CallVirtualMethod(
 	return GetExport().CallVirtualMethod(name, call);
 }
 
+std::string PyApi::Strategy::GetRequiredSuppliers() const {
+	
+	std::string result = Base::GetRequiredSuppliers();
+
+	CallVirtualMethod(
+		"getRequiredSuppliers",
+		[&](const py::override &f) {
+			const py::str callResult = f();
+			const std::string scriptRequest
+				= py::extract<std::string>(callResult);
+			if (!result.empty() && !scriptRequest.empty()) {
+				result.push_back(',');
+			}
+			result += scriptRequest;
+		});
+
+	return result;
+
+}
+
 pt::ptime PyApi::Strategy::OnSecurityStart(trdk::Security &security) {
 	const bool isExists = CallVirtualMethod(
 		"onSecurityStart",
@@ -278,6 +298,23 @@ void PyApi::Strategy::OnPositionUpdate(Position &position) {
 		});
 	if (!isExists) {
 		Base::OnPositionUpdate(position);
+	}
+}
+
+void PyApi::Strategy::OnBrokerPositionUpdate(
+			Security &security,
+			Qty qty,
+			bool isInitial) {
+	const bool isExists = CallVirtualMethod(
+		"onBrokerPositionUpdate",
+		[&](const py::override &f) {
+			f(
+				PyApi::Export(security),
+				PyApi::Export(qty),
+				PyApi::Export(isInitial));
+		});
+	if (!isExists) {
+		Base::OnBrokerPositionUpdate(security, qty, isInitial);
 	}
 }
 

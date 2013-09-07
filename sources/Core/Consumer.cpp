@@ -91,8 +91,16 @@ void Consumer::OnServiceDataUpdate(const Service &service) {
  		"Module subscribed to service, but can't work with it");
 }
 
-void Consumer::OnPositionUpdate(Position &) {
-	//...//
+void Consumer::OnBrokerPositionUpdate(
+			Security &security,
+			Qty,
+			bool /*isInitial*/) {
+	GetLog().Error(
+		"Subscribed to %1% Broker Positions Updates, but can't work with it"
+			" (hasn't OnBrokerPositionUpdate method implementation).",
+		security);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to Broker Positions Updates, but can't work with it");
 }
 
 void Consumer::RegisterSource(Security &security) {
@@ -111,6 +119,14 @@ Consumer::SecurityList & Consumer::GetSecurities() {
 
 const Consumer::SecurityList & Consumer::GetSecurities() const {
 	return const_cast<Consumer *>(this)->GetSecurities();
+}
+
+void Consumer::RaiseBrokerPositionUpdateEvent(
+			Security &security,
+			Qty qty,
+			bool isInitial) {
+	const Lock lock(GetMutex());
+	OnBrokerPositionUpdate(security, qty, isInitial);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

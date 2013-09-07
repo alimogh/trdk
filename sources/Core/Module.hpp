@@ -56,6 +56,11 @@ namespace trdk {
 
 	public:
 
+		//! Returns list of required services.
+		virtual std::string GetRequiredSuppliers() const;
+
+	public:
+
 		virtual void OnServiceStart(const trdk::Service &);
 
 	public:

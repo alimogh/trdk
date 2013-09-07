@@ -279,4 +279,45 @@ void SubscriberPtrWrapper::RaisePositionUpdateEvent(Position &position) const {
 
 }
 
+void SubscriberPtrWrapper::RaiseBrokerPositionUpdateEvent(
+			const BrokerPosition &position)
+		const {
+
+	class Visitor
+			: public boost::static_visitor<void>,
+			private boost::noncopyable {
+	public:		
+		explicit Visitor(const BrokerPosition &position)
+				: m_position(position) {
+			//...//
+		}
+	public:
+		void operator ()(Strategy &strategy) const {
+			return strategy.RaiseBrokerPositionUpdateEvent(
+				*m_position.security,
+				m_position.qty,
+				m_position.isInitial);
+		}
+		void operator ()(Service &service) const {
+			if (	service.RaiseBrokerPositionUpdateEvent(
+						*m_position.security,
+						m_position.qty,
+						m_position.isInitial)) {
+				RaiseServiceDataUpdateEvent(service);
+			}
+		}
+		void operator ()(Observer &observer) const {
+			return observer.RaiseBrokerPositionUpdateEvent(
+				*m_position.security,
+				m_position.qty,
+				m_position.isInitial);
+		}
+	private:
+		const BrokerPosition &m_position;
+	};
+
+	boost::apply_visitor(Visitor(position), m_subscriber);
+
+}
+
 //////////////////////////////////////////////////////////////////////////

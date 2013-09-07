@@ -185,6 +185,14 @@ bool Service::RaiseServiceDataUpdateEvent(const Service &service) {
 	return OnServiceDataUpdate(service);
 }
 
+bool Service::RaiseBrokerPositionUpdateEvent(
+			Security &security,
+			Qty qty,
+			bool isInitial) {
+	const Lock lock(GetMutex());
+	return OnBrokerPositionUpdate(security, qty, isInitial);
+}
+
 bool Service::OnLevel1Update(const Security &security) {
 	GetLog().Error(
 		"Subscribed to %1% Level 1 Updates, but can't work with it"
@@ -227,6 +235,18 @@ bool Service::OnServiceDataUpdate(const Service &service) {
 		service);
  	throw MethodDoesNotImplementedError(
  		"Module subscribed to service, but can't work with it");
+}
+
+bool Service::OnBrokerPositionUpdate(
+			Security &security,
+			Qty,
+			bool /*isInitial*/) {
+	GetLog().Error(
+		"Subscribed to %1% Broker Positions Updates, but can't work with it"
+			" (hasn't OnBrokerPositionUpdate method implementation).",
+		security);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to Broker Positions Updates, but can't work with it");
 }
 
 void Service::RegisterSubscriber(Strategy &module) {

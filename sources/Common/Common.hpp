@@ -24,6 +24,8 @@
 #	include <boost/format.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
+#include "Common/Constants.h"
+
 #include "Common/Dll.hpp"
 #include "Common/Interlocking.hpp"
 #include "Common/Util.hpp"

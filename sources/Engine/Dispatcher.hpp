@@ -230,7 +230,15 @@ namespace trdk { namespace Engine {
 			PositionUpdateEvent;
 		//! @todo: Check performance: set or list
 		typedef EventQueue<std::set<PositionUpdateEvent>>
-			PositionUpdateEventQueue;
+			PositionsUpdateEventQueue;
+
+		typedef boost::tuple<
+				SubscriberPtrWrapper::BrokerPosition,
+				SubscriberPtrWrapper>
+			BrokerPositionUpdateEvent;
+		//! @todo: Check performance: map to exclude duplicate securities
+		typedef EventQueue<std::list<BrokerPositionUpdateEvent>>
+			BrokerPositionsUpdateEventQueue;
 
 	public:
 
@@ -240,7 +248,7 @@ namespace trdk { namespace Engine {
 	public:
 
 		bool IsActive() const {
-			return m_positionUpdates.IsActive();
+			return m_positionsUpdates.IsActive();
 		}
 
 		void Activate();
@@ -262,7 +270,12 @@ namespace trdk { namespace Engine {
 					ScaledPrice,
 					Qty,
 					OrderSide);
-		virtual void SignalPositionUpdate(SubscriberPtrWrapper &, Position &);
+		void SignalPositionUpdate(SubscriberPtrWrapper &, Position &);
+		void SignalBrokerPositionUpdate(
+					SubscriberPtrWrapper &,
+					Security &,
+					Qty,
+					bool isInitial);
 
 	private:
 
@@ -278,6 +291,12 @@ namespace trdk { namespace Engine {
 		static void RaiseEvent(const PositionUpdateEvent &positionUpdateEvent) {
 			boost::get<1>(positionUpdateEvent).RaisePositionUpdateEvent(
 				*boost::get<0>(positionUpdateEvent));
+		}
+		template<>
+		static void RaiseEvent(
+					const BrokerPositionUpdateEvent &positionUpdateEvent) {
+			boost::get<1>(positionUpdateEvent).RaiseBrokerPositionUpdateEvent(
+					boost::get<0>(positionUpdateEvent));
 		}
 
 		template<typename Event, typename EventList>
@@ -300,6 +319,13 @@ namespace trdk { namespace Engine {
 				return false;
 			}
 			eventList.insert(positionUpdateEvent);
+			return true;
+		}
+		template<typename EventList>
+		static bool QueueEvent(
+					const BrokerPositionUpdateEvent &positionUpdateEvent,
+					EventList &eventList) {
+			eventList.push_back(positionUpdateEvent);
 			return true;
 		}
 
@@ -672,7 +698,8 @@ namespace trdk { namespace Engine {
 		boost::thread_group m_threads;
 
 		Level1TicksEventQueue m_level1Ticks;
-		PositionUpdateEventQueue m_positionUpdates;
+		PositionsUpdateEventQueue m_positionsUpdates;
+		BrokerPositionsUpdateEventQueue m_brokerPositionsUpdates;
 
 	};
 

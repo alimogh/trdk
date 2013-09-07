@@ -99,7 +99,6 @@ public:
 				conf,
 				m_context,
 				m_subscriptionsManager,
-				m_securities,
 				m_strategies,
 				m_observers,
 				m_services);
@@ -110,7 +109,9 @@ public:
 			throw Exception("Failed to init engine context");
 		}
 		
-		m_context.GetLog().Info("Loaded %1% securities.", m_securities.size());
+		m_context.GetLog().Info(
+			"Loaded %1% securities.",
+			m_context.GetMarketDataSource().GetActiveSecurityCount());
 		m_context.GetLog().Info("Loaded %1% observers.", m_observers.size());
 		m_context.GetLog().Info(
 			"Loaded %1% strategies (%2% instances).",
@@ -130,11 +131,7 @@ public:
 public:
 
 	Security * FindSecurity(const Symbol &symbol) {
-		const auto pos = m_securities.find(symbol);
-		if (pos == m_securities.end()) {
-			return nullptr;
-		}
-		return &*pos->second;
+		return m_context.GetMarketDataSource().FindSecurity(symbol);
 	}
 
 private:
@@ -143,7 +140,6 @@ private:
 
 	SubscriptionsManager m_subscriptionsManager;
 
-	Securities m_securities;
 	Strategies m_strategies;
 	Observers m_observers;
 	Services m_services;
@@ -223,7 +219,8 @@ Security * Engine::Context::FindSecurity(const Symbol &symbol) {
 }
 
 const Security * Engine::Context::FindSecurity(const Symbol &symbol) const {
-	return const_cast<Context *>(this)->FindSecurity(symbol);
+	Assert(m_pimpl->m_state);
+	return m_pimpl->m_state->FindSecurity(symbol);
 }
 
 //////////////////////////////////////////////////////////////////////////

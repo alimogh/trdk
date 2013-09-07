@@ -80,9 +80,9 @@ namespace {
 
 		static void AppendRecordHead(const pt::ptime &time, std::ostream &os) {
 #			ifdef BOOST_WINDOWS
-				os << (time + GetEdtDiff()) << " [" << GetCurrentThreadId() << "]: ";
+				os << time << " [" << GetCurrentThreadId() << "]: ";
 #			else
-				os << (time + GetEdtDiff()) << " [" << pthread_self() << "]: ";
+				os << time << " [" << pthread_self() << "]: ";
 #			endif
 		}
 
@@ -293,11 +293,23 @@ void Log::RegisterUnhandledException(
 		try {
 			throw;
 		} catch (const trdk::PyApi::ClientError &ex) {
-			logger.Create("Py API error, please check your Python script: \"%1%\".") % ex.what();
+			logger.Create(
+					"Py API error, please check your Python script: \"%1%\".")
+				% ex.what();
 		} catch (const Exception &ex) {
-			logger.CreateStandard() % "LOCAL" % ex.what() % function % file % line;
+			logger.CreateStandard()
+				% "LOCAL"
+				% ex.what()
+				% function
+				% file
+				% line;
 		} catch (const std::exception &ex) {
-			logger.CreateStandard() % "STANDART" % ex.what() % function % file % line;
+			logger.CreateStandard()
+				% "STANDART"
+				% ex.what()
+				% function
+				% file
+				% line;
 		} catch (...) {
 			logger.CreateStandard() % "UNKNOWN" % "" % function % file % line;
 		}

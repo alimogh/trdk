@@ -15,19 +15,6 @@
 namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
-
-	typedef boost::uint64_t OrderId;
-
-	enum OrderSide {
-		ORDER_SIDE_BUY,
-		ORDER_SIDE_BID = ORDER_SIDE_BUY,
-		ORDER_SIDE_SELL,
-		ORDER_SIDE_OFFER = ORDER_SIDE_SELL,
-		ORDER_SIDE_ASK = ORDER_SIDE_SELL,
-		numberOfOrderSides
-	};
-
-	////////////////////////////////////////////////////////////////////////////////
 	
 	typedef boost::int32_t Qty;
 	
@@ -219,6 +206,39 @@ namespace trdk {
 				return 0;
 		}
 	}
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	typedef boost::uint64_t OrderId;
+
+	enum OrderSide {
+		ORDER_SIDE_BUY,
+		ORDER_SIDE_BID = ORDER_SIDE_BUY,
+		ORDER_SIDE_SELL,
+		ORDER_SIDE_OFFER = ORDER_SIDE_SELL,
+		ORDER_SIDE_ASK = ORDER_SIDE_SELL,
+		numberOfOrderSides
+	};
+
+	//! Extended order parameters.
+	struct OrderParams {
+		
+		//! Display size for Iceberg orders.
+		boost::optional<trdk::Qty> displaySize;
+		
+		//! Good Till Time.
+		/** Absolute value in Coordinated Universal Time (UTC). Incompatible
+		  * with goodInSeconds.
+		  * @sa trdk::OrderParams::goodInSeconds
+		  */
+		boost::optional<boost::posix_time::ptime> goodTillTime;
+		//! Good next N seconds.
+		/** Incompatible with goodTillTime.
+		  * @sa trdk::OrderParams::goodTillTime
+		  */
+		boost::optional<uintmax_t> goodInSeconds;
+
+	};
 
 	////////////////////////////////////////////////////////////////////////////////
 

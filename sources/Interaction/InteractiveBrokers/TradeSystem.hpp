@@ -22,6 +22,10 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		: public trdk::TradeSystem,
 		public trdk::MarketDataSource {
 
+	public:
+
+		typedef std::set<Security *> Securities;
+
 	private:
 
 		typedef boost::shared_mutex Mutex;
@@ -63,8 +67,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 						&PlacedOrder::id>>>>
 			PlacedOrderSet;
 
-		typedef std::list<Security *> Securities;
-
 	public:
 
 		explicit TradeSystem(const Lib::IniFileSectionRef &, Context::Log &);
@@ -76,61 +78,63 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
-		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
-				trdk::Context &,
-				const trdk::Lib::Symbol &)
-			const;
-
-	public:
-
 		virtual OrderId SellAtMarketPrice(
 				trdk::Security &,
 				trdk::Qty qty,
-				trdk::Qty displaySize,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId Sell(
 				trdk::Security &,
 				trdk::Qty qty,
 				trdk::ScaledPrice,
-				trdk::Qty displaySize,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellAtMarketPriceWithStopPrice(
 				trdk::Security &,
 				trdk::Qty qty,
 				trdk::ScaledPrice stopPrice,
-				trdk::Qty displaySize,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId SellOrCancel(
 				trdk::Security &,
 				trdk::Qty,
 				trdk::ScaledPrice,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
 
 		virtual OrderId BuyAtMarketPrice(
 				trdk::Security &,
 				trdk::Qty qty,
-				trdk::Qty displaySize,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId Buy(
 				trdk::Security &,
 				trdk::Qty qty,
 				trdk::ScaledPrice,
-				trdk::Qty displaySize,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
 				trdk::Security &,
 				trdk::Qty qty,
 				trdk::ScaledPrice stopPrice,
-				trdk::Qty displaySize,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
 		virtual OrderId BuyOrCancel(
 				trdk::Security &,
 				trdk::Qty,
 				trdk::ScaledPrice,
+				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
 
 		virtual void CancelOrder(OrderId);
 		virtual void CancelAllOrders(trdk::Security &);
+
+	protected:
+
+		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
+				trdk::Context &,
+				const trdk::Lib::Symbol &)
+			const;
 
 	private:
 
@@ -144,7 +148,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		std::unique_ptr<Client> m_client;
 		PlacedOrderSet m_placedOrders;
 
-		mutable Securities m_unsubscribedSecurities;
+		mutable Securities m_securities;
 
 	};
 

@@ -11,7 +11,7 @@
 #pragma once
 
 #include "Security.hpp"
-#include "Core/TradeSystem.hpp"
+#include "TradeSystem.hpp"
 #include "Core/Context.hpp"
 
 namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
@@ -36,10 +36,23 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	private:
 
-		enum State {
-			STATE_IDLE,
-			STATE_PING,
-			STATE_PING_ACK
+		enum ConnectionState {
+			//! Not connected.
+			/** false-value - supporting previous bool-type
+			  */
+			CONNECTION_STATE_NOT_CONNECTED = false,
+			//! Connected but not ready to work (no initial data was requested
+			//! or received).
+			CONNECTION_STATE_CONNECTED,
+			//! Connected and ready to work (all initial data was requested
+			//! and received).
+			CONNECTION_STATE_READY
+		};
+
+		enum PingState {
+			PING_STATE_IDLE,
+			PING_STATE_REQ,
+			PING_STATE_ACK
 		};
 
 		typedef boost::mutex Mutex;
@@ -48,6 +61,14 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		typedef std::map<std::string, TradeSystem::OrderStatus>
 			OrderStatusesMap;
+
+		struct BySecurity {
+			//...//
+		};
+
+		struct ByTicker {
+			//...//
+		};
 
 		struct SecurityRequest {
 			
@@ -64,14 +85,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 				return security->GetSymbol();
 			}
 
-		};
-
-		struct BySecurity {
-			//...//
-		};
-
-		struct ByTicker {
-			//...//
 		};
 
 		typedef boost::multi_index_container<
@@ -91,14 +104,19 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 						&SecurityRequest::tickerId>>>>
 			SecurityRequestList;
 
-		typedef SecurityRequestList MarketLevel1Request;
-		typedef SecurityRequestList MarketLevel1HistoryRequest;
+		//! @todo Use field "type" instead separated lists.
+		typedef SecurityRequestList MarketLevel1Requests;
+		typedef SecurityRequestList MarketLevel1HistoryRequests;
 		typedef SecurityRequestList MarketDepthLevel2Requests;
 		typedef SecurityRequestList TicksRequests;
+
+		typedef std::list<Security *> PostponedSecurityRequestList;
+		typedef PostponedSecurityRequestList PostponedMarketLevel1Requests;
 
 	public:
 
 		Client(
+				const TradeSystem::Securities &,
 				Context::Log &,
 				int clientId = 0,
 				const std::string &host = "127.0.0.1",
@@ -114,34 +132,42 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		trdk::OrderId PlaceBuyOrder(
 				const trdk::Security &,
 				Qty qty,
-				Qty displaySize);
+				const OrderParams &);
 		trdk::OrderId PlaceBuyOrder(
 				const trdk::Security &,
 				Qty qty,
 				double price,
-				Qty displaySize);
+				const OrderParams &);
 		trdk::OrderId PlaceBuyOrderWithMarketPrice(
 				const trdk::Security &,
 				Qty qty,
 				double stopPrice,
-				Qty displaySize);
-		trdk::OrderId PlaceBuyIocOrder(const trdk::Security &, Qty, double);
+				const OrderParams &);
+		trdk::OrderId PlaceBuyIocOrder(
+				const trdk::Security &,
+				Qty,
+				double,
+				const OrderParams &);
 
 		trdk::OrderId PlaceSellOrder(
 				const trdk::Security &,
 				Qty qty,
-				Qty displaySize);
+				const OrderParams &);
 		trdk::OrderId PlaceSellOrder(
 				const trdk::Security &,
 				Qty quantity,
 				double price,
-				Qty displaySize);
+				const OrderParams &);
 		trdk::OrderId PlaceSellOrderWithMarketPrice(
 				const trdk::Security &,
 				Qty qty,
 				double stopPrice,
-				Qty displaySize);
-		trdk::OrderId PlaceSellIocOrder(const trdk::Security &, Qty, double);
+				const OrderParams &);
+		trdk::OrderId PlaceSellIocOrder(
+				const trdk::Security &,
+				Qty,
+				double,
+				const OrderParams &);
 
 		void CancelOrder(trdk::OrderId);
 
@@ -153,6 +179,11 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		void SubscribeToMarketDepthLevel2(Security &) const;
 
 	private:
+
+		void PostponeMarketDataSubscription(Security &) const;
+		void FlushPostponedMarketDataSubscription() const;
+
+		void DoMarketDataSubscription(Security &) const;
 
 		void SendMarketDataRequest(Security &) const;
 		bool SendMarketDataHistoryRequest(Security &) const;
@@ -186,6 +217,10 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		Security * GetHistoryRequest(TickerId);
 
 		static bool IsSubscribed(const SecurityRequestList &, const Security &);
+		static bool IsSubscribed(
+					const SecurityRequestList &,
+					const PostponedSecurityRequestList &,
+					const Security &);
 
 	private:
 
@@ -310,7 +345,19 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		virtual void tickSnapshotEnd(int);
 		virtual void marketDataType(TickerId, int);
 
+		virtual void position(const IBString &, const Contract &, int, double);
+		virtual void positionEnd(void);
+		virtual void accountSummary(
+				int,
+				const IBString &,
+				const IBString &,
+				const IBString &,
+				const IBString &);
+		virtual void accountSummaryEnd(int);
+
 	private:
+
+		const TradeSystem::Securities &m_securities;
 
 		Context::Log &m_log;
 
@@ -319,8 +366,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		const int m_clientId;
 		mutable std::unique_ptr<EPosixClientSocket> m_client;
 
-		bool m_isConnected;
-		State m_state;
+		ConnectionState m_connectionState;
+		PingState m_state;
 
 		boost::posix_time::ptime m_nextPingTime;
 		boost::posix_time::ptime m_timeoutTime;
@@ -339,12 +386,14 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		::OrderId m_seqNumber;
 
-		mutable MarketLevel1Request m_marketDataRequest;
+		mutable MarketLevel1Requests m_marketDataRequests;
+		mutable PostponedMarketLevel1Requests m_postponedMarketDataRequests;
+
 		mutable MarketDepthLevel2Requests m_marketDepthLevel2Requests;
 
 		//! @todo Check data type at history finish
 		//! @todo Check data type at error.
-		mutable MarketLevel1HistoryRequest m_historyRequest;
+		mutable MarketLevel1HistoryRequests m_historyRequest;
 
 	};
 

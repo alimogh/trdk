@@ -33,6 +33,8 @@ const std::string Keys::isStandalone = "standalone";
 const std::string Constants::Services::level1Updates = "Level 1 Updates";
 const std::string Constants::Services::level1Ticks = "Level 1 Ticks";
 const std::string Constants::Services::trades = "Trades";
+const std::string Constants::Services::brokerPositionsUpdates
+	= "Broker Positions";
 
 const std::string DefaultValues::Factories::factoryNameStart = "Create";
 const std::string DefaultValues::Factories::tradeSystem

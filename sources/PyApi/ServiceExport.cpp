@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "ServiceExport.hpp"
-#include "Service.hpp"
+#include "PyService.hpp"
 #include "BaseExport.hpp"
 #include "ObjectCache.hpp"
 

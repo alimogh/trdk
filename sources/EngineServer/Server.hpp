@@ -38,7 +38,7 @@ namespace trdk { namespace EngineServer {
 							std::string,
 							&EngineInfo::uuid>>>>
 			Engines;
-		typedef Engines::index<ByUuid>::type SubscribedBySubcriber;
+		typedef Engines::index<ByUuid>::type SubscribedBySubscriber;
 
 	public:
 
