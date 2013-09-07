@@ -24,6 +24,20 @@ __all__ = [
 ###############################################################################
 
 
+class OrderParams(object):
+    """
+    Extended order parameters.
+    """
+
+    displaySize = int  # Display size for Iceberg orders.
+    goodTillTime = float  # Good Till Time.
+                          # Incompatible
+                          # with trdk.OrderParams.goodInSeconds
+                          # Absolute value in Coordinated Universal Time (UTC).
+    goodInSeconds = float  # Good next N seconds Incompatible with
+                           # trdk.OrderParams.goodTillTime.
+
+
 class SecurityInfo(object):
 
     symbol = str
@@ -427,96 +441,99 @@ class Position(object):
         :param openOrderId: int
         """
 
-    def openAtMarketPrice(self, displaySize=None):
+    def openAtMarketPrice(self, orderParams=None):
         """
         Sends market order. Asynchronous. Returns order ID.
 
-        :param displaySize: int
+        :param orderParams: trdk.OrderParams
         :rtype: int
         """
         pass
 
-    def open(self, price, displaySize=None):
+    def open(self, price, orderParams=None):
         """
         Sends limit order. Asynchronous. Returns order ID.
 
         :param price: int
-        :param displaySize: int
+        :param orderParams: trdk.OrderParams
         :rtype: int
         """
 
-    def openAtMarketPriceWithStopPrice(self, stopPrice, displaySize=None):
+    def openAtMarketPriceWithStopPrice(self, stopPrice, orderParams=None):
         """
         Sends market order. Asynchronous. Returns order ID.
 
         :param stopPrice: int
-        :param displaySize: int
+        :param orderParams: trdk.OrderParams
         :rtype: int
         """
         pass
 
-    def openOrCancel(self, price):
+    def openOrCancel(self, price, orderParams=None):
         """
         Sends "Immediate or Cancel" order. Asynchronous. Returns order ID.
 
         :param price: int
+        :param orderParams: trdk.OrderParams
         :rtype: int
         """
         pass
 
-    def closeAtMarketPrice(self, displaySize=None):
+    def closeAtMarketPrice(self, orderParams=None):
         """
         Sends market order. Asynchronous. Returns order ID.
 
-        :param displaySize: int
+        :param orderParams: trdk.OrderParams
         :rtype: int
         """
         pass
 
-    def close(self, price, displaySize=None):
+    def close(self, price, orderParams=None):
         """
         Sends limit order. Asynchronous. Returns order ID.
 
         :param price: int
-        :param displaySize: int
+        :param orderParams: trdk.OrderParams
         :rtype: int
         """
         pass
 
-    def closeAtMarketPriceWithStopPrice(self, stopPrice, displaySize=None):
+    def closeAtMarketPriceWithStopPrice(self, stopPrice, orderParams=None):
         """
         Sends market order. Asynchronous. Returns order ID.
 
         :param stopPrice: int
-        :param displaySize: int
+        :param orderParams: trdk.OrderParams
         :rtype: int
         """
         pass
 
-    def closeOrCancel(self, price):
+    def closeOrCancel(self, price, orderParams=None):
         """
         Sends "Immediate or Cancel" order. Asynchronous. Returns order ID.
 
         :param price: int
+        :param orderParams: trdk.OrderParams
         :rtype: int
         """
         pass
 
-    def cancelAtMarketPrice(self, displaySize=None):
+    def cancelAtMarketPrice(self, orderParams=None):
         """
         Cancels all active orders for this position and close at market price.
         Asynchronous. Returns True if position opened and order will be sent.
 
-        :param displaySize: int
+        :param orderParams: trdk.OrderParams
         :rtype: int
         """
         pass
 
-    def cancelAllOrders(self):
+    def cancelAllOrders(self, orderParams=None):
         """
         Cancels all active orders for this position. Asynchronous.
         Returns True if one or more orders will be canceled.
 
+        :param orderParams: trdk.OrderParams
         :rtype: bool
         """
         pass

@@ -20,6 +20,15 @@ TradeSystem::Error::Error(const char *what) throw()
 	//...//
 }
 
+TradeSystem::OrderParamsError::OrderParamsError(
+			const char *what,
+			Qty,
+			const trdk::OrderParams &)
+		throw()
+		: Error(what) {
+	//...//
+}
+
 TradeSystem::ConnectError::ConnectError() throw()
 		: Error("Failed to connect to trade system") {
 	//...//
@@ -35,7 +44,9 @@ TradeSystem::SendingError::SendingError() throw()
 	//...//
 }
 
-TradeSystem::ConnectionDoesntExistError::ConnectionDoesntExistError(const char *what) throw()
+TradeSystem::ConnectionDoesntExistError::ConnectionDoesntExistError(
+			const char *what)
+		throw()
 		: Error(what) {
 	//...//
 }
@@ -72,6 +83,39 @@ const char * TradeSystem::GetStringStatus(OrderStatus code) {
 		default:
 			AssertFail("Unknown order status code");
 			return "unknown";
+	}
+
+}
+
+void TradeSystem::Validate(
+			Qty qty,
+			const OrderParams &params,
+			bool isIoc)
+		const {
+
+	if (qty == 0) {
+		throw OrderParamsError("Order size can't be zero", qty, params);
+	}
+
+	if (params.displaySize && *params.displaySize > qty) {
+		throw OrderParamsError(
+			"Order display size can't be greater then order size",
+			qty,
+			params);
+	}
+
+	if (isIoc && (params.goodInSeconds || params.goodTillTime)) {
+		throw OrderParamsError(
+			"Good Next Seconds and Good Till Time can't be used for"
+				" Immediate Or Cancel (IOC) order",
+			qty,
+			params);
+	} else if (params.goodInSeconds && params.goodTillTime) {
+		throw OrderParamsError(
+			"Good Next Seconds and Good Till Time can't be used at"
+				" the same time",
+			qty,
+			params);
 	}
 
 }

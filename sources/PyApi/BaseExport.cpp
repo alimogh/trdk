@@ -14,6 +14,7 @@
 #include "ServiceExport.hpp"
 #include "StrategyExport.hpp"
 #include "SecurityExport.hpp"
+#include "OrderParamsExport.hpp"
 #include "Detail.hpp"
 
 namespace py = boost::python;
@@ -33,6 +34,8 @@ BOOST_PYTHON_MODULE(trdk) {
 
 	py::object module = py::scope();
 	module.attr("__path__") = "trdk";
+
+	OrderParamsExport::ExportClass("OrderParams");
 
 	SecurityInfoExport::ExportClass("SecurityInfo");
 	SecurityExport::ExportClass("Security");
@@ -87,6 +90,13 @@ namespace {
 		}
 	};
 
+	template<>
+	struct TypeTrait<boost::uint64_t> {
+		static char * GetName() {
+			return "unsigned int64";
+		}
+	};
+
 	template<typename T>
 	py::object ExportType(const T &val) {
 		try {
@@ -101,6 +111,10 @@ namespace {
 }
 
 py::object PyApi::Export(boost::int64_t val) {
+	return ExportType(val);
+}
+
+py::object PyApi::Export(boost::uint64_t val) {
 	return ExportType(val);
 }
 

@@ -65,6 +65,9 @@
     <ClInclude Include="PyStrategy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="OrderParamsExport.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -101,6 +104,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PyStrategy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OrderParamsExport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

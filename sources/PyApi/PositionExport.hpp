@@ -14,6 +14,7 @@
 #include "StrategyExport.hpp"
 #include "PyStrategy.hpp"
 #include "PythonToCoreTransit.hpp"
+#include "OrderParamsExport.hpp"
 
 namespace boost { namespace python {
 
@@ -86,27 +87,27 @@ namespace trdk { namespace PyApi {
 		void RestoreOpenStateWithOpenOrderId(trdk::OrderId openOrderId);
 
 		OrderId OpenAtMarketPrice();
-		OrderId OpenAtMarketPriceByIceberg(Qty displaySize);
+		OrderId OpenAtMarketPriceWithParams(const OrderParamsExport &);
 		OrderId Open(ScaledPrice);
-		OrderId OpenByIceberg(ScaledPrice, Qty displaySize);
+		OrderId OpenWithParams(ScaledPrice, const OrderParamsExport &);
 		OrderId OpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
-		OrderId OpenAtMarketPriceWithStopPriceByIceberg(
+		OrderId OpenAtMarketPriceWithStopPriceWithParams(
 					ScaledPrice stopPrice,
-					Qty displaySize);
+					const OrderParamsExport &);
 		OrderId OpenOrCancel(ScaledPrice);
 
 		OrderId CloseAtMarketPrice();
-		OrderId CloseAtMarketPriceByIceberg(Qty displaySize);
+		OrderId CloseAtMarketPriceWithParams(const OrderParamsExport &);
 		OrderId Close(ScaledPrice);
-		OrderId CloseByIceberg(ScaledPrice, Qty displaySize);
+		OrderId CloseWithParams(ScaledPrice, const OrderParamsExport &);
 		OrderId CloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice);
-		OrderId CloseAtMarketPriceWithStopPriceByIceberg(
+		OrderId CloseAtMarketPriceWithStopPriceWithParams(
 					ScaledPrice stopPrice,
-					Qty displaySize);
+					const OrderParamsExport &);
 		OrderId CloseOrCancel(ScaledPrice);
 
 		bool CancelAtMarketPrice();
-		bool CancelAtMarketPriceByIceberg(Qty displaySize);
+		bool CancelAtMarketPriceWithParams(const OrderParamsExport &);
 
 		bool CancelAllOrders();
 

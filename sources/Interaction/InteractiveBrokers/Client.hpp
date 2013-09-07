@@ -132,34 +132,42 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		trdk::OrderId PlaceBuyOrder(
 				const trdk::Security &,
 				Qty qty,
-				Qty displaySize);
+				const OrderParams &);
 		trdk::OrderId PlaceBuyOrder(
 				const trdk::Security &,
 				Qty qty,
 				double price,
-				Qty displaySize);
+				const OrderParams &);
 		trdk::OrderId PlaceBuyOrderWithMarketPrice(
 				const trdk::Security &,
 				Qty qty,
 				double stopPrice,
-				Qty displaySize);
-		trdk::OrderId PlaceBuyIocOrder(const trdk::Security &, Qty, double);
+				const OrderParams &);
+		trdk::OrderId PlaceBuyIocOrder(
+				const trdk::Security &,
+				Qty,
+				double,
+				const OrderParams &);
 
 		trdk::OrderId PlaceSellOrder(
 				const trdk::Security &,
 				Qty qty,
-				Qty displaySize);
+				const OrderParams &);
 		trdk::OrderId PlaceSellOrder(
 				const trdk::Security &,
 				Qty quantity,
 				double price,
-				Qty displaySize);
+				const OrderParams &);
 		trdk::OrderId PlaceSellOrderWithMarketPrice(
 				const trdk::Security &,
 				Qty qty,
 				double stopPrice,
-				Qty displaySize);
-		trdk::OrderId PlaceSellIocOrder(const trdk::Security &, Qty, double);
+				const OrderParams &);
+		trdk::OrderId PlaceSellIocOrder(
+				const trdk::Security &,
+				Qty,
+				double,
+				const OrderParams &);
 
 		void CancelOrder(trdk::OrderId);
 

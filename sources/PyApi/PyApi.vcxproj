@@ -86,6 +86,7 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="ModuleSecurityListExport.hpp" />
     <ClInclude Include="ObjectCache.hpp" />
+    <ClInclude Include="OrderParamsExport.hpp" />
     <ClInclude Include="PositionExport.hpp" />
     <ClInclude Include="PyPosition.hpp" />
     <ClInclude Include="PyService.hpp" />
@@ -103,6 +104,7 @@
     <ClCompile Include="BaseExport.cpp" />
     <ClCompile Include="Detail.cpp" />
     <ClCompile Include="ModuleSecurityListExport.cpp" />
+    <ClCompile Include="OrderParamsExport.cpp" />
     <ClCompile Include="PositionExport.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

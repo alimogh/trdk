@@ -114,7 +114,8 @@ namespace trdk { namespace Lib {
 	FILETIME ConvertToFileTime(const boost::posix_time::ptime &);
 	int64_t ConvertToInt64(const boost::posix_time::ptime &);
 
-	boost::posix_time::ptime ConvertToPTime(int64_t);
+	boost::posix_time::ptime ConvertToPTimeFromFileTime(int64_t);
+	boost::posix_time::ptime ConvertToPTimeFromTimeT(time_t);
 
 	//////////////////////////////////////////////////////////////////////////
 	

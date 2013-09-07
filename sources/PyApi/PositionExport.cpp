@@ -115,33 +115,35 @@ void PositionExport::ExportClass(const char *className) {
 			&PositionExport::RestoreOpenStateWithOpenOrderId)
 
 		.def("openAtMarketPrice", &PositionExport::OpenAtMarketPrice)
-		.def("openAtMarketPrice", &PositionExport::OpenAtMarketPriceByIceberg)
+		.def("openAtMarketPrice", &PositionExport::OpenAtMarketPriceWithParams)
 		.def("open", &PositionExport::Open)
-		.def("open", &PositionExport::OpenByIceberg)
+		.def("open", &PositionExport::OpenWithParams)
 		.def(
 			"openAtMarketPriceWithStopPrice",
 			&PositionExport::OpenAtMarketPriceWithStopPrice)
 		.def(
 			"openAtMarketPriceWithStopPrice",
-			&PositionExport::OpenAtMarketPriceWithStopPriceByIceberg)
+			&PositionExport::OpenAtMarketPriceWithStopPriceWithParams)
 		.def("openOrCancel", &PositionExport::OpenOrCancel)
 
 		.def("closeAtMarketPrice", &PositionExport::CloseAtMarketPrice)
-		.def("closeAtMarketPrice", &PositionExport::CloseAtMarketPriceByIceberg)
+		.def(
+			"closeAtMarketPrice",
+			&PositionExport::CloseAtMarketPriceWithParams)
 		.def("close", &PositionExport::Close)
-		.def("close", &PositionExport::CloseByIceberg)
+		.def("close", &PositionExport::CloseWithParams)
 		.def(
 			"closeAtMarketPriceWithStopPrice",
 			&PositionExport::CloseAtMarketPriceWithStopPrice)
 		.def(
 			"closeAtMarketPriceWithStopPrice",
-			&PositionExport::CloseAtMarketPriceWithStopPriceByIceberg)
+			&PositionExport::CloseAtMarketPriceWithStopPriceWithParams)
 		.def("closeOrCancel", &PositionExport::CloseOrCancel)
 
 		.def("cancelAtMarketPrice", &PositionExport::CancelAtMarketPrice)
 		.def(
 			"cancelAtMarketPrice",
-			&PositionExport::CancelAtMarketPriceByIceberg)
+			&PositionExport::CancelAtMarketPriceWithParams)
 		.def("cancelAllOrders", &PositionExport::CancelAllOrders);
 		
 }
@@ -260,26 +262,31 @@ OrderId PositionExport::OpenAtMarketPrice() {
 	return GetPosition().OpenAtMarketPrice();
 }
 
-OrderId PositionExport::OpenAtMarketPriceByIceberg(Qty displaySize) {
-	return GetPosition().OpenAtMarketPrice(displaySize);
+OrderId PositionExport::OpenAtMarketPriceWithParams(
+			const OrderParamsExport &params) {
+	return GetPosition().OpenAtMarketPrice(params.GetOrderParams());
 }
 
 OrderId PositionExport::Open(ScaledPrice price) {
 	return GetPosition().Open(price);
 }
 
-OrderId PositionExport::OpenByIceberg(ScaledPrice price, Qty displaySize) {
-	return GetPosition().Open(price, displaySize);
+OrderId PositionExport::OpenWithParams(
+			ScaledPrice price,
+			const OrderParamsExport &params) {
+	return GetPosition().Open(price, params.GetOrderParams());
 }
 
 OrderId PositionExport::OpenAtMarketPriceWithStopPrice(ScaledPrice stopPrice) {
 	return GetPosition().OpenAtMarketPriceWithStopPrice(stopPrice);
 }
 
-OrderId PositionExport::OpenAtMarketPriceWithStopPriceByIceberg(
+OrderId PositionExport::OpenAtMarketPriceWithStopPriceWithParams(
 			ScaledPrice stopPrice,
-			Qty displaySize) {
-	return GetPosition().OpenAtMarketPriceWithStopPrice(stopPrice, displaySize);
+			const OrderParamsExport &params) {
+	return GetPosition().OpenAtMarketPriceWithStopPrice(
+		stopPrice,
+		params.GetOrderParams());
 }
 
 OrderId PositionExport::OpenOrCancel(ScaledPrice price) {
@@ -290,18 +297,24 @@ OrderId PositionExport::CloseAtMarketPrice() {
 	return GetPosition().CloseAtMarketPrice(Position::CLOSE_TYPE_NONE);
 }
 
-OrderId PositionExport::CloseAtMarketPriceByIceberg(Qty displaySize) {
+OrderId PositionExport::CloseAtMarketPriceWithParams(
+			const OrderParamsExport &params) {
 	return GetPosition().CloseAtMarketPrice(
 		Position::CLOSE_TYPE_NONE,
-		displaySize);
+		params.GetOrderParams());
 }
 
 OrderId PositionExport::Close(ScaledPrice price) {
 	return GetPosition().Close(Position::CLOSE_TYPE_NONE, price);
 }
 
-OrderId PositionExport::CloseByIceberg(ScaledPrice price, Qty displaySize) {
-	return GetPosition().Close(Position::CLOSE_TYPE_NONE, price, displaySize);
+OrderId PositionExport::CloseWithParams(
+			ScaledPrice price,
+			const OrderParamsExport &params) {
+	return GetPosition().Close(
+		Position::CLOSE_TYPE_NONE,
+		price,
+		params.GetOrderParams());
 }
 
 OrderId PositionExport::CloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice) {
@@ -310,13 +323,13 @@ OrderId PositionExport::CloseAtMarketPriceWithStopPrice(ScaledPrice stopPrice) {
 		stopPrice);
 }
 
-OrderId PositionExport::CloseAtMarketPriceWithStopPriceByIceberg(
+OrderId PositionExport::CloseAtMarketPriceWithStopPriceWithParams(
 			ScaledPrice stopPrice,
-			Qty displaySize) {
+			const OrderParamsExport &params) {
 	return GetPosition().CloseAtMarketPriceWithStopPrice(
 		Position::CLOSE_TYPE_NONE,
 		stopPrice,
-		displaySize);
+		params.GetOrderParams());
 }
 
 OrderId PositionExport::CloseOrCancel(ScaledPrice price) {
@@ -327,10 +340,11 @@ bool PositionExport::CancelAtMarketPrice() {
 	return GetPosition().CancelAtMarketPrice(Position::CLOSE_TYPE_NONE);
 }
 
-bool PositionExport::CancelAtMarketPriceByIceberg(Qty displaySize) {
+bool PositionExport::CancelAtMarketPriceWithParams(
+			const OrderParamsExport &params) {
 	return GetPosition().CancelAtMarketPrice(
 		Position::CLOSE_TYPE_NONE,
-		displaySize);
+		params.GetOrderParams());
 }
 
 bool PositionExport::CancelAllOrders() {

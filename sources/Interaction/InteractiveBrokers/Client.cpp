@@ -37,6 +37,43 @@ namespace {
 		return contract;
 	}
 
+	void FormatOrderDateTime(const pt::ptime &dateTime, IBString &destination) {
+		// Format: 20060505 08:00:00 {time zone}
+		boost::format result("%d%02d%02d %02d:%02d:%02d UTC");
+		{
+			const auto &date = dateTime.date();
+			result % date.year() % date.month().as_number() % date.day();
+		}
+		{
+			const auto &time = dateTime.time_of_day();
+			result % time.hours() % time.minutes() % time.seconds();
+		}
+		destination = result.str();
+	}
+
+	Order & operator <<(Order &order, const OrderParams &params) {
+
+		if (params.displaySize) {
+			AssertLt(0, *params.displaySize);
+			order.displaySize = *params.displaySize;
+		}
+
+		Assert(!params.goodInSeconds || !params.goodTillTime);
+		if (params.goodTillTime) {
+			FormatOrderDateTime(*params.goodTillTime, order.goodTillDate);
+			order.tif = "GTD";
+		} else if (params.goodInSeconds) {
+			FormatOrderDateTime(
+				boost::get_system_time()
+					+ pt::seconds(long(*params.goodInSeconds)),
+				order.goodTillDate);
+			order.tif = "GTD";
+		}
+
+		return order;
+
+	}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -499,19 +536,17 @@ void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
 trdk::OrderId Client::PlaceBuyOrder(
 			const trdk::Security &security,
 			Qty qty,
-			Qty displaySize) {
+			const OrderParams &params) {
 
-	AssertLe(displaySize, qty);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 
 	Contract contract;
 	contract << security;
 
 	Order order;
+	order << params;
 	order.action = "BUY";
 	order.totalQuantity = qty;
-	order.displaySize = displaySize;
 	order.orderType = "MKT";
 
 	const Lock lock(m_mutex);
@@ -529,19 +564,17 @@ trdk::OrderId Client::PlaceBuyOrder(
 			const trdk::Security &security,
 			Qty qty,
 			double price,
-			Qty displaySize) {
+			const OrderParams &params) {
 
-	AssertLe(displaySize, qty);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 
 	Contract contract;
 	contract << security;
 
 	Order order;
+	order << params;
 	order.action = "BUY";
 	order.totalQuantity = qty;
-	order.displaySize = displaySize;
 	order.orderType = "LMT";
 	order.lmtPrice = price;
 
@@ -560,19 +593,17 @@ trdk::OrderId Client::PlaceBuyOrderWithMarketPrice(
 			const trdk::Security &security,
 			Qty qty,
 			double stopPrice,
-			Qty displaySize) {
+			const OrderParams &params) {
 
-	AssertLe(displaySize, qty);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 
 	Contract contract;
 	contract << security;
 
 	Order order;
+	order << params;
 	order.action = "BUY";
 	order.totalQuantity = qty;
-	order.displaySize = displaySize;
 	order.orderType = "STP";
 	order.auxPrice = stopPrice;
 
@@ -590,15 +621,18 @@ trdk::OrderId Client::PlaceBuyOrderWithMarketPrice(
 trdk::OrderId Client::PlaceBuyIocOrder(
 			const trdk::Security &security,
 			Qty qty,
-			double price) {
+			double price,
+			const OrderParams &params) {
 
 	Contract contract;
 	contract << security;
 
 	Order order;
+	order << params;
 	order.action = "BUY";
 	order.totalQuantity = qty;
 	order.orderType = "LMT";
+	AssertEq(std::string(), order.tif);
 	order.tif = "IOC";
 	order.lmtPrice = price;
 
@@ -616,19 +650,17 @@ trdk::OrderId Client::PlaceBuyIocOrder(
 trdk::OrderId Client::PlaceSellOrder(
 			const trdk::Security &security,
 			Qty qty,
-			Qty displaySize) {
+			const OrderParams &params) {
 
-	AssertLe(displaySize, qty);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 
 	Contract contract;
 	contract << security;
 
 	Order order;
+	order << params;
 	order.action = "SELL";
 	order.totalQuantity = qty;
-	order.displaySize = displaySize;
 	order.orderType = "MKT";
 
 	const Lock lock(m_mutex);
@@ -646,19 +678,17 @@ trdk::OrderId Client::PlaceSellOrder(
 			const trdk::Security &security,
 			Qty qty,
 			double price,
-			Qty displaySize) {
+			const OrderParams &params) {
 
-	AssertLe(displaySize, qty);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 
 	Contract contract;
 	contract << security;
 
 	Order order;
+	order << params;
 	order.action = "SELL";
 	order.totalQuantity = qty;
-	order.displaySize = displaySize;
 	order.orderType = "LMT";
 	order.lmtPrice = price;
 
@@ -677,19 +707,17 @@ trdk::OrderId Client::PlaceSellOrderWithMarketPrice(
 			const trdk::Security &security,
 			Qty qty,
 			double stopPrice,
-			Qty displaySize) {
+			const OrderParams &params) {
 
-	AssertLe(displaySize, qty);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 
 	Contract contract;
 	contract << security;
 
 	Order order;
+	order << params;
 	order.action = "SELL";
 	order.totalQuantity = qty;
-	order.displaySize = displaySize;
 	order.orderType = "STP";
 	order.auxPrice = stopPrice;
 
@@ -707,15 +735,18 @@ trdk::OrderId Client::PlaceSellOrderWithMarketPrice(
 trdk::OrderId Client::PlaceSellIocOrder(
 			const trdk::Security &security,
 			Qty qty,
-			double price) {
+			double price,
+			const OrderParams &params) {
 
 	Contract contract;
 	contract << security;
 
 	Order order;
+	order << params;
 	order.action = "SELL";
 	order.totalQuantity = qty;
 	order.orderType = "LMT";
+	AssertEq(std::string(), order.tif);
 	order.tif = "IOC";
 	order.lmtPrice = price;
 

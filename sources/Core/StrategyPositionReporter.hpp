@@ -72,9 +72,6 @@ namespace trdk {
 			if (!m_isInited) {
 				return;
 			}
-			Assert(position.IsOpened());
-			Assert(position.IsClosed() || position.IsError());
-			Assert(m_isInited);
 			Assert(m_file);
 			PrintLine(position, m_file);
 			m_file << std::endl;
@@ -101,10 +98,6 @@ namespace trdk {
 		}
 
 		virtual void PrintLine(const trdk::Position &position, std::ostream &out) const {
-
-			Assert(position.GetOpenedQty() == position.GetPlanedQty());
-			Assert(position.GetOpenedQty() == position.GetClosedQty());
-			Assert(position.GetActiveQty() == 0);
 
 			const trdk::Security &security = position.GetSecurity();
 

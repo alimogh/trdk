@@ -193,12 +193,10 @@ void Fake::TradeSystem::Connect(const IniFileSectionRef &) {
 OrderId Fake::TradeSystem::SellAtMarketPrice(
 			Security &security,
 			Qty qty,
-			Qty displaySize,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	UseUnused(displaySize);
-	AssertLe(displaySize, qty);
+	Validate(qty, params, false);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 	const Order order = {
 		&security,
 		true,
@@ -217,29 +215,40 @@ OrderId Fake::TradeSystem::SellAtMarketPrice(
 }
 
 OrderId Fake::TradeSystem::Sell(
-			Security &,
+			Security &security,
 			Qty qty,
-			ScaledPrice,
-			Qty displaySize,
-			const OrderStatusUpdateSlot  &) {
-	UseUnused(qty, displaySize);
-	AssertLe(displaySize, qty);
+			ScaledPrice price,
+			const OrderParams &params,
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Validate(qty, params, false);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
-	AssertFail("Doesn't implemented.");
-	throw Exception("Method doesn't implemented");
+	const Order order = {
+		&security,
+		false,
+		m_pimpl->TakeOrderId(),
+		statusUpdateSlot,
+		qty,
+		price};
+	m_pimpl->SendOrder(order);
+	m_pimpl->GetLog().Trading(
+		buyLogTag,
+		"%2% order-id=%1% type=LMT qty=%3% price=%4%",
+		boost::make_tuple(
+			order.id,
+			boost::cref(security.GetSymbol()),
+			qty,
+			security.DescalePrice(price)));
+	return order.id;
 }
 
 OrderId Fake::TradeSystem::SellAtMarketPriceWithStopPrice(
 			Security &,
 			Qty qty,
 			ScaledPrice /*stopPrice*/,
-			Qty displaySize,
-			const OrderStatusUpdateSlot  &) {
-	UseUnused(qty, displaySize);
-	AssertLe(displaySize, qty);
+			const OrderParams &params,
+			const OrderStatusUpdateSlot &) {
+	Validate(qty, params, false);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
@@ -248,7 +257,9 @@ OrderId Fake::TradeSystem::SellOrCancel(
 			Security &security,
 			Qty qty,
 			ScaledPrice price,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Validate(qty, params, true);
 	const Order order = {
 		&security,
 		true,
@@ -271,12 +282,10 @@ OrderId Fake::TradeSystem::SellOrCancel(
 OrderId Fake::TradeSystem::BuyAtMarketPrice(
 			Security &security,
 			Qty qty,
-			Qty displaySize,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	UseUnused(displaySize);
-	AssertLe(displaySize, qty);
+	Validate(qty, params, false);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 	const Order order = {
 		&security,
 		false,
@@ -295,29 +304,40 @@ OrderId Fake::TradeSystem::BuyAtMarketPrice(
 }
 
 OrderId Fake::TradeSystem::Buy(
-			Security &,
+			Security &security,
 			Qty qty,
-			ScaledPrice,
-			Qty displaySize,
-			const OrderStatusUpdateSlot  &) {
-	UseUnused(qty, displaySize);
-	AssertLe(displaySize, qty);
+			ScaledPrice price,
+			const OrderParams &params,
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Validate(qty, params, false);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
-	AssertFail("Doesn't implemented.");
-	throw Exception("Method doesn't implemented");
+	const Order order = {
+		&security,
+		false,
+		m_pimpl->TakeOrderId(),
+		statusUpdateSlot,
+		qty,
+		price};
+	m_pimpl->SendOrder(order);
+	m_pimpl->GetLog().Trading(
+		buyLogTag,
+		"%2% order-id=%1% type=LMT qty=%3% price=%4%",
+		boost::make_tuple(
+			order.id,
+			boost::cref(security.GetSymbol()),
+			qty,
+			security.DescalePrice(price)));
+	return order.id;
 }
 
 OrderId Fake::TradeSystem::BuyAtMarketPriceWithStopPrice(
 			Security &,
 			Qty qty,
 			ScaledPrice /*stopPrice*/,
-			Qty displaySize,
-			const OrderStatusUpdateSlot  &) {
-	UseUnused(qty, displaySize);
-	AssertLe(displaySize, qty);
+			const OrderParams &params,
+			const OrderStatusUpdateSlot &) {
+	Validate(qty, params, false);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
@@ -326,7 +346,9 @@ OrderId Fake::TradeSystem::BuyOrCancel(
 			Security &security,
 			Qty qty,
 			ScaledPrice price,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Validate(qty, params, true);
 	const Order order = {
 		&security,
 		false,

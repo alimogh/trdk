@@ -25,7 +25,7 @@ __all__ = [
 class BarService(trdk.ServiceInfo):
 
     class Bar(object):
-        time = int  # Bar start time.
+        time = float  # Bar start time.
         size = int  # Bar size, seconds.
         maxAskPrice = int
         minBidPrice = int

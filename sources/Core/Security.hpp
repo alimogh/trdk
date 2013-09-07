@@ -91,40 +91,42 @@ namespace trdk {
 
 		trdk::OrderId SellAtMarketPrice(
 					trdk::Qty qty,
-					trdk::Qty displaySize,
+					const trdk::OrderParams &,
 					trdk::Position &);
 		trdk::OrderId Sell(
 					trdk::Qty qty,
 					trdk::ScaledPrice,
-					trdk::Qty displaySize,
+					const trdk::OrderParams &,
 					trdk::Position &);
 		trdk::OrderId SellAtMarketPriceWithStopPrice(
 					trdk::Qty qty,
 					ScaledPrice stopPrice,
-					trdk::Qty displaySize,
+					const trdk::OrderParams &,
 					trdk::Position &);
 		trdk::OrderId SellOrCancel(
 					trdk::Qty,
 					trdk::ScaledPrice,
+					const trdk::OrderParams &,
 					trdk::Position &);
 
 		trdk::OrderId BuyAtMarketPrice(
 					trdk::Qty qty,
-					trdk::Qty displaySize,
+					const trdk::OrderParams &,
 					trdk::Position &);
 		trdk::OrderId Buy(
 					trdk::Qty,
 					trdk::ScaledPrice,
-					trdk::Qty displaySize,
+					const trdk::OrderParams &,
 					trdk::Position &);
 		trdk::OrderId BuyAtMarketPriceWithStopPrice(
 					trdk::Qty qty,
 					ScaledPrice stopPrice,
-					trdk::Qty displaySize,
+					const trdk::OrderParams &,
 					trdk::Position &);
 		trdk::OrderId BuyOrCancel(
 					trdk::Qty,
 					trdk::ScaledPrice,
+					const trdk::OrderParams &,
 					trdk::Position &);
 
 		void CancelOrder(trdk::OrderId);

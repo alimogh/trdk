@@ -15,6 +15,7 @@ namespace trdk { namespace PyApi {
 	void ExportApi();
 
 	boost::python::object Export(boost::int64_t);
+	boost::python::object Export(boost::uint64_t);
 	boost::python::object Export(boost::int32_t);
 
 	boost::python::object Export(const boost::posix_time::ptime &);

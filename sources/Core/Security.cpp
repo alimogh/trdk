@@ -173,7 +173,7 @@ public:
 	}
 
 	pt::ptime GetLastMarketDataTime() const {
-		const pt::ptime result = ConvertToPTime(m_marketDataTime);
+		const pt::ptime result = ConvertToPTimeFromFileTime(m_marketDataTime);
 		Assert(!result.is_not_a_date_time());
 		return result;
 	}
@@ -210,117 +210,109 @@ pt::ptime Security::GetLastMarketDataTime() const {
 
 OrderId Security::SellAtMarketPrice(
 			Qty qty,
-			Qty displaySize,
+			const OrderParams &params,
 			Position &position) {
-	AssertLe(displaySize, qty);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 	return GetContext().GetTradeSystem().SellAtMarketPrice(
 		*this,
 		qty,
-		displaySize,
+		params,
 		position.GetSellOrderStatusUpdateSlot());
 }
 
 OrderId Security::Sell(
 			Qty qty,
 			ScaledPrice price,
-			Qty displaySize,
+			const OrderParams &params,
 			Position &position) {
-	AssertLe(displaySize, qty);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 	return GetContext().GetTradeSystem().Sell(
 		*this,
 		qty,
 		price,
-		displaySize,
+		params,
 		position.GetSellOrderStatusUpdateSlot());
 }
 
 OrderId Security::SellAtMarketPriceWithStopPrice(
 			Qty qty,
 			ScaledPrice stopPrice,
-			Qty displaySize,
+			const OrderParams &params,
 			Position &position) {
-	AssertLe(displaySize, qty);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 	return GetContext().GetTradeSystem().SellAtMarketPriceWithStopPrice(
 		*this,
 		qty,
 		stopPrice,
-		displaySize,
+		params,
 		position.GetSellOrderStatusUpdateSlot());
 }
 
 OrderId Security::SellOrCancel(
 			Qty qty,
 			ScaledPrice price,
+			const OrderParams &params,
 			Position &position) {
 	AssertLt(0, qty);
 	return GetContext().GetTradeSystem().SellOrCancel(
 		*this,
 		qty,
 		price,
+		params,
 		position.GetSellOrderStatusUpdateSlot());
 }
 
 OrderId Security::BuyAtMarketPrice(
 			Qty qty,
-			Qty displaySize,
+			const OrderParams &params,
 			Position &position) {
-	AssertLe(displaySize, qty);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 	return GetContext().GetTradeSystem().BuyAtMarketPrice(
 		*this,
 		qty,
-		displaySize,
+		params,
 		position.GetBuyOrderStatusUpdateSlot());
 }
 
 OrderId Security::Buy(
 			Qty qty,
 			ScaledPrice price,
-			Qty displaySize,
+			const OrderParams &params,
 			Position &position) {
-	AssertLe(displaySize, qty);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 	return GetContext().GetTradeSystem().Buy(
 		*this,
 		qty,
 		price,
-		displaySize,
+		params,
 		position.GetBuyOrderStatusUpdateSlot());
 }
 
 OrderId Security::BuyAtMarketPriceWithStopPrice(
 			Qty qty,
 			ScaledPrice stopPrice,
-			Qty displaySize,
+			const OrderParams &params,
 			Position &position) {
-	AssertLe(displaySize, qty);
 	AssertLt(0, qty);
-	AssertLt(0, displaySize);
 	return GetContext().GetTradeSystem().BuyAtMarketPriceWithStopPrice(
 		*this,
 		qty,
 		stopPrice,
-		displaySize,
+		params,
 		position.GetBuyOrderStatusUpdateSlot());
 }
 
 OrderId Security::BuyOrCancel(
 			Qty qty,
 			ScaledPrice price,
+			const OrderParams &params,
 			Position &position) {
 	AssertLt(0, qty);
 	return GetContext().GetTradeSystem().BuyOrCancel(
 		*this,
 		qty,
 		price,
+		params,
 		position.GetBuyOrderStatusUpdateSlot());
 }
 

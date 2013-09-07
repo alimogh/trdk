@@ -413,7 +413,6 @@ void Strategy::RaiseServiceDataUpdateEvent(const Service &service) {
 void Strategy::RaisePositionUpdateEvent(Position &position) {
 	
 	Assert(position.IsStarted());
-	Assert(position.IsOpened() || position.IsError());
 
 	const Lock lock(GetMutex());
 	if (position.IsCompleted() && !m_pimpl->m_positions.IsExists(position)) {
@@ -429,11 +428,8 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 		return;
 	}
 	
-	const bool isTradingTime = m_pimpl->IsTradingTime();
-	if (isTradingTime) {
-		OnPositionUpdate(position);
-	}
-		
+	OnPositionUpdate(position);
+
 	if (position.IsCompleted()) {
 		m_pimpl->ForgetPosition(position);
 	}

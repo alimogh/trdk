@@ -99,11 +99,16 @@ int64_t Lib::ConvertToInt64(const pt::ptime &source) {
 	return li.QuadPart;
 }
 
-pt::ptime Lib::ConvertToPTime(int64_t source) {
+pt::ptime Lib::ConvertToPTimeFromFileTime(int64_t source) {
 	LARGE_INTEGER li;
 	li.QuadPart = source;
 	const FILETIME ft = {li.LowPart, li.HighPart};
 	return pt::from_ftime<pt::ptime>(ft);
+}
+
+pt::ptime Lib::ConvertToPTimeFromTimeT(time_t source) {
+	return Lib::ConvertToPTimeFromFileTime(
+		Int32x32To64(source, 10000000) + 116444736000000000);
 }
 
 //////////////////////////////////////////////////////////////////////////
