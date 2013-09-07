@@ -20,7 +20,7 @@
 #define TRDK_VERSION_MINOR_HIGH	0
 #define TRDK_VERSION_MINOR_LOW	0
 
-#define TRDK_VERSION_BRANCH "master"
+#define TRDK_VERSION_BRANCH "Antoine"
 #define TRDK_VERSION_BRANCH_W _XWSTR(TRDK_VERSION_BRANCH)
 
 #define TRDK_VENDOR "Eugene V. Palchukovsky"
