@@ -26,7 +26,6 @@ Dispatcher::Dispatcher(Engine::Context &context)
 			m_level1Ticks("Level 1 Ticks", m_context),
 			m_positionsUpdates("Position", m_context),
 			m_brokerPositionsUpdates("Broker Positions", m_context) {
-	StartNotificationTask(m_level1Ticks, m_positionsUpdates);
 	StartNotificationTask(
 		m_level1Ticks,
 		m_positionsUpdates,
