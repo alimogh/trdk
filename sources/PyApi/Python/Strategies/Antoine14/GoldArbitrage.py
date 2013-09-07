@@ -6,7 +6,7 @@ positionVolume = 20000
 orderDisplaySize = 100
 
 openOrderParams = trdk.OrderParams()
-openOrderParams.goodInSeconds = 6
+openOrderParams.goodInSeconds = 60
 openOrderParams.displaySize = orderDisplaySize
 
 closeOrderParams = trdk.OrderParams()
