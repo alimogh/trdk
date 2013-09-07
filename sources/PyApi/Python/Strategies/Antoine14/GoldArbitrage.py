@@ -1,45 +1,97 @@
 import trdk
 import time
 
-
 ratio = 2.860
 positionVolume = 20000
 orderDisplaySize = 100
+
+openOrderParams = trdk.OrderParams()
+openOrderParams.goodInSeconds = 6
+openOrderParams.displaySize = orderDisplaySize
+
+closeOrderParams = trdk.OrderParams()
+openOrderParams.displaySize = orderDisplaySize
 
 assert \
     orderDisplaySize % 100 == 0, \
     "The Display Size should be a multiple of the round lot size for this security."
 
 
-class LongPosition(trdk.LongPosition):
-    entryType = None
-
-    def __init__(self, strategy, security, qty, startPrice, entryType):
-        super(self.__class__, self).__init__(
-            strategy,
-            security,
-            qty,
-            startPrice)
-        self.entryType = entryType
-
-
-class ShortPosition(trdk.ShortPosition):
-    entryType = None
-
-    def __init__(self, strategy, security, qty, startPrice, entryType):
-        super(self.__class__, self).__init__(
-            strategy,
-            security,
-            qty,
-            startPrice)
-        self.entryType = entryType
-
-
 # noinspection PyCallByClass,PyTypeChecker
 class GoldArbitrage(trdk.Strategy):
 
+    ###########################################################################
+
+    class Long(trdk.LongPosition):
+
+        entryType = None
+
+        def __init__(self, strategy, security, qty, startPrice, entryType):
+            super(self.__class__, self).__init__(
+                strategy,
+                security,
+                qty,
+                startPrice)
+            self.entryType = entryType
+
+    class Short(trdk.ShortPosition):
+
+        entryType = None
+
+        def __init__(self, strategy, security, qty, startPrice, entryType):
+            super(self.__class__, self).__init__(
+                strategy,
+                security,
+                qty,
+                startPrice)
+            self.entryType = entryType
+
+    ###########################################################################
+
     gldBars = None
     dglBars = None
+
+    ###########################################################################
+
+    def getRequiredSuppliers(self):
+        return \
+            '5 minute bars[GLD], 5 minute bars[DGL]' \
+            ', Broker Positions[GLD], Broker Positions[DGL]'
+
+    ###########################################################################
+
+    def onBrokerPositionUpdate(self, security, qty, isInitial):
+
+        if isInitial is False:
+            return
+
+        if security.symbol == 'GLD':
+            if qty < 0:
+                entryType = 'shortGldLongDlg'
+            else:
+                entryType = 'longGldShortDgl'
+        elif security.symbol == 'DGL':
+            if qty > 0:
+                entryType = 'shortGldLongDlg'
+            else:
+                entryType = 'longGldShortDgl'
+        else:
+            return
+
+        if qty < 0:
+            position = GoldArbitrage.Short(self, security, qty, 0, entryType)
+        elif qty > 0:
+            position = GoldArbitrage.Long(self, security, qty, 0, entryType)
+        else:
+            return
+
+        self.log.debug(
+            'Restoring {0} {1} position: {2}...'
+            .format(
+                position.type,
+                position.security.symbol,
+                position.activeQty))
+        position.restoreOpenState()
 
     ###########################################################################
 
@@ -186,13 +238,13 @@ class GoldArbitrage(trdk.Strategy):
         if shortGldLongDlg:
             gldQty = calcQty(gld, gldBar.maxAskPrice)
             dglQty = calcQty(dgl, dglBar.minBidPrice)
-            gldPos = ShortPosition(
+            gldPos = GoldArbitrage.Short(
                 self,
                 gld,
                 gldQty,
                 gldBar.maxAskPrice,
                 'shortGldLongDlg')
-            dglPos = LongPosition(
+            dglPos = GoldArbitrage.Long(
                 self,
                 dgl,
                 dglQty,
@@ -200,27 +252,28 @@ class GoldArbitrage(trdk.Strategy):
                 'shortGldLongDlg')
             self.log.info(
                 'Opening positions "Short GLD {0}/{4}, Long DGL {1}/{5}"'
-                ' (volume: {2}, visible qty: {3})...'
+                ' (volume: {2}, visible qty: {3}, good in: {6})...'
                 .format(
                     gldQty,
                     dglQty,
                     positionVolume,
-                    orderDisplaySize,
+                    openOrderParams.displaySize,
                     gld.descalePrice(gldPos.openStartPrice),
-                    dgl.descalePrice(dglPos.openStartPrice)))
-            gldPos.open(gldPos.openStartPrice, orderDisplaySize)
-            dglPos.open(dglPos.openStartPrice, orderDisplaySize)
+                    dgl.descalePrice(dglPos.openStartPrice),
+                    openOrderParams.goodInSeconds))
+            gldPos.open(gldPos.openStartPrice, openOrderParams)
+            dglPos.open(dglPos.openStartPrice, openOrderParams)
 
         if longGldShortDgl:
             gldQty = calcQty(gld, gldBar.minBidPrice)
             dglQty = calcQty(dgl, dglBar.maxAskPrice)
-            gldPos = LongPosition(
+            gldPos = GoldArbitrage.Long(
                 self,
                 gld,
                 gldQty,
                 gldBar.minBidPrice,
                 'longGldShortDgl')
-            dglPos = ShortPosition(
+            dglPos = GoldArbitrage.Short(
                 self,
                 dgl,
                 dglQty,
@@ -228,16 +281,17 @@ class GoldArbitrage(trdk.Strategy):
                 'longGldShortDgl')
             self.log.info(
                 'Opening positions "Short GLD {0}/{4}, Long DGL {1}/{5}"'
-                ' (volume: {2}, visible qty: {3})...'
+                ' (volume: {2}, visible qty: {3}, good in: {6})...'
                 .format(
                     gldQty,
                     dglQty,
                     positionVolume,
-                    orderDisplaySize,
+                    openOrderParams.displaySize,
                     gld.descalePrice(gldPos.openStartPrice),
-                    dgl.descalePrice(dglPos.openStartPrice)))
-            gldPos.open(gldPos.openStartPrice, orderDisplaySize)
-            dglPos.open(dglPos.openStartPrice, orderDisplaySize)
+                    dgl.descalePrice(dglPos.openStartPrice),
+                    openOrderParams.goodInSeconds))
+            gldPos.open(gldPos.openStartPrice, openOrderParams)
+            dglPos.open(dglPos.openStartPrice, openOrderParams)
 
     def _checkExit(self, position):
 
@@ -275,6 +329,6 @@ class GoldArbitrage(trdk.Strategy):
         if isExitTime is not True:
             return
 
-        position.closeAtMarketPrice(orderDisplaySize)
+        position.closeAtMarketPrice(closeOrderParams)
 
     ###########################################################################
