@@ -952,7 +952,9 @@ void Client::HandleError(
 		case 321:	// Server error when validating an API client request.
 			{
 				ib::Security *const security = GetHistoryRequest(id);
-				if (security) {
+				if (	security
+						// sometimes TWS sends it two or more times:
+						&& !IsSubscribed(m_marketDataRequests, *security)) {
 					//! @todo Check data type.
 					SendMarketDataRequest(*security);
 				}
