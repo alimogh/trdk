@@ -91,6 +91,9 @@
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="CsvSecurity.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Csv.rc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

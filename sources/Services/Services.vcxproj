@@ -39,6 +39,9 @@
   <ItemGroup>
     <None Include="Services.def" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Services.rc" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{4F025D92-8F15-4A05-97B6-CA680CB090D9}</ProjectGuid>
     <RootNamespace>Services</RootNamespace>

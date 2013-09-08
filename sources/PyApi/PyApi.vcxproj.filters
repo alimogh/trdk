@@ -126,4 +126,9 @@
       <Filter>Lib Files</Filter>
     </Library>
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PyApi.rc">
+      <Filter>Source Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
 </Project>

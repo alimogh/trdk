@@ -42,7 +42,8 @@
 #define TRDK_NAME_W	_XWSTR(TRDK_NAME)
 
 #define TRDK_COPYRIGHT \
-	"Copyright 2013 (C) Eugene V. Palchukovsky. All rights reserved."
+	"Copyright 2013 (C) Eugene V. Palchukovsky" \
+	", " TRDK_DOMAIN ". All rights reserved."
 #define TRDK_COPYRIGHT_W _XWSTR(TRDK_COPYRIGHT)
 
 #define TRDK_VERSION	\
@@ -90,12 +91,46 @@
 #	define TRDK_BUILD_IDENTITY_ADD_W	L""
 #endif
 
-#ifdef _DEBUG
-#	define TRDK_FILE_MODIFICATOR		"_dbg"
+#if defined(_DEBUG)
+#	define TRDK_FILE_MODIFICATOR "_dbg"
+#elif defined(_TEST)
+#	define TRDK_FILE_MODIFICATOR "_test"
 #else
-#	ifdef _TEST
-#		define TRDK_FILE_MODIFICATOR	"_test"
-#	else
-#		define TRDK_FILE_MODIFICATOR
-#	endif
+#	define TRDK_FILE_MODIFICATOR
 #endif
+
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRDK_CORE_FILE_NAME "Core"
+#define TRDK_CORE_DLL_FILE_NAME \
+	TRDK_CORE_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+#define TRDK_SERVICES_FILE_NAME "Services"
+#define TRDK_SERVICES_DLL_FILE_NAME \
+	TRDK_SERVICES_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+#define TRDK_PYAPI_FILE_NAME "PyApi"
+#define TRDK_PYAPI_DLL_FILE_NAME \
+	TRDK_PYAPI_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+#define TRDK_ENGINE_FILE_NAME "Engine"
+#define TRDK_ENGINE_DLL_FILE_NAME \
+	TRDK_ENGINE_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+#define TRDK_ENGINE_SERVER_FILE_NAME "RobotEngine"
+#define TRDK_ENGINE_SERVER_EXE_FILE_NAME \
+	TRDK_ENGINE_SERVER_FILE_NAME TRDK_FILE_MODIFICATOR ".exe"
+
+#define TRDK_INTERACTION_FAKE_FILE_NAME "Fake"
+#define TRDK_INTERACTION_FAKE_DLL_FILE_NAME \
+	TRDK_INTERACTION_FAKE_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+#define TRDK_INTERACTION_INTERACTIVEBROKERS_FILE_NAME "InteractiveBrokers"
+#define TRDK_INTERACTION_INTERACTIVEBROKERS_DLL_FILE_NAME \
+	TRDK_INTERACTION_INTERACTIVEBROKERS_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+#define TRDK_INTERACTION_CSV_FILE_NAME "Csv"
+#define TRDK_INTERACTION_CSV_DLL_FILE_NAME \
+	TRDK_INTERACTION_CSV_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+////////////////////////////////////////////////////////////////////////////////

@@ -83,6 +83,9 @@
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="InteractiveBrokers.rc" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BEFE87AE-1376-4C4C-87D5-73E782990306}</ProjectGuid>
     <RootNamespace>InteractiveBrokers</RootNamespace>
