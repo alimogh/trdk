@@ -88,6 +88,7 @@
     <ClCompile Include="Security.cpp" />
     <ClCompile Include="Settings.cpp" />
     <ClCompile Include="TradeSystem.cpp" />
+    <ClCompile Include="Types.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Context.hpp" />

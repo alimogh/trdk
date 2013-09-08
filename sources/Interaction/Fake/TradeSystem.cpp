@@ -31,6 +31,7 @@ namespace {
 		Fake::TradeSystem::OrderStatusUpdateSlot callback;
 		Qty qty;
 		ScaledPrice price;
+		OrderParams params;
 	};
 
 }
@@ -140,6 +141,13 @@ private:
 						price = order.security->GetLastPrice();
 					}
 					Assert(!IsZero(price));
+					m_log.Info(
+						"Fake Trade System executes order:"
+							" price=%1%, qty=%2%, %3%.",
+						boost::make_tuple(
+							price,
+							order.qty,
+							boost::cref(order.params)));
 					order.callback(
 						order.id,
 						TradeSystem::ORDER_STATUS_FILLED,
@@ -202,7 +210,9 @@ OrderId Fake::TradeSystem::SellAtMarketPrice(
 		true,
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
-		qty};
+		qty,
+		0,
+		params};
 	m_pimpl->SendOrder(order);
 	m_pimpl->GetLog().Trading(
 		sellLogTag,
@@ -228,7 +238,8 @@ OrderId Fake::TradeSystem::Sell(
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
 		qty,
-		price};
+		price,
+		params};
 	m_pimpl->SendOrder(order);
 	m_pimpl->GetLog().Trading(
 		buyLogTag,
@@ -266,7 +277,8 @@ OrderId Fake::TradeSystem::SellOrCancel(
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
 		qty,
-		price};
+		price,
+		params};
 	m_pimpl->SendOrder(order);
 	m_pimpl->GetLog().Trading(
 		sellLogTag,
@@ -291,7 +303,9 @@ OrderId Fake::TradeSystem::BuyAtMarketPrice(
 		false,
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
-		qty};
+		qty,
+		0,
+		params};
 	m_pimpl->SendOrder(order);
 	m_pimpl->GetLog().Trading(
 		buyLogTag,
@@ -317,7 +331,8 @@ OrderId Fake::TradeSystem::Buy(
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
 		qty,
-		price};
+		price,
+		params};
 	m_pimpl->SendOrder(order);
 	m_pimpl->GetLog().Trading(
 		buyLogTag,
@@ -355,7 +370,8 @@ OrderId Fake::TradeSystem::BuyOrCancel(
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
 		qty,
-		price};
+		price,
+		params};
 	m_pimpl->SendOrder(order);
 	m_pimpl->GetLog().Trading(
 		buyLogTag,
