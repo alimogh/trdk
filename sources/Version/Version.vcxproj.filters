@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="Compile.js">
+      <Filter>Scripts</Filter>
+    </None>
+    <None Include="SetVersion.cmd">
+      <Filter>Output</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Scripts">
+      <UniqueIdentifier>{219439a9-9d42-4590-8f2f-1931b744a039}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Output">
+      <UniqueIdentifier>{1e170887-c09d-4b65-ae41-b0fd8f0439a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{98981aaa-75f5-4434-8297-51fa1e184102}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Version.h">
+      <Filter>Output</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="version">
+      <Filter>Input</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

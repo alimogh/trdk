@@ -10,41 +10,16 @@
 
 #pragma once
 
+#include "Version/Version.h"
+
+////////////////////////////////////////////////////////////////////////////////
+
 #define _STR(a) #a
 #define _XSTR(a) _STR(a)
 #define _WSTR(a) L#a
 #define _XWSTR(a) _WSTR(a)
 
-#define TRDK_VERSION_MAJOR_HIGH	1
-#define TRDK_VERSION_MAJOR_LOW	0
-#define TRDK_VERSION_MINOR_HIGH	0
-#define TRDK_VERSION_MINOR_LOW	0
-
-#define TRDK_VERSION_BRANCH "master"
-#define TRDK_VERSION_BRANCH_W _XWSTR(TRDK_VERSION_BRANCH)
-
-#define TRDK_VENDOR "Eugene V. Palchukovsky"
-#define TRDK_VENDOR_W _XWSTR(TRDK_VENDOR)
-
-#define TRDK_DOMAIN "robotdk.com"
-#define TRDK_DOMAIN_W _XWSTR(TRDK_DOMAIN)
-
-#define TRDK_LICENSE_SERVICE_SUBDOMAIN "licensing"
-#define TRDK_LICENSE_SERVICE_SUBDOMAIN_W _XWSTR(TRDK_LICENSE_SERVICE_SUBDOMAIN)
-
-#define TRDK_SUPPORT_EMAIL_BOX "support"
-#define TRDK_SUPPORT_EMAIL_BOX_W _XWSTR(TRDK_SUPPORT_EMAIL_BOX)
-
-#define TRDK_SUPPORT_EMAIL TRDK_SUPPORT_EMAIL_BOX "@" TRDK_DOMAIN
-#define TRDK_SUPPORT_EMAIL_W _XWSTR(TRDK_SUPPORT_EMAIL_W)
-
-#define TRDK_NAME "Trading Robot Development Kit"
-#define TRDK_NAME_W	_XWSTR(TRDK_NAME)
-
-#define TRDK_COPYRIGHT \
-	"Copyright 2013 (C) Eugene V. Palchukovsky" \
-	", " TRDK_DOMAIN ". All rights reserved."
-#define TRDK_COPYRIGHT_W _XWSTR(TRDK_COPYRIGHT)
+////////////////////////////////////////////////////////////////////////////////
 
 #define TRDK_VERSION	\
 	_XSTR(TRDK_VERSION_MAJOR_HIGH) \
