@@ -435,7 +435,6 @@ bool Security::IsBrokerPositionRequired() const {
 void Security::SetLevel1(
 			const pt::ptime &time,
 			const Level1TickValue &tick) {
-	Assert(IsLevel1Required());
 	m_pimpl->SetLevel1(time, tick, true, false);
 }
 
@@ -443,7 +442,6 @@ void Security::SetLevel1(
 			const pt::ptime &time,
 			const Level1TickValue &tick1,
 			const Level1TickValue &tick2) {
-	Assert(IsLevel1UpdatesRequired());
 	AssertNe(tick1.type, tick2.type);
 	m_pimpl->SetLevel1(
 		time,
@@ -457,7 +455,6 @@ void Security::SetLevel1(
 			const Level1TickValue &tick1,
 			const Level1TickValue &tick2,
 			const Level1TickValue &tick3) {
-	Assert(IsLevel1UpdatesRequired());
 	AssertNe(tick1.type, tick2.type);
 	AssertNe(tick1.type, tick3.type);
 	AssertNe(tick2.type, tick3.type);
@@ -475,7 +472,6 @@ void Security::SetLevel1(
 void Security::AddLevel1Tick(
 			const pt::ptime &time,
 			const Level1TickValue &tick) {
-	Assert(IsLevel1Required());
 	m_pimpl->AddLevel1Tick(time, tick, true, false);
 }
 
@@ -483,7 +479,6 @@ void Security::AddLevel1Tick(
 			const pt::ptime &time,
 			const Level1TickValue &tick1,
 			const Level1TickValue &tick2) {
-	Assert(IsLevel1Required());
 	AssertNe(tick1.type, tick2.type);
 	m_pimpl->AddLevel1Tick(
 		time,
@@ -497,7 +492,6 @@ void Security::AddLevel1Tick(
 			const Level1TickValue &tick1,
 			const Level1TickValue &tick2,
 			const Level1TickValue &tick3) {
-	Assert(IsLevel1Required());
 	AssertNe(tick1.type, tick2.type);
 	AssertNe(tick1.type, tick3.type);
 	AssertNe(tick2.type, tick3.type);
@@ -520,8 +514,6 @@ void Security::AddTrade(
 			bool useAsLastTrade,
 			bool useForTradedVolume) {
 	
-	Assert(IsTradesRequired() || useAsLastTrade == IsLevel1Required());
-
 	bool isLevel1Changed = false;
 	if (useAsLastTrade) {
 		if (m_pimpl->SetLevel1(
