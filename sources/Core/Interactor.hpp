@@ -31,7 +31,7 @@ namespace trdk {
 	public:
 
 		Interactor();
-		~Interactor();
+		virtual ~Interactor();
 
 	};
 
