@@ -13,7 +13,6 @@
 #include "ContextBootstrap.hpp"
 #include "SubscriptionsManager.hpp"
 #include "Ini.hpp"
-#include "Util.hpp"
 #include "Core/Settings.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradeSystem.hpp"
@@ -162,30 +161,48 @@ Engine::Context::~Context() {
 }
 
 void Engine::Context::Start() {
+	
 	GetLog().Debug("Starting...");
 	Assert(!m_pimpl->m_state);
 	if (m_pimpl->m_state) {
 		GetLog().Warn("Already started!");
 		return;
 	}
+	
 	std::unique_ptr<Implementation::State> state(
 		new Implementation::State(*this, m_pimpl->m_conf));
+	
 	try {
-		Connect(
-			GetTradeSystem(),
+		GetTradeSystem().Connect(
 			IniFileSectionRef(
 				m_pimpl->m_conf,
 				Ini::Sections::tradeSystem));
-		Connect(
-			GetMarketDataSource(),
-			IniFileSectionRef(
-				m_pimpl->m_conf,
-				Ini::Sections::tradeSystem));
+	} catch (const Interactor::ConnectError &ex) {
+		boost::format message("Failed to connect to trading system: \"%1%\"");
+		message % ex;
+		throw Interactor::ConnectError(message.str().c_str());
 	} catch (const Exception &ex) {
-		GetLog().Error("Failed to make trading connections: \"%1%\".", ex);
-		throw Exception("Failed to make trading connections");
+		GetLog().Error("Failed to make trading system connection: \"%1%\".", ex);
+		throw Exception("Failed to make trading system");
 	}
+	
+	try {
+		GetMarketDataSource().Connect(
+			IniFileSectionRef(
+				m_pimpl->m_conf,
+				Ini::Sections::marketDataSource));
+	} catch (const Interactor::ConnectError &ex) {
+		boost::format message(
+			"Failed to connect to marker data source: \"%1%\"");
+		message % ex;
+		throw Interactor::ConnectError(message.str().c_str());
+	} catch (const Exception &ex) {
+		GetLog().Error("Failed to make trading system connection: \"%1%\".", ex);
+		throw Exception("Failed to make trading system");
+	}
+
 	m_pimpl->m_state.reset(state.release());
+
 }
 
 void Engine::Context::Stop() {

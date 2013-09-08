@@ -107,7 +107,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="SubscriberPtrWrapper.cpp" />
-    <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api.h" />
@@ -120,7 +119,6 @@
     <ClInclude Include="Dispatcher.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="SubscriberPtrWrapper.hpp" />
-    <ClInclude Include="Util.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Engine.rc" />

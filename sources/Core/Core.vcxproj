@@ -71,6 +71,7 @@
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="Consumer.cpp" />
+    <ClCompile Include="Interactor.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="Strategy.cpp" />
     <ClCompile Include="StrategyPositionState.cpp" />
@@ -92,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Context.hpp" />
+    <ClInclude Include="Interactor.hpp" />
     <ClInclude Include="ModuleRef.hpp" />
     <ClInclude Include="ModuleSecurityList.hpp" />
     <ClInclude Include="ModuleVariant.hpp" />

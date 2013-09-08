@@ -102,7 +102,7 @@ Client::Client(
 		m_clientId);
 	AssertEq(connectResult, m_client->isConnected());
 	if (!connectResult || !m_client->isConnected()) {
-		throw trdk::TradeSystem::ConnectError(
+		throw trdk::Interactor::ConnectError(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME ": failed to connect");
 	}
 	m_connectionState = CONNECTION_STATE_CONNECTED;

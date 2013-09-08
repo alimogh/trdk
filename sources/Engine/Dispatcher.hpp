@@ -24,6 +24,11 @@ namespace trdk { namespace Engine {
 		typedef EventQueueMutex::scoped_lock EventQueueLock;
 		typedef boost::condition_variable EventQueueCondition;
 
+		struct EventListsSyncObjects {
+			EventQueueMutex mutex;
+			EventQueueCondition newDataCondition;
+		};
+
 		template<typename ListT>
 		class EventQueue : private boost::noncopyable {
 
@@ -49,8 +54,6 @@ namespace trdk { namespace Engine {
 					: m_context(context),
 					m_name(name),
 					m_current(&m_lists.first),
-					m_mutex(nullptr),
-					m_newDataCondition(nullptr),
 					m_taksState(TASK_STATE_INACTIVE) {
 				if (m_context.GetSettings().IsReplayMode()) {
 					m_readyToReadCondition.reset(new Condition);
@@ -60,12 +63,9 @@ namespace trdk { namespace Engine {
 		public:
 
 			void AssignSyncObjects(
-						Mutex &mutex,
-						Condition &newDataCondition) {
-				Assert(!m_mutex);
-				Assert(!m_newDataCondition);
-				m_mutex = &mutex;
-				m_newDataCondition = &newDataCondition;
+						boost::shared_ptr<EventListsSyncObjects> &sync) {
+				Assert(!m_sync);
+				m_sync = sync;
 			}
 
 			const char * GetName() const {
@@ -77,36 +77,35 @@ namespace trdk { namespace Engine {
 			}
 
 			void Activate() {
-				Assert(m_mutex);
-				const Lock lock(*m_mutex);
+				Assert(m_sync);
+				const Lock lock(m_sync->mutex);
 				AssertEq(int(TASK_STATE_INACTIVE), int(m_taksState));
 				m_taksState = TASK_STATE_ACTIVE;
 			}
 
 			void Suspend() {
-				Assert(m_mutex);
-				const Lock lock(*m_mutex);
+				Assert(m_sync);
+				const Lock lock(m_sync->mutex);
 				AssertNe(int(TASK_STATE_STOPPED), int(m_taksState));
 				m_taksState = TASK_STATE_INACTIVE;
 			}
 
 			void Stop() {
-				Assert(m_mutex);
-				Assert(m_newDataCondition);
+				Assert(m_sync);
 				{
-					const Lock lock(*m_mutex);
+					const Lock lock(m_sync->mutex);
 					AssertNe(int(TASK_STATE_STOPPED), int(m_taksState));
 					m_taksState = TASK_STATE_STOPPED;
 				}
-				m_newDataCondition->notify_all();
+				m_sync->newDataCondition.notify_all();
 				if (m_readyToReadCondition) {
 					m_readyToReadCondition->notify_all();
 				}
 			}
 
 			bool IsStopped(const Lock &lock) const {
-				Assert(m_mutex);
-				Assert(m_mutex == lock.mutex());
+				Assert(m_sync);
+				Assert(&m_sync->mutex == lock.mutex());
 				Assert(lock);
 				UseUnused(lock);
 				return m_taksState == TASK_STATE_STOPPED;
@@ -114,9 +113,8 @@ namespace trdk { namespace Engine {
 
 			template<typename Event>
 			void Queue(const Event &event, bool flush) {
-				Assert(m_mutex);
-				Assert(m_newDataCondition);
-				Lock lock(*m_mutex);
+				Assert(m_sync);
+				Lock lock(m_sync->mutex);
 				if (m_taksState == TASK_STATE_STOPPED) {
 					return;
 				}
@@ -124,7 +122,7 @@ namespace trdk { namespace Engine {
 					m_current == &m_lists.first
 					|| m_current == &m_lists.second);
 				if (Dispatcher::QueueEvent(event, *m_current) || !flush) {
-					m_newDataCondition->notify_one();
+					m_sync->newDataCondition.notify_one();
 					if (m_readyToReadCondition) {
 						m_readyToReadCondition->wait(lock);
 					}
@@ -140,10 +138,9 @@ namespace trdk { namespace Engine {
 
 			bool Enqueue(Lock &lock) {
 
-				Assert(m_mutex);
-				Assert(m_mutex == lock.mutex());
+				Assert(m_sync);
+				Assert(&m_sync->mutex == lock.mutex());
 				Assert(lock);
-				Assert(m_newDataCondition);
 				Assert(
 					m_current == &m_lists.first
 					|| m_current == &m_lists.second);
@@ -193,8 +190,7 @@ namespace trdk { namespace Engine {
 			std::pair<List, List> m_lists;
 			List *m_current;
 			
-			Mutex *m_mutex;
-			Condition *m_newDataCondition;
+			boost::shared_ptr<EventListsSyncObjects> m_sync;
 			std::unique_ptr<Condition> m_readyToReadCondition;
 
 			TaskState m_taksState;
@@ -426,10 +422,9 @@ namespace trdk { namespace Engine {
 		
 		template<typename T1>
 		static void AssignEventListsSyncObjects(
-					EventQueueMutex &mutex,
-					EventQueueCondition &newDataCondition,
+					boost::shared_ptr<EventListsSyncObjects> &sync,
 					const boost::tuple<T1> &lists) {
-			lists.get<0>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<0>().AssignSyncObjects(sync);
 		}
 
 		template<typename T1>
@@ -467,11 +462,10 @@ namespace trdk { namespace Engine {
 
 		template<typename T1, typename T2>
 		static void AssignEventListsSyncObjects(
-					EventQueueMutex &mutex,
-					EventQueueCondition &newDataCondition,
+					boost::shared_ptr<EventListsSyncObjects> &sync,
 					const boost::tuple<T1, T2> &lists) {
-			lists.get<0>().AssignSyncObjects(mutex, newDataCondition);
-			lists.get<1>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<0>().AssignSyncObjects(sync);
+			lists.get<1>().AssignSyncObjects(sync);
 		}
 		
 		template<typename T1, typename T2>
@@ -519,12 +513,11 @@ namespace trdk { namespace Engine {
 
 		template<typename T1, typename T2, typename T3>
 		static void AssignEventListsSyncObjects(
-					EventQueueMutex &mutex,
-					EventQueueCondition &newDataCondition,
+					boost::shared_ptr<EventListsSyncObjects> &sync,
 					const boost::tuple<T1, T2, T3> &lists) {
-			lists.get<0>().AssignSyncObjects(mutex, newDataCondition);
-			lists.get<1>().AssignSyncObjects(mutex, newDataCondition);
-			lists.get<2>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<0>().AssignSyncObjects(sync);
+			lists.get<1>().AssignSyncObjects(sync);
+			lists.get<2>().AssignSyncObjects(sync);
 		}
 
 		template<typename T1, typename T2, typename T3>
@@ -578,13 +571,12 @@ namespace trdk { namespace Engine {
 
 		template<typename T1, typename T2, typename T3, typename T4>
 		static void AssignEventListsSyncObjects(
-					EventQueueMutex &mutex,
-					EventQueueCondition &newDataCondition,
+					boost::shared_ptr<EventListsSyncObjects> &sync,
 					const boost::tuple<T1, T2, T3, T4> &lists) {
-			lists.get<0>().AssignSyncObjects(mutex, newDataCondition);
-			lists.get<1>().AssignSyncObjects(mutex, newDataCondition);
-			lists.get<2>().AssignSyncObjects(mutex, newDataCondition);
-			lists.get<3>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<0>().AssignSyncObjects(sync);
+			lists.get<1>().AssignSyncObjects(sync);
+			lists.get<2>().AssignSyncObjects(sync);
+			lists.get<3>().AssignSyncObjects(sync);
 		}
 
 		template<typename T1, typename T2, typename T3, typename T4>
@@ -654,14 +646,13 @@ namespace trdk { namespace Engine {
 			typename T4,
 			typename T5>
 		static void AssignEventListsSyncObjects(
-					EventQueueMutex &mutex,
-					EventQueueCondition &newDataCondition,
+					boost::shared_ptr<EventListsSyncObjects> &sync,
 					const boost::tuple<T1, T2, T3, T4, T5> &lists) {
-			lists.get<0>().AssignSyncObjects(mutex, newDataCondition);
-			lists.get<1>().AssignSyncObjects(mutex, newDataCondition);
-			lists.get<2>().AssignSyncObjects(mutex, newDataCondition);
-			lists.get<3>().AssignSyncObjects(mutex, newDataCondition);
-			lists.get<4>().AssignSyncObjects(mutex, newDataCondition);
+			lists.get<0>().AssignSyncObjects(sync);
+			lists.get<1>().AssignSyncObjects(sync);
+			lists.get<2>().AssignSyncObjects(sync);
+			lists.get<3>().AssignSyncObjects(sync);
+			lists.get<4>().AssignSyncObjects(sync);
 		}
 
 		template<
@@ -699,16 +690,16 @@ namespace trdk { namespace Engine {
 			try {
 				std::bitset<boost::tuples::length<EventLists>::value>
 					deactivationMask;
-				EventQueueMutex mutex;
-				EventQueueCondition newDataCondition;
-				AssignEventListsSyncObjects(mutex, newDataCondition, lists);
-				EventQueueLock lock(mutex);
+				boost::shared_ptr<EventListsSyncObjects> sync(
+					new EventListsSyncObjects);
+				AssignEventListsSyncObjects(sync, lists);
+				EventQueueLock lock(sync->mutex);
 				for ( ; ; ) {
 					EnqueueEventListsCollection(lists, deactivationMask, lock);
 					if (deactivationMask.all()) {
 						break;
 					}
-					newDataCondition.wait(lock);
+					sync->newDataCondition.wait(lock);
 				}
 			} catch (...) {
 				// error already logged

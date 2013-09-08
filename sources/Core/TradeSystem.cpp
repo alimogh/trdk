@@ -16,7 +16,7 @@ using namespace trdk;
 //////////////////////////////////////////////////////////////////////////
 
 TradeSystem::Error::Error(const char *what) throw()
-		: Exception(what) {
+		: Base::Error(what) {
 	//...//
 }
 
@@ -25,16 +25,6 @@ TradeSystem::OrderParamsError::OrderParamsError(
 			Qty,
 			const trdk::OrderParams &)
 		throw()
-		: Error(what) {
-	//...//
-}
-
-TradeSystem::ConnectError::ConnectError() throw()
-		: Error("Failed to connect to trade system") {
-	//...//
-}
-
-TradeSystem::ConnectError::ConnectError(const char *what) throw()
 		: Error(what) {
 	//...//
 }
