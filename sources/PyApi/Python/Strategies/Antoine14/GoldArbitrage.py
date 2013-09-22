@@ -7,7 +7,7 @@ orderDisplaySize = 100
 
 openOrderParams = trdk.OrderParams()
 openOrderParams.goodInSeconds = 60
-openOrderParams.isMarketPrice = True
+openOrderParams.isMarketPrice = False
 openOrderParams.displaySize = orderDisplaySize
 
 closeOrderParams = trdk.OrderParams()
