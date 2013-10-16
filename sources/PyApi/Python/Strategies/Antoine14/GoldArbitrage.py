@@ -194,9 +194,9 @@ class GoldArbitrage(trdk.Strategy):
         checkShortGldLongDlgRatio = 0
         shortGldLongDlg = False
         # When GLD (ask)/DGL (bid) > ratio * 1.001% -> Short GLD, Long DGL
-        if dglBar.minBidPrice != 0:
+        if dglBar.openBidPrice != 0:
             currentShortGldLongDlgRatio \
-                = float(gldBar.maxAskPrice) / float(dglBar.minBidPrice)
+                = float(gldBar.openAskPrice) / float(dglBar.openBidPrice)
             currentShortGldLongDlgRatio = round(currentShortGldLongDlgRatio, 4)
             checkShortGldLongDlgRatio = round(ratio * 1.001, 4)
             shortGldLongDlg \
@@ -205,8 +205,8 @@ class GoldArbitrage(trdk.Strategy):
             'Entry 1: "GLD(Ask {0}) / DGL(Bid {1}) = {2}"'
             ' > "{3} * 1.001% = {4}" -> {5}'
             .format(
-                gld.descalePrice(gldBar.maxAskPrice),
-                dgl.descalePrice(dglBar.minBidPrice),
+                gld.descalePrice(gldBar.openAskPrice),
+                dgl.descalePrice(dglBar.openBidPrice),
                 currentShortGldLongDlgRatio,
                 ratio,
                 checkShortGldLongDlgRatio,
@@ -215,10 +215,10 @@ class GoldArbitrage(trdk.Strategy):
         currentLongGldShortDglRatio = 0
         checkLongGldShortDglRatio = 0
         longGldShortDgl = False
-        if dglBar.maxAskPrice != 0:
+        if dglBar.openAskPrice != 0:
             # When GLD (bid)/DGL (ask) < ratio * 0.999% -> Long GLD, Short DGL
             currentLongGldShortDglRatio \
-                = float(gldBar.minBidPrice) / float(dglBar.maxAskPrice)
+                = float(gldBar.openBidPrice) / float(dglBar.openAskPrice)
             currentLongGldShortDglRatio = round(currentLongGldShortDglRatio, 4)
             checkLongGldShortDglRatio = round(ratio * 0.999, 4)
             longGldShortDgl \
@@ -227,8 +227,8 @@ class GoldArbitrage(trdk.Strategy):
             'Entry 2: "GLD(Bid {0}) / DGL(Ask {1}) = {2}"'
             ' < "{3} * 0.999% = {4}" -> {5}'
             .format(
-                gld.descalePrice(gldBar.minBidPrice),
-                dgl.descalePrice(dglBar.maxAskPrice),
+                gld.descalePrice(gldBar.openBidPrice),
+                dgl.descalePrice(dglBar.openAskPrice),
                 currentLongGldShortDglRatio,
                 ratio,
                 checkLongGldShortDglRatio,
@@ -238,19 +238,19 @@ class GoldArbitrage(trdk.Strategy):
             return security.scalePrice(positionVolume) / price
 
         if shortGldLongDlg:
-            gldQty = calcQty(gld, gldBar.maxAskPrice)
-            dglQty = calcQty(dgl, dglBar.minBidPrice)
+            gldQty = calcQty(gld, gldBar.openAskPrice)
+            dglQty = calcQty(dgl, dglBar.openBidPrice)
             gldPos = GoldArbitrage.Short(
                 self,
                 gld,
                 gldQty,
-                gldBar.maxAskPrice,
+                gldBar.openAskPrice,
                 'shortGldLongDlg')
             dglPos = GoldArbitrage.Long(
                 self,
                 dgl,
                 dglQty,
-                dglBar.minBidPrice,
+                dglBar.openBidPrice,
                 'shortGldLongDlg')
             self.log.info(
                 'Opening positions "Short GLD {0}/{4}, Long DGL {1}/{5}"'
@@ -267,19 +267,19 @@ class GoldArbitrage(trdk.Strategy):
             dglPos.open(dglPos.openStartPrice, openOrderParams)
 
         if longGldShortDgl:
-            gldQty = calcQty(gld, gldBar.minBidPrice)
-            dglQty = calcQty(dgl, dglBar.maxAskPrice)
+            gldQty = calcQty(gld, gldBar.openBidPrice)
+            dglQty = calcQty(dgl, dglBar.openAskPrice)
             gldPos = GoldArbitrage.Long(
                 self,
                 gld,
                 gldQty,
-                gldBar.minBidPrice,
+                gldBar.openBidPrice,
                 'longGldShortDgl')
             dglPos = GoldArbitrage.Short(
                 self,
                 dgl,
                 dglQty,
-                dglBar.maxAskPrice,
+                dglBar.openAskPrice,
                 'longGldShortDgl')
             self.log.info(
                 'Opening positions "Long GLD {0}/{4}, Short DGL {1}/{5}"'
@@ -305,15 +305,15 @@ class GoldArbitrage(trdk.Strategy):
 
         if position.entryType == 'shortGldLongDlg':
             # Exit trade when GLD (bid)/DGL (ask) = ratio
-            gldPrice = self.gldBars.getBarByReversedIndex(0).minBidPrice
-            dglPrice = self.dglBars.getBarByReversedIndex(0).maxAskPrice
+            gldPrice = self.gldBars.getBarByReversedIndex(0).openBidPrice
+            dglPrice = self.dglBars.getBarByReversedIndex(0).openAskPrice
             message = 'Exit 1: "GLD(Bid {0}) / DGL(Ask {1}) = {2}"'
             message += ' == {3} -> {4};'
         else:
             # Exit trade when GLD (ask)/DGL (bid) = ratio
             assert position.entryType == 'longGldShortDgl'
-            gldPrice = self.gldBars.getBarByReversedIndex(0).maxAskPrice
-            dglPrice = self.dglBars.getBarByReversedIndex(0).minBidPrice
+            gldPrice = self.gldBars.getBarByReversedIndex(0).openAskPrice
+            dglPrice = self.dglBars.getBarByReversedIndex(0).openBidPrice
             message = 'Exit 2: "GLD(Ask {0}) / DGL(Bid {1}) = {2}"'
             message += ' == {3} -> {4};'
 
