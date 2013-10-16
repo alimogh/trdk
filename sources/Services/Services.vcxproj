@@ -35,9 +35,15 @@
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Version\Version.vcxproj">
+      <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="Services.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Services.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{4F025D92-8F15-4A05-97B6-CA680CB090D9}</ProjectGuid>

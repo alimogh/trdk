@@ -167,11 +167,15 @@ void BarServiceExport::BarExport::ExportClass(const char *className) {
 		.add_property("time", &BarExport::GetTime)
 		.add_property("size", &BarExport::GetSize)
 		.add_property("maxAskPrice", &BarExport::GetMaxAskPrice)
+		.add_property("openAskPrice", &BarExport::GetOpenAskPrice)
+		.add_property("closeAskPrice", &BarExport::GetCloseAskPrice)
 		.add_property("minBidPrice", &BarExport::GetMinBidPrice)
-		.add_property("openPrice", &BarExport::GetOpenPrice)
-		.add_property("closePrice", &BarExport::GetClosePrice)
-		.add_property("highPrice", &BarExport::GetHighPrice)
-		.add_property("lowPrice", &BarExport::GetLowPrice)
+		.add_property("openBidPrice", &BarExport::GetOpenBidPrice)
+		.add_property("closeBidPrice", &BarExport::GetCloseBidPrice)
+		.add_property("openTradePrice", &BarExport::GetOpenTradePrice)
+		.add_property("closeTradePrice", &BarExport::GetCloseTradePrice)
+		.add_property("highTradePrice", &BarExport::GetHighTradePrice)
+		.add_property("lowTradePrice", &BarExport::GetLowTradePrice)
 		.add_property("tradingVolume", &BarExport::GetTradingVolume);
 }
 
@@ -187,26 +191,42 @@ boost::intmax_t BarServiceExport::BarExport::GetMaxAskPrice() const {
 	return m_bar->maxAskPrice;
 }
 
+boost::intmax_t BarServiceExport::BarExport::GetOpenAskPrice() const {
+	return m_bar->openAskPrice;
+}
+
+boost::intmax_t BarServiceExport::BarExport::GetCloseAskPrice() const {
+	return m_bar->closeAskPrice;
+}
+
 boost::intmax_t BarServiceExport::BarExport::GetMinBidPrice() const {
 	return m_bar->minBidPrice;
 }
 
-boost::intmax_t BarServiceExport::BarExport::GetOpenPrice() const {
-	return m_bar->openPrice;
+boost::intmax_t BarServiceExport::BarExport::GetOpenBidPrice() const {
+	return m_bar->openBidPrice;
 }
 
-boost::intmax_t BarServiceExport::BarExport::GetClosePrice() const {
-	return m_bar->closePrice;
-}
-			
-boost::intmax_t BarServiceExport::BarExport::GetHighPrice() const {
-	return m_bar->highPrice;
+boost::intmax_t BarServiceExport::BarExport::GetCloseBidPrice() const {
+	return m_bar->closeBidPrice;
 }
 
-boost::intmax_t BarServiceExport::BarExport::GetLowPrice() const {
-	return m_bar->lowPrice;
+boost::intmax_t BarServiceExport::BarExport::GetOpenTradePrice() const {
+	return m_bar->openTradePrice;
 }
-			
+
+boost::intmax_t BarServiceExport::BarExport::GetCloseTradePrice() const {
+	return m_bar->closeTradePrice;
+}
+
+boost::intmax_t BarServiceExport::BarExport::GetHighTradePrice() const {
+	return m_bar->highTradePrice;
+}
+
+boost::intmax_t BarServiceExport::BarExport::GetLowTradePrice() const {
+	return m_bar->lowTradePrice;
+}
+
 boost::intmax_t BarServiceExport::BarExport::GetTradingVolume() const {
 	return m_bar->tradingVolume;
 }

@@ -110,11 +110,15 @@ namespace trdk { namespace PyApi {
 			time_t GetTime() const;
 			size_t GetSize() const;
 			boost::intmax_t GetMaxAskPrice() const;
+			boost::intmax_t GetOpenAskPrice() const;
+			boost::intmax_t GetCloseAskPrice() const;
 			boost::intmax_t GetMinBidPrice() const;
-			boost::intmax_t GetOpenPrice() const;
-			boost::intmax_t GetClosePrice() const;
-			boost::intmax_t GetHighPrice() const;
-			boost::intmax_t GetLowPrice() const;
+			boost::intmax_t GetOpenBidPrice() const;
+			boost::intmax_t GetCloseBidPrice() const;
+			boost::intmax_t GetOpenTradePrice() const;
+			boost::intmax_t GetCloseTradePrice() const;
+			boost::intmax_t GetHighTradePrice() const;
+			boost::intmax_t GetLowTradePrice() const;
 			boost::intmax_t GetTradingVolume() const;
 		private:
 			const Implementation *m_service;

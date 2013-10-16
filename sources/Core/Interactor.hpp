@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/07/22 23:40:47
+ *   Created: 2013/09/08 23:05:59
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,18 +10,29 @@
 
 #pragma once
 
-namespace trdk { namespace Engine {
+#include "Fwd.hpp"
 
-	//////////////////////////////////////////////////////////////////////////
+namespace trdk {
 
-	void Connect(
-				trdk::TradeSystem &,
-				const trdk::Lib::IniFileSectionRef &);
+	class TRDK_CORE_API Interactor : private boost::noncopyable {
 
-	void Connect(
-				trdk::MarketDataSource &,
-				const trdk::Lib::IniFileSectionRef &);
+	public:
 
-	//////////////////////////////////////////////////////////////////////////
+		class TRDK_CORE_API Error : public trdk::Lib::Exception {
+		public:
+			explicit Error(const char *what) throw();
+		};
 
-} }
+		class TRDK_CORE_API ConnectError : public Error {
+		public:
+			ConnectError(const char *what) throw();
+		};
+
+	public:
+
+		Interactor();
+		virtual ~Interactor();
+
+	};
+
+}

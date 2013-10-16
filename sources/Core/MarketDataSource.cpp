@@ -34,12 +34,7 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 MarketDataSource::Error::Error(const char *what) throw()
-		: Exception(what) {
-	//...//
-}
-
-MarketDataSource::ConnectError::ConnectError() throw()
-		: Error("Failed to connect to Market Data Source") {
+		: Base::Error(what) {
 	//...//
 }
 

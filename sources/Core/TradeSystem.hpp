@@ -12,6 +12,7 @@
 
 #include "Context.hpp"	//! @todo	remove context from TradeSystem as it can be
 						//!			one for all contexts.
+#include "Interactor.hpp"
 #include "Fwd.hpp"
 #include "Api.h"
 
@@ -34,9 +35,11 @@ namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	class TRDK_CORE_API TradeSystem : private boost::noncopyable {
+	class TRDK_CORE_API TradeSystem : virtual public trdk::Interactor {
 
 	public:
+
+		typedef trdk::Interactor Base;
 
 		enum OrderStatus {
 			ORDER_STATUS_PENDIGN,
@@ -60,7 +63,7 @@ namespace trdk {
 
 	public:
 
-		class TRDK_CORE_API Error : public trdk::Lib::Exception {
+		class TRDK_CORE_API Error : public Base::Error {
 		public:
 			explicit Error(const char *what) throw();
 		};
@@ -72,12 +75,6 @@ namespace trdk {
 						trdk::Qty,
 						const trdk::OrderParams &)
 					throw();
-		};
-
-		class TRDK_CORE_API ConnectError : public Error {
-		public:
-			ConnectError() throw();
-			explicit ConnectError(const char *what) throw();
 		};
 
 		class TRDK_CORE_API SendingError : public Error {

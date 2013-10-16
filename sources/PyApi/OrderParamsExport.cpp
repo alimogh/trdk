@@ -17,6 +17,7 @@ using namespace trdk::PyApi;
 using namespace trdk::Lib;
 
 namespace py = boost::python;
+namespace pt = boost::posix_time;
 
 OrderParamsExport::OrderParamsExport(PyObject *self)
 		: Detail::PythonToCoreTransit<OrderParamsExport>(self) {
@@ -83,7 +84,7 @@ void OrderParamsExport::SetGoodTillTime(const py::object &newTime) {
 		const int64_t timestamp = floatValue.check()
 			?	int64_t(floatValue)
 			:	py::extract<int64_t>(newTime);
-		m_orderParams.goodTillTime = ConvertToPTimeFromTimeT(timestamp);
+		m_orderParams.goodTillTime = pt::from_time_t(timestamp);
 	} else {
 		m_orderParams.goodTillTime.reset();
 	}

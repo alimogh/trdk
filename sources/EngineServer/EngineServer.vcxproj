@@ -88,6 +88,12 @@
     <ProjectReference Include="..\Engine\Engine.vcxproj">
       <Project>{015fb121-6122-4a00-bfbb-545e9e73abee}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Version\Version.vcxproj">
+      <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="EngineServer.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

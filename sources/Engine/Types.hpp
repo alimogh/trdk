@@ -12,13 +12,21 @@
 
 namespace trdk { namespace Engine {
 
-	typedef trdk::Lib::DllObjectPtr<Strategy> ModuleStrategy;
-	typedef std::map<std::string /*tag*/, std::list<ModuleStrategy>> Strategies;
+	typedef std::map<
+			std::string /*tag*/,
+			std::list<boost::shared_ptr<Strategy>>>
+		Strategies;
 
-	typedef trdk::Lib::DllObjectPtr<Observer> ModuleObserver;
-	typedef std::map<std::string /*tag*/, std::list<ModuleObserver>> Observers;
+	typedef std::map<
+			std::string /*tag*/,
+			std::list<boost::shared_ptr<Observer>>>
+		Observers;
 
-	typedef trdk::Lib::DllObjectPtr<Service> ModuleService;
-	typedef std::map<std::string /*tag*/, std::list<ModuleService>> Services;
+	typedef std::map<
+			std::string /*tag*/,
+			std::list<boost::shared_ptr<Service>>>
+		Services;
+
+	typedef std::set<boost::shared_ptr<trdk::Lib::Dll>> ModuleList;
 
 } }

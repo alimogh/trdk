@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Interactor.hpp"
 #include "Fwd.hpp"
 #include "Api.h"
 
@@ -25,18 +26,17 @@ namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	class TRDK_CORE_API MarketDataSource : private boost::noncopyable {
+	class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
 
 	public:
 
-		class TRDK_CORE_API Error : public trdk::Lib::Exception {
+		typedef trdk::Interactor Base;
+
+	public:
+
+		class TRDK_CORE_API Error : public Base::Error {
 		public:
 			explicit Error(const char *what) throw();
-		};
-
-		class TRDK_CORE_API ConnectError : public Error {
-		public:
-			ConnectError() throw();
 		};
 
 	public:

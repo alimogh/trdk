@@ -424,12 +424,14 @@ public:
 				SubscriptionsManager &subscriptionsManagerRef,
 				Strategies &strategiesRef,
 				Observers &observersRef,
-				Services &servicesRef)
+				Services &servicesRef,
+				ModuleList &moduleListRef)
 			: m_context(context),
 			m_subscriptionsManager(subscriptionsManagerRef),
 			m_strategiesResult(strategiesRef),
 			m_observersResult(observersRef),
 			m_servicesResult(servicesRef),
+			m_moduleListResult(moduleListRef),
 			m_conf(confRef) {
 		//...//
 	}
@@ -511,21 +513,22 @@ private:
 
 	template<typename Module>
 	void MakeModulesResult(
-				const std::map<std::string /*tag*/, ModuleDll<Module>> &source,
+				std::map<std::string /*tag*/, ModuleDll<Module>> &source,
 				std::map<
 						std::string /*tag*/,
-						std::list<DllObjectPtr<Module>>> &
+						std::list<boost::shared_ptr<Module>>> &
 					result) {
-		foreach (const auto &module, source) {
+		foreach (auto &module, source) {
 			const std::string &tag = module.first;
-			const ModuleDll<Module> &moduleDll = module.second;
+			ModuleDll<Module> &moduleDll = module.second;
 			auto &resultTag = result[tag];
-			foreach (const auto &instance, moduleDll.symbolInstances) {
+			foreach (auto &instance, moduleDll.symbolInstances) {
 				resultTag.push_back(instance.second);
 			}
-			foreach (const auto &instance, moduleDll.standaloneInstances) {
+			foreach (auto &instance, moduleDll.standaloneInstances) {
 				resultTag.push_back(instance);
 			}
+			m_moduleListResult.insert(moduleDll.dll);
 		}
 	}
 
@@ -1414,6 +1417,7 @@ private:
 	Strategies &m_strategiesResult;
 	Observers &m_observersResult;
 	Services &m_servicesResult;
+	ModuleList &m_moduleListResult;
 
 	StrategyModules m_strategies;
 	ObserverModules m_observers;
@@ -1446,14 +1450,16 @@ void Engine::BootstrapContextState(
 			SubscriptionsManager &subscriptionsManagerRef,
 			Strategies &strategiesRef,
 			Observers &observersRef,
-			Services &servicesRef) {
+			Services &servicesRef,
+			ModuleList &moduleListRef) {
 	ContextStateBootstraper(
 			conf,
 			context,
 			subscriptionsManagerRef,
 			strategiesRef,
 			observersRef,
-			servicesRef)
+			servicesRef,
+			moduleListRef)
 		.Bootstrap();
 }
 

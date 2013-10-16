@@ -29,6 +29,7 @@ namespace trdk { namespace Engine {
 				SubscriptionsManager &subscriptionsManagerRef,
 				Strategies &strategiesRef,
 				Observers &observersRef,
-				Services &servicesRef);
+				Services &servicesRef,
+				ModuleList &moduleListRef);
 
 } }

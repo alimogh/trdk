@@ -10,40 +10,16 @@
 
 #pragma once
 
+#include "Version/Version.h"
+
+////////////////////////////////////////////////////////////////////////////////
+
 #define _STR(a) #a
 #define _XSTR(a) _STR(a)
 #define _WSTR(a) L#a
 #define _XWSTR(a) _WSTR(a)
 
-#define TRDK_VERSION_MAJOR_HIGH	1
-#define TRDK_VERSION_MAJOR_LOW	0
-#define TRDK_VERSION_MINOR_HIGH	0
-#define TRDK_VERSION_MINOR_LOW	0
-
-#define TRDK_VERSION_BRANCH "Antoine"
-#define TRDK_VERSION_BRANCH_W _XWSTR(TRDK_VERSION_BRANCH)
-
-#define TRDK_VENDOR "Eugene V. Palchukovsky"
-#define TRDK_VENDOR_W _XWSTR(TRDK_VENDOR)
-
-#define TRDK_DOMAIN "robotdk.com"
-#define TRDK_DOMAIN_W _XWSTR(TRDK_DOMAIN)
-
-#define TRDK_LICENSE_SERVICE_SUBDOMAIN "licensing"
-#define TRDK_LICENSE_SERVICE_SUBDOMAIN_W _XWSTR(TRDK_LICENSE_SERVICE_SUBDOMAIN)
-
-#define TRDK_SUPPORT_EMAIL_BOX "support"
-#define TRDK_SUPPORT_EMAIL_BOX_W _XWSTR(TRDK_SUPPORT_EMAIL_BOX)
-
-#define TRDK_SUPPORT_EMAIL TRDK_SUPPORT_EMAIL_BOX "@" TRDK_DOMAIN
-#define TRDK_SUPPORT_EMAIL_W _XWSTR(TRDK_SUPPORT_EMAIL_W)
-
-#define TRDK_NAME "Trading Robot Development Kit"
-#define TRDK_NAME_W	_XWSTR(TRDK_NAME)
-
-#define TRDK_COPYRIGHT \
-	"Copyright 2013 (C) Eugene V. Palchukovsky. All rights reserved."
-#define TRDK_COPYRIGHT_W _XWSTR(TRDK_COPYRIGHT)
+////////////////////////////////////////////////////////////////////////////////
 
 #define TRDK_VERSION	\
 	_XSTR(TRDK_VERSION_MAJOR_HIGH) \
@@ -90,12 +66,46 @@
 #	define TRDK_BUILD_IDENTITY_ADD_W	L""
 #endif
 
-#ifdef _DEBUG
-#	define TRDK_FILE_MODIFICATOR		"_dbg"
+#if defined(_DEBUG)
+#	define TRDK_FILE_MODIFICATOR "_dbg"
+#elif defined(_TEST)
+#	define TRDK_FILE_MODIFICATOR "_test"
 #else
-#	ifdef _TEST
-#		define TRDK_FILE_MODIFICATOR	"_test"
-#	else
-#		define TRDK_FILE_MODIFICATOR
-#	endif
+#	define TRDK_FILE_MODIFICATOR
 #endif
+
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRDK_CORE_FILE_NAME "Core"
+#define TRDK_CORE_DLL_FILE_NAME \
+	TRDK_CORE_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+#define TRDK_SERVICES_FILE_NAME "Services"
+#define TRDK_SERVICES_DLL_FILE_NAME \
+	TRDK_SERVICES_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+#define TRDK_PYAPI_FILE_NAME "PyApi"
+#define TRDK_PYAPI_DLL_FILE_NAME \
+	TRDK_PYAPI_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+#define TRDK_ENGINE_FILE_NAME "Engine"
+#define TRDK_ENGINE_DLL_FILE_NAME \
+	TRDK_ENGINE_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+#define TRDK_ENGINE_SERVER_FILE_NAME "RobotEngine"
+#define TRDK_ENGINE_SERVER_EXE_FILE_NAME \
+	TRDK_ENGINE_SERVER_FILE_NAME TRDK_FILE_MODIFICATOR ".exe"
+
+#define TRDK_INTERACTION_FAKE_FILE_NAME "Fake"
+#define TRDK_INTERACTION_FAKE_DLL_FILE_NAME \
+	TRDK_INTERACTION_FAKE_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+#define TRDK_INTERACTION_INTERACTIVEBROKERS_FILE_NAME "InteractiveBrokers"
+#define TRDK_INTERACTION_INTERACTIVEBROKERS_DLL_FILE_NAME \
+	TRDK_INTERACTION_INTERACTIVEBROKERS_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+#define TRDK_INTERACTION_CSV_FILE_NAME "Csv"
+#define TRDK_INTERACTION_CSV_DLL_FILE_NAME \
+	TRDK_INTERACTION_CSV_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
+////////////////////////////////////////////////////////////////////////////////

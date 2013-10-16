@@ -111,11 +111,19 @@ namespace {
 
 BarService::Bar::Bar()
 		: maxAskPrice(0),
+		openAskPrice(0),
+		closeAskPrice(0),
+			
 		minBidPrice(0),
-		openPrice(0),
-		closePrice(0),
-		highPrice(0),
-		lowPrice(0),
+		openBidPrice(0),
+		closeBidPrice(0),
+
+		openTradePrice(0),
+		closeTradePrice(0),
+			
+		highTradePrice(0),
+		lowTradePrice(0),
+
 		tradingVolume(0) {
 	//...//
 }
@@ -363,10 +371,10 @@ public:
 				<< std::setw(2) << time.seconds();
 		}
 		m_barsLog->file
-			<< GetCsvDelimeter() << m_currentBar->openPrice
-			<< GetCsvDelimeter() << m_currentBar->highPrice
-			<< GetCsvDelimeter() << m_currentBar->lowPrice
-			<< GetCsvDelimeter() << m_currentBar->closePrice
+			<< GetCsvDelimeter() << m_currentBar->openTradePrice
+			<< GetCsvDelimeter() << m_currentBar->highTradePrice
+			<< GetCsvDelimeter() << m_currentBar->lowTradePrice
+			<< GetCsvDelimeter() << m_currentBar->closeTradePrice
 			<< GetCsvDelimeter() << m_currentBar->tradingVolume
 			<< std::endl;
 	}
@@ -454,33 +462,73 @@ public:
 		return AppendStat(
 			time,
 			[&](Bar &bar) {
+			
 				switch (value.type) {
+			
 					default:
 						AssertEq(LEVEL1_TICK_BID_PRICE, value.type);
 						return;
+			
 					case LEVEL1_TICK_BID_PRICE:
+						
+						if (!bar.openBidPrice) {
+							bar.openBidPrice = value.value.bidPrice;
+						}
 						bar.minBidPrice = bar.minBidPrice
 							?	std::min(
 									bar.minBidPrice,
 									value.value.bidPrice)
-							:	value.value.bidPrice;
+							:	bar.openBidPrice;
+						bar.closeBidPrice = value.value.bidPrice;
+						
+						if (!bar.openAskPrice) {
+							AssertEq(0, bar.maxAskPrice);
+							AssertEq(0, bar.closeAskPrice);
+							if (m_size > 0) {
+								bar.openAskPrice = m_bars[m_size - 1].closeAskPrice;
+							}
+							if (!bar.openAskPrice) {
+								bar.openAskPrice = security.GetAskPriceScaled();
+							}
+							bar.maxAskPrice = bar.openAskPrice;
+							bar.closeAskPrice = bar.openAskPrice;
+						} else {
+							AssertNe(0, bar.maxAskPrice);
+							AssertNe(0, bar.closeAskPrice);
+						}
+						
 						break;
+			
 					case LEVEL1_TICK_ASK_PRICE:
+
+						if (!bar.openAskPrice) {
+							bar.openAskPrice = value.value.askPrice;
+						}
 						bar.maxAskPrice = std::max(
 							bar.maxAskPrice,
 							value.value.askPrice);
+						bar.closeAskPrice = value.value.askPrice;
+
+						if (!bar.openBidPrice) {
+							AssertEq(0, bar.minBidPrice);
+							AssertEq(0, bar.closeBidPrice);
+							if (m_size > 0) {
+								bar.openBidPrice = m_bars[m_size - 1].closeBidPrice;
+							}
+							if (!bar.openBidPrice) {
+								bar.openBidPrice = security.GetBidPriceScaled();
+							}
+							bar.minBidPrice = bar.openBidPrice;
+							bar.closeBidPrice = bar.openBidPrice;
+						} else {
+							AssertNe(0, bar.minBidPrice);
+							AssertNe(0, bar.closeBidPrice);
+						}
+
 						break;
+			
 				}
-				if (!bar.minBidPrice) {
-					bar.minBidPrice = m_size > 0
-						?	m_bars[m_size - 1].minBidPrice
-						:	security.GetBidPriceScaled();
-				}
-				if (!bar.maxAskPrice) {
-					bar.maxAskPrice = m_size > 0
-						?	m_bars[m_size - 1].maxAskPrice
-						:	security.GetAskPriceScaled();
-				}
+
 			});
 	}
 
@@ -492,19 +540,19 @@ public:
 		return AppendStat(
 			time,
 			[&](Bar &bar) {
-				if (!bar.openPrice) {
-					AssertEq(0, bar.highPrice);
-					AssertEq(0, bar.lowPrice);
-					AssertEq(0, bar.closePrice);
+				if (!bar.openTradePrice) {
+					AssertEq(0, bar.highTradePrice);
+					AssertEq(0, bar.lowTradePrice);
+					AssertEq(0, bar.closeTradePrice);
 					AssertEq(0, bar.tradingVolume);
 					AssertNe(0, price);
-					bar.openPrice = price;
+					bar.openTradePrice = price;
 				}
-				bar.highPrice = std::max(bar.highPrice, price);
-				bar.lowPrice = bar.lowPrice
-					?	std::min(bar.lowPrice, price)
+				bar.highTradePrice = std::max(bar.highTradePrice, price);
+				bar.lowTradePrice = bar.lowTradePrice
+					?	std::min(bar.lowTradePrice, price)
 					:	price;
-				bar.closePrice = price;
+				bar.closeTradePrice = price;
 				bar.tradingVolume += qty;
 			});
 	}
@@ -596,7 +644,7 @@ boost::shared_ptr<BarService::ScaledPriceStat> BarService::GetOpenPriceStat(
 		const {
 	typedef StatAccumulator<
 			ScaledPriceStat,
-			offsetof(BarService::Bar, BarService::Bar::openPrice)>
+			offsetof(BarService::Bar, BarService::Bar::openTradePrice)>
 		Stat;
 	return m_pimpl->CreateStat<Stat>(numberOfBars);
 }
@@ -606,7 +654,7 @@ boost::shared_ptr<BarService::ScaledPriceStat> BarService::GetClosePriceStat(
 		const {
 	typedef StatAccumulator<
 			ScaledPriceStat,
-			offsetof(BarService::Bar, BarService::Bar::closePrice)>
+			offsetof(BarService::Bar, BarService::Bar::closeTradePrice)>
 		Stat;
 	return m_pimpl->CreateStat<Stat>(numberOfBars);
 }
@@ -616,7 +664,7 @@ boost::shared_ptr<BarService::ScaledPriceStat> BarService::GetHighPriceStat(
 		const {
 	typedef StatAccumulator<
 			ScaledPriceStat,
-			offsetof(BarService::Bar, BarService::Bar::highPrice)>
+			offsetof(BarService::Bar, BarService::Bar::highTradePrice)>
 		Stat;
 	return m_pimpl->CreateStat<Stat>(numberOfBars);
 }
@@ -626,7 +674,7 @@ boost::shared_ptr<BarService::ScaledPriceStat> BarService::GetLowPriceStat(
 		const {
 	typedef StatAccumulator<
 			ScaledPriceStat,
-			offsetof(BarService::Bar, BarService::Bar::lowPrice)>
+			offsetof(BarService::Bar, BarService::Bar::lowTradePrice)>
 		Stat;
 	return m_pimpl->CreateStat<Stat>(numberOfBars);
 }

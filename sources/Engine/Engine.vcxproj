@@ -85,6 +85,9 @@
     <ProjectReference Include="..\Services\Services.vcxproj">
       <Project>{4f025d92-8f15-4a05-97b6-ca680cb090d9}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Version\Version.vcxproj">
+      <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Context.cpp" />
@@ -98,7 +101,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="SubscriberPtrWrapper.cpp" />
-    <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api.h" />
@@ -111,7 +113,9 @@
     <ClInclude Include="Dispatcher.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="SubscriberPtrWrapper.hpp" />
-    <ClInclude Include="Util.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Engine.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

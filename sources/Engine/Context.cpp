@@ -13,7 +13,6 @@
 #include "ContextBootstrap.hpp"
 #include "SubscriptionsManager.hpp"
 #include "Ini.hpp"
-#include "Util.hpp"
 #include "Core/Settings.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradeSystem.hpp"
@@ -56,6 +55,8 @@ public:
 	const IniFile m_conf;
 	Settings m_settings;
 
+	ModuleList m_modulesDlls;
+
 	DllObjectPtr<TradeSystem> m_tradeSystem;
 	DllObjectPtr<MarketDataSource> m_marketDataSource;
 
@@ -90,59 +91,21 @@ class Engine::Context::Implementation::State : private boost::noncopyable {
 
 public:
 
-	explicit State(Context &context, const IniFile &conf)
-			: m_context(context),
-			m_subscriptionsManager(m_context) {
-		
-		try {
-			BootstrapContextState(
-				conf,
-				m_context,
-				m_subscriptionsManager,
-				m_strategies,
-				m_observers,
-				m_services);
-		} catch (const Exception &ex) {
-			m_context.GetLog().Error(
-				"Failed to init engine context: \"%1%\".",
-				ex);
-			throw Exception("Failed to init engine context");
-		}
-		
-		m_context.GetLog().Info(
-			"Loaded %1% securities.",
-			m_context.GetMarketDataSource().GetActiveSecurityCount());
-		m_context.GetLog().Info("Loaded %1% observers.", m_observers.size());
-		m_context.GetLog().Info(
-			"Loaded %1% strategies (%2% instances).",
-			boost::make_tuple(
-				m_strategies.size(),
-				GetModulesCount(m_strategies)));
-		m_context.GetLog().Info(
-			"Loaded %1% services (%2% instances).",
-			boost::make_tuple(
-				m_services.size(),
-				GetModulesCount(m_services)));
+	Context &context;
 
-		m_subscriptionsManager.Activate();
-	
-	}
+	SubscriptionsManager subscriptionsManager;
+
+	Strategies strategies;
+	Observers observers;
+	Services services;
 
 public:
 
-	Security * FindSecurity(const Symbol &symbol) {
-		return m_context.GetMarketDataSource().FindSecurity(symbol);
+	explicit State(Context &context)
+			: context(context),
+			subscriptionsManager(context) {
+		//...//	
 	}
-
-private:
-
-	Context &m_context;
-
-	SubscriptionsManager m_subscriptionsManager;
-
-	Strategies m_strategies;
-	Observers m_observers;
-	Services m_services;
 
 };
 
@@ -162,30 +125,79 @@ Engine::Context::~Context() {
 }
 
 void Engine::Context::Start() {
+	
 	GetLog().Debug("Starting...");
 	Assert(!m_pimpl->m_state);
-	if (m_pimpl->m_state) {
-		GetLog().Warn("Already started!");
+	Assert(m_pimpl->m_modulesDlls.empty());
+	if (m_pimpl->m_state || !m_pimpl->m_modulesDlls.empty()) {
+		GetLog().Warn("Already was started!");
 		return;
 	}
+	
 	std::unique_ptr<Implementation::State> state(
-		new Implementation::State(*this, m_pimpl->m_conf));
+		new Implementation::State(*this));
+	ModuleList moduleDlls;
 	try {
-		Connect(
-			GetTradeSystem(),
-			IniFileSectionRef(
-				m_pimpl->m_conf,
-				Ini::Sections::tradeSystem));
-		Connect(
-			GetMarketDataSource(),
-			IniFileSectionRef(
-				m_pimpl->m_conf,
-				Ini::Sections::tradeSystem));
+		BootstrapContextState(
+			m_pimpl->m_conf,
+			*this,
+			state->subscriptionsManager,
+			state->strategies,
+			state->observers,
+			state->services,
+			moduleDlls);
 	} catch (const Exception &ex) {
-		GetLog().Error("Failed to make trading connections: \"%1%\".", ex);
-		throw Exception("Failed to make trading connections");
+		GetLog().Error("Failed to init engine context: \"%1%\".", ex);
+		throw Exception("Failed to init engine context");
 	}
+	GetLog().Info(
+		"Loaded %1% securities.",
+		GetMarketDataSource().GetActiveSecurityCount());
+	GetLog().Info("Loaded %1% observers.", state->observers.size());
+	GetLog().Info(
+		"Loaded %1% strategies (%2% instances).",
+		boost::make_tuple(
+			state->strategies.size(),
+			GetModulesCount(state->strategies)));
+	GetLog().Info(
+		"Loaded %1% services (%2% instances).",
+		boost::make_tuple(
+			state->services.size(),
+			GetModulesCount(state->services)));
+	state->subscriptionsManager.Activate();
+
+	try {
+		GetTradeSystem().Connect(
+			IniFileSectionRef(
+				m_pimpl->m_conf,
+				Ini::Sections::tradeSystem));
+	} catch (const Interactor::ConnectError &ex) {
+		boost::format message("Failed to connect to trading system: \"%1%\"");
+		message % ex;
+		throw Interactor::ConnectError(message.str().c_str());
+	} catch (const Exception &ex) {
+		GetLog().Error("Failed to make trading system connection: \"%1%\".", ex);
+		throw Exception("Failed to make trading system");
+	}
+	
+	try {
+		GetMarketDataSource().Connect(
+			IniFileSectionRef(
+				m_pimpl->m_conf,
+				Ini::Sections::marketDataSource));
+	} catch (const Interactor::ConnectError &ex) {
+		boost::format message(
+			"Failed to connect to marker data source: \"%1%\"");
+		message % ex;
+		throw Interactor::ConnectError(message.str().c_str());
+	} catch (const Exception &ex) {
+		GetLog().Error("Failed to make trading system connection: \"%1%\".", ex);
+		throw Exception("Failed to make trading system");
+	}
+
 	m_pimpl->m_state.reset(state.release());
+	moduleDlls.swap(m_pimpl->m_modulesDlls);
+
 }
 
 void Engine::Context::Stop() {
@@ -215,12 +227,12 @@ const Settings & Engine::Context::GetSettings() const {
 
 Security * Engine::Context::FindSecurity(const Symbol &symbol) {
 	Assert(m_pimpl->m_state);
-	return m_pimpl->m_state->FindSecurity(symbol);
+	return m_pimpl->m_state->context.GetMarketDataSource().FindSecurity(symbol);
 }
 
 const Security * Engine::Context::FindSecurity(const Symbol &symbol) const {
 	Assert(m_pimpl->m_state);
-	return m_pimpl->m_state->FindSecurity(symbol);
+	return m_pimpl->m_state->context.GetMarketDataSource().FindSecurity(symbol);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -105,6 +105,11 @@
     <ClInclude Include="UseUnused.hpp" />
     <ClInclude Include="Util.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Version\Version.vcxproj">
+      <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
