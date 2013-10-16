@@ -25,14 +25,24 @@ __all__ = [
 class BarService(trdk.ServiceInfo):
 
     class Bar(object):
+
         time = float  # Bar start time.
         size = int  # Bar size, seconds.
+
         maxAskPrice = int
+        openAskPrice = int
+        closeAskPrice = int
+
         minBidPrice = int
-        openPrice = int
-        closePrice = int
-        highPrice = int
-        lowPrice = int
+        openBidPrice = int
+        closeBidPrice = int
+
+        openTradePrice = int
+        closeTradePrice = int
+
+        highTradePrice = int
+        lowTradePrice = int
+
         tradingVolume = int
 
     class Stat(object):

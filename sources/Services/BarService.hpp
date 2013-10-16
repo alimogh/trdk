@@ -44,12 +44,21 @@ namespace trdk { namespace Services {
  		struct Bar {
 			
 			boost::posix_time::ptime time;
+			
 			trdk::ScaledPrice maxAskPrice;
+			trdk::ScaledPrice openAskPrice;
+			trdk::ScaledPrice closeAskPrice;
+			
 			trdk::ScaledPrice minBidPrice;
-			trdk::ScaledPrice openPrice;
-			trdk::ScaledPrice closePrice;
-			trdk::ScaledPrice highPrice;
-			trdk::ScaledPrice lowPrice;
+			trdk::ScaledPrice openBidPrice;
+			trdk::ScaledPrice closeBidPrice;
+
+			trdk::ScaledPrice openTradePrice;
+			trdk::ScaledPrice closeTradePrice;
+			
+			trdk::ScaledPrice highTradePrice;
+			trdk::ScaledPrice lowTradePrice;
+			
 			trdk::Qty tradingVolume;
 
 			Bar();
