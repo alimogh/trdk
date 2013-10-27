@@ -223,6 +223,14 @@ namespace {
 		numberOfModuleTypes
 	};
 
+	template<typename ModuleTrait>
+	std::string BuildDefaultFactoryName(const std::string &tag) {
+		return
+			Ini::DefaultValues::Factories::factoryNameStart
+			+ tag
+			+ ModuleTrait::GetName(true);
+	}
+
 	template<typename Module>
 	struct ModuleTrait {
 		//...//
@@ -242,8 +250,8 @@ namespace {
 		static const char * GetName(bool capital = false) {
 			return capital ? "Strategy" : "strategy";
 		}
-		static const std::string & GetDefaultFactory() {
-			return Ini::DefaultValues::Factories::strategy;
+		static std::string GetDefaultFactory(const std::string &tag) {
+			return BuildDefaultFactoryName<ModuleTrait>(tag);
 		}
 		static std::string GetDefaultModule() {
 			return std::string();
@@ -264,8 +272,8 @@ namespace {
 		static const char * GetName(bool capital = false) {
 			return capital ? "Service" : "service";
 		}
-		static const std::string & GetDefaultFactory() {
-			return Ini::DefaultValues::Factories::service;
+		static std::string GetDefaultFactory(const std::string &tag) {
+			return BuildDefaultFactoryName<ModuleTrait>(tag);
 		}
 		static const std::string & GetDefaultModule() {
 			return Ini::DefaultValues::Modules::service;
@@ -286,8 +294,8 @@ namespace {
 		static const char * GetName(bool capital = false) {
 			return capital ? "Observer" : "observer";
 		}
-		static const std::string & GetDefaultFactory() {
-			return Ini::DefaultValues::Factories::observer;
+		static std::string GetDefaultFactory(const std::string &tag) {
+			return BuildDefaultFactoryName<ModuleTrait>(tag);
 		}
 		static std::string GetDefaultModule() {
 			return std::string();
@@ -368,10 +376,9 @@ namespace {
 		boost::shared_ptr<IniFileSectionRef> conf;
 		boost::shared_ptr<Lib::Dll> dll;
 		typename ModuleTrait<Module>::Factory *factory;
-		std::map<
-				std::set<Symbol>,
-				DllObjectPtr<Module>>
-			symbolInstances;
+		//! Instances which have symbol sets.
+		std::map<std::set<Symbol>, DllObjectPtr<Module>> symbolInstances;
+		//! Instances that are created without symbols.
 		std::list<DllObjectPtr<Module>> standaloneInstances;
 	};
 
@@ -596,19 +603,8 @@ private:
 		const std::set<Symbol> symbolInstances
 			= GetSymbolInstances(Trait(), tag, *module.conf);
 		if (!symbolInstances.empty()) {
-			if (conf.ReadBoolKey(Ini::Keys::isStandalone, false)) {
-				m_context.GetLog().Error(
-					"Setting %1% provide instance list, but setting %2% sets"
-						" %3% as \"standalone\".",
-					boost::make_tuple(
-						boost::cref(Ini::Keys::instances),
-						boost::cref(Ini::Keys::isStandalone),
-						boost::cref(Trait::GetName())));
-				throw Exception("Settings conflict");
-			}
 			foreach (const auto &symbol, symbolInstances) {
-				boost::shared_ptr<Module> instance
-					= CreateModuleInstance(tag, symbol, module);
+				CreateModuleInstance(tag, symbol, module);
 			}
 		} else {
 			CreateStandaloneModuleInstance(tag, module);
@@ -647,6 +643,7 @@ private:
 		if (!symbols.empty()) {
 			std::list<std::string> securities;
 			foreach (auto symbol, symbols) {
+				Assert(!IsMagicSymbolCurrentSecurity(symbol));
 				auto &security = LoadSecurity(symbol);
 				try {
 					instance->RegisterSource(security);
@@ -701,31 +698,19 @@ private:
 		static_assert(
 			Trait::Type != MODULE_TYPE_SERVICE,
 			"Wrong CreateStandaloneModuleInstance method choose.");
-		if (module.conf->ReadBoolKey(Ini::Keys::isStandalone, false)) {
-			m_context.GetLog().Error(
-				"%1% can not be \"not standalone\" without \"%2%\".",
-				boost::make_tuple(
-					boost::cref(Trait::GetName(true)),
-					Ini::Keys::requires));
-			throw Exception("Settings conflict");
-		}
 		CreateModuleInstance(tag, module);
 	}
 
 	template<>
 	void CreateStandaloneModuleInstance(
 				const std::string &tag,
-				ModuleDll<Service> &module) {
+				ModuleDll<Service> &) {
 		typedef ModuleTrait<Service> Trait;
-		if (module.conf->ReadBoolKey(Ini::Keys::isStandalone)) {
-			CreateModuleInstance(tag, module);
-		} else {
-			m_context.GetLog().Debug(
-				"%1% \"%2%\" instantiation delayed.",
-				boost::make_tuple(
-					boost::cref(Trait::GetName(true)),
-					boost::cref(tag)));
-		}
+		m_context.GetLog().Debug(
+			"%1% \"%2%\" instantiation delayed.",
+			boost::make_tuple(
+				boost::cref(Trait::GetName(true)),
+				boost::cref(tag)));
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -1012,7 +997,15 @@ private:
 			tag,
 			uniqueInstance,
 			[&](TagRequirementsList &requirements) {
-				auto &module = requirements.requiredModules[supplierRequest.tag];
+				auto &module
+					= requirements.requiredModules[supplierRequest.tag];
+#				ifdef DEV_VER
+					if (supplierRequest.symbols.size() > 1) {
+ 						foreach (const auto &symbol, supplierRequest.symbols) {
+ 							Assert(!IsMagicSymbolCurrentSecurity(symbol));
+ 						}
+					}
+#				endif
 				module.insert(supplierRequest.symbols);
 			},
 			list);
@@ -1079,18 +1072,18 @@ private:
 			}
 #			ifdef DEV_VER
 				if (!isUniqueInstanceStandalone) {
-					bool isExist = false;
 					foreach (auto &instance, module.symbolInstances) {
 						if (&*instance.second == uniqueInstance) {
-							isExist = true;
-							break;
+							AssertFail(
+								"Unique instance can't be in symbol and"
+									" standalone lists at the same time.");
 						}
 					}
-					Assert(isExist);
 				}
 #			endif
 		}
 
+		// Subscribing to system services:
 		foreach (
 				const auto &requirement,
 				requirements.requiredSystemServices) {
@@ -1101,25 +1094,23 @@ private:
 				"System service list changed.");
 			switch (requirement.first) {
 				case SYSTEM_SERVICE_LEVEL1_UPDATES:
-					subscribe
-						= &SubscriptionsManager::SubscribeToLevel1Updates;
+					subscribe = &SubscriptionsManager::SubscribeToLevel1Updates;
 					break;
 				case SYSTEM_SERVICE_LEVEL1_TICKS:
-					subscribe
-						= &SubscriptionsManager::SubscribeToLevel1Ticks;
+					subscribe = &SubscriptionsManager::SubscribeToLevel1Ticks;
 					break;
 				case SYSTEM_SERVICE_TRADES:
-					subscribe
-						= &SubscriptionsManager::SubscribeToLevel1Ticks;
+					subscribe = &SubscriptionsManager::SubscribeToLevel1Ticks;
 					break;
 				case SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES:
-					subscribe
-						= &SubscriptionsManager::SubscribeToBrokerPositionUpdates;
+					subscribe = &SubscriptionsManager
+						::SubscribeToBrokerPositionUpdates;
 					break;
 				default:
 					AssertEq(SYSTEM_SERVICE_LEVEL1_UPDATES, requirement.first);
 					break;
 			}
+			Assert(subscribe);
 			if (!subscribe) {
 				continue;
 			}
@@ -1156,7 +1147,9 @@ private:
 				}
 			}
 		}
+		// Subscription to system services completed.
 		
+		// Creating required modules and subscribing to it:
 		foreach (const auto &requirement, requirements.requiredModules) {
 			const auto &requirementTag = requirement.first;
 			const auto requredModulePos = m_services.find(requirementTag);
@@ -1168,50 +1161,84 @@ private:
 			}
  			ModuleDll<Service> &requredModule = requredModulePos->second;
  			foreach (const std::set<Symbol> &symbols, requirement.second) {
-				std::list<std::string> symbolsStr;
-				foreach (const Symbol &symbol, symbols) {
-					symbolsStr.push_back(symbol.GetAsString());
-				}
-				const std::string symbolsStrList
-					= boost::join(symbolsStr, ", ");
- 				const auto requredServicePos
- 					= requredModule.symbolInstances.find(symbols);
-				boost::shared_ptr<Service> requredService;
- 				if (requredServicePos != requredModule.symbolInstances.end()) {
-					requredService = requredServicePos->second.GetObjPtr();
+
+				const auto createBySymbolSet = [&](
+							const std::set<Symbol> &symbols,
+							std::string &symbolsStrList)
+						-> boost::shared_ptr<Service> {
+					std::list<std::string> symbolsStr;
+					foreach (const Symbol &symbol, symbols) {
+						Assert(!IsMagicSymbolCurrentSecurity(symbol));
+						symbolsStr.push_back(symbol.GetAsString());
+					}
+					std::string symbolsStrListTmp
+						= boost::join(symbolsStr, ", ");
+ 					const auto requredServicePos
+ 						= requredModule.symbolInstances.find(symbols);
+					boost::shared_ptr<Service> result;
+ 					if (requredServicePos != requredModule.symbolInstances.end()) {
+						result = requredServicePos->second.GetObjPtr();
+					} else {
+						result = CreateModuleInstance(
+							requirementTag,
+							symbols,
+							requredModule);
+						Assert(
+							requredModule.symbolInstances.find(symbols)
+							!= requredModule.symbolInstances.end());
+ 					}
+					symbolsStrListTmp.swap(symbolsStrList);
+					return result;
+				};
+
+				if (	symbols.size() == 1
+						&& IsMagicSymbolCurrentSecurity(*symbols.begin())) {
+
+					foreach (auto &instance, module.symbolInstances) {
+						std::string symbolsStrList;
+						boost::shared_ptr<Service> requredService
+							= createBySymbolSet(instance.first, symbolsStrList);
+						requredService->RegisterSubscriber(*instance.second);
+						instance.second->GetLog().Info(
+							"Subscribed to \"%1%\" with security(ies) \"%2%\".",
+							boost::make_tuple(
+								boost::cref(*requredService),
+								boost::cref(symbolsStrList)));
+					}
+
 				} else {
-					requredService = CreateModuleInstance(
-						requirementTag,
-						symbols,
-						requredModule);
-					Assert(
-						requredModule.symbolInstances.find(symbols)
-						!= requredModule.symbolInstances.end());
- 				}
-				foreach (auto &instance, module.standaloneInstances) {
-					requredService->RegisterSubscriber(*instance);
-					instance->GetLog().Info(
-						"Subscribed to \"%1%\" with security(ies) \"%2%\".",
-						boost::make_tuple(
-							boost::cref(*requredService),
-							boost::cref(symbolsStrList)));
-				}
-				foreach (auto &instance, module.symbolInstances) {
-					requredService->RegisterSubscriber(*instance.second);
-					instance.second->GetLog().Info(
-						"Subscribed to \"%1%\" with security(ies) \"%2%\".",
-						boost::make_tuple(
-							boost::cref(*requredService),
-							boost::cref(symbolsStrList)));
+
+					std::string symbolsStrList;
+					boost::shared_ptr<Service> requredService
+						= createBySymbolSet(symbols, symbolsStrList);
+
+					foreach (auto &instance, module.standaloneInstances) {
+						requredService->RegisterSubscriber(*instance);
+						instance->GetLog().Info(
+							"Subscribed to \"%1%\" with security(ies) \"%2%\".",
+							boost::make_tuple(
+								boost::cref(*requredService),
+								boost::cref(symbolsStrList)));
+					}
+					foreach (auto &instance, module.symbolInstances) {
+						requredService->RegisterSubscriber(*instance.second);
+						instance.second->GetLog().Info(
+							"Subscribed to \"%1%\" with security(ies) \"%2%\".",
+							boost::make_tuple(
+								boost::cref(*requredService),
+								boost::cref(symbolsStrList)));
+					}
+
 				}
 				
  			}
 		}
+		// Work with modules completed.
 
 	}
 
 	template<typename Module, typename Pred>
-	void SubscribeForEachSubscribedSecurity(
+	void ForEachSubscribedSecurity(
 				Module &module,
 				const Pred &pred) {
 		const auto begin = module.GetSecurities().GetBegin();
@@ -1221,7 +1248,7 @@ private:
 		}
 	}
 	template<typename Pred>
-	void SubscribeForEachSubscribedSecurity(
+	void ForEachSubscribedSecurity(
 				Service &module,
 				const Pred &pred) {
 		const auto begin = module.GetSecurities().GetBegin();
@@ -1242,7 +1269,7 @@ private:
 			(m_subscriptionsManager.*subscribe)(*security, instance);
 			instance.RegisterSource(*security);
 		} else {
-			SubscribeForEachSubscribedSecurity(
+			ForEachSubscribedSecurity(
 				instance,
 				[&](Security &subscribedSecurity) {
 					(m_subscriptionsManager.*subscribe)(
@@ -1263,7 +1290,7 @@ private:
 				instance);
 			instance.RegisterSource(*security);
 		} else {
-			SubscribeForEachSubscribedSecurity(
+			ForEachSubscribedSecurity(
 				instance,
 				[&](Security &subscribedSecurity) {
 					(m_subscriptionsManager.*subscribe)(
@@ -1386,20 +1413,42 @@ private:
 
 		result.dll.reset(new Dll(modulePath, true));
 
-		const std::string factoryName = result.conf->ReadKey(
-			Ini::Keys::factory,
-			Trait::GetDefaultFactory());
+		const bool isFactoreNameKeyExist
+			= result.conf->IsKeyExist(Ini::Keys::factory);
+		const std::string factoryName = isFactoreNameKeyExist
+			?	result.conf->ReadKey(Ini::Keys::factory)
+			:	Trait::GetDefaultFactory(tag);
 		try {
 			result.factory
 				= result.dll->GetFunction<Trait::Factory>(factoryName);
 		} catch (const Dll::DllFuncException &) {
-			if (	boost::istarts_with(
-						factoryName,
-						Ini::DefaultValues::Factories::factoryNameStart)) {
-				throw;
+			const std::string unifiedName
+				= Ini::DefaultValues::Factories::factoryNameStart
+					+ Trait::GetName(true);
+			if (!isFactoreNameKeyExist) {
+				result.factory = result.dll->GetFunction<Trait::Factory>(
+					unifiedName);
+			} else {
+				if (
+						boost::istarts_with(
+							factoryName,
+							Ini::DefaultValues::Factories::factoryNameStart)) {
+					throw;
+				}
+				std::string appendedName
+					= Ini::DefaultValues::Factories::factoryNameStart
+					+ factoryName;
+				if (!boost::iends_with(factoryName, Trait::GetName())) {
+					appendedName += Trait::GetName();
+				}
+				try {
+					result.factory
+						= result.dll->GetFunction<Trait::Factory>(appendedName);
+				} catch (const Dll::DllFuncException &) {
+					result.factory
+						= result.dll->GetFunction<Trait::Factory>(unifiedName);
+				}
 			}
-			result.factory = result.dll->GetFunction<Trait::Factory>(
-				Ini::DefaultValues::Factories::factoryNameStart + factoryName);
 		}
 
 		return result;

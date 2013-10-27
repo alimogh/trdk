@@ -25,7 +25,6 @@ namespace trdk { namespace Engine { namespace Ini {
 		extern const std::string factory;
 		extern const std::string instances;
 		extern const std::string requires;
-		extern const std::string isStandalone;
 	}
 
 	namespace Constants {
@@ -42,9 +41,6 @@ namespace trdk { namespace Engine { namespace Ini {
 			extern const std::string factoryNameStart;
 			extern const std::string tradeSystem;
 			extern const std::string marketDataSource;
-			extern const std::string strategy;
-			extern const std::string service;
-			extern const std::string observer;
 		}
 		namespace Modules {
 			extern const std::string service;

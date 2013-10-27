@@ -28,7 +28,6 @@ const std::string Keys::module = "module";
 const std::string Keys::factory = "factory";
 const std::string Keys::instances = "instances";
 const std::string Keys::requires = "requires";
-const std::string Keys::isStandalone = "standalone";
 
 const std::string Constants::Services::level1Updates = "Level 1 Updates";
 const std::string Constants::Services::level1Ticks = "Level 1 Ticks";
@@ -41,11 +40,5 @@ const std::string DefaultValues::Factories::tradeSystem
 	= DefaultValues::Factories::factoryNameStart + "TradeSystem";
 const std::string DefaultValues::Factories::marketDataSource
 	= DefaultValues::Factories::factoryNameStart + "MarketDataSource";
-const std::string DefaultValues::Factories::strategy
-	= DefaultValues::Factories::factoryNameStart + "Strategy";
-const std::string DefaultValues::Factories::service
-	= DefaultValues::Factories::factoryNameStart + "Service";
-const std::string DefaultValues::Factories::observer
-	= DefaultValues::Factories::factoryNameStart + "Observer";
 
 const std::string DefaultValues::Modules::service = "Services";
