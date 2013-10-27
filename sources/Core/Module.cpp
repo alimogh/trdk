@@ -153,9 +153,15 @@ void Module::SecurityList::ConstIterator::advance(difference_type n) {
 
 //////////////////////////////////////////////////////////////////////////
 
+namespace {
+	volatile Module::InstanceId nextFreeInstanceId = 1;
+}
+
 class Module::Implementation : private boost::noncopyable {
 
 public:
+
+	const InstanceId m_instanceId;
 
 	Mutex m_mutex;
 
@@ -172,7 +178,8 @@ public:
 				const std::string &typeName,
 				const std::string &name,
 				const std::string &tag)
-			: m_context(context),
+			: m_instanceId(Interlocking::Increment(nextFreeInstanceId)),
+			m_context(context),
 			m_typeName(typeName),
 			m_name(name),
 			m_tag(tag) {
@@ -192,6 +199,10 @@ Module::Module(
 
 Module::~Module() {
 	delete m_pimpl;
+}
+
+Module::InstanceId Module::GetInstanceId() const {
+	return m_pimpl->m_instanceId;
 }
 
 Module::Mutex & Module::GetMutex() const {
@@ -298,7 +309,8 @@ std::ostream & std::operator <<(
 		oss
 			<< module.GetTypeName()
 			<< '.' << module.GetName()
-			<< '.' << module.GetTag();
+			<< '.' << module.GetTag()
+			<< '.' << module.GetInstanceId();
 	} catch (...) {
 		AssertFailNoException();
 	}

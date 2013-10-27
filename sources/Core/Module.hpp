@@ -27,6 +27,8 @@ namespace trdk {
 
 		class TRDK_CORE_API SecurityList;
 
+		typedef uintmax_t InstanceId;
+
 	protected:
 
 		typedef boost::mutex Mutex;
@@ -42,6 +44,8 @@ namespace trdk {
 		virtual ~Module();
 
 	public:
+
+		trdk::Module::InstanceId GetInstanceId() const;
 
 		trdk::Context & GetContext();
 		const trdk::Context & GetContext() const;
