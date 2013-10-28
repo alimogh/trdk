@@ -13,6 +13,7 @@
 #include "ModuleExport.hpp"
 #include "ModuleSecurityListExport.hpp"
 #include "Services/BarService.hpp"
+#include "Services/MovingAverageService.hpp"
 #include "PythonToCoreTransit.hpp"
 
 //////////////////////////////////////////////////////////////////////////
@@ -174,17 +175,59 @@ namespace trdk { namespace PyApi {
 
 	public:
 
-		boost::python::str GetName() const;
 		size_t GetBarSize() const;
 		size_t GetSize() const;
 		bool IsEmpty() const;
-		BarExport GetBarByIndex(size_t index) const;
+		BarExport GetBar(size_t index) const;
 		BarExport GetBarByReversedIndex(size_t index) const;
 		PriceStatExport GetOpenPriceStat(size_t numberOfBars) const;
 		PriceStatExport GetClosePriceStat(size_t numberOfBars) const;
 		PriceStatExport GetHighPriceStat(size_t numberOfBars) const;
 		PriceStatExport GetLowPriceStat(size_t numberOfBars) const;
 		QtyStatExport GetTradingVolumeStat(size_t numberOfBars) const;
+
+	protected:
+
+		const Implementation & GetService() const;
+
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+
+} }
+
+//////////////////////////////////////////////////////////////////////////
+
+namespace trdk { namespace PyApi {
+
+	//////////////////////////////////////////////////////////////////////////
+	
+	class MovingAverageServiceExport : public ServiceInfoExport {
+
+	public:
+
+		typedef trdk::Services::MovingAverageService Implementation;
+
+	public:
+
+		//! C-tor.
+		/*  @param serviceRef	Reference to service, must be alive all time
+		 *						while export object exists.
+		 */
+		explicit MovingAverageServiceExport(const Implementation &serviceRef);
+
+	public:
+
+		static void ExportClass(const char *className);
+
+	public:
+
+		size_t GetSize() const;
+		bool IsEmpty() const;
+
+		ScaledPrice GetValue(size_t index) const;
+		ScaledPrice GetValueByReversedIndex(size_t index) const;
+		ScaledPrice GetLastValue() const;
 
 	protected:
 

@@ -20,24 +20,16 @@ namespace trdk { namespace Services {
 
 	public:
 
-		typedef trdk::Service Base;
-
 		//! General service error.
 		class Error : public trdk::Lib::Exception {
 		public:
-			explicit Error(const char *what) throw()
-					:  Exception(what) {
-				//...//
-			}
+			explicit Error(const char *) throw();
 		};
 
 		//! Throws when client code requests bar which does not exist.
 		class BarDoesNotExistError : public Error {
 		public:
-			explicit BarDoesNotExistError(const char *what) throw()
-					:  Error(what) {
-				//...//
-			}
+			explicit BarDoesNotExistError(const char *) throw();
 		};
 
  		//! Bar data.
@@ -121,7 +113,7 @@ namespace trdk { namespace Services {
 	public:
 
 		//! Each bar size.
- 		boost::posix_time::time_duration GetBarSize() const;
+ 		const boost::posix_time::time_duration & GetBarSize() const;
 
 	public:
 

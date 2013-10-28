@@ -13,6 +13,6 @@
 namespace trdk { namespace Services {
 
 	class BarService;
-	class BarStatService;
+	class MovingAverageService;
 
 } }

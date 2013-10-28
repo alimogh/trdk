@@ -14,8 +14,8 @@
 #include "Core/Settings.hpp"
 
 using namespace trdk;
-using namespace trdk::Services;
 using namespace trdk::Lib;
+using namespace trdk::Services;
 
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
@@ -105,6 +105,20 @@ namespace {
 
 	};
 
+	const char csvDelimeter = ',';
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+BarService::Error::Error(const char *what) throw()
+		: Exception(what) {
+	//...//
+}
+
+BarService::BarDoesNotExistError::BarDoesNotExistError(const char *what) throw()
+		: Error(what) {
+	//...//
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -162,6 +176,7 @@ public:
 		UNITS_MINUTES,
 		UNITS_HOURS,
 		UNITS_DAYS,
+		UNITS_WEEKS,
 		numberOfUnits
 	};
 
@@ -182,7 +197,8 @@ public:
 	Units m_units;
 	
 	std::string m_barSizeStr;
-	long m_barSize;
+	long m_barSizeUnits;
+	pt::time_duration m_barSize;
 
 	Bars m_bars;
 	Bar *m_currentBar;
@@ -216,8 +232,9 @@ public:
 			m_unitsStr = what.str(2);
 		}
 
-		m_barSize = boost::lexical_cast<decltype(m_barSize)>(m_barSizeStr);
-		if (m_barSize <= 0) {
+		m_barSizeUnits
+			= boost::lexical_cast<decltype(m_barSizeUnits)>(m_barSizeStr);
+		if (m_barSizeUnits <= 0) {
 			m_service.GetLog().Error(
 				"Wrong size specified: \"%1%\"."
 					" Size can't be zero or less.",
@@ -225,66 +242,67 @@ public:
 			throw Error("Wrong bar size settings");
 		}
 
+		static_assert(numberOfUnits == 5, "Units list changed.");
 		if (boost::iequals(m_unitsStr, "seconds")) {
-			if (60 % m_barSize) {
+			if (60 % m_barSizeUnits) {
 				m_service.GetLog().Error(
 					"Wrong size specified: \"%1%\"."
-						" Should be a multiple of 1 minute.",
+						" Must be a multiple of 1 minute.",
 					m_barSizeStr);
 				throw Error("Wrong bar size settings");
 			}
 			m_units = UNITS_SECONDS;
+			m_barSize = boost::posix_time::seconds(m_barSizeUnits);
 		} else if (boost::iequals(m_unitsStr, "minutes")) {
-			if (60 % m_barSize) {
+			if (60 % m_barSizeUnits) {
 				m_service.GetLog().Error(
 					"Wrong size specified: \"%1%\"."
-						" Should be a multiple of 1 hour.",
+						" Must be a multiple of 1 hour.",
 					m_barSizeStr);
 				throw Error("Wrong bar size settings");
 			}
 			m_units = UNITS_MINUTES;
+			m_barSize = boost::posix_time::minutes(m_barSizeUnits);
 		} else if (boost::iequals(m_unitsStr, "hours")) {
 			m_units = UNITS_HOURS;
+			m_barSize = boost::posix_time::hours(m_barSizeUnits);
 		} else if (boost::iequals(m_unitsStr, "days")) {
 			m_units = UNITS_DAYS;
+			m_barSize = boost::posix_time::hours(m_barSizeUnits * 24);
 			throw Error("Days units doesn't yet implemented");
+		} else if (boost::iequals(m_unitsStr, "weeks")) {
+			m_units = UNITS_WEEKS;
+			m_barSize = boost::posix_time::hours((m_barSizeUnits * 24) * 7);
+			throw Error("Weeks units doesn't yet implemented");
 		} else {
 			m_service.GetLog().Error(
 				"Wrong size specified: \"%1%\". Unknown units."
-					"Supported: seconds, minutes, hours and days.",
+					"Supported: seconds, minutes, hours, days and weeks.",
 				m_unitsStr);
 			throw Error("Wrong bar size settings");
 		}
 
-		ReopenLog(configuration, false);
+		ReopenLog(configuration);
 
-		m_service.GetLog().Info(
-			"Stated with size %1% %2%.",
-			boost::make_tuple(
-				boost::cref(m_barSize),
-				boost::cref(m_unitsStr)));
+		m_service.GetLog().Info("Stated with size \"%1%\".", m_barSize);
 
 	}
 
-	char GetCsvDelimeter() const {
-		return ',';
-	}
+	void ReopenLog(const IniFileSectionRef &configuration) {
 
-	void ReopenLog(const IniFileSectionRef &configuration, bool isCritical) {
-
-		const std::string logType = configuration.ReadKey("log");
+		const std::string logType = configuration.ReadKey("log", "none");
 		if (boost::iequals(logType, "none")) {
-			m_barsLog.reset();
+			if (m_barsLog) {
+				m_barsLog.reset();
+				m_service.GetLog().Info("Logging disabled.");
+			}
 			return;
 		} else if (!boost::iequals(logType, "csv")) {
 			m_service.GetLog().Error(
 				"Wrong log type settings: \"%1%\". Unknown type."
 					" Supported: none and CSV.",
 				logType);
-			if (!isCritical) {
-				throw Error("Wrong bars log type");
-			}
-			return;
+			throw Error("Wrong bars log type");
 		}
 
 		std::unique_ptr<BarsLog> log(new BarsLog);
@@ -310,51 +328,31 @@ public:
 			std::ios::out | std::ios::ate | std::ios::app);
 		if (!log->file) {
 			m_service.GetLog().Error("Failed to open log file %1%", log->path);
-			if (!isCritical) {
-				throw Error("Failed to open log file");
-			}
-			return;
+			throw Error("Failed to open log file");
 		}
 		if (isNew) {
 			log->file
 				<< "Date"
-				<< GetCsvDelimeter() << "Time"
-				<< GetCsvDelimeter() << "Open"
-				<< GetCsvDelimeter() << "High"
-				<< GetCsvDelimeter() << "Low"
-				<< GetCsvDelimeter() << "Close"
-				<< GetCsvDelimeter() << "Volume"
+				<< csvDelimeter << "Time"
+				<< csvDelimeter << "Open"
+				<< csvDelimeter << "High"
+				<< csvDelimeter << "Low"
+				<< csvDelimeter << "Close"
+				<< csvDelimeter << "Volume"
 				<< std::endl;
 		}
 		log->file << std::setfill('0');
 
-		m_service.GetLog().Info("Logging bars into %1%.", log->path);
+		m_service.GetLog().Info("Logging into %1%.", log->path);
 		std::swap(log, m_barsLog);
 
-	}
-
-	pt::time_duration GetBarSize() const {
-		static_assert(numberOfOrderSides, "Units list changed.");
-		switch (m_units) {
-			case UNITS_SECONDS:
-				return boost::posix_time::seconds(m_barSize);
-			case UNITS_MINUTES:
-				return boost::posix_time::minutes(m_barSize);
-			case UNITS_HOURS:
-				return boost::posix_time::hours(m_barSize);
-			case UNITS_DAYS:
-				return boost::posix_time::hours(m_barSize * 24);
-			default:
-				AssertFail("Unknown units type");
-				throw Exception("Unknown bar service units type");
-		}
 	}
 
 	void LogCurrentBar() const {
 		if (!m_barsLog || !m_currentBar) {
 			return;
 		}
-		const auto barStartTime = m_currentBarEnd - GetBarSize();
+		const auto barStartTime = m_currentBarEnd - m_barSize;
 		{
 			const auto date = m_currentBar->time.date();
 			m_barsLog->file
@@ -365,17 +363,17 @@ public:
 		{
 			const auto time = m_currentBar->time.time_of_day();
 			m_barsLog->file
-				<< GetCsvDelimeter()
+				<< csvDelimeter
 				<< std::setw(2) << time.hours()
 				<< std::setw(2) << time.minutes()
 				<< std::setw(2) << time.seconds();
 		}
 		m_barsLog->file
-			<< GetCsvDelimeter() << m_currentBar->openTradePrice
-			<< GetCsvDelimeter() << m_currentBar->highTradePrice
-			<< GetCsvDelimeter() << m_currentBar->lowTradePrice
-			<< GetCsvDelimeter() << m_currentBar->closeTradePrice
-			<< GetCsvDelimeter() << m_currentBar->tradingVolume
+			<< csvDelimeter << m_currentBar->openTradePrice
+			<< csvDelimeter << m_currentBar->highTradePrice
+			<< csvDelimeter << m_currentBar->lowTradePrice
+			<< csvDelimeter << m_currentBar->closeTradePrice
+			<< csvDelimeter << m_currentBar->tradingVolume
 			<< std::endl;
 	}
 
@@ -386,7 +384,7 @@ public:
 			const {
 		AssertNe(pt::not_a_date_time, tradeTime);
 		const auto time = tradeTime.time_of_day();
-		static_assert(numberOfOrderSides, "Units list changed.");
+		static_assert(numberOfUnits == 5, "Units list changed.");
 		switch (m_units) {
 			case UNITS_SECONDS:
 				endTime
@@ -394,30 +392,36 @@ public:
 					+ pt::hours(time.hours())
 					+ pt::minutes(time.minutes())
 					+ pt::seconds(
-						((time.seconds() / m_barSize) + 1) * m_barSize);
-				startTime = endTime - pt::seconds(m_barSize);
+						((time.seconds() / m_barSizeUnits) + 1)
+							* m_barSizeUnits);
+				startTime = endTime - pt::seconds(m_barSizeUnits);
 				break;
 			case UNITS_MINUTES:
 				endTime
 					= pt::ptime(tradeTime.date())
 					+ pt::hours(time.hours())
 					+ pt::minutes(
-						((time.minutes() / m_barSize) + 1) * m_barSize);
-				startTime = endTime - pt::minutes(m_barSize);
+						((time.minutes() / m_barSizeUnits) + 1)
+							* m_barSizeUnits);
+				startTime = endTime - pt::minutes(m_barSizeUnits);
 				break;
 			case UNITS_HOURS:
 				endTime
 					= pt::ptime(tradeTime.date())
 					+ pt::hours(
-						((time.hours() / m_barSize) + 1) * m_barSize);
-				startTime = endTime - pt::hours(m_barSize);
+						((time.hours() / m_barSizeUnits) + 1)
+							* m_barSizeUnits);
+				startTime = endTime - pt::hours(m_barSizeUnits);
 				break;
 			case UNITS_DAYS:
 				//! @todo Implement days bar service
 				throw Error("Days units doesn't yet implemented");
+			case UNITS_WEEKS:
+				//! @todo Implement days bar service
+				throw Error("Weeks units doesn't yet implemented");
 			default:
 				AssertFail("Unknown units type");
-				throw Exception("Unknown bar service units type");
+				throw Error("Unknown bar service units type");
 		}
 	}
 
@@ -570,7 +574,7 @@ BarService::BarService(
 			Context &context,
 			const std::string &tag,
 			const IniFileSectionRef &configuration)
-		: Service(context, "BarService", tag) {
+		: Service(context, "BarsService", tag) {
 	m_pimpl = new Implementation(*this, configuration);
 }
 
@@ -578,8 +582,7 @@ BarService::~BarService() {
 	delete m_pimpl;
 }
 
-pt::ptime BarService::OnSecurityStart(
-			const Security &) {
+pt::ptime BarService::OnSecurityStart(const Security &) {
 	return boost::get_system_time() - GetBarSize();
 }
 
@@ -599,19 +602,21 @@ bool BarService::OnNewTrade(
 	return m_pimpl->OnNewTrade(security, time, price, qty);
 }
 
-pt::time_duration BarService::GetBarSize() const {
-	return m_pimpl->GetBarSize();
+const pt::time_duration & BarService::GetBarSize() const {
+	return m_pimpl->m_barSize;
 }
 
-void BarService::UpdateAlogImplSettings(const IniFileSectionRef &configuration) {
-	m_pimpl->ReopenLog(configuration, true);
+void BarService::UpdateAlogImplSettings(
+			const IniFileSectionRef &configuration) {
+	m_pimpl->ReopenLog(configuration);
 }
 
 const BarService::Bar & BarService::GetBar(size_t index) const {
-	if (IsEmpty()) {
-		throw BarDoesNotExistError("BarService is empty");
-	} else if (index >= GetSize()) {
-		throw BarDoesNotExistError("Index is out of range of BarService");
+	if (index >= GetSize()) {
+		throw BarDoesNotExistError(
+			IsEmpty()
+				?	"BarService is empty"
+				:	"Index is out of range of BarService");
 	}
 	const Lock lock(GetMutex());
 	const auto pos = m_pimpl->m_bars.find(index);
@@ -619,11 +624,14 @@ const BarService::Bar & BarService::GetBar(size_t index) const {
 	return pos->second;
 }
 
-const BarService::Bar & BarService::GetBarByReversedIndex(size_t index) const {
-	if (IsEmpty()) {
-		throw BarDoesNotExistError("BarService is empty");
-	} else if (index >= GetSize()) {
-		throw BarDoesNotExistError("Index is out of range of BarService");
+const BarService::Bar & BarService::GetBarByReversedIndex(
+			size_t index)
+		const {
+	if (index >= GetSize()) {
+		throw BarDoesNotExistError(
+			IsEmpty()
+				?	"BarService is empty"
+				:	"Index is out of range of BarService");
 	}
 	const Lock lock(GetMutex());
 	const auto pos = m_pimpl->m_bars.find(m_pimpl->m_size - index - 1);
@@ -692,7 +700,7 @@ boost::shared_ptr<BarService::QtyStat> BarService::GetTradingVolumeStat(
 //////////////////////////////////////////////////////////////////////////
 
 #ifdef BOOST_WINDOWS
-	boost::shared_ptr<trdk::Service> CreateBarService(
+	boost::shared_ptr<trdk::Service> CreateBarsService(
 				Context &context,
 				const std::string &tag,
 				const IniFileSectionRef &configuration) {
@@ -700,7 +708,7 @@ boost::shared_ptr<BarService::QtyStat> BarService::GetTradingVolumeStat(
 			new BarService(context, tag, configuration));
 	}
 #else
-	extern "C" boost::shared_ptr<trdk::Service> CreateBarService(
+	extern "C" boost::shared_ptr<trdk::Service> CreateBarsService(
 				Context &context,
 				const std::string &tag,
 				const IniFileSectionRef &configuration) {

@@ -17,7 +17,8 @@ import trdk
 ###############################################################################
 
 __all__ = [
-    "BarService"]
+    "BarService",
+    "MovingAverageService"]
 
 ###############################################################################
 
@@ -60,7 +61,7 @@ class BarService(trdk.ServiceInfo):
     size = int  # Number of bars.
     isEmpty = bool
 
-    def getBarByIndex(self, index):
+    def getBar(self, index):
         """ Returns bar by index. First bar has index "zero".
         :type index: int
         :rtype: trdk.BarService.Bar
@@ -106,6 +107,30 @@ class BarService(trdk.ServiceInfo):
         """
         :type numberOfBars: int
         :rtype: trdk.BarService.QtyStat
+        """
+        pass
+
+###############################################################################
+
+
+class MovingAverageService(trdk.ServiceInfo):
+
+    size = int  # Number of values.
+    isEmpty = bool
+
+    lastValue = bool  # Last value.
+
+    def getValue(self, index):
+        """ Returns value by index. First value has index "zero".
+        :type index: int
+        :rtype: int
+        """
+        pass
+
+    def getValueByReversedIndex(self, index):
+        """ Returns value by reversed index. Last bar has index "zero".
+        :type index: int
+        :rtype: int
         """
         pass
 

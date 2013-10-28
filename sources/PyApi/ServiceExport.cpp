@@ -55,6 +55,10 @@ py::object PyApi::Export(const trdk::Service &service) {
 	try {
 		if (dynamic_cast<const BarServiceExport::Implementation *>(&service)) {
 			return objectCache.Get<BarServiceExport>(service);
+		} else if (
+				dynamic_cast<const MovingAverageServiceExport::Implementation *>(
+					&service)) {
+			return objectCache.Get<MovingAverageServiceExport>(service);
 		}
 	} catch (const py::error_already_set &) {
 		throw GetPythonClientException("Failed to export service");
@@ -291,7 +295,7 @@ BarServiceExport::QtyStatExport::GetMin()
 	return m_stat->GetMin();
 }
 
-BarServiceExport::BarServiceExport(const BarService &barService)
+BarServiceExport::BarServiceExport(const Implementation &barService)
 		: ServiceInfoExport(barService) {
 	//...//
 }
@@ -309,7 +313,7 @@ void BarServiceExport::ExportClass(const char *className) {
 		.add_property("size", &BarServiceExport::GetSize)
 		.add_property("isEmpty", &BarServiceExport::IsEmpty)
 
-		.def("getBarByIndex", &BarServiceExport::GetBarByIndex)
+		.def("getBar", &BarServiceExport::GetBar)
  		.def("getBarByReversedIndex", &BarServiceExport::GetBarByReversedIndex)
 
  		.def("getOpenPriceStat", &BarServiceExport::GetOpenPriceStat)
@@ -326,10 +330,6 @@ void BarServiceExport::ExportClass(const char *className) {
 
 }
 
-py::str BarServiceExport::GetName() const {
-	return GetService().GetName().c_str();
-}
-		
 size_t BarServiceExport::GetBarSize() const {
 	return GetService().GetBarSize().total_seconds();
 }
@@ -342,7 +342,7 @@ bool BarServiceExport::IsEmpty() const {
 	return GetService().IsEmpty();
 }
  		
-BarServiceExport::BarExport BarServiceExport::GetBarByIndex(
+BarServiceExport::BarExport BarServiceExport::GetBar(
 			size_t index)
 		const {
 	return BarExport(GetService(), GetService().GetBar(index));
@@ -390,3 +390,54 @@ const BarService & BarServiceExport::GetService() const {
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+MovingAverageServiceExport::MovingAverageServiceExport(
+			const Implementation &service)
+		: ServiceInfoExport(service) {
+	//...//
+}
+
+void MovingAverageServiceExport::ExportClass(const char *className) {
+
+	typedef MovingAverageServiceExport Self;
+
+	typedef py::class_<Self, py::bases<ServiceInfoExport>> Export;
+	
+	const py::scope serviceClass = Export(className, py::no_init)
+					
+		.add_property("size", &Self::GetSize)
+		.add_property("isEmpty", &Self::IsEmpty)
+
+		.add_property("lastValue", &Self::GetLastValue)
+		.def("getValue", &Self::GetValue)
+ 		.def("getValueByReversedIndex", &Self::GetValueByReversedIndex);
+
+}
+
+size_t MovingAverageServiceExport::GetSize() const {
+	return GetService().GetSize();
+}
+
+bool MovingAverageServiceExport::IsEmpty() const {
+	return GetService().IsEmpty();
+}
+
+ScaledPrice MovingAverageServiceExport::GetValue(size_t index) const {
+	return GetService().GetValue(index);
+}
+
+ScaledPrice MovingAverageServiceExport::GetValueByReversedIndex(
+			size_t index) const {
+	return GetService().GetValueByReversedIndex(index);
+}
+
+ScaledPrice MovingAverageServiceExport::GetLastValue() const {
+	return GetService().GetLastValue();
+}
+
+const MovingAverageService & MovingAverageServiceExport::GetService() const {
+	return *boost::polymorphic_downcast<const MovingAverageService *>(
+		&ServiceInfoExport::GetService());
+}
+
+////////////////////////////////////////////////////////////////////////////////
