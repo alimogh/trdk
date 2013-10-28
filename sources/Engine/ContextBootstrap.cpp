@@ -1072,13 +1072,14 @@ private:
 			}
 #			ifdef DEV_VER
 				if (!isUniqueInstanceStandalone) {
+					bool isExist = false;
 					foreach (auto &instance, module.symbolInstances) {
 						if (&*instance.second == uniqueInstance) {
-							AssertFail(
-								"Unique instance can't be in symbol and"
-									" standalone lists at the same time.");
+							isExist = true;
+							break;
 						}
 					}
+					Assert(isExist);
 				}
 #			endif
 		}
