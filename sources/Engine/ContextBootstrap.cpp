@@ -494,14 +494,24 @@ public:
 		}
 
 		try {
-			BindWithRequirements(requirementList);
+			BindWithModuleRequirements(requirementList);
 		} catch (...) {
 			trdk::Log::RegisterUnhandledException(
 				__FUNCTION__,
 				__FILE__,
 				__LINE__,
 				false);
-			throw Exception("Failed to load trade system module");
+			throw Exception("Failed to build system modules relationship");
+		}
+		try {
+			BindWithSystemRequirements(requirementList);
+		} catch (...) {
+			trdk::Log::RegisterUnhandledException(
+				__FUNCTION__,
+				__FILE__,
+				__LINE__,
+				false);
+			throw Exception("Failed to build modules relationship");
 		}
 
 		MakeModulesResult(m_strategies, m_strategiesResult);
@@ -1011,7 +1021,7 @@ private:
 			list);
 	}
 
-	void BindWithRequirements(const RequirementsList &requirements) {
+	void BindWithModuleRequirements(const RequirementsList &requirements) {
 		foreach (
 				const TagRequirementsList &moduleRequirements,
 				requirements.get<BySubscriber>()) {
@@ -1020,17 +1030,49 @@ private:
 				"Changed module type list.");
 			switch (moduleRequirements.subscriberType) {
 				case MODULE_TYPE_STRATEGY:
-					BindModuleWithRequirements<Strategy>(
+					BindModuleWithModuleRequirements(
 						moduleRequirements,
 						m_strategies);
 					break;
 				case MODULE_TYPE_SERVICE:
-					BindModuleWithRequirements<Service>(
+					BindModuleWithModuleRequirements(
 						moduleRequirements,
 						m_services);
 					break;
 				case MODULE_TYPE_OBSERVER:
-					BindModuleWithRequirements<Observer>(
+					BindModuleWithModuleRequirements(
+						moduleRequirements,
+						m_observers);
+					break;
+				default:
+					AssertEq(
+						MODULE_TYPE_STRATEGY,
+						moduleRequirements.subscriberType);
+					break;
+			}
+		}
+	}
+	
+	void BindWithSystemRequirements(const RequirementsList &requirements) {
+		foreach (
+				const TagRequirementsList &moduleRequirements,
+				requirements.get<BySubscriber>()) {
+			static_assert(
+				numberOfModuleTypes == 3,
+				"Changed module type list.");
+			switch (moduleRequirements.subscriberType) {
+				case MODULE_TYPE_STRATEGY:
+					BindModuleWithSystemRequirements(
+						moduleRequirements,
+						m_strategies);
+					break;
+				case MODULE_TYPE_SERVICE:
+					BindModuleWithSystemRequirements(
+						moduleRequirements,
+						m_services);
+					break;
+				case MODULE_TYPE_OBSERVER:
+					BindModuleWithSystemRequirements(
 						moduleRequirements,
 						m_observers);
 					break;
@@ -1044,113 +1086,20 @@ private:
 	}
 
 	template<typename Module>
-	void BindModuleWithRequirements(
+	void BindModuleWithModuleRequirements(
 				const TagRequirementsList &requirements,
 				std::map<std::string /*tag*/, ModuleDll<Module>> &modules) {
 
 		typedef ModuleTrait<Module> Trait;
 		AssertEq(Trait::Type, requirements.subscriberType);
 
-		const auto modulePos = modules.find(requirements.subscriberTag);
+		const auto &modulePos = modules.find(requirements.subscriberTag);
 		Assert(modulePos != modules.end());
 		if (modulePos == modules.end()) {
 			return;
 		}
 		ModuleDll<Module> &module = modulePos->second;
 
-		Module *uniqueInstance = nullptr;
-		bool isUniqueInstanceStandalone = false;
-		if (requirements.uniqueInstance) {
-			uniqueInstance = boost::polymorphic_downcast<Module *>(
-				requirements.uniqueInstance);
-			isUniqueInstanceStandalone = false;
-			foreach (auto &instance, module.standaloneInstances) {
-				if (&*instance == uniqueInstance) {
-					isUniqueInstanceStandalone = true;
-					break;
-				}
-			}
-#			ifdef DEV_VER
-				if (!isUniqueInstanceStandalone) {
-					bool isExist = false;
-					foreach (auto &instance, module.symbolInstances) {
-						if (&*instance.second == uniqueInstance) {
-							isExist = true;
-							break;
-						}
-					}
-					Assert(isExist);
-				}
-#			endif
-		}
-
-		// Subscribing to system services:
-		foreach (
-				const auto &requirement,
-				requirements.requiredSystemServices) {
-			void (SubscriptionsManager::*subscribe)(Security &, Module &)
-				= nullptr;
-			static_assert(
-				numberOfSystemServices == 4,
-				"System service list changed.");
-			switch (requirement.first) {
-				case SYSTEM_SERVICE_LEVEL1_UPDATES:
-					subscribe = &SubscriptionsManager::SubscribeToLevel1Updates;
-					break;
-				case SYSTEM_SERVICE_LEVEL1_TICKS:
-					subscribe = &SubscriptionsManager::SubscribeToLevel1Ticks;
-					break;
-				case SYSTEM_SERVICE_TRADES:
-					subscribe = &SubscriptionsManager::SubscribeToLevel1Ticks;
-					break;
-				case SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES:
-					subscribe = &SubscriptionsManager
-						::SubscribeToBrokerPositionUpdates;
-					break;
-				default:
-					AssertEq(SYSTEM_SERVICE_LEVEL1_UPDATES, requirement.first);
-					break;
-			}
-			Assert(subscribe);
-			if (!subscribe) {
-				continue;
-			}
-			foreach (const Symbol &symbol, requirement.second) {
-				Security *security = nullptr;
-				if (!IsMagicSymbolCurrentSecurity(symbol)) {
-					security = &LoadSecurity(symbol);
-				}
-				if (!uniqueInstance) {
-					ForEachModuleInstance(
-						module,
-						[&](Module &instance) {
-							SubscribeModuleStandaloneInstance(
-								instance,
-								subscribe,
-								security);
-						},
-						[&](Module &instance) {
-							SubscribeModuleSymbolInstance(
-								instance,
-								subscribe,
-								security);
-						});
-				} else if (isUniqueInstanceStandalone) {
-					SubscribeModuleStandaloneInstance(
-						*uniqueInstance,
-						subscribe,
-						security);
-				} else {
-					SubscribeModuleSymbolInstance(
-						*uniqueInstance,
-						subscribe,
-						security);
-				}
-			}
-		}
-		// Subscription to system services completed.
-		
-		// Creating required modules and subscribing to it:
 		foreach (const auto &requirement, requirements.requiredModules) {
 			const auto &requirementTag = requirement.first;
 			const auto requredModulePos = m_services.find(requirementTag);
@@ -1177,7 +1126,8 @@ private:
  					const auto requredServicePos
  						= requredModule.symbolInstances.find(symbols);
 					boost::shared_ptr<Service> result;
- 					if (requredServicePos != requredModule.symbolInstances.end()) {
+ 					if (	requredServicePos
+							!= requredModule.symbolInstances.end()) {
 						result = requredServicePos->second.GetObjPtr();
 					} else {
 						result = CreateModuleInstance(
@@ -1234,7 +1184,114 @@ private:
 				
  			}
 		}
-		// Work with modules completed.
+
+	}
+
+	template<typename Module>
+	void BindModuleWithSystemRequirements(
+				const TagRequirementsList &requirements,
+				std::map<std::string /*tag*/, ModuleDll<Module>> &modules) {
+
+		typedef ModuleTrait<Module> Trait;
+		AssertEq(Trait::Type, requirements.subscriberType);
+
+		const auto &modulePos = modules.find(requirements.subscriberTag);
+		Assert(modulePos != modules.end());
+		if (modulePos == modules.end()) {
+			return;
+		}
+		ModuleDll<Module> &module = modulePos->second;
+
+		Module *uniqueInstance = nullptr;
+		bool isUniqueInstanceStandalone = false;
+		if (requirements.uniqueInstance) {
+			uniqueInstance = boost::polymorphic_downcast<Module *>(
+				requirements.uniqueInstance);
+			isUniqueInstanceStandalone = false;
+			foreach (auto &instance, module.standaloneInstances) {
+				if (&*instance == uniqueInstance) {
+					isUniqueInstanceStandalone = true;
+					break;
+				}
+			}
+#			ifdef DEV_VER
+				if (!isUniqueInstanceStandalone) {
+					bool isExist = false;
+					foreach (auto &instance, module.symbolInstances) {
+						if (&*instance.second == uniqueInstance) {
+							isExist = true;
+							break;
+						}
+					}
+					Assert(isExist);
+				}
+#			endif
+		}
+
+		// Subscribing to system services:
+		foreach (
+				const auto &requirement,
+				requirements.requiredSystemServices) {
+			void (SubscriptionsManager::*subscribe)(Security &, Module &)
+				= nullptr;
+			static_assert(
+				numberOfSystemServices == 4,
+				"System service list changed.");
+			switch (requirement.first) {
+				case SYSTEM_SERVICE_LEVEL1_UPDATES:
+					subscribe = &SubscriptionsManager::SubscribeToLevel1Updates;
+					break;
+				case SYSTEM_SERVICE_LEVEL1_TICKS:
+					subscribe = &SubscriptionsManager::SubscribeToLevel1Ticks;
+					break;
+				case SYSTEM_SERVICE_TRADES:
+					subscribe = &SubscriptionsManager::SubscribeToTrades;
+					break;
+				case SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES:
+					subscribe = &SubscriptionsManager
+						::SubscribeToBrokerPositionUpdates;
+					break;
+				default:
+					AssertEq(SYSTEM_SERVICE_LEVEL1_UPDATES, requirement.first);
+					break;
+			}
+			Assert(subscribe);
+			if (!subscribe) {
+				continue;
+			}
+			foreach (const Symbol &symbol, requirement.second) {
+				Security *security = nullptr;
+				if (!IsMagicSymbolCurrentSecurity(symbol)) {
+					security = &LoadSecurity(symbol);
+				}
+				if (!uniqueInstance) {
+					ForEachModuleInstance(
+						module,
+						[&](Module &instance) {
+							SubscribeModuleStandaloneInstance(
+								instance,
+								subscribe,
+								security);
+						},
+						[&](Module &instance) {
+							SubscribeModuleSymbolInstance(
+								instance,
+								subscribe,
+								security);
+						});
+				} else if (isUniqueInstanceStandalone) {
+					SubscribeModuleStandaloneInstance(
+						*uniqueInstance,
+						subscribe,
+						security);
+				} else {
+					SubscribeModuleSymbolInstance(
+						*uniqueInstance,
+						subscribe,
+						security);
+				}
+			}
+		}
 
 	}
 
