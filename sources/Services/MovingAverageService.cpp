@@ -286,7 +286,7 @@ public:
 		}
 
 		m_service.GetLog().Info(
-			"Stated with: %1% = %2%, %3% = %4% frames, %5% = %6%, %7% = %8%.",
+			"Initial: %1% = %2%, %3% = %4% frames, %5% = %6%, %7% = %8%.",
 			boost::make_tuple(
 				Configuration::Keys::type,
 				boost::cref(types[type]),
