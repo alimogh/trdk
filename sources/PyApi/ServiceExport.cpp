@@ -315,6 +315,7 @@ void BarServiceExport::ExportClass(const char *className) {
 
 		.def("getBar", &BarServiceExport::GetBar)
  		.def("getBarByReversedIndex", &BarServiceExport::GetBarByReversedIndex)
+		.add_property("lastBar", &BarServiceExport::GetLastBar)
 
  		.def("getOpenPriceStat", &BarServiceExport::GetOpenPriceStat)
  		.def("getClosePriceStat", &BarServiceExport::GetClosePriceStat)
@@ -354,6 +355,10 @@ BarServiceExport::BarExport BarServiceExport::GetBarByReversedIndex(
 	return BarExport(GetService(), GetService().GetBarByReversedIndex(index));
 }
 
+BarServiceExport::BarExport BarServiceExport::GetLastBar() const {
+	return BarExport(GetService(), GetService().GetLastBar());
+}
+
 BarServiceExport::PriceStatExport BarServiceExport::GetOpenPriceStat(
 			size_t numberOfBars)
 		const {
@@ -391,6 +396,24 @@ const BarService & BarServiceExport::GetService() const {
 
 //////////////////////////////////////////////////////////////////////////
 
+MovingAverageServiceExport::PointExport::PointExport(
+						const Implementation &service,
+						const Implementation::Point &point)
+		: m_service(&service),
+		m_point(point) {
+	//...//
+}
+
+void MovingAverageServiceExport::PointExport::ExportClass(
+		const char *className) {
+	py::class_<PointExport>(className, py::no_init)
+		.add_property("value", &PointExport::GetValue);
+}
+
+boost::intmax_t MovingAverageServiceExport::PointExport::GetValue() const {
+	return m_point.value;
+}
+
 MovingAverageServiceExport::MovingAverageServiceExport(
 			const Implementation &service)
 		: ServiceInfoExport(service) {
@@ -404,35 +427,43 @@ void MovingAverageServiceExport::ExportClass(const char *className) {
 	typedef py::class_<Self, py::bases<ServiceInfoExport>> Export;
 	
 	const py::scope serviceClass = Export(className, py::no_init)
-					
-		.add_property("size", &Self::GetSize)
-		.add_property("isEmpty", &Self::IsEmpty)
 
-		.add_property("lastValue", &Self::GetLastValue)
-		.def("getValue", &Self::GetValue)
- 		.def("getValueByReversedIndex", &Self::GetValueByReversedIndex);
+		.add_property("lastPoint", &Self::GetLastPoint)
+
+		.add_property("historySize", &Self::GetHistorySize)
+		.def("getHistoryPoint", &Self::GetHistoryPoint)
+ 		.def(
+			"getHistoryPointByReversedIndex",
+			&Self::GetHistoryPointByReversedIndex);
+
+	PointExport::ExportClass("Point");
 
 }
 
-size_t MovingAverageServiceExport::GetSize() const {
-	return GetService().GetSize();
+MovingAverageServiceExport::PointExport
+MovingAverageServiceExport::GetLastPoint()
+		const {
+	return PointExport(GetService(), GetService().GetLastPoint());
 }
 
-bool MovingAverageServiceExport::IsEmpty() const {
-	return GetService().IsEmpty();
+size_t MovingAverageServiceExport::GetHistorySize() const {
+	return GetService().GetHistorySize();
 }
 
-ScaledPrice MovingAverageServiceExport::GetValue(size_t index) const {
-	return GetService().GetValue(index);
+MovingAverageServiceExport::PointExport
+MovingAverageServiceExport::GetHistoryPoint(
+			size_t index)
+		const {
+	return PointExport(GetService(), GetService().GetHistoryPoint(index));
 }
 
-ScaledPrice MovingAverageServiceExport::GetValueByReversedIndex(
-			size_t index) const {
-	return GetService().GetValueByReversedIndex(index);
-}
-
-ScaledPrice MovingAverageServiceExport::GetLastValue() const {
-	return GetService().GetLastValue();
+MovingAverageServiceExport::PointExport
+MovingAverageServiceExport::GetHistoryPointByReversedIndex(
+			size_t index)
+		const {
+	return PointExport(
+		GetService(),
+		GetService().GetHistoryPointByReversedIndex(index));
 }
 
 const MovingAverageService & MovingAverageServiceExport::GetService() const {

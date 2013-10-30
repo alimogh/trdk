@@ -180,6 +180,7 @@ namespace trdk { namespace PyApi {
 		bool IsEmpty() const;
 		BarExport GetBar(size_t index) const;
 		BarExport GetBarByReversedIndex(size_t index) const;
+		BarExport GetLastBar() const;
 		PriceStatExport GetOpenPriceStat(size_t numberOfBars) const;
 		PriceStatExport GetClosePriceStat(size_t numberOfBars) const;
 		PriceStatExport GetHighPriceStat(size_t numberOfBars) const;
@@ -210,6 +211,22 @@ namespace trdk { namespace PyApi {
 
 	public:
 
+		class PointExport {
+		public:
+			explicit PointExport(
+						const Implementation &,
+						const Implementation::Point &);
+		public:
+			static void ExportClass(const char *className);
+		public:
+			boost::intmax_t GetValue() const;
+		private:
+			const Implementation *m_service;
+			Implementation::Point m_point;
+		};
+
+	public:
+
 		//! C-tor.
 		/*  @param serviceRef	Reference to service, must be alive all time
 		 *						while export object exists.
@@ -222,12 +239,12 @@ namespace trdk { namespace PyApi {
 
 	public:
 
-		size_t GetSize() const;
-		bool IsEmpty() const;
+		PointExport GetLastPoint() const;
 
-		ScaledPrice GetValue(size_t index) const;
-		ScaledPrice GetValueByReversedIndex(size_t index) const;
-		ScaledPrice GetLastValue() const;
+		size_t GetHistorySize() const;
+
+		PointExport GetHistoryPoint(size_t index) const;
+		PointExport GetHistoryPointByReversedIndex(size_t index) const;
 
 	protected:
 

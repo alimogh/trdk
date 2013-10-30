@@ -31,6 +31,16 @@ namespace trdk { namespace Services {
 			explicit ValueDoesNotExistError(const char *) throw();
 		};
 
+		//! Service has not points history.
+		class HasNotHistory : public Error {
+		public:
+			explicit HasNotHistory(const char *) throw();
+		};
+
+		//! Value data point.
+ 		struct Point {
+			trdk::ScaledPrice value;
+		};
 
 	public:
 
@@ -42,30 +52,32 @@ namespace trdk { namespace Services {
 
 	public:
 
-		//! Number of values.
-		size_t GetSize() const;
-		bool IsEmpty() const;
+		//! Returns last value point.
+		/** Last bar has index "zero".
+		  * @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
+		  */
+		Point GetLastPoint() const;
 
-		//! Returns value by index.
+	public:
+
+		//! Number of points from history.
+		size_t GetHistorySize() const;
+
+		//! Returns value point from history by index.
 		/** First bar has index "zero".
 		  * @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
+		  * @throw trdk::Services::MovingAverageService::HasNotHistory
 		  * @sa trdk::Services::MovingAverageService::GetValueByReversedIndex
 		  */
-		trdk::ScaledPrice GetValue(size_t index) const;
+		Point GetHistoryPoint(size_t index) const;
 
-		//! Returns value by reversed index.
+		//! Returns value point from history by reversed index.
 		/** Last bar has index "zero".
 		  * @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
+		  * @throw trdk::Services::MovingAverageService::HasNotHistory
 		  * @sa trdk::Services::MovingAverageService::GetValue 
 		  */
-		trdk::ScaledPrice GetValueByReversedIndex(size_t index) const;
-
-		//! Returns last value.
-		/** Last bar has index "zero".
-		  * @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
-		  * @sa trdk::Services::MovingAverageService::GetValueByReversedIndex 
-		  */
-		trdk::ScaledPrice GetLastValue() const;
+		Point GetHistoryPointByReversedIndex(size_t index) const;
 
 	public:
 

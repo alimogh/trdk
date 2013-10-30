@@ -94,6 +94,7 @@
     <ClInclude Include="DisableBoostWarningsBegin.h" />
     <ClInclude Include="Dll.hpp" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="SegmentedVector.hpp" />
     <ClInclude Include="Symbol.hpp" />
     <ClInclude Include="SysError.hpp" />
     <ClInclude Include="Exception.hpp" />

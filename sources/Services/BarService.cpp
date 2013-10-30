@@ -225,7 +225,7 @@ public:
 			if (!boost::regex_match(sizeStr , what, expr)) {
 				m_service.GetLog().Error(
 					"Wrong size size format: \"%1%\". Example: \"5 minutes\".",
-					what.str(0));
+					sizeStr);
 				throw Error("Wrong bar size settings");
 			}
 			m_barSizeStr = what.str(1);
@@ -637,6 +637,10 @@ const BarService::Bar & BarService::GetBarByReversedIndex(
 	const auto pos = m_pimpl->m_bars.find(m_pimpl->m_size - index - 1);
 	Assert(pos != m_pimpl->m_bars.end());
 	return pos->second;
+}
+
+const BarService::Bar & BarService::GetLastBar() const {
+	return GetBarByReversedIndex(0);
 }
 
 size_t BarService::GetSize() const {

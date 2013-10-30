@@ -34,7 +34,7 @@ namespace trdk { namespace Services {
 
  		//! Bar data.
  		struct Bar {
-			
+
 			boost::posix_time::ptime time;
 			
 			trdk::ScaledPrice maxAskPrice;
@@ -137,6 +137,12 @@ namespace trdk { namespace Services {
 		  * @sa trdk::Services::BarService::GetBarByIndex 
 		  */
 		const Bar & GetBarByReversedIndex(size_t index) const;
+
+		//! Returns last bar.
+		/** @throw trdk::Services::BarService::BarDoesNotExistError
+		  * @sa trdk::Services::BarService::GetBarByReversedIndex
+		  */
+		const Bar & GetLastBar() const;
 
 	public:
 

@@ -17,9 +17,13 @@
 #	include <boost/regex.hpp>
 #	include <boost/accumulators/accumulators.hpp>
 #	include <boost/accumulators/statistics.hpp>
+#	include <boost/accumulators/statistics/rolling_mean.hpp>
+#	include <boost/variant.hpp>
+#	include <boost/optional.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
+#include "Common/SegmentedVector.hpp"
 
 #include "Core/Fwd.hpp"
 
