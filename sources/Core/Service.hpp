@@ -67,6 +67,10 @@ namespace trdk {
 					trdk::Qty qty,
 					bool isInitial);
 
+		virtual bool OnNewBar(
+					const trdk::Security &,
+					const trdk::Security::Bar &);
+
 	public:
 
 		void RegisterSource(trdk::Security &);
@@ -95,6 +99,9 @@ namespace trdk {
 					trdk::Security &security,
 					trdk::Qty qty,
 					bool isInitial);
+		bool RaiseNewBarEvent(
+					const trdk::Security &,
+					const trdk::Security::Bar &);
 
 	private:
 

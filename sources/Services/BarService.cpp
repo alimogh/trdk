@@ -244,10 +244,26 @@ public:
 
 		static_assert(numberOfUnits == 5, "Units list changed.");
 		if (boost::iequals(m_unitsStr, "seconds")) {
-			if (60 % m_barSizeUnits) {
+			if (m_barSizeUnits < 5) {
+				// reqRealTimeBars: Currently only 5 second bars are supported,
+				// if any other value is used, an exception will be thrown.
 				m_service.GetLog().Error(
 					"Wrong size specified: \"%1%\"."
-						" Must be a multiple of 1 minute.",
+						" Can't be less then 5 seconds (IB TWS limitation).",
+					m_barSizeStr);
+				throw Error("Wrong bar size settings");
+			} else if (m_barSizeUnits % 5) {
+				// reqRealTimeBars: Currently only 5 second bars are supported,
+				// if any other value is used, an exception will be thrown.
+				m_service.GetLog().Error(
+					"Wrong size specified: \"%1%\"."
+						" Must be a multiple of 5 seconds (IB TWS limitation).",
+					m_barSizeStr);
+				throw Error("Wrong bar size settings");				
+			} else if (60 % m_barSizeUnits) {
+				m_service.GetLog().Error(
+					"Wrong size specified: \"%1%\"."
+						" Minute must be a multiple of the bar size.",
 					m_barSizeStr);
 				throw Error("Wrong bar size settings");
 			}
@@ -257,7 +273,7 @@ public:
 			if (60 % m_barSizeUnits) {
 				m_service.GetLog().Error(
 					"Wrong size specified: \"%1%\"."
-						" Must be a multiple of 1 hour.",
+						" Hour must be a multiple of the bar size.",
 					m_barSizeStr);
 				throw Error("Wrong bar size settings");
 			}
@@ -452,6 +468,80 @@ public:
 			:	StartNewBar(time, pred);
 	}
 
+	bool OnNewBar(const Security::Bar &sourceBar) {
+		
+		AssertGe(m_barSize, sourceBar.size);
+		if (m_barSize < sourceBar.size) {
+			m_service.GetLog().Error(
+				"Can't work with source bar size %1% as service bar size %2%.",
+				boost::make_tuple(
+					boost::cref(sourceBar.size),
+					boost::cref(m_barSize)));
+			throw Error("Wrong source bar size");
+		}
+
+		const auto &setOpen = [](
+					const Security::Bar &sourceBar,
+					ScaledPrice &stat) {
+			if (sourceBar.openPrice && !stat) {
+				stat = *sourceBar.openPrice;
+			}
+		};
+		const auto &setClose = [](
+					const Security::Bar &sourceBar,
+					ScaledPrice &stat) {
+			if (sourceBar.closePrice) {
+				stat = *sourceBar.closePrice;
+			}
+		};
+		const auto &setMax = [](
+					const Security::Bar &sourceBar,
+					ScaledPrice &stat) {
+			if (sourceBar.highPrice) {
+				stat = std::max(stat, *sourceBar.highPrice);
+			}
+		};
+		const auto &setMin = [](
+					const Security::Bar &sourceBar,
+					ScaledPrice &stat) {
+			if (sourceBar.lowPrice) {
+				stat = stat
+					?	std::min(stat, *sourceBar.lowPrice)
+					:	*sourceBar.lowPrice;
+			}
+		};
+		
+		return AppendStat(
+			sourceBar.time,
+			[&](Bar &statBar) {
+				static_assert(
+					Security::Bar::numberOfTypes,
+					"Bar type list changed.");
+				switch (sourceBar.type) {
+					case Security::Bar::TRADES:
+						setOpen(sourceBar, statBar.openTradePrice);
+						setClose(sourceBar, statBar.closeTradePrice);
+						setMax(sourceBar, statBar.highTradePrice);
+						setMin(sourceBar, statBar.lowTradePrice);
+						break;
+					case Security::Bar::BID:
+						setMin(sourceBar, statBar.minBidPrice);
+						setOpen(sourceBar, statBar.openBidPrice);
+						setClose(sourceBar, statBar.closeBidPrice);
+						break;
+					case Security::Bar::ASK:
+						setMax(sourceBar, statBar.maxAskPrice);
+						setOpen(sourceBar, statBar.openAskPrice);
+						setClose(sourceBar, statBar.closeAskPrice);
+						break;
+					default:
+						AssertEq(Security::Bar::TRADES, sourceBar.type);
+						return;
+				}
+			});
+
+	}
+
 	bool OnLevel1Tick(
 				const Security &security,
 				const pt::ptime &time,
@@ -489,7 +579,8 @@ public:
 							AssertEq(0, bar.maxAskPrice);
 							AssertEq(0, bar.closeAskPrice);
 							if (m_size > 0) {
-								bar.openAskPrice = m_bars[m_size - 1].closeAskPrice;
+								bar.openAskPrice
+									= m_bars[m_size - 1].closeAskPrice;
 							}
 							if (!bar.openAskPrice) {
 								bar.openAskPrice = security.GetAskPriceScaled();
@@ -517,7 +608,8 @@ public:
 							AssertEq(0, bar.minBidPrice);
 							AssertEq(0, bar.closeBidPrice);
 							if (m_size > 0) {
-								bar.openBidPrice = m_bars[m_size - 1].closeBidPrice;
+								bar.openBidPrice
+									= m_bars[m_size - 1].closeBidPrice;
 							}
 							if (!bar.openBidPrice) {
 								bar.openBidPrice = security.GetBidPriceScaled();
@@ -584,6 +676,10 @@ BarService::~BarService() {
 
 pt::ptime BarService::OnSecurityStart(const Security &) {
 	return boost::get_system_time() - GetBarSize();
+}
+
+bool BarService::OnNewBar(const Security &, const Security::Bar &bar) {
+	return m_pimpl->OnNewBar(bar);
 }
 
 bool BarService::OnLevel1Tick(

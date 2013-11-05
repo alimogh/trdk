@@ -49,6 +49,18 @@ namespace {
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+Security::Bar::Bar(
+			const pt::ptime &time,
+			const pt::time_duration &size,
+			Type type)
+		: time(time),
+		size(size),
+		type(type) {
+	//...//
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 class Security::Implementation : private boost::noncopyable {
@@ -57,12 +69,11 @@ public:
 
 	mutable boost::signals2::signal<Level1UpdateSlotSignature>
 		m_level1UpdateSignal;
-	mutable boost::signals2::signal<Level1TickSlotSignature>
-		m_level1TickSignal;
-	mutable boost::signals2::signal<NewTradeSlotSignature>
-		m_tradeSignal;
+	mutable boost::signals2::signal<Level1TickSlotSignature> m_level1TickSignal;
+	mutable boost::signals2::signal<NewTradeSlotSignature> m_tradeSignal;
 	mutable boost::signals2::signal<BrokerPositionUpdateSlotSignature>
 		m_brokerPositionUpdateSignal;
+	mutable boost::signals2::signal<NewBarSlotSignature> m_barSignal;
 
 	Level1 m_level1;
 	volatile Qty m_brokerPosition;
@@ -412,6 +423,12 @@ Security::NewTradeSlotConnection Security::SubscribeToBrokerPositionUpdates(
 	return m_pimpl->m_brokerPositionUpdateSignal.connect(slot);
 }
 
+Security::NewBarSlotConnection Security::SubscribeToBars(
+			const NewBarSlot &slot)
+		const {
+	return m_pimpl->m_barSignal.connect(slot);
+}
+
 bool Security::IsLevel1Required() const {
 	return IsLevel1UpdatesRequired() || IsLevel1TicksRequired();
 }
@@ -430,6 +447,10 @@ bool Security::IsTradesRequired() const {
 
 bool Security::IsBrokerPositionRequired() const {
 	return !m_pimpl->m_brokerPositionUpdateSignal.empty();
+}
+
+bool Security::IsBarsRequired() const {
+	return !m_pimpl->m_barSignal.empty();
 }
 
 void Security::SetLevel1(
@@ -535,10 +556,10 @@ void Security::AddTrade(
 	AssertLt(0, qty);
 	if (useForTradedVolume && qty > 0) {
 		for ( ; ; ) {
-			const auto prevVal = GetTradedVolume();
+			const auto prevVal = m_pimpl->m_level1[LEVEL1_TICK_TRADING_VOLUME];
 			const auto newVal
 				= Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>(
-					prevVal + qty);
+					IsSet(prevVal) ? Qty(prevVal) + qty : qty);
 			if (	m_pimpl->CompareAndSetLevel1(
 						time,
 						newVal,
@@ -552,6 +573,10 @@ void Security::AddTrade(
 
 	m_pimpl->m_tradeSignal(time, price, qty, side);
 
+}
+
+void Security::AddBar(const Bar &bar) {
+	m_pimpl->m_barSignal(bar);
 }
 
 void Security::SetBrokerPosition(trdk::Qty qty, bool isInitial) {

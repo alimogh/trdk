@@ -25,14 +25,16 @@ Dispatcher::Dispatcher(Engine::Context &context)
 			: m_context(context),
 			m_level1Updates("Level 1 Updates", m_context),
 			m_level1Ticks("Level 1 Ticks", m_context),
-			m_newTrades("New Trades", m_context),
+			m_newTrades("Trades", m_context),
 			m_positionsUpdates("Positions", m_context),
-			m_brokerPositionsUpdates("Broker Positions", m_context) {
+			m_brokerPositionsUpdates("Broker Positions", m_context),
+			m_newBars("Bars", m_context) {
 	StartNotificationTask(
 		m_level1Updates,
 		m_level1Ticks,
 		m_newTrades,
 		m_positionsUpdates,
+		m_newBars,
 		m_brokerPositionsUpdates);
 }
 
@@ -44,6 +46,7 @@ Dispatcher::~Dispatcher() {
 		m_level1Updates.Stop();
 		m_positionsUpdates.Stop();
 		m_brokerPositionsUpdates.Stop();
+		m_newBars.Stop();
 		m_threads.join_all();
 		m_context.GetLog().Debug("Events dispatching stopped.");
 	} catch (...) {
@@ -54,6 +57,7 @@ Dispatcher::~Dispatcher() {
 
 void Dispatcher::Activate() {
 	m_context.GetLog().Debug("Starting events dispatching...");
+	m_newBars.Activate();
 	m_brokerPositionsUpdates.Activate();
 	m_positionsUpdates.Activate();
 	m_level1Updates.Activate();
@@ -64,6 +68,7 @@ void Dispatcher::Activate() {
 
 void Dispatcher::Suspend() {
 	m_context.GetLog().Debug("Suspending events dispatching...");
+	m_newBars.Suspend();
 	m_level1Ticks.Suspend();
 	m_newTrades.Suspend();
 	m_level1Updates.Suspend();
@@ -112,14 +117,12 @@ void Dispatcher::SignalNewTrade(
 		if (subscriber.IsBlocked()) {
 			return;
 		}
-		//! @todo Check profit from ptr.
-		boost::shared_ptr<SubscriberPtrWrapper::Trade> trade(
-			new SubscriberPtrWrapper::Trade);
-		trade->security = &security;
-		trade->time = time;
-		trade->price = price;
-		trade->qty = qty;
-		trade->side = side;
+		const SubscriberPtrWrapper::Trade trade = {
+			&security,
+			time,
+			price,
+			qty,
+			side};
 		m_newTrades.Queue(boost::make_tuple(trade, subscriber), true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
@@ -156,6 +159,22 @@ void Dispatcher::SignalBrokerPositionUpdate(
 		m_brokerPositionsUpdates.Queue(
 			boost::make_tuple(position , subscriber),
 			true);
+	} catch (...) {
+		//! Blocking as irreversible error, data loss.
+		subscriber.Block();
+		throw;
+	}
+}
+
+void Dispatcher::SignalNewBar(
+			SubscriberPtrWrapper &subscriber,
+			Security &security,
+			const Security::Bar &bar) {
+	try {
+		if (subscriber.IsBlocked()) {
+			return;
+		}
+		m_newBars.Queue(boost::make_tuple(&security, bar, subscriber), true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		subscriber.Block();

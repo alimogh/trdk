@@ -320,4 +320,41 @@ void SubscriberPtrWrapper::RaiseBrokerPositionUpdateEvent(
 
 }
 
+void SubscriberPtrWrapper::RaiseNewBarEvent(
+			Security &security,
+			const Security::Bar &bar)
+		const {
+
+	const class Visitor
+			: public boost::static_visitor<void>,
+			private boost::noncopyable {
+	public:		
+		explicit Visitor(
+					Security &security,
+					const Security::Bar &bar)
+				: m_source(security),
+				m_bar(bar) {
+			//...//
+		}
+	public:
+		void operator ()(Strategy &strategy) const {
+			strategy.RaiseNewBarEvent(m_source, m_bar);
+		}
+		void operator ()(Service &service) const {
+			if (service.RaiseNewBarEvent(m_source, m_bar)) {
+				RaiseServiceDataUpdateEvent(service);
+			}
+		}
+		void operator ()(Observer &observer) const {
+			observer.RaiseNewBarEvent(m_source, m_bar);
+		}
+	private:
+		Security &m_source;
+		const Security::Bar &m_bar;
+	};
+
+	boost::apply_visitor(Visitor(security, bar), m_subscriber);
+
+}
+
 //////////////////////////////////////////////////////////////////////////

@@ -208,6 +208,7 @@ namespace {
 		SYSTEM_SERVICE_LEVEL1_TICKS,
 		SYSTEM_SERVICE_TRADES,
 		SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES,
+		SYSTEM_SERVICE_BARS,
 		numberOfSystemServices
 	};
 
@@ -247,7 +248,7 @@ namespace {
 		static ModuleType GetType() {
 			return static_cast<ModuleType>(Type);
 		}
-		static const char * GetName(bool capital = false) {
+		static const char * GetName(bool capital) {
 			return capital ? "Strategy" : "strategy";
 		}
 		static std::string GetDefaultFactory(const std::string &tag) {
@@ -269,7 +270,7 @@ namespace {
 		static ModuleType GetType() {
 			return static_cast<ModuleType>(Type);
 		}
-		static const char * GetName(bool capital = false) {
+		static const char * GetName(bool capital) {
 			return capital ? "Service" : "service";
 		}
 		static std::string GetDefaultFactory(const std::string &tag) {
@@ -291,7 +292,7 @@ namespace {
 		static ModuleType GetType() {
 			return static_cast<ModuleType>(Type);
 		}
-		static const char * GetName(bool capital = false) {
+		static const char * GetName(bool capital) {
 			return capital ? "Observer" : "observer";
 		}
 		static std::string GetDefaultFactory(const std::string &tag) {
@@ -584,15 +585,19 @@ private:
 		m_context.GetLog().Debug(
 			"Found %1% section \"%2%\"...",
 			boost::make_tuple(
-				boost::cref(Trait::GetName()),
+				boost::cref(Trait::GetName(false)),
 				boost::cref(conf)));
 
+		static_assert(
+			numberOfSystemServices == 5,
+			"System service list changed.");
 		if (	boost::iequals(tag, Ini::Constants::Services::level1Updates)
 				|| boost::iequals(tag, Ini::Constants::Services::level1Ticks)
 				|| boost::iequals(tag, Ini::Constants::Services::trades)
 				|| boost::iequals(
 						tag,
-						Ini::Constants::Services::brokerPositionsUpdates)) {
+						Ini::Constants::Services::brokerPositionsUpdates)
+				|| boost::iequals(tag, Ini::Constants::Services::bars)) {
 			m_context.GetLog().Error(
 				"System predefined module name used in %1%: \"%2%\".",
 				boost::make_tuple(boost::cref(conf), boost::cref(tag)));
@@ -604,7 +609,7 @@ private:
 				"Tag name \"%1%\" for %2% isn't unique.",
 				boost::make_tuple(
 					boost::cref(tag),
-					boost::cref(Trait::GetName())));
+					boost::cref(Trait::GetName(false))));
 			throw Exception("Tag name isn't unique");
 		}
 
@@ -934,6 +939,16 @@ private:
 					SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES,
 					request,
 					result);
+			} else if (	boost::iequals(
+							request.tag,
+							Ini::Constants::Services::bars)) {
+				UpdateRequirementsList(
+					Trait::GetType(),
+					tag,
+					uniqueInstance,
+					SYSTEM_SERVICE_BARS,
+					request,
+					result);
 			} else {
 				UpdateRequirementsList(
 					Trait::GetType(),
@@ -1235,7 +1250,7 @@ private:
 			void (SubscriptionsManager::*subscribe)(Security &, Module &)
 				= nullptr;
 			static_assert(
-				numberOfSystemServices == 4,
+				numberOfSystemServices == 5,
 				"System service list changed.");
 			switch (requirement.first) {
 				case SYSTEM_SERVICE_LEVEL1_UPDATES:
@@ -1250,6 +1265,9 @@ private:
 				case SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES:
 					subscribe = &SubscriptionsManager
 						::SubscribeToBrokerPositionUpdates;
+					break;
+				case SYSTEM_SERVICE_BARS:
+					subscribe = &SubscriptionsManager::SubscribeToBars;
 					break;
 				default:
 					AssertEq(SYSTEM_SERVICE_LEVEL1_UPDATES, requirement.first);
@@ -1398,7 +1416,7 @@ private:
 			"Loading symbol instances from %1% for %2% \"%3%\"...",
 			boost::make_tuple(
 				boost::cref(symbolsFilePath),
-				boost::cref(Trait::GetName()),
+				boost::cref(Trait::GetName(false)),
 				boost::cref(tag)));
 		const IniFile symbolsIni(symbolsFilePath);
 		std::set<Symbol> symbols = symbolsIni.ReadSymbols(
@@ -1440,14 +1458,14 @@ private:
 
 		typedef ModuleTrait<Module> Trait;
 
-		ModuleDll<Module> result;
+		ModuleDll<Module> result = {};
 		result.conf.reset(new IniFileSectionRef(conf));
 
 		if (tag.empty()) {
 			m_context.GetLog().Error(
 				"Failed to get tag for %1% section \"%2%\".",
 				boost::make_tuple(
-					boost::cref(Trait::GetName()),
+					boost::cref(Trait::GetName(false)),
 					boost::cref(result.conf)));
 			throw IniFile::Error("Failed to load module");
 		}
@@ -1464,7 +1482,7 @@ private:
 			m_context.GetLog().Error(
 				"Failed to get %1% module: \"%2%\".",
 				boost::make_tuple(
-					boost::cref(Trait::GetName()),
+					boost::cref(Trait::GetName(false)),
 					boost::cref(ex)));
 			throw IniFile::Error("Failed to load module");
 		}
@@ -1496,16 +1514,24 @@ private:
 				std::string appendedName
 					= Ini::DefaultValues::Factories::factoryNameStart
 					+ factoryName;
-				if (!boost::iends_with(factoryName, Trait::GetName())) {
-					appendedName += Trait::GetName();
+				if (!boost::iends_with(factoryName, Trait::GetName(true))) {
+					appendedName += Trait::GetName(true);
 				}
 				try {
 					result.factory
 						= result.dll->GetFunction<Trait::Factory>(appendedName);
 				} catch (const Dll::DllFuncException &) {
-					result.factory
-						= result.dll->GetFunction<Trait::Factory>(unifiedName);
+					try {
+						result.factory
+							= result.dll->GetFunction<Trait::Factory>(
+								unifiedName);
+					} catch (const Dll::DllFuncException &) {
+						//...//
+					}
 				}
+			}
+			if (!result.factory) {
+				throw;
 			}
 		}
 

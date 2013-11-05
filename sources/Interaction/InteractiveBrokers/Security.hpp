@@ -42,11 +42,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		bool IsBrokerPositionRequired() const {
 			return Base::IsBrokerPositionRequired();
 		}
-
-		void SetLevel1(
-					const boost::posix_time::ptime &time,
-					const Level1TickValue &tick) {
-			Base::SetLevel1(time, tick);
+		bool IsBarsRequired() const {
+			return Base::IsBarsRequired();
 		}
 
 		void AddLevel1Tick(
@@ -59,6 +56,10 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 					const Level1TickValue &tick1,
 					const Level1TickValue &tick2) {
 			Base::AddLevel1Tick(time, tick1, tick2);
+		}
+
+		void AddBar(const Bar &bar) {
+			Base::AddBar(bar);
 		}
 
 		void SetBrokerPosition(Qty qty, bool isInitial) {

@@ -211,7 +211,7 @@ namespace trdk { namespace Engine {
 		typedef EventQueue<std::list<Level1TickEvent>> Level1TicksEventQueue;
 
 		typedef boost::tuple<
-				boost::shared_ptr<SubscriberPtrWrapper::Trade>,
+				SubscriberPtrWrapper::Trade,
 				SubscriberPtrWrapper>
 			NewTradeEvent;
 		//! @todo	HAVY OPTIMIZATION!!! Use preallocated buffer here instead
@@ -236,6 +236,15 @@ namespace trdk { namespace Engine {
 		typedef EventQueue<std::list<BrokerPositionUpdateEvent>>
 			BrokerPositionsUpdateEventQueue;
 
+		typedef boost::tuple<
+				Security *,
+				Security::Bar,
+				SubscriberPtrWrapper>
+			NewBarEvent;
+		//! @todo	HAVY OPTIMIZATION!!! Use preallocated buffer here instead
+		//!			std::list.
+		typedef EventQueue<std::list<NewBarEvent>> NewBarEventQueue;
+
 	public:
 
 		explicit Dispatcher(Engine::Context &);
@@ -249,7 +258,8 @@ namespace trdk { namespace Engine {
 				|| m_level1Ticks.IsActive()
 				|| m_newTrades.IsActive()
 				|| m_positionsUpdates.IsActive()
-				|| m_brokerPositionsUpdates.IsActive();
+				|| m_brokerPositionsUpdates.IsActive()
+				|| m_newBars.IsActive();
 		}
 
 		void Activate();
@@ -277,6 +287,10 @@ namespace trdk { namespace Engine {
 					Security &,
 					Qty,
 					bool isInitial);
+			void SignalNewBar(
+					SubscriberPtrWrapper &,
+					Security &,
+					const Security::Bar &);
 
 	private:
 
@@ -296,7 +310,7 @@ namespace trdk { namespace Engine {
 		template<>
 		static void RaiseEvent(const NewTradeEvent &newTradeEvent) {
 			boost::get<1>(newTradeEvent).RaiseNewTradeEvent(
-				*boost::get<0>(newTradeEvent));
+				boost::get<0>(newTradeEvent));
 		}
 		template<>
 		static void RaiseEvent(const PositionUpdateEvent &positionUpdateEvent) {
@@ -307,7 +321,13 @@ namespace trdk { namespace Engine {
 		static void RaiseEvent(
 					const BrokerPositionUpdateEvent &positionUpdateEvent) {
 			boost::get<1>(positionUpdateEvent).RaiseBrokerPositionUpdateEvent(
-					boost::get<0>(positionUpdateEvent));
+				boost::get<0>(positionUpdateEvent));
+		}
+		template<>
+		static void RaiseEvent(const NewBarEvent &newBarEvent) {
+			boost::get<2>(newBarEvent).RaiseNewBarEvent(
+				*boost::get<0>(newBarEvent),
+				boost::get<1>(newBarEvent));
 		}
 
 		template<typename Event, typename EventList>
@@ -355,6 +375,13 @@ namespace trdk { namespace Engine {
 					const BrokerPositionUpdateEvent &positionUpdateEvent,
 					EventList &eventList) {
 			eventList.push_back(positionUpdateEvent);
+			return true;
+		}
+		template<typename EventList>
+		static bool QueueEvent(
+					const NewBarEvent &newBarEvent,
+					EventList &eventList) {
+			eventList.push_back(newBarEvent);
 			return true;
 		}
 
@@ -681,6 +708,108 @@ namespace trdk { namespace Engine {
 
 		////////////////////////////////////////////////////////////////////////////////
 
+		template<
+			typename ListWithHighPriority,
+			typename ListWithLowPriority,
+			typename ListWithExtraLowPriority,
+			typename ListWithExtraLowPriority2,
+			typename ListWithExtraLowPriority3,
+			typename ListWithExtraLowPriority4>
+		void StartNotificationTask(
+					ListWithHighPriority &listWithHighPriority,
+					ListWithLowPriority &listWithLowPriority,
+					ListWithExtraLowPriority &listWithExtraLowPriority,
+					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
+					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
+					ListWithExtraLowPriority4 &listWithExtraLowPriority4) {
+			const auto lists = boost::make_tuple(
+				boost::ref(listWithHighPriority),
+				boost::ref(listWithLowPriority),
+				boost::ref(listWithExtraLowPriority),
+				boost::ref(listWithExtraLowPriority2),
+				boost::ref(listWithExtraLowPriority3),
+				boost::ref(listWithExtraLowPriority4));
+			m_threads.create_thread(
+				boost::bind(
+					&Dispatcher::NotificationTask<decltype(lists)>,
+					this,
+					lists));
+		}
+
+		template<
+			typename T1,
+			typename T2,
+			typename T3,
+			typename T4,
+			typename T5,
+			typename T6>
+		static std::string GetEventListsName(
+					const boost::tuple<T1, T2, T3, T4, T5, T6> &lists) {
+			boost::format result("%1%, %2%, %3%, %4%, %5%, %6%");
+			result
+				% lists.get<0>().GetName()
+				% lists.get<1>().GetName()
+				% lists.get<2>().GetName()
+				% lists.get<3>().GetName()
+				% lists.get<4>().GetName()
+				% lists.get<5>().GetName();
+			return result.str();
+		}
+
+		template<
+			typename T1,
+			typename T2,
+			typename T3,
+			typename T4,
+			typename T5,
+			typename T6>
+		static void AssignEventListsSyncObjects(
+					boost::shared_ptr<EventListsSyncObjects> &sync,
+					const boost::tuple<T1, T2, T3, T4, T5, T6> &lists) {
+			lists.get<0>().AssignSyncObjects(sync);
+			lists.get<1>().AssignSyncObjects(sync);
+			lists.get<2>().AssignSyncObjects(sync);
+			lists.get<3>().AssignSyncObjects(sync);
+			lists.get<4>().AssignSyncObjects(sync);
+			lists.get<5>().AssignSyncObjects(sync);
+		}
+
+		template<
+			typename T1,
+			typename T2,
+			typename T3,
+			typename T4,
+			typename T5,
+			typename T6>
+		void EnqueueEventListsCollection(
+					const boost::tuple<T1, T2, T3, T4, T5, T6> &lists,
+					std::bitset<6> &deactivationMask,
+					EventQueueLock &lock)
+				const {
+			do {
+				do {
+					do {
+						do {
+							do {
+								EnqueueEventList<0>(
+									lists,
+									deactivationMask,
+									lock);
+							} while (
+								EnqueueEventList<1>(
+									lists,
+									deactivationMask,
+									lock));
+						} while (
+							EnqueueEventList<2>(lists, deactivationMask, lock));
+					} while (
+						EnqueueEventList<3>(lists, deactivationMask, lock));
+				} while (EnqueueEventList<4>(lists, deactivationMask, lock));
+			} while (EnqueueEventList<5>(lists, deactivationMask, lock));
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+
 		template<typename EventLists>
 		void NotificationTask(EventLists &lists) const {
 			m_context.GetLog().Debug(
@@ -726,6 +855,7 @@ namespace trdk { namespace Engine {
 		NewTradeEventQueue m_newTrades;
 		PositionsUpdateEventQueue m_positionsUpdates;
 		BrokerPositionsUpdateEventQueue m_brokerPositionsUpdates;
+		NewBarEventQueue m_newBars;
 
 	};
 

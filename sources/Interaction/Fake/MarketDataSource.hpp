@@ -41,6 +41,10 @@ namespace trdk { namespace Interaction { namespace Fake {
 				Base::AddTrade(time, side, price, qty, true, true);
 			}
 
+			void AddBar(const Bar &bar) {
+				Base::AddBar(bar);
+			}
+
 		};
 
 	public:
