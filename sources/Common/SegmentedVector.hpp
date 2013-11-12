@@ -61,8 +61,8 @@ namespace trdk { namespace Lib {
 			ValueType & operator [](size_t i) {
 				const size_t segmentIndex = i / SEGMENT_SIZE;
 				const size_t recordIndex = i % SEGMENT_SIZE;
-				AssertLt(m_storage.size(), segmentIndex);
-				AssertLt(m_storage[segmentIndex]->size(), recordIndex );
+				AssertLt(segmentIndex, m_storage.size());
+				AssertLt(recordIndex, m_storage[segmentIndex]->size());
 				return (*m_storage[segmentIndex])[recordIndex];
 			}
 
