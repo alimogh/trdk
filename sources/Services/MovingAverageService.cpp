@@ -72,7 +72,7 @@ namespace {
 		ScaledPrice operator ()(
 					const MaSourceToType<MA_SOURCE_CLOSE_TRADE_PRICE> &)
 				const {
-			return m_bar->closeAskPrice; // closeTradePrice;
+			return m_bar->closeTradePrice;
 		}
 	private:
 		const BarService::Bar *m_bar;
@@ -339,10 +339,12 @@ MovingAverageService::~MovingAverageService() {
 }
 
 bool MovingAverageService::OnServiceDataUpdate(const Service &service) {
-	
 	const auto &barService = m_pimpl->CastToBarService(service);
 	AssertLt(0, barService.GetSize());
-	const auto &bar = barService.GetLastBar();
+	return OnNewBar(barService.GetLastBar());
+}
+
+bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
 	
 	{
 		const ExtractFrameValueVisitor extractVisitor(bar);

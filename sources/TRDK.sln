@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2010
+# Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Engine\Engine.vcxproj", "{015FB121-6122-4A00-BFBB-545E9E73ABEE}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "Core\Core.vcxproj", "{48CE7676-DCB3-41F2-BED9-313D6FF57A97}"
@@ -24,6 +24,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Interactive Brokers", "Interaction\InteractiveBrokers\InteractiveBrokers.vcxproj", "{BEFE87AE-1376-4C4C-87D5-73E782990306}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Version", "Version\Version.vcxproj", "{6884DFB9-D84C-4F37-853F-79565671A1E3}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests\Tests.vcxproj", "{AF773219-8D87-4958-A567-4BCB72272E51}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -92,6 +94,12 @@ Global
 		{6884DFB9-D84C-4F37-853F-79565671A1E3}.Release|Win32.Build.0 = Release|Win32
 		{6884DFB9-D84C-4F37-853F-79565671A1E3}.Test|Win32.ActiveCfg = Release|Win32
 		{6884DFB9-D84C-4F37-853F-79565671A1E3}.Test|Win32.Build.0 = Release|Win32
+		{AF773219-8D87-4958-A567-4BCB72272E51}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AF773219-8D87-4958-A567-4BCB72272E51}.Debug|Win32.Build.0 = Debug|Win32
+		{AF773219-8D87-4958-A567-4BCB72272E51}.Release|Win32.ActiveCfg = Release|Win32
+		{AF773219-8D87-4958-A567-4BCB72272E51}.Release|Win32.Build.0 = Release|Win32
+		{AF773219-8D87-4958-A567-4BCB72272E51}.Test|Win32.ActiveCfg = Test|Win32
+		{AF773219-8D87-4958-A567-4BCB72272E51}.Test|Win32.Build.0 = Test|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

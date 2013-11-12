@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "BarService.hpp"
 #include "Core/Service.hpp"
 #include "Api.h"
 
@@ -83,10 +84,13 @@ namespace trdk { namespace Services {
 
 		virtual bool OnServiceDataUpdate(const trdk::Service &);
 
+		bool OnNewBar(const trdk::Services::BarService::Bar &);
+
 	protected:
 
 		virtual void UpdateAlogImplSettings(
 					const trdk::Lib::IniFileSectionRef &);
+
 	private:
 
 		class Implementation;
