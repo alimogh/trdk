@@ -69,7 +69,7 @@ namespace trdk { namespace Lib {
 	}
 
 	inline double RoundDouble(double source, size_t scale) {
-		return boost::math::round(source * scale) / scale;
+		return boost::math::round(source * double(scale)) / double(scale);
 	}
 
 	template<size_t numbsAfterDot>
