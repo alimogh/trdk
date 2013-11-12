@@ -33,7 +33,7 @@ namespace trdk { namespace Services {
 		};
 
  		//! Bar data.
- 		struct Bar {
+ 		struct TRDK_SERVICES_API Bar {
 
 			boost::posix_time::ptime time;
 			
