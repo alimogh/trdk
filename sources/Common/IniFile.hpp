@@ -28,20 +28,15 @@
 
 namespace trdk { namespace Lib {
 
-	//////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
 
-	class IniFile : private boost::noncopyable {
+	class Ini : private boost::noncopyable {
 
 	public:
 
 		class Error : public Exception {
 		public:
 			explicit Error(const char *what) throw();
-		};
-
-		class FileOpenError : public Error {
-		public:
-			FileOpenError() throw();
 		};
 
 		class KeyNotExistsError : public Error {
@@ -88,13 +83,17 @@ namespace trdk { namespace Lib {
 
 		typedef std::set<std::string, SectionLess> SectionList;
 
+	protected:
+
+		Ini() {
+			//...//
+		}
+
 	public:
 
-		explicit IniFile(const boost::filesystem::path &);
-
-	public:
-
-		const boost::filesystem::path & GetPath() const;
+		virtual ~Ini() {
+			//...//
+		}
 
 	public:
 
@@ -207,15 +206,78 @@ namespace trdk { namespace Lib {
 					const std::string &defPrimaryExchange)
 				const;
 
+	protected:
+
+		virtual std::istream & GetSource() const = 0;
+
 	private:
 
 		std::string ReadCurrentLine() const;
 		void Reset();
 
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+
+	class IniFile : public trdk::Lib::Ini {
+
+	public:
+
+		class FileOpenError : public Error {
+		public:
+			FileOpenError() throw();
+		};
+
+	public:
+
+		explicit IniFile(const boost::filesystem::path &);
+
+	public:
+
+		const boost::filesystem::path & GetPath() const {
+			return m_path;
+		}
+
+	protected:
+
+		virtual std::istream & GetSource() const {
+			return m_file;
+		}
+
 	private:
 
 		boost::filesystem::path m_path;
 		mutable std::ifstream m_file;
+
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	class IniString : public trdk::Lib::Ini {
+
+	public:
+
+		class FileOpenError : public Error {
+		public:
+			FileOpenError() throw();
+		};
+
+	public:
+
+		explicit IniString(const std::string &source)
+				: m_source(source) {
+			//...//
+		}
+
+	protected:
+
+		virtual std::istream & GetSource() const {
+			return m_source;
+		}
+
+	private:
+
+		mutable std::istringstream m_source;
 
 	};
 
@@ -226,13 +288,18 @@ namespace trdk { namespace Lib {
 	public:
 
 		explicit IniFileSectionRef(
-					const trdk::Lib::IniFile &fileRef,
-					const std::string &sectionNameRef);
+					const trdk::Lib::Ini &iniRef,
+					const std::string &sectionName);
 
 	public:
 
-		const std::string & GetName() const;
-		const IniFile & GetBase() const;
+		const std::string & GetName() const {
+			return m_name;
+		}
+
+		const trdk::Lib::Ini & GetBase() const {
+			return *m_base;
+		}
 
 		bool IsKeyExist(const std::string &key) const;
 
@@ -279,7 +346,7 @@ namespace trdk { namespace Lib {
 
 	private:
 
-		const trdk::Lib::IniFile *m_file;
+		const trdk::Lib::Ini *m_base;
 		std::string m_name;
 
 	};

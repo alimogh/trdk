@@ -32,41 +32,34 @@ namespace {
 
 }
 
-//////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-IniFile::Error::Error(const char *what) throw()
+Ini::Error::Error(const char *what) throw()
 		: Exception(what) {
 	//...//
 }
 
-IniFile::FileOpenError::FileOpenError() throw()
-		: Error("Failed to open INI-file") {
-	//...//
-}
-
-IniFile::KeyNotExistsError::KeyNotExistsError(const char *what) throw()
+Ini::KeyNotExistsError::KeyNotExistsError(const char *what) throw()
 		: Error(what) {
 	//...//
 }
 
-IniFile::SectionNotExistsError::SectionNotExistsError(const char *what) throw()
+Ini::SectionNotExistsError::SectionNotExistsError(const char *what) throw()
 		: Error(what) {
 	//...//
 }
 
-IniFile::KeyFormatError::KeyFormatError(const char *what) throw()
+Ini::KeyFormatError::KeyFormatError(const char *what) throw()
 		: Error(what) {
 	//...//
 }
 
-IniFile::SectionNotUnique::SectionNotUnique() throw()
+Ini::SectionNotUnique::SectionNotUnique() throw()
 		: Error("Section is not unique")  {
 	//...//
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-boost::int64_t IniFile::AbsoluteOrPercentsPrice::Get(
+boost::int64_t Ini::AbsoluteOrPercentsPrice::Get(
 			boost::int64_t fullVal)
 		const {
 	return isAbsolute
@@ -74,7 +67,7 @@ boost::int64_t IniFile::AbsoluteOrPercentsPrice::Get(
 		:	boost::int64_t(boost::math::round(fullVal * value.percents));
 }
 
-std::string IniFile::AbsoluteOrPercentsPrice::GetStr(unsigned long priceScale)
+std::string Ini::AbsoluteOrPercentsPrice::GetStr(unsigned long priceScale)
 		const {
 	return isAbsolute
 		?	boost::lexical_cast<std::string>(
@@ -82,24 +75,14 @@ std::string IniFile::AbsoluteOrPercentsPrice::GetStr(unsigned long priceScale)
 		:	(boost::format("%1%%%") % (value.percents * 100)).str();
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-IniFile::IniFile(const fs::path &path)
-		: m_path(path),
-		m_file(m_path.c_str()) {
-	if (!m_file) {
-		throw FileOpenError();
-	}
+void Ini::Reset() {
+	GetSource().clear();
+	GetSource().seekg(0);
 }
 
-void IniFile::Reset() {
-	m_file.clear();
-	m_file.seekg(0);
-}
-
-std::string IniFile::ReadCurrentLine() const {
+std::string Ini::ReadCurrentLine() const {
 	std::string result;
-	std::getline(m_file, result);
+	std::getline(GetSource(), result);
 	const auto commentPos1 = result.find(";");
 	const auto commentPos2 = result.find("#");
 	const auto commentPos3 = result.find("//");
@@ -110,10 +93,11 @@ std::string IniFile::ReadCurrentLine() const {
 	return result;
 }
 
-IniFile::SectionList IniFile::ReadSectionsList() const {
+Ini::SectionList Ini::ReadSectionsList() const {
 	SectionList result;
-	const_cast<IniFile *>(this)->Reset();
-	while (!m_file.eof()) {
+	const_cast<Ini *>(this)->Reset();
+	auto &source = GetSource();
+	while (!source.eof() && !source.fail()) {
 		std::string line = ReadCurrentLine();
 		if (IsSection(line)) {
 			TrimSection(line);
@@ -126,14 +110,15 @@ IniFile::SectionList IniFile::ReadSectionsList() const {
 	return result;
 }
 
-void IniFile::ReadSection(
+void Ini::ReadSection(
 			const std::string &section,
 			boost::function<bool(const std::string &)> readLine,
 			bool mustExist)
 		const {
-	const_cast<IniFile *>(this)->Reset();
+	const_cast<Ini *>(this)->Reset();
 	bool isInSection = false;
-	while (!m_file.eof()) {
+	auto &source = GetSource();
+	while (!source.eof() && !source.fail()) {
 		std::string line = ReadCurrentLine();
 		if (line.empty()) {
 			continue;
@@ -149,13 +134,13 @@ void IniFile::ReadSection(
 		}
 	}
 	if (!isInSection && mustExist) {
-		boost::format message("Failed to find INI-file section \"%1%\"");
+		boost::format message("Failed to find INI-section \"%1%\"");
 		message % section;
 		throw SectionNotExistsError(message.str().c_str());
 	}
 }
 
-bool IniFile::IsKeyExist(
+bool Ini::IsKeyExist(
 			const std::string &section,
 			const std::string &key)
 		const {
@@ -178,7 +163,7 @@ bool IniFile::IsKeyExist(
 	return result;
 }
 
-std::string IniFile::ReadKey(
+std::string Ini::ReadKey(
 			const std::string &section,
 			const std::string &key)
 		const {
@@ -207,14 +192,14 @@ std::string IniFile::ReadKey(
 		true);
 	if (!isKeyExists || result.empty()) {
 		Assert(result.empty());
-		boost::format message("Failed to find INI-file key \"%1%::%2%\"");
+		boost::format message("Failed to find INI-key \"%1%::%2%\"");
 		message % section % key;
 		throw KeyNotExistsError(message.str().c_str());
 	}
 	return result;
 }
 
-std::string IniFile::ReadKey(
+std::string Ini::ReadKey(
 			const std::string &section,
 			const std::string &key,
 			const std::string &defaultValue)
@@ -226,14 +211,14 @@ std::string IniFile::ReadKey(
 	}
 }
 
-fs::path IniFile::ReadFileSystemPath(
+fs::path Ini::ReadFileSystemPath(
 			const std::string &section,
 			const std::string &key)
 		const {
 	return Normalize(fs::path(ReadKey(section, key)));
 }
 
-IniFile::AbsoluteOrPercentsPrice IniFile::ReadAbsoluteOrPercentsPriceKey(
+Ini::AbsoluteOrPercentsPrice Ini::ReadAbsoluteOrPercentsPriceKey(
 			const std::string &section,
 			const std::string &key,
 			unsigned long priceScale)
@@ -254,13 +239,13 @@ IniFile::AbsoluteOrPercentsPrice IniFile::ReadAbsoluteOrPercentsPriceKey(
 		return result;
 	} catch (const boost::bad_lexical_cast &ex) {
 		boost::format message(
-			"Wrong INI-file key (\"%1%:%2%\") format: \"%3%\"");
+			"Wrong INI-key (\"%1%:%2%\") format: \"%3%\"");
 		message % section % key % ex.what();
 		throw KeyFormatError(message.str().c_str());
 	}
 }
 
-bool IniFile::ReadBoolKey(
+bool Ini::ReadBoolKey(
 			const std::string &section,
 			const std::string &key)
 		const {
@@ -274,7 +259,7 @@ bool IniFile::ReadBoolKey(
 				&& !boost::iequals(val, "no")
 				&& val != "0") {
 		boost::format message(
-			"Wrong INI-file key (\"%1%:%2%\") format:"
+			"Wrong INI-key (\"%1%:%2%\") format:"
 				" \"for boolean available values: true/false, yes/no, 1/0");
 		message % section % key;
 		throw KeyFormatError(message.str().c_str());
@@ -283,7 +268,7 @@ bool IniFile::ReadBoolKey(
 	}
 }
 
-bool IniFile::ReadBoolKey(
+bool Ini::ReadBoolKey(
 			const std::string &section,
 			const std::string &key,
 			bool defaultValue)
@@ -295,10 +280,11 @@ bool IniFile::ReadBoolKey(
 	}
 }
 
-std::list<std::string> IniFile::ReadList() const {
+std::list<std::string> Ini::ReadList() const {
 	std::list<std::string> result;
-	const_cast<IniFile *>(this)->Reset();
-	while (!m_file.eof()) {
+	const_cast<Ini *>(this)->Reset();
+	auto &source = GetSource();
+	while (!source.eof() && !source.fail()) {
 		std::string line = ReadCurrentLine();
 		if (line.empty() || IsSection(line)) {
 			continue;
@@ -308,7 +294,7 @@ std::list<std::string> IniFile::ReadList() const {
 	return result;
 }
 
-std::list<std::string> IniFile::ReadList(
+std::list<std::string> Ini::ReadList(
 			const std::string &section,
 			bool mustExist)
 		const {
@@ -323,7 +309,7 @@ std::list<std::string> IniFile::ReadList(
 	return result;
 }
 
-std::set<Symbol> IniFile::ReadSymbols(
+std::set<Symbol> Ini::ReadSymbols(
 			const std::string &defExchange,
 			const std::string &defPrimaryExchange)
 		const {
@@ -334,7 +320,7 @@ std::set<Symbol> IniFile::ReadSymbols(
 	return result;
 }
 
-std::set<Symbol> IniFile::ReadSymbols(
+std::set<Symbol> Ini::ReadSymbols(
 			const std::string &section,
 			const std::string &defExchange,
 			const std::string &defPrimaryExchange)
@@ -346,16 +332,27 @@ std::set<Symbol> IniFile::ReadSymbols(
 	return result;
 }
 
-const fs::path & IniFile::GetPath() const {
-	return m_path;
+//////////////////////////////////////////////////////////////////////////
+
+IniFile::FileOpenError::FileOpenError() throw()
+		: Error("Failed to open INI-file") {
+	//...//
+}
+
+IniFile::IniFile(const fs::path &path)
+		: m_path(path),
+		m_file(m_path.c_str()) {
+	if (!m_file) {
+		throw FileOpenError();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 IniFileSectionRef::IniFileSectionRef(
-			const IniFile &file,
+			const Ini &base,
 			const std::string &name)
-		: m_file(&file),
+		: m_base(&base),
 		m_name(name) {
 	//...//
 }
@@ -409,14 +406,6 @@ std::set<Symbol> IniFileSectionRef::ReadSymbols(
 			const std::string &defPrimaryExchange)
 		const {
 	return GetBase().ReadSymbols(GetName(), defExchange, defPrimaryExchange);
-}
-
-const std::string & IniFileSectionRef::GetName() const {
-	return m_name;
-}
-
-const IniFile & IniFileSectionRef::GetBase() const {
-	return *m_file;
 }
 
 //////////////////////////////////////////////////////////////////////////
