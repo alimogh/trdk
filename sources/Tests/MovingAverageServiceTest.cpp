@@ -19,129 +19,131 @@ namespace svc = trdk::Services;
 
 namespace {
 
-	const double movingAverageSimpleSource[100][2] = {
-			{	2394	,	0	},
-			{	2697	,	0	},
-			{	8934	,	0	},
-			{	1254	,	3819.75	},
-			{	5381	,	4566.5	},
-			{	8976	,	6136.25	},
-			{	2667	,	4569.5	},
-			{	1026	,	4512.5	},
-			{	9843	,	5628	},
-			{	4722	,	4564.5	},
-			{	8866	,	6114.25	},
-			{	834	,	6066.25	},
-			{	1857	,	4069.75	},
-			{	2864	,	3605.25	},
-			{	4778	,	2583.25	},
-			{	753	,	2563	},
-			{	4622	,	3254.25	},
-			{	949	,	2775.5	},
-			{	805	,	1782.25	},
-			{	1861	,	2059.25	},
-			{	1976	,	1397.75	},
-			{	2095	,	1684.25	},
-			{	5112	,	2761	},
-			{	4284	,	3366.75	},
-			{	9547	,	5259.5	},
-			{	8371	,	6828.5	},
-			{	9484	,	7921.5	},
-			{	3219	,	7655.25	},
-			{	165	,	5309.75	},
-			{	5896	,	4691	},
-			{	6193	,	3868.25	},
-			{	7596	,	4962.5	},
-			{	3325	,	5752.5	},
-			{	1117	,	4557.75	},
-			{	4277	,	4078.75	},
-			{	5166	,	3471.25	},
-			{	9152	,	4928	},
-			{	4200	,	5698.75	},
-			{	6839	,	6339.25	},
-			{	2906	,	5774.25	},
-			{	5913	,	4964.5	},
-			{	5654	,	5328	},
-			{	5677	,	5037.5	},
-			{	8663	,	6476.75	},
-			{	2676	,	5667.5	},
-			{	3623	,	5159.75	},
-			{	4363	,	4831.25	},
-			{	6051	,	4178.25	},
-			{	1872	,	3977.25	},
-			{	9161	,	5361.75	},
-			{	9377	,	6615.25	},
-			{	7609	,	7004.75	},
-			{	1195	,	6835.5	},
-			{	4042	,	5555.75	},
-			{	997	,	3460.75	},
-			{	756	,	1747.5	},
-			{	9716	,	3877.75	},
-			{	218	,	2921.75	},
-			{	369	,	2764.75	},
-			{	8612	,	4728.75	},
-			{	1978	,	2794.25	},
-			{	1363	,	3080.5	},
-			{	9596	,	5387.25	},
-			{	7845	,	5195.5	},
-			{	2893	,	5424.25	},
-			{	9347	,	7420.25	},
-			{	5153	,	6309.5	},
-			{	1150	,	4635.75	},
-			{	8002	,	5913	},
-			{	690	,	3748.75	},
-			{	3113	,	3238.75	},
-			{	9447	,	5313	},
-			{	5438	,	4672	},
-			{	1703	,	4925.25	},
-			{	1084	,	4418	},
-			{	7170	,	3848.75	},
-			{	5464	,	3855.25	},
-			{	3502	,	4305	},
-			{	6965	,	5775.25	},
-			{	6974	,	5726.25	},
-			{	4467	,	5477	},
-			{	9769	,	7043.75	},
-			{	2310	,	5880	},
-			{	8498	,	6261	},
-			{	3662	,	6059.75	},
-			{	7536	,	5501.5	},
-			{	3986	,	5920.5	},
-			{	1287	,	4117.75	},
-			{	2994	,	3950.75	},
-			{	2475	,	2685.5	},
-			{	1903	,	2164.75	},
-			{	9700	,	4268	},
-			{	6687	,	5191.25	},
-			{	3700	,	5497.5	},
-			{	7493	,	6895	},
-			{	6324	,	6051	},
-			{	9636	,	6788.25	},
-			{	2388	,	6460.25	},
-			{	9668	,	7004	},
-			{	8653	,	7586.25	}};
+	const double source[111][3] = {
+		/*	Val			SMA				EMA	 */
+		{	1642.81	,	0.00	,	0.00	},
+		{	1626.13	,	0.00	,	0.00	},
+		{	1612.52	,	0.00	,	0.00	},
+		{	1636.36	,	0.00	,	0.00	},
+		{	1626.73	,	0.00	,	0.00	},
+		{	1639.04	,	0.00	,	0.00	},
+		{	1651.81	,	0.00	,	0.00	},
+		{	1628.93	,	0.00	,	0.00	},
+		{	1588.19	,	0.00	,	0.00	},
+		{	1628.93	,	1628.15	,	296.17	},
+		{	1588.19	,	1622.68	,	531.08	},
+		{	1592.43	,	1619.31	,	724.05	},
+		{	1573.09	,	1615.37	,	878.42	},
+		{	1588.03	,	1610.54	,	1007.44	},
+		{	1603.26	,	1608.19	,	1115.77	},
+		{	1613.2	,	1605.61	,	1206.22	},
+		{	1606.28	,	1601.05	,	1278.95	},
+		{	1614.96	,	1599.66	,	1340.05	},
+		{	1614.08	,	1602.25	,	1389.87	},
+		{	1615.41	,	1600.89	,	1430.88	},
+		{	1631.89	,	1605.26	,	1467.43	},
+		{	1640.46	,	1610.07	,	1498.89	},
+		{	1652.32	,	1617.99	,	1526.78	},
+		{	1652.62	,	1624.45	,	1549.66	},
+		{	1675.02	,	1631.62	,	1572.45	},
+		{	1680.19	,	1638.32	,	1592.04	},
+		{	1682.5	,	1645.95	,	1608.49	},
+		{	1676.26	,	1652.08	,	1620.81	},
+		{	1680.91	,	1658.76	,	1631.74	},
+		{	1689.37	,	1666.15	,	1642.22	},
+		{	1692.09	,	1672.17	,	1651.28	},
+		{	1695.53	,	1677.68	,	1659.33	},
+		{	1692.39	,	1681.69	,	1665.34	},
+		{	1685.94	,	1685.02	,	1669.09	},
+		{	1690.25	,	1686.54	,	1672.93	},
+		{	1691.65	,	1687.69	,	1676.34	},
+		{	1685.33	,	1687.97	,	1677.97	},
+		{	1685.96	,	1688.94	,	1679.42	},
+		{	1685.73	,	1689.42	,	1680.57	},
+		{	1706.87	,	1691.17	,	1685.35	},
+		{	1709.67	,	1692.93	,	1689.77	},
+		{	1707.14	,	1694.09	,	1692.93	},
+		{	1697.37	,	1694.59	,	1693.74	},
+		{	1690.91	,	1695.09	,	1693.22	},
+		{	1697.48	,	1695.81	,	1694.00	},
+		{	1691.42	,	1695.79	,	1693.53	},
+		{	1689.47	,	1696.20	,	1692.79	},
+		{	1694.16	,	1697.02	,	1693.04	},
+		{	1685.39	,	1696.99	,	1691.65	},
+		{	1661.32	,	1692.43	,	1686.13	},
+		{	1655.83	,	1687.05	,	1680.62	},
+		{	1646.06	,	1680.94	,	1674.34	},
+		{	1652.35	,	1676.44	,	1670.34	},
+		{	1642.8	,	1671.63	,	1665.33	},
+		{	1656.96	,	1667.58	,	1663.81	},
+		{	1663.5	,	1664.78	,	1663.76	},
+		{	1656.78	,	1661.52	,	1662.49	},
+		{	1630.48	,	1655.15	,	1656.67	},
+		{	1634.96	,	1650.10	,	1652.72	},
+		{	1638.17	,	1647.79	,	1650.08	},
+		{	1632.97	,	1645.50	,	1646.97	},
+		{	1639.77	,	1644.87	,	1645.66	},
+		{	1653.08	,	1644.95	,	1647.01	},
+		{	1655.08	,	1646.18	,	1648.47	},
+		{	1655.17	,	1646.00	,	1649.69	},
+		{	1671.71	,	1646.82	,	1653.70	},
+		{	1683.99	,	1649.54	,	1659.20	},
+		{	1689.13	,	1655.40	,	1664.64	},
+		{	1683.42	,	1660.25	,	1668.06	},
+		{	1687.99	,	1665.23	,	1671.68	},
+		{	1697.6	,	1671.69	,	1676.39	},
+		{	1704.76	,	1678.19	,	1681.55	},
+		{	1725.52	,	1685.44	,	1689.55	},
+		{	1722.34	,	1692.16	,	1695.51	},
+		{	1709.91	,	1697.64	,	1698.13	},
+		{	1701.84	,	1700.65	,	1698.80	},
+		{	1697.42	,	1701.99	,	1698.55	},
+		{	1692.77	,	1702.36	,	1697.50	},
+		{	1698.67	,	1703.88	,	1697.71	},
+		{	1691.75	,	1704.26	,	1696.63	},
+		{	1681.55	,	1702.65	,	1693.89	},
+		{	1695	,	1701.68	,	1694.09	},
+		{	1693.87	,	1698.51	,	1694.05	},
+		{	1678.66	,	1694.14	,	1691.25	},
+		{	1690.5	,	1692.20	,	1691.11	},
+		{	1676.12	,	1689.63	,	1688.39	},
+		{	1655.45	,	1685.43	,	1682.40	},
+		{	1656.4	,	1681.80	,	1677.67	},
+		{	1692.56	,	1681.19	,	1680.38	},
+		{	1703.2	,	1682.33	,	1684.53	},
+		{	1710.14	,	1685.19	,	1689.19	},
+		{	1698.06	,	1685.50	,	1690.80	},
+		{	1721.54	,	1688.26	,	1696.39	},
+		{	1733.15	,	1693.71	,	1703.07	},
+		{	1744.5	,	1699.11	,	1710.60	},
+		{	1744.66	,	1705.97	,	1716.80	},
+		{	1754.67	,	1715.89	,	1723.68	},
+		{	1746.38	,	1724.89	,	1727.81	},
+		{	1752.07	,	1730.84	,	1732.22	},
+		{	1759.77	,	1736.49	,	1737.23	},
+		{	1762.11	,	1741.69	,	1741.75	},
+		{	1771.95	,	1749.08	,	1747.24	},
+		{	1763.31	,	1753.26	,	1750.16	},
+		{	1756.54	,	1755.60	,	1751.32	},
+		{	1761.64	,	1757.31	,	1753.20	},
+		{	1767.93	,	1759.64	,	1755.88	},
+		{	1762.97	,	1760.47	,	1757.17	},
+		{	1770.49	,	1762.88	,	1759.59	},
+		{	1747.15	,	1762.39	,	1757.33	},
+		{	1770.61	,	1763.47	,	1759.74	},
+		{	1771.89	,	1764.45	,	1761.95	},
+	};
 
 	struct Simple {
 
-		typedef double Source[100][2];
+		typedef double Source[110][2];
 
-		static const char * GetSettingsWithHistory() {
-			return
-				"[MovingAverageSection]\n"
-					"type = simple\n"
-					"history = yes\n"
-					"period = 4";
+		static const char * GetType() {
+			return "simple";
 		}
 
-		static const char * GetSettingsWithoutHistory() {
-			return
-				"[MovingAverageSection]\n"
-					"type = simple\n"
-					"period = 4";
-		}
-
-		static const Source & GetSource() {
-			return movingAverageSimpleSource;
+		static size_t GetColumn() {
+			return 1;
 		}
 
 	};
@@ -168,49 +170,60 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 	
 	typedef typename TypeParam Policy;
 
-	const lib::IniString settings(Policy::GetSettingsWithHistory());
+	boost::format settingsString(
+		"[Section]\n"
+			"type = %1%\n"
+			"history = yes\n"
+			"period = 10");
+	settingsString % Policy::GetType();
+	const lib::IniString settings(settingsString.str());
 	Context context;
 
 	svc::MovingAverageService service(
 		context,
-		"MovingAverageTag",
-		lib::IniFileSectionRef(settings, "MovingAverageSection"));
+		"Tag",
+		lib::IniFileSectionRef(settings, "Section"));
 
-	for (size_t i = 0; i < _countof(Policy::GetSource()); ++i) {
+	for (size_t i = 0; i < _countof(source); ++i) {
 		svc::BarService::Bar bar;
-		bar.closeTradePrice
-			= lib::Scale(Policy::GetSource()[i][0], 100);
-		ASSERT_EQ(i >= 3, service.OnNewBar(bar))
+		bar.closeTradePrice = lib::Scale(source[i][0], 100);
+		ASSERT_EQ(
+				!lib::IsZero(source[i][Policy::GetColumn()]),
+				service.OnNewBar(bar))
 			<< "i = " << i << ";"
 			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
-		if (!lib::IsZero(Policy::GetSource()[i][1])) {
-			ASSERT_EQ(
-					Policy::GetSource()[i][1],
+		if (!lib::IsZero(source[i][Policy::GetColumn()])) {
+			EXPECT_EQ(
+					source[i][Policy::GetColumn()],
 					lib::Descale(service.GetLastPoint().value, 100))
 				<< "i = " << i << ";"
-				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
+				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
+				<< " service.GetLastPoint().value = "
+					<< service.GetLastPoint().value << ";";
 		}
 	}
 
 	ASSERT_NO_THROW(service.GetHistorySize());
-	ASSERT_EQ(97, service.GetHistorySize());
+	ASSERT_EQ(102, service.GetHistorySize());
 	EXPECT_THROW(
-		service.GetHistoryPoint(97),
+		service.GetHistoryPoint(102),
 		svc::MovingAverageService::ValueDoesNotExistError);
 	EXPECT_THROW(
-		service.GetHistoryPointByReversedIndex(97),
+		service.GetHistoryPointByReversedIndex(102),
 		svc::MovingAverageService::ValueDoesNotExistError);
 
 	for (size_t i = 0; i < service.GetHistorySize(); ++i) {
 		ASSERT_EQ(
-				lib::Scale(Policy::GetSource()[i + 3][1], 100),
-				service.GetHistoryPoint(i).value)
+				source[i + 9][Policy::GetColumn()],
+				lib::Descale(service.GetHistoryPoint(i).value, 100))
 			<< "i = " << i << ";";
 	}
 	for (size_t i = 0; i < service.GetHistorySize(); ++i) {
 		ASSERT_EQ(
-				lib::Scale(Policy::GetSource()[99 - i][1], 100),
-				service.GetHistoryPointByReversedIndex(i).value)
+				source[110 - i][Policy::GetColumn()],
+				lib::Descale(
+					service.GetHistoryPointByReversedIndex(i).value,
+					100))
 			<< "i = " << i << ";";
 	}
 
@@ -220,27 +233,35 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 
 	typedef typename TypeParam Policy;
 
-	const lib::IniString settings(Policy::GetSettingsWithoutHistory());
+	boost::format settingsString(
+		"[Section]\n"
+			"type = %1%\n"
+			"period = 10");
+	settingsString % Policy::GetType();
+	const lib::IniString settings(settingsString.str());
 	Context context;
 
 	svc::MovingAverageService service(
 		context,
-		"MovingAverageTag",
-		lib::IniFileSectionRef(settings, "MovingAverageSection"));
+		"Tag",
+		lib::IniFileSectionRef(settings, "Section"));
 
-	for (size_t i = 0; i < _countof(Policy::GetSource()); ++i) {
+	for (size_t i = 0; i < _countof(source); ++i) {
 		svc::BarService::Bar bar;
-		bar.closeTradePrice
-			= lib::Scale(Policy::GetSource()[i][0], 100);
-		ASSERT_EQ(i >= 3, service.OnNewBar(bar))
+		bar.closeTradePrice = lib::Scale(source[i][0], 100);
+		ASSERT_EQ(
+				!lib::IsZero(source[i][Policy::GetColumn()]),
+				service.OnNewBar(bar))
 			<< "i = " << i << ";"
 			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
-		if (!lib::IsZero(Policy::GetSource()[i][1])) {
-			ASSERT_EQ(
-					Policy::GetSource()[i][1],
+		if (!lib::IsZero(source[i][Policy::GetColumn()])) {
+			EXPECT_EQ(
+					source[i][Policy::GetColumn()],
 					lib::Descale(service.GetLastPoint().value, 100))
 				<< "i = " << i << ";"
-				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
+				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
+				<< " service.GetLastPoint().value = "
+					<< service.GetLastPoint().value << ";";
 		}
 	}
 

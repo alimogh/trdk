@@ -16,6 +16,7 @@
 
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/noncopyable.hpp>
+#	include <boost/format.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #undef Assert

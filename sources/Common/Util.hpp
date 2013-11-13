@@ -43,41 +43,6 @@ namespace trdk { namespace Lib {
 		return IsEqual(v, .0);
 	};
 
-	namespace Detail {
-		template<size_t numbsAfterDot>
-		struct NumbsAfterDotToScale {
-			//...//
-		};
-		template<>
-		struct NumbsAfterDotToScale<2> {
-			static size_t GetScale() {
-				return 100;
-			}
-		};
-		template<>
-		struct NumbsAfterDotToScale<3> {
-			static size_t GetScale() {
-				return 1000;
-			}
-		};
-		template<>
-		struct NumbsAfterDotToScale<4> {
-			static size_t GetScale() {
-				return 10000;
-			}
-		};
-	}
-
-	inline double RoundDouble(double source, size_t scale) {
-		return boost::math::round(source * double(scale)) / double(scale);
-	}
-
-	template<size_t numbsAfterDot>
-	inline double RoundDouble(double source) {
-		typedef Detail::NumbsAfterDotToScale<numbsAfterDot> Scale;
-		return RoundDouble(source, Scale::GetScale());
-	}
-
 	//////////////////////////////////////////////////////////////////////////
 
 	inline boost::int64_t Scale(double value, unsigned long scale) {
@@ -85,7 +50,14 @@ namespace trdk { namespace Lib {
 	}
 
 	inline double Descale(boost::int64_t value, unsigned long scale) {
-		return RoundDouble(double(value) / scale, scale);
+		const auto result = value / double(scale);
+		return result;
+	}
+
+	inline double Descale(double value, unsigned long scale) {
+		value = boost::math::round(value);
+		value /= double(scale);
+		return value;
 	}
 
 	//////////////////////////////////////////////////////////////////////////

@@ -129,7 +129,7 @@ namespace {
 	}
 
 	typedef accs::accumulator_set<
-			ScaledPrice,
+			double,
 			accs::stats<
 				accs::tag::count,
 				accs::tag::rolling_mean>>
@@ -158,10 +158,10 @@ namespace {
 		}
 	};
 
-	struct GetValueVisitor : public boost::static_visitor<size_t> {
+	struct GetValueVisitor : public boost::static_visitor<double> {
 		template<typename Acc>
-		ScaledPrice operator ()(Acc &acc) const {
-			return ScaledPrice(accs::rolling_mean(acc));
+		double operator ()(Acc &acc) const {
+			return accs::rolling_mean(acc);
 		}
 	};
 
@@ -360,7 +360,8 @@ bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
 	}
 
 	const Point newPoint = {
-		boost::apply_visitor(GetValueVisitor(), *m_pimpl->m_acc)};
+		boost::apply_visitor(GetValueVisitor(), *m_pimpl->m_acc)
+	};
 	m_pimpl->m_lastValue = newPoint;
 
 	if (m_pimpl->m_history) {

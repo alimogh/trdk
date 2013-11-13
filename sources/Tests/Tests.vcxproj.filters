@@ -49,4 +49,7 @@
       <Filter>Lib Files</Filter>
     </Library>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Indicators.xlsx" />
+  </ItemGroup>
 </Project>
