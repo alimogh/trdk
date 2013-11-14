@@ -134,18 +134,22 @@ namespace {
 		{	1771.89	,	1764.45	,	1761.95	},
 	};
 
-	struct Simple {
-
-		typedef double Source[110][2];
-
+	struct Sma {
 		static const char * GetType() {
 			return "simple";
 		}
-
 		static size_t GetColumn() {
 			return 1;
 		}
+	};
 
+	struct Ema {
+		static const char * GetType() {
+			return "exponential";
+		}
+		static size_t GetColumn() {
+			return 2;
+		}
 	};
 
 }
@@ -287,7 +291,7 @@ REGISTER_TYPED_TEST_CASE_P(
 
 namespace trdk { namespace Testing {
 
-	typedef ::testing::Types<Simple>
+	typedef ::testing::Types<Sma, Ema>
 		MovingAverageServiceTestPolicies;
 
 	INSTANTIATE_TYPED_TEST_CASE_P(
