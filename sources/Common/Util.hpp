@@ -24,24 +24,29 @@ namespace trdk { namespace Lib {
 	inline bool IsEqual(const double v1, const double v2) {
 		typedef std::numeric_limits<double> Nm;
 		return ::abs(v1 - v2) <= std::max(Nm::epsilon(), Nm::epsilon());
-	};
+	}
 
 	inline bool IsEqual(const float v1, const float v2) {
 		typedef std::numeric_limits<float> Nm;
 		return ::abs(v1 - v2) <= std::max(Nm::epsilon(), Nm::epsilon());
-	};
+	}
 
 	inline bool IsEqual(const std::string &v1, const std::string &v2) {
-		return v1 == v2;
-	};
+		return boost::equal(v1, v2);
+	}
 
-	inline bool IsEqual(const boost::uint32_t v1, const boost::uint32_t v2) {
+	inline bool IsEqual(const intmax_t v1, const intmax_t v2) {
 		return v1 == v2;
-	};
+	}
 
-	inline bool IsZero(double v) {
-		return IsEqual(v, .0);
-	};
+	inline bool IsEqual(const uintmax_t v1, const uintmax_t v2) {
+		return v1 == v2;
+	}
+
+	template<typename T>
+	inline T IsZero(const T &v) {
+		return IsEqual(v, 0);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 
