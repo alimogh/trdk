@@ -12,8 +12,9 @@
 
 #include "ModuleExport.hpp"
 #include "ModuleSecurityListExport.hpp"
-#include "Services/BarService.hpp"
+#include "Services/BollingerBandsService.hpp"
 #include "Services/MovingAverageService.hpp"
+#include "Services/BarService.hpp"
 #include "PythonToCoreTransit.hpp"
 
 //////////////////////////////////////////////////////////////////////////
@@ -195,14 +196,6 @@ namespace trdk { namespace PyApi {
 
 	//////////////////////////////////////////////////////////////////////////
 
-} }
-
-//////////////////////////////////////////////////////////////////////////
-
-namespace trdk { namespace PyApi {
-
-	//////////////////////////////////////////////////////////////////////////
-	
 	class MovingAverageServiceExport : public ServiceInfoExport {
 
 	public:
@@ -251,6 +244,88 @@ namespace trdk { namespace PyApi {
 	protected:
 
 		const Implementation & GetService() const;
+
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+	
+	class BollingerBandsServiceExport : public ServiceInfoExport {
+
+	public:
+
+		typedef trdk::Services::BollingerBandsService Implementation;
+
+	public:
+
+		class PointExport {
+		public:
+			explicit PointExport(
+						const Implementation &service,
+						const Implementation::Point &point)
+				: m_service(&service),
+				m_point(point) {
+			//...//
+		}
+		public:
+			static void ExportClass(const char *className);
+		public:
+			double  GetLow() const {
+				return m_point.low;
+			}
+			double  GetHigh() const {
+				return m_point.high;
+			}
+		private:
+			const Implementation *m_service;
+			Implementation::Point m_point;
+		};
+
+	public:
+
+		//! C-tor.
+		/*  @param serviceRef	Reference to service, must be alive all time
+		 *						while export object exists.
+		 */
+		explicit BollingerBandsServiceExport(const Implementation &serviceRef)
+				: ServiceInfoExport(serviceRef) {
+			//...//
+		}
+
+	public:
+
+		static void ExportClass(const char *className);
+
+	public:
+
+		bool IsEmpty() const {
+			return GetService().IsEmpty();
+		}
+
+		PointExport GetLastPoint() const {
+			return PointExport(GetService(), GetService().GetLastPoint());
+		}
+
+		size_t GetHistorySize() const {
+			return GetService().GetHistorySize();
+		}
+
+		PointExport GetHistoryPoint(size_t index) const {
+			return PointExport(
+				GetService(),
+				GetService().GetHistoryPoint(index));
+		}
+		PointExport GetHistoryPointByReversedIndex(size_t index) const {
+			return PointExport(
+				GetService(),
+				GetService().GetHistoryPointByReversedIndex(index));
+		}
+
+	protected:
+
+		const Implementation & GetService() const {
+			return *boost::polymorphic_downcast<const Implementation *>(
+				&ServiceInfoExport::GetService());
+		}
 
 	};
 

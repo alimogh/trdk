@@ -58,6 +58,7 @@ BOOST_PYTHON_MODULE(trdk) {
 		py::scope servicesScope = servicesModule;
 		BarServiceExport::ExportClass("BarService");
 		MovingAverageServiceExport::ExportClass("MovingAverageService");
+		BollingerBandsServiceExport::ExportClass("BollingerBandsService");
 	}
 
 }

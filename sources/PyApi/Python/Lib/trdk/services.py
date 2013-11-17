@@ -135,11 +135,39 @@ class MovingAverageService(trdk.ServiceInfo):
         pass
 
     def getHistoryPointByReversedIndex(self, index):
-        """ Returns value point from history by reversed index. Last bar has index
-            "zero".
+        """ Returns value point from history by reversed index. Last value has
+            index "zero".
         :type index: int
         :rtype: trdk.services.MovingAverageService.Point
         """
         pass
 
 ###############################################################################
+
+
+class BollingerBandsService(trdk.ServiceInfo):
+
+    class Point(object):
+        high = float
+        low = float
+
+    isEmpty = bool
+
+    lastPoint = trdk.services.BollingerBandsService.Point  # Last value point.
+
+    historySize = int  # Number of points in history.
+
+    def getHistoryPoint(self, index):
+        """ Returns point from history by index. First point has index "zero".
+        :type index: int
+        :rtype: trdk.services.BollingerBandsService.Point
+        """
+        pass
+
+    def getHistoryPointByReversedIndex(self, index):
+        """ Returns point from history by reversed index. Last point has index
+            "zero".
+        :type index: int
+        :rtype: trdk.services.BollingerBandsService.Point
+        """
+        pass

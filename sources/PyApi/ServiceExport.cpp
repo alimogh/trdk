@@ -405,7 +405,7 @@ MovingAverageServiceExport::PointExport::PointExport(
 }
 
 void MovingAverageServiceExport::PointExport::ExportClass(
-		const char *className) {
+			const char *className) {
 	py::class_<PointExport>(className, py::no_init)
 		.add_property("value", &PointExport::GetValue);
 }
@@ -475,6 +475,38 @@ MovingAverageServiceExport::GetHistoryPointByReversedIndex(
 const MovingAverageService & MovingAverageServiceExport::GetService() const {
 	return *boost::polymorphic_downcast<const MovingAverageService *>(
 		&ServiceInfoExport::GetService());
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void BollingerBandsServiceExport::PointExport::ExportClass(
+			const char *className) {
+	py::class_<PointExport>(className, py::no_init)
+		.add_property("high", &PointExport::GetHigh)
+		.add_property("low", &PointExport::GetLow);
+}
+
+
+void BollingerBandsServiceExport::ExportClass(const char *className) {
+
+	typedef MovingAverageServiceExport Self;
+
+	typedef py::class_<Self, py::bases<ServiceInfoExport>> Export;
+	
+	const py::scope serviceClass = Export(className, py::no_init)
+
+		.add_property("isEmpty", &Self::IsEmpty)
+
+		.add_property("lastPoint", &Self::GetLastPoint)
+
+		.add_property("historySize", &Self::GetHistorySize)
+		.def("getHistoryPoint", &Self::GetHistoryPoint)
+ 		.def(
+			"getHistoryPointByReversedIndex",
+			&Self::GetHistoryPointByReversedIndex);
+
+	PointExport::ExportClass("Point");
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

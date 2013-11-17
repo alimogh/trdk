@@ -135,7 +135,7 @@ namespace {
 		{	1771.89	,	1764.45	,	1761.95	}
 	};
 
-	struct Sma {
+	struct SmaTrait {
 		static const char * GetType() {
 			return "simple";
 		}
@@ -144,7 +144,7 @@ namespace {
 		}
 	};
 
-	struct Ema {
+	struct EmaTrait {
 		static const char * GetType() {
 			return "exponential";
 		}
@@ -300,7 +300,7 @@ REGISTER_TYPED_TEST_CASE_P(
 
 namespace trdk { namespace Testing {
 
-	typedef ::testing::Types<Sma, Ema>
+	typedef ::testing::Types<SmaTrait, EmaTrait>
 		MovingAverageServiceTestPolicies;
 
 	INSTANTIATE_TYPED_TEST_CASE_P(

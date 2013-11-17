@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2013/10/23 19:44:19
+ *   Created: 2013/11/17 13:23:08
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,13 +10,14 @@
 
 #pragma once
 
+#include "MovingAverageService.hpp"
 #include "BarService.hpp"
 #include "Core/Service.hpp"
 #include "Api.h"
 
 namespace trdk { namespace Services {
 
-	class TRDK_SERVICES_API MovingAverageService : public trdk::Service {
+	class TRDK_SERVICES_API BollingerBandsService : public trdk::Service {
 
 	public:
 
@@ -40,23 +41,24 @@ namespace trdk { namespace Services {
 
 		//! Value data point.
  		struct Point {
-			double value;
+			double high;
+			double low;
 		};
 
 	public:
 
-		explicit MovingAverageService(
+		explicit BollingerBandsService(
 					Context &,
 					const std::string &tag,
 					const Lib::IniSectionRef &);
-		virtual ~MovingAverageService();
+		virtual ~BollingerBandsService();
 
 	public:
 
 		bool IsEmpty() const;
 
-		//! Returns last value point.
-		/** @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
+		//! Returns last point.
+		/** @throw trdk::Services::BollingerBandsService::ValueDoesNotExistError
 		  */
 		Point GetLastPoint() const;
 
@@ -65,19 +67,19 @@ namespace trdk { namespace Services {
 		//! Number of points from history.
 		size_t GetHistorySize() const;
 
-		//! Returns value point from history by index.
-		/** First value has index "zero".
-		  * @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
-		  * @throw trdk::Services::MovingAverageService::HasNotHistory
-		  * @sa trdk::Services::MovingAverageService::GetValueByReversedIndex
+		//! Returns point from history by index.
+		/** First point has index "zero".
+		  * @throw trdk::Services::BollingerBandsService::ValueDoesNotExistError
+		  * @throw trdk::Services::BollingerBandsService::HasNotHistory
+		  * @sa trdk::Services::BollingerBandsService::GetValueByReversedIndex
 		  */
 		Point GetHistoryPoint(size_t index) const;
 
-		//! Returns value point from history by reversed index.
-		/** Last value has index "zero".
-		  * @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
-		  * @throw trdk::Services::MovingAverageService::HasNotHistory
-		  * @sa trdk::Services::MovingAverageService::GetLastPoint 
+		//! Returns point from history by reversed index.
+		/** Last point has index "zero".
+		  * @throw trdk::Services::BollingerBandsService::ValueDoesNotExistError
+		  * @throw trdk::Services::BollingerBandsService::HasNotHistory
+		  * @sa trdk::Services::BollingerBandsService::GetLastPoint 
 		  */
 		Point GetHistoryPointByReversedIndex(size_t index) const;
 
@@ -85,7 +87,10 @@ namespace trdk { namespace Services {
 
 		virtual bool OnServiceDataUpdate(const trdk::Service &);
 
+	public:
+
 		bool OnNewBar(const trdk::Services::BarService::Bar &);
+		bool OnNewMa(const trdk::Services::MovingAverageService::Point &);
 
 	protected:
 

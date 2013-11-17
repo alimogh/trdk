@@ -12,7 +12,6 @@
 #include "MovingAverageService.hpp"
 #include "BarService.hpp"
 
-namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
 namespace accs = boost::accumulators;
 
@@ -426,7 +425,7 @@ bool MovingAverageService::OnServiceDataUpdate(const Service &service) {
 
 bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
 	
-	//! Called from dispatcher, locking doesn't needed.
+	//! Called from dispatcher, locking is not required.
 
 	{
 		const ExtractFrameValueVisitor extractVisitor(bar);

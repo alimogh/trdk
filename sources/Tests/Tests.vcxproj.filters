@@ -40,6 +40,9 @@
     <ClCompile Include="MovingAverageServiceTest.cpp">
       <Filter>Source Files\Tests</Filter>
     </ClCompile>
+    <ClCompile Include="BollingerBandsServiceTest.cpp">
+      <Filter>Source Files\Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\output\x86\lib\Services_dbg.lib">

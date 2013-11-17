@@ -26,6 +26,9 @@
     <ClInclude Include="MovingAverageService.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BollingerBandsService.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BarService.cpp">
@@ -35,6 +38,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MovingAverageService.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BollingerBandsService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
