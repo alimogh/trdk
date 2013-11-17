@@ -26,6 +26,7 @@ namespace mi = boost::multi_index;
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Engine;
+using namespace trdk::Engine::Ini;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -69,12 +70,12 @@ private:
 		
 		const IniFileSectionRef configurationSection(
 			m_conf,
-			Ini::Sections::tradeSystem);
+			Sections::tradeSystem);
 		const std::string module
-			= configurationSection.ReadKey(Ini::Keys::module);
+			= configurationSection.ReadKey(Keys::module);
 		std::string factoryName = configurationSection.ReadKey(
-			Ini::Keys::factory,
-			Ini::DefaultValues::Factories::tradeSystem);
+			Keys::factory,
+			DefaultValues::Factories::tradeSystem);
 		
 		boost::shared_ptr<Dll> dll(new Dll(module, true));
 
@@ -91,9 +92,9 @@ private:
 			} catch (const Dll::DllFuncException &) {
 				if (	!boost::istarts_with(
 							factoryName,
-							Ini::DefaultValues::Factories::factoryNameStart)) {
+							DefaultValues::Factories::factoryNameStart)) {
 					factoryName
-						= Ini::DefaultValues::Factories::factoryNameStart
+						= DefaultValues::Factories::factoryNameStart
 							+ factoryName;
 					factoryResult = dll->GetFunction<Factory>(factoryName)(
 						configurationSection,
@@ -137,12 +138,12 @@ private:
 
 		const IniFileSectionRef configurationSection(
 			m_conf,
-			Ini::Sections::marketDataSource);
+			Sections::marketDataSource);
 		const std::string module
-			= configurationSection.ReadKey(Ini::Keys::module);
+			= configurationSection.ReadKey(Keys::module);
 		std::string factoryName = configurationSection.ReadKey(
-			Ini::Keys::factory,
-			Ini::DefaultValues::Factories::marketDataSource);
+			Keys::factory,
+			DefaultValues::Factories::marketDataSource);
 		
 		boost::shared_ptr<Dll> dll(new Dll(module, true));
 
@@ -158,9 +159,9 @@ private:
 			} catch (const Dll::DllFuncException &) {
 				if (	!boost::istarts_with(
 							factoryName,
-							Ini::DefaultValues::Factories::factoryNameStart)) {
+							DefaultValues::Factories::factoryNameStart)) {
 					factoryName
-						= Ini::DefaultValues::Factories::factoryNameStart
+						= DefaultValues::Factories::factoryNameStart
 							+ factoryName;
 					factoryResult = dll->GetFunction<Factory>(factoryName)(
 						configurationSection);
@@ -227,7 +228,7 @@ namespace {
 	template<typename ModuleTrait>
 	std::string BuildDefaultFactoryName(const std::string &tag) {
 		return
-			Ini::DefaultValues::Factories::factoryNameStart
+			DefaultValues::Factories::factoryNameStart
 			+ tag
 			+ ModuleTrait::GetName(true);
 	}
@@ -277,7 +278,7 @@ namespace {
 			return BuildDefaultFactoryName<ModuleTrait>(tag);
 		}
 		static const std::string & GetDefaultModule() {
-			return Ini::DefaultValues::Modules::service;
+			return DefaultValues::Modules::service;
 		}
 	};
 	template<>
@@ -468,11 +469,11 @@ public:
 					const std::string &,
 					RequirementsList &)
 				= nullptr;
-			if (boost::iequals(type, Ini::Sections::strategy)) {
+			if (boost::iequals(type, Sections::strategy)) {
 				initModule = &ContextStateBootstraper::InitStrategy;
-			} else if (boost::iequals(type, Ini::Sections::observer)) {
+			} else if (boost::iequals(type, Sections::observer)) {
 				initModule = &ContextStateBootstraper::InitObserver;
-			} else if (boost::iequals(type, Ini::Sections::service)) {
+			} else if (boost::iequals(type, Sections::service)) {
 				initModule = &ContextStateBootstraper::InitService;
 			} else {
 				AssertFail("Unknown module type");
@@ -591,13 +592,13 @@ private:
 		static_assert(
 			numberOfSystemServices == 5,
 			"System service list changed.");
-		if (	boost::iequals(tag, Ini::Constants::Services::level1Updates)
-				|| boost::iequals(tag, Ini::Constants::Services::level1Ticks)
-				|| boost::iequals(tag, Ini::Constants::Services::trades)
+		if (	boost::iequals(tag, Constants::Services::level1Updates)
+				|| boost::iequals(tag, Constants::Services::level1Ticks)
+				|| boost::iequals(tag, Constants::Services::trades)
 				|| boost::iequals(
 						tag,
-						Ini::Constants::Services::brokerPositionsUpdates)
-				|| boost::iequals(tag, Ini::Constants::Services::bars)) {
+						Constants::Services::brokerPositionsUpdates)
+				|| boost::iequals(tag, Constants::Services::bars)) {
 			m_context.GetLog().Error(
 				"System predefined module name used in %1%: \"%2%\".",
 				boost::make_tuple(boost::cref(conf), boost::cref(tag)));
@@ -740,9 +741,9 @@ private:
 		if (subs.empty()) {
 			return false;
 		} else if (
-				!boost::iequals(*subs.begin(), Ini::Sections::strategy)
-				&& !boost::iequals(*subs.begin(), Ini::Sections::observer)
-				&& !boost::iequals(*subs.begin(), Ini::Sections::service)) {
+				!boost::iequals(*subs.begin(), Sections::strategy)
+				&& !boost::iequals(*subs.begin(), Sections::observer)
+				&& !boost::iequals(*subs.begin(), Sections::service)) {
 			return false;
 		} else if (subs.size() != 2 || subs.rbegin()->empty()) {
 			boost::format message(
@@ -901,7 +902,7 @@ private:
 			typedef ModuleTrait<Module> Trait;
 			if (	boost::iequals(
 						request.tag,
-						Ini::Constants::Services::level1Updates)) {
+						Constants::Services::level1Updates)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
@@ -911,7 +912,7 @@ private:
 					result);
 			} else if (	boost::iequals(
 							request.tag,
-							Ini::Constants::Services::level1Ticks)) {
+							Constants::Services::level1Ticks)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
@@ -921,7 +922,7 @@ private:
 					result);
 			} else if (	boost::iequals(
 							request.tag,
-							Ini::Constants::Services::trades)) {
+							Constants::Services::trades)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
@@ -931,7 +932,7 @@ private:
 					result);
 			} else if (	boost::iequals(
 							request.tag,
-							Ini::Constants::Services::brokerPositionsUpdates)) {
+							Constants::Services::brokerPositionsUpdates)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
@@ -941,7 +942,7 @@ private:
 					result);
 			} else if (	boost::iequals(
 							request.tag,
-							Ini::Constants::Services::bars)) {
+							Constants::Services::bars)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
@@ -961,7 +962,7 @@ private:
 
 		{
 			const auto &list = ParseSupplierRequestList(
-				module.conf->ReadKey(Ini::Keys::requires, std::string()));
+				module.conf->ReadKey(Keys::requires, std::string()));
 			foreach (const std::string &request, list) {
 				parseRequest(ParseSupplierRequest(request), nullptr);
 			}
@@ -1397,14 +1398,14 @@ private:
 
 		std::set<Symbol> result;
 
-		if (!conf.IsKeyExist(Ini::Keys::instances)) {
+		if (!conf.IsKeyExist(Keys::instances)) {
 			return result;
 		}
 
 		fs::path symbolsFilePath;
 		try {
 			symbolsFilePath = Normalize(
-				conf.ReadKey(Ini::Keys::instances),
+				conf.ReadKey(Keys::instances),
 				conf.GetBase().GetPath().branch_path());
 		} catch (const IniFile::Error &ex) {
 			m_context.GetLog().Error(
@@ -1472,11 +1473,11 @@ private:
 
 		fs::path modulePath;
 		try {
-			if (	!result.conf->IsKeyExist(Ini::Keys::module)
+			if (	!result.conf->IsKeyExist(Keys::module)
 					&& !Trait::GetDefaultModule().empty()) {
 				modulePath = Normalize(Trait::GetDefaultModule());
 			} else {
-				modulePath = result.conf->ReadFileSystemPath(Ini::Keys::module);
+				modulePath = result.conf->ReadFileSystemPath(Keys::module);
 			}
 		} catch (const IniFile::Error &ex) {
 			m_context.GetLog().Error(
@@ -1490,16 +1491,16 @@ private:
 		result.dll.reset(new Dll(modulePath, true));
 
 		const bool isFactoreNameKeyExist
-			= result.conf->IsKeyExist(Ini::Keys::factory);
+			= result.conf->IsKeyExist(Keys::factory);
 		const std::string factoryName = isFactoreNameKeyExist
-			?	result.conf->ReadKey(Ini::Keys::factory)
+			?	result.conf->ReadKey(Keys::factory)
 			:	Trait::GetDefaultFactory(tag);
 		try {
 			result.factory
 				= result.dll->GetFunction<Trait::Factory>(factoryName);
 		} catch (const Dll::DllFuncException &) {
 			const std::string unifiedName
-				= Ini::DefaultValues::Factories::factoryNameStart
+				= DefaultValues::Factories::factoryNameStart
 					+ Trait::GetName(true);
 			if (!isFactoreNameKeyExist) {
 				result.factory = result.dll->GetFunction<Trait::Factory>(
@@ -1508,11 +1509,11 @@ private:
 				if (
 						boost::istarts_with(
 							factoryName,
-							Ini::DefaultValues::Factories::factoryNameStart)) {
+							DefaultValues::Factories::factoryNameStart)) {
 					throw;
 				}
 				std::string appendedName
-					= Ini::DefaultValues::Factories::factoryNameStart
+					= DefaultValues::Factories::factoryNameStart
 					+ factoryName;
 				if (!boost::iends_with(factoryName, Trait::GetName(true))) {
 					appendedName += Trait::GetName(true);
