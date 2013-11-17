@@ -166,7 +166,7 @@ bool PyApi::Service::OnLevel1Update(const Security &security) {
 	const bool isExists = CallVirtualMethod(
 		"onLevel1Update",
 		[&](const py::override &f) {
-			isStateChanged = f(security);
+			isStateChanged = f(PyApi::Export(security));
 		});
 	if (!isExists) {
 		isStateChanged = Base::OnLevel1Update(security);
