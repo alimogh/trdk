@@ -52,8 +52,52 @@ namespace trdk {
 		typedef void (BrokerPositionUpdateSlotSignature)(
 					trdk::Qty,
 					bool isInitial);
-		typedef boost::function<BrokerPositionUpdateSlotSignature> BrokerPositionUpdateSlot;
+		typedef boost::function<BrokerPositionUpdateSlotSignature>
+			BrokerPositionUpdateSlot;
 		typedef boost::signals2::connection BrokerPositionUpdateSlotConnection;
+
+		struct TRDK_CORE_API Bar {
+			
+			enum Type {
+				TRADES,
+				BID,
+				ASK,
+				numberOfTypes
+			};
+
+		 	//! Bar start time.
+			boost::posix_time::ptime time;
+			//! Bar size (time).
+			boost::posix_time::time_duration size;
+			//! Data type.
+			Type type;
+			
+			//! The bar opening price.
+			boost::optional<trdk::ScaledPrice> openPrice;
+			//! The high price during the time covered by the bar.
+			boost::optional<trdk::ScaledPrice> highPrice;
+			
+			//! The low price during the time covered by the bar.
+			boost::optional<trdk::ScaledPrice> lowPrice;
+			//! The bar closing price.
+			boost::optional<trdk::ScaledPrice> closePrice;
+			
+			//! The volume during the time covered by the bar.
+			boost::optional<trdk::Qty> volume;
+			
+			//! When TRADES historical data is returned, represents the number
+			//! of trades that occurred during the time period the bar covers.
+			boost::optional<size_t> count;
+
+			explicit Bar(
+		 				const boost::posix_time::ptime &,
+						const boost::posix_time::time_duration &,
+						Type);
+
+		};
+		typedef void (NewBarSlotSignature)(const Bar &);
+		typedef boost::function<NewBarSlotSignature> NewBarSlot;
+		typedef boost::signals2::connection NewBarSlotConnection;
 
 	public:
 
@@ -84,6 +128,7 @@ namespace trdk {
 
 		trdk::ScaledPrice ScalePrice(double price) const;
 		double DescalePrice(trdk::ScaledPrice price) const;
+		double DescalePrice(double price) const;
 
 	public:
 
@@ -165,6 +210,7 @@ namespace trdk {
 		BrokerPositionUpdateSlotConnection SubscribeToBrokerPositionUpdates(
 					const BrokerPositionUpdateSlot &)
 				const;
+		NewBarSlotConnection SubscribeToBars(const NewBarSlot &) const;
 
 	protected:
 
@@ -173,6 +219,7 @@ namespace trdk {
 		bool IsLevel1TicksRequired() const;
 		bool IsTradesRequired() const;
 		bool IsBrokerPositionRequired() const;
+		bool IsBarsRequired() const;
 
 		//! Sets one Level I parameter.
 		/** Subscribers will be notified about Level I Update only if parameter
@@ -235,6 +282,8 @@ namespace trdk {
 				trdk::Qty,
 				bool useAsLastTrade,
 				bool useForTradedVolume);
+
+		void AddBar(const Bar &);
 
 		//! Sets security broker position info.
 		/** Subscribers will be notified only if parameter will be changed.

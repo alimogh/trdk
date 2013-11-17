@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/11/15 23:16:00
+ *   Created: 2013/11/11 22:37:22
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -12,21 +12,19 @@
 
 #include "Common/Assert.hpp"
 
+#include "Common/Common.hpp"
+
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/date_time.hpp>
-#	include <boost/regex.hpp>
-#	include <boost/accumulators/accumulators.hpp>
-#	include <boost/accumulators/statistics.hpp>
-#	include <boost/accumulators/statistics/rolling_mean.hpp>
-#	include <boost/variant.hpp>
-#	include <boost/optional.hpp>
+#	include <boost/noncopyable.hpp>
+#	include <boost/format.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
-#include "Common/Common.hpp"
-#include "Common/SegmentedVector.hpp"
+#undef Assert
 
-#include "Core/Fwd.hpp"
+//! @todo	try later to disable _VARIADIC_MAX=10 in GMock/GTest (after 1.7)
+//!			and VS project Tests (after VS 2012).
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <string>
 
-#include "Common/Assert.hpp"

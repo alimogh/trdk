@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Core/ModuleVariant.hpp"
+#include "Core/Security.hpp"
 
 namespace trdk { namespace Engine {
 
@@ -79,6 +80,7 @@ namespace trdk { namespace Engine {
 		void RaiseNewTradeEvent(const Trade &) const;
 		void RaisePositionUpdateEvent(Position &) const;
 		void RaiseBrokerPositionUpdateEvent(const BrokerPosition &) const;
+		void RaiseNewBarEvent(Security &, const Security::Bar &) const;
 
 	private:
 

@@ -57,6 +57,7 @@ BOOST_PYTHON_MODULE(trdk) {
 		py::scope().attr("services") = servicesModule;
 		py::scope servicesScope = servicesModule;
 		BarServiceExport::ExportClass("BarService");
+		MovingAverageServiceExport::ExportClass("MovingAverageService");
 	}
 
 }

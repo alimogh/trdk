@@ -180,6 +180,32 @@ void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
 	Report(*subscriber, security, "Broker Position Updates");
 }
 
+void SubscriptionsManager::SubscribeToBars(
+			Security &security,
+			const SubscriberPtrWrapper &subscriber,
+			std::list<ss::connection> &slotConnections) {
+	const auto slot = Security::NewBarSlot(
+		boost::bind(
+			&Dispatcher::SignalNewBar,
+			&m_dispatcher,
+			subscriber,
+			boost::ref(security),
+			_1));
+	const auto &connection = security.SubscribeToBars(slot);
+	try {
+		slotConnections.push_back(connection);
+	} catch (...) {
+		try {
+			connection.disconnect();
+		} catch (...) {
+			AssertFailNoException();
+			throw;
+		}
+		throw;
+	}
+	Report(*subscriber, security, "new bars");
+}
+
 void SubscriptionsManager::SubscribeToLevel1Updates(
 			Security &security,
 			Strategy &strategy) {
@@ -378,6 +404,50 @@ void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
 		});
 }
 
+void SubscriptionsManager::SubscribeToBars(
+			Security &security,
+			Strategy &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+					Security &security,
+					const SubscriberPtrWrapper &subscriber,
+					std::list<ss::connection> &slotConnections) {
+			SubscribeToBars(security, subscriber, slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToBars(
+			Security &security,
+			Service &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+					Security &security,
+					const SubscriberPtrWrapper &subscriber,
+					std::list<ss::connection> &slotConnections) {
+			SubscribeToBars(security, subscriber, slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToBars(
+			Security &security,
+			Observer &observer) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		observer,
+		[this](
+					Security &security,
+					const SubscriberPtrWrapper &subscriber,
+					std::list<ss::connection> &slotConnections) {
+			SubscribeToBars(security, subscriber, slotConnections);
+		});
+}
 
 void SubscriptionsManager::Subscribe(
 			Security &security,

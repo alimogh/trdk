@@ -144,6 +144,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		Context::Log &m_log;
 
+		const bool m_isTestSource;
+
 		Mutex m_mutex;
 		std::unique_ptr<Client> m_client;
 		PlacedOrderSet m_placedOrders;

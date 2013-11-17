@@ -23,9 +23,13 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
-		explicit Security(Context &, const Lib::Symbol &);
+		explicit Security(Context &, const Lib::Symbol &, bool isTestSource);
 
 	public:
+
+		bool IsTestSource() const {
+			return m_isTestSource;
+		}
 
 		bool IsLevel1Required() const {
 			return Base::IsLevel1Required();
@@ -42,28 +46,102 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		bool IsBrokerPositionRequired() const {
 			return Base::IsBrokerPositionRequired();
 		}
-
-		void SetLevel1(
-					const boost::posix_time::ptime &time,
-					const Level1TickValue &tick) {
-			Base::SetLevel1(time, tick);
+		bool IsBarsRequired() const {
+			return Base::IsBarsRequired();
 		}
 
 		void AddLevel1Tick(
 					const boost::posix_time::ptime &time,
 					const Level1TickValue &tick) {
+			CheckLastTrade(time, tick);
 			Base::AddLevel1Tick(time, tick);
 		}
 		void AddLevel1Tick(
 					const boost::posix_time::ptime &time,
 					const Level1TickValue &tick1,
 					const Level1TickValue &tick2) {
+			CheckLastTrade(time, tick1);
+			CheckLastTrade(time, tick2);
 			Base::AddLevel1Tick(time, tick1, tick2);
+		}
+
+		void AddBar(const Bar &bar) {
+			Base::AddBar(bar);
 		}
 
 		void SetBrokerPosition(Qty qty, bool isInitial) {
 			Base::SetBrokerPosition(qty, isInitial);
 		}
+
+	private:
+
+		void CheckLastTrade(
+					const boost::posix_time::ptime &time,
+					const Level1TickValue &tick) {
+			if (!m_isTestSource || !IsTradesRequired()) {
+				return;
+			}
+			// real time bar not available from TWS demo account:
+			switch (tick.type) {
+				case LEVEL1_TICK_LAST_PRICE:
+					{
+						auto lastQty = GetLastQty();
+						if (!lastQty) {
+							if (!m_firstTradeTick) {
+								m_firstTradeTick = tick;
+								break;
+							} else if (m_firstTradeTick->type == tick.type) {
+								break;
+							} else {
+								AssertEq(
+									LEVEL1_TICK_LAST_QTY,
+									m_firstTradeTick->type);
+								lastQty = m_firstTradeTick->value.lastQty;
+							}
+						}
+						AddTrade(
+							time,
+							ORDER_SIDE_SELL,
+							tick.value.lastPrice,
+							lastQty,
+							false,
+							true);
+					}
+					break;
+				case LEVEL1_TICK_LAST_QTY:
+					{
+						auto lastPrice = GetLastPriceScaled();
+						if (!lastPrice) {
+							if (!m_firstTradeTick) {
+								m_firstTradeTick = tick;
+								break;
+							} else if (m_firstTradeTick->type == tick.type) {
+								break;
+							} else {
+								AssertEq(
+									LEVEL1_TICK_LAST_PRICE,
+									m_firstTradeTick->type);
+								lastPrice = m_firstTradeTick->value.lastPrice;
+							}
+						}
+						AddTrade(
+							time,
+							ORDER_SIDE_BUY,
+							lastPrice,
+							tick.value.lastQty,
+							false,
+							true);
+					}
+					break;
+				default:
+					break;
+			}
+		}
+		
+	private:
+
+		const bool m_isTestSource;
+		boost::optional<Level1TickValue> m_firstTradeTick;
 
 	};
 

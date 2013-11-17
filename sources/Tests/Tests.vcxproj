@@ -15,26 +15,27 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{A2C9BF31-4AAD-4AD2-B975-2695E30C055B}</ProjectGuid>
-    <RootNamespace>Common</RootNamespace>
+    <ProjectGuid>{AF773219-8D87-4958-A567-4BCB72272E51}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>Tests</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v100</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v100</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -42,74 +43,88 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\Default.props" />
-    <Import Project="..\Static lib.props" />
-    <Import Project="Common.props" />
+    <Import Project="Tests.props" />
     <Import Project="..\Configuration Debug.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\Default.props" />
-    <Import Project="..\Static lib.props" />
-    <Import Project="Common.props" />
+    <Import Project="Tests.props" />
     <Import Project="..\Configuration Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\Default.props" />
-    <Import Project="..\Static lib.props" />
-    <Import Project="Common.props" />
+    <Import Project="Tests.props" />
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <BrowseInformation>true</BrowseInformation>
-    </ClCompile>
-    <Bscmake>
-      <PreserveSBR>true</PreserveSBR>
-    </Bscmake>
+    <Link>
+      <AdditionalDependencies>$(GMOCK_DIR_X86)\gmock-1.7.0\msvc\2010\Debug\gmock.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Link>
+      <AdditionalDependencies>$(GMOCK_DIR_X86)\gmock-1.7.0\msvc\2010\Release\gmock.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
+    <Link>
+      <AdditionalDependencies>$(GMOCK_DIR_X86)\gmock-1.7.0\msvc\2010\Release\gmock.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Assert.cpp" />
-    <ClCompile Include="Defaults.cpp" />
+    <ProjectReference Include="..\Common\Common.vcxproj">
+      <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Core\Core.vcxproj">
+      <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Services\Services.vcxproj">
+      <Project>{4f025d92-8f15-4a05-97b6-ca680cb090d9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Version\Version.vcxproj">
+      <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Tests.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Context.hpp" />
+    <ClInclude Include="Prec.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MovingAverageServiceTest.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Symbol.cpp" />
-    <ClCompile Include="SysError.cpp" />
-    <ClCompile Include="Exception.cpp" />
-    <ClCompile Include="FileSystemChangeNotificator.cpp" />
-    <ClCompile Include="IniFile.cpp" />
-    <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Assert.hpp" />
-    <ClInclude Include="Common.hpp" />
-    <ClInclude Include="Constants.h" />
-    <ClInclude Include="Defaults.hpp" />
-    <ClInclude Include="DisableBoostWarningsEnd.h" />
-    <ClInclude Include="DisableBoostWarningsBegin.h" />
-    <ClInclude Include="Dll.hpp" />
-    <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="SegmentedVector.hpp" />
-    <ClInclude Include="Symbol.hpp" />
-    <ClInclude Include="SysError.hpp" />
-    <ClInclude Include="Exception.hpp" />
-    <ClInclude Include="FileSystemChangeNotificator.hpp" />
-    <ClInclude Include="Foreach.hpp" />
-    <ClInclude Include="IniFile.hpp" />
-    <ClInclude Include="Interlocking.hpp" />
-    <ClInclude Include="LockingPolicy.hpp" />
-    <ClInclude Include="UseUnused.hpp" />
-    <ClInclude Include="Util.hpp" />
+    <Library Include="..\..\output\x86\lib\Services_dbg.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Services_test.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Library>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Version\Version.vcxproj">
-      <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
-    </ProjectReference>
+    <None Include="Indicators.xlsx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

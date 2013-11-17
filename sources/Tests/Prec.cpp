@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/11/25 17:34:35
+ *   Created: 2013/11/11 22:37:12
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,11 +8,4 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#pragma once
-
-namespace trdk { namespace Services {
-
-	class BarService;
-	class MovingAverageService;
-
-} }
+#include "Prec.hpp"

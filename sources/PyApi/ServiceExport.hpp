@@ -13,6 +13,7 @@
 #include "ModuleExport.hpp"
 #include "ModuleSecurityListExport.hpp"
 #include "Services/BarService.hpp"
+#include "Services/MovingAverageService.hpp"
 #include "PythonToCoreTransit.hpp"
 
 //////////////////////////////////////////////////////////////////////////
@@ -174,17 +175,78 @@ namespace trdk { namespace PyApi {
 
 	public:
 
-		boost::python::str GetName() const;
 		size_t GetBarSize() const;
 		size_t GetSize() const;
 		bool IsEmpty() const;
-		BarExport GetBarByIndex(size_t index) const;
+		BarExport GetBar(size_t index) const;
 		BarExport GetBarByReversedIndex(size_t index) const;
+		BarExport GetLastBar() const;
 		PriceStatExport GetOpenPriceStat(size_t numberOfBars) const;
 		PriceStatExport GetClosePriceStat(size_t numberOfBars) const;
 		PriceStatExport GetHighPriceStat(size_t numberOfBars) const;
 		PriceStatExport GetLowPriceStat(size_t numberOfBars) const;
 		QtyStatExport GetTradingVolumeStat(size_t numberOfBars) const;
+
+	protected:
+
+		const Implementation & GetService() const;
+
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+
+} }
+
+//////////////////////////////////////////////////////////////////////////
+
+namespace trdk { namespace PyApi {
+
+	//////////////////////////////////////////////////////////////////////////
+	
+	class MovingAverageServiceExport : public ServiceInfoExport {
+
+	public:
+
+		typedef trdk::Services::MovingAverageService Implementation;
+
+	public:
+
+		class PointExport {
+		public:
+			explicit PointExport(
+						const Implementation &,
+						const Implementation::Point &);
+		public:
+			static void ExportClass(const char *className);
+		public:
+			double GetValue() const;
+		private:
+			const Implementation *m_service;
+			Implementation::Point m_point;
+		};
+
+	public:
+
+		//! C-tor.
+		/*  @param serviceRef	Reference to service, must be alive all time
+		 *						while export object exists.
+		 */
+		explicit MovingAverageServiceExport(const Implementation &serviceRef);
+
+	public:
+
+		static void ExportClass(const char *className);
+
+	public:
+
+		bool IsEmpty() const;
+
+		PointExport GetLastPoint() const;
+
+		size_t GetHistorySize() const;
+
+		PointExport GetHistoryPoint(size_t index) const;
+		PointExport GetHistoryPointByReversedIndex(size_t index) const;
 
 	protected:
 

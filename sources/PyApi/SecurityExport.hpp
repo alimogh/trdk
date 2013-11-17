@@ -38,7 +38,8 @@ namespace trdk { namespace PyApi {
 
 		ScaledPrice GetPriceScale() const;
 		ScaledPrice ScalePrice(double price) const;
-		double DescalePrice(ScaledPrice price) const;
+		double DescalePriceFromInt(ScaledPrice price) const;
+		double DescalePriceFromDouble(double price) const;
 
 		ScaledPrice GetLastPriceScaled() const;
 		Qty GetLastQty() const;

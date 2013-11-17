@@ -20,29 +20,21 @@ namespace trdk { namespace Services {
 
 	public:
 
-		typedef trdk::Service Base;
-
 		//! General service error.
 		class Error : public trdk::Lib::Exception {
 		public:
-			explicit Error(const char *what) throw()
-					:  Exception(what) {
-				//...//
-			}
+			explicit Error(const char *) throw();
 		};
 
 		//! Throws when client code requests bar which does not exist.
 		class BarDoesNotExistError : public Error {
 		public:
-			explicit BarDoesNotExistError(const char *what) throw()
-					:  Error(what) {
-				//...//
-			}
+			explicit BarDoesNotExistError(const char *) throw();
 		};
 
  		//! Bar data.
- 		struct Bar {
-			
+ 		struct TRDK_SERVICES_API Bar {
+
 			boost::posix_time::ptime time;
 			
 			trdk::ScaledPrice maxAskPrice;
@@ -106,22 +98,26 @@ namespace trdk { namespace Services {
 		virtual boost::posix_time::ptime OnSecurityStart(
 					const trdk::Security &);
 
+		virtual bool OnNewBar(
+					const trdk::Security &,
+					const trdk::Security::Bar &);
+
 		virtual bool OnLevel1Tick(
-					const Security &,
+					const trdk::Security &,
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &);
 
 		virtual bool OnNewTrade(
-					const Security &,
+					const trdk::Security &,
 					const boost::posix_time::ptime &,
-					ScaledPrice,
-					Qty,
-					OrderSide);
+					trdk::ScaledPrice,
+					trdk::Qty,
+					trdk::OrderSide);
 			
 	public:
 
 		//! Each bar size.
- 		boost::posix_time::time_duration GetBarSize() const;
+ 		const boost::posix_time::time_duration & GetBarSize() const;
 
 	public:
 
@@ -145,6 +141,12 @@ namespace trdk { namespace Services {
 		  * @sa trdk::Services::BarService::GetBarByIndex 
 		  */
 		const Bar & GetBarByReversedIndex(size_t index) const;
+
+		//! Returns last bar.
+		/** @throw trdk::Services::BarService::BarDoesNotExistError
+		  * @sa trdk::Services::BarService::GetBarByReversedIndex
+		  */
+		const Bar & GetLastBar() const;
 
 	public:
 

@@ -66,6 +66,8 @@ namespace trdk {
 					trdk::Qty qty,
 					bool isInitial);
 
+		virtual void OnNewBar(trdk::Security &, const trdk::Security::Bar &);
+
 	public:
 
 		void RegisterSource(trdk::Security &);
@@ -79,6 +81,7 @@ namespace trdk {
 					trdk::Security &,
 					trdk::Qty,
 					bool isInitial);
+		void RaiseNewBarEvent(trdk::Security &, const trdk::Security::Bar &);
 
 	private:
 

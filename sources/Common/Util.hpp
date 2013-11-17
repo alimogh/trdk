@@ -24,58 +24,28 @@ namespace trdk { namespace Lib {
 	inline bool IsEqual(const double v1, const double v2) {
 		typedef std::numeric_limits<double> Nm;
 		return ::abs(v1 - v2) <= std::max(Nm::epsilon(), Nm::epsilon());
-	};
+	}
 
 	inline bool IsEqual(const float v1, const float v2) {
 		typedef std::numeric_limits<float> Nm;
 		return ::abs(v1 - v2) <= std::max(Nm::epsilon(), Nm::epsilon());
-	};
+	}
 
 	inline bool IsEqual(const std::string &v1, const std::string &v2) {
-		return v1 == v2;
-	};
-
-	inline bool IsEqual(const boost::uint32_t v1, const boost::uint32_t v2) {
-		return v1 == v2;
-	};
-
-	inline bool IsZero(double v) {
-		return IsEqual(v, .0);
-	};
-
-	namespace Detail {
-		template<size_t numbsAfterDot>
-		struct NumbsAfterDotToScale {
-			//...//
-		};
-		template<>
-		struct NumbsAfterDotToScale<2> {
-			static size_t GetScale() {
-				return 100;
-			}
-		};
-		template<>
-		struct NumbsAfterDotToScale<3> {
-			static size_t GetScale() {
-				return 1000;
-			}
-		};
-		template<>
-		struct NumbsAfterDotToScale<4> {
-			static size_t GetScale() {
-				return 10000;
-			}
-		};
+		return boost::equal(v1, v2);
 	}
 
-	inline double RoundDouble(double source, size_t scale) {
-		return boost::math::round(source * scale) / scale;
+	inline bool IsEqual(const intmax_t v1, const intmax_t v2) {
+		return v1 == v2;
 	}
 
-	template<size_t numbsAfterDot>
-	inline double RoundDouble(double source) {
-		typedef Detail::NumbsAfterDotToScale<numbsAfterDot> Scale;
-		return RoundDouble(source, Scale::GetScale());
+	inline bool IsEqual(const uintmax_t v1, const uintmax_t v2) {
+		return v1 == v2;
+	}
+
+	template<typename T>
+	inline T IsZero(const T &v) {
+		return IsEqual(v, 0);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -85,7 +55,14 @@ namespace trdk { namespace Lib {
 	}
 
 	inline double Descale(boost::int64_t value, unsigned long scale) {
-		return RoundDouble(double(value) / scale, scale);
+		const auto result = value / double(scale);
+		return result;
+	}
+
+	inline double Descale(double value, unsigned long scale) {
+		value = boost::math::round(value);
+		value /= double(scale);
+		return value;
 	}
 
 	//////////////////////////////////////////////////////////////////////////

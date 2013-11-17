@@ -103,6 +103,15 @@ void Consumer::OnBrokerPositionUpdate(
 		"Module subscribed to Broker Positions Updates, but can't work with it");
 }
 
+void Consumer::OnNewBar(Security &security, const Security::Bar &) {
+	GetLog().Error(
+		"Subscribed to %1% new bars, but can't work with it"
+			" (hasn't OnNewBar method implementation).",
+		security);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to new bars, but can't work with it");
+}
+
 void Consumer::RegisterSource(Security &security) {
 	if (!m_pimpl->m_securities.Insert(security)) {
 		return;
@@ -127,6 +136,14 @@ void Consumer::RaiseBrokerPositionUpdateEvent(
 			bool isInitial) {
 	const Lock lock(GetMutex());
 	OnBrokerPositionUpdate(security, qty, isInitial);
+}
+
+
+void Consumer::RaiseNewBarEvent(
+			Security &security,
+			const Security::Bar &bar) {
+	const Lock lock(GetMutex());
+	return OnNewBar(security, bar);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
