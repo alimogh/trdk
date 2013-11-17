@@ -331,7 +331,10 @@ void Client::SubscribeToMarketData(ib::Security &security) const {
 
 	Assert(m_securities.find(&security) != m_securities.end());
 
-	if (!security.IsLevel1Required() && !security.IsTradesRequired()) {
+	if (security.IsTradesRequired() && !security.IsTestSource()) {
+		throw trdk::TradeSystem::Error(
+			"Interactive Brokers doesn't provide trades info");
+	} else if (!security.IsLevel1Required() && !security.IsBarsRequired()) {
 		return;
 	}
 
@@ -370,7 +373,7 @@ void Client::FlushPostponedMarketDataSubscription() const {
 
 void Client::DoMarketDataSubscription(ib::Security &security) const {
 	Assert(!IsSubscribed(m_marketDataRequests, security));
-	Assert(security.IsLevel1Required() || security.IsTradesRequired());
+	Assert(security.IsLevel1Required() || security.IsBarsRequired());
 	if (!SendMarketDataHistoryRequest(security)) {
 		SendMarketDataRequest(security);
 	}
@@ -379,38 +382,82 @@ void Client::DoMarketDataSubscription(ib::Security &security) const {
 void Client::SendMarketDataRequest(ib::Security &security) const {
 
 	Assert(!m_mutex.try_lock());
-	Assert(security.IsLevel1Required() || security.IsTradesRequired());
+	Assert(security.IsLevel1Required() || security.IsBarsRequired());
 	Assert(!IsSubscribed(m_marketDataRequests, security));
 
-	const SecurityRequest request(
-		security,
-		const_cast<Client *>(this)->TakeTickerId());
-	Contract contract;
-	contract << *request.security;
+	if (	security.IsLevel1Required()
+			|| (security.IsTestSource()
+				&& (security.IsBarsRequired()
+					|| security.IsTradesRequired()))) {
 
-	auto requests(m_marketDataRequests);
-	requests.insert(request);
+		const SecurityRequest request(
+			security,
+			const_cast<Client *>(this)->TakeTickerId());
+		Contract contract;
+		contract << *request.security;
 
-	std::list<IBString> genericTicklist;
-	if (request.security->IsTradesRequired()) {
+		auto requests(m_marketDataRequests);
+		requests.insert(request);
+
+		std::list<IBString> genericTicklist;
 		genericTicklist.push_back("233");
+
+		m_client->reqMktData(
+			request.tickerId,
+			contract,
+			boost::join(genericTicklist, ","),
+			false);
+		
+		m_log.Info(
+			"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level I"
+				" market data subscription request for \"%1%\""
+				" (ticker ID: %2%).",
+			boost::make_tuple(
+				boost::cref(*request.security),
+				boost::cref(request.tickerId)));
+		
+		requests.swap(m_marketDataRequests);
+
 	}
 
-	m_client->reqMktData(
-		request.tickerId,
-		contract,
-		boost::join(genericTicklist, ","),
-		false);
+	if (security.IsBarsRequired()) {
+
+		const char *const whatToShowList[]
+			= {"TRADES" , "BID" , "ASK" /*, MIDPOINT*/};
+		foreach (const char *const whatToShow, whatToShowList) {
+
+			const SecurityRequest request(
+				security,
+				const_cast<Client *>(this)->TakeTickerId());
+			Contract contract;
+			contract << *request.security;
+
+			auto requests(m_barsRequest);
+			requests.insert(request);
+
+			m_client->reqRealTimeBars(
+				request.tickerId,
+				contract,
+				// Currently only 5 second bars are supported, if any other
+				// value is used, an exception will be thrown. 
+				5,
+				whatToShow,
+				false);
 		
-	m_log.Info(
-		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level I"
-			" market data subscription request for \"%1%\""
-			" (ticker ID: %2%).",
-		boost::make_tuple(
-			boost::cref(*request.security),
-			boost::cref(request.tickerId)));
+			m_log.Info(
+				"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
+				" Real Time Bars (%1%) subscription request for \"%2%\""
+				" (ticker ID: %3%).",
+				boost::make_tuple(
+					whatToShow,
+					boost::cref(*request.security),
+					boost::cref(request.tickerId)));
 		
-	requests.swap(m_marketDataRequests);
+			requests.swap(m_barsRequest);
+
+		}
+
+	}
 
 }
 
@@ -426,9 +473,6 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 
 	Contract contract;
 	contract << *request.security;
-
-	// not yet implemented:
-	Assert(!request.security->IsTradesRequired());
 
 	const pt::ptime now = boost::get_system_time();
 	if (now <= security.GetRequestedDataStartTime() ) {
@@ -470,7 +514,10 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 		contract,
 		endTime,
 		period,
-		"1 secs",
+		// Sends as often as possible, but only for bars it doesn't make sense
+		// less as 5 second as "Currently only 5 second bars are supported, if
+		// any other value is used, an exception will be thrown" for real bars:
+		security.IsLevel1Required() ? "1 secs" : "5 secs",
 		"BID_ASK",
 		0,
 		1);
@@ -1056,6 +1103,18 @@ ib::Security * Client::GetHistoryRequest(TickerId tickerId) {
 	return &*pos->security;
 }
 
+ib::Security * Client::GetBarsRequest(TickerId tickerId) {
+	const auto &index = m_barsRequest.get<ByTicker>();
+	const auto pos = index.find(tickerId);
+	if (pos == index.end()) {
+		m_log.Debug(
+			"Couldn't find Bars Request for ticker %1%.",
+			tickerId);
+		return nullptr;
+	}
+	return &*pos->security;
+}
+
 bool Client::IsSubscribed(
 			const SecurityRequestList &list,
 			const ib::Security &security) {
@@ -1188,6 +1247,9 @@ void Client::tickSize(
 			TickerId tickerId,
 			TickType field,
 			int size) {
+	if (!size) {
+		return;
+	}
 	Level1TickValue (*valueCtor)(Qty);
 	switch (field) {
 		default:
@@ -1237,7 +1299,7 @@ void Client::tickGeneric(
 void Client::tickString(
 			TickerId /*tickerId*/,
 			TickType /*tickType*/,
-			const IBString& /*value*/) {
+			const IBString &/*value*/) {
 	//...//
 }
 
@@ -1474,13 +1536,13 @@ namespace {
 
 void Client::historicalData(
 			TickerId tickerId,
-			const IBString &time,
-			double /*open*/,
+			const IBString &timeStr,
+			double openPrice,
 			double highPrice,
 			double lowPrice,
-			double /*close*/,
-			int /*volume*/,
-			int /*barCount*/,
+			double closePrice,
+			int volume,
+			int barCount,
 			double /*WAP*/,
 			int /*hasGaps*/) {
 
@@ -1488,22 +1550,47 @@ void Client::historicalData(
 	if (!security) {
 		return;
 	}
+	Assert(security->IsLevel1Required() || security->IsBarsRequired());
 	
-	const bool isFinished = boost::starts_with(time, "f");
-	Assert(!isFinished || boost::starts_with(time, "finished-"));
+	const bool isFinished = boost::starts_with(timeStr, "f");
+	Assert(!isFinished || boost::starts_with(timeStr, "finished-"));
 	Assert(
 		!isFinished
 		|| (IsEqual(lowPrice, -1.0) && IsEqual(highPrice, -1.0)));
 
 	if (!isFinished) {
-		security->AddLevel1Tick(
-			ParseHistoryPointTime(time, m_log, isFinished),
-			Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-				security->ScalePrice(lowPrice)),
-			Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-				security->ScalePrice(highPrice)));
+
+		const auto &time = ParseHistoryPointTime(timeStr, m_log, isFinished);
+		const auto &lowPriceScaled = security->ScalePrice(lowPrice);
+		const auto &highPriceScaled = security->ScalePrice(highPrice);
+
+		if (security->IsLevel1Required()) {
+			security->AddLevel1Tick(
+				time,
+				Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(lowPriceScaled),
+				Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+					highPriceScaled));
+		}
+	
+		if (security->IsBarsRequired()) {
+			ib::Security::Bar bar(
+				time,
+				//! See request for detail about frame size:
+				pt::seconds(security->IsLevel1Required() ? 1 : 5),
+				ib::Security::Bar::TRADES);
+			bar.openPrice = security->ScalePrice(openPrice);
+			bar.highPrice = highPriceScaled;
+			bar.lowPrice = lowPriceScaled;
+			bar.closePrice = security->ScalePrice(closePrice);
+			bar.volume = volume;
+			bar.count = barCount;
+			security->AddBar(bar);	
+		}
+	
 	} else {
+	
 		SendMarketDataRequest(*security);
+	
 	}
 
 }
@@ -1528,16 +1615,36 @@ void Client::scannerDataEnd(int /*reqId*/) {
 }
 
 void Client::realtimeBar(
-			TickerId /*reqId*/,
+			TickerId /*tickerId*/,
 			long /*time*/,
-			double /*open*/,
-			double /*high*/,
-			double /*low*/,
-			double /*close*/,
+			double /*openPrice*/,
+			double /*highPrice*/,
+			double /*lowPrice*/,
+			double /*closePrice*/,
 			long /*volume*/,
 			double /*wap*/,
 			int /*count*/) {
-	//...//
+	AssertFail("Received real time bar from IB.");
+	/*
+	auto *const security = GetBarsRequest(tickerId);
+	if (!security) {
+		return;
+	}
+	Assert(security->IsBarsRequired());
+	ib::Security::Bar bar(
+		pt::from_time_t(time),
+		// Currently only 5 second bars are supported, if any other value is
+		// used, an exception will be thrown:
+		pt::seconds(5),
+		ib::Security::Bar::TRADES);
+	bar.openPrice = security->ScalePrice(openPrice);
+	bar.highPrice = security->ScalePrice(highPrice);
+	bar.lowPrice = security->ScalePrice(lowPrice);
+	bar.closePrice = security->ScalePrice(closePrice);
+	bar.volume = volume;
+	bar.count = count;
+	security->AddBar(bar);
+	*/
 }
 
 void Client::fundamentalData(

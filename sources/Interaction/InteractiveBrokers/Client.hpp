@@ -109,6 +109,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		typedef SecurityRequestList MarketLevel1HistoryRequests;
 		typedef SecurityRequestList MarketDepthLevel2Requests;
 		typedef SecurityRequestList TicksRequests;
+		typedef SecurityRequestList BarsRequests;
 
 		typedef std::list<Security *> PostponedSecurityRequestList;
 		typedef PostponedSecurityRequestList PostponedMarketLevel1Requests;
@@ -215,6 +216,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		Security * GetMarketDataRequest(TickerId);
 		Security * GetHistoryRequest(TickerId);
+		Security * GetBarsRequest(TickerId);
 
 		static bool IsSubscribed(const SecurityRequestList &, const Security &);
 		static bool IsSubscribed(
@@ -394,6 +396,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		//! @todo Check data type at history finish
 		//! @todo Check data type at error.
 		mutable MarketLevel1HistoryRequests m_historyRequest;
+
+		mutable BarsRequests m_barsRequest;
 
 	};
 
