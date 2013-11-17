@@ -128,6 +128,7 @@ namespace trdk {
 
 		trdk::ScaledPrice ScalePrice(double price) const;
 		double DescalePrice(trdk::ScaledPrice price) const;
+		double DescalePrice(double price) const;
 
 	public:
 

@@ -19,7 +19,7 @@ namespace svc = trdk::Services;
 
 namespace {
 
-	const double source[111][3] = {
+	const double source[112][3] = {
 		/*	Val			SMA				EMA	 */
 		{	1642.81	,	0.00	,	0.00	},
 		{	1626.13	,	0.00	,	0.00	},
@@ -48,6 +48,7 @@ namespace {
 		{	1675.02	,	1631.62	,	1572.45	},
 		{	1680.19	,	1638.32	,	1592.04	},
 		{	1682.5	,	1645.95	,	1608.49	},
+		{	0	,	0.00	,	0.00	},
 		{	1676.26	,	1652.08	,	1620.81	},
 		{	1680.91	,	1658.76	,	1631.74	},
 		{	1689.37	,	1666.15	,	1642.22	},
@@ -131,7 +132,7 @@ namespace {
 		{	1770.49	,	1762.88	,	1759.59	},
 		{	1747.15	,	1762.39	,	1757.33	},
 		{	1770.61	,	1763.47	,	1759.74	},
-		{	1771.89	,	1764.45	,	1761.95	},
+		{	1771.89	,	1764.45	,	1761.95	}
 	};
 
 	struct Sma {
@@ -186,7 +187,7 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 	svc::MovingAverageService service(
 		context,
 		"Tag",
-		lib::IniFileSectionRef(settings, "Section"));
+		lib::IniSectionRef(settings, "Section"));
 
 	for (size_t i = 0; i < _countof(source); ++i) {
 		svc::BarService::Bar bar;
@@ -216,15 +217,23 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 		service.GetHistoryPointByReversedIndex(102),
 		svc::MovingAverageService::ValueDoesNotExistError);
 
+	size_t offset = 9;
 	for (size_t i = 0; i < service.GetHistorySize(); ++i) {
+		if (trdk::Lib::IsZero(source[i + offset][Policy::GetColumn()])) {
+			++offset;
+		}
 		ASSERT_EQ(
-				source[i + 9][Policy::GetColumn()],
+				source[i + offset][Policy::GetColumn()],
 				lib::Descale(service.GetHistoryPoint(i).value, 100))
 			<< "i = " << i << ";";
 	}
+	offset = 0;
 	for (size_t i = 0; i < service.GetHistorySize(); ++i) {
+		if (trdk::Lib::IsZero(source[111 - i - offset][Policy::GetColumn()])) {
+			++offset;
+		}
 		ASSERT_EQ(
-				source[110 - i][Policy::GetColumn()],
+				source[111 - i - offset][Policy::GetColumn()],
 				lib::Descale(
 					service.GetHistoryPointByReversedIndex(i).value,
 					100))
@@ -248,7 +257,7 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 	svc::MovingAverageService service(
 		context,
 		"Tag",
-		lib::IniFileSectionRef(settings, "Section"));
+		lib::IniSectionRef(settings, "Section"));
 
 	for (size_t i = 0; i < _countof(source); ++i) {
 		svc::BarService::Bar bar;

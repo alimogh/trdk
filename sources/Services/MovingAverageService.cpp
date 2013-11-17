@@ -266,6 +266,8 @@ public:
 public:
 
 	MovingAverageService &m_service;
+
+	volatile bool m_isEmpty;
 	
 	MaSourceInfo m_sourceInfo;
 
@@ -275,12 +277,15 @@ public:
 	boost::optional<Point> m_lastValue;
 	std::unique_ptr<History> m_history;
 
+	pt::ptime m_lastZeroTime;
+
 public:
 
 	explicit Implementation(
 				MovingAverageService &service,
-				const IniFileSectionRef &configuration)
+				const IniSectionRef &configuration)
 			: m_service(service),
+			m_isEmpty(true),
 			m_sourceInfo(MaSourceToType<MA_SOURCE_CLOSE_TRADE_PRICE>()) {
 
 		m_period = configuration.ReadTypedKey<uintmax_t>(
@@ -404,7 +409,7 @@ public:
 MovingAverageService::MovingAverageService(
 			Context &context,
 			const std::string &tag,
-			const IniFileSectionRef &configuration)
+			const IniSectionRef &configuration)
 		: Service(context, "MovingAverageService", tag) {
 	m_pimpl = new Implementation(*this, configuration);
 }
@@ -421,10 +426,24 @@ bool MovingAverageService::OnServiceDataUpdate(const Service &service) {
 
 bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
 	
+	//! Called from dispatcher, locking doesn't needed.
+
 	{
 		const ExtractFrameValueVisitor extractVisitor(bar);
-		const AccumVisitor accumVisitor(
-			boost::apply_visitor(extractVisitor, m_pimpl->m_sourceInfo));
+		const auto frameValue
+			= boost::apply_visitor(extractVisitor, m_pimpl->m_sourceInfo);
+		if (IsZero(frameValue)) {
+			if (	m_pimpl->m_lastZeroTime == pt::not_a_date_time
+					|| bar.time - m_pimpl->m_lastZeroTime >= pt::minutes(1)) {
+				if (m_pimpl->m_lastZeroTime != pt::not_a_date_time) {
+					GetLog().Debug("Recently received only zeros.");
+				}
+				m_pimpl->m_lastZeroTime = bar.time;
+			}
+			return false;
+		}
+		m_pimpl->m_lastZeroTime = pt::not_a_date_time;
+		const AccumVisitor accumVisitor(frameValue);
 		boost::apply_visitor(accumVisitor, *m_pimpl->m_acc);
 	}
 
@@ -438,6 +457,7 @@ bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
 		boost::apply_visitor(GetValueVisitor(), *m_pimpl->m_acc)
 	};
 	m_pimpl->m_lastValue = newPoint;
+	Interlocking::Exchange(m_pimpl->m_isEmpty, false);
 
 	if (m_pimpl->m_history) {
 		m_pimpl->m_history->PushBack(newPoint);
@@ -445,6 +465,10 @@ bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
 
 	return true;
 
+}
+
+bool MovingAverageService::IsEmpty() const {
+	return m_pimpl->m_isEmpty;
 }
 
 MovingAverageService::Point MovingAverageService::GetLastPoint() const {

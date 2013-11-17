@@ -38,7 +38,8 @@ void SecurityInfoExport::ExportClass(const char *className) {
 
 		.add_property("priceScale", &SecurityInfoExport::GetPriceScale)
 		.def("scalePrice", &SecurityInfoExport::ScalePrice)
-		.def("descalePrice", &SecurityInfoExport::DescalePrice)
+		.def("descalePrice", &SecurityInfoExport::DescalePriceFromInt)
+		.def("descalePrice", &SecurityInfoExport::DescalePriceFromDouble)
 
 		.add_property("lastPrice", &SecurityInfoExport::GetLastPriceScaled)
 		.add_property("lastSize", &SecurityInfoExport::GetLastQty)
@@ -77,7 +78,10 @@ ScaledPrice SecurityInfoExport::GetPriceScale() const {
 ScaledPrice SecurityInfoExport::ScalePrice(double price) const {
 	return int(m_security->ScalePrice(price));
 }
-double SecurityInfoExport::DescalePrice(ScaledPrice price) const {
+double SecurityInfoExport::DescalePriceFromInt(ScaledPrice price) const {
+	return m_security->DescalePrice(price);
+}
+double SecurityInfoExport::DescalePriceFromDouble(double price) const {
 	return m_security->DescalePrice(price);
 }
 

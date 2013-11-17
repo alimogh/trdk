@@ -410,7 +410,7 @@ void MovingAverageServiceExport::PointExport::ExportClass(
 		.add_property("value", &PointExport::GetValue);
 }
 
-boost::intmax_t MovingAverageServiceExport::PointExport::GetValue() const {
+double MovingAverageServiceExport::PointExport::GetValue() const {
 	return m_point.value;
 }
 
@@ -428,6 +428,8 @@ void MovingAverageServiceExport::ExportClass(const char *className) {
 	
 	const py::scope serviceClass = Export(className, py::no_init)
 
+		.add_property("isEmpty", &Self::IsEmpty)
+
 		.add_property("lastPoint", &Self::GetLastPoint)
 
 		.add_property("historySize", &Self::GetHistorySize)
@@ -438,6 +440,10 @@ void MovingAverageServiceExport::ExportClass(const char *className) {
 
 	PointExport::ExportClass("Point");
 
+}
+
+bool MovingAverageServiceExport::IsEmpty() const {
+	return GetService().IsEmpty();
 }
 
 MovingAverageServiceExport::PointExport

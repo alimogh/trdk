@@ -118,7 +118,9 @@ class BarService(trdk.ServiceInfo):
 class MovingAverageService(trdk.ServiceInfo):
 
     class Point(object):
-        value = int
+        value = float
+
+    isEmpty = bool
 
     lastPoint = trdk.services.MovingAverageService.Point  # Last value point.
 

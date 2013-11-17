@@ -105,6 +105,10 @@ public:
 		return Descale(price, GetPriceScale());
 	}
 
+	double DescalePrice(double price) const {
+		return Descale(price, GetPriceScale());
+	}
+
 	bool IsLevel1Started() const {
 		return m_isLevel1Started == 0 ? false : true;
 	}
@@ -212,6 +216,9 @@ ScaledPrice Security::ScalePrice(double price) const {
 }
 
 double Security::DescalePrice(ScaledPrice price) const {
+	return m_pimpl->DescalePrice(price);
+}
+double Security::DescalePrice(double price) const {
 	return m_pimpl->DescalePrice(price);
 }
 

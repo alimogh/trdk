@@ -48,10 +48,12 @@ namespace trdk { namespace Services {
 		explicit MovingAverageService(
 					Context &,
 					const std::string &tag,
-					const Lib::IniFileSectionRef &);
+					const Lib::IniSectionRef &);
 		virtual ~MovingAverageService();
 
 	public:
+
+		bool IsEmpty() const;
 
 		//! Returns last value point.
 		/** Last bar has index "zero".
