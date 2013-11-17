@@ -283,11 +283,11 @@ namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class IniFileSectionRef {
+	class IniSectionRef {
 
 	public:
 
-		explicit IniFileSectionRef(
+		explicit IniSectionRef(
 					const trdk::Lib::Ini &iniRef,
 					const std::string &sectionName);
 
@@ -348,6 +348,27 @@ namespace trdk { namespace Lib {
 
 		const trdk::Lib::Ini *m_base;
 		std::string m_name;
+
+	};
+
+	class IniFileSectionRef : public trdk::Lib::IniSectionRef {
+
+	public:
+
+		typedef trdk::Lib::IniSectionRef Base;
+
+	public:
+
+		explicit IniFileSectionRef(
+					const trdk::Lib::IniFile &iniRef,
+					const std::string &sectionName)
+				: Base(iniRef, sectionName) {
+			//...//
+		}
+
+		const trdk::Lib::IniFile & GetBase() const {
+			return static_cast<const trdk::Lib::IniFile &>(Base::GetBase());
+		}
 
 	};
 

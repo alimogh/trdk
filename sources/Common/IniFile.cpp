@@ -349,7 +349,7 @@ IniFile::IniFile(const fs::path &path)
 
 //////////////////////////////////////////////////////////////////////////
 
-IniFileSectionRef::IniFileSectionRef(
+IniSectionRef::IniSectionRef(
 			const Ini &base,
 			const std::string &name)
 		: m_base(&base),
@@ -357,58 +357,54 @@ IniFileSectionRef::IniFileSectionRef(
 	//...//
 }
 
-bool IniFileSectionRef::IsKeyExist(const std::string &key) const {
+bool IniSectionRef::IsKeyExist(const std::string &key) const {
 	return GetBase().IsKeyExist(GetName(), key);
 }
 
-std::string IniFileSectionRef::ReadKey(const std::string &key) const {
+std::string IniSectionRef::ReadKey(const std::string &key) const {
 	return GetBase().ReadKey(GetName(), key);
 }
 
-std::string IniFileSectionRef::ReadKey(
+std::string IniSectionRef::ReadKey(
 				const std::string &key,
 				const std::string &defaultValue)
 			const {
 	return GetBase().ReadKey(GetName(), key, defaultValue);
 }
 
-fs::path IniFileSectionRef::ReadFileSystemPath(const std::string &key) const {
+fs::path IniSectionRef::ReadFileSystemPath(const std::string &key) const {
 	return GetBase().ReadFileSystemPath(GetName(), key);
 }
 
 IniFile::AbsoluteOrPercentsPrice
-IniFileSectionRef::ReadAbsoluteOrPercentsPriceKey(
+IniSectionRef::ReadAbsoluteOrPercentsPriceKey(
 			const std::string &key,
 			unsigned long priceScale)
 		const {
 	return GetBase().ReadAbsoluteOrPercentsPriceKey(GetName(), key, priceScale);
 }
 
-bool IniFileSectionRef::ReadBoolKey(const std::string &key) const {
+bool IniSectionRef::ReadBoolKey(const std::string &key) const {
 	return GetBase().ReadBoolKey(GetName(), key);
 }
 
-bool IniFileSectionRef::ReadBoolKey(
+bool IniSectionRef::ReadBoolKey(
 			const std::string &key,
 			bool defaultValue)
 		const {
 	return GetBase().ReadBoolKey(GetName(), key, defaultValue);
 }
 
-std::list<std::string> IniFileSectionRef::ReadList(
-			bool mustExist)
-		const {
+std::list<std::string> IniSectionRef::ReadList(bool mustExist) const {
 	return GetBase().ReadList(GetName(), mustExist);
 }
 
-std::set<Symbol> IniFileSectionRef::ReadSymbols(
+std::set<Symbol> IniSectionRef::ReadSymbols(
 			const std::string &defExchange,
 			const std::string &defPrimaryExchange)
 		const {
 	return GetBase().ReadSymbols(GetName(), defExchange, defPrimaryExchange);
 }
-
-//////////////////////////////////////////////////////////////////////////
 
 std::ostream & std::operator <<(
 			std::ostream &os,
