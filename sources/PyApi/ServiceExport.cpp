@@ -59,6 +59,10 @@ py::object PyApi::Export(const trdk::Service &service) {
 				dynamic_cast<const MovingAverageServiceExport::Implementation *>(
 					&service)) {
 			return objectCache.Get<MovingAverageServiceExport>(service);
+		} else if (
+				dynamic_cast<const BollingerBandsServiceExport::Implementation *>(
+					&service)) {
+			return objectCache.Get<BollingerBandsServiceExport>(service);
 		}
 	} catch (const py::error_already_set &) {
 		throw GetPythonClientException("Failed to export service");
