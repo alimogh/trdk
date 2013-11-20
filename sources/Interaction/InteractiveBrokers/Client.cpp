@@ -334,7 +334,10 @@ void Client::SubscribeToMarketData(ib::Security &security) const {
 	if (security.IsTradesRequired() && !security.IsTestSource()) {
 		throw trdk::TradeSystem::Error(
 			"Interactive Brokers doesn't provide trades info");
-	} else if (!security.IsLevel1Required() && !security.IsBarsRequired()) {
+	} else if (
+			!security.IsLevel1Required()
+			&& !security.IsBarsRequired()
+			&& !(security.IsTestSource() && security.IsTradesRequired())) {
 		return;
 	}
 
@@ -373,7 +376,10 @@ void Client::FlushPostponedMarketDataSubscription() const {
 
 void Client::DoMarketDataSubscription(ib::Security &security) const {
 	Assert(!IsSubscribed(m_marketDataRequests, security));
-	Assert(security.IsLevel1Required() || security.IsBarsRequired());
+	Assert(
+		security.IsLevel1Required()
+		|| security.IsBarsRequired()
+		|| (security.IsTestSource() && security.IsTradesRequired()));
 	if (!SendMarketDataHistoryRequest(security)) {
 		SendMarketDataRequest(security);
 	}
@@ -382,7 +388,10 @@ void Client::DoMarketDataSubscription(ib::Security &security) const {
 void Client::SendMarketDataRequest(ib::Security &security) const {
 
 	Assert(!m_mutex.try_lock());
-	Assert(security.IsLevel1Required() || security.IsBarsRequired());
+	Assert(
+		security.IsLevel1Required()
+		|| security.IsBarsRequired()
+		|| (security.IsTestSource() && security.IsTradesRequired()));
 	Assert(!IsSubscribed(m_marketDataRequests, security));
 
 	if (	security.IsLevel1Required()
@@ -1550,7 +1559,10 @@ void Client::historicalData(
 	if (!security) {
 		return;
 	}
-	Assert(security->IsLevel1Required() || security->IsBarsRequired());
+	Assert(
+		security->IsLevel1Required()
+		|| security->IsBarsRequired()
+		|| (security->IsTestSource() && security->IsTradesRequired()));
 	
 	const bool isFinished = boost::starts_with(timeStr, "f");
 	Assert(!isFinished || boost::starts_with(timeStr, "finished-"));
