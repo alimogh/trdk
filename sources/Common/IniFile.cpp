@@ -334,13 +334,30 @@ std::set<Symbol> Ini::ReadSymbols(
 
 //////////////////////////////////////////////////////////////////////////
 
+namespace {
+
+	fs::path FindIniFile(const fs::path &source) {
+		if (boost::iends_with(source.string(), ".ini")) {
+			return source;
+		} else if (fs::exists(source)) {
+			return source;
+		}
+		const fs::path pathWhithExt = source.string() + ".ini";
+		if (!fs::exists(pathWhithExt)) {
+			return source;
+		}
+		return pathWhithExt;	
+	}
+
+}
+
 IniFile::FileOpenError::FileOpenError() throw()
 		: Error("Failed to open INI-file") {
 	//...//
 }
 
 IniFile::IniFile(const fs::path &path)
-		: m_path(path),
+		: m_path(FindIniFile(path)),
 		m_file(m_path.c_str()) {
 	if (!m_file) {
 		throw FileOpenError();
