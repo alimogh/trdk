@@ -202,6 +202,7 @@ class Strategy(Module):
             pass
 
     positions = PositionList  # active positions
+    securities = SecurityList
 
     def __init__(self, param):
         """
@@ -301,6 +302,8 @@ class ServiceInfo(Module):
             :rtype: trdk.SecurityInfo
             """
             pass
+
+    securities = SecurityList
 
     def __init__(self, param):
         """
