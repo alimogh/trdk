@@ -1,4 +1,17 @@
+# TRDK-21:
+#
+# I would like to add an technical indicator filter: Moving Averages (Choice
+# of simple, exponential, smoothed, hull).
+#
+# Application will buy only when price is above Moving Average
+# (I can input MA period, and time frame 15min, 1 hr, 4 hr, daily, weekly).
+#
+# Sell only when price is below MA.
+#
+# Only trade one position per symbol.
+
 import trdk
+import time
 
 
 accountVolumeForPosition = .05  # Allocate how much % of account to each trade.
@@ -13,9 +26,10 @@ closeOrderParams = trdk.OrderParams()
 # noinspection PyCallByClass,PyTypeChecker
 class MovingAverage(trdk.Strategy):
 
-    movingAverage = None
-    account = 100000
-    skipsCount = 0
+    def __init__(self, param):
+        super(self.__class__, self).__init__(param)
+        self.account = 100000
+        self.lastLogPingTime = time.time()
 
     def getRequiredSuppliers(self):
         return 'Level 1 Updates, MovingAverage'
@@ -24,17 +38,17 @@ class MovingAverage(trdk.Strategy):
         self.movingAverage = service
 
     def onServiceDataUpdate(self, service):
+        # required to mark service as "used"
         pass
 
     def onLevel1Update(self, security):
-
+        self._pingLog(security)
         if self.movingAverage.isEmpty:
             return
-
-        # Only trade one position per symbol:
         if self.positions.count() == 0:
             self.checkEntry(security)
         else:
+            # Only trade one position per symbol:
             assert self.positions.count() == 1
             map(
                 lambda position: self.checkPosition(position),
@@ -45,18 +59,9 @@ class MovingAverage(trdk.Strategy):
         lastPrice = security.lastPrice
         movingAverage = int(self.movingAverage.lastPoint.value)
 
-        # Application will buy only when price is above Moving Average
         if lastPrice <= movingAverage:
-            if ++self.skipsCount > 20:
-                self.log.debug(
-                    'Still no suitable prices for positions opening'
-                    ' (last price: {0}, moving average: {1})...'
-                    .format(
-                        security.descalePrice(lastPrice),
-                        security.descalePrice(movingAverage)))
-                self.skipsCount = 0
+            # Application will buy only when price is above Moving Average
             return
-        self.skipsCount = 0
 
         lastPriceDescaled = security.descalePrice(lastPrice)
         volumeSource = self.account * accountVolumeForPosition
@@ -72,8 +77,10 @@ class MovingAverage(trdk.Strategy):
                 security.descalePrice(movingAverage),
                 volumeSource, volume,
                 qtySource, qty))
-        trdk.LongPosition(self, security, qty, lastPrice).openAtMarketPrice(
-            openOrderParams)
+        trdk.LongPosition(self, security, qty, lastPrice)\
+            .openAtMarketPrice(openOrderParams)
+
+        self.lastLogPingTime = time.time()
 
     def checkPosition(self, position):
 
@@ -83,18 +90,9 @@ class MovingAverage(trdk.Strategy):
         lastPrice = position.security.lastPrice
         movingAverage = int(self.movingAverage.lastPoint.value)
 
-        # Sell only when price is below MA.
         if lastPrice >= movingAverage:
-            if ++self.skipsCount > 20:
-                self.log.debug(
-                    'Still no suitable prices for positions closing'
-                    ' (last price: {0}, moving average: {1})...'
-                    .format(
-                        position.security.descalePrice(lastPrice),
-                        position.security.descalePrice(movingAverage)))
-                self.skipsCount = 0
+            # Sell only when price is below MA.
             return
-        self.skipsCount = 0
 
         self.log.debug(
             'Closing position: "last price {0}" < "moving average {1}"...'
@@ -102,3 +100,18 @@ class MovingAverage(trdk.Strategy):
                 position.security.descalePrice(lastPrice),
                 position.security.descalePrice(movingAverage)))
         position.closeAtMarketPrice(closeOrderParams)
+
+        self.lastLogPingTime = time.time()
+
+    def _pingLog(self, security):
+        now = time.time()
+        if self.lastLogPingTime is None or now - self.lastLogPingTime >= 60:
+            if self.movingAverage.isEmpty:
+                maStr = 'None'
+            else:
+                maStr = self.movingAverage.lastPoint.value
+                maStr = security.descalePrice(maStr)
+            self.log.debug(
+                'Ping: last price = {0}, ma = {1};'
+                .format(security.descalePrice(security.lastPrice), maStr))
+            self.lastLogPingTime = now
