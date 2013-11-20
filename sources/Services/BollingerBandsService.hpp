@@ -85,12 +85,14 @@ namespace trdk { namespace Services {
 
 	public:
 
+		virtual void OnServiceStart(const trdk::Service &);
 		virtual bool OnServiceDataUpdate(const trdk::Service &);
 
 	public:
 
-		bool OnNewBar(const trdk::Services::BarService::Bar &);
-		bool OnNewMa(const trdk::Services::MovingAverageService::Point &);
+		bool OnNewData(
+					const trdk::Services::BarService::Bar &,
+					const trdk::Services::MovingAverageService::Point &);
 
 	protected:
 
