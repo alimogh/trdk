@@ -424,24 +424,22 @@ bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
 	
 	// Called from dispatcher, locking is not required.
 
-	{
-		const ExtractFrameValueVisitor extractVisitor(bar);
-		const auto frameValue
-			= boost::apply_visitor(extractVisitor, m_pimpl->m_sourceInfo);
-		if (IsZero(frameValue)) {
-			if (	m_pimpl->m_lastZeroTime == pt::not_a_date_time
-					|| bar.time - m_pimpl->m_lastZeroTime >= pt::minutes(1)) {
-				if (m_pimpl->m_lastZeroTime != pt::not_a_date_time) {
-					GetLog().Debug("Recently received only zeros.");
-				}
-				m_pimpl->m_lastZeroTime = bar.time;
+	const ExtractFrameValueVisitor extractVisitor(bar);
+	const auto frameValue
+		= boost::apply_visitor(extractVisitor, m_pimpl->m_sourceInfo);
+	if (IsZero(frameValue)) {
+		if (	m_pimpl->m_lastZeroTime == pt::not_a_date_time
+				|| bar.time - m_pimpl->m_lastZeroTime >= pt::minutes(1)) {
+			if (m_pimpl->m_lastZeroTime != pt::not_a_date_time) {
+				GetLog().Debug("Recently received only zeros.");
 			}
-			return false;
+			m_pimpl->m_lastZeroTime = bar.time;
 		}
-		m_pimpl->m_lastZeroTime = pt::not_a_date_time;
-		const AccumVisitor accumVisitor(frameValue);
-		boost::apply_visitor(accumVisitor, *m_pimpl->m_acc);
+		return false;
 	}
+	m_pimpl->m_lastZeroTime = pt::not_a_date_time;
+	const AccumVisitor accumVisitor(frameValue);
+	boost::apply_visitor(accumVisitor, *m_pimpl->m_acc);
 
 	if (	boost::apply_visitor(GetAccSizeVisitor(), *m_pimpl->m_acc)
 			< m_pimpl->m_period) {
@@ -449,7 +447,8 @@ bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
 	}
 
 	const Point newPoint = {
-		boost::apply_visitor(GetValueVisitor(), *m_pimpl->m_acc)
+		frameValue,
+		boost::apply_visitor(GetValueVisitor(), *m_pimpl->m_acc),
 	};
 	m_pimpl->m_lastValue = newPoint;
 	Interlocking::Exchange(m_pimpl->m_isEmpty, false);

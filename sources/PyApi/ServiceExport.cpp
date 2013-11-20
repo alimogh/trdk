@@ -407,11 +407,8 @@ MovingAverageServiceExport::PointExport::PointExport(
 void MovingAverageServiceExport::PointExport::ExportClass(
 			const char *className) {
 	py::class_<PointExport>(className, py::no_init)
+		.add_property("source", &PointExport::GetSource)
 		.add_property("value", &PointExport::GetValue);
-}
-
-double MovingAverageServiceExport::PointExport::GetValue() const {
-	return m_point.value;
 }
 
 MovingAverageServiceExport::MovingAverageServiceExport(
@@ -482,6 +479,7 @@ const MovingAverageService & MovingAverageServiceExport::GetService() const {
 void BollingerBandsServiceExport::PointExport::ExportClass(
 			const char *className) {
 	py::class_<PointExport>(className, py::no_init)
+		.add_property("source", &PointExport::GetSource)
 		.add_property("high", &PointExport::GetHigh)
 		.add_property("low", &PointExport::GetLow);
 }

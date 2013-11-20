@@ -212,7 +212,12 @@ namespace trdk { namespace PyApi {
 		public:
 			static void ExportClass(const char *className);
 		public:
-			double GetValue() const;
+			boost::intmax_t GetSource() const {
+				return m_point.source;
+			}
+			double GetValue() const {
+				return m_point.value;
+			}
 		private:
 			const Implementation *m_service;
 			Implementation::Point m_point;
@@ -269,6 +274,9 @@ namespace trdk { namespace PyApi {
 		public:
 			static void ExportClass(const char *className);
 		public:
+			boost::intmax_t GetSource() const {
+				return m_point.source;
+			}
 			double  GetLow() const {
 				return m_point.low;
 			}

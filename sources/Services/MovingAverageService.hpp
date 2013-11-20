@@ -40,6 +40,7 @@ namespace trdk { namespace Services {
 
 		//! Value data point.
  		struct Point {
+			ScaledPrice source;
 			double value;
 		};
 

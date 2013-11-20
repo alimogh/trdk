@@ -24,75 +24,6 @@ namespace {
 
 	typedef SegmentedVector<BollingerBandsService::Point, 1000> History;
 
-	enum BbSource {
-		BB_SOURCE_CLOSE_TRADE_PRICE,
-		numberOfBbSources
-	};
-
-	template<BbSource source>
-	struct BbSourceToType {
-		enum {
-			SOURCE = source
-		};
-	};
-
-	typedef boost::variant<
-			BbSourceToType<BB_SOURCE_CLOSE_TRADE_PRICE>>
-		BbSourceInfo;
-
-	struct GetBbSourceVisitor : public boost::static_visitor<BbSource> {
-		template<typename Info>
-		BbSource operator ()(const Info &) const {
-			return BbSource(Info::SOURCE);
-		}
-	};
-	BbSource GetBbSource(const BbSourceInfo &info) {
-		return boost::apply_visitor(GetBbSourceVisitor(), info);
-	}
-
-	class ExtractFrameValueVisitor : public boost::static_visitor<ScaledPrice> {
-		static_assert(numberOfBbSources == 1, "BB Sources list changed.");
-	public:
-		explicit ExtractFrameValueVisitor(const BarService::Bar &barRef)
-				: m_bar(&barRef) {
-			//...//
-		}
-	public:
-		ScaledPrice operator ()(
-					const BbSourceToType<BB_SOURCE_CLOSE_TRADE_PRICE> &)
-				const {
-			return m_bar->closeTradePrice;
-		}
-	private:
-		const BarService::Bar *m_bar;
-	};
-
-	template<BbSource source, typename BbSourcesMap>
-	void InsertBbSourceInfo(const char *keyVal, BbSourcesMap &sourcesMap) {
-		Assert(sourcesMap.find(source) == sourcesMap.end());
-#		ifdef DEV_VER
-			foreach (const auto &i, sourcesMap) {
-				AssertNe(std::string(keyVal), i.second.first);
-				AssertNe(source, GetBbSource(*i.second.second));
-			}
-#		endif
-		sourcesMap[source] = std::make_pair(
-			std::string(keyVal),
-			BbSourceToType<source>());
-	}
-		
-	std::map<BbSource, std::pair<std::string, boost::optional<BbSourceInfo>>>
-	GetSources() {
-		std::map<
-				BbSource,
-				std::pair<std::string, boost::optional<BbSourceInfo>>>
-			result;
-		static_assert(numberOfBbSources == 1, "BB Sources list changed.");
-		InsertBbSourceInfo<BB_SOURCE_CLOSE_TRADE_PRICE>("close price", result);
-		AssertEq(numberOfBbSources, result.size());
-		return result;
-	}
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -122,7 +53,6 @@ namespace { namespace Configuration {
 
 		const char *const period = "period";
 		const char *const deviation = "deviation";
-		const char *const source = "source";
 		const char *const isHistoryOn = "history";
 
 	}
@@ -153,27 +83,6 @@ namespace { namespace Configuration {
 			throw Exception("Wrong deviation specified for Bollinger Bands");
 		}
 		return size_t(result);
-	}
-
-	BbSourceInfo LoadSourceSetting(
-				const IniSectionRef &configuration,
-				BollingerBandsService &service) {
-		//! @todo to std::map<BbSource, std::string> &sources in new  MSVC 2012
-		auto sources = GetSources();
-		if (!configuration.IsKeyExist(Keys::source)) {
-			return BbSourceToType<BB_SOURCE_CLOSE_TRADE_PRICE>();
-		}
-		const auto &sourceStr = configuration.ReadKey(Keys::source);
-		foreach (const auto &i, sources) {
-			if (boost::iequals(i.second.first, sourceStr)) {
-				return *i.second.second;
-			}
-		}
-		service.GetLog().Error(
-			"Unknown source specified: \"%1%\"."
-				"Supported: close price (default).",
-			sourceStr);
-		throw Exception("Unknown Bollinger Bands source");
 	}
 
 	History * LoadHistorySetting(
@@ -259,8 +168,6 @@ public:
 	BollingerBandsService &m_service;
 
 	volatile bool m_isEmpty;
-	
-	BbSourceInfo m_sourceInfo;
 
 	const size_t m_period;
 	const size_t m_deviation;
@@ -272,12 +179,6 @@ public:
 	boost::optional<Point> m_lastValue;
 	std::unique_ptr<History> m_history;
 
-	pt::ptime m_lastBarTime;
-	pt::ptime m_lastZeroTime;
-
-	const BarService *m_barsService;
-	const MovingAverageService *m_movingAverageService;
-
 public:
 
 	explicit Implementation(
@@ -285,23 +186,18 @@ public:
 				const IniSectionRef &configuration)
 			: m_service(service),
 			m_isEmpty(true),
-			m_sourceInfo(
-				Configuration::LoadSourceSetting(configuration, m_service)),
 			m_period(
 				Configuration::LoadPeriodSetting(configuration, m_service)),
 			m_deviation(
 				Configuration::LoadDeviationSetting(configuration, m_service)),
 			m_stat(accs::tag::rolling_window::window_size = m_period),
 			m_history(
-				Configuration::LoadHistorySetting(configuration, m_service)),
-			m_barsService(nullptr),
-			m_movingAverageService(nullptr) {
+				Configuration::LoadHistorySetting(configuration, m_service)) {
 		m_service.GetLog().Info(
 			"Initial: %1% = %2%, %3% = %4% frames, %5% = %6%.",
 			boost::make_tuple(
 				Configuration::Keys::period, m_period,
-				Configuration::Keys::source,
-					boost::cref(GetSources()[GetBbSource(m_sourceInfo)].first),
+				Configuration::Keys::deviation, m_deviation,
 				Configuration::Keys::isHistoryOn, m_history ? "yes" : "no"));
 	}
 
@@ -316,12 +212,16 @@ public:
 		}
 	}
 
-	void CheckServices() const {
-		if (!m_movingAverageService || !m_barsService) {
-			throw Error(
-				"Bollinger Bands requires Bars Service"
-					" and Moving Average service");
+	const MovingAverageService & CastToMaService(const Service &service) const {
+		const MovingAverageService *const result
+			= dynamic_cast<const MovingAverageService *>(&service);
+		if (!result) {
+			m_service.GetLog().Error(
+				"Service \"%1%\" can't be used as data source.",
+				service);
+			throw Error("Unknown service used as source");
 		}
+		return *result;
 	}
 
 };
@@ -340,89 +240,31 @@ BollingerBandsService::~BollingerBandsService() {
 	delete m_pimpl;
 }
 
-void BollingerBandsService::OnServiceStart(const Service &service) {
-	
-	const BarService *const barsService
-		= dynamic_cast<const BarService *>(&service);
-	if (barsService) {
-		if (m_pimpl->m_barsService) {
-			GetLog().Error(
-				"Can use only one Bars Service, failed to attach \"%1%\".",
-				service);
-			throw Error(
-				"Bollinger Bands service can use only one Bars Service");
-		}
-		m_pimpl->m_barsService = barsService;
-		return;
-	}
-
-	const MovingAverageService *const maService
-		= dynamic_cast<const MovingAverageService *>(&service);
-	if (!maService) {
-		GetLog().Error("\"%1%\" can't be used as data source.", service);
-		throw Error("Unknown service used as source");
-	}
-
-	if (m_pimpl->m_movingAverageService) {
-		GetLog().Error(
-			"Bollinger Bands service can use only one Moving Average service,"
-				" failed to attach \"%1%\".",
-			service);
-		throw Error(
-			"Bollinger Bands service can use only one Moving Average service");
-	}
-
-	m_pimpl->m_movingAverageService = maService;
-
-}
-
 bool BollingerBandsService::OnServiceDataUpdate(const Service &service) {
-	Assert(
-		m_pimpl->m_barsService == &service
-		|| m_pimpl->m_movingAverageService == &service);
-	m_pimpl->CheckServices();
-	if (m_pimpl->m_movingAverageService != &service) {
-		return false;
-	}
-	Assert(!m_pimpl->m_barsService->IsEmpty());
-	return OnNewData(
-		m_pimpl->m_barsService->GetLastBar(),
-		m_pimpl->m_movingAverageService->GetLastPoint());
+	const auto &maService = m_pimpl->CastToMaService(service);
+	Assert(!maService.IsEmpty());
+	return OnNewData(maService.GetLastPoint());
 }
 
-bool BollingerBandsService::OnNewData(
-			const BarService::Bar &bar,
-			const MovingAverageService::Point &ma) {
+bool BollingerBandsService::OnNewData(const MovingAverageService::Point &ma) {
 
 	// Called from dispatcher, locking is not required.
 
-	{
-		const ExtractFrameValueVisitor extractVisitor(bar);
-		const auto frameValue
-			= boost::apply_visitor(extractVisitor, m_pimpl->m_sourceInfo);
-		if (IsZero(frameValue)) {
-			if (	m_pimpl->m_lastZeroTime == pt::not_a_date_time
-					|| bar.time - m_pimpl->m_lastZeroTime >= pt::minutes(1)) {
-				if (m_pimpl->m_lastZeroTime != pt::not_a_date_time) {
-					GetLog().Debug("Recently received only zeros.");
-				}
-				m_pimpl->m_lastZeroTime = bar.time;
-			}
-			return false;
-		}
-		m_pimpl->m_lastZeroTime = pt::not_a_date_time;
-		m_pimpl->m_stat(frameValue);
+	if (IsZero(ma.source)) {
+		return false;
 	}
+	m_pimpl->m_stat(ma.source);
 
 	if (accs::rolling_count(m_pimpl->m_stat) < m_pimpl->m_period) {
  		return false;
  	}
 
 	const auto &stDev = accs::standardDeviationForBb(m_pimpl->m_stat);
-	Point newPoint;
- 	newPoint.high = ma.value + (m_pimpl->m_deviation * stDev);
- 	newPoint.low = ma.value - (m_pimpl->m_deviation * stDev);
-
+	const Point newPoint = {
+		ma.source,
+ 		ma.value + (m_pimpl->m_deviation * stDev),
+ 		ma.value - (m_pimpl->m_deviation * stDev)
+	};
 	m_pimpl->m_lastValue = newPoint;
 	Interlocking::Exchange(m_pimpl->m_isEmpty, false);
 

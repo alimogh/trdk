@@ -11,7 +11,6 @@
 #pragma once
 
 #include "MovingAverageService.hpp"
-#include "BarService.hpp"
 #include "Core/Service.hpp"
 #include "Api.h"
 
@@ -41,6 +40,7 @@ namespace trdk { namespace Services {
 
 		//! Value data point.
  		struct Point {
+			ScaledPrice source;
 			double high;
 			double low;
 		};
@@ -85,14 +85,11 @@ namespace trdk { namespace Services {
 
 	public:
 
-		virtual void OnServiceStart(const trdk::Service &);
 		virtual bool OnServiceDataUpdate(const trdk::Service &);
 
 	public:
 
-		bool OnNewData(
-					const trdk::Services::BarService::Bar &,
-					const trdk::Services::MovingAverageService::Point &);
+		bool OnNewData(const trdk::Services::MovingAverageService::Point &);
 
 	protected:
 

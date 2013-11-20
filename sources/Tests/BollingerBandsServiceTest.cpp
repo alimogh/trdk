@@ -133,25 +133,13 @@ namespace {
 		{	1771.89	,	1753.07	,	1789.41	,	1716.73	},
 	};
 
-	struct CloseTradePiceSource {
-		static trdk::ScaledPrice & GetSourcePlace(svc::BarService::Bar &bar) {
-			return bar.closeTradePrice;
-		}
-	};
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace trdk { namespace Testing {
 
-	template<typename PolicyT>
-	class BollingerBandsServiceTypedTest : public testing::Test {
-
-	protected:
-
-		typedef typename PolicyT Policy;
-		
+	class BollingerBandsServiceTest : public testing::Test {
 
 	protected:
 		
@@ -171,17 +159,15 @@ namespace trdk { namespace Testing {
 
 			for (size_t i = 0; i < _countof(source); ++i) {
 			
-				svc::BarService::Bar bar;
-				Policy::GetSourcePlace(bar) = lib::Scale(source[i][0], 100);
-			
-				svc::MovingAverageService::Point ma = {
+				const svc::MovingAverageService::Point ma = {
+					lib::Scale(source[i][0], 100),
 					double(lib::Scale(source[i][1], 100))
 				};
 			
 				ASSERT_EQ(lib::IsZero(source[i][2]), lib::IsZero(source[i][3]));
 				const bool hasValue = !lib::IsZero(source[i][2]);
 
-				EXPECT_EQ(hasValue, m_service->OnNewData(bar, ma))
+				EXPECT_EQ(hasValue, m_service->OnNewData(ma))
 					<< "i = " << i << ";";
 			
 				if (!hasValue) {
@@ -190,16 +176,23 @@ namespace trdk { namespace Testing {
 				const svc::BollingerBandsService::Point &point
 					= m_service->GetLastPoint();
 			
+				EXPECT_EQ(source[i][0], lib::Descale(point.source, 100))
+					<< "i = " << i << ";"
+					<< " source = " << ma.source << ";"
+					<< " ma = " << ma.value << ";"
+					<< " high = " << point.high << ";"
+					<< " low = " << point.low << ";";
+
 				EXPECT_EQ(source[i][2], lib::Descale(point.high, 100))
 					<< "i = " << i << ";"
-					<< " source = " << Policy::GetSourcePlace(bar) << ";"
+					<< " source = " << ma.source << ";"
 					<< " ma = " << ma.value << ";"
 					<< " high = " << point.high << ";"
 					<< " low = " << point.low << ";";
 			
 				EXPECT_EQ(source[i][3], lib::Descale(point.low, 100))
 					<< "i = " << i << ";"
-					<< " source = " << Policy::GetSourcePlace(bar) << ";"
+					<< " source = " << ma.source << ";"
 					<< " ma = " << ma.value << ";"
 					<< " high = " << point.high << ";"
 					<< " low = " << point.low << ";";
@@ -214,7 +207,6 @@ namespace trdk { namespace Testing {
 		std::unique_ptr<svc::BollingerBandsService> m_service;
 
 	};
-	TYPED_TEST_CASE_P(BollingerBandsServiceTypedTest);
 
 } }
 
@@ -222,7 +214,7 @@ namespace trdk { namespace Testing {
 
 using namespace trdk::Testing;
 
-TYPED_TEST_P(BollingerBandsServiceTypedTest, RealTimeWithHistory) {
+TEST_F(BollingerBandsServiceTest, RealTimeWithHistory) {
 	
 	std::string settingsString(
 		"[Section]\n"
@@ -258,6 +250,14 @@ TYPED_TEST_P(BollingerBandsServiceTypedTest, RealTimeWithHistory) {
 		
 		const svc::BollingerBandsService::Point &point
 			= m_service->GetHistoryPoint(i);
+
+		EXPECT_EQ(source[pos][0], lib::Descale(point.source, 100))
+			<< "i = " << i << ";"
+			<< " pos = " << pos << ";"
+			<< " source = " << source[pos][0] << ";"
+			<< " ma = " << source[pos][1] << ";"
+			<< " high = " << point.high << ";"
+			<< " low = " << point.low << ";";
 
 		EXPECT_EQ(source[pos][2], lib::Descale(point.high, 100))
 			<< "i = " << i << ";"
@@ -311,7 +311,7 @@ TYPED_TEST_P(BollingerBandsServiceTypedTest, RealTimeWithHistory) {
 
 }
 
-TYPED_TEST_P(BollingerBandsServiceTypedTest, RealTimeWithoutHistory) {
+TEST_F(BollingerBandsServiceTest, RealTimeWithoutHistory) {
 
 	std::string settingsString("[Section]\n");
 	const lib::IniString settings(settingsString);
@@ -334,24 +334,5 @@ TYPED_TEST_P(BollingerBandsServiceTypedTest, RealTimeWithoutHistory) {
 		svc::BollingerBandsService::HasNotHistory);
 
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-REGISTER_TYPED_TEST_CASE_P(
-	BollingerBandsServiceTypedTest,
-	RealTimeWithHistory,
-	RealTimeWithoutHistory);
-
-namespace trdk { namespace Testing {
-
-	typedef ::testing::Types<CloseTradePiceSource>
-		BollingerBandsServiceTestPolicies;
-
-	INSTANTIATE_TYPED_TEST_CASE_P(
-		BollingerBandsService,
-		BollingerBandsServiceTypedTest,
-		BollingerBandsServiceTestPolicies);
-
-} }
 
 ////////////////////////////////////////////////////////////////////////////////

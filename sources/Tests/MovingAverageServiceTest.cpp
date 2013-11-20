@@ -197,6 +197,13 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
 		if (!lib::IsZero(source[i][Policy::GetColumn()])) {
 			EXPECT_EQ(
+					source[i][0],
+					lib::Descale(service.GetLastPoint().source, 100))
+				<< "i = " << i << ";"
+				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
+				<< " service.GetLastPoint().value = "
+					<< service.GetLastPoint().value << ";";
+			EXPECT_EQ(
 					source[i][Policy::GetColumn()],
 					lib::Descale(service.GetLastPoint().value, 100))
 				<< "i = " << i << ";"
@@ -272,6 +279,13 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 			<< "i = " << i << ";"
 			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
 		if (!lib::IsZero(source[i][Policy::GetColumn()])) {
+			EXPECT_EQ(
+					source[i][0],
+					lib::Descale(service.GetLastPoint().source, 100))
+				<< "i = " << i << ";"
+				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
+				<< " service.GetLastPoint().value = "
+					<< service.GetLastPoint().value << ";";
 			EXPECT_EQ(
 					source[i][Policy::GetColumn()],
 					lib::Descale(service.GetLastPoint().value, 100))

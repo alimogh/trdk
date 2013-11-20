@@ -118,7 +118,8 @@ class BarService(trdk.ServiceInfo):
 class MovingAverageService(trdk.ServiceInfo):
 
     class Point(object):
-        value = float
+        source = int  # Last source frame value
+        value = float  # Moving Average value
 
     isEmpty = bool
 
@@ -148,8 +149,9 @@ class MovingAverageService(trdk.ServiceInfo):
 class BollingerBandsService(trdk.ServiceInfo):
 
     class Point(object):
-        high = float
-        low = float
+        source = int  # Last source frame value
+        high = float  # Upper band point
+        low = float  # Lower band point
 
     isEmpty = bool
 
