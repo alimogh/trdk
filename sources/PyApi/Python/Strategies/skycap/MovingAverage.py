@@ -29,7 +29,6 @@ class MovingAverage(trdk.Strategy):
     def __init__(self, param):
         super(self.__class__, self).__init__(param)
         self.account = 100000
-        self.lastLogPingTime = time.time()
 
     def getRequiredSuppliers(self):
         return 'Level 1 Updates, MovingAverage'
@@ -80,7 +79,7 @@ class MovingAverage(trdk.Strategy):
         trdk.LongPosition(self, security, qty, lastPrice)\
             .openAtMarketPrice(openOrderParams)
 
-        self.lastLogPingTime = time.time()
+        self._updatePingTime()
 
     def checkPosition(self, position):
 
@@ -101,11 +100,12 @@ class MovingAverage(trdk.Strategy):
                 position.security.descalePrice(movingAverage)))
         position.closeAtMarketPrice(closeOrderParams)
 
-        self.lastLogPingTime = time.time()
+        self._updatePingTime()
 
     def _pingLog(self, security):
         now = time.time()
-        if self.lastLogPingTime is None or now - self.lastLogPingTime >= 60:
+        hasLastLogPingTime = hasattr(self, 'lastLogPingTime')
+        if hasLastLogPingTime is False or now - self.lastLogPingTime >= 60:
             if self.movingAverage.isEmpty:
                 maStr = 'None'
             else:
@@ -114,4 +114,7 @@ class MovingAverage(trdk.Strategy):
             self.log.debug(
                 'Ping: last price = {0}, ma = {1};'
                 .format(security.descalePrice(security.lastPrice), maStr))
-            self.lastLogPingTime = now
+            self._updatePingTime()
+
+    def _updatePingTime(self):
+        self.lastLogPingTime = time.time()
