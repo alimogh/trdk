@@ -487,7 +487,7 @@ void BollingerBandsServiceExport::PointExport::ExportClass(
 
 void BollingerBandsServiceExport::ExportClass(const char *className) {
 
-	typedef MovingAverageServiceExport Self;
+	typedef BollingerBandsServiceExport Self;
 
 	typedef py::class_<Self, py::bases<ServiceInfoExport>> Export;
 	
