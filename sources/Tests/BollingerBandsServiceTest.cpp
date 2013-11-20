@@ -237,12 +237,12 @@ TYPED_TEST_P(BollingerBandsServiceTypedTest, RealTimeWithHistory) {
 	TestOnlineResult();
 
 	ASSERT_NO_THROW(m_service->GetHistorySize());
-	ASSERT_EQ(90, m_service->GetHistorySize());
+	ASSERT_EQ(_countof(source) - 20, m_service->GetHistorySize());
 	EXPECT_THROW(
-		m_service->GetHistoryPoint(90),
+		m_service->GetHistoryPoint(_countof(source) - 20),
 		svc::BollingerBandsService::ValueDoesNotExistError);
 	EXPECT_THROW(
-		m_service->GetHistoryPointByReversedIndex(90),
+		m_service->GetHistoryPointByReversedIndex(_countof(source) - 20),
 		svc::BollingerBandsService::ValueDoesNotExistError);
 
 	size_t offset = 19;

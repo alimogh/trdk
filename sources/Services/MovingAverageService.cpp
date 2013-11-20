@@ -111,49 +111,55 @@ namespace boost { namespace accumulators {
 	namespace impl {
 
 		template<typename Sample>
-		struct ema : accumulator_base {
+		struct Ema : accumulator_base {
 
 			typedef Sample result_type;
 
 			template<typename Args>
-			ema(const Args &args)
-					: window_size(args[rolling_window_size]),
-					smoothing_constant(2 / (double(window_size) + 1)),
-					sum(0) {
+			Ema(const Args &args)
+					: m_windowSize(args[rolling_window_size]),
+					m_smoothingConstant(2 / (double(m_windowSize) + 1)),
+					m_isStarted(false),
+					m_sum(0) {
 				//...//
 			}
 
 			template<typename Args>
 			void operator ()(const Args &args) {
 				const auto count = rolling_count(args);
-				if (count < window_size) {
+				if (count < m_windowSize) {
 					return;
 				}
-				sum = smoothing_constant * (args[sample] - sum) + sum;
+				if (!m_isStarted) {
+					m_sum = rolling_mean(args);
+					m_isStarted = true;
+				}
+				m_sum = m_smoothingConstant * (args[sample] - m_sum) + m_sum;
  			}
 
 			result_type result(dont_care) const {
-				return sum;
+				return m_sum;
 			}
 
 		private:
 			
-			uintmax_t window_size;
-			double smoothing_constant;
-			result_type sum;
+			uintmax_t m_windowSize;
+			double m_smoothingConstant;
+			bool m_isStarted;
+			result_type m_sum;
 		
 		};
 
 	}
 
 	namespace tag {
-		struct ema : depends_on<rolling_count> {
-			typedef accumulators::impl::ema<mpl::_1> impl;
+		struct Ema : depends_on<rolling_mean> {
+			typedef accumulators::impl::Ema<mpl::_1> impl;
 		};
 	}
 
 	namespace extract {
-		const extractor<tag::ema> ema = {
+		const extractor<tag::Ema> ema = {
 			//...//
 		};
 		BOOST_ACCUMULATORS_IGNORE_GLOBAL(ema)
@@ -187,19 +193,10 @@ namespace {
 	}
 
 	//! Simple Moving Average
-	typedef accs::accumulator_set<
-			double,
-			accs::stats<
-				accs::tag::count,
-				accs::tag::rolling_mean>>
+	typedef accs::accumulator_set<double, accs::stats<accs::tag::rolling_mean>>
 		SmaAcc;
 	//! Exponential Moving Average
-	typedef accs::accumulator_set<
-			double,
-			accs::stats<
-				accs::tag::count,
-				accs::tag::ema>>
-		EmaAcc;
+	typedef accs::accumulator_set<double, accs::stats<accs::tag::Ema>> EmaAcc;
 	typedef boost::variant<SmaAcc, EmaAcc> Acc;
 
 	class AccumVisitor : public boost::static_visitor<void> {
@@ -217,10 +214,10 @@ namespace {
 		ScaledPrice m_frameValue;
 	};
 
-	struct GetAccumedCountVisitor : public boost::static_visitor<size_t> {
+	struct GetAccSizeVisitor : public boost::static_visitor<size_t> {
 		template<typename Acc>
 		size_t operator ()(Acc &acc) const {
-			return accs::count(acc);
+			return accs::rolling_count(acc);
 		}
 	};
 
@@ -383,7 +380,7 @@ public:
 			= dynamic_cast<const BarService *>(&service);
 		if (!result) {
 			m_service.GetLog().Error(
-				"Service \"%1%\" can be used as data source.",
+				"Service \"%1%\" can't be used as data source.",
 				service);
 			throw Error("Unknown service used as source");
 		}
@@ -425,7 +422,7 @@ bool MovingAverageService::OnServiceDataUpdate(const Service &service) {
 
 bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
 	
-	//! Called from dispatcher, locking is not required.
+	// Called from dispatcher, locking is not required.
 
 	{
 		const ExtractFrameValueVisitor extractVisitor(bar);
@@ -446,9 +443,8 @@ bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
 		boost::apply_visitor(accumVisitor, *m_pimpl->m_acc);
 	}
 
-	const auto accumedCount
-		= boost::apply_visitor(GetAccumedCountVisitor(), *m_pimpl->m_acc);
-	if (accumedCount < m_pimpl->m_period) {
+	if (	boost::apply_visitor(GetAccSizeVisitor(), *m_pimpl->m_acc)
+			< m_pimpl->m_period) {
 		return false;
 	}
 
