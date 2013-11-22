@@ -112,7 +112,7 @@ class MovingAverage(trdk.Strategy):
                 maStr = self.movingAverage.lastPoint.value
                 maStr = security.descalePrice(maStr)
             self.log.debug(
-                'Ping: last price = {0}, ma = {1};'
+                'Ping: price = {0}, ma = {1};'
                 .format(security.descalePrice(security.lastPrice), maStr))
             self._updatePingTime()
 
