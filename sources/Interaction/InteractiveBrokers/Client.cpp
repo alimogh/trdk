@@ -81,11 +81,13 @@ namespace {
 Client::Client(
 			const ib::TradeSystem::Securities &securities,
 			Context::Log &log,
+			bool isNoHistoryMode,
 			int clientId /*= 0*/,
 			const std::string &host /*= "127.0.0.1"*/,
 			unsigned short port /*= 7496*/)
 		: m_securities(securities),
 		m_log(log),
+		m_isNoHistoryMode(isNoHistoryMode),
 		m_host(host),
 		m_port(port),
 		m_clientId(clientId),
@@ -145,7 +147,7 @@ Client::~Client() {
 }
 
 void Client::Task() {
-	m_log.Info(
+	m_log.Debug(
 		"Started "
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 			" connection read task.");
@@ -215,7 +217,7 @@ void Client::Task() {
 			throw;
 		}
 	}
-	m_log.Info(
+	m_log.Debug(
 		"Stopped "
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 			" connection read task.");
@@ -380,7 +382,7 @@ void Client::DoMarketDataSubscription(ib::Security &security) const {
 		security.IsLevel1Required()
 		|| security.IsBarsRequired()
 		|| (security.IsTestSource() && security.IsTradesRequired()));
-	if (!SendMarketDataHistoryRequest(security)) {
+	if (m_isNoHistoryMode || !SendMarketDataHistoryRequest(security)) {
 		SendMarketDataRequest(security);
 	}
 }
@@ -417,7 +419,7 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 			boost::join(genericTicklist, ","),
 			false);
 		
-		m_log.Info(
+		m_log.Debug(
 			"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level I"
 				" market data subscription request for \"%1%\""
 				" (ticker ID: %2%).",
@@ -453,7 +455,7 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 				whatToShow,
 				false);
 		
-			m_log.Info(
+			m_log.Debug(
 				"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 				" Real Time Bars (%1%) subscription request for \"%2%\""
 				" (ticker ID: %3%).",
@@ -471,6 +473,8 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 }
 
 bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
+
+	Assert(!m_isNoHistoryMode);
 
 	if (security.GetRequestedDataStartTime() == pt::not_a_date_time) {
 		return false;
@@ -531,7 +535,7 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 		0,
 		1);
 	
-	m_log.Info(
+	m_log.Debug(
 		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level I"
 			" market data history request for \"%1%\": %2% - %3%"
 			" (end time: \"%4%\", period: \"%5%\", ticker ID: %6%).",
@@ -576,7 +580,7 @@ void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
 		contract,
 		std::numeric_limits<int>::max());
 
-	m_log.Info(
+	m_log.Debug(
 		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level II"
 			" market depth subscription request for \"%1%\" (ticker ID: %2%).",
 		boost::make_tuple(
@@ -827,7 +831,7 @@ void Client::CancelOrder(trdk::OrderId id) {
 }
 
 void Client::LogConnectionAttempt() const throw() {
-	m_log.Info(
+	m_log.Debug(
 		"Connecting to "
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 			" at \"%1%:%2%\" with client ID %3%...",
@@ -847,7 +851,7 @@ void Client::LogConnect() const throw() {
 }
 
 void Client::LogDisconnectAttempt() const throw() {
-	m_log.Info(
+	m_log.Debug(
 		"Disconnecting from "
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 			" at \"%1%:%2%\" with client ID %3%...",
@@ -1210,7 +1214,7 @@ void Client::currentTime(long time) {
 			pt::from_time_t(time));
 		return;
 	}
-	m_log.Info(
+	m_log.Debug(
 		INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " server current time: %1%.",
 		pt::from_time_t(time));
 	UpdateNextPingRequestTime();
@@ -1385,14 +1389,14 @@ void Client::nextValidId(::OrderId id) {
 	const auto prevVal = m_seqNumber;
 	m_seqNumber = id;
 	if (prevVal != -1) {
-		m_log.Info(
+		m_log.Debug(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 				": next order ID %1% -> %2%.",
 			boost::make_tuple(
 				boost::cref(prevVal),
 				boost::cref(m_seqNumber)));
 	} else {
-		m_log.Info(
+		m_log.Debug(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 				": next order ID %1%.",
 			m_seqNumber);
@@ -1703,7 +1707,7 @@ void Client::position(
 			m_log.Debug(text, params);
 			return;
 		} else {
-			m_log.Info(text, params);
+			m_log.Debug(text, params);
 		}
 	}
 

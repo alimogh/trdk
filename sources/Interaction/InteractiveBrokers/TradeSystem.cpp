@@ -42,6 +42,7 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 		new Client(
 			m_securities,
 			m_log,
+			settings.ReadBoolKey("no_history", false),
 			settings.ReadTypedKey<int>("client_id", 0),
 			settings.ReadKey("ip_address", "127.0.0.1")));
 

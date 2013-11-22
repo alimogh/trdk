@@ -119,6 +119,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		Client(
 				const TradeSystem::Securities &,
 				Context::Log &,
+				bool isNoHistoryMode,
 				int clientId = 0,
 				const std::string &host = "127.0.0.1",
 				unsigned short port = 7496);
@@ -362,6 +363,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		const TradeSystem::Securities &m_securities;
 
 		Context::Log &m_log;
+
+		const bool m_isNoHistoryMode;
 
 		const std::string m_host;
 		const unsigned short m_port;
