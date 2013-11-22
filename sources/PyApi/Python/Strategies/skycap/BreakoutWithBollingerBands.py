@@ -22,9 +22,9 @@ import time
 
 
 accountVolumeForPosition = .05  # Allocate how much % of account to each trade.
-# For example, 5% will allocate $5,000 to
-# a $100,000 account. # It will then calculate
-# the number of shares to buy or sell.
+                                # For example, 5% will allocate $5,000 to
+                                # a $100,000 account. # It will then calculate
+                                # the number of shares to buy or sell.
 account = 100000
 
 openOrderParams = trdk.OrderParams()
@@ -88,22 +88,21 @@ class BreakoutWithBollingerBands(trdk.Strategy):
 
         pos.openAtMarketPrice(openOrderParams)
 
-        pos._updatePingTime()
+        self._updatePingTime()
 
     def checkPosition(self, position, point):
         if position.isOpened is False or position.hasActiveCloseOrders is True:
             return
         if self._makeExitDecision(point) is True:
             position.closeAtMarketPrice(closeOrderParams)
-            pos._updatePingTime()
+            self._updatePingTime()
 
     def _pingLog(self, service):
         now = time.time()
         hasLastLogPingTime = hasattr(self, 'lastLogPingTime')
         if hasLastLogPingTime is False or now - self.lastLogPingTime >= 60:
             self.log.debug(
-                'Ping: last price = {0}, upper bound point = {1},'
-                ' lower bound point = {2};'
+                'Ping: {1} / {0} / {0};'
                 .format(
                     self.security.descalePrice(service.lastPoint.source),
                     self.security.descalePrice(service.lastPoint.high),
