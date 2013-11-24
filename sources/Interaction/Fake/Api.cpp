@@ -9,8 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "TradeSystem.hpp"
-#include "MarketDataSource.hpp"
+#include "FakeTradeSystem.hpp"
+#include "FakeMarketDataSource.hpp"
 
 #ifdef BOOST_WINDOWS
 #	define TRDK_INTERACTION_FAKE_API

@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Client.hpp"
+#include "IbClient.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

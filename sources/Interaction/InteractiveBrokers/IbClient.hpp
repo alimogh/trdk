@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "Security.hpp"
-#include "TradeSystem.hpp"
+#include "IbSecurity.hpp"
+#include "IbTradeSystem.hpp"
 #include "Core/Context.hpp"
 
 namespace trdk {  namespace Interaction { namespace InteractiveBrokers {

@@ -46,6 +46,7 @@ namespace trdk { namespace PyApi {
 		boost::python::str GetTag() const;
 		boost::python::str GetName() const;
 		LogExport GetLog() const;
+		ContextExport GetContext() const;
 
 	public:
 

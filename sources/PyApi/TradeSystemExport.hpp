@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2013/01/27 20:38:47
+ *   Created: 2013/11/24 19:14:19
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -12,19 +12,31 @@
 
 namespace trdk { namespace PyApi {
 
-	class Script;
+	class TradeSystemExport {
 
-	class Strategy;
-	class StrategyExport;
+	public:
 
-	class Service;
-	class ServiceExport;
+		//! C-tor.
+		/*  @param serviceRef	Reference to context, must be alive all time
+		 *						while export object exists.
+		 */
+		explicit TradeSystemExport(const TradeSystem &tradeSystem)
+				: m_tradeSystem(&tradeSystem) {
+			//...//
+		}
 
-	template<typename Impl>
-	class SidePositionExport;
+	public:
 
-	class ContextExport;
+		static void ExportClass(const char *className);
 
-	class TradeSystemExport;
+	public:
+
+		double GetCashBalance() const;
+
+	private:
+
+		const TradeSystem *m_tradeSystem;
+
+	};
 
 } }

@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "TradeSystem.hpp"
+#include "FakeTradeSystem.hpp"
 #include "Core/Security.hpp"
 
 using namespace trdk;
@@ -196,6 +196,11 @@ Fake::TradeSystem::~TradeSystem() {
 
 void Fake::TradeSystem::Connect(const IniFileSectionRef &) {
 	m_pimpl->Start();
+}
+
+double Fake::TradeSystem::GetCashBalance() const {
+	throw MethodDoesNotImplementedError(
+		"Account Cash Balance doesn't implementated");
 }
 
 OrderId Fake::TradeSystem::SellAtMarketPrice(

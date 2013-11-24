@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "TradeSystem.hpp"
+#include "IbTradeSystem.hpp"
 
 #ifdef BOOST_WINDOWS
 #	define TRDK_INTERACTION_INTERACTIVEBROKERS_API

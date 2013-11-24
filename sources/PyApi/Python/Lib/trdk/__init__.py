@@ -132,6 +132,7 @@ class Module(object):
     tag = str
 
     log = Log
+    context = Context
 
     def __init__(self, param):
         """
@@ -568,5 +569,21 @@ class ShortPosition(Position):
         """
         super(self.__class__, self)\
             .__init__(strategy, security, qty, startPrice)
+
+###############################################################################
+
+
+class Context(object):
+
+    tradeSystem = TradeSystem
+
+###############################################################################
+
+
+class TradeSystem(object):
+
+    cashBalance = float  # Default account current Cash Balance. Value is
+                         # unscaled. If default account hasn't been set it
+                         # throws an exception.
 
 ###############################################################################

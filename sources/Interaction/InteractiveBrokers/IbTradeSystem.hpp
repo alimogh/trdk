@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "Security.hpp"
+#include "IbSecurity.hpp"
 #include "Core/TradeSystem.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Context.hpp"
@@ -75,6 +75,10 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 	public:
 
 		virtual void Connect(const trdk::Lib::IniFileSectionRef &);
+
+	public:
+
+		virtual double GetCashBalance() const;
 
 	public:
 

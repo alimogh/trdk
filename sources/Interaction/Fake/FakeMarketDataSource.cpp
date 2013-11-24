@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "MarketDataSource.hpp"
+#include "FakeMarketDataSource.hpp"
 
 namespace pt = boost::posix_time;
 

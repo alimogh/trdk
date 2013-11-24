@@ -28,6 +28,10 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	public:
 
+		virtual double GetCashBalance() const;
+
+	public:
+
 		virtual OrderId SellAtMarketPrice(
 				trdk::Security &,
 				trdk::Qty qty,

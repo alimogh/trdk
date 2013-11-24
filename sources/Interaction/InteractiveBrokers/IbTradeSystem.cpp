@@ -9,8 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "TradeSystem.hpp"
-#include "Client.hpp"
+#include "IbTradeSystem.hpp"
+#include "IbClient.hpp"
 #include "Core/Security.hpp"
 
 using namespace trdk;
@@ -104,6 +104,10 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 
 	client.swap(m_client);
 
+}
+
+double ib::TradeSystem::GetCashBalance() const {
+	return .0;
 }
 
 boost::shared_ptr<trdk::Security> ib::TradeSystem::CreateSecurity(

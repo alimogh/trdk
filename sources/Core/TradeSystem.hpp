@@ -87,6 +87,13 @@ namespace trdk {
 			ConnectionDoesntExistError(const char *what) throw();
 		};
 
+		//! Account is unknown or default account requested but hasn't been set.
+		class TRDK_CORE_API UnknownAccountError : public Error {
+		public:
+			UnknownAccountError(const char *what) throw();
+		};
+
+
 	public:
 
 		TradeSystem();
@@ -99,6 +106,15 @@ namespace trdk {
 	public:
 
 		virtual void Connect(const trdk::Lib::IniFileSectionRef &) = 0;
+
+	public:
+
+		//! Returns Cash Balance for default account.
+		/** Value is unscaled. If default account hasn't been set - throws
+		  * an exception.
+		  * @throw trdk::TradeSystem::UnknownAccountError
+		  */
+		virtual double GetCashBalance() const = 0;
 
 	public:
 

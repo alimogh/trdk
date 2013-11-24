@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "ModuleExport.hpp"
+#include "ContextExport.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::PyApi;
@@ -59,7 +60,8 @@ void ModuleExport::ExportClass(const char *className) {
 	const py::scope moduleClass = Module(className, py::no_init)
 		.add_property("name", &ModuleExport::GetName)
 		.add_property("tag", &ModuleExport::GetTag)
-		.add_property("log", &ModuleExport::GetLog);
+		.add_property("log", &ModuleExport::GetLog)
+		.add_property("context", &ModuleExport::GetContext);
 	
 	LogExport::ExportClass("Log");
 
@@ -75,6 +77,10 @@ py::str ModuleExport::GetName() const {
 
 ModuleExport::LogExport ModuleExport::GetLog() const {
 	return LogExport(m_module->GetLog());
+}
+
+ContextExport ModuleExport::GetContext() const {
+	return ContextExport(m_module->GetContext());
 }
 
 const trdk::Module & ModuleExport::GetModule() const {
