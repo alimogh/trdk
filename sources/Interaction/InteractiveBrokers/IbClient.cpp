@@ -95,7 +95,8 @@ Client::Client(
 		m_state(PING_STATE_REQ),
 		m_thread(nullptr),
 		m_orderStatusesMap(GetOrderStatusesMap()),
-		m_seqNumber(-1) {
+		m_seqNumber(-1),
+		m_accountCashBalance(std::numeric_limits<double>::quiet_NaN()) {
 	m_client.reset(new EPosixClientSocket(this));
 	LogConnectionAttempt();
 	const bool connectResult = m_client->eConnect(
@@ -231,6 +232,15 @@ void Client::StartData() {
 	AssertEq(CONNECTION_STATE_CONNECTED, m_connectionState);
 	if (m_thread) {
 		return;
+	}
+
+	if (!boost::math::isnan(m_accountCashBalance)) {
+		m_log.Debug(
+			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
+				": requesting account updates for \"%1%\"...",
+			m_account);
+		m_accountCashBalance = .0;
+		m_client->reqAccountUpdates(true, m_account);
 	}
 
 	bool isBrokerPositionsRequred = false;
@@ -1357,11 +1367,20 @@ void Client::connectionClosed() {
 }
 
 void Client::updateAccountValue(
-			const IBString &/*key*/,
-			const IBString &/*val*/,
+			const IBString &key,
+			const IBString &val,
 			const IBString &/*currency*/,
-			const IBString &/*accountName*/) {
-	//...//
+			const IBString &accountName) {
+	Assert(!boost::math::isnan(m_accountCashBalance));
+	if (!m_account.empty() && !boost::iequals(m_account, accountName)) {
+		return;
+	}
+	if (key == "CashBalance") {
+		std::istringstream iss(val);
+		double newCashBalance;
+		iss >> newCashBalance;
+		Interlocking::Exchange(m_accountCashBalance, newCashBalance);
+	}
 }
 
 void Client::updatePortfolio(

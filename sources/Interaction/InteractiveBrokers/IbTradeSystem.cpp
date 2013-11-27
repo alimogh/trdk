@@ -46,6 +46,10 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 			settings.ReadTypedKey<int>("client_id", 0),
 			settings.ReadKey("ip_address", "127.0.0.1")));
 
+	if (settings.IsKeyExist("account")) {
+		client->SetAccount(settings.ReadKey("account", ""));
+	}
+
 	client->Subscribe(
 		[this](
 					trdk::OrderId id,
@@ -107,7 +111,11 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 }
 
 double ib::TradeSystem::GetCashBalance() const {
-	return .0;
+	const auto &result = m_client->GetAccountCashBalance();
+	if (boost::math::isnan(result)) {
+		throw UnknownAccountError("Account not specified");
+	}
+	return result;
 }
 
 boost::shared_ptr<trdk::Security> ib::TradeSystem::CreateSecurity(
