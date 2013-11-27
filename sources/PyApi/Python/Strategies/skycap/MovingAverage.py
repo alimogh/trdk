@@ -28,7 +28,6 @@ class MovingAverage(trdk.Strategy):
 
     def __init__(self, param):
         super(self.__class__, self).__init__(param)
-        self.account = 100000
 
     def getRequiredSuppliers(self):
         return 'Level 1 Updates, MovingAverage'
@@ -63,19 +62,22 @@ class MovingAverage(trdk.Strategy):
             return
 
         lastPriceDescaled = security.descalePrice(lastPrice)
-        volumeSource = self.account * accountVolumeForPosition
+        volumeSource\
+            = self.context.tradeSystem.cashBalance * accountVolumeForPosition
         qtySource = int(volumeSource / lastPriceDescaled)
         qty = int(qtySource / 100) * 100
         volume = qty * lastPriceDescaled
 
         self.log.debug(
-            'Opening position: "last price {0}" > "moving average {1}"'
-            ' (using volume: {2} -> {3}, qty: {4} -> {5})...'
+            'Opening {0} position: "last price {1}" > "moving average {2}"'
+            ' (using volume: {3} -> {4}, qty: {5} -> {6}, cash: {7})...'
             .format(
+                security.symbol,
                 lastPriceDescaled,
                 security.descalePrice(movingAverage),
                 volumeSource, volume,
-                qtySource, qty))
+                qtySource, qty,
+                self.context.tradeSystem.cashBalance))
         trdk.LongPosition(self, security, qty, lastPrice)\
             .openAtMarketPrice(openOrderParams)
 
@@ -94,8 +96,9 @@ class MovingAverage(trdk.Strategy):
             return
 
         self.log.debug(
-            'Closing position: "last price {0}" < "moving average {1}"...'
+            'Closing {0} position: "last price {1}" < "moving average {2}"...'
             .format(
+                position.security.symbol,
                 position.security.descalePrice(lastPrice),
                 position.security.descalePrice(movingAverage)))
         position.closeAtMarketPrice(closeOrderParams)
@@ -112,8 +115,12 @@ class MovingAverage(trdk.Strategy):
                 maStr = self.movingAverage.lastPoint.value
                 maStr = security.descalePrice(maStr)
             self.log.debug(
-                'Ping: price = {0}, ma = {1};'
-                .format(security.descalePrice(security.lastPrice), maStr))
+                'Ping {0}: price = {1}, ma = {2}; cash = {3};'
+                .format(
+                    security.symbol,
+                    security.descalePrice(security.lastPrice),
+                    maStr,
+                    self.context.tradeSystem.cashBalance))
             self._updatePingTime()
 
     def _updatePingTime(self):

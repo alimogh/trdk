@@ -19,7 +19,6 @@ accountVolumeForPosition = .05  # Allocate how much % of account to each trade.
                                 # For example, 5% will allocate $5,000 to
                                 # a $100,000 account. # It will then calculate
                                 # the number of shares to buy or sell.
-account = 100000
 
 openOrderParams = trdk.OrderParams()
 closeOrderParams = trdk.OrderParams()
@@ -67,8 +66,12 @@ class RangeWithBollingerBands(trdk.Strategy):
         else:
             qty = self._calcQty(currentPoint)
             self.log.debug(
-                'Opening short position {0}: (qty = {1})...'
-                .format(conditionStr, qty))
+                'Opening {0} short position {1}: (qty = {2}, cash = {3})...'
+                .format(
+                    self.security.symbol,
+                    conditionStr,
+                    qty,
+                    self.context.tradeSystem.cashBalance))
             trdk.ShortPosition(self, self.security, qty, currentPoint.source)\
                 .openAtMarketPrice(openOrderParams)
 
@@ -90,8 +93,12 @@ class RangeWithBollingerBands(trdk.Strategy):
         else:
             qty = self._calcQty(currentPoint)
             self.log.debug(
-                'Opening long position {0}: (qty = {1})...'
-                .format(conditionStr, qty))
+                'Opening {0} long position {1}: (qty = {2}, cash = {3})...'
+                .format(
+                    self.security.symbol,
+                    conditionStr,
+                    qty,
+                    self.context.tradeSystem.cashBalance))
             trdk.LongPosition(self, self.security, qty, currentPoint.source)\
                 .openAtMarketPrice(openOrderParams)
 
@@ -106,13 +113,14 @@ class RangeWithBollingerBands(trdk.Strategy):
         if position.isOpened is False or position.hasActiveCloseOrders is True:
             return
         self.log.debug(
-            'Closing {0} position: {1}...'
-            .format(position.type, condition))
+            'Closing {0} {1} position: {2}...'
+            .format(self.security.symbol, position.type, condition))
         position.closeAtMarketPrice(closeOrderParams)
 
     def _calcQty(self, point):
         lastPriceDescaled = self.security.descalePrice(point.source)
-        volumeSource = account * accountVolumeForPosition
+        volumeSource\
+            = self.context.tradeSystem.cashBalance * accountVolumeForPosition
         qtySource = int(volumeSource / lastPriceDescaled)
         return int(qtySource / 100) * 100
 
@@ -134,14 +142,18 @@ class RangeWithBollingerBands(trdk.Strategy):
                 = prevPointLowBb \
                 = 'None'
         self.log.debug(
-            'Ping: prev = {1} / {0} / {2}; current = {4} / {3} / {5};'
+            'Ping {7}: prev = {1} / {0} / {2};'
+            ' current = {4} / {3} / {5};'
+            ' cash = {6};'
             .format(
                 prevPointLastPrice,
                 prevPointHighBb,
                 prevPointLowBb,
                 self.security.descalePrice(currentPoint.source),
                 self.security.descalePrice(currentPoint.high),
-                self.security.descalePrice(currentPoint.low)))
+                self.security.descalePrice(currentPoint.low),
+                self.context.tradeSystem.cashBalance,
+                self.security.symbol))
         self._updatePingTime()
 
     def _updatePingTime(self):

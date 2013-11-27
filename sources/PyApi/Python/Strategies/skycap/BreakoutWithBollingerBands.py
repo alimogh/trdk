@@ -25,7 +25,6 @@ accountVolumeForPosition = .05  # Allocate how much % of account to each trade.
                                 # For example, 5% will allocate $5,000 to
                                 # a $100,000 account. # It will then calculate
                                 # the number of shares to buy or sell.
-account = 100000
 
 openOrderParams = trdk.OrderParams()
 closeOrderParams = trdk.OrderParams()
@@ -61,18 +60,19 @@ class BreakoutWithBollingerBands(trdk.Strategy):
             return
 
         lastPriceDescaled = self.security.descalePrice(point.source)
-        volumeSource = account * accountVolumeForPosition
+        volumeSource\
+            = self.context.tradeSystem.cashBalance * accountVolumeForPosition
         qtySource = int(volumeSource / lastPriceDescaled)
         qty = int(qtySource / 100) * 100
         volume = qty * lastPriceDescaled
 
         if decision > 0:
-            decisionStr = 'long position: "last price {0}"' \
+            decisionStr = 'long position: "last price {0}"'\
                 ' > "upper band point {1}"...'
             pos = trdk.LongPosition(self, self.security, qty, point.source)
         else:
             assert decision < 0
-            decisionStr = 'short position: "last price {0}"' \
+            decisionStr = 'short position: "last price {0}"'\
                 ' < "lower band point {1}"...'
             pos = trdk.ShortPosition(self, self.security, qty, point.source)
 
@@ -80,11 +80,14 @@ class BreakoutWithBollingerBands(trdk.Strategy):
             lastPriceDescaled,
             self.security.descalePrice(point.high))
         self.log.debug(
-            'Opening {0} (volume {1} -> {2}, qty {3} -> {4})...'
+            'Opening {0} {1} (volume {2} -> {3}, qty {4} -> {5},'
+            ' cash = {6})...'
             .format(
+                self.security.symbol,
                 decisionStr,
                 volumeSource, volume,
-                qtySource, qty))
+                qtySource, qty,
+                self.context.tradeSystem.cashBalance))
 
         pos.openAtMarketPrice(openOrderParams)
 
@@ -102,11 +105,13 @@ class BreakoutWithBollingerBands(trdk.Strategy):
         hasLastLogPingTime = hasattr(self, 'lastLogPingTime')
         if hasLastLogPingTime is False or now - self.lastLogPingTime >= 60:
             self.log.debug(
-                'Ping: {1} / {0} / {0};'
+                'Ping {4}: price = {1} / {0} / {2}; cash = {3};'
                 .format(
                     self.security.descalePrice(service.lastPoint.source),
                     self.security.descalePrice(service.lastPoint.high),
-                    self.security.descalePrice(service.lastPoint.low)))
+                    self.security.descalePrice(service.lastPoint.low),
+                    self.context.tradeSystem.cashBalance,
+                    self.security.symbol))
             self._updatePingTime()
 
     def _updatePingTime(self):
@@ -130,9 +135,10 @@ class BreakoutWithBollingerBandsBuy(BreakoutWithBollingerBands):
         # if bar closes below lower band, sell.
         if point.source < point.low:
             self.log.debug(
-                'Closing long position: "last price {0}"'
-                ' < "lower band point {1}"...'
+                'Closing {0} long position: "last price {1}"'
+                ' < "lower band point {2}"...'
                 .format(
+                    self.security.symbol,
                     self.security.descalePrice(point.source),
                     self.security.descalePrice(point.low)))
             return True
@@ -155,9 +161,10 @@ class BreakoutWithBollingerBandsSell(BreakoutWithBollingerBands):
     def _makeExitDecision(self, point):
         if point.source > point.high:
             self.log.debug(
-                'Closing short position: "last price {0}"'
-                ' > "upper band point {1}"...'
+                'Closing {0} short position: "last price {1}"'
+                ' > "upper band point {2}"...'
                 .format(
+                    self.security.symbol,
                     self.security.descalePrice(point.source),
                     self.security.descalePrice(point.high)))
             return True
