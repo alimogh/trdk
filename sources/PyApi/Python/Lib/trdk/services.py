@@ -25,7 +25,7 @@ __all__ = [
 
 class BarService(trdk.ServiceInfo):
 
-    class Bar(object):
+    class Bar:
 
         time = float  # Bar start time.
         size = int  # Bar size, seconds.
@@ -46,7 +46,7 @@ class BarService(trdk.ServiceInfo):
 
         tradingVolume = int
 
-    class Stat(object):
+    class Stat:
         pass
 
     class PriceStat(Stat):
@@ -117,7 +117,7 @@ class BarService(trdk.ServiceInfo):
 
 class MovingAverageService(trdk.ServiceInfo):
 
-    class Point(object):
+    class Point:
         source = int  # Last source frame value
         value = float  # Moving Average value
 
@@ -148,7 +148,7 @@ class MovingAverageService(trdk.ServiceInfo):
 
 class BollingerBandsService(trdk.ServiceInfo):
 
-    class Point(object):
+    class Point:
         source = int  # Last source frame value
         high = float  # Upper band point
         low = float  # Lower band point

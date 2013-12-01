@@ -14,17 +14,16 @@
 ###############################################################################
 
 __all__ = [
-    "SecurityInfo",
-    "Security",
+    "OrderParams",
     "LongPosition",
     "ShortPosition",
-    "SecurityAlgo",
-    "Strategy"]
+    "Strategy",
+    "Service"]
 
 ###############################################################################
 
 
-class OrderParams(object):
+class OrderParams:
     """
     Extended order parameters.
     """
@@ -38,7 +37,7 @@ class OrderParams(object):
                            # trdk.OrderParams.goodTillTime.
 
 
-class SecurityInfo(object):
+class SecurityInfo:
 
     symbol = str
     exchange = str
@@ -92,9 +91,9 @@ class Security(SecurityInfo):
 ###############################################################################
 
 
-class Module(object):
+class Module:
 
-    class Log(object):
+    class Log:
 
         def debug(self, eventMessage):
             """
@@ -164,7 +163,7 @@ class Strategy(Module):
     Every strategy algorithm class must be inherited from this class.
     """
 
-    class PositionList(object):
+    class PositionList:
         """
         Iterable position list.
         """
@@ -179,7 +178,7 @@ class Strategy(Module):
             """
             pass
 
-    class SecurityList(object):
+    class SecurityList:
         """
         Iterable security list.
         """
@@ -282,7 +281,7 @@ class Strategy(Module):
 
 class ServiceInfo(Module):
 
-    class SecurityList(object):
+    class SecurityList:
         """ Iterable security list.
         """
 
@@ -385,7 +384,7 @@ class Service(ServiceInfo):
 ###############################################################################
 
 
-class Position(object):
+class Position:
 
     type = str
 
@@ -573,14 +572,14 @@ class ShortPosition(Position):
 ###############################################################################
 
 
-class Context(object):
+class Context:
 
     tradeSystem = TradeSystem
 
 ###############################################################################
 
 
-class TradeSystem(object):
+class TradeSystem:
 
     cashBalance = float  # Default account current Cash Balance. Value is
                          # unscaled. If default account hasn't been set it
