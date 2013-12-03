@@ -166,16 +166,18 @@ void Context::Params::Update(
 	auto it = m_pimpl->m_storage.find(key);
 	if (it != m_pimpl->m_storage.end()) {
 		m_pimpl->m_context.GetLog().Debug(
-			"Context param update (%1%): \"%2%\" -> \"%3%\"...",
+			"Context param \"%1%\" update (%2%): \"%3%\" -> \"%4%\"...",
 			boost::make_tuple(
+				boost::cref(key),
 				Revision(m_pimpl->m_revision),
 				boost::cref(it->second),
 				boost::cref(newValue)));
 		it->second = newValue;
 	} else {
 		m_pimpl->m_context.GetLog().Debug(
-			"Context param create (%1%): \"%2%\"...",
+			"Context param \"%1%\" create (%2%): \"%3%\"...",
 			boost::make_tuple(
+				boost::cref(key),
 				Revision(m_pimpl->m_revision),
 				boost::cref(newValue)));
 		m_pimpl->m_storage.insert(std::make_pair(key, newValue));
