@@ -28,6 +28,8 @@ class MovingAverage(trdk.Strategy):
 
     def __init__(self, param):
         super(self.__class__, self).__init__(param)
+        self.movingAverage = None
+        self.lastLogPingTime = None
 
     def getRequiredSuppliers(self):
         return 'Level 1 Updates, MovingAverage'
@@ -62,8 +64,7 @@ class MovingAverage(trdk.Strategy):
             return
 
         lastPriceDescaled = security.descalePrice(lastPrice)
-        volumeSource\
-            = self.context.tradeSystem.cashBalance * accountVolumeForPosition
+        volumeSource = self._getCashBalance() * accountVolumeForPosition
         qtySource = int(volumeSource / lastPriceDescaled)
         qty = int(qtySource / 100) * 100
         volume = qty * lastPriceDescaled
@@ -77,7 +78,7 @@ class MovingAverage(trdk.Strategy):
                 security.descalePrice(movingAverage),
                 volumeSource, volume,
                 qtySource, qty,
-                self.context.tradeSystem.cashBalance))
+                self._getCashBalance()))
         trdk.LongPosition(self, security, qty, lastPrice)\
             .openAtMarketPrice(openOrderParams)
 
@@ -105,23 +106,31 @@ class MovingAverage(trdk.Strategy):
 
         self._updatePingTime()
 
+    def _getCashBalance(self):
+        context = self.context
+        if hasattr(context.params, "cashBalance") is False:
+            context.params.cashBalance = str(context.tradeSystem.cashBalance)
+            assert float(context.params.cashBalance) != 0
+        return float(context.params.cashBalance)
+
     def _pingLog(self, security):
         now = time.time()
-        hasLastLogPingTime = hasattr(self, 'lastLogPingTime')
-        if hasLastLogPingTime is False or now - self.lastLogPingTime >= 60:
-            if self.movingAverage.isEmpty:
-                maStr = 'None'
-            else:
-                maStr = self.movingAverage.lastPoint.value
-                maStr = security.descalePrice(maStr)
-            self.log.debug(
-                'Ping {0}: price = {1}, ma = {2}; cash = {3};'
-                .format(
-                    security.symbol,
-                    security.descalePrice(security.lastPrice),
-                    maStr,
-                    self.context.tradeSystem.cashBalance))
-            self._updatePingTime()
+        if self.lastLogPingTime is not None:
+            if now - self.lastLogPingTime < 60:
+                return
+        if self.movingAverage.isEmpty:
+            maStr = 'None'
+        else:
+            maStr = self.movingAverage.lastPoint.value
+            maStr = security.descalePrice(maStr)
+        self.log.debug(
+            'Ping {0}: price = {1}, ma = {2}; cash = {3};'
+            .format(
+                security.symbol,
+                security.descalePrice(security.lastPrice),
+                maStr,
+                self._getCashBalance()))
+        self._updatePingTime()
 
     def _updatePingTime(self):
         self.lastLogPingTime = time.time()

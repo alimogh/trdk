@@ -76,6 +76,8 @@ namespace trdk { namespace PyApi {
 		PyApi::Service & GetService();
 		const PyApi::Service & GetService() const;
 
+		ContextExport GetContext();
+
 	};
 
 	//////////////////////////////////////////////////////////////////////////

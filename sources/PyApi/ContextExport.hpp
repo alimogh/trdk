@@ -16,11 +16,26 @@ namespace trdk { namespace PyApi {
 
 	public:
 
+		class ParamsExport {
+		public:
+			explicit ParamsExport(Context &);
+		public:
+			static void ExportClass(const char *className);
+		public:
+			std::string GetAttr(const std::string &) const;
+			void SetAttr(const std::string &key, const std::string &val) ;
+			uintmax_t GetRevision() const;
+		private:
+			Context *m_context;
+		};
+
+	public:
+
 		//! C-tor.
 		/*  @param serviceRef	Reference to context, must be alive all time
 		 *						while export object exists.
 		 */
-		explicit ContextExport(const Context &context)
+		explicit ContextExport(Context &context)
 				: m_context(&context) {
 			//...//
 		}
@@ -31,11 +46,12 @@ namespace trdk { namespace PyApi {
 
 	private:
 
+		ParamsExport GetParams();
 		TradeSystemExport GetTradeSystem() const;
 
 	private:
 
-		const Context * m_context;
+		Context * m_context;
 
 	};
 

@@ -32,6 +32,8 @@ namespace trdk {
 
 		class TRDK_CORE_API Log;
 
+		class TRDK_CORE_API Params;
+
 	public:
 
 		Context();
@@ -46,8 +48,15 @@ namespace trdk {
 
 	public:
 
+		//! Context setting with predefined key list and predefined behavior.
 		virtual const trdk::Settings & GetSettings() const = 0;
-		
+
+		//! User context parameters. No predefined key list. Any key can be
+		//! changed.
+		trdk::Context::Params & GetParams();
+		//! User context parameters. No predefined key list.
+		const trdk::Context::Params & GetParams() const;
+
 		virtual trdk::MarketDataSource & GetMarketDataSource() = 0;
 		virtual const trdk::MarketDataSource & GetMarketDataSource() const = 0;
 
@@ -136,5 +145,59 @@ namespace trdk {
 	};
 
 	//////////////////////////////////////////////////////////////////////////
+
+
+	class trdk::Context::Params : private boost::noncopyable {
+
+	public:
+
+		class TRDK_CORE_API Exception : public trdk::Context::Exception {
+		public:
+			Exception(const char *what) throw();
+			~Exception();
+		};
+
+		class TRDK_CORE_API KeyDoesntExistError : public Exception {
+		public:
+			KeyDoesntExistError(const char *what) throw();
+			~KeyDoesntExistError();
+		};
+
+		typedef uintmax_t Revision;
+	
+	public:
+	
+		Params(const trdk::Context &);
+		~Params();
+
+	public:
+
+		//! Returns key value.
+		/** Throws an exception if key doesn't exist.
+		  * @sa trdk::Context::Parameters::Update
+		  * @throw trdk::Context::Parameters::KeyDoesntExistError
+		  */
+		std::string operator [](const std::string &) const;
+
+	public:
+		
+		//! Returns current object revision.
+		/** Any field update changes revision number. Update rule isn't defined.
+		  */
+		Revision GetRevision() const;
+
+		bool IsExist(const std::string &) const;
+
+		//! Updates key. Creates new if key doesn't exist.
+		void Update(const std::string &key, const std::string &value);
+	
+	private:
+	
+		class Implementation;
+		Implementation *m_pimpl;
+	
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
 
 }

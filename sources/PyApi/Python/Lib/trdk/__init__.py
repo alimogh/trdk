@@ -131,29 +131,11 @@ class Module:
     tag = str
 
     log = Log
-    context = Context
 
     def __init__(self, param):
         """
 
         :param param: int
-        """
-        pass
-
-    def getRequiredSuppliers(self):
-        """
-        Virtual. Returns required service list. Calls once at engine start.
-        Optional.
-
-        :rtype: str
-        """
-        pass
-
-    def onServiceStart(self, service):
-        """
-        Notifies about new service start. Virtual.
-
-        :param service: trdk.ServiceInfo
         """
         pass
 
@@ -201,6 +183,8 @@ class Strategy(Module):
             """
             pass
 
+    context = Context
+
     positions = PositionList  # active positions
     securities = SecurityList
 
@@ -210,6 +194,15 @@ class Strategy(Module):
         :param param: int
         """
         super(self.__class__, self).__init__(param)
+
+    def getRequiredSuppliers(self):
+        """
+        Virtual. Returns required service list. Called once at engine start.
+        Optional.
+
+        :rtype: str
+        """
+        pass
 
     def findSecurity(self, symbol, exchange=None, primaryExchange=None):
         """
@@ -224,6 +217,14 @@ class Strategy(Module):
         Notifies about new security start. Virtual.
 
         :param security: trdk.Security
+        """
+        pass
+
+    def onServiceStart(self, service):
+        """
+        Notifies about new service start. Virtual.
+
+        :param service: trdk.ServiceInfo
         """
         pass
 
@@ -303,6 +304,8 @@ class ServiceInfo(Module):
             """
             pass
 
+    context = Context
+
     securities = SecurityList
 
     def __init__(self, param):
@@ -320,6 +323,15 @@ class Service(ServiceInfo):
 
         :param param: int
         """
+        super(self.__class__, self).__init__(param)
+
+    def getRequiredSuppliers(self):
+        """
+        Virtual. Returns required service list. Called once at engine start.
+        Optional.
+
+        :rtype: str
+        """
         pass
 
     def onSecurityStart(self, security):
@@ -327,6 +339,14 @@ class Service(ServiceInfo):
         Notifies about new security start. Virtual.
 
         :param security: trdk.SecurityInfo
+        """
+        pass
+
+    def onServiceStart(self, service):
+        """
+        Notifies about new service start. Virtual.
+
+        :param service: trdk.ServiceInfo
         """
         pass
 
@@ -574,6 +594,42 @@ class ShortPosition(Position):
 
 class Context:
 
+    class Params:
+        """
+        User context parameters, no predefined key list.
+        """
+
+        def __getattr__(self, item):
+            """
+            If unknown parameter will be requested - exception will be raised.
+
+            :param item: str
+            :rtype: int
+            """
+            pass
+
+
+        def __setattr__(self, key, value):
+            """
+            Any parameter can be set or changed.
+
+            :param key: str
+            :param value: str
+            :rtype: str
+            """
+            pass
+
+        def getRevision(self):
+            """
+            Returns current object revision. Any field update changes revision
+            number. Update rule is not defined.
+
+            :rtype: int
+            """
+            pass
+
+
+    params = Params
     tradeSystem = TradeSystem
 
 ###############################################################################

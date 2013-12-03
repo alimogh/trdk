@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "ServiceExport.hpp"
 #include "PyService.hpp"
+#include "ContextExport.hpp"
 #include "BaseExport.hpp"
 #include "ObjectCache.hpp"
 
@@ -148,16 +149,24 @@ void ServiceExport::ExportClass(const char *className) {
 			Detail::PythonToCoreTransitHolder<ServiceExport>,
 			boost::noncopyable>
 		Export;
-	Export(className, py::init<boost::uintmax_t>());
+	Export(className, py::init<boost::uintmax_t>())
+		.add_property("context", &ServiceExport::GetContext);
 }
 
 const PyApi::Service & ServiceExport::GetService() const {
-	return const_cast<ServiceExport *>(this)->GetService();
+	return *boost::polymorphic_downcast<const PyApi::Service *>(
+		&ServiceInfoExport::GetService());
 }
 
 PyApi::Service & ServiceExport::GetService() {
-	return *boost::polymorphic_downcast<PyApi::Service *>(
-		&const_cast<trdk::Service &>(ServiceInfoExport::GetService()));
+	const PyApi::Service &result
+		= *boost::polymorphic_downcast<const PyApi::Service *>(
+			&ServiceInfoExport::GetService());
+	return const_cast<PyApi::Service &>(result);
+}
+
+ContextExport ServiceExport::GetContext() {
+	return ContextExport(GetService().GetContext());
 }
 
 //////////////////////////////////////////////////////////////////////////
