@@ -13,12 +13,6 @@
 import trdk
 import time
 
-
-accountVolumeForPosition = .05  # Allocate how much % of account to each trade.
-                                # For example, 5% will allocate $5,000 to
-                                # a $100,000 account. # It will then calculate
-                                # the number of shares to buy or sell.
-
 openOrderParams = trdk.OrderParams()
 closeOrderParams = trdk.OrderParams()
 
@@ -64,6 +58,8 @@ class MovingAverage(trdk.Strategy):
             return
 
         lastPriceDescaled = security.descalePrice(lastPrice)
+        accountVolumeForPosition\
+            = float(self.context.params.account_volume_for_position)
         volumeSource = self._getCashBalance() * accountVolumeForPosition
         qtySource = int(volumeSource / lastPriceDescaled)
         qty = int(qtySource / 100) * 100
@@ -108,10 +104,10 @@ class MovingAverage(trdk.Strategy):
 
     def _getCashBalance(self):
         context = self.context
-        if hasattr(context.params, "cashBalance") is False:
-            context.params.cashBalance = str(context.tradeSystem.cashBalance)
-            assert float(context.params.cashBalance) != 0
-        return float(context.params.cashBalance)
+        if hasattr(context.params, "cash_balance") is False:
+            context.params.cash_balance = str(context.tradeSystem.cashBalance)
+            assert float(context.params.cash_balance) != 0
+        return float(context.params.cash_balance)
 
     def _pingLog(self, security):
         now = time.time()
