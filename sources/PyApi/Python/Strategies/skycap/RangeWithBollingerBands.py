@@ -11,6 +11,7 @@
 
 import trdk
 import time
+from Util import *
 
 openOrderParams = trdk.OrderParams()
 closeOrderParams = trdk.OrderParams()
@@ -28,6 +29,7 @@ class RangeWithBollingerBands(trdk.Strategy):
         self.security = security
 
     def onServiceDataUpdate(self, service):
+        updateContext(self)
         currentPoint = service.lastPoint
         self._pingLog(currentPoint)
         if hasattr(self, "prevPoint") is False:
@@ -63,7 +65,7 @@ class RangeWithBollingerBands(trdk.Strategy):
                     self.security.symbol,
                     conditionStr,
                     qty,
-                    self._getCashBalance()))
+                    self.context.tradeSystem.cashBalance))
             trdk.ShortPosition(self, self.security, qty, currentPoint.source)\
                 .openAtMarketPrice(openOrderParams)
 
@@ -90,7 +92,9 @@ class RangeWithBollingerBands(trdk.Strategy):
                     self.security.symbol,
                     conditionStr,
                     qty,
-                    self._getCashBalance()))
+                    self.context.tradeSystem.cashBalance))
+            if checkAccount(self, qty * currentPoint.source) is False:
+                return
             trdk.LongPosition(self, self.security, qty, currentPoint.source)\
                 .openAtMarketPrice(openOrderParams)
 
@@ -109,18 +113,11 @@ class RangeWithBollingerBands(trdk.Strategy):
             .format(self.security.symbol, position.type, condition))
         position.closeAtMarketPrice(closeOrderParams)
 
-    def _getCashBalance(self):
-        context = self.context
-        if hasattr(context.params, "cash_balance") is False:
-            context.params.cash_balance = str(context.tradeSystem.cashBalance)
-            assert float(context.params.cash_balance) != 0
-        return float(context.params.cash_balance)
-
     def _calcQty(self, point):
         lastPriceDescaled = self.security.descalePrice(point.source)
         accountVolumeForPosition\
             = float(self.context.params.account_volume_for_position)
-        volumeSource = self._getCashBalance() * accountVolumeForPosition
+        volumeSource = getFullBalance(self) * accountVolumeForPosition
         qtySource = int(volumeSource / lastPriceDescaled)
         qty = int(round(float(qtySource) / 100) * 100)
         return qty
@@ -153,7 +150,7 @@ class RangeWithBollingerBands(trdk.Strategy):
                 self.security.descalePrice(currentPoint.source),
                 self.security.descalePrice(currentPoint.high),
                 self.security.descalePrice(currentPoint.low),
-                self._getCashBalance(),
+                self.context.tradeSystem.cashBalance,
                 self.security.symbol))
         self._updatePingTime()
 
