@@ -62,7 +62,7 @@ class MovingAverage(trdk.Strategy):
             = float(self.context.params.account_volume_for_position)
         volumeSource = self._getCashBalance() * accountVolumeForPosition
         qtySource = int(volumeSource / lastPriceDescaled)
-        qty = int(qtySource / 100) * 100
+        qty = int(round(float(qtySource) / 100) * 100)
         volume = qty * lastPriceDescaled
 
         self.log.debug(
