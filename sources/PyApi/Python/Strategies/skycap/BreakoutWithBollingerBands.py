@@ -16,15 +16,8 @@
 #
 # Only trade one position per symbol.
 
-
 import trdk
 import time
-
-
-accountVolumeForPosition = .05  # Allocate how much % of account to each trade.
-                                # For example, 5% will allocate $5,000 to
-                                # a $100,000 account. # It will then calculate
-                                # the number of shares to buy or sell.
 
 openOrderParams = trdk.OrderParams()
 closeOrderParams = trdk.OrderParams()
@@ -60,10 +53,11 @@ class BreakoutWithBollingerBands(trdk.Strategy):
             return
 
         lastPriceDescaled = self.security.descalePrice(point.source)
-        volumeSource\
-            = self.context.tradeSystem.cashBalance * accountVolumeForPosition
+        accountVolumeForPosition\
+            = float(self.context.params.account_volume_for_position)
+        volumeSource = self._getCashBalance() * accountVolumeForPosition
         qtySource = int(volumeSource / lastPriceDescaled)
-        qty = int(qtySource / 100) * 100
+        qty = int(round(float(qtySource) / 100) * 100)
         volume = qty * lastPriceDescaled
 
         if decision > 0:
@@ -87,7 +81,7 @@ class BreakoutWithBollingerBands(trdk.Strategy):
                 decisionStr,
                 volumeSource, volume,
                 qtySource, qty,
-                self.context.tradeSystem.cashBalance))
+                self._getCashBalance()))
 
         pos.openAtMarketPrice(openOrderParams)
 
@@ -100,6 +94,13 @@ class BreakoutWithBollingerBands(trdk.Strategy):
             position.closeAtMarketPrice(closeOrderParams)
             self._updatePingTime()
 
+    def _getCashBalance(self):
+        context = self.context
+        if hasattr(context.params, "cash_balance") is False:
+            context.params.cash_balance = str(context.tradeSystem.cashBalance)
+            assert float(context.params.cash_balance) != 0
+        return float(context.params.cash_balance)
+
     def _pingLog(self, service):
         now = time.time()
         hasLastLogPingTime = hasattr(self, 'lastLogPingTime')
@@ -110,7 +111,7 @@ class BreakoutWithBollingerBands(trdk.Strategy):
                     self.security.descalePrice(service.lastPoint.source),
                     self.security.descalePrice(service.lastPoint.high),
                     self.security.descalePrice(service.lastPoint.low),
-                    self.context.tradeSystem.cashBalance,
+                    self._getCashBalance(),
                     self.security.symbol))
             self._updatePingTime()
 
