@@ -12,6 +12,7 @@
 
 import trdk
 import time
+from Util import *
 
 openOrderParams = trdk.OrderParams()
 closeOrderParams = trdk.OrderParams()
@@ -36,6 +37,7 @@ class MovingAverage(trdk.Strategy):
         pass
 
     def onLevel1Update(self, security):
+        updateContext(self)
         self._pingLog(security)
         if self.movingAverage.isEmpty:
             return
@@ -60,7 +62,7 @@ class MovingAverage(trdk.Strategy):
         lastPriceDescaled = security.descalePrice(lastPrice)
         accountVolumeForPosition\
             = float(self.context.params.account_volume_for_position)
-        volumeSource = self._getCashBalance() * accountVolumeForPosition
+        volumeSource = getFullBalance(self) * accountVolumeForPosition
         qtySource = int(volumeSource / lastPriceDescaled)
         qty = int(round(float(qtySource) / 100) * 100)
         volume = qty * lastPriceDescaled
@@ -74,9 +76,11 @@ class MovingAverage(trdk.Strategy):
                 security.descalePrice(movingAverage),
                 volumeSource, volume,
                 qtySource, qty,
-                self._getCashBalance()))
-        trdk.LongPosition(self, security, qty, lastPrice)\
-            .openAtMarketPrice(openOrderParams)
+                self.context.tradeSystem.cashBalance))
+
+        if checkAccount(self, volume) is True:
+            pos = trdk.LongPosition(self, security, qty, lastPrice)
+            pos.openAtMarketPrice(openOrderParams)
 
         self._updatePingTime()
 
@@ -102,13 +106,6 @@ class MovingAverage(trdk.Strategy):
 
         self._updatePingTime()
 
-    def _getCashBalance(self):
-        context = self.context
-        if hasattr(context.params, "cash_balance") is False:
-            context.params.cash_balance = str(context.tradeSystem.cashBalance)
-            assert float(context.params.cash_balance) != 0
-        return float(context.params.cash_balance)
-
     def _pingLog(self, security):
         now = time.time()
         if self.lastLogPingTime is not None:
@@ -125,7 +122,7 @@ class MovingAverage(trdk.Strategy):
                 security.symbol,
                 security.descalePrice(security.lastPrice),
                 maStr,
-                self._getCashBalance()))
+                self.context.tradeSystem.cashBalance))
         self._updatePingTime()
 
     def _updatePingTime(self):
