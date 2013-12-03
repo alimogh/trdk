@@ -9,16 +9,8 @@
 #
 # Only trade one position per symbol.
 
-
-
 import trdk
 import time
-
-
-accountVolumeForPosition = .05  # Allocate how much % of account to each trade.
-                                # For example, 5% will allocate $5,000 to
-                                # a $100,000 account. # It will then calculate
-                                # the number of shares to buy or sell.
 
 openOrderParams = trdk.OrderParams()
 closeOrderParams = trdk.OrderParams()
@@ -71,7 +63,7 @@ class RangeWithBollingerBands(trdk.Strategy):
                     self.security.symbol,
                     conditionStr,
                     qty,
-                    self.context.tradeSystem.cashBalance))
+                    self._getCashBalance()))
             trdk.ShortPosition(self, self.security, qty, currentPoint.source)\
                 .openAtMarketPrice(openOrderParams)
 
@@ -98,7 +90,7 @@ class RangeWithBollingerBands(trdk.Strategy):
                     self.security.symbol,
                     conditionStr,
                     qty,
-                    self.context.tradeSystem.cashBalance))
+                    self._getCashBalance()))
             trdk.LongPosition(self, self.security, qty, currentPoint.source)\
                 .openAtMarketPrice(openOrderParams)
 
@@ -117,12 +109,21 @@ class RangeWithBollingerBands(trdk.Strategy):
             .format(self.security.symbol, position.type, condition))
         position.closeAtMarketPrice(closeOrderParams)
 
+    def _getCashBalance(self):
+        context = self.context
+        if hasattr(context.params, "cash_balance") is False:
+            context.params.cash_balance = str(context.tradeSystem.cashBalance)
+            assert float(context.params.cash_balance) != 0
+        return float(context.params.cash_balance)
+
     def _calcQty(self, point):
         lastPriceDescaled = self.security.descalePrice(point.source)
-        volumeSource\
-            = self.context.tradeSystem.cashBalance * accountVolumeForPosition
+        accountVolumeForPosition\
+            = float(self.context.params.account_volume_for_position)
+        volumeSource = self._getCashBalance() * accountVolumeForPosition
         qtySource = int(volumeSource / lastPriceDescaled)
-        return int(qtySource / 100) * 100
+        qty = int(round(float(qtySource) / 100) * 100)
+        return qty
 
     def _pingLog(self, currentPoint):
         now = time.time()
@@ -152,7 +153,7 @@ class RangeWithBollingerBands(trdk.Strategy):
                 self.security.descalePrice(currentPoint.source),
                 self.security.descalePrice(currentPoint.high),
                 self.security.descalePrice(currentPoint.low),
-                self.context.tradeSystem.cashBalance,
+                self._getCashBalance(),
                 self.security.symbol))
         self._updatePingTime()
 
