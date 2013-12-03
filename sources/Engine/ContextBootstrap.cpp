@@ -51,6 +51,7 @@ public:
 public:
 
 	void Bootstrap() {
+		LoadContextParams();
 		Assert(!m_tradeSystem);
 		Assert(!m_marketDataSource);
 		LoadTradeSystem();
@@ -62,6 +63,17 @@ public:
 	}
 
 private:
+
+	void LoadContextParams() {
+		const auto &pred = [&](
+					const std::string &key,
+					const std::string &name)
+				-> bool {
+			m_context.GetParams().Update(key, name);
+			return true;
+		};
+		m_conf.ForEachKey(Sections::contextParams, pred, false);
+	}
 
 	void LoadTradeSystem() {
 		

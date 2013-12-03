@@ -112,7 +112,7 @@ Ini::SectionList Ini::ReadSectionsList() const {
 
 void Ini::ReadSection(
 			const std::string &section,
-			boost::function<bool(const std::string &)> readLine,
+			const boost::function<bool(const std::string &)> &readLine,
 			bool mustExist)
 		const {
 	const_cast<Ini *>(this)->Reset();
@@ -161,6 +161,30 @@ bool Ini::IsKeyExist(
 		},
 		true);
 	return result;
+}
+
+void Ini::ForEachKey(
+			const std::string &section,
+			const boost::function<
+					bool(const std::string &, const std::string &)>
+				&pred,
+			bool mustExist)
+		const {
+	const auto &linePred = [&](const std::string &line) -> bool {
+		std::list<std::string> subs;
+		boost::split(subs, line, boost::is_any_of("="));
+		Assert(!subs.empty());
+		if (subs.size() < 2) {
+			return true;
+		}
+ 		boost::trim(*subs.begin());
+		const std::string key = *subs.begin();
+ 		subs.pop_front();
+		std::string value = boost::join(subs, "=");
+ 		boost::trim(value);
+		return pred(key, value);
+	};
+	ReadSection(section, linePred, mustExist);
 }
 
 std::string Ini::ReadKey(
@@ -376,6 +400,15 @@ IniSectionRef::IniSectionRef(
 
 bool IniSectionRef::IsKeyExist(const std::string &key) const {
 	return GetBase().IsKeyExist(GetName(), key);
+}
+
+void IniSectionRef::ForEachKey(
+			const boost::function<
+					bool(const std::string &key, const std::string &value)>
+				&pred,
+			bool mustExist)
+		const {
+	GetBase().ForEachKey(GetName(), pred, mustExist);
 }
 
 std::string IniSectionRef::ReadKey(const std::string &key) const {
