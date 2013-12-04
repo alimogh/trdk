@@ -19,9 +19,16 @@ using namespace trdk::PyApi;
 void TradeSystemExport::ExportClass(const char *className) {
 	typedef py::class_<TradeSystemExport> Export;
 	Export(className, py::no_init)
-		.add_property("cashBalance", &TradeSystemExport::GetCashBalance);
+		.add_property("cashBalance", &TradeSystemExport::GetCashBalance)
+		.add_property(
+			"excessLiquidity",
+			&TradeSystemExport::GetExcessLiquidity);
 }
 
 double TradeSystemExport::GetCashBalance() const {
-	return m_tradeSystem->GetCashBalance();
+	return m_tradeSystem->GetAccount().cashBalance;
+}
+
+double TradeSystemExport::GetExcessLiquidity() const {
+	return m_tradeSystem->GetAccount().excessLiquidity;
 }

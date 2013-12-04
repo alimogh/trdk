@@ -28,7 +28,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	public:
 
-		virtual double GetCashBalance() const;
+		virtual const Account & GetAccount() const;
 
 	public:
 

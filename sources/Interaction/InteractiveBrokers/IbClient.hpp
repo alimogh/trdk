@@ -128,18 +128,13 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 	public:
 
 		//! Sets account, can be empty, must be called before StartData.
-		void SetAccount(const std::string &account) {
+		void SetAccount(
+					const std::string &account,
+					TradeSystem::Account &accountInfoRef) {
 			AssertEq(std::string(), m_account);
-			Assert(boost::math::isnan(m_accountCashBalance));
+			Assert(!m_accountInfo);
 			m_account = account;
-			m_accountCashBalance = .0;
-		}
-
-		//! Account current cash balance.
-		/** return	returns current balance or NaN if info not requested.
-		  */
-		double GetAccountCashBalance() const {
-			return m_accountCashBalance;
+			m_accountInfo = &accountInfoRef;
 		}
 
 	public:
@@ -421,7 +416,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		mutable BarsRequests m_barsRequest;
 
 		std::string m_account;
-		volatile double m_accountCashBalance;
+		TradeSystem::Account *m_accountInfo;
 
 	};
 

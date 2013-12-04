@@ -198,7 +198,7 @@ void Fake::TradeSystem::Connect(const IniFileSectionRef &) {
 	m_pimpl->Start();
 }
 
-double Fake::TradeSystem::GetCashBalance() const {
+const Fake::TradeSystem::Account & Fake::TradeSystem::GetAccount() const {
 	throw MethodDoesNotImplementedError(
 		"Account Cash Balance doesn't implementated");
 }

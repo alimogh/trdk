@@ -38,6 +38,7 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 		return;
 	}
 
+	std::unique_ptr<Account> account;
 	std::unique_ptr<Client> client(
 		new Client(
 			m_securities,
@@ -47,7 +48,8 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 			settings.ReadKey("ip_address", "127.0.0.1")));
 
 	if (settings.IsKeyExist("account")) {
-		client->SetAccount(settings.ReadKey("account", ""));
+		account.reset(new Account);
+		client->SetAccount(settings.ReadKey("account", ""), *account);
 	}
 
 	client->Subscribe(
@@ -107,15 +109,15 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 	}
 
 	client.swap(m_client);
+	account.swap(m_account);
 
 }
 
-double ib::TradeSystem::GetCashBalance() const {
-	const auto &result = m_client->GetAccountCashBalance();
-	if (boost::math::isnan(result)) {
+const ib::TradeSystem::Account & ib::TradeSystem::GetAccount() const {
+	if (!m_account) {
 		throw UnknownAccountError("Account not specified");
 	}
-	return result;
+	return *m_account;
 }
 
 boost::shared_ptr<trdk::Security> ib::TradeSystem::CreateSecurity(

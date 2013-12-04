@@ -78,7 +78,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
-		virtual double GetCashBalance() const;
+		virtual const Account & GetAccount() const;
 
 	public:
 
@@ -155,6 +155,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		PlacedOrderSet m_placedOrders;
 
 		mutable Securities m_securities;
+
+		std::unique_ptr<Account> m_account;
 
 	};
 

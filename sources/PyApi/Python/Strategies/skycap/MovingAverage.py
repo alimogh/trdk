@@ -69,14 +69,16 @@ class MovingAverage(trdk.Strategy):
 
         self.log.debug(
             'Opening {0} position: "last price {1}" > "moving average {2}"'
-            ' (using volume: {3} -> {4}, qty: {5} -> {6}, cash: {7})...'
+            ' (using volume: {3} -> {4}, qty: {5} -> {6}'
+            ', cash: {7}, el: {8})...'
             .format(
                 security.symbol,
                 lastPriceDescaled,
                 security.descalePrice(movingAverage),
                 volumeSource, volume,
                 qtySource, qty,
-                self.context.tradeSystem.cashBalance))
+                self.context.tradeSystem.cashBalance,
+                self.context.tradeSystem.excessLiquidity))
 
         if checkAccount(self, volume) is True:
             pos = trdk.LongPosition(self, security, qty, lastPrice)
@@ -117,12 +119,13 @@ class MovingAverage(trdk.Strategy):
             maStr = self.movingAverage.lastPoint.value
             maStr = security.descalePrice(maStr)
         self.log.debug(
-            'Ping {0}: price = {1}, ma = {2}; cash = {3};'
+            'Ping {0}: price = {1}, ma = {2}; cash = {3}; el = {4};'
             .format(
                 security.symbol,
                 security.descalePrice(security.lastPrice),
                 maStr,
-                self.context.tradeSystem.cashBalance))
+                self.context.tradeSystem.cashBalance,
+                self.context.tradeSystem.excessLiquidity))
         self._updatePingTime()
 
     def _updatePingTime(self):

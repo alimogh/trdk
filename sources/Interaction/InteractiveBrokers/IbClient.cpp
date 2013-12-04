@@ -96,7 +96,7 @@ Client::Client(
 		m_thread(nullptr),
 		m_orderStatusesMap(GetOrderStatusesMap()),
 		m_seqNumber(-1),
-		m_accountCashBalance(std::numeric_limits<double>::quiet_NaN()) {
+		m_accountInfo(nullptr) {
 	m_client.reset(new EPosixClientSocket(this));
 	LogConnectionAttempt();
 	const bool connectResult = m_client->eConnect(
@@ -234,12 +234,11 @@ void Client::StartData() {
 		return;
 	}
 
-	if (!boost::math::isnan(m_accountCashBalance)) {
+	if (m_accountInfo) {
 		m_log.Debug(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 				": requesting account updates for \"%1%\"...",
 			m_account);
-		m_accountCashBalance = .0;
 		m_client->reqAccountUpdates(true, m_account);
 	}
 
@@ -1371,16 +1370,43 @@ void Client::updateAccountValue(
 			const IBString &val,
 			const IBString &/*currency*/,
 			const IBString &accountName) {
-	Assert(!boost::math::isnan(m_accountCashBalance));
-	if (!m_account.empty() && !boost::iequals(m_account, accountName)) {
+	
+	Assert(!boost::math::isnan(m_accountInfo));
+	if (!m_accountInfo) {
+		m_log.Error(
+			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME ": "
+			"Received account info but not requested.");
+		return;
+	} else if (!m_account.empty() && !boost::iequals(m_account, accountName)) {
 		return;
 	}
+
+	bool isExcessLiquiditySource = false;
 	if (key == "CashBalance") {
-		std::istringstream iss(val);
-		double newCashBalance;
-		iss >> newCashBalance;
-		Interlocking::Exchange(m_accountCashBalance, newCashBalance);
+		Interlocking::Exchange(
+			m_accountInfo->cashBalance,
+			boost::lexical_cast<double>(val));
+	} else if (key == "EquityWithLoanValue") {
+		Interlocking::Exchange(
+			m_accountInfo->equityWithLoanValue,
+			boost::lexical_cast<double>(val));
+		isExcessLiquiditySource = true;
+	} else if (key == "MaintMarginReq") {
+		Interlocking::Exchange(
+			m_accountInfo->maintenanceMargin,
+			boost::lexical_cast<double>(val));
+		isExcessLiquiditySource = true;
 	}
+
+	if (isExcessLiquiditySource) {
+		const auto excessLiquidity
+			= m_accountInfo->equityWithLoanValue
+				- m_accountInfo->maintenanceMargin;
+		Interlocking::Exchange(
+			m_accountInfo->excessLiquidity,
+			excessLiquidity);
+	}
+
 }
 
 void Client::updatePortfolio(

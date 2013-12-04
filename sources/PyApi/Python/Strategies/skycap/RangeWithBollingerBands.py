@@ -87,12 +87,14 @@ class RangeWithBollingerBands(trdk.Strategy):
         else:
             qty = self._calcQty(currentPoint)
             self.log.debug(
-                'Opening {0} long position {1}: (qty = {2}, cash = {3})...'
+                'Opening {0} long position {1}: (qty = {2}'
+                ', cash = {3}, el = {4})...'
                 .format(
                     self.security.symbol,
                     conditionStr,
                     qty,
-                    self.context.tradeSystem.cashBalance))
+                    self.context.tradeSystem.cashBalance,
+                    self.context.tradeSystem.excessLiquidity))
             if checkAccount(self, qty * currentPoint.source) is False:
                 return
             trdk.LongPosition(self, self.security, qty, currentPoint.source)\
@@ -142,7 +144,7 @@ class RangeWithBollingerBands(trdk.Strategy):
         self.log.debug(
             'Ping {7}: prev = {1} / {0} / {2};'
             ' current = {4} / {3} / {5};'
-            ' cash = {6};'
+            ' cash = {6}; el = {8};'
             .format(
                 prevPointLastPrice,
                 prevPointHighBb,
@@ -151,7 +153,8 @@ class RangeWithBollingerBands(trdk.Strategy):
                 self.security.descalePrice(currentPoint.high),
                 self.security.descalePrice(currentPoint.low),
                 self.context.tradeSystem.cashBalance,
-                self.security.symbol))
+                self.security.symbol,
+                self.context.tradeSystem.excessLiquidity))
         self._updatePingTime()
 
     def _updatePingTime(self):

@@ -32,6 +32,7 @@ namespace trdk { namespace PyApi {
 	public:
 
 		double GetCashBalance() const;
+		double GetExcessLiquidity() const;
 
 	private:
 

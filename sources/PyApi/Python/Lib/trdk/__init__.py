@@ -608,7 +608,6 @@ class Context:
             """
             pass
 
-
         def __setattr__(self, key, value):
             """
             Any parameter can be set or changed.
@@ -628,7 +627,6 @@ class Context:
             """
             pass
 
-
     params = Params
     tradeSystem = TradeSystem
 
@@ -640,5 +638,9 @@ class TradeSystem:
     cashBalance = float  # Default account current Cash Balance. Value is
                          # unscaled. If default account hasn't been set it
                          # throws an exception.
+
+    excessLiquidity = float  # Default account current Excess Liquidity. Value
+                             # is unscaled. If default account hasn't been set
+                             # it throws an exception.
 
 ###############################################################################
