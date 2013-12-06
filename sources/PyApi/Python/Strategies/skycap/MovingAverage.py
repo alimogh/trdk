@@ -82,7 +82,7 @@ class MovingAverage(trdk.Strategy):
 
         if checkAccount(self, volume) is True:
             pos = trdk.LongPosition(self, security, qty, lastPrice)
-            pos.openAtMarketPrice(openOrderParams)
+            pos.openAtMarketPriceWithStopPrice(openOrderParams, movingAverage)
 
         self._updatePingTime()
 
