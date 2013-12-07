@@ -367,7 +367,7 @@ namespace {
 				const boost::function<void (TagRequirementsList &)> &modifier,
 				RequirementsList &list) {
 		auto &index = list.get<BySubscriber>();
-		auto pos = index.find(boost::make_tuple(type, tag));
+		auto pos = index.find(boost::make_tuple(type, tag, uniqueInstance));
 		if (pos != index.end()) {
 			Verify(index.modify(pos, modifier));
 		} else {
@@ -1017,6 +1017,9 @@ private:
 			tag,
 			uniqueInstance,
 			[&](TagRequirementsList &requirements) {
+				Assert(
+					!requirements.uniqueInstance
+					|| requirements.uniqueInstance == uniqueInstance);
 				requirements.requiredSystemServices[requiredService].insert(
 					supplierRequest.symbols.begin(),
 					supplierRequest.symbols.end());
