@@ -149,7 +149,7 @@ namespace trdk { namespace Engine {
 				while (	!m_current->empty()
 						&& m_taksState == TASK_STATE_ACTIVE) {
 
-					if (!(++heavyLoadsCount % 10)) {
+					if (!(++heavyLoadsCount % 500)) {
 						m_context.GetLog().Warn(
 							"Dispatcher task \"%1%\" is heavy loaded"
 								" (%2% iterations)!",
