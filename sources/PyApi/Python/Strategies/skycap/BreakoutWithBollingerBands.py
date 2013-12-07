@@ -41,7 +41,7 @@ class BreakoutWithBollingerBands(trdk.Strategy):
         if self.positions.count() == 0:
             # Only trade one position per symbol:
             self.checkEntry(service.lastPoint)
-        else:
+        elif self.context.params.bb_breakout_do_not_close_position != 'yes':
             # Only trade one position per symbol:
             assert self.positions.count() == 1
             map(
@@ -61,6 +61,12 @@ class BreakoutWithBollingerBands(trdk.Strategy):
         qtySource = int(volumeSource / lastPriceDescaled)
         qty = int(round(float(qtySource) / 100) * 100)
         volume = qty * lastPriceDescaled
+
+        if qty <= 0:
+            self.log.debug(
+                "Can't open position: too small account volume for this price")
+            self._updatePingTime()
+            return
 
         if decision > 0:
             decisionStr = 'long position: "last price {0}"'\
@@ -84,11 +90,6 @@ class BreakoutWithBollingerBands(trdk.Strategy):
                 volumeSource, volume,
                 qtySource, qty,
                 self.context.tradeSystem.cashBalance))
-        if qty <= 0:
-            self.log.debug(
-                "Can't open position: too small account volume for this price")
-            self._updatePingTime()
-            return
 
         if decision < 0 or checkAccount(self, volume) is True:
             pos.openAtMarketPrice(openOrderParams)
