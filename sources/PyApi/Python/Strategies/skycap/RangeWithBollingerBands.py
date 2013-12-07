@@ -118,7 +118,7 @@ class RangeWithBollingerBands(trdk.Strategy):
             self.positions)
 
     def checkPosition(self, position, condition):
-        if position.isOpened is False or position.hasActiveCloseOrders is True:
+        if isActualForClosingPositionUpdate(position) is False:
             return
         self.log.debug(
             'Closing {0} {1} position: {2}...'

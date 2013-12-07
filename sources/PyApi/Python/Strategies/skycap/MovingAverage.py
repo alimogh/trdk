@@ -94,9 +94,7 @@ class MovingAverage(trdk.Strategy):
     def checkPosition(self, position):
 
         if self.context.params.ma_do_not_close_position == 'yes' \
-                or position.isClosed \
-                or position.isOpened is False \
-                or position.hasActiveCloseOrders is True:
+                or isActualForClosingPositionUpdate(position) is False:
             return
 
         lastPrice = position.security.lastPrice

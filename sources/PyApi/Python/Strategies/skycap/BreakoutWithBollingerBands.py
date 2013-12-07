@@ -96,7 +96,7 @@ class BreakoutWithBollingerBands(trdk.Strategy):
         self._updatePingTime()
 
     def checkPosition(self, position, point):
-        if position.isOpened is False or position.hasActiveCloseOrders is True:
+        if isActualForClosingPositionUpdate(position) is False:
             return
         if self._makeExitDecision(point) is True:
             position.closeAtMarketPrice(closeOrderParams)
