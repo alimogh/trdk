@@ -132,9 +132,6 @@ public:
 	void RegisterSubscriber(Module &module) {
 		const Subscriber subscriber(ModuleRef(module));
 		CheckRecursiveSubscription(subscriber);
-		Assert(
-			std::find(m_subscribers.begin(), m_subscribers.end(), subscriber)
-			== m_subscribers.end());
 		m_subscribers.push_back(subscriber);
 		module.OnServiceStart(m_service);
 	}
