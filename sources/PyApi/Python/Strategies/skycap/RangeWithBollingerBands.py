@@ -66,6 +66,11 @@ class RangeWithBollingerBands(trdk.Strategy):
                     conditionStr,
                     qty,
                     self.context.tradeSystem.cashBalance))
+            if qty <= 0:
+                self.log.debug(
+                    "Can't open position:"
+                    " too small account volume for this price")
+                return
             trdk.ShortPosition(self, self.security, qty, currentPoint.source)\
                 .openAtMarketPrice(openOrderParams)
 
@@ -95,6 +100,11 @@ class RangeWithBollingerBands(trdk.Strategy):
                     qty,
                     self.context.tradeSystem.cashBalance,
                     self.context.tradeSystem.excessLiquidity))
+            if qty <= 0:
+                self.log.debug(
+                    "Can't open position:"
+                    " too small account volume for this price")
+                return
             if checkAccount(self, qty * currentPoint.source) is False:
                 return
             trdk.LongPosition(self, self.security, qty, currentPoint.source)\
@@ -127,8 +137,9 @@ class RangeWithBollingerBands(trdk.Strategy):
     def _pingLog(self, currentPoint):
         now = time.time()
         hasLastLogPingTime = hasattr(self, 'lastLogPingTime')
-        if hasLastLogPingTime is not False and now - self.lastLogPingTime < 60:
-            return
+        if hasLastLogPingTime is True:
+            if now - self.lastLogPingTime < 60 * 10:
+                return
         if hasattr(self, "prevPoint"):
             prevPointLastPrice = self.security.descalePrice(
                 self.prevPoint.source)

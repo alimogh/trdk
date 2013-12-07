@@ -84,6 +84,11 @@ class BreakoutWithBollingerBands(trdk.Strategy):
                 volumeSource, volume,
                 qtySource, qty,
                 self.context.tradeSystem.cashBalance))
+        if qty <= 0:
+            self.log.debug(
+                "Can't open position: too small account volume for this price")
+            self._updatePingTime()
+            return
 
         if decision < 0 or checkAccount(self, volume) is True:
             pos.openAtMarketPrice(openOrderParams)
@@ -100,16 +105,18 @@ class BreakoutWithBollingerBands(trdk.Strategy):
     def _pingLog(self, service):
         now = time.time()
         hasLastLogPingTime = hasattr(self, 'lastLogPingTime')
-        if hasLastLogPingTime is False or now - self.lastLogPingTime >= 60:
-            self.log.debug(
-                'Ping {4}: price = {1} / {0} / {2}; cash = {3};'
-                .format(
-                    self.security.descalePrice(service.lastPoint.source),
-                    self.security.descalePrice(service.lastPoint.high),
-                    self.security.descalePrice(service.lastPoint.low),
-                    self.context.tradeSystem.cashBalance,
-                    self.security.symbol))
-            self._updatePingTime()
+        if hasLastLogPingTime is True:
+            if now - self.lastLogPingTime < 60 * 10:
+                return
+        self.log.debug(
+            'Ping {4}: price = {1} / {0} / {2}; cash = {3};'
+            .format(
+                self.security.descalePrice(service.lastPoint.source),
+                self.security.descalePrice(service.lastPoint.high),
+                self.security.descalePrice(service.lastPoint.low),
+                self.context.tradeSystem.cashBalance,
+                self.security.symbol))
+        self._updatePingTime()
 
     def _updatePingTime(self):
         self.lastLogPingTime = time.time()

@@ -60,7 +60,7 @@ class MovingAverage(trdk.Strategy):
             return
 
         lastPriceDescaled = security.descalePrice(lastPrice)
-        accountVolumeForPosition\
+        accountVolumeForPosition \
             = float(self.context.params.account_volume_for_position)
         volumeSource = getFullBalance(self) * accountVolumeForPosition
         qtySource = int(volumeSource / lastPriceDescaled)
@@ -79,16 +79,24 @@ class MovingAverage(trdk.Strategy):
                 qtySource, qty,
                 self.context.tradeSystem.cashBalance,
                 self.context.tradeSystem.excessLiquidity))
+        if qty <= 0:
+            self.log.debug(
+                "Can't open position: too small account volume for this price")
+            self._updatePingTime()
+            return
 
         if checkAccount(self, volume) is True:
             pos = trdk.LongPosition(self, security, qty, lastPrice)
-            pos.openAtMarketPriceWithStopPrice(openOrderParams, movingAverage)
+            pos.openAtMarketPriceWithStopPrice(movingAverage, openOrderParams)
 
         self._updatePingTime()
 
     def checkPosition(self, position):
 
-        if position.isOpened is False or position.hasActiveCloseOrders is True:
+        if self.context.params.ma_do_not_close_position == 'yes' \
+                or position.isClosed \
+                or position.isOpened is False \
+                or position.hasActiveCloseOrders is True:
             return
 
         lastPrice = position.security.lastPrice
@@ -111,7 +119,7 @@ class MovingAverage(trdk.Strategy):
     def _pingLog(self, security):
         now = time.time()
         if self.lastLogPingTime is not None:
-            if now - self.lastLogPingTime < 60:
+            if now - self.lastLogPingTime < 60 * 10:
                 return
         if self.movingAverage.isEmpty:
             maStr = 'None'
