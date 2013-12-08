@@ -169,6 +169,69 @@ namespace boost { namespace accumulators {
 
 } }
 
+
+namespace boost { namespace accumulators {
+
+	namespace impl {
+
+		template<typename Sample>
+		struct SmMa : accumulator_base {
+
+			typedef Sample result_type;
+
+			template<typename Args>
+			SmMa(const Args &args)
+					: m_windowSize(args[rolling_window_size]),
+					m_val(0) {
+				//...//
+			}
+
+			template<typename Args>
+			void operator ()(const Args &args) {
+				const auto count = rolling_count(args) + 1;
+				if (count <= m_windowSize) {
+					if (count == m_windowSize) {
+						m_val = rolling_mean(args);
+					}
+					return;
+				}
+				result_type val = m_val * m_windowSize;
+				val -= m_val;
+				val += args[sample];
+				val /= m_windowSize;
+				m_val = val;
+ 			}
+
+			result_type result(dont_care) const {
+				return m_val;
+			}
+
+		private:
+			
+			uintmax_t m_windowSize;
+			result_type m_val;
+		
+		};
+
+	}
+
+	namespace tag {
+		struct SmMa : depends_on<rolling_mean> {
+			typedef accumulators::impl::SmMa<mpl::_1> impl;
+		};
+	}
+
+	namespace extract {
+		const extractor<tag::SmMa> smMa = {
+			//...//
+		};
+		BOOST_ACCUMULATORS_IGNORE_GLOBAL(smMa)
+	}
+
+	using extract::smMa;
+
+} }
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -197,7 +260,10 @@ namespace {
 		SmaAcc;
 	//! Exponential Moving Average
 	typedef accs::accumulator_set<double, accs::stats<accs::tag::Ema>> EmaAcc;
-	typedef boost::variant<SmaAcc, EmaAcc> Acc;
+		//! Smoothed Moving Average
+	typedef accs::accumulator_set<double, accs::stats<accs::tag::SmMa>> SmMaAcc;
+
+	typedef boost::variant<SmaAcc, EmaAcc, SmMaAcc> Acc;
 
 	class AccumVisitor : public boost::static_visitor<void> {
 	public:
@@ -227,6 +293,9 @@ namespace {
 		}
 		double operator ()(EmaAcc &acc) const {
 			return accs::ema(acc);
+		}
+		double operator ()(SmMaAcc &acc) const {
+			return accs::smMa(acc);
 		}
 	};
 
@@ -322,6 +391,12 @@ public:
 					}
 					break;
 				case MA_TYPE_SMOOTHED:
+					{
+						const SmMaAcc acc(
+							accs::tag::rolling_window::window_size = m_period);
+						m_acc.reset(new Acc(acc));
+					}
+					break;
 				case MA_TYPE_HULL:
 				default:
 					m_service.GetLog().Error(

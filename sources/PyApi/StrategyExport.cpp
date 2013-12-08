@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "StrategyExport.hpp"
 #include "PyStrategy.hpp"
+#include "ContextExport.hpp"
 #include "PositionExport.hpp"
 #include "PyPosition.hpp"
 #include "PyService.hpp"
@@ -30,17 +31,18 @@ namespace pt = boost::posix_time;
 StrategyInfoExport::StrategyInfoExport(
 			const boost::shared_ptr<PyApi::Strategy> &strategy)
 		: ModuleExport(*strategy),
+		m_strategy(&*strategy),
 		m_strategyRefHolder(strategy) {
-	//...//
+	Assert(m_strategy == &ModuleExport::GetModule());
 }
 
 PyApi::Strategy & StrategyInfoExport::GetStrategy() {
-	return const_cast<PyApi::Strategy &>(
-		*boost::polymorphic_cast<const PyApi::Strategy *>(&GetModule()));
+	Assert(m_strategy == &ModuleExport::GetModule());
+	return *m_strategy;
 }
 
 const PyApi::Strategy & StrategyInfoExport::GetStrategy() const {
-	return *boost::polymorphic_cast<const PyApi::Strategy *>(&GetModule());
+	return const_cast<StrategyInfoExport *>(this)->GetStrategy();
 }
 
 boost::shared_ptr<PyApi::Strategy> StrategyInfoExport::ReleaseRefHolder()
@@ -130,6 +132,7 @@ void StrategyExport::ExportClass(const char *className) {
 		Export;
 
 	const py::scope strategyClass = Export(className, py::init<uintptr_t>())
+		.add_property("context", &StrategyExport::GetContext)
 		.add_property("positions", &StrategyExport::GetPositions)
 		.add_property("securities", &StrategyExport::GetSecurities)
 		.def("findSecurity", &StrategyExport::FindSecurityBySymbol)
@@ -141,6 +144,10 @@ void StrategyExport::ExportClass(const char *className) {
 	PositionListExport::ExportClass("PositionList");
 	ConsumerSecurityListExport::ExportClass("SecurityList");
 
+}
+
+ContextExport StrategyExport::GetContext() {
+	return ContextExport(GetStrategy().GetContext());
 }
 
 py::object StrategyExport::FindSecurityBySymbol(const py::str &symbol) {

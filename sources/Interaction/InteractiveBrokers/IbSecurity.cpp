@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Security.hpp"
+#include "IbSecurity.hpp"
 
 using namespace trdk;
 using namespace trdk::Interaction;

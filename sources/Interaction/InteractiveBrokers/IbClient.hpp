@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "Security.hpp"
-#include "TradeSystem.hpp"
+#include "IbSecurity.hpp"
+#include "IbTradeSystem.hpp"
 #include "Core/Context.hpp"
 
 namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
@@ -127,6 +127,19 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
+		//! Sets account, can be empty, must be called before StartData.
+		void SetAccount(
+					const std::string &account,
+					TradeSystem::Account &accountInfoRef) {
+			AssertEq(std::string(), m_account);
+			Assert(!m_accountInfo);
+			m_account = account;
+			m_accountInfo = &accountInfoRef;
+		}
+
+	public:
+
+		//! Starts data.
 		void StartData();
 
 	public:
@@ -401,6 +414,9 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		mutable MarketLevel1HistoryRequests m_historyRequest;
 
 		mutable BarsRequests m_barsRequest;
+
+		std::string m_account;
+		TradeSystem::Account *m_accountInfo;
 
 	};
 

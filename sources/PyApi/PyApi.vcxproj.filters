@@ -68,6 +68,12 @@
     <ClInclude Include="OrderParamsExport.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ContextExport.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TradeSystemExport.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -107,6 +113,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="OrderParamsExport.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TradeSystemExport.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ContextExport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

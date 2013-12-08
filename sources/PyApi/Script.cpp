@@ -65,6 +65,14 @@ Script & Script::Load(const fs::path &path) {
 			throw GetPythonClientException(
 				"Internal error: Failed to get __main__");
 		}
+		try {
+			py::import("sys")
+				.attr("path")
+				.attr("append")(path.branch_path().string());
+		} catch (const py::error_already_set &) {
+			throw GetPythonClientException(
+				"Internal error: Failed to set PYTHONPATH");
+		}
 	}
 	boost::shared_ptr<Script> script(new Script(global, path));
 	AssertEq(path, script->GetFilePath());

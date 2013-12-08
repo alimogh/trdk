@@ -61,6 +61,23 @@ namespace trdk {
 					double lastPrice)>
 			OrderStatusUpdateSlot;
 
+		struct Account {
+
+			volatile double cashBalance;
+			volatile double equityWithLoanValue;
+			volatile double maintenanceMargin;
+			volatile double excessLiquidity;
+
+			Account() 
+					: cashBalance(.0),
+					equityWithLoanValue(.0),
+					maintenanceMargin(.0),
+					excessLiquidity(.0) {
+				//...//
+			}
+
+		};
+
 	public:
 
 		class TRDK_CORE_API Error : public Base::Error {
@@ -87,6 +104,13 @@ namespace trdk {
 			ConnectionDoesntExistError(const char *what) throw();
 		};
 
+		//! Account is unknown or default account requested but hasn't been set.
+		class TRDK_CORE_API UnknownAccountError : public Error {
+		public:
+			UnknownAccountError(const char *what) throw();
+		};
+
+
 	public:
 
 		TradeSystem();
@@ -99,6 +123,15 @@ namespace trdk {
 	public:
 
 		virtual void Connect(const trdk::Lib::IniFileSectionRef &) = 0;
+
+	public:
+
+		//! Returns default account info.
+		/** All values is unscaled. If default account hasn't been set - throws
+		  * an exception.
+		  * @throw trdk::TradeSystem::UnknownAccountError
+		  */
+		virtual const trdk::TradeSystem::Account & GetAccount() const = 0;
 
 	public:
 

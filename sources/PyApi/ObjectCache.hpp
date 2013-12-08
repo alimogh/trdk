@@ -23,7 +23,7 @@ namespace trdk { namespace PyApi { namespace Detail {
 
 		typedef std::map<T *, boost::python::object> Cache;
 
-		//! @todo: place for optimization - rw lock
+		//! @todo: place for optimization - rw lock with spin
 		typedef boost::shared_mutex CacheMutex;
 		typedef boost::shared_lock<CacheMutex> CacheReadLock;
 		typedef boost::unique_lock<CacheMutex> CacheWriteLock;

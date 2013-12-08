@@ -40,9 +40,9 @@
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4800;4005;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">4800;4005;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
-    <ClCompile Include="Client.cpp" />
-    <ClCompile Include="Security.cpp" />
-    <ClCompile Include="TradeSystem.cpp" />
+    <ClCompile Include="IbClient.cpp" />
+    <ClCompile Include="IbSecurity.cpp" />
+    <ClCompile Include="IbTradeSystem.cpp" />
     <ClCompile Include="Prec.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -66,9 +66,9 @@
     <ClInclude Include="Api\TagValue.h" />
     <ClInclude Include="Api\TwsSocketClientErrors.h" />
     <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="Client.hpp" />
-    <ClInclude Include="Security.hpp" />
-    <ClInclude Include="TradeSystem.hpp" />
+    <ClInclude Include="IbClient.hpp" />
+    <ClInclude Include="IbSecurity.hpp" />
+    <ClInclude Include="IbTradeSystem.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>

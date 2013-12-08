@@ -41,6 +41,13 @@ TradeSystem::ConnectionDoesntExistError::ConnectionDoesntExistError(
 	//...//
 }
 
+TradeSystem::UnknownAccountError::UnknownAccountError(
+			const char *what)
+		throw()
+		: Error(what) {
+	//...//
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 TradeSystem::TradeSystem() {

@@ -15,6 +15,8 @@
 #include "StrategyExport.hpp"
 #include "SecurityExport.hpp"
 #include "OrderParamsExport.hpp"
+#include "ContextExport.hpp"
+#include "TradeSystemExport.hpp"
 #include "Detail.hpp"
 
 namespace py = boost::python;
@@ -60,6 +62,10 @@ BOOST_PYTHON_MODULE(trdk) {
 		MovingAverageServiceExport::ExportClass("MovingAverageService");
 		BollingerBandsServiceExport::ExportClass("BollingerBandsService");
 	}
+
+	ContextExport::ExportClass("Context");
+
+	TradeSystemExport::ExportClass("TradeSystem");
 
 }
 

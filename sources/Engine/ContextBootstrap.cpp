@@ -51,6 +51,7 @@ public:
 public:
 
 	void Bootstrap() {
+		LoadContextParams();
 		Assert(!m_tradeSystem);
 		Assert(!m_marketDataSource);
 		LoadTradeSystem();
@@ -62,6 +63,17 @@ public:
 	}
 
 private:
+
+	void LoadContextParams() {
+		const auto &pred = [&](
+					const std::string &key,
+					const std::string &name)
+				-> bool {
+			m_context.GetParams().Update(key, name);
+			return true;
+		};
+		m_conf.ForEachKey(Sections::contextParams, pred, false);
+	}
 
 	void LoadTradeSystem() {
 		
@@ -355,7 +367,7 @@ namespace {
 				const boost::function<void (TagRequirementsList &)> &modifier,
 				RequirementsList &list) {
 		auto &index = list.get<BySubscriber>();
-		auto pos = index.find(boost::make_tuple(type, tag));
+		auto pos = index.find(boost::make_tuple(type, tag, uniqueInstance));
 		if (pos != index.end()) {
 			Verify(index.modify(pos, modifier));
 		} else {
@@ -1005,6 +1017,9 @@ private:
 			tag,
 			uniqueInstance,
 			[&](TagRequirementsList &requirements) {
+				Assert(
+					!requirements.uniqueInstance
+					|| requirements.uniqueInstance == uniqueInstance);
 				requirements.requiredSystemServices[requiredService].insert(
 					supplierRequest.symbols.begin(),
 					supplierRequest.symbols.end());

@@ -23,4 +23,8 @@ namespace trdk { namespace PyApi {
 	template<typename Impl>
 	class SidePositionExport;
 
+	class ContextExport;
+
+	class TradeSystemExport;
+
 } }

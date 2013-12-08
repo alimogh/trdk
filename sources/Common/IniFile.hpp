@@ -101,11 +101,24 @@ namespace trdk { namespace Lib {
 
 		void ReadSection(
 					const std::string &section,
-					boost::function<bool(const std::string &)> readLine,
+					const boost::function<bool(const std::string &)> &readLine,
 					bool mustExist)
 				const;
 
-		bool IsKeyExist(const std::string &section,const std::string &key) const;
+		bool IsKeyExist(
+					const std::string &section,
+					const std::string &key)
+				const;
+
+		void ForEachKey(
+					const std::string &section,
+					const boost::function<
+							bool(
+								const std::string &key,
+								const std::string &value)>
+						&pred,
+					bool mustExist)
+				const;
 
 		std::string ReadKey(
 					const std::string &section,
@@ -302,6 +315,15 @@ namespace trdk { namespace Lib {
 		}
 
 		bool IsKeyExist(const std::string &key) const;
+
+		void ForEachKey(
+					const boost::function<
+							bool(
+								const std::string &key,
+								const std::string &value)>
+						&pred,
+					bool mustExist)
+				const;
 
 		std::string ReadKey(const std::string &key) const;
 		std::string ReadKey(

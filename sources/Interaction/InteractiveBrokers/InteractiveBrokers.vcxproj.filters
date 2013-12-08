@@ -17,12 +17,6 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Client.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TradeSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Api\EClientSocket.cpp">
       <Filter>API</Filter>
     </ClCompile>
@@ -35,7 +29,13 @@
     <ClCompile Include="Api.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Security.cpp">
+    <ClCompile Include="IbSecurity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IbClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IbTradeSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,12 +44,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Fwd.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Client.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TradeSystem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Api\CommissionReport.h">
@@ -109,7 +103,13 @@
     <ClInclude Include="Api\TwsSocketClientErrors.h">
       <Filter>API</Filter>
     </ClInclude>
-    <ClInclude Include="Security.hpp">
+    <ClInclude Include="IbSecurity.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IbClient.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IbTradeSystem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

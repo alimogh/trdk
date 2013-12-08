@@ -9,8 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "TradeSystem.hpp"
-#include "Client.hpp"
+#include "IbTradeSystem.hpp"
+#include "IbClient.hpp"
 #include "Core/Security.hpp"
 
 using namespace trdk;
@@ -38,6 +38,7 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 		return;
 	}
 
+	std::unique_ptr<Account> account;
 	std::unique_ptr<Client> client(
 		new Client(
 			m_securities,
@@ -45,6 +46,11 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 			settings.ReadBoolKey("no_history", false),
 			settings.ReadTypedKey<int>("client_id", 0),
 			settings.ReadKey("ip_address", "127.0.0.1")));
+
+	if (settings.IsKeyExist("account")) {
+		account.reset(new Account);
+		client->SetAccount(settings.ReadKey("account", ""), *account);
+	}
 
 	client->Subscribe(
 		[this](
@@ -103,7 +109,15 @@ void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
 	}
 
 	client.swap(m_client);
+	account.swap(m_account);
 
+}
+
+const ib::TradeSystem::Account & ib::TradeSystem::GetAccount() const {
+	if (!m_account) {
+		throw UnknownAccountError("Account not specified");
+	}
+	return *m_account;
 }
 
 boost::shared_ptr<trdk::Security> ib::TradeSystem::CreateSecurity(

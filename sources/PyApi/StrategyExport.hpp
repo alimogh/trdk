@@ -34,6 +34,7 @@ namespace trdk { namespace PyApi {
 
 	private:
 
+		PyApi::Strategy *m_strategy;
 		boost::shared_ptr<PyApi::Strategy> m_strategyRefHolder;
 
 	};
@@ -103,6 +104,8 @@ namespace trdk { namespace PyApi {
 		static void ExportClass(const char *className);
 
 	private:
+
+		ContextExport GetContext();
 
 		PositionListExport GetPositions();
 		ConsumerSecurityListExport GetSecurities();

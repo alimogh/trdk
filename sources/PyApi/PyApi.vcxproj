@@ -81,6 +81,7 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ContextExport.hpp" />
     <ClInclude Include="Detail.hpp" />
     <ClInclude Include="BaseExport.hpp" />
     <ClInclude Include="Fwd.hpp" />
@@ -99,9 +100,11 @@
     <ClInclude Include="Script.hpp" />
     <ClInclude Include="Errors.hpp" />
     <ClInclude Include="StrategyExport.hpp" />
+    <ClInclude Include="TradeSystemExport.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BaseExport.cpp" />
+    <ClCompile Include="ContextExport.cpp" />
     <ClCompile Include="Detail.cpp" />
     <ClCompile Include="ModuleSecurityListExport.cpp" />
     <ClCompile Include="OrderParamsExport.cpp" />
@@ -118,6 +121,7 @@
     <ClCompile Include="ServiceExport.cpp" />
     <ClCompile Include="Script.cpp" />
     <ClCompile Include="StrategyExport.cpp" />
+    <ClCompile Include="TradeSystemExport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyApi.def" />

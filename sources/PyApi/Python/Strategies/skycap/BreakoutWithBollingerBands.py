@@ -16,16 +16,9 @@
 #
 # Only trade one position per symbol.
 
-
 import trdk
 import time
-
-
-accountVolumeForPosition = .05  # Allocate how much % of account to each trade.
-                                # For example, 5% will allocate $5,000 to
-                                # a $100,000 account. # It will then calculate
-                                # the number of shares to buy or sell.
-account = 100000
+from Util import *
 
 openOrderParams = trdk.OrderParams()
 closeOrderParams = trdk.OrderParams()
@@ -43,11 +36,12 @@ class BreakoutWithBollingerBands(trdk.Strategy):
         self.security = security
 
     def onServiceDataUpdate(self, service):
+        updateContext(self)
         self._pingLog(service)
         if self.positions.count() == 0:
             # Only trade one position per symbol:
             self.checkEntry(service.lastPoint)
-        else:
+        elif self.context.params.bb_breakout_do_not_close_position != 'yes':
             # Only trade one position per symbol:
             assert self.positions.count() == 1
             map(
@@ -60,19 +54,28 @@ class BreakoutWithBollingerBands(trdk.Strategy):
         if decision == 0:
             return
 
+        self._updatePingTime()
+
         lastPriceDescaled = self.security.descalePrice(point.source)
-        volumeSource = account * accountVolumeForPosition
+        accountVolumeForPosition\
+            = float(self.context.params.account_volume_for_position)
+        volumeSource = getFullBalance(self) * accountVolumeForPosition
         qtySource = int(volumeSource / lastPriceDescaled)
-        qty = int(qtySource / 100) * 100
+        qty = int(round(float(qtySource) / 100) * 100)
         volume = qty * lastPriceDescaled
 
+        if qty <= 0:
+            self.log.debug(
+                "Can't open position: too small account volume for this price")
+            return
+
         if decision > 0:
-            decisionStr = 'long position: "last price {0}"' \
+            decisionStr = 'long position: "last price {0}"'\
                 ' > "upper band point {1}"...'
             pos = trdk.LongPosition(self, self.security, qty, point.source)
         else:
             assert decision < 0
-            decisionStr = 'short position: "last price {0}"' \
+            decisionStr = 'short position: "last price {0}"'\
                 ' < "lower band point {1}"...'
             pos = trdk.ShortPosition(self, self.security, qty, point.source)
 
@@ -80,18 +83,20 @@ class BreakoutWithBollingerBands(trdk.Strategy):
             lastPriceDescaled,
             self.security.descalePrice(point.high))
         self.log.debug(
-            'Opening {0} (volume {1} -> {2}, qty {3} -> {4})...'
+            'Opening {0} {1} (volume {2} -> {3}, qty {4} -> {5},'
+            ' cash = {6})...'
             .format(
+                self.security.symbol,
                 decisionStr,
                 volumeSource, volume,
-                qtySource, qty))
+                qtySource, qty,
+                self.context.tradeSystem.cashBalance))
 
-        pos.openAtMarketPrice(openOrderParams)
-
-        self._updatePingTime()
+        if decision < 0 or checkAccount(self, volume) is True:
+            pos.openAtMarketPrice(openOrderParams)
 
     def checkPosition(self, position, point):
-        if position.isOpened is False or position.hasActiveCloseOrders is True:
+        if isActualForClosingPositionUpdate(position) is False:
             return
         if self._makeExitDecision(point) is True:
             position.closeAtMarketPrice(closeOrderParams)
@@ -100,14 +105,18 @@ class BreakoutWithBollingerBands(trdk.Strategy):
     def _pingLog(self, service):
         now = time.time()
         hasLastLogPingTime = hasattr(self, 'lastLogPingTime')
-        if hasLastLogPingTime is False or now - self.lastLogPingTime >= 60:
-            self.log.debug(
-                'Ping: {1} / {0} / {0};'
-                .format(
-                    self.security.descalePrice(service.lastPoint.source),
-                    self.security.descalePrice(service.lastPoint.high),
-                    self.security.descalePrice(service.lastPoint.low)))
-            self._updatePingTime()
+        if hasLastLogPingTime is True:
+            if now - self.lastLogPingTime < 60 * 10:
+                return
+        self.log.debug(
+            'Ping {4}: price = {1} / {0} / {2}; cash = {3};'
+            .format(
+                self.security.descalePrice(service.lastPoint.source),
+                self.security.descalePrice(service.lastPoint.high),
+                self.security.descalePrice(service.lastPoint.low),
+                self.context.tradeSystem.cashBalance,
+                self.security.symbol))
+        self._updatePingTime()
 
     def _updatePingTime(self):
         self.lastLogPingTime = time.time()
@@ -130,9 +139,10 @@ class BreakoutWithBollingerBandsBuy(BreakoutWithBollingerBands):
         # if bar closes below lower band, sell.
         if point.source < point.low:
             self.log.debug(
-                'Closing long position: "last price {0}"'
-                ' < "lower band point {1}"...'
+                'Closing {0} long position: "last price {1}"'
+                ' < "lower band point {2}"...'
                 .format(
+                    self.security.symbol,
                     self.security.descalePrice(point.source),
                     self.security.descalePrice(point.low)))
             return True
@@ -155,9 +165,10 @@ class BreakoutWithBollingerBandsSell(BreakoutWithBollingerBands):
     def _makeExitDecision(self, point):
         if point.source > point.high:
             self.log.debug(
-                'Closing short position: "last price {0}"'
-                ' > "upper band point {1}"...'
+                'Closing {0} short position: "last price {1}"'
+                ' > "upper band point {2}"...'
                 .format(
+                    self.security.symbol,
                     self.security.descalePrice(point.source),
                     self.security.descalePrice(point.high)))
             return True
