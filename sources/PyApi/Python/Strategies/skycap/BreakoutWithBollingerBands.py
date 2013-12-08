@@ -54,6 +54,8 @@ class BreakoutWithBollingerBands(trdk.Strategy):
         if decision == 0:
             return
 
+        self._updatePingTime()
+
         lastPriceDescaled = self.security.descalePrice(point.source)
         accountVolumeForPosition\
             = float(self.context.params.account_volume_for_position)
@@ -65,7 +67,6 @@ class BreakoutWithBollingerBands(trdk.Strategy):
         if qty <= 0:
             self.log.debug(
                 "Can't open position: too small account volume for this price")
-            self._updatePingTime()
             return
 
         if decision > 0:
@@ -93,8 +94,6 @@ class BreakoutWithBollingerBands(trdk.Strategy):
 
         if decision < 0 or checkAccount(self, volume) is True:
             pos.openAtMarketPrice(openOrderParams)
-
-        self._updatePingTime()
 
     def checkPosition(self, position, point):
         if isActualForClosingPositionUpdate(position) is False:
