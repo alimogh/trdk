@@ -306,11 +306,11 @@ std::ostream & std::operator <<(
 			const Module &module)
 		throw() {
 	try {
-		oss
-			<< module.GetTypeName()
-			<< '.' << module.GetName()
-			<< '.' << module.GetTag()
-			<< '.' << module.GetInstanceId();
+		oss << module.GetTypeName() << '.' << module.GetName();
+		if (module.GetName() != module.GetTag()) {
+			oss << '.' << module.GetTag();
+		}
+		oss << '.' << module.GetInstanceId();
 	} catch (...) {
 		AssertFailNoException();
 	}
