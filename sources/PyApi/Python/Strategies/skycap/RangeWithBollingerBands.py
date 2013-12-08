@@ -20,36 +20,67 @@ closeOrderParams = trdk.OrderParams()
 # noinspection PyCallByClass,PyTypeChecker
 class RangeWithBollingerBands(trdk.Strategy):
 
+    class Point:
+        def __init__(self, point):
+            self.source = point.source
+            self.high = point.high
+            self.low = point.low
+
+    def __init__(self, param, tradeOnNewBar):
+        trdk.Strategy.__init__(self, param)
+        self.tradeOnNewBar = tradeOnNewBar
+        self.security = None
+        self.prevPoint = None
+        self.currentPoint = None
+        self.lastLogPingTime = None
+
     def getRequiredSuppliers(self):
-        return "BollingerBands"
+        result = "BollingerBands"
+        if self.tradeOnNewBar is False:
+            result += ", Level 1 Updates"
+        return result
 
     def onSecurityStart(self, security):
         # Only trade one position per symbol.
-        assert hasattr(self, "security") is False
+        assert self.security is None
         self.security = security
 
     def onServiceDataUpdate(self, service):
         updateContext(self)
-        currentPoint = service.lastPoint
-        self._pingLog(currentPoint)
-        if hasattr(self, "prevPoint") is False:
-            assert self.positions.count() == 0
-            self.prevPoint = currentPoint
-        elif self.prevPoint.source > self.prevPoint.high:
-            if currentPoint.source <= self.prevPoint.high:
-                self.checkIfPriceReturnsFromTop(currentPoint)
+        if self.currentPoint is None:
+            if self.prevPoint is None:
+                self.prevPoint \
+                    = RangeWithBollingerBands.Point(service.lastPoint)
+                return
+        else:
+            self.prevPoint = self.currentPoint
+        self.currentPoint = RangeWithBollingerBands.Point(service.lastPoint)
+        if self.tradeOnNewBar:
+            self.checkSignal()
+
+    def onLevel1Update(self, security):
+        if self.tradeOnNewBar is True or self.currentPoint is None:
+            return
+        self.prevPoint = self.currentPoint
+        self.currentPoint.source = security.lastPrice
+        self.checkSignal()
+
+    def checkSignal(self):
+        self._pingLog()
+        if self.prevPoint.source > self.prevPoint.high:
+            if self.currentPoint.source < self.prevPoint.high:
+                self.checkIfPriceReturnsFromTop(self.currentPoint)
         elif self.prevPoint.source < self.prevPoint.low:
-            if currentPoint.source >= self.prevPoint.high:
-                self.checkIfPriceReturnsFromBottom(currentPoint)
+            if self.currentPoint.source > self.prevPoint.low:
+                self.checkIfPriceReturnsFromBottom(self.currentPoint)
 
     def checkIfPriceReturnsFromTop(self, currentPoint):
         # When price goes above higher band and back down the band, enter a
         # sell.
-        assert hasattr(self, "prevPoint")
         self._updatePingTime()
         conditionStr = \
             '"prev. price {0} > prev. upper bound point {1}"' \
-            ' and "curr. price {2} <= curr. upper bound point {3}"' \
+            ' and "curr. price {2} < curr. upper bound point {3}"' \
             .format(
                 self.security.descalePrice(self.prevPoint.source),
                 self.security.descalePrice(self.prevPoint.high),
@@ -77,11 +108,10 @@ class RangeWithBollingerBands(trdk.Strategy):
     def checkIfPriceReturnsFromBottom(self, currentPoint):
         # When price goes below lower band and price comes back above lower
         # band, enter a buy
-        assert hasattr(self, "prevPoint")
         self._updatePingTime()
         conditionStr = \
             '"prev. price {0} < prev. lower bound point {1}"' \
-            ' and "curr. price {2} >= curr. lower bound point {3}"' \
+            ' and "curr. price {2} > curr. lower bound point {3}"' \
             .format(
                 self.security.descalePrice(self.prevPoint.source),
                 self.security.descalePrice(self.prevPoint.low),
@@ -134,35 +164,22 @@ class RangeWithBollingerBands(trdk.Strategy):
         qty = int(round(float(qtySource) / 100) * 100)
         return qty
 
-    def _pingLog(self, currentPoint):
+    def _pingLog(self):
         now = time.time()
-        hasLastLogPingTime = hasattr(self, 'lastLogPingTime')
-        if hasLastLogPingTime is True:
+        if self.lastLogPingTime is not None:
             if now - self.lastLogPingTime < 60 * 10:
                 return
-        if hasattr(self, "prevPoint"):
-            prevPointLastPrice = self.security.descalePrice(
-                self.prevPoint.source)
-            prevPointHighBb = self.security.descalePrice(
-                self.prevPoint.high)
-            prevPointLowBb = self.security.descalePrice(
-                self.prevPoint.low)
-        else:
-            prevPointLastPrice \
-                = prevPointHighBb \
-                = prevPointLowBb \
-                = 'None'
         self.log.debug(
             'Ping {7}: prev = {1} / {0} / {2};'
             ' current = {4} / {3} / {5};'
             ' cash = {6}; el = {8};'
             .format(
-                prevPointLastPrice,
-                prevPointHighBb,
-                prevPointLowBb,
-                self.security.descalePrice(currentPoint.source),
-                self.security.descalePrice(currentPoint.high),
-                self.security.descalePrice(currentPoint.low),
+                self.security.descalePrice(self.prevPoint.source),
+                self.security.descalePrice(self.prevPoint.high),
+                self.security.descalePrice(self.prevPoint.low),
+                self.security.descalePrice(self.currentPoint.source),
+                self.security.descalePrice(self.currentPoint.high),
+                self.security.descalePrice(self.currentPoint.low),
                 self.context.tradeSystem.cashBalance,
                 self.security.symbol,
                 self.context.tradeSystem.excessLiquidity))
@@ -170,3 +187,13 @@ class RangeWithBollingerBands(trdk.Strategy):
 
     def _updatePingTime(self):
         self.lastLogPingTime = time.time()
+
+
+class RangeWithBollingerBandsByBar(RangeWithBollingerBands):
+    def __init__(self, param):
+        RangeWithBollingerBands.__init__(self, param, True)
+
+
+class RangeWithBollingerBandsByTick(RangeWithBollingerBands):
+    def __init__(self, param):
+        RangeWithBollingerBands.__init__(self, param, False)
