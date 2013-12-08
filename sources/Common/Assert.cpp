@@ -20,7 +20,7 @@ using namespace trdk::Debug;
 #if defined(_DEBUG)
 #	define IS_DEBUG_BREAK_ENABLED 1
 #elif defined(DEV_VER)
-#	define IS_DEBUG_BREAK_ENABLED 1
+#	define IS_DEBUG_BREAK_ENABLED 0
 #else
 #	define IS_DEBUG_BREAK_ENABLED 0
 #endif
