@@ -20,7 +20,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7BD47287-4175-45EE-860B-326AE8060A16}</ProjectGuid>
     <RootNamespace>PyAPI</RootNamespace>
-    <ProjectName>PyAPI</ProjectName>
+    <ProjectName>Py API</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
