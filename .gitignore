@@ -24,3 +24,7 @@
 /sources/Gateway/Service/build/
 /sources/Gateway/Service/dist/
 /sources/PyApi/Python/.idea
+/sources/ipch
+*.pyc
+/sources/TRDK.opensdf
+/sources/TRDK.sdf
