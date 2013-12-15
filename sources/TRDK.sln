@@ -11,7 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Strategies", "Strategies", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Interaction", "Interaction", "{0472C2A4-F2BB-48CC-A6FE-32B792EE621D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PyAPI", "PyApi\PyApi.vcxproj", "{7BD47287-4175-45EE-860B-326AE8060A16}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Py API", "PyApi\PyApi.vcxproj", "{7BD47287-4175-45EE-860B-326AE8060A16}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Fake", "Interaction\Fake\Fake.vcxproj", "{3E0187E3-F6E3-48E3-A0E4-1E454B0E7F40}"
 EndProject
@@ -26,6 +26,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Version", "Version\Version.vcxproj", "{6884DFB9-D84C-4F37-853F-79565671A1E3}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests\Tests.vcxproj", "{AF773219-8D87-4958-A567-4BCB72272E51}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mql API", "MqlApi\MqlApi.vcxproj", "{2D63F319-8EDA-4660-9960-6552D8433B15}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -100,6 +102,12 @@ Global
 		{AF773219-8D87-4958-A567-4BCB72272E51}.Release|Win32.Build.0 = Release|Win32
 		{AF773219-8D87-4958-A567-4BCB72272E51}.Test|Win32.ActiveCfg = Test|Win32
 		{AF773219-8D87-4958-A567-4BCB72272E51}.Test|Win32.Build.0 = Test|Win32
+		{2D63F319-8EDA-4660-9960-6552D8433B15}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2D63F319-8EDA-4660-9960-6552D8433B15}.Debug|Win32.Build.0 = Debug|Win32
+		{2D63F319-8EDA-4660-9960-6552D8433B15}.Release|Win32.ActiveCfg = Release|Win32
+		{2D63F319-8EDA-4660-9960-6552D8433B15}.Release|Win32.Build.0 = Release|Win32
+		{2D63F319-8EDA-4660-9960-6552D8433B15}.Test|Win32.ActiveCfg = Test|Win32
+		{2D63F319-8EDA-4660-9960-6552D8433B15}.Test|Win32.Build.0 = Test|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
