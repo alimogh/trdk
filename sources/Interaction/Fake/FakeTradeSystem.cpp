@@ -185,7 +185,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-Fake::TradeSystem::TradeSystem(const IniFileSectionRef &, Context::Log &log)
+Fake::TradeSystem::TradeSystem(const IniSectionRef &, Context::Log &log)
 		: m_pimpl(new Implementation(log)) {
 	//...//
 }
@@ -194,7 +194,7 @@ Fake::TradeSystem::~TradeSystem() {
 	delete m_pimpl;
 }
 
-void Fake::TradeSystem::Connect(const IniFileSectionRef &) {
+void Fake::TradeSystem::Connect(const IniSectionRef &) {
 	m_pimpl->Start();
 }
 

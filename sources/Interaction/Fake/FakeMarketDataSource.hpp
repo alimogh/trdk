@@ -49,12 +49,12 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	public:
 
-		MarketDataSource(const Lib::IniFileSectionRef &);
+		MarketDataSource(const Lib::IniSectionRef &);
 		virtual ~MarketDataSource();
 
 	public:
 
-		virtual void Connect(const trdk::Lib::IniFileSectionRef &);
+		virtual void Connect(const trdk::Lib::IniSectionRef &);
 
 	protected:
 

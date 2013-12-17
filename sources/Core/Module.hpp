@@ -69,12 +69,12 @@ namespace trdk {
 
 	public:
 
-		void UpdateSettings(const trdk::Lib::IniFileSectionRef &);
+		void UpdateSettings(const trdk::Lib::IniSectionRef &);
 
 	protected:
 
 		virtual void UpdateAlogImplSettings(
-					const trdk::Lib::IniFileSectionRef &)
+					const trdk::Lib::IniSectionRef &)
 				= 0;
 
 		Mutex & GetMutex() const;

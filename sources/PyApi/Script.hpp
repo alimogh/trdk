@@ -22,7 +22,7 @@ namespace trdk { namespace PyApi {
 
 	public:
 
-		static Script & Load(const Lib::IniFileSectionRef &);
+		static Script & Load(const Lib::IniSectionRef &);
 		static Script & Load(const boost::filesystem::path &);
 
 	public:
@@ -34,7 +34,7 @@ namespace trdk { namespace PyApi {
 		void Exec(const std::string &code);
 
 		boost::python::object GetClass(
-					const Lib::IniFileSectionRef &,
+					const Lib::IniSectionRef &,
 					Context &,
 					const char *errorWhat = nullptr);
 		boost::python::object GetClass(const std::string &name);

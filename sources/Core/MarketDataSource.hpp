@@ -22,7 +22,7 @@ namespace trdk {
 	/** Result can't be nullptr.
 	  */
 	typedef boost::shared_ptr<trdk::MarketDataSource> (MarketDataSourceFactory)(
-			const trdk::Lib::IniFileSectionRef &);
+			const trdk::Lib::IniSectionRef &);
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -46,7 +46,7 @@ namespace trdk {
 
 	public:
 
-		virtual void Connect(const trdk::Lib::IniFileSectionRef &) = 0;
+		virtual void Connect(const trdk::Lib::IniSectionRef &) = 0;
 
 	public:
 

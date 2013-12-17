@@ -55,7 +55,7 @@ namespace trdk { namespace SettingsReport {
 
 	inline void Append(
 				const std::string &name,
-				const trdk::Lib::IniFile::AbsoluteOrPercentsPrice &val,
+				const trdk::Lib::Ini::AbsoluteOrPercentsPrice &val,
 				const trdk::Security &security,
 				Report &report) {
 		Append(name, val.GetStr(security.GetPriceScale()), report);

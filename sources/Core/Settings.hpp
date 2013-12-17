@@ -47,7 +47,7 @@ namespace trdk {
 	public:
 	
 		explicit Settings(
-				const trdk::Lib::IniFile &,
+				const trdk::Lib::Ini &,
 				const Time &now,
 				bool isReplayMode,
 				trdk::Context::Log &);
@@ -55,13 +55,13 @@ namespace trdk {
 	public:
 
 		void Update(
-					const trdk::Lib::IniFile &,
+					const trdk::Lib::Ini &,
 					trdk::Context::Log &);
 
 	private:
 
-		void UpdateDynamic(const trdk::Lib::IniFile&, trdk::Context::Log &);
-		void UpdateStatic(const trdk::Lib::IniFile &, trdk::Context::Log &);
+		void UpdateDynamic(const trdk::Lib::Ini &, trdk::Context::Log &);
+		void UpdateStatic(const trdk::Lib::Ini &, trdk::Context::Log &);
 
 	public:
 

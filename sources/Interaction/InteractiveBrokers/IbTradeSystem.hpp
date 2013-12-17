@@ -69,12 +69,12 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
-		explicit TradeSystem(const Lib::IniFileSectionRef &, Context::Log &);
+		explicit TradeSystem(const Lib::IniSectionRef &, Context::Log &);
 		virtual ~TradeSystem();
 
 	public:
 
-		virtual void Connect(const trdk::Lib::IniFileSectionRef &);
+		virtual void Connect(const trdk::Lib::IniSectionRef &);
 
 	public:
 

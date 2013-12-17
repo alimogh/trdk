@@ -20,7 +20,7 @@ namespace trdk { namespace Engine {
 	public:
 
 		explicit Context(
-					const boost::filesystem::path &iniFilePath,
+					boost::shared_ptr<const trdk::Lib::Ini> conf,
 					bool isReplayMode);
 		virtual ~Context();
 

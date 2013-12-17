@@ -20,7 +20,7 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::Csv;
 
 Csv::MarketDataSource::MarketDataSource(
-			const IniFileSectionRef &configuration,
+			const IniSectionRef &configuration,
 			Context::Log &log)
 		: m_log(log),
 		m_pimaryExchange(configuration.ReadKey("exchange")),
@@ -49,7 +49,7 @@ Csv::MarketDataSource::~MarketDataSource() {
 	}
 }
 
-void Csv::MarketDataSource::Connect(const IniFileSectionRef &) {
+void Csv::MarketDataSource::Connect(const IniSectionRef &) {
 	Verify(Interlocking::Exchange(m_isStopped, false));
 	m_thread.reset(
 		new boost::thread([this]() {

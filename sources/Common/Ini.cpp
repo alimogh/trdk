@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "IniFile.hpp"
+#include "Ini.hpp"
 #include "Util.hpp"
 #include "Foreach.hpp"
 
@@ -388,6 +388,10 @@ IniFile::IniFile(const fs::path &path)
 	}
 }
 
+IniFile::~IniFile() {
+	//...//
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 IniSectionRef::IniSectionRef(
@@ -458,7 +462,7 @@ std::set<Symbol> IniSectionRef::ReadSymbols(
 
 std::ostream & std::operator <<(
 			std::ostream &os,
-			const IniFileSectionRef &section) {
+			const IniSectionRef &section) {
 	os << section.GetName();
 	return os;
 }

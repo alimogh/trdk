@@ -19,7 +19,7 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::Fake;
 
 Fake::MarketDataSource::MarketDataSource(
-			const IniFileSectionRef &) {
+			const IniSectionRef &) {
 	//...//
 }
 
@@ -27,7 +27,7 @@ Fake::MarketDataSource::~MarketDataSource() {
 	//...//
 }
 
-void Fake::MarketDataSource::Connect(const IniFileSectionRef &) {
+void Fake::MarketDataSource::Connect(const IniSectionRef &) {
 	m_threads.create_thread([this](){NotificationThread();});
 }
 

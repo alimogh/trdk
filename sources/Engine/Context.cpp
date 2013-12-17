@@ -52,7 +52,7 @@ public:
 
 	Engine::Context &m_context;
 
-	const IniFile m_conf;
+	boost::shared_ptr<const Lib::Ini> m_conf;
 	Settings m_settings;
 
 	ModuleList m_modulesDlls;
@@ -66,17 +66,17 @@ public:
 
 	explicit Implementation(
 				Engine::Context &context,
-				const fs::path &configurationFilePath,
+				boost::shared_ptr<const Lib::Ini> conf,
 				bool isReplayMode)
 			: m_context(context),
-			m_conf(configurationFilePath),
+			m_conf(conf),
 			m_settings(
-				m_conf,
+				*m_conf,
 				boost::get_system_time(),
 				isReplayMode,
 				m_context.GetLog()) {
 		BootstrapContext(
-			m_conf,
+			*m_conf,
 			m_settings,
 			m_context,
 			m_tradeSystem,
@@ -112,9 +112,9 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Engine::Context::Context(
-			const fs::path &configurationFilePath,
+			boost::shared_ptr<const Lib::Ini> conf,
 			bool isReplayMode) {
-	m_pimpl = new Implementation(*this, configurationFilePath, isReplayMode);
+	m_pimpl = new Implementation(*this, conf, isReplayMode);
 }
 
 Engine::Context::~Context() {
@@ -139,7 +139,7 @@ void Engine::Context::Start() {
 	ModuleList moduleDlls;
 	try {
 		BootstrapContextState(
-			m_pimpl->m_conf,
+			*m_pimpl->m_conf,
 			*this,
 			state->subscriptionsManager,
 			state->strategies,
@@ -168,8 +168,8 @@ void Engine::Context::Start() {
 
 	try {
 		GetTradeSystem().Connect(
-			IniFileSectionRef(
-				m_pimpl->m_conf,
+			IniSectionRef(
+				*m_pimpl->m_conf,
 				Ini::Sections::tradeSystem));
 	} catch (const Interactor::ConnectError &ex) {
 		boost::format message("Failed to connect to trading system: \"%1%\"");
@@ -182,8 +182,8 @@ void Engine::Context::Start() {
 	
 	try {
 		GetMarketDataSource().Connect(
-			IniFileSectionRef(
-				m_pimpl->m_conf,
+			IniSectionRef(
+				*m_pimpl->m_conf,
 				Ini::Sections::marketDataSource));
 	} catch (const Interactor::ConnectError &ex) {
 		boost::format message(

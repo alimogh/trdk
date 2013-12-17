@@ -210,7 +210,7 @@ public:
 
 	explicit Implementation(
 				BarService &service,
-				const IniFileSectionRef &configuration)
+				const IniSectionRef &configuration)
 			: m_service(service),
 			m_size(0),
 			m_currentBar(nullptr),
@@ -304,7 +304,7 @@ public:
 
 	}
 
-	void ReopenLog(const IniFileSectionRef &configuration) {
+	void ReopenLog(const IniSectionRef &configuration) {
 
 		const std::string logType = configuration.ReadKey("log", "none");
 		if (boost::iequals(logType, "none")) {
@@ -665,7 +665,7 @@ public:
 BarService::BarService(
 			Context &context,
 			const std::string &tag,
-			const IniFileSectionRef &configuration)
+			const IniSectionRef &configuration)
 		: Service(context, "BarsService", tag) {
 	m_pimpl = new Implementation(*this, configuration);
 }
@@ -703,7 +703,7 @@ const pt::time_duration & BarService::GetBarSize() const {
 }
 
 void BarService::UpdateAlogImplSettings(
-			const IniFileSectionRef &configuration) {
+			const IniSectionRef &configuration) {
 	m_pimpl->ReopenLog(configuration);
 }
 
@@ -803,7 +803,7 @@ boost::shared_ptr<BarService::QtyStat> BarService::GetTradingVolumeStat(
 	boost::shared_ptr<trdk::Service> CreateBarsService(
 				Context &context,
 				const std::string &tag,
-				const IniFileSectionRef &configuration) {
+				const IniSectionRef &configuration) {
 		return boost::shared_ptr<trdk::Service>(
 			new BarService(context, tag, configuration));
 	}
@@ -811,7 +811,7 @@ boost::shared_ptr<BarService::QtyStat> BarService::GetTradingVolumeStat(
 	extern "C" boost::shared_ptr<trdk::Service> CreateBarsService(
 				Context &context,
 				const std::string &tag,
-				const IniFileSectionRef &configuration) {
+				const IniSectionRef &configuration) {
 		return boost::shared_ptr<trdk::Service>(
 			new BarService(context, tag, configuration));
 	}

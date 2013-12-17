@@ -244,6 +244,7 @@ namespace trdk { namespace Lib {
 	public:
 
 		explicit IniFile(const boost::filesystem::path &);
+		virtual ~IniFile();
 
 	public:
 
@@ -373,27 +374,6 @@ namespace trdk { namespace Lib {
 
 	};
 
-	class IniFileSectionRef : public trdk::Lib::IniSectionRef {
-
-	public:
-
-		typedef trdk::Lib::IniSectionRef Base;
-
-	public:
-
-		explicit IniFileSectionRef(
-					const trdk::Lib::IniFile &iniRef,
-					const std::string &sectionName)
-				: Base(iniRef, sectionName) {
-			//...//
-		}
-
-		const trdk::Lib::IniFile & GetBase() const {
-			return static_cast<const trdk::Lib::IniFile &>(Base::GetBase());
-		}
-
-	};
-
 	//////////////////////////////////////////////////////////////////////////
 
 } }
@@ -404,7 +384,7 @@ namespace std {
 	
 	std::ostream & operator <<(
 				std::ostream &,
-				const trdk::Lib::IniFileSectionRef &);
+				const trdk::Lib::IniSectionRef &);
 
 }
 

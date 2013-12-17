@@ -91,7 +91,7 @@ namespace trdk { namespace Services {
 	protected:
 
 		virtual void UpdateAlogImplSettings(
-					const trdk::Lib::IniFileSectionRef &);
+					const trdk::Lib::IniSectionRef &);
 
 	private:
 

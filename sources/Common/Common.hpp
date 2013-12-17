@@ -33,7 +33,7 @@
 #include "Common/Defaults.hpp"
 #include "Common/UseUnused.hpp"
 #include "Common/Foreach.hpp"
-#include "Common/IniFile.hpp"
+#include "Common/Ini.hpp"
 #include "Common/Symbol.hpp"
 #include "Common/FileSystemChangeNotificator.hpp"
 #include "Common/SysError.hpp"

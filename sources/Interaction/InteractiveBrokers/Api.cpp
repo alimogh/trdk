@@ -23,7 +23,7 @@ namespace ib = trdk::Interaction::InteractiveBrokers;
 
 TRDK_INTERACTION_INTERACTIVEBROKERS_API
 TradeSystemFactoryResult CreateTradeSystem(
-			const IniFileSectionRef &configuration,
+			const IniSectionRef &configuration,
 			Context::Log &log) {
 	TradeSystemFactoryResult result;
 	boost::shared_ptr<ib::TradeSystem> tradeSystem(
@@ -35,7 +35,7 @@ TradeSystemFactoryResult CreateTradeSystem(
 
 TRDK_INTERACTION_INTERACTIVEBROKERS_API
 boost::shared_ptr<MarketDataSource> CreateMarketDataSource(
-			const IniFileSectionRef &configuration,
+			const IniSectionRef &configuration,
 			Context::Log &log) {
 	return boost::shared_ptr<MarketDataSource>(
 		new ib::TradeSystem(configuration, log));

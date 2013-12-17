@@ -17,7 +17,7 @@ using namespace trdk;
 using namespace trdk::Lib;
 
 Settings::Settings(
-			const IniFile &conf,
+			const Ini &conf,
 			const Time &now,
 			bool isReplayMode,
 			Context::Log &log)
@@ -27,21 +27,19 @@ Settings::Settings(
 	UpdateStatic(conf, log);
 }
 
-void Settings::Update(const IniFile &conf, Context::Log &log) {
+void Settings::Update(const Ini &conf, Context::Log &log) {
 	UpdateDynamic(conf, log);
 }
 
-void Settings::UpdateDynamic(const IniFile &, Context::Log &) {
+void Settings::UpdateDynamic(const Ini &, Context::Log &) {
 	//...//
 }
 
-void Settings::UpdateStatic(const IniFile &conf, Context::Log &log) {
+void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 
 	Values values = {};
 
-	log.Info("Using configuration %1%...", conf.GetPath());
-
-	const IniFileSectionRef commonConf(conf, "Common");
+	const IniSectionRef commonConf(conf, "Common");
 
 	const char *const tradeSessionPeriodEdtKey = "trade_session_period_edt";
 	const char *const waitMarketDataKey = "wait_market_data";
@@ -127,7 +125,7 @@ void Settings::UpdateStatic(const IniFile &conf, Context::Log &log) {
 	{
 		const char *const exchangeKey = "exchange";
 		const char *const primaryExchangeKey = "primary_exchange";
-		const IniFileSectionRef defaultsConf(conf, "Defaults");
+		const IniSectionRef defaultsConf(conf, "Defaults");
 		values.defaultExchange = defaultsConf.ReadKey(exchangeKey);
 		values.defaultPrimaryExchange
 			= defaultsConf.ReadKey(primaryExchangeKey);

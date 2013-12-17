@@ -90,7 +90,7 @@ namespace trdk { namespace Services {
 		explicit BarService(
 					Context &context,
 					const std::string &tag,
-					const Lib::IniFileSectionRef &);
+					const Lib::IniSectionRef &);
 		virtual ~BarService();
 
 	public:
@@ -169,7 +169,7 @@ namespace trdk { namespace Services {
 	protected:
 
 		virtual void UpdateAlogImplSettings(
-					const trdk::Lib::IniFileSectionRef &);
+					const trdk::Lib::IniSectionRef &);
 
 	private:
 

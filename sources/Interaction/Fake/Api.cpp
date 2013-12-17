@@ -20,7 +20,7 @@
 
 TRDK_INTERACTION_FAKE_API
 trdk::TradeSystemFactoryResult CreateTradeSystem(
-			const trdk::Lib::IniFileSectionRef &configuration,
+			const trdk::Lib::IniSectionRef &configuration,
 			trdk::Context::Log &log) {
 	trdk::TradeSystemFactoryResult result;
 	boost::get<0>(result).reset(
@@ -30,7 +30,7 @@ trdk::TradeSystemFactoryResult CreateTradeSystem(
 
 TRDK_INTERACTION_FAKE_API
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
-			const trdk::Lib::IniFileSectionRef &configuration) {
+			const trdk::Lib::IniSectionRef &configuration) {
 	return boost::shared_ptr<trdk::MarketDataSource>(
 		new trdk::Interaction::Fake::MarketDataSource(configuration));
 }

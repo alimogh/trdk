@@ -12,7 +12,7 @@
 #include "CsvMarketDataSource.hpp"
 
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
-			const trdk::Lib::IniFileSectionRef &configuration,
+			const trdk::Lib::IniSectionRef &configuration,
 			trdk::Context::Log &log) {
  	return boost::shared_ptr<trdk::MarketDataSource>(
  		new trdk::Interaction::Csv::MarketDataSource(configuration, log));

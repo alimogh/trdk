@@ -19,12 +19,12 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	public:
 
-		TradeSystem(const Lib::IniFileSectionRef &, Context::Log &);
+		TradeSystem(const Lib::IniSectionRef &, Context::Log &);
 		virtual ~TradeSystem();
 
 	public:
 
-		virtual void Connect(const Lib::IniFileSectionRef &);
+		virtual void Connect(const Lib::IniSectionRef &);
 
 	public:
 

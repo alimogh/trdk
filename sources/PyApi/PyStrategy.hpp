@@ -20,7 +20,7 @@ namespace trdk { namespace PyApi {
 		template<typename Module>
 		friend void trdk::PyApi::Detail::UpdateAlgoSettings(
 				Module &,
-				const trdk::Lib::IniFileSectionRef &);
+				const trdk::Lib::IniSectionRef &);
 
 	public:
 
@@ -34,7 +34,7 @@ namespace trdk { namespace PyApi {
 		static boost::shared_ptr<trdk::Strategy> CreateClientInstance(
 					Context &,
 					const std::string &tag,
-					const Lib::IniFileSectionRef &);
+					const Lib::IniSectionRef &);
 
 	public:
 
@@ -78,11 +78,11 @@ namespace trdk { namespace PyApi {
 				const;
 
 		virtual void UpdateAlogImplSettings(
-					const trdk::Lib::IniFileSectionRef &);
+					const trdk::Lib::IniSectionRef &);
 
 	private:
 
-		void DoSettingsUpdate(const trdk::Lib::IniFileSectionRef &);
+		void DoSettingsUpdate(const trdk::Lib::IniSectionRef &);
 		void UpdateCallbacks();
 
 		bool CallVirtualMethod(

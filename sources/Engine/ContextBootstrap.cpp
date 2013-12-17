@@ -35,7 +35,7 @@ class ContextBootstraper : private boost::noncopyable {
 public:
 
 	explicit ContextBootstraper(
-				const IniFile &conf,
+				const Lib::Ini &conf,
 				const Settings &settings,
 				Engine::Context &context,
 				DllObjectPtr<TradeSystem> &tradeSystemRef,
@@ -80,7 +80,7 @@ private:
 		Assert(!m_tradeSystem);
 		Assert(!m_marketDataSource);
 		
-		const IniFileSectionRef configurationSection(
+		const IniSectionRef configurationSection(
 			m_conf,
 			Sections::tradeSystem);
 		const std::string module
@@ -148,7 +148,7 @@ private:
 		
 		Assert(!m_marketDataSource);
 
-		const IniFileSectionRef configurationSection(
+		const IniSectionRef configurationSection(
 			m_conf,
 			Sections::marketDataSource);
 		const std::string module
@@ -204,7 +204,7 @@ private:
 
 	Engine::Context &m_context;
 
-	const IniFile &m_conf;
+	const Lib::Ini &m_conf;
 	const Settings &m_settings;
 
 	DllObjectPtr<TradeSystem> &m_tradeSystem;
@@ -257,7 +257,7 @@ namespace {
 		typedef boost::shared_ptr<Strategy> (Factory)(
 				trdk::Context &,
 				const std::string &tag,
-				const IniFileSectionRef &);
+				const IniSectionRef &);
 		static ModuleType GetType() {
 			return static_cast<ModuleType>(Type);
 		}
@@ -279,7 +279,7 @@ namespace {
 		typedef boost::shared_ptr<Service> (Factory)(
 			trdk::Context &,
 			const std::string &tag,
-			const IniFileSectionRef &);
+			const IniSectionRef &);
 		static ModuleType GetType() {
 			return static_cast<ModuleType>(Type);
 		}
@@ -301,7 +301,7 @@ namespace {
 		typedef boost::shared_ptr<Observer> (Factory)(
 			trdk::Context &,
 			const std::string &tag,
-			const IniFileSectionRef &);
+			const IniSectionRef &);
 		static ModuleType GetType() {
 			return static_cast<ModuleType>(Type);
 		}
@@ -387,7 +387,7 @@ namespace {
 
 	template<typename Module>
 	struct ModuleDll {
-		boost::shared_ptr<IniFileSectionRef> conf;
+		boost::shared_ptr<IniSectionRef> conf;
 		boost::shared_ptr<Lib::Dll> dll;
 		typename ModuleTrait<Module>::Factory *factory;
 		//! Instances which have symbol sets.
@@ -440,7 +440,7 @@ class ContextStateBootstraper : private boost::noncopyable {
 public:
 	
 	ContextStateBootstraper(
-				const IniFile &confRef,
+				const Lib::Ini &confRef,
 				Engine::Context &context,
 				SubscriptionsManager &subscriptionsManagerRef,
 				Strategies &strategiesRef,
@@ -471,13 +471,13 @@ public:
 		foreach (const auto &sectionName, sections) {
 			std::string type;
 			std::string tag;
-			std::unique_ptr<const IniFileSectionRef> section(
+			std::unique_ptr<const IniSectionRef> section(
 				GetModuleSection(m_conf, sectionName, type, tag));
 			if (!section) {
 				continue;
 			}
 			void (ContextStateBootstraper::*initModule)(
-					const IniFileSectionRef &,
+					const IniSectionRef &,
 					const std::string &,
 					RequirementsList &)
 				= nullptr;
@@ -566,21 +566,21 @@ private:
 	////////////////////////////////////////////////////////////////////////////////
 
 	void InitStrategy(
-				const IniFileSectionRef &section,
+				const IniSectionRef &section,
 				const std::string &tag,
 				RequirementsList &requirementList) {
 		InitModule(section, tag, m_strategies, requirementList);
 	}
 
 	void InitObserver(
-				const IniFileSectionRef &section,
+				const IniSectionRef &section,
 				const std::string &tag,
 				RequirementsList &requirementList) {
 		InitModule(section, tag, m_observers, requirementList);
 	}
 
 	void InitService(
-				const IniFileSectionRef &section,
+				const IniSectionRef &section,
 				const std::string &tag,
 				RequirementsList &requirementList) {
 		InitModule(section, tag, m_services, requirementList);
@@ -588,7 +588,7 @@ private:
 
 	template<typename Module>
 	void InitModule(
-				const IniFileSectionRef &conf,
+				const IniSectionRef &conf,
 				const std::string &tag,
 				std::map<std::string /* tag */, ModuleDll<Module>> &modules,
 				RequirementsList &requirementList) {
@@ -774,14 +774,14 @@ private:
 	}
 
 	//! Returns nullptr at fail.
-	const IniFileSectionRef * GetModuleSection(
-				const IniFile &ini,
+	const IniSectionRef * GetModuleSection(
+				const Lib::Ini &ini,
 				const std::string &sectionName,
 				std::string &typeResult,
 				std::string &tagResult)
 			const {
 		return GetModuleSection(sectionName, typeResult, tagResult)
-			?	new IniFileSectionRef(ini, sectionName)
+			?	new IniSectionRef(ini, sectionName)
 			:	nullptr;
 	}
 
@@ -1404,7 +1404,7 @@ private:
 	std::set<Symbol> GetSymbolInstances(
 				const ModuleTrait<Module> &,
 				const std::string &tag,
-				const IniFileSectionRef &conf) {
+				const IniSectionRef &conf) {
 
 		typedef ModuleTrait<Module> Trait;
 		static_assert(
@@ -1418,11 +1418,19 @@ private:
 		}
 
 		fs::path symbolsFilePath;
+		if (!dynamic_cast<const IniFile *>(&conf.GetBase())) {
+			m_context.GetLog().Error(
+				"Failed to get symbol instances file:"
+					" \"Failed to get root path\"");
+			throw Lib::Ini::Error("Failed to get symbol instances file");
+		}
 		try {
-			symbolsFilePath = Normalize(
-				conf.ReadKey(Keys::instances),
-				conf.GetBase().GetPath().branch_path());
-		} catch (const IniFile::Error &ex) {
+ 			symbolsFilePath = Normalize(
+ 				conf.ReadKey(Keys::instances),
+ 				dynamic_cast<const IniFile &>(conf.GetBase())
+					.GetPath()
+					.branch_path());
+		} catch (const Lib::Ini::Error &ex) {
 			m_context.GetLog().Error(
 				"Failed to get symbol instances file: \"%1%\".",
 				ex);
@@ -1443,13 +1451,13 @@ private:
 			foreach (const auto &iniSymbol, symbols) {
 				result.insert(Symbol(iniSymbol));
 			}
-		} catch (const IniFile::Error &ex) {
+		} catch (const Lib::Ini::Error &ex) {
 			m_context.GetLog().Error(
 				"Failed to load securities for %2%: \"%1%\".",
 				boost::make_tuple(
 					boost::cref(ex),
 					boost::cref(tag)));
-			throw IniFile::Error("Failed to load securities");
+			throw Lib::Ini::Error("Failed to load securities");
 		}
 	
 		return result;
@@ -1460,7 +1468,7 @@ private:
 	std::set<Symbol> GetSymbolInstances(
 				const ModuleTrait<Observer> &,
 				const std::string &,
-				const IniFileSectionRef &) {
+				const IniSectionRef &) {
 		return std::set<Symbol>();
 	}
 
@@ -1468,14 +1476,14 @@ private:
 
 	template<typename Module>
 	ModuleDll<Module> LoadModuleDll(
-				const IniFileSectionRef &conf,
+				const IniSectionRef &conf,
 				const std::string &tag)
 			const {
 
 		typedef ModuleTrait<Module> Trait;
 
 		ModuleDll<Module> result = {};
-		result.conf.reset(new IniFileSectionRef(conf));
+		result.conf.reset(new IniSectionRef(conf));
 
 		if (tag.empty()) {
 			m_context.GetLog().Error(
@@ -1483,7 +1491,7 @@ private:
 				boost::make_tuple(
 					boost::cref(Trait::GetName(false)),
 					boost::cref(result.conf)));
-			throw IniFile::Error("Failed to load module");
+			throw Lib::Ini::Error("Failed to load module");
 		}
 
 		fs::path modulePath;
@@ -1494,13 +1502,13 @@ private:
 			} else {
 				modulePath = result.conf->ReadFileSystemPath(Keys::module);
 			}
-		} catch (const IniFile::Error &ex) {
+		} catch (const Lib::Ini::Error &ex) {
 			m_context.GetLog().Error(
 				"Failed to get %1% module: \"%2%\".",
 				boost::make_tuple(
 					boost::cref(Trait::GetName(false)),
 					boost::cref(ex)));
-			throw IniFile::Error("Failed to load module");
+			throw Lib::Ini::Error("Failed to load module");
 		}
 
 		result.dll.reset(new Dll(modulePath, true));
@@ -1572,14 +1580,14 @@ private:
 	ObserverModules m_observers;
 	ServiceModules m_services;
 
-	const IniFile &m_conf;
+	const Lib::Ini &m_conf;
 
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void Engine::BootstrapContext(
-			const IniFile &conf,
+			const Lib::Ini &conf,
 			const Settings &settings,
 			Context &context,
 			DllObjectPtr<TradeSystem> &tradeSystemRef,
@@ -1594,7 +1602,7 @@ void Engine::BootstrapContext(
 }
 
 void Engine::BootstrapContextState(
-			const IniFile &conf,
+			const Lib::Ini &conf,
 			Context &context,
 			SubscriptionsManager &subscriptionsManagerRef,
 			Strategies &strategiesRef,

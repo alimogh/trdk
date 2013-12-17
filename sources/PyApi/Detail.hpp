@@ -18,10 +18,10 @@ namespace trdk { namespace PyApi { namespace Detail {
 	ScriptError GetPythonClientException(const char *actionDescr);
 
 	inline std::string GetModuleClassName(
-				const trdk::Lib::IniFileSectionRef &conf) {
+				const trdk::Lib::IniSectionRef &conf) {
 		try {
 			return conf.ReadKey("class");
-		} catch (const trdk::Lib::IniFile::KeyNotExistsError &) {
+		} catch (const trdk::Lib::Ini::KeyNotExistsError &) {
 			const auto dotPos = conf.GetName().find('.');
 			AssertNe(std::string::npos, dotPos);
 			if (std::string::npos == dotPos) {
@@ -34,7 +34,7 @@ namespace trdk { namespace PyApi { namespace Detail {
 	template<typename Module>
 	void UpdateAlgoSettings(
 				Module &algo,
-				const trdk::Lib::IniFileSectionRef &conf) {
+				const trdk::Lib::IniSectionRef &conf) {
 		SettingsReport::Report report;
 		SettingsReport::Append("tag", algo.GetTag(), report);
 		SettingsReport::Append(

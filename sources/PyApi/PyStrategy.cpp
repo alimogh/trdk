@@ -32,13 +32,13 @@ namespace {
 		Context &context;
 		const std::string &name;
 		const std::string &tag;
-		const IniFileSectionRef &configuration;
+		const IniSectionRef &configuration;
 	
 		explicit Params(
 					Context &context,
 					const std::string &name,
 					const std::string &tag,
-					const IniFileSectionRef &configuration)
+					const IniSectionRef &configuration)
 				: context(context),
 				name(name),
 				tag(tag),
@@ -66,7 +66,7 @@ PyApi::Strategy::~Strategy() {
 boost::shared_ptr<trdk::Strategy> PyApi::Strategy::CreateClientInstance(
 			Context &context,
 			const std::string &tag,
-			const IniFileSectionRef &configuration) {
+			const IniSectionRef &configuration) {
 	auto clientClass = Script::Load(configuration).GetClass(
 		configuration,
 		context,
@@ -188,11 +188,11 @@ std::auto_ptr<PositionReporter> PyApi::Strategy::CreatePositionReporter() const 
 	return std::auto_ptr<PositionReporter>(result);
 }
 
-void PyApi::Strategy::UpdateAlogImplSettings(const IniFileSectionRef &ini) {
+void PyApi::Strategy::UpdateAlogImplSettings(const IniSectionRef &ini) {
 	DoSettingsUpdate(ini);
 }
 
-void PyApi::Strategy::DoSettingsUpdate(const IniFileSectionRef &ini) {
+void PyApi::Strategy::DoSettingsUpdate(const IniSectionRef &ini) {
 	UpdateAlgoSettings(*this, ini);
 }
 
@@ -324,7 +324,7 @@ void PyApi::Strategy::OnBrokerPositionUpdate(
 	boost::shared_ptr<trdk::Strategy> CreateStrategy(
 				Context &context,
 				const std::string &tag,
-				const IniFileSectionRef &configuration) {
+				const IniSectionRef &configuration) {
 		return PyApi::Strategy::CreateClientInstance(
 			context,
 			tag,
@@ -334,7 +334,7 @@ void PyApi::Strategy::OnBrokerPositionUpdate(
 	extern "C" boost::shared_ptr<trdk::Strategy> CreateStrategy(
 				Context &context,
 				const std::string &tag,
-				const IniFileSectionRef &configuration) {
+				const IniSectionRef &configuration) {
 		return PyApi::Strategy::CreateClientInstance(
 			context,
 			tag,

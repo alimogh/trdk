@@ -29,13 +29,13 @@ namespace {
 		Context &context;
 		const std::string &name;
 		const std::string &tag;
-		const IniFileSectionRef &configuration;
+		const IniSectionRef &configuration;
 	
 		explicit Params(
 					Context &context,
 					const std::string &name,
 					const std::string &tag,
-					const IniFileSectionRef &configuration)
+					const IniSectionRef &configuration)
 				: context(context),
 				name(name),
 				tag(tag),
@@ -80,7 +80,7 @@ const ServiceExport & PyApi::Service::GetExport() const {
 boost::shared_ptr<trdk::Service> PyApi::Service::CreateClientInstance(
 			Context &context,
 			const std::string &tag,
-			const IniFileSectionRef &configuration) {
+			const IniSectionRef &configuration) {
 	auto clientClass = Script::Load(configuration).GetClass(
 		configuration,
 		context,
@@ -102,11 +102,11 @@ boost::shared_ptr<trdk::Service> PyApi::Service::CreateClientInstance(
 	}
 }
 
-void PyApi::Service::UpdateAlogImplSettings(const IniFileSectionRef &ini) {
+void PyApi::Service::UpdateAlogImplSettings(const IniSectionRef &ini) {
 	DoSettingsUpdate(ini);
 }
 
-void PyApi::Service::DoSettingsUpdate(const IniFileSectionRef &ini) {
+void PyApi::Service::DoSettingsUpdate(const IniSectionRef &ini) {
 	UpdateAlgoSettings(*this, ini);
 }
 
@@ -235,7 +235,7 @@ bool PyApi::Service::OnBrokerPositionUpdate(
 	boost::shared_ptr<trdk::Service> CreateService(
 				Context &context,
 				const std::string &tag,
-				const IniFileSectionRef &configuration) {
+				const IniSectionRef &configuration) {
 		return PyApi::Service::CreateClientInstance(
 			context,
 			tag,
@@ -245,7 +245,7 @@ bool PyApi::Service::OnBrokerPositionUpdate(
 	extern "C" boost::shared_ptr<trdk::Service> CreateService(
 				Context &context,
 				const std::string &tag,
-				const IniFileSectionRef &configuration) {
+				const IniSectionRef &configuration) {
 		return PyApi::Service::CreateClientInstance(
 			context,
 			tag,

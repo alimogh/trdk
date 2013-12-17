@@ -21,7 +21,7 @@ namespace ib = trdk::Interaction::InteractiveBrokers;
 
 
 ib::TradeSystem::TradeSystem(
-			const Lib::IniFileSectionRef &settings,
+			const Lib::IniSectionRef &settings,
 			Context::Log &log)
 		: m_log(log),
 		m_isTestSource(settings.ReadBoolKey("test_source", false)) {
@@ -32,7 +32,7 @@ ib::TradeSystem::~TradeSystem() {
 	//...//
 }
 
-void ib::TradeSystem::Connect(const IniFileSectionRef &settings) {
+void ib::TradeSystem::Connect(const IniSectionRef &settings) {
 
 	if (m_client) {
 		return;

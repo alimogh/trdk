@@ -573,7 +573,7 @@ MovingAverageService::GetHistoryPointByReversedIndex(
 	return (*m_pimpl->m_history)[m_pimpl->m_history->GetSize() - index - 1];
 }
 
-void MovingAverageService::UpdateAlogImplSettings(const IniFileSectionRef &) {
+void MovingAverageService::UpdateAlogImplSettings(const IniSectionRef &) {
 	//...//
 }
 
@@ -583,7 +583,7 @@ void MovingAverageService::UpdateAlogImplSettings(const IniFileSectionRef &) {
 	boost::shared_ptr<trdk::Service> CreateMovingAverageService(
 				Context &context,
 				const std::string &tag,
-				const IniFileSectionRef &configuration) {
+				const IniSectionRef &configuration) {
 		return boost::shared_ptr<trdk::Service>(
 			new MovingAverageService(context, tag, configuration));
 	}
@@ -591,7 +591,7 @@ void MovingAverageService::UpdateAlogImplSettings(const IniFileSectionRef &) {
 	extern "C" boost::shared_ptr<trdk::Service> CreateMovingAverageService(
 				Context &context,
 				const std::string &tag,
-				const IniFileSectionRef &configuration) {
+				const IniSectionRef &configuration) {
 		return boost::shared_ptr<trdk::Service>(
 			new MovingAverageService(context, tag, configuration));
 	}

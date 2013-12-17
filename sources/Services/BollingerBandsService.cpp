@@ -313,7 +313,7 @@ BollingerBandsService::GetHistoryPointByReversedIndex(
 	return (*m_pimpl->m_history)[m_pimpl->m_history->GetSize() - index - 1];
 }
 
-void BollingerBandsService::UpdateAlogImplSettings(const IniFileSectionRef &) {
+void BollingerBandsService::UpdateAlogImplSettings(const IniSectionRef &) {
 	//...//
 }
 
@@ -323,7 +323,7 @@ void BollingerBandsService::UpdateAlogImplSettings(const IniFileSectionRef &) {
 	boost::shared_ptr<trdk::Service> CreateBollingerBandsService(
 				Context &context,
 				const std::string &tag,
-				const IniFileSectionRef &configuration) {
+				const IniSectionRef &configuration) {
 		return boost::shared_ptr<trdk::Service>(
 			new BollingerBandsService(context, tag, configuration));
 	}
@@ -331,7 +331,7 @@ void BollingerBandsService::UpdateAlogImplSettings(const IniFileSectionRef &) {
 	extern "C" boost::shared_ptr<trdk::Service> CreateBollingerBandsService(
 				Context &context,
 				const std::string &tag,
-				const IniFileSectionRef &configuration) {
+				const IniSectionRef &configuration) {
 		return boost::shared_ptr<trdk::Service>(
 			new BollingerBandsService(context, tag, configuration));
 	}

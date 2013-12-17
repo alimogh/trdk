@@ -237,7 +237,7 @@ std::string Module::GetRequiredSuppliers() const {
 	return std::string();
 }
 
-void Module::UpdateSettings(const IniFileSectionRef &ini) {
+void Module::UpdateSettings(const IniSectionRef &ini) {
 	const Lock lock(GetMutex());
 	UpdateAlogImplSettings(ini);
 }

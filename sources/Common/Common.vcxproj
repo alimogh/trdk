@@ -73,6 +73,7 @@
   <ItemGroup>
     <ClCompile Include="Assert.cpp" />
     <ClCompile Include="Defaults.cpp" />
+    <ClCompile Include="Ini.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -82,7 +83,6 @@
     <ClCompile Include="SysError.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="FileSystemChangeNotificator.cpp" />
-    <ClCompile Include="IniFile.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -93,6 +93,7 @@
     <ClInclude Include="DisableBoostWarningsEnd.h" />
     <ClInclude Include="DisableBoostWarningsBegin.h" />
     <ClInclude Include="Dll.hpp" />
+    <ClInclude Include="Ini.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="SegmentedVector.hpp" />
     <ClInclude Include="Symbol.hpp" />
@@ -100,7 +101,6 @@
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="FileSystemChangeNotificator.hpp" />
     <ClInclude Include="Foreach.hpp" />
-    <ClInclude Include="IniFile.hpp" />
     <ClInclude Include="Interlocking.hpp" />
     <ClInclude Include="LockingPolicy.hpp" />
     <ClInclude Include="UseUnused.hpp" />

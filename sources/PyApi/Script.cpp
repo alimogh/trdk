@@ -40,7 +40,7 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
-Script & Script::Load(const IniFileSectionRef &ini) {
+Script & Script::Load(const IniSectionRef &ini) {
 	return Load(ini.ReadFileSystemPath("script_file_path"));
 }
 
@@ -117,7 +117,7 @@ void Script::Exec(const std::string &code) {
 }
 
 py::object Script::GetClass(
-			const IniFileSectionRef &conf,
+			const IniSectionRef &conf,
 			Context &context,
 			const char *errorWhat /*= nullptr*/) {
 	try {

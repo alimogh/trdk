@@ -70,13 +70,13 @@ namespace trdk { namespace Interaction { namespace Csv {
 	public:
 
 		explicit MarketDataSource(
-				const trdk::Lib::IniFileSectionRef &,
+				const trdk::Lib::IniSectionRef &,
 				trdk::Context::Log &);
 		virtual ~MarketDataSource();
 
 	public:
 
-		virtual void Connect(const trdk::Lib::IniFileSectionRef &);
+		virtual void Connect(const trdk::Lib::IniSectionRef &);
 
 	private:
 

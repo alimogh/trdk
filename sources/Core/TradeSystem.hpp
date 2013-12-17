@@ -28,7 +28,7 @@ namespace trdk {
 		TradeSystemFactoryResult;
 
 	typedef trdk::TradeSystemFactoryResult (TradeSystemFactory)(
-			const trdk::Lib::IniFileSectionRef &,
+			const trdk::Lib::IniSectionRef &,
 			trdk::Context::Log &);	//! @todo	remove context from TradeSystem
 									//!			as it can be one for all
 									//!			contexts.
@@ -122,7 +122,7 @@ namespace trdk {
 
 	public:
 
-		virtual void Connect(const trdk::Lib::IniFileSectionRef &) = 0;
+		virtual void Connect(const trdk::Lib::IniSectionRef &) = 0;
 
 	public:
 

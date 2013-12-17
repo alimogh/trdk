@@ -35,10 +35,11 @@ void Server::Run(
 			throw Exception(message.str().c_str());
 		}
 	}
+	boost::shared_ptr<IniFile> ini(new IniFile(path));
 	EngineInfo info = {
 		uuid,
 		boost::shared_ptr<Engine::Context>(
-			new Engine::Context(path, isReplayMode))
+			new Engine::Context(ini, isReplayMode))
 	};
 	info.engine->Start();
 	m_engines.insert(info);
