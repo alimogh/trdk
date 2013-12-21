@@ -1,3 +1,8 @@
 
 EXPORTS
-
+	trdk_InitLog
+	trdk_CreateBridge
+	trdk_OpenLongPosition
+	trdk_OpenShortPosition
+	trdk_CloseAllPositions
+	CreateMqlBridgeStrategy

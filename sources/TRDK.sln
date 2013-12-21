@@ -27,7 +27,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Version", "Version\Version.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests\Tests.vcxproj", "{AF773219-8D87-4958-A567-4BCB72272E51}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mql API", "MqlApi\MqlApi.vcxproj", "{2D63F319-8EDA-4660-9960-6552D8433B15}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MQL API", "MqlApi\MqlApi.vcxproj", "{2D63F319-8EDA-4660-9960-6552D8433B15}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
