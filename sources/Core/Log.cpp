@@ -184,13 +184,14 @@ namespace {
 				const pt::ptime &time,
 				const Str &str) {
 		Lock lock(events.mutex);
-		events.AppendRecordHead(level, time, std::cout);
-		DumpMultiLineString(str, std::cout);
-		if (!events.log) {
-			return;
+		if (events.isStdOutEnabled) {
+			events.AppendRecordHead(level, time, std::cout);
+			DumpMultiLineString(str, std::cout);
 		}
- 		events.AppendRecordHead(level, time);
-		DumpMultiLineString(str, *events.log);
+		if (events.log) {
+ 			events.AppendRecordHead(level, time);
+			DumpMultiLineString(str, *events.log);
+		}
 	}
 
 }
