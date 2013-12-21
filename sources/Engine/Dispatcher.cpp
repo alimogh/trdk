@@ -29,13 +29,19 @@ Dispatcher::Dispatcher(Engine::Context &context)
 			m_positionsUpdates("Positions", m_context),
 			m_brokerPositionsUpdates("Broker Positions", m_context),
 			m_newBars("Bars", m_context) {
+	size_t threadsCount = 1;
+	boost::barrier startBarrier(threadsCount + 1);
 	StartNotificationTask(
+		startBarrier,
 		m_level1Updates,
 		m_level1Ticks,
 		m_newTrades,
 		m_positionsUpdates,
 		m_newBars,
-		m_brokerPositionsUpdates);
+		m_brokerPositionsUpdates,
+		threadsCount);
+	AssertEq(0, threadsCount);
+	startBarrier.wait();
 }
 
 Dispatcher::~Dispatcher() {

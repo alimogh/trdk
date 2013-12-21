@@ -432,13 +432,18 @@ namespace trdk { namespace Engine {
 		////////////////////////////////////////////////////////////////////////////////
 
 		template<typename EventList>
-		void StartNotificationTask(EventList &list) {
+		void StartNotificationTask(
+					boost::barrier &startBarrier,
+					EventList &list,
+					size_t &threadsCounter) {
 			const auto lists = boost::make_tuple(boost::ref(list));
 			m_threads.create_thread(
 				boost::bind(
 					&Dispatcher::NotificationTask<decltype(lists)>,
 					this,
+					boost::ref(startBarrier),
 					lists));
+			Assert(1 == threadsCounter--);
 		}
 
 		template<typename T1>
@@ -467,8 +472,10 @@ namespace trdk { namespace Engine {
 
 		template<typename ListWithHighPriority, typename ListWithLowPriority>
 		void StartNotificationTask(
+					boost::barrier &startBarrier,
 					ListWithHighPriority &listWithHighPriority,
-					ListWithLowPriority &listWithLowPriority) {
+					ListWithLowPriority &listWithLowPriority,
+					size_t &threadsCounter) {
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority));
@@ -476,7 +483,9 @@ namespace trdk { namespace Engine {
 				boost::bind(
 					&Dispatcher::NotificationTask<decltype(lists)>,
 					this,
+					boost::ref(startBarrier),
 					lists));
+			Assert(1 == threadsCounter--);
 		}
 
 		template<typename T1, typename T2>
@@ -513,9 +522,11 @@ namespace trdk { namespace Engine {
 			typename ListWithLowPriority,
 			typename ListWithExtraLowPriority>
 		void StartNotificationTask(
+					boost::barrier &startBarrier,
 					ListWithHighPriority &listWithHighPriority,
 					ListWithLowPriority &listWithLowPriority,
-					ListWithExtraLowPriority &listWithExtraLowPriority) {
+					ListWithExtraLowPriority &listWithExtraLowPriority,
+					size_t &threadsCounter) {
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority),
@@ -524,7 +535,9 @@ namespace trdk { namespace Engine {
 				boost::bind(
 					&Dispatcher::NotificationTask<decltype(lists)>,
 					this,
+					boost::ref(startBarrier),
 					lists));
+			Assert(1 == threadsCounter--);
 		}
 
 		template<typename T1, typename T2, typename T3>
@@ -568,10 +581,12 @@ namespace trdk { namespace Engine {
 			typename ListWithExtraLowPriority,
 			typename ListWithExtraLowPriority2>
 		void StartNotificationTask(
+					boost::barrier &startBarrier,
 					ListWithHighPriority &listWithHighPriority,
 					ListWithLowPriority &listWithLowPriority,
 					ListWithExtraLowPriority &listWithExtraLowPriority,
-					ListWithExtraLowPriority2 &listWithExtraLowPriority2) {
+					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
+					size_t &threadsCounter) {
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority),
@@ -581,7 +596,9 @@ namespace trdk { namespace Engine {
 				boost::bind(
 					&Dispatcher::NotificationTask<decltype(lists)>,
 					this,
+					boost::ref(startBarrier),
 					lists));
+			Assert(1 == threadsCounter--);
 		}
 
 		template<typename T1, typename T2, typename T3, typename T4>
@@ -630,11 +647,13 @@ namespace trdk { namespace Engine {
 			typename ListWithExtraLowPriority2,
 			typename ListWithExtraLowPriority3>
 		void StartNotificationTask(
+					boost::barrier &startBarrier,
 					ListWithHighPriority &listWithHighPriority,
 					ListWithLowPriority &listWithLowPriority,
 					ListWithExtraLowPriority &listWithExtraLowPriority,
 					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
-					ListWithExtraLowPriority3 &listWithExtraLowPriority3) {
+					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
+					size_t &threadsCounter) {
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority),
@@ -645,7 +664,9 @@ namespace trdk { namespace Engine {
 				boost::bind(
 					&Dispatcher::NotificationTask<decltype(lists)>,
 					this,
+					boost::ref(startBarrier),
 					lists));
+			Assert(1 == threadsCounter--);
 		}
 
 		template<
@@ -716,12 +737,14 @@ namespace trdk { namespace Engine {
 			typename ListWithExtraLowPriority3,
 			typename ListWithExtraLowPriority4>
 		void StartNotificationTask(
+					boost::barrier &startBarrier,
 					ListWithHighPriority &listWithHighPriority,
 					ListWithLowPriority &listWithLowPriority,
 					ListWithExtraLowPriority &listWithExtraLowPriority,
 					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
 					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
-					ListWithExtraLowPriority4 &listWithExtraLowPriority4) {
+					ListWithExtraLowPriority4 &listWithExtraLowPriority4,
+					size_t &threadsCounter) {
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority),
@@ -733,7 +756,9 @@ namespace trdk { namespace Engine {
 				boost::bind(
 					&Dispatcher::NotificationTask<decltype(lists)>,
 					this,
+					boost::ref(startBarrier),
 					lists));
+			Assert(1 == threadsCounter--);
 		}
 
 		template<
@@ -811,17 +836,21 @@ namespace trdk { namespace Engine {
 		////////////////////////////////////////////////////////////////////////////////
 
 		template<typename EventLists>
-		void NotificationTask(EventLists &lists) const {
-			m_context.GetLog().Debug(
-				"Dispatcher notification task \"%1%\" started...",
-				GetEventListsName(lists));
+		void NotificationTask(
+					boost::barrier &startBarrier,
+					EventLists &lists)
+				const {
 			bool isError = false;
 			try {
+				m_context.GetLog().Debug(
+					"Dispatcher notification task \"%1%\" started...",
+					GetEventListsName(lists));
 				std::bitset<boost::tuples::length<EventLists>::value>
 					deactivationMask;
 				boost::shared_ptr<EventListsSyncObjects> sync(
 					new EventListsSyncObjects);
 				AssignEventListsSyncObjects(sync, lists);
+				startBarrier.wait();
 				EventQueueLock lock(sync->mutex);
 				for ( ; ; ) {
 					EnqueueEventListsCollection(lists, deactivationMask, lock);
