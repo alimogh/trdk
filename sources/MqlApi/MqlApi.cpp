@@ -41,6 +41,20 @@ int trdk_CreateBridge() {
 	}
 	return 0;
 }
+
+void trdk_DeleteBridge() {
+	try {
+		if (!theBridge.IsActive()) {
+			Log::Warn("MQL Bridge Server doen't exist.");
+			return;
+		}
+		theBridge.Stop();
+	} catch (const Exception &ex) {
+		Log::Error("Failed to stop MQL Bridge Server: \"%1%\".", ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+}
 	
 int trdk_OpenLongPosition(Qty qty, double price) {
 	try {
