@@ -29,11 +29,19 @@ namespace {
 	const pt::time_duration maxIterationTime = pt::milliseconds(10);
 
 	Contract & operator <<(Contract &contract, const trdk::Security &security) {
-		contract.symbol = security.GetSymbol().GetSymbol();
-		contract.secType = "STK";
-		contract.primaryExchange = security.GetSymbol().GetPrimaryExchange();
+		const bool isForex
+			= security.GetSymbol().GetPrimaryExchange() == "FOREX";
+		if (!isForex) {
+			contract.secType = "STK";
+			contract.symbol = security.GetSymbol().GetSymbol();
+			contract.primaryExchange = security.GetSymbol().GetPrimaryExchange();
+			contract.currency = security.GetCurrency();
+		} else {
+			contract.secType = "CASH";
+			contract.symbol = "EUR";
+			contract.currency = "USD";
+		}
 		contract.exchange = security.GetSymbol().GetExchange();
-		contract.currency = security.GetCurrency();
 		return contract;
 	}
 
