@@ -1427,8 +1427,8 @@ private:
 		try {
  			symbolsFilePath = Normalize(
  				conf.ReadKey(Keys::instances),
- 				dynamic_cast<const IniFile &>(conf.GetBase())
-					.GetPath()
+ 				boost::polymorphic_downcast<const IniFile *>(&conf.GetBase())
+					->GetPath()
 					.branch_path());
 		} catch (const Lib::Ini::Error &ex) {
 			m_context.GetLog().Error(
