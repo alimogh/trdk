@@ -26,6 +26,7 @@
       <AdditionalOptions>/Zm256 %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4503;4275;4251</DisableSpecificWarnings>
       <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

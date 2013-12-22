@@ -7,3 +7,4 @@ EXPORTS
 	trdk_OpenShortPosition
 	trdk_CloseAllPositions
 	CreateMqlBridgeStrategy
+	CreateTradeSystem

@@ -56,6 +56,10 @@ void BridgeServer::InitLog(const fs::path &logFilePath) {
 	if (m_pimpl->m_eventLog) {
 		Log::EnableEvents(m_pimpl->m_eventLog);
 	}
+	//! @todo fix second load and starte reset
+#	ifdef DEV_VER
+		Log::EnableEventsToStdOut();
+#	endif
 }
 
 bool BridgeServer::IsActive() const {
@@ -72,11 +76,11 @@ void BridgeServer::Run() {
 			"primary_exchange = FOREX\n"
 			"exchange = IDEALPRO\n"
 		"[TradeSystem]\n"
-			"module = InteractiveBrokers\n"
+			"module = a:/Projects/TRDK.Egsdavinci/output/x86/bin/MqlApi\n"
 			"account = \n"
 			"test_source = true\n"
 		"[Strategy.MqlBridge]\n"
-			"module = a:/Projects/TRDK/output/x86/bin/MqlApi\n"
+			"module = a:/Projects/TRDK.Egsdavinci/output/x86/bin/MqlApi\n"
 			"standalone = true\n");
 	boost::shared_ptr<const Ini> ini(new IniString(settingsString));
 	std::unique_ptr<BridgeContext> engine(new BridgeContext(ini));

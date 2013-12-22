@@ -12,9 +12,9 @@
 
 #if defined(_MSC_VER)
 #	ifdef TRDK_ENGINE
-#		define TRDK_ENGINE_API __declspec(dllexport)
+#		define TRDK_ENGINE_API
 #	else
-#		define TRDK_ENGINE_API __declspec(dllimport)
+#		define TRDK_ENGINE_API
 #	endif
 #else
 #	define TRDK_ENGINE_API

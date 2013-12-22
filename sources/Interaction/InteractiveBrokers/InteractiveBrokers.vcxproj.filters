@@ -117,9 +117,6 @@
     <None Include="Api\version">
       <Filter>API</Filter>
     </None>
-    <None Include="InteractiveBrokers.def">
-      <Filter>Header Files</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="InteractiveBrokers.rc">

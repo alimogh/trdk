@@ -72,6 +72,9 @@
     <ProjectReference Include="..\Engine\Engine.vcxproj">
       <Project>{015fb121-6122-4a00-bfbb-545e9e73abee}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Interaction\InteractiveBrokers\InteractiveBrokers.vcxproj">
+      <Project>{befe87ae-1376-4c4c-87d5-73e782990306}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Version\Version.vcxproj">
       <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
     </ProjectReference>

@@ -18,6 +18,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>nafxcw.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;NTEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
