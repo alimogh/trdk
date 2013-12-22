@@ -76,11 +76,11 @@ void BridgeServer::Run() {
 			"primary_exchange = FOREX\n"
 			"exchange = IDEALPRO\n"
 		"[TradeSystem]\n"
-			"module = a:/Projects/TRDK.Egsdavinci/output/x86/bin/MqlApi\n"
+			"module = TrdkMqlBridge\n"
 			"account = \n"
 			"test_source = true\n"
 		"[Strategy.MqlBridge]\n"
-			"module = a:/Projects/TRDK.Egsdavinci/output/x86/bin/MqlApi\n"
+			"module = TrdkMqlBridge\n"
 			"standalone = true\n");
 	boost::shared_ptr<const Ini> ini(new IniString(settingsString));
 	std::unique_ptr<BridgeContext> engine(new BridgeContext(ini));
