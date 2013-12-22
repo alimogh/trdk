@@ -333,6 +333,7 @@ namespace trdk { namespace Engine {
 					ListWithHighPriority &listWithHighPriority,
 					ListWithLowPriority &listWithLowPriority,
 					size_t &threadsCounter) {
+			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority));
