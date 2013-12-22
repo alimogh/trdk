@@ -33,18 +33,6 @@ namespace trdk { namespace Engine {
 
 	public:
 
-		void SubscribeToLevel1Updates(trdk::Security &, trdk::Strategy &);
-		void SubscribeToLevel1Updates(trdk::Security &, trdk::Service &);
-		void SubscribeToLevel1Updates(trdk::Security &, trdk::Observer &);
-
-		void SubscribeToLevel1Ticks(trdk::Security &, trdk::Strategy &);
-		void SubscribeToLevel1Ticks(trdk::Security &, trdk::Service &);
-		void SubscribeToLevel1Ticks(trdk::Security &, trdk::Observer &);
-
-		void SubscribeToTrades(trdk::Security &, trdk::Strategy &);
-		void SubscribeToTrades(trdk::Security &, trdk::Service &);
-		void SubscribeToTrades(trdk::Security &, trdk::Observer &);
-
 		void SubscribeToBrokerPositionUpdates(
 					trdk::Security &,
 					trdk::Strategy &);
@@ -67,23 +55,7 @@ namespace trdk { namespace Engine {
 
 	private:
 
-		void SubscribeToLevel1Updates(
-					Security &,		
-					const SubscriberPtrWrapper &,
-					std::list<boost::signals2::connection> &);
-		void SubscribeToLevel1Ticks(
-					Security &,
-					const SubscriberPtrWrapper &,
-					std::list<boost::signals2::connection> &);
-		void SubscribeToTrades(
-					Security &,
-					const SubscriberPtrWrapper &,
-					std::list<boost::signals2::connection> &);
 		void SubscribeToBrokerPositionUpdates(
-					Security &,
-					const SubscriberPtrWrapper &,
-					std::list<boost::signals2::connection> &);
-		void SubscribeToBars(
 					Security &,
 					const SubscriberPtrWrapper &,
 					std::list<boost::signals2::connection> &);

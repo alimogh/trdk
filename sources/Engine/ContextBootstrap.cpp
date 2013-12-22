@@ -1269,21 +1269,9 @@ private:
 				numberOfSystemServices == 5,
 				"System service list changed.");
 			switch (requirement.first) {
-				case SYSTEM_SERVICE_LEVEL1_UPDATES:
-					subscribe = &SubscriptionsManager::SubscribeToLevel1Updates;
-					break;
-				case SYSTEM_SERVICE_LEVEL1_TICKS:
-					subscribe = &SubscriptionsManager::SubscribeToLevel1Ticks;
-					break;
-				case SYSTEM_SERVICE_TRADES:
-					subscribe = &SubscriptionsManager::SubscribeToTrades;
-					break;
 				case SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES:
 					subscribe = &SubscriptionsManager
 						::SubscribeToBrokerPositionUpdates;
-					break;
-				case SYSTEM_SERVICE_BARS:
-					subscribe = &SubscriptionsManager::SubscribeToBars;
 					break;
 				default:
 					AssertEq(SYSTEM_SERVICE_LEVEL1_UPDATES, requirement.first);
