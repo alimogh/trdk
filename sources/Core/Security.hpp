@@ -120,10 +120,6 @@ namespace trdk {
 
 	public:
 
-		const char * GetCurrency() const {
-			return "USD";
-		}
-
 		unsigned int GetPriceScale() const throw();
 
 		trdk::ScaledPrice ScalePrice(double price) const;

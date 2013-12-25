@@ -210,13 +210,15 @@ namespace trdk { namespace Lib {
 
 		std::set<trdk::Lib::Symbol> ReadSymbols(
 					const std::string &defExchange,
-					const std::string &defPrimaryExchange)
+					const std::string &defPrimaryExchange,
+					const std::string &defCurrency)
 				const;
 
 		std::set<trdk::Lib::Symbol> ReadSymbols(
 					const std::string &section,
 					const std::string &defExchange,
-					const std::string &defPrimaryExchange)
+					const std::string &defPrimaryExchange,
+					const std::string &defCurrency)
 				const;
 
 	protected:

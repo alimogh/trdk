@@ -106,6 +106,7 @@ namespace trdk { namespace Interaction { namespace Csv {
 		Context::Log &m_log;
 
 		const std::string m_pimaryExchange;
+		const std::string m_currency;
 
 		std::ifstream m_file;
 		SecurityList m_securityList;

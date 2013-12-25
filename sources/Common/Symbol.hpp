@@ -49,12 +49,14 @@ namespace trdk { namespace Lib {
 		explicit Symbol(
 					const std::string &symbol,
 					const std::string &exchange,
-					const std::string &primaryExchange);
+					const std::string &primaryExchange,
+					const std::string &currency);
 
 		static Symbol Parse(
 					const std::string &line,
 					const std::string &defExchange,
-					const std::string &defPrimaryExchange);
+					const std::string &defPrimaryExchange,
+					const std::string &defCurrency);
 
 	public:
 
@@ -69,6 +71,7 @@ namespace trdk { namespace Lib {
 		const std::string & GetSymbol() const;
 		const std::string & GetExchange() const;
 		const std::string & GetPrimaryExchange() const;
+		const std::string & GetCurrency() const;
 		
 		std::string GetAsString() const;
 
@@ -77,6 +80,7 @@ namespace trdk { namespace Lib {
 		std::string m_symbol;
 		std::string m_exchange;
 		std::string m_primaryExchange;
+		std::string m_currency;
 
 		volatile Hash m_hash;
 

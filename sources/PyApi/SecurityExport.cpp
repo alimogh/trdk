@@ -69,7 +69,7 @@ py::str SecurityInfoExport::GetPrimaryExchange() const {
 }
 
 py::str SecurityInfoExport::GetCurrency() const {
-	return m_security->GetCurrency();
+	return m_security->GetSymbol().GetCurrency().c_str();
 }
 
 ScaledPrice SecurityInfoExport::GetPriceScale() const {

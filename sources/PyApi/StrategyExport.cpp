@@ -154,7 +154,8 @@ py::object StrategyExport::FindSecurityBySymbol(const py::str &symbol) {
 	const Symbol key(
 		py::extract<std::string>(symbol),
 		GetModule().GetContext().GetSettings().GetDefaultExchange(),
-		GetModule().GetContext().GetSettings().GetDefaultPrimaryExchange());
+		GetModule().GetContext().GetSettings().GetDefaultPrimaryExchange(),
+		GetModule().GetContext().GetSettings().GetDefaultCurrency());
 	try {
 		return PyApi::Export(GetStrategy().GetContext().GetSecurity(key));
 	} catch (const Context::UnknownSecurity &) {
@@ -168,7 +169,8 @@ py::object StrategyExport::FindSecurityBySymbolAndExchange(
 	const Symbol key(
 		py::extract<std::string>(symbol),
 		py::extract<std::string>(exchange),
-		GetModule().GetContext().GetSettings().GetDefaultPrimaryExchange());
+		GetModule().GetContext().GetSettings().GetDefaultPrimaryExchange(),
+		GetModule().GetContext().GetSettings().GetDefaultCurrency());
 	try {
 		return PyApi::Export(GetStrategy().GetContext().GetSecurity(key));
 	} catch (const Context::UnknownSecurity &) {
@@ -188,7 +190,11 @@ py::object StrategyExport::FindSecurityBySymbolAndPrimaryExchange(
 					Symbol(
 						py::extract<std::string>(symbol),
 						py::extract<std::string>(exchange),
-						py::extract<std::string>(primaryExchange))));
+						py::extract<std::string>(primaryExchange),
+						GetModule()
+							.GetContext()
+							.GetSettings()
+							.GetDefaultCurrency())));
 	} catch (const Context::UnknownSecurity &) {
 		return py::object();
 	}

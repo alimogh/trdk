@@ -24,6 +24,7 @@ Csv::MarketDataSource::MarketDataSource(
 			Context::Log &log)
 		: m_log(log),
 		m_pimaryExchange(configuration.ReadKey("exchange")),
+		m_currency(configuration.ReadKey("currency")),
 		m_isStopped(true) {
 	const auto filePath = configuration.ReadFileSystemPath("source");
 	m_log.Info(
@@ -242,7 +243,7 @@ void Csv::MarketDataSource::ReadFile() {
 		}
 
 		//! @todo Place for optimization: 3 string objects copies every time
-		Symbol instrumnet(symbol, exchange, m_pimaryExchange);
+		Symbol instrumnet(symbol, exchange, m_pimaryExchange, m_currency);
 		const SecurityByInstrument::const_iterator security
 			= index.find(instrumnet);
 		if (security == index.end()) {

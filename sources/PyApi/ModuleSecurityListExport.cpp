@@ -68,7 +68,8 @@ ModuleSecurityListExport<Module, IteratorImplementation>::FindBySymbol(
 		Symbol(
 			py::extract<std::string>(symbol),
 			m_module->GetContext().GetSettings().GetDefaultExchange(),
-			m_module->GetContext().GetSettings().GetDefaultPrimaryExchange()));
+			m_module->GetContext().GetSettings().GetDefaultPrimaryExchange(),
+			m_module->GetContext().GetSettings().GetDefaultCurrency()));
 	if (pos == m_module->GetSecurities().GetEnd()) {
 		return py::object();
 	}
@@ -84,7 +85,8 @@ ModuleSecurityListExport<Module, IteratorImplementation>::FindBySymbolAndExchang
 		Symbol(
 			py::extract<std::string>(symbol),
 			py::extract<std::string>(exchange),
-			m_module->GetContext().GetSettings().GetDefaultPrimaryExchange()));
+			m_module->GetContext().GetSettings().GetDefaultPrimaryExchange(),
+			m_module->GetContext().GetSettings().GetDefaultCurrency()));
 	if (pos == m_module->GetSecurities().GetEnd()) {
 		return py::object();
 	}
@@ -101,7 +103,8 @@ ModuleSecurityListExport<Module, IteratorImplementation>::FindBySymbolAndPrimary
 		Symbol(
 			py::extract<std::string>(symbol),
 			py::extract<std::string>(exchange),
-			py::extract<std::string>(primaryExchange)));
+			py::extract<std::string>(primaryExchange),
+			m_module->GetContext().GetSettings().GetDefaultCurrency()));
 	if (pos == m_module->GetSecurities().GetEnd()) {
 		return py::object();
 	}

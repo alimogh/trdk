@@ -31,6 +31,11 @@ namespace trdk { namespace MqlApi {
 
 		virtual std::string GetRequiredSuppliers() const;
 
+		virtual void OnBrokerPositionUpdate(
+					trdk::Security &security,
+					trdk::Qty qty,
+					bool isInitial);
+
 	public:
 	
 		virtual void ReportDecision(const trdk::Position &) const;

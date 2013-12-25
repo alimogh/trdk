@@ -417,7 +417,7 @@ namespace {
 	typedef std::map<std::string /*tag*/, ModuleDll<Service>> ServiceModules;
 
 	Symbol GetMagicSymbolCurrentSecurity() {
-		return Symbol("$", "$", "$");
+		return Symbol("$", "$", "$", "$");
 	}
 
 	bool IsMagicSymbolCurrentSecurity(const Symbol &symbol) {
@@ -425,10 +425,14 @@ namespace {
 		AssertEq(
 			symbol.GetExchange() == "$",
 			symbol.GetPrimaryExchange() == "$");
+		AssertEq(
+			symbol.GetPrimaryExchange() == "$",
+			symbol.GetCurrency() == "$");
 		return
 			symbol.GetSymbol() == "$"
 			&& symbol.GetExchange() == "$"
-			&& symbol.GetPrimaryExchange() == "$";
+			&& symbol.GetPrimaryExchange() == "$"
+			&& symbol.GetCurrency() == "$";
 	}
 
 }
@@ -883,7 +887,8 @@ private:
 			Symbol symbol = Symbol::Parse(
 				symbolRequest,
 				m_context.GetSettings().GetDefaultExchange(),
-				m_context.GetSettings().GetDefaultPrimaryExchange());
+				m_context.GetSettings().GetDefaultPrimaryExchange(),
+				m_context.GetSettings().GetDefaultCurrency());
 			if (result.symbols.find(symbol) != result.symbols.end()) {
 				m_context.GetLog().Error(
 					"Requirements syntax error:"
@@ -1445,7 +1450,8 @@ private:
 		const IniFile symbolsIni(symbolsFilePath);
 		std::set<Symbol> symbols = symbolsIni.ReadSymbols(
 			m_context.GetSettings().GetDefaultExchange(),
-			m_context.GetSettings().GetDefaultPrimaryExchange());
+			m_context.GetSettings().GetDefaultPrimaryExchange(),
+			m_context.GetSettings().GetDefaultCurrency());
 
 		try {
 			foreach (const auto &iniSymbol, symbols) {
