@@ -57,6 +57,9 @@ namespace trdk { namespace Lib {
 					const std::string &defExchange,
 					const std::string &defPrimaryExchange,
 					const std::string &defCurrency);
+		static Symbol ParseForex(
+					const std::string &line,
+					const std::string &defExchange);
 
 	public:
 

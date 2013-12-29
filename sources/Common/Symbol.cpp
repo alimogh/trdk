@@ -12,7 +12,6 @@
 #include "Symbol.hpp"
 #include "Foreach.hpp"
 #include "Interlocking.hpp"
-#include <xhash>
 
 using namespace trdk::Lib;
 
@@ -99,6 +98,38 @@ Symbol Symbol::Parse(
 	result.m_currency = subs.size() >= 4 && !subs[3].empty()
 		?	subs[3]
 		:	defCurrency;
+	return result;
+}
+
+Symbol Symbol::ParseForex(
+			const std::string &line,
+			const std::string &defExchange) {
+	Assert(!defExchange.empty());
+	if (defExchange.empty()) {
+		throw ParameterError("Default symbol exchange can't be empty");
+	}
+	std::vector<std::string> subs;
+	boost::split(subs, line, boost::is_any_of(":"));
+	foreach (auto &s, subs) {
+		boost::trim(s);
+	}
+	if (subs[0].empty() || subs.size() > 2) {
+		throw StringFormatError();
+	}
+	boost::smatch symbolMatch;
+	if (	!boost::regex_match(
+				subs[0],
+				symbolMatch,
+				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*([a-zA-Z]{3,3})$"))) {
+		throw StringFormatError();
+	}
+	Symbol result;
+	result.m_symbol = symbolMatch[1].str();
+	result.m_currency = symbolMatch[2].str();
+	result.m_exchange = subs.size() >= 2 && !subs[1].empty()
+		?	subs[1]
+		:	defExchange;
+	result.m_primaryExchange = "FOREX";
 	return result;
 }
 
