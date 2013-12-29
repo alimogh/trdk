@@ -226,13 +226,11 @@ const Settings & Engine::Context::GetSettings() const {
 }
 
 Security * Engine::Context::FindSecurity(const Symbol &symbol) {
-	Assert(m_pimpl->m_state);
-	return m_pimpl->m_state->context.GetMarketDataSource().FindSecurity(symbol);
+	return GetMarketDataSource().FindSecurity(symbol);
 }
 
 const Security * Engine::Context::FindSecurity(const Symbol &symbol) const {
-	Assert(m_pimpl->m_state);
-	return m_pimpl->m_state->context.GetMarketDataSource().FindSecurity(symbol);
+	return GetMarketDataSource().FindSecurity(symbol);
 }
 
 //////////////////////////////////////////////////////////////////////////
