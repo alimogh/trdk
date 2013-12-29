@@ -75,10 +75,10 @@ void BridgeServer::Run() {
 		"[Defaults]\n"
 			"primary_exchange = FOREX\n"
 			"exchange = IDEALPRO\n"
+			"currency = USD\n"
 		"[TradeSystem]\n"
 			"module = TrdkMqlBridge\n"
-			"account = \n"
-			"test_source = true\n"
+			"positions = yes\n"
 		"[Strategy.MqlBridge]\n"
 			"module = TrdkMqlBridge\n"
 			"standalone = true\n");

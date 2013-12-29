@@ -25,7 +25,9 @@ ib::TradeSystem::TradeSystem(
 			Context::Log &log)
 		: m_log(log),
 		m_isTestSource(settings.ReadBoolKey("test_source", false)) {
-	//...//
+	if (settings.ReadBoolKey("positions", false)) {
+		m_positions.reset(new Positions);
+	}
 }
 
 ib::TradeSystem::~TradeSystem() {
@@ -41,7 +43,7 @@ void ib::TradeSystem::Connect(const IniSectionRef &settings) {
 	std::unique_ptr<Account> account;
 	std::unique_ptr<Client> client(
 		new Client(
-			m_securities,
+			*this,
 			m_log,
 			settings.ReadBoolKey("no_history", false),
 			settings.ReadTypedKey<int>("client_id", 0),
@@ -66,7 +68,7 @@ void ib::TradeSystem::Connect(const IniSectionRef &settings) {
 			OrderStatusUpdateSlot callBack;
 			{
 				auto &index = m_placedOrders.get<ByOrder>();
-				const WriteLock lock(m_mutex);
+				const OrdersWriteLock lock(m_ordersMutex);
 				const auto pos = index.find(id);
 				if (pos == index.end()) {
 					return;
@@ -120,13 +122,32 @@ const ib::TradeSystem::Account & ib::TradeSystem::GetAccount() const {
 	return *m_account;
 }
 
+ib::TradeSystem::Position ib::TradeSystem::GetBrokerPostion(
+			const Symbol &symbol)
+		const {
+	if (!m_positions) {
+		throw PositionError("Positions storage not enabled");
+	}
+	Position result;
+	{
+		const PositionsReadLock lock(m_positionsMutex);
+		const auto &it = m_positions->find(symbol.GetSymbol());
+		if (it != m_positions->end()) {
+			result.qty = it->second;
+		}
+	}
+	return result;
+}
+
 boost::shared_ptr<trdk::Security> ib::TradeSystem::CreateSecurity(
 			Context &context,
 			const Symbol &symbol)
 		const {
 	boost::shared_ptr<ib::Security> result(
 		new ib::Security(context, symbol, m_isTestSource));
-	m_securities.insert(&*result);
+	if (!m_client) {
+		m_securities.insert(&*result);
+	}
 	return result;
 }
 
@@ -138,7 +159,7 @@ void ib::TradeSystem::CancelAllOrders(trdk::Security &security) {
 	std::list<trdk::OrderId> ids;
 	std::list<std::string> idsStr;
 	{
-		const ReadLock lock(m_mutex);
+		const OrdersReadLock lock(m_ordersMutex);
 		const auto &index = m_placedOrders.get<BySymbol>();
 		for (	auto i = index.find(&security)
 				; i != index.end() && i->security == &security
@@ -290,7 +311,7 @@ trdk::OrderId ib::TradeSystem::BuyOrCancel(
 }
 
 void ib::TradeSystem::RegOrder(const PlacedOrder &order) {
-	const WriteLock lock(m_mutex);
+	const OrdersWriteLock lock(m_ordersMutex);
 	Assert(
 		m_placedOrders.get<ByOrder>().find(order.id)
 		== m_placedOrders.get<ByOrder>().end());

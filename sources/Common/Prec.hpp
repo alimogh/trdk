@@ -24,7 +24,10 @@
 #	include <boost/tuple/tuple.hpp>
 #	include <boost/format.hpp>
 #	include <boost/filesystem.hpp>
+#	include <boost/regex.hpp>
 #include "DisableBoostWarningsEnd.h"
+
+#include <xhash>
 
 #include <Windows.h>
 
