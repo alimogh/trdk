@@ -78,7 +78,7 @@ int trdk_OpenLongPosition(const char *symbol, Qty qty, double price) {
 	return 0;
 }
 
-int trdk_OpenLongPositionAtMarketPrice(const char *symbol, Qty qty) {
+int trdk_OpenLongPositionMkt(const char *symbol, Qty qty) {
 	try {
 		return int(theBridge.GetStrategy().OpenLongPositionByMarketPrice(
 			symbol,
@@ -112,7 +112,7 @@ int trdk_OpenShortPosition(const char *symbol, Qty qty, double price) {
 	return 0;
 }
 
-int trdk_OpenShortPositionAtMarketPrice(const char *symbol, Qty qty) {
+int trdk_OpenShortPositionMkt(const char *symbol, Qty qty) {
 	try {
 		return int(theBridge.GetStrategy().OpenShortPositionByMarketPrice(
 			symbol,
@@ -130,12 +130,12 @@ int trdk_OpenShortPositionAtMarketPrice(const char *symbol, Qty qty) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int trdk_GetPositionQty(const char *symbol) {
+int trdk_GetPosition(const char *symbol) {
 	try {
 		return int(theBridge.GetStrategy().GetPositionQty(symbol));
 	} catch (const Exception &ex) {
 		Log::Error(
-			"Failed to get Position Qty via MQL Bridge Server: \"%1%\".",
+			"Failed to get Position via MQL Bridge Server: \"%1%\".",
 			ex);
 	} catch (...) {
 		AssertFailNoException();
