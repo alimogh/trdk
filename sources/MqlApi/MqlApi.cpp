@@ -16,6 +16,8 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::MqlApi;
 
+////////////////////////////////////////////////////////////////////////////////
+
 void trdk_InitLog(const char *logFilePath) {
 	try {
 		theBridge.InitLog(logFilePath);
@@ -25,6 +27,8 @@ void trdk_InitLog(const char *logFilePath) {
 		AssertFailNoException();
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 int trdk_CreateBridge() {
 	try {
@@ -45,7 +49,7 @@ int trdk_CreateBridge() {
 void trdk_DeleteBridge() {
 	try {
 		if (!theBridge.IsActive()) {
-			Log::Warn("MQL Bridge Server doen't exist.");
+			Log::Warn("MQL Bridge Server doesn't exist.");
 			return;
 		}
 		theBridge.Stop();
@@ -55,13 +59,18 @@ void trdk_DeleteBridge() {
 		AssertFailNoException();
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////
 	
-int trdk_OpenLongPosition(Qty qty, double price) {
+int trdk_OpenLongPosition(const char *symbol, Qty qty, double price) {
 	try {
-		return int(theBridge.GetStrategy().OpenLongPosition(qty, price));
+		return int(theBridge.GetStrategy().OpenLongPosition(
+			symbol,
+			qty,
+			price));
 	} catch (const Exception &ex) {
 		Log::Error(
-			"Failed to open long position via MQL Bridge Server: \"%1%\".",
+			"Failed to open Long Position via MQL Bridge Server: \"%1%\".",
 			ex);
 	} catch (...) {
 		AssertFailNoException();
@@ -69,12 +78,15 @@ int trdk_OpenLongPosition(Qty qty, double price) {
 	return 0;
 }
 
-int trdk_OpenShortPosition(Qty qty, double price) {
+int trdk_OpenLongPositionAtMarketPrice(const char *symbol, Qty qty) {
 	try {
-		return int(theBridge.GetStrategy().OpenShortPosition(qty, price));
+		return int(theBridge.GetStrategy().OpenLongPositionByMarketPrice(
+			symbol,
+			qty));
 	} catch (const Exception &ex) {
 		Log::Error(
-			"Failed to open short position via MQL Bridge Server: \"%1%\".",
+			"Failed to open Long Position at market price"
+				" via MQL Bridge Server: \"%1%\".",
 			ex);
 	} catch (...) {
 		AssertFailNoException();
@@ -82,14 +94,53 @@ int trdk_OpenShortPosition(Qty qty, double price) {
 	return 0;
 }
 
-void trdk_CloseAllPositions() {
+////////////////////////////////////////////////////////////////////////////////
+
+int trdk_OpenShortPosition(const char *symbol, Qty qty, double price) {
 	try {
-		theBridge.GetStrategy().CloseAllPositions();
+		return int(theBridge.GetStrategy().OpenShortPosition(
+			symbol,
+			qty,
+			price));
 	} catch (const Exception &ex) {
 		Log::Error(
-			"Failed to close all positions via MQL Bridge Server: \"%1%\".",
+			"Failed to open Short Position via MQL Bridge Server: \"%1%\".",
 			ex);
 	} catch (...) {
 		AssertFailNoException();
 	}
+	return 0;
 }
+
+int trdk_OpenShortPositionAtMarketPrice(const char *symbol, Qty qty) {
+	try {
+		return int(theBridge.GetStrategy().OpenShortPositionByMarketPrice(
+			symbol,
+			qty));
+	} catch (const Exception &ex) {
+		Log::Error(
+			"Failed to open Short Position at market price"
+				" via MQL Bridge Server: \"%1%\".",
+			ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+	return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+int trdk_GetPositionQty(const char *symbol) {
+	try {
+		return int(theBridge.GetStrategy().GetPositionQty(symbol));
+	} catch (const Exception &ex) {
+		Log::Error(
+			"Failed to get Position Qty via MQL Bridge Server: \"%1%\".",
+			ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+	return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////

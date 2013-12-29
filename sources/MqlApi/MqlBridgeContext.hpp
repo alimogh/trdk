@@ -33,6 +33,13 @@ namespace trdk { namespace MqlApi {
 		boost::shared_ptr<BridgeStrategy> GetStrategy();
 		boost::shared_ptr<const BridgeStrategy> GetStrategy() const;
 
+	protected:
+
+		virtual trdk::Security * FindSecurity(const trdk::Lib::Symbol &);
+		virtual const trdk::Security * FindSecurity(
+					const trdk::Lib::Symbol &)
+				const;
+
 	private:
 
 		class Implementation;

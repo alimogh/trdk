@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "MqlBridgeContext.hpp"
 #include "MqlBridgeStrategy.hpp"
+#include "Core/MarketDataSource.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -56,6 +57,14 @@ boost::shared_ptr<BridgeStrategy> BridgeContext::GetStrategy() {
 
 boost::shared_ptr<const BridgeStrategy> BridgeContext::GetStrategy() const {
 	return const_cast<BridgeContext *>(this)->GetStrategy();
+}
+
+Security * BridgeContext::FindSecurity(const Symbol &symbol) {
+	return &GetMarketDataSource().GetSecurity(*this, symbol);
+}
+
+const trdk::Security * BridgeContext::FindSecurity(const Symbol &symbol) const {
+	return const_cast<BridgeContext *>(this)->FindSecurity(symbol);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

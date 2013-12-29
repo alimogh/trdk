@@ -23,18 +23,27 @@ namespace trdk { namespace MqlApi {
 
 	public:
 
-		OrderId OpenLongPosition(Qty qty, double price);
-		OrderId OpenShortPosition(Qty qty, double price);
-		void CloseAllPositions();
+		OrderId OpenLongPosition(
+					const std::string &symbol,
+					Qty qty,
+					double price);
+		OrderId OpenLongPositionByMarketPrice(
+					const std::string &symbol,
+					Qty qty);
+
+		OrderId OpenShortPosition(
+					const std::string &symbol,
+					Qty qty,
+					double price);
+		OrderId OpenShortPositionByMarketPrice(
+					const std::string &symbol,
+					Qty qty);
+		
+		Qty GetPositionQty(const std::string &symbol) const;
 
 	public:
 
 		virtual std::string GetRequiredSuppliers() const;
-
-		virtual void OnBrokerPositionUpdate(
-					trdk::Security &security,
-					trdk::Qty qty,
-					bool isInitial);
 
 	public:
 	
@@ -45,6 +54,11 @@ namespace trdk { namespace MqlApi {
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
 
 		virtual void UpdateAlogImplSettings(const trdk::Lib::IniSectionRef &);
+
+	protected:
+
+		Lib::Symbol GetSymbol(std::string symbol) const;
+		Security & GetSecurity(const std::string &symbol);
 
 	};
 

@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "MqlBridgeStrategy.hpp"
 #include "Core/PositionReporter.hpp"
+#include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
 
@@ -30,14 +31,7 @@ BridgeStrategy::~BridgeStrategy() {
 }
 
 std::string BridgeStrategy::GetRequiredSuppliers() const {
-	return std::string("Broker Positions[EUR:FOREX:IDEALPRO:USD]");
-}
-
-void BridgeStrategy::OnBrokerPositionUpdate(
-			Security &/*security*/,
-			Qty /*qty*/,
-			bool /*isInitial*/) {
-	//...//
+	return std::string();
 }
 
 void BridgeStrategy::ReportDecision(const trdk::Position &) const {
@@ -68,34 +62,67 @@ void BridgeStrategy::UpdateAlogImplSettings(const trdk::Lib::IniSectionRef &) {
 	//...//
 }
 
-OrderId BridgeStrategy::OpenLongPosition(Qty qty, double price) {
+Symbol BridgeStrategy::GetSymbol(std::string symbol) const {
+	boost::erase_all(symbol, ":");
+	return Symbol::ParseForex(
+		symbol,
+		GetContext().GetSettings().GetDefaultExchange());
+}
+
+Security & BridgeStrategy::GetSecurity(const std::string &symbol) {
+	return GetContext().GetSecurity(GetSymbol(symbol));
+}
+
+OrderId BridgeStrategy::OpenLongPosition(
+			const std::string &symbol,
+			Qty qty,
+			double price) {
 	AssertLt(0, qty);
 	const Lock lock(GetMutex());
-	Security &security
-		= GetContext().GetSecurity(
-			Symbol::Parse("EUR", "IDEALPRO", "FOREX", "USD"));
+	Security &security = GetSecurity(symbol);
 	const auto priceScaled = security.ScalePrice(price);
 	boost::shared_ptr<Position> position(
 		new LongPosition(*this, security, qty, priceScaled));
 	return position->Open(priceScaled);
 }
 
-OrderId BridgeStrategy::OpenShortPosition(Qty qty, double price) {
+OrderId BridgeStrategy::OpenLongPositionByMarketPrice(
+			const std::string &symbol,
+			Qty qty) {
 	AssertLt(0, qty);
 	const Lock lock(GetMutex());
-	Security &security
-		= GetContext().GetSecurity(
-			Symbol::Parse("EUR", "IDEALPRO", "FOREX", "USD"));
+	Security &security = GetSecurity(symbol);
+	boost::shared_ptr<Position> position(
+		new LongPosition(*this, security, qty, 0));
+	return position->OpenAtMarketPrice();
+}
+
+OrderId BridgeStrategy::OpenShortPosition(
+			const std::string &symbol,
+			Qty qty,
+			double price) {
+	AssertLt(0, qty);
+	const Lock lock(GetMutex());
+	Security &security = GetSecurity(symbol);
 	const auto priceScaled = security.ScalePrice(price);
 	boost::shared_ptr<Position> position(
 		new ShortPosition(*this, security, qty, priceScaled));
 	return position->Open(priceScaled);
 }
 
-void BridgeStrategy::CloseAllPositions() {
+OrderId BridgeStrategy::OpenShortPositionByMarketPrice(
+			const std::string &symbol,
+			Qty qty) {
+	AssertLt(0, qty);
 	const Lock lock(GetMutex());
-	const auto &end = GetPositions().GetEnd();
-	for (auto i = GetPositions().GetBegin(); i != end; ++i) {
-		i->CancelAtMarketPrice(Position::CLOSE_TYPE_NONE);
-	}
+	Security &security = GetSecurity(symbol);
+	boost::shared_ptr<Position> position(
+		new ShortPosition(*this, security, qty, 0));
+	return position->OpenAtMarketPrice();
+}
+
+Qty BridgeStrategy::GetPositionQty(const std::string &symbol) const {
+	const auto &pos
+		= GetContext().GetTradeSystem().GetBrokerPostion(GetSymbol(symbol));
+	return pos.qty;
 }

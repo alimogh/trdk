@@ -1,9 +1,17 @@
 
 EXPORTS
+	
 	trdk_InitLog
+	
 	trdk_CreateBridge
 	trdk_DeleteBridge
+	
 	trdk_OpenLongPosition
+	trdk_OpenLongPositionAtMarketPrice
+	
 	trdk_OpenShortPosition
-	trdk_CloseAllPositions
+	trdk_OpenLongPositionAtMarketPrice
+
+	trdk_GetPositionQty
+	
 	CreateMqlBridgeStrategy

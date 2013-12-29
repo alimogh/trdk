@@ -74,7 +74,7 @@ void BridgeServer::Run() {
 			"currency = USD\n"
 		"[TradeSystem]\n"
 			"module = InteractiveBrokers\n"
-			"account = \n"
+			"positions = yes\n"
 		"[Strategy.MqlBridge]\n"
 			"module = a:/Projects/TRDK/output/x86/bin/MqlApi\n"
 			"standalone = true\n");
