@@ -10,7 +10,7 @@ EXPORTS
 	trdk_OpenLongPositionMkt
 	
 	trdk_OpenShortPosition
-	trdk_OpenLongPositionMkt
+	trdk_OpenShortPositionMkt
 
 	trdk_GetPosition
 	
