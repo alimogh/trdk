@@ -78,6 +78,17 @@ namespace trdk {
 
 		};
 
+		struct Position {
+
+			trdk::Qty qty;
+
+			Position()
+					: qty(0) {
+				//...//
+			}
+
+		};
+
 	public:
 
 		class TRDK_CORE_API Error : public Base::Error {
@@ -110,6 +121,13 @@ namespace trdk {
 			UnknownAccountError(const char *what) throw();
 		};
 
+		//! Broker position error.
+		class TRDK_CORE_API PositionError : public Error {
+		public:
+			PositionError(const char *what) throw();
+		};
+
+
 
 	public:
 
@@ -132,6 +150,12 @@ namespace trdk {
 		  * @throw trdk::TradeSystem::UnknownAccountError
 		  */
 		virtual const trdk::TradeSystem::Account & GetAccount() const = 0;
+
+		//! Returns broker position by symbol.
+		virtual trdk::TradeSystem::Position GetBrokerPostion(
+				const trdk::Lib::Symbol &)
+			const
+			= 0;
 
 	public:
 

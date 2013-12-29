@@ -18,9 +18,17 @@
 
 namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
+	class Client;
+
+} } }
+
+namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
+
 	class TradeSystem
 		: public trdk::TradeSystem,
 		public trdk::MarketDataSource {
+
+		friend class trdk::Interaction::InteractiveBrokers::Client;
 
 	public:
 
@@ -28,9 +36,14 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	private:
 
-		typedef boost::shared_mutex Mutex;
-		typedef boost::unique_lock<Mutex> WriteLock;
-		typedef boost::shared_lock<Mutex> ReadLock;
+		typedef Concurrency::reader_writer_lock OrdersMutex;
+		typedef OrdersMutex::scoped_lock OrdersWriteLock;
+		typedef OrdersMutex::scoped_lock_read OrdersReadLock;
+
+		typedef Concurrency::reader_writer_lock PositionsMutex;
+		typedef PositionsMutex::scoped_lock_read PositionsReadLock;
+		typedef PositionsMutex::scoped_lock PositionsWriteLock;
+		typedef std::map<std::string, Qty> Positions;
 
 		struct PlacedOrder {
 			OrderId id;
@@ -79,6 +92,10 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 	public:
 
 		virtual const Account & GetAccount() const;
+
+		virtual trdk::TradeSystem::Position GetBrokerPostion(
+				const trdk::Lib::Symbol &)
+			const;
 
 	public:
 
@@ -150,13 +167,16 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		const bool m_isTestSource;
 
-		Mutex m_mutex;
+		OrdersMutex m_ordersMutex;
 		std::unique_ptr<Client> m_client;
 		PlacedOrderSet m_placedOrders;
 
 		mutable Securities m_securities;
 
 		std::unique_ptr<Account> m_account;
+
+		mutable PositionsMutex m_positionsMutex;
+		std::unique_ptr<Positions> m_positions;
 
 	};
 

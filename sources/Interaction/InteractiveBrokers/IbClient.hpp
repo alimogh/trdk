@@ -117,7 +117,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 	public:
 
 		Client(
-				const TradeSystem::Securities &,
+				InteractiveBrokers::TradeSystem &,
 				Context::Log &,
 				bool isNoHistoryMode,
 				int clientId = 0,
@@ -373,7 +373,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	private:
 
-		const TradeSystem::Securities &m_securities;
+		InteractiveBrokers::TradeSystem &m_ts;
 
 		Context::Log &m_log;
 

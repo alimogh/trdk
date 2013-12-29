@@ -48,6 +48,13 @@ TradeSystem::UnknownAccountError::UnknownAccountError(
 	//...//
 }
 
+TradeSystem::PositionError::PositionError(
+			const char *what)
+		throw()
+		: Error(what) {
+	//...//
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 TradeSystem::TradeSystem() {

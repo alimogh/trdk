@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "IbClient.hpp"
+#include "IbTradeSystem.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -84,13 +85,13 @@ namespace {
 ///////////////////////////////////////////////////////////////////////////////
 
 Client::Client(
-			const ib::TradeSystem::Securities &securities,
+			ib::TradeSystem &ts,
 			Context::Log &log,
 			bool isNoHistoryMode,
 			int clientId /*= 0*/,
 			const std::string &host /*= "127.0.0.1"*/,
 			unsigned short port /*= 7496*/)
-		: m_securities(securities),
+		: m_ts(ts),
 		m_log(log),
 		m_isNoHistoryMode(isNoHistoryMode),
 		m_host(host),
@@ -247,11 +248,13 @@ void Client::StartData() {
 		m_client->reqAccountUpdates(true, m_account);
 	}
 
-	bool isBrokerPositionsRequred = false;
-	foreach (const Security *security, m_securities) {
-		if (security->IsBrokerPositionRequired()) {
-			isBrokerPositionsRequred = true;
-			break;
+	bool isBrokerPositionsRequred = m_ts.m_positions;
+	if (!isBrokerPositionsRequred) {
+		foreach (const Security *security, m_ts.m_securities) {
+			if (security->IsBrokerPositionRequired()) {
+				isBrokerPositionsRequred = true;
+				break;
+			}
 		}
 	}
 	if (isBrokerPositionsRequred) {
@@ -345,7 +348,7 @@ void Client::Subscribe(const OrderStatusSlot &orderStatusSlot) const {
 
 void Client::SubscribeToMarketData(ib::Security &security) const {
 
-	Assert(m_securities.find(&security) != m_securities.end());
+	Assert(m_ts.m_securities.find(&security) != m_ts.m_securities.end());
 
 	if (security.IsTradesRequired() && !security.IsTestSource()) {
 		throw trdk::TradeSystem::Error(
@@ -573,7 +576,7 @@ void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
 
 	AssertFail("Market Depth Level II not yet supported by security.");
 
-	Assert(m_securities.find(&security) != m_securities.end());
+	Assert(m_ts.m_securities.find(&security) != m_ts.m_securities.end());
 
 	const Lock lock(m_mutex);
 	if (IsSubscribed(m_marketDepthLevel2Requests, security)) {
@@ -1763,11 +1766,21 @@ void Client::position(
 
 	//! @todo place for optimization (if position will be used not only at
 	//! start):
-	foreach (ib::Security *security, m_securities) {
+	foreach (ib::Security *security, m_ts.m_securities) {
+		//! @todo compares only symbols, not exchanges
 		if (security->GetSymbol().GetSymbol() == contract.symbol) {
 			security->SetBrokerPosition(position, isInitial);
 			break;
 		}
+	}
+
+	if (m_ts.m_positions) {
+		//! @todo place for optimization (if position will be used not only at
+		//! start):
+		const ib::TradeSystem::PositionsWriteLock positionsLock(
+			m_ts.m_positionsMutex);
+		//! @todo compares only symbols, not exchanges
+		(*m_ts.m_positions)[contract.symbol] = position;
 	}
 
 }

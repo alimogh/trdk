@@ -200,7 +200,14 @@ void Fake::TradeSystem::Connect(const IniSectionRef &) {
 
 const Fake::TradeSystem::Account & Fake::TradeSystem::GetAccount() const {
 	throw MethodDoesNotImplementedError(
-		"Account Cash Balance doesn't implementated");
+		"Account Cash Balance doesn't implemented");
+}
+
+Fake::TradeSystem::Position Fake::TradeSystem::GetBrokerPostion(
+			const Symbol &)
+		const {
+	throw MethodDoesNotImplementedError(
+		"Broker Position Info doesn't implemented");
 }
 
 OrderId Fake::TradeSystem::SellAtMarketPrice(

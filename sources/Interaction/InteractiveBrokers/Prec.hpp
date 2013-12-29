@@ -30,6 +30,8 @@
 #	include <boost/math/special_functions/fpclassify.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
+#include <concrt.h>
+
 #include <Windows.h>
 #include <WinSock2.h>
 
