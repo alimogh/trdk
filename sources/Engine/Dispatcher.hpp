@@ -436,6 +436,7 @@ namespace trdk { namespace Engine {
 					boost::barrier &startBarrier,
 					EventList &list,
 					size_t &threadsCounter) {
+			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(boost::ref(list));
 			m_threads.create_thread(
 				boost::bind(
@@ -476,6 +477,7 @@ namespace trdk { namespace Engine {
 					ListWithHighPriority &listWithHighPriority,
 					ListWithLowPriority &listWithLowPriority,
 					size_t &threadsCounter) {
+			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority));
@@ -527,6 +529,7 @@ namespace trdk { namespace Engine {
 					ListWithLowPriority &listWithLowPriority,
 					ListWithExtraLowPriority &listWithExtraLowPriority,
 					size_t &threadsCounter) {
+			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority),
@@ -587,6 +590,7 @@ namespace trdk { namespace Engine {
 					ListWithExtraLowPriority &listWithExtraLowPriority,
 					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
 					size_t &threadsCounter) {
+			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority),
@@ -654,6 +658,7 @@ namespace trdk { namespace Engine {
 					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
 					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
 					size_t &threadsCounter) {
+			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority),
@@ -745,6 +750,7 @@ namespace trdk { namespace Engine {
 					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
 					ListWithExtraLowPriority4 &listWithExtraLowPriority4,
 					size_t &threadsCounter) {
+			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority),
