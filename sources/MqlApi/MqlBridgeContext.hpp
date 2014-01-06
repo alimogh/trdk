@@ -24,7 +24,7 @@ namespace trdk { namespace MqlApi {
 	public:
 
 		explicit BridgeContext(boost::shared_ptr<const trdk::Lib::Ini>);
-		~BridgeContext();
+		virtual ~BridgeContext();
 
 	public:
 
