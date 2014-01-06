@@ -74,6 +74,12 @@
     <ClInclude Include="TradeSystemExport.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PyEngine.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LogExport.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -119,6 +125,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ContextExport.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PyEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LogExport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

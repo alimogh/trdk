@@ -507,10 +507,6 @@ public:
 			}
 		}
 
-		if (m_strategies.empty()) {
-			throw Exception("No strategies loaded");
-		}
-
 		try {
 			BindWithModuleRequirements(requirementList);
 		} catch (...) {

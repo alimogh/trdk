@@ -633,6 +633,20 @@ class Context:
 ###############################################################################
 
 
+class Engine(Context):
+
+    def __init__(self, settings):
+        pass
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
+###############################################################################
+
+
 class TradeSystem:
 
     cashBalance = float  # Default account current Cash Balance. Value is

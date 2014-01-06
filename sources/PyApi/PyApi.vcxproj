@@ -85,10 +85,12 @@
     <ClInclude Include="Detail.hpp" />
     <ClInclude Include="BaseExport.hpp" />
     <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="LogExport.hpp" />
     <ClInclude Include="ModuleSecurityListExport.hpp" />
     <ClInclude Include="ObjectCache.hpp" />
     <ClInclude Include="OrderParamsExport.hpp" />
     <ClInclude Include="PositionExport.hpp" />
+    <ClInclude Include="PyEngine.hpp" />
     <ClInclude Include="PyPosition.hpp" />
     <ClInclude Include="PyService.hpp" />
     <ClInclude Include="PyStrategy.hpp" />
@@ -106,6 +108,7 @@
     <ClCompile Include="BaseExport.cpp" />
     <ClCompile Include="ContextExport.cpp" />
     <ClCompile Include="Detail.cpp" />
+    <ClCompile Include="LogExport.cpp" />
     <ClCompile Include="ModuleSecurityListExport.cpp" />
     <ClCompile Include="OrderParamsExport.cpp" />
     <ClCompile Include="PositionExport.cpp" />
@@ -115,6 +118,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="ModuleExport.cpp" />
+    <ClCompile Include="PyEngine.cpp" />
     <ClCompile Include="PyService.cpp" />
     <ClCompile Include="PyStrategy.cpp" />
     <ClCompile Include="SecurityExport.cpp" />
@@ -132,6 +136,9 @@
     </ProjectReference>
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Engine\Engine.vcxproj">
+      <Project>{015fb121-6122-4a00-bfbb-545e9e73abee}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Services\Services.vcxproj">
       <Project>{4f025d92-8f15-4a05-97b6-ca680cb090d9}</Project>
