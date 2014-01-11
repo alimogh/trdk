@@ -1,0 +1,149 @@
+
+{% extends 'base.html' %}
+
+{% block app_head %}
+
+	<script>
+
+		function onError(xhr, textStatus, errorThrown) {
+			$('#cashBalance').html('Cash Balance: <span style="color: red"><b>request error</b></span>')
+			showServicesError(errorThrown + xhr.status + xhr.responseText)
+		}
+
+		function setConnectionState(isConnected) {
+			if (isConnected) {
+				$('#connectionState').html('connected')
+				$('#connectionState').css({'color': 'green'})
+			} else {
+				$('#connectionState').html('disconnected')
+				$('#connectionState').css({'color': 'red'})
+			}
+		}
+
+		function onPositionOpen(symbol, qty) {
+			$('#position').html("Position: " + symbol + " = " + qty)
+			$("#openTestPosition").button("disable")
+			$("#closeTestPosition").button("enable")
+		}
+
+		function onPositionClose() {
+			$('#position').html("")
+			$("#openTestPosition").button("enable")
+			$("#closeTestPosition").button("disable")
+		}
+
+		$(function updateState() {
+			$.ajax({
+				type: "POST",
+				url: "services/getState",
+				data: {
+					csrfmiddlewaretoken: document.getElementsByName('csrfmiddlewaretoken')[0].value,
+				},
+				success: function(data) {
+					$('#cashBalance').html("Cash Balance: <b>" + data.cashBalance + "</b>")
+					if ('pos' in data) {
+						onPositionOpen(data.pos.symbol, data.pos.qty)
+					} else {
+						onPositionClose()
+					}
+					setConnectionState(data.isConnected)
+				},
+				error: onError,
+				complete: function() {
+					setTimeout(updateState, 2000)
+				}
+			});
+		});
+
+	</script>
+
+{% endblock %}
+
+{% block app_body %}
+
+	<div style="font-size: medium; margin-bottom: 25px;">Interactive Brokers <span id="connectionState" style="color: red; font-weight: bold;">disconnected</span></div>
+	<div id="cashBalance" style="font-size: medium; margin-bottom: 25px;"></div>
+	<div id="position" style="font-size: large; margin-bottom: 25px;"></div>
+
+	<div id="positionOpenDlg" title="New Position" style="white-space: nowrap">
+		<div style="position: absolute; left: 5px; top: 7px; width: 60px; text-align: right;">Symbol:</div>
+		<div style="position: absolute; left: 70px; top: 5px;">
+			<span class="ui-spinner ui-widget ui-widget-content ui-corner-all"><select id="newPositionSymbol" class="ui-widget ui-widget-content">
+				<option value="USDEUR">USD.EUR</option>
+				<option value="USDJPY">USD.JPY</option>
+				<option value="GBRUSD">GBR.USD</option>
+				<option value="USDCAD">USD.CAD</option>
+				<option value="GBREUR">GBR.EUR</option>
+			</select></span></div>
+		<div style="position: absolute; left: 5px; top: 37px; width: 60px; text-align: right;">Size:</div>
+		<div style="position: absolute; left: 70px; top: 35px;"><input id="newPositionQty" value="20000" style="width: 100px;"></div>
+		<script>
+			$("#newPositionQty").spinner()
+		</script>
+	</div>
+	<script>
+		$('#positionOpenDlg').dialog(
+			{
+				modal: true,
+				width: 220,
+				buttons: [
+					{
+						text: "Ok",
+						click: function() {
+							$.ajax({
+								type: "POST",
+								url: "services/openPosition",
+								data: {
+									csrfmiddlewaretoken: document.getElementsByName('csrfmiddlewaretoken')[0].value,
+									symbol: $("#newPositionSymbol  option:selected").text(),
+									qty: $("#newPositionQty").spinner("value")
+								},
+								error: onError,
+								success: function(data) {
+									$("#openTestPosition").button("disable")
+									$("#positionOpenDlg").dialog("close")
+								}
+							})
+						}
+					},
+					{
+						text: "Cancel",
+						click: function() {
+							$(this).dialog("close")
+						}
+					}
+				]
+			});
+		$('#positionOpenDlg').dialog()
+		$('#positionOpenDlg').dialog({modal: true})
+		$('#positionOpenDlg').dialog("close")
+	</script>
+
+	<button id="openTestPosition">Open test position</button> <button id="closeTestPosition">Close test position</button>
+	<script>
+
+		$("#openTestPosition").button()
+		$("#openTestPosition").button("disable")
+		$("#openTestPosition").button().click(
+			function(event) {
+				$('#positionOpenDlg').dialog("open")
+			});
+
+		$("#closeTestPosition").button()
+		$("#closeTestPosition").button("disable")
+		$("#closeTestPosition").button().click(
+			function(event) {
+				$.ajax({
+					type: "POST",
+					url: "services/closePosition",
+					data: {
+						csrfmiddlewaretoken: document.getElementsByName('csrfmiddlewaretoken')[0].value,
+					},
+					error: onError
+				});
+				$("#closeTestPosition").button("disable")
+			})
+
+	</script>
+
+{% endblock %}
