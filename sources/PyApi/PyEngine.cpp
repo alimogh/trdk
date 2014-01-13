@@ -38,7 +38,7 @@ public:
 
 PyApi::Engine::Engine(PyObject *self, const std::string &settings)
 		: Context(boost::shared_ptr<Ini>(new IniString(settings)), false),
-		ContextExport(*this),
+		ContextExport(static_cast<Context &>(*this)),
 		m_pimpl(new Implementation(self)) {
 	//...//
 }
