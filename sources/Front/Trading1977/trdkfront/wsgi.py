@@ -13,4 +13,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "trdkfront.settings")
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
 
-application.xxx = 1
+application.tradeEngine = None
+application.tradeStrategies = {}
+application.fullTradeStrategyList = []

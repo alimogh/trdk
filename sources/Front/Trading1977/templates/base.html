@@ -11,10 +11,16 @@
 	<script src="{{ MEDIA_URL }}js/jquery-ui-1.10.3.custom.js"></script>
 
 	<script>
+
 		function showServicesError(text) {
-			$('#errorText').html("<h1>Last error:</h1>" + text);
-			$('#error').show();
+			$('#errorText').html(text)
+			$('#error').show()
 		}
+
+		function getCsrfToken() {
+			return document.getElementsByName('csrfmiddlewaretoken')[0].value
+		}
+
 	</script>
 
 	<style>
@@ -73,10 +79,10 @@
 			{% block app_body %}{% endblock %}
 		</div>
 
-		<div id="error" style="display: none;">
+		<div id="error" style="display: none; margin-top: 35px;">
 			<div class="ui-state-error ui-corner-all" style="padding: 0 .7em;">
 				<p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;"></span>
-				<p id="errorText"></p>
+				<span id="errorText"></p>
 			</div>
 		</div>
 

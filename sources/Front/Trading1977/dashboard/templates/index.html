@@ -6,8 +6,12 @@
 	<script>
 
 		function onError(xhr, textStatus, errorThrown) {
-			$('#cashBalance').html('Cash Balance: <span style="color: red"><b>request error</b></span>')
-			showServicesError(errorThrown + xhr.status + xhr.responseText)
+			errorStr = '<div style="margin-bottom: 20px;">' + xhr.status
+			errorStr += ": " + errorThrown + "</div>"
+			errorStr
+				+= '<div style="margin-bottom: 20px;">' + textStatus + "</div>"
+			errorStr += "<div>" +  xhr.responseText + "</div>"
+			showServicesError(errorStr)
 		}
 
 		function setConnectionState(isConnected) {
@@ -17,11 +21,19 @@
 			} else {
 				$('#connectionState').html('disconnected')
 				$('#connectionState').css({'color': 'red'})
+				$("#openTestPosition").button("disable")
+				$("#closeTestPosition").button("disable")
 			}
 		}
 
-		function onPositionOpen(symbol, qty) {
-			$('#position').html("Position: " + symbol + " = " + qty)
+		function onPositionOpen(symbol, notOpenedQty, activeQty, closedQty) {
+			html = "Position: " + symbol + " "
+			if (notOpenedQty != 0) {
+				html += notOpenedQty + " (order size) -> "
+			}
+			html += activeQty
+			$('#position').html(html)
+			$('#positionSymbol').val(symbol)
 			$("#openTestPosition").button("disable")
 			$("#closeTestPosition").button("enable")
 		}
@@ -37,12 +49,16 @@
 				type: "POST",
 				url: "services/getState",
 				data: {
-					csrfmiddlewaretoken: document.getElementsByName('csrfmiddlewaretoken')[0].value,
+					csrfmiddlewaretoken: getCsrfToken()
 				},
 				success: function(data) {
-					$('#cashBalance').html("Cash Balance: <b>" + data.cashBalance + "</b>")
+					$('#cashBalance').html(data.cashBalance)
 					if ('pos' in data) {
-						onPositionOpen(data.pos.symbol, data.pos.qty)
+						onPositionOpen(
+							data.pos.symbol,
+							data.pos.notOpenedQty,
+							data.pos.activeQty,
+							data.pos.closedQty)
 					} else {
 						onPositionClose()
 					}
@@ -61,19 +77,27 @@
 
 {% block app_body %}
 
-	<div style="font-size: medium; margin-bottom: 25px;">Interactive Brokers <span id="connectionState" style="color: red; font-weight: bold;">disconnected</span></div>
-	<div id="cashBalance" style="font-size: medium; margin-bottom: 25px;"></div>
-	<div id="position" style="font-size: large; margin-bottom: 25px;"></div>
+	<div style="font-size: medium; margin-bottom: 25px;">
+		Interactive Brokers
+		<span id="connectionState" style="color: red; font-weight: bold;">disconnected</span>
+	</div>
+	<div style="font-size: medium; margin-bottom: 25px;">
+		Cash Balance: <span id="cashBalance" style="font-weight: bold;"></span>
+	</div>
+	<div style="font-size: large; margin-bottom: 25px;">
+		<input id="positionSymbol" type="hidden"><span id="position"></span>
+	</div>
 
 	<div id="positionOpenDlg" title="New Position" style="white-space: nowrap">
 		<div style="position: absolute; left: 5px; top: 7px; width: 60px; text-align: right;">Symbol:</div>
 		<div style="position: absolute; left: 70px; top: 5px;">
 			<span class="ui-spinner ui-widget ui-widget-content ui-corner-all"><select id="newPositionSymbol" class="ui-widget ui-widget-content">
-				<option value="USDEUR">USD.EUR</option>
+				<option value="EURUSD">EUR.USD</option>
 				<option value="USDJPY">USD.JPY</option>
-				<option value="GBRUSD">GBR.USD</option>
+				<option value="GBPUSD">GBP.USD</option>
 				<option value="USDCAD">USD.CAD</option>
-				<option value="GBREUR">GBR.EUR</option>
+				<option value="EURCHF">EUR.CHF</option>
+				<option value="USDCHF">USD.CHF</option>
 			</select></span></div>
 		<div style="position: absolute; left: 5px; top: 37px; width: 60px; text-align: right;">Size:</div>
 		<div style="position: absolute; left: 70px; top: 35px;"><input id="newPositionQty" value="20000" style="width: 100px;"></div>
@@ -94,8 +118,8 @@
 								type: "POST",
 								url: "services/openPosition",
 								data: {
-									csrfmiddlewaretoken: document.getElementsByName('csrfmiddlewaretoken')[0].value,
-									symbol: $("#newPositionSymbol  option:selected").text(),
+									csrfmiddlewaretoken: getCsrfToken(),
+									symbol: $("#newPositionSymbol  option:selected").val(),
 									qty: $("#newPositionQty").spinner("value")
 								},
 								error: onError,
@@ -119,7 +143,8 @@
 		$('#positionOpenDlg').dialog("close")
 	</script>
 
-	<button id="openTestPosition">Open test position</button> <button id="closeTestPosition">Close test position</button>
+	<button id="openTestPosition">Open test position</button>
+	<button id="closeTestPosition">Close test position</button>
 	<script>
 
 		$("#openTestPosition").button()
@@ -137,7 +162,8 @@
 					type: "POST",
 					url: "services/closePosition",
 					data: {
-						csrfmiddlewaretoken: document.getElementsByName('csrfmiddlewaretoken')[0].value,
+						csrfmiddlewaretoken: getCsrfToken(),
+						symbol: $('#positionSymbol').val()
 					},
 					error: onError
 				});
