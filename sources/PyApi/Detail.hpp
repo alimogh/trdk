@@ -47,4 +47,19 @@ namespace trdk { namespace PyApi { namespace Detail {
 
 	//////////////////////////////////////////////////////////////////////////
 
+	class GilState : private boost::noncopyable {
+	public:
+		GilState() throw()
+				: m_state(PyGILState_Ensure()) {
+			//...//
+		}
+		~GilState() {
+			PyGILState_Release(m_state);
+		}
+	private:
+		PyGILState_STATE m_state;
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
 } } }

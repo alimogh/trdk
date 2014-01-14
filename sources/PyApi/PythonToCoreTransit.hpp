@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "Detail.hpp"
+
 //////////////////////////////////////////////////////////////////////////
 
 namespace trdk { namespace PyApi { namespace Detail {
@@ -209,6 +211,7 @@ namespace trdk { namespace PyApi { namespace Detail {
 				const {
 			namespace py = boost::python;
 			Assert(m_self);
+			const GilState gilState;
 			//! @todo:	Check in new Boost.Python (after 1.51) and new Python
 			//!			(after 2.7.3). Old versions makes error if attribute
 			//!			doesn't defined in Python class implementation. So we
@@ -245,6 +248,7 @@ namespace trdk { namespace PyApi { namespace Detail {
 		}
 
 		void DecRef() throw() {
+			const GilState gilState;
 			try {
 				boost::python::decref(m_self);
 			} catch (...) {
