@@ -729,7 +729,7 @@ Position::Time Position::GetOpenTime() const {
 }
 
 Qty Position::GetNotOpenedQty() const {
-	AssertLt(GetOpenedQty(), GetPlanedQty());
+	AssertLe(GetOpenedQty(), GetPlanedQty());
 	return GetPlanedQty() - GetOpenedQty();
 }
 

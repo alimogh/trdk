@@ -1419,23 +1419,22 @@ private:
 		}
 
 		fs::path symbolsFilePath;
-		if (!dynamic_cast<const IniFile *>(&conf.GetBase())) {
-			m_context.GetLog().Error(
-				"Failed to get symbol instances file:"
-					" \"Failed to get root path\"");
-			throw Lib::Ini::Error("Failed to get symbol instances file");
-		}
-		try {
- 			symbolsFilePath = Normalize(
- 				conf.ReadKey(Keys::instances),
- 				boost::polymorphic_downcast<const IniFile *>(&conf.GetBase())
-					->GetPath()
-					.branch_path());
-		} catch (const Lib::Ini::Error &ex) {
-			m_context.GetLog().Error(
-				"Failed to get symbol instances file: \"%1%\".",
-				ex);
-			throw;
+		if (dynamic_cast<const IniFile *>(&conf.GetBase())) {
+			try {
+ 				symbolsFilePath = Normalize(
+ 					conf.ReadKey(Keys::instances),
+ 					boost::polymorphic_downcast<const IniFile *>(
+							&conf.GetBase())
+						->GetPath()
+						.branch_path());
+			} catch (const Lib::Ini::Error &ex) {
+				m_context.GetLog().Error(
+					"Failed to get symbol instances file: \"%1%\".",
+					ex);
+				throw;
+			}
+		} else {
+			symbolsFilePath = conf.ReadFileSystemPath(Keys::instances);
 		}
 		m_context.GetLog().Debug(
 			"Loading symbol instances from %1% for %2% \"%3%\"...",
@@ -1513,7 +1512,8 @@ private:
 			throw Lib::Ini::Error("Failed to load module");
 		}
 
-		result.dll.reset(new Dll(modulePath, true));
+		result.dll.reset(
+			new Dll(modulePath, conf.ReadBoolKey(Keys::Dbg::autoName, true)));
 
 		const bool isFactoreNameKeyExist
 			= result.conf->IsKeyExist(Keys::factory);
