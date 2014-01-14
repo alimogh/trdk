@@ -85,19 +85,24 @@ Symbol Symbol::Parse(
 		boost::trim(s);
 	}
 	Symbol result;
-	result.m_symbol = subs[0];
-	if (result.m_symbol.empty()) {
-		throw StringFormatError();
-	}
-	result.m_exchange = subs.size() >= 3 && !subs[2].empty()
-		?	subs[2]
-		:	defExchange;
 	result.m_primaryExchange = subs.size() >= 2 && !subs[1].empty()
 		?	subs[1]
 		:	defPrimaryExchange;
-	result.m_currency = subs.size() >= 4 && !subs[3].empty()
-		?	subs[3]
-		:	defCurrency;
+	if (	boost::iequals(result.m_primaryExchange, "FOREX")
+			&& boost::iequals(defPrimaryExchange, "FOREX")) {
+		return ParseForex(line, defExchange);
+	} else {
+		result.m_symbol = subs[0];
+		if (result.m_symbol.empty()) {
+			throw StringFormatError();
+		}
+		result.m_exchange = subs.size() >= 3 && !subs[2].empty()
+			?	subs[2]
+			:	defExchange;
+		result.m_currency = subs.size() >= 4 && !subs[3].empty()
+			?	subs[3]
+			:	defCurrency;
+	}
 	return result;
 }
 
