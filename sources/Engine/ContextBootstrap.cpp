@@ -89,7 +89,10 @@ private:
 			Keys::factory,
 			DefaultValues::Factories::tradeSystem);
 		
-		boost::shared_ptr<Dll> dll(new Dll(module, true));
+		boost::shared_ptr<Dll> dll(
+			new Dll(
+				module,
+				configurationSection.ReadBoolKey(Keys::Dbg::autoName, true)));
 
 		typedef TradeSystemFactoryResult FactoryResult;
 		typedef TradeSystemFactory Factory;
@@ -157,7 +160,10 @@ private:
 			Keys::factory,
 			DefaultValues::Factories::marketDataSource);
 		
-		boost::shared_ptr<Dll> dll(new Dll(module, true));
+		boost::shared_ptr<Dll> dll(
+			new Dll(
+				module,
+				configurationSection.ReadBoolKey(Keys::Dbg::autoName, true)));
 
 		typedef boost::shared_ptr<MarketDataSource> FactoryResult;
 		typedef MarketDataSourceFactory Factory;
