@@ -24,8 +24,8 @@ def makeConnection():
         "   exchange = IDEALPRO\n" \
         "   currency = USD\n" \
         "[TradeSystem]\n" \
-        "   module = InteractiveBrokers\n" \
-        "   positions = yes\n" \
+        "   module = " + frontSettings.BASE_DIR + "trdk.pyd\n" \
+        "   dbg_auto_name = no\n" \
         "   account = \n" \
         "[Strategy.Proxy]\n" \
         "   module = " + frontSettings.BASE_DIR + "trdk.pyd\n" \

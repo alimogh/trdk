@@ -12,7 +12,6 @@
 #include "PyStrategy.hpp"
 #include "StrategyExport.hpp"
 #include "PositionExport.hpp"
-#include "ServiceExport.hpp"
 #include "Script.hpp"
 #include "BaseExport.hpp"
 #include "Core/StrategyPositionReporter.hpp"
@@ -236,17 +235,6 @@ pt::ptime PyApi::Strategy::OnSecurityStart(trdk::Security &security) {
 	}
 }
 
-void PyApi::Strategy::OnServiceStart(const trdk::Service &service) {
-	const bool isExists = CallVirtualMethod(
-		"onServiceStart",
-		[&](const py::override &f) {
-			f(PyApi::Export(service));
-		});
-	if (!isExists) {
-		Base::OnServiceStart(service);
-	}
-}
-
 void PyApi::Strategy::OnLevel1Update(Security &security) {
 	const bool isExists = CallVirtualMethod(
 		"onLevel1Update",
@@ -276,17 +264,6 @@ void PyApi::Strategy::OnNewTrade(
 		});
 	if (!isExists) {
 		Base::OnNewTrade(security, time, price, qty, side);
-	}
-}
-
-void PyApi::Strategy::OnServiceDataUpdate(const trdk::Service &service) {
-	const bool isExists = CallVirtualMethod(
-		"onServiceDataUpdate",
-		[&](const py::override &f) {
-			f(PyApi::Export(service));
-		});
-	if (!isExists) {
-		Base::OnServiceDataUpdate(service);
 	}
 }
 

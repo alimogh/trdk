@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "BaseExport.hpp"
 #include "PositionExport.hpp"
-#include "ServiceExport.hpp"
 #include "StrategyExport.hpp"
 #include "SecurityExport.hpp"
 #include "OrderParamsExport.hpp"
@@ -51,19 +50,6 @@ BOOST_PYTHON_MODULE(trdk) {
 	ModuleExport::ExportClass("Module");
 
 	StrategyExport::ExportClass("Strategy");
-
-	ServiceInfoExport::ExportClass("ServiceInfoExport");
-	ServiceExport::ExportClass("Service");
-	{
-		//! @todo: export __all__
-		py::object servicesModule(
-			py::handle<>(py::borrowed(PyImport_AddModule("trdk.services"))));
-		py::scope().attr("services") = servicesModule;
-		py::scope servicesScope = servicesModule;
-		BarServiceExport::ExportClass("BarService");
-		MovingAverageServiceExport::ExportClass("MovingAverageService");
-		BollingerBandsServiceExport::ExportClass("BollingerBandsService");
-	}
 
 	ContextExport::ExportClass("Context");
 	PyApi::Engine::ExportClass("Engine");

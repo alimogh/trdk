@@ -256,10 +256,8 @@ namespace trdk { namespace Engine {
 			return
 				m_level1Updates.IsActive()
 				|| m_level1Ticks.IsActive()
-				|| m_newTrades.IsActive()
 				|| m_positionsUpdates.IsActive()
-				|| m_brokerPositionsUpdates.IsActive()
-				|| m_newBars.IsActive();
+				|| m_brokerPositionsUpdates.IsActive();
 		}
 
 		void Activate();
@@ -274,23 +272,12 @@ namespace trdk { namespace Engine {
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &,
 					bool flush);
-		void SignalNewTrade(
-					SubscriberPtrWrapper &,
-					Security &,
-					const boost::posix_time::ptime &,
-					ScaledPrice,
-					Qty,
-					OrderSide);
 		void SignalPositionUpdate(SubscriberPtrWrapper &, Position &);
 		void SignalBrokerPositionUpdate(
 					SubscriberPtrWrapper &,
 					Security &,
 					Qty,
 					bool isInitial);
-			void SignalNewBar(
-					SubscriberPtrWrapper &,
-					Security &,
-					const Security::Bar &);
 
 	private:
 
@@ -431,153 +418,6 @@ namespace trdk { namespace Engine {
 
 		////////////////////////////////////////////////////////////////////////////////
 
-		template<typename EventList>
-		void StartNotificationTask(
-					boost::barrier &startBarrier,
-					EventList &list,
-					size_t &threadsCounter) {
-			UseUnused(threadsCounter);
-			const auto lists = boost::make_tuple(boost::ref(list));
-			m_threads.create_thread(
-				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
-					this,
-					boost::ref(startBarrier),
-					lists));
-			Assert(1 == threadsCounter--);
-		}
-
-		template<typename T1>
-		static std::string GetEventListsName(
-					const boost::tuple<T1> &lists) {
-			return lists.get<0>().GetName();
-		}
-		
-		template<typename T1>
-		static void AssignEventListsSyncObjects(
-					boost::shared_ptr<EventListsSyncObjects> &sync,
-					const boost::tuple<T1> &lists) {
-			lists.get<0>().AssignSyncObjects(sync);
-		}
-
-		template<typename T1>
-		void EnqueueEventListsCollection(
-					const boost::tuple<T1> &lists,
-					std::bitset<1> &deactivationMask,
-					EventQueueLock &lock)
-				const {
-			EnqueueEventList<0>(lists, deactivationMask, lock);
-		}
-
-		////////////////////////////////////////////////////////////////////////////////
-
-		template<typename ListWithHighPriority, typename ListWithLowPriority>
-		void StartNotificationTask(
-					boost::barrier &startBarrier,
-					ListWithHighPriority &listWithHighPriority,
-					ListWithLowPriority &listWithLowPriority,
-					size_t &threadsCounter) {
-			UseUnused(threadsCounter);
-			const auto lists = boost::make_tuple(
-				boost::ref(listWithHighPriority),
-				boost::ref(listWithLowPriority));
-			m_threads.create_thread(
-				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
-					this,
-					boost::ref(startBarrier),
-					lists));
-			Assert(1 == threadsCounter--);
-		}
-
-		template<typename T1, typename T2>
-		static std::string GetEventListsName(
-					const boost::tuple<T1, T2> &lists) {
-			boost::format result("%1%, %2%");
-			result % lists.get<0>().GetName() % lists.get<1>().GetName();
-			return result.str();
-		}
-
-		template<typename T1, typename T2>
-		static void AssignEventListsSyncObjects(
-					boost::shared_ptr<EventListsSyncObjects> &sync,
-					const boost::tuple<T1, T2> &lists) {
-			lists.get<0>().AssignSyncObjects(sync);
-			lists.get<1>().AssignSyncObjects(sync);
-		}
-		
-		template<typename T1, typename T2>
-		void EnqueueEventListsCollection(
-					const boost::tuple<T1, T2> &lists,
-					std::bitset<2> &deactivationMask,
-					EventQueueLock &lock)
-				const {
-			do {
-				EnqueueEventList<0>(lists, deactivationMask, lock);
-			} while (EnqueueEventList<1>(lists, deactivationMask, lock));
-		}
-
-		////////////////////////////////////////////////////////////////////////////////
-
-		template<
-			typename ListWithHighPriority,
-			typename ListWithLowPriority,
-			typename ListWithExtraLowPriority>
-		void StartNotificationTask(
-					boost::barrier &startBarrier,
-					ListWithHighPriority &listWithHighPriority,
-					ListWithLowPriority &listWithLowPriority,
-					ListWithExtraLowPriority &listWithExtraLowPriority,
-					size_t &threadsCounter) {
-			UseUnused(threadsCounter);
-			const auto lists = boost::make_tuple(
-				boost::ref(listWithHighPriority),
-				boost::ref(listWithLowPriority),
-				boost::ref(listWithExtraLowPriority));
-			m_threads.create_thread(
-				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
-					this,
-					boost::ref(startBarrier),
-					lists));
-			Assert(1 == threadsCounter--);
-		}
-
-		template<typename T1, typename T2, typename T3>
-		static std::string GetEventListsName(
-					const boost::tuple<T1, T2, T3> &lists) {
-			boost::format result("%1%, %2%, %3%");
-			result
-				% lists.get<0>().GetName()
-				% lists.get<1>().GetName()
-				% lists.get<2>().GetName();
-			return result.str();
-		}
-
-		template<typename T1, typename T2, typename T3>
-		static void AssignEventListsSyncObjects(
-					boost::shared_ptr<EventListsSyncObjects> &sync,
-					const boost::tuple<T1, T2, T3> &lists) {
-			lists.get<0>().AssignSyncObjects(sync);
-			lists.get<1>().AssignSyncObjects(sync);
-			lists.get<2>().AssignSyncObjects(sync);
-		}
-
-		template<typename T1, typename T2, typename T3>
-		void EnqueueEventListsCollection(
-					const boost::tuple<T1, T2, T3> &lists,
-					std::bitset<3> &deactivationMask,
-					EventQueueLock &lock)
-				const {
-			do {
-				do {
-					EnqueueEventList<0>(lists, deactivationMask, lock);
-				} while (EnqueueEventList<1>(lists, deactivationMask, lock));
-			} while (EnqueueEventList<2>(lists, deactivationMask, lock));
-		}
-
-		////////////////////////////////////////////////////////////////////////////////
-
 		template<
 			typename ListWithHighPriority,
 			typename ListWithLowPriority,
@@ -644,203 +484,6 @@ namespace trdk { namespace Engine {
 
 		////////////////////////////////////////////////////////////////////////////////
 
-		template<
-			typename ListWithHighPriority,
-			typename ListWithLowPriority,
-			typename ListWithExtraLowPriority,
-			typename ListWithExtraLowPriority2,
-			typename ListWithExtraLowPriority3>
-		void StartNotificationTask(
-					boost::barrier &startBarrier,
-					ListWithHighPriority &listWithHighPriority,
-					ListWithLowPriority &listWithLowPriority,
-					ListWithExtraLowPriority &listWithExtraLowPriority,
-					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
-					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
-					size_t &threadsCounter) {
-			UseUnused(threadsCounter);
-			const auto lists = boost::make_tuple(
-				boost::ref(listWithHighPriority),
-				boost::ref(listWithLowPriority),
-				boost::ref(listWithExtraLowPriority),
-				boost::ref(listWithExtraLowPriority2),
-				boost::ref(listWithExtraLowPriority3));
-			m_threads.create_thread(
-				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
-					this,
-					boost::ref(startBarrier),
-					lists));
-			Assert(1 == threadsCounter--);
-		}
-
-		template<
-			typename T1,
-			typename T2,
-			typename T3,
-			typename T4,
-			typename T5>
-		static std::string GetEventListsName(
-					const boost::tuple<T1, T2, T3, T4, T5> &lists) {
-			boost::format result("%1%, %2%, %3%, %4%, %5%");
-			result
-				% lists.get<0>().GetName()
-				% lists.get<1>().GetName()
-				% lists.get<2>().GetName()
-				% lists.get<3>().GetName()
-				% lists.get<4>().GetName();
-			return result.str();
-		}
-
-		template<
-			typename T1,
-			typename T2,
-			typename T3,
-			typename T4,
-			typename T5>
-		static void AssignEventListsSyncObjects(
-					boost::shared_ptr<EventListsSyncObjects> &sync,
-					const boost::tuple<T1, T2, T3, T4, T5> &lists) {
-			lists.get<0>().AssignSyncObjects(sync);
-			lists.get<1>().AssignSyncObjects(sync);
-			lists.get<2>().AssignSyncObjects(sync);
-			lists.get<3>().AssignSyncObjects(sync);
-			lists.get<4>().AssignSyncObjects(sync);
-		}
-
-		template<
-			typename T1,
-			typename T2,
-			typename T3,
-			typename T4,
-			typename T5>
-		void EnqueueEventListsCollection(
-					const boost::tuple<T1, T2, T3, T4, T5> &lists,
-					std::bitset<5> &deactivationMask,
-					EventQueueLock &lock)
-				const {
-			do {
-				do {
-					do {
-						do {
-							EnqueueEventList<0>(lists, deactivationMask, lock);
-						} while (
-							EnqueueEventList<1>(lists, deactivationMask, lock));
-					} while (
-						EnqueueEventList<2>(lists, deactivationMask, lock));
-				} while (EnqueueEventList<3>(lists, deactivationMask, lock));
-			} while (EnqueueEventList<4>(lists, deactivationMask, lock));
-		}
-
-		////////////////////////////////////////////////////////////////////////////////
-
-		template<
-			typename ListWithHighPriority,
-			typename ListWithLowPriority,
-			typename ListWithExtraLowPriority,
-			typename ListWithExtraLowPriority2,
-			typename ListWithExtraLowPriority3,
-			typename ListWithExtraLowPriority4>
-		void StartNotificationTask(
-					boost::barrier &startBarrier,
-					ListWithHighPriority &listWithHighPriority,
-					ListWithLowPriority &listWithLowPriority,
-					ListWithExtraLowPriority &listWithExtraLowPriority,
-					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
-					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
-					ListWithExtraLowPriority4 &listWithExtraLowPriority4,
-					size_t &threadsCounter) {
-			UseUnused(threadsCounter);
-			const auto lists = boost::make_tuple(
-				boost::ref(listWithHighPriority),
-				boost::ref(listWithLowPriority),
-				boost::ref(listWithExtraLowPriority),
-				boost::ref(listWithExtraLowPriority2),
-				boost::ref(listWithExtraLowPriority3),
-				boost::ref(listWithExtraLowPriority4));
-			m_threads.create_thread(
-				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
-					this,
-					boost::ref(startBarrier),
-					lists));
-			Assert(1 == threadsCounter--);
-		}
-
-		template<
-			typename T1,
-			typename T2,
-			typename T3,
-			typename T4,
-			typename T5,
-			typename T6>
-		static std::string GetEventListsName(
-					const boost::tuple<T1, T2, T3, T4, T5, T6> &lists) {
-			boost::format result("%1%, %2%, %3%, %4%, %5%, %6%");
-			result
-				% lists.get<0>().GetName()
-				% lists.get<1>().GetName()
-				% lists.get<2>().GetName()
-				% lists.get<3>().GetName()
-				% lists.get<4>().GetName()
-				% lists.get<5>().GetName();
-			return result.str();
-		}
-
-		template<
-			typename T1,
-			typename T2,
-			typename T3,
-			typename T4,
-			typename T5,
-			typename T6>
-		static void AssignEventListsSyncObjects(
-					boost::shared_ptr<EventListsSyncObjects> &sync,
-					const boost::tuple<T1, T2, T3, T4, T5, T6> &lists) {
-			lists.get<0>().AssignSyncObjects(sync);
-			lists.get<1>().AssignSyncObjects(sync);
-			lists.get<2>().AssignSyncObjects(sync);
-			lists.get<3>().AssignSyncObjects(sync);
-			lists.get<4>().AssignSyncObjects(sync);
-			lists.get<5>().AssignSyncObjects(sync);
-		}
-
-		template<
-			typename T1,
-			typename T2,
-			typename T3,
-			typename T4,
-			typename T5,
-			typename T6>
-		void EnqueueEventListsCollection(
-					const boost::tuple<T1, T2, T3, T4, T5, T6> &lists,
-					std::bitset<6> &deactivationMask,
-					EventQueueLock &lock)
-				const {
-			do {
-				do {
-					do {
-						do {
-							do {
-								EnqueueEventList<0>(
-									lists,
-									deactivationMask,
-									lock);
-							} while (
-								EnqueueEventList<1>(
-									lists,
-									deactivationMask,
-									lock));
-						} while (
-							EnqueueEventList<2>(lists, deactivationMask, lock));
-					} while (
-						EnqueueEventList<3>(lists, deactivationMask, lock));
-				} while (EnqueueEventList<4>(lists, deactivationMask, lock));
-			} while (EnqueueEventList<5>(lists, deactivationMask, lock));
-		}
-
-		////////////////////////////////////////////////////////////////////////////////
-
 		template<typename EventLists>
 		void NotificationTask(
 					boost::barrier &startBarrier,
@@ -887,10 +530,8 @@ namespace trdk { namespace Engine {
 
 		Level1UpdateEventQueue m_level1Updates;
 		Level1TicksEventQueue m_level1Ticks;
-		NewTradeEventQueue m_newTrades;
 		PositionsUpdateEventQueue m_positionsUpdates;
 		BrokerPositionsUpdateEventQueue m_brokerPositionsUpdates;
-		NewBarEventQueue m_newBars;
 
 	};
 

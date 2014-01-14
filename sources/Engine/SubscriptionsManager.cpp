@@ -127,29 +127,7 @@ void SubscriptionsManager::SubscribeToLevel1Ticks(
 void SubscriptionsManager::SubscribeToTrades(
 			Security &security,
 			const SubscriberPtrWrapper &subscriber,
-			std::list<ss::connection> &slotConnections) {
-	const auto slot = Security::NewTradeSlot(
-		boost::bind(
-			&Dispatcher::SignalNewTrade,
-			&m_dispatcher,
-			subscriber,
-			boost::ref(security),
-			_1,
-			_2,
-			_3,
-			_4));
-	const auto &connection = security.SubscribeToTrades(slot);
-	try {
-		slotConnections.push_back(connection);
-	} catch (...) {
-		try {
-			connection.disconnect();
-		} catch (...) {
-			AssertFailNoException();
-			throw;
-		}
-		throw;
-	}
+			std::list<ss::connection> &) {
 	Report(*subscriber, security, "new trades");
 }
 
@@ -183,26 +161,7 @@ void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
 void SubscriptionsManager::SubscribeToBars(
 			Security &security,
 			const SubscriberPtrWrapper &subscriber,
-			std::list<ss::connection> &slotConnections) {
-	const auto slot = Security::NewBarSlot(
-		boost::bind(
-			&Dispatcher::SignalNewBar,
-			&m_dispatcher,
-			subscriber,
-			boost::ref(security),
-			_1));
-	const auto &connection = security.SubscribeToBars(slot);
-	try {
-		slotConnections.push_back(connection);
-	} catch (...) {
-		try {
-			connection.disconnect();
-		} catch (...) {
-			AssertFailNoException();
-			throw;
-		}
-		throw;
-	}
+			std::list<ss::connection> &) {
 	Report(*subscriber, security, "new bars");
 }
 

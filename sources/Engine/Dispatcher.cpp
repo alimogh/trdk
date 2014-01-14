@@ -25,19 +25,15 @@ Dispatcher::Dispatcher(Engine::Context &context)
 			: m_context(context),
 			m_level1Updates("Level 1 Updates", m_context),
 			m_level1Ticks("Level 1 Ticks", m_context),
-			m_newTrades("Trades", m_context),
 			m_positionsUpdates("Positions", m_context),
-			m_brokerPositionsUpdates("Broker Positions", m_context),
-			m_newBars("Bars", m_context) {
+			m_brokerPositionsUpdates("Broker Positions", m_context) {
 	size_t threadsCount = 1;
 	boost::barrier startBarrier(threadsCount + 1);
 	StartNotificationTask(
 		startBarrier,
 		m_level1Updates,
 		m_level1Ticks,
-		m_newTrades,
 		m_positionsUpdates,
-		m_newBars,
 		m_brokerPositionsUpdates,
 		threadsCount);
 	AssertEq(0, threadsCount);
@@ -48,11 +44,9 @@ Dispatcher::~Dispatcher() {
 	try {
 		m_context.GetLog().Debug("Stopping events dispatching...");
 		m_level1Ticks.Stop();
-		m_newTrades.Stop();
 		m_level1Updates.Stop();
 		m_positionsUpdates.Stop();
 		m_brokerPositionsUpdates.Stop();
-		m_newBars.Stop();
 		m_threads.join_all();
 		m_context.GetLog().Debug("Events dispatching stopped.");
 	} catch (...) {
@@ -63,20 +57,16 @@ Dispatcher::~Dispatcher() {
 
 void Dispatcher::Activate() {
 	m_context.GetLog().Debug("Starting events dispatching...");
-	m_newBars.Activate();
 	m_brokerPositionsUpdates.Activate();
 	m_positionsUpdates.Activate();
 	m_level1Updates.Activate();
-	m_newTrades.Activate();
 	m_level1Ticks.Activate();
 	m_context.GetLog().Debug("Events dispatching started.");
 }
 
 void Dispatcher::Suspend() {
 	m_context.GetLog().Debug("Suspending events dispatching...");
-	m_newBars.Suspend();
 	m_level1Ticks.Suspend();
-	m_newTrades.Suspend();
 	m_level1Updates.Suspend();
 	m_positionsUpdates.Suspend();
 	m_context.GetLog().Debug("Events dispatching suspended.");
@@ -112,31 +102,6 @@ void Dispatcher::SignalLevel1Tick(
 	}
 }
 
-void Dispatcher::SignalNewTrade(
-			SubscriberPtrWrapper &subscriber,
-			Security &security,
-			const pt::ptime &time,
-			ScaledPrice price,
-			Qty qty,
-			OrderSide side) {
-	try {
-		if (subscriber.IsBlocked()) {
-			return;
-		}
-		const SubscriberPtrWrapper::Trade trade = {
-			&security,
-			time,
-			price,
-			qty,
-			side};
-		m_newTrades.Queue(boost::make_tuple(trade, subscriber), true);
-	} catch (...) {
-		//! Blocking as irreversible error, data loss.
-		subscriber.Block();
-		throw;
-	}
-}
-
 void Dispatcher::SignalPositionUpdate(
 			SubscriberPtrWrapper &subscriber,
 			Position &position) {
@@ -165,22 +130,6 @@ void Dispatcher::SignalBrokerPositionUpdate(
 		m_brokerPositionsUpdates.Queue(
 			boost::make_tuple(position , subscriber),
 			true);
-	} catch (...) {
-		//! Blocking as irreversible error, data loss.
-		subscriber.Block();
-		throw;
-	}
-}
-
-void Dispatcher::SignalNewBar(
-			SubscriberPtrWrapper &subscriber,
-			Security &security,
-			const Security::Bar &bar) {
-	try {
-		if (subscriber.IsBlocked()) {
-			return;
-		}
-		m_newBars.Queue(boost::make_tuple(&security, bar, subscriber), true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		subscriber.Block();

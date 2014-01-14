@@ -68,9 +68,15 @@
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>trdk_dbg</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>trdk</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
+    <TargetName>trdk_test</TargetName>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Link />
     <ClCompile>
@@ -92,13 +98,11 @@
     <ClInclude Include="PositionExport.hpp" />
     <ClInclude Include="PyEngine.hpp" />
     <ClInclude Include="PyPosition.hpp" />
-    <ClInclude Include="PyService.hpp" />
     <ClInclude Include="PyStrategy.hpp" />
     <ClInclude Include="PythonToCoreTransit.hpp" />
     <ClInclude Include="ModuleExport.hpp" />
     <ClInclude Include="SecurityExport.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="ServiceExport.hpp" />
     <ClInclude Include="Script.hpp" />
     <ClInclude Include="Errors.hpp" />
     <ClInclude Include="StrategyExport.hpp" />
@@ -119,10 +123,8 @@
     </ClCompile>
     <ClCompile Include="ModuleExport.cpp" />
     <ClCompile Include="PyEngine.cpp" />
-    <ClCompile Include="PyService.cpp" />
     <ClCompile Include="PyStrategy.cpp" />
     <ClCompile Include="SecurityExport.cpp" />
-    <ClCompile Include="ServiceExport.cpp" />
     <ClCompile Include="Script.cpp" />
     <ClCompile Include="StrategyExport.cpp" />
     <ClCompile Include="TradeSystemExport.cpp" />
@@ -140,8 +142,8 @@
     <ProjectReference Include="..\Engine\Engine.vcxproj">
       <Project>{015fb121-6122-4a00-bfbb-545e9e73abee}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Services\Services.vcxproj">
-      <Project>{4f025d92-8f15-4a05-97b6-ca680cb090d9}</Project>
+    <ProjectReference Include="..\Interaction\InteractiveBrokers\InteractiveBrokers.vcxproj">
+      <Project>{befe87ae-1376-4c4c-87d5-73e782990306}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Version\Version.vcxproj">
       <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>

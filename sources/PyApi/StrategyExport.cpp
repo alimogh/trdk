@@ -14,7 +14,6 @@
 #include "ContextExport.hpp"
 #include "PositionExport.hpp"
 #include "PyPosition.hpp"
-#include "PyService.hpp"
 #include "BaseExport.hpp"
 #include "Core/Settings.hpp"
 

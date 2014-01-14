@@ -15,8 +15,6 @@ class Proxy(trdk.Strategy):
 
     def onBrokerPositionUpdate(self, security, qty, isInitial):
 
-        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ", qty, isInitial
-
         if isInitial is False:
             return
 
