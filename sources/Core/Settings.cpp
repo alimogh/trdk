@@ -92,7 +92,7 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 				"Wrong INI-file key (\"%1%:%2%\") format:"
 					" \"trade session period EDT example: 09:30:00-15:58:00");
 			message % commonConf % tradeSessionPeriodEdtKey;
-			throw IniFile::KeyFormatError(message.str().c_str());
+			throw Ini::KeyFormatError(message.str().c_str());
 		}
 		values.tradeSessionStartTime -= GetEdtDiff();
 		values.tradeSessionEndTime -= GetEdtDiff();
