@@ -26,6 +26,9 @@ namespace trdk { namespace Engine { namespace Ini {
 		extern const std::string factory;
 		extern const std::string instances;
 		extern const std::string requires;
+		namespace Dbg {
+			const std::string autoName = "dbg_auto_name";
+		}
 	}
 
 	namespace Constants {
