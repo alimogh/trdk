@@ -30,6 +30,17 @@ using namespace trdk::Engine::Ini;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+trdk::TradeSystemFactoryResult CreateTradeSystem(
+		const trdk::Lib::IniSectionRef &,
+		trdk::Context::Log &);
+
+boost::shared_ptr<trdk::Strategy> CreateStrategy(
+		trdk::Context &context,
+		const std::string &tag,
+		const trdk::Lib::IniSectionRef &configuration);
+
+////////////////////////////////////////////////////////////////////////////////
+
 class ContextBootstraper : private boost::noncopyable {
 
 public:
@@ -89,45 +100,15 @@ private:
 			Keys::factory,
 			DefaultValues::Factories::tradeSystem);
 		
-		boost::shared_ptr<Dll> dll(
-			new Dll(
-				module,
-				configurationSection.ReadBoolKey(Keys::Dbg::autoName, true)));
+		boost::shared_ptr<Dll> dll;
 
 		typedef TradeSystemFactoryResult FactoryResult;
-		typedef TradeSystemFactory Factory;
 		FactoryResult factoryResult;
 		
-		try {
-			
-			try {
-				factoryResult = dll->GetFunction<Factory>(factoryName)(
-					configurationSection,
-					m_context.GetLog());
-			} catch (const Dll::DllFuncException &) {
-				if (	!boost::istarts_with(
-							factoryName,
-							DefaultValues::Factories::factoryNameStart)) {
-					factoryName
-						= DefaultValues::Factories::factoryNameStart
-							+ factoryName;
-					factoryResult = dll->GetFunction<Factory>(factoryName)(
-						configurationSection,
-						m_context.GetLog());
-				} else {
-					throw;
-				}
-			}
-		
-		} catch (...) {
-			trdk::Log::RegisterUnhandledException(
-				__FUNCTION__,
-				__FILE__,
-				__LINE__,
-				false);
-			throw Exception("Failed to load trade system module");
-		}
-	
+		factoryResult = CreateTradeSystem(
+			configurationSection,
+			m_context.GetLog());
+
 		Assert(boost::get<0>(factoryResult));
 		if (!boost::get<0>(factoryResult)) {
 			throw Exception(
@@ -1566,6 +1547,32 @@ private:
 				throw;
 			}
 		}
+
+		return result;
+
+	}
+
+	template<>
+	ModuleDll<Strategy> LoadModuleDll(
+				const IniSectionRef &conf,
+				const std::string &tag)
+			const {
+
+		typedef ModuleTrait<Strategy> Trait;
+
+		ModuleDll<Strategy> result = {};
+		result.conf.reset(new IniSectionRef(conf));
+
+		if (tag.empty()) {
+			m_context.GetLog().Error(
+				"Failed to get tag for %1% section \"%2%\".",
+				boost::make_tuple(
+					boost::cref(Trait::GetName(false)),
+					boost::cref(result.conf)));
+			throw Lib::Ini::Error("Failed to load module");
+		}
+
+		result.factory = &CreateStrategy;
 
 		return result;
 

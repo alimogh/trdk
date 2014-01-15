@@ -91,8 +91,35 @@ Script::Script(py::object &main, const fs::path &filePath)
 			"Internal error: Failed to get __main__.__dict__");
 	}
 
+const char *s = "\n"
+"import trdk\n"
+"from trdkfront.wsgi import application\n"
+"class Proxy(trdk.Strategy):\n"
+"    def __init__(self, param):\n"
+"        trdk.Strategy.__init__(self, param)\n"
+"        application.fullTradeStrategyList.append(self)\n"
+"    def getRequiredSuppliers(self):\n"
+"        return 'Broker Positions'\n"
+"    def onBrokerPositionUpdate(self, security, qty, isInitial):\n"
+"        if isInitial is False:\n"
+"            return\n"
+"        if qty < 0:\n"
+"            position = trdk.ShortPosition(self, security, qty, 0)\n"
+"        elif qty > 0:\n"
+"            position = trdk.LongPosition(self, security, qty, 0)\n"
+"        else:\n"
+"            return\n"
+"        self.log.debug(\n"
+"            'Restoring {0} {1} position: {2}...'\n"
+"            .format(\n"
+"                position.type,\n"
+"                position.security.symbol,\n"
+"                position.activeQty))\n"
+"        position.restoreOpenState()\n"
+"\n";
+
 	try {
-		py::exec_file(filePath.string().c_str(), m_global, m_global);
+		py::exec(s, m_global, m_global);
 	} catch (const std::exception &ex) {
 		throw Error(
 			(boost::format("Failed to load script from %1%: \"%2%\"")

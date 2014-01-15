@@ -20,8 +20,8 @@ using namespace trdk::Lib;
 
 namespace {
 	
-	typedef Concurrency::reader_writer_lock SecuritiesMutex;
-	typedef SecuritiesMutex::scoped_lock_read SecuritiesReadLock;
+	typedef boost::mutex SecuritiesMutex;
+	typedef SecuritiesMutex::scoped_lock SecuritiesReadLock;
 	typedef SecuritiesMutex::scoped_lock SecuritiesWriteLock;
 
 }

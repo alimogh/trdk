@@ -36,12 +36,12 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	private:
 
-		typedef Concurrency::reader_writer_lock OrdersMutex;
+		typedef boost::mutex OrdersMutex;
 		typedef OrdersMutex::scoped_lock OrdersWriteLock;
-		typedef OrdersMutex::scoped_lock_read OrdersReadLock;
+		typedef OrdersMutex::scoped_lock OrdersReadLock;
 
-		typedef Concurrency::reader_writer_lock PositionsMutex;
-		typedef PositionsMutex::scoped_lock_read PositionsReadLock;
+		typedef boost::mutex PositionsMutex;
+		typedef PositionsMutex::scoped_lock PositionsReadLock;
 		typedef PositionsMutex::scoped_lock PositionsWriteLock;
 		typedef std::map<std::string, Qty> Positions;
 

@@ -14,6 +14,7 @@ def makeConnection():
         return
 
     trdk.log.enableEventsToStdOut()
+    # trdk.log.enableEvents(os.path.join(frontSettings.BASE_DIR, 'log'))
 
     engineSettings = \
         "[Common]\n" \
@@ -30,7 +31,7 @@ def makeConnection():
         "[Strategy.Proxy]\n" \
         "   module = " + frontSettings.BASE_DIR + "trdk.pyd\n" \
         "   dbg_auto_name = no\n" \
-        "   script_file_path = " + frontSettings.BASE_DIR + "hedgemanager\proxy.py\n" \
+        "   script_file_path = " + frontSettings.BASE_DIR + "\hedgemanager\proxy.py\n" \
         "   instances = " + frontSettings.BASE_DIR + "symbols.ini\n"
 
     engine = trdk.Engine(engineSettings)

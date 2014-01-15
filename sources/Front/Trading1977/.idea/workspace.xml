@@ -31,25 +31,16 @@
       <file leaf-file-name="views.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/services/views.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="65" column="0" selection-start="1867" selection-end="1867" vertical-scroll-proportion="0.0" vertical-offset="1105" max-vertical-offset="1479">
+            <state line="5" column="0" selection-start="111" selection-end="111" vertical-scroll-proportion="0.0" vertical-offset="85" max-vertical-offset="1871">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="connection.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="connection.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/trdkfront/connection.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="14" column="0" selection-start="286" selection-end="286" vertical-scroll-proportion="0.39921722" vertical-offset="0" max-vertical-offset="1395">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="autoreload.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://C:/Python27/Lib/site-packages/django/utils/autoreload.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="127" column="0" selection-start="4621" selection-end="4621" vertical-scroll-proportion="0.0" vertical-offset="2159" max-vertical-offset="3128">
+            <state line="15" column="6" selection-start="293" selection-end="293" vertical-scroll-proportion="0.0" vertical-offset="187" max-vertical-offset="1412">
               <folding />
             </state>
           </provider>
@@ -58,25 +49,70 @@
       <file leaf-file-name="SocketServer.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://C:/Python27/Lib/SocketServer.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="154" column="0" selection-start="5999" selection-end="5999" vertical-scroll-proportion="0.0" vertical-offset="2618" max-vertical-offset="12461">
+            <state line="154" column="0" selection-start="5999" selection-end="5999" vertical-scroll-proportion="0.0" vertical-offset="2380" max-vertical-offset="12853">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="index.html" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/dashboard/templates/index.html">
+      <file leaf-file-name="autoreload.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://C:/Python27/Lib/site-packages/django/utils/autoreload.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="102" column="90" selection-start="3201" selection-end="3201" vertical-scroll-proportion="-7.8461537" vertical-offset="1530" max-vertical-offset="3413">
+            <state line="127" column="0" selection-start="4621" selection-end="4621" vertical-scroll-proportion="0.0" vertical-offset="1989" max-vertical-offset="3588">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="base.html" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/templates/base.html">
+      <file leaf-file-name="proxy.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/hedgemanager/proxy.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="19" column="17" selection-start="405" selection-end="417" vertical-scroll-proportion="0.0" vertical-offset="323" max-vertical-offset="1564">
+            <state line="18" column="18" selection-start="442" selection-end="442" vertical-scroll-proportion="0.0" vertical-offset="306" max-vertical-offset="612">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="manage.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/manage.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="5" column="71" selection-start="124" selection-end="142" vertical-scroll-proportion="0.0" vertical-offset="85" max-vertical-offset="204">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="settings.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/trdkfront/settings.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="16" column="64" selection-start="469" selection-end="469" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="2075">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="setup.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/setup.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="60" column="0" selection-start="1635" selection-end="1635" vertical-scroll-proportion="0.0" vertical-offset="663" max-vertical-offset="2857">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="trdkfront.py" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/trdkfront.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="28" column="27" selection-start="753" selection-end="753" vertical-scroll-proportion="0.33268103" vertical-offset="306" max-vertical-offset="1038">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="urls.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/trdkfront/urls.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="6" column="0" selection-start="163" selection-end="195" vertical-scroll-proportion="0.0" vertical-offset="102" max-vertical-offset="459">
               <folding />
             </state>
           </provider>
@@ -94,15 +130,17 @@
       <list>
         <option value="$PROJECT_DIR$/trdkfront/templates/index.html" />
         <option value="$PROJECT_DIR$/media/css/vader/jquery-ui-1.10.3.custom.css" />
-        <option value="$PROJECT_DIR$/trdkfront/settings.py" />
         <option value="$PROJECT_DIR$/trdkfront/wsgi.py" />
         <option value="$PROJECT_DIR$/trdkfront/urls.py" />
-        <option value="$PROJECT_DIR$/dashboard/views.py" />
         <option value="$PROJECT_DIR$/templates/base.html" />
         <option value="$PROJECT_DIR$/services/views.py" />
         <option value="$PROJECT_DIR$/dashboard/templates/index.html" />
-        <option value="$PROJECT_DIR$/trdkfront/connection.py" />
         <option value="$PROJECT_DIR$/hedgemanager/proxy.py" />
+        <option value="$PROJECT_DIR$/dashboard/views.py" />
+        <option value="$PROJECT_DIR$/setup.py" />
+        <option value="$PROJECT_DIR$/trdkfront/connection.py" />
+        <option value="$PROJECT_DIR$/trdkfront/settings.py" />
+        <option value="$PROJECT_DIR$/trdkfront.py" />
       </list>
     </option>
   </component>
@@ -164,32 +202,6 @@
               <option name="myItemId" value="trdkfront" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
             </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="External Libraries" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ExternalLibrariesNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="&lt; Python 2.7.4 (C:/Python27/python.exe) &gt;" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="trdkfront" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="External Libraries" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ExternalLibrariesNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="&lt; Python 2.7.4 (C:/Python27/python.exe) &gt;" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Lib" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
           </PATH>
           <PATH>
             <PATH_ELEMENT>
@@ -212,20 +224,6 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="trdkfront" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="trdkfront" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Trading1977" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="templates" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -271,24 +269,6 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="trdkfront" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Trading1977" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="dashboard" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="templates" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
         </subPane>
       </pane>
       <pane id="Scope" />
@@ -297,13 +277,13 @@
   <component name="PropertiesComponent">
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="recentsLimit" value="5" />
     <property name="options.lastSelected" value="reference.settingsdialog.IDE.editor.colors.General" />
+    <property name="recentsLimit" value="5" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../../../output/x86/bin/Test2.py" />
     <property name="FullScreen" value="false" />
     <property name="DefaultHtmlFileTemplate" value="Html5" />
-    <property name="options.splitter.details.proportions" value="0.2" />
     <property name="options.searchVisible" value="true" />
+    <property name="options.splitter.details.proportions" value="0.2" />
   </component>
   <component name="PyConsoleOptionsProvider">
     <option name="myPythonConsoleState">
@@ -404,27 +384,7 @@
       <option name="PARAMETERS" value="" />
       <method />
     </configuration>
-    <configuration default="true" type="Python.DjangoServer" factoryName="Django server">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="trdkfront" />
-      <option name="launchJavascriptDebuger" value="false" />
-      <option name="port" value="8000" />
-      <option name="host" value="" />
-      <option name="additionalOptions" value="" />
-      <option name="browserUrl" value="" />
-      <option name="runTestServer" value="false" />
-      <option name="runNoReload" value="false" />
-      <option name="useCustomRunCommand" value="false" />
-      <option name="customRunCommand" value="" />
+    <configuration default="true" type="JavascriptDebugType" factoryName="JavaScript Debug" singleton="true">
       <method />
     </configuration>
     <configuration default="true" type="tests" factoryName="Unittests">
@@ -450,7 +410,27 @@
       <option name="USE_PARAM" value="false" />
       <method />
     </configuration>
-    <configuration default="true" type="JavascriptDebugType" factoryName="JavaScript Debug" singleton="true">
+    <configuration default="true" type="Python.DjangoServer" factoryName="Django server">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="trdkfront" />
+      <option name="launchJavascriptDebuger" value="false" />
+      <option name="port" value="8000" />
+      <option name="host" value="" />
+      <option name="additionalOptions" value="" />
+      <option name="browserUrl" value="" />
+      <option name="runTestServer" value="false" />
+      <option name="runNoReload" value="false" />
+      <option name="useCustomRunCommand" value="false" />
+      <option name="customRunCommand" value="" />
       <method />
     </configuration>
     <configuration default="true" type="tests" factoryName="Doctests">
@@ -579,8 +559,8 @@
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32977587" sideWeight="0.6" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.25987193" sideWeight="0.5966667" order="1" side_tool="false" content_ui="tabs" x="-681" y="131" width="468" height="540" />
-      <window_info id="Project" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.26574174" sideWeight="0.5966667" order="4" side_tool="false" content_ui="combo" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.15101388" sideWeight="0.5966667" order="1" side_tool="false" content_ui="tabs" x="-681" y="131" width="468" height="540" />
+      <window_info id="Project" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.15741728" sideWeight="0.5966667" order="4" side_tool="false" content_ui="combo" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.40333334" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.40444446" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
@@ -608,77 +588,91 @@
       <breakpoints-dialog>
         <breakpoints-dialog />
       </breakpoints-dialog>
-      <option name="time" value="74" />
+      <option name="time" value="78" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/templates/base.html">
+    <entry file="file://$PROJECT_DIR$/dashboard/templates/index.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="19" column="17" selection-start="405" selection-end="417" vertical-scroll-proportion="0.0" vertical-offset="323" max-vertical-offset="1564">
+        <state line="102" column="90" selection-start="3201" selection-end="3201" vertical-scroll-proportion="-7.8461537" vertical-offset="1530" max-vertical-offset="3413" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build.cmd">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="853" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/services/models.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="887">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/services/__init__.py">
+    <entry file="file://$PROJECT_DIR$/services/admin.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="514" />
-      </provider>
-    </entry>
-    <entry file="file://C:/Python27/Lib/site-packages/django/core/servers/basehttp.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="125" column="0" selection-start="4483" selection-end="4549" vertical-scroll-proportion="0.33268481" vertical-offset="1716" max-vertical-offset="3132">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="887">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://C:/Python27/Lib/wsgiref/handlers.py">
+    <entry file="file://$PROJECT_DIR$/manage.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="84" column="0" selection-start="2886" selection-end="2886" vertical-scroll-proportion="0.0" vertical-offset="1189" max-vertical-offset="8079">
+        <state line="5" column="71" selection-start="124" selection-end="142" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="989">
           <folding />
         </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/trdkfront/wsgi.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="16" column="27" selection-start="437" selection-end="452" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="803" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/dashboard/views.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="7" column="0" selection-start="148" selection-end="148" vertical-scroll-proportion="0.24385247" vertical-offset="0" max-vertical-offset="641">
+        <state line="10" column="0" selection-start="210" selection-end="210" vertical-scroll-proportion="0.3469388" vertical-offset="0" max-vertical-offset="643">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hedgemanager/proxy.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="18" column="18" selection-start="442" selection-end="442" vertical-scroll-proportion="0.0" vertical-offset="204" max-vertical-offset="1051">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/trdkfront/urls.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="6" column="0" selection-start="163" selection-end="195" vertical-scroll-proportion="0.0" vertical-offset="1" max-vertical-offset="1261">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/services/tests.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="3" column="0" selection-start="60" selection-end="60" vertical-scroll-proportion="0.100409836" vertical-offset="2" max-vertical-offset="522" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/trdkfront/urls.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="10" column="35" selection-start="306" selection-end="306" vertical-scroll-proportion="0.33398822" vertical-offset="0" max-vertical-offset="917">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/templates/base.html">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="19" column="17" selection-start="405" selection-end="417" vertical-scroll-proportion="0.0" vertical-offset="323" max-vertical-offset="1564">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://C:/Python27/Lib/site-packages/django/core/handlers/base.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="113" column="0" selection-start="4537" selection-end="4537" vertical-scroll-proportion="-0.51307845" vertical-offset="1921" max-vertical-offset="5155">
-          <folding />
-        </state>
+        <state line="3" column="0" selection-start="60" selection-end="60" vertical-scroll-proportion="0.10408163" vertical-offset="0" max-vertical-offset="524" />
       </provider>
     </entry>
     <entry file="file://C:/Python27/Lib/site-packages/django/utils/autoreload.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="127" column="0" selection-start="4621" selection-end="4621" vertical-scroll-proportion="0.0" vertical-offset="1989" max-vertical-offset="3587">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/services/views.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="5" column="0" selection-start="111" selection-end="111" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1918">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/setup.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="60" column="0" selection-start="1635" selection-end="1635" vertical-scroll-proportion="0.0" vertical-offset="663" max-vertical-offset="2857">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/trdkfront/connection.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="15" column="6" selection-start="293" selection-end="293" vertical-scroll-proportion="0.0" vertical-offset="187" max-vertical-offset="1412">
           <folding />
         </state>
       </provider>
@@ -690,30 +684,16 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/services/views.py">
+    <entry file="file://$PROJECT_DIR$/trdkfront/settings.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="65" column="0" selection-start="1867" selection-end="1867" vertical-scroll-proportion="0.0" vertical-offset="959" max-vertical-offset="1849">
+        <state line="16" column="64" selection-start="469" selection-end="469" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="2075">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/dashboard/templates/index.html">
+    <entry file="file://$PROJECT_DIR$/trdkfront.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="102" column="90" selection-start="3201" selection-end="3201" vertical-scroll-proportion="-7.8461537" vertical-offset="1530" max-vertical-offset="3413">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/hedgemanager/proxy.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="16" column="0" selection-start="392" selection-end="392" vertical-scroll-proportion="0.0665362" vertical-offset="221" max-vertical-offset="1055">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/trdkfront/connection.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="14" column="0" selection-start="286" selection-end="286" vertical-scroll-proportion="0.39921722" vertical-offset="0" max-vertical-offset="1395">
+        <state line="28" column="27" selection-start="753" selection-end="753" vertical-scroll-proportion="0.33268103" vertical-offset="306" max-vertical-offset="1038">
           <folding />
         </state>
       </provider>

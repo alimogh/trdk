@@ -99,8 +99,8 @@ class Context::Params::Implementation : private boost::noncopyable {
 
 public:
 
-	typedef Concurrency::reader_writer_lock Mutex;
-	typedef Mutex::scoped_lock_read ReadLock;
+	typedef boost::mutex Mutex;
+	typedef Mutex::scoped_lock ReadLock;
 	typedef Mutex::scoped_lock WriteLock;
 
 	typedef std::map<std::string, std::string> Storage;
