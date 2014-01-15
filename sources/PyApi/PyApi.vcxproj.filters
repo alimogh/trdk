@@ -128,17 +128,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\output\x86\lib\Services.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Services_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Services_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="PyApi.rc">
       <Filter>Source Files</Filter>
     </ResourceCompile>
