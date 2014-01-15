@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2013/12/22 00:14:30
+ *   Created: 2014/01/15 23:04:42
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,27 +10,9 @@
 
 #pragma once
 
-#include "Engine/Context.hpp"
-#include "Fwd.hpp"
+namespace trdk { namespace MqlApi { namespace Detail {
 
-namespace trdk { namespace MqlApi {
+	Lib::Symbol GetSymbol(Context &, std::string symbol);
+	Security & GetSecurity(Context &, const std::string &symbol);
 
-	class BridgeContext : public trdk::Engine::Context {
-
-	public:
-
-		typedef trdk::Engine::Context Base;
-
-	public:
-
-		explicit BridgeContext(boost::shared_ptr<const trdk::Lib::Ini>);
-		virtual ~BridgeContext();
-
-	private:
-
-		class Implementation;
-		Implementation *m_pimpl;
-
-	};
-
-} }
+} } }

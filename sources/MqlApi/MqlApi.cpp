@@ -9,12 +9,28 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "MqlBridgeStrategy.hpp"
 #include "MqlBridgeServer.hpp"
+#include "MqlDetail.hpp"
+#include "Core/Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::MqlApi;
+using namespace trdk::MqlApi::Detail;
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+	OrderParams GetOrderParams(const char *account) {
+		OrderParams result = {};
+		if (account && !Lib::IsEmpty(account)) {
+			*result.account = account;
+		}
+		return result;
+	}
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -62,12 +78,30 @@ void trdk_DeleteBridge() {
 
 ////////////////////////////////////////////////////////////////////////////////
 	
-int trdk_OpenLongPosition(const char *symbol, Qty qty, double price) {
+int trdk_Buy(
+			const char *symbol,
+			Qty qty,
+			double price,
+			const char *account = nullptr) {
 	try {
-		return int(theBridge.GetStrategy().OpenLongPosition(
-			symbol,
+		auto &context = theBridge.GetContext();
+		Security &security = GetSecurity(context, symbol);
+		const auto priceScaled = security.ScalePrice(price);
+		const auto &orderId = context.GetTradeSystem().Buy(
+			security,
 			qty,
-			price));
+			priceScaled,
+			GetOrderParams(account),
+			[](
+						OrderId,
+						TradeSystem::OrderStatus,
+						Qty /*filled*/,
+						Qty /*remaining*/,
+						double /*avgPrice*/,
+						double /*lastPrice*/) {
+				//...//
+			});
+		return (int)orderId;
 	} catch (const Exception &ex) {
 		Log::Error(
 			"Failed to open Long Position via MQL Bridge Server: \"%1%\".",
@@ -78,11 +112,24 @@ int trdk_OpenLongPosition(const char *symbol, Qty qty, double price) {
 	return 0;
 }
 
-int trdk_OpenLongPositionMkt(const char *symbol, Qty qty) {
+int trdk_BuyMkt(const char *symbol, Qty qty, const char *account = nullptr) {
 	try {
-		return int(theBridge.GetStrategy().OpenLongPositionByMarketPrice(
-			symbol,
-			qty));
+		auto &context = theBridge.GetContext();
+		Security &security = GetSecurity(context, symbol);
+		const auto &orderId = context.GetTradeSystem().BuyAtMarketPrice(
+			security,
+			qty,
+			GetOrderParams(account),
+			[](
+						OrderId,
+						TradeSystem::OrderStatus,
+						Qty /*filled*/,
+						Qty /*remaining*/,
+						double /*avgPrice*/,
+						double /*lastPrice*/) {
+				//...//
+			});
+		return (int)orderId;
 	} catch (const Exception &ex) {
 		Log::Error(
 			"Failed to open Long Position at market price"
@@ -96,12 +143,30 @@ int trdk_OpenLongPositionMkt(const char *symbol, Qty qty) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int trdk_OpenShortPosition(const char *symbol, Qty qty, double price) {
+int trdk_Sell(
+			const char *symbol,
+			Qty qty,
+			double price,
+			const char *account = nullptr) {
 	try {
-		return int(theBridge.GetStrategy().OpenShortPosition(
-			symbol,
+		auto &context = theBridge.GetContext();
+		Security &security = GetSecurity(context, symbol);
+		const auto priceScaled = security.ScalePrice(price);
+		const auto &orderId = context.GetTradeSystem().Buy(
+			security,
 			qty,
-			price));
+			priceScaled,
+			GetOrderParams(account),
+			[](
+						OrderId,
+						TradeSystem::OrderStatus,
+						Qty /*filled*/,
+						Qty /*remaining*/,
+						double /*avgPrice*/,
+						double /*lastPrice*/) {
+				//...//
+			});
+		return (int)orderId;
 	} catch (const Exception &ex) {
 		Log::Error(
 			"Failed to open Short Position via MQL Bridge Server: \"%1%\".",
@@ -112,11 +177,24 @@ int trdk_OpenShortPosition(const char *symbol, Qty qty, double price) {
 	return 0;
 }
 
-int trdk_OpenShortPositionMkt(const char *symbol, Qty qty) {
+int trdk_SellMkt(const char *symbol, Qty qty, const char *account = nullptr) {
 	try {
-		return int(theBridge.GetStrategy().OpenShortPositionByMarketPrice(
-			symbol,
-			qty));
+		auto &context = theBridge.GetContext();
+		Security &security = GetSecurity(context, symbol);
+		const auto &orderId = context.GetTradeSystem().SellAtMarketPrice(
+			security,
+			qty,
+			GetOrderParams(account),
+			[](
+						OrderId,
+						TradeSystem::OrderStatus,
+						Qty /*filled*/,
+						Qty /*remaining*/,
+						double /*avgPrice*/,
+						double /*lastPrice*/) {
+				//...//
+			});
+		return (int)orderId;
 	} catch (const Exception &ex) {
 		Log::Error(
 			"Failed to open Short Position at market price"
@@ -132,7 +210,12 @@ int trdk_OpenShortPositionMkt(const char *symbol, Qty qty) {
 
 int trdk_GetPosition(const char *symbol) {
 	try {
-		return int(theBridge.GetStrategy().GetPositionQty(symbol));
+		auto &context = theBridge.GetContext();
+		const auto &pos
+			= context
+				.GetTradeSystem()
+				.GetBrokerPostion(GetSymbol(context, symbol));
+		return int(pos.qty);
 	} catch (const Exception &ex) {
 		Log::Error(
 			"Failed to get Position via MQL Bridge Server: \"%1%\".",

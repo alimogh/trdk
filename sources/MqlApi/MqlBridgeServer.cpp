@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "MqlBridgeServer.hpp"
 #include "MqlBridgeContext.hpp"
-#include "MqlBridgeStrategy.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -74,10 +73,7 @@ void BridgeServer::Run() {
 			"currency = USD\n"
 		"[TradeSystem]\n"
 			"module = InteractiveBrokers\n"
-			"positions = yes\n"
-		"[Strategy.MqlBridge]\n"
-			"module = a:/Projects/TRDK/output/x86/bin/MqlApi\n"
-			"standalone = true\n");
+			"positions = yes\n");
 	boost::shared_ptr<const Ini> ini(new IniString(settingsString));
 	std::unique_ptr<BridgeContext> engine(new BridgeContext(ini));
 	engine->Start();
@@ -89,32 +85,15 @@ void BridgeServer::Stop() {
 	m_pimpl->m_bridge.reset();
 }
 
-BridgeStrategy & BridgeServer::GetStrategy() {
+trdk::Context & BridgeServer::GetContext() {
 	if (!m_pimpl->m_bridge) {
 		throw Exception("MQL Bridge Server is not active");
 	}
-	return *m_pimpl->m_bridge->GetStrategy();
+	return *m_pimpl->m_bridge;
 }
 
-
-const BridgeStrategy & BridgeServer::GetStrategy() const {
-	if (!m_pimpl->m_bridge) {
-		throw Exception("MQL Bridge Server is not active");
-	}
-	return *m_pimpl->m_bridge->GetStrategy();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-boost::shared_ptr<Strategy> CreateMqlBridgeStrategy(
-			trdk::Context &context,
-			const std::string &tag,
-			const IniSectionRef &) {
-	if (!dynamic_cast<BridgeContext *>(&context)) {
-		throw ModuleError("Wrong context type for MQL Bridge Strategy");
-	}
-	auto &bridge = *boost::polymorphic_downcast<BridgeContext *>(&context);
-	return bridge.InitStrategy(tag);
+const trdk::Context & BridgeServer::GetContext() const {
+	return const_cast<BridgeServer *>(this)->GetContext();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

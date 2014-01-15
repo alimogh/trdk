@@ -34,8 +34,8 @@ namespace trdk { namespace MqlApi {
 
 	public:
 
-		BridgeStrategy & GetStrategy();
-		const BridgeStrategy & GetStrategy() const;
+		trdk::Context & GetContext();
+		const trdk::Context & GetContext() const;
 
 	private:
 
