@@ -12,6 +12,6 @@
 
 namespace trdk { namespace MqlApi {
 
-	class BridgeStrategy;
+	class Bridge;
 
 } } 

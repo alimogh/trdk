@@ -26,6 +26,9 @@
     <ClCompile Include="MqlDetail.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MqlBridge.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="MqlApi.def">
@@ -54,6 +57,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MqlDetail.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MqlBridge.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

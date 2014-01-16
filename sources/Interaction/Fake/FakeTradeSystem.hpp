@@ -29,7 +29,10 @@ namespace trdk { namespace Interaction { namespace Fake {
 	public:
 
 		virtual const Account & GetAccount() const;
-		virtual Position GetBrokerPostion(const trdk::Lib::Symbol &) const;
+		virtual Position GetBrokerPostion(
+				const std::string &account,
+				const trdk::Lib::Symbol &)
+			const;
 
 	public:
 

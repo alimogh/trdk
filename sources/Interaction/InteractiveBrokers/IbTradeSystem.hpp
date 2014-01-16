@@ -43,7 +43,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		typedef Concurrency::reader_writer_lock PositionsMutex;
 		typedef PositionsMutex::scoped_lock_read PositionsReadLock;
 		typedef PositionsMutex::scoped_lock PositionsWriteLock;
-		typedef std::map<std::string, Qty> Positions;
+		typedef std::map<std::pair<std::string, std::string>, Qty> Positions;
 
 		struct PlacedOrder {
 			OrderId id;
@@ -94,6 +94,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		virtual const Account & GetAccount() const;
 
 		virtual trdk::TradeSystem::Position GetBrokerPostion(
+				const std::string &account,
 				const trdk::Lib::Symbol &)
 			const;
 

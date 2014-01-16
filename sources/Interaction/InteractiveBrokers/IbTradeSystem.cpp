@@ -47,7 +47,8 @@ void ib::TradeSystem::Connect(const IniSectionRef &settings) {
 			m_log,
 			settings.ReadBoolKey("no_history", false),
 			settings.ReadTypedKey<int>("client_id", 0),
-			settings.ReadKey("ip_address", "127.0.0.1")));
+			settings.ReadKey("ip_address", "127.0.0.1"),
+			settings.ReadTypedKey<unsigned short>("port", 7496)));
 
 	if (settings.IsKeyExist("account")) {
 		account.reset(new Account);
@@ -123,6 +124,7 @@ const ib::TradeSystem::Account & ib::TradeSystem::GetAccount() const {
 }
 
 ib::TradeSystem::Position ib::TradeSystem::GetBrokerPostion(
+			const std::string &account,
 			const Symbol &symbol)
 		const {
 	if (!m_positions) {
@@ -130,8 +132,9 @@ ib::TradeSystem::Position ib::TradeSystem::GetBrokerPostion(
 	}
 	Position result;
 	{
+		const auto &key = std::make_pair(account, symbol.GetSymbol());
 		const PositionsReadLock lock(m_positionsMutex);
-		const auto &it = m_positions->find(symbol.GetSymbol());
+		const auto &it = m_positions->find(key);
 		if (it != m_positions->end()) {
 			result.qty = it->second;
 		}

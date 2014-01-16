@@ -34,4 +34,12 @@ BridgeContext::~BridgeContext() {
 	delete m_pimpl;
 }
 
+Security * BridgeContext::FindSecurity(const Symbol &symbol) {
+	return &GetMarketDataSource().GetSecurity(*this, symbol);
+}
+
+const trdk::Security * BridgeContext::FindSecurity(const Symbol &symbol) const {
+	return const_cast<BridgeContext *>(this)->FindSecurity(symbol);
+}
+
 ////////////////////////////////////////////////////////////////////////////////

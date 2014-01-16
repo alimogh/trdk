@@ -153,6 +153,7 @@ namespace trdk {
 
 		//! Returns broker position by symbol.
 		virtual trdk::TradeSystem::Position GetBrokerPostion(
+				const std::string &account,
 				const trdk::Lib::Symbol &)
 			const
 			= 0;

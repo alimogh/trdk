@@ -204,6 +204,7 @@ const Fake::TradeSystem::Account & Fake::TradeSystem::GetAccount() const {
 }
 
 Fake::TradeSystem::Position Fake::TradeSystem::GetBrokerPostion(
+			const std::string &/*account*/,
 			const Symbol &)
 		const {
 	throw MethodDoesNotImplementedError(

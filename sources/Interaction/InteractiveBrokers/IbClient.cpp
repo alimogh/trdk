@@ -1775,12 +1775,14 @@ void Client::position(
 	}
 
 	if (m_ts.m_positions) {
+		const auto &acountPosition
+			= std::make_pair(account, contract.symbol);
 		//! @todo place for optimization (if position will be used not only at
 		//! start):
 		const ib::TradeSystem::PositionsWriteLock positionsLock(
 			m_ts.m_positionsMutex);
 		//! @todo compares only symbols, not exchanges
-		(*m_ts.m_positions)[contract.symbol] = position;
+		(*m_ts.m_positions)[acountPosition] = position;
 	}
 
 }
@@ -1790,7 +1792,7 @@ void Client::positionEnd() {
 	m_log.Debug(
 		INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 			": positions info completed.");
-	m_client->cancelPositions();
+//	m_client->cancelPositions();
 	m_connectionState = CONNECTION_STATE_READY;
 	FlushPostponedMarketDataSubscription();
 }

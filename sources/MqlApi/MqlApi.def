@@ -4,7 +4,8 @@ EXPORTS
 	trdk_InitLog
 	
 	trdk_CreateBridge
-	trdk_DeleteBridge
+	trdk_DestoryBridge
+	trdk_DestroyAllBridges
 	
 	trdk_Buy
 	trdk_BuyMkt
