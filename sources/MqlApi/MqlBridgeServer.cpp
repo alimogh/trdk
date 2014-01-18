@@ -82,9 +82,7 @@ public:
 
 BridgeServer::BridgeServer()
 		: m_pimpl(new Implementation) {
-#	ifdef DEV_VER
-		Log::EnableEventsToStdOut();
-#	endif
+	//...//	
 }
 
 BridgeServer::~BridgeServer() {

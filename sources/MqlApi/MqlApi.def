@@ -2,6 +2,7 @@
 EXPORTS
 	
 	trdk_InitLog
+	trdk_InitLogToStdOut
 	
 	trdk_CreateBridge
 	trdk_DestoryBridge

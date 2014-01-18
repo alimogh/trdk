@@ -28,6 +28,18 @@ void trdk_InitLog(const char *logFilePath) {
 	}
 }
 
+void trdk_InitLogToStdOut() {
+	try {
+		Log::EnableEventsToStdOut();
+	} catch (const Exception &ex) {
+		Log::Error(
+			"Failed to init MQL Bridge Server log to StdOut: \"%1%\".",
+			ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 bool trdk_CreateBridge(const char *twsHost, int twsPort, const char *account) {
