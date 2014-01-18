@@ -125,7 +125,8 @@ BridgeServer::EngineId BridgeServer::CreateBridge(
 				"exchange = IDEALPRO\n"
 				"currency = USD\n"
 			"[TradeSystem]\n"
-				"module = InteractiveBrokers\n"
+				"module = " << GetDllWorkingDir().string()
+					<< "/InteractiveBrokers\n"
 				"positions = yes\n"
 				"client_id = " << engineId << "\n";
 	if (!twsHost.empty()) {
