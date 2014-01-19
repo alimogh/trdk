@@ -23,18 +23,18 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v110</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v110</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -89,10 +89,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="MqlBridge.cpp" />
+    <ClCompile Include="MqlDetail.cpp" />
     <ClCompile Include="MqlApi.cpp" />
     <ClCompile Include="MqlBridgeContext.cpp" />
     <ClCompile Include="MqlBridgeServer.cpp" />
-    <ClCompile Include="MqlBridgeStrategy.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -101,15 +102,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="MqlApi.def" />
+    <None Include="TrdkMqlBridgeExample.mq4" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MqlApi.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="MqlBridge.hpp" />
+    <ClInclude Include="MqlDetail.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="MqlBridgeContext.hpp" />
     <ClInclude Include="MqlBridgeServer.hpp" />
-    <ClInclude Include="MqlBridgeStrategy.hpp" />
+    <ClInclude Include="MqlString.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

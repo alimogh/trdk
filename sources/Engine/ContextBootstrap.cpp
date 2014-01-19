@@ -89,7 +89,10 @@ private:
 			Keys::factory,
 			DefaultValues::Factories::tradeSystem);
 		
-		boost::shared_ptr<Dll> dll(new Dll(module, true));
+		boost::shared_ptr<Dll> dll(
+			new Dll(
+				module,
+				configurationSection.ReadBoolKey(Keys::Dbg::autoName, true)));
 
 		typedef TradeSystemFactoryResult FactoryResult;
 		typedef TradeSystemFactory Factory;
@@ -157,7 +160,10 @@ private:
 			Keys::factory,
 			DefaultValues::Factories::marketDataSource);
 		
-		boost::shared_ptr<Dll> dll(new Dll(module, true));
+		boost::shared_ptr<Dll> dll(
+			new Dll(
+				module,
+				configurationSection.ReadBoolKey(Keys::Dbg::autoName, true)));
 
 		typedef boost::shared_ptr<MarketDataSource> FactoryResult;
 		typedef MarketDataSourceFactory Factory;
@@ -416,25 +422,6 @@ namespace {
 	typedef std::map<std::string /*tag*/, ModuleDll<Observer>> ObserverModules;
 	typedef std::map<std::string /*tag*/, ModuleDll<Service>> ServiceModules;
 
-	Symbol GetMagicSymbolCurrentSecurity() {
-		return Symbol("$", "$", "$", "$");
-	}
-
-	bool IsMagicSymbolCurrentSecurity(const Symbol &symbol) {
-		AssertEq(symbol.GetSymbol() == "$", symbol.GetExchange() == "$");
-		AssertEq(
-			symbol.GetExchange() == "$",
-			symbol.GetPrimaryExchange() == "$");
-		AssertEq(
-			symbol.GetPrimaryExchange() == "$",
-			symbol.GetCurrency() == "$");
-		return
-			symbol.GetSymbol() == "$"
-			&& symbol.GetExchange() == "$"
-			&& symbol.GetPrimaryExchange() == "$"
-			&& symbol.GetCurrency() == "$";
-	}
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -505,10 +492,6 @@ public:
 						boost::cref(ex)));
 				throw Exception("Failed to load module");
 			}
-		}
-
-		if (m_strategies.empty()) {
-			throw Exception("No strategies loaded");
 		}
 
 		try {
@@ -675,7 +658,7 @@ private:
 		if (!symbols.empty()) {
 			std::list<std::string> securities;
 			foreach (auto symbol, symbols) {
-				Assert(!IsMagicSymbolCurrentSecurity(symbol));
+				Assert(symbol);
 				auto &security = LoadSecurity(symbol);
 				try {
 					instance->RegisterSource(security);
@@ -872,7 +855,7 @@ private:
 
 		const std::string &symbolList = boost::trim_copy(match[3].str());
 		if (symbolList.empty()) {
-			result.symbols.insert(GetMagicSymbolCurrentSecurity());
+			result.symbols.insert(Symbol());
 			return result;
 		}
 
@@ -1048,7 +1031,7 @@ private:
 #				ifdef DEV_VER
 					if (supplierRequest.symbols.size() > 1) {
  						foreach (const auto &symbol, supplierRequest.symbols) {
- 							Assert(!IsMagicSymbolCurrentSecurity(symbol));
+ 							Assert(symbol);
  						}
 					}
 #				endif
@@ -1154,7 +1137,7 @@ private:
 						-> boost::shared_ptr<Service> {
 					std::list<std::string> symbolsStr;
 					foreach (const Symbol &symbol, symbols) {
-						Assert(!IsMagicSymbolCurrentSecurity(symbol));
+						Assert(symbol);
 						symbolsStr.push_back(symbol.GetAsString());
 					}
 					std::string symbolsStrListTmp
@@ -1178,8 +1161,7 @@ private:
 					return result;
 				};
 
-				if (	symbols.size() == 1
-						&& IsMagicSymbolCurrentSecurity(*symbols.begin())) {
+				if (symbols.size() == 1 && !*symbols.begin()) {
 
 					foreach (auto &instance, module.symbolInstances) {
 						std::string symbolsStrList;
@@ -1288,7 +1270,7 @@ private:
 			}
 			foreach (const Symbol &symbol, requirement.second) {
 				Security *security = nullptr;
-				if (!IsMagicSymbolCurrentSecurity(symbol)) {
+				if (symbol) {
 					security = &LoadSecurity(symbol);
 				}
 				if (!uniqueInstance) {
@@ -1411,23 +1393,22 @@ private:
 		}
 
 		fs::path symbolsFilePath;
-		if (!dynamic_cast<const IniFile *>(&conf.GetBase())) {
-			m_context.GetLog().Error(
-				"Failed to get symbol instances file:"
-					" \"Failed to get root path\"");
-			throw Lib::Ini::Error("Failed to get symbol instances file");
-		}
-		try {
- 			symbolsFilePath = Normalize(
- 				conf.ReadKey(Keys::instances),
- 				boost::polymorphic_downcast<const IniFile *>(&conf.GetBase())
-					->GetPath()
-					.branch_path());
-		} catch (const Lib::Ini::Error &ex) {
-			m_context.GetLog().Error(
-				"Failed to get symbol instances file: \"%1%\".",
-				ex);
-			throw;
+		if (dynamic_cast<const IniFile *>(&conf.GetBase())) {
+			try {
+ 				symbolsFilePath = Normalize(
+ 					conf.ReadKey(Keys::instances),
+ 					boost::polymorphic_downcast<const IniFile *>(
+							&conf.GetBase())
+						->GetPath()
+						.branch_path());
+			} catch (const Lib::Ini::Error &ex) {
+				m_context.GetLog().Error(
+					"Failed to get symbol instances file: \"%1%\".",
+					ex);
+				throw;
+			}
+		} else {
+			symbolsFilePath = conf.ReadFileSystemPath(Keys::instances);
 		}
 		m_context.GetLog().Debug(
 			"Loading symbol instances from %1% for %2% \"%3%\"...",
@@ -1505,7 +1486,8 @@ private:
 			throw Lib::Ini::Error("Failed to load module");
 		}
 
-		result.dll.reset(new Dll(modulePath, true));
+		result.dll.reset(
+			new Dll(modulePath, conf.ReadBoolKey(Keys::Dbg::autoName, true)));
 
 		const bool isFactoreNameKeyExist
 			= result.conf->IsKeyExist(Keys::factory);

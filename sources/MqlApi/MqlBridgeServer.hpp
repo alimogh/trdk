@@ -18,24 +18,60 @@ namespace trdk { namespace MqlApi {
 
 	public:
 
+		typedef size_t EngineId;
+
+		class Exception : public trdk::Lib::Exception {
+		public:
+			typedef trdk::Lib::Exception Base;
+		public:
+			Exception(const char *what) throw();
+		};
+
+		class UnknownEngineError : public Exception {
+		public:
+			UnknownEngineError() throw();
+		};
+
+		class UnknownAccountError : public Exception {
+		public:
+			UnknownAccountError() throw();
+		};
+
+		class NotEnoughFreeEngineSlotsError : public Exception {
+		public:
+			NotEnoughFreeEngineSlotsError() throw();
+		};
+
+	public:
+
 		BridgeServer();
 		~BridgeServer();
 
 	public:
 
-		bool IsActive() const;
+		EngineId CreateBridge(
+				const std::string &twsHost,
+				unsigned short twsPort,
+				const std::string &account,
+				const std::string &defaultExchange);
+		EngineId CreateBridge(
+				const std::string &twsHost,
+				unsigned short twsPort,
+				const std::string &account,
+				const std::string &defaultExchange,
+				const std::string &expirationDate,
+				double strike);
 
-		void Run();
-		void Stop();
+		void DestoryBridge(EngineId);
+		void DestoryBridge(const std::string &account);
+		void DestoryAllBridge();
+
+		Bridge & GetBridge(const std::string &account);
+		const Bridge & GetBridge(const std::string &account) const;
 
 	public:
 
 		void InitLog(const boost::filesystem::path &);
-
-	public:
-
-		BridgeStrategy & GetStrategy();
-		const BridgeStrategy & GetStrategy() const;
 
 	private:
 

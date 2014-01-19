@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2013/12/15 21:26:50
+ *   Created: 2014/01/15 23:04:42
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,16 +10,9 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
+namespace trdk { namespace MqlApi { namespace Detail {
 
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/noncopyable.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
+	Lib::Symbol GetSymbol(Context &, std::string symbol);
+	Security & GetSecurity(Context &, const std::string &symbol);
 
-#include <cstdint>
-
-#include "Common/Common.hpp"
-
-#include "Core/Fwd.hpp"
-
-#include "Common/Assert.hpp"
+} } }

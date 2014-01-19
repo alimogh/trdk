@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2013/12/15 21:26:50
+ *   Created: 2014/01/19 05:22:25
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,16 +10,22 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
+namespace trdk { namespace MqlApi { namespace MqlTypes { 
 
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/noncopyable.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
+	struct String {
+		
+		int32_t size;
+		char *value;
 
-#include <cstdint>
+		String & operator =(const std::string &source) {
+			AssertEq(0, size);
+			Assert(!value);
+			value = new char[source.size() + 1];
+			size = source.size();
+			memcpy(value, source.c_str(), size + 1);
+			return *this;
+		}
 
-#include "Common/Common.hpp"
+	};
 
-#include "Core/Fwd.hpp"
-
-#include "Common/Assert.hpp"
+} } }

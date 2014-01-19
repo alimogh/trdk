@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "MqlBridgeContext.hpp"
-#include "MqlBridgeStrategy.hpp"
 #include "Core/MarketDataSource.hpp"
 
 using namespace trdk;
@@ -20,11 +19,7 @@ using namespace trdk::MqlApi;
 ////////////////////////////////////////////////////////////////////////////////
 
 class BridgeContext::Implementation :private boost::noncopyable {
-
-public:
-
-	boost::shared_ptr<BridgeStrategy> m_strategy;
-
+	//...//
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,26 +32,6 @@ BridgeContext::BridgeContext(boost::shared_ptr<const trdk::Lib::Ini> conf)
 
 BridgeContext::~BridgeContext() {
 	delete m_pimpl;
-}
-
-boost::shared_ptr<BridgeStrategy> BridgeContext::InitStrategy(
-			const std::string &tag) {
-	if (m_pimpl->m_strategy) {
-		throw ModuleError("MQL Bridge Strategy is already created");
-	}
-	m_pimpl->m_strategy.reset(new BridgeStrategy(*this, tag));
-	return m_pimpl->m_strategy;
-}
-
-boost::shared_ptr<BridgeStrategy> BridgeContext::GetStrategy() {
-	if (!m_pimpl->m_strategy) {
-		throw ModuleError("MQL Bridge Strategy is not created");
-	}
-	return m_pimpl->m_strategy;
-}
-
-boost::shared_ptr<const BridgeStrategy> BridgeContext::GetStrategy() const {
-	return const_cast<BridgeContext *>(this)->GetStrategy();
 }
 
 Security * BridgeContext::FindSecurity(const Symbol &symbol) {

@@ -20,16 +20,22 @@
     <ClCompile Include="MqlBridgeServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MqlBridgeStrategy.cpp">
+    <ClCompile Include="MqlApi.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MqlApi.cpp">
+    <ClCompile Include="MqlDetail.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MqlBridge.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="MqlApi.def">
       <Filter>Header Files</Filter>
+    </None>
+    <None Include="TrdkMqlBridgeExample.mq4">
+      <Filter>Source Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -44,13 +50,19 @@
     <ClInclude Include="MqlBridgeContext.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MqlBridgeStrategy.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="MqlBridgeServer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MqlDetail.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MqlBridge.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MqlString.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

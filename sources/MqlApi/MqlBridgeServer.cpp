@@ -10,8 +10,9 @@
 
 #include "Prec.hpp"
 #include "MqlBridgeServer.hpp"
+#include "MqlBridge.hpp"
 #include "MqlBridgeContext.hpp"
-#include "MqlBridgeStrategy.hpp"
+
 
 namespace fs = boost::filesystem;
 
@@ -19,9 +20,26 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::MqlApi;
 
-////////////////////////////////////////////////////////////////////////////////
 
 trdk::MqlApi::BridgeServer trdk::MqlApi::theBridge;
+
+
+BridgeServer::Exception::Exception(const char *what) throw()
+		: Base(what) {
+	//...//
+}
+BridgeServer::UnknownEngineError::UnknownEngineError() throw()
+		: Exception("MQL Bridge Server is not active") {
+	//...//
+}
+BridgeServer::UnknownAccountError::UnknownAccountError() throw()
+		: Exception("MQL Bridge Server: account is unknown") {
+	//...//
+}
+BridgeServer::NotEnoughFreeEngineSlotsError::NotEnoughFreeEngineSlotsError()
+		: Exception("Not enough free MQL Bridge Slots") {
+	//...//
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -30,17 +48,41 @@ class BridgeServer::Implementation : private boost::noncopyable {
 public:
 
 	std::ofstream m_eventLog;
-	std::unique_ptr<BridgeContext> m_bridge;
+
+	std::array<boost::shared_ptr<BridgeContext>, 10> m_engines;
+
+	typedef boost::tuple<EngineId, boost::shared_ptr<Bridge>> Account;
+	std::map<std::string, Account> m_accounts;
+
+	Account & GetAccount(const std::string &account) {
+		auto pos = m_accounts.find(account);
+		if (pos == m_accounts.end()) {
+			Log::Error(
+				"MQL Bridge Server: account \"%1%\" is unknown.",
+				account);
+			throw UnknownAccountError();
+		}
+		return pos->second;
+	}
+
+	boost::shared_ptr<BridgeContext> GetEngine(EngineId engineId) {
+		if (engineId >= m_engines.size() || !m_engines[engineId]) {
+			throw UnknownEngineError();
+		}
+		return m_engines[engineId];
+	}
+
+	boost::shared_ptr<BridgeContext> GetEngine(const std::string &account) {
+		return GetEngine(boost::get<0>(GetAccount(account)));
+	}
+
 
 };
 
-////////////////////////////////////////////////////////////////////////////////
 
 BridgeServer::BridgeServer()
 		: m_pimpl(new Implementation) {
-#	ifdef DEV_VER
-		Log::EnableEventsToStdOut();
-#	endif
+	//...//	
 }
 
 BridgeServer::~BridgeServer() {
@@ -56,69 +98,111 @@ void BridgeServer::InitLog(const fs::path &logFilePath) {
 	if (m_pimpl->m_eventLog) {
 		Log::EnableEvents(m_pimpl->m_eventLog);
 	}
-	//! @todo fix second load and starte reset
-#	ifdef DEV_VER
-		Log::EnableEventsToStdOut();
-#	endif
 }
 
-bool BridgeServer::IsActive() const {
-	return m_pimpl->m_bridge;
-}
-
-void BridgeServer::Run() {
-	Assert(!m_pimpl->m_bridge);
-	const std::string settingsString(
-		"[Common]\n"
-			"trade_session_period_edt = 00:00:00 - 23:59:59\n"
-			"wait_market_data = no\n"
-		"[Defaults]\n"
-			"primary_exchange = FOREX\n"
-			"exchange = IDEALPRO\n"
-			"currency = USD\n"
-		"[TradeSystem]\n"
-			"module = TrdkMqlBridge\n"
-			"positions = yes\n"
-		"[Strategy.MqlBridge]\n"
-			"module = TrdkMqlBridge\n"
-			"standalone = true\n");
-	boost::shared_ptr<const Ini> ini(new IniString(settingsString));
-	std::unique_ptr<BridgeContext> engine(new BridgeContext(ini));
+BridgeServer::EngineId BridgeServer::CreateBridge(
+			const std::string &twsHost,
+			unsigned short twsPort,
+			const std::string &account,
+			const std::string &defaultExchange) {
+	
+	EngineId engineId = 0;
+	foreach (const auto &engine, m_pimpl->m_engines) {
+		if (!engine) {
+			break;
+		}
+	}
+	AssertGe(m_pimpl->m_engines.size(), engineId);
+	if (engineId >= m_pimpl->m_engines.size()) {
+		throw UnknownEngineError();
+	}
+	
+	std::ostringstream settingsString;
+	settingsString
+		<< "[Common]\n"
+				"trade_session_period_edt = 00:00:00 - 23:59:59\n"
+				"wait_market_data = no\n"
+			"[Defaults]\n"
+				"primary_exchange = FOREX\n"
+				"exchange = " << defaultExchange << "\n"
+				"currency = USD\n"
+			"[TradeSystem]\n"
+				"module = " << GetDllWorkingDir().string() << "/TrdkMqlBridge\n"
+				"positions = yes\n"
+				"account = " << account << "\n"
+				"client_id = " << time(nullptr) << "\n";
+	if (!twsHost.empty()) {
+		settingsString << "ip_address = " << twsHost << "\n";
+	}
+	if (twsPort) {
+		settingsString << "port = " << twsPort << "\n";
+	}
+	boost::shared_ptr<const Ini> ini(new IniString(settingsString.str()));
+	boost::shared_ptr<BridgeContext> engine(new BridgeContext(ini));
 	engine->Start();
-	std::swap(engine, m_pimpl->m_bridge);
+
+	std::swap(engine, m_pimpl->m_engines[engineId]);
+	return engineId;
+
 }
 
-void BridgeServer::Stop() {
-	Assert(m_pimpl->m_bridge);
-	m_pimpl->m_bridge.reset();
-}
-
-BridgeStrategy & BridgeServer::GetStrategy() {
-	if (!m_pimpl->m_bridge) {
-		throw Exception("MQL Bridge Server is not active");
+BridgeServer::EngineId BridgeServer::CreateBridge(
+			const std::string &twsHost,
+			unsigned short twsPort,
+			const std::string &account,
+			const std::string &defaultExchange,
+			const std::string &expirationDate,
+			double strike) {
+	{
+		const auto &pos = m_pimpl->m_accounts.find(account);
+		if (pos != m_pimpl->m_accounts.end()) {
+			Log::Warn(
+				"Failed to start MQL Bridge Server:"
+					" account \"%1%\" already registered.",
+				account);
+			return boost::get<0>(pos->second);
+		}
 	}
-	return *m_pimpl->m_bridge->GetStrategy();
+	const auto engine
+		= theBridge.CreateBridge(twsHost, twsPort, account, defaultExchange);
+	boost::shared_ptr<Bridge> bridge(
+		new Bridge(
+			*m_pimpl->GetEngine(engine),
+			account,
+			expirationDate,
+			strike));
+	m_pimpl->m_accounts[account] = boost::make_tuple(engine, bridge);
+	Log::Info(
+		"MQL Bridge Server registered account \"%1%\" for \"%2%\".",
+		account,
+		defaultExchange);
+	return engine;
 }
 
+void BridgeServer::DestoryBridge(EngineId engineId) {
+	m_pimpl->GetEngine(engineId).reset();
+}
 
-const BridgeStrategy & BridgeServer::GetStrategy() const {
-	if (!m_pimpl->m_bridge) {
-		throw Exception("MQL Bridge Server is not active");
+void BridgeServer::DestoryAllBridge() {
+	foreach (auto &engine, m_pimpl->m_engines) {
+		engine.reset();
 	}
-	return *m_pimpl->m_bridge->GetStrategy();
+	m_pimpl->m_accounts.clear();
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-boost::shared_ptr<Strategy> CreateMqlBridgeStrategy(
-			trdk::Context &context,
-			const std::string &tag,
-			const IniSectionRef &) {
-	if (!dynamic_cast<BridgeContext *>(&context)) {
-		throw ModuleError("Wrong context type for MQL Bridge Strategy");
-	}
-	auto &bridge = *boost::polymorphic_downcast<BridgeContext *>(&context);
-	return bridge.InitStrategy(tag);
+void BridgeServer::DestoryBridge(const std::string &account) {
+	auto accounts = m_pimpl->m_accounts;
+	const auto engineId = boost::get<0>(m_pimpl->GetAccount(account));
+	accounts.erase(account);
+	DestoryBridge(engineId);
+	accounts.swap(m_pimpl->m_accounts);
+	Log::Info("MQL Bridge Server unregistered account \"%1%\".", account);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+Bridge & BridgeServer::GetBridge(const std::string &account) {
+	return *boost::get<1>(m_pimpl->GetAccount(account));
+}
+
+const Bridge & BridgeServer::GetBridge(const std::string &account) const {
+	return const_cast<BridgeServer *>(this)->GetBridge(account);
+}

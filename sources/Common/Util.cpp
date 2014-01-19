@@ -18,6 +18,7 @@ namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
 
 using namespace trdk;
+using namespace trdk::Lib;
 
 fs::path Lib::SymbolToFilePath(
 			const boost::filesystem::path &path,
@@ -108,29 +109,58 @@ pt::ptime Lib::ConvertToPTimeFromFileTime(int64_t source) {
 
 //////////////////////////////////////////////////////////////////////////
 
-fs::path Lib::GetExeFilePath() {
-	typedef std::vector<char> Buffer;
-	for (DWORD bufferSize = _MAX_PATH; ; ) {
-		Buffer buffer(bufferSize, 0);
-		const auto resultSize
-			= GetModuleFileNameA(NULL, &buffer[0], bufferSize);
-		if (resultSize != bufferSize) {
-			if (!resultSize) {
-				const SysError error(GetLastError());
-				boost::format message(
-					"Failed to call GetModuleFileName (system error: \"%1%\")");
-				message % error;
-				throw SystemException(message.str().c_str());
+namespace {
+
+	fs::path GetModuleFilePath(HMODULE handle) {
+		typedef std::vector<char> Buffer;
+		for (DWORD bufferSize = _MAX_PATH; ; ) {
+			Buffer buffer(bufferSize, 0);
+			const auto resultSize
+				= GetModuleFileNameA(handle, &buffer[0], bufferSize);
+			if (resultSize != bufferSize) {
+				if (!resultSize) {
+					const SysError error(GetLastError());
+					boost::format message(
+						"Failed to call GetModuleFileName"
+							" (system error: \"%1%\")");
+					message % error;
+					throw SystemException(message.str().c_str());
+				}
+				AssertLe(resultSize, buffer.size());
+				return fs::path(&buffer[0]);
 			}
-			AssertLe(resultSize, buffer.size());
-			return fs::path(&buffer[0]);
+			bufferSize *= 2;
 		}
-		bufferSize *= 2;
 	}
+
+}
+
+fs::path Lib::GetExeFilePath() {
+	return GetModuleFilePath(NULL);
 }
 
 fs::path Lib::GetExeWorkingDir() {
 	return GetExeFilePath().parent_path();
+}
+
+fs::path Lib::GetDllFilePath() {
+	HMODULE handle;
+	if (	!GetModuleHandleExA(
+				GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
+					| GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+				reinterpret_cast<LPCTSTR>(&Lib::GetDllFilePath),
+				&handle)) {
+		const SysError error(GetLastError());
+		boost::format message(
+			"Failed to call GetModuleHandleEx (system error: \"%1%\")");
+			message % error;
+		throw SystemException(message.str().c_str());
+	}
+	return GetModuleFilePath(handle);
+}
+
+fs::path Lib::GetDllWorkingDir() {
+	return GetDllFilePath().parent_path();
 }
 
 fs::path Lib::Normalize(const fs::path &path) {
