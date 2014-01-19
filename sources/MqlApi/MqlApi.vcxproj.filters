@@ -62,5 +62,8 @@
     <ClInclude Include="MqlBridge.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MqlString.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

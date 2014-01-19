@@ -51,11 +51,16 @@ namespace trdk { namespace MqlApi {
 
 		EngineId CreateBridge(
 				const std::string &twsHost,
-				unsigned short twsPort);
+				unsigned short twsPort,
+				const std::string &account,
+				const std::string &defaultExchange);
 		EngineId CreateBridge(
 				const std::string &twsHost,
 				unsigned short twsPort,
-				const std::string &account);
+				const std::string &account,
+				const std::string &defaultExchange,
+				const std::string &expirationDate,
+				double strike);
 
 		void DestoryBridge(EngineId);
 		void DestoryBridge(const std::string &account);

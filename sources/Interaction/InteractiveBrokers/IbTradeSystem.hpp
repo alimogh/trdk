@@ -36,23 +36,9 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	private:
 
-		typedef Concurrency::reader_writer_lock OrdersMutex;
-		typedef OrdersMutex::scoped_lock OrdersWriteLock;
-		typedef OrdersMutex::scoped_lock_read OrdersReadLock;
-
-		typedef Concurrency::reader_writer_lock PositionsMutex;
-		typedef PositionsMutex::scoped_lock_read PositionsReadLock;
-		typedef PositionsMutex::scoped_lock PositionsWriteLock;
-		typedef std::map<std::pair<std::string, std::string>, Qty> Positions;
-
-		struct PlacedOrder {
-			OrderId id;
-			trdk::Security *security;
-			OrderStatusUpdateSlot callback;
-			bool commission;
-			bool completed;
+		struct ByAccount {
+			//...//
 		};
-
 		struct BySymbol {
 			//...//
 		};
@@ -61,6 +47,68 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		};
 		struct BySymbolAndOrder {
 			//...//
+		};
+
+
+		typedef Concurrency::reader_writer_lock OrdersMutex;
+		typedef OrdersMutex::scoped_lock OrdersWriteLock;
+		typedef OrdersMutex::scoped_lock_read OrdersReadLock;
+
+		typedef Concurrency::reader_writer_lock PositionsMutex;
+		typedef PositionsMutex::scoped_lock_read PositionsReadLock;
+		typedef PositionsMutex::scoped_lock PositionsWriteLock;
+		struct Position : public trdk::TradeSystem::Position {
+			typedef trdk::TradeSystem::Position Base;
+			Position() {
+				//...//
+			}
+			explicit Position(
+						const std::string &account,
+						const Lib::Symbol &symbol,
+						Qty qty)
+					: Base(account, symbol, qty) {
+				//...//
+			}
+			const std::string & GetSymbol() const {
+				return symbol.GetSymbol();
+			}
+			const std::string & GetCurrency() const {
+				return symbol.GetCurrency();
+			}
+		};
+		typedef boost::multi_index_container<
+				Position,
+				boost::multi_index::indexed_by<
+					boost::multi_index::ordered_non_unique<
+						boost::multi_index::tag<ByAccount>,
+						boost::multi_index::member<
+							trdk::TradeSystem::Position,
+							std::string,
+							&trdk::TradeSystem::Position::account>>,
+					boost::multi_index::hashed_unique<
+						boost::multi_index::tag<BySymbol>,
+						boost::multi_index::composite_key<
+							Position,
+							boost::multi_index::member<
+								trdk::TradeSystem::Position,
+								std::string,
+								&trdk::TradeSystem::Position::account>,
+							boost::multi_index::const_mem_fun<
+								Position,
+								const std::string &,
+								&Position::GetCurrency>,
+							boost::multi_index::const_mem_fun<
+								Position,
+								const std::string &,
+								&Position::GetSymbol>>>>>
+			Positions;
+
+		struct PlacedOrder {
+			OrderId id;
+			trdk::Security *security;
+			OrderStatusUpdateSlot callback;
+			bool commission;
+			bool completed;
 		};
 
 		typedef boost::multi_index_container<
@@ -76,7 +124,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 					boost::multi_index::tag<ByOrder>,
 					boost::multi_index::member<
 						PlacedOrder,
-						TradeSystem::OrderId,
+						OrderId,
 						&PlacedOrder::id>>>>
 			PlacedOrderSet;
 
@@ -96,6 +144,11 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		virtual trdk::TradeSystem::Position GetBrokerPostion(
 				const std::string &account,
 				const trdk::Lib::Symbol &)
+			const;
+		virtual void TradeSystem::ForEachBrokerPostion(
+				const std::string &,
+				const boost::function<
+					bool (const trdk::TradeSystem::Position &)> &)
 			const;
 
 	public:

@@ -102,7 +102,9 @@ void BridgeServer::InitLog(const fs::path &logFilePath) {
 
 BridgeServer::EngineId BridgeServer::CreateBridge(
 			const std::string &twsHost,
-			unsigned short twsPort) {
+			unsigned short twsPort,
+			const std::string &account,
+			const std::string &defaultExchange) {
 	
 	EngineId engineId = 0;
 	foreach (const auto &engine, m_pimpl->m_engines) {
@@ -122,13 +124,14 @@ BridgeServer::EngineId BridgeServer::CreateBridge(
 				"wait_market_data = no\n"
 			"[Defaults]\n"
 				"primary_exchange = FOREX\n"
-				"exchange = IDEALPRO\n"
+				"exchange = " << defaultExchange << "\n"
 				"currency = USD\n"
 			"[TradeSystem]\n"
 				"module = " << GetDllWorkingDir().string()
 					<< "/InteractiveBrokers\n"
 				"positions = yes\n"
-				"client_id = " << engineId << "\n";
+				"account = " << account << "\n"
+				"client_id = " << time(nullptr) << "\n";
 	if (!twsHost.empty()) {
 		settingsString << "ip_address = " << twsHost << "\n";
 	}
@@ -147,7 +150,10 @@ BridgeServer::EngineId BridgeServer::CreateBridge(
 BridgeServer::EngineId BridgeServer::CreateBridge(
 			const std::string &twsHost,
 			unsigned short twsPort,
-			const std::string &account) {
+			const std::string &account,
+			const std::string &defaultExchange,
+			const std::string &expirationDate,
+			double strike) {
 	{
 		const auto &pos = m_pimpl->m_accounts.find(account);
 		if (pos != m_pimpl->m_accounts.end()) {
@@ -158,11 +164,19 @@ BridgeServer::EngineId BridgeServer::CreateBridge(
 			return boost::get<0>(pos->second);
 		}
 	}
-	const auto engine = theBridge.CreateBridge(twsHost, twsPort);
+	const auto engine
+		= theBridge.CreateBridge(twsHost, twsPort, account, defaultExchange);
 	boost::shared_ptr<Bridge> bridge(
-		new Bridge(*m_pimpl->GetEngine(engine), account));
+		new Bridge(
+			*m_pimpl->GetEngine(engine),
+			account,
+			expirationDate,
+			strike));
 	m_pimpl->m_accounts[account] = boost::make_tuple(engine, bridge);
-	Log::Info("MQL Bridge Server registered account \"%1%\".", account);
+	Log::Info(
+		"MQL Bridge Server registered account \"%1%\" for \"%2%\".",
+		account,
+		defaultExchange);
 	return engine;
 }
 

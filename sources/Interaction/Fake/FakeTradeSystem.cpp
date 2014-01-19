@@ -198,19 +198,6 @@ void Fake::TradeSystem::Connect(const IniSectionRef &) {
 	m_pimpl->Start();
 }
 
-const Fake::TradeSystem::Account & Fake::TradeSystem::GetAccount() const {
-	throw MethodDoesNotImplementedError(
-		"Account Cash Balance doesn't implemented");
-}
-
-Fake::TradeSystem::Position Fake::TradeSystem::GetBrokerPostion(
-			const std::string &/*account*/,
-			const Symbol &)
-		const {
-	throw MethodDoesNotImplementedError(
-		"Broker Position Info doesn't implemented");
-}
-
 OrderId Fake::TradeSystem::SellAtMarketPrice(
 			Security &security,
 			Qty qty,

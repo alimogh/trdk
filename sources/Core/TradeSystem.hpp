@@ -80,10 +80,22 @@ namespace trdk {
 
 		struct Position {
 
+			std::string account;
+			trdk::Lib::Symbol symbol;
 			trdk::Qty qty;
 
 			Position()
 					: qty(0) {
+				//...//
+			}
+			
+			explicit Position(
+						const std::string &account,
+						const Lib::Symbol &symbol,
+						Qty qty)
+					: account(account),
+					symbol(symbol),
+					qty(qty) {
 				//...//
 			}
 
@@ -149,14 +161,23 @@ namespace trdk {
 		  * an exception.
 		  * @throw trdk::TradeSystem::UnknownAccountError
 		  */
-		virtual const trdk::TradeSystem::Account & GetAccount() const = 0;
+		virtual const trdk::TradeSystem::Account & GetAccount() const;
 
 		//! Returns broker position by symbol.
 		virtual trdk::TradeSystem::Position GetBrokerPostion(
 				const std::string &account,
 				const trdk::Lib::Symbol &)
-			const
-			= 0;
+			const;
+		//! Retrieves all positions for account.
+		/** @param account		Account for positions search.
+		  * @param predicate	Predicate, iteration will be stopped if it
+		  *						returns false. Must be very fast as call can be
+		  *						at lock.
+		  */
+		virtual void TradeSystem::ForEachBrokerPostion(
+				const std::string &account,
+				const boost::function<bool (const Position &)> &predicate)
+			const;
 
 	public:
 

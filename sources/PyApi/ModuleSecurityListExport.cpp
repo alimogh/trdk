@@ -66,6 +66,7 @@ ModuleSecurityListExport<Module, IteratorImplementation>::FindBySymbol(
 			const py::str &symbol) {
 	const auto pos = m_module->GetSecurities().Find(
 		Symbol(
+			Symbol::SECURITY_TYPE_STOCK,
 			py::extract<std::string>(symbol),
 			m_module->GetContext().GetSettings().GetDefaultExchange(),
 			m_module->GetContext().GetSettings().GetDefaultPrimaryExchange(),
@@ -83,6 +84,7 @@ ModuleSecurityListExport<Module, IteratorImplementation>::FindBySymbolAndExchang
 			const py::str &exchange) {
 	const auto pos = m_module->GetSecurities().Find(
 		Symbol(
+			Symbol::SECURITY_TYPE_STOCK,
 			py::extract<std::string>(symbol),
 			py::extract<std::string>(exchange),
 			m_module->GetContext().GetSettings().GetDefaultPrimaryExchange(),
@@ -101,6 +103,7 @@ ModuleSecurityListExport<Module, IteratorImplementation>::FindBySymbolAndPrimary
 			const py::str &primaryExchange) {
 	const auto pos = m_module->GetSecurities().Find(
 		Symbol(
+			Symbol::SECURITY_TYPE_STOCK,
 			py::extract<std::string>(symbol),
 			py::extract<std::string>(exchange),
 			py::extract<std::string>(primaryExchange),

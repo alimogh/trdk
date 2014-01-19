@@ -123,23 +123,40 @@ const ib::TradeSystem::Account & ib::TradeSystem::GetAccount() const {
 	return *m_account;
 }
 
-ib::TradeSystem::Position ib::TradeSystem::GetBrokerPostion(
+trdk::TradeSystem::Position ib::TradeSystem::GetBrokerPostion(
 			const std::string &account,
 			const Symbol &symbol)
 		const {
 	if (!m_positions) {
 		throw PositionError("Positions storage not enabled");
 	}
-	Position result;
 	{
-		const auto &key = std::make_pair(account, symbol.GetSymbol());
+		const auto &index = m_positions->get<BySymbol>();
+		const auto &key = boost::make_tuple(
+			boost::cref(account),
+			boost::cref(symbol.GetCurrency()),
+			boost::cref(symbol.GetSymbol()));
 		const PositionsReadLock lock(m_positionsMutex);
-		const auto &it = m_positions->find(key);
-		if (it != m_positions->end()) {
-			result.qty = it->second;
+		const auto &it = index.find(key);
+		if (it != index.end()) {
+			return *it;
 		}
 	}
-	return result;
+	return trdk::TradeSystem::Position();
+}
+
+void ib::TradeSystem::ForEachBrokerPostion(
+			const std::string &account,
+			const boost::function<
+				bool (const trdk::TradeSystem::Position &)> &pred)
+		const {
+	if (!m_positions) {
+		throw PositionError("Positions storage not enabled");
+	}
+	const auto &index = m_positions->get<ByAccount>();
+	const PositionsReadLock lock(m_positionsMutex);
+	const auto &end = index.upper_bound(account);
+	for (auto it = index.lower_bound(account); it != end && pred(*it); ++it);
 }
 
 boost::shared_ptr<trdk::Security> ib::TradeSystem::CreateSecurity(

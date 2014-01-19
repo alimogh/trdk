@@ -20,7 +20,8 @@ using namespace trdk::MqlApi::Detail;
 
 Symbol Detail::GetSymbol(Context &context, std::string symbol) {
 	boost::erase_all(symbol, ":");
-	return Lib::Symbol::ParseForex(
+	return Symbol::ParseCash(
+		Symbol::SECURITY_TYPE_FUTURE_OPTION,
 		symbol,
 		context.GetSettings().GetDefaultExchange());
 }

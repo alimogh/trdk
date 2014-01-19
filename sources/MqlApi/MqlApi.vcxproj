@@ -101,6 +101,7 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="MqlBridgeContext.hpp" />
     <ClInclude Include="MqlBridgeServer.hpp" />
+    <ClInclude Include="MqlString.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
