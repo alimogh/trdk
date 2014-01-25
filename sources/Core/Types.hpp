@@ -228,6 +228,9 @@ namespace trdk {
 
 	//! Extended order parameters.
 	struct OrderParams {
+
+		//! Account.
+		boost::optional<std::string> account;
 		
 		//! Display size for Iceberg orders.
 		boost::optional<trdk::Qty> displaySize;
@@ -243,6 +246,8 @@ namespace trdk {
 		  * @sa trdk::OrderParams::goodTillTime
 		  */
 		boost::optional<uintmax_t> goodInSeconds;
+
+		boost::optional<bool> isPut;
 
 	};
 

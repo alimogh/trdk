@@ -48,6 +48,18 @@ namespace trdk { namespace Lib {
 		return IsEqual(v, 0);
 	}
 
+	inline bool IsEmpty(const char *const str) {
+		Assert(str);
+		return !str[0];
+	}
+
+	inline bool IsEmpty(const std::string &str) {
+		return str.empty();
+	}
+	inline bool IsEmpty(const std::wstring &str) {
+		return str.empty();
+	}
+
 	//////////////////////////////////////////////////////////////////////////
 
 	inline boost::int64_t Scale(double value, unsigned long scale) {
@@ -76,6 +88,10 @@ namespace trdk { namespace Lib {
 
 	boost::filesystem::path GetExeFilePath();
 	boost::filesystem::path GetExeWorkingDir();
+
+	boost::filesystem::path GetDllFilePath();
+	boost::filesystem::path GetDllWorkingDir();
+
 	boost::filesystem::path Normalize(const boost::filesystem::path &);
 	boost::filesystem::path Normalize(
 				const boost::filesystem::path &pathToNormilize,

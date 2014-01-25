@@ -151,6 +151,7 @@ ContextExport StrategyExport::GetContext() {
 
 py::object StrategyExport::FindSecurityBySymbol(const py::str &symbol) {
 	const Symbol key(
+		Symbol::SECURITY_TYPE_STOCK,
 		py::extract<std::string>(symbol),
 		GetModule().GetContext().GetSettings().GetDefaultExchange(),
 		GetModule().GetContext().GetSettings().GetDefaultPrimaryExchange(),
@@ -166,6 +167,7 @@ py::object StrategyExport::FindSecurityBySymbolAndExchange(
 			const py::str &symbol,
 			const py::str &exchange) {
 	const Symbol key(
+		Symbol::SECURITY_TYPE_STOCK,
 		py::extract<std::string>(symbol),
 		py::extract<std::string>(exchange),
 		GetModule().GetContext().GetSettings().GetDefaultPrimaryExchange(),
@@ -187,6 +189,7 @@ py::object StrategyExport::FindSecurityBySymbolAndPrimaryExchange(
 				.GetContext()
 				.GetSecurity(
 					Symbol(
+						Symbol::SECURITY_TYPE_STOCK,
 						py::extract<std::string>(symbol),
 						py::extract<std::string>(exchange),
 						py::extract<std::string>(primaryExchange),

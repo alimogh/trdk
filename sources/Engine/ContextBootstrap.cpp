@@ -422,25 +422,6 @@ namespace {
 	typedef std::map<std::string /*tag*/, ModuleDll<Observer>> ObserverModules;
 	typedef std::map<std::string /*tag*/, ModuleDll<Service>> ServiceModules;
 
-	Symbol GetMagicSymbolCurrentSecurity() {
-		return Symbol("$", "$", "$", "$");
-	}
-
-	bool IsMagicSymbolCurrentSecurity(const Symbol &symbol) {
-		AssertEq(symbol.GetSymbol() == "$", symbol.GetExchange() == "$");
-		AssertEq(
-			symbol.GetExchange() == "$",
-			symbol.GetPrimaryExchange() == "$");
-		AssertEq(
-			symbol.GetPrimaryExchange() == "$",
-			symbol.GetCurrency() == "$");
-		return
-			symbol.GetSymbol() == "$"
-			&& symbol.GetExchange() == "$"
-			&& symbol.GetPrimaryExchange() == "$"
-			&& symbol.GetCurrency() == "$";
-	}
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -677,7 +658,7 @@ private:
 		if (!symbols.empty()) {
 			std::list<std::string> securities;
 			foreach (auto symbol, symbols) {
-				Assert(!IsMagicSymbolCurrentSecurity(symbol));
+				Assert(symbol);
 				auto &security = LoadSecurity(symbol);
 				try {
 					instance->RegisterSource(security);
@@ -874,7 +855,7 @@ private:
 
 		const std::string &symbolList = boost::trim_copy(match[3].str());
 		if (symbolList.empty()) {
-			result.symbols.insert(GetMagicSymbolCurrentSecurity());
+			result.symbols.insert(Symbol());
 			return result;
 		}
 
@@ -1050,7 +1031,7 @@ private:
 #				ifdef DEV_VER
 					if (supplierRequest.symbols.size() > 1) {
  						foreach (const auto &symbol, supplierRequest.symbols) {
- 							Assert(!IsMagicSymbolCurrentSecurity(symbol));
+ 							Assert(symbol);
  						}
 					}
 #				endif
@@ -1156,7 +1137,7 @@ private:
 						-> boost::shared_ptr<Service> {
 					std::list<std::string> symbolsStr;
 					foreach (const Symbol &symbol, symbols) {
-						Assert(!IsMagicSymbolCurrentSecurity(symbol));
+						Assert(symbol);
 						symbolsStr.push_back(symbol.GetAsString());
 					}
 					std::string symbolsStrListTmp
@@ -1180,8 +1161,7 @@ private:
 					return result;
 				};
 
-				if (	symbols.size() == 1
-						&& IsMagicSymbolCurrentSecurity(*symbols.begin())) {
+				if (symbols.size() == 1 && !*symbols.begin()) {
 
 					foreach (auto &instance, module.symbolInstances) {
 						std::string symbolsStrList;
@@ -1302,7 +1282,7 @@ private:
 			}
 			foreach (const Symbol &symbol, requirement.second) {
 				Security *security = nullptr;
-				if (!IsMagicSymbolCurrentSecurity(symbol)) {
+				if (symbol) {
 					security = &LoadSecurity(symbol);
 				}
 				if (!uniqueInstance) {
