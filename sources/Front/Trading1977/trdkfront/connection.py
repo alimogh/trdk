@@ -27,11 +27,14 @@ def makeConnection():
         "   module = " + frontSettings.BASE_DIR + "trdk.pyd\n" \
         "   dbg_auto_name = no\n" \
         "   account = \n" \
-        "[Strategy.Proxy]\n" \
+        "[Strategy.Proxy1]\n" \
         "   module = " + frontSettings.BASE_DIR + "trdk.pyd\n" \
         "   dbg_auto_name = no\n" \
         "   script_file_path = " + frontSettings.BASE_DIR + "hedgemanager\proxy.py\n" \
-        "   instances = " + frontSettings.BASE_DIR + "symbols.ini\n"
+        "[Strategy.Proxy2]\n" \
+        "   module = " + frontSettings.BASE_DIR + "trdk.pyd\n" \
+        "   dbg_auto_name = no\n" \
+        "   script_file_path = " + frontSettings.BASE_DIR + "hedgemanager\proxy.py\n"
 
     engine = trdk.Engine(engineSettings)
     try:
@@ -40,15 +43,7 @@ def makeConnection():
         return
     assert len(application.fullTradeStrategyList) > 0
 
-    tradeStrategies = {}
-    for strategy in application.fullTradeStrategyList:
-        for security in strategy.securities:
-            break
-        key = security.symbol + security.currency
-        tradeStrategies[key] = []
-        tradeStrategies[key].append(strategy)
-        tradeStrategies[key].append(security)
-
+    tradeStrategies = application.fullTradeStrategyList
     application.fullTradeStrategyList = []
     application.tradeEngine = engine
     application.tradeStrategies = tradeStrategies

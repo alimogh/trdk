@@ -34,8 +34,14 @@
 		</div>
 		<div style="float: right;">
 			<button id="createNewStrategy">New Strategy...</button>
+			<button id="refresh">Refresh</button>
 			<script>
 				$("#createNewStrategy").button().button("disable")
+				$("#refresh").button().button("disable").click(
+					function() {
+						$("#refresh").button("disable")
+						theService.scheduleFullUpdate()
+					})
 			</script>
 		</div>
 	</div>
@@ -127,10 +133,12 @@
 
 		var strategies = new function() {
 
-			this.strategiesCount = 0
+			var self = this
+
+			self.strategiesCount = 0
 
 			this.add = function(
-					id,
+					uid,
 					account,
 					baseCurrency,
 					tradeSize,
@@ -138,7 +146,7 @@
 					symbol2) {
 
 				var strategy = $("#strategyTemplate").clone()
-				strategy.attr("id", id)
+				strategy.attr("id", uid)
 				strategy.find("input").each(
 					function() {
 						$(this)
@@ -197,47 +205,70 @@
 
 				strategy.find("[name='account']").val(account)
 				strategy.find("[name='tradeNumber']")
-					.val(this.strategiesCount + 1)
+					.val(self.strategiesCount + 1)
 				strategy.find("[name='baseCurrency']").val(baseCurrency)
 
 				$("#strategies").append(strategy)
-				++this.strategiesCount
+				++self.strategiesCount
 				strategy.show()
 
+			}
+
+			this.clear = function() {
+				$("#strategies").html("")
+				self.strategiesCount = 0
 			}
 
 		}
 
 		var theService = new function() {
 
+			var self = this
+
 			this.start = function() {
-				this._requestStateUpdate()
+				self._requestStateUpdate()
+			}
+
+			this.scheduleFullUpdate = function() {
+				self._isFullUpdateRequired = true
 			}
 
 			this._onStateUpdate = function(data) {
+				if ('fullUpdate' in data && data.fullUpdate) {
+					strategies.clear()
+				}
 				if ('connection' in data) {
-					theService._onConnectionStateUpdate(data.connection)
+					self._onConnectionStateUpdate(data.connection)
 				}
 				if ('strategies' in data) {
 					if ('new' in data.strategies) {
-						data.strategies.new.forEach(theService._onNewStrategy)
+						data.strategies.new.forEach(self._onNewStrategy)
 					}
 					if ('update' in data.strategies) {
-						data.strategies.update.forEach(theService._onStrategyUpdate)
+						data.strategies.update.forEach(self._onStrategyUpdate)
 					}
+				}
+				if ('fullUpdate' in data && data.fullUpdate) {
+					$("#refresh").button().button("enable")
+					self._isFullUpdateRequired = false
 				}
 			}
 
 			this._requestStateUpdate = function() {
-				$.ajax({
+				var request = {
 					type: "POST",
 					url: "services/getState",
 					data: {csrfmiddlewaretoken: getCsrfToken()},
-					success: theService._onStateUpdate,
+					success: self._onStateUpdate,
 					error: onError,
-					complete: function() {
-						setTimeout(theService._requestStateUpdate, 2000)
-					}})
+					complete:
+						function() {
+							setTimeout(self._requestStateUpdate, 2000)
+						}}
+				if (self._isFullUpdateRequired) {
+					request.data.fullUpdate = true
+				}
+				$.ajax(request)
 			}
 
 			this._onConnectionStateUpdate = function(isConnected) {
@@ -248,7 +279,7 @@
 
 			this._onNewStrategy = function(newStrategyInfo) {
 				strategies.add(
-					newStrategyInfo.id,
+					newStrategyInfo.uid,
 					newStrategyInfo.account,
 					newStrategyInfo.baseCurrency,
 					newStrategyInfo.tradeSize,
@@ -259,6 +290,8 @@
 			this._onStrategyUpdate = function(strategyInfo) {
 				//...//
 			}
+
+			self._isFullUpdateRequired = true
 
 		}
 

@@ -21,31 +21,25 @@ def getState(request):
 
     result = {}
 
-    result['fullUpdate'] \
-        = 'fullUpdate' in request.POST and request.POST['fullUpdate']
-    if result['fullUpdate'] is False and cache is None:
+    if 'fullUpdate' in request.POST or cache is None:
         cache = dict()
         cache['strategies'] = dict()
+        result['fullUpdate'] = True
 
     if 'new' not in cache['strategies']:
-        cache['strategies']['new'] = {}
-        cache['strategies']['new'] = [
-            {
-                'id': '2166230c-b4ff-4f4c-8cf1-24d7af1a3b91',
+
+        cache['strategies']['new'] = []
+        for strategy in application.tradeStrategies:
+            strategyInfo = {
+                'uid': strategy.uid,
                 'account': 'DU15079',
                 'baseCurrency': 'USD',
+                'tradeSizeInBase': 1000,
                 'tradeSize': 1000,
-                'symbol1': 'AUD.USD',
-                'symbol2': 'GBP.USD'
-            },
-            {
-                'id': 'e6bb0f76-19a4-4fec-a3be-15930d68331e',
-                'account': 'DU15079',
-                'baseCurrency': 'USD',
-                'tradeSize': 1000,
-                'symbol1': 'EUR.CHF',
-                'symbol2': 'JPY.NZD'
-            }]
+                'symbol1': strategy.symbol1,
+                'symbol2': strategy.symbol2}
+            cache['strategies']['new'].append(strategyInfo)
+
         if 'strategies' not in result:
             result['strategies'] = {}
         result['strategies']['new'] = cache['strategies']['new']
