@@ -3,172 +3,266 @@
 
 {% block app_head %}
 
-	<script>
+<script>
 
-		function onError(xhr, textStatus, errorThrown) {
-			errorStr = '<div style="margin-bottom: 20px;">' + xhr.status
-			errorStr += ": " + errorThrown + "</div>"
-			errorStr
-				+= '<div style="margin-bottom: 20px;">' + textStatus + "</div>"
-			errorStr += "<div>" +  xhr.responseText + "</div>"
-			showServicesError(errorStr)
-		}
+	function onError(xhr, textStatus, errorThrown) {
+		errorStr = '<div style="margin-bottom: 20px;">' + xhr.status
+		errorStr += ": " + errorThrown + "</div>"
+		errorStr
+			+= '<div style="margin-bottom: 20px;">' + textStatus + "</div>"
+		errorStr += "<div>" +  xhr.responseText + "</div>"
+		showServicesError(errorStr)
+	}
 
-		function setConnectionState(isConnected) {
-			if (isConnected) {
-				$('#connectionState').html('connected')
-				$('#connectionState').css({'color': 'green'})
-			} else {
-				$('#connectionState').html('disconnected')
-				$('#connectionState').css({'color': 'red'})
-				$("#openTestPosition").button("disable")
-				$("#closeTestPosition").button("disable")
-			}
-		}
-
-		function onPositionOpen(symbol, notOpenedQty, activeQty, closedQty) {
-			html = "Position: " + symbol + " "
-			if (notOpenedQty != 0) {
-				html += notOpenedQty + " (order size) -> "
-			}
-			html += activeQty
-			$('#position').html(html)
-			$('#positionSymbol').val(symbol)
-			$("#openTestPosition").button("disable")
-			$("#closeTestPosition").button("enable")
-		}
-
-		function onPositionClose() {
-			$('#position').html("")
-			$("#openTestPosition").button("enable")
-			$("#closeTestPosition").button("disable")
-		}
-
-		$(function updateState() {
-			$.ajax({
-				type: "POST",
-				url: "services/getState",
-				data: {
-					csrfmiddlewaretoken: getCsrfToken()
-				},
-				success: function(data) {
-					$('#cashBalance').html(data.cashBalance)
-					if ('pos' in data) {
-						onPositionOpen(
-							data.pos.symbol,
-							data.pos.notOpenedQty,
-							data.pos.activeQty,
-							data.pos.closedQty)
-					} else {
-						onPositionClose()
-					}
-					setConnectionState(data.isConnected)
-				},
-				error: onError,
-				complete: function() {
-					setTimeout(updateState, 2000)
-				}
-			});
-		});
-
-	</script>
+</script>
 
 {% endblock %}
 
 {% block app_body %}
 
-	<div style="font-size: medium; margin-bottom: 25px;">
-		Interactive Brokers
-		<span id="connectionState" style="color: red; font-weight: bold;">disconnected</span>
-	</div>
-	<div style="font-size: medium; margin-bottom: 25px;">
-		Cash Balance: <span id="cashBalance" style="font-weight: bold;"></span>
-	</div>
-	<div style="font-size: large; margin-bottom: 25px;">
-		<input id="positionSymbol" type="hidden"><span id="position"></span>
+	<div
+			style="
+				margin: 15px;
+				padding: 15px;
+				border: black 1px solid;
+				background-color: #2b2b2b;
+				overflow: hidden;
+				min-width: 600px;">
+		<div style="float: left; font-size: 150%;">
+			Interactive Brokers:
+			<span id="connectionState" style="color: gray; font-weight: bold;">connection state unknown</span>
+		</div>
+		<div style="float: right;">
+			<button id="createNewStrategy">New Strategy...</button>
+			<script>
+				$("#createNewStrategy").button().button("disable")
+			</script>
+		</div>
 	</div>
 
-	<div id="positionOpenDlg" title="New Position" style="white-space: nowrap">
-		<div style="position: absolute; left: 5px; top: 7px; width: 60px; text-align: right;">Symbol:</div>
-		<div style="position: absolute; left: 70px; top: 5px;">
-			<span class="ui-spinner ui-widget ui-widget-content ui-corner-all"><select id="newPositionSymbol" class="ui-widget ui-widget-content">
-				<option value="EURUSD">EUR.USD</option>
-				<option value="USDJPY">USD.JPY</option>
-				<option value="GBPUSD">GBP.USD</option>
-				<option value="USDCAD">USD.CAD</option>
-				<option value="EURCHF">EUR.CHF</option>
-				<option value="USDCHF">USD.CHF</option>
-			</select></span></div>
-		<div style="position: absolute; left: 5px; top: 37px; width: 60px; text-align: right;">Size:</div>
-		<div style="position: absolute; left: 70px; top: 35px;"><input id="newPositionQty" value="20000" style="width: 100px;"></div>
-		<script>
-			$("#newPositionQty").spinner()
-		</script>
-	</div>
+	<div id="strategies"></div>
+
+	<table
+			id="strategyTemplate"
+			style="
+				border: black 1px solid;
+				background-color: #2b2b2b;
+				margin: 15px;
+				padding: 15px;
+				display: none;">
+		<tr>
+			<td colspan="5">
+				<table
+						name="account"
+						style="
+							border: black 1px solid;
+							margin: 0px;
+							padding: 15px;
+							text-align: right;">
+					<tr>
+						<td>Account: <input type="text" name="account"></td>
+						<td>&nbsp;</td>
+						<td>Trade: <input type="text" name="tradeNumber"></td>
+					</tr>
+					<tr>
+						<td>Balance: <input type="text" name="balance"></td>
+						<td>&nbsp;</td>
+						<td>Base Currency: <input type="text" name="baseCurrency"></td>
+					</tr>
+				</table>
+			</td>
+			<td colspan="6" align="right">
+				<table
+						style="
+							border: black 1px solid;
+							margin: 0px;
+							padding: 15px;
+							text-align: right;">
+					<tr>
+						<td>Profit Target: <input type="text" name="profitTarget"></td>
+						<td rowspan="2">&nbsp;</td>
+						<td rowspan="2" style="vertical-align: middle; text-align: left;">Total P/L:<br><input type="text" name="totalPl"></td>
+						<td rowspan="2">&nbsp;</td>
+						<td>
+							<button name="closeAll" style="white-space: nowrap">Close All</button><br>
+						</td>
+					</tr>
+					<tr>
+						<td>Stop Loss: <input type="text" name="stopLoss"></td>
+						<td><button name="closeAll" style="white-space: nowrap">Delete</button></td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr><td colspan="11">&nbsp;</td></tr>
+		<tr name="head">
+			<td>Symbol</td>
+			<td></td>
+			<td>Trade Size</td>
+			<td>Trade Size<br>in Base</td>
+			<td>Bid</td>
+			<td>Ask</td>
+			<td>Spread</td>
+			<td>Filled Price</td>
+			<td>P/L</td>
+			<td>P/L in Base</td>
+			<td></td>
+		</tr>
+		<tr id="symbolTemplate">
+			<td><input name="symbol"></td>
+			<td><button name="open"></button></td>
+			<td><input name="tradeSize"></td>
+			<td><input name="tradeSizeInBase"></td>
+			<td><input name="bid"></td>
+			<td><input name="ask"></td>
+			<td><input name="spread"></td>
+			<td><input name="filledPrice"></td>
+			<td><input name="pl"></td>
+			<td><input name="plInBase"></td>
+			<td><button name="close"></button></td>
+		</tr>
+	</table>
+
 	<script>
-		$('#positionOpenDlg').dialog(
-			{
-				modal: true,
-				width: 220,
-				buttons: [
-					{
-						text: "Ok",
-						click: function() {
-							$.ajax({
-								type: "POST",
-								url: "services/openPosition",
-								data: {
-									csrfmiddlewaretoken: getCsrfToken(),
-									symbol: $("#newPositionSymbol  option:selected").val(),
-									qty: $("#newPositionQty").spinner("value")
-								},
-								error: onError,
-								success: function(data) {
-									$("#openTestPosition").button("disable")
-									$("#positionOpenDlg").dialog("close")
-								}
-							})
+
+		var strategies = new function() {
+
+			this.strategiesCount = 0
+
+			this.add = function(
+					id,
+					account,
+					baseCurrency,
+					tradeSize,
+					symbol1,
+					symbol2) {
+
+				var strategy = $("#strategyTemplate").clone()
+				strategy.attr("id", id)
+				strategy.find("input").each(
+					function() {
+						$(this)
+							.addClass("ui-autocomplete-input")
+							.addClass("ui-widget-content")
+							.addClass("ui-corner-all")
+							.prop("readonly", true)
+						id = $(this).attr("id")
+						if (id == "balance") {
+							$(this).width(85)
+						} else {
+							$(this).width(65)
 						}
-					},
-					{
-						text: "Cancel",
-						click: function() {
-							$(this).dialog("close")
+					})
+				strategy.find("button").each(
+					function() {
+						$(this).button()
+						if ($(this).attr("name") != "closeAll") {
+							$(this).width(60)
+						} else {
+							$(this)
+								.width(100)
+								.addClass("sell")
+								.button("disable")
 						}
+					})
+				strategy.find("tr[name='head']").find("td").each(
+					function() {
+						$(this).css(
+							{textAlign: "center",
+							verticalAlign: "bottom"})
+					})
+
+				var strategySymbol1 = strategy.find("#symbolTemplate")
+				strategySymbol1.attr("id", "")
+				strategySymbol1
+					.find("[name='close']")
+					.addClass("sell")
+					.button("disable")
+					.html("Close")
+
+				var strategySymbol2 = strategySymbol1.clone()
+				strategySymbol1.after(strategySymbol2)
+
+				strategySymbol1
+					.find("[name='open']")
+					.addClass("buy")
+					.html("Buy")
+				strategySymbol2
+					.find("[name='open']")
+					.addClass("sell")
+					.html("Sell")
+
+				strategySymbol1.find("[name='symbol']").val(symbol1)
+				strategySymbol2.find("[name='symbol']").val(symbol2)
+
+				strategy.find("[name='account']").val(account)
+				strategy.find("[name='tradeNumber']")
+					.val(this.strategiesCount + 1)
+				strategy.find("[name='baseCurrency']").val(baseCurrency)
+
+				$("#strategies").append(strategy)
+				++this.strategiesCount
+				strategy.show()
+
+			}
+
+		}
+
+		var theService = new function() {
+
+			this.start = function() {
+				this._requestStateUpdate()
+			}
+
+			this._onStateUpdate = function(data) {
+				if ('connection' in data) {
+					theService._onConnectionStateUpdate(data.connection)
+				}
+				if ('strategies' in data) {
+					if ('new' in data.strategies) {
+						data.strategies.new.forEach(theService._onNewStrategy)
 					}
-				]
-			});
-		$('#positionOpenDlg').dialog()
-		$('#positionOpenDlg').dialog({modal: true})
-		$('#positionOpenDlg').dialog("close")
-	</script>
+					if ('update' in data.strategies) {
+						data.strategies.update.forEach(theService._onStrategyUpdate)
+					}
+				}
+			}
 
-	<button id="openTestPosition">Open test position</button>
-	<button id="closeTestPosition">Close test position</button>
-	<script>
-
-		$("#openTestPosition").button()
-		$("#openTestPosition").button("disable")
-		$("#openTestPosition").button().click(
-			function(event) {
-				$('#positionOpenDlg').dialog("open")
-			});
-
-		$("#closeTestPosition").button()
-		$("#closeTestPosition").button("disable")
-		$("#closeTestPosition").button().click(
-			function(event) {
+			this._requestStateUpdate = function() {
 				$.ajax({
 					type: "POST",
-					url: "services/closePosition",
-					data: {
-						csrfmiddlewaretoken: getCsrfToken(),
-						symbol: $('#positionSymbol').val()
-					},
-					error: onError
-				});
-				$("#closeTestPosition").button("disable")
-			})
+					url: "services/getState",
+					data: {csrfmiddlewaretoken: getCsrfToken()},
+					success: theService._onStateUpdate,
+					error: onError,
+					complete: function() {
+						setTimeout(theService._requestStateUpdate, 2000)
+					}})
+			}
+
+			this._onConnectionStateUpdate = function(isConnected) {
+				$("#connectionState")
+					.css({color: connectionState ? "green" : "red"})
+					.html(isConnected ? "connected" : "disconnected")
+			}
+
+			this._onNewStrategy = function(newStrategyInfo) {
+				strategies.add(
+					newStrategyInfo.id,
+					newStrategyInfo.account,
+					newStrategyInfo.baseCurrency,
+					newStrategyInfo.tradeSize,
+					newStrategyInfo.symbol1,
+					newStrategyInfo.symbol2)
+			}
+
+			this._onStrategyUpdate = function(strategyInfo) {
+				//...//
+			}
+
+		}
+
+		theService.start()
 
 	</script>
 

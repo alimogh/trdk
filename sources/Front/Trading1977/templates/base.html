@@ -10,6 +10,8 @@
 	<script src="{{ MEDIA_URL }}js/jquery-1.9.1.js"></script>
 	<script src="{{ MEDIA_URL }}js/jquery-ui-1.10.3.custom.js"></script>
 
+	<link rel="stylesheet" type="text/css" href="{{ MEDIA_URL }}css/base.css">
+
 	<script>
 
 		function showServicesError(text) {
@@ -23,49 +25,6 @@
 
 	</script>
 
-	<style>
-		body{
-			font: 62.5% "Trebuchet MS", sans-serif;
-			margin: 50px;
-			background-color: #2b2b2b;
-			color: #fef1ec;
-			min-height: 100%;
-			width: 100%;
-			overflow-x: hidden
-		}
-		#dialog-link {
-			padding: .4em 1em .4em 20px;
-			text-decoration: none;
-			position: relative;
-		}
-		#dialog-link span.ui-icon {
-			margin: 0 5px 0 0;
-			position: absolute;
-			left: .2em;
-			top: 50%;
-			margin-top: -8px;
-		}
-		#icons {
-			margin: 0;
-			padding: 0;
-		}
-		#icons li {
-			margin: 2px;
-			position: relative;
-			padding: 4px 0;
-			cursor: pointer;
-			float: left;
-			list-style: none;
-		}
-		#icons span.ui-icon {
-			float: left;
-			margin: 0 4px;
-		}
-		.fakewindowcontain .ui-widget-overlay {
-			position: absolute;
-		}
-	</style>
-
 	{% block app_head %}{% endblock %}
 
 </head>
@@ -73,7 +32,7 @@
 
 	{% csrf_token %}
 
-	<div id="body">
+	<div id="body" style="display: inline-table;">
 
 		<div id="appBody">
 			{% block app_body %}{% endblock %}
@@ -82,7 +41,7 @@
 		<div id="error" style="display: none; margin-top: 35px;">
 			<div class="ui-state-error ui-corner-all" style="padding: 0 .7em;">
 				<p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;"></span>
-				<span id="errorText"></p>
+				<span id="errorText"></span>
 			</div>
 		</div>
 

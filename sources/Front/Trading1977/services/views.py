@@ -10,31 +10,49 @@ from trdkfront import connection as connection
 import trdk
 
 
+cache = None
+
+
 def getState(request):
+
+    global cache
 
     connection.makeConnection()
 
-    result = dict()
+    result = {}
 
-    for strategy in application.tradeStrategies.itervalues():
-        position = None
-        for position in strategy[0].positions:
-            break
-        if position is not None:
-            result['pos'] = {}
-            result['pos']['symbol']\
-                = position.security.symbol + position.security.currency
-            result['pos']['notOpenedQty'] = position.notOpenedQty
-            result['pos']['activeQty'] = position.activeQty
-            result['pos']['closedQty'] = position.closedQty
-            break
+    result['fullUpdate'] \
+        = 'fullUpdate' in request.POST and request.POST['fullUpdate']
+    if result['fullUpdate'] is False and cache is None:
+        cache = dict()
+        cache['strategies'] = dict()
 
-    if application.tradeEngine is not None:
-        result['cashBalance'] = application.tradeEngine.tradeSystem.cashBalance
-    else:
-        result['cashBalance'] = 'unknown'
+    if 'new' not in cache['strategies']:
+        cache['strategies']['new'] = {}
+        cache['strategies']['new'] = [
+            {
+                'id': '2166230c-b4ff-4f4c-8cf1-24d7af1a3b91',
+                'account': 'DU15079',
+                'baseCurrency': 'USD',
+                'tradeSize': 1000,
+                'symbol1': 'AUD.USD',
+                'symbol2': 'GBP.USD'
+            },
+            {
+                'id': 'e6bb0f76-19a4-4fec-a3be-15930d68331e',
+                'account': 'DU15079',
+                'baseCurrency': 'USD',
+                'tradeSize': 1000,
+                'symbol1': 'EUR.CHF',
+                'symbol2': 'JPY.NZD'
+            }]
+        if 'strategies' not in result:
+            result['strategies'] = {}
+        result['strategies']['new'] = cache['strategies']['new']
 
-    result['isConnected'] = application.tradeEngine is not None
+    isConnected = application.tradeEngine is not None
+    if 'connection' not in cache or cache['connection'] != isConnected:
+        result['connection'] = cache['connection'] = isConnected
 
     return HttpResponse(json.dumps(result), mimetype='application/json')
 
