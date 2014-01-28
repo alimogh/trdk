@@ -12,6 +12,7 @@
 #include "TradeSystem.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -122,6 +123,25 @@ void TradeSystem::Validate(
 			params);
 	}
 
+}
+
+const TradeSystem::Account & TradeSystem::GetAccount() const {
+	throw MethodDoesNotImplementedError(
+		"Account Cash Balance not implemented");
+}
+
+TradeSystem::Position TradeSystem::GetBrokerPostion(
+			const std::string &,
+			const trdk::Lib::Symbol &)
+		const {
+	throw MethodDoesNotImplementedError("Broker Position Info not implemented");
+}
+
+void TradeSystem::ForEachBrokerPostion(
+			const std::string &,
+			const boost::function<bool (const Position &)> &)
+		const {
+	throw MethodDoesNotImplementedError("Broker Position Info not implemented");
 }
 
 //////////////////////////////////////////////////////////////////////////

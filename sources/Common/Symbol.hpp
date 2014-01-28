@@ -23,6 +23,13 @@ namespace trdk { namespace Lib {
 
 		typedef size_t Hash;
 
+		enum SecurityType {
+			SECURITY_TYPE_STOCK,
+			SECURITY_TYPE_FUTURE_OPTION,
+			SECURITY_TYPE_CASH,
+			numberOfSecurityTypes
+		};
+
 	public:
 
 		class Error : public Exception {
@@ -40,13 +47,23 @@ namespace trdk { namespace Lib {
 			explicit ParameterError(const char *what) throw();
 		};
 
-	private:
+	public:
 
 		Symbol();
 
-	public:
+		explicit Symbol(
+					SecurityType,
+					const std::string &symbol,
+					const std::string &exchange);
 
 		explicit Symbol(
+					const std::string &symbol,
+					const std::string &currency,
+					const std::string &expirationDate,
+					double strike);
+
+		explicit Symbol(
+					SecurityType,
 					const std::string &symbol,
 					const std::string &exchange,
 					const std::string &primaryExchange,
@@ -57,11 +74,19 @@ namespace trdk { namespace Lib {
 					const std::string &defExchange,
 					const std::string &defPrimaryExchange,
 					const std::string &defCurrency);
-		static Symbol ParseForex(
+		static Symbol ParseCash(
+					SecurityType securityType,
 					const std::string &line,
+					const std::string &defExchange);
+		static Symbol ParseCashFutureOption(
+					const std::string &line,
+					const std::string &expirationDate,
+					double strike,
 					const std::string &defExchange);
 
 	public:
+
+		operator bool() const;
 
 		bool operator <(const Symbol &rhs) const;
 		bool operator ==(const Symbol &rhs) const;
@@ -71,19 +96,29 @@ namespace trdk { namespace Lib {
 
 	public:
 
+		SecurityType GetSecurityType() const;
+
 		const std::string & GetSymbol() const;
 		const std::string & GetExchange() const;
 		const std::string & GetPrimaryExchange() const;
+
 		const std::string & GetCurrency() const;
 		
+		const std::string & GetExpirationDate() const;
+		double GetStrike() const;
+
 		std::string GetAsString() const;
 
 	private:
 
+		SecurityType m_securityType;
 		std::string m_symbol;
 		std::string m_exchange;
 		std::string m_primaryExchange;
 		std::string m_currency;
+
+		std::string m_expirationDate;
+		double m_strike;
 
 		volatile Hash m_hash;
 

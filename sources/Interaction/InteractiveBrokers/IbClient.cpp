@@ -29,13 +29,60 @@ namespace {
 	const pt::time_duration timeout = pt::seconds(60);
 	const pt::time_duration maxIterationTime = pt::milliseconds(10);
 
-	Contract & operator <<(Contract &contract, const trdk::Security &security) {
+	Contract GetContract(const trdk::Security &security) {
+		Contract contract;
+		static_assert(
+			Symbol::numberOfSecurityTypes == 3,
+			"Security type list changed.");
 		const Symbol &symbol = security.GetSymbol();
-		if (symbol.GetPrimaryExchange() != "FOREX") {
-			contract.secType = "STK";
-			contract.primaryExchange = symbol.GetPrimaryExchange();
-		} else {
-			contract.secType = "CASH";
+		switch (symbol.GetSecurityType()) {
+			case Symbol::SECURITY_TYPE_STOCK:
+				contract.secType = "STK";
+				contract.primaryExchange = symbol.GetPrimaryExchange();
+				break;
+			case Symbol::SECURITY_TYPE_FUTURE_OPTION:
+				contract.secType = "FOP";
+				contract.expiry = symbol.GetExpirationDate();
+				contract.strike = symbol.GetStrike();
+				break;
+			case Symbol::SECURITY_TYPE_CASH:
+				contract.secType = "CASH";
+				break;
+			default:
+				AssertEq(Symbol::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
+				break;
+		}
+		contract.symbol = symbol.GetSymbol();
+		contract.currency = symbol.GetCurrency();
+		contract.exchange = symbol.GetExchange();
+		return contract;
+	}
+
+	Contract GetContract(
+				const trdk::Security &security,
+				const OrderParams &orderParams) {
+		Contract contract;
+		static_assert(
+			Symbol::numberOfSecurityTypes == 3,
+			"Security type list changed.");
+		const Symbol &symbol = security.GetSymbol();
+		switch (symbol.GetSecurityType()) {
+			case Symbol::SECURITY_TYPE_STOCK:
+				contract.secType = "STK";
+				contract.primaryExchange = symbol.GetPrimaryExchange();
+				break;
+			case Symbol::SECURITY_TYPE_FUTURE_OPTION:
+				contract.secType = "FOP";
+				contract.expiry = symbol.GetExpirationDate();
+				contract.strike = symbol.GetStrike();
+				contract.right = *orderParams.isPut ? "P" : "C";
+				break;
+			case Symbol::SECURITY_TYPE_CASH:
+				contract.secType = "CASH";
+				break;
+			default:
+				AssertEq(Symbol::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
+				break;
 		}
 		contract.symbol = symbol.GetSymbol();
 		contract.currency = symbol.GetCurrency();
@@ -421,8 +468,7 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 		const SecurityRequest request(
 			security,
 			const_cast<Client *>(this)->TakeTickerId());
-		Contract contract;
-		contract << *request.security;
+		const auto &contract = GetContract(*request.security);
 
 		auto requests(m_marketDataRequests);
 		requests.insert(request);
@@ -457,8 +503,7 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 			const SecurityRequest request(
 				security,
 				const_cast<Client *>(this)->TakeTickerId());
-			Contract contract;
-			contract << *request.security;
+			const auto &contract = GetContract(*request.security);
 
 			auto requests(m_barsRequest);
 			requests.insert(request);
@@ -501,10 +546,9 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 		security,
 		const_cast<Client *>(this)->TakeTickerId());
 
-	Contract contract;
-	contract << *request.security;
+	const auto &contract = GetContract(*request.security);
 
-	const pt::ptime now = boost::get_system_time();
+	const pt::ptime &now = boost::get_system_time();
 	if (now <= security.GetRequestedDataStartTime() ) {
 		return false;
 	}
@@ -590,8 +634,7 @@ void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
 	auto requests(m_marketDepthLevel2Requests);
 	requests.insert(request);
 
-	Contract contract;
-	contract << *request.security;
+	const auto &contract = GetContract(*request.security);
 	m_client->reqMktDepth(
 		request.tickerId,
 		contract,
@@ -617,8 +660,7 @@ trdk::OrderId Client::PlaceBuyOrder(
 
 	AssertLt(0, qty);
 
-	Contract contract;
-	contract << security;
+	const auto &contract = GetContract(security, params);
 
 	Order order;
 	order << params;
@@ -645,8 +687,7 @@ trdk::OrderId Client::PlaceBuyOrder(
 
 	AssertLt(0, qty);
 
-	Contract contract;
-	contract << security;
+	const auto &contract = GetContract(security, params);
 
 	Order order;
 	order << params;
@@ -674,8 +715,7 @@ trdk::OrderId Client::PlaceBuyOrderWithMarketPrice(
 
 	AssertLt(0, qty);
 
-	Contract contract;
-	contract << security;
+	const auto &contract = GetContract(security, params);
 
 	Order order;
 	order << params;
@@ -701,8 +741,7 @@ trdk::OrderId Client::PlaceBuyIocOrder(
 			double price,
 			const OrderParams &params) {
 
-	Contract contract;
-	contract << security;
+	const auto &contract = GetContract(security, params);
 
 	Order order;
 	order << params;
@@ -731,8 +770,7 @@ trdk::OrderId Client::PlaceSellOrder(
 
 	AssertLt(0, qty);
 
-	Contract contract;
-	contract << security;
+	const auto &contract = GetContract(security, params);
 
 	Order order;
 	order << params;
@@ -759,8 +797,7 @@ trdk::OrderId Client::PlaceSellOrder(
 
 	AssertLt(0, qty);
 
-	Contract contract;
-	contract << security;
+	const auto &contract = GetContract(security, params);
 
 	Order order;
 	order << params;
@@ -788,8 +825,7 @@ trdk::OrderId Client::PlaceSellOrderWithMarketPrice(
 
 	AssertLt(0, qty);
 
-	Contract contract;
-	contract << security;
+	const auto &contract = GetContract(security, params);
 
 	Order order;
 	order << params;
@@ -815,8 +851,7 @@ trdk::OrderId Client::PlaceSellIocOrder(
 			double price,
 			const OrderParams &params) {
 
-	Contract contract;
-	contract << security;
+	const auto &contract = GetContract(security, params);
 
 	Order order;
 	order << params;
@@ -1741,7 +1776,7 @@ void Client::marketDataType(
 void Client::position(
 			const IBString &account,
 			const Contract &contract,
-			int position,
+			int size,
 			double avgCost) {
 
 	const bool isInitial = m_connectionState < CONNECTION_STATE_READY;
@@ -1750,13 +1785,15 @@ void Client::position(
 		const char *const text
 			= INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME ":"
 				" position info for account \"%1%\" -"
-				" \"%2%\" = %3% (average cost: %4%).";
+				" \"%2%:%3% (%4%)\" = %5% (average cost: %6%).";
 		const auto &params = boost::make_tuple(
 			boost::cref(account),
 			boost::cref(contract.symbol),
-			position,
+			boost::cref(contract.currency),
+			boost::cref(contract.secType),
+			size,
 			avgCost);
-		if (position == 0 && isInitial) {
+		if (size == 0 && isInitial) {
 			m_log.Debug(text, params);
 			return;
 		} else {
@@ -1769,18 +1806,61 @@ void Client::position(
 	foreach (ib::Security *security, m_ts.m_securities) {
 		//! @todo compares only symbols, not exchanges
 		if (security->GetSymbol().GetSymbol() == contract.symbol) {
-			security->SetBrokerPosition(position, isInitial);
+			security->SetBrokerPosition(size, isInitial);
 			break;
 		}
 	}
 
 	if (m_ts.m_positions) {
-		//! @todo place for optimization (if position will be used not only at
-		//! start):
-		const ib::TradeSystem::PositionsWriteLock positionsLock(
-			m_ts.m_positionsMutex);
-		//! @todo compares only symbols, not exchanges
-		(*m_ts.m_positions)[contract.symbol] = position;
+
+		Symbol symbol;
+
+		if (contract.secType == "STK") {
+			symbol = Symbol(
+				Symbol::SECURITY_TYPE_STOCK,
+				contract.symbol,
+				contract.currency);
+		} else if (contract.secType == "CASH") {
+			symbol = Symbol(
+				Symbol::SECURITY_TYPE_CASH,
+				contract.symbol,
+				contract.currency);
+		} else if (contract.secType == "FOP") {
+			symbol = Symbol(
+				contract.symbol,
+				contract.currency,
+				contract.expiry,
+				contract.strike);
+		} else {
+			AssertEq(std::string("STK"), contract.secType);
+		}
+
+		if (symbol) {
+
+			ib::TradeSystem::Position position(account, symbol, size);
+
+			auto &index = m_ts.m_positions->get<ib::TradeSystem::BySymbol>();
+
+			const ib::TradeSystem::PositionsWriteLock positionsLock(
+				m_ts.m_positionsMutex);
+
+			auto it = index.find(
+				boost::make_tuple(
+					boost::cref(account),
+					boost::cref(position.symbol.GetCurrency()),
+					boost::cref(position.symbol.GetSymbol())));
+			if (it == index.end()) {
+				index.insert(position);
+			} else {
+				index.modify(
+					it,
+					[&position](ib::TradeSystem::Position &storage) {
+						storage = position;
+					});
+			}
+
+		}
+
 	}
 
 }
@@ -1790,7 +1870,7 @@ void Client::positionEnd() {
 	m_log.Debug(
 		INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 			": positions info completed.");
-	m_client->cancelPositions();
+//	m_client->cancelPositions();
 	m_connectionState = CONNECTION_STATE_READY;
 	FlushPostponedMarketDataSubscription();
 }
