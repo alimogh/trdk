@@ -14,7 +14,7 @@ class Proxy(trdk.Strategy):
         application.fullTradeStrategyList.append(self)
 
     def getRequiredSuppliers(self):
-        return 'Broker Positions[{0}, {1}]'.format(self.symbol1, self.symbol2)
+        return 'Level 1 Updates[{0}, {1}]'.format(self.symbol1, self.symbol2)
 
     def onBrokerPositionUpdate(self, security, qty, isInitial):
 
@@ -44,8 +44,8 @@ class Proxy1(Proxy):
             self,
             param,
             '2166230c-b4ff-4f4c-8cf1-24d7af1a3b91',
-            'AUD.USD',
-            'GBP.USD')
+            'GBP.USD',
+            'AUD.USD')
 
 
 class Proxy2(Proxy):

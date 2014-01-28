@@ -6,6 +6,9 @@
 <script>
 
 	function onError(xhr, textStatus, errorThrown) {
+		if (xhr.status == 0) {
+			return
+		}
 		errorStr = '<div style="margin-bottom: 20px;">' + xhr.status
 		errorStr += ": " + errorThrown + "</div>"
 		errorStr
@@ -95,7 +98,7 @@
 					</tr>
 					<tr>
 						<td>Stop Loss: <input type="text" name="stopLoss"></td>
-						<td><button name="closeAll" style="white-space: nowrap">Delete</button></td>
+						<td><button name="delete" style="white-space: nowrap">Delete</button></td>
 					</tr>
 				</table>
 			</td>
@@ -142,6 +145,7 @@
 					account,
 					baseCurrency,
 					tradeSize,
+					tradeSizeInBase,
 					symbol1,
 					symbol2) {
 
@@ -164,13 +168,14 @@
 				strategy.find("button").each(
 					function() {
 						$(this).button()
-						if ($(this).attr("name") != "closeAll") {
+						name = $(this).attr("name")
+						if (name != "closeAll" && name != "delete") {
 							$(this).width(60)
 						} else {
-							$(this)
-								.width(100)
-								.addClass("sell")
-								.button("disable")
+							$(this).width(100).addClass("sell")
+							if ($(this).attr("name") == "delete") {
+								$(this).button("disable")
+							}
 						}
 					})
 				strategy.find("tr[name='head']").find("td").each(
@@ -185,20 +190,62 @@
 				strategySymbol1
 					.find("[name='close']")
 					.addClass("sell")
-					.button("disable")
 					.html("Close")
 
 				var strategySymbol2 = strategySymbol1.clone()
 				strategySymbol1.after(strategySymbol2)
 
+				strategySymbol1.attr("name", "symbol1")
+				strategySymbol2.attr("name", "symbol2")
+
 				strategySymbol1
 					.find("[name='open']")
 					.addClass("buy")
 					.html("Buy")
+					.attr("x", uid)
+					.click(
+						function() {
+							theService.buy($(this).attr("x"), 1)
+						})
 				strategySymbol2
 					.find("[name='open']")
 					.addClass("sell")
 					.html("Sell")
+					.attr("x", uid)
+					.click(
+						function() {
+							theService.sell($(this).attr("x"), 2)
+						})
+
+				strategySymbol1
+					.find("[name='close']")
+					.attr("x", uid)
+					.click(
+						function() {
+							theService.closePosition($(this).attr("x"), 1)
+						})
+				strategySymbol2
+					.find("[name='close']")
+					.attr("x", uid)
+					.click(
+						function() {
+							theService.closePosition($(this).attr("x"), 2)
+						})
+
+				strategySymbol1
+					.find("[name='closeAll']")
+					.attr("x", uid)
+					.click(
+						function() {
+							theService.closeAllPositions($(this).attr("x"))
+						})
+				strategySymbol2
+					.find("[name='closeAll']")
+					.attr("x", uid)
+					.click(
+						function() {
+							theService.closeAllPositions($(this).attr("x"))
+						})
 
 				strategySymbol1.find("[name='symbol']").val(symbol1)
 				strategySymbol2.find("[name='symbol']").val(symbol2)
@@ -207,6 +254,8 @@
 				strategy.find("[name='tradeNumber']")
 					.val(self.strategiesCount + 1)
 				strategy.find("[name='baseCurrency']").val(baseCurrency)
+				strategy.find("[name='tradeSize']").val(tradeSize)
+				strategy.find("[name='tradeSizeInBase']").val(tradeSizeInBase)
 
 				$("#strategies").append(strategy)
 				++self.strategiesCount
@@ -217,6 +266,23 @@
 			this.clear = function() {
 				$("#strategies").html("")
 				self.strategiesCount = 0
+			}
+
+			this.update = function(
+					uid,
+					symbol1Info,
+					symbol2Info) {
+				function update(info, symbol) {
+					symbol.find("[name='ask']").val(info.ask)
+					symbol.find("[name='bid']").val(info.bid)
+					symbol.find("[name='spread']").val(info.spread)
+					if (info.fPrice) {
+						symbol.find("[name='filledPrice']").val(info.fPrice)
+					}
+				}
+				var strategy = $("#strategies").find("#" + uid)
+				update(symbol1Info, strategy.find("[name='symbol1']"))
+				update(symbol2Info, strategy.find("[name='symbol2']"))
 			}
 
 		}
@@ -233,6 +299,34 @@
 				self._isFullUpdateRequired = true
 			}
 
+			this.buy = function(strategyUid, symbol) {
+				self._sendOrder("buy", strategyUid, symbol)
+			}
+
+			this.sell = function(strategyUid, symbol) {
+				self._sendOrder("sell", strategyUid, symbol)
+			}
+
+			this.closePosition = function(strategyUid, symbol) {
+				self._sendOrder("closePosition", strategyUid, symbol)
+			}
+
+			this.closeAllPositions = function(strategyUid) {
+				self._sendOrder("closeAllPositions", strategyUid, "")
+			}
+
+			this._sendOrder = function(order, strategyUid, symbol) {
+				var request = {
+					type: "POST",
+					url: "services/" + order,
+					data: {
+						csrfmiddlewaretoken: getCsrfToken(),
+						strategyUid: strategyUid,
+						symbol: symbol},
+					error: onError}
+				$.ajax(request)
+			}
+
 			this._onStateUpdate = function(data) {
 				if ('fullUpdate' in data && data.fullUpdate) {
 					strategies.clear()
@@ -240,13 +334,17 @@
 				if ('connection' in data) {
 					self._onConnectionStateUpdate(data.connection)
 				}
+				if ('newStrategies' in data) {
+					data.newStrategies.forEach(self._onNewStrategy)
+				}
 				if ('strategies' in data) {
-					if ('new' in data.strategies) {
-						data.strategies.new.forEach(self._onNewStrategy)
-					}
-					if ('update' in data.strategies) {
-						data.strategies.update.forEach(self._onStrategyUpdate)
-					}
+					data.strategies.forEach(self._onStrategyUpdate)
+				}
+				if ('balance' in data) {
+					$("[name='balance']").each(
+						function() {
+							$(this).val(data.balance)
+						})
 				}
 				if ('fullUpdate' in data && data.fullUpdate) {
 					$("#refresh").button().button("enable")
@@ -263,7 +361,7 @@
 					error: onError,
 					complete:
 						function() {
-							setTimeout(self._requestStateUpdate, 2000)
+							setTimeout(self._requestStateUpdate, 1000)
 						}}
 				if (self._isFullUpdateRequired) {
 					request.data.fullUpdate = true
@@ -283,12 +381,16 @@
 					newStrategyInfo.account,
 					newStrategyInfo.baseCurrency,
 					newStrategyInfo.tradeSize,
+					newStrategyInfo.tradeSizeInBase,
 					newStrategyInfo.symbol1,
 					newStrategyInfo.symbol2)
 			}
 
 			this._onStrategyUpdate = function(strategyInfo) {
-				//...//
+				strategies.update(
+					strategyInfo.uid,
+					strategyInfo.s1,
+					strategyInfo.s2)
 			}
 
 			self._isFullUpdateRequired = true

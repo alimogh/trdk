@@ -23,75 +23,157 @@ def getState(request):
 
     if 'fullUpdate' in request.POST or cache is None:
         cache = dict()
-        cache['strategies'] = dict()
         result['fullUpdate'] = True
-
-    if 'new' not in cache['strategies']:
-
-        cache['strategies']['new'] = []
-        for strategy in application.tradeStrategies:
-            strategyInfo = {
-                'uid': strategy.uid,
-                'account': 'DU15079',
-                'baseCurrency': 'USD',
-                'tradeSizeInBase': 1000,
-                'tradeSize': 1000,
-                'symbol1': strategy.symbol1,
-                'symbol2': strategy.symbol2}
-            cache['strategies']['new'].append(strategyInfo)
-
-        if 'strategies' not in result:
-            result['strategies'] = {}
-        result['strategies']['new'] = cache['strategies']['new']
 
     isConnected = application.tradeEngine is not None
     if 'connection' not in cache or cache['connection'] != isConnected:
         result['connection'] = cache['connection'] = isConnected
 
+    balance = application.tradeEngine.tradeSystem.cashBalance
+    if 'balance' not in cache or cache['balance'] != balance:
+        result['balance'] = cache['balance'] = balance
+
+    if 'strategies' not in cache:
+        cache['newStrategies'] = []
+        cache['strategies'] = []
+        for strategy in application.tradeStrategies:
+            strategyInfo = {
+                'uid': strategy.uid,
+                'account': '---',
+                'baseCurrency': 'USD',
+                'tradeSizeInBase': 35000,
+                'tradeSize': 35000,
+                'symbol1': strategy.symbol1,
+                'symbol2': strategy.symbol2}
+            cache['newStrategies'].append(strategyInfo)
+            cache['strategies'].append({
+                'uid': strategy.uid,
+                's1': {
+                    'ask': 0,
+                    'bid': 0,
+                    'spread': 0,
+                    'fPrice': 0,
+                    'opened': 1},
+                's2': {
+                    'ask': 0,
+                    'bid': 0,
+                    'spread': 0,
+                    'fPrice': 0,
+                    'opened': 1}})
+        result['newStrategies'] = cache['newStrategies']
+
+    result['strategies'] = []
+    for strategy in application.tradeStrategies:
+        xxx = {'uid': strategy.uid}
+        for security in strategy.securities:
+            ask = security.descalePrice(security.askPrice)
+            bid = security.descalePrice(security.bidPrice)
+            zzz = {
+                'ask': ask,
+                'bid': bid,
+                'spread': round(ask - bid, 6),
+                'fPrice': 0}
+            for position in strategy.positions:
+                if position.security.symbol == security.symbol:
+                    zzz['fPrice'] = security.descalePrice(position.openPrice)
+                    break
+            if 's1' not in xxx:
+                xxx['s1'] = zzz
+            else:
+                xxx['s2'] = zzz
+
+        result['strategies'].append(xxx)
+
     return HttpResponse(json.dumps(result), mimetype='application/json')
 
 
-def openPosition(request):
+def openPosition(request, isLong):
 
     try:
-        symbol = str(request.POST['symbol'])
-        qty = int(request.POST['qty'])
+        strategyUid = str(request.POST['strategyUid'])
+        symbol = int(request.POST['symbol'])
     except KeyError:
         return HttpResponseServerError('Key error!')
 
-    if symbol == "" or qty < 1:
+    if strategyUid == "" or symbol < 1 or symbol > 2:
         return HttpResponseServerError('Key value error!')
 
-    if symbol not in application.tradeStrategies.keys():
+    for i in application.tradeStrategies:
+        if i.uid == strategyUid:
+            strategy = i
+            for j in strategy.securities:
+                symbol -= 1
+                if symbol == 0:
+                    security = j
+                    break
+            break
+    if strategy is None or security is None:
         return HttpResponseServerError(
-            'Symbol "{0}" is unknown!'.format(symbol))
+            'Strategy "{0}" is unknown!'.format(strategyUid))
 
-    position = trdk.LongPosition(
-        application.tradeStrategies[symbol][0],
-        application.tradeStrategies[symbol][1],
-        qty,
-        0)
+    if isLong is True:
+        position = trdk.LongPosition(strategy, security, 35000, 0)
+    else:
+        position = trdk.ShortPosition(strategy, security, 35000, 0)
     position.openAtMarketPrice()
 
     return HttpResponse("")
 
 
+def openLongPosition(request):
+    return openPosition(request, True)
+
+
+def openShortPosition(request):
+    return openPosition(request, False)
+
+
 def closePosition(request):
 
     try:
-        symbol = str(request.POST['symbol'])
+        strategyUid = str(request.POST['strategyUid'])
+        symbol = int(request.POST['symbol'])
     except KeyError:
         return HttpResponseServerError('Key error!')
 
-    if symbol == "":
+    if strategyUid == "" or symbol < 1 or symbol > 2:
         return HttpResponseServerError('Key value error!')
 
-    if symbol not in application.tradeStrategies.keys():
-        return HttpResponseServerError('Symbol "{0}" is unknown!'.format(symbol))
+    for i in application.tradeStrategies:
+        if i.uid == strategyUid:
+            strategy = i
+            for j in strategy.securities:
+                symbol -= 1
+                if symbol == 0:
+                    security = j
+                    break
+            break
+    if strategy is None or security is None:
+        return HttpResponseServerError(
+            'Strategy "{0}" is unknown!'.format(strategyUid))
 
-    for strategy in application.tradeStrategies.itervalues():
-        map(
-            lambda position: position.cancelAtMarketPrice(),
-            strategy[0].positions)
+    for position in strategy.positions:
+        if position.security.symbol == security.symbol:
+            position.cancelAtMarketPrice()
 
     return HttpResponse("")
+
+
+def closeAllPositions(request):
+
+    try:
+        strategyUid = str(request.POST['strategyUid'])
+    except KeyError:
+        return HttpResponseServerError('Key error!')
+
+    if strategyUid == "":
+        return HttpResponseServerError('Key value error!')
+
+    for strategy in application.tradeStrategies:
+        if strategy.uid == strategyUid:
+            for position in strategy.positions:
+                position.cancelAtMarketPrice()
+            return HttpResponse("")
+
+    return HttpResponseServerError(
+        'Strategy "{0}" is unknown!'.format(strategyUid))
