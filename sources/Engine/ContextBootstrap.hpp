@@ -16,14 +16,14 @@
 
 namespace trdk { namespace Engine {
 
-	void BootstrapContext(
+	void BootContext(
 			const trdk::Lib::Ini &,
 			const Settings &,
 			Context &,
 			trdk::Lib::DllObjectPtr<TradeSystem> &tradeSystemRef,
 			trdk::Lib::DllObjectPtr<MarketDataSource> &marketDataSourceRef);
 
-	void BootstrapContextState(
+	void BootContextState(
 				const trdk::Lib::Ini &,
 				Context &,
 				SubscriptionsManager &subscriptionsManagerRef,

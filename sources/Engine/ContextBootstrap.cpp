@@ -30,11 +30,11 @@ using namespace trdk::Engine::Ini;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ContextBootstraper : private boost::noncopyable {
+class ContextBootstrapper : private boost::noncopyable {
 
 public:
 
-	explicit ContextBootstraper(
+	explicit ContextBootstrapper(
 				const Lib::Ini &conf,
 				const Settings &settings,
 				Engine::Context &context,
@@ -50,7 +50,7 @@ public:
 
 public:
 
-	void Bootstrap() {
+	void Boot() {
 		LoadContextParams();
 		Assert(!m_tradeSystem);
 		Assert(!m_marketDataSource);
@@ -426,11 +426,11 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ContextStateBootstraper : private boost::noncopyable {
+class ContextStateBootstrapper : private boost::noncopyable {
 
 public:
 	
-	ContextStateBootstraper(
+	ContextStateBootstrapper(
 				const Lib::Ini &confRef,
 				Engine::Context &context,
 				SubscriptionsManager &subscriptionsManagerRef,
@@ -450,7 +450,7 @@ public:
 
 public:
 
-	void Bootstrap() {
+	void Boot() {
 
 		m_strategies.clear();
 		m_observers.clear();
@@ -467,17 +467,17 @@ public:
 			if (!section) {
 				continue;
 			}
-			void (ContextStateBootstraper::*initModule)(
+			void (ContextStateBootstrapper::*initModule)(
 					const IniSectionRef &,
 					const std::string &,
 					RequirementsList &)
 				= nullptr;
 			if (boost::iequals(type, Sections::strategy)) {
-				initModule = &ContextStateBootstraper::InitStrategy;
+				initModule = &ContextStateBootstrapper::InitStrategy;
 			} else if (boost::iequals(type, Sections::observer)) {
-				initModule = &ContextStateBootstraper::InitObserver;
+				initModule = &ContextStateBootstrapper::InitObserver;
 			} else if (boost::iequals(type, Sections::service)) {
-				initModule = &ContextStateBootstraper::InitService;
+				initModule = &ContextStateBootstrapper::InitService;
 			} else {
 				AssertFail("Unknown module type");
 				continue;
@@ -1574,22 +1574,22 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Engine::BootstrapContext(
+void Engine::BootContext(
 			const Lib::Ini &conf,
 			const Settings &settings,
 			Context &context,
 			DllObjectPtr<TradeSystem> &tradeSystemRef,
 			DllObjectPtr<MarketDataSource> &marketDataSourceRef) {
-	ContextBootstraper(
+	ContextBootstrapper(
 			conf,
 			settings,
 			context,
 			tradeSystemRef,
 			marketDataSourceRef)
-		.Bootstrap();
+		.Boot();
 }
 
-void Engine::BootstrapContextState(
+void Engine::BootContextState(
 			const Lib::Ini &conf,
 			Context &context,
 			SubscriptionsManager &subscriptionsManagerRef,
@@ -1597,7 +1597,7 @@ void Engine::BootstrapContextState(
 			Observers &observersRef,
 			Services &servicesRef,
 			ModuleList &moduleListRef) {
-	ContextStateBootstraper(
+	ContextStateBootstrapper(
 			conf,
 			context,
 			subscriptionsManagerRef,
@@ -1605,7 +1605,7 @@ void Engine::BootstrapContextState(
 			observersRef,
 			servicesRef,
 			moduleListRef)
-		.Bootstrap();
+		.Boot();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

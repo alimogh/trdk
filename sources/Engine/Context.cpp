@@ -75,7 +75,7 @@ public:
 				boost::get_system_time(),
 				isReplayMode,
 				m_context.GetLog()) {
-		BootstrapContext(
+		BootContext(
 			*m_conf,
 			m_settings,
 			m_context,
@@ -138,7 +138,7 @@ void Engine::Context::Start() {
 		new Implementation::State(*this));
 	ModuleList moduleDlls;
 	try {
-		BootstrapContextState(
+		BootContextState(
 			*m_pimpl->m_conf,
 			*this,
 			state->subscriptionsManager,
