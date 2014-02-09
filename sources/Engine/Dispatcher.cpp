@@ -69,6 +69,7 @@ void Dispatcher::Suspend() {
 	m_level1Ticks.Suspend();
 	m_level1Updates.Suspend();
 	m_positionsUpdates.Suspend();
+	m_brokerPositionsUpdates.Suspend();
 	m_context.GetLog().Debug("Events dispatching suspended.");
 }
 
