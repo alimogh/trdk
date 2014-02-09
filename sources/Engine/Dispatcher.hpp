@@ -254,7 +254,7 @@ namespace trdk { namespace Engine {
 
 		bool IsActive() const {
 			return
-				|| m_brokerPositionsUpdates.IsActive()
+				m_brokerPositionsUpdates.IsActive()
 				|| m_positionsUpdates.IsActive()
 				|| m_level1Updates.IsActive();
 		}
