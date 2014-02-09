@@ -14,5 +14,5 @@ from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
 
 application.tradeEngine = None
-application.tradeStrategies = {}
+application.tradeStrategies = []
 application.fullTradeStrategyList = []

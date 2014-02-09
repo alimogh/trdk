@@ -8,6 +8,8 @@ from trdkfront.wsgi import application
 import json
 from trdkfront import connection as connection
 import trdk
+from django.conf import settings as frontSettings
+import uuid
 
 
 cache = None
@@ -34,20 +36,22 @@ def getState(request):
         result['balance'] = cache['balance'] = balance
 
     if 'strategies' not in cache:
-        cache['newStrategies'] = []
+        if result['fullUpdate']:
+            cache['newStrategies'] = []
         cache['strategies'] = []
         for strategy in application.tradeStrategies:
             strategyInfo = {
-                'uid': strategy.uid,
+                'uid': strategy.tag,
                 'account': '---',
                 'baseCurrency': 'USD',
                 'tradeSizeInBase': 35000,
                 'tradeSize': 35000,
                 'symbol1': strategy.symbol1,
                 'symbol2': strategy.symbol2}
-            cache['newStrategies'].append(strategyInfo)
+            if result['fullUpdate']:
+                cache['newStrategies'].append(strategyInfo)
             cache['strategies'].append({
-                'uid': strategy.uid,
+                'uid': strategy.tag,
                 's1': {
                     'ask': 0,
                     'bid': 0,
@@ -60,11 +64,12 @@ def getState(request):
                     'spread': 0,
                     'fPrice': 0,
                     'opened': 1}})
-        result['newStrategies'] = cache['newStrategies']
+        if result['fullUpdate']:
+            result['newStrategies'] = cache['newStrategies']
 
     result['strategies'] = []
     for strategy in application.tradeStrategies:
-        xxx = {'uid': strategy.uid}
+        xxx = {'uid': strategy.tag}
         for security in strategy.securities:
             ask = security.descalePrice(security.askPrice)
             bid = security.descalePrice(security.bidPrice)
@@ -81,10 +86,69 @@ def getState(request):
                 xxx['s1'] = zzz
             else:
                 xxx['s2'] = zzz
+        assert 's1' in xxx
+        if 's2' not in xxx:
+            xxx['s2'] = xxx['s1']
 
         result['strategies'].append(xxx)
 
     return HttpResponse(json.dumps(result), mimetype='application/json')
+
+
+def addStrategy(request):
+
+    try:
+        symbol1 = str(request.POST['symbol1'])
+        symbol2 = str(request.POST['symbol2'])
+    except KeyError:
+        return HttpResponseServerError('Key error!')
+    if symbol1 == "" or symbol2 == "":
+        return HttpResponseServerError('Key value error!')
+
+    if symbol1 != symbol2:
+        symbolList = symbol1 + ", " + symbol2
+    else:
+        symbolList = symbol1
+
+    newStrategy = \
+        "[Strategy." + str(uuid.uuid1()) + "]\n" \
+        "   module = " + frontSettings.BASE_DIR + "trdk.pyd\n" \
+        "   class = Proxy\n" \
+        "   dbg_auto_name = no\n" \
+        "   requires = Level 1 Updates[" + symbolList + "]\n" \
+        "   script_file_path = " + frontSettings.BASE_DIR + "hedgemanager\proxy.py\n"
+    application.tradeEngine.addStrategies(newStrategy)
+
+    for strategy in application.fullTradeStrategyList:
+        if strategy.symbol1 is not None:
+            continue
+        assert strategy.symbol2 is None
+        strategy.symbol1 = symbol1
+        strategy.symbol2 = symbol2
+        application.tradeStrategies.append(strategy)
+    application.fullTradeStrategyList = []
+
+    global cache
+    cache = None
+
+    return HttpResponse("")
+
+
+def deleteStrategy(request):
+    try:
+        strategyUid = str(request.POST['strategyUid'])
+    except KeyError:
+        return HttpResponseServerError('Key error!')
+    if strategyUid == "":
+        return HttpResponseServerError('Key value error!')
+    strategies = []
+    for strategy in application.tradeStrategies:
+        if strategy.tag != strategyUid:
+            strategies.append(strategy)
+    application.tradeStrategies = strategies
+    global cache
+    cache = None
+    return HttpResponse("")
 
 
 def openPosition(request, isLong):
@@ -135,7 +199,6 @@ def closePosition(request):
         symbol = int(request.POST['symbol'])
     except KeyError:
         return HttpResponseServerError('Key error!')
-
     if strategyUid == "" or symbol < 1 or symbol > 2:
         return HttpResponseServerError('Key value error!')
 

@@ -21,6 +21,8 @@ urlpatterns = patterns(
         {'document_root': settings.MEDIA_ROOT}),
     url(r'^$', dashboard.show),
     url(r'^services/getState', services.getState),
+    url(r'^services/addStrategy', services.addStrategy),
+    url(r'^services/deleteStrategy', services.deleteStrategy),
     url(r'^services/buy$', services.openLongPosition),
     url(r'^services/sell$', services.openShortPosition),
     url(r'^services/closePosition$', services.closePosition),
