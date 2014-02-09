@@ -28,6 +28,10 @@ namespace trdk { namespace PyApi {
 
 		static void ExportClass(const char *className);
 
+	public:
+
+		void AddStrategies(const std::string &newStartegiesConf);
+
 	private:
 
 		class Implementation;

@@ -29,6 +29,8 @@ namespace trdk { namespace Engine {
 		void Start();
 		void Stop();
 
+		void AddStrategies(const trdk::Lib::Ini &);
+
 	public:
 
 		virtual const trdk::Settings & GetSettings() const;

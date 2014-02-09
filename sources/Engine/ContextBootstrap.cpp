@@ -430,7 +430,7 @@ class ContextStateBootstrapper : private boost::noncopyable {
 
 public:
 	
-	ContextStateBootstrapper(
+	explicit ContextStateBootstrapper(
 				const Lib::Ini &confRef,
 				Engine::Context &context,
 				SubscriptionsManager &subscriptionsManagerRef,
@@ -440,9 +440,26 @@ public:
 				ModuleList &moduleListRef)
 			: m_context(context),
 			m_subscriptionsManager(subscriptionsManagerRef),
-			m_strategiesResult(strategiesRef),
-			m_observersResult(observersRef),
-			m_servicesResult(servicesRef),
+			m_strategiesResult(&strategiesRef),
+			m_observersResult(&observersRef),
+			m_servicesResult(&servicesRef),
+			m_moduleListResult(moduleListRef),
+			m_conf(confRef) {
+		//...//
+	}
+
+	explicit ContextStateBootstrapper(
+				const Lib::Ini &confRef,
+				Engine::Context &context,
+				SubscriptionsManager &subscriptionsManagerRef,
+				Strategies &strategiesRef,
+				Services &servicesRef,
+				ModuleList &moduleListRef)
+			: m_context(context),
+			m_subscriptionsManager(subscriptionsManagerRef),
+			m_strategiesResult(&strategiesRef),
+			m_observersResult(nullptr),
+			m_servicesResult(&servicesRef),
 			m_moduleListResult(moduleListRef),
 			m_conf(confRef) {
 		//...//
@@ -534,12 +551,16 @@ private:
 				std::map<std::string /*tag*/, ModuleDll<Module>> &source,
 				std::map<
 						std::string /*tag*/,
-						std::list<boost::shared_ptr<Module>>> &
+						std::list<boost::shared_ptr<Module>>> *
 					result) {
+		if (!result) {
+			AssertEq(0, source.size());
+			return;
+		}
 		foreach (auto &module, source) {
 			const std::string &tag = module.first;
 			ModuleDll<Module> &moduleDll = module.second;
-			auto &resultTag = result[tag];
+			auto &resultTag = (*result)[tag];
 			foreach (auto &instance, moduleDll.symbolInstances) {
 				resultTag.push_back(instance.second);
 			}
@@ -556,6 +577,14 @@ private:
 				const IniSectionRef &section,
 				const std::string &tag,
 				RequirementsList &requirementList) {
+		if (!m_strategiesResult) {
+			m_context.GetLog().Error(
+				"Strategy section \"%1%\" is found"
+					", but strategies can not be added.",
+				section.GetName());
+			throw Exception(
+				"Strategy section is found, but strategies can not be added");
+		}
 		InitModule(section, tag, m_strategies, requirementList);
 	}
 
@@ -563,6 +592,14 @@ private:
 				const IniSectionRef &section,
 				const std::string &tag,
 				RequirementsList &requirementList) {
+		if (!m_observersResult) {
+			m_context.GetLog().Error(
+				"Observer section \"%1%\" is found"
+					", but strategies can not be added.",
+				section.GetName());
+			throw Exception(
+				"Observer section is found, but strategies can not be added");
+		}
 		InitModule(section, tag, m_observers, requirementList);
 	}
 
@@ -570,6 +607,14 @@ private:
 				const IniSectionRef &section,
 				const std::string &tag,
 				RequirementsList &requirementList) {
+		if (!m_servicesResult) {
+			m_context.GetLog().Error(
+				"Service section \"%1%\" is found"
+					", but strategies can not be added.",
+				section.GetName());
+			throw Exception(
+				"Service section is found, but strategies can not be added");
+		}
 		InitModule(section, tag, m_services, requirementList);
 	}
 
@@ -1559,9 +1604,9 @@ private:
 
 	SubscriptionsManager &m_subscriptionsManager;
 
-	Strategies &m_strategiesResult;
-	Observers &m_observersResult;
-	Services &m_servicesResult;
+	Strategies *m_strategiesResult;
+	Observers *m_observersResult;
+	Services *m_servicesResult;
 	ModuleList &m_moduleListResult;
 
 	StrategyModules m_strategies;
@@ -1603,6 +1648,23 @@ void Engine::BootContextState(
 			subscriptionsManagerRef,
 			strategiesRef,
 			observersRef,
+			servicesRef,
+			moduleListRef)
+		.Boot();
+}
+
+void Engine::BootNewStrategiesForContextState(
+			const trdk::Lib::Ini &newStrategiesConf,
+			Context &context,
+			SubscriptionsManager &subscriptionsManagerRef,
+			Strategies &strategiesRef,
+			Services &servicesRef,
+			ModuleList &moduleListRef) {
+	ContextStateBootstrapper(
+			newStrategiesConf,
+			context,
+			subscriptionsManagerRef,
+			strategiesRef,
 			servicesRef,
 			moduleListRef)
 		.Boot();

@@ -107,6 +107,25 @@ public:
 		//...//	
 	}
 
+public:
+
+	void ReportState() const {
+		context.GetLog().Info(
+			"Loaded %1% securities.",
+			context.GetMarketDataSource().GetActiveSecurityCount());
+		context.GetLog().Info("Loaded %1% observers.", observers.size());
+		context.GetLog().Info(
+			"Loaded %1% strategies (%2% instances).",
+			boost::make_tuple(
+				strategies.size(),
+				GetModulesCount(strategies)));
+		context.GetLog().Info(
+			"Loaded %1% services (%2% instances).",
+			boost::make_tuple(
+				services.size(),
+				GetModulesCount(services)));
+	}
+
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -146,24 +165,13 @@ void Engine::Context::Start() {
 			state->observers,
 			state->services,
 			moduleDlls);
-	} catch (const Exception &ex) {
+	} catch (const Lib::Exception &ex) {
 		GetLog().Error("Failed to init engine context: \"%1%\".", ex);
 		throw Exception("Failed to init engine context");
 	}
-	GetLog().Info(
-		"Loaded %1% securities.",
-		GetMarketDataSource().GetActiveSecurityCount());
-	GetLog().Info("Loaded %1% observers.", state->observers.size());
-	GetLog().Info(
-		"Loaded %1% strategies (%2% instances).",
-		boost::make_tuple(
-			state->strategies.size(),
-			GetModulesCount(state->strategies)));
-	GetLog().Info(
-		"Loaded %1% services (%2% instances).",
-		boost::make_tuple(
-			state->services.size(),
-			GetModulesCount(state->services)));
+
+	state->ReportState();
+	
 	state->subscriptionsManager.Activate();
 
 	try {
@@ -175,7 +183,7 @@ void Engine::Context::Start() {
 		boost::format message("Failed to connect to trading system: \"%1%\"");
 		message % ex;
 		throw Interactor::ConnectError(message.str().c_str());
-	} catch (const Exception &ex) {
+	} catch (const Lib::Exception &ex) {
 		GetLog().Error("Failed to make trading system connection: \"%1%\".", ex);
 		throw Exception("Failed to make trading system");
 	}
@@ -190,8 +198,10 @@ void Engine::Context::Start() {
 			"Failed to connect to marker data source: \"%1%\"");
 		message % ex;
 		throw Interactor::ConnectError(message.str().c_str());
-	} catch (const Exception &ex) {
-		GetLog().Error("Failed to make trading system connection: \"%1%\".", ex);
+	} catch (const Lib::Exception &ex) {
+		GetLog().Error(
+			"Failed to make trading system connection: \"%1%\".",
+			ex);
 		throw Exception("Failed to make trading system");
 	}
 
@@ -203,6 +213,27 @@ void Engine::Context::Start() {
 void Engine::Context::Stop() {
 	GetLog().Info("Stopping...");
 	m_pimpl->m_state.reset();
+}
+
+void Engine::Context::AddStrategies(const Lib::Ini &newStrategiesConf) {
+	GetLog().Info("Adding new strategies...");
+	m_pimpl->m_state->subscriptionsManager.Suspend();
+	try {
+		BootNewStrategiesForContextState(
+			newStrategiesConf,
+			*this,
+			m_pimpl->m_state->subscriptionsManager,
+			m_pimpl->m_state->strategies,
+			m_pimpl->m_state->services,
+			m_pimpl->m_modulesDlls);
+	} catch (const Lib::Exception &ex) {
+		GetLog().Error(
+			"Failed to add new strategies into engine context: \"%1%\".",
+			ex);
+		throw Exception("Failed to add new strategies into engine context");
+	}
+	m_pimpl->m_state->ReportState();
+	m_pimpl->m_state->subscriptionsManager.Activate();
 }
 
 MarketDataSource & Engine::Context::GetMarketDataSource() {

@@ -644,6 +644,9 @@ class Engine(Context):
     def stop(self):
         pass
 
+    def addStrategies(self, newStrategiesSettings):
+        pass
+
 ###############################################################################
 
 
