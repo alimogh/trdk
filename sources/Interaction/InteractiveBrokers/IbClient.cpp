@@ -1420,7 +1420,11 @@ void Client::updateAccountValue(
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME ": "
 			"Received account info but not requested.");
 		return;
-	} else if (!m_account.empty() && !boost::iequals(m_account, accountName)) {
+	}
+	
+	m_accountInfo->accounts.insert(accountName);
+
+	if (!m_account.empty() && !boost::iequals(m_account, accountName)) {
 		return;
 	}
 

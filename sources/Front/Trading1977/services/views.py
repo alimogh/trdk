@@ -42,7 +42,7 @@ def getState(request):
         for strategy in application.tradeStrategies:
             strategyInfo = {
                 'uid': strategy.tag,
-                'account': '---',
+                'account': strategy.account,
                 'baseCurrency': 'USD',
                 'tradeSizeInBase': 35000,
                 'tradeSize': 35000,
@@ -98,11 +98,13 @@ def getState(request):
 def addStrategy(request):
 
     try:
+        account = str(request.POST['account'])
         symbol1 = str(request.POST['symbol1'])
         symbol2 = str(request.POST['symbol2'])
+        tradeSize = int(request.POST['tradeSize'])
     except KeyError:
         return HttpResponseServerError('Key error!')
-    if symbol1 == "" or symbol2 == "":
+    if account == "" or symbol1 == "" or symbol2 == "" or tradeSize <= 0:
         return HttpResponseServerError('Key value error!')
 
     if symbol1 != symbol2:
@@ -120,11 +122,14 @@ def addStrategy(request):
     application.tradeEngine.addStrategies(newStrategy)
 
     for strategy in application.fullTradeStrategyList:
-        if strategy.symbol1 is not None:
-            continue
+        assert strategy.account is None
+        assert strategy.symbol1 is None
         assert strategy.symbol2 is None
+        assert strategy.tradeSize is None
+        strategy.account = account
         strategy.symbol1 = symbol1
         strategy.symbol2 = symbol2
+        strategy.tradeSize = tradeSize
         application.tradeStrategies.append(strategy)
     application.fullTradeStrategyList = []
 

@@ -23,6 +23,96 @@
 
 {% block app_body %}
 
+	<div id="newStrategyDialog" title="New Strategy">
+		<table>
+			<tr>
+				<td style="text-align: right;">Account:</td>
+				<td colspan="3"><input id="newStrategyAccount" value="DU175288"></td>
+			</tr>
+			<tr>
+				<td style="text-align: right;">Symbols:</td>
+				<td><input id="newStrategySymbol1"></td>
+				<td><input id="newStrategySymbol2"></td>
+				<td>ex.: USD.EUR</td>
+			</tr>
+			<tr>
+				<td style="text-align: right;">Trade Size:</td>
+				<td colspan="2"><input id="newStrategyTradeSize" type="number"></td>
+				<td>(in base)</td>
+			</tr>
+		</table>
+	</div>
+	<script>
+		$('#newStrategyDialog').find("input").each(
+			function() {
+				$(this)
+					.addClass("ui-autocomplete-input")
+					.addClass("ui-widget-content")
+					.addClass("ui-corner-all")
+				if ($(this).attr("id") == "newStrategySymbol1" || $(this).attr("id") == "newStrategySymbol2") {
+					$(this).width(65)
+				} else {
+					$(this).width(135)
+				}
+			})
+		$('#newStrategyDialog').find("td").each(
+			function() {
+				$(this).css({
+					verticalAlign: "middle",
+					whiteSpace: "nowrap"})
+			})
+		$('#newStrategyDialog').dialog({
+			modal: true,
+			width: 335,
+			buttons: [
+				{
+					text: "Ok",
+					click:
+						function() {
+							if ($("#newStrategyAccount").val() == "") {
+								alert("Please provide Account")
+								return
+							}
+							if ($("#newStrategySymbol1").val() == "") {
+								alert("Please provide Symbol 1")
+								return
+							}
+							if ($("#newStrategySymbol2").val() == "") {
+								alert("Please provide Symbol 2")
+								return
+							}
+							$.ajax({
+								type: "POST",
+								url: "services/addStrategy",
+								data: {
+									csrfmiddlewaretoken: getCsrfToken(),
+									account: $("#newStrategyAccount").val(),
+									symbol1: $("#newStrategySymbol1").val(),
+									symbol2: $("#newStrategySymbol2").val(),
+									tradeSize: $("#newStrategyTradeSize").val()
+								},
+								error: onError,
+								complete:
+									function() {
+										$("#createNewStrategy").button("enable")
+										$("#newStrategyDialog").dialog("close")
+									}
+							})
+						}
+				},
+				{
+					text: "Cancel",
+					click:
+						function() {
+							$("#createNewStrategy").button("enable")
+							$(this).dialog("close")
+						}
+				}
+			]
+		})
+		$('#newStrategyDialog').dialog("close")
+	</script>
+
 	<div
 			style="
 				margin: 15px;
@@ -39,7 +129,11 @@
 			<button id="createNewStrategy">New Strategy...</button>
 			<button id="refresh">Refresh</button>
 			<script>
-				$("#createNewStrategy").button().button("disable")
+				$("#createNewStrategy").button().click(
+					function() {
+						$("#createNewStrategy").button("disable")
+						$('#newStrategyDialog').dialog("open")
+					})
 				$("#refresh").button().button("disable").click(
 					function() {
 						$("#refresh").button("disable")
@@ -174,7 +268,19 @@
 						} else {
 							$(this).width(100).addClass("sell")
 							if ($(this).attr("name") == "delete") {
-								$(this).button("disable")
+								$(this).attr("id", uid)
+								$(this).button().click(
+									function() {
+										$.ajax({
+											type: "POST",
+											url: "services/deleteStrategy",
+											data: {
+												csrfmiddlewaretoken: getCsrfToken(),
+												strategyUid: $(this).attr("id")
+											},
+											error: onError
+										})
+								})
 							}
 						}
 					})

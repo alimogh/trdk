@@ -8,8 +8,10 @@ class Proxy(trdk.Strategy):
 
     def __init__(self, param):
         trdk.Strategy.__init__(self, param)
+        self.account = None
         self.symbol1 = None
         self.symbol2 = None
+        self.tradeSize = None
         application.fullTradeStrategyList.append(self)
 
     def onBrokerPositionUpdate(self, security, qty, isInitial):

@@ -68,6 +68,9 @@ namespace trdk {
 			volatile double maintenanceMargin;
 			volatile double excessLiquidity;
 
+			// workaround
+			std::set<std::string> accounts;
+
 			Account() 
 					: cashBalance(.0),
 					equityWithLoanValue(.0),
