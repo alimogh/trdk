@@ -12,7 +12,6 @@
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;DEV_VER;BOOST_ENABLE_ASSERT_HANDLER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <MinimalRebuild>true</MinimalRebuild>
       <Optimization>Disabled</Optimization>
     </ClCompile>

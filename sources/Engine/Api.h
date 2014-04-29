@@ -10,12 +10,16 @@
 
 #pragma once
 
-#if defined(_MSC_VER)
-#	ifdef TRDK_ENGINE
-#		define TRDK_ENGINE_API __declspec(dllexport)
-#	else
-#		define TRDK_ENGINE_API __declspec(dllimport)
+#if defined(DISTRIBUTION_STANDALONE)
+#	if defined(_MSC_VER)
+#		ifdef TRDK_ENGINE
+#			define TRDK_ENGINE_API __declspec(dllexport)
+#		else
+#			define TRDK_ENGINE_API __declspec(dllimport)
+#		endif
 #	endif
-#else
+#endif
+
+#if !defined(TRDK_ENGINE_API)
 #	define TRDK_ENGINE_API
 #endif

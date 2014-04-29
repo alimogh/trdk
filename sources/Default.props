@@ -4,7 +4,6 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <IntDir>$(SolutionDir)..\output\$(PlatformShortName)\int\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>$(SolutionDir)..\output\$(PlatformShortName)\bin\</OutDir>
     <LibraryPath>$(SolutionDir)..\output\lib;$(BOOST_DIR_X86)\lib\;$(LibraryPath)</LibraryPath>
     <IncludePath>$(SolutionDir);$(BOOST_DIR_X86)\include\boost-1_53\;$(IncludePath)</IncludePath>
   </PropertyGroup>
@@ -33,7 +32,7 @@
       </PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
-      <ImportLibrary>$(SolutionDir)..\output\$(PlatformShortName)\lib\$(TargetName).lib</ImportLibrary>
+      <ImportLibrary>$(SolutionDir)..\output\$(PlatformShortName)\lib\$(Configuration)\$(TargetName).lib</ImportLibrary>
       <ProgramDatabaseFile>$(TargetDir)$(TargetName)$(TargetExt).pdb</ProgramDatabaseFile>
       <ProfileGuidedDatabase>$(TargetDir)$(TargetName)$(TargetExt).pgd</ProfileGuidedDatabase>
       <LargeAddressAware>true</LargeAddressAware>

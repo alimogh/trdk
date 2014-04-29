@@ -45,13 +45,22 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\output\x86\lib\Services_dbg.lib">
+    <Library Include="..\..\output\x86\lib\Debug DLL\Services_dbg.lib">
       <Filter>Lib Files</Filter>
     </Library>
-    <Library Include="..\..\output\x86\lib\Services_test.lib">
+    <Library Include="..\..\output\x86\lib\Debug Standalone\Services_dbg.lib">
       <Filter>Lib Files</Filter>
     </Library>
-    <Library Include="..\..\output\x86\lib\Services.lib">
+    <Library Include="..\..\output\x86\lib\Test DLL\Services_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Test Standalone\Services_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Release DLL\Services.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Release Standalone\Services.lib">
       <Filter>Lib Files</Filter>
     </Library>
   </ItemGroup>

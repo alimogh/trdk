@@ -3,12 +3,12 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <OutDir>$(SolutionDir)..\output\$(PlatformShortName)\lib\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)..\output\$(PlatformShortName)\bin\standalone\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
-    <Lib>
-      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-    </Lib>
+    <ClCompile>
+      <PreprocessorDefinitions>DISTRIBUTION_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>
