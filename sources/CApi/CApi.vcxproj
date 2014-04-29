@@ -142,6 +142,10 @@
     <TargetName>Trdk_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="CApi.cpp" />
+    <ClCompile Include="CApiBridge.cpp" />
+    <ClCompile Include="CApiBridgeContext.cpp" />
+    <ClCompile Include="CApiBridgeServer.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
@@ -153,11 +157,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="CApi.def" />
+    <None Include="Test.py" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CApi.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CApiBridge.hpp" />
+    <ClInclude Include="CApiBridgeContext.hpp" />
+    <ClInclude Include="CApiBridgeServer.hpp" />
+    <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -169,6 +178,9 @@
     </ProjectReference>
     <ProjectReference Include="..\Engine\Engine.vcxproj">
       <Project>{015fb121-6122-4a00-bfbb-545e9e73abee}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Interaction\InteractiveBrokers\InteractiveBrokers.vcxproj">
+      <Project>{befe87ae-1376-4c4c-87d5-73e782990306}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Version\Version.vcxproj">
       <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>

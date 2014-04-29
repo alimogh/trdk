@@ -28,3 +28,4 @@
 *.pyc
 /sources/*.opensdf
 /sources/*.sdf
+*.aps

@@ -1,2 +1,14 @@
 
 EXPORTS
+
+	trdk_InitLog
+	trdk_InitLogToStdOut
+	
+	trdk_CreateIbTwsBridge
+	trdk_DestroyBridge
+	trdk_DestroyAllBridges
+
+	trdk_GetCashBalance
+	trdk_GetPosition
+
+	CreateTradeSystem

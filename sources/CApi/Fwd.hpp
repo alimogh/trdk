@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2014/04/29 22:51:08
+ *   Created: 2014/04/29 23:32:06
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,14 +10,10 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
+#pragma once
 
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/noncopyable.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
+namespace trdk { namespace CApi {
 
-#include "Common/Common.hpp"
+	class Bridge;
 
-#include "Core/Fwd.hpp"
-
-#include "Common/Assert.hpp"
+} }
