@@ -19,20 +19,20 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::CApi;
 
+////////////////////////////////////////////////////////////////////////////////
+
 BridgeServer::Exception::Exception(const char *what) throw()
 		: Base(what) {
 	//...//
 }
+
 BridgeServer::UnknownEngineError::UnknownEngineError() throw()
 		: Exception("Bridge Server is not active") {
 	//...//
 }
+
 BridgeServer::UnknownAccountError::UnknownAccountError() throw()
 		: Exception("Bridge Server: account is unknown") {
-	//...//
-}
-BridgeServer::NotEnoughFreeEngineSlotsError::NotEnoughFreeEngineSlotsError()
-		: Exception("Not enough free Bridge Slots") {
 	//...//
 }
 
@@ -44,38 +44,23 @@ public:
 
 	std::ofstream m_eventLog;
 
-	std::array<boost::shared_ptr<BridgeContext>, 1> m_engines;
-
-	typedef boost::tuple<EngineId, boost::shared_ptr<Bridge>> Account;
-	std::map<std::string, Account> m_accounts;
+	typedef std::vector<boost::shared_ptr<Bridge>> Bridges;
+	Bridges m_bridges;
 
 	size_t m_clientId;
 
 	Implementation()
-			: m_clientId(0) {
+			: m_clientId(size_t(time(nullptr))) {
 		//...//
 	}
 
-	Account & GetAccount(const std::string &account) {
-		auto pos = m_accounts.find(account);
-		if (pos == m_accounts.end()) {
-			Log::Error("Bridge Server: account \"%1%\" is unknown.", account);
-			throw UnknownAccountError();
-		}
-		return pos->second;
-	}
-
-	boost::shared_ptr<BridgeContext> GetEngine(EngineId engineId) {
-		if (engineId >= m_engines.size() || !m_engines[engineId]) {
+	boost::shared_ptr<Bridge> GetBridge(const BridgeId &id) {
+		if (id >= m_bridges.size()) {
 			throw UnknownEngineError();
 		}
-		return m_engines[engineId];
+		Assert(m_bridges[id]);
+		return m_bridges[id];
 	}
-
-	boost::shared_ptr<BridgeContext> GetEngine(const std::string &account) {
-		return GetEngine(boost::get<0>(GetAccount(account)));
-	}
-
 
 };
 
@@ -99,22 +84,8 @@ void BridgeServer::InitLog(const fs::path &logFilePath) {
 	}
 }
 
-BridgeServer::EngineId BridgeServer::CreateIbTwsBridge(
-			const std::string &twsHost,
-			unsigned short twsPort,
-			const std::string &account,
+BridgeServer::BridgeId BridgeServer::CreateBridge(
 			const std::string &defaultExchange) {
-	
-	EngineId engineId = 0;
-	foreach (const auto &engine, m_pimpl->m_engines) {
-		if (!engine) {
-			break;
-		}
-	}
-	AssertGe(m_pimpl->m_engines.size(), engineId);
-	if (engineId >= m_pimpl->m_engines.size()) {
-		throw UnknownEngineError();
-	}
 	
 	std::ostringstream settingsString;
 	settingsString
@@ -128,83 +99,47 @@ BridgeServer::EngineId BridgeServer::CreateIbTwsBridge(
 			"[TradeSystem]\n"
 				"module = " << GetDllWorkingDir().string() << "/Trdk\n"
 				"positions = yes\n"
-				"account = " << account << "\n"
 				"client_id = " << ++m_pimpl->m_clientId << "\n";
-	if (!twsHost.empty()) {
-		settingsString << "ip_address = " << twsHost << "\n";
-	}
-	if (twsPort) {
-		settingsString << "port = " << twsPort << "\n";
-	}
 	boost::shared_ptr<const Ini> ini(new IniString(settingsString.str()));
-	boost::shared_ptr<BridgeContext> engine(new BridgeContext(ini));
-	engine->Start();
+	boost::shared_ptr<BridgeContext> context(new BridgeContext(ini));
+	boost::shared_ptr<Bridge> bridge(new Bridge(context));
+	context->Start();
 
-	std::swap(engine, m_pimpl->m_engines[engineId]);
-	return engineId;
+	const BridgeId newBridgeId = m_pimpl->m_bridges.size();
+	m_pimpl->m_bridges.push_back(bridge);
+	return newBridgeId;
 
 }
 
-BridgeServer::EngineId BridgeServer::CreateIbTwsBridge(
-			const std::string &twsHost,
-			unsigned short twsPort,
-			const std::string &account,
-			const std::string &defaultExchange,
-			const std::string &expirationDate,
-			double strike) {
-	{
-		const auto &pos = m_pimpl->m_accounts.find(account);
-		if (pos != m_pimpl->m_accounts.end()) {
-			Log::Warn(
-				"Failed to start Bridge to IB TWS:"
-					" account \"%1%\" already registered.",
-				account);
-			return boost::get<0>(pos->second);
-		}
-	}
-	const auto engine = CreateIbTwsBridge(
-		twsHost,
-		twsPort,
-		account,
-		defaultExchange);
-	boost::shared_ptr<Bridge> bridge(
-		new Bridge(
-			*m_pimpl->GetEngine(engine),
-			account,
-			expirationDate,
-			strike));
-	m_pimpl->m_accounts[account] = boost::make_tuple(engine, bridge);
-	Log::Info(
-		"Bridge Server registered account \"%1%\" for \"%2%\".",
-		account,
-		defaultExchange);
-	return engine;
-}
-
-void BridgeServer::DestoryBridge(EngineId engineId) {
-	m_pimpl->GetEngine(engineId).reset();
+void BridgeServer::DestoryBridge(const BridgeId &bridgeId) {
+	m_pimpl->GetBridge(bridgeId); // just to check bridge ID
+	AssertLt(bridgeId, m_pimpl->m_bridges.size());
+	m_pimpl->m_bridges.erase(m_pimpl->m_bridges.begin() + bridgeId);
 }
 
 void BridgeServer::DestoryAllBridge() {
-	foreach (auto &engine, m_pimpl->m_engines) {
-		engine.reset();
+	Implementation::Bridges().swap(m_pimpl->m_bridges);
+}
+
+Bridge & BridgeServer::CheckBridge(
+			const BridgeId &id,
+			const std::string &defaultExchange) {
+	if (id < m_pimpl->m_bridges.size()) {
+		return *m_pimpl->m_bridges[id];
 	}
-	m_pimpl->m_accounts.clear();
+	AssertEq(m_pimpl->m_bridges.size(), id);
+	if (m_pimpl->m_bridges.size() != id) {
+		throw UnknownEngineError();
+	}
+	Verify(CreateBridge(defaultExchange) == id);
+	AssertEq(id + 1, m_pimpl->m_bridges.size());
+	return *m_pimpl->m_bridges[id];
 }
 
-void BridgeServer::DestoryBridge(const std::string &account) {
-	auto accounts = m_pimpl->m_accounts;
-	const auto engineId = boost::get<0>(m_pimpl->GetAccount(account));
-	accounts.erase(account);
-	DestoryBridge(engineId);
-	accounts.swap(m_pimpl->m_accounts);
-	Log::Info("Bridge Server unregistered account \"%1%\".", account);
+Bridge & BridgeServer::GetBridge(const BridgeId &bridgeId) {
+	return *m_pimpl->GetBridge(bridgeId);
 }
 
-Bridge & BridgeServer::GetBridge(const std::string &account) {
-	return *boost::get<1>(m_pimpl->GetAccount(account));
-}
-
-const Bridge & BridgeServer::GetBridge(const std::string &account) const {
-	return const_cast<BridgeServer *>(this)->GetBridge(account);
+const Bridge & BridgeServer::GetBridge(const BridgeId &bridgeId) const {
+	return const_cast<BridgeServer *>(this)->GetBridge(bridgeId);
 }

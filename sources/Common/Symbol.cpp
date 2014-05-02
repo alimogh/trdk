@@ -38,7 +38,8 @@ Symbol::ParameterError::ParameterError(const char *what) throw()
 Symbol::Symbol()
 		: m_securityType(numberOfSecurityTypes),
 		m_strike(.0),
-		m_hash(0) {
+		m_hash(0),
+		m_right(numberOfRights) {
 	//...//
 }
 
@@ -50,7 +51,8 @@ Symbol::Symbol(
 		m_symbol(symbol),
 		m_currency(currency),
 		m_strike(.0),
-		m_hash(0) {
+		m_hash(0),
+		m_right(numberOfRights) {
 	Assert(!m_symbol.empty());
 	Assert(!m_currency.empty());
 	if (m_symbol.empty()) {
@@ -70,7 +72,8 @@ Symbol::Symbol(
 		m_currency(currency),
 		m_expirationDate(expirationDate),
 		m_strike(strike),
-		m_hash(0) {
+		m_hash(0),
+		m_right(numberOfRights) {
 	Assert(!m_symbol.empty());
 	Assert(!m_currency.empty());
 	Assert(!expirationDate.empty());
@@ -94,7 +97,8 @@ Symbol::Symbol(
 		m_primaryExchange(primaryExchange),
 		m_currency(currency),
 		m_strike(.0),
-		m_hash(0) {
+		m_hash(0),
+		m_right(numberOfRights) {
 	Assert(!m_symbol.empty());
 	Assert(!m_exchange.empty());
 	Assert(!m_primaryExchange.empty());
@@ -197,11 +201,14 @@ Symbol Symbol::ParseCashFutureOption(
 			const std::string &line,
 			const std::string &expirationDate,
 			double strike,
+			const Right &right,
 			const std::string &defExchange) {
+
 	Assert(!defExchange.empty());
 	if (defExchange.empty()) {
 		throw ParameterError("Default symbol exchange can't be empty");
 	}
+
 	std::vector<std::string> subs;
 	boost::split(subs, line, boost::is_any_of(":"));
 	foreach (auto &s, subs) {
@@ -217,6 +224,7 @@ Symbol Symbol::ParseCashFutureOption(
 				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*([a-zA-Z]{3,3})$"))) {
 		throw StringFormatError();
 	}
+
 	Symbol result;
 	result.m_securityType = SECURITY_TYPE_FUTURE_OPTION;
 	result.m_symbol = symbolMatch[1].str();
@@ -226,7 +234,10 @@ Symbol Symbol::ParseCashFutureOption(
 		:	defExchange;
 	result.m_expirationDate = expirationDate;
 	result.m_strike = strike;
+	result.m_right = right;
+	
 	return result;
+
 }
 
 std::string Symbol::GetAsString() const {
@@ -268,6 +279,7 @@ bool Symbol::operator <(const Symbol &rhs) const {
 }
 
 bool Symbol::operator ==(const Symbol &rhs) const {
+	//! @todo see TRDK-120
 	if (this == &rhs) {
 		return true;
 	} else if (m_hash && rhs.m_hash) {
@@ -336,6 +348,26 @@ double Symbol::GetStrike() const {
 	return m_strike;
 }
 
+const Symbol::Right & Symbol::GetRight() const {
+	if (m_right == numberOfRights) {
+		throw Lib::LogicError("Symbol has not Right");
+	}
+	return m_right;
+}
+
+std::string Symbol::GetRightAsString() const {
+	static_assert(numberOfRights == 2, "Right list changed.");
+	switch (GetRight()) {
+		default:
+			AssertEq(RIGHT_CALL, GetRight());
+			return std::string();
+		case RIGHT_CALL:
+			return "Call";
+		case RIGHT_PUT:
+			return "Put";
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 std::ostream & std::operator <<(std::ostream &os, const Symbol &symbol) {
@@ -356,6 +388,7 @@ std::ostream & std::operator <<(std::ostream &os, const Symbol &symbol) {
 				<< ':' << symbol.GetExchange()
 				<< ':' << symbol.GetExpirationDate()
 				<< ':' << symbol.GetStrike()
+				<< ':' << symbol.GetRightAsString()
 				<< " (FOP)";
 			break;
 		case Symbol::SECURITY_TYPE_CASH:

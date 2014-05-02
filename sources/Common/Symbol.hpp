@@ -30,6 +30,12 @@ namespace trdk { namespace Lib {
 			numberOfSecurityTypes
 		};
 
+		enum Right {
+			RIGHT_PUT,
+			RIGHT_CALL,
+			numberOfRights
+		};
+
 	public:
 
 		class Error : public Exception {
@@ -82,6 +88,7 @@ namespace trdk { namespace Lib {
 					const std::string &line,
 					const std::string &expirationDate,
 					double strike,
+					const Right &,
 					const std::string &defExchange);
 
 	public:
@@ -106,6 +113,8 @@ namespace trdk { namespace Lib {
 		
 		const std::string & GetExpirationDate() const;
 		double GetStrike() const;
+		const Right & GetRight() const;
+		std::string GetRightAsString() const;
 
 		std::string GetAsString() const;
 
@@ -119,6 +128,7 @@ namespace trdk { namespace Lib {
 
 		std::string m_expirationDate;
 		double m_strike;
+		Right m_right;
 
 		volatile Hash m_hash;
 

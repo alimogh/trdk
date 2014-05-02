@@ -16,31 +16,29 @@ namespace trdk { namespace CApi {
 
 	public:
 
-		explicit Bridge(
-				Context &,
-				const std::string &account,
-				const std::string &expirationDate,
-				double strike);
+		typedef uintptr_t SecurityId;
 
 	public:
 
+		explicit Bridge(boost::shared_ptr<Context>);
+
+	public:
+
+		SecurityId ResolveFutOpt(
+					const std::string &symbol,
+					const std::string &exchange,
+					const std::string &expirationDate,
+					double strike,
+					const std::string &right)
+				const;
+		Security & GetSecurity(const SecurityId &);
+		const Security & GetSecurity(const SecurityId &) const;
+
 		double GetCashBalance() const;
-		Qty GetPosition(const std::string &symbol) const;
-
-	protected:
-
-		Security & GetSecurity(const std::string &symbol) const;
-		Lib::Symbol GetSymbol(std::string symbol) const;
 
 	private:
 
-		mutable Context &m_context;
-
-		const std::string m_account;
-
-		const std::string m_expirationDate;
-		const double m_strike;
-
+		boost::shared_ptr<Context> m_context;
 
 	};
 

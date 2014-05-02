@@ -247,8 +247,6 @@ namespace trdk {
 		  */
 		boost::optional<uintmax_t> goodInSeconds;
 
-		boost::optional<bool> isPut;
-
 	};
 
 }

@@ -44,6 +44,7 @@ namespace {
 				contract.secType = "FOP";
 				contract.expiry = symbol.GetExpirationDate();
 				contract.strike = symbol.GetStrike();
+				contract.right = symbol.GetRightAsString();
 				break;
 			case Symbol::SECURITY_TYPE_CASH:
 				contract.secType = "CASH";
@@ -60,7 +61,7 @@ namespace {
 
 	Contract GetContract(
 				const trdk::Security &security,
-				const OrderParams &orderParams) {
+				const OrderParams &/*orderParams*/) {
 		Contract contract;
 		static_assert(
 			Symbol::numberOfSecurityTypes == 3,
@@ -75,7 +76,7 @@ namespace {
 				contract.secType = "FOP";
 				contract.expiry = symbol.GetExpirationDate();
 				contract.strike = symbol.GetStrike();
-				contract.right = *orderParams.isPut ? "P" : "C";
+				contract.right = symbol.GetRightAsString();
 				break;
 			case Symbol::SECURITY_TYPE_CASH:
 				contract.secType = "CASH";

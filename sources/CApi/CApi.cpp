@@ -11,18 +11,25 @@
 #include "Prec.hpp"
 #include "CApiBridgeServer.hpp"
 #include "CApiBridge.hpp"
+#include "Core/Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::CApi;
 
+////////////////////////////////////////////////////////////////////////////////
+
 namespace {
+
 	BridgeServer theBridgeServer;
+	
+	const BridgeServer::BridgeId bridgeId = 0;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int trdk_InitLog(const char *logFilePath) {
+int32_t trdk_InitLog(const char *logFilePath) {
 	try {
 		theBridgeServer.InitLog(logFilePath);
 		return 1;
@@ -34,7 +41,7 @@ int trdk_InitLog(const char *logFilePath) {
 	return 0;
 }
 
-int trdk_InitLogToStdOut() {
+int32_t trdk_InitLogToStdOut() {
 	try {
 		Log::EnableEventsToStdOut();
 		return 1;
@@ -48,49 +55,12 @@ int trdk_InitLogToStdOut() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int trdk_CreateIbTwsBridge(
-		const char *twsHost,
-		unsigned short twsPort,
-		const char *account,
-		const char *defaultExchange,
-		const char *expirationDate,
-		double strike) {
-	try {
-		theBridgeServer.CreateIbTwsBridge(
-			twsHost,
-			twsPort,
-			account,
-			defaultExchange,
-			expirationDate,
-			strike);
-		Sleep(3000); // @todo Only for debug, remove.
-		return 1;
-	} catch (const Exception &ex) {
-		Log::Error("Failed to create Bridge to IB TWS: \"%1%\".", ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
-}
-
-int trdk_DestroyBridge(const char *account) {
-	try {
-		theBridgeServer.DestoryBridge(account);
-		return 1;
-	} catch (const Exception &ex) {
-		Log::Error("Failed to destroy Bridge: \"%1%\".", ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
-}
-
-int trdk_DestroyAllBridges() {
+int32_t trdk_DestroyAllBridges() {
 	try {
 		theBridgeServer.DestoryAllBridge();
 		return 1;
 	} catch (const Exception &ex) {
-		Log::Error("Failed to destroy all  Bridges: \"%1%\".", ex);
+		Log::Error("Failed to destroy all Bridges: \"%1%\".", ex);
 	} catch (...) {
 		AssertFailNoException();
 	}
@@ -99,26 +69,134 @@ int trdk_DestroyAllBridges() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-double trdk_GetCashBalance(const char *account) {
+uint32_t trdk_ResolveFutOpt(
+			const char *symbol,
+			const char *exchange,
+			const char *expirationDate,
+			double strike,
+			const char *right) {
+	Assert(symbol);
+	Assert(exchange);
+	Assert(expirationDate);
+	Assert(right);
 	try {
-		return theBridgeServer.GetBridge(account).GetCashBalance();
+		const std::string exchangeStr(exchange);
+		return theBridgeServer
+			.CheckBridge(bridgeId, exchangeStr)
+			.ResolveFutOpt(symbol, exchangeStr, expirationDate, strike, right);
 	} catch (const Exception &ex) {
-		Log::Error("Failed to get Cash Balance across Bridge: \"%1%\".", ex);
+		Log::Error(
+			"Failed to resolve FOP Symbol \"%1%:%2%\" (%3%, %4%)"
+				" across Bridge: \"%5%\".",
+			symbol,
+			exchange,
+			expirationDate,
+			strike,
+			ex);
 	} catch (...) {
 		AssertFailNoException();
 	}
 	return 0;
 }
 
-int trdk_GetPosition(const char *account, const char *symbol) {
+////////////////////////////////////////////////////////////////////////////////
+
+double trdk_GetLastPrice(uint32_t securityId) {
 	try {
-		return int(theBridgeServer.GetBridge(account).GetPosition(symbol));
+		return theBridgeServer
+			.GetBridge(bridgeId)
+			.GetSecurity(securityId)
+			.GetLastPrice();
 	} catch (const Exception &ex) {
-		Log::Error("Failed to get Position across Bridge: \"%1%\".", ex);
+		Log::Error("Failed to get Last Price across Bridge: \"%1%\".", ex);
 	} catch (...) {
 		AssertFailNoException();
 	}
-	return 0; 
+	return 0;
+}
+
+int32_t trdk_GetLastQty(uint32_t securityId) {
+	try {
+		return theBridgeServer
+			.GetBridge(bridgeId)
+			.GetSecurity(securityId)
+			.GetLastQty();
+	} catch (const Exception &ex) {
+		Log::Error("Failed to get Last Qty across Bridge: \"%1%\".", ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+	return 0;
+}
+
+double trdk_GetAskPrice(uint32_t securityId) {
+	try {
+		return theBridgeServer
+			.GetBridge(bridgeId)
+			.GetSecurity(securityId)
+			.GetAskPrice();
+	} catch (const Exception &ex) {
+		Log::Error("Failed to get Ask Price across Bridge: \"%1%\".", ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+	return 0;
+}
+
+int32_t trdk_GetAskQty(uint32_t securityId) {
+	try {
+		return theBridgeServer
+			.GetBridge(bridgeId)
+			.GetSecurity(securityId)
+			.GetAskQty();
+	} catch (const Exception &ex) {
+		Log::Error("Failed to get Ask Qty across Bridge: \"%1%\".", ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+	return 0;
+}
+
+double trdk_GetBidPrice(uint32_t securityId) {
+	try {
+		return theBridgeServer
+			.GetBridge(bridgeId)
+			.GetSecurity(securityId)
+			.GetBidPrice();
+	} catch (const Exception &ex) {
+		Log::Error("Failed to get Bid Price across Bridge: \"%1%\".", ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+	return 0;
+}
+
+int32_t trdk_GetBidQty(uint32_t securityId) {
+	try {
+		return theBridgeServer
+			.GetBridge(bridgeId)
+			.GetSecurity(securityId)
+			.GetBidQty();
+	} catch (const Exception &ex) {
+		Log::Error("Failed to get Bid Qty across Bridge: \"%1%\".", ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+	return 0;
+}
+
+int32_t trdk_GetTradedVolume(uint32_t securityId) {
+	try {
+		return theBridgeServer
+			.GetBridge(bridgeId)
+			.GetSecurity(securityId)
+			.GetTradedVolume();
+	} catch (const Exception &ex) {
+		Log::Error("Failed to get Traded Volume across Bridge: \"%1%\".", ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -18,7 +18,7 @@ namespace trdk { namespace CApi {
 
 	public:
 
-		typedef size_t EngineId;
+		typedef size_t BridgeId;
 
 		class Exception : public trdk::Lib::Exception {
 		public:
@@ -37,11 +37,6 @@ namespace trdk { namespace CApi {
 			UnknownAccountError() throw();
 		};
 
-		class NotEnoughFreeEngineSlotsError : public Exception {
-		public:
-			NotEnoughFreeEngineSlotsError() throw();
-		};
-
 	public:
 
 		BridgeServer();
@@ -49,25 +44,17 @@ namespace trdk { namespace CApi {
 
 	public:
 
-		EngineId CreateIbTwsBridge(
-				const std::string &twsHost,
-				unsigned short twsPort,
-				const std::string &account,
-				const std::string &defaultExchange);
-		EngineId CreateIbTwsBridge(
-				const std::string &twsHost,
-				unsigned short twsPort,
-				const std::string &account,
-				const std::string &defaultExchange,
-				const std::string &expirationDate,
-				double strike);
+		BridgeId CreateBridge(const std::string &defaultExchange);
 
-		void DestoryBridge(EngineId);
-		void DestoryBridge(const std::string &account);
+		void DestoryBridge(const BridgeId &);
 		void DestoryAllBridge();
 
-		Bridge & GetBridge(const std::string &account);
-		const Bridge & GetBridge(const std::string &account) const;
+		Bridge & CheckBridge(
+					const BridgeId &,
+					const std::string &defaultExchange);
+
+		Bridge & GetBridge(const BridgeId &);
+		const Bridge & GetBridge(const BridgeId &) const;
 
 	public:
 

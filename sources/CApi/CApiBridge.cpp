@@ -17,39 +17,51 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::CApi;
 
-Bridge::Bridge(
-			Context &context,
-			const std::string &account,
-			const std::string &expirationDate,
-			double strike)
-		: m_context(context),
-		m_account(account),
-		m_expirationDate(expirationDate),
-		m_strike(strike) {
+namespace {
+
+	Symbol::Right ParseFutOptRight(const std::string &source) {
+		if (boost::iequals(source, "put")) {
+			return Symbol::RIGHT_PUT;
+		} else if (boost::iequals(source, "call")) {
+			return Symbol::RIGHT_CALL;
+		} else {
+			throw Exception("Failed to resolve right (Put or Call)");
+		}
+	}
+
+}
+
+Bridge::Bridge(boost::shared_ptr<Context> context)
+		: m_context(context) {
 	//...//
 }
 
-Symbol Bridge::GetSymbol(std::string symbol) const {
-	boost::erase_all(symbol, ":");
-	return Symbol::ParseCashFutureOption(
- 		symbol,
- 		m_expirationDate,
- 		m_strike,
- 		m_context.GetSettings().GetDefaultExchange());
+Bridge::SecurityId Bridge::ResolveFutOpt(
+			const std::string &symbol,
+			const std::string &exchange,
+			const std::string &expirationDate,
+			double strike,
+			const std::string &right)
+		const {
+	const Security &security
+		= m_context->GetSecurity(
+			Symbol::ParseCashFutureOption(
+ 				boost::erase_all_copy(symbol, ":"), // TRDK-reserver delimiter
+ 				expirationDate,
+ 				strike,
+				ParseFutOptRight(right),
+ 				exchange));
+	return SecurityId(&security);
 }
 
-Security & Bridge::GetSecurity(const std::string &symbol) const {
-	return m_context.GetSecurity(GetSymbol(symbol));
+Security & Bridge::GetSecurity(const SecurityId &id) {
+	return *reinterpret_cast<Security *>(id);
 }
 
-Qty Bridge::GetPosition(const std::string &symbol) const {
-	const auto &pos
-		= m_context
-			.GetTradeSystem()
-			.GetBrokerPostion(m_account, GetSymbol(symbol));
-	return pos.qty;
+const Security & Bridge::GetSecurity(const SecurityId &id) const {
+	return const_cast<Bridge *>(this)->GetSecurity(id);
 }
 
 double Bridge::GetCashBalance() const {
-	return m_context.GetTradeSystem().GetAccount().cashBalance;
+	return m_context->GetTradeSystem().GetAccount().cashBalance;
 }
