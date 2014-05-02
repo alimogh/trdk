@@ -38,9 +38,9 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", TRDK_NAME " C API module" TRDK_BUILD_IDENTITY_ADD
+            VALUE "FileDescription", TRDK_NAME " Simple API " TRDK_BUILD_IDENTITY_ADD
             VALUE "FileVersion", TRDK_VERSION_FULL
-            VALUE "InternalName", TRDK_VERSION_BRANCH ".CApi"
+            VALUE "InternalName", TRDK_VERSION_BRANCH ".SimpleApi"
             VALUE "LegalCopyright", TRDK_COPYRIGHT
 			VALUE "OriginalFilename", TRDK_MQLAPI_DLL_FILE_NAME
             VALUE "ProductName", TRDK_NAME

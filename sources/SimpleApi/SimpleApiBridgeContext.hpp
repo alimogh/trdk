@@ -13,7 +13,7 @@
 #include "Engine/Context.hpp"
 #include "Fwd.hpp"
 
-namespace trdk { namespace CApi {
+namespace trdk { namespace SimpleApi {
 
 	class BridgeContext : public trdk::Engine::Context {
 

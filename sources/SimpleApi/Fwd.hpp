@@ -12,7 +12,7 @@
 
 #pragma once
 
-namespace trdk { namespace CApi {
+namespace trdk { namespace SimpleApi {
 
 	class Bridge;
 

@@ -21,21 +21,21 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CApiBridge.cpp">
+    <ClCompile Include="SimpleApiBridge.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CApiBridgeServer.cpp">
+    <ClCompile Include="SimpleApiBridgeServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CApi.cpp">
+    <ClCompile Include="SimpleApi.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CApiBridgeContext.cpp">
+    <ClCompile Include="SimpleApiBridgeContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="CApi.def">
+    <None Include="SimpleApi.def">
       <Filter>Header Files</Filter>
     </None>
     <None Include="Test.py">
@@ -46,21 +46,21 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CApiBridgeServer.hpp">
+    <ClInclude Include="SimpleApiBridgeServer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CApiBridge.hpp">
+    <ClInclude Include="SimpleApiBridge.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CApiBridgeContext.hpp">
+    <ClInclude Include="SimpleApiBridgeContext.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="CApi.rc">
+    <ResourceCompile Include="SimpleApi.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

@@ -9,15 +9,15 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "CApiBridgeServer.hpp"
-#include "CApiBridge.hpp"
-#include "CApiBridgeContext.hpp"
+#include "SimpleApiBridgeServer.hpp"
+#include "SimpleApiBridge.hpp"
+#include "SimpleApiBridgeContext.hpp"
 
 namespace fs = boost::filesystem;
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::CApi;
+using namespace trdk::SimpleApi;
 
 ////////////////////////////////////////////////////////////////////////////////
 

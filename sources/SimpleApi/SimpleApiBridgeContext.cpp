@@ -9,12 +9,12 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "CApiBridgeContext.hpp"
+#include "SimpleApiBridgeContext.hpp"
 #include "Core/MarketDataSource.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::CApi;
+using namespace trdk::SimpleApi;
 
 ////////////////////////////////////////////////////////////////////////////////
 

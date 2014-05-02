@@ -5,7 +5,7 @@
   <PropertyGroup />
   <ItemDefinitionGroup>
     <Link>
-      <ModuleDefinitionFile>CApi.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>SimpleApi.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

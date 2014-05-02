@@ -12,7 +12,7 @@
 
 #include "Fwd.hpp"
 
-namespace trdk { namespace CApi {
+namespace trdk { namespace SimpleApi {
 
 	class BridgeServer : private boost::noncopyable {
 

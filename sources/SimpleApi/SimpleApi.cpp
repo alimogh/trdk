@@ -9,13 +9,13 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "CApiBridgeServer.hpp"
-#include "CApiBridge.hpp"
+#include "SimpleApiBridgeServer.hpp"
+#include "SimpleApiBridge.hpp"
 #include "Core/Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::CApi;
+using namespace trdk::SimpleApi;
 
 ////////////////////////////////////////////////////////////////////////////////
 
