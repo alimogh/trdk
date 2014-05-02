@@ -9,7 +9,6 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "PyApi/Errors.hpp"
 
 using namespace trdk;
 using namespace trdk::Log;
@@ -293,10 +292,6 @@ void Log::RegisterUnhandledException(
 
 		try {
 			throw;
-		} catch (const trdk::PyApi::ClientError &ex) {
-			logger.Create(
-					"Py API error, please check your Python script: \"%1%\".")
-				% ex.what();
 		} catch (const Exception &ex) {
 			logger.CreateStandard()
 				% "LOCAL"
