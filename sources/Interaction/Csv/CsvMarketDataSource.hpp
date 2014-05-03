@@ -78,6 +78,10 @@ namespace trdk { namespace Interaction { namespace Csv {
 
 		virtual void Connect(const trdk::Lib::IniSectionRef &);
 
+		virtual void SubscribeToSecurities() {
+			//...//
+		}
+
 	private:
 
 		void Subscribe(Security &) const;

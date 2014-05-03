@@ -56,6 +56,10 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 		virtual void Connect(const trdk::Lib::IniSectionRef &);
 
+		virtual void SubscribeToSecurities() {
+			//...//
+		}
+
 	protected:
 
 		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
