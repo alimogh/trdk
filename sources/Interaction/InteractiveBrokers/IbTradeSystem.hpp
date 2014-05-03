@@ -35,6 +35,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		typedef std::set<Security *> Securities;
 
 	private:
+	
+		typedef std::list<Security *> UnsubscribedSecurities;
 
 		struct ByAccount {
 			//...//
@@ -137,6 +139,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		virtual void Connect(const trdk::Lib::IniSectionRef &);
 
+		virtual void SubscribeToSecurities();
+
 	public:
 
 		virtual const Account & GetAccount() const;
@@ -225,7 +229,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		std::unique_ptr<Client> m_client;
 		PlacedOrderSet m_placedOrders;
 
-		mutable Securities m_securities;
+		Securities m_securities;
+		mutable UnsubscribedSecurities m_unsubscribedSecurities;
 
 		std::unique_ptr<Account> m_account;
 

@@ -17,20 +17,6 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::SimpleApi;
 
-namespace {
-
-	Symbol::Right ParseFutOptRight(const std::string &source) {
-		if (boost::iequals(source, "put")) {
-			return Symbol::RIGHT_PUT;
-		} else if (boost::iequals(source, "call")) {
-			return Symbol::RIGHT_CALL;
-		} else {
-			throw Exception("Failed to resolve right (Put or Call)");
-		}
-	}
-
-}
-
 Bridge::Bridge(boost::shared_ptr<Context> context)
 		: m_context(context) {
 	//...//
@@ -49,7 +35,7 @@ Bridge::SecurityId Bridge::ResolveFutOpt(
  				boost::erase_all_copy(symbol, ":"), // TRDK-reserver delimiter
  				expirationDate,
  				strike,
-				ParseFutOptRight(right),
+				Symbol::ParseRight(right),
  				exchange));
 	return SecurityId(&security);
 }

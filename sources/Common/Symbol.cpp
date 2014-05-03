@@ -355,7 +355,20 @@ const Symbol::Right & Symbol::GetRight() const {
 	return m_right;
 }
 
+Symbol::Right Symbol::ParseRight(const std::string &source) {
+	//! @sa trdk::Lib::Symbol::GetRightAsString
+	static_assert(numberOfRights == 2, "Right list changed.");
+	if (boost::iequals(source, "put")) {
+		return RIGHT_PUT;
+	} else if (boost::iequals(source, "call")) {
+		return RIGHT_CALL;
+	} else {
+		throw ParameterError("Failed to resolve FOP Right (Put or Call)");
+	}
+}
+
 std::string Symbol::GetRightAsString() const {
+	//! @sa trdk::Lib::Symbol::ParseRight
 	static_assert(numberOfRights == 2, "Right list changed.");
 	switch (GetRight()) {
 		default:

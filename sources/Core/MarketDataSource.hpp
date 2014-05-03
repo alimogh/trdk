@@ -48,6 +48,8 @@ namespace trdk {
 
 		virtual void Connect(const trdk::Lib::IniSectionRef &) = 0;
 
+		virtual void SubscribeToSecurities() = 0;
+
 	public:
 
 		//! Returns security, creates new object if it doesn't exist yet.
