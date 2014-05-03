@@ -101,14 +101,14 @@ Bridge::BarServiceHandle Bridge::ResolveFutOpt(
  		exchange);
 	std::ostringstream settings;
 
-	const auto &serviceTitle = boost::replace_all_copy(
-		symbol.GetAsString(),
-		".", // TRDK-reserver delimiter
-		"-");
+	std::ostringstream serviceTitle;
+	serviceTitle << barIntervalTypeStr << "Bars" << "_";
+	serviceTitle
+		<< boost::replace_all_copy(symbol.GetAsString(),
+			".", // TRDK-reserver delimiter
+			"-");
 	settings
-		<< "[Service."
-				<< barIntervalTypeStr << "Bars"
-				<< "_" << serviceTitle << "]" << std::endl
+		<< "[Service." << serviceTitle.str() << "]" << std::endl
 			<< "module = "
 				<< GetDllWorkingDir().string() << "/Trdk" << std::endl
 			<< "factory = Bars" << std::endl
@@ -117,7 +117,7 @@ Bridge::BarServiceHandle Bridge::ResolveFutOpt(
 			<< "start = " << dataStart << std::endl;
 	m_context->Add(IniString(settings.str()));
 
-	return BarServiceHandle(0);
+	return BarServiceHandle(m_context->FindService(serviceTitle.str()));
 
 }
 

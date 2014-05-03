@@ -2,7 +2,7 @@
 import ctypes
 import msvcrt
 
-api = ctypes.cdll.LoadLibrary("Trdk_dbg.dll")
+api = ctypes.windll.LoadLibrary("Trdk_dbg.dll")
 api.trdk_ResolveFutOpt.restype = ctypes.c_uint
 # api.trdk_GetLastPrice.restype = ctypes.c_double
 

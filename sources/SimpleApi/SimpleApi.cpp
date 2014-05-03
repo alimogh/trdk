@@ -29,7 +29,7 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int32_t trdk_InitLog(const char *logFilePath) {
+int _stdcall trdk_InitLog(char *logFilePath) {
 	try {
 		theBridgeServer.InitLog(logFilePath);
 		return 1;
@@ -55,7 +55,7 @@ int32_t trdk_InitLogToStdOut() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int32_t trdk_DestroyAllBridges() {
+int32_t _stdcall trdk_DestroyAllBridges() {
 	try {
 		theBridgeServer.DestoryAllBridge();
 		return 1;
@@ -69,7 +69,7 @@ int32_t trdk_DestroyAllBridges() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32_t trdk_ResolveFutOpt(
+uint32_t _stdcall trdk_ResolveFutOpt(
 			const char *symbol,
 			const char *exchange,
 			const char *expirationDate,
@@ -118,7 +118,8 @@ uint32_t trdk_ResolveFutOpt(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-double trdk_GetImpliedVolatility(uint32_t /*securityId*/) {
+double _stdcall trdk_GetImpliedVolatility(
+			uint32_t /*securityId*/) {
 	try {
 		throw 0;
 // 		return theBridgeServer
