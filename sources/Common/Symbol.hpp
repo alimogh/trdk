@@ -89,7 +89,12 @@ namespace trdk { namespace Lib {
 					const std::string &expirationDate,
 					double strike,
 					const Right &,
+					const std::string &tradingClass,
 					const std::string &defExchange);
+		//! Special code only for custom branch.
+		static Symbol ParseCashFutureOption(const std::string &line);
+
+		static Right ParseRight(const std::string &);
 
 	public:
 
@@ -116,6 +121,8 @@ namespace trdk { namespace Lib {
 		const Right & GetRight() const;
 		std::string GetRightAsString() const;
 
+		const std::string & GetTradingClass() const;
+
 		std::string GetAsString() const;
 
 	private:
@@ -129,6 +136,7 @@ namespace trdk { namespace Lib {
 		std::string m_expirationDate;
 		double m_strike;
 		Right m_right;
+		std::string m_tradingClass;
 
 		volatile Hash m_hash;
 

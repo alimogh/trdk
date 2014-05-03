@@ -206,6 +206,8 @@ public:
 
 	std::unique_ptr<BarsLog> m_barsLog;
 
+	pt::ptime m_dataStartTime;
+
 public:
 
 	explicit Implementation(
@@ -298,9 +300,13 @@ public:
 			throw Error("Wrong bar size settings");
 		}
 
+		m_dataStartTime = pt::time_from_string(configuration.ReadKey("start"));
+
 		ReopenLog(configuration);
 
-		m_service.GetLog().Info("Stated with size \"%1%\".", m_barSize);
+		m_service.GetLog().Info(
+			"Stated with size \"%1%\" from %2%.",
+			boost::make_tuple(m_barSize, m_dataStartTime));
 
 	}
 
@@ -675,7 +681,7 @@ BarService::~BarService() {
 }
 
 pt::ptime BarService::OnSecurityStart(const Security &) {
-	return boost::get_system_time() - GetBarSize();
+	return m_pimpl->m_dataStartTime;
 }
 
 bool BarService::OnNewBar(const Security &, const Security::Bar &bar) {

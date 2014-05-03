@@ -40,6 +40,8 @@ void ib::TradeSystem::Connect(const IniSectionRef &settings) {
 		return;
 	}
 
+	Assert(m_securities.empty());
+
 	std::unique_ptr<Account> account;
 	std::unique_ptr<Client> client(
 		new Client(
@@ -107,13 +109,22 @@ void ib::TradeSystem::Connect(const IniSectionRef &settings) {
 
 	client->StartData();
 
-	foreach (auto *security, m_securities) {
-		client->SubscribeToMarketData(*security);
-	}
-
 	client.swap(m_client);
 	account.swap(m_account);
 
+}
+
+void ib::TradeSystem::SubscribeToSecurities() {
+	Assert(m_client);
+	if (!m_client) {
+		return;
+	}
+	while (!m_unsubscribedSecurities.empty()) {
+ 		auto &security = **m_unsubscribedSecurities.begin();
+		m_unsubscribedSecurities.pop_front();
+		m_securities.insert(&security);
+		m_client->SubscribeToMarketData(security);
+ 	}
 }
 
 const ib::TradeSystem::Account & ib::TradeSystem::GetAccount() const {
@@ -165,9 +176,7 @@ boost::shared_ptr<trdk::Security> ib::TradeSystem::CreateSecurity(
 		const {
 	boost::shared_ptr<ib::Security> result(
 		new ib::Security(context, symbol, m_isTestSource));
-	if (!m_client) {
-		m_securities.insert(&*result);
-	}
+	m_unsubscribedSecurities.push_back(&*result);
 	return result;
 }
 

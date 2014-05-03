@@ -45,6 +45,7 @@ namespace {
 				contract.expiry = symbol.GetExpirationDate();
 				contract.strike = symbol.GetStrike();
 				contract.right = symbol.GetRightAsString();
+				contract.tradingClass = symbol.GetTradingClass();
 				break;
 			case Symbol::SECURITY_TYPE_CASH:
 				contract.secType = "CASH";
@@ -581,7 +582,12 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 
 	const auto period
 		= (boost::format("%1% S")
-				% std::max(60, (edtNow - edtRequestStart).total_seconds()))
+				% std::max(
+					60,
+					// custom branch
+					std::min(
+						86400,
+						(edtNow - edtRequestStart).total_seconds())))
 			.str();
 
 	m_client->reqHistoricalData(
@@ -589,11 +595,10 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 		contract,
 		endTime,
 		period,
-		// Sends as often as possible, but only for bars it doesn't make sense
-		// less as 5 second as "Currently only 5 second bars are supported, if
-		// any other value is used, an exception will be thrown" for real bars:
-		security.IsLevel1Required() ? "1 secs" : "5 secs",
-		"BID_ASK",
+		// custom branch
+		"1 min",
+		// custom branch
+		"OPTION_IMPLIED_VOLATILITY",
 		0,
 		1);
 	
@@ -1665,32 +1670,19 @@ void Client::historicalData(
 
 	if (!isFinished) {
 
-		const auto &time = ParseHistoryPointTime(timeStr, m_log, isFinished);
-		const auto &lowPriceScaled = security->ScalePrice(lowPrice);
-		const auto &highPriceScaled = security->ScalePrice(highPrice);
+		// custom branch
 
-		if (security->IsLevel1Required()) {
-			security->AddLevel1Tick(
-				time,
-				Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(lowPriceScaled),
-				Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-					highPriceScaled));
-		}
-	
-		if (security->IsBarsRequired()) {
-			ib::Security::Bar bar(
-				time,
-				//! See request for detail about frame size:
-				pt::seconds(security->IsLevel1Required() ? 1 : 5),
-				ib::Security::Bar::TRADES);
-			bar.openPrice = security->ScalePrice(openPrice);
-			bar.highPrice = highPriceScaled;
-			bar.lowPrice = lowPriceScaled;
-			bar.closePrice = security->ScalePrice(closePrice);
-			bar.volume = volume;
-			bar.count = barCount;
-			security->AddBar(bar);	
-		}
+		const auto &time = ParseHistoryPointTime(timeStr, m_log, isFinished);
+		ib::Security::Bar bar(
+			time,
+			//! See request for detail about frame size:
+			pt::minutes(1),
+			ib::Security::Bar::TRADES);
+		bar.openPrice = openPrice;
+		bar.closePrice = closePrice;
+		bar.volume = volume;
+		bar.count = barCount;
+		security->AddBar(bar);	
 	
 	} else {
 	
@@ -1833,7 +1825,8 @@ void Client::position(
 				contract.expiry,
 				contract.strike);
 		} else {
-			AssertEq(std::string("STK"), contract.secType);
+			// custom branch
+			// AssertEq(std::string("STK"), contract.secType);
 		}
 
 		if (symbol) {

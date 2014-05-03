@@ -8,12 +8,7 @@ EXPORTS
 
 	trdk_ResolveFutOpt
 
-	trdk_GetLastPrice
-	trdk_GetLastQty
-	trdk_GetAskPrice
-	trdk_GetAskQty
-	trdk_GetBidPrice
-	trdk_GetBidQty
-	trdk_GetTradedVolume
+	trdk_GetImpliedVolatility
 
 	CreateTradeSystem
+	CreateBarsService

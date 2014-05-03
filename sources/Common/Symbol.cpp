@@ -197,11 +197,54 @@ Symbol Symbol::ParseCash(
 	return result;
 }
 
+Symbol Symbol::ParseCashFutureOption(const std::string &line) {
+
+	// Special code only for custom branch (for ex. with currency extract
+	// or exchange code)!
+ 
+	std::vector<std::string> subs;
+	boost::split(subs, line, boost::is_any_of(":"));
+	foreach (auto &s, subs) {
+		boost::trim(s);
+		if (s.empty()) {
+			throw StringFormatError();
+		}
+	}
+	if (subs.size() != 7) {
+		throw StringFormatError();
+	}
+
+	Symbol result;
+	result.m_securityType = SECURITY_TYPE_FUTURE_OPTION;
+	result.m_symbol = subs[0];
+	result.m_currency = subs[1];
+	result.m_exchange = subs[2];
+	result.m_expirationDate = subs[3];
+	try {
+		result.m_strike
+			= boost::lexical_cast<decltype(result.m_strike)>(subs[4]);
+	} catch (const boost::bad_lexical_cast &) {
+		throw ParameterError("Failed to parse FOP Symbol Strike");
+	}
+	result.m_right = ParseRight(subs[5]);
+	
+	const auto &fopStrPos = subs[6].find(" (FOP)");
+	if (fopStrPos != std::string::npos) {
+		result.m_tradingClass = subs[6].substr(0, fopStrPos);
+	} else {
+		result.m_tradingClass = subs[6];
+	}
+	
+	return result;
+
+}
+
 Symbol Symbol::ParseCashFutureOption(
 			const std::string &line,
 			const std::string &expirationDate,
 			double strike,
 			const Right &right,
+			const std::string &tradingClass,
 			const std::string &defExchange) {
 
 	Assert(!defExchange.empty());
@@ -235,7 +278,8 @@ Symbol Symbol::ParseCashFutureOption(
 	result.m_expirationDate = expirationDate;
 	result.m_strike = strike;
 	result.m_right = right;
-	
+	result.m_tradingClass = tradingClass;
+		
 	return result;
 
 }
@@ -355,7 +399,19 @@ const Symbol::Right & Symbol::GetRight() const {
 	return m_right;
 }
 
+Symbol::Right Symbol::ParseRight(const std::string &source) {
+	//! @sa trdk::Lib::Symbol::GetRightAsString
+	if (boost::iequals(source, "put")) {
+		return RIGHT_PUT;
+	} else if (boost::iequals(source, "call")) {
+		return RIGHT_CALL;
+	} else {
+		throw ParameterError("Failed to resolve FOP Right (Put or Call)");
+	}
+}
+
 std::string Symbol::GetRightAsString() const {
+	//! @sa trdk::Lib::Symbol::ParseRight
 	static_assert(numberOfRights == 2, "Right list changed.");
 	switch (GetRight()) {
 		default:
@@ -366,6 +422,13 @@ std::string Symbol::GetRightAsString() const {
 		case RIGHT_PUT:
 			return "Put";
 	}
+}
+
+const std::string & Symbol::GetTradingClass() const {
+	if (m_tradingClass.empty()) {
+		throw Lib::LogicError("Symbol has not Trading Class");
+	}
+	return m_tradingClass;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -389,6 +452,7 @@ std::ostream & std::operator <<(std::ostream &os, const Symbol &symbol) {
 				<< ':' << symbol.GetExpirationDate()
 				<< ':' << symbol.GetStrike()
 				<< ':' << symbol.GetRightAsString()
+				<< ':' << symbol.GetTradingClass()
 				<< " (FOP)";
 			break;
 		case Symbol::SECURITY_TYPE_CASH:

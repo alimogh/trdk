@@ -10,56 +10,123 @@
 
 #include "Prec.hpp"
 #include "SimpleApiBridge.hpp"
+#include "Services/BarService.hpp"
+#include "Engine/Context.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
+
+namespace pt = boost::posix_time;
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::SimpleApi;
+using namespace trdk::Services;
 
-namespace {
-
-	Symbol::Right ParseFutOptRight(const std::string &source) {
-		if (boost::iequals(source, "put")) {
-			return Symbol::RIGHT_PUT;
-		} else if (boost::iequals(source, "call")) {
-			return Symbol::RIGHT_CALL;
-		} else {
-			throw Exception("Failed to resolve right (Put or Call)");
-		}
-	}
-
-}
-
-Bridge::Bridge(boost::shared_ptr<Context> context)
+Bridge::Bridge(boost::shared_ptr<Engine::Context> context)
 		: m_context(context) {
 	//...//
 }
 
-Bridge::SecurityId Bridge::ResolveFutOpt(
-			const std::string &symbol,
+Bridge::BarServiceHandle Bridge::ResolveFutOpt(
+			const std::string &symbolStr,
 			const std::string &exchange,
 			const std::string &expirationDate,
 			double strike,
-			const std::string &right)
+			const std::string &right,
+			const std::string &tradingClass,
+			int32_t dataStartDate,
+			int32_t dataStartTime,
+			int32_t barIntervalType)
 		const {
-	const Security &security
-		= m_context->GetSecurity(
-			Symbol::ParseCashFutureOption(
- 				boost::erase_all_copy(symbol, ":"), // TRDK-reserver delimiter
- 				expirationDate,
- 				strike,
-				ParseFutOptRight(right),
- 				exchange));
-	return SecurityId(&security);
+	
+	std::string barIntervalTypeStr;
+	switch (barIntervalType) {
+		case 1: // Intraday Minute Bar
+			barIntervalTypeStr = "Minutes";
+			break;
+		case 2: // Daily Bar
+			barIntervalTypeStr = "Days";
+			break;
+		case 3: // Weekly Bar
+		case 4: // Monthly Bar
+		case 0: // Tick Bar or Volume Bar
+		case 5: // Point & Figure
+		default:
+			throw Exception(
+				"Wrong Bar Interval Type. Supported only Intraday Minute Bar"
+					" and Daily Bar");
+	}
+
+	pt::ptime dataStart;
+	{
+		unsigned short day = 1;
+		unsigned short month = 1;
+		unsigned short year = 1900;
+		AssertLt(0, dataStartDate);
+		if (dataStartDate != 0) {
+			day = dataStartDate % 100;
+			dataStartDate /= 100;
+			month = dataStartDate % 100;
+			dataStartDate /= 100;
+			year += unsigned short(dataStartDate);
+		}
+		int secs = 0;
+		int mins = 0;
+		int hours = 0;
+		AssertLe(0, time);
+		if (dataStartTime != 0) {
+			mins = dataStartTime % 100;
+			dataStartTime /= 100;
+			hours = dataStartTime;
+		}
+		AssertLe(1, day);
+		AssertGe(31, day);
+		AssertLe(1, month);
+		AssertGt(12, month);
+		AssertGt(23, hours);
+		AssertLe(1900, year);
+		AssertGe(59, mins);
+		AssertGe(59, secs);
+		dataStart = pt::ptime(
+			boost::gregorian::date(year, month, day),
+			pt::time_duration(hours, mins, secs));
+	}
+
+	const Symbol &symbol = Symbol::ParseCashFutureOption(
+ 		boost::erase_all_copy(symbolStr, ":"), // TRDK-reserver delimiter
+ 		expirationDate,
+ 		strike,
+		Symbol::ParseRight(right),
+		tradingClass,
+ 		exchange);
+	std::ostringstream settings;
+
+	const auto &serviceTitle = boost::replace_all_copy(
+		symbol.GetAsString(),
+		".", // TRDK-reserver delimiter
+		"-");
+	settings
+		<< "[Service."
+				<< barIntervalTypeStr << "Bars"
+				<< "_" << serviceTitle << "]" << std::endl
+			<< "module = "
+				<< GetDllWorkingDir().string() << "/Trdk" << std::endl
+			<< "factory = Bars" << std::endl
+			<< "requires = Bars["<< symbol.GetAsString() << "]" << std::endl
+			<< "size = 1 " << barIntervalTypeStr << std::endl
+			<< "start = " << dataStart << std::endl;
+	m_context->Add(IniString(settings.str()));
+
+	return BarServiceHandle(0);
+
 }
 
-Security & Bridge::GetSecurity(const SecurityId &id) {
-	return *reinterpret_cast<Security *>(id);
+BarService & Bridge::GetBarService(const BarServiceHandle &handle) {
+	return *reinterpret_cast<BarService *>(handle);
 }
 
-const Security & Bridge::GetSecurity(const SecurityId &id) const {
-	return const_cast<Bridge *>(this)->GetSecurity(id);
+const BarService & Bridge::GetBarService(const BarServiceHandle &handle) const {
+	return const_cast<Bridge *>(this)->GetBarService(handle);
 }
 
 double Bridge::GetCashBalance() const {

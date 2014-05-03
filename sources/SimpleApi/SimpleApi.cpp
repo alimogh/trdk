@@ -74,16 +74,33 @@ uint32_t trdk_ResolveFutOpt(
 			const char *exchange,
 			const char *expirationDate,
 			double strike,
-			const char *right) {
+			const char *right,
+			const char *tradingClass,
+			int32_t dataStartDate,
+			int32_t dataStartTime,
+			int32_t barIntervalType) {
 	Assert(symbol);
 	Assert(exchange);
 	Assert(expirationDate);
+	AssertNe(.0, strike);
 	Assert(right);
+	Assert(dataStartDate);
+	Assert(dataStartTime);
+	Assert(tradingClass);
 	try {
 		const std::string exchangeStr(exchange);
 		return theBridgeServer
 			.CheckBridge(bridgeId, exchangeStr)
-			.ResolveFutOpt(symbol, exchangeStr, expirationDate, strike, right);
+			.ResolveFutOpt(
+				symbol,
+				exchangeStr,
+				expirationDate,
+				strike,
+				right,
+				tradingClass,
+				dataStartDate,
+				dataStartTime,
+				barIntervalType);
 	} catch (const Exception &ex) {
 		Log::Error(
 			"Failed to resolve FOP Symbol \"%1%:%2%\" (%3%, %4%)"
@@ -101,98 +118,17 @@ uint32_t trdk_ResolveFutOpt(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-double trdk_GetLastPrice(uint32_t securityId) {
+double trdk_GetImpliedVolatility(uint32_t /*securityId*/) {
 	try {
-		return theBridgeServer
-			.GetBridge(bridgeId)
-			.GetSecurity(securityId)
-			.GetLastPrice();
+		throw 0;
+// 		return theBridgeServer
+// 			.GetBridge(bridgeId)
+// 			.GetSecurity(securityId)
+// 			.GetLastPrice();
 	} catch (const Exception &ex) {
-		Log::Error("Failed to get Last Price across Bridge: \"%1%\".", ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
-}
-
-int32_t trdk_GetLastQty(uint32_t securityId) {
-	try {
-		return theBridgeServer
-			.GetBridge(bridgeId)
-			.GetSecurity(securityId)
-			.GetLastQty();
-	} catch (const Exception &ex) {
-		Log::Error("Failed to get Last Qty across Bridge: \"%1%\".", ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
-}
-
-double trdk_GetAskPrice(uint32_t securityId) {
-	try {
-		return theBridgeServer
-			.GetBridge(bridgeId)
-			.GetSecurity(securityId)
-			.GetAskPrice();
-	} catch (const Exception &ex) {
-		Log::Error("Failed to get Ask Price across Bridge: \"%1%\".", ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
-}
-
-int32_t trdk_GetAskQty(uint32_t securityId) {
-	try {
-		return theBridgeServer
-			.GetBridge(bridgeId)
-			.GetSecurity(securityId)
-			.GetAskQty();
-	} catch (const Exception &ex) {
-		Log::Error("Failed to get Ask Qty across Bridge: \"%1%\".", ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
-}
-
-double trdk_GetBidPrice(uint32_t securityId) {
-	try {
-		return theBridgeServer
-			.GetBridge(bridgeId)
-			.GetSecurity(securityId)
-			.GetBidPrice();
-	} catch (const Exception &ex) {
-		Log::Error("Failed to get Bid Price across Bridge: \"%1%\".", ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
-}
-
-int32_t trdk_GetBidQty(uint32_t securityId) {
-	try {
-		return theBridgeServer
-			.GetBridge(bridgeId)
-			.GetSecurity(securityId)
-			.GetBidQty();
-	} catch (const Exception &ex) {
-		Log::Error("Failed to get Bid Qty across Bridge: \"%1%\".", ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
-}
-
-int32_t trdk_GetTradedVolume(uint32_t securityId) {
-	try {
-		return theBridgeServer
-			.GetBridge(bridgeId)
-			.GetSecurity(securityId)
-			.GetTradedVolume();
-	} catch (const Exception &ex) {
-		Log::Error("Failed to get Traded Volume across Bridge: \"%1%\".", ex);
+		Log::Error(
+			"Failed to get Implied Volatility across Bridge: \"%1%\".",
+			ex);
 	} catch (...) {
 		AssertFailNoException();
 	}

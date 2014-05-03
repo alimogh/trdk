@@ -193,16 +193,17 @@ void Engine::Context::Start() {
 			IniSectionRef(
 				*m_pimpl->m_conf,
 				Ini::Sections::marketDataSource));
+		GetMarketDataSource().SubscribeToSecurities();
 	} catch (const Interactor::ConnectError &ex) {
 		boost::format message(
-			"Failed to connect to marker data source: \"%1%\"");
+			"Failed to connect to market data source: \"%1%\"");
 		message % ex;
 		throw Interactor::ConnectError(message.str().c_str());
 	} catch (const Lib::Exception &ex) {
 		GetLog().Error(
-			"Failed to make trading system connection: \"%1%\".",
+			"Failed to make market data connection: \"%1%\".",
 			ex);
-		throw Exception("Failed to make trading system");
+		throw Exception("Failed to make market data connection");
 	}
 
 	m_pimpl->m_state.reset(state.release());
@@ -215,9 +216,11 @@ void Engine::Context::Stop() {
 	m_pimpl->m_state.reset();
 }
 
-void Engine::Context::AddStrategies(const Lib::Ini &newStrategiesConf) {
-	GetLog().Info("Adding new strategies...");
+void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
+
+	GetLog().Info("Adding new entities into engine context...");
 	m_pimpl->m_state->subscriptionsManager.Suspend();
+	
 	try {
 		BootNewStrategiesForContextState(
 			newStrategiesConf,
@@ -228,12 +231,21 @@ void Engine::Context::AddStrategies(const Lib::Ini &newStrategiesConf) {
 			m_pimpl->m_modulesDlls);
 	} catch (const Lib::Exception &ex) {
 		GetLog().Error(
-			"Failed to add new strategies into engine context: \"%1%\".",
+			"Failed to add new entities into engine context: \"%1%\".",
 			ex);
 		throw Exception("Failed to add new strategies into engine context");
 	}
 	m_pimpl->m_state->ReportState();
+
 	m_pimpl->m_state->subscriptionsManager.Activate();
+
+	try {
+		GetMarketDataSource().SubscribeToSecurities();
+	} catch (const Lib::Exception &ex) {
+		GetLog().Error("Failed to make market data subscription: \"%1%\".", ex);
+		throw Exception("Failed to make market data subscription");
+	}
+
 }
 
 MarketDataSource & Engine::Context::GetMarketDataSource() {

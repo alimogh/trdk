@@ -29,7 +29,7 @@ namespace trdk { namespace Engine {
 		void Start();
 		void Stop();
 
-		void AddStrategies(const trdk::Lib::Ini &);
+		void Add(const trdk::Lib::Ini &);
 
 	public:
 

@@ -755,22 +755,7 @@ private:
 				const std::string &tag,
 				ModuleDll<Module> &module) {
 		typedef ModuleTrait<Module> Trait;
-		static_assert(
-			Trait::Type != MODULE_TYPE_SERVICE,
-			"Wrong CreateStandaloneModuleInstance method choose.");
 		CreateModuleInstance(tag, module);
-	}
-
-	template<>
-	void CreateStandaloneModuleInstance(
-				const std::string &tag,
-				ModuleDll<Service> &) {
-		typedef ModuleTrait<Service> Trait;
-		m_context.GetLog().Debug(
-			"%1% \"%2%\" instantiation delayed.",
-			boost::make_tuple(
-				boost::cref(Trait::GetName(true)),
-				boost::cref(tag)));
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -912,11 +897,7 @@ private:
 				++i) {
 			const std::string symbolRequest
 				= boost::copy_range<std::string>(*i);
-			Symbol symbol = Symbol::Parse(
-				symbolRequest,
-				m_context.GetSettings().GetDefaultExchange(),
-				m_context.GetSettings().GetDefaultPrimaryExchange(),
-				m_context.GetSettings().GetDefaultCurrency());
+			Symbol symbol = Symbol::ParseCashFutureOption(symbolRequest);
 			if (result.symbols.find(symbol) != result.symbols.end()) {
 				m_context.GetLog().Error(
 					"Requirements syntax error:"
