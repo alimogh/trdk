@@ -29,7 +29,7 @@ Dispatcher::Dispatcher(Engine::Context &context)
 			m_positionsUpdates("Positions", m_context),
 			m_brokerPositionsUpdates("Broker Positions", m_context),
 			m_newBars("Bars", m_context) {
-	size_t threadsCount = 1;
+	unsigned int threadsCount = 1;
 	boost::barrier startBarrier(threadsCount + 1);
 	StartNotificationTask(
 		startBarrier,

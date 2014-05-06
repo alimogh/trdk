@@ -69,7 +69,7 @@ int32_t trdk_DestroyAllBridges() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32_t trdk_ResolveFutOpt(
+uint64_t trdk_ResolveFutOpt(
 			const char *symbol,
 			const char *exchange,
 			const char *expirationDate,
@@ -101,11 +101,11 @@ uint32_t trdk_ResolveFutOpt(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-double trdk_GetLastPrice(uint32_t securityId) {
+double trdk_GetLastPrice(uint64_t securityId) {
 	try {
 		return theBridgeServer
 			.GetBridge(bridgeId)
-			.GetSecurity(securityId)
+			.GetSecurity(reinterpret_cast<Bridge::SecurityId &>(securityId))
 			.GetLastPrice();
 	} catch (const Exception &ex) {
 		Log::Error("Failed to get Last Price across Bridge: \"%1%\".", ex);

@@ -63,6 +63,24 @@
     <Library Include="..\..\output\x86\lib\Release Standalone\Services.lib">
       <Filter>Lib Files</Filter>
     </Library>
+    <Library Include="..\..\output\x64\lib\Debug DLL\Services_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Debug Standalone\Services_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Test DLL\Services_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Test Standalone\Services_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Release DLL\Services.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Release Standalone\Services.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
   </ItemGroup>
   <ItemGroup>
     <None Include="Indicators.xlsx" />

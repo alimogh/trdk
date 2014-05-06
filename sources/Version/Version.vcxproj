@@ -5,25 +5,49 @@
       <Configuration>Debug DLL</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug DLL|x64">
+      <Configuration>Debug DLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug Standalone|Win32">
       <Configuration>Debug Standalone</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug Standalone|x64">
+      <Configuration>Debug Standalone</Configuration>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release DLL|Win32">
       <Configuration>Release DLL</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Release DLL|x64">
+      <Configuration>Release DLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release Standalone|Win32">
       <Configuration>Release Standalone</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Standalone|x64">
+      <Configuration>Release Standalone</Configuration>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Test DLL|Win32">
       <Configuration>Test DLL</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Test DLL|x64">
+      <Configuration>Test DLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Test Standalone|Win32">
       <Configuration>Test Standalone</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Test Standalone|x64">
+      <Configuration>Test Standalone</Configuration>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -35,7 +59,15 @@
     <ConfigurationType>Utility</ConfigurationType>
     <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" Label="Configuration">
     <ConfigurationType>Utility</ConfigurationType>
     <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
@@ -43,7 +75,15 @@
     <ConfigurationType>Utility</ConfigurationType>
     <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'" Label="Configuration">
     <ConfigurationType>Utility</ConfigurationType>
     <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
@@ -51,7 +91,15 @@
     <ConfigurationType>Utility</ConfigurationType>
     <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" Label="Configuration">
     <ConfigurationType>Utility</ConfigurationType>
     <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
@@ -61,6 +109,15 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x86.props" />
+    <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Distribution Standalone Release.props" />
+    <Import Project="..\Configuration Release.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
     <Import Project="..\Distribution Standalone Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -68,6 +125,15 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x86.props" />
+    <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Distribution Standalone Test.props" />
+    <Import Project="..\Configuration Test.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
     <Import Project="..\Distribution Standalone Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -75,6 +141,15 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x86.props" />
+    <Import Project="..\Distribution Dll.props" />
+    <Import Project="..\Distribution Dll Release.props" />
+    <Import Project="..\Configuration Release.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
     <Import Project="..\Distribution Dll Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -82,6 +157,15 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x86.props" />
+    <Import Project="..\Distribution Dll.props" />
+    <Import Project="..\Distribution Dll Test.props" />
+    <Import Project="..\Configuration Test.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
     <Import Project="..\Distribution Dll Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -89,6 +173,15 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x86.props" />
+    <Import Project="..\Distribution Dll.props" />
+    <Import Project="..\Distribution Dll Debug.props" />
+    <Import Project="..\Configuration Debug.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
     <Import Project="..\Distribution Dll Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -96,12 +189,18 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
     <Import Project="..\Distribution Standalone Debug.props" />
     <Import Project="..\Configuration Debug.props" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="..\Distribution Standalone Release.props" />
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x64.props" />
+    <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Distribution Standalone Debug.props" />
+    <Import Project="..\Configuration Debug.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -114,65 +213,113 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">$(ProjectDir)</OutDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">
     </TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" />
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'" />
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" />
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'" />
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'" />
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'" />
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'" />
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'" />
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'" />
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" />
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" />
     <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'" />
+    <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" />
     <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'" />
+    <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" />
     <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'" />
+    <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'" />
     <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'" />
+    <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'" />
     <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'" />
+    <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'" />
     <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" />
+    <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" />
   </PropertyGroup>
   <ItemGroup>
     <None Include="Compile.js">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
     </None>
     <None Include="SetVersion.cmd">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
     </None>
     <CustomBuild Include="version">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">"$(ProjectDir)Compile.js" "InputFile=$(ProjectDir)version" "OutputDir=$(OutDir)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(ProjectDir)Compile.js" "InputFile=$(ProjectDir)version" "OutputDir=$(OutDir)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">"$(ProjectDir)Compile.js" "InputFile=$(ProjectDir)version" "OutputDir=$(OutDir)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">"$(ProjectDir)Compile.js" "InputFile=$(ProjectDir)version" "OutputDir=$(OutDir)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">"$(ProjectDir)Compile.js" "InputFile=$(ProjectDir)version" "OutputDir=$(OutDir)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">"$(ProjectDir)Compile.js" "InputFile=$(ProjectDir)version" "OutputDir=$(OutDir)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">"$(ProjectDir)Compile.js" "InputFile=$(ProjectDir)version" "OutputDir=$(OutDir)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">"$(ProjectDir)Compile.js" "InputFile=$(ProjectDir)version" "OutputDir=$(OutDir)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">"$(ProjectDir)Compile.js" "InputFile=$(ProjectDir)version" "OutputDir=$(OutDir)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">"$(ProjectDir)Compile.js" "InputFile=$(ProjectDir)version" "OutputDir=$(OutDir)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">"$(ProjectDir)Compile.js" "InputFile=$(ProjectDir)version" "OutputDir=$(OutDir)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">"$(ProjectDir)Compile.js" "InputFile=$(ProjectDir)version" "OutputDir=$(OutDir)"</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Compiling version...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Compiling version...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Compiling version...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Compiling version...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Compiling version...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Compiling version...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Compiling version...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Compiling version...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Compiling version...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Compiling version...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Compiling version...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Compiling version...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">null</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">null</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">null</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">null</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">null</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">null</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">null</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">null</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">null</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">null</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">null</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">null</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Version.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
     </ClInclude>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
