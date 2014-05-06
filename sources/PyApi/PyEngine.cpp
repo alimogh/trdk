@@ -65,11 +65,11 @@ void PyApi::Engine::ExportClass(const char *className) {
 	Export(className, py::init<std::string>())
 		.def("start", &Engine::Start)
 		.def("stop", &Engine::Stop)
-		.def("addStrategies", &Engine::AddStrategies);
+		.def("add", &Engine::Add);
 }
 
-void PyApi::Engine::AddStrategies(const std::string &newStartegiesConf) {
-	Context::AddStrategies(IniString(newStartegiesConf));
+void PyApi::Engine::Add(const std::string &newConf) {
+	Context::Add(IniString(newConf));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

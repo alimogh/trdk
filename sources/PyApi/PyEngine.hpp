@@ -30,7 +30,7 @@ namespace trdk { namespace PyApi {
 
 	public:
 
-		void AddStrategies(const std::string &newStartegiesConf);
+		void Add(const std::string &newConf);
 
 	private:
 
