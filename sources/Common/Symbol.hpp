@@ -115,7 +115,7 @@ namespace trdk { namespace Lib {
 		double GetStrike() const;
 		const Right & GetRight() const;
 		std::string GetRightAsString() const;
-		Right ParseRight(const std::string &);
+		static Right ParseRight(const std::string &);
 
 		std::string GetAsString() const;
 
