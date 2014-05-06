@@ -401,6 +401,7 @@ const Symbol::Right & Symbol::GetRight() const {
 
 Symbol::Right Symbol::ParseRight(const std::string &source) {
 	//! @sa trdk::Lib::Symbol::GetRightAsString
+	static_assert(numberOfRights == 2, "Right list changed.");
 	if (boost::iequals(source, "put")) {
 		return RIGHT_PUT;
 	} else if (boost::iequals(source, "call")) {

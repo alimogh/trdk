@@ -94,8 +94,6 @@ namespace trdk { namespace Lib {
 		//! Special code only for custom branch.
 		static Symbol ParseCashFutureOption(const std::string &line);
 
-		static Right ParseRight(const std::string &);
-
 	public:
 
 		operator bool() const;
@@ -120,6 +118,7 @@ namespace trdk { namespace Lib {
 		double GetStrike() const;
 		const Right & GetRight() const;
 		std::string GetRightAsString() const;
+		static Right ParseRight(const std::string &);
 
 		const std::string & GetTradingClass() const;
 

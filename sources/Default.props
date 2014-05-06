@@ -4,8 +4,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <IntDir>$(SolutionDir)..\output\$(PlatformShortName)\int\$(Configuration)\$(ProjectName)\</IntDir>
-    <LibraryPath>$(SolutionDir)..\output\lib;$(BOOST_DIR_X86)\lib\;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir);$(BOOST_DIR_X86)\include\boost-1_53\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\output\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

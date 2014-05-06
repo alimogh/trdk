@@ -23,21 +23,12 @@
     <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MovingAverageService.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BollingerBandsService.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BarService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Prec.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Core\Security.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

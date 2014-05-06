@@ -71,7 +71,7 @@ int32_t _stdcall trdk_DestroyAllBridges() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32_t _stdcall trdk_ResolveFutOpt(
+uint64_t _stdcall trdk_ResolveFutOpt(
 			const char *symbol,
 			const char *exchange,
 			const char *expirationDate,
@@ -122,14 +122,14 @@ uint32_t _stdcall trdk_ResolveFutOpt(
 ////////////////////////////////////////////////////////////////////////////////
 
 double _stdcall trdk_GetImpliedVolatility(
-			uint32_t barServiceHandle,
+			uint64_t barServiceHandle,
 			int32_t date,
 			int32_t time) {
 	try {
- 		return theBridgeServer
- 			.GetBridge(bridgeId)
- 			.GetBarService(barServiceHandle)
- 			.GetBar(Util::ConvertEasyLanguageDateTimeToPTime(date, time))
+		return theBridgeServer
+			.GetBridge(bridgeId)
+			.GetBarService(reinterpret_cast<Bridge::BarServiceHandle &>(barServiceHandle))
+			.GetBar(Util::ConvertEasyLanguageDateTimeToPTime(date, time))
 			.impliedVolatility;
 	} catch (const Exception &ex) {
 		Log::Error(

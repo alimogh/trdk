@@ -436,7 +436,7 @@ namespace trdk { namespace Engine {
 		void StartNotificationTask(
 					boost::barrier &startBarrier,
 					EventList &list,
-					size_t &threadsCounter) {
+					unsigned int &threadsCounter) {
 			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(boost::ref(list));
 			m_threads.create_thread(
@@ -477,7 +477,7 @@ namespace trdk { namespace Engine {
 					boost::barrier &startBarrier,
 					ListWithHighPriority &listWithHighPriority,
 					ListWithLowPriority &listWithLowPriority,
-					size_t &threadsCounter) {
+					unsigned int &threadsCounter) {
 			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
@@ -529,7 +529,7 @@ namespace trdk { namespace Engine {
 					ListWithHighPriority &listWithHighPriority,
 					ListWithLowPriority &listWithLowPriority,
 					ListWithExtraLowPriority &listWithExtraLowPriority,
-					size_t &threadsCounter) {
+					unsigned int &threadsCounter) {
 			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
@@ -590,7 +590,7 @@ namespace trdk { namespace Engine {
 					ListWithLowPriority &listWithLowPriority,
 					ListWithExtraLowPriority &listWithExtraLowPriority,
 					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
-					size_t &threadsCounter) {
+					unsigned int &threadsCounter) {
 			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
@@ -658,7 +658,7 @@ namespace trdk { namespace Engine {
 					ListWithExtraLowPriority &listWithExtraLowPriority,
 					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
 					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
-					size_t &threadsCounter) {
+					unsigned int &threadsCounter) {
 			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
@@ -750,7 +750,7 @@ namespace trdk { namespace Engine {
 					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
 					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
 					ListWithExtraLowPriority4 &listWithExtraLowPriority4,
-					size_t &threadsCounter) {
+					unsigned int &threadsCounter) {
 			UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
