@@ -3,8 +3,8 @@ Host To Build on MS Windows
 ---------------------------
 
 1. Requirements:
-1.1. MS Visual Studio Express (or better) 10:
-     Free install: http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express
+1.1. MS Visual Studio Express (or better) 2012:
+     Free install: http://www.visualstudio.com/en-us/products/visual-studio-express-vs.aspx
 1.2. Boost C++ libraries 1.53 32-bit.
      Official site: http://www.boost.org/
      Free install (ready build): http://download.robotdk.com/externals/Boost.1.53_msvc-10.0.x86_msvc-11.0.x86.7z
