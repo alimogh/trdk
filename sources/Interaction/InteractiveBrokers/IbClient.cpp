@@ -1644,11 +1644,11 @@ namespace {
 void Client::historicalData(
 			TickerId tickerId,
 			const IBString &timeStr,
-			double openPrice,
+			double /*openPrice*/,
 			double highPrice,
 			double lowPrice,
 			double closePrice,
-			int volume,
+			int /*volume*/,
 			int barCount,
 			double /*WAP*/,
 			int /*hasGaps*/) {
@@ -1677,10 +1677,8 @@ void Client::historicalData(
 			time,
 			//! See request for detail about frame size:
 			pt::minutes(1),
-			ib::Security::Bar::TRADES);
-		bar.openPrice = openPrice;
-		bar.closePrice = closePrice;
-		bar.volume = volume;
+			ib::Security::Bar::IMPLIED_VOLATILITY);
+		bar.impliedVolatility = closePrice;
 		bar.count = barCount;
 		security->AddBar(bar);	
 	

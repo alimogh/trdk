@@ -31,8 +31,7 @@ namespace trdk { namespace SimpleApi {
 					double strike,
 					const std::string &right,
 					const std::string &tradingClass,
-					int32_t dataStartDate,
-					int32_t dataStartTime,
+					const boost::posix_time::ptime &dataStartTime,
 					int32_t barIntervalType)
 				const;
 		Services::BarService & GetBarService(const BarServiceHandle &);

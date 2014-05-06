@@ -11,6 +11,8 @@
 #include "Prec.hpp"
 #include "SimpleApiBridgeServer.hpp"
 #include "SimpleApiBridge.hpp"
+#include "SimpleApiUtil.hpp"
+#include "Services/BarService.hpp"
 #include "Core/Security.hpp"
 
 using namespace trdk;
@@ -98,8 +100,9 @@ uint32_t _stdcall trdk_ResolveFutOpt(
 				strike,
 				right,
 				tradingClass,
-				dataStartDate,
-				dataStartTime,
+				Util::ConvertEasyLanguageDateTimeToPTime(
+					dataStartDate,
+					dataStartTime),
 				barIntervalType);
 	} catch (const Exception &ex) {
 		Log::Error(
@@ -119,13 +122,15 @@ uint32_t _stdcall trdk_ResolveFutOpt(
 ////////////////////////////////////////////////////////////////////////////////
 
 double _stdcall trdk_GetImpliedVolatility(
-			uint32_t /*securityId*/) {
+			uint32_t barServiceHandle,
+			int32_t date,
+			int32_t time) {
 	try {
-		throw 0;
-// 		return theBridgeServer
-// 			.GetBridge(bridgeId)
-// 			.GetSecurity(securityId)
-// 			.GetLastPrice();
+ 		return theBridgeServer
+ 			.GetBridge(bridgeId)
+ 			.GetBarService(barServiceHandle)
+ 			.GetBar(Util::ConvertEasyLanguageDateTimeToPTime(date, time))
+			.impliedVolatility;
 	} catch (const Exception &ex) {
 		Log::Error(
 			"Failed to get Implied Volatility across Bridge: \"%1%\".",

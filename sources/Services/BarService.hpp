@@ -53,6 +53,9 @@ namespace trdk { namespace Services {
 			
 			trdk::Qty tradingVolume;
 
+			// Custom branch.
+			double impliedVolatility;
+
 			Bar();
 
  		};
@@ -129,42 +132,11 @@ namespace trdk { namespace Services {
 	public:
 
 		//! Returns bar by index.
-		/** First bar has index "zero".
+		/** Custom branch. First bar has index "zero".
 		  * @throw trdk::Services::BarService::BarDoesNotExistError
 		  * @sa trdk::Services::BarService::GetBarByReversedIndex
 		  */
-		const Bar & GetBar(size_t index) const;
-
-		//! Returns bar by reversed index.
-		/** Last bar has index "zero".
-		  * @throw trdk::Services::BarService::BarDoesNotExistError
-		  * @sa trdk::Services::BarService::GetBarByIndex 
-		  */
-		const Bar & GetBarByReversedIndex(size_t index) const;
-
-		//! Returns last bar.
-		/** @throw trdk::Services::BarService::BarDoesNotExistError
-		  * @sa trdk::Services::BarService::GetBarByReversedIndex
-		  */
-		const Bar & GetLastBar() const;
-
-	public:
-
-		boost::shared_ptr<ScaledPriceStat> GetOpenPriceStat(
-					size_t numberOfBars)
-				const;
-		boost::shared_ptr<ScaledPriceStat> GetClosePriceStat(
-					size_t numberOfBars)
-				const;
-		boost::shared_ptr<ScaledPriceStat> GetHighPriceStat(
-					size_t numberOfBars)
-				const;
-		boost::shared_ptr<ScaledPriceStat> GetLowPriceStat(
-					size_t numberOfBars)
-				const;
-		boost::shared_ptr<QtyStat> GetTradingVolumeStat(
-					size_t numberOfBars)
-				const;
+		const Bar & GetBar(const boost::posix_time::ptime &) const;
 
 	protected:
 

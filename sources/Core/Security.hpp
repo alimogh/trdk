@@ -62,6 +62,8 @@ namespace trdk {
 				TRADES,
 				BID,
 				ASK,
+				// custom branch
+				IMPLIED_VOLATILITY,
 				numberOfTypes
 			};
 
@@ -84,6 +86,9 @@ namespace trdk {
 			
 			//! The volume during the time covered by the bar.
 			boost::optional<trdk::Qty> volume;
+
+			//! custom branch
+			boost::optional<double> impliedVolatility;
 			
 			//! When TRADES historical data is returned, represents the number
 			//! of trades that occurred during the time period the bar covers.

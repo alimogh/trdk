@@ -37,10 +37,7 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MovingAverageService.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BollingerBandsService.cpp">
+    <ClCompile Include="..\Core\Security.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

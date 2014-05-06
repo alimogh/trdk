@@ -33,6 +33,9 @@
     <ClCompile Include="SimpleApiBridgeContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SimpleApiUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="SimpleApi.def">
@@ -56,6 +59,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SimpleApiBridgeContext.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SimpleApiUtil.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
