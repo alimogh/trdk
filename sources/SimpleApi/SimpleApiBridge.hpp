@@ -16,7 +16,7 @@ namespace trdk { namespace SimpleApi {
 
 	public:
 
-		typedef uintptr_t BarServiceHandle;
+		typedef uint32_t BarServiceHandle;
 
 	public:
 
@@ -42,6 +42,7 @@ namespace trdk { namespace SimpleApi {
 	private:
 
 		boost::shared_ptr<trdk::Engine::Context> m_context;
+		std::vector<Services::BarService *> m_handles;
 
 	};
 

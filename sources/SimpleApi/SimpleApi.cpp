@@ -71,7 +71,7 @@ int32_t _stdcall trdk_DestroyAllBridges() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint64_t _stdcall trdk_ResolveFutOpt(
+uint32_t _stdcall trdk_ResolveFutOpt(
 			const char *symbol,
 			const char *exchange,
 			const char *expirationDate,
@@ -122,7 +122,7 @@ uint64_t _stdcall trdk_ResolveFutOpt(
 ////////////////////////////////////////////////////////////////////////////////
 
 double _stdcall trdk_GetImpliedVolatility(
-			uint64_t barServiceHandle,
+			uint32_t barServiceHandle,
 			int32_t date,
 			int32_t time) {
 	try {

@@ -81,16 +81,30 @@ Bridge::BarServiceHandle Bridge::ResolveFutOpt(
 			<< "start = " << dataStartTime << std::endl;
 	m_context->Add(IniString(settings.str()));
 
-	return BarServiceHandle(m_context->FindService(serviceTitle.str()));
+	const_cast<Bridge *>(this)->m_handles.push_back(
+		&dynamic_cast<Services::BarService &>(
+			*m_context->FindService(serviceTitle.str())));
+	
+	Assert(*m_handles.rbegin());
+	AssertGe(std::numeric_limits<BarServiceHandle>::max(), m_handles.size());
+	return BarServiceHandle(m_handles.size());
 
 }
 
 BarService & Bridge::GetBarService(const BarServiceHandle &handle) {
-	return *reinterpret_cast<BarService *>(handle);
+	AssertNe(0, handle);
+	if (handle == 0) {
+		throw Exception("Unknown Bar Service Handle \"zero\"");
+	}
+	AssertGe(m_handles.size(), handle);
+	if (handle > m_handles.size()) {
+		throw Exception("Unknown Bar Service Handle");
+	}
+	return *m_handles[handle - 1];
 }
 
 const BarService & Bridge::GetBarService(const BarServiceHandle &handle) const {
-	return const_cast<Bridge *>(this)->GetBarService(handle);
+	const_cast<Bridge *>(this)->GetBarService(handle);
 }
 
 double Bridge::GetCashBalance() const {

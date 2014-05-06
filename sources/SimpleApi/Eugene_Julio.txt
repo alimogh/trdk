@@ -1,0 +1,260 @@
+//**************************************************
+// Dear Eugene
+//
+//	This very simple code does nothing more than calculate and 
+// plot the Delta of each option group, namely, Puts and Calls.
+//
+//	In order to calculate the Delta value, one needed input is the IV.
+//
+//	From my previous experience, I believe that you should be aware
+// that I will be using in this code four EUR.USD Forex FOP (Future Options).
+//
+//	IMPORTANT: To get some result from this code, it must be plotted as an indicator
+// below the EUR.USD Forex chart (or IDEALPRO cash contract) as it uses its "close" value to calculate
+// the Delta.
+//
+//	Some information you may need to code your dll:
+//
+// All expiration dates for the series defined below: 20140606
+//
+// ***** The four options used are described here:
+
+// Product 		EUR
+// Security Type 	FOP
+// Underlying 	6EM4 JUN 16 '14 FUT
+// Contract Month 	JUN14
+// Expiration 	JUN 06 '14 14:00 CST
+// Strike 		1.365
+// Right 		Put
+// Currency 		USD
+// Multiplier 	125000
+// Exchange 		GLOBEX
+// Symbol 		6EM4 P1365
+// Trading 		Class 6E
+// Product Type 	Foreign Exchange
+// Settlement Method Physical Delivery
+// Exercise Style 	American
+
+// Product		EUR
+// Security Type	FOP
+// Underlying		6EM4 JUN 16 '14 FUT
+// Contract Month	JUN14
+// Expiration		JUN 06 '14 14:00 CST
+// Strike		1.37
+// Right		Put
+// Currency		USD
+// Multiplier		125000
+// Exchange		GLOBEX
+// Symbol		6EM4 P1370
+// Trading Class	6E
+// Product Type	Foreign Exchange
+// Settlement Method	Physical Delivery
+// Exercise Style	American
+
+// Product		EUR
+// Security Type	FOP
+// Underlying		6EM4 JUN 16 '14 FUT
+// Contract Month	JUN14
+// Expiration		JUN 06 '14 14:00 CST
+// Strike		1.37
+// Right		Call
+// Currency		USD
+// Multiplier		125000
+// Exchange		GLOBEX
+// Symbol		6EM4 C1370
+// Trading Class	6E
+// Product Type	Foreign Exchange
+// Settlement Method	Physical Delivery
+// Exercise Style	American
+
+// Product		EUR
+// Security Type	FOP
+// Underlying		6EM4 JUN 16 '14 FUT
+// Contract Month	JUN14
+// Expiration		JUN 06 '14 14:00 CST
+// Strike		1.375
+// Right		Call
+// Currency		USD
+// Multiplier		125000
+// Exchange		GLOBEX
+// Symbol		6EM4 C1375
+// Trading Class	6E
+// Product Type	Foreign Exchange
+// Settlement Method	Physical Delivery
+// Exercise Style	American
+
+
+//=================================
+// 	Another way to describe the same options
+// (data got when I exported a page inside TWS with these options)
+//=================================
+
+//	DES,EUR,FOP,GLOBEX,201406,1.365,Put,125000,
+//	DES,EUR,FOP,GLOBEX,201406,1.37,Put,125000,
+//	DES,EUR,FOP,GLOBEX,201406,1.37,Call,125000,
+//	DES,EUR,FOP,GLOBEX,201406,1.375,Call,125000,
+
+//=================================
+
+// Inits logging for debug purposes.
+external:
+	"Trdk_test.dll",
+	int, {Returns non zero at success, zero at error.}
+	"trdk_InitLog",
+	string; {Path and file name for log. Ex.: "C:/TRDK/debug.log".}
+
+// Resolves Future Option at TWS side.
+external:
+	"Trdk_test.dll",
+	dword, {Returns contract handle or zero (0) at error.}
+	"trdk_ResolveFutOpt",
+	string, {Symbol. Ex.: "EUR"}
+	string, {Exchange. Ex.: "GLOBEX"}
+	string, {Expiration data. Ex.: "20140606" for Jun 06 2014}
+	double, {Strike. Ex.: 1.365}
+	string, {Right. Can be "Put" or "Call"}
+	string, {Trading class. Ex.: "6E".}
+	int, {Data start date. Can be date of first bar. Ex.: Date.}
+	int, {Data start time. Can be time of first bar. Ex.: Time.}
+	int; {Bar interval type. Used EL inteval type value. Ex.: BarType}
+
+// Returns Implied Volatility by date and time.
+external:
+	"Trdk_test.dll",
+	double, {Returns Implied Volatility value or zero (0) at error.}
+	"trdk_GetImpliedVolatility",
+	dword, {Contract handle. See ResolveFutOpt.}
+	int, {Value date. Can be date of current bar. Ex.: Date.}
+	int; {Value time. Can be time of current bar. Ex.: Time.}
+
+inputs: 
+Pos_Put_1  (4),	{Positive or negative position in the first PUT}
+Pos_Put_2  (7),	{Positive or negative position in the second PUT}
+
+Pos_Call_1  (3),	{Positive or negative position in the first CALL}
+Pos_Call_2  (5),	{Positive or negative position in the second CALL}
+
+
+//    Strikes for two PUTs and two CALLs
+Str_Put_1  ( 1.365 ),	{The strikes do change overtime, so they will be kept here in the input session }
+Str_Put_2  ( 1.37 ), 	{The strikes do change overtime, so they will be kept here in the input session }
+
+Str_Call_1 ( 1.37 ), 	{The strikes do change overtime, so they will be kept here in the input session }
+Str_Call_2 ( 1.375 ), 	{The strikes do change overtime, so they will be kept here in the input session }
+
+
+// Expiration month and year for the followed Options
+ExpMonth_Put_1 ( 06 ), 
+ExpYear_Put_1  ( 2014 ), 
+ExpMonth_Put_2 ( 06 ), 
+ExpYear_Put_2  ( 2014 ), 
+
+ExpMonth_Call_1  ( 06 ), 
+ExpYear_Call_1   ( 2014 ), 
+ExpMonth_Call_2  ( 06 ), 
+ExpYear_Call_2   ( 2014 ), 
+
+
+// Inputs below to keep compatibility with my program
+Rate_for_all ( 0 ),
+Put_for_all  ( Put ) ,
+Call_for_all ( call );
+
+variables: 
+// These variables deal with Expiration Year
+var1  ( 0 ),
+var2  ( 0 ),
+var3  ( 0 ),
+var11 ( 0 ),
+var12 ( 0 ),
+fopPut1( 0 ),
+fopPut2( 0 ),
+fopCall1( 0 ),
+fopCall2( 0 ),
+IV_Put_1   ( 0 ), 
+IV_Put_2   ( 0 ), 
+IV_Call_1  ( 0 ), 
+IV_Call_2  ( 0 );
+
+// Expiration year mus follow this format to be used in the @Delta function
+var1  = ExpYear_Put_1  - 1900;
+var2  = ExpYear_Put_2  - 1900;
+var11 = ExpYear_Call_1 - 1900;
+var12 = ExpYear_Call_2 - 1900;
+
+if fopPut1 = 0 then
+begin
+	// Just for debugging, needs to be removed after "release version".
+	trdk_InitLog("C:/TRDK/debug.log");
+	fopPut1 = trdk_ResolveFutOpt(
+		GetSymbolName, 
+		"GLOBEX",
+		"20140606", {Expiration}
+		1.365, {Strike}
+		"Put",
+		"6E", {Trading class} 
+		Date,
+		Time,
+		BarType);
+end;
+
+if fopPut2 = 0 then
+begin
+	fopPut2 = trdk_ResolveFutOpt(
+		GetSymbolName, 
+		"GLOBEX",
+		"20140606", {Expiration}
+		1.37, {Strike}
+		"Put",
+		"6E", {Trading class} 
+		Date,
+		Time,
+		BarType);
+end;
+
+if fopCall1 = 0 then
+begin
+	fopCall1 = trdk_ResolveFutOpt(
+		GetSymbolName, 
+		"GLOBEX",
+		"20140606", {Expiration}
+		1.37, {Strike}
+		"Call",
+		"6E", {Trading class} 
+		Date,
+		Time,
+		BarType);
+end;
+
+if fopCall2 = 0 then
+begin
+	fopCall2 = trdk_ResolveFutOpt(
+		GetSymbolName, 
+		"GLOBEX",
+		"20140606", {Expiration}
+		1.375, {Strike}
+		"Call",
+		"6E", {Trading class} 
+		Date,
+		Time,
+		BarType);
+end;
+
+IV_Put_1 = trdk_GetImpliedVolatility(fopPut1, Date, Time);
+IV_Put_2 = trdk_GetImpliedVolatility(fopPut2, Date, Time);
+IV_Call_1 = trdk_GetImpliedVolatility(fopCall1, Date, Time);
+IV_Call_2 = trdk_GetImpliedVolatility(fopCall2, Date, Time);
+
+// Plots the Puts' Delta
+Plot1( 
+	Pos_Put_1 * @Delta( DaysToExpiration( ExpMonth_Put_1,  var1 )-14, Str_Put_1, Close, Rate_for_all, IV_Put_1, Put_for_all )+
+	Pos_Put_2 * @Delta( DaysToExpiration( ExpMonth_Put_2,  var2 )-14, Str_Put_2, Close, Rate_for_all, IV_Put_2, Put_for_all ),
+	"Delta_Puts", red, default, 1);
+
+// Plots the Calls' Delta
+Plot2(
+	Pos_Call_1 * @Delta( DaysToExpiration( ExpMonth_Call_1, var11 )-14, Str_Call_1, Close, Rate_for_all, IV_Call_1, Call_for_all )+
+	Pos_Call_2 * @Delta( DaysToExpiration( ExpMonth_Call_2, var12 )-14, Str_Call_2, Close, Rate_for_all, IV_Call_2, Call_for_all ),
+	"Delta_Calls", darkgreen, default, 1);
+
+Plot3(0, "ZeroLine", yellow,  default, 1);
