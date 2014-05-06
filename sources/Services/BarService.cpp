@@ -515,7 +515,7 @@ public:
 			sourceBar.time,
 			[&](Bar &statBar) {
 				static_assert(
-					Security::Bar::numberOfTypes,
+					Security::Bar::numberOfTypes == 3,
 					"Bar type list changed.");
 				switch (sourceBar.type) {
 					case Security::Bar::TRADES:
