@@ -344,7 +344,12 @@ bool Symbol::operator ==(const Symbol &rhs) const {
 			m_symbol == rhs.m_symbol
 			&& m_currency == rhs.m_currency
 			&& m_exchange == rhs.m_exchange
-			&& m_primaryExchange == rhs.m_primaryExchange;
+			&& m_primaryExchange == rhs.m_primaryExchange
+			&& m_securityType == rhs.m_securityType
+			&& m_expirationDate == rhs.m_expirationDate
+			&& m_strike == rhs.m_strike
+			&& m_right == rhs.m_right
+			&& m_tradingClass == rhs.m_tradingClass;
 	}
 }
 

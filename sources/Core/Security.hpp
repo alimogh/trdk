@@ -180,6 +180,8 @@ namespace trdk {
 
 	public:
 
+		double GetLastImpliedVolatility() const;
+
 		trdk::ScaledPrice GetLastPriceScaled() const;
 		double GetLastPrice() const;
 		trdk::Qty GetLastQty() const;
@@ -292,6 +294,9 @@ namespace trdk {
 		  * @param isInitial	true if it initial data at start.
 		  */
 		void SetBrokerPosition(trdk::Qty qty, bool isInitial);
+
+		// Custom brunch
+		void SetImpliedVolatility(double);
 
 	private:
 

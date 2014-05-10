@@ -35,7 +35,12 @@ BridgeContext::~BridgeContext() {
 }
 
 Security * BridgeContext::FindSecurity(const Symbol &symbol) {
-	return &GetMarketDataSource().GetSecurity(*this, symbol);
+	Security *security = GetMarketDataSource().FindSecurity(symbol);
+	if (!security) {
+		security = &GetMarketDataSource().GetSecurity(*this, symbol);
+		GetMarketDataSource().SubscribeToSecurities();
+	}
+	return security;
 }
 
 const trdk::Security * BridgeContext::FindSecurity(const Symbol &symbol) const {

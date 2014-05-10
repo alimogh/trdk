@@ -6,9 +6,7 @@ EXPORTS
 	
 	trdk_DestroyAllBridges
 
-	trdk_ResolveFutOpt
-
 	trdk_GetImpliedVolatility
+	GetImpliedVolatility
 
 	CreateTradeSystem
-	CreateBarsService

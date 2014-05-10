@@ -397,16 +397,13 @@ void Client::Subscribe(const OrderStatusSlot &orderStatusSlot) const {
 
 void Client::SubscribeToMarketData(ib::Security &security) const {
 
+	// custom branch
+
 	Assert(m_ts.m_securities.find(&security) != m_ts.m_securities.end());
 
 	if (security.IsTradesRequired() && !security.IsTestSource()) {
 		throw trdk::TradeSystem::Error(
 			"Interactive Brokers doesn't provide trades info");
-	} else if (
-			!security.IsLevel1Required()
-			&& !security.IsBarsRequired()
-			&& !(security.IsTestSource() && security.IsTradesRequired())) {
-		return;
 	}
 
 	const Lock lock(m_mutex);
@@ -444,10 +441,6 @@ void Client::FlushPostponedMarketDataSubscription() const {
 
 void Client::DoMarketDataSubscription(ib::Security &security) const {
 	Assert(!IsSubscribed(m_marketDataRequests, security));
-	Assert(
-		security.IsLevel1Required()
-		|| security.IsBarsRequired()
-		|| (security.IsTestSource() && security.IsTradesRequired()));
 	if (m_isNoHistoryMode || !SendMarketDataHistoryRequest(security)) {
 		SendMarketDataRequest(security);
 	}
@@ -456,83 +449,36 @@ void Client::DoMarketDataSubscription(ib::Security &security) const {
 void Client::SendMarketDataRequest(ib::Security &security) const {
 
 	Assert(!m_mutex.try_lock());
-	Assert(
-		security.IsLevel1Required()
-		|| security.IsBarsRequired()
-		|| (security.IsTestSource() && security.IsTradesRequired()));
-	Assert(!IsSubscribed(m_marketDataRequests, security));
 
-	if (	security.IsLevel1Required()
-			|| (security.IsTestSource()
-				&& (security.IsBarsRequired()
-					|| security.IsTradesRequired()))) {
+	// Custom branch
 
-		const SecurityRequest request(
-			security,
-			const_cast<Client *>(this)->TakeTickerId());
-		const auto &contract = GetContract(*request.security);
+	const SecurityRequest request(
+		security,
+		const_cast<Client *>(this)->TakeTickerId());
+	const auto &contract = GetContract(*request.security);
 
-		auto requests(m_marketDataRequests);
-		requests.insert(request);
+	auto requests(m_marketDataRequests);
+	Verify(requests.insert(request).second);
 
-		std::list<IBString> genericTicklist;
-		genericTicklist.push_back("233");
+	std::list<IBString> genericTicklist;
+//	genericTicklist.push_back("106");
 
-		m_client->reqMktData(
-			request.tickerId,
-			contract,
-			boost::join(genericTicklist, ","),
-			false);
+	m_client->reqMktData(
+		request.tickerId,
+		contract,
+		boost::join(genericTicklist, ","),
+		true);
 		
-		m_log.Debug(
-			"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level I"
-				" market data subscription request for \"%1%\""
-				" (ticker ID: %2%).",
-			boost::make_tuple(
-				boost::cref(*request.security),
-				boost::cref(request.tickerId)));
+	// Custom branch
+	m_log.Debug(
+		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " "
+			" Option Implied Volatility subscription request for \"%1%\""
+			" (ticker ID: %2%).",
+		boost::make_tuple(
+			boost::cref(*request.security),
+			boost::cref(request.tickerId)));
 		
-		requests.swap(m_marketDataRequests);
-
-	}
-
-	if (security.IsBarsRequired()) {
-
-		const char *const whatToShowList[]
-			= {"TRADES" , "BID" , "ASK" /*, MIDPOINT*/};
-		foreach (const char *const whatToShow, whatToShowList) {
-
-			const SecurityRequest request(
-				security,
-				const_cast<Client *>(this)->TakeTickerId());
-			const auto &contract = GetContract(*request.security);
-
-			auto requests(m_barsRequest);
-			requests.insert(request);
-
-			m_client->reqRealTimeBars(
-				request.tickerId,
-				contract,
-				// Currently only 5 second bars are supported, if any other
-				// value is used, an exception will be thrown. 
-				5,
-				whatToShow,
-				false);
-		
-			m_log.Debug(
-				"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
-				" Real Time Bars (%1%) subscription request for \"%2%\""
-				" (ticker ID: %3%).",
-				boost::make_tuple(
-					whatToShow,
-					boost::cref(*request.security),
-					boost::cref(request.tickerId)));
-		
-			requests.swap(m_barsRequest);
-
-		}
-
-	}
+	requests.swap(m_marketDataRequests);
 
 }
 
@@ -1361,10 +1307,18 @@ void Client::tickOptionComputation(
 }
 
 void Client::tickGeneric(
-			TickerId /*tickerId*/,
-			TickType /*tickType*/,
-			double /*value*/) {
-	//...//
+			TickerId tickerId,
+			TickType tickType,
+			double value) {
+	if (tickType != OPTION_IMPLIED_VOL) {
+		return;
+	}
+	// custom branch
+	ib::Security *const security = GetMarketDataRequest(tickerId);
+	if (!security) {
+		return;
+	}
+	security->SetImpliedVolatility(value);
 }
 
 void Client::tickString(
@@ -1754,8 +1708,36 @@ void Client::deltaNeutralValidation(
 	//...//
 }
 
-void Client::tickSnapshotEnd(int /*reqId*/) {
-	//...//
+void Client::tickSnapshotEnd(int reqId) {
+	// Custom branch
+	Assert(!m_mutex.try_lock());
+	ib::Security *const security = GetMarketDataRequest(reqId);
+	if (!security) {
+		return;
+	}
+	security->SetImpliedVolatility(-1);
+	m_marketDataRequests.get<ByTicker>().erase(reqId);
+	const SecurityRequest request(
+		*security,
+		TakeTickerId());
+	const auto &contract = GetContract(*request.security);
+	auto requests(m_marketDataRequests);
+	Verify(requests.insert(request).second);
+	std::list<IBString> genericTicklist;
+ 	genericTicklist.push_back("106");
+	m_client->reqMktData(
+		request.tickerId,
+		contract,
+		boost::join(genericTicklist, ","),
+		false);
+	m_log.Debug(
+		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " "
+			" Option Implied Volatility subscription request for \"%1%\""
+			" (ticker ID: %2%).",
+		boost::make_tuple(
+			boost::cref(*request.security),
+			boost::cref(request.tickerId)));
+	requests.swap(m_marketDataRequests);
 }
 
 void Client::marketDataType(

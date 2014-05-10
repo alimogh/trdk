@@ -276,12 +276,4 @@ const Security * Engine::Context::FindSecurity(const Symbol &symbol) const {
 	return GetMarketDataSource().FindSecurity(symbol);
 }
 
-Service * Engine::Context::FindService(const std::string &name) {
-	const auto &pos = m_pimpl->m_state->services.find(name);
-	if (pos == m_pimpl->m_state->services.end()) {
-		return nullptr;
-	}
-	return &**pos->second.begin();
-}
-
 //////////////////////////////////////////////////////////////////////////

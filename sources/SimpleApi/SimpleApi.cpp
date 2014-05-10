@@ -12,7 +12,6 @@
 #include "SimpleApiBridgeServer.hpp"
 #include "SimpleApiBridge.hpp"
 #include "SimpleApiUtil.hpp"
-#include "Services/BarService.hpp"
 #include "Core/Security.hpp"
 
 using namespace trdk;
@@ -71,27 +70,22 @@ int32_t _stdcall trdk_DestroyAllBridges() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32_t _stdcall trdk_ResolveFutOpt(
+double _stdcall trdk_GetImpliedVolatility(
 			const char *symbol,
 			const char *exchange,
 			const char *expirationDate,
 			double strike,
 			const char *right,
-			const char *tradingClass,
-			int32_t dataStartDate,
-			int32_t dataStartTime,
-			int32_t barIntervalType) {
+			const char *tradingClass) {
 	Assert(symbol);
 	Assert(exchange);
 	Assert(expirationDate);
-	AssertNe(.0, strike);
+	AssertLt(.0, strike);
 	Assert(right);
-	Assert(dataStartDate);
-	Assert(dataStartTime);
 	Assert(tradingClass);
 	try {
 		const std::string exchangeStr(exchange);
-		return theBridgeServer
+		auto result = theBridgeServer
 			.CheckBridge(bridgeId, exchangeStr)
 			.ResolveFutOpt(
 				symbol,
@@ -99,15 +93,14 @@ uint32_t _stdcall trdk_ResolveFutOpt(
 				expirationDate,
 				strike,
 				right,
-				tradingClass,
-				Util::ConvertEasyLanguageDateTimeToPTime(
-					dataStartDate,
-					dataStartTime),
-				barIntervalType);
+				tradingClass)
+			.GetLastImpliedVolatility();
+		result *= 100;
+		return result;
 	} catch (const Exception &ex) {
 		Log::Error(
-			"Failed to resolve FOP Symbol \"%1%:%2%\" (%3%, %4%)"
-				" across Bridge: \"%5%\".",
+			"Failed to get Implied Volatility for FOP Symbol"
+				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
 			symbol,
 			exchange,
 			expirationDate,
@@ -118,27 +111,21 @@ uint32_t _stdcall trdk_ResolveFutOpt(
 	}
 	return 0;
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-double _stdcall trdk_GetImpliedVolatility(
-			uint32_t barServiceHandle,
-			int32_t date,
-			int32_t time) {
-	try {
-		return theBridgeServer
-			.GetBridge(bridgeId)
-			.GetBarService(reinterpret_cast<Bridge::BarServiceHandle &>(barServiceHandle))
-			.GetBar(Util::ConvertEasyLanguageDateTimeToPTime(date, time))
-			.impliedVolatility;
-	} catch (const Exception &ex) {
-		Log::Error(
-			"Failed to get Implied Volatility across Bridge: \"%1%\".",
-			ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
+                
+double _stdcall GetImpliedVolatility(
+			const char *symbol,
+			const char *exchange,
+			const char *expirationDate,
+			double strike,
+			const char *right,
+			const char *tradingClass) {
+	return trdk_GetImpliedVolatility(
+		symbol,
+		exchange,
+		expirationDate,
+		strike,
+		right,
+		tradingClass);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

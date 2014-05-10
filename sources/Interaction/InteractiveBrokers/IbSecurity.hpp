@@ -73,6 +73,10 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 			Base::SetBrokerPosition(qty, isInitial);
 		}
 
+		void SetImpliedVolatility(double value) {
+			Base::SetImpliedVolatility(value);
+		}
+
 	private:
 
 		void CheckLastTrade(

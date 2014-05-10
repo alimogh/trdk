@@ -16,33 +16,25 @@ namespace trdk { namespace SimpleApi {
 
 	public:
 
-		typedef uint32_t BarServiceHandle;
-
-	public:
-
 		explicit Bridge(boost::shared_ptr<trdk::Engine::Context>);
 
 	public:
 
-		BarServiceHandle ResolveFutOpt(
+		Security & ResolveFutOpt(
 					const std::string &symbol,
 					const std::string &exchange,
 					const std::string &expirationDate,
 					double strike,
 					const std::string &right,
-					const std::string &tradingClass,
-					const boost::posix_time::ptime &dataStartTime,
-					int32_t barIntervalType)
+					const std::string &tradingClass)
 				const;
-		Services::BarService & GetBarService(const BarServiceHandle &);
-		const Services::BarService & GetBarService(const BarServiceHandle &) const;
 
 		double GetCashBalance() const;
 
 	private:
 
 		boost::shared_ptr<trdk::Engine::Context> m_context;
-		std::vector<Services::BarService *> m_handles;
+		std::vector<Security *> m_handles;
 
 	};
 

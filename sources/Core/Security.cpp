@@ -82,12 +82,17 @@ public:
 
 	pt::ptime m_requestedDataStartTime;
 
+	volatile double m_impliedVolatility;
+	boost::mutex m_impliedVolatilityInitMutex;
+	boost::condition_variable m_impliedVolatilityCondition;
+
 public:
 
 	Implementation()
 			: m_brokerPosition(0),
 			m_marketDataTime(0),
-			m_isLevel1Started(false) {
+			m_isLevel1Started(false),
+			m_impliedVolatility(-2.0) {
 		foreach (auto &item, m_level1) {
 			Unset(item);
 		}
@@ -362,6 +367,38 @@ const pt::ptime & Security::GetRequestedDataStartTime() const {
 	return m_pimpl->m_requestedDataStartTime;
 }
 
+double Security::GetLastImpliedVolatility() const {
+	if (m_pimpl->m_impliedVolatility >= 0) {
+		return m_pimpl->m_impliedVolatility;
+	}
+	boost::mutex::scoped_lock lock(m_pimpl->m_impliedVolatilityInitMutex);
+	for ( ; ; ) {
+		if (m_pimpl->m_impliedVolatility >= 0) {
+			return m_pimpl->m_impliedVolatility;
+		}
+		if (m_pimpl->m_impliedVolatility < -1) {
+			m_pimpl->m_impliedVolatilityCondition.wait(lock);
+		} else {
+			m_pimpl->m_impliedVolatilityCondition.timed_wait(
+				lock,
+				pt::seconds(5));
+			if (m_pimpl->m_impliedVolatility < 0) {
+				Log::Error(
+					"Implied Volatility condition timeout for %1%.",
+					*this);
+				Interlocking::Exchange(m_pimpl->m_impliedVolatility, 0);
+			}
+		}
+	}
+}
+
+void Security::SetImpliedVolatility(double value) {
+	const boost::mutex::scoped_lock lock(m_pimpl->m_impliedVolatilityInitMutex);
+	AssertLe(-1, value);
+	Interlocking::Exchange(m_pimpl->m_impliedVolatility, value);
+	m_pimpl->m_impliedVolatilityCondition.notify_all();
+}
+
 double Security::GetLastPrice() const {
 	return DescalePrice(GetLastPriceScaled());
 }
@@ -594,4 +631,3 @@ void Security::SetBrokerPosition(trdk::Qty qty, bool isInitial) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
