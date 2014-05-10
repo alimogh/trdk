@@ -106,7 +106,7 @@ external:
 // Resolves Future Option at TWS side.
 external:
 	"Trdk.dll",
-	dword, {Returns actual Implied Volatility value or zero (0) at error.}
+	double, {Returns actual Implied Volatility value or zero (0) at error.}
 	"GetImpliedVolatility",
 	string, {Symbol. Ex.: "EUR"}
 	string, {Exchange. Ex.: "GLOBEX"}
