@@ -395,7 +395,9 @@ double Security::GetLastImpliedVolatility() const {
 void Security::SetImpliedVolatility(double value) {
 	const boost::mutex::scoped_lock lock(m_pimpl->m_impliedVolatilityInitMutex);
 	AssertLe(-1, value);
-	Interlocking::Exchange(m_pimpl->m_impliedVolatility, value);
+	if (value >= 0 || m_pimpl->m_impliedVolatility < 0) {
+		Interlocking::Exchange(m_pimpl->m_impliedVolatility, value);
+	}
 	m_pimpl->m_impliedVolatilityCondition.notify_all();
 }
 

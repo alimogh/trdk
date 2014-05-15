@@ -1318,6 +1318,10 @@ void Client::tickGeneric(
 	if (!security) {
 		return;
 	}
+	Log::Debug(
+		"Generic tick OPTION_IMPLIED_VOL for \"%1%\": %2%.",
+		*security,
+		value);
 	security->SetImpliedVolatility(value);
 }
 
@@ -1618,9 +1622,6 @@ void Client::historicalData(
 	
 	const bool isFinished = boost::starts_with(timeStr, "f");
 	Assert(!isFinished || boost::starts_with(timeStr, "finished-"));
-	Assert(
-		!isFinished
-		|| (IsEqual(lowPrice, -1.0) && IsEqual(highPrice, -1.0)));
 
 	if (!isFinished) {
 

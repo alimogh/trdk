@@ -54,10 +54,33 @@ int32_t trdk_InitLogToStdOut() {
 	return 0;
 }
 
+#ifdef DEV_VER
+	namespace {
+
+		void InitDebugLog() {
+			if (theBridgeServer.IsLogInited()) {
+				return;
+			}
+			trdk_InitLog("C:/Jts/trdk.log");
+		}
+
+	}
+#else
+	namespace {
+
+		void InitDebugLog() {
+			//...//
+		}
+
+	}
+#endif
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 int32_t _stdcall trdk_DestroyAllBridges() {
 	try {
+		InitDebugLog();
 		theBridgeServer.DestoryAllBridge();
 		return 1;
 	} catch (const Exception &ex) {
@@ -84,6 +107,7 @@ double _stdcall trdk_GetImpliedVolatility(
 	Assert(right);
 	Assert(tradingClass);
 	try {
+		InitDebugLog();
 		const std::string exchangeStr(exchange);
 		auto result = theBridgeServer
 			.CheckBridge(bridgeId, exchangeStr)
@@ -96,6 +120,12 @@ double _stdcall trdk_GetImpliedVolatility(
 				tradingClass)
 			.GetLastImpliedVolatility();
 		result *= 100;
+		Log::Debug(
+			"trdk_GetImpliedVolatility result for \"%1% %2% %3%\": %4%.",
+			symbol,
+			strike,
+			right,
+			result);
 		return result;
 	} catch (const Exception &ex) {
 		Log::Error(

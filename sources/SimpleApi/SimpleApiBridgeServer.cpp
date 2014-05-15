@@ -49,8 +49,11 @@ public:
 
 	size_t m_clientId;
 
+	bool m_isLogInited;
+
 	Implementation()
-			: m_clientId(size_t(time(nullptr))) {
+			: m_clientId(size_t(time(nullptr))),
+			m_isLogInited(false) {
 		//...//
 	}
 
@@ -73,7 +76,12 @@ BridgeServer::~BridgeServer() {
 	delete m_pimpl;
 }
 
+bool BridgeServer::IsLogInited() const {
+	return m_pimpl->m_isLogInited;
+}
+
 void BridgeServer::InitLog(const fs::path &logFilePath) {
+	m_pimpl->m_isLogInited = true;
 	m_pimpl->m_eventLog.close();
 	fs::create_directories(logFilePath.branch_path());
 	m_pimpl->m_eventLog.open(
@@ -81,6 +89,10 @@ void BridgeServer::InitLog(const fs::path &logFilePath) {
 		std::ios::out | std::ios::ate | std::ios::app);
 	if (m_pimpl->m_eventLog) {
 		Log::EnableEvents(m_pimpl->m_eventLog);
+		Log::Info(
+			"Started:"
+				" Build: " TRDK_BUILD_IDENTITY "."
+				" Build time: " __TIME__ " " __DATE__ ".");
 	}
 }
 

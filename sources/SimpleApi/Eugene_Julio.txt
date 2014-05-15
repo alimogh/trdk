@@ -96,16 +96,12 @@
 
 //=================================
 
-// Inits logging for debug purposes.
+// Returns Implied Volatility from TWS.
+// Use test-suffix in DLL name for testing. In test version: creates log-file
+// "C:/Jts/trdk.log" and makes some additional debug checks that, doesn't
+// required in production.
 external:
-	"Trdk.dll",
-	int, {Returns non zero at success, zero at error.}
-	"trdk_InitLog",
-	string; {Path and file name for log. Ex.: "C:/TRDK/debug.log".}
-
-// Resolves Future Option at TWS side.
-external:
-	"Trdk.dll",
+	"Trdk_test.dll", {For production: "Trdk.dll", for tests: "Trdk_test.dll".}
 	double, {Returns actual Implied Volatility value or zero (0) at error.}
 	"GetImpliedVolatility",
 	string, {Symbol. Ex.: "EUR"}
@@ -166,14 +162,6 @@ var1  = ExpYear_Put_1  - 1900;
 var2  = ExpYear_Put_2  - 1900;
 var11 = ExpYear_Call_1 - 1900;
 var12 = ExpYear_Call_2 - 1900;
-
-
-// Uncomment it to create debug log:
-//if isLogInited = 0 then
-//begin
-//	trdk_InitLog("C:/TRDK/debug.log");
-//	isLogInited = 1;
-//end;
 
 
 IV_Put_1 = GetImpliedVolatility(GetSymbolName, "GLOBEX", "20140606",  1.365, "Put", "6E");

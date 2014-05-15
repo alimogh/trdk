@@ -59,6 +59,7 @@ namespace trdk { namespace SimpleApi {
 	public:
 
 		void InitLog(const boost::filesystem::path &);
+		bool IsLogInited() const;
 
 	private:
 
