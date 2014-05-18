@@ -452,6 +452,8 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 
 	// Custom branch
 
+	m_client->reqMarketDataType(2);
+
 	const SecurityRequest request(
 		security,
 		const_cast<Client *>(this)->TakeTickerId());
@@ -461,15 +463,17 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 	Verify(requests.insert(request).second);
 
 	std::list<IBString> genericTicklist;
-//	genericTicklist.push_back("106");
+	genericTicklist.push_back("106");
 
+	security.SetImpliedVolatility(-1);
 	m_client->reqMktData(
 		request.tickerId,
 		contract,
 		boost::join(genericTicklist, ","),
-		true);
+		false);
 		
 	// Custom branch
+
 	m_log.Debug(
 		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " "
 			" Option Implied Volatility subscription request for \"%1%\""
@@ -1293,9 +1297,9 @@ void Client::tickSize(
 }
 
 void Client::tickOptionComputation(
-			TickerId /*tickerId*/,
-			TickType /*tickType*/,
-			double /*impliedVol*/,
+			TickerId tickerId,
+			TickType tickType,
+			double impliedVol,
 			double /*delta*/,
 			double /*optPrice*/,
 			double /*pvDividend*/,
@@ -1303,7 +1307,19 @@ void Client::tickOptionComputation(
 			double /*vega*/,
 			double /*theta*/,
 			double /*undPrice*/) {
-	//...//
+	// custom branch
+	if (tickType != LAST_OPTION_COMPUTATION) {
+		return;
+	}
+	ib::Security *const security = GetMarketDataRequest(tickerId);
+	if (!security) {
+		return;
+	}
+	Log::Debug(
+		"Generic tick LAST_OPTION_COMPUTATION for \"%1%\": %2%.",
+		*security,
+		impliedVol);
+	security->SetImpliedVolatility(impliedVol);
 }
 
 void Client::tickGeneric(
