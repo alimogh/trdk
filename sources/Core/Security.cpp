@@ -367,7 +367,7 @@ const pt::ptime & Security::GetRequestedDataStartTime() const {
 	return m_pimpl->m_requestedDataStartTime;
 }
 
-double Security::GetLastImpliedVolatility() const {
+double Security::GetLastImpliedVolatility(bool wait /*= true*/) const {
 	if (m_pimpl->m_impliedVolatility >= 0) {
 		return m_pimpl->m_impliedVolatility;
 	}
@@ -375,13 +375,15 @@ double Security::GetLastImpliedVolatility() const {
 	for ( ; ; ) {
 		if (m_pimpl->m_impliedVolatility >= 0) {
 			return m_pimpl->m_impliedVolatility;
+		} else if (!wait) {
+			return 0;
 		}
 		if (m_pimpl->m_impliedVolatility < -1) {
 			m_pimpl->m_impliedVolatilityCondition.wait(lock);
 		} else {
 			m_pimpl->m_impliedVolatilityCondition.timed_wait(
 				lock,
-				pt::seconds(5));
+				pt::seconds(10));
 			if (m_pimpl->m_impliedVolatility < 0) {
 				Log::Error(
 					"Implied Volatility condition timeout for %1%.",

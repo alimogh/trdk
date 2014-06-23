@@ -463,7 +463,7 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 	Verify(requests.insert(request).second);
 
 	std::list<IBString> genericTicklist;
-	genericTicklist.push_back("106");
+	// genericTicklist.push_back("106");
 
 	security.SetImpliedVolatility(-1);
 	m_client->reqMktData(
@@ -1308,37 +1308,52 @@ void Client::tickOptionComputation(
 			double /*theta*/,
 			double /*undPrice*/) {
 	// custom branch
-	if (tickType != LAST_OPTION_COMPUTATION) {
-		return;
-	}
+
 	ib::Security *const security = GetMarketDataRequest(tickerId);
 	if (!security) {
 		return;
 	}
-	Log::Debug(
-		"Generic tick LAST_OPTION_COMPUTATION for \"%1%\": %2%.",
-		*security,
-		impliedVol);
+
+	if (	tickType != BID_OPTION_COMPUTATION
+			&& tickType != ASK_OPTION_COMPUTATION
+			&& tickType != LAST_OPTION_COMPUTATION) {
+		Log::Debug(
+			"Skipped tick %3% for \"%1%\": %2%.",
+			*security,
+			impliedVol,
+			tickType);
+		return;
+	}
+
+	if (Lib::IsEqual(impliedVol, DBL_MAX)) {
+		Log::Debug(
+			"Skipped tick %2% for \"%1%\": \"not computed\".",
+			*security,
+			tickType);
+		return;
+	}
+
+	const auto &iv = security->GetLastImpliedVolatility(false);
+	if (tickType == LAST_OPTION_COMPUTATION && !Lib::IsZero(iv)) {
+		Log::Debug(
+			"Skipped tick %3% for \"%1%\": %2% (IV: %4%).",
+			*security,
+			impliedVol,
+			tickType,
+			security->GetLastImpliedVolatility());
+		return;
+	}
+
+	Log::Debug("Tick %3% for \"%1%\": %2%.", *security, impliedVol, tickType);
 	security->SetImpliedVolatility(impliedVol);
+
 }
 
 void Client::tickGeneric(
-			TickerId tickerId,
-			TickType tickType,
-			double value) {
-	if (tickType != OPTION_IMPLIED_VOL) {
-		return;
-	}
-	// custom branch
-	ib::Security *const security = GetMarketDataRequest(tickerId);
-	if (!security) {
-		return;
-	}
-	Log::Debug(
-		"Generic tick OPTION_IMPLIED_VOL for \"%1%\": %2%.",
-		*security,
-		value);
-	security->SetImpliedVolatility(value);
+			TickerId /*tickerId*/,
+			TickType /*tickType*/,
+			double /*value*/) {
+	//...//
 }
 
 void Client::tickString(

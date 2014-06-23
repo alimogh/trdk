@@ -180,7 +180,7 @@ namespace trdk {
 
 	public:
 
-		double GetLastImpliedVolatility() const;
+		double GetLastImpliedVolatility(bool wait = true) const;
 
 		trdk::ScaledPrice GetLastPriceScaled() const;
 		double GetLastPrice() const;
