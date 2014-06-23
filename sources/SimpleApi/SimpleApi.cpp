@@ -105,7 +105,7 @@ double trdk_GetLastPrice(uint64_t securityId) {
 	try {
 		return theBridgeServer
 			.GetBridge(bridgeId)
-			.GetSecurity(reinterpret_cast<Bridge::SecurityId &>(securityId))
+			.GetSecurity(reinterpret_cast<Bridge::SecurityHandle &>(securityId))
 			.GetLastPrice();
 	} catch (const Exception &ex) {
 		Log::Error("Failed to get Last Price across Bridge: \"%1%\".", ex);

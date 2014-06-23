@@ -22,7 +22,7 @@ Bridge::Bridge(boost::shared_ptr<Context> context)
 	//...//
 }
 
-Bridge::SecurityId Bridge::ResolveFutOpt(
+Bridge::SecurityHandle Bridge::ResolveFutOpt(
 			const std::string &symbol,
 			const std::string &exchange,
 			const std::string &expirationDate,
@@ -37,14 +37,14 @@ Bridge::SecurityId Bridge::ResolveFutOpt(
  				strike,
 				Symbol::ParseRight(right),
  				exchange));
-	return SecurityId(&security);
+	return SecurityHandle(&security);
 }
 
-Security & Bridge::GetSecurity(const SecurityId &id) {
+Security & Bridge::GetSecurity(const SecurityHandle &id) {
 	return *reinterpret_cast<Security *>(id);
 }
 
-const Security & Bridge::GetSecurity(const SecurityId &id) const {
+const Security & Bridge::GetSecurity(const SecurityHandle &id) const {
 	return const_cast<Bridge *>(this)->GetSecurity(id);
 }
 

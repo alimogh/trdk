@@ -16,7 +16,7 @@ namespace trdk { namespace SimpleApi {
 
 	public:
 
-		typedef uintptr_t SecurityId;
+		typedef uintptr_t SecurityHandle;
 
 	public:
 
@@ -24,15 +24,15 @@ namespace trdk { namespace SimpleApi {
 
 	public:
 
-		SecurityId ResolveFutOpt(
+		SecurityHandle ResolveFutOpt(
 					const std::string &symbol,
 					const std::string &exchange,
 					const std::string &expirationDate,
 					double strike,
 					const std::string &right)
 				const;
-		Security & GetSecurity(const SecurityId &);
-		const Security & GetSecurity(const SecurityId &) const;
+		Security & GetSecurity(const SecurityHandle &);
+		const Security & GetSecurity(const SecurityHandle &) const;
 
 		double GetCashBalance() const;
 
