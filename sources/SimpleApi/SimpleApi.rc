@@ -42,7 +42,7 @@ BEGIN
             VALUE "FileVersion", TRDK_VERSION_FULL
             VALUE "InternalName", TRDK_VERSION_BRANCH ".SimpleApi"
             VALUE "LegalCopyright", TRDK_COPYRIGHT
-			VALUE "OriginalFilename", TRDK_MQLAPI_DLL_FILE_NAME
+			VALUE "OriginalFilename", TRDK_SIMPLEAPI_DLL_FILE_NAME
             VALUE "ProductName", TRDK_NAME
             VALUE "ProductVersion", TRDK_VERSION_FULL
         END
