@@ -15,21 +15,21 @@
 //
 //	Some information you may need to code your dll:
 //
-// All expiration dates for the series defined below: 20140606
+// All expiration dates for the series defined below: 20140905
 //
 // ***** The four options used are described here:
 
 // Product 		EUR
 // Security Type 	FOP
-// Underlying 	6EM4 JUN 16 '14 FUT
-// Contract Month 	JUN14
-// Expiration 	JUN 06 '14 14:00 CST
+// Underlying 	6EU4 SEP 15 '14 FUT
+// Contract Month 	SEP14
+// Expiration 	SEP 05 '14 14:00 CST
 // Strike 		1.365
 // Right 		Put
 // Currency 		USD
 // Multiplier 	125000
 // Exchange 		GLOBEX
-// Symbol 		6EM4 P1365
+// Symbol 		6EU4 P1365
 // Trading 		Class 6E
 // Product Type 	Foreign Exchange
 // Settlement Method Physical Delivery
@@ -37,15 +37,15 @@
 
 // Product		EUR
 // Security Type	FOP
-// Underlying		6EM4 JUN 16 '14 FUT
-// Contract Month	JUN14
-// Expiration		JUN 06 '14 14:00 CST
+// Underlying		6EU4 SEP 15 '14 FUT
+// Contract Month	SEP14
+// Expiration		SEP 05 '14 14:00 CST
 // Strike		1.37
 // Right		Put
 // Currency		USD
 // Multiplier		125000
 // Exchange		GLOBEX
-// Symbol		6EM4 P1370
+// Symbol		6EU4 P1370
 // Trading Class	6E
 // Product Type	Foreign Exchange
 // Settlement Method	Physical Delivery
@@ -53,15 +53,15 @@
 
 // Product		EUR
 // Security Type	FOP
-// Underlying		6EM4 JUN 16 '14 FUT
-// Contract Month	JUN14
-// Expiration		JUN 06 '14 14:00 CST
+// Underlying		6EU4 SEP 15 '14 FUT
+// Contract Month	SEP14
+// Expiration		SEP 05 '14 14:00 CST
 // Strike		1.37
 // Right		Call
 // Currency		USD
 // Multiplier		125000
 // Exchange		GLOBEX
-// Symbol		6EM4 C1370
+// Symbol		6EU4 C1370
 // Trading Class	6E
 // Product Type	Foreign Exchange
 // Settlement Method	Physical Delivery
@@ -69,15 +69,15 @@
 
 // Product		EUR
 // Security Type	FOP
-// Underlying		6EM4 JUN 16 '14 FUT
-// Contract Month	JUN14
-// Expiration		JUN 06 '14 14:00 CST
+// Underlying		6EU4 SEP 15 '14 FUT
+// Contract Month	SEP14
+// Expiration		SEP 05 '14 14:00 CST
 // Strike		1.375
 // Right		Call
 // Currency		USD
 // Multiplier		125000
 // Exchange		GLOBEX
-// Symbol		6EM4 C1375
+// Symbol		6EU4 C1375
 // Trading Class	6E
 // Product Type	Foreign Exchange
 // Settlement Method	Physical Delivery
@@ -89,10 +89,10 @@
 // (data got when I exported a page inside TWS with these options)
 //=================================
 
-//	DES,EUR,FOP,GLOBEX,201406,1.365,Put,125000,
-//	DES,EUR,FOP,GLOBEX,201406,1.37,Put,125000,
-//	DES,EUR,FOP,GLOBEX,201406,1.37,Call,125000,
-//	DES,EUR,FOP,GLOBEX,201406,1.375,Call,125000,
+//	DES,EUR,FOP,GLOBEX,201409,1.365,Put,125000,
+//	DES,EUR,FOP,GLOBEX,201409,1.37,Put,125000,
+//	DES,EUR,FOP,GLOBEX,201409,1.37,Call,125000,
+//	DES,EUR,FOP,GLOBEX,201409,1.375,Call,125000,
 
 //=================================
 
@@ -101,12 +101,12 @@
 // "C:/Jts/trdk.log" and makes some additional debug checks that, doesn't
 // required in production.
 external:
-	"Trdk_test.dll", {For production: "Trdk.dll", for tests: "Trdk_test.dll".}
+	"Trdk.dll", {For production: "Trdk.dll", for tests: "Trdk_test.dll".}
 	double, {Returns actual Implied Volatility value or zero (0) at error.}
 	"GetImpliedVolatility",
 	string, {Symbol. Ex.: "EUR"}
 	string, {Exchange. Ex.: "GLOBEX"}
-	string, {Expiration data. Ex.: "20140606" for Jun 06 2014}
+	string, {Expiration data. Ex.: "20140905" for Sep 05 2014}
 	double, {Strike. Ex.: 1.365}
 	string, {Right. Can be "Put" or "Call"}
 	string {Trading class. Ex.: "6E".};
@@ -128,14 +128,14 @@ Str_Call_2 ( 1.375 ), 	{The strikes do change overtime, so they will be kept her
 
 
 // Expiration month and year for the followed Options
-ExpMonth_Put_1 ( 06 ), 
+ExpMonth_Put_1 ( 09 ), 
 ExpYear_Put_1  ( 2014 ), 
-ExpMonth_Put_2 ( 06 ), 
+ExpMonth_Put_2 ( 09 ), 
 ExpYear_Put_2  ( 2014 ), 
 
-ExpMonth_Call_1  ( 06 ), 
+ExpMonth_Call_1  ( 09 ), 
 ExpYear_Call_1   ( 2014 ), 
-ExpMonth_Call_2  ( 06 ), 
+ExpMonth_Call_2  ( 09 ), 
 ExpYear_Call_2   ( 2014 ), 
 
 
@@ -164,26 +164,13 @@ var11 = ExpYear_Call_1 - 1900;
 var12 = ExpYear_Call_2 - 1900;
 
 
-IV_Put_1 = GetImpliedVolatility(GetSymbolName, "GLOBEX", "20140606",  1.365, "Put", "6E");
-IV_Put_2 = GetImpliedVolatility(GetSymbolName, "GLOBEX", "20140606",  1.37,  "Put", "6E");
-IV_Call_1 = GetImpliedVolatility(GetSymbolName, "GLOBEX", "20140606", 1.37, "Call", "6E");
-IV_Call_2 = GetImpliedVolatility(GetSymbolName, "GLOBEX", "20140606", 1.375, "Call", "6E");
+IV_Put_1 = GetImpliedVolatility(GetSymbolName, "GLOBEX", "20140905",  1.365, "Put", "6E");
+IV_Put_2 = GetImpliedVolatility(GetSymbolName, "GLOBEX", "20140905",  1.37,  "Put", "6E");
+IV_Call_1 = GetImpliedVolatility(GetSymbolName, "GLOBEX", "20140905", 1.37, "Call", "6E");
+IV_Call_2 = GetImpliedVolatility(GetSymbolName, "GLOBEX", "20140905", 1.375, "Call", "6E");
 
-// Plots the Puts' Delta
-Plot1( 
-	Pos_Put_1 * @Delta( DaysToExpiration( ExpMonth_Put_1,  var1 )-14, Str_Put_1, Close, Rate_for_all, IV_Put_1, Put_for_all )+
-	Pos_Put_2 * @Delta( DaysToExpiration( ExpMonth_Put_2,  var2 )-14, Str_Put_2, Close, Rate_for_all, IV_Put_2, Put_for_all ),
-	"Delta_Puts", red, default, 1);
+Plot1(IV_Put_1, "IV_Put1", red, default, 1);
+Plot2(IV_Put_2, "IV_Put2", darkred, default, 1);
+Plot3(IV_Call_1, "IV_Call1", green, default, 1);
+Plot4(IV_Call_2, "IV_Call1", darkgreen, default, 1);
 
-// Plots the Calls' Delta
-Plot2(
-	Pos_Call_1 * @Delta( DaysToExpiration( ExpMonth_Call_1, var11 )-14, Str_Call_1, Close, Rate_for_all, IV_Call_1, Call_for_all )+
-	Pos_Call_2 * @Delta( DaysToExpiration( ExpMonth_Call_2, var12 )-14, Str_Call_2, Close, Rate_for_all, IV_Call_2, Call_for_all ),
-	"Delta_Calls", darkgreen, default, 1);
-
-Plot3(0, "ZeroLine", yellow,  default, 1);
-
-Plot4(IV_Put_1, "IV_Put1", green, default, 1);
-Plot5(IV_Put_2, "IV_Put2", green, default, 1);
-Plot6(IV_Call_1, "IV_Call1", green, default, 1);
-Plot7(IV_Call_2, "IV_Call1", green, default, 1);
