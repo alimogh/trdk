@@ -133,6 +133,8 @@ external:
 	string, {Right. Can be "Put" or "Call"}
 	string {Trading class. Ex.: "6E".};
 
+external: "Trdk.dll", void, "SetImpliedVolatilityUpdatePeriod", unsigned int;
+
 inputs: 
 Pos_Put_1  (4),	{Positive or negative position in the first PUT}
 Pos_Put_2  (7),	{Positive or negative position in the second PUT}

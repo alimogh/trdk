@@ -239,6 +239,22 @@ double _stdcall trdk_GetImpliedVolatilityBid(
 	}
 	return 0;
 }
+
+void _stdcall trdk_SetImpliedVolatilityUpdatePeriod(unsigned int updatePeriod) {
+	AssertLt(0, updatePeriod);
+	try {
+		InitDebugLog();
+		trdk::Security::SetImpliedVolatilityUpdatePeriodSec(updatePeriod);
+		Log::Debug("trdk_SetImpliedVolatilityUpdatePeriod %1%.", updatePeriod);
+	} catch (const Exception &ex) {
+		Log::Error(
+			"Failed to Set Implied Volatility Update Period %1%: \"%2%\".",
+			updatePeriod,
+			ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+}
                 
 double _stdcall GetImpliedVolatilityLast(
 			const char *symbol,
@@ -286,6 +302,10 @@ double _stdcall GetImpliedVolatilityBid(
 		strike,
 		right,
 		tradingClass);
+}
+
+void SetImpliedVolatilityUpdatePeriod(unsigned int updatePeriod) {
+	trdk_SetImpliedVolatilityUpdatePeriod(updatePeriod);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

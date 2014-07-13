@@ -47,6 +47,8 @@ namespace {
 		val = std::numeric_limits<T>::max();
 	}
 
+	volatile size_t impliedVolatilityUpdatePeriod(30);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -87,41 +89,54 @@ public:
 	public:
 
 		ImpliedVolatility()
-				: m_value(-2.0) {
+				: m_actualValue(-2.0),
+				m_lastValue(.0) {
 			//...//
 		}
 
 	public:
 	
 		void Set(double newValue) {
-			const boost::mutex::scoped_lock lock(m_initMutex);
+			const boost::mutex::scoped_lock lock(m_mutex);
 			AssertLe(-1, newValue);
-			if (newValue >= 0 || m_value < 0) {
-				Interlocking::Exchange(m_value, newValue);
+			if (newValue >= 0 || m_actualValue < 0) {
+				m_actualValue = newValue;
+			}
+			if (newValue >= 0) {
+				m_lastValue = newValue;
+			}
+			m_condition.notify_all();
+		}
+
+		void SetActual() {
+			const boost::mutex::scoped_lock lock(m_mutex);
+			if (m_actualValue >= 0 && m_lastValue > 0) {
+				m_actualValue = m_lastValue;
 			}
 			m_condition.notify_all();
 		}
 
 		double Get(bool wait) const {
+
+			boost::mutex::scoped_lock lock(m_mutex);
 			
-			if (m_value >= 0) {
-				return m_value;
+			if (m_actualValue >= 0) {
+				return m_actualValue;
 			}
 			
-			boost::mutex::scoped_lock lock(m_initMutex);
 			for ( ; ; ) {
-				if (m_value >= 0) {
-					return m_value;
+				if (m_actualValue >= 0) {
+					return m_actualValue;
 				} else if (!wait) {
 					return 0;
 				}
-				if (m_value < -1) {
+				if (m_actualValue < -1) {
 					m_condition.wait(lock);
 				} else {
 					m_condition.timed_wait(lock, pt::seconds(10));
-					if (m_value < 0) {
+					if (m_actualValue < 0) {
 						Log::Error("Implied Volatility condition timeout.");
-						Interlocking::Exchange(m_value, 0);
+						Interlocking::Exchange(m_actualValue, 0);
 					}
 				}
 			}
@@ -130,8 +145,9 @@ public:
 	
 	private:
 
-		mutable volatile double m_value;
-		mutable boost::mutex m_initMutex;
+		mutable double m_actualValue;
+		mutable double m_lastValue;
+		mutable boost::mutex m_mutex;
 		mutable boost::condition_variable m_condition;
 	
 	};
@@ -139,6 +155,22 @@ public:
 	ImpliedVolatility m_impliedVolatilityLast;
 	ImpliedVolatility m_impliedVolatilityAsk;
 	ImpliedVolatility m_impliedVolatilityBid;
+
+	mutable boost::mutex m_ivTimeMutex;
+	pt::ptime m_ivLastTime;
+
+	void CheckIv() {
+		const auto &now = pt::second_clock::universal_time();
+		const boost::mutex::scoped_lock lock(m_ivTimeMutex);
+		if (	m_ivLastTime.is_not_a_date_time()
+				|| m_ivLastTime + pt::seconds(long(impliedVolatilityUpdatePeriod))
+						<= now) {
+			m_impliedVolatilityLast.SetActual();
+			m_impliedVolatilityAsk.SetActual();
+			m_impliedVolatilityBid.SetActual();
+			m_ivLastTime = now;
+		}
+	}
 
 public:
 
@@ -421,6 +453,7 @@ const pt::ptime & Security::GetRequestedDataStartTime() const {
 }
 
 double Security::GetLastImpliedVolatility(bool wait /*= true*/) const {
+	m_pimpl->CheckIv();
 	return m_pimpl->m_impliedVolatilityLast.Get(wait);
 }
 
@@ -429,6 +462,7 @@ void Security::SetLastImpliedVolatility(double value) {
 }
 
 double Security::GetAskImpliedVolatility(bool wait /*= true*/) const {
+	m_pimpl->CheckIv();
 	return m_pimpl->m_impliedVolatilityAsk.Get(wait);
 }
 
@@ -437,6 +471,7 @@ void Security::SetAskImpliedVolatility(double value) {
 }
 
 double Security::GetBidImpliedVolatility(bool wait /*= true*/) const {
+	m_pimpl->CheckIv();
 	return m_pimpl->m_impliedVolatilityBid.Get(wait);
 }
 
@@ -673,6 +708,10 @@ void Security::SetBrokerPosition(trdk::Qty qty, bool isInitial) {
 		return;
 	}
 	m_pimpl->m_brokerPositionUpdateSignal(qty, isInitial);
+}
+
+void Security::SetImpliedVolatilityUpdatePeriodSec(size_t seconds) {
+	Lib::Interlocking::Exchange(impliedVolatilityUpdatePeriod, seconds);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

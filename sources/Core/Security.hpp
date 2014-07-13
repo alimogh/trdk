@@ -131,6 +131,8 @@ namespace trdk {
 		double DescalePrice(trdk::ScaledPrice price) const;
 		double DescalePrice(double price) const;
 
+		static void SetImpliedVolatilityUpdatePeriodSec(size_t);
+
 	public:
 
 		boost::posix_time::ptime GetLastMarketDataTime() const;
