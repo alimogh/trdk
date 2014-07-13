@@ -240,7 +240,7 @@ double _stdcall trdk_GetImpliedVolatilityBid(
 	return 0;
 }
 
-void _stdcall trdk_SetImpliedVolatilityUpdatePeriod(unsigned int updatePeriod) {
+void _stdcall trdk_SetImpliedVolatilityUpdatePeriod(int updatePeriod) {
 	AssertLt(0, updatePeriod);
 	try {
 		InitDebugLog();
@@ -304,7 +304,7 @@ double _stdcall GetImpliedVolatilityBid(
 		tradingClass);
 }
 
-void SetImpliedVolatilityUpdatePeriod(unsigned int updatePeriod) {
+void SetImpliedVolatilityUpdatePeriod(int updatePeriod) {
 	trdk_SetImpliedVolatilityUpdatePeriod(updatePeriod);
 }
 
