@@ -93,7 +93,7 @@ int32_t _stdcall trdk_DestroyAllBridges() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-double _stdcall trdk_GetImpliedVolatility(
+double _stdcall trdk_GetImpliedVolatilityLast(
 			const char *symbol,
 			const char *exchange,
 			const char *expirationDate,
@@ -121,7 +121,7 @@ double _stdcall trdk_GetImpliedVolatility(
 			.GetLastImpliedVolatility();
 		result *= 100;
 		Log::Debug(
-			"trdk_GetImpliedVolatility result for \"%1% %2% %3%\": %4%.",
+			"trdk_GetImpliedVolatilityLast result for \"%1% %2% %3%\": %4%.",
 			symbol,
 			strike,
 			right,
@@ -129,7 +129,105 @@ double _stdcall trdk_GetImpliedVolatility(
 		return result;
 	} catch (const Exception &ex) {
 		Log::Error(
-			"Failed to get Implied Volatility for FOP Symbol"
+			"Failed to get Implied Volatility Last for FOP Symbol"
+				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
+			symbol,
+			exchange,
+			expirationDate,
+			strike,
+			ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+	return 0;
+}
+
+double _stdcall trdk_GetImpliedVolatilityAsk(
+			const char *symbol,
+			const char *exchange,
+			const char *expirationDate,
+			double strike,
+			const char *right,
+			const char *tradingClass) {
+	Assert(symbol);
+	Assert(exchange);
+	Assert(expirationDate);
+	AssertLt(.0, strike);
+	Assert(right);
+	Assert(tradingClass);
+	try {
+		InitDebugLog();
+		const std::string exchangeStr(exchange);
+		auto result = theBridgeServer
+			.CheckBridge(bridgeId, exchangeStr)
+			.ResolveFutOpt(
+				symbol,
+				exchangeStr,
+				expirationDate,
+				strike,
+				right,
+				tradingClass)
+			.GetAskImpliedVolatility();
+		result *= 100;
+		Log::Debug(
+			"trdk_GetImpliedVolatilityAsk result for \"%1% %2% %3%\": %4%.",
+			symbol,
+			strike,
+			right,
+			result);
+		return result;
+	} catch (const Exception &ex) {
+		Log::Error(
+			"Failed to get Implied Volatility Ask for FOP Symbol"
+				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
+			symbol,
+			exchange,
+			expirationDate,
+			strike,
+			ex);
+	} catch (...) {
+		AssertFailNoException();
+	}
+	return 0;
+}
+
+double _stdcall trdk_GetImpliedVolatilityBid(
+			const char *symbol,
+			const char *exchange,
+			const char *expirationDate,
+			double strike,
+			const char *right,
+			const char *tradingClass) {
+	Assert(symbol);
+	Assert(exchange);
+	Assert(expirationDate);
+	AssertLt(.0, strike);
+	Assert(right);
+	Assert(tradingClass);
+	try {
+		InitDebugLog();
+		const std::string exchangeStr(exchange);
+		auto result = theBridgeServer
+			.CheckBridge(bridgeId, exchangeStr)
+			.ResolveFutOpt(
+				symbol,
+				exchangeStr,
+				expirationDate,
+				strike,
+				right,
+				tradingClass)
+			.GetBidImpliedVolatility();
+		result *= 100;
+		Log::Debug(
+			"trdk_GetImpliedVolatilityBid result for \"%1% %2% %3%\": %4%.",
+			symbol,
+			strike,
+			right,
+			result);
+		return result;
+	} catch (const Exception &ex) {
+		Log::Error(
+			"Failed to get Implied Volatility Bid for FOP Symbol"
 				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
 			symbol,
 			exchange,
@@ -142,14 +240,46 @@ double _stdcall trdk_GetImpliedVolatility(
 	return 0;
 }
                 
-double _stdcall GetImpliedVolatility(
+double _stdcall GetImpliedVolatilityLast(
 			const char *symbol,
 			const char *exchange,
 			const char *expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
-	return trdk_GetImpliedVolatility(
+	return trdk_GetImpliedVolatilityLast(
+		symbol,
+		exchange,
+		expirationDate,
+		strike,
+		right,
+		tradingClass);
+}
+
+double _stdcall GetImpliedVolatilityAsk(
+			const char *symbol,
+			const char *exchange,
+			const char *expirationDate,
+			double strike,
+			const char *right,
+			const char *tradingClass) {
+	return trdk_GetImpliedVolatilityAsk(
+		symbol,
+		exchange,
+		expirationDate,
+		strike,
+		right,
+		tradingClass);
+}
+
+double _stdcall GetImpliedVolatilityBid(
+			const char *symbol,
+			const char *exchange,
+			const char *expirationDate,
+			double strike,
+			const char *right,
+			const char *tradingClass) {
+	return trdk_GetImpliedVolatilityBid(
 		symbol,
 		exchange,
 		expirationDate,

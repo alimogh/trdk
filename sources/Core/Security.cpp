@@ -82,17 +82,70 @@ public:
 
 	pt::ptime m_requestedDataStartTime;
 
-	volatile double m_impliedVolatility;
-	boost::mutex m_impliedVolatilityInitMutex;
-	boost::condition_variable m_impliedVolatilityCondition;
+	class ImpliedVolatility : private boost::noncopyable {
+
+	public:
+
+		ImpliedVolatility()
+				: m_value(-2.0) {
+			//...//
+		}
+
+	public:
+	
+		void Set(double newValue) {
+			const boost::mutex::scoped_lock lock(m_initMutex);
+			AssertLe(-1, newValue);
+			if (newValue >= 0 || m_value < 0) {
+				Interlocking::Exchange(m_value, newValue);
+			}
+			m_condition.notify_all();
+		}
+
+		double Get(bool wait) const {
+			
+			if (m_value >= 0) {
+				return m_value;
+			}
+			
+			boost::mutex::scoped_lock lock(m_initMutex);
+			for ( ; ; ) {
+				if (m_value >= 0) {
+					return m_value;
+				} else if (!wait) {
+					return 0;
+				}
+				if (m_value < -1) {
+					m_condition.wait(lock);
+				} else {
+					m_condition.timed_wait(lock, pt::seconds(10));
+					if (m_value < 0) {
+						Log::Error("Implied Volatility condition timeout.");
+						Interlocking::Exchange(m_value, 0);
+					}
+				}
+			}
+		
+		}
+	
+	private:
+
+		mutable volatile double m_value;
+		mutable boost::mutex m_initMutex;
+		mutable boost::condition_variable m_condition;
+	
+	};
+
+	ImpliedVolatility m_impliedVolatilityLast;
+	ImpliedVolatility m_impliedVolatilityAsk;
+	ImpliedVolatility m_impliedVolatilityBid;
 
 public:
 
 	Implementation()
 			: m_brokerPosition(0),
 			m_marketDataTime(0),
-			m_isLevel1Started(false),
-			m_impliedVolatility(-2.0) {
+			m_isLevel1Started(false) {
 		foreach (auto &item, m_level1) {
 			Unset(item);
 		}
@@ -368,39 +421,27 @@ const pt::ptime & Security::GetRequestedDataStartTime() const {
 }
 
 double Security::GetLastImpliedVolatility(bool wait /*= true*/) const {
-	if (m_pimpl->m_impliedVolatility >= 0) {
-		return m_pimpl->m_impliedVolatility;
-	}
-	boost::mutex::scoped_lock lock(m_pimpl->m_impliedVolatilityInitMutex);
-	for ( ; ; ) {
-		if (m_pimpl->m_impliedVolatility >= 0) {
-			return m_pimpl->m_impliedVolatility;
-		} else if (!wait) {
-			return 0;
-		}
-		if (m_pimpl->m_impliedVolatility < -1) {
-			m_pimpl->m_impliedVolatilityCondition.wait(lock);
-		} else {
-			m_pimpl->m_impliedVolatilityCondition.timed_wait(
-				lock,
-				pt::seconds(10));
-			if (m_pimpl->m_impliedVolatility < 0) {
-				Log::Error(
-					"Implied Volatility condition timeout for %1%.",
-					*this);
-				Interlocking::Exchange(m_pimpl->m_impliedVolatility, 0);
-			}
-		}
-	}
+	return m_pimpl->m_impliedVolatilityLast.Get(wait);
 }
 
-void Security::SetImpliedVolatility(double value) {
-	const boost::mutex::scoped_lock lock(m_pimpl->m_impliedVolatilityInitMutex);
-	AssertLe(-1, value);
-	if (value >= 0 || m_pimpl->m_impliedVolatility < 0) {
-		Interlocking::Exchange(m_pimpl->m_impliedVolatility, value);
-	}
-	m_pimpl->m_impliedVolatilityCondition.notify_all();
+void Security::SetLastImpliedVolatility(double value) {
+	m_pimpl->m_impliedVolatilityLast.Set(value);
+}
+
+double Security::GetAskImpliedVolatility(bool wait /*= true*/) const {
+	return m_pimpl->m_impliedVolatilityAsk.Get(wait);
+}
+
+void Security::SetAskImpliedVolatility(double value) {
+	m_pimpl->m_impliedVolatilityAsk.Set(value);
+}
+
+double Security::GetBidImpliedVolatility(bool wait /*= true*/) const {
+	return m_pimpl->m_impliedVolatilityBid.Get(wait);
+}
+
+void Security::SetBidImpliedVolatility(double value) {
+	m_pimpl->m_impliedVolatilityBid.Set(value);
 }
 
 double Security::GetLastPrice() const {

@@ -73,8 +73,20 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 			Base::SetBrokerPosition(qty, isInitial);
 		}
 
-		void SetImpliedVolatility(double value) {
-			Base::SetImpliedVolatility(value);
+		void SetAllImpliedVolatility(double value) {
+			Base::SetLastImpliedVolatility(value);
+			Base::SetBidImpliedVolatility(value);
+			Base::SetAskImpliedVolatility(value);
+		}
+
+		void SetLastImpliedVolatility(double value) {
+			Base::SetLastImpliedVolatility(value);
+		}
+		void SetBidImpliedVolatility(double value) {
+			Base::SetBidImpliedVolatility(value);
+		}
+		void SetAskImpliedVolatility(double value) {
+			Base::SetAskImpliedVolatility(value);
 		}
 
 	private:

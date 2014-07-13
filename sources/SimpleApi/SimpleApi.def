@@ -6,7 +6,12 @@ EXPORTS
 	
 	trdk_DestroyAllBridges
 
-	trdk_GetImpliedVolatility
-	GetImpliedVolatility
+	trdk_GetImpliedVolatilityLast
+	trdk_GetImpliedVolatilityBid
+	trdk_GetImpliedVolatilityAsk
+	
+	GetImpliedVolatilityLast
+	GetImpliedVolatilityAsk
+	GetImpliedVolatilityBid
 
 	CreateTradeSystem

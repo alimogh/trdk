@@ -181,6 +181,8 @@ namespace trdk {
 	public:
 
 		double GetLastImpliedVolatility(bool wait = true) const;
+		double GetAskImpliedVolatility(bool wait = true) const;
+		double GetBidImpliedVolatility(bool wait = true) const;
 
 		trdk::ScaledPrice GetLastPriceScaled() const;
 		double GetLastPrice() const;
@@ -296,7 +298,9 @@ namespace trdk {
 		void SetBrokerPosition(trdk::Qty qty, bool isInitial);
 
 		// Custom brunch
-		void SetImpliedVolatility(double);
+		void SetLastImpliedVolatility(double);
+		void SetBidImpliedVolatility(double);
+		void SetAskImpliedVolatility(double);
 
 	private:
 

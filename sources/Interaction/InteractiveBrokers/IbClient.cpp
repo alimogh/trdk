@@ -465,7 +465,7 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 	std::list<IBString> genericTicklist;
 	// genericTicklist.push_back("106");
 
-	security.SetImpliedVolatility(-1);
+	security.SetAllImpliedVolatility(-1);
 	m_client->reqMktData(
 		request.tickerId,
 		contract,
@@ -1314,38 +1314,40 @@ void Client::tickOptionComputation(
 		return;
 	}
 
-	if (	tickType != BID_OPTION_COMPUTATION
-			&& tickType != ASK_OPTION_COMPUTATION
-			&& tickType != LAST_OPTION_COMPUTATION) {
-		Log::Debug(
-			"Skipped tick %3% for \"%1%\": %2%.",
-			*security,
-			impliedVol,
-			tickType);
-		return;
-	}
-
 	if (Lib::IsEqual(impliedVol, DBL_MAX)) {
-		Log::Debug(
-			"Skipped tick %2% for \"%1%\": \"not computed\".",
-			*security,
-			tickType);
+		switch (tickType) {
+			case BID_OPTION_COMPUTATION:
+			case ASK_OPTION_COMPUTATION:
+			case LAST_OPTION_COMPUTATION:
+				Log::Debug(
+				"Skipped tick %2% for \"%1%\": \"not computed\".",
+					*security,
+					tickType);
+		}
 		return;
 	}
 
-	const auto &iv = security->GetLastImpliedVolatility(false);
-	if (tickType == LAST_OPTION_COMPUTATION && !Lib::IsZero(iv)) {
-		Log::Debug(
-			"Skipped tick %3% for \"%1%\": %2% (IV: %4%).",
-			*security,
-			impliedVol,
-			tickType,
-			security->GetLastImpliedVolatility());
-		return;
+	switch (tickType) {
+		case BID_OPTION_COMPUTATION:
+			Log::Debug("Tick BID %3% for \"%1%\": %2%.", *security, impliedVol, tickType);
+			security->SetBidImpliedVolatility(impliedVol);
+			break;
+		case ASK_OPTION_COMPUTATION:
+			Log::Debug("Tick ASK %3% for \"%1%\": %2%.", *security, impliedVol, tickType);
+			security->SetAskImpliedVolatility(impliedVol);
+			break;
+		case LAST_OPTION_COMPUTATION:
+			Log::Debug("Tick LAST %3% for \"%1%\": %2%.", *security, impliedVol, tickType);
+			security->SetLastImpliedVolatility(impliedVol);
+			break;
+		default:
+			Log::Debug(
+				"Skipped tick %3% for \"%1%\": %2%.",
+				*security,
+				impliedVol,
+				tickType);
+			return;
 	}
-
-	Log::Debug("Tick %3% for \"%1%\": %2%.", *security, impliedVol, tickType);
-	security->SetImpliedVolatility(impliedVol);
 
 }
 
@@ -1747,7 +1749,7 @@ void Client::tickSnapshotEnd(int reqId) {
 	if (!security) {
 		return;
 	}
-	security->SetImpliedVolatility(-1);
+	security->SetAllImpliedVolatility(-1);
 	m_marketDataRequests.get<ByTicker>().erase(reqId);
 	const SecurityRequest request(
 		*security,
