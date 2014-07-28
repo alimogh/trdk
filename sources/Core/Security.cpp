@@ -184,7 +184,7 @@ public:
 	}
 
 	unsigned int GetPriceScale() const throw() {
-		return 100;
+		return 100000;
 	}
 
 	ScaledPrice ScalePrice(double price) const {

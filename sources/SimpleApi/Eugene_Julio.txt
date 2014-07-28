@@ -133,7 +133,69 @@ external:
 	string, {Right. Can be "Put" or "Call"}
 	string {Trading class. Ex.: "6E".};
 
-external: "Trdk.dll", void, "SetImpliedVolatilityUpdatePeriod", int;
+external: "Trdk.dll", void, "SetImpliedVolatilityUpdatePeriod", dword;
+
+external:
+	"Trdk.dll",
+	int,
+	"GetFopLastTradeQty",
+	string, {Symbol. Ex.: "EUR"}
+	string, {Exchange. Ex.: "GLOBEX"}
+	string, {Expiration data. Ex.: "20140905" for Sep 05 2014}
+	double, {Strike. Ex.: 1.365}
+	string, {Right. Can be "Put" or "Call"}
+	string {Trading class. Ex.: "6E".};
+
+external:
+	"Trdk.dll",
+	double,
+	"GetFopLastTradePrice",
+	string, {Symbol. Ex.: "EUR"}
+	string, {Exchange. Ex.: "GLOBEX"}
+	string, {Expiration data. Ex.: "20140905" for Sep 05 2014}
+	double, {Strike. Ex.: 1.365}
+	string, {Right. Can be "Put" or "Call"}
+	string {Trading class. Ex.: "6E".};
+external:
+	"Trdk.dll",
+	int,
+	"GetFopLastBidQty", 
+	string, {Symbol. Ex.: "EUR"}
+	string, {Exchange. Ex.: "GLOBEX"}
+	string, {Expiration data. Ex.: "20140905" for Sep 05 2014}
+	double, {Strike. Ex.: 1.365}
+	string, {Right. Can be "Put" or "Call"}
+	string {Trading class. Ex.: "6E".};
+external:
+	"Trdk.dll",
+	double,
+	"GetFopLastBidPrice", 
+	string, {Symbol. Ex.: "EUR"}
+	string, {Exchange. Ex.: "GLOBEX"}
+	string, {Expiration data. Ex.: "20140905" for Sep 05 2014}
+	double, {Strike. Ex.: 1.365}
+	string, {Right. Can be "Put" or "Call"}
+	string {Trading class. Ex.: "6E".};
+external:
+	"Trdk.dll",
+	int,
+	"GetFopLastAskQty", 
+	string, {Symbol. Ex.: "EUR"}
+	string, {Exchange. Ex.: "GLOBEX"}
+	string, {Expiration data. Ex.: "20140905" for Sep 05 2014}
+	double, {Strike. Ex.: 1.365}
+	string, {Right. Can be "Put" or "Call"}
+	string {Trading class. Ex.: "6E".};
+external:
+	"Trdk.dll",
+	double,
+	"GetFopLastAskPrice", 
+	string, {Symbol. Ex.: "EUR"}
+	string, {Exchange. Ex.: "GLOBEX"}
+	string, {Expiration data. Ex.: "20140905" for Sep 05 2014}
+	double, {Strike. Ex.: 1.365}
+	string, {Right. Can be "Put" or "Call"}
+	string {Trading class. Ex.: "6E".};
 
 inputs: 
 Pos_Put_1  (4),	{Positive or negative position in the first PUT}

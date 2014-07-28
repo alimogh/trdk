@@ -9,10 +9,24 @@ EXPORTS
 	trdk_GetImpliedVolatilityLast
 	trdk_GetImpliedVolatilityBid
 	trdk_GetImpliedVolatilityAsk
+
+	trdk_GetFopLastQty
+	trdk_GetFopLastPrice
+	trdk_GetFopBidQty
+	trdk_GetFopBidPrice
+	trdk_GetFopAskQty
+	trdk_GetFopAskPrice
 	
 	GetImpliedVolatilityLast
 	GetImpliedVolatilityAsk
 	GetImpliedVolatilityBid
+
+	GetFopLastTradeQty
+	GetFopLastTradePrice
+	GetFopLastBidQty
+	GetFopLastBidPrice
+	GetFopLastAskQty
+	GetFopLastAskPrice
 
 	SetImpliedVolatilityUpdatePeriod
 

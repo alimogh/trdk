@@ -452,8 +452,6 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 
 	// Custom branch
 
-	m_client->reqMarketDataType(2);
-
 	const SecurityRequest request(
 		security,
 		const_cast<Client *>(this)->TakeTickerId());
@@ -463,7 +461,7 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 	Verify(requests.insert(request).second);
 
 	std::list<IBString> genericTicklist;
-	// genericTicklist.push_back("106");
+	genericTicklist.push_back("233");
 
 	security.SetAllImpliedVolatility(-1);
 	m_client->reqMktData(
@@ -476,7 +474,7 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 
 	m_log.Debug(
 		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " "
-			" Option Implied Volatility subscription request for \"%1%\""
+			" Market Data subscription request for \"%1%\""
 			" (ticker ID: %2%).",
 		boost::make_tuple(
 			boost::cref(*request.security),
@@ -1246,6 +1244,8 @@ void Client::tickPrice(
 	switch (field) {
 		default:
 			return;
+		case OPEN:
+		case CLOSE:
 		case LAST:
 			valueCtor = Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>;
 			break;
@@ -1278,6 +1278,8 @@ void Client::tickSize(
 		case VOLUME:
 			valueCtor = Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>;
 			break;
+		case OPEN:
+		case CLOSE:
 		case LAST_SIZE:
 			valueCtor = Level1TickValue::Create<LEVEL1_TICK_LAST_QTY>;
 			break;
