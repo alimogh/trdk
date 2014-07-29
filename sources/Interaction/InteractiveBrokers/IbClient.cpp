@@ -1240,30 +1240,65 @@ void Client::tickPrice(
 			TickType field,
 			double price,
 			int /*canAutoExecute*/) {
-	if (price < 0) {
-		return;
-	}
-	Level1TickValue (*valueCtor)(ScaledPrice);
-	switch (field) {
-		default:
-			return;
-		case OPEN:
-		case CLOSE:
-		case LAST:
-			valueCtor = Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>;
-			break;
-		case BID:
-			valueCtor = Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>;
-			break;
-		case ASK:
-			valueCtor = Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>;
-			break;
-	}
 	const auto now = boost::get_system_time();
 	ib::Security *const security = GetMarketDataRequest(tickerId);
 	if (!security) {
 		return;
 	}
+	if (price < 0) {
+		Log::Debug(
+			"Skip Tick Price %1% %2%: %3%.",
+			field,
+			*security,
+			price);
+		return;
+	}
+	Level1TickValue (*valueCtor)(ScaledPrice);
+	const char *tickName = "";
+	switch (field) {
+		default:
+			return;
+		case OPEN:
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>;
+			tickName = "OPEN";
+			if (!Lib::IsZero(security->GetLastPriceScaled())) {
+				Log::Debug(
+					"Skip Tick Price OPEN %1%: %2%.",
+					*security,
+					price);
+				return;
+			}
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>;
+			break;
+		case CLOSE:
+			tickName = "CLOSE";
+			if (!Lib::IsZero(security->GetLastPriceScaled())) {
+				Log::Debug(
+					"Skip Tick Price CLOSE %1%: %2%.",
+					*security,
+					price);		
+				return;		
+			}
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>;
+			break;
+		case LAST:
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>;
+			tickName = "LAST";
+			break;
+		case BID:
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>;
+			tickName = "BID";
+			break;
+		case ASK:
+			valueCtor = Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>;
+			tickName = "ASK";
+			break;
+	}
+	Log::Debug(
+		"Tick Price %1% %2%: %3%.",
+		tickName,
+		*security,
+		price);
 	security->AddLevel1Tick(now, valueCtor(security->ScalePrice(price)));
 }
 
@@ -1320,37 +1355,37 @@ void Client::tickOptionComputation(
 	}
 
 	if (Lib::IsEqual(impliedVol, DBL_MAX)) {
-		switch (tickType) {
-			case BID_OPTION_COMPUTATION:
-			case ASK_OPTION_COMPUTATION:
-			case LAST_OPTION_COMPUTATION:
-				Log::Debug(
-				"Skipped tick %2% for \"%1%\": \"not computed\".",
-					*security,
-					tickType);
-		}
+//		switch (tickType) {
+//			case BID_OPTION_COMPUTATION:
+//			case ASK_OPTION_COMPUTATION:
+//			case LAST_OPTION_COMPUTATION:
+// 				Log::Debug(
+// 				"Skipped tick %2% for \"%1%\": \"not computed\".",
+// 					*security,
+// 					tickType);
+//		}
 		return;
 	}
 
 	switch (tickType) {
 		case BID_OPTION_COMPUTATION:
-			Log::Debug("Tick BID %3% for \"%1%\": %2%.", *security, impliedVol, tickType);
+			Log::Debug("Tick IV BID %3% for \"%1%\": %2%.", *security, impliedVol, tickType);
 			security->SetBidImpliedVolatility(impliedVol);
 			break;
 		case ASK_OPTION_COMPUTATION:
-			Log::Debug("Tick ASK %3% for \"%1%\": %2%.", *security, impliedVol, tickType);
+			Log::Debug("Tick IV ASK %3% for \"%1%\": %2%.", *security, impliedVol, tickType);
 			security->SetAskImpliedVolatility(impliedVol);
 			break;
 		case LAST_OPTION_COMPUTATION:
-			Log::Debug("Tick LAST %3% for \"%1%\": %2%.", *security, impliedVol, tickType);
+			Log::Debug("Tick IV LAST %3% for \"%1%\": %2%.", *security, impliedVol, tickType);
 			security->SetLastImpliedVolatility(impliedVol);
 			break;
 		default:
-			Log::Debug(
-				"Skipped tick %3% for \"%1%\": %2%.",
-				*security,
-				impliedVol,
-				tickType);
+// 			Log::Debug(
+// 				"Skipped tick %3% for \"%1%\": %2%.",
+// 				*security,
+// 				impliedVol,
+// 				tickType);
 			return;
 	}
 
