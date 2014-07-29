@@ -1240,6 +1240,9 @@ void Client::tickPrice(
 			TickType field,
 			double price,
 			int /*canAutoExecute*/) {
+	if (price < 0) {
+		return;
+	}
 	Level1TickValue (*valueCtor)(ScaledPrice);
 	switch (field) {
 		default:
