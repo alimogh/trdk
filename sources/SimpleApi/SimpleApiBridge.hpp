@@ -23,7 +23,7 @@ namespace trdk { namespace SimpleApi {
 		Security & ResolveFutOpt(
 					const std::string &symbol,
 					const std::string &exchange,
-					const std::string &expirationDate,
+					double expirationDate,
 					double strike,
 					const std::string &right,
 					const std::string &tradingClass)

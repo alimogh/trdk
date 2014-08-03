@@ -96,13 +96,13 @@ int32_t _stdcall trdk_DestroyAllBridges() {
 double _stdcall trdk_GetImpliedVolatilityLast(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
 	Assert(symbol);
 	Assert(exchange);
-	Assert(expirationDate);
+	AssertLt(.0, expirationDate);
 	AssertLt(.0, strike);
 	Assert(right);
 	Assert(tradingClass);
@@ -145,13 +145,13 @@ double _stdcall trdk_GetImpliedVolatilityLast(
 double _stdcall trdk_GetImpliedVolatilityAsk(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
 	Assert(symbol);
 	Assert(exchange);
-	Assert(expirationDate);
+	AssertLt(.0, expirationDate);
 	AssertLt(.0, strike);
 	Assert(right);
 	Assert(tradingClass);
@@ -194,13 +194,13 @@ double _stdcall trdk_GetImpliedVolatilityAsk(
 double _stdcall trdk_GetImpliedVolatilityBid(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
 	Assert(symbol);
 	Assert(exchange);
-	Assert(expirationDate);
+	AssertLt(.0, expirationDate);
 	AssertLt(.0, strike);
 	Assert(right);
 	Assert(tradingClass);
@@ -243,13 +243,13 @@ double _stdcall trdk_GetImpliedVolatilityBid(
 int _stdcall trdk_GetFopLastQty(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
 	Assert(symbol);
 	Assert(exchange);
-	Assert(expirationDate);
+	AssertLt(.0, expirationDate);
 	AssertLt(.0, strike);
 	Assert(right);
 	Assert(tradingClass);
@@ -291,13 +291,13 @@ int _stdcall trdk_GetFopLastQty(
 double _stdcall trdk_GetFopLastPrice(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
 	Assert(symbol);
 	Assert(exchange);
-	Assert(expirationDate);
+	AssertLt(.0, expirationDate);
 	AssertLt(.0, strike);
 	Assert(right);
 	Assert(tradingClass);
@@ -339,13 +339,13 @@ double _stdcall trdk_GetFopLastPrice(
 int _stdcall trdk_GetFopBidQty(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
 	Assert(symbol);
 	Assert(exchange);
-	Assert(expirationDate);
+	AssertLt(.0, expirationDate);
 	AssertLt(.0, strike);
 	Assert(right);
 	Assert(tradingClass);
@@ -387,13 +387,13 @@ int _stdcall trdk_GetFopBidQty(
 double _stdcall trdk_GetFopBidPrice(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
 	Assert(symbol);
 	Assert(exchange);
-	Assert(expirationDate);
+	AssertLt(.0, expirationDate);
 	AssertLt(.0, strike);
 	Assert(right);
 	Assert(tradingClass);
@@ -435,13 +435,13 @@ double _stdcall trdk_GetFopBidPrice(
 int _stdcall trdk_GetFopAskQty(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
 	Assert(symbol);
 	Assert(exchange);
-	Assert(expirationDate);
+	AssertLt(.0, expirationDate);
 	AssertLt(.0, strike);
 	Assert(right);
 	Assert(tradingClass);
@@ -483,13 +483,13 @@ int _stdcall trdk_GetFopAskQty(
 double _stdcall trdk_GetFopAskPrice(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
 	Assert(symbol);
 	Assert(exchange);
-	Assert(expirationDate);
+	AssertLt(.0, expirationDate);
 	AssertLt(.0, strike);
 	Assert(right);
 	Assert(tradingClass);
@@ -547,7 +547,7 @@ void _stdcall trdk_SetImpliedVolatilityUpdatePeriod(int updatePeriod) {
 double _stdcall GetImpliedVolatilityLast(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
@@ -563,7 +563,7 @@ double _stdcall GetImpliedVolatilityLast(
 double _stdcall GetImpliedVolatilityAsk(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
@@ -579,7 +579,7 @@ double _stdcall GetImpliedVolatilityAsk(
 double _stdcall GetImpliedVolatilityBid(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
@@ -595,7 +595,7 @@ double _stdcall GetImpliedVolatilityBid(
 int GetFopLastTradeQty(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
@@ -611,7 +611,7 @@ int GetFopLastTradeQty(
 double GetFopLastTradePrice(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
@@ -627,7 +627,7 @@ double GetFopLastTradePrice(
 int GetFopLastBidQty(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
@@ -643,7 +643,7 @@ int GetFopLastBidQty(
 double GetFopLastBidPrice(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
@@ -659,7 +659,7 @@ double GetFopLastBidPrice(
 int GetFopLastAskQty(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {
@@ -675,7 +675,7 @@ int GetFopLastAskQty(
 double GetFopLastAskPrice(
 			const char *symbol,
 			const char *exchange,
-			const char *expirationDate,
+			double expirationDate,
 			double strike,
 			const char *right,
 			const char *tradingClass) {

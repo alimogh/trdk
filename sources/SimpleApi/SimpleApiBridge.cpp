@@ -30,14 +30,14 @@ Bridge::Bridge(boost::shared_ptr<Engine::Context> context)
 Security & Bridge::ResolveFutOpt(
 			const std::string &symbolStr,
 			const std::string &exchange,
-			const std::string &expirationDate,
+			double expirationDate,
 			double strike,
 			const std::string &right,
 			const std::string &tradingClass)
 		const {
 	const Symbol &symbol = Symbol::ParseCashFutureOption(
  		boost::erase_all_copy(symbolStr, ":"), // TRDK-reserver delimiter
- 		expirationDate,
+		boost::lexical_cast<std::string>(size_t(expirationDate)),
  		strike,
 		Symbol::ParseRight(right),
 		tradingClass,
