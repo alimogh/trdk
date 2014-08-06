@@ -88,9 +88,15 @@ public:
 
 	public:
 
-		ImpliedVolatility()
-				: m_actualValue(-2.0),
-				m_lastValue(.0) {
+		ImpliedVolatility(
+					boost::mutex &mutex,
+					boost::condition_variable &condition,
+					volatile long &isAnotherSet)
+				: m_mutex(mutex),
+				m_condition(condition),
+				m_actualValue(-2.0),
+				m_lastValue(.0),
+				m_isAnotherSet(isAnotherSet) {
 			//...//
 		}
 
@@ -101,6 +107,9 @@ public:
 			AssertLe(-1, newValue);
 			if (newValue >= 0 || m_actualValue < 0) {
 				m_actualValue = newValue;
+				if (m_actualValue >= 0) {
+					Interlocking::Exchange(m_isAnotherSet, true);
+				}
 			}
 			if (newValue >= 0) {
 				m_lastValue = newValue;
@@ -112,6 +121,9 @@ public:
 			const boost::mutex::scoped_lock lock(m_mutex);
 			if (m_actualValue >= 0 && m_lastValue > 0) {
 				m_actualValue = m_lastValue;
+				if (m_actualValue >= 0) {
+					Interlocking::Exchange(m_isAnotherSet, true);
+				}
 			}
 			m_condition.notify_all();
 		}
@@ -133,10 +145,17 @@ public:
 				if (m_actualValue < -1) {
 					m_condition.wait(lock);
 				} else {
-					m_condition.timed_wait(lock, pt::seconds(10));
+					const bool isAnotherWasSet = m_isAnotherSet ? true : false;
+					const long timeToWait = !isAnotherWasSet ? 10 : 2;
+					m_condition.timed_wait(lock, pt::seconds(timeToWait));
 					if (m_actualValue < 0) {
-						Log::Error("Implied Volatility condition timeout.");
-						Interlocking::Exchange(m_actualValue, 0);
+						if (!m_isAnotherSet || isAnotherWasSet) {
+							Log::Error("Implied Volatility condition timeout.");
+							Interlocking::Exchange(m_actualValue, 0);
+						} else {
+							Log::Info(
+								"Implied Volatility condition fast wait...");
+						}
 					}
 				}
 			}
@@ -147,11 +166,15 @@ public:
 
 		mutable double m_actualValue;
 		mutable double m_lastValue;
-		mutable boost::mutex m_mutex;
-		mutable boost::condition_variable m_condition;
+		mutable boost::mutex &m_mutex;
+		mutable boost::condition_variable &m_condition;
+		volatile long &m_isAnotherSet;
 	
 	};
 
+	boost::mutex m_impliedVolatilityMutex;
+	boost::condition_variable m_impliedVolatilityCondition;
+	volatile long m_isAnotherImpliedVolatilitySet;
 	ImpliedVolatility m_impliedVolatilityLast;
 	ImpliedVolatility m_impliedVolatilityAsk;
 	ImpliedVolatility m_impliedVolatilityBid;
@@ -177,7 +200,20 @@ public:
 	Implementation()
 			: m_brokerPosition(0),
 			m_marketDataTime(0),
-			m_isLevel1Started(false) {
+			m_isLevel1Started(false),
+			m_isAnotherImpliedVolatilitySet(false),
+			m_impliedVolatilityLast(
+				m_impliedVolatilityMutex,
+				m_impliedVolatilityCondition,
+				m_isAnotherImpliedVolatilitySet),
+			m_impliedVolatilityAsk(
+				m_impliedVolatilityMutex,
+				m_impliedVolatilityCondition,
+				m_isAnotherImpliedVolatilitySet),
+			m_impliedVolatilityBid(
+				m_impliedVolatilityMutex,
+				m_impliedVolatilityCondition,
+				m_isAnotherImpliedVolatilitySet) {
 		foreach (auto &item, m_level1) {
 			Unset(item);
 		}
