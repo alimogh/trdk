@@ -121,8 +121,9 @@ double _stdcall trdk_GetImpliedVolatilityLast(
 			.GetLastImpliedVolatility();
 		result *= 100;
 		Log::Debug(
-			"trdk_GetImpliedVolatilityLast result for \"%1% %2% %3%\": %4%.",
+			"trdk_GetImpliedVolatilityLast result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
+			expirationDate,
 			strike,
 			right,
 			result);
@@ -170,8 +171,9 @@ double _stdcall trdk_GetImpliedVolatilityAsk(
 			.GetAskImpliedVolatility();
 		result *= 100;
 		Log::Debug(
-			"trdk_GetImpliedVolatilityAsk result for \"%1% %2% %3%\": %4%.",
+			"trdk_GetImpliedVolatilityAsk result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
+			expirationDate,
 			strike,
 			right,
 			result);
@@ -219,8 +221,9 @@ double _stdcall trdk_GetImpliedVolatilityBid(
 			.GetBidImpliedVolatility();
 		result *= 100;
 		Log::Debug(
-			"trdk_GetImpliedVolatilityBid result for \"%1% %2% %3%\": %4%.",
+			"trdk_GetImpliedVolatilityBid result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
+			expirationDate,
 			strike,
 			right,
 			result);
@@ -267,8 +270,9 @@ int _stdcall trdk_GetFopLastQty(
 				tradingClass)
 			.GetLastQty();
 		Log::Debug(
-			"trdk_GetFopLastQty result for \"%1% %2% %3%\": %4%.",
+			"trdk_GetFopLastQty result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
+			expirationDate,
 			strike,
 			right,
 			result);
@@ -315,8 +319,9 @@ double _stdcall trdk_GetFopLastPrice(
 				tradingClass)
 			.GetLastPrice();
 		Log::Debug(
-			"trdk_GetFopLastPrice result for \"%1% %2% %3%\": %4%.",
+			"trdk_GetFopLastPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
+			expirationDate,
 			strike,
 			right,
 			result);
@@ -363,8 +368,9 @@ int _stdcall trdk_GetFopBidQty(
 				tradingClass)
 			.GetBidQty();
 		Log::Debug(
-			"trdk_GetFopBidQty result for \"%1% %2% %3%\": %4%.",
+			"trdk_GetFopBidQty result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
+			expirationDate,
 			strike,
 			right,
 			result);
@@ -411,8 +417,9 @@ double _stdcall trdk_GetFopBidPrice(
 				tradingClass)
 			.GetBidPrice();
 		Log::Debug(
-			"trdk_GetFopBidPrice result for \"%1% %2% %3%\": %4%.",
+			"trdk_GetFopBidPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
+			expirationDate,
 			strike,
 			right,
 			result);
@@ -459,8 +466,9 @@ int _stdcall trdk_GetFopAskQty(
 				tradingClass)
 			.GetAskQty();
 		Log::Debug(
-			"trdk_GetFopAskQty result for \"%1% %2% %3%\": %4%.",
+			"trdk_GetFopAskQty result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
+			expirationDate,
 			strike,
 			right,
 			result);
@@ -507,8 +515,9 @@ double _stdcall trdk_GetFopAskPrice(
 				tradingClass)
 			.GetAskPrice();
 		Log::Debug(
-			"trdk_GetFopAskPrice result for \"%1% %2% %3%\": %4%.",
+			"trdk_GetFopAskPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
+			expirationDate,
 			strike,
 			right,
 			result);
