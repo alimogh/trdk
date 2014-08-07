@@ -131,7 +131,8 @@ namespace trdk { namespace Lib {
 		double m_strike;
 		Right m_right;
 
-		volatile Hash m_hash;
+		//! todo see TRDK-143:
+		Hash m_hash;
 
 	};
 
@@ -153,12 +154,12 @@ namespace stdext {
 
 }
 
-namespace boost {
+namespace trdk { namespace Lib {
 
 	inline size_t hash_value(const trdk::Lib::Symbol &symbol) {
 		return stdext::hash_value(symbol);
-    };
+	};
 
-}
+} }
 
 ////////////////////////////////////////////////////////////////////////////////

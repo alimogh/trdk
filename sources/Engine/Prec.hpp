@@ -34,7 +34,6 @@
 
 #include "Core/Fwd.hpp"
 
-#include <hash_map>
 #include <bitset>
 
 #include "Common/Assert.hpp"

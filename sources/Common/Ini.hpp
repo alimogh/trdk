@@ -144,15 +144,7 @@ namespace trdk { namespace Lib {
 				throw KeyFormatError(message.str().c_str());
 			}
 		}
-
-		template<>
-		bool ReadTypedKey(
-					const std::string &section,
-					const std::string &key)
-				const {
-			return ReadBoolKey(section, key);
-		}
-
+		
 		template<typename T>
 		T ReadTypedKey(
 					const std::string &section,
@@ -169,15 +161,6 @@ namespace trdk { namespace Lib {
 			} catch (const KeyNotExistsError &) {
 				return defaultValue;
 			}
-		}
-
-		template<>
-		bool ReadTypedKey(
-					const std::string &section,
-					const std::string &key,
-					const bool &defaultValue)
-				const {
-			return ReadBoolKey(section, key, defaultValue);
 		}
 
 		boost::filesystem::path ReadFileSystemPath(
@@ -231,6 +214,23 @@ namespace trdk { namespace Lib {
 		void Reset();
 
 	};
+	
+	template<>
+	inline bool Ini::ReadTypedKey(
+				const std::string &section,
+				const std::string &key)
+			const {
+		return ReadBoolKey(section, key);
+	}
+
+	template<>
+	inline bool Ini::ReadTypedKey(
+				const std::string &section,
+				const std::string &key,
+				const bool &defaultValue)
+			const {
+		return ReadBoolKey(section, key, defaultValue);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 

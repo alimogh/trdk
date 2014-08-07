@@ -29,3 +29,7 @@
 /sources/*.opensdf
 /sources/*.sdf
 *.aps
+/sources/EngineServer/build/
+/sources/EngineServer/dist/
+/sources/Strategies/Test/build/
+/sources/Strategies/Test/dist/

@@ -84,7 +84,7 @@ private:
 		}
 	private:
 		const Subscriber &m_subscriberToFind;
-		mutable Path &m_path;
+		Path &m_path;
 		const bool m_isMyPath;
 	};
 

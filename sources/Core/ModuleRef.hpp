@@ -24,7 +24,7 @@ namespace trdk {
 		}
 	public:
 		bool operator ==(const ModuleReferenceWrapper &rhs) const {
-			return get_pointer() == rhs.get_pointer();
+			return this->get_pointer() == rhs.get_pointer();
 		}
 	};
 

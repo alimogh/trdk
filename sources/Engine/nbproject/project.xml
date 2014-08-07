@@ -6,14 +6,13 @@
             <name>Engine</name>
             <c-extensions/>
             <cpp-extensions>cpp</cpp-extensions>
-            <header-extensions>hpp</header-extensions>
+            <header-extensions>h,hpp</header-extensions>
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects>
-                <make-dep-project>../Interaction/Lightspeed</make-dep-project>
                 <make-dep-project>../Gateway/Service</make-dep-project>
                 <make-dep-project>../Common</make-dep-project>
                 <make-dep-project>../PyApi</make-dep-project>
-                <make-dep-project>../Interaction/Enyx</make-dep-project>
+                <make-dep-project>../Strategies/Test</make-dep-project>
                 <make-dep-project>../Core</make-dep-project>
                 <make-dep-project>../Interaction/Fake</make-dep-project>
             </make-dep-projects>
@@ -21,13 +20,16 @@
             <confList>
                 <confElem>
                     <name>Debug</name>
-                    <type>1</type>
+                    <type>2</type>
                 </confElem>
                 <confElem>
                     <name>Release</name>
-                    <type>1</type>
+                    <type>2</type>
                 </confElem>
             </confList>
+            <formatting>
+                <project-formatting-style>false</project-formatting-style>
+            </formatting>
         </data>
     </configuration>
 </project>

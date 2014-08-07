@@ -258,7 +258,7 @@ namespace trdk { namespace Lib {
 
 		operator bool() const {
 			Assert(m_objFormDll || !m_dll);
-			return m_objFormDll;
+			return m_objFormDll ? true : false;
 		}
 
 		operator ValueType &() {

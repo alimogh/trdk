@@ -154,7 +154,7 @@ void Module::SecurityList::ConstIterator::advance(difference_type n) {
 //////////////////////////////////////////////////////////////////////////
 
 namespace {
-	volatile Module::InstanceId nextFreeInstanceId = 1;
+	boost::atomic<Module::InstanceId> nextFreeInstanceId(1);
 }
 
 class Module::Implementation : private boost::noncopyable {
@@ -178,12 +178,12 @@ public:
 				const std::string &typeName,
 				const std::string &name,
 				const std::string &tag)
-			: m_instanceId(Interlocking::Increment(nextFreeInstanceId)),
+			: m_instanceId(nextFreeInstanceId++),
 			m_context(context),
 			m_typeName(typeName),
 			m_name(name),
 			m_tag(tag) {
-		//...//
+		Assert(nextFreeInstanceId.is_lock_free());
 	}
 
 };

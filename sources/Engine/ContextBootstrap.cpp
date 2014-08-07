@@ -756,21 +756,9 @@ private:
 				ModuleDll<Module> &module) {
 		typedef ModuleTrait<Module> Trait;
 		static_assert(
-			Trait::Type != MODULE_TYPE_SERVICE,
+			int(Trait::Type) != int(MODULE_TYPE_SERVICE),
 			"Wrong CreateStandaloneModuleInstance method choose.");
 		CreateModuleInstance(tag, module);
-	}
-
-	template<>
-	void CreateStandaloneModuleInstance(
-				const std::string &tag,
-				ModuleDll<Service> &) {
-		typedef ModuleTrait<Service> Trait;
-		m_context.GetLog().Debug(
-			"%1% \"%2%\" instantiation delayed.",
-			boost::make_tuple(
-				boost::cref(Trait::GetName(true)),
-				boost::cref(tag)));
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -1155,7 +1143,7 @@ private:
 				std::map<std::string /*tag*/, ModuleDll<Module>> &modules) {
 
 		typedef ModuleTrait<Module> Trait;
-		AssertEq(Trait::Type, requirements.subscriberType);
+		AssertEq(int(Trait::Type), int(requirements.subscriberType));
 
 		const auto &modulePos = modules.find(requirements.subscriberTag);
 		Assert(modulePos != modules.end());
@@ -1256,7 +1244,7 @@ private:
 				std::map<std::string /*tag*/, ModuleDll<Module>> &modules) {
 
 		typedef ModuleTrait<Module> Trait;
-		AssertEq(Trait::Type, requirements.subscriberType);
+		AssertEq(int(Trait::Type), int(requirements.subscriberType));
 
 		const auto &modulePos = modules.find(requirements.subscriberTag);
 		Assert(modulePos != modules.end());
@@ -1440,7 +1428,7 @@ private:
 
 		typedef ModuleTrait<Module> Trait;
 		static_assert(
-			Trait::Type != MODULE_TYPE_OBSERVER,
+			int(Trait::Type) != int(MODULE_TYPE_OBSERVER),
 			"Wrong GetSymbolInstances method choose.");
 
 		std::set<Symbol> result;
@@ -1496,14 +1484,6 @@ private:
 
 	}
 
-	template<>
-	std::set<Symbol> GetSymbolInstances(
-				const ModuleTrait<Observer> &,
-				const std::string &,
-				const IniSectionRef &) {
-		return std::set<Symbol>();
-	}
-
 	////////////////////////////////////////////////////////////////////////////////
 
 	template<typename Module>
@@ -1513,6 +1493,7 @@ private:
 			const {
 
 		typedef ModuleTrait<Module> Trait;
+		typedef typename Trait::Factory Factory;
 
 		ModuleDll<Module> result = {};
 		result.conf.reset(new IniSectionRef(conf));
@@ -1545,6 +1526,8 @@ private:
 
 		result.dll.reset(
 			new Dll(modulePath, conf.ReadBoolKey(Keys::Dbg::autoName, true)));
+		//! @todo Workaround for g++ 4.8.2 for Ubuntu:
+		Dll &dll = *result.dll;
 
 		const bool isFactoreNameKeyExist
 			= result.conf->IsKeyExist(Keys::factory);
@@ -1552,15 +1535,13 @@ private:
 			?	result.conf->ReadKey(Keys::factory)
 			:	Trait::GetDefaultFactory(tag);
 		try {
-			result.factory
-				= result.dll->GetFunction<Trait::Factory>(factoryName);
+			result.factory = dll.GetFunction<Factory>(factoryName);
 		} catch (const Dll::DllFuncException &) {
 			const std::string unifiedName
 				= DefaultValues::Factories::factoryNameStart
 					+ Trait::GetName(true);
 			if (!isFactoreNameKeyExist) {
-				result.factory = result.dll->GetFunction<Trait::Factory>(
-					unifiedName);
+				result.factory = dll.GetFunction<Factory>(unifiedName);
 			} else {
 				if (
 						boost::istarts_with(
@@ -1576,12 +1557,11 @@ private:
 				}
 				try {
 					result.factory
-						= result.dll->GetFunction<Trait::Factory>(appendedName);
+						= dll.GetFunction<Factory>(appendedName);
 				} catch (const Dll::DllFuncException &) {
 					try {
 						result.factory
-							= result.dll->GetFunction<Trait::Factory>(
-								unifiedName);
+							= dll.GetFunction<Factory>(unifiedName);
 					} catch (const Dll::DllFuncException &) {
 						//...//
 					}
@@ -1616,6 +1596,27 @@ private:
 	const Lib::Ini &m_conf;
 
 };
+
+template<>
+void ContextStateBootstrapper::CreateStandaloneModuleInstance(
+			const std::string &tag,
+			ModuleDll<Service> &) {
+	typedef ModuleTrait<Service> Trait;
+	m_context.GetLog().Debug(
+		"%1% \"%2%\" instantiation delayed.",
+		boost::make_tuple(
+			boost::cref(Trait::GetName(true)),
+			boost::cref(tag)));
+}
+
+
+template<>
+std::set<Symbol> ContextStateBootstrapper::GetSymbolInstances(
+			const ModuleTrait<Observer> &,
+			const std::string &,
+			const IniSectionRef &) {
+	return std::set<Symbol>();
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

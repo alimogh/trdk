@@ -14,14 +14,14 @@ GREP=grep
 NM=nm
 CCADMIN=CCadmin
 RANLIB=ranlib
-CC=gcc-4.7.1
-CCC=g++-4.7.1
-CXX=g++-4.7.1
+CC=gcc
+CCC=g++
+CXX=g++
 FC=gfortran
 AS=as
 
 # Macros
-CND_PLATFORM=GNU_4.7.1-Linux-x86
+CND_PLATFORM=GNU-Linux-x86
 CND_DLIB_EXT=so
 CND_CONF=Release
 CND_DISTDIR=dist
@@ -35,9 +35,9 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/TradeSystem.o \
 	${OBJECTDIR}/Api.o \
-	${OBJECTDIR}/LiveMarketDataSource.o
+	${OBJECTDIR}/FakeMarketDataSource.o \
+	${OBJECTDIR}/FakeTradeSystem.o
 
 
 # C Compiler Flags
@@ -54,34 +54,34 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib -Wl,-rpath,../../Core/dist/Release/GNU_4.7.1-Linux-x86 -L../../Core/dist/Release/GNU_4.7.1-Linux-x86 -lCore ../../Common/dist/Release/GNU_4.7.1-Linux-x86/libcommon.a
+LDLIBSOPTIONS=-Wl,-rpath,../../Core/dist/Release/GNU-Linux-x86 -L../../Core/dist/Release/GNU-Linux-x86 -lCore ../../Common/dist/Release/GNU-Linux-x86/libcommon.a
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
 	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake.${CND_DLIB_EXT}
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake.${CND_DLIB_EXT}: ../../Core/dist/Release/GNU_4.7.1-Linux-x86/libCore.so
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake.${CND_DLIB_EXT}: ../../Core/dist/Release/GNU-Linux-x86/libCore.so
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake.${CND_DLIB_EXT}: ../../Common/dist/Release/GNU_4.7.1-Linux-x86/libcommon.a
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake.${CND_DLIB_EXT}: ../../Common/dist/Release/GNU-Linux-x86/libcommon.a
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -shared -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
-
-${OBJECTDIR}/TradeSystem.o: TradeSystem.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_INTERACTION_FAKE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/TradeSystem.o TradeSystem.cpp
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
 
 ${OBJECTDIR}/Api.o: Api.cpp 
 	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_INTERACTION_FAKE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Api.o Api.cpp
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_INTERACTION_FAKE -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Api.o Api.cpp
 
-${OBJECTDIR}/LiveMarketDataSource.o: LiveMarketDataSource.cpp 
+${OBJECTDIR}/FakeMarketDataSource.o: FakeMarketDataSource.cpp 
 	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_INTERACTION_FAKE -I../.. -I/usr/local/boost/boost_1_51/include -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/LiveMarketDataSource.o LiveMarketDataSource.cpp
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_INTERACTION_FAKE -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FakeMarketDataSource.o FakeMarketDataSource.cpp
+
+${OBJECTDIR}/FakeTradeSystem.o: FakeTradeSystem.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_INTERACTION_FAKE -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FakeTradeSystem.o FakeTradeSystem.cpp
 
 # Subprojects
 .build-subprojects:

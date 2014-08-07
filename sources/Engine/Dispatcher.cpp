@@ -13,7 +13,6 @@
 #include "Context.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/Observer.hpp"
-#include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
 

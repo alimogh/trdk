@@ -52,9 +52,10 @@ public:
 
 	Implementation(Context::Log &log)
 			: m_log(log),
+			m_id(0),
 			m_isStarted(0),
 			m_currentOrders(&m_orders1) {
-		Interlocking::Exchange(m_id, 0);
+		//...//
 	}
 
 	~Implementation() {
@@ -76,7 +77,7 @@ public:
 	}
 
 	OrderId TakeOrderId() {
-		return Interlocking::Increment(m_id);
+		return m_id++;
 	}
 
 	void Start() {
@@ -169,7 +170,7 @@ private:
 
 	Context::Log &m_log;
 
-	volatile long m_id;
+	boost::atomic_uintmax_t m_id;
 	bool m_isStarted;
 
 	Mutex m_mutex;

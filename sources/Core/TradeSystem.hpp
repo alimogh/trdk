@@ -174,7 +174,7 @@ namespace trdk {
 		  *						returns false. Must be very fast as call can be
 		  *						at lock.
 		  */
-		virtual void TradeSystem::ForEachBrokerPostion(
+		virtual void ForEachBrokerPostion(
 				const std::string &account,
 				const boost::function<bool (const Position &)> &predicate)
 			const;

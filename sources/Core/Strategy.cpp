@@ -166,11 +166,11 @@ void Strategy::PositionList::Iterator::advance(difference_type n) {
 	std::advance(m_pimpl->iterator, n);
 }
 
-Strategy::PositionList::ConstIterator::ConstIterator(Implementation *pimpl)
+Strategy::PositionList::ConstIterator::ConstIterator(Implementation *pimpl) throw()
 		: m_pimpl(pimpl) {
 	Assert(m_pimpl);
 }
-Strategy::PositionList::ConstIterator::ConstIterator(const Iterator &rhs)
+Strategy::PositionList::ConstIterator::ConstIterator(const Iterator &rhs) throw()
 		: m_pimpl(new Implementation(rhs.m_pimpl->iterator)) {
 	//...//
 }
@@ -281,7 +281,7 @@ public:
 
 	Strategy &m_strategy;
 	
-	volatile long m_isBlocked;
+	boost::atomic_bool m_isBlocked;
 	
 	PositionList m_positions;
 	PositionReporter *m_positionReporter;
@@ -441,7 +441,7 @@ bool Strategy::IsBlocked() const {
 }
 
 void Strategy::Block() throw() {
-	Interlocking::Exchange(m_pimpl->m_isBlocked, true);
+	m_pimpl->m_isBlocked = true;
 	GetLog().Error("Blocked.");
 }
 
