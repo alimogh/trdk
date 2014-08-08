@@ -629,9 +629,7 @@ private:
 
 		m_context.GetLog().Debug(
 			"Found %1% section \"%2%\"...",
-			boost::make_tuple(
-				boost::cref(Trait::GetName(false)),
-				boost::cref(conf)));
+			boost::make_tuple(Trait::GetName(false), boost::cref(conf)));
 
 		static_assert(
 			numberOfSystemServices == 5,
@@ -652,9 +650,7 @@ private:
 		if (modules.find(tag) != modules.end()) {
 			m_context.GetLog().Error(
 				"Tag name \"%1%\" for %2% isn't unique.",
-				boost::make_tuple(
-					boost::cref(tag),
-					boost::cref(Trait::GetName(false))));
+				boost::make_tuple(boost::cref(tag), Trait::GetName(false)));
 			throw Exception("Tag name isn't unique");
 		}
 
@@ -1459,7 +1455,7 @@ private:
 			"Loading symbol instances from %1% for %2% \"%3%\"...",
 			boost::make_tuple(
 				boost::cref(symbolsFilePath),
-				boost::cref(Trait::GetName(false)),
+				Trait::GetName(false),
 				boost::cref(tag)));
 		const IniFile symbolsIni(symbolsFilePath);
 		std::set<Symbol> symbols = symbolsIni.ReadSymbols(
@@ -1502,7 +1498,7 @@ private:
 			m_context.GetLog().Error(
 				"Failed to get tag for %1% section \"%2%\".",
 				boost::make_tuple(
-					boost::cref(Trait::GetName(false)),
+					Trait::GetName(false),
 					boost::cref(result.conf)));
 			throw Lib::Ini::Error("Failed to load module");
 		}
@@ -1518,9 +1514,7 @@ private:
 		} catch (const Lib::Ini::Error &ex) {
 			m_context.GetLog().Error(
 				"Failed to get %1% module: \"%2%\".",
-				boost::make_tuple(
-					boost::cref(Trait::GetName(false)),
-					boost::cref(ex)));
+				boost::make_tuple(Trait::GetName(false), boost::cref(ex)));
 			throw Lib::Ini::Error("Failed to load module");
 		}
 
@@ -1604,9 +1598,7 @@ void ContextStateBootstrapper::CreateStandaloneModuleInstance(
 	typedef ModuleTrait<Service> Trait;
 	m_context.GetLog().Debug(
 		"%1% \"%2%\" instantiation delayed.",
-		boost::make_tuple(
-			boost::cref(Trait::GetName(true)),
-			boost::cref(tag)));
+		boost::make_tuple(Trait::GetName(true), boost::cref(tag)));
 }
 
 

@@ -63,10 +63,10 @@ namespace trdk {
 
 		struct Account {
 
-			volatile double cashBalance;
-			volatile double equityWithLoanValue;
-			volatile double maintenanceMargin;
-			volatile double excessLiquidity;
+			boost::atomic<double> cashBalance;
+			boost::atomic<double> equityWithLoanValue;
+			boost::atomic<double> maintenanceMargin;
+			boost::atomic<double> excessLiquidity;
 
 			Account() 
 					: cashBalance(.0),

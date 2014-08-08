@@ -191,7 +191,7 @@ public:
 
 	BarService &m_service;
 
-	volatile long m_size;
+	boost::atomic_size_t m_size;
 
 	std::string m_unitsStr;
 	Units m_units;
@@ -452,11 +452,11 @@ public:
 	template<typename Pred>
 	bool StartNewBar(const pt::ptime &time, const Pred &pred) {
 		LogCurrentBar();
-		m_currentBar = &m_bars[size_t(m_size)];
+		m_currentBar = &m_bars[m_size];
 		GetBarTimePoints(time, m_currentBar->time, m_currentBarEnd);
 		pred(*m_currentBar);
-		Interlocking::Increment(m_size);
-		AssertEq(size_t(m_size), m_bars.size());
+		++m_size;
+		AssertEq(m_size, m_bars.size());
 		return m_size > 1;
 	}
 

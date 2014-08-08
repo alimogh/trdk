@@ -23,6 +23,7 @@
 #	include <boost/tuple/tuple.hpp>
 #	include <boost/format.hpp>
 #	include <boost/atomic.hpp>
+#	include <boost/ref.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Constants.h"

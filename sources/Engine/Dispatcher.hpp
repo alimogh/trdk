@@ -373,12 +373,13 @@ namespace trdk { namespace Engine {
 			try {
 				return list.Enqueue(lock);
 			} catch (const trdk::Lib::ModuleError &ex) {
+				const auto &moduleName = list.GetName();
 				m_context.GetLog().Error(
 					"Module error in dispatcher notification task"
 						" \"%1%\": \"%2%\".",
 					boost::make_tuple(
-					boost::cref(list.GetName()),
-					boost::cref(ex)));
+						boost::cref(moduleName),
+						boost::cref(ex)));
 				throw;
 			} catch (...) {
 				m_context.GetLog().Error(

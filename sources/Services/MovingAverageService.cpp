@@ -332,7 +332,7 @@ public:
 
 	MovingAverageService &m_service;
 
-	volatile bool m_isEmpty;
+	boost::atomic_bool m_isEmpty;
 	
 	MaSourceInfo m_sourceInfo;
 
@@ -526,7 +526,7 @@ bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
 		boost::apply_visitor(GetValueVisitor(), *m_pimpl->m_acc),
 	};
 	m_pimpl->m_lastValue = newPoint;
-	Interlocking::Exchange(m_pimpl->m_isEmpty, false);
+	m_pimpl->m_isEmpty = false;
 
 	if (m_pimpl->m_history) {
 		m_pimpl->m_history->PushBack(newPoint);

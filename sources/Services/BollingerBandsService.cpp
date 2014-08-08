@@ -167,7 +167,7 @@ public:
 
 	BollingerBandsService &m_service;
 
-	volatile bool m_isEmpty;
+	boost::atomic_bool m_isEmpty;
 
 	const size_t m_period;
 	const size_t m_deviation;
@@ -266,7 +266,7 @@ bool BollingerBandsService::OnNewData(const MovingAverageService::Point &ma) {
  		ma.value - (m_pimpl->m_deviation * stDev)
 	};
 	m_pimpl->m_lastValue = newPoint;
-	Interlocking::Exchange(m_pimpl->m_isEmpty, false);
+	m_pimpl->m_isEmpty = false;
 
 	if (m_pimpl->m_history) {
 		m_pimpl->m_history->PushBack(newPoint);

@@ -124,7 +124,7 @@ public:
 			boost::make_tuple(
 				boost::cref(boost::apply_visitor(Visitors::GetModule(), subscriber)),
 				boost::cref(m_service),
-				boost::cref(boost::join(path, " -> "))));
+				boost::join(path, " -> ")));
 		throw Exception("Recursive service reference detected");
 	}
 

@@ -115,10 +115,10 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 			" start_time_edt = %1%;"
 			" %2% = %3% -> %4%; %5% = %6%;",
 		boost::make_tuple(
-			boost::cref(GetStartTime() + GetEdtDiff()),
+			GetStartTime() + GetEdtDiff(),
 			tradeSessionPeriodEdtKey,
-			boost::cref(values.tradeSessionStartTime + GetEdtDiff()),
-			boost::cref(values.tradeSessionEndTime + GetEdtDiff()),
+			values.tradeSessionStartTime + GetEdtDiff(),
+			values.tradeSessionEndTime + GetEdtDiff(),
 			waitMarketDataKey,
 			values.shouldWaitForMarketData ? "yes" : "no"));
 

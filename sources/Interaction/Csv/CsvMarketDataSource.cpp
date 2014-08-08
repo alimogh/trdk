@@ -41,7 +41,8 @@ Csv::MarketDataSource::MarketDataSource(
 
 Csv::MarketDataSource::~MarketDataSource() {
 	if (m_thread) {
-		Verify(!Interlocking::Exchange(m_isStopped, true));
+		Assert(!m_isStopped);
+		m_isStopped = true;
 		try {
 			m_thread->join();
 		} catch (...) {
@@ -51,7 +52,8 @@ Csv::MarketDataSource::~MarketDataSource() {
 }
 
 void Csv::MarketDataSource::Connect(const IniSectionRef &) {
-	Verify(Interlocking::Exchange(m_isStopped, false));
+	Assert(m_isStopped);
+	m_isStopped = false;
 	m_thread.reset(
 		new boost::thread([this]() {
 			try {
