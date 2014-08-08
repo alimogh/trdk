@@ -65,6 +65,18 @@
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">TurnOffAllWarnings</WarningLevel>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">TurnOffAllWarnings</WarningLevel>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">TurnOffAllWarnings</WarningLevel>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Api\EClientSocketBase.cpp">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">TurnOffAllWarnings</WarningLevel>
@@ -79,6 +91,18 @@
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">TurnOffAllWarnings</WarningLevel>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">TurnOffAllWarnings</WarningLevel>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">TurnOffAllWarnings</WarningLevel>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Api\EPosixClientSocket.cpp">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">TurnOffAllWarnings</WarningLevel>
@@ -93,11 +117,36 @@
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">TurnOffAllWarnings</WarningLevel>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">TurnOffAllWarnings</WarningLevel>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">TurnOffAllWarnings</WarningLevel>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="IbClient.cpp" />
     <ClCompile Include="IbSecurity.cpp" />
     <ClCompile Include="IbTradeSystem.cpp" />
-    <ClCompile Include="Prec.cpp" />
+    <ClCompile Include="Prec.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api\CommissionReport.h" />
@@ -237,6 +286,8 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
     <Import Project="InteractiveBrokers.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
@@ -246,6 +297,8 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
     <Import Project="InteractiveBrokers.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
@@ -256,6 +309,8 @@
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Dll.props" />
     <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
     <Import Project="InteractiveBrokers.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
@@ -266,6 +321,8 @@
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
     <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
     <Import Project="InteractiveBrokers.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
@@ -275,6 +332,8 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
     <Import Project="InteractiveBrokers.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
@@ -284,6 +343,8 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
     <Import Project="InteractiveBrokers.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
@@ -294,6 +355,8 @@
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Dll.props" />
     <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
     <Import Project="InteractiveBrokers.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
@@ -304,6 +367,8 @@
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
     <Import Project="..\..\Static lib.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="..\..\Module.props" />
     <Import Project="InteractiveBrokers.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
@@ -313,6 +378,8 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
     <Import Project="InteractiveBrokers.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
@@ -322,6 +389,8 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
     <Import Project="InteractiveBrokers.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
@@ -332,6 +401,8 @@
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Dll.props" />
     <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
     <Import Project="InteractiveBrokers.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
@@ -342,6 +413,8 @@
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
     <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Interaction.props" />
     <Import Project="InteractiveBrokers.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
