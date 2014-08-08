@@ -44,7 +44,7 @@ namespace trdk { namespace Lib {
 	}
 
 	template<typename T>
-	inline T IsZero(const T &v) {
+	inline bool IsZero(const T &v) {
 		return IsEqual(v, 0);
 	}
 
