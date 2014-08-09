@@ -2,6 +2,6 @@
 
 conf="Release"
 
-cd ./Engine
+cd ./EngineServer
 make CONF=${conf} clean
 cd ..

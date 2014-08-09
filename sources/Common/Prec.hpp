@@ -27,9 +27,9 @@
 #	include <boost/regex.hpp>
 #include "DisableBoostWarningsEnd.h"
 
-#include <xhash>
-
-#include <Windows.h>
+#ifdef BOOST_WINDOWS
+#	include <Windows.h>
+#endif
 
 #include "Common/Assert.hpp"
 

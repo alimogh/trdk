@@ -115,7 +115,7 @@ namespace trdk { namespace Interaction { namespace Csv {
 		std::ifstream m_file;
 		SecurityList m_securityList;
 
-		volatile long m_isStopped;
+		boost::atomic_bool m_isStopped;
 		std::unique_ptr<boost::thread> m_thread;
 
 	};

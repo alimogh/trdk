@@ -14,14 +14,14 @@ GREP=grep
 NM=nm
 CCADMIN=CCadmin
 RANLIB=ranlib
-CC=gcc-4.7.1
-CCC=g++-4.7.1
-CXX=g++-4.7.1
+CC=gcc
+CCC=g++
+CXX=g++
 FC=gfortran
 AS=as
 
 # Macros
-CND_PLATFORM=GNU_4.7.1-Linux-x86
+CND_PLATFORM=GNU-Linux-x86
 CND_DLIB_EXT=so
 CND_CONF=Release
 CND_DISTDIR=dist
@@ -35,10 +35,22 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/ScriptEngine.o \
-	${OBJECTDIR}/PyApi.o \
-	${OBJECTDIR}/Api.o \
-	${OBJECTDIR}/PositionWrapper.o
+	${OBJECTDIR}/BaseExport.o \
+	${OBJECTDIR}/ContextExport.o \
+	${OBJECTDIR}/Detail.o \
+	${OBJECTDIR}/LogExport.o \
+	${OBJECTDIR}/ModuleExport.o \
+	${OBJECTDIR}/ModuleSecurityListExport.o \
+	${OBJECTDIR}/OrderParamsExport.o \
+	${OBJECTDIR}/PositionExport.o \
+	${OBJECTDIR}/PyEngine.o \
+	${OBJECTDIR}/PyService.o \
+	${OBJECTDIR}/PyStrategy.o \
+	${OBJECTDIR}/Script.o \
+	${OBJECTDIR}/SecurityExport.o \
+	${OBJECTDIR}/ServiceExport.o \
+	${OBJECTDIR}/StrategyExport.o \
+	${OBJECTDIR}/TradeSystemExport.o
 
 
 # C Compiler Flags
@@ -55,39 +67,99 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L/usr/local/boost/boost_1_51/lib -Wl,-rpath,../Core/dist/Release/GNU_4.7.1-Linux-x86 -L../Core/dist/Release/GNU_4.7.1-Linux-x86 -lCore ../Common/dist/Release/GNU_4.7.1-Linux-x86/libcommon.a -lboost_python -lpython2.6
+LDLIBSOPTIONS=-Wl,-rpath,../Core/dist/Release/GNU-Linux-x86 -L../Core/dist/Release/GNU-Linux-x86 -lCore ../Common/dist/Release/GNU-Linux-x86/libcommon.a -lboost_python -lpython2.6
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
 	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}: ../Core/dist/Release/GNU_4.7.1-Linux-x86/libCore.so
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}: ../Core/dist/Release/GNU-Linux-x86/libCore.so
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}: ../Common/dist/Release/GNU_4.7.1-Linux-x86/libcommon.a
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}: ../Common/dist/Release/GNU-Linux-x86/libcommon.a
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -shared -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libPyApi.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
 
-${OBJECTDIR}/ScriptEngine.o: ScriptEngine.cpp 
+${OBJECTDIR}/BaseExport.o: BaseExport.cpp 
 	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/ScriptEngine.o ScriptEngine.cpp
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/BaseExport.o BaseExport.cpp
 
-${OBJECTDIR}/PyApi.o: PyApi.cpp 
+${OBJECTDIR}/ContextExport.o: ContextExport.cpp 
 	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/PyApi.o PyApi.cpp
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/ContextExport.o ContextExport.cpp
 
-${OBJECTDIR}/Api.o: Api.cpp 
+${OBJECTDIR}/Detail.o: Detail.cpp 
 	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/Api.o Api.cpp
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Detail.o Detail.cpp
 
-${OBJECTDIR}/PositionWrapper.o: PositionWrapper.cpp 
+${OBJECTDIR}/LogExport.o: LogExport.cpp 
 	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/local/boost/boost_1_51/include -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/PositionWrapper.o PositionWrapper.cpp
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/LogExport.o LogExport.cpp
+
+${OBJECTDIR}/ModuleExport.o: ModuleExport.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/ModuleExport.o ModuleExport.cpp
+
+${OBJECTDIR}/ModuleSecurityListExport.o: ModuleSecurityListExport.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/ModuleSecurityListExport.o ModuleSecurityListExport.cpp
+
+${OBJECTDIR}/OrderParamsExport.o: OrderParamsExport.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/OrderParamsExport.o OrderParamsExport.cpp
+
+${OBJECTDIR}/PositionExport.o: PositionExport.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/PositionExport.o PositionExport.cpp
+
+${OBJECTDIR}/PyEngine.o: PyEngine.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/PyEngine.o PyEngine.cpp
+
+${OBJECTDIR}/PyService.o: PyService.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/PyService.o PyService.cpp
+
+${OBJECTDIR}/PyStrategy.o: PyStrategy.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/PyStrategy.o PyStrategy.cpp
+
+${OBJECTDIR}/Script.o: Script.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Script.o Script.cpp
+
+${OBJECTDIR}/SecurityExport.o: SecurityExport.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/SecurityExport.o SecurityExport.cpp
+
+${OBJECTDIR}/ServiceExport.o: ServiceExport.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/ServiceExport.o ServiceExport.cpp
+
+${OBJECTDIR}/StrategyExport.o: StrategyExport.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/StrategyExport.o StrategyExport.cpp
+
+${OBJECTDIR}/TradeSystemExport.o: TradeSystemExport.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_PYAPI -I.. -I/usr/include/python2.6 -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TradeSystemExport.o TradeSystemExport.cpp
 
 # Subprojects
 .build-subprojects:

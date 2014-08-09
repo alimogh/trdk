@@ -1,24 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="84">
+<configurationDescriptor version="94">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
+      <itemPath>Api.h</itemPath>
+      <itemPath>Context.hpp</itemPath>
+      <itemPath>ContextBootstrap.hpp</itemPath>
       <itemPath>Dispatcher.hpp</itemPath>
+      <itemPath>Fwd.hpp</itemPath>
       <itemPath>Ini.hpp</itemPath>
       <itemPath>Prec.hpp</itemPath>
-      <itemPath>Util.hpp</itemPath>
+      <itemPath>SubscriberPtrWrapper.hpp</itemPath>
+      <itemPath>SubscriptionsManager.hpp</itemPath>
+      <itemPath>TradeObserverState.hpp</itemPath>
+      <itemPath>Types.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>../Common/Assert.cpp</itemPath>
+      <itemPath>Context.cpp</itemPath>
+      <itemPath>ContextBootstrap.cpp</itemPath>
       <itemPath>Dispatcher.cpp</itemPath>
       <itemPath>Ini.cpp</itemPath>
-      <itemPath>Main.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
-      <itemPath>Trading.cpp</itemPath>
-      <itemPath>Util.cpp</itemPath>
+      <itemPath>SubscriberPtrWrapper.cpp</itemPath>
+      <itemPath>SubscriptionsManager.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -34,18 +41,19 @@
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
-    <conf name="Debug" type="1">
+    <conf name="Debug" type="2">
       <toolsSet>
-        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
-        <compilerSet>GNU_4.7.1|GNU</compilerSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <compileType>
         <ccTool>
           <standard>8</standard>
           <incDir>
             <pElem>..</pElem>
-            <pElem>/usr/local/boost/boost_1_51/include</pElem>
           </incDir>
+          <commandLine>-fPIC</commandLine>
           <preprocessorList>
             <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
             <Elem>DEV_VER</Elem>
@@ -56,9 +64,6 @@
         </ccTool>
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader_dbg</output>
-          <linkerAddLib>
-            <pElem>/usr/local/boost/boost_1_51/lib</pElem>
-          </linkerAddLib>
           <linkerLibItems>
             <linkerLibProjectItem>
               <makeArtifact PL="../Common"
@@ -89,35 +94,16 @@
             <linkerLibLibItem>boost_system</linkerLibLibItem>
             <linkerLibLibItem>boost_filesystem</linkerLibLibItem>
             <linkerLibLibItem>boost_chrono</linkerLibLibItem>
+            <linkerLibLibItem>boost_regex</linkerLibLibItem>
             <linkerLibLibItem>dl</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
         <requiredProjects>
-          <makeArtifact PL="../Interaction/Lightspeed"
-                        CT="2"
-                        CN="Debug"
-                        AC="true"
-                        BL="true"
-                        WD="../Interaction/Lightspeed"
-                        BC="${MAKE}  -f Makefile CONF=Debug"
-                        CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libLightspeed_dbg.${CND_DLIB_EXT}">
-          </makeArtifact>
-          <makeArtifact PL="../Interaction/Enyx"
-                        CT="2"
-                        CN="Debug"
-                        AC="true"
-                        BL="true"
-                        WD="../Interaction/Enyx"
-                        BC="${MAKE}  -f Makefile CONF=Debug"
-                        CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx_dbg.${CND_DLIB_EXT}">
-          </makeArtifact>
           <makeArtifact PL="../PyApi"
                         CT="2"
                         CN="Debug"
                         AC="true"
-                        BL="true"
+                        BL="false"
                         WD="../PyApi"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
@@ -137,21 +123,64 @@
                         CT="2"
                         CN="Debug"
                         AC="true"
-                        BL="true"
+                        BL="false"
                         WD="../Gateway/Service"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libService.${CND_DLIB_EXT}">
           </makeArtifact>
+          <makeArtifact PL="../Strategies/Test"
+                        CT="2"
+                        CN="Debug"
+                        AC="true"
+                        BL="true"
+                        WD="../Strategies/Test"
+                        BC="${MAKE}  -f Makefile CONF=Debug"
+                        CC="${MAKE}  -f Makefile CONF=Debug clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest.${CND_DLIB_EXT}">
+          </makeArtifact>
         </requiredProjects>
       </compileType>
-      <item path="Prec.cpp" ex="true" tool="1" flavor2="0">
+      <item path="Api.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Context.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Context.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ContextBootstrap.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="ContextBootstrap.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Dispatcher.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Dispatcher.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Fwd.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Ini.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Ini.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SubscriberPtrWrapper.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="SubscriberPtrWrapper.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SubscriptionsManager.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="SubscriptionsManager.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="TradeObserverState.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Types.hpp" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
-    <conf name="Release" type="1">
+    <conf name="Release" type="2">
       <toolsSet>
-        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
-        <compilerSet>GNU_4.7.1|GNU</compilerSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <compileType>
         <cTool>
@@ -162,8 +191,8 @@
           <standard>8</standard>
           <incDir>
             <pElem>..</pElem>
-            <pElem>/usr/local/boost/boost_1_51/include</pElem>
           </incDir>
+          <commandLine>-fPIC</commandLine>
           <preprocessorList>
             <Elem>BOOST_DISABLE_ASSERTS</Elem>
             <Elem>NDEBUG</Elem>
@@ -180,9 +209,6 @@
         </asmTool>
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader</output>
-          <linkerAddLib>
-            <pElem>/usr/local/boost/boost_1_51/lib</pElem>
-          </linkerAddLib>
           <linkerLibItems>
             <linkerLibProjectItem>
               <makeArtifact PL="../Core"
@@ -213,35 +239,16 @@
             <linkerLibLibItem>boost_system</linkerLibLibItem>
             <linkerLibLibItem>boost_filesystem</linkerLibLibItem>
             <linkerLibLibItem>boost_chrono</linkerLibLibItem>
+            <linkerLibLibItem>boost_regex</linkerLibLibItem>
             <linkerLibLibItem>dl</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
         <requiredProjects>
-          <makeArtifact PL="../Interaction/Lightspeed"
-                        CT="2"
-                        CN="Release"
-                        AC="false"
-                        BL="true"
-                        WD="../Interaction/Lightspeed"
-                        BC="${MAKE}  -f Makefile CONF=Release"
-                        CC="${MAKE}  -f Makefile CONF=Release clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libLightspeed.${CND_DLIB_EXT}">
-          </makeArtifact>
-          <makeArtifact PL="../Interaction/Enyx"
-                        CT="2"
-                        CN="Release"
-                        AC="false"
-                        BL="true"
-                        WD="../Interaction/Enyx"
-                        BC="${MAKE}  -f Makefile CONF=Release"
-                        CC="${MAKE}  -f Makefile CONF=Release clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEnyx.${CND_DLIB_EXT}">
-          </makeArtifact>
           <makeArtifact PL="../PyApi"
                         CT="2"
                         CN="Release"
                         AC="false"
-                        BL="true"
+                        BL="false"
                         WD="../PyApi"
                         BC="${MAKE}  -f Makefile CONF=Release"
                         CC="${MAKE}  -f Makefile CONF=Release clean"
@@ -261,15 +268,57 @@
                         CT="2"
                         CN="Release"
                         AC="false"
-                        BL="true"
+                        BL="false"
                         WD="../Gateway/Service"
                         BC="${MAKE}  -f Makefile CONF=Release"
                         CC="${MAKE}  -f Makefile CONF=Release clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libService.${CND_DLIB_EXT}">
           </makeArtifact>
+          <makeArtifact PL="../Strategies/Test"
+                        CT="2"
+                        CN="Release"
+                        AC="false"
+                        BL="true"
+                        WD="../Strategies/Test"
+                        BC="${MAKE}  -f Makefile CONF=Release"
+                        CC="${MAKE}  -f Makefile CONF=Release clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest.${CND_DLIB_EXT}">
+          </makeArtifact>
         </requiredProjects>
       </compileType>
-      <item path="Prec.cpp" ex="true" tool="1" flavor2="0">
+      <item path="Api.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Context.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Context.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ContextBootstrap.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="ContextBootstrap.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Dispatcher.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Dispatcher.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Fwd.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Ini.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Ini.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SubscriberPtrWrapper.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="SubscriberPtrWrapper.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SubscriptionsManager.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="SubscriptionsManager.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="TradeObserverState.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Types.hpp" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

@@ -1427,18 +1427,12 @@ void Client::updateAccountValue(
 
 	bool isExcessLiquiditySource = false;
 	if (key == "CashBalance") {
-		Interlocking::Exchange(
-			m_accountInfo->cashBalance,
-			boost::lexical_cast<double>(val));
+		m_accountInfo->cashBalance = boost::lexical_cast<double>(val);
 	} else if (key == "EquityWithLoanValue") {
-		Interlocking::Exchange(
-			m_accountInfo->equityWithLoanValue,
-			boost::lexical_cast<double>(val));
+		m_accountInfo->equityWithLoanValue= boost::lexical_cast<double>(val);
 		isExcessLiquiditySource = true;
 	} else if (key == "MaintMarginReq") {
-		Interlocking::Exchange(
-			m_accountInfo->maintenanceMargin,
-			boost::lexical_cast<double>(val));
+		m_accountInfo->maintenanceMargin = boost::lexical_cast<double>(val);
 		isExcessLiquiditySource = true;
 	}
 
@@ -1446,9 +1440,7 @@ void Client::updateAccountValue(
 		const auto excessLiquidity
 			= m_accountInfo->equityWithLoanValue
 				- m_accountInfo->maintenanceMargin;
-		Interlocking::Exchange(
-			m_accountInfo->excessLiquidity,
-			excessLiquidity);
+		m_accountInfo->excessLiquidity = excessLiquidity;
 	}
 
 }

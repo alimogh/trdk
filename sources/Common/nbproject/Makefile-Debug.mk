@@ -14,14 +14,14 @@ GREP=grep
 NM=nm
 CCADMIN=CCadmin
 RANLIB=ranlib
-CC=gcc-4.7.1
-CCC=g++-4.7.1
-CXX=g++-4.7.1
+CC=gcc
+CCC=g++
+CXX=g++
 FC=gfortran
 AS=as
 
 # Macros
-CND_PLATFORM=GNU_4.7.1-Linux-x86
+CND_PLATFORM=GNU-Linux-x86
 CND_DLIB_EXT=so
 CND_CONF=Debug
 CND_DISTDIR=dist
@@ -35,12 +35,14 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/_ext/1207213382/Error.o \
-	${OBJECTDIR}/_ext/1207213382/Exception.o \
-	${OBJECTDIR}/_ext/1207213382/Defaults.o \
-	${OBJECTDIR}/_ext/1207213382/FileSystemChangeNotificator.o \
-	${OBJECTDIR}/_ext/1207213382/IniFile.o \
-	${OBJECTDIR}/_ext/1207213382/Util.o
+	${OBJECTDIR}/Defaults.o \
+	${OBJECTDIR}/Exception.o \
+	${OBJECTDIR}/FileSystemChangeNotificator.o \
+	${OBJECTDIR}/Ini.o \
+	${OBJECTDIR}/Prec.o \
+	${OBJECTDIR}/Symbol.o \
+	${OBJECTDIR}/SysError.o \
+	${OBJECTDIR}/Util.o
 
 
 # C Compiler Flags
@@ -69,35 +71,45 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a: ${OBJECTFILES}
 	${AR} -rv ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a ${OBJECTFILES} 
 	$(RANLIB) ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a
 
-${OBJECTDIR}/_ext/1207213382/Error.o: /mnt/hgfs/Projects/Trader/sources/Common/Error.cpp 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1207213382
-	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/Error.o /mnt/hgfs/Projects/Trader/sources/Common/Error.cpp
+${OBJECTDIR}/Defaults.o: Defaults.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Defaults.o Defaults.cpp
 
-${OBJECTDIR}/_ext/1207213382/Exception.o: /mnt/hgfs/Projects/Trader/sources/Common/Exception.cpp 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1207213382
-	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/Exception.o /mnt/hgfs/Projects/Trader/sources/Common/Exception.cpp
+${OBJECTDIR}/Exception.o: Exception.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Exception.o Exception.cpp
 
-${OBJECTDIR}/_ext/1207213382/Defaults.o: /mnt/hgfs/Projects/Trader/sources/Common/Defaults.cpp 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1207213382
-	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/Defaults.o /mnt/hgfs/Projects/Trader/sources/Common/Defaults.cpp
+${OBJECTDIR}/FileSystemChangeNotificator.o: FileSystemChangeNotificator.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FileSystemChangeNotificator.o FileSystemChangeNotificator.cpp
 
-${OBJECTDIR}/_ext/1207213382/FileSystemChangeNotificator.o: /mnt/hgfs/Projects/Trader/sources/Common/FileSystemChangeNotificator.cpp 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1207213382
-	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/FileSystemChangeNotificator.o /mnt/hgfs/Projects/Trader/sources/Common/FileSystemChangeNotificator.cpp
+${OBJECTDIR}/Ini.o: Ini.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Ini.o Ini.cpp
 
-${OBJECTDIR}/_ext/1207213382/IniFile.o: /mnt/hgfs/Projects/Trader/sources/Common/IniFile.cpp 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1207213382
-	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/IniFile.o /mnt/hgfs/Projects/Trader/sources/Common/IniFile.cpp
+${OBJECTDIR}/Prec.o: Prec.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Prec.o Prec.cpp
 
-${OBJECTDIR}/_ext/1207213382/Util.o: /mnt/hgfs/Projects/Trader/sources/Common/Util.cpp 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1207213382
-	${RM} $@.d
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -I/usr/local/boost/boost_1_51/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1207213382/Util.o /mnt/hgfs/Projects/Trader/sources/Common/Util.cpp
+${OBJECTDIR}/Symbol.o: Symbol.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Symbol.o Symbol.cpp
+
+${OBJECTDIR}/SysError.o: SysError.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/SysError.o SysError.cpp
+
+${OBJECTDIR}/Util.o: Util.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Util.o Util.cpp
 
 # Subprojects
 .build-subprojects:

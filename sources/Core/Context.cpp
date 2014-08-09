@@ -99,20 +99,27 @@ class Context::Params::Implementation : private boost::noncopyable {
 
 public:
 
-	typedef Concurrency::reader_writer_lock Mutex;
-	typedef Mutex::scoped_lock_read ReadLock;
-	typedef Mutex::scoped_lock WriteLock;
+#	ifdef BOOST_WINDOWS
+		typedef Concurrency::reader_writer_lock Mutex;
+		typedef Mutex::scoped_lock_read ReadLock;
+		typedef Mutex::scoped_lock WriteLock;
+#	else
+		//! @todo TRDK-144
+		typedef boost::shared_mutex Mutex;
+		typedef boost::shared_lock<Mutex> ReadLock;
+		typedef boost::unique_lock<Mutex> WriteLock;
+#	endif
 
 	typedef std::map<std::string, std::string> Storage;
 
 	Implementation(const Context &context)
 			: m_context(context),
 			m_revision(0) {
-		//...//
+		Assert(m_revision.is_lock_free());
 	}
 
 	const Context &m_context;
-	volatile Revision m_revision;
+	boost::atomic<Revision> m_revision;
 	Mutex m_mutex;
 	Storage m_storage;
 
@@ -162,7 +169,7 @@ void Context::Params::Update(
 			const std::string &key,
 			const std::string &newValue) {
 	const Implementation::WriteLock lock(m_pimpl->m_mutex);
-	Interlocking::Increment(m_pimpl->m_revision);
+	++m_pimpl->m_revision;
 	auto it = m_pimpl->m_storage.find(key);
 	if (it != m_pimpl->m_storage.end()) {
 		m_pimpl->m_context.GetLog().Debug(
