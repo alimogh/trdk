@@ -1,5 +1,0 @@
-
-EXPORTS
-	CreateBarsService
-	CreateMovingAverageService
-	CreateBollingerBandsService
