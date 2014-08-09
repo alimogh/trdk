@@ -286,7 +286,6 @@
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="FileSystemChangeNotificator.hpp" />
     <ClInclude Include="Foreach.hpp" />
-    <ClInclude Include="Interlocking.hpp" />
     <ClInclude Include="LockingPolicy.hpp" />
     <ClInclude Include="UseUnused.hpp" />
     <ClInclude Include="Util.hpp" />
