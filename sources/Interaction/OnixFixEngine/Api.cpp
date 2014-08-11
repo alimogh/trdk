@@ -9,8 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Core/TradeSystem.hpp"
-#include "Core/MarketDataSource.hpp"
+#include "CurrenexFixExchange.hpp"
 
 #ifdef BOOST_WINDOWS
 #	define TRDK_INTERACTION_ONIXFIXENGINE_API
@@ -20,20 +19,16 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::Interaction::Onyx;
 
 TRDK_INTERACTION_ONIXFIXENGINE_API
-TradeSystemFactoryResult CreateTradeSystem(
-			const IniSectionRef &/*configuration*/,
-			Context::Log &/*log*/) {
+TradeSystemFactoryResult CreateCurrenexFixExchange(
+			const IniSectionRef &configuration,
+			Context::Log &log) {
+	boost::shared_ptr<CurrenexFixExchange> tradeSystem(
+		new CurrenexFixExchange(configuration, log));
 	TradeSystemFactoryResult result;
-	boost::get<0>(result);
-	boost::get<1>(result);
+	boost::get<0>(result) = tradeSystem;
+	boost::get<1>(result) = tradeSystem;
 	return result;
-}
-
-TRDK_INTERACTION_ONIXFIXENGINE_API
-boost::shared_ptr<MarketDataSource> CreateMarketDataSource(
-			const IniSectionRef &/*configuration*/,
-			Context::Log &/*log*/) {
-	return boost::shared_ptr<MarketDataSource>();
 }

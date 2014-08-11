@@ -21,6 +21,12 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OnixFixEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CurrenexFixExchange.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OnixFixEngine.rc">
@@ -29,5 +35,22 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="OnixFixEngine.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DisableOnixFixEngineWarningsBegin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DisableOnixFixEngineWarningsEnd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CurrenexFixExchange.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="OnixFixEngine.def">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

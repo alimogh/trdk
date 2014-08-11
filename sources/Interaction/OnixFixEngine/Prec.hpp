@@ -13,7 +13,13 @@
 #include "Common/Assert.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
+#include	<boost/algorithm/string.hpp>
+#include	<boost/scoped_ptr.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
+
+#include "DisableOnixFixEngineWarningsBegin.h"
+#	include <OnixS/FIXEngine.h>
+#include "DisableOnixFixEngineWarningsEnd.h"
 
 #include "Common/Common.hpp"
 

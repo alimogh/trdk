@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+
+	<configSections>
+		<section name="FixEngine" type="System.Configuration.NameValueSectionHandler" />
+	</configSections>
+
+	<FixEngine>
+		<!-- <add key="" value="" /> -->
+	</FixEngine>
+
+</configuration>
