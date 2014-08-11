@@ -9,16 +9,16 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU-Linux-x86
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux-x86
-CND_ARTIFACT_NAME_Debug=engineserver
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/engineserver
+CND_ARTIFACT_NAME_Debug=RobotEngine_dbg
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/RobotEngine_dbg
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux-x86/package
 CND_PACKAGE_NAME_Debug=engineserver.tar
 CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux-x86/package/engineserver.tar
 # Release configuration
 CND_PLATFORM_Release=GNU-Linux-x86
 CND_ARTIFACT_DIR_Release=dist/Release/GNU-Linux-x86
-CND_ARTIFACT_NAME_Release=engineserver
-CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux-x86/engineserver
+CND_ARTIFACT_NAME_Release=RobotEngine
+CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux-x86/RobotEngine
 CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux-x86/package
 CND_PACKAGE_NAME_Release=engineserver.tar
 CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux-x86/package/engineserver.tar

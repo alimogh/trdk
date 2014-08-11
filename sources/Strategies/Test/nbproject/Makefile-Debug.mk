@@ -52,19 +52,19 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=../../Common/dist/Debug/GNU-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Debug/GNU-Linux-x86 -L../../Core/dist/Debug/GNU-Linux-x86 -lCore_dbg
+LDLIBSOPTIONS=../../Common/dist/Debug/GNU-Linux-x86/libcommon_dbg.a -Wl,-rpath,../../Core/dist/Debug/GNU-Linux-x86 -L../../Core/dist/Debug/GNU-Linux-x86 -lCore_dbg
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest.${CND_DLIB_EXT}
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest_dbg.${CND_DLIB_EXT}
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest.${CND_DLIB_EXT}: ../../Common/dist/Debug/GNU-Linux-x86/libcommon.a
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest_dbg.${CND_DLIB_EXT}: ../../Common/dist/Debug/GNU-Linux-x86/libcommon_dbg.a
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest.${CND_DLIB_EXT}: ../../Core/dist/Debug/GNU-Linux-x86/libCore_dbg.so
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest_dbg.${CND_DLIB_EXT}: ../../Core/dist/Debug/GNU-Linux-x86/libCore_dbg.so
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest.${CND_DLIB_EXT}: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest_dbg.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest_dbg.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
 
 ${OBJECTDIR}/TestStrategy.o: TestStrategy.cpp 
 	${MKDIR} -p ${OBJECTDIR}
@@ -75,18 +75,14 @@ ${OBJECTDIR}/TestStrategy.o: TestStrategy.cpp
 .build-subprojects:
 	cd ../../Common && ${MAKE}  -f Makefile CONF=Debug
 	cd ../../Core && ${MAKE}  -f Makefile CONF=Debug
-	cd ../../Common && ${MAKE}  -f Makefile CONF=Debug
-	cd ../../Core && ${MAKE}  -f Makefile CONF=Debug
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
 	${RM} -r ${CND_BUILDDIR}/${CND_CONF}
-	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest.${CND_DLIB_EXT}
+	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest_dbg.${CND_DLIB_EXT}
 
 # Subprojects
 .clean-subprojects:
-	cd ../../Common && ${MAKE}  -f Makefile CONF=Debug clean
-	cd ../../Core && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../../Common && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../../Core && ${MAKE}  -f Makefile CONF=Debug clean
 

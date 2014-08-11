@@ -4,6 +4,7 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
+      <itemPath>Prec.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -12,6 +13,7 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
+      <itemPath>Prec.cpp</itemPath>
       <itemPath>TestStrategy.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -58,24 +60,25 @@
           </preprocessorList>
         </ccTool>
         <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest_dbg.${CND_DLIB_EXT}</output>
           <linkerLibItems>
             <linkerLibProjectItem>
               <makeArtifact PL="../../Common"
                             CT="3"
                             CN="Debug"
-                            AC="false"
+                            AC="true"
                             BL="true"
                             WD="../../Common"
                             BC="${MAKE}  -f Makefile CONF=Debug"
                             CC="${MAKE}  -f Makefile CONF=Debug clean"
-                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon_dbg.a">
               </makeArtifact>
             </linkerLibProjectItem>
             <linkerLibProjectItem>
               <makeArtifact PL="../../Core"
                             CT="2"
                             CN="Debug"
-                            AC="false"
+                            AC="true"
                             BL="true"
                             WD="../../Core"
                             BC="${MAKE}  -f Makefile CONF=Debug"
@@ -85,29 +88,9 @@
             </linkerLibProjectItem>
           </linkerLibItems>
         </linkerTool>
-        <requiredProjects>
-          <makeArtifact PL="../../Common"
-                        CT="3"
-                        CN="Debug"
-                        AC="false"
-                        BL="true"
-                        WD="../../Common"
-                        BC="${MAKE}  -f Makefile CONF=Debug"
-                        CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
-          </makeArtifact>
-          <makeArtifact PL="../../Core"
-                        CT="2"
-                        CN="Debug"
-                        AC="false"
-                        BL="true"
-                        WD="../../Core"
-                        BC="${MAKE}  -f Makefile CONF=Debug"
-                        CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore_dbg.${CND_DLIB_EXT}">
-          </makeArtifact>
-        </requiredProjects>
       </compileType>
+      <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="TestStrategy.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
@@ -178,29 +161,9 @@
             </linkerLibProjectItem>
           </linkerLibItems>
         </linkerTool>
-        <requiredProjects>
-          <makeArtifact PL="../../Common"
-                        CT="3"
-                        CN="Release"
-                        AC="true"
-                        BL="true"
-                        WD="../../Common"
-                        BC="${MAKE}  -f Makefile CONF=Release"
-                        CC="${MAKE}  -f Makefile CONF=Release clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
-          </makeArtifact>
-          <makeArtifact PL="../../Core"
-                        CT="2"
-                        CN="Release"
-                        AC="true"
-                        BL="true"
-                        WD="../../Core"
-                        BC="${MAKE}  -f Makefile CONF=Release"
-                        CC="${MAKE}  -f Makefile CONF=Release clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
-          </makeArtifact>
-        </requiredProjects>
       </compileType>
+      <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="TestStrategy.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>

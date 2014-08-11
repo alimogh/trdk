@@ -33,3 +33,6 @@
 /sources/EngineServer/dist/
 /sources/Strategies/Test/build/
 /sources/Strategies/Test/dist/
+*.log
+/sources/Interaction/OnixFixEngine/build/
+/sources/Interaction/OnixFixEngine/dist/

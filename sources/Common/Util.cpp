@@ -104,9 +104,17 @@ namespace {
 		}
 #	else
 		fs::path GetModuleFilePath(void *) {
-			//! @todo GetModuleFilePath
-			AssertFail("Not implemented for Linux.");
-			throw 0;
+			char path[PATH_MAX];
+			ssize_t count = readlink("/proc/self/exe", path, sizeof(path));
+			if (count <= 0) {
+				const SysError error(errno);
+				boost::format message(
+					"Failed to call readlink \"/proc/self/exe\""
+						" system error: \"%1%\")");
+				message % error;
+				throw SystemException(message.str().c_str());
+			}
+			return fs::path(path, path + count);
 		}
 #	endif
 
@@ -131,7 +139,7 @@ fs::path Lib::GetExeWorkingDir() {
 			const SysError error(GetLastError());
 			boost::format message(
 				"Failed to call GetModuleHandleEx (system error: \"%1%\")");
-				message % error;
+			message % error;
 			throw SystemException(message.str().c_str());
 		}
 		return GetModuleFilePath(handle);
@@ -149,11 +157,11 @@ fs::path Lib::GetDllWorkingDir() {
 }
 
 fs::path Lib::Normalize(const fs::path &path) {
-	if (path.empty() || path.has_root_name()) {
+	if (path.empty() || path.has_root_path()) {
 		return path;
 	}
 	fs::path result = GetExeWorkingDir() / path;
-	Assert(result.has_root_name());
+	Assert(result.has_root_path());
 	return result;
 }
 

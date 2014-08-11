@@ -50,8 +50,70 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">
+    <Lib>
+      <AdditionalDependencies>FIXForge.Cpp.FIX.Engine-vs11_D.lib</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">
+    <Link>
+      <AdditionalDependencies>FIXForge.Cpp.FIX.Engine-vs11_D.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">
+    <Lib>
+      <AdditionalDependencies>FIXForge.Cpp.FIX.Engine-vs11.lib</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">
+    <Link>
+      <AdditionalDependencies>FIXForge.Cpp.FIX.Engine-vs11.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">
+    <Lib>
+      <AdditionalDependencies>FIXForge.Cpp.FIX.Engine-vs11.lib</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">
+    <Link>
+      <AdditionalDependencies>FIXForge.Cpp.FIX.Engine-vs11.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
+    <Lib>
+      <AdditionalDependencies>FIXForge.Cpp.FIX.Engine-vs11_x64_D.lib</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
+    <Link>
+      <AdditionalDependencies>FIXForge.Cpp.FIX.Engine-vs11_x64_D.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">
+    <Lib>
+      <AdditionalDependencies>FIXForge.Cpp.FIX.Engine-vs11_x64.lib</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
+    <Link>
+      <AdditionalDependencies>FIXForge.Cpp.FIX.Engine-vs11_x64.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">
+    <Lib>
+      <AdditionalDependencies>FIXForge.Cpp.FIX.Engine-vs11_x64.lib</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
+    <Link>
+      <AdditionalDependencies>FIXForge.Cpp.FIX.Engine-vs11_x64.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Api.cpp" />
+    <ClCompile Include="CurrenexFixExchange.cpp" />
+    <ClCompile Include="OnixFixEngine.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
@@ -68,6 +130,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CurrenexFixExchange.hpp" />
+    <ClInclude Include="DisableOnixFixEngineWarningsBegin.h" />
+    <ClInclude Include="DisableOnixFixEngineWarningsEnd.h" />
+    <ClInclude Include="OnixFixEngine.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -83,6 +149,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OnixFixEngine.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="OnixFixEngine.def" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C86383E0-0A73-41E0-8263-9E05B608CE55}</ProjectGuid>

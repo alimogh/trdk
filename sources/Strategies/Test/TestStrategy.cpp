@@ -8,12 +8,15 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
+#include "Prec.hpp"
 #include "Common/Assert.hpp"
 #include "Common/Common.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/Security.hpp"
 #include "Core/Position.hpp"
-#include "Common/Assert.hpp"
+#include "Core/PositionReporter.hpp"
+
+////////////////////////////////////////////////////////////////////////////////
 
 namespace trdk { namespace Strategies { namespace Test {
 	
@@ -69,13 +72,23 @@ namespace trdk { namespace Strategies { namespace Test {
 		
 	};
 	
-	
 } } }
 
-extern "C" boost::shared_ptr<trdk::Strategy> CreateStrategy(
+
+////////////////////////////////////////////////////////////////////////////////
+
+#ifdef BOOST_WINDOWS
+#	define TRDK_STRATEGY_TEST_API
+#else
+#	define TRDK_STRATEGY_TEST_API extern "C"
+#endif
+
+TRDK_STRATEGY_TEST_API boost::shared_ptr<trdk::Strategy> CreateStrategy(
 			trdk::Context &context,
 			const std::string &tag,
 			const trdk::Lib::IniSectionRef &) {
 	return boost::shared_ptr<trdk::Strategy>(
 		new trdk::Strategies::Test::TestStrategy(context, tag, "Test"));
 }
+
+////////////////////////////////////////////////////////////////////////////////

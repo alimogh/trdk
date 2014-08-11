@@ -60,24 +60,25 @@
           <warningLevel>3</warningLevel>
         </ccTool>
         <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine_dbg</output>
           <linkerLibItems>
             <linkerLibProjectItem>
               <makeArtifact PL="../Common"
                             CT="3"
                             CN="Debug"
-                            AC="false"
+                            AC="true"
                             BL="true"
                             WD="../Common"
                             BC="${MAKE}  -f Makefile CONF=Debug"
                             CC="${MAKE}  -f Makefile CONF=Debug clean"
-                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon_dbg.a">
               </makeArtifact>
             </linkerLibProjectItem>
             <linkerLibProjectItem>
               <makeArtifact PL="../Core"
                             CT="2"
                             CN="Debug"
-                            AC="false"
+                            AC="true"
                             BL="true"
                             WD="../Core"
                             BC="${MAKE}  -f Makefile CONF=Debug"
@@ -89,12 +90,12 @@
               <makeArtifact PL="../Engine"
                             CT="2"
                             CN="Debug"
-                            AC="false"
+                            AC="true"
                             BL="true"
                             WD="../Engine"
                             BC="${MAKE}  -f Makefile CONF=Debug"
                             CC="${MAKE}  -f Makefile CONF=Debug clean"
-                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader_dbg">
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngine_dbg.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
             <linkerLibLibItem>boost_system</linkerLibLibItem>
@@ -106,17 +107,17 @@
           <makeArtifact PL="../Common"
                         CT="3"
                         CN="Debug"
-                        AC="false"
+                        AC="true"
                         BL="true"
                         WD="../Common"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon_dbg.a">
           </makeArtifact>
           <makeArtifact PL="../Core"
                         CT="2"
                         CN="Debug"
-                        AC="false"
+                        AC="true"
                         BL="true"
                         WD="../Core"
                         BC="${MAKE}  -f Makefile CONF=Debug"
@@ -126,12 +127,12 @@
           <makeArtifact PL="../Engine"
                         CT="2"
                         CN="Debug"
-                        AC="false"
+                        AC="true"
                         BL="true"
                         WD="../Engine"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader_dbg">
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngine_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
         </requiredProjects>
       </compileType>
@@ -181,6 +182,7 @@
           <developmentMode>5</developmentMode>
         </asmTool>
         <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine</output>
           <linkerLibItems>
             <linkerLibProjectItem>
               <makeArtifact PL="../Common"
@@ -210,12 +212,12 @@
               <makeArtifact PL="../Engine"
                             CT="2"
                             CN="Release"
-                            AC="true"
+                            AC="false"
                             BL="true"
                             WD="../Engine"
                             BC="${MAKE}  -f Makefile CONF=Release"
                             CC="${MAKE}  -f Makefile CONF=Release clean"
-                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader">
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngine.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
             <linkerLibLibItem>boost_system</linkerLibLibItem>

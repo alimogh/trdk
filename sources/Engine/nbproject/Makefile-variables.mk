@@ -9,16 +9,16 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU-Linux-x86
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux-x86
-CND_ARTIFACT_NAME_Debug=trader_dbg
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/trader_dbg
+CND_ARTIFACT_NAME_Debug=libEngine_dbg.so
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/libEngine_dbg.so
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux-x86/package
 CND_PACKAGE_NAME_Debug=libEngine.so.tar
 CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux-x86/package/libEngine.so.tar
 # Release configuration
 CND_PLATFORM_Release=GNU-Linux-x86
 CND_ARTIFACT_DIR_Release=dist/Release/GNU-Linux-x86
-CND_ARTIFACT_NAME_Release=trader
-CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux-x86/trader
+CND_ARTIFACT_NAME_Release=libEngine.so
+CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux-x86/libEngine.so
 CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux-x86/package
 CND_PACKAGE_NAME_Release=libEngine.so.tar
 CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux-x86/package/libEngine.so.tar
