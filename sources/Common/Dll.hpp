@@ -138,18 +138,20 @@ namespace trdk { namespace Lib {
 				}
 	#		else
 				if (autoName) {
-					auto tmp = m_file;
+					auto tmp = m_file.filename();
 					tmp.replace_extension("");
 	#				if defined(_DEBUG)
-						const std::string tmpStr = "lib" + tmp.string() + "_dbg";
+						const std::string tmpStr
+							= "lib" + tmp.string() + "_dbg";
 	#				elif defined(_TEST)
-						const std::string tmpStr = "lib" + tmp.string() + "_test";
+						const std::string tmpSt
+							= "lib" + tmp.string() + "_test";
 	#				else
-						const std::string tmpStr = "lib" + tmp.string();
+						const std::string tmpStr = "lib" + filename.string();
 	#				endif
 					tmp = tmpStr;
 					tmp.replace_extension(m_file.extension());
-					m_file = tmp;
+					m_file = m_file.branch_path() / tmp;
 				}
 				if (!m_file.has_extension()) {
 					m_file.replace_extension(".so");
