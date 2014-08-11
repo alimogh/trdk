@@ -149,11 +149,11 @@ fs::path Lib::GetDllWorkingDir() {
 }
 
 fs::path Lib::Normalize(const fs::path &path) {
-	if (path.empty() || path.has_root_name()) {
+	if (path.empty() || path.has_root_path()) {
 		return path;
 	}
 	fs::path result = GetExeWorkingDir() / path;
-	Assert(result.has_root_name());
+	Assert(result.has_root_path());
 	return result;
 }
 
