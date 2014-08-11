@@ -188,22 +188,24 @@ void Engine::Context::Start() {
 		throw Exception("Failed to make trading system");
 	}
 	
-	try {
-		GetMarketDataSource().Connect(
-			IniSectionRef(
-				*m_pimpl->m_conf,
-				Ini::Sections::marketDataSource));
-		GetMarketDataSource().SubscribeToSecurities();
-	} catch (const Interactor::ConnectError &ex) {
-		boost::format message(
-			"Failed to connect to market data source: \"%1%\"");
-		message % ex;
-		throw Interactor::ConnectError(message.str().c_str());
-	} catch (const Lib::Exception &ex) {
-		GetLog().Error(
-			"Failed to make market data connection: \"%1%\".",
-			ex);
-		throw Exception("Failed to make market data connection");
+	if (m_pimpl->m_conf->IsSectionExist(Ini::Sections::marketDataSource)) {
+		try {
+			GetMarketDataSource().Connect(
+				IniSectionRef(
+					*m_pimpl->m_conf,
+					Ini::Sections::marketDataSource));
+			GetMarketDataSource().SubscribeToSecurities();
+		} catch (const Interactor::ConnectError &ex) {
+			boost::format message(
+				"Failed to connect to market data source: \"%1%\"");
+			message % ex;
+			throw Interactor::ConnectError(message.str().c_str());
+		} catch (const Lib::Exception &ex) {
+			GetLog().Error(
+				"Failed to make market data connection: \"%1%\".",
+				ex);
+			throw Exception("Failed to make market data connection");
+		}
 	}
 
 	m_pimpl->m_state.reset(state.release());

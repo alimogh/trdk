@@ -105,6 +105,7 @@ namespace trdk { namespace Lib {
 					bool mustExist)
 				const;
 
+		bool IsSectionExist(const std::string &section) const;
 		bool IsKeyExist(
 					const std::string &section,
 					const std::string &key)

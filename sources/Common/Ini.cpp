@@ -140,6 +140,22 @@ void Ini::ReadSection(
 	}
 }
 
+bool Ini::IsSectionExist(const std::string &section) const {
+	const_cast<Ini *>(this)->Reset();
+	auto &source = GetSource();
+	while (!source.eof() && !source.fail()) {
+		std::string line = ReadCurrentLine();
+		if (!IsSection(line)) {
+			continue;
+		}
+		TrimSection(line);
+		if (boost::iequals(line, section)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool Ini::IsKeyExist(
 			const std::string &section,
 			const std::string &key)
