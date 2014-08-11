@@ -103,6 +103,11 @@ namespace trdk { namespace Interaction { namespace Onyx {
 
 	public:
 
+		virtual void onInboundApplicationMsg(
+					OnixS::FIX::Message &,
+					OnixS::FIX::Session *) {
+			//...//
+		}
 		virtual void onStateChange(
 					OnixS::FIX::SessionState::Enum newState,
 					OnixS::FIX::SessionState::Enum prevState,
