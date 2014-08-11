@@ -32,18 +32,29 @@ void CurrenexFixExchange::ConnectSession(
 			const IniSectionRef &config,
 			fix::Session &session,
 			const std::string &host,
-			int port) {
+			int port,
+			const std::string &prefix) {
+	
 	fix::Message customLogonMessage("A", GetFixVersion());
 	customLogonMessage.set(
 		fix::FIX43::Tags::Password,
-		config.ReadKey("password"));
-	if (config.ReadBoolKey("use_ssl")) {
-		session.encryptionMethod(fix::EncryptionMethod::SSL);
-	}
+		config.ReadKey(prefix + ".password"));
+#	ifdef _DEBUG
+		customLogonMessage.setFlag(141, true);
+#	endif
+
 	try {
+		if (config.ReadBoolKey(prefix + ".use_ssl")) {
+			session.encryptionMethod(fix::EncryptionMethod::SSL);
+		}
 		session.logonAsInitiator(host, port, 30, &customLogonMessage);
 	} catch (const fix::Exception &ex) {
-		GetLog().Error("Failed to connect to FIX Server: \"%1%\".", ex.what());
+		GetLog().Error(
+			"Failed to connect to FIX Server (%1%): \"%2%\".",
+			boost::make_tuple(
+				boost::cref(prefix),
+				ex.what()));
 		throw Error("Failed to connect to FIX Server");
 	}
+
 }

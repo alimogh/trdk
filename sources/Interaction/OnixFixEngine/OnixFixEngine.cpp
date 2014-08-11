@@ -25,7 +25,7 @@ namespace {
 
 		fix::ProtocolVersion::Enum result = fix::ProtocolVersion::UNKNOWN;
 
-		const auto &fixVerStr = configuration.ReadKey("fix_version");
+		const auto &fixVerStr = configuration.ReadKey("engine.fix_version");
 		if (boost::iequals(fixVerStr, std::string("FIX 4.0"))) {
 			result = fix::ProtocolVersion::FIX_40;
 		} else if (boost::iequals(fixVerStr, "FIX 4.1")) {
@@ -73,7 +73,7 @@ OnixFixEngine::OnixFixEngine(
 		m_log.Info("Initializing FIX Engine...");
 		try {
 			fix::Engine::init(
-				configuration.ReadFileSystemPath("engine_settings").string());
+				configuration.ReadFileSystemPath("engine.settings").string());
 		} catch (const fix::Exception &ex) {
 			m_log.Error("Failed to init FIX Engine: \"%1%\".", ex.what());
 			throw Error("Failed to init FIX Engine");
@@ -91,40 +91,63 @@ OnixFixEngine::~OnixFixEngine() {
 
 void OnixFixEngine::Connect(const trdk::Lib::IniSectionRef &conf) {
 
-	if (m_session) {
-		return;
+	boost::scoped_ptr<fix::Session> tradeSession;
+	boost::scoped_ptr<fix::Session> streamSession;
+
+	if (!tradeSession) {
+		tradeSession.reset(CreateSession(conf, "trade"));
 	}
 
-	// Assert(m_securities.empty());
+	if (!m_streamSession) {
+		streamSession.reset(CreateSession(conf, "stream"));
+	}
 
-	const std::string senderCompId = conf.ReadKey("sender_comp_id");
-	const std::string targetCompId = conf.ReadKey("target_comp_id");
 
-	const std::string host = conf.ReadKey("server_host");
-	const auto port  = conf.ReadTypedKey<int>("server_port");
+	if (tradeSession) {
+		tradeSession.swap(m_tradeSession);
+	}
+
+	if (streamSession) {
+		streamSession.swap(m_streamSession);
+	}
+
+}
+
+fix::Session * OnixFixEngine::CreateSession(
+			const trdk::Lib::IniSectionRef &conf,
+			const std::string &prefix) {
+
+	const std::string senderCompId = conf.ReadKey(prefix + ".sender_comp_id");
+	const std::string targetCompId = conf.ReadKey(prefix + ".target_comp_id");
+
+	const std::string host = conf.ReadKey(prefix + ".server_host");
+	const auto port  = conf.ReadTypedKey<int>(prefix + ".server_port");
 
 	m_log.Info(
-		"Connecting to FIX Server at \"%1%:%2%\""
-			" with SenderCompID \"%3%\" and TargetCompID \"%4%\"...",
+		"Connecting to FIX Server (%1%) at \"%2%:%3%\""
+			" with SenderCompID \"%4%\" and TargetCompID \"%5%\"...",
 		boost::make_tuple(
+			boost::cref(prefix),
 			boost::cref(host),
 			port,
 			boost::cref(senderCompId),
 			boost::cref(targetCompId)));
 
-	boost::scoped_ptr<fix::Session> session(
+	std::unique_ptr<fix::Session> result(
 		new fix::Session(senderCompId, targetCompId, m_fixVersion, this));
-	ConnectSession(conf, *session, host, port);
-	session.swap(m_session);
+	ConnectSession(conf, *result, host, port, prefix);
 
 	m_log.Info(
-		"Connected to FIX Server at \"%1%:%2%\""
-			" with SenderCompID \"%3%\" and TargetCompID \"%4%\".",
+		"Connecting to FIX Server (%1%) at \"%2%:%3%\""
+			" with SenderCompID \"%4%\" and TargetCompID \"%5%\"...",
 		boost::make_tuple(
+			boost::cref(prefix),
 			boost::cref(host),
 			port,
 			boost::cref(senderCompId),
 			boost::cref(targetCompId)));
+
+	return result.release();
 
 }
 
@@ -132,11 +155,16 @@ void OnixFixEngine::ConnectSession(
 			const IniSectionRef &,
 			fix::Session &session,
 			const std::string &host,
-			int port) {
+			int port,
+			const std::string &prefix) {
 	try {
 		session.logonAsInitiator(host, port);
 	} catch (const fix::Exception &ex) {
-		m_log.Error("Failed to connect to FIX Server: \"%1%\".", ex.what());
+		GetLog().Error(
+			"Failed to connect to FIX Server (%1%): \"%2%\".",
+			boost::make_tuple(
+				boost::cref(prefix),
+				ex.what()));
 		throw Error("Failed to connect to FIX Server");
 	}
 }

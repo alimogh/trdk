@@ -136,7 +136,14 @@ namespace trdk { namespace Interaction { namespace Onyx {
 					const trdk::Lib::IniSectionRef &,
 					OnixS::FIX::Session &,
 					const std::string &host,
-					int port);
+					int port,
+					const std::string &prefix);
+
+	private:
+
+		OnixS::FIX::Session * CreateSession(
+					const trdk::Lib::IniSectionRef &,
+					const std::string &prefix);
 
 	private:
 
@@ -144,7 +151,8 @@ namespace trdk { namespace Interaction { namespace Onyx {
 
 		const OnixS::FIX::ProtocolVersion::Enum m_fixVersion;
 
-		boost::scoped_ptr<OnixS::FIX::Session> m_session;
+		boost::scoped_ptr<OnixS::FIX::Session> m_tradeSession;
+		boost::scoped_ptr<OnixS::FIX::Session> m_streamSession;
 		
 	};
 

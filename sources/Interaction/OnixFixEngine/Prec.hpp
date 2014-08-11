@@ -15,6 +15,7 @@
 #include "Common/DisableBoostWarningsBegin.h"
 #include	<boost/algorithm/string.hpp>
 #include	<boost/scoped_ptr.hpp>
+#include	<boost/noncopyable.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "DisableOnixFixEngineWarningsBegin.h"

@@ -35,7 +35,8 @@ namespace trdk { namespace Interaction { namespace Onyx {
 					const trdk::Lib::IniSectionRef &,
 					OnixS::FIX::Session &,
 					const std::string &host,
-					int port);
+					int port,
+					const std::string &prefix);
 
 
 	};
