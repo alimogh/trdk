@@ -50,9 +50,44 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Prec.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="TestStrategy.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Prec.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\Common.vcxproj">
+      <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Core\Core.vcxproj">
+      <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Version\Version.vcxproj">
+      <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Test.rc" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{015FB121-6122-4A00-BFBB-545E9E73ABEE}</ProjectGuid>
-    <RootNamespace>Engine</RootNamespace>
+    <ProjectGuid>{9EF13741-7C1B-4A58-B79C-3800B42847E7}</ProjectGuid>
+    <RootNamespace>Test</RootNamespace>
+    <ProjectName>Test Strategy</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">
@@ -128,182 +163,142 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\x86.props" />
-    <Import Project="..\Distribution Standalone.props" />
-    <Import Project="Enigne.props" />
-    <Import Project="..\Distribution Standalone Debug.props" />
-    <Import Project="..\Configuration Debug.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\x86.props" />
+    <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Strategy.props" />
+    <Import Project="Test.props" />
+    <Import Project="..\..\Distribution Standalone Debug.props" />
+    <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\x64.props" />
-    <Import Project="..\Distribution Standalone.props" />
-    <Import Project="Enigne.props" />
-    <Import Project="..\Distribution Standalone Debug.props" />
-    <Import Project="..\Configuration Debug.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\x64.props" />
+    <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Strategy.props" />
+    <Import Project="Test.props" />
+    <Import Project="..\..\Distribution Standalone Debug.props" />
+    <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\x86.props" />
-    <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
-    <Import Project="Enigne.props" />
-    <Import Project="..\Distribution Dll Debug.props" />
-    <Import Project="..\Configuration Debug.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\x86.props" />
+    <Import Project="..\..\Distribution Dll.props" />
+    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Strategy.props" />
+    <Import Project="Test.props" />
+    <Import Project="..\..\Distribution Dll Debug.props" />
+    <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\x64.props" />
-    <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
-    <Import Project="Enigne.props" />
-    <Import Project="..\Distribution Dll Debug.props" />
-    <Import Project="..\Configuration Debug.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\x64.props" />
+    <Import Project="..\..\Distribution Dll.props" />
+    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Strategy.props" />
+    <Import Project="Test.props" />
+    <Import Project="..\..\Distribution Dll Debug.props" />
+    <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\x86.props" />
-    <Import Project="..\Distribution Standalone.props" />
-    <Import Project="Enigne.props" />
-    <Import Project="..\Distribution Standalone Release.props" />
-    <Import Project="..\Configuration Release.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\x86.props" />
+    <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Strategy.props" />
+    <Import Project="Test.props" />
+    <Import Project="..\..\Distribution Standalone Release.props" />
+    <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\x64.props" />
-    <Import Project="..\Distribution Standalone.props" />
-    <Import Project="Enigne.props" />
-    <Import Project="..\Distribution Standalone Release.props" />
-    <Import Project="..\Configuration Release.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\x64.props" />
+    <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Strategy.props" />
+    <Import Project="Test.props" />
+    <Import Project="..\..\Distribution Standalone Release.props" />
+    <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\x86.props" />
-    <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
-    <Import Project="Enigne.props" />
-    <Import Project="..\Distribution Dll Release.props" />
-    <Import Project="..\Configuration Release.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\x86.props" />
+    <Import Project="..\..\Distribution Dll.props" />
+    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Strategy.props" />
+    <Import Project="Test.props" />
+    <Import Project="..\..\Distribution Dll Release.props" />
+    <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\x64.props" />
-    <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
-    <Import Project="Enigne.props" />
-    <Import Project="..\Distribution Dll Release.props" />
-    <Import Project="..\Configuration Release.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\x64.props" />
+    <Import Project="..\..\Distribution Dll.props" />
+    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\Strategy.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="Test.props" />
+    <Import Project="..\..\Distribution Dll Release.props" />
+    <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\x86.props" />
-    <Import Project="..\Distribution Standalone.props" />
-    <Import Project="Enigne.props" />
-    <Import Project="..\Distribution Standalone Test.props" />
-    <Import Project="..\Configuration Test.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\x86.props" />
+    <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Strategy.props" />
+    <Import Project="Test.props" />
+    <Import Project="..\..\Distribution Standalone Test.props" />
+    <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\x64.props" />
-    <Import Project="..\Distribution Standalone.props" />
-    <Import Project="Enigne.props" />
-    <Import Project="..\Distribution Standalone Test.props" />
-    <Import Project="..\Configuration Test.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\x64.props" />
+    <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Strategy.props" />
+    <Import Project="Test.props" />
+    <Import Project="..\..\Distribution Standalone Test.props" />
+    <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\x86.props" />
-    <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
-    <Import Project="Enigne.props" />
-    <Import Project="..\Distribution Dll Test.props" />
-    <Import Project="..\Configuration Test.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\x86.props" />
+    <Import Project="..\..\Distribution Dll.props" />
+    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Strategy.props" />
+    <Import Project="Test.props" />
+    <Import Project="..\..\Distribution Dll Test.props" />
+    <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Default.props" />
-    <Import Project="..\x64.props" />
-    <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
-    <Import Project="Enigne.props" />
-    <Import Project="..\Distribution Dll Test.props" />
-    <Import Project="..\Configuration Test.props" />
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\x64.props" />
+    <Import Project="..\..\Distribution Dll.props" />
+    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Module.props" />
+    <Import Project="..\Strategy.props" />
+    <Import Project="Test.props" />
+    <Import Project="..\..\Distribution Dll Test.props" />
+    <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
-  <ItemGroup>
-    <ProjectReference Include="..\Common\Common.vcxproj">
-      <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Core\Core.vcxproj">
-      <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\Csv\Csv.vcxproj">
-      <Project>{2e95108d-1af3-4aae-909e-f380c264d4a4}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\Fake\Fake.vcxproj">
-      <Project>{3e0187e3-f6e3-48e3-a0e4-1e454b0e7f40}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\InteractiveBrokers\InteractiveBrokers.vcxproj">
-      <Project>{befe87ae-1376-4c4c-87d5-73e782990306}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\OnixFixEngine\OnixFixEngine.vcxproj">
-      <Project>{c86383e0-0a73-41e0-8263-9e05b608ce55}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Services\Services.vcxproj">
-      <Project>{4f025d92-8f15-4a05-97b6-ca680cb090d9}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Version\Version.vcxproj">
-      <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Context.cpp" />
-    <ClCompile Include="ContextBootstrap.cpp" />
-    <ClCompile Include="SubscriptionsManager.cpp" />
-    <ClCompile Include="Ini.cpp" />
-    <ClCompile Include="Dispatcher.cpp" />
-    <ClCompile Include="Prec.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="SubscriberPtrWrapper.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Api.h" />
-    <ClInclude Include="Context.hpp" />
-    <ClInclude Include="ContextBootstrap.hpp" />
-    <ClInclude Include="Types.hpp" />
-    <ClInclude Include="SubscriptionsManager.hpp" />
-    <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="Ini.hpp" />
-    <ClInclude Include="Dispatcher.hpp" />
-    <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="SubscriberPtrWrapper.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Engine.rc" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
