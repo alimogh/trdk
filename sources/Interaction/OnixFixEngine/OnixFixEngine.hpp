@@ -103,12 +103,6 @@ namespace trdk { namespace Interaction { namespace Onyx {
 
 	public:
 
-		virtual void onInboundApplicationMsg (
-					OnixS::FIX::Message &,
-					OnixS::FIX::Session *);
-		virtual void onInboundSessionMsg(
-					OnixS::FIX::Message &,
-					OnixS::FIX::Session *);
 		virtual void onStateChange(
 					OnixS::FIX::SessionState::Enum newState,
 					OnixS::FIX::SessionState::Enum prevState,
@@ -145,15 +139,20 @@ namespace trdk { namespace Interaction { namespace Onyx {
 					const trdk::Lib::IniSectionRef &,
 					const std::string &prefix);
 
+		void SubscribeToMarketData(OnixS::FIX::Session &);
+
 	private:
 
 		Context::Log &m_log;
 
 		const OnixS::FIX::ProtocolVersion::Enum m_fixVersion;
 
+		std::vector<boost::shared_ptr<Security>> m_securities;
+
 		boost::scoped_ptr<OnixS::FIX::Session> m_tradeSession;
 		boost::scoped_ptr<OnixS::FIX::Session> m_streamSession;
-		
+
+	
 	};
 
 } } }

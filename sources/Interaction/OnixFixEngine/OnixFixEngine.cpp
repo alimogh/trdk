@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "OnixFixEngine.hpp"
+#include "Core/Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -95,13 +96,15 @@ void OnixFixEngine::Connect(const trdk::Lib::IniSectionRef &conf) {
 	boost::scoped_ptr<fix::Session> streamSession;
 
 	if (!tradeSession) {
+		// Makes connection to trade-port:
 		tradeSession.reset(CreateSession(conf, "trade"));
 	}
 
 	if (!m_streamSession) {
+		// Makes connection to stream-port:
 		streamSession.reset(CreateSession(conf, "stream"));
+		SubscribeToMarketData(*streamSession);
 	}
-
 
 	if (tradeSession) {
 		tradeSession.swap(m_tradeSession);
@@ -148,6 +151,47 @@ fix::Session * OnixFixEngine::CreateSession(
 			boost::cref(targetCompId)));
 
 	return result.release();
+
+}
+
+void OnixFixEngine::SubscribeToMarketData(fix::Session &session) {
+	
+	// Requests market data from stream by selected securities:
+	foreach (const auto &security, m_securities) {
+			
+		const Symbol &symbol = security->GetSymbol();
+		
+		fix::Message mdRequest("V", GetFixVersion());
+
+		mdRequest.set(
+			fix::FIX40::Tags::Symbol,
+			symbol.GetSymbol() + "/" + symbol.GetCurrency());
+			
+		mdRequest.set(
+			fix::FIX42::Tags::SubscriptionRequestType,
+			fix::FIX42::Values::SubscriptionRequestType::Snapshot__plus__Updates);
+		mdRequest.set(
+			fix::FIX42::Tags::MarketDepth,
+			fix::FIX42::Values::MarketDepth::Top_of_Book);
+		mdRequest.set(
+			fix::FIX42::Tags::MDUpdateType,
+			fix::FIX42::Values::MDUpdateType::Incremental_Refresh);
+
+		auto mdEntryTypes
+			= mdRequest.setGroup(fix::FIX42::Tags::NoMDEntryTypes, 2);
+		mdEntryTypes[0].set(
+			fix::FIX42::Tags::MDEntryType,
+			fix::FIX42::Values::MDEntryType::Bid);
+		mdEntryTypes[1].set(
+			fix::FIX42::Tags::MDEntryType,
+			fix::FIX42::Values::MDEntryType::Offer);
+		
+		m_log.Info(
+			"Sending Market Data Request for %1%...",
+			boost::cref(symbol));
+		session.send(&mdRequest);
+
+	}
 
 }
 
@@ -252,22 +296,12 @@ void OnixFixEngine::CancelAllOrders(trdk::Security &) {
 }
 
 boost::shared_ptr<trdk::Security> OnixFixEngine::CreateSecurity(
-			trdk::Context &,
-			const trdk::Lib::Symbol &)
+			trdk::Context &context,
+			const trdk::Lib::Symbol &symbol)
 		const {
-	throw Error("OnixFixEngine::CreateSecurity not implemented");
-}
-
-void OnixFixEngine::onInboundApplicationMsg(
-			fix::Message &/*message*/,
-			fix::Session *) {
-    // clog << "\nIncoming application-level message:\n" << msg << endl;
-}
-
-void OnixFixEngine::onInboundSessionMsg(
-			fix::Message &/*message*/,
-			fix::Session *) {
-    // clog << "\nIncoming session-level message:\n" << msg << endl;
+	boost::shared_ptr<Security> result(new Security(context, symbol));
+	const_cast<OnixFixEngine *>(this)->m_securities.push_back(result);
+	return result;
 }
 
 void OnixFixEngine::onStateChange(
