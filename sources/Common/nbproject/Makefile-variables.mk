@@ -9,8 +9,8 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU-Linux-x86
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux-x86
-CND_ARTIFACT_NAME_Debug=libcommon.a
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/libcommon.a
+CND_ARTIFACT_NAME_Debug=libcommon_dbg.a
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/libcommon_dbg.a
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux-x86/package
 CND_PACKAGE_NAME_Debug=Common.tar
 CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux-x86/package/Common.tar

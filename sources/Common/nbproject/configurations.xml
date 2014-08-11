@@ -72,7 +72,7 @@
           <warningLevel>3</warningLevel>
         </ccTool>
         <archiverTool>
-          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a</output>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon_dbg.a</output>
         </archiverTool>
       </compileType>
       <item path="Assert.hpp" ex="false" tool="3" flavor2="0">
@@ -160,6 +160,7 @@
           <developmentMode>5</developmentMode>
         </asmTool>
         <archiverTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a</output>
         </archiverTool>
       </compileType>
       <item path="Assert.hpp" ex="false" tool="3" flavor2="0">

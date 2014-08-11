@@ -98,7 +98,7 @@
                             WD="../Common"
                             BC="${MAKE}  -f Makefile CONF=Debug"
                             CC="${MAKE}  -f Makefile CONF=Debug clean"
-                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon_dbg.a">
               </makeArtifact>
             </linkerLibProjectItem>
           </linkerLibItems>

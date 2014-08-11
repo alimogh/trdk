@@ -63,7 +63,7 @@
           <warningLevel>3</warningLevel>
         </ccTool>
         <linkerTool>
-          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader_dbg</output>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngine_dbg.${CND_DLIB_EXT}</output>
           <linkerLibItems>
             <linkerLibProjectItem>
               <makeArtifact PL="../Common"
@@ -74,7 +74,7 @@
                             WD="../Common"
                             BC="${MAKE}  -f Makefile CONF=Debug"
                             CC="${MAKE}  -f Makefile CONF=Debug clean"
-                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon_dbg.a">
               </makeArtifact>
             </linkerLibProjectItem>
             <linkerLibProjectItem>
@@ -137,7 +137,7 @@
                         WD="../Strategies/Test"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest.${CND_DLIB_EXT}">
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
           <makeArtifact PL="../Interaction/OnixFixEngine"
                         CT="2"
@@ -147,7 +147,7 @@
                         WD="../Interaction/OnixFixEngine"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT}">
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
         </requiredProjects>
       </compileType>
@@ -218,7 +218,6 @@
           <developmentMode>5</developmentMode>
         </asmTool>
         <linkerTool>
-          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/trader</output>
           <linkerLibItems>
             <linkerLibProjectItem>
               <makeArtifact PL="../Core"

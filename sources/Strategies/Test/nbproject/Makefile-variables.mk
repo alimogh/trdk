@@ -9,8 +9,8 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU-Linux-x86
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux-x86
-CND_ARTIFACT_NAME_Debug=libTest.so
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/libTest.so
+CND_ARTIFACT_NAME_Debug=libTest_dbg.so
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/libTest_dbg.so
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux-x86/package
 CND_PACKAGE_NAME_Debug=libTest.so.tar
 CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux-x86/package/libTest.so.tar

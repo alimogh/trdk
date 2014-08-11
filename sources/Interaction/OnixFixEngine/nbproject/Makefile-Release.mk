@@ -54,7 +54,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=../../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Release/GNU-Linux-x86 -L../../Core/dist/Release/GNU-Linux-x86 -lCore
+LDLIBSOPTIONS=../../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Release/GNU-Linux-x86 -L../../Core/dist/Release/GNU-Linux-x86 -lCore ../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/lib/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/lib/libffCppFixEngine.so
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -63,6 +63,8 @@ LDLIBSOPTIONS=../../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT}: ../../Common/dist/Release/GNU-Linux-x86/libcommon.a
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT}: ../../Core/dist/Release/GNU-Linux-x86/libCore.so
+
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT}: ../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/lib/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/lib/libffCppFixEngine.so
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
@@ -87,8 +89,6 @@ ${OBJECTDIR}/OnixFixEngine.o: OnixFixEngine.cpp
 .build-subprojects:
 	cd ../../Common && ${MAKE}  -f Makefile CONF=Release
 	cd ../../Core && ${MAKE}  -f Makefile CONF=Release
-	cd ../../Common && ${MAKE}  -f Makefile CONF=Release
-	cd ../../Core && ${MAKE}  -f Makefile CONF=Release
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
@@ -97,8 +97,6 @@ ${OBJECTDIR}/OnixFixEngine.o: OnixFixEngine.cpp
 
 # Subprojects
 .clean-subprojects:
-	cd ../../Common && ${MAKE}  -f Makefile CONF=Release clean
-	cd ../../Core && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../../Common && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../../Core && ${MAKE}  -f Makefile CONF=Release clean
 

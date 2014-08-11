@@ -75,8 +75,6 @@ ${OBJECTDIR}/TestStrategy.o: TestStrategy.cpp
 .build-subprojects:
 	cd ../../Common && ${MAKE}  -f Makefile CONF=Release
 	cd ../../Core && ${MAKE}  -f Makefile CONF=Release
-	cd ../../Common && ${MAKE}  -f Makefile CONF=Release
-	cd ../../Core && ${MAKE}  -f Makefile CONF=Release
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
@@ -85,8 +83,6 @@ ${OBJECTDIR}/TestStrategy.o: TestStrategy.cpp
 
 # Subprojects
 .clean-subprojects:
-	cd ../../Common && ${MAKE}  -f Makefile CONF=Release clean
-	cd ../../Core && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../../Common && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../../Core && ${MAKE}  -f Makefile CONF=Release clean
 

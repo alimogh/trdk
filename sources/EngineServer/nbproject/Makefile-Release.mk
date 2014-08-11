@@ -54,21 +54,21 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../Core/dist/Release/GNU-Linux-x86 -L../Core/dist/Release/GNU-Linux-x86 -lCore ../Engine/dist/Release/GNU-Linux-x86/trader -lboost_system -lboost_filesystem -lboost_regex
+LDLIBSOPTIONS=../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../Core/dist/Release/GNU-Linux-x86 -L../Core/dist/Release/GNU-Linux-x86 -lCore -Wl,-rpath,../Engine/dist/Release/GNU-Linux-x86 -L../Engine/dist/Release/GNU-Linux-x86 -lEngine -lboost_system -lboost_filesystem -lboost_regex
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engineserver
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engineserver: ../Common/dist/Release/GNU-Linux-x86/libcommon.a
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine: ../Common/dist/Release/GNU-Linux-x86/libcommon.a
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engineserver: ../Core/dist/Release/GNU-Linux-x86/libCore.so
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine: ../Core/dist/Release/GNU-Linux-x86/libCore.so
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engineserver: ../Engine/dist/Release/GNU-Linux-x86/trader
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine: ../Engine/dist/Release/GNU-Linux-x86/libEngine.so
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engineserver: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engineserver ${OBJECTFILES} ${LDLIBSOPTIONS}
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine ${OBJECTFILES} ${LDLIBSOPTIONS}
 
 ${OBJECTDIR}/_ext/2108356922/Assert.o: ../Common/Assert.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/2108356922
@@ -97,7 +97,7 @@ ${OBJECTDIR}/Server.o: Server.cpp
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
 	${RM} -r ${CND_BUILDDIR}/${CND_CONF}
-	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engineserver
+	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine
 
 # Subprojects
 .clean-subprojects:
