@@ -111,9 +111,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Api.cpp" />
-    <ClCompile Include="CurrenexFixExchange.cpp" />
-    <ClCompile Include="OnixFixEngine.cpp" />
+    <ClCompile Include="CurrenexFixMarketDataSource.cpp" />
+    <ClCompile Include="CurrenexFixSession.cpp" />
+    <ClCompile Include="CurrenexFixTradeSystem.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
@@ -130,10 +130,14 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CurrenexFixExchange.hpp" />
+    <ClInclude Include="Api.h" />
+    <ClInclude Include="CurrenexFixMarketDataSource.hpp" />
+    <ClInclude Include="CurrenexFixSession.hpp" />
+    <ClInclude Include="CurrenexSecurity.hpp" />
+    <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="CurrenexFixTradeSystem.hpp" />
     <ClInclude Include="DisableOnixFixEngineWarningsBegin.h" />
     <ClInclude Include="DisableOnixFixEngineWarningsEnd.h" />
-    <ClInclude Include="OnixFixEngine.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>

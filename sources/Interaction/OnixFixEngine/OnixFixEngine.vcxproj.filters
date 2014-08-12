@@ -15,16 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Api.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="OnixFixEngine.cpp">
+    <ClCompile Include="CurrenexFixMarketDataSource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CurrenexFixExchange.cpp">
+    <ClCompile Include="CurrenexFixSession.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CurrenexFixTradeSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,16 +35,28 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="OnixFixEngine.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DisableOnixFixEngineWarningsBegin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DisableOnixFixEngineWarningsEnd.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CurrenexFixExchange.hpp">
+    <ClInclude Include="CurrenexFixTradeSystem.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CurrenexFixMarketDataSource.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CurrenexFixSession.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CurrenexSecurity.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,3 +1,4 @@
 
 EXPORTS
-	CreateCurrenexFixExchange
+	CreateCurrenexTrading
+	CreateCurrenexStream
