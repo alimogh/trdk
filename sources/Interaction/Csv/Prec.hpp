@@ -13,7 +13,6 @@
 #include "Common/Assert.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/date_time.hpp>
 #	include <boost/multi_index_container.hpp>
 #	include <boost/multi_index/mem_fun.hpp>
 #	include <boost/multi_index/hashed_index.hpp>

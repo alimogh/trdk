@@ -54,6 +54,14 @@ namespace trdk { namespace Strategies { namespace Test {
 	public:
 		
 		virtual void OnLevel1Update(Security &security) {
+			GetContext().GetLog().Debug(
+				"%1%: bid = %2% / %3%, ask = %4% / %5%;",
+				boost::make_tuple(
+					security.GetSymbol(),
+					security.GetBidPrice(),
+					security.GetBidQty(),
+					security.GetAskPrice(),
+					security.GetAskQty()));
 			const auto &lastPrice = security.GetLastPriceScaled();
 			if (		lastPrice > security.ScalePrice(10.99)
 					|| lastPrice < security.ScalePrice(10.01)) {

@@ -41,7 +41,7 @@ namespace {
 			return 0;
 		}
 		return static_cast<typename Level1TickValuePolicy<tick>::ValueType>(
-			IsSet(level1[tick]));
+			level1[tick]);
 	}
 
 	void Unset(boost::atomic<Level1Value> &val) {
@@ -108,10 +108,6 @@ public:
 
 	double DescalePrice(double price) const {
 		return Descale(price, GetPriceScale());
-	}
-
-	bool IsLevel1Started() const {
-		return m_isLevel1Started == 0 ? false : true;
 	}
 
 	bool AddLevel1Tick(
@@ -338,7 +334,12 @@ void Security::CancelAllOrders() {
 }
 
 bool Security::IsLevel1Started() const {
-	return m_pimpl->IsLevel1Started();
+	return m_pimpl->m_isLevel1Started;
+}
+
+void Security::StartLevel1() {
+	Assert(!m_pimpl->m_isLevel1Started);
+	m_pimpl->m_isLevel1Started = true;
 }
 
 bool Security::IsStarted() const {
