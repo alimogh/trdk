@@ -166,12 +166,12 @@ fs::path Lib::Normalize(const fs::path &path) {
 }
 
 fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
-	Assert(workingDir.has_root_name());
-	if (path.empty() || path.has_root_name()) {
+	Assert(workingDir.has_root_path());
+	if (path.empty() || path.has_root_path()) {
 		return path;
 	}
 	fs::path result = workingDir / path;
-	Assert(result.has_root_name());
+	Assert(result.has_root_path());
 	return result;	
 }
 
