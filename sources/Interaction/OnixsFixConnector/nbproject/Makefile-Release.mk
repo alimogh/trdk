@@ -58,17 +58,17 @@ LDLIBSOPTIONS=../../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT}
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT}: ../../Common/dist/Release/GNU-Linux-x86/libcommon.a
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}: ../../Common/dist/Release/GNU-Linux-x86/libcommon.a
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT}: ../../Core/dist/Release/GNU-Linux-x86/libCore.so
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}: ../../Core/dist/Release/GNU-Linux-x86/libCore.so
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT}: ../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/lib/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/lib/libffCppFixEngine.so
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}: ../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/lib/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/lib/libffCppFixEngine.so
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT}: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
 
 ${OBJECTDIR}/Api.o: Api.cpp 
 	${MKDIR} -p ${OBJECTDIR}
@@ -93,7 +93,7 @@ ${OBJECTDIR}/OnixFixEngine.o: OnixFixEngine.cpp
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
 	${RM} -r ${CND_BUILDDIR}/${CND_CONF}
-	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT}
+	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}
 
 # Subprojects
 .clean-subprojects:

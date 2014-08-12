@@ -33,7 +33,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "API", "API", "{3FC123F7-5DC
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Simple API", "SimpleApi\SimpleApi.vcxproj", "{4809FFBD-45A2-4758-8E6E-9B7771BA3E7B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Onix FIX Engine", "Interaction\OnixFixEngine\OnixFixEngine.vcxproj", "{C86383E0-0A73-41E0-8263-9E05B608CE55}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OnixS FIX Connector", "Interaction\OnixsFixConnector\OnixsFixConnector.vcxproj", "{C86383E0-0A73-41E0-8263-9E05B608CE55}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test Strategy", "Strategies\Test\Test.vcxproj", "{9EF13741-7C1B-4A58-B79C-3800B42847E7}"
 EndProject

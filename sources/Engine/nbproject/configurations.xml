@@ -139,15 +139,15 @@
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
-          <makeArtifact PL="../Interaction/OnixFixEngine"
+          <makeArtifact PL="../Interaction/OnixsFixConnector"
                         CT="2"
                         CN="Debug"
                         AC="true"
                         BL="true"
-                        WD="../Interaction/OnixFixEngine"
+                        WD="../Interaction/OnixsFixConnector"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine_dbg.${CND_DLIB_EXT}">
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
         </requiredProjects>
       </compileType>
@@ -293,15 +293,15 @@
                         CC="${MAKE}  -f Makefile CONF=Release clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libTest.${CND_DLIB_EXT}">
           </makeArtifact>
-          <makeArtifact PL="../Interaction/OnixFixEngine"
+          <makeArtifact PL="../Interaction/OnixsFixConnector"
                         CT="2"
                         CN="Release"
                         AC="false"
                         BL="true"
-                        WD="../Interaction/OnixFixEngine"
+                        WD="../Interaction/OnixsFixConnector"
                         BC="${MAKE}  -f Makefile CONF=Release"
                         CC="${MAKE}  -f Makefile CONF=Release clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixFixEngine.${CND_DLIB_EXT}">
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}">
           </makeArtifact>
         </requiredProjects>
       </compileType>

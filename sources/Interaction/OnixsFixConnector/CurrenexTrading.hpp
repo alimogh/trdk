@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2014/08/09 13:08:41
+ *   Created: 2014/08/12 22:17:22
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,43 +10,26 @@
 
 #pragma once
 
+#include "CurrenexSession.hpp"
 #include "Core/TradeSystem.hpp"
-#include "Core/MarketDataSource.hpp"
 
-namespace trdk { namespace Interaction { namespace Onyx {
+namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
-	//! Main OnixS FIX Engine wrapper.
-	class OnixFixEngine
+	//! FIX trade connection with OnixS C++ FIX Engine.
+	class CurrenexTrading
 			: public trdk::TradeSystem,
-			public trdk::MarketDataSource,
 			public OnixS::FIX::ISessionListener {
 
 	public:
 
-		using Interactor::Error;
-
-	public:
-
-		explicit OnixFixEngine(
+		explicit CurrenexTrading(
 					const Lib::IniSectionRef &,
 					Context::Log &);
-		virtual ~OnixFixEngine();
-
-	public:
-
-		Context::Log & GetLog() const {
-			return m_log;
-		}
-
-		const OnixS::FIX::ProtocolVersion::Enum & GetFixVersion() const {
-			return m_fixVersion;
-		}
+		virtual ~CurrenexTrading();
 
 	public:
 
 		virtual void Connect(const trdk::Lib::IniSectionRef &);
-
-		virtual void SubscribeToSecurities();
 
 	public:
 
@@ -105,9 +88,7 @@ namespace trdk { namespace Interaction { namespace Onyx {
 
 		virtual void onInboundApplicationMsg(
 					OnixS::FIX::Message &,
-					OnixS::FIX::Session *) {
-			//...//
-		}
+					OnixS::FIX::Session *);
 		virtual void onStateChange(
 					OnixS::FIX::SessionState::Enum newState,
 					OnixS::FIX::SessionState::Enum prevState,
@@ -121,43 +102,11 @@ namespace trdk { namespace Interaction { namespace Onyx {
 					const std::string &description,
 					OnixS::FIX::Session *);
 
-	protected:
-
-		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
-					trdk::Context &,
-					const trdk::Lib::Symbol &)
-				const;
-
-	protected:
-
-		//! Implements trade system custom connect.
-		virtual void ConnectSession(
-					const trdk::Lib::IniSectionRef &,
-					OnixS::FIX::Session &,
-					const std::string &host,
-					int port,
-					const std::string &prefix);
-
-	private:
-
-		OnixS::FIX::Session * CreateSession(
-					const trdk::Lib::IniSectionRef &,
-					const std::string &prefix);
-
-		void SubscribeToMarketData(OnixS::FIX::Session &);
-
 	private:
 
 		Context::Log &m_log;
+		CurrenexFixSession m_session;		
 
-		const OnixS::FIX::ProtocolVersion::Enum m_fixVersion;
-
-		std::vector<boost::shared_ptr<Security>> m_securities;
-
-		boost::scoped_ptr<OnixS::FIX::Session> m_tradeSession;
-		boost::scoped_ptr<OnixS::FIX::Session> m_streamSession;
-
-	
 	};
 
 } } }
