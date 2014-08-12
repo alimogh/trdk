@@ -36,3 +36,5 @@
 *.log
 /sources/Interaction/OnixFixEngine/build/
 /sources/Interaction/OnixFixEngine/dist/
+/sources/Interaction/OnixsFixConnector/build/
+/sources/Interaction/OnixsFixConnector/dist/
