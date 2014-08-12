@@ -251,7 +251,14 @@
     <ProjectReference Include="..\Interaction\Fake\Fake.vcxproj">
       <Project>{3e0187e3-f6e3-48e3-a0e4-1e454b0e7f40}</Project>
     </ProjectReference>
+<<<<<<< HEAD
     <ProjectReference Include="..\Interaction\OnixFixEngine\OnixFixEngine.vcxproj">
+=======
+    <ProjectReference Include="..\Interaction\InteractiveBrokers\InteractiveBrokers.vcxproj">
+      <Project>{befe87ae-1376-4c4c-87d5-73e782990306}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Interaction\OnixsFixConnector\OnixsFixConnector.vcxproj">
+>>>>>>> 123fc7ccc737fc2d38bbbb0ad3c4b10d0d3f5212
       <Project>{c86383e0-0a73-41e0-8263-9e05b608ce55}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Version\Version.vcxproj">

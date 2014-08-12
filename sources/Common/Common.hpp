@@ -24,6 +24,7 @@
 #	include <boost/format.hpp>
 #	include <boost/atomic.hpp>
 #	include <boost/ref.hpp>
+#	include <boost/date_time.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Constants.h"
