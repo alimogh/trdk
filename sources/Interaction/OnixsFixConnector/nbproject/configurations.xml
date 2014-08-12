@@ -4,15 +4,21 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>CurrenexFixExchange.hpp</itemPath>
-      <itemPath>OnixFixEngine.hpp</itemPath>
+      <itemPath>Api.h</itemPath>
+      <itemPath>CurrenexSecurity.hpp</itemPath>
+      <itemPath>CurrenexSession.hpp</itemPath>
+      <itemPath>CurrenexStream.hpp</itemPath>
+      <itemPath>CurrenexTrading.hpp</itemPath>
+      <itemPath>DisableOnixsFixEngineWarningsBegin.h</itemPath>
+      <itemPath>DisableOnixsFixEngineWarningsEnd.h</itemPath>
+      <itemPath>Fwd.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>Api.cpp</itemPath>
-      <itemPath>CurrenexFixExchange.cpp</itemPath>
-      <itemPath>OnixFixEngine.cpp</itemPath>
+      <itemPath>CurrenexSession.cpp</itemPath>
+      <itemPath>CurrenexStream.cpp</itemPath>
+      <itemPath>CurrenexTrading.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -93,15 +99,30 @@
           </linkerLibItems>
         </linkerTool>
       </compileType>
-      <item path="Api.cpp" ex="false" tool="1" flavor2="0">
+      <item path="Api.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="CurrenexFixExchange.cpp" ex="false" tool="1" flavor2="0">
+      <item path="CurrenexSecurity.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="CurrenexFixExchange.hpp" ex="false" tool="3" flavor2="0">
+      <item path="CurrenexSession.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="OnixFixEngine.cpp" ex="false" tool="1" flavor2="0">
+      <item path="CurrenexSession.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="OnixFixEngine.hpp" ex="false" tool="3" flavor2="0">
+      <item path="CurrenexStream.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="CurrenexStream.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="CurrenexTrading.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="CurrenexTrading.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="DisableOnixsFixEngineWarningsBegin.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="DisableOnixsFixEngineWarningsEnd.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Fwd.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
       </item>
@@ -176,15 +197,30 @@
           </linkerLibItems>
         </linkerTool>
       </compileType>
-      <item path="Api.cpp" ex="false" tool="1" flavor2="0">
+      <item path="Api.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="CurrenexFixExchange.cpp" ex="false" tool="1" flavor2="0">
+      <item path="CurrenexSecurity.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="CurrenexFixExchange.hpp" ex="false" tool="3" flavor2="0">
+      <item path="CurrenexSession.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="OnixFixEngine.cpp" ex="false" tool="1" flavor2="0">
+      <item path="CurrenexSession.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="OnixFixEngine.hpp" ex="false" tool="3" flavor2="0">
+      <item path="CurrenexStream.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="CurrenexStream.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="CurrenexTrading.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="CurrenexTrading.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="DisableOnixsFixEngineWarningsBegin.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="DisableOnixsFixEngineWarningsEnd.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Fwd.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
       </item>
