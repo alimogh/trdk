@@ -54,11 +54,9 @@ void CurrenexFixExchange::ConnectSession(
 			boost::cref(prefix),
 			resetSeqNumFlagKey,
 			resetSeqNumFlag));
-	if (resetSeqNumFlag) {
-		customLogonMessage.setFlag(
-			fix::FIX41::Tags::ResetSeqNumFlag,
-			fix::FIX41::Values::ResetSeqNumFlag::Yes_reset_sequence_numbers);
-	}
+	customLogonMessage.setFlag(
+		fix::FIX41::Tags::ResetSeqNumFlag,
+		resetSeqNumFlag);
 
 	try {
 		if (config.ReadBoolKey(prefix + ".use_ssl")) {
