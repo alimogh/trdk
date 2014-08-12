@@ -9,16 +9,16 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "CurrenexFixMarketDataSource.hpp"
+#include "CurrenexStream.hpp"
 #include "CurrenexSecurity.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::Interaction::Onyx;
+using namespace trdk::Interaction::OnixsFixConnector;
 
 namespace fix = OnixS::FIX;
 
-CurrenexFixMarketDataSource::CurrenexFixMarketDataSource(
+CurrenexStream::CurrenexStream(
 			const Lib::IniSectionRef &conf,
 			Context::Log &log)
 		: m_log(log),
@@ -26,11 +26,11 @@ CurrenexFixMarketDataSource::CurrenexFixMarketDataSource(
 	//...//
 }
 
-CurrenexFixMarketDataSource::~CurrenexFixMarketDataSource() {
+CurrenexStream::~CurrenexStream() {
 	//...//
 }
 
-void CurrenexFixMarketDataSource::Connect(const IniSectionRef &conf) {
+void CurrenexStream::Connect(const IniSectionRef &conf) {
 	if (m_session.IsConnected()) {
 		return;
 	}
@@ -43,7 +43,7 @@ void CurrenexFixMarketDataSource::Connect(const IniSectionRef &conf) {
 	}
 }
 
-CurrenexSecurity * CurrenexFixMarketDataSource::FindRequestSecurity(
+CurrenexSecurity * CurrenexStream::FindRequestSecurity(
 			const fix::Message &requestResult) {
 	const auto securityIndex
 		= requestResult.getUInt64(fix::FIX42::Tags::MDReqID);
@@ -53,17 +53,18 @@ CurrenexSecurity * CurrenexFixMarketDataSource::FindRequestSecurity(
 			requestResult.get(fix::FIX42::Tags::MDReqID));
 		return nullptr;
 	}
-	return &*m_securities[requestResult.getUInt64(fix::FIX42::Tags::MDReqID)];
+	const auto securityId = requestResult.getUInt64(fix::FIX42::Tags::MDReqID);
+	return &*m_securities[size_t(securityId)];
 }
 
-const CurrenexSecurity * CurrenexFixMarketDataSource::FindRequestSecurity(
+const CurrenexSecurity * CurrenexStream::FindRequestSecurity(
 			const fix::Message &requestResult)
 		const {
-	return const_cast<CurrenexFixMarketDataSource *>(this)
+	return const_cast<CurrenexStream *>(this)
 		->FindRequestSecurity(requestResult);
 }
 
-std::string CurrenexFixMarketDataSource::GetRequestSymbolStr(
+std::string CurrenexStream::GetRequestSymbolStr(
 			const fix::Message &requestResult)
 		const {
 	const CurrenexSecurity *const security = FindRequestSecurity(requestResult);
@@ -73,7 +74,7 @@ std::string CurrenexFixMarketDataSource::GetRequestSymbolStr(
 	return security->GetSymbol().GetAsString();
 }
 
-void CurrenexFixMarketDataSource::SubscribeToSecurities() {
+void CurrenexStream::SubscribeToSecurities() {
 
 	m_log.Info(
 		"Sending FIX Market Data Requests for %1% securities...",
@@ -127,18 +128,18 @@ void CurrenexFixMarketDataSource::SubscribeToSecurities() {
 
 }
 
-boost::shared_ptr<Security> CurrenexFixMarketDataSource::CreateSecurity(
+boost::shared_ptr<Security> CurrenexStream::CreateSecurity(
 			Context &context,
 			const Symbol &symbol)
 		const {
 	boost::shared_ptr<CurrenexSecurity> result(
 		new CurrenexSecurity(context, symbol));
-	const_cast<CurrenexFixMarketDataSource *>(this)
+	const_cast<CurrenexStream *>(this)
 		->m_securities.push_back(result);
 	return result;
 }
 
-void CurrenexFixMarketDataSource::onStateChange(
+void CurrenexStream::onStateChange(
 			fix::SessionState::Enum newState,
 			fix::SessionState::Enum prevState,
 			fix::Session *session) {
@@ -146,7 +147,7 @@ void CurrenexFixMarketDataSource::onStateChange(
 	m_session.LogStateChange(newState, prevState, *session);
 }
 
-void CurrenexFixMarketDataSource::onError(
+void CurrenexStream::onError(
 			fix::ErrorReason::Enum reason,
 			const std::string &description,
 			fix::Session *session) {
@@ -154,7 +155,7 @@ void CurrenexFixMarketDataSource::onError(
 	m_session.LogError(reason, description, *session);
 }
 
-void CurrenexFixMarketDataSource::onWarning(
+void CurrenexStream::onWarning(
 			fix::WarningReason::Enum reason,
 			const std::string &description,
 			fix::Session *session) {
@@ -162,7 +163,7 @@ void CurrenexFixMarketDataSource::onWarning(
 	m_session.LogWarning(reason, description, *session);
 }
 
-void CurrenexFixMarketDataSource::onInboundApplicationMsg(
+void CurrenexStream::onInboundApplicationMsg(
 			fix::Message &message,
 			fix::Session *session) {
 			
@@ -210,12 +211,12 @@ void CurrenexFixMarketDataSource::onInboundApplicationMsg(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TRDK_INTERACTION_ONIXFIXENGINE_API
+TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 boost::shared_ptr<MarketDataSource> CreateCurrenexStream(
 			const IniSectionRef &configuration,
 			Context::Log &log) {
 	return boost::shared_ptr<MarketDataSource>(
-		new CurrenexFixMarketDataSource(configuration, log));
+		new CurrenexStream(configuration, log));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

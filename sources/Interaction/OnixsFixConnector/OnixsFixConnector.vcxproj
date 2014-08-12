@@ -111,9 +111,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CurrenexFixMarketDataSource.cpp" />
-    <ClCompile Include="CurrenexFixSession.cpp" />
-    <ClCompile Include="CurrenexFixTradeSystem.cpp" />
+    <ClCompile Include="CurrenexSession.cpp" />
+    <ClCompile Include="CurrenexStream.cpp" />
+    <ClCompile Include="CurrenexTrading.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
@@ -131,13 +131,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api.h" />
-    <ClInclude Include="CurrenexFixMarketDataSource.hpp" />
-    <ClInclude Include="CurrenexFixSession.hpp" />
+    <ClInclude Include="CurrenexStream.hpp" />
     <ClInclude Include="CurrenexSecurity.hpp" />
+    <ClInclude Include="DisableOnixsFixEngineWarningsBegin.h" />
+    <ClInclude Include="DisableOnixsFixEngineWarningsEnd.h" />
     <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="CurrenexFixTradeSystem.hpp" />
-    <ClInclude Include="DisableOnixFixEngineWarningsBegin.h" />
-    <ClInclude Include="DisableOnixFixEngineWarningsEnd.h" />
+    <ClInclude Include="CurrenexTrading.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -152,15 +151,15 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="OnixFixEngine.rc" />
+    <ResourceCompile Include="OnixsFixConnector.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="OnixFixEngine.def" />
+    <None Include="OnixsFixConnector.def" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C86383E0-0A73-41E0-8263-9E05B608CE55}</ProjectGuid>
-    <RootNamespace>OnixFixEngine</RootNamespace>
-    <ProjectName>Onix FIX Engine</ProjectName>
+    <RootNamespace>OnixsFixConnector</RootNamespace>
+    <ProjectName>OnixS FIX Connector</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">
@@ -241,7 +240,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="OnixFixEngine.props" />
+    <Import Project="OnixsFixConnector.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -252,7 +251,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="OnixFixEngine.props" />
+    <Import Project="OnixsFixConnector.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -264,7 +263,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="OnixFixEngine.props" />
+    <Import Project="OnixsFixConnector.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -276,7 +275,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="OnixFixEngine.props" />
+    <Import Project="OnixsFixConnector.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -287,7 +286,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="OnixFixEngine.props" />
+    <Import Project="OnixsFixConnector.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -298,7 +297,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="OnixFixEngine.props" />
+    <Import Project="OnixsFixConnector.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -310,7 +309,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="OnixFixEngine.props" />
+    <Import Project="OnixsFixConnector.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -322,7 +321,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\Interaction.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="OnixFixEngine.props" />
+    <Import Project="OnixsFixConnector.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -333,7 +332,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="OnixFixEngine.props" />
+    <Import Project="OnixsFixConnector.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -344,7 +343,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="OnixFixEngine.props" />
+    <Import Project="OnixsFixConnector.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -356,7 +355,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="OnixFixEngine.props" />
+    <Import Project="OnixsFixConnector.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -368,7 +367,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="OnixFixEngine.props" />
+    <Import Project="OnixsFixConnector.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>

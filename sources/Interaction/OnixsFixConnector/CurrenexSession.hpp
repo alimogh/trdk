@@ -13,7 +13,7 @@
 #include "Core/Interactor.hpp"
 #include "Core/Context.hpp"
 
-namespace trdk { namespace Interaction { namespace Onyx {
+namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	class CurrenexFixSession : private boost::noncopyable {
 

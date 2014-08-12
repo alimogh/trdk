@@ -10,13 +10,13 @@
 
 #pragma once
 
-#include "CurrenexFixSession.hpp"
+#include "CurrenexSession.hpp"
 #include "Core/MarketDataSource.hpp"
 
-namespace trdk { namespace Interaction { namespace Onyx {
+namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	//! FIX price stream connection with OnixS C++ FIX Engine.
-	class CurrenexFixMarketDataSource
+	class CurrenexStream
 			: public trdk::MarketDataSource,
 			public OnixS::FIX::ISessionListener {
 
@@ -26,10 +26,10 @@ namespace trdk { namespace Interaction { namespace Onyx {
 
 	public:
 
-		explicit CurrenexFixMarketDataSource(
+		explicit CurrenexStream(
 					const Lib::IniSectionRef &,
 					Context::Log &);
-		virtual ~CurrenexFixMarketDataSource();
+		virtual ~CurrenexStream();
 
 	public:
 

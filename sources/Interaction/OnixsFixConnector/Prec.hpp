@@ -21,9 +21,9 @@
 #include	<boost/noncopyable.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
-#include "DisableOnixFixEngineWarningsBegin.h"
+#include "DisableOnixsFixEngineWarningsBegin.h"
 #	include <OnixS/FIXEngine.h>
-#include "DisableOnixFixEngineWarningsEnd.h"
+#include "DisableOnixsFixEngineWarningsEnd.h"
 
 #include "Common/Common.hpp"
 

@@ -9,15 +9,15 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "CurrenexFixTradeSystem.hpp"
+#include "CurrenexTrading.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::Interaction::Onyx;
+using namespace trdk::Interaction::OnixsFixConnector;
 
 namespace fix = OnixS::FIX;
 
-CurrenexFixTradeSystem::CurrenexFixTradeSystem(
+CurrenexTrading::CurrenexTrading(
 					const IniSectionRef &conf,
 					Context::Log &log)
 		: m_log(log),
@@ -25,11 +25,11 @@ CurrenexFixTradeSystem::CurrenexFixTradeSystem(
 	//...//
 }
 
-CurrenexFixTradeSystem::~CurrenexFixTradeSystem() {
+CurrenexTrading::~CurrenexTrading() {
 	//...//
 }
 
-void CurrenexFixTradeSystem::Connect(const IniSectionRef &conf) {
+void CurrenexTrading::Connect(const IniSectionRef &conf) {
 	if (m_session.IsConnected()) {
 		return;
 	}
@@ -42,89 +42,89 @@ void CurrenexFixTradeSystem::Connect(const IniSectionRef &conf) {
 	}
 }
 
-OrderId CurrenexFixTradeSystem::SellAtMarketPrice(
+OrderId CurrenexTrading::SellAtMarketPrice(
 			trdk::Security &,
 			trdk::Qty,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
-	throw Error("CurrenexFixTradeSystem::SellAtMarketPrice not implemented");
+	throw Error("CurrenexTrading::SellAtMarketPrice not implemented");
 }
 
-OrderId CurrenexFixTradeSystem::Sell(
+OrderId CurrenexTrading::Sell(
 			trdk::Security &,
 			trdk::Qty,
 			trdk::ScaledPrice,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
-	throw Error("CurrenexFixTradeSystem::Sell not implemented");
+	throw Error("CurrenexTrading::Sell not implemented");
 }
 
-OrderId CurrenexFixTradeSystem::SellAtMarketPriceWithStopPrice(
+OrderId CurrenexTrading::SellAtMarketPriceWithStopPrice(
 			trdk::Security &,
 			trdk::Qty,
 			trdk::ScaledPrice /*stopPrice*/,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
 	throw Error(
-		"CurrenexFixTradeSystem::SellAtMarketPriceWithStopPrice"
+		"CurrenexTrading::SellAtMarketPriceWithStopPrice"
 			" not implemented");
 }
 
-OrderId CurrenexFixTradeSystem::SellOrCancel(
+OrderId CurrenexTrading::SellOrCancel(
 			trdk::Security &,
 			trdk::Qty,
 			trdk::ScaledPrice,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
-	throw Error("CurrenexFixTradeSystem::SellOrCancel not implemented");
+	throw Error("CurrenexTrading::SellOrCancel not implemented");
 }
 
-OrderId CurrenexFixTradeSystem::BuyAtMarketPrice(
+OrderId CurrenexTrading::BuyAtMarketPrice(
 			trdk::Security &,
 			trdk::Qty,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
-	throw Error("CurrenexFixTradeSystem::BuyAtMarketPrice not implemented");
+	throw Error("CurrenexTrading::BuyAtMarketPrice not implemented");
 }
 
-OrderId CurrenexFixTradeSystem::Buy(
+OrderId CurrenexTrading::Buy(
 			trdk::Security &,
 			trdk::Qty,
 			trdk::ScaledPrice,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
-	throw Error("CurrenexFixTradeSystem::Buy not implemented");
+	throw Error("CurrenexTrading::Buy not implemented");
 }
 
-OrderId CurrenexFixTradeSystem::BuyAtMarketPriceWithStopPrice(
+OrderId CurrenexTrading::BuyAtMarketPriceWithStopPrice(
 			trdk::Security &,
 			trdk::Qty,
 			trdk::ScaledPrice /*stopPrice*/,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
 	throw Error(
-		"CurrenexFixTradeSystem::BuyAtMarketPriceWithStopPrice"
+		"CurrenexTrading::BuyAtMarketPriceWithStopPrice"
 			" not implemented");
 }
 
-OrderId CurrenexFixTradeSystem::BuyOrCancel(
+OrderId CurrenexTrading::BuyOrCancel(
 			trdk::Security &,
 			trdk::Qty,
 			trdk::ScaledPrice,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
-	throw Error("CurrenexFixTradeSystem::BuyOrCancel not implemented");
+	throw Error("CurrenexTrading::BuyOrCancel not implemented");
 }
 
-void CurrenexFixTradeSystem::CancelOrder(OrderId) {
-	throw Error("CurrenexFixTradeSystem::CancelOrder not implemented");
+void CurrenexTrading::CancelOrder(OrderId) {
+	throw Error("CurrenexTrading::CancelOrder not implemented");
 }
 
-void CurrenexFixTradeSystem::CancelAllOrders(trdk::Security &) {
-	throw Error("CurrenexFixTradeSystem::CancelAllOrders not implemented");
+void CurrenexTrading::CancelAllOrders(trdk::Security &) {
+	throw Error("CurrenexTrading::CancelAllOrders not implemented");
 }
 
-void CurrenexFixTradeSystem::onStateChange(
+void CurrenexTrading::onStateChange(
 			fix::SessionState::Enum newState,
 			fix::SessionState::Enum prevState,
 			fix::Session *session) {
@@ -132,7 +132,7 @@ void CurrenexFixTradeSystem::onStateChange(
 	m_session.LogStateChange(newState, prevState, *session);
 }
 
-void CurrenexFixTradeSystem::onError(
+void CurrenexTrading::onError(
 			fix::ErrorReason::Enum reason,
 			const std::string &description,
 			fix::Session *session) {
@@ -140,7 +140,7 @@ void CurrenexFixTradeSystem::onError(
 	m_session.LogError(reason, description, *session);
 }
 
-void CurrenexFixTradeSystem::onWarning(
+void CurrenexTrading::onWarning(
 			fix::WarningReason::Enum reason,
 			const std::string &description,
 			fix::Session *session) {
@@ -148,7 +148,7 @@ void CurrenexFixTradeSystem::onWarning(
 	m_session.LogWarning(reason, description, *session);
 }
 
-void CurrenexFixTradeSystem::onInboundApplicationMsg(
+void CurrenexTrading::onInboundApplicationMsg(
 			fix::Message &/*message*/,
 			fix::Session *session) {
 	Assert(session == &m_session.Get());
@@ -157,13 +157,13 @@ void CurrenexFixTradeSystem::onInboundApplicationMsg(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TRDK_INTERACTION_ONIXFIXENGINE_API
+TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 TradeSystemFactoryResult CreateCurrenexTrading(
 			const IniSectionRef &configuration,
 			Context::Log &log) {
 	TradeSystemFactoryResult result;
 	boost::get<0>(result).reset(
-		new CurrenexFixTradeSystem(configuration, log));
+		new CurrenexTrading(configuration, log));
 	return result;
 }
 

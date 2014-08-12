@@ -9,11 +9,11 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "CurrenexFixSession.hpp"
+#include "CurrenexSession.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::Interaction::Onyx;
+using namespace trdk::Interaction::OnixsFixConnector;
 
 namespace fix = OnixS::FIX;
 

@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2014/08/12 23:51:51
+ *   Created: 2014/08/12 23:28:45
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,8 +10,19 @@
 
 #pragma once
 
-#ifdef BOOST_WINDOWS
-#	define TRDK_INTERACTION_ONIXFIXENGINE_API
-#else
-#	define TRDK_INTERACTION_ONIXFIXENGINE_API extern "C"
-#endif
+#include "Core/Security.hpp"
+
+namespace trdk { namespace Interaction { namespace OnixsFixConnector {
+
+	class CurrenexSecurity : public trdk::Security {
+
+	public:
+
+		explicit CurrenexSecurity(Context &context, const Lib::Symbol &symbol)
+				: Security(context, symbol) {
+			//...//
+		}
+
+	};
+
+} } }

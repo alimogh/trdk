@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2014/08/12 23:33:43
+ *   Created: 2014/08/12 23:51:51
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,8 +10,8 @@
 
 #pragma once
 
-namespace trdk { namespace Interaction { namespace Onyx {
-
-	class CurrenexSecurity;
-
-} } }
+#ifdef BOOST_WINDOWS
+#	define TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
+#else
+#	define TRDK_INTERACTION_ONIXSFIXCONNECTOR_API extern "C"
+#endif

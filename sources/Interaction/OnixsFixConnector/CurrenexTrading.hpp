@@ -10,22 +10,22 @@
 
 #pragma once
 
-#include "CurrenexFixSession.hpp"
+#include "CurrenexSession.hpp"
 #include "Core/TradeSystem.hpp"
 
-namespace trdk { namespace Interaction { namespace Onyx {
+namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	//! FIX trade connection with OnixS C++ FIX Engine.
-	class CurrenexFixTradeSystem
+	class CurrenexTrading
 			: public trdk::TradeSystem,
 			public OnixS::FIX::ISessionListener {
 
 	public:
 
-		explicit CurrenexFixTradeSystem(
+		explicit CurrenexTrading(
 					const Lib::IniSectionRef &,
 					Context::Log &);
-		virtual ~CurrenexFixTradeSystem();
+		virtual ~CurrenexTrading();
 
 	public:
 

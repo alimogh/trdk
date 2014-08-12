@@ -9,7 +9,7 @@
             <header-extensions>h,hpp</header-extensions>
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects>
-                <make-dep-project>../Interaction/OnixFixEngine</make-dep-project>
+                <make-dep-project>../Interaction/OnixsFixConnector</make-dep-project>
                 <make-dep-project>../Gateway/Service</make-dep-project>
                 <make-dep-project>../Common</make-dep-project>
                 <make-dep-project>../PyApi</make-dep-project>

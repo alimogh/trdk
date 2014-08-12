@@ -18,38 +18,23 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CurrenexFixMarketDataSource.cpp">
+    <ClCompile Include="CurrenexSession.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CurrenexFixSession.cpp">
+    <ClCompile Include="CurrenexStream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CurrenexFixTradeSystem.cpp">
+    <ClCompile Include="CurrenexTrading.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="OnixFixEngine.rc">
+    <ResourceCompile Include="OnixsFixConnector.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="DisableOnixFixEngineWarningsBegin.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DisableOnixFixEngineWarningsEnd.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CurrenexFixTradeSystem.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CurrenexFixMarketDataSource.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CurrenexFixSession.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CurrenexSecurity.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -59,9 +44,21 @@
     <ClInclude Include="Api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CurrenexStream.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CurrenexTrading.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DisableOnixsFixEngineWarningsBegin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DisableOnixsFixEngineWarningsEnd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="OnixFixEngine.def">
+    <None Include="OnixsFixConnector.def">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
