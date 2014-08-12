@@ -40,8 +40,23 @@ void CurrenexFixExchange::ConnectSession(
 		fix::FIX43::Tags::Password,
 		config.ReadKey(prefix + ".password"));
 #	ifdef _DEBUG
-		customLogonMessage.setFlag(141, true);
+		bool resetSeqNumFlag = true;
+#	else
+		bool resetSeqNumFlag = false;
 #	endif
+	const char *const resetSeqNumFlagKey = "engine.reset_seq_num_flag";
+	resetSeqNumFlag = config.ReadBoolKey(resetSeqNumFlagKey);
+	GetLog().Info(
+		"ResetSeqNumFlag %1%: %2% = %3%.",
+		boost::make_tuple(
+			boost::cref(prefix),
+			resetSeqNumFlagKey),
+			resetSeqNumFlag));
+	if (resetSeqNumFlag) {
+		customLogonMessage.setFlag(
+			fix::FIX41::Tags::ResetSeqNumFlag,
+			fix::FIX41::Values::ResetSeqNumFlag::Yes_reset_sequence_numbers);
+	}
 
 	try {
 		if (config.ReadBoolKey(prefix + ".use_ssl")) {
