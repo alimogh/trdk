@@ -37,9 +37,11 @@ namespace {
 	typename Level1TickValuePolicy<tick>::ValueType
 	GetIfSet(
 				const Level1 &level1) {
-		return
-			static_cast<typename Level1TickValuePolicy<tick>::ValueType>(
-				IsSet(level1[tick]) ? level1[tick] : 0);
+		if (!IsSet(level1[tick])) {
+			return 0;
+		}
+		return static_cast<typename Level1TickValuePolicy<tick>::ValueType>(
+			IsSet(level1[tick]));
 	}
 
 	void Unset(boost::atomic<Level1Value> &val) {
