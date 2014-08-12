@@ -45,12 +45,14 @@ void CurrenexFixExchange::ConnectSession(
 		bool resetSeqNumFlag = false;
 #	endif
 	const char *const resetSeqNumFlagKey = "engine.reset_seq_num_flag";
-	resetSeqNumFlag = config.ReadBoolKey(resetSeqNumFlagKey);
+	resetSeqNumFlag = config.ReadBoolKey(
+		resetSeqNumFlagKey,
+		resetSeqNumFlag);
 	GetLog().Info(
 		"ResetSeqNumFlag %1%: %2% = %3%.",
 		boost::make_tuple(
 			boost::cref(prefix),
-			resetSeqNumFlagKey),
+			resetSeqNumFlagKey,
 			resetSeqNumFlag));
 	if (resetSeqNumFlag) {
 		customLogonMessage.setFlag(
