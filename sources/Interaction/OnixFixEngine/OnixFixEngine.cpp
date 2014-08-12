@@ -157,16 +157,23 @@ fix::Session * OnixFixEngine::CreateSession(
 void OnixFixEngine::SubscribeToMarketData(fix::Session &session) {
 	
 	// Requests market data from stream by selected securities:
-	foreach (const auto &security, m_securities) {
+	for (	size_t sequrityIndex = 0;
+			sequrityIndex < m_securities.size();
+			++sequrityIndex) {
 			
-		const Symbol &symbol = security->GetSymbol();
+		const Symbol &symbol = m_securities[sequrityIndex]->GetSymbol();
 		
 		fix::Message mdRequest("V", GetFixVersion());
 
 		mdRequest.set(
-			fix::FIX40::Tags::Symbol,
-			symbol.GetSymbol() + "/" + symbol.GetCurrency());
-			
+ 			fix::FIX42::Tags::MDReqID,
+ 			sequrityIndex);
+		mdRequest.setGroup(fix::FIX41::Tags::NoRelatedSym, 1)
+			.at(0)
+			.set(
+				fix::FIX40::Tags::Symbol,
+				symbol.GetSymbol() + "/" + symbol.GetCurrency());
+	
 		mdRequest.set(
 			fix::FIX42::Tags::SubscriptionRequestType,
 			fix::FIX42::Values::SubscriptionRequestType::Snapshot__plus__Updates);
@@ -176,6 +183,9 @@ void OnixFixEngine::SubscribeToMarketData(fix::Session &session) {
 		mdRequest.set(
 			fix::FIX42::Tags::MDUpdateType,
 			fix::FIX42::Values::MDUpdateType::Incremental_Refresh);
+		mdRequest.set(
+			fix::FIX42::Tags::AggregatedBook,
+			fix::FIX42::Values::AggregatedBook::one_book_entry_per_side_per_price);
 
 		auto mdEntryTypes
 			= mdRequest.setGroup(fix::FIX42::Tags::NoMDEntryTypes, 2);
@@ -185,7 +195,7 @@ void OnixFixEngine::SubscribeToMarketData(fix::Session &session) {
 		mdEntryTypes[1].set(
 			fix::FIX42::Tags::MDEntryType,
 			fix::FIX42::Values::MDEntryType::Offer);
-		
+
 		m_log.Info(
 			"Sending Market Data Request for %1%...",
 			boost::cref(symbol));
@@ -331,4 +341,76 @@ void OnixFixEngine::onWarning(
 	m_log.Warn(
 		"FIX Session waring: \"%1%\" (%2%)",
 		boost::make_tuple(boost::cref(description), reason));
+}
+
+Security * OnixFixEngine::FindRequestSecurity(
+			const fix::Message &requestResult) {
+	const auto securityIndex
+		= requestResult.getUInt64(fix::FIX42::Tags::MDReqID);
+	if (securityIndex >= m_securities.size()) {
+		GetLog().Error(
+			"Received wrong security index from FIX Server: %1%.",
+			requestResult.get(fix::FIX42::Tags::MDReqID));
+		return nullptr;
+	}
+	return &*m_securities[requestResult.getUInt64(fix::FIX42::Tags::MDReqID)];
+}
+
+const Security * OnixFixEngine::FindRequestSecurity(
+			const OnixS::FIX::Message &requestResult)
+		const {
+	return const_cast<OnixFixEngine *>(this)
+		->FindRequestSecurity(requestResult);
+}
+
+std::string OnixFixEngine::GetRequestSymbolStr(
+			const fix::Message &requestResult)
+		const {
+	const Security *const security = FindRequestSecurity(requestResult);
+	if (!security) {
+		return std::string();
+	}
+	return security->GetSymbol().GetAsString();
+}
+
+void OnixFixEngine::onInboundApplicationMsg(
+			fix::Message &message,
+			fix::Session *) {
+	if (message.type() == "Y") {
+		m_log.Error(
+			"Failed to Subscribe to %1% Market Data: \"%2%\".",
+			boost::make_tuple(
+				GetRequestSymbolStr(message),
+				message.get(fix::FIX42::Tags::MDReqRejReason)));
+	} else if (message.type() == "X") {
+		const Security *security = FindRequestSecurity(message);
+		if (!security) {
+			return;
+		}
+		const fix::Group &entries
+			= message.getGroup(fix::FIX42::Tags::NoMDEntries);
+		for (size_t i = 0; i < entries.size(); ++i) {
+			
+			const auto &entry = entries[i];
+			const auto &entryType = entry.get(fix::FIX42::Tags::MDEntryType);
+			std::string tmp;
+			if (entryType == fix::FIX42::Values::MDEntryType::Bid) {
+				tmp = "bid";
+			} else if (entryType == fix::FIX42::Values::MDEntryType::Offer) {
+				tmp = "offer";
+			} else {
+				tmp = "UNKNOWN";
+			}
+	
+			m_log.Info(
+				"MD!!! %1%: %2% = %3% / %4%.",
+				boost::make_tuple(
+					security->GetSymbol(),
+					tmp,
+					entry.getDouble(fix::FIX42::Tags::MDEntryPx),
+					entry.getDouble(fix::FIX42::Tags::MDEntrySize)));
+
+		}
+
+	}
 }

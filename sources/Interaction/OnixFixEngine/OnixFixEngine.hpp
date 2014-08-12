@@ -105,9 +105,7 @@ namespace trdk { namespace Interaction { namespace Onyx {
 
 		virtual void onInboundApplicationMsg(
 					OnixS::FIX::Message &,
-					OnixS::FIX::Session *) {
-			//...//
-		}
+					OnixS::FIX::Session *);
 		virtual void onStateChange(
 					OnixS::FIX::SessionState::Enum newState,
 					OnixS::FIX::SessionState::Enum prevState,
@@ -137,6 +135,13 @@ namespace trdk { namespace Interaction { namespace Onyx {
 					const std::string &host,
 					int port,
 					const std::string &prefix);
+
+	protected:
+
+		Security * FindRequestSecurity(const OnixS::FIX::Message &);
+		const Security * FindRequestSecurity(const OnixS::FIX::Message &) const;
+		
+		std::string GetRequestSymbolStr(const OnixS::FIX::Message &) const;
 
 	private:
 
