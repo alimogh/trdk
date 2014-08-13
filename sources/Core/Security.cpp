@@ -20,34 +20,35 @@ namespace pt = boost::posix_time;
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::Lib::Interlocking;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
-
-	typedef std::array<volatile int64_t, numberOfLevel1TickTypes> Level1;
 	
-	template<typename T>
-	bool IsSet(const T &val) {
-		return val != std::numeric_limits<T>::max();
+	typedef intmax_t Level1Value;
+
+	typedef std::array<boost::atomic<Level1Value>, numberOfLevel1TickTypes> Level1;
+	
+	bool IsSet(const boost::atomic<Level1Value> &val) {
+		return val != std::numeric_limits<Level1Value>::max();
 	}
 
 	template<Level1TickType tick>
 	typename Level1TickValuePolicy<tick>::ValueType
 	GetIfSet(
 				const Level1 &level1) {
-		return
-			static_cast<typename Level1TickValuePolicy<tick>::ValueType>(
-				IsSet(level1[tick]) ? level1[tick] : 0);
+		if (!IsSet(level1[tick])) {
+			return 0;
+		}
+		return static_cast<typename Level1TickValuePolicy<tick>::ValueType>(
+			level1[tick]);
 	}
 
-	template<typename T>
-	void Unset(T &val) {
-		val = std::numeric_limits<T>::max();
+	void Unset(boost::atomic<Level1Value> &val) {
+		val = std::numeric_limits<Level1Value>::max();
 	}
 
-	volatile size_t impliedVolatilityUpdatePeriod(30);
+	boost::atomic_size_t impliedVolatilityUpdatePeriod(30);
 
 }
 
@@ -78,9 +79,9 @@ public:
 	mutable boost::signals2::signal<NewBarSlotSignature> m_barSignal;
 
 	Level1 m_level1;
-	volatile Qty m_brokerPosition;
-	volatile int64_t m_marketDataTime;
-	volatile long m_isLevel1Started;
+	boost::atomic<Qty> m_brokerPosition;
+	boost::atomic_int64_t m_marketDataTime;
+	boost::atomic_bool m_isLevel1Started;
 
 	pt::ptime m_requestedDataStartTime;
 
@@ -91,7 +92,7 @@ public:
 		ImpliedVolatility(
 					boost::mutex &mutex,
 					boost::condition_variable &condition,
-					volatile long &isAnotherSet)
+					boost::atomic_bool &isAnotherSet)
 				: m_mutex(mutex),
 				m_condition(condition),
 				m_actualValue(-2.0),
@@ -108,7 +109,7 @@ public:
 			if (newValue >= 0 || m_actualValue < 0) {
 				m_actualValue = newValue;
 				if (m_actualValue >= 0) {
-					Interlocking::Exchange(m_isAnotherSet, true);
+					m_isAnotherSet = true;
 				}
 			}
 			if (newValue >= 0) {
@@ -122,7 +123,7 @@ public:
 			if (m_actualValue >= 0 && m_lastValue > 0) {
 				m_actualValue = m_lastValue;
 				if (m_actualValue >= 0) {
-					Interlocking::Exchange(m_isAnotherSet, true);
+					m_isAnotherSet = true;
 				}
 			}
 			m_condition.notify_all();
@@ -145,13 +146,13 @@ public:
 				if (m_actualValue < -1) {
 					m_condition.wait(lock);
 				} else {
-					const bool isAnotherWasSet = m_isAnotherSet ? true : false;
+					const bool isAnotherWasSet = m_isAnotherSet;
 					const long timeToWait = !isAnotherWasSet ? 10 : 2;
 					m_condition.timed_wait(lock, pt::seconds(timeToWait));
 					if (m_actualValue < 0) {
 						if (!m_isAnotherSet || isAnotherWasSet) {
 							Log::Error("Implied Volatility condition timeout.");
-							Interlocking::Exchange(m_actualValue, 0);
+							m_actualValue = .0;
 						} else {
 							Log::Info(
 								"Implied Volatility condition fast wait...");
@@ -164,17 +165,17 @@ public:
 	
 	private:
 
-		mutable double m_actualValue;
+		mutable boost::atomic<double> m_actualValue;
 		mutable double m_lastValue;
 		mutable boost::mutex &m_mutex;
 		mutable boost::condition_variable &m_condition;
-		volatile long &m_isAnotherSet;
+		boost::atomic_bool &m_isAnotherSet;
 	
 	};
 
 	boost::mutex m_impliedVolatilityMutex;
 	boost::condition_variable m_impliedVolatilityCondition;
-	volatile long m_isAnotherImpliedVolatilitySet;
+	boost::atomic_bool m_isAnotherImpliedVolatilitySet;
 	ImpliedVolatility m_impliedVolatilityLast;
 	ImpliedVolatility m_impliedVolatilityAsk;
 	ImpliedVolatility m_impliedVolatilityBid;
@@ -235,10 +236,6 @@ public:
 		return Descale(price, GetPriceScale());
 	}
 
-	bool IsLevel1Started() const {
-		return m_isLevel1Started == 0 ? false : true;
-	}
-
 	bool AddLevel1Tick(
 				const pt::ptime &time,
 				const Level1TickValue &tick,
@@ -256,8 +253,7 @@ public:
 				bool flush,
 				bool isPreviouslyChanged) {
 		const auto tickValue = tick.Get();
-		const bool isChanged
-			= Exchange(m_level1[tick.type], tickValue) != tickValue;
+		const bool isChanged = m_level1[tick.type].exchange(tickValue) != tickValue;
 		FlushLevel1Update(time, flush, isChanged, isPreviouslyChanged);
 		return isChanged;
 	}
@@ -265,7 +261,7 @@ public:
 	bool CompareAndSetLevel1(
 				const pt::ptime &time,
 				const Level1TickValue &tick,
-				long long prevValue,
+				intmax_t prevValue,
 				bool flush,
 				bool isPreviouslyChanged) {
 		const auto tickValue = tick.Get();
@@ -273,16 +269,10 @@ public:
 		if (tickValue == prevValue) {
 			return true;
 		}
-		const bool isChanged
-			= CompareExchange(
-					m_level1[tick.type],
-					tickValue,
-					prevValue)
-				== prevValue;
-		if (!isChanged) {
+		if (!m_level1[tick.type].compare_exchange_weak(prevValue, tickValue)) {
 			return false;
 		}
-		FlushLevel1Update(time, flush, isChanged, isPreviouslyChanged);
+		FlushLevel1Update(time, flush, true, isPreviouslyChanged);
 		return true;
 	}
 
@@ -297,24 +287,25 @@ public:
 		}
 		
 		if (!m_isLevel1Started) {
-			foreach (auto item, m_level1) {
+			foreach (const auto &item, m_level1) {
 				if (!IsSet(item)) {
 					return;
 				}
 			}
-			Verify(!Interlocking::Exchange(m_isLevel1Started, true));
+			Assert(!m_isLevel1Started);
+			m_isLevel1Started = true;
 		}
 
 		Assert(!time.is_not_a_date_time());
 		AssertLe(GetLastMarketDataTime(), time);
-		Exchange(m_marketDataTime, ConvertToInt64(time));
+		m_marketDataTime = ConvertToMicroseconds(time);
 
 		m_level1UpdateSignal();
 
 	}
 
 	pt::ptime GetLastMarketDataTime() const {
-		const pt::ptime result = ConvertToPTimeFromFileTime(m_marketDataTime);
+		const pt::ptime result = ConvertToPTimeFromMicroseconds(m_marketDataTime);
 		Assert(!result.is_not_a_date_time());
 		return result;
 	}
@@ -469,7 +460,12 @@ void Security::CancelAllOrders() {
 }
 
 bool Security::IsLevel1Started() const {
-	return m_pimpl->IsLevel1Started();
+	return m_pimpl->m_isLevel1Started;
+}
+
+void Security::StartLevel1() {
+	Assert(!m_pimpl->m_isLevel1Started);
+	m_pimpl->m_isLevel1Started = true;
 }
 
 bool Security::IsStarted() const {
@@ -716,7 +712,7 @@ void Security::AddTrade(
 	AssertLt(0, qty);
 	if (useForTradedVolume && qty > 0) {
 		for ( ; ; ) {
-			const auto prevVal = m_pimpl->m_level1[LEVEL1_TICK_TRADING_VOLUME];
+			const auto &prevVal = m_pimpl->m_level1[LEVEL1_TICK_TRADING_VOLUME];
 			const auto newVal
 				= Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>(
 					IsSet(prevVal) ? Qty(prevVal) + qty : qty);
@@ -740,14 +736,14 @@ void Security::AddBar(const Bar &bar) {
 }
 
 void Security::SetBrokerPosition(trdk::Qty qty, bool isInitial) {
-	if (Exchange(m_pimpl->m_brokerPosition, qty) == qty) {
+	if (m_pimpl->m_brokerPosition.exchange(qty) == qty) {
 		return;
 	}
 	m_pimpl->m_brokerPositionUpdateSignal(qty, isInitial);
 }
 
 void Security::SetImpliedVolatilityUpdatePeriodSec(size_t seconds) {
-	Lib::Interlocking::Exchange(impliedVolatilityUpdatePeriod, seconds);
+	impliedVolatilityUpdatePeriod = seconds;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

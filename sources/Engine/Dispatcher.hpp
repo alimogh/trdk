@@ -13,6 +13,7 @@
 #include "SubscriberPtrWrapper.hpp"
 #include "Context.hpp"
 #include "Fwd.hpp"
+#include "Core/Settings.hpp"
 
 namespace trdk { namespace Engine {
 
@@ -107,7 +108,7 @@ namespace trdk { namespace Engine {
 				Assert(m_sync);
 				Assert(&m_sync->mutex == lock.mutex());
 				Assert(lock);
-				UseUnused(lock);
+				Lib::UseUnused(lock);
 				return m_taksState == TASK_STATE_STOPPED;
 			}
 
@@ -189,7 +190,7 @@ namespace trdk { namespace Engine {
 
 			std::pair<List, List> m_lists;
 			List *m_current;
-			
+
 			boost::shared_ptr<EventListsSyncObjects> m_sync;
 			std::unique_ptr<Condition> m_readyToReadCondition;
 
@@ -297,43 +298,20 @@ namespace trdk { namespace Engine {
 
 		template<typename Event>
 		static void RaiseEvent(const Event &) {
-			static_assert(false, "Failed to find event raise specialization.");
-		}
-		template<>
-		static void RaiseEvent(const Level1UpdateEvent &level1Update) {
-			boost::get<1>(level1Update).RaiseLevel1UpdateEvent(
-				*boost::get<0>(level1Update));
-		}
-		template<>
-		static void RaiseEvent(const Level1TickEvent &tick) {
-			boost::get<1>(tick).RaiseLevel1TickEvent(boost::get<0>(tick));
-		}
-		template<>
-		static void RaiseEvent(const NewTradeEvent &newTradeEvent) {
-			boost::get<1>(newTradeEvent).RaiseNewTradeEvent(
-				boost::get<0>(newTradeEvent));
-		}
-		template<>
-		static void RaiseEvent(const PositionUpdateEvent &positionUpdateEvent) {
-			boost::get<1>(positionUpdateEvent).RaisePositionUpdateEvent(
-				*boost::get<0>(positionUpdateEvent));
-		}
-		template<>
-		static void RaiseEvent(
-					const BrokerPositionUpdateEvent &positionUpdateEvent) {
-			boost::get<1>(positionUpdateEvent).RaiseBrokerPositionUpdateEvent(
-				boost::get<0>(positionUpdateEvent));
-		}
-		template<>
-		static void RaiseEvent(const NewBarEvent &newBarEvent) {
-			boost::get<2>(newBarEvent).RaiseNewBarEvent(
-				*boost::get<0>(newBarEvent),
-				boost::get<1>(newBarEvent));
+#			if !defined(__GNUG__)
+				static_assert(false, "Failed to find event raise specialization.");
+#			else
+				AssertFail("Failed to find event raise specialization.");
+#			endif
 		}
 
 		template<typename Event, typename EventList>
 		static bool QueueEvent(const Event &, EventList &) {
-			static_assert(false, "Failed to find event queue specialization.");
+#			if !defined(__GNUG__)
+				static_assert(false, "Failed to find event queue specialization.");
+#			else
+				AssertFail("Failed to find event raise specialization.");
+#			endif
 		}
 		template<typename EventList>
 		static bool QueueEvent(
@@ -395,12 +373,13 @@ namespace trdk { namespace Engine {
 			try {
 				return list.Enqueue(lock);
 			} catch (const trdk::Lib::ModuleError &ex) {
+				const auto &moduleName = list.GetName();
 				m_context.GetLog().Error(
 					"Module error in dispatcher notification task"
 						" \"%1%\": \"%2%\".",
 					boost::make_tuple(
-					boost::cref(list.GetName()),
-					boost::cref(ex)));
+						boost::cref(moduleName),
+						boost::cref(ex)));
 				throw;
 			} catch (...) {
 				m_context.GetLog().Error(
@@ -422,7 +401,7 @@ namespace trdk { namespace Engine {
 			if (deactivationMask[index]) {
 				return false;
 			}
-			auto &list = lists.get<index>();
+			auto &list = boost::get<index>(lists);
 			if (EnqueueEvents(list, lock)) {
 				return true;
 			}
@@ -437,7 +416,7 @@ namespace trdk { namespace Engine {
 					boost::barrier &startBarrier,
 					EventList &list,
 					unsigned int &threadsCounter) {
-			UseUnused(threadsCounter);
+			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(boost::ref(list));
 			m_threads.create_thread(
 				boost::bind(
@@ -451,14 +430,14 @@ namespace trdk { namespace Engine {
 		template<typename T1>
 		static std::string GetEventListsName(
 					const boost::tuple<T1> &lists) {
-			return lists.get<0>().GetName();
+			return boost::get<0>(lists).GetName();
 		}
 		
 		template<typename T1>
 		static void AssignEventListsSyncObjects(
 					boost::shared_ptr<EventListsSyncObjects> &sync,
 					const boost::tuple<T1> &lists) {
-			lists.get<0>().AssignSyncObjects(sync);
+			boost::get<0>(lists).AssignSyncObjects(sync);
 		}
 
 		template<typename T1>
@@ -478,7 +457,7 @@ namespace trdk { namespace Engine {
 					ListWithHighPriority &listWithHighPriority,
 					ListWithLowPriority &listWithLowPriority,
 					unsigned int &threadsCounter) {
-			UseUnused(threadsCounter);
+			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority));
@@ -495,7 +474,7 @@ namespace trdk { namespace Engine {
 		static std::string GetEventListsName(
 					const boost::tuple<T1, T2> &lists) {
 			boost::format result("%1%, %2%");
-			result % lists.get<0>().GetName() % lists.get<1>().GetName();
+			result % boost::get<0>(lists).GetName() % boost::get<1>(lists).GetName();
 			return result.str();
 		}
 
@@ -503,8 +482,8 @@ namespace trdk { namespace Engine {
 		static void AssignEventListsSyncObjects(
 					boost::shared_ptr<EventListsSyncObjects> &sync,
 					const boost::tuple<T1, T2> &lists) {
-			lists.get<0>().AssignSyncObjects(sync);
-			lists.get<1>().AssignSyncObjects(sync);
+			boost::get<0>(lists).AssignSyncObjects(sync);
+			boost::get<1>(lists).AssignSyncObjects(sync);
 		}
 		
 		template<typename T1, typename T2>
@@ -530,7 +509,7 @@ namespace trdk { namespace Engine {
 					ListWithLowPriority &listWithLowPriority,
 					ListWithExtraLowPriority &listWithExtraLowPriority,
 					unsigned int &threadsCounter) {
-			UseUnused(threadsCounter);
+			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority),
@@ -549,9 +528,9 @@ namespace trdk { namespace Engine {
 					const boost::tuple<T1, T2, T3> &lists) {
 			boost::format result("%1%, %2%, %3%");
 			result
-				% lists.get<0>().GetName()
-				% lists.get<1>().GetName()
-				% lists.get<2>().GetName();
+				% boost::get<0>(lists).GetName()
+				% boost::get<1>(lists).GetName()
+				% boost::get<2>(lists).GetName();
 			return result.str();
 		}
 
@@ -559,9 +538,9 @@ namespace trdk { namespace Engine {
 		static void AssignEventListsSyncObjects(
 					boost::shared_ptr<EventListsSyncObjects> &sync,
 					const boost::tuple<T1, T2, T3> &lists) {
-			lists.get<0>().AssignSyncObjects(sync);
-			lists.get<1>().AssignSyncObjects(sync);
-			lists.get<2>().AssignSyncObjects(sync);
+			boost::get<0>(lists).AssignSyncObjects(sync);
+			boost::get<1>(lists).AssignSyncObjects(sync);
+			boost::get<2>(lists).AssignSyncObjects(sync);
 		}
 
 		template<typename T1, typename T2, typename T3>
@@ -591,7 +570,7 @@ namespace trdk { namespace Engine {
 					ListWithExtraLowPriority &listWithExtraLowPriority,
 					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
 					unsigned int &threadsCounter) {
-			UseUnused(threadsCounter);
+			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority),
@@ -611,10 +590,10 @@ namespace trdk { namespace Engine {
 					const boost::tuple<T1, T2, T3, T4> &lists) {
 			boost::format result("%1%, %2%, %3%, %4%");
 			result
-				% lists.get<0>().GetName()
-				% lists.get<1>().GetName()
-				% lists.get<2>().GetName()
-				% lists.get<3>().GetName();
+				% boost::get<0>(lists).GetName()
+				% boost::get<1>(lists).GetName()
+				% boost::get<2>(lists).GetName()
+				% boost::get<3>(lists).GetName();
 			return result.str();
 		}
 
@@ -622,10 +601,10 @@ namespace trdk { namespace Engine {
 		static void AssignEventListsSyncObjects(
 					boost::shared_ptr<EventListsSyncObjects> &sync,
 					const boost::tuple<T1, T2, T3, T4> &lists) {
-			lists.get<0>().AssignSyncObjects(sync);
-			lists.get<1>().AssignSyncObjects(sync);
-			lists.get<2>().AssignSyncObjects(sync);
-			lists.get<3>().AssignSyncObjects(sync);
+			boost::get<0>(lists).AssignSyncObjects(sync);
+			boost::get<1>(lists).AssignSyncObjects(sync);
+			boost::get<2>(lists).AssignSyncObjects(sync);
+			boost::get<3>(lists).AssignSyncObjects(sync);
 		}
 
 		template<typename T1, typename T2, typename T3, typename T4>
@@ -659,7 +638,7 @@ namespace trdk { namespace Engine {
 					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
 					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
 					unsigned int &threadsCounter) {
-			UseUnused(threadsCounter);
+			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority),
@@ -685,11 +664,11 @@ namespace trdk { namespace Engine {
 					const boost::tuple<T1, T2, T3, T4, T5> &lists) {
 			boost::format result("%1%, %2%, %3%, %4%, %5%");
 			result
-				% lists.get<0>().GetName()
-				% lists.get<1>().GetName()
-				% lists.get<2>().GetName()
-				% lists.get<3>().GetName()
-				% lists.get<4>().GetName();
+				% boost::get<0>(lists).GetName()
+				% boost::get<1>(lists).GetName()
+				% boost::get<2>(lists).GetName()
+				% boost::get<3>(lists).GetName()
+				% boost::get<4>(lists).GetName();
 			return result.str();
 		}
 
@@ -702,11 +681,11 @@ namespace trdk { namespace Engine {
 		static void AssignEventListsSyncObjects(
 					boost::shared_ptr<EventListsSyncObjects> &sync,
 					const boost::tuple<T1, T2, T3, T4, T5> &lists) {
-			lists.get<0>().AssignSyncObjects(sync);
-			lists.get<1>().AssignSyncObjects(sync);
-			lists.get<2>().AssignSyncObjects(sync);
-			lists.get<3>().AssignSyncObjects(sync);
-			lists.get<4>().AssignSyncObjects(sync);
+			boost::get<0>(lists).AssignSyncObjects(sync);
+			boost::get<1>(lists).AssignSyncObjects(sync);
+			boost::get<2>(lists).AssignSyncObjects(sync);
+			boost::get<3>(lists).AssignSyncObjects(sync);
+			boost::get<4>(lists).AssignSyncObjects(sync);
 		}
 
 		template<
@@ -751,7 +730,7 @@ namespace trdk { namespace Engine {
 					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
 					ListWithExtraLowPriority4 &listWithExtraLowPriority4,
 					unsigned int &threadsCounter) {
-			UseUnused(threadsCounter);
+			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority),
@@ -779,12 +758,12 @@ namespace trdk { namespace Engine {
 					const boost::tuple<T1, T2, T3, T4, T5, T6> &lists) {
 			boost::format result("%1%, %2%, %3%, %4%, %5%, %6%");
 			result
-				% lists.get<0>().GetName()
-				% lists.get<1>().GetName()
-				% lists.get<2>().GetName()
-				% lists.get<3>().GetName()
-				% lists.get<4>().GetName()
-				% lists.get<5>().GetName();
+				% boost::get<0>(lists).GetName()
+				% boost::get<1>(lists).GetName()
+				% boost::get<2>(lists).GetName()
+				% boost::get<3>(lists).GetName()
+				% boost::get<4>(lists).GetName()
+				% boost::get<5>(lists).GetName();
 			return result.str();
 		}
 
@@ -798,12 +777,12 @@ namespace trdk { namespace Engine {
 		static void AssignEventListsSyncObjects(
 					boost::shared_ptr<EventListsSyncObjects> &sync,
 					const boost::tuple<T1, T2, T3, T4, T5, T6> &lists) {
-			lists.get<0>().AssignSyncObjects(sync);
-			lists.get<1>().AssignSyncObjects(sync);
-			lists.get<2>().AssignSyncObjects(sync);
-			lists.get<3>().AssignSyncObjects(sync);
-			lists.get<4>().AssignSyncObjects(sync);
-			lists.get<5>().AssignSyncObjects(sync);
+			boost::get<0>(lists).AssignSyncObjects(sync);
+			boost::get<1>(lists).AssignSyncObjects(sync);
+			boost::get<2>(lists).AssignSyncObjects(sync);
+			boost::get<3>(lists).AssignSyncObjects(sync);
+			boost::get<4>(lists).AssignSyncObjects(sync);
+			boost::get<5>(lists).AssignSyncObjects(sync);
 		}
 
 		template<
@@ -895,4 +874,36 @@ namespace trdk { namespace Engine {
 
 	};
 
+	template<>
+	inline void Dispatcher::RaiseEvent(const Level1UpdateEvent &level1Update) {
+		boost::get<1>(level1Update).RaiseLevel1UpdateEvent(
+			*boost::get<0>(level1Update));
+	}
+	template<>
+	inline void Dispatcher::RaiseEvent(const Level1TickEvent &tick) {
+		boost::get<1>(tick).RaiseLevel1TickEvent(boost::get<0>(tick));
+	}
+	template<>
+	inline void Dispatcher::RaiseEvent(const NewTradeEvent &newTradeEvent) {
+		boost::get<1>(newTradeEvent).RaiseNewTradeEvent(
+			boost::get<0>(newTradeEvent));
+	}
+	template<>
+	inline void Dispatcher::RaiseEvent(const PositionUpdateEvent &positionUpdateEvent) {
+		boost::get<1>(positionUpdateEvent).RaisePositionUpdateEvent(
+			*boost::get<0>(positionUpdateEvent));
+	}
+	template<>
+	inline void Dispatcher::RaiseEvent(
+				const BrokerPositionUpdateEvent &positionUpdateEvent) {
+		boost::get<1>(positionUpdateEvent).RaiseBrokerPositionUpdateEvent(
+			boost::get<0>(positionUpdateEvent));
+	}
+	template<>
+	inline void Dispatcher::RaiseEvent(const NewBarEvent &newBarEvent) {
+		boost::get<2>(newBarEvent).RaiseNewBarEvent(
+			*boost::get<0>(newBarEvent),
+			boost::get<1>(newBarEvent));
+	}
+	
 } }

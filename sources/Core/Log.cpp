@@ -42,8 +42,8 @@ namespace {
 	struct State {
 
 		Log::Mutex mutex;
-		volatile long isStreamEnabled;
-		volatile long isStdOutEnabled;
+		boost::atomic_bool isStreamEnabled;
+		boost::atomic_bool isStdOutEnabled;
 
 		std::ostream *log;
 
@@ -62,19 +62,19 @@ namespace {
 				AppendRecordHead(boost::get_system_time());
 				*log << "Started." << std::endl;
 			}
-			Interlocking::Exchange(isStreamEnabled, true);
+			isStreamEnabled = true;
 		}
 
 		void DisableStream() throw() {
-			Interlocking::Exchange(isStreamEnabled, false);
+			isStreamEnabled = false;
 		}
 
 		void EnableStdOut() {
-			Interlocking::Exchange(isStdOutEnabled, true);
+			isStdOutEnabled = true;
 		}
 
 		void DisableStdOut() throw() {
-			Interlocking::Exchange(isStdOutEnabled, false);
+			isStdOutEnabled = false;
 		}
 
 		static void AppendRecordHead(const pt::ptime &time, std::ostream &os) {
@@ -129,7 +129,7 @@ bool Log::IsEventsEnabled(Level /*level*/) throw() {
 }
 
 bool Log::IsTradingEnabled() throw() {
-	return trading.isStreamEnabled ? true : false;
+	return trading.isStreamEnabled;
 }
 
 void Log::EnableEvents(std::ostream &log) {

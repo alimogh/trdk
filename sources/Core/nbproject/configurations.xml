@@ -1,41 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="84">
+<configurationDescriptor version="94">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>Algo.hpp</itemPath>
-      <itemPath>AlgoPositionState.hpp</itemPath>
       <itemPath>Api.h</itemPath>
+      <itemPath>Consumer.hpp</itemPath>
+      <itemPath>Context.hpp</itemPath>
+      <itemPath>Fwd.hpp</itemPath>
       <itemPath>Instrument.hpp</itemPath>
+      <itemPath>Interactor.hpp</itemPath>
       <itemPath>Log.hpp</itemPath>
       <itemPath>MarketDataSource.hpp</itemPath>
       <itemPath>Module.hpp</itemPath>
+      <itemPath>ModuleRef.hpp</itemPath>
+      <itemPath>ModuleSecurityList.hpp</itemPath>
+      <itemPath>ModuleVariant.hpp</itemPath>
+      <itemPath>Observer.hpp</itemPath>
       <itemPath>Position.hpp</itemPath>
-      <itemPath>PositionBundle.hpp</itemPath>
       <itemPath>PositionReporter.hpp</itemPath>
-      <itemPath>PositionReporterAlgo.hpp</itemPath>
       <itemPath>Prec.hpp</itemPath>
       <itemPath>Security.hpp</itemPath>
+      <itemPath>Service.hpp</itemPath>
       <itemPath>Settings.hpp</itemPath>
+      <itemPath>SettingsReport.hpp</itemPath>
+      <itemPath>Strategy.hpp</itemPath>
+      <itemPath>StrategyPositionReporter.hpp</itemPath>
+      <itemPath>StrategyPositionState.hpp</itemPath>
       <itemPath>TradeSystem.hpp</itemPath>
+      <itemPath>Types.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>Algo.cpp</itemPath>
-      <itemPath>AlgoPositionState.cpp</itemPath>
+      <itemPath>Consumer.cpp</itemPath>
+      <itemPath>Context.cpp</itemPath>
+      <itemPath>Instrument.cpp</itemPath>
+      <itemPath>Interactor.cpp</itemPath>
       <itemPath>Log.cpp</itemPath>
       <itemPath>MarketDataSource.cpp</itemPath>
       <itemPath>Module.cpp</itemPath>
       <itemPath>Observer.cpp</itemPath>
       <itemPath>Position.cpp</itemPath>
-      <itemPath>PositionBundle.cpp</itemPath>
       <itemPath>PositionReporter.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
       <itemPath>Security.cpp</itemPath>
+      <itemPath>Service.cpp</itemPath>
       <itemPath>Settings.cpp</itemPath>
+      <itemPath>Strategy.cpp</itemPath>
+      <itemPath>StrategyPositionState.cpp</itemPath>
       <itemPath>TradeSystem.cpp</itemPath>
+      <itemPath>Types.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -53,15 +68,15 @@
   <confs>
     <conf name="Debug" type="2">
       <toolsSet>
-        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
-        <compilerSet>GNU_4.7.1|GNU</compilerSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <compileType>
         <ccTool>
           <standard>8</standard>
           <incDir>
             <pElem>..</pElem>
-            <pElem>/usr/local/boost/boost_1_51/include</pElem>
           </incDir>
           <preprocessorList>
             <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
@@ -83,7 +98,7 @@
                             WD="../Common"
                             BC="${MAKE}  -f Makefile CONF=Debug"
                             CC="${MAKE}  -f Makefile CONF=Debug clean"
-                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a">
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon_dbg.a">
               </makeArtifact>
             </linkerLibProjectItem>
           </linkerLibItems>
@@ -101,13 +116,96 @@
           </makeArtifact>
         </requiredProjects>
       </compileType>
-      <item path="Prec.cpp" ex="true" tool="1" flavor2="0">
+      <item path="Api.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Consumer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Consumer.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Context.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Context.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Fwd.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Instrument.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Instrument.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Interactor.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Interactor.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Log.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Log.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="MarketDataSource.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="MarketDataSource.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Module.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Module.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ModuleRef.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ModuleSecurityList.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ModuleVariant.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Observer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Observer.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Position.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Position.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="PositionReporter.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="PositionReporter.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Security.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Security.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Service.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Service.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Settings.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Settings.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SettingsReport.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Strategy.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Strategy.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="StrategyPositionReporter.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="StrategyPositionState.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="StrategyPositionState.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="TradeSystem.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="TradeSystem.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Types.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Types.hpp" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="2">
       <toolsSet>
-        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
-        <compilerSet>GNU_4.7.1|GNU</compilerSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <compileType>
         <cTool>
@@ -118,7 +216,6 @@
           <standard>8</standard>
           <incDir>
             <pElem>..</pElem>
-            <pElem>/usr/local/boost/boost_1_51/include</pElem>
           </incDir>
           <preprocessorList>
             <Elem>BOOST_DISABLE_ASSERTS</Elem>
@@ -163,7 +260,89 @@
           </makeArtifact>
         </requiredProjects>
       </compileType>
-      <item path="Prec.cpp" ex="true" tool="1" flavor2="0">
+      <item path="Api.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Consumer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Consumer.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Context.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Context.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Fwd.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Instrument.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Instrument.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Interactor.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Interactor.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Log.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Log.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="MarketDataSource.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="MarketDataSource.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Module.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Module.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ModuleRef.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ModuleSecurityList.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ModuleVariant.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Observer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Observer.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Position.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Position.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="PositionReporter.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="PositionReporter.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Security.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Security.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Service.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Service.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Settings.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Settings.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SettingsReport.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Strategy.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Strategy.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="StrategyPositionReporter.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="StrategyPositionState.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="StrategyPositionState.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="TradeSystem.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="TradeSystem.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Types.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Types.hpp" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

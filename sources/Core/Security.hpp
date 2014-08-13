@@ -228,6 +228,9 @@ namespace trdk {
 		bool IsBrokerPositionRequired() const;
 		bool IsBarsRequired() const;
 
+		//! Allows forcibly start Level 1 notification,
+		//! even if not all Level 1 data received.
+		void StartLevel1();
 		//! Sets one Level I parameter.
 		/** Subscribers will be notified about Level I Update only if parameter
 		  * will bee changed.

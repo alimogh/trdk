@@ -70,21 +70,21 @@ public:
 
 	struct DynamicData {
 
-		volatile OrderId orderId;
+		boost::atomic<OrderId> orderId;
 		Time time;
 		struct Price {
-			volatile long long total;
-			volatile long count;
+			boost::atomic_intmax_t total;
+			boost::atomic_size_t count;
 			Price()
 					: total(0),
 					count(0) {
 				//...//
 			}
 		} price;
-		volatile Qty qty;
-		volatile ScaledPrice comission;
+		boost::atomic<Qty> qty;
+		boost::atomic<ScaledPrice> comission;
 
-		volatile bool hasOrder;
+		boost::atomic_bool hasOrder;
 
 		DynamicData()
 				: orderId(nOrderId),
@@ -94,6 +94,14 @@ public:
 			//...//
 		}
 
+	};
+	
+private:
+	
+	enum Canceled {
+		CANCELED_0,
+		CANCELED_1,
+		CANCELED_2,
 	};
 
 public:
@@ -107,7 +115,7 @@ public:
 	Strategy *m_strategy;
 	Security &m_security;
 
-	volatile long m_planedQty;
+	const Qty m_planedQty;
 
 	const ScaledPrice m_openStartPrice;
 	DynamicData m_opened;
@@ -115,13 +123,13 @@ public:
 	ScaledPrice m_closeStartPrice;
 	DynamicData m_closed;
 
-	volatile long m_closeType;
+	boost::atomic<CloseType> m_closeType;
 
 	volatile long m_isStarted;
 
-	volatile long m_isError;
+	boost::atomic_bool m_isError;
 
-	volatile long m_isCanceled;
+	boost::atomic<Canceled> m_isCanceled;
 	boost::function<void ()> m_cancelMethod;
 
 	const std::string m_tag;
@@ -141,7 +149,7 @@ public:
 			m_closeType(CLOSE_TYPE_NONE),
 			m_isStarted(false),
 			m_isError(false),
-			m_isCanceled(0),
+			m_isCanceled(CANCELED_0),
 			m_tag(m_strategy->GetTag()) {
 		//...//
 	}
@@ -189,11 +197,9 @@ public:
 				Assert(filled + remaining == m_planedQty);
 				Assert(m_opened.qty + filled <= m_planedQty);
 				Assert(avgPrice > 0);
-				Interlocking::Exchange(
-					m_opened.price.total,
-					m_opened.price.total + m_security.ScalePrice(avgPrice));
-				Interlocking::Increment(m_opened.price.count);
-				Interlocking::Exchange(m_opened.qty, m_opened.qty + filled);
+				m_opened.price.total += m_security.ScalePrice(avgPrice);
+				++m_opened.price.count;
+				m_opened.qty += filled;
 				AssertGt(m_opened.qty, 0);
 				ReportOpeningUpdate("filled", orderStatus);
 				if (remaining != 0) {
@@ -203,7 +209,7 @@ public:
 			case TradeSystem::ORDER_STATUS_INACTIVE:
 			case TradeSystem::ORDER_STATUS_ERROR:
 				ReportOpeningUpdate("error", orderStatus);
-				Interlocking::Exchange(m_isError, true);
+				m_isError = true;
 				break;
 			case TradeSystem::ORDER_STATUS_CANCELLED:
 				ReportOpeningUpdate("canceled", orderStatus);
@@ -224,7 +230,7 @@ public:
 			}
 		}
 
-		Interlocking::Exchange(m_opened.hasOrder, false);
+		m_opened.hasOrder = false;
 
 		if (CancelIfSet()) {
 			return;
@@ -275,11 +281,9 @@ public:
 				AssertEq(filled + remaining, m_opened.qty);
 				AssertLe(long(m_closed.qty) + filled, m_opened.qty);
 				Assert(avgPrice > 0);
-				Interlocking::Exchange(
-					m_closed.price.total,
-					m_closed.price.total + m_security.ScalePrice(avgPrice));
-				Interlocking::Increment(m_closed.price.count);
-				Interlocking::Exchange(m_closed.qty, m_closed.qty + filled);
+				m_closed.price.total += m_security.ScalePrice(avgPrice);
+				++m_closed.price.count;
+				m_closed.qty += filled;
 				AssertGt(m_closed.qty, 0);
 				ReportClosingUpdate("filled", orderStatus);
 				if (remaining != 0) {
@@ -301,7 +305,7 @@ public:
 // 						m_opened.qty,
 // 						m_closed.qty));
 				ReportClosingUpdate("error", orderStatus);
-				Interlocking::Exchange(m_isError, true);
+				m_isError = true;
 				break;
 			case TradeSystem::ORDER_STATUS_CANCELLED:
 				ReportClosingUpdate("canceled", orderStatus);
@@ -318,12 +322,12 @@ public:
 						?	boost::get_system_time()
 						:	m_security.GetLastMarketDataTime();
 			} catch (...) {
-				Interlocking::Exchange(m_isError, true);
+				m_isError = true;
 				AssertFailNoException();
 			}
 		}
 
-		Interlocking::Exchange(m_closed.hasOrder, false);
+		m_closed.hasOrder = false;
 
 		if (CancelIfSet()) {
 			return;
@@ -341,8 +345,12 @@ public:
 public:
 
 	bool CancelIfSet() throw() {
-		if (	m_position.IsClosed()
-				|| Interlocking::CompareExchange(m_isCanceled, 2, 1) != 1) {
+		if (m_position.IsClosed()) {
+			return false;
+		}
+		Canceled prevCancelFlag = CANCELED_1;
+		const Canceled newCancelFlag = CANCELED_2;
+		if  (!m_isCanceled.compare_exchange_strong(prevCancelFlag, newCancelFlag)) {
 			return false;
 		}
 //! @todo Log THIS!!!
@@ -365,7 +373,7 @@ public:
 			m_cancelMethod();
 			return true;
 		} catch (...) {
-			Interlocking::Exchange(m_isError, true);
+			m_isError = true;
 			AssertFailNoException();
 			return false;
 		}
@@ -466,8 +474,6 @@ public:
 	template<typename OpenImpl>
 	OrderId Open(const OpenImpl &openImpl) {
 		
-		using namespace Interlocking;
-		
 		const WriteLock lock(m_mutex);
 		if (m_position.IsStarted()) {
 			throw AlreadyStartedError();
@@ -485,9 +491,11 @@ public:
 		try {
 			const auto orderId = openImpl(m_position.GetNotOpenedQty());
 			m_strategy = nullptr;
-			Exchange(m_opened.hasOrder, true);
-			Verify(Exchange(m_opened.orderId, orderId) == nOrderId);
-			Verify(Exchange(m_isStarted, true) == false);
+			m_opened.hasOrder = true;
+			AssertEq(nOrderId, m_opened.orderId);
+			m_opened.orderId = orderId;
+			Assert(!m_isStarted);
+			m_isStarted = true;
 			return orderId;
 		} catch (...) {
 			if (m_strategy) {
@@ -501,8 +509,6 @@ public:
 	template<typename CloseImpl>
 	OrderId CloseUnsafe(CloseType closeType, const CloseImpl &closeImpl) {
 		
-		using namespace Interlocking;
-
 		if (!m_position.IsOpened()) {
 			throw NotOpenedError();
 		} else if (m_position.HasActiveCloseOrders() || m_position.IsClosed()) {
@@ -516,9 +522,9 @@ public:
 		Assert(!m_position.IsCompleted());
 
 		const auto orderId = closeImpl(m_position.GetActiveQty());
-		Exchange(m_closeType, closeType);
-		Exchange(m_closed.hasOrder, true);
-		Exchange(m_closed.orderId, orderId);
+		m_closeType = closeType;
+		m_closed.hasOrder = true;
+		m_closed.orderId = orderId;
 
 		return orderId;
 
@@ -571,7 +577,8 @@ public:
 			Assert(!m_position.HasActiveOrders());
 			cancelMethod();
 		}
-		Verify(Interlocking::Exchange(m_isCanceled, 1) == 0);
+		AssertEq(int(CANCELED_0), int(m_isCanceled));
+		m_isCanceled = CANCELED_1;
 		return true;
 	}
 

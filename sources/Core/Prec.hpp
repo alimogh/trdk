@@ -27,8 +27,9 @@
 #	include <boost/unordered_map.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
-#include <concrt.h>
-#include <hash_map>
+#ifdef BOOST_WINDOWS
+#	include <concrt.h>
+#endif
 
 #include "Common/Common.hpp"
 

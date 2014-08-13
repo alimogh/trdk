@@ -76,9 +76,6 @@
     <ClInclude Include="Exception.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Interlocking.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SysError.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

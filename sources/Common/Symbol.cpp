@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "Symbol.hpp"
 #include "Foreach.hpp"
-#include "Interlocking.hpp"
 #include "Util.hpp"
 
 using namespace trdk::Lib;
@@ -358,14 +357,13 @@ bool Symbol::operator !=(const Symbol &rhs) const {
 }
 
 Symbol::Hash Symbol::GetHash() const {
-	if (!m_hash) {
+/* @todo see TRDK-143
+ 	if (!m_hash) {
 		std::ostringstream oss;
 		oss << *this << ":" << m_currency;
-		Interlocking::Exchange(
-			const_cast<Symbol *>(this)->m_hash,
-			stdext::hash_value(oss.str()));
+		const_cast<Symbol *>(this)->m_hash = stdext::hash_value(oss.str());
 		AssertNe(0, m_hash);
-	}
+	}*/
 	return m_hash;
 }
 

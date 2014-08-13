@@ -62,76 +62,61 @@ time_t Lib::ConvertToTimeT(const pt::ptime &source) {
 	return static_cast<time_t>(durationFromTEpoch.total_seconds());
 }
 
-FILETIME Lib::ConvertToFileTime(const pt::ptime &source) {
-    
-	SYSTEMTIME st;
-    boost::gregorian::date::ymd_type ymd = source.date().year_month_day();
-    st.wYear = ymd.year;
-    st.wMonth = ymd.month;
-    st.wDay = ymd.day;
-    st.wDayOfWeek = source.date().day_of_week();
- 
-    pt::time_duration td = source.time_of_day();
-    st.wHour = static_cast<WORD>(td.hours());
-    st.wMinute = static_cast<WORD>(td.minutes());
-    st.wSecond = static_cast<WORD>(td.seconds());
-    st.wMilliseconds = 0;
- 
-    FILETIME ft;
-    SystemTimeToFileTime(&st, &ft);
- 
-    boost::uint64_t _100nsSince1601 = ft.dwHighDateTime;
-    _100nsSince1601 <<= 32;
-    _100nsSince1601 |= ft.dwLowDateTime;
-    _100nsSince1601 += td.fractional_seconds() * 10;
-
-	ft.dwHighDateTime = _100nsSince1601 >> 32;
-    ft.dwLowDateTime = _100nsSince1601 & 0x00000000FFFFFFFF;
- 
-    return ft;
-
+int64_t Lib::ConvertToMicroseconds(const pt::ptime &source) {
+	Assert(!source.is_special());
+	AssertGe(source, unixEpochStart);
+	if (source < unixEpochStart) {
+		return 0;
+	}
+	const pt::time_duration durationFromTEpoch(source - unixEpochStart);
+	return static_cast<time_t>(durationFromTEpoch.total_microseconds());
 }
 
-int64_t Lib::ConvertToInt64(const pt::ptime &source) {
-	const FILETIME ft = ConvertToFileTime(source);
-	LARGE_INTEGER li;
-	li.LowPart = ft.dwLowDateTime;
-	li.HighPart = ft.dwHighDateTime;
-	return li.QuadPart;
-}
-
-pt::ptime Lib::ConvertToPTimeFromFileTime(int64_t source) {
-	LARGE_INTEGER li;
-	li.QuadPart = source;
-	const FILETIME ft = {li.LowPart, li.HighPart};
-	return pt::from_ftime<pt::ptime>(ft);
+pt::ptime Lib::ConvertToPTimeFromMicroseconds(int64_t source) {
+	return unixEpochStart + pt::microseconds(source);
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 namespace {
 
-	fs::path GetModuleFilePath(HMODULE handle) {
-		typedef std::vector<char> Buffer;
-		for (DWORD bufferSize = _MAX_PATH; ; ) {
-			Buffer buffer(bufferSize, 0);
-			const auto resultSize
-				= GetModuleFileNameA(handle, &buffer[0], bufferSize);
-			if (resultSize != bufferSize) {
-				if (!resultSize) {
-					const SysError error(GetLastError());
-					boost::format message(
-						"Failed to call GetModuleFileName"
-							" (system error: \"%1%\")");
-					message % error;
-					throw SystemException(message.str().c_str());
+#	ifdef BOOST_WINDOWS
+		fs::path GetModuleFilePath(HMODULE handle) {
+			typedef std::vector<char> Buffer;
+			for (DWORD bufferSize = _MAX_PATH; ; ) {
+				Buffer buffer(bufferSize, 0);
+				const auto resultSize
+					= GetModuleFileNameA(handle, &buffer[0], bufferSize);
+				if (resultSize != bufferSize) {
+					if (!resultSize) {
+						const SysError error(GetLastError());
+						boost::format message(
+							"Failed to call GetModuleFileName"
+								" (system error: \"%1%\")");
+						message % error;
+						throw SystemException(message.str().c_str());
+					}
+					AssertLe(resultSize, buffer.size());
+					return fs::path(&buffer[0]);
 				}
-				AssertLe(resultSize, buffer.size());
-				return fs::path(&buffer[0]);
+				bufferSize *= 2;
 			}
-			bufferSize *= 2;
 		}
-	}
+#	else
+		fs::path GetModuleFilePath(void *) {
+			char path[PATH_MAX];
+			ssize_t count = readlink("/proc/self/exe", path, sizeof(path));
+			if (count <= 0) {
+				const SysError error(errno);
+				boost::format message(
+					"Failed to call readlink \"/proc/self/exe\""
+						" system error: \"%1%\")");
+				message % error;
+				throw SystemException(message.str().c_str());
+			}
+			return fs::path(path, path + count);
+		}
+#	endif
 
 }
 
@@ -143,42 +128,50 @@ fs::path Lib::GetExeWorkingDir() {
 	return GetExeFilePath().parent_path();
 }
 
-fs::path Lib::GetDllFilePath() {
-	HMODULE handle;
-	if (	!GetModuleHandleExA(
-				GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
-					| GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-				reinterpret_cast<LPCTSTR>(&Lib::GetDllFilePath),
-				&handle)) {
-		const SysError error(GetLastError());
-		boost::format message(
-			"Failed to call GetModuleHandleEx (system error: \"%1%\")");
+#ifdef BOOST_WINDOWS
+	fs::path Lib::GetDllFilePath() {
+		HMODULE handle;
+		if (	!GetModuleHandleExA(
+					GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
+						| GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+					reinterpret_cast<LPCTSTR>(&Lib::GetDllFilePath),
+					&handle)) {
+			const SysError error(GetLastError());
+			boost::format message(
+				"Failed to call GetModuleHandleEx (system error: \"%1%\")");
 			message % error;
-		throw SystemException(message.str().c_str());
+			throw SystemException(message.str().c_str());
+		}
+		return GetModuleFilePath(handle);
 	}
-	return GetModuleFilePath(handle);
-}
+#else
+	fs::path Lib::GetDllFilePath() {
+		//! @todo GetDllFilePath
+		AssertFail("Not implemented for Linux.");
+		throw 0;
+	}
+#endif
 
 fs::path Lib::GetDllWorkingDir() {
 	return GetDllFilePath().parent_path();
 }
 
 fs::path Lib::Normalize(const fs::path &path) {
-	if (path.empty() || path.has_root_name()) {
+	if (path.empty() || path.has_root_path()) {
 		return path;
 	}
 	fs::path result = GetExeWorkingDir() / path;
-	Assert(result.has_root_name());
+	Assert(result.has_root_path());
 	return result;
 }
 
 fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
-	Assert(workingDir.has_root_name());
-	if (path.empty() || path.has_root_name()) {
+	Assert(workingDir.has_root_path());
+	if (path.empty() || path.has_root_path()) {
 		return path;
 	}
 	fs::path result = workingDir / path;
-	Assert(result.has_root_name());
+	Assert(result.has_root_path());
 	return result;	
 }
 

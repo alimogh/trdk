@@ -22,14 +22,15 @@
 #	include <boost/iterator/iterator_facade.hpp>
 #	include <boost/tuple/tuple.hpp>
 #	include <boost/format.hpp>
+#	include <boost/atomic.hpp>
+#	include <boost/ref.hpp>
+#	include <boost/date_time.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Constants.h"
 
 #include "Common/Dll.hpp"
-#include "Common/Interlocking.hpp"
 #include "Common/Util.hpp"
-#include "Common/Interlocking.hpp"
 #include "Common/Defaults.hpp"
 #include "Common/UseUnused.hpp"
 #include "Common/Foreach.hpp"

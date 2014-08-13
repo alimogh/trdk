@@ -1,36 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="84">
+<configurationDescriptor version="94">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Assert.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Common.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Defaults.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/DisableBoostWarningsBegin.h</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/DisableBoostWarningsEnd.h</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Dll.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Error.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Exception.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/FileSystemChangeNotificator.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Foreach.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/IniFile.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Interlocking.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/LockingPolicy.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/SignalConnection.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/UseUnused.hpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Util.hpp</itemPath>
+      <itemPath>Assert.hpp</itemPath>
+      <itemPath>Common.hpp</itemPath>
+      <itemPath>Defaults.hpp</itemPath>
+      <itemPath>DisableBoostWarningsBegin.h</itemPath>
+      <itemPath>DisableBoostWarningsEnd.h</itemPath>
+      <itemPath>Dll.hpp</itemPath>
+      <itemPath>Exception.hpp</itemPath>
+      <itemPath>FileSystemChangeNotificator.hpp</itemPath>
+      <itemPath>Foreach.hpp</itemPath>
+      <itemPath>Ini.hpp</itemPath>
+      <itemPath>LockingPolicy.hpp</itemPath>
+      <itemPath>Prec.hpp</itemPath>
+      <itemPath>SegmentedVector.hpp</itemPath>
+      <itemPath>Symbol.hpp</itemPath>
+      <itemPath>SysError.hpp</itemPath>
+      <itemPath>UseUnused.hpp</itemPath>
+      <itemPath>Util.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Assert.cpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Defaults.cpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Error.cpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Exception.cpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/FileSystemChangeNotificator.cpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/IniFile.cpp</itemPath>
-      <itemPath>/mnt/hgfs/Projects/Trader/sources/Common/Util.cpp</itemPath>
+      <itemPath>Assert.cpp</itemPath>
+      <itemPath>Constants.h</itemPath>
+      <itemPath>Defaults.cpp</itemPath>
+      <itemPath>Exception.cpp</itemPath>
+      <itemPath>FileSystemChangeNotificator.cpp</itemPath>
+      <itemPath>Ini.cpp</itemPath>
+      <itemPath>Prec.cpp</itemPath>
+      <itemPath>Symbol.cpp</itemPath>
+      <itemPath>SysError.cpp</itemPath>
+      <itemPath>Util.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -48,15 +52,15 @@
   <confs>
     <conf name="Debug" type="3">
       <toolsSet>
-        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
-        <compilerSet>GNU_4.7.1|GNU</compilerSet>
+        <compilerSet>GNU|GNU</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <compileType>
         <ccTool>
           <standard>8</standard>
           <incDir>
             <pElem>..</pElem>
-            <pElem>/usr/local/boost/boost_1_51/include</pElem>
           </incDir>
           <commandLine>-fpic</commandLine>
           <preprocessorList>
@@ -68,19 +72,67 @@
           <warningLevel>3</warningLevel>
         </ccTool>
         <archiverTool>
-          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a</output>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon_dbg.a</output>
         </archiverTool>
       </compileType>
-      <item path="/mnt/hgfs/Projects/Trader/sources/Common/Assert.cpp"
-            ex="true"
-            tool="1"
-            flavor2="0">
+      <item path="Assert.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Common.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Constants.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Defaults.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Defaults.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="DisableBoostWarningsBegin.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="DisableBoostWarningsEnd.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Dll.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Exception.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Exception.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="FileSystemChangeNotificator.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="FileSystemChangeNotificator.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Foreach.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Ini.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Ini.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="LockingPolicy.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Prec.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SegmentedVector.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Symbol.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Symbol.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SysError.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="SysError.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="UseUnused.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Util.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Util.hpp" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="3">
       <toolsSet>
-        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
-        <compilerSet>GNU_4.7.1|GNU</compilerSet>
+        <compilerSet>GNU|GNU</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <compileType>
         <cTool>
@@ -91,7 +143,6 @@
           <standard>8</standard>
           <incDir>
             <pElem>..</pElem>
-            <pElem>/usr/local/boost/boost_1_51/include</pElem>
           </incDir>
           <commandLine>-fpic</commandLine>
           <preprocessorList>
@@ -109,12 +160,60 @@
           <developmentMode>5</developmentMode>
         </asmTool>
         <archiverTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a</output>
         </archiverTool>
       </compileType>
-      <item path="/mnt/hgfs/Projects/Trader/sources/Common/Assert.cpp"
-            ex="true"
-            tool="1"
-            flavor2="0">
+      <item path="Assert.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Common.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Constants.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Defaults.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Defaults.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="DisableBoostWarningsBegin.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="DisableBoostWarningsEnd.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Dll.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Exception.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Exception.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="FileSystemChangeNotificator.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="FileSystemChangeNotificator.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Foreach.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Ini.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Ini.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="LockingPolicy.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Prec.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SegmentedVector.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Symbol.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Symbol.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SysError.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="SysError.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="UseUnused.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Util.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Util.hpp" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

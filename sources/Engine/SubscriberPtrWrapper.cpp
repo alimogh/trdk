@@ -83,11 +83,13 @@ namespace {
 		bool operator ()(const Module &) const {
 			return true;
 		}
-		template<>
-		bool operator ()(const Strategy &strategy) const {
-			return !strategy.IsBlocked();
-		}
 	};
+	template<>
+	bool AvailabilityCheckVisitor::operator ()(
+				const Strategy &strategy)
+			const {
+		return !strategy.IsBlocked();
+	}
 
 	class BlockVisitor : public boost::static_visitor<void> {
 	public:
@@ -95,11 +97,11 @@ namespace {
 		void operator ()(Module &) const throw() {
 			//...//
 		}
-		template<>
-		void operator ()(Strategy &strategy) const throw() {
-			strategy.Block();
-		}
 	};
+	template<>
+	void BlockVisitor::operator ()(Strategy &strategy) const throw() {
+		strategy.Block();
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -135,7 +137,7 @@ void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
 			Security &security)
 		const {
 
-	const class Visitor
+	class Visitor
 			: public boost::static_visitor<void>,
 			private boost::noncopyable {
 	public:		
@@ -165,7 +167,7 @@ void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
 
 void SubscriberPtrWrapper::RaiseLevel1TickEvent(const Level1Tick &tick) const {
 
-	const class Visitor
+	class Visitor
 			: public boost::static_visitor<void>,
 			private boost::noncopyable {
 	public:		
@@ -204,7 +206,7 @@ void SubscriberPtrWrapper::RaiseLevel1TickEvent(const Level1Tick &tick) const {
 
 void SubscriberPtrWrapper::RaiseNewTradeEvent(const Trade &trade) const {
 
-	const class Visitor
+	class Visitor
 			: public boost::static_visitor<void>,
 			private boost::noncopyable {
 	public:		
@@ -325,7 +327,7 @@ void SubscriberPtrWrapper::RaiseNewBarEvent(
 			const Security::Bar &bar)
 		const {
 
-	const class Visitor
+	class Visitor
 			: public boost::static_visitor<void>,
 			private boost::noncopyable {
 	public:		

@@ -73,14 +73,14 @@ Exception & Exception::operator =(const Exception &rhs) throw() {
 
 //////////////////////////////////////////////////////////////////////////
 
-LogicError::LogicError(const char *what)
+LogicError::LogicError(const char *what) throw()
 		: Exception(what) {
 	//...//
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-SystemException::SystemException(const char *what)
+SystemException::SystemException(const char *what) throw()
 		: Exception(what) {
 	//...//
 }
@@ -89,13 +89,14 @@ SystemException::SystemException(const char *what)
 
 MethodDoesNotImplementedError::MethodDoesNotImplementedError(
 			const char *what)
+		 throw()
 		: Exception(what) {
 	//...//
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-ModuleError::ModuleError(const char *what)
+ModuleError::ModuleError(const char *what) throw()
 		: Exception(what) {
 	//...//
 }
