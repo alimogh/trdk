@@ -22,6 +22,8 @@ using namespace trdk::Lib;
 using namespace trdk::SimpleApi;
 using namespace trdk::Services;
 
+
+
 Bridge::Bridge(boost::shared_ptr<Engine::Context> context)
 		: m_context(context) {
 	//...//
@@ -47,4 +49,10 @@ Security & Bridge::ResolveFutOpt(
 
 double Bridge::GetCashBalance() const {
 	return m_context->GetTradeSystem().GetAccount().cashBalance;
+}
+
+extern bool isIbActive;
+
+bool Bridge::IsActive() const {
+	return isIbActive;
 }

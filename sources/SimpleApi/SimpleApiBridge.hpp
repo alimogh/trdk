@@ -31,6 +31,8 @@ namespace trdk { namespace SimpleApi {
 
 		double GetCashBalance() const;
 
+		bool IsActive() const;
+
 	private:
 
 		boost::shared_ptr<trdk::Engine::Context> m_context;

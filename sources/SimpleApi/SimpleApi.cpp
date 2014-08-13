@@ -123,7 +123,7 @@ double _stdcall trdk_GetImpliedVolatilityLast(
 		Log::Debug(
 			"trdk_GetImpliedVolatilityLast result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			right,
 			result);
@@ -134,7 +134,7 @@ double _stdcall trdk_GetImpliedVolatilityLast(
 				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
 			symbol,
 			exchange,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			ex);
 	} catch (...) {
@@ -173,7 +173,7 @@ double _stdcall trdk_GetImpliedVolatilityAsk(
 		Log::Debug(
 			"trdk_GetImpliedVolatilityAsk result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			right,
 			result);
@@ -184,7 +184,7 @@ double _stdcall trdk_GetImpliedVolatilityAsk(
 				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
 			symbol,
 			exchange,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			ex);
 	} catch (...) {
@@ -223,7 +223,7 @@ double _stdcall trdk_GetImpliedVolatilityBid(
 		Log::Debug(
 			"trdk_GetImpliedVolatilityBid result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			right,
 			result);
@@ -234,7 +234,7 @@ double _stdcall trdk_GetImpliedVolatilityBid(
 				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
 			symbol,
 			exchange,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			ex);
 	} catch (...) {
@@ -272,7 +272,7 @@ int _stdcall trdk_GetFopLastQty(
 		Log::Debug(
 			"trdk_GetFopLastQty result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			right,
 			result);
@@ -283,7 +283,7 @@ int _stdcall trdk_GetFopLastQty(
 				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
 			symbol,
 			exchange,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			ex);
 	} catch (...) {
@@ -321,7 +321,7 @@ double _stdcall trdk_GetFopLastPrice(
 		Log::Debug(
 			"trdk_GetFopLastPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			right,
 			result);
@@ -332,7 +332,7 @@ double _stdcall trdk_GetFopLastPrice(
 				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
 			symbol,
 			exchange,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			ex);
 	} catch (...) {
@@ -370,7 +370,7 @@ int _stdcall trdk_GetFopBidQty(
 		Log::Debug(
 			"trdk_GetFopBidQty result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			right,
 			result);
@@ -381,7 +381,7 @@ int _stdcall trdk_GetFopBidQty(
 				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
 			symbol,
 			exchange,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			ex);
 	} catch (...) {
@@ -419,7 +419,7 @@ double _stdcall trdk_GetFopBidPrice(
 		Log::Debug(
 			"trdk_GetFopBidPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			right,
 			result);
@@ -430,7 +430,7 @@ double _stdcall trdk_GetFopBidPrice(
 				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
 			symbol,
 			exchange,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			ex);
 	} catch (...) {
@@ -468,7 +468,7 @@ int _stdcall trdk_GetFopAskQty(
 		Log::Debug(
 			"trdk_GetFopAskQty result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			right,
 			result);
@@ -479,7 +479,7 @@ int _stdcall trdk_GetFopAskQty(
 				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
 			symbol,
 			exchange,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			ex);
 	} catch (...) {
@@ -517,7 +517,7 @@ double _stdcall trdk_GetFopAskPrice(
 		Log::Debug(
 			"trdk_GetFopAskPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
 			symbol,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			right,
 			result);
@@ -528,7 +528,7 @@ double _stdcall trdk_GetFopAskPrice(
 				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
 			symbol,
 			exchange,
-			expirationDate,
+			boost::lexical_cast<std::string>(expirationDate),
 			strike,
 			ex);
 	} catch (...) {

@@ -751,12 +751,9 @@ private:
 				const std::string &tag,
 				ModuleDll<Module> &module) {
 		typedef ModuleTrait<Module> Trait;
-<<<<<<< HEAD
-=======
 		static_assert(
 			int(Trait::Type) != int(MODULE_TYPE_SERVICE),
 			"Wrong CreateStandaloneModuleInstance method choose.");
->>>>>>> 123fc7ccc737fc2d38bbbb0ad3c4b10d0d3f5212
 		CreateModuleInstance(tag, module);
 	}
 

@@ -97,7 +97,8 @@ void BridgeServer::InitLog(const fs::path &logFilePath) {
 }
 
 BridgeServer::BridgeId BridgeServer::CreateBridge(
-			const std::string &defaultExchange) {
+			const std::string &defaultExchange,
+			const BridgeId *id) {
 	
 	std::ostringstream settingsString;
 	settingsString
@@ -117,9 +118,14 @@ BridgeServer::BridgeId BridgeServer::CreateBridge(
 	boost::shared_ptr<Bridge> bridge(new Bridge(context));
 	context->Start();
 
-	const BridgeId newBridgeId = m_pimpl->m_bridges.size();
-	m_pimpl->m_bridges.push_back(bridge);
-	return newBridgeId;
+	if (!id) {
+		const BridgeId newBridgeId = m_pimpl->m_bridges.size();
+		m_pimpl->m_bridges.push_back(bridge);
+		return newBridgeId;
+	} else {
+		m_pimpl->m_bridges[*id] = bridge;
+		return *id;
+	}
 
 }
 
@@ -137,15 +143,20 @@ Bridge & BridgeServer::CheckBridge(
 			const BridgeId &id,
 			const std::string &defaultExchange) {
 	if (id < m_pimpl->m_bridges.size()) {
+		if (m_pimpl->m_bridges[id]->IsActive()) {
+			return *m_pimpl->m_bridges[id];
+		}
+		Verify(CreateBridge(defaultExchange, &id) == id);
+		return *m_pimpl->m_bridges[id];
+	} else {
+		AssertEq(m_pimpl->m_bridges.size(), id);
+		if (m_pimpl->m_bridges.size() != id) {
+			throw UnknownEngineError();
+		}
+		Verify(CreateBridge(defaultExchange) == id);
+		AssertEq(id + 1, m_pimpl->m_bridges.size());
 		return *m_pimpl->m_bridges[id];
 	}
-	AssertEq(m_pimpl->m_bridges.size(), id);
-	if (m_pimpl->m_bridges.size() != id) {
-		throw UnknownEngineError();
-	}
-	Verify(CreateBridge(defaultExchange) == id);
-	AssertEq(id + 1, m_pimpl->m_bridges.size());
-	return *m_pimpl->m_bridges[id];
 }
 
 Bridge & BridgeServer::GetBridge(const BridgeId &bridgeId) {

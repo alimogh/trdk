@@ -44,7 +44,9 @@ namespace trdk { namespace SimpleApi {
 
 	public:
 
-		BridgeId CreateBridge(const std::string &defaultExchange);
+		BridgeId CreateBridge(
+					const std::string &defaultExchange,
+					const BridgeId * = nullptr);
 
 		void DestoryBridge(const BridgeId &);
 		void DestoryAllBridge();
