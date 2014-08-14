@@ -82,7 +82,7 @@ void CurrenexStream::SubscribeToSecurities() {
 		"Sending FIX Market Data Requests for %1% securities...",
 		m_securities.size());
 
-	for (	fix::UInt64 sequrityIndex = 0;
+	for (	size_t sequrityIndex = 0;
 			sequrityIndex < m_securities.size();
 			++sequrityIndex) {
 			
