@@ -35,10 +35,14 @@ Symbol::ParameterError::ParameterError(const char *what) throw()
 ////////////////////////////////////////////////////////////////////////////////
 
 Symbol::Symbol()
-		: m_securityType(numberOfSecurityTypes),
-		m_strike(.0),
-		m_hash(0),
-		m_right(numberOfRights) {
+		: m_hash(0) {
+	//...//
+}
+
+Symbol::Data::Data()
+		: securityType(numberOfSecurityTypes),
+		strike(.0),
+		right(numberOfRights) {
 	//...//
 }
 
@@ -46,19 +50,27 @@ Symbol::Symbol(
 			SecurityType securityType,
 			const std::string &symbol,
 			const std::string &currency)
-		: m_securityType(securityType),
-		m_symbol(symbol),
-		m_currency(currency),
-		m_strike(.0),
-		m_hash(0),
-		m_right(numberOfRights) {
-	Assert(!m_symbol.empty());
-	Assert(!m_currency.empty());
-	if (m_symbol.empty()) {
+		: m_data(securityType, symbol, currency),
+		m_hash(0) {
+	Assert(!m_data.symbol.empty());
+	Assert(!m_data.currency.empty());
+	if (m_data.symbol.empty()) {
 		throw ParameterError("Symbol can't be empty");
-	} else if (m_currency.empty()) {
+	} else if (m_data.currency.empty()) {
 		throw ParameterError("Symbol currency can't be empty");
 	}
+}
+
+Symbol::Data::Data(
+			SecurityType securityType,
+			const std::string &symbol,
+			const std::string &currency)
+		: securityType(securityType),
+		symbol(symbol),
+		currency(currency),
+		strike(.0),
+		right(numberOfRights) {
+	//...//
 }
 
 Symbol::Symbol(
@@ -66,22 +78,31 @@ Symbol::Symbol(
 			const std::string &currency,
 			const std::string &expirationDate,
 			double strike)
-		: m_securityType(SECURITY_TYPE_FUTURE_OPTION),
-		m_symbol(symbol),
-		m_currency(currency),
-		m_expirationDate(expirationDate),
-		m_strike(strike),
-		m_hash(0),
-		m_right(numberOfRights) {
-	Assert(!m_symbol.empty());
-	Assert(!m_currency.empty());
-	Assert(!expirationDate.empty());
-	Assert(!IsZero(strike));
-	if (m_symbol.empty()) {
+		: m_data(symbol, currency, expirationDate, strike),
+		m_hash(0) {
+	Assert(!m_data.symbol.empty());
+	Assert(!m_data.currency.empty());
+	Assert(!m_data.expirationDate.empty());
+	Assert(!IsZero(m_data.strike));
+	if (m_data.symbol.empty()) {
 		throw ParameterError("Symbol can't be empty");
-	} else if (m_currency.empty()) {
+	} else if (m_data.currency.empty()) {
 		throw ParameterError("Symbol currency can't be empty");
 	}
+}
+
+Symbol::Data::Data(
+			const std::string &symbol,
+			const std::string &currency,
+			const std::string &expirationDate,
+			double strike)
+		: securityType(SECURITY_TYPE_FUTURE_OPTION),
+		symbol(symbol),
+		currency(currency),
+		expirationDate(expirationDate),
+		strike(strike),
+		right(numberOfRights) {
+	//...//
 }
 
 Symbol::Symbol(
@@ -90,27 +111,51 @@ Symbol::Symbol(
 			const std::string &exchange,
 			const std::string &primaryExchange,
 			const std::string &currency)
-		: m_securityType(securityType),
-		m_symbol(symbol),
-		m_exchange(exchange),
-		m_primaryExchange(primaryExchange),
-		m_currency(currency),
-		m_strike(.0),
-		m_hash(0),
-		m_right(numberOfRights) {
-	Assert(!m_symbol.empty());
-	Assert(!m_exchange.empty());
-	Assert(!m_primaryExchange.empty());
-	Assert(!m_currency.empty());
-	if (m_symbol.empty()) {
+		: m_data(securityType, symbol, exchange, primaryExchange, currency),
+		m_hash(0) {
+	Assert(!m_data.symbol.empty());
+	Assert(!m_data.exchange.empty());
+	Assert(!m_data.primaryExchange.empty());
+	Assert(!m_data.currency.empty());
+	if (m_data.symbol.empty()) {
 		throw ParameterError("Symbol can't be empty");
-	} else if (m_exchange.empty()) {
+	} else if (m_data.exchange.empty()) {
 		throw ParameterError("Symbol exchange can't be empty");
-	} else if (m_primaryExchange.empty()) {
+	} else if (m_data.primaryExchange.empty()) {
 		throw ParameterError("Symbol primary exchange can't be empty");
-	} else if (m_currency.empty()) {
+	} else if (m_data.currency.empty()) {
 		throw ParameterError("Symbol currency can't be empty");
 	}
+}
+
+Symbol::Data::Data(
+			SecurityType securityType,
+			const std::string &symbol,
+			const std::string &exchange,
+			const std::string &primaryExchange,
+			const std::string &currency)
+		: securityType(securityType),
+		symbol(symbol),
+		exchange(exchange),
+		primaryExchange(primaryExchange),
+		currency(currency),
+		strike(.0),
+		right(numberOfRights) {
+	//...//
+}
+
+Symbol::Symbol(const Symbol &rhs)
+		: m_data(rhs.m_data),
+		m_hash(rhs.m_hash.load()) {
+	//...//
+}
+
+Symbol & Symbol::operator =(const Symbol &rhs) {
+	if (this != &rhs) {
+		m_data = rhs.m_data;
+		m_hash = rhs.m_hash.load();
+	}
+	return *this;
 }
 
 Symbol Symbol::Parse(
@@ -146,16 +191,16 @@ Symbol Symbol::Parse(
 	}
 	
 	Symbol result;
-	result.m_securityType = Symbol::SECURITY_TYPE_STOCK;
-	primaryExchange.swap(result.m_primaryExchange);
-	result.m_symbol = subs[0];
-	if (result.m_symbol.empty()) {
+	result.m_data.securityType = Symbol::SECURITY_TYPE_STOCK;
+	primaryExchange.swap(result.m_data.primaryExchange);
+	result.m_data.symbol = subs[0];
+	if (result.m_data.symbol.empty()) {
 		throw StringFormatError();
 	}
-	result.m_exchange = subs.size() >= 3 && !subs[2].empty()
+	result.m_data.exchange = subs.size() >= 3 && !subs[2].empty()
 		?	subs[2]
 		:	defExchange;
-	result.m_currency = subs.size() >= 4 && !subs[3].empty()
+	result.m_data.currency = subs.size() >= 4 && !subs[3].empty()
 		?	subs[3]
 		:	defCurrency;
 	return result;
@@ -186,13 +231,13 @@ Symbol Symbol::ParseCash(
 		throw StringFormatError();
 	}
 	Symbol result;
-	result.m_securityType = securityType;
-	result.m_symbol = symbolMatch[1].str();
-	result.m_currency = symbolMatch[2].str();
-	result.m_exchange = subs.size() >= 2 && !subs[1].empty()
+	result.m_data.securityType = securityType;
+	result.m_data.symbol = symbolMatch[1].str();
+	result.m_data.currency = symbolMatch[2].str();
+	result.m_data.exchange = subs.size() >= 2 && !subs[1].empty()
 		?	subs[1]
 		:	defExchange;
-	result.m_primaryExchange = "FOREX";
+	result.m_data.primaryExchange = "FOREX";
 	return result;
 }
 
@@ -225,15 +270,15 @@ Symbol Symbol::ParseCashFutureOption(
 	}
 
 	Symbol result;
-	result.m_securityType = SECURITY_TYPE_FUTURE_OPTION;
-	result.m_symbol = symbolMatch[1].str();
-	result.m_currency = symbolMatch[2].str();
-	result.m_exchange = subs.size() >= 2 && !subs[1].empty()
+	result.m_data.securityType = SECURITY_TYPE_FUTURE_OPTION;
+	result.m_data.symbol = symbolMatch[1].str();
+	result.m_data.currency = symbolMatch[2].str();
+	result.m_data.exchange = subs.size() >= 2 && !subs[1].empty()
 		?	subs[1]
 		:	defExchange;
-	result.m_expirationDate = expirationDate;
-	result.m_strike = strike;
-	result.m_right = right;
+	result.m_data.expirationDate = expirationDate;
+	result.m_data.strike = strike;
+	result.m_data.right = right;
 	
 	return result;
 
@@ -247,33 +292,33 @@ std::string Symbol::GetAsString() const {
 
 Symbol::operator bool() const {
 	Assert(
-		m_securityType == numberOfSecurityTypes
-		|| (!m_symbol.empty() && !m_currency.empty()));
+		m_data.securityType == numberOfSecurityTypes
+		|| (!m_data.symbol.empty() && !m_data.currency.empty()));
 	Assert(
-		m_securityType != numberOfSecurityTypes
-		|| (m_symbol.empty()
-			&& m_exchange.empty()
-			&& m_primaryExchange.empty()
-			&& m_currency.empty()
+		m_data.securityType != numberOfSecurityTypes
+		|| (m_data.symbol.empty()
+			&& m_data.exchange.empty()
+			&& m_data.primaryExchange.empty()
+			&& m_data.currency.empty()
 			&& m_hash == 0));
-	return m_securityType != numberOfSecurityTypes;
+	return m_data.securityType != numberOfSecurityTypes;
 }
 
 bool Symbol::operator <(const Symbol &rhs) const {
-	if (m_primaryExchange < rhs.m_primaryExchange) {
+	if (m_data.primaryExchange < rhs.m_data.primaryExchange) {
 		return true;
-	} else if (m_primaryExchange != rhs.m_primaryExchange) {
+	} else if (m_data.primaryExchange != rhs.m_data.primaryExchange) {
 		return false;
-	} else if (m_exchange < rhs.m_exchange) {
+	} else if (m_data.exchange < rhs.m_data.exchange) {
 		return true;
-	} else if (m_exchange != rhs.m_exchange) {
+	} else if (m_data.exchange != rhs.m_data.exchange) {
 		return false;
-	} else if (m_symbol < rhs.m_symbol) {
+	} else if (m_data.symbol < rhs.m_data.symbol) {
 		return true;
-	} else if (m_symbol != rhs.m_symbol) {
+	} else if (m_data.symbol != rhs.m_data.symbol) {
 		return false;
 	} else {
-		return m_currency < rhs.m_currency;
+		return m_data.currency < rhs.m_data.currency;
 	}
 }
 
@@ -284,22 +329,22 @@ bool Symbol::operator ==(const Symbol &rhs) const {
 	} else if (m_hash && rhs.m_hash) {
 		Assert(
 			(m_hash == rhs.m_hash
-				&& m_symbol == rhs.m_symbol
-				&& m_exchange == rhs.m_exchange
-				&& m_primaryExchange == rhs.m_primaryExchange
-				&& m_currency == rhs.m_currency)
+				&& m_data.symbol == rhs.m_data.symbol
+				&& m_data.exchange == rhs.m_data.exchange
+				&& m_data.primaryExchange == rhs.m_data.primaryExchange
+				&& m_data.currency == rhs.m_data.currency)
 			|| (m_hash != rhs.m_hash
-				&& (m_symbol != rhs.m_symbol
-					|| m_exchange != rhs.m_exchange
-					|| m_primaryExchange != rhs.m_primaryExchange
-					|| m_currency != rhs.m_currency)));
+				&& (m_data.symbol != rhs.m_data.symbol
+					|| m_data.exchange != rhs.m_data.exchange
+					|| m_data.primaryExchange != rhs.m_data.primaryExchange
+					|| m_data.currency != rhs.m_data.currency)));
 		return m_hash == rhs.m_hash;
 	} else {
 		return
-			m_symbol == rhs.m_symbol
-			&& m_currency == rhs.m_currency
-			&& m_exchange == rhs.m_exchange
-			&& m_primaryExchange == rhs.m_primaryExchange;
+			m_data.symbol == rhs.m_data.symbol
+			&& m_data.currency == rhs.m_data.currency
+			&& m_data.exchange == rhs.m_data.exchange
+			&& m_data.primaryExchange == rhs.m_data.primaryExchange;
 	}
 }
 
@@ -308,49 +353,48 @@ bool Symbol::operator !=(const Symbol &rhs) const {
 }
 
 Symbol::Hash Symbol::GetHash() const {
-/* @todo see TRDK-143
  	if (!m_hash) {
 		std::ostringstream oss;
-		oss << *this << ":" << m_currency;
-		const_cast<Symbol *>(this)->m_hash = stdext::hash_value(oss.str());
+		oss << *this << ":" << m_data.currency;
+		const_cast<Symbol *>(this)->m_hash = boost::hash_value(oss.str());
 		AssertNe(0, m_hash);
-	}*/
+	}
 	return m_hash;
 }
 
 Symbol::SecurityType Symbol::GetSecurityType() const {
-	return m_securityType;
+	return m_data.securityType;
 }
 
 const std::string & Symbol::GetSymbol() const {
-	return m_symbol;
+	return m_data.symbol;
 }
 		
 const std::string & Symbol::GetExchange() const {
-	return m_exchange;
+	return m_data.exchange;
 }
 		
 const std::string & Symbol::GetPrimaryExchange() const {
-	return m_primaryExchange;
+	return m_data.primaryExchange;
 }
 
 const std::string & Symbol::GetCurrency() const {
-	return m_currency;
+	return m_data.currency;
 }
 
 const std::string & Symbol::GetExpirationDate() const {
-	return m_expirationDate;
+	return m_data.expirationDate;
 }
 
 double Symbol::GetStrike() const {
-	return m_strike;
+	return m_data.strike;
 }
 
 const Symbol::Right & Symbol::GetRight() const {
-	if (m_right == numberOfRights) {
+	if (m_data.right == numberOfRights) {
 		throw Lib::LogicError("Symbol has not Right");
 	}
-	return m_right;
+	return m_data.right;
 }
 
 Symbol::Right Symbol::ParseRight(const std::string &source) {

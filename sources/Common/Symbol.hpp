@@ -91,6 +91,9 @@ namespace trdk { namespace Lib {
 					const Right &,
 					const std::string &defExchange);
 
+		Symbol(const Symbol &);
+		Symbol & operator =(const Symbol &);
+
 	public:
 
 		operator bool() const;
@@ -121,18 +124,41 @@ namespace trdk { namespace Lib {
 
 	private:
 
-		SecurityType m_securityType;
-		std::string m_symbol;
-		std::string m_exchange;
-		std::string m_primaryExchange;
-		std::string m_currency;
+		struct Data {
 
-		std::string m_expirationDate;
-		double m_strike;
-		Right m_right;
+			SecurityType securityType;
+			std::string symbol;
+			std::string exchange;
+			std::string primaryExchange;
+			std::string currency;
 
-		//! todo see TRDK-143:
-		Hash m_hash;
+			std::string expirationDate;
+			double strike;
+			Right right;
+
+			Data();
+			
+			explicit Data(
+						SecurityType,
+						const std::string &symbol,
+						const std::string &exchange);
+
+			explicit Data(
+						const std::string &symbol,
+						const std::string &currency,
+						const std::string &expirationDate,
+						double strike);
+
+			explicit Data(
+						SecurityType,
+						const std::string &symbol,
+						const std::string &exchange,
+						const std::string &primaryExchange,
+						const std::string &currency);
+
+		} m_data;
+
+		boost::atomic<Hash> m_hash;
 
 	};
 

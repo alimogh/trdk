@@ -25,6 +25,7 @@
 #	include <boost/format.hpp>
 #	include <boost/filesystem.hpp>
 #	include <boost/regex.hpp>
+#	include <boost/atomic.hpp>
 #include "DisableBoostWarningsEnd.h"
 
 #ifdef BOOST_WINDOWS
