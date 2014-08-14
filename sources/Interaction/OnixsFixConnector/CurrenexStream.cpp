@@ -19,9 +19,11 @@ using namespace trdk::Interaction::OnixsFixConnector;
 namespace fix = OnixS::FIX;
 
 CurrenexStream::CurrenexStream(
+			const std::string &tag,
 			const Lib::IniSectionRef &conf,
 			Context::Log &log)
-		: m_log(log),
+		: MarketDataSource(tag),
+		m_log(log),
 		m_session("stream", conf, m_log) {
 	//...//
 }
@@ -80,7 +82,7 @@ void CurrenexStream::SubscribeToSecurities() {
 		"Sending FIX Market Data Requests for %1% securities...",
 		m_securities.size());
 
-	for (	fix::UInt64 sequrityIndex = 0;
+	for (	size_t sequrityIndex = 0;
 			sequrityIndex < m_securities.size();
 			++sequrityIndex) {
 			
@@ -133,7 +135,7 @@ boost::shared_ptr<Security> CurrenexStream::CreateSecurity(
 			const Symbol &symbol)
 		const {
 	boost::shared_ptr<CurrenexSecurity> result(
-		new CurrenexSecurity(context, symbol));
+		new CurrenexSecurity(context, symbol, *this));
 	const_cast<CurrenexStream *>(this)
 		->m_securities.push_back(result);
 	return result;
@@ -213,10 +215,11 @@ void CurrenexStream::onInboundApplicationMsg(
 
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 boost::shared_ptr<MarketDataSource> CreateCurrenexStream(
+			const std::string &tag,
 			const IniSectionRef &configuration,
 			Context::Log &log) {
 	return boost::shared_ptr<MarketDataSource>(
-		new CurrenexStream(configuration, log));
+		new CurrenexStream(tag, configuration, log));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

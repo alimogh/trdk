@@ -68,6 +68,8 @@ class Security::Implementation : private boost::noncopyable {
 
 public:
 
+	const MarketDataSource &m_source;
+
 	mutable boost::signals2::signal<Level1UpdateSlotSignature>
 		m_level1UpdateSignal;
 	mutable boost::signals2::signal<Level1TickSlotSignature> m_level1TickSignal;
@@ -85,8 +87,9 @@ public:
 
 public:
 
-	Implementation()
-			: m_brokerPosition(0),
+	Implementation(const MarketDataSource &source)
+			: m_source(source),
+			m_brokerPosition(0),
 			m_marketDataTime(0),
 			m_isLevel1Started(false) {
 		foreach (auto &item, m_level1) {
@@ -188,14 +191,21 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-Security::Security(Context &context, const Symbol &symbol)
+Security::Security(
+			Context &context,
+			const Symbol &symbol,
+			const MarketDataSource &source)
 		: Base(context, symbol),
-		m_pimpl(new Implementation) {
+		m_pimpl(new Implementation(source)) {
 	//...//
 }
 
 Security::~Security() {
 	delete m_pimpl;
+}
+
+const MarketDataSource & Security::GetSource() const {
+	return m_pimpl->m_source;
 }
 
 unsigned int Security::GetPriceScale() const throw() {

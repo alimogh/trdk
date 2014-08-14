@@ -43,8 +43,21 @@ public:
 			boost::shared_ptr<Security>>
 		Securities;
 
+public:
+
+	const std::string m_tag;
+
 	SecuritiesMutex m_securitiesMutex;
 	Securities m_securities;
+
+public:
+
+	explicit Implementation(const std::string &tag)
+			: m_tag(tag) {
+		//...//
+	}
+
+public:
 
 	Security * FindSecurity(const Symbol &symbol) {
 		const auto &result = m_securities.find(symbol);
@@ -64,13 +77,17 @@ MarketDataSource::Error::Error(const char *what) throw()
 
 //////////////////////////////////////////////////////////////////////////
 
-MarketDataSource::MarketDataSource()
-		: m_pimpl(new Implementation) {
+MarketDataSource::MarketDataSource(const std::string &tag)
+		: m_pimpl(new Implementation(tag)) {
 	//...//
 }
 
 MarketDataSource::~MarketDataSource() {
 	delete m_pimpl;
+}
+
+const std::string & MarketDataSource::GetTag() const {
+	return m_pimpl->m_tag;
 }
 
 Security & MarketDataSource::GetSecurity(
@@ -108,4 +125,4 @@ size_t MarketDataSource::GetActiveSecurityCount() const {
 	return m_pimpl->m_securities.size();
 }
 
-//////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////

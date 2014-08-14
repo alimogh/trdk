@@ -30,6 +30,78 @@ using namespace trdk::Engine::Ini;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+
+	bool GetModuleSection(
+				const std::string &sectionName,
+				std::string &typeResult,
+				std::string &tagResult) {
+		std::list<std::string> subs;
+		boost::split(subs, sectionName, boost::is_any_of("."));
+		if (subs.empty()) {
+			return false;
+		} else if (
+				!boost::iequals(*subs.begin(), Sections::strategy)
+				&& !boost::iequals(*subs.begin(), Sections::observer)
+				&& !boost::iequals(*subs.begin(), Sections::service)) {
+			return false;
+		} else if (subs.size() != 2 || subs.rbegin()->empty()) {
+			boost::format message(
+				"Wrong module section name format: \"%1%\", %2%");
+			message % sectionName;
+			if (subs.size() < 2 || subs.rbegin()->empty()) {
+				message % "expected tag name after dot";
+			} else {
+				message % "no extra dots allowed";
+			}
+			throw Exception(message.str().c_str());
+		}
+		subs.begin()->swap(typeResult);
+		subs.rbegin()->swap(tagResult);
+		return true;
+	}
+
+	//! Returns nullptr at fail.
+	const IniSectionRef * GetModuleSection(
+				const Lib::Ini &ini,
+				const std::string &sectionName,
+				std::string &typeResult,
+				std::string &tagResult) {
+		return GetModuleSection(sectionName, typeResult, tagResult)
+			?	new IniSectionRef(ini, sectionName)
+			:	nullptr;
+	}
+
+	bool GetMarketDataSourceSection(
+				const std::string &sectionName,
+				std::string &tagResult) {
+		std::list<std::string> subs;
+		boost::split(subs, sectionName, boost::is_any_of("."));
+		if (subs.empty()) {
+			return false;
+		} else if (!boost::iequals(*subs.begin(), Sections::marketDataSource)) {
+			return false;
+		} else if (
+				(subs.size() == 2 && subs.rbegin()->empty())
+				|| subs.size() != 2) {
+			boost::format message(
+				"Wrong Market Data Source section name format: \"%1%\", %2%");
+			message % sectionName;
+			if (subs.size() < 2 || subs.rbegin()->empty()) {
+				message % "expected tag name after dot";
+			} else {
+				message % "no extra dots allowed";
+			}
+			throw Exception(message.str().c_str());
+		}
+		subs.rbegin()->swap(tagResult);
+		return true;
+	}
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 class ContextBootstrapper : private boost::noncopyable {
 
 public:
@@ -39,12 +111,12 @@ public:
 				const Settings &settings,
 				Engine::Context &context,
 				DllObjectPtr<TradeSystem> &tradeSystemRef,
-				DllObjectPtr<MarketDataSource> &marketDataSourceRef)
+				MarketDataSources &marketDataSourcesRef)
 			: m_context(context),
 			m_conf(conf),
 			m_settings(settings),
 			m_tradeSystem(tradeSystemRef),
-			m_marketDataSource(marketDataSourceRef) {
+			m_marketDataSources(marketDataSourcesRef) {
 		//...//
 	}
 
@@ -53,13 +125,11 @@ public:
 	void Boot() {
 		LoadContextParams();
 		Assert(!m_tradeSystem);
-		Assert(!m_marketDataSource);
+		Assert(m_marketDataSources.empty());
 		LoadTradeSystem();
-		if (!m_marketDataSource) {
-			LoadMarketDataSource();
-		}
+		LoadMarketDataSources();
 		Assert(m_tradeSystem);
-		Assert(m_marketDataSource);
+		Assert(!m_marketDataSources.empty());
 	}
 
 private:
@@ -78,7 +148,6 @@ private:
 	void LoadTradeSystem() {
 		
 		Assert(!m_tradeSystem);
-		Assert(!m_marketDataSource);
 		
 		const IniSectionRef configurationSection(
 			m_conf,
@@ -140,20 +209,19 @@ private:
 		if (boost::get<1>(factoryResult)) {
 			m_context.GetLog().Debug(
 				"Using trade system as market data source.");
-			m_marketDataSource = DllObjectPtr<MarketDataSource>(
-				dll,
-				boost::get<1>(factoryResult));
+			m_marketDataSources.push_back(
+				DllObjectPtr<MarketDataSource>(
+					dll,
+					boost::get<1>(factoryResult)));
 		}
 
 	}
 
-	void LoadMarketDataSource() {
+	//! Loads Market Data Source by conf. section name.
+	DllObjectPtr<MarketDataSource> LoadMarketDataSource(
+				const IniSectionRef &configurationSection,
+				const std::string &tag) {
 		
-		Assert(!m_marketDataSource);
-
-		const IniSectionRef configurationSection(
-			m_conf,
-			Sections::marketDataSource);
 		const std::string module
 			= configurationSection.ReadKey(Keys::module);
 		std::string factoryName = configurationSection.ReadKey(
@@ -173,7 +241,9 @@ private:
 		
 			try {
 				factoryResult = dll->GetFunction<Factory>(factoryName)(
-					configurationSection);
+					tag,
+					configurationSection,
+					m_context.GetLog());
 			} catch (const Dll::DllFuncException &) {
 				if (	!boost::istarts_with(
 							factoryName,
@@ -182,7 +252,9 @@ private:
 						= DefaultValues::Factories::factoryNameStart
 							+ factoryName;
 					factoryResult = dll->GetFunction<Factory>(factoryName)(
-						configurationSection);
+						tag,
+						configurationSection,
+						m_context.GetLog());
 				} else {
 					throw;
 				}
@@ -202,8 +274,36 @@ private:
 			throw Exception(
 				"Failed to load market data source module - no object returned");
 		}
-		m_marketDataSource = DllObjectPtr<MarketDataSource>(dll, factoryResult);
+		
+		return DllObjectPtr<MarketDataSource>(dll, factoryResult);
 
+	}
+
+	//! Loads Market Data Sources.
+	/** Reads all sections from configuration, filters Marker Data Source
+	  * sections and loads service for it.
+	  */
+	void LoadMarketDataSources() {
+	
+		foreach (const auto &section, m_conf.ReadSectionsList()) {
+			std::string tag;
+			if (	!GetMarketDataSourceSection(section, tag)
+					&& !boost::iequals(section, Sections::marketDataSource)) {
+				continue;
+			}
+			const auto &source = LoadMarketDataSource(
+				IniSectionRef(m_conf, section),
+				tag);
+			m_marketDataSources.push_back(source);
+		}
+	
+		
+		if (m_marketDataSources.empty()) {
+			throw Exception("No one Market Data Source found in configuration");
+		}
+
+		m_marketDataSources.shrink_to_fit();
+	
 	}
 
 private:
@@ -214,7 +314,7 @@ private:
 	const Settings &m_settings;
 
 	DllObjectPtr<TradeSystem> &m_tradeSystem;
-	DllObjectPtr<MarketDataSource> &m_marketDataSource;
+	MarketDataSources &m_marketDataSources;
 
 };
 
@@ -551,12 +651,14 @@ private:
 				std::map<std::string /*tag*/, ModuleDll<Module>> &source,
 				std::map<
 						std::string /*tag*/,
-						std::list<boost::shared_ptr<Module>>> *
+						std::vector<boost::shared_ptr<Module>>> *
 					result) {
+		
 		if (!result) {
 			AssertEq(0, source.size());
 			return;
 		}
+		
 		foreach (auto &module, source) {
 			const std::string &tag = module.first;
 			ModuleDll<Module> &moduleDll = module.second;
@@ -569,6 +671,11 @@ private:
 			}
 			m_moduleListResult.insert(moduleDll.dll);
 		}
+		
+		foreach (auto &tag, *result) {
+			tag.second.shrink_to_fit();
+		}
+
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -697,23 +804,28 @@ private:
 		AssertEq(tag, instance->GetTag());
 		DllObjectPtr<Module> instanceDllPtr(module.dll, instance);
 		if (!symbols.empty()) {
-			std::list<std::string> securities;
+			std::vector<std::string> securities;
 			foreach (auto symbol, symbols) {
 				Assert(symbol);
-				auto &security = LoadSecurity(symbol);
-				try {
-					instance->RegisterSource(security);
-				} catch (...) {
-					trdk::Log::RegisterUnhandledException(
-						__FUNCTION__,
-						__FILE__,
-						__LINE__,
-						false);
-					throw Exception("Failed to attach security");
-				}
-				std::ostringstream oss;
-				oss << security;
-				securities.push_back(oss.str());
+				m_context.ForEachMarketDataSource([&](
+							MarketDataSource &source)
+						-> bool {
+					auto &security = source.GetSecurity(m_context, symbol);
+					try {
+						instance->RegisterSource(security);
+					} catch (...) {
+						trdk::Log::RegisterUnhandledException(
+							__FUNCTION__,
+							__FILE__,
+							__LINE__,
+							false);
+						throw Exception("Failed to attach security");
+					}
+					std::ostringstream oss;
+					oss << security;
+					securities.push_back(oss.str());
+					return true;
+				});
 			}
 			Assert(
 				module.symbolInstances.find(symbols)
@@ -755,50 +867,6 @@ private:
 			int(Trait::Type) != int(MODULE_TYPE_SERVICE),
 			"Wrong CreateStandaloneModuleInstance method choose.");
 		CreateModuleInstance(tag, module);
-	}
-
-	////////////////////////////////////////////////////////////////////////////////
-
-	bool GetModuleSection(
-				const std::string &sectionName,
-				std::string &typeResult,
-				std::string &tagResult)
-			const {
-		std::list<std::string> subs;
-		boost::split(subs, sectionName, boost::is_any_of("."));
-		if (subs.empty()) {
-			return false;
-		} else if (
-				!boost::iequals(*subs.begin(), Sections::strategy)
-				&& !boost::iequals(*subs.begin(), Sections::observer)
-				&& !boost::iequals(*subs.begin(), Sections::service)) {
-			return false;
-		} else if (subs.size() != 2 || subs.rbegin()->empty()) {
-			boost::format message(
-				"Wrong module section name format: \"%1%\", %2%");
-			message % sectionName;
-			if (subs.size() < 2 || subs.rbegin()->empty()) {
-				message % "expected tag name after dot";
-			} else {
-				message % "no extra dots allowed";
-			}
-			throw Exception(message.str().c_str());
-		}
-		subs.begin()->swap(typeResult);
-		subs.rbegin()->swap(tagResult);
-		return true;
-	}
-
-	//! Returns nullptr at fail.
-	const IniSectionRef * GetModuleSection(
-				const Lib::Ini &ini,
-				const std::string &sectionName,
-				std::string &typeResult,
-				std::string &tagResult)
-			const {
-		return GetModuleSection(sectionName, typeResult, tagResult)
-			?	new IniSectionRef(ini, sectionName)
-			:	nullptr;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -1310,36 +1378,40 @@ private:
 				continue;
 			}
 			foreach (const Symbol &symbol, requirement.second) {
-				Security *security = nullptr;
-				if (symbol) {
-					security = &LoadSecurity(symbol);
-				}
-				if (!uniqueInstance) {
-					ForEachModuleInstance(
-						module,
-						[&](Module &instance) {
+				m_context.ForEachMarketDataSource(
+					[&](MarketDataSource &source) -> bool {
+						Security *security = nullptr;
+						if (symbol) {
+							security = &source.GetSecurity(m_context, symbol);
+						}
+						if (!uniqueInstance) {
+							ForEachModuleInstance(
+								module,
+								[&](Module &instance) {
+									SubscribeModuleStandaloneInstance(
+										instance,
+										subscribe,
+										security);
+								},
+								[&](Module &instance) {
+									SubscribeModuleSymbolInstance(
+										instance,
+										subscribe,
+										security);
+								});
+						} else if (isUniqueInstanceStandalone) {
 							SubscribeModuleStandaloneInstance(
-								instance,
+								*uniqueInstance,
 								subscribe,
 								security);
-						},
-						[&](Module &instance) {
+						} else {
 							SubscribeModuleSymbolInstance(
-								instance,
+								*uniqueInstance,
 								subscribe,
 								security);
-						});
-				} else if (isUniqueInstanceStandalone) {
-					SubscribeModuleStandaloneInstance(
-						*uniqueInstance,
-						subscribe,
-						security);
-				} else {
-					SubscribeModuleSymbolInstance(
-						*uniqueInstance,
-						subscribe,
-						security);
-				}
+						}
+						return true;
+					});
 			}
 		}
 
@@ -1362,9 +1434,12 @@ private:
 		const auto begin = module.GetSecurities().GetBegin();
 		const auto end = module.GetSecurities().GetEnd();
 		for (auto i = begin; i != end; ++i) {
-			Assert(
-				m_context.GetMarketDataSource().FindSecurity(i->GetSymbol()));
-			pred(LoadSecurity(i->GetSymbol()));
+			m_context.ForEachMarketDataSource(
+				[&](MarketDataSource &source) -> bool {
+					pred(source.GetSecurity(m_context, i->GetSymbol()));
+					return true;
+				});
+			
 		}
 	}
 
@@ -1406,12 +1481,6 @@ private:
 						instance);
 				});
 		}
-	}
-
-	////////////////////////////////////////////////////////////////////////////////
-
-	Security & LoadSecurity(const Symbol &symbol) {
-		return m_context.GetMarketDataSource().GetSecurity(m_context, symbol);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -1617,13 +1686,13 @@ void Engine::BootContext(
 			const Settings &settings,
 			Context &context,
 			DllObjectPtr<TradeSystem> &tradeSystemRef,
-			DllObjectPtr<MarketDataSource> &marketDataSourceRef) {
+			MarketDataSources &marketDataSourcesRef) {
 	ContextBootstrapper(
 			conf,
 			settings,
 			context,
 			tradeSystemRef,
-			marketDataSourceRef)
+			marketDataSourcesRef)
 		.Boot();
 }
 

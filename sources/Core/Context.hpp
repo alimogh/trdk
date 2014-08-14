@@ -57,8 +57,17 @@ namespace trdk {
 		//! User context parameters. No predefined key list.
 		const trdk::Context::Params & GetParams() const;
 
-		virtual trdk::MarketDataSource & GetMarketDataSource() = 0;
-		virtual const trdk::MarketDataSource & GetMarketDataSource() const = 0;
+		//! Applies the given predicate to the each market data source and
+		//! stops if predicate returns false.
+		virtual void ForEachMarketDataSource(
+						const boost::function<bool (const trdk::MarketDataSource &)> &)
+					const
+					= 0;
+		//! Applies the given predicate to the each market data source and
+		//! stops if predicate returns false.
+		virtual void ForEachMarketDataSource(
+						const boost::function<bool (trdk::MarketDataSource &)> &)
+					= 0;
 
 		virtual trdk::TradeSystem & GetTradeSystem() = 0;
 		virtual const trdk::TradeSystem & GetTradeSystem() const = 0;
@@ -67,9 +76,9 @@ namespace trdk {
 
 		virtual trdk::Security * FindSecurity(const trdk::Lib::Symbol &) = 0;
 		virtual const trdk::Security * FindSecurity(
-					const trdk::Lib::Symbol &)
-				const
-				= 0;
+						const trdk::Lib::Symbol &)
+					const
+					= 0;
 
 	private:
 

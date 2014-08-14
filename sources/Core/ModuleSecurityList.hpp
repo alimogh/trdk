@@ -16,7 +16,11 @@ namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	typedef std::map<trdk::Lib::Symbol::Hash, Security *>
+	typedef std::map<
+			boost::tuple<
+				trdk::Lib::Symbol::Hash,
+				const trdk::MarketDataSource *>,
+			Security *>
 		ModuleSecurityListStorage;
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -59,11 +63,14 @@ namespace trdk {
 	public:
 
 		bool Insert(Security &security) {
-			if (m_list.find(security.GetSymbol().GetHash()) != m_list.end()) {
-				Assert(&security == m_list[security.GetSymbol().GetHash()]);
+			const auto &key = boost::make_tuple(
+				security.GetSymbol().GetHash(),
+				&security.GetSource());
+			if (m_list.find(key) != m_list.end()) {
+				Assert(&security == m_list[key]);
 				return false;
 			}
-			m_list[security.GetSymbol().GetHash()] = &security;
+			m_list[key] = &security;
 			return true;
 		}
 
