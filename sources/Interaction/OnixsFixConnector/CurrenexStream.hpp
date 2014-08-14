@@ -27,6 +27,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit CurrenexStream(
+					const std::string &tag,
 					const Lib::IniSectionRef &,
 					Context::Log &);
 		virtual ~CurrenexStream();

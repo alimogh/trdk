@@ -23,7 +23,8 @@ namespace ib = trdk::Interaction::InteractiveBrokers;
 ib::TradeSystem::TradeSystem(
 			const Lib::IniSectionRef &settings,
 			Context::Log &log)
-		: m_log(log),
+		: MarketDataSource("InteractiveBrokers"), //! @todo Setup market system name
+		m_log(log),
 		m_isTestSource(settings.ReadBoolKey("test_source", false)) {
 	if (settings.ReadBoolKey("positions", false)) {
 		m_positions.reset(new Positions);
@@ -175,7 +176,7 @@ boost::shared_ptr<trdk::Security> ib::TradeSystem::CreateSecurity(
 			const Symbol &symbol)
 		const {
 	boost::shared_ptr<ib::Security> result(
-		new ib::Security(context, symbol, m_isTestSource));
+		new ib::Security(context, symbol, *this, m_isTestSource));
 	m_unsubscribedSecurities.push_back(&*result);
 	return result;
 }

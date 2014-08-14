@@ -20,6 +20,8 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	public:
 
+		typedef trdk::MarketDataSource Base;
+
 		class Security : public trdk::Security {
 
 		public:
@@ -28,8 +30,11 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 		public:
 				
-			explicit Security(Context &context, const Lib::Symbol &symbol)
-					: Base(context, symbol) {
+			explicit Security(
+						Context &context,
+						const Lib::Symbol &symbol,
+						const MarketDataSource &source)
+					: Base(context, symbol, source) {
 				//...//
 			}
 
@@ -49,7 +54,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	public:
 
-		MarketDataSource(const Lib::IniSectionRef &);
+		MarketDataSource(const std::string &tag, const Lib::IniSectionRef &);
 		virtual ~MarketDataSource();
 
 	public:

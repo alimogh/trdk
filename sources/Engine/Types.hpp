@@ -12,19 +12,22 @@
 
 namespace trdk { namespace Engine {
 
+	typedef std::vector<trdk::Lib::DllObjectPtr<MarketDataSource>>
+		MarketDataSources;
+
 	typedef std::map<
 			std::string /*tag*/,
-			std::list<boost::shared_ptr<Strategy>>>
+			std::vector<boost::shared_ptr<Strategy>>>
 		Strategies;
 
 	typedef std::map<
 			std::string /*tag*/,
-			std::list<boost::shared_ptr<Observer>>>
+			std::vector<boost::shared_ptr<Observer>>>
 		Observers;
 
 	typedef std::map<
 			std::string /*tag*/,
-			std::list<boost::shared_ptr<Service>>>
+			std::vector<boost::shared_ptr<Service>>>
 		Services;
 
 	typedef std::set<boost::shared_ptr<trdk::Lib::Dll>> ModuleList;

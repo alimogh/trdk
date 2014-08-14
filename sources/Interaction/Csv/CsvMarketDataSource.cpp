@@ -20,9 +20,11 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::Csv;
 
 Csv::MarketDataSource::MarketDataSource(
+			const std::string &tag,
 			const IniSectionRef &configuration,
 			Context::Log &log)
-		: m_log(log),
+		: Base(tag),
+		m_log(log),
 		m_pimaryExchange(configuration.ReadKey("exchange")),
 		m_currency(configuration.ReadKey("currency")),
 		m_isStopped(true) {
@@ -279,7 +281,8 @@ boost::shared_ptr<trdk::Security> Csv::MarketDataSource::CreateSecurity(
 			Context &context,
 			const Symbol &symbol)
 		const {
-	boost::shared_ptr<Csv::Security> result(new Security(context, symbol));
+	boost::shared_ptr<Csv::Security> result(
+		new Security(context, symbol, *this));
 	Subscribe(*result);
 	return result;
 }

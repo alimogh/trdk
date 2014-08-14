@@ -15,8 +15,11 @@ using namespace trdk;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::Csv;
 
-Csv::Security::Security(Context &context, const Lib::Symbol &symbol)
-		: Base(context, symbol) {
+Csv::Security::Security(
+			Context &context,
+			const Lib::Symbol &symbol,
+			const MarketDataSource &source)
+		: Base(context, symbol, source) {
 	//...//
 }
 

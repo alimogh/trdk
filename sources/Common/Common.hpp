@@ -21,6 +21,7 @@
 #	include <boost/cast.hpp>
 #	include <boost/iterator/iterator_facade.hpp>
 #	include <boost/tuple/tuple.hpp>
+#	include <boost/tuple/tuple_comparison.hpp>
 #	include <boost/format.hpp>
 #	include <boost/atomic.hpp>
 #	include <boost/ref.hpp>

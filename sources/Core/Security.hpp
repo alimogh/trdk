@@ -101,7 +101,10 @@ namespace trdk {
 
 	public:
 
-		explicit Security(trdk::Context &, const trdk::Lib::Symbol &);
+		explicit Security(
+					trdk::Context &,
+					const trdk::Lib::Symbol &,
+					const trdk::MarketDataSource &);
 		~Security();
 
 	public:
@@ -117,6 +120,10 @@ namespace trdk {
 		  *			set.
 		  */
 		const boost::posix_time::ptime & GetRequestedDataStartTime() const;
+
+		//! Returns Market Data Source object which provides market data for
+		//! this security object.
+		const trdk::MarketDataSource & GetSource() const;
 
 	public:
 

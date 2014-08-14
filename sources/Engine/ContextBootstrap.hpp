@@ -21,7 +21,7 @@ namespace trdk { namespace Engine {
 				const Settings &,
 				Context &,
 				trdk::Lib::DllObjectPtr<TradeSystem> &tradeSystemRef,
-				trdk::Lib::DllObjectPtr<MarketDataSource> &marketDataSourceRef);
+				MarketDataSources &marketDataSourcesRef);
 
 	void BootContextState(
 				const trdk::Lib::Ini &,

@@ -19,8 +19,9 @@ namespace ib = trdk::Interaction::InteractiveBrokers;
 ib::Security::Security(
 			Context &context,
 			const Lib::Symbol &symbol,
+			const MarketDataSource &source,
 			bool isTestSource)
-		: Base(context, symbol),
+		: Base(context, symbol, source),
 		m_isTestSource(isTestSource) {
 	//...//
 }

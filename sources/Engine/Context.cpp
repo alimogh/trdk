@@ -30,10 +30,18 @@ namespace {
 
 	template<typename T>
 	size_t GetModulesCount(
-				const std::map<std::string, std::list<T>> &modulesByTag) {
+				const std::map<std::string, std::vector<T>> &modulesByTag) {
 		size_t result = 0;
 		foreach (const auto &modules, modulesByTag) {
 			result += modules.second.size();
+		}
+		return result;
+	}
+
+	std::string GetMarketDataSourceSectionName(const MarketDataSource &source) {
+		std::string result = Engine::Ini::Sections::marketDataSource;
+		if (!source.GetTag().empty()) {
+			result += "." + source.GetTag();
 		}
 		return result;
 	}
@@ -58,7 +66,7 @@ public:
 	ModuleList m_modulesDlls;
 
 	DllObjectPtr<TradeSystem> m_tradeSystem;
-	DllObjectPtr<MarketDataSource> m_marketDataSource;
+	MarketDataSources m_marketDataSources;
 
 	std::unique_ptr<State> m_state;
 
@@ -80,7 +88,7 @@ public:
 			m_settings,
 			m_context,
 			m_tradeSystem,
-			m_marketDataSource);
+			m_marketDataSources);
 	}
 
 };
@@ -110,9 +118,30 @@ public:
 public:
 
 	void ReportState() const {
-		context.GetLog().Info(
-			"Loaded %1% securities.",
-			context.GetMarketDataSource().GetActiveSecurityCount());
+
+		{
+			std::vector<std::string> markedDataSourcesStat;
+			size_t commonSecuritiesCount = 0;
+			context.ForEachMarketDataSource(
+				[&](const MarketDataSource &source) -> bool {
+					std::ostringstream oss;
+					oss << markedDataSourcesStat.size() + 1;
+					if (!source.GetTag().empty())  {
+						oss << " (" << source.GetTag() << ")";
+					}
+					oss << ": " << source.GetActiveSecurityCount();
+					markedDataSourcesStat.push_back(oss.str());
+					commonSecuritiesCount += source.GetActiveSecurityCount();
+					return true;
+				});
+			context.GetLog().Info(
+				"Loaded %1% market data sources with %2% securities: %3%.",
+				boost::make_tuple(
+					markedDataSourcesStat.size(),
+					commonSecuritiesCount,
+					boost::join(markedDataSourcesStat, ", ")));
+		}
+		
 		context.GetLog().Info("Loaded %1% observers.", observers.size());
 		context.GetLog().Info(
 			"Loaded %1% strategies (%2% instances).",
@@ -124,6 +153,7 @@ public:
 			boost::make_tuple(
 				services.size(),
 				GetModulesCount(services)));
+
 	}
 
 };
@@ -188,25 +218,26 @@ void Engine::Context::Start() {
 		throw Exception("Failed to make trading system");
 	}
 	
-	if (m_pimpl->m_conf->IsSectionExist(Ini::Sections::marketDataSource)) {
-		try {
-			GetMarketDataSource().Connect(
-				IniSectionRef(
-					*m_pimpl->m_conf,
-					Ini::Sections::marketDataSource));
-			GetMarketDataSource().SubscribeToSecurities();
-		} catch (const Interactor::ConnectError &ex) {
-			boost::format message(
-				"Failed to connect to market data source: \"%1%\"");
-			message % ex;
-			throw Interactor::ConnectError(message.str().c_str());
-		} catch (const Lib::Exception &ex) {
-			GetLog().Error(
-				"Failed to make market data connection: \"%1%\".",
-				ex);
-			throw Exception("Failed to make market data connection");
-		}
-	}
+	ForEachMarketDataSource( [&](MarketDataSource &source) -> bool {
+			try {
+				source.Connect(
+					IniSectionRef(
+						*m_pimpl->m_conf,
+						GetMarketDataSourceSectionName(source)));
+				source.SubscribeToSecurities();
+			} catch (const Interactor::ConnectError &ex) {
+				boost::format message(
+					"Failed to connect to market data source: \"%1%\"");
+				message % ex;
+				throw Interactor::ConnectError(message.str().c_str());
+			} catch (const Lib::Exception &ex) {
+				GetLog().Error(
+					"Failed to make market data connection: \"%1%\".",
+					ex);
+				throw Exception("Failed to make market data connection");
+			}
+			return true;
+		});
 
 	m_pimpl->m_state.reset(state.release());
 	moduleDlls.swap(m_pimpl->m_modulesDlls);
@@ -241,21 +272,38 @@ void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
 
 	m_pimpl->m_state->subscriptionsManager.Activate();
 
-	try {
-		GetMarketDataSource().SubscribeToSecurities();
-	} catch (const Lib::Exception &ex) {
-		GetLog().Error("Failed to make market data subscription: \"%1%\".", ex);
-		throw Exception("Failed to make market data subscription");
+	ForEachMarketDataSource(
+		[&](MarketDataSource &source) -> bool {
+			try {
+				source.SubscribeToSecurities();
+			} catch (const Lib::Exception &ex) {
+				GetLog().Error(
+					"Failed to make market data subscription: \"%1%\".",
+					ex);
+				throw Exception("Failed to make market data subscription");
+			}
+			return true;
+		});
+
+}
+
+void Engine::Context::ForEachMarketDataSource(
+				const boost::function<bool (const MarketDataSource &)> &pred)
+			const {
+	foreach (const auto &source, m_pimpl->m_marketDataSources) {
+		if (!pred(*source)) {
+			return;
+		}
 	}
-
 }
 
-MarketDataSource & Engine::Context::GetMarketDataSource() {
-	return m_pimpl->m_marketDataSource;
-}
-
-const MarketDataSource & Engine::Context::GetMarketDataSource() const {
-	return const_cast<Context *>(this)->GetMarketDataSource();
+void Engine::Context::ForEachMarketDataSource(
+				const boost::function<bool (MarketDataSource &)> &pred) {
+	foreach (auto &source, m_pimpl->m_marketDataSources) {
+		if (!pred(*source)) {
+			return;
+		}
+	}
 }
 
 TradeSystem & Engine::Context::GetTradeSystem() {
@@ -271,11 +319,18 @@ const Settings & Engine::Context::GetSettings() const {
 }
 
 Security * Engine::Context::FindSecurity(const Symbol &symbol) {
-	return GetMarketDataSource().FindSecurity(symbol);
+	//! @todo Wrong method implementation - symbol must says what MDS it uses
+	Security *result = nullptr;
+	ForEachMarketDataSource(
+		[&](MarketDataSource &source) -> bool {
+			result = source.FindSecurity(symbol);
+			return result ? false : true;
+		});
+	return result;
 }
 
 const Security * Engine::Context::FindSecurity(const Symbol &symbol) const {
-	return GetMarketDataSource().FindSecurity(symbol);
+	return const_cast<Context *>(this)->FindSecurity(symbol);
 }
 
 //////////////////////////////////////////////////////////////////////////
