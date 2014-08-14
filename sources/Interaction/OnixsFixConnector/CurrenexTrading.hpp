@@ -104,8 +104,23 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	private:
 
+		//! Takes next free order ID.
+		OrderId TakeOrderId() {
+			return m_nextOrderId++;
+		}
+
+		//! Creates order FIX-message and sets common fields.
+		OnixS::FIX::Message CreateOrderMessage(
+				const OrderId &,
+				const Security &,
+				const Qty &);
+
+	private:
+
 		Context::Log &m_log;
-		CurrenexFixSession m_session;		
+		CurrenexFixSession m_session;
+
+		boost::atomic<OrderId> m_nextOrderId;
 
 	};
 

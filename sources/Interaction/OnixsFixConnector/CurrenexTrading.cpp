@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "CurrenexTrading.hpp"
+#include "Core/Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -21,7 +22,8 @@ CurrenexTrading::CurrenexTrading(
 					const IniSectionRef &conf,
 					Context::Log &log)
 		: m_log(log),
-		m_session("trading", conf, m_log) {
+		m_session("trading", conf, m_log),
+		m_nextOrderId(0) {
 	//...//
 }
 
@@ -42,12 +44,44 @@ void CurrenexTrading::Connect(const IniSectionRef &conf) {
 	}
 }
 
+fix::Message CurrenexTrading::CreateOrderMessage(
+			const OrderId &orderId,	
+			const Security &security,
+			const Qty &qty) {
+	// Creates order FIX-message and sets common fields.
+	fix::Message result("D", m_session.GetFixVersion());
+	result.set(
+		fix::FIX40::Tags::ClOrdID,
+		boost::lexical_cast<std::string>(orderId));
+	result.set(
+		fix::FIX40::Tags::HandlInst,
+		fix::FIX40::Values::HandlInst::Automated_execution_order_private_no_Broker_intervention);
+	result.set(fix::FIX40::Tags::Currency, "EUR");
+	result.set(
+		fix::FIX40::Tags::Symbol,
+		security.GetSymbol().GetSymbol()
+			+ "/" + security.GetSymbol().GetCurrency());
+	result.set(
+		fix::FIX40::Tags::TransactTime,
+		fix::Timestamp::utc(),
+		fix::TimestampFormat::YYYYMMDDHHMMSSMsec);
+	result.set(fix::FIX40::Tags::OrderQty, qty);
+	return std::move(result);
+}
+
 OrderId CurrenexTrading::SellAtMarketPrice(
-			trdk::Security &,
-			trdk::Qty,
+			trdk::Security &security,
+			trdk::Qty qty,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
-	throw Error("CurrenexTrading::SellAtMarketPrice not implemented");
+	const auto &orderId = TakeOrderId();
+	fix::Message order = CreateOrderMessage(orderId, security, qty);
+	order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
+	order.set(
+		fix::FIX40::Tags::OrdType,
+		fix::FIX41::Values::OrdType::Forex_Market);
+	m_session.Get().send(&order);
+	return orderId;
 }
 
 OrderId CurrenexTrading::Sell(
@@ -80,11 +114,18 @@ OrderId CurrenexTrading::SellOrCancel(
 }
 
 OrderId CurrenexTrading::BuyAtMarketPrice(
-			trdk::Security &,
-			trdk::Qty,
+			trdk::Security &security,
+			trdk::Qty qty,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
-	throw Error("CurrenexTrading::BuyAtMarketPrice not implemented");
+	const auto &orderId = TakeOrderId();
+	fix::Message order = CreateOrderMessage(orderId, security, qty);
+	order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
+	order.set(
+		fix::FIX40::Tags::OrdType,
+		fix::FIX41::Values::OrdType::Forex_Market);
+	m_session.Get().send(&order);
+	return orderId;
 }
 
 OrderId CurrenexTrading::Buy(
@@ -149,10 +190,11 @@ void CurrenexTrading::onWarning(
 }
 
 void CurrenexTrading::onInboundApplicationMsg(
-			fix::Message &/*message*/,
+			fix::Message &message,
 			fix::Session *session) {
 	Assert(session == &m_session.Get());
 	UseUnused(session);
+	m_log.Debug(" ==== %1%", message.type());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
