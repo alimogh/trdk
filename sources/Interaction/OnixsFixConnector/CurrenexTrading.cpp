@@ -194,7 +194,6 @@ void CurrenexTrading::onInboundApplicationMsg(
 			fix::Session *session) {
 	Assert(session == &m_session.Get());
 	UseUnused(session);
-	m_log.Debug(" ==== %1%", message.type());
 }
 
 ////////////////////////////////////////////////////////////////////////////////

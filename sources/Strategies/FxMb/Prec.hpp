@@ -12,6 +12,8 @@
 
 #include "Common/Assert.hpp"
 
+#include "Api.h"
+
 #include "Common/DisableBoostWarningsBegin.h"
 #include "Common/DisableBoostWarningsEnd.h"
 

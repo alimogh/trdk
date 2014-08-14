@@ -18,6 +18,12 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FxArb1Mono.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\Assert.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="FxMb.rc">
@@ -26,5 +32,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="Api.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="FxMb.def">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
