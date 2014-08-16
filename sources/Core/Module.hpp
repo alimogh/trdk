@@ -100,7 +100,7 @@ public:
 	void Debug(const char *str) throw() {
 		m_log.DebugEx(
 			[this, str]() -> boost::format {
-				return GetFormat() % str;
+				return std::move(GetFormat() % str);
 			});
 	}
 	template<typename Params>
@@ -109,21 +109,21 @@ public:
 			[this, str, &params]() -> boost::format {
 				boost::format result((GetFormat() % str).str());
 				trdk::Lib::Format(params, result);
-				return result;
+				return std::move(result);
 			});
 	}
 	template<typename Callback>
-	void DebugEx(Callback callback) throw() {
+	void DebugEx(const Callback &callback) throw() {
 		m_log.DebugEx(
 			[this, &callback]() -> boost::format {
-				return GetFormat() % callback().str();
+				return std::move(GetFormat() % callback().str());
 			});
 	}
 public:
 	void Info(const char *str) throw() {
 		m_log.InfoEx(
 			[this, str]() -> boost::format {
-				return GetFormat() % str;
+				return std::move(GetFormat() % str);
 			});
 	}
 	template<typename Params>
@@ -132,21 +132,21 @@ public:
 			[this, str, &params]() -> boost::format {
 				boost::format result((GetFormat() % str).str());
 				trdk::Lib::Format(params, result);
-				return result;
+				return std::move(result);
 			});
 	}
 	template<typename Callback>
-	void InfoEx(Callback callback) throw() {
+	void InfoEx(const Callback &callback) throw() {
 		m_log.InfoEx(
 			[this, &callback]() -> boost::format {
-				return GetFormat() % callback().str();
+				return std::move(GetFormat() % callback().str());
 			});
 	}
 public:
 	void Warn(const char *str) throw() {
 		m_log.WarnEx(
 			[this, str]() -> boost::format {
-				return GetFormat() % str;
+				return std::move(GetFormat() % str);
 			});
 	}
 	template<typename Params>
@@ -155,21 +155,21 @@ public:
 			[this, str, &params]() -> boost::format {
 				boost::format result((GetFormat() % str).str());
 				trdk::Lib::Format(params, result);
-				return result;
+				return std::move(result);
 			});
 	}
 	template<typename Callback>
-	void WarnEx(Callback callback) throw() {
+	void WarnEx(const Callback &callback) throw() {
 		m_log.WarnEx(
 			[this, &callback]() -> boost::format {
-				return GetFormat() % callback().str();
+				return std::move(GetFormat() % callback().str());
 			});
 	}
 public:
 	void Error(const char *str) throw() {
 		m_log.ErrorEx(
 			[this, str]() -> boost::format {
-				return GetFormat() % str;
+				return std::move(GetFormat() % str);
 			});
 	}
 	template<typename Params>
@@ -178,21 +178,35 @@ public:
 			[this, str, &params]() -> boost::format {
 				boost::format result((GetFormat() % str).str());
 				trdk::Lib::Format(params, result);
-				return result;
+				return std::move(result);
 			});
 	}
 	template<typename Callback>
-	void ErrorEx(Callback callback) throw() {
+	void ErrorEx(const Callback &callback) throw() {
 		m_log.ErrorEx(
 			[this, &callback]() -> boost::format {
-				return GetFormat() % callback().str();
+				return std::move(GetFormat() % callback().str());
 			});
+	}
+public:
+	template<typename Params>
+	void Trading(const char *str) throw() {
+		m_log.Trading(m_tag, str);
+	}
+	template<typename Callback>
+	void TradingEx(const Callback &callback) throw() {
+		m_log.TradingEx(m_tag, callback);
+	}
+	template<typename Params>
+	void Trading(const char *str, const Params &params) throw() {
+		m_log.Trading(m_tag, str, params);
 	}
 private:
 	boost::format GetFormat() const {
 		return m_format;
 	}
 private:
+	std::string m_tag;
 	trdk::Context::Log &m_log;
 	const boost::format m_format;
 };

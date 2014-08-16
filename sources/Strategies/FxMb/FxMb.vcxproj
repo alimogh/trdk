@@ -92,7 +92,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{741EC258-DBD7-4F89-A176-1A9C036216F8}</ProjectGuid>
     <RootNamespace>FxMb</RootNamespace>
-    <ProjectName>FX Morgan Benoit Strategies</ProjectName>
+    <ProjectName>Morgan Benoit FX Strategies</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">

@@ -12,9 +12,12 @@
 #include "Core/Strategy.hpp"
 #include "Core/Position.hpp"
 #include "Core/PositionReporter.hpp"
+#include "Core/MarketDataSource.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
+
+namespace pt = boost::posix_time;
 
 namespace trdk { namespace Strategies { namespace FxMb {
 	
@@ -24,14 +27,51 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		
 		typedef Strategy Base;
 
+	private:
+
+		struct Broker {
+
+			struct Pair {
+				double bid;
+				double ask;
+				explicit Pair(const Security &security)
+						: bid(security.GetBidPrice()),
+						ask(security.GetAskPrice()) {
+					//...//
+				}
+			};
+			Pair p1;
+			Pair p2;
+			Pair p3;
+
+			template<typename Storage>
+			explicit Broker(const Storage &storage)
+					: p1(*storage[0]),
+					p2(*storage[1]),
+					p3(*storage[2]) {
+				//...//
+			}
+
+		};
+
+		typedef boost::function<bool (const Broker &b1, const Broker &b2)>
+			Equation;
+		typedef std::vector<Equation> Equations;
+
 	public:
 
 		explicit FxArb1Mono(
 					Context &context,
 					const std::string &tag,
 					const IniSectionRef &conf)
-				: Base(context, "FxArb1Mono", tag) {
-			
+				: Base(context, "FxArb1Mono", tag),
+				m_equations(CreateEquations()),
+				m_isPairsByBrokerChecked(false) {
+
+			foreach (auto &broker, m_pairsByBroker) {
+				broker.assign(nullptr);
+			}
+
 			// Loading volume and direction configuration for each symbol:
 			conf.ForEachKey(
 				[&](const std::string &key, const std::string &value) -> bool {
@@ -59,32 +99,64 @@ namespace trdk { namespace Strategies { namespace FxMb {
 	public:
 
 		
-		virtual boost::posix_time::ptime OnSecurityStart(Security &security) {
+		virtual pt::ptime OnSecurityStart(Security &security) {
 			
 			// New security start - caching security object for fast getting:
 			const auto &key = security.GetSymbol().GetHash();
-			if (m_sendList.count(key) != 0) {
-				// already cached...
-				return Base::OnSecurityStart(security);
+			if (!m_sendList.count(key)) {
+				// not cached yet...
+				const auto &conf = m_qtyConf.find(
+					security.GetSymbol().GetSymbol()
+						+ "/" + security.GetSymbol().GetCurrency());
+				if (conf == m_qtyConf.end()) {
+					// symbol hasn't configuration:
+					GetLog().Error(
+						"Symbol %1% hasn't Qty and direction configuration.",
+						security);
+					throw Exception(
+						"Symbol hasn't Qty and direction configuration");
+				}
+				// caching:
+				m_sendList.insert(
+					std::make_pair(
+						key,
+						boost::make_tuple(&security, conf->second)));
 			}
 
-			// not cached yet...
-			const auto &conf = m_qtyConf.find(
-				security.GetSymbol().GetSymbol()
-					+ "/" + security.GetSymbol().GetCurrency());
-			if (conf == m_qtyConf.end()) {
-				// symbol hasn't configuration:
-				GetLog().Error(
-					"Symbol %1% hasn't Qty and direction configuration.",
-					security);
-				throw Exception(
-					"Symbol hasn't Qty and direction configuration");
+			// Filling matrix "b{x}.p{y}":
+			bool isSet = false;
+			foreach (auto &broker, m_pairsByBroker) {
+				if (	broker.front()
+						&& broker.front()->GetSource()
+								!= security.GetSource()) {
+					// At this position already set another broker.
+					continue;
+				}
+				foreach (auto &pair, broker) {
+					if (!pair) {
+						pair = &security;
+						isSet = true;
+						break;
+					}
+					Assert(pair->GetSymbol() != security.GetSymbol());
+				}
+				if (isSet) {
+					break;
+				}
 			}
-			// caching:
-			m_sendList.insert(
-				std::make_pair(
-					key,
-					boost::make_tuple(&security, conf->second)));
+			if (!isSet) {
+				// We have predefined equations which has fixed variables so
+				// configuration must provide required count of pairs.
+				// If isSet is false - configuration provides more pairs then
+				// required for equations.
+				GetLog().Error(
+					"Too much pairs (symbols) configured."
+						" Count of pairs must be %1%."
+						" Count of brokers must be %2%.",
+					boost::make_tuple(PAIRS_COUNT, BROKERS_COUNT));
+				throw Exception("Too much pairs (symbols) provided.");
+			}
+
 
 			return Base::OnSecurityStart(security);
 
@@ -102,11 +174,38 @@ namespace trdk { namespace Strategies { namespace FxMb {
 	public:
 		
 		virtual void OnLevel1Update(Security &) {
+			
 			// Level 1 update callback - will be called every time when
 			// ask or bid will be changed for any of configured security:
-			for (size_t i = 0; i < m_positionsByEquation.size(); ++i) {
-				CheckEquation(i);
+
+			if (!m_isPairsByBrokerChecked) {
+				// At first update it needs to check configuration, one time:
+				foreach (const auto &broker, m_pairsByBroker) {
+					foreach (auto *pair, broker) {
+						if (!pair) {
+							GetLog().Error(
+								"One or more pairs (symbols) not find."
+									" Count of pairs must be %1%."
+									" Count of brokers must be %2%.",
+							boost::make_tuple(PAIRS_COUNT, BROKERS_COUNT));
+						}
+					}
+				}
+				m_isPairsByBrokerChecked = true;
 			}
+
+			// Getting more human readable format:
+			const Broker b1(m_pairsByBroker[0]);
+			const Broker b2(m_pairsByBroker[1]);
+			// Call with actual prices each equation:
+			for (size_t i = 0; i < m_equations.size(); ++i) {
+				// Call equation:
+				if (m_equations[i](b1, b2)) {
+					// Open-close position:
+					OnEquation(i, b1, b2);
+				}
+			}
+		
 		}
 		
 	protected:
@@ -117,62 +216,39 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	protected:
 
-		void CheckEquation(size_t equationIndex) {
-			
-			// Cuurently for test i hardcoded only two first equation:
-			switch (equationIndex) {
-				case 0:
-					if (m_b1_p1->GetBidPrice() + m_b2_p1->GetBidPrice() + m_b2_p1->GetBidPrice() / 3 > 80.5) {
-						OnEquation(equationIndex);
-					}
-					break;
-				case 1:
-					if (m_b1_p2->GetBidPrice() + m_b2_p2->GetBidPrice() + m_b2_p2->GetBidPrice() / 3 > 80.5) {
-						OnEquation(equationIndex);
-					}
-					break;
-				case 2:
-					// OnEquation(equationIndex);
-					break;
-				case 3:
-					// OnEquation(equationIndex);
-					break;
-				case 4:
-					// OnEquation(equationIndex);
-					break;
-				case 5:
-					// OnEquation(equationIndex);
-					break;
-				case 6:
-					// OnEquation(equationIndex);
-					break;
-				case 7:
-					// OnEquation(equationIndex);
-					break;
-				case 8:
-					// OnEquation(equationIndex);
-					break;
-				case 9:
-					// OnEquation(equationIndex);
-					break;
-				case 10:
-					// OnEquation(equationIndex);
-					break;
-				case 11:
-					// OnEquation(equationIndex);
-					break;
-				default:
-					AssertFail("Unknown equation");
-			}
-		}
+		void OnEquation(
+					size_t equationIndex,
+					const Broker &b1,
+					const Broker &b2) {
 
-		void OnEquation(size_t equationIndex) {
+			// Logging current bid/ask values for all pairs:
+			GetLog().TradingEx(
+				[&]() -> boost::format {
+					// log message format:
+					// equation #    b{x}.p{y}.bid    b{x}.p{y}.ask    ...
+					boost::format message(
+						"equation %1%"
+							"\t%2% \t%2%" // b1.p1.bid, b1.p1.ask
+							"\t%4% \t%5%" // b1.p2.bid, b1.p2.ask
+							"\t%6% \t%7%" // b1.p3.bid, b1.p3.ask
+							"\t%8% \t%9%" // b2.p1.bid, b2.p1.ask
+							"\t%10% \t%11%" // b2.p2.bid, b2.p2.ask
+							"\t%12% \t%13%"); // b2.p3.bid, b2.p3.ask
+					message
+						% b1.p1.bid % b1.p1.ask
+						% b1.p2.bid % b1.p2.ask
+						% b1.p3.bid % b1.p3.ask
+						% b2.p1.bid % b2.p1.ask
+						% b2.p2.bid % b2.p2.ask
+						% b2.p3.bid % b2.p3.ask; 
+					return std::move(message);
+				});
 
 			Assert(m_positionsByEquation[equationIndex].empty());
 
 			// First closing all positions by opposite equation (if exists):
 			
-			// Calcs opposite equation index:
+			// Calculates opposite equation index:
 			const auto oppositeEquationIndex
 				= equationIndex >= m_positionsByEquation.size()  / 2
 					?	equationIndex - (m_positionsByEquation.size()  / 2)
@@ -218,24 +294,57 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		}
 
+		static Equations CreateEquations() {
+			
+			Equations result;
+			result.reserve(EQUATIONS_COUNT);
+
+			const auto add = [&result](const Equation &equation) {
+				result.push_back(equation);
+			};
+			typedef const Broker B;
+
+			add([](B &b1, B &b2) {return	b1.p1.bid + b2.p1.bid + b2.p1.bid / 3 > 80.5	;});
+			add([](B &b1, B &b2) {return	b1.p2.bid + b2.p2.bid + b2.p2.bid / 3 > 80.5	;});
+			add([](B &b1, B &b2) {return	b1.p3.bid + b2.p3.bid + b2.p3.bid / 3 > 80.5	;});
+			add([](B &b1, B &b2) {return	b1.p1.ask + b2.p1.ask + b2.p1.ask / 3 > 80.5	;});
+			add([](B &b1, B &b2) {return	b1.p2.ask + b2.p2.ask + b2.p2.ask / 3 > 80.5	;});
+			add([](B &b1, B &b2) {return	b1.p3.ask + b2.p3.ask + b2.p3.ask / 3 > 80.5	;});
+			add([](B &b1, B &b2) {return	b1.p1.bid + b2.p2.bid + b2.p3.bid / 3 > 80.5	;});
+			add([](B &b1, B &b2) {return	b1.p2.bid + b2.p1.bid + b2.p3.bid / 3 > 80.5	;});
+			add([](B &b1, B &b2) {return	b1.p3.bid + b2.p2.bid + b2.p1.bid / 3 > 80.5	;});
+			add([](B &b1, B &b2) {return	b1.p1.ask + b2.p2.ask + b2.p3.ask / 3 > 80.5	;});
+			add([](B &b1, B &b2) {return	b1.p2.ask + b2.p1.ask + b2.p3.ask / 3 > 80.5	;});
+			add([](B &b1, B &b2) {return	b1.p3.ask + b2.p2.ask + b2.p1.ask / 3 > 80.5	;});
+
+			AssertEq(EQUATIONS_COUNT, result.size());
+			result.shrink_to_fit();
+
+			return result;
+
+		}
+
 	private:
+
+		enum {
+			EQUATIONS_COUNT = 12,
+			BROKERS_COUNT = 2,
+			PAIRS_COUNT = 2
+		};
+
+		const Equations m_equations;
 
 		std::map<std::string /* symbol */, Qty /* direction and qty */>
 			m_qtyConf;
 
 		std::map<Symbol::Hash, boost::tuple<Security *, Qty>> m_sendList;
 
-		// Hardcoded equations count in beta version - 12 equations.
-		boost::array<std::vector<boost::shared_ptr<Position>>, 12>
+		boost::array<std::vector<boost::shared_ptr<Position>>, EQUATIONS_COUNT>
 			m_positionsByEquation;
 
-		Security *m_b1_p1;
-		Security *m_b1_p2;
-		Security *m_b1_p3;
-		
-		Security *m_b2_p1;
-		Security *m_b2_p2;
-		Security *m_b2_p3;
+		boost::array<boost::array<Security *, PAIRS_COUNT>, BROKERS_COUNT>
+			m_pairsByBroker;
+		bool m_isPairsByBrokerChecked;
 
 	};
 	

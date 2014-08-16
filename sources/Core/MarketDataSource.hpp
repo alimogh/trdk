@@ -47,6 +47,13 @@ namespace trdk {
 		MarketDataSource(const std::string &tag);
 		virtual ~MarketDataSource();
 
+		bool operator ==(const MarketDataSource &rhs) const {
+			return this == &rhs;
+		}
+		bool operator !=(const MarketDataSource &rhs) const {
+			return !operator ==(rhs);
+		}
+
 	public:
 
 		//! Identifies Market Data Source object by verbose name. 
