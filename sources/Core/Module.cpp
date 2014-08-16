@@ -22,7 +22,8 @@ using namespace trdk::Lib;
 ////////////////////////////////////////////////////////////////////////////////
 
 Module::Log::Log(const Module &module)
-		: m_log(module.GetContext().GetLog()),
+		: m_tag(module.GetTag()),
+		m_log(module.GetContext().GetLog()),
 		m_format(boost::format("[%1%] %2%") % module) {
 	//...//
 }
