@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/10/27 14:24:07
+ *   Created: 2014/08/14 10:01:50
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -12,20 +12,11 @@
 
 #include "Common/Assert.hpp"
 
+#include "Api.h"
+
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/multi_index_container.hpp>
-#	include <boost/multi_index/mem_fun.hpp>
-#	include <boost/multi_index/hashed_index.hpp>
-#	include <boost/multi_index/ordered_index.hpp>
-#	include <boost/thread.hpp>
-#	include <boost/algorithm/string.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
 
-#include <fstream>
-
 #include "Common/Assert.hpp"
-
-#define TRDK_INTERACTION_CSV "CSV"
-#define TRDK_INTERACTION_CSV_LOG_PREFFIX "[" TRDK_INTERACTION_CSV "] "

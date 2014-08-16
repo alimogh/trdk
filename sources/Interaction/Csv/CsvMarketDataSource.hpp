@@ -20,6 +20,8 @@ namespace trdk { namespace Interaction { namespace Csv {
 
 	private:
 
+		typedef trdk::MarketDataSource Base;
+
 		struct ByInstrument {
 			//...//
 		};
@@ -70,6 +72,7 @@ namespace trdk { namespace Interaction { namespace Csv {
 	public:
 
 		explicit MarketDataSource(
+				const std::string &tag,
 				const trdk::Lib::IniSectionRef &,
 				trdk::Context::Log &);
 		virtual ~MarketDataSource();

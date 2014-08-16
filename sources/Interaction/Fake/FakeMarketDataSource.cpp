@@ -19,7 +19,9 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::Fake;
 
 Fake::MarketDataSource::MarketDataSource(
-			const IniSectionRef &) {
+			const std::string &tag,
+			const IniSectionRef &)
+		: Base(tag) {
 	//...//
 }
 
@@ -82,7 +84,8 @@ boost::shared_ptr<Security> Fake::MarketDataSource::CreateSecurity(
 			Context &context,
 			const Symbol &symbol)
 		const {
-	auto result = boost::shared_ptr<Security>(new Security(context, symbol));
+	auto result = boost::shared_ptr<Security>(
+		new Security(context, symbol, *this));
 	const_cast<MarketDataSource *>(this)
 		->m_securityList.push_back(result);
 	return result;

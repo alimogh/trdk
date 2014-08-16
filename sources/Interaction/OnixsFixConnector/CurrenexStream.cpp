@@ -19,9 +19,11 @@ using namespace trdk::Interaction::OnixsFixConnector;
 namespace fix = OnixS::FIX;
 
 CurrenexStream::CurrenexStream(
+			const std::string &tag,
 			const Lib::IniSectionRef &conf,
 			Context::Log &log)
-		: m_log(log),
+		: MarketDataSource(tag),
+		m_log(log),
 		m_session("stream", conf, m_log) {
 	//...//
 }
@@ -80,7 +82,7 @@ void CurrenexStream::SubscribeToSecurities() {
 		"Sending FIX Market Data Requests for %1% securities...",
 		m_securities.size());
 
-	for (	fix::UInt64 sequrityIndex = 0;
+	for (	size_t sequrityIndex = 0;
 			sequrityIndex < m_securities.size();
 			++sequrityIndex) {
 			
@@ -133,7 +135,7 @@ boost::shared_ptr<Security> CurrenexStream::CreateSecurity(
 			const Symbol &symbol)
 		const {
 	boost::shared_ptr<CurrenexSecurity> result(
-		new CurrenexSecurity(context, symbol));
+		new CurrenexSecurity(context, symbol, *this));
 	const_cast<CurrenexStream *>(this)
 		->m_securities.push_back(result);
 	return result;
@@ -171,38 +173,38 @@ void CurrenexStream::onInboundApplicationMsg(
 	UseUnused(session);
 
 	if (message.type() == "Y") {
+		
 		m_log.Error(
 			"Failed to Subscribe to %1% Market Data: \"%2%\".",
 			boost::make_tuple(
 				GetRequestSymbolStr(message),
 				message.get(fix::FIX42::Tags::MDReqRejReason)));
+
 	} else if (message.type() == "X") {
-		const Security *security = FindRequestSecurity(message);
+	
+		CurrenexSecurity *const security = FindRequestSecurity(message);
 		if (!security) {
 			return;
 		}
+		
 		const fix::Group &entries
 			= message.getGroup(fix::FIX42::Tags::NoMDEntries);
 		for (size_t i = 0; i < entries.size(); ++i) {
 			
 			const auto &entry = entries[i];
+
+			const auto price = entry.getDouble(fix::FIX42::Tags::MDEntryPx);
+			const Qty qty = entry.getInt32(fix::FIX42::Tags::MDEntrySize);
+			
 			const auto &entryType = entry.get(fix::FIX42::Tags::MDEntryType);
-			std::string tmp;
 			if (entryType == fix::FIX42::Values::MDEntryType::Bid) {
-				tmp = "bid";
+				security->SetBid(price, qty);
 			} else if (entryType == fix::FIX42::Values::MDEntryType::Offer) {
-				tmp = "offer";
+				security->SetOffer(price, qty);
 			} else {
-				tmp = "UNKNOWN";
+				AssertFail("Unknown entry type.");
+				continue;
 			}
-	
-			m_log.Info(
-				"MD!!! %1%: %2% = %3% / %4%.",
-				boost::make_tuple(
-					security->GetSymbol(),
-					tmp,
-					entry.getDouble(fix::FIX42::Tags::MDEntryPx),
-					entry.getDouble(fix::FIX42::Tags::MDEntrySize)));
 
 		}
 
@@ -213,10 +215,11 @@ void CurrenexStream::onInboundApplicationMsg(
 
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 boost::shared_ptr<MarketDataSource> CreateCurrenexStream(
+			const std::string &tag,
 			const IniSectionRef &configuration,
 			Context::Log &log) {
 	return boost::shared_ptr<MarketDataSource>(
-		new CurrenexStream(configuration, log));
+		new CurrenexStream(tag, configuration, log));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

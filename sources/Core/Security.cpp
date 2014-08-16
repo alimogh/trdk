@@ -41,7 +41,7 @@ namespace {
 			return 0;
 		}
 		return static_cast<typename Level1TickValuePolicy<tick>::ValueType>(
-			IsSet(level1[tick]));
+			level1[tick]);
 	}
 
 	void Unset(boost::atomic<Level1Value> &val) {
@@ -68,6 +68,8 @@ class Security::Implementation : private boost::noncopyable {
 
 public:
 
+	const MarketDataSource &m_source;
+
 	mutable boost::signals2::signal<Level1UpdateSlotSignature>
 		m_level1UpdateSignal;
 	mutable boost::signals2::signal<Level1TickSlotSignature> m_level1TickSignal;
@@ -85,8 +87,9 @@ public:
 
 public:
 
-	Implementation()
-			: m_brokerPosition(0),
+	Implementation(const MarketDataSource &source)
+			: m_source(source),
+			m_brokerPosition(0),
 			m_marketDataTime(0),
 			m_isLevel1Started(false) {
 		foreach (auto &item, m_level1) {
@@ -108,10 +111,6 @@ public:
 
 	double DescalePrice(double price) const {
 		return Descale(price, GetPriceScale());
-	}
-
-	bool IsLevel1Started() const {
-		return m_isLevel1Started == 0 ? false : true;
 	}
 
 	bool AddLevel1Tick(
@@ -192,14 +191,21 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-Security::Security(Context &context, const Symbol &symbol)
+Security::Security(
+			Context &context,
+			const Symbol &symbol,
+			const MarketDataSource &source)
 		: Base(context, symbol),
-		m_pimpl(new Implementation) {
+		m_pimpl(new Implementation(source)) {
 	//...//
 }
 
 Security::~Security() {
 	delete m_pimpl;
+}
+
+const MarketDataSource & Security::GetSource() const {
+	return m_pimpl->m_source;
 }
 
 unsigned int Security::GetPriceScale() const throw() {
@@ -338,7 +344,12 @@ void Security::CancelAllOrders() {
 }
 
 bool Security::IsLevel1Started() const {
-	return m_pimpl->IsLevel1Started();
+	return m_pimpl->m_isLevel1Started;
+}
+
+void Security::StartLevel1() {
+	Assert(!m_pimpl->m_isLevel1Started);
+	m_pimpl->m_isLevel1Started = true;
 }
 
 bool Security::IsStarted() const {

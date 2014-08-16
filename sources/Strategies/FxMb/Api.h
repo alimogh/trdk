@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/10/27 14:21:22
+ *   Created: 2014/08/15 01:40:52
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,13 +8,10 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#include "Prec.hpp"
-#include "CsvMarketDataSource.hpp"
+#pragma once
 
-boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
-			const std::string &tag,
-			const trdk::Lib::IniSectionRef &configuration,
-			trdk::Context::Log &log) {
- 	return boost::shared_ptr<trdk::MarketDataSource>(
- 		new trdk::Interaction::Csv::MarketDataSource(tag, configuration, log));
-}
+#ifdef BOOST_WINDOWS
+#	define TRDK_STRATEGY_FXMB_API
+#else
+#	define TRDK_STRATEGY_FXMB_API extern "C"
+#endif

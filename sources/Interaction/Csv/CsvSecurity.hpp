@@ -23,7 +23,10 @@ namespace trdk {  namespace Interaction { namespace Csv {
 
 	public:
 
-		explicit Security(Context &, const trdk::Lib::Symbol &);
+		explicit Security(
+					Context &,
+					const trdk::Lib::Symbol &,
+					const MarketDataSource &);
 
 	public:
 

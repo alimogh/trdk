@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Context.hpp"
 #include "Interactor.hpp"
 #include "Fwd.hpp"
 #include "Api.h"
@@ -22,7 +23,9 @@ namespace trdk {
 	/** Result can't be nullptr.
 	  */
 	typedef boost::shared_ptr<trdk::MarketDataSource> (MarketDataSourceFactory)(
-			const trdk::Lib::IniSectionRef &);
+			const std::string &tag,
+			const trdk::Lib::IniSectionRef &,
+			Context::Log &);
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -41,11 +44,26 @@ namespace trdk {
 
 	public:
 
-		MarketDataSource();
+		MarketDataSource(const std::string &tag);
 		virtual ~MarketDataSource();
+
+		bool operator ==(const MarketDataSource &rhs) const {
+			return this == &rhs;
+		}
+		bool operator !=(const MarketDataSource &rhs) const {
+			return !operator ==(rhs);
+		}
 
 	public:
 
+		//! Identifies Market Data Source object by verbose name. 
+		/** Market Data Source Tag unique, but can be empty for one of objects.
+		  */
+		const std::string & GetTag() const;
+
+	public:
+
+		//! Makes connection with Market Data Source.
 		virtual void Connect(const trdk::Lib::IniSectionRef &) = 0;
 
 		virtual void SubscribeToSecurities() = 0;

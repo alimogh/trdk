@@ -128,5 +128,9 @@
 #define TRDK_STRATEGY_TEST_DLL_FILE_NAME \
 	TRDK_STRATEGY_TEST_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
 
+#define TRDK_STRATEGY_FXMB_FILE_NAME "FxMb"
+#define TRDK_STRATEGY_FXMB_DLL_FILE_NAME \
+	TRDK_STRATEGY_FXMB_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
 ////////////////////////////////////////////////////////////////////////////////
 	

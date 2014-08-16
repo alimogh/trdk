@@ -18,9 +18,34 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	public:
 
-		explicit CurrenexSecurity(Context &context, const Lib::Symbol &symbol)
-				: Security(context, symbol) {
-			//...//
+		typedef trdk::Security Base;
+
+	public:
+
+		explicit CurrenexSecurity(
+					Context &context,
+					const Lib::Symbol &symbol,
+					const trdk::MarketDataSource &source)
+				: Base(context, symbol, source) {
+			StartLevel1();
+		}
+
+	public:
+
+		void SetBid(double price, Qty qty) {
+			SetLevel1(
+				boost::posix_time::microsec_clock::universal_time(),
+				Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+					ScalePrice(price)),
+				Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(qty));
+		}
+
+		void SetOffer(double price, Qty qty) {
+			SetLevel1(
+				boost::posix_time::microsec_clock::universal_time(),
+				Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+					ScalePrice(price)),
+				Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(qty));
 		}
 
 	};

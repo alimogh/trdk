@@ -57,8 +57,17 @@ namespace trdk {
 		//! User context parameters. No predefined key list.
 		const trdk::Context::Params & GetParams() const;
 
-		virtual trdk::MarketDataSource & GetMarketDataSource() = 0;
-		virtual const trdk::MarketDataSource & GetMarketDataSource() const = 0;
+		//! Applies the given predicate to the each market data source and
+		//! stops if predicate returns false.
+		virtual void ForEachMarketDataSource(
+						const boost::function<bool (const trdk::MarketDataSource &)> &)
+					const
+					= 0;
+		//! Applies the given predicate to the each market data source and
+		//! stops if predicate returns false.
+		virtual void ForEachMarketDataSource(
+						const boost::function<bool (trdk::MarketDataSource &)> &)
+					= 0;
 
 		virtual trdk::TradeSystem & GetTradeSystem() = 0;
 		virtual const trdk::TradeSystem & GetTradeSystem() const = 0;
@@ -67,9 +76,9 @@ namespace trdk {
 
 		virtual trdk::Security * FindSecurity(const trdk::Lib::Symbol &) = 0;
 		virtual const trdk::Security * FindSecurity(
-					const trdk::Lib::Symbol &)
-				const
-				= 0;
+						const trdk::Lib::Symbol &)
+					const
+					= 0;
 
 	private:
 
@@ -93,7 +102,7 @@ namespace trdk {
 			trdk::Log::Debug(str, params);
 		}
 		template<typename Callback>
-		void DebugEx(Callback callback) throw() {
+		void DebugEx(const Callback &callback) throw() {
 			trdk::Log::DebugEx(callback);
 		}
 	public:
@@ -105,7 +114,7 @@ namespace trdk {
 			trdk::Log::Info(str, params);
 		}
 		template<typename Callback>
-		void InfoEx(Callback callback) throw() {
+		void InfoEx(const Callback &callback) throw() {
 			trdk::Log::InfoEx(callback);
 		}
 	public:
@@ -117,7 +126,7 @@ namespace trdk {
 			trdk::Log::Warn(str, params);
 		}
 		template<typename Callback>
-		void WarnEx(Callback callback) throw() {
+		void WarnEx(const Callback &callback) throw() {
 			trdk::Log::WarnEx(callback);
 		}
 	public:
@@ -129,11 +138,18 @@ namespace trdk {
 			trdk::Log::Error(str, params);
 		}
 		template<typename Callback>
-		void ErrorEx(Callback callback) throw() {
+		void ErrorEx(const Callback &callback) throw() {
 			trdk::Log::ErrorEx(callback);
 		}
 	public:
-		void Trading(const std::string &tag, const char *) throw();
+		template<typename Params>
+		void Trading(const std::string &tag, const char *str) throw() {
+			trdk::Log::Trading(tag, str);
+		}
+		template<typename Callback>
+		void TradingEx(const std::string &tag, const Callback &callback) throw() {
+			trdk::Log::TradingEx(tag, callback);
+		}
 		template<typename Params>
 		void Trading(
 					const std::string &tag,

@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/10/27 14:21:22
+ *   Created: 2014/08/14 10:00:31
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,12 +9,3 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "CsvMarketDataSource.hpp"
-
-boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
-			const std::string &tag,
-			const trdk::Lib::IniSectionRef &configuration,
-			trdk::Context::Log &log) {
- 	return boost::shared_ptr<trdk::MarketDataSource>(
- 		new trdk::Interaction::Csv::MarketDataSource(tag, configuration, log));
-}

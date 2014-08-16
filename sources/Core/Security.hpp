@@ -101,7 +101,10 @@ namespace trdk {
 
 	public:
 
-		explicit Security(trdk::Context &, const trdk::Lib::Symbol &);
+		explicit Security(
+					trdk::Context &,
+					const trdk::Lib::Symbol &,
+					const trdk::MarketDataSource &);
 		~Security();
 
 	public:
@@ -117,6 +120,10 @@ namespace trdk {
 		  *			set.
 		  */
 		const boost::posix_time::ptime & GetRequestedDataStartTime() const;
+
+		//! Returns Market Data Source object which provides market data for
+		//! this security object.
+		const trdk::MarketDataSource & GetSource() const;
 
 	public:
 
@@ -217,6 +224,9 @@ namespace trdk {
 		bool IsBrokerPositionRequired() const;
 		bool IsBarsRequired() const;
 
+		//! Allows forcibly start Level 1 notification,
+		//! even if not all Level 1 data received.
+		void StartLevel1();
 		//! Sets one Level I parameter.
 		/** Subscribers will be notified about Level I Update only if parameter
 		  * will bee changed.

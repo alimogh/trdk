@@ -51,9 +51,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{9EF13741-7C1B-4A58-B79C-3800B42847E7}</ProjectGuid>
-    <RootNamespace>Test</RootNamespace>
-    <ProjectName>Test Strategy</ProjectName>
+    <ProjectGuid>{741EC258-DBD7-4F89-A176-1A9C036216F8}</ProjectGuid>
+    <RootNamespace>FxMb</RootNamespace>
+    <ProjectName>Morgan Benoit FX Strategies</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">
@@ -134,7 +134,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="Test.props" />
+    <Import Project="FxMb.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -145,7 +145,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="Test.props" />
+    <Import Project="FxMb.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -157,7 +157,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="Test.props" />
+    <Import Project="FxMb.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -169,7 +169,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="Test.props" />
+    <Import Project="FxMb.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -180,7 +180,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="Test.props" />
+    <Import Project="FxMb.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -191,7 +191,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="Test.props" />
+    <Import Project="FxMb.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -203,7 +203,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="Test.props" />
+    <Import Project="FxMb.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -215,7 +215,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="Test.props" />
+    <Import Project="FxMb.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -226,7 +226,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="Test.props" />
+    <Import Project="FxMb.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -237,7 +237,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="Test.props" />
+    <Import Project="FxMb.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -249,7 +249,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="Test.props" />
+    <Import Project="FxMb.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -261,11 +261,13 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="Test.props" />
+    <Import Project="FxMb.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Common\Assert.cpp" />
+    <ClCompile Include="FxArb1Mono.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
@@ -280,9 +282,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="TestStrategy.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Api.h" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -297,7 +299,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Test.rc" />
+    <ResourceCompile Include="FxMb.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="FxMb.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
