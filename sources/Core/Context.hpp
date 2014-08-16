@@ -142,7 +142,6 @@ namespace trdk {
 			trdk::Log::ErrorEx(callback);
 		}
 	public:
-		template<typename Params>
 		void Trading(const std::string &tag, const char *str) throw() {
 			trdk::Log::Trading(tag, str);
 		}

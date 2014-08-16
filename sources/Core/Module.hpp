@@ -206,7 +206,7 @@ private:
 		return m_format;
 	}
 private:
-	std::string m_tag;
+	const std::string m_tag;
 	trdk::Context::Log &m_log;
 	const boost::format m_format;
 };
