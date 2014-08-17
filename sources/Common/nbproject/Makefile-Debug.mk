@@ -43,6 +43,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/Prec.o \
 	${OBJECTDIR}/Symbol.o \
 	${OBJECTDIR}/SysError.o \
+	${OBJECTDIR}/TimeMeasurement.o \
 	${OBJECTDIR}/Util.o
 
 
@@ -111,6 +112,11 @@ ${OBJECTDIR}/SysError.o: SysError.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/SysError.o SysError.cpp
+
+${OBJECTDIR}/TimeMeasurement.o: TimeMeasurement.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_COMMON -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TimeMeasurement.o TimeMeasurement.cpp
 
 ${OBJECTDIR}/Util.o: Util.cpp 
 	${MKDIR} -p ${OBJECTDIR}

@@ -19,6 +19,7 @@
       <itemPath>SegmentedVector.hpp</itemPath>
       <itemPath>Symbol.hpp</itemPath>
       <itemPath>SysError.hpp</itemPath>
+      <itemPath>TimeMeasurement.hpp</itemPath>
       <itemPath>UseUnused.hpp</itemPath>
       <itemPath>Util.hpp</itemPath>
     </logicalFolder>
@@ -35,6 +36,7 @@
       <itemPath>Prec.cpp</itemPath>
       <itemPath>Symbol.cpp</itemPath>
       <itemPath>SysError.cpp</itemPath>
+      <itemPath>TimeMeasurement.cpp</itemPath>
       <itemPath>Util.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -123,6 +125,10 @@
       <item path="SysError.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="SysError.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="TimeMeasurement.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="TimeMeasurement.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="UseUnused.hpp" ex="false" tool="3" flavor2="0">
       </item>
@@ -213,6 +219,10 @@
       <item path="SysError.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="SysError.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="TimeMeasurement.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="TimeMeasurement.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="UseUnused.hpp" ex="false" tool="3" flavor2="0">
       </item>

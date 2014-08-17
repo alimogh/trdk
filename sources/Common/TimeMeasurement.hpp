@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Foreach.hpp"
 #include <boost/chrono.hpp>
 #include <boost/array.hpp>
 
