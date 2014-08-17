@@ -93,6 +93,9 @@ void BridgeServer::InitLog(const fs::path &logFilePath) {
 			"Started:"
 				" Build: " TRDK_BUILD_IDENTITY "."
 				" Build time: " __TIME__ " " __DATE__ ".");
+		Log::Info(
+			"Local time: %1%.",
+			boost::posix_time::microsec_clock::local_time());
 	}
 }
 
@@ -143,7 +146,7 @@ Bridge & BridgeServer::CheckBridge(
 			const BridgeId &id,
 			const std::string &defaultExchange) {
 	if (id < m_pimpl->m_bridges.size()) {
-		if (m_pimpl->m_bridges[id]->IsActive()) {
+		if (m_pimpl->m_bridges[id]->CheckActive()) {
 			return *m_pimpl->m_bridges[id];
 		}
 		Verify(CreateBridge(defaultExchange, &id) == id);
