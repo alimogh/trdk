@@ -183,12 +183,14 @@ namespace trdk {
 
 		virtual OrderId SellAtMarketPrice(
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty qty,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId Sell(
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty qty,
 				trdk::ScaledPrice,
 				const trdk::OrderParams &,
@@ -196,6 +198,7 @@ namespace trdk {
 			= 0;
 		virtual OrderId SellAtMarketPriceWithStopPrice(
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty qty,
 				trdk::ScaledPrice stopPrice,
 				const trdk::OrderParams &,
@@ -203,6 +206,7 @@ namespace trdk {
 			= 0;
 		virtual OrderId SellOrCancel(
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty,
 				trdk::ScaledPrice,
 				const trdk::OrderParams &,
@@ -211,12 +215,14 @@ namespace trdk {
 
 		virtual OrderId BuyAtMarketPrice(
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty qty,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
 		virtual OrderId Buy(
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty qty,
 				trdk::ScaledPrice,
 				const trdk::OrderParams &,
@@ -224,6 +230,7 @@ namespace trdk {
 			= 0;
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty qty,
 				trdk::ScaledPrice stopPrice,
 				const trdk::OrderParams &,
@@ -231,6 +238,7 @@ namespace trdk {
 			= 0;
 		virtual OrderId BuyOrCancel(
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty,
 				trdk::ScaledPrice,
 				const trdk::OrderParams &,

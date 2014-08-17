@@ -95,9 +95,7 @@ void CurrenexStream::SubscribeToSecurities() {
  			sequrityIndex);
 		mdRequest.setGroup(fix::FIX41::Tags::NoRelatedSym, 1)
 			.at(0)
-			.set(
-				fix::FIX40::Tags::Symbol,
-				symbol.GetSymbol() + "/" + symbol.GetCurrency());
+			.set(fix::FIX40::Tags::Symbol, symbol.GetSymbol());
 	
 		mdRequest.set(
 			fix::FIX42::Tags::SubscriptionRequestType,

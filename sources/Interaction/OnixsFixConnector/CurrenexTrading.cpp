@@ -47,6 +47,7 @@ void CurrenexTrading::Connect(const IniSectionRef &conf) {
 fix::Message CurrenexTrading::CreateOrderMessage(
 			const OrderId &orderId,	
 			const Security &security,
+			const Currency &currency,
 			const Qty &qty) {
 	// Creates order FIX-message and sets common fields.
 	fix::Message result("D", m_session.GetFixVersion());
@@ -56,11 +57,8 @@ fix::Message CurrenexTrading::CreateOrderMessage(
 	result.set(
 		fix::FIX40::Tags::HandlInst,
 		fix::FIX40::Values::HandlInst::Automated_execution_order_private_no_Broker_intervention);
-	result.set(fix::FIX40::Tags::Currency, "EUR");
-	result.set(
-		fix::FIX40::Tags::Symbol,
-		security.GetSymbol().GetSymbol()
-			+ "/" + security.GetSymbol().GetCurrency());
+	result.set(fix::FIX40::Tags::Currency, ConvertToIso(currency));
+	result.set(fix::FIX40::Tags::Symbol, security.GetSymbol().GetSymbol());
 	result.set(
 		fix::FIX40::Tags::TransactTime,
 		fix::Timestamp::utc(),
@@ -71,11 +69,12 @@ fix::Message CurrenexTrading::CreateOrderMessage(
 
 OrderId CurrenexTrading::SellAtMarketPrice(
 			trdk::Security &security,
+			const trdk::Lib::Currency &currency,
 			trdk::Qty qty,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
 	const auto &orderId = TakeOrderId();
-	fix::Message order = CreateOrderMessage(orderId, security, qty);
+	fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
 	order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
 	order.set(
 		fix::FIX40::Tags::OrdType,
@@ -86,6 +85,7 @@ OrderId CurrenexTrading::SellAtMarketPrice(
 
 OrderId CurrenexTrading::Sell(
 			trdk::Security &,
+			const trdk::Lib::Currency &,
 			trdk::Qty,
 			trdk::ScaledPrice,
 			const trdk::OrderParams &,
@@ -95,6 +95,7 @@ OrderId CurrenexTrading::Sell(
 
 OrderId CurrenexTrading::SellAtMarketPriceWithStopPrice(
 			trdk::Security &,
+			const trdk::Lib::Currency &,
 			trdk::Qty,
 			trdk::ScaledPrice /*stopPrice*/,
 			const trdk::OrderParams &,
@@ -106,6 +107,7 @@ OrderId CurrenexTrading::SellAtMarketPriceWithStopPrice(
 
 OrderId CurrenexTrading::SellOrCancel(
 			trdk::Security &,
+			const trdk::Lib::Currency &,
 			trdk::Qty,
 			trdk::ScaledPrice,
 			const trdk::OrderParams &,
@@ -115,11 +117,12 @@ OrderId CurrenexTrading::SellOrCancel(
 
 OrderId CurrenexTrading::BuyAtMarketPrice(
 			trdk::Security &security,
+			const trdk::Lib::Currency &currency,
 			trdk::Qty qty,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
 	const auto &orderId = TakeOrderId();
-	fix::Message order = CreateOrderMessage(orderId, security, qty);
+	fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
 	order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
 	order.set(
 		fix::FIX40::Tags::OrdType,
@@ -130,6 +133,7 @@ OrderId CurrenexTrading::BuyAtMarketPrice(
 
 OrderId CurrenexTrading::Buy(
 			trdk::Security &,
+			const trdk::Lib::Currency &,
 			trdk::Qty,
 			trdk::ScaledPrice,
 			const trdk::OrderParams &,
@@ -139,6 +143,7 @@ OrderId CurrenexTrading::Buy(
 
 OrderId CurrenexTrading::BuyAtMarketPriceWithStopPrice(
 			trdk::Security &,
+			const trdk::Lib::Currency &,
 			trdk::Qty,
 			trdk::ScaledPrice /*stopPrice*/,
 			const trdk::OrderParams &,
@@ -150,6 +155,7 @@ OrderId CurrenexTrading::BuyAtMarketPriceWithStopPrice(
 
 OrderId CurrenexTrading::BuyOrCancel(
 			trdk::Security &,
+			const trdk::Lib::Currency &,
 			trdk::Qty,
 			trdk::ScaledPrice,
 			const trdk::OrderParams &,
@@ -192,8 +198,82 @@ void CurrenexTrading::onWarning(
 void CurrenexTrading::onInboundApplicationMsg(
 			fix::Message &message,
 			fix::Session *session) {
+	
 	Assert(session == &m_session.Get());
 	UseUnused(session);
+
+	if (message.type() != "8") {
+		return;
+	}
+
+	const auto &execTransType = message.get(fix::FIX40::Tags::ExecTransType);
+
+	if (execTransType == fix::FIX40::Values::ExecTransType::New) {
+		
+		const auto &execType = message.get(fix::FIX41::Tags::ExecType);
+		const auto &ordStatus = message.get(fix::FIX40::Tags::OrdStatus);
+		
+		if (execType == fix::FIX41::Values::ExecType::New) {
+			
+			if (ordStatus == fix::FIX40::Values::OrdStatus::New) {
+				OnOrderNew(message);
+				return;
+			}
+
+		} else if (execType == fix::FIX41::Values::ExecType::Fill) {
+
+			if (ordStatus == fix::FIX40::Values::OrdStatus::Partially_filled) {
+				OnOrderFill(message);
+				return;
+			} else if (ordStatus == fix::FIX40::Values::OrdStatus::Filled) {
+				OnOrderPartialFill(message);
+				return;
+			}
+
+		} else if (execType == fix::FIX41::Values::ExecType::Suspended) {
+			
+			//...//
+		
+		} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
+			OnOrderRejected(message);
+			return;
+		}
+		
+	} else if (execTransType == fix::FIX40::Values::ExecTransType::Status) {
+		
+		//...//
+
+	}
+
+	m_log.Error(
+		"FIX Server sent unknown Execution Report: \"%1%\".",
+		boost::make_tuple(boost::cref(message)));
+
+}
+
+void CurrenexTrading::OnOrderNew(const fix::Message &/*report*/) {
+	m_log.Debug("NEW!");
+}		
+
+void CurrenexTrading::OnOrderRejected(const fix::Message &reject) {
+	const std::string &clOrdID = reject.get(fix::FIX40::Tags::ClOrdID);
+	const std::string &reason = reject.get(fix::FIX40::Tags::Text);
+	m_log.Error(
+		"FIX Server Rejected order %1%: \"%2%\"."
+			" Original reject: \"%3%\".",
+		boost::make_tuple(
+			boost::cref(clOrdID),
+			boost::cref(reason),
+			boost::cref(reject)));
+	//! @todo remove order by clOrdID from active list here
+}
+
+void CurrenexTrading::OnOrderFill(const fix::Message &/*report*/) {
+	m_log.Debug("FILLED!");
+}
+		
+void CurrenexTrading::OnOrderPartialFill(const fix::Message &/*report*/) {
+	m_log.Debug("PARTIAL FILLED!");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

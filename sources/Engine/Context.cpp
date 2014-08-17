@@ -74,7 +74,7 @@ public:
 
 	explicit Implementation(
 				Engine::Context &context,
-				boost::shared_ptr<const Lib::Ini> conf,
+				const boost::shared_ptr<const Lib::Ini> &conf,
 				bool isReplayMode)
 			: m_context(context),
 			m_conf(conf),
@@ -161,7 +161,7 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Engine::Context::Context(
-			boost::shared_ptr<const Lib::Ini> conf,
+			const boost::shared_ptr<const Lib::Ini> &conf,
 			bool isReplayMode) {
 	m_pimpl = new Implementation(*this, conf, isReplayMode);
 }

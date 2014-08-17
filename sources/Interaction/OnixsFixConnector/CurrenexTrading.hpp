@@ -35,23 +35,27 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		virtual OrderId SellAtMarketPrice(
 					trdk::Security &,
+					const trdk::Lib::Currency &,
 					trdk::Qty qty,
 					const trdk::OrderParams &,
 					const OrderStatusUpdateSlot &);
 		virtual OrderId Sell(
 					trdk::Security &,
+					const trdk::Lib::Currency &,
 					trdk::Qty qty,
 					trdk::ScaledPrice,
 					const trdk::OrderParams &,
 					const OrderStatusUpdateSlot &);
 		virtual OrderId SellAtMarketPriceWithStopPrice(
 					trdk::Security &,
+					const trdk::Lib::Currency &,
 					trdk::Qty qty,
 					trdk::ScaledPrice stopPrice,
 					const trdk::OrderParams &,
 					const OrderStatusUpdateSlot &);
 		virtual OrderId SellOrCancel(
 					trdk::Security &,
+					const trdk::Lib::Currency &,
 					trdk::Qty,
 					trdk::ScaledPrice,
 					const trdk::OrderParams &,
@@ -59,23 +63,27 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		virtual OrderId BuyAtMarketPrice(
 					trdk::Security &,
+					const trdk::Lib::Currency &,
 					trdk::Qty qty,
 					const trdk::OrderParams &,
 					const OrderStatusUpdateSlot &);
 		virtual OrderId Buy(
 					trdk::Security &,
+					const trdk::Lib::Currency &,
 					trdk::Qty qty,
 					trdk::ScaledPrice,
 					const trdk::OrderParams &,
 					const OrderStatusUpdateSlot &);
 		virtual OrderId BuyAtMarketPriceWithStopPrice(
 					trdk::Security &,
+					const trdk::Lib::Currency &,
 					trdk::Qty qty,
 					trdk::ScaledPrice stopPrice,
 					const trdk::OrderParams &,
 					const OrderStatusUpdateSlot &);
 		virtual OrderId BuyOrCancel(
 					trdk::Security &,
+					const trdk::Lib::Currency &,
 					trdk::Qty,
 					trdk::ScaledPrice,
 					const trdk::OrderParams &,
@@ -113,7 +121,15 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		OnixS::FIX::Message CreateOrderMessage(
 				const OrderId &,
 				const Security &,
+				const trdk::Lib::Currency &,
 				const Qty &);
+
+	private:
+
+		void OnOrderNew(const OnixS::FIX::Message &);
+		void OnOrderRejected(const OnixS::FIX::Message &);
+		void OnOrderFill(const OnixS::FIX::Message &);
+		void OnOrderPartialFill(const OnixS::FIX::Message &);
 
 	private:
 

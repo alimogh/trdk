@@ -105,9 +105,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			const auto &key = security.GetSymbol().GetHash();
 			if (!m_sendList.count(key)) {
 				// not cached yet...
-				const auto &conf = m_qtyConf.find(
-					security.GetSymbol().GetSymbol()
-						+ "/" + security.GetSymbol().GetCurrency());
+				const auto &conf
+					= m_qtyConf.find(security.GetSymbol().GetSymbol());
 				if (conf == m_qtyConf.end()) {
 					// symbol hasn't configuration:
 					GetLog().Error(
@@ -138,7 +137,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						isSet = true;
 						break;
 					}
-					Assert(pair->GetSymbol() != security.GetSymbol());
+					AssertNe(pair->GetSymbol(), security.GetSymbol());
 				}
 				if (isSet) {
 					break;
@@ -277,10 +276,22 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				boost::shared_ptr<Position> position;
 				if (qty < 0) {
 					position.reset(
-						new ShortPosition(*this, security, abs(qty), 0));
+						new ShortPosition(
+							*this,
+							GetContext().GetTradeSystem(),
+							security,
+							CURRENCY_EUR,
+							abs(qty),
+							0));
 				} else {
 					position.reset(
-						new LongPosition(*this, security, qty, 0));					
+						new LongPosition(
+							*this,
+							GetContext().GetTradeSystem(),
+							security,
+							CURRENCY_EUR,
+							qty,
+							0));					
 				}
 
 				// sends order to broker:
@@ -329,7 +340,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		enum {
 			EQUATIONS_COUNT = 12,
 			BROKERS_COUNT = 2,
-			PAIRS_COUNT = 2
+			PAIRS_COUNT = 3
 		};
 
 		const Equations m_equations;

@@ -52,6 +52,7 @@ namespace {
 #if defined(BOOST_ENABLE_ASSERT_HANDLER)
 
 	namespace boost {
+
 		void assertion_failed(
 					char const *expr,
 					char const *function,
@@ -66,6 +67,23 @@ namespace {
 			Log::Trading("assert", message.str().c_str());
 			BreakDebug();
 		}
+
+		void assertion_failed_msg(
+					char const *expr,
+					char const *msg,
+					char const *function,
+					char const *file,
+					long line) {
+			boost::format message(
+				"Assertion Failed: \"%5%\""
+					" - \"%1%\" in function %2%, file %3%, line %4%.");
+			message % expr % function % file % line % msg;
+			std::cerr << message.str() << std::endl;
+			Log::Error(message.str().c_str());
+			Log::Trading("assert", message.str().c_str());
+			BreakDebug();
+		}
+
 	}
 
 	void Detail::ReportCompareAssertFail(

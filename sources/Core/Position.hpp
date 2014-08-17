@@ -68,7 +68,9 @@ namespace trdk {
 
 		explicit Position(
 				trdk::Strategy &,
+				trdk::TradeSystem &,
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty,
 				trdk::ScaledPrice startPrice);
 		virtual ~Position();
@@ -80,8 +82,13 @@ namespace trdk {
 
 	public:
 
+		const trdk::TradeSystem & GetTradeSystem() const;
+		trdk::TradeSystem & GetTradeSystem();
+
 		const trdk::Security & GetSecurity() const throw();
 		trdk::Security & GetSecurity() throw();
+
+		const trdk::Lib::Currency & GetCurrency() const throw();
 
 	public:
 
@@ -192,12 +199,6 @@ namespace trdk {
 
 		StateUpdateConnection Subscribe(const StateUpdateSlot &) const;
 
-		virtual trdk::Security::OrderStatusUpdateSlot
-		GetSellOrderStatusUpdateSlot() = 0;
-		
-		virtual trdk::Security::OrderStatusUpdateSlot
-		GetBuyOrderStatusUpdateSlot() = 0;
-
 	protected:
 
 		virtual trdk::OrderId DoOpenAtMarketPrice(
@@ -272,7 +273,9 @@ namespace trdk {
 
 		explicit LongPosition(
 				trdk::Strategy &,
+				trdk::TradeSystem &,
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty,
 				trdk::ScaledPrice startPrice);
 		virtual ~LongPosition();
@@ -281,14 +284,6 @@ namespace trdk {
 
 		virtual Type GetType() const;
 		virtual const std::string & GetTypeStr() const throw();
-
-	public:
-
-		virtual trdk::Security::OrderStatusUpdateSlot
-		GetSellOrderStatusUpdateSlot();
-		
-		virtual trdk::Security::OrderStatusUpdateSlot
-		GetBuyOrderStatusUpdateSlot();
 
 	protected:
 
@@ -334,7 +329,9 @@ namespace trdk {
 
 		explicit ShortPosition(
 				trdk::Strategy &,
+				trdk::TradeSystem &,
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty,
 				trdk::ScaledPrice startPrice);
 		virtual ~ShortPosition();
@@ -343,14 +340,6 @@ namespace trdk {
 
 		virtual Type GetType() const;
 		virtual const std::string & GetTypeStr() const throw();
-
-	public:
-
-		virtual trdk::Security::OrderStatusUpdateSlot
-		GetSellOrderStatusUpdateSlot();
-		
-		virtual trdk::Security::OrderStatusUpdateSlot
-		GetBuyOrderStatusUpdateSlot();
 
 	protected:
 

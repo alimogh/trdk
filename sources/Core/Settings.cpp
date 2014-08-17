@@ -125,22 +125,19 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 	{
 		const char *const exchangeKey = "exchange";
 		const char *const primaryExchangeKey = "primary_exchange";
-		const char *const currencyKey = "currency";
 		const IniSectionRef defaultsConf(conf, "Defaults");
-		values.defaultExchange = defaultsConf.ReadKey(exchangeKey);
+		values.defaultExchange
+			= defaultsConf.ReadKey(exchangeKey, std::string());
 		values.defaultPrimaryExchange
 			= defaultsConf.ReadKey(primaryExchangeKey);
-		values.defaultCurrency = defaultsConf.ReadKey(currencyKey);
 		log.Info(
 			"Default settings:"
-				" %1% = \"%2%\"; %3% = \"%4%\"; %5% = \"%6%\"",
+				" %1% = \"%2%\"; %3% = \"%4%\";",
 			boost::make_tuple(
 				exchangeKey,
 				boost::cref(values.defaultExchange),
 				primaryExchangeKey,
-				boost::cref(values.defaultPrimaryExchange),
-				currencyKey,
-				boost::cref(values.defaultCurrency)));
+				boost::cref(values.defaultPrimaryExchange)));
 	}
 
 	m_values = values;

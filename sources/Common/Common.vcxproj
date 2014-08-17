@@ -248,6 +248,7 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="Assert.cpp" />
+    <ClCompile Include="Currency.cpp" />
     <ClCompile Include="Defaults.cpp" />
     <ClCompile Include="Ini.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -274,6 +275,7 @@
     <ClInclude Include="Assert.hpp" />
     <ClInclude Include="Common.hpp" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="Currency.hpp" />
     <ClInclude Include="Defaults.hpp" />
     <ClInclude Include="DisableBoostWarningsEnd.h" />
     <ClInclude Include="DisableBoostWarningsBegin.h" />
