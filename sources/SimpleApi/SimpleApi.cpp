@@ -120,13 +120,13 @@ double _stdcall trdk_GetImpliedVolatilityLast(
 				tradingClass)
 			.GetLastImpliedVolatility();
 		result *= 100;
-		Log::Debug(
-			"trdk_GetImpliedVolatilityLast result for \"%1%:%2%:%3%:%4%\": %5%.",
-			symbol,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			right,
-			result);
+// 		Log::Debug(
+// 			"trdk_GetImpliedVolatilityLast result for \"%1%:%2%:%3%:%4%\": %5%.",
+// 			symbol,
+// 			boost::lexical_cast<std::string>(expirationDate),
+// 			strike,
+// 			right,
+// 			result);
 		return result;
 	} catch (const Exception &ex) {
 		Log::Error(
@@ -170,13 +170,13 @@ double _stdcall trdk_GetImpliedVolatilityAsk(
 				tradingClass)
 			.GetAskImpliedVolatility();
 		result *= 100;
-		Log::Debug(
-			"trdk_GetImpliedVolatilityAsk result for \"%1%:%2%:%3%:%4%\": %5%.",
-			symbol,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			right,
-			result);
+// 		Log::Debug(
+// 			"trdk_GetImpliedVolatilityAsk result for \"%1%:%2%:%3%:%4%\": %5%.",
+// 			symbol,
+// 			boost::lexical_cast<std::string>(expirationDate),
+// 			strike,
+// 			right,
+// 			result);
 		return result;
 	} catch (const Exception &ex) {
 		Log::Error(
@@ -220,13 +220,13 @@ double _stdcall trdk_GetImpliedVolatilityBid(
 				tradingClass)
 			.GetBidImpliedVolatility();
 		result *= 100;
-		Log::Debug(
-			"trdk_GetImpliedVolatilityBid result for \"%1%:%2%:%3%:%4%\": %5%.",
-			symbol,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			right,
-			result);
+// 		Log::Debug(
+// 			"trdk_GetImpliedVolatilityBid result for \"%1%:%2%:%3%:%4%\": %5%.",
+// 			symbol,
+// 			boost::lexical_cast<std::string>(expirationDate),
+// 			strike,
+// 			right,
+// 			result);
 		return result;
 	} catch (const Exception &ex) {
 		Log::Error(
@@ -269,13 +269,13 @@ int _stdcall trdk_GetFopLastQty(
 				right,
 				tradingClass)
 			.GetLastQty();
-		Log::Debug(
-			"trdk_GetFopLastQty result for \"%1%:%2%:%3%:%4%\": %5%.",
-			symbol,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			right,
-			result);
+// 		Log::Debug(
+// 			"trdk_GetFopLastQty result for \"%1%:%2%:%3%:%4%\": %5%.",
+// 			symbol,
+// 			boost::lexical_cast<std::string>(expirationDate),
+// 			strike,
+// 			right,
+// 			result);
 		return result;
 	} catch (const Exception &ex) {
 		Log::Error(
@@ -318,13 +318,13 @@ double _stdcall trdk_GetFopLastPrice(
 				right,
 				tradingClass)
 			.GetLastPrice();
-		Log::Debug(
-			"trdk_GetFopLastPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
-			symbol,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			right,
-			result);
+// 		Log::Debug(
+// 			"trdk_GetFopLastPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
+// 			symbol,
+// 			boost::lexical_cast<std::string>(expirationDate),
+// 			strike,
+// 			right,
+// 			result);
 		return result;
 	} catch (const Exception &ex) {
 		Log::Error(
@@ -367,13 +367,13 @@ int _stdcall trdk_GetFopBidQty(
 				right,
 				tradingClass)
 			.GetBidQty();
-		Log::Debug(
-			"trdk_GetFopBidQty result for \"%1%:%2%:%3%:%4%\": %5%.",
-			symbol,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			right,
-			result);
+// 		Log::Debug(
+// 			"trdk_GetFopBidQty result for \"%1%:%2%:%3%:%4%\": %5%.",
+// 			symbol,
+// 			boost::lexical_cast<std::string>(expirationDate),
+// 			strike,
+// 			right,
+// 			result);
 		return result;
 	} catch (const Exception &ex) {
 		Log::Error(
@@ -416,13 +416,13 @@ double _stdcall trdk_GetFopBidPrice(
 				right,
 				tradingClass)
 			.GetBidPrice();
-		Log::Debug(
-			"trdk_GetFopBidPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
-			symbol,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			right,
-			result);
+// 		Log::Debug(
+// 			"trdk_GetFopBidPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
+// 			symbol,
+// 			boost::lexical_cast<std::string>(expirationDate),
+// 			strike,
+// 			right,
+// 			result);
 		return result;
 	} catch (const Exception &ex) {
 		Log::Error(
@@ -465,13 +465,13 @@ int _stdcall trdk_GetFopAskQty(
 				right,
 				tradingClass)
 			.GetAskQty();
-		Log::Debug(
-			"trdk_GetFopAskQty result for \"%1%:%2%:%3%:%4%\": %5%.",
-			symbol,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			right,
-			result);
+// 		Log::Debug(
+// 			"trdk_GetFopAskQty result for \"%1%:%2%:%3%:%4%\": %5%.",
+// 			symbol,
+// 			boost::lexical_cast<std::string>(expirationDate),
+// 			strike,
+// 			right,
+// 			result);
 		return result;
 	} catch (const Exception &ex) {
 		Log::Error(
@@ -514,13 +514,13 @@ double _stdcall trdk_GetFopAskPrice(
 				right,
 				tradingClass)
 			.GetAskPrice();
-		Log::Debug(
-			"trdk_GetFopAskPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
-			symbol,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			right,
-			result);
+// 		Log::Debug(
+// 			"trdk_GetFopAskPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
+// 			symbol,
+// 			boost::lexical_cast<std::string>(expirationDate),
+// 			strike,
+// 			right,
+// 			result);
 		return result;
 	} catch (const Exception &ex) {
 		Log::Error(
@@ -538,11 +538,11 @@ double _stdcall trdk_GetFopAskPrice(
 }
 
 void _stdcall trdk_SetImpliedVolatilityUpdatePeriod(int updatePeriod) {
-	AssertLt(0, updatePeriod);
+	AssertLe(0, updatePeriod);
 	try {
 		InitDebugLog();
 		trdk::Security::SetImpliedVolatilityUpdatePeriodSec(updatePeriod);
-		Log::Debug("trdk_SetImpliedVolatilityUpdatePeriod %1%.", updatePeriod);
+/*		Log::Debug("trdk_SetImpliedVolatilityUpdatePeriod %1%.", updatePeriod);*/
 	} catch (const Exception &ex) {
 		Log::Error(
 			"Failed to Set Implied Volatility Update Period %1%: \"%2%\".",
