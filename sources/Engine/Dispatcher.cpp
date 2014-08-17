@@ -84,11 +84,14 @@ void Dispatcher::Suspend() {
 
 void Dispatcher::SignalLevel1Update(
 			SubscriberPtrWrapper &subscriber,
-			Security &security) {
+			Security &security,
+			const TimeMeasurement::Milestones &timeMeasurement) {
 	if (subscriber.IsBlocked()) {
 		return;
 	}
-	m_level1Updates.Queue(boost::make_tuple(&security, subscriber), true);
+	m_level1Updates.Queue(
+		boost::make_tuple(&security, subscriber, timeMeasurement),
+		true);
 }
 
 void Dispatcher::SignalLevel1Tick(

@@ -43,6 +43,11 @@ namespace trdk {
 
 		trdk::Context::Log & GetLog() const throw();
 
+		trdk::Lib::TimeMeasurement::Milestones StartStrategyTimeMeasurement()
+				const;
+		trdk::Lib::TimeMeasurement::Milestones StartTradeSystemTimeMeasurement()
+				const;
+
 		trdk::Security & GetSecurity(const trdk::Lib::Symbol &);
 		const trdk::Security & GetSecurity(const trdk::Lib::Symbol &) const;
 

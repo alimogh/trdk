@@ -80,7 +80,8 @@ void SubscriptionsManager::SubscribeToLevel1Updates(
 			&Dispatcher::SignalLevel1Update,
 			&m_dispatcher,
 			subscriber,
-			boost::ref(security)));
+			boost::ref(security),
+			_1));
 	const auto connection = security.SubscribeToLevel1Updates(slot);
 	try {
 		slotConnections.push_back(connection);

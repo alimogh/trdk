@@ -148,11 +148,17 @@ namespace {
 		//! @todo read configuration from std in
 		const fs::path confFilePath = GetIniFilePath(argv[2]);
 		{
+			IniFile ini(confFilePath);
 			//! @todo Hardcoded INI-key name.
-			auto logsPath = IniFile(confFilePath)
-				.ReadFileSystemPath("Common", "logs_dir");
+			auto logsPath = ini.ReadFileSystemPath("Common", "logs_dir");
 			logsPath /= uuid;
-			InitLogs(true, true, true, argc, argv, logsPath);
+			InitLogs(
+				true,
+				true,
+				ini.ReadBoolKey("Common", "trading_log"),
+				argc,
+				argv,
+				logsPath);
 		}
 
 		Server server;

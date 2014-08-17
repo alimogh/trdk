@@ -284,7 +284,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Api.h" />
     <ClInclude Include="EquationPosition.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>

@@ -45,6 +45,8 @@ public:
 
 public:
 
+	Context &m_context;
+
 	const std::string m_tag;
 
 	SecuritiesMutex m_securitiesMutex;
@@ -52,8 +54,9 @@ public:
 
 public:
 
-	explicit Implementation(const std::string &tag)
-			: m_tag(tag) {
+	explicit Implementation(Context &context, const std::string &tag)
+			: m_context(context),
+			m_tag(tag) {
 		//...//
 	}
 
@@ -77,13 +80,25 @@ MarketDataSource::Error::Error(const char *what) throw()
 
 //////////////////////////////////////////////////////////////////////////
 
-MarketDataSource::MarketDataSource(const std::string &tag)
-		: m_pimpl(new Implementation(tag)) {
+MarketDataSource::MarketDataSource(Context &context, const std::string &tag)
+		: m_pimpl(new Implementation(context, tag)) {
 	//...//
 }
 
 MarketDataSource::~MarketDataSource() {
 	delete m_pimpl;
+}
+
+Context & MarketDataSource::GetContext() {
+	return m_pimpl->m_context;
+}
+
+const Context & MarketDataSource::GetContext() const {
+	return const_cast<MarketDataSource *>(this)->GetContext();
+}
+
+Context::Log & MarketDataSource::GetLog() const {
+	return GetContext().GetLog();
 }
 
 const std::string & MarketDataSource::GetTag() const {

@@ -19,12 +19,11 @@ using namespace trdk::Interaction::OnixsFixConnector;
 namespace fix = OnixS::FIX;
 
 CurrenexStream::CurrenexStream(
+			Context &context,
 			const std::string &tag,
-			const Lib::IniSectionRef &conf,
-			Context::Log &log)
-		: MarketDataSource(tag),
-		m_log(log),
-		m_session("stream", conf, m_log) {
+			const Lib::IniSectionRef &conf)
+		: MarketDataSource(context, tag),
+		m_session(GetContext(), "stream", conf) {
 	//...//
 }
 
@@ -50,7 +49,7 @@ CurrenexSecurity * CurrenexStream::FindRequestSecurity(
 	const auto securityIndex
 		= requestResult.getUInt64(fix::FIX42::Tags::MDReqID);
 	if (securityIndex >= m_securities.size()) {
-		m_log.Error(
+		GetLog().Error(
 			"Received wrong security index from FIX Server: %1%.",
 			requestResult.get(fix::FIX42::Tags::MDReqID));
 		return nullptr;
@@ -78,7 +77,7 @@ std::string CurrenexStream::GetRequestSymbolStr(
 
 void CurrenexStream::SubscribeToSecurities() {
 
-	m_log.Info(
+	GetLog().Info(
 		"Sending FIX Market Data Requests for %1% securities...",
 		m_securities.size());
 
@@ -119,7 +118,7 @@ void CurrenexStream::SubscribeToSecurities() {
 			fix::FIX42::Tags::MDEntryType,
 			fix::FIX42::Values::MDEntryType::Offer);
 
-		m_log.Info(
+		GetLog().Info(
 			"Sending Market Data Request for %1%...",
 			boost::cref(symbol));
 		m_session.Get().send(&mdRequest);
@@ -166,13 +165,15 @@ void CurrenexStream::onWarning(
 void CurrenexStream::onInboundApplicationMsg(
 			fix::Message &message,
 			fix::Session *session) {
+
+	const auto &timeMeasurement = GetContext().StartStrategyTimeMeasurement();
 			
 	Assert(session == &m_session.Get());
 	UseUnused(session);
 
 	if (message.type() == "Y") {
 		
-		m_log.Error(
+		GetLog().Error(
 			"Failed to Subscribe to %1% Market Data: \"%2%\".",
 			boost::make_tuple(
 				GetRequestSymbolStr(message),
@@ -196,9 +197,9 @@ void CurrenexStream::onInboundApplicationMsg(
 			
 			const auto &entryType = entry.get(fix::FIX42::Tags::MDEntryType);
 			if (entryType == fix::FIX42::Values::MDEntryType::Bid) {
-				security->SetBid(price, qty);
+				security->SetBid(price, qty, timeMeasurement);
 			} else if (entryType == fix::FIX42::Values::MDEntryType::Offer) {
-				security->SetOffer(price, qty);
+				security->SetOffer(price, qty, timeMeasurement);
 			} else {
 				AssertFail("Unknown entry type.");
 				continue;
@@ -211,13 +212,12 @@ void CurrenexStream::onInboundApplicationMsg(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 boost::shared_ptr<MarketDataSource> CreateCurrenexStream(
+			Context &context,
 			const std::string &tag,
-			const IniSectionRef &configuration,
-			Context::Log &log) {
+			const IniSectionRef &configuration) {
 	return boost::shared_ptr<MarketDataSource>(
-		new CurrenexStream(tag, configuration, log));
+		new CurrenexStream(context, tag, configuration));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

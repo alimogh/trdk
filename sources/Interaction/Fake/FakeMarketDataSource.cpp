@@ -19,9 +19,10 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::Fake;
 
 Fake::MarketDataSource::MarketDataSource(
+			Context &context,
 			const std::string &tag,
 			const IniSectionRef &)
-		: Base(tag) {
+		: Base(context, tag) {
 	//...//
 }
 
@@ -48,22 +49,37 @@ void Fake::MarketDataSource::NotificationThread() {
 		bar.volume = 111;
 		bar.count = 45;
 
+		const double bid = 12.99;
+		const double ask = 13.99;					
+		int correction = 1;
+
 		for ( ; ; ) {
-			
+
+		
 			const auto &now = pt::second_clock::local_time();
 			bool isBarTime = bar.time + bar.size <= now;
-			
+
 			foreach (boost::shared_ptr<Security> s, m_securityList) {
-				s->AddTrade(
-					boost::get_system_time(),
-					ORDER_SIDE_BUY,
-					10,
-					20);
-				if (isBarTime) {
-					s->AddBar(bar);
-				}
-				s->SetLevel1(12, 23, 45, 67);
+				const auto &timeMeasurement
+					= GetContext().StartStrategyTimeMeasurement();
+ 				s->AddTrade(
+ 					boost::get_system_time(),
+ 					ORDER_SIDE_BUY,
+ 					10,
+ 					20,
+ 					timeMeasurement);
+ 				if (isBarTime) {
+ 					s->AddBar(bar);
+ 				}
+				s->SetLevel1(
+					bid + correction,
+					10000,
+					ask + correction,
+					10000,
+					timeMeasurement);
 			}
+
+			correction *= -1;
 
 			if (isBarTime) {
 				bar.time = now;

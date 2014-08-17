@@ -27,6 +27,15 @@ Observer::~Observer() {
 	//...//
 }
 
+void Observer::OnLevel1Update(Security &security) {
+	GetLog().Error(
+		"Subscribed to %1% Level 1 Updates, but can't work with it"
+			" (hasn't OnLevel1Update method implementation).",
+		security);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to Level 1 updates, but can't work with it");
+}
+
 void Observer::RaiseLevel1UpdateEvent(Security &security) {
 	const Lock lock(GetMutex());
 	OnLevel1Update(security);

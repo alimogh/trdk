@@ -64,29 +64,29 @@ namespace {
 }
 
 CurrenexFixSession::CurrenexFixSession(
+			Context &context,
 			const std::string &type,
-			const IniSectionRef &configuration,
-			Context::Log &log)
-		: m_type(type),
-		m_log(log),
-		m_fixVersion(ParseFixVersion(configuration, m_log, m_type)) {
+			const IniSectionRef &configuration)
+		: m_context(context),
+		m_type(type),
+		m_fixVersion(ParseFixVersion(configuration, GetLog(), m_type)) {
 	
 	if (!fix::Engine::initialized()) {
 		const auto &settings
 			= configuration.GetBase().ReadFileSystemPath(
 				"Common",
 				"onixs_fix_engine_settings");
-		m_log.Info(
+		GetLog().Info(
 			"Initializing FIX Engine with %1%...",
 			settings);
 		try {
 			fix::Engine::init(settings.string());
 		} catch (const fix::Exception &ex) {
-			m_log.Error("Failed to init FIX Engine: \"%1%\".", ex.what());
+			GetLog().Error("Failed to init FIX Engine: \"%1%\".", ex.what());
 			throw Error("Failed to init FIX Engine");
 		}
 	} else {
-		m_log.Debug("FIX Engine already initialized.");
+		GetLog().Debug("FIX Engine already initialized.");
 	}
 	Assert(fix::Engine::initialized());
 
@@ -120,7 +120,7 @@ void CurrenexFixSession::Connect(
 		resetSeqNumFlagKey,
 		resetSeqNumFlag);
 
-	m_log.Info(
+	GetLog().Info(
 		"Connecting to FIX Server (%1%) at \"%2%:%3%\""
 			" with SenderCompID \"%4%\" and TargetCompID \"%5%\""
 			", ResetSeqNumFlag: %6%::%7% = %8%...",
@@ -157,7 +157,7 @@ void CurrenexFixSession::Connect(
 			resetSeqNumFlag);
 	} catch (const fix::Exception &ex) {
 		m_session.reset();
-		m_log.Error(
+		GetLog().Error(
 			"Failed to connect to FIX Server (%1%): \"%2%\".",
 			boost::make_tuple(
 				boost::cref(m_type),
@@ -168,7 +168,7 @@ void CurrenexFixSession::Connect(
 		throw;
 	}
 	
-	m_log.Info("Connected to FIX Server (%1%).", m_type);
+	GetLog().Info("Connected to FIX Server (%1%).", m_type);
 
 }
 
@@ -180,7 +180,7 @@ void CurrenexFixSession::LogStateChange(
 	UseUnused(session);
 	const auto newStateStr = fix::SessionState::toString(newState);
 	const auto prevStateStr = fix::SessionState::toString(prevState);
-	m_log.Info(
+	GetLog().Info(
 		"FIX Session State changed: \"%1%\" -> \"%2%\".",
 		boost::make_tuple(boost::cref(prevStateStr), boost::cref(newStateStr)));
 }
@@ -191,7 +191,7 @@ void CurrenexFixSession::LogError(
 			fix::Session &session) {
 	Assert(&session == &Get());
 	UseUnused(session);
-    m_log.Error(
+    GetLog().Error(
 		"FIX Session error: \"%1%\" (%2%)",
 		boost::make_tuple(boost::cref(description), reason));
 }
@@ -202,7 +202,7 @@ void CurrenexFixSession::LogWarning(
 			fix::Session &session) {
 	Assert(&session == &Get());
 	UseUnused(session);
-	m_log.Warn(
+	GetLog().Warn(
 		"FIX Session waring: \"%1%\" (%2%)",
 		boost::make_tuple(boost::cref(description), reason));
 }

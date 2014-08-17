@@ -25,7 +25,8 @@ namespace trdk {
 		typedef trdk::TradeSystem::OrderStatusUpdateSlot
 			OrderStatusUpdateSlot;
 
-		typedef void (Level1UpdateSlotSignature)();
+		typedef void (Level1UpdateSlotSignature)(
+					const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Update one of more from following values:
 		//! best bid, best ask, last trade.
 		typedef boost::function<Level1UpdateSlotSignature> Level1UpdateSlot;
@@ -192,7 +193,8 @@ namespace trdk {
 		  */
 		void SetLevel1(
 					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &);
+					const trdk::Level1TickValue &,
+					const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Sets two Level I parameters and one operation.
 		/** More optimal than call "set one parameter" two times. Subscribers
 		  * will be notified about Level I Update only if parameter will be
@@ -201,7 +203,8 @@ namespace trdk {
 		void SetLevel1(
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &);
+					const trdk::Level1TickValue &,
+					const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Sets three Level I parameters and one operation.
 		/** More optimal than call "set one parameter" three times. Subscribers
 		  * will be notified about Level I Update only if parameter will bee
@@ -211,7 +214,8 @@ namespace trdk {
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &,
 					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &);
+					const trdk::Level1TickValue &,
+					const trdk::Lib::TimeMeasurement::Milestones &);
 
 		//! Adds one Level I parameter tick.
 		/** Subscribers will be notified about Level I Update only if parameter
@@ -219,7 +223,8 @@ namespace trdk {
 		  */
 		void AddLevel1Tick(
 					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &);
+					const trdk::Level1TickValue &,
+					const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Adds two Level I parameter ticks.
 		/** More optimal than call "add one tick" two times. Subscribers will
 		  * be notified about Level I Update only if parameter will be changed.
@@ -228,7 +233,8 @@ namespace trdk {
 		void AddLevel1Tick(
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &);
+					const trdk::Level1TickValue &,
+					const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Adds three Level I parameter ticks.
 		/** More optimal than call "add one tick" three times. Subscribers will
 		  * be notified about Level I Update only if parameter will be changed.
@@ -238,13 +244,15 @@ namespace trdk {
 					const boost::posix_time::ptime &,
 					const trdk::Level1TickValue &,
 					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &);
+					const trdk::Level1TickValue &,
+					const trdk::Lib::TimeMeasurement::Milestones &);
 
 		void AddTrade(
 					const boost::posix_time::ptime &,
 					trdk::OrderSide,
 					trdk::ScaledPrice,
 					trdk::Qty,
+					const trdk::Lib::TimeMeasurement::Milestones &,
 					bool useAsLastTrade,
 					bool useForTradedVolume);
 

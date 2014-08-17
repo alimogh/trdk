@@ -198,9 +198,9 @@ private:
 			
 			try {
 				factoryResult = dll->GetFunction<Factory>(factoryName)(
+					m_context,
 					tag,
-					configurationSection,
-					m_context.GetLog());
+					configurationSection);
 			} catch (const Dll::DllFuncException &) {
 				if (	!boost::istarts_with(
 							factoryName,
@@ -209,9 +209,9 @@ private:
 						= DefaultValues::Factories::factoryNameStart
 							+ factoryName;
 					factoryResult = dll->GetFunction<Factory>(factoryName)(
+						m_context,
 						tag,
-						configurationSection,
-						m_context.GetLog());
+						configurationSection);
 				} else {
 					throw;
 				}
@@ -311,9 +311,9 @@ private:
 		
 			try {
 				factoryResult = dll->GetFunction<Factory>(factoryName)(
+					m_context,
 					tag,
-					configurationSection,
-					m_context.GetLog());
+					configurationSection);
 			} catch (const Dll::DllFuncException &) {
 				if (	!boost::istarts_with(
 							factoryName,
@@ -322,9 +322,9 @@ private:
 						= DefaultValues::Factories::factoryNameStart
 							+ factoryName;
 					factoryResult = dll->GetFunction<Factory>(factoryName)(
+						m_context,
 						tag,
-						configurationSection,
-						m_context.GetLog());
+						configurationSection);
 				} else {
 					throw;
 				}

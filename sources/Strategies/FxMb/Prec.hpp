@@ -12,8 +12,6 @@
 
 #include "Common/Assert.hpp"
 
-#include "Api.h"
-
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/algorithm/string.hpp>
 #	include <boost/regex.hpp>

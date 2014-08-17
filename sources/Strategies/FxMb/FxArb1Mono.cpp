@@ -13,6 +13,7 @@
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/StrategyPositionReporter.hpp"
+#include "Core/TimeMeasurement.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -287,8 +288,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	public:
 		
-		virtual void OnLevel1Update(Security &) {
-			
+		virtual void OnLevel1Update(
+					Security &,
+					TimeMeasurement::Milestones &timeMeasurement) {
+
 			// Level 1 update callback - will be called every time when
 			// ask or bid will be changed for any of configured security:
 
@@ -325,7 +328,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// Ask equation:
 				if (m_equations[i](b1, b2)) {
 					// Open positions:
-					OnEquation(i, b1, b2);
+					OnEquation(i, b1, b2, timeMeasurement);
+				} else {
+					timeMeasurement.Measure(STMM_STRATEGY_WITHOUT_DECISION);
 				}
 			}
 		
@@ -376,6 +381,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				return;
 			}
 
+			position.GetTimeMeasurement().Measure(
+				STMM_STRATEGY_EXECUTION_REPLY);
+
 			// All equation orders are filled. Now we need to close all
 			// positions for opposite equation.
 			CancelAllInEquationAtMarketPrice(
@@ -395,7 +403,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void OnEquation(
 					size_t equationIndex,
 					const Broker &b1,
-					const Broker &b2) {
+					const Broker &b2,
+					TimeMeasurement::Milestones &timeMeasurement) {
 
 			// Logging current bid/ask values for all pairs:
 			GetLog().TradingEx(
@@ -420,6 +429,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						% b2.p3.bid % b2.p3.ask; 
 					return std::move(message);
 				});
+
+			timeMeasurement.Measure(STMM_STRATEGY_DECISION_START);
 
 			auto &equationPositions = m_positionsByEquation[equationIndex];
 			AssertEq(0, equationPositions.positions.size());
@@ -458,7 +469,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 								*conf.security,
 								conf.security->GetSymbol().GetCashCurrency(),
 								conf.qty,
-								conf.security->GetBidPriceScaled()));
+								conf.security->GetBidPriceScaled(),
+								timeMeasurement));
 					} else {
 						position.reset(
 							new EquationLongPosition(
@@ -469,7 +481,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 								*conf.security,
 								conf.security->GetSymbol().GetCashCurrency(),
 								conf.qty,
-								conf.security->GetAskPriceScaled()));					
+								conf.security->GetAskPriceScaled(),
+								timeMeasurement));
+					}
+
+					if (!equationPositions.activeCount) {
+						timeMeasurement.Measure(STMM_STRATEGY_EXECUTION_START);
 					}
 
 					// Sends orders to broker:
@@ -487,6 +504,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					Position::CLOSE_TYPE_SYSTEM_ERROR);
 				throw;
 			}
+
+			timeMeasurement.Measure(STMM_STRATEGY_DECISION_STOP);
 
 		}
 
@@ -568,7 +587,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TRDK_STRATEGY_FXMB_API boost::shared_ptr<Strategy> CreateFxArb1MonoStrategy(
+boost::shared_ptr<Strategy> CreateFxArb1MonoStrategy(
 			Context &context,
 			const std::string &tag,
 			const IniSectionRef &conf) {
