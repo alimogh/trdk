@@ -31,7 +31,7 @@ namespace trdk { namespace SimpleApi {
 
 		double GetCashBalance() const;
 
-		bool IsActive() const;
+		bool CheckActive() const;
 
 	private:
 

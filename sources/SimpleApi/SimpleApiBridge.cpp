@@ -51,8 +51,8 @@ double Bridge::GetCashBalance() const {
 	return m_context->GetTradeSystem().GetAccount().cashBalance;
 }
 
-extern bool isIbActive;
+extern boost::atomic_bool isIbActive;
 
-bool Bridge::IsActive() const {
-	return isIbActive;
+bool Bridge::CheckActive() const {
+	return isIbActive.exchange(true);
 }

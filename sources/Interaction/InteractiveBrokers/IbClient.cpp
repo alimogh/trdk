@@ -202,10 +202,9 @@ Client::~Client() {
 
 }
 
-bool isIbActive = true;
+boost::atomic_bool isIbActive(true);
 
 void Client::Task() {
-	isIbActive = false;
 	m_log.Debug(
 		"Started "
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
@@ -280,7 +279,7 @@ void Client::Task() {
 		"Stopped "
 			INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
 			" connection read task.");
-	isIbActive = true;
+	isIbActive = false;
 }
 
 
