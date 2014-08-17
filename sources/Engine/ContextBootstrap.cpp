@@ -967,8 +967,7 @@ private:
 			Symbol symbol = Symbol::Parse(
 				symbolRequest,
 				m_context.GetSettings().GetDefaultExchange(),
-				m_context.GetSettings().GetDefaultPrimaryExchange(),
-				m_context.GetSettings().GetDefaultCurrency());
+				m_context.GetSettings().GetDefaultPrimaryExchange());
 			if (result.symbols.find(symbol) != result.symbols.end()) {
 				m_context.GetLog().Error(
 					"Requirements syntax error:"
@@ -1529,8 +1528,7 @@ private:
 		const IniFile symbolsIni(symbolsFilePath);
 		std::set<Symbol> symbols = symbolsIni.ReadSymbols(
 			m_context.GetSettings().GetDefaultExchange(),
-			m_context.GetSettings().GetDefaultPrimaryExchange(),
-			m_context.GetSettings().GetDefaultCurrency());
+			m_context.GetSettings().GetDefaultPrimaryExchange());
 
 		try {
 			foreach (const auto &iniSymbol, symbols) {

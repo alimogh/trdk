@@ -25,8 +25,9 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		explicit CurrenexSecurity(
 					Context &context,
 					const Lib::Symbol &symbol,
+					const Currency &currency,
 					const trdk::MarketDataSource &source)
-				: Base(context, symbol, source) {
+				: Base(context, symbol, currency, source) {
 			StartLevel1();
 		}
 

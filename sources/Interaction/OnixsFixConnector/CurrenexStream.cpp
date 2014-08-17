@@ -95,9 +95,7 @@ void CurrenexStream::SubscribeToSecurities() {
  			sequrityIndex);
 		mdRequest.setGroup(fix::FIX41::Tags::NoRelatedSym, 1)
 			.at(0)
-			.set(
-				fix::FIX40::Tags::Symbol,
-				symbol.GetSymbol() + "/" + symbol.GetCurrency());
+			.set(fix::FIX40::Tags::Symbol, symbol.GetSymbol());
 	
 		mdRequest.set(
 			fix::FIX42::Tags::SubscriptionRequestType,
@@ -135,7 +133,7 @@ boost::shared_ptr<Security> CurrenexStream::CreateSecurity(
 			const Symbol &symbol)
 		const {
 	boost::shared_ptr<CurrenexSecurity> result(
-		new CurrenexSecurity(context, symbol, *this));
+		new CurrenexSecurity(context, symbol, Security::EUR, *this));
 	const_cast<CurrenexStream *>(this)
 		->m_securities.push_back(result);
 	return result;

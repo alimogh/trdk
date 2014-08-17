@@ -26,6 +26,7 @@ namespace trdk {  namespace Interaction { namespace Csv {
 		explicit Security(
 					Context &,
 					const trdk::Lib::Symbol &,
+					const Currency &,
 					const MarketDataSource &);
 
 	public:

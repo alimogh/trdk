@@ -56,11 +56,8 @@ fix::Message CurrenexTrading::CreateOrderMessage(
 	result.set(
 		fix::FIX40::Tags::HandlInst,
 		fix::FIX40::Values::HandlInst::Automated_execution_order_private_no_Broker_intervention);
-	result.set(fix::FIX40::Tags::Currency, "EUR");
-	result.set(
-		fix::FIX40::Tags::Symbol,
-		security.GetSymbol().GetSymbol()
-			+ "/" + security.GetSymbol().GetCurrency());
+	result.set(fix::FIX40::Tags::Currency, security.GetCurrencyIso());
+	result.set(fix::FIX40::Tags::Symbol, security.GetSymbol().GetSymbol());
 	result.set(
 		fix::FIX40::Tags::TransactTime,
 		fix::Timestamp::utc(),

@@ -194,8 +194,9 @@ public:
 Security::Security(
 			Context &context,
 			const Symbol &symbol,
+			const Currency &currency,
 			const MarketDataSource &source)
-		: Base(context, symbol),
+		: Base(context, symbol, currency),
 		m_pimpl(new Implementation(source)) {
 	//...//
 }
