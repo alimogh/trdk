@@ -75,6 +75,7 @@ namespace trdk { namespace Strategies { namespace Test {
 			boost::shared_ptr<LongPosition> pos(
 				new LongPosition(
 					*this,
+					GetContext().GetTradeSystem(),
 					security,
 					CURRENCY_USD,
 					40000,

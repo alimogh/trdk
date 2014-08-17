@@ -278,6 +278,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					position.reset(
 						new ShortPosition(
 							*this,
+							GetContext().GetTradeSystem(),
 							security,
 							CURRENCY_EUR,
 							abs(qty),
@@ -286,6 +287,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					position.reset(
 						new LongPosition(
 							*this,
+							GetContext().GetTradeSystem(),
 							security,
 							CURRENCY_EUR,
 							qty,

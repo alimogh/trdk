@@ -139,57 +139,6 @@ namespace trdk {
 
 		boost::posix_time::ptime GetLastMarketDataTime() const;
 
-		trdk::OrderId SellAtMarketPrice(
-					trdk::Qty qty,
-					const trdk::Lib::Currency &,
-					const trdk::OrderParams &,
-					trdk::Position &);
-		trdk::OrderId Sell(
-					trdk::Qty qty,
-					const trdk::Lib::Currency &,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &,
-					trdk::Position &);
-		trdk::OrderId SellAtMarketPriceWithStopPrice(
-					trdk::Qty qty,
-					const trdk::Lib::Currency &,
-					ScaledPrice stopPrice,
-					const trdk::OrderParams &,
-					trdk::Position &);
-		trdk::OrderId SellOrCancel(
-					trdk::Qty,
-					const trdk::Lib::Currency &,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &,
-					trdk::Position &);
-
-		trdk::OrderId BuyAtMarketPrice(
-					trdk::Qty qty,
-					const trdk::Lib::Currency &,
-					const trdk::OrderParams &,
-					trdk::Position &);
-		trdk::OrderId Buy(
-					trdk::Qty,
-					const trdk::Lib::Currency &,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &,
-					trdk::Position &);
-		trdk::OrderId BuyAtMarketPriceWithStopPrice(
-					trdk::Qty qty,
-					const trdk::Lib::Currency &,
-					ScaledPrice stopPrice,
-					const trdk::OrderParams &,
-					trdk::Position &);
-		trdk::OrderId BuyOrCancel(
-					trdk::Qty,
-					const trdk::Lib::Currency &,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &,
-					trdk::Position &);
-
-		void CancelOrder(trdk::OrderId);
-		void CancelAllOrders();
-
 	public:
 
 		trdk::ScaledPrice GetLastPriceScaled() const;
