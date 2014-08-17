@@ -28,6 +28,7 @@ namespace trdk {
 		TradeSystemFactoryResult;
 
 	typedef trdk::TradeSystemFactoryResult (TradeSystemFactory)(
+			const std::string &tag,
 			const trdk::Lib::IniSectionRef &,
 			trdk::Context::Log &);	//! @todo	remove context from TradeSystem
 									//!			as it can be one for all
@@ -143,12 +144,19 @@ namespace trdk {
 
 	public:
 
-		TradeSystem();
+		TradeSystem(const std::string &tag);
 		virtual ~TradeSystem();
 
 	public:
 
 		static const char * GetStringStatus(OrderStatus);
+
+	public:
+
+		//! Identifies Trade System object by verbose name. 
+		/** Trade System Tag unique, but can be empty for one of objects.
+		  */
+		const std::string & GetTag() const;
 
 	public:
 
@@ -254,6 +262,11 @@ namespace trdk {
 		/** @throw trdk::OrderPatams
 		  */
 		virtual void Validate(Qty, const trdk::OrderParams &, bool isIoc) const;
+
+	private:
+
+		class Implementation;
+		Implementation *m_pimpl;
 
 	};
 

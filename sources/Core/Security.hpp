@@ -241,12 +241,12 @@ namespace trdk {
 					const trdk::Level1TickValue &);
 
 		void AddTrade(
-				const boost::posix_time::ptime &,
-				trdk::OrderSide,
-				trdk::ScaledPrice,
-				trdk::Qty,
-				bool useAsLastTrade,
-				bool useForTradedVolume);
+					const boost::posix_time::ptime &,
+					trdk::OrderSide,
+					trdk::ScaledPrice,
+					trdk::Qty,
+					bool useAsLastTrade,
+					bool useForTradedVolume);
 
 		void AddBar(const Bar &);
 

@@ -407,7 +407,7 @@ public:
 					m_security.DescalePrice(m_position.GetOpenStartPrice()),
 					m_security.DescalePrice(m_position.GetOpenPrice()),
 					m_position.GetOpenOrderId(),
-					context.GetTradeSystem().GetStringStatus(orderStatus)));
+					m_tradeSystem.GetStringStatus(orderStatus)));
 		} catch (...) {
 			AssertFailNoException();
 		}
@@ -436,7 +436,7 @@ public:
 						.DescalePrice(m_position.GetClosePrice()),
 					m_position.GetOpenOrderId(),
 					m_position.GetCloseOrderId(),
-					context.GetTradeSystem().GetStringStatus(orderStatus)));
+					m_tradeSystem.GetStringStatus(orderStatus)));
 		} catch (...) {
 			AssertFailNoException();
 		}

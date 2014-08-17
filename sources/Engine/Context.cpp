@@ -46,6 +46,14 @@ namespace {
 		return result;
 	}
 
+	std::string GetMarketDataSourceSectionName(const TradeSystem &tradeSystem) {
+		std::string result = Engine::Ini::Sections::tradeSystem;
+		if (!tradeSystem.GetTag().empty()) {
+			result += "." + tradeSystem.GetTag();
+		}
+		return result;
+	}
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -65,7 +73,7 @@ public:
 
 	ModuleList m_modulesDlls;
 
-	DllObjectPtr<TradeSystem> m_tradeSystem;
+	TradeSystems m_tradeSystems;
 	MarketDataSources m_marketDataSources;
 
 	std::unique_ptr<State> m_state;
@@ -87,7 +95,7 @@ public:
 			*m_conf,
 			m_settings,
 			m_context,
-			m_tradeSystem,
+			m_tradeSystems,
 			m_marketDataSources);
 	}
 
@@ -204,21 +212,28 @@ void Engine::Context::Start() {
 	
 	state->subscriptionsManager.Activate();
 
-	try {
-		GetTradeSystem().Connect(
-			IniSectionRef(
-				*m_pimpl->m_conf,
-				Ini::Sections::tradeSystem));
-	} catch (const Interactor::ConnectError &ex) {
-		boost::format message("Failed to connect to trading system: \"%1%\"");
-		message % ex;
-		throw Interactor::ConnectError(message.str().c_str());
-	} catch (const Lib::Exception &ex) {
-		GetLog().Error("Failed to make trading system connection: \"%1%\".", ex);
-		throw Exception("Failed to make trading system");
+	foreach (auto &tradeSystemRef, m_pimpl->m_tradeSystems) {
+		auto &tradeSystem = *tradeSystemRef;
+		try {
+			tradeSystem.Connect(
+				IniSectionRef(
+					*m_pimpl->m_conf,
+					GetMarketDataSourceSectionName(tradeSystemRef)));
+		} catch (const Interactor::ConnectError &ex) {
+			boost::format message(
+				"Failed to connect to trading system: \"%1%\"");
+			message % ex;
+			throw Interactor::ConnectError(message.str().c_str());
+		} catch (const Lib::Exception &ex) {
+			GetLog().Error(
+				"Failed to make trading system connection: \"%1%\".",
+				ex);
+			throw Exception("Failed to make trading system");
+		}
 	}
 	
-	ForEachMarketDataSource( [&](MarketDataSource &source) -> bool {
+	ForEachMarketDataSource(
+		[&](MarketDataSource &source) -> bool {
 			try {
 				source.Connect(
 					IniSectionRef(
@@ -306,12 +321,19 @@ void Engine::Context::ForEachMarketDataSource(
 	}
 }
 
-TradeSystem & Engine::Context::GetTradeSystem() {
-	return m_pimpl->m_tradeSystem;
+size_t Engine::Context::GetTradeSystemsCount() const {
+	return m_pimpl->m_tradeSystems.size();
 }
 
-const TradeSystem & Engine::Context::GetTradeSystem() const {
-	return const_cast<Context *>(this)->GetTradeSystem();
+TradeSystem & Engine::Context::GetTradeSystem(size_t index) {
+	if (index >= m_pimpl->m_tradeSystems.size()) {
+		throw Exception("Trade System index is out of range");
+	}
+	return *m_pimpl->m_tradeSystems[index];
+}
+
+const TradeSystem & Engine::Context::GetTradeSystem(size_t index) const {
+	return const_cast<Context *>(this)->GetTradeSystem(index);
 }
 
 const Settings & Engine::Context::GetSettings() const {
