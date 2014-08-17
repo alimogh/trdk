@@ -190,7 +190,7 @@ void CurrenexTrading::onWarning(
 }
 
 void CurrenexTrading::onInboundApplicationMsg(
-			fix::Message &message,
+			fix::Message &/*message*/,
 			fix::Session *session) {
 	Assert(session == &m_session.Get());
 	UseUnused(session);
