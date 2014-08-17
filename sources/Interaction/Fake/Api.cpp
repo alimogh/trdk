@@ -20,11 +20,12 @@
 
 TRDK_INTERACTION_FAKE_API
 trdk::TradeSystemFactoryResult CreateTradeSystem(
+			const std::string &tag,
 			const trdk::Lib::IniSectionRef &configuration,
 			trdk::Context::Log &log) {
 	trdk::TradeSystemFactoryResult result;
 	boost::get<0>(result).reset(
-		new trdk::Interaction::Fake::TradeSystem(configuration, log));
+		new trdk::Interaction::Fake::TradeSystem(tag, configuration, log));
 	return result;
 }
 

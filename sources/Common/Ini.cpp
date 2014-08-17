@@ -351,13 +351,12 @@ std::list<std::string> Ini::ReadList(
 
 std::set<Symbol> Ini::ReadSymbols(
 			const std::string &defExchange,
-			const std::string &defPrimaryExchange,
-			const std::string &defCurrency)
+			const std::string &defPrimaryExchange)
 		const {
 	std::set<Symbol> result;
 	foreach (const auto &l, ReadList())  {
 		result.insert(
-			Symbol::Parse(l, defExchange, defPrimaryExchange, defCurrency));
+			Symbol::Parse(l, defExchange, defPrimaryExchange));
 	}
 	return result;
 }
@@ -365,13 +364,12 @@ std::set<Symbol> Ini::ReadSymbols(
 std::set<Symbol> Ini::ReadSymbols(
 			const std::string &section,
 			const std::string &defExchange,
-			const std::string &defPrimaryExchange,
-			const std::string &defCurrency)
+			const std::string &defPrimaryExchange)
 		const {
 	std::set<Symbol> result;
 	foreach (const auto &l, ReadList(section, true))  {
 		result.insert(
-			Symbol::Parse(l, defExchange, defPrimaryExchange, defCurrency));
+			Symbol::Parse(l, defExchange, defPrimaryExchange));
 	}
 	return result;
 }

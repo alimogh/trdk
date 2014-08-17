@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Currency.hpp"
 #include "Exception.hpp"
 #include <iosfwd>
 
@@ -59,12 +60,10 @@ namespace trdk { namespace Lib {
 
 		explicit Symbol(
 					SecurityType,
-					const std::string &symbol,
-					const std::string &exchange);
+					const std::string &symbol);
 
 		explicit Symbol(
 					const std::string &symbol,
-					const std::string &currency,
 					const std::string &expirationDate,
 					double strike);
 
@@ -72,14 +71,12 @@ namespace trdk { namespace Lib {
 					SecurityType,
 					const std::string &symbol,
 					const std::string &exchange,
-					const std::string &primaryExchange,
-					const std::string &currency);
+					const std::string &primaryExchange);
 
 		static Symbol Parse(
 					const std::string &line,
 					const std::string &defExchange,
-					const std::string &defPrimaryExchange,
-					const std::string &defCurrency);
+					const std::string &defPrimaryExchange);
 		static Symbol ParseCash(
 					SecurityType securityType,
 					const std::string &line,
@@ -112,13 +109,13 @@ namespace trdk { namespace Lib {
 		const std::string & GetExchange() const;
 		const std::string & GetPrimaryExchange() const;
 
-		const std::string & GetCurrency() const;
-		
 		const std::string & GetExpirationDate() const;
 		double GetStrike() const;
 		const Right & GetRight() const;
 		std::string GetRightAsString() const;
 		static Right ParseRight(const std::string &);
+
+		trdk::Lib::Currency GetCashCurrency() const;
 
 		std::string GetAsString() const;
 
@@ -130,22 +127,21 @@ namespace trdk { namespace Lib {
 			std::string symbol;
 			std::string exchange;
 			std::string primaryExchange;
-			std::string currency;
 
 			std::string expirationDate;
 			double strike;
 			Right right;
 
+			trdk::Lib::Currency cacheCurrency;
+
 			Data();
 			
 			explicit Data(
 						SecurityType,
-						const std::string &symbol,
-						const std::string &exchange);
+						const std::string &symbol);
 
 			explicit Data(
 						const std::string &symbol,
-						const std::string &currency,
 						const std::string &expirationDate,
 						double strike);
 
@@ -153,8 +149,7 @@ namespace trdk { namespace Lib {
 						SecurityType,
 						const std::string &symbol,
 						const std::string &exchange,
-						const std::string &primaryExchange,
-						const std::string &currency);
+						const std::string &primaryExchange);
 
 		} m_data;
 

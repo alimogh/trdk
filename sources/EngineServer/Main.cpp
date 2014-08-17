@@ -62,6 +62,9 @@ namespace {
 						" Build: " TRDK_BUILD_IDENTITY "."
 						" Build time: " __TIME__ " " __DATE__ ".",
 					boost::join(cmd, " "));
+				Log::Info(
+					"Local time: %1%.",
+					boost::posix_time::microsec_clock::local_time());
 			}
 		}
 		if (useTrading) {

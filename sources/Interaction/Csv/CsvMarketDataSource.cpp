@@ -26,7 +26,6 @@ Csv::MarketDataSource::MarketDataSource(
 		: Base(tag),
 		m_log(log),
 		m_pimaryExchange(configuration.ReadKey("exchange")),
-		m_currency(configuration.ReadKey("currency")),
 		m_isStopped(true) {
 	const auto filePath = configuration.ReadFileSystemPath("source");
 	m_log.Info(
@@ -251,8 +250,7 @@ void Csv::MarketDataSource::ReadFile() {
 			Symbol::SECURITY_TYPE_STOCK,
 			symbol,
 			exchange,
-			m_pimaryExchange,
-			m_currency);
+			m_pimaryExchange);
 		const SecurityByInstrument::const_iterator security
 			= index.find(instrumnet);
 		if (security == index.end()) {

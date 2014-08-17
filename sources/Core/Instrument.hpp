@@ -25,7 +25,7 @@ namespace trdk {
 	public:
 
 		const trdk::Lib::Symbol & GetSymbol() const throw();
-	
+
 	public:
 
 		const trdk::Context & GetContext() const;

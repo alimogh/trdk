@@ -46,6 +46,14 @@ namespace {
 		return result;
 	}
 
+	std::string GetMarketDataSourceSectionName(const TradeSystem &tradeSystem) {
+		std::string result = Engine::Ini::Sections::tradeSystem;
+		if (!tradeSystem.GetTag().empty()) {
+			result += "." + tradeSystem.GetTag();
+		}
+		return result;
+	}
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -65,7 +73,7 @@ public:
 
 	ModuleList m_modulesDlls;
 
-	DllObjectPtr<TradeSystem> m_tradeSystem;
+	TradeSystems m_tradeSystems;
 	MarketDataSources m_marketDataSources;
 
 	std::unique_ptr<State> m_state;
@@ -74,7 +82,7 @@ public:
 
 	explicit Implementation(
 				Engine::Context &context,
-				boost::shared_ptr<const Lib::Ini> conf,
+				const boost::shared_ptr<const Lib::Ini> &conf,
 				bool isReplayMode)
 			: m_context(context),
 			m_conf(conf),
@@ -87,7 +95,7 @@ public:
 			*m_conf,
 			m_settings,
 			m_context,
-			m_tradeSystem,
+			m_tradeSystems,
 			m_marketDataSources);
 	}
 
@@ -161,7 +169,7 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Engine::Context::Context(
-			boost::shared_ptr<const Lib::Ini> conf,
+			const boost::shared_ptr<const Lib::Ini> &conf,
 			bool isReplayMode) {
 	m_pimpl = new Implementation(*this, conf, isReplayMode);
 }
@@ -204,27 +212,33 @@ void Engine::Context::Start() {
 	
 	state->subscriptionsManager.Activate();
 
-	try {
-		GetTradeSystem().Connect(
-			IniSectionRef(
-				*m_pimpl->m_conf,
-				Ini::Sections::tradeSystem));
-	} catch (const Interactor::ConnectError &ex) {
-		boost::format message("Failed to connect to trading system: \"%1%\"");
-		message % ex;
-		throw Interactor::ConnectError(message.str().c_str());
-	} catch (const Lib::Exception &ex) {
-		GetLog().Error("Failed to make trading system connection: \"%1%\".", ex);
-		throw Exception("Failed to make trading system");
+	foreach (auto &tradeSystemRef, m_pimpl->m_tradeSystems) {
+		auto &tradeSystem = *tradeSystemRef;
+		try {
+			tradeSystem.Connect(
+				IniSectionRef(
+					*m_pimpl->m_conf,
+					GetMarketDataSourceSectionName(tradeSystemRef)));
+		} catch (const Interactor::ConnectError &ex) {
+			boost::format message(
+				"Failed to connect to trading system: \"%1%\"");
+			message % ex;
+			throw Interactor::ConnectError(message.str().c_str());
+		} catch (const Lib::Exception &ex) {
+			GetLog().Error(
+				"Failed to make trading system connection: \"%1%\".",
+				ex);
+			throw Exception("Failed to make trading system");
+		}
 	}
 	
-	ForEachMarketDataSource( [&](MarketDataSource &source) -> bool {
+	ForEachMarketDataSource(
+		[&](MarketDataSource &source) -> bool {
 			try {
 				source.Connect(
 					IniSectionRef(
 						*m_pimpl->m_conf,
 						GetMarketDataSourceSectionName(source)));
-				source.SubscribeToSecurities();
 			} catch (const Interactor::ConnectError &ex) {
 				boost::format message(
 					"Failed to connect to market data source: \"%1%\"");
@@ -235,6 +249,24 @@ void Engine::Context::Start() {
 					"Failed to make market data connection: \"%1%\".",
 					ex);
 				throw Exception("Failed to make market data connection");
+			}
+			return true;
+		});
+
+	ForEachMarketDataSource(
+		[&](MarketDataSource &source) -> bool {
+			try {
+				source.SubscribeToSecurities();
+			} catch (const Interactor::ConnectError &ex) {
+				boost::format message(
+					"Failed to make market data subscription: \"%1%\"");
+				message % ex;
+				throw Interactor::ConnectError(message.str().c_str());
+			} catch (const Lib::Exception &ex) {
+				GetLog().Error(
+					"Failed to make market data subscription: \"%1%\".",
+					ex);
+				throw Exception("Failed to make market data subscription");
 			}
 			return true;
 		});
@@ -287,9 +319,26 @@ void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
 
 }
 
-void Engine::Context::ForEachMarketDataSource(
-				const boost::function<bool (const MarketDataSource &)> &pred)
+size_t Engine::Context::GetMarketDataSourcesCount() const {
+	return m_pimpl->m_marketDataSources.size();
+}
+
+const MarketDataSource & Engine::Context::GetMarketDataSource(
+				size_t index)
 			const {
+	return const_cast<Engine::Context *>(this)->GetMarketDataSource(index);
+}
+
+MarketDataSource & Engine::Context::GetMarketDataSource(size_t index) {
+	if (index >= m_pimpl->m_marketDataSources.size()) {
+		throw Exception("Market Data Source index is out of range");
+	}
+	return *m_pimpl->m_marketDataSources[index];
+}
+
+void Engine::Context::ForEachMarketDataSource(
+			const boost::function<bool (const MarketDataSource &)> &pred)
+		const {
 	foreach (const auto &source, m_pimpl->m_marketDataSources) {
 		if (!pred(*source)) {
 			return;
@@ -298,7 +347,7 @@ void Engine::Context::ForEachMarketDataSource(
 }
 
 void Engine::Context::ForEachMarketDataSource(
-				const boost::function<bool (MarketDataSource &)> &pred) {
+			const boost::function<bool (MarketDataSource &)> &pred) {
 	foreach (auto &source, m_pimpl->m_marketDataSources) {
 		if (!pred(*source)) {
 			return;
@@ -306,12 +355,19 @@ void Engine::Context::ForEachMarketDataSource(
 	}
 }
 
-TradeSystem & Engine::Context::GetTradeSystem() {
-	return m_pimpl->m_tradeSystem;
+size_t Engine::Context::GetTradeSystemsCount() const {
+	return m_pimpl->m_tradeSystems.size();
 }
 
-const TradeSystem & Engine::Context::GetTradeSystem() const {
-	return const_cast<Context *>(this)->GetTradeSystem();
+TradeSystem & Engine::Context::GetTradeSystem(size_t index) {
+	if (index >= m_pimpl->m_tradeSystems.size()) {
+		throw Exception("Trade System index is out of range");
+	}
+	return *m_pimpl->m_tradeSystems[index];
+}
+
+const TradeSystem & Engine::Context::GetTradeSystem(size_t index) const {
+	return const_cast<Context *>(this)->GetTradeSystem(index);
 }
 
 const Settings & Engine::Context::GetSettings() const {

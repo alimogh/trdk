@@ -42,12 +42,6 @@ namespace trdk {
 			  */
 			std::string defaultPrimaryExchange;
 
-			//! Default security Currency.
-			/** Path: Defaults::currency
-			  * Ex.: currency = USD
-			  */
-			std::string defaultCurrency;
-
 		};
 
 	public:
@@ -102,14 +96,6 @@ namespace trdk {
 		  */
 		const std::string & GetDefaultPrimaryExchange() const {
 			return m_values.defaultPrimaryExchange;
-		}
-
-		//! Default security Currency.
-		/** Path: Defaults::currency
-		  * Ex.: currency = USD
-		  */
-		const std::string & GetDefaultCurrency() const {
-			return m_values.defaultCurrency;
 		}
 
 	private:

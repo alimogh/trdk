@@ -20,7 +20,7 @@ namespace trdk { namespace Engine {
 	public:
 
 		explicit Context(
-					boost::shared_ptr<const trdk::Lib::Ini> conf,
+					const boost::shared_ptr<const trdk::Lib::Ini> &conf,
 					bool isReplayMode);
 		virtual ~Context();
 
@@ -35,14 +35,20 @@ namespace trdk { namespace Engine {
 
 		virtual const trdk::Settings & GetSettings() const;
 
+		virtual size_t GetMarketDataSourcesCount() const;
+		virtual const trdk::MarketDataSource & GetMarketDataSource(
+						size_t index)
+					const;
+		virtual trdk::MarketDataSource & GetMarketDataSource(size_t index);
 		virtual void ForEachMarketDataSource(
 						const boost::function<bool (const trdk::MarketDataSource &)> &)
 					const;
 		virtual void ForEachMarketDataSource(
 						const boost::function<bool (trdk::MarketDataSource &)> &);
 
-		virtual trdk::TradeSystem & GetTradeSystem();
-		virtual const trdk::TradeSystem & GetTradeSystem() const;
+		virtual size_t GetTradeSystemsCount() const;
+		virtual const trdk::TradeSystem & GetTradeSystem(size_t index) const;
+		virtual trdk::TradeSystem & GetTradeSystem(size_t index);
 
 	protected:
 

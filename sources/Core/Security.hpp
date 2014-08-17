@@ -109,6 +109,12 @@ namespace trdk {
 
 	public:
 
+		//! Returns Market Data Source object which provides market data for
+		//! this security object.
+		const trdk::MarketDataSource & GetSource() const;
+
+	public:
+
 		//! Check security for valid market data and state.
 		bool IsStarted() const;
 		bool IsLevel1Started() const;
@@ -121,13 +127,9 @@ namespace trdk {
 		  */
 		const boost::posix_time::ptime & GetRequestedDataStartTime() const;
 
-		//! Returns Market Data Source object which provides market data for
-		//! this security object.
-		const trdk::MarketDataSource & GetSource() const;
-
 	public:
 
-		unsigned int GetPriceScale() const throw();
+		uint8_t GetPricePrecision() const throw();
 
 		trdk::ScaledPrice ScalePrice(double price) const;
 		double DescalePrice(trdk::ScaledPrice price) const;
@@ -136,49 +138,6 @@ namespace trdk {
 	public:
 
 		boost::posix_time::ptime GetLastMarketDataTime() const;
-
-		trdk::OrderId SellAtMarketPrice(
-					trdk::Qty qty,
-					const trdk::OrderParams &,
-					trdk::Position &);
-		trdk::OrderId Sell(
-					trdk::Qty qty,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &,
-					trdk::Position &);
-		trdk::OrderId SellAtMarketPriceWithStopPrice(
-					trdk::Qty qty,
-					ScaledPrice stopPrice,
-					const trdk::OrderParams &,
-					trdk::Position &);
-		trdk::OrderId SellOrCancel(
-					trdk::Qty,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &,
-					trdk::Position &);
-
-		trdk::OrderId BuyAtMarketPrice(
-					trdk::Qty qty,
-					const trdk::OrderParams &,
-					trdk::Position &);
-		trdk::OrderId Buy(
-					trdk::Qty,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &,
-					trdk::Position &);
-		trdk::OrderId BuyAtMarketPriceWithStopPrice(
-					trdk::Qty qty,
-					ScaledPrice stopPrice,
-					const trdk::OrderParams &,
-					trdk::Position &);
-		trdk::OrderId BuyOrCancel(
-					trdk::Qty,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &,
-					trdk::Position &);
-
-		void CancelOrder(trdk::OrderId);
-		void CancelAllOrders();
 
 	public:
 
@@ -282,12 +241,12 @@ namespace trdk {
 					const trdk::Level1TickValue &);
 
 		void AddTrade(
-				const boost::posix_time::ptime &,
-				trdk::OrderSide,
-				trdk::ScaledPrice,
-				trdk::Qty,
-				bool useAsLastTrade,
-				bool useForTradedVolume);
+					const boost::posix_time::ptime &,
+					trdk::OrderSide,
+					trdk::ScaledPrice,
+					trdk::Qty,
+					bool useAsLastTrade,
+					bool useForTradedVolume);
 
 		void AddBar(const Bar &);
 

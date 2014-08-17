@@ -57,6 +57,25 @@ namespace trdk {
 		//! User context parameters. No predefined key list.
 		const trdk::Context::Params & GetParams() const;
 
+		//! Market Data Sources count.
+		/** @sa GetMarketDataSource
+		  */
+		virtual size_t GetMarketDataSourcesCount() const = 0;
+		//! Returns Market Data Source by index.
+		/** Throws an exception if index in unknown.
+		  * @sa GetMarketDataSourcesCount
+		  * @throw trdk::Lib::Exception
+		  */
+		virtual const trdk::MarketDataSource & GetMarketDataSource(
+						size_t index)
+					const
+					= 0;
+		//! Returns Market Data Source by index.
+		/** Throws an exception if index in unknown.
+		  * @sa GetMarketDataSourcesCount
+		  * @throw trdk::Lib::Exception
+		  */
+		virtual trdk::MarketDataSource & GetMarketDataSource(size_t index) = 0;
 		//! Applies the given predicate to the each market data source and
 		//! stops if predicate returns false.
 		virtual void ForEachMarketDataSource(
@@ -69,8 +88,25 @@ namespace trdk {
 						const boost::function<bool (trdk::MarketDataSource &)> &)
 					= 0;
 
-		virtual trdk::TradeSystem & GetTradeSystem() = 0;
-		virtual const trdk::TradeSystem & GetTradeSystem() const = 0;
+		//! Trade Systems count.
+		/** @sa GetTradeSystem
+		  */
+		virtual size_t GetTradeSystemsCount() const = 0;
+		//! Returns Trade System by index.
+		/** Throws an exception if index in unknown.
+		  * @sa GetTradeSystemsCount
+		  * @throw trdk::Lib::Exception
+		  */
+		virtual const trdk::TradeSystem & GetTradeSystem(
+						size_t index)
+					const
+					= 0;
+		//! Returns Trade System by index.
+		/** Throws an exception if index in unknown.
+		  * @sa GetTradeSystemsCount
+		  * @throw trdk::Lib::Exception
+		  */
+		virtual trdk::TradeSystem & GetTradeSystem(size_t index) = 0;
 
 	protected:
 

@@ -16,9 +16,12 @@
 #include "Api.h"
 
 #include "Common/DisableBoostWarningsBegin.h"
-#include	<boost/algorithm/string.hpp>
-#include	<boost/scoped_ptr.hpp>
-#include	<boost/noncopyable.hpp>
+#	include	<boost/algorithm/string.hpp>
+#	include	<boost/scoped_ptr.hpp>
+#	include	<boost/noncopyable.hpp>
+#	ifndef BOOST_WINDOWS
+#		include <boost/thread.hpp>
+#	endif
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "DisableOnixsFixEngineWarningsBegin.h"
@@ -26,5 +29,9 @@
 #include "DisableOnixsFixEngineWarningsEnd.h"
 
 #include "Common/Common.hpp"
+
+#ifdef BOOST_WINDOWS
+#	include <concrt.h>
+#endif
 
 #include "Common/Assert.hpp"

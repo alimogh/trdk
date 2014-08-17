@@ -77,7 +77,7 @@ namespace {
 				std::string &tagResult) {
 		std::list<std::string> subs;
 		boost::split(subs, sectionName, boost::is_any_of("."));
-		if (subs.empty()) {
+		if (subs.empty() || subs.size() == 1) {
 			return false;
 		} else if (!boost::iequals(*subs.begin(), Sections::marketDataSource)) {
 			return false;
@@ -86,6 +86,32 @@ namespace {
 				|| subs.size() != 2) {
 			boost::format message(
 				"Wrong Market Data Source section name format: \"%1%\", %2%");
+			message % sectionName;
+			if (subs.size() < 2 || subs.rbegin()->empty()) {
+				message % "expected tag name after dot";
+			} else {
+				message % "no extra dots allowed";
+			}
+			throw Exception(message.str().c_str());
+		}
+		subs.rbegin()->swap(tagResult);
+		return true;
+	}
+
+	bool GetTradeSystemSection(
+				const std::string &sectionName,
+				std::string &tagResult) {
+		std::list<std::string> subs;
+		boost::split(subs, sectionName, boost::is_any_of("."));
+		if (subs.empty() || subs.size() == 1) {
+			return false;
+		} else if (!boost::iequals(*subs.begin(), Sections::tradeSystem)) {
+			return false;
+		} else if (
+				(subs.size() == 2 && subs.rbegin()->empty())
+				|| subs.size() != 2) {
+			boost::format message(
+				"Wrong Trade System section name format: \"%1%\", %2%");
 			message % sectionName;
 			if (subs.size() < 2 || subs.rbegin()->empty()) {
 				message % "expected tag name after dot";
@@ -110,12 +136,12 @@ public:
 				const Lib::Ini &conf,
 				const Settings &settings,
 				Engine::Context &context,
-				DllObjectPtr<TradeSystem> &tradeSystemRef,
+				TradeSystems &tradeSystemsRef,
 				MarketDataSources &marketDataSourcesRef)
 			: m_context(context),
 			m_conf(conf),
 			m_settings(settings),
-			m_tradeSystem(tradeSystemRef),
+			m_tradeSystems(tradeSystemsRef),
 			m_marketDataSources(marketDataSourcesRef) {
 		//...//
 	}
@@ -124,12 +150,13 @@ public:
 
 	void Boot() {
 		LoadContextParams();
-		Assert(!m_tradeSystem);
-		Assert(m_marketDataSources.empty());
-		LoadTradeSystem();
+		AssertEq(0, m_tradeSystems.size());
+		AssertEq(0, m_marketDataSources.size());
+		LoadTradeSystems();
+		AssertLt(0, m_tradeSystems.size());
 		LoadMarketDataSources();
-		Assert(m_tradeSystem);
-		Assert(!m_marketDataSources.empty());
+		AssertLt(0, m_tradeSystems.size());
+		AssertLt(0, m_marketDataSources.size());
 	}
 
 private:
@@ -145,13 +172,13 @@ private:
 		m_conf.ForEachKey(Sections::contextParams, pred, false);
 	}
 
-	void LoadTradeSystem() {
+	//! Loads Market Data Source by conf. section name.
+	void LoadTradeSystem(
+				const IniSectionRef &configurationSection,
+				const std::string &tag,
+				DllObjectPtr<TradeSystem> &tradeSystemResult,
+				DllObjectPtr<MarketDataSource> &marketDataSourceResult) {
 		
-		Assert(!m_tradeSystem);
-		
-		const IniSectionRef configurationSection(
-			m_conf,
-			Sections::tradeSystem);
 		const std::string module
 			= configurationSection.ReadKey(Keys::module);
 		std::string factoryName = configurationSection.ReadKey(
@@ -171,6 +198,7 @@ private:
 			
 			try {
 				factoryResult = dll->GetFunction<Factory>(factoryName)(
+					tag,
 					configurationSection,
 					m_context.GetLog());
 			} catch (const Dll::DllFuncException &) {
@@ -181,6 +209,7 @@ private:
 						= DefaultValues::Factories::factoryNameStart
 							+ factoryName;
 					factoryResult = dll->GetFunction<Factory>(factoryName)(
+						tag,
 						configurationSection,
 						m_context.GetLog());
 				} else {
@@ -202,19 +231,60 @@ private:
 			throw Exception(
 				"Failed to load trade system module - no object returned");
 		}
-		m_tradeSystem = DllObjectPtr<TradeSystem>(
+
+		tradeSystemResult = DllObjectPtr<TradeSystem>(
 			dll,
 			boost::get<0>(factoryResult));
-
 		if (boost::get<1>(factoryResult)) {
-			m_context.GetLog().Debug(
-				"Using trade system as market data source.");
-			m_marketDataSources.push_back(
-				DllObjectPtr<MarketDataSource>(
-					dll,
-					boost::get<1>(factoryResult)));
+			marketDataSourceResult = DllObjectPtr<MarketDataSource>(
+				dll,
+				boost::get<1>(factoryResult));
 		}
 
+	}
+
+	//! Loads Trade Systems.
+	/** Reads all sections from configuration, filters Trade Systems
+	  * sections and loads service for it.
+	  */
+	void LoadTradeSystems() {
+	
+		foreach (const auto &section, m_conf.ReadSectionsList()) {
+			
+			std::string tag;
+			if (	!GetTradeSystemSection(section, tag)
+					&& !boost::iequals(section, Sections::tradeSystem)) {
+				continue;
+			}
+			
+			DllObjectPtr<TradeSystem> tradeSystem;
+			DllObjectPtr<MarketDataSource> marketDataSource;
+			LoadTradeSystem(
+				IniSectionRef(m_conf, section),
+				tag,
+				tradeSystem,
+				marketDataSource);
+
+			// It always must be a trade system service...
+			Assert(tradeSystem);
+			m_tradeSystems.push_back(tradeSystem);
+
+			// ...and can be Market Data Source at the same time:
+			if (marketDataSource) {
+				m_context.GetLog().Info(
+					"Using Trade System as Market Sata Source.");
+				m_marketDataSources.push_back(marketDataSource);
+			}
+
+		}
+	
+		
+		if (m_tradeSystems.empty()) {
+			throw Exception("No one TradeSystem found in configuration");
+		}
+
+		m_tradeSystems.shrink_to_fit();
+	
 	}
 
 	//! Loads Market Data Source by conf. section name.
@@ -313,7 +383,7 @@ private:
 	const Lib::Ini &m_conf;
 	const Settings &m_settings;
 
-	DllObjectPtr<TradeSystem> &m_tradeSystem;
+	TradeSystems &m_tradeSystems;
 	MarketDataSources &m_marketDataSources;
 
 };
@@ -967,8 +1037,7 @@ private:
 			Symbol symbol = Symbol::Parse(
 				symbolRequest,
 				m_context.GetSettings().GetDefaultExchange(),
-				m_context.GetSettings().GetDefaultPrimaryExchange(),
-				m_context.GetSettings().GetDefaultCurrency());
+				m_context.GetSettings().GetDefaultPrimaryExchange());
 			if (result.symbols.find(symbol) != result.symbols.end()) {
 				m_context.GetLog().Error(
 					"Requirements syntax error:"
@@ -1529,8 +1598,7 @@ private:
 		const IniFile symbolsIni(symbolsFilePath);
 		std::set<Symbol> symbols = symbolsIni.ReadSymbols(
 			m_context.GetSettings().GetDefaultExchange(),
-			m_context.GetSettings().GetDefaultPrimaryExchange(),
-			m_context.GetSettings().GetDefaultCurrency());
+			m_context.GetSettings().GetDefaultPrimaryExchange());
 
 		try {
 			foreach (const auto &iniSymbol, symbols) {
@@ -1685,13 +1753,13 @@ void Engine::BootContext(
 			const Lib::Ini &conf,
 			const Settings &settings,
 			Context &context,
-			DllObjectPtr<TradeSystem> &tradeSystemRef,
+			TradeSystems &tradeSystemsRef,
 			MarketDataSources &marketDataSourcesRef) {
 	ContextBootstrapper(
 			conf,
 			settings,
 			context,
-			tradeSystemRef,
+			tradeSystemsRef,
 			marketDataSourcesRef)
 		.Boot();
 }
