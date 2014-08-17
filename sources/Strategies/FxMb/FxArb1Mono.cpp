@@ -72,6 +72,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				broker.assign(nullptr);
 			}
 
+			if (GetContext().GetTradeSystemsCount() != BROKERS_COUNT) {
+				throw Exception("Strategy requires exact number of brokers");
+			}
+
 			// Loading volume and direction configuration for each symbol:
 			conf.ForEachKey(
 				[&](const std::string &key, const std::string &value) -> bool {
@@ -263,6 +267,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				possition->CancelAtMarketPrice(Position::CLOSE_TYPE_NONE);
 			}
 			oppositeEquationPositions.clear();
+
+			AssertEq(BROKERS_COUNT, GetContext().GetTradeSystemsCount());
+			const size_t tradeSystemIndex
+				= equationIndex >= m_positionsByEquation.size()  / 2
+					?	1
+					:	0;
 			
 			// Open new position for each security by equationIndex:
 
@@ -278,7 +288,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					position.reset(
 						new ShortPosition(
 							*this,
-							GetContext().GetTradeSystem(),
+							GetContext().GetTradeSystem(tradeSystemIndex),
 							security,
 							CURRENCY_EUR,
 							abs(qty),
@@ -287,7 +297,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					position.reset(
 						new LongPosition(
 							*this,
-							GetContext().GetTradeSystem(),
+							GetContext().GetTradeSystem(tradeSystemIndex),
 							security,
 							CURRENCY_EUR,
 							qty,

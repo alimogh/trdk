@@ -23,6 +23,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit CurrenexTrading(
+					const std::string &tag,
 					const Lib::IniSectionRef &,
 					Context::Log &);
 		virtual ~CurrenexTrading();

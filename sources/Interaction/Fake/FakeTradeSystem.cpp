@@ -186,8 +186,12 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-Fake::TradeSystem::TradeSystem(const IniSectionRef &, Context::Log &log)
-		: m_pimpl(new Implementation(log)) {
+Fake::TradeSystem::TradeSystem(
+			const std::string &tag,
+			const IniSectionRef &,
+			Context::Log &log)
+		: Base(tag),
+		m_pimpl(new Implementation(log)) {
 	//...//
 }
 

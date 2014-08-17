@@ -12,6 +12,8 @@
 
 namespace trdk { namespace Engine {
 
+	typedef std::vector<trdk::Lib::DllObjectPtr<TradeSystem>>
+		TradeSystems;
 	typedef std::vector<trdk::Lib::DllObjectPtr<MarketDataSource>>
 		MarketDataSources;
 

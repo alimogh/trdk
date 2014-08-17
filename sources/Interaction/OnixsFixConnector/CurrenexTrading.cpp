@@ -19,9 +19,11 @@ using namespace trdk::Interaction::OnixsFixConnector;
 namespace fix = OnixS::FIX;
 
 CurrenexTrading::CurrenexTrading(
+					const std::string &tag,
 					const IniSectionRef &conf,
 					Context::Log &log)
-		: m_log(log),
+		: TradeSystem(tag),
+		m_log(log),
 		m_session("trading", conf, m_log),
 		m_nextOrderId(0) {
 	//...//
@@ -280,11 +282,12 @@ void CurrenexTrading::OnOrderPartialFill(const fix::Message &/*report*/) {
 
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 TradeSystemFactoryResult CreateCurrenexTrading(
+			const std::string &tag,
 			const IniSectionRef &configuration,
 			Context::Log &log) {
 	TradeSystemFactoryResult result;
 	boost::get<0>(result).reset(
-		new CurrenexTrading(configuration, log));
+		new CurrenexTrading(tag, configuration, log));
 	return result;
 }
 

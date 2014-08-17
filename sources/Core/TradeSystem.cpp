@@ -58,12 +58,26 @@ TradeSystem::PositionError::PositionError(
 
 //////////////////////////////////////////////////////////////////////////
 
-TradeSystem::TradeSystem() {
+class TradeSystem::Implementation : private boost::noncopyable {
+
+public:
+
+	const std::string m_tag;
+
+	explicit Implementation(const std::string &tag)
+			: m_tag(tag) {
+		//...//
+	}
+
+};
+
+TradeSystem::TradeSystem(const std::string &tag)
+		: m_pimpl(new Implementation(tag)) {
 	//...//
 }
 
 TradeSystem::~TradeSystem() {
-	//...//
+	delete m_pimpl;
 }
 
 const char * TradeSystem::GetStringStatus(OrderStatus code) {
@@ -90,6 +104,10 @@ const char * TradeSystem::GetStringStatus(OrderStatus code) {
 			return "unknown";
 	}
 
+}
+
+const std::string & TradeSystem::GetTag() const {
+	return m_pimpl->m_tag;
 }
 
 void TradeSystem::Validate(

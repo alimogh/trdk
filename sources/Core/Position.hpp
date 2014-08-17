@@ -88,7 +88,7 @@ namespace trdk {
 		const trdk::Security & GetSecurity() const throw();
 		trdk::Security & GetSecurity() throw();
 
-		const trdk::Lib::Currency & GetCurrency() const throw();
+		const trdk::Lib::Currency & GetCurrency() const;
 
 	public:
 
