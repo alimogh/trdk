@@ -17,6 +17,8 @@
 #include "Core/PositionReporter.hpp"
 #include "Core/MarketDataSource.hpp"
 
+using namespace trdk::Lib;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace trdk { namespace Strategies { namespace Test {
@@ -70,8 +72,14 @@ namespace trdk { namespace Strategies { namespace Test {
 				return;
 			}
 			const auto &priceToBuy = lastPrice - security.ScalePrice(.01);
-			LongPosition pos(*this, security, 100, priceToBuy);
-			pos.OpenOrCancel(priceToBuy);
+			boost::shared_ptr<LongPosition> pos(
+				new LongPosition(
+					*this,
+					security,
+					CURRENCY_USD,
+					40000,
+					priceToBuy));
+			pos->OpenOrCancel(priceToBuy);
 		}
 		
 	protected:

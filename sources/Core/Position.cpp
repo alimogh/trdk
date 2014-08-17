@@ -114,6 +114,7 @@ public:
 
 	Strategy *m_strategy;
 	Security &m_security;
+	const Currency m_currency;
 
 	const Qty m_planedQty;
 
@@ -138,11 +139,13 @@ public:
 				Position &position,
 				Strategy &strategy,
 				Security &security,
+				const Currency &currency,
 				Qty qty,
 				ScaledPrice startPrice)
 			: m_position(position),
 			m_strategy(&strategy),
 			m_security(security),
+			m_currency(currency),
 			m_planedQty(qty),
 			m_openStartPrice(startPrice),
 			m_closeStartPrice(0),
@@ -604,12 +607,14 @@ public:
 Position::Position(
 			Strategy &strategy,
 			Security &security,
+			const Currency &currency,
 			Qty qty,
 			ScaledPrice startPrice) {
 	m_pimpl = new Implementation(
 		*this,
 		strategy,
 		security,
+		currency,
 		qty,
 		startPrice);
 	AssertGt(m_pimpl->m_planedQty, 0);
@@ -624,6 +629,10 @@ const Security & Position::GetSecurity() const throw() {
 }
 Security & Position::GetSecurity() throw() {
 	return m_pimpl->m_security;
+}
+
+const Currency & Position::GetCurrency() const throw() {
+	return m_pimpl->m_currency;
 }
 
 Position::CloseType Position::GetCloseType() const throw() {
@@ -945,9 +954,10 @@ void Position::RestoreOpenState(OrderId openOrderId) {
 LongPosition::LongPosition(
 			Strategy &strategy,
 			Security &security,
+			const Currency &currency,
 			Qty qty,
 			ScaledPrice startPrice)
-		: Position(strategy, security, qty, startPrice) {
+		: Position(strategy, security, currency, qty, startPrice) {
 	//...//
 }
 
@@ -993,13 +1003,13 @@ Security::OrderStatusUpdateSlot LongPosition::GetBuyOrderStatusUpdateSlot() {
 OrderId LongPosition::DoOpenAtMarketPrice(Qty qty, const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetSecurity().BuyAtMarketPrice(qty, params, *this);
+	return GetSecurity().BuyAtMarketPrice(qty, GetCurrency(), params, *this);
 }
 
 OrderId LongPosition::DoOpen(Qty qty, ScaledPrice price, const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetSecurity().Buy(qty, price, params, *this);
+	return GetSecurity().Buy(qty, GetCurrency(), price, params, *this);
 }
 
 OrderId LongPosition::DoOpenAtMarketPriceWithStopPrice(
@@ -1010,6 +1020,7 @@ OrderId LongPosition::DoOpenAtMarketPriceWithStopPrice(
 	Assert(!IsClosed());
 	return GetSecurity().BuyAtMarketPriceWithStopPrice(
 		qty,
+		GetCurrency(),
 		stopPrice,
 		params,
 		*this);
@@ -1021,19 +1032,19 @@ OrderId LongPosition::DoOpenOrCancel(
 			const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetSecurity().BuyOrCancel(qty, price, params, *this);
+	return GetSecurity().BuyOrCancel(qty, GetCurrency(), price, params, *this);
 }
 
 OrderId LongPosition::DoCloseAtMarketPrice(Qty qty, const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	return GetSecurity().SellAtMarketPrice(qty, params, *this);
+	return GetSecurity().SellAtMarketPrice(qty, GetCurrency(), params, *this);
 }
 
 OrderId LongPosition::DoClose(Qty qty, ScaledPrice price, const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	return GetSecurity().Sell(qty, price, params, *this);
+	return GetSecurity().Sell(qty, GetCurrency(), price, params, *this);
 }
 
 OrderId LongPosition::DoCloseAtMarketPriceWithStopPrice(
@@ -1044,6 +1055,7 @@ OrderId LongPosition::DoCloseAtMarketPriceWithStopPrice(
 	Assert(!IsClosed());
 	return GetSecurity().SellAtMarketPriceWithStopPrice(
 		qty,
+		GetCurrency(), 
 		stopPrice,
 		params,
 		*this);
@@ -1056,7 +1068,7 @@ OrderId LongPosition::DoCloseOrCancel(
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	Assert(qty > 0);
-	return GetSecurity().SellOrCancel(qty, price, params, *this);
+	return GetSecurity().SellOrCancel(qty, GetCurrency(), price, params, *this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1064,9 +1076,10 @@ OrderId LongPosition::DoCloseOrCancel(
 ShortPosition::ShortPosition(
 			Strategy &strategy,
 			Security &security,
+			const Currency &currency,
 			Qty qty,
 			ScaledPrice startPrice)
-		: Position(strategy, security, abs(qty), startPrice) {
+		: Position(strategy, security, currency, abs(qty), startPrice) {
 	//...//
 }
 
@@ -1112,13 +1125,13 @@ Security::OrderStatusUpdateSlot ShortPosition::GetBuyOrderStatusUpdateSlot() {
 OrderId ShortPosition::DoOpenAtMarketPrice(Qty qty, const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetSecurity().SellAtMarketPrice(qty, params, *this);
+	return GetSecurity().SellAtMarketPrice(qty, GetCurrency(), params, *this);
 }
 
 OrderId ShortPosition::DoOpen(Qty qty, ScaledPrice price, const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetSecurity().Sell(qty, price, params, *this);
+	return GetSecurity().Sell(qty, GetCurrency(), price, params, *this);
 }
 
 OrderId ShortPosition::DoOpenAtMarketPriceWithStopPrice(
@@ -1129,6 +1142,7 @@ OrderId ShortPosition::DoOpenAtMarketPriceWithStopPrice(
 	Assert(!IsClosed());
 	return GetSecurity().SellAtMarketPriceWithStopPrice(
 		qty,
+		GetCurrency(), 
 		stopPrice,
 		params,
 		*this);
@@ -1140,7 +1154,7 @@ OrderId ShortPosition::DoOpenOrCancel(
 			const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetSecurity().SellOrCancel(qty, price, params, *this);
+	return GetSecurity().SellOrCancel(qty, GetCurrency(), price, params, *this);
 }
 
 OrderId ShortPosition::DoCloseAtMarketPrice(
@@ -1148,14 +1162,14 @@ OrderId ShortPosition::DoCloseAtMarketPrice(
 			const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	return GetSecurity().BuyAtMarketPrice(qty, params, *this);
+	return GetSecurity().BuyAtMarketPrice(qty, GetCurrency(), params, *this);
 }
 
 OrderId ShortPosition::DoClose(
 			Qty qty,
 			ScaledPrice price,
 			const OrderParams &params) {
-	return GetSecurity().Buy(qty, price, params, *this);
+	return GetSecurity().Buy(qty, GetCurrency(), price, params, *this);
 }
 
 OrderId ShortPosition::DoCloseAtMarketPriceWithStopPrice(
@@ -1166,6 +1180,7 @@ OrderId ShortPosition::DoCloseAtMarketPriceWithStopPrice(
 	Assert(!IsClosed());
 	return GetSecurity().BuyAtMarketPriceWithStopPrice(
 		qty,
+		GetCurrency(), 
 		stopPrice,
 		params,
 		*this);
@@ -1177,7 +1192,7 @@ OrderId ShortPosition::DoCloseOrCancel(
 			const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	return GetSecurity().BuyOrCancel(qty, price, params, *this);
+	return GetSecurity().BuyOrCancel(qty, GetCurrency(), price, params, *this);
 }
 
 //////////////////////////////////////////////////////////////////////////

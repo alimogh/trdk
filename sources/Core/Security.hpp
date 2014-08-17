@@ -104,7 +104,6 @@ namespace trdk {
 		explicit Security(
 					trdk::Context &,
 					const trdk::Lib::Symbol &,
-					const trdk::Security::Currency &,
 					const trdk::MarketDataSource &);
 		~Security();
 
@@ -142,40 +141,48 @@ namespace trdk {
 
 		trdk::OrderId SellAtMarketPrice(
 					trdk::Qty qty,
+					const trdk::Lib::Currency &,
 					const trdk::OrderParams &,
 					trdk::Position &);
 		trdk::OrderId Sell(
 					trdk::Qty qty,
+					const trdk::Lib::Currency &,
 					trdk::ScaledPrice,
 					const trdk::OrderParams &,
 					trdk::Position &);
 		trdk::OrderId SellAtMarketPriceWithStopPrice(
 					trdk::Qty qty,
+					const trdk::Lib::Currency &,
 					ScaledPrice stopPrice,
 					const trdk::OrderParams &,
 					trdk::Position &);
 		trdk::OrderId SellOrCancel(
 					trdk::Qty,
+					const trdk::Lib::Currency &,
 					trdk::ScaledPrice,
 					const trdk::OrderParams &,
 					trdk::Position &);
 
 		trdk::OrderId BuyAtMarketPrice(
 					trdk::Qty qty,
+					const trdk::Lib::Currency &,
 					const trdk::OrderParams &,
 					trdk::Position &);
 		trdk::OrderId Buy(
 					trdk::Qty,
+					const trdk::Lib::Currency &,
 					trdk::ScaledPrice,
 					const trdk::OrderParams &,
 					trdk::Position &);
 		trdk::OrderId BuyAtMarketPriceWithStopPrice(
 					trdk::Qty qty,
+					const trdk::Lib::Currency &,
 					ScaledPrice stopPrice,
 					const trdk::OrderParams &,
 					trdk::Position &);
 		trdk::OrderId BuyOrCancel(
 					trdk::Qty,
+					const trdk::Lib::Currency &,
 					trdk::ScaledPrice,
 					const trdk::OrderParams &,
 					trdk::Position &);

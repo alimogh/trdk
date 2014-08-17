@@ -194,9 +194,8 @@ public:
 Security::Security(
 			Context &context,
 			const Symbol &symbol,
-			const Currency &currency,
 			const MarketDataSource &source)
-		: Base(context, symbol, currency),
+		: Base(context, symbol),
 		m_pimpl(new Implementation(source)) {
 	//...//
 }
@@ -230,11 +229,13 @@ pt::ptime Security::GetLastMarketDataTime() const {
 
 OrderId Security::SellAtMarketPrice(
 			Qty qty,
+			const Currency &currency,
 			const OrderParams &params,
 			Position &position) {
 	AssertLt(0, qty);
 	return GetContext().GetTradeSystem().SellAtMarketPrice(
 		*this,
+		currency,
 		qty,
 		params,
 		position.GetSellOrderStatusUpdateSlot());
@@ -242,12 +243,14 @@ OrderId Security::SellAtMarketPrice(
 
 OrderId Security::Sell(
 			Qty qty,
+			const Currency &currency,
 			ScaledPrice price,
 			const OrderParams &params,
 			Position &position) {
 	AssertLt(0, qty);
 	return GetContext().GetTradeSystem().Sell(
 		*this,
+		currency,
 		qty,
 		price,
 		params,
@@ -256,12 +259,14 @@ OrderId Security::Sell(
 
 OrderId Security::SellAtMarketPriceWithStopPrice(
 			Qty qty,
+			const Currency &currency,
 			ScaledPrice stopPrice,
 			const OrderParams &params,
 			Position &position) {
 	AssertLt(0, qty);
 	return GetContext().GetTradeSystem().SellAtMarketPriceWithStopPrice(
 		*this,
+		currency,
 		qty,
 		stopPrice,
 		params,
@@ -270,12 +275,14 @@ OrderId Security::SellAtMarketPriceWithStopPrice(
 
 OrderId Security::SellOrCancel(
 			Qty qty,
+			const Currency &currency,
 			ScaledPrice price,
 			const OrderParams &params,
 			Position &position) {
 	AssertLt(0, qty);
 	return GetContext().GetTradeSystem().SellOrCancel(
 		*this,
+		currency,
 		qty,
 		price,
 		params,
@@ -284,11 +291,13 @@ OrderId Security::SellOrCancel(
 
 OrderId Security::BuyAtMarketPrice(
 			Qty qty,
+			const Currency &currency,
 			const OrderParams &params,
 			Position &position) {
 	AssertLt(0, qty);
 	return GetContext().GetTradeSystem().BuyAtMarketPrice(
 		*this,
+		currency,
 		qty,
 		params,
 		position.GetBuyOrderStatusUpdateSlot());
@@ -296,12 +305,14 @@ OrderId Security::BuyAtMarketPrice(
 
 OrderId Security::Buy(
 			Qty qty,
+			const Currency &currency,
 			ScaledPrice price,
 			const OrderParams &params,
 			Position &position) {
 	AssertLt(0, qty);
 	return GetContext().GetTradeSystem().Buy(
 		*this,
+		currency,
 		qty,
 		price,
 		params,
@@ -310,12 +321,14 @@ OrderId Security::Buy(
 
 OrderId Security::BuyAtMarketPriceWithStopPrice(
 			Qty qty,
+			const Currency &currency,
 			ScaledPrice stopPrice,
 			const OrderParams &params,
 			Position &position) {
 	AssertLt(0, qty);
 	return GetContext().GetTradeSystem().BuyAtMarketPriceWithStopPrice(
 		*this,
+		currency,
 		qty,
 		stopPrice,
 		params,
@@ -324,12 +337,14 @@ OrderId Security::BuyAtMarketPriceWithStopPrice(
 
 OrderId Security::BuyOrCancel(
 			Qty qty,
+			const Currency &currency,
 			ScaledPrice price,
 			const OrderParams &params,
 			Position &position) {
 	AssertLt(0, qty);
 	return GetContext().GetTradeSystem().BuyOrCancel(
 		*this,
+		currency,
 		qty,
 		price,
 		params,

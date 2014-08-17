@@ -85,7 +85,7 @@ boost::shared_ptr<Security> Fake::MarketDataSource::CreateSecurity(
 			const Symbol &symbol)
 		const {
 	auto result = boost::shared_ptr<Security>(
-		new Security(context, symbol, Security::USD, *this));
+		new Security(context, symbol, *this));
 	const_cast<MarketDataSource *>(this)
 		->m_securityList.push_back(result);
 	return result;

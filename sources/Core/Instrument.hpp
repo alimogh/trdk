@@ -19,31 +19,13 @@ namespace trdk {
 
 	public:
 
-		enum Currency {
-			USD,
-			EUR,
-			numberOfCurrencies
-		};
-
-	public:
-
-		explicit Instrument(
-					trdk::Context &,
-					const trdk::Lib::Symbol &,
-					const trdk::Instrument::Currency &);
+		explicit Instrument(trdk::Context &, const trdk::Lib::Symbol &);
 		~Instrument();
 
 	public:
 
 		const trdk::Lib::Symbol & GetSymbol() const throw();
 
-		//! Instrument currency.
-		trdk::Instrument::Currency GetCurrency() const throw();
-		//! Instrument currency as  ISO 4217 code.
-		/** http://en.wikipedia.org/wiki/ISO_4217
-		  */
-		const std::string & GetCurrencyIso() const;
-	
 	public:
 
 		const trdk::Context & GetContext() const;

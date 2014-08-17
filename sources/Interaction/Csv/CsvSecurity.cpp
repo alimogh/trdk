@@ -18,9 +18,8 @@ using namespace trdk::Interaction::Csv;
 Csv::Security::Security(
 			Context &context,
 			const Lib::Symbol &symbol,
-			const Currency &currency,
 			const MarketDataSource &source)
-		: Base(context, symbol, currency, source) {
+		: Base(context, symbol, source) {
 	//...//
 }
 

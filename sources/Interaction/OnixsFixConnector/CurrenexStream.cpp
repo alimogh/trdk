@@ -133,7 +133,7 @@ boost::shared_ptr<Security> CurrenexStream::CreateSecurity(
 			const Symbol &symbol)
 		const {
 	boost::shared_ptr<CurrenexSecurity> result(
-		new CurrenexSecurity(context, symbol, Security::EUR, *this));
+		new CurrenexSecurity(context, symbol, *this));
 	const_cast<CurrenexStream *>(this)
 		->m_securities.push_back(result);
 	return result;

@@ -33,9 +33,8 @@ namespace trdk { namespace Interaction { namespace Fake {
 			explicit Security(
 						Context &context,
 						const Lib::Symbol &symbol,
-						const Currency &currency,
 						const MarketDataSource &source)
-					: Base(context, symbol, currency, source) {
+					: Base(context, symbol, source) {
 				//...//
 			}
 

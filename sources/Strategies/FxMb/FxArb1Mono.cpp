@@ -276,10 +276,20 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				boost::shared_ptr<Position> position;
 				if (qty < 0) {
 					position.reset(
-						new ShortPosition(*this, security, abs(qty), 0));
+						new ShortPosition(
+							*this,
+							security,
+							CURRENCY_EUR,
+							abs(qty),
+							0));
 				} else {
 					position.reset(
-						new LongPosition(*this, security, qty, 0));					
+						new LongPosition(
+							*this,
+							security,
+							CURRENCY_EUR,
+							qty,
+							0));					
 				}
 
 				// sends order to broker:

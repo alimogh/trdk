@@ -69,6 +69,7 @@ namespace trdk {
 		explicit Position(
 				trdk::Strategy &,
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty,
 				trdk::ScaledPrice startPrice);
 		virtual ~Position();
@@ -82,6 +83,8 @@ namespace trdk {
 
 		const trdk::Security & GetSecurity() const throw();
 		trdk::Security & GetSecurity() throw();
+
+		const trdk::Lib::Currency & GetCurrency() const throw();
 
 	public:
 
@@ -273,6 +276,7 @@ namespace trdk {
 		explicit LongPosition(
 				trdk::Strategy &,
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty,
 				trdk::ScaledPrice startPrice);
 		virtual ~LongPosition();
@@ -335,6 +339,7 @@ namespace trdk {
 		explicit ShortPosition(
 				trdk::Strategy &,
 				trdk::Security &,
+				const trdk::Lib::Currency &,
 				trdk::Qty,
 				trdk::ScaledPrice startPrice);
 		virtual ~ShortPosition();

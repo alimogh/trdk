@@ -201,6 +201,7 @@ void Fake::TradeSystem::Connect(const IniSectionRef &) {
 
 OrderId Fake::TradeSystem::SellAtMarketPrice(
 			Security &security,
+			const Currency &,
 			Qty qty,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -227,6 +228,7 @@ OrderId Fake::TradeSystem::SellAtMarketPrice(
 
 OrderId Fake::TradeSystem::Sell(
 			Security &security,
+			const Currency &,
 			Qty qty,
 			ScaledPrice price,
 			const OrderParams &params,
@@ -255,6 +257,7 @@ OrderId Fake::TradeSystem::Sell(
 
 OrderId Fake::TradeSystem::SellAtMarketPriceWithStopPrice(
 			Security &,
+			const Currency &,
 			Qty qty,
 			ScaledPrice /*stopPrice*/,
 			const OrderParams &params,
@@ -267,6 +270,7 @@ OrderId Fake::TradeSystem::SellAtMarketPriceWithStopPrice(
 
 OrderId Fake::TradeSystem::SellOrCancel(
 			Security &security,
+			const Currency &,
 			Qty qty,
 			ScaledPrice price,
 			const OrderParams &params,
@@ -294,6 +298,7 @@ OrderId Fake::TradeSystem::SellOrCancel(
 
 OrderId Fake::TradeSystem::BuyAtMarketPrice(
 			Security &security,
+			const Currency &,
 			Qty qty,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
@@ -320,6 +325,7 @@ OrderId Fake::TradeSystem::BuyAtMarketPrice(
 
 OrderId Fake::TradeSystem::Buy(
 			Security &security,
+			const Currency &,
 			Qty qty,
 			ScaledPrice price,
 			const OrderParams &params,
@@ -348,6 +354,7 @@ OrderId Fake::TradeSystem::Buy(
 
 OrderId Fake::TradeSystem::BuyAtMarketPriceWithStopPrice(
 			Security &,
+			const Currency &,
 			Qty qty,
 			ScaledPrice /*stopPrice*/,
 			const OrderParams &params,
@@ -360,6 +367,7 @@ OrderId Fake::TradeSystem::BuyAtMarketPriceWithStopPrice(
 
 OrderId Fake::TradeSystem::BuyOrCancel(
 			Security &security,
+			const Currency &,
 			Qty qty,
 			ScaledPrice price,
 			const OrderParams &params,

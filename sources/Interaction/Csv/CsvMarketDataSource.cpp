@@ -280,7 +280,7 @@ boost::shared_ptr<trdk::Security> Csv::MarketDataSource::CreateSecurity(
 			const Symbol &symbol)
 		const {
 	boost::shared_ptr<Csv::Security> result(
-		new Security(context, symbol, Security::USD, *this));
+		new Security(context, symbol, *this));
 	Subscribe(*result);
 	return result;
 }
