@@ -35,6 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/Currency.o \
 	${OBJECTDIR}/Defaults.o \
 	${OBJECTDIR}/Exception.o \
 	${OBJECTDIR}/FileSystemChangeNotificator.o \
@@ -70,6 +71,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a: ${OBJECTFILES}
 	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a
 	${AR} -rv ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a ${OBJECTFILES} 
 	$(RANLIB) ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcommon.a
+
+${OBJECTDIR}/Currency.o: Currency.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_COMMON -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Currency.o Currency.cpp
 
 ${OBJECTDIR}/Defaults.o: Defaults.cpp 
 	${MKDIR} -p ${OBJECTDIR}

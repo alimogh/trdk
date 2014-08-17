@@ -27,6 +27,7 @@
                    projectFiles="true">
       <itemPath>Assert.cpp</itemPath>
       <itemPath>Constants.h</itemPath>
+      <itemPath>Currency.cpp</itemPath>
       <itemPath>Defaults.cpp</itemPath>
       <itemPath>Exception.cpp</itemPath>
       <itemPath>FileSystemChangeNotificator.cpp</itemPath>
@@ -80,6 +81,8 @@
       <item path="Common.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Constants.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Currency.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Defaults.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -168,6 +171,8 @@
       <item path="Common.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Constants.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Currency.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Defaults.cpp" ex="false" tool="1" flavor2="0">
       </item>
