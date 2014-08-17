@@ -187,10 +187,84 @@ void CurrenexTrading::onWarning(
 }
 
 void CurrenexTrading::onInboundApplicationMsg(
-			fix::Message &/*message*/,
+			fix::Message &message,
 			fix::Session *session) {
+	
 	Assert(session == &m_session.Get());
 	UseUnused(session);
+
+	if (message.type() != "8") {
+		return;
+	}
+
+	const auto &execTransType = message.get(fix::FIX40::Tags::ExecTransType);
+
+	if (execTransType == fix::FIX40::Values::ExecTransType::New) {
+		
+		const auto &execType = message.get(fix::FIX41::Tags::ExecType);
+		const auto &ordStatus = message.get(fix::FIX40::Tags::OrdStatus);
+		
+		if (execType == fix::FIX41::Values::ExecType::New) {
+			
+			if (ordStatus == fix::FIX40::Values::OrdStatus::New) {
+				OnOrderNew(message);
+				return;
+			}
+
+		} else if (execType == fix::FIX41::Values::ExecType::Fill) {
+
+			if (ordStatus == fix::FIX40::Values::OrdStatus::Partially_filled) {
+				OnOrderFill(message);
+				return;
+			} else if (ordStatus == fix::FIX40::Values::OrdStatus::Filled) {
+				OnOrderPartialFill(message);
+				return;
+			}
+
+		} else if (execType == fix::FIX41::Values::ExecType::Suspended) {
+			
+			//...//
+		
+		} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
+			OnOrderRejected(message);
+			return;
+		}
+		
+	} else if (execTransType == fix::FIX40::Values::ExecTransType::Status) {
+		
+		//...//
+
+	}
+
+	m_log.Error(
+		"FIX Server sent unknown Execution Report: \"%1%\".",
+		boost::make_tuple(boost::cref(message)));
+
+}
+
+void CurrenexTrading::OnOrderNew(const fix::Message &/*report*/) {
+	m_log.Debug("NEW!");
+}		
+
+void CurrenexTrading::OnOrderRejected(const fix::Message &reject) {
+	const std::string &clOrdID = reject.get(fix::FIX40::Tags::ClOrdID);
+	const std::string &reason = reject.get(fix::FIX40::Tags::Text);
+	m_log.Error(
+		"FIX Server Rejected order %1%: \"%2%\"."
+			" Original reject: \"%3%\".",
+		boost::make_tuple(
+			boost::cref(clOrdID),
+			boost::cref(reason),
+			boost::cref(reject)));
+	//! @todo remove order by clOrdID from active list here
+}
+
+void CurrenexTrading::OnOrderFill(const fix::Message &/*report*/) {
+	m_log.Debug("FILLED!");
+}
+		
+void CurrenexTrading::OnOrderPartialFill(const fix::Message &/*report*/) {
+	m_log.Debug("PARTIAL FILLED!");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

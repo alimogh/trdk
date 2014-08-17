@@ -117,6 +117,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	private:
 
+		void OnOrderNew(const OnixS::FIX::Message &);
+		void OnOrderRejected(const OnixS::FIX::Message &);
+		void OnOrderFill(const OnixS::FIX::Message &);
+		void OnOrderPartialFill(const OnixS::FIX::Message &);
+
+	private:
+
 		Context::Log &m_log;
 		CurrenexFixSession m_session;
 
