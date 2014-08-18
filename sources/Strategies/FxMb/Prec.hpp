@@ -15,6 +15,8 @@
 #include "Api.h"
 
 #include "Common/DisableBoostWarningsBegin.h"
+#	include <boost/algorithm/string.hpp>
+#	include <boost/regex.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

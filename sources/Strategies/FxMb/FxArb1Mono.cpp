@@ -28,6 +28,38 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		typedef Strategy Base;
 
 	private:
+	
+		enum {
+			EQUATIONS_COUNT = 12,
+			BROKERS_COUNT = 2,
+			PAIRS_COUNT = 3
+		};
+
+		struct PositionConf {
+			Security *security;
+			Qty qty;
+			bool isLong;
+		};
+		struct SecurityPositionConf : public PositionConf {
+			Security *security;
+		};
+
+		struct BrokerConf {
+			
+			std::map<std::string /* symbol */, PositionConf> pos;
+			Currency currency;
+
+			std::map<Symbol::Hash, SecurityPositionConf> sendList;
+
+			boost::array<Security *, PAIRS_COUNT> pairs;
+
+			BrokerConf()
+					: currency(CURRENCY_EUR) {
+				pairs.assign(nullptr);
+			}
+
+
+		};
 
 		struct Broker {
 
@@ -68,29 +100,88 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				m_equations(CreateEquations()),
 				m_isPairsByBrokerChecked(false) {
 
-			foreach (auto &broker, m_pairsByBroker) {
-				broker.assign(nullptr);
-			}
-
 			if (GetContext().GetTradeSystemsCount() != BROKERS_COUNT) {
 				throw Exception("Strategy requires exact number of brokers");
+			}
+
+			if (GetContext().GetMarketDataSourcesCount() != BROKERS_COUNT) {
+				throw Exception(
+					"Strategy requires exact number of Market Data Sources");
 			}
 
 			// Loading volume and direction configuration for each symbol:
 			conf.ForEachKey(
 				[&](const std::string &key, const std::string &value) -> bool {
+					
 					// checking for "magic"-prefix in key name:
-					if (!boost::istarts_with(key, "qty.")) {
+					
+					std::deque<std::string> subs;
+					boost::split(subs, key, boost::is_any_of("."));
+					if (subs.size() < 2) {
 						return true;
 					}
-					const auto &symbol = key.substr(4);
-					const auto &qty = boost::lexical_cast<Qty>(value);
-					const char *const direction = qty < 0 ? "short" : "long";
-					m_qtyConf[symbol] = qty;
-					GetLog().Info(
-						"Using \"%1%\" with qty %2% (%3%).",
-						boost::make_tuple(symbol, abs(qty), direction));
-					return true;
+
+					boost::trim(subs.front());
+					boost::smatch broker;
+					if (	!boost::regex_match(
+								subs.front(),
+								broker,
+								boost::regex("broker_(\\d+)"))) {
+						return true;
+					}
+					const size_t brokerIndex = boost::lexical_cast<size_t>(
+						broker.str(1));
+					if (brokerIndex < 1 || brokerIndex > BROKERS_COUNT) {
+						GetLog().Error(
+							"Failed to configure strategy:"
+								" Unknown broker index %1%.",
+							brokerIndex);
+						throw Exception(
+							"Failed to configure strategy:"
+								" Unknown broker index");
+					}
+					subs.pop_front();
+					BrokerConf &conf = m_brokersConf[brokerIndex - 1];
+
+					boost::trim(subs.front());
+					
+					// Getting currency:					
+					if (	subs.size() == 1
+							&& boost::iequals(subs.front(), "currency")) {
+						conf.currency = ConvertCurrencyFromIso(value);
+						GetLog().Info(
+							"Using \"%1%\" as currency for broker %2%.",
+								boost::make_tuple(
+									ConvertToIso(conf.currency),
+									brokerIndex));
+						return true;
+					}
+
+					// Getting qty and side:
+					if (	subs.size() == 2
+							&& boost::iequals(subs.front(), "qty")) {
+						const std::string symbol
+							= boost::trim_copy(subs.back());
+						PositionConf &pos = conf.pos[symbol];
+						const auto &qty = boost::lexical_cast<Qty>(value);
+						pos.qty = abs(qty) * 1000;
+						pos.isLong = qty >= 0;
+						const char *const direction
+							= !pos.isLong ? "short" : "long";
+						GetLog().Info(
+							"Using \"%1%\" with qty %2% (%3%).",
+							boost::make_tuple(symbol, pos.qty, direction));
+						return true;
+					}
+
+					GetLog().Error(
+							"Failed to configure strategy:"
+								" Unknown broker configuration key \"%1%\".",
+							key);
+					throw Exception(
+						"Failed to configure strategy:"
+							" Unknown broker configuration key");
+	
 				},
 				true);
 
@@ -107,46 +198,55 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			
 			// New security start - caching security object for fast getting:
 			const auto &key = security.GetSymbol().GetHash();
-			if (!m_sendList.count(key)) {
+			if (!m_brokersConf.front().sendList.count(key)) {
 				// not cached yet...
-				const auto &conf
-					= m_qtyConf.find(security.GetSymbol().GetSymbol());
-				if (conf == m_qtyConf.end()) {
-					// symbol hasn't configuration:
-					GetLog().Error(
-						"Symbol %1% hasn't Qty and direction configuration.",
-						security);
-					throw Exception(
-						"Symbol hasn't Qty and direction configuration");
+				foreach (auto &broker, m_brokersConf) {
+					Assert(!broker.sendList.count(key));
+					const auto &conf
+						= broker.pos.find(security.GetSymbol().GetSymbol());
+					if (conf == broker.pos.end()) {
+						// symbol hasn't configuration:
+						GetLog().Error(
+							"Symbol %1% hasn't Qty and direction configuration.",
+							security);
+						throw Exception(
+							"Symbol hasn't Qty and direction configuration");
+					}
+					SecurityPositionConf pos;
+					static_cast<PositionConf &>(pos) = conf->second;
+					pos.security = &security;
+					// caching:
+					broker.sendList.insert(std::make_pair(key, pos));
 				}
-				// caching:
-				m_sendList.insert(
-					std::make_pair(
-						key,
-						boost::make_tuple(&security, conf->second)));
 			}
 
-			// Filling matrix "b{x}.p{y}":
-			bool isSet = false;
-			foreach (auto &broker, m_pairsByBroker) {
-				if (	broker.front()
-						&& broker.front()->GetSource()
-								!= security.GetSource()) {
-					// At this position already set another broker.
-					continue;
-				}
-				foreach (auto &pair, broker) {
-					if (!pair) {
-						pair = &security;
-						isSet = true;
-						break;
+			// Filling matrix "b{x}.p{y}" for broker with market data source
+			// index:
+
+			size_t brokerIndex = 0;
+			GetContext().ForEachMarketDataSource(
+				[&](const MarketDataSource &source) -> bool {
+					if (security.GetSource() == source) {
+						return false;
 					}
-					AssertNe(pair->GetSymbol(), security.GetSymbol());
-				}
-				if (isSet) {
+					++brokerIndex;
+					return true;
+				});
+			AssertGt(GetContext().GetMarketDataSourcesCount(), brokerIndex);
+			AssertGt(m_brokersConf.size(), brokerIndex);
+			BrokerConf &broker = m_brokersConf[brokerIndex];
+
+			bool isSet = false;
+			foreach (auto &pair, broker.pairs) {
+				if (!pair) {
+					pair = &security;
+					isSet = true;
 					break;
 				}
+				AssertNe(pair->GetSymbol(), security.GetSymbol());
+				Assert(pair->GetSource() == security.GetSource());
 			}
+
 			if (!isSet) {
 				// We have predefined equations which has fixed variables so
 				// configuration must provide required count of pairs.
@@ -183,8 +283,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			if (!m_isPairsByBrokerChecked) {
 				// At first update it needs to check configuration, one time:
-				foreach (const auto &broker, m_pairsByBroker) {
-					foreach (auto *pair, broker) {
+				foreach (const auto &broker, m_brokersConf) {
+					foreach (const auto *pair, broker.pairs) {
 						if (!pair) {
 							GetLog().Error(
 								"One or more pairs (symbols) not find."
@@ -198,10 +298,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 
 			// Getting more human readable format:
-			const Broker b1(m_pairsByBroker[0]);
-			const Broker b2(m_pairsByBroker[1]);
+			const Broker b1(m_brokersConf[0].pairs);
+			const Broker b2(m_brokersConf[1].pairs);
 			// Call with actual prices each equation:
 			for (size_t i = 0; i < m_equations.size(); ++i) {
+				if (!m_positionsByEquation[i].empty()) {
+					// This equation already has opened positions, skip it...
+					continue;
+				}
 				// Call equation:
 				if (m_equations[i](b1, b2)) {
 					// Open-close position:
@@ -228,16 +332,17 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			GetLog().TradingEx(
 				[&]() -> boost::format {
 					// log message format:
-					// equation #    b{x}.p{y}.bid    b{x}.p{y}.ask    ...
+					// equation    #    b{x}.p{y}.bid    b{x}.p{y}.ask    ...
 					boost::format message(
-						"equation %1%"
-							"\t%2% \t%2%" // b1.p1.bid, b1.p1.ask
+						"equation\t%1%"
+							"\t%2% \t%3%" // b1.p1.bid, b1.p1.ask
 							"\t%4% \t%5%" // b1.p2.bid, b1.p2.ask
 							"\t%6% \t%7%" // b1.p3.bid, b1.p3.ask
 							"\t%8% \t%9%" // b2.p1.bid, b2.p1.ask
 							"\t%10% \t%11%" // b2.p2.bid, b2.p2.ask
 							"\t%12% \t%13%"); // b2.p3.bid, b2.p3.ask
 					message
+						% equationIndex
 						% b1.p1.bid % b1.p1.ask
 						% b1.p2.bid % b1.p2.ask
 						% b1.p3.bid % b1.p3.ask
@@ -247,7 +352,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					return std::move(message);
 				});
 
-			Assert(m_positionsByEquation[equationIndex].empty());
+			auto &equationPositions = m_positionsByEquation[equationIndex];
+			Assert(equationPositions.empty());
+
 
 			// First closing all positions by opposite equation (if exists):
 			
@@ -269,38 +376,39 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			oppositeEquationPositions.clear();
 
 			AssertEq(BROKERS_COUNT, GetContext().GetTradeSystemsCount());
-			const size_t tradeSystemIndex
+			const size_t brokerIndex
 				= equationIndex >= m_positionsByEquation.size()  / 2
 					?	1
 					:	0;
+			const BrokerConf &broker = m_brokersConf[brokerIndex];
+			TradeSystem &tradeSystem = GetContext().GetTradeSystem(brokerIndex);
 			
 			// Open new position for each security by equationIndex:
 
-			foreach (const auto &i, m_sendList) {
-			
-				auto &security = *boost::get<0>(i.second);
-				const auto &qty = boost::get<1>(i.second);
+			foreach (const auto &i, broker.sendList) {
+	
+				const SecurityPositionConf &conf = i.second;
 			
 				// Position must be "shared" as it uses pattern
 				// "shared from this":
 				boost::shared_ptr<Position> position;
-				if (qty < 0) {
+				if (!conf.isLong) {
 					position.reset(
 						new ShortPosition(
 							*this,
-							GetContext().GetTradeSystem(tradeSystemIndex),
-							security,
-							CURRENCY_EUR,
-							abs(qty),
+							tradeSystem,
+							*conf.security,
+							broker.currency,
+							conf.qty,
 							0));
 				} else {
 					position.reset(
 						new LongPosition(
 							*this,
-							GetContext().GetTradeSystem(tradeSystemIndex),
-							security,
-							CURRENCY_EUR,
-							qty,
+							tradeSystem,
+							*conf.security,
+							broker.currency,
+							conf.qty,
 							0));					
 				}
 
@@ -309,7 +417,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 				// binding object with equation to close at opposite side
 				// opening:
-				m_positionsByEquation[equationIndex].push_back(position);
+				equationPositions.push_back(position);
 			
 			}
 
@@ -347,24 +455,13 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	private:
 
-		enum {
-			EQUATIONS_COUNT = 12,
-			BROKERS_COUNT = 2,
-			PAIRS_COUNT = 3
-		};
-
 		const Equations m_equations;
 
-		std::map<std::string /* symbol */, Qty /* direction and qty */>
-			m_qtyConf;
-
-		std::map<Symbol::Hash, boost::tuple<Security *, Qty>> m_sendList;
+		boost::array<BrokerConf, BROKERS_COUNT> m_brokersConf;
 
 		boost::array<std::vector<boost::shared_ptr<Position>>, EQUATIONS_COUNT>
 			m_positionsByEquation;
 
-		boost::array<boost::array<Security *, PAIRS_COUNT>, BROKERS_COUNT>
-			m_pairsByBroker;
 		bool m_isPairsByBrokerChecked;
 
 	};

@@ -35,6 +35,11 @@ namespace trdk { namespace Engine {
 
 		virtual const trdk::Settings & GetSettings() const;
 
+		virtual size_t GetMarketDataSourcesCount() const;
+		virtual const trdk::MarketDataSource & GetMarketDataSource(
+						size_t index)
+					const;
+		virtual trdk::MarketDataSource & GetMarketDataSource(size_t index);
 		virtual void ForEachMarketDataSource(
 						const boost::function<bool (const trdk::MarketDataSource &)> &)
 					const;

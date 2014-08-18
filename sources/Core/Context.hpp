@@ -57,6 +57,25 @@ namespace trdk {
 		//! User context parameters. No predefined key list.
 		const trdk::Context::Params & GetParams() const;
 
+		//! Market Data Sources count.
+		/** @sa GetMarketDataSource
+		  */
+		virtual size_t GetMarketDataSourcesCount() const = 0;
+		//! Returns Market Data Source by index.
+		/** Throws an exception if index in unknown.
+		  * @sa GetMarketDataSourcesCount
+		  * @throw trdk::Lib::Exception
+		  */
+		virtual const trdk::MarketDataSource & GetMarketDataSource(
+						size_t index)
+					const
+					= 0;
+		//! Returns Market Data Source by index.
+		/** Throws an exception if index in unknown.
+		  * @sa GetMarketDataSourcesCount
+		  * @throw trdk::Lib::Exception
+		  */
+		virtual trdk::MarketDataSource & GetMarketDataSource(size_t index) = 0;
 		//! Applies the given predicate to the each market data source and
 		//! stops if predicate returns false.
 		virtual void ForEachMarketDataSource(
