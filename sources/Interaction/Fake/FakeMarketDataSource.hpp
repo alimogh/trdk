@@ -35,7 +35,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 						const Lib::Symbol &symbol,
 						const MarketDataSource &source)
 					: Base(context, symbol, source) {
-				//...//
+				StartLevel1();
 			}
 
 			void AddTrade(
@@ -48,6 +48,23 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 			void AddBar(const Bar &bar) {
 				Base::AddBar(bar);
+			}
+
+			void SetLevel1(
+						double bidPrice,
+						const Qty &bidQty,
+						double askPrice,
+						const Qty &askQty) {
+				Base::SetLevel1(
+					boost::posix_time::microsec_clock::universal_time(),
+					Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+						ScalePrice(askPrice)),
+					Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(askQty));
+				Base::SetLevel1(
+					boost::posix_time::microsec_clock::universal_time(),
+					Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+						ScalePrice(bidPrice)),
+					Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(bidQty));
 			}
 
 		};

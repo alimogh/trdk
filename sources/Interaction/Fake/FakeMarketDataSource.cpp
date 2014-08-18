@@ -62,6 +62,7 @@ void Fake::MarketDataSource::NotificationThread() {
 				if (isBarTime) {
 					s->AddBar(bar);
 				}
+				s->SetLevel1(12, 23, 45, 67);
 			}
 
 			if (isBarTime) {
