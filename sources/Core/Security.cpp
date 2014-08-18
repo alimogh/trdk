@@ -101,6 +101,10 @@ public:
 		return 100;
 	}
 
+	uint8_t GetPricePrecision() const throw() {
+		return 2;
+	}
+
 	ScaledPrice ScalePrice(double price) const {
 		return Scale(price, GetPriceScale());
 	}
@@ -208,8 +212,8 @@ const MarketDataSource & Security::GetSource() const {
 	return m_pimpl->m_source;
 }
 
-unsigned int Security::GetPriceScale() const throw() {
-	return m_pimpl->GetPriceScale();
+uint8_t Security::GetPricePrecision() const throw() {
+	return m_pimpl->GetPricePrecision();
 }
 
 ScaledPrice Security::ScalePrice(double price) const {

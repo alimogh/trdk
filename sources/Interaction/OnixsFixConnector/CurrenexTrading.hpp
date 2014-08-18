@@ -124,10 +124,24 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				const Security &,
 				const trdk::Lib::Currency &,
 				const Qty &);
+		//! Creates market order FIX-message and sets common fields.
+		OnixS::FIX::Message CreateMarketOrderMessage(
+				const OrderId &,
+				const Security &,
+				const trdk::Lib::Currency &,
+				const Qty &);
+		//! Creates limit order FIX-message and sets common fields.
+		OnixS::FIX::Message CreateLimitOrderMessage(
+				const OrderId &,
+				const Security &,
+				const trdk::Lib::Currency &,
+				const Qty &,
+				const ScaledPrice &);
 
 	private:
 
 		void OnOrderNew(const OnixS::FIX::Message &);
+		void OnOrderCanceled(const OnixS::FIX::Message &);
 		void OnOrderRejected(const OnixS::FIX::Message &);
 		void OnOrderFill(const OnixS::FIX::Message &);
 		void OnOrderPartialFill(const OnixS::FIX::Message &);

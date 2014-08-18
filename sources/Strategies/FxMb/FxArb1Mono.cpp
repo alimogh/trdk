@@ -64,14 +64,22 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		struct Broker {
 
 			struct Pair {
+				
 				double bid;
 				double ask;
+				
 				explicit Pair(const Security &security)
 						: bid(security.GetBidPrice()),
 						ask(security.GetAskPrice()) {
 					//...//
 				}
+
+				operator bool() const {
+					return !IsZero(bid) && !IsZero(ask);
+				}
+
 			};
+
 			Pair p1;
 			Pair p2;
 			Pair p3;
@@ -82,6 +90,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					p2(*storage[1]),
 					p3(*storage[2]) {
 				//...//
+			}
+
+			operator bool() const {
+				return p1 && p2 && p3;
 			}
 
 		};
@@ -300,6 +312,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			// Getting more human readable format:
 			const Broker b1(m_brokersConf[0].pairs);
 			const Broker b2(m_brokersConf[1].pairs);
+			if (!b1 || !b2) {
+				// Not all data received yet (from streams)...
+				return;
+			}
+			
 			// Call with actual prices each equation:
 			for (size_t i = 0; i < m_equations.size(); ++i) {
 				if (!m_positionsByEquation[i].empty()) {
@@ -400,7 +417,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 							*conf.security,
 							broker.currency,
 							conf.qty,
-							0));
+							conf.security->GetBidPriceScaled()));
 				} else {
 					position.reset(
 						new LongPosition(
@@ -409,11 +426,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 							*conf.security,
 							broker.currency,
 							conf.qty,
-							0));					
+							conf.security->GetAskPriceScaled()));					
 				}
 
+
 				// sends order to broker:
-				position->OpenAtMarketPrice();
+				position->OpenOrCancel(position->GetOpenStartPrice());
 
 				// binding object with equation to close at opposite side
 				// opening:

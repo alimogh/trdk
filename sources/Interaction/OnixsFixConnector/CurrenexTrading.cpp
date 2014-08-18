@@ -69,6 +69,35 @@ fix::Message CurrenexTrading::CreateOrderMessage(
 	return std::move(result);
 }
 
+fix::Message CurrenexTrading::CreateMarketOrderMessage(
+			const OrderId &orderId,	
+			const Security &security,
+			const Currency &currency,
+			const Qty &qty) {
+	fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
+	order.set(
+		fix::FIX40::Tags::OrdType,
+		fix::FIX41::Values::OrdType::Forex_Market);
+	return std::move(order);
+}
+
+fix::Message CurrenexTrading::CreateLimitOrderMessage(
+			const OrderId &orderId,
+			const Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const ScaledPrice &price) {
+	fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
+	order.set(
+		fix::FIX40::Tags::OrdType,
+		fix::FIX41::Values::OrdType::Forex_Limit);
+	order.set(
+		fix::FIX40::Tags::Price,
+		security.DescalePrice(price),
+		security.GetPricePrecision());
+	return std::move(order);
+}
+
 OrderId CurrenexTrading::SellAtMarketPrice(
 			trdk::Security &security,
 			const trdk::Lib::Currency &currency,
@@ -76,11 +105,9 @@ OrderId CurrenexTrading::SellAtMarketPrice(
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
 	const auto &orderId = TakeOrderId();
-	fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
+	fix::Message order
+		= CreateMarketOrderMessage(orderId, security, currency, qty);
 	order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
-	order.set(
-		fix::FIX40::Tags::OrdType,
-		fix::FIX41::Values::OrdType::Forex_Market);
 	m_session.Get().send(&order);
 	return orderId;
 }
@@ -108,13 +135,21 @@ OrderId CurrenexTrading::SellAtMarketPriceWithStopPrice(
 }
 
 OrderId CurrenexTrading::SellOrCancel(
-			trdk::Security &,
-			const trdk::Lib::Currency &,
-			trdk::Qty,
-			trdk::ScaledPrice,
+			trdk::Security &security,
+			const trdk::Lib::Currency &currency,
+			trdk::Qty qty,
+			trdk::ScaledPrice price,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
-	throw Error("CurrenexTrading::SellOrCancel not implemented");
+	const auto &orderId = TakeOrderId();
+	fix::Message order
+		= CreateLimitOrderMessage(orderId, security, currency, qty, price);
+	order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Sell);
+	order.set(
+		fix::FIX40::Tags::TimeInForce,
+		fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
+	m_session.Get().send(&order);
+	return orderId;
 }
 
 OrderId CurrenexTrading::BuyAtMarketPrice(
@@ -124,11 +159,9 @@ OrderId CurrenexTrading::BuyAtMarketPrice(
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
 	const auto &orderId = TakeOrderId();
-	fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
+	fix::Message order
+		= CreateMarketOrderMessage(orderId, security, currency, qty);
 	order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
-	order.set(
-		fix::FIX40::Tags::OrdType,
-		fix::FIX41::Values::OrdType::Forex_Market);
 	m_session.Get().send(&order);
 	return orderId;
 }
@@ -156,13 +189,21 @@ OrderId CurrenexTrading::BuyAtMarketPriceWithStopPrice(
 }
 
 OrderId CurrenexTrading::BuyOrCancel(
-			trdk::Security &,
-			const trdk::Lib::Currency &,
-			trdk::Qty,
-			trdk::ScaledPrice,
+			trdk::Security &security,
+			const trdk::Lib::Currency &currency,
+			trdk::Qty qty,
+			trdk::ScaledPrice price,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &) {
-	throw Error("CurrenexTrading::BuyOrCancel not implemented");
+	const auto &orderId = TakeOrderId();
+	fix::Message order
+		= CreateLimitOrderMessage(orderId, security, currency, qty, price);
+	order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
+	order.set(
+		fix::FIX40::Tags::TimeInForce,
+		fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
+	m_session.Get().send(&order);
+	return orderId;
 }
 
 void CurrenexTrading::CancelOrder(OrderId) {
@@ -222,6 +263,13 @@ void CurrenexTrading::onInboundApplicationMsg(
 				return;
 			}
 
+		} else if (execType == fix::FIX41::Values::ExecType::Cancelled) {
+
+			if (ordStatus == fix::FIX40::Values::OrdStatus::Canceled) {
+				OnOrderCanceled(message);
+				return;
+			}
+
 		} else if (execType == fix::FIX41::Values::ExecType::Fill) {
 
 			if (ordStatus == fix::FIX40::Values::OrdStatus::Partially_filled) {
@@ -253,29 +301,36 @@ void CurrenexTrading::onInboundApplicationMsg(
 
 }
 
-void CurrenexTrading::OnOrderNew(const fix::Message &/*report*/) {
-	m_log.Debug("NEW!");
-}		
+void CurrenexTrading::OnOrderNew(const fix::Message &report) {
+	const std::string &clOrdID = report.get(fix::FIX40::Tags::ClOrdID);
+	m_log.Debug("%2% - NEW! %1%", boost::make_tuple(clOrdID, GetTag()));
+}
+
+void CurrenexTrading::OnOrderCanceled(const fix::Message &report) {
+	const std::string &clOrdID = report.get(fix::FIX40::Tags::ClOrdID);
+	m_log.Debug("%2% - CANCELED! %1%", boost::make_tuple(clOrdID, GetTag()));
+}	
 
 void CurrenexTrading::OnOrderRejected(const fix::Message &reject) {
 	const std::string &clOrdID = reject.get(fix::FIX40::Tags::ClOrdID);
 	const std::string &reason = reject.get(fix::FIX40::Tags::Text);
 	m_log.Error(
-		"FIX Server Rejected order %1%: \"%2%\"."
-			" Original reject: \"%3%\".",
+		"FIX Server (%1%) Rejected order %2%: \"%3%\".",
 		boost::make_tuple(
+			GetTag(),
 			boost::cref(clOrdID),
-			boost::cref(reason),
-			boost::cref(reject)));
+			boost::cref(reason)));
 	//! @todo remove order by clOrdID from active list here
 }
 
-void CurrenexTrading::OnOrderFill(const fix::Message &/*report*/) {
-	m_log.Debug("FILLED!");
+void CurrenexTrading::OnOrderFill(const fix::Message &report) {
+	const std::string &clOrdID = report.get(fix::FIX40::Tags::ClOrdID);
+	m_log.Debug("%2% - FILLED! %1%", boost::make_tuple(clOrdID, GetTag()));
 }
 		
-void CurrenexTrading::OnOrderPartialFill(const fix::Message &/*report*/) {
-	m_log.Debug("PARTIAL FILLED!");
+void CurrenexTrading::OnOrderPartialFill(const fix::Message &report) {
+	const std::string &clOrdID = report.get(fix::FIX40::Tags::ClOrdID);
+	m_log.Debug("%2% - PARTIAL FILLED! %1%", boost::make_tuple(clOrdID, GetTag()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
