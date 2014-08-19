@@ -58,8 +58,7 @@ namespace trdk {
 					OrderStatus,
 					trdk::Qty filled,
 					trdk::Qty remaining,
-					double avgPrice,
-					double lastPrice)>
+					double avgPrice)>
 			OrderStatusUpdateSlot;
 
 		struct Account {

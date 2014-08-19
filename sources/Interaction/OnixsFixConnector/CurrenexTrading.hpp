@@ -20,6 +20,28 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			: public trdk::TradeSystem,
 			public OnixS::FIX::ISessionListener {
 
+	private:
+
+		struct Order {
+			//! Order must be removed from storage.
+			/** Synchronization doesn't require - it provides FIX engine.
+			  */
+			bool isRemoved;
+			OrderId id;
+			OrderStatusUpdateSlot callback;
+		};
+
+		
+#	ifdef BOOST_WINDOWS
+		typedef Concurrency::reader_writer_lock OrdersMutex;
+		typedef OrdersMutex::scoped_lock_read OrdersReadLock;
+		typedef OrdersMutex::scoped_lock OrdersWriteLock;
+#	else
+		typedef boost::shared_mutex OrdersMutex;
+		typedef boost::shared_lock<OrdersMutex> OrdersReadLock;
+		typedef boost::unique_lock<OrdersMutex> OrdersWriteLock;
+#	endif
+
 	public:
 
 		explicit CurrenexTrading(
@@ -114,9 +136,17 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	private:
 
 		//! Takes next free order ID.
-		OrderId TakeOrderId() {
-			return m_nextOrderId++;
-		}
+		OrderId TakeOrderId(const OrderStatusUpdateSlot &);
+		//! Deletes unsent order (at error).
+		void DeleteErrorOrder(const OrderId &) throw();
+
+		Order * FindOrder(const OrderId &);
+		OrderStatusUpdateSlot FindOrderCallback(
+					const OrderId &,
+					const char *operation,
+					bool isOrderCompleted);
+
+		void FlushRemovedOrders();
 
 		//! Creates order FIX-message and sets common fields.
 		OnixS::FIX::Message CreateOrderMessage(
@@ -138,6 +168,14 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				const Qty &,
 				const ScaledPrice &);
 
+		OrderId GetMessageOrderId(const OnixS::FIX::Message &) const;
+
+		void NotifyOrderUpdate(
+				const OnixS::FIX::Message &,
+				const OrderStatus &,
+				const char *operation,
+				bool isOrderCompleted);
+
 	private:
 
 		void OnOrderNew(const OnixS::FIX::Message &);
@@ -151,7 +189,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		Context::Log &m_log;
 		CurrenexFixSession m_session;
 
-		boost::atomic<OrderId> m_nextOrderId;
+		OrderId m_nextOrderId;
+		//! @todo reimplemented with circular buffer.
+		//! @todo compare insert/search speed with tree
+		std::deque<Order> m_orders;
+		size_t m_ordersCountReportsCounter;
+		OrdersMutex m_ordersMutex;
 
 	};
 

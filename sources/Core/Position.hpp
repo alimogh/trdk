@@ -248,15 +248,13 @@ namespace trdk {
 					trdk::TradeSystem::OrderStatus,
 					trdk::Qty filled,
 					trdk::Qty remaining,
-					double avgPrice,
-					double lastPrice);
+					double avgPrice);
 		void UpdateClosing(
 					trdk::OrderId,
 					trdk::TradeSystem::OrderStatus,
 					trdk::Qty filled,
 					trdk::Qty remaining,
-					double avgPrice,
-					double lastPrice);
+					double avgPrice);
 
 	private:
 

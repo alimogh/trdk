@@ -13,6 +13,7 @@
 #include "Core/Position.hpp"
 #include "Core/PositionReporter.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/StrategyPositionReporter.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -283,7 +284,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter()
 				const {
-			return std::auto_ptr<PositionReporter>();
+			return std::auto_ptr<PositionReporter>(
+				new StrategyPositionReporter<FxArb1Mono>);
 		}
 
 	public:

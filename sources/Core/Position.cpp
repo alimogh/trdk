@@ -168,8 +168,7 @@ public:
 				TradeSystem::OrderStatus orderStatus,
 				Qty filled,
 				Qty remaining,
-				double avgPrice,
-				double /*lastPrice*/) {
+				double avgPrice) {
 
 		UseUnused(orderId);
 
@@ -199,6 +198,9 @@ public:
 				AssertEq(m_opened.qty, 0);
 				AssertEq(m_opened.price.total, 0);
 				AssertEq(m_opened.price.count, 0);
+				AssertEq(m_planedQty, remaining);
+				AssertEq(0, filled);
+				AssertEq(0, avgPrice);
 				return;
 			case TradeSystem::ORDER_STATUS_FILLED:
 				Assert(filled + remaining == m_planedQty);
@@ -253,8 +255,7 @@ public:
 				TradeSystem::OrderStatus orderStatus,
 				Qty filled,
 				Qty remaining,
-				double avgPrice,
-				double /*lastPrice*/) {
+				double avgPrice) {
 
 		UseUnused(orderId);
 
@@ -722,15 +723,13 @@ void Position::UpdateOpening(
 			TradeSystem::OrderStatus orderStatus,
 			Qty filled,
 			Qty remaining,
-			double avgPrice,
-			double lastPrice) {
+			double avgPrice) {
 	m_pimpl->UpdateOpening(
 		orderId,
 		orderStatus,
 		filled,
 		remaining,
-		avgPrice,
-		lastPrice);
+		avgPrice);
 }
 
 void Position::UpdateClosing(
@@ -738,15 +737,13 @@ void Position::UpdateClosing(
 			TradeSystem::OrderStatus orderStatus,
 			Qty filled,
 			Qty remaining,
-			double avgPrice,
-			double lastPrice) {
+			double avgPrice) {
 	m_pimpl->UpdateClosing(
 		orderId,
 		orderStatus,
 		filled,
 		remaining,
-		avgPrice,
-		lastPrice);
+		avgPrice);
 }
 
 Position::Time Position::GetOpenTime() const {
@@ -1012,8 +1009,7 @@ OrderId LongPosition::DoOpenAtMarketPrice(Qty qty, const OrderParams &params) {
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId LongPosition::DoOpen(Qty qty, ScaledPrice price, const OrderParams &params) {
@@ -1032,8 +1028,7 @@ OrderId LongPosition::DoOpen(Qty qty, ScaledPrice price, const OrderParams &para
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId LongPosition::DoOpenAtMarketPriceWithStopPrice(
@@ -1055,8 +1050,7 @@ OrderId LongPosition::DoOpenAtMarketPriceWithStopPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId LongPosition::DoOpenOrCancel(
@@ -1078,8 +1072,7 @@ OrderId LongPosition::DoOpenOrCancel(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId LongPosition::DoCloseAtMarketPrice(Qty qty, const OrderParams &params) {
@@ -1097,8 +1090,7 @@ OrderId LongPosition::DoCloseAtMarketPrice(Qty qty, const OrderParams &params) {
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId LongPosition::DoClose(Qty qty, ScaledPrice price, const OrderParams &params) {
@@ -1117,8 +1109,7 @@ OrderId LongPosition::DoClose(Qty qty, ScaledPrice price, const OrderParams &par
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId LongPosition::DoCloseAtMarketPriceWithStopPrice(
@@ -1140,8 +1131,7 @@ OrderId LongPosition::DoCloseAtMarketPriceWithStopPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId LongPosition::DoCloseOrCancel(
@@ -1164,8 +1154,7 @@ OrderId LongPosition::DoCloseOrCancel(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1217,8 +1206,7 @@ OrderId ShortPosition::DoOpenAtMarketPrice(Qty qty, const OrderParams &params) {
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId ShortPosition::DoOpen(Qty qty, ScaledPrice price, const OrderParams &params) {
@@ -1237,8 +1225,7 @@ OrderId ShortPosition::DoOpen(Qty qty, ScaledPrice price, const OrderParams &par
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId ShortPosition::DoOpenAtMarketPriceWithStopPrice(
@@ -1260,8 +1247,7 @@ OrderId ShortPosition::DoOpenAtMarketPriceWithStopPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId ShortPosition::DoOpenOrCancel(
@@ -1283,8 +1269,7 @@ OrderId ShortPosition::DoOpenOrCancel(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId ShortPosition::DoCloseAtMarketPrice(
@@ -1304,8 +1289,7 @@ OrderId ShortPosition::DoCloseAtMarketPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId ShortPosition::DoClose(
@@ -1325,8 +1309,7 @@ OrderId ShortPosition::DoClose(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId ShortPosition::DoCloseAtMarketPriceWithStopPrice(
@@ -1348,8 +1331,7 @@ OrderId ShortPosition::DoCloseAtMarketPriceWithStopPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 OrderId ShortPosition::DoCloseOrCancel(
@@ -1371,8 +1353,7 @@ OrderId ShortPosition::DoCloseOrCancel(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6));
+			_5));
 }
 
 //////////////////////////////////////////////////////////////////////////

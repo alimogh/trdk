@@ -154,7 +154,6 @@ private:
 						TradeSystem::ORDER_STATUS_FILLED,
 						order.qty,
 						0,
-						price,
 						price);
 				}
 				orders->clear();
