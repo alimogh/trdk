@@ -48,14 +48,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		struct BrokerConf {
 			
 			std::map<std::string /* symbol */, PositionConf> pos;
-			Currency currency;
 
 			std::map<Symbol::Hash, SecurityPositionConf> sendList;
 
 			boost::array<Security *, PAIRS_COUNT> pairs;
 
-			BrokerConf()
-					: currency(CURRENCY_EUR) {
+			BrokerConf() {
 				pairs.assign(nullptr);
 			}
 
@@ -158,18 +156,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 					boost::trim(subs.front());
 					
-					// Getting currency:					
-					if (	subs.size() == 1
-							&& boost::iequals(subs.front(), "currency")) {
-						conf.currency = ConvertCurrencyFromIso(value);
-						GetLog().Info(
-							"Using \"%1%\" as currency for broker %2%.",
-								boost::make_tuple(
-									ConvertToIso(conf.currency),
-									brokerIndex));
-						return true;
-					}
-
 					// Getting qty and side:
 					if (	subs.size() == 2
 							&& boost::iequals(subs.front(), "qty")) {
@@ -417,7 +403,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 							*this,
 							tradeSystem,
 							*conf.security,
-							broker.currency,
+							conf.security->GetSymbol().GetCashCurrency(),
 							conf.qty,
 							conf.security->GetBidPriceScaled()));
 				} else {
@@ -426,7 +412,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 							*this,
 							tradeSystem,
 							*conf.security,
-							broker.currency,
+							conf.security->GetSymbol().GetCashCurrency(),
 							conf.qty,
 							conf.security->GetAskPriceScaled()));					
 				}

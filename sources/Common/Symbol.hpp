@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Currency.hpp"
 #include "Exception.hpp"
 #include <iosfwd>
 
@@ -114,6 +115,8 @@ namespace trdk { namespace Lib {
 		std::string GetRightAsString() const;
 		static Right ParseRight(const std::string &);
 
+		trdk::Lib::Currency GetCashCurrency() const;
+
 		std::string GetAsString() const;
 
 	private:
@@ -128,6 +131,8 @@ namespace trdk { namespace Lib {
 			std::string expirationDate;
 			double strike;
 			Right right;
+
+			trdk::Lib::Currency cacheCurrency;
 
 			Data();
 			
