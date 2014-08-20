@@ -9,9 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "EquationPosition.hpp"
 #include "Core/Strategy.hpp"
-#include "Core/Position.hpp"
-#include "Core/PositionReporter.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/StrategyPositionReporter.hpp"
 
@@ -100,6 +99,18 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		typedef boost::function<bool (const Broker &b1, const Broker &b2)>
 			Equation;
 		typedef std::vector<Equation> Equations;
+
+		struct EquationOpenedPositions {
+			
+			size_t activeCount;
+			std::vector<boost::shared_ptr<EquationPosition>> positions;
+
+			EquationOpenedPositions()
+					: activeCount(0) {
+				//...//
+			}
+
+		};
 
 	public:
 
@@ -307,17 +318,70 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			
 			// Call with actual prices each equation:
 			for (size_t i = 0; i < m_equations.size(); ++i) {
-				if (!m_positionsByEquation[i].empty()) {
+				if (m_positionsByEquation[i].activeCount) {
 					// This equation already has opened positions, skip it...
 					continue;
 				}
-				// Call equation:
+				// Ask equation:
 				if (m_equations[i](b1, b2)) {
-					// Open-close position:
+					// Open positions:
 					OnEquation(i, b1, b2);
 				}
 			}
 		
+		}
+
+		virtual void OnPositionUpdate(trdk::Position &positionRef) {
+
+			// Method calls each time when one of strategy positions updates.
+			
+			EquationPosition &position
+				= dynamic_cast<EquationPosition &>(positionRef);
+
+			if (position.IsCompleted() || position.IsCanceled()) {
+
+				auto &equationPositions
+					= m_positionsByEquation[position.GetEquationIndex()];
+
+				// Position closed, need to find out why:
+				if (position.GetOpenedQty() == 0) {
+					// IOC was canceled without filling, cancel all another
+					// orders at equation and close positions if another orders
+					// are filled:
+					Assert(!IsEquationOpenedFully(position.GetEquationIndex()));
+					CancelAllInEquationAtMarketPrice(
+						position.GetEquationIndex(),
+						Position::CLOSE_TYPE_OPEN_FAILED);
+				}
+				AssertEq(0, equationPositions.positions.size());
+
+				// We completed work with this position, forget it...
+				Verify(equationPositions.activeCount--);
+				return;
+
+			}
+
+			Assert(position.IsStarted());
+			AssertEq(
+				PAIRS_COUNT,
+				m_positionsByEquation[position.GetEquationIndex()].activeCount);
+			AssertEq(
+				PAIRS_COUNT,
+				m_positionsByEquation[position.GetEquationIndex()].positions.size());
+			Assert(position.IsOpened());
+			AssertEq(position.GetPlanedQty(), position.GetOpenedQty());
+
+			if (!IsEquationOpenedFully(position.GetEquationIndex())) {
+				// Not all orders are filled yet, we need wait more...
+				return;
+			}
+
+			// All equation orders are filled. Now we need to close all
+			// positions for opposite equation.
+			CancelAllInEquationAtMarketPrice(
+				position.GetOppositeEquationIndex(),
+				Position::CLOSE_TYPE_TAKE_PROFIT);
+
 		}
 		
 	protected:
@@ -358,27 +422,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				});
 
 			auto &equationPositions = m_positionsByEquation[equationIndex];
-			Assert(equationPositions.empty());
+			AssertEq(0, equationPositions.positions.size());
+			AssertEq(0, equationPositions.activeCount);
 
-
-			// First closing all positions by opposite equation (if exists):
-			
 			// Calculates opposite equation index:
 			const auto oppositeEquationIndex
 				= equationIndex >= m_positionsByEquation.size()  / 2
 					?	equationIndex - (m_positionsByEquation.size()  / 2)
 					:	equationIndex + (m_positionsByEquation.size()  / 2);
-			// Gets opposite equation positions:
-			auto &oppositeEquationPositions
-				= m_positionsByEquation[oppositeEquationIndex];
-			// Sends command to close for all open positions:
-			foreach (auto &possition, oppositeEquationPositions) {
-				// Sends market-order to close position, takes actual active
-				// position size from object. CLOSE_TYPE_NONE - just for
-				// reporting in log:
-				possition->CancelAtMarketPrice(Position::CLOSE_TYPE_NONE);
-			}
-			oppositeEquationPositions.clear();
 
 			AssertEq(BROKERS_COUNT, GetContext().GetTradeSystemsCount());
 			const size_t brokerIndex
@@ -389,42 +440,52 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			TradeSystem &tradeSystem = GetContext().GetTradeSystem(brokerIndex);
 			
 			// Open new position for each security by equationIndex:
+			try {
 
-			foreach (const auto &i, broker.sendList) {
-	
-				const SecurityPositionConf &conf = i.second;
+				foreach (const auto &i, broker.sendList) {
 			
-				// Position must be "shared" as it uses pattern
-				// "shared from this":
-				boost::shared_ptr<Position> position;
-				if (!conf.isLong) {
-					position.reset(
-						new ShortPosition(
-							*this,
-							tradeSystem,
-							*conf.security,
-							conf.security->GetSymbol().GetCashCurrency(),
-							conf.qty,
-							conf.security->GetBidPriceScaled()));
-				} else {
-					position.reset(
-						new LongPosition(
-							*this,
-							tradeSystem,
-							*conf.security,
-							conf.security->GetSymbol().GetCashCurrency(),
-							conf.qty,
-							conf.security->GetAskPriceScaled()));					
+					const SecurityPositionConf &conf = i.second;
+					// Position must be "shared" as it uses pattern
+					// "shared from this":
+					boost::shared_ptr<EquationPosition> position;
+					if (!conf.isLong) {
+						position.reset(
+							new EquationShortPosition(
+								equationIndex,
+								oppositeEquationIndex,
+								*this,
+								tradeSystem,
+								*conf.security,
+								conf.security->GetSymbol().GetCashCurrency(),
+								conf.qty,
+								conf.security->GetBidPriceScaled()));
+					} else {
+						position.reset(
+							new EquationLongPosition(
+								equationIndex,
+								oppositeEquationIndex,
+								*this,
+								tradeSystem,
+								*conf.security,
+								conf.security->GetSymbol().GetCashCurrency(),
+								conf.qty,
+								conf.security->GetAskPriceScaled()));					
+					}
+
+					// Sends orders to broker:
+					position->OpenAtMarketPriceImmediatelyOrCancel();
+				
+					// Binding all positions into one equation:
+					equationPositions.positions.push_back(position);
+					Verify(++equationPositions.activeCount <= PAIRS_COUNT);
+			
 				}
 
-
-				// sends order to broker:
-				position->OpenImmediatelyOrCancel(position->GetOpenStartPrice());
-
-				// binding object with equation to close at opposite side
-				// opening:
-				equationPositions.push_back(position);
-			
+			} catch (...) {
+				CancelAllInEquationAtMarketPrice(
+					equationIndex,
+					Position::CLOSE_TYPE_SYSTEM_ERROR);
+				throw;
 			}
 
 		}
@@ -461,11 +522,41 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	private:
 
+		//! Returns true if all orders for equation are filled.
+		bool IsEquationOpenedFully(size_t equationIndex) const {
+			const auto &positions = m_positionsByEquation[equationIndex];
+			foreach (const auto &position, positions.positions) {
+				if (!position->IsOpened()) {
+					return false;
+				}
+			}
+			return !positions.positions.empty();
+		}
+
+		//! Cancels all opened for equation orders and close positions for it.
+		void CancelAllInEquationAtMarketPrice(
+					size_t equationIndex,
+					const Position::CloseType &closeType)
+				throw() {
+			try {
+				auto &positions = m_positionsByEquation[equationIndex];
+				foreach (auto &position, positions.positions) {
+					position->CancelAtMarketPrice(closeType);
+				}
+				positions.positions.clear();
+			} catch (...) {
+				AssertFailNoException();
+				Block();
+			}
+		}
+	
+	private:
+
 		const Equations m_equations;
 
 		boost::array<BrokerConf, BROKERS_COUNT> m_brokersConf;
 
-		boost::array<std::vector<boost::shared_ptr<Position>>, EQUATIONS_COUNT>
+		boost::array<EquationOpenedPositions, EQUATIONS_COUNT>
 			m_positionsByEquation;
 
 		bool m_isPairsByBrokerChecked;

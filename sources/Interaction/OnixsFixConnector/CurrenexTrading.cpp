@@ -374,7 +374,7 @@ OrderId CurrenexTrading::BuyAtMarketPriceImmediatelyOrCancel(
 }
 
 void CurrenexTrading::CancelOrder(OrderId) {
-	throw Error("CurrenexTrading::CancelOrder not implemented");
+	//...//
 }
 
 void CurrenexTrading::CancelAllOrders(trdk::Security &) {

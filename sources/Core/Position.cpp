@@ -549,7 +549,9 @@ public:
 				CloseType closeType,
 				const CancelMethodImpl &cancelMethodImpl) {
 		const WriteLock lock(m_mutex);
-		if (m_position.IsCanceled() || m_position.GetActiveQty() == 0) {
+		if (m_position.IsCanceled()) {
+			Assert(!m_position.HasActiveOpenOrders());
+			Assert(!m_position.HasActiveCloseOrders());
 			return false;
 		}
 		m_security.GetContext().GetLog().Trading(
@@ -573,17 +575,20 @@ public:
 						&& !m_position.HasActiveOpenOrders())) {
 			return false;
 		}
-		boost::function<void ()> cancelMethod = boost::bind(
-			&Implementation::CloseUnsafe<CancelMethodImpl>,
-			this,
-			closeType,
-			cancelMethodImpl);
+		boost::function<void ()> delayedCancelMethod
+			= [this, closeType, cancelMethodImpl]() {
+				if (!m_position.IsOpened() || m_position.IsClosed()) {
+					SignalUpdate();
+					return;
+				}
+				CloseUnsafe<CancelMethodImpl>(closeType, cancelMethodImpl);
+			};
 		if (CancelAllOrders()) {
 			Assert(m_position.HasActiveOrders());
-			cancelMethod.swap(m_cancelMethod);
+			delayedCancelMethod.swap(m_cancelMethod);
 		} else {
 			Assert(!m_position.HasActiveOrders());
-			cancelMethod();
+			CloseUnsafe<CancelMethodImpl>(closeType, cancelMethodImpl);
 		}
 		AssertEq(int(CANCELED_0), int(m_isCanceled));
 		m_isCanceled = CANCELED_1;
@@ -696,13 +701,16 @@ namespace { namespace CloseTypeStr {
 	const std::string timeout = "timeout";
 	const std::string schedule = "schedule";
 	const std::string engineStop = "engine stop";
+	const std::string openFailed = "open failed";
+	const std::string systemError = "sys error";
 } }
 
 const std::string & Position::GetCloseTypeStr() const {
 	using namespace CloseTypeStr;
+	static_assert(numberOfCloseTypes == 8, "Close type list changed.");
 	switch (GetCloseType()) {
 		default:
-			AssertFail("Unknown position close type.");
+			AssertEq(CLOSE_TYPE_NONE, GetCloseType());
 		case CLOSE_TYPE_NONE:
 			return none;
 		case CLOSE_TYPE_TAKE_PROFIT:
@@ -715,6 +723,10 @@ const std::string & Position::GetCloseTypeStr() const {
 			return schedule;
 		case CLOSE_TYPE_ENGINE_STOP:
 			return engineStop;
+		case CLOSE_TYPE_OPEN_FAILED:
+			return openFailed;
+		case CLOSE_TYPE_SYSTEM_ERROR:
+			return systemError;
 	}
 }
 

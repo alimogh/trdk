@@ -42,7 +42,10 @@ namespace trdk {
 			CLOSE_TYPE_STOP_LOSS,
 			CLOSE_TYPE_TIMEOUT,
 			CLOSE_TYPE_SCHEDULE,
-			CLOSE_TYPE_ENGINE_STOP
+			CLOSE_TYPE_ENGINE_STOP,
+			CLOSE_TYPE_OPEN_FAILED,
+			CLOSE_TYPE_SYSTEM_ERROR,
+			numberOfCloseTypes
 		};
 
 		class TRDK_CORE_API LogicError : public trdk::Lib::LogicError {
@@ -283,7 +286,7 @@ namespace trdk {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class TRDK_CORE_API LongPosition : public Position {
+	class TRDK_CORE_API LongPosition : virtual public Position {
 
 	public:
 
@@ -345,7 +348,7 @@ namespace trdk {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class TRDK_CORE_API ShortPosition : public Position {
+	class TRDK_CORE_API ShortPosition : virtual public Position {
 
 	public:
 
