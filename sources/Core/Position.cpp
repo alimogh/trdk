@@ -862,14 +862,26 @@ OrderId Position::OpenAtMarketPriceWithStopPrice(
 		});
 }
 
-OrderId Position::OpenOrCancel(ScaledPrice price) {
-	return OpenOrCancel(price, defaultOrderParams);
+OrderId Position::OpenImmediatelyOrCancel(const ScaledPrice &price) {
+	return OpenImmediatelyOrCancel(price, defaultOrderParams);
 }
 
-OrderId Position::OpenOrCancel(ScaledPrice price, const OrderParams &params) {
+OrderId Position::OpenImmediatelyOrCancel(ScaledPrice price, const OrderParams &params) {
 	return m_pimpl->Open(
 		[&](Qty qty) -> OrderId {
-			return DoOpenOrCancel(qty, price, params);
+			return DoOpenImmediatelyOrCancel(qty, price, params);
+		});
+}
+
+OrderId Position::OpenAtMarketPriceImmediatelyOrCancel() {
+	return OpenAtMarketPriceImmediatelyOrCancel(defaultOrderParams);
+}
+
+OrderId Position::OpenAtMarketPriceImmediatelyOrCancel(
+			const OrderParams &params) {
+	return m_pimpl->Open(
+		[&](const Qty &qty) {
+			return DoOpenAtMarketPriceImmediatelyOrCancel(qty, params);
 		});
 }
 
@@ -922,18 +934,35 @@ OrderId Position::CloseAtMarketPriceWithStopPrice(
 		});
 }
 
-OrderId Position::CloseOrCancel(CloseType closeType, ScaledPrice price) {
-	return CloseOrCancel(closeType, price, defaultOrderParams);
+OrderId Position::CloseImmediatelyOrCancel(
+			const CloseType &closeType,
+			const ScaledPrice &price) {
+	return CloseImmediatelyOrCancel(closeType, price, defaultOrderParams);
 }
 
-OrderId Position::CloseOrCancel(
-			CloseType closeType,
-			ScaledPrice price,
+OrderId Position::CloseImmediatelyOrCancel(
+			const CloseType &closeType,
+			const ScaledPrice &price,
 			const OrderParams &params) {
 	return m_pimpl->Close(
 		closeType,
-		[&](Qty qty) -> OrderId {
-			return DoCloseOrCancel(qty, price, params);
+		[&](const Qty &qty) {
+			return DoCloseImmediatelyOrCancel(qty, price, params);
+		});
+}
+
+OrderId Position::CloseAtMarketPriceImmediatelyOrCancel(
+			const CloseType &closeType) {
+	return CloseAtMarketPriceImmediatelyOrCancel(closeType, defaultOrderParams);
+}
+
+OrderId Position::CloseAtMarketPriceImmediatelyOrCancel(
+			const CloseType &closeType,
+			const OrderParams &params) {
+	return m_pimpl->Close(
+		closeType,
+		[&](const Qty &qty) {
+			return DoCloseAtMarketPriceImmediatelyOrCancel(qty, params);
 		});
 }
 
@@ -1053,17 +1082,37 @@ OrderId LongPosition::DoOpenAtMarketPriceWithStopPrice(
 			_5));
 }
 
-OrderId LongPosition::DoOpenOrCancel(
-			Qty qty,
-			ScaledPrice price,
+OrderId LongPosition::DoOpenImmediatelyOrCancel(
+			const Qty &qty,
+			const ScaledPrice &price,
 			const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().BuyOrCancel(
+	return GetTradeSystem().BuyImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
 		price,
+		params,
+		boost::bind(
+			&LongPosition::UpdateOpening,
+			shared_from_this(),
+			_1,
+			_2,
+			_3,
+			_4,
+			_5));
+}
+
+OrderId LongPosition::DoOpenAtMarketPriceImmediatelyOrCancel(
+			const Qty &qty,
+			const OrderParams &params) {
+	Assert(!IsOpened());
+	Assert(!IsClosed());
+	return GetTradeSystem().BuyAtMarketPriceImmediatelyOrCancel(
+		GetSecurity(),
+		GetCurrency(),
+		qty,
 		params,
 		boost::bind(
 			&LongPosition::UpdateOpening,
@@ -1134,18 +1183,39 @@ OrderId LongPosition::DoCloseAtMarketPriceWithStopPrice(
 			_5));
 }
 
-OrderId LongPosition::DoCloseOrCancel(
-			Qty qty,
-			ScaledPrice price,
+OrderId LongPosition::DoCloseImmediatelyOrCancel(
+			const Qty &qty,
+			const ScaledPrice &price,
 			const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	Assert(qty > 0);
-	return GetTradeSystem().SellOrCancel(
+	return GetTradeSystem().SellImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
 		price,
+		params,
+		boost::bind(
+			&LongPosition::UpdateClosing,
+			shared_from_this(),
+			_1,
+			_2,
+			_3,
+			_4,
+			_5));
+}
+
+OrderId LongPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
+			const Qty &qty,
+			const OrderParams &params) {
+	Assert(IsOpened());
+	Assert(!IsClosed());
+	Assert(qty > 0);
+	return GetTradeSystem().SellAtMarketPriceImmediatelyOrCancel(
+		GetSecurity(),
+		GetCurrency(),
+		qty,
 		params,
 		boost::bind(
 			&LongPosition::UpdateClosing,
@@ -1250,17 +1320,37 @@ OrderId ShortPosition::DoOpenAtMarketPriceWithStopPrice(
 			_5));
 }
 
-OrderId ShortPosition::DoOpenOrCancel(
-			Qty qty,
-			ScaledPrice price,
+OrderId ShortPosition::DoOpenImmediatelyOrCancel(
+			const Qty &qty,
+			const ScaledPrice &price,
 			const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().SellOrCancel(
+	return GetTradeSystem().SellImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
 		price,
+		params,
+		boost::bind(
+			&ShortPosition::UpdateOpening,
+			shared_from_this(),
+			_1,
+			_2,
+			_3,
+			_4,
+			_5));
+}
+
+OrderId ShortPosition::DoOpenAtMarketPriceImmediatelyOrCancel(
+			const Qty &qty,
+			const OrderParams &params) {
+	Assert(!IsOpened());
+	Assert(!IsClosed());
+	return GetTradeSystem().SellAtMarketPriceImmediatelyOrCancel(
+		GetSecurity(),
+		GetCurrency(),
+		qty,
 		params,
 		boost::bind(
 			&ShortPosition::UpdateOpening,
@@ -1334,17 +1424,37 @@ OrderId ShortPosition::DoCloseAtMarketPriceWithStopPrice(
 			_5));
 }
 
-OrderId ShortPosition::DoCloseOrCancel(
-			Qty qty,
-			ScaledPrice price,
+OrderId ShortPosition::DoCloseImmediatelyOrCancel(
+			const Qty &qty,
+			const ScaledPrice &price,
 			const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().BuyOrCancel(
+	return GetTradeSystem().BuyImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
 		price,
+		params,
+		boost::bind(
+			&ShortPosition::UpdateClosing,
+			shared_from_this(),
+			_1,
+			_2,
+			_3,
+			_4,
+			_5));
+}
+
+OrderId ShortPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
+			const Qty &qty,
+			const OrderParams &params) {
+	Assert(IsOpened());
+	Assert(!IsClosed());
+	return GetTradeSystem().BuyAtMarketPriceImmediatelyOrCancel(
+		GetSecurity(),
+		GetCurrency(),
+		qty,
 		params,
 		boost::bind(
 			&ShortPosition::UpdateClosing,

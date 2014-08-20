@@ -76,11 +76,17 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					trdk::ScaledPrice stopPrice,
 					const trdk::OrderParams &,
 					const OrderStatusUpdateSlot &);
-		virtual OrderId SellOrCancel(
+		virtual OrderId SellImmediatelyOrCancel(
 					trdk::Security &,
 					const trdk::Lib::Currency &,
-					trdk::Qty,
-					trdk::ScaledPrice,
+					const trdk::Qty &,
+					const trdk::ScaledPrice &,
+					const trdk::OrderParams &,
+					const OrderStatusUpdateSlot &);
+		virtual OrderId SellAtMarketPriceImmediatelyOrCancel(
+					trdk::Security &,
+					const trdk::Lib::Currency &,
+					const trdk::Qty &,
 					const trdk::OrderParams &,
 					const OrderStatusUpdateSlot &);
 
@@ -104,11 +110,17 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					trdk::ScaledPrice stopPrice,
 					const trdk::OrderParams &,
 					const OrderStatusUpdateSlot &);
-		virtual OrderId BuyOrCancel(
+		virtual OrderId BuyImmediatelyOrCancel(
 					trdk::Security &,
 					const trdk::Lib::Currency &,
-					trdk::Qty,
-					trdk::ScaledPrice,
+					const trdk::Qty &,
+					const trdk::ScaledPrice &,
+					const trdk::OrderParams &,
+					const OrderStatusUpdateSlot &);
+		virtual OrderId BuyAtMarketPriceImmediatelyOrCancel(
+					trdk::Security &,
+					const trdk::Lib::Currency &,
+					const trdk::Qty &,
 					const trdk::OrderParams &,
 					const OrderStatusUpdateSlot &);
 

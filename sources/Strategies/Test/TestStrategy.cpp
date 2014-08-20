@@ -67,20 +67,20 @@ namespace trdk { namespace Strategies { namespace Test {
 					security.GetAskQty(),
 					security.GetSource().GetTag()));
 			const auto &lastPrice = security.GetLastPriceScaled();
-			if (		lastPrice > security.ScalePrice(10.99)
-					|| lastPrice < security.ScalePrice(10.01)) {
-				return;
-			}
+// 			if (		lastPrice > security.ScalePrice(10.99)
+// 					|| lastPrice < security.ScalePrice(10.01)) {
+// 				return;
+// 			}
 			const auto &priceToBuy = lastPrice - security.ScalePrice(.01);
 			boost::shared_ptr<LongPosition> pos(
 				new LongPosition(
 					*this,
 					GetContext().GetTradeSystem(0),
 					security,
-					CURRENCY_USD,
-					40000,
+					CURRENCY_EUR,
+					1000000,
 					priceToBuy));
-			pos->OpenOrCancel(priceToBuy);
+			pos->OpenAtMarketPrice();
 		}
 		
 	protected:

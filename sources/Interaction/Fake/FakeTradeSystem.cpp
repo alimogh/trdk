@@ -271,11 +271,11 @@ OrderId Fake::TradeSystem::SellAtMarketPriceWithStopPrice(
 	throw Exception("Method doesn't implemented");
 }
 
-OrderId Fake::TradeSystem::SellOrCancel(
+OrderId Fake::TradeSystem::SellImmediatelyOrCancel(
 			Security &security,
 			const Currency &,
-			Qty qty,
-			ScaledPrice price,
+			const Qty &qty,
+			const ScaledPrice &price,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Validate(qty, params, true);
@@ -297,6 +297,18 @@ OrderId Fake::TradeSystem::SellOrCancel(
 			qty,
 			security.DescalePrice(price)));
 	return order.id;
+}
+
+OrderId Fake::TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
+			Security &,
+			const Currency &,
+			const Qty &qty,
+			const OrderParams &params,
+			const OrderStatusUpdateSlot &) {
+	Validate(qty, params, true);
+	AssertLt(0, qty);
+	AssertFail("Doesn't implemented.");
+	throw Exception("Method doesn't implemented");
 }
 
 OrderId Fake::TradeSystem::BuyAtMarketPrice(
@@ -368,11 +380,11 @@ OrderId Fake::TradeSystem::BuyAtMarketPriceWithStopPrice(
 	throw Exception("Method doesn't implemented");
 }
 
-OrderId Fake::TradeSystem::BuyOrCancel(
+OrderId Fake::TradeSystem::BuyImmediatelyOrCancel(
 			Security &security,
 			const Currency &,
-			Qty qty,
-			ScaledPrice price,
+			const Qty &qty,
+			const ScaledPrice &price,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Validate(qty, params, true);
@@ -394,6 +406,18 @@ OrderId Fake::TradeSystem::BuyOrCancel(
 			qty,
 			security.DescalePrice(price)));
 	return order.id;
+}
+
+OrderId Fake::TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
+			Security &,
+			const Currency &,
+			const Qty &qty,
+			const OrderParams &params,
+			const OrderStatusUpdateSlot &) {
+	Validate(qty, params, true);
+		AssertLt(0, qty);
+	AssertFail("Doesn't implemented.");
+	throw Exception("Method doesn't implemented");
 }
 
 void Fake::TradeSystem::CancelOrder(OrderId) {

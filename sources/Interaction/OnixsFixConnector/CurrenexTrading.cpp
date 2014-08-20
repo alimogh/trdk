@@ -242,17 +242,39 @@ OrderId CurrenexTrading::SellAtMarketPriceWithStopPrice(
 			" not implemented");
 }
 
-OrderId CurrenexTrading::SellOrCancel(
+OrderId CurrenexTrading::SellImmediatelyOrCancel(
 			trdk::Security &security,
 			const trdk::Lib::Currency &currency,
-			trdk::Qty qty,
-			trdk::ScaledPrice price,
+			const trdk::Qty &qty,
+			const trdk::ScaledPrice &price,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &callback) {
 	const auto &orderId = TakeOrderId(callback);
 	try {
 		fix::Message order
 			= CreateLimitOrderMessage(orderId, security, currency, qty, price);
+		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Sell);
+		order.set(
+			fix::FIX40::Tags::TimeInForce,
+			fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
+		m_session.Get().send(&order);
+	} catch (...) {
+		DeleteErrorOrder(orderId);
+		throw;
+	}
+	return orderId;
+}
+
+OrderId CurrenexTrading::SellAtMarketPriceImmediatelyOrCancel(
+			trdk::Security &security,
+			const trdk::Lib::Currency &currency,
+			const trdk::Qty &qty,
+			const trdk::OrderParams &,
+			const OrderStatusUpdateSlot &callback) {
+	const auto &orderId = TakeOrderId(callback);
+	try {
+		fix::Message order
+			= CreateMarketOrderMessage(orderId, security, currency, qty);
 		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Sell);
 		order.set(
 			fix::FIX40::Tags::TimeInForce,
@@ -306,17 +328,39 @@ OrderId CurrenexTrading::BuyAtMarketPriceWithStopPrice(
 			" not implemented");
 }
 
-OrderId CurrenexTrading::BuyOrCancel(
+OrderId CurrenexTrading::BuyImmediatelyOrCancel(
 			trdk::Security &security,
 			const trdk::Lib::Currency &currency,
-			trdk::Qty qty,
-			trdk::ScaledPrice price,
+			const trdk::Qty &qty,
+			const trdk::ScaledPrice &price,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &callback) {
 	const auto &orderId = TakeOrderId(callback);
 	try {
 		fix::Message order
 			= CreateLimitOrderMessage(orderId, security, currency, qty, price);
+		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
+		order.set(
+			fix::FIX40::Tags::TimeInForce,
+			fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
+		m_session.Get().send(&order);
+	} catch (...) {
+		DeleteErrorOrder(orderId);
+		throw;
+	}
+	return orderId;
+}
+
+OrderId CurrenexTrading::BuyAtMarketPriceImmediatelyOrCancel(
+			trdk::Security &security,
+			const trdk::Lib::Currency &currency,
+			const trdk::Qty &qty,
+			const trdk::OrderParams &,
+			const OrderStatusUpdateSlot &callback) {
+	const auto &orderId = TakeOrderId(callback);
+	try {
+		fix::Message order
+			= CreateMarketOrderMessage(orderId, security, currency, qty);
 		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
 		order.set(
 			fix::FIX40::Tags::TimeInForce,

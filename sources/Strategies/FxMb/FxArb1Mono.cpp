@@ -419,7 +419,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 
 				// sends order to broker:
-				position->OpenOrCancel(position->GetOpenStartPrice());
+				position->OpenImmediatelyOrCancel(position->GetOpenStartPrice());
 
 				// binding object with equation to close at opposite side
 				// opening:
