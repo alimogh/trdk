@@ -51,7 +51,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C86383E0-0A73-41E0-8263-9E05B608CE55}</ProjectGuid>
+    <ProjectGuid>{76A595AB-DDE0-4972-8793-4818398E6B94}</ProjectGuid>
     <RootNamespace>OnixsFixConnector</RootNamespace>
     <ProjectName>OnixS FIX Connector</ProjectName>
   </PropertyGroup>
