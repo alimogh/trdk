@@ -239,7 +239,6 @@ void Engine::Context::Start() {
 					IniSectionRef(
 						*m_pimpl->m_conf,
 						GetMarketDataSourceSectionName(source)));
-				source.SubscribeToSecurities();
 			} catch (const Interactor::ConnectError &ex) {
 				boost::format message(
 					"Failed to connect to market data source: \"%1%\"");
@@ -250,6 +249,24 @@ void Engine::Context::Start() {
 					"Failed to make market data connection: \"%1%\".",
 					ex);
 				throw Exception("Failed to make market data connection");
+			}
+			return true;
+		});
+
+	ForEachMarketDataSource(
+		[&](MarketDataSource &source) -> bool {
+			try {
+				source.SubscribeToSecurities();
+			} catch (const Interactor::ConnectError &ex) {
+				boost::format message(
+					"Failed to make market data subscription: \"%1%\"");
+				message % ex;
+				throw Interactor::ConnectError(message.str().c_str());
+			} catch (const Lib::Exception &ex) {
+				GetLog().Error(
+					"Failed to make market data subscription: \"%1%\".",
+					ex);
+				throw Exception("Failed to make market data subscription");
 			}
 			return true;
 		});
@@ -302,9 +319,26 @@ void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
 
 }
 
-void Engine::Context::ForEachMarketDataSource(
-				const boost::function<bool (const MarketDataSource &)> &pred)
+size_t Engine::Context::GetMarketDataSourcesCount() const {
+	return m_pimpl->m_marketDataSources.size();
+}
+
+const MarketDataSource & Engine::Context::GetMarketDataSource(
+				size_t index)
 			const {
+	return const_cast<Engine::Context *>(this)->GetMarketDataSource(index);
+}
+
+MarketDataSource & Engine::Context::GetMarketDataSource(size_t index) {
+	if (index >= m_pimpl->m_marketDataSources.size()) {
+		throw Exception("Market Data Source index is out of range");
+	}
+	return *m_pimpl->m_marketDataSources[index];
+}
+
+void Engine::Context::ForEachMarketDataSource(
+			const boost::function<bool (const MarketDataSource &)> &pred)
+		const {
 	foreach (const auto &source, m_pimpl->m_marketDataSources) {
 		if (!pred(*source)) {
 			return;
@@ -313,7 +347,7 @@ void Engine::Context::ForEachMarketDataSource(
 }
 
 void Engine::Context::ForEachMarketDataSource(
-				const boost::function<bool (MarketDataSource &)> &pred) {
+			const boost::function<bool (MarketDataSource &)> &pred) {
 	foreach (auto &source, m_pimpl->m_marketDataSources) {
 		if (!pred(*source)) {
 			return;

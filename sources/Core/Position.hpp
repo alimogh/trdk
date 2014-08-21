@@ -42,7 +42,10 @@ namespace trdk {
 			CLOSE_TYPE_STOP_LOSS,
 			CLOSE_TYPE_TIMEOUT,
 			CLOSE_TYPE_SCHEDULE,
-			CLOSE_TYPE_ENGINE_STOP
+			CLOSE_TYPE_ENGINE_STOP,
+			CLOSE_TYPE_OPEN_FAILED,
+			CLOSE_TYPE_SYSTEM_ERROR,
+			numberOfCloseTypes
 		};
 
 		class TRDK_CORE_API LogicError : public trdk::Lib::LogicError {
@@ -166,9 +169,13 @@ namespace trdk {
 		trdk::OrderId OpenAtMarketPriceWithStopPrice(
 					trdk::ScaledPrice stopPrice,
 					const trdk::OrderParams &);
-		trdk::OrderId OpenOrCancel(trdk::ScaledPrice);
-		trdk::OrderId OpenOrCancel(
+		trdk::OrderId OpenImmediatelyOrCancel(
+					const trdk::ScaledPrice &);
+		trdk::OrderId OpenImmediatelyOrCancel(
 					trdk::ScaledPrice,
+					const trdk::OrderParams &);
+		trdk::OrderId OpenAtMarketPriceImmediatelyOrCancel();
+		trdk::OrderId OpenAtMarketPriceImmediatelyOrCancel(
 					const trdk::OrderParams &);
 
 		trdk::OrderId CloseAtMarketPrice(CloseType);
@@ -185,10 +192,16 @@ namespace trdk {
 					CloseType,
 					trdk::ScaledPrice stopPrice,
 					const trdk::OrderParams &);
-		trdk::OrderId CloseOrCancel(CloseType, trdk::ScaledPrice);
-		trdk::OrderId CloseOrCancel(
-					CloseType,
-					trdk::ScaledPrice,
+		trdk::OrderId CloseImmediatelyOrCancel(
+					const CloseType &,
+					const trdk::ScaledPrice &);
+		trdk::OrderId CloseImmediatelyOrCancel(
+					const CloseType &,
+					const trdk::ScaledPrice &,
+					const trdk::OrderParams &);
+		trdk::OrderId CloseAtMarketPriceImmediatelyOrCancel(const CloseType &);
+		trdk::OrderId CloseAtMarketPriceImmediatelyOrCancel(
+					const CloseType &,
 					const trdk::OrderParams &);
 
 		bool CancelAtMarketPrice(CloseType);
@@ -215,9 +228,13 @@ namespace trdk {
 					trdk::ScaledPrice stopPrice,
 					const trdk::OrderParams &)
 				= 0;
-		virtual trdk::OrderId DoOpenOrCancel(
-					trdk::Qty,
-					trdk::ScaledPrice,
+		virtual trdk::OrderId DoOpenImmediatelyOrCancel(
+					const trdk::Qty &,
+					const trdk::ScaledPrice &,
+					const trdk::OrderParams &)
+				= 0;
+		virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
+					const trdk::Qty &,
 					const trdk::OrderParams &)
 				= 0;
 
@@ -235,9 +252,13 @@ namespace trdk {
 					trdk::ScaledPrice stopPrice,
 					const trdk::OrderParams &)
 				= 0;
-		virtual trdk::OrderId DoCloseOrCancel(
-					trdk::Qty,
-					trdk::ScaledPrice,
+		virtual trdk::OrderId DoCloseImmediatelyOrCancel(
+					const trdk::Qty &,
+					const trdk::ScaledPrice &,
+					const trdk::OrderParams &)
+				= 0;
+		virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
+					const trdk::Qty &,
 					const trdk::OrderParams &)
 				= 0;
 
@@ -248,15 +269,13 @@ namespace trdk {
 					trdk::TradeSystem::OrderStatus,
 					trdk::Qty filled,
 					trdk::Qty remaining,
-					double avgPrice,
-					double lastPrice);
+					double avgPrice);
 		void UpdateClosing(
 					trdk::OrderId,
 					trdk::TradeSystem::OrderStatus,
 					trdk::Qty filled,
 					trdk::Qty remaining,
-					double avgPrice,
-					double lastPrice);
+					double avgPrice);
 
 	private:
 
@@ -267,7 +286,7 @@ namespace trdk {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class TRDK_CORE_API LongPosition : public Position {
+	class TRDK_CORE_API LongPosition : virtual public Position {
 
 	public:
 
@@ -298,9 +317,12 @@ namespace trdk {
 					trdk::Qty qty,
 					trdk::ScaledPrice stopPrice,
 					const trdk::OrderParams &);
-		virtual trdk::OrderId DoOpenOrCancel(
-					trdk::Qty,
-					trdk::ScaledPrice,
+		virtual trdk::OrderId DoOpenImmediatelyOrCancel(
+					const  trdk::Qty &,
+					const trdk::ScaledPrice &,
+					const trdk::OrderParams &);
+		virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
+					const trdk::Qty &,
 					const trdk::OrderParams &);
 
 		virtual trdk::OrderId DoCloseAtMarketPrice(
@@ -314,16 +336,19 @@ namespace trdk {
 					trdk::Qty,
 					trdk::ScaledPrice stopPrice,
 					const trdk::OrderParams &);
-		virtual trdk::OrderId DoCloseOrCancel(
-					trdk::Qty,
-					trdk::ScaledPrice,
+		virtual trdk::OrderId DoCloseImmediatelyOrCancel(
+					const trdk::Qty &,
+					const trdk::ScaledPrice &,
+					const trdk::OrderParams &);
+		virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
+					const trdk::Qty &,
 					const trdk::OrderParams &);
 
 	};
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class TRDK_CORE_API ShortPosition : public Position {
+	class TRDK_CORE_API ShortPosition : virtual public Position {
 
 	public:
 
@@ -354,9 +379,12 @@ namespace trdk {
 					trdk::Qty qty,
 					trdk::ScaledPrice stopPrice,
 					const trdk::OrderParams &);
-		virtual trdk::OrderId DoOpenOrCancel(
-					trdk::Qty,
-					trdk::ScaledPrice,
+		virtual trdk::OrderId DoOpenImmediatelyOrCancel(
+					const trdk::Qty &,
+					const trdk::ScaledPrice &,
+					const trdk::OrderParams &);
+		virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
+					const trdk::Qty &,
 					const trdk::OrderParams &);
 
 		virtual trdk::OrderId DoCloseAtMarketPrice(
@@ -370,9 +398,12 @@ namespace trdk {
 					trdk::Qty,
 					trdk::ScaledPrice stopPrice,
 					const trdk::OrderParams &);
-		virtual trdk::OrderId DoCloseOrCancel(
-					trdk::Qty,
-					trdk::ScaledPrice,
+		virtual trdk::OrderId DoCloseImmediatelyOrCancel(
+					const trdk::Qty &,
+					const trdk::ScaledPrice &,
+					const trdk::OrderParams &);
+		virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
+					const trdk::Qty &,
 					const trdk::OrderParams &);
 
 	};

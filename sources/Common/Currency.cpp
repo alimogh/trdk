@@ -34,7 +34,7 @@ const std::string & Lib::ConvertToIso(const Currency &currency) {
 	}
 }
 
-Currency ConvertCurrencyFromIso(const std::string &code) {
+Currency Lib::ConvertCurrencyFromIso(const std::string &code) {
 	using namespace Iso4217;
 	static_assert(numberOfCurrencies == 2, "Currency list changed.");
 	if (boost::iequals(code, usd)) {

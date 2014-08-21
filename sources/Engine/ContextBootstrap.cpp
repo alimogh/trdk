@@ -77,7 +77,7 @@ namespace {
 				std::string &tagResult) {
 		std::list<std::string> subs;
 		boost::split(subs, sectionName, boost::is_any_of("."));
-		if (subs.empty()) {
+		if (subs.empty() || subs.size() == 1) {
 			return false;
 		} else if (!boost::iequals(*subs.begin(), Sections::marketDataSource)) {
 			return false;
@@ -103,7 +103,7 @@ namespace {
 				std::string &tagResult) {
 		std::list<std::string> subs;
 		boost::split(subs, sectionName, boost::is_any_of("."));
-		if (subs.empty()) {
+		if (subs.empty() || subs.size() == 1) {
 			return false;
 		} else if (!boost::iequals(*subs.begin(), Sections::tradeSystem)) {
 			return false;

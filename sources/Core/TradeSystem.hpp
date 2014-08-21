@@ -58,8 +58,7 @@ namespace trdk {
 					OrderStatus,
 					trdk::Qty filled,
 					trdk::Qty remaining,
-					double avgPrice,
-					double lastPrice)>
+					double avgPrice)>
 			OrderStatusUpdateSlot;
 
 		struct Account {
@@ -212,11 +211,18 @@ namespace trdk {
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
-		virtual OrderId SellOrCancel(
+		virtual OrderId SellImmediatelyOrCancel(
 				trdk::Security &,
 				const trdk::Lib::Currency &,
-				trdk::Qty,
-				trdk::ScaledPrice,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &)
+			= 0;
+		virtual OrderId SellAtMarketPriceImmediatelyOrCancel(
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
@@ -244,11 +250,18 @@ namespace trdk {
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;
-		virtual OrderId BuyOrCancel(
+		virtual OrderId BuyImmediatelyOrCancel(
 				trdk::Security &,
 				const trdk::Lib::Currency &,
-				trdk::Qty,
-				trdk::ScaledPrice,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &)
+			= 0;
+		virtual OrderId BuyAtMarketPriceImmediatelyOrCancel(
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 			= 0;

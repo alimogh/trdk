@@ -129,7 +129,7 @@ namespace trdk {
 
 	public:
 
-		unsigned int GetPriceScale() const throw();
+		uint8_t GetPricePrecision() const throw();
 
 		trdk::ScaledPrice ScalePrice(double price) const;
 		double DescalePrice(trdk::ScaledPrice price) const;

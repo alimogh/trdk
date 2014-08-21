@@ -42,7 +42,8 @@ Symbol::Symbol()
 Symbol::Data::Data()
 		: securityType(numberOfSecurityTypes),
 		strike(.0),
-		right(numberOfRights) {
+		right(numberOfRights),
+		cacheCurrency(numberOfCurrencies) {
 	//...//
 }
 
@@ -62,7 +63,8 @@ Symbol::Data::Data(
 		: securityType(securityType),
 		symbol(symbol),
 		strike(.0),
-		right(numberOfRights) {
+		right(numberOfRights),
+		cacheCurrency(numberOfCurrencies) {
 	//...//
 }
 
@@ -87,7 +89,8 @@ Symbol::Data::Data(
 		symbol(symbol),
 		expirationDate(expirationDate),
 		strike(strike),
-		right(numberOfRights) {
+		right(numberOfRights),
+		cacheCurrency(numberOfCurrencies) {
 	//...//
 }
 
@@ -189,9 +192,11 @@ Symbol Symbol::ParseCash(
 	if (subs[0].empty() || subs.size() > 2) {
 		throw StringFormatError();
 	}
+	boost::smatch symbolMatch;
 	if (	!boost::regex_match(
 				subs[0],
-				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*([a-zA-Z]{3,3})$"))) {
+				symbolMatch,
+				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*[a-zA-Z]{3,3}$"))) {
 		throw StringFormatError();
 	}
 	
@@ -202,6 +207,7 @@ Symbol Symbol::ParseCash(
 		?	subs[1]
 		:	defExchange;
 	result.m_data.primaryExchange = "FOREX";
+	result.m_data.cacheCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
 
 	return result;
 
@@ -227,9 +233,11 @@ Symbol Symbol::ParseCashFutureOption(
 	if (subs[0].empty() || subs.size() > 2) {
 		throw StringFormatError();
 	}
+	boost::smatch symbolMatch;
 	if (	!boost::regex_match(
 				subs[0],
-				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*([a-zA-Z]{3,3})$"))) {
+				symbolMatch,
+				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*[a-zA-Z]{3,3}$"))) {
 		throw StringFormatError();
 	}
 
@@ -242,6 +250,7 @@ Symbol Symbol::ParseCashFutureOption(
 	result.m_data.expirationDate = expirationDate;
 	result.m_data.strike = strike;
 	result.m_data.right = right;
+	result.m_data.cacheCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
 	
 	return result;
 
@@ -369,6 +378,13 @@ std::string Symbol::GetRightAsString() const {
 		case RIGHT_PUT:
 			return "Put";
 	}
+}
+
+Currency Symbol::GetCashCurrency() const {
+	if (m_data.cacheCurrency == numberOfCurrencies) {
+		throw Lib::LogicError("Symbol has not Cash Currency");
+	}
+	return m_data.cacheCurrency;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
