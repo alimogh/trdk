@@ -484,7 +484,7 @@ namespace trdk { namespace Engine {
 					this,
 					boost::ref(startBarrier),
 					lists));
-			Assert(1 == threadsCounter--);
+			Assert(1 <= threadsCounter--);
 		}
 
 		template<typename T1, typename T2>
@@ -537,7 +537,7 @@ namespace trdk { namespace Engine {
 					this,
 					boost::ref(startBarrier),
 					lists));
-			Assert(1 == threadsCounter--);
+			Assert(1 <= threadsCounter--);
 		}
 
 		template<typename T1, typename T2, typename T3>
@@ -599,7 +599,7 @@ namespace trdk { namespace Engine {
 					this,
 					boost::ref(startBarrier),
 					lists));
-			Assert(1 == threadsCounter--);
+			Assert(1 <= threadsCounter--);
 		}
 
 		template<typename T1, typename T2, typename T3, typename T4>
@@ -668,7 +668,7 @@ namespace trdk { namespace Engine {
 					this,
 					boost::ref(startBarrier),
 					lists));
-			Assert(1 == threadsCounter--);
+			Assert(1 <= threadsCounter--);
 		}
 
 		template<
@@ -761,7 +761,7 @@ namespace trdk { namespace Engine {
 					this,
 					boost::ref(startBarrier),
 					lists));
-			Assert(1 == threadsCounter--);
+			Assert(1 <= threadsCounter--);
 		}
 
 		template<
