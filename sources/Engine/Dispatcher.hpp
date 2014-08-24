@@ -263,8 +263,7 @@ namespace trdk { namespace Engine {
 				|| m_positionsUpdates.IsActive()
 				|| m_level1Updates.IsActive()
 				|| m_newTrades.IsActive()
-				|| m_level1Ticks.IsActive()
-				|| m_level1Updates.IsActive();
+				|| m_level1Ticks.IsActive();
 		}
 
 		void Activate();
@@ -442,7 +441,7 @@ namespace trdk { namespace Engine {
 					this,
 					boost::ref(startBarrier),
 					lists));
-			Assert(1 == threadsCounter--);
+			Assert(1 <= threadsCounter--);
 		}
 
 		template<typename T1>
