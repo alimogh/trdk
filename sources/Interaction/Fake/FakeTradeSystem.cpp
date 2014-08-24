@@ -55,7 +55,7 @@ private:
 public:
 
 	Implementation()
-			: m_id(0),
+			: m_id(1),
 			m_isStarted(0),
 			m_currentOrders(&m_orders1) {
 		//...//
@@ -297,15 +297,23 @@ OrderId Fake::TradeSystem::SellImmediatelyOrCancel(
 }
 
 OrderId Fake::TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
-			Security &,
+			Security &security,
 			const Currency &,
 			const Qty &qty,
 			const OrderParams &params,
-			const OrderStatusUpdateSlot &) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Validate(qty, params, true);
 	AssertLt(0, qty);
-	AssertFail("Doesn't implemented.");
-	throw Exception("Method doesn't implemented");
+	const Order order = {
+		&security,
+		false,
+		m_pimpl->TakeOrderId(),
+		statusUpdateSlot,
+		qty,
+		0,
+		params};
+	m_pimpl->SendOrder(order);
+	return order.id;
 }
 
 OrderId Fake::TradeSystem::BuyAtMarketPrice(
@@ -406,15 +414,23 @@ OrderId Fake::TradeSystem::BuyImmediatelyOrCancel(
 }
 
 OrderId Fake::TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
-			Security &,
+			Security &security,
 			const Currency &,
 			const Qty &qty,
 			const OrderParams &params,
-			const OrderStatusUpdateSlot &) {
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Validate(qty, params, true);
 	AssertLt(0, qty);
-	AssertFail("Doesn't implemented.");
-	throw Exception("Method doesn't implemented");
+	const Order order = {
+		&security,
+		false,
+		m_pimpl->TakeOrderId(),
+		statusUpdateSlot,
+		qty,
+		0,
+		params};
+	m_pimpl->SendOrder(order);
+	return order.id;
 }
 
 void Fake::TradeSystem::CancelOrder(OrderId) {
