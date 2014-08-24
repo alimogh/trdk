@@ -104,7 +104,7 @@ public:
 				<< "=========================================================================="
 				<< std::endl << "Started at "
 				<< pt::microsec_clock::universal_time() << " with period "
-				<< reportPeriod << "(" << TRDK_BUILD_IDENTITY << ")."
+				<< reportPeriod << " (" << TRDK_BUILD_IDENTITY << ")."
 				<< std::endl;
 			{
 				typedef Milestones::Clock Clock;

@@ -72,7 +72,7 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 					const MilestoneIndex &milestone,
 					const TimePoint &now)
 				const {
-			Assert(m_start);
+			Assert(m_stat);
 			m_stat->AddMeasurement(milestone, CalcPeriod(m_start, now));
 		}
 
