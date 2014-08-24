@@ -39,12 +39,8 @@ Dispatcher::Dispatcher(Engine::Context &context)
 Dispatcher::~Dispatcher() {
 	try {
 		m_context.GetLog().Debug("Stopping events dispatching...");
-		m_level1Ticks.Stop();
-		m_newTrades.Stop();
 		m_level1Updates.Stop();
 		m_positionsUpdates.Stop();
-		m_brokerPositionsUpdates.Stop();
-		m_newBars.Stop();
 		m_threads.join_all();
 		m_context.GetLog().Debug("Events dispatching stopped.");
 	} catch (...) {
@@ -55,22 +51,15 @@ Dispatcher::~Dispatcher() {
 
 void Dispatcher::Activate() {
 	m_context.GetLog().Debug("Starting events dispatching...");
-	m_newBars.Activate();
-	m_brokerPositionsUpdates.Activate();
 	m_positionsUpdates.Activate();
 	m_level1Updates.Activate();
-	m_newTrades.Activate();
-	m_level1Ticks.Activate();
 	m_context.GetLog().Debug("Events dispatching started.");
 }
 
 void Dispatcher::Suspend() {
 	m_context.GetLog().Debug("Suspending events dispatching...");
-	m_level1Ticks.Suspend();
-	m_newTrades.Suspend();
 	m_level1Updates.Suspend();
 	m_positionsUpdates.Suspend();
-	m_brokerPositionsUpdates.Suspend();
 	m_newBars.Suspend();
 	m_context.GetLog().Debug("Events dispatching suspended.");
 }
