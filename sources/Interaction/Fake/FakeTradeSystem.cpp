@@ -40,6 +40,10 @@ namespace {
 
 class Fake::TradeSystem::Implementation : private boost::noncopyable {
 
+public:
+
+	TradeSystem *m_self;
+
 private:
 
 	typedef boost::mutex Mutex;
@@ -50,9 +54,8 @@ private:
 
 public:
 
-	Implementation(Context::Log &log)
-			: m_log(log),
-			m_id(0),
+	Implementation()
+			: m_id(0),
 			m_isStarted(0),
 			m_currentOrders(&m_orders1) {
 		//...//
@@ -60,7 +63,7 @@ public:
 
 	~Implementation() {
 		if (m_isStarted) {
-			m_log.Debug("Stopping Fake Trade System task...");
+			m_self->GetLog().Debug("Stopping Fake Trade System task...");
 			{
 				const Lock lock(m_mutex);
 				m_isStarted = false;
@@ -71,10 +74,6 @@ public:
 	}
 
 public:
-
-	Context::Log & GetLog() {
-		return m_log;
-	}
 
 	OrderId TakeOrderId() {
 		return m_id++;
@@ -108,7 +107,7 @@ private:
 				Lock lock(m_mutex);
 				m_condition.notify_all();
 			}
-			m_log.Info("Stated Fake Trade System task...");
+			m_self->GetLog().Info("Stated Fake Trade System task...");
 			for ( ; ; ) {
 				Orders *orders = nullptr;
 				{
@@ -142,7 +141,7 @@ private:
 						price = order.security->GetLastPrice();
 					}
 					Assert(!IsZero(price));
-					m_log.Info(
+					m_self->GetLog().Info(
 						"Fake Trade System executes order:"
 							" price=%1%, qty=%2%, %3%.",
 						boost::make_tuple(
@@ -162,12 +161,10 @@ private:
 			AssertFailNoException();
 			throw;
 		}
-		m_log.Info("Fake Trade System stopped.");
+		m_self->GetLog().Info("Fake Trade System stopped.");
 	}
 
 private:
-
-	Context::Log &m_log;
 
 	boost::atomic_uintmax_t m_id;
 	bool m_isStarted;
@@ -186,12 +183,12 @@ private:
 //////////////////////////////////////////////////////////////////////////
 
 Fake::TradeSystem::TradeSystem(
+			Context &context,
 			const std::string &tag,
-			const IniSectionRef &,
-			Context::Log &log)
-		: Base(tag),
-		m_pimpl(new Implementation(log)) {
-	//...//
+			const IniSectionRef &)
+		: Base(context, tag),
+		m_pimpl(new Implementation) {
+	m_pimpl->m_self = this;
 }
 
 Fake::TradeSystem::~TradeSystem() {
@@ -219,7 +216,7 @@ OrderId Fake::TradeSystem::SellAtMarketPrice(
 		0,
 		params};
 	m_pimpl->SendOrder(order);
-	m_pimpl->GetLog().Trading(
+	GetLog().Trading(
 		sellLogTag,
 		"%2% order-id=%1% qty=%3% price=market",
 		boost::make_tuple(
@@ -247,7 +244,7 @@ OrderId Fake::TradeSystem::Sell(
 		price,
 		params};
 	m_pimpl->SendOrder(order);
-	m_pimpl->GetLog().Trading(
+	GetLog().Trading(
 		buyLogTag,
 		"%2% order-id=%1% type=LMT qty=%3% price=%4%",
 		boost::make_tuple(
@@ -288,7 +285,7 @@ OrderId Fake::TradeSystem::SellImmediatelyOrCancel(
 		price,
 		params};
 	m_pimpl->SendOrder(order);
-	m_pimpl->GetLog().Trading(
+	GetLog().Trading(
 		sellLogTag,
 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
 		boost::make_tuple(
@@ -328,7 +325,7 @@ OrderId Fake::TradeSystem::BuyAtMarketPrice(
 		0,
 		params};
 	m_pimpl->SendOrder(order);
-	m_pimpl->GetLog().Trading(
+	GetLog().Trading(
 		buyLogTag,
 		"%2% order-id=%1% qty=%3% price=market",
 		boost::make_tuple(
@@ -356,7 +353,7 @@ OrderId Fake::TradeSystem::Buy(
 		price,
 		params};
 	m_pimpl->SendOrder(order);
-	m_pimpl->GetLog().Trading(
+	GetLog().Trading(
 		buyLogTag,
 		"%2% order-id=%1% type=LMT qty=%3% price=%4%",
 		boost::make_tuple(
@@ -397,7 +394,7 @@ OrderId Fake::TradeSystem::BuyImmediatelyOrCancel(
 		price,
 		params};
 	m_pimpl->SendOrder(order);
-	m_pimpl->GetLog().Trading(
+	GetLog().Trading(
 		buyLogTag,
 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
 		boost::make_tuple(
@@ -415,7 +412,7 @@ OrderId Fake::TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &) {
 	Validate(qty, params, true);
-		AssertLt(0, qty);
+	AssertLt(0, qty);
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
@@ -426,7 +423,7 @@ void Fake::TradeSystem::CancelOrder(OrderId) {
 }
 
 void Fake::TradeSystem::CancelAllOrders(Security &security) {
-	m_pimpl->GetLog().Trading("cancel", "%1% orders=[all]", security.GetSymbol());
+	GetLog().Trading("cancel", "%1% orders=[all]", security.GetSymbol());
 }
 
 //////////////////////////////////////////////////////////////////////////

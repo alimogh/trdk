@@ -14,6 +14,7 @@
 #include "Context.hpp"
 #include "Fwd.hpp"
 #include "Core/Settings.hpp"
+#include "Core/TimeMeasurement.hpp"
 
 namespace trdk { namespace Engine {
 
@@ -166,7 +167,7 @@ namespace trdk { namespace Engine {
 
 					lock.unlock();
 					Assert(!listToRead->empty());
-					foreach (const auto &event, *listToRead) {
+					foreach (auto &event, *listToRead) {
 						Dispatcher::RaiseEvent(event);
 					}
 					listToRead->clear();
@@ -198,10 +199,12 @@ namespace trdk { namespace Engine {
 
 		};
 
-		typedef boost::tuple<Security *, SubscriberPtrWrapper>
+		typedef boost::tuple<
+				Security *,
+				SubscriberPtrWrapper,
+				Lib::TimeMeasurement::Milestones>
 			Level1UpdateEvent;
-		//! @todo: Check performance: set or list + find
-		typedef EventQueue<std::set<Level1UpdateEvent>> Level1UpdateEventQueue;
+		typedef EventQueue<std::vector<Level1UpdateEvent>> Level1UpdateEventQueue;
 
 		typedef boost::tuple<
 				SubscriberPtrWrapper::Level1Tick,
@@ -209,7 +212,7 @@ namespace trdk { namespace Engine {
 			Level1TickEvent;
 		//! @todo	HAVY OPTIMIZATION!!! Use preallocated buffer here instead
 		//!			std::list.
-		typedef EventQueue<std::list<Level1TickEvent>> Level1TicksEventQueue;
+		typedef EventQueue<std::vector<Level1TickEvent>> Level1TicksEventQueue;
 
 		typedef boost::tuple<
 				SubscriberPtrWrapper::Trade,
@@ -217,7 +220,7 @@ namespace trdk { namespace Engine {
 			NewTradeEvent;
 		//! @todo	HAVY OPTIMIZATION!!! Use preallocated buffer here instead
 		//!			std::list.
-		typedef EventQueue<std::list<NewTradeEvent>> NewTradeEventQueue;
+		typedef EventQueue<std::vector<NewTradeEvent>> NewTradeEventQueue;
 
 		//! Increasing position references count for safety work in core (which
 		//! can lost owning references at event handling).
@@ -226,7 +229,7 @@ namespace trdk { namespace Engine {
 				SubscriberPtrWrapper>
 			PositionUpdateEvent;
 		//! @todo: Check performance: set or list
-		typedef EventQueue<std::set<PositionUpdateEvent>>
+		typedef EventQueue<std::vector<PositionUpdateEvent>>
 			PositionsUpdateEventQueue;
 
 		typedef boost::tuple<
@@ -234,7 +237,7 @@ namespace trdk { namespace Engine {
 				SubscriberPtrWrapper>
 			BrokerPositionUpdateEvent;
 		//! @todo: Check performance: map to exclude duplicate securities
-		typedef EventQueue<std::list<BrokerPositionUpdateEvent>>
+		typedef EventQueue<std::vector<BrokerPositionUpdateEvent>>
 			BrokerPositionsUpdateEventQueue;
 
 		typedef boost::tuple<
@@ -244,7 +247,7 @@ namespace trdk { namespace Engine {
 			NewBarEvent;
 		//! @todo	HAVY OPTIMIZATION!!! Use preallocated buffer here instead
 		//!			std::list.
-		typedef EventQueue<std::list<NewBarEvent>> NewBarEventQueue;
+		typedef EventQueue<std::vector<NewBarEvent>> NewBarEventQueue;
 
 	public:
 
@@ -269,7 +272,10 @@ namespace trdk { namespace Engine {
 
 	public:
 
-		void SignalLevel1Update(SubscriberPtrWrapper &, Security &);
+		void SignalLevel1Update(
+					SubscriberPtrWrapper &,
+					Security &,
+					const Lib::TimeMeasurement::Milestones &);
 		void SignalLevel1Tick(
 					SubscriberPtrWrapper &,
 					Security &,
@@ -297,7 +303,7 @@ namespace trdk { namespace Engine {
 	private:
 
 		template<typename Event>
-		static void RaiseEvent(const Event &) {
+		static void RaiseEvent(Event &) {
 #			if !defined(__GNUG__)
 				static_assert(false, "Failed to find event raise specialization.");
 #			else
@@ -318,10 +324,17 @@ namespace trdk { namespace Engine {
 					const Level1UpdateEvent &level1UpdateEvent,
 					EventList &eventList) {
 			//! @todo place for optimization
-			if (eventList.find(level1UpdateEvent) != eventList.end()) {
-				return false;
+			foreach (const Level1UpdateEvent &event, eventList) {
+				if (	boost::get<0>(level1UpdateEvent)
+								== boost::get<0>(event)
+							&& boost::get<1>(level1UpdateEvent)
+									== boost::get<1>(event)) {
+					return false;
+				}
 			}
-			eventList.insert(level1UpdateEvent);
+			eventList.push_back(level1UpdateEvent);
+			boost::get<2>(level1UpdateEvent)
+				.Measure(STMM_DISPATCHING_DATA_ENQUEUE);
 			return true;
 		}
 		template<typename EventList>
@@ -343,10 +356,15 @@ namespace trdk { namespace Engine {
 					const PositionUpdateEvent &positionUpdateEvent,
 					EventList &eventList) {
 			//! @todo place for optimization
-			if (eventList.find(positionUpdateEvent) != eventList.end()) {
+			const auto &end = eventList.cend();
+			const auto &pos = std::find(
+				eventList.cbegin(),
+				end,
+				positionUpdateEvent);
+			if (pos != end) {
 				return false;
 			}
-			eventList.insert(positionUpdateEvent);
+			eventList.push_back(positionUpdateEvent);
 			return true;
 		}
 		template<typename EventList>
@@ -875,32 +893,36 @@ namespace trdk { namespace Engine {
 	};
 
 	template<>
-	inline void Dispatcher::RaiseEvent(const Level1UpdateEvent &level1Update) {
+	inline void Dispatcher::RaiseEvent(Level1UpdateEvent &level1Update) {
+		Lib::TimeMeasurement::Milestones &timeMeasurement
+			= boost::get<2>(level1Update);
+		timeMeasurement.Measure(STMM_DISPATCHING_DATA_DEQUEUE);
 		boost::get<1>(level1Update).RaiseLevel1UpdateEvent(
-			*boost::get<0>(level1Update));
+			*boost::get<0>(level1Update),
+			timeMeasurement);
 	}
 	template<>
-	inline void Dispatcher::RaiseEvent(const Level1TickEvent &tick) {
+	inline void Dispatcher::RaiseEvent(Level1TickEvent &tick) {
 		boost::get<1>(tick).RaiseLevel1TickEvent(boost::get<0>(tick));
 	}
 	template<>
-	inline void Dispatcher::RaiseEvent(const NewTradeEvent &newTradeEvent) {
+	inline void Dispatcher::RaiseEvent(NewTradeEvent &newTradeEvent) {
 		boost::get<1>(newTradeEvent).RaiseNewTradeEvent(
 			boost::get<0>(newTradeEvent));
 	}
 	template<>
-	inline void Dispatcher::RaiseEvent(const PositionUpdateEvent &positionUpdateEvent) {
+	inline void Dispatcher::RaiseEvent(PositionUpdateEvent &positionUpdateEvent) {
 		boost::get<1>(positionUpdateEvent).RaisePositionUpdateEvent(
 			*boost::get<0>(positionUpdateEvent));
 	}
 	template<>
 	inline void Dispatcher::RaiseEvent(
-				const BrokerPositionUpdateEvent &positionUpdateEvent) {
+				BrokerPositionUpdateEvent &positionUpdateEvent) {
 		boost::get<1>(positionUpdateEvent).RaiseBrokerPositionUpdateEvent(
 			boost::get<0>(positionUpdateEvent));
 	}
 	template<>
-	inline void Dispatcher::RaiseEvent(const NewBarEvent &newBarEvent) {
+	inline void Dispatcher::RaiseEvent(NewBarEvent &newBarEvent) {
 		boost::get<2>(newBarEvent).RaiseNewBarEvent(
 			*boost::get<0>(newBarEvent),
 			boost::get<1>(newBarEvent));

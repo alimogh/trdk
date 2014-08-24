@@ -56,7 +56,9 @@ namespace trdk { namespace Strategies { namespace Test {
 
 	public:
 		
-		virtual void OnLevel1Update(Security &security) {
+		virtual void OnLevel1Update(
+					Security &security,
+					Lib::TimeMeasurement::Milestones &timeMeasurement) {
 			GetContext().GetLog().Debug(
 				"%1% (%6%): bid = %2% / %3%, ask = %4% / %5%;",
 				boost::make_tuple(
@@ -79,7 +81,8 @@ namespace trdk { namespace Strategies { namespace Test {
 					security,
 					CURRENCY_EUR,
 					1000000,
-					priceToBuy));
+					priceToBuy,
+					timeMeasurement));
 			pos->OpenAtMarketPrice();
 		}
 		

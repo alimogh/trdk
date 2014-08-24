@@ -72,9 +72,9 @@ namespace trdk { namespace Interaction { namespace Csv {
 	public:
 
 		explicit MarketDataSource(
+				trdk::Context &,
 				const std::string &tag,
-				const trdk::Lib::IniSectionRef &,
-				trdk::Context::Log &);
+				const trdk::Lib::IniSectionRef &);
 		virtual ~MarketDataSource();
 
 	public:
@@ -109,8 +109,6 @@ namespace trdk { namespace Interaction { namespace Csv {
 				const;
 
 	private:
-
-		Context::Log &m_log;
 
 		const std::string m_pimaryExchange;
 		const std::string m_currency;

@@ -269,6 +269,7 @@
     <ClCompile Include="SysError.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="FileSystemChangeNotificator.cpp" />
+    <ClCompile Include="TimeMeasurement.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -289,6 +290,7 @@
     <ClInclude Include="FileSystemChangeNotificator.hpp" />
     <ClInclude Include="Foreach.hpp" />
     <ClInclude Include="LockingPolicy.hpp" />
+    <ClInclude Include="TimeMeasurement.hpp" />
     <ClInclude Include="UseUnused.hpp" />
     <ClInclude Include="Util.hpp" />
   </ItemGroup>

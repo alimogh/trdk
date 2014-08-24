@@ -62,22 +62,37 @@ class TradeSystem::Implementation : private boost::noncopyable {
 
 public:
 
+	Context &m_context;
+
 	const std::string m_tag;
 
-	explicit Implementation(const std::string &tag)
-			: m_tag(tag) {
+	explicit Implementation(Context &context, const std::string &tag)
+			: m_context(context),
+			m_tag(tag) {
 		//...//
 	}
 
 };
 
-TradeSystem::TradeSystem(const std::string &tag)
-		: m_pimpl(new Implementation(tag)) {
+TradeSystem::TradeSystem(Context &context, const std::string &tag)
+		: m_pimpl(new Implementation(context, tag)) {
 	//...//
 }
 
 TradeSystem::~TradeSystem() {
 	delete m_pimpl;
+}
+
+Context & TradeSystem::GetContext() {
+	return m_pimpl->m_context;
+}
+
+const Context & TradeSystem::GetContext() const {
+	return const_cast<TradeSystem *>(this)->GetContext();
+}
+
+Context::Log & TradeSystem::GetLog() const {
+	return GetContext().GetLog();
 }
 
 const char * TradeSystem::GetStringStatus(OrderStatus code) {

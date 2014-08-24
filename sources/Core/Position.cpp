@@ -137,6 +137,8 @@ public:
 
 	const std::string m_tag;
 
+	TimeMeasurement::Milestones m_timeMeasurement;
+
 	explicit Implementation(
 				Position &position,
 				TradeSystem &tradeSystem,
@@ -144,7 +146,8 @@ public:
 				Security &security,
 				const Currency &currency,
 				Qty qty,
-				ScaledPrice startPrice)
+				ScaledPrice startPrice,
+				const TimeMeasurement::Milestones &timeMeasurement)
 			: m_position(position),
 			m_tradeSystem(tradeSystem),
 			m_strategy(&strategy),
@@ -157,7 +160,8 @@ public:
 			m_isStarted(false),
 			m_isError(false),
 			m_isCanceled(CANCELED_0),
-			m_tag(m_strategy->GetTag()) {
+			m_tag(m_strategy->GetTag()),
+			m_timeMeasurement(timeMeasurement) {
 		//...//
 	}
 
@@ -620,7 +624,8 @@ Position::Position(
 			Security &security,
 			const Currency &currency,
 			Qty qty,
-			ScaledPrice startPrice) {
+			ScaledPrice startPrice,
+			const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl = new Implementation(
 		*this,
 		tradeSystem,
@@ -628,7 +633,8 @@ Position::Position(
 		security,
 		currency,
 		qty,
-		startPrice);
+		startPrice,
+		timeMeasurement);
 	AssertGt(m_pimpl->m_planedQty, 0);
 }
 
@@ -653,6 +659,10 @@ TradeSystem & Position::GetTradeSystem() {
 
 const Currency & Position::GetCurrency() const {
 	return m_pimpl->m_currency;
+}
+
+TimeMeasurement::Milestones & Position::GetTimeMeasurement() {
+	return m_pimpl->m_timeMeasurement;
 }
 
 Position::CloseType Position::GetCloseType() const throw() {
@@ -1009,14 +1019,16 @@ LongPosition::LongPosition(
 			Security &security,
 			const Currency &currency,
 			Qty qty,
-			ScaledPrice startPrice)
+			ScaledPrice startPrice,
+			const TimeMeasurement::Milestones &timeMeasurement)
 		: Position(
 			strategy,
 			tradeSystem,
 			security,
 			currency,
 			qty,
-			startPrice) {
+			startPrice,
+			timeMeasurement) {
 	//...//
 }
 
@@ -1247,14 +1259,16 @@ ShortPosition::ShortPosition(
 			Security &security,
 			const Currency &currency,
 			Qty qty,
-			ScaledPrice startPrice)
+			ScaledPrice startPrice,
+			const TimeMeasurement::Milestones &timeMeasurement)
 		: Position(
 			strategy,
 			tradeSystem,
 			security,
 			currency,
 			abs(qty),
-			startPrice) {
+			startPrice,
+			timeMeasurement) {
 	//...//
 }
 

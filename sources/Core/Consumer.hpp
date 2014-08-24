@@ -35,8 +35,6 @@ namespace trdk {
 		virtual boost::posix_time::ptime OnSecurityStart(trdk::Security &);
 
 	public:
-
-		virtual void OnLevel1Update(trdk::Security &);
 		
 		virtual void OnLevel1Tick(
 					trdk::Security &,

@@ -24,9 +24,9 @@ namespace trdk { namespace Interaction { namespace Fake {
 	public:
 
 		TradeSystem(
+				Context &context,
 				const std::string &tag,
-				const Lib::IniSectionRef &,
-				Context::Log &);
+				const Lib::IniSectionRef &);
 		virtual ~TradeSystem();
 
 	public:

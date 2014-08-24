@@ -20,15 +20,14 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::Csv;
 
 Csv::MarketDataSource::MarketDataSource(
+			Context &context,
 			const std::string &tag,
-			const IniSectionRef &configuration,
-			Context::Log &log)
-		: Base(tag),
-		m_log(log),
+			const IniSectionRef &configuration)
+		: Base(context, tag),
 		m_pimaryExchange(configuration.ReadKey("exchange")),
 		m_isStopped(true) {
 	const auto filePath = configuration.ReadFileSystemPath("source");
-	m_log.Info(
+	GetLog().Info(
 		TRDK_INTERACTION_CSV_LOG_PREFFIX
 			"loading file %1% for exchange \"%2%\"...",
 		boost::make_tuple(
@@ -86,7 +85,7 @@ bool Csv::MarketDataSource::ParseTradeLine(
 	for ( ; !i.eof(); ++i) {
 		switch (++field) {
 			default:
-				m_log.Error(
+				GetLog().Error(
 					TRDK_INTERACTION_CSV_LOG_PREFFIX
 						"format mismatch: unknown field #%1%.",
 					field);
@@ -115,7 +114,7 @@ bool Csv::MarketDataSource::ParseTradeLine(
 				symbol = boost::copy_range<std::string>(*i);
 				boost::trim(symbol);
 				if (symbol.empty()) {
-					m_log.Error(
+					GetLog().Error(
 						TRDK_INTERACTION_CSV_LOG_PREFFIX
 							"format mismatch: empty symbol field.");
 					return false;
@@ -125,7 +124,7 @@ bool Csv::MarketDataSource::ParseTradeLine(
 				exchange = boost::copy_range<std::string>(*i);
 				boost::trim(exchange);
 				if (exchange.empty()) {
-					m_log.Error(
+					GetLog().Error(
 						TRDK_INTERACTION_CSV_LOG_PREFFIX
 							"format mismatch: empty exchange field.");
 					return false;
@@ -141,7 +140,7 @@ bool Csv::MarketDataSource::ParseTradeLine(
 					try {
 						price = boost::lexical_cast<ScaledPrice>(val);
 					} catch (const boost::bad_lexical_cast &ex) {
-						m_log.Error(
+						GetLog().Error(
 							TRDK_INTERACTION_CSV_LOG_PREFFIX
 								"format mismatch: wrong price field value:"
 								" %1% (%2%).",
@@ -149,7 +148,7 @@ bool Csv::MarketDataSource::ParseTradeLine(
 						return false;
 					}
 					if (price == 0) {
-						m_log.Error(
+						GetLog().Error(
 							TRDK_INTERACTION_CSV_LOG_PREFFIX
 								"format mismatch: wrong price field value: %1%.",
 							val);
@@ -164,14 +163,14 @@ bool Csv::MarketDataSource::ParseTradeLine(
 					try {
 						qty = boost::lexical_cast<Qty>(val);
 					} catch (const boost::bad_lexical_cast &ex) {
-						m_log.Error(
+						GetLog().Error(
 							TRDK_INTERACTION_CSV_LOG_PREFFIX
 								"format mismatch:"
 									" wrong quantity field value: %1% (%2%).",
 							boost::make_tuple(boost::cref(val), ex.what()));
 					}
 					if (qty == 0) {
-						m_log.Error(
+						GetLog().Error(
 							TRDK_INTERACTION_CSV_LOG_PREFFIX
 								"format mismatch:"
 								" wrong quantity field value: %1%.",
@@ -190,7 +189,7 @@ bool Csv::MarketDataSource::ParseTradeLine(
 					} else if (val == "B") {
 						side = ORDER_SIDE_BUY;
 					} else {
-						m_log.Error(
+						GetLog().Error(
 							TRDK_INTERACTION_CSV_LOG_PREFFIX
 								"format mismatch:"
 								" unknown side field value: \"%1%\".",
@@ -203,7 +202,7 @@ bool Csv::MarketDataSource::ParseTradeLine(
 	}
 
 	if (field != 16) {
-		m_log.Error(
+		GetLog().Error(
 			TRDK_INTERACTION_CSV_LOG_PREFFIX
 				"format mismatch: wrong field number (%1%)"
 				" for primary exchange \"%2%\".",
@@ -219,7 +218,7 @@ void Csv::MarketDataSource::ReadFile() {
 
 	const auto &securityList = m_securityList.get<ByTradesRequirements>();
 	if (securityList.find(true) == securityList.end()) {
-		m_log.Info(
+		GetLog().Info(
 			TRDK_INTERACTION_CSV_LOG_PREFFIX
 				"reading stopped because it's not necessary.");
 		return;
@@ -232,6 +231,8 @@ void Csv::MarketDataSource::ReadFile() {
 	std::string line;
 	size_t lineCount = 0;
 	while (!m_isStopped && getline(m_file, line)) {
+
+		const auto &timeMeasurement = GetContext().StartStrategyTimeMeasurement();
 
 		++lineCount;
 
@@ -254,7 +255,7 @@ void Csv::MarketDataSource::ReadFile() {
 		const SecurityByInstrument::const_iterator security
 			= index.find(instrumnet);
 		if (security == index.end()) {
-			m_log.DebugEx(
+			GetLog().DebugEx(
 				[&]() -> boost::format {
 					boost::format message(
 						"Found unknown instrument: %1%:%2%:%3%.");
@@ -263,12 +264,14 @@ void Csv::MarketDataSource::ReadFile() {
 				});
 		} else if (security->security->IsTradesRequired()) {
 			AssertNe(int(numberOfOrderSides), int(side));
-			security->security->AddTrade(time, side, price, qty);
+			security
+				->security
+				->AddTrade(time, side, price, qty, timeMeasurement);
 		}
 
     }
 
-	m_log.Info(
+	GetLog().Info(
 		TRDK_INTERACTION_CSV_LOG_PREFFIX
 			"reading for exchange \"%1%\" is completed (line count: %2%).",
 		boost::make_tuple(boost::cref(m_pimaryExchange), lineCount));

@@ -36,7 +36,8 @@ namespace trdk {  namespace Interaction { namespace Csv {
 					const boost::posix_time::ptime &,
 					trdk::OrderSide,
 					ScaledPrice,
-					Qty);
+					Qty,
+					const Lib::TimeMeasurement::Milestones &);
 
 	};
 

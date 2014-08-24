@@ -120,10 +120,15 @@ public:
 	bool AddLevel1Tick(
 				const pt::ptime &time,
 				const Level1TickValue &tick,
+				const TimeMeasurement::Milestones &timeMeasurement,
 				bool flush,
 				bool isPreviouslyChanged) {
-		const bool isChanged
-			= SetLevel1(time, tick, flush, isPreviouslyChanged);
+		const bool isChanged = SetLevel1(
+			time,
+			tick,
+			timeMeasurement,
+			flush,
+			isPreviouslyChanged);
 		m_level1TickSignal(time, tick, flush);
 		return isChanged;
 	}
@@ -131,11 +136,18 @@ public:
 	bool SetLevel1(
 				const pt::ptime &time,
 				const Level1TickValue &tick,
+				const TimeMeasurement::Milestones &timeMeasurement,
 				bool flush,
 				bool isPreviouslyChanged) {
 		const auto tickValue = tick.Get();
-		const bool isChanged = m_level1[tick.type].exchange(tickValue) != tickValue;
-		FlushLevel1Update(time, flush, isChanged, isPreviouslyChanged);
+		const bool isChanged
+			= m_level1[tick.type].exchange(tickValue) != tickValue;
+		FlushLevel1Update(
+			time,
+			timeMeasurement,
+			flush,
+			isChanged,
+			isPreviouslyChanged);
 		return isChanged;
 	}
 
@@ -143,6 +155,7 @@ public:
 				const pt::ptime &time,
 				const Level1TickValue &tick,
 				intmax_t prevValue,
+				const TimeMeasurement::Milestones &timeMeasurement,
 				bool flush,
 				bool isPreviouslyChanged) {
 		const auto tickValue = tick.Get();
@@ -153,12 +166,18 @@ public:
 		if (!m_level1[tick.type].compare_exchange_weak(prevValue, tickValue)) {
 			return false;
 		}
-		FlushLevel1Update(time, flush, true, isPreviouslyChanged);
+		FlushLevel1Update(
+			time,
+			timeMeasurement,
+			flush,
+			true,
+			isPreviouslyChanged);
 		return true;
 	}
 
 	void FlushLevel1Update(
 				const pt::ptime &time,
+				const TimeMeasurement::Milestones &timeMeasurement,
 				bool flush,
 				bool isChanged,
 				bool isPreviouslyChanged) {
@@ -181,7 +200,7 @@ public:
 		AssertLe(GetLastMarketDataTime(), time);
 		m_marketDataTime = ConvertToMicroseconds(time);
 
-		m_level1UpdateSignal();
+		m_level1UpdateSignal(timeMeasurement);
 
 	}
 
@@ -356,76 +375,93 @@ bool Security::IsBarsRequired() const {
 
 void Security::SetLevel1(
 			const pt::ptime &time,
-			const Level1TickValue &tick) {
-	m_pimpl->SetLevel1(time, tick, true, false);
-}
-
-void Security::SetLevel1(
-			const pt::ptime &time,
-			const Level1TickValue &tick1,
-			const Level1TickValue &tick2) {
-	AssertNe(tick1.type, tick2.type);
-	m_pimpl->SetLevel1(
-		time,
-		tick2,
-		true,
-		m_pimpl->SetLevel1(time, tick1, false, false));
+			const Level1TickValue &tick,
+			const TimeMeasurement::Milestones &timeMeasurement) {
+	m_pimpl->SetLevel1(time, tick, timeMeasurement, true, false);
 }
 
 void Security::SetLevel1(
 			const pt::ptime &time,
 			const Level1TickValue &tick1,
 			const Level1TickValue &tick2,
-			const Level1TickValue &tick3) {
+			const TimeMeasurement::Milestones &timeMeasurement) {
+	AssertNe(tick1.type, tick2.type);
+	m_pimpl->SetLevel1(
+		time,
+		tick2,
+		timeMeasurement,
+		true,
+		m_pimpl->SetLevel1(time, tick1, timeMeasurement, false, false));
+}
+
+void Security::SetLevel1(
+			const pt::ptime &time,
+			const Level1TickValue &tick1,
+			const Level1TickValue &tick2,
+			const Level1TickValue &tick3,
+			const TimeMeasurement::Milestones &timeMeasurement) {
 	AssertNe(tick1.type, tick2.type);
 	AssertNe(tick1.type, tick3.type);
 	AssertNe(tick2.type, tick3.type);
 	m_pimpl->SetLevel1(
 		time,
 		tick3,
+		timeMeasurement,
 		true,
 		m_pimpl->SetLevel1(
 			time,
 			tick2,
+			timeMeasurement,
 			false,
-			m_pimpl->SetLevel1(time, tick1, false, false)));
+			m_pimpl->SetLevel1(time, tick1, timeMeasurement, false, false)));
 }
 
 void Security::AddLevel1Tick(
 			const pt::ptime &time,
-			const Level1TickValue &tick) {
-	m_pimpl->AddLevel1Tick(time, tick, true, false);
-}
-
-void Security::AddLevel1Tick(
-			const pt::ptime &time,
-			const Level1TickValue &tick1,
-			const Level1TickValue &tick2) {
-	AssertNe(tick1.type, tick2.type);
-	m_pimpl->AddLevel1Tick(
-		time,
-		tick2,
-		true,
-		m_pimpl->AddLevel1Tick(time, tick1, false, false));
+			const Level1TickValue &tick,
+			const TimeMeasurement::Milestones &timeMeasurement) {
+	m_pimpl->AddLevel1Tick(time, tick, timeMeasurement, true, false);
 }
 
 void Security::AddLevel1Tick(
 			const pt::ptime &time,
 			const Level1TickValue &tick1,
 			const Level1TickValue &tick2,
-			const Level1TickValue &tick3) {
+			const TimeMeasurement::Milestones &timeMeasurement) {
+	AssertNe(tick1.type, tick2.type);
+	m_pimpl->AddLevel1Tick(
+		time,
+		tick2,
+		timeMeasurement,
+		true,
+		m_pimpl->AddLevel1Tick(time, tick1, timeMeasurement, false, false));
+}
+
+void Security::AddLevel1Tick(
+			const pt::ptime &time,
+			const Level1TickValue &tick1,
+			const Level1TickValue &tick2,
+			const Level1TickValue &tick3,
+			const TimeMeasurement::Milestones &timeMeasurement) {
 	AssertNe(tick1.type, tick2.type);
 	AssertNe(tick1.type, tick3.type);
 	AssertNe(tick2.type, tick3.type);
 	m_pimpl->AddLevel1Tick(
 		time,
 		tick3,
+		timeMeasurement,
 		true,
 		m_pimpl->AddLevel1Tick(
 			time,
 			tick2,
+			timeMeasurement,
 			false,
-			m_pimpl->AddLevel1Tick(time, tick1, false, false)));
+			m_pimpl->AddLevel1Tick(
+				time,
+				tick1,
+				timeMeasurement,
+				false,
+				false)));
 }
 
 void Security::AddTrade(
@@ -433,6 +469,7 @@ void Security::AddTrade(
 			OrderSide side,
 			ScaledPrice price,
 			Qty qty,
+			const TimeMeasurement::Milestones &timeMeasurement,
 			bool useAsLastTrade,
 			bool useForTradedVolume) {
 	
@@ -441,6 +478,7 @@ void Security::AddTrade(
 		if (m_pimpl->SetLevel1(
 				time,
 				Level1TickValue::Create<LEVEL1_TICK_LAST_QTY>(qty),
+				timeMeasurement,
 				false,
 				false)) {
 			isLevel1Changed = true;
@@ -448,6 +486,7 @@ void Security::AddTrade(
 		if (m_pimpl->SetLevel1(
 				time,
 				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(price),
+				timeMeasurement,
 				!useForTradedVolume,
 				isLevel1Changed)) {
 			isLevel1Changed = true;
@@ -465,6 +504,7 @@ void Security::AddTrade(
 						time,
 						newVal,
 						prevVal,
+						timeMeasurement,
 						true,
 						isLevel1Changed)) {
 				break;

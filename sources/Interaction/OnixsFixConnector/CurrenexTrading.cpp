@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "CurrenexTrading.hpp"
 #include "Core/Security.hpp"
+#include "Core/TimeMeasurement.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -19,12 +20,11 @@ using namespace trdk::Interaction::OnixsFixConnector;
 namespace fix = OnixS::FIX;
 
 CurrenexTrading::CurrenexTrading(
-					const std::string &tag,
-					const IniSectionRef &conf,
-					Context::Log &log)
-		: TradeSystem(tag),
-		m_log(log),
-		m_session("trading", conf, m_log),
+			Context &context,
+			const std::string &tag,
+			const IniSectionRef &conf)
+		: TradeSystem(context, tag),
+		m_session(GetContext(), "trading", conf),
 		m_nextOrderId(1),
 		m_ordersCountReportsCounter(0) {
 	//...//
@@ -51,18 +51,21 @@ OrderId CurrenexTrading::GetMessageOrderId(const fix::Message &message) const {
 	return message.getUInt64(fix::FIX40::Tags::ClOrdID);
 }
 
-OrderId CurrenexTrading::TakeOrderId(const OrderStatusUpdateSlot &callback) {
+OrderId CurrenexTrading::TakeOrderId(
+			const OrderStatusUpdateSlot &callback,
+			const TimeMeasurement::Milestones &timeMeasurement) {
 	const Order order = {
 		false,
 		m_nextOrderId++,
-		callback
+		callback,
+		timeMeasurement
 	};
 	{
 		const OrdersWriteLock lock(m_ordersMutex);
 		m_orders.push_back(order);
 		if (m_orders.size() >= 1000) {
 			if (!(++m_ordersCountReportsCounter % 1000)) {
-				m_log.Warn(
+				GetLog().Warn(
 					"FIX orders storage too big (%1%): %2% records.",
 					boost::make_tuple(GetTag(), m_orders.size()));
 				m_ordersCountReportsCounter = 0;
@@ -80,23 +83,6 @@ CurrenexTrading::Order * CurrenexTrading::FindOrder(
 		}
 	}
 	return nullptr;
-}
-
-CurrenexTrading::OrderStatusUpdateSlot CurrenexTrading::FindOrderCallback(
-			const OrderId &orderId,
-			const char *operation,
-			bool isOrderCompleted) {
-	const OrdersReadLock lock(m_ordersMutex);
-	Order *order = FindOrder(orderId);
-	if (!order) {
-		m_log.Error(
-			"FIX Server (%1%) sent unknown %2% order ID %3%.",
-			boost::make_tuple(GetTag(), operation, orderId));
-		return OrderStatusUpdateSlot();
-	}
-	Assert(!order->isRemoved);
-	order->isRemoved = isOrderCompleted;
-	return order->callback;
 }
 
 void CurrenexTrading::DeleteErrorOrder(const OrderId &orderId) throw() {
@@ -131,13 +117,31 @@ void CurrenexTrading::NotifyOrderUpdate(
 			const fix::Message &updateMessage,
 			const OrderStatus &status,
 			const char *operation,
-			bool isOrderCompleted) {
+			bool isOrderCompleted,
+			const TimeMeasurement::Milestones::TimePoint &replyTime) {
+	
 	const auto &orderId = GetMessageOrderId(updateMessage);
-	const auto &callback
-		= FindOrderCallback(orderId, operation, isOrderCompleted);
-	if (!callback) {
-		return;
+	
+	OrderStatusUpdateSlot callback;
+	TimeMeasurement::Milestones timeMeasurement;
+	{
+		const OrdersReadLock lock(m_ordersMutex);
+		Order *const order = FindOrder(orderId);
+		if (!order) {
+			GetLog().Error(
+				"FIX Server (%1%) sent unknown %2% order ID %3%.",
+				boost::make_tuple(GetTag(), operation, orderId));
+			return;
+		}
+		Assert(!order->isRemoved);
+		timeMeasurement = order->timeMeasurement;
+		order->isRemoved = isOrderCompleted;
+		callback = order->callback;
 	}
+	Assert(callback);
+	Assert(timeMeasurement);
+
+	timeMeasurement.Add(TSTMM_ORDER_REPLY_RECEIVED, replyTime);
 	callback(
 		orderId,
 		status,
@@ -147,6 +151,8 @@ void CurrenexTrading::NotifyOrderUpdate(
 	if (isOrderCompleted) {
 		FlushRemovedOrders();
 	}
+	timeMeasurement.Measure(TSTMM_ORDER_REPLY_PROCESSED);
+
 }
 
 fix::Message CurrenexTrading::CreateOrderMessage(
@@ -201,18 +207,28 @@ fix::Message CurrenexTrading::CreateLimitOrderMessage(
 	return std::move(order);
 }
 
+void CurrenexTrading::Send(
+			fix::Message &message,
+			TimeMeasurement::Milestones &timeMeasurement) {
+	timeMeasurement.Measure(TSTMM_ORDER_SEND);
+	m_session.Get().send(&message);
+	timeMeasurement.Measure(TSTMM_ORDER_SENT);
+}
+
 OrderId CurrenexTrading::SellAtMarketPrice(
 			trdk::Security &security,
 			const trdk::Lib::Currency &currency,
 			trdk::Qty qty,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &callback) {
-	const auto &orderId = TakeOrderId(callback);
+	TimeMeasurement::Milestones timeMeasurement
+		= GetContext().StartTradeSystemTimeMeasurement();
+	const auto &orderId = TakeOrderId(callback, timeMeasurement);
 	try {
 		fix::Message order
 			= CreateMarketOrderMessage(orderId, security, currency, qty);
 		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
-		m_session.Get().send(&order);
+		Send(order, timeMeasurement);
 	} catch (...) {
 		DeleteErrorOrder(orderId);
 		throw;
@@ -249,7 +265,9 @@ OrderId CurrenexTrading::SellImmediatelyOrCancel(
 			const trdk::ScaledPrice &price,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &callback) {
-	const auto &orderId = TakeOrderId(callback);
+	TimeMeasurement::Milestones timeMeasurement
+		= GetContext().StartTradeSystemTimeMeasurement();
+	const auto &orderId = TakeOrderId(callback, timeMeasurement);
 	try {
 		fix::Message order
 			= CreateLimitOrderMessage(orderId, security, currency, qty, price);
@@ -257,7 +275,7 @@ OrderId CurrenexTrading::SellImmediatelyOrCancel(
 		order.set(
 			fix::FIX40::Tags::TimeInForce,
 			fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
-		m_session.Get().send(&order);
+		Send(order, timeMeasurement);
 	} catch (...) {
 		DeleteErrorOrder(orderId);
 		throw;
@@ -271,7 +289,9 @@ OrderId CurrenexTrading::SellAtMarketPriceImmediatelyOrCancel(
 			const trdk::Qty &qty,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &callback) {
-	const auto &orderId = TakeOrderId(callback);
+	TimeMeasurement::Milestones timeMeasurement
+		= GetContext().StartTradeSystemTimeMeasurement();
+	const auto &orderId = TakeOrderId(callback, timeMeasurement);
 	try {
 		fix::Message order
 			= CreateMarketOrderMessage(orderId, security, currency, qty);
@@ -279,7 +299,7 @@ OrderId CurrenexTrading::SellAtMarketPriceImmediatelyOrCancel(
 		order.set(
 			fix::FIX40::Tags::TimeInForce,
 			fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
-		m_session.Get().send(&order);
+		Send(order, timeMeasurement);
 	} catch (...) {
 		DeleteErrorOrder(orderId);
 		throw;
@@ -293,12 +313,14 @@ OrderId CurrenexTrading::BuyAtMarketPrice(
 			trdk::Qty qty,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &callback) {
-	const auto &orderId = TakeOrderId(callback);
+	TimeMeasurement::Milestones timeMeasurement
+		= GetContext().StartTradeSystemTimeMeasurement();
+	const auto &orderId = TakeOrderId(callback, timeMeasurement);
 	try {
 		fix::Message order
 			= CreateMarketOrderMessage(orderId, security, currency, qty);
 		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
-		m_session.Get().send(&order);
+		Send(order, timeMeasurement);
 	} catch (...) {
 		DeleteErrorOrder(orderId);
 		throw;
@@ -335,7 +357,9 @@ OrderId CurrenexTrading::BuyImmediatelyOrCancel(
 			const trdk::ScaledPrice &price,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &callback) {
-	const auto &orderId = TakeOrderId(callback);
+	TimeMeasurement::Milestones timeMeasurement
+		= GetContext().StartTradeSystemTimeMeasurement();
+	const auto &orderId = TakeOrderId(callback, timeMeasurement);
 	try {
 		fix::Message order
 			= CreateLimitOrderMessage(orderId, security, currency, qty, price);
@@ -343,7 +367,7 @@ OrderId CurrenexTrading::BuyImmediatelyOrCancel(
 		order.set(
 			fix::FIX40::Tags::TimeInForce,
 			fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
-		m_session.Get().send(&order);
+		Send(order, timeMeasurement);
 	} catch (...) {
 		DeleteErrorOrder(orderId);
 		throw;
@@ -357,7 +381,9 @@ OrderId CurrenexTrading::BuyAtMarketPriceImmediatelyOrCancel(
 			const trdk::Qty &qty,
 			const trdk::OrderParams &,
 			const OrderStatusUpdateSlot &callback) {
-	const auto &orderId = TakeOrderId(callback);
+	TimeMeasurement::Milestones timeMeasurement
+		= GetContext().StartTradeSystemTimeMeasurement();
+	const auto &orderId = TakeOrderId(callback, timeMeasurement);
 	try {
 		fix::Message order
 			= CreateMarketOrderMessage(orderId, security, currency, qty);
@@ -365,7 +391,7 @@ OrderId CurrenexTrading::BuyAtMarketPriceImmediatelyOrCancel(
 		order.set(
 			fix::FIX40::Tags::TimeInForce,
 			fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
-		m_session.Get().send(&order);
+		Send(order, timeMeasurement);
 	} catch (...) {
 		DeleteErrorOrder(orderId);
 		throw;
@@ -408,6 +434,8 @@ void CurrenexTrading::onWarning(
 void CurrenexTrading::onInboundApplicationMsg(
 			fix::Message &message,
 			fix::Session *session) {
+
+	const auto &replyTime = TimeMeasurement::Milestones::GetNow();
 	
 	Assert(session == &m_session.Get());
 	UseUnused(session);
@@ -426,24 +454,24 @@ void CurrenexTrading::onInboundApplicationMsg(
 		if (execType == fix::FIX41::Values::ExecType::New) {
 			
 			if (ordStatus == fix::FIX40::Values::OrdStatus::New) {
-				OnOrderNew(message);
+				OnOrderNew(message, replyTime);
 				return;
 			}
 
 		} else if (execType == fix::FIX41::Values::ExecType::Cancelled) {
 
 			if (ordStatus == fix::FIX40::Values::OrdStatus::Canceled) {
-				OnOrderCanceled(message);
+				OnOrderCanceled(message, replyTime);
 				return;
 			}
 
 		} else if (execType == fix::FIX41::Values::ExecType::Fill) {
 
 			if (ordStatus == fix::FIX40::Values::OrdStatus::Partially_filled) {
-				OnOrderPartialFill(message);
+				OnOrderPartialFill(message, replyTime);
 				return;
 			} else if (ordStatus == fix::FIX40::Values::OrdStatus::Filled) {
-				OnOrderFill(message);
+				OnOrderFill(message, replyTime);
 				return;
 			}
 
@@ -452,7 +480,7 @@ void CurrenexTrading::onInboundApplicationMsg(
 			//...//
 		
 		} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
-			OnOrderRejected(message);
+			OnOrderRejected(message, replyTime);
 			return;
 		}
 		
@@ -462,13 +490,15 @@ void CurrenexTrading::onInboundApplicationMsg(
 
 	}
 
-	m_log.Error(
+	GetLog().Error(
 		"FIX Server sent unknown Execution Report: \"%1%\".",
 		boost::make_tuple(boost::cref(message)));
 
 }
 
-void CurrenexTrading::OnOrderNew(const fix::Message &execReport) {
+void CurrenexTrading::OnOrderNew(
+			const fix::Message &execReport,
+			const TimeMeasurement::Milestones::TimePoint &replyTime) {
 	AssertEq("8", execReport.type());
 	Assert(
 		execReport.get(fix::FIX41::Tags::ExecType)
@@ -476,10 +506,17 @@ void CurrenexTrading::OnOrderNew(const fix::Message &execReport) {
 	Assert(
 		fix::FIX41::Values::OrdStatus::New
 			== execReport.get(fix::FIX40::Tags::OrdStatus));
-	NotifyOrderUpdate(execReport, ORDER_STATUS_SUBMITTED, "NEW", false);
+	NotifyOrderUpdate(
+		execReport,
+		ORDER_STATUS_SUBMITTED,
+		"NEW",
+		false,
+		replyTime);
 }
 
-void CurrenexTrading::OnOrderCanceled(const fix::Message &execReport) {
+void CurrenexTrading::OnOrderCanceled(
+			const fix::Message &execReport,
+			const TimeMeasurement::Milestones::TimePoint &replyTime) {
 	AssertEq("8", execReport.type());
 	Assert(
 		fix::FIX41::Values::ExecType::Cancelled
@@ -487,10 +524,17 @@ void CurrenexTrading::OnOrderCanceled(const fix::Message &execReport) {
 	Assert(
 		fix::FIX41::Values::OrdStatus::Canceled
 			== execReport.get(fix::FIX40::Tags::OrdStatus));
-	NotifyOrderUpdate(execReport, ORDER_STATUS_CANCELLED, "CANCELED", true);
+	NotifyOrderUpdate(
+		execReport,
+		ORDER_STATUS_CANCELLED,
+		"CANCELED",
+		true,
+		replyTime);
 }	
 
-void CurrenexTrading::OnOrderRejected(const fix::Message &execReport) {
+void CurrenexTrading::OnOrderRejected(
+			const fix::Message &execReport,
+			const TimeMeasurement::Milestones::TimePoint &replyTime) {
 
 	AssertEq("8", execReport.type());
 	Assert(
@@ -498,18 +542,25 @@ void CurrenexTrading::OnOrderRejected(const fix::Message &execReport) {
 			== execReport.get(fix::FIX41::Tags::ExecType));
 
 	const std::string &reason = execReport.get(fix::FIX40::Tags::Text);
-	m_log.Error(
+	GetLog().Error(
 		"FIX Server (%1%) Rejected order %2%: \"%3%\".",
 		boost::make_tuple(
 			GetTag(),
 			GetMessageOrderId(execReport),
 			boost::cref(reason)));
 
-	NotifyOrderUpdate(execReport, ORDER_STATUS_ERROR, "REJECTED", true);
+	NotifyOrderUpdate(
+		execReport,
+		ORDER_STATUS_ERROR,
+		"REJECTED",
+		true,
+		replyTime);
 
 }
 
-void CurrenexTrading::OnOrderFill(const fix::Message &execReport) {
+void CurrenexTrading::OnOrderFill(
+			const fix::Message &execReport,
+			const TimeMeasurement::Milestones::TimePoint &replyTime) {
 	AssertEq("8", execReport.type());
 	Assert(
 		fix::FIX41::Values::ExecType::Fill
@@ -517,10 +568,12 @@ void CurrenexTrading::OnOrderFill(const fix::Message &execReport) {
 	Assert(
 		fix::FIX41::Values::OrdStatus::Filled
 			== execReport.get(fix::FIX40::Tags::OrdStatus));
-	NotifyOrderUpdate(execReport, ORDER_STATUS_FILLED, "FILL", true);
+	NotifyOrderUpdate(execReport, ORDER_STATUS_FILLED, "FILL", true, replyTime);
 }
 		
-void CurrenexTrading::OnOrderPartialFill(const fix::Message &execReport) {
+void CurrenexTrading::OnOrderPartialFill(
+			const fix::Message &execReport,
+			const TimeMeasurement::Milestones::TimePoint &replyTime) {
 	AssertEq("8", execReport.type());
 	Assert(
 		fix::FIX41::Values::ExecType::Fill
@@ -528,19 +581,23 @@ void CurrenexTrading::OnOrderPartialFill(const fix::Message &execReport) {
 	Assert(
 		fix::FIX41::Values::OrdStatus::Partially_filled
 			== execReport.get(fix::FIX40::Tags::OrdStatus));
-	NotifyOrderUpdate(execReport, ORDER_STATUS_FILLED, "PARTIAL FILL", false);
+	NotifyOrderUpdate(
+		execReport,
+		ORDER_STATUS_FILLED,
+		"PARTIAL FILL",
+		false,
+		replyTime);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 TradeSystemFactoryResult CreateCurrenexTrading(
+			Context &context,
 			const std::string &tag,
-			const IniSectionRef &configuration,
-			Context::Log &log) {
+			const IniSectionRef &configuration) {
 	TradeSystemFactoryResult result;
 	boost::get<0>(result).reset(
-		new CurrenexTrading(tag, configuration, log));
+		new CurrenexTrading(context, tag, configuration));
 	return result;
 }
 

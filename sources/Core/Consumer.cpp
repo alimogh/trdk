@@ -47,15 +47,6 @@ pt::ptime Consumer::OnSecurityStart(Security &) {
 	return pt::not_a_date_time;
 }
 
-void Consumer::OnLevel1Update(Security &security) {
-	GetLog().Error(
-		"Subscribed to %1% Level 1 Updates, but can't work with it"
-			" (hasn't OnLevel1Update method implementation).",
-		security);
-	throw MethodDoesNotImplementedError(
-		"Module subscribed to Level 1 updates, but can't work with it");
-}
-
 void Consumer::OnLevel1Tick(
 				Security &security,
 				const pt::ptime &,

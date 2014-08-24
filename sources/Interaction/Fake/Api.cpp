@@ -20,20 +20,23 @@
 
 TRDK_INTERACTION_FAKE_API
 trdk::TradeSystemFactoryResult CreateTradeSystem(
+			trdk::Context &context,
 			const std::string &tag,
-			const trdk::Lib::IniSectionRef &configuration,
-			trdk::Context::Log &log) {
+			const trdk::Lib::IniSectionRef &configuration) {
 	trdk::TradeSystemFactoryResult result;
 	boost::get<0>(result).reset(
-		new trdk::Interaction::Fake::TradeSystem(tag, configuration, log));
+		new trdk::Interaction::Fake::TradeSystem(context, tag, configuration));
 	return result;
 }
 
 TRDK_INTERACTION_FAKE_API
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
+			trdk::Context &context,
 			const std::string &tag,
-			const trdk::Lib::IniSectionRef &configuration,
-			trdk::Context::Log &/*log*/) {
+			const trdk::Lib::IniSectionRef &configuration) {
 	return boost::shared_ptr<trdk::MarketDataSource>(
-		new trdk::Interaction::Fake::MarketDataSource(tag, configuration));
+		new trdk::Interaction::Fake::MarketDataSource(
+			context,
+			tag,
+			configuration));
 }

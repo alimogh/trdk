@@ -32,9 +32,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="Api.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="EquationPosition.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -27,6 +27,7 @@ void Csv::Security::AddTrade(
 			const boost::posix_time::ptime &time,
 			OrderSide side,
 			ScaledPrice price,
-			trdk::Qty qty) {
-	Base::AddTrade(time, side, price, qty, true, true);
+			trdk::Qty qty,
+			const Lib::TimeMeasurement::Milestones &timeMeasurement) {
+	Base::AddTrade(time, side, price, qty, timeMeasurement, true, true);
 }

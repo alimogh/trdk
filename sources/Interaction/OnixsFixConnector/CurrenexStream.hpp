@@ -27,9 +27,9 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit CurrenexStream(
+					Context &,
 					const std::string &tag,
-					const Lib::IniSectionRef &,
-					Context::Log &);
+					const Lib::IniSectionRef &);
 		virtual ~CurrenexStream();
 
 	public:
@@ -74,7 +74,6 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	private:
 
-		Context::Log &m_log;
 		CurrenexFixSession m_session;
 		std::vector<boost::shared_ptr<CurrenexSecurity>> m_securities;
 
