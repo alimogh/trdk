@@ -29,6 +29,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			bool isRemoved;
 			OrderId id;
 			OrderStatusUpdateSlot callback;
+			Lib::TimeMeasurement::Milestones timeMeasurement;
 		};
 
 		
@@ -45,9 +46,9 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit CurrenexTrading(
+					Context &,
 					const std::string &tag,
-					const Lib::IniSectionRef &,
-					Context::Log &);
+					const Lib::IniSectionRef &);
 		virtual ~CurrenexTrading();
 
 	public:
@@ -148,15 +149,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	private:
 
 		//! Takes next free order ID.
-		OrderId TakeOrderId(const OrderStatusUpdateSlot &);
+		OrderId TakeOrderId(
+					const OrderStatusUpdateSlot &,
+					const Lib::TimeMeasurement::Milestones &);
 		//! Deletes unsent order (at error).
 		void DeleteErrorOrder(const OrderId &) throw();
 
 		Order * FindOrder(const OrderId &);
-		OrderStatusUpdateSlot FindOrderCallback(
-					const OrderId &,
-					const char *operation,
-					bool isOrderCompleted);
 
 		void FlushRemovedOrders();
 
@@ -180,25 +179,39 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				const Qty &,
 				const ScaledPrice &);
 
+		void Send(
+				OnixS::FIX::Message &,
+				Lib::TimeMeasurement::Milestones &);
+
 		OrderId GetMessageOrderId(const OnixS::FIX::Message &) const;
 
 		void NotifyOrderUpdate(
 				const OnixS::FIX::Message &,
 				const OrderStatus &,
 				const char *operation,
-				bool isOrderCompleted);
+				bool isOrderCompleted,
+				const Lib::TimeMeasurement::Milestones::TimePoint &);
 
 	private:
 
-		void OnOrderNew(const OnixS::FIX::Message &);
-		void OnOrderCanceled(const OnixS::FIX::Message &);
-		void OnOrderRejected(const OnixS::FIX::Message &);
-		void OnOrderFill(const OnixS::FIX::Message &);
-		void OnOrderPartialFill(const OnixS::FIX::Message &);
+		void OnOrderNew(
+					const OnixS::FIX::Message &,
+					const Lib::TimeMeasurement::Milestones::TimePoint &);
+		void OnOrderCanceled(
+					const OnixS::FIX::Message &,
+					const Lib::TimeMeasurement::Milestones::TimePoint &);
+		void OnOrderRejected(
+					const OnixS::FIX::Message &,
+					const Lib::TimeMeasurement::Milestones::TimePoint &);
+		void OnOrderFill(
+					const OnixS::FIX::Message &,
+					const Lib::TimeMeasurement::Milestones::TimePoint &);
+		void OnOrderPartialFill(
+					const OnixS::FIX::Message &,
+					const Lib::TimeMeasurement::Milestones::TimePoint &);
 
 	private:
 
-		Context::Log &m_log;
 		CurrenexFixSession m_session;
 
 		OrderId m_nextOrderId;

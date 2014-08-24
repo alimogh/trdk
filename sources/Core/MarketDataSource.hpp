@@ -23,9 +23,9 @@ namespace trdk {
 	/** Result can't be nullptr.
 	  */
 	typedef boost::shared_ptr<trdk::MarketDataSource> (MarketDataSourceFactory)(
+			trdk::Context &,
 			const std::string &tag,
-			const trdk::Lib::IniSectionRef &,
-			Context::Log &);
+			const trdk::Lib::IniSectionRef &);
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -44,7 +44,7 @@ namespace trdk {
 
 	public:
 
-		MarketDataSource(const std::string &tag);
+		MarketDataSource(trdk::Context &, const std::string &tag);
 		virtual ~MarketDataSource();
 
 		bool operator ==(const MarketDataSource &rhs) const {
@@ -55,6 +55,11 @@ namespace trdk {
 		}
 
 	public:
+
+		trdk::Context & GetContext();
+		const trdk::Context & GetContext() const;
+
+		trdk::Context::Log & GetLog() const;
 
 		//! Identifies Market Data Source object by verbose name. 
 		/** Market Data Source Tag unique, but can be empty for one of objects.

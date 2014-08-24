@@ -30,7 +30,7 @@ const std::string & Lib::ConvertToIso(const Currency &currency) {
 			return eur;
 		default:
 			AssertEq(CURRENCY_USD, currency);
-			throw std::exception("Internal error: Unknown currency ID");
+			throw Exception("Internal error: Unknown currency ID");
 	}
 }
 

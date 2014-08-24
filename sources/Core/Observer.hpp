@@ -27,6 +27,10 @@ namespace trdk {
 
 	public:
 
+		virtual void OnLevel1Update(trdk::Security &);
+
+	public:
+
 		void RaiseLevel1UpdateEvent(Security &);
 		void RaiseLevel1TickEvent(
 					trdk::Security &,

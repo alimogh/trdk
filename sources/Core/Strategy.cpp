@@ -13,6 +13,7 @@
 #include "Service.hpp"
 #include "PositionReporter.hpp"
 #include "Settings.hpp"
+#include "TimeMeasurement.hpp"
 
 namespace mi = boost::multi_index;
 
@@ -339,6 +340,17 @@ Strategy::~Strategy() {
 	delete m_pimpl;
 }
 
+void Strategy::OnLevel1Update(
+			Security &security,
+			TimeMeasurement::Milestones &) {
+	GetLog().Error(
+		"Subscribed to %1% Level 1 Updates, but can't work with it"
+			" (hasn't OnLevel1Update method implementation).",
+		security);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to Level 1 updates, but can't work with it");
+}
+
 void Strategy::OnPositionUpdate(Position &) {
 	//...//
 }
@@ -370,12 +382,15 @@ PositionReporter & Strategy::GetPositionReporter() {
 	return *m_pimpl->m_positionReporter;
 }
 
-void Strategy::RaiseLevel1UpdateEvent(Security &security) {
+void Strategy::RaiseLevel1UpdateEvent(
+			Security &security,
+			TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
 	if (IsBlocked()) {
 		return;
 	}
-	OnLevel1Update(security);
+	timeMeasurement.Measure(STMM_DISPATCHING_DATA_RAISE);
+	OnLevel1Update(security, timeMeasurement);
 }
 
 void Strategy::RaiseLevel1TickEvent(

@@ -65,7 +65,6 @@ namespace trdk { namespace Engine {
 		const Module & operator *() const;
 		const Module * operator ->() const;
 				
-		bool operator <(const SubscriberPtrWrapper &) const;
 		bool operator ==(const SubscriberPtrWrapper &) const;
 
 	public:
@@ -75,7 +74,10 @@ namespace trdk { namespace Engine {
 
 	public:
 
-		void RaiseLevel1UpdateEvent(Security &) const;
+		void RaiseLevel1UpdateEvent(
+					Security &,
+					Lib::TimeMeasurement::Milestones &)
+				const;
 		void RaiseLevel1TickEvent(const Level1Tick &) const;
 		void RaiseNewTradeEvent(const Trade &) const;
 		void RaisePositionUpdateEvent(Position &) const;

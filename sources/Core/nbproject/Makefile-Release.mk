@@ -50,6 +50,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/Settings.o \
 	${OBJECTDIR}/Strategy.o \
 	${OBJECTDIR}/StrategyPositionState.o \
+	${OBJECTDIR}/TimeMeasurement.o \
 	${OBJECTDIR}/TradeSystem.o \
 	${OBJECTDIR}/Types.o
 
@@ -154,6 +155,11 @@ ${OBJECTDIR}/StrategyPositionState.o: StrategyPositionState.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/StrategyPositionState.o StrategyPositionState.cpp
+
+${OBJECTDIR}/TimeMeasurement.o: TimeMeasurement.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TimeMeasurement.o TimeMeasurement.cpp
 
 ${OBJECTDIR}/TradeSystem.o: TradeSystem.cpp 
 	${MKDIR} -p ${OBJECTDIR}

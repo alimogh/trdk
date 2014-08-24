@@ -75,7 +75,8 @@ namespace trdk {
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				trdk::Qty,
-				trdk::ScaledPrice startPrice);
+				trdk::ScaledPrice startPrice,
+				const Lib::TimeMeasurement::Milestones &);
 		virtual ~Position();
 
 	public:
@@ -92,6 +93,8 @@ namespace trdk {
 		trdk::Security & GetSecurity() throw();
 
 		const trdk::Lib::Currency & GetCurrency() const;
+
+		Lib::TimeMeasurement::Milestones & GetTimeMeasurement();
 
 	public:
 
@@ -296,7 +299,8 @@ namespace trdk {
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				trdk::Qty,
-				trdk::ScaledPrice startPrice);
+				trdk::ScaledPrice startPrice,
+				const Lib::TimeMeasurement::Milestones &);
 		virtual ~LongPosition();
 
 	public:
@@ -358,7 +362,8 @@ namespace trdk {
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				trdk::Qty,
-				trdk::ScaledPrice startPrice);
+				trdk::ScaledPrice startPrice,
+				const Lib::TimeMeasurement::Milestones &);
 		virtual ~ShortPosition();
 
 	public:

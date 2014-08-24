@@ -28,7 +28,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					trdk::Security &security,
 					const trdk::Lib::Currency &currency,
 					const trdk::Qty &qty,
-					const trdk::ScaledPrice &startPrice)
+					const trdk::ScaledPrice &startPrice,
+					const Lib::TimeMeasurement::Milestones &timeMeasurement)
 				: m_equationIndex(equationIndex),
 				m_oppositeEquationIndex(oppositeEquationIndex),
 				Position(
@@ -37,7 +38,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					security,
 					currency,
 					qty,
-					startPrice)  {
+					startPrice,
+					timeMeasurement)  {
 			//...//
 		}
 
@@ -74,14 +76,16 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					trdk::Security &security,
 					const trdk::Lib::Currency &currency,
 					const trdk::Qty &qty,
-					const trdk::ScaledPrice &startPrice)
+					const trdk::ScaledPrice &startPrice,
+					const Lib::TimeMeasurement::Milestones &timeMeasurement)
 				: Position(
 					strategy,
 					tradeSystem,
 					security,
 					currency,
 					qty,
-					startPrice),
+					startPrice,
+					timeMeasurement),
 				EquationPosition(
 					equationIndex,
 					oppositeEquationIndex,
@@ -90,14 +94,16 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					security,
 					currency,
 					qty,
-					startPrice),
+					startPrice,
+					timeMeasurement),
 				LongPosition(
 					strategy,
 					tradeSystem,
 					security,
 					currency,
 					qty,
-					startPrice) {
+					startPrice,
+					timeMeasurement) {
 			//...//
 		}
 
@@ -119,14 +125,16 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					trdk::Security &security,
 					const trdk::Lib::Currency &currency,
 					const trdk::Qty &qty,
-					const trdk::ScaledPrice &startPrice)
+					const trdk::ScaledPrice &startPrice,
+					const Lib::TimeMeasurement::Milestones &timeMeasurement)
 				: Position(
 					strategy,
 					tradeSystem,
 					security,
 					currency,
 					qty,
-					startPrice),
+					startPrice,
+					timeMeasurement),
 				EquationPosition(
 					equationIndex,
 					oppositeEquationIndex,
@@ -135,14 +143,16 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					security,
 					currency,
 					qty,
-					startPrice),
+					startPrice,
+					timeMeasurement),
 				ShortPosition(
 					strategy,
 					tradeSystem,
 					security,
 					currency,
 					qty,
-					startPrice) {
+					startPrice,
+					timeMeasurement) {
 			//...//
 		}
 

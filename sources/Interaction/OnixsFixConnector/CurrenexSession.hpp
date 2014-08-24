@@ -25,15 +25,15 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit CurrenexFixSession(
+					Context &,
 					const std::string &type,
-					const Lib::IniSectionRef &,
-					Context::Log &);
+					const Lib::IniSectionRef &);
 		~CurrenexFixSession();
 
 	public:
 
 		Context::Log & GetLog() const {
-			return m_log;
+			return m_context.GetLog();
 		}
 
 		const OnixS::FIX::ProtocolVersion::Enum GetFixVersion() const {
@@ -76,9 +76,9 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	private:
 
-		const std::string m_type;
+		Context &m_context;
 
-		Context::Log &m_log;
+		const std::string m_type;
 
 		const OnixS::FIX::ProtocolVersion::Enum m_fixVersion;
 

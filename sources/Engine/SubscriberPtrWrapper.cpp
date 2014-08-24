@@ -117,10 +117,6 @@ const Module * SubscriberPtrWrapper::operator ->() const {
 	return &**this;
 }
 
-bool SubscriberPtrWrapper::operator <(const SubscriberPtrWrapper &rhs) const {
-	return &**this < &*rhs;
-}
-
 bool SubscriberPtrWrapper::operator ==(const SubscriberPtrWrapper &rhs) const {
 	return &**this == &*rhs;
 }
@@ -134,20 +130,24 @@ void SubscriberPtrWrapper::Block() const throw() {
 }
 
 void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
-			Security &security)
+			Security &security,
+			TimeMeasurement::Milestones &timeMeasurement)
 		const {
 
 	class Visitor
 			: public boost::static_visitor<void>,
 			private boost::noncopyable {
 	public:		
-		explicit Visitor(Security &security)
-				: m_security(security) {
+		explicit Visitor(
+					Security &security,
+					TimeMeasurement::Milestones &timeMeasurement)
+				: m_security(security),
+				m_timeMeasurement(timeMeasurement) {
 			//...//
 		}
 	public:
 		void operator ()(Strategy &strategy) const {
-			strategy.RaiseLevel1UpdateEvent(m_security);
+			strategy.RaiseLevel1UpdateEvent(m_security, m_timeMeasurement);
 		}
 		void operator ()(Service &service) const {
 			if (service.RaiseLevel1UpdateEvent(m_security)) {
@@ -159,9 +159,10 @@ void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
 		}
 	private:
 		Security &m_security;
+		TimeMeasurement::Milestones &m_timeMeasurement;
 	};
 
-	boost::apply_visitor(Visitor(security), m_subscriber);
+	boost::apply_visitor(Visitor(security, timeMeasurement), m_subscriber);
 
 }
 

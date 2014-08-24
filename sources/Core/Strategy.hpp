@@ -111,6 +111,10 @@ namespace trdk {
 
 	public:
 
+		virtual void OnLevel1Update(
+					trdk::Security &,
+					trdk::Lib::TimeMeasurement::Milestones &);
+
 		virtual void OnPositionUpdate(trdk::Position &);
 
 	public:
@@ -120,7 +124,9 @@ namespace trdk {
 
 	public:
 
-		void RaiseLevel1UpdateEvent(trdk::Security &);
+		void RaiseLevel1UpdateEvent(
+					trdk::Security &,
+					trdk::Lib::TimeMeasurement::Milestones &);
 		void RaiseLevel1TickEvent(
 					trdk::Security &,
 					const boost::posix_time::ptime &,

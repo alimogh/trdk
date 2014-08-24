@@ -26,7 +26,10 @@
 #	include <boost/filesystem.hpp>
 #	include <boost/regex.hpp>
 #	include <boost/atomic.hpp>
+#	include <boost/array.hpp>
 #include "DisableBoostWarningsEnd.h"
+
+#include <iomanip>
 
 #ifdef BOOST_WINDOWS
 #	include <Windows.h>
