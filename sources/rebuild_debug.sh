@@ -2,7 +2,7 @@
 
 conf="Debug"
 
-cd ./Engine
+cd ./EngineServer
 make CONF=${conf} clean
 make CONF=${conf}
 cd ..

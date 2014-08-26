@@ -1,7 +1,7 @@
 #!/bin/bash
 
 outputDir="../output/"
-outputLibDir="../output/lib"
+outputLibDir="../output/"
 conf="Debug"
 
 mkdir ${outputDir}
