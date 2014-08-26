@@ -51,8 +51,12 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
+        <gdb_signals>
+        </gdb_signals>
         <gdb_options>
           <DebugOptions>
+            <option name="debug_command" value="debug etc"/>
+            <option name="debug_dir" value="/home/palchukovsky/Projects/trdk/output"/>
           </DebugOptions>
         </gdb_options>
         <gdb_buildfirst gdb_buildfirst_overriden="false" gdb_buildfirst_old="false"/>
@@ -63,9 +67,10 @@
       <runprofile version="9">
         <runcommandpicklist>
           <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
+          <runcommandpicklistitem>"/home/palchukovsky/Projects/trdk/output"</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}"</runcommand>
-        <rundir></rundir>
+        <runcommand>"/home/palchukovsky/Projects/trdk/output"</runcommand>
+        <rundir>/home/palchukovsky/Projects/trdk/output</rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>
         <remove-instrumentation>0</remove-instrumentation>

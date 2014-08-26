@@ -53,7 +53,7 @@ namespace trdk {
 				strategy.GetLog().Error(
 					"Failed to open position log file %1%.",
 					filePath);
-				throw Exception("Failed to open position log file");
+				throw trdk::Lib::Exception("Failed to open position log file");
 			}
 			strategy.GetLog().Info("Logging positions into %1%...", filePath);
 			if (isNew) {
@@ -61,7 +61,7 @@ namespace trdk {
 				m_file << std::endl;
 			}
 			if (!m_file) {
-				throw Exception("Failed to open position log file");
+				throw trdk::Lib::Exception("Failed to open position log file");
 			}
 			m_isInited = true;
 		}
