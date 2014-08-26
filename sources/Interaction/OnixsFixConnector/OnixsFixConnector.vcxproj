@@ -345,6 +345,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Api.h" />
     <ClInclude Include="CurrenexStream.hpp" />
     <ClInclude Include="CurrenexSecurity.hpp" />
     <ClInclude Include="DisableOnixsFixEngineWarningsBegin.h" />

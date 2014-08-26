@@ -587,7 +587,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-boost::shared_ptr<Strategy> CreateFxArb1MonoStrategy(
+TRDK_STRATEGY_FXMB_API boost::shared_ptr<Strategy> CreateFxArb1MonoStrategy(
 			Context &context,
 			const std::string &tag,
 			const IniSectionRef &conf) {

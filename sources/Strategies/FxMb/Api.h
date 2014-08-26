@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2014/08/14 10:01:50
+ *   Created: 2014/08/15 01:40:52
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,15 +10,8 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
-
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/algorithm/string.hpp>
-#	include <boost/regex.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
-#include "Common/Common.hpp"
-
-#include "Api.h"
-
-#include "Common/Assert.hpp"
+#ifdef BOOST_WINDOWS
+#	define TRDK_STRATEGY_FXMB_API
+#else
+#	define TRDK_STRATEGY_FXMB_API extern "C"
+#endif
