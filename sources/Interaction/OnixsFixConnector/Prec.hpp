@@ -12,8 +12,6 @@
 
 #include "Common/Assert.hpp"
 
-#include "Fwd.hpp"
-
 #include "Common/DisableBoostWarningsBegin.h"
 #	include	<boost/algorithm/string.hpp>
 #	include	<boost/scoped_ptr.hpp>
@@ -32,5 +30,8 @@
 #ifdef BOOST_WINDOWS
 #	include <concrt.h>
 #endif
+
+#include "Api.h"
+#include "Fwd.hpp"
 
 #include "Common/Assert.hpp"
