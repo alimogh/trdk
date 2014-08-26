@@ -144,10 +144,10 @@ namespace trdk { namespace Lib {
 						const std::string tmpStr
 							= "lib" + tmp.string() + "_dbg";
 	#				elif defined(_TEST)
-						const std::string tmpSt
+						const std::string tmpStr
 							= "lib" + tmp.string() + "_test";
 	#				else
-						const std::string tmpStr = "lib" + filename.string();
+						const std::string tmpStr = "lib" + tmp.string();
 	#				endif
 					tmp = tmpStr;
 					tmp.replace_extension(m_file.extension());
