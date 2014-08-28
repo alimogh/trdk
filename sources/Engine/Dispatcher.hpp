@@ -14,7 +14,6 @@
 #include "Context.hpp"
 #include "Fwd.hpp"
 #include "Core/Settings.hpp"
-#include "Core/TimeMeasurement.hpp"
 
 namespace trdk { namespace Engine {
 
@@ -333,7 +332,7 @@ namespace trdk { namespace Engine {
 			}
 			eventList.push_back(level1UpdateEvent);
 			boost::get<2>(level1UpdateEvent)
-				.Measure(STMM_DISPATCHING_DATA_ENQUEUE);
+				.Measure(TimeMeasurement::SM_DISPATCHING_DATA_ENQUEUE);
 			return true;
 		}
 		template<typename EventList>
@@ -856,11 +855,15 @@ namespace trdk { namespace Engine {
 				startBarrier.wait();
 				EventQueueLock lock(sync->mutex);
 				for ( ; ; ) {
+					TimeMeasurement::Milestones timeMeasurement(
+						m_context.StartDispatchingTimeMeasurement());
 					EnqueueEventListsCollection(lists, deactivationMask, lock);
+					timeMeasurement.Measure(TimeMeasurement::DM_COMPLETE);
 					if (deactivationMask.all()) {
 						break;
 					}
 					sync->newDataCondition.wait(lock);
+					timeMeasurement.Measure(TimeMeasurement::DM_NEW_DATA);
 				}
 			} catch (...) {
 				// error already logged
@@ -895,7 +898,8 @@ namespace trdk { namespace Engine {
 	inline void Dispatcher::RaiseEvent(Level1UpdateEvent &level1Update) {
 		Lib::TimeMeasurement::Milestones &timeMeasurement
 			= boost::get<2>(level1Update);
-		timeMeasurement.Measure(STMM_DISPATCHING_DATA_DEQUEUE);
+		timeMeasurement.Measure(
+			Lib::TimeMeasurement::SM_DISPATCHING_DATA_DEQUEUE);
 		boost::get<1>(level1Update).RaiseLevel1UpdateEvent(
 			*boost::get<0>(level1Update),
 			timeMeasurement);

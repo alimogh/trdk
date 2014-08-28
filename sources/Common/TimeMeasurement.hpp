@@ -26,6 +26,37 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 
 	////////////////////////////////////////////////////////////////////////////////
 
+	enum StrategyMilestone {
+		SM_DISPATCHING_DATA_ENQUEUE,
+		SM_DISPATCHING_DATA_DEQUEUE,
+		SM_DISPATCHING_DATA_RAISE,
+		SM_STRATEGY_WITHOUT_DECISION,
+		SM_STRATEGY_DECISION_START,
+		SM_STRATEGY_EXECUTION_START,
+		SM_STRATEGY_DECISION_STOP,
+		SM_STRATEGY_EXECUTION_REPLY,
+		numberOfStrategyMilestones
+	};
+	const std::string & GetMilestoneName(const StrategyMilestone &);
+
+	enum TradeSystemMilestone {
+		TSM_ORDER_SEND,
+		TSM_ORDER_SENT,
+		TSM_ORDER_REPLY_RECEIVED,
+		TSM_ORDER_REPLY_PROCESSED,
+		numberOfTradeSystemMilestones
+	};
+	const std::string & GetMilestoneName(const TradeSystemMilestone &);
+
+	enum DispatchingMilestone {
+		DM_COMPLETE,
+		DM_NEW_DATA,
+		numberOfDispatchingMilestones
+	};
+	const std::string & GetMilestoneName(const DispatchingMilestone &);
+
+	////////////////////////////////////////////////////////////////////////////////
+
 	class StatAccum {
 	public:
 		virtual ~StatAccum() {

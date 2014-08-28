@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "CurrenexTrading.hpp"
 #include "Core/Security.hpp"
-#include "Core/TimeMeasurement.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -141,7 +140,7 @@ void CurrenexTrading::NotifyOrderUpdate(
 	Assert(callback);
 	Assert(timeMeasurement);
 
-	timeMeasurement.Add(TSTMM_ORDER_REPLY_RECEIVED, replyTime);
+	timeMeasurement.Add(TimeMeasurement::TSM_ORDER_REPLY_RECEIVED, replyTime);
 	callback(
 		orderId,
 		status,
@@ -151,7 +150,7 @@ void CurrenexTrading::NotifyOrderUpdate(
 	if (isOrderCompleted) {
 		FlushRemovedOrders();
 	}
-	timeMeasurement.Measure(TSTMM_ORDER_REPLY_PROCESSED);
+	timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_REPLY_PROCESSED);
 
 }
 
@@ -210,9 +209,9 @@ fix::Message CurrenexTrading::CreateLimitOrderMessage(
 void CurrenexTrading::Send(
 			fix::Message &message,
 			TimeMeasurement::Milestones &timeMeasurement) {
-	timeMeasurement.Measure(TSTMM_ORDER_SEND);
+	timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_SEND);
 	m_session.Get().send(&message);
-	timeMeasurement.Measure(TSTMM_ORDER_SENT);
+	timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_SENT);
 }
 
 OrderId CurrenexTrading::SellAtMarketPrice(
