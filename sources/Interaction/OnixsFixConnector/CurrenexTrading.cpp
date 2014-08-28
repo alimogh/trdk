@@ -591,7 +591,9 @@ void CurrenexTrading::OnOrderPartialFill(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TradeSystemFactoryResult CreateCurrenexTrading(
+TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
+TradeSystemFactoryResult
+CreateCurrenexTrading(
 			Context &context,
 			const std::string &tag,
 			const IniSectionRef &configuration) {

@@ -41,6 +41,9 @@
     <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Api.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="CurrenexStream.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

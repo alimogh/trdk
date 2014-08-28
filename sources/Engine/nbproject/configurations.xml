@@ -149,6 +149,16 @@
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
+          <makeArtifact PL="../Strategies/FxMb"
+                        CT="2"
+                        CN="Debug"
+                        AC="false"
+                        BL="true"
+                        WD="../Strategies/FxMb"
+                        BC="${MAKE}  -f Makefile CONF=Debug"
+                        CC="${MAKE}  -f Makefile CONF=Debug clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb_dbg.${CND_DLIB_EXT}">
+          </makeArtifact>
         </requiredProjects>
       </compileType>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
@@ -302,6 +312,16 @@
                         BC="${MAKE}  -f Makefile CONF=Release"
                         CC="${MAKE}  -f Makefile CONF=Release clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}">
+          </makeArtifact>
+          <makeArtifact PL="../Strategies/FxMb"
+                        CT="2"
+                        CN="Release"
+                        AC="true"
+                        BL="true"
+                        WD="../Strategies/FxMb"
+                        BC="${MAKE}  -f Makefile CONF=Release"
+                        CC="${MAKE}  -f Makefile CONF=Release clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT}">
           </makeArtifact>
         </requiredProjects>
       </compileType>

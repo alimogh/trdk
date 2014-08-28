@@ -212,7 +212,9 @@ void CurrenexStream::onInboundApplicationMsg(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-boost::shared_ptr<MarketDataSource> CreateCurrenexStream(
+TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
+boost::shared_ptr<MarketDataSource>
+CreateCurrenexStream(
 			Context &context,
 			const std::string &tag,
 			const IniSectionRef &configuration) {
