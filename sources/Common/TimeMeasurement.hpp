@@ -40,6 +40,8 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 	const std::string & GetMilestoneName(const StrategyMilestone &);
 
 	enum TradeSystemMilestone {
+		TSM_ORDER_ENQUEUE,
+		TSM_ORDER_PACK,
 		TSM_ORDER_SEND,
 		TSM_ORDER_SENT,
 		TSM_ORDER_REPLY_RECEIVED,
