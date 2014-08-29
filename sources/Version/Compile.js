@@ -19,6 +19,7 @@ var domain = "robotdk.com"
 var licenseServiceSubdomain = "licensing"
 var supportEmail ="support@" + domain
 var copyright = "Copyright 2014 (C) " + vendorName + ", " + domain + ". All rights reserved."
+var concurrencyProfile = "PROFILE_RELAX"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -115,7 +116,9 @@ function CreateVersionCppHeaderFile() {
 	var nameLineW				= "#define TRDK_NAME_W\tL\"" + productName + "\"";
 	
 	var copyrightLine			= "#define TRDK_COPYRIGHT\t\t\"" + copyright + "\"";
-	var copyrightLineW			= "#define TRDK_COPYRIGHT_W\tL\"" + copyright + "\"";
+	var copyrightLineW = "#define TRDK_COPYRIGHT_W\tL\"" + copyright + "\"";
+
+	var concurrencyProfileLine = "#define TRDK_CONCURRENCY_PROFILE (::trdk::Lib::Concurrency::" + concurrencyProfile + ")"
 
 	var fullFileName = outputDir + "Version.h";
 	if (	IsExistsInFile(fullFileName, versionMajorHighLine)
@@ -128,7 +131,8 @@ function CreateVersionCppHeaderFile() {
 			&& IsExistsInFile(fullFileName, supportEmailLine)
 			&& IsExistsInFile(fullFileName, licenseServiceSubdomainLine)
 			&& IsExistsInFile(fullFileName, nameLine)
-			&& IsExistsInFile(fullFileName, copyrightLine)) {
+			&& IsExistsInFile(fullFileName, copyrightLine)
+			&& IsExistsInFile(fullFileName, concurrencyProfileLine)) {
 		return;
 	}
 
@@ -161,6 +165,9 @@ function CreateVersionCppHeaderFile() {
 	f.WriteLine("");
 	f.WriteLine(copyrightLine);
 	f.WriteLine(copyrightLineW);
+	f.WriteLine("");
+	f.WriteLine(concurrencyProfileLine);
+	f.WriteLine("");
 
 }
 
