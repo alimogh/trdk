@@ -17,9 +17,9 @@
 
 namespace trdk { namespace Lib { namespace Concurrency {
 
+	class SpinScopedLock;
+	
 #	ifdef BOOST_WINDOWS
-
-		class SpinScopedLock;
 
 		class SpinMutex : public ::Concurrency::reader_writer_lock {
 		public:
@@ -36,11 +36,17 @@ namespace trdk { namespace Lib { namespace Concurrency {
 				//...//
 			}
 		public:
-			void lock() {
+			void Lock() {
 				m_mutex.lock();
 			}
-			void unlock() {
+			void lock() {
+				Lock();
+			}
+			void Unlock() {
 				m_mutex.unlock();
+			}
+			void unlock() {
+				Unlock();
 			}
 		private:
 			SpinMutex &m_mutex;
@@ -48,7 +54,62 @@ namespace trdk { namespace Lib { namespace Concurrency {
 
 #	else
 
-
+		class SpinMutex : private boost::noncopyable {
+			
+		public:
+			
+			typedef SpinScopedLock ScopedLock;
+		
+		public:
+			
+			void Lock() {
+				while (m_state.test_and_set(boost::memory_order_acquire));
+			}
+			
+			void Unlock() {
+				m_state.clear();
+			}
+			
+		private:
+			
+			boost::atomic_flag m_state;
+		
+		};
+		
+		class SpinScopedLock : private boost::noncopyable {
+		
+		public:
+		
+			explicit SpinScopedLock(SpinMutex &mutex)
+					: m_mutex(mutex) {
+				Lock();
+			}
+					
+			~SpinScopedLock() {
+				Unlock();
+			}
+		
+		public:
+			
+			void Lock() {
+				m_mutex.Lock();
+			}
+			void lock() {
+				Lock();
+			}
+			
+			void Unlock() {
+				m_mutex.Unlock();
+			}
+			void unlock() {
+				Unlock();
+			}
+		
+		private:
+			
+			SpinMutex &m_mutex;
+		
+		};
 
 #	endif
 
@@ -77,9 +138,9 @@ namespace trdk { namespace Lib { namespace Concurrency {
 			if (!m_state.test_and_set(boost::memory_order_acquire)) {
 				return;
 			}
-			lock.unlock();
+			lock.Unlock();
 			while (m_state.test_and_set(boost::memory_order_acquire));
-			lock.lock();
+			lock.Lock();
 		}
 
 		void wait(trdk::Lib::Concurrency::SpinScopedLock &lock) const {
