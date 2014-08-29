@@ -6,6 +6,7 @@
                    projectFiles="true">
       <itemPath>Assert.hpp</itemPath>
       <itemPath>Common.hpp</itemPath>
+      <itemPath>Constants.h</itemPath>
       <itemPath>Defaults.hpp</itemPath>
       <itemPath>DisableBoostWarningsBegin.h</itemPath>
       <itemPath>DisableBoostWarningsEnd.h</itemPath>
@@ -14,9 +15,9 @@
       <itemPath>FileSystemChangeNotificator.hpp</itemPath>
       <itemPath>Foreach.hpp</itemPath>
       <itemPath>Ini.hpp</itemPath>
-      <itemPath>LockingPolicy.hpp</itemPath>
       <itemPath>Prec.hpp</itemPath>
       <itemPath>SegmentedVector.hpp</itemPath>
+      <itemPath>Spin.hpp</itemPath>
       <itemPath>Symbol.hpp</itemPath>
       <itemPath>SysError.hpp</itemPath>
       <itemPath>TimeMeasurement.hpp</itemPath>
@@ -27,7 +28,6 @@
                    displayName="Source Files"
                    projectFiles="true">
       <itemPath>Assert.cpp</itemPath>
-      <itemPath>Constants.h</itemPath>
       <itemPath>Currency.cpp</itemPath>
       <itemPath>Defaults.cpp</itemPath>
       <itemPath>Exception.cpp</itemPath>
@@ -110,13 +110,13 @@
       </item>
       <item path="Ini.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="LockingPolicy.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="Prec.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="SegmentedVector.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Spin.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Symbol.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -204,13 +204,13 @@
       </item>
       <item path="Ini.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="LockingPolicy.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="Prec.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="SegmentedVector.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Spin.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Symbol.cpp" ex="false" tool="1" flavor2="0">
       </item>

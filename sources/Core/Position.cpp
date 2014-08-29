@@ -54,14 +54,8 @@ namespace {
 
 	const OrderId nOrderId = std::numeric_limits<OrderId>::max();
 
-}
-
-class Position::Implementation : private boost::noncopyable {
-
-public:
-
 	template<Lib::Concurrency::Profile profile>
-	struct ConcurrencyPolicyT {
+	struct PostionConcurrencyPolicyT {
 		static_assert(
 			profile == Lib::Concurrency::PROFILE_RELAX,
 			"Wrong concurrency profile");
@@ -70,16 +64,25 @@ public:
 		typedef boost::unique_lock<Mutex> WriteLock;
 	};
 	template<>
-	struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+	struct PostionConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
 		//! @todo TRDK-167
 		typedef Lib::Concurrency::SpinMutex Mutex;
 		typedef Mutex::ScopedLock ReadLock;
 		typedef Mutex::ScopedLock WriteLock;
 	};
-	typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy;
-	typedef ConcurrencyPolicy::Mutex Mutex;
-	typedef ConcurrencyPolicy::ReadLock ReadLock;
-	typedef ConcurrencyPolicy::WriteLock WriteLock;
+	typedef PostionConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
+		PostionConcurrencyPolicy;
+	
+}
+
+class Position::Implementation : private boost::noncopyable {
+
+public:
+
+
+	typedef PostionConcurrencyPolicy::Mutex Mutex;
+	typedef PostionConcurrencyPolicy::ReadLock ReadLock;
+	typedef PostionConcurrencyPolicy::WriteLock WriteLock;
 
 	typedef boost::signals2::signal<StateUpdateSlotSignature>
 		StateUpdateSignal;

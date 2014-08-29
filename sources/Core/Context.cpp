@@ -304,12 +304,10 @@ TimeMeasurement::Milestones Context::StartDispatchingTimeMeasurement() const {
 
 //////////////////////////////////////////////////////////////////////////
 
-class Context::Params::Implementation : private boost::noncopyable {
-
-public:
-
+namespace {
+	
 	template<Lib::Concurrency::Profile profile>
-	struct ConcurrencyPolicyT {
+	struct ParamsConcurrencyPolicyT {
 		static_assert(
 			profile == Lib::Concurrency::PROFILE_RELAX,
 			"Wrong concurrency profile");
@@ -317,17 +315,27 @@ public:
 		typedef boost::shared_lock<Mutex> ReadLock;
 		typedef boost::unique_lock<Mutex> WriteLock;
 	};
+	
 	template<>
-	struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+	struct ParamsConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
 		//! @todo TRDK-144
 		typedef Lib::Concurrency::SpinMutex Mutex;
 		typedef Mutex::ScopedLock ReadLock;
 		typedef Mutex::ScopedLock WriteLock;
 	};
-	typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy;
-	typedef ConcurrencyPolicy::Mutex Mutex;
-	typedef ConcurrencyPolicy::ReadLock ReadLock;
-	typedef ConcurrencyPolicy::WriteLock WriteLock;
+	
+	typedef ParamsConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
+		ParamsConcurrencyPolicy;
+	
+}
+
+class Context::Params::Implementation : private boost::noncopyable {
+
+public:
+
+	typedef ParamsConcurrencyPolicy::Mutex Mutex;
+	typedef ParamsConcurrencyPolicy::ReadLock ReadLock;
+	typedef ParamsConcurrencyPolicy::WriteLock WriteLock;
 
 	typedef std::map<std::string, std::string> Storage;
 
