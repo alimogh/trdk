@@ -284,12 +284,12 @@
     <ClInclude Include="Ini.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="SegmentedVector.hpp" />
+    <ClInclude Include="Spin.hpp" />
     <ClInclude Include="Symbol.hpp" />
     <ClInclude Include="SysError.hpp" />
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="FileSystemChangeNotificator.hpp" />
     <ClInclude Include="Foreach.hpp" />
-    <ClInclude Include="LockingPolicy.hpp" />
     <ClInclude Include="TimeMeasurement.hpp" />
     <ClInclude Include="UseUnused.hpp" />
     <ClInclude Include="Util.hpp" />

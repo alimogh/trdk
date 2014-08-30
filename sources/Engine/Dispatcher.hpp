@@ -21,9 +21,26 @@ namespace trdk { namespace Engine {
 
 	private:
 
-		typedef boost::mutex EventQueueMutex;
-		typedef EventQueueMutex::scoped_lock EventQueueLock;
-		typedef boost::condition_variable EventQueueCondition;
+		template<Lib::Concurrency::Profile profile>
+		struct ConcurrencyPolicyT {
+			static_assert(
+				profile == Lib::Concurrency::PROFILE_RELAX,
+				"Wrong concurrency profile");
+			typedef boost::mutex Mutex;
+			typedef Mutex::scoped_lock Lock;
+			typedef boost::condition_variable Condition;
+		};
+		template<>
+		struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+			typedef Lib::Concurrency::SpinMutex Mutex;
+			typedef Mutex::ScopedLock Lock;
+			typedef Lib::Concurrency::SpinCondition Condition;
+		};
+
+		typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy;
+		typedef ConcurrencyPolicy::Mutex EventQueueMutex;
+		typedef ConcurrencyPolicy::Lock EventQueueLock;
+		typedef ConcurrencyPolicy::Condition EventQueueCondition;
 
 		struct EventListsSyncObjects {
 			EventQueueMutex mutex;
@@ -98,10 +115,12 @@ namespace trdk { namespace Engine {
 					AssertNe(int(TASK_STATE_STOPPED), int(m_taksState));
 					m_taksState = TASK_STATE_STOPPED;
 				}
-				m_sync->newDataCondition.notify_all();
-				if (m_readyToReadCondition) {
-					m_readyToReadCondition->notify_all();
-				}
+					
+				//! @todo see TRDK-165
+// 				m_sync->newDataCondition.notify_all();
+// 				if (m_readyToReadCondition) {
+// 					m_readyToReadCondition->notify_all();
+// 				}
 			}
 
 			bool IsStopped(const Lock &lock) const {
@@ -173,7 +192,8 @@ namespace trdk { namespace Engine {
 					lock.lock();
 
 					if (m_readyToReadCondition) {
-						m_readyToReadCondition->notify_all();
+						//! @todo TRDK-165
+//						m_readyToReadCondition->notify_all();
 					}
 
 				}

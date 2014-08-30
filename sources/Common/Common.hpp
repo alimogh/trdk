@@ -42,6 +42,7 @@
 #include "Common/SysError.hpp"
 #include "Common/Exception.hpp"
 #include "Common/TimeMeasurement.hpp"
+#include "Common/Spin.hpp"
 
 #include "Core/Types.hpp"
 #include "Core/Log.hpp"

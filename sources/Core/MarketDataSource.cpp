@@ -20,15 +20,29 @@ using namespace trdk::Lib;
 
 namespace {
 	
-#	ifdef BOOST_WINDOWS
-		typedef Concurrency::reader_writer_lock SecuritiesMutex;
-		typedef SecuritiesMutex::scoped_lock_read SecuritiesReadLock;
-		typedef SecuritiesMutex::scoped_lock SecuritiesWriteLock;
-#	else
-		typedef boost::shared_mutex SecuritiesMutex;
-		typedef boost::shared_lock<SecuritiesMutex> SecuritiesReadLock;
-		typedef boost::unique_lock<SecuritiesMutex> SecuritiesWriteLock;
-#	endif
+	template<Lib::Concurrency::Profile profile>
+	struct ConcurrencyPolicyT {
+		static_assert(
+			profile == Lib::Concurrency::PROFILE_RELAX,
+			"Wrong concurrency profile");
+		typedef boost::shared_mutex Mutex;
+		typedef boost::shared_lock<Mutex> ReadLock;
+		typedef boost::unique_lock<Mutex> WriteLock;
+	};
+
+	template<>
+	struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+		//! @todo TRDK-141
+		typedef Lib::Concurrency::SpinMutex Mutex;
+		typedef Mutex::ScopedLock ReadLock;
+		typedef Mutex::ScopedLock WriteLock;
+	};
+
+	typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy;
+
+	typedef ConcurrencyPolicy::Mutex SecuritiesMutex;
+	typedef ConcurrencyPolicy::ReadLock SecuritiesReadLock;
+	typedef ConcurrencyPolicy::WriteLock SecuritiesWriteLock;
 
 }
 

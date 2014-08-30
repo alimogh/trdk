@@ -308,16 +308,26 @@ class Context::Params::Implementation : private boost::noncopyable {
 
 public:
 
-#	ifdef BOOST_WINDOWS
-		typedef Concurrency::reader_writer_lock Mutex;
-		typedef Mutex::scoped_lock_read ReadLock;
-		typedef Mutex::scoped_lock WriteLock;
-#	else
-		//! @todo TRDK-144
+	template<Lib::Concurrency::Profile profile>
+	struct ConcurrencyPolicyT {
+		static_assert(
+			profile == Lib::Concurrency::PROFILE_RELAX,
+			"Wrong concurrency profile");
 		typedef boost::shared_mutex Mutex;
 		typedef boost::shared_lock<Mutex> ReadLock;
 		typedef boost::unique_lock<Mutex> WriteLock;
-#	endif
+	};
+	template<>
+	struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+		//! @todo TRDK-144
+		typedef Lib::Concurrency::SpinMutex Mutex;
+		typedef Mutex::ScopedLock ReadLock;
+		typedef Mutex::ScopedLock WriteLock;
+	};
+	typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy;
+	typedef ConcurrencyPolicy::Mutex Mutex;
+	typedef ConcurrencyPolicy::ReadLock ReadLock;
+	typedef ConcurrencyPolicy::WriteLock WriteLock;
 
 	typedef std::map<std::string, std::string> Storage;
 
