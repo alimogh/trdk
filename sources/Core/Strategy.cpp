@@ -13,7 +13,6 @@
 #include "Service.hpp"
 #include "PositionReporter.hpp"
 #include "Settings.hpp"
-#include "TimeMeasurement.hpp"
 
 namespace mi = boost::multi_index;
 
@@ -389,7 +388,7 @@ void Strategy::RaiseLevel1UpdateEvent(
 	if (IsBlocked()) {
 		return;
 	}
-	timeMeasurement.Measure(STMM_DISPATCHING_DATA_RAISE);
+	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
 	OnLevel1Update(security, timeMeasurement);
 }
 

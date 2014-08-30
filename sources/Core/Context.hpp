@@ -47,6 +47,8 @@ namespace trdk {
 				const;
 		trdk::Lib::TimeMeasurement::Milestones StartTradeSystemTimeMeasurement()
 				const;
+		trdk::Lib::TimeMeasurement::Milestones StartDispatchingTimeMeasurement()
+				const;
 
 		trdk::Security & GetSecurity(const trdk::Lib::Symbol &);
 		const trdk::Security & GetSecurity(const trdk::Lib::Symbol &) const;

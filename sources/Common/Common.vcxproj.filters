@@ -70,9 +70,6 @@
     <ClInclude Include="Foreach.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LockingPolicy.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FileSystemChangeNotificator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -104,6 +101,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TimeMeasurement.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Spin.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

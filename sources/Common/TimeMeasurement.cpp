@@ -11,7 +11,95 @@
 #include "Prec.hpp"
 #include "TimeMeasurement.hpp"
 
+using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace { namespace StrategyStrings {
+	const std::string dispatchingDataEnqueue = "data enqueue";
+	const std::string dispatchingDataDequeue = "data dequeue";
+	const std::string dispatchingDataRaise = "data raise";
+	const std::string strategyWithoutDecision = "strategy skip";
+	const std::string strategyDecisionStart = "strategy start";
+	const std::string strategyDecisionStop = "strategy stop";
+	const std::string executionStart = "exec start";
+	const std::string executionReply = "exec reply";
+} }
+const std::string & TimeMeasurement::GetMilestoneName(
+			const TimeMeasurement::StrategyMilestone &milestone) {
+	using namespace StrategyStrings;
+	static_assert(
+		numberOfStrategyMilestones == 8,
+		"Milestone list changed.");
+	switch (milestone) {
+		default:
+			AssertEq(SM_DISPATCHING_DATA_ENQUEUE, milestone);
+		case SM_DISPATCHING_DATA_ENQUEUE:
+			return dispatchingDataEnqueue;
+		case SM_DISPATCHING_DATA_DEQUEUE:
+			return dispatchingDataDequeue;
+		case SM_DISPATCHING_DATA_RAISE:
+			return dispatchingDataRaise;
+		case SM_STRATEGY_WITHOUT_DECISION:
+			return strategyWithoutDecision;
+		case SM_STRATEGY_DECISION_START:
+			return strategyDecisionStart;
+		case SM_STRATEGY_EXECUTION_START:
+			return executionStart;
+		case SM_STRATEGY_DECISION_STOP:
+			return strategyDecisionStop;
+		case SM_STRATEGY_EXECUTION_REPLY:
+			return executionReply;
+	}
+}
+
+namespace { namespace TradeSystemStrings {
+	const std::string orderSend = "order send";
+	const std::string orderSent = "order sent";
+	const std::string orderReply = "reply recv";
+	const std::string orderReplyProcessed = "reply proc";
+} }
+const std::string & TimeMeasurement::GetMilestoneName(
+			const TimeMeasurement::TradeSystemMilestone &milestone) {
+	using namespace TradeSystemStrings;
+	static_assert(
+		numberOfTradeSystemMilestones == 4,
+		"Milestone list changed.");
+	switch (milestone) {
+		default:
+			AssertEq(TSM_ORDER_SEND, milestone);
+		case TSM_ORDER_SEND:
+			return orderSend;
+		case TSM_ORDER_SENT:
+			return orderSent;
+		case TSM_ORDER_REPLY_RECEIVED:
+			return orderReply;
+		case TSM_ORDER_REPLY_PROCESSED:
+			return orderReplyProcessed;
+	}
+}
+
+namespace { namespace DispatchingStrings {
+	const std::string complete = "complete";
+	const std::string newData = "new data";
+} }
+const std::string & TimeMeasurement::GetMilestoneName(
+			const TimeMeasurement::DispatchingMilestone &milestone) {
+	using namespace DispatchingStrings;
+	static_assert(
+		numberOfDispatchingMilestones == 2,
+		"Milestone list changed.");
+	switch (milestone) {
+		default:
+			AssertEq(DM_COMPLETE, milestone);
+		case DM_COMPLETE:
+			return complete;
+		case DM_NEW_DATA:
+			return newData;
+	}
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

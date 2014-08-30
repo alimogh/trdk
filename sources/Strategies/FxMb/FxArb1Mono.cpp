@@ -13,7 +13,6 @@
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/StrategyPositionReporter.hpp"
-#include "Core/TimeMeasurement.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -330,7 +329,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					// Open positions:
 					OnEquation(i, b1, b2, timeMeasurement);
 				} else {
-					timeMeasurement.Measure(STMM_STRATEGY_WITHOUT_DECISION);
+					timeMeasurement.Measure(
+						TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 				}
 			}
 		
@@ -382,7 +382,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 
 			position.GetTimeMeasurement().Measure(
-				STMM_STRATEGY_EXECUTION_REPLY);
+				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
 
 			// All equation orders are filled. Now we need to close all
 			// positions for opposite equation.
@@ -430,7 +430,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					return std::move(message);
 				});
 
-			timeMeasurement.Measure(STMM_STRATEGY_DECISION_START);
+			timeMeasurement.Measure(
+				TimeMeasurement::SM_STRATEGY_DECISION_START);
 
 			auto &equationPositions = m_positionsByEquation[equationIndex];
 			AssertEq(0, equationPositions.positions.size());
@@ -486,7 +487,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					}
 
 					if (!equationPositions.activeCount) {
-						timeMeasurement.Measure(STMM_STRATEGY_EXECUTION_START);
+						timeMeasurement.Measure(
+							TimeMeasurement::SM_STRATEGY_EXECUTION_START);
 					}
 
 					// Sends orders to broker:
@@ -505,7 +507,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				throw;
 			}
 
-			timeMeasurement.Measure(STMM_STRATEGY_DECISION_STOP);
+			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
 		}
 
