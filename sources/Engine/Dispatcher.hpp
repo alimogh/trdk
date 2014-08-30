@@ -137,7 +137,7 @@ namespace trdk { namespace Engine {
 				}
 			}
 
-			bool Enqueue(Lock &lock) {
+			bool Flush(Lock &lock) {
 
 				Assert(m_sync);
 				Assert(&m_sync->mutex == lock.mutex());
@@ -385,9 +385,9 @@ namespace trdk { namespace Engine {
 		////////////////////////////////////////////////////////////////////////////////
 
 		template<typename EventList>
-		bool EnqueueEvents(EventList &list, EventQueueLock &lock) const {
+		bool FlushEvents(EventList &list, EventQueueLock &lock) const {
 			try {
-				return list.Enqueue(lock);
+				return list.Flush(lock);
 			} catch (const trdk::Lib::ModuleError &ex) {
 				const auto &moduleName = list.GetName();
 				m_context.GetLog().Error(
@@ -408,7 +408,7 @@ namespace trdk { namespace Engine {
 		}
 
 		template<size_t index, typename EventLists>
-		bool EnqueueEventList(
+		bool FlushEventList(
 					EventLists &lists,
 					std::bitset<boost::tuples::length<EventLists>::value>
 						&deactivationMask,
@@ -418,7 +418,7 @@ namespace trdk { namespace Engine {
 				return false;
 			}
 			auto &list = boost::get<index>(lists);
-			if (EnqueueEvents(list, lock)) {
+			if (FlushEvents(list, lock)) {
 				return true;
 			}
 			deactivationMask[index] = list.IsStopped(lock);
@@ -457,12 +457,12 @@ namespace trdk { namespace Engine {
 		}
 
 		template<typename T1>
-		void EnqueueEventListsCollection(
+		void FlushEventListsCollection(
 					const boost::tuple<T1> &lists,
 					std::bitset<1> &deactivationMask,
 					EventQueueLock &lock)
 				const {
-			EnqueueEventList<0>(lists, deactivationMask, lock);
+			FlushEventList<0>(lists, deactivationMask, lock);
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -503,14 +503,14 @@ namespace trdk { namespace Engine {
 		}
 		
 		template<typename T1, typename T2>
-		void EnqueueEventListsCollection(
+		void FlushEventListsCollection(
 					const boost::tuple<T1, T2> &lists,
 					std::bitset<2> &deactivationMask,
 					EventQueueLock &lock)
 				const {
 			do {
-				EnqueueEventList<0>(lists, deactivationMask, lock);
-			} while (EnqueueEventList<1>(lists, deactivationMask, lock));
+				FlushEventList<0>(lists, deactivationMask, lock);
+			} while (FlushEventList<1>(lists, deactivationMask, lock));
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -560,16 +560,16 @@ namespace trdk { namespace Engine {
 		}
 
 		template<typename T1, typename T2, typename T3>
-		void EnqueueEventListsCollection(
+		void FlushEventListsCollection(
 					const boost::tuple<T1, T2, T3> &lists,
 					std::bitset<3> &deactivationMask,
 					EventQueueLock &lock)
 				const {
 			do {
 				do {
-					EnqueueEventList<0>(lists, deactivationMask, lock);
-				} while (EnqueueEventList<1>(lists, deactivationMask, lock));
-			} while (EnqueueEventList<2>(lists, deactivationMask, lock));
+					FlushEventList<0>(lists, deactivationMask, lock);
+				} while (FlushEventList<1>(lists, deactivationMask, lock));
+			} while (FlushEventList<2>(lists, deactivationMask, lock));
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -624,7 +624,7 @@ namespace trdk { namespace Engine {
 		}
 
 		template<typename T1, typename T2, typename T3, typename T4>
-		void EnqueueEventListsCollection(
+		void FlushEventListsCollection(
 					const boost::tuple<T1, T2, T3, T4> &lists,
 					std::bitset<4> &deactivationMask,
 					EventQueueLock &lock)
@@ -632,10 +632,10 @@ namespace trdk { namespace Engine {
 			do {
 				do {
 					do {
-						EnqueueEventList<0>(lists, deactivationMask, lock);
-					} while (EnqueueEventList<1>(lists, deactivationMask, lock));
-				} while (EnqueueEventList<2>(lists, deactivationMask, lock));
-			} while (EnqueueEventList<3>(lists, deactivationMask, lock));
+						FlushEventList<0>(lists, deactivationMask, lock);
+					} while (FlushEventList<1>(lists, deactivationMask, lock));
+				} while (FlushEventList<2>(lists, deactivationMask, lock));
+			} while (FlushEventList<3>(lists, deactivationMask, lock));
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -710,7 +710,7 @@ namespace trdk { namespace Engine {
 			typename T3,
 			typename T4,
 			typename T5>
-		void EnqueueEventListsCollection(
+		void FlushEventListsCollection(
 					const boost::tuple<T1, T2, T3, T4, T5> &lists,
 					std::bitset<5> &deactivationMask,
 					EventQueueLock &lock)
@@ -719,13 +719,13 @@ namespace trdk { namespace Engine {
 				do {
 					do {
 						do {
-							EnqueueEventList<0>(lists, deactivationMask, lock);
+							FlushEventList<0>(lists, deactivationMask, lock);
 						} while (
-							EnqueueEventList<1>(lists, deactivationMask, lock));
+							FlushEventList<1>(lists, deactivationMask, lock));
 					} while (
-						EnqueueEventList<2>(lists, deactivationMask, lock));
-				} while (EnqueueEventList<3>(lists, deactivationMask, lock));
-			} while (EnqueueEventList<4>(lists, deactivationMask, lock));
+						FlushEventList<2>(lists, deactivationMask, lock));
+				} while (FlushEventList<3>(lists, deactivationMask, lock));
+			} while (FlushEventList<4>(lists, deactivationMask, lock));
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -808,7 +808,7 @@ namespace trdk { namespace Engine {
 			typename T4,
 			typename T5,
 			typename T6>
-		void EnqueueEventListsCollection(
+		void FlushEventListsCollection(
 					const boost::tuple<T1, T2, T3, T4, T5, T6> &lists,
 					std::bitset<6> &deactivationMask,
 					EventQueueLock &lock)
@@ -818,21 +818,21 @@ namespace trdk { namespace Engine {
 					do {
 						do {
 							do {
-								EnqueueEventList<0>(
+								FlushEventList<0>(
 									lists,
 									deactivationMask,
 									lock);
 							} while (
-								EnqueueEventList<1>(
+								FlushEventList<1>(
 									lists,
 									deactivationMask,
 									lock));
 						} while (
-							EnqueueEventList<2>(lists, deactivationMask, lock));
+							FlushEventList<2>(lists, deactivationMask, lock));
 					} while (
-						EnqueueEventList<3>(lists, deactivationMask, lock));
-				} while (EnqueueEventList<4>(lists, deactivationMask, lock));
-			} while (EnqueueEventList<5>(lists, deactivationMask, lock));
+						FlushEventList<3>(lists, deactivationMask, lock));
+				} while (FlushEventList<4>(lists, deactivationMask, lock));
+			} while (FlushEventList<5>(lists, deactivationMask, lock));
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -857,7 +857,7 @@ namespace trdk { namespace Engine {
 				for ( ; ; ) {
 					TimeMeasurement::Milestones timeMeasurement(
 						m_context.StartDispatchingTimeMeasurement());
-					EnqueueEventListsCollection(lists, deactivationMask, lock);
+					FlushEventListsCollection(lists, deactivationMask, lock);
 					timeMeasurement.Measure(TimeMeasurement::DM_COMPLETE);
 					if (deactivationMask.all()) {
 						break;
