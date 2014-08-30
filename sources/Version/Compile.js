@@ -19,7 +19,7 @@ var domain = "robotdk.com"
 var licenseServiceSubdomain = "licensing"
 var supportEmail ="support@" + domain
 var copyright = "Copyright 2014 (C) " + vendorName + ", " + domain + ". All rights reserved."
-var concurrencyProfile = "PROFILE_HFT"
+var concurrencyProfile = "PROFILE_RELAX"
 
 //////////////////////////////////////////////////////////////////////////
 
