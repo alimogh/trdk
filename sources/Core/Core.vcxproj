@@ -270,7 +270,6 @@
     </ClCompile>
     <ClCompile Include="Security.cpp" />
     <ClCompile Include="Settings.cpp" />
-    <ClCompile Include="TimeMeasurement.cpp" />
     <ClCompile Include="TradeSystem.cpp" />
     <ClCompile Include="Types.cpp" />
   </ItemGroup>
@@ -298,7 +297,6 @@
     <ClInclude Include="Security.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Settings.hpp" />
-    <ClInclude Include="TimeMeasurement.hpp" />
     <ClInclude Include="TradeSystem.hpp" />
     <ClInclude Include="Types.hpp" />
   </ItemGroup>
