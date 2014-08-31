@@ -25,12 +25,83 @@ CurrenexTrading::CurrenexTrading(
 		: TradeSystem(context, tag),
 		m_session(GetContext(), "trading", conf),
 		m_nextOrderId(1),
-		m_ordersCountReportsCounter(0) {
+		m_ordersCountReportsCounter(0),
+		m_currentToSend(&m_toSend.first),
+		m_sendThread([&] {SendThreadMain();}) {
 	//...//
 }
 
 CurrenexTrading::~CurrenexTrading() {
 	//...//
+}
+
+void CurrenexTrading::SendThreadMain() {
+	try {
+		SendLock lock(m_sendMutex);
+		for ( ; ; ) {
+			while (!m_currentToSend->empty()) {
+				auto &toSend = *m_currentToSend;
+				m_currentToSend = &m_toSend.first == m_currentToSend
+					?	&m_toSend.second
+					:	&m_toSend.first;
+				lock.unlock();
+				try {
+					foreach (const auto &order, toSend) {
+						Send(order);
+					}
+				} catch (...) {
+					Log::RegisterUnhandledException(
+						__FUNCTION__,
+						__FILE__,
+						__LINE__,
+						false);
+					throw;
+				}
+				lock.lock();
+			}
+			m_sendCondition.wait(lock);
+		}
+	} catch (...) {
+		Log::RegisterUnhandledException(
+			__FUNCTION__,
+			__FILE__,
+			__LINE__,
+			false);
+		throw;
+	}
+}
+
+void CurrenexTrading::Send(const OrderToSend &order) {
+	try {
+		TimeMeasurement::Milestones timeMeasurement = order.timeMeasurement;
+		timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_PACK);
+		fix::Message message = CreateMarketOrderMessage(
+			order.id,
+			*order.security,
+			order.currency,
+			order.qty);
+		message.set(
+			fix::FIX40::Tags::TimeInForce,
+			fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
+		message.set(
+			fix::FIX40::Tags::Side,
+			order.isSell
+				?	fix::FIX40::Values::Side::Sell
+				:	fix::FIX40::Values::Side::Buy);
+		Send(message, timeMeasurement);
+	} catch (...) {
+		DeleteErrorOrder(order.id);
+		throw;
+	}
+}
+
+void CurrenexTrading::ScheduleSend(OrderToSend &order) {
+	{
+		const SendLock lock(m_sendMutex);
+		m_currentToSend->push_back(order);
+	}
+	m_sendCondition.notify_one();
+	order.timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_ENQUEUE);
 }
 
 void CurrenexTrading::Connect(const IniSectionRef &conf) {
@@ -290,20 +361,21 @@ OrderId CurrenexTrading::SellAtMarketPriceImmediatelyOrCancel(
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
-	const auto &orderId = TakeOrderId(callback, timeMeasurement);
+	OrderToSend order = {
+		TakeOrderId(callback, timeMeasurement),
+		&security,
+		currency,
+		qty,
+		true,
+		timeMeasurement
+	};
 	try {
-		fix::Message order
-			= CreateMarketOrderMessage(orderId, security, currency, qty);
-		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Sell);
-		order.set(
-			fix::FIX40::Tags::TimeInForce,
-			fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
-		Send(order, timeMeasurement);
+		ScheduleSend(order);
 	} catch (...) {
-		DeleteErrorOrder(orderId);
+		DeleteErrorOrder(order.id);
 		throw;
 	}
-	return orderId;
+	return order.id;
 }
 
 OrderId CurrenexTrading::BuyAtMarketPrice(
@@ -382,20 +454,21 @@ OrderId CurrenexTrading::BuyAtMarketPriceImmediatelyOrCancel(
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
-	const auto &orderId = TakeOrderId(callback, timeMeasurement);
+	OrderToSend order = {
+		TakeOrderId(callback, timeMeasurement),
+		&security,
+		currency,
+		qty,
+		false,
+		timeMeasurement
+	};
 	try {
-		fix::Message order
-			= CreateMarketOrderMessage(orderId, security, currency, qty);
-		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
-		order.set(
-			fix::FIX40::Tags::TimeInForce,
-			fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
-		Send(order, timeMeasurement);
+		ScheduleSend(order);
 	} catch (...) {
-		DeleteErrorOrder(orderId);
+		DeleteErrorOrder(order.id);
 		throw;
 	}
-	return orderId;
+	return order.id;
 }
 
 void CurrenexTrading::CancelOrder(OrderId) {

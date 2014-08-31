@@ -56,6 +56,8 @@ const std::string & TimeMeasurement::GetMilestoneName(
 }
 
 namespace { namespace TradeSystemStrings {
+	const std::string orderEnqueue = "order enqu";
+	const std::string orderPack = "order pack";
 	const std::string orderSend = "order send";
 	const std::string orderSent = "order sent";
 	const std::string orderReply = "reply recv";
@@ -65,11 +67,15 @@ const std::string & TimeMeasurement::GetMilestoneName(
 			const TimeMeasurement::TradeSystemMilestone &milestone) {
 	using namespace TradeSystemStrings;
 	static_assert(
-		numberOfTradeSystemMilestones == 4,
+		numberOfTradeSystemMilestones == 6,
 		"Milestone list changed.");
 	switch (milestone) {
 		default:
-			AssertEq(TSM_ORDER_SEND, milestone);
+			AssertEq(TSM_ORDER_ENQUEUE, milestone);
+		case TSM_ORDER_ENQUEUE:
+			return orderEnqueue;
+		case TSM_ORDER_PACK:
+			return orderPack;
 		case TSM_ORDER_SEND:
 			return orderSend;
 		case TSM_ORDER_SENT:
