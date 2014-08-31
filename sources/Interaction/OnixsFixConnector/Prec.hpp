@@ -16,9 +16,7 @@
 #	include	<boost/algorithm/string.hpp>
 #	include	<boost/scoped_ptr.hpp>
 #	include	<boost/noncopyable.hpp>
-#	ifndef BOOST_WINDOWS
-#		include <boost/thread.hpp>
-#	endif
+#	include <boost/thread.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "DisableOnixsFixEngineWarningsBegin.h"

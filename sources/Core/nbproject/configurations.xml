@@ -50,7 +50,6 @@
       <itemPath>Settings.cpp</itemPath>
       <itemPath>Strategy.cpp</itemPath>
       <itemPath>StrategyPositionState.cpp</itemPath>
-      <itemPath>TimeMeasurement.cpp</itemPath>
       <itemPath>TradeSystem.cpp</itemPath>
       <itemPath>Types.cpp</itemPath>
     </logicalFolder>
@@ -193,8 +192,6 @@
       <item path="StrategyPositionState.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="StrategyPositionState.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="TimeMeasurement.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="TimeMeasurement.hpp" ex="false" tool="3" flavor2="0">
       </item>
@@ -341,8 +338,6 @@
       <item path="StrategyPositionState.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="StrategyPositionState.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="TimeMeasurement.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="TimeMeasurement.hpp" ex="false" tool="3" flavor2="0">
       </item>

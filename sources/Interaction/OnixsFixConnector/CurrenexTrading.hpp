@@ -15,6 +15,31 @@
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
+	template<Lib::Concurrency::Profile profile>
+	struct CurrenexTradingConcurrencyPolicyT {
+		static_assert(
+			profile == Lib::Concurrency::PROFILE_RELAX,
+			"Wrong concurrency profile");
+		typedef boost::shared_mutex OrderMutex;
+		typedef boost::shared_lock<OrderMutex> OrderReadLock;
+		typedef boost::unique_lock<OrderMutex> OrderWriteLock;
+		typedef boost::mutex SendMutex;
+		typedef boost::unique_lock<SendMutex> SendLock;
+		typedef boost::condition_variable SendCondition;
+	};
+	template<>
+	struct CurrenexTradingConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+		//! @todo TRDK-168
+		typedef Lib::Concurrency::SpinMutex OrderMutex;
+		typedef OrderMutex::ScopedLock OrderReadLock;
+		typedef OrderMutex::ScopedLock OrderWriteLock;
+		typedef Lib::Concurrency::SpinMutex SendMutex;
+		typedef SendMutex::ScopedLock SendLock;
+		typedef Lib::Concurrency::SpinCondition SendCondition;
+	};
+	typedef CurrenexTradingConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
+		CurrenexTradingConcurrencyPolicy;
+
 	//! FIX trade connection with OnixS C++ FIX Engine.
 	class CurrenexTrading
 			: public trdk::TradeSystem,
@@ -32,16 +57,23 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			Lib::TimeMeasurement::Milestones timeMeasurement;
 		};
 
-		
-#	ifdef BOOST_WINDOWS
-		typedef Concurrency::reader_writer_lock OrdersMutex;
-		typedef OrdersMutex::scoped_lock_read OrdersReadLock;
-		typedef OrdersMutex::scoped_lock OrdersWriteLock;
-#	else
-		typedef boost::shared_mutex OrdersMutex;
-		typedef boost::shared_lock<OrdersMutex> OrdersReadLock;
-		typedef boost::unique_lock<OrdersMutex> OrdersWriteLock;
-#	endif
+		struct OrderToSend {
+			OrderId id;
+			const trdk::Security *security;
+			trdk::Lib::Currency currency;
+			trdk::Qty qty;
+			bool isSell;
+			Lib::TimeMeasurement::Milestones timeMeasurement;
+		};
+
+		typedef CurrenexTradingConcurrencyPolicy::OrderMutex OrdersMutex;
+		typedef CurrenexTradingConcurrencyPolicy::OrderReadLock OrdersReadLock;
+		typedef CurrenexTradingConcurrencyPolicy::OrderWriteLock
+			OrdersWriteLock;
+
+		typedef CurrenexTradingConcurrencyPolicy::SendMutex SendMutex;
+		typedef CurrenexTradingConcurrencyPolicy::SendLock SendLock;
+		typedef CurrenexTradingConcurrencyPolicy::SendCondition SendCondition;
 
 	public:
 
@@ -182,6 +214,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		void Send(
 				OnixS::FIX::Message &,
 				Lib::TimeMeasurement::Milestones &);
+		void Send(const OrderToSend &);
+		void ScheduleSend(OrderToSend &);
 
 		OrderId GetMessageOrderId(const OnixS::FIX::Message &) const;
 
@@ -212,6 +246,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	private:
 
+		void SendThreadMain();
+
+	private:
+
 		CurrenexFixSession m_session;
 
 		OrderId m_nextOrderId;
@@ -220,6 +258,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		std::deque<Order> m_orders;
 		size_t m_ordersCountReportsCounter;
 		OrdersMutex m_ordersMutex;
+
+		SendMutex m_sendMutex;
+		SendCondition m_sendCondition;
+		std::pair<std::vector<OrderToSend>, std::vector<OrderToSend>> m_toSend;
+		std::vector<OrderToSend> *m_currentToSend;
+		boost::thread m_sendThread;
 
 	};
 

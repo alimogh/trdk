@@ -16,31 +16,32 @@
 #include "Core/Settings.hpp"
 
 namespace trdk { namespace Engine {
+	
+	template<Lib::Concurrency::Profile profile>
+	struct DispatcherConcurrencyPolicyT {
+		static_assert(
+			profile == Lib::Concurrency::PROFILE_RELAX,
+			"Wrong concurrency profile");
+		typedef boost::mutex Mutex;
+		typedef Mutex::scoped_lock Lock;
+		typedef boost::condition_variable Condition;
+	};
+	template<>
+	struct DispatcherConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+		typedef Lib::Concurrency::SpinMutex Mutex;
+		typedef Mutex::ScopedLock Lock;
+		typedef Lib::Concurrency::SpinCondition Condition;
+	};
+	typedef DispatcherConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
+		DispatcherConcurrencyPolicy;
 
 	class Dispatcher : private boost::noncopyable {
 
 	private:
 
-		template<Lib::Concurrency::Profile profile>
-		struct ConcurrencyPolicyT {
-			static_assert(
-				profile == Lib::Concurrency::PROFILE_RELAX,
-				"Wrong concurrency profile");
-			typedef boost::mutex Mutex;
-			typedef Mutex::scoped_lock Lock;
-			typedef boost::condition_variable Condition;
-		};
-		template<>
-		struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
-			typedef Lib::Concurrency::SpinMutex Mutex;
-			typedef Mutex::ScopedLock Lock;
-			typedef Lib::Concurrency::SpinCondition Condition;
-		};
-
-		typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy;
-		typedef ConcurrencyPolicy::Mutex EventQueueMutex;
-		typedef ConcurrencyPolicy::Lock EventQueueLock;
-		typedef ConcurrencyPolicy::Condition EventQueueCondition;
+		typedef  DispatcherConcurrencyPolicy::Mutex EventQueueMutex;
+		typedef  DispatcherConcurrencyPolicy::Lock EventQueueLock;
+		typedef  DispatcherConcurrencyPolicy::Condition EventQueueCondition;
 
 		struct EventListsSyncObjects {
 			EventQueueMutex mutex;
@@ -193,7 +194,7 @@ namespace trdk { namespace Engine {
 					}
 					listToRead->clear();
 					lock.lock();
-					timeMeasurement.Measure(TimeMeasurement::DM_COMPLETE_LIST);
+					timeMeasurement.Measure(Lib::TimeMeasurement::DM_COMPLETE_LIST);
 
 					if (m_readyToReadCondition) {
 						//! @todo TRDK-165
@@ -352,7 +353,7 @@ namespace trdk { namespace Engine {
 			}
 			eventList.push_back(level1UpdateEvent);
 			boost::get<2>(level1UpdateEvent)
-				.Measure(TimeMeasurement::SM_DISPATCHING_DATA_ENQUEUE);
+				.Measure(Lib::TimeMeasurement::SM_DISPATCHING_DATA_ENQUEUE);
 			return true;
 		}
 		template<typename EventList>
@@ -970,19 +971,19 @@ namespace trdk { namespace Engine {
 				startBarrier.wait();
 				EventQueueLock lock(sync->mutex);
 				for ( ; ; ) {
-					TimeMeasurement::Milestones timeMeasurement(
+					Lib::TimeMeasurement::Milestones timeMeasurement(
 						m_context.StartDispatchingTimeMeasurement());
 					FlushEventListsCollection(
 						lists,
 						deactivationMask,
 						lock,
 						timeMeasurement);
-					timeMeasurement.Measure(TimeMeasurement::DM_COMPLETE_ALL);
+					timeMeasurement.Measure(Lib::TimeMeasurement::DM_COMPLETE_ALL);
 					if (deactivationMask.all()) {
 						break;
 					}
 					sync->newDataCondition.wait(lock);
-					timeMeasurement.Measure(TimeMeasurement::DM_NEW_DATA);
+					timeMeasurement.Measure(Lib::TimeMeasurement::DM_NEW_DATA);
 				}
 			} catch (...) {
 				// error already logged
@@ -1049,5 +1050,5 @@ namespace trdk { namespace Engine {
 			*boost::get<0>(newBarEvent),
 			boost::get<1>(newBarEvent));
 	}
-	
+
 } }
