@@ -82,20 +82,23 @@ const std::string & TimeMeasurement::GetMilestoneName(
 }
 
 namespace { namespace DispatchingStrings {
-	const std::string complete = "complete";
-	const std::string newData = "new data";
+	const std::string list = "list";
+	const std::string all = "all";
+	const std::string newData = "new";
 } }
 const std::string & TimeMeasurement::GetMilestoneName(
 			const TimeMeasurement::DispatchingMilestone &milestone) {
 	using namespace DispatchingStrings;
 	static_assert(
-		numberOfDispatchingMilestones == 2,
+		numberOfDispatchingMilestones == 3,
 		"Milestone list changed.");
 	switch (milestone) {
 		default:
-			AssertEq(DM_COMPLETE, milestone);
-		case DM_COMPLETE:
-			return complete;
+			AssertEq(DM_COMPLETE_ALL, milestone);
+		case DM_COMPLETE_LIST:
+			return list;
+		case DM_COMPLETE_ALL:
+			return all;
 		case DM_NEW_DATA:
 			return newData;
 	}

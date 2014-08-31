@@ -156,7 +156,9 @@ namespace trdk { namespace Engine {
 				}
 			}
 
-			bool Flush(Lock &lock) {
+			bool Flush(
+						Lock &lock, 
+						Lib::TimeMeasurement::Milestones &timeMeasurement) {
 
 				Assert(m_sync);
 				Assert(&m_sync->mutex == lock.mutex());
@@ -166,7 +168,8 @@ namespace trdk { namespace Engine {
 					|| m_current == &m_lists.second);
 
 				size_t heavyLoadsCount = 0;
-				while (	!m_current->empty()
+				while (
+						!m_current->empty()
 						&& m_taksState == TASK_STATE_ACTIVE) {
 
 					if (!(++heavyLoadsCount % 500)) {
@@ -190,6 +193,7 @@ namespace trdk { namespace Engine {
 					}
 					listToRead->clear();
 					lock.lock();
+					timeMeasurement.Measure(TimeMeasurement::DM_COMPLETE_LIST);
 
 					if (m_readyToReadCondition) {
 						//! @todo TRDK-165
@@ -401,9 +405,13 @@ namespace trdk { namespace Engine {
 		////////////////////////////////////////////////////////////////////////////////
 
 		template<typename EventList>
-		bool FlushEvents(EventList &list, EventQueueLock &lock) const {
+		bool FlushEvents(
+					EventList &list,
+					EventQueueLock &lock,
+					Lib::TimeMeasurement::Milestones &timeMeasurement)
+				const {
 			try {
-				return list.Flush(lock);
+				return list.Flush(lock, timeMeasurement);
 			} catch (const trdk::Lib::ModuleError &ex) {
 				const auto &moduleName = list.GetName();
 				m_context.GetLog().Error(
@@ -428,13 +436,14 @@ namespace trdk { namespace Engine {
 					EventLists &lists,
 					std::bitset<boost::tuples::length<EventLists>::value>
 						&deactivationMask,
-					EventQueueLock &lock)
+					EventQueueLock &lock,
+					Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			if (deactivationMask[index]) {
 				return false;
 			}
 			auto &list = boost::get<index>(lists);
-			if (FlushEvents(list, lock)) {
+			if (FlushEvents(list, lock, timeMeasurement)) {
 				return true;
 			}
 			deactivationMask[index] = list.IsStopped(lock);
@@ -476,9 +485,10 @@ namespace trdk { namespace Engine {
 		void FlushEventListsCollection(
 					const boost::tuple<T1> &lists,
 					std::bitset<1> &deactivationMask,
-					EventQueueLock &lock)
+					EventQueueLock &lock,
+					Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
-			FlushEventList<0>(lists, deactivationMask, lock);
+			FlushEventList<0>(lists, deactivationMask, lock, timeMeasurement);
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -522,11 +532,21 @@ namespace trdk { namespace Engine {
 		void FlushEventListsCollection(
 					const boost::tuple<T1, T2> &lists,
 					std::bitset<2> &deactivationMask,
-					EventQueueLock &lock)
+					EventQueueLock &lock,
+					Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			do {
-				FlushEventList<0>(lists, deactivationMask, lock);
-			} while (FlushEventList<1>(lists, deactivationMask, lock));
+				FlushEventList<0>(
+					lists,
+					deactivationMask,
+					lock,
+					timeMeasurement);
+			} while (
+				FlushEventList<1>(
+					lists,
+					deactivationMask,
+					lock,
+					timeMeasurement));
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -579,13 +599,28 @@ namespace trdk { namespace Engine {
 		void FlushEventListsCollection(
 					const boost::tuple<T1, T2, T3> &lists,
 					std::bitset<3> &deactivationMask,
-					EventQueueLock &lock)
+					EventQueueLock &lock,
+					Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			do {
 				do {
-					FlushEventList<0>(lists, deactivationMask, lock);
-				} while (FlushEventList<1>(lists, deactivationMask, lock));
-			} while (FlushEventList<2>(lists, deactivationMask, lock));
+					FlushEventList<0>(
+						lists,
+						deactivationMask,
+						lock,
+						timeMeasurement);
+				} while (
+					FlushEventList<1>(
+						lists,
+						deactivationMask,
+						lock,
+						timeMeasurement));
+			} while (
+				FlushEventList<2>(
+					lists,
+					deactivationMask,
+					lock,
+					timeMeasurement));
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -643,15 +678,35 @@ namespace trdk { namespace Engine {
 		void FlushEventListsCollection(
 					const boost::tuple<T1, T2, T3, T4> &lists,
 					std::bitset<4> &deactivationMask,
-					EventQueueLock &lock)
+					EventQueueLock &lock,
+					Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			do {
 				do {
 					do {
-						FlushEventList<0>(lists, deactivationMask, lock);
-					} while (FlushEventList<1>(lists, deactivationMask, lock));
-				} while (FlushEventList<2>(lists, deactivationMask, lock));
-			} while (FlushEventList<3>(lists, deactivationMask, lock));
+						FlushEventList<0>(
+							lists,
+							deactivationMask,
+							lock,
+							timeMeasurement);
+					} while (
+						FlushEventList<1>(
+							lists,
+							deactivationMask,
+							lock,
+							timeMeasurement));
+				} while (
+					FlushEventList<2>(
+						lists,
+						deactivationMask,
+						lock,
+						timeMeasurement));
+			} while (
+				FlushEventList<3>(
+					lists,
+					deactivationMask,
+					lock,
+					timeMeasurement));
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -729,19 +784,42 @@ namespace trdk { namespace Engine {
 		void FlushEventListsCollection(
 					const boost::tuple<T1, T2, T3, T4, T5> &lists,
 					std::bitset<5> &deactivationMask,
-					EventQueueLock &lock)
+					EventQueueLock &lock,
+					Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			do {
 				do {
 					do {
 						do {
-							FlushEventList<0>(lists, deactivationMask, lock);
+							FlushEventList<0>(
+								lists,
+								deactivationMask,
+								lock,
+								timeMeasurement);
 						} while (
-							FlushEventList<1>(lists, deactivationMask, lock));
+							FlushEventList<1>(
+								lists,
+								deactivationMask,
+								lock,
+								timeMeasurement));
 					} while (
-						FlushEventList<2>(lists, deactivationMask, lock));
-				} while (FlushEventList<3>(lists, deactivationMask, lock));
-			} while (FlushEventList<4>(lists, deactivationMask, lock));
+						FlushEventList<2>(
+							lists,
+							deactivationMask,
+							lock,
+							timeMeasurement));
+				} while (
+					FlushEventList<3>(
+						lists,
+						deactivationMask,
+						lock,
+						timeMeasurement));
+			} while (
+				FlushEventList<4>(
+					lists,
+					deactivationMask,
+					lock,
+					timeMeasurement));
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -827,7 +905,8 @@ namespace trdk { namespace Engine {
 		void FlushEventListsCollection(
 					const boost::tuple<T1, T2, T3, T4, T5, T6> &lists,
 					std::bitset<6> &deactivationMask,
-					EventQueueLock &lock)
+					EventQueueLock &lock,
+					Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			do {
 				do {
@@ -837,18 +916,38 @@ namespace trdk { namespace Engine {
 								FlushEventList<0>(
 									lists,
 									deactivationMask,
-									lock);
+									lock,
+									timeMeasurement);
 							} while (
 								FlushEventList<1>(
 									lists,
 									deactivationMask,
-									lock));
+									lock,
+									timeMeasurement));
 						} while (
-							FlushEventList<2>(lists, deactivationMask, lock));
+							FlushEventList<2>(
+								lists,
+								deactivationMask,
+								lock,
+								timeMeasurement));
 					} while (
-						FlushEventList<3>(lists, deactivationMask, lock));
-				} while (FlushEventList<4>(lists, deactivationMask, lock));
-			} while (FlushEventList<5>(lists, deactivationMask, lock));
+						FlushEventList<3>(
+							lists,
+							deactivationMask,
+							lock,
+							timeMeasurement));
+				} while (
+					FlushEventList<4>(
+						lists,
+						deactivationMask,
+						lock,
+						timeMeasurement));
+			} while (
+				FlushEventList<5>(
+					lists,
+					deactivationMask,
+					lock,
+					timeMeasurement));
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -873,8 +972,12 @@ namespace trdk { namespace Engine {
 				for ( ; ; ) {
 					TimeMeasurement::Milestones timeMeasurement(
 						m_context.StartDispatchingTimeMeasurement());
-					FlushEventListsCollection(lists, deactivationMask, lock);
-					timeMeasurement.Measure(TimeMeasurement::DM_COMPLETE);
+					FlushEventListsCollection(
+						lists,
+						deactivationMask,
+						lock,
+						timeMeasurement);
+					timeMeasurement.Measure(TimeMeasurement::DM_COMPLETE_ALL);
 					if (deactivationMask.all()) {
 						break;
 					}
