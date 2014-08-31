@@ -49,7 +49,8 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 	const std::string & GetMilestoneName(const TradeSystemMilestone &);
 
 	enum DispatchingMilestone {
-		DM_COMPLETE,
+		DM_COMPLETE_LIST,
+		DM_COMPLETE_ALL,
 		DM_NEW_DATA,
 		numberOfDispatchingMilestones
 	};
