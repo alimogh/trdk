@@ -60,10 +60,26 @@ class Position::Implementation : private boost::noncopyable {
 
 public:
 
-	//! @todo use spin read-write???
-	typedef boost::shared_mutex Mutex;
-	typedef boost::shared_lock<Mutex> ReadLock;
-	typedef boost::unique_lock<Mutex> WriteLock;
+	template<Lib::Concurrency::Profile profile>
+	struct ConcurrencyPolicyT {
+		static_assert(
+			profile == Lib::Concurrency::PROFILE_RELAX,
+			"Wrong concurrency profile");
+		typedef boost::shared_mutex Mutex;
+		typedef boost::shared_lock<Mutex> ReadLock;
+		typedef boost::unique_lock<Mutex> WriteLock;
+	};
+	template<>
+	struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+		//! @todo TRDK-167
+		typedef Lib::Concurrency::SpinMutex Mutex;
+		typedef Mutex::ScopedLock ReadLock;
+		typedef Mutex::ScopedLock WriteLock;
+	};
+	typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy;
+	typedef ConcurrencyPolicy::Mutex Mutex;
+	typedef ConcurrencyPolicy::ReadLock ReadLock;
+	typedef ConcurrencyPolicy::WriteLock WriteLock;
 
 	typedef boost::signals2::signal<StateUpdateSlotSignature>
 		StateUpdateSignal;
