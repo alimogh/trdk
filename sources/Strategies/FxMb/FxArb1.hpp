@@ -119,6 +119,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 	public:
 
 		virtual boost::posix_time::ptime OnSecurityStart(Security &);
+
+		virtual void OnPositionUpdate(trdk::Position &);
 		
 		virtual void ReportDecision(const Position &) const;
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
@@ -168,6 +170,15 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					const Broker &,
 					const Broker &)
 				const;
+
+		//! Sends open-orders for each configured security.
+		void StartPositionsOpening(
+					size_t equationIndex,
+					size_t opposideEquationIndex,
+					const size_t brokerId,
+					const Broker &b1,
+					const Broker &b2,
+					Lib::TimeMeasurement::Milestones &);
 
 	private:
 

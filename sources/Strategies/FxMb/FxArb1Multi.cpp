@@ -18,7 +18,7 @@ namespace pt = boost::posix_time;
 
 namespace trdk { namespace Strategies { namespace FxMb {
 	
-	//! Mono-strategy.
+	//! Multi-strategy. Each strategy - logic "thread" for equations pair.
 	class FxArb1Multi : public FxArb1 {
 		
 	public:
@@ -32,7 +32,24 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					const std::string &tag,
 					const IniSectionRef &conf)
 				: Base(context, "FxArb1Multi", tag, conf) {
-			//...//
+			
+			// Reading equations pair num from settings for this
+			// equations thread:
+			const auto equationPairNum
+				= conf.ReadTypedKey<size_t>("equations_pair");
+			GetLog().Error(
+				"Using equations pair number: %1%.",
+				equationPairNum);
+			if (equationPairNum < 1 || equationPairNum > EQUATIONS_COUNT  / 2) {
+				throw Exception("Wrong equations pair number");
+			}
+
+			// Storing equations indexes for this "thread":
+			m_equations.first = equationPairNum - 1;
+			AssertGt(EQUATIONS_COUNT, m_equations.first + EQUATIONS_COUNT / 2);
+			m_equations.second = m_equations.first + (EQUATIONS_COUNT / 2);
+			AssertNe(m_equations.first, m_equations.second);
+				
 		}
 		
 		virtual ~FxArb1Multi() {
@@ -58,192 +75,93 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				return;
 			}
 			
-			double bestEquationsResult = .0;
-			size_t bestEquationsIndex = std::numeric_limits<size_t>::max();
-			// Call with actual prices each equation and search for best
-			// equation:
-			for (size_t i = 0; i < GetEquations().size(); ++i) {
-				// Ask equation for result:
-				double currentResult = .0;
-				if (!GetEquations()[i](b1, b2, currentResult)) {
-					continue;
-				}
-				// Check current result for best result:
-				if (currentResult > bestEquationsResult) {
-					bestEquationsResult = currentResult;
-					bestEquationsIndex = i;
-				}
-			}
-
-			if (bestEquationsResult == std::numeric_limits<size_t>::max()) {
-				// not one equation with "true" result exists...
-				timeMeasurement.Measure(
-					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
+			// Call threads equations:
+			if (	CheckEquation(m_equations.first,
+						m_equations.second,
+						b1,
+						b2,
+						timeMeasurement)) {
+				// First equation returns "true", so we sent orders for it and
+				// exit.
 				return;
 			}
 
-			// "best equation" exists, open positions for it:
-			Assert(!Lib::IsZero(bestEquationsResult));
-			AssertGt(GetEquations().size(), bestEquationsIndex);
+			// First equation returns "false", so we check opposide equation:
+			CheckEquation(
+				m_equations.second,
+				m_equations.first,
+				b1,
+				b2,
+				timeMeasurement);
 
-			if (GetEquationPosition(bestEquationsIndex).activeCount) {
-				// Equation already has opened positions.
-				timeMeasurement.Measure(
-					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
-				return;
-			}
-			OnEquation(bestEquationsIndex, b1, b2, timeMeasurement);
-		
 		}
 
-		virtual void OnPositionUpdate(trdk::Position &positionRef) {
+	private:
 
-			// Method calls each time when one of strategy positions updates.
+		//! Calls and checks equation by index and open positions if equation
+		//! returns "true".
+		bool CheckEquation(
+					size_t equationIndex,
+					size_t opposideEquationIndex,
+					const Broker &b1,
+					const Broker &b2,
+					TimeMeasurement::Milestones &timeMeasurement) {
 			
-			EquationPosition &position
-				= dynamic_cast<EquationPosition &>(positionRef);
+			AssertNe(equationIndex, opposideEquationIndex);
 
-			if (position.IsCompleted() || position.IsCanceled()) {
-
-				auto &equationPositions
-					= GetEquationPosition(position.GetEquationIndex());
-
-				// Position closed, need to find out why:
-				if (position.GetOpenedQty() == 0) {
-					// IOC was canceled without filling, cancel all another
-					// orders at equation and close positions if another orders
-					// are filled:
-					Assert(!IsEquationOpenedFully(position.GetEquationIndex()));
-					CancelAllInEquationAtMarketPrice(
-						position.GetEquationIndex(),
-						Position::CLOSE_TYPE_OPEN_FAILED);
-				}
-				AssertEq(0, equationPositions.positions.size());
-
-				// We completed work with this position, forget it...
-				Verify(equationPositions.activeCount--);
-				return;
-
+			if (GetEquationPosition(equationIndex).activeCount) {
+				// This equation already has opened positions or orders.
+				return false;
 			}
-
-			Assert(position.IsStarted());
-			AssertEq(
-				PAIRS_COUNT,
-				GetEquationPosition(position.GetEquationIndex()).activeCount);
-			AssertEq(
-				PAIRS_COUNT,
-				GetEquationPosition(position.GetEquationIndex()).positions.size());
-			Assert(position.IsOpened());
-			AssertEq(position.GetPlanedQty(), position.GetOpenedQty());
-
-			if (!IsEquationOpenedFully(position.GetEquationIndex())) {
-				// Not all orders are filled yet, we need wait more...
-				return;
+			
+			double equationsResult = .0;
+			// Calls equation and exits if it will return "false":
+			if (!GetEquations()[equationIndex](b1, b2, equationsResult)) {
+				return false;
 			}
-
-			position.GetTimeMeasurement().Measure(
-				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
-
-			// All equation orders are filled. Now we need to close all
-			// positions for opposite equation.
-			CancelAllInEquationAtMarketPrice(
-				position.GetOppositeEquationIndex(),
-				Position::CLOSE_TYPE_TAKE_PROFIT);
+			
+			// Opening positions for this equitation:
+			OnEquation(
+				equationIndex,
+				opposideEquationIndex,
+				b1,
+				b2,
+				timeMeasurement);
+			
+			return true;
 
 		}
-		
-	protected:
 
 		void OnEquation(
 					size_t equationIndex,
+					size_t opposideEquationIndex,
 					const Broker &b1,
 					const Broker &b2,
 					TimeMeasurement::Milestones &timeMeasurement) {
 
-			// Logging current bid/ask values for all pairs
-			// (if logging enabled):
-			LogBrokersState(equationIndex, b1, b2);
-
-			timeMeasurement.Measure(
-				TimeMeasurement::SM_STRATEGY_DECISION_START);
-
-			auto &equationPositions = GetEquationPosition(equationIndex);
-			AssertEq(0, equationPositions.positions.size());
-			AssertEq(0, equationPositions.activeCount);
-
-			// Calculates opposite equation index:
-			const auto oppositeEquationIndex
-				= equationIndex >= EQUATIONS_COUNT  / 2
-					?	equationIndex - (EQUATIONS_COUNT  / 2)
-					:	equationIndex + (EQUATIONS_COUNT  / 2);
+			AssertNe(equationIndex, opposideEquationIndex);
 
 			AssertEq(BROKERS_COUNT, GetContext().GetTradeSystemsCount());
-			const size_t brokerId = equationIndex >= EQUATIONS_COUNT  / 2
-				?	2
-				:	1;
-			const BrokerConf &broker = GetBrokerConf(brokerId);
-			TradeSystem &tradeSystem
-				= GetContext().GetTradeSystem(brokerId - 1);
-			
-			// Open new position for each security by equationIndex:
-			try {
+			// if 0 - 1 equations sends orders to first broker,
+			// if 6 - 11 - to second broker:
+			const size_t brokerId = equationIndex < opposideEquationIndex
+				?	1
+				:	2;
 
-				foreach (const auto &i, broker.sendList) {
-			
-					const SecurityPositionConf &conf = i.second;
-					// Position must be "shared" as it uses pattern
-					// "shared from this":
-					boost::shared_ptr<EquationPosition> position;
-					if (!conf.isLong) {
-						position.reset(
-							new EquationShortPosition(
-								equationIndex,
-								oppositeEquationIndex,
-								*this,
-								tradeSystem,
-								*conf.security,
-								conf.security->GetSymbol().GetCashCurrency(),
-								conf.qty,
-								conf.security->GetBidPriceScaled(),
-								timeMeasurement));
-					} else {
-						position.reset(
-							new EquationLongPosition(
-								equationIndex,
-								oppositeEquationIndex,
-								*this,
-								tradeSystem,
-								*conf.security,
-								conf.security->GetSymbol().GetCashCurrency(),
-								conf.qty,
-								conf.security->GetAskPriceScaled(),
-								timeMeasurement));
-					}
-
-					if (!equationPositions.activeCount) {
-						timeMeasurement.Measure(
-							TimeMeasurement::SM_STRATEGY_EXECUTION_START);
-					}
-
-					// Sends orders to broker:
-					position->OpenAtMarketPriceImmediatelyOrCancel();
-				
-					// Binding all positions into one equation:
-					equationPositions.positions.push_back(position);
-					Verify(++equationPositions.activeCount <= PAIRS_COUNT);
-			
-				}
-
-			} catch (...) {
-				CancelAllInEquationAtMarketPrice(
-					equationIndex,
-					Position::CLOSE_TYPE_SYSTEM_ERROR);
-				throw;
-			}
-
-			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+			// Send open-orders:
+			StartPositionsOpening(
+				equationIndex,
+				opposideEquationIndex,
+				brokerId,
+				b1,
+				b2,
+				timeMeasurement);
 
 		}
+
+	private:
+
+		std::pair<size_t, size_t> m_equations;
 
 	};
 	

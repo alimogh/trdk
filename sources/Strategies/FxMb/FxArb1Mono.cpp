@@ -96,63 +96,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		
 		}
 
-		virtual void OnPositionUpdate(trdk::Position &positionRef) {
-
-			// Method calls each time when one of strategy positions updates.
-			
-			EquationPosition &position
-				= dynamic_cast<EquationPosition &>(positionRef);
-
-			if (position.IsCompleted() || position.IsCanceled()) {
-
-				auto &equationPositions
-					= GetEquationPosition(position.GetEquationIndex());
-
-				// Position closed, need to find out why:
-				if (position.GetOpenedQty() == 0) {
-					// IOC was canceled without filling, cancel all another
-					// orders at equation and close positions if another orders
-					// are filled:
-					Assert(!IsEquationOpenedFully(position.GetEquationIndex()));
-					CancelAllInEquationAtMarketPrice(
-						position.GetEquationIndex(),
-						Position::CLOSE_TYPE_OPEN_FAILED);
-				}
-				AssertEq(0, equationPositions.positions.size());
-
-				// We completed work with this position, forget it...
-				Verify(equationPositions.activeCount--);
-				return;
-
-			}
-
-			Assert(position.IsStarted());
-			AssertEq(
-				PAIRS_COUNT,
-				GetEquationPosition(position.GetEquationIndex()).activeCount);
-			AssertEq(
-				PAIRS_COUNT,
-				GetEquationPosition(position.GetEquationIndex()).positions.size());
-			Assert(position.IsOpened());
-			AssertEq(position.GetPlanedQty(), position.GetOpenedQty());
-
-			if (!IsEquationOpenedFully(position.GetEquationIndex())) {
-				// Not all orders are filled yet, we need wait more...
-				return;
-			}
-
-			position.GetTimeMeasurement().Measure(
-				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
-
-			// All equation orders are filled. Now we need to close all
-			// positions for opposite equation.
-			CancelAllInEquationAtMarketPrice(
-				position.GetOppositeEquationIndex(),
-				Position::CLOSE_TYPE_TAKE_PROFIT);
-
-		}
-		
-	protected:
+	private:
 
 		void OnEquation(
 					size_t equationIndex,
@@ -160,88 +104,27 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					const Broker &b2,
 					TimeMeasurement::Milestones &timeMeasurement) {
 
-			// Logging current bid/ask values for all pairs
-			// (if logging enabled):
-			LogBrokersState(equationIndex, b1, b2);
-
-			timeMeasurement.Measure(
-				TimeMeasurement::SM_STRATEGY_DECISION_START);
-
-			auto &equationPositions = GetEquationPosition(equationIndex);
-			AssertEq(0, equationPositions.positions.size());
-			AssertEq(0, equationPositions.activeCount);
-
 			// Calculates opposite equation index:
-			const auto oppositeEquationIndex
+			const auto opposideEquationIndex
 				= equationIndex >= EQUATIONS_COUNT  / 2
 					?	equationIndex - (EQUATIONS_COUNT  / 2)
 					:	equationIndex + (EQUATIONS_COUNT  / 2);
 
 			AssertEq(BROKERS_COUNT, GetContext().GetTradeSystemsCount());
+			// if 0 - 1 equations sends orders to first broker,
+			// if 6 - 11 - to second broker:
 			const size_t brokerId = equationIndex >= EQUATIONS_COUNT  / 2
 				?	2
 				:	1;
-			const BrokerConf &broker = GetBrokerConf(brokerId);
-			TradeSystem &tradeSystem
-				= GetContext().GetTradeSystem(brokerId - 1);
-			
-			// Open new position for each security by equationIndex:
-			try {
 
-				foreach (const auto &i, broker.sendList) {
-			
-					const SecurityPositionConf &conf = i.second;
-					// Position must be "shared" as it uses pattern
-					// "shared from this":
-					boost::shared_ptr<EquationPosition> position;
-					if (!conf.isLong) {
-						position.reset(
-							new EquationShortPosition(
-								equationIndex,
-								oppositeEquationIndex,
-								*this,
-								tradeSystem,
-								*conf.security,
-								conf.security->GetSymbol().GetCashCurrency(),
-								conf.qty,
-								conf.security->GetBidPriceScaled(),
-								timeMeasurement));
-					} else {
-						position.reset(
-							new EquationLongPosition(
-								equationIndex,
-								oppositeEquationIndex,
-								*this,
-								tradeSystem,
-								*conf.security,
-								conf.security->GetSymbol().GetCashCurrency(),
-								conf.qty,
-								conf.security->GetAskPriceScaled(),
-								timeMeasurement));
-					}
-
-					if (!equationPositions.activeCount) {
-						timeMeasurement.Measure(
-							TimeMeasurement::SM_STRATEGY_EXECUTION_START);
-					}
-
-					// Sends orders to broker:
-					position->OpenAtMarketPriceImmediatelyOrCancel();
-				
-					// Binding all positions into one equation:
-					equationPositions.positions.push_back(position);
-					Verify(++equationPositions.activeCount <= PAIRS_COUNT);
-			
-				}
-
-			} catch (...) {
-				CancelAllInEquationAtMarketPrice(
-					equationIndex,
-					Position::CLOSE_TYPE_SYSTEM_ERROR);
-				throw;
-			}
-
-			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+			// Send open-orders:
+			StartPositionsOpening(
+				equationIndex,
+				opposideEquationIndex,
+				brokerId,
+				b1,
+				b2,
+				timeMeasurement);
 
 		}
 

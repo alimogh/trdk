@@ -302,3 +302,147 @@ void FxArb1::LogBrokersState(
 			return std::move(message);
 		});
 }
+
+void FxArb1::StartPositionsOpening(
+			size_t equationIndex,
+			size_t opposideEquationIndex,
+			const size_t brokerId,
+			const Broker &b1,
+			const Broker &b2,
+			TimeMeasurement::Milestones &timeMeasurement) {
+
+	// Sends open-orders for each configured security:
+
+	AssertNe(equationIndex, opposideEquationIndex);
+
+	// Logging current bid/ask values for all pairs (if logging enabled):
+	LogBrokersState(equationIndex, b1, b2);
+
+	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
+	
+	// Symbols and broker for positions:
+	const BrokerConf &broker = GetBrokerConf(brokerId);
+	TradeSystem &tradeSystem = GetContext().GetTradeSystem(brokerId - 1);
+
+	// Info about positions (which not yet opened) for this equation:
+	auto &equationPositions = GetEquationPosition(equationIndex);
+	AssertEq(0, equationPositions.positions.size());
+	AssertEq(0, equationPositions.activeCount);
+
+	try {
+
+		// For each configured symbol we create position object and
+		// sending open-order:
+		foreach (const auto &i, broker.sendList) {
+			
+			const SecurityPositionConf &conf = i.second;
+			// Position must be "shared" as it uses pattern
+			// "shared from this":
+			boost::shared_ptr<EquationPosition> position;
+			if (!conf.isLong) {
+				position.reset(
+					new EquationShortPosition(
+						equationIndex,
+						opposideEquationIndex,
+						*this,
+						tradeSystem,
+						*conf.security,
+						conf.security->GetSymbol().GetCashCurrency(),
+						conf.qty,
+						conf.security->GetBidPriceScaled(),
+						timeMeasurement));
+			} else {
+				position.reset(
+					new EquationLongPosition(
+						equationIndex,
+						opposideEquationIndex,
+						*this,
+						tradeSystem,
+						*conf.security,
+						conf.security->GetSymbol().GetCashCurrency(),
+						conf.qty,
+						conf.security->GetAskPriceScaled(),
+						timeMeasurement));
+			}
+
+			if (!equationPositions.activeCount) {
+				timeMeasurement.Measure(
+					TimeMeasurement::SM_STRATEGY_EXECUTION_START);
+			}
+
+			// Sends orders to broker:
+			position->OpenAtMarketPriceImmediatelyOrCancel();
+				
+			// Binding all positions into one equation:
+			equationPositions.positions.push_back(position);
+			Verify(++equationPositions.activeCount <= PAIRS_COUNT);
+			
+		}
+
+	} catch (...) {
+		CancelAllInEquationAtMarketPrice(
+			equationIndex,
+			Position::CLOSE_TYPE_SYSTEM_ERROR);
+		throw;
+	}
+
+	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+
+}
+
+void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
+
+	// Method calls each time when one of strategy positions updates.
+			
+	EquationPosition &position
+		= dynamic_cast<EquationPosition &>(positionRef);
+
+	if (position.IsCompleted() || position.IsCanceled()) {
+
+		auto &equationPositions
+			= GetEquationPosition(position.GetEquationIndex());
+
+		// Position closed, need to find out why:
+		if (position.GetOpenedQty() == 0) {
+			// IOC was canceled without filling, cancel all another
+			// orders at equation and close positions if another orders
+			// are filled:
+			Assert(!IsEquationOpenedFully(position.GetEquationIndex()));
+			CancelAllInEquationAtMarketPrice(
+				position.GetEquationIndex(),
+				Position::CLOSE_TYPE_OPEN_FAILED);
+		}
+		AssertEq(0, equationPositions.positions.size());
+		AssertLt(0, equationPositions.activeCount);
+
+		// We completed work with this position, forget it...
+		Verify(equationPositions.activeCount--);
+		return;
+
+	}
+
+	Assert(position.IsStarted());
+	AssertEq(
+		PAIRS_COUNT,
+		GetEquationPosition(position.GetEquationIndex()).activeCount);
+	AssertEq(
+		PAIRS_COUNT,
+		GetEquationPosition(position.GetEquationIndex()).positions.size());
+	Assert(position.IsOpened());
+	AssertEq(position.GetPlanedQty(), position.GetOpenedQty());
+
+	if (!IsEquationOpenedFully(position.GetEquationIndex())) {
+		// Not all orders are filled yet, we need wait more...
+		return;
+	}
+
+	position.GetTimeMeasurement().Measure(
+		TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+
+	// All equation orders are filled. Now we need to close all
+	// positions for opposite equation.
+	CancelAllInEquationAtMarketPrice(
+		position.GetOppositeEquationIndex(),
+		Position::CLOSE_TYPE_TAKE_PROFIT);
+
+}
