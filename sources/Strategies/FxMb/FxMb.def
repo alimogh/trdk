@@ -1,3 +1,4 @@
 
 EXPORTS
 	CreateFxArb1MonoStrategy
+	CreateFxArb1MultiStrategy

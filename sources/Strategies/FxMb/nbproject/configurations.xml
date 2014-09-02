@@ -5,11 +5,14 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>Api.h</itemPath>
+      <itemPath>FxArb1.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
+      <itemPath>FxArb1.cpp</itemPath>
       <itemPath>FxArb1Mono.cpp</itemPath>
+      <itemPath>FxArb1Multi.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -88,7 +91,13 @@
       </compileType>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="FxArb1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="FxArb1.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="FxArb1Mono.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="FxArb1Multi.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
       </item>
@@ -163,7 +172,13 @@
       </compileType>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="FxArb1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="FxArb1.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="FxArb1Mono.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="FxArb1Multi.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
       </item>
