@@ -252,7 +252,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		CurrenexFixSession m_session;
 
-		OrderId m_nextOrderId;
+		boost::atomic<OrderId> m_nextOrderId;
 		//! @todo reimplemented with circular buffer.
 		//! @todo compare insert/search speed with tree
 		std::deque<Order> m_orders;
