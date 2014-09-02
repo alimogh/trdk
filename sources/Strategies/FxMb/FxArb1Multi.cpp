@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2014/08/15 01:40:01
+ *   Created: 2014/09/03 00:37:01
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -19,7 +19,7 @@ namespace pt = boost::posix_time;
 namespace trdk { namespace Strategies { namespace FxMb {
 	
 	//! Mono-strategy.
-	class FxArb1Mono : public FxArb1 {
+	class FxArb1Multi : public FxArb1 {
 		
 	public:
 		
@@ -27,15 +27,15 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	public:
 
-		explicit FxArb1Mono(
+		explicit FxArb1Multi(
 					Context &context,
 					const std::string &tag,
 					const IniSectionRef &conf)
-				: Base(context, "FxArb1Mono", tag, conf) {
+				: Base(context, "FxArb1Multi", tag, conf) {
 			//...//
 		}
 		
-		virtual ~FxArb1Mono() {
+		virtual ~FxArb1Multi() {
 			//...//
 		}
 
@@ -252,12 +252,13 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TRDK_STRATEGY_FXMB_API boost::shared_ptr<Strategy> CreateFxArb1MonoStrategy(
+TRDK_STRATEGY_FXMB_API boost::shared_ptr<Strategy> CreateFxArb1MultiStrategy(
 			Context &context,
 			const std::string &tag,
 			const IniSectionRef &conf) {
 	return boost::shared_ptr<Strategy>(
-		new Strategies::FxMb::FxArb1Mono(context, tag, conf));
+		new Strategies::FxMb::FxArb1Multi(context, tag, conf));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
