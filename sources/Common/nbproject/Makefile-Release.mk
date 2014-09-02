@@ -40,6 +40,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/Exception.o \
 	${OBJECTDIR}/FileSystemChangeNotificator.o \
 	${OBJECTDIR}/Ini.o \
+	${OBJECTDIR}/LogState.o \
 	${OBJECTDIR}/Prec.o \
 	${OBJECTDIR}/Symbol.o \
 	${OBJECTDIR}/SysError.o \
@@ -97,6 +98,11 @@ ${OBJECTDIR}/Ini.o: Ini.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_COMMON -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Ini.o Ini.cpp
+
+${OBJECTDIR}/LogState.o: LogState.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_COMMON -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/LogState.o LogState.cpp
 
 ${OBJECTDIR}/Prec.o: Prec.cpp 
 	${MKDIR} -p ${OBJECTDIR}
