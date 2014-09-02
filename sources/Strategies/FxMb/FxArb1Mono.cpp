@@ -96,7 +96,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		};
 
-		typedef boost::function<bool (const Broker &b1, const Broker &b2)>
+		typedef boost::function<bool (const Broker &b1, const Broker &b2, double &result)>
 			Equation;
 		typedef std::vector<Equation> Equations;
 
@@ -318,21 +318,41 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				return;
 			}
 			
-			// Call with actual prices each equation:
+			double bestEquationsResult = .0;
+			size_t bestEquationsIndex = std::numeric_limits<size_t>::max();
+			// Call with actual prices each equation and search for best
+			// equation:
 			for (size_t i = 0; i < m_equations.size(); ++i) {
-				if (m_positionsByEquation[i].activeCount) {
-					// This equation already has opened positions, skip it...
+				// Ask equation for result:
+				double currentResult = .0;
+				if (!m_equations[i](b1, b2, currentResult)) {
 					continue;
 				}
-				// Ask equation:
-				if (m_equations[i](b1, b2)) {
-					// Open positions:
-					OnEquation(i, b1, b2, timeMeasurement);
-				} else {
-					timeMeasurement.Measure(
-						TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
+				// Check current result for best result:
+				if (currentResult > bestEquationsResult) {
+					bestEquationsResult = currentResult;
+					bestEquationsIndex = i;
 				}
 			}
+
+			if (bestEquationsResult == std::numeric_limits<size_t>::max()) {
+				// not one equation with "true" result exists...
+				timeMeasurement.Measure(
+					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
+				return;
+			}
+
+			// "best equation" exists, open positions for it:
+			Assert(!Lib::IsZero(bestEquationsResult));
+			AssertGt(m_equations.size(), bestEquationsIndex);
+
+			if (m_positionsByEquation[bestEquationsIndex].activeCount) {
+				// Equation already has opened positions.
+				timeMeasurement.Measure(
+					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
+				return;
+			}
+			OnEquation(bestEquationsIndex, b1, b2, timeMeasurement);
 		
 		}
 
@@ -521,18 +541,18 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			};
 			typedef const Broker B;
 
-			add([](B &b1, B &b2) {return	b1.p1.bid + b2.p1.bid + b2.p1.bid / 3 > 80.5	;});
-			add([](B &b1, B &b2) {return	b1.p2.bid + b2.p2.bid + b2.p2.bid / 3 > 80.5	;});
-			add([](B &b1, B &b2) {return	b1.p3.bid + b2.p3.bid + b2.p3.bid / 3 > 80.5	;});
-			add([](B &b1, B &b2) {return	b1.p1.ask + b2.p1.ask + b2.p1.ask / 3 > 80.5	;});
-			add([](B &b1, B &b2) {return	b1.p2.ask + b2.p2.ask + b2.p2.ask / 3 > 80.5	;});
-			add([](B &b1, B &b2) {return	b1.p3.ask + b2.p3.ask + b2.p3.ask / 3 > 80.5	;});
-			add([](B &b1, B &b2) {return	b1.p1.bid + b2.p2.bid + b2.p3.bid / 3 > 80.5	;});
-			add([](B &b1, B &b2) {return	b1.p2.bid + b2.p1.bid + b2.p3.bid / 3 > 80.5	;});
-			add([](B &b1, B &b2) {return	b1.p3.bid + b2.p2.bid + b2.p1.bid / 3 > 80.5	;});
-			add([](B &b1, B &b2) {return	b1.p1.ask + b2.p2.ask + b2.p3.ask / 3 > 80.5	;});
-			add([](B &b1, B &b2) {return	b1.p2.ask + b2.p1.ask + b2.p3.ask / 3 > 80.5	;});
-			add([](B &b1, B &b2) {return	b1.p3.ask + b2.p2.ask + b2.p1.ask / 3 > 80.5	;});
+			add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p1.bid + b2.p1.bid + b2.p1.bid / 3	;	return result > 80.5	;});
+			add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p2.bid + b2.p2.bid + b2.p2.bid / 3	;	return result > 80.5	;});
+			add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p3.bid + b2.p3.bid + b2.p3.bid / 3	;	return result > 80.5	;});
+			add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p1.ask + b2.p1.ask + b2.p1.ask / 3	;	return result > 80.5	;});
+			add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p2.ask + b2.p2.ask + b2.p2.ask / 3	;	return result > 80.5	;});
+			add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p3.ask + b2.p3.ask + b2.p3.ask / 3	;	return result > 80.5	;});
+			add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p1.bid + b2.p2.bid + b2.p3.bid / 3	;	return result > 80.5	;});
+			add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p2.bid + b2.p1.bid + b2.p3.bid / 3	;	return result > 80.5	;});
+			add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p3.bid + b2.p2.bid + b2.p1.bid / 3	;	return result > 80.5	;});
+			add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p1.ask + b2.p2.ask + b2.p3.ask / 3	;	return result > 80.5	;});
+			add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p2.ask + b2.p1.ask + b2.p3.ask / 3	;	return result > 80.5	;});
+			add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p3.ask + b2.p2.ask + b2.p1.ask / 3	;	return result > 80.5	;});
 
 			AssertEq(EQUATIONS_COUNT, result.size());
 			result.shrink_to_fit();
