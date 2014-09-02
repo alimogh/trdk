@@ -57,6 +57,7 @@ void CurrenexTrading::SendThreadMain() {
 						false);
 					throw;
 				}
+				toSend.clear();
 				lock.lock();
 			}
 			m_sendCondition.wait(lock);
