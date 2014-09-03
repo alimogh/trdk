@@ -22,6 +22,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		
 		typedef Strategy Base;
 
+	public:
+
+		static const size_t nEquationsIndex;
+
 	protected:
 	
 		enum {
