@@ -27,29 +27,52 @@ namespace trdk { namespace Lib { namespace Concurrency {
 		};
 		
 		class SpinScopedLock : public SpinMutex::scoped_lock {
+		
 		public:
+		
 			typedef SpinMutex::scoped_lock Base;
+		
 		public:
+		
 			explicit SpinScopedLock(SpinMutex &mutex)
 					: Base(mutex),
 					m_mutex(mutex) {
 				//...//
 			}
+		
 		public:
+		
+			SpinMutex & GetMutex() {
+				return m_mutex;
+			}
+			SpinMutex * mutex() {
+				return &GetMutex();
+			}
+			const SpinMutex & GetMutex() const {
+				return const_cast<SpinScopedLock *>(this)->GetMutex();
+			}
+			const SpinMutex * mutex() const {
+				return &GetMutex();
+			}
+		
 			void Lock() {
 				m_mutex.lock();
 			}
 			void lock() {
 				Lock();
 			}
+		
 			void Unlock() {
 				m_mutex.unlock();
 			}
 			void unlock() {
 				Unlock();
 			}
+		
 		private:
+		
 			SpinMutex &m_mutex;
+		
 		};
 
 #	else
@@ -90,6 +113,19 @@ namespace trdk { namespace Lib { namespace Concurrency {
 			}
 		
 		public:
+
+			SpinMutex & GetMutex() {
+				return m_mutex;
+			}
+			SpinMutex * mutex() {
+				return &GetMutex();
+			}
+			const SpinMutex & GetMutex() const {
+				return const_cast<SpinScopedLock *>(this)->GetMutex();
+			}
+			const SpinMutex * mutex() const {
+				return &GetMutex();
+			}
 			
 			void Lock() {
 				m_mutex.Lock();
