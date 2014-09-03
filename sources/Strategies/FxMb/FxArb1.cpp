@@ -19,6 +19,8 @@ using namespace trdk::Strategies::FxMb;
 
 namespace pt = boost::posix_time;
 
+const size_t FxArb1::nEquationsIndex = std::numeric_limits<size_t>::max();
+
 FxArb1::FxArb1(
 			Context &context,
 			const std::string &name,

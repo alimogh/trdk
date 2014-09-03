@@ -59,13 +59,22 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 			
 			double bestEquationsResult = .0;
-			size_t bestEquationsIndex = std::numeric_limits<size_t>::max();
+			size_t bestEquationsIndex = nEquationsIndex;
+			// One or more equations has opened positions or active orders.
+			size_t currentEquationIndex = nEquationsIndex;
 			// Call with actual prices each equation and search for best
 			// equation:
 			for (size_t i = 0; i < GetEquations().size(); ++i) {
+
+				if (GetEquationPosition(i).activeCount) {
+					currentEquationIndex = i;
+					continue;
+				}
+
 				// Ask equation for result:
 				double currentResult = .0;
 				if (!GetEquations()[i](b1, b2, currentResult)) {
+					// Equation not verified.
 					continue;
 				}
 				// Check current result for best result:
@@ -73,9 +82,32 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					bestEquationsResult = currentResult;
 					bestEquationsIndex = i;
 				}
+
 			}
 
-			if (bestEquationsResult == std::numeric_limits<size_t>::max()) {
+			if (currentEquationIndex != nEquationsIndex) {
+				// if there is one order opened, we do nothing on opening but
+				// we check the closing
+				const auto oppositeEquationIndex
+					= currentEquationIndex >= (EQUATIONS_COUNT / 2)
+						? currentEquationIndex - (EQUATIONS_COUNT / 2)
+						: currentEquationIndex + (EQUATIONS_COUNT / 2);
+				double currentResult = .0;
+				if (
+						GetEquations()[oppositeEquationIndex](
+							b1,
+							b2,
+							currentResult)) {
+					// Opposite equation verified, we close positions
+					OnEquation(oppositeEquationIndex, b1, b2, timeMeasurement);
+					return;
+				}
+				timeMeasurement.Measure(
+					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
+				return;
+			}
+
+			if (bestEquationsResult == nEquationsIndex) {
 				// not one equation with "true" result exists...
 				timeMeasurement.Measure(
 					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
