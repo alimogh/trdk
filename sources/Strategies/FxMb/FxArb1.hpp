@@ -154,6 +154,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			return m_equations;
 		}
 
+		size_t GetOppositeEquationIndex(size_t equationIndex) const {
+			return equationIndex >= (EQUATIONS_COUNT / 2)
+				?	equationIndex - (EQUATIONS_COUNT / 2)
+				:	equationIndex + (EQUATIONS_COUNT / 2);
+		}
+
 		EquationOpenedPositions & GetEquationPosition(size_t equationIndex) {
 			AssertLe(0, equationIndex);
 			AssertGt(m_positionsByEquation.size(), equationIndex);
