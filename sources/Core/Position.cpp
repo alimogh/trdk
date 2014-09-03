@@ -195,80 +195,83 @@ public:
 
 		UseUnused(orderId);
 
-		WriteLock lock(m_mutex);
+		{
 
-		Assert(!m_position.IsOpened());
-		Assert(!m_position.IsClosed());
-		Assert(!m_position.IsCompleted());
-		AssertNe(orderId, 0);
-		AssertNe(m_opened.orderId, 0);
-		AssertEq(m_opened.orderId, orderId);
-		AssertEq(m_closed.price.total, 0);
-		AssertEq(m_closed.price.count, 0);
-		Assert(m_opened.time.is_not_a_date_time());
-		Assert(m_closed.time.is_not_a_date_time());
-		AssertLe(m_opened.qty, m_planedQty);
-		AssertEq(m_closed.qty, 0);
-		Assert(m_opened.hasOrder);
-		Assert(!m_closed.hasOrder);
+			const WriteLock lock(m_mutex);
 
-		switch (orderStatus) {
-			default:
-				AssertFail("Unknown order status");
-				return;
-			case TradeSystem::ORDER_STATUS_PENDIGN:
-			case TradeSystem::ORDER_STATUS_SUBMITTED:
-				AssertEq(m_opened.qty, 0);
-				AssertEq(m_opened.price.total, 0);
-				AssertEq(m_opened.price.count, 0);
-				AssertEq(m_planedQty, remaining);
-				AssertEq(0, filled);
-				AssertEq(0, avgPrice);
-				return;
-			case TradeSystem::ORDER_STATUS_FILLED:
-				Assert(filled + remaining == m_planedQty);
-				Assert(m_opened.qty + filled <= m_planedQty);
-				Assert(avgPrice > 0);
-				m_opened.price.total += m_security.ScalePrice(avgPrice);
-				++m_opened.price.count;
-				m_opened.qty += filled;
-				AssertGt(m_opened.qty, 0);
-				ReportOpeningUpdate("filled", orderStatus);
-				if (remaining != 0) {
+			Assert(!m_position.IsOpened());
+			Assert(!m_position.IsClosed());
+			Assert(!m_position.IsCompleted());
+			AssertNe(orderId, 0);
+			AssertNe(m_opened.orderId, 0);
+			AssertEq(m_opened.orderId, orderId);
+			AssertEq(m_closed.price.total, 0);
+			AssertEq(m_closed.price.count, 0);
+			Assert(m_opened.time.is_not_a_date_time());
+			Assert(m_closed.time.is_not_a_date_time());
+			AssertLe(m_opened.qty, m_planedQty);
+			AssertEq(m_closed.qty, 0);
+			Assert(m_opened.hasOrder);
+			Assert(!m_closed.hasOrder);
+
+			switch (orderStatus) {
+				default:
+					AssertFail("Unknown order status");
 					return;
-				}
-				break;
-			case TradeSystem::ORDER_STATUS_INACTIVE:
-			case TradeSystem::ORDER_STATUS_ERROR:
-				ReportOpeningUpdate("error", orderStatus);
-				m_isError = true;
-				break;
-			case TradeSystem::ORDER_STATUS_CANCELLED:
-				ReportOpeningUpdate("canceled", orderStatus);
-				break;
-		}
-	
-		AssertLe(m_opened.qty, m_planedQty);
-		Assert(m_opened.time.is_not_a_date_time());
-
-		if (m_position.GetOpenedQty() > 0) {
-			try {
-				m_opened.time
-					= !m_security.GetContext().GetSettings().IsReplayMode()
-						?	boost::get_system_time()
-						:	m_security.GetLastMarketDataTime();
-			} catch (...) {
-				AssertFailNoException();
+				case TradeSystem::ORDER_STATUS_PENDIGN:
+				case TradeSystem::ORDER_STATUS_SUBMITTED:
+					AssertEq(m_opened.qty, 0);
+					AssertEq(m_opened.price.total, 0);
+					AssertEq(m_opened.price.count, 0);
+					AssertEq(m_planedQty, remaining);
+					AssertEq(0, filled);
+					AssertEq(0, avgPrice);
+					return;
+				case TradeSystem::ORDER_STATUS_FILLED:
+					Assert(filled + remaining == m_planedQty);
+					Assert(m_opened.qty + filled <= m_planedQty);
+					Assert(avgPrice > 0);
+					m_opened.price.total += m_security.ScalePrice(avgPrice);
+					++m_opened.price.count;
+					m_opened.qty += filled;
+					AssertGt(m_opened.qty, 0);
+					ReportOpeningUpdate("filled", orderStatus);
+					if (remaining != 0) {
+						return;
+					}
+					break;
+				case TradeSystem::ORDER_STATUS_INACTIVE:
+				case TradeSystem::ORDER_STATUS_ERROR:
+					ReportOpeningUpdate("error", orderStatus);
+					m_isError = true;
+					break;
+				case TradeSystem::ORDER_STATUS_CANCELLED:
+					ReportOpeningUpdate("canceled", orderStatus);
+					break;
 			}
+	
+			AssertLe(m_opened.qty, m_planedQty);
+			Assert(m_opened.time.is_not_a_date_time());
+
+			if (m_position.GetOpenedQty() > 0) {
+				try {
+					m_opened.time
+						= !m_security.GetContext().GetSettings().IsReplayMode()
+							?	boost::get_system_time()
+							:	m_security.GetLastMarketDataTime();
+				} catch (...) {
+					AssertFailNoException();
+				}
+			}
+
+			m_opened.hasOrder = false;
+
+			if (CancelIfSet()) {
+				return;
+			}
+
 		}
-
-		m_opened.hasOrder = false;
-
-		if (CancelIfSet()) {
-			return;
-		}
-
-		lock.unlock();
+		
 		SignalUpdate();
 
 	}
@@ -282,89 +285,92 @@ public:
 
 		UseUnused(orderId);
 
-		WriteLock lock(m_mutex);
+		{
 
-		Assert(m_position.IsOpened());
-		Assert(!m_position.IsClosed());
-		Assert(!m_position.IsCompleted());
-		Assert(!m_opened.time.is_not_a_date_time());
-		Assert(m_closed.time.is_not_a_date_time());
-		AssertLe(m_opened.qty, m_planedQty);
-		AssertLe(m_closed.qty, m_opened.qty);
-		AssertNe(orderId, 0);
-		AssertNe(m_closed.orderId, 0);
-		AssertEq(m_closed.orderId, orderId);
-		AssertNe(m_opened.orderId, orderId);
-		Assert(!m_opened.hasOrder);
-		Assert(m_closed.hasOrder);
+			const WriteLock lock(m_mutex);
 
-		switch (orderStatus) {
-			default:
-				AssertFail("Unknown order status");
-				return;
-			case TradeSystem::ORDER_STATUS_PENDIGN:
-			case TradeSystem::ORDER_STATUS_SUBMITTED:
-				AssertEq(m_closed.qty, 0);
-				AssertEq(m_closed.price.total, 0);
-				AssertEq(m_closed.price.count, 0);
-				return;
-			case TradeSystem::ORDER_STATUS_FILLED:
-				AssertEq(filled + remaining, m_opened.qty);
-				AssertLe(long(m_closed.qty) + filled, m_opened.qty);
-				Assert(avgPrice > 0);
-				m_closed.price.total += m_security.ScalePrice(avgPrice);
-				++m_closed.price.count;
-				m_closed.qty += filled;
-				AssertGt(m_closed.qty, 0);
-				ReportClosingUpdate("filled", orderStatus);
-				if (remaining != 0) {
+			Assert(m_position.IsOpened());
+			Assert(!m_position.IsClosed());
+			Assert(!m_position.IsCompleted());
+			Assert(!m_opened.time.is_not_a_date_time());
+			Assert(m_closed.time.is_not_a_date_time());
+			AssertLe(m_opened.qty, m_planedQty);
+			AssertLe(m_closed.qty, m_opened.qty);
+			AssertNe(orderId, 0);
+			AssertNe(m_closed.orderId, 0);
+			AssertEq(m_closed.orderId, orderId);
+			AssertNe(m_opened.orderId, orderId);
+			Assert(!m_opened.hasOrder);
+			Assert(m_closed.hasOrder);
+
+			switch (orderStatus) {
+				default:
+					AssertFail("Unknown order status");
 					return;
-				}
-				break;
-			case TradeSystem::ORDER_STATUS_INACTIVE:
-			case TradeSystem::ORDER_STATUS_ERROR:
-//! @todo Log THIS!!!
-// 				m_security.GetContext().GetLog().Error(
-// 					"Position CLOSE error: symbol: \"%1%\", strategy %2%"
-// 						", trade system state: %3%, orders ID: %4%->%5%, qty: %6%->%7%.",
-// 					boost::make_tuple(
-// 						boost::cref(m_position.GetSecurity()),
-// 						boost::cref(m_tag),
-// 						orderStatus,
-// 						m_opened.orderId,
-// 						m_closed.orderId,	
-// 						m_opened.qty,
-// 						m_closed.qty));
-				ReportClosingUpdate("error", orderStatus);
-				m_isError = true;
-				break;
-			case TradeSystem::ORDER_STATUS_CANCELLED:
-				ReportClosingUpdate("canceled", orderStatus);
-				break;
-		}
-	
-		AssertLe(m_opened.qty, m_planedQty);
-		Assert(m_closed.time.is_not_a_date_time());
-
-		if (m_position.GetActiveQty() == 0) {
-			try {
-				m_closed.time
-					= !m_security.GetContext().GetSettings().IsReplayMode()
-						?	boost::get_system_time()
-						:	m_security.GetLastMarketDataTime();
-			} catch (...) {
-				m_isError = true;
-				AssertFailNoException();
+				case TradeSystem::ORDER_STATUS_PENDIGN:
+				case TradeSystem::ORDER_STATUS_SUBMITTED:
+					AssertEq(m_closed.qty, 0);
+					AssertEq(m_closed.price.total, 0);
+					AssertEq(m_closed.price.count, 0);
+					return;
+				case TradeSystem::ORDER_STATUS_FILLED:
+					AssertEq(filled + remaining, m_opened.qty);
+					AssertLe(long(m_closed.qty) + filled, m_opened.qty);
+					Assert(avgPrice > 0);
+					m_closed.price.total += m_security.ScalePrice(avgPrice);
+					++m_closed.price.count;
+					m_closed.qty += filled;
+					AssertGt(m_closed.qty, 0);
+					ReportClosingUpdate("filled", orderStatus);
+					if (remaining != 0) {
+						return;
+					}
+					break;
+				case TradeSystem::ORDER_STATUS_INACTIVE:
+				case TradeSystem::ORDER_STATUS_ERROR:
+	//! @todo Log THIS!!!
+	// 				m_security.GetContext().GetLog().Error(
+	// 					"Position CLOSE error: symbol: \"%1%\", strategy %2%"
+	// 						", trade system state: %3%, orders ID: %4%->%5%, qty: %6%->%7%.",
+	// 					boost::make_tuple(
+	// 						boost::cref(m_position.GetSecurity()),
+	// 						boost::cref(m_tag),
+	// 						orderStatus,
+	// 						m_opened.orderId,
+	// 						m_closed.orderId,	
+	// 						m_opened.qty,
+	// 						m_closed.qty));
+					ReportClosingUpdate("error", orderStatus);
+					m_isError = true;
+					break;
+				case TradeSystem::ORDER_STATUS_CANCELLED:
+					ReportClosingUpdate("canceled", orderStatus);
+					break;
 			}
+	
+			AssertLe(m_opened.qty, m_planedQty);
+			Assert(m_closed.time.is_not_a_date_time());
+
+			if (m_position.GetActiveQty() == 0) {
+				try {
+					m_closed.time
+						= !m_security.GetContext().GetSettings().IsReplayMode()
+							?	boost::get_system_time()
+							:	m_security.GetLastMarketDataTime();
+				} catch (...) {
+					m_isError = true;
+					AssertFailNoException();
+				}
+			}
+
+			m_closed.hasOrder = false;
+
+			if (CancelIfSet()) {
+				return;
+			}
+
 		}
-
-		m_closed.hasOrder = false;
-
-		if (CancelIfSet()) {
-			return;
-		}
-
-		lock.unlock();
+		
 		SignalUpdate();		
 
 	}
