@@ -192,24 +192,53 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		void FlushRemovedOrders();
 
 		//! Creates order FIX-message and sets common fields.
+		/** Crates new order message each time, can be called from anywhere,
+		  * without synchronization.
+		  */
 		OnixS::FIX::Message CreateOrderMessage(
 				const OrderId &,
 				const Security &,
 				const trdk::Lib::Currency &,
 				const Qty &);
 		//! Creates market order FIX-message and sets common fields.
+		/** Crates new order message each time, can be called from anywhere,
+		  * without synchronization.
+		  */
 		OnixS::FIX::Message CreateMarketOrderMessage(
 				const OrderId &,
 				const Security &,
 				const trdk::Lib::Currency &,
 				const Qty &);
 		//! Creates limit order FIX-message and sets common fields.
+		/** Crates new order message each time, can be called from anywhere,
+		  * without synchronization.
+		  */
 		OnixS::FIX::Message CreateLimitOrderMessage(
 				const OrderId &,
 				const Security &,
 				const trdk::Lib::Currency &,
 				const Qty &,
 				const ScaledPrice &);
+		//! Sets common fields and returns reference to preallocated order
+		//! FIX-message.
+		/** Uses only one object for all messages, hasn't synchronization, can
+		  * called only from one thread.
+		  */
+		OnixS::FIX::Message & GetPreallocatedOrderMessage(
+				const OrderId &,
+				const Security &,
+				const trdk::Lib::Currency &,
+				const Qty &);
+		//! Sets common fields for market orders and returns reference to
+		//! preallocated market order FIX-message.
+		/** Uses only one object for all messages, hasn't synchronization, can
+		  * called only from one thread.
+		  */
+		OnixS::FIX::Message & GetPreallocatedMarketOrderMessage(
+				const OrderId &,	
+				const Security &,
+				const trdk::Lib::Currency &,
+				const Qty &);
 
 		void Send(
 				OnixS::FIX::Message &,
@@ -264,6 +293,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		std::pair<std::vector<OrderToSend>, std::vector<OrderToSend>> m_toSend;
 		std::vector<OrderToSend> *m_currentToSend;
 		boost::thread m_sendThread;
+
+
+		struct {
+			std::unique_ptr<OnixS::FIX::Message> orderMessage;
+		} m_preallocated;
+
 
 	};
 

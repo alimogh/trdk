@@ -76,7 +76,7 @@ void CurrenexTrading::Send(const OrderToSend &order) {
 	try {
 		TimeMeasurement::Milestones timeMeasurement = order.timeMeasurement;
 		timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_PACK);
-		fix::Message message = CreateMarketOrderMessage(
+		fix::Message &message = GetPreallocatedMarketOrderMessage(
 			order.id,
 			*order.security,
 			order.currency,
@@ -226,6 +226,29 @@ void CurrenexTrading::NotifyOrderUpdate(
 
 }
 
+namespace {
+	void FillOrderMessage(
+				const OrderId &orderId,
+				const Security &security,
+				const Currency &currency,
+				const Qty &qty,
+				fix::Message &message) {
+		message.set(
+			fix::FIX40::Tags::ClOrdID,
+			boost::lexical_cast<std::string>(orderId));
+		message.set(
+			fix::FIX40::Tags::HandlInst,
+			fix::FIX40::Values::HandlInst::Automated_execution_order_private_no_Broker_intervention);
+		message.set(fix::FIX40::Tags::Currency, ConvertToIso(currency));
+		message.set(fix::FIX40::Tags::Symbol, security.GetSymbol().GetSymbol());
+		message.set(
+			fix::FIX40::Tags::TransactTime,
+			fix::Timestamp::utc(),
+			fix::TimestampFormat::YYYYMMDDHHMMSSMsec);
+		message.set(fix::FIX40::Tags::OrderQty, qty);
+	}
+}
+
 fix::Message CurrenexTrading::CreateOrderMessage(
 			const OrderId &orderId,	
 			const Security &security,
@@ -233,19 +256,7 @@ fix::Message CurrenexTrading::CreateOrderMessage(
 			const Qty &qty) {
 	// Creates order FIX-message and sets common fields.
 	fix::Message result("D", m_session.GetFixVersion());
-	result.set(
-		fix::FIX40::Tags::ClOrdID,
-		boost::lexical_cast<std::string>(orderId));
-	result.set(
-		fix::FIX40::Tags::HandlInst,
-		fix::FIX40::Values::HandlInst::Automated_execution_order_private_no_Broker_intervention);
-	result.set(fix::FIX40::Tags::Currency, ConvertToIso(currency));
-	result.set(fix::FIX40::Tags::Symbol, security.GetSymbol().GetSymbol());
-	result.set(
-		fix::FIX40::Tags::TransactTime,
-		fix::Timestamp::utc(),
-		fix::TimestampFormat::YYYYMMDDHHMMSSMsec);
-	result.set(fix::FIX40::Tags::OrderQty, qty);
+	FillOrderMessage(orderId, security, currency, qty, result);
 	return std::move(result);
 }
 
@@ -259,6 +270,39 @@ fix::Message CurrenexTrading::CreateMarketOrderMessage(
 		fix::FIX40::Tags::OrdType,
 		fix::FIX41::Values::OrdType::Forex_Market);
 	return std::move(order);
+}
+
+fix::Message & CurrenexTrading::GetPreallocatedOrderMessage(
+				const OrderId &orderId,
+				const Security &security,
+				const Currency &currency,
+				const Qty &qty) {
+	if (!m_preallocated.orderMessage) {
+		m_preallocated.orderMessage.reset(
+			new fix::Message("D", m_session.GetFixVersion()));
+	} else {
+		m_preallocated.orderMessage->clear();
+	}
+	FillOrderMessage(
+		orderId,
+		security,
+		currency,
+		qty,
+		*m_preallocated.orderMessage);
+	return *m_preallocated.orderMessage;
+}
+
+fix::Message & CurrenexTrading::GetPreallocatedMarketOrderMessage(
+			const OrderId &orderId,	
+			const Security &security,
+			const Currency &currency,
+			const Qty &qty) {
+	fix::Message &result
+		= GetPreallocatedOrderMessage(orderId, security, currency, qty);
+	result.set(
+		fix::FIX40::Tags::OrdType,
+		fix::FIX41::Values::OrdType::Forex_Market);
+	return result;
 }
 
 fix::Message CurrenexTrading::CreateLimitOrderMessage(
