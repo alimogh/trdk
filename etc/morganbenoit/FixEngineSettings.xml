@@ -6,15 +6,16 @@
 	</configSections>
 
 	<FixEngine>
-		<add key="Resending.QueueSize" value="0"/>
-		<add key="Validate.EmptyFieldValues" value="false"/>
-		<add key="Validate.FieldValues" value="false"/>
-		<add key="Validate.RepeatingGroupEntryCount" value="false"/>
-		<add key="Validate.RepeatingGroupLeadingTag" value="false"/>
-		<add key="Validate.RequiredFields" value="false"/>
-		<add key="Validate.UnknownFields" value="false"/>
-		<add key="Validate.UnknownMessages" value="false"/>
-		<add key="Validate.DuplicatedField" value="false"/> 
+		<add key="Connection.ReceiveSpinningTimeout" value="500" />
+		<add key="Resending.QueueSize" value="0" />
+		<add key="Validate.EmptyFieldValues" value="false" />
+		<add key="Validate.FieldValues" value="false" />
+		<add key="Validate.RepeatingGroupEntryCount" value="false" />
+		<add key="Validate.RepeatingGroupLeadingTag" value="false" />
+		<add key="Validate.RequiredFields" value="false" />
+		<add key="Validate.UnknownFields" value="false" />
+		<add key="Validate.UnknownMessages" value="false" />
+		<add key="Validate.DuplicatedField" value="false" /> 
 	</FixEngine>
 
 </configuration>
