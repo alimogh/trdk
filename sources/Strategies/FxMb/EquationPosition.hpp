@@ -30,20 +30,29 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					const trdk::Qty &qty,
 					const trdk::ScaledPrice &startPrice,
 					const Lib::TimeMeasurement::Milestones &timeMeasurement)
-				: m_equationIndex(equationIndex),
-				m_oppositeEquationIndex(oppositeEquationIndex),
-				Position(
+				: Position(
 					strategy,
 					tradeSystem,
 					security,
 					currency,
 					qty,
 					startPrice,
-					timeMeasurement)  {
+					timeMeasurement),
+				m_equationIndex(equationIndex),
+				m_oppositeEquationIndex(oppositeEquationIndex),
+				m_isObservationActive(true) {
 			//...//
 		}
 
 	public:
+
+		bool IsObservationActive() const {
+			return m_isObservationActive;
+		}
+
+		void DeactivatieObservation() {
+			m_isObservationActive = false;
+		}
 
 		size_t GetEquationIndex() const {
 			return m_equationIndex;
@@ -57,6 +66,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		const size_t m_equationIndex;
 		const size_t m_oppositeEquationIndex;
+
+		bool m_isObservationActive;
 
 	};
 

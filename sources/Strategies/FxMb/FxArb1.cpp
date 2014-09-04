@@ -398,6 +398,9 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 			
 	EquationPosition &position
 		= dynamic_cast<EquationPosition &>(positionRef);
+	if (!position.IsObservationActive()) {
+		return;
+	}
 
 	if (position.IsCompleted() || position.IsCanceled()) {
 
@@ -419,6 +422,9 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 
 		// We completed work with this position, forget it...
 		Verify(equationPositions.activeCount--);
+
+		position.DeactivatieObservation();
+
 		return;
 
 	}
