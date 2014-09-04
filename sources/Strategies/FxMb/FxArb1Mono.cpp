@@ -88,19 +88,29 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			if (currentEquationIndex != nEquationsIndex) {
 				// if there is one order opened, we do nothing on opening but
 				// we check the closing
-				const auto oppositeEquationIndex
-					= currentEquationIndex >= (EQUATIONS_COUNT / 2)
-						? currentEquationIndex - (EQUATIONS_COUNT / 2)
-						: currentEquationIndex + (EQUATIONS_COUNT / 2);
-				double currentResult = .0;
-				if (
-						GetEquations()[oppositeEquationIndex](
+				const auto &oppositeEquationIndex
+					= GetOppositeEquationIndex(currentEquationIndex);
+				// First we should check - is it already has active positions or
+				// order or not? At fast updates we can get situation when we
+				// already sent orders for this equation at previous MD update,
+				// but this orders still not updated own status (opening for
+				// this, closing for opposite) as it very fast MD updates, much
+				// faster then orders update.
+				if (!GetEquationPosition(oppositeEquationIndex).activeCount) {
+					double currentResult = .0;
+					if (
+							GetEquations()[oppositeEquationIndex](
+								b1,
+								b2,
+								currentResult)) {
+						// Opposite equation verified, we close positions
+						OnEquation(
+							oppositeEquationIndex,
 							b1,
 							b2,
-							currentResult)) {
-					// Opposite equation verified, we close positions
-					OnEquation(oppositeEquationIndex, b1, b2, timeMeasurement);
-					return;
+							timeMeasurement);
+						return;
+					}
 				}
 				timeMeasurement.Measure(
 					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
@@ -137,10 +147,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					TimeMeasurement::Milestones &timeMeasurement) {
 
 			// Calculates opposite equation index:
-			const auto opposideEquationIndex
-				= equationIndex >= EQUATIONS_COUNT  / 2
-					?	equationIndex - (EQUATIONS_COUNT  / 2)
-					:	equationIndex + (EQUATIONS_COUNT  / 2);
+			const auto &opposideEquationIndex
+				= GetOppositeEquationIndex(equationIndex);
 
 			AssertEq(BROKERS_COUNT, GetContext().GetTradeSystemsCount());
 			// if 0 - 1 equations sends orders to first broker,

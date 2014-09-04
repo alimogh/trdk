@@ -127,7 +127,6 @@ namespace trdk { namespace Engine {
 			bool IsStopped(const Lock &lock) const {
 				Assert(m_sync);
 				Assert(&m_sync->mutex == lock.mutex());
-				Assert(lock);
 				Lib::UseUnused(lock);
 				return m_taksState == TASK_STATE_STOPPED;
 			}
@@ -163,7 +162,6 @@ namespace trdk { namespace Engine {
 
 				Assert(m_sync);
 				Assert(&m_sync->mutex == lock.mutex());
-				Assert(lock);
 				Assert(
 					m_current == &m_lists.first
 					|| m_current == &m_lists.second);
