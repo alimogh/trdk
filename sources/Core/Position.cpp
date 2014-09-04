@@ -421,32 +421,27 @@ public:
 				TradeSystem::OrderStatus orderStatus)
 			const
 			throw() {
-		try {
-			const auto &context = m_security.GetContext();
-			context.GetLog().TradingEx(
-				logTag,
-				[&]() -> boost::format {
-					boost::format message(
-						"%11% %1% %2% open-%3% %4%"
-							" qty=%5%->%6% price=%7%->%8% order-id=%9%"
-							" order-status=%10%");
-					message
-						%	m_security.GetSymbol()
-						%	m_position.GetTypeStr()
-						%	eventDesc
-						%	m_tag
-						%	m_position.GetPlanedQty()
-						%	m_position.GetOpenedQty()
-						%	m_security.DescalePrice(m_position.GetOpenStartPrice())
-						%	m_security.DescalePrice(m_position.GetOpenPrice())
-						%	m_position.GetOpenOrderId()
-						%	m_tradeSystem.GetStringStatus(orderStatus)
-						%	m_position.GetTradeSystem().GetTag();
-					return std::move(message);
-				});
-		} catch (...) {
-			AssertFailNoException();
-		}
+		m_security.GetContext().GetLog().TradingEx(
+			logTag,
+			[&]() -> boost::format {
+				boost::format message(
+					"%11% %1% %2% open-%3% %4%"
+						" qty=%5%->%6% price=%7%->%8% order-id=%9%"
+						" order-status=%10%");
+				message
+					%	m_security.GetSymbol()
+					%	m_position.GetTypeStr()
+					%	eventDesc
+					%	m_tag
+					%	m_position.GetPlanedQty()
+					%	m_position.GetOpenedQty()
+					%	m_security.DescalePrice(m_position.GetOpenStartPrice())
+					%	m_security.DescalePrice(m_position.GetOpenPrice())
+					%	m_position.GetOpenOrderId()
+					%	m_tradeSystem.GetStringStatus(orderStatus)
+					%	m_position.GetTradeSystem().GetTag();
+				return std::move(message);
+			});
 	}
 	
 	void ReportClosingUpdate(
@@ -454,34 +449,29 @@ public:
 				TradeSystem::OrderStatus orderStatus)
 			const
 			throw() {
-		try {
-			const auto &context = m_security.GetContext();
-			context.GetLog().TradingEx(
-				logTag,
-				[&]() -> boost::format {
-					boost::format message(
-						"%11% %1% %2% close-%3% %4%"
-							" qty=%5%->%6% price=%7% order-id=%8%->%9%"
-							" order-status=%10%");
-					message
-						%	m_position.GetSecurity().GetSymbol()
-						%	m_position.GetTypeStr()
-						%	eventDesc
-						%	m_tag
-						%	m_position.GetOpenedQty()
-						%	m_position.GetClosedQty()
-						%	m_position
-								.GetSecurity()
-								.DescalePrice(m_position.GetClosePrice())
-						%	m_position.GetOpenOrderId()
-						%	m_position.GetCloseOrderId()
-						%	m_tradeSystem.GetStringStatus(orderStatus)
-						%	m_position.GetTradeSystem().GetTag();
-					return std::move(message);
-				});
-		} catch (...) {
-			AssertFailNoException();
-		}
+		m_security.GetContext().GetLog().TradingEx(
+			logTag,
+			[&]() -> boost::format {
+				boost::format message(
+					"%11% %1% %2% close-%3% %4%"
+						" qty=%5%->%6% price=%7% order-id=%8%->%9%"
+						" order-status=%10%");
+				message
+					%	m_position.GetSecurity().GetSymbol()
+					%	m_position.GetTypeStr()
+					%	eventDesc
+					%	m_tag
+					%	m_position.GetOpenedQty()
+					%	m_position.GetClosedQty()
+					%	m_position
+							.GetSecurity()
+							.DescalePrice(m_position.GetClosePrice())
+					%	m_position.GetOpenOrderId()
+					%	m_position.GetCloseOrderId()
+					%	m_tradeSystem.GetStringStatus(orderStatus)
+					%	m_position.GetTradeSystem().GetTag();
+				return std::move(message);
+			});
 	}
 
 public:
@@ -621,15 +611,15 @@ public:
 						&& !m_position.HasActiveOpenOrders())) {
 			return false;
 		}
-		boost::function<void ()> delayedCancelMethod
-			= [this, closeType, cancelMethodImpl]() {
-				if (!m_position.IsOpened() || m_position.IsClosed()) {
-					SignalUpdate();
-					return;
-				}
-				CloseUnsafe<CancelMethodImpl>(closeType, cancelMethodImpl);
-			};
 		if (CancelAllOrders()) {
+			boost::function<void ()> delayedCancelMethod
+				= [this, closeType, cancelMethodImpl]() {
+					if (!m_position.IsOpened() || m_position.IsClosed()) {
+						SignalUpdate();
+						return;
+					}
+					CloseUnsafe<CancelMethodImpl>(closeType, cancelMethodImpl);
+				};
 			Assert(m_position.HasActiveOrders());
 			delayedCancelMethod.swap(m_cancelMethod);
 		} else {
