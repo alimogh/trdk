@@ -135,7 +135,12 @@ void CurrenexFixSession::Connect(
 			resetSeqNumFlag ? "true" : "false"));
 
 	boost::scoped_ptr<fix::Session> session(
-		new fix::Session(senderCompId, targetCompId, m_fixVersion, &listener));
+		new fix::Session(
+			senderCompId,
+			targetCompId,
+			m_fixVersion,
+			&listener,
+			fix::SessionStorageType::MemoryBased));
 	if (conf.ReadBoolKey("use_ssl")) {
 		session->encryptionMethod(fix::EncryptionMethod::SSL);
 	}
