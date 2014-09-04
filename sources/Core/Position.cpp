@@ -423,21 +423,27 @@ public:
 			throw() {
 		try {
 			const auto &context = m_security.GetContext();
-			context.GetLog().Trading(
+			context.GetLog().TradingEx(
 				logTag,
-				"%1% %2% open-%3% %4% qty=%5%->%6% price=%7%->%8% order-id=%9%"
-					" order-status=%10%",
-				boost::make_tuple(
-					boost::cref(m_security.GetSymbol()),
-					boost::cref(m_position.GetTypeStr()),
-					eventDesc,
-					boost::cref(m_tag),
-					m_position.GetPlanedQty(),
-					m_position.GetOpenedQty(),
-					m_security.DescalePrice(m_position.GetOpenStartPrice()),
-					m_security.DescalePrice(m_position.GetOpenPrice()),
-					m_position.GetOpenOrderId(),
-					m_tradeSystem.GetStringStatus(orderStatus)));
+				[&]() -> boost::format {
+					boost::format message(
+						"%11% %1% %2% open-%3% %4%"
+							" qty=%5%->%6% price=%7%->%8% order-id=%9%"
+							" order-status=%10%");
+					message
+						%	m_security.GetSymbol()
+						%	m_position.GetTypeStr()
+						%	eventDesc
+						%	m_tag
+						%	m_position.GetPlanedQty()
+						%	m_position.GetOpenedQty()
+						%	m_security.DescalePrice(m_position.GetOpenStartPrice())
+						%	m_security.DescalePrice(m_position.GetOpenPrice())
+						%	m_position.GetOpenOrderId()
+						%	m_tradeSystem.GetStringStatus(orderStatus)
+						%	m_position.GetTradeSystem().GetTag();
+					return std::move(message);
+				});
 		} catch (...) {
 			AssertFailNoException();
 		}
@@ -450,23 +456,29 @@ public:
 			throw() {
 		try {
 			const auto &context = m_security.GetContext();
-			context.GetLog().Trading(
+			context.GetLog().TradingEx(
 				logTag,
-				"%1% %2% close-%3% %4% qty=%5%->%6% price=%7% order-id=%8%->%9%"
-					" order-status=%10%",
-				boost::make_tuple(
-					boost::cref(m_position.GetSecurity().GetSymbol()),
-					boost::cref(m_position.GetTypeStr()),
-					eventDesc,
-					boost::cref(m_tag),
-					m_position.GetOpenedQty(),
-					m_position.GetClosedQty(),
-					m_position
-						.GetSecurity()
-						.DescalePrice(m_position.GetClosePrice()),
-					m_position.GetOpenOrderId(),
-					m_position.GetCloseOrderId(),
-					m_tradeSystem.GetStringStatus(orderStatus)));
+				[&]() -> boost::format {
+					boost::format message(
+						"%11% %1% %2% close-%3% %4%"
+							" qty=%5%->%6% price=%7% order-id=%8%->%9%"
+							" order-status=%10%");
+					message
+						%	m_position.GetSecurity().GetSymbol()
+						%	m_position.GetTypeStr()
+						%	eventDesc
+						%	m_tag
+						%	m_position.GetOpenedQty()
+						%	m_position.GetClosedQty()
+						%	m_position
+								.GetSecurity()
+								.DescalePrice(m_position.GetClosePrice())
+						%	m_position.GetOpenOrderId()
+						%	m_position.GetCloseOrderId()
+						%	m_tradeSystem.GetStringStatus(orderStatus)
+						%	m_position.GetTradeSystem().GetTag();
+					return std::move(message);
+				});
 		} catch (...) {
 			AssertFailNoException();
 		}
@@ -583,22 +595,27 @@ public:
 			Assert(!m_position.HasActiveCloseOrders());
 			return false;
 		}
-		m_security.GetContext().GetLog().Trading(
+		m_security.GetContext().GetLog().TradingEx(
 			logTag,
-			"%1% %2% close-cancel-pre %3% qty=%4%->%5%"
-				" price=market order-id=%6%->%7%"
-				" has-orders=%8%/%9% is-error=%10%",
-			boost::make_tuple(
-				boost::cref(m_security),
-				boost::cref(m_position.GetTypeStr()),
-				boost::cref(m_tag),
-				m_position.GetOpenedQty(),
-				m_position.GetClosedQty(),
-				m_position.GetOpenOrderId(),
-				m_position.GetCloseOrderId(),
-				m_position.HasActiveOpenOrders(),
-				m_position.HasActiveCloseOrders(),
-				m_isError ? true : false));
+			[&]() -> boost::format {
+				boost::format message(
+					"%11% %1% %2% close-cancel-pre %3% qty=%4%->%5%"
+						" price=market order-id=%6%->%7%"
+						" has-orders=%8%/%9% is-error=%10%");
+				message
+					%	m_security
+					%	m_position.GetTypeStr()
+					%	m_tag
+					%	m_position.GetOpenedQty()
+					%	m_position.GetClosedQty()
+					%	m_position.GetOpenOrderId()
+					%	m_position.GetCloseOrderId()
+					%	m_position.HasActiveOpenOrders()
+					%	m_position.HasActiveCloseOrders()
+					%	(m_isError ? true : false)
+					%	m_position.GetTradeSystem().GetTag();
+				return std::move(message);
+			});
 		if (	m_position.IsClosed()
 				|| (	!m_position.IsOpened()
 						&& !m_position.HasActiveOpenOrders())) {
