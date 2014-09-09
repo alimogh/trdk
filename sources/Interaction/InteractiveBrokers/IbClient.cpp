@@ -1464,23 +1464,41 @@ void Client::updateAccountValue(
 		return;
 	}
 
-	bool isExcessLiquiditySource = false;
-	if (key == "CashBalance") {
-		m_accountInfo->cashBalance = boost::lexical_cast<double>(val);
-	} else if (key == "EquityWithLoanValue") {
-		m_accountInfo->equityWithLoanValue= boost::lexical_cast<double>(val);
-		isExcessLiquiditySource = true;
-	} else if (key == "MaintMarginReq") {
-		m_accountInfo->maintenanceMargin = boost::lexical_cast<double>(val);
-		isExcessLiquiditySource = true;
+	TradeSystem::Account::Value *groupDestination = nullptr;
+	if (boost::starts_with(key, "TotalCashValue")) {
+		groupDestination = &m_accountInfo->cash;
+	} else if (boost::starts_with(key, "EquityWithLoanValue")) {
+		groupDestination = &m_accountInfo->equityWithLoanValue;
+	} else if (boost::starts_with(key, "InitMarginReq")) {
+		groupDestination = &m_accountInfo->currentInitialMargin;
+	} else if (boost::starts_with(key, "MaintMarginReq")) {
+		groupDestination = &m_accountInfo->currentMaintenanceMargin;
+	} else if (boost::starts_with(key, "NetLiquidation")) {
+		groupDestination = &m_accountInfo->netLiquidationValue;
+	} else if (boost::starts_with(key, "GrossPositionValue")) {
+		groupDestination = &m_accountInfo->securitiesGrossPositionValue;
+	} else if (boost::starts_with(key, "AvailableFunds")) {
+		groupDestination = &m_accountInfo->currentAvailableFunds;
+	} else if (boost::starts_with(key, "ExcessLiquidity")) {
+		groupDestination = &m_accountInfo->currentExcessLiquidity;
 	}
 
-	if (isExcessLiquiditySource) {
-		const auto excessLiquidity
-			= m_accountInfo->equityWithLoanValue
-				- m_accountInfo->maintenanceMargin;
-		m_accountInfo->excessLiquidity = excessLiquidity;
+	if (!groupDestination) {
+		return;
 	}
+
+	boost::atomic<int32_t> *valDestination;
+	if (boost::ends_with(key, "-C")) {
+		valDestination = &groupDestination->usCommodities;
+	} else if (boost::ends_with(key, "-S")) {
+		valDestination = &groupDestination->usSecurities;
+	} else {
+		Assert(key.find("-") == std::string::npos);
+		valDestination = &groupDestination->total;
+	}
+
+	*valDestination
+		= int32_t(boost::math::round(boost::lexical_cast<double>(val)));
 
 }
 
@@ -1503,7 +1521,7 @@ void Client::updateAccountTime(const IBString &/*timeStamp*/) {
 void Client::accountDownloadEnd(const IBString &/*accountName*/) {
 	//...//
 }
-
+ 
 void Client::nextValidId(::OrderId id) {
 	Assert(m_seqNumber < 0);
 	const auto prevVal = m_seqNumber;

@@ -47,8 +47,8 @@ Security & Bridge::ResolveFutOpt(
 	return m_context->GetSecurity(symbol);
 }
 
-double Bridge::GetCashBalance() const {
-	return m_context->GetTradeSystem().GetAccount().cashBalance;
+const TradeSystem::Account & Bridge::GetAccount() const {
+	return m_context->GetTradeSystem().GetAccount();
 }
 
 extern boost::atomic_bool isIbActive;

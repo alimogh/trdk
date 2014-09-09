@@ -44,16 +44,12 @@ namespace trdk { namespace SimpleApi {
 
 	public:
 
-		BridgeId CreateBridge(
-					const std::string &defaultExchange,
-					const BridgeId * = nullptr);
+		BridgeId CreateBridge(const BridgeId * = nullptr);
 
 		void DestoryBridge(const BridgeId &);
 		void DestoryAllBridge();
 
-		Bridge & CheckBridge(
-					const BridgeId &,
-					const std::string &defaultExchange);
+		Bridge & CheckBridge(const BridgeId &);
 
 		Bridge & GetBridge(const BridgeId &);
 		const Bridge & GetBridge(const BridgeId &) const;

@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "Core/TradeSystem.hpp"
+
 namespace trdk { namespace SimpleApi {
 
 	class Bridge : private boost::noncopyable {
@@ -29,7 +31,7 @@ namespace trdk { namespace SimpleApi {
 					const std::string &tradingClass)
 				const;
 
-		double GetCashBalance() const;
+		const trdk::TradeSystem::Account & GetAccount() const;
 
 		bool CheckActive() const;
 

@@ -31,6 +31,7 @@
 #	include <boost/multi_index/member.hpp>
 #	include <boost/regex.hpp>
 #	include <boost/math/special_functions/fpclassify.hpp>
+#	include <boost/math/special_functions/round.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include <concrt.h>

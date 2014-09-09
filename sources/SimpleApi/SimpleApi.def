@@ -6,28 +6,35 @@ EXPORTS
 	
 	trdk_DestroyAllBridges
 
-	trdk_GetImpliedVolatilityLast
-	trdk_GetImpliedVolatilityBid
-	trdk_GetImpliedVolatilityAsk
+	GetNetLiquidationValueTotal
+	GetNetLiquidationValueUsSecurities
+	GetNetLiquidationValueUsCommodities
 
-	trdk_GetFopLastQty
-	trdk_GetFopLastPrice
-	trdk_GetFopBidQty
-	trdk_GetFopBidPrice
-	trdk_GetFopAskQty
-	trdk_GetFopAskPrice
+	GetEquityWithLoanValueTotal
+	GetEquityWithLoanValueUsSecurities
+	GetEquityWithLoanValueUsCommodities
+
+	GetSecuritiesGrossPositionValueTotal
+	GetSecuritiesGrossPositionUsSecurities
+
+	GetCashTotal
+	GetCashUsSecurities
+	GetCashUsCommodities
 	
-	GetImpliedVolatilityLast
-	GetImpliedVolatilityAsk
-	GetImpliedVolatilityBid
+	GetCurrentInitialMarginTotal
+	GetCurrentInitialMarginUsSecurities
+	GetCurrentInitialMarginUsCommodities
+	
+	GetCurrentMaintenanceMarginTotal
+	GetCurrentMaintenanceMarginUsSecurities
+	GetCurrentMaintenanceMarginUsCommodities
 
-	GetFopLastTradeQty
-	GetFopLastTradePrice
-	GetFopLastBidQty
-	GetFopLastBidPrice
-	GetFopLastAskQty
-	GetFopLastAskPrice
+	GetCurrentAvailableFundsTotal
+	GetCurrentAvailableFundsUsSecurities
+	GetCurrentAvailableFundsUsCommodities
 
-	SetImpliedVolatilityUpdatePeriod
+	GetCurrentExcessLiquidityTotal
+	GetCurrentExcessLiquidityUsSecurities
+	GetCurrentExcessLiquidityUsCommodities
 
 	CreateTradeSystem

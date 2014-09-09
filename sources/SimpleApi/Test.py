@@ -2,49 +2,46 @@
 import ctypes
 import msvcrt
 
-api = ctypes.windll.LoadLibrary("Trdk_dbg.dll")
-api.trdk_GetImpliedVolatilityLast.restype = ctypes.c_double
-api.trdk_GetFopLastPrice.restype = ctypes.c_double
-api.trdk_GetFopBidPrice.restype = ctypes.c_double
-api.trdk_GetFopAskPrice.restype = ctypes.c_double
+api = ctypes.windll.LoadLibrary("Acct_dbg.dll")
+
+api.GetNetLiquidationValueTotal.restype						= ctypes.c_int
+api.GetNetLiquidationValueUsSecurities.restype				= ctypes.c_int
+api.GetNetLiquidationValueUsCommodities.restype				= ctypes.c_int
+api.GetEquityWithLoanValueTotal.restype						= ctypes.c_int
+api.GetEquityWithLoanValueUsSecurities.restype				= ctypes.c_int
+api.GetEquityWithLoanValueUsCommodities.restype				= ctypes.c_int
+api.GetSecuritiesGrossPositionValueTotal.restype			= ctypes.c_int
+api.GetSecuritiesGrossPositionUsSecurities.restype			= ctypes.c_int
+api.GetCashTotal.restype									= ctypes.c_int
+api.GetCashUsSecurities.restype								= ctypes.c_int
+api.GetCashUsCommodities.restype							= ctypes.c_int
+api.GetCurrentInitialMarginTotal.restype					= ctypes.c_int
+api.GetCurrentInitialMarginUsSecurities.restype				= ctypes.c_int
+api.GetCurrentInitialMarginUsCommodities.restype			= ctypes.c_int
+api.GetCurrentMaintenanceMarginTotal.restype				= ctypes.c_int
+api.GetCurrentMaintenanceMarginUsSecurities.restype			= ctypes.c_int
+api.GetCurrentMaintenanceMarginUsCommodities.restype		= ctypes.c_int
+api.GetCurrentAvailableFundsTotal.restype					= ctypes.c_int
+api.GetCurrentAvailableFundsUsSecurities.restype			= ctypes.c_int
+api.GetCurrentAvailableFundsUsCommodities.restype			= ctypes.c_int
+api.GetCurrentExcessLiquidityTotal.restype					= ctypes.c_int
+api.GetCurrentExcessLiquidityUsSecurities.restype			= ctypes.c_int
+api.GetCurrentExcessLiquidityUsCommodities.restype			= ctypes.c_int
 
 api.trdk_InitLogToStdOut()
 
-
-def print_fop(strike, right):
-
-    strike = ctypes.c_double(strike)
-    expDate = ctypes.c_double(20140905.00)
-
-    ivLast = api.trdk_GetImpliedVolatilityLast("EUR.USD", "GLOBEX", expDate, strike, right, "6E")
-
-    tradeQty = api.trdk_GetFopLastQty("EUR.USD", "GLOBEX", expDate, strike, right, "6E")
-    tradePrice = api.trdk_GetFopLastPrice("EUR.USD", "GLOBEX", expDate, strike, right, "6E")
-
-    bidQty = api.trdk_GetFopBidQty("EUR.USD", "GLOBEX", expDate, strike, right, "6E")
-    bidPrice = api.trdk_GetFopBidPrice("EUR.USD", "GLOBEX", expDate, strike, right, "6E")
-
-    askQty = api.trdk_GetFopAskQty("EUR.USD", "GLOBEX", expDate, strike, right, "6E")
-    askPrice = api.trdk_GetFopAskPrice("EUR.USD", "GLOBEX", expDate,  strike, right, "6E")
-
-    print "{0}/{1} - {2}\t{3}/{4}\t{5}/{6}\t{7}/{8}".format(strike, right, ivLast, tradePrice, tradeQty, bidPrice, bidQty, askPrice, askQty)
+def print_current():
+	print "Net Liquidation Value_______ {0}\t{1}\t{2}".format(	api.GetNetLiquidationValueTotal(),			api.GetNetLiquidationValueUsSecurities(),		api.GetNetLiquidationValueUsCommodities());
+	print "Equity With Loan Value______ {0}\t{1}\t{2}".format(	api.GetEquityWithLoanValueTotal(),			api.GetEquityWithLoanValueUsSecurities(),		api.GetEquityWithLoanValueUsCommodities());
+	print "Securities Gross Position___ {0}\t{1}".format(		api.GetSecuritiesGrossPositionValueTotal(),	api.GetSecuritiesGrossPositionUsSecurities())
+	print "Cash________________________ {0}\t{1}\t{2}".format(	api.GetCashTotal(),							api.GetCashUsSecurities(),						api.GetCashUsCommodities())
+	print "Current Initial Margin______ {0}\t{1}\t{2}".format(	api.GetCurrentInitialMarginTotal(),			api.GetCurrentInitialMarginUsSecurities(),		api.GetCurrentInitialMarginUsCommodities())
+	print "Current Maintenance Margin__ {0}\t{1}\t{2}".format(	api.GetCurrentMaintenanceMarginTotal(),		api.GetCurrentMaintenanceMarginUsSecurities(),	api.GetCurrentMaintenanceMarginUsCommodities())
+	print "Current Available Funds_____ {0}\t{1}\t{2}".format(	api.GetCurrentAvailableFundsTotal(),		api.GetCurrentAvailableFundsUsSecurities(),		api.GetCurrentAvailableFundsUsCommodities())
+	print "Current Excess Liquidity____ {0}\t{1}\t{2}".format(	api.GetCurrentExcessLiquidityTotal(),		api.GetCurrentExcessLiquidityUsSecurities(),	api.GetCurrentExcessLiquidityUsCommodities())
 
 while (True):
-
-    print_fop(1.255, "Put")
-    print_fop(1.26,  "Put")
-    print_fop(1.45, "Call")
-    print_fop(1.455, "Call")
-    print "______________________"
-    print_fop(1.345, "Put")
-    print_fop(1.35,  "Put")
-    print_fop(1.335, "Call")
-    print_fop(1.34, "Call")
-
-    print "-------------------"
-    print "-------------------"
-    print "-------------------"
-
-    print "Completed. Press Enter to continue."
-    msvcrt.getch()
-
+	print_current()
+	print "_________________________________________"
+	print "Completed. Press Enter to continue."
+	msvcrt.getch()

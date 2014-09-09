@@ -12,7 +12,7 @@
 //////////////////////////////////////////////////////////////////////////
 // Customization:
 
-var branch = "juliomac"
+var branch = "juliomac2"
 var productName	= "Trading Robot Development Kit"
 var vendorName = "Eugene V. Palchukovsky"
 var domain = "robotdk.com"

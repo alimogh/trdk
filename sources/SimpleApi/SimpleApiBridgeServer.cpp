@@ -99,9 +99,7 @@ void BridgeServer::InitLog(const fs::path &logFilePath) {
 	}
 }
 
-BridgeServer::BridgeId BridgeServer::CreateBridge(
-			const std::string &defaultExchange,
-			const BridgeId *id) {
+BridgeServer::BridgeId BridgeServer::CreateBridge(const BridgeId *id) {
 	
 	std::ostringstream settingsString;
 	settingsString
@@ -110,12 +108,13 @@ BridgeServer::BridgeId BridgeServer::CreateBridge(
 				"wait_market_data = no\n"
 			"[Defaults]\n"
 				"primary_exchange = FOREX\n"
-				"exchange = " << defaultExchange << "\n"
+				"exchange = GLOBEX\n"
 				"currency = USD\n"
 			"[TradeSystem]\n"
-				"module = " << GetDllWorkingDir().string() << "/Trdk\n"
+				"module = " << GetDllWorkingDir().string() << "/Acct\n"
 				"positions = yes\n"
-				"client_id = " << ++m_pimpl->m_clientId << "\n";
+				"client_id = " << ++m_pimpl->m_clientId << "\n"
+				"account = \n";
 	boost::shared_ptr<const Ini> ini(new IniString(settingsString.str()));
 	boost::shared_ptr<BridgeContext> context(new BridgeContext(ini));
 	boost::shared_ptr<Bridge> bridge(new Bridge(context));
@@ -142,21 +141,19 @@ void BridgeServer::DestoryAllBridge() {
 	Implementation::Bridges().swap(m_pimpl->m_bridges);
 }
 
-Bridge & BridgeServer::CheckBridge(
-			const BridgeId &id,
-			const std::string &defaultExchange) {
+Bridge & BridgeServer::CheckBridge(const BridgeId &id) {
 	if (id < m_pimpl->m_bridges.size()) {
 		if (m_pimpl->m_bridges[id]->CheckActive()) {
 			return *m_pimpl->m_bridges[id];
 		}
-		Verify(CreateBridge(defaultExchange, &id) == id);
+		Verify(CreateBridge(&id) == id);
 		return *m_pimpl->m_bridges[id];
 	} else {
 		AssertEq(m_pimpl->m_bridges.size(), id);
 		if (m_pimpl->m_bridges.size() != id) {
 			throw UnknownEngineError();
 		}
-		Verify(CreateBridge(defaultExchange) == id);
+		Verify(CreateBridge() == id);
 		AssertEq(id + 1, m_pimpl->m_bridges.size());
 		return *m_pimpl->m_bridges[id];
 	}

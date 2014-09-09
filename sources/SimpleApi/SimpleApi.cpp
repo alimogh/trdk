@@ -93,612 +93,102 @@ int32_t _stdcall trdk_DestroyAllBridges() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-double _stdcall trdk_GetImpliedVolatilityLast(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	Assert(symbol);
-	Assert(exchange);
-	AssertLt(.0, expirationDate);
-	AssertLt(.0, strike);
-	Assert(right);
-	Assert(tradingClass);
-	try {
-		InitDebugLog();
-		const std::string exchangeStr(exchange);
-		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
-			.ResolveFutOpt(
-				symbol,
-				exchangeStr,
-				expirationDate,
-				strike,
-				right,
-				tradingClass)
-			.GetLastImpliedVolatility();
-		result *= 100;
-// 		Log::Debug(
-// 			"trdk_GetImpliedVolatilityLast result for \"%1%:%2%:%3%:%4%\": %5%.",
-// 			symbol,
-// 			boost::lexical_cast<std::string>(expirationDate),
-// 			strike,
-// 			right,
-// 			result);
-		return result;
-	} catch (const Exception &ex) {
-		Log::Error(
-			"Failed to get Implied Volatility Last for FOP Symbol"
-				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
-			symbol,
-			exchange,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			ex);
-	} catch (...) {
-		AssertFailNoException();
+namespace {
+
+	const TradeSystem::Account & GetAccount(const char *account) {
+		Assert(account);
+		try {
+			InitDebugLog();
+			return theBridgeServer
+				.CheckBridge(bridgeId)
+				.GetAccount();
+		} catch (const Exception &ex) {
+			Log::Error(
+				"Failed to get Account Info for \"%1%\": \"%2%\".", account, ex);
+			throw;
+		} catch (...) {
+			AssertFailNoException();
+			throw;
+		}
 	}
-	return 0;
+
 }
 
-double _stdcall trdk_GetImpliedVolatilityAsk(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	Assert(symbol);
-	Assert(exchange);
-	AssertLt(.0, expirationDate);
-	AssertLt(.0, strike);
-	Assert(right);
-	Assert(tradingClass);
-	try {
-		InitDebugLog();
-		const std::string exchangeStr(exchange);
-		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
-			.ResolveFutOpt(
-				symbol,
-				exchangeStr,
-				expirationDate,
-				strike,
-				right,
-				tradingClass)
-			.GetAskImpliedVolatility();
-		result *= 100;
-// 		Log::Debug(
-// 			"trdk_GetImpliedVolatilityAsk result for \"%1%:%2%:%3%:%4%\": %5%.",
-// 			symbol,
-// 			boost::lexical_cast<std::string>(expirationDate),
-// 			strike,
-// 			right,
-// 			result);
-		return result;
-	} catch (const Exception &ex) {
-		Log::Error(
-			"Failed to get Implied Volatility Ask for FOP Symbol"
-				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
-			symbol,
-			exchange,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
+int32_t GetNetLiquidationValueTotal(const char *account) {
+	return GetAccount(account).netLiquidationValue.total;
+}
+int32_t GetNetLiquidationValueUsSecurities(const char *account) {
+	return GetAccount(account).netLiquidationValue.usSecurities;
+}
+int32_t GetNetLiquidationValueUsCommodities(const char *account) {
+	return GetAccount(account).netLiquidationValue.usCommodities;
 }
 
-double _stdcall trdk_GetImpliedVolatilityBid(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	Assert(symbol);
-	Assert(exchange);
-	AssertLt(.0, expirationDate);
-	AssertLt(.0, strike);
-	Assert(right);
-	Assert(tradingClass);
-	try {
-		InitDebugLog();
-		const std::string exchangeStr(exchange);
-		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
-			.ResolveFutOpt(
-				symbol,
-				exchangeStr,
-				expirationDate,
-				strike,
-				right,
-				tradingClass)
-			.GetBidImpliedVolatility();
-		result *= 100;
-// 		Log::Debug(
-// 			"trdk_GetImpliedVolatilityBid result for \"%1%:%2%:%3%:%4%\": %5%.",
-// 			symbol,
-// 			boost::lexical_cast<std::string>(expirationDate),
-// 			strike,
-// 			right,
-// 			result);
-		return result;
-	} catch (const Exception &ex) {
-		Log::Error(
-			"Failed to get Implied Volatility Bid for FOP Symbol"
-				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
-			symbol,
-			exchange,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
+int32_t GetEquityWithLoanValueTotal(const char *account) {
+	return GetAccount(account).equityWithLoanValue.total;
+}
+int32_t GetEquityWithLoanValueUsSecurities(const char *account) {
+	return GetAccount(account).equityWithLoanValue.usSecurities;
+}
+int32_t GetEquityWithLoanValueUsCommodities(const char *account) {
+	return GetAccount(account).equityWithLoanValue.usCommodities;
 }
 
-int _stdcall trdk_GetFopLastQty(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	Assert(symbol);
-	Assert(exchange);
-	AssertLt(.0, expirationDate);
-	AssertLt(.0, strike);
-	Assert(right);
-	Assert(tradingClass);
-	try {
-		InitDebugLog();
-		const std::string exchangeStr(exchange);
-		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
-			.ResolveFutOpt(
-				symbol,
-				exchangeStr,
-				expirationDate,
-				strike,
-				right,
-				tradingClass)
-			.GetLastQty();
-// 		Log::Debug(
-// 			"trdk_GetFopLastQty result for \"%1%:%2%:%3%:%4%\": %5%.",
-// 			symbol,
-// 			boost::lexical_cast<std::string>(expirationDate),
-// 			strike,
-// 			right,
-// 			result);
-		return result;
-	} catch (const Exception &ex) {
-		Log::Error(
-			"Failed to get Last Qty for FOP Symbol"
-				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
-			symbol,
-			exchange,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
+int32_t GetSecuritiesGrossPositionValueTotal(const char *account) {
+	return GetAccount(account).securitiesGrossPositionValue.total;
+}
+int32_t GetSecuritiesGrossPositionUsSecurities(const char *account) {
+	return GetAccount(account).securitiesGrossPositionValue.usSecurities;
 }
 
-double _stdcall trdk_GetFopLastPrice(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	Assert(symbol);
-	Assert(exchange);
-	AssertLt(.0, expirationDate);
-	AssertLt(.0, strike);
-	Assert(right);
-	Assert(tradingClass);
-	try {
-		InitDebugLog();
-		const std::string exchangeStr(exchange);
-		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
-			.ResolveFutOpt(
-				symbol,
-				exchangeStr,
-				expirationDate,
-				strike,
-				right,
-				tradingClass)
-			.GetLastPrice();
-// 		Log::Debug(
-// 			"trdk_GetFopLastPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
-// 			symbol,
-// 			boost::lexical_cast<std::string>(expirationDate),
-// 			strike,
-// 			right,
-// 			result);
-		return result;
-	} catch (const Exception &ex) {
-		Log::Error(
-			"Failed to get Last Price for FOP Symbol"
-				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
-			symbol,
-			exchange,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
+int32_t GetCashTotal(const char *account) {
+	return GetAccount(account).cash.total;
+}
+int32_t GetCashUsSecurities(const char *account) {
+	return GetAccount(account).cash.usSecurities;
+}
+int32_t GetCashUsCommodities(const char *account) {
+	return GetAccount(account).cash.usCommodities;
+}
+	
+int32_t GetCurrentInitialMarginTotal(const char *account) {
+	return GetAccount(account).currentInitialMargin.total;
+}
+int32_t GetCurrentInitialMarginUsSecurities(const char *account) {
+	return GetAccount(account).currentInitialMargin.usSecurities;
+}
+int32_t GetCurrentInitialMarginUsCommodities(const char *account) {
+	return GetAccount(account).currentInitialMargin.usCommodities;
+}
+	
+int32_t GetCurrentMaintenanceMarginTotal(const char *account) {
+	return GetAccount(account).currentMaintenanceMargin.total;
+}
+int32_t GetCurrentMaintenanceMarginUsSecurities(const char *account) {
+	return GetAccount(account).currentMaintenanceMargin.usSecurities;
+}
+int32_t GetCurrentMaintenanceMarginUsCommodities(const char *account) {
+	return GetAccount(account).currentMaintenanceMargin.usCommodities;
 }
 
-int _stdcall trdk_GetFopBidQty(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	Assert(symbol);
-	Assert(exchange);
-	AssertLt(.0, expirationDate);
-	AssertLt(.0, strike);
-	Assert(right);
-	Assert(tradingClass);
-	try {
-		InitDebugLog();
-		const std::string exchangeStr(exchange);
-		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
-			.ResolveFutOpt(
-				symbol,
-				exchangeStr,
-				expirationDate,
-				strike,
-				right,
-				tradingClass)
-			.GetBidQty();
-// 		Log::Debug(
-// 			"trdk_GetFopBidQty result for \"%1%:%2%:%3%:%4%\": %5%.",
-// 			symbol,
-// 			boost::lexical_cast<std::string>(expirationDate),
-// 			strike,
-// 			right,
-// 			result);
-		return result;
-	} catch (const Exception &ex) {
-		Log::Error(
-			"Failed to get Bid Qty for FOP Symbol"
-				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
-			symbol,
-			exchange,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
+int32_t GetCurrentAvailableFundsTotal(const char *account) {
+	return GetAccount(account).currentAvailableFunds.total;
+}
+int32_t GetCurrentAvailableFundsUsSecurities(const char *account) {
+	return GetAccount(account).currentAvailableFunds.usSecurities;
+}
+int32_t GetCurrentAvailableFundsUsCommodities(const char *account) {
+	return GetAccount(account).currentAvailableFunds.usCommodities;
 }
 
-double _stdcall trdk_GetFopBidPrice(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	Assert(symbol);
-	Assert(exchange);
-	AssertLt(.0, expirationDate);
-	AssertLt(.0, strike);
-	Assert(right);
-	Assert(tradingClass);
-	try {
-		InitDebugLog();
-		const std::string exchangeStr(exchange);
-		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
-			.ResolveFutOpt(
-				symbol,
-				exchangeStr,
-				expirationDate,
-				strike,
-				right,
-				tradingClass)
-			.GetBidPrice();
-// 		Log::Debug(
-// 			"trdk_GetFopBidPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
-// 			symbol,
-// 			boost::lexical_cast<std::string>(expirationDate),
-// 			strike,
-// 			right,
-// 			result);
-		return result;
-	} catch (const Exception &ex) {
-		Log::Error(
-			"Failed to get Bid Price for FOP Symbol"
-				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
-			symbol,
-			exchange,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
+int32_t GetCurrentExcessLiquidityTotal(const char *account) {
+	return GetAccount(account).currentExcessLiquidity.total;
 }
-
-int _stdcall trdk_GetFopAskQty(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	Assert(symbol);
-	Assert(exchange);
-	AssertLt(.0, expirationDate);
-	AssertLt(.0, strike);
-	Assert(right);
-	Assert(tradingClass);
-	try {
-		InitDebugLog();
-		const std::string exchangeStr(exchange);
-		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
-			.ResolveFutOpt(
-				symbol,
-				exchangeStr,
-				expirationDate,
-				strike,
-				right,
-				tradingClass)
-			.GetAskQty();
-// 		Log::Debug(
-// 			"trdk_GetFopAskQty result for \"%1%:%2%:%3%:%4%\": %5%.",
-// 			symbol,
-// 			boost::lexical_cast<std::string>(expirationDate),
-// 			strike,
-// 			right,
-// 			result);
-		return result;
-	} catch (const Exception &ex) {
-		Log::Error(
-			"Failed to get Ask Qty for FOP Symbol"
-				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
-			symbol,
-			exchange,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
+int32_t GetCurrentExcessLiquidityUsSecurities(const char *account) {
+	return GetAccount(account).currentExcessLiquidity.usSecurities;
 }
-
-double _stdcall trdk_GetFopAskPrice(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	Assert(symbol);
-	Assert(exchange);
-	AssertLt(.0, expirationDate);
-	AssertLt(.0, strike);
-	Assert(right);
-	Assert(tradingClass);
-	try {
-		InitDebugLog();
-		const std::string exchangeStr(exchange);
-		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
-			.ResolveFutOpt(
-				symbol,
-				exchangeStr,
-				expirationDate,
-				strike,
-				right,
-				tradingClass)
-			.GetAskPrice();
-// 		Log::Debug(
-// 			"trdk_GetFopAskPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
-// 			symbol,
-// 			boost::lexical_cast<std::string>(expirationDate),
-// 			strike,
-// 			right,
-// 			result);
-		return result;
-	} catch (const Exception &ex) {
-		Log::Error(
-			"Failed to get Ask Price for FOP Symbol"
-				" \"%1%:%2%\" (%3%, %4%): \"%5%\".",
-			symbol,
-			exchange,
-			boost::lexical_cast<std::string>(expirationDate),
-			strike,
-			ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-	return 0;
-}
-
-void _stdcall trdk_SetImpliedVolatilityUpdatePeriod(int updatePeriod) {
-	AssertLe(0, updatePeriod);
-	try {
-		InitDebugLog();
-		trdk::Security::SetImpliedVolatilityUpdatePeriodSec(updatePeriod);
-/*		Log::Debug("trdk_SetImpliedVolatilityUpdatePeriod %1%.", updatePeriod);*/
-	} catch (const Exception &ex) {
-		Log::Error(
-			"Failed to Set Implied Volatility Update Period %1%: \"%2%\".",
-			updatePeriod,
-			ex);
-	} catch (...) {
-		AssertFailNoException();
-	}
-}
-
-double _stdcall GetImpliedVolatilityLast(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	return trdk_GetImpliedVolatilityLast(
-		symbol,
-		exchange,
-		expirationDate,
-		strike,
-		right,
-		tradingClass);
-}
-
-double _stdcall GetImpliedVolatilityAsk(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	return trdk_GetImpliedVolatilityAsk(
-		symbol,
-		exchange,
-		expirationDate,
-		strike,
-		right,
-		tradingClass);
-}
-
-double _stdcall GetImpliedVolatilityBid(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	return trdk_GetImpliedVolatilityBid(
-		symbol,
-		exchange,
-		expirationDate,
-		strike,
-		right,
-		tradingClass);
-}
-
-int GetFopLastTradeQty(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	return trdk_GetFopLastQty(
-		symbol,
-		exchange,
-		expirationDate,
-		strike,
-		right,
-		tradingClass);
-}
-
-double GetFopLastTradePrice(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	return trdk_GetFopLastPrice(
-		symbol,
-		exchange,
-		expirationDate,
-		strike,
-		right,
-		tradingClass);
-}
-
-int GetFopLastBidQty(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	return trdk_GetFopBidQty(
-		symbol,
-		exchange,
-		expirationDate,
-		strike,
-		right,
-		tradingClass);
-}
-
-double GetFopLastBidPrice(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	return trdk_GetFopBidPrice(
-		symbol,
-		exchange,
-		expirationDate,
-		strike,
-		right,
-		tradingClass);
-}
-
-int GetFopLastAskQty(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	return trdk_GetFopAskQty(
-		symbol,
-		exchange,
-		expirationDate,
-		strike,
-		right,
-		tradingClass);
-}
-
-double GetFopLastAskPrice(
-			const char *symbol,
-			const char *exchange,
-			double expirationDate,
-			double strike,
-			const char *right,
-			const char *tradingClass) {
-	return trdk_GetFopAskPrice(
-		symbol,
-		exchange,
-		expirationDate,
-		strike,
-		right,
-		tradingClass);
-}
-
-void SetImpliedVolatilityUpdatePeriod(int updatePeriod) {
-	trdk_SetImpliedVolatilityUpdatePeriod(updatePeriod);
+int32_t GetCurrentExcessLiquidityUsCommodities(const char *account) {
+	return GetAccount(account).currentExcessLiquidity.usCommodities;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

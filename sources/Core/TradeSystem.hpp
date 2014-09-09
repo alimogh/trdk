@@ -63,18 +63,29 @@ namespace trdk {
 
 		struct Account {
 
-			boost::atomic<double> cashBalance;
-			boost::atomic<double> equityWithLoanValue;
-			boost::atomic<double> maintenanceMargin;
-			boost::atomic<double> excessLiquidity;
+			struct Value {
 
-			Account() 
-					: cashBalance(.0),
-					equityWithLoanValue(.0),
-					maintenanceMargin(.0),
-					excessLiquidity(.0) {
-				//...//
-			}
+				boost::atomic<int32_t> total;
+				boost::atomic<int32_t> usSecurities;
+				boost::atomic<int32_t> usCommodities;
+
+				Value()
+						: total(0),
+						usSecurities(0),
+						usCommodities(0) {
+					//...//
+				}
+
+			};
+
+			Value netLiquidationValue;
+			Value equityWithLoanValue;
+			Value securitiesGrossPositionValue;
+			Value cash;
+			Value currentInitialMargin;
+			Value currentMaintenanceMargin;
+			Value currentAvailableFunds;
+			Value currentExcessLiquidity;
 
 		};
 
