@@ -19,8 +19,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "API", "API", "{3FC123F7-5DC
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Simple API", "SimpleApi\SimpleApi.vcxproj", "{4809FFBD-45A2-4758-8E6E-9B7771BA3E7B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OnixS FIX Connector", "Interaction\OnixsFixConnector\OnixsFixConnector.vcxproj", "{C86383E0-0A73-41E0-8263-9E05B608CE55}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug DLL|Win32 = Debug DLL|Win32
@@ -175,37 +173,12 @@ Global
 		{4809FFBD-45A2-4758-8E6E-9B7771BA3E7B}.Test DLL|x64.Build.0 = Test DLL|x64
 		{4809FFBD-45A2-4758-8E6E-9B7771BA3E7B}.Test Standalone|Win32.ActiveCfg = Test Standalone|Win32
 		{4809FFBD-45A2-4758-8E6E-9B7771BA3E7B}.Test Standalone|x64.ActiveCfg = Test Standalone|x64
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Debug DLL|Win32.ActiveCfg = Debug DLL|Win32
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Debug DLL|Win32.Build.0 = Debug DLL|Win32
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Debug DLL|x64.ActiveCfg = Debug DLL|x64
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Debug DLL|x64.Build.0 = Debug DLL|x64
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Debug Standalone|Win32.ActiveCfg = Debug Standalone|Win32
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Debug Standalone|Win32.Build.0 = Debug Standalone|Win32
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Debug Standalone|x64.ActiveCfg = Debug Standalone|x64
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Debug Standalone|x64.Build.0 = Debug Standalone|x64
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Release DLL|Win32.ActiveCfg = Release DLL|Win32
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Release DLL|Win32.Build.0 = Release DLL|Win32
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Release DLL|x64.ActiveCfg = Release DLL|x64
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Release DLL|x64.Build.0 = Release DLL|x64
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Release Standalone|Win32.ActiveCfg = Release Standalone|Win32
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Release Standalone|Win32.Build.0 = Release Standalone|Win32
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Release Standalone|x64.ActiveCfg = Release Standalone|x64
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Release Standalone|x64.Build.0 = Release Standalone|x64
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Test DLL|Win32.ActiveCfg = Test DLL|Win32
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Test DLL|Win32.Build.0 = Test DLL|Win32
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Test DLL|x64.ActiveCfg = Test DLL|x64
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Test DLL|x64.Build.0 = Test DLL|x64
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Test Standalone|Win32.ActiveCfg = Test Standalone|Win32
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Test Standalone|Win32.Build.0 = Test Standalone|Win32
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Test Standalone|x64.ActiveCfg = Test Standalone|x64
-		{C86383E0-0A73-41E0-8263-9E05B608CE55}.Test Standalone|x64.Build.0 = Test Standalone|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{BEFE87AE-1376-4C4C-87D5-73E782990306} = {0472C2A4-F2BB-48CC-A6FE-32B792EE621D}
-		{C86383E0-0A73-41E0-8263-9E05B608CE55} = {0472C2A4-F2BB-48CC-A6FE-32B792EE621D}
 		{4809FFBD-45A2-4758-8E6E-9B7771BA3E7B} = {3FC123F7-5DCB-436A-96EB-AC392109EB72}
 	EndGlobalSection
 EndGlobal
