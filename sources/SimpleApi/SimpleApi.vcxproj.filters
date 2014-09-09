@@ -71,7 +71,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Eugene_Julio.txt">
+    <Text Include="Mql.txt">
       <Filter>Scripts</Filter>
     </Text>
   </ItemGroup>
