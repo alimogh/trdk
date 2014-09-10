@@ -111,59 +111,20 @@ namespace {
 
 	};
 
-	State events;
-	State trading;
+	State theEventsLog;
 
-}
-
-Log::Mutex & Log::GetEventsMutex() {
-	return events.mutex;
-}
-
-Log::Mutex & Log::GetTradingMutex() {
-	return trading.mutex;
-}
-
-bool Log::IsEventsEnabled(Level /*level*/) throw() {
-	return events.isStreamEnabled || events.isStdOutEnabled ? true : false;
-}
-
-bool Log::IsTradingEnabled() throw() {
-	return trading.isStreamEnabled;
-}
-
-void Log::EnableEvents(std::ostream &log) {
-	events.EnableStream(log);
-}
-
-void Log::EnableEventsToStdOut() {
-	events.EnableStdOut();
-}
-
-void Log::EnableTrading(std::ostream &log) {
-	log.setf(std::ios::left);
-	trading.EnableStream(log);
-}
-
-void Log::DisableEvents() throw() {
-	events.DisableStream();
-}
-
-void Log::DisableEventsToStdOut() throw() {
-	events.DisableStdOut();
-}
-
-void Log::DisableTrading() throw() {
-	trading.DisableStream();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
-	
+
 	template<typename Str, typename Stream>
 	void DumpMultiLineString(const Str &str, Stream &stream) {
 		foreach (char ch, str) {
+			if (ch == 0) {
+				break;
+			}
 			stream << ch;
 			if (ch == stream.widen('\n')) {
 				stream << "\t\t\t\t\t\t";
@@ -171,6 +132,247 @@ namespace {
 		}
 		stream << std::endl;
 	}
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+	class TradingLog : private boost::noncopyable {
+
+	private:
+
+		typedef boost::mutex Mutex;
+		typedef Mutex::scoped_lock Lock;
+		typedef boost::condition_variable Condition;
+
+		struct Record {
+			
+			pt::ptime time;
+			std::vector<char> tag;
+			std::vector<char> message;
+		
+			void Save(
+						const pt::ptime &time,
+						const std::string &tag,
+						const std::string &message) {
+				this->time = time;
+				std::copy(
+					tag.begin(),
+					tag.end(),
+					std::back_inserter(this->tag));
+				this->tag.push_back(0);
+				std::copy(
+					message.begin(),
+					message.end(),
+					std::back_inserter(this->message));
+				this->message.push_back(0);
+			}
+
+			void Save(
+						const pt::ptime &time,
+						const std::string &tag,
+						const char *message) {
+				this->time = time;
+				std::copy(
+					tag.begin(),
+					tag.end(),
+					std::back_inserter(this->tag));
+				this->tag.push_back(0);
+				std::copy(
+					message,
+					message + strlen(message) + 1,
+					std::back_inserter(this->message));
+			}
+
+		};
+
+		struct Buffer {
+			
+			std::vector<Record> records;
+			std::vector<Record>::iterator end;
+		
+			Buffer()
+					: end(records.begin()) {
+				//...//
+			}
+		
+		};
+
+	public:
+
+		TradingLog()
+				: m_currentBuffer(&m_buffers.first) {
+			//...//
+		}
+
+		~TradingLog() {
+			DisableStream();
+		}
+
+	public:
+
+		bool IsEnabled() const throw() {
+			return m_log.isStreamEnabled;
+		}
+
+		void EnableStream(std::ostream &newLog) {
+			Lock lock(m_mutex);
+			Assert(!m_writeThread);
+			while (m_writeThread) {
+				lock.release();
+				DisableStream();
+				lock.lock();
+			}
+			m_log.EnableStream(newLog);
+			m_writeThread.reset(new boost::thread(
+				[&]() {
+					try {
+						WriteTask();
+					} catch (...) {
+						AssertFailNoException();
+						throw;
+					}
+				}));
+			m_condition.wait(lock);
+		}
+
+		void DisableStream() throw() {
+			try {
+				Lock lock(m_mutex);
+				m_log.DisableStream();
+				if (!m_writeThread) {
+					return;
+				}
+				auto thread = m_writeThread;
+				m_writeThread.reset();
+				lock.release();
+				m_condition.notify_all();
+				thread->join();
+			} catch (...) {
+				AssertFailNoException();
+			}
+		}
+
+	public:
+
+		template<typename Str>
+		void AppendRecord(
+					const pt::ptime &time,
+					const std::string &tag,
+					const Str &str) {
+			{
+				const Lock lock(m_mutex);
+				if (m_currentBuffer->end == m_currentBuffer->records.end()) {
+					m_currentBuffer->records.emplace(
+						m_currentBuffer->records.end());
+					m_currentBuffer->end = m_currentBuffer->records.end();
+					m_currentBuffer->records.back().Save(time, tag, str);
+				} else {
+					m_currentBuffer->end->Save(time, tag, str);
+					++m_currentBuffer->end;
+				}
+			}
+			m_condition.notify_one();
+		}
+
+	private:
+
+		void WriteTask() {
+
+			m_condition.notify_all();
+		
+			Lock lock(m_mutex);
+		
+			while (m_writeThread) {
+
+				Buffer *currentBuffer = m_currentBuffer;
+				m_currentBuffer = m_currentBuffer == &m_buffers.first
+					?	&m_buffers.second
+					:	&m_buffers.first;
+
+				lock.unlock();
+				{
+					for (
+							auto record = currentBuffer->records.begin();
+							record != currentBuffer->end;
+							++record) {
+						m_log.AppendRecordHead(record->time);
+						*m_log.log << '\t' << &record->tag[0] << '\t';
+						DumpMultiLineString(record->message, *m_log.log);
+						record->tag.empty();
+						record->message.empty();
+					}
+					currentBuffer->end = currentBuffer->records.begin();
+				}
+				lock.lock();
+
+				if (m_currentBuffer->records.begin() != m_currentBuffer->end) {
+					continue;
+				}
+				
+				m_condition.wait(lock);
+		
+			}
+		
+		}
+
+
+	private:
+
+		std::pair<Buffer, Buffer> m_buffers;
+		Buffer *m_currentBuffer;
+
+		State m_log;
+
+		Mutex m_mutex;
+		Condition m_condition;
+		boost::shared_ptr<boost::thread> m_writeThread;
+
+	} theTradingLog;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+Log::Mutex & Log::GetEventsMutex() {
+	return theEventsLog.mutex;
+}
+
+bool Log::IsEventsEnabled(Level /*level*/) throw() {
+	return theEventsLog.isStreamEnabled || theEventsLog.isStdOutEnabled
+		?	true
+		:	false;
+}
+
+bool Log::IsTradingEnabled() throw() {
+	return theTradingLog.IsEnabled();;
+}
+
+void Log::EnableEvents(std::ostream &log) {
+	theEventsLog.EnableStream(log);
+}
+
+void Log::EnableEventsToStdOut() {
+	theEventsLog.EnableStdOut();
+}
+
+void Log::EnableTrading(std::ostream &log) {
+	log.setf(std::ios::left);
+	theTradingLog.EnableStream(log);
+}
+
+void Log::DisableEvents() throw() {
+	theEventsLog.DisableStream();
+}
+
+void Log::DisableEventsToStdOut() throw() {
+	theEventsLog.DisableStdOut();
+}
+
+void Log::DisableTrading() throw() {
+	theTradingLog.DisableStream();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -182,14 +384,14 @@ namespace {
 				Level level,
 				const pt::ptime &time,
 				const Str &str) {
-		Lock lock(events.mutex);
-		if (events.isStdOutEnabled) {
-			events.AppendRecordHead(level, time, std::cout);
+		Lock lock(theEventsLog.mutex);
+		if (theEventsLog.isStdOutEnabled) {
+			theEventsLog.AppendRecordHead(level, time, std::cout);
 			DumpMultiLineString(str, std::cout);
 		}
-		if (events.log) {
- 			events.AppendRecordHead(level, time);
-			DumpMultiLineString(str, *events.log);
+		if (theEventsLog.log) {
+ 			theEventsLog.AppendRecordHead(level, time);
+			DumpMultiLineString(str, *theEventsLog.log);
 		}
 	}
 
@@ -211,35 +413,18 @@ void Log::Detail::AppendEventRecordUnsafe(
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace {
-	
-	template<typename Str>
-	void AppendTradingRecordImpl(
-				const pt::ptime &time,
-				const std::string &tag,
-				const Str &str) {
-		Lock lock(trading.mutex);
-		if (!trading.log) {
-			return;
-		}
-		trading.AppendRecordHead(time);
-		*trading.log << '\t' << tag << '\t';
-		DumpMultiLineString(str, *trading.log);
-	}
-}
-
 void Log::Detail::AppendTradingRecordUnsafe(
 			const pt::ptime &time,
 			const std::string &tag,
 			const char *str) {
-	AppendTradingRecordImpl(time, tag, str);
+	theTradingLog.AppendRecord(time, tag, str);
 }
 
 void Log::Detail::AppendTradingRecordUnsafe(
 			const pt::ptime &time,
 			const std::string &tag,
 			const std::string &str) {
-	AppendTradingRecordImpl(time, tag, str);
+	theTradingLog.AppendRecord(time, tag, str);
 }
 
 //////////////////////////////////////////////////////////////////////////

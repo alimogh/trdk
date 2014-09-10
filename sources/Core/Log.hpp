@@ -29,7 +29,6 @@ namespace trdk { namespace Log {
 	};
 
 	TRDK_CORE_API Mutex & GetEventsMutex();
-	TRDK_CORE_API Mutex & GetTradingMutex();
 
 	TRDK_CORE_API bool IsEventsEnabled(trdk::Log::Level) throw();
 	TRDK_CORE_API void EnableEvents(std::ostream &);

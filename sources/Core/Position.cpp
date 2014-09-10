@@ -115,12 +115,10 @@ public:
 
 	};
 	
-private:
-	
-	enum Canceled {
-		CANCELED_0,
-		CANCELED_1,
-		CANCELED_2,
+	enum CancelState {
+		CANCEL_STATE_NOT_CANCELED,
+		CANCEL_STATE_SCHEDULED,
+		CANCEL_STATE_CANCELED,
 	};
 
 public:
@@ -151,7 +149,7 @@ public:
 
 	boost::atomic_bool m_isError;
 
-	boost::atomic<Canceled> m_isCanceled;
+	boost::atomic<CancelState> m_ñancelState;
 	boost::function<void ()> m_cancelMethod;
 
 	const std::string m_tag;
@@ -178,7 +176,7 @@ public:
 			m_closeType(CLOSE_TYPE_NONE),
 			m_isStarted(false),
 			m_isError(false),
-			m_isCanceled(CANCELED_0),
+			m_ñancelState(CANCEL_STATE_NOT_CANCELED),
 			m_tag(m_strategy->GetTag()),
 			m_timeMeasurement(timeMeasurement) {
 		//...//
@@ -385,9 +383,12 @@ public:
 		if (m_position.IsClosed()) {
 			return false;
 		}
-		Canceled prevCancelFlag = CANCELED_1;
-		const Canceled newCancelFlag = CANCELED_2;
-		if  (!m_isCanceled.compare_exchange_strong(prevCancelFlag, newCancelFlag)) {
+		CancelState prevCancelFlag = CANCEL_STATE_SCHEDULED;
+		const CancelState newCancelFlag = CANCEL_STATE_CANCELED;
+		if  (
+				!m_ñancelState.compare_exchange_strong(
+					prevCancelFlag,
+					newCancelFlag)) {
 			return false;
 		}
 //! @todo Log THIS!!!
@@ -622,12 +623,14 @@ public:
 				};
 			Assert(m_position.HasActiveOrders());
 			delayedCancelMethod.swap(m_cancelMethod);
+			AssertEq(int(CANCEL_STATE_NOT_CANCELED), int(m_ñancelState));
+			m_ñancelState = CANCEL_STATE_SCHEDULED;
 		} else {
 			Assert(!m_position.HasActiveOrders());
 			CloseUnsafe<CancelMethodImpl>(closeType, cancelMethodImpl);
+			AssertEq(int(CANCEL_STATE_NOT_CANCELED), int(m_ñancelState));
+			m_ñancelState = CANCEL_STATE_CANCELED;
 		}
-		AssertEq(int(CANCELED_0), int(m_isCanceled));
-		m_isCanceled = CANCELED_1;
 		return true;
 	}
 
@@ -723,7 +726,7 @@ bool Position::IsError() const throw() {
 	return m_pimpl->m_isError ? true : false;
 }
 bool Position::IsCanceled() const throw() {
-	return m_pimpl->m_isCanceled > 0;
+	return m_pimpl->m_ñancelState != Implementation::CANCEL_STATE_NOT_CANCELED;
 }
 
 bool Position::HasActiveOrders() const throw() {
