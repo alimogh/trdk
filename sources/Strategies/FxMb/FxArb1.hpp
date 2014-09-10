@@ -185,7 +185,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void StartPositionsOpening(
 					size_t equationIndex,
 					size_t opposideEquationIndex,
-					const size_t brokerId,
+					//const size_t brokerId,
 					const Broker &b1,
 					const Broker &b2,
 					Lib::TimeMeasurement::Milestones &);

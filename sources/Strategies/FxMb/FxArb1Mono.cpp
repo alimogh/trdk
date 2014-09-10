@@ -68,7 +68,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 				if (GetEquationPosition(i).activeCount) {
 					currentEquationIndex = i;
-					continue;
+					break;
 				}
 
 				// Ask equation for result:
@@ -151,17 +151,19 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				= GetOppositeEquationIndex(equationIndex);
 
 			AssertEq(BROKERS_COUNT, GetContext().GetTradeSystemsCount());
+			
+			// TODO : wrong, that's not as it it function
 			// if 0 - 1 equations sends orders to first broker,
 			// if 6 - 11 - to second broker:
-			const size_t brokerId = equationIndex >= EQUATIONS_COUNT  / 2
+			/*const size_t brokerId = equationIndex >= EQUATIONS_COUNT  / 2
 				?	2
-				:	1;
+				:	1;*/
 
 			// Send open-orders:
 			StartPositionsOpening(
 				equationIndex,
 				opposideEquationIndex,
-				brokerId,
+				//brokerId,
 				b1,
 				b2,
 				timeMeasurement);

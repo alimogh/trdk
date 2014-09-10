@@ -203,18 +203,18 @@ FxArb1::Equations FxArb1::CreateEquations() {
 	};
 	typedef const Broker B;
 
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p1.bid + b2.p1.bid + b2.p1.bid / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p2.bid + b2.p2.bid + b2.p2.bid / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p3.bid + b2.p3.bid + b2.p3.bid / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p1.ask + b2.p1.ask + b2.p1.ask / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p2.ask + b2.p2.ask + b2.p2.ask / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p3.ask + b2.p3.ask + b2.p3.ask / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p1.bid + b2.p2.bid + b2.p3.bid / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p2.bid + b2.p1.bid + b2.p3.bid / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p3.bid + b2.p2.bid + b2.p1.bid / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p1.ask + b2.p2.ask + b2.p3.ask / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p2.ask + b2.p1.ask + b2.p3.ask / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p3.ask + b2.p2.ask + b2.p1.ask / 3	;	return result > 80.5	;});
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid + b2.p2.bid + b1.p3.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid + b2.p3.bid + b1.p2.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid + b2.p1.bid + b1.p3.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid + b2.p3.bid + b1.p1.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid + b2.p1.bid + b1.p2.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid + b2.p2.bid + b1.p1.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.ask + b2.p2.ask + b1.p3.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.ask + b2.p3.ask + b1.p2.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.ask + b2.p1.ask + b1.p3.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.ask + b2.p3.ask + b1.p1.ask / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.ask + b2.p1.ask + b1.p2.ask / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.ask + b2.p2.ask + b1.p1.ask / 3;	return result > 1.000055; });
 
 	AssertEq(EQUATIONS_COUNT, result.size());
 	result.shrink_to_fit();
@@ -308,7 +308,7 @@ void FxArb1::LogBrokersState(
 void FxArb1::StartPositionsOpening(
 			size_t equationIndex,
 			size_t opposideEquationIndex,
-			const size_t brokerId,
+			//const size_t brokerId,
 			const Broker &b1,
 			const Broker &b2,
 			TimeMeasurement::Milestones &timeMeasurement) {
@@ -323,8 +323,11 @@ void FxArb1::StartPositionsOpening(
 	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
 	
 	// Symbols and broker for positions:
-	const BrokerConf &broker = GetBrokerConf(brokerId);
-	TradeSystem &tradeSystem = GetContext().GetTradeSystem(brokerId - 1);
+	const BrokerConf &broker = GetBrokerConf(1);
+	TradeSystem &tradeSystem = GetContext().GetTradeSystem(0);
+
+	const BrokerConf &broker2 = GetBrokerConf(2);
+	TradeSystem &tradeSystem2 = GetContext().GetTradeSystem(1);
 
 	// Info about positions (which not yet opened) for this equation:
 	auto &equationPositions = GetEquationPosition(equationIndex);
@@ -335,8 +338,15 @@ void FxArb1::StartPositionsOpening(
 
 		// For each configured symbol we create position object and
 		// sending open-order:
-		foreach (const auto &i, broker.sendList) {
-			
+		int cpt = 1;
+		foreach (const auto &i, broker.sendList) 
+		{
+			//second broker take position 2
+			if (cpt == 2)
+			{
+				&i = broker2.sendList.find(i.first);
+			}
+
 			const SecurityPositionConf &conf = i.second;
 			// Position must be "shared" as it uses pattern
 			// "shared from this":
@@ -378,7 +388,7 @@ void FxArb1::StartPositionsOpening(
 			// Binding all positions into one equation:
 			equationPositions.positions.push_back(position);
 			Verify(++equationPositions.activeCount <= PAIRS_COUNT);
-			
+			cpt++;
 		}
 
 	} catch (...) {
