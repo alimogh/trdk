@@ -37,7 +37,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			// equations thread:
 			const auto equationPairNum
 				= conf.ReadTypedKey<size_t>("equations_pair");
-			GetLog().Error(
+			GetLog().Info(
 				"Using equations pair number: %1%.",
 				equationPairNum);
 			if (equationPairNum < 1 || equationPairNum > EQUATIONS_COUNT  / 2) {
