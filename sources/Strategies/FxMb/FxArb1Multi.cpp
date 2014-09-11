@@ -163,19 +163,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					TimeMeasurement::Milestones &timeMeasurement) {
 
 			AssertNe(equationIndex, opposideEquationIndex);
-
 			AssertEq(BROKERS_COUNT, GetContext().GetTradeSystemsCount());
-			// if 0 - 1 equations sends orders to first broker,
-			// if 6 - 11 - to second broker:
-			/*const size_t brokerId = equationIndex < opposideEquationIndex
-				?	1
-				:	2;*/
 
 			// Send open-orders:
 			StartPositionsOpening(
 				equationIndex,
 				opposideEquationIndex,
-				//brokerId,
 				b1,
 				b2,
 				timeMeasurement);
