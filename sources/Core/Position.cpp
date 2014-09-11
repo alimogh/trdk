@@ -149,7 +149,7 @@ public:
 
 	boost::atomic_bool m_isError;
 
-	boost::atomic<CancelState> m_ñancelState;
+	boost::atomic<CancelState> m_cancelState;
 	boost::function<void ()> m_cancelMethod;
 
 	const std::string m_tag;
@@ -176,7 +176,7 @@ public:
 			m_closeType(CLOSE_TYPE_NONE),
 			m_isStarted(false),
 			m_isError(false),
-			m_ñancelState(CANCEL_STATE_NOT_CANCELED),
+			m_cancelState(CANCEL_STATE_NOT_CANCELED),
 			m_tag(m_strategy->GetTag()),
 			m_timeMeasurement(timeMeasurement) {
 		//...//
@@ -386,7 +386,7 @@ public:
 		CancelState prevCancelFlag = CANCEL_STATE_SCHEDULED;
 		const CancelState newCancelFlag = CANCEL_STATE_CANCELED;
 		if  (
-				!m_ñancelState.compare_exchange_strong(
+				!m_cancelState.compare_exchange_strong(
 					prevCancelFlag,
 					newCancelFlag)) {
 			return false;
@@ -623,13 +623,13 @@ public:
 				};
 			Assert(m_position.HasActiveOrders());
 			delayedCancelMethod.swap(m_cancelMethod);
-			AssertEq(int(CANCEL_STATE_NOT_CANCELED), int(m_ñancelState));
-			m_ñancelState = CANCEL_STATE_SCHEDULED;
+			AssertEq(int(CANCEL_STATE_NOT_CANCELED), int(m_cancelState));
+			m_cancelState = CANCEL_STATE_SCHEDULED;
 		} else {
 			Assert(!m_position.HasActiveOrders());
 			CloseUnsafe<CancelMethodImpl>(closeType, cancelMethodImpl);
-			AssertEq(int(CANCEL_STATE_NOT_CANCELED), int(m_ñancelState));
-			m_ñancelState = CANCEL_STATE_CANCELED;
+			AssertEq(int(CANCEL_STATE_NOT_CANCELED), int(m_cancelState));
+			m_cancelState = CANCEL_STATE_CANCELED;
 		}
 		return true;
 	}
@@ -726,7 +726,7 @@ bool Position::IsError() const throw() {
 	return m_pimpl->m_isError ? true : false;
 }
 bool Position::IsCanceled() const throw() {
-	return m_pimpl->m_ñancelState != Implementation::CANCEL_STATE_NOT_CANCELED;
+	return m_pimpl->m_cancelState != Implementation::CANCEL_STATE_NOT_CANCELED;
 }
 
 bool Position::HasActiveOrders() const throw() {

@@ -75,25 +75,48 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				return;
 			}
 			
-			// Call threads equations:
-			if (	CheckEquation(m_equations.first,
-						m_equations.second,
-						b1,
-						b2,
-						timeMeasurement)) {
-				// First equation returns "true", so we sent orders for it and
-				// exit.
-				return;
+			if (GetEquationPosition(m_equations.first).activeCount)
+			{
+				// We opened on first equation, we try to close on second one
+				CheckEquation(
+					m_equations.second,
+					m_equations.first,
+					b1,
+					b2,
+					timeMeasurement);
 			}
+			else if (GetEquationPosition(m_equations.second).activeCount)
+			{
+				// We opened on second equation, we try to close on first one
+				CheckEquation(m_equations.first,
+					m_equations.second,
+					b1,
+					b2,
+					timeMeasurement);
+			}
+			else
+			{
+				// We haven't opened yet, we try to open
 
-			// First equation returns "false", so we check opposide equation:
-			CheckEquation(
-				m_equations.second,
-				m_equations.first,
-				b1,
-				b2,
-				timeMeasurement);
+				// Call threads equations:
+				if (	CheckEquation(m_equations.first,
+							m_equations.second,
+							b1,
+							b2,
+							timeMeasurement)) {
+					// First equation returns "true", so we sent orders for it and
+					// exit.
+					return;
+				}
 
+				// First equation returns "false", so we check opposide equation:
+				CheckEquation(
+					m_equations.second,
+					m_equations.first,
+					b1,
+					b2,
+					timeMeasurement);
+			}
 		}
 
 	private:
@@ -140,19 +163,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					TimeMeasurement::Milestones &timeMeasurement) {
 
 			AssertNe(equationIndex, opposideEquationIndex);
-
 			AssertEq(BROKERS_COUNT, GetContext().GetTradeSystemsCount());
-			// if 0 - 1 equations sends orders to first broker,
-			// if 6 - 11 - to second broker:
-			const size_t brokerId = equationIndex < opposideEquationIndex
-				?	1
-				:	2;
 
 			// Send open-orders:
 			StartPositionsOpening(
 				equationIndex,
 				opposideEquationIndex,
-				brokerId,
 				b1,
 				b2,
 				timeMeasurement);

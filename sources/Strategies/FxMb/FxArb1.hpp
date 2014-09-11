@@ -40,21 +40,28 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			bool isLong;
 		};
 		struct SecurityPositionConf : public PositionConf {
+			
 			Security *security;
+			
+			bool operator ==(const trdk::Lib::Symbol &symbol) const {
+				return security->GetSymbol() == symbol;
+			}
+
 		};
 
 		struct BrokerConf {
-			
+
 			std::map<std::string /* symbol */, PositionConf> pos;
 
-			std::map<Lib::Symbol::Hash, SecurityPositionConf> sendList;
+			//! Securities order coincides with order in config
+			//! and it is important.
+			std::vector<SecurityPositionConf> sendList;
 
 			boost::array<Security *, PAIRS_COUNT> pairs;
 
 			BrokerConf() {
 				pairs.assign(nullptr);
 			}
-
 
 		};
 
@@ -185,7 +192,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void StartPositionsOpening(
 					size_t equationIndex,
 					size_t opposideEquationIndex,
-					const size_t brokerId,
 					const Broker &b1,
 					const Broker &b2,
 					Lib::TimeMeasurement::Milestones &);

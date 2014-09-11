@@ -125,11 +125,13 @@ std::auto_ptr<PositionReporter> FxArb1::CreatePositionReporter() const {
 pt::ptime FxArb1::OnSecurityStart(Security &security) {
 			
 	// New security start - caching security object for fast getting:
-	const auto &key = security.GetSymbol().GetHash();
-	if (!m_brokersConf.front().sendList.count(key)) {
+	if (	std::find(
+					m_brokersConf.front().sendList.begin(),
+					m_brokersConf.front().sendList.end(),
+					security.GetSymbol())
+				== m_brokersConf.front().sendList.end()) {
 		// not cached yet...
 		foreach (auto &broker, m_brokersConf) {
-			Assert(!broker.sendList.count(key));
 			const auto &conf
 				= broker.pos.find(security.GetSymbol().GetSymbol());
 			if (conf == broker.pos.end()) {
@@ -144,7 +146,7 @@ pt::ptime FxArb1::OnSecurityStart(Security &security) {
 			static_cast<PositionConf &>(pos) = conf->second;
 			pos.security = &security;
 			// caching:
-			broker.sendList.insert(std::make_pair(key, pos));
+			broker.sendList.push_back(pos);
 		}
 	}
 
@@ -203,18 +205,18 @@ FxArb1::Equations FxArb1::CreateEquations() {
 	};
 	typedef const Broker B;
 
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p1.bid + b2.p1.bid + b2.p1.bid / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p2.bid + b2.p2.bid + b2.p2.bid / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p3.bid + b2.p3.bid + b2.p3.bid / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p1.ask + b2.p1.ask + b2.p1.ask / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p2.ask + b2.p2.ask + b2.p2.ask / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p3.ask + b2.p3.ask + b2.p3.ask / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p1.bid + b2.p2.bid + b2.p3.bid / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p2.bid + b2.p1.bid + b2.p3.bid / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p3.bid + b2.p2.bid + b2.p1.bid / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p1.ask + b2.p2.ask + b2.p3.ask / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p2.ask + b2.p1.ask + b2.p3.ask / 3	;	return result > 80.5	;});
-	add([](const B &b1, const B &b2, double &result) -> bool {result =		b1.p3.ask + b2.p2.ask + b2.p1.ask / 3	;	return result > 80.5	;});
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid + b2.p2.bid + b1.p3.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid + b2.p3.bid + b1.p2.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid + b2.p1.bid + b1.p3.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid + b2.p3.bid + b1.p1.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid + b2.p1.bid + b1.p2.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid + b2.p2.bid + b1.p1.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.ask + b2.p2.ask + b1.p3.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.ask + b2.p3.ask + b1.p2.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.ask + b2.p1.ask + b1.p3.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.ask + b2.p3.ask + b1.p1.ask / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.ask + b2.p1.ask + b1.p2.ask / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.ask + b2.p2.ask + b1.p1.ask / 3;	return result > 1.000055; });
 
 	AssertEq(EQUATIONS_COUNT, result.size());
 	result.shrink_to_fit();
@@ -308,7 +310,6 @@ void FxArb1::LogBrokersState(
 void FxArb1::StartPositionsOpening(
 			size_t equationIndex,
 			size_t opposideEquationIndex,
-			const size_t brokerId,
 			const Broker &b1,
 			const Broker &b2,
 			TimeMeasurement::Milestones &timeMeasurement) {
@@ -323,8 +324,9 @@ void FxArb1::StartPositionsOpening(
 	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
 	
 	// Symbols and broker for positions:
-	const BrokerConf &broker = GetBrokerConf(brokerId);
-	TradeSystem &tradeSystem = GetContext().GetTradeSystem(brokerId - 1);
+	const BrokerConf &broker = GetBrokerConf(1);
+	TradeSystem &tradeSystem1 = GetContext().GetTradeSystem(0);
+	TradeSystem &tradeSystem2 = GetContext().GetTradeSystem(1);
 
 	// Info about positions (which not yet opened) for this equation:
 	auto &equationPositions = GetEquationPosition(equationIndex);
@@ -335,9 +337,14 @@ void FxArb1::StartPositionsOpening(
 
 		// For each configured symbol we create position object and
 		// sending open-order:
-		foreach (const auto &i, broker.sendList) {
-			
-			const SecurityPositionConf &conf = i.second;
+		for (size_t i = 0; i < broker.sendList.size(); ++i) {
+
+			const SecurityPositionConf &conf = broker.sendList[i];
+
+			TradeSystem &tradeSystem = i == 1
+				?	tradeSystem2 //second broker take position 2
+				:	tradeSystem1;
+
 			// Position must be "shared" as it uses pattern
 			// "shared from this":
 			boost::shared_ptr<EquationPosition> position;
@@ -378,7 +385,7 @@ void FxArb1::StartPositionsOpening(
 			// Binding all positions into one equation:
 			equationPositions.positions.push_back(position);
 			Verify(++equationPositions.activeCount <= PAIRS_COUNT);
-			
+
 		}
 
 	} catch (...) {
