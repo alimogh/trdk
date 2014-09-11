@@ -139,7 +139,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			
 			double equationsResult = .0;
 			// Calls equation and exits if it will return "false":
-			if (!GetEquations()[equationIndex](b1, b2, equationsResult)) {
+			const auto &equation = GetEquations()[equationIndex];
+			if (!equation.first(b1, b2, equationsResult)) {
 				return false;
 			}
 			

@@ -102,9 +102,21 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		};
 
-		typedef boost::function<bool (const Broker &b1, const Broker &b2, double &result)>
+		typedef boost::function<
+				bool (
+					const Broker &b1,
+					const Broker &b2,
+					double &result)>
 			Equation;
-		typedef std::vector<Equation> Equations;
+		typedef boost::function<
+				void (
+					const Broker &b1,
+					const Broker &b2,
+					trdk::Module::Log &)>
+			EquationPrint;
+		typedef std::vector<
+				std::pair<Equation, EquationPrint>>
+			Equations;
 
 		struct EquationOpenedPositions {
 			

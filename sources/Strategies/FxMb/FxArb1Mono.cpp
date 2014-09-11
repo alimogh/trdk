@@ -73,7 +73,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 				// Ask equation for result:
 				double currentResult = .0;
-				if (!GetEquations()[i](b1, b2, currentResult)) {
+				// first - call equation
+				const auto &equation = GetEquations()[i];
+				if (!equation.first(b1, b2, currentResult)) {
 					// Equation not verified.
 					continue;
 				}
@@ -98,11 +100,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// faster then orders update.
 				if (!GetEquationPosition(oppositeEquationIndex).activeCount) {
 					double currentResult = .0;
-					if (
-							GetEquations()[oppositeEquationIndex](
-								b1,
-								b2,
-								currentResult)) {
+					const auto &equation
+						= GetEquations()[oppositeEquationIndex];
+					// fisrt - calls eqution
+					if (equation.first(b1, b2, currentResult)) {
 						// Opposite equation verified, we close positions
 						OnEquation(
 							oppositeEquationIndex,

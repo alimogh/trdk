@@ -198,10 +198,14 @@ pt::ptime FxArb1::OnSecurityStart(Security &security) {
 FxArb1::Equations FxArb1::CreateEquations() {
 			
 	Equations result;
-	result.reserve(EQUATIONS_COUNT);
+	result.resize(EQUATIONS_COUNT);
+	size_t i = 0;
 
-	const auto add = [&result](const Equation &equation) {
-		result.push_back(equation);
+	const auto add = [&result, &i](const Equation &equation) {
+		result[i++].first = equation;
+	};
+	const auto addPrint = [&result, &i](const EquationPrint &equation) {
+		result[i++].second= equation;
 	};
 	typedef const Broker B;
 
@@ -217,6 +221,21 @@ FxArb1::Equations FxArb1::CreateEquations() {
 	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.ask + b2.p3.ask + b1.p1.ask / 3;	return result > 1.000055; });
 	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.ask + b2.p1.ask + b1.p2.ask / 3;	return result > 1.000055; });
 	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.ask + b2.p2.ask + b1.p1.ask / 3;	return result > 1.000055; });
+
+	i = 0;
+
+	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p1.bid, b2.p2.bid, b1.p3.bid, b1.p1.bid + b2.p2.bid + b1.p3.bid / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p1.bid, b2.p3.bid, b1.p2.bid, b1.p1.bid + b2.p3.bid + b1.p2.bid / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p2.bid, b2.p1.bid, b1.p3.bid, b1.p2.bid + b2.p1.bid + b1.p3.bid / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p2.bid, b2.p3.bid, b1.p1.bid, b1.p2.bid + b2.p3.bid + b1.p1.bid / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p3.bid, b2.p1.bid, b1.p2.bid, b1.p3.bid + b2.p1.bid + b1.p2.bid / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p3.bid, b2.p2.bid, b1.p1.bid, b1.p3.bid + b2.p2.bid + b1.p1.bid / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p1.ask, b2.p2.ask, b1.p3.bid, b1.p1.ask + b2.p2.ask + b1.p3.bid / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p1.ask, b2.p3.ask, b1.p2.bid, b1.p1.ask + b2.p3.ask + b1.p2.bid / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p2.ask, b2.p1.ask, b1.p3.bid, b1.p2.ask + b2.p1.ask + b1.p3.bid / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p2.ask, b2.p3.ask, b1.p1.ask, b1.p2.ask + b2.p3.ask + b1.p1.ask / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p3.ask, b2.p1.ask, b1.p2.ask, b1.p3.ask + b2.p1.ask + b1.p2.ask / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p3.ask, b2.p2.ask, b1.p1.ask, b1.p3.ask + b2.p2.ask + b1.p1.ask / 3));	});
 
 	AssertEq(EQUATIONS_COUNT, result.size());
 	result.shrink_to_fit();
@@ -283,28 +302,7 @@ void FxArb1::LogBrokersState(
 			const Broker &b2)
 		const {
 	// Logging current bid/ask values for all pairs (if logging enabled).
-	GetLog().TradingEx(
-		[&]() -> boost::format {
-			// log message format:
-			// equation    #    b{x}.p{y}.bid    b{x}.p{y}.ask    ...
-			boost::format message(
-				"equation\t%1%"
-					"\t%2% \t%3%" // b1.p1.bid, b1.p1.ask
-					"\t%4% \t%5%" // b1.p2.bid, b1.p2.ask
-					"\t%6% \t%7%" // b1.p3.bid, b1.p3.ask
-					"\t%8% \t%9%" // b2.p1.bid, b2.p1.ask
-					"\t%10% \t%11%" // b2.p2.bid, b2.p2.ask
-					"\t%12% \t%13%"); // b2.p3.bid, b2.p3.ask
-			message
-				% equationIndex
-				% b1.p1.bid % b1.p1.ask
-				% b1.p2.bid % b1.p2.ask
-				% b1.p3.bid % b1.p3.ask
-				% b2.p1.bid % b2.p1.ask
-				% b2.p2.bid % b2.p2.ask
-				% b2.p3.bid % b2.p3.ask; 
-			return std::move(message);
-		});
+	GetEquations()[equationIndex].second(b1, b2, GetLog());
 }
 
 void FxArb1::StartPositionsOpening(
