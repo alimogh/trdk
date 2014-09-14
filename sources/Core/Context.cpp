@@ -65,11 +65,17 @@ namespace {
 		
 		explicit LatanReport(trdk::Context::Log &log)
 				: m_log(log),
+				m_stopFlag(false),
 				m_thread([&]{ThreadMain();}) {
 			//....//
 		}
 
 		~LatanReport() {
+			{
+				const Lock lock(m_mutex);
+				Assert(!m_stopFlag);
+				m_stopFlag = true;
+			}
 			m_stopCondition.notify_all();
 			m_thread.join();
 		}
@@ -142,7 +148,8 @@ namespace {
 						size_t strategyIndex = 0,
 							tsIndex = 0,
 							dispatchingIndex = 0;
-						!m_stopCondition.timed_wait(lock, reportPeriod);
+						!m_stopFlag
+							&& !m_stopCondition.timed_wait(lock, reportPeriod);
 						) {
 					DumpAccum<TimeMeasurement::StrategyMilestone>(
 						strategyIndex,
@@ -225,6 +232,7 @@ namespace {
 		} m_accums;
 
 		Mutex m_mutex;
+		bool m_stopFlag;
 		StopCondition m_stopCondition;
 		boost::thread m_thread;
 
