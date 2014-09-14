@@ -337,7 +337,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Mql.txt" />
+    <Text Include="EasyLanguage.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

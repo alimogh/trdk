@@ -71,7 +71,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Mql.txt">
+    <Text Include="EasyLanguage.txt">
       <Filter>Scripts</Filter>
     </Text>
   </ItemGroup>
