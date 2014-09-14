@@ -336,6 +336,7 @@ Global
 		{AF773219-8D87-4958-A567-4BCB72272E51}.Debug Standalone|Win32.ActiveCfg = Debug Standalone|Win32
 		{AF773219-8D87-4958-A567-4BCB72272E51}.Debug Standalone|Win32.Build.0 = Debug Standalone|Win32
 		{AF773219-8D87-4958-A567-4BCB72272E51}.Debug Standalone|x64.ActiveCfg = Debug Standalone|x64
+		{AF773219-8D87-4958-A567-4BCB72272E51}.Debug Standalone|x64.Build.0 = Debug Standalone|x64
 		{AF773219-8D87-4958-A567-4BCB72272E51}.Release DLL|Win32.ActiveCfg = Release DLL|Win32
 		{AF773219-8D87-4958-A567-4BCB72272E51}.Release DLL|x64.ActiveCfg = Release DLL|x64
 		{AF773219-8D87-4958-A567-4BCB72272E51}.Release Standalone|Win32.ActiveCfg = Release Standalone|Win32

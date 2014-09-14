@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Types.hpp"
 #include "BarService.hpp"
 #include "Core/Service.hpp"
 #include "Api.h"
@@ -39,10 +40,7 @@ namespace trdk { namespace Services {
 		};
 
 		//! Value data point.
- 		struct Point {
-			ScaledPrice source;
-			double value;
-		};
+ 		typedef MovingAveragePoint Point;
 
 	public:
 

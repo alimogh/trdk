@@ -245,12 +245,15 @@
     <ClInclude Include="BarService.hpp" />
     <ClInclude Include="BollingerBandsService.hpp" />
     <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="MovingAverage.hpp" />
     <ClInclude Include="MovingAverageService.hpp" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="Types.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BarService.cpp" />
     <ClCompile Include="BollingerBandsService.cpp" />
+    <ClCompile Include="MovingAverage.cpp" />
     <ClCompile Include="MovingAverageService.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
