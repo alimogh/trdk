@@ -36,8 +36,11 @@ namespace {
 		std::vector<char> tag;
 		
 		void Save(
-				const pt::ptime &time,
-				const boost::tuple<const std::string &, const std::string &> &param) {
+					const pt::ptime &time,
+					const boost::tuple<
+							const std::string &,
+							const std::string &> &
+						param) {
 			Base::Save(time, boost::get<1>(param));
 			std::copy(
 					boost::get<0>(param).begin(),
@@ -48,13 +51,24 @@ namespace {
 
 		void Save(
 					const pt::ptime &time,
-					const boost::tuple<const std::string &, const char *> &param) {
+					const boost::tuple<
+							const std::string &,
+							const char *> &
+						param) {
 			Base::Save(time, boost::get<1>(param));
 			std::copy(
 					boost::get<0>(param).begin(),
 					boost::get<0>(param).end(),
 					std::back_inserter(this->tag));
 			this->tag.push_back(0);
+		}
+
+		void Flush(trdk::Lib::LogState &log) {
+			Assert(log.log);
+			log.AppendRecordHead(time);
+			*log.log << '\t' << &tag[0] << '\t';
+			Lib::Detail::DumpMultiLineString(message, *log.log);
+			message.clear();
 		}
 
 	};
