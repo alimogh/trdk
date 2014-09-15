@@ -39,6 +39,15 @@ FxArb1::FxArb1(
 			"Strategy requires exact number of Market Data Sources");
 	}
 
+	{
+		size_t i = 0;
+		GetContext().ForEachMarketDataSource(
+			[&](trdk::MarketDataSource &mds) -> bool {
+				m_brokersConf[i++].name = mds.GetTag();
+				return true;
+			});
+	}
+
 	// Loading volume and direction configuration for each symbol:
 	size_t pairIndex[BROKERS_COUNT] = {};
 	conf.ForEachKey(
@@ -393,6 +402,41 @@ void FxArb1::StartPositionsOpening(
 	AssertEq(0, equationPositions.positions.size());
 	AssertEq(0, equationPositions.activeCount);
 
+	GetContext().GetLog().Equation(
+		
+		"Opening detected",
+		equationIndex,
+		
+		// broker 1:
+		broker.name,
+		broker.sendList[0].security->GetSymbol().GetSymbol(),
+		false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+		b1.p1.bid,
+		b1.p1.ask,
+		false, // Reversed Bid if pair is reversed
+		false, // Reversed Ask if pair is reversed
+		
+		// broker 2:
+		GetBrokerConf(2).name,
+		broker.sendList[2].security->GetSymbol().GetSymbol(),
+		false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+		b2.p2.bid,
+		b2.p2.ask,
+		false, // Reversed Bid if pair is reversed
+		false, // Reversed Ask if pair is reversed
+		
+		// broker 3:
+		broker.name,
+		broker.sendList[2].security->GetSymbol().GetSymbol(),
+		false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+		b1.p3.bid,
+		b1.p3.ask,
+		false, // Reversed Bid if pair is reversed
+		false, // Reversed Ask if pair is reversed
+		
+		"Product of Y1 detected",
+		"Product of Y2 detected");
+
 	try {
 
 		// For each configured symbol we create position object and
@@ -492,6 +536,50 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 
 		// We completed work with this position, forget it...
 		Verify(equationPositions.activeCount--);
+		
+		if (equationPositions.activeCount == 0) {
+
+			const auto &b1 = GetBroker(1);
+			const auto &broker1 = GetBrokerConf(1);
+			const auto &b2 = GetBroker(2);
+			const auto &broker2 = GetBrokerConf(2);
+			
+			GetContext().GetLog().Equation(
+		
+				"Closing executed",
+				position.GetEquationIndex(),
+		
+				// broker 1:
+				broker1.name,
+				broker1.sendList[0].security->GetSymbol().GetSymbol(),
+				false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+				b1.p1.bid,
+				b1.p1.ask,
+				false, // Reversed Bid if pair is reversed
+				false, // Reversed Ask if pair is reversed
+		
+				// broker 2:
+				GetBrokerConf(2).name,
+				broker2.sendList[2].security->GetSymbol().GetSymbol(),
+				false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+				b2.p2.bid,
+				b2.p2.ask,
+				false, // Reversed Bid if pair is reversed
+				false, // Reversed Ask if pair is reversed
+		
+				// broker 3:
+				broker1.name,
+				broker1.sendList[2].security->GetSymbol().GetSymbol(),
+				false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+				b1.p3.bid,
+				b1.p3.ask,
+				false, // Reversed Bid if pair is reversed
+				false, // Reversed Ask if pair is reversed
+		
+				"Product of Y1 detected",
+				"Product of Y2 detected");
+
+		}
 
 		position.DeactivatieObservation();
 
@@ -512,6 +600,50 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 	if (!IsEquationOpenedFully(position.GetEquationIndex())) {
 		// Not all orders are filled yet, we need wait more...
 		return;
+	}
+
+	{
+
+		const auto &b1 = GetBroker(1);
+		const auto &broker1 = GetBrokerConf(1);
+		const auto &b2 = GetBroker(2);
+		const auto &broker2 = GetBrokerConf(2);
+			
+		GetContext().GetLog().Equation(
+		
+			"Opening executed",
+			position.GetEquationIndex(),
+		
+			// broker 1:
+			broker1.name,
+			broker1.sendList[0].security->GetSymbol().GetSymbol(),
+			false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+			b1.p1.bid,
+			b1.p1.ask,
+			false, // Reversed Bid if pair is reversed
+			false, // Reversed Ask if pair is reversed
+		
+			// broker 2:
+			GetBrokerConf(2).name,
+			broker2.sendList[2].security->GetSymbol().GetSymbol(),
+			false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+			b2.p2.bid,
+			b2.p2.ask,
+			false, // Reversed Bid if pair is reversed
+			false, // Reversed Ask if pair is reversed
+		
+			// broker 3:
+			broker1.name,
+			broker1.sendList[2].security->GetSymbol().GetSymbol(),
+			false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+			b1.p3.bid,
+			b1.p3.ask,
+			false, // Reversed Bid if pair is reversed
+			false, // Reversed Ask if pair is reversed
+		
+			"Product of Y1 detected",
+			"Product of Y2 detected");
+
 	}
 
 	position.GetTimeMeasurement().Measure(

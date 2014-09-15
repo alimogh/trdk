@@ -46,6 +46,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		struct BrokerConf {
 
+			std::string name;
+
 			std::map<std::string /* symbol */, PositionConf> pos;
 
 			//! Securities order coincides with order in config
@@ -54,7 +56,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			boost::array<Security *, PAIRS_COUNT> pairs;
 
-			BrokerConf() {
+			BrokerConf()
+					: name(name) {
 				pairs.assign(nullptr);
 			}
 

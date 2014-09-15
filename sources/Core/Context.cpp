@@ -262,9 +262,9 @@ public:
 			// Indicates if pair is reversed or not  (TRUE or FALSE)
 			bool reversed;
 			// Bid of pair 1
-			ScaledPrice bid;
+			double bid;
 			// Ask of Pair 1
-			ScaledPrice ask;
+			double ask;
 			// Reversed Bid if pair is reversed
 			bool bidReversed;
 			// Reversed Ask if pair is reversed
@@ -308,10 +308,9 @@ public:
 			this->time = time;
 
 			std::copy(
-				params.action->begin(),
-				params.action->end(),
+				params.action,
+				params.action + strlen(params.action) + 1,
 				std::back_inserter(action));
-			action.push_back(0);
 
 			equation = params.equation;
 
@@ -320,15 +319,13 @@ public:
 			SavePair(params.pair3, pair3);
 
 			std::copy(
-				params.resultOfY1->begin(),
-				params.resultOfY1->end(),
+				params.resultOfY1,
+				params.resultOfY1 + strlen(params.resultOfY1) + 1,
 				std::back_inserter(resultOfY1));
-			resultOfY1.push_back(0);
 			std::copy(
-				params.resultOfY2->begin(),
-				params.resultOfY2->end(),
+				params.resultOfY2,
+				params.resultOfY2 + strlen(params.resultOfY2) + 1,
 				std::back_inserter(resultOfY2));
-			resultOfY2.push_back(0);
 
 		}
 
@@ -336,11 +333,11 @@ public:
 			*log.log
 				<< &record.broker[0]
 				<< ';' << &record.name[0]
-				<< ';' << record.reversed
+				<< ';' << (record.reversed ? "TRUE" : "FALSE")
 				<< ';' << record.bid
 				<< ';' << record.ask
-				<< ';' << record.bidReversed
-				<< ';' << record.askReversed
+				<< ';' << (record.bidReversed ? "TRUE" : "FALSE")
+				<< ';' << (record.askReversed ? "TRUE" : "FALSE")
 				<< ';';
 			record.broker.clear();
 			record.name.clear();
@@ -351,7 +348,7 @@ public:
 			Assert(log.log);
 			
 			*log.log
-				// <<  List of opportunities here << ';'
+				/*  <<  List of opportunities here  */ << "1;"
 				<< time << ';' << &action[0] << ';';
 			action.clear();
 			
@@ -373,6 +370,8 @@ public:
 			*log.log << &resultOfY2[0] << ';';
 			resultOfY2.clear();
 
+			*log.log << std::endl;
+
 		}
 			
 	};
@@ -392,10 +391,10 @@ public:
 		const fs::path logPath
 			= Lib::GetExeWorkingDir() / "logs" / "strategies.log";
 		boost::filesystem::create_directories(logPath.branch_path());
-		std::ofstream log(
+		m_equationLogStream.open(
 			logPath.string().c_str(),
-			std::ios::ate | std::ios::app);
-		if (!log) {
+			std::ios::out | std::ios::ate | std::ios::app);
+		if (!m_equationLogStream) {
 			throw Exception("Failed to open Strategies report file");
 		}
 		m_equationLog.EnableStream(m_equationLogStream);
