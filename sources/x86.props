@@ -4,7 +4,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <LibraryPath>$(BOOST_DIR_X86)\boost_1_56_0\lib32-msvc-11.0\;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(BOOST_DIR_X86)\boost_1_56_0\;$(IncludePath)</IncludePath>
+    <IncludePath>$(BOOST_DIR_X86)\boost_1_56_0\;$(GTEST_DIR_X86)\gtest-1.7.0\include\;$(GMOCK_DIR_X86)\gmock-1.7.0\include\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup />
   <ItemGroup />

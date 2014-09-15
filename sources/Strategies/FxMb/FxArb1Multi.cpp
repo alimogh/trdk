@@ -148,6 +148,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			OnEquation(
 				equationIndex,
 				opposideEquationIndex,
+				true,
 				b1,
 				b2,
 				timeMeasurement);
@@ -159,6 +160,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void OnEquation(
 					size_t equationIndex,
 					size_t opposideEquationIndex,
+					bool opening,
 					const Broker &b1,
 					const Broker &b2,
 					TimeMeasurement::Milestones &timeMeasurement) {
@@ -170,6 +172,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			StartPositionsOpening(
 				equationIndex,
 				opposideEquationIndex,
+				opening,
 				b1,
 				b2,
 				timeMeasurement);

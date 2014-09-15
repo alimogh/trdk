@@ -35,18 +35,13 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		};
 
 		struct PositionConf {
+			size_t index;
 			Security *security;
 			Qty qty;
 			bool isLong;
 		};
 		struct SecurityPositionConf : public PositionConf {
-			
 			Security *security;
-			
-			bool operator ==(const trdk::Lib::Symbol &symbol) const {
-				return security->GetSymbol() == symbol;
-			}
-
 		};
 
 		struct BrokerConf {
@@ -204,9 +199,16 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void StartPositionsOpening(
 					size_t equationIndex,
 					size_t opposideEquationIndex,
+					bool opening,
 					const Broker &b1,
 					const Broker &b2,
 					Lib::TimeMeasurement::Milestones &);
+
+		//! Return true for long position, false for short position
+		bool GetEquationPositionWay(
+					size_t equationIndex,
+					bool invert,
+					bool opening);
 
 	private:
 

@@ -18,27 +18,56 @@ namespace trdk { namespace Testing {
 
 	public:
 
+		virtual ~Context() {
+			//...//
+		}
+
+	public:
+
 		virtual const trdk::Settings & GetSettings() const {
 			throw trdk::Lib::MethodDoesNotImplementedError(
 				"The method is not implemented for testing module");
 		}
+
+		virtual size_t GetMarketDataSourcesCount() const {
+			throw trdk::Lib::MethodDoesNotImplementedError(
+				"The method is not implemented for testing module");
+		}
 		
-		virtual trdk::MarketDataSource & GetMarketDataSource() {
+		virtual trdk::MarketDataSource & GetMarketDataSource(size_t) {
 			throw trdk::Lib::MethodDoesNotImplementedError(
 				"The method is not implemented for testing module");
 		}
 
-		virtual const trdk::MarketDataSource & GetMarketDataSource() const {
+		virtual const trdk::MarketDataSource & GetMarketDataSource(size_t) const {
 			throw trdk::Lib::MethodDoesNotImplementedError(
 				"The method is not implemented for testing module");
 		}
 
-		virtual trdk::TradeSystem & GetTradeSystem() {
+		virtual void ForEachMarketDataSource(
+						const boost::function<bool (const trdk::MarketDataSource &)> &)
+					const {
 			throw trdk::Lib::MethodDoesNotImplementedError(
 				"The method is not implemented for testing module");
 		}
 
-		virtual const trdk::TradeSystem & GetTradeSystem() const {
+		virtual void ForEachMarketDataSource(
+						const boost::function<bool (trdk::MarketDataSource &)> &) {
+			throw trdk::Lib::MethodDoesNotImplementedError(
+				"The method is not implemented for testing module");
+		}
+
+		virtual size_t GetTradeSystemsCount() const {
+			throw trdk::Lib::MethodDoesNotImplementedError(
+				"The method is not implemented for testing module");
+		}
+
+		virtual trdk::TradeSystem & GetTradeSystem(size_t) {
+			throw trdk::Lib::MethodDoesNotImplementedError(
+				"The method is not implemented for testing module");
+		}
+
+		virtual const trdk::TradeSystem & GetTradeSystem(size_t) const {
 			throw trdk::Lib::MethodDoesNotImplementedError(
 				"The method is not implemented for testing module");
 		}
