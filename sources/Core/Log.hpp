@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Common/Log.hpp"
 #include "Api.h"
 #include "Common/Assert.hpp"
 
@@ -20,13 +21,7 @@ namespace trdk { namespace Log {
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
 
-	enum Level {
-		LEVEL_DEBUG,
-		LEVEL_INFO,
-		LEVEL_WARN,
-		LEVEL_ERROR,
-		numberOfLevels
-	};
+	typedef trdk::Lib::LogLevel Level;
 
 	TRDK_CORE_API Mutex & GetEventsMutex();
 
@@ -56,11 +51,11 @@ namespace trdk { namespace Log { namespace Detail {
 	//////////////////////////////////////////////////////////////////////////
 
 	void TRDK_CORE_API AppendEventRecordUnsafe(
-				Level,
+				const trdk::Lib::LogLevel &,
 				const boost::posix_time::ptime &time,
 				const char *str);
 	void TRDK_CORE_API AppendEventRecordUnsafe(
-				Level,
+				const trdk::Lib::LogLevel &,
 				const boost::posix_time::ptime &time,
 				const std::string &str);
 
@@ -76,7 +71,7 @@ namespace trdk { namespace Log { namespace Detail {
 	//////////////////////////////////////////////////////////////////////////
 
 	inline void AppendEventRecordUnsafe(
-				Level level,
+				const trdk::Lib::LogLevel &level,
 				const boost::posix_time::ptime &time,
 				const boost::format &format) {
 		AppendEventRecordUnsafe(level, time, format.str());
@@ -118,7 +113,7 @@ namespace trdk { namespace Log { namespace Detail {
 				boost::format message(
 					"Failed to format log record \"%1%\" with error: \"%2%\".");
 				message % str % ex.what();
-				AppendEventRecordUnsafe(LEVEL_ERROR, time, message);
+				AppendEventRecordUnsafe(trdk::Lib::LOG_LEVEL_ERROR, time, message);
 				AssertFail("Failed to format log record.");
 			} catch (...) {
 				AssertFailNoException();
@@ -143,7 +138,7 @@ namespace trdk { namespace Log { namespace Detail {
 					"Failed to format callback log record with error:"
 						" \"%1%\".");
 				message % ex.what();
-				AppendEventRecordUnsafe(LEVEL_ERROR, time, message);
+				AppendEventRecordUnsafe(trdk::Lib::LOG_LEVEL_ERROR, time, message);
 				AssertFail("Failed to format callback log record.");
 			} catch (...) {
 				AssertFailNoException();
@@ -188,7 +183,10 @@ namespace trdk { namespace Log { namespace Detail {
 				boost::format message(
 					"Failed to format log record \"%1%\" with error: \"%2%\".");
 				message % str % ex.what();
-				AppendEventRecordUnsafe(LEVEL_ERROR, time, message);
+				AppendEventRecordUnsafe(
+					trdk::Lib::LOG_LEVEL_ERROR,
+					time,
+					message);
 				AssertFail("Failed to format log record.");
 			} catch (...) {
 				AssertFailNoException();
@@ -216,7 +214,10 @@ namespace trdk { namespace Log { namespace Detail {
 					"Failed to format callback trading log record with error:"
 						" \"%1%\".");
 				message % ex.what();
-				AppendEventRecordUnsafe(LEVEL_ERROR, time, message);
+				AppendEventRecordUnsafe(
+					trdk::Lib::LOG_LEVEL_ERROR,
+					time,
+					message);
 				AssertFail("Failed to format callback trading log record.");
 			} catch (...) {
 				AssertFailNoException();
@@ -236,7 +237,7 @@ namespace trdk { namespace Log { namespace Detail {
 namespace trdk { namespace Log {
 
 	inline void Debug(const char *str) throw() {
-		const auto level = LEVEL_DEBUG;
+		const auto &level = trdk::Lib::LOG_LEVEL_DEBUG;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -245,7 +246,7 @@ namespace trdk { namespace Log {
 
 	template<typename Callback>
 	inline void DebugEx(const Callback &callback) throw() {
-		const auto level = LEVEL_DEBUG;
+		const auto &level = trdk::Lib::LOG_LEVEL_DEBUG;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -254,7 +255,7 @@ namespace trdk { namespace Log {
 
 	template<typename Params>
 	inline void Debug(const char *str, const Params &params) throw() {
-		const auto level = LEVEL_DEBUG;
+		const auto &level = trdk::Lib::LOG_LEVEL_DEBUG;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -267,7 +268,7 @@ namespace trdk { namespace Log {
 				const Param1 &param1,
 				const Param2 &param2)
 			throw() {
-		const auto level = LEVEL_DEBUG;
+		const auto &level = trdk::Lib::LOG_LEVEL_DEBUG;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -284,7 +285,7 @@ namespace trdk { namespace Log {
 				const Param2 &param2,
 				const Param3 &param3)
 			throw() {
-		const auto level = LEVEL_DEBUG;
+		const auto &level = trdk::Lib::LOG_LEVEL_DEBUG;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -305,7 +306,7 @@ namespace trdk { namespace Log {
 				const Param3 &param3,
 				const Param4 &param4)
 			throw() {
-		const auto level = LEVEL_DEBUG;
+		const auto &level = trdk::Lib::LOG_LEVEL_DEBUG;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -333,7 +334,7 @@ namespace trdk { namespace Log {
 				const Param4 &param4,
 				const Param5 &param5)
 			throw() {
-		const auto level = LEVEL_DEBUG;
+		const auto &level = trdk::Lib::LOG_LEVEL_DEBUG;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -364,7 +365,7 @@ namespace trdk { namespace Log {
 				const Param5 &param5,
 				const Param6 &param6)
 			throw() {
-		const auto level = LEVEL_DEBUG;
+		const auto &level = trdk::Lib::LOG_LEVEL_DEBUG;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -398,7 +399,7 @@ namespace trdk { namespace Log {
 				const Param6 &param6,
 				const Param7 &param7)
 			throw() {
-		const auto level = LEVEL_DEBUG;
+		const auto &level = trdk::Lib::LOG_LEVEL_DEBUG;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -435,7 +436,7 @@ namespace trdk { namespace Log {
 				const Param7 &param7,
 				const Param8 &param8)
 			throw() {
-		const auto level = LEVEL_DEBUG;
+		const auto &level = trdk::Lib::LOG_LEVEL_DEBUG;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -475,7 +476,7 @@ namespace trdk { namespace Log {
 				const Param8 &param8,
 				const Param9 &param9)
 			throw() {
-		const auto level = LEVEL_DEBUG;
+		const auto &level = trdk::Lib::LOG_LEVEL_DEBUG;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -518,7 +519,7 @@ namespace trdk { namespace Log {
 				const Param9 &param9,
 				const Param10 &param10)
 			throw() {
-		const auto level = LEVEL_DEBUG;
+		const auto &level = trdk::Lib::LOG_LEVEL_DEBUG;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -546,7 +547,7 @@ namespace trdk { namespace Log {
 namespace trdk { namespace Log {
 
 	inline void Info(const char *str) throw() {
-		const auto level = LEVEL_INFO;
+		const auto &level = trdk::Lib::LOG_LEVEL_INFO;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -555,7 +556,7 @@ namespace trdk { namespace Log {
 
 	template<typename Callback>
 	inline void InfoEx(const Callback &callback) throw() {
-		const auto level = LEVEL_INFO;
+		const auto &level = trdk::Lib::LOG_LEVEL_INFO;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -564,7 +565,7 @@ namespace trdk { namespace Log {
 
 	template<typename Params>
 	inline void Info(const char *str, const Params &params) throw() {
-		const auto level = LEVEL_INFO;
+		const auto &level = trdk::Lib::LOG_LEVEL_INFO;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -577,7 +578,7 @@ namespace trdk { namespace Log {
 				const Param1 &param1,
 				const Param2 &param2)
 			throw() {
-		const auto level = LEVEL_INFO;
+		const auto &level = trdk::Lib::LOG_LEVEL_INFO;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -594,7 +595,7 @@ namespace trdk { namespace Log {
 				const Param2 &param2,
 				const Param3 &param3)
 			throw() {
-		const auto level = LEVEL_INFO;
+		const auto &level = trdk::Lib::LOG_LEVEL_INFO;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -615,7 +616,7 @@ namespace trdk { namespace Log {
 				const Param3 &param3,
 				const Param4 &param4)
 			throw() {
-		const auto level = LEVEL_INFO;
+		const auto &level = trdk::Lib::LOG_LEVEL_INFO;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -643,7 +644,7 @@ namespace trdk { namespace Log {
 				const Param4 &param4,
 				const Param5 &param5)
 			throw() {
-		const auto level = LEVEL_INFO;
+		const auto &level = trdk::Lib::LOG_LEVEL_INFO;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -674,7 +675,7 @@ namespace trdk { namespace Log {
 				const Param5 &param5,
 				const Param6 &param6)
 			throw() {
-		const auto level = LEVEL_INFO;
+		const auto &level = trdk::Lib::LOG_LEVEL_INFO;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -708,7 +709,7 @@ namespace trdk { namespace Log {
 				const Param6 &param6,
 				const Param7 &param7)
 			throw() {
-		const auto level = LEVEL_INFO;
+		const auto &level = trdk::Lib::LOG_LEVEL_INFO;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -745,7 +746,7 @@ namespace trdk { namespace Log {
 				const Param7 &param7,
 				const Param8 &param8)
 			throw() {
-		const auto level = LEVEL_INFO;
+		const auto &level = trdk::Lib::LOG_LEVEL_INFO;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -785,7 +786,7 @@ namespace trdk { namespace Log {
 				const Param8 &param8,
 				const Param9 &param9)
 			throw() {
-		const auto level = LEVEL_INFO;
+		const auto &level = trdk::Lib::LOG_LEVEL_INFO;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -828,7 +829,7 @@ namespace trdk { namespace Log {
 				const Param9 &param9,
 				const Param10 &param10)
 			throw() {
-		const auto level = LEVEL_INFO;
+		const auto &level = trdk::Lib::LOG_LEVEL_INFO;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -856,7 +857,7 @@ namespace trdk { namespace Log {
 namespace trdk { namespace Log {
 
 	inline void Warn(const char *str) throw() {
-		const auto level = LEVEL_WARN;
+		const auto &level = trdk::Lib::LOG_LEVEL_WARN;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -865,7 +866,7 @@ namespace trdk { namespace Log {
 
 	template<typename Callback>
 	inline void WarnEx(const Callback &callback) throw() {
-		const auto level = LEVEL_WARN;
+		const auto &level = trdk::Lib::LOG_LEVEL_WARN;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -874,7 +875,7 @@ namespace trdk { namespace Log {
 
 	template<typename Params>
 	inline void Warn(const char *str, const Params &params) throw() {
-		const auto level = LEVEL_WARN;
+		const auto &level = trdk::Lib::LOG_LEVEL_WARN;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -887,7 +888,7 @@ namespace trdk { namespace Log {
 				const Param1 &param1,
 				const Param2 &param2)
 			throw() {
-		const auto level = LEVEL_WARN;
+		const auto &level = trdk::Lib::LOG_LEVEL_WARN;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -904,7 +905,7 @@ namespace trdk { namespace Log {
 				const Param2 &param2,
 				const Param3 &param3)
 			throw() {
-		const auto level = LEVEL_WARN;
+		const auto &level = trdk::Lib::LOG_LEVEL_WARN;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -925,7 +926,7 @@ namespace trdk { namespace Log {
 				const Param3 &param3,
 				const Param4 &param4)
 			throw() {
-		const auto level = LEVEL_WARN;
+		const auto &level = trdk::Lib::LOG_LEVEL_WARN;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -953,7 +954,7 @@ namespace trdk { namespace Log {
 				const Param4 &param4,
 				const Param5 &param5)
 			throw() {
-		const auto level = LEVEL_WARN;
+		const auto &level = trdk::Lib::LOG_LEVEL_WARN;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -984,7 +985,7 @@ namespace trdk { namespace Log {
 				const Param5 &param5,
 				const Param6 &param6)
 			throw() {
-		const auto level = LEVEL_WARN;
+		const auto &level = trdk::Lib::LOG_LEVEL_WARN;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1018,7 +1019,7 @@ namespace trdk { namespace Log {
 				const Param6 &param6,
 				const Param7 &param7)
 			throw() {
-		const auto level = LEVEL_WARN;
+		const auto &level = trdk::Lib::LOG_LEVEL_WARN;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1055,7 +1056,7 @@ namespace trdk { namespace Log {
 				const Param7 &param7,
 				const Param8 &param8)
 			throw() {
-		const auto level = LEVEL_WARN;
+		const auto &level = trdk::Lib::LOG_LEVEL_WARN;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1095,7 +1096,7 @@ namespace trdk { namespace Log {
 				const Param8 &param8,
 				const Param9 &param9)
 			throw() {
-		const auto level = LEVEL_WARN;
+		const auto &level = trdk::Lib::LOG_LEVEL_WARN;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1138,7 +1139,7 @@ namespace trdk { namespace Log {
 				const Param9 &param9,
 				const Param10 &param10)
 			throw() {
-		const auto level = LEVEL_WARN;
+		const auto &level = trdk::Lib::LOG_LEVEL_WARN;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1166,7 +1167,7 @@ namespace trdk { namespace Log {
 namespace trdk { namespace Log {
 
 	inline void Error(const char *str) throw() {
-		const auto level = LEVEL_ERROR;
+		const auto &level = trdk::Lib::LOG_LEVEL_ERROR;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1175,7 +1176,7 @@ namespace trdk { namespace Log {
 
 	template<typename Callback>
 	inline void ErrorEx(const Callback &callback) throw() {
-		const auto level = LEVEL_ERROR;
+		const auto &level = trdk::Lib::LOG_LEVEL_ERROR;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1184,7 +1185,7 @@ namespace trdk { namespace Log {
 
 	template<typename Params>
 	inline void Error(const char *str, const Params &params) throw() {
-		const auto level = LEVEL_ERROR;
+		const auto &level = trdk::Lib::LOG_LEVEL_ERROR;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1197,7 +1198,7 @@ namespace trdk { namespace Log {
 				const Param1 &param1,
 				const Param2 &param2)
 			throw() {
-		const auto level = LEVEL_ERROR;
+		const auto &level = trdk::Lib::LOG_LEVEL_ERROR;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1214,7 +1215,7 @@ namespace trdk { namespace Log {
 				const Param2 &param2,
 				const Param3 &param3)
 			throw() {
-		const auto level = LEVEL_ERROR;
+		const auto &level = trdk::Lib::LOG_LEVEL_ERROR;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1235,7 +1236,7 @@ namespace trdk { namespace Log {
 				const Param3 &param3,
 				const Param4 &param4)
 			throw() {
-		const auto level = LEVEL_ERROR;
+		const auto &level = trdk::Lib::LOG_LEVEL_ERROR;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1263,7 +1264,7 @@ namespace trdk { namespace Log {
 				const Param4 &param4,
 				const Param5 &param5)
 			throw() {
-		const auto level = LEVEL_ERROR;
+		const auto &level = trdk::Lib::LOG_LEVEL_ERROR;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1294,7 +1295,7 @@ namespace trdk { namespace Log {
 				const Param5 &param5,
 				const Param6 &param6)
 			throw() {
-		const auto level = LEVEL_ERROR;
+		const auto &level = trdk::Lib::LOG_LEVEL_ERROR;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1328,7 +1329,7 @@ namespace trdk { namespace Log {
 				const Param6 &param6,
 				const Param7 &param7)
 			throw() {
-		const auto level = LEVEL_ERROR;
+		const auto &level = trdk::Lib::LOG_LEVEL_ERROR;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1365,7 +1366,7 @@ namespace trdk { namespace Log {
 				const Param7 &param7,
 				const Param8 &param8)
 			throw() {
-		const auto level = LEVEL_ERROR;
+		const auto &level = trdk::Lib::LOG_LEVEL_ERROR;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1405,7 +1406,7 @@ namespace trdk { namespace Log {
 				const Param8 &param8,
 				const Param9 &param9)
 			throw() {
-		const auto level = LEVEL_ERROR;
+		const auto &level = trdk::Lib::LOG_LEVEL_ERROR;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
@@ -1448,7 +1449,7 @@ namespace trdk { namespace Log {
 				const Param9 &param9,
 				const Param10 &param10)
 			throw() {
-		const auto level = LEVEL_ERROR;
+		const auto &level = trdk::Lib::LOG_LEVEL_ERROR;
 		if (!trdk::Log::IsEventsEnabled(level)) {
 			return;
 		}
