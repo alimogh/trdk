@@ -44,6 +44,9 @@
     <ClCompile Include="TimeMeasurement.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LogState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assert.hpp">
@@ -104,6 +107,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Spin.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AsyncLog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LogState.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Log.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LogDetail.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
