@@ -289,7 +289,6 @@ bool FxArb1::GetEquationPositionWay(size_t equationIndex, bool invert, bool open
 	    }
 	}
 
-	return "";
 }
 
 bool FxArb1::IsEquationOpenedFully(size_t equationIndex) const {
