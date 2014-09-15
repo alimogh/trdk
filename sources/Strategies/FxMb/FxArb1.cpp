@@ -40,6 +40,7 @@ FxArb1::FxArb1(
 	}
 
 	// Loading volume and direction configuration for each symbol:
+	size_t pairIndex[BROKERS_COUNT] = {};
 	conf.ForEachKey(
 		[&](const std::string &key, const std::string &value) -> bool {
 					
@@ -81,14 +82,16 @@ FxArb1::FxArb1(
 				const std::string symbol
 					= boost::trim_copy(subs.back());
 				PositionConf &pos = conf.pos[symbol];
+				AssertEq(0, pos.index);
+				pos.index = pairIndex[brokerIndex - 1]++;
 				const auto &qty = boost::lexical_cast<Qty>(value);
 				pos.qty = abs(qty) * 1000;
 				pos.isLong = qty >= 0;
 				const char *const direction
 					= !pos.isLong ? "short" : "long";
 				GetLog().Info(
-					"Using \"%1%\" with qty %2% (%3%).",
-					boost::make_tuple(symbol, pos.qty, direction));
+					"Using \"%1%\" at %2% with qty %3% (%4%).",
+					boost::make_tuple(symbol, pos.index, pos.qty, direction));
 				return true;
 			}
 
@@ -125,11 +128,19 @@ std::auto_ptr<PositionReporter> FxArb1::CreatePositionReporter() const {
 pt::ptime FxArb1::OnSecurityStart(Security &security) {
 			
 	// New security start - caching security object for fast getting:
-	if (	std::find(
-					m_brokersConf.front().sendList.begin(),
-					m_brokersConf.front().sendList.end(),
-					security.GetSymbol())
-				== m_brokersConf.front().sendList.end()) {
+	bool isSecurityCached = false;
+	foreach (const auto &cahed, m_brokersConf.front().sendList) {
+		if (!cahed.security) {
+			// Cell not set yet, but already allocated (for ex. if we got
+			// call with index 3 before index 1).
+			continue;
+		} else if (cahed.security->GetSymbol() == security.GetSymbol()) {
+			isSecurityCached = true;
+			break;
+		}
+	}
+
+	if (!isSecurityCached) {
 		// not cached yet...
 		foreach (auto &broker, m_brokersConf) {
 			const auto &conf
@@ -142,11 +153,16 @@ pt::ptime FxArb1::OnSecurityStart(Security &security) {
 				throw Exception(
 					"Symbol hasn't Qty and direction configuration");
 			}
+			const auto &pairIndex = conf->second.index;
 			SecurityPositionConf pos;
 			static_cast<PositionConf &>(pos) = conf->second;
 			pos.security = &security;
 			// caching:
-			broker.sendList.push_back(pos);
+			if (pairIndex >= broker.sendList.size()) {
+				broker.sendList.resize(pairIndex + 1);
+			}
+			Assert(!broker.sendList[pairIndex].security);
+			broker.sendList[pairIndex] = pos;
 		}
 	}
 

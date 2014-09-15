@@ -35,18 +35,13 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		};
 
 		struct PositionConf {
+			size_t index;
 			Security *security;
 			Qty qty;
 			bool isLong;
 		};
 		struct SecurityPositionConf : public PositionConf {
-			
 			Security *security;
-			
-			bool operator ==(const trdk::Lib::Symbol &symbol) const {
-				return security->GetSymbol() == symbol;
-			}
-
 		};
 
 		struct BrokerConf {
