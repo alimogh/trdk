@@ -75,12 +75,13 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				double currentResult = .0;
 				// first - call equation
 				const auto &equation = GetEquations()[i];
+				
+				LogBrokersState(i, b1, b2);
+				
 				if (!equation.first(b1, b2, currentResult)) { 
 					// Equation not verified.
 					continue;
 				}
-				
-				GetLog().Debug("currentResult : %1%. Result true", currentResult);
 				
 				// Check current result for best result:
 				if (currentResult > bestEquationsResult) {
