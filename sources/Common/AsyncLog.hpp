@@ -59,7 +59,7 @@ namespace trdk { namespace Lib {
 			log.AppendRecordHead(time);
 			*log.log << '\t';
 			Detail::DumpMultiLineString(message, *log.log);
-			message.empty();
+			message.clear();
 		}
 
 	};
