@@ -126,21 +126,22 @@ std::auto_ptr<PositionReporter> FxArb1::CreatePositionReporter() const {
 }
 
 pt::ptime FxArb1::OnSecurityStart(Security &security) {
+
+	size_t pairIndex = std::numeric_limits<size_t>::max();
 			
 	// New security start - caching security object for fast getting:
-	bool isSecurityCached = false;
 	foreach (const auto &cahed, m_brokersConf.front().sendList) {
 		if (!cahed.security) {
 			// Cell not set yet, but already allocated (for ex. if we got
 			// call with index 3 before index 1).
 			continue;
 		} else if (cahed.security->GetSymbol() == security.GetSymbol()) {
-			isSecurityCached = true;
+			pairIndex = cahed.index;
 			break;
 		}
 	}
 
-	if (!isSecurityCached) {
+	if (pairIndex == std::numeric_limits<size_t>::max()) {
 		// not cached yet...
 		foreach (auto &broker, m_brokersConf) {
 			const auto &conf
@@ -153,7 +154,10 @@ pt::ptime FxArb1::OnSecurityStart(Security &security) {
 				throw Exception(
 					"Symbol hasn't Qty and direction configuration");
 			}
-			const auto &pairIndex = conf->second.index;
+			Assert(
+				std::numeric_limits<size_t>::max() == pairIndex
+				|| pairIndex == conf->second.index);
+			pairIndex = conf->second.index;
 			SecurityPositionConf pos;
 			static_cast<PositionConf &>(pos) = conf->second;
 			pos.security = &security;
@@ -165,6 +169,8 @@ pt::ptime FxArb1::OnSecurityStart(Security &security) {
 			broker.sendList[pairIndex] = pos;
 		}
 	}
+
+	AssertNe(std::numeric_limits<size_t>::max(), pairIndex);
 
 	// Filling matrix "b{x}.p{y}" for broker with market data source
 	// index:
@@ -182,18 +188,7 @@ pt::ptime FxArb1::OnSecurityStart(Security &security) {
 	AssertGt(m_brokersConf.size(), brokerIndex);
 	BrokerConf &broker = m_brokersConf[brokerIndex];
 
-	bool isSet = false;
-	foreach (auto &pair, broker.pairs) {
-		if (!pair) {
-			pair = &security;
-			isSet = true;
-			break;
-		}
-		AssertNe(pair->GetSymbol(), security.GetSymbol());
-		Assert(pair->GetSource() == security.GetSource());
-	}
-
-	if (!isSet) {
+	if (broker.pairs[pairIndex]) {
 		// We have predefined equations which has fixed variables so
 		// configuration must provide required count of pairs.
 		// If isSet is false - configuration provides more pairs then
@@ -205,7 +200,7 @@ pt::ptime FxArb1::OnSecurityStart(Security &security) {
 			boost::make_tuple(PAIRS_COUNT, BROKERS_COUNT));
 		throw Exception("Too much pairs (symbols) provided.");
 	}
-
+	broker.pairs[pairIndex] = &security;
 
 	return Base::OnSecurityStart(security);
 
@@ -328,6 +323,7 @@ void FxArb1::CheckConf() {
 	}
 	
 	foreach (const auto &broker, m_brokersConf) {
+		
 		foreach (const auto *pair, broker.pairs) {
 			if (!pair) {
 				GetLog().Error(
@@ -337,6 +333,24 @@ void FxArb1::CheckConf() {
 					boost::make_tuple(PAIRS_COUNT, BROKERS_COUNT));
 			}
 		}
+
+		// Printing pairs order in sendList (must be the same as in INI-file):
+		std::vector<std::string> pairs;
+		foreach (const auto &pair, broker.sendList) {
+			pairs.push_back(pair.security->GetSymbol().GetSymbol());
+		}
+		GetLog().Info("Send-list pairs order: %1%.", boost::join(pairs, ", "));
+
+		// Printing pairs order for data fields:
+		pairs.clear();
+		foreach (const auto &pair, broker.pairs) {
+			Assert(pair);
+			pairs.push_back(pair->GetSymbol().GetSymbol());
+		}
+		GetLog().Info(
+			"Data fields pairs order: %1%.",
+			boost::join(pairs, ", "));
+
 	}
 
 	m_isPairsByBrokerChecked = true;
