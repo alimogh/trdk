@@ -15,6 +15,41 @@
 
 namespace trdk {
 
+	////////////////////////////////////////////////////////////////////////////////
+
+	struct EquationRecordParam {
+		
+		struct PairRecordParam {
+			// Name of Broker
+			const std::string *broker;
+			// Name of Pair
+			const std::string *name;
+			// Indicates if pair is reversed or not  (TRUE or FALSE)
+			bool reversed;
+			// Bid of pair 1
+			ScaledPrice bid;
+			// Ask of Pair 1
+			ScaledPrice ask;
+			// Reversed Bid if pair is reversed
+			bool bidReversed;
+			// Reversed Ask if pair is reversed
+			bool askReversed;
+		};
+
+		// Opening detected, Opening executed, Closing detected, Closing executed
+		const std::string *action;
+		// Number of equation that was detected
+		size_t equation;
+		
+		PairRecordParam pair1;
+		PairRecordParam pair2;
+		PairRecordParam pair3;
+
+		const std::string *resultOfY1;
+		const std::string *resultOfY2;
+	
+	};
+
 	//////////////////////////////////////////////////////////////////////////
 
 	class TRDK_CORE_API Context : private boost::noncopyable {
@@ -42,6 +77,8 @@ namespace trdk {
 	public:
 
 		trdk::Context::Log & GetLog() const throw();
+
+		void LogEquation(const EquationRecordParam &) const;
 
 		trdk::Lib::TimeMeasurement::Milestones StartStrategyTimeMeasurement()
 				const;
@@ -200,6 +237,95 @@ namespace trdk {
 				throw() {
 			trdk::Log::Trading(tag, str, params);
 		}
+		
+		void Equation(const EquationRecordParam &params) {
+			m_context.LogEquation(params);
+		}
+	
+		void Equation(
+					// Opening detected, Opening executed, Closing detected, Closing executed
+					// ex: Ouverture Initiale (theoretical opening)
+					const std::string &action,
+					// Number of equation that was detected
+					// ex: 1
+					size_t equation,
+					// Name of Broker
+					// ex: Fastmatch
+					const std::string &broker1,
+					// Name of Pair
+					// ex: EUR/USD
+					const std::string &pair1,
+					// Indicates if pair is reversed or not  (TRUE or FALSE)
+					// False
+					bool pair1Reversed,
+					// Bid of pair 1
+					// ex: 1.39186
+					const ScaledPrice &pair1Bid,
+					// Ask of Pair 1
+					// ex: 1.39191
+					const ScaledPrice &pair1Ask,
+					// Reversed Bid if pair is reversed
+					// ex: 0
+					bool pair1BidReversed,
+					// Reversed Ask if pair is reversed
+					// ex: 0
+					bool pair1AskReversed,
+					const std::string &broker2,
+					const std::string &pair2,
+					bool pair2Reversed,
+					const ScaledPrice &pair2Bid,
+					const ScaledPrice &pair2Ask,
+					bool pair2BidReversed,
+					bool pair2AskReversed,
+					const std::string &broker3,
+					const std::string &pair3,
+					bool pair3Reversed,
+					const ScaledPrice &pair3Bid,
+					const ScaledPrice &pair3Ask,
+					bool pair3BidReversed,
+					bool pair3AskReversed,
+					const std::string &resultOfY1,
+					const std::string &resultOfY2) {
+			const EquationRecordParam params = {
+				&action,
+				equation,
+				{
+					&broker1,
+					&pair1,
+					pair1Reversed,
+					pair1Bid,
+					pair1Ask,
+					pair1BidReversed,
+					pair1AskReversed
+				},
+				{
+					&broker2,
+					&pair2,
+					pair2Reversed,
+					pair2Bid,
+					pair2Ask,
+					pair2BidReversed,
+					pair2AskReversed
+				},
+				{
+					&broker3,
+					&pair3,
+					pair3Reversed,
+					pair3Bid,
+					pair3Ask,
+					pair3BidReversed,
+					pair3AskReversed
+				},
+				&resultOfY1,
+				&resultOfY2
+			};
+			Equation(params);
+		}
+
+	private:
+
+		const trdk::Context &m_context;
+
 	};
 
 	//////////////////////////////////////////////////////////////////////////

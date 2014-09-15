@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Context.hpp"
+#include "Common/AsyncLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -31,7 +32,8 @@ Context::UnknownSecurity::UnknownSecurity() throw()
 
 //////////////////////////////////////////////////////////////////////////
 
-Context::Log::Log(const Context &) {
+Context::Log::Log(const Context &ctx)
+		: m_context(ctx) {
 	//...//
 }
 
@@ -246,6 +248,138 @@ class Context::Implementation : private boost::noncopyable {
 
 public:
 
+	struct EquationRecord : public AsyncLogRecord {
+
+		typedef std::vector<char> String;
+		
+		pt::ptime time;
+
+		struct PairRecord {
+			// Name of Broker
+			String broker;
+			// Name of Pair
+			String name;
+			// Indicates if pair is reversed or not  (TRUE or FALSE)
+			bool reversed;
+			// Bid of pair 1
+			ScaledPrice bid;
+			// Ask of Pair 1
+			ScaledPrice ask;
+			// Reversed Bid if pair is reversed
+			bool bidReversed;
+			// Reversed Ask if pair is reversed
+			bool askReversed;
+		};
+
+		// Opening detected, Opening executed, Closing detected, Closing executed
+		String action;
+		// Number of equation that was detected
+		size_t equation;
+		
+		PairRecord pair1;
+		PairRecord pair2;
+		PairRecord pair3;
+
+		String resultOfY1;
+		String resultOfY2;
+
+		static void SavePair(
+					const EquationRecordParam::PairRecordParam &param,
+					PairRecord &record) {
+			std::copy(
+				param.broker->begin(),
+				param.broker->end(),
+				std::back_inserter(record.broker));
+			record.broker.push_back(0);
+			std::copy(
+				param.name->begin(),
+				param.name->end(),
+				std::back_inserter(record.name));
+			record.name.push_back(0);
+			record.reversed = param.reversed;
+			record.bid = param.bid;
+			record.ask = param.ask;
+			record.bidReversed = param.bidReversed;
+			record.askReversed = param.askReversed;
+		}
+
+		void Save(const pt::ptime &time, const EquationRecordParam &params) {
+
+			this->time = time;
+
+			std::copy(
+				params.action->begin(),
+				params.action->end(),
+				std::back_inserter(action));
+			action.push_back(0);
+
+			equation = params.equation;
+
+			SavePair(params.pair1, pair1);
+			SavePair(params.pair2, pair2);
+			SavePair(params.pair3, pair3);
+
+			std::copy(
+				params.resultOfY1->begin(),
+				params.resultOfY1->end(),
+				std::back_inserter(resultOfY1));
+			resultOfY1.push_back(0);
+			std::copy(
+				params.resultOfY2->begin(),
+				params.resultOfY2->end(),
+				std::back_inserter(resultOfY2));
+			resultOfY2.push_back(0);
+
+		}
+
+		static void FlushPair(PairRecord &record, LogState &log) {
+			*log.log
+				<< &record.broker[0]
+				<< ';' << &record.name[0]
+				<< ';' << record.reversed
+				<< ';' << record.bid
+				<< ';' << record.ask
+				<< ';' << record.bidReversed
+				<< ';' << record.askReversed
+				<< ';';
+			record.broker.clear();
+			record.name.clear();
+		}
+
+		void Flush(LogState &log) {
+			
+			Assert(log.log);
+			
+			*log.log
+				// <<  List of opportunities here << ';'
+				<< time << ';' << &action[0] << ';';
+			action.clear();
+			
+			FlushPair(pair1, log);
+			// 5 empty fields:
+			*log.log << ";;;;;";
+			
+			FlushPair(pair2, log);
+			// 5 empty fields:
+			*log.log << ";;;;;";
+
+			FlushPair(pair3, log);
+			// 5 empty fields:
+			*log.log << ";;;;;";
+
+			*log.log << &resultOfY1[0] << ';';
+			resultOfY1.clear();
+
+			*log.log << &resultOfY2[0] << ';';
+			resultOfY2.clear();
+
+		}
+			
+	};
+
+	std::ofstream m_equationLogStream;
+	AsyncLog<EquationRecord> m_equationLog;
+
 	Context::Log m_log;
 	Params m_params;
 
@@ -255,7 +389,16 @@ public:
 			: m_log(context),
 			m_params(context),
 			m_latanReport(m_log) {
-		//...//
+		const fs::path logPath
+			= Lib::GetExeWorkingDir() / "logs" / "strategies.log";
+		boost::filesystem::create_directories(logPath.branch_path());
+		std::ofstream log(
+			logPath.string().c_str(),
+			std::ios::ate | std::ios::app);
+		if (!log) {
+			throw Exception("Failed to open Strategies report file");
+		}
+		m_equationLog.EnableStream(m_equationLogStream);
 	}
 
 };
@@ -272,6 +415,10 @@ Context::~Context() {
 
 Context::Log & Context::GetLog() const throw() {
 	return m_pimpl->m_log;
+}
+
+void Context::LogEquation(const EquationRecordParam &params) const {
+	m_pimpl->m_equationLog.AppendRecord(boost::get_system_time(), params);
 }
 
 Security & Context::GetSecurity(const Symbol &symbol) {
