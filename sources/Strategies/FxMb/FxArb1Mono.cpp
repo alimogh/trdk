@@ -75,10 +75,13 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				double currentResult = .0;
 				// first - call equation
 				const auto &equation = GetEquations()[i];
-				if (!equation.first(b1, b2, currentResult)) {
+				if (!equation.first(b1, b2, currentResult)) { 
 					// Equation not verified.
 					continue;
 				}
+				
+				GetLog().Debug("currentResult : %1%. Result true", currentResult);
+				
 				// Check current result for best result:
 				if (currentResult > bestEquationsResult) {
 					bestEquationsResult = currentResult;
@@ -106,7 +109,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					if (equation.first(b1, b2, currentResult)) {
 						// Opposite equation verified, we close positions
 						OnEquation(
-							oppositeEquationIndex,
+							currentEquationIndex,
+							false,
 							b1,
 							b2,
 							timeMeasurement);
@@ -135,7 +139,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 				return;
 			}
-			OnEquation(bestEquationsIndex, b1, b2, timeMeasurement);
+			
+			GetLog().Debug("Going to open orders on equation %1% / 12", (bestEquationsIndex + 1));
+			
+			OnEquation(bestEquationsIndex, true, b1, b2, timeMeasurement);
 		
 		}
 
@@ -143,6 +150,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		void OnEquation(
 					size_t equationIndex,
+					bool opening,
 					const Broker &b1,
 					const Broker &b2,
 					TimeMeasurement::Milestones &timeMeasurement) {
@@ -157,6 +165,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			StartPositionsOpening(
 				equationIndex,
 				opposideEquationIndex,
+				opening,
 				b1,
 				b2,
 				timeMeasurement);

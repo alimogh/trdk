@@ -225,41 +225,71 @@ FxArb1::Equations FxArb1::CreateEquations() {
 	};
 	typedef const Broker B;
 
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid + b2.p2.bid + (1 / b1.p3.bid) / 3;	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid + (1 / b2.p3.bid) + b1.p2.bid / 3;	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid + b2.p1.bid + (1 / b1.p3.bid) / 3;	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid + (1 / b2.p3.bid) + b1.p1.bid / 3;	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.bid) + b2.p1.bid + b1.p2.bid / 3;	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.bid) + b2.p2.bid + b1.p1.bid / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid 		* b2.p2.bid 		* (1 / b1.p3.ask);	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid 		* (1 / b2.p3.ask) 	* b1.p2.bid;		return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid 		* b2.p1.bid 		* (1 / b1.p3.ask);	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid 		* (1 / b2.p3.ask) 	* b1.p1.bid;		return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.ask) 	* b2.p1.bid 		* b1.p2.bid;		return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.ask) 	* b2.p2.bid 		* b1.p1.bid;		return result > 1.000055; });
 	
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask) + (1 / b2.p2.ask) + b1.p3.ask / 3;	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask) + b2.p3.ask + (1 / b1.p2.ask) / 3;	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask) + (1 / b2.p1.ask) + b1.p3.ask / 3;	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask) + b2.p3.ask + (1 / b1.p1.ask) / 3;	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.ask + (1 / b2.p1.ask) + (1 / b1.p2.ask) / 3;	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.ask + (1 / b2.p2.ask) + (1 / b1.p1.ask) / 3;	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask) 	* (1 / b2.p2.ask) 	* b1.p3.bid;		return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask) 	* b2.p3.bid 		* (1 / b1.p2.ask);	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask) 	* (1 / b2.p1.ask) 	* b1.p3.bid;		return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask) 	* b2.p3.bid 		* (1 / b1.p1.ask);	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid 		* (1 / b2.p1.ask) 	* (1 / b1.p2.ask);	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid 		* (1 / b2.p2.ask) 	* (1 / b1.p1.ask);	return result > 1.000055; });
 
 	i = 0;
 
-	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p1.bid, b2.p2.bid, (1 / b1.p3.bid), b1.p1.bid + b2.p2.bid + (1 / b1.p3.bid) / 3));	});
-	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p1.bid, (1 / b2.p3.bid), b1.p2.bid, b1.p1.bid + (1 / b2.p3.bid) + b1.p2.bid / 3));	});
-	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p2.bid, b2.p1.bid, (1 / b1.p3.bid), b1.p2.bid + b2.p1.bid + (1 / b1.p3.bid) / 3));	});
-	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p2.bid, (1 / b2.p3.bid), b1.p1.bid, b1.p2.bid + (1 / b2.p3.bid) + b1.p1.bid / 3));	});
-	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple((1 / b1.p3.bid), b2.p1.bid, b1.p2.bid, (1 / b1.p3.bid) + b2.p1.bid + b1.p2.bid / 3));	});
-	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple((1 / b1.p3.bid), b2.p2.bid, b1.p1.bid, (1 / b1.p3.bid) + b2.p2.bid + b1.p1.bid / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("%1% * %2% * %3% = %4%",	boost::make_tuple(b1.p1.bid, b2.p2.bid, (1 / b1.p3.ask), b1.p1.bid * b2.p2.bid * (1 / b1.p3.ask)));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("%1% * %2% * %3% = %4%",	boost::make_tuple(b1.p1.bid, (1 / b2.p3.ask), b1.p2.bid, b1.p1.bid * (1 / b2.p3.ask) * b1.p2.bid));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("%1% * %2% * %3% = %4%",	boost::make_tuple(b1.p2.bid, b2.p1.bid, (1 / b1.p3.ask), b1.p2.bid * b2.p1.bid * (1 / b1.p3.ask)));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("%1% * %2% * %3% = %4%",	boost::make_tuple(b1.p2.bid, (1 / b2.p3.ask), b1.p1.bid, b1.p2.bid * (1 / b2.p3.ask) * b1.p1.bid));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("%1% * %2% * %3% = %4%",	boost::make_tuple((1 / b1.p3.ask), b2.p1.bid, b1.p2.bid, (1 / b1.p3.ask) * b2.p1.bid * b1.p2.bid));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("%1% * %2% * %3% = %4%",	boost::make_tuple((1 / b1.p3.ask), b2.p2.bid, b1.p1.bid, (1 / b1.p3.ask) * b2.p2.bid * b1.p1.bid));	});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple((1 / b1.p1.ask), (1 / b2.p2.ask), b1.p3.ask, (1 / b1.p1.ask) + (1 / b2.p2.ask) + b1.p3.ask / 3));	});
-	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple((1 / b1.p1.ask), b2.p3.ask, (1 / b1.p2.ask), (1 / b1.p1.ask) + b2.p3.ask + (1 / b1.p2.ask) / 3));	});
-	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple((1 / b1.p2.ask), (1 / b2.p1.ask), b1.p3.ask, (1 / b1.p2.ask) + (1 / b2.p1.ask) + b1.p3.ask / 3));	});
-	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple((1 / b1.p2.ask), b2.p3.ask, (1 / b1.p1.ask), (1 / b1.p2.ask) + b2.p3.ask + (1 / b1.p1.ask) / 3));	});
-	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p3.ask, (1 / b2.p1.ask), (1 / b1.p2.ask), b1.p3.ask + (1 / b2.p1.ask) + (1 / b1.p2.ask) / 3));	});
-	addPrint([](const B &b1, const B &b2, Module::Log &log) {    log.Trading("%1% + %2% + %3% / 3 = %4%",		boost::make_tuple(b1.p3.ask, (1 / b2.p2.ask), (1 / b1.p1.ask), b1.p3.ask + (1 / b2.p2.ask) + (1 / b1.p1.ask) / 3));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("%1% * %2% * %3% = %4%",	boost::make_tuple((1 / b1.p1.ask), (1 / b2.p2.ask), b1.p3.bid, (1 / b1.p1.ask) * (1 / b2.p2.ask) * b1.p3.bid));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("%1% * %2% * %3% = %4%",	boost::make_tuple((1 / b1.p1.ask), b2.p3.bid, (1 / b1.p2.ask), (1 / b1.p1.ask) * b2.p3.bid * (1 / b1.p2.ask)));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("%1% * %2% * %3% = %4%",	boost::make_tuple((1 / b1.p2.ask), (1 / b2.p1.ask), b1.p3.bid, (1 / b1.p2.ask) * (1 / b2.p1.ask) * b1.p3.bid));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("%1% * %2% * %3% = %4%",	boost::make_tuple((1 / b1.p2.ask), b2.p3.bid, (1 / b1.p1.ask), (1 / b1.p2.ask) * b2.p3.bid * (1 / b1.p1.ask)));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("%1% * %2% * %3% = %4%",	boost::make_tuple(b1.p3.bid, (1 / b2.p1.ask), (1 / b1.p2.ask), b1.p3.bid * (1 / b2.p1.ask) * (1 / b1.p2.ask)));	});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("%1% * %2% * %3% = %4%",	boost::make_tuple(b1.p3.bid, (1 / b2.p2.ask), (1 / b1.p1.ask), b1.p3.bid * (1 / b2.p2.ask) * (1 / b1.p1.ask)));	});
 
 	AssertEq(EQUATIONS_COUNT, result.size());
 	result.shrink_to_fit();
 
 	return result;
 
+}
+
+bool FxArb1::GetEquationPositionWay(size_t equationIndex, bool invert, bool opening)
+{
+	GetLog().Debug("GetEquationPositionWay for equation %1% / 11 on %2% will %3% be invert", boost::make_tuple(equationIndex, opening ? "opening" : "closing", invert ? "" : "not"));
+
+	if (opening)
+	{
+	    if (!invert)
+	    {
+		return ((equationIndex < (EQUATIONS_COUNT / 2)) ? false : true);
+	    }
+	    else
+	    {
+		return ((equationIndex < (EQUATIONS_COUNT / 2)) ? true : false);
+	    }
+	}
+	else
+	{
+	    if (!invert)
+	    {
+		return ((equationIndex < (EQUATIONS_COUNT / 2)) ? true : false);
+	    }
+	    else
+	    {
+		return ((equationIndex < (EQUATIONS_COUNT / 2)) ? false : true);
+	    }
+	}
+
+	return "";
 }
 
 bool FxArb1::IsEquationOpenedFully(size_t equationIndex) const {
@@ -326,6 +356,7 @@ void FxArb1::LogBrokersState(
 void FxArb1::StartPositionsOpening(
 			size_t equationIndex,
 			size_t opposideEquationIndex,
+			bool opening,
 			const Broker &b1,
 			const Broker &b2,
 			TimeMeasurement::Milestones &timeMeasurement) {
@@ -364,19 +395,10 @@ void FxArb1::StartPositionsOpening(
 			// Position must be "shared" as it uses pattern
 			// "shared from this":
 			boost::shared_ptr<EquationPosition> position;
-			if (!conf.isLong) {
-				position.reset(
-					new EquationShortPosition(
-						equationIndex,
-						opposideEquationIndex,
-						*this,
-						tradeSystem,
-						*conf.security,
-						conf.security->GetSymbol().GetCashCurrency(),
-						conf.qty,
-						conf.security->GetBidPriceScaled(),
-						timeMeasurement));
-			} else {
+			
+			GetLog().Debug("Equation %1% / 11 pair %2% (%5%) will %3% on %4% with %6% euros", boost::make_tuple(equationIndex, (i + 1), (opening ? "open" : "close"), GetEquationPositionWay(equationIndex, conf.isLong, opening) ? "BUY" : "SELL", conf.security->GetSymbol(), conf.qty));
+			
+			if (GetEquationPositionWay(equationIndex, conf.isLong, opening)) {
 				position.reset(
 					new EquationLongPosition(
 						equationIndex,
@@ -387,6 +409,18 @@ void FxArb1::StartPositionsOpening(
 						conf.security->GetSymbol().GetCashCurrency(),
 						conf.qty,
 						conf.security->GetAskPriceScaled(),
+						timeMeasurement));
+			} else {
+				position.reset(
+					new EquationShortPosition(
+						equationIndex,
+						opposideEquationIndex,
+						*this,
+						tradeSystem,
+						*conf.security,
+						conf.security->GetSymbol().GetCashCurrency(),
+						conf.qty,
+						conf.security->GetBidPriceScaled(),
 						timeMeasurement));
 			}
 
@@ -472,8 +506,8 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 
 	// All equation orders are filled. Now we need to close all
 	// positions for opposite equation.
-	CancelAllInEquationAtMarketPrice(
+	/*CancelAllInEquationAtMarketPrice(
 		position.GetOppositeEquationIndex(),
-		Position::CLOSE_TYPE_TAKE_PROFIT);
+		Position::CLOSE_TYPE_TAKE_PROFIT);*/
 
 }
