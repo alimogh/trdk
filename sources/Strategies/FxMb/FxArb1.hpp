@@ -56,8 +56,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			boost::array<Security *, PAIRS_COUNT> pairs;
 
-			BrokerConf()
-					: name(name) {
+			BrokerConf() {
 				pairs.assign(nullptr);
 			}
 
