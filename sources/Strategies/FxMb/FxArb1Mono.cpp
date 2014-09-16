@@ -123,8 +123,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				return;
 			}
 
-			if (bestEquationsResult == nEquationsIndex) {
-				// not one equation with "true" result exists...
+			if (bestEquationsIndex == nEquationsIndex) {
+				// no one equation with "true" result exists...
 				timeMeasurement.Measure(
 					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 				return;
