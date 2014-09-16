@@ -39,6 +39,15 @@ FxArb1::FxArb1(
 			"Strategy requires exact number of Market Data Sources");
 	}
 
+	{
+		size_t i = 0;
+		GetContext().ForEachMarketDataSource(
+			[&](trdk::MarketDataSource &mds) -> bool {
+				m_brokersConf[i++].name = mds.GetTag();
+				return true;
+			});
+	}
+
 	// Loading volume and direction configuration for each symbol:
 	size_t pairIndex[BROKERS_COUNT] = {};
 	conf.ForEachKey(
