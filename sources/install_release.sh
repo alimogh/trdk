@@ -14,3 +14,5 @@ cp ./Strategies/FxMb/dist/${conf}/GNU-Linux-x86/* ${outputLibDir}
 cp ./Interaction/OnixsFixConnector/dist/${conf}/GNU-Linux-x86/* ${outputLibDir}
 cp ./EngineServer/dist/${conf}/GNU-Linux-x86/* ${outputDir}
 cp ./EngineServer/run.sh ${outputDir}
+cp ./EngineServer/run_mono.sh ${outputDir}
+cp ./EngineServer/run_multi.sh ${outputDir}

@@ -2,4 +2,4 @@
 
 export LD_LIBRARY_PATH=./
 
-./RobotEngine debug etc 2>&1
+./RobotEngine_dbg debug etc/mono 2>&1
