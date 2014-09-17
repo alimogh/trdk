@@ -13,6 +13,7 @@
                 <make-dep-project>../Gateway/Service</make-dep-project>
                 <make-dep-project>../Common</make-dep-project>
                 <make-dep-project>../Interaction/OnixsFixConnector</make-dep-project>
+                <make-dep-project>../Interaction/OnixsHotspot</make-dep-project>
                 <make-dep-project>../PyApi</make-dep-project>
                 <make-dep-project>../Strategies/Test</make-dep-project>
                 <make-dep-project>../Core</make-dep-project>

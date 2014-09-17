@@ -5,10 +5,13 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>Api.h</itemPath>
+      <itemPath>HotspotSecurity.hpp</itemPath>
+      <itemPath>Util.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
+      <itemPath>HotspotStream.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -85,13 +88,19 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore_dbg.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
-            <linkerLibFileItem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0.tar\OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0/lib/libOnixS.HotspotItchHandlerCpp.so</linkerLibFileItem>
+            <linkerLibFileItem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0/lib/libOnixS.HotspotItchHandlerCpp.so</linkerLibFileItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="HotspotSecurity.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="HotspotStream.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Util.hpp" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="2">
@@ -160,13 +169,19 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
-            <linkerLibFileItem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0.tar\OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0/lib/libOnixS.HotspotItchHandlerCpp.so</linkerLibFileItem>
+            <linkerLibFileItem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0/lib/libOnixS.HotspotItchHandlerCpp.so</linkerLibFileItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="HotspotSecurity.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="HotspotStream.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Util.hpp" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

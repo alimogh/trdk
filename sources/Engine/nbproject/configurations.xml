@@ -159,6 +159,16 @@
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
+          <makeArtifact PL="../Interaction/OnixsHotspot"
+                        CT="2"
+                        CN="Debug"
+                        AC="true"
+                        BL="true"
+                        WD="../Interaction/OnixsHotspot"
+                        BC="${MAKE}  -f Makefile CONF=Debug"
+                        CC="${MAKE}  -f Makefile CONF=Debug clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsHotspot_dbg.${CND_DLIB_EXT}">
+          </makeArtifact>
         </requiredProjects>
       </compileType>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
@@ -322,6 +332,16 @@
                         BC="${MAKE}  -f Makefile CONF=Release"
                         CC="${MAKE}  -f Makefile CONF=Release clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT}">
+          </makeArtifact>
+          <makeArtifact PL="../Interaction/OnixsHotspot"
+                        CT="2"
+                        CN="Release"
+                        AC="false"
+                        BL="true"
+                        WD="../Interaction/OnixsHotspot"
+                        BC="${MAKE}  -f Makefile CONF=Release"
+                        CC="${MAKE}  -f Makefile CONF=Release clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsHotspot.${CND_DLIB_EXT}">
           </makeArtifact>
         </requiredProjects>
       </compileType>
