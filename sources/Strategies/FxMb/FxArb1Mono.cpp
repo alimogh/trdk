@@ -106,7 +106,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					double currentResult = .0;
 					const auto &equation
 						= GetEquations()[oppositeEquationIndex];
-					// fisrt - calls eqution
+					// first - calls equation
 					if (equation.first(b1, b2, currentResult)) {
 						// Opposite equation verified, we close positions
 						OnEquation(

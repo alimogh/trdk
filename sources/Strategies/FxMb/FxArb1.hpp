@@ -39,6 +39,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			Security *security;
 			Qty qty;
 			bool isLong;
+			double requiredVol;
 		};
 		struct SecurityPositionConf : public PositionConf {
 			Security *security;

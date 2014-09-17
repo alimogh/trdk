@@ -88,19 +88,31 @@ FxArb1::FxArb1(
 			// Getting qty and side:
 			if (	subs.size() == 2
 					&& boost::iequals(subs.front(), "qty")) {
-				const std::string symbol
-					= boost::trim_copy(subs.back());
+				const std::string symbol = boost::trim_copy(subs.back());
 				PositionConf &pos = conf.pos[symbol];
 				AssertEq(0, pos.index);
 				pos.index = pairIndex[brokerIndex - 1]++;
 				const auto &qty = boost::lexical_cast<Qty>(value);
 				pos.qty = abs(qty) * 1000;
 				pos.isLong = qty >= 0;
+				pos.requiredVol = 3.0;
 				const char *const direction
 					= !pos.isLong ? "short" : "long";
 				GetLog().Info(
 					"Using \"%1%\" at %2% with qty %3% (%4%).",
 					boost::make_tuple(symbol, pos.index, pos.qty, direction));
+				return true;
+			}
+
+			// Getting required volume:
+			if (	subs.size() == 2
+					&& boost::iequals(subs.front(), "requiredVol")) {
+				const std::string symbol = boost::trim_copy(subs.back());
+				PositionConf &pos = conf.pos[symbol];
+				pos.requiredVol = boost::lexical_cast<double>(value);
+				GetLog().Info(
+					"Requiring %1%%% availability for \"%2%\".",
+					boost::make_tuple(pos.requiredVol * 100, symbol));
 				return true;
 			}
 
@@ -450,6 +462,30 @@ void FxArb1::StartPositionsOpening(
 		"Product of Y2 detected");
 
 	try {
+
+		// Check for required volume for each pair:
+		foreach (const auto &conf, broker.sendList) {
+			const Qty &actualQty = conf.isLong
+				?	conf.security->GetAskQty()
+				:	conf.security->GetBidQty();
+			if (conf.qty * conf.requiredVol > actualQty) {
+				GetLog().TradingEx(
+					[&]() -> boost::format {
+						boost::format message(
+							"Can't trade: required %1% * %2% = %3% > %4%"
+								" for %5% %6%, but it's not.");
+						message
+							%	conf.qty
+							%	conf.requiredVol
+							%	actualQty
+							%	(conf.qty * conf.requiredVol)
+							%	conf.security->GetSymbol().GetSymbol()
+							%	(conf.isLong ? "ask" : "bid");
+						return message;
+					});
+				return;
+			}
+		}
 
 		// For each configured symbol we create position object and
 		// sending open-order:
