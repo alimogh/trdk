@@ -65,8 +65,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			// Call with actual prices each equation and search for best
 			// equation:
 			for (size_t i = 0; i < GetEquations().size(); ++i) {
+				
+				LogBrokersState(i, b1, b2);
 
 				if (GetEquationPosition(i).activeCount) {
+					//GetLog().Debug("Equation %1% has active position", (int)i);
 					currentEquationIndex = i;
 					break;
 				}
@@ -75,8 +78,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				double currentResult = .0;
 				// first - call equation
 				const auto &equation = GetEquations()[i];
-				
-				LogBrokersState(i, b1, b2);
 				
 				if (!equation.first(b1, b2, currentResult)) { 
 					// Equation not verified.
@@ -102,19 +103,28 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// but this orders still not updated own status (opening for
 				// this, closing for opposite) as it very fast MD updates, much
 				// faster then orders update.
+				//GetLog().Debug("Trying to close on equation %1%.", (int)oppositeEquationIndex);
+
+					
 				if (!GetEquationPosition(oppositeEquationIndex).activeCount) {
 					double currentResult = .0;
 					const auto &equation
 						= GetEquations()[oppositeEquationIndex];
 					// first - calls equation
 					if (equation.first(b1, b2, currentResult)) {
+			
+						GetLog().Debug("Going to close orders on equation %1% / 12", (oppositeEquationIndex));
+
 						// Opposite equation verified, we close positions
-						OnEquation(
+						/*OnEquation(
 							currentEquationIndex,
 							false,
 							b1,
 							b2,
-							timeMeasurement);
+							timeMeasurement);*/
+						CancelAllInEquationAtMarketPrice(
+						    currentEquationIndex,
+						    Position::CLOSE_TYPE_TAKE_PROFIT);
 						return;
 					}
 				}
