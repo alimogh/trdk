@@ -427,7 +427,7 @@ void FxArb1::StartPositionsOpening(
 
 	GetContext().GetLog().Equation(
 		
-		opening ? "Opening detected" : "Closing detected",
+		"Opening detected",
 		equationIndex,
 		
 		// broker 1:
@@ -440,7 +440,7 @@ void FxArb1::StartPositionsOpening(
 		false, // Reversed Ask if pair is reversed
 		
 		// broker 2:
-		GetBrokerConf(2).name,
+		GetBrokerConf<2>().name,
 		broker.sendList[2].security->GetSymbol().GetSymbol(),
 		false, // Indicates if pair is reversed or not  (TRUE or FALSE)
 		b2.p2.bid,
@@ -586,10 +586,10 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 		
 		if (equationPositions.activeCount == 0) {
 
-			const auto &b1 = GetBroker(1);
-			const auto &broker1 = GetBrokerConf(1);
-			const auto &b2 = GetBroker(2);
-			const auto &broker2 = GetBrokerConf(2);
+			const auto &b1 = GetBroker<1>();
+			const auto &broker1 = GetBrokerConf<1>();
+			const auto &b2 = GetBroker<2>();
+			const auto &broker2 = GetBrokerConf<2>();
 			
 			GetContext().GetLog().Equation(
 		
@@ -606,7 +606,7 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 				false, // Reversed Ask if pair is reversed
 		
 				// broker 2:
-				GetBrokerConf(2).name,
+				GetBrokerConf<2>().name,
 				broker2.sendList[2].security->GetSymbol().GetSymbol(),
 				false, // Indicates if pair is reversed or not  (TRUE or FALSE)
 				b2.p2.bid,
@@ -651,10 +651,10 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 
 	{
 
-		const auto &b1 = GetBroker(1);
-		const auto &broker1 = GetBrokerConf(1);
-		const auto &b2 = GetBroker(2);
-		const auto &broker2 = GetBrokerConf(2);
+		const auto &b1 = GetBroker<1>();
+		const auto &broker1 = GetBrokerConf<1>();
+		const auto &b2 = GetBroker<2>();
+		const auto &broker2 = GetBrokerConf<2>();
 			
 		GetContext().GetLog().Equation(
 		
@@ -671,7 +671,7 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 			false, // Reversed Ask if pair is reversed
 		
 			// broker 2:
-			GetBrokerConf(2).name,
+			GetBrokerConf<2>().name,
 			broker2.sendList[2].security->GetSymbol().GetSymbol(),
 			false, // Indicates if pair is reversed or not  (TRUE or FALSE)
 			b2.p2.bid,
