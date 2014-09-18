@@ -51,8 +51,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			CheckConf();
 
 			// Getting more human readable format:
-			const Broker &b1 = GetBroker(1);
-			const Broker &b2 = GetBroker(2);
+			const Broker &b1 = GetBroker<1>();
+			const Broker &b2 = GetBroker<2>();
 			if (!b1 || !b2) {
 				// Not all data received yet (from streams)...
 				return;
@@ -66,10 +66,15 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			// equation:
 			for (size_t i = 0; i < GetEquations().size(); ++i) {
 				
-				LogBrokersState(i, b1, b2);
+				// LogBrokersState(i, b1, b2);
 
-				if (GetEquationPosition(i).activeCount) {
-					//GetLog().Debug("Equation %1% has active position", (int)i);
+				const auto &positions = GetEquationPosition(i);
+				// activeCount > 0 says that it has "broker postions",
+				// positions.empty() that we already sent orders to close.
+				// Together - we sent orders, but not yet received update
+				// from broker. So this position will be closed in any case
+				// - command with MKT orders already sent.
+				if (positions.activeCount && !positions.positions.empty()) {
 					currentEquationIndex = i;
 					break;
 				}
@@ -107,33 +112,38 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 					
 				if (!GetEquationPosition(oppositeEquationIndex).activeCount) {
-					double currentResult = .0;
+
 					const auto &equation
 						= GetEquations()[oppositeEquationIndex];
 
-					LogBrokersState(oppositeEquationIndex, b1, b2);
-					
-					// first - calls equation
+					double currentResult = .0;
 					if (equation.first(b1, b2, currentResult)) {
-			
-						GetLog().Debug("Going to close orders on equation %1% / 12", (oppositeEquationIndex));
 
-						// Opposite equation verified, we close positions
-						/*OnEquation(
-							currentEquationIndex,
-							false,
-							b1,
-							b2,
-							timeMeasurement);*/
+						// Opposite equation verified, we close current
+						// equation position and will start new after (if
+						// at this time one of equation will return "true"
+						// again).
+
+						GetLog().Debug(
+							"Going to close orders on equation %1% / 12",
+							oppositeEquationIndex);
+
 						CancelAllInEquationAtMarketPrice(
-						    currentEquationIndex,
-						    Position::CLOSE_TYPE_TAKE_PROFIT);
+							currentEquationIndex,
+							Position::CLOSE_TYPE_TAKE_PROFIT);
+
+						timeMeasurement.Measure(
+							TimeMeasurement::SM_STRATEGY_DECISION_START);
 						return;
+
 					}
+
 				}
+
 				timeMeasurement.Measure(
 					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 				return;
+			
 			}
 
 			if (bestEquationsIndex == nEquationsIndex) {
@@ -156,7 +166,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			
 			GetLog().Debug("Going to open orders on equation %1% / 12", (bestEquationsIndex + 1));
 			
-			OnEquation(bestEquationsIndex, true, b1, b2, timeMeasurement);
+			OnEquation(bestEquationsIndex, b1, b2, timeMeasurement);
 		
 		}
 
@@ -164,7 +174,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		void OnEquation(
 					size_t equationIndex,
-					bool opening,
 					const Broker &b1,
 					const Broker &b2,
 					TimeMeasurement::Milestones &timeMeasurement) {
@@ -179,7 +188,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			StartPositionsOpening(
 				equationIndex,
 				opposideEquationIndex,
-				opening,
 				b1,
 				b2,
 				timeMeasurement);

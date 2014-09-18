@@ -237,7 +237,7 @@ FxArb1::Equations FxArb1::CreateEquations() {
 		result[i++].first = equation;
 	};
 	const auto addPrint = [&result, &i](const EquationPrint &equation) {
-		result[i++].second= equation;
+		result[i++].second = equation;
 	};
 	typedef const Broker B;
 
@@ -402,7 +402,6 @@ void FxArb1::LogBrokersState(
 void FxArb1::StartPositionsOpening(
 			size_t equationIndex,
 			size_t opposideEquationIndex,
-			bool opening,
 			const Broker &b1,
 			const Broker &b2,
 			TimeMeasurement::Milestones &timeMeasurement) {
@@ -417,7 +416,7 @@ void FxArb1::StartPositionsOpening(
 	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
 	
 	// Symbols and broker for positions:
-	const BrokerConf &broker = GetBrokerConf(1);
+	const BrokerConf &broker = GetBrokerConf<1>();
 	TradeSystem &tradeSystem1 = GetContext().GetTradeSystem(0);
 	TradeSystem &tradeSystem2 = GetContext().GetTradeSystem(1);
 
@@ -466,9 +465,9 @@ void FxArb1::StartPositionsOpening(
 			// "shared from this":
 			boost::shared_ptr<EquationPosition> position;
 			
-			GetLog().Debug("Equation %1% / 11 pair %2% (%5%) will %3% on %4% with %6% euros", boost::make_tuple(equationIndex, (i + 1), (opening ? "open" : "close"), GetEquationPositionWay(equationIndex, conf.isLong, opening) ? "BUY" : "SELL", conf.security->GetSymbol(), conf.qty));
+			GetLog().Debug("Equation %1% / 11 pair %2% (%5%) will %3% on %4% with %6% euros", boost::make_tuple(equationIndex, (i + 1), "open", GetEquationPositionWay(equationIndex, conf.isLong, true) ? "BUY" : "SELL", conf.security->GetSymbol(), conf.qty));
 			
-			if (GetEquationPositionWay(equationIndex, conf.isLong, opening)) {
+			if (GetEquationPositionWay(equationIndex, conf.isLong, true)) {
 				position.reset(
 					new EquationLongPosition(
 						equationIndex,
