@@ -160,9 +160,19 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		Broker GetBroker(size_t id) const {
 			return Broker(GetBrokerConf(id).pairs);
 		}
+		template<size_t id>
+		Broker GetBroker() const {
+			return Broker(GetBrokerConf<id>().pairs);
+		}
 
 		const BrokerConf & GetBrokerConf(size_t id) const {
 			AssertLt(0, id);
+			AssertGe(m_brokersConf.size(), id);
+			return m_brokersConf[id - 1];
+		}
+		template<size_t id>
+		const BrokerConf & GetBrokerConf() const {
+			static_assert(0 < id, "Broker Index starts from 1.");
 			AssertGe(m_brokersConf.size(), id);
 			return m_brokersConf[id - 1];
 		}
@@ -202,7 +212,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void StartPositionsOpening(
 					size_t equationIndex,
 					size_t opposideEquationIndex,
-					bool opening,
 					const Broker &b1,
 					const Broker &b2,
 					Lib::TimeMeasurement::Milestones &);
