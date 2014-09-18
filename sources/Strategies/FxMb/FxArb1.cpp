@@ -428,7 +428,7 @@ void FxArb1::StartPositionsOpening(
 
 	GetContext().GetLog().Equation(
 		
-		"Opening detected",
+		opening ? "Opening detected" : "Closing detected",
 		equationIndex,
 		
 		// broker 1:
