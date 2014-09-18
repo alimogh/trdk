@@ -110,6 +110,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					double currentResult = .0;
 					const auto &equation
 						= GetEquations()[oppositeEquationIndex];
+
+					LogBrokersState(oppositeEquationIndex, b1, b2);
+					
 					// first - calls equation
 					if (equation.first(b1, b2, currentResult)) {
 			
