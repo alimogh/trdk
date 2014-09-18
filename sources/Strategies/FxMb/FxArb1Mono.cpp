@@ -92,8 +92,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			}
 
-			if (currentEquationIndex != nEquationsIndex) 
-			{
+			if (currentEquationIndex != nEquationsIndex) {
 				// if there is one order opened, we do nothing on opening but
 				// we check the closing
 				const auto &oppositeEquationIndex
@@ -107,17 +106,15 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				//GetLog().Debug("Trying to close on equation %1%.", (int)oppositeEquationIndex);
 
 					
-				if (!GetEquationPosition(oppositeEquationIndex).activeCount) 
-				{
+				if (!GetEquationPosition(oppositeEquationIndex).activeCount) {
 					double currentResult = .0;
 					const auto &equation
 						= GetEquations()[oppositeEquationIndex];
 
 					LogBrokersState(oppositeEquationIndex, b1, b2);
 					
-					// fisrt - calls eqution
-					if (equation.first(b1, b2, currentResult)) 
-					{
+					// first - calls equation
+					if (equation.first(b1, b2, currentResult)) {
 			
 						GetLog().Debug("Going to close orders on equation %1% / 12", (oppositeEquationIndex));
 
