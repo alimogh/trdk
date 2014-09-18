@@ -863,6 +863,10 @@ OrderId Position::GetOpenOrderId() const throw() {
 Qty Position::GetOpenedQty() const throw() {
 	return m_pimpl->m_opened.qty;
 }
+void Position::SetOpenedQty(const Qty &newQty) const throw() {
+	const Implementation::WriteLock lock(m_pimpl->m_mutex);
+	m_pimpl->m_opened.qty = newQty;
+}
 
 ScaledPrice Position::GetOpenPrice() const {
 	return m_pimpl->m_opened.price.count > 0

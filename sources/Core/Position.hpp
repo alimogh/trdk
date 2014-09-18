@@ -137,6 +137,7 @@ namespace trdk {
 		trdk::ScaledPrice GetOpenStartPrice() const;
 
 		trdk::OrderId GetOpenOrderId() const throw();
+		void SetOpenedQty(const trdk::Qty &) const throw();
 		trdk::Qty GetOpenedQty() const throw();
 		trdk::ScaledPrice GetOpenPrice() const;
 		Time GetOpenTime() const;
