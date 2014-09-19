@@ -74,7 +74,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// Together - we sent orders, but not yet received update
 				// from broker. So this position will be closed in any case
 				// - command with MKT orders already sent.
-				if (positions.activeCount && !positions.positions.empty()) {
+				if (positions.activeCount) {
+					if (positions.positions.empty()) {
+						// Position in closing process - waiting until it 
+						// will be finished:
+						timeMeasurement.Measure(
+							TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
+						return;
+					}
 					currentEquationIndex = i;
 					break;
 				}
