@@ -177,7 +177,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		}
 
 		//! Cancels all opened for equation orders and close positions for it.
-		virtual void CancelAllInEquationAtMarketPrice(
+		virtual size_t CancelAllInEquationAtMarketPrice(
 					size_t equationIndex,
 					const Position::CloseType &closeType)
 				throw() {
@@ -190,7 +190,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				AssertFailNoException();
 				Block();
 			}
-			Base::CancelAllInEquationAtMarketPrice(equationIndex, closeType);
+			return Base::CancelAllInEquationAtMarketPrice(
+				equationIndex,
+				closeType);
 		}
 
 	private:

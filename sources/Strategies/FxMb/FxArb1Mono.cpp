@@ -169,12 +169,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 							oppositeEquationIndex < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
 							oppositeEquationIndex >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
 
+						timeMeasurement.Measure(
+							TimeMeasurement::SM_STRATEGY_DECISION_START);
 						CancelAllInEquationAtMarketPrice(
 							currentEquationIndex,
 							Position::CLOSE_TYPE_TAKE_PROFIT);
-
 						timeMeasurement.Measure(
-							TimeMeasurement::SM_STRATEGY_DECISION_START);
+							TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+
 						return;
 
 					}
