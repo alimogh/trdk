@@ -135,12 +135,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 							"Going to close orders on equation %1% / 12",
 							oppositeEquationIndex);
 
+						timeMeasurement.Measure(
+							TimeMeasurement::SM_STRATEGY_DECISION_START);
 						CancelAllInEquationAtMarketPrice(
 							currentEquationIndex,
 							Position::CLOSE_TYPE_TAKE_PROFIT);
-
 						timeMeasurement.Measure(
-							TimeMeasurement::SM_STRATEGY_DECISION_START);
+							TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+
 						return;
 
 					}
