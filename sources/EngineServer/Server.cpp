@@ -45,6 +45,16 @@ void Server::Run(
 	m_engines.insert(info);
 }
 
+void Server::CancelAllAndStop() {
+	{
+		Lock lock(m_mutex);
+		foreach (const auto &e, m_engines) {
+			e.engine->CancelAllAndBlock();
+		}
+	}
+	StopAll();
+}
+
 void Server::StopAll() {
 	const Lock lock(m_mutex);
 	Engines().swap(m_engines);

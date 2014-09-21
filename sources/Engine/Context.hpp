@@ -28,6 +28,7 @@ namespace trdk { namespace Engine {
 
 		void Start();
 		void Stop();
+		void CancelAllAndBlock();
 
 		void Add(const trdk::Lib::Ini &);
 

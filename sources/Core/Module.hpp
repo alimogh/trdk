@@ -29,7 +29,7 @@ namespace trdk {
 
 		typedef uintmax_t InstanceId;
 
-	protected:
+	public:
 
 		typedef boost::mutex Mutex;
 		typedef Mutex::scoped_lock Lock;
@@ -77,7 +77,11 @@ namespace trdk {
 					const trdk::Lib::IniSectionRef &)
 				= 0;
 
+	public:
+
 		Mutex & GetMutex() const;
+
+	protected:
 
 		void ReportSettings(const trdk::SettingsReport::Report &) const;
 

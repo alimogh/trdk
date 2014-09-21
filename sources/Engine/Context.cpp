@@ -16,6 +16,7 @@
 #include "Core/Settings.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradeSystem.hpp"
+#include "Core/Strategy.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -387,6 +388,36 @@ Security * Engine::Context::FindSecurity(const Symbol &symbol) {
 
 const Security * Engine::Context::FindSecurity(const Symbol &symbol) const {
 	return const_cast<Context *>(this)->FindSecurity(symbol);
+}
+
+void Engine::Context::CancelAllAndBlock() {
+	Strategy::CancelAndBlockCondition condition;
+	boost::mutex::scoped_lock lock(condition.mutex);
+	size_t totalCount = 0;
+	foreach (auto &tagetStrategies, m_pimpl->m_state->strategies) {
+		foreach (auto &strategy, tagetStrategies.second) {
+			{
+				const Strategy::Lock strategyLock(strategy->GetMutex());
+				strategy->CancelAllAndBlock(condition);
+			}
+			++totalCount;
+		}
+	}
+	for ( ; ; ) {
+		size_t blockedCount = totalCount;
+		foreach (auto &tagetStrategies, m_pimpl->m_state->strategies) {
+			foreach (auto &strategy, tagetStrategies.second) {
+				if (strategy->IsBlocked()) {
+					AssertLt(0, blockedCount);
+					--blockedCount;
+				}
+			}
+		}
+		if (!blockedCount) {
+			break;
+		}
+		condition.condition.wait(lock);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

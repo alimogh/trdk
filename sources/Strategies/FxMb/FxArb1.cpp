@@ -28,7 +28,8 @@ FxArb1::FxArb1(
 			const IniSectionRef &conf)
 		: Base(context, name, tag),
 		m_equations(CreateEquations()),
-		m_isPairsByBrokerChecked(false) {
+		m_isPairsByBrokerChecked(false),
+		m_cancelAndBlockCondition(nullptr) {
 
 	if (GetContext().GetTradeSystemsCount() != BROKERS_COUNT) {
 		throw Exception("Strategy requires exact number of brokers");
@@ -630,6 +631,13 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 				"Product of Y1 detected",
 				"Product of Y2 detected");
 
+			if (m_cancelAndBlockCondition) {
+				const boost::mutex::scoped_lock lock(
+					m_cancelAndBlockCondition->mutex);
+				Block();
+				m_cancelAndBlockCondition->condition.notify_all();
+			}
+
 		}
 
 		position.DeactivatieObservation();
@@ -706,4 +714,22 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 		position.GetOppositeEquationIndex(),
 		Position::CLOSE_TYPE_TAKE_PROFIT);*/
 
+}
+
+void FxArb1::CancelAllAndBlock(CancelAndBlockCondition &cancelAndBlockCondition) {
+
+	Assert(!m_cancelAndBlockCondition);
+	m_cancelAndBlockCondition = &cancelAndBlockCondition;
+	
+	size_t ordersCount = 0;
+	for (size_t i = 0; i < EQUATIONS_COUNT; ++i) {
+		ordersCount += CancelAllInEquationAtMarketPrice(
+			i,
+			Position::CLOSE_TYPE_ENGINE_STOP);
+	}
+
+	if (ordersCount == 0) {
+		Block();
+	}
+	
 }

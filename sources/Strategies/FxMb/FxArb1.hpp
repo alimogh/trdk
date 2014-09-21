@@ -139,6 +139,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	public:
 
+		virtual void CancelAllAndBlock(CancelAndBlockCondition &);
+
 		virtual boost::posix_time::ptime OnSecurityStart(Security &);
 
 		virtual void OnPositionUpdate(trdk::Position &);
@@ -222,6 +224,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					bool invert,
 					bool opening);
 
+		bool IsInCanceling() const {
+			return m_cancelAndBlockCondition ? true : false;
+		}
+
 	private:
 
 		const Equations m_equations;
@@ -232,6 +238,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			m_positionsByEquation;
 
 		bool m_isPairsByBrokerChecked;
+
+		CancelAndBlockCondition *m_cancelAndBlockCondition;
 
 	};
 

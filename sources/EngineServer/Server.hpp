@@ -50,6 +50,7 @@ namespace trdk { namespace EngineServer {
 					const std::string &uuid,
 					const boost::filesystem::path &,
 					bool isReplayMode);
+		void CancelAllAndStop();
 		void StopAll();
 
 	private:

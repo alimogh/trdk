@@ -171,16 +171,47 @@ namespace {
 			result = false;
 		}
 
-		getchar();
-		
 		if (result) {
-			try {
-				server.StopAll();
-			} catch (const Exception &ex) {
-				Log::Error("Failed to start engine: \"%1%\".", ex.what());
-				result = false;
-				getchar();
+		
+			std::cout
+				<< "To stop please enter:" << std::endl
+				<< "\t's' - normal stop,"
+					<< " all position will be closed before;" << std::endl
+				<< "\t'u' - urgent stop, no positions will be closed;"
+					<< std::endl;
+			
+			for ( ; ; ) {
+				const auto &stopMode = getchar();
+				if (stopMode == 's') {
+					std::cout
+						<< "Closing all position and stop."
+							<< " To interrupt closing process use Ctrl + C."
+						<< std::endl;
+					try {
+						server.CancelAllAndStop();
+					} catch (const Exception &ex) {
+						Log::Error("Failed to stop engine: \"%1%\".", ex.what());
+						result = false;
+						getchar();
+					}
+				} else if (stopMode == 'u') {
+					try {
+						server.StopAll();
+					} catch (const Exception &ex) {
+						Log::Error("Failed to stop engine: \"%1%\".", ex.what());
+						result = false;
+						getchar();
+					}
+				} else {
+					std::cout
+						<< "Unknown command."
+							<< " Please enter 's' (normal stop) or 'u' (urgent)."
+							<< std::endl;
+				}
 			}
+
+		} else {
+			getchar();
 		}
 
 		return result;

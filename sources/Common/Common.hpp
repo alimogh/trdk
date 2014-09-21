@@ -17,6 +17,7 @@
 #	include <boost/signals2.hpp>
 #	include <boost/thread/mutex.hpp>
 #	include <boost/thread/shared_mutex.hpp>
+#	include <boost/thread/condition.hpp>
 #	include <boost/shared_ptr.hpp>
 #	include <boost/cast.hpp>
 #	include <boost/iterator/iterator_facade.hpp>

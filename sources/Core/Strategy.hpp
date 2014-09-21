@@ -122,6 +122,12 @@ namespace trdk {
 		bool IsBlocked() const;
 		void Block() throw();
 
+		struct CancelAndBlockCondition {
+			boost::mutex mutex;
+			boost::condition_variable condition;
+		};
+		virtual void CancelAllAndBlock(CancelAndBlockCondition &) = 0;
+
 	public:
 
 		void RaiseLevel1UpdateEvent(
