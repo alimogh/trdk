@@ -330,21 +330,25 @@ bool FxArb1::IsEquationOpenedFully(size_t equationIndex) const {
 	return !positions.positions.empty();
 }
 
-void FxArb1::CancelAllInEquationAtMarketPrice(
+size_t FxArb1::CancelAllInEquationAtMarketPrice(
 			size_t equationIndex,
 			const Position::CloseType &closeType)
 		throw() {
+	size_t result = 0;
 	// Cancels all opened for equation orders and close positions for it.
 	try {
 		auto &positions = m_positionsByEquation[equationIndex];
 		foreach (auto &position, positions.positions) {
-			position->CancelAtMarketPrice(closeType);
+			if (position->CancelAtMarketPrice(closeType)) {
+				++result;
+			}
 		}
 		positions.positions.clear();
 	} catch (...) {
 		AssertFailNoException();
 		Block();
 	}
+	return result;
 }
 
 void FxArb1::CheckConf() {
