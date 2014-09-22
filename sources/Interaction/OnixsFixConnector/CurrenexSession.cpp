@@ -134,13 +134,19 @@ void CurrenexFixSession::Connect(
 			resetSeqNumFlagKey,
 			resetSeqNumFlag ? "true" : "false"));
 
+#	ifdef _DEBUG
+		const auto &sessionStorageType = fix::SessionStorageType::FileBased;
+#	else
+		const auto &sessionStorageType = fix::SessionStorageType::MemoryBased;
+#	endif
+
 	boost::scoped_ptr<fix::Session> session(
 		new fix::Session(
 			senderCompId,
 			targetCompId,
 			m_fixVersion,
 			&listener,
-			fix::SessionStorageType::MemoryBased));
+			sessionStorageType));
 	if (conf.ReadBoolKey("use_ssl")) {
 		session->encryptionMethod(fix::EncryptionMethod::SSL);
 	}
