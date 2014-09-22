@@ -461,9 +461,9 @@ void FxArb1::StartPositionsOpening(
 		b1.p3.ask,
 		false, // Reversed Bid if pair is reversed
 		false, // Reversed Ask if pair is reversed
-		
-		"Product of Y1 detected",
-		"Product of Y2 detected");
+
+		equationIndex < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
+		equationIndex >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
 
 	try {
 
@@ -628,8 +628,8 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 				false, // Reversed Bid if pair is reversed
 				false, // Reversed Ask if pair is reversed
 		
-				"Product of Y1 detected",
-				"Product of Y2 detected");
+				position.GetEquationIndex() < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
+				position.GetEquationIndex() >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
 
 			if (m_cancelAndBlockCondition) {
 				const boost::mutex::scoped_lock lock(
@@ -700,8 +700,8 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 			false, // Reversed Bid if pair is reversed
 			false, // Reversed Ask if pair is reversed
 		
-			"Product of Y1 detected",
-			"Product of Y2 detected");
+			position.GetEquationIndex() < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
+			position.GetEquationIndex() >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
 
 	}
 
