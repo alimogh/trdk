@@ -65,8 +65,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			// Call with actual prices each equation and search for best
 			// equation:
 			for (size_t i = 0; i < GetEquations().size(); ++i) {
-				
-				// LogBrokersState(i, b1, b2);
 
 				const auto &positions = GetEquationPosition(i);
 				// activeCount > 0 says that it has "broker postions",
@@ -115,8 +113,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// but this orders still not updated own status (opening for
 				// this, closing for opposite) as it very fast MD updates, much
 				// faster then orders update.
-				//GetLog().Debug("Trying to close on equation %1%.", (int)oppositeEquationIndex);
-
 					
 				if (!GetEquationPosition(oppositeEquationIndex).activeCount) {
 
@@ -131,9 +127,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						// at this time one of equation will return "true"
 						// again).
 
+						//! @todo remove in production, too slow
 						GetLog().Debug(
 							"Going to close orders on equation %1% / 12",
 							oppositeEquationIndex);
+
+						LogBrokersState(oppositeEquationIndex, b1, b2);
 
 						timeMeasurement.Measure(
 							TimeMeasurement::SM_STRATEGY_DECISION_START);
@@ -168,12 +167,15 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			if (GetEquationPosition(bestEquationsIndex).activeCount) {
 				// Equation already has opened positions.
-				timeMeasurement.Measure(
+					timeMeasurement.Measure(
 					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 				return;
 			}
 			
-			GetLog().Debug("Going to open orders on equation %1% / 12", (bestEquationsIndex + 1));
+			//! @todo remove in production, too slow
+			GetLog().Debug(
+				"Going to open orders on equation %1% / 12",
+				(bestEquationsIndex + 1));
 			
 			OnEquation(bestEquationsIndex, b1, b2, timeMeasurement);
 		
