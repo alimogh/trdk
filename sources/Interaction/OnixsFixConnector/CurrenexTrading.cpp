@@ -342,7 +342,7 @@ OrderId CurrenexTrading::SellAtMarketPrice(
 	try {
 		fix::Message order
 			= CreateMarketOrderMessage(orderId, security, currency, qty);
-		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
+		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Sell);
 		Send(order, timeMeasurement);
 	} catch (...) {
 		DeleteErrorOrder(orderId);
