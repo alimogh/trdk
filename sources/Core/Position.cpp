@@ -604,7 +604,7 @@ public:
 			logTag,
 			[&]() -> boost::format {
 				boost::format message(
-					"%11% %1% %2% close-cancel-pre %3% qty=%4%->%5%"
+					"%11%\t%1%\t%2%\tclose-cancel-pre\t%3%\tqty=%4%->%5%"
 						" price=market order-id=%6%->%7%"
 						" has-orders=%8%/%9% is-error=%10%");
 				message
