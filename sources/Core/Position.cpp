@@ -426,8 +426,8 @@ public:
 			logTag,
 			[&]() -> boost::format {
 				boost::format message(
-					"%11% %1% %2% open-%3% %4%"
-						" qty=%5%->%6% price=%7%->%8% order-id=%9%"
+					"%11%\t%1%\t%2%\topen-%3%\t%4%"
+						"\tqty=%5%->%6% price=%7%->%8% order-id=%9%"
 						" order-status=%10%");
 				message
 					%	m_security.GetSymbol()
@@ -454,8 +454,8 @@ public:
 			logTag,
 			[&]() -> boost::format {
 				boost::format message(
-					"%11% %1% %2% close-%3% %4%"
-						" qty=%5%->%6% price=%7% order-id=%8%->%9%"
+					"%11%\t%1%\t%2%\tclose-%3%\t%4%"
+						"\tqty=%5%->%6% price=%7% order-id=%8%->%9%"
 						" order-status=%10%");
 				message
 					%	m_position.GetSecurity().GetSymbol()
@@ -528,6 +528,20 @@ public:
 		if (m_strategy) {
 			m_strategy->Register(m_position);
 		}
+
+		m_security.GetContext().GetLog().TradingEx(
+			logTag,
+			[&]() -> boost::format {
+				boost::format message("%5%\t%1%\t%2%\topen-pre\t%3%\tqty=%4%");
+				message
+					%	m_security
+					%	m_position.GetTypeStr()
+					%	m_tag
+					%	m_position.GetPlanedQty()
+					%	m_position.GetTradeSystem().GetTag();
+				return std::move(message);
+			});
+
 		try {
 			const auto orderId = openImpl(m_position.GetNotOpenedQty());
 			m_strategy = nullptr;
