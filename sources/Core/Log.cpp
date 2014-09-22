@@ -68,6 +68,7 @@ namespace {
 			Assert(log.log);
 			log.AppendRecordHead(time);
 			*log.log << '\t' << &tag[0] << '\t';
+			tag.clear();
 			Lib::Detail::DumpMultiLineString(message, *log.log);
 			message.clear();
 		}
