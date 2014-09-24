@@ -140,10 +140,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						// at this time one of equation will return "true"
 						// again).
 
-						//! @todo remove in production, too slow
-// 						GetLog().Debug(
-// 							"Going to close orders on equation %1% / 12",
-// 							oppositeEquationIndex);
+#						ifdef DEV_VER
+ 							GetLog().Debug(
+ 								"Going to close orders on equation %1% / 12",
+	 							oppositeEquationIndex);
+#						endif
 						GetContext().GetLog().Equation(
 		
 							"Closing detected",
@@ -219,10 +220,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				return;
 			}
 			
-			//! @todo remove in production, too slow
-			GetLog().Debug(
-				"Going to open orders on equation %1% / 12",
-				(bestEquationsIndex + 1));
+#			ifdef DEV_VER
+				GetLog().Debug(
+ 					"Going to open orders on equation %1% / 12",
+	 				(bestEquationsIndex + 1));
+#			endif
 			
 			OnEquation(bestEquationsIndex, b1, b2, timeMeasurement);
 		
