@@ -74,9 +74,26 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// Not all data received yet (from streams)...
 				return;
 			}
+
+			const auto &firstEquationPositions
+				= GetEquationPosition(m_equations.first);
+			const auto &secondEquationPositions
+				= GetEquationPosition(m_equations.second);
+			if (
+					(firstEquationPositions.activeCount
+					&& firstEquationPositions.positions.empty())
+					|| (secondEquationPositions.activeCount
+						&& firstEquationPositions.positions.empty())) {
+				// Position in closing process - waiting until it  will be
+				// finished:
+				timeMeasurement.Measure(
+					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
+				return;
+			}
 			
-			if (GetEquationPosition(m_equations.first).activeCount)
-			{
+			if (firstEquationPositions.activeCount) {
+				AssertEq(0, secondEquationPositions.activeCount);
+				AssertEq(0, secondEquationPositions.positions.size());
 				// We opened on first equation, we try to close on second one
 				CheckEquation(
 					m_equations.second,
@@ -84,39 +101,39 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					b1,
 					b2,
 					timeMeasurement);
+				return;
 			}
-			else if (GetEquationPosition(m_equations.second).activeCount)
-			{
+			AssertEq(0, firstEquationPositions.positions.size());
+
+			if (secondEquationPositions.activeCount) {
 				// We opened on second equation, we try to close on first one
-				CheckEquation(m_equations.first,
-					m_equations.second,
-					b1,
-					b2,
-					timeMeasurement);
-			}
-			else
-			{
-				// We haven't opened yet, we try to open
-
-				// Call threads equations:
-				if (	CheckEquation(m_equations.first,
-							m_equations.second,
-							b1,
-							b2,
-							timeMeasurement)) {
-					// First equation returns "true", so we sent orders for it and
-					// exit.
-					return;
-				}
-
-				// First equation returns "false", so we check opposite equation:
 				CheckEquation(
-					m_equations.second,
 					m_equations.first,
+					m_equations.second,
 					b1,
 					b2,
 					timeMeasurement);
+				return;
 			}
+			AssertEq(0, secondEquationPositions.positions.size());			
+
+			// We haven't opened yet, we try to open
+
+			// Check first equation...
+			CheckEquation(
+						m_equations.first,
+						m_equations.second,
+						b1,
+						b2,
+						timeMeasurement)
+				// ... then second if first not "true":
+				||	CheckEquation(
+						m_equations.second,
+						m_equations.first,
+						b1,
+						b2,
+						timeMeasurement);
+
 		}
 
 	private:
@@ -126,32 +143,62 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		bool CheckEquation(
 					size_t equationIndex,
 					size_t opposideEquationIndex,
-					const Broker &b1,
-					const Broker &b2,
+					Broker &b1,
+					Broker &b2,
 					TimeMeasurement::Milestones &timeMeasurement) {
 			
 			AssertNe(equationIndex, opposideEquationIndex);
-
-			if (GetEquationPosition(equationIndex).activeCount) {
-				// This equation already has opened positions or orders.
-				return false;
-			}
+			AssertEq(0, GetEquationPosition(equationIndex).activeCount);
+			AssertEq(0, GetEquationPosition(equationIndex).positions.size());
 			
 			double equationsResult = .0;
 			// Calls equation and exits if it will return "false":
 			const auto &equation = GetEquations()[equationIndex];
+			b1.equationIndex
+				= b2.equationIndex
+				= equationIndex;
 			if (!equation.first(b1, b2, equationsResult)) {
+				timeMeasurement.Measure(
+					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 				return false;
 			}
 			
-			// Opening positions for this equitation:
-			OnEquation(
-				equationIndex,
-				opposideEquationIndex,
-				b1,
-				b2,
-				timeMeasurement);
+			if (GetEquationPosition(opposideEquationIndex).activeCount) {
+				// Current equation and opposite equation - first closing
+				// opposite positions, then wait until any of equations will be
+				// "true" again.
+				timeMeasurement.Measure(
+					TimeMeasurement::SM_STRATEGY_DECISION_START);
 			
+				AssertLt(
+					0,
+					GetEquationPosition(opposideEquationIndex).positions.size());
+
+				// Double amount at closing at this strategy:
+				auto &positions = GetEquationPosition(opposideEquationIndex);
+				foreach (auto &position, positions.positions) {
+					position->SetOpenedQty(position->GetOpenedQty() * 2);
+				}
+
+				CancelAllInEquationAtMarketPrice(
+					opposideEquationIndex,
+					Position::CLOSE_TYPE_TAKE_PROFIT);
+
+				timeMeasurement.Measure(
+					TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+			
+			} else {
+
+				// Opening positions for this equitation:
+				OnEquation(
+					equationIndex,
+					opposideEquationIndex,
+					b1,
+					b2,
+					timeMeasurement);
+
+			}
+
 			return true;
 
 		}
@@ -174,25 +221,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				b2,
 				timeMeasurement);
 
-		}
-
-		//! Cancels all opened for equation orders and close positions for it.
-		virtual size_t CancelAllInEquationAtMarketPrice(
-					size_t equationIndex,
-					const Position::CloseType &closeType)
-				throw() {
-			try {
-				auto &positions = GetEquationPosition(equationIndex);
-				foreach (auto &position, positions.positions) {
-					position->SetOpenedQty(position->GetOpenedQty() * 2);
-				}
-			} catch (...) {
-				AssertFailNoException();
-				Block();
-			}
-			return Base::CancelAllInEquationAtMarketPrice(
-				equationIndex,
-				closeType);
 		}
 
 	private:
