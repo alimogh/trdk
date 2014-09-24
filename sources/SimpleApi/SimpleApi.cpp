@@ -99,9 +99,18 @@ namespace {
 		Assert(account);
 		try {
 			InitDebugLog();
-			return theBridgeServer
+			const auto &result = theBridgeServer
 				.CheckBridge(bridgeId)
 				.GetAccount();
+			Log::Debug(
+				"%1% %2% %3% %4% %5% %6%",
+				result.equityWithLoanValue.total.load(),
+				result.cash.total.load(),
+				result.currentInitialMargin.total.load(),
+				result.currentMaintenanceMargin.total.load(),
+				result.currentAvailableFunds.total.load(),
+				result.currentExcessLiquidity.total.load());
+			return result;
 		} catch (const Exception &ex) {
 			Log::Error(
 				"Failed to get Account Info for \"%1%\": \"%2%\".", account, ex);
@@ -115,80 +124,103 @@ namespace {
 }
 
 int32_t GetNetLiquidationValueTotal(const char *account) {
-	return GetAccount(account).netLiquidationValue.total;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).netLiquidationValue.total.load();
 }
 int32_t GetNetLiquidationValueUsSecurities(const char *account) {
-	return GetAccount(account).netLiquidationValue.usSecurities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).netLiquidationValue.usSecurities.load();
 }
 int32_t GetNetLiquidationValueUsCommodities(const char *account) {
-	return GetAccount(account).netLiquidationValue.usCommodities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).netLiquidationValue.usCommodities.load();
 }
 
 int32_t GetEquityWithLoanValueTotal(const char *account) {
-	return GetAccount(account).equityWithLoanValue.total;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).equityWithLoanValue.total.load();
 }
 int32_t GetEquityWithLoanValueUsSecurities(const char *account) {
-	return GetAccount(account).equityWithLoanValue.usSecurities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).equityWithLoanValue.usSecurities.load();
 }
 int32_t GetEquityWithLoanValueUsCommodities(const char *account) {
-	return GetAccount(account).equityWithLoanValue.usCommodities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).equityWithLoanValue.usCommodities.load();
 }
 
 int32_t GetSecuritiesGrossPositionValueTotal(const char *account) {
-	return GetAccount(account).securitiesGrossPositionValue.total;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).securitiesGrossPositionValue.total.load();
 }
 int32_t GetSecuritiesGrossPositionUsSecurities(const char *account) {
-	return GetAccount(account).securitiesGrossPositionValue.usSecurities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).securitiesGrossPositionValue.usSecurities.load();
 }
 
 int32_t GetCashTotal(const char *account) {
-	return GetAccount(account).cash.total;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).cash.total.load();
 }
 int32_t GetCashUsSecurities(const char *account) {
-	return GetAccount(account).cash.usSecurities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).cash.usSecurities.load();
 }
 int32_t GetCashUsCommodities(const char *account) {
-	return GetAccount(account).cash.usCommodities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).cash.usCommodities.load();
 }
 	
 int32_t GetCurrentInitialMarginTotal(const char *account) {
-	return GetAccount(account).currentInitialMargin.total;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).currentInitialMargin.total.load();
 }
 int32_t GetCurrentInitialMarginUsSecurities(const char *account) {
-	return GetAccount(account).currentInitialMargin.usSecurities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).currentInitialMargin.usSecurities.load();
 }
 int32_t GetCurrentInitialMarginUsCommodities(const char *account) {
-	return GetAccount(account).currentInitialMargin.usCommodities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).currentInitialMargin.usCommodities.load();
 }
 	
 int32_t GetCurrentMaintenanceMarginTotal(const char *account) {
-	return GetAccount(account).currentMaintenanceMargin.total;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).currentMaintenanceMargin.total.load();
 }
 int32_t GetCurrentMaintenanceMarginUsSecurities(const char *account) {
-	return GetAccount(account).currentMaintenanceMargin.usSecurities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).currentMaintenanceMargin.usSecurities.load();
 }
 int32_t GetCurrentMaintenanceMarginUsCommodities(const char *account) {
-	return GetAccount(account).currentMaintenanceMargin.usCommodities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).currentMaintenanceMargin.usCommodities.load();
 }
 
 int32_t GetCurrentAvailableFundsTotal(const char *account) {
-	return GetAccount(account).currentAvailableFunds.total;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).currentAvailableFunds.total.load();
 }
 int32_t GetCurrentAvailableFundsUsSecurities(const char *account) {
-	return GetAccount(account).currentAvailableFunds.usSecurities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).currentAvailableFunds.usSecurities.load();
 }
 int32_t GetCurrentAvailableFundsUsCommodities(const char *account) {
-	return GetAccount(account).currentAvailableFunds.usCommodities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).currentAvailableFunds.usCommodities.load();
 }
 
 int32_t GetCurrentExcessLiquidityTotal(const char *account) {
-	return GetAccount(account).currentExcessLiquidity.total;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).currentExcessLiquidity.total.load();
 }
 int32_t GetCurrentExcessLiquidityUsSecurities(const char *account) {
-	return GetAccount(account).currentExcessLiquidity.usSecurities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).currentExcessLiquidity.usSecurities.load();
 }
 int32_t GetCurrentExcessLiquidityUsCommodities(const char *account) {
-	return GetAccount(account).currentExcessLiquidity.usCommodities;
+	Log::Debug("__%1%__", __LINE__);
+	return GetAccount(account).currentExcessLiquidity.usCommodities.load();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
