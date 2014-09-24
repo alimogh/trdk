@@ -182,9 +182,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 			
 			//! @todo remove in production, too slow
-			GetLog().Debug(
-				"Going to open orders on equation %1% / 12",
-				(bestEquationsIndex + 1));
+// 			GetLog().Debug(
+// 				"Going to open orders on equation %1% / 12",
+// 				(bestEquationsIndex + 1));
 			
 			OnEquation(bestEquationsIndex, b1, b2, timeMeasurement);
 		
