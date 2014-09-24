@@ -56,19 +56,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			//! and it is important.
 			std::vector<SecurityPositionConf> sendList;
 
-			// boost::array<Security *, PAIRS_COUNT> pairs;
-
 			TradeSystem *tradeSystem;
-
-			BrokerConf() {
-//				pairs.assign(nullptr);
-			}
 
 		};
 
 		struct Broker : private boost::noncopyable {
 
-			typedef SecurityPositionConf * CheckedSecurities[EQUATIONS_COUNT][PAIRS_COUNT];
+			typedef boost::array<SecurityPositionConf *, PAIRS_COUNT>
+				CheckedSecurities[EQUATIONS_COUNT];
 
 			struct Pair : private boost::noncopyable{
 
@@ -159,17 +154,22 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			Pair p2;
 			Pair p3;
 
-			// template<typename Storage>
 			explicit Broker(BrokerConf &conf)
  					: equationIndex(0),
 					p1(conf.sendList[0], equationIndex, checkedSecurities),
  					p2(conf.sendList[1], equationIndex, checkedSecurities),
  					p3(conf.sendList[2], equationIndex, checkedSecurities) {
-				memset(checkedSecurities, 0, sizeof(checkedSecurities));
+				foreach (auto &e, checkedSecurities) {
+					e.assign(nullptr);
+				}
 			}
 
 			operator bool() const {
 				return p1 && p2 && p3;
+			}
+
+			void ResetCheckedSecurities() {
+				checkedSecurities[equationIndex].assign(nullptr);
 			}
 
 		};
@@ -250,7 +250,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		BrokerConf & GetBrokerConf(size_t id) {
 			AssertLt(0, id);
 			AssertGe(m_brokersConf.size(), id);
-			return m_brokersConf[id - 1];			
+			return m_brokersConf[id - 1];
 		}
 		template<size_t id>
 		BrokerConf & GetBrokerConf() {

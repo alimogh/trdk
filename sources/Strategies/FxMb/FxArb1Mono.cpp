@@ -128,6 +128,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						= GetEquations()[oppositeEquationIndex];
 
 					double currentResult = .0;
+					b1.equationIndex
+						= b2.equationIndex
+						= oppositeEquationIndex;
+					b1.ResetCheckedSecurities();
+					b2.ResetCheckedSecurities();
 					if (equation.first(b1, b2, currentResult)) {
 
 						// Opposite equation verified, we close current
