@@ -265,7 +265,7 @@ FxArb1::Equations FxArb1::CreateEquations() {
 
 bool FxArb1::GetEquationPositionWay(size_t equationIndex, bool invert, bool opening)
 {
-	GetLog().Debug("GetEquationPositionWay for equation %1% / 11 on %2% will %3% be invert", boost::make_tuple(equationIndex, opening ? "opening" : "closing", invert ? "" : "not"));
+//	GetLog().Debug("GetEquationPositionWay for equation %1% / 11 on %2% will %3% be invert", boost::make_tuple(equationIndex, opening ? "opening" : "closing", invert ? "" : "not"));
 
 	if (opening)
 	{
@@ -430,7 +430,7 @@ void FxArb1::StartPositionsOpening(
 			// "shared from this":
 			boost::shared_ptr<EquationPosition> position;
 			
-			GetLog().Debug("Equation %1% / 11 pair %2% (%5%) will %3% on %4% with %6% euros", boost::make_tuple(equationIndex, (i + 1), "open", GetEquationPositionWay(equationIndex, conf.isLong, true) ? "BUY" : "SELL", conf.security->GetSymbol(), conf.qty));
+//			GetLog().Debug("Equation %1% / 11 pair %2% (%5%) will %3% on %4% with %6% euros", boost::make_tuple(equationIndex, (i + 1), "open", GetEquationPositionWay(equationIndex, conf.isLong, true) ? "BUY" : "SELL", conf.security->GetSymbol(), conf.qty));
 			
 			if (GetEquationPositionWay(equationIndex, conf.isLong, true)) {
 				position.reset(
