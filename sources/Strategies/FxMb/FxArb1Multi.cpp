@@ -72,8 +72,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 
 			// Getting more human readable format:
-			const Broker &b1 = GetBroker<1>();
-			const Broker &b2 = GetBroker<2>();
+			Broker b1 = GetBroker<1>();
+			Broker b2 = GetBroker<2>();
 			if (!b1 || !b2) {
 				// Not all data received yet (from streams)...
 				return;

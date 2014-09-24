@@ -43,6 +43,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		};
 		struct SecurityPositionConf : public PositionConf {
 			Security *security;
+			TradeSystem *tradeSystem;
 		};
 
 		struct BrokerConf {
@@ -55,43 +56,116 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			//! and it is important.
 			std::vector<SecurityPositionConf> sendList;
 
-			boost::array<Security *, PAIRS_COUNT> pairs;
+			// boost::array<Security *, PAIRS_COUNT> pairs;
+
+			TradeSystem *tradeSystem;
 
 			BrokerConf() {
-				pairs.assign(nullptr);
+//				pairs.assign(nullptr);
 			}
 
 		};
 
-		struct Broker {
+		struct Broker : private boost::noncopyable {
 
-			struct Pair {
+			typedef SecurityPositionConf * CheckedSecurities[EQUATIONS_COUNT][PAIRS_COUNT];
+
+			struct Pair : private boost::noncopyable{
+
+				struct Val : private boost::noncopyable {
+					
+					explicit Val(
+								double val,
+								SecurityPositionConf &security,
+								size_t &equationIndex,
+								CheckedSecurities &checkedSecurities)
+							: val(val),
+							security(security),
+							equationIndex(equationIndex),
+							checkedSecurities(checkedSecurities) {
+						//...//
+					}
+
+					operator bool() const {
+						return !Lib::IsZero(val);
+					}
+
+					double Get() const {
+						OnGet();
+						return val;
+					}
+
+					double GetConst() const {
+						return val;
+					}
+
+				private:
+
+					void OnGet() const {
+						foreach (
+								auto &checkSecurity,
+								checkedSecurities[equationIndex]) {
+							if (!checkSecurity) {
+								checkSecurity = &security;
+								return;
+							}
+						}
+						AssertFail("Too many pairs.");						
+					}
+
+				private:
+
+					const double val;
+					mutable SecurityPositionConf &security;
+					size_t &equationIndex;
+					mutable CheckedSecurities &checkedSecurities;
+
+
+				};
 				
-				double bid;
-				double ask;
+				CheckedSecurities checkedSecurities;
+
+				Val bid;
+				Val ask;
+			
 				
-				explicit Pair(const Security &security)
-						: bid(security.GetBidPrice()),
-						ask(security.GetAskPrice()) {
+				explicit Pair(
+							SecurityPositionConf &security,
+							size_t &equationIndex,
+							CheckedSecurities &checkedSecurities)
+						: bid(
+							security.security->GetBidPrice(),
+							security,
+							equationIndex,
+							checkedSecurities),
+						ask(
+							security.security->GetAskPrice(),
+							security,
+							equationIndex,
+							checkedSecurities) {
 					//...//
 				}
 
 				operator bool() const {
-					return !Lib::IsZero(bid) && !Lib::IsZero(ask);
+					return bid && ask;
 				}
 
 			};
+
+			size_t equationIndex;
+			CheckedSecurities checkedSecurities;
 
 			Pair p1;
 			Pair p2;
 			Pair p3;
 
-			template<typename Storage>
-			explicit Broker(const Storage &storage)
-					: p1(*storage[0]),
-					p2(*storage[1]),
-					p3(*storage[2]) {
-				//...//
+			// template<typename Storage>
+			explicit Broker(BrokerConf &conf)
+ 					: equationIndex(0),
+					p1(conf.sendList[0], equationIndex, checkedSecurities),
+ 					p2(conf.sendList[1], equationIndex, checkedSecurities),
+ 					p3(conf.sendList[2], equationIndex, checkedSecurities) {
+				memset(checkedSecurities, 0, sizeof(checkedSecurities));
 			}
 
 			operator bool() const {
@@ -161,21 +235,25 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		//! Checks conf. Must be called at each data update.
 		void CheckConf();
 
-		Broker GetBroker(size_t id) const {
-			return Broker(GetBrokerConf(id).pairs);
-		}
 		template<size_t id>
-		Broker GetBroker() const {
-			return Broker(GetBrokerConf<id>().pairs);
+		Broker GetBroker() {
+			return Broker(GetBrokerConf<id>());
 		}
 
 		const BrokerConf & GetBrokerConf(size_t id) const {
-			AssertLt(0, id);
-			AssertGe(m_brokersConf.size(), id);
-			return m_brokersConf[id - 1];
+			return const_cast<FxArb1 *>(this)->GetBrokerConf(id);
 		}
 		template<size_t id>
 		const BrokerConf & GetBrokerConf() const {
+			return const_cast<FxArb1 *>(this)->GetBrokerConf<id>();
+		}
+		BrokerConf & GetBrokerConf(size_t id) {
+			AssertLt(0, id);
+			AssertGe(m_brokersConf.size(), id);
+			return m_brokersConf[id - 1];			
+		}
+		template<size_t id>
+		BrokerConf & GetBrokerConf() {
 			static_assert(0 < id, "Broker Index starts from 1.");
 			AssertGe(m_brokersConf.size(), id);
 			return m_brokersConf[id - 1];
