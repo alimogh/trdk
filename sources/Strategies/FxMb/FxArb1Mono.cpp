@@ -141,9 +141,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						// again).
 
 						//! @todo remove in production, too slow
-						GetLog().Debug(
-							"Going to close orders on equation %1% / 12",
-							oppositeEquationIndex);
+// 						GetLog().Debug(
+// 							"Going to close orders on equation %1% / 12",
+// 							oppositeEquationIndex);
 						GetContext().GetLog().Equation(
 		
 							"Closing detected",
