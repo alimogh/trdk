@@ -51,8 +51,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			CheckConf();
 
 			// Getting more human readable format:
-			const Broker &b1 = GetBroker<1>();
-			const Broker &b2 = GetBroker<2>();
+			Broker b1 = GetBroker<1>();
+			Broker b2 = GetBroker<2>();
 			if (!b1 || !b2) {
 				// Not all data received yet (from streams)...
 				return;
@@ -89,7 +89,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// first - call equation
 				const auto &equation = GetEquations()[i];
 				
-				if (!equation.first(b1, b2, currentResult)) { 
+				const bool equationResult
+					= equation.first(b1, b2, currentResult);
+				++b1.equationIndex;
+				++b2.equationIndex;
+				if (!equationResult) { 
 					// Equation not verified.
 					continue;
 				}
