@@ -196,36 +196,6 @@ pt::ptime FxArb1::OnSecurityStart(Security &security) {
 
 	AssertNe(std::numeric_limits<size_t>::max(), pairIndex);
 
-	// Filling matrix "b{x}.p{y}" for broker with market data source
-	// index:
-
-	size_t brokerIndex = 0;
-	GetContext().ForEachMarketDataSource(
-		[&](const MarketDataSource &source) -> bool {
-			if (security.GetSource() == source) {
-				return false;
-			}
-			++brokerIndex;
-			return true;
-		});
-	AssertGt(GetContext().GetMarketDataSourcesCount(), brokerIndex);
-	AssertGt(m_brokersConf.size(), brokerIndex);
-//	BrokerConf &broker = m_brokersConf[brokerIndex];
-
-// 	if (broker.pairs[pairIndex]) {
-// 		// We have predefined equations which has fixed variables so
-// 		// configuration must provide required count of pairs.
-// 		// If isSet is false - configuration provides more pairs then
-// 		// required for equations.
-// 		GetLog().Error(
-// 			"Too much pairs (symbols) configured."
-// 				" Count of pairs must be %1%."
-// 				" Count of brokers must be %2%.",
-// 			boost::make_tuple(PAIRS_COUNT, BROKERS_COUNT));
-// 		throw Exception("Too much pairs (symbols) provided.");
-// 	}
-// 	broker.pairs[pairIndex] = &security;
-
 	return Base::OnSecurityStart(security);
 
 }
@@ -363,34 +333,12 @@ void FxArb1::CheckConf() {
 	}
 	
 	foreach (const auto &broker, m_brokersConf) {
-		
-// 		foreach (const auto *pair, broker.pairs) {
-// 			if (!pair) {
-// 				GetLog().Error(
-// 					"One or more pairs (symbols) not find."
-// 						" Count of pairs must be %1%."
-// 						" Count of brokers must be %2%.",
-// 					boost::make_tuple(PAIRS_COUNT, BROKERS_COUNT));
-// 			}
-// 		}
-
 		// Printing pairs order in sendList (must be the same as in INI-file):
 		std::vector<std::string> pairs;
 		foreach (const auto &pair, broker.sendList) {
 			pairs.push_back(pair.security->GetSymbol().GetSymbol());
 		}
 		GetLog().Info("Send-list pairs order: %1%.", boost::join(pairs, ", "));
-
-		// Printing pairs order for data fields:
-		pairs.clear();
-// 		foreach (const auto &pair, broker.pairs) {
-// 			Assert(pair);
-// 			pairs.push_back(pair->GetSymbol().GetSymbol());
-// 		}
-		GetLog().Info(
-			"Data fields pairs order: %1%.",
-			boost::join(pairs, ", "));
-
 	}
 
 	m_isPairsByBrokerChecked = true;

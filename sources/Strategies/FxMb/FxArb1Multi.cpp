@@ -109,7 +109,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					return;
 				}
 
-				// First equation returns "false", so we check opposide equation:
+				// First equation returns "false", so we check opposite equation:
 				CheckEquation(
 					m_equations.second,
 					m_equations.first,
