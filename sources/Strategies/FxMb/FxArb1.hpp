@@ -60,14 +60,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		};
 
-		struct Broker : private boost::noncopyable {
+		struct Broker {
 
 			typedef boost::array<SecurityPositionConf *, PAIRS_COUNT>
 				CheckedSecurities[EQUATIONS_COUNT];
 
-			struct Pair : private boost::noncopyable{
+			struct Pair {
 
-				struct Val : private boost::noncopyable {
+				struct Val {
 					
 					explicit Val(
 								double val,
@@ -96,6 +96,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 				private:
 
+					Val & operator =(const Val &);
+
+				private:
+
 					void OnGet() const {
 						foreach (
 								auto &checkSecurity,
@@ -110,10 +114,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 				private:
 
-					const double val;
-					mutable SecurityPositionConf &security;
+					double val;
+					SecurityPositionConf &security;
 					size_t &equationIndex;
-					mutable CheckedSecurities &checkedSecurities;
+					CheckedSecurities &checkedSecurities;
 
 
 				};
