@@ -15,6 +15,7 @@
 #include "Settings.hpp"
 
 namespace mi = boost::multi_index;
+namespace pt = boost::posix_time;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -219,6 +220,9 @@ class Strategy::Implementation : private boost::noncopyable {
 
 public:
 
+	typedef boost::mutex BlockMutex;
+	typedef BlockMutex::scoped_lock BlockLock;
+
 	class PositionList : public Strategy::PositionList {
 
 	public:
@@ -282,6 +286,8 @@ public:
 	Strategy &m_strategy;
 	
 	boost::atomic_bool m_isBlocked;
+	pt::ptime m_blockEndTime;
+	BlockMutex m_blockMutex;
 	
 	PositionList m_positions;
 	PositionReporter *m_positionReporter;
@@ -440,6 +446,13 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 		m_pimpl->ForgetPosition(position);
 		//! @todo notify engine here
 		return;
+	} else if (position.IsInactive()) {
+		const auto &blockPeriod = pt::seconds(10);
+		GetLog().Error(
+			"Will be blocked by position inactivity at %1%...",
+			blockPeriod);
+		Block(blockPeriod);
+		position.ResetInactive();
 	}
 	
 	OnPositionUpdate(position);
@@ -451,12 +464,41 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 }
 
 bool Strategy::IsBlocked() const {
-	return m_pimpl->m_isBlocked || !m_pimpl->IsTradingTime();
+	if (!m_pimpl->m_isBlocked) {
+		return !m_pimpl->IsTradingTime();
+	} else {
+		const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
+		if (
+				m_pimpl->m_blockEndTime == pt::not_a_date_time
+				|| m_pimpl->m_blockEndTime > boost::get_system_time()) {
+			return true;
+		}
+		m_pimpl->m_blockEndTime = pt::not_a_date_time;
+		m_pimpl->m_isBlocked = false;
+		GetLog().Error("Unblocked.");
+		return false;
+	}
 }
 
 void Strategy::Block() throw() {
+	const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
 	m_pimpl->m_isBlocked = true;
+	m_pimpl->m_blockEndTime = pt::not_a_date_time;
 	GetLog().Error("Blocked.");
+}
+
+void Strategy::Block(const pt::time_duration &blockDuration) {
+	const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
+	const pt::ptime &blockEndTime = boost::get_system_time() + blockDuration;
+	if (
+			m_pimpl->m_isBlocked
+			&& m_pimpl->m_blockEndTime != pt::not_a_date_time
+			&& blockEndTime <= m_pimpl->m_blockEndTime) {
+		return;
+	}
+	m_pimpl->m_isBlocked = true;
+	m_pimpl->m_blockEndTime = blockEndTime;
+	GetLog().Error("Blocked until %1%.", m_pimpl->m_blockEndTime);
 }
 
 Strategy::PositionUpdateSlotConnection Strategy::SubscribeToPositionsUpdates(

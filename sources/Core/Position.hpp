@@ -124,6 +124,10 @@ namespace trdk {
 
 		//! Open operation started, but error occurred at opening or closing.
 		bool IsError() const throw();
+		//! Open operation started, but temporary error occurred at opening
+		//! or closing.
+		bool IsInactive() const throw();
+		void ResetInactive();
 		//! All orders canceled, position will be closed or already closed.
 		bool IsCanceled() const throw();
 

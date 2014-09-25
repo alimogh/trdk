@@ -294,11 +294,9 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		std::vector<OrderToSend> *m_currentToSend;
 		boost::thread m_sendThread;
 
-
 		struct {
 			std::unique_ptr<OnixS::FIX::Message> orderMessage;
 		} m_preallocated;
-
 
 	};
 

@@ -309,6 +309,7 @@ size_t FxArb1::CancelAllInEquationAtMarketPrice(
 			size_t equationIndex,
 			const Position::CloseType &closeType)
 		throw() {
+	Assert(!IsBlocked());
 	size_t result = 0;
 	// Cancels all opened for equation orders and close positions for it.
 	try {
@@ -501,10 +502,27 @@ void FxArb1::StartPositionsOpening(
 
 }
 
+void FxArb1::OnLevel1Update(
+			Security &,
+			TimeMeasurement::Milestones &timeMeasurement) {
+	OnOpportunityUpdate(timeMeasurement);
+}
+
+void FxArb1::OnOpportunityUpdate(TimeMeasurement::Milestones &timeMeasurement) {
+	Assert(!IsBlocked());
+	CloseDelayed();
+	CheckOpportunity(timeMeasurement);
+}
+
+void FxArb1::OnOpportunityReturn() {
+	auto startegyTimeMeasurement = GetContext().StartStrategyTimeMeasurement();
+	OnOpportunityUpdate(startegyTimeMeasurement);
+}
+
 void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 
 	// Method calls each time when one of strategy positions updates.
-			
+
 	EquationPosition &position
 		= dynamic_cast<EquationPosition &>(positionRef);
 	if (!position.IsObservationActive()) {
@@ -522,17 +540,38 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 			// orders at equation and close positions if another orders
 			// are filled:
 			Assert(!IsEquationOpenedFully(position.GetEquationIndex()));
-			CancelAllInEquationAtMarketPrice(
-				position.GetEquationIndex(),
-				Position::CLOSE_TYPE_OPEN_FAILED);
+			if (!IsBlocked()) {
+				CloseDelayed();
+				CancelAllInEquationAtMarketPrice(
+					position.GetEquationIndex(),
+					Position::CLOSE_TYPE_OPEN_FAILED);
+			} else {
+				GetLog().TradingEx(
+					[&]() -> boost::format {
+						boost::format message(
+							"Delaying positions closing for equation %1%"
+								", as strategy blocked...");
+						message % position.GetEquationIndex();
+						return std::move(message);
+					});
+				Assert(
+					!m_equationsForDelayedClosing[position.GetEquationIndex()]);
+				m_equationsForDelayedClosing[position.GetEquationIndex()]
+					= true;
+				return;
+			}
 		}
 		AssertEq(0, equationPositions.positions.size());
 		AssertLt(0, equationPositions.activeCount);
 
-		// We completed work with this position, forget it...
-		Verify(equationPositions.activeCount--);
-
 		position.DeactivatieObservation();
+
+		// We completed work with this position, forget it...
+		AssertLt(0, equationPositions.activeCount);
+		if (!--equationPositions.activeCount) {
+			AssertEq(0, equationPositions.positions.size());
+			OnOpportunityReturn();
+		}
 
 		return;
 
@@ -556,4 +595,25 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 	position.GetTimeMeasurement().Measure(
 		TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
 
+	OnOpportunityReturn();
+
 }
+
+void FxArb1::CloseDelayed() {
+	Assert(!IsBlocked());
+	for (size_t i = 0; i < m_equationsForDelayedClosing.size(); ++i) {
+		if (!m_equationsForDelayedClosing[i]) {
+			continue;
+		}
+		GetLog().TradingEx(
+			[&]() -> boost::format {
+				boost::format message(
+					"Closing delayed positions for equation %1%...");
+				message % i;
+				return std::move(message);
+			});
+		CancelAllInEquationAtMarketPrice(i, Position::CLOSE_TYPE_NONE);
+		m_equationsForDelayedClosing[i] = false;
+	}
+}
+

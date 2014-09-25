@@ -659,6 +659,9 @@ void CurrenexTrading::OnOrderRejected(
 			== execReport.get(fix::FIX41::Tags::ExecType));
 
 	const std::string &reason = execReport.get(fix::FIX40::Tags::Text);
+	const bool isMaxOperationLimitExceeded = boost::iequals(
+		reason,
+		"maximum operation limit exceeded");
 	GetLog().Error(
 		"FIX Server (%1%) Rejected order %2%: \"%3%\".",
 		boost::make_tuple(
@@ -668,7 +671,9 @@ void CurrenexTrading::OnOrderRejected(
 
 	NotifyOrderUpdate(
 		execReport,
-		ORDER_STATUS_ERROR,
+		isMaxOperationLimitExceeded
+			?	ORDER_STATUS_INACTIVE
+			:	ORDER_STATUS_ERROR,
 		"REJECTED",
 		true,
 		replyTime);

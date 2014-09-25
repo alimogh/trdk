@@ -219,6 +219,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		virtual boost::posix_time::ptime OnSecurityStart(Security &);
 
+		virtual void OnLevel1Update(
+					Security &,
+					Lib::TimeMeasurement::Milestones &);
+
 		virtual void OnPositionUpdate(trdk::Position &);
 		
 		virtual void ReportDecision(const Position &) const;
@@ -231,6 +235,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		static Equations CreateEquations();
 
 	protected:
+
+		void OnOpportunityUpdate(Lib::TimeMeasurement::Milestones &);
+
+		void OnOpportunityReturn();
+
+		virtual void CheckOpportunity(Lib::TimeMeasurement::Milestones &) = 0;
 
 		//! Checks conf. Must be called at each data update.
 		void CheckConf();
@@ -304,6 +314,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					bool invert,
 					bool opening);
 
+		bool CheckRestoreState();
+
+		void CloseDelayed();
+
 	private:
 
 		const Equations m_equations;
@@ -314,6 +328,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			m_positionsByEquation;
 
 		bool m_isPairsByBrokerChecked;
+
+		std::bitset<EQUATIONS_COUNT> m_equationsForDelayedClosing;
 
 	};
 
