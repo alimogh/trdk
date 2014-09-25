@@ -447,7 +447,7 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 		//! @todo notify engine here
 		return;
 	} else if (position.IsInactive()) {
-		const auto &blockPeriod = pt::seconds(10);
+		const auto &blockPeriod = pt::seconds(1);
 		GetLog().Error(
 			"Will be blocked by position inactivity at %1%...",
 			blockPeriod);
