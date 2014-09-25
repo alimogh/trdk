@@ -549,16 +549,15 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 				GetLog().TradingEx(
 					[&]() -> boost::format {
 						boost::format message(
-							"Delaying positions closing for equation %1%"
+							"Delaying positions closing by %1% for equation %2%"
 								", as strategy blocked...");
-						message % position.GetEquationIndex();
+						message
+							% position.GetSecurity()
+							% position.GetEquationIndex();
 						return std::move(message);
 					});
-				Assert(
-					!m_equationsForDelayedClosing[position.GetEquationIndex()]);
 				m_equationsForDelayedClosing[position.GetEquationIndex()]
 					= true;
-				return;
 			}
 		}
 		AssertEq(0, equationPositions.positions.size());
