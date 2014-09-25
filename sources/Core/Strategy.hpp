@@ -121,6 +121,7 @@ namespace trdk {
 
 		bool IsBlocked() const;
 		void Block() throw();
+		void Block(const boost::posix_time::time_duration &);
 
 		struct CancelAndBlockCondition {
 			boost::mutex mutex;

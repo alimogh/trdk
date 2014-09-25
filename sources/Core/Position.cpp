@@ -135,7 +135,7 @@ public:
 	Security &m_security;
 	const Currency m_currency;
 
-	const Qty m_planedQty;
+	Qty m_planedQty;
 
 	const ScaledPrice m_openStartPrice;
 	DynamicData m_opened;
@@ -148,6 +148,7 @@ public:
 	volatile long m_isStarted;
 
 	boost::atomic_bool m_isError;
+	boost::atomic_bool m_isInactive;
 
 	boost::atomic<CancelState> m_cancelState;
 	boost::function<void ()> m_cancelMethod;
@@ -176,6 +177,7 @@ public:
 			m_closeType(CLOSE_TYPE_NONE),
 			m_isStarted(false),
 			m_isError(false),
+			m_isInactive(false),
 			m_cancelState(CANCEL_STATE_NOT_CANCELED),
 			m_tag(m_strategy->GetTag()),
 			m_timeMeasurement(timeMeasurement) {
@@ -239,6 +241,9 @@ public:
 					}
 					break;
 				case TradeSystem::ORDER_STATUS_INACTIVE:
+					ReportOpeningUpdate("error", orderStatus);
+					m_isInactive = true;
+					break;
 				case TradeSystem::ORDER_STATUS_ERROR:
 					ReportOpeningUpdate("error", orderStatus);
 					m_isError = true;
@@ -325,6 +330,9 @@ public:
 					}
 					break;
 				case TradeSystem::ORDER_STATUS_INACTIVE:
+					ReportClosingUpdate("error", orderStatus);
+					m_isInactive = true;
+					break;
 				case TradeSystem::ORDER_STATUS_ERROR:
 	//! @todo Log THIS!!!
 	// 				m_security.GetContext().GetLog().Error(
@@ -739,6 +747,16 @@ bool Position::IsCompleted() const throw() {
 bool Position::IsError() const throw() {
 	return m_pimpl->m_isError ? true : false;
 }
+
+bool Position::IsInactive() const throw() {
+	return m_pimpl->m_isInactive ? true : false;
+}
+
+void Position::ResetInactive() {
+	Assert(m_pimpl->m_isInactive);
+	m_pimpl->m_isInactive = false;
+}
+
 bool Position::IsCanceled() const throw() {
 	return m_pimpl->m_cancelState != Implementation::CANCEL_STATE_NOT_CANCELED;
 }
@@ -880,6 +898,9 @@ Qty Position::GetOpenedQty() const throw() {
 void Position::SetOpenedQty(const Qty &newQty) const throw() {
 	const Implementation::WriteLock lock(m_pimpl->m_mutex);
 	m_pimpl->m_opened.qty = newQty;
+	if (m_pimpl->m_opened.qty > m_pimpl->m_planedQty) {
+		m_pimpl->m_planedQty = m_pimpl->m_opened.qty;
+	}
 }
 
 ScaledPrice Position::GetOpenPrice() const {

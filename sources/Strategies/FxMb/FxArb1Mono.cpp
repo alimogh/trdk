@@ -39,10 +39,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			//...//
 		}
 
-	public:
+	protected:
 		
-		virtual void OnLevel1Update(
-					Security &,
+		virtual void CheckOpportunity(
 					TimeMeasurement::Milestones &timeMeasurement) {
 
 			// Level 1 update callback - will be called every time when
