@@ -31,8 +31,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					Context &context,
 					const std::string &tag,
 					const IniSectionRef &conf)
-				: Base(context, "FxArb1Mono", tag, conf) {
-			//...//
+				: Base(context, "FxArb1Mono", tag, conf),
+				m_positionGracePeriod(
+					pt::seconds(
+						//  size_t -> long as period can be negative, but not our setting
+						long(conf.ReadTypedKey<size_t>("position_grace_period_sec")))) {
+			GetLog().Info(
+				"Using position grace period: %1%.",
+				m_positionGracePeriod);
 		}
 		
 		virtual ~FxArb1Mono() {
@@ -76,9 +82,13 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// from broker. So this position will be closed in any case
 				// - command with MKT orders already sent.
 				if (positions.activeCount) {
-					if (positions.positions.empty()) {
-						// Position in closing process - waiting until it 
-						// will be finished:
+							// Position in closing process - waiting until it
+							// will be finished:
+					if (	positions.positions.empty()
+								// We will not close position this period after
+								// start:
+							||	positions.lastStartTime + m_positionGracePeriod
+									>= boost::get_system_time()) {
 						timeMeasurement.Measure(
 							TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 						return;
@@ -252,6 +262,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				timeMeasurement);
 
 		}
+
+	private:
+
+		const pt::time_duration m_positionGracePeriod;
 
 	};
 	

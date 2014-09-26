@@ -199,6 +199,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			size_t activeCount;
 			std::vector<boost::shared_ptr<EquationPosition>> positions;
 
+			boost::posix_time::ptime lastStartTime;
+
 			EquationOpenedPositions()
 					: activeCount(0) {
 				//...//

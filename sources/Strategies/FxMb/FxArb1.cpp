@@ -551,6 +551,8 @@ void FxArb1::StartPositionsOpening(
 
 		LogEquationPosition("Opening detected", equationIndex, reversed);
 
+		equationPositions.lastStartTime = boost::get_system_time();
+
 	} catch (...) {
 		CancelAllInEquationAtMarketPrice(
 			equationIndex,
