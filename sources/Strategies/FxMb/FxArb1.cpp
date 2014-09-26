@@ -491,6 +491,8 @@ void FxArb1::StartPositionsOpening(
 
 		}
 
+		equationPositions.lastStartTime = boost::get_system_time();
+
 	} catch (...) {
 		CancelAllInEquationAtMarketPrice(
 			equationIndex,
