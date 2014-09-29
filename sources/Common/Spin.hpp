@@ -152,6 +152,17 @@ namespace trdk { namespace Lib { namespace Concurrency {
 	class SpinCondition : private boost::noncopyable {
 
 	public:
+
+		SpinCondition()
+				: m_waitersCount(0) {
+			//...//
+		}
+
+		~SpinCondition() {
+			AssertEq(0, m_waitersCount);
+		}
+
+	public:
 		
 		void NotifyOne() {
 			m_state.clear();
@@ -161,21 +172,25 @@ namespace trdk { namespace Lib { namespace Concurrency {
 			NotifyOne();
 		}
 
-// 		void NotifyAll() {
-//! @todo see TRDK-165	
-// 		}
-// 
- //! @todo see TRDK-165
-// 		void notify_all() {
-// 			NotifyAll();
-// 		}
+		void NotifyAll() {
+			while (m_waitersCount != 0) {
+				NotifyOne();
+			}
+		}
+
+ 		void notify_all() {
+			NotifyAll();
+		}
 
 		void Wait(trdk::Lib::Concurrency::SpinScopedLock &lock) const {
 			if (!m_state.test_and_set(boost::memory_order_acquire)) {
 				return;
 			}
+			++m_waitersCount;
 			lock.Unlock();
 			while (m_state.test_and_set(boost::memory_order_acquire));
+			AssertLt(0, m_waitersCount);
+			--m_waitersCount;
 			lock.Lock();
 		}
 
@@ -185,6 +200,7 @@ namespace trdk { namespace Lib { namespace Concurrency {
 
 	private:
 
+		mutable boost::atomic_size_t m_waitersCount;
 		mutable boost::atomic_flag m_state;
 
 	};

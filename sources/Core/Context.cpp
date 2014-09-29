@@ -77,8 +77,8 @@ namespace {
 				const Lock lock(m_mutex);
 				Assert(!m_stopFlag);
 				m_stopFlag = true;
+				m_stopCondition.notify_all();
 			}
-			m_stopCondition.notify_all();
 			m_thread.join();
 		}
 

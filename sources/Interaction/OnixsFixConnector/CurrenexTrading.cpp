@@ -32,13 +32,24 @@ CurrenexTrading::CurrenexTrading(
 }
 
 CurrenexTrading::~CurrenexTrading() {
-	//...//
+	try {
+		{
+			const SendLock lock(m_sendMutex);
+			Assert(m_currentToSend);
+			m_currentToSend = nullptr;
+			m_sendCondition.notify_all();
+		}
+		m_sendThread.join();
+	} catch (...) {
+		AssertFailNoException();
+		throw;
+	}
 }
 
 void CurrenexTrading::SendThreadMain() {
 	try {
 		SendLock lock(m_sendMutex);
-		for ( ; ; ) {
+		while (m_currentToSend) {
 			while (!m_currentToSend->empty()) {
 				auto &toSend = *m_currentToSend;
 				m_currentToSend = &m_toSend.first == m_currentToSend
@@ -100,8 +111,8 @@ void CurrenexTrading::ScheduleSend(OrderToSend &order) {
 	{
 		const SendLock lock(m_sendMutex);
 		m_currentToSend->push_back(order);
+		m_sendCondition.notify_one();
 	}
-	m_sendCondition.notify_one();
 	order.timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_ENQUEUE);
 }
 

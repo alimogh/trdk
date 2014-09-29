@@ -138,8 +138,8 @@ namespace trdk { namespace Lib {
 				}
 				auto thread = m_writeThread;
 				m_writeThread.reset();
-				lock.release();
 				m_condition.notify_all();
+				lock.release();
 				thread->join();
 			} catch (...) {
 				AssertFailNoException();
@@ -152,17 +152,15 @@ namespace trdk { namespace Lib {
 		void AppendRecord(
 					const boost::posix_time::ptime &time,
 					const T &param) {
-			{
-				const Lock lock(m_mutex);
-				if (m_currentBuffer->end == m_currentBuffer->records.end()) {
-					m_currentBuffer->records.emplace(
-						m_currentBuffer->records.end());
-					m_currentBuffer->end = m_currentBuffer->records.end();
-					m_currentBuffer->records.back().Save(time, param);
-				} else {
-					m_currentBuffer->end->Save(time, param);
-					++m_currentBuffer->end;
-				}
+			const Lock lock(m_mutex);
+			if (m_currentBuffer->end == m_currentBuffer->records.end()) {
+				m_currentBuffer->records.emplace(
+					m_currentBuffer->records.end());
+				m_currentBuffer->end = m_currentBuffer->records.end();
+				m_currentBuffer->records.back().Save(time, param);
+			} else {
+				m_currentBuffer->end->Save(time, param);
+				++m_currentBuffer->end;
 			}
 			m_condition.notify_one();
 		}
@@ -171,10 +169,10 @@ namespace trdk { namespace Lib {
 
 		void WriteTask() {
 
-			m_condition.notify_all();
-		
 			Lock lock(m_mutex);
-		
+
+			m_condition.notify_all();
+	
 			while (m_writeThread) {
 
 				Buffer *currentBuffer = m_currentBuffer;
