@@ -128,6 +128,7 @@ namespace trdk {
 			boost::condition_variable condition;
 		};
 		virtual void CancelAllAndBlock(CancelAndBlockCondition &) = 0;
+		virtual void WaitForCancelAndBlock(CancelAndBlockCondition &) = 0;
 
 	public:
 

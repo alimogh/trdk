@@ -66,10 +66,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			CheckConf();
 
-			if (IsInCanceling()) {
-				return;
-			}
-
 			// Getting more human readable format:
 			Broker b1 = GetBroker<1>();
 			Broker b2 = GetBroker<2>();

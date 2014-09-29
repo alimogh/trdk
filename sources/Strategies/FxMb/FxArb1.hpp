@@ -222,6 +222,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 	public:
 
 		virtual void CancelAllAndBlock(CancelAndBlockCondition &);
+		virtual void WaitForCancelAndBlock(CancelAndBlockCondition &);
 
 		virtual boost::posix_time::ptime OnSecurityStart(Security &);
 
@@ -323,10 +324,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					size_t equationIndex,
 					bool invert,
 					bool opening);
-
-		bool IsInCanceling() const {
-			return m_cancelAndBlockCondition ? true : false;
-		}
 
 		bool CheckRestoreState();
 

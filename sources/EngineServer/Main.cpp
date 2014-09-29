@@ -174,38 +174,52 @@ namespace {
 		if (result) {
 		
 			std::cout
+				<< std::endl
 				<< "To stop please enter:" << std::endl
 				<< "\t's' - normal stop,"
-					<< " all position will be closed before;" << std::endl
-				<< "\t'u' - urgent stop, no positions will be closed;"
-					<< std::endl;
+					<< " wait until all positions will be closed and stop;"
+					<< std::endl
+				<< "\t'u' - urgent stop,"
+					<< " all position will be forcibly closed before;"
+					<< std::endl
+				<< std::endl;
 			
 			for ( ; ; ) {
 				const auto &stopMode = getchar();
 				if (stopMode == 's') {
 					std::cout
-						<< "Closing all position and stop."
-							<< " To interrupt closing process use Ctrl + C."
+						<< "Waiting until all positions will be closed"
+							<< " by conditions..."
+						<< " To interrupt closing process use Ctrl + C."
 						<< std::endl;
 					try {
-						server.CancelAllAndStop();
+						server.WaitForCancelAndStop();
 					} catch (const Exception &ex) {
-						Log::Error("Failed to stop engine: \"%1%\".", ex.what());
+						Log::Error(
+							"Failed to stop engine: \"%1%\".",
+							ex.what());
 						result = false;
 						getchar();
 					}
 				} else if (stopMode == 'u') {
+					std::cout
+						<< "Closing all position before stop..."
+						<< " To interrupt closing process use Ctrl + C."
+						<< std::endl;
 					try {
-						server.StopAll();
+						server.CancelAllAndStop();
 					} catch (const Exception &ex) {
-						Log::Error("Failed to stop engine: \"%1%\".", ex.what());
+						Log::Error(
+							"Failed to stop engine: \"%1%\".",
+							ex.what());
 						result = false;
 						getchar();
 					}
 				} else {
 					std::cout
 						<< "Unknown command."
-							<< " Please enter 's' (normal stop) or 'u' (urgent)."
+							<< " Please enter 's' (normal stop)"
+							<< " or 'u' (urgent)."
 							<< std::endl;
 				}
 			}

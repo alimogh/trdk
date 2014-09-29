@@ -215,19 +215,19 @@ FxArb1::Equations FxArb1::CreateEquations() {
 	};
 	typedef const Broker B;
 
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid.Get() 			* b2.p2.bid.Get() 			* (1 / b1.p3.ask.Get());	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid.Get() 			* (1 / b2.p3.ask.Get()) 	* b1.p2.bid.Get();			return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid.Get() 			* b2.p1.bid.Get() 			* (1 / b1.p3.ask.Get());	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid.Get() 			* (1 / b2.p3.ask.Get()) 	* b1.p1.bid.Get();			return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.ask.Get()) 	* b2.p1.bid.Get() 			* b1.p2.bid.Get();			return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.ask.Get()) 	* b2.p2.bid.Get() 			* b1.p1.bid.Get();			return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid.Get() 			* b2.p2.bid.Get() 			* (1 / b1.p3.ask.Get());	return result > .000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid.Get() 			* (1 / b2.p3.ask.Get()) 	* b1.p2.bid.Get();			return result > .000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid.Get() 			* b2.p1.bid.Get() 			* (1 / b1.p3.ask.Get());	return result > .000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid.Get() 			* (1 / b2.p3.ask.Get()) 	* b1.p1.bid.Get();			return result > .000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.ask.Get()) 	* b2.p1.bid.Get() 			* b1.p2.bid.Get();			return result > .000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.ask.Get()) 	* b2.p2.bid.Get() 			* b1.p1.bid.Get();			return result > .000055; });
 	
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask.Get()) 	* (1 / b2.p2.ask.Get()) 	* b1.p3.bid.Get();			return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask.Get()) 	* b2.p3.bid.Get() 			* (1 / b1.p2.ask.Get());	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask.Get()) 	* (1 / b2.p1.ask.Get()) 	* b1.p3.bid.Get();			return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask.Get()) 	* b2.p3.bid.Get() 			* (1 / b1.p1.ask.Get());	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid.Get() 			* (1 / b2.p1.ask.Get()) 	* (1 / b1.p2.ask.Get());	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid.Get() 			* (1 / b2.p2.ask.Get()) 	* (1 / b1.p1.ask.Get());	return result > 1.000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask.Get()) 	* (1 / b2.p2.ask.Get()) 	* b1.p3.bid.Get();			return result > .000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask.Get()) 	* b2.p3.bid.Get() 			* (1 / b1.p2.ask.Get());	return result > .000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask.Get()) 	* (1 / b2.p1.ask.Get()) 	* b1.p3.bid.Get();			return result > .000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask.Get()) 	* b2.p3.bid.Get() 			* (1 / b1.p1.ask.Get());	return result > .000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid.Get() 			* (1 / b2.p1.ask.Get()) 	* (1 / b1.p2.ask.Get());	return result > .000055; });
+	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid.Get() 			* (1 / b2.p2.ask.Get()) 	* (1 / b1.p1.ask.Get());	return result > .000055; });
 
 	i = 0;
 
@@ -752,11 +752,12 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 }
 
 
-void FxArb1::CancelAllAndBlock(CancelAndBlockCondition &cancelAndBlockCondition) {
+void FxArb1::CancelAllAndBlock(
+			CancelAndBlockCondition &cancelAndBlockCondition) {
 
 	Assert(!m_cancelAndBlockCondition);
 	m_cancelAndBlockCondition = &cancelAndBlockCondition;
-	
+
 	size_t ordersCount = 0;
 	for (size_t i = 0; i < EQUATIONS_COUNT; ++i) {
 		ordersCount += CancelAllInEquationAtMarketPrice(
@@ -768,6 +769,22 @@ void FxArb1::CancelAllAndBlock(CancelAndBlockCondition &cancelAndBlockCondition)
 		Block();
 	}
 	
+}
+
+void FxArb1::WaitForCancelAndBlock(
+			CancelAndBlockCondition &cancelAndBlockCondition) {
+
+	Assert(!m_cancelAndBlockCondition);
+	m_cancelAndBlockCondition = &cancelAndBlockCondition;
+
+	foreach (const auto &position, m_positionsByEquation) {
+		if (!position.positions.empty()) {
+			return;
+		}
+	}
+
+	Block();
+
 }
 
 void FxArb1::CloseDelayed() {

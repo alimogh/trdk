@@ -100,6 +100,39 @@ public:
 			m_marketDataSources);
 	}
 
+public:
+
+	template<typename Call>
+	void CallEachStrategyAndBlock(const Call &call) {
+		Strategy::CancelAndBlockCondition condition;
+		boost::mutex::scoped_lock lock(condition.mutex);
+		size_t totalCount = 0;
+		foreach (auto &tagetStrategies, m_state->strategies) {
+			foreach (auto &strategy, tagetStrategies.second) {
+				{
+					const Strategy::Lock strategyLock(strategy->GetMutex());
+					call(*strategy, condition);
+				}
+				++totalCount;
+			}
+		}
+		for ( ; ; ) {
+			size_t blockedCount = totalCount;
+			foreach (auto &tagetStrategies, m_state->strategies) {
+				foreach (auto &strategy, tagetStrategies.second) {
+					if (strategy->IsBlocked()) {
+						AssertLt(0, blockedCount);
+						--blockedCount;
+					}
+				}
+			}
+			if (!blockedCount) {
+				break;
+			}
+			condition.condition.wait(lock);
+		}
+	}
+
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -391,33 +424,17 @@ const Security * Engine::Context::FindSecurity(const Symbol &symbol) const {
 }
 
 void Engine::Context::CancelAllAndBlock() {
-	Strategy::CancelAndBlockCondition condition;
-	boost::mutex::scoped_lock lock(condition.mutex);
-	size_t totalCount = 0;
-	foreach (auto &tagetStrategies, m_pimpl->m_state->strategies) {
-		foreach (auto &strategy, tagetStrategies.second) {
-			{
-				const Strategy::Lock strategyLock(strategy->GetMutex());
-				strategy->CancelAllAndBlock(condition);
-			}
-			++totalCount;
-		}
-	}
-	for ( ; ; ) {
-		size_t blockedCount = totalCount;
-		foreach (auto &tagetStrategies, m_pimpl->m_state->strategies) {
-			foreach (auto &strategy, tagetStrategies.second) {
-				if (strategy->IsBlocked()) {
-					AssertLt(0, blockedCount);
-					--blockedCount;
-				}
-			}
-		}
-		if (!blockedCount) {
-			break;
-		}
-		condition.condition.wait(lock);
-	}
+	m_pimpl->CallEachStrategyAndBlock(
+		[](Strategy &strategy, Strategy::CancelAndBlockCondition &condition) {
+			strategy.CancelAllAndBlock(condition);
+		});
+}
+
+void Engine::Context::WaitForCancelAndBlock() {
+	m_pimpl->CallEachStrategyAndBlock(
+		[](Strategy &strategy, Strategy::CancelAndBlockCondition &condition) {
+			strategy.WaitForCancelAndBlock(condition);
+		});
 }
 
 //////////////////////////////////////////////////////////////////////////
