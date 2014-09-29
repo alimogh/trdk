@@ -100,8 +100,8 @@ void CurrenexTrading::ScheduleSend(OrderToSend &order) {
 	{
 		const SendLock lock(m_sendMutex);
 		m_currentToSend->push_back(order);
+		m_sendCondition.notify_one();
 	}
-	m_sendCondition.notify_one();
 	order.timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_ENQUEUE);
 }
 
