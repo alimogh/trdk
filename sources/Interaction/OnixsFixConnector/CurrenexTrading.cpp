@@ -32,13 +32,24 @@ CurrenexTrading::CurrenexTrading(
 }
 
 CurrenexTrading::~CurrenexTrading() {
-	//...//
+	try {
+		{
+			const SendLock lock(m_sendMutex);
+			Assert(m_currentToSend);
+			m_currentToSend = nullptr;
+			m_sendCondition.notify_all();
+		}
+		m_sendThread.join();
+	} catch (...) {
+		AssertFailNoException();
+		throw;
+	}
 }
 
 void CurrenexTrading::SendThreadMain() {
 	try {
 		SendLock lock(m_sendMutex);
-		for ( ; ; ) {
+		while (m_currentToSend) {
 			while (!m_currentToSend->empty()) {
 				auto &toSend = *m_currentToSend;
 				m_currentToSend = &m_toSend.first == m_currentToSend

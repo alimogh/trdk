@@ -111,17 +111,13 @@ namespace trdk { namespace Engine {
 
 			void Stop() {
 				Assert(m_sync);
-				{
-					const Lock lock(m_sync->mutex);
-					AssertNe(int(TASK_STATE_STOPPED), int(m_taksState));
-					m_taksState = TASK_STATE_STOPPED;
-				}
-					
-				//! @todo see TRDK-165
-// 				m_sync->newDataCondition.notify_all();
-// 				if (m_readyToReadCondition) {
-// 					m_readyToReadCondition->notify_all();
-// 				}
+				const Lock lock(m_sync->mutex);
+				AssertNe(int(TASK_STATE_STOPPED), int(m_taksState));
+				m_taksState = TASK_STATE_STOPPED;
+ 				m_sync->newDataCondition.notify_all();
+				if (m_readyToReadCondition) {
+					m_readyToReadCondition->notify_all();
+ 				}
 			}
 
 			bool IsStopped(const Lock &lock) const {
@@ -195,8 +191,7 @@ namespace trdk { namespace Engine {
 					timeMeasurement.Measure(Lib::TimeMeasurement::DM_COMPLETE_LIST);
 
 					if (m_readyToReadCondition) {
-						//! @todo TRDK-165
-//						m_readyToReadCondition->notify_all();
+						m_readyToReadCondition->notify_all();
 					}
 
 				}
