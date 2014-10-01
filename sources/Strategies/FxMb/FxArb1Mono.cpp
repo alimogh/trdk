@@ -45,6 +45,164 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			//...//
 		}
 
+	public:
+
+	virtual void OnPositionUpdate(Position &positionRef) {
+
+		// Method calls each time when one of strategy positions updates.
+
+		EquationPosition &position
+			= dynamic_cast<EquationPosition &>(positionRef);
+		if (!position.IsObservationActive()) {
+			return;
+		}
+
+		if (position.IsCompleted() || position.IsCanceled()) {
+
+			auto &equationPositions
+				= GetEquationPosition(position.GetEquationIndex());
+
+			// Position closed, need to find out why:
+			if (position.GetOpenedQty() == 0) {
+				// IOC was canceled without filling, cancel all another
+				// orders at equation and close positions if another orders
+				// are filled:
+				Assert(!IsEquationOpenedFully(position.GetEquationIndex()));
+				if (!IsBlocked()) {
+					CloseDelayed();
+					CancelAllInEquationAtMarketPrice(
+						position.GetEquationIndex(),
+						Position::CLOSE_TYPE_OPEN_FAILED);
+				} else {
+					DelayCancel(position);
+				}
+			}
+			AssertEq(0, equationPositions.positions.size());
+			AssertLt(0, equationPositions.activeCount);
+
+			position.DeactivatieObservation();
+
+			// We completed work with this position, forget it...
+			AssertLt(0, equationPositions.activeCount);
+			if (!--equationPositions.activeCount) {
+
+				const auto &b1 = GetBroker<1>();
+				const auto &broker1 = GetBrokerConf<1>();
+				const auto &b2 = GetBroker<2>();
+				const auto &broker2 = GetBrokerConf<2>();
+			    
+				GetContext().GetLog().Equation(
+		    
+					"Closing executed",
+					position.GetEquationIndex(),
+		    
+					// broker 1:
+					broker1.name,
+					broker1.sendList[0].security->GetSymbol().GetSymbol(),
+					false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+					b1.p1.bid,
+					b1.p1.ask,
+					false, // Reversed Bid if pair is reversed
+					false, // Reversed Ask if pair is reversed
+		    
+					// broker 2:
+					GetBrokerConf<2>().name,
+					broker2.sendList[2].security->GetSymbol().GetSymbol(),
+					false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+					b2.p2.bid,
+					b2.p2.ask,
+					false, // Reversed Bid if pair is reversed
+					false, // Reversed Ask if pair is reversed
+		    
+					// broker 3:
+					broker1.name,
+					broker1.sendList[2].security->GetSymbol().GetSymbol(),
+					false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+					b1.p3.bid,
+					b1.p3.ask,
+					false, // Reversed Bid if pair is reversed
+					false, // Reversed Ask if pair is reversed
+		    
+					position.GetEquationIndex() < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
+					position.GetEquationIndex() >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
+    
+				if (!CheckCancelAndBlockCondition()) {
+					AssertEq(0, equationPositions.positions.size());
+					OnOpportunityReturn();
+				}
+
+			}
+
+			return;
+
+		}
+
+		Assert(position.IsStarted());
+		AssertEq(
+			PAIRS_COUNT,
+			GetEquationPosition(position.GetEquationIndex()).activeCount);
+		AssertEq(
+			PAIRS_COUNT,
+			GetEquationPosition(position.GetEquationIndex()).positions.size());
+		Assert(position.IsOpened());
+		AssertEq(position.GetPlanedQty(), position.GetOpenedQty());
+
+		if (!IsEquationOpenedFully(position.GetEquationIndex())) {
+			// Not all orders are filled yet, we need wait more...
+			return;
+		}
+
+		{
+
+			const auto &b1 = GetBroker<1>();
+			const auto &broker1 = GetBrokerConf<1>();
+			const auto &b2 = GetBroker<2>();
+			const auto &broker2 = GetBrokerConf<2>();
+			    
+			GetContext().GetLog().Equation(
+		    
+				"Opening executed",
+				position.GetEquationIndex(),
+		    
+				// broker 1:
+				broker1.name,
+				broker1.sendList[0].security->GetSymbol().GetSymbol(),
+				false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+				b1.p1.bid,
+				b1.p1.ask,
+				false, // Reversed Bid if pair is reversed
+				false, // Reversed Ask if pair is reversed
+		    
+				// broker 2:
+				GetBrokerConf<2>().name,
+				broker2.sendList[2].security->GetSymbol().GetSymbol(),
+				false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+				b2.p2.bid,
+				b2.p2.ask,
+				false, // Reversed Bid if pair is reversed
+				false, // Reversed Ask if pair is reversed
+		    
+				// broker 3:
+				broker1.name,
+				broker1.sendList[2].security->GetSymbol().GetSymbol(),
+				false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+				b1.p3.bid,
+				b1.p3.ask,
+				false, // Reversed Bid if pair is reversed
+				false, // Reversed Ask if pair is reversed
+		    
+				position.GetEquationIndex() < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
+				position.GetEquationIndex() >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
+
+		}
+
+		position.GetTimeMeasurement().Measure(
+			TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+
+		OnOpportunityReturn();
+
+	}
+
 	protected:
 		
 		virtual void CheckOpportunity(

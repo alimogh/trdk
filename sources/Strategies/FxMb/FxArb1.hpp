@@ -230,8 +230,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					Security &,
 					Lib::TimeMeasurement::Milestones &);
 
-		virtual void OnPositionUpdate(trdk::Position &);
-		
 		virtual void ReportDecision(const Position &) const;
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
 
@@ -327,6 +325,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		bool CheckRestoreState();
 
+		void DelayCancel(EquationPosition &);
 		void CloseDelayed();
 
 		bool CheckCancelAndBlockCondition();
