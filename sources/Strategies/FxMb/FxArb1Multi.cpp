@@ -57,8 +57,41 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		}
 
 	public:
-		
-		virtual void CheckOpportunity(
+
+	virtual void OnPositionUpdate(Position &positionRef) {
+
+		EquationPosition &position
+			= dynamic_cast<EquationPosition &>(positionRef);
+		if (!position.IsObservationActive()) {
+			return;
+		}
+
+		auto &equationPositions
+			= GetEquationPosition(position.GetEquationIndex());
+
+		Assert(!position.IsCanceled());
+
+		if (position.IsCompleted()) {
+			position.DeactivatieObservation();
+			AssertLt(0, equationPositions.activeCount);
+			if (!--equationPositions.activeCount) {
+				position.GetTimeMeasurement().Measure(
+					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+				equationPositions.positions.clear();
+				OnOpportunityReturn();
+			}
+			return;
+		}
+
+		if (position.IsOpened() && !position.HasActiveCloseOrders()) {
+			position.GetTimeMeasurement().Measure(
+				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+			return;
+		}
+
+	}
+	
+	virtual void CheckOpportunity(
 					TimeMeasurement::Milestones &timeMeasurement) {
 
 			// Level 1 update callback - will be called every time when
@@ -78,18 +111,16 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				= GetEquationPosition(m_equations.first);
 			const auto &secondEquationPositions
 				= GetEquationPosition(m_equations.second);
+
 			if (
-					(firstEquationPositions.activeCount
-					&& firstEquationPositions.positions.empty())
-					|| (secondEquationPositions.activeCount
-						&& firstEquationPositions.positions.empty())) {
-				// Position in closing process - waiting until it  will be
-				// finished:
+					IsInTurnPositionAction(
+						firstEquationPositions,
+						secondEquationPositions)) {
 				timeMeasurement.Measure(
 					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 				return;
 			}
-			
+
 			if (firstEquationPositions.activeCount) {
 				AssertEq(0, secondEquationPositions.activeCount);
 				AssertEq(0, secondEquationPositions.positions.size());
@@ -163,31 +194,15 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 			
 			if (GetEquationPosition(opposideEquationIndex).activeCount) {
-				// Current equation and opposite equation - first closing
-				// opposite positions, then wait until any of equations will be
-				// "true" again.
-				timeMeasurement.Measure(
-					TimeMeasurement::SM_STRATEGY_DECISION_START);
-			
 				AssertLt(
 					0,
-					GetEquationPosition(opposideEquationIndex).positions.size());
-
-				// Double amount at closing at this strategy:
-				auto &positions = GetEquationPosition(opposideEquationIndex);
-				foreach (auto &position, positions.positions) {
-					position->SetOpenedQty(position->GetOpenedQty() * 2);
-				}
-
-				CancelAllInEquationAtMarketPrice(
+					GetEquationPosition(opposideEquationIndex)
+						.positions.size());
+				TurnPositions(
 					opposideEquationIndex,
-					Position::CLOSE_TYPE_TAKE_PROFIT);
-
-				timeMeasurement.Measure(
-					TimeMeasurement::SM_STRATEGY_DECISION_STOP);
-			
+					equationIndex,
+					timeMeasurement);
 			} else {
-
 				// Opening positions for this equitation:
 				OnEquation(
 					equationIndex,
@@ -195,7 +210,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					b1,
 					b2,
 					timeMeasurement);
-
 			}
 
 			return true;
@@ -219,6 +233,103 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				b1,
 				b2,
 				timeMeasurement);
+
+		}
+
+		void TurnPositions(
+					size_t fromEquationIndex,
+					size_t toEquationIndex,
+					TimeMeasurement::Milestones &timeMeasurement) {
+
+			timeMeasurement.Measure(
+				TimeMeasurement::SM_STRATEGY_DECISION_START);
+			
+			auto &fromPositions = GetEquationPosition(fromEquationIndex);
+			AssertEq(PAIRS_COUNT, fromPositions.activeCount);
+			AssertEq(PAIRS_COUNT, fromPositions.positions.size());
+			auto &toPositions = GetEquationPosition(toEquationIndex);
+			AssertEq(0, toPositions.activeCount);
+			AssertEq(0, toPositions.positions.size());
+		
+			foreach (auto &fromPosition, fromPositions.positions) {
+
+				boost::shared_ptr<EquationPosition> position;
+
+				if (fromPosition->GetType() == Position::TYPE_LONG) {
+					position.reset(
+						new EquationShortPosition(
+							toEquationIndex,
+							fromEquationIndex,
+							*this,
+							dynamic_cast<EquationLongPosition &>(*fromPosition),
+							fromPosition->GetPlanedQty(),
+							fromPosition->GetSecurity().GetAskPriceScaled(),
+							timeMeasurement));
+				} else {
+					AssertEq(Position::TYPE_SHORT, fromPosition->GetType());
+					position.reset(
+						new EquationLongPosition(
+							toEquationIndex,
+							fromEquationIndex,
+							*this,
+							dynamic_cast<EquationShortPosition &>(*fromPosition),
+							fromPosition->GetPlanedQty(),
+							fromPosition->GetSecurity().GetBidPriceScaled(),
+							timeMeasurement));
+				}
+
+				if (!toPositions.activeCount) {
+					timeMeasurement.Measure(
+						TimeMeasurement::SM_STRATEGY_EXECUTION_START);
+				}
+
+				// Sends orders to broker:
+				position->OpenAtMarketPrice();
+				
+				// Binding all positions into one equation:
+				toPositions.positions.push_back(position);
+				Verify(++toPositions.activeCount <= PAIRS_COUNT);
+
+			}
+
+			toPositions.lastStartTime = boost::get_system_time();
+
+			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+				
+		}
+
+		bool IsInTurnPositionAction(
+					const EquationOpenedPositions &firstEquationPositions,
+					const EquationOpenedPositions &secondEquationPositions)
+				const {
+
+			if (
+					firstEquationPositions.activeCount
+					&& secondEquationPositions.activeCount) {
+				return true;
+			}
+
+			const auto &check = [](
+						const EquationOpenedPositions &positions)
+					-> bool {
+				if (!positions.activeCount) {
+					return false;
+				}
+				AssertGe(PAIRS_COUNT, positions.activeCount);
+				if (positions.activeCount < PAIRS_COUNT) {
+					return true;
+				}
+				foreach (const auto &p, positions.positions) {
+					if (p->HasActiveOrders()) {
+						return true;
+					}
+				}
+				return false;
+			};
+
+			return
+				check(firstEquationPositions)
+				|| check(secondEquationPositions);
 
 		}
 

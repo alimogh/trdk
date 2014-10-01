@@ -14,6 +14,9 @@
 
 namespace trdk { namespace Strategies { namespace FxMb {
 
+	class EquationLongPosition;
+	class EquationShortPosition;
+
 	////////////////////////////////////////////////////////////////////////////////
 
 	class EquationPosition : virtual public Position {
@@ -35,6 +38,26 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					tradeSystem,
 					security,
 					currency,
+					qty,
+					startPrice,
+					timeMeasurement),
+				m_equationIndex(equationIndex),
+				m_oppositeEquationIndex(oppositeEquationIndex),
+				m_isObservationActive(true) {
+			//...//
+		}
+
+		explicit EquationPosition(
+					size_t equationIndex,
+					size_t oppositeEquationIndex,
+					trdk::Strategy &strategy,
+					Position &opposidePosition,
+					const trdk::Qty &qty,
+					const trdk::ScaledPrice &startPrice,
+					const Lib::TimeMeasurement::Milestones &timeMeasurement)
+				: Position(
+					strategy,
+					opposidePosition,
 					qty,
 					startPrice,
 					timeMeasurement),
@@ -118,6 +141,37 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			//...//
 		}
 
+		explicit EquationLongPosition(
+					size_t equationIndex,
+					size_t oppositeEquationIndex,
+					trdk::Strategy &strategy,
+					ShortPosition &opposidePosition,
+					const trdk::Qty &qty,
+					const trdk::ScaledPrice &startPrice,
+					const Lib::TimeMeasurement::Milestones &timeMeasurement)
+				: Position(
+					strategy,
+					opposidePosition,
+					qty,
+					startPrice,
+					timeMeasurement),
+				EquationPosition(
+					equationIndex,
+					oppositeEquationIndex,
+					strategy,
+					opposidePosition,
+					qty,
+					startPrice,
+					timeMeasurement),
+				LongPosition(
+					strategy,
+					opposidePosition,
+					qty,
+					startPrice,
+					timeMeasurement) {
+			//...//
+		}
+
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -161,6 +215,37 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					tradeSystem,
 					security,
 					currency,
+					qty,
+					startPrice,
+					timeMeasurement) {
+			//...//
+		}
+
+		explicit EquationShortPosition(
+					size_t equationIndex,
+					size_t oppositeEquationIndex,
+					trdk::Strategy &strategy,
+					LongPosition &opposidePosition,
+					const trdk::Qty &qty,
+					const trdk::ScaledPrice &startPrice,
+					const Lib::TimeMeasurement::Milestones &timeMeasurement)
+				: Position(
+					strategy,
+					opposidePosition,
+					qty,
+					startPrice,
+					timeMeasurement),
+				EquationPosition(
+					equationIndex,
+					oppositeEquationIndex,
+					strategy,
+					opposidePosition,
+					qty,
+					startPrice,
+					timeMeasurement),
+				ShortPosition(
+					strategy,
+					opposidePosition,
 					qty,
 					startPrice,
 					timeMeasurement) {

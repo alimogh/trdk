@@ -16,6 +16,9 @@
 
 namespace trdk {
 
+	class LongPosition;
+	class ShortPosition;
+
 	//////////////////////////////////////////////////////////////////////////
 
 	class TRDK_CORE_API Position
@@ -74,8 +77,14 @@ namespace trdk {
 				trdk::TradeSystem &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
-				trdk::Qty,
-				trdk::ScaledPrice startPrice,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &startPrice,
+				const Lib::TimeMeasurement::Milestones &);
+		explicit Position(
+				trdk::Strategy &,
+				trdk::Position &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &startPrice,
 				const Lib::TimeMeasurement::Milestones &);
 		virtual ~Position();
 
@@ -303,8 +312,14 @@ namespace trdk {
 				trdk::TradeSystem &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
-				trdk::Qty,
-				trdk::ScaledPrice startPrice,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &startPrice,
+				const Lib::TimeMeasurement::Milestones &);
+		explicit LongPosition(
+				trdk::Strategy &,
+				trdk::ShortPosition &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &startPrice,
 				const Lib::TimeMeasurement::Milestones &);
 		virtual ~LongPosition();
 
@@ -366,8 +381,14 @@ namespace trdk {
 				trdk::TradeSystem &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
-				trdk::Qty,
-				trdk::ScaledPrice startPrice,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &startPrice,
+				const Lib::TimeMeasurement::Milestones &);
+		explicit ShortPosition(
+				trdk::Strategy &,
+				trdk::LongPosition &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &startPrice,
 				const Lib::TimeMeasurement::Milestones &);
 		virtual ~ShortPosition();
 
