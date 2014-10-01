@@ -329,6 +329,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		void CloseDelayed();
 
+		bool CheckCancelAndBlockCondition();
+
 	private:
 
 		const Equations m_equations;

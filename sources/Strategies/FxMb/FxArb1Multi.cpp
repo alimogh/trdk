@@ -78,7 +78,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				position.GetTimeMeasurement().Measure(
 					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
 				equationPositions.positions.clear();
-				OnOpportunityReturn();
+				if (!CheckCancelAndBlockCondition()) {
+					OnOpportunityReturn();
+				}
 			}
 			return;
 		}

@@ -672,13 +672,7 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 				position.GetEquationIndex() < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
 				position.GetEquationIndex() >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
 
-			if (m_cancelAndBlockCondition) {
-				const boost::mutex::scoped_lock lock(
-					m_cancelAndBlockCondition->mutex);
-				Block();
-				m_cancelAndBlockCondition->condition.notify_all();
-				m_cancelAndBlockCondition = nullptr;
-			} else {
+			if (!CheckCancelAndBlockCondition()) {
 				AssertEq(0, equationPositions.positions.size());
 				OnOpportunityReturn();
 			}
@@ -755,6 +749,16 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 
 }
 
+bool FxArb1::CheckCancelAndBlockCondition() {
+	if (!m_cancelAndBlockCondition) {
+		return false;
+	}
+	const boost::mutex::scoped_lock lock(m_cancelAndBlockCondition->mutex);
+	Block();
+	m_cancelAndBlockCondition->condition.notify_all();
+	m_cancelAndBlockCondition = nullptr;
+	return true;
+}
 
 void FxArb1::CancelAllAndBlock(
 			CancelAndBlockCondition &cancelAndBlockCondition) {
