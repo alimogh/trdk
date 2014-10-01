@@ -197,12 +197,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		struct EquationOpenedPositions {
 			
 			size_t activeCount;
+			size_t waitsForReplyCount;
 			std::vector<boost::shared_ptr<EquationPosition>> positions;
 
 			boost::posix_time::ptime lastStartTime;
 
 			EquationOpenedPositions()
-					: activeCount(0) {
+					: activeCount(0),
+					waitsForReplyCount(0) {
 				//...//
 			}
 
@@ -288,6 +290,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			AssertLe(0, equationIndex);
 			AssertGt(m_positionsByEquation.size(), equationIndex);
 			return m_positionsByEquation[equationIndex];
+		}
+		const EquationOpenedPositions & GetEquationPosition(
+					size_t equationIndex)
+				const {
+			return const_cast<FxArb1 *>(this)
+				->GetEquationPosition(equationIndex);
 		}
 
 		//! Returns true if all orders for equation are filled.
