@@ -306,6 +306,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					size_t opposideEquationIndex,
 					const Broker &b1,
 					const Broker &b2,
+					bool useIoc,
 					Lib::TimeMeasurement::Milestones &);
 
 		//! Return true for long position, false for short position
