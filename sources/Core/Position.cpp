@@ -157,6 +157,8 @@ public:
 
 	TimeMeasurement::Milestones m_timeMeasurement;
 
+	boost::shared_ptr<Position> m_oppositePosition;
+
 	explicit Implementation(
 				Position &position,
 				TradeSystem &tradeSystem,
@@ -181,36 +183,43 @@ public:
 			m_cancelState(CANCEL_STATE_NOT_CANCELED),
 			m_tag(m_strategy->GetTag()),
 			m_timeMeasurement(timeMeasurement) {
-		//...//
+		AssertLt(0, m_planedQty);
 	}
 
 public:
 
 	void UpdateOpening(
-				OrderId orderId,
-				TradeSystem::OrderStatus orderStatus,
+				const OrderId &orderId,
+				const TradeSystem::OrderStatus &orderStatus,
 				Qty filled,
-				Qty remaining,
+				const Qty &remaining,
 				double avgPrice) {
 
 		UseUnused(orderId);
 
+		boost::shared_ptr<Position> updatedOppositePosition;
+
 		{
 
 			const WriteLock lock(m_mutex);
+			std::unique_ptr<const WriteLock> oppositePositionLock;
+			if (m_oppositePosition) {
+				oppositePositionLock.reset(
+					new WriteLock(m_oppositePosition->m_pimpl->m_mutex));
+			}
 
 			Assert(!m_position.IsOpened());
 			Assert(!m_position.IsClosed());
 			Assert(!m_position.IsCompleted());
-			AssertNe(orderId, 0);
-			AssertNe(m_opened.orderId, 0);
+			AssertNe(0, orderId);
+			AssertNe(0, m_opened.orderId);
 			AssertEq(m_opened.orderId, orderId);
-			AssertEq(m_closed.price.total, 0);
-			AssertEq(m_closed.price.count, 0);
+			AssertEq(0, m_closed.price.total);
+			AssertEq(0, m_closed.price.count);
 			Assert(m_opened.time.is_not_a_date_time());
 			Assert(m_closed.time.is_not_a_date_time());
 			AssertLe(m_opened.qty, m_planedQty);
-			AssertEq(m_closed.qty, 0);
+			AssertEq(0, m_closed.qty);
 			Assert(m_opened.hasOrder);
 			Assert(!m_closed.hasOrder);
 
@@ -220,70 +229,138 @@ public:
 					return;
 				case TradeSystem::ORDER_STATUS_PENDIGN:
 				case TradeSystem::ORDER_STATUS_SUBMITTED:
-					AssertEq(m_opened.qty, 0);
-					AssertEq(m_opened.price.total, 0);
-					AssertEq(m_opened.price.count, 0);
-					AssertEq(m_planedQty, remaining);
+					AssertEq(0, m_opened.qty);
+					AssertEq(0, m_opened.price.total);
+					AssertEq(0, m_opened.price.count);
+					AssertEq(
+						m_planedQty
+							+	(m_oppositePosition
+									?	m_oppositePosition->GetActiveQty()
+									:	0),
+						remaining);
 					AssertEq(0, filled);
 					AssertEq(0, avgPrice);
 					return;
 				case TradeSystem::ORDER_STATUS_FILLED:
-					Assert(filled + remaining == m_planedQty);
-					Assert(m_opened.qty + filled <= m_planedQty);
 					Assert(avgPrice > 0);
-					m_opened.price.total += m_security.ScalePrice(avgPrice);
-					++m_opened.price.count;
-					m_opened.qty += filled;
-					AssertGt(m_opened.qty, 0);
-					ReportOpeningUpdate("filled", orderStatus);
-					if (remaining != 0) {
-						return;
+					if (m_oppositePosition) {
+						AssertLe(m_oppositePosition->GetActiveQty(), filled);
+						const auto filledForOpposite
+							= filled >= m_oppositePosition->GetActiveQty()
+								?	filled - m_oppositePosition->GetActiveQty()
+								:	filled;
+						filled -= filledForOpposite;
+						m_oppositePosition->m_pimpl->m_closed.price.total
+							+= m_security.ScalePrice(avgPrice);
+						++m_oppositePosition->m_pimpl->m_closed.price.count;
+						m_oppositePosition->m_pimpl->m_closed.qty
+							+= filledForOpposite;
+						AssertLt(0, m_oppositePosition->m_pimpl->m_closed.qty);
+						m_oppositePosition->m_pimpl->ReportClosingUpdate(
+							"filled",
+							orderStatus);
+						updatedOppositePosition = m_oppositePosition;
+					}
+					if (filled != 0) {
+						AssertEq(filled + remaining, m_planedQty);
+						AssertLe(m_opened.qty + filled, m_planedQty);
+						m_opened.price.total += m_security.ScalePrice(avgPrice);
+						++m_opened.price.count;
+						m_opened.qty += filled;
+						AssertLe(0, m_opened.qty);
+						ReportOpeningUpdate("filled", orderStatus);
+					} else {
+						AssertNe(0, remaining);
 					}
 					break;
 				case TradeSystem::ORDER_STATUS_INACTIVE:
-					ReportOpeningUpdate("error", orderStatus);
+					if (m_oppositePosition) {
+						m_oppositePosition->m_pimpl->ReportClosingUpdate(
+							"inactive",
+							orderStatus);
+						m_oppositePosition->m_pimpl->m_isInactive = true;
+						updatedOppositePosition = m_oppositePosition;
+					}
+					ReportOpeningUpdate("inactive", orderStatus);
 					m_isInactive = true;
 					break;
 				case TradeSystem::ORDER_STATUS_ERROR:
+					if (m_oppositePosition) {
+						m_oppositePosition->m_pimpl->ReportClosingUpdate(
+							"error",
+							orderStatus);
+						m_oppositePosition->m_pimpl->m_isError = true;
+						updatedOppositePosition = m_oppositePosition;
+					}
 					ReportOpeningUpdate("error", orderStatus);
 					m_isError = true;
 					break;
 				case TradeSystem::ORDER_STATUS_CANCELLED:
+					if (m_oppositePosition) {
+						m_oppositePosition->m_pimpl->ReportClosingUpdate(
+							"canceled",
+							orderStatus);
+						updatedOppositePosition = m_oppositePosition;
+					}
 					ReportOpeningUpdate("canceled", orderStatus);
 					break;
 			}
 	
-			AssertLe(m_opened.qty, m_planedQty);
-			Assert(m_opened.time.is_not_a_date_time());
-
-			if (m_position.GetOpenedQty() > 0) {
+	
+			if (m_oppositePosition && m_oppositePosition->GetActiveQty() == 0) {
 				try {
-					m_opened.time
+					m_oppositePosition->m_pimpl->m_closed.time
 						= !m_security.GetContext().GetSettings().IsReplayMode()
 							?	boost::get_system_time()
 							:	m_security.GetLastMarketDataTime();
 				} catch (...) {
 					AssertFailNoException();
 				}
+				m_oppositePosition->m_pimpl->m_closed.hasOrder = false;
+				updatedOppositePosition = m_oppositePosition;
+				m_oppositePosition.reset();
 			}
 
-			m_opened.hasOrder = false;
+			if (remaining == 0) {
 
-			if (CancelIfSet()) {
-				return;
+				AssertLe(m_opened.qty, m_planedQty);
+				Assert(m_opened.time.is_not_a_date_time());
+
+				if (m_position.GetOpenedQty() > 0) {
+					try {
+						m_opened.time
+							= !m_security.GetContext().GetSettings().IsReplayMode()
+								?	boost::get_system_time()
+								:	m_security.GetLastMarketDataTime();
+
+					} catch (...) {
+						AssertFailNoException();
+					}
+				}
+
+				m_opened.hasOrder = false;
+				if (CancelIfSet()) {
+					return;
+				}
+
 			}
 
 		}
 		
-		SignalUpdate();
+		if (updatedOppositePosition) {
+			updatedOppositePosition->m_pimpl->SignalUpdate();
+		}
+		if (remaining == 0) {
+			SignalUpdate();
+		}
 
 	}
 
 	void UpdateClosing(
-				OrderId orderId,
-				TradeSystem::OrderStatus orderStatus,
-				Qty filled,
-				Qty remaining,
+				const OrderId &orderId,
+				const TradeSystem::OrderStatus &orderStatus,
+				const Qty &filled,
+				const Qty &remaining,
 				double avgPrice) {
 
 		UseUnused(orderId);
@@ -292,6 +369,7 @@ public:
 
 			const WriteLock lock(m_mutex);
 
+			Assert(!m_oppositePosition);
 			Assert(m_position.IsOpened());
 			Assert(!m_position.IsClosed());
 			Assert(!m_position.IsCompleted());
@@ -523,6 +601,7 @@ public:
 	OrderId Open(const OpenImpl &openImpl) {
 		
 		const WriteLock lock(m_mutex);
+		std::unique_ptr<const WriteLock> oppositePositionLock;
 		if (m_position.IsStarted()) {
 			throw AlreadyStartedError();
 		}
@@ -533,31 +612,62 @@ public:
 		Assert(!m_position.IsCompleted());
 		Assert(!m_position.HasActiveOrders());
 
+		auto qtyToOpen = m_position.GetNotOpenedQty();
+		const char *action = "open-pre";
+
+		if (m_oppositePosition) {
+			oppositePositionLock.reset(
+				new WriteLock(m_oppositePosition->m_pimpl->m_mutex));
+			Assert(!m_oppositePosition->m_pimpl->m_strategy);
+			Assert(m_oppositePosition->IsStarted());
+			Assert(!m_oppositePosition->IsError());
+			Assert(!m_oppositePosition->HasActiveOrders());
+			Assert(!m_oppositePosition->IsCompleted());
+			if (!m_oppositePosition->IsOpened()) {
+				throw NotOpenedError();
+			} else if (
+						m_oppositePosition->HasActiveCloseOrders()
+						|| m_oppositePosition->IsClosed()) {
+				throw AlreadyClosedError();
+			}
+			action = "close-open-pre";
+			qtyToOpen += m_oppositePosition->GetActiveQty();
+		}
+
 		if (m_strategy) {
 			m_strategy->Register(m_position);
 		}
 
+
+			
 		m_security.GetContext().GetLog().TradingEx(
 			logTag,
 			[&]() -> boost::format {
-				boost::format message("%5%\t%1%\t%2%\topen-pre\t%3%\tqty=%4%");
+				boost::format message(
+					"%5%\t%1%\t%2%\t%6%\t%3%\tqty=%4%");
 				message
 					%	m_security
 					%	m_position.GetTypeStr()
 					%	m_tag
 					%	m_position.GetPlanedQty()
-					%	m_position.GetTradeSystem().GetTag();
+					%	m_position.GetTradeSystem().GetTag()
+					%	action;
 				return std::move(message);
 			});
 
 		try {
-			const auto orderId = openImpl(m_position.GetNotOpenedQty());
+			const auto orderId = openImpl(qtyToOpen);
 			m_strategy = nullptr;
 			m_opened.hasOrder = true;
 			AssertEq(nOrderId, m_opened.orderId);
 			m_opened.orderId = orderId;
 			Assert(!m_isStarted);
 			m_isStarted = true;
+			if (m_oppositePosition) {
+				m_oppositePosition->m_pimpl->m_closeType = CLOSE_TYPE_NONE;
+				m_oppositePosition->m_pimpl->m_closed.hasOrder = true;
+				m_oppositePosition->m_pimpl->m_closed.orderId = orderId;
+			}
 			return orderId;
 		} catch (...) {
 			if (m_strategy) {
@@ -569,7 +679,9 @@ public:
 	}
 
 	template<typename CloseImpl>
-	OrderId CloseUnsafe(CloseType closeType, const CloseImpl &closeImpl) {
+	OrderId CloseUnsafe(
+				const CloseType &closeType,
+				const CloseImpl &closeImpl) {
 		
 		if (!m_position.IsOpened()) {
 			throw NotOpenedError();
@@ -577,6 +689,7 @@ public:
 			throw AlreadyClosedError();
 		}
 
+		Assert(!m_oppositePosition);
 		Assert(!m_strategy);
 		Assert(m_position.IsStarted());
 		Assert(!m_position.IsError());
@@ -680,8 +793,8 @@ Position::Position(
 			TradeSystem &tradeSystem,
 			Security &security,
 			const Currency &currency,
-			Qty qty,
-			ScaledPrice startPrice,
+			const Qty &qty,
+			const ScaledPrice &startPrice,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl = new Implementation(
 		*this,
@@ -692,7 +805,33 @@ Position::Position(
 		qty,
 		startPrice,
 		timeMeasurement);
-	AssertGt(m_pimpl->m_planedQty, 0);
+}
+
+
+Position::Position(
+			Strategy &strategy,
+			Position &oppositePosition,
+			const Qty &qty,
+			const ScaledPrice &startPrice,
+			const TimeMeasurement::Milestones &timeMeasurement) {
+	Assert(oppositePosition.IsOpened());
+	Assert(!oppositePosition.HasActiveCloseOrders());
+	Assert(!oppositePosition.IsClosed());
+	Assert(!oppositePosition.m_pimpl->m_strategy);
+	Assert(oppositePosition.IsStarted());
+	Assert(!oppositePosition.IsError());
+	Assert(!oppositePosition.HasActiveOrders());
+	Assert(!oppositePosition.IsCompleted());
+	m_pimpl = new Implementation(
+		*this,
+		oppositePosition.m_pimpl->m_tradeSystem,
+		strategy,
+		oppositePosition.m_pimpl->m_security,
+		oppositePosition.m_pimpl->m_currency,
+		qty,
+		startPrice,
+		timeMeasurement);
+	m_pimpl->m_oppositePosition = oppositePosition.shared_from_this();
 }
 
 Position::~Position() {
@@ -1092,14 +1231,29 @@ LongPosition::LongPosition(
 			TradeSystem &tradeSystem,
 			Security &security,
 			const Currency &currency,
-			Qty qty,
-			ScaledPrice startPrice,
+			const Qty &qty,
+			const ScaledPrice &startPrice,
 			const TimeMeasurement::Milestones &timeMeasurement)
 		: Position(
 			strategy,
 			tradeSystem,
 			security,
 			currency,
+			qty,
+			startPrice,
+			timeMeasurement) {
+	//...//
+}
+
+LongPosition::LongPosition(
+			Strategy &strategy,
+			ShortPosition &oppositePosition,
+			const Qty &qty,
+			const ScaledPrice &startPrice,
+			const TimeMeasurement::Milestones &timeMeasurement)
+		: Position(
+			strategy,
+			oppositePosition,
 			qty,
 			startPrice,
 			timeMeasurement) {
@@ -1332,15 +1486,30 @@ ShortPosition::ShortPosition(
 			TradeSystem &tradeSystem,
 			Security &security,
 			const Currency &currency,
-			Qty qty,
-			ScaledPrice startPrice,
+			const Qty &qty,
+			const ScaledPrice &startPrice,
 			const TimeMeasurement::Milestones &timeMeasurement)
 		: Position(
 			strategy,
 			tradeSystem,
 			security,
 			currency,
-			abs(qty),
+			qty,
+			startPrice,
+			timeMeasurement) {
+	//...//
+}
+
+ShortPosition::ShortPosition(
+			Strategy &strategy,
+			LongPosition &oppositePosition,
+			const Qty &qty,
+			const ScaledPrice &startPrice,
+			const TimeMeasurement::Milestones &timeMeasurement)
+		: Position(
+			strategy,
+			oppositePosition,
+			qty,
 			startPrice,
 			timeMeasurement) {
 	//...//
