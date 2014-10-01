@@ -414,6 +414,7 @@ void FxArb1::StartPositionsOpening(
 			size_t opposideEquationIndex,
 			const Broker &b1,
 			const Broker &b2,
+			bool useIoc,
 			TimeMeasurement::Milestones &timeMeasurement) {
 
 	// Sends open-orders for each configured security:
@@ -539,7 +540,11 @@ void FxArb1::StartPositionsOpening(
 			}
 
 			// Sends orders to broker:
-			position->OpenAtMarketPriceImmediatelyOrCancel();
+			if (useIoc) {
+				position->OpenAtMarketPriceImmediatelyOrCancel();
+			} else {
+				position->OpenAtMarketPrice();
+			}
 				
 			// Binding all positions into one equation:
 			equationPositions.positions.push_back(position);

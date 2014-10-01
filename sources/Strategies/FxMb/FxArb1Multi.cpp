@@ -234,6 +234,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				opposideEquationIndex,
 				b1,
 				b2,
+				false,
 				timeMeasurement);
 
 		}
