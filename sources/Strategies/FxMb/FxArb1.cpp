@@ -575,6 +575,9 @@ void FxArb1::OnOpportunityUpdate(TimeMeasurement::Milestones &timeMeasurement) {
 }
 
 void FxArb1::OnOpportunityReturn() {
+	if (IsBlocked()) {
+		return;
+	}
 	auto startegyTimeMeasurement = GetContext().StartStrategyTimeMeasurement();
 	OnOpportunityUpdate(startegyTimeMeasurement);
 }
@@ -674,6 +677,7 @@ void FxArb1::OnPositionUpdate(trdk::Position &positionRef) {
 					m_cancelAndBlockCondition->mutex);
 				Block();
 				m_cancelAndBlockCondition->condition.notify_all();
+				m_cancelAndBlockCondition = nullptr;
 			} else {
 				AssertEq(0, equationPositions.positions.size());
 				OnOpportunityReturn();
@@ -775,10 +779,9 @@ void FxArb1::WaitForCancelAndBlock(
 			CancelAndBlockCondition &cancelAndBlockCondition) {
 
 	Assert(!m_cancelAndBlockCondition);
-	m_cancelAndBlockCondition = &cancelAndBlockCondition;
-
 	foreach (const auto &position, m_positionsByEquation) {
 		if (!position.positions.empty()) {
+			m_cancelAndBlockCondition = &cancelAndBlockCondition;
 			return;
 		}
 	}
