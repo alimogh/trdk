@@ -239,7 +239,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		
 		virtual void UpdateAlogImplSettings(const Lib::IniSectionRef &);
 
-		Equations CreateEquations(bool isFake) const;
+		Equations CreateEquations(const Lib::Ini &) const;
 
 	protected:
 
