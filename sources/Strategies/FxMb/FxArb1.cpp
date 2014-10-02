@@ -27,9 +27,7 @@ FxArb1::FxArb1(
 			const std::string &tag,
 			const IniSectionRef &conf)
 		: Base(context, name, tag),
-		m_equations(
-			CreateEquations(
-				conf.GetBase().ReadBoolKey("Common", "fake_equations"))),
+		m_equations(CreateEquations(conf.GetBase())),
 		m_isPairsByBrokerChecked(false) {
 
 	if (GetContext().GetTradeSystemsCount() != BROKERS_COUNT) {
@@ -202,29 +200,22 @@ pt::ptime FxArb1::OnSecurityStart(Security &security) {
 
 }
 
-FxArb1::Equations FxArb1::CreateEquations(bool isFake) const {
+FxArb1::Equations FxArb1::CreateEquations(const Ini &conf) const {
 			
 	Equations result;
 	result.resize(EQUATIONS_COUNT);
-	size_t i = 0;
 
-	if (isFake) {
-		GetLog().Info(
-			"USING FAKE EQUATIONS FOR DEBUGGING (always returns TRUE)!");
-		foreach (auto &equation, result) {
-			typedef const Broker B;
-			equation.first = [](const B &, const B &, double &result) -> bool {
-				result = 0;
-				return true;
-			};
-			equation.second = [i](const B &, const B &, Module::Log &log) {
-				log.Trading("Equation %1% : FAKE (always TRUE)!", i);
-			};
-			++i;
-		}
-		result.shrink_to_fit();
-		return result;
+	const auto comparisonValue = conf.ReadTypedKey<double>(
+		"Common",
+		"equation_result_comparison_value");
+	{
+		const char *const logMessage = "Equation result comparison value: %1%";
+		GetLog().Info(logMessage, comparisonValue);
+		GetLog().Trading(logMessage, comparisonValue);
 	}
+
+	typedef const Broker B;
+	size_t i = 0;
 
 	const auto add = [&result, &i](const Equation &equation) {
 		result[i++].first = equation;
@@ -232,49 +223,48 @@ FxArb1::Equations FxArb1::CreateEquations(bool isFake) const {
 	const auto addPrint = [&result, &i](const EquationPrint &equation) {
 		result[i++].second = equation;
 	};
-	typedef const Broker B;
 
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid.Get() 			* b2.p2.bid.Get() 			* (1 / b1.p3.ask.Get());	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid.Get() 			* (1 / b2.p3.ask.Get()) 	* b1.p2.bid.Get();			return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid.Get() 			* b2.p1.bid.Get() 			* (1 / b1.p3.ask.Get());	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid.Get() 			* (1 / b2.p3.ask.Get()) 	* b1.p1.bid.Get();			return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.ask.Get()) 	* b2.p1.bid.Get() 			* b1.p2.bid.Get();			return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.ask.Get()) 	* b2.p2.bid.Get() 			* b1.p1.bid.Get();			return result > 1.000055; });
-	
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask.Get()) 	* (1 / b2.p2.ask.Get()) 	* b1.p3.bid.Get();			return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask.Get()) 	* b2.p3.bid.Get() 			* (1 / b1.p2.ask.Get());	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask.Get()) 	* (1 / b2.p1.ask.Get()) 	* b1.p3.bid.Get();			return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask.Get()) 	* b2.p3.bid.Get() 			* (1 / b1.p1.ask.Get());	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid.Get() 			* (1 / b2.p1.ask.Get()) 	* (1 / b1.p2.ask.Get());	return result > 1.000055; });
-	add([](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid.Get() 			* (1 / b2.p2.ask.Get()) 	* (1 / b1.p1.ask.Get());	return result > 1.000055; });
+	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid.Get() 			* b2.p2.bid.Get() 			* (1 / b1.p3.ask.Get());	return result > comparisonValue; });
+	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid.Get() 			* (1 / b2.p3.ask.Get()) 	* b1.p2.bid.Get();			return result > comparisonValue; });
+	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid.Get() 			* b2.p1.bid.Get() 			* (1 / b1.p3.ask.Get());	return result > comparisonValue; });
+	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid.Get() 			* (1 / b2.p3.ask.Get()) 	* b1.p1.bid.Get();			return result > comparisonValue; });
+	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.ask.Get()) 	* b2.p1.bid.Get() 			* b1.p2.bid.Get();			return result > comparisonValue; });
+	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.ask.Get()) 	* b2.p2.bid.Get() 			* b1.p1.bid.Get();			return result > comparisonValue; });
+
+	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask.Get()) 	* (1 / b2.p2.ask.Get()) 	* b1.p3.bid.Get();			return result > comparisonValue; });
+	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask.Get()) 	* b2.p3.bid.Get() 			* (1 / b1.p2.ask.Get());	return result > comparisonValue; });
+	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask.Get()) 	* (1 / b2.p1.ask.Get()) 	* b1.p3.bid.Get();			return result > comparisonValue; });
+	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask.Get()) 	* b2.p3.bid.Get() 			* (1 / b1.p1.ask.Get());	return result > comparisonValue; });
+	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid.Get() 			* (1 / b2.p1.ask.Get()) 	* (1 / b1.p2.ask.Get());	return result > comparisonValue; });
+	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid.Get() 			* (1 / b2.p2.ask.Get()) 	* (1 / b1.p1.ask.Get());	return result > comparisonValue; });
 
 	i = 0;
 
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 1 : %1% * %2% * (1 / %3%) = %4%",	boost::make_tuple(	b1.p1.bid.GetConst(), b2.p2.bid.GetConst(), b1.p3.ask.GetConst(),	b1.p1.bid.GetConst() * b2.p2.bid.GetConst() * (1 / b1.p3.ask.GetConst())		));});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 1: %1% * %2% * (1 / %3%) = %4%",	boost::make_tuple(	b1.p1.bid.GetConst(), b2.p2.bid.GetConst(), b1.p3.ask.GetConst(),	b1.p1.bid.GetConst() * b2.p2.bid.GetConst() * (1 / b1.p3.ask.GetConst())		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 2 : %1% * (1 / %2%) * %3% = %4%",	boost::make_tuple(	b1.p1.bid.GetConst(), b2.p3.ask.GetConst(), b1.p2.bid.GetConst(),	b1.p1.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p2.bid.GetConst()		));});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 2: %1% * (1 / %2%) * %3% = %4%",	boost::make_tuple(	b1.p1.bid.GetConst(), b2.p3.ask.GetConst(), b1.p2.bid.GetConst(),	b1.p1.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p2.bid.GetConst()		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 3 : %1% * %2% * (1 / %3%) = %4%",	boost::make_tuple(	b1.p2.bid.GetConst(), b2.p1.bid.GetConst(), b1.p3.ask.GetConst(),	b1.p2.bid.GetConst() * b2.p1.bid.GetConst() * (1 / b1.p3.ask.GetConst())		));});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 3: %1% * %2% * (1 / %3%) = %4%",	boost::make_tuple(	b1.p2.bid.GetConst(), b2.p1.bid.GetConst(), b1.p3.ask.GetConst(),	b1.p2.bid.GetConst() * b2.p1.bid.GetConst() * (1 / b1.p3.ask.GetConst())		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 4 : %1% * (1 / %2%) * %3% = %4%",	boost::make_tuple(	b1.p2.bid.GetConst(), b2.p3.ask.GetConst(), b1.p1.bid.GetConst(),	b1.p2.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p1.bid.GetConst()		));});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 4: %1% * (1 / %2%) * %3% = %4%",	boost::make_tuple(	b1.p2.bid.GetConst(), b2.p3.ask.GetConst(), b1.p1.bid.GetConst(),	b1.p2.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p1.bid.GetConst()		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 5 : (1 / %1%) * %2% * %3% = %4%",	boost::make_tuple(	b1.p3.ask.GetConst(), b2.p1.bid.GetConst(), b1.p2.bid.GetConst(),	(1 / b1.p3.ask.GetConst()) * b2.p1.bid.GetConst() * b1.p2.bid.GetConst()		));});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 5: (1 / %1%) * %2% * %3% = %4%",	boost::make_tuple(	b1.p3.ask.GetConst(), b2.p1.bid.GetConst(), b1.p2.bid.GetConst(),	(1 / b1.p3.ask.GetConst()) * b2.p1.bid.GetConst() * b1.p2.bid.GetConst()		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 6 : (1 / %1%) * %2% * %3% = %4%",	boost::make_tuple(	b1.p3.ask.GetConst(), b2.p2.bid.GetConst(), b1.p1.bid.GetConst(),	(1 / b1.p3.ask.GetConst()) * b2.p2.bid.GetConst() * b1.p1.bid.GetConst()		));});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 6: (1 / %1%) * %2% * %3% = %4%",	boost::make_tuple(	b1.p3.ask.GetConst(), b2.p2.bid.GetConst(), b1.p1.bid.GetConst(),	(1 / b1.p3.ask.GetConst()) * b2.p2.bid.GetConst() * b1.p1.bid.GetConst()		));});
 	
 	
 
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 7 : (1 / %1%) * (1 / %2%) * %3% = %4%",		boost::make_tuple(b1.p1.ask.GetConst(), b2.p2.ask.GetConst(), b1.p3.bid.GetConst(),		(1 / b1.p1.ask.GetConst()) * (1 / b2.p2.ask.GetConst()) * b1.p3.bid.GetConst()		));});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 7: (1 / %1%) * (1 / %2%) * %3% = %4%",		boost::make_tuple(b1.p1.ask.GetConst(), b2.p2.ask.GetConst(), b1.p3.bid.GetConst(),		(1 / b1.p1.ask.GetConst()) * (1 / b2.p2.ask.GetConst()) * b1.p3.bid.GetConst()		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 8 : (1 / %1%) * %2% * (1 / %3%) = %4%",		boost::make_tuple(b1.p1.ask.GetConst(), b2.p3.bid.GetConst(), b1.p2.ask.GetConst(),		(1 / b1.p1.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p2.ask.GetConst())		));});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 8: (1 / %1%) * %2% * (1 / %3%) = %4%",		boost::make_tuple(b1.p1.ask.GetConst(), b2.p3.bid.GetConst(), b1.p2.ask.GetConst(),		(1 / b1.p1.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p2.ask.GetConst())		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 9 : (1 / %1%) * (1 / %2%) * %3% = %4%",		boost::make_tuple(b1.p2.ask.GetConst(), b2.p1.ask.GetConst(), b1.p3.bid.GetConst(),		(1 / b1.p2.ask.GetConst()) * (1 / b2.p1.ask.GetConst()) * b1.p3.bid.GetConst()		));});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 9: (1 / %1%) * (1 / %2%) * %3% = %4%",		boost::make_tuple(b1.p2.ask.GetConst(), b2.p1.ask.GetConst(), b1.p3.bid.GetConst(),		(1 / b1.p2.ask.GetConst()) * (1 / b2.p1.ask.GetConst()) * b1.p3.bid.GetConst()		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 10 : (1 / %1%) * %2% * (1 / %3%) = %4%",	boost::make_tuple(b1.p2.ask.GetConst(), b2.p3.bid.GetConst(), b1.p1.ask.GetConst(),		(1 / b1.p2.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p1.ask.GetConst())		));});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 10: (1 / %1%) * %2% * (1 / %3%) = %4%",	boost::make_tuple(b1.p2.ask.GetConst(), b2.p3.bid.GetConst(), b1.p1.ask.GetConst(),		(1 / b1.p2.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p1.ask.GetConst())		));});
 
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 11 : %1% * (1 / %2%) * (1 / %3%) = %4%",	boost::make_tuple(b1.p3.bid.GetConst(), b2.p1.ask.GetConst(), b1.p2.ask.GetConst(),		b1.p3.bid.GetConst() * (1 / b2.p1.ask.GetConst()) * (1 / b1.p2.ask.GetConst())		));});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 11: %1% * (1 / %2%) * (1 / %3%) = %4%",	boost::make_tuple(b1.p3.bid.GetConst(), b2.p1.ask.GetConst(), b1.p2.ask.GetConst(),		b1.p3.bid.GetConst() * (1 / b2.p1.ask.GetConst()) * (1 / b1.p2.ask.GetConst())		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 12 : %1% * (1 / %2%) * (1 / %3%) = %4%",	boost::make_tuple(b1.p3.bid.GetConst(), b2.p2.ask.GetConst(), b1.p1.ask.GetConst(),		b1.p3.bid.GetConst() * (1 / b2.p2.ask.GetConst()) * (1 / b1.p1.ask.GetConst())		));});
+	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 12: %1% * (1 / %2%) * (1 / %3%) = %4%",	boost::make_tuple(b1.p3.bid.GetConst(), b2.p2.ask.GetConst(), b1.p1.ask.GetConst(),		b1.p3.bid.GetConst() * (1 / b2.p2.ask.GetConst()) * (1 / b1.p1.ask.GetConst())		));});
 
 	AssertEq(EQUATIONS_COUNT, result.size());
 	result.shrink_to_fit();

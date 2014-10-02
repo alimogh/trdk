@@ -189,7 +189,6 @@ public:
 			});
 	}
 public:
-	template<typename Params>
 	void Trading(const char *str) throw() {
 		m_log.Trading(m_tag, str);
 	}
