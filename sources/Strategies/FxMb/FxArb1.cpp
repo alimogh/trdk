@@ -27,7 +27,9 @@ FxArb1::FxArb1(
 			const std::string &tag,
 			const IniSectionRef &conf)
 		: Base(context, name, tag),
-		m_equations(CreateEquations()),
+		m_equations(
+			CreateEquations(
+				conf.GetBase().ReadBoolKey("Common", "fake_equations"))),
 		m_isPairsByBrokerChecked(false),
 		m_cancelAndBlockCondition(nullptr) {
 
@@ -201,11 +203,29 @@ pt::ptime FxArb1::OnSecurityStart(Security &security) {
 
 }
 
-FxArb1::Equations FxArb1::CreateEquations() {
+FxArb1::Equations FxArb1::CreateEquations(bool isFake) const {
 			
 	Equations result;
 	result.resize(EQUATIONS_COUNT);
 	size_t i = 0;
+
+	if (isFake) {
+		GetLog().Info(
+			"USING FAKE EQUATIONS FOR DEBUGGING (always returns TRUE)!");
+		foreach (auto &equation, result) {
+			typedef const Broker B;
+			equation.first = [](const B &, const B &, double &result) -> bool {
+				result = 0;
+				return true;
+			};
+			equation.second = [i](const B &, const B &, Module::Log &log) {
+				log.Trading("Equation %1% : FAKE (always TRUE)!", i);
+			};
+			++i;
+		}
+		result.shrink_to_fit();
+		return result;
+	}
 
 	const auto add = [&result, &i](const Equation &equation) {
 		result[i++].first = equation;
