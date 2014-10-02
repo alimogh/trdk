@@ -232,7 +232,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		
 		virtual void UpdateAlogImplSettings(const Lib::IniSectionRef &);
 
-		static Equations CreateEquations();
+		Equations CreateEquations(bool isFake) const;
 
 	protected:
 
