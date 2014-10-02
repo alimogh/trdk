@@ -303,19 +303,15 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		//! Returns true if all orders for equation are filled.
 		bool IsEquationOpenedFully(size_t equationIndex) const;
+
+		bool IsEquationCanceledOrCompleted(size_t equationIndex) const;
+
 		//! Cancels all opened for equation orders and close positions for it.
 		size_t CancelAllInEquationAtMarketPrice(
 					size_t equationIndex,
 					const Position::CloseType &closeType)
 				throw();
 	
-		//! Logging current bid/ask values for all pairs (if logging enabled).
-		void LogBrokersState(
-					size_t equationIndex,
-					const Broker &,
-					const Broker &)
-				const;
-
 		//! Sends open-orders for each configured security.
 		void StartPositionsOpening(
 					size_t equationIndex,
@@ -336,7 +332,22 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void DelayCancel(EquationPosition &);
 		void CloseDelayed();
 
+		//! Logging current bid/ask values for all pairs (if logging enabled).
+		void LogBrokersState(
+					size_t equationIndex,
+					const Broker &,
+					const Broker &)
+				const;
+		void LogOpeningDetection(size_t equationIndex) const;
+		void LogOpeningExecuted(size_t equationIndex) const;
+		void LogClosingDetection(size_t equationIndex) const;
+		void LogClosingExecuted(size_t equationIndex) const;
+	
 		bool CheckCancelAndBlockCondition();
+
+	private:
+		
+		void LogEquation(const char *, size_t, bool, bool) const;
 
 	private:
 
