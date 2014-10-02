@@ -368,57 +368,6 @@ void FxArb1::LogBrokersState(
 	GetEquations()[equationIndex].second(b1, b2, GetLog());
 }
 
-void FxArb1::LogEquationPosition(
-			const char *action,
-			size_t equationIndex,
-			const PairsReverse &reverse) {
-
-	const auto &pair1Conf = GetBrokerConf<1>().sendList[0];
-	const auto &pair1 = *pair1Conf.security;
-	
-	const auto &pair2Conf = GetBrokerConf<2>().sendList[1];
-	const auto &pair2 = *pair2Conf.security;
-	
-	const auto &pair3Conf = GetBrokerConf<1>().sendList[2];
-	const auto &pair3 = *pair3Conf.security;
-	
-	GetContext().GetLog().Equation(
-		
-		action,
-		equationIndex,
-		
-		// broker 1:
-		GetBrokerConf<1>().name,
-		pair1.GetSymbol().GetSymbol(),
-		reverse[0], // Indicates if pair is reversed or not  (TRUE or FALSE)
-		pair1.GetBidPrice(),
-		pair1.GetAskPrice(),
-		false, // Reversed Bid if pair is reversed
-		false, // Reversed Ask if pair is reversed
-		
-		// broker 2:
-		GetBrokerConf<2>().name,
-		pair2.GetSymbol().GetSymbol(),
-		reverse[1], // Indicates if pair is reversed or not  (TRUE or FALSE)
-		pair2.GetBidPrice(),
-		pair2.GetAskPrice(),
-		false, // Reversed Bid if pair is reversed
-		false, // Reversed Ask if pair is reversed
-		
-		// broker 3:
-		GetBrokerConf<1>().name,
-		pair3.GetSymbol().GetSymbol(),
-		reverse[2], // Indicates if pair is reversed or not  (TRUE or FALSE)
-		pair3.GetBidPrice(),
-		pair3.GetAskPrice(),
-		false, // Reversed Bid if pair is reversed
-		false, // Reversed Ask if pair is reversed
-
-		equationIndex < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
-		equationIndex >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
-
-}
-
 void FxArb1::StartPositionsOpening(
 			size_t equationIndex,
 			size_t opposideEquationIndex,
@@ -559,12 +508,11 @@ void FxArb1::StartPositionsOpening(
 			// Binding all positions into one equation:
 			equationPositions.positions.push_back(position);
 			Verify(++equationPositions.activeCount <= PAIRS_COUNT);
+			Verify(++equationPositions.waitsForReplyCount <= PAIRS_COUNT);
 
 		}
 
 		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
-
-		LogEquationPosition("Opening detected", equationIndex, reversed);
 
 		equationPositions.lastStartTime = boost::get_system_time();
 

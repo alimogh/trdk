@@ -312,10 +312,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					const Broker &,
 					const Broker &)
 				const;
-		void LogEquationPosition(
-					const char *action,
-					size_t equationIndex,
-					const PairsReverse &);
 
 		//! Sends open-orders for each configured security.
 		void StartPositionsOpening(

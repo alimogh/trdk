@@ -78,7 +78,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			if (!--equationPositions.activeCount) {
 				position.GetTimeMeasurement().Measure(
 					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
-				LogClosing(position.GetEquationIndex());
+				LogClosingExecuted(position.GetEquationIndex());
 				equationPositions.positions.clear();
 				if (!CheckCancelAndBlockCondition()) {
 					OnOpportunityReturn();
@@ -89,10 +89,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		if (position.IsOpened() && !position.HasActiveCloseOrders()) {
 			AssertLt(0, equationPositions.waitsForReplyCount);
-			if (!--equationPositions.activeCount) {
+			if (!--equationPositions.waitsForReplyCount) {
 				position.GetTimeMeasurement().Measure(
 					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
-				LogOpening(position.GetEquationIndex());
+				LogOpeningExecuted(position.GetEquationIndex());
 			}
 			return;
 		}
@@ -251,7 +251,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					TimeMeasurement::Milestones &timeMeasurement) {
 
 			LogClosingDetection(fromEquationIndex);
-			LogOpeningDetection(toEquationIndex);
 
 			timeMeasurement.Measure(
 				TimeMeasurement::SM_STRATEGY_DECISION_START);
@@ -303,12 +302,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// Binding all positions into one equation:
 				toPositions.positions.push_back(position);
 				Verify(++toPositions.activeCount <= PAIRS_COUNT);
+				Verify(++toPositions.waitsForReplyCount <= PAIRS_COUNT);
 
 			}
 
 			toPositions.lastStartTime = boost::get_system_time();
-
 			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+
+			LogOpeningDetection(toEquationIndex);
 				
 		}
 
@@ -316,6 +317,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					const EquationOpenedPositions &firstEquationPositions,
 					const EquationOpenedPositions &secondEquationPositions)
 				const {
+
+			if (
+					firstEquationPositions.waitsForReplyCount
+					|| secondEquationPositions.waitsForReplyCount) {
+				return true;
+			}
 
 			if (
 					firstEquationPositions.activeCount
@@ -351,18 +358,34 @@ namespace trdk { namespace Strategies { namespace FxMb {
 	private:
 
 		void LogOpeningDetection(size_t equationIndex) const {
-			LogEquation("Closing detected", equationIndex);
+			AssertEq(
+				PAIRS_COUNT,
+				GetEquationPosition(equationIndex).activeCount);
+			AssertEq(
+				PAIRS_COUNT,
+				GetEquationPosition(equationIndex).waitsForReplyCount);
+			LogEquation("Opening detected", equationIndex);
 		}
 
-		void LogOpening(size_t equationIndex) const {
+		void LogOpeningExecuted(size_t equationIndex) const {
+			AssertEq(
+				PAIRS_COUNT,
+				GetEquationPosition(equationIndex).activeCount);
+			AssertEq(0, GetEquationPosition(equationIndex).waitsForReplyCount);
 			LogEquation("Opening executed", equationIndex);
 		}
 
 		void LogClosingDetection(size_t equationIndex) const {
+			AssertEq(
+				PAIRS_COUNT,
+				GetEquationPosition(equationIndex).activeCount);
+			AssertEq(0, GetEquationPosition(equationIndex).waitsForReplyCount);
 			LogEquation("Closing detected", equationIndex);
 		}
 
-		void LogClosing(size_t equationIndex) const {
+		void LogClosingExecuted(size_t equationIndex) const {
+			AssertEq(0, GetEquationPosition(equationIndex).activeCount);
+			AssertEq(0, GetEquationPosition(equationIndex).waitsForReplyCount);
 			LogEquation("Closing executed", equationIndex);
 		}
 
@@ -373,7 +396,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			const auto &equationPositions = GetEquationPosition(equationIndex);
 			const auto &positions = equationPositions.positions;
-			AssertEq(PAIRS_COUNT, equationPositions.activeCount);
 			AssertEq(PAIRS_COUNT, positions.size());
 			if (positions.size() < PAIRS_COUNT) {
 				return;
