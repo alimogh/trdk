@@ -74,6 +74,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		if (position.IsCompleted()) {
 			position.DeactivatieObservation();
 			AssertLt(0, equationPositions.activeCount);
+			AssertEq(0, equationPositions.waitsForReplyCount);
 			if (!--equationPositions.activeCount) {
 				position.GetTimeMeasurement().Measure(
 					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
@@ -84,8 +85,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		}
 
 		if (position.IsOpened() && !position.HasActiveCloseOrders()) {
-			position.GetTimeMeasurement().Measure(
-				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+			AssertLt(0, equationPositions.waitsForReplyCount);
+			if (!--equationPositions.waitsForReplyCount) {
+				position.GetTimeMeasurement().Measure(
+					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+			}
 			return;
 		}
 
@@ -198,13 +202,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					0,
 					GetEquationPosition(opposideEquationIndex)
 						.positions.size());
+				LogBrokersState(equationIndex, b1, b2);
 				TurnPositions(
 					opposideEquationIndex,
 					equationIndex,
 					timeMeasurement);
 			} else {
 				// Opening positions for this equitation:
-				OnEquation(
+				OnFirstEquation(
 					equationIndex,
 					opposideEquationIndex,
 					b1,
@@ -216,17 +221,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		}
 
-		void OnEquation(
+		void OnFirstEquation(
 					size_t equationIndex,
 					size_t opposideEquationIndex,
 					const Broker &b1,
 					const Broker &b2,
 					TimeMeasurement::Milestones &timeMeasurement) {
-
 			AssertNe(equationIndex, opposideEquationIndex);
 			AssertEq(BROKERS_COUNT, GetContext().GetTradeSystemsCount());
-
-			// Send open-orders:
 			StartPositionsOpening(
 				equationIndex,
 				opposideEquationIndex,
@@ -234,7 +236,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				b2,
 				false,
 				timeMeasurement);
-
 		}
 
 		void TurnPositions(
@@ -248,9 +249,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			auto &fromPositions = GetEquationPosition(fromEquationIndex);
 			AssertEq(PAIRS_COUNT, fromPositions.activeCount);
 			AssertEq(PAIRS_COUNT, fromPositions.positions.size());
+			AssertEq(0, fromPositions.waitsForReplyCount);
 			auto &toPositions = GetEquationPosition(toEquationIndex);
 			AssertEq(0, toPositions.activeCount);
 			AssertEq(0, toPositions.positions.size());
+			AssertEq(0, toPositions.waitsForReplyCount);
 		
 			foreach (auto &fromPosition, fromPositions.positions) {
 
@@ -290,19 +293,26 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// Binding all positions into one equation:
 				toPositions.positions.push_back(position);
 				Verify(++toPositions.activeCount <= PAIRS_COUNT);
+				Verify(++toPositions.waitsForReplyCount <= PAIRS_COUNT);
 
 			}
 
+			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+			
 			toPositions.lastStartTime = boost::get_system_time();
 
-			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
-				
 		}
 
 		bool IsInTurnPositionAction(
 					const EquationOpenedPositions &firstEquationPositions,
 					const EquationOpenedPositions &secondEquationPositions)
 				const {
+
+			if (
+					firstEquationPositions.waitsForReplyCount
+					|| secondEquationPositions.waitsForReplyCount) {
+				return true;
+			}
 
 			if (
 					firstEquationPositions.activeCount
@@ -314,6 +324,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						const EquationOpenedPositions &positions)
 					-> bool {
 				if (!positions.activeCount) {
+					AssertEq(0, positions.waitsForReplyCount);
 					return false;
 				}
 				AssertGe(PAIRS_COUNT, positions.activeCount);

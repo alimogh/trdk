@@ -304,6 +304,17 @@ bool FxArb1::GetEquationPositionWay(
 
 }
 
+bool FxArb1::IsEquationCanceledOrCompleted(size_t equationIndex) const {
+	const auto &positions = m_positionsByEquation[equationIndex];
+	foreach (const auto &position, positions.positions) {
+		if (position->IsCanceled() || position->IsCompleted()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+
 bool FxArb1::IsEquationOpenedFully(size_t equationIndex) const {
 	// Returns true if all orders for equation are filled.
 	const auto &positions = m_positionsByEquation[equationIndex];
@@ -325,11 +336,14 @@ size_t FxArb1::CancelAllInEquationAtMarketPrice(
 	try {
 		auto &positions = m_positionsByEquation[equationIndex];
 		foreach (auto &position, positions.positions) {
+			position->SetCloseStartPrice(
+				position->GetType() == Position::TYPE_LONG
+					?	position->GetSecurity().GetBidPriceScaled()
+					:	position->GetSecurity().GetAskPriceScaled());
 			if (position->CancelAtMarketPrice(closeType)) {
 				++result;
 			}
 		}
-		positions.positions.clear();
 	} catch (...) {
 		AssertFailNoException();
 		Block();
@@ -503,8 +517,11 @@ void FxArb1::StartPositionsOpening(
 			// Binding all positions into one equation:
 			equationPositions.positions.push_back(position);
 			Verify(++equationPositions.activeCount <= PAIRS_COUNT);
+			Verify(++equationPositions.waitsForReplyCount <= PAIRS_COUNT);
 
 		}
+
+		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
 		equationPositions.lastStartTime = boost::get_system_time();
 
@@ -514,8 +531,6 @@ void FxArb1::StartPositionsOpening(
 			Position::CLOSE_TYPE_SYSTEM_ERROR);
 		throw;
 	}
-
-	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
 }
 

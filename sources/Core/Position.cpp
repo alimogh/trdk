@@ -623,6 +623,7 @@ public:
 			Assert(!m_oppositePosition->IsError());
 			Assert(!m_oppositePosition->HasActiveOrders());
 			Assert(!m_oppositePosition->IsCompleted());
+			AssertEq(0, m_oppositePosition->GetCloseStartPrice());
 			if (!m_oppositePosition->IsOpened()) {
 				throw NotOpenedError();
 			} else if (
@@ -632,6 +633,7 @@ public:
 			}
 			action = "close-open-pre";
 			qtyToOpen += m_oppositePosition->GetActiveQty();
+			m_oppositePosition->SetCloseStartPrice(m_openStartPrice);
 		}
 
 		if (m_strategy) {

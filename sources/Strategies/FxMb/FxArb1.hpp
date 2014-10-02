@@ -197,12 +197,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		struct EquationOpenedPositions {
 			
 			size_t activeCount;
+			size_t waitsForReplyCount;
 			std::vector<boost::shared_ptr<EquationPosition>> positions;
 
 			boost::posix_time::ptime lastStartTime;
 
 			EquationOpenedPositions()
-					: activeCount(0) {
+					: activeCount(0),
+					waitsForReplyCount(0) {
 				//...//
 			}
 
@@ -284,22 +286,24 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			AssertGt(m_positionsByEquation.size(), equationIndex);
 			return m_positionsByEquation[equationIndex];
 		}
+		const EquationOpenedPositions & GetEquationPosition(
+					size_t equationIndex)
+				const {
+			return const_cast<FxArb1 *>(this)
+				->GetEquationPosition(equationIndex);
+		}
 
 		//! Returns true if all orders for equation are filled.
 		bool IsEquationOpenedFully(size_t equationIndex) const;
+
+		bool IsEquationCanceledOrCompleted(size_t equationIndex) const;
+
 		//! Cancels all opened for equation orders and close positions for it.
 		size_t CancelAllInEquationAtMarketPrice(
 					size_t equationIndex,
 					const Position::CloseType &closeType)
 				throw();
 	
-		//! Logging current bid/ask values for all pairs (if logging enabled).
-		void LogBrokersState(
-					size_t equationIndex,
-					const Broker &,
-					const Broker &)
-				const;
-
 		//! Sends open-orders for each configured security.
 		void StartPositionsOpening(
 					size_t equationIndex,
@@ -319,6 +323,13 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		void DelayCancel(EquationPosition &);
 		void CloseDelayed();
+
+		//! Logging current bid/ask values for all pairs (if logging enabled).
+		void LogBrokersState(
+					size_t equationIndex,
+					const Broker &,
+					const Broker &)
+				const;
 
 	private:
 

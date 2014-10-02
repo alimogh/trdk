@@ -59,11 +59,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			if (!position.IsObservationActive()) {
 				return;
 			}
+			auto &equationPositions
+				= GetEquationPosition(position.GetEquationIndex());
 
 			if (position.IsCompleted() || position.IsCanceled()) {
-
-				auto &equationPositions
-					= GetEquationPosition(position.GetEquationIndex());
 
 				// Position closed, need to find out why:
 				if (position.GetOpenedQty() == 0) {
@@ -80,7 +79,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						DelayCancel(position);
 					}
 				}
-				AssertEq(0, equationPositions.positions.size());
+				AssertLt(0, equationPositions.positions.size());
 				AssertLt(0, equationPositions.activeCount);
 
 				position.DeactivatieObservation();
@@ -89,6 +88,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				AssertLt(0, equationPositions.activeCount);
 				if (!--equationPositions.activeCount) {
 					AssertEq(0, equationPositions.positions.size());
+					equationPositions.positions.clear();
+					equationPositions.waitsForReplyCount = 0;
 					OnOpportunityReturn();
 				}
 
@@ -113,6 +114,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			position.GetTimeMeasurement().Measure(
 				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+
+			equationPositions.waitsForReplyCount = 0;
 
 			OnOpportunityReturn();
 
@@ -145,15 +148,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			for (size_t i = 0; i < GetEquations().size(); ++i) {
 
 				const auto &positions = GetEquationPosition(i);
-				// activeCount > 0 says that it has "broker postions",
-				// positions.empty() that we already sent orders to close.
-				// Together - we sent orders, but not yet received update
-				// from broker. So this position will be closed in any case
-				// - command with MKT orders already sent.
 				if (positions.activeCount) {
 							// Position in closing process - waiting until it
 							// will be finished:
-					if (	positions.positions.empty()
+					AssertLt(0, positions.positions.size());
+					if (	IsEquationCanceledOrCompleted(i)
 								// We will not close position this period after
 								// start:
 							||	positions.lastStartTime + m_positionGracePeriod
