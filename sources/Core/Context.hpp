@@ -26,16 +26,8 @@ namespace trdk {
 			const std::string *broker;
 			// Name of Pair
 			const std::string *name;
-			// Indicates if pair is reversed or not  (TRUE or FALSE)
-			bool reversed;
-			// Bid of pair 1
-			double bid;
-			// Ask of Pair 1
-			double ask;
-			// Reversed Bid if pair is reversed
-			bool bidReversed;
-			// Reversed Ask if pair is reversed
-			bool askReversed;
+			double price;
+			bool isBuy;
 		};
 
 		OpportunityNumber opportunityNumber;
@@ -49,8 +41,7 @@ namespace trdk {
 		PairRecordParam pair2;
 		PairRecordParam pair3;
 
-		const char *resultOfY1;
-		const char *resultOfY2;
+		bool isResultOfY1;
 	
 	};
 
@@ -250,49 +241,21 @@ namespace trdk {
 	
 		void Equation(
 					const OpportunityNumber &opportunityNumber,
-					// Opening detected, Opening executed, Closing detected, Closing executed
-					// ex: Ouverture Initiale (theoretical opening)
 					const char *action,
-					// Number of equation that was detected
-					// ex: 1
 					size_t equation,
-					// Name of Broker
-					// ex: Fastmatch
 					const std::string &broker1,
-					// Name of Pair
-					// ex: EUR/USD
 					const std::string &pair1,
-					// Indicates if pair is reversed or not  (TRUE or FALSE)
-					// False
-					bool pair1Reversed,
-					// Bid of pair 1
-					// ex: 1.39186
-					double pair1Bid,
-					// Ask of Pair 1
-					// ex: 1.39191
-					double pair1Ask,
-					// Reversed Bid if pair is reversed
-					// ex: 0
-					bool pair1BidReversed,
-					// Reversed Ask if pair is reversed
-					// ex: 0
-					bool pair1AskReversed,
+					double pair1Price,
+					bool isPair1Buy,
 					const std::string &broker2,
 					const std::string &pair2,
-					bool pair2Reversed,
-					double pair2Bid,
-					double pair2Ask,
-					bool pair2BidReversed,
-					bool pair2AskReversed,
+					double pair2Price,
+					bool isPair2Buy,
 					const std::string &broker3,
 					const std::string &pair3,
-					bool pair3Reversed,
-					double pair3Bid,
-					double pair3Ask,
-					bool pair3BidReversed,
-					bool pair3AskReversed,
-					const char *resultOfY1,
-					const char *resultOfY2) {
+					double pair3Price,
+					bool isPair3Buy,
+					bool isResultOfY1) {
 			const EquationRecordParam params = {
 				opportunityNumber,
 				action,
@@ -300,32 +263,22 @@ namespace trdk {
 				{
 					&broker1,
 					&pair1,
-					pair1Reversed,
-					pair1Bid,
-					pair1Ask,
-					pair1BidReversed,
-					pair1AskReversed
+					pair1Price,
+					isPair1Buy
 				},
 				{
 					&broker2,
 					&pair2,
-					pair2Reversed,
-					pair2Bid,
-					pair2Ask,
-					pair2BidReversed,
-					pair2AskReversed
+					pair2Price,
+					isPair2Buy
 				},
 				{
 					&broker3,
 					&pair3,
-					pair3Reversed,
-					pair3Bid,
-					pair3Ask,
-					pair3BidReversed,
-					pair3AskReversed
+					pair3Price,
+					isPair3Buy
 				},
-				resultOfY1,
-				resultOfY2
+				isResultOfY1
 			};
 			Equation(params);
 		}

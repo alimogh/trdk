@@ -255,35 +255,26 @@ public:
 		pt::ptime time;
 
 		struct PairRecord {
-			// Name of Broker
+			//! Name of Broker
 			String broker;
-			// Name of Pair
+			//! Name of Pair
 			String name;
-			// Indicates if pair is reversed or not  (TRUE or FALSE)
-			bool reversed;
-			// Bid of pair 1
-			double bid;
-			// Ask of Pair 1
-			double ask;
-			// Reversed Bid if pair is reversed
-			bool bidReversed;
-			// Reversed Ask if pair is reversed
-			bool askReversed;
+			double price;
+			bool isBuy;
 		};
 
 		OpportunityNumber opportunityNumber;
 
-		// Opening detected, Opening executed, Closing detected, Closing executed
+		//! Opening detected, Opening executed, Closing detected, Closing executed
 		String action;
-		// Number of equation that was detected
+		//! Number of equation that was detected
 		size_t equation;
 		
 		PairRecord pair1;
 		PairRecord pair2;
 		PairRecord pair3;
 
-		String resultOfY1;
-		String resultOfY2;
+		bool isResultOfY1;
 
 		static void SavePair(
 					const EquationRecordParam::PairRecordParam &param,
@@ -298,11 +289,8 @@ public:
 				param.name->end(),
 				std::back_inserter(record.name));
 			record.name.push_back(0);
-			record.reversed = param.reversed;
-			record.bid = param.bid;
-			record.ask = param.ask;
-			record.bidReversed = param.bidReversed;
-			record.askReversed = param.askReversed;
+			record.price = param.price;
+			record.isBuy = param.isBuy;
 		}
 
 		void Save(const pt::ptime &time, const EquationRecordParam &params) {
@@ -322,27 +310,16 @@ public:
 			SavePair(params.pair2, pair2);
 			SavePair(params.pair3, pair3);
 
-			std::copy(
-				params.resultOfY1,
-				params.resultOfY1 + strlen(params.resultOfY1) + 1,
-				std::back_inserter(resultOfY1));
-			std::copy(
-				params.resultOfY2,
-				params.resultOfY2 + strlen(params.resultOfY2) + 1,
-				std::back_inserter(resultOfY2));
+			isResultOfY1 = params.isResultOfY1;
 
 		}
 
 		static void FlushPair(PairRecord &record, LogState &log) {
 			*log.log
-				<< &record.broker[0]
-				<< ';' << &record.name[0]
-				<< ';' << (record.reversed ? "TRUE" : "FALSE")
-				<< ';' << record.bid
-				<< ';' << record.ask
-				<< ';' << (record.bidReversed ? "TRUE" : "FALSE")
-				<< ';' << (record.askReversed ? "TRUE" : "FALSE")
-				<< ';';
+				<< &record.broker[0] << ';'
+				<< &record.name[0] << ';'
+				<< record.price << ';'
+				<< (record.isBuy ? "BUY" : "SELL") << ';';
 			record.broker.clear();
 			record.name.clear();
 		}
@@ -357,24 +334,15 @@ public:
 
 			*log.log << &action[0] << ';';
 			action.clear();
+
+
+			*log.log
+				<< equation << ';'
+				<< (isResultOfY1 ? "Y1" : "Y2") << ';';
 			
 			FlushPair(pair1, log);
-			// 5 empty fields:
-			*log.log << ";;;;;";
-			
 			FlushPair(pair2, log);
-			// 5 empty fields:
-			*log.log << ";;;;;";
-
 			FlushPair(pair3, log);
-			// 5 empty fields:
-			*log.log << ";;;;;";
-
-			*log.log << &resultOfY1[0] << ';';
-			resultOfY1.clear();
-
-			*log.log << &resultOfY2[0] << ';';
-			resultOfY2.clear();
 
 			*log.log << std::endl;
 

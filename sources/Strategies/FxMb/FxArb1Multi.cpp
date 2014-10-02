@@ -250,8 +250,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					size_t toEquationIndex,
 					TimeMeasurement::Milestones &timeMeasurement) {
 
-			LogClosingDetection(fromEquationIndex);
-
 			timeMeasurement.Measure(
 				TimeMeasurement::SM_STRATEGY_DECISION_START);
 			
@@ -312,6 +310,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			toPositions.currentOpportunityNumber
 				= GetContext().TakeOpportunityNumber();
 
+			LogClosingDetection(fromEquationIndex);
 			LogOpeningDetection(toEquationIndex);
 				
 		}
@@ -367,7 +366,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			AssertEq(
 				PAIRS_COUNT,
 				GetEquationPosition(equationIndex).waitsForReplyCount);
-			LogEquation("Opening detected", equationIndex);
+			LogEquation("Opening detected", equationIndex, false, false);
 		}
 
 		void LogOpeningExecuted(size_t equationIndex) const {
@@ -375,7 +374,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				PAIRS_COUNT,
 				GetEquationPosition(equationIndex).activeCount);
 			AssertEq(0, GetEquationPosition(equationIndex).waitsForReplyCount);
-			LogEquation("Opening executed", equationIndex);
+			LogEquation("Opening executed", equationIndex, false, true);
 		}
 
 		void LogClosingDetection(size_t equationIndex) const {
@@ -383,18 +382,20 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				PAIRS_COUNT,
 				GetEquationPosition(equationIndex).activeCount);
 			AssertEq(0, GetEquationPosition(equationIndex).waitsForReplyCount);
-			LogEquation("Closing detected", equationIndex);
+			LogEquation("Closing detected", equationIndex, true, false);
 		}
 
 		void LogClosingExecuted(size_t equationIndex) const {
 			AssertEq(0, GetEquationPosition(equationIndex).activeCount);
 			AssertEq(0, GetEquationPosition(equationIndex).waitsForReplyCount);
-			LogEquation("Closing executed", equationIndex);
+			LogEquation("Closing executed", equationIndex, true, true);
 		}
 
 		void LogEquation(
 					const char *action,
-					size_t equationIndex)
+					size_t equationIndex,
+					bool isClosing,
+					bool isCompleted)
 				const {
 
 			const auto &equationPositions = GetEquationPosition(equationIndex);
@@ -404,6 +405,40 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				return;
 			}
 
+			const auto &p1 = *positions[0];
+			const auto &p2 = *positions[1];
+			const auto &p3 = *positions[2];
+
+			bool isP1Buy;
+			bool isP2Buy;
+			bool isP3Buy;
+
+			double p1Price;
+			double p2Price;
+			double p3Price;
+
+			const auto &getVals = [isClosing, isCompleted](
+						const Position &p,
+						bool &isBuy,
+						double &price) {
+				isBuy = p.GetType() == Position::TYPE_LONG
+					?	!isClosing
+					:	isClosing;
+				const auto &scaledPrice = !isCompleted
+					?	!isClosing
+						?	p.GetOpenStartPrice()
+						:	p.GetCloseStartPrice()
+					:	!isClosing
+						?	p.GetOpenPrice()
+						:	p.GetClosePrice();
+				AssertNe(0, scaledPrice);
+				price = p.GetSecurity().DescalePrice(scaledPrice);
+			};
+
+			getVals(p1, isP1Buy, p1Price);
+			getVals(p2, isP2Buy, p2Price);
+			getVals(p3, isP3Buy, p3Price);
+
 			GetContext().GetLog().Equation(
 
 				equationPositions.currentOpportunityNumber,
@@ -411,35 +446,22 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				action,
 				equationIndex,
 		    
-				// broker 1:
-				positions[0]->GetTradeSystem().GetTag(),
-				positions[0]->GetSecurity().GetSymbol().GetSymbol(),
-				false, // Indicates if pair is reversed or not  (TRUE or FALSE)
-				positions[0]->GetSecurity().GetBidPrice(),
-				positions[0]->GetSecurity().GetAskPrice(),
-				false, // Reversed Bid if pair is reversed
-				false, // Reversed Ask if pair is reversed
+				p1.GetTradeSystem().GetTag(),
+				p1.GetSecurity().GetSymbol().GetSymbol(),
+				p1Price,
+				isP1Buy,
+
+				p2.GetTradeSystem().GetTag(),
+				p2.GetSecurity().GetSymbol().GetSymbol(),
+				p2Price,
+				isP2Buy,
+
+				p3.GetTradeSystem().GetTag(),
+				p3.GetSecurity().GetSymbol().GetSymbol(),
+				p3Price,
+				isP3Buy,
 		    
-				// broker 2:
-				positions[1]->GetTradeSystem().GetTag(),
-				positions[1]->GetSecurity().GetSymbol().GetSymbol(),
-				false, // Indicates if pair is reversed or not  (TRUE or FALSE)
-				positions[1]->GetSecurity().GetBidPrice(),
-				positions[1]->GetSecurity().GetAskPrice(),
-				false, // Reversed Bid if pair is reversed
-				false, // Reversed Ask if pair is reversed
-		    
-				// broker 3:
-				positions[2]->GetTradeSystem().GetTag(),
-				positions[2]->GetSecurity().GetSymbol().GetSymbol(),
-				false, // Indicates if pair is reversed or not  (TRUE or FALSE)
-				positions[2]->GetSecurity().GetBidPrice(),
-				positions[2]->GetSecurity().GetAskPrice(),
-				false, // Reversed Bid if pair is reversed
-				false, // Reversed Ask if pair is reversed
-		    
-				equationIndex < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
-				equationIndex >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
+				equationIndex < (EQUATIONS_COUNT / 2));
 
 		}
 

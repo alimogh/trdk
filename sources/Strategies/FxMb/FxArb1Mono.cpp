@@ -89,47 +89,47 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				AssertLt(0, equationPositions.activeCount);
 				if (!--equationPositions.activeCount) {
 
-					const auto &b1 = GetBroker<1>();
-					const auto &broker1 = GetBrokerConf<1>();
-					const auto &b2 = GetBroker<2>();
-					const auto &broker2 = GetBrokerConf<2>();
+// 					const auto &b1 = GetBroker<1>();
+// 					const auto &broker1 = GetBrokerConf<1>();
+// 					const auto &b2 = GetBroker<2>();
+// 					const auto &broker2 = GetBrokerConf<2>();
 			    
-					GetContext().GetLog().Equation(
-
-						1,
-		    
-						"Closing executed",
-						position.GetEquationIndex(),
-		    
-						// broker 1:
-						broker1.name,
-						broker1.sendList[0].security->GetSymbol().GetSymbol(),
-						false, // Indicates if pair is reversed or not  (TRUE or FALSE)
-						b1.p1.bid,
-						b1.p1.ask,
-						false, // Reversed Bid if pair is reversed
-						false, // Reversed Ask if pair is reversed
-		    
-						// broker 2:
-						GetBrokerConf<2>().name,
-						broker2.sendList[2].security->GetSymbol().GetSymbol(),
-						false, // Indicates if pair is reversed or not  (TRUE or FALSE)
-						b2.p2.bid,
-						b2.p2.ask,
-						false, // Reversed Bid if pair is reversed
-						false, // Reversed Ask if pair is reversed
-		    
-						// broker 3:
-						broker1.name,
-						broker1.sendList[2].security->GetSymbol().GetSymbol(),
-						false, // Indicates if pair is reversed or not  (TRUE or FALSE)
-						b1.p3.bid,
-						b1.p3.ask,
-						false, // Reversed Bid if pair is reversed
-						false, // Reversed Ask if pair is reversed
-		    
-						position.GetEquationIndex() < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
-						position.GetEquationIndex() >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
+// 					GetContext().GetLog().Equation(
+// 
+// 						1,
+// 		    
+// 						"Closing executed",
+// 						position.GetEquationIndex(),
+// 		    
+// 						// broker 1:
+// 						broker1.name,
+// 						broker1.sendList[0].security->GetSymbol().GetSymbol(),
+// 						false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+// 						b1.p1.bid,
+// 						b1.p1.ask,
+// 						false, // Reversed Bid if pair is reversed
+// 						false, // Reversed Ask if pair is reversed
+// 		    
+// 						// broker 2:
+// 						GetBrokerConf<2>().name,
+// 						broker2.sendList[2].security->GetSymbol().GetSymbol(),
+// 						false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+// 						b2.p2.bid,
+// 						b2.p2.ask,
+// 						false, // Reversed Bid if pair is reversed
+// 						false, // Reversed Ask if pair is reversed
+// 		    
+// 						// broker 3:
+// 						broker1.name,
+// 						broker1.sendList[2].security->GetSymbol().GetSymbol(),
+// 						false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+// 						b1.p3.bid,
+// 						b1.p3.ask,
+// 						false, // Reversed Bid if pair is reversed
+// 						false, // Reversed Ask if pair is reversed
+// 		    
+// 						position.GetEquationIndex() < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
+// 						position.GetEquationIndex() >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
     
 					if (!CheckCancelAndBlockCondition()) {
 						AssertEq(0, equationPositions.positions.size());
@@ -159,47 +159,47 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			{
 
-				const auto &b1 = GetBroker<1>();
-				const auto &broker1 = GetBrokerConf<1>();
-				const auto &b2 = GetBroker<2>();
-				const auto &broker2 = GetBrokerConf<2>();
+// 				const auto &b1 = GetBroker<1>();
+// 				const auto &broker1 = GetBrokerConf<1>();
+// 				const auto &b2 = GetBroker<2>();
+// 				const auto &broker2 = GetBrokerConf<2>();
 			    
-				GetContext().GetLog().Equation(
-
-					1,
-		    
-					"Opening executed",
-					position.GetEquationIndex(),
-		    
-					// broker 1:
-					broker1.name,
-					broker1.sendList[0].security->GetSymbol().GetSymbol(),
-					false, // Indicates if pair is reversed or not  (TRUE or FALSE)
-					b1.p1.bid,
-					b1.p1.ask,
-					false, // Reversed Bid if pair is reversed
-					false, // Reversed Ask if pair is reversed
-		    
-					// broker 2:
-					GetBrokerConf<2>().name,
-					broker2.sendList[2].security->GetSymbol().GetSymbol(),
-					false, // Indicates if pair is reversed or not  (TRUE or FALSE)
-					b2.p2.bid,
-					b2.p2.ask,
-					false, // Reversed Bid if pair is reversed
-					false, // Reversed Ask if pair is reversed
-		    
-					// broker 3:
-					broker1.name,
-					broker1.sendList[2].security->GetSymbol().GetSymbol(),
-					false, // Indicates if pair is reversed or not  (TRUE or FALSE)
-					b1.p3.bid,
-					b1.p3.ask,
-					false, // Reversed Bid if pair is reversed
-					false, // Reversed Ask if pair is reversed
-		    
-					position.GetEquationIndex() < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
-					position.GetEquationIndex() >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
+// 				GetContext().GetLog().Equation(
+// 
+// 					1,
+// 		    
+// 					"Opening executed",
+// 					position.GetEquationIndex(),
+// 		    
+// 					// broker 1:
+// 					broker1.name,
+// 					broker1.sendList[0].security->GetSymbol().GetSymbol(),
+// 					false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+// 					b1.p1.bid,
+// 					b1.p1.ask,
+// 					false, // Reversed Bid if pair is reversed
+// 					false, // Reversed Ask if pair is reversed
+// 		    
+// 					// broker 2:
+// 					GetBrokerConf<2>().name,
+// 					broker2.sendList[2].security->GetSymbol().GetSymbol(),
+// 					false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+// 					b2.p2.bid,
+// 					b2.p2.ask,
+// 					false, // Reversed Bid if pair is reversed
+// 					false, // Reversed Ask if pair is reversed
+// 		    
+// 					// broker 3:
+// 					broker1.name,
+// 					broker1.sendList[2].security->GetSymbol().GetSymbol(),
+// 					false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+// 					b1.p3.bid,
+// 					b1.p3.ask,
+// 					false, // Reversed Bid if pair is reversed
+// 					false, // Reversed Ask if pair is reversed
+// 		    
+// 					position.GetEquationIndex() < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
+// 					position.GetEquationIndex() >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
 
 			}
 
@@ -315,42 +315,42 @@ namespace trdk { namespace Strategies { namespace FxMb {
  								"Going to close orders on equation %1% / 12",
 	 							oppositeEquationIndex);
 #						endif
-						GetContext().GetLog().Equation(
-
-							1,
-		
-							"Closing detected",
-							oppositeEquationIndex,
-		
-							// broker 1:
-							GetBrokerConf<1>().name,
-							GetBrokerConf<1>().sendList[0].security->GetSymbol().GetSymbol(),
-							false, // Indicates if pair is reversed or not  (TRUE or FALSE)
-							b1.p1.bid,
-							b1.p1.ask,
-							false, // Reversed Bid if pair is reversed
-							false, // Reversed Ask if pair is reversed
-		
-							// broker 2:
-							GetBrokerConf<2>().name,
-							GetBrokerConf<2>().sendList[2].security->GetSymbol().GetSymbol(),
-							false, // Indicates if pair is reversed or not  (TRUE or FALSE)
-							b2.p2.bid,
-							b2.p2.ask,
-							false, // Reversed Bid if pair is reversed
-							false, // Reversed Ask if pair is reversed
-		
-							// broker 3:
-							GetBrokerConf<2>().name,
-							GetBrokerConf<2>().sendList[2].security->GetSymbol().GetSymbol(),
-							false, // Indicates if pair is reversed or not  (TRUE or FALSE)
-							b1.p3.bid,
-							b1.p3.ask,
-							false, // Reversed Bid if pair is reversed
-							false, // Reversed Ask if pair is reversed
-		
-							oppositeEquationIndex < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
-							oppositeEquationIndex >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
+// 						GetContext().GetLog().Equation(
+// 
+// 							1,
+// 		
+// 							"Closing detected",
+// 							oppositeEquationIndex,
+// 		
+// 							// broker 1:
+// 							GetBrokerConf<1>().name,
+// 							GetBrokerConf<1>().sendList[0].security->GetSymbol().GetSymbol(),
+// 							false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+// 							b1.p1.bid,
+// 							b1.p1.ask,
+// 							false, // Reversed Bid if pair is reversed
+// 							false, // Reversed Ask if pair is reversed
+// 		
+// 							// broker 2:
+// 							GetBrokerConf<2>().name,
+// 							GetBrokerConf<2>().sendList[2].security->GetSymbol().GetSymbol(),
+// 							false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+// 							b2.p2.bid,
+// 							b2.p2.ask,
+// 							false, // Reversed Bid if pair is reversed
+// 							false, // Reversed Ask if pair is reversed
+// 		
+// 							// broker 3:
+// 							GetBrokerConf<2>().name,
+// 							GetBrokerConf<2>().sendList[2].security->GetSymbol().GetSymbol(),
+// 							false, // Indicates if pair is reversed or not  (TRUE or FALSE)
+// 							b1.p3.bid,
+// 							b1.p3.ask,
+// 							false, // Reversed Bid if pair is reversed
+// 							false, // Reversed Ask if pair is reversed
+// 		
+// 							oppositeEquationIndex < (EQUATIONS_COUNT / 2) ? "Y1 detected" : "",
+// 							oppositeEquationIndex >= (EQUATIONS_COUNT / 2) ? "Y2 detected" : "");
 
 						LogBrokersState(oppositeEquationIndex, b1, b2);
 
