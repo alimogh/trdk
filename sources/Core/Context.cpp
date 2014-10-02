@@ -271,6 +271,8 @@ public:
 			bool askReversed;
 		};
 
+		OpportunityNumber opportunityNumber;
+
 		// Opening detected, Opening executed, Closing detected, Closing executed
 		String action;
 		// Number of equation that was detected
@@ -306,6 +308,8 @@ public:
 		void Save(const pt::ptime &time, const EquationRecordParam &params) {
 
 			this->time = time;
+
+			opportunityNumber = params.opportunityNumber;
 
 			std::copy(
 				params.action,
@@ -348,8 +352,10 @@ public:
 			Assert(log.log);
 			
 			*log.log
-				/*  <<  List of opportunities here  */ << "1;"
-				<< time << ';' << &action[0] << ';';
+				<< opportunityNumber << ';'
+				<< time << ';';
+
+			*log.log << &action[0] << ';';
 			action.clear();
 			
 			FlushPair(pair1, log);
@@ -379,13 +385,16 @@ public:
 	std::ofstream m_equationLogStream;
 	AsyncLog<EquationRecord> m_equationLog;
 
+	boost::atomic<OpportunityNumber> m_opportunityNumber;
+
 	Context::Log m_log;
 	Params m_params;
 
 	LatanReport m_latanReport;
 	
 	explicit Implementation(Context &context)
-			: m_log(context),
+			: m_opportunityNumber(1),
+			m_log(context),
 			m_params(context),
 			m_latanReport(m_log) {
 		const fs::path logPath
@@ -410,6 +419,10 @@ Context::Context() {
 
 Context::~Context() {
 	delete m_pimpl;
+}
+
+OpportunityNumber Context::TakeOpportunityNumber() {
+	return m_pimpl->m_opportunityNumber++;
 }
 
 Context::Log & Context::GetLog() const throw() {

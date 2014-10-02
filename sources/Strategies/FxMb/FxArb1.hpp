@@ -202,9 +202,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			boost::posix_time::ptime lastStartTime;
 
+			OpportunityNumber currentOpportunityNumber;
+
 			EquationOpenedPositions()
 					: activeCount(0),
-					waitsForReplyCount(0) {
+					waitsForReplyCount(0),
+					currentOpportunityNumber(0) {
 				//...//
 			}
 

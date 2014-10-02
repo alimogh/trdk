@@ -515,6 +515,8 @@ void FxArb1::StartPositionsOpening(
 		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
 		equationPositions.lastStartTime = boost::get_system_time();
+		equationPositions.currentOpportunityNumber
+			= GetContext().TakeOpportunityNumber();
 
 	} catch (...) {
 		CancelAllInEquationAtMarketPrice(

@@ -95,6 +95,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					const auto &broker2 = GetBrokerConf<2>();
 			    
 					GetContext().GetLog().Equation(
+
+						1,
 		    
 						"Closing executed",
 						position.GetEquationIndex(),
@@ -163,6 +165,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				const auto &broker2 = GetBrokerConf<2>();
 			    
 				GetContext().GetLog().Equation(
+
+					1,
 		    
 					"Opening executed",
 					position.GetEquationIndex(),
@@ -312,6 +316,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 	 							oppositeEquationIndex);
 #						endif
 						GetContext().GetLog().Equation(
+
+							1,
 		
 							"Closing detected",
 							oppositeEquationIndex,

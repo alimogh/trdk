@@ -17,6 +17,8 @@ namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
 
+	typedef size_t OpportunityNumber;
+
 	struct EquationRecordParam {
 		
 		struct PairRecordParam {
@@ -35,6 +37,8 @@ namespace trdk {
 			// Reversed Ask if pair is reversed
 			bool askReversed;
 		};
+
+		OpportunityNumber opportunityNumber;
 
 		// Opening detected, Opening executed, Closing detected, Closing executed
 		const char *action;
@@ -75,6 +79,8 @@ namespace trdk {
 		virtual ~Context();
 
 	public:
+
+		OpportunityNumber TakeOpportunityNumber();
 
 		trdk::Context::Log & GetLog() const throw();
 
@@ -243,6 +249,7 @@ namespace trdk {
 		}
 	
 		void Equation(
+					const OpportunityNumber &opportunityNumber,
 					// Opening detected, Opening executed, Closing detected, Closing executed
 					// ex: Ouverture Initiale (theoretical opening)
 					const char *action,
@@ -287,6 +294,7 @@ namespace trdk {
 					const char *resultOfY1,
 					const char *resultOfY2) {
 			const EquationRecordParam params = {
+				opportunityNumber,
 				action,
 				equation,
 				{
