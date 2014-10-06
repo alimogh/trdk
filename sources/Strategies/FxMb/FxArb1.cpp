@@ -552,7 +552,6 @@ void FxArb1::OnLevel1Update(
 
 void FxArb1::OnOpportunityUpdate(TimeMeasurement::Milestones &timeMeasurement) {
 	Assert(!IsBlocked());
-	CloseDelayed();
 	CheckOpportunity(timeMeasurement);
 }
 
@@ -562,23 +561,6 @@ void FxArb1::OnOpportunityReturn() {
 	}
 	auto startegyTimeMeasurement = GetContext().StartStrategyTimeMeasurement();
 	OnOpportunityUpdate(startegyTimeMeasurement);
-}
-
-void FxArb1::DelayCancel(EquationPosition &position) {
-	if (m_equationsForDelayedClosing[position.GetEquationIndex()]) {
-		return;
-	}
-	GetLog().TradingEx(
-		[&]() -> boost::format {
-			boost::format message(
-				"Delaying positions closing by %1% for equation %2%"
-					", as strategy blocked...");
-			message
-				% position.GetSecurity()
-				% position.GetEquationIndex();
-			return std::move(message);
-		});
-	m_equationsForDelayedClosing[position.GetEquationIndex()] = true;
 }
 
 bool FxArb1::CheckCancelAndBlockCondition() {
@@ -626,23 +608,6 @@ void FxArb1::WaitForCancelAndBlock(
 
 }
 
-void FxArb1::CloseDelayed() {
-	Assert(!IsBlocked());
-	for (size_t i = 0; i < m_equationsForDelayedClosing.size(); ++i) {
-		if (!m_equationsForDelayedClosing[i]) {
-			continue;
-		}
-		GetLog().TradingEx(
-			[&]() -> boost::format {
-				boost::format message(
-					"Closing delayed positions for equation %1%...");
-				message % i;
-				return std::move(message);
-			});
-		CancelAllInEquationAtMarketPrice(i, Position::CLOSE_TYPE_NONE);
-		m_equationsForDelayedClosing[i] = false;
-	}
-}
 
 void FxArb1::LogOpeningDetection(size_t equationIndex) const {
 	AssertEq(
