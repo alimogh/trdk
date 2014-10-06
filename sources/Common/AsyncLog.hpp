@@ -132,7 +132,6 @@ namespace trdk { namespace Lib {
 		void DisableStream() throw() {
 			try {
 				Lock lock(m_mutex);
-				m_log.DisableStream();
 				if (!m_writeThread) {
 					return;
 				}
@@ -173,7 +172,7 @@ namespace trdk { namespace Lib {
 
 			m_condition.notify_all();
 	
-			while (m_writeThread) {
+			for ( ; ; ) {
 
 				Buffer *currentBuffer = m_currentBuffer;
 				m_currentBuffer = m_currentBuffer == &m_buffers.first
@@ -194,6 +193,8 @@ namespace trdk { namespace Lib {
 
 				if (m_currentBuffer->records.begin() != m_currentBuffer->end) {
 					continue;
+				} else if (!m_writeThread) {
+					break;
 				}
 				
 				m_condition.wait(lock);
