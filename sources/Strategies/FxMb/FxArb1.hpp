@@ -344,7 +344,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	private:
 		
-		void LogEquation(const char *, size_t, bool, bool) const;
+		void LogEquation(const char *, size_t, size_t, bool, bool) const;
 
 	private:
 

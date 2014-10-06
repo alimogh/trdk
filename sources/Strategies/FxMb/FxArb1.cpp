@@ -608,36 +608,46 @@ void FxArb1::WaitForCancelAndBlock(
 
 }
 
-
 void FxArb1::LogOpeningDetection(size_t equationIndex) const {
 	AssertEq(
 		PAIRS_COUNT,
 		GetEquationPosition(equationIndex).activeCount);
-	LogEquation("Opening detected", equationIndex, false, false);
+	LogEquation("Opening detected", equationIndex, equationIndex, false, false);
 }
 
 void FxArb1::LogOpeningExecuted(size_t equationIndex) const {
 	AssertEq(
 		PAIRS_COUNT,
 		GetEquationPosition(equationIndex).activeCount);
-	LogEquation("Opening executed", equationIndex, false, true);
+	LogEquation("Opening executed", equationIndex, equationIndex, false, true);
 }
 
 void FxArb1::LogClosingDetection(size_t equationIndex) const {
 	AssertEq(
 		PAIRS_COUNT,
 		GetEquationPosition(equationIndex).activeCount);
-	LogEquation("Closing detected", equationIndex, true, false);
+	LogEquation(
+		"Closing detected",
+		equationIndex,
+		GetOppositeEquationIndex(equationIndex),
+		true,
+		false);
 }
 
 void FxArb1::LogClosingExecuted(size_t equationIndex) const {
 	AssertEq(0, GetEquationPosition(equationIndex).activeCount);
-	LogEquation("Closing executed", equationIndex, true, true);
+	LogEquation(
+		"Closing executed",
+		equationIndex,
+		GetOppositeEquationIndex(equationIndex),
+		true,
+		true);
 }
 
 void FxArb1::LogEquation(
 			const char *action,
 			size_t equationIndex,
+			size_t initiatorIndex,
 			bool isClosing,
 			bool isCompleted)
 		const {
@@ -688,7 +698,7 @@ void FxArb1::LogEquation(
 		equationPositions.currentOpportunityNumber,
 		    
 		action,
-		equationIndex,
+		initiatorIndex,
 		    
 		p1.GetTradeSystem().GetTag(),
 		p1.GetSecurity().GetSymbol().GetSymbol(),
@@ -705,6 +715,6 @@ void FxArb1::LogEquation(
 		p3Price,
 		isP3Buy,
 		    
-		equationIndex < (EQUATIONS_COUNT / 2));
+		initiatorIndex < (EQUATIONS_COUNT / 2));
 
 }
