@@ -330,6 +330,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		bool CheckRestoreState();
 
+		void DelayCancel(EquationPosition &);
+
 		//! Logging current bid/ask values for all pairs (if logging enabled).
 		void LogBrokersState(
 					size_t equationIndex,
@@ -349,6 +351,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	private:
 
+		void CloseDelayed();
+
+	private:
+
 		const Equations m_equations;
 
 		boost::array<BrokerConf, BROKERS_COUNT> m_brokersConf;
@@ -359,6 +365,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		bool m_isPairsByBrokerChecked;
 
 		CancelAndBlockCondition *m_cancelAndBlockCondition;
+
+		std::bitset<EQUATIONS_COUNT> m_equationsForDelayedClosing;
 
 	};
 

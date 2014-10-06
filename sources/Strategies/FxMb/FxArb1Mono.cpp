@@ -56,9 +56,19 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			EquationPosition &position
 				= dynamic_cast<EquationPosition &>(positionRef);
+			
 			if (!position.IsObservationActive()) {
+				Assert(!position.IsInactive());
 				return;
 			}
+			
+			if (position.HasActiveOrders()) {
+				Assert(!position.IsInactive());
+				return;
+			}
+
+			position.ResetInactive();
+
 			auto &equationPositions
 				= GetEquationPosition(position.GetEquationIndex());
 
@@ -71,7 +81,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					// are filled:
 					Assert(!IsEquationOpenedFully(position.GetEquationIndex()));
 					if (!IsBlocked()) {
-						CloseDelayed();
 						CancelAllInEquationAtMarketPrice(
 							position.GetEquationIndex(),
 							Position::CLOSE_TYPE_OPEN_FAILED);
@@ -144,8 +153,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				return;
 			}
 
-			CloseDelayed();
-			
 			double bestEquationsResult = .0;
 			size_t bestEquationsIndex = nEquationsIndex;
 			// One or more equations has opened positions or active orders.
@@ -305,48 +312,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		}
 
-		void DelayCancel(EquationPosition &position) {
-			if (m_equationsForDelayedClosing[position.GetEquationIndex()]) {
-				return;
-			}
-			GetLog().TradingEx(
-				[&]() -> boost::format {
-					boost::format message(
-						"Delaying positions closing by %1% for equation %2%"
-							", as strategy blocked...");
-					message
-						% position.GetSecurity()
-						% position.GetEquationIndex();
-					return std::move(message);
-				});
-			m_equationsForDelayedClosing[position.GetEquationIndex()] = true;
-		}
-
-		void CloseDelayed() {
-			Assert(!IsBlocked());
-			for (size_t i = 0; i < m_equationsForDelayedClosing.size(); ++i) {
-				if (!m_equationsForDelayedClosing[i]) {
-					continue;
-				}
-				GetLog().TradingEx(
-					[&]() -> boost::format {
-						boost::format message(
-							"Closing delayed positions for equation %1%...");
-						message % i;
-						return std::move(message);
-					});
-				CancelAllInEquationAtMarketPrice(i, Position::CLOSE_TYPE_NONE);
-				m_equationsForDelayedClosing[i] = false;
-			}
-		}
-
 	private:
 
 		const bool m_useIocForPositionStart;
 
 		const pt::time_duration m_positionGracePeriod;
-
-		std::bitset<EQUATIONS_COUNT> m_equationsForDelayedClosing;
 
 	};
 	

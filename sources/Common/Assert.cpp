@@ -97,7 +97,7 @@ namespace {
 				const char *file,
 				int line) {
 		boost::format message(
-			"Assertion Failed: Expecting that value %1%, but it is not:"
+			"Assertion Failed: Expecting that %1%, but it is not:"
 				" %2% (which is %3%) %4% %5% (which is %6%)"
 				" in function %7%, file %8%, line %9%.");
 		message

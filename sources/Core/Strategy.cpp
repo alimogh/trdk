@@ -452,7 +452,6 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 			"Will be blocked by position inactivity at %1%...",
 			blockPeriod);
 		Block(blockPeriod);
-		position.ResetInactive();
 	}
 	
 	OnPositionUpdate(position);
@@ -475,7 +474,7 @@ bool Strategy::IsBlocked() const {
 		}
 		m_pimpl->m_blockEndTime = pt::not_a_date_time;
 		m_pimpl->m_isBlocked = false;
-		GetLog().Error("Unblocked.");
+		GetLog().Info("Unblocked.");
 		return false;
 	}
 }
@@ -498,7 +497,7 @@ void Strategy::Block(const pt::time_duration &blockDuration) {
 	}
 	m_pimpl->m_isBlocked = true;
 	m_pimpl->m_blockEndTime = blockEndTime;
-	GetLog().Error("Blocked until %1%.", m_pimpl->m_blockEndTime);
+	GetLog().Warn("Blocked until %1%.", m_pimpl->m_blockEndTime);
 }
 
 Strategy::PositionUpdateSlotConnection Strategy::SubscribeToPositionsUpdates(
