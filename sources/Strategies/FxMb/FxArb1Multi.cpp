@@ -58,44 +58,66 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	public:
 
-	virtual void OnPositionUpdate(Position &positionRef) {
+		virtual void OnPositionUpdate(Position &positionRef) {
 
-		EquationPosition &position
-			= dynamic_cast<EquationPosition &>(positionRef);
-		if (!position.IsObservationActive()) {
-			return;
-		}
-
-		auto &equationPositions
-			= GetEquationPosition(position.GetEquationIndex());
-
-		Assert(!position.IsCanceled());
-
-		if (position.IsCompleted()) {
-			position.DeactivatieObservation();
-			AssertLt(0, equationPositions.activeCount);
-			AssertEq(0, equationPositions.waitsForReplyCount);
-			if (!--equationPositions.activeCount) {
-				position.GetTimeMeasurement().Measure(
-					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
-				equationPositions.positions.clear();
-				OnOpportunityReturn();
+			EquationPosition &position
+				= dynamic_cast<EquationPosition &>(positionRef);
+			if (!position.IsObservationActive()) {
+				Assert(!position.IsInactive());
+				return;
 			}
-			return;
-		}
 
-		if (position.IsOpened() && !position.HasActiveCloseOrders()) {
-			AssertLt(0, equationPositions.waitsForReplyCount);
-			if (!--equationPositions.waitsForReplyCount) {
-				position.GetTimeMeasurement().Measure(
-					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+			Assert(!position.IsCanceled());
+
+			if (position.HasActiveOrders()) {
+				Assert(!position.IsInactive());
+				return;
 			}
-			return;
-		}
 
-	}
+			auto &equationPositions
+				= GetEquationPosition(position.GetEquationIndex());
+
+			if (position.IsCompleted()) {
+
+				position.DeactivatieObservation();
+
+				AssertLt(0, equationPositions.activeCount);
+				AssertEq(0, equationPositions.waitsForReplyCount);
+				Assert(!position.IsInactive());
+
+				if (!--equationPositions.activeCount) {
+					position.GetTimeMeasurement().Measure(
+						TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+					equationPositions.positions.clear();
+					OnOpportunityReturn();
+				}
+
+			} else {
+
+				AssertLt(0, equationPositions.waitsForReplyCount);
+
+				if (position.IsInactive()) {
+					position.ResetInactive();
+					if (position.GetOpenedQty() == 0) {
+						position.DeactivatieObservation();
+						position.CancelAtMarketPrice(
+							Position::CLOSE_TYPE_OPEN_FAILED);
+					} else {
+						DelayCancel(position);
+					}
+				}
+
+				if (!--equationPositions.waitsForReplyCount) {
+					position.GetTimeMeasurement().Measure(
+						TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+					OnOpportunityReturn();
+				}
+
+			}
+
+		}
 	
-	virtual void CheckOpportunity(
+		virtual void CheckOpportunity(
 					TimeMeasurement::Milestones &timeMeasurement) {
 
 			// Level 1 update callback - will be called every time when

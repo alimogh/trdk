@@ -452,7 +452,6 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 			"Will be blocked by position inactivity at %1%...",
 			blockPeriod);
 		Block(blockPeriod);
-		position.ResetInactive();
 	}
 	
 	OnPositionUpdate(position);

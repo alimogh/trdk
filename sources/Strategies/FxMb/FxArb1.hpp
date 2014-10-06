@@ -326,7 +326,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		bool CheckRestoreState();
 
 		void DelayCancel(EquationPosition &);
-		void CloseDelayed();
 
 		//! Logging current bid/ask values for all pairs (if logging enabled).
 		void LogBrokersState(
@@ -334,6 +333,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					const Broker &,
 					const Broker &)
 				const;
+
+	private:
+
+		void CloseDelayed();
 
 	private:
 

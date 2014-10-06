@@ -56,9 +56,19 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			EquationPosition &position
 				= dynamic_cast<EquationPosition &>(positionRef);
+			
 			if (!position.IsObservationActive()) {
+				Assert(!position.IsInactive());
 				return;
 			}
+			
+			if (position.HasActiveOrders()) {
+				Assert(!position.IsInactive());
+				return;
+			}
+
+			position.ResetInactive();
+
 			auto &equationPositions
 				= GetEquationPosition(position.GetEquationIndex());
 
@@ -71,7 +81,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					// are filled:
 					Assert(!IsEquationOpenedFully(position.GetEquationIndex()));
 					if (!IsBlocked()) {
-						CloseDelayed();
 						CancelAllInEquationAtMarketPrice(
 							position.GetEquationIndex(),
 							Position::CLOSE_TYPE_OPEN_FAILED);
@@ -138,7 +147,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// Not all data received yet (from streams)...
 				return;
 			}
-			
+
 			double bestEquationsResult = .0;
 			size_t bestEquationsIndex = nEquationsIndex;
 			// One or more equations has opened positions or active orders.
