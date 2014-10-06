@@ -87,11 +87,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// We completed work with this position, forget it...
 				AssertLt(0, equationPositions.activeCount);
 				if (!--equationPositions.activeCount) {
+					AssertLt(0, equationPositions.positions.size());
+					LogClosingExecuted(position.GetEquationIndex());
+					equationPositions.positions.clear();
+					equationPositions.waitsForReplyCount = 0;
 					if (!CheckCancelAndBlockCondition()) {
-						AssertLt(0, equationPositions.positions.size());
-						LogClosingExecuted(position.GetEquationIndex());
-						equationPositions.positions.clear();
-						equationPositions.waitsForReplyCount = 0;
 						OnOpportunityReturn();
 					}
 				}
