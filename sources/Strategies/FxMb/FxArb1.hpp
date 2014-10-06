@@ -27,7 +27,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		static const size_t nEquationsIndex;
 
 	protected:
-	
+
 		enum {
 			EQUATIONS_COUNT = 12,
 			BROKERS_COUNT = 2,
@@ -202,9 +202,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			boost::posix_time::ptime lastStartTime;
 
+			bool isClosedNotByEquation;
+
 			EquationOpenedPositions()
 					: activeCount(0),
-					waitsForReplyCount(0) {
+					waitsForReplyCount(0),
+					isClosedNotByEquation(false) {
 				//...//
 			}
 
@@ -301,7 +304,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		//! Cancels all opened for equation orders and close positions for it.
 		size_t CancelAllInEquationAtMarketPrice(
 					size_t equationIndex,
-					const Position::CloseType &closeType)
+					const Position::CloseType &closeType,
+					bool isCanceledWithoutEquation = false)
 				throw();
 	
 		//! Sends open-orders for each configured security.
