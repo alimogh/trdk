@@ -405,9 +405,6 @@ void FxArb1::StartPositionsOpening(
 	AssertEq(0, equationPositions.positions.size());
 	AssertEq(0, equationPositions.activeCount);
 
-	PairsReverse reversed;
-	reversed.assign(false);
-
 	const auto &getSecurityByPairIndex = [&](
 				size_t index)
 			-> SecurityPositionConf & {
@@ -482,7 +479,6 @@ void FxArb1::StartPositionsOpening(
 #			endif
 			
 			if (GetEquationPositionWay(equationIndex, conf.isLong, true)) {
-				reversed[i] = true;
 				position.reset(
 					new EquationLongPosition(
 						equationIndex,

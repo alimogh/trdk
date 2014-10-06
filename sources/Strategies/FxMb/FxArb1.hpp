@@ -213,8 +213,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		};
 
-		typedef boost::array<bool, PAIRS_COUNT> PairsReverse;
-
 	public:
 
 		explicit FxArb1(
