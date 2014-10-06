@@ -336,9 +336,13 @@ public:
 			action.clear();
 
 
-			*log.log
-				<< equation << ';'
-				<< (isResultOfY1 ? "Y1" : "Y2") << ';';
+			if (equation != std::numeric_limits<size_t>::max()) {
+				*log.log
+					<< equation << ';'
+					<< (isResultOfY1 ? "Y1" : "Y2") << ';';
+			} else {
+				*log.log << "-;-;";
+			}
 			
 			FlushPair(pair1, log);
 			FlushPair(pair2, log);

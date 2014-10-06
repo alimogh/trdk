@@ -349,7 +349,9 @@ size_t FxArb1::CancelAllInEquationAtMarketPrice(
 				++result;
 			}
 		}
-		LogClosingDetection(equationIndex);
+		if (result > 0) {
+			LogClosingDetection(equationIndex);
+		}
 	} catch (...) {
 		AssertFailNoException();
 		Block();
@@ -584,7 +586,8 @@ void FxArb1::CancelAllAndBlock(
 	for (size_t i = 0; i < EQUATIONS_COUNT; ++i) {
 		ordersCount += CancelAllInEquationAtMarketPrice(
 			i,
-			Position::CLOSE_TYPE_ENGINE_STOP);
+			Position::CLOSE_TYPE_ENGINE_STOP,
+			true);
 	}
 
 	if (ordersCount == 0) {
@@ -623,23 +626,27 @@ void FxArb1::LogOpeningExecuted(size_t equationIndex) const {
 }
 
 void FxArb1::LogClosingDetection(size_t equationIndex) const {
-	AssertEq(
-		PAIRS_COUNT,
-		GetEquationPosition(equationIndex).activeCount);
+	const auto &equation = GetEquationPosition(equationIndex);
+	AssertEq(PAIRS_COUNT, equation.activeCount);
 	LogEquation(
 		"Closing detected",
 		equationIndex,
-		GetOppositeEquationIndex(equationIndex),
+		!equation.isClosedNotByEquation
+			?	GetOppositeEquationIndex(equationIndex)
+			:	nEquationsIndex,
 		true,
 		false);
 }
 
 void FxArb1::LogClosingExecuted(size_t equationIndex) const {
-	AssertEq(0, GetEquationPosition(equationIndex).activeCount);
+	const auto &equation = GetEquationPosition(equationIndex);
+	AssertEq(0, equation.activeCount);
 	LogEquation(
 		"Closing executed",
 		equationIndex,
-		GetOppositeEquationIndex(equationIndex),
+		!equation.isClosedNotByEquation
+			?	GetOppositeEquationIndex(equationIndex)
+			:	nEquationsIndex,
 		true,
 		true);
 }
