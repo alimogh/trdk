@@ -138,8 +138,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// Not all data received yet (from streams)...
 				return;
 			}
-
-			CloseDelayed();
 			
 			double bestEquationsResult = .0;
 			size_t bestEquationsIndex = nEquationsIndex;
@@ -300,48 +298,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		}
 
-		void DelayCancel(EquationPosition &position) {
-			if (m_equationsForDelayedClosing[position.GetEquationIndex()]) {
-				return;
-			}
-			GetLog().TradingEx(
-				[&]() -> boost::format {
-					boost::format message(
-						"Delaying positions closing by %1% for equation %2%"
-							", as strategy blocked...");
-					message
-						% position.GetSecurity()
-						% position.GetEquationIndex();
-					return std::move(message);
-				});
-			m_equationsForDelayedClosing[position.GetEquationIndex()] = true;
-		}
-
-		void CloseDelayed() {
-			Assert(!IsBlocked());
-			for (size_t i = 0; i < m_equationsForDelayedClosing.size(); ++i) {
-				if (!m_equationsForDelayedClosing[i]) {
-					continue;
-				}
-				GetLog().TradingEx(
-					[&]() -> boost::format {
-						boost::format message(
-							"Closing delayed positions for equation %1%...");
-						message % i;
-						return std::move(message);
-					});
-				CancelAllInEquationAtMarketPrice(i, Position::CLOSE_TYPE_NONE);
-				m_equationsForDelayedClosing[i] = false;
-			}
-		}
-
 	private:
 
 		const bool m_useIocForPositionStart;
 
 		const pt::time_duration m_positionGracePeriod;
-
-		std::bitset<EQUATIONS_COUNT> m_equationsForDelayedClosing;
 
 	};
 	
