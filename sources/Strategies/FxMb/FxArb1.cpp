@@ -329,13 +329,17 @@ bool FxArb1::IsEquationOpenedFully(size_t equationIndex) const {
 
 size_t FxArb1::CancelAllInEquationAtMarketPrice(
 			size_t equationIndex,
-			const Position::CloseType &closeType)
+			const Position::CloseType &closeType,
+			bool isCanceledWithoutEquation /*= false*/)
 		throw() {
 	Assert(!IsBlocked());
 	size_t result = 0;
 	// Cancels all opened for equation orders and close positions for it.
 	try {
 		auto &positions = m_positionsByEquation[equationIndex];
+		if (isCanceledWithoutEquation) {
+			positions.isClosedNotByEquation = true;
+		}
 		foreach (auto &position, positions.positions) {
 			position->SetCloseStartPrice(
 				position->GetType() == Position::TYPE_LONG
