@@ -111,12 +111,35 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			} else {
 
+				position.ResetInactive();
+
 				if (position.GetActiveQty()) {
-					position.GetTimeMeasurement().Measure(
-						TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
 					DelayCancel(position);
 				} else {
-					//...//
+					AssertLt(0, equationPositions.activeCount);
+					AssertLt(0, equationPositions.waitsForReplyCount);
+					AssertLt(0, equationPositions.positions.size());
+					--equationPositions.waitsForReplyCount;
+					if (!--equationPositions.activeCount) {
+						AssertEq(0, equationPositions.waitsForReplyCount);
+						AssertEq(0, equationPositions.positions.size());
+						position.GetTimeMeasurement().Measure(
+							TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+					} else {
+						const auto pos = std::find(
+							equationPositions.positions.begin(),
+							equationPositions.positions.end(),
+							position.shared_from_this());
+						Assert(pos != equationPositions.positions.end());
+						if (pos != equationPositions.positions.end()) {
+							equationPositions.positions.erase(pos);
+						}
+					}
+					position.DeactivatieObservation();
+					//!	Just to remove object from system, no orders will be
+					//!	sent as GetActiveQty() == 0:
+					position.CancelAtMarketPrice(
+						Position::CLOSE_TYPE_OPEN_FAILED);
 				}
 			
 			}
@@ -204,10 +227,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			auto &positions = GetEquationPosition(equationIndex);
 			const auto &oppositeEquationIndex
 				= GetOppositeEquationIndex(equationIndex);
-			AssertEq(0, GetEquationPosition(oppositeEquationIndex).activeCount);
-			AssertEq(
-				0,
-				GetEquationPosition(oppositeEquationIndex).positions.size());
 			AssertEq(
 				0,
 				GetEquationPosition(oppositeEquationIndex).waitsForReplyCount);
@@ -215,6 +234,15 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				if (position->IsCompleted()) {
 					continue;
 				}
+				AssertGt(
+					PAIRS_COUNT,
+					GetEquationPosition(oppositeEquationIndex).activeCount);
+				AssertGt(
+					PAIRS_COUNT,
+					GetEquationPosition(oppositeEquationIndex).waitsForReplyCount);
+				AssertGt(
+					PAIRS_COUNT,
+					GetEquationPosition(oppositeEquationIndex).positions.size());
 				TurnPosition(*position, oppositeEquationIndex, timeMeasurement);
 			}
 		}
@@ -324,6 +352,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					TimeMeasurement::Milestones &timeMeasurement) {
 
 			auto &toPositions = GetEquationPosition(toEquationIndex);
+			AssertGt(PAIRS_COUNT, toPositions.activeCount);
+			AssertGt(PAIRS_COUNT, toPositions.waitsForReplyCount);
+			AssertGt(PAIRS_COUNT, toPositions.positions.size());
 
 			boost::shared_ptr<EquationPosition> position;
 
