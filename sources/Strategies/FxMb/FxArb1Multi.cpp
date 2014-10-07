@@ -60,13 +60,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		virtual void OnPositionUpdate(Position &positionRef) {
 
-			if (positionRef.IsError()) {
+			EquationPosition &position
+				= dynamic_cast<EquationPosition &>(positionRef);
+
+			if (position.IsError()) {
 				Assert(IsBlocked());
 				return;
 			}
 
-			EquationPosition &position
-				= dynamic_cast<EquationPosition &>(positionRef);
 			if (!position.IsObservationActive()) {
 				Assert(!position.IsInactive());
 				return;
