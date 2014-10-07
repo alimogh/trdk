@@ -68,6 +68,21 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				return;
 			}
 
+			auto &equationPositions
+				= GetEquationPosition(position.GetEquationIndex());
+
+			if (position.IsCanceled()) {
+				position.DeactivatieObservation();
+				if (!--equationPositions.activeCount) {
+					position.GetTimeMeasurement().Measure(
+						TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+					LogClosingExecuted(position.GetEquationIndex());
+					equationPositions.positions.clear();
+					CheckCancelAndBlockCondition();
+				}
+				return;
+			}
+
 			if (!position.IsObservationActive()) {
 				Assert(!position.IsInactive());
 				return;
@@ -78,9 +93,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			if (position.HasActiveOrders()) {
 				return;
 			}
-
-			auto &equationPositions
-				= GetEquationPosition(position.GetEquationIndex());
 
 			if (!position.IsInactive()) {
 
@@ -253,6 +265,18 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					GetEquationPosition(oppositeEquationIndex).positions.size());
 				TurnPosition(*position, oppositeEquationIndex, timeMeasurement);
 			}
+		}
+
+		virtual bool OnCanceling() {
+			size_t ordersSent = 0;
+			for (size_t i = 0; i < EQUATIONS_COUNT; ++i) {
+				ordersSent += CancelAllInEquationAtMarketPrice(
+					i,
+					Position::CLOSE_TYPE_ENGINE_STOP,
+					true);
+			}
+			AssertGe(PAIRS_COUNT, ordersSent);
+			return ordersSent == 0;
 		}
 
 	private:

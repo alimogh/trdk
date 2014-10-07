@@ -295,6 +295,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				Position::CLOSE_TYPE_NONE);
 		}
 
+		virtual bool OnCanceling() {
+			return true;
+		}
+
 	private:
 
 		void OnEquation(

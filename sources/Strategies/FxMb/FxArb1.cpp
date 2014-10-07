@@ -567,9 +567,9 @@ void FxArb1::OnOpportunityReturn() {
 }
 
 bool FxArb1::CheckCancelAndBlockCondition() {
-	if (!m_cancelAndBlockCondition) {
+	if (!m_cancelAndBlockCondition || !OnCanceling()) {
 		return false;
-	}
+	} 
 	const boost::mutex::scoped_lock lock(m_cancelAndBlockCondition->mutex);
 	Block();
 	m_cancelAndBlockCondition->condition.notify_all();
@@ -693,7 +693,6 @@ void FxArb1::LogEquation(
 			:	!isClosing
 				?	p.GetOpenPrice()
 				:	p.GetClosePrice();
-		AssertNe(0, scaledPrice);
 		price = p.GetSecurity().DescalePrice(scaledPrice);
 	};
 

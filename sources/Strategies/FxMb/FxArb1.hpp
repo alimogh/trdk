@@ -348,6 +348,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void LogClosingExecuted(size_t equationIndex) const;
 	
 		bool CheckCancelAndBlockCondition();
+		virtual bool OnCanceling() = 0;
 
 	private:
 		
