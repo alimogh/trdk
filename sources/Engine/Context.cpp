@@ -193,7 +193,7 @@ void Engine::Context::Implementation::CallEachStrategyAndBlock(
 		size_t blockedCount = totalCount;
 		foreach (auto &tagetStrategies, m_state->strategies) {
 			foreach (auto &strategy, tagetStrategies.second) {
-				if (strategy->IsBlocked()) {
+				if (strategy->IsBlocked(true)) {
 					AssertLt(0, blockedCount);
 					--blockedCount;
 				}
