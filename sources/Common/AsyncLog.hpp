@@ -138,7 +138,7 @@ namespace trdk { namespace Lib {
 				auto thread = m_writeThread;
 				m_writeThread.reset();
 				m_condition.notify_all();
-				lock.release();
+				lock.unlock();
 				thread->join();
 			} catch (...) {
 				AssertFailNoException();
