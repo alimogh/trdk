@@ -186,7 +186,7 @@ namespace {
 			
 			for ( ; ; ) {
 				const auto &stopMode = getchar();
-				if (stopMode == 's') {
+				if (stopMode == 's' || stopMode == 'S') {
 					std::cout
 						<< "Waiting until all positions will be closed"
 							<< " by conditions..."
@@ -199,22 +199,23 @@ namespace {
 							"Failed to stop engine: \"%1%\".",
 							ex.what());
 						result = false;
-						getchar();
 					}
-				} else if (stopMode == 'u') {
+					break;
+				} else if (stopMode == 'u' || stopMode == 'U') {
 					std::cout
 						<< "Closing all position before stop..."
 						<< " To interrupt closing process use Ctrl + C."
 						<< std::endl;
 					try {
 						server.CancelAllAndStop();
+						break;
 					} catch (const Exception &ex) {
 						Log::Error(
 							"Failed to stop engine: \"%1%\".",
 							ex.what());
 						result = false;
-						getchar();
 					}
+					break;
 				} else {
 					std::cout
 						<< "Unknown command."
