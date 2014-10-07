@@ -287,6 +287,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		
 		}
 
+		virtual void CloseDelayed(
+					size_t equationIndex,
+					TimeMeasurement::Milestones &) {
+			CancelAllInEquationAtMarketPrice(
+				equationIndex,
+				Position::CLOSE_TYPE_NONE);
+		}
+
 	private:
 
 		void OnEquation(

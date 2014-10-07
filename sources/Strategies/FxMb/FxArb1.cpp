@@ -341,6 +341,9 @@ size_t FxArb1::CancelAllInEquationAtMarketPrice(
 			positions.isClosedNotByEquation = true;
 		}
 		foreach (auto &position, positions.positions) {
+			if (position->IsCompleted()) {
+				continue;
+			}
 			position->SetCloseStartPrice(
 				position->GetType() == Position::TYPE_LONG
 					?	position->GetSecurity().GetBidPriceScaled()
@@ -551,7 +554,7 @@ void FxArb1::OnLevel1Update(
 
 void FxArb1::OnOpportunityUpdate(TimeMeasurement::Milestones &timeMeasurement) {
 	Assert(!IsBlocked());
-	CloseDelayed();
+	CloseDelayed(timeMeasurement);
 	CheckOpportunity(timeMeasurement);
 }
 
@@ -741,7 +744,8 @@ void FxArb1::DelayCancel(EquationPosition &position) {
 	m_equationsForDelayedClosing[position.GetEquationIndex()] = true;
 }
 
-void FxArb1::CloseDelayed() {
+void FxArb1::CloseDelayed(
+			Lib::TimeMeasurement::Milestones &timeMeasurement) {
 	Assert(!IsBlocked());
 	for (size_t i = 0; i < m_equationsForDelayedClosing.size(); ++i) {
 		if (!m_equationsForDelayedClosing[i]) {
@@ -754,7 +758,7 @@ void FxArb1::CloseDelayed() {
 				message % i;
 				return std::move(message);
 			});
-		CancelAllInEquationAtMarketPrice(i, Position::CLOSE_TYPE_NONE);
+		CloseDelayed(i, timeMeasurement);
 		m_equationsForDelayedClosing[i] = false;
 	}
 }

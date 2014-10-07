@@ -244,11 +244,16 @@ public:
 				case TradeSystem::ORDER_STATUS_FILLED:
 					Assert(avgPrice > 0);
 					if (m_oppositePosition) {
-						AssertLe(m_oppositePosition->GetActiveQty(), filled);
-						const auto filledForOpposite
-							= filled >= m_oppositePosition->GetActiveQty()
-								?	filled - m_oppositePosition->GetActiveQty()
-								:	filled;
+						AssertGe(
+							m_oppositePosition->GetActiveQty()
+								+ m_position.GetPlanedQty(),
+							filled);
+						auto filledForOpposite = filled;
+						if (filledForOpposite > m_oppositePosition->GetActiveQty()) {
+							filledForOpposite
+								= m_oppositePosition->GetActiveQty();
+						}
+						AssertGe(filled, filledForOpposite);
 						filled -= filledForOpposite;
 						m_oppositePosition->m_pimpl->m_closed.price.total
 							+= m_security.ScalePrice(avgPrice);
@@ -262,8 +267,9 @@ public:
 						updatedOppositePosition = m_oppositePosition;
 					}
 					if (filled != 0) {
-						AssertEq(filled + remaining, m_planedQty);
-						AssertLe(m_opened.qty + filled, m_planedQty);
+						AssertEq(
+							m_opened.qty + filled + remaining,
+							m_planedQty);
 						m_opened.price.total += m_security.ScalePrice(avgPrice);
 						++m_opened.price.count;
 						m_opened.qty += filled;
@@ -306,8 +312,8 @@ public:
 					break;
 			}
 	
-	
 			if (m_oppositePosition && m_oppositePosition->GetActiveQty() == 0) {
+				Assert(m_oppositePosition->m_pimpl->m_closed.hasOrder);
 				try {
 					m_oppositePosition->m_pimpl->m_closed.time
 						= !m_security.GetContext().GetSettings().IsReplayMode()

@@ -60,6 +60,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		virtual void OnPositionUpdate(Position &positionRef) {
 
+			if (positionRef.IsError()) {
+				Assert(IsBlocked());
+				return;
+			}
+
 			EquationPosition &position
 				= dynamic_cast<EquationPosition &>(positionRef);
 			if (!position.IsObservationActive()) {
@@ -70,53 +75,54 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			Assert(!position.IsCanceled());
 
 			if (position.HasActiveOrders()) {
-				Assert(!position.IsInactive());
 				return;
 			}
 
 			auto &equationPositions
 				= GetEquationPosition(position.GetEquationIndex());
 
-			if (position.IsCompleted()) {
+			if (!position.IsInactive()) {
 
-				position.DeactivatieObservation();
-
-				AssertLt(0, equationPositions.activeCount);
-				AssertEq(0, equationPositions.waitsForReplyCount);
-				Assert(!position.IsInactive());
-
-				if (!--equationPositions.activeCount) {
-					position.GetTimeMeasurement().Measure(
-						TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
-					LogClosingExecuted(position.GetEquationIndex());
-					equationPositions.positions.clear();
-					if (!CheckCancelAndBlockCondition()) {
+				if (position.GetActiveQty()) {
+				
+					AssertLt(0, equationPositions.waitsForReplyCount);
+					if (!--equationPositions.waitsForReplyCount) {
+						position.GetTimeMeasurement().Measure(
+							TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+						LogOpeningExecuted(position.GetEquationIndex());
 						OnOpportunityReturn();
 					}
+				
+				} else {
+
+					position.DeactivatieObservation();
+
+					AssertLt(0, equationPositions.activeCount);
+					AssertEq(0, equationPositions.waitsForReplyCount);
+					Assert(!position.IsInactive());
+
+					if (!--equationPositions.activeCount) {
+						position.GetTimeMeasurement().Measure(
+							TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+						LogClosingExecuted(position.GetEquationIndex());
+						equationPositions.positions.clear();
+						if (!CheckCancelAndBlockCondition()) {
+							OnOpportunityReturn();
+						}
+					}
+
 				}
 
 			} else {
 
-				AssertLt(0, equationPositions.waitsForReplyCount);
-
-				if (position.IsInactive()) {
-					position.ResetInactive();
-					if (position.GetOpenedQty() == 0) {
-						position.DeactivatieObservation();
-						position.CancelAtMarketPrice(
-							Position::CLOSE_TYPE_OPEN_FAILED);
-					} else {
-						DelayCancel(position);
-					}
-				}
-
-				if (!--equationPositions.waitsForReplyCount) {
+				if (position.GetActiveQty()) {
 					position.GetTimeMeasurement().Measure(
 						TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
-					LogOpeningExecuted(position.GetEquationIndex());
-					OnOpportunityReturn();
+					DelayCancel(position);
+				} else {
+					//...//
 				}
-
+			
 			}
 
 		}
@@ -194,6 +200,27 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						b2,
 						timeMeasurement);
 
+		}
+
+		virtual void CloseDelayed(
+					size_t equationIndex,
+					TimeMeasurement::Milestones &timeMeasurement) {
+			auto &positions = GetEquationPosition(equationIndex);
+			const auto &oppositeEquationIndex
+				= GetOppositeEquationIndex(equationIndex);
+			AssertEq(0, GetEquationPosition(oppositeEquationIndex).activeCount);
+			AssertEq(
+				0,
+				GetEquationPosition(oppositeEquationIndex).positions.size());
+			AssertEq(
+				0,
+				GetEquationPosition(oppositeEquationIndex).waitsForReplyCount);
+			foreach (auto &position, positions.positions) {
+				if (position->IsCompleted()) {
+					continue;
+				}
+				TurnPosition(*position, oppositeEquationIndex, timeMeasurement);
+			}
 		}
 
 	private:
@@ -282,55 +309,68 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			AssertEq(0, toPositions.waitsForReplyCount);
 		
 			foreach (auto &fromPosition, fromPositions.positions) {
-
-				boost::shared_ptr<EquationPosition> position;
-
-				if (fromPosition->GetType() == Position::TYPE_LONG) {
-					position.reset(
-						new EquationShortPosition(
-							toEquationIndex,
-							fromEquationIndex,
-							*this,
-							dynamic_cast<EquationLongPosition &>(*fromPosition),
-							fromPosition->GetPlanedQty(),
-							fromPosition->GetSecurity().GetAskPriceScaled(),
-							timeMeasurement));
-				} else {
-					AssertEq(Position::TYPE_SHORT, fromPosition->GetType());
-					position.reset(
-						new EquationLongPosition(
-							toEquationIndex,
-							fromEquationIndex,
-							*this,
-							dynamic_cast<EquationShortPosition &>(*fromPosition),
-							fromPosition->GetPlanedQty(),
-							fromPosition->GetSecurity().GetBidPriceScaled(),
-							timeMeasurement));
-				}
-
-				if (!toPositions.activeCount) {
-					timeMeasurement.Measure(
-						TimeMeasurement::SM_STRATEGY_EXECUTION_START);
-				}
-
-				// Sends orders to broker:
-				position->OpenAtMarketPrice();
-				
-				// Binding all positions into one equation:
-				toPositions.positions.push_back(position);
-				Verify(++toPositions.activeCount <= PAIRS_COUNT);
-				Verify(++toPositions.waitsForReplyCount <= PAIRS_COUNT);
-
+				TurnPosition(
+					*fromPosition,
+					toEquationIndex,
+					timeMeasurement);
 			}
 
 			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
-			
+
 			toPositions.lastStartTime = boost::get_system_time();
 			toPositions.currentOpportunityNumber
 				= GetContext().TakeOpportunityNumber();
 
 			LogClosingDetection(fromEquationIndex);
 			LogOpeningDetection(toEquationIndex);
+			
+		}
+
+		
+		void TurnPosition(
+					EquationPosition &fromPosition,
+					size_t toEquationIndex,
+					TimeMeasurement::Milestones &timeMeasurement) {
+
+			auto &toPositions = GetEquationPosition(toEquationIndex);
+
+			boost::shared_ptr<EquationPosition> position;
+
+			if (fromPosition.GetType() == Position::TYPE_LONG) {
+				position.reset(
+					new EquationShortPosition(
+						toEquationIndex,
+						fromPosition.GetEquationIndex(),
+						*this,
+						dynamic_cast<EquationLongPosition &>(fromPosition),
+						fromPosition.GetPlanedQty(),
+						fromPosition.GetSecurity().GetAskPriceScaled(),
+						timeMeasurement));
+			} else {
+				AssertEq(Position::TYPE_SHORT, fromPosition.GetType());
+				position.reset(
+					new EquationLongPosition(
+						toEquationIndex,
+						fromPosition.GetEquationIndex(),
+						*this,
+						dynamic_cast<EquationShortPosition &>(fromPosition),
+						fromPosition.GetPlanedQty(),
+						fromPosition.GetSecurity().GetBidPriceScaled(),
+						timeMeasurement));
+			}
+
+			if (!toPositions.activeCount) {
+				timeMeasurement.Measure(
+					TimeMeasurement::SM_STRATEGY_EXECUTION_START);
+			}
+
+			// Sends orders to broker:
+			position->OpenAtMarketPrice();
+				
+			// Binding all positions into one equation:
+			toPositions.positions.push_back(position);
+			Verify(++toPositions.activeCount <= PAIRS_COUNT);
+			Verify(++toPositions.waitsForReplyCount <= PAIRS_COUNT);
 
 		}
 
