@@ -462,15 +462,20 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 
 }
 
-bool Strategy::IsBlocked() const {
+bool Strategy::IsBlocked(bool forever /* = false */) const {
 	if (!m_pimpl->m_isBlocked) {
-		return !m_pimpl->IsTradingTime();
+		return forever
+			?	false
+			:	!m_pimpl->IsTradingTime();
 	} else {
 		const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
 		if (
 				m_pimpl->m_blockEndTime == pt::not_a_date_time
 				|| m_pimpl->m_blockEndTime > boost::get_system_time()) {
 			return true;
+		} else if (forever) {
+			return false;
+			
 		}
 		m_pimpl->m_blockEndTime = pt::not_a_date_time;
 		m_pimpl->m_isBlocked = false;

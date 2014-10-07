@@ -119,7 +119,7 @@ namespace trdk {
 
 	public:
 
-		bool IsBlocked() const;
+		bool IsBlocked(bool forever = false) const;
 		void Block() throw();
 		void Block(const boost::posix_time::time_duration &);
 
