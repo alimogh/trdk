@@ -28,7 +28,11 @@ CurrenexStream::CurrenexStream(
 }
 
 CurrenexStream::~CurrenexStream() {
-	//...//
+	try {
+		m_session.Disconnect();
+	} catch (...) {
+		AssertFailNoException();
+	}
 }
 
 void CurrenexStream::Connect(const IniSectionRef &conf) {

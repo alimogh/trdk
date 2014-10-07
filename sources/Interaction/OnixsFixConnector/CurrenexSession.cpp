@@ -63,6 +63,10 @@ namespace {
 
 }
 
+namespace {
+	boost::atomic_size_t fixEngineRefCounter(0);
+}
+
 CurrenexFixSession::CurrenexFixSession(
 			Context &context,
 			const std::string &type,
@@ -72,6 +76,7 @@ CurrenexFixSession::CurrenexFixSession(
 		m_fixVersion(ParseFixVersion(configuration, GetLog(), m_type)) {
 	
 	if (!fix::Engine::initialized()) {
+		AssertEq(0, fixEngineRefCounter.load());
 		const auto &settings
 			= configuration.GetBase().ReadFileSystemPath(
 				"Common",
@@ -86,14 +91,26 @@ CurrenexFixSession::CurrenexFixSession(
 			throw Error("Failed to init FIX Engine");
 		}
 	} else {
-		GetLog().Debug("FIX Engine already initialized.");
+		AssertLt(0, fixEngineRefCounter.load());
+		GetLog().Debug(
+			"FIX Engine already initialized (%1%).",
+			fixEngineRefCounter.load());
 	}
+	++fixEngineRefCounter;
 	Assert(fix::Engine::initialized());
 
 }
 
 CurrenexFixSession::~CurrenexFixSession() {
 	Assert(fix::Engine::initialized());
+	AssertLt(0, fixEngineRefCounter.load());
+	if (!--fixEngineRefCounter) {
+		try {
+			fix::Engine::shutdown();
+		} catch (...) {
+			AssertFailNoException();
+		}
+	}
 }
 
 void CurrenexFixSession::Connect(
@@ -181,6 +198,14 @@ void CurrenexFixSession::Connect(
 	
 	GetLog().Info("Connected to FIX Server (%1%).", m_type);
 
+}
+
+void CurrenexFixSession::Disconnect() {
+	if (!m_session) {
+		return;
+	}
+	m_session->logout("Logout");
+	m_session->shutdown();
 }
 
 void CurrenexFixSession::LogStateChange(
