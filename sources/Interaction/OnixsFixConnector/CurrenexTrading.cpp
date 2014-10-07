@@ -33,6 +33,7 @@ CurrenexTrading::CurrenexTrading(
 
 CurrenexTrading::~CurrenexTrading() {
 	try {
+		m_session.Disconnect();
 		{
 			const SendLock lock(m_sendMutex);
 			Assert(m_currentToSend);

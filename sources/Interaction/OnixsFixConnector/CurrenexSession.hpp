@@ -58,6 +58,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		void Connect(
 						const trdk::Lib::IniSectionRef &,
 						OnixS::FIX::ISessionListener &);
+		void Disconnect();
 
 	public:
 
