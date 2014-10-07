@@ -312,19 +312,29 @@ public:
 					break;
 			}
 	
-			if (m_oppositePosition && m_oppositePosition->GetActiveQty() == 0) {
-				Assert(m_oppositePosition->m_pimpl->m_closed.hasOrder);
-				try {
-					m_oppositePosition->m_pimpl->m_closed.time
-						= !m_security.GetContext().GetSettings().IsReplayMode()
-							?	boost::get_system_time()
-							:	m_security.GetLastMarketDataTime();
-				} catch (...) {
-					AssertFailNoException();
+			if (m_oppositePosition) {
+				if (m_oppositePosition->GetActiveQty() == 0) {
+					try {
+						m_oppositePosition->m_pimpl->m_closed.time
+							= !m_security.GetContext().GetSettings().IsReplayMode()
+								?	boost::get_system_time()
+								:	m_security.GetLastMarketDataTime();
+					} catch (...) {
+						AssertFailNoException();
+					}
+					m_oppositePosition->m_pimpl->m_closed.hasOrder = false;
+					updatedOppositePosition = m_oppositePosition;
+					m_oppositePosition.reset();
+				} else if (remaining == 0) {
+					AssertNe(0, m_oppositePosition->GetCloseStartPrice());
+					try {
+						m_oppositePosition->SetCloseStartPrice(0);
+					} catch (...) {
+						AssertFailNoException();
+					}
+					m_oppositePosition->m_pimpl->m_closed.hasOrder = false;
+					updatedOppositePosition = m_oppositePosition;
 				}
-				m_oppositePosition->m_pimpl->m_closed.hasOrder = false;
-				updatedOppositePosition = m_oppositePosition;
-				m_oppositePosition.reset();
 			}
 
 			if (remaining == 0) {
