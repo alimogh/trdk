@@ -312,11 +312,8 @@ public:
 					break;
 			}
 	
-	
-			if (
-					m_oppositePosition
-					&& (m_oppositePosition->GetActiveQty() == 0
-						|| remaining == 0)) {
+			if (m_oppositePosition && m_oppositePosition->GetActiveQty() == 0) {
+				Assert(m_oppositePosition->m_pimpl->m_closed.hasOrder);
 				try {
 					m_oppositePosition->m_pimpl->m_closed.time
 						= !m_security.GetContext().GetSettings().IsReplayMode()

@@ -326,6 +326,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		bool CheckRestoreState();
 
 		void DelayCancel(EquationPosition &);
+		virtual void CloseDelayed(
+					size_t,
+					Lib::TimeMeasurement::Milestones &)
+				= 0;
 
 		//! Logging current bid/ask values for all pairs (if logging enabled).
 		void LogBrokersState(
@@ -336,7 +340,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	private:
 
-		void CloseDelayed();
+		void CloseDelayed(Lib::TimeMeasurement::Milestones &);
 
 	private:
 
