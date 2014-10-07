@@ -349,9 +349,6 @@ size_t FxArb1::CancelAllInEquationAtMarketPrice(
 				++result;
 			}
 		}
-		if (result > 0) {
-			LogClosingDetection(equationIndex);
-		}
 	} catch (...) {
 		AssertFailNoException();
 		Block();
