@@ -202,14 +202,15 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			boost::posix_time::ptime lastStartTime;
 
+			bool isCanceled;
+
 			OpportunityNumber currentOpportunityNumber;
-			bool isClosedNotByEquation;
 
 			EquationOpenedPositions()
 					: activeCount(0),
 					waitsForReplyCount(0),
-					currentOpportunityNumber(0),
-					isClosedNotByEquation(false) {
+					isCanceled(false),
+					currentOpportunityNumber(0) {
 				//...//
 			}
 
@@ -234,6 +235,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		virtual void OnLevel1Update(
 					Security &,
 					Lib::TimeMeasurement::Milestones &);
+		virtual void FxArb1::OnPositionUpdate(Position &);
 
 		virtual void ReportDecision(const Position &) const;
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
@@ -245,10 +247,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		Equations CreateEquations(const Lib::Ini &) const;
 
 	protected:
-
-		void OnOpportunityUpdate(Lib::TimeMeasurement::Milestones &);
-
-		void OnOpportunityReturn();
 
 		virtual void CheckOpportunity(Lib::TimeMeasurement::Milestones &) = 0;
 
@@ -289,28 +287,24 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				:	equationIndex + (EQUATIONS_COUNT / 2);
 		}
 
-		EquationOpenedPositions & GetEquationPosition(size_t equationIndex) {
+		EquationOpenedPositions & GetEquationPositions(size_t equationIndex) {
 			AssertLe(0, equationIndex);
 			AssertGt(m_positionsByEquation.size(), equationIndex);
 			return m_positionsByEquation[equationIndex];
 		}
-		const EquationOpenedPositions & GetEquationPosition(
+		const EquationOpenedPositions & GetEquationPositions(
 					size_t equationIndex)
 				const {
 			return const_cast<FxArb1 *>(this)
-				->GetEquationPosition(equationIndex);
+				->GetEquationPositions(equationIndex);
 		}
 
-		//! Returns true if all orders for equation are filled.
-		bool IsEquationOpenedFully(size_t equationIndex) const;
-
-		bool IsEquationCanceledOrCompleted(size_t equationIndex) const;
+		void CloseEquation(size_t equationIndex, const Position::CloseType &);
 
 		//! Cancels all opened for equation orders and close positions for it.
-		size_t CancelAllInEquationAtMarketPrice(
+		size_t CancelEquation(
 					size_t equationIndex,
-					const Position::CloseType &closeType,
-					bool isCanceledWithoutEquation = false)
+					const Position::CloseType &closeType)
 				throw();
 	
 		//! Sends open-orders for each configured security.
@@ -319,7 +313,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					size_t opposideEquationIndex,
 					const Broker &b1,
 					const Broker &b2,
-					bool useIoc,
 					Lib::TimeMeasurement::Milestones &);
 
 		//! Return true for long position, false for short position
@@ -330,7 +323,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		bool CheckRestoreState();
 
-		void DelayCancel(EquationPosition &);
 		virtual void CloseDelayed(
 					size_t,
 					Lib::TimeMeasurement::Milestones &)
@@ -356,6 +348,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	private:
 
+		void OnOpportunityUpdate(Lib::TimeMeasurement::Milestones &);
+
+		void OnOpportunityReturn();
+
+		void DelayClose(EquationPosition &);
 		void CloseDelayed(Lib::TimeMeasurement::Milestones &);
 
 	private:

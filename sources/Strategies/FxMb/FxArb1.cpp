@@ -305,41 +305,41 @@ bool FxArb1::GetEquationPositionWay(
 
 }
 
-bool FxArb1::IsEquationCanceledOrCompleted(size_t equationIndex) const {
-	const auto &positions = m_positionsByEquation[equationIndex];
-	foreach (const auto &position, positions.positions) {
-		if (position->IsCanceled() || position->IsCompleted()) {
-			return true;
-		}
-	}
-	return false;
-}
-
-
-bool FxArb1::IsEquationOpenedFully(size_t equationIndex) const {
-	// Returns true if all orders for equation are filled.
-	const auto &positions = m_positionsByEquation[equationIndex];
-	foreach (const auto &position, positions.positions) {
-		if (!position->IsOpened()) {
-			return false;
-		}
-	}
-	return !positions.positions.empty();
-}
-
-size_t FxArb1::CancelAllInEquationAtMarketPrice(
+void FxArb1::CloseEquation(
 			size_t equationIndex,
-			const Position::CloseType &closeType,
-			bool isCanceledWithoutEquation /*= false*/)
+			const Position::CloseType &closeType) {
+	auto &positions = m_positionsByEquation[equationIndex];
+	// If it "closing" - can be not fully opened, by logic:
+	AssertEq(PAIRS_COUNT, positions.activeCount);
+	AssertEq(0, positions.waitsForReplyCount);
+	Assert(!positions.isCanceled);
+	foreach (auto &position, positions.positions) {
+		// If it "closing" - can be not fully opened, by logic:
+		Assert(!position->IsCompleted());
+		position->SetCloseStartPrice(
+			position->GetType() == Position::TYPE_LONG
+				?	position->GetSecurity().GetBidPriceScaled()
+				:	position->GetSecurity().GetAskPriceScaled());
+		if (position->CloseAtMarketPrice(closeType)) {
+			AssertGt(PAIRS_COUNT, positions.waitsForReplyCount);
+			++positions.waitsForReplyCount;
+		}
+	}
+	AssertEq(positions.activeCount, positions.waitsForReplyCount);
+}
+
+size_t FxArb1::CancelEquation(
+			size_t equationIndex,
+			const Position::CloseType &closeType)
 		throw() {
 	Assert(!IsBlocked());
-	size_t result = 0;
 	// Cancels all opened for equation orders and close positions for it.
 	try {
 		auto &positions = m_positionsByEquation[equationIndex];
-		if (isCanceledWithoutEquation) {
-			positions.isClosedNotByEquation = true;
-		}
+		AssertGe(PAIRS_COUNT, positions.activeCount);
+		AssertGe(PAIRS_COUNT, positions.waitsForReplyCount);
+		Assert(!positions.isCanceled);
+		const auto prevWaitsForReplyCount = positions.waitsForReplyCount;
 		foreach (auto &position, positions.positions) {
 			if (position->IsCompleted()) {
 				continue;
@@ -349,14 +349,23 @@ size_t FxArb1::CancelAllInEquationAtMarketPrice(
 					?	position->GetSecurity().GetBidPriceScaled()
 					:	position->GetSecurity().GetAskPriceScaled());
 			if (position->CancelAtMarketPrice(closeType)) {
-				++result;
+				AssertGt(PAIRS_COUNT, positions.waitsForReplyCount);
+				++positions.waitsForReplyCount;
 			}
 		}
+		AssertLe(prevWaitsForReplyCount, positions.waitsForReplyCount);
+		AssertGe(positions.activeCount, positions.waitsForReplyCount);
+		const auto affectedPositionsCount
+			= positions.waitsForReplyCount - prevWaitsForReplyCount;
+		if (affectedPositionsCount > 0) {
+			positions.isCanceled = true;
+		}
+		return affectedPositionsCount;
 	} catch (...) {
 		AssertFailNoException();
 		Block();
+		return 0;
 	}
-	return result;
 }
 
 void FxArb1::CheckConf() {
@@ -394,7 +403,6 @@ void FxArb1::StartPositionsOpening(
 			size_t opposideEquationIndex,
 			const Broker &b1,
 			const Broker &b2,
-			bool useIoc,
 			TimeMeasurement::Milestones &timeMeasurement) {
 
 	// Sends open-orders for each configured security:
@@ -407,7 +415,7 @@ void FxArb1::StartPositionsOpening(
 	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
 
 	// Info about positions (which not yet opened) for this equation:
-	auto &equationPositions = GetEquationPosition(equationIndex);
+	auto &equationPositions = GetEquationPositions(equationIndex);
 	AssertEq(0, equationPositions.positions.size());
 	AssertEq(0, equationPositions.activeCount);
 
@@ -429,120 +437,109 @@ void FxArb1::StartPositionsOpening(
 		throw std::out_of_range("Pair index is out of range");
 	};
 
-	try {
-
-		// Check for required volume for each pair:
-		for (size_t i = 0; i < PAIRS_COUNT; ++i) {
-			const SecurityPositionConf &conf = getSecurityByPairIndex(i);
-			const Qty &actualQty = conf.isLong
-				?	conf.security->GetAskQty()
-				:	conf.security->GetBidQty();
-			if (conf.qty * conf.requiredVol > actualQty) {
-				GetLog().TradingEx(
-					[&]() -> boost::format {
-						boost::format message(
-							"Can't trade: required %1% * %2% = %3% > %4%"
-								" for %5% %6%, but it's not.");
-						message
-							%	conf.qty
-							%	conf.requiredVol
-							%	actualQty
-							%	(conf.qty * conf.requiredVol)
-							%	conf.security->GetSymbol().GetSymbol()
-							%	(conf.isLong ? "ask" : "bid");
-						return message;
-					});
-				return;
-			}
+	// Check for required volume for each pair:
+	for (size_t i = 0; i < PAIRS_COUNT; ++i) {
+		const SecurityPositionConf &conf = getSecurityByPairIndex(i);
+		const Qty &actualQty = conf.isLong
+			?	conf.security->GetAskQty()
+			:	conf.security->GetBidQty();
+		if (conf.qty * conf.requiredVol > actualQty) {
+			GetLog().TradingEx(
+				[&]() -> boost::format {
+					boost::format message(
+						"Can't trade: required %1% * %2% = %3% > %4%"
+							" for %5% %6%, but it's not.");
+					message
+						%	conf.qty
+						%	conf.requiredVol
+						%	actualQty
+						%	(conf.qty * conf.requiredVol)
+						%	conf.security->GetSymbol().GetSymbol()
+						%	(conf.isLong ? "ask" : "bid");
+					return message;
+				});
+			return;
 		}
+	}
 
-		// For each configured symbol we create position object and
-		// sending open-order:
-		for (size_t i = 0; i < PAIRS_COUNT; ++i) {
+	// For each configured symbol we create position object and
+	// sending open-order:
+	for (size_t i = 0; i < PAIRS_COUNT; ++i) {
 			
-			const SecurityPositionConf &conf = getSecurityByPairIndex(i);
+		const SecurityPositionConf &conf = getSecurityByPairIndex(i);
 
-			// Position must be "shared" as it uses pattern
-			// "shared from this":
-			boost::shared_ptr<EquationPosition> position;
+		// Position must be "shared" as it uses pattern
+		// "shared from this":
+		boost::shared_ptr<EquationPosition> position;
 			
 #			ifdef DEV_VER
-				GetLog().Debug(
-					"Equation %1% / %2% pair %3% (%6%)"
-						" will %4% on %5% with %7% euros",
-					boost::make_tuple(
-						equationIndex,
-						opposideEquationIndex,
-						(i + 1),
-						"open",
-						GetEquationPositionWay(
-								equationIndex,
-								conf.isLong,
-								true)
-							? "BUY" : "SELL",
-						conf.security->GetSymbol(),
-						conf.qty));
+			GetLog().Debug(
+				"Equation %1% / %2% pair %3% (%6%)"
+					" will %4% on %5% with %7% euros",
+				boost::make_tuple(
+					equationIndex,
+					opposideEquationIndex,
+					(i + 1),
+					"open",
+					GetEquationPositionWay(
+							equationIndex,
+							conf.isLong,
+							true)
+						? "BUY" : "SELL",
+					conf.security->GetSymbol(),
+					conf.qty));
 #			endif
 			
-			if (GetEquationPositionWay(equationIndex, conf.isLong, true)) {
-				position.reset(
-					new EquationLongPosition(
-						equationIndex,
-						opposideEquationIndex,
-						*this,
-						*conf.tradeSystem,
-						*conf.security,
-						conf.security->GetSymbol().GetCashCurrency(),
-						conf.qty,
-						conf.security->GetAskPriceScaled(),
-						timeMeasurement));
-			} else {
-				position.reset(
-					new EquationShortPosition(
-						equationIndex,
-						opposideEquationIndex,
-						*this,
-						*conf.tradeSystem,
-						*conf.security,
-						conf.security->GetSymbol().GetCashCurrency(),
-						conf.qty,
-						conf.security->GetBidPriceScaled(),
-						timeMeasurement));
-			}
-
-			if (!equationPositions.activeCount) {
-				timeMeasurement.Measure(
-					TimeMeasurement::SM_STRATEGY_EXECUTION_START);
-			}
-
-			// Sends orders to broker:
-			if (useIoc) {
-				position->OpenAtMarketPriceImmediatelyOrCancel();
-			} else {
-				position->OpenAtMarketPrice();
-			}
-				
-			// Binding all positions into one equation:
-			equationPositions.positions.push_back(position);
-			Verify(++equationPositions.activeCount <= PAIRS_COUNT);
-			Verify(++equationPositions.waitsForReplyCount <= PAIRS_COUNT);
-
+		if (GetEquationPositionWay(equationIndex, conf.isLong, true)) {
+			position.reset(
+				new EquationLongPosition(
+					equationIndex,
+					opposideEquationIndex,
+					*this,
+					*conf.tradeSystem,
+					*conf.security,
+					conf.security->GetSymbol().GetCashCurrency(),
+					conf.qty,
+					conf.security->GetAskPriceScaled(),
+					timeMeasurement));
+		} else {
+			position.reset(
+				new EquationShortPosition(
+					equationIndex,
+					opposideEquationIndex,
+					*this,
+					*conf.tradeSystem,
+					*conf.security,
+					conf.security->GetSymbol().GetCashCurrency(),
+					conf.qty,
+					conf.security->GetBidPriceScaled(),
+					timeMeasurement));
 		}
 
-		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+		if (!equationPositions.activeCount) {
+			timeMeasurement.Measure(
+				TimeMeasurement::SM_STRATEGY_EXECUTION_START);
+		}
 
-		equationPositions.lastStartTime = boost::get_system_time();
-		equationPositions.currentOpportunityNumber
-			= GetContext().TakeOpportunityNumber();
+		// Sends orders to broker:
+		position->OpenAtMarketPrice();
+				
+		// Binding all positions into one equation:
+		equationPositions.positions.push_back(position);
+		Verify(++equationPositions.activeCount <= PAIRS_COUNT);
+		Verify(++equationPositions.waitsForReplyCount <= PAIRS_COUNT);
 
-		LogOpeningDetection(equationIndex);
-
-	} catch (...) {
-		CancelAllInEquationAtMarketPrice(
-			equationIndex,
-			Position::CLOSE_TYPE_SYSTEM_ERROR);
-		throw;
 	}
+
+	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+
+	equationPositions.lastStartTime = boost::get_system_time();
+	equationPositions.currentOpportunityNumber
+		= GetContext().TakeOpportunityNumber();
+
+	LogOpeningDetection(equationIndex);
+
+	equationPositions.lastStartTime = boost::get_system_time();
 
 }
 
@@ -550,6 +547,125 @@ void FxArb1::OnLevel1Update(
 			Security &,
 			TimeMeasurement::Milestones &timeMeasurement) {
 	OnOpportunityUpdate(timeMeasurement);
+}
+
+void FxArb1::OnPositionUpdate(Position &positionRef) {
+
+	// Method calls each time when one of strategy positions updates.
+
+	EquationPosition &position
+		= dynamic_cast<EquationPosition &>(positionRef);
+
+	if (position.IsError()) {
+		Assert(IsBlocked());
+		return;
+	}
+
+	auto &equationPositions
+		= GetEquationPositions(position.GetEquationIndex());
+
+	if (position.IsCanceled()) {
+		AssertLt(0, equationPositions.activeCount);
+		AssertLt(0, equationPositions.waitsForReplyCount);
+		position.DeactivatieObservation();
+		--equationPositions.waitsForReplyCount;
+		if (!--equationPositions.activeCount) {
+			AssertEq(0, equationPositions.waitsForReplyCount);
+			position.GetTimeMeasurement().Measure(
+				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+			LogClosingExecuted(position.GetEquationIndex());
+			equationPositions.positions.clear();
+			Verify(CheckCancelAndBlockCondition());
+		}
+		// Objects with completed positions will be removed from system:
+		Assert(position.IsCompleted());
+		return;
+	}
+
+	if (!position.IsObservationActive()) {
+		Assert(!position.IsInactive());
+		return;
+	}
+
+	Assert(!position.IsCanceled());
+
+	if (position.HasActiveOrders()) {
+		return;
+	}
+
+	if (!position.IsInactive()) {
+
+		if (position.GetActiveQty()) {
+				
+			AssertLt(0, equationPositions.waitsForReplyCount);
+			if (!--equationPositions.waitsForReplyCount) {
+				AssertGe(PAIRS_COUNT, equationPositions.activeCount);
+				position.GetTimeMeasurement().Measure(
+					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+				if (equationPositions.activeCount >= PAIRS_COUNT) {
+					LogOpeningExecuted(position.GetEquationIndex());	
+				}
+				OnOpportunityReturn();
+			}
+				
+		} else {
+
+			position.DeactivatieObservation();
+
+			AssertLt(0, equationPositions.activeCount);
+			AssertLt(0, equationPositions.waitsForReplyCount);
+			Assert(!position.IsInactive());
+
+			--equationPositions.waitsForReplyCount;
+			if (!--equationPositions.activeCount) {
+				AssertEq(0, equationPositions.waitsForReplyCount);
+				position.GetTimeMeasurement().Measure(
+					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+				LogClosingExecuted(position.GetEquationIndex());
+				equationPositions.positions.clear();
+				if (!CheckCancelAndBlockCondition()) {
+					OnOpportunityReturn();
+				}
+			}
+
+			// Objects with completed positions will be removed from system:
+			Assert(position.IsCompleted());
+
+		}
+
+	} else {
+
+		position.ResetInactive();
+
+		if (position.GetActiveQty()) {
+			DelayClose(position);
+		} else {
+			AssertEq(std::string("FxArb1Multi"), GetName());
+			AssertLt(0, equationPositions.activeCount);
+			AssertLt(0, equationPositions.waitsForReplyCount);
+			AssertLt(0, equationPositions.positions.size());
+			--equationPositions.waitsForReplyCount;
+			if (!--equationPositions.activeCount) {
+				AssertEq(0, equationPositions.waitsForReplyCount);
+				AssertEq(0, equationPositions.positions.size());
+				position.GetTimeMeasurement().Measure(
+					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+			} else {
+				const auto pos = std::find(
+					equationPositions.positions.begin(),
+					equationPositions.positions.end(),
+					position.shared_from_this());
+				Assert(pos != equationPositions.positions.end());
+				if (pos != equationPositions.positions.end()) {
+					equationPositions.positions.erase(pos);
+				}
+			}
+			// Objects with completed positions will be removed from system:
+			Assert(position.IsCompleted());
+		}
+			
+	}
+
 }
 
 void FxArb1::OnOpportunityUpdate(TimeMeasurement::Milestones &timeMeasurement) {
@@ -585,10 +701,9 @@ void FxArb1::CancelAllAndBlock(
 
 	size_t ordersCount = 0;
 	for (size_t i = 0; i < EQUATIONS_COUNT; ++i) {
-		ordersCount += CancelAllInEquationAtMarketPrice(
+		ordersCount += CancelEquation(
 			i,
-			Position::CLOSE_TYPE_ENGINE_STOP,
-			true);
+			Position::CLOSE_TYPE_ENGINE_STOP);
 	}
 
 	if (ordersCount == 0) {
@@ -615,24 +730,24 @@ void FxArb1::WaitForCancelAndBlock(
 void FxArb1::LogOpeningDetection(size_t equationIndex) const {
 	AssertEq(
 		PAIRS_COUNT,
-		GetEquationPosition(equationIndex).activeCount);
+		GetEquationPositions(equationIndex).activeCount);
 	LogEquation("Opening detected", equationIndex, equationIndex, false, false);
 }
 
 void FxArb1::LogOpeningExecuted(size_t equationIndex) const {
 	AssertEq(
 		PAIRS_COUNT,
-		GetEquationPosition(equationIndex).activeCount);
+		GetEquationPositions(equationIndex).activeCount);
 	LogEquation("Opening executed", equationIndex, equationIndex, false, true);
 }
 
 void FxArb1::LogClosingDetection(size_t equationIndex) const {
-	const auto &equation = GetEquationPosition(equationIndex);
+	const auto &equation = GetEquationPositions(equationIndex);
 	AssertEq(PAIRS_COUNT, equation.activeCount);
 	LogEquation(
 		"Closing detected",
 		equationIndex,
-		!equation.isClosedNotByEquation
+		!equation.isCanceled
 			?	GetOppositeEquationIndex(equationIndex)
 			:	nEquationsIndex,
 		true,
@@ -640,12 +755,12 @@ void FxArb1::LogClosingDetection(size_t equationIndex) const {
 }
 
 void FxArb1::LogClosingExecuted(size_t equationIndex) const {
-	const auto &equation = GetEquationPosition(equationIndex);
+	const auto &equation = GetEquationPositions(equationIndex);
 	AssertEq(0, equation.activeCount);
 	LogEquation(
 		"Closing executed",
 		equationIndex,
-		!equation.isClosedNotByEquation
+		!equation.isCanceled
 			?	GetOppositeEquationIndex(equationIndex)
 			:	nEquationsIndex,
 		true,
@@ -660,7 +775,7 @@ void FxArb1::LogEquation(
 			bool isCompleted)
 		const {
 
-	const auto &equationPositions = GetEquationPosition(equationIndex);
+	const auto &equationPositions = GetEquationPositions(equationIndex);
 	const auto &positions = equationPositions.positions;
 	AssertEq(PAIRS_COUNT, positions.size());
 	if (positions.size() < PAIRS_COUNT) {
@@ -727,7 +842,7 @@ void FxArb1::LogEquation(
 
 }
 
-void FxArb1::DelayCancel(EquationPosition &position) {
+void FxArb1::DelayClose(EquationPosition &position) {
 	if (m_equationsForDelayedClosing[position.GetEquationIndex()]) {
 		return;
 	}

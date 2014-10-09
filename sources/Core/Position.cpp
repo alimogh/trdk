@@ -546,10 +546,34 @@ public:
 				return std::move(message);
 			});
 	}
-	
+
+	void ReportClosingStart(const char *eventDesc) const throw() {
+		m_security.GetContext().GetLog().TradingEx(
+			logTag,
+			[&]() -> boost::format {
+				boost::format message(
+					"%11%\t%1%\t%2%\tclose-%12%\t%3%\tqty=%4%->%5%"
+						" order-id=%6%->%7% has-orders=%8%/%9% is-error=%10%");
+				message
+					%	m_security
+					%	m_position.GetTypeStr()
+					%	m_tag
+					%	m_position.GetOpenedQty()
+					%	m_position.GetClosedQty()
+					%	m_position.GetOpenOrderId()
+					%	m_position.GetCloseOrderId()
+					%	m_position.HasActiveOpenOrders()
+					%	m_position.HasActiveCloseOrders()
+					%	(m_isError ? true : false)
+					%	m_position.GetTradeSystem().GetTag()
+					%	eventDesc;
+				return std::move(message);
+			});
+	}
+
 	void ReportClosingUpdate(
 				const char *eventDesc,
-				TradeSystem::OrderStatus orderStatus)
+				const TradeSystem::OrderStatus &orderStatus)
 			const
 			throw() {
 		m_security.GetContext().GetLog().TradingEx(
@@ -558,7 +582,7 @@ public:
 				boost::format message(
 					"%11%\t%1%\t%2%\tclose-%3%\t%4%"
 						"\tqty=%5%->%6% price=%7% order-id=%8%->%9%"
-						" order-status=%10%");
+						" order-status=%10% has-orders=%12%/%13%");
 				message
 					%	m_position.GetSecurity().GetSymbol()
 					%	m_position.GetTypeStr()
@@ -572,7 +596,9 @@ public:
 					%	m_position.GetOpenOrderId()
 					%	m_position.GetCloseOrderId()
 					%	m_tradeSystem.GetStringStatus(orderStatus)
-					%	m_position.GetTradeSystem().GetTag();
+					%	m_position.GetTradeSystem().GetTag()
+					%	m_position.HasActiveOpenOrders()
+					%	m_position.HasActiveCloseOrders();
 				return std::move(message);
 			});
 	}
@@ -656,8 +682,6 @@ public:
 			m_strategy->Register(m_position);
 		}
 
-
-			
 		m_security.GetContext().GetLog().TradingEx(
 			logTag,
 			[&]() -> boost::format {
@@ -725,6 +749,7 @@ public:
 
 	template<typename CloseImpl>
 	OrderId Close(CloseType closeType, const CloseImpl &closeImpl) {
+		ReportClosingStart("pre");
 		const Implementation::WriteLock lock(m_mutex);
 		return CloseUnsafe(closeType, closeImpl);
 	}
@@ -739,27 +764,7 @@ public:
 			Assert(!m_position.HasActiveCloseOrders());
 			return false;
 		}
-		m_security.GetContext().GetLog().TradingEx(
-			logTag,
-			[&]() -> boost::format {
-				boost::format message(
-					"%11%\t%1%\t%2%\tclose-cancel-pre\t%3%\tqty=%4%->%5%"
-						" price=market order-id=%6%->%7%"
-						" has-orders=%8%/%9% is-error=%10%");
-				message
-					%	m_security
-					%	m_position.GetTypeStr()
-					%	m_tag
-					%	m_position.GetOpenedQty()
-					%	m_position.GetClosedQty()
-					%	m_position.GetOpenOrderId()
-					%	m_position.GetCloseOrderId()
-					%	m_position.HasActiveOpenOrders()
-					%	m_position.HasActiveCloseOrders()
-					%	(m_isError ? true : false)
-					%	m_position.GetTradeSystem().GetTag();
-				return std::move(message);
-			});
+		ReportClosingStart("cancel-pre");
 		if (	m_position.IsClosed()
 				|| (	!m_position.IsOpened()
 						&& !m_position.HasActiveOpenOrders())) {
