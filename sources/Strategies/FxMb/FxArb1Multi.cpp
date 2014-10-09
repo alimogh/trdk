@@ -239,11 +239,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			AssertEq(PAIRS_COUNT, fromPositions.positions.size());
 			AssertEq(0, fromPositions.waitsForReplyCount);
 			
-			AssertEq(0, GetEquationPositions(toEquationIndex).activeCount);
-			AssertEq(0, GetEquationPositions(toEquationIndex).positions.size());
-			AssertEq(
-				0,
-				GetEquationPositions(toEquationIndex).waitsForReplyCount);
+			auto &toPositions = GetEquationPositions(toEquationIndex);
+			Lib::UseUnused(toPositions);
+			AssertEq(0, toPositions.activeCount);
+			AssertEq(0, toPositions.positions.size());
+			AssertEq(0, toPositions.waitsForReplyCount);
 		
 			foreach (auto &fromPosition, fromPositions.positions) {
 				TurnPosition(

@@ -567,6 +567,7 @@ void FxArb1::OnPositionUpdate(Position &positionRef) {
 				
 			AssertLt(0, equationPositions.waitsForReplyCount);
 			if (!--equationPositions.waitsForReplyCount) {
+				AssertGe(PAIRS_COUNT, equationPositions.activeCount);
 				position.GetTimeMeasurement().Measure(
 					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
 				OnOpportunityReturn();
