@@ -187,6 +187,7 @@ namespace {
 			for ( ; ; ) {
 				const auto &stopMode = getchar();
 				if (stopMode == 's' || stopMode == 'S') {
+					Log::Info("Stopping engine with 'S'-scenario...");
 					std::cout
 						<< "Waiting until all positions will be closed"
 							<< " by conditions..."
@@ -202,6 +203,7 @@ namespace {
 					}
 					break;
 				} else if (stopMode == 'u' || stopMode == 'U') {
+					Log::Info("Stopping engine with 'U'-scenario...");
 					std::cout
 						<< "Closing all position before stop..."
 						<< " To interrupt closing process use Ctrl + C."
