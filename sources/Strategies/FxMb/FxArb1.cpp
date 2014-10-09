@@ -693,6 +693,7 @@ void FxArb1::LogEquation(
 			:	!isClosing
 				?	p.GetOpenPrice()
 				:	p.GetClosePrice();
+		AssertNe(0, scaledPrice);
 		price = p.GetSecurity().DescalePrice(scaledPrice);
 	};
 
