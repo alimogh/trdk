@@ -202,9 +202,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			boost::posix_time::ptime lastStartTime;
 
+			bool isCanceled;
+
 			EquationOpenedPositions()
 					: activeCount(0),
-					waitsForReplyCount(0) {
+					waitsForReplyCount(0),
+					isCanceled(false) {
 				//...//
 			}
 

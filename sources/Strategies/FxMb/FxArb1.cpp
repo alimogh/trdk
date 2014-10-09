@@ -311,6 +311,7 @@ void FxArb1::CloseEquation(
 	// If it "closing" - can be not fully opened, by logic:
 	AssertEq(PAIRS_COUNT, positions.activeCount);
 	AssertEq(0, positions.waitsForReplyCount);
+	Assert(!positions.isCanceled);
 	foreach (auto &position, positions.positions) {
 		// If it "closing" - can be not fully opened, by logic:
 		Assert(!position->IsCompleted());
@@ -336,6 +337,7 @@ size_t FxArb1::CancelEquation(
 		auto &positions = m_positionsByEquation[equationIndex];
 		AssertGe(PAIRS_COUNT, positions.activeCount);
 		AssertGe(PAIRS_COUNT, positions.waitsForReplyCount);
+		Assert(!positions.isCanceled);
 		const auto prevWaitsForReplyCount = positions.waitsForReplyCount;
 		foreach (auto &position, positions.positions) {
 			if (position->IsCompleted()) {
@@ -352,7 +354,12 @@ size_t FxArb1::CancelEquation(
 		}
 		AssertLe(prevWaitsForReplyCount, positions.waitsForReplyCount);
 		AssertGe(positions.activeCount, positions.waitsForReplyCount);
-		return positions.waitsForReplyCount - prevWaitsForReplyCount;
+		const auto affectedPositionsCount
+			= positions.waitsForReplyCount - prevWaitsForReplyCount;
+		if (affectedPositionsCount > 0) {
+			positions.isCanceled = true;
+		}
+		return affectedPositionsCount;
 	} catch (...) {
 		AssertFailNoException();
 		Block();
