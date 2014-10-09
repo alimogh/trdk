@@ -155,7 +155,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				AssertGt(
 					PAIRS_COUNT,
 					GetEquationPositions(oppositeEquationIndex).positions.size());
-				TurnPosition(*position, oppositeEquationIndex, timeMeasurement);
+				TurnPosition(
+					*position,
+					positions,
+					oppositeEquationIndex,
+					timeMeasurement);
 			}
 		}
 
@@ -259,6 +263,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			foreach (auto &fromPosition, fromPositions.positions) {
 				TurnPosition(
 					*fromPosition,
+					fromPositions,
 					toEquationIndex,
 					timeMeasurement);
 			}
@@ -277,6 +282,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		
 		void TurnPosition(
 					EquationPosition &fromPosition,
+					EquationOpenedPositions &fromPositions,
 					size_t toEquationIndex,
 					TimeMeasurement::Milestones &timeMeasurement) {
 
@@ -320,9 +326,13 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				
 			// Binding all positions into one equation:
 			toPositions.positions.push_back(position);
-			Verify(++toPositions.activeCount <= PAIRS_COUNT);
-			AssertGe(PAIRS_COUNT - 2, toPositions.waitsForReplyCount);
-			toPositions.waitsForReplyCount += 2;
+			
+			AssertGe(PAIRS_COUNT, toPositions.activeCount);
+			++toPositions.activeCount;
+			AssertGe(PAIRS_COUNT, fromPositions.waitsForReplyCount);
+			++fromPositions.waitsForReplyCount;
+			AssertGe(PAIRS_COUNT, toPositions.waitsForReplyCount);
+			++toPositions.waitsForReplyCount;
 
 		}
 
