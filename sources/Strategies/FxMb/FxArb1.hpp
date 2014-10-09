@@ -329,6 +329,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					const Broker &)
 				const;
 
+		bool IsInGracePeriod(const EquationOpenedPositions &) const;
+
 	private:
 
 		void OnOpportunityUpdate(Lib::TimeMeasurement::Milestones &);
@@ -350,6 +352,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		bool m_isPairsByBrokerChecked;
 
 		std::bitset<EQUATIONS_COUNT> m_equationsForDelayedClosing;
+
+		const boost::posix_time::time_duration m_positionGracePeriod;
 
 	};
 

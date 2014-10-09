@@ -89,6 +89,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 
 			if (firstEquationPositions.activeCount) {
+				if (IsInGracePeriod(firstEquationPositions)) {
+					return;
+				}
 				AssertEq(0, secondEquationPositions.activeCount);
 				AssertEq(0, secondEquationPositions.positions.size());
 				// We opened on first equation, we try to close on second one
@@ -103,6 +106,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			AssertEq(0, firstEquationPositions.positions.size());
 
 			if (secondEquationPositions.activeCount) {
+				if (IsInGracePeriod(secondEquationPositions)) {
+					return;
+				}
 				// We opened on second equation, we try to close on first one
 				CheckEquation(
 					m_equations.first,
