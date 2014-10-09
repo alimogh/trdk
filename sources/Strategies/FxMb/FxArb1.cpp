@@ -29,7 +29,17 @@ FxArb1::FxArb1(
 		: Base(context, name, tag),
 		m_equations(CreateEquations(conf.GetBase())),
 		m_isPairsByBrokerChecked(false),
-		m_cancelAndBlockCondition(nullptr) {
+		m_cancelAndBlockCondition(nullptr),
+		m_positionGracePeriod(
+			pt::seconds(
+				//  size_t -> long as period can be negative, but not for our
+				//  setting:
+				long(
+					conf.GetBase().ReadTypedKey<size_t>(
+						"Common",
+						"position_grace_period_sec"))))  {
+
+	GetLog().Info("Using \"grace period\": %1%.", m_positionGracePeriod);
 
 	if (GetContext().GetTradeSystemsCount() != BROKERS_COUNT) {
 		throw Exception("Strategy requires exact number of brokers");
@@ -884,3 +894,10 @@ void FxArb1::CloseDelayed(
 	}
 }
 
+bool FxArb1::IsInGracePeriod(const EquationOpenedPositions &positions) const {
+	AssertNe(0, positions.activeCount);
+	AssertNe(pt::not_a_date_time, positions.lastStartTime);
+	return
+		positions.lastStartTime + m_positionGracePeriod
+			>= boost::get_system_time();
+}

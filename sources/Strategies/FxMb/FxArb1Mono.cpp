@@ -14,8 +14,6 @@
 using namespace trdk;
 using namespace trdk::Lib;
 
-namespace pt = boost::posix_time;
-
 namespace trdk { namespace Strategies { namespace FxMb {
 	
 	//! Mono-strategy.
@@ -31,11 +29,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					Context &context,
 					const std::string &tag,
 					const IniSectionRef &conf)
-				: Base(context, "FxArb1Mono", tag, conf),
-				m_positionGracePeriod(
-					pt::seconds(
-						//  size_t -> long as period can be negative, but not our setting
-						long(conf.ReadTypedKey<size_t>("position_grace_period_sec")))) {
+				: Base(context, "FxArb1Mono", tag, conf) {
 			//...//
 		}
 		
@@ -74,11 +68,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 							// Position in closing process - waiting until it
 							// will be finished:
 					AssertLt(0, positions.positions.size());
-					if (	positions.waitsForReplyCount
-								// We will not close position this period after
-								// start:
-							||	positions.lastStartTime + m_positionGracePeriod
-									>= boost::get_system_time()) {
+					if (	
+							positions.waitsForReplyCount
+							||	IsInGracePeriod(positions)) {
 						timeMeasurement.Measure(
 							TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 						return;
@@ -220,10 +212,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				timeMeasurement);
 
 		}
-
-	private:
-
-		const pt::time_duration m_positionGracePeriod;
 
 	};
 	

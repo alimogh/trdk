@@ -345,6 +345,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		bool CheckCancelAndBlockCondition();
 		virtual bool OnCanceling() = 0;
 
+		bool IsInGracePeriod(const EquationOpenedPositions &) const;
+
 	private:
 		
 		void LogEquation(const char *, size_t, size_t, bool, bool) const;
@@ -372,6 +374,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		CancelAndBlockCondition *m_cancelAndBlockCondition;
 
 		std::bitset<EQUATIONS_COUNT> m_equationsForDelayedClosing;
+
+		const boost::posix_time::time_duration m_positionGracePeriod;
 
 	};
 
