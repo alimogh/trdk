@@ -901,3 +901,8 @@ bool FxArb1::IsInGracePeriod(const EquationOpenedPositions &positions) const {
 		positions.lastStartTime + m_positionGracePeriod
 			>= boost::get_system_time();
 }
+
+void FxArb1::ResetGracePeriod() {
+	m_positionGracePeriod = pt::seconds(0);
+}
+

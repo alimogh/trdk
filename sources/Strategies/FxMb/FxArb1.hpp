@@ -346,6 +346,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		virtual bool OnCanceling() = 0;
 
 		bool IsInGracePeriod(const EquationOpenedPositions &) const;
+		void ResetGracePeriod();
 
 	private:
 		
@@ -375,7 +376,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		std::bitset<EQUATIONS_COUNT> m_equationsForDelayedClosing;
 
-		const boost::posix_time::time_duration m_positionGracePeriod;
+		boost::posix_time::time_duration m_positionGracePeriod;
 
 	};
 
