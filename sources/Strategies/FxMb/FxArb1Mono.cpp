@@ -32,102 +32,15 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					const std::string &tag,
 					const IniSectionRef &conf)
 				: Base(context, "FxArb1Mono", tag, conf),
-				m_useIocForPositionStart(conf.ReadBoolKey("use_ioc_orders")),
 				m_positionGracePeriod(
 					pt::seconds(
 						//  size_t -> long as period can be negative, but not our setting
 						long(conf.ReadTypedKey<size_t>("position_grace_period_sec")))) {
-			GetLog().Info(
-				"Using position grace period: %1%. Using IOC-orders: %2%.",
-				boost::make_tuple(
-					m_positionGracePeriod,
-					m_useIocForPositionStart ? "yes" : "no"));
+			//...//
 		}
 		
 		virtual ~FxArb1Mono() {
 			//...//
-		}
-
-	public:
-
-		virtual void OnPositionUpdate(Position &positionRef) {
-
-			// Method calls each time when one of strategy positions updates.
-
-			EquationPosition &position
-				= dynamic_cast<EquationPosition &>(positionRef);
-			
-			if (!position.IsObservationActive()) {
-				Assert(!position.IsInactive());
-				return;
-			}
-			
-			if (position.HasActiveOrders()) {
-				Assert(!position.IsInactive());
-				return;
-			}
-
-			position.ResetInactive();
-
-			auto &equationPositions
-				= GetEquationPosition(position.GetEquationIndex());
-
-			if (position.IsCompleted() || position.IsCanceled()) {
-
-				// Position closed, need to find out why:
-				if (position.GetOpenedQty() == 0) {
-					// IOC was canceled without filling, cancel all another
-					// orders at equation and close positions if another orders
-					// are filled:
-					Assert(!IsEquationOpenedFully(position.GetEquationIndex()));
-					if (!IsBlocked()) {
-						CancelAllInEquationAtMarketPrice(
-							position.GetEquationIndex(),
-							Position::CLOSE_TYPE_OPEN_FAILED);
-					} else {
-						DelayCancel(position);
-					}
-				}
-				AssertLt(0, equationPositions.positions.size());
-				AssertLt(0, equationPositions.activeCount);
-
-				position.DeactivatieObservation();
-
-				// We completed work with this position, forget it...
-				AssertLt(0, equationPositions.activeCount);
-				if (!--equationPositions.activeCount) {
-					AssertEq(0, equationPositions.positions.size());
-					equationPositions.positions.clear();
-					equationPositions.waitsForReplyCount = 0;
-					OnOpportunityReturn();
-				}
-
-				return;
-
-			}
-
-			Assert(position.IsStarted());
-			AssertEq(
-				PAIRS_COUNT,
-				GetEquationPosition(position.GetEquationIndex()).activeCount);
-			AssertEq(
-				PAIRS_COUNT,
-				GetEquationPosition(position.GetEquationIndex()).positions.size());
-			Assert(position.IsOpened());
-			AssertEq(position.GetPlanedQty(), position.GetOpenedQty());
-
-			if (!IsEquationOpenedFully(position.GetEquationIndex())) {
-				// Not all orders are filled yet, we need wait more...
-				return;
-			}
-
-			position.GetTimeMeasurement().Measure(
-				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
-
-			equationPositions.waitsForReplyCount = 0;
-
-			OnOpportunityReturn();
-
 		}
 
 	protected:
@@ -156,12 +69,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			// equation:
 			for (size_t i = 0; i < GetEquations().size(); ++i) {
 
-				const auto &positions = GetEquationPosition(i);
+				const auto &positions = GetEquationPositions(i);
 				if (positions.activeCount) {
 							// Position in closing process - waiting until it
 							// will be finished:
 					AssertLt(0, positions.positions.size());
-					if (	IsEquationCanceledOrCompleted(i)
+					if (	positions.waitsForReplyCount
 								// We will not close position this period after
 								// start:
 							||	positions.lastStartTime + m_positionGracePeriod
@@ -208,7 +121,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				// this, closing for opposite) as it very fast MD updates, much
 				// faster then orders update.
 					
-				if (!GetEquationPosition(oppositeEquationIndex).activeCount) {
+				const auto &equationPositions
+					= GetEquationPositions(oppositeEquationIndex);
+				if (!equationPositions.activeCount) {
+
+					AssertEq(0, equationPositions.waitsForReplyCount);
 
 					const auto &equation
 						= GetEquations()[oppositeEquationIndex];
@@ -226,17 +143,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						// at this time one of equation will return "true"
 						// again).
 
-#						ifdef DEV_VER
- 							GetLog().Debug(
- 								"Going to close orders on equation %1% / 12",
-	 							oppositeEquationIndex);
-#						endif
-
 						LogBrokersState(oppositeEquationIndex, b1, b2);
 
 						timeMeasurement.Measure(
 							TimeMeasurement::SM_STRATEGY_DECISION_START);
-						CancelAllInEquationAtMarketPrice(
+						CloseEquation(
 							currentEquationIndex,
 							Position::CLOSE_TYPE_TAKE_PROFIT);
 						timeMeasurement.Measure(
@@ -265,18 +176,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			Assert(!Lib::IsZero(bestEquationsResult));
 			AssertGt(GetEquations().size(), bestEquationsIndex);
 
-			if (GetEquationPosition(bestEquationsIndex).activeCount) {
+			if (GetEquationPositions(bestEquationsIndex).activeCount) {
 				// Equation already has opened positions.
 					timeMeasurement.Measure(
 					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 				return;
 			}
-			
-#			ifdef DEV_VER
-				GetLog().Debug(
- 					"Going to open orders on equation %1% / 12",
-	 				(bestEquationsIndex + 1));
-#			endif
 			
 			OnEquation(bestEquationsIndex, b1, b2, timeMeasurement);
 		
@@ -285,9 +190,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		virtual void CloseDelayed(
 					size_t equationIndex,
 					TimeMeasurement::Milestones &) {
-			CancelAllInEquationAtMarketPrice(
-				equationIndex,
-				Position::CLOSE_TYPE_NONE);
+			CloseEquation(equationIndex, Position::CLOSE_TYPE_NONE);
 		}
 
 	private:
@@ -310,14 +213,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				opposideEquationIndex,
 				b1,
 				b2,
-				m_useIocForPositionStart,
 				timeMeasurement);
 
 		}
 
 	private:
-
-		const bool m_useIocForPositionStart;
 
 		const pt::time_duration m_positionGracePeriod;
 
