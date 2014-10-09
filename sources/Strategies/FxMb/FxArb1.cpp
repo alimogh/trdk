@@ -342,8 +342,11 @@ size_t FxArb1::CancelEquation(
 		auto &positions = m_positionsByEquation[equationIndex];
 		AssertGe(PAIRS_COUNT, positions.activeCount);
 		AssertGe(PAIRS_COUNT, positions.waitsForReplyCount);
-		Assert(!positions.isCanceled);
-		const auto prevWaitsForReplyCount = positions.waitsForReplyCount;
+		if (positions.isCanceled) {
+			return 0;
+		}
+		// All acive orders will be canceled:
+		positions.waitsForReplyCount = 0; 
 		foreach (auto &position, positions.positions) {
 			if (position->IsCompleted()) {
 				continue;
@@ -357,15 +360,12 @@ size_t FxArb1::CancelEquation(
 				++positions.waitsForReplyCount;
 			}
 		}
-		AssertLe(prevWaitsForReplyCount, positions.waitsForReplyCount);
-		AssertGe(positions.activeCount, positions.waitsForReplyCount);
-		const auto affectedPositionsCount
-			= positions.waitsForReplyCount - prevWaitsForReplyCount;
-		if (affectedPositionsCount > 0) {
+		AssertEq(positions.activeCount, positions.waitsForReplyCount);
+		if (positions.waitsForReplyCount > 0) {
 			positions.isCanceled = true;
 			LogClosingDetection(equationIndex);
 		}
-		return affectedPositionsCount;
+		return positions.waitsForReplyCount;
 	} catch (...) {
 		AssertFailNoException();
 		Block();
@@ -570,6 +570,10 @@ void FxArb1::OnPositionUpdate(Position &positionRef) {
 		= GetEquationPositions(position.GetEquationIndex());
 
 	if (position.IsCanceled()) {
+		if (!position.IsCompleted()) {
+			// Answer from Trade System not received yet.
+			return;
+		}
 		AssertLt(0, equationPositions.activeCount);
 		AssertLt(0, equationPositions.waitsForReplyCount);
 		position.DeactivatieObservation();
