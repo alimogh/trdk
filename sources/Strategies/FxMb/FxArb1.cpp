@@ -715,6 +715,8 @@ bool FxArb1::CheckCancelAndBlockCondition() {
 void FxArb1::CancelAllAndBlock(
 			CancelAndBlockCondition &cancelAndBlockCondition) {
 
+	ResetGracePeriod();
+
 	Assert(!m_cancelAndBlockCondition);
 	m_cancelAndBlockCondition = &cancelAndBlockCondition;
 
@@ -733,6 +735,8 @@ void FxArb1::CancelAllAndBlock(
 
 void FxArb1::WaitForCancelAndBlock(
 			CancelAndBlockCondition &cancelAndBlockCondition) {
+
+	ResetGracePeriod();
 
 	Assert(!m_cancelAndBlockCondition);
 	foreach (const auto &position, m_positionsByEquation) {
