@@ -190,7 +190,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		virtual void CloseDelayed(
 					size_t equationIndex,
 					TimeMeasurement::Milestones &) {
-			CloseEquation(equationIndex, Position::CLOSE_TYPE_NONE);
+			CloseEquation(equationIndex, Position::CLOSE_TYPE_NONE, true);
 		}
 
 		virtual bool OnCanceling() {

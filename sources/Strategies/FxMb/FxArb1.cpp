@@ -307,7 +307,8 @@ bool FxArb1::GetEquationPositionWay(
 
 void FxArb1::CloseEquation(
 			size_t equationIndex,
-			const Position::CloseType &closeType) {
+			const Position::CloseType &closeType,
+			bool skipReport /*= false*/) {
 	auto &positions = m_positionsByEquation[equationIndex];
 	// If it "closing" - can be not fully opened, by logic:
 	AssertEq(PAIRS_COUNT, positions.activeCount);
@@ -321,10 +322,13 @@ void FxArb1::CloseEquation(
 				?	position->GetSecurity().GetBidPriceScaled()
 				:	position->GetSecurity().GetAskPriceScaled());
 		if (position->CloseAtMarketPrice(closeType)) {
-			AssertGt(PAIRS_COUNT, positions.waitsForReplyCount);
+			if (!skipReport) {
+				AssertGt(PAIRS_COUNT, positions.waitsForReplyCount);
+			}
 			++positions.waitsForReplyCount;
 		}
 	}
+	LogClosingDetection(equationIndex);
 	AssertEq(positions.activeCount, positions.waitsForReplyCount);
 }
 
@@ -359,6 +363,7 @@ size_t FxArb1::CancelEquation(
 			= positions.waitsForReplyCount - prevWaitsForReplyCount;
 		if (affectedPositionsCount > 0) {
 			positions.isCanceled = true;
+			LogClosingDetection(equationIndex);
 		}
 		return affectedPositionsCount;
 	} catch (...) {
@@ -743,7 +748,6 @@ void FxArb1::LogOpeningExecuted(size_t equationIndex) const {
 
 void FxArb1::LogClosingDetection(size_t equationIndex) const {
 	const auto &equation = GetEquationPositions(equationIndex);
-	AssertEq(PAIRS_COUNT, equation.activeCount);
 	LogEquation(
 		"Closing detected",
 		equationIndex,
@@ -756,7 +760,6 @@ void FxArb1::LogClosingDetection(size_t equationIndex) const {
 
 void FxArb1::LogClosingExecuted(size_t equationIndex) const {
 	const auto &equation = GetEquationPositions(equationIndex);
-	AssertEq(0, equation.activeCount);
 	LogEquation(
 		"Closing executed",
 		equationIndex,
@@ -777,7 +780,6 @@ void FxArb1::LogEquation(
 
 	const auto &equationPositions = GetEquationPositions(equationIndex);
 	const auto &positions = equationPositions.positions;
-	AssertEq(PAIRS_COUNT, positions.size());
 	if (positions.size() < PAIRS_COUNT) {
 		return;
 	}
