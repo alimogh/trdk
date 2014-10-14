@@ -861,8 +861,12 @@ void FxArb1::LogEquation(
 	const auto &getVals = [isClosing, isCompleted](
 				const Position &p,
 				bool &isBuy,
-				double &price) {
-		isBuy = p.GetType() == Position::TYPE_LONG
+				double &price,
+				size_t equationIndex) {
+		  // /!\ Ask or Bid is depending of equation number, we have to use the GetEquationPositionWay function !!!
+		const bool way = ((p.GetType() == Position::TYPE_LONG) ? ((equationIndex < (EQUATIONS_COUNT / 2)) ? true : false) : ((equationIndex < (EQUATIONS_COUNT / 2)) ? false : true));
+		isBuy = way
+		//isBuy = p.GetType() == Position::TYPE_LONG
 			?	!isClosing
 			:	isClosing;
 		const auto &scaledPrice = !isCompleted
@@ -876,9 +880,9 @@ void FxArb1::LogEquation(
 		price = p.GetSecurity().DescalePrice(scaledPrice);
 	};
 
-	getVals(p1, isP1Buy, p1Price);
-	getVals(p2, isP2Buy, p2Price);
-	getVals(p3, isP3Buy, p3Price);
+	getVals(p1, isP1Buy, p1Price, equationIndex);
+	getVals(p2, isP2Buy, p2Price, equationIndex);
+	getVals(p3, isP3Buy, p3Price, equationIndex);
 
 	GetContext().GetLog().Equation(
 
