@@ -45,8 +45,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			// Level 1 update callback - will be called every time when
 			// ask or bid will be changed for any of configured security:
 
-			CheckConf();
-
 			// Getting more human readable format:
 			Broker b1 = GetBroker<1>();
 			Broker b2 = GetBroker<2>();

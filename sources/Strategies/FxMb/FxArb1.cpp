@@ -21,6 +21,8 @@ namespace pt = boost::posix_time;
 
 const size_t FxArb1::nEquationsIndex = std::numeric_limits<size_t>::max();
 
+boost::atomic_bool FxArb1::m_isFirstFakeOrderSent(false);
+
 FxArb1::FxArb1(
 			Context &context,
 			const std::string &name,
@@ -388,17 +390,52 @@ void FxArb1::CheckConf() {
 	if (m_isPairsByBrokerChecked) {
 		return;
 	}
-	
+
+	Security *anySecurity = nullptr;	
 	foreach (const auto &broker, m_brokersConf) {
 		// Printing pairs order in sendList (must be the same as in INI-file):
 		std::vector<std::string> pairs;
-		foreach (const auto &pair, broker.sendList) {
+		foreach (auto &pair, broker.sendList) {
 			pairs.push_back(pair.security->GetSymbol().GetSymbol());
+			anySecurity = pair.security;
 		}
 		GetLog().Info("Send-list pairs order: %1%.", boost::join(pairs, ", "));
 	}
 
 	m_isPairsByBrokerChecked = true;
+
+	Assert(anySecurity);
+	if (m_isFirstFakeOrderSent.exchange(true)) {
+		return;
+	}
+	for (
+			size_t i = 0;
+			i < GetContext().GetTradeSystemsCount();
+			++i) {
+		auto &ts = GetContext().GetTradeSystem(i);
+		const std::string tsTag = ts.GetTag();
+		GetContext().GetLog().Info(
+			"Sending Fist-Fake-Order to \"%1%\""
+				" to preheat the trading system...",
+			tsTag);
+		ts.BuyImmediatelyOrCancel(
+			*anySecurity,
+			Lib::CURRENCY_USD,
+			1,
+			1,
+			OrderParams(),
+			[this, tsTag](
+						OrderId,
+						TradeSystem::OrderStatus status,
+						Qty,
+						Qty,
+						double) {
+				GetContext().GetLog().Info(
+					"Received answer at Fist-Fake-Order from \"%1%\""
+						" with status %2%.",
+					boost::make_tuple(tsTag, status));
+			});
+	}
 
 }
 
@@ -555,6 +592,7 @@ void FxArb1::StartPositionsOpening(
 void FxArb1::OnLevel1Update(
 			Security &,
 			TimeMeasurement::Milestones &timeMeasurement) {
+	CheckConf();
 	OnOpportunityUpdate(timeMeasurement);
 }
 
