@@ -229,7 +229,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		virtual void OnLevel1Update(
 					Security &,
 					Lib::TimeMeasurement::Milestones &);
-		virtual void FxArb1::OnPositionUpdate(Position &);
+		virtual void OnPositionUpdate(Position &);
 
 		virtual void ReportDecision(const Position &) const;
 		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
