@@ -326,7 +326,9 @@ void FxArb1::CloseEquation(
 		// If it "closing" - can be not fully opened, by logic:
 		Assert(!position->IsCompleted());
 		position->SetCloseStartPrice(
-			position->GetType() == Position::TYPE_LONG
+		  // /!\ Ask or Bid is depending of equation number, we have to use the GetPositionWay function !!!
+			GetEquationPositionWay(equationIndex, position->GetType() == Position::TYPE_LONG, true)
+			//position->GetType() == Position::TYPE_LONG
 				?	position->GetSecurity().GetBidPriceScaled()
 				:	position->GetSecurity().GetAskPriceScaled());
 		if (position->CloseAtMarketPrice(closeType)) {
@@ -357,7 +359,9 @@ size_t FxArb1::CancelEquation(
 				continue;
 			}
 			position->SetCloseStartPrice(
-				position->GetType() == Position::TYPE_LONG
+		  // /!\ Ask or Bid is depending of equation number, we have to use the GetEquationPositionWay function !!!
+				GetEquationPositionWay(equationIndex, position->GetType() == Position::TYPE_LONG, true)
+				//position->GetType() == Position::TYPE_LONG
 					?	position->GetSecurity().GetBidPriceScaled()
 					:	position->GetSecurity().GetAskPriceScaled());
 			if (position->CancelAtMarketPrice(closeType)) {
@@ -449,11 +453,13 @@ void FxArb1::StartPositionsOpening(
 	// Check for required volume for each pair:
 	for (size_t i = 0; i < PAIRS_COUNT; ++i) {
 		const SecurityPositionConf &conf = getSecurityByPairIndex(i);
-		const Qty &actualQty = conf.isLong
+		  // /!\ Ask or Bid is depending of equation number, we have to use the GetEquationPositionWay function !!!
+		const Qty &actualQty = GetEquationPositionWay(equationIndex, conf.isLong, true)//conf.isLong
 			?	conf.security->GetAskQty()
 			:	conf.security->GetBidQty();
 		if (conf.qty * conf.requiredVol > actualQty) {
 			GetLog().TradingEx(
+		  // /!\ Ask or Bid is depending of equation number, we have to use the GetPositionWay function !!!
 				[&]() -> boost::format {
 					boost::format message(
 						"Can't trade: required %1% * %2% = %3% > %4%"
@@ -464,7 +470,7 @@ void FxArb1::StartPositionsOpening(
 						%	actualQty
 						%	(conf.qty * conf.requiredVol)
 						%	conf.security->GetSymbol().GetSymbol()
-						%	(conf.isLong ? "ask" : "bid");
+						%	GetEquationPositionWay(equationIndex, conf.isLong, true);//(conf.isLong ? "ask" : "bid");
 					return message;
 				});
 			return;
