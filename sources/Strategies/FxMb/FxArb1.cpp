@@ -21,6 +21,8 @@ namespace pt = boost::posix_time;
 
 const size_t FxArb1::nEquationsIndex = std::numeric_limits<size_t>::max();
 
+boost::atomic_bool FxArb1::m_isFirstFakeOrderSent(false);
+
 FxArb1::FxArb1(
 			Context &context,
 			const std::string &name,
@@ -328,7 +330,9 @@ void FxArb1::CloseEquation(
 		// If it "closing" - can be not fully opened, by logic:
 		Assert(!position->IsCompleted());
 		position->SetCloseStartPrice(
-			position->GetType() == Position::TYPE_LONG
+		  // /!\ Ask or Bid is depending of equation number, we have to use the GetPositionWay function !!!
+			GetEquationPositionWay(equationIndex, position->GetType() == Position::TYPE_LONG, true)
+			//position->GetType() == Position::TYPE_LONG
 				?	position->GetSecurity().GetBidPriceScaled()
 				:	position->GetSecurity().GetAskPriceScaled());
 		if (position->CloseAtMarketPrice(closeType)) {
@@ -362,7 +366,9 @@ size_t FxArb1::CancelEquation(
 				continue;
 			}
 			position->SetCloseStartPrice(
-				position->GetType() == Position::TYPE_LONG
+		  // /!\ Ask or Bid is depending of equation number, we have to use the GetEquationPositionWay function !!!
+				GetEquationPositionWay(equationIndex, position->GetType() == Position::TYPE_LONG, true)
+				//position->GetType() == Position::TYPE_LONG
 					?	position->GetSecurity().GetBidPriceScaled()
 					:	position->GetSecurity().GetAskPriceScaled());
 			if (position->CancelAtMarketPrice(closeType)) {
@@ -390,17 +396,52 @@ void FxArb1::CheckConf() {
 	if (m_isPairsByBrokerChecked) {
 		return;
 	}
-	
+
+	Security *anySecurity = nullptr;	
 	foreach (const auto &broker, m_brokersConf) {
 		// Printing pairs order in sendList (must be the same as in INI-file):
 		std::vector<std::string> pairs;
-		foreach (const auto &pair, broker.sendList) {
+		foreach (auto &pair, broker.sendList) {
 			pairs.push_back(pair.security->GetSymbol().GetSymbol());
+			anySecurity = pair.security;
 		}
 		GetLog().Info("Send-list pairs order: %1%.", boost::join(pairs, ", "));
 	}
 
 	m_isPairsByBrokerChecked = true;
+
+	Assert(anySecurity);
+	if (m_isFirstFakeOrderSent.exchange(true)) {
+		return;
+	}
+	for (
+			size_t i = 0;
+			i < GetContext().GetTradeSystemsCount();
+			++i) {
+		auto &ts = GetContext().GetTradeSystem(i);
+		const std::string tsTag = ts.GetTag();
+		GetContext().GetLog().Info(
+			"Sending Fist-Fake-Order to \"%1%\""
+				" to preheat the trading system...",
+			tsTag);
+		ts.BuyImmediatelyOrCancel(
+			*anySecurity,
+			Lib::CURRENCY_USD,
+			1,
+			1,
+			OrderParams(),
+			[this, tsTag](
+						OrderId,
+						TradeSystem::OrderStatus status,
+						Qty,
+						Qty,
+						double) {
+				GetContext().GetLog().Info(
+					"Received answer at Fist-Fake-Order from \"%1%\""
+						" with status %2%.",
+					boost::make_tuple(tsTag, status));
+			});
+	}
 
 }
 
@@ -455,11 +496,13 @@ void FxArb1::StartPositionsOpening(
 	// Check for required volume for each pair:
 	for (size_t i = 0; i < PAIRS_COUNT; ++i) {
 		const SecurityPositionConf &conf = getSecurityByPairIndex(i);
-		const Qty &actualQty = conf.isLong
+		  // /!\ Ask or Bid is depending of equation number, we have to use the GetEquationPositionWay function !!!
+		const Qty &actualQty = GetEquationPositionWay(equationIndex, conf.isLong, true)//conf.isLong
 			?	conf.security->GetAskQty()
 			:	conf.security->GetBidQty();
 		if (conf.qty * conf.requiredVol > actualQty) {
 			GetLog().TradingEx(
+		  // /!\ Ask or Bid is depending of equation number, we have to use the GetPositionWay function !!!
 				[&]() -> boost::format {
 					boost::format message(
 						"Can't trade: required %1% * %2% = %3% > %4%"
@@ -470,7 +513,7 @@ void FxArb1::StartPositionsOpening(
 						%	actualQty
 						%	(conf.qty * conf.requiredVol)
 						%	conf.security->GetSymbol().GetSymbol()
-						%	(conf.isLong ? "ask" : "bid");
+						%	GetEquationPositionWay(equationIndex, conf.isLong, true);//(conf.isLong ? "ask" : "bid");
 					return message;
 				});
 			return;
@@ -561,6 +604,7 @@ void FxArb1::StartPositionsOpening(
 void FxArb1::OnLevel1Update(
 			Security &,
 			TimeMeasurement::Milestones &timeMeasurement) {
+	CheckConf();
 	OnOpportunityUpdate(timeMeasurement);
 }
 
