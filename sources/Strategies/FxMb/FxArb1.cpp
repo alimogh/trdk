@@ -828,10 +828,7 @@ void FxArb1::LogEquation(
 				const Position &p,
 				bool &isBuy,
 				double &price) {
-		  // /!\ Ask or Bid is depending of equation number, we have to use the GetEquationPositionWay function !!!
-		const bool way = ((p.GetType() == Position::TYPE_LONG) ? ((equationIndex < (EQUATIONS_COUNT / 2)) ? true : false) : ((equationIndex < (EQUATIONS_COUNT / 2)) ? false : true));
-		isBuy = way
-		//isBuy = p.GetType() == Position::TYPE_LONG
+		isBuy = p.GetType() == Position::TYPE_LONG
 			?	!isClosing
 			:	isClosing;
 		const auto &scaledPrice = !isCompleted
