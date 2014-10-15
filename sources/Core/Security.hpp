@@ -216,6 +216,18 @@ namespace trdk {
 					const trdk::Level1TickValue &,
 					const trdk::Level1TickValue &,
 					const trdk::Lib::TimeMeasurement::Milestones &);
+		//! Sets four Level I parameters and one operation.
+		/** More optimal than call "set one parameter" four times. Subscribers
+		  * will be notified about Level I Update only if parameter will bee
+		  * changed.
+		  */
+		void SetLevel1(
+					const boost::posix_time::ptime &,
+					const trdk::Level1TickValue &,
+					const trdk::Level1TickValue &,
+					const trdk::Level1TickValue &,
+					const trdk::Level1TickValue &,
+					const trdk::Lib::TimeMeasurement::Milestones &);
 
 		//! Adds one Level I parameter tick.
 		/** Subscribers will be notified about Level I Update only if parameter

@@ -416,6 +416,42 @@ void Security::SetLevel1(
 			m_pimpl->SetLevel1(time, tick1, timeMeasurement, false, false)));
 }
 
+void Security::SetLevel1(
+			const pt::ptime &time,
+			const Level1TickValue &tick1,
+			const Level1TickValue &tick2,
+			const Level1TickValue &tick3,
+			const Level1TickValue &tick4,
+			const TimeMeasurement::Milestones &timeMeasurement) {
+	AssertNe(tick1.type, tick2.type);
+	AssertNe(tick1.type, tick3.type);
+	AssertNe(tick1.type, tick4.type);
+	AssertNe(tick2.type, tick4.type);
+	AssertNe(tick3.type, tick2.type);
+	AssertNe(tick3.type, tick4.type);
+	m_pimpl->SetLevel1(
+		time,
+		tick4,
+		timeMeasurement,
+		true,
+		m_pimpl->SetLevel1(
+			time,
+			tick3,
+			timeMeasurement,
+			false,
+			m_pimpl->SetLevel1(
+				time,
+				tick2,
+				timeMeasurement,
+				false,
+				m_pimpl->SetLevel1(
+					time,
+					tick1,
+					timeMeasurement,
+					false,
+					false))));
+}
+
 void Security::AddLevel1Tick(
 			const pt::ptime &time,
 			const Level1TickValue &tick,

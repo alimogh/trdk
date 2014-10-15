@@ -3,21 +3,14 @@
     <type>org.netbeans.modules.cnd.makeproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
-            <name>Engine</name>
+            <name>OnixsHotspot</name>
             <c-extensions/>
             <cpp-extensions>cpp</cpp-extensions>
             <header-extensions>h,hpp</header-extensions>
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects>
-                <make-dep-project>../Strategies/FxMb</make-dep-project>
-                <make-dep-project>../Gateway/Service</make-dep-project>
-                <make-dep-project>../Common</make-dep-project>
-                <make-dep-project>../Interaction/OnixsFixConnector</make-dep-project>
-                <make-dep-project>../Interaction/OnixsHotspot</make-dep-project>
-                <make-dep-project>../PyApi</make-dep-project>
-                <make-dep-project>../Strategies/Test</make-dep-project>
-                <make-dep-project>../Core</make-dep-project>
-                <make-dep-project>../Interaction/Fake</make-dep-project>
+                <make-dep-project>../../Core</make-dep-project>
+                <make-dep-project>../../Common</make-dep-project>
             </make-dep-projects>
             <sourceRootList/>
             <confList>
