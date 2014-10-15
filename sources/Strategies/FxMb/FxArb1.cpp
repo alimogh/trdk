@@ -108,14 +108,18 @@ FxArb1::FxArb1(
 				AssertEq(0, pos.index);
 				pos.index = pairIndex[brokerIndex - 1]++;
 				const auto &qty = boost::lexical_cast<Qty>(value);
-				pos.qty = abs(qty) * 1000;
-				pos.isLong = qty >= 0;
+				if (qty <= 0) {
+					GetLog().Error(
+						"Wrong qty set: \"%1%\", must be a positive number"
+							" (broker: %2%, symbol: \"%3%\").",
+						boost::make_tuple(value, brokerIndex, symbol));
+					throw Exception("Wrong qty set");
+				}
+				pos.qty = qty * 1000;
 				pos.requiredVol = 3.0;
-				const char *const direction
-					= !pos.isLong ? "short" : "long";
 				GetLog().Info(
-					"Using \"%1%\" at %2% with qty %3% (%4%).",
-					boost::make_tuple(symbol, pos.index, pos.qty, direction));
+					"Using \"%1%\" at %2% with qty %3%.",
+					boost::make_tuple(symbol, pos.index, pos.qty));
 				return true;
 			}
 
@@ -237,83 +241,52 @@ FxArb1::Equations FxArb1::CreateEquations(const Ini &conf) const {
 		result[i++].second = equation;
 	};
 
-	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid.Get() 			* b2.p2.bid.Get() 			* (1 / b1.p3.ask.Get());	return result > comparisonValue; });
-	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = b1.p1.bid.Get() 			* (1 / b2.p3.ask.Get()) 	* b1.p2.bid.Get();			return result > comparisonValue; });
-	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid.Get() 			* b2.p1.bid.Get() 			* (1 / b1.p3.ask.Get());	return result > comparisonValue; });
-	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = b1.p2.bid.Get() 			* (1 / b2.p3.ask.Get()) 	* b1.p1.bid.Get();			return result > comparisonValue; });
-	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.ask.Get()) 	* b2.p1.bid.Get() 			* b1.p2.bid.Get();			return result > comparisonValue; });
-	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p3.ask.Get()) 	* b2.p2.bid.Get() 			* b1.p1.bid.Get();			return result > comparisonValue; });
+	add([comparisonValue](B &b1, B &b2, double &result) -> bool {result = b1.p1.bid.Get() 			* b2.p2.bid.Get() 			* (1 / b1.p3.ask.Get());	return result > comparisonValue; });
+	add([comparisonValue](B &b1, B &b2, double &result) -> bool {result = b1.p1.bid.Get() 			* (1 / b2.p3.ask.Get()) 	* b1.p2.bid.Get();			return result > comparisonValue; });
+	add([comparisonValue](B &b1, B &b2, double &result) -> bool {result = b1.p2.bid.Get() 			* b2.p1.bid.Get() 			* (1 / b1.p3.ask.Get());	return result > comparisonValue; });
+	add([comparisonValue](B &b1, B &b2, double &result) -> bool {result = b1.p2.bid.Get() 			* (1 / b2.p3.ask.Get()) 	* b1.p1.bid.Get();			return result > comparisonValue; });
+	add([comparisonValue](B &b1, B &b2, double &result) -> bool {result = (1 / b1.p3.ask.Get()) 	* b2.p1.bid.Get() 			* b1.p2.bid.Get();			return result > comparisonValue; });
+	add([comparisonValue](B &b1, B &b2, double &result) -> bool {result = (1 / b1.p3.ask.Get()) 	* b2.p2.bid.Get() 			* b1.p1.bid.Get();			return result > comparisonValue; });
 
-	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask.Get()) 	* (1 / b2.p2.ask.Get()) 	* b1.p3.bid.Get();			return result > comparisonValue; });
-	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p1.ask.Get()) 	* b2.p3.bid.Get() 			* (1 / b1.p2.ask.Get());	return result > comparisonValue; });
-	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask.Get()) 	* (1 / b2.p1.ask.Get()) 	* b1.p3.bid.Get();			return result > comparisonValue; });
-	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = (1 / b1.p2.ask.Get()) 	* b2.p3.bid.Get() 			* (1 / b1.p1.ask.Get());	return result > comparisonValue; });
-	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid.Get() 			* (1 / b2.p1.ask.Get()) 	* (1 / b1.p2.ask.Get());	return result > comparisonValue; });
-	add([comparisonValue](const B &b1, const B &b2, double &result) -> bool {result = b1.p3.bid.Get() 			* (1 / b2.p2.ask.Get()) 	* (1 / b1.p1.ask.Get());	return result > comparisonValue; });
+	add([comparisonValue](B &b1, B &b2, double &result) -> bool {result = (1 / b1.p1.ask.Get()) 	* (1 / b2.p2.ask.Get()) 	* b1.p3.bid.Get();			return result > comparisonValue; });
+	add([comparisonValue](B &b1, B &b2, double &result) -> bool {result = (1 / b1.p1.ask.Get()) 	* b2.p3.bid.Get() 			* (1 / b1.p2.ask.Get());	return result > comparisonValue; });
+	add([comparisonValue](B &b1, B &b2, double &result) -> bool {result = (1 / b1.p2.ask.Get()) 	* (1 / b2.p1.ask.Get()) 	* b1.p3.bid.Get();			return result > comparisonValue; });
+	add([comparisonValue](B &b1, B &b2, double &result) -> bool {result = (1 / b1.p2.ask.Get()) 	* b2.p3.bid.Get() 			* (1 / b1.p1.ask.Get());	return result > comparisonValue; });
+	add([comparisonValue](B &b1, B &b2, double &result) -> bool {result = b1.p3.bid.Get() 			* (1 / b2.p1.ask.Get()) 	* (1 / b1.p2.ask.Get());	return result > comparisonValue; });
+	add([comparisonValue](B &b1, B &b2, double &result) -> bool {result = b1.p3.bid.Get() 			* (1 / b2.p2.ask.Get()) 	* (1 / b1.p1.ask.Get());	return result > comparisonValue; });
 
 	i = 0;
 
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 1: %1% * %2% * (1 / %3%) = %4%",	boost::make_tuple(	b1.p1.bid.GetConst(), b2.p2.bid.GetConst(), b1.p3.ask.GetConst(),	b1.p1.bid.GetConst() * b2.p2.bid.GetConst() * (1 / b1.p3.ask.GetConst())		));});
+	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 1: %1% * %2% * (1 / %3%) = %4%",	boost::make_tuple(	b1.p1.bid.GetConst(), b2.p2.bid.GetConst(), b1.p3.ask.GetConst(),	b1.p1.bid.GetConst() * b2.p2.bid.GetConst() * (1 / b1.p3.ask.GetConst())		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 2: %1% * (1 / %2%) * %3% = %4%",	boost::make_tuple(	b1.p1.bid.GetConst(), b2.p3.ask.GetConst(), b1.p2.bid.GetConst(),	b1.p1.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p2.bid.GetConst()		));});
+	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 2: %1% * (1 / %2%) * %3% = %4%",	boost::make_tuple(	b1.p1.bid.GetConst(), b2.p3.ask.GetConst(), b1.p2.bid.GetConst(),	b1.p1.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p2.bid.GetConst()		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 3: %1% * %2% * (1 / %3%) = %4%",	boost::make_tuple(	b1.p2.bid.GetConst(), b2.p1.bid.GetConst(), b1.p3.ask.GetConst(),	b1.p2.bid.GetConst() * b2.p1.bid.GetConst() * (1 / b1.p3.ask.GetConst())		));});
+	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 3: %1% * %2% * (1 / %3%) = %4%",	boost::make_tuple(	b1.p2.bid.GetConst(), b2.p1.bid.GetConst(), b1.p3.ask.GetConst(),	b1.p2.bid.GetConst() * b2.p1.bid.GetConst() * (1 / b1.p3.ask.GetConst())		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 4: %1% * (1 / %2%) * %3% = %4%",	boost::make_tuple(	b1.p2.bid.GetConst(), b2.p3.ask.GetConst(), b1.p1.bid.GetConst(),	b1.p2.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p1.bid.GetConst()		));});
+	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 4: %1% * (1 / %2%) * %3% = %4%",	boost::make_tuple(	b1.p2.bid.GetConst(), b2.p3.ask.GetConst(), b1.p1.bid.GetConst(),	b1.p2.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p1.bid.GetConst()		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 5: (1 / %1%) * %2% * %3% = %4%",	boost::make_tuple(	b1.p3.ask.GetConst(), b2.p1.bid.GetConst(), b1.p2.bid.GetConst(),	(1 / b1.p3.ask.GetConst()) * b2.p1.bid.GetConst() * b1.p2.bid.GetConst()		));});
+	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 5: (1 / %1%) * %2% * %3% = %4%",	boost::make_tuple(	b1.p3.ask.GetConst(), b2.p1.bid.GetConst(), b1.p2.bid.GetConst(),	(1 / b1.p3.ask.GetConst()) * b2.p1.bid.GetConst() * b1.p2.bid.GetConst()		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 6: (1 / %1%) * %2% * %3% = %4%",	boost::make_tuple(	b1.p3.ask.GetConst(), b2.p2.bid.GetConst(), b1.p1.bid.GetConst(),	(1 / b1.p3.ask.GetConst()) * b2.p2.bid.GetConst() * b1.p1.bid.GetConst()		));});
+	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 6: (1 / %1%) * %2% * %3% = %4%",	boost::make_tuple(	b1.p3.ask.GetConst(), b2.p2.bid.GetConst(), b1.p1.bid.GetConst(),	(1 / b1.p3.ask.GetConst()) * b2.p2.bid.GetConst() * b1.p1.bid.GetConst()		));});
 	
 	
 
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 7: (1 / %1%) * (1 / %2%) * %3% = %4%",		boost::make_tuple(b1.p1.ask.GetConst(), b2.p2.ask.GetConst(), b1.p3.bid.GetConst(),		(1 / b1.p1.ask.GetConst()) * (1 / b2.p2.ask.GetConst()) * b1.p3.bid.GetConst()		));});
+	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 7: (1 / %1%) * (1 / %2%) * %3% = %4%",		boost::make_tuple(b1.p1.ask.GetConst(), b2.p2.ask.GetConst(), b1.p3.bid.GetConst(),		(1 / b1.p1.ask.GetConst()) * (1 / b2.p2.ask.GetConst()) * b1.p3.bid.GetConst()		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 8: (1 / %1%) * %2% * (1 / %3%) = %4%",		boost::make_tuple(b1.p1.ask.GetConst(), b2.p3.bid.GetConst(), b1.p2.ask.GetConst(),		(1 / b1.p1.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p2.ask.GetConst())		));});
+	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 8: (1 / %1%) * %2% * (1 / %3%) = %4%",		boost::make_tuple(b1.p1.ask.GetConst(), b2.p3.bid.GetConst(), b1.p2.ask.GetConst(),		(1 / b1.p1.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p2.ask.GetConst())		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 9: (1 / %1%) * (1 / %2%) * %3% = %4%",		boost::make_tuple(b1.p2.ask.GetConst(), b2.p1.ask.GetConst(), b1.p3.bid.GetConst(),		(1 / b1.p2.ask.GetConst()) * (1 / b2.p1.ask.GetConst()) * b1.p3.bid.GetConst()		));});
+	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 9: (1 / %1%) * (1 / %2%) * %3% = %4%",		boost::make_tuple(b1.p2.ask.GetConst(), b2.p1.ask.GetConst(), b1.p3.bid.GetConst(),		(1 / b1.p2.ask.GetConst()) * (1 / b2.p1.ask.GetConst()) * b1.p3.bid.GetConst()		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 10: (1 / %1%) * %2% * (1 / %3%) = %4%",	boost::make_tuple(b1.p2.ask.GetConst(), b2.p3.bid.GetConst(), b1.p1.ask.GetConst(),		(1 / b1.p2.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p1.ask.GetConst())		));});
+	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 10: (1 / %1%) * %2% * (1 / %3%) = %4%",	boost::make_tuple(b1.p2.ask.GetConst(), b2.p3.bid.GetConst(), b1.p1.ask.GetConst(),		(1 / b1.p2.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p1.ask.GetConst())		));});
 
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 11: %1% * (1 / %2%) * (1 / %3%) = %4%",	boost::make_tuple(b1.p3.bid.GetConst(), b2.p1.ask.GetConst(), b1.p2.ask.GetConst(),		b1.p3.bid.GetConst() * (1 / b2.p1.ask.GetConst()) * (1 / b1.p2.ask.GetConst())		));});
+	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 11: %1% * (1 / %2%) * (1 / %3%) = %4%",	boost::make_tuple(b1.p3.bid.GetConst(), b2.p1.ask.GetConst(), b1.p2.ask.GetConst(),		b1.p3.bid.GetConst() * (1 / b2.p1.ask.GetConst()) * (1 / b1.p2.ask.GetConst())		));});
 	
-	addPrint([](const B &b1, const B &b2, Module::Log &log) { log.Trading("Equation 12: %1% * (1 / %2%) * (1 / %3%) = %4%",	boost::make_tuple(b1.p3.bid.GetConst(), b2.p2.ask.GetConst(), b1.p1.ask.GetConst(),		b1.p3.bid.GetConst() * (1 / b2.p2.ask.GetConst()) * (1 / b1.p1.ask.GetConst())		));});
+	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 12: %1% * (1 / %2%) * (1 / %3%) = %4%",	boost::make_tuple(b1.p3.bid.GetConst(), b2.p2.ask.GetConst(), b1.p1.ask.GetConst(),		b1.p3.bid.GetConst() * (1 / b2.p2.ask.GetConst()) * (1 / b1.p1.ask.GetConst())		));});
 
 	AssertEq(EQUATIONS_COUNT, result.size());
 	result.shrink_to_fit();
 
 	return result;
-
-}
-
-bool FxArb1::GetEquationPositionWay(
-			size_t equationIndex,
-			bool invert,
-			bool opening) {
-
-#	ifdef DEV_VER
-		GetLog().Debug(
-			"GetEquationPositionWay"
-				" for equation %1% / 11 on %2% will %3% be invert",
-			boost::make_tuple(
-				equationIndex,
-				opening ? "opening" : "closing",
-				invert ? "" : "not"));
-#	endif
-
-	if (opening) {
-	    if (!invert) {
-			return ((equationIndex < (EQUATIONS_COUNT / 2)) ? false : true);
-	    } else {
-			return ((equationIndex < (EQUATIONS_COUNT / 2)) ? true : false);
-	    }
-	} else {
-	    if (!invert) {
-			return ((equationIndex < (EQUATIONS_COUNT / 2)) ? true : false);
-	    } else {
-			return ((equationIndex < (EQUATIONS_COUNT / 2)) ? false : true);
-	    }
-	}
 
 }
 
@@ -329,11 +302,12 @@ void FxArb1::CloseEquation(
 	foreach (auto &position, positions.positions) {
 		// If it "closing" - can be not fully opened, by logic:
 		Assert(!position->IsCompleted());
+		// Remembers price at close-decision moment:
 		position->SetCloseStartPrice(
-		  // /!\ Ask or Bid is depending of equation number, we have to use the GetPositionWay function !!!
-			GetEquationPositionWay(equationIndex, position->GetType() == Position::TYPE_LONG, true)
-			//position->GetType() == Position::TYPE_LONG
+			position->GetType() == Position::TYPE_LONG
+					// because "long" and it will sell to close position
 				?	position->GetSecurity().GetBidPriceScaled()
+					// because "short" and it will buy to close position
 				:	position->GetSecurity().GetAskPriceScaled());
 		if (position->CloseAtMarketPrice(closeType)) {
 			if (!skipReport) {
@@ -359,17 +333,18 @@ size_t FxArb1::CancelEquation(
 		if (positions.isCanceled) {
 			return 0;
 		}
-		// All acive orders will be canceled:
+		// All active orders will be canceled:
 		positions.waitsForReplyCount = 0; 
 		foreach (auto &position, positions.positions) {
 			if (position->IsCompleted()) {
 				continue;
 			}
+			// Remembers price at close-decision moment:
 			position->SetCloseStartPrice(
-		  // /!\ Ask or Bid is depending of equation number, we have to use the GetEquationPositionWay function !!!
-				GetEquationPositionWay(equationIndex, position->GetType() == Position::TYPE_LONG, true)
-				//position->GetType() == Position::TYPE_LONG
+				position->GetType() == Position::TYPE_LONG
+						// because "long" and it will sell to close position
 					?	position->GetSecurity().GetBidPriceScaled()
+						// because "short" and it will buy to close position
 					:	position->GetSecurity().GetAskPriceScaled());
 			if (position->CancelAtMarketPrice(closeType)) {
 				AssertGt(PAIRS_COUNT, positions.waitsForReplyCount);
@@ -475,19 +450,28 @@ void FxArb1::StartPositionsOpening(
 	AssertEq(0, equationPositions.positions.size());
 	AssertEq(0, equationPositions.activeCount);
 
-	const auto &getSecurityByPairIndex = [&](
+	const auto &getSecurityByPairIndex = [&b1, &b2, equationIndex](
 				size_t index)
-			-> SecurityPositionConf & {
+			-> const Broker::CheckedSecurity & {
 		switch (index) {
 			case 0:
-				Assert(b1.checkedSecurities[equationIndex][0]);
-				return *b1.checkedSecurities[equationIndex][0];
+				Assert(b1.checkedSecurities[equationIndex][0].conf);
+				AssertNe(
+					numberOfOrderSides,
+					b1.checkedSecurities[equationIndex][0].side);
+				return b1.checkedSecurities[equationIndex][0];
 			case 1:
-				Assert(b2.checkedSecurities[equationIndex][0]);
-				return *b2.checkedSecurities[equationIndex][0];
+				Assert(b2.checkedSecurities[equationIndex][0].conf);
+				AssertNe(
+					numberOfOrderSides,
+					b2.checkedSecurities[equationIndex][0].side);
+				return b2.checkedSecurities[equationIndex][0];
 			case 2:
-				Assert(b1.checkedSecurities[equationIndex][1]);
-				return *b1.checkedSecurities[equationIndex][1];
+				Assert(b1.checkedSecurities[equationIndex][1].conf);
+				AssertNe(
+					numberOfOrderSides,
+					b1.checkedSecurities[equationIndex][1].side);
+				return b1.checkedSecurities[equationIndex][1];
 		}
 		AssertFail("Pair index is out of range");
 		throw std::out_of_range("Pair index is out of range");
@@ -495,25 +479,24 @@ void FxArb1::StartPositionsOpening(
 
 	// Check for required volume for each pair:
 	for (size_t i = 0; i < PAIRS_COUNT; ++i) {
-		const SecurityPositionConf &conf = getSecurityByPairIndex(i);
-		  // /!\ Ask or Bid is depending of equation number, we have to use the GetEquationPositionWay function !!!
-		const Qty &actualQty = GetEquationPositionWay(equationIndex, conf.isLong, true)//conf.isLong
-			?	conf.security->GetAskQty()
-			:	conf.security->GetBidQty();
-		if (conf.qty * conf.requiredVol > actualQty) {
+		const Broker::CheckedSecurity &security = getSecurityByPairIndex(i);
+		const bool checkAsk = security.side == ORDER_SIDE_BUY;
+		const Qty &actualQty = checkAsk
+			?	security.conf->security->GetAskQty()
+			:	security.conf->security->GetBidQty();
+		if (security.conf->qty * security.conf->requiredVol > actualQty) {
 			GetLog().TradingEx(
-		  // /!\ Ask or Bid is depending of equation number, we have to use the GetPositionWay function !!!
-				[&]() -> boost::format {
+				[&security, actualQty, checkAsk]() -> boost::format {
 					boost::format message(
 						"Can't trade: required %1% * %2% = %3% > %4%"
 							" for %5% %6%, but it's not.");
 					message
-						%	conf.qty
-						%	conf.requiredVol
+						%	security.conf->qty
+						%	security.conf->requiredVol
 						%	actualQty
-						%	(conf.qty * conf.requiredVol)
-						%	conf.security->GetSymbol().GetSymbol()
-						%	GetEquationPositionWay(equationIndex, conf.isLong, true);//(conf.isLong ? "ask" : "bid");
+						%	(security.conf->qty * security.conf->requiredVol)
+						%	security.conf->security->GetSymbol().GetSymbol()
+						%	(checkAsk ? "ask" : "bid");
 					return message;
 				});
 			return;
@@ -524,53 +507,36 @@ void FxArb1::StartPositionsOpening(
 	// sending open-order:
 	for (size_t i = 0; i < PAIRS_COUNT; ++i) {
 			
-		const SecurityPositionConf &conf = getSecurityByPairIndex(i);
+		const Broker::CheckedSecurity &security = getSecurityByPairIndex(i);
 
 		// Position must be "shared" as it uses pattern
 		// "shared from this":
 		boost::shared_ptr<EquationPosition> position;
 			
-#			ifdef DEV_VER
-			GetLog().Debug(
-				"Equation %1% / %2% pair %3% (%6%)"
-					" will %4% on %5% with %7% euros",
-				boost::make_tuple(
-					equationIndex,
-					opposideEquationIndex,
-					(i + 1),
-					"open",
-					GetEquationPositionWay(
-							equationIndex,
-							conf.isLong,
-							true)
-						? "BUY" : "SELL",
-					conf.security->GetSymbol(),
-					conf.qty));
-#			endif
-			
-		if (GetEquationPositionWay(equationIndex, conf.isLong, true)) {
+		if (security.side == ORDER_SIDE_ASK) {
 			position.reset(
 				new EquationLongPosition(
 					equationIndex,
 					opposideEquationIndex,
 					*this,
-					*conf.tradeSystem,
-					*conf.security,
-					conf.security->GetSymbol().GetCashCurrency(),
-					conf.qty,
-					conf.security->GetAskPriceScaled(),
+					*security.conf->tradeSystem,
+					*security.conf->security,
+					security.conf->security->GetSymbol().GetCashCurrency(),
+					security.conf->qty,
+					security.conf->security->GetAskPriceScaled(),
 					timeMeasurement));
 		} else {
+			AssertEq(ORDER_SIDE_BID, security.side);
 			position.reset(
 				new EquationShortPosition(
 					equationIndex,
 					opposideEquationIndex,
 					*this,
-					*conf.tradeSystem,
-					*conf.security,
-					conf.security->GetSymbol().GetCashCurrency(),
-					conf.qty,
-					conf.security->GetBidPriceScaled(),
+					*security.conf->tradeSystem,
+					*security.conf->security,
+					security.conf->security->GetSymbol().GetCashCurrency(),
+					security.conf->qty,
+					security.conf->security->GetBidPriceScaled(),
 					timeMeasurement));
 		}
 

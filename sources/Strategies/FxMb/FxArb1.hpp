@@ -38,7 +38,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			size_t index;
 			Security *security;
 			Qty qty;
-			bool isLong;
 			double requiredVol;
 		};
 		struct SecurityPositionConf : public PositionConf {
@@ -62,7 +61,20 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		struct Broker {
 
-			typedef boost::array<SecurityPositionConf *, PAIRS_COUNT>
+			struct CheckedSecurity {
+				
+				SecurityPositionConf *conf;
+				OrderSide side;
+
+				CheckedSecurity()
+						: conf(nullptr),
+						side(numberOfOrderSides) {
+					//...//
+				}
+
+			};
+
+			typedef boost::array<CheckedSecurity, PAIRS_COUNT>
 				CheckedSecurities[EQUATIONS_COUNT];
 
 			struct Pair {
@@ -72,10 +84,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					explicit Val(
 								double val,
 								SecurityPositionConf &security,
+								const OrderSide &side,
 								size_t &equationIndex,
 								CheckedSecurities &checkedSecurities)
 							: val(val),
 							security(security),
+							side(side),
 							equationIndex(equationIndex),
 							checkedSecurities(checkedSecurities) {
 						//...//
@@ -104,18 +118,24 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						foreach (
 								auto &checkSecurity,
 								checkedSecurities[equationIndex]) {
-							if (!checkSecurity) {
-								checkSecurity = &security;
+							if (!checkSecurity.conf) {
+								checkSecurity.conf = &security;
+								AssertEq(
+									numberOfOrderSides,
+									checkSecurity.side);
+								checkSecurity.side = side;
 								return;
 							}
 						}
-						AssertFail("Too many pairs.");						
+						AssertFail("Too many pairs.");		
 					}
 
 				private:
 
 					double val;
 					SecurityPositionConf &security;
+					const OrderSide side;
+
 					size_t &equationIndex;
 					CheckedSecurities &checkedSecurities;
 
@@ -135,11 +155,13 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						: bid(
 							security.security->GetBidPrice(),
 							security,
+							ORDER_SIDE_BID,
 							equationIndex,
 							checkedSecurities),
 						ask(
 							security.security->GetAskPrice(),
 							security,
+							ORDER_SIDE_ASK,
 							equationIndex,
 							checkedSecurities) {
 					//...//
@@ -163,8 +185,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					p1(conf.sendList[0], equationIndex, checkedSecurities),
  					p2(conf.sendList[1], equationIndex, checkedSecurities),
  					p3(conf.sendList[2], equationIndex, checkedSecurities) {
+				const CheckedSecurity checkedSecurityInit;
 				foreach (auto &e, checkedSecurities) {
-					e.assign(nullptr);
+					e.assign(checkedSecurityInit);
 				}
 			}
 
@@ -173,7 +196,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 
 			void ResetCheckedSecurities() {
-				checkedSecurities[equationIndex].assign(nullptr);
+				const CheckedSecurity checkedSecurityInit;
+				checkedSecurities[equationIndex].assign(checkedSecurityInit);
 			}
 
 		};
@@ -317,12 +341,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					const Broker &b1,
 					const Broker &b2,
 					Lib::TimeMeasurement::Milestones &);
-
-		//! Return true for long position, false for short position
-		bool GetEquationPositionWay(
-					size_t equationIndex,
-					bool invert,
-					bool opening);
 
 		bool CheckRestoreState();
 
