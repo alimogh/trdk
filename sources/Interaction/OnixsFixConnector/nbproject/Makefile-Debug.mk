@@ -37,7 +37,9 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/CurrenexStream.o \
 	${OBJECTDIR}/CurrenexTrading.o \
-	${OBJECTDIR}/FixSession.o
+	${OBJECTDIR}/FixSession.o \
+	${OBJECTDIR}/FixTrading.o \
+	${OBJECTDIR}/HotspotTrading.o
 
 
 # C Compiler Flags
@@ -84,6 +86,16 @@ ${OBJECTDIR}/FixSession.o: FixSession.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FixSession.o FixSession.cpp
+
+${OBJECTDIR}/FixTrading.o: FixTrading.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FixTrading.o FixTrading.cpp
+
+${OBJECTDIR}/HotspotTrading.o: HotspotTrading.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/HotspotTrading.o HotspotTrading.cpp
 
 # Subprojects
 .build-subprojects:
