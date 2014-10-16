@@ -35,6 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/_ext/1528583316/Terminal.o \
 	${OBJECTDIR}/Consumer.o \
 	${OBJECTDIR}/Context.o \
 	${OBJECTDIR}/Instrument.o \
@@ -79,6 +80,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}: ../Common/di
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
+
+${OBJECTDIR}/_ext/1528583316/Terminal.o: ../Interaction/OnixsHotspot/../../../sources/Core/Terminal.cpp 
+	${MKDIR} -p ${OBJECTDIR}/_ext/1528583316
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/1528583316/Terminal.o ../Interaction/OnixsHotspot/../../../sources/Core/Terminal.cpp
 
 ${OBJECTDIR}/Consumer.o: Consumer.cpp 
 	${MKDIR} -p ${OBJECTDIR}

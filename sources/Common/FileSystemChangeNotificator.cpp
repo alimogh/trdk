@@ -144,13 +144,13 @@ using namespace trdk::Lib;
 		explicit Implementation(
 					const fs::path &path,
 					const FileSystemChangeNotificator::EventSlot &eventSlot)
-				: path(path),
-				eventSlot(eventSlot) {
+				/*: path(path),
+				eventSlot(eventSlot) */{
 			//...//
 		}
 
 		~Implementation() {
-			thread.join();
+//			thread.join();
 		}
 	
 		void Task() {
@@ -169,7 +169,7 @@ using namespace trdk::Lib;
 	FileSystemChangeNotificator::FileSystemChangeNotificator(
 				const fs::path &path,
 				const EventSlot &slot)
-			: m_pimpl(Implementation(path, slot)) {
+			/*: m_pimpl(Implementation(path, slot)) */{
 		//...//
 	}
 
@@ -188,7 +188,7 @@ using namespace trdk::Lib;
 	}
 
 	void FileSystemChangeNotificator::Stop() {
-		m_pimpl->m_thread.join();
+//		m_pimpl->m_thread.join();
 	}
 
 #endif
