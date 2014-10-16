@@ -53,7 +53,7 @@
           <standard>8</standard>
           <incDir>
             <pElem>../..</pElem>
-            <pElem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0/include</pElem>
+            <pElem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL52-gcc412-x64-1_7_1_0/include</pElem>
           </incDir>
           <preprocessorList>
             <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
@@ -63,6 +63,9 @@
         </ccTool>
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsHotspot_dbg.${CND_DLIB_EXT}</output>
+          <linkerAddLib>
+            <pElem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL52-gcc412-x64-1_7_1_0/lib</pElem>
+          </linkerAddLib>
           <linkerLibItems>
             <linkerLibProjectItem>
               <makeArtifact PL="../../Common"
@@ -88,7 +91,7 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore_dbg.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
-            <linkerLibFileItem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0/lib/libOnixS.HotspotItchHandlerCpp.so</linkerLibFileItem>
+            <linkerLibLibItem>OnixS.HotspotItchHandlerCpp</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -144,6 +147,9 @@
           <developmentMode>5</developmentMode>
         </asmTool>
         <linkerTool>
+          <linkerAddLib>
+            <pElem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL52-gcc412-x64-1_7_1_0/lib</pElem>
+          </linkerAddLib>
           <linkerLibItems>
             <linkerLibProjectItem>
               <makeArtifact PL="../../Common"
@@ -169,7 +175,7 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
-            <linkerLibFileItem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0/lib/libOnixS.HotspotItchHandlerCpp.so</linkerLibFileItem>
+            <linkerLibLibItem>OnixS.HotspotItchHandlerCpp</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

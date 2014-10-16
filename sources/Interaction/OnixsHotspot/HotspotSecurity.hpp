@@ -34,12 +34,12 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 	public:
 
 		OnixS::HotspotItch::PriceLevels & GetAsksCache() {
-			m_cache.Check();
+			AssertEq(0, m_cache.asks.size());
 			return m_cache.asks;
 		}
 
 		OnixS::HotspotItch::PriceLevels & GetBidsCache() {
-			m_cache.Check();
+			AssertEq(0, m_cache.bids.size());
 			return m_cache.bids;
 		}
 
@@ -48,7 +48,7 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 		void Flush(const Lib::TimeMeasurement::Milestones &timeMeasurement) {
 
 			if (!m_cache.asks.empty() && !m_cache.bids.empty()) {
-				
+
 				SetLevel1(
 					boost::posix_time::microsec_clock::universal_time(),
 					Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
@@ -65,9 +65,9 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 				m_cache.bids.clear();
 
 			} else if (!m_cache.asks.empty())  {
-				
+
 				AssertEq(0, m_cache.bids.size());
-				
+
 				SetLevel1(
 					boost::posix_time::microsec_clock::universal_time(),
 					Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
@@ -99,15 +99,8 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 	private:
 
 		struct {
-		
 			OnixS::HotspotItch::PriceLevels asks;
 			OnixS::HotspotItch::PriceLevels bids;
-
-			void Check() {
-				AssertEq(0, asks.size());
-				AssertEq(0, bids.size());
-			}
-
 		} m_cache;
 		
 

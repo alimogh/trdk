@@ -52,7 +52,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=../../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Release/GNU-Linux-x86 -L../../Core/dist/Release/GNU-Linux-x86 -lCore ../../../externals/OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0/lib/libOnixS.HotspotItchHandlerCpp.so
+LDLIBSOPTIONS=-L../../../externals/OnixS.HotspotItchHandlerCpp-RHEL52-gcc412-x64-1_7_1_0/lib ../../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Release/GNU-Linux-x86 -L../../Core/dist/Release/GNU-Linux-x86 -lCore -lOnixS.HotspotItchHandlerCpp
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -61,8 +61,6 @@ LDLIBSOPTIONS=../../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsHotspot.${CND_DLIB_EXT}: ../../Common/dist/Release/GNU-Linux-x86/libcommon.a
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsHotspot.${CND_DLIB_EXT}: ../../Core/dist/Release/GNU-Linux-x86/libCore.so
-
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsHotspot.${CND_DLIB_EXT}: ../../../externals/OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0/lib/libOnixS.HotspotItchHandlerCpp.so
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsHotspot.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}

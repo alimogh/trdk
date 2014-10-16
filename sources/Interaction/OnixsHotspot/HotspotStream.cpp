@@ -23,14 +23,14 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 			: public trdk::MarketDataSource,
 			public hsi::Listener {
 
-
 	public:
 
 		explicit HotspotStream(
 					Context &context,
 					const std::string &tag,
-					const IniSectionRef &)
-				: MarketDataSource(context, tag) {
+					const IniSectionRef &conf)
+				: MarketDataSource(context, tag),
+				m_handler(GetHandlerOptions(conf)) {
 			m_handler.registerListener(this);
 		}
 
@@ -51,24 +51,12 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 				return;
 			}
 
-			const auto &host = conf.ReadKey("server_host");
-			const auto &port = conf.ReadTypedKey<int>("server_port");
-			const auto &login = conf.ReadKey("login");
-			const auto &password = conf.ReadKey("password");
+			m_connectionOptions.host = conf.ReadKey("server_host");
+			m_connectionOptions.port = conf.ReadTypedKey<int>("server_port");
+			m_connectionOptions.login = conf.ReadKey("login");
+			m_connectionOptions.password = conf.ReadKey("password");
 
-			GetLog().Info(
-				"Connecting to Hotspot ITCH Server at \"%1%:%2%\""
-					" as \"%3%\" (with password)...",
-				boost::make_tuple(
-					boost::cref(host),
-					port,
-					boost::cref(login)));
-
-			try {
-				m_handler.connect(host, port, login, password);
-			} catch (const std::exception &ex) {
-				throw ConnectError(ex.what());
-			}
+			Connect();
 
 		}
 
@@ -96,17 +84,19 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 		/// Is called when Handler is disconnected.
 		virtual void onDisconnect(const std::string &disconnectReason) {
 			GetLog().Info(
-				"Disconnected from Hotspot ITCH server with reason: \"%1%\".",
+				"Disconnected from Hotspot ITCH server with reason: \"%1%\"."
+					" Reconnection...",
 				disconnectReason);
+			Connect();
 		}
-                
+
 		/// Is called when the Login Accepted message is received.
 		virtual void onLoginAccepted(int visibilityBitMask) {
 			GetLog().Info(
 				"Login request to Hotspot ITCH server accepted (mask: %1%).",
 				visibilityBitMask);
 		}
-                
+
 		/// Is called when the Login Rejected message is received.
 		virtual void onLoginRejected(const std::string &rejectReason) {
 			GetLog().Error(
@@ -122,22 +112,22 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 
 		/// Is called when the Market Snapshot message is received.
 		virtual void onMarketSnapshot(const hsi::MarketSnapshotMessage &) {
-			AssertFail("Method not supported.");
+			//...//
 		}
 
 		/// Is called when the New Order message is received.
 		virtual void onNewOrder(const hsi::NewOrderMessage &) {
-			AssertFail("Method not supported.");
+			//...//
 		}
 
 		/// Is called when the Modify Order message is received.
 		virtual void onModifyOrder(const hsi::ModifyOrderMessage &) {
-			AssertFail("Method not supported.");
+			//...//
 		}
 
 		/// Is called when the Cancel Order message is received.
 		virtual void onCancelOrder(const hsi::CancelOrderMessage &) {
-			AssertFail("Method not supported.");
+			//...//
 		}
 
 		/// Is called when the Ticker message is received.
@@ -153,7 +143,6 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 
 			const auto &securityPos = m_securities.find(pair.pair());
 			if (securityPos == m_securities.end()) {
-				GetLog().Error("Unknown pair: \"%1%\".", pair.pair());
 				return;
 			}
 			HotspotSecurity &security = *securityPos->second;
@@ -184,8 +173,56 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 
 	private:
 
+		static hsi::HandlerOptions GetHandlerOptions(
+					const Lib::IniSectionRef &) {
+			hsi::HandlerOptions result;
+			result.logSettings = hsi::LogSettings::Default;
+			result.feedProvidesMinQtyLotSize = true;
+#			ifdef DEV_VER
+				result.logLevel = hsi::LogLevel::Debug;
+#			else
+				result.logLevel = hsi::LogLevel::Info;
+#			endif
+			return result;
+		}
+
+		void Connect() {
+
+			if (m_handler.connected()) {
+				return;
+			}
+
+			GetLog().Info(
+				"Connecting to Hotspot ITCH Server at \"%1%:%2%\""
+					" as \"%3%\" (with password)...",
+				boost::make_tuple(
+					boost::cref(m_connectionOptions.host),
+					m_connectionOptions.port,
+					boost::cref(m_connectionOptions.login)));
+
+			try {
+				m_handler.connect(
+					m_connectionOptions.host,
+					m_connectionOptions.port,
+					m_connectionOptions.login,
+					m_connectionOptions.password);
+			} catch (const std::exception &ex) {
+				throw ConnectError(ex.what());
+			}
+
+		}
+
+	private:
+
 		hsi::Handler m_handler;
 		std::map<std::string, boost::shared_ptr<HotspotSecurity>> m_securities;
+
+		struct {
+			std::string host;
+			int port;
+			std::string login;
+			std::string password;
+		} m_connectionOptions;
 
 	};
 
