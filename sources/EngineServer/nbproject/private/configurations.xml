@@ -13,13 +13,12 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
-        <gdb_signals>
-        </gdb_signals>
         <gdb_options>
           <DebugOptions>
             <option name="debug_command"
-                    value="/home/palchukovsky/Projects/trdk/output/RobotEngine_dbg debug etc"/>
-            <option name="debug_dir" value="/home/palchukovsky/Projects/trdk/output"/>
+                    value="/home/palchukovsky/Projects/trdk/sources/Interaction/output/RobotEngine_dbg debug etc/mono"/>
+            <option name="debug_dir"
+                    value="/home/palchukovsky/Projects/trdk/sources/Interaction/output"/>
           </DebugOptions>
         </gdb_options>
         <gdb_buildfirst gdb_buildfirst_overriden="false" gdb_buildfirst_old="false"/>
@@ -51,8 +50,6 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
-        <gdb_signals>
-        </gdb_signals>
         <gdb_options>
           <DebugOptions>
             <option name="debug_command" value="debug etc"/>

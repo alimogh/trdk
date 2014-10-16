@@ -120,6 +120,8 @@ void CurrenexFixSession::Connect(
 	Assert(!m_session);
 
 	const std::string senderCompId = conf.ReadKey("sender_comp_id");
+	const std::string senderSubId
+		= conf.ReadKey("sender_sub_id", std::string());
 	const std::string targetCompId = conf.ReadKey("target_comp_id");
 	
 	const std::string host = conf.ReadKey("server_host");
@@ -167,8 +169,18 @@ void CurrenexFixSession::Connect(
 	if (conf.ReadBoolKey("use_ssl")) {
 		session->encryptionMethod(fix::EncryptionMethod::SSL);
 	}
+	if (!senderSubId.empty()) {
+		session->senderSubId(senderSubId);
+	}
 
 	fix::Message customLogonMessage("A", GetFixVersion());
+
+	const std::string username = conf.ReadKey("Username", std::string());
+	if (!username.empty()) {
+		customLogonMessage.set(
+			fix::FIX43::Tags::Username,
+			username);
+	}
 
 	customLogonMessage.set(
 		fix::FIX43::Tags::Password,
