@@ -389,7 +389,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			m_positionsByEquation;
 
 		bool m_isPairsByBrokerChecked;
-		static boost::atomic_bool m_isFirstFakeOrderSent;
 
 		CancelAndBlockCondition *m_cancelAndBlockCondition;
 
