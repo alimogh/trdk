@@ -369,7 +369,6 @@ void FxArb1::CheckConf() {
 		std::vector<std::string> pairs;
 		foreach (auto &pair, broker.sendList) {
 			pairs.push_back(pair.security->GetSymbol().GetSymbol());
-			anySecurity = pair.security;
 		}
 		GetLog().Info("Send-list pairs order: %1%.", boost::join(pairs, ", "));
 	}
@@ -624,7 +623,14 @@ void FxArb1::OnPositionUpdate(Position &positionRef) {
 void FxArb1::OnOpportunityUpdate(TimeMeasurement::Milestones &timeMeasurement) {
 	Assert(!IsBlocked());
 	CloseDelayed(timeMeasurement);
-	CheckOpportunity(timeMeasurement);
+	// Getting more human readable format:
+	Broker b1 = GetBroker<1>();
+	Broker b2 = GetBroker<2>();
+	if (!b1 || !b2) {
+		// Not all data received yet (from streams)...
+		return;
+	}
+	CheckOpportunity(b1, b2, timeMeasurement);
 }
 
 void FxArb1::OnOpportunityReturn() {
