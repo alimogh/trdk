@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "TradeSystem.hpp"
+#include "Terminal.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -66,10 +67,16 @@ public:
 
 	const std::string m_tag;
 
+	std::unique_ptr<Terminal> m_terminal;
+
 	explicit Implementation(Context &context, const std::string &tag)
 			: m_context(context),
 			m_tag(tag) {
 		//...//
+	}
+
+	~Implementation() {
+		m_terminal.reset();
 	}
 
 };
@@ -175,6 +182,21 @@ void TradeSystem::ForEachBrokerPostion(
 			const boost::function<bool (const Position &)> &)
 		const {
 	throw MethodDoesNotImplementedError("Broker Position Info not implemented");
+}
+
+void TradeSystem::Connect(const IniSectionRef &conf) {
+	if (IsConnected()) {
+		return;
+	}
+	Assert(!m_pimpl->m_terminal);
+	std::unique_ptr<Terminal> terminal;
+	const char *const terminalCmdFileKey = "terminal_cmd_file";
+	if (conf.IsKeyExist(terminalCmdFileKey)) {
+		terminal.reset(
+			new Terminal(conf.ReadFileSystemPath("terminal_cmd_file"), *this));
+	}
+	CreateConnection(conf);
+	terminal.swap(m_pimpl->m_terminal);
 }
 
 //////////////////////////////////////////////////////////////////////////

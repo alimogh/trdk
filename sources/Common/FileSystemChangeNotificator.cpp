@@ -12,12 +12,14 @@
 #include "FileSystemChangeNotificator.hpp"
 
 namespace fs = boost::filesystem;
+using namespace trdk::Lib;
 
 #ifdef BOOST_WINDOWS
 
 	//////////////////////////////////////////////////////////////////////////
 
-	class FileSystemChangeNotificator::Implementation : private boost::noncopyable {
+	class FileSystemChangeNotificator::Implementation
+		: private boost::noncopyable {
 
 	public:
 
@@ -29,7 +31,9 @@ namespace fs = boost::filesystem;
 		HANDLE stopEvent;
 		HANDLE watchHandle;
 
-		explicit Implementation(const fs::path &path, const FileSystemChangeNotificator::EventSlot &eventSlot)
+		explicit Implementation(
+					const fs::path &path,
+					const FileSystemChangeNotificator::EventSlot &eventSlot)
 				: path(path),
 				eventSlot(eventSlot),
 				lastWriteTime(0),
@@ -60,20 +64,22 @@ namespace fs = boost::filesystem;
 							return;
 						case WAIT_OBJECT_0 + 1:
 							{
-								const auto newWriteTime = fs::last_write_time(path);
+								const auto newWriteTime
+									= fs::last_write_time(path);
 								if (newWriteTime != lastWriteTime) {
 									eventSlot();
 									lastWriteTime = newWriteTime;
 								}
 							}
 							if (!FindNextChangeNotification(events[1])) {
-								AssertFail("File System Change Notificator error.");
+								AssertFail(
+									"File System Change Notificator error.");
 								return;
 							}
 					}
 				}
 			} catch (...) {
-				AssertFail("File System Change Notificator error.");
+				AssertFailNoException();
 				throw;
 			}
 		}
@@ -126,23 +132,63 @@ namespace fs = boost::filesystem;
 
 #else
 
+	class FileSystemChangeNotificator::Implementation
+		: private boost::noncopyable {
+
+	public:
+
+		const fs::path m_path;
+		const FileSystemChangeNotificator::EventSlot m_eventSlot;
+		boost::thread m_thread;
+
+		explicit Implementation(
+					const fs::path &path,
+					const FileSystemChangeNotificator::EventSlot &eventSlot)
+				: path(path),
+				eventSlot(eventSlot) {
+			//...//
+		}
+
+		~Implementation() {
+			thread.join();
+		}
+	
+		void Task() {
+			try {
+				for ( ; ; ) {
+					//....//
+				}
+			} catch (...) {
+				AssertFail("File System Change Notificator error.");
+				throw;
+			}
+		}
+
+	};
+
 	FileSystemChangeNotificator::FileSystemChangeNotificator(
-				const fs::path &,
-				const EventSlot &)
-			: m_pimpl(nullptr) {
+				const fs::path &path,
+				const EventSlot &slot)
+			: m_pimpl(Implementation(path, slot)) {
 		//...//
 	}
 
 	FileSystemChangeNotificator::~FileSystemChangeNotificator() {
-		//...//
+		try {
+			Stop();
+		} catch (...) {
+			AssertFailNoException();
+		}
+		delete m_pimpl;
 	}
 
 	void FileSystemChangeNotificator::Start() {
-		//...//
+		boost::thread(boost::bind(&Implementation::Task, m_pimpl))
+			.swap(m_pimpl->m_thread);
 	}
 
 	void FileSystemChangeNotificator::Stop() {
-		//...//
+		m_pimpl->m_thread.join();
 	}
 
 #endif

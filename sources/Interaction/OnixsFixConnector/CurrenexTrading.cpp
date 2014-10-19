@@ -117,10 +117,12 @@ void CurrenexTrading::ScheduleSend(OrderToSend &order) {
 	order.timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_ENQUEUE);
 }
 
-void CurrenexTrading::Connect(const IniSectionRef &conf) {
-	if (m_session.IsConnected()) {
-		return;
-	}
+bool CurrenexTrading::IsConnected() const {
+	return m_session.IsConnected();
+}
+
+void CurrenexTrading::CreateConnection(const IniSectionRef &conf) {
+	Assert(!m_session.IsConnected());
 	try {
 		m_session.Connect(conf, *this);
 	} catch (const CurrenexFixSession::ConnectError &ex) {

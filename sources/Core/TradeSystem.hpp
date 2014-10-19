@@ -160,7 +160,8 @@ namespace trdk {
 
 	public:
 
-		virtual void Connect(const trdk::Lib::IniSectionRef &) = 0;
+		virtual bool IsConnected() const = 0;
+		void Connect(const trdk::Lib::IniSectionRef &);
 
 	public:
 
@@ -271,6 +272,8 @@ namespace trdk {
 		virtual void CancelAllOrders(trdk::Security &) = 0;
 
 	protected:
+
+		virtual void CreateConnection(const trdk::Lib::IniSectionRef &) = 0;
 
 		//! Validates order parameters and throws an exception if it has errors.
 		/** @throw trdk::OrderPatams
