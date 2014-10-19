@@ -162,7 +162,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			if (GetEquationPositions(bestEquationsIndex).activeCount) {
 				// Equation already has opened positions.
-					timeMeasurement.Measure(
+				timeMeasurement.Measure(
 					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 				return;
 			}
