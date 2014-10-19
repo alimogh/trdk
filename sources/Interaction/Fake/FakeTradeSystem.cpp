@@ -79,12 +79,14 @@ public:
 		return m_id++;
 	}
 
+	bool IsStarted() const {
+		const Lock lock(m_mutex);
+		return m_isStarted;
+	}
+
 	void Start() {
 		Lock lock(m_mutex);
 		Assert(!m_isStarted);
-		if (m_isStarted) {
-			return;
-		}
 		m_isStarted = true;
 		boost::thread(boost::bind(&Implementation::Task, this)).swap(m_thread);
 		m_condition.wait(lock);
@@ -169,7 +171,7 @@ private:
 	boost::atomic_uintmax_t m_id;
 	bool m_isStarted;
 
-	Mutex m_mutex;
+	mutable Mutex m_mutex;
 	Condition m_condition;
 	boost::thread m_thread;
 
@@ -195,7 +197,11 @@ Fake::TradeSystem::~TradeSystem() {
 	delete m_pimpl;
 }
 
-void Fake::TradeSystem::Connect(const IniSectionRef &) {
+bool Fake::TradeSystem::IsConnected() const {
+	return m_pimpl->IsStarted();
+}
+
+void Fake::TradeSystem::CreateConnection(const IniSectionRef &) {
 	m_pimpl->Start();
 }
 

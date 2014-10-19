@@ -85,7 +85,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	public:
 
-		virtual void Connect(const trdk::Lib::IniSectionRef &);
+		virtual bool IsConnected() const;
 
 	public:
 
@@ -177,6 +177,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					OnixS::FIX::WarningReason::Enum,
 					const std::string &description,
 					OnixS::FIX::Session *);
+	
+	protected:
+
+		virtual void CreateConnection(const trdk::Lib::IniSectionRef &);
 
 	private:
 

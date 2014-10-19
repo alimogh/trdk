@@ -17,25 +17,31 @@
 #include "Common/DisableBoostWarningsEnd.h"
 #include <string>
 
-class FileSystemChangeNotificator : private boost::noncopyable {
+namespace trdk { namespace Lib {
 
-public:
+	class FileSystemChangeNotificator : private boost::noncopyable {
 
-	typedef boost::function<void()> EventSlot;
+	public:
 
-public:
+		typedef boost::function<void()> EventSlot;
+
+	public:
 	
-	FileSystemChangeNotificator(const boost::filesystem::path &, const EventSlot &eventSlot);
-	~FileSystemChangeNotificator();
+		FileSystemChangeNotificator(
+					const boost::filesystem::path &,
+					const EventSlot &eventSlot);
+		~FileSystemChangeNotificator();
 
-public:
+	public:
 
-	void Start();
-	void Stop();
+		void Start();
+		void Stop();
 
-private:
+	private:
 
-	class Implementation;
-	Implementation *m_pimpl;
+		class Implementation;
+		Implementation *m_pimpl;
 
-};
+	};
+
+} }

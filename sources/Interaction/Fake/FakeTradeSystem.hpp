@@ -31,7 +31,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	public:
 
-		virtual void Connect(const Lib::IniSectionRef &);
+		virtual bool IsConnected() const;
 
 	public:
 
@@ -105,6 +105,10 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 		virtual void CancelOrder(OrderId);
 		virtual void CancelAllOrders(trdk::Security &);
+
+	public:
+
+		virtual void CreateConnection(const Lib::IniSectionRef &);
 
 	private:
 
