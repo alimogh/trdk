@@ -40,18 +40,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 	protected:
 		
 		virtual void CheckOpportunity(
+					Broker &b1,
+					Broker &b2,
 					TimeMeasurement::Milestones &timeMeasurement) {
 
 			// Level 1 update callback - will be called every time when
 			// ask or bid will be changed for any of configured security:
-
-			// Getting more human readable format:
-			Broker b1 = GetBroker<1>();
-			Broker b2 = GetBroker<2>();
-			if (!b1 || !b2) {
-				// Not all data received yet (from streams)...
-				return;
-			}
 
 			double bestEquationsResult = .0;
 			size_t bestEquationsIndex = nEquationsIndex;
@@ -168,7 +162,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			if (GetEquationPositions(bestEquationsIndex).activeCount) {
 				// Equation already has opened positions.
-					timeMeasurement.Measure(
+				timeMeasurement.Measure(
 					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 				return;
 			}

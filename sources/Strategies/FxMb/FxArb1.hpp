@@ -272,7 +272,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	protected:
 
-		virtual void CheckOpportunity(Lib::TimeMeasurement::Milestones &) = 0;
+		virtual void CheckOpportunity(
+					Broker &b1,
+					Broker &b2,
+					Lib::TimeMeasurement::Milestones &)
+				= 0;
 
 		//! Checks conf. Must be called at each data update.
 		void CheckConf();
