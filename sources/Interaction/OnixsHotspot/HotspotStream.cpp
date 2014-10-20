@@ -36,8 +36,9 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 
 		virtual ~HotspotStream() {
 			try {
+				m_handler.unsubscribeMarketDataForAllCurrencyPairs();
+				m_handler.subscribeTickerForAllCurrencyPairs();
 				m_handler.disconnect();
-				m_handler.unregisterListener();
 			} catch (...) {
 				AssertFailNoException();
 			}

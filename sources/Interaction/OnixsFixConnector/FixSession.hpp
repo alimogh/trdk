@@ -15,7 +15,7 @@
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
-	class CurrenexFixSession : private boost::noncopyable {
+	class FixSession : private boost::noncopyable {
 
 	public:
 
@@ -24,11 +24,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	public:
 
-		explicit CurrenexFixSession(
+		explicit FixSession(
 					Context &,
 					const std::string &type,
 					const Lib::IniSectionRef &);
-		~CurrenexFixSession();
+		~FixSession();
 
 	public:
 

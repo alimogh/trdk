@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "CurrenexSession.hpp"
+#include "FixSession.hpp"
 #include "Core/MarketDataSource.hpp"
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
@@ -74,7 +74,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	private:
 
-		CurrenexFixSession m_session;
+		FixSession m_session;
 		std::vector<boost::shared_ptr<CurrenexSecurity>> m_securities;
 
 	};

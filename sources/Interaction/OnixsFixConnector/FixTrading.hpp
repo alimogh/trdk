@@ -10,13 +10,13 @@
 
 #pragma once
 
-#include "CurrenexSession.hpp"
+#include "FixSession.hpp"
 #include "Core/TradeSystem.hpp"
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	template<Lib::Concurrency::Profile profile>
-	struct CurrenexTradingConcurrencyPolicyT {
+	struct FixTradingConcurrencyPolicyT {
 		static_assert(
 			profile == Lib::Concurrency::PROFILE_RELAX,
 			"Wrong concurrency profile");
@@ -28,7 +28,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		typedef boost::condition_variable SendCondition;
 	};
 	template<>
-	struct CurrenexTradingConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+	struct FixTradingConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
 		//! @todo TRDK-168
 		typedef Lib::Concurrency::SpinMutex OrderMutex;
 		typedef OrderMutex::ScopedLock OrderReadLock;
@@ -37,11 +37,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		typedef SendMutex::ScopedLock SendLock;
 		typedef Lib::Concurrency::SpinCondition SendCondition;
 	};
-	typedef CurrenexTradingConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
-		CurrenexTradingConcurrencyPolicy;
+	typedef FixTradingConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
+		FixTradingConcurrencyPolicy;
 
 	//! FIX trade connection with OnixS C++ FIX Engine.
-	class CurrenexTrading
+	class FixTrading
 			: public trdk::TradeSystem,
 			public OnixS::FIX::ISessionListener {
 
@@ -66,22 +66,22 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			Lib::TimeMeasurement::Milestones timeMeasurement;
 		};
 
-		typedef CurrenexTradingConcurrencyPolicy::OrderMutex OrdersMutex;
-		typedef CurrenexTradingConcurrencyPolicy::OrderReadLock OrdersReadLock;
-		typedef CurrenexTradingConcurrencyPolicy::OrderWriteLock
+		typedef FixTradingConcurrencyPolicy::OrderMutex OrdersMutex;
+		typedef FixTradingConcurrencyPolicy::OrderReadLock OrdersReadLock;
+		typedef FixTradingConcurrencyPolicy::OrderWriteLock
 			OrdersWriteLock;
 
-		typedef CurrenexTradingConcurrencyPolicy::SendMutex SendMutex;
-		typedef CurrenexTradingConcurrencyPolicy::SendLock SendLock;
-		typedef CurrenexTradingConcurrencyPolicy::SendCondition SendCondition;
+		typedef FixTradingConcurrencyPolicy::SendMutex SendMutex;
+		typedef FixTradingConcurrencyPolicy::SendLock SendLock;
+		typedef FixTradingConcurrencyPolicy::SendCondition SendCondition;
 
 	public:
 
-		explicit CurrenexTrading(
+		explicit FixTrading(
 					Context &,
 					const std::string &tag,
 					const Lib::IniSectionRef &);
-		virtual ~CurrenexTrading();
+		virtual ~FixTrading();
 
 	public:
 
@@ -162,9 +162,6 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	public:
 
-		virtual void onInboundApplicationMsg(
-					OnixS::FIX::Message &,
-					OnixS::FIX::Session *);
 		virtual void onStateChange(
 					OnixS::FIX::SessionState::Enum newState,
 					OnixS::FIX::SessionState::Enum prevState,
@@ -181,6 +178,29 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	protected:
 
 		virtual void CreateConnection(const trdk::Lib::IniSectionRef &);
+
+		FixSession & GetSession() {
+			return m_session;
+		}
+
+		
+	protected:
+
+		void OnOrderNew(
+					const OnixS::FIX::Message &,
+					const Lib::TimeMeasurement::Milestones::TimePoint &);
+		void OnOrderCanceled(
+					const OnixS::FIX::Message &,
+					const Lib::TimeMeasurement::Milestones::TimePoint &);
+		void OnOrderRejected(
+					const OnixS::FIX::Message &,
+					const Lib::TimeMeasurement::Milestones::TimePoint &);
+		void OnOrderFill(
+					const OnixS::FIX::Message &,
+					const Lib::TimeMeasurement::Milestones::TimePoint &);
+		void OnOrderPartialFill(
+					const OnixS::FIX::Message &,
+					const Lib::TimeMeasurement::Milestones::TimePoint &);
 
 	private:
 
@@ -261,29 +281,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	private:
 
-		void OnOrderNew(
-					const OnixS::FIX::Message &,
-					const Lib::TimeMeasurement::Milestones::TimePoint &);
-		void OnOrderCanceled(
-					const OnixS::FIX::Message &,
-					const Lib::TimeMeasurement::Milestones::TimePoint &);
-		void OnOrderRejected(
-					const OnixS::FIX::Message &,
-					const Lib::TimeMeasurement::Milestones::TimePoint &);
-		void OnOrderFill(
-					const OnixS::FIX::Message &,
-					const Lib::TimeMeasurement::Milestones::TimePoint &);
-		void OnOrderPartialFill(
-					const OnixS::FIX::Message &,
-					const Lib::TimeMeasurement::Milestones::TimePoint &);
-
-	private:
-
 		void SendThreadMain();
 
 	private:
 
-		CurrenexFixSession m_session;
+		FixSession m_session;
 
 		boost::atomic<OrderId> m_nextOrderId;
 		//! @todo reimplemented with circular buffer.
