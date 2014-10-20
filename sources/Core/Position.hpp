@@ -90,6 +90,8 @@ namespace trdk {
 
 	public:
 
+		const PositionId & GetId() const;
+
 		virtual Type GetType() const = 0;
 		virtual const std::string & GetTypeStr() const throw() = 0;
 

@@ -18,6 +18,7 @@ namespace trdk {
 	
 	class MarketDataSource;
 
+	typedef uintmax_t PositionId;
 	class Position;
 	class LongPosition;
 	class ShortPosition;
