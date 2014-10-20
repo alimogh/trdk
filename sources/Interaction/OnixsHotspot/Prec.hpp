@@ -12,6 +12,8 @@
 
 #include "Common/Assert.hpp"
 
+#include <stddef.h>
+#include <string>
 #if defined(_MSC_VER)
 #	pragma warning(push)
 #	pragma warning(disable: 4512)

@@ -69,7 +69,7 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsHotspot.${CND_DLIB_EXT}: ${OB
 ${OBJECTDIR}/HotspotStream.o: HotspotStream.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/HotspotStream.o HotspotStream.cpp
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.HotspotItchHandlerCpp-RHEL52-gcc412-x64-1_7_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/HotspotStream.o HotspotStream.cpp
 
 # Subprojects
 .build-subprojects:

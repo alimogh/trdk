@@ -132,7 +132,7 @@
           <standard>8</standard>
           <incDir>
             <pElem>../..</pElem>
-            <pElem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL60-gcc444-x64-1_7_1_0/include</pElem>
+            <pElem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL52-gcc412-x64-1_7_1_0/include</pElem>
           </incDir>
           <preprocessorList>
             <Elem>BOOST_DISABLE_ASSERTS</Elem>
