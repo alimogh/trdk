@@ -72,13 +72,14 @@ namespace {
 	};
 	typedef PostionConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
 		PostionConcurrencyPolicy;
+
+	boost::atomic<PositionId> theNextPositionId(0);
 	
 }
 
 class Position::Implementation : private boost::noncopyable {
 
 public:
-
 
 	typedef PostionConcurrencyPolicy::Mutex Mutex;
 	typedef PostionConcurrencyPolicy::ReadLock ReadLock;
@@ -122,6 +123,8 @@ public:
 	};
 
 public:
+
+	const PositionId m_id;
 
 	Position &m_position;
 
@@ -168,7 +171,8 @@ public:
 				Qty qty,
 				ScaledPrice startPrice,
 				const TimeMeasurement::Milestones &timeMeasurement)
-			: m_position(position),
+			: m_id(theNextPositionId++),
+			m_position(position),
 			m_tradeSystem(tradeSystem),
 			m_strategy(&strategy),
 			m_security(security),
@@ -521,14 +525,14 @@ public:
 
 	void ReportOpeningUpdate(
 				const char *eventDesc,
-				TradeSystem::OrderStatus orderStatus)
+				const TradeSystem::OrderStatus &orderStatus)
 			const
 			throw() {
 		m_security.GetContext().GetLog().TradingEx(
 			logTag,
-			[&]() -> boost::format {
+			[this, eventDesc, &orderStatus]() -> boost::format {
 				boost::format message(
-					"%11%\t%1%\t%2%\topen-%3%\t%4%"
+					"%12%\t%11%\t%1%\t%2%\topen-%3%\t%4%"
 						"\tqty=%5%->%6% price=%7%->%8% order-id=%9%"
 						" order-status=%10%");
 				message
@@ -542,7 +546,8 @@ public:
 					%	m_security.DescalePrice(m_position.GetOpenPrice())
 					%	m_position.GetOpenOrderId()
 					%	m_tradeSystem.GetStringStatus(orderStatus)
-					%	m_position.GetTradeSystem().GetTag();
+					%	m_position.GetTradeSystem().GetTag()
+					%	m_id;
 				return std::move(message);
 			});
 	}
@@ -550,9 +555,9 @@ public:
 	void ReportClosingStart(const char *eventDesc) const throw() {
 		m_security.GetContext().GetLog().TradingEx(
 			logTag,
-			[&]() -> boost::format {
+			[this, eventDesc]() -> boost::format {
 				boost::format message(
-					"%11%\t%1%\t%2%\tclose-%12%\t%3%\tqty=%4%->%5%"
+					"%13%\t%11%\t%1%\t%2%\tclose-%12%\t%3%\tqty=%4%->%5%"
 						" order-id=%6%->%7% has-orders=%8%/%9% is-error=%10%");
 				message
 					%	m_security
@@ -566,7 +571,8 @@ public:
 					%	m_position.HasActiveCloseOrders()
 					%	(m_isError ? true : false)
 					%	m_position.GetTradeSystem().GetTag()
-					%	eventDesc;
+					%	eventDesc
+					%	m_id;
 				return std::move(message);
 			});
 	}
@@ -578,9 +584,9 @@ public:
 			throw() {
 		m_security.GetContext().GetLog().TradingEx(
 			logTag,
-			[&]() -> boost::format {
+			[this, eventDesc, &orderStatus]() -> boost::format {
 				boost::format message(
-					"%11%\t%1%\t%2%\tclose-%3%\t%4%"
+					"%14%\t%11%\t%1%\t%2%\tclose-%3%\t%4%"
 						"\tqty=%5%->%6% price=%7% order-id=%8%->%9%"
 						" order-status=%10% has-orders=%12%/%13%");
 				message
@@ -598,7 +604,8 @@ public:
 					%	m_tradeSystem.GetStringStatus(orderStatus)
 					%	m_position.GetTradeSystem().GetTag()
 					%	m_position.HasActiveOpenOrders()
-					%	m_position.HasActiveCloseOrders();
+					%	m_position.HasActiveCloseOrders()
+					%	m_id;
 				return std::move(message);
 			});
 	}
@@ -684,7 +691,7 @@ public:
 
 		m_security.GetContext().GetLog().TradingEx(
 			logTag,
-			[&]() -> boost::format {
+			[this, action]() -> boost::format {
 				boost::format message(
 					"%5%\t%1%\t%2%\t%6%\t%3%\tqty=%4%");
 				message
@@ -859,6 +866,10 @@ Position::Position(
 
 Position::~Position() {
 	delete m_pimpl;
+}
+
+const PositionId & Position::GetId() const {
+	return m_pimpl->m_id;
 }
 
 const Security & Position::GetSecurity() const throw() {
