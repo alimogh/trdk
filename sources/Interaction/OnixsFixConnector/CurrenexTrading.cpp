@@ -88,7 +88,14 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					//...//
 		
 				} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
-					OnOrderRejected(message, replyTime);
+					const std::string &reason
+						= message.get(fix::FIX40::Tags::Text);
+					OnOrderRejected(
+						message,
+						replyTime,
+						boost::iequals(
+							reason,
+							"maximum operation limit exceeded"));
 					return;
 				}
 		

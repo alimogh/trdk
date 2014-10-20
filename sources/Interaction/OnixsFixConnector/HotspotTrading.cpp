@@ -74,8 +74,15 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					return;
 
 				} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
-					
-					OnOrderRejected(message, replyTime);
+
+					const std::string &reason
+						= message.get(fix::FIX40::Tags::Text);
+					OnOrderRejected(
+						message,
+						replyTime,
+						boost::istarts_with(
+							reason,
+							"orders are throttled to "));
 					return;
 				
 				} else if (execType == "F") {
