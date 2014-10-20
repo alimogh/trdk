@@ -21,11 +21,11 @@ namespace fix = OnixS::FIX;
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
-	class CurrenexTrading : public FixTrading {
+	class HotspotTrading : public FixTrading {
 
 	public:
 
-		explicit CurrenexTrading(
+		explicit HotspotTrading(
 					Context &context,
 					const std::string &tag,
 					const Lib::IniSectionRef &conf)
@@ -33,7 +33,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			//...//
 		}
 		
-		virtual ~CurrenexTrading() {
+		virtual ~HotspotTrading() {
 			//...//
 		}
 
@@ -61,20 +61,27 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		
 				if (execType == fix::FIX41::Values::ExecType::New) {
 			
-					if (ordStatus == fix::FIX40::Values::OrdStatus::New) {
+					if (
+							ordStatus == fix::FIX42::Values::OrdStatus::Accepted_for_bidding
+							|| ordStatus == fix::FIX40::Values::OrdStatus::New) {
 						OnOrderNew(message, replyTime);
 						return;
 					}
 
 				} else if (execType == fix::FIX41::Values::ExecType::Cancelled) {
 
-					if (ordStatus == fix::FIX40::Values::OrdStatus::Canceled) {
-						OnOrderCanceled(message, replyTime);
-						return;
-					}
+					OnOrderCanceled(message, replyTime);
+					return;
 
-				} else if (execType == fix::FIX41::Values::ExecType::Fill) {
-
+				} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
+					
+					OnOrderRejected(message, replyTime);
+					return;
+				
+				} else if (execType == "F") {
+				
+					// Custom Hotspot exec status "F = Trade"
+					
 					if (ordStatus == fix::FIX40::Values::OrdStatus::Partially_filled) {
 						OnOrderPartialFill(message, replyTime);
 						return;
@@ -82,15 +89,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 						OnOrderFill(message, replyTime);
 						return;
 					}
-
-				} else if (execType == fix::FIX41::Values::ExecType::Suspended) {
-			
-					//...//
-		
-				} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
-					OnOrderRejected(message, replyTime);
-					return;
+				
 				}
+
+			} else if (execTransType == fix::FIX40::Values::ExecTransType::Cancel) {
+
+				OnOrderCanceled(message, replyTime);
+				return;
 		
 			} else if (execTransType == fix::FIX40::Values::ExecTransType::Status) {
 		
@@ -112,13 +117,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 TradeSystemFactoryResult
-CreateCurrenexTrading(
+CreateHotspotTrading(
 			Context &context,
 			const std::string &tag,
 			const IniSectionRef &configuration) {
 	TradeSystemFactoryResult result;
 	boost::get<0>(result).reset(
-		new CurrenexTrading(context, tag, configuration));
+		new HotspotTrading(context, tag, configuration));
 	return result;
 }
 

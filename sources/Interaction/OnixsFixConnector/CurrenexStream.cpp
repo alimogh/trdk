@@ -41,9 +41,9 @@ void CurrenexStream::Connect(const IniSectionRef &conf) {
 	}
 	try {
 		m_session.Connect(conf, *this);
-	} catch (const CurrenexFixSession::ConnectError &ex) {
+	} catch (const FixSession::ConnectError &ex) {
 		throw ConnectError(ex.what());
-	} catch (const CurrenexFixSession::Error &ex) {
+	} catch (const FixSession::Error &ex) {
 		throw Error(ex.what());
 	}
 }

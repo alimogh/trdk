@@ -6,7 +6,7 @@
                    projectFiles="true">
       <itemPath>Api.h</itemPath>
       <itemPath>CurrenexSecurity.hpp</itemPath>
-      <itemPath>CurrenexSession.hpp</itemPath>
+      <itemPath>FixSession.hpp</itemPath>
       <itemPath>CurrenexStream.hpp</itemPath>
       <itemPath>CurrenexTrading.hpp</itemPath>
       <itemPath>DisableOnixsFixEngineWarningsBegin.h</itemPath>
@@ -16,7 +16,7 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>CurrenexSession.cpp</itemPath>
+      <itemPath>FixSession.cpp</itemPath>
       <itemPath>CurrenexStream.cpp</itemPath>
       <itemPath>CurrenexTrading.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
@@ -103,9 +103,9 @@
       </item>
       <item path="CurrenexSecurity.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="CurrenexSession.cpp" ex="false" tool="1" flavor2="0">
+      <item path="FixSession.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="CurrenexSession.hpp" ex="false" tool="3" flavor2="0">
+      <item path="FixSession.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="CurrenexStream.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -201,9 +201,9 @@
       </item>
       <item path="CurrenexSecurity.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="CurrenexSession.cpp" ex="false" tool="1" flavor2="0">
+      <item path="FixSession.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="CurrenexSession.hpp" ex="false" tool="3" flavor2="0">
+      <item path="FixSession.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="CurrenexStream.cpp" ex="false" tool="1" flavor2="0">
       </item>

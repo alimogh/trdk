@@ -326,9 +326,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CurrenexSession.cpp" />
+    <ClCompile Include="FixSession.cpp" />
     <ClCompile Include="CurrenexStream.cpp" />
     <ClCompile Include="CurrenexTrading.cpp" />
+    <ClCompile Include="FixTrading.cpp" />
+    <ClCompile Include="HotspotTrading.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
@@ -350,8 +352,9 @@
     <ClInclude Include="CurrenexSecurity.hpp" />
     <ClInclude Include="DisableOnixsFixEngineWarningsBegin.h" />
     <ClInclude Include="DisableOnixsFixEngineWarningsEnd.h" />
+    <ClInclude Include="FixSession.hpp" />
+    <ClInclude Include="FixTrading.hpp" />
     <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="CurrenexTrading.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>

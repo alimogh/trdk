@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "CurrenexSession.hpp"
+#include "FixSession.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -50,7 +50,7 @@ namespace {
 					", \"FIX 4.3\", \"FIX 4.4\", \"FIX 5.0\", \"FIX 5.0 SP1\""
 					" or \"FIX 5.0 SP2\".",
 				boost::make_tuple(sessionType, fixVerStr));
-			throw CurrenexFixSession::Error("Failed to init FIX Engine");
+			throw FixSession::Error("Failed to init FIX Engine");
 		}
 	
 		Log::Debug(
@@ -67,7 +67,7 @@ namespace {
 	boost::atomic_size_t fixEngineRefCounter(0);
 }
 
-CurrenexFixSession::CurrenexFixSession(
+FixSession::FixSession(
 			Context &context,
 			const std::string &type,
 			const IniSectionRef &configuration)
@@ -101,7 +101,7 @@ CurrenexFixSession::CurrenexFixSession(
 
 }
 
-CurrenexFixSession::~CurrenexFixSession() {
+FixSession::~FixSession() {
 	Assert(fix::Engine::initialized());
 	AssertLt(0, fixEngineRefCounter.load());
 	if (!--fixEngineRefCounter) {
@@ -113,7 +113,7 @@ CurrenexFixSession::~CurrenexFixSession() {
 	}
 }
 
-void CurrenexFixSession::Connect(
+void FixSession::Connect(
 			const IniSectionRef &conf,
 			fix::ISessionListener &listener) {
 
@@ -212,7 +212,7 @@ void CurrenexFixSession::Connect(
 
 }
 
-void CurrenexFixSession::Disconnect() {
+void FixSession::Disconnect() {
 	if (!m_session) {
 		return;
 	}
@@ -220,7 +220,7 @@ void CurrenexFixSession::Disconnect() {
 	m_session->shutdown();
 }
 
-void CurrenexFixSession::LogStateChange(
+void FixSession::LogStateChange(
 			fix::SessionState::Enum newState,
 			fix::SessionState::Enum prevState,
 			fix::Session &session) {
@@ -233,7 +233,7 @@ void CurrenexFixSession::LogStateChange(
 		boost::make_tuple(boost::cref(prevStateStr), boost::cref(newStateStr)));
 }
 
-void CurrenexFixSession::LogError(
+void FixSession::LogError(
 			fix::ErrorReason::Enum reason,
 			const std::string &description,
 			fix::Session &session) {
@@ -244,7 +244,7 @@ void CurrenexFixSession::LogError(
 		boost::make_tuple(boost::cref(description), reason));
 }
 
-void CurrenexFixSession::LogWarning(
+void FixSession::LogWarning(
 			fix::WarningReason::Enum reason,
 			const std::string &description,
 			fix::Session &session) {

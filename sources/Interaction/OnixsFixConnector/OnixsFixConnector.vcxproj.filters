@@ -18,13 +18,19 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CurrenexSession.cpp">
+    <ClCompile Include="FixSession.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CurrenexStream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CurrenexTrading.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FixTrading.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HotspotTrading.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,13 +53,16 @@
     <ClInclude Include="CurrenexStream.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CurrenexTrading.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DisableOnixsFixEngineWarningsBegin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DisableOnixsFixEngineWarningsEnd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FixSession.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FixTrading.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
