@@ -194,7 +194,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					const Lib::TimeMeasurement::Milestones::TimePoint &);
 		void OnOrderRejected(
 					const OnixS::FIX::Message &,
-					const Lib::TimeMeasurement::Milestones::TimePoint &);
+					const Lib::TimeMeasurement::Milestones::TimePoint &,
+					bool isMaxOperationLimitExceeded);
 		void OnOrderFill(
 					const OnixS::FIX::Message &,
 					const Lib::TimeMeasurement::Milestones::TimePoint &);
