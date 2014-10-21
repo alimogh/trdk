@@ -14,6 +14,7 @@
 #include "SubscriptionsManager.hpp"
 #include "Ini.hpp"
 #include "Core/Settings.hpp"
+#include "Core/Terminal.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradeSystem.hpp"
 
@@ -213,12 +214,14 @@ void Engine::Context::Start() {
 	state->subscriptionsManager.Activate();
 
 	foreach (auto &tradeSystemRef, m_pimpl->m_tradeSystems) {
-		auto &tradeSystem = *tradeSystemRef;
+
+		auto &tradeSystem = *tradeSystemRef.tradeSystem;
+		const IniSectionRef conf(
+			*m_pimpl->m_conf,
+			GetMarketDataSourceSectionName(tradeSystemRef.tradeSystem));
+
 		try {
-			tradeSystem.Connect(
-				IniSectionRef(
-					*m_pimpl->m_conf,
-					GetMarketDataSourceSectionName(tradeSystemRef)));
+			tradeSystem.Connect(conf);
 		} catch (const Interactor::ConnectError &ex) {
 			boost::format message(
 				"Failed to connect to trading system: \"%1%\"");
@@ -230,6 +233,15 @@ void Engine::Context::Start() {
 				ex);
 			throw Exception("Failed to make trading system");
 		}
+
+		const char *const terminalCmdFileKey = "terminal_cmd_file";
+		if (conf.IsKeyExist(terminalCmdFileKey)) {
+			tradeSystemRef.terminal.reset(
+				new Terminal(
+					conf.ReadFileSystemPath(terminalCmdFileKey),
+					tradeSystem));
+		}
+
 	}
 	
 	ForEachMarketDataSource(
@@ -363,7 +375,7 @@ TradeSystem & Engine::Context::GetTradeSystem(size_t index) {
 	if (index >= m_pimpl->m_tradeSystems.size()) {
 		throw Exception("Trade System index is out of range");
 	}
-	return *m_pimpl->m_tradeSystems[index];
+	return *m_pimpl->m_tradeSystems[index].tradeSystem;
 }
 
 const TradeSystem & Engine::Context::GetTradeSystem(size_t index) const {

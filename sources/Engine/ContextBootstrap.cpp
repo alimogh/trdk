@@ -267,12 +267,14 @@ private:
 
 			// It always must be a trade system service...
 			Assert(tradeSystem);
-			m_tradeSystems.push_back(tradeSystem);
+			TradeSystemHolder tradeSystemHolder;
+			tradeSystemHolder.tradeSystem = tradeSystem;
+			m_tradeSystems.push_back(tradeSystemHolder);
 
 			// ...and can be Market Data Source at the same time:
 			if (marketDataSource) {
 				m_context.GetLog().Info(
-					"Using Trade System as Market Sata Source.");
+					"Using Trade System as Market Data Source.");
 				m_marketDataSources.push_back(marketDataSource);
 			}
 

@@ -11,11 +11,10 @@
 #pragma once
 
 #include "Fwd.hpp"
-#include "Common/FileSystemChangeNotificator.hpp"
 
 namespace trdk {
 
-	class Terminal : private boost::noncopyable {
+	class TRDK_CORE_API Terminal : private boost::noncopyable {
 
 	public:
 
@@ -24,17 +23,9 @@ namespace trdk {
 
 	private:
 
-		void OnCmdFileChanged();
-
-	private:
-
-		const boost::filesystem::path m_cmdFile;
-		trdk::TradeSystem &m_tradeSystem;
-		trdk::Lib::FileSystemChangeNotificator m_notificator;
-		size_t m_lastSentSeqnumber;
-		
+		class Implementation;
+		Implementation *m_pimpl;
 
 	};
-
 
 }
