@@ -133,7 +133,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 							TimeMeasurement::SM_STRATEGY_DECISION_START);
 						CloseEquation(
 							currentEquationIndex,
-							Position::CLOSE_TYPE_TAKE_PROFIT);
+							Position::CLOSE_TYPE_TAKE_PROFIT,
+							false);
 						timeMeasurement.Measure(
 							TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
@@ -174,7 +175,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		virtual void CloseDelayed(
 					size_t equationIndex,
 					TimeMeasurement::Milestones &) {
-			CloseEquation(equationIndex, Position::CLOSE_TYPE_NONE);
+			CloseEquation(equationIndex, Position::CLOSE_TYPE_NONE, true);
 		}
 
 	private:
