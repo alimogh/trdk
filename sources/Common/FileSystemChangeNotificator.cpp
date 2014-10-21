@@ -136,27 +136,57 @@ using namespace trdk::Lib;
 		: private boost::noncopyable {
 
 	public:
+		
+		typedef boost::mutex Mutex;
+		typedef Mutex::scoped_lock Lock;
+		typedef boost::condition_variable Condition;
 
 		const fs::path m_path;
 		const FileSystemChangeNotificator::EventSlot m_eventSlot;
 		boost::thread m_thread;
+		Mutex m_mutex;
+		bool m_stopFlag;
+		Condition m_condition;
 
 		explicit Implementation(
 					const fs::path &path,
 					const FileSystemChangeNotificator::EventSlot &eventSlot)
-				/*: path(path),
-				eventSlot(eventSlot) */{
+				: m_path(path),
+				m_eventSlot(eventSlot),
+				m_stopFlag(true){
 			//...//
 		}
 
-		~Implementation() {
-//			thread.join();
+		void Stop() {
+			{
+				const Lock lock(m_mutex);
+				if (m_stopFlag) {
+					return;
+				}
+				m_stopFlag = true;
+				m_condition.notify_one();
+			}
+			m_thread.join();
 		}
 	
 		void Task() {
 			try {
-				for ( ; ; ) {
-					//....//
+				Lock lock(m_mutex);
+				std::time_t lastTime = 0;
+				while (!m_stopFlag) {
+					const auto newTime = fs::exists(m_path)
+						?	fs::last_write_time(m_path)
+						:	0;
+					if (newTime != lastTime) {
+						if (lastTime != 0) {
+							m_eventSlot();
+						}
+						lastTime = newTime;
+					} else {
+						m_condition.wait_for(
+							lock,
+							boost::chrono::seconds(1));
+					}
 				}
 			} catch (...) {
 				AssertFail("File System Change Notificator error.");
@@ -169,7 +199,7 @@ using namespace trdk::Lib;
 	FileSystemChangeNotificator::FileSystemChangeNotificator(
 				const fs::path &path,
 				const EventSlot &slot)
-			/*: m_pimpl(Implementation(path, slot)) */{
+			: m_pimpl(new Implementation(path, slot)) {
 		//...//
 	}
 
@@ -183,12 +213,17 @@ using namespace trdk::Lib;
 	}
 
 	void FileSystemChangeNotificator::Start() {
+		const Implementation::Lock lock(m_pimpl->m_mutex);
+		if (!m_pimpl->m_stopFlag) {
+			return;
+		}
+		m_pimpl->m_stopFlag = false;
 		boost::thread(boost::bind(&Implementation::Task, m_pimpl))
 			.swap(m_pimpl->m_thread);
 	}
 
 	void FileSystemChangeNotificator::Stop() {
-//		m_pimpl->m_thread.join();
+		m_pimpl->Stop();
 	}
 
 #endif
