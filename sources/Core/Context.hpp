@@ -42,6 +42,10 @@ namespace trdk {
 		PairRecordParam pair3;
 
 		bool isResultOfY1;
+
+		PositionId position1Id;
+		PositionId position2Id;
+		PositionId position3Id;
 	
 	};
 
@@ -255,7 +259,10 @@ namespace trdk {
 					const std::string &pair3,
 					double pair3Price,
 					bool isPair3Buy,
-					bool isResultOfY1) {
+					bool isResultOfY1,
+					const PositionId &position1Id,
+					const PositionId &position2Id,
+					const PositionId &position3Id) {
 			const EquationRecordParam params = {
 				opportunityNumber,
 				action,
@@ -278,7 +285,10 @@ namespace trdk {
 					pair3Price,
 					isPair3Buy
 				},
-				isResultOfY1
+				isResultOfY1,
+				position1Id,
+				position2Id,
+				position3Id
 			};
 			Equation(params);
 		}

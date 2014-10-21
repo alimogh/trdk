@@ -276,6 +276,10 @@ public:
 
 		bool isResultOfY1;
 
+		PositionId position1Id;
+		PositionId position2Id;
+		PositionId position3Id;
+
 		static void SavePair(
 					const EquationRecordParam::PairRecordParam &param,
 					PairRecord &record) {
@@ -312,6 +316,10 @@ public:
 
 			isResultOfY1 = params.isResultOfY1;
 
+			position1Id = params.position1Id;
+			position2Id = params.position2Id;
+			position3Id = params.position3Id;
+
 		}
 
 		static void FlushPair(PairRecord &record, LogState &log) {
@@ -347,6 +355,11 @@ public:
 			FlushPair(pair1, log);
 			FlushPair(pair2, log);
 			FlushPair(pair3, log);
+
+			*log.log
+				<< position1Id << ';'
+				<< position2Id << ';'
+				<< position3Id << ';';
 
 			*log.log << std::endl;
 

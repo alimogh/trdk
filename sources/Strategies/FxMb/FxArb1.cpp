@@ -838,7 +838,11 @@ void FxArb1::LogEquation(
 		p3Price,
 		isP3Buy,
 		    
-		initiatorIndex < (EQUATIONS_COUNT / 2));
+		initiatorIndex < (EQUATIONS_COUNT / 2),
+		
+		p1.GetId(),
+		p2.GetId(),
+		p3.GetId());
 
 }
 
