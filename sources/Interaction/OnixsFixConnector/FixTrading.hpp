@@ -53,6 +53,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			  */
 			bool isRemoved;
 			OrderId id;
+			const trdk::Security *security;
+			trdk::Lib::Currency currency;
+			trdk::Qty qty;
+			bool isSell;
 			OrderStatusUpdateSlot callback;
 			Lib::TimeMeasurement::Milestones timeMeasurement;
 		};
@@ -207,6 +211,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		//! Takes next free order ID.
 		OrderId TakeOrderId(
+					const Security &security,
+					const Lib::Currency &currency,
+					const Qty &qty,
+					bool isSell,
 					const OrderStatusUpdateSlot &,
 					const Lib::TimeMeasurement::Milestones &);
 		//! Deletes unsent order (at error).
