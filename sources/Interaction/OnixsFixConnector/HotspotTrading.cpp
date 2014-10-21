@@ -68,6 +68,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 						return;
 					}
 
+				} else if (execType == fix::FIX42::Values::ExecType::Pending_Cancel) {
+
+					return;
+
 				} else if (execType == fix::FIX41::Values::ExecType::Cancelled) {
 
 					OnOrderCanceled(message, replyTime);

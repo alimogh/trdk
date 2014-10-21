@@ -34,6 +34,8 @@ namespace trdk {
 	class Observer;
 	class Service;
 
+	class Terminal;
+
 	namespace SettingsReport {
 		typedef std::list<std::pair<std::string, std::string>> Report;
 	}

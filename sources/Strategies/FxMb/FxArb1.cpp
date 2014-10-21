@@ -291,13 +291,17 @@ FxArb1::Equations FxArb1::CreateEquations(const Ini &conf) const {
 void FxArb1::CloseEquation(
 			size_t equationIndex,
 			const Position::CloseType &closeType,
-			bool skipReport /*= false*/) {
+			bool canBePartiallyClosed,
+			bool skipReport) {
 	auto &positions = m_positionsByEquation[equationIndex];
 	// If it "closing" - can be not fully opened, by logic:
 	AssertEq(PAIRS_COUNT, positions.activeCount);
 	AssertEq(0, positions.waitsForReplyCount);
 	Assert(!positions.isCanceled);
 	foreach (auto &position, positions.positions) {
+		if (canBePartiallyClosed && position->IsCompleted()) {
+			return;
+		}
 		// If it "closing" - can be not fully opened, by logic:
 		Assert(!position->IsCompleted());
 		// Remembers price at close-decision moment:
@@ -871,10 +875,18 @@ void FxArb1::CloseDelayed(
 			continue;
 		}
 		GetLog().TradingEx(
-			[&]() -> boost::format {
+			[this, i]() -> boost::format {
 				boost::format message(
-					"Closing delayed positions for equation %1%...");
-				message % i;
+					"Closing delayed positions for equation %1%"
+						" (%2% / %3% / %4% / %5% / %6%)...");
+				const auto &positions = GetEquationPositions(i);
+				message
+					%	i
+					%	positions.activeCount
+					%	positions.waitsForReplyCount
+					%	positions.positions.size()
+					%	positions.lastStartTime
+					%	positions.isCanceled;
 				return std::move(message);
 			});
 		CloseDelayed(i, timeMeasurement);

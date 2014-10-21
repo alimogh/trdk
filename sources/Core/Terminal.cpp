@@ -12,143 +12,488 @@
 #include "Terminal.hpp"
 #include "TradeSystem.hpp"
 #include "Security.hpp"
+#include "Common/FileSystemChangeNotificator.hpp"
 
 namespace fs = boost::filesystem;
 
 using namespace trdk;
 using namespace trdk::Lib;
 
-Terminal::Terminal(const fs::path &cmdFile, TradeSystem &tradeSystem)
-		: m_cmdFile(cmdFile),
-		m_tradeSystem(tradeSystem),
-		m_notificator(m_cmdFile, [this]() {OnCmdFileChanged();}),
-		m_lastSentSeqnumber(0) {
-	m_tradeSystem.GetLog().Info(
-		"Starting terminal with commands file %1%...",
-		m_cmdFile);
-	m_notificator.Start();
-	m_tradeSystem.GetLog().Info(
-		"Terminal commands format:"
-			" # instrument_sympol +_to_buy_or_-_to_sell"
-			" price_or_0_for_market qty");
-}
+class Terminal::Implementation : private boost::noncopyable {
 
-Terminal::~Terminal() {
-	//...//
-}
+private:
 
-void Terminal::OnCmdFileChanged() {
-
-	std::ifstream f(m_cmdFile.string().c_str());
-	if (!f) {
-		m_tradeSystem.GetLog().Error(
-			"Failed to open terminal commands file %1%.",
-			m_cmdFile);
-		return;
-	}
-
-	boost::cmatch match;
-	const boost::regex regex (
-		"^(\\d+)\\s+([a-zA-Z1-9\\//_]+)\\s+([-\\+]+)\\s+([\\d\\.]+)\\s+(\\d+)$");
-	char buffer[255] = {};
-	size_t line = 0;
-	size_t seqnumber = 0;
-	while (!f.eof()) {
-		f.getline(buffer, sizeof(buffer) - 1);
-		++line;
-		++seqnumber;
-		if (!boost::regex_match(buffer, match, regex)) {
-			m_tradeSystem.GetLog().Error(
-				"Failed to parse terminal command \"%1%\" at %2%:%3%.",
-				boost::make_tuple(buffer, m_cmdFile, line));
-			return;
+	class Command : private boost::noncopyable {
+	public:
+		class Exception : public Lib::Exception {
+		public:
+			explicit Exception(const char *what) throw()
+					: Lib::Exception(what) {
+				//...//
+			}
+		};
+	public:
+		explicit Command(TradeSystem &tradeSystem)
+				: m_tradeSystem(tradeSystem) {
+			//...//
 		}
-		const auto cmdSeqnumber = boost::lexical_cast<size_t>(match[1]);
-		if (cmdSeqnumber != seqnumber) {
-			m_tradeSystem.GetLog().Error(
-				"Wrong terminal command seqnumber \"%1%\" at %2%:%3%"
-					", must be %4%.",
-				boost::make_tuple(
-					cmdSeqnumber,
-					m_cmdFile,
-					line,
-					seqnumber));
-			return;
+		virtual ~Command() {
+			//...//
 		}
-		const Symbol symbol = Symbol::ParseCash(
-			Symbol::SECURITY_TYPE_CASH,
-			match[2],
-			"");
-		const bool isBuy = match[3] == '+';
-		const auto price = boost::lexical_cast<double>(match[4]);
-		const auto qty = boost::lexical_cast<Qty>(match[5]);
+		virtual void ParseField(const std::string &) = 0;
+		virtual std::string Validate() const = 0;
+		virtual void Execute() = 0;
+	protected:
+		TradeSystem &m_tradeSystem;
+	};
 
-		Security *security;
-		try {
-			security = &m_tradeSystem.GetContext().GetSecurity(symbol);
-		} catch (const Context::UnknownSecurity &) {
-			m_tradeSystem.GetLog().Error(
-				"Terminal find unknown instrument in command:"
-					" \"%1%\" at %2%:%3%.",
-				boost::make_tuple(symbol, m_cmdFile, line));
-			return;
+	class OrderCommand
+		: public Command,
+		public boost::enable_shared_from_this<OrderCommand> {
+	public:
+		explicit OrderCommand(TradeSystem &tradeSystem)
+				: Command(tradeSystem),
+				m_security(nullptr),
+				m_qty(0),
+				m_price(-1.0) {
+			//...//
 		}
-
-		const OrderParams orderParams;
-
-		const auto &callback = [this](
-					OrderId orderId,
-					TradeSystem::OrderStatus status,
-					Qty filled,
-					Qty remaining,
+		virtual ~OrderCommand() {
+			//...//
+		}
+		virtual void ParseField(const std::string &field) {
+			if (ParseSymbol(field)) {
+				return;
+			}
+			const auto pos = field.find('=');
+			if (pos == std::string::npos) {
+				throw Exception("Failed to parse command");
+			}
+			std::string cmd = field.substr(0, pos);
+			boost::trim(cmd);
+			if (boost::iequals(cmd, "qty")) {
+				if (m_qty) {
+					throw Exception("Qty already set");
+				}
+				try {
+					m_qty = boost::lexical_cast<Qty>(field.substr(pos + 1));
+				} catch (const boost::bad_lexical_cast &) {
+					//...//
+				}
+				if (m_qty <= 0) {
+					throw Exception("Failed to parse qty value");
+				}
+			} else if (boost::iequals(cmd, "price")) {
+				if (m_price >= 0) {
+					throw Exception("Price already set");
+				}
+				const auto &val = field.substr(pos + 1);
+				if (!boost::iequals(val, "MKT")) {
+					try {
+						m_price = boost::lexical_cast<double>(val);
+					} catch (const boost::bad_lexical_cast &) {
+						//...//
+					}
+					if (m_price <= 0) {
+						throw Exception("Failed to parse price value");
+					}
+				} else {
+					m_price = 0;
+				}
+			} else {
+				throw Exception("Unknown command");
+			}
+		}
+		virtual std::string Validate() const {
+			if (!m_security) {
+				return "No symbol set.";
+			} else if (!m_qty) {
+				return "No qty set. Ex.: \"qty=10000\".";
+			} else if (m_price < 0) {
+				return "No price set. Ex.: \"price=1.234\".";
+			}
+			return "";
+		}
+	protected:
+		bool ParseSymbol(const std::string &field) {
+			if (m_security) {
+				return false;
+			}
+			const Symbol symbol = Symbol::ParseCash(
+				Symbol::SECURITY_TYPE_CASH,
+				field,
+				"");
+			try {
+				m_security = &m_tradeSystem.GetContext().GetSecurity(symbol);
+				return true;
+			} catch (const Context::UnknownSecurity &) {
+				throw Exception("Failed to find security for command");
+			}
+		}
+		void OnReply(
+					const OrderId &orderId,
+					const TradeSystem::OrderStatus &status,
+					const Qty &filled,
+					const Qty &remaining,
 					double avgPrice) {
 			m_tradeSystem.GetLog().Info(
-				"Order reply received:"
+				"Terminal: Order reply received:"
 					" order ID = %1%, status = %2%, filled qty = %3%,"
 					" remaining qty = %4%, avgPrice = %5%.",
 				boost::make_tuple(
-					orderId,
-					status,
+					boost::cref(orderId),
+					boost::cref(status),
 					filled,
 					remaining,
 					avgPrice));
-		};
+		}
+	protected:
+		Security *m_security;
+		Qty m_qty;
+		double m_price;
+	};
 
-		if (Lib::IsZero(price)) {
-			if (isBuy) {
-				m_tradeSystem.BuyAtMarketPrice(
-					*security,
-					security->GetSymbol().GetCashCurrency(),
-					qty,
-					orderParams,
-					callback);
-			} else {
+	class SellCommand : public OrderCommand {
+	public:
+		explicit SellCommand(TradeSystem &tradeSystem)
+				: OrderCommand(tradeSystem) {
+			//...//
+		}
+		virtual ~SellCommand() {
+			//...//
+		}
+		virtual void Execute() {
+			AssertEq(std::string(), Validate());
+			const OrderParams orderParams;
+			if (Lib::IsZero(m_price)) {
 				m_tradeSystem.SellAtMarketPrice(
-					*security,
-					security->GetSymbol().GetCashCurrency(),
-					qty,
+					*m_security,
+					m_security->GetSymbol().GetCashCurrency(),
+					m_qty,
 					orderParams,
-					callback);
-			}
-		} else {
-			if (isBuy) {
-				m_tradeSystem.Buy(
-					*security,
-					security->GetSymbol().GetCashCurrency(),
-					qty,
-					security->ScalePrice(price),
-					orderParams,
-					callback);
+					boost::bind(
+						&SellCommand::OnReply,
+						shared_from_this(),
+						_1,
+						_2,
+						_3,
+						_4,
+						_5));
 			} else {
 				m_tradeSystem.Sell(
-					*security,
-					security->GetSymbol().GetCashCurrency(),
-					qty,
-					security->ScalePrice(price),
+					*m_security,
+					m_security->GetSymbol().GetCashCurrency(),
+					m_qty,
+					m_security->ScalePrice(m_price),
 					orderParams,
-					callback);
+					boost::bind(
+						&SellCommand::OnReply,
+						shared_from_this(),
+						_1,
+						_2,
+						_3,
+						_4,
+						_5));
 			}
 		}
+	};
+
+	class BuyCommand : public OrderCommand {
+	public:
+		explicit BuyCommand(TradeSystem &tradeSystem)
+				: OrderCommand(tradeSystem) {
+			//...//
+		}
+		virtual ~BuyCommand() {
+			//...//
+		}
+		virtual void Execute() {
+			AssertEq(std::string(), Validate());
+			const OrderParams orderParams;
+			if (Lib::IsZero(m_price)) {
+				m_tradeSystem.BuyAtMarketPrice(
+					*m_security,
+					m_security->GetSymbol().GetCashCurrency(),
+					m_qty,
+					orderParams,
+					boost::bind(
+						&BuyCommand::OnReply,
+						shared_from_this(),
+						_1,
+						_2,
+						_3,
+						_4,
+						_5));
+			} else {
+				m_tradeSystem.Buy(
+					*m_security,
+					m_security->GetSymbol().GetCashCurrency(),
+					m_qty,
+					m_security->ScalePrice(m_price),
+					orderParams,
+					boost::bind(
+						&BuyCommand::OnReply,
+						shared_from_this(),
+						_1,
+						_2,
+						_3,
+						_4,
+						_5));
+			}
+		}
+	};
+
+	class CancelCommand
+		: public Command,
+		public boost::enable_shared_from_this<CancelCommand> {
+	public:
+		explicit CancelCommand(TradeSystem &tradeSystem)
+				: Command(tradeSystem),
+				m_isOrderIdSet(false) {
+			//...//
+		}
+		virtual ~CancelCommand() {
+			//...//
+		}
+		virtual void ParseField(const std::string &field) {
+			if (m_isOrderIdSet) {
+				throw Exception("Unknown command");
+			}
+			const auto pos = field.find('=');
+			if (pos == std::string::npos) {
+				throw Exception("Failed to parse command");
+			}
+			std::string cmd = field.substr(0, pos);
+			boost::trim(cmd);
+			if (!boost::iequals(cmd, "order")) {
+				throw Exception("Unknown command");
+			}
+			try {
+				m_orderId = boost::lexical_cast<OrderId>(field.substr(pos + 1));
+			} catch (const boost::bad_lexical_cast &) {
+				throw Exception("Failed to parse order ID");
+			}
+			m_isOrderIdSet = true;
+		}
+		virtual std::string Validate() const {
+			if (!m_isOrderIdSet) {
+				return "No order ID set. Ex.: \"order=123\".";
+			}
+			return "";
+		}
+		virtual void Execute() {
+			AssertEq(std::string(), Validate());
+			m_tradeSystem.CancelOrder(m_orderId);
+		}
+	private:
+		bool m_isOrderIdSet;
+		OrderId m_orderId;
+	};
+
+public:
+
+	explicit Implementation(const fs::path &cmdFile, TradeSystem &tradeSystem)
+			: m_cmdFile(cmdFile),
+			m_tradeSystem(tradeSystem),
+			m_notificator(m_cmdFile, [this]() {OnCmdFileChanged();}),
+			m_lastSeqnumber(0) {
+		m_tradeSystem.GetLog().Info(
+			"Terminal: Starting with commands file %1%...",
+			m_cmdFile);
+		m_notificator.Start();
+	}
+	
+private:
+
+	void OnCmdFileChanged() {
+
+		std::ifstream f(m_cmdFile.string().c_str());
+		if (!f) {
+			m_tradeSystem.GetLog().Error(
+				"Terminal: Failed to open terminal commands file %1%.",
+				m_cmdFile);
+			return;
+		}
+
+		char buffer[255] = {};
+		size_t line = 0;
+		size_t seqnumber = 0;
+		size_t execsCount = 0;
+		while (!f.eof()) {
+			f.getline(buffer, sizeof(buffer) - 1);
+			++line;
+			if (!ProcessCmdLine(line, buffer, seqnumber, execsCount)) {
+				break;
+			}
+		}
+
+		AssertGe(line, execsCount);
+		if (line >= 0) {
+			m_tradeSystem.GetLog().Debug(
+				"Terminal: processed file %1%"
+					" (lines: %2%, commands executed: %3%). ",
+				boost::make_tuple(boost::cref(m_cmdFile), line, execsCount));
+		}
+
 	}
 
+	bool ProcessCmdLine(
+				size_t lineNo,
+				const char *line,
+				size_t &knownSeqnumber,
+				size_t &execsCount) {
+
+		Assert(line);
+
+		if (line[0] == ';' || (line[0] == '/' && line[1] == '/')) {
+			return true;
+		}
+
+		size_t seqnumber = 0;
+		boost::shared_ptr<Command> command;
+		const char *commandsHelp = "\"BUY\", \"SELL\" or \"CANCEL\"";
+	
+		typedef boost::split_iterator<const char *> It;
+		const auto &end = It();
+		for (
+				It it = boost::make_split_iterator(
+					line,
+					boost::token_finder(
+						boost::algorithm::is_space(),
+						boost::algorithm::token_compress_on));
+				it != end;
+				++it) {
+		
+			auto field = boost::copy_range<std::string>(*it);
+			boost::trim(field);
+			if (field.empty()) {
+				continue;
+			}
+
+			if (!seqnumber) {
+		
+				Assert(!command);
+
+				try {
+					seqnumber = boost::lexical_cast<size_t>(field);
+				} catch (const boost::bad_lexical_cast &) {
+					//...//
+				}
+
+				if (seqnumber <= 0) {
+					m_tradeSystem.GetLog().Error(
+						"Terminal: Failed to parse seqnumber \"%1%\" at %2%:%3%."
+							" Must be a positive value greater than zero.",
+						boost::make_tuple(
+							boost::cref(field),
+							boost::cref(m_cmdFile),
+							lineNo));
+					return false;
+				} else if (knownSeqnumber + 1 != seqnumber) {
+					m_tradeSystem.GetLog().Error(
+						"Terminal: Wrong terminal command seqnumber \"%1%\""
+								" at %2%:%3%, last seqnumber was %4%.",
+						boost::make_tuple(
+							seqnumber,
+							m_cmdFile,
+							lineNo,
+							knownSeqnumber));
+					return false;
+				}
+
+				if (seqnumber <= m_lastSeqnumber) {
+					knownSeqnumber = seqnumber;
+					return true;
+				}
+
+			} else if (!command) {
+		
+				if (boost::iequals(field, "buy")) {
+					command.reset(new BuyCommand(m_tradeSystem));
+				} else if (boost::iequals(field, "sell")) {
+					command.reset(new SellCommand(m_tradeSystem));
+				} else if (boost::iequals(field, "cancel")) {
+					command.reset(new CancelCommand(m_tradeSystem));
+				} else {
+					m_tradeSystem.GetLog().Error(
+						"Terminal: Failed to parse command \"%1%\" at %2%:%3%."
+							" Must be %4%.",
+						boost::make_tuple(
+							boost::cref(field),
+							boost::cref(m_cmdFile),
+							lineNo,
+							commandsHelp));
+					return false;
+				}
+		
+			} else {
+
+				try {
+					command->ParseField(field);
+				} catch (const Command::Exception &ex) {
+					m_tradeSystem.GetLog().Error(
+						"Terminal: Failed to parse command parameter \"%1%\""
+							" at \"%2%\":%3%. %4%.",
+						boost::make_tuple(
+							boost::cref(field),
+							boost::cref(m_cmdFile),
+							lineNo,
+							ex.what()));
+					return false;
+				}
+
+			}
+
+		}
+
+		if (seqnumber <= 0) {
+			return true;
+		}
+
+		if (!command) {
+			m_tradeSystem.GetLog().Error(
+				"Terminal: No command set at %1%:%2%. Must be %3%.",
+				boost::make_tuple(
+					boost::cref(m_cmdFile),
+					lineNo,
+					commandsHelp));
+			return false;
+		}
+
+		const std::string &commandErrorText = command->Validate();
+		if (!commandErrorText.empty()) {
+			m_tradeSystem.GetLog().Error(
+				"Terminal: Failed to get command parameter at %1%:%2% - %3%",
+				boost::make_tuple(
+					boost::cref(m_cmdFile),
+					lineNo,
+					boost::cref(commandErrorText)));
+			return false;		
+		}
+
+		++execsCount;
+		command->Execute();
+
+		m_lastSeqnumber = seqnumber;
+		knownSeqnumber = seqnumber;
+		return true;
+
+	}
+
+private:
+
+	const boost::filesystem::path m_cmdFile;
+	trdk::TradeSystem &m_tradeSystem;
+	trdk::Lib::FileSystemChangeNotificator m_notificator;
+	size_t m_lastSeqnumber;
+
+};
+
+Terminal::Terminal(const fs::path &cmdFile, TradeSystem &tradeSystem)
+		: m_pimpl(new Implementation(cmdFile, tradeSystem)) {
+	//...//
+}
+
+Terminal::~Terminal() {
+	delete m_pimpl;
 }

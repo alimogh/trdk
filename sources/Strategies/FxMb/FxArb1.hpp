@@ -330,7 +330,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void CloseEquation(
 					size_t equationIndex,
 					const Position::CloseType &,
-					bool skipReport = false);
+					bool canBePartiallyClosed,
+					bool skipReport);
 
 		//! Cancels all opened for equation orders and close positions for it.
 		size_t CancelEquation(

@@ -12,8 +12,13 @@
 
 namespace trdk { namespace Engine {
 
-	typedef std::vector<trdk::Lib::DllObjectPtr<TradeSystem>>
-		TradeSystems;
+	struct TradeSystemHolder {
+		// Deinitialization order is important!
+		trdk::Lib::DllObjectPtr<TradeSystem> tradeSystem;
+		boost::shared_ptr<Terminal> terminal;
+	};
+	typedef std::vector<TradeSystemHolder> TradeSystems;
+	
 	typedef std::vector<trdk::Lib::DllObjectPtr<MarketDataSource>>
 		MarketDataSources;
 
