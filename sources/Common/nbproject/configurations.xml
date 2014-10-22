@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="94">
+<configurationDescriptor version="95">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
@@ -36,7 +36,7 @@
       <itemPath>Exception.cpp</itemPath>
       <itemPath>FileSystemChangeNotificator.cpp</itemPath>
       <itemPath>Ini.cpp</itemPath>
-      <itemPath>LogState.cpp</itemPath>
+      <itemPath>Log.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
       <itemPath>Symbol.cpp</itemPath>
       <itemPath>SysError.cpp</itemPath>
@@ -114,11 +114,11 @@
       </item>
       <item path="Ini.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="Log.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="Log.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="LogDetail.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="LogState.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="LogState.hpp" ex="false" tool="3" flavor2="0">
       </item>
@@ -216,11 +216,11 @@
       </item>
       <item path="Ini.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="Log.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="Log.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="LogDetail.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="LogState.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="LogState.hpp" ex="false" tool="3" flavor2="0">
       </item>

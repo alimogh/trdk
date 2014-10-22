@@ -214,12 +214,6 @@ namespace trdk {
 			typedef Mutex::scoped_lock Lock;
 			typedef boost::condition_variable Condition;
 		};
-		template<>
-		struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
-			typedef Lib::Concurrency::SpinMutex Mutex;
-			typedef Mutex::ScopedLock Lock;
-			typedef Lib::Concurrency::SpinCondition Condition;
-		};
 		typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy;
 		typedef ConcurrencyPolicy::Mutex Mutex;
 		typedef ConcurrencyPolicy::Lock Lock;
@@ -286,6 +280,13 @@ namespace trdk {
 
 	};
 
+	template<>
+	struct trdk::AsyncLog::ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+		typedef Lib::Concurrency::SpinMutex Mutex;
+		typedef Mutex::ScopedLock Lock;
+		typedef Lib::Concurrency::SpinCondition Condition;
+	};
+	
 	typedef trdk::AsyncLog::Record LogRecord;
 
 	////////////////////////////////////////////////////////////////////////////////

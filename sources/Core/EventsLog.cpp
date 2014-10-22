@@ -11,6 +11,9 @@
 #include "Prec.hpp"
 #include "EventsLog.hpp"
 #include "PyApi/Errors.hpp"
+#ifndef BOOST_WINDOWS
+#	include <signal.h>
+#endif
 
 using namespace trdk;
 using namespace trdk::Lib;

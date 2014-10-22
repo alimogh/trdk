@@ -29,7 +29,8 @@
 		void RegisterUnhandledException(
 				const char *,
 				const char *,
-				long);
+				long)
+			throw();
 		void ReportAssertFail(const char *, const char *, int) throw();
 	} } }
 #endif

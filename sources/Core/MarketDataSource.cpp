@@ -129,7 +129,7 @@ const Context & MarketDataSource::GetContext() const {
 	return const_cast<MarketDataSource *>(this)->GetContext();
 }
 
-MarketDataSource::Log & MarketDataSource::GetLog() const {
+MarketDataSource::Log & MarketDataSource::GetLog() const throw() {
 	return m_pimpl->m_log;
 }
 

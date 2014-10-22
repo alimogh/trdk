@@ -42,8 +42,7 @@ namespace {
 					" and other product log files at " TRDK_SUPPORT_EMAIL
 					" with descriptions of actions that you have made during"
 					" the occurrence of the failure.";
-			Log::Error(message);
-			Log::Trading("error", message);
+			EventsLog::BroadcastCriticalError(message);
 		}
 #		endif
 	}

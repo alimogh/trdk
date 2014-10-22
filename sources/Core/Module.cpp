@@ -230,7 +230,7 @@ const std::string & Module::GetTag() const throw() {
 	return m_pimpl->m_tag;
 }
 
-const std::string & Module::GetStringId() const {
+const std::string & Module::GetStringId() const throw() {
 	return m_pimpl->m_stringId;
 }
 
