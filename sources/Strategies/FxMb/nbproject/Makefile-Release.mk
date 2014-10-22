@@ -37,7 +37,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/FxArb1.o \
 	${OBJECTDIR}/FxArb1Mono.o \
-	${OBJECTDIR}/FxArb1Multi.o
+	${OBJECTDIR}/FxArb1Multi.o \
+	${OBJECTDIR}/Util.o
 
 
 # C Compiler Flags
@@ -82,6 +83,11 @@ ${OBJECTDIR}/FxArb1Multi.o: FxArb1Multi.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxArb1Multi.o FxArb1Multi.cpp
+
+${OBJECTDIR}/Util.o: Util.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Util.o Util.cpp
 
 # Subprojects
 .build-subprojects:
