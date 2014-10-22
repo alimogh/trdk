@@ -756,9 +756,6 @@ void FixTrading::OnOrderPartialFill(
 	Assert(
 		fix::FIX41::Values::ExecType::Fill
 			== execReport.get(fix::FIX41::Tags::ExecType));
-	Assert(
-		fix::FIX41::Values::OrdStatus::Partially_filled
-			== execReport.get(fix::FIX40::Tags::OrdStatus));
 	NotifyOrderUpdate(
 		execReport,
 		ORDER_STATUS_FILLED,
