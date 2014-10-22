@@ -39,6 +39,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/CurrenexTrading.o \
 	${OBJECTDIR}/FixSession.o \
 	${OBJECTDIR}/FixTrading.o \
+	${OBJECTDIR}/FxAllTrading.o \
 	${OBJECTDIR}/HotspotTrading.o
 
 
@@ -91,6 +92,11 @@ ${OBJECTDIR}/FixTrading.o: FixTrading.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FixTrading.o FixTrading.cpp
+
+${OBJECTDIR}/FxAllTrading.o: FxAllTrading.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxAllTrading.o FxAllTrading.cpp
 
 ${OBJECTDIR}/HotspotTrading.o: HotspotTrading.cpp 
 	${MKDIR} -p ${OBJECTDIR}
