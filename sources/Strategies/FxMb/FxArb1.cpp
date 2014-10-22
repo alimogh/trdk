@@ -521,7 +521,7 @@ void FxArb1::StartPositionsOpening(
 
 	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
-	equationPositions.lastStartTime = boost::get_system_time();
+	equationPositions.lastOpenTime = boost::get_system_time();
 	equationPositions.currentOpportunityNumber
 		= GetContext().TakeOpportunityNumber();
 
@@ -696,7 +696,7 @@ bool FxArb1::CheckCancelAndBlockCondition() {
 void FxArb1::CancelAllAndBlock(
 			CancelAndBlockCondition &cancelAndBlockCondition) {
 
-	ResetGracePeriod();
+	DisablePositionOpenGracePeriod();
 
 	Assert(!m_cancelAndBlockCondition);
 	m_cancelAndBlockCondition = &cancelAndBlockCondition;
@@ -717,7 +717,7 @@ void FxArb1::CancelAllAndBlock(
 void FxArb1::WaitForCancelAndBlock(
 			CancelAndBlockCondition &cancelAndBlockCondition) {
 
-	ResetGracePeriod();
+	DisablePositionOpenGracePeriod();
 
 	Assert(!m_cancelAndBlockCondition);
 	foreach (const auto &position, m_positionsByEquation) {
