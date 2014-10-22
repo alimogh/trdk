@@ -35,6 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/AlpariStream.o \
 	${OBJECTDIR}/CurrenexStream.o \
 	${OBJECTDIR}/CurrenexTrading.o \
 	${OBJECTDIR}/FixSession.o \
@@ -74,6 +75,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}:
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
+
+${OBJECTDIR}/AlpariStream.o: AlpariStream.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/AlpariStream.o AlpariStream.cpp
 
 ${OBJECTDIR}/CurrenexStream.o: CurrenexStream.cpp 
 	${MKDIR} -p ${OBJECTDIR}
