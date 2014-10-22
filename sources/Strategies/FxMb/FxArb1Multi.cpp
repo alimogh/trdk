@@ -81,7 +81,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 
 			if (firstEquationPositions.activeCount) {
-				if (IsInGracePeriod(firstEquationPositions)) {
+				if (IsInPositionOpenGracePeriod(firstEquationPositions)) {
 					return;
 				}
 				AssertEq(0, secondEquationPositions.activeCount);
@@ -98,7 +98,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			AssertEq(0, firstEquationPositions.positions.size());
 
 			if (secondEquationPositions.activeCount) {
-				if (IsInGracePeriod(secondEquationPositions)) {
+				if (IsInPositionOpenGracePeriod(secondEquationPositions)) {
 					return;
 				}
 				// We opened on second equation, we try to close on first one
@@ -268,7 +268,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
-			toPositions.lastStartTime = boost::get_system_time();
+			toPositions.lastOpenTime = boost::get_system_time();
 			toPositions.currentOpportunityNumber
 				= GetContext().TakeOpportunityNumber();
 

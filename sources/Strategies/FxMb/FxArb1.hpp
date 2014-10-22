@@ -224,7 +224,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			size_t waitsForReplyCount;
 			std::vector<boost::shared_ptr<EquationPosition>> positions;
 
-			boost::posix_time::ptime lastStartTime;
+			boost::posix_time::ptime lastOpenTime;
+			boost::posix_time::ptime lastCloseTime;
 
 			bool isCanceled;
 
@@ -368,8 +369,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		bool CheckCancelAndBlockCondition();
 		virtual bool OnCanceling() = 0;
 
-		bool IsInGracePeriod(const EquationOpenedPositions &) const;
-		void ResetGracePeriod();
+		bool IsInPositionOpenGracePeriod(const EquationOpenedPositions &) const;
+		void DisablePositionOpenGracePeriod();
 
 	private:
 		
@@ -399,7 +400,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		std::bitset<EQUATIONS_COUNT> m_equationsForDelayedClosing;
 
-		boost::posix_time::time_duration m_positionGracePeriod;
+		boost::posix_time::time_duration m_positionOpenGracePeriod;
 
 	};
 

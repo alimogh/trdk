@@ -10,9 +10,12 @@
 
 #include "Prec.hpp"
 #include "FxArb1.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
+
+namespace pt = boost::posix_time;
 
 namespace trdk { namespace Strategies { namespace FxMb {
 	
@@ -29,8 +32,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					Context &context,
 					const std::string &tag,
 					const IniSectionRef &conf)
-				: Base(context, "FxArb1Mono", tag, conf) {
-			//...//
+				: Base(context, "FxArb1Mono", tag, conf),
+				m_positionCloseGracePeriod(
+					ReadPositionGracePeriod(
+						conf,
+						"position_close_grace_period_sec")) {
+			GetLog().Info(
+				"Using \"grace period\" between positions: %1%.",
+				m_positionCloseGracePeriod);
 		}
 		
 		virtual ~FxArb1Mono() {
@@ -62,7 +71,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					AssertLt(0, positions.positions.size());
 					if (	
 							positions.waitsForReplyCount
-							||	IsInGracePeriod(positions)) {
+							||	IsInPositionOpenGracePeriod(positions)) {
 						timeMeasurement.Measure(
 							TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 						return;
@@ -136,6 +145,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 							Position::CLOSE_TYPE_TAKE_PROFIT,
 							false,
 							false);
+						m_lastCloseTime = boost::get_system_time();
 						timeMeasurement.Measure(
 							TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
@@ -162,8 +172,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			Assert(!Lib::IsZero(bestEquationsResult));
 			AssertGt(GetEquations().size(), bestEquationsIndex);
 
-			if (GetEquationPositions(bestEquationsIndex).activeCount) {
-				// Equation already has opened positions.
+			if (
+					GetEquationPositions(bestEquationsIndex).activeCount
+					|| IsInPositionCloseGracePeriod()) {
 				timeMeasurement.Measure(
 					TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 				return;
@@ -177,10 +188,20 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					size_t equationIndex,
 					TimeMeasurement::Milestones &) {
 			CloseEquation(equationIndex, Position::CLOSE_TYPE_NONE, true, true);
+			m_lastCloseTime = boost::get_system_time();
 		}
 
 		virtual bool OnCanceling() {
 			return true;
+		}
+
+		bool IsInPositionCloseGracePeriod() const {
+			if (m_lastCloseTime == pt::not_a_date_time) {
+				return false;
+			}
+			const auto periodEndTime
+				= m_lastCloseTime + m_positionCloseGracePeriod;
+			return periodEndTime >= boost::get_system_time();
 		}
 
 	private:
@@ -206,6 +227,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				timeMeasurement);
 
 		}
+
+	private:
+
+		const boost::posix_time::time_duration m_positionCloseGracePeriod;
+		boost::posix_time::ptime m_lastCloseTime;
 
 	};
 	

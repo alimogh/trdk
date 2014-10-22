@@ -12,6 +12,7 @@
 #include "FxArb1.hpp"
 #include "Core/StrategyPositionReporter.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -30,16 +31,12 @@ FxArb1::FxArb1(
 		m_equations(CreateEquations(conf.GetBase())),
 		m_isPairsByBrokerChecked(false),
 		m_cancelAndBlockCondition(nullptr),
-		m_positionGracePeriod(
-			pt::seconds(
-				//  size_t -> long as period can be negative, but not for our
-				//  setting:
-				long(
-					conf.GetBase().ReadTypedKey<size_t>(
-						"Common",
-						"position_grace_period_sec"))))  {
+		m_positionOpenGracePeriod(
+			ReadPositionGracePeriod(conf, "position_open_grace_period_sec")) {
 
-	GetLog().Info("Using \"grace period\": %1%.", m_positionGracePeriod);
+	GetLog().Info(
+		"Using \"grace period\" for position closing: %1%.",
+		m_positionOpenGracePeriod);
 
 	if (GetContext().GetTradeSystemsCount() != BROKERS_COUNT) {
 		throw Exception("Strategy requires exact number of brokers");
@@ -530,7 +527,7 @@ void FxArb1::StartPositionsOpening(
 
 	LogOpeningDetection(equationIndex);
 
-	equationPositions.lastStartTime = boost::get_system_time();
+	equationPositions.lastOpenTime = boost::get_system_time();
 
 }
 
@@ -878,14 +875,15 @@ void FxArb1::CloseDelayed(
 			[this, i]() -> boost::format {
 				boost::format message(
 					"Closing delayed positions for equation %1%"
-						" (%2% / %3% / %4% / %5% / %6%)...");
+						" (%2% / %3% / %4% / %5% / %6% / %7%)...");
 				const auto &positions = GetEquationPositions(i);
 				message
 					%	i
 					%	positions.activeCount
 					%	positions.waitsForReplyCount
 					%	positions.positions.size()
-					%	positions.lastStartTime
+					%	positions.lastOpenTime
+					%	positions.lastCloseTime
 					%	positions.isCanceled;
 				return std::move(message);
 			});
@@ -894,15 +892,17 @@ void FxArb1::CloseDelayed(
 	}
 }
 
-bool FxArb1::IsInGracePeriod(const EquationOpenedPositions &positions) const {
+bool FxArb1::IsInPositionOpenGracePeriod(
+			const EquationOpenedPositions &positions)
+		const {
 	AssertNe(0, positions.activeCount);
-	AssertNe(pt::not_a_date_time, positions.lastStartTime);
-	return
-		positions.lastStartTime + m_positionGracePeriod
-			>= boost::get_system_time();
+	AssertNe(pt::not_a_date_time, positions.lastOpenTime);
+	const auto pauseEndTime
+		= positions.lastOpenTime + m_positionOpenGracePeriod;
+	return pauseEndTime >= boost::get_system_time();
 }
 
-void FxArb1::ResetGracePeriod() {
-	m_positionGracePeriod = pt::seconds(0);
+void FxArb1::DisablePositionOpenGracePeriod() {
+	m_positionOpenGracePeriod = pt::seconds(0);
 }
 
