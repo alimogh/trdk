@@ -653,8 +653,8 @@ public:
 	}
 
 	template<typename Stat>
-	boost::shared_ptr<typename Stat> CreateStat(size_t size) const {
-		return boost::shared_ptr<typename Stat>(new Stat(m_service, size));
+	boost::shared_ptr<Stat> CreateStat(size_t size) const {
+		return boost::shared_ptr<Stat>(new Stat(m_service, size));
 	}
 
 };

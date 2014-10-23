@@ -9,6 +9,7 @@ mkdir ${outputLibDir}
 
 cp ./Engine/dist/${conf}/GNU-Linux-x86/* ${outputLibDir}
 cp ./Core/dist/${conf}/GNU-Linux-x86/* ${outputLibDir}
+cp ./Services/dist/${conf}/GNU-Linux-x86/* ${outputLibDir}
 cp ./Strategies/Test/dist/${conf}/GNU-Linux-x86/* ${outputLibDir}
 cp ./Strategies/FxMb/dist/${conf}/GNU-Linux-x86/* ${outputLibDir}
 cp ./Interaction/OnixsFixConnector/dist/${conf}/GNU-Linux-x86/* ${outputLibDir}
