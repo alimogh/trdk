@@ -54,7 +54,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=../Common/dist/Debug/GNU-Linux-x86/libcommon_dbg.a -Wl,-rpath,../Core/dist/Debug/GNU-Linux-x86 -L../Core/dist/Debug/GNU-Linux-x86 -lCore_dbg -Wl,-rpath,../Engine/dist/Debug/GNU-Linux-x86 -L../Engine/dist/Debug/GNU-Linux-x86 -lEngine_dbg -lboost_system -lboost_filesystem -lboost_regex
+LDLIBSOPTIONS=../Common/dist/Debug/GNU-Linux-x86/libcommon_dbg.a -Wl,-rpath,../Core/dist/Debug/GNU-Linux-x86 -L../Core/dist/Debug/GNU-Linux-x86 -lCore_dbg -Wl,-rpath,../Engine/dist/Debug/GNU-Linux-x86 -L../Engine/dist/Debug/GNU-Linux-x86 -lEngine_dbg -lboost_system -lboost_filesystem -lboost_regex -lboost_thread
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}

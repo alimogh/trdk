@@ -33,6 +33,7 @@
       <itemPath>Terminal.hpp</itemPath>
       <itemPath>TimeMeasurement.hpp</itemPath>
       <itemPath>TradeSystem.hpp</itemPath>
+      <itemPath>TradingLog.hpp</itemPath>
       <itemPath>Types.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
@@ -58,6 +59,50 @@
       <itemPath>../Interaction/OnixsHotspot/../../../sources/Core/Terminal.cpp</itemPath>
       <itemPath>TradeSystem.cpp</itemPath>
       <itemPath>Types.cpp</itemPath>
+    </logicalFolder>
+    <logicalFolder name="TestFiles"
+                   displayName="Test Files"
+                   projectFiles="false"
+                   kind="TEST_LOGICAL_FOLDER">
+    </logicalFolder>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+    </logicalFolder>
+    <logicalFolder name="TestFiles"
+                   displayName="Test Files"
+                   projectFiles="false"
+                   kind="TEST_LOGICAL_FOLDER">
+    </logicalFolder>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+    </logicalFolder>
+    <logicalFolder name="TestFiles"
+                   displayName="Test Files"
+                   projectFiles="false"
+                   kind="TEST_LOGICAL_FOLDER">
+    </logicalFolder>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+    </logicalFolder>
+    <logicalFolder name="TestFiles"
+                   displayName="Test Files"
+                   projectFiles="false"
+                   kind="TEST_LOGICAL_FOLDER">
+    </logicalFolder>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -223,6 +268,8 @@
       </item>
       <item path="TradeSystem.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="TradingLog.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="Types.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Types.hpp" ex="false" tool="3" flavor2="0">
@@ -386,6 +433,8 @@
       <item path="TradeSystem.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="TradeSystem.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="TradingLog.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Types.cpp" ex="false" tool="1" flavor2="0">
       </item>
