@@ -282,7 +282,7 @@ namespace trdk {
 		BookUpdateAction action;
 		trdk::OrderSide side;
 		trdk::ScaledPrice price;
-		trdk::OrderId qty;
+		trdk::Qty qty;
 	};
 
 }
