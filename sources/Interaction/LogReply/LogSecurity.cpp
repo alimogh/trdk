@@ -46,7 +46,7 @@ LogSecurity::LogSecurity(
 	if (
 			!boost::istarts_with(
 				buffer,
-				"TRDK Book Update Ticks Log version 1.1 ")) {
+				"TRDK Book Update Ticks Log version 1.0 ")) {
 		GetSource().GetLog().Error(
 			"Failed to open market data source for \"%1%\" in file %2%:"
 				" wrong format.",

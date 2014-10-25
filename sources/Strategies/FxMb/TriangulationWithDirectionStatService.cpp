@@ -351,7 +351,7 @@ TriangulationWithDirectionStatService::GetServiceLog(
 		
 		const pt::ptime &now = boost::posix_time::microsec_clock::local_time();
 		boost::format fileName(
-			"Pretrade_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.csv");
+			"pretrade_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.csv");
 		fileName
 			% now.date().year()
 			% now.date().month().as_number()
