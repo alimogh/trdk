@@ -49,7 +49,6 @@
       <itemPath>Module.cpp</itemPath>
       <itemPath>Observer.cpp</itemPath>
       <itemPath>Position.cpp</itemPath>
-      <itemPath>PositionReporter.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
       <itemPath>Security.cpp</itemPath>
       <itemPath>Service.cpp</itemPath>
@@ -230,8 +229,6 @@
       </item>
       <item path="Position.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="PositionReporter.cpp" ex="false" tool="1" flavor2="0">
-      </item>
       <item path="PositionReporter.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
@@ -395,8 +392,6 @@
       <item path="Position.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Position.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="PositionReporter.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="PositionReporter.hpp" ex="false" tool="3" flavor2="0">
       </item>

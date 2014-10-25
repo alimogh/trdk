@@ -7,6 +7,7 @@
       <itemPath>Api.h</itemPath>
       <itemPath>FxArb1.hpp</itemPath>
       <itemPath>FxMbStrategyLog.hpp</itemPath>
+      <itemPath>TriangulationWithDirectionStatService.hpp</itemPath>
       <itemPath>Util.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
@@ -17,6 +18,8 @@
       <itemPath>FxArb1Multi.cpp</itemPath>
       <itemPath>FxMbStrategyLog.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
+      <itemPath>TriangulationWithDirection.cpp</itemPath>
+      <itemPath>TriangulationWithDirectionStatService.cpp</itemPath>
       <itemPath>Util.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -109,6 +112,18 @@
       </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="TriangulationWithDirection.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="TriangulationWithDirectionStatService.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="TriangulationWithDirectionStatService.hpp"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="Util.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Util.hpp" ex="false" tool="3" flavor2="0">
@@ -197,6 +212,18 @@
       <item path="FxMbStrategyLog.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="TriangulationWithDirection.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="TriangulationWithDirectionStatService.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="TriangulationWithDirectionStatService.hpp"
+            ex="false"
+            tool="3"
+            flavor2="0">
       </item>
       <item path="Util.cpp" ex="false" tool="1" flavor2="0">
       </item>

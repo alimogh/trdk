@@ -18,6 +18,7 @@
 #include "Core/Service.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
+#include <boost/bind.hpp>
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -1473,12 +1474,8 @@ private:
 							if (!uniqueInstance) {
 								ForEachModuleInstance(
 									module,
-									[&](Module &instance) {
-										SubscribeModuleStandaloneInstance(
-											instance,
-											subscribe,
-											&security);
-									},
+									// bind is a workaround for g++ internal error with lambda:
+									boost::bind(&ContextStateBootstrapper::SubscribeModuleStandaloneInstance<Module>, this, _1, subscribe, &security),
 									[&](Module &instance) {
 										SubscribeModuleSymbolInstance(
 											instance,
