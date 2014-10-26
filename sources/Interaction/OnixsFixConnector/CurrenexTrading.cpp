@@ -29,7 +29,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					Context &context,
 					const std::string &tag,
 					const Lib::IniSectionRef &conf)
-				: FixTrading( context, tag, conf) {
+				: FixTrading(context, tag, conf) {
 			//...//
 		}
 		
@@ -109,6 +109,21 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				"FIX Server sent unknown Execution Report: \"%1%\".",
 				boost::make_tuple(boost::cref(message)));
 
+		}
+
+	protected:
+
+		fix::Message CreateMarketOrderMessage(
+					const OrderId &orderId,	
+					const Security &security,
+					const Currency &currency,
+					const Qty &qty) {
+			fix::Message order
+				= CreateOrderMessage(orderId, security, currency, qty);
+			order.set(
+				fix::FIX40::Tags::OrdType,
+				fix::FIX41::Values::OrdType::Forex_Market);
+			return std::move(order);
 		}
 
 	};

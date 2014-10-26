@@ -207,6 +207,28 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					const OnixS::FIX::Message &,
 					const Lib::TimeMeasurement::Milestones::TimePoint &);
 
+	protected:
+
+		//! Creates order FIX-message and sets common fields.
+		/** Crates new order message each time, can be called from anywhere,
+		  * without synchronization.
+		  */
+		OnixS::FIX::Message CreateOrderMessage(
+				const OrderId &,
+				const Security &,
+				const trdk::Lib::Currency &,
+				const Qty &);
+		//! Creates market order FIX-message and sets common fields.
+		/** Crates new order message each time, can be called from anywhere,
+		  * without synchronization.
+		  */
+		virtual OnixS::FIX::Message CreateMarketOrderMessage(
+				const OrderId &,
+				const Security &,
+				const trdk::Lib::Currency &,
+				const Qty &)
+			= 0;
+
 	private:
 
 		//! Takes next free order ID.
@@ -224,24 +246,6 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		void FlushRemovedOrders();
 
-		//! Creates order FIX-message and sets common fields.
-		/** Crates new order message each time, can be called from anywhere,
-		  * without synchronization.
-		  */
-		OnixS::FIX::Message CreateOrderMessage(
-				const OrderId &,
-				const Security &,
-				const trdk::Lib::Currency &,
-				const Qty &);
-		//! Creates market order FIX-message and sets common fields.
-		/** Crates new order message each time, can be called from anywhere,
-		  * without synchronization.
-		  */
-		OnixS::FIX::Message CreateMarketOrderMessage(
-				const OrderId &,
-				const Security &,
-				const trdk::Lib::Currency &,
-				const Qty &);
 		//! Creates limit order FIX-message and sets common fields.
 		/** Crates new order message each time, can be called from anywhere,
 		  * without synchronization.
@@ -293,6 +297,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		void SendThreadMain();
 
 	private:
+
+		const std::string m_account;
 
 		FixSession m_session;
 

@@ -23,6 +23,7 @@ FixTrading::FixTrading(
 			const std::string &tag,
 			const IniSectionRef &conf)
 		: TradeSystem(context, tag),
+		m_account(conf.ReadKey("account", "")),
 		m_session(GetContext(), "trading", conf),
 		m_nextOrderId(1),
 		m_ordersCountReportsCounter(0),
@@ -235,11 +236,15 @@ void FixTrading::NotifyOrderUpdate(
 	Assert(timeMeasurement);
 
 	timeMeasurement.Add(TimeMeasurement::TSM_ORDER_REPLY_RECEIVED, replyTime);
+	const std::string lastShares
+		= updateMessage.get(fix::FIX40::Tags::LastShares);
+	const std::string lastQty
+		= updateMessage.get(fix::FIX41::Tags::LeavesQty);
 	callback(
 		orderId,
 		status,
-		updateMessage.getInt32(fix::FIX40::Tags::LastShares),
-		updateMessage.getInt32(fix::FIX41::Tags::LeavesQty),
+		boost::lexical_cast<Qty>(lastShares),
+		boost::lexical_cast<Qty>(lastQty),
 		updateMessage.getDouble(fix::FIX40::Tags::AvgPx));
 	if (isOrderCompleted) {
 		FlushRemovedOrders();
@@ -254,6 +259,7 @@ namespace {
 				const Security &security,
 				const Currency &currency,
 				const Qty &qty,
+				const std::string &account,
 				fix::Message &message) {
 		message.set(
 			fix::FIX40::Tags::ClOrdID,
@@ -268,6 +274,9 @@ namespace {
 			fix::Timestamp::utc(),
 			fix::TimestampFormat::YYYYMMDDHHMMSSMsec);
 		message.set(fix::FIX40::Tags::OrderQty, qty);
+		if (!account.empty()) {
+			message.set(fix::FIX40::Tags::Account, account);
+		}
 	}
 }
 
@@ -278,20 +287,8 @@ fix::Message FixTrading::CreateOrderMessage(
 			const Qty &qty) {
 	// Creates order FIX-message and sets common fields.
 	fix::Message result("D", m_session.GetFixVersion());
-	FillOrderMessage(orderId, security, currency, qty, result);
+	FillOrderMessage(orderId, security, currency, qty, m_account, result);
 	return std::move(result);
-}
-
-fix::Message FixTrading::CreateMarketOrderMessage(
-			const OrderId &orderId,	
-			const Security &security,
-			const Currency &currency,
-			const Qty &qty) {
-	fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
-	order.set(
-		fix::FIX40::Tags::OrdType,
-		fix::FIX41::Values::OrdType::Forex_Market);
-	return std::move(order);
 }
 
 fix::Message & FixTrading::GetPreallocatedOrderMessage(
@@ -310,6 +307,7 @@ fix::Message & FixTrading::GetPreallocatedOrderMessage(
 		security,
 		currency,
 		qty,
+		m_account,
 		*m_preallocated.orderMessage);
 	return *m_preallocated.orderMessage;
 }

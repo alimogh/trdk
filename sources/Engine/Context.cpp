@@ -116,11 +116,11 @@ public:
 
 	Context &context;
 
-	SubscriptionsManager subscriptionsManager;
-
 	Strategies strategies;
 	Observers observers;
 	Services services;
+
+	SubscriptionsManager subscriptionsManager;
 
 public:
 

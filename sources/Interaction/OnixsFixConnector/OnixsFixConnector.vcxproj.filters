@@ -33,6 +33,9 @@
     <ClCompile Include="HotspotTrading.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FxAllTrading.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OnixsFixConnector.rc">

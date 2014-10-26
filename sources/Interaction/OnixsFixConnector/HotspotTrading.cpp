@@ -120,6 +120,21 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		}
 
+	protected:
+
+		fix::Message CreateMarketOrderMessage(
+					const OrderId &orderId,	
+					const Security &security,
+					const Currency &currency,
+					const Qty &qty) {
+			fix::Message order
+				= CreateOrderMessage(orderId, security, currency, qty);
+			order.set(
+				fix::FIX40::Tags::OrdType,
+				fix::FIX41::Values::OrdType::Forex_Market);
+			return std::move(order);
+		}
+
 	};
 
 } } }
