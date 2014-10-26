@@ -196,16 +196,12 @@ void FixSession::Connect(
 			&customLogonMessage,
 			resetSeqNumFlag);
 	} catch (const fix::Exception &ex) {
-		m_session.reset();
 		GetLog().Error(
 			"Failed to connect to FIX Server (%1%): \"%2%\".",
 			boost::make_tuple(
 				boost::cref(m_type),
 				ex.what()));
 		throw ConnectError("Failed to connect to FIX Server");
-	} catch (...) {
-		m_session.reset();
-		throw;
 	}
 	
 	GetLog().Info("Connected to FIX Server (%1%).", m_type);

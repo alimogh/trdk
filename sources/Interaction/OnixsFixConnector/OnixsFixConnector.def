@@ -1,5 +1,9 @@
 
 EXPORTS
+	
 	CreateCurrenexTrading
 	CreateCurrenexStream
+	
 	CreateHotspotTrading
+
+	CreateFxAllTrading

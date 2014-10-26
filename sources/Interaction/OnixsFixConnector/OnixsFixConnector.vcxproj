@@ -330,6 +330,7 @@
     <ClCompile Include="CurrenexStream.cpp" />
     <ClCompile Include="CurrenexTrading.cpp" />
     <ClCompile Include="FixTrading.cpp" />
+    <ClCompile Include="FxAllTrading.cpp" />
     <ClCompile Include="HotspotTrading.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
