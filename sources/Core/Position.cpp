@@ -693,14 +693,15 @@ public:
 			logTag,
 			[this, action]() -> boost::format {
 				boost::format message(
-					"%5%\t%1%\t%2%\t%6%\t%3%\tqty=%4%");
+					"%7%\t%5%\t%1%\t%2%\t%6%\t%3%\tqty=%4%");
 				message
 					%	m_security
 					%	m_position.GetTypeStr()
 					%	m_tag
 					%	m_position.GetPlanedQty()
 					%	m_position.GetTradeSystem().GetTag()
-					%	action;
+					%	action
+					%	m_id;
 				return std::move(message);
 			});
 
