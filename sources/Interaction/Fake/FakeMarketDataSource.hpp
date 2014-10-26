@@ -110,6 +110,8 @@ namespace trdk { namespace Interaction { namespace Fake {
 	private:
 
 		boost::thread_group m_threads;
+		boost::atomic_bool m_stopFlag;
+
 		std::list<boost::shared_ptr<Security>> m_securityList;
 
 	};

@@ -22,15 +22,20 @@ Fake::MarketDataSource::MarketDataSource(
 			Context &context,
 			const std::string &tag,
 			const IniSectionRef &)
-		: Base(context, tag) {
+		: Base(context, tag),
+		m_stopFlag(false) {
 	//...//
 }
 
 Fake::MarketDataSource::~MarketDataSource() {
-	//...//
+	m_stopFlag = true;
+	m_threads.join_all();
 }
 
 void Fake::MarketDataSource::Connect(const IniSectionRef &) {
+	if (m_threads.size()) {
+		return;
+	}
 	m_threads.create_thread([this](){NotificationThread();});
 }
 
@@ -53,7 +58,7 @@ void Fake::MarketDataSource::NotificationThread() {
 		const double ask = 13.99;					
 		int correction = 1;
 
-		for ( ; ; ) {
+		while (!m_stopFlag) {
 
 		
 			const auto &now = pt::second_clock::local_time();
@@ -85,7 +90,10 @@ void Fake::MarketDataSource::NotificationThread() {
 				bar.time = now;
 			}
 
-			boost::this_thread::sleep(pt::milliseconds(500));
+			if (m_stopFlag) {
+				break;
+			}
+			boost::this_thread::sleep(pt::milliseconds(1));
 		
 		}
 	} catch (...) {
