@@ -97,6 +97,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 							reason,
 							"maximum operation limit exceeded"));
 					return;
+				} else if (execType == fix::FIX41::Values::ExecType::Expired) {
+
+					if (ordStatus == fix::FIX40::Values::OrdStatus::Expired) {
+						OnOrderRejected(message, replyTime, true);
+						return;
+					}
+
 				}
 		
 			} else if (execTransType == fix::FIX40::Values::ExecTransType::Status) {
