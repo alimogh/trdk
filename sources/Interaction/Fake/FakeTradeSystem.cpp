@@ -12,6 +12,8 @@
 #include "FakeTradeSystem.hpp"
 #include "Core/Security.hpp"
 
+namespace pt = boost::posix_time;
+
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Interaction;
@@ -131,6 +133,7 @@ private:
 						? &m_orders2
 						: &m_orders1;
 				}
+				boost::this_thread::sleep(pt::milliseconds(4));
 				Assert(!orders->empty());
 				foreach (const Order &order, *orders) {
 					Assert(order.callback);
