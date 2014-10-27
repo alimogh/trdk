@@ -78,7 +78,7 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 
 				m_cache.asks.clear();
 
-			} else {
+			} else if (!m_cache.bids.empty())  {
 
 				AssertEq(0, m_cache.asks.size());
 				
