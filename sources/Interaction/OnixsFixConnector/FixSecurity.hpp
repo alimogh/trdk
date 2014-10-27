@@ -14,7 +14,7 @@
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
-	class CurrenexSecurity : public trdk::Security {
+	class FixSecurity : public trdk::Security {
 
 	public:
 
@@ -22,7 +22,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	public:
 
-		explicit CurrenexSecurity(
+		explicit FixSecurity(
 					Context &context,
 					const Lib::Symbol &symbol,
 					const trdk::MarketDataSource &source)

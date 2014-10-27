@@ -230,6 +230,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				const Qty &)
 			= 0;
 
+	protected:
+
+		virtual Qty ParseLastShares(const OnixS::FIX::Message &) const;
+		virtual Qty ParseLeavesQty(const OnixS::FIX::Message &) const;
+
 	private:
 
 		//! Takes next free order ID.

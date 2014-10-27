@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2014/10/27 20:28:35
+ *   Created: 2014/10/27 20:28:26
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -19,16 +19,22 @@ using namespace trdk::Interaction::OnixsFixConnector;
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
-	class CurrenexStream : public FixStream {
+	class FxAllStream : public FixStream {
 
 	public:
 
-		explicit CurrenexStream(
+		explicit FxAllStream(
 					Context &context,
 					const std::string &tag,
 					const IniSectionRef &conf)
 				: FixStream(context, tag, conf) {
 			//...//
+		}
+
+	protected:
+
+		virtual Qty ParseMdEntrySize(const fix::GroupInstance &entry) const {
+			return Qty(entry.getDouble(fix::FIX42::Tags::MDEntrySize));
 		}
 
 	};
@@ -39,12 +45,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 boost::shared_ptr<MarketDataSource>
-CreateCurrenexStream(
+CreateFxAllStream(
 			Context &context,
 			const std::string &tag,
 			const IniSectionRef &configuration) {
 	return boost::shared_ptr<MarketDataSource>(
-		new CurrenexStream(context, tag, configuration));
+		new FxAllStream(context, tag, configuration));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

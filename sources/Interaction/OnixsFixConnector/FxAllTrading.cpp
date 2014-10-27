@@ -70,6 +70,16 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			return std::move(order);
 		}
 
+	protected:
+
+		virtual Qty ParseLastShares(const fix::Message &message) const {
+			return Qty(message.getDouble(fix::FIX40::Tags::LastShares));
+		}
+
+		virtual Qty ParseLeavesQty(const fix::Message &message) const {
+			return Qty(message.getInt32(fix::FIX41::Tags::LeavesQty));
+		}
+
 	private:
 
 		void OnExecutionReport(

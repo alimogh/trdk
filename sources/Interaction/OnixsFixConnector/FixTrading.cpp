@@ -236,15 +236,11 @@ void FixTrading::NotifyOrderUpdate(
 	Assert(timeMeasurement);
 
 	timeMeasurement.Add(TimeMeasurement::TSM_ORDER_REPLY_RECEIVED, replyTime);
-	const std::string lastShares
-		= updateMessage.get(fix::FIX40::Tags::LastShares);
-	const std::string lastQty
-		= updateMessage.get(fix::FIX41::Tags::LeavesQty);
 	callback(
 		orderId,
 		status,
-		boost::lexical_cast<Qty>(lastShares),
-		boost::lexical_cast<Qty>(lastQty),
+		ParseLastShares(updateMessage),
+		ParseLeavesQty(updateMessage),
 		updateMessage.getDouble(fix::FIX40::Tags::AvgPx));
 	if (isOrderCompleted) {
 		FlushRemovedOrders();
@@ -762,4 +758,10 @@ void FixTrading::OnOrderPartialFill(
 		replyTime);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+Qty FixTrading::ParseLastShares(const fix::Message &message) const {
+	return message.getInt32(fix::FIX40::Tags::LastShares);
+}
+
+Qty FixTrading::ParseLeavesQty(const fix::Message &message) const {
+	return message.getInt32(fix::FIX41::Tags::LeavesQty);
+}

@@ -326,10 +326,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="FixSession.cpp" />
     <ClCompile Include="CurrenexStream.cpp" />
+    <ClCompile Include="FixSession.cpp" />
     <ClCompile Include="CurrenexTrading.cpp" />
+    <ClCompile Include="FixStream.cpp" />
     <ClCompile Include="FixTrading.cpp" />
+    <ClCompile Include="FxAllStream.cpp" />
     <ClCompile Include="FxAllTrading.cpp" />
     <ClCompile Include="HotspotTrading.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -349,11 +351,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api.h" />
-    <ClInclude Include="CurrenexStream.hpp" />
-    <ClInclude Include="CurrenexSecurity.hpp" />
     <ClInclude Include="DisableOnixsFixEngineWarningsBegin.h" />
     <ClInclude Include="DisableOnixsFixEngineWarningsEnd.h" />
+    <ClInclude Include="FixSecurity.hpp" />
     <ClInclude Include="FixSession.hpp" />
+    <ClInclude Include="FixStream.hpp" />
     <ClInclude Include="FixTrading.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Prec.hpp" />
