@@ -84,10 +84,18 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					OnOrderRejected(
 						message,
 						replyTime,
+						reason,
 						boost::istarts_with(
 							reason,
 							"orders are throttled to "));
 					return;
+
+				} else if (execType == fix::FIX41::Values::ExecType::Expired) {
+
+					if (ordStatus == fix::FIX40::Values::OrdStatus::Expired) {
+						OnOrderRejected(message, replyTime, "expired", true);
+						return;
+					}
 				
 				} else if (execType == "F") {
 				
