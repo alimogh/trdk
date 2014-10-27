@@ -714,6 +714,7 @@ void FixTrading::OnOrderCanceled(
 void FixTrading::OnOrderRejected(
 			const fix::Message &execReport,
 			const TimeMeasurement::Milestones::TimePoint &replyTime,
+			const std::string &reason,
 			bool isMaxOperationLimitExceeded) {
 
 	AssertEq("8", execReport.type());
@@ -721,7 +722,6 @@ void FixTrading::OnOrderRejected(
 		fix::FIX41::Values::ExecType::Rejected
 			== execReport.get(fix::FIX41::Tags::ExecType));
 
-	const std::string &reason = execReport.get(fix::FIX40::Tags::Text);
 	GetLog().Error(
 		"FIX Server (%1%) Rejected order %2%: \"%3%\".",
 		boost::make_tuple(
