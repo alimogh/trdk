@@ -5,8 +5,6 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>Api.h</itemPath>
-      <itemPath>CurrenexSecurity.hpp</itemPath>
-      <itemPath>CurrenexStream.hpp</itemPath>
       <itemPath>DisableOnixsFixEngineWarningsBegin.h</itemPath>
       <itemPath>DisableOnixsFixEngineWarningsEnd.h</itemPath>
       <itemPath>FixSession.hpp</itemPath>
@@ -19,7 +17,9 @@
       <itemPath>CurrenexStream.cpp</itemPath>
       <itemPath>CurrenexTrading.cpp</itemPath>
       <itemPath>FixSession.cpp</itemPath>
+      <itemPath>FixStream.cpp</itemPath>
       <itemPath>FixTrading.cpp</itemPath>
+      <itemPath>FxAllStream.cpp</itemPath>
       <itemPath>FxAllTrading.cpp</itemPath>
       <itemPath>HotspotTrading.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
@@ -104,11 +104,7 @@
       </compileType>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="CurrenexSecurity.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="CurrenexStream.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="CurrenexStream.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="CurrenexTrading.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -123,11 +119,15 @@
       </item>
       <item path="FixSession.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="FixStream.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="FixTrading.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="FixTrading.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Fwd.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="FxAllStream.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="FxAllTrading.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -208,11 +208,7 @@
       </compileType>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="CurrenexSecurity.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="CurrenexStream.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="CurrenexStream.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="CurrenexTrading.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -227,11 +223,15 @@
       </item>
       <item path="FixSession.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="FixStream.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="FixTrading.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="FixTrading.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Fwd.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="FxAllStream.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="FxAllTrading.cpp" ex="false" tool="1" flavor2="0">
       </item>

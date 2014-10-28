@@ -38,7 +38,9 @@ OBJECTFILES= \
 	${OBJECTDIR}/CurrenexStream.o \
 	${OBJECTDIR}/CurrenexTrading.o \
 	${OBJECTDIR}/FixSession.o \
+	${OBJECTDIR}/FixStream.o \
 	${OBJECTDIR}/FixTrading.o \
+	${OBJECTDIR}/FxAllStream.o \
 	${OBJECTDIR}/FxAllTrading.o \
 	${OBJECTDIR}/HotspotTrading.o
 
@@ -88,10 +90,20 @@ ${OBJECTDIR}/FixSession.o: FixSession.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FixSession.o FixSession.cpp
 
+${OBJECTDIR}/FixStream.o: FixStream.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FixStream.o FixStream.cpp
+
 ${OBJECTDIR}/FixTrading.o: FixTrading.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FixTrading.o FixTrading.cpp
+
+${OBJECTDIR}/FxAllStream.o: FxAllStream.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxAllStream.o FxAllStream.cpp
 
 ${OBJECTDIR}/FxAllTrading.o: FxAllTrading.cpp 
 	${MKDIR} -p ${OBJECTDIR}
