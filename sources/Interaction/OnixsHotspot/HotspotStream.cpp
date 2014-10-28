@@ -40,7 +40,11 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 				m_handler.subscribeTickerForAllCurrencyPairs();
 				m_handler.disconnect();
 			} catch (...) {
-				AssertFailNoException();
+				Log::RegisterUnhandledException(
+					__FUNCTION__,
+					__FILE__,
+					__LINE__,
+					false);
 			}
 		}
 
