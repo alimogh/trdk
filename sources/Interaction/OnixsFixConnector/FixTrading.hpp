@@ -164,6 +164,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		virtual void CancelOrder(OrderId);
 		virtual void CancelAllOrders(trdk::Security &);
 
+		virtual void Test();
+
 	public:
 
 		virtual void onStateChange(

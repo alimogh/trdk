@@ -290,6 +290,28 @@ private:
 		OrderId m_orderId;
 	};
 
+	class TestCommand
+		: public Command,
+		public boost::enable_shared_from_this<TestCommand> {
+	public:
+		explicit TestCommand(TradeSystem &tradeSystem)
+				: Command(tradeSystem) {
+			//...//
+		}
+		virtual ~TestCommand() {
+			//...//
+		}
+		virtual void ParseField(const std::string &) {
+			throw Exception("Unknown command");
+		}
+		virtual std::string Validate() const {
+			return "";
+		}
+		virtual void Execute() {
+			m_tradeSystem.Test();
+		}
+	};
+
 public:
 
 	explicit Implementation(const fs::path &cmdFile, TradeSystem &tradeSystem)
@@ -351,7 +373,7 @@ private:
 
 		size_t seqnumber = 0;
 		boost::shared_ptr<Command> command;
-		const char *commandsHelp = "\"BUY\", \"SELL\" or \"CANCEL\"";
+		const char *commandsHelp = "\"BUY\", \"SELL\", \"CANCEL\" or \"TEST\"";
 	
 		typedef boost::split_iterator<const char *> It;
 		const auto &end = It();
@@ -382,7 +404,8 @@ private:
 
 				if (seqnumber <= 0) {
 					m_tradeSystem.GetLog().Error(
-						"Terminal: Failed to parse seqnumber \"%1%\" at %2%:%3%."
+						"Terminal: Failed to parse seqnumber"
+							" \"%1%\" at %2%:%3%."
 							" Must be a positive value greater than zero.",
 						boost::make_tuple(
 							boost::cref(field),
@@ -414,6 +437,8 @@ private:
 					command.reset(new SellCommand(m_tradeSystem));
 				} else if (boost::iequals(field, "cancel")) {
 					command.reset(new CancelCommand(m_tradeSystem));
+				} else if (boost::iequals(field, "test")) {
+					command.reset(new TestCommand(m_tradeSystem));
 				} else {
 					m_tradeSystem.GetLog().Error(
 						"Terminal: Failed to parse command \"%1%\" at %2%:%3%."

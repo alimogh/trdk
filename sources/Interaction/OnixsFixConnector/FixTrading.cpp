@@ -650,6 +650,15 @@ void FixTrading::CancelAllOrders(trdk::Security &) {
 	throw Error("FixTrading::CancelAllOrders not implemented");
 }
 
+void FixTrading::Test() {
+	fix::Message message("1", m_session.GetFixVersion());
+	message.set(
+		fix::FIX40::Tags::TestReqID,
+		TRDK_BUILD_IDENTITY);
+	m_session.Get().send(&message);
+	GetLog().Info("Test request sent: \"%1%\".", message);
+}
+
 void FixTrading::onStateChange(
 			fix::SessionState::Enum newState,
 			fix::SessionState::Enum prevState,

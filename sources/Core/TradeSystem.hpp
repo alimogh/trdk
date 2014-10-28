@@ -271,6 +271,8 @@ namespace trdk {
 		virtual void CancelOrder(OrderId) = 0;
 		virtual void CancelAllOrders(trdk::Security &) = 0;
 
+		virtual void Test();
+
 	protected:
 
 		virtual void CreateConnection(const trdk::Lib::IniSectionRef &) = 0;

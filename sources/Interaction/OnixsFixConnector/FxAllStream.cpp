@@ -31,6 +31,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			//...//
 		}
 
+		virtual ~FxAllStream() {
+			//...//
+		}
+
 	protected:
 
 		virtual Qty ParseMdEntrySize(const fix::GroupInstance &entry) const {

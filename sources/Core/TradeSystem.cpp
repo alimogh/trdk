@@ -184,4 +184,9 @@ void TradeSystem::Connect(const IniSectionRef &conf) {
 	CreateConnection(conf);
 }
 
+void TradeSystem::Test() {
+	throw MethodDoesNotImplementedError(
+		"Trading system does not support testing");
+}
+
 //////////////////////////////////////////////////////////////////////////
