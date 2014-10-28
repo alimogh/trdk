@@ -16,7 +16,7 @@
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	//! FIX price stream connection with OnixS C++ FIX Engine.
-	class CurrenexStream
+	class FixStream
 			: public trdk::MarketDataSource,
 			public OnixS::FIX::ISessionListener {
 
@@ -26,11 +26,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	public:
 
-		explicit CurrenexStream(
+		explicit FixStream(
 					Context &,
 					const std::string &tag,
 					const Lib::IniSectionRef &);
-		virtual ~CurrenexStream();
+		virtual ~FixStream();
 
 	public:
 
@@ -65,17 +65,19 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	protected:
 
-		CurrenexSecurity * FindRequestSecurity(const OnixS::FIX::Message &);
-		const CurrenexSecurity * FindRequestSecurity(
+		FixSecurity * FindRequestSecurity(const OnixS::FIX::Message &);
+		const FixSecurity * FindRequestSecurity(
 					const OnixS::FIX::Message &)
 				const;
 		
 		std::string GetRequestSymbolStr(const OnixS::FIX::Message &) const;
 
+		virtual Qty ParseMdEntrySize(const OnixS::FIX::GroupInstance &) const;
+
 	private:
 
 		FixSession m_session;
-		std::vector<boost::shared_ptr<CurrenexSecurity>> m_securities;
+		std::vector<boost::shared_ptr<FixSecurity>> m_securities;
 
 	};
 

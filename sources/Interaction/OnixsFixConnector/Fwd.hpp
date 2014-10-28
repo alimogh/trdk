@@ -12,6 +12,6 @@
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
-	class CurrenexSecurity;
+	class FixSecurity;
 
 } } }
