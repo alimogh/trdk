@@ -73,11 +73,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	protected:
 
 		virtual Qty ParseLastShares(const fix::Message &message) const {
-			return Qty(message.getDouble(fix::FIX40::Tags::LastShares));
+			return Qty(message.getDouble(fix::FIX43::Tags::LastQty));
 		}
 
 		virtual Qty ParseLeavesQty(const fix::Message &message) const {
-			return Qty(message.getInt32(fix::FIX41::Tags::LeavesQty));
+			return Qty(message.getDouble(fix::FIX41::Tags::LeavesQty));
 		}
 
 	private:
