@@ -138,10 +138,12 @@ OrderId FixTrading::GetMessageOrderId(const fix::Message &message) const {
 }
 
 OrderId FixTrading::TakeOrderId(
-			const Security &security,
+			Security &security,
 			const Currency &currency,
 			const Qty &qty,
 			bool isSell,
+			const OrderType &type,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &callback,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 	const Order order = {
@@ -151,6 +153,8 @@ OrderId FixTrading::TakeOrderId(
 		currency,
 		qty,
 		isSell,
+		type,
+		params,
 		callback,
 		timeMeasurement
 	};
@@ -216,8 +220,7 @@ void FixTrading::NotifyOrderUpdate(
 	
 	const auto &orderId = GetMessageOrderId(updateMessage);
 	
-	OrderStatusUpdateSlot callback;
-	TimeMeasurement::Milestones timeMeasurement;
+	Order orderCopy;
 	{
 		const OrdersReadLock lock(m_ordersMutex);
 		Order *const order = FindOrder(orderId);
@@ -228,25 +231,32 @@ void FixTrading::NotifyOrderUpdate(
 			return;
 		}
 		Assert(!order->isRemoved);
-		timeMeasurement = order->timeMeasurement;
 		order->isRemoved = isOrderCompleted;
-		callback = order->callback;
+		orderCopy = *order;
 	}
-	Assert(callback);
-	Assert(timeMeasurement);
 
-	timeMeasurement.Add(TimeMeasurement::TSM_ORDER_REPLY_RECEIVED, replyTime);
-	callback(
-		orderId,
-		status,
-		ParseLastShares(updateMessage),
-		ParseLeavesQty(updateMessage),
-		updateMessage.getDouble(fix::FIX40::Tags::AvgPx));
+	orderCopy.timeMeasurement.Add(
+		TimeMeasurement::TSM_ORDER_REPLY_RECEIVED,
+		replyTime);
+	OnOrderStateChanged(updateMessage, status, orderCopy);
 	if (isOrderCompleted) {
 		FlushRemovedOrders();
 	}
-	timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_REPLY_PROCESSED);
+	orderCopy.timeMeasurement.Measure(
+		TimeMeasurement::TSM_ORDER_REPLY_PROCESSED);
 
+}
+
+void FixTrading::OnOrderStateChanged(
+			const fix::Message &message,
+			const OrderStatus &status,
+			const Order &order) {
+	order.callback(
+		order.id,
+		status,
+		ParseLastShares(message),
+		ParseLeavesQty(message),
+		message.getDouble(fix::FIX40::Tags::AvgPx));
 }
 
 namespace {
@@ -350,7 +360,7 @@ OrderId FixTrading::SellAtMarketPrice(
 			trdk::Security &security,
 			const trdk::Lib::Currency &currency,
 			trdk::Qty qty,
-			const trdk::OrderParams &,
+			const trdk::OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -359,6 +369,8 @@ OrderId FixTrading::SellAtMarketPrice(
 		currency,
 		qty,
 		true,
+		ORDER_TYPE_DAY_MARKET,
+		params,
 		callback,
 		timeMeasurement);
 	try {
@@ -378,7 +390,7 @@ OrderId FixTrading::Sell(
 			const trdk::Lib::Currency &currency,
 			trdk::Qty qty,
 			trdk::ScaledPrice price,
-			const trdk::OrderParams &,
+			const trdk::OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -387,6 +399,8 @@ OrderId FixTrading::Sell(
 		currency,
 		qty,
 		true,
+		ORDER_TYPE_DAY_LIMIT,
+		params,
 		callback,
 		timeMeasurement);
 	try {
@@ -421,7 +435,7 @@ OrderId FixTrading::SellImmediatelyOrCancel(
 			const trdk::Lib::Currency &currency,
 			const trdk::Qty &qty,
 			const trdk::ScaledPrice &price,
-			const trdk::OrderParams &,
+			const trdk::OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -430,6 +444,8 @@ OrderId FixTrading::SellImmediatelyOrCancel(
 		currency,
 		qty,
 		true,
+		ORDER_TYPE_IOC_LIMIT,
+		params,
 		callback,
 		timeMeasurement);
 	try {
@@ -451,7 +467,7 @@ OrderId FixTrading::SellAtMarketPriceImmediatelyOrCancel(
 			trdk::Security &security,
 			const trdk::Lib::Currency &currency,
 			const trdk::Qty &qty,
-			const trdk::OrderParams &,
+			const trdk::OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -461,6 +477,8 @@ OrderId FixTrading::SellAtMarketPriceImmediatelyOrCancel(
 			currency,
 			qty,
 			true,
+			ORDER_TYPE_IOC_MARKET,
+			params,
 			callback,
 			timeMeasurement),
 		&security,
@@ -482,7 +500,7 @@ OrderId FixTrading::BuyAtMarketPrice(
 			trdk::Security &security,
 			const trdk::Lib::Currency &currency,
 			trdk::Qty qty,
-			const trdk::OrderParams &,
+			const trdk::OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -491,6 +509,8 @@ OrderId FixTrading::BuyAtMarketPrice(
 		currency,
 		qty,
 		false,
+		ORDER_TYPE_DAY_MARKET,
+		params,
 		callback,
 		timeMeasurement);
 	try {
@@ -510,7 +530,7 @@ OrderId FixTrading::Buy(
 			const trdk::Lib::Currency &currency,
 			trdk::Qty qty,
 			trdk::ScaledPrice price,
-			const trdk::OrderParams &,
+			const trdk::OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -519,6 +539,8 @@ OrderId FixTrading::Buy(
 		currency,
 		qty,
 		false,
+		ORDER_TYPE_DAY_LIMIT,
+		params,
 		callback,
 		timeMeasurement);
 	try {
@@ -553,7 +575,7 @@ OrderId FixTrading::BuyImmediatelyOrCancel(
 			const trdk::Lib::Currency &currency,
 			const trdk::Qty &qty,
 			const trdk::ScaledPrice &price,
-			const trdk::OrderParams &,
+			const trdk::OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -562,6 +584,8 @@ OrderId FixTrading::BuyImmediatelyOrCancel(
 		currency,
 		qty,
 		false,
+		ORDER_TYPE_IOC_LIMIT,
+		params,
 		callback,
 		timeMeasurement);
 	try {
@@ -583,7 +607,7 @@ OrderId FixTrading::BuyAtMarketPriceImmediatelyOrCancel(
 			trdk::Security &security,
 			const trdk::Lib::Currency &currency,
 			const trdk::Qty &qty,
-			const trdk::OrderParams &,
+			const trdk::OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -593,6 +617,8 @@ OrderId FixTrading::BuyAtMarketPriceImmediatelyOrCancel(
 			currency,
 			qty,
 			false,
+			ORDER_TYPE_IOC_MARKET,
+			params,
 			callback,
 			timeMeasurement),
 		&security,
@@ -756,9 +782,6 @@ void FixTrading::OnOrderPartialFill(
 			const fix::Message &execReport,
 			const TimeMeasurement::Milestones::TimePoint &replyTime) {
 	AssertEq("8", execReport.type());
-	Assert(
-		fix::FIX41::Values::ExecType::Fill
-			== execReport.get(fix::FIX41::Tags::ExecType));
 	NotifyOrderUpdate(
 		execReport,
 		ORDER_STATUS_FILLED,

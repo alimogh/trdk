@@ -45,7 +45,14 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			: public trdk::TradeSystem,
 			public OnixS::FIX::ISessionListener {
 
-	private:
+	protected:
+
+		enum OrderType {
+			ORDER_TYPE_DAY_MARKET,
+			ORDER_TYPE_DAY_LIMIT,
+			ORDER_TYPE_IOC_MARKET,
+			ORDER_TYPE_IOC_LIMIT,
+		};
 
 		struct Order {
 			//! Order must be removed from storage.
@@ -53,13 +60,17 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			  */
 			bool isRemoved;
 			OrderId id;
-			const trdk::Security *security;
+			trdk::Security *security;
 			trdk::Lib::Currency currency;
 			trdk::Qty qty;
 			bool isSell;
+			OrderType type;
+			OrderParams params;
 			OrderStatusUpdateSlot callback;
 			Lib::TimeMeasurement::Milestones timeMeasurement;
 		};
+
+	private:
 
 		struct OrderToSend {
 			OrderId id;
@@ -232,6 +243,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				const Qty &)
 			= 0;
 
+		virtual void OnOrderStateChanged(
+				const OnixS::FIX::Message &,
+				const OrderStatus &,
+				const Order &);
+
 	protected:
 
 		virtual Qty ParseLastShares(const OnixS::FIX::Message &) const;
@@ -241,10 +257,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		//! Takes next free order ID.
 		OrderId TakeOrderId(
-					const Security &security,
+					Security &security,
 					const Lib::Currency &currency,
 					const Qty &qty,
 					bool isSell,
+					const OrderType &,
+					const OrderParams &,
 					const OrderStatusUpdateSlot &,
 					const Lib::TimeMeasurement::Milestones &);
 		//! Deletes unsent order (at error).

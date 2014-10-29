@@ -217,7 +217,6 @@ public:
 			Assert(!m_position.IsCompleted());
 			AssertNe(0, orderId);
 			AssertNe(0, m_opened.orderId);
-			AssertEq(m_opened.orderId, orderId);
 			AssertEq(0, m_closed.price.total);
 			AssertEq(0, m_closed.price.count);
 			Assert(m_opened.time.is_not_a_date_time());
@@ -226,6 +225,11 @@ public:
 			AssertEq(0, m_closed.qty);
 			Assert(m_opened.hasOrder);
 			Assert(!m_closed.hasOrder);
+
+			if (m_opened.orderId != orderId) {
+				ReportOrderIdReplace("open", m_closed.orderId, orderId);
+				m_closed.orderId = orderId;
+			}
 
 			switch (orderStatus) {
 				default:
@@ -399,10 +403,14 @@ public:
 			AssertLe(m_closed.qty, m_opened.qty);
 			AssertNe(orderId, 0);
 			AssertNe(m_closed.orderId, 0);
-			AssertEq(m_closed.orderId, orderId);
 			AssertNe(m_opened.orderId, orderId);
 			Assert(!m_opened.hasOrder);
 			Assert(m_closed.hasOrder);
+
+			if (m_closed.orderId != orderId) {
+				ReportOrderIdReplace("close", m_closed.orderId, orderId);
+				m_closed.orderId = orderId;
+			}
 
 			switch (orderStatus) {
 				default:
@@ -606,6 +614,32 @@ public:
 					%	m_position.HasActiveOpenOrders()
 					%	m_position.HasActiveCloseOrders()
 					%	m_id;
+				return std::move(message);
+			});
+	}
+
+	void ReportOrderIdReplace(
+				const char *eventDesc,
+				const OrderId &prevOrdeId,
+				const OrderId &newOrdeId)
+			const
+			throw() {
+		m_security.GetContext().GetLog().TradingEx(
+			logTag,
+			[&]() -> boost::format {
+				boost::format message(
+					"%1%\t%2%\t%3%\t%4%\treplacing-%7%-order\t%5%\t%6%"
+						"\tbid=%8%/%9%\task=%10%/%11%");
+				message
+					%	m_id
+					%	m_position.GetTradeSystem().GetTag()
+					%	m_security.GetSymbol()
+					%	m_position.GetTypeStr()
+					%	prevOrdeId
+					%	newOrdeId
+					%	eventDesc
+					%	m_security.GetBidPrice() % m_security.GetBidQty()
+					%	m_security.GetAskPrice() % m_security.GetAskQty();
 				return std::move(message);
 			});
 	}

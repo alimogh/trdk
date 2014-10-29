@@ -10,6 +10,9 @@
 
 #include "Prec.hpp"
 #include "FixTrading.hpp"
+#ifdef DEV_VER
+#	include "Core/Security.hpp"
+#endif
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -22,6 +25,10 @@ namespace fix = OnixS::FIX;
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	class FxAllTrading : public FixTrading {
+
+	public:
+
+		typedef FixTrading Base;
 
 	public:
 
@@ -73,11 +80,59 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	protected:
 
 		virtual Qty ParseLastShares(const fix::Message &message) const {
-			return Qty(message.getDouble(fix::FIX43::Tags::LastQty));
+			return message.contain(fix::FIX43::Tags::LastQty)
+				?	Qty(message.getDouble(fix::FIX43::Tags::LastQty))
+				:	0;
 		}
 
 		virtual Qty ParseLeavesQty(const fix::Message &message) const {
 			return Qty(message.getDouble(fix::FIX41::Tags::LeavesQty));
+		}
+
+		virtual void OnOrderStateChanged(
+					const fix::Message &message,
+					const OrderStatus &status,
+					const Order &order) {
+			
+			if (
+					order.type != ORDER_TYPE_DAY_MARKET
+					|| status != ORDER_STATUS_CANCELLED) {
+				Base::OnOrderStateChanged(message, status, order);
+				return;
+			}
+
+#			ifdef DEV_VER
+				GetLog().TradingEx(
+					GetTag(),
+					[&order]() -> boost::format {
+						boost::format message(
+							"Emulating \"day-market\" order"
+								" by resending order %1%"
+								" for \"%2%\" with qty %3%...");
+							message
+								% order.id
+								% order.security->GetSymbol()
+								% order.qty;
+						return std::move(message);
+					});
+#			endif
+			
+			if (order.isSell) {
+				SellAtMarketPrice(
+					*order.security,
+					order.currency,
+					order.qty,
+					order.params,
+					order.callback);
+			} else {
+				BuyAtMarketPrice(
+					*order.security,
+					order.currency,
+					order.qty,
+					order.params,
+					order.callback);
+			}
+		
 		}
 
 	private:
