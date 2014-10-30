@@ -50,9 +50,16 @@ private:
 	class OrderCommand
 		: public Command,
 		public boost::enable_shared_from_this<OrderCommand> {
+	protected:
+		enum OrderTime {
+			ORDER_TIME_NOT_SET,
+			ORDER_TIME_IOC,
+			ORDER_TIME_DAY
+		};
 	public:
 		explicit OrderCommand(TradeSystem &tradeSystem)
 				: Command(tradeSystem),
+				m_orderTime(ORDER_TIME_NOT_SET),
 				m_security(nullptr),
 				m_qty(0),
 				m_price(-1.0) {
@@ -71,12 +78,25 @@ private:
 			}
 			std::string cmd = field.substr(0, pos);
 			boost::trim(cmd);
-			if (boost::iequals(cmd, "qty")) {
+			std::string val = field.substr(pos + 1);
+			boost::trim(val);
+			if (boost::iequals(cmd, "time")) {
+				if (m_orderTime != ORDER_TIME_NOT_SET) {
+					throw Exception("Order time already set");
+				}
+				if (boost::iequals(val, "IOC")) {
+					m_orderTime = ORDER_TIME_IOC;
+				} else if (boost::iequals(val, "DAY")) {
+					m_orderTime = ORDER_TIME_DAY;
+				} else {
+					throw Exception("Failed to parse order time");
+				}
+			} else if (boost::iequals(cmd, "qty")) {
 				if (m_qty) {
 					throw Exception("Qty already set");
 				}
 				try {
-					m_qty = boost::lexical_cast<Qty>(field.substr(pos + 1));
+					m_qty = boost::lexical_cast<Qty>(val);
 				} catch (const boost::bad_lexical_cast &) {
 					//...//
 				}
@@ -87,7 +107,6 @@ private:
 				if (m_price >= 0) {
 					throw Exception("Price already set");
 				}
-				const auto &val = field.substr(pos + 1);
 				if (!boost::iequals(val, "MKT")) {
 					try {
 						m_price = boost::lexical_cast<double>(val);
@@ -111,6 +130,8 @@ private:
 				return "No qty set. Ex.: \"qty=10000\".";
 			} else if (m_price < 0) {
 				return "No price set. Ex.: \"price=1.234\".";
+			} else if (m_orderTime == ORDER_TIME_NOT_SET) {
+				return "No order time set. Ex.: \"time=ioc\" or \"time=day\".";
 			}
 			return "";
 		}
@@ -138,16 +159,18 @@ private:
 					double avgPrice) {
 			m_tradeSystem.GetLog().Info(
 				"Terminal: Order reply received:"
-					" order ID = %1%, status = %2%, filled qty = %3%,"
+					" order ID = %1%, status = %6% (%2%), filled qty = %3%,"
 					" remaining qty = %4%, avgPrice = %5%.",
 				boost::make_tuple(
 					boost::cref(orderId),
 					boost::cref(status),
 					filled,
 					remaining,
-					avgPrice));
+					avgPrice,
+					TradeSystem::GetStringStatus(status)));
 		}
 	protected:
+		OrderTime m_orderTime;
 		Security *m_security;
 		Qty m_qty;
 		double m_price;
@@ -166,34 +189,67 @@ private:
 			AssertEq(std::string(), Validate());
 			const OrderParams orderParams;
 			if (Lib::IsZero(m_price)) {
-				m_tradeSystem.SellAtMarketPrice(
-					*m_security,
-					m_security->GetSymbol().GetCashCurrency(),
-					m_qty,
-					orderParams,
-					boost::bind(
-						&SellCommand::OnReply,
-						shared_from_this(),
-						_1,
-						_2,
-						_3,
-						_4,
-						_5));
+				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
+					m_tradeSystem.SellAtMarketPrice(
+						*m_security,
+						m_security->GetSymbol().GetCashCurrency(),
+						m_qty,
+						orderParams,
+						boost::bind(
+							&SellCommand::OnReply,
+							shared_from_this(),
+							_1,
+							_2,
+							_3,
+							_4,
+							_5));
+				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
+					m_tradeSystem.SellAtMarketPriceImmediatelyOrCancel(
+						*m_security,
+						m_security->GetSymbol().GetCashCurrency(),
+						m_qty,
+						orderParams,
+						boost::bind(
+							&SellCommand::OnReply,
+							shared_from_this(),
+							_1,
+							_2,
+							_3,
+							_4,
+							_5));
+				}
 			} else {
-				m_tradeSystem.Sell(
-					*m_security,
-					m_security->GetSymbol().GetCashCurrency(),
-					m_qty,
-					m_security->ScalePrice(m_price),
-					orderParams,
-					boost::bind(
-						&SellCommand::OnReply,
-						shared_from_this(),
-						_1,
-						_2,
-						_3,
-						_4,
-						_5));
+				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
+					m_tradeSystem.Sell(
+						*m_security,
+						m_security->GetSymbol().GetCashCurrency(),
+						m_qty,
+						m_security->ScalePrice(m_price),
+						orderParams,
+						boost::bind(
+							&SellCommand::OnReply,
+							shared_from_this(),
+							_1,
+							_2,
+							_3,
+							_4,
+							_5));
+				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
+					m_tradeSystem.SellImmediatelyOrCancel(
+						*m_security,
+						m_security->GetSymbol().GetCashCurrency(),
+						m_qty,
+						m_security->ScalePrice(m_price),
+						orderParams,
+						boost::bind(
+							&SellCommand::OnReply,
+							shared_from_this(),
+							_1,
+							_2,
+							_3,
+							_4,
+							_5));
+				}
 			}
 		}
 	};
@@ -211,34 +267,67 @@ private:
 			AssertEq(std::string(), Validate());
 			const OrderParams orderParams;
 			if (Lib::IsZero(m_price)) {
-				m_tradeSystem.BuyAtMarketPrice(
-					*m_security,
-					m_security->GetSymbol().GetCashCurrency(),
-					m_qty,
-					orderParams,
-					boost::bind(
-						&BuyCommand::OnReply,
-						shared_from_this(),
-						_1,
-						_2,
-						_3,
-						_4,
-						_5));
+				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
+					m_tradeSystem.BuyAtMarketPrice(
+						*m_security,
+						m_security->GetSymbol().GetCashCurrency(),
+						m_qty,
+						orderParams,
+						boost::bind(
+							&BuyCommand::OnReply,
+							shared_from_this(),
+							_1,
+							_2,
+							_3,
+							_4,
+							_5));
+				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
+					m_tradeSystem.BuyAtMarketPriceImmediatelyOrCancel(
+						*m_security,
+						m_security->GetSymbol().GetCashCurrency(),
+						m_qty,
+						orderParams,
+						boost::bind(
+							&BuyCommand::OnReply,
+							shared_from_this(),
+							_1,
+							_2,
+							_3,
+							_4,
+							_5));					
+				}
 			} else {
-				m_tradeSystem.Buy(
-					*m_security,
-					m_security->GetSymbol().GetCashCurrency(),
-					m_qty,
-					m_security->ScalePrice(m_price),
-					orderParams,
-					boost::bind(
-						&BuyCommand::OnReply,
-						shared_from_this(),
-						_1,
-						_2,
-						_3,
-						_4,
-						_5));
+				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
+					m_tradeSystem.Buy(
+						*m_security,
+						m_security->GetSymbol().GetCashCurrency(),
+						m_qty,
+						m_security->ScalePrice(m_price),
+						orderParams,
+						boost::bind(
+							&BuyCommand::OnReply,
+							shared_from_this(),
+							_1,
+							_2,
+							_3,
+							_4,
+							_5));
+				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
+					m_tradeSystem.BuyImmediatelyOrCancel(
+						*m_security,
+						m_security->GetSymbol().GetCashCurrency(),
+						m_qty,
+						m_security->ScalePrice(m_price),
+						orderParams,
+						boost::bind(
+							&BuyCommand::OnReply,
+							shared_from_this(),
+							_1,
+							_2,
+							_3,
+							_4,
+							_5));
+				}
 			}
 		}
 	};
