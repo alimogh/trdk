@@ -97,39 +97,64 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			if (
 					order.type != ORDER_TYPE_DAY_MARKET
 					|| status != ORDER_STATUS_CANCELLED) {
+				if (
+						status == ORDER_STATUS_SUBMITTED
+						&& order.params.goodInSeconds) {
+					GetLog().TradingEx(
+						GetTag(),
+						[&]() -> boost::format {
+							boost::format message(
+								"Skipping emulated \"day-market\" order %1%"
+									" \"new status\" for %2%...");
+								message
+									% order.id
+									% order.security->GetSymbol();
+							return std::move(message);
+						});
+					return;
+				}
 				Base::OnOrderStateChanged(message, status, order);
 				return;
 			}
 
-#			ifdef DEV_VER
-				GetLog().TradingEx(
-					GetTag(),
-					[&order]() -> boost::format {
-						boost::format message(
-							"Emulating \"day-market\" order"
-								" by resending order %1%"
-								" for \"%2%\" with qty %3%...");
-							message
-								% order.id
-								% order.security->GetSymbol()
-								% order.qty;
-						return std::move(message);
-					});
-#			endif
-			
+			OrderParams params(order.params);
+			if (params.goodInSeconds) {
+				++*params.goodInSeconds;
+			} else {
+				params.goodInSeconds.reset(1);
+			}
+
+			const Qty newQty = order.qty;
+
+			GetLog().TradingEx(
+				GetTag(),
+				[&]() -> boost::format {
+					boost::format message(
+						"Emulating \"day-market\" order"
+							" by resending order %1%"
+							" for \"%2%\" with qty %3%->%4% (%5% times)...");
+						message
+							% order.id
+							% order.security->GetSymbol()
+							% order.qty
+							% newQty
+							% *params.goodInSeconds;
+					return std::move(message);
+				});
+
 			if (order.isSell) {
 				SellAtMarketPrice(
 					*order.security,
 					order.currency,
-					order.qty,
-					order.params,
+					newQty,
+					params,
 					order.callback);
 			} else {
 				BuyAtMarketPrice(
 					*order.security,
 					order.currency,
-					order.qty,
-					order.params,
+					newQty,
+					params,
 					order.callback);
 			}
 		

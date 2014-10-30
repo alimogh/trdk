@@ -595,7 +595,7 @@ public:
 			[this, eventDesc, &orderStatus]() -> boost::format {
 				boost::format message(
 					"%14%\t%11%\t%1%\t%2%\tclose-%3%\t%4%"
-						"\tqty=%5%->%6% price=%7% order-id=%8%->%9%"
+						"\tqty=%5%->%6% price=%15%->%7% order-id=%8%->%9%"
 						" order-status=%10% has-orders=%12%/%13%");
 				message
 					%	m_position.GetSecurity().GetSymbol()
@@ -604,22 +604,22 @@ public:
 					%	m_tag
 					%	m_position.GetOpenedQty()
 					%	m_position.GetClosedQty()
-					%	m_position
-							.GetSecurity()
-							.DescalePrice(m_position.GetClosePrice())
+					%	m_security.DescalePrice(m_position.GetClosePrice())
 					%	m_position.GetOpenOrderId()
 					%	m_position.GetCloseOrderId()
 					%	m_tradeSystem.GetStringStatus(orderStatus)
 					%	m_position.GetTradeSystem().GetTag()
 					%	m_position.HasActiveOpenOrders()
 					%	m_position.HasActiveCloseOrders()
-					%	m_id;
+					%	m_id
+					%	m_security.DescalePrice(
+							m_position.GetCloseStartPrice());
 				return std::move(message);
 			});
 	}
 
 	void ReportOrderIdReplace(
-				const char *eventDesc,
+				bool isOpening,
 				const OrderId &prevOrdeId,
 				const OrderId &newOrdeId)
 			const
@@ -628,18 +628,35 @@ public:
 			logTag,
 			[&]() -> boost::format {
 				boost::format message(
-					"%1%\t%2%\t%3%\t%4%\treplacing-%7%-order\t%5%\t%6%"
-						"\tbid=%8%/%9%\task=%10%/%11%");
+					"%1%\t%2%\t%3%\t%4%\treplacing-%5%-order\t%6%\t%7%"
+						"\tqty=%8%->%9% price=%10%->%11%"
+						" bid=%12%/%13% ask=%14%/%15%");
 				message
 					%	m_id
 					%	m_position.GetTradeSystem().GetTag()
 					%	m_security.GetSymbol()
 					%	m_position.GetTypeStr()
+					%	(isOpening ? "open" : "close")
 					%	prevOrdeId
 					%	newOrdeId
-					%	eventDesc
-					%	m_security.GetBidPrice() % m_security.GetBidQty()
-					%	m_security.GetAskPrice() % m_security.GetAskQty();
+					%	m_position.GetOpenedQty()
+					%	m_position.GetClosedQty();
+				if (isOpening) {
+					message
+						%	m_security.DescalePrice(
+								m_position.GetOpenStartPrice())
+						%	m_security.DescalePrice(m_position.GetOpenPrice());
+				} else {
+					message
+						%	m_security.DescalePrice(
+								m_position.GetCloseStartPrice())
+						%	m_security.DescalePrice(m_position.GetClosePrice());
+				}
+				message
+					%	m_security.GetBidPrice()
+					%	m_security.GetBidQty()
+					%	m_security.GetAskPrice()
+					%	m_security.GetAskQty();
 				return std::move(message);
 			});
 	}
