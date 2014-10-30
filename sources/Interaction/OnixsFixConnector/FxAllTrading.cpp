@@ -10,9 +10,7 @@
 
 #include "Prec.hpp"
 #include "FixTrading.hpp"
-#ifdef DEV_VER
-#	include "Core/Security.hpp"
-#endif
+#include "Core/Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
