@@ -22,13 +22,11 @@ namespace trdk { namespace Lib {
 	//////////////////////////////////////////////////////////////////////////
 
 	inline bool IsEqual(const double v1, const double v2) {
-		typedef std::numeric_limits<double> Nm;
-		return ::abs(v1 - v2) <= std::max(Nm::epsilon(), Nm::epsilon());
+		return ::fabs(v1 - v2) <= std::numeric_limits<double>::epsilon();
 	}
 
 	inline bool IsEqual(const float v1, const float v2) {
-		typedef std::numeric_limits<float> Nm;
-		return ::abs(v1 - v2) <= std::max(Nm::epsilon(), Nm::epsilon());
+		return ::fabs(v1 - v2) <= std::numeric_limits<float>::epsilon();
 	}
 
 	inline bool IsEqual(const std::string &v1, const std::string &v2) {
