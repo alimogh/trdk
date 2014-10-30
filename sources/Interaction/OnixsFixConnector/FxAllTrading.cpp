@@ -122,7 +122,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				params.goodInSeconds.reset(1);
 			}
 
-			const Qty newQty = order.qty;
+			AssertLt(order.filledQty, order.qty);
+			const Qty newQty = order.qty - order.filledQty;
 
 			GetLog().TradingEx(
 				GetTag(),

@@ -232,6 +232,12 @@ void FixTrading::NotifyOrderUpdate(
 		}
 		Assert(!order->isRemoved);
 		order->isRemoved = isOrderCompleted;
+		if (status == ORDER_STATUS_FILLED) {
+			AssertEq(
+				order->qty,
+				order->filledQty + ParseLeavesQty(updateMessage));
+			order->filledQty += ParseLeavesQty(updateMessage);
+		}
 		orderCopy = *order;
 	}
 

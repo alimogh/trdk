@@ -68,6 +68,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			OrderParams params;
 			OrderStatusUpdateSlot callback;
 			Lib::TimeMeasurement::Milestones timeMeasurement;
+			Qty filledQty;
 		};
 
 	private:
