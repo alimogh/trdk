@@ -749,9 +749,6 @@ void FixTrading::OnOrderRejected(
 			bool isMaxOperationLimitExceeded) {
 
 	AssertEq("8", execReport.type());
-	Assert(
-		fix::FIX41::Values::ExecType::Rejected
-			== execReport.get(fix::FIX41::Tags::ExecType));
 
 	GetLog().Error(
 		"FIX Server (%1%) Rejected order %2%: \"%3%\".",
