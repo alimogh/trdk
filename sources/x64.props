@@ -3,7 +3,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <LibraryPath>$(BOOST_DIR_X64)\boost_1_56_0\lib64-msvc-11.0\;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(BOOST_DIR_X64)\boost_1_56_0\lib64-msvc-12.0\;$(LibraryPath)</LibraryPath>
     <IncludePath>$(BOOST_DIR_X64)\boost_1_56_0\;$(GTEST_DIR_X64)\gtest-1.7.0\include\;$(GMOCK_DIR_X64)\gmock-1.7.0\include\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup />
