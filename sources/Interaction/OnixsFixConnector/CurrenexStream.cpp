@@ -31,6 +31,24 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			//...//
 		}
 
+		virtual ~CurrenexStream() {
+			try {
+				GetSession().Disconnect();
+			} catch (...) {
+				AssertFailNoException();
+			}
+		}
+
+	protected:
+
+		virtual void OnLogout() {
+			GetSession().ResetLocalSequenceNumbers();
+		}
+
+		virtual void OnReconnecting() {
+			GetSession().ResetLocalSequenceNumbers();
+		}
+
 	};
 
 } } }

@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2014/10/27 20:28:26
+ *   Created: 2014/11/03 13:53:42
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -19,11 +19,11 @@ using namespace trdk::Interaction::OnixsFixConnector;
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
-	class FxAllStream : public FixStream {
+	class AlpariStream : public FixStream {
 
 	public:
 
-		explicit FxAllStream(
+		explicit AlpariStream(
 					Context &context,
 					const std::string &tag,
 					const IniSectionRef &conf)
@@ -31,7 +31,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			//...//
 		}
 
-		virtual ~FxAllStream() {
+		virtual ~AlpariStream() {
 			try {
 				GetSession().Disconnect();
 			} catch (...) {
@@ -41,16 +41,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	protected:
 
-		virtual Qty ParseMdEntrySize(const fix::GroupInstance &entry) const {
-			return Qty(entry.getDouble(fix::FIX42::Tags::MDEntrySize));
-		}
-
 		virtual void OnLogout() {
-			GetSession().ResetLocalSequenceNumbers();
+			//...//
 		}
 
 		virtual void OnReconnecting() {
-			GetSession().ResetLocalSequenceNumbers();
+			// @todo Fix me!
 		}
 
 	};
@@ -61,12 +57,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 boost::shared_ptr<MarketDataSource>
-CreateFxAllStream(
+CreateAlpariStream(
 			Context &context,
 			const std::string &tag,
 			const IniSectionRef &configuration) {
 	return boost::shared_ptr<MarketDataSource>(
-		new FxAllStream(context, tag, configuration));
+		new AlpariStream(context, tag, configuration));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

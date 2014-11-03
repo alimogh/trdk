@@ -75,6 +75,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 						const std::string &description,
 						OnixS::FIX::Session &);
 
+	public:
+
+		void ResetLocalSequenceNumbers();
+
 	private:
 
 		Context &m_context;

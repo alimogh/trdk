@@ -251,3 +251,12 @@ void FixSession::LogWarning(
 		boost::make_tuple(boost::cref(description), reason));
 }
 
+void FixSession::ResetLocalSequenceNumbers() {
+	GetLog().Info(
+		"FIX Session:"
+			" sequence number will be reset from out %1% and in %2%...",
+		boost::make_tuple(m_session->outSeqNum(), m_session->inSeqNum()));
+	// m_session->resetLocalSequenceNumbers();
+	m_session->outSeqNum(1);
+	m_session->inSeqNum(1);
+}

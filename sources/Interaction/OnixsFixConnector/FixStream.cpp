@@ -28,11 +28,7 @@ FixStream::FixStream(
 }
 
 FixStream::~FixStream() {
-	try {
-		m_session.Disconnect();
-	} catch (...) {
-		AssertFailNoException();
-	}
+	//...//
 }
 
 void FixStream::Connect(const IniSectionRef &conf) {
@@ -148,6 +144,15 @@ void FixStream::onStateChange(
 			fix::Session *session) {
 	Assert(session == &m_session.Get());
 	m_session.LogStateChange(newState, prevState, *session);
+	if (
+			prevState == fix::SessionState::LogoutInProgress
+			&& newState == fix::SessionState::Disconnected) {
+		OnLogout();
+	} else if (
+			prevState == fix::SessionState::Active
+			&& newState == fix::SessionState::Reconnecting) {
+		OnReconnecting();
+	}
 }
 
 void FixStream::onError(

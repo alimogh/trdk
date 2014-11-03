@@ -34,7 +34,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		}
 		
 		virtual ~CurrenexTrading() {
-			//...//
+			try {
+				GetSession().Disconnect();
+			} catch (...) {
+				AssertFailNoException();
+			}
 		}
 
 	public:
@@ -132,6 +136,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				fix::FIX40::Tags::OrdType,
 				fix::FIX41::Values::OrdType::Forex_Market);
 			return std::move(order);
+		}
+
+		virtual void OnLogout() {
+			//...//
 		}
 
 	};
