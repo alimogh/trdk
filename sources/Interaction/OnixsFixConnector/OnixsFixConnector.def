@@ -3,6 +3,8 @@ EXPORTS
 	
 	CreateCurrenexTrading
 	CreateCurrenexStream
+
+	CreateAlpariStream
 	
 	CreateHotspotTrading
 

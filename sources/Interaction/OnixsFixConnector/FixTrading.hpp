@@ -201,7 +201,6 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			return m_session;
 		}
 
-		
 	protected:
 
 		void OnOrderNew(
@@ -221,6 +220,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		void OnOrderPartialFill(
 					const OnixS::FIX::Message &,
 					const Lib::TimeMeasurement::Milestones::TimePoint &);
+
+		virtual void OnLogout() = 0;
 
 	protected:
 

@@ -32,13 +32,25 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		}
 
 		virtual ~FxAllStream() {
-			//...//
+			try {
+				GetSession().Disconnect();
+			} catch (...) {
+				AssertFailNoException();
+			}
 		}
 
 	protected:
 
 		virtual Qty ParseMdEntrySize(const fix::GroupInstance &entry) const {
 			return Qty(entry.getDouble(fix::FIX42::Tags::MDEntrySize));
+		}
+
+		virtual void OnLogout() {
+			GetSession().ResetLocalSequenceNumbers();
+		}
+
+		virtual void OnReconnecting() {
+			GetSession().ResetLocalSequenceNumbers();
 		}
 
 	};

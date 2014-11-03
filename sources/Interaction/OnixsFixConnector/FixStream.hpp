@@ -63,6 +63,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					const trdk::Lib::Symbol &)
 				const;
 
+		FixSession & GetSession() {
+			return m_session;
+		}
+
 	protected:
 
 		FixSecurity * FindRequestSecurity(const OnixS::FIX::Message &);
@@ -73,6 +77,9 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		std::string GetRequestSymbolStr(const OnixS::FIX::Message &) const;
 
 		virtual Qty ParseMdEntrySize(const OnixS::FIX::GroupInstance &) const;
+
+		virtual void OnLogout() = 0;
+		virtual void OnReconnecting() = 0;
 
 	private:
 

@@ -326,6 +326,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AlpariStream.cpp" />
     <ClCompile Include="CurrenexStream.cpp" />
     <ClCompile Include="FixSession.cpp" />
     <ClCompile Include="CurrenexTrading.cpp" />

@@ -39,7 +39,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		}
 		
 		virtual ~FxAllTrading() {
-			//...//
+			try {
+				GetSession().Disconnect();
+			} catch (...) {
+				AssertFailNoException();
+			}
 		}
 
 	public:
@@ -157,6 +161,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					order.callback);
 			}
 		
+		}
+
+		virtual void OnLogout() {
+			//...//
 		}
 
 	private:

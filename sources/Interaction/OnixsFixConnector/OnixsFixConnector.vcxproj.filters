@@ -42,6 +42,9 @@
     <ClCompile Include="FixStream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AlpariStream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OnixsFixConnector.rc">

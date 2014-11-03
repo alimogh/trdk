@@ -34,7 +34,6 @@ FixTrading::FixTrading(
 
 FixTrading::~FixTrading() {
 	try {
-		m_session.Disconnect();
 		{
 			const SendLock lock(m_sendMutex);
 			Assert(m_currentToSend);
@@ -233,7 +232,7 @@ void FixTrading::NotifyOrderUpdate(
 		Assert(!order->isRemoved);
 		order->isRemoved = isOrderCompleted;
 		if (status == ORDER_STATUS_FILLED) {
-			AssertEq(
+			AssertGe(
 				order->qty,
 				order->filledQty + ParseLeavesQty(updateMessage));
 			order->filledQty += ParseLeavesQty(updateMessage);
@@ -697,6 +696,11 @@ void FixTrading::onStateChange(
 			fix::Session *session) {
 	Assert(session == &m_session.Get());
 	m_session.LogStateChange(newState, prevState, *session);
+	if (
+			prevState == fix::SessionState::LogoutInProgress
+			&& newState == fix::SessionState::Disconnected) {
+		OnLogout();
+	}
 }
 
 void FixTrading::onError(
