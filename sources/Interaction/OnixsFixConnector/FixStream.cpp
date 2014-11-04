@@ -201,6 +201,12 @@ void FixStream::onInboundApplicationMsg(
 			
 			const auto &entry = entries[i];
 
+			const auto action
+				= entry.getInt32(fix::FIX42::Tags::MDUpdateAction);
+			if (action == 2) { // Delete
+				continue;
+			}
+
 			const auto price = entry.getDouble(fix::FIX42::Tags::MDEntryPx);
 			const auto qty = ParseMdEntrySize(entry);
 			
