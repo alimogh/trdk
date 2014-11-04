@@ -106,9 +106,9 @@ namespace {
 				
 				const auto reportPeriod = pt::seconds(30);
 				const fs::path logPath
-					= Lib::GetExeWorkingDir() / "logs" / "latan.log";
+					= Lib::GetExeWorkingDir() / "logs" / "latan.report";
 				m_log.Info(
-					"Logging Latan to to file %1% with period %2%...",
+					"Reporting Latan to to file %1% with period %2%...",
 					boost::make_tuple(logPath, reportPeriod));
 
 				boost::filesystem::create_directories(logPath.branch_path());
@@ -133,8 +133,8 @@ namespace {
 						boost::this_thread::sleep(pt::microseconds(period));
 						const auto now = Clock::now();
 						log
-							<< period  << " = " << (now - start).count() << " / "
-							<< Milestones::CalcPeriod(start, now);
+							<< period  << " = " << (now - start).count()
+							<< " / " << Milestones::CalcPeriod(start, now);
 					};
 					log << "Test: ";
 					test(1000); log << ", ";

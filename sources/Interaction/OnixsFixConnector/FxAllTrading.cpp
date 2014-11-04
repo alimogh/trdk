@@ -164,7 +164,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		}
 
 		virtual void OnLogout() {
-			//...//
+			GetSession().ResetLocalSequenceNumbers();			
 		}
 
 	private:

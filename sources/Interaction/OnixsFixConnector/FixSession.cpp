@@ -224,13 +224,20 @@ void FixSession::LogStateChange(
 	UseUnused(session);
 	const auto newStateStr = fix::SessionState::toString(newState);
 	const auto prevStateStr = fix::SessionState::toString(prevState);
-	GetLog().Info(
-		"FIX Session State changed: \"%1%\" -> \"%2%\".",
-		boost::make_tuple(boost::cref(prevStateStr), boost::cref(newStateStr)));
+	const char *message = "FIX Session State changed: \"%1%\" -> \"%2%\".";
+	const auto params = boost::make_tuple(
+		boost::cref(prevStateStr),
+		boost::cref(newStateStr));
+	if (newState == fix::SessionState::Disconnected) {
+		GetLog().Error(message, params);
+	} else {
+		GetLog().Info(message, params);
+	}
 }
 
 void FixSession::LogError(
 			fix::ErrorReason::Enum reason,
+
 			const std::string &description,
 			fix::Session &session) {
 	Assert(&session == &Get());
