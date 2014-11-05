@@ -191,9 +191,8 @@ void FixStream::onInboundApplicationMsg(
 		
 		GetLog().Error(
 			"Failed to Subscribe to %1% Market Data: \"%2%\".",
-			boost::make_tuple(
-				GetRequestSymbolStr(message),
-				message.get(fix::FIX42::Tags::MDReqRejReason)));
+			GetRequestSymbolStr(message),
+			message.get(fix::FIX42::Tags::MDReqRejReason));
 
 	} else if (message.type() == "X") {
 	

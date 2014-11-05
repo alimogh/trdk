@@ -149,10 +149,9 @@ private:
 					m_self->GetLog().Info(
 						"Fake Trade System executes order:"
 							" price=%1%, qty=%2%, %3%.",
-						boost::make_tuple(
-							price,
-							order.qty,
-							boost::cref(order.params)));
+						price,
+						order.qty,
+						order.params);
 					order.callback(
 						order.id,
 						TradeSystem::ORDER_STATUS_FILLED,
@@ -228,10 +227,9 @@ OrderId Fake::TradeSystem::SellAtMarketPrice(
 	GetLog().Trading(
 		sellLogTag,
 		"%2% order-id=%1% qty=%3% price=market",
-		boost::make_tuple(
-			order.id,
-			boost::cref(security.GetSymbol()),
-			qty));
+		order.id,
+		security.GetSymbol(),
+		qty);
 	return order.id;
 }
 
@@ -256,11 +254,10 @@ OrderId Fake::TradeSystem::Sell(
 	GetLog().Trading(
 		buyLogTag,
 		"%2% order-id=%1% type=LMT qty=%3% price=%4%",
-		boost::make_tuple(
-			order.id,
-			boost::cref(security.GetSymbol()),
-			qty,
-			security.DescalePrice(price)));
+		order.id,
+		security.GetSymbol(),
+		qty,
+		security.DescalePrice(price));
 	return order.id;
 }
 
@@ -297,11 +294,10 @@ OrderId Fake::TradeSystem::SellImmediatelyOrCancel(
 	GetLog().Trading(
 		sellLogTag,
 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
-		boost::make_tuple(
-			order.id,
-			boost::cref(security.GetSymbol()),
-			qty,
-			security.DescalePrice(price)));
+		order.id,
+		security.GetSymbol(),
+		qty,
+		security.DescalePrice(price));
 	return order.id;
 }
 
@@ -345,10 +341,9 @@ OrderId Fake::TradeSystem::BuyAtMarketPrice(
 	GetLog().Trading(
 		buyLogTag,
 		"%2% order-id=%1% qty=%3% price=market",
-		boost::make_tuple(
-			order.id,
-			boost::cref(security.GetSymbol()),
-			qty));
+		order.id,
+		security.GetSymbol(),
+		qty);
 	return order.id;
 }
 
@@ -373,11 +368,10 @@ OrderId Fake::TradeSystem::Buy(
 	GetLog().Trading(
 		buyLogTag,
 		"%2% order-id=%1% type=LMT qty=%3% price=%4%",
-		boost::make_tuple(
-			order.id,
-			boost::cref(security.GetSymbol()),
-			qty,
-			security.DescalePrice(price)));
+		order.id,
+		security.GetSymbol(),
+		qty,
+		security.DescalePrice(price));
 	return order.id;
 }
 
@@ -414,11 +408,10 @@ OrderId Fake::TradeSystem::BuyImmediatelyOrCancel(
 	GetLog().Trading(
 		buyLogTag,
 		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
-		boost::make_tuple(
-			order.id,
-			boost::cref(security.GetSymbol()),
-			qty,
-			security.DescalePrice(price)));
+		order.id,
+		security.GetSymbol(),
+		qty,
+		security.DescalePrice(price));
 	return order.id;
 }
 

@@ -140,9 +140,9 @@ namespace trdk {
 		void Debug(const char *str) throw() {
 			trdk::Log::Debug(str);
 		}
-		template<typename Params>
-		void Debug(const char *str, const Params &params) throw() {
-			trdk::Log::Debug(str, params);
+		template<typename... Params>
+		void Debug(const char *str, const Params &...params) throw() {
+			trdk::Log::Debug(str, params...);
 		}
 		template<typename Callback>
 		void DebugEx(const Callback &callback) throw() {
@@ -152,9 +152,9 @@ namespace trdk {
 		void Info(const char *str) throw() {
 			trdk::Log::Info(str);
 		}
-		template<typename Params>
-		void Info(const char *str, const Params &params) throw() {
-			trdk::Log::Info(str, params);
+		template<typename... Params>
+		void Info(const char *str, const Params &...params) throw() {
+			trdk::Log::Info(str, params...);
 		}
 		template<typename Callback>
 		void InfoEx(const Callback &callback) throw() {
@@ -164,9 +164,9 @@ namespace trdk {
 		void Warn(const char *str) throw() {
 			trdk::Log::Warn(str);
 		}
-		template<typename Params>
-		void Warn(const char *str, const Params &params) throw() {
-			trdk::Log::Warn(str, params);
+		template<typename... Params>
+		void Warn(const char *str, const Params &...params) throw() {
+			trdk::Log::Warn(str, params...);
 		}
 		template<typename Callback>
 		void WarnEx(const Callback &callback) throw() {
@@ -176,9 +176,9 @@ namespace trdk {
 		void Error(const char *str) throw() {
 			trdk::Log::Error(str);
 		}
-		template<typename Params>
-		void Error(const char *str, const Params &params) throw() {
-			trdk::Log::Error(str, params);
+		template<typename... Params>
+		void Error(const char *str, const Params &...params) throw() {
+			trdk::Log::Error(str, params...);
 		}
 		template<typename Callback>
 		void ErrorEx(const Callback &callback) throw() {
@@ -192,18 +192,17 @@ namespace trdk {
 		void TradingEx(const std::string &tag, const Callback &callback) throw() {
 			trdk::Log::TradingEx(tag, callback);
 		}
-		template<typename Params>
+		template<typename... Params>
 		void Trading(
 					const std::string &tag,
 					const char *str,
-					const Params &params)
+					const Params &...params)
 				throw() {
-			trdk::Log::Trading(tag, str, params);
+			trdk::Log::Trading(tag, str, params...);
 		}
 	};
 
 	//////////////////////////////////////////////////////////////////////////
-
 
 	class trdk::Context::Params : private boost::noncopyable {
 

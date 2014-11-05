@@ -107,7 +107,8 @@ namespace {
 					= Lib::GetExeWorkingDir() / "logs" / "latan.report";
 				m_log.Info(
 					"Reporting Latan to to file %1% with period %2%...",
-					boost::make_tuple(logPath, reportPeriod));
+					logPath,
+					reportPeriod);
 
 				boost::filesystem::create_directories(logPath.branch_path());
 				std::ofstream log(
@@ -409,19 +410,17 @@ void Context::Params::Update(
 	if (it != m_pimpl->m_storage.end()) {
 		m_pimpl->m_context.GetLog().Debug(
 			"Context param \"%1%\" update (%2%): \"%3%\" -> \"%4%\"...",
-			boost::make_tuple(
-				boost::cref(key),
-				Revision(m_pimpl->m_revision),
-				boost::cref(it->second),
-				boost::cref(newValue)));
+			key,
+			Revision(m_pimpl->m_revision),
+			it->second,
+			newValue);
 		it->second = newValue;
 	} else {
 		m_pimpl->m_context.GetLog().Debug(
 			"Context param \"%1%\" create (%2%): \"%3%\"...",
-			boost::make_tuple(
-				boost::cref(key),
-				Revision(m_pimpl->m_revision),
-				boost::cref(newValue)));
+			key,
+			Revision(m_pimpl->m_revision),
+			newValue);
 		m_pimpl->m_storage.insert(std::make_pair(key, newValue));
 	}
 }

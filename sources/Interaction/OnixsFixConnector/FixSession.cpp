@@ -49,13 +49,16 @@ namespace {
 					" Can be: \"FIX 4.0\", \"FIX 4.1\", \"FIX 4.2\""
 					", \"FIX 4.3\", \"FIX 4.4\", \"FIX 5.0\", \"FIX 5.0 SP1\""
 					" or \"FIX 5.0 SP2\".",
-				boost::make_tuple(sessionType, fixVerStr));
+				sessionType,
+				fixVerStr);
 			throw FixSession::Error("Failed to init FIX Engine");
 		}
 	
 		Log::Debug(
 			"Using FIX Version \"%1%\" (%2%) for \"%3%\".",
-			boost::make_tuple(fixVerStr, result, sessionType));
+			fixVerStr,
+			result,
+			sessionType);
 
 		return result;
 
@@ -138,15 +141,14 @@ void FixSession::Connect(
 		"Connecting to FIX Server (%1%) at \"%2%:%3%\""
 			" with SenderCompID \"%4%\" and TargetCompID \"%5%\""
 			", ResetSeqNumFlag: %6%::%7% = %8%...",
-		boost::make_tuple(
-			boost::cref(m_type),
-			boost::cref(m_host),
-			m_port,
-			boost::cref(senderCompId),
-			boost::cref(targetCompId),
-			resetSeqNumFlagSection,
-			resetSeqNumFlagKey,
-			resetSeqNumFlag ? "true" : "false"));
+		m_type,
+		m_host,
+		m_port,
+		senderCompId,
+		targetCompId,
+		resetSeqNumFlagSection,
+		resetSeqNumFlagKey,
+		resetSeqNumFlag ? "true" : "false");
 
 #	ifdef _DEBUG
 		const auto &sessionStorageType = fix::SessionStorageType::FileBased;
@@ -194,9 +196,8 @@ void FixSession::Connect(
 	} catch (const fix::Exception &ex) {
 		GetLog().Error(
 			"Failed to connect to FIX Server (%1%): \"%2%\".",
-			boost::make_tuple(
-				boost::cref(m_type),
-				ex.what()));
+			m_type,
+			ex.what());
 		throw ConnectError("Failed to connect to FIX Server");
 	}
 	
@@ -211,10 +212,9 @@ void FixSession::Reconnect() {
 	}
 	GetLog().Info(
 		"Reconnecting to FIX Server (%1%) at \"%2%:%3%\"...",
-		boost::make_tuple(
-			boost::cref(m_type),
-			boost::cref(m_host),
-			m_port));
+		m_type,
+		m_host,
+		m_port);
  	m_session->logonAsInitiator(m_host, m_port);
  	GetLog().Info("Reconnected to FIX Server (%1%).", m_type);
 }
@@ -237,13 +237,10 @@ void FixSession::LogStateChange(
 	const auto newStateStr = fix::SessionState::toString(newState);
 	const auto prevStateStr = fix::SessionState::toString(prevState);
 	const char *message = "FIX Session State changed: \"%1%\" -> \"%2%\".";
-	const auto params = boost::make_tuple(
-		boost::cref(prevStateStr),
-		boost::cref(newStateStr));
 	if (newState == fix::SessionState::Disconnected) {
-		GetLog().Error(message, params);
+		GetLog().Error(message, prevStateStr, newStateStr);
 	} else {
-		GetLog().Info(message, params);
+		GetLog().Info(message, prevStateStr, newStateStr);
 	}
 }
 
@@ -253,9 +250,7 @@ void FixSession::LogError(
 			fix::Session &session) {
 	Assert(&session == &Get());
 	UseUnused(session);
-    GetLog().Error(
-		"FIX Session error: \"%1%\" (%2%)",
-		boost::make_tuple(boost::cref(description), reason));
+    GetLog().Error("FIX Session error: \"%1%\" (%2%)", description, reason);
 }
 
 void FixSession::LogWarning(
@@ -264,16 +259,15 @@ void FixSession::LogWarning(
 			fix::Session &session) {
 	Assert(&session == &Get());
 	UseUnused(session);
-	GetLog().Warn(
-		"FIX Session waring: \"%1%\" (%2%)",
-		boost::make_tuple(boost::cref(description), reason));
+	GetLog().Warn("FIX Session waring: \"%1%\" (%2%)", description, reason);
 }
 
 void FixSession::ResetLocalSequenceNumbers() {
 	GetLog().Info(
 		"FIX Session:"
 			" sequence number will be reset from out %1% and in %2%...",
-		boost::make_tuple(m_session->outSeqNum(), m_session->inSeqNum()));
+		m_session->outSeqNum(),
+		m_session->inSeqNum());
 	// m_session->resetLocalSequenceNumbers();
  	m_session->outSeqNum(1);
  	m_session->inSeqNum(1);

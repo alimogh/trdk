@@ -114,13 +114,12 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 		"Common static settings:"
 			" start_time_edt = %1%;"
 			" %2% = %3% -> %4%; %5% = %6%;",
-		boost::make_tuple(
-			GetStartTime() + GetEdtDiff(),
-			tradeSessionPeriodEdtKey,
-			values.tradeSessionStartTime + GetEdtDiff(),
-			values.tradeSessionEndTime + GetEdtDiff(),
-			waitMarketDataKey,
-			values.shouldWaitForMarketData ? "yes" : "no"));
+		GetStartTime() + GetEdtDiff(),
+		tradeSessionPeriodEdtKey,
+		values.tradeSessionStartTime + GetEdtDiff(),
+		values.tradeSessionEndTime + GetEdtDiff(),
+		waitMarketDataKey,
+		values.shouldWaitForMarketData ? "yes" : "no");
 
 	{
 		const char *const exchangeKey = "exchange";
@@ -131,13 +130,11 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 		values.defaultPrimaryExchange
 			= defaultsConf.ReadKey(primaryExchangeKey);
 		log.Info(
-			"Default settings:"
-				" %1% = \"%2%\"; %3% = \"%4%\";",
-			boost::make_tuple(
-				exchangeKey,
-				boost::cref(values.defaultExchange),
-				primaryExchangeKey,
-				boost::cref(values.defaultPrimaryExchange)));
+			"Default settings: %1% = \"%2%\"; %3% = \"%4%\";",
+			exchangeKey,
+			values.defaultExchange,
+			primaryExchangeKey,
+			values.defaultPrimaryExchange);
 	}
 
 	m_values = values;

@@ -438,15 +438,14 @@ public:
 
 		m_service.GetLog().Info(
 			"Initial: %1% = %2%, %3% = %4% frames, %5% = %6%, %7% = %8%.",
-			boost::make_tuple(
-				Configuration::Keys::type,
-				boost::cref(types[type]),
-				Configuration::Keys::period,
-				m_period,
-				Configuration::Keys::source,
-				boost::cref(sources[GetMaSource(m_sourceInfo)].first),
-				Configuration::Keys::isHistoryOn,
-				m_history ? "yes" : "no"));
+			Configuration::Keys::type,
+			types[type],
+			Configuration::Keys::period,
+			m_period,
+			Configuration::Keys::source,
+			sources[GetMaSource(m_sourceInfo)].first,
+			Configuration::Keys::isHistoryOn,
+			m_history ? "yes" : "no");
 
 	}
 

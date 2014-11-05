@@ -195,10 +195,9 @@ public:
 				Configuration::LoadHistorySetting(configuration, m_service)) {
 		m_service.GetLog().Info(
 			"Initial: %1% = %2%, %3% = %4% frames, %5% = %6%.",
-			boost::make_tuple(
-				Configuration::Keys::period, m_period,
-				Configuration::Keys::deviation, m_deviation,
-				Configuration::Keys::isHistoryOn, m_history ? "yes" : "no"));
+			Configuration::Keys::period, m_period,
+			Configuration::Keys::deviation, m_deviation,
+			Configuration::Keys::isHistoryOn, m_history ? "yes" : "no");
 	}
 
 	void CheckHistoryIndex(size_t index) const {

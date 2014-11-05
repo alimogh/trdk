@@ -30,9 +30,8 @@ Csv::MarketDataSource::MarketDataSource(
 	GetLog().Info(
 		TRDK_INTERACTION_CSV_LOG_PREFFIX
 			"loading file %1% for exchange \"%2%\"...",
-		boost::make_tuple(
-			boost::cref(filePath),
-			boost::cref(m_pimaryExchange)));
+		filePath,
+		m_pimaryExchange);
 	m_file.open(filePath.string().c_str());
 	if (!m_file) {
 		throw Exception("Failed to open CSV file");
@@ -144,7 +143,8 @@ bool Csv::MarketDataSource::ParseTradeLine(
 							TRDK_INTERACTION_CSV_LOG_PREFFIX
 								"format mismatch: wrong price field value:"
 								" %1% (%2%).",
-							boost::make_tuple(boost::cref(val), ex.what()));
+							val,
+							ex.what());
 						return false;
 					}
 					if (price == 0) {
@@ -167,7 +167,8 @@ bool Csv::MarketDataSource::ParseTradeLine(
 							TRDK_INTERACTION_CSV_LOG_PREFFIX
 								"format mismatch:"
 									" wrong quantity field value: %1% (%2%).",
-							boost::make_tuple(boost::cref(val), ex.what()));
+							val,
+							ex.what());
 					}
 					if (qty == 0) {
 						GetLog().Error(
@@ -206,7 +207,8 @@ bool Csv::MarketDataSource::ParseTradeLine(
 			TRDK_INTERACTION_CSV_LOG_PREFFIX
 				"format mismatch: wrong field number (%1%)"
 				" for primary exchange \"%2%\".",
-			boost::make_tuple(field, boost::cref(m_pimaryExchange)));
+			field,
+			m_pimaryExchange);
 		return false;
 	}
 
@@ -274,7 +276,8 @@ void Csv::MarketDataSource::ReadFile() {
 	GetLog().Info(
 		TRDK_INTERACTION_CSV_LOG_PREFFIX
 			"reading for exchange \"%1%\" is completed (line count: %2%).",
-		boost::make_tuple(boost::cref(m_pimaryExchange), lineCount));
+		m_pimaryExchange,
+		lineCount);
 
 }
 

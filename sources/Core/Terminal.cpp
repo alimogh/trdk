@@ -161,13 +161,12 @@ private:
 				"Terminal: Order reply received:"
 					" order ID = %1%, status = %6% (%2%), filled qty = %3%,"
 					" remaining qty = %4%, avgPrice = %5%.",
-				boost::make_tuple(
-					boost::cref(orderId),
-					boost::cref(status),
-					filled,
-					remaining,
-					avgPrice,
-					TradeSystem::GetStringStatus(status)));
+				orderId,
+				status,
+				filled,
+				remaining,
+				avgPrice,
+				TradeSystem::GetStringStatus(status));
 		}
 	protected:
 		OrderTime m_orderTime;
@@ -443,7 +442,9 @@ private:
 			m_tradeSystem.GetLog().Debug(
 				"Terminal: processed file %1%"
 					" (lines: %2%, commands executed: %3%). ",
-				boost::make_tuple(boost::cref(m_cmdFile), line, execsCount));
+				m_cmdFile,
+				line,
+				execsCount);
 		}
 
 	}
@@ -496,20 +497,18 @@ private:
 						"Terminal: Failed to parse seqnumber"
 							" \"%1%\" at %2%:%3%."
 							" Must be a positive value greater than zero.",
-						boost::make_tuple(
-							boost::cref(field),
-							boost::cref(m_cmdFile),
-							lineNo));
+						field,
+						m_cmdFile,
+						lineNo);
 					return false;
 				} else if (knownSeqnumber + 1 != seqnumber) {
 					m_tradeSystem.GetLog().Error(
 						"Terminal: Wrong terminal command seqnumber \"%1%\""
-								" at %2%:%3%, last seqnumber was %4%.",
-						boost::make_tuple(
-							seqnumber,
-							m_cmdFile,
-							lineNo,
-							knownSeqnumber));
+							" at %2%:%3%, last seqnumber was %4%.",
+						seqnumber,
+						m_cmdFile,
+						lineNo,
+						knownSeqnumber);
 					return false;
 				}
 
@@ -532,11 +531,10 @@ private:
 					m_tradeSystem.GetLog().Error(
 						"Terminal: Failed to parse command \"%1%\" at %2%:%3%."
 							" Must be %4%.",
-						boost::make_tuple(
-							boost::cref(field),
-							boost::cref(m_cmdFile),
-							lineNo,
-							commandsHelp));
+						field,
+						m_cmdFile,
+						lineNo,
+						commandsHelp);
 					return false;
 				}
 		
@@ -548,11 +546,10 @@ private:
 					m_tradeSystem.GetLog().Error(
 						"Terminal: Failed to parse command parameter \"%1%\""
 							" at \"%2%\":%3%. %4%.",
-						boost::make_tuple(
-							boost::cref(field),
-							boost::cref(m_cmdFile),
-							lineNo,
-							ex.what()));
+						field,
+						m_cmdFile,
+						lineNo,
+						ex.what());
 					return false;
 				}
 
@@ -567,10 +564,9 @@ private:
 		if (!command) {
 			m_tradeSystem.GetLog().Error(
 				"Terminal: No command set at %1%:%2%. Must be %3%.",
-				boost::make_tuple(
-					boost::cref(m_cmdFile),
-					lineNo,
-					commandsHelp));
+				m_cmdFile,
+				lineNo,
+				commandsHelp);
 			return false;
 		}
 
@@ -578,10 +574,9 @@ private:
 		if (!commandErrorText.empty()) {
 			m_tradeSystem.GetLog().Error(
 				"Terminal: Failed to get command parameter at %1%:%2% - %3%",
-				boost::make_tuple(
-					boost::cref(m_cmdFile),
-					lineNo,
-					boost::cref(commandErrorText)));
+				m_cmdFile,
+				lineNo,
+				commandErrorText);
 			return false;		
 		}
 

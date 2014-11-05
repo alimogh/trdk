@@ -474,9 +474,8 @@ public:
 		if (m_barSize < sourceBar.size) {
 			m_service.GetLog().Error(
 				"Can't work with source bar size %1% as service bar size %2%.",
-				boost::make_tuple(
-					boost::cref(sourceBar.size),
-					boost::cref(m_barSize)));
+				sourceBar.size,
+				m_barSize);
 			throw Error("Wrong source bar size");
 		}
 
