@@ -58,6 +58,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		void Connect(
 						const trdk::Lib::IniSectionRef &,
 						OnixS::FIX::ISessionListener &);
+		void Reconnect();
 		void Disconnect();
 
 	public:
@@ -88,6 +89,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		const OnixS::FIX::ProtocolVersion::Enum m_fixVersion;
 
 		boost::scoped_ptr<OnixS::FIX::Session> m_session;
+		OnixS::FIX::Message m_customLogonMessage;
+		std::string m_host;
+		int m_port;
+		boost::atomic_bool m_isSessionActive;
 
 	};
 

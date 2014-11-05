@@ -694,13 +694,20 @@ void FixTrading::onStateChange(
 			fix::SessionState::Enum newState,
 			fix::SessionState::Enum prevState,
 			fix::Session *session) {
+
 	Assert(session == &m_session.Get());
+
 	m_session.LogStateChange(newState, prevState, *session);
 	if (
 			prevState == fix::SessionState::LogoutInProgress
 			&& newState == fix::SessionState::Disconnected) {
 		OnLogout();
 	}
+	
+	if (newState == fix::SessionState::Disconnected) {
+		m_session.Reconnect();
+	}
+
 }
 
 void FixTrading::onError(
@@ -709,6 +716,9 @@ void FixTrading::onError(
 			fix::Session *session) {
 	Assert(session == &m_session.Get());
 	m_session.LogError(reason, description, *session);
+	if (reason == fix::ErrorReason::MsgSeqNumTooLow) {
+		m_session.ResetLocalSequenceNumbers();
+	}
 }
 
 void FixTrading::onWarning(

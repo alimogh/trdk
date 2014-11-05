@@ -73,7 +73,8 @@ FixSession::FixSession(
 			const IniSectionRef &configuration)
 		: m_context(context),
 		m_type(type),
-		m_fixVersion(ParseFixVersion(configuration, GetLog(), m_type)) {
+		m_fixVersion(ParseFixVersion(configuration, GetLog(), m_type)),
+		m_isSessionActive(false) {
 	
 	if (!fix::Engine::initialized()) {
 		AssertEq(0, fixEngineRefCounter.load());
@@ -124,20 +125,14 @@ void FixSession::Connect(
 		= conf.ReadKey("sender_sub_id", std::string());
 	const std::string targetCompId = conf.ReadKey("target_comp_id");
 	
-	const std::string host = conf.ReadKey("server_host");
-	const auto port = conf.ReadTypedKey<int>("server_port");
+	m_host = conf.ReadKey("server_host");
+	m_port = conf.ReadTypedKey<int>("server_port");
 
-#	ifdef _DEBUG
-		bool resetSeqNumFlag = true;
-#	else
-		bool resetSeqNumFlag = false;
-#	endif
 	const char *const resetSeqNumFlagSection = "Common";
 	const char *const resetSeqNumFlagKey = "onixs_fix_reset_seq_num_flag";
-	resetSeqNumFlag = conf.GetBase().ReadBoolKey(
+	const bool resetSeqNumFlag = conf.GetBase().ReadBoolKey(
 		resetSeqNumFlagSection,
-		resetSeqNumFlagKey,
-		resetSeqNumFlag);
+		resetSeqNumFlagKey);
 
 	GetLog().Info(
 		"Connecting to FIX Server (%1%) at \"%2%:%3%\""
@@ -145,8 +140,8 @@ void FixSession::Connect(
 			", ResetSeqNumFlag: %6%::%7% = %8%...",
 		boost::make_tuple(
 			boost::cref(m_type),
-			boost::cref(host),
-			port,
+			boost::cref(m_host),
+			m_port,
 			boost::cref(senderCompId),
 			boost::cref(targetCompId),
 			resetSeqNumFlagSection,
@@ -173,16 +168,16 @@ void FixSession::Connect(
 		session->senderSubId(senderSubId);
 	}
 
-	fix::Message customLogonMessage("A", GetFixVersion());
+	m_customLogonMessage = fix::Message("A", GetFixVersion());
 
 	const std::string username = conf.ReadKey("Username", std::string());
 	if (!username.empty()) {
-		customLogonMessage.set(
+		m_customLogonMessage.set(
 			fix::FIX43::Tags::Username,
 			username);
 	}
 
-	customLogonMessage.set(
+	m_customLogonMessage.set(
 		fix::FIX43::Tags::Password,
 		conf.ReadKey("password"));
 
@@ -190,11 +185,12 @@ void FixSession::Connect(
 	session.swap(m_session);
 	try {
 		m_session->logonAsInitiator(
-			host,
-			port,
+			m_host,
+			m_port,
 			30,
-			&customLogonMessage,
+			&m_customLogonMessage,
 			resetSeqNumFlag);
+		m_isSessionActive = true;
 	} catch (const fix::Exception &ex) {
 		GetLog().Error(
 			"Failed to connect to FIX Server (%1%): \"%2%\".",
@@ -208,7 +204,23 @@ void FixSession::Connect(
 
 }
 
+void FixSession::Reconnect() {
+	if (!m_isSessionActive) {
+		GetLog().Debug("No connection exists, reconnecting canceled.");
+		return;
+	}
+	GetLog().Info(
+		"Reconnecting to FIX Server (%1%) at \"%2%:%3%\"...",
+		boost::make_tuple(
+			boost::cref(m_type),
+			boost::cref(m_host),
+			m_port));
+ 	m_session->logonAsInitiator(m_host, m_port);
+ 	GetLog().Info("Reconnected to FIX Server (%1%).", m_type);
+}
+
 void FixSession::Disconnect() {
+	m_isSessionActive = false;
 	if (!m_session) {
 		return;
 	}
@@ -237,7 +249,6 @@ void FixSession::LogStateChange(
 
 void FixSession::LogError(
 			fix::ErrorReason::Enum reason,
-
 			const std::string &description,
 			fix::Session &session) {
 	Assert(&session == &Get());
@@ -264,6 +275,6 @@ void FixSession::ResetLocalSequenceNumbers() {
 			" sequence number will be reset from out %1% and in %2%...",
 		boost::make_tuple(m_session->outSeqNum(), m_session->inSeqNum()));
 	// m_session->resetLocalSequenceNumbers();
-	m_session->outSeqNum(1);
-	m_session->inSeqNum(1);
+ 	m_session->outSeqNum(1);
+ 	m_session->inSeqNum(1);
 }

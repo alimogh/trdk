@@ -142,8 +142,10 @@ void FixStream::onStateChange(
 			fix::SessionState::Enum newState,
 			fix::SessionState::Enum prevState,
 			fix::Session *session) {
+
 	Assert(session == &m_session.Get());
 	m_session.LogStateChange(newState, prevState, *session);
+
 	if (
 			prevState == fix::SessionState::LogoutInProgress
 			&& newState == fix::SessionState::Disconnected) {
@@ -153,6 +155,11 @@ void FixStream::onStateChange(
 			&& newState == fix::SessionState::Reconnecting) {
 		OnReconnecting();
 	}
+	
+	if (newState == fix::SessionState::Disconnected) {
+		m_session.Reconnect();
+	}
+
 }
 
 void FixStream::onError(
