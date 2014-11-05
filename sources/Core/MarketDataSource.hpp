@@ -100,7 +100,7 @@ namespace trdk {
 
 	protected:
 
-		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
+		virtual trdk::Security & CreateSecurity(
 					trdk::Context &,
 					const trdk::Lib::Symbol &)
 				const

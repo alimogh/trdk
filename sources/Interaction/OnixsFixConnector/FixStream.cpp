@@ -127,7 +127,7 @@ void FixStream::SubscribeToSecurities() {
 
 }
 
-boost::shared_ptr<Security> FixStream::CreateSecurity(
+Security & FixStream::CreateSecurity(
 			Context &context,
 			const Symbol &symbol)
 		const {
@@ -135,15 +135,17 @@ boost::shared_ptr<Security> FixStream::CreateSecurity(
 		new FixSecurity(context, symbol, *this));
 	const_cast<FixStream *>(this)
 		->m_securities.push_back(result);
-	return result;
+	return *result;
 }
 
 void FixStream::onStateChange(
 			fix::SessionState::Enum newState,
 			fix::SessionState::Enum prevState,
 			fix::Session *session) {
+
 	Assert(session == &m_session.Get());
 	m_session.LogStateChange(newState, prevState, *session);
+
 	if (
 			prevState == fix::SessionState::LogoutInProgress
 			&& newState == fix::SessionState::Disconnected) {
@@ -153,6 +155,11 @@ void FixStream::onStateChange(
 			&& newState == fix::SessionState::Reconnecting) {
 		OnReconnecting();
 	}
+	
+	if (newState == fix::SessionState::Disconnected) {
+		m_session.Reconnect();
+	}
+
 }
 
 void FixStream::onError(
@@ -200,6 +207,12 @@ void FixStream::onInboundApplicationMsg(
 		for (size_t i = 0; i < entries.size(); ++i) {
 			
 			const auto &entry = entries[i];
+
+			const auto action
+				= entry.getInt32(fix::FIX42::Tags::MDUpdateAction);
+			if (action == 2) { // Delete
+				continue;
+			}
 
 			const auto price = entry.getDouble(fix::FIX42::Tags::MDEntryPx);
 			const auto qty = ParseMdEntrySize(entry);

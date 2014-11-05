@@ -161,7 +161,7 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 
 	protected:
 
-		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
+		virtual trdk::Security & CreateSecurity(
 					Context &context,
 					const Symbol &symbol)
 				const {
@@ -173,7 +173,7 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 					== securities.end());
 			securities[result->GetSymbol().GetSymbol()] = result;
 			securities.swap(const_cast<HotspotStream *>(this)->m_securities);
-			return result;
+			return *result;
 		}
 
 	private:

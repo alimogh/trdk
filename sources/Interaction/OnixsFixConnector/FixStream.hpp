@@ -58,7 +58,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	protected:
 
-		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
+		virtual trdk::Security & CreateSecurity(
 					trdk::Context &,
 					const trdk::Lib::Symbol &)
 				const;
