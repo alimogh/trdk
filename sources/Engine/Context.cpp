@@ -151,23 +151,20 @@ public:
 				});
 			context.GetLog().Info(
 				"Loaded %1% market data sources with %2% securities: %3%.",
-				boost::make_tuple(
-					markedDataSourcesStat.size(),
-					commonSecuritiesCount,
-					boost::join(markedDataSourcesStat, ", ")));
+				markedDataSourcesStat.size(),
+				commonSecuritiesCount,
+				boost::join(markedDataSourcesStat, ", "));
 		}
 		
 		context.GetLog().Info("Loaded %1% observers.", observers.size());
 		context.GetLog().Info(
 			"Loaded %1% strategies (%2% instances).",
-			boost::make_tuple(
-				strategies.size(),
-				GetModulesCount(strategies)));
+			strategies.size(),
+			GetModulesCount(strategies));
 		context.GetLog().Info(
 			"Loaded %1% services (%2% instances).",
-			boost::make_tuple(
-				services.size(),
-				GetModulesCount(services)));
+			services.size(),
+			GetModulesCount(services));
 
 	}
 

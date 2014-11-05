@@ -676,9 +676,8 @@ public:
 			} catch (const Exception &ex) {
 				m_context.GetLog().Error(
 					"Failed to load module from \"%1%\": \"%2%\".",
-					boost::make_tuple(
-						boost::cref(*section),
-						boost::cref(ex)));
+					*section,
+					ex);
 				throw Exception("Failed to load module");
 			}
 		}
@@ -808,7 +807,8 @@ private:
 
 		m_context.GetLog().Debug(
 			"Found %1% section \"%2%\"...",
-			boost::make_tuple(Trait::GetName(false), boost::cref(conf)));
+			Trait::GetName(false),
+			conf);
 
 		static_assert(
 			numberOfSystemServices == 5,
@@ -822,14 +822,16 @@ private:
 				|| boost::iequals(tag, Constants::Services::bars)) {
 			m_context.GetLog().Error(
 				"System predefined module name used in %1%: \"%2%\".",
-				boost::make_tuple(boost::cref(conf), boost::cref(tag)));
+				conf, 
+				tag);
 			throw Exception("System predefined module name used");
 		}
 
 		if (modules.find(tag) != modules.end()) {
 			m_context.GetLog().Error(
 				"Tag name \"%1%\" for %2% isn't unique.",
-				boost::make_tuple(boost::cref(tag), Trait::GetName(false)));
+				tag,
+				false);
 			throw Exception("Tag name isn't unique");
 		}
 
@@ -989,9 +991,8 @@ private:
 			m_context.GetLog().Error(
 				"Requirements syntax error:"
 					" expected closing \"]\" for \"%1%\" in \"%2%\".",
-					boost::make_tuple(
-						boost::cref(*result.rbegin()),
-						boost::cref(request)));
+					*result.rbegin(),
+					request);
 			throw Exception("Requirements syntax error");
 		}
 
@@ -1044,9 +1045,8 @@ private:
 				m_context.GetLog().Error(
 					"Requirements syntax error:"
 						" duplicate entry \"%1%\" in \"%2%\".",
-						boost::make_tuple(
-							boost::cref(symbol),
-							boost::cref(request)));
+					symbol,
+					request);
 				throw Exception("Requirements syntax error");
 			}
 			result.symbols.insert(symbol);
@@ -1338,9 +1338,8 @@ private:
 						requredService->RegisterSubscriber(*instance.second);
 						instance.second->GetLog().Info(
 							"Subscribed to \"%1%\" with security(ies) \"%2%\".",
-							boost::make_tuple(
-								boost::cref(*requredService),
-								boost::cref(symbolsStrList)));
+							*requredService,
+							symbolsStrList);
 					}
 
 				} else {
@@ -1353,17 +1352,15 @@ private:
 						requredService->RegisterSubscriber(*instance);
 						instance->GetLog().Info(
 							"Subscribed to \"%1%\" with security(ies) \"%2%\".",
-							boost::make_tuple(
-								boost::cref(*requredService),
-								boost::cref(symbolsStrList)));
+							*requredService,
+							symbolsStrList);
 					}
 					foreach (auto &instance, module.symbolInstances) {
 						requredService->RegisterSubscriber(*instance.second);
 						instance.second->GetLog().Info(
 							"Subscribed to \"%1%\" with security(ies) \"%2%\".",
-							boost::make_tuple(
-								boost::cref(*requredService),
-								boost::cref(symbolsStrList)));
+							*requredService,
+							symbolsStrList);
 					}
 
 				}
@@ -1593,10 +1590,9 @@ private:
 		}
 		m_context.GetLog().Debug(
 			"Loading symbol instances from %1% for %2% \"%3%\"...",
-			boost::make_tuple(
-				boost::cref(symbolsFilePath),
-				Trait::GetName(false),
-				boost::cref(tag)));
+			symbolsFilePath,
+			Trait::GetName(false),
+			tag);
 		const IniFile symbolsIni(symbolsFilePath);
 		std::set<Symbol> symbols = symbolsIni.ReadSymbols(
 			m_context.GetSettings().GetDefaultExchange(),
@@ -1609,9 +1605,8 @@ private:
 		} catch (const Lib::Ini::Error &ex) {
 			m_context.GetLog().Error(
 				"Failed to load securities for %2%: \"%1%\".",
-				boost::make_tuple(
-					boost::cref(ex),
-					boost::cref(tag)));
+				ex,
+				tag);
 			throw Lib::Ini::Error("Failed to load securities");
 		}
 	
@@ -1636,9 +1631,8 @@ private:
 		if (tag.empty()) {
 			m_context.GetLog().Error(
 				"Failed to get tag for %1% section \"%2%\".",
-				boost::make_tuple(
-					Trait::GetName(false),
-					boost::cref(result.conf)));
+				Trait::GetName(false),
+				result.conf);
 			throw Lib::Ini::Error("Failed to load module");
 		}
 
@@ -1653,7 +1647,8 @@ private:
 		} catch (const Lib::Ini::Error &ex) {
 			m_context.GetLog().Error(
 				"Failed to get %1% module: \"%2%\".",
-				boost::make_tuple(Trait::GetName(false), boost::cref(ex)));
+				Trait::GetName(false),
+				ex);
 			throw Lib::Ini::Error("Failed to load module");
 		}
 
@@ -1737,7 +1732,8 @@ void ContextStateBootstrapper::CreateStandaloneModuleInstance(
 	typedef ModuleTrait<Service> Trait;
 	m_context.GetLog().Debug(
 		"%1% \"%2%\" instantiation delayed.",
-		boost::make_tuple(Trait::GetName(true), boost::cref(tag)));
+		Trait::GetName(true),
+		tag);
 }
 
 

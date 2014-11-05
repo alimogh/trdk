@@ -128,7 +128,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 			GetLog().Error(
 				"FIX Server sent unknown Execution Report: \"%1%\".",
-				boost::make_tuple(boost::cref(message)));
+				message);
 
 		}
 

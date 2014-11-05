@@ -146,9 +146,8 @@ namespace trdk { namespace Engine {
 				if (!(m_current->size() % 50)) {
 					m_context.GetLog().Warn(
 						"Dispatcher queue \"%1%\" is too long (%2% events)!",
-						boost::make_tuple(
-							boost::cref(m_name),
-							m_current->size()));
+						m_name,
+						m_current->size());
 				}
 			}
 
@@ -171,9 +170,8 @@ namespace trdk { namespace Engine {
 						m_context.GetLog().Warn(
 							"Dispatcher task \"%1%\" is heavy loaded"
 								" (%2% iterations)!",
-							boost::make_tuple(
-								boost::cref(m_name),
-								heavyLoadsCount));
+							m_name,
+							heavyLoadsCount);
 					}
 
 					List *listToRead = m_current;
@@ -411,9 +409,8 @@ namespace trdk { namespace Engine {
 				m_context.GetLog().Error(
 					"Module error in dispatcher notification task"
 						" \"%1%\": \"%2%\".",
-					boost::make_tuple(
-						boost::cref(moduleName),
-						boost::cref(ex)));
+					moduleName,
+					ex);
 				throw;
 			} catch (...) {
 				m_context.GetLog().Error(

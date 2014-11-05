@@ -121,10 +121,9 @@ public:
 			"Recursive service reference detected:"
 				" trying to make subscription \"%1%\" -> \"%2%\","
 				" but already exists subscription %3%.",
-			boost::make_tuple(
-				boost::cref(boost::apply_visitor(Visitors::GetModule(), subscriber)),
-				boost::cref(m_service),
-				boost::join(path, " -> ")));
+			boost::apply_visitor(Visitors::GetModule(), subscriber),
+			m_service,
+			boost::join(path, " -> "));
 		throw Exception("Recursive service reference detected");
 	}
 

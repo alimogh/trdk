@@ -164,7 +164,8 @@ OrderId FixTrading::TakeOrderId(
 			if (!(++m_ordersCountReportsCounter % 1000)) {
 				GetLog().Warn(
 					"FIX orders storage too big (%1%): %2% records.",
-					boost::make_tuple(GetTag(), m_orders.size()));
+					GetTag(),
+					m_orders.size());
 				m_ordersCountReportsCounter = 0;
 			}
 		}
@@ -226,7 +227,9 @@ void FixTrading::NotifyOrderUpdate(
 		if (!order) {
 			GetLog().Error(
 				"FIX Server (%1%) sent unknown %2% order ID %3%.",
-				boost::make_tuple(GetTag(), operation, orderId));
+				GetTag(),
+				operation,
+				orderId);
 			return;
 		}
 		Assert(!order->isRemoved);
@@ -661,7 +664,8 @@ void FixTrading::CancelOrder(OrderId orderId) {
 		if (!order) {
 			GetLog().Warn(
 				"FIX Server (%1%) failed to find order with ID %2% to cancel.",
-				boost::make_tuple(GetTag(), boost::cref(orderId)));
+				GetTag(),
+				orderId);
 			return;
 		}
 		message.set(
@@ -772,10 +776,9 @@ void FixTrading::OnOrderRejected(
 
 	GetLog().Error(
 		"FIX Server (%1%) Rejected order %2%: \"%3%\".",
-		boost::make_tuple(
-			GetTag(),
-			GetMessageOrderId(execReport),
-			boost::cref(reason)));
+		GetTag(),
+		GetMessageOrderId(execReport),
+		reason);
 
 	NotifyOrderUpdate(
 		execReport,

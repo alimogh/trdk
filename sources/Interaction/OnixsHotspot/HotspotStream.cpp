@@ -200,10 +200,9 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 			GetLog().Info(
 				"Connecting to Hotspot ITCH Server at \"%1%:%2%\""
 					" as \"%3%\" (with password)...",
-				boost::make_tuple(
-					boost::cref(m_connectionOptions.host),
-					m_connectionOptions.port,
-					boost::cref(m_connectionOptions.login)));
+				m_connectionOptions.host,
+				m_connectionOptions.port,
+				m_connectionOptions.login);
 
 			try {
 				m_handler.connect(
