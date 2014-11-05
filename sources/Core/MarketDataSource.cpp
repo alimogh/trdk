@@ -52,10 +52,7 @@ class MarketDataSource::Implementation : private boost::noncopyable {
 
 public:
 
-	typedef boost::unordered_map<
-			trdk::Lib::Symbol,
-			boost::shared_ptr<Security>>
-		Securities;
+	typedef boost::unordered_map<trdk::Lib::Symbol, Security *> Securities;
 
 public:
 
@@ -132,10 +129,9 @@ Security & MarketDataSource::GetSecurity(
 		if (result) {
 			return *result;
 		}
-		boost::shared_ptr<trdk::Security> newSecurity
-			= CreateSecurity(context, symbol);
-		m_pimpl->m_securities[symbol] = newSecurity;
-		result = &*newSecurity;
+		auto &newSecurity = CreateSecurity(context, symbol);
+		m_pimpl->m_securities[symbol] = &newSecurity;
+		result = &newSecurity;
 	}
 	context.GetLog().Debug("Loaded security \"%1%\".", *result);
 	return *result;

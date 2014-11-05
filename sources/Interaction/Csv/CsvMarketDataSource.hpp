@@ -32,10 +32,10 @@ namespace trdk { namespace Interaction { namespace Csv {
 
 		struct SecurityHolder {
 			
-			Security *security;
+			boost::shared_ptr<Security> security;
 
-			explicit SecurityHolder(Security &security)
-					: security(&security) {
+			explicit SecurityHolder(const boost::shared_ptr<Security> &security)
+					: security(security) {
 				//...//
 			}
 
@@ -87,7 +87,7 @@ namespace trdk { namespace Interaction { namespace Csv {
 
 	private:
 
-		void Subscribe(Security &) const;
+		void Subscribe(const boost::shared_ptr<Security> &) const;
 
 		void ReadFile();
 
@@ -103,7 +103,7 @@ namespace trdk { namespace Interaction { namespace Csv {
 
 	protected:
 
-		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
+		virtual trdk::Security & CreateSecurity(
 					Context &,
 					const trdk::Lib::Symbol &)
 				const;

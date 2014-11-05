@@ -98,7 +98,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	protected:
 
-		virtual boost::shared_ptr<trdk::Security> CreateSecurity(
+		virtual trdk::Security & CreateSecurity(
 					Context &,
 					const trdk::Lib::Symbol &)
 				const;

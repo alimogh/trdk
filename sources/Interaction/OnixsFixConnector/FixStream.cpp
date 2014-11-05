@@ -127,7 +127,7 @@ void FixStream::SubscribeToSecurities() {
 
 }
 
-boost::shared_ptr<Security> FixStream::CreateSecurity(
+Security & FixStream::CreateSecurity(
 			Context &context,
 			const Symbol &symbol)
 		const {
@@ -135,7 +135,7 @@ boost::shared_ptr<Security> FixStream::CreateSecurity(
 		new FixSecurity(context, symbol, *this));
 	const_cast<FixStream *>(this)
 		->m_securities.push_back(result);
-	return result;
+	return *result;
 }
 
 void FixStream::onStateChange(

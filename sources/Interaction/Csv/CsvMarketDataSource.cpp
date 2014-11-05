@@ -278,19 +278,21 @@ void Csv::MarketDataSource::ReadFile() {
 
 }
 
-boost::shared_ptr<trdk::Security> Csv::MarketDataSource::CreateSecurity(
+trdk::Security & Csv::MarketDataSource::CreateSecurity(
 			Context &context,
 			const Symbol &symbol)
 		const {
 	boost::shared_ptr<Csv::Security> result(
 		new Security(context, symbol, *this));
-	Subscribe(*result);
-	return result;
+	Subscribe(result);
+	return *result;
 }
 		
-void Csv::MarketDataSource::Subscribe(Security &security) const {
+void Csv::MarketDataSource::Subscribe(
+			const boost::shared_ptr<Security> &security)
+		const {
 	Assert(
-		m_securityList.get<ByInstrument>().find(security.GetSymbol())
+		m_securityList.get<ByInstrument>().find(security->GetSymbol())
 			== m_securityList.get<ByInstrument>().end());
  	const_cast<MarketDataSource *>(this)
  		->m_securityList.insert(SecurityHolder(security));
