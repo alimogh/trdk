@@ -62,7 +62,8 @@ private:
 				m_orderTime(ORDER_TIME_NOT_SET),
 				m_security(nullptr),
 				m_qty(0),
-				m_price(-1.0) {
+				m_price(-1.0),
+				m_currency(numberOfCurrencies) {
 			//...//
 		}
 		virtual ~OrderCommand() {
@@ -119,6 +120,15 @@ private:
 				} else {
 					m_price = 0;
 				}
+			} else if (boost::iequals(cmd, "curr")) {
+				if (m_currency != numberOfCurrencies) {
+					throw Exception("Currency already set");
+				}
+				try {
+					m_currency = ConvertCurrencyFromIso(val);
+				} catch (const Lib::Exception &ex) {
+					throw Exception(ex.what());
+				}
 			} else {
 				throw Exception("Unknown command");
 			}
@@ -168,11 +178,18 @@ private:
 				avgPrice,
 				TradeSystem::GetStringStatus(status));
 		}
+		Currency GetCurrency() const {
+			return m_currency != numberOfCurrencies
+				?	m_currency
+				:	m_security->GetSymbol().GetCashCurrency();
+		}
 	protected:
 		OrderTime m_orderTime;
 		Security *m_security;
 		Qty m_qty;
 		double m_price;
+	private:
+		Lib::Currency m_currency;
 	};
 
 	class SellCommand : public OrderCommand {
@@ -191,7 +208,7 @@ private:
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
 					m_tradeSystem.SellAtMarketPrice(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						orderParams,
 						boost::bind(
@@ -205,7 +222,7 @@ private:
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.SellAtMarketPriceImmediatelyOrCancel(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						orderParams,
 						boost::bind(
@@ -221,7 +238,7 @@ private:
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
 					m_tradeSystem.Sell(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						m_security->ScalePrice(m_price),
 						orderParams,
@@ -236,7 +253,7 @@ private:
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.SellImmediatelyOrCancel(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						m_security->ScalePrice(m_price),
 						orderParams,
@@ -269,7 +286,7 @@ private:
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
 					m_tradeSystem.BuyAtMarketPrice(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						orderParams,
 						boost::bind(
@@ -283,7 +300,7 @@ private:
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.BuyAtMarketPriceImmediatelyOrCancel(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						orderParams,
 						boost::bind(
@@ -299,7 +316,7 @@ private:
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
 					m_tradeSystem.Buy(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						m_security->ScalePrice(m_price),
 						orderParams,
@@ -314,7 +331,7 @@ private:
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.BuyImmediatelyOrCancel(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						m_security->ScalePrice(m_price),
 						orderParams,

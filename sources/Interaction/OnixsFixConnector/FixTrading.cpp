@@ -133,7 +133,9 @@ void FixTrading::CreateConnection(const IniSectionRef &conf) {
 }
 
 OrderId FixTrading::GetMessageOrderId(const fix::Message &message) const {
-	return message.getUInt64(fix::FIX40::Tags::ClOrdID);
+	return message.contain(fix::FIX40::Tags::OrigClOrdID)
+		?	message.getUInt64(fix::FIX40::Tags::OrigClOrdID)
+		:	message.getUInt64(fix::FIX40::Tags::ClOrdID);
 }
 
 OrderId FixTrading::TakeOrderId(
@@ -337,23 +339,6 @@ fix::Message & FixTrading::GetPreallocatedMarketOrderMessage(
 		fix::FIX40::Tags::OrdType,
 		fix::FIX41::Values::OrdType::Forex_Market);
 	return result;
-}
-
-fix::Message FixTrading::CreateLimitOrderMessage(
-			const OrderId &orderId,
-			const Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const ScaledPrice &price) {
-	fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
-	order.set(
-		fix::FIX40::Tags::OrdType,
-		fix::FIX41::Values::OrdType::Forex_Limit);
-	order.set(
-		fix::FIX40::Tags::Price,
-		security.DescalePrice(price),
-		security.GetPricePrecision());
-	return std::move(order);
 }
 
 void FixTrading::Send(

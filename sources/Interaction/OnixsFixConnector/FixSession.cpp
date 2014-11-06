@@ -54,7 +54,7 @@ namespace {
 			throw FixSession::Error("Failed to init FIX Engine");
 		}
 	
-		Log::Debug(
+		log.Debug(
 			"Using FIX Version \"%1%\" (%2%) for \"%3%\".",
 			fixVerStr,
 			result,

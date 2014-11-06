@@ -54,16 +54,26 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			const auto &replyTime = TimeMeasurement::Milestones::GetNow();
 			Assert(session == &GetSession().Get());
 			UseUnused(session);
-			if (message.type() == "8") {
-				OnExecutionReport(message, replyTime);
-			} else if (message.type() == "3") {
-				OnReject(message);
+			if (message.type() != "8") {
+				return;
 			}
+			OnExecutionReport(message, replyTime);
+		}
+
+		virtual void onInboundSessionMsg (
+					fix::Message &message,
+					fix::Session *session) {
+			Assert(session == &GetSession().Get());
+			UseUnused(session);
+			if (message.type() != "3") {
+				return;
+			}
+			OnReject(message);
 		}
 
 	protected:
 
-		fix::Message CreateMarketOrderMessage(
+		virtual fix::Message CreateMarketOrderMessage(
 					const OrderId &orderId,	
 					const Security &security,
 					const Currency &currency,
@@ -76,6 +86,23 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			order.set(
 				fix::FIX40::Tags::TimeInForce,
 				fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
+			return std::move(order);
+		}
+
+		virtual fix::Message CreateLimitOrderMessage(
+					const OrderId &orderId,
+					const Security &security,
+					const Currency &currency,
+					const Qty &qty,
+					const ScaledPrice &price) {
+			fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
+			order.set(
+				fix::FIX40::Tags::OrdType,
+				fix::FIX41::Values::OrdType::Limit);
+			order.set(
+				fix::FIX40::Tags::Price,
+				security.DescalePrice(price),
+				security.GetPricePrecision());
 			return std::move(order);
 		}
 
@@ -206,19 +233,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			
 				return;
 		
-			} /*else if (execType == fix::FIX41::Values::ExecType::Rejected) {
-					const std::string &reason
-						= message.get(fix::FIX40::Tags::Text);
-					OnOrderRejected(
-						message,
-						replyTime,
-						boost::iequals(
-							reason,
-							"maximum operation limit exceeded"));
-					return;
-				}
+			} else if (execType == fix::FIX42::Values::ExecType::Pending_Cancel) {
+			
+				return;
 		
-			}*/
+			}
 
 			GetLog().Error(
 				"FIX Server sent unknown Execution Report: \"%1%\".",
@@ -229,7 +248,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		void OnReject(fix::Message &message) {
 			GetLog().Error(
 				"FIX Server sent unknown Reject: \"%1%\".",
-				boost::cref(message));
+				message);
 		}
 
 
