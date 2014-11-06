@@ -244,6 +244,17 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				const trdk::Lib::Currency &,
 				const Qty &)
 			= 0;
+		//! Creates limit order FIX-message and sets common fields.
+		/** Crates new order message each time, can be called from anywhere,
+		  * without synchronization.
+		  */
+		virtual OnixS::FIX::Message CreateLimitOrderMessage(
+				const OrderId &,
+				const Security &,
+				const trdk::Lib::Currency &,
+				const Qty &,
+				const ScaledPrice &)
+			= 0;
 
 		virtual void OnOrderStateChanged(
 				const OnixS::FIX::Message &,
@@ -274,16 +285,6 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		void FlushRemovedOrders();
 
-		//! Creates limit order FIX-message and sets common fields.
-		/** Crates new order message each time, can be called from anywhere,
-		  * without synchronization.
-		  */
-		OnixS::FIX::Message CreateLimitOrderMessage(
-				const OrderId &,
-				const Security &,
-				const trdk::Lib::Currency &,
-				const Qty &,
-				const ScaledPrice &);
 		//! Sets common fields and returns reference to preallocated order
 		//! FIX-message.
 		/** Uses only one object for all messages, hasn't synchronization, can

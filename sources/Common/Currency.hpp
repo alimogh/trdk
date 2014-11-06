@@ -16,6 +16,9 @@ namespace trdk { namespace Lib {
 	enum Currency {
 		CURRENCY_USD,
 		CURRENCY_EUR,
+		CURRENCY_JPY,
+		CURRENCY_RUB,
+		CURRENCY_GBP,
 		numberOfCurrencies
 	};
 

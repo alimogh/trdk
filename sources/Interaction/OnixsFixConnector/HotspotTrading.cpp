@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "FixTrading.hpp"
+#include "Core/Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -134,7 +135,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	protected:
 
-		fix::Message CreateMarketOrderMessage(
+		virtual fix::Message CreateMarketOrderMessage(
 					const OrderId &orderId,	
 					const Security &security,
 					const Currency &currency,
@@ -144,6 +145,23 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			order.set(
 				fix::FIX40::Tags::OrdType,
 				fix::FIX41::Values::OrdType::Forex_Market);
+			return std::move(order);
+		}
+
+		virtual fix::Message CreateLimitOrderMessage(
+					const OrderId &orderId,
+					const Security &security,
+					const Currency &currency,
+					const Qty &qty,
+					const ScaledPrice &price) {
+			fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
+			order.set(
+				fix::FIX40::Tags::OrdType,
+				fix::FIX41::Values::OrdType::Forex_Limit);
+			order.set(
+				fix::FIX40::Tags::Price,
+				security.DescalePrice(price),
+				security.GetPricePrecision());
 			return std::move(order);
 		}
 
