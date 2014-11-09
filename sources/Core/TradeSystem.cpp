@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "TradeSystem.hpp"
+#include "AsyncLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -58,6 +59,19 @@ TradeSystem::PositionError::PositionError(
 
 //////////////////////////////////////////////////////////////////////////
 
+namespace {
+	
+	std::string FormatStringId(const std::string &tag) {
+		std::string	result("TradeSystem");
+		if (!tag.empty()) {
+			result += '.';
+			result += tag;
+		}
+		return std::move(result);
+	}
+
+}
+
 class TradeSystem::Implementation : private boost::noncopyable {
 
 public:
@@ -65,10 +79,17 @@ public:
 	Context &m_context;
 
 	const std::string m_tag;
+	const std::string m_stringId;
+
+	TradeSystem::Log m_log;
+	TradeSystem::TradingLog m_tradingLog;
 
 	explicit Implementation(Context &context, const std::string &tag)
 			: m_context(context),
-			m_tag(tag) {
+			m_tag(tag),
+			m_stringId(FormatStringId(m_tag)),
+			m_log(m_stringId, m_context.GetLog()),
+			m_tradingLog(m_tag, m_context.GetTradingLog()) {
 		//...//
 	}
 
@@ -91,8 +112,12 @@ const Context & TradeSystem::GetContext() const {
 	return const_cast<TradeSystem *>(this)->GetContext();
 }
 
-Context::Log & TradeSystem::GetLog() const {
-	return GetContext().GetLog();
+TradeSystem::Log & TradeSystem::GetLog() const throw() {
+	return m_pimpl->m_log;
+}
+
+TradeSystem::TradingLog & TradeSystem::GetTradingLog() const throw() {
+	return m_pimpl->m_tradingLog;
 }
 
 const char * TradeSystem::GetStringStatus(OrderStatus code) {
@@ -123,6 +148,10 @@ const char * TradeSystem::GetStringStatus(OrderStatus code) {
 
 const std::string & TradeSystem::GetTag() const {
 	return m_pimpl->m_tag;
+}
+
+const std::string & TradeSystem::GetStringId() const throw() {
+	return m_pimpl->m_stringId;
 }
 
 void TradeSystem::Validate(
@@ -190,3 +219,12 @@ void TradeSystem::Test() {
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+std::ostream & std::operator <<(
+			std::ostream &oss,
+			const TradeSystem &tradeSystem) {
+	oss << tradeSystem.GetStringId();
+	return oss;
+}
+
+////////////////////////////////////////////////////////////////////////////////

@@ -13,21 +13,27 @@
 #include "Security.hpp"
 
 namespace pt = boost::posix_time;
+namespace fs = boost::filesystem;
+
 using namespace trdk;
 using namespace trdk::Lib;
 
 Settings::Settings(
-			const Ini &conf,
 			const Time &now,
 			bool isReplayMode,
-			Context::Log &log)
-		: m_startTime(now),
-		m_isReplayMode(isReplayMode) {
-	UpdateDynamic(conf, log);
-	UpdateStatic(conf, log);
+			const fs::path &logsDir)
+		: m_isLoaded(false),
+		m_startTime(now),
+		m_isReplayMode(isReplayMode),
+		m_logsDir(logsDir) {
+	//...//
 }
 
 void Settings::Update(const Ini &conf, Context::Log &log) {
+	if (!m_isLoaded) {
+		UpdateStatic(conf, log);
+		m_isLoaded = true;
+	}
 	UpdateDynamic(conf, log);
 }
 
@@ -69,13 +75,13 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 			}
 			if (values.tradeSessionStartTime.is_not_a_date_time()) {
 				Assert(values.tradeSessionEndTime.is_not_a_date_time());
-				values.tradeSessionStartTime = GetStartTime() + GetEdtDiff();
+				values.tradeSessionStartTime = GetStartTime() + GetEstDiff();
 				values.tradeSessionStartTime -= values.tradeSessionStartTime.time_of_day();
 				values.tradeSessionStartTime += pt::hours(atoi(subSubs[0].c_str()));
 				values.tradeSessionStartTime += pt::minutes(atoi(subSubs[1].c_str()));
 				values.tradeSessionStartTime += pt::seconds(atoi(subSubs[2].c_str()));
 			} else if (values.tradeSessionEndTime.is_not_a_date_time()) {
-				values.tradeSessionEndTime = GetStartTime() + GetEdtDiff();
+				values.tradeSessionEndTime = GetStartTime() + GetEstDiff();
 				values.tradeSessionEndTime -= values.tradeSessionEndTime.time_of_day();
 				values.tradeSessionEndTime += pt::hours(atoi(subSubs[0].c_str()));
 				values.tradeSessionEndTime += pt::minutes(atoi(subSubs[1].c_str()));
@@ -94,8 +100,8 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 			message % commonConf % tradeSessionPeriodEdtKey;
 			throw Ini::KeyFormatError(message.str().c_str());
 		}
-		values.tradeSessionStartTime -= GetEdtDiff();
-		values.tradeSessionEndTime -= GetEdtDiff();
+		values.tradeSessionStartTime -= GetEstDiff();
+		values.tradeSessionEndTime -= GetEstDiff();
 		if (values.tradeSessionStartTime >= values.tradeSessionEndTime) {
 			if (values.tradeSessionStartTime <= GetStartTime()) {
 				values.tradeSessionEndTime += pt::hours(24);
@@ -114,10 +120,10 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 		"Common static settings:"
 			" start_time_edt = %1%;"
 			" %2% = %3% -> %4%; %5% = %6%;",
-		GetStartTime() + GetEdtDiff(),
+		GetStartTime() + GetEstDiff(),
 		tradeSessionPeriodEdtKey,
-		values.tradeSessionStartTime + GetEdtDiff(),
-		values.tradeSessionEndTime + GetEdtDiff(),
+		values.tradeSessionStartTime + GetEstDiff(),
+		values.tradeSessionEndTime + GetEstDiff(),
 		waitMarketDataKey,
 		values.shouldWaitForMarketData ? "yes" : "no");
 

@@ -26,15 +26,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		explicit FixSession(
 					Context &,
-					const std::string &type,
+					ModuleEventsLog &,
 					const Lib::IniSectionRef &);
 		~FixSession();
 
 	public:
-
-		Context::Log & GetLog() const {
-			return m_context.GetLog();
-		}
 
 		const OnixS::FIX::ProtocolVersion::Enum GetFixVersion() const {
 			return m_fixVersion;
@@ -84,7 +80,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		Context &m_context;
 
-		const std::string m_type;
+		ModuleEventsLog &m_log;
 
 		const OnixS::FIX::ProtocolVersion::Enum m_fixVersion;
 

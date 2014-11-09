@@ -212,7 +212,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				void (
 					const Broker &b1,
 					const Broker &b2,
-					trdk::Module::Log &)>
+					Strategy::TradingLog &)>
 			EquationPrint;
 		typedef std::vector<
 				std::pair<Equation, EquationPrint>>

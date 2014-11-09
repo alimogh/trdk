@@ -251,7 +251,7 @@
     <ClCompile Include="Currency.cpp" />
     <ClCompile Include="Defaults.cpp" />
     <ClCompile Include="Ini.cpp" />
-    <ClCompile Include="LogState.cpp" />
+    <ClCompile Include="Log.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -275,7 +275,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assert.hpp" />
-    <ClInclude Include="AsyncLog.hpp" />
     <ClInclude Include="Common.hpp" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="Currency.hpp" />
@@ -285,8 +284,6 @@
     <ClInclude Include="Dll.hpp" />
     <ClInclude Include="Ini.hpp" />
     <ClInclude Include="Log.hpp" />
-    <ClInclude Include="LogState.hpp" />
-    <ClInclude Include="LogDetail.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="SegmentedVector.hpp" />
     <ClInclude Include="Spin.hpp" />

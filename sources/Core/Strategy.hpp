@@ -12,6 +12,7 @@
 
 #include "Position.hpp"
 #include "Consumer.hpp"
+#include "Fwd.hpp"
 #include "Api.h"
 
 namespace trdk {
@@ -101,6 +102,8 @@ namespace trdk {
 
 		};
 
+		typedef trdk::ModuleAsyncLog TradingLog;
+
 	public:
 
 		explicit Strategy(
@@ -108,6 +111,10 @@ namespace trdk {
 				const std::string &name,
 				const std::string &tag);
 		virtual ~Strategy();
+
+	public:
+
+		trdk::Strategy::TradingLog & GetTradingLog() const throw();
 
 	public:
 

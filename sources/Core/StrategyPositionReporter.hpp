@@ -119,7 +119,7 @@ namespace trdk {
 				<< ',' << security.DescalePrice(position.GetOpenPrice())
 
 				// entry time
-				<< ',' << (position.GetOpenTime() + trdk::Lib::GetEdtDiff()).time_of_day()
+				<< ',' << (position.GetOpenTime() + trdk::Lib::GetEstDiff()).time_of_day()
 
 				// entry order
 				<< ',' << position.GetOpenOrderId()
@@ -136,7 +136,7 @@ namespace trdk {
 			// exit time
 			out << ',';
 			if (position.IsClosed()) {
-				out << (position.GetCloseTime() + trdk::Lib::GetEdtDiff()).time_of_day();
+				out << (position.GetCloseTime() + trdk::Lib::GetEstDiff()).time_of_day();
 			} else {
 				out << '-';
 			}

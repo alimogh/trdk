@@ -97,9 +97,9 @@ namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	boost::shared_ptr<boost::local_time::posix_time_zone> GetEdtTimeZone();
+	boost::shared_ptr<boost::local_time::posix_time_zone> GetEstTimeZone();
 
-	boost::posix_time::time_duration GetEdtDiff();
+	boost::posix_time::time_duration GetEstDiff();
 
 	time_t ConvertToTimeT(const boost::posix_time::ptime &);
 	int64_t ConvertToMicroseconds(const boost::posix_time::ptime &);

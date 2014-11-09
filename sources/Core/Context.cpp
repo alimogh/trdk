@@ -10,6 +10,9 @@
 
 #include "Prec.hpp"
 #include "Context.hpp"
+#include "AsyncLog.hpp"
+#include "EventsLog.hpp"
+#include "Settings.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -26,16 +29,6 @@ Context::Exception::Exception(const char *what) throw()
 
 Context::UnknownSecurity::UnknownSecurity() throw()
 		: Exception("Unknown security") {
-	//...//
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-Context::Log::Log(const Context &) {
-	//...//
-}
-
-Context::Log::~Log() {
 	//...//
 }
 
@@ -63,8 +56,8 @@ namespace {
 
 	public:
 		
-		explicit LatanReport(trdk::Context::Log &log)
-				: m_log(log),
+		explicit LatanReport(Context &context)
+				: m_context(context),
 				m_stopFlag(false),
 				m_thread([&]{ThreadMain();}) {
 			//....//
@@ -103,9 +96,9 @@ namespace {
 			try {
 				
 				const auto reportPeriod = pt::seconds(30);
-				const fs::path logPath
-					= Lib::GetExeWorkingDir() / "logs" / "latan.report";
-				m_log.Info(
+				const fs::path &logPath
+					= m_context.GetSettings().GetLogsDir() / "latan.report";
+				m_context.GetLog().Info(
 					"Reporting Latan to to file %1% with period %2%...",
 					logPath,
 					reportPeriod);
@@ -170,11 +163,10 @@ namespace {
 				}
 
 			} catch (...) {
-				trdk::Log::RegisterUnhandledException(
+				EventsLog::BroadcastUnhandledException(
 					__FUNCTION__,
 					__FILE__,
-					__LINE__,
-					false);
+					__LINE__);
 				throw;
 			}
 		}
@@ -215,7 +207,7 @@ namespace {
 
 	private:
 
-		trdk::Context::Log &m_log;
+		trdk::Context &m_context;
 
 		struct Accums {
 			
@@ -247,15 +239,25 @@ class Context::Implementation : private boost::noncopyable {
 
 public:
 
-	Context::Log m_log;
+	Context::Log &m_log;
+	Context::TradingLog &m_tradingLog;
+
+	Settings m_settings;
+
 	Params m_params;
 
 	LatanReport m_latanReport;
 	
-	explicit Implementation(Context &context)
-			: m_log(context),
+	explicit Implementation(
+				Context &context,
+				Log &log,
+				TradingLog &tradingLog,
+				const Settings &settings)
+			: m_log(log),
+			m_tradingLog(tradingLog),
+			m_settings(settings),
 			m_params(context),
-			m_latanReport(m_log) {
+			m_latanReport(context) {
 		//...//
 	}
 
@@ -263,8 +265,8 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-Context::Context() {
-	m_pimpl = new Implementation(*this);
+Context::Context(Log &log, TradingLog &tradingLog, const Settings &settings) {
+	m_pimpl = new Implementation(*this, log, tradingLog, settings);
 }
 
 Context::~Context() {
@@ -273,6 +275,14 @@ Context::~Context() {
 
 Context::Log & Context::GetLog() const throw() {
 	return m_pimpl->m_log;
+}
+
+Context::TradingLog & Context::GetTradingLog() const throw() {
+	return m_pimpl->m_tradingLog;
+}
+
+const Settings & Context::GetSettings() const {
+	return m_pimpl->m_settings;
 }
 
 Security & Context::GetSecurity(const Symbol &symbol) {

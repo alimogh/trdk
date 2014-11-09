@@ -21,8 +21,7 @@ namespace {
 
 	fix::ProtocolVersion::Enum ParseFixVersion(
 				const IniSectionRef &configuration,
-				Context::Log &log,
-				const std::string &sessionType) {
+				ModuleEventsLog &log) {
 
 		fix::ProtocolVersion::Enum result = fix::ProtocolVersion::UNKNOWN;
 
@@ -45,20 +44,15 @@ namespace {
 			result = fix::ProtocolVersion::FIX_50_SP2;
 		} else {
 			log.Error(
-				"Failed to parse FIX Version for \"%1%\": \"%2%\"."
+				"Failed to parse FIX version: \"%1%\"."
 					" Can be: \"FIX 4.0\", \"FIX 4.1\", \"FIX 4.2\""
 					", \"FIX 4.3\", \"FIX 4.4\", \"FIX 5.0\", \"FIX 5.0 SP1\""
 					" or \"FIX 5.0 SP2\".",
-				sessionType,
 				fixVerStr);
 			throw FixSession::Error("Failed to init FIX Engine");
 		}
 	
-		log.Debug(
-			"Using FIX Version \"%1%\" (%2%) for \"%3%\".",
-			fixVerStr,
-			result,
-			sessionType);
+		log.Debug("Using FIX version \"%1%\" (%2%).", fixVerStr, result);
 
 		return result;
 
@@ -72,11 +66,11 @@ namespace {
 
 FixSession::FixSession(
 			Context &context,
-			const std::string &type,
+			ModuleEventsLog &log,
 			const IniSectionRef &configuration)
 		: m_context(context),
-		m_type(type),
-		m_fixVersion(ParseFixVersion(configuration, GetLog(), m_type)),
+		m_log(log),
+		m_fixVersion(ParseFixVersion(configuration, m_log)),
 		m_isSessionActive(false) {
 	
 	if (!fix::Engine::initialized()) {
@@ -85,18 +79,16 @@ FixSession::FixSession(
 			= configuration.GetBase().ReadFileSystemPath(
 				"Common",
 				"onixs_fix_engine_settings");
-		GetLog().Info(
-			"Initializing FIX Engine with %1%...",
-			settings);
+		m_log.Info("Initializing FIX Engine with %1%...", settings);
 		try {
 			fix::Engine::init(settings.string());
 		} catch (const fix::Exception &ex) {
-			GetLog().Error("Failed to init FIX Engine: \"%1%\".", ex.what());
+			m_log.Error("Failed to init FIX Engine: \"%1%\".", ex.what());
 			throw Error("Failed to init FIX Engine");
 		}
 	} else {
 		AssertLt(0, fixEngineRefCounter.load());
-		GetLog().Debug(
+		m_log.Debug(
 			"FIX Engine already initialized (%1%).",
 			fixEngineRefCounter.load());
 	}
@@ -137,11 +129,10 @@ void FixSession::Connect(
 		resetSeqNumFlagSection,
 		resetSeqNumFlagKey);
 
-	GetLog().Info(
-		"Connecting to FIX Server (%1%) at \"%2%:%3%\""
-			" with SenderCompID \"%4%\" and TargetCompID \"%5%\""
-			", ResetSeqNumFlag: %6%::%7% = %8%...",
-		m_type,
+	m_log.Info(
+		"Connecting to server at \"%1%:%2%\""
+			" with SenderCompID \"%3%\" and TargetCompID \"%4%\""
+			", ResetSeqNumFlag: %5%::%6% = %7%...",
 		m_host,
 		m_port,
 		senderCompId,
@@ -174,9 +165,7 @@ void FixSession::Connect(
 
 	const std::string username = conf.ReadKey("Username", std::string());
 	if (!username.empty()) {
-		m_customLogonMessage.set(
-			fix::FIX43::Tags::Username,
-			username);
+		m_customLogonMessage.set(fix::FIX43::Tags::Username, username);
 	}
 
 	m_customLogonMessage.set(
@@ -194,29 +183,22 @@ void FixSession::Connect(
 			resetSeqNumFlag);
 		m_isSessionActive = true;
 	} catch (const fix::Exception &ex) {
-		GetLog().Error(
-			"Failed to connect to FIX Server (%1%): \"%2%\".",
-			m_type,
-			ex.what());
-		throw ConnectError("Failed to connect to FIX Server");
+		m_log.Error("Failed to connect to server: \"%1%\".", ex.what());
+		throw ConnectError("Failed to connect to server");
 	}
 	
-	GetLog().Info("Connected to FIX Server (%1%).", m_type);
+	m_log.Info("Connected to server.");
 
 }
 
 void FixSession::Reconnect() {
 	if (!m_isSessionActive) {
-		GetLog().Debug("No connection exists, reconnecting canceled.");
+		m_log.Debug("No connection exists, reconnecting canceled.");
 		return;
 	}
-	GetLog().Info(
-		"Reconnecting to FIX Server (%1%) at \"%2%:%3%\"...",
-		m_type,
-		m_host,
-		m_port);
+	m_log.Info("Reconnecting to server at \"%1%:%2%\"...", m_host, m_port);
  	m_session->logonAsInitiator(m_host, m_port);
- 	GetLog().Info("Reconnected to FIX Server (%1%).", m_type);
+ 	m_log.Info("Reconnected to server.");
 }
 
 void FixSession::Disconnect() {
@@ -236,11 +218,11 @@ void FixSession::LogStateChange(
 	UseUnused(session);
 	const auto newStateStr = fix::SessionState::toString(newState);
 	const auto prevStateStr = fix::SessionState::toString(prevState);
-	const char *message = "FIX Session State changed: \"%1%\" -> \"%2%\".";
+	const char *message = "FIX session state changed: \"%1%\" -> \"%2%\".";
 	if (newState == fix::SessionState::Disconnected) {
-		GetLog().Error(message, prevStateStr, newStateStr);
+		m_log.Warn(message, prevStateStr, newStateStr);
 	} else {
-		GetLog().Info(message, prevStateStr, newStateStr);
+		m_log.Info(message, prevStateStr, newStateStr);
 	}
 }
 
@@ -250,7 +232,7 @@ void FixSession::LogError(
 			fix::Session &session) {
 	Assert(&session == &Get());
 	UseUnused(session);
-    GetLog().Error("FIX Session error: \"%1%\" (%2%)", description, reason);
+    m_log.Error("%1% (%2%).", description, reason);
 }
 
 void FixSession::LogWarning(
@@ -259,16 +241,14 @@ void FixSession::LogWarning(
 			fix::Session &session) {
 	Assert(&session == &Get());
 	UseUnused(session);
-	GetLog().Warn("FIX Session waring: \"%1%\" (%2%)", description, reason);
+	m_log.Warn("%1% (%2%)", description, reason);
 }
 
 void FixSession::ResetLocalSequenceNumbers() {
-	GetLog().Info(
-		"FIX Session:"
-			" sequence number will be reset from out %1% and in %2%...",
+	m_log.Info(
+		"Sequence number will be reset from \"out\" %1% and \"in\" %2%...",
 		m_session->outSeqNum(),
 		m_session->inSeqNum());
-	// m_session->resetLocalSequenceNumbers();
  	m_session->outSeqNum(1);
  	m_session->inSeqNum(1);
 }

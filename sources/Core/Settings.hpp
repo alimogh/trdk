@@ -47,10 +47,9 @@ namespace trdk {
 	public:
 	
 		explicit Settings(
-				const trdk::Lib::Ini &,
 				const Time &now,
 				bool isReplayMode,
-				trdk::Context::Log &);
+				const boost::filesystem::path &logsDir);
 
 	public:
 
@@ -67,6 +66,10 @@ namespace trdk {
 
 		bool IsReplayMode() const throw() {
 			return m_isReplayMode;
+		}
+
+		const boost::filesystem::path & GetLogsDir() const {
+			return m_logsDir;
 		}
 
 		const Time & GetStartTime() const;
@@ -100,9 +103,11 @@ namespace trdk {
 
 	private:
 
+		bool m_isLoaded;
 		Time m_startTime;
 		Values m_values;
 		bool m_isReplayMode;
+		boost::filesystem::path m_logsDir;
 
 	};
 

@@ -10,6 +10,9 @@
 
 #pragma once
 
+#include "Engine/Context.hpp"
+#include "Core/AsyncLog.hpp"
+
 namespace trdk { namespace EngineServer {
 
 	class Server : private boost::noncopyable {
@@ -20,8 +23,16 @@ namespace trdk { namespace EngineServer {
 		typedef Mutex::scoped_lock Lock;
 
 		struct EngineInfo {
+
 			std::string uuid;
+
+			boost::shared_ptr<std::ofstream> eventsLogFile;
+			boost::shared_ptr<Engine::Context::Log> eventsLog;
+			boost::shared_ptr<std::ofstream> tradingLogFile;
+			boost::shared_ptr<Engine::Context::TradingLog> tradingLog;
+
 			boost::shared_ptr<trdk::Engine::Context> engine;
+
 		};
 
 		struct ByUuid {
@@ -49,7 +60,10 @@ namespace trdk { namespace EngineServer {
 		void Run(
 					const std::string &uuid,
 					const boost::filesystem::path &,
-					bool isReplayMode);
+					bool isReplayMode,
+					bool enableStdOutLog,
+					int argc,
+					const char *argv[]);
 		void StopAll();
 
 	private:

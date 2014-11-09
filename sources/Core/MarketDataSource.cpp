@@ -12,6 +12,7 @@
 #include "MarketDataSource.hpp"
 #include "Context.hpp"
 #include "Security.hpp"
+#include "AsyncLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -48,6 +49,19 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+	
+	std::string FormatStringId(const std::string &tag) {
+		std::string	result("MarketDataSource");
+		if (!tag.empty()) {
+			result += '.';
+			result += tag;
+		}
+		return std::move(result);
+	}
+
+}
+
 class MarketDataSource::Implementation : private boost::noncopyable {
 
 public:
@@ -59,6 +73,10 @@ public:
 	Context &m_context;
 
 	const std::string m_tag;
+	const std::string m_stringId;
+
+	TradeSystem::Log m_log;
+	TradeSystem::TradingLog m_tradingLog;
 
 	SecuritiesMutex m_securitiesMutex;
 	Securities m_securities;
@@ -67,7 +85,10 @@ public:
 
 	explicit Implementation(Context &context, const std::string &tag)
 			: m_context(context),
-			m_tag(tag) {
+			m_tag(tag),
+			m_stringId(FormatStringId(m_tag)),
+			m_log(m_stringId, m_context.GetLog()),
+			m_tradingLog(m_tag, m_context.GetTradingLog()) {
 		//...//
 	}
 
@@ -108,12 +129,20 @@ const Context & MarketDataSource::GetContext() const {
 	return const_cast<MarketDataSource *>(this)->GetContext();
 }
 
-Context::Log & MarketDataSource::GetLog() const {
-	return GetContext().GetLog();
+MarketDataSource::Log & MarketDataSource::GetLog() const {
+	return m_pimpl->m_log;
+}
+
+MarketDataSource::TradingLog & MarketDataSource::GetTradingLog() const throw() {
+	return m_pimpl->m_tradingLog;
 }
 
 const std::string & MarketDataSource::GetTag() const {
 	return m_pimpl->m_tag;
+}
+
+const std::string & MarketDataSource::GetStringId() const throw() {
+	return m_pimpl->m_stringId;
 }
 
 Security & MarketDataSource::GetSecurity(
@@ -150,4 +179,15 @@ size_t MarketDataSource::GetActiveSecurityCount() const {
 	return m_pimpl->m_securities.size();
 }
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+std::ostream & std::operator <<(
+			std::ostream &oss,
+			const MarketDataSource &marketDataSource) {
+	oss << marketDataSource.GetStringId();
+	return oss;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+
