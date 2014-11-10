@@ -79,7 +79,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 				} else if (execType == fix::FIX41::Values::ExecType::Cancelled) {
 
-					OnOrderCanceled(message, replyTime);
+					OnOrderCanceled(
+						message,
+						GetMessageOrigClOrderId(message),
+						replyTime);
 					return;
 
 				} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
@@ -118,7 +121,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 			} else if (execTransType == fix::FIX40::Values::ExecTransType::Cancel) {
 
-				OnOrderCanceled(message, replyTime);
+				OnOrderCanceled(
+					message,
+					GetMessageClOrderId(message),
+					replyTime);
 				return;
 		
 			} else if (execTransType == fix::FIX40::Values::ExecTransType::Status) {
@@ -139,9 +145,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					const OrderId &orderId,	
 					const Security &security,
 					const Currency &currency,
-					const Qty &qty) {
+					const Qty &qty,
+					const trdk::OrderParams &params) {
 			fix::Message order
-				= CreateOrderMessage(orderId, security, currency, qty);
+				= CreateOrderMessage(orderId, security, currency, qty, params);
 			order.set(
 				fix::FIX40::Tags::OrdType,
 				fix::FIX41::Values::OrdType::Forex_Market);
@@ -153,8 +160,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					const Security &security,
 					const Currency &currency,
 					const Qty &qty,
-					const ScaledPrice &price) {
-			fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
+					const ScaledPrice &price,
+					const trdk::OrderParams &params) {
+			fix::Message order
+				= CreateOrderMessage(orderId, security, currency, qty, params);
 			order.set(
 				fix::FIX40::Tags::OrdType,
 				fix::FIX41::Values::OrdType::Forex_Limit);

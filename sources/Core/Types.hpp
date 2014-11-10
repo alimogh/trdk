@@ -247,6 +247,9 @@ namespace trdk {
 		  */
 		boost::optional<uintmax_t> goodInSeconds;
 
+		//! Order ID to replace.
+		boost::optional<uintmax_t> orderIdToReplace;
+
 	};
 
 }
