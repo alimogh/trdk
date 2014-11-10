@@ -125,6 +125,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					const fix::Message &message,
 					const OrderStatus &status,
 					const Order &order) {
+
+			if (order.params.isManualOrder) {
+				Base::OnOrderStateChanged(message, status, order);
+				return;
+			}
 			
 			if (
 					order.type != ORDER_TYPE_DAY_MARKET
@@ -194,7 +199,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		}
 
 		virtual void OnLogout() {
-			GetSession().ResetLocalSequenceNumbers();			
+			//...//
 		}
 
 	private:

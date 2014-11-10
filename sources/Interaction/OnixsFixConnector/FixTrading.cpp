@@ -242,7 +242,7 @@ void FixTrading::NotifyOrderUpdate(
 			AssertGe(
 				order->qty,
 				order->filledQty + ParseLeavesQty(updateMessage));
-			order->filledQty += ParseLeavesQty(updateMessage);
+			order->filledQty += ParseLastShares(updateMessage);
 		}
 		orderCopy = *order;
 	}
