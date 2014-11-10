@@ -671,6 +671,7 @@ OrderId FixTrading::BuyAtMarketPriceImmediatelyOrCancel(
 		&security,
 		currency,
 		qty,
+		params,
 		false,
 		timeMeasurement
 	};
