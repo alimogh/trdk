@@ -77,9 +77,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					const OrderId &orderId,	
 					const Security &security,
 					const Currency &currency,
-					const Qty &qty) {
+					const Qty &qty,
+					const trdk::OrderParams &params) {
 			fix::Message order
-				= CreateOrderMessage(orderId, security, currency, qty);
+				= CreateOrderMessage(orderId, security, currency, qty, params);
 			order.set(
 				fix::FIX40::Tags::OrdType,
 				fix::FIX40::Values::OrdType::Market);
@@ -94,8 +95,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					const Security &security,
 					const Currency &currency,
 					const Qty &qty,
-					const ScaledPrice &price) {
-			fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
+					const ScaledPrice &price,
+					const trdk::OrderParams &params) {
+			fix::Message order
+				= CreateOrderMessage(orderId, security, currency, qty, params);
 			order.set(
 				fix::FIX40::Tags::OrdType,
 				fix::FIX41::Values::OrdType::Limit);
@@ -205,7 +208,9 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			const auto &execType = message.get(fix::FIX41::Tags::ExecType);
 			const auto &ordStatus = message.get(fix::FIX40::Tags::OrdStatus);
 		
-			if (execType == fix::FIX41::Values::ExecType::New) {
+			if (
+					execType == fix::FIX41::Values::ExecType::New
+					|| execType == fix::FIX41::Values::ExecType::Replace) {
 			
 				if (ordStatus == fix::FIX40::Values::OrdStatus::New) {
 					OnOrderNew(message, replyTime);
@@ -215,7 +220,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			} else if (execType == fix::FIX41::Values::ExecType::Cancelled) {
 
 				if (ordStatus == fix::FIX40::Values::OrdStatus::Canceled) {
-					OnOrderCanceled(message, replyTime);
+					OnOrderCanceled(
+						message,
+						GetMessageOrigClOrderId(message),
+						replyTime);
 					return;
 				}
 
@@ -237,6 +245,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			
 				return;
 		
+			} else if (execType == fix::FIX44::Values::ExecType::PendingReplace) {
+			
+				return;
+
 			}
 
 			GetLog().Error(
