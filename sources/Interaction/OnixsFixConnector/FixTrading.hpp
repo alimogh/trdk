@@ -60,6 +60,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			  */
 			bool isRemoved;
 			OrderId id;
+			std::string clOrderId;
 			trdk::Security *security;
 			trdk::Lib::Currency currency;
 			trdk::Qty qty;
@@ -75,6 +76,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		struct OrderToSend {
 			OrderId id;
+			std::string clOrderId;
 			const trdk::Security *security;
 			trdk::Lib::Currency currency;
 			trdk::Qty qty;
@@ -232,7 +234,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		  * without synchronization.
 		  */
 		OnixS::FIX::Message CreateOrderMessage(
-				const OrderId &,
+				const std::string &clOrderId,
 				const Security &,
 				const trdk::Lib::Currency &,
 				const Qty &,
@@ -242,7 +244,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		  * without synchronization.
 		  */
 		virtual OnixS::FIX::Message CreateMarketOrderMessage(
-				const OrderId &,
+				const std::string &clOrderId,
 				const Security &,
 				const trdk::Lib::Currency &,
 				const Qty &,
@@ -253,7 +255,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		  * without synchronization.
 		  */
 		virtual OnixS::FIX::Message CreateLimitOrderMessage(
-				const OrderId &,
+				const std::string &clOrderId,
 				const Security &,
 				const trdk::Lib::Currency &,
 				const Qty &,
@@ -277,7 +279,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	private:
 
 		//! Takes next free order ID.
-		OrderId TakeOrderId(
+		Order TakeOrderId(
 					Security &security,
 					const Lib::Currency &currency,
 					const Qty &qty,
@@ -290,8 +292,19 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		void DeleteErrorOrder(const OrderId &) throw();
 
 		Order * FindOrder(const OrderId &);
+		const Order * FindOrder(const OrderId &) const;
 
 		void FlushRemovedOrders();
+
+		void FillOrderMessage(
+				const std::string &clOrderId,
+				const Security &,
+				const Lib::Currency &,
+				const Qty &,
+				const std::string &account,
+				const trdk::OrderParams &,
+				OnixS::FIX::Message &)
+			const;
 
 		//! Sets common fields and returns reference to preallocated order
 		//! FIX-message.
@@ -299,7 +312,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		  * called only from one thread.
 		  */
 		OnixS::FIX::Message & GetPreallocatedOrderMessage(
-				const OrderId &,
+				const std::string &clOrderId,
 				const Security &,
 				const trdk::Lib::Currency &,
 				const Qty &,
@@ -310,7 +323,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		  * called only from one thread.
 		  */
 		OnixS::FIX::Message & GetPreallocatedMarketOrderMessage(
-				const OrderId &,	
+				const std::string &clOrderId,
 				const Security &,
 				const trdk::Lib::Currency &,
 				const Qty &,
@@ -345,7 +358,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		//! @todo compare insert/search speed with tree
 		std::deque<Order> m_orders;
 		size_t m_ordersCountReportsCounter;
-		OrdersMutex m_ordersMutex;
+		mutable OrdersMutex m_ordersMutex;
 
 		SendMutex m_sendMutex;
 		SendCondition m_sendCondition;

@@ -74,13 +74,17 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	protected:
 
 		virtual fix::Message CreateMarketOrderMessage(
-					const OrderId &orderId,	
+					const std::string &clOrderId,
 					const Security &security,
 					const Currency &currency,
 					const Qty &qty,
 					const trdk::OrderParams &params) {
-			fix::Message order
-				= CreateOrderMessage(orderId, security, currency, qty, params);
+			fix::Message order = CreateOrderMessage(
+				clOrderId,
+				security,
+				currency,
+				qty,
+				params);
 			order.set(
 				fix::FIX40::Tags::OrdType,
 				fix::FIX40::Values::OrdType::Market);
@@ -91,14 +95,18 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		}
 
 		virtual fix::Message CreateLimitOrderMessage(
-					const OrderId &orderId,
+					const std::string &clOrderId,
 					const Security &security,
 					const Currency &currency,
 					const Qty &qty,
 					const ScaledPrice &price,
 					const trdk::OrderParams &params) {
-			fix::Message order
-				= CreateOrderMessage(orderId, security, currency, qty, params);
+			fix::Message order = CreateOrderMessage(
+				clOrderId,
+				security,
+				currency,
+				qty,
+				params);
 			order.set(
 				fix::FIX40::Tags::OrdType,
 				fix::FIX41::Values::OrdType::Limit);
