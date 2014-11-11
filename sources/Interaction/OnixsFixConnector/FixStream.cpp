@@ -207,20 +207,26 @@ void FixStream::onInboundApplicationMsg(
 			
 			const auto &entry = entries[i];
 
-			const auto action
-				= entry.getInt32(fix::FIX42::Tags::MDUpdateAction);
-			if (action == 2) { // Delete
-				continue;
-			}
+			const bool isDelete
+				=	entry.get(fix::FIX42::Tags::MDUpdateAction)
+						== fix::FIX42::Values::MDUpdateAction::Delete;
 
 			const auto price = entry.getDouble(fix::FIX42::Tags::MDEntryPx);
 			const auto qty = ParseMdEntrySize(entry);
 			
 			const auto &entryType = entry.get(fix::FIX42::Tags::MDEntryType);
 			if (entryType == fix::FIX42::Values::MDEntryType::Bid) {
-				security->SetBid(price, qty, timeMeasurement);
+				if (!isDelete) {
+					security->SetBid(price, qty, timeMeasurement);
+				} else {
+					security->SetBid(0, 0, timeMeasurement);
+				}
 			} else if (entryType == fix::FIX42::Values::MDEntryType::Offer) {
-				security->SetOffer(price, qty, timeMeasurement);
+				if (!isDelete) {
+					security->SetOffer(price, qty, timeMeasurement);
+				} else {
+					security->SetOffer(0, 0, timeMeasurement);
+				}
 			} else {
 				AssertFail("Unknown entry type.");
 				continue;

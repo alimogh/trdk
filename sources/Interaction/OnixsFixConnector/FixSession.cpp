@@ -78,7 +78,7 @@ FixSession::FixSession(
 		m_type(type),
 		m_fixVersion(ParseFixVersion(configuration, GetLog(), m_type)),
 		m_isSessionActive(false) {
-	
+
 	if (!fix::Engine::initialized()) {
 		AssertEq(0, fixEngineRefCounter.load());
 		const auto &settings
@@ -133,27 +133,32 @@ void FixSession::Connect(
 
 	const char *const resetSeqNumFlagSection = "Common";
 	const char *const resetSeqNumFlagKey = "onixs_fix_reset_seq_num_flag";
-	const bool resetSeqNumFlag = conf.GetBase().ReadBoolKey(
-		resetSeqNumFlagSection,
-		resetSeqNumFlagKey);
+	bool resetSeqNumFlag = conf.IsKeyExist(resetSeqNumFlagKey)
+		?	conf.ReadBoolKey(resetSeqNumFlagKey)
+		:	conf.GetBase().ReadBoolKey(
+				resetSeqNumFlagSection,
+				resetSeqNumFlagKey);
 
 	GetLog().Info(
 		"Connecting to FIX Server (%1%) at \"%2%:%3%\""
 			" with SenderCompID \"%4%\" and TargetCompID \"%5%\""
-			", ResetSeqNumFlag: %6%::%7% = %8%...",
+			", ResetSeqNumFlag: %6% = %7%...",
 		m_type,
 		m_host,
 		m_port,
 		senderCompId,
 		targetCompId,
-		resetSeqNumFlagSection,
 		resetSeqNumFlagKey,
 		resetSeqNumFlag ? "true" : "false");
 
-#	ifdef _DEBUG
+#	ifdef DEV_VER
+		conf.GetBase().ReadBoolKey("Common", "onixs_fix_session_log");
 		const auto &sessionStorageType = fix::SessionStorageType::FileBased;
 #	else
-		const auto &sessionStorageType = fix::SessionStorageType::MemoryBased;
+		const auto &sessionStorageType
+			= conf.GetBase().ReadBoolKey("Common", "onixs_fix_session_log")
+				?	fix::SessionStorageType::FileBased
+				:	fix::SessionStorageType::MemoryBased;
 #	endif
 
 	boost::scoped_ptr<fix::Session> session(

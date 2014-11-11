@@ -194,6 +194,7 @@ private:
 		}
 		OrderParams GetOrderParams() const {
 			OrderParams result;
+			result.isManualOrder = true;
 			if (m_replaceOrderId) {
 				result.orderIdToReplace = m_replaceOrderId;
 			}

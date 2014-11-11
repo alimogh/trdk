@@ -22,7 +22,7 @@ namespace {
 	
 	const std::string logTag = "position";
 
-	const OrderParams defaultOrderParams = {};
+	const OrderParams defaultOrderParams;
 
 }
 

@@ -250,6 +250,14 @@ namespace trdk {
 		//! Order ID to replace.
 		boost::optional<uintmax_t> orderIdToReplace;
 
+		//! Order sent not by strategy.
+		bool isManualOrder;
+
+		explicit OrderParams()
+				: isManualOrder(false) {
+			//...//
+		}
+
 	};
 
 }
