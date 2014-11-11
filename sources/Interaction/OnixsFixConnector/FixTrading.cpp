@@ -160,9 +160,9 @@ namespace {
 	std::string GenerateClOrderId(const OrderId &orderId) {
 		boost::format result(
 #			ifdef DEV_VER
-				"DEV_VER.%1%%2$02d%3$02d.%4%"
+				"DEV_VER.%1$02d%2$02d%3$02d.%4%"
 #			else
-				"%1%%2$02d%3$02d.%4%"
+				"%1$02d%2$02d%3$02d.%4%"
 #			endif
 		);
 		const auto &now
