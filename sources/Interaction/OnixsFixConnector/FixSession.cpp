@@ -267,13 +267,17 @@ void FixSession::LogWarning(
 	GetLog().Warn("FIX Session waring: \"%1%\" (%2%)", description, reason);
 }
 
-void FixSession::ResetLocalSequenceNumbers() {
-	GetLog().Info(
-		"FIX Session:"
-			" sequence number will be reset from out %1% and in %2%...",
-		m_session->outSeqNum(),
-		m_session->inSeqNum());
-	// m_session->resetLocalSequenceNumbers();
- 	m_session->outSeqNum(1);
- 	m_session->inSeqNum(1);
+void FixSession::ResetLocalSequenceNumbers(bool in, bool out) {
+	if (in) {
+		GetLog().Info(
+			"FIX Session: in-sequence number will be reset %1%...",
+			m_session->inSeqNum());
+ 		m_session->inSeqNum(1);
+	}
+	if (out) {
+		GetLog().Info(
+			"FIX Session: out-sequence number will be reset from %1%...",
+			m_session->outSeqNum());
+ 		m_session->outSeqNum(1);
+	}
 }
