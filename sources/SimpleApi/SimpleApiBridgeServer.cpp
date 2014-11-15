@@ -97,7 +97,7 @@ BridgeServer::BridgeId BridgeServer::CreateBridge(
 				"exchange = " << defaultExchange << "\n"
 				"currency = USD\n"
 			"[TradeSystem]\n"
-				"module = " << GetDllWorkingDir().string() << "/Trdk\n"
+				"module = " << GetDllFileDir().string() << "/Trdk\n"
 				"positions = yes\n"
 				"client_id = " << ++m_pimpl->m_clientId << "\n";
 	boost::shared_ptr<const Ini> ini(new IniString(settingsString.str()));

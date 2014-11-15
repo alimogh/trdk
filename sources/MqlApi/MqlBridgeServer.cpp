@@ -127,7 +127,7 @@ BridgeServer::EngineId BridgeServer::CreateBridge(
 				"exchange = " << defaultExchange << "\n"
 				"currency = USD\n"
 			"[TradeSystem]\n"
-				"module = " << GetDllWorkingDir().string()
+				"module = " << GetDllFileDir().string()
 					<< "/InteractiveBrokers\n"
 				"positions = yes\n"
 				"account = " << account << "\n"
