@@ -822,7 +822,7 @@ void FixTrading::onError(
 	Assert(session == &m_session.Get());
 	m_session.LogError(reason, description, *session);
 	if (reason == fix::ErrorReason::MsgSeqNumTooLow) {
-		m_session.ResetLocalSequenceNumbers();
+		m_session.ResetLocalSequenceNumbers(true, false);
 	}
 }
 
