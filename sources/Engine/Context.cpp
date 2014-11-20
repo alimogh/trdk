@@ -83,15 +83,10 @@ public:
 
 	explicit Implementation(
 				Engine::Context &context,
-				const boost::shared_ptr<const Lib::Ini> &conf,
-				bool isReplayMode)
+				const boost::shared_ptr<const Lib::Ini> &conf)
 			: m_context(context),
 			m_conf(conf),
-			m_settings(
-				*m_conf,
-				boost::get_system_time(),
-				isReplayMode,
-				m_context.GetLog()) {
+			m_settings(*m_conf, m_context.GetLog()) {
 		BootContext(
 			*m_conf,
 			m_settings,
@@ -166,10 +161,8 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-Engine::Context::Context(
-			const boost::shared_ptr<const Lib::Ini> &conf,
-			bool isReplayMode) {
-	m_pimpl = new Implementation(*this, conf, isReplayMode);
+Engine::Context::Context(const boost::shared_ptr<const Lib::Ini> &conf) {
+	m_pimpl = new Implementation(*this, conf);
 }
 
 Engine::Context::~Context() {

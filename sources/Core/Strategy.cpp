@@ -304,17 +304,6 @@ public:
 
 public:
 
-	bool IsTradingTime() const {
-		const Settings &settings = m_strategy.GetContext().GetSettings();
-		if (settings.IsReplayMode()) {
-			return true;
-		}
-		const auto now = boost::get_system_time();
-		return
-			settings.GetCurrentTradeSessionStartTime() <= now
-			&& now < settings.GetCurrentTradeSessionEndime();
-	}
-
 	void ForgetPosition(const Position &position) {
 		m_positions.Erase(position);
 		m_strategy.GetPositionReporter().ReportClosedPositon(position);
@@ -464,9 +453,7 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 
 bool Strategy::IsBlocked(bool forever /* = false */) const {
 	if (!m_pimpl->m_isBlocked) {
-		return forever
-			?	false
-			:	!m_pimpl->IsTradingTime();
+		return false;
 	} else {
 		const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
 		if (

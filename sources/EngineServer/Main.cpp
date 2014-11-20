@@ -165,7 +165,7 @@ namespace {
 		bool result = true;
 
 		try {
-			server.Run(uuid, confFilePath, false);
+			server.Run(uuid, confFilePath);
 		} catch (const Exception &ex) {
 			Log::Error("Failed to start engine: \"%1%\".", ex.what());
 			result = false;

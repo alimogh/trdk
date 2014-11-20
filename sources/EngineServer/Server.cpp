@@ -22,10 +22,7 @@ Server::Server() {
 	//..//
 }
 
-void Server::Run(
-			const std::string &uuid,
-			const fs::path &path,
-			bool isReplayMode) {
+void Server::Run(const std::string &uuid, const fs::path &path) {
 	const Lock lock(m_mutex);
 	{
 		const auto &index = m_engines.get<ByUuid>();
@@ -38,8 +35,7 @@ void Server::Run(
 	boost::shared_ptr<IniFile> ini(new IniFile(path));
 	EngineInfo info = {
 		uuid,
-		boost::shared_ptr<Engine::Context>(
-			new Engine::Context(ini, isReplayMode))
+		boost::shared_ptr<Engine::Context>(new Engine::Context(ini))
 	};
 	info.engine->Start();
 	m_engines.insert(info);

@@ -19,9 +19,7 @@ namespace trdk { namespace Engine {
 
 	public:
 
-		explicit Context(
-					const boost::shared_ptr<const trdk::Lib::Ini> &conf,
-					bool isReplayMode);
+		explicit Context(const boost::shared_ptr<const trdk::Lib::Ini> &conf);
 		virtual ~Context();
 
 	public:
