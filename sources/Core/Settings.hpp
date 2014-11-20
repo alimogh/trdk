@@ -26,11 +26,6 @@ namespace trdk {
 
 		struct Values {
 
-			Time tradeSessionStartTime;
-			Time tradeSessionEndTime;
-
-			bool shouldWaitForMarketData;
-
 			//! Default security Exchange.
 			/** Path: Defaults::exchange
 			  * Ex.: exchange = SMART
@@ -46,11 +41,7 @@ namespace trdk {
 
 	public:
 	
-		explicit Settings(
-				const trdk::Lib::Ini &,
-				const Time &now,
-				bool isReplayMode,
-				trdk::Context::Log &);
+		explicit Settings(const trdk::Lib::Ini &, trdk::Context::Log &);
 
 	public:
 
@@ -64,22 +55,6 @@ namespace trdk {
 		void UpdateStatic(const trdk::Lib::Ini &, trdk::Context::Log &);
 
 	public:
-
-		bool IsReplayMode() const throw() {
-			return m_isReplayMode;
-		}
-
-		const Time & GetStartTime() const;
-		const Time & GetCurrentTradeSessionStartTime() const;
-		const Time & GetCurrentTradeSessionEndime() const;
-
-		boost::uint32_t GetLevel2PeriodSeconds() const;
-		bool IsLevel2SnapshotPrintEnabled() const;
-		boost::uint16_t GetLevel2SnapshotPrintTimeSeconds() const;
-
-		bool ShouldWaitForMarketData() const {
-			return m_values.shouldWaitForMarketData;
-		}
 
 		//! Default security Exchange.
 		/** Path: Defaults::exchange
@@ -100,9 +75,7 @@ namespace trdk {
 
 	private:
 
-		Time m_startTime;
 		Values m_values;
-		bool m_isReplayMode;
 
 	};
 

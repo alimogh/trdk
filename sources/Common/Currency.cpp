@@ -18,16 +18,25 @@ using namespace trdk::Lib;
 namespace { namespace Iso4217 {
 	const std::string usd = "USD";
 	const std::string eur = "EUR";
+	const std::string jpy = "JPY";
+	const std::string rub = "RUB";
+	const std::string gbp = "GBP";
 } }
 
 const std::string & Lib::ConvertToIso(const Currency &currency) {
 	using namespace Iso4217;
-	static_assert(numberOfCurrencies == 2, "Currency list changed.");
+	static_assert(numberOfCurrencies == 5, "Currency list changed.");
 	switch (currency) {
 		case CURRENCY_USD:
 			return usd;
 		case CURRENCY_EUR:
 			return eur;
+		case CURRENCY_JPY:
+			return jpy;
+		case CURRENCY_RUB:
+			return rub;
+		case CURRENCY_GBP:
+			return gbp;
 		default:
 			AssertEq(CURRENCY_USD, currency);
 			throw Exception("Internal error: Unknown currency ID");
@@ -36,11 +45,17 @@ const std::string & Lib::ConvertToIso(const Currency &currency) {
 
 Currency Lib::ConvertCurrencyFromIso(const std::string &code) {
 	using namespace Iso4217;
-	static_assert(numberOfCurrencies == 2, "Currency list changed.");
+	static_assert(numberOfCurrencies == 5, "Currency list changed.");
 	if (boost::iequals(code, usd)) {
 		return CURRENCY_USD;
 	} else if (boost::iequals(code, eur)) {
 		return CURRENCY_EUR;
+	} else if (boost::iequals(code, jpy)) {
+		return CURRENCY_JPY;
+	} else if (boost::iequals(code, rub)) {
+		return CURRENCY_RUB;
+	} else if (boost::iequals(code, gbp)) {
+		return CURRENCY_GBP;
 	} else {
 		boost::format message("Currency code \"%1%\" is unknown");
 		message % code;

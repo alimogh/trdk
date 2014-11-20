@@ -78,7 +78,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	public:
 
-		void ResetLocalSequenceNumbers();
+		void ResetLocalSequenceNumbers(bool in, bool out);
 
 	private:
 

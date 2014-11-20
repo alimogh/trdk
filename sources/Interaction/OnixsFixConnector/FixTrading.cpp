@@ -89,10 +89,11 @@ void FixTrading::Send(const OrderToSend &order) {
 		TimeMeasurement::Milestones timeMeasurement = order.timeMeasurement;
 		timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_PACK);
 		fix::Message &message = GetPreallocatedMarketOrderMessage(
-			order.id,
+			order.clOrderId,
 			*order.security,
 			order.currency,
-			order.qty);
+			order.qty,
+			order.params);
 		message.set(
 			fix::FIX40::Tags::TimeInForce,
 			fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
@@ -132,11 +133,46 @@ void FixTrading::CreateConnection(const IniSectionRef &conf) {
 	}
 }
 
-OrderId FixTrading::GetMessageOrderId(const fix::Message &message) const {
-	return message.getUInt64(fix::FIX40::Tags::ClOrdID);
+namespace {
+	
+	OrderId ParseOrderId(const fix::StringRef &clOrderId) {
+		for (size_t i = clOrderId.size(); i > 0; --i) {
+			if (clOrderId[i - 1] == '.') {
+				return boost::lexical_cast<OrderId>(
+					&clOrderId[i],
+					clOrderId.size() - i);
+			}
+		}
+		return 0;
+	}
+
 }
 
-OrderId FixTrading::TakeOrderId(
+OrderId FixTrading::GetMessageClOrderId(const fix::Message &message) {
+	return ParseOrderId(message.getStringRef(fix::FIX40::Tags::ClOrdID));
+}
+
+OrderId FixTrading::GetMessageOrigClOrderId(const fix::Message &message) {
+	return ParseOrderId(message.getStringRef(fix::FIX40::Tags::OrigClOrdID));
+}
+
+namespace {
+	std::string GenerateClOrderId(const OrderId &orderId) {
+		boost::format result(
+#			ifdef DEV_VER
+				"DEV_VER.%1$02d%2$02d%3$02d.%4%"
+#			else
+				"%1$02d%2$02d%3$02d.%4%"
+#			endif
+		);
+		const auto &now
+			= boost::posix_time::second_clock::local_time().time_of_day();
+		result % now.hours() % now.minutes() % now.seconds() % orderId;
+		return std::move(result.str());
+	}
+}
+
+FixTrading::Order FixTrading::TakeOrderId(
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -145,9 +181,11 @@ OrderId FixTrading::TakeOrderId(
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &callback,
 			const TimeMeasurement::Milestones &timeMeasurement) {
+	const auto orderId = m_nextOrderId++;
 	const Order order = {
 		false,
-		m_nextOrderId++,
+		orderId,
+		GenerateClOrderId(orderId),
 		&security,
 		currency,
 		qty,
@@ -170,7 +208,7 @@ OrderId FixTrading::TakeOrderId(
 			}
 		}
 	}
-	return order.id;
+	return std::move(order);
 }
 
 FixTrading::Order * FixTrading::FindOrder(
@@ -181,6 +219,12 @@ FixTrading::Order * FixTrading::FindOrder(
 		}
 	}
 	return nullptr;
+}
+
+const FixTrading::Order * FixTrading::FindOrder(
+			const OrderId &orderId)
+		const {
+	return const_cast<FixTrading *>(this)->FindOrder(orderId);
 }
 
 void FixTrading::DeleteErrorOrder(const OrderId &orderId) throw() {
@@ -213,12 +257,11 @@ void FixTrading::FlushRemovedOrders() {
 
 void FixTrading::NotifyOrderUpdate(
 			const fix::Message &updateMessage,
+			const OrderId &orderId,
 			const OrderStatus &status,
 			const char *operation,
 			bool isOrderCompleted,
 			const TimeMeasurement::Milestones::TimePoint &replyTime) {
-	
-	const auto &orderId = GetMessageOrderId(updateMessage);
 	
 	Order orderCopy;
 	{
@@ -238,7 +281,7 @@ void FixTrading::NotifyOrderUpdate(
 			AssertGe(
 				order->qty,
 				order->filledQty + ParseLeavesQty(updateMessage));
-			order->filledQty += ParseLeavesQty(updateMessage);
+			order->filledQty += ParseLastShares(updateMessage);
 		}
 		orderCopy = *order;
 	}
@@ -267,93 +310,120 @@ void FixTrading::OnOrderStateChanged(
 		message.getDouble(fix::FIX40::Tags::AvgPx));
 }
 
-namespace {
-	void FillOrderMessage(
-				const OrderId &orderId,
-				const Security &security,
-				const Currency &currency,
-				const Qty &qty,
-				const std::string &account,
-				fix::Message &message) {
-		message.set(
-			fix::FIX40::Tags::ClOrdID,
-			boost::lexical_cast<std::string>(orderId));
-		message.set(
-			fix::FIX40::Tags::HandlInst,
-			fix::FIX40::Values::HandlInst::Automated_execution_order_private_no_Broker_intervention);
-		message.set(fix::FIX40::Tags::Currency, ConvertToIso(currency));
-		message.set(fix::FIX40::Tags::Symbol, security.GetSymbol().GetSymbol());
-		message.set(
-			fix::FIX40::Tags::TransactTime,
-			fix::Timestamp::utc(),
-			fix::TimestampFormat::YYYYMMDDHHMMSSMsec);
-		message.set(fix::FIX40::Tags::OrderQty, qty);
-		if (!account.empty()) {
-			message.set(fix::FIX40::Tags::Account, account);
+void FixTrading::FillOrderMessage(
+			const std::string &clOrderId,
+			const Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const std::string &account,
+			const trdk::OrderParams &params,
+			fix::Message &message)
+		const {
+
+	Assert(!clOrderId.empty());
+	message.set(fix::FIX40::Tags::ClOrdID, clOrderId);
+
+	if (params.orderIdToReplace) {
+		AssertEq("G", message.type());
+		OrdersReadLock lock(m_ordersMutex);
+		const Order *const order = FindOrder(*params.orderIdToReplace);
+		if (!order) {
+			lock.unlock();
+			GetLog().Warn(
+				"FIX Server failed to find order with ID %1%"
+					" to cancel/replace.",
+				*params.orderIdToReplace);
+			throw Error("Failed to find order to cancel/replace");
 		}
+		AssertEq(
+			*params.orderIdToReplace,
+			ParseOrderId(
+				fix::StringRef(
+					order->clOrderId.c_str(),
+					order->clOrderId.size())));
+		message.set(fix::FIX40::Tags::OrigClOrdID, order->clOrderId);
+	} else {
+		AssertEq("D", message.type());
 	}
+
+	message.set(
+		fix::FIX40::Tags::HandlInst,
+		fix::FIX40::Values::HandlInst::Automated_execution_order_private_no_Broker_intervention);
+	message.set(fix::FIX40::Tags::Currency, ConvertToIso(currency));
+	message.set(fix::FIX40::Tags::Symbol, security.GetSymbol().GetSymbol());
+	message.set(
+		fix::FIX40::Tags::TransactTime,
+		fix::Timestamp::utc(),
+		fix::TimestampFormat::YYYYMMDDHHMMSSMsec);
+	message.set(fix::FIX40::Tags::OrderQty, qty);
+
+	if (!account.empty()) {
+		message.set(fix::FIX40::Tags::Account, account);
+	}
+
 }
 
 fix::Message FixTrading::CreateOrderMessage(
-			const OrderId &orderId,	
+			const std::string &clOrderId,
 			const Security &security,
 			const Currency &currency,
-			const Qty &qty) {
+			const Qty &qty,
+			const trdk::OrderParams &params) {
 	// Creates order FIX-message and sets common fields.
-	fix::Message result("D", m_session.GetFixVersion());
-	FillOrderMessage(orderId, security, currency, qty, m_account, result);
+	fix::Message result(
+		!params.orderIdToReplace ? "D" : "G",
+		m_session.GetFixVersion());
+	FillOrderMessage(
+		clOrderId,
+		security,
+		currency,
+		qty,
+		m_account,
+		params,
+		result);
 	return std::move(result);
 }
 
 fix::Message & FixTrading::GetPreallocatedOrderMessage(
-				const OrderId &orderId,
-				const Security &security,
-				const Currency &currency,
-				const Qty &qty) {
+			const std::string &clOrderId,
+			const Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const trdk::OrderParams &params) {
 	if (!m_preallocated.orderMessage) {
 		m_preallocated.orderMessage.reset(
 			new fix::Message("D", m_session.GetFixVersion()));
 	} else {
 		m_preallocated.orderMessage->clear();
 	}
+	Assert(!params.orderIdToReplace);
 	FillOrderMessage(
-		orderId,
+		clOrderId,
 		security,
 		currency,
 		qty,
 		m_account,
+		params,
 		*m_preallocated.orderMessage);
 	return *m_preallocated.orderMessage;
 }
 
 fix::Message & FixTrading::GetPreallocatedMarketOrderMessage(
-			const OrderId &orderId,	
+			const std::string &clOrderId,
 			const Security &security,
 			const Currency &currency,
-			const Qty &qty) {
-	fix::Message &result
-		= GetPreallocatedOrderMessage(orderId, security, currency, qty);
+			const Qty &qty,
+			const trdk::OrderParams &params) {
+	fix::Message &result = GetPreallocatedOrderMessage(
+		clOrderId,
+		security,
+		currency,
+		qty,
+		params);
 	result.set(
 		fix::FIX40::Tags::OrdType,
 		fix::FIX41::Values::OrdType::Forex_Market);
 	return result;
-}
-
-fix::Message FixTrading::CreateLimitOrderMessage(
-			const OrderId &orderId,
-			const Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const ScaledPrice &price) {
-	fix::Message order = CreateOrderMessage(orderId, security, currency, qty);
-	order.set(
-		fix::FIX40::Tags::OrdType,
-		fix::FIX41::Values::OrdType::Forex_Limit);
-	order.set(
-		fix::FIX40::Tags::Price,
-		security.DescalePrice(price),
-		security.GetPricePrecision());
-	return std::move(order);
 }
 
 void FixTrading::Send(
@@ -372,7 +442,7 @@ OrderId FixTrading::SellAtMarketPrice(
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
-	const auto &orderId = TakeOrderId(
+	const auto &order = TakeOrderId(
 		security,
 		currency,
 		qty,
@@ -382,15 +452,19 @@ OrderId FixTrading::SellAtMarketPrice(
 		callback,
 		timeMeasurement);
 	try {
-		fix::Message order
-			= CreateMarketOrderMessage(orderId, security, currency, qty);
-		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Sell);
-		Send(order, timeMeasurement);
+		fix::Message message = CreateMarketOrderMessage(
+			order.clOrderId,
+			security,
+			currency,
+			qty,
+			params);
+		message.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Sell);
+		Send(message, timeMeasurement);
 	} catch (...) {
-		DeleteErrorOrder(orderId);
+		DeleteErrorOrder(order.id);
 		throw;
 	}
-	return orderId;
+	return order.id;
 }
 
 OrderId FixTrading::Sell(
@@ -402,7 +476,7 @@ OrderId FixTrading::Sell(
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
-	const auto &orderId = TakeOrderId(
+	const auto &order = TakeOrderId(
 		security,
 		currency,
 		qty,
@@ -412,18 +486,23 @@ OrderId FixTrading::Sell(
 		callback,
 		timeMeasurement);
 	try {
-		fix::Message order
-			= CreateLimitOrderMessage(orderId, security, currency, qty, price);
-		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Sell);
-		order.set(
+		fix::Message message = CreateLimitOrderMessage(
+			order.clOrderId,
+			security,
+			currency,
+			qty,
+			price,
+			params);
+		message.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Sell);
+		message.set(
 			fix::FIX40::Tags::TimeInForce,
 			fix::FIX40::Values::TimeInForce::Day);
-		Send(order, timeMeasurement);
+		Send(message, timeMeasurement);
 	} catch (...) {
-		DeleteErrorOrder(orderId);
+		DeleteErrorOrder(order.id);
 		throw;
 	}
-	return orderId;
+	return order.id;
 }
 
 OrderId FixTrading::SellAtMarketPriceWithStopPrice(
@@ -447,7 +526,7 @@ OrderId FixTrading::SellImmediatelyOrCancel(
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
-	const auto &orderId = TakeOrderId(
+	const auto &order = TakeOrderId(
 		security,
 		currency,
 		qty,
@@ -457,18 +536,23 @@ OrderId FixTrading::SellImmediatelyOrCancel(
 		callback,
 		timeMeasurement);
 	try {
-		fix::Message order
-			= CreateLimitOrderMessage(orderId, security, currency, qty, price);
-		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Sell);
-		order.set(
+		fix::Message message = CreateLimitOrderMessage(
+			order.clOrderId,
+			security,
+			currency,
+			qty,
+			price,
+			params);
+		message.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Sell);
+		message.set(
 			fix::FIX40::Tags::TimeInForce,
 			fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
-		Send(order, timeMeasurement);
+		Send(message, timeMeasurement);
 	} catch (...) {
-		DeleteErrorOrder(orderId);
+		DeleteErrorOrder(order.id);
 		throw;
 	}
-	return orderId;
+	return order.id;
 }
 
 OrderId FixTrading::SellAtMarketPriceImmediatelyOrCancel(
@@ -479,24 +563,27 @@ OrderId FixTrading::SellAtMarketPriceImmediatelyOrCancel(
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
-	OrderToSend order = {
-		TakeOrderId(
-			security,
-			currency,
-			qty,
-			true,
-			ORDER_TYPE_IOC_MARKET,
-			params,
-			callback,
-			timeMeasurement),
+	const  auto &order = TakeOrderId(
+		security,
+		currency,
+		qty,
+		true,
+		ORDER_TYPE_IOC_MARKET,
+		params,
+		callback,
+		timeMeasurement);
+	OrderToSend orderToSend = {
+		order.id,
+		order.clOrderId,
 		&security,
 		currency,
 		qty,
+		params,
 		true,
 		timeMeasurement
 	};
 	try {
-		ScheduleSend(order);
+		ScheduleSend(orderToSend);
 	} catch (...) {
 		DeleteErrorOrder(order.id);
 		throw;
@@ -512,7 +599,7 @@ OrderId FixTrading::BuyAtMarketPrice(
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
-	const auto &orderId = TakeOrderId(
+	const auto &order = TakeOrderId(
 		security,
 		currency,
 		qty,
@@ -522,15 +609,19 @@ OrderId FixTrading::BuyAtMarketPrice(
 		callback,
 		timeMeasurement);
 	try {
-		fix::Message order
-			= CreateMarketOrderMessage(orderId, security, currency, qty);
-		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
-		Send(order, timeMeasurement);
+		fix::Message message = CreateMarketOrderMessage(
+			order.clOrderId,
+			security,
+			currency,
+			qty,
+			params);
+		message.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
+		Send(message, timeMeasurement);
 	} catch (...) {
-		DeleteErrorOrder(orderId);
+		DeleteErrorOrder(order.id);
 		throw;
 	}
-	return orderId;
+	return order.id;
 }
 
 OrderId FixTrading::Buy(
@@ -542,7 +633,7 @@ OrderId FixTrading::Buy(
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
-	const auto &orderId = TakeOrderId(
+	const auto &order = TakeOrderId(
 		security,
 		currency,
 		qty,
@@ -552,18 +643,23 @@ OrderId FixTrading::Buy(
 		callback,
 		timeMeasurement);
 	try {
-		fix::Message order
-			= CreateLimitOrderMessage(orderId, security, currency, qty, price);
-		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
-		order.set(
+		fix::Message message = CreateLimitOrderMessage(
+			order.clOrderId,
+			security,
+			currency,
+			qty,
+			price,
+			params);
+		message.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
+		message.set(
 			fix::FIX40::Tags::TimeInForce,
 			fix::FIX40::Values::TimeInForce::Day);
-		Send(order, timeMeasurement);
+		Send(message, timeMeasurement);
 	} catch (...) {
-		DeleteErrorOrder(orderId);
+		DeleteErrorOrder(order.id);
 		throw;
 	}
-	return orderId;
+	return order.id;
 }
 
 OrderId FixTrading::BuyAtMarketPriceWithStopPrice(
@@ -587,7 +683,7 @@ OrderId FixTrading::BuyImmediatelyOrCancel(
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
-	const auto &orderId = TakeOrderId(
+	const auto &order = TakeOrderId(
 		security,
 		currency,
 		qty,
@@ -597,18 +693,23 @@ OrderId FixTrading::BuyImmediatelyOrCancel(
 		callback,
 		timeMeasurement);
 	try {
-		fix::Message order
-			= CreateLimitOrderMessage(orderId, security, currency, qty, price);
-		order.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
-		order.set(
+		fix::Message message = CreateLimitOrderMessage(
+			order.clOrderId,
+			security,
+			currency,
+			qty,
+			price,
+			params);
+		message.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
+		message.set(
 			fix::FIX40::Tags::TimeInForce,
 			fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
-		Send(order, timeMeasurement);
+		Send(message, timeMeasurement);
 	} catch (...) {
-		DeleteErrorOrder(orderId);
+		DeleteErrorOrder(order.id);
 		throw;
 	}
-	return orderId;
+	return order.id;
 }
 
 OrderId FixTrading::BuyAtMarketPriceImmediatelyOrCancel(
@@ -619,24 +720,27 @@ OrderId FixTrading::BuyAtMarketPriceImmediatelyOrCancel(
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
-	OrderToSend order = {
-		TakeOrderId(
-			security,
-			currency,
-			qty,
-			false,
-			ORDER_TYPE_IOC_MARKET,
-			params,
-			callback,
-			timeMeasurement),
+	const auto &order = TakeOrderId(
+		security,
+		currency,
+		qty,
+		false,
+		ORDER_TYPE_IOC_MARKET,
+		params,
+		callback,
+		timeMeasurement);
+	OrderToSend orderToSend = {
+		order.id,
+		order.clOrderId,
 		&security,
 		currency,
 		qty,
+		params,
 		false,
 		timeMeasurement
 	};
 	try {
-		ScheduleSend(order);
+		ScheduleSend(orderToSend);
 	} catch (...) {
 		DeleteErrorOrder(order.id);
 		throw;
@@ -648,26 +752,23 @@ void FixTrading::CancelOrder(OrderId orderId) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
 	fix::Message message("F", m_session.GetFixVersion());
- 	message.set(
- 			fix::FIX40::Tags::ClOrdID,
- 			boost::lexical_cast<std::string>(m_nextOrderId++));
-	message.set(
-		fix::FIX40::Tags::OrigClOrdID,
-		boost::lexical_cast<std::string>(orderId));
+	message.set(fix::FIX40::Tags::ClOrdID, GenerateClOrderId(m_nextOrderId++));
 	message.set(
 		fix::FIX40::Tags::TransactTime,
 		fix::Timestamp::utc(),
 		fix::TimestampFormat::YYYYMMDDHHMMSSMsec);
 	{
-		const OrdersReadLock lock(m_ordersMutex);
+		OrdersReadLock lock(m_ordersMutex);
 		const Order *const order = FindOrder(orderId);
 		if (!order) {
+			lock.unlock();
 			GetLog().Warn(
 				"FIX Server (%1%) failed to find order with ID %2% to cancel.",
 				GetTag(),
 				orderId);
 			return;
 		}
+		message.set(fix::FIX40::Tags::OrigClOrdID, order->clOrderId);
 		message.set(
 			fix::FIX40::Tags::Symbol,
 			order->security->GetSymbol().GetSymbol());
@@ -721,7 +822,7 @@ void FixTrading::onError(
 	Assert(session == &m_session.Get());
 	m_session.LogError(reason, description, *session);
 	if (reason == fix::ErrorReason::MsgSeqNumTooLow) {
-		m_session.ResetLocalSequenceNumbers();
+		m_session.ResetLocalSequenceNumbers(true, false);
 	}
 }
 
@@ -737,11 +838,9 @@ void FixTrading::OnOrderNew(
 			const fix::Message &execReport,
 			const TimeMeasurement::Milestones::TimePoint &replyTime) {
 	AssertEq("8", execReport.type());
-	Assert(
-		execReport.get(fix::FIX41::Tags::ExecType)
-			== fix::FIX41::Values::ExecType::New);
 	NotifyOrderUpdate(
 		execReport,
+		GetMessageClOrderId(execReport),
 		ORDER_STATUS_SUBMITTED,
 		"NEW",
 		false,
@@ -750,6 +849,7 @@ void FixTrading::OnOrderNew(
 
 void FixTrading::OnOrderCanceled(
 			const fix::Message &execReport,
+			const OrderId &orderId,
 			const TimeMeasurement::Milestones::TimePoint &replyTime) {
 	AssertEq("8", execReport.type());
 	Assert(
@@ -760,6 +860,7 @@ void FixTrading::OnOrderCanceled(
 			== execReport.get(fix::FIX40::Tags::OrdStatus));
 	NotifyOrderUpdate(
 		execReport,
+		orderId,
 		ORDER_STATUS_CANCELLED,
 		"CANCELED",
 		true,
@@ -777,11 +878,12 @@ void FixTrading::OnOrderRejected(
 	GetLog().Error(
 		"FIX Server (%1%) Rejected order %2%: \"%3%\".",
 		GetTag(),
-		GetMessageOrderId(execReport),
+		GetMessageClOrderId(execReport),
 		reason);
 
 	NotifyOrderUpdate(
 		execReport,
+		GetMessageClOrderId(execReport),
 		isMaxOperationLimitExceeded
 			?	ORDER_STATUS_INACTIVE
 			:	ORDER_STATUS_ERROR,
@@ -795,7 +897,13 @@ void FixTrading::OnOrderFill(
 			const fix::Message &execReport,
 			const TimeMeasurement::Milestones::TimePoint &replyTime) {
 	AssertEq("8", execReport.type());
-	NotifyOrderUpdate(execReport, ORDER_STATUS_FILLED, "FILL", true, replyTime);
+	NotifyOrderUpdate(
+		execReport,
+		GetMessageClOrderId(execReport),
+		ORDER_STATUS_FILLED,
+		"FILL",
+		true,
+		replyTime);
 }
 		
 void FixTrading::OnOrderPartialFill(
@@ -804,6 +912,7 @@ void FixTrading::OnOrderPartialFill(
 	AssertEq("8", execReport.type());
 	NotifyOrderUpdate(
 		execReport,
+		GetMessageClOrderId(execReport),
 		ORDER_STATUS_FILLED,
 		"PARTIAL FILL",
 		false,

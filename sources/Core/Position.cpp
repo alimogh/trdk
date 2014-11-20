@@ -22,7 +22,7 @@ namespace {
 	
 	const std::string logTag = "position";
 
-	const OrderParams defaultOrderParams = {};
+	const OrderParams defaultOrderParams;
 
 }
 
@@ -324,9 +324,7 @@ public:
 				if (m_oppositePosition->GetActiveQty() == 0) {
 					try {
 						m_oppositePosition->m_pimpl->m_closed.time
-							= !m_security.GetContext().GetSettings().IsReplayMode()
-								?	boost::get_system_time()
-								:	m_security.GetLastMarketDataTime();
+							= boost::get_system_time();
 					} catch (...) {
 						AssertFailNoException();
 					}
@@ -352,11 +350,7 @@ public:
 
 				if (m_position.GetOpenedQty() > 0) {
 					try {
-						m_opened.time
-							= !m_security.GetContext().GetSettings().IsReplayMode()
-								?	boost::get_system_time()
-								:	m_security.GetLastMarketDataTime();
-
+						m_opened.time = boost::get_system_time();
 					} catch (...) {
 						AssertFailNoException();
 					}
@@ -465,10 +459,7 @@ public:
 
 			if (m_position.GetActiveQty() == 0) {
 				try {
-					m_closed.time
-						= !m_security.GetContext().GetSettings().IsReplayMode()
-							?	boost::get_system_time()
-							:	m_security.GetLastMarketDataTime();
+					m_closed.time = boost::get_system_time();
 				} catch (...) {
 					m_isError = true;
 					AssertFailNoException();

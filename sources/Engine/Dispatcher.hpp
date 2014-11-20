@@ -74,9 +74,7 @@ namespace trdk { namespace Engine {
 					m_name(name),
 					m_current(&m_lists.first),
 					m_taksState(TASK_STATE_INACTIVE) {
-				if (m_context.GetSettings().IsReplayMode()) {
-					m_readyToReadCondition.reset(new Condition);
-				}
+				//...//
 			}
 
 		public:
@@ -115,9 +113,6 @@ namespace trdk { namespace Engine {
 				AssertNe(int(TASK_STATE_STOPPED), int(m_taksState));
 				m_taksState = TASK_STATE_STOPPED;
  				m_sync->newDataCondition.notify_all();
-				if (m_readyToReadCondition) {
-					m_readyToReadCondition->notify_all();
- 				}
 			}
 
 			bool IsStopped(const Lock &lock) const {
@@ -139,9 +134,6 @@ namespace trdk { namespace Engine {
 					|| m_current == &m_lists.second);
 				if (Dispatcher::QueueEvent(event, *m_current) || !flush) {
 					m_sync->newDataCondition.notify_one();
-					if (m_readyToReadCondition) {
-						m_readyToReadCondition->wait(lock);
-					}
 				}
 				if (!(m_current->size() % 50)) {
 					m_context.GetLog().Warn(
@@ -188,10 +180,6 @@ namespace trdk { namespace Engine {
 					lock.lock();
 					timeMeasurement.Measure(Lib::TimeMeasurement::DM_COMPLETE_LIST);
 
-					if (m_readyToReadCondition) {
-						m_readyToReadCondition->notify_all();
-					}
-
 				}
 
 				return heavyLoadsCount > 0;
@@ -208,7 +196,6 @@ namespace trdk { namespace Engine {
 			List *m_current;
 
 			boost::shared_ptr<EventListsSyncObjects> m_sync;
-			std::unique_ptr<Condition> m_readyToReadCondition;
 
 			TaskState m_taksState;
 

@@ -42,11 +42,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	protected:
 
 		virtual void OnLogout() {
-			GetSession().ResetLocalSequenceNumbers();
+			GetSession().ResetLocalSequenceNumbers(true, true);
 		}
 
 		virtual void OnReconnecting() {
-			GetSession().ResetLocalSequenceNumbers();
+			GetSession().ResetLocalSequenceNumbers(true, true);
 		}
 
 	};

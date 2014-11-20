@@ -46,10 +46,7 @@ namespace trdk { namespace EngineServer {
 
 	public:
 
-		void Run(
-					const std::string &uuid,
-					const boost::filesystem::path &,
-					bool isReplayMode);
+		void Run(const std::string &uuid, const boost::filesystem::path &);
 		void CancelAllAndStop();
 		void WaitForCancelAndStop();
 		void StopAll();

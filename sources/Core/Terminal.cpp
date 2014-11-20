@@ -62,7 +62,8 @@ private:
 				m_orderTime(ORDER_TIME_NOT_SET),
 				m_security(nullptr),
 				m_qty(0),
-				m_price(-1.0) {
+				m_price(-1.0),
+				m_currency(numberOfCurrencies) {
 			//...//
 		}
 		virtual ~OrderCommand() {
@@ -119,6 +120,24 @@ private:
 				} else {
 					m_price = 0;
 				}
+			} else if (boost::iequals(cmd, "curr")) {
+				if (m_currency != numberOfCurrencies) {
+					throw Exception("Currency already set");
+				}
+				try {
+					m_currency = ConvertCurrencyFromIso(val);
+				} catch (const Lib::Exception &ex) {
+					throw Exception(ex.what());
+				}
+			} else if (boost::iequals(cmd, "replace")) {
+				if (m_replaceOrderId) {
+					throw Exception("Order ID for replace already set");
+				}
+				try {
+					m_replaceOrderId = boost::lexical_cast<OrderId>(val);
+				} catch (const boost::bad_lexical_cast &) {
+					throw Exception("Failed to parse order ID to replace");
+				}
 			} else {
 				throw Exception("Unknown command");
 			}
@@ -168,11 +187,27 @@ private:
 				avgPrice,
 				TradeSystem::GetStringStatus(status));
 		}
+		Currency GetCurrency() const {
+			return m_currency != numberOfCurrencies
+				?	m_currency
+				:	m_security->GetSymbol().GetCashCurrency();
+		}
+		OrderParams GetOrderParams() const {
+			OrderParams result;
+			result.isManualOrder = true;
+			if (m_replaceOrderId) {
+				result.orderIdToReplace = m_replaceOrderId;
+			}
+			return std::move(result);
+		}
 	protected:
 		OrderTime m_orderTime;
 		Security *m_security;
 		Qty m_qty;
 		double m_price;
+	private:
+		Lib::Currency m_currency;
+		boost::optional<OrderId> m_replaceOrderId;
 	};
 
 	class SellCommand : public OrderCommand {
@@ -186,12 +221,12 @@ private:
 		}
 		virtual void Execute() {
 			AssertEq(std::string(), Validate());
-			const OrderParams orderParams;
+			const OrderParams &orderParams = GetOrderParams();
 			if (Lib::IsZero(m_price)) {
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
 					m_tradeSystem.SellAtMarketPrice(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						orderParams,
 						boost::bind(
@@ -205,7 +240,7 @@ private:
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.SellAtMarketPriceImmediatelyOrCancel(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						orderParams,
 						boost::bind(
@@ -221,7 +256,7 @@ private:
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
 					m_tradeSystem.Sell(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						m_security->ScalePrice(m_price),
 						orderParams,
@@ -236,7 +271,7 @@ private:
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.SellImmediatelyOrCancel(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						m_security->ScalePrice(m_price),
 						orderParams,
@@ -264,12 +299,12 @@ private:
 		}
 		virtual void Execute() {
 			AssertEq(std::string(), Validate());
-			const OrderParams orderParams;
+			const OrderParams &orderParams = GetOrderParams();
 			if (Lib::IsZero(m_price)) {
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
 					m_tradeSystem.BuyAtMarketPrice(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						orderParams,
 						boost::bind(
@@ -283,7 +318,7 @@ private:
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.BuyAtMarketPriceImmediatelyOrCancel(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						orderParams,
 						boost::bind(
@@ -299,7 +334,7 @@ private:
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
 					m_tradeSystem.Buy(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						m_security->ScalePrice(m_price),
 						orderParams,
@@ -314,7 +349,7 @@ private:
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.BuyImmediatelyOrCancel(
 						*m_security,
-						m_security->GetSymbol().GetCashCurrency(),
+						GetCurrency(),
 						m_qty,
 						m_security->ScalePrice(m_price),
 						orderParams,
@@ -336,15 +371,14 @@ private:
 		public boost::enable_shared_from_this<CancelCommand> {
 	public:
 		explicit CancelCommand(TradeSystem &tradeSystem)
-				: Command(tradeSystem),
-				m_isOrderIdSet(false) {
+				: Command(tradeSystem) {
 			//...//
 		}
 		virtual ~CancelCommand() {
 			//...//
 		}
 		virtual void ParseField(const std::string &field) {
-			if (m_isOrderIdSet) {
+			if (m_orderId) {
 				throw Exception("Unknown command");
 			}
 			const auto pos = field.find('=');
@@ -357,25 +391,24 @@ private:
 				throw Exception("Unknown command");
 			}
 			try {
-				m_orderId = boost::lexical_cast<OrderId>(field.substr(pos + 1));
+				m_orderId
+					= boost::lexical_cast<OrderId>(field.substr(pos + 1));
 			} catch (const boost::bad_lexical_cast &) {
 				throw Exception("Failed to parse order ID");
 			}
-			m_isOrderIdSet = true;
 		}
 		virtual std::string Validate() const {
-			if (!m_isOrderIdSet) {
+			if (!m_orderId) {
 				return "No order ID set. Ex.: \"order=123\".";
 			}
 			return "";
 		}
 		virtual void Execute() {
 			AssertEq(std::string(), Validate());
-			m_tradeSystem.CancelOrder(m_orderId);
+			m_tradeSystem.CancelOrder(*m_orderId);
 		}
 	private:
-		bool m_isOrderIdSet;
-		OrderId m_orderId;
+		boost::optional<OrderId> m_orderId;
 	};
 
 	class TestCommand

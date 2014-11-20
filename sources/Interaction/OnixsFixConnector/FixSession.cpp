@@ -54,7 +54,7 @@ namespace {
 			throw FixSession::Error("Failed to init FIX Engine");
 		}
 	
-		Log::Debug(
+		log.Debug(
 			"Using FIX Version \"%1%\" (%2%) for \"%3%\".",
 			fixVerStr,
 			result,
@@ -78,7 +78,7 @@ FixSession::FixSession(
 		m_type(type),
 		m_fixVersion(ParseFixVersion(configuration, GetLog(), m_type)),
 		m_isSessionActive(false) {
-	
+
 	if (!fix::Engine::initialized()) {
 		AssertEq(0, fixEngineRefCounter.load());
 		const auto &settings
@@ -133,27 +133,32 @@ void FixSession::Connect(
 
 	const char *const resetSeqNumFlagSection = "Common";
 	const char *const resetSeqNumFlagKey = "onixs_fix_reset_seq_num_flag";
-	const bool resetSeqNumFlag = conf.GetBase().ReadBoolKey(
-		resetSeqNumFlagSection,
-		resetSeqNumFlagKey);
+	bool resetSeqNumFlag = conf.IsKeyExist(resetSeqNumFlagKey)
+		?	conf.ReadBoolKey(resetSeqNumFlagKey)
+		:	conf.GetBase().ReadBoolKey(
+				resetSeqNumFlagSection,
+				resetSeqNumFlagKey);
 
 	GetLog().Info(
 		"Connecting to FIX Server (%1%) at \"%2%:%3%\""
 			" with SenderCompID \"%4%\" and TargetCompID \"%5%\""
-			", ResetSeqNumFlag: %6%::%7% = %8%...",
+			", ResetSeqNumFlag: %6% = %7%...",
 		m_type,
 		m_host,
 		m_port,
 		senderCompId,
 		targetCompId,
-		resetSeqNumFlagSection,
 		resetSeqNumFlagKey,
 		resetSeqNumFlag ? "true" : "false");
 
-#	ifdef _DEBUG
+#	ifdef DEV_VER
+		conf.GetBase().ReadBoolKey("Common", "onixs_fix_session_log");
 		const auto &sessionStorageType = fix::SessionStorageType::FileBased;
 #	else
-		const auto &sessionStorageType = fix::SessionStorageType::MemoryBased;
+		const auto &sessionStorageType
+			= conf.GetBase().ReadBoolKey("Common", "onixs_fix_session_log")
+				?	fix::SessionStorageType::FileBased
+				:	fix::SessionStorageType::MemoryBased;
 #	endif
 
 	boost::scoped_ptr<fix::Session> session(
@@ -262,13 +267,17 @@ void FixSession::LogWarning(
 	GetLog().Warn("FIX Session waring: \"%1%\" (%2%)", description, reason);
 }
 
-void FixSession::ResetLocalSequenceNumbers() {
-	GetLog().Info(
-		"FIX Session:"
-			" sequence number will be reset from out %1% and in %2%...",
-		m_session->outSeqNum(),
-		m_session->inSeqNum());
-	// m_session->resetLocalSequenceNumbers();
- 	m_session->outSeqNum(1);
- 	m_session->inSeqNum(1);
+void FixSession::ResetLocalSequenceNumbers(bool in, bool out) {
+	if (in) {
+		GetLog().Info(
+			"FIX Session: in-sequence number will be reset %1%...",
+			m_session->inSeqNum());
+ 		m_session->inSeqNum(1);
+	}
+	if (out) {
+		GetLog().Info(
+			"FIX Session: out-sequence number will be reset from %1%...",
+			m_session->outSeqNum());
+ 		m_session->outSeqNum(1);
+	}
 }

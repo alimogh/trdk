@@ -152,7 +152,7 @@ fs::path Lib::GetExeWorkingDir() {
 	}
 #endif
 
-fs::path Lib::GetDllWorkingDir() {
+fs::path Lib::GetDllFileDir() {
 	return GetDllFilePath().parent_path();
 }
 

@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "FixTrading.hpp"
+#include "Core/Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -73,7 +74,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				} else if (execType == fix::FIX41::Values::ExecType::Cancelled) {
 
 					if (ordStatus == fix::FIX40::Values::OrdStatus::Canceled) {
-						OnOrderCanceled(message, replyTime);
+						OnOrderCanceled(
+							message,
+							GetMessageClOrderId(message),
+							replyTime);
 						return;
 					}
 
@@ -125,16 +129,44 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	protected:
 
-		fix::Message CreateMarketOrderMessage(
-					const OrderId &orderId,	
+		virtual fix::Message CreateMarketOrderMessage(
+					const std::string &clOrderId,
 					const Security &security,
 					const Currency &currency,
-					const Qty &qty) {
-			fix::Message order
-				= CreateOrderMessage(orderId, security, currency, qty);
+					const Qty &qty,
+					const trdk::OrderParams &params) {
+			fix::Message order = CreateOrderMessage(
+				clOrderId,
+				security,
+				currency,
+				qty,
+				params);
 			order.set(
 				fix::FIX40::Tags::OrdType,
 				fix::FIX41::Values::OrdType::Forex_Market);
+			return std::move(order);
+		}
+
+		virtual fix::Message CreateLimitOrderMessage(
+					const std::string &clOrderId,
+					const Security &security,
+					const Currency &currency,
+					const Qty &qty,
+					const ScaledPrice &price,
+					const trdk::OrderParams &params) {
+			fix::Message order = CreateOrderMessage(
+				clOrderId,
+				security,
+				currency,
+				qty,
+				params);
+			order.set(
+				fix::FIX40::Tags::OrdType,
+				fix::FIX41::Values::OrdType::Forex_Limit);
+			order.set(
+				fix::FIX40::Tags::Price,
+				security.DescalePrice(price),
+				security.GetPricePrecision());
 			return std::move(order);
 		}
 
