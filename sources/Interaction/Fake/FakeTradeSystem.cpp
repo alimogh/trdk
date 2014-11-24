@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "FakeTradeSystem.hpp"
 #include "Core/Security.hpp"
+#include "Core/AsyncLog.hpp"
 
 namespace pt = boost::posix_time;
 
@@ -22,9 +23,6 @@ using namespace trdk::Interaction::Fake;
 /////////////////////////////////////////////////////////////////////////
 
 namespace {
-
-	const std::string sellLogTag = "sell";
-	const std::string buyLogTag = "buy";
 
 	struct Order {
 		Security *security;
@@ -224,12 +222,11 @@ OrderId Fake::TradeSystem::SellAtMarketPrice(
 		0,
 		params};
 	m_pimpl->SendOrder(order);
-	GetLog().Trading(
-		sellLogTag,
-		"%2% order-id=%1% qty=%3% price=market",
-		order.id,
-		security.GetSymbol(),
-		qty);
+	GetTradingLog().Write(
+		"sell\t%2%\torder-id=%1% qty=%3% price=market",
+		[&](LogRecord &record) {
+			record % order.id % security.GetSymbol() % qty;
+		});
 	return order.id;
 }
 
@@ -251,13 +248,15 @@ OrderId Fake::TradeSystem::Sell(
 		price,
 		params};
 	m_pimpl->SendOrder(order);
-	GetLog().Trading(
-		buyLogTag,
-		"%2% order-id=%1% type=LMT qty=%3% price=%4%",
-		order.id,
-		security.GetSymbol(),
-		qty,
-		security.DescalePrice(price));
+	GetTradingLog().Write(
+		"buy\t%2%\torder-id=%1% type=LMT qty=%3% price=%4%",
+		[&](LogRecord &record) {
+			record
+				% order.id
+				% security.GetSymbol()
+				% qty
+				% security.DescalePrice(price);
+		});
 	return order.id;
 }
 
@@ -291,13 +290,15 @@ OrderId Fake::TradeSystem::SellImmediatelyOrCancel(
 		price,
 		params};
 	m_pimpl->SendOrder(order);
-	GetLog().Trading(
-		sellLogTag,
-		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
-		order.id,
-		security.GetSymbol(),
-		qty,
-		security.DescalePrice(price));
+	GetTradingLog().Write(
+		"sell\t%2%\torder-id=%1% type=IOC qty=%3% price=%4%",
+		[&](LogRecord &record) {
+			record
+				% order.id
+				% security.GetSymbol()
+				% qty
+				% security.DescalePrice(price);
+		});
 	return order.id;
 }
 
@@ -338,12 +339,11 @@ OrderId Fake::TradeSystem::BuyAtMarketPrice(
 		0,
 		params};
 	m_pimpl->SendOrder(order);
-	GetLog().Trading(
-		buyLogTag,
-		"%2% order-id=%1% qty=%3% price=market",
-		order.id,
-		security.GetSymbol(),
-		qty);
+	GetTradingLog().Write(
+		"buy\t%2%\torder-id=%1% qty=%3% price=market",
+		[&](LogRecord &record) {
+			record % order.id % security.GetSymbol() % qty;
+		});
 	return order.id;
 }
 
@@ -365,13 +365,15 @@ OrderId Fake::TradeSystem::Buy(
 		price,
 		params};
 	m_pimpl->SendOrder(order);
-	GetLog().Trading(
-		buyLogTag,
-		"%2% order-id=%1% type=LMT qty=%3% price=%4%",
-		order.id,
-		security.GetSymbol(),
-		qty,
-		security.DescalePrice(price));
+	GetTradingLog().Write(
+		"buy\t%2%\torder-id=%1% type=LMT qty=%3% price=%4%",
+		[&](LogRecord &record) {
+			record
+				% order.id
+				% security.GetSymbol()
+				% qty
+				% security.DescalePrice(price);
+		});
 	return order.id;
 }
 
@@ -405,13 +407,15 @@ OrderId Fake::TradeSystem::BuyImmediatelyOrCancel(
 		price,
 		params};
 	m_pimpl->SendOrder(order);
-	GetLog().Trading(
-		buyLogTag,
-		"%2% order-id=%1% type=IOC qty=%3% price=%4%",
-		order.id,
-		security.GetSymbol(),
-		qty,
-		security.DescalePrice(price));
+	GetTradingLog().Write(
+		"buy\t%2%\torder-id=%1% type=IOC qty=%3% price=%4%",
+		[&](LogRecord &record) {
+			record
+				% order.id
+				% security.GetSymbol()
+				% qty
+				% security.DescalePrice(price);
+		});
 	return order.id;
 }
 
@@ -441,7 +445,11 @@ void Fake::TradeSystem::CancelOrder(OrderId) {
 }
 
 void Fake::TradeSystem::CancelAllOrders(Security &security) {
-	GetLog().Trading("cancel", "%1% orders=[all]", security.GetSymbol());
+	GetTradingLog().Write(
+		"cancel\t%1%\torders=[all]",
+		[&security](LogRecord &record) {
+			record % security.GetSymbol();
+		});
 }
 
 //////////////////////////////////////////////////////////////////////////

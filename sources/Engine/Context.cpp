@@ -17,6 +17,7 @@
 #include "Core/Terminal.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradeSystem.hpp"
+#include "Core/AsyncLog.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -70,7 +71,8 @@ public:
 	Engine::Context &m_context;
 
 	boost::shared_ptr<const Lib::Ini> m_conf;
-	Settings m_settings;
+
+	const fs::path m_fileLogsDir;
 
 	ModuleList m_modulesDlls;
 
@@ -85,14 +87,16 @@ public:
 				Engine::Context &context,
 				const boost::shared_ptr<const Lib::Ini> &conf)
 			: m_context(context),
-			m_conf(conf),
-			m_settings(*m_conf, m_context.GetLog()) {
+			m_conf(conf) {
 		BootContext(
 			*m_conf,
-			m_settings,
 			m_context,
 			m_tradeSystems,
 			m_marketDataSources);
+	}
+
+	~Implementation() {
+		m_context.GetTradingLog().WaitForFlush();
 	}
 
 };
@@ -117,6 +121,18 @@ public:
 			: context(context),
 			subscriptionsManager(context) {
 		//...//	
+	}
+
+	~State() {
+		// Suspend events...
+		try {
+			subscriptionsManager.Suspend();
+		} catch (...) {
+			AssertFailNoException();
+		}
+		// ... no new events expected, wait until old records will be flushed...
+		context.GetTradingLog().WaitForFlush();
+		// ... then we can destroy objects and unload DLLs...
 	}
 
 public:
@@ -161,7 +177,12 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-Engine::Context::Context(const boost::shared_ptr<const Lib::Ini> &conf) {
+Engine::Context::Context(
+			Context::Log &log,
+			Context::TradingLog &tradingLog,
+			const trdk::Settings &settings,
+			const boost::shared_ptr<const Lib::Ini> &conf)
+		: Base(log, tradingLog, settings) {
 	m_pimpl = new Implementation(*this, conf);
 }
 
@@ -181,10 +202,12 @@ void Engine::Context::Start() {
 		GetLog().Warn("Already was started!");
 		return;
 	}
-	
+
+	// It must be destroyed after state-object, as it state-object has
+	// sub-objects from this DLL:
+	ModuleList moduleDlls;
 	std::unique_ptr<Implementation::State> state(
 		new Implementation::State(*this));
-	ModuleList moduleDlls;
 	try {
 		BootContextState(
 			*m_pimpl->m_conf,
@@ -370,10 +393,6 @@ TradeSystem & Engine::Context::GetTradeSystem(size_t index) {
 
 const TradeSystem & Engine::Context::GetTradeSystem(size_t index) const {
 	return const_cast<Context *>(this)->GetTradeSystem(index);
-}
-
-const Settings & Engine::Context::GetSettings() const {
-	return m_pimpl->m_settings;
 }
 
 Security * Engine::Context::FindSecurity(const Symbol &symbol) {

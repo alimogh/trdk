@@ -40,6 +40,9 @@ namespace trdk {
 
 		typedef trdk::Interactor Base;
 
+		typedef trdk::ModuleEventsLog Log;
+		typedef trdk::ModuleAsyncLog TradingLog;
+
 		enum OrderStatus {
 			ORDER_STATUS_PENDIGN,
 			ORDER_STATUS_SUBMITTED,
@@ -151,12 +154,15 @@ namespace trdk {
 		trdk::Context & GetContext();
 		const trdk::Context & GetContext() const;
 
-		trdk::Context::Log & GetLog() const;
+		trdk::TradeSystem::Log & GetLog() const throw();
+		trdk::TradeSystem::TradingLog & GetTradingLog() const throw();
 
 		//! Identifies Trade System object by verbose name. 
 		/** Trade System Tag unique, but can be empty for one of objects.
 		  */
 		const std::string & GetTag() const;
+
+		const std::string & GetStringId() const throw();
 
 	public:
 
@@ -291,6 +297,14 @@ namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
 
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+namespace std {
+	TRDK_CORE_API std::ostream & operator <<(
+				std::ostream &,
+				const trdk::TradeSystem &);
 }
 
 //////////////////////////////////////////////////////////////////////////

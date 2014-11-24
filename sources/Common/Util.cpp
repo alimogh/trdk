@@ -30,22 +30,21 @@ fs::path Lib::SymbolToFilePath(
 	result /= path;
 	result /= boost::join(subs, "_");
 	result.replace_extension((boost::format(".%1%") % ext).str());
-	return result;
+	return std::move(result);
 }
 
 namespace {
-	const lt::posix_time_zone edtTimeZone(
-		"EST-05EDT+01,M4.1.0/02:00,M10.5.0/02:00");
+	const lt::posix_time_zone estTimeZone("EST-5EDT,M4.1.0,M10.5.0");
 }
 
-boost::shared_ptr<lt::posix_time_zone> Lib::GetEdtTimeZone() {
+boost::shared_ptr<lt::posix_time_zone> Lib::GetEstTimeZone() {
 	return boost::shared_ptr<lt::posix_time_zone>(
-		new  lt::posix_time_zone(edtTimeZone));
+		new  lt::posix_time_zone(estTimeZone));
 }
 
-pt::time_duration Lib::GetEdtDiff() {
-	const lt::local_date_time estTime(boost::get_system_time(), GetEdtTimeZone());
-	return estTime.local_time() - estTime.utc_time();
+pt::time_duration Lib::GetEstDiff() {
+	const lt::local_date_time estTime(boost::get_system_time(), GetEstTimeZone());
+	return std::move(estTime.local_time() - estTime.utc_time());
 }
 
 namespace {
@@ -73,7 +72,7 @@ int64_t Lib::ConvertToMicroseconds(const pt::ptime &source) {
 }
 
 pt::ptime Lib::ConvertToPTimeFromMicroseconds(int64_t source) {
-	return unixEpochStart + pt::microseconds(source);
+	return std::move(unixEpochStart + pt::microseconds(source));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -97,7 +96,7 @@ namespace {
 						throw SystemException(message.str().c_str());
 					}
 					AssertLe(resultSize, buffer.size());
-					return fs::path(&buffer[0]);
+					return std::move(fs::path(&buffer[0]));
 				}
 				bufferSize *= 2;
 			}
@@ -114,18 +113,18 @@ namespace {
 				message % error;
 				throw SystemException(message.str().c_str());
 			}
-			return fs::path(path, path + count);
+			return std::move(fs::path(path, path + count));
 		}
 #	endif
 
 }
 
 fs::path Lib::GetExeFilePath() {
-	return GetModuleFilePath(NULL);
+	return std::move(GetModuleFilePath(NULL));
 }
 
 fs::path Lib::GetExeWorkingDir() {
-	return GetExeFilePath().parent_path();
+	return std::move(GetExeFilePath().parent_path());
 }
 
 #ifdef BOOST_WINDOWS
@@ -142,7 +141,7 @@ fs::path Lib::GetExeWorkingDir() {
 			message % error;
 			throw SystemException(message.str().c_str());
 		}
-		return GetModuleFilePath(handle);
+		return std::move(GetModuleFilePath(handle));
 	}
 #else
 	fs::path Lib::GetDllFilePath() {
@@ -153,7 +152,7 @@ fs::path Lib::GetExeWorkingDir() {
 #endif
 
 fs::path Lib::GetDllFileDir() {
-	return GetDllFilePath().parent_path();
+	return std::move(GetDllFilePath().parent_path());
 }
 
 fs::path Lib::Normalize(const fs::path &path) {
@@ -162,7 +161,7 @@ fs::path Lib::Normalize(const fs::path &path) {
 	}
 	fs::path result = GetExeWorkingDir() / path;
 	Assert(result.has_root_path());
-	return result;
+	return std::move(result);
 }
 
 fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
@@ -172,7 +171,7 @@ fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
 	}
 	fs::path result = workingDir / path;
 	Assert(result.has_root_path());
-	return result;	
+	return std::move(result);
 }
 
 //////////////////////////////////////////////////////////////////////////

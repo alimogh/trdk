@@ -35,6 +35,9 @@ namespace trdk {
 
 		typedef trdk::Interactor Base;
 
+		typedef trdk::ModuleEventsLog Log;
+		typedef trdk::ModuleAsyncLog TradingLog;
+
 	public:
 
 		class TRDK_CORE_API Error : public Base::Error {
@@ -59,12 +62,14 @@ namespace trdk {
 		trdk::Context & GetContext();
 		const trdk::Context & GetContext() const;
 
-		trdk::Context::Log & GetLog() const;
+		trdk::MarketDataSource::Log & GetLog() const throw();
+		trdk::MarketDataSource::TradingLog & GetTradingLog() const throw();
 
 		//! Identifies Market Data Source object by verbose name. 
 		/** Market Data Source Tag unique, but can be empty for one of objects.
 		  */
 		const std::string & GetTag() const;
+		const std::string & GetStringId() const throw();
 
 	public:
 
@@ -116,3 +121,13 @@ namespace trdk {
 	////////////////////////////////////////////////////////////////////////////////
 
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace std {
+	TRDK_CORE_API std::ostream & operator <<(
+				std::ostream &,
+				const trdk::MarketDataSource &);
+}
+
+////////////////////////////////////////////////////////////////////////////////

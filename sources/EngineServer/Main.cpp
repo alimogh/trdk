@@ -21,60 +21,6 @@ using namespace trdk::EngineServer;
 
 namespace {
 
-	std::ofstream tradingLog;
-	std::ofstream eventLog;
-
-	fs::path InitLogFile(const fs::path &filePath, std::ofstream &file) {
-		boost::filesystem::create_directories(filePath.branch_path());
-		file.open(
-			filePath.c_str(),
-			std::ios::out | std::ios::ate | std::ios::app);
-		if (!file) {
-			std::cerr
-				<< "Failed to open log file " << filePath << "."
-				<< std::endl;
-		}
-		return filePath;
-	}
-
-	void InitLogs(
-				bool useFile,
-				bool useStdOut,
-				bool useTrading,
-				int argc,
-				const char *argv[],
-				const fs::path &logDir = fs::path()) {
-		if (useFile) {
-			InitLogFile(logDir / "event.log", eventLog);
-			Log::EnableEvents(eventLog);
-		}
-		if (useStdOut) {
-			Log::EnableEventsToStdOut();
-		}
-		{
-			std::list<std::string> cmd;
-			if (useFile) {
-				for (auto i = 0; i < argc; ++i) {
-					cmd.push_back(argv[i]);
-				}
-				Log::Info(
-					"Started: \"%1%\"."
-						" Build: " TRDK_BUILD_IDENTITY "."
-						" Build time: " __TIME__ " " __DATE__ ".",
-					boost::join(cmd, " "));
-				Log::Info(
-					"Local time: %1%.",
-					boost::posix_time::microsec_clock::local_time());
-			}
-		}
-		if (useTrading) {
-			const auto filePath
-				= InitLogFile(logDir / "trading.log", tradingLog);
-			Log::EnableTrading(tradingLog);
-			Log::Info("Logging trading to file %1%...", filePath);
-		}
-	}
-
 	fs::path GetIniFilePath(const char *inputValue) {
 		fs::path result = Normalize(GetExeWorkingDir() / inputValue);
 		if (fs::is_directory(result)) {
@@ -89,8 +35,7 @@ namespace {
 
 namespace {
 
-	bool RunServerService(int argc, const char *argv[]) {
-		InitLogs(true, false, true, argc, argv);
+	bool RunServerService(int /*argc*/, const char * /*argv*/[]) {
 		//! @todo Implement service installation
 		return false;
 	}
@@ -122,15 +67,8 @@ namespace {
 
 	bool RunServerStandalone(int argc, const char *argv[]) {
 		if (argc < 3 || !strlen(argv[2])) {
-			std::cout << "No configuration file specified." << std::endl;
+			std::cerr << "No configuration file specified." << std::endl;
 			return false;
-		}
-		const fs::path confFilePath = GetIniFilePath(argv[2]);
-		{
-			//! @todo Hardcoded INI-key name.
-			const auto logsPath = IniFile(confFilePath)
-				.ReadFileSystemPath("Common", "logs_dir");
-			InitLogs(true, true, true, argc, argv, logsPath);
 		}
 		//! @todo Implement run standalone command
 		return false;
@@ -139,35 +77,21 @@ namespace {
 	bool DebugStrategy(int argc, const char *argv[]) {
 	
 		if (argc < 3 || !strlen(argv[2])) {
-			std::cout << "No configuration file specified." << std::endl;
+			std::cerr << "No configuration file specified." << std::endl;
 			return false;
 		}
 
 		const char *const uuid = "DEBUG";
 	
-		//! @todo read configuration from std in
-		const fs::path confFilePath = GetIniFilePath(argv[2]);
-		{
-			IniFile ini(confFilePath);
-			//! @todo Hardcoded INI-key name.
-			auto logsPath = ini.ReadFileSystemPath("Common", "logs_dir");
-			logsPath /= uuid;
-			InitLogs(
-				true,
-				true,
-				ini.ReadBoolKey("Common", "trading_log"),
-				argc,
-				argv,
-				logsPath);
-		}
-
 		Server server;
 		bool result = true;
 
 		try {
-			server.Run(uuid, confFilePath);
+			server.Run(uuid, GetIniFilePath(argv[2]), true, argc, argv);
 		} catch (const Exception &ex) {
-			Log::Error("Failed to start engine: \"%1%\".", ex.what());
+			std::cerr
+				<< "Failed to start engine: \"" << ex << "\"."
+				<< std::endl;
 			result = false;
 		}
 
@@ -177,7 +101,9 @@ namespace {
 			try {
 				server.StopAll();
 			} catch (const Exception &ex) {
-				Log::Error("Failed to start engine: \"%1%\".", ex.what());
+				std::cerr
+					<< "Failed to stop engine: \"" << ex << "\"."
+					<< std::endl;
 				result = false;
 				getchar();
 			}
@@ -249,7 +175,6 @@ int main(int argc, const char *argv[]) {
 	} catch (...) {
 		AssertFailNoException();
 	}
-	Log::Info("Stopped.");
 #	ifdef DEV_VER
 		getchar();
 #	endif

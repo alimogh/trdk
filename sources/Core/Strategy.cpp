@@ -13,6 +13,7 @@
 #include "Service.hpp"
 #include "PositionReporter.hpp"
 #include "Settings.hpp"
+#include "AsyncLog.hpp"
 
 namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
@@ -284,6 +285,8 @@ public:
 public:
 
 	Strategy &m_strategy;
+
+	Strategy::TradingLog m_tradingLog;
 	
 	boost::atomic_bool m_isBlocked;
 	pt::ptime m_blockEndTime;
@@ -298,7 +301,10 @@ public:
 	explicit Implementation(Strategy &strategy)
 			: m_strategy(strategy),
 			m_isBlocked(false),
-			m_positionReporter(nullptr) {
+			m_positionReporter(nullptr),
+			m_tradingLog(
+				m_strategy.GetTag(),
+				m_strategy.GetContext().GetTradingLog()) {
 		//...//
 	}
 
@@ -332,6 +338,10 @@ Strategy::~Strategy() {
 		AssertFailNoException();
 	}
 	delete m_pimpl;
+}
+
+Strategy::TradingLog & Strategy::GetTradingLog() const throw() {
+	return m_pimpl->m_tradingLog;
 }
 
 void Strategy::OnLevel1Update(

@@ -134,13 +134,11 @@ public:
 
 	explicit ContextBootstrapper(
 				const Lib::Ini &conf,
-				const Settings &settings,
 				Engine::Context &context,
 				TradeSystems &tradeSystemsRef,
 				MarketDataSources &marketDataSourcesRef)
 			: m_context(context),
 			m_conf(conf),
-			m_settings(settings),
 			m_tradeSystems(tradeSystemsRef),
 			m_marketDataSources(marketDataSourcesRef) {
 		//...//
@@ -218,11 +216,10 @@ private:
 			}
 		
 		} catch (...) {
-			trdk::Log::RegisterUnhandledException(
+			trdk::EventsLog::BroadcastUnhandledException(
 				__FUNCTION__,
 				__FILE__,
-				__LINE__,
-				false);
+				__LINE__);
 			throw Exception("Failed to load trade system module");
 		}
 	
@@ -333,11 +330,10 @@ private:
 			}
 	
 		} catch (...) {
-			trdk::Log::RegisterUnhandledException(
+			trdk::EventsLog::BroadcastUnhandledException(
 				__FUNCTION__,
 				__FILE__,
-				__LINE__,
-				false);
+				__LINE__);
 			throw Exception("Failed to load market data source module");
 		}
 	
@@ -383,7 +379,6 @@ private:
 	Engine::Context &m_context;
 
 	const Lib::Ini &m_conf;
-	const Settings &m_settings;
 
 	TradeSystems &m_tradeSystems;
 	MarketDataSources &m_marketDataSources;
@@ -685,21 +680,19 @@ public:
 		try {
 			BindWithModuleRequirements(requirementList);
 		} catch (...) {
-			trdk::Log::RegisterUnhandledException(
+			trdk::EventsLog::BroadcastUnhandledException(
 				__FUNCTION__,
 				__FILE__,
-				__LINE__,
-				false);
+				__LINE__);
 			throw Exception("Failed to build system modules relationship");
 		}
 		try {
 			BindWithSystemRequirements(requirementList);
 		} catch (...) {
-			trdk::Log::RegisterUnhandledException(
+			trdk::EventsLog::BroadcastUnhandledException(
 				__FUNCTION__,
 				__FILE__,
-				__LINE__,
-				false);
+				__LINE__);
 			throw Exception("Failed to build modules relationship");
 		}
 
@@ -868,11 +861,10 @@ private:
 		try {
 			instance = module.factory(m_context, tag, *module.conf);
 		} catch (...) {
-			trdk::Log::RegisterUnhandledException(
+			trdk::EventsLog::BroadcastUnhandledException(
 				__FUNCTION__,
 				__FILE__,
-				__LINE__,
-				false);
+				__LINE__);
 			throw Exception("Failed to create module instance");
 		}
 		AssertEq(tag, instance->GetTag());
@@ -888,11 +880,10 @@ private:
 					try {
 						instance->RegisterSource(security);
 					} catch (...) {
-						trdk::Log::RegisterUnhandledException(
+						trdk::EventsLog::BroadcastUnhandledException(
 							__FUNCTION__,
 							__FILE__,
-							__LINE__,
-							false);
+							__LINE__);
 						throw Exception("Failed to attach security");
 					}
 					std::ostringstream oss;
@@ -1141,11 +1132,10 @@ private:
 			try {
 				strList = instance.GetRequiredSuppliers();
 			} catch (...) {
-				trdk::Log::RegisterUnhandledException(
+				trdk::EventsLog::BroadcastUnhandledException(
 					__FUNCTION__,
 					__FILE__,
-					__LINE__,
-					false);
+					__LINE__);
 				// DLL will be unloaded, replacing exception:
 				throw Exception("Failed to read module requirement list");
 			}
@@ -1749,13 +1739,11 @@ std::set<Symbol> ContextStateBootstrapper::GetSymbolInstances(
 
 void Engine::BootContext(
 			const Lib::Ini &conf,
-			const Settings &settings,
 			Context &context,
 			TradeSystems &tradeSystemsRef,
 			MarketDataSources &marketDataSourcesRef) {
 	ContextBootstrapper(
 			conf,
-			settings,
 			context,
 			tradeSystemsRef,
 			marketDataSourcesRef)

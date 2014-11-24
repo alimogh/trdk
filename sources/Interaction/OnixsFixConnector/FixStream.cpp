@@ -23,7 +23,7 @@ FixStream::FixStream(
 			const std::string &tag,
 			const Lib::IniSectionRef &conf)
 		: MarketDataSource(context, tag),
-		m_session(GetContext(), "stream", conf) {
+		m_session(GetContext(), GetLog(), conf) {
 	//...//
 }
 
@@ -50,7 +50,7 @@ FixSecurity * FixStream::FindRequestSecurity(
 		= requestResult.getUInt64(fix::FIX42::Tags::MDReqID);
 	if (securityIndex >= m_securities.size()) {
 		GetLog().Error(
-			"Received wrong security index from FIX Server: %1%.",
+			"Received wrong security index: %1%.",
 			requestResult.get(fix::FIX42::Tags::MDReqID));
 		return nullptr;
 	}
@@ -78,7 +78,7 @@ std::string FixStream::GetRequestSymbolStr(
 void FixStream::SubscribeToSecurities() {
 
 	GetLog().Info(
-		"Sending FIX Market Data Requests for %1% securities...",
+		"Sending Market Data Requests for %1% securities...",
 		m_securities.size());
 
 	for (	fix::UInt32 sequrityIndex = 0;
@@ -190,7 +190,7 @@ void FixStream::onInboundApplicationMsg(
 	if (message.type() == "Y") {
 		
 		GetLog().Error(
-			"Failed to Subscribe to %1% Market Data: \"%2%\".",
+			"Failed to subscribe to %1% market data: \"%2%\".",
 			GetRequestSymbolStr(message),
 			message.get(fix::FIX42::Tags::MDReqRejReason));
 

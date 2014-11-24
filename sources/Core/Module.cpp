@@ -13,24 +13,12 @@
 #include "ModuleSecurityList.hpp"
 #include "Service.hpp"
 #include "Security.hpp"
+#include "EventsLog.hpp"
 
 namespace fs = boost::filesystem;
 
 using namespace trdk;
 using namespace trdk::Lib;
-
-////////////////////////////////////////////////////////////////////////////////
-
-Module::Log::Log(const Module &module)
-		: m_tag(module.GetTag()),
-		m_log(module.GetContext().GetLog()),
-		m_format(boost::format("[%1%] %2%") % module) {
-	//...//
-}
-
-Module::Log::~Log() {
-	//...//
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -155,7 +143,23 @@ void Module::SecurityList::ConstIterator::advance(difference_type n) {
 //////////////////////////////////////////////////////////////////////////
 
 namespace {
+
 	boost::atomic<Module::InstanceId> nextFreeInstanceId(1);
+	
+	std::string FormatStringId(
+				const Module::InstanceId &instanceId,
+				const std::string &typeName,
+				const std::string &name,
+				const std::string &tag) {
+		std::ostringstream result;
+		result << typeName << '.' << name;
+		if (name != tag) {
+			result << '.' << tag;
+		}
+		result << '.' << instanceId;
+		return std::move(result.str());
+	}
+
 }
 
 class Module::Implementation : private boost::noncopyable {
@@ -171,8 +175,9 @@ public:
 	const std::string m_typeName;
 	const std::string m_name;
 	const std::string m_tag;
+	const std::string m_stringId;
 
-	boost::scoped_ptr<Log> m_log;
+	Module::Log m_log;
 
 	explicit Implementation(
 				Context &context,
@@ -183,7 +188,10 @@ public:
 			m_context(context),
 			m_typeName(typeName),
 			m_name(name),
-			m_tag(tag) {
+			m_tag(tag),
+			m_stringId(
+				FormatStringId(m_instanceId, m_typeName, m_name, m_tag)),
+			m_log(m_stringId, m_context.GetLog()) {
 		Assert(nextFreeInstanceId.is_lock_free());
 	}
 
@@ -195,14 +203,14 @@ Module::Module(
 			const std::string &name,
 			const std::string &tag)
 		: m_pimpl(new Implementation(context, typeName, name, tag)) {
-	m_pimpl->m_log.reset(new Log(*this));
+	//...//
 }
 
 Module::~Module() {
 	delete m_pimpl;
 }
 
-Module::InstanceId Module::GetInstanceId() const {
+const Module::InstanceId & Module::GetInstanceId() const {
 	return m_pimpl->m_instanceId;
 }
 
@@ -222,6 +230,10 @@ const std::string & Module::GetTag() const throw() {
 	return m_pimpl->m_tag;
 }
 
+const std::string & Module::GetStringId() const throw() {
+	return m_pimpl->m_stringId;
+}
+
 Context & Module::GetContext() {
 	return m_pimpl->m_context;
 }
@@ -231,11 +243,11 @@ const Context & Module::GetContext() const {
 }
 
 Module::Log & Module::GetLog() const throw() {
-	return *m_pimpl->m_log;
+	return m_pimpl->m_log;
 }
 
 std::string Module::GetRequiredSuppliers() const {
-	return std::string();
+	return std::move(std::string());
 }
 
 void Module::UpdateSettings(const IniSectionRef &ini) {
@@ -288,7 +300,7 @@ void Module::ReportSettings(
 			throw Exception("Failed to open log file");
 		}
 		f
-			<< (boost::get_system_time() + GetEdtDiff())
+			<< (boost::get_system_time() + GetEstDiff())
 			<< ' ' << GetName() << ':' << std::endl;
 		foreach (const auto &s, settings) {
 			f << "\t" << s.first << " = " << s.second << std::endl;
@@ -302,19 +314,8 @@ void Module::ReportSettings(
 
 //////////////////////////////////////////////////////////////////////////
 
-std::ostream & std::operator <<(
-			std::ostream &oss,
-			const Module &module)
-		throw() {
-	try {
-		oss << module.GetTypeName() << '.' << module.GetName();
-		if (module.GetName() != module.GetTag()) {
-			oss << '.' << module.GetTag();
-		}
-		oss << '.' << module.GetInstanceId();
-	} catch (...) {
-		AssertFailNoException();
-	}
+std::ostream & std::operator <<(std::ostream &oss, const Module &module) {
+	oss << module.GetStringId();
 	return oss;
 }
 

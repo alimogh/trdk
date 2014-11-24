@@ -41,7 +41,7 @@ namespace trdk {
 
 	public:
 	
-		explicit Settings(const trdk::Lib::Ini &, trdk::Context::Log &);
+		explicit Settings(const boost::filesystem::path &logsDir);
 
 	public:
 
@@ -55,6 +55,10 @@ namespace trdk {
 		void UpdateStatic(const trdk::Lib::Ini &, trdk::Context::Log &);
 
 	public:
+
+		const boost::filesystem::path & GetLogsDir() const {
+			return m_logsDir;
+		}
 
 		//! Default security Exchange.
 		/** Path: Defaults::exchange
@@ -76,6 +80,8 @@ namespace trdk {
 	private:
 
 		Values m_values;
+		bool m_isLoaded;
+		boost::filesystem::path m_logsDir;
 
 	};
 

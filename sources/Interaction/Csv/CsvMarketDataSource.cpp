@@ -257,13 +257,11 @@ void Csv::MarketDataSource::ReadFile() {
 		const SecurityByInstrument::const_iterator security
 			= index.find(instrumnet);
 		if (security == index.end()) {
-			GetLog().DebugEx(
-				[&]() -> boost::format {
-					boost::format message(
-						"Found unknown instrument: %1%:%2%:%3%.");
-					message % symbol % m_pimaryExchange % exchange;
-					return message;
-				});
+			GetLog().Debug(
+				"Found unknown instrument: %1%:%2%:%3%.",
+				symbol,
+				m_pimaryExchange,
+				exchange);
 		} else if (security->security->IsTradesRequired()) {
 			AssertNe(int(numberOfOrderSides), int(side));
 			security

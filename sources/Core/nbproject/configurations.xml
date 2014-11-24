@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="94">
+<configurationDescriptor version="95">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>Api.h</itemPath>
+      <itemPath>AsyncLog.hpp</itemPath>
       <itemPath>Consumer.hpp</itemPath>
       <itemPath>Context.hpp</itemPath>
+      <itemPath>EventsLog.hpp</itemPath>
       <itemPath>Fwd.hpp</itemPath>
       <itemPath>Instrument.hpp</itemPath>
       <itemPath>Interactor.hpp</itemPath>
@@ -28,6 +30,7 @@
       <itemPath>StrategyPositionReporter.hpp</itemPath>
       <itemPath>StrategyPositionState.hpp</itemPath>
       <itemPath>../Interaction/OnixsHotspot/../../../sources/Core/Terminal.hpp</itemPath>
+      <itemPath>Terminal.hpp</itemPath>
       <itemPath>TimeMeasurement.hpp</itemPath>
       <itemPath>TradeSystem.hpp</itemPath>
       <itemPath>Types.hpp</itemPath>
@@ -35,11 +38,12 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
+      <itemPath>AsyncLog.cpp</itemPath>
       <itemPath>Consumer.cpp</itemPath>
       <itemPath>Context.cpp</itemPath>
+      <itemPath>EventsLog.cpp</itemPath>
       <itemPath>Instrument.cpp</itemPath>
       <itemPath>Interactor.cpp</itemPath>
-      <itemPath>Log.cpp</itemPath>
       <itemPath>MarketDataSource.cpp</itemPath>
       <itemPath>Module.cpp</itemPath>
       <itemPath>Observer.cpp</itemPath>
@@ -131,6 +135,10 @@
       </item>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="AsyncLog.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="AsyncLog.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="Consumer.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Consumer.hpp" ex="false" tool="3" flavor2="0">
@@ -138,6 +146,10 @@
       <item path="Context.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Context.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="EventsLog.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="EventsLog.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Fwd.hpp" ex="false" tool="3" flavor2="0">
       </item>
@@ -148,8 +160,6 @@
       <item path="Interactor.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Interactor.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="Log.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Log.hpp" ex="false" tool="3" flavor2="0">
       </item>
@@ -204,6 +214,8 @@
       <item path="StrategyPositionState.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="StrategyPositionState.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Terminal.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="TimeMeasurement.hpp" ex="false" tool="3" flavor2="0">
       </item>
@@ -287,6 +299,10 @@
       </item>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="AsyncLog.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="AsyncLog.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="Consumer.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Consumer.hpp" ex="false" tool="3" flavor2="0">
@@ -294,6 +310,10 @@
       <item path="Context.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Context.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="EventsLog.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="EventsLog.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Fwd.hpp" ex="false" tool="3" flavor2="0">
       </item>
@@ -304,8 +324,6 @@
       <item path="Interactor.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Interactor.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="Log.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Log.hpp" ex="false" tool="3" flavor2="0">
       </item>
@@ -360,6 +378,8 @@
       <item path="StrategyPositionState.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="StrategyPositionState.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Terminal.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="TimeMeasurement.hpp" ex="false" tool="3" flavor2="0">
       </item>

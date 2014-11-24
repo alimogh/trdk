@@ -40,11 +40,10 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 				m_handler.subscribeTickerForAllCurrencyPairs();
 				m_handler.disconnect();
 			} catch (...) {
-				Log::RegisterUnhandledException(
+				EventsLog::BroadcastUnhandledException(
 					__FUNCTION__,
 					__FILE__,
-					__LINE__,
-					false);
+					__LINE__);
 			}
 		}
 
@@ -67,12 +66,11 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 
 		virtual void SubscribeToSecurities() {
 			GetLog().Info(
-				"Sending Market Data Requests"
-					" to Hotspot ITCH Server for %1% securities...",
+				"Sending market data requests for %1% securities...",
 				m_securities.size());
 			foreach (const auto &security, m_securities) {
 				const auto &symbol = security.second->GetSymbol().GetSymbol();
-				GetLog().Info("Sending Market Data Request for %1%...", symbol);
+				GetLog().Info("Sending market data request for %1%...", symbol);
 				m_handler.subscribeMarketData(symbol);
 			}
 		}
@@ -81,16 +79,13 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 
 		/// Is called when the error condition is detected.
 		virtual void onError(const std::string &errorDescription) {
-			GetLog().Error(
-				"Hotspot ITCH error: \"%1%\".",
-				errorDescription);
+			GetLog().Error("Session error: \"%1%\".", errorDescription);
 		}
 
 		/// Is called when Handler is disconnected.
 		virtual void onDisconnect(const std::string &disconnectReason) {
 			GetLog().Info(
-				"Disconnected from Hotspot ITCH server with reason: \"%1%\"."
-					" Reconnection...",
+				"Disconnected with reason: \"%1%\". Reconnecting...",
 				disconnectReason);
 			Connect();
 		}
@@ -98,15 +93,14 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 		/// Is called when the Login Accepted message is received.
 		virtual void onLoginAccepted(int visibilityBitMask) {
 			GetLog().Info(
-				"Login request to Hotspot ITCH server accepted (mask: %1%).",
+				"Login request server accepted (mask: %1%).",
 				visibilityBitMask);
 		}
 
 		/// Is called when the Login Rejected message is received.
 		virtual void onLoginRejected(const std::string &rejectReason) {
 			GetLog().Error(
-				"Login request to Hotspot ITCH server REJECTED with reason:"
-					" \"%1%\".",
+				"Login request to server REJECTED with reason: \"%1%\".",
 				rejectReason);
 		}
 
@@ -198,7 +192,7 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 			}
 
 			GetLog().Info(
-				"Connecting to Hotspot ITCH Server at \"%1%:%2%\""
+				"Connecting to server at \"%1%:%2%\""
 					" as \"%3%\" (with password)...",
 				m_connectionOptions.host,
 				m_connectionOptions.port,

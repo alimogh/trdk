@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Module.hpp"
+#include "Fwd.hpp"
 
 namespace trdk {
 
@@ -18,7 +19,7 @@ namespace trdk {
 
 	typedef std::map<
 			boost::tuple<
-				trdk::Lib::Symbol::Hash,
+				size_t/*trdk::Lib::Symbol::Hash*/,
 				const trdk::MarketDataSource *>,
 			Security *>
 		ModuleSecurityListStorage;
