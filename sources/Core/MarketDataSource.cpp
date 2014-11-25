@@ -12,7 +12,7 @@
 #include "MarketDataSource.hpp"
 #include "Context.hpp"
 #include "Security.hpp"
-#include "AsyncLog.hpp"
+#include "TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

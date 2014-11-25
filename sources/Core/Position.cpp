@@ -12,7 +12,7 @@
 #include "Position.hpp"
 #include "Strategy.hpp"
 #include "Settings.hpp"
-#include "AsyncLog.hpp"
+#include "TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -533,7 +533,7 @@ public:
 			"%12%\t%11%\t%1%\t%2%\topen-%3%\t%4%"
 				"\tqty=%5%->%6% price=%7%->%8% order-id=%9%"
 				" order-status=%10%",
-			[this, eventDesc, &orderStatus](LogRecord &record) {
+			[this, eventDesc, &orderStatus](TradingRecord &record) {
 				record
 					% m_security.GetSymbol()
 					% m_position.GetTypeStr()
@@ -555,7 +555,7 @@ public:
 			logTag,
 			"%13%\t%11%\t%1%\t%2%\tclose-%12%\t%3%\tqty=%4%->%5%"
 				" order-id=%6%->%7% has-orders=%8%/%9% is-error=%10%",
-			[this, eventDesc](LogRecord &record) {
+			[this, eventDesc](TradingRecord &record) {
 				record
 					% m_security
 					% m_position.GetTypeStr()
@@ -583,7 +583,7 @@ public:
 			"%14%\t%11%\t%1%\t%2%\tclose-%3%\t%4%"
 				"\tqty=%5%->%6% price=%15%->%7% order-id=%8%->%9%"
 				" order-status=%10% has-orders=%12%/%13%",
-			[this, eventDesc, &orderStatus](LogRecord &record) {
+			[this, eventDesc, &orderStatus](TradingRecord &record) {
 				record
 					% m_position.GetSecurity().GetSymbol()
 					% m_position.GetTypeStr()
@@ -614,7 +614,7 @@ public:
 			"%1%\t%2%\t%3%\t%4%\treplacing-%5%-order\t%6%\t%7%"
 				"\tqty=%8%->%9% price=%10%->%11%"
 				" bid=%12%/%13% ask=%14%/%15%",
-			[&](LogRecord &record) {
+			[&](TradingRecord &record) {
 				record
 					% m_id
 					% m_position.GetTradeSystem().GetTag()
@@ -725,7 +725,7 @@ public:
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
 			"%7%\t%5%\t%1%\t%2%\t%6%\t%3%\tqty=%4%",
-			[this, action](LogRecord &record) {
+			[this, action](TradingRecord &record) {
 				record
 					% m_security
 					% m_position.GetTypeStr()

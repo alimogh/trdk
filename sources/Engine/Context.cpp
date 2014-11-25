@@ -17,7 +17,7 @@
 #include "Core/Terminal.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradeSystem.hpp"
-#include "Core/AsyncLog.hpp"
+#include "Core/TradingLog.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;

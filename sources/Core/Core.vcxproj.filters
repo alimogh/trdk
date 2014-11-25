@@ -65,10 +65,10 @@
     <ClCompile Include="Terminal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AsyncLog.cpp">
+    <ClCompile Include="EventsLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EventsLog.cpp">
+    <ClCompile Include="AsyncLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -152,6 +152,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="EventsLog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TradingLog.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

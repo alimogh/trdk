@@ -11,7 +11,7 @@
 #pragma once
 
 #include "Engine/Context.hpp"
-#include "Core/AsyncLog.hpp"
+#include "Core/TradingLog.hpp"
 
 namespace trdk { namespace EngineServer {
 

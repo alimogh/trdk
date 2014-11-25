@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "Context.hpp"
-#include "AsyncLog.hpp"
+#include "TradingLog.hpp"
 #include "EventsLog.hpp"
 #include "Settings.hpp"
 

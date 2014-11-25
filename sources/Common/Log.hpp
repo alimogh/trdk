@@ -60,11 +60,11 @@ namespace trdk { namespace Lib {
 
 		template<typename Message>
 		void Write(
-					const char *tag,
-					const Time &time,
-					const ThreadId &theadId,
-					const std::string *module,
-					const Message &message) {
+				const char *tag,
+				const Time &time,
+				const ThreadId &theadId,
+				const std::string *module,
+				const Message &message) {
 			if (m_isStreamEnabled) {
 				Assert(m_log);
 				const Lock lock(m_streamMutex);
@@ -76,13 +76,26 @@ namespace trdk { namespace Lib {
 			}
 		}
 
+		template<typename Message>
+		void Write(const Message &message) {
+			if (m_isStreamEnabled) {
+				Assert(m_log);
+				const Lock lock(m_streamMutex);
+				AppendMessage(message, *m_log);
+			}
+			if (m_isStdOutEnabled) {
+				const Lock lock(m_stdOutMutex);
+				AppendMessage(message, std::cout);
+			}
+		}
+
 	public:
 
-		static boost::posix_time::ptime GetTime() {
+		Time GetTime() const {
 			return std::move(boost::posix_time::microsec_clock::local_time());
 		}
 
-		static ThreadId GetThreadId() {
+		ThreadId GetThreadId() const {
 #			ifdef BOOST_WINDOWS
 				return GetCurrentThreadId();
 #			else
@@ -94,23 +107,29 @@ namespace trdk { namespace Lib {
 
 		template<typename Message>
 		static void AppendMessage(
-					const char *tag,
-					const Time &time,
-					const ThreadId &theadId,
-					const std::string *module,
-					const Message &message,
-					std::ostream &os) {
+				const char *tag,
+				const Time &time,
+				const ThreadId &theadId,
+				const std::string *module,
+				const Message &message,
+				std::ostream &os) {
 			AppendRecordHead(tag, time, theadId, module, os);
 			AppendString(message, os);
 			AppendRecordEnd(os);
 		}
 
+		template<typename Message>
+		static void AppendMessage(const Message &message, std::ostream &os) {
+			AppendString(message, os);
+			AppendRecordEnd(os);
+		}
+
 		static void AppendRecordHead(
-					const char *tag,
-					const boost::posix_time::ptime &time,
-					const ThreadId &threadId,
-					const std::string *module,
-					std::ostream &os) {
+				const char *tag,
+				const boost::posix_time::ptime &time,
+				const ThreadId &threadId,
+				const std::string *module,
+				std::ostream &os) {
 			if (tag) {
 				os << '[' << tag << "]\t";
 			}
@@ -125,26 +144,8 @@ namespace trdk { namespace Lib {
 
 		template<typename Message>
 		static void AppendString(
-					const Message &message,
-					std::ostream &os) {
-			foreach (const auto &ch, message) {
-				if (ch == 0) {
-					break;
-				}
-				os << ch;
-				if (ch == os.widen('\n')) {
-					os << "\t\t\t\t\t\t";
-				}
-			}
-		}
-
-		static void AppendString(
-					const boost::format &message,
-					std::ostream &os) {
-			os << message;
-		}
-
-		static void AppendString(const char *message, std::ostream &os) {
+				const Message &message,
+				std::ostream &os) {
 			os << message;
 		}
 

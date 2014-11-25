@@ -41,7 +41,7 @@ namespace trdk {
 		typedef trdk::Interactor Base;
 
 		typedef trdk::ModuleEventsLog Log;
-		typedef trdk::ModuleAsyncLog TradingLog;
+		typedef trdk::ModuleTradingLog TradingLog;
 
 		enum OrderStatus {
 			ORDER_STATUS_PENDIGN,

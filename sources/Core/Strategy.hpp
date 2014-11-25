@@ -102,7 +102,7 @@ namespace trdk {
 
 		};
 
-		typedef trdk::ModuleAsyncLog TradingLog;
+		typedef trdk::ModuleTradingLog TradingLog;
 
 	public:
 

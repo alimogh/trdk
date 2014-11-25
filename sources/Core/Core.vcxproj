@@ -302,6 +302,7 @@
     <ClInclude Include="Settings.hpp" />
     <ClInclude Include="Terminal.hpp" />
     <ClInclude Include="TradeSystem.hpp" />
+    <ClInclude Include="TradingLog.hpp" />
     <ClInclude Include="Types.hpp" />
   </ItemGroup>
   <ItemGroup>

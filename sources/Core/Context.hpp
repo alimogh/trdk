@@ -32,7 +32,7 @@ namespace trdk {
 		};
 
 		typedef trdk::EventsLog Log;
-		typedef trdk::AsyncLog TradingLog;
+		typedef trdk::TradingLog TradingLog;
 
 		class TRDK_CORE_API Params;
 

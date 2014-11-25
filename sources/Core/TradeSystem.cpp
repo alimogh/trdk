@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "TradeSystem.hpp"
-#include "AsyncLog.hpp"
+#include "TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

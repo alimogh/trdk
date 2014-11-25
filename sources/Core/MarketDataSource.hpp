@@ -36,7 +36,7 @@ namespace trdk {
 		typedef trdk::Interactor Base;
 
 		typedef trdk::ModuleEventsLog Log;
-		typedef trdk::ModuleAsyncLog TradingLog;
+		typedef trdk::ModuleTradingLog TradingLog;
 
 	public:
 

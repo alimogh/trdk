@@ -13,7 +13,7 @@
 #include "Service.hpp"
 #include "PositionReporter.hpp"
 #include "Settings.hpp"
-#include "AsyncLog.hpp"
+#include "TradingLog.hpp"
 
 namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;

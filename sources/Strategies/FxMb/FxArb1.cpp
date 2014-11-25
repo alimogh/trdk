@@ -12,7 +12,7 @@
 #include "FxArb1.hpp"
 #include "Core/StrategyPositionReporter.hpp"
 #include "Core/MarketDataSource.hpp"
-#include "Core/AsyncLog.hpp"
+#include "Core/TradingLog.hpp"
 #include "Util.hpp"
 
 using namespace trdk;
@@ -230,7 +230,7 @@ FxArb1::Equations FxArb1::CreateEquations(const Ini &conf) const {
 		GetLog().Info(logMessage, comparisonValue);
 		GetTradingLog().Write(
 			logMessage,
-			[&](LogRecord &r) {
+			[&](TradingRecord &r) {
 				r % comparisonValue;
 			});
 	}
@@ -263,19 +263,19 @@ FxArb1::Equations FxArb1::CreateEquations(const Ini &conf) const {
 
 	typedef Strategy::TradingLog L;
 
-	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 1: %1% * %2% * (1 / %3%) = %4%",				[&](LogRecord &r) { r %		b1.p1.bid.GetConst() % b2.p2.bid.GetConst() % b1.p3.ask.GetConst()		% (		b1.p1.bid.GetConst() * b2.p2.bid.GetConst() * (1 / b1.p3.ask.GetConst())		)	;});});
-	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 2: %1% * (1 / %2%) * %3% = %4%",				[&](LogRecord &r) { r %		b1.p1.bid.GetConst() % b2.p3.ask.GetConst() % b1.p2.bid.GetConst()		% (		b1.p1.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p2.bid.GetConst()		)	;});});
-	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 3: %1% * %2% * (1 / %3%) = %4%",				[&](LogRecord &r) { r %		b1.p2.bid.GetConst() % b2.p1.bid.GetConst() % b1.p3.ask.GetConst()		% (		b1.p2.bid.GetConst() * b2.p1.bid.GetConst() * (1 / b1.p3.ask.GetConst())		)	;});});
-	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 4: %1% * (1 / %2%) * %3% = %4%",				[&](LogRecord &r) { r %		b1.p2.bid.GetConst() % b2.p3.ask.GetConst() % b1.p1.bid.GetConst()		% (		b1.p2.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p1.bid.GetConst()		)	;});});
-	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 5: (1 / %1%) * %2% * %3% = %4%",				[&](LogRecord &r) { r %		b1.p3.ask.GetConst() % b2.p1.bid.GetConst() % b1.p2.bid.GetConst()		% (		(1 / b1.p3.ask.GetConst()) * b2.p1.bid.GetConst() * b1.p2.bid.GetConst()		)	;});});
-	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 6: (1 / %1%) * %2% * %3% = %4%",				[&](LogRecord &r) { r %		b1.p3.ask.GetConst() % b2.p2.bid.GetConst() % b1.p1.bid.GetConst()		% (		(1 / b1.p3.ask.GetConst()) * b2.p2.bid.GetConst() * b1.p1.bid.GetConst()		)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 1: %1% * %2% * (1 / %3%) = %4%",				[&](TradingRecord &r) { r %		b1.p1.bid.GetConst() % b2.p2.bid.GetConst() % b1.p3.ask.GetConst()		% (		b1.p1.bid.GetConst() * b2.p2.bid.GetConst() * (1 / b1.p3.ask.GetConst())		)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 2: %1% * (1 / %2%) * %3% = %4%",				[&](TradingRecord &r) { r %		b1.p1.bid.GetConst() % b2.p3.ask.GetConst() % b1.p2.bid.GetConst()		% (		b1.p1.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p2.bid.GetConst()		)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 3: %1% * %2% * (1 / %3%) = %4%",				[&](TradingRecord &r) { r %		b1.p2.bid.GetConst() % b2.p1.bid.GetConst() % b1.p3.ask.GetConst()		% (		b1.p2.bid.GetConst() * b2.p1.bid.GetConst() * (1 / b1.p3.ask.GetConst())		)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 4: %1% * (1 / %2%) * %3% = %4%",				[&](TradingRecord &r) { r %		b1.p2.bid.GetConst() % b2.p3.ask.GetConst() % b1.p1.bid.GetConst()		% (		b1.p2.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p1.bid.GetConst()		)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 5: (1 / %1%) * %2% * %3% = %4%",				[&](TradingRecord &r) { r %		b1.p3.ask.GetConst() % b2.p1.bid.GetConst() % b1.p2.bid.GetConst()		% (		(1 / b1.p3.ask.GetConst()) * b2.p1.bid.GetConst() * b1.p2.bid.GetConst()		)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 6: (1 / %1%) * %2% * %3% = %4%",				[&](TradingRecord &r) { r %		b1.p3.ask.GetConst() % b2.p2.bid.GetConst() % b1.p1.bid.GetConst()		% (		(1 / b1.p3.ask.GetConst()) * b2.p2.bid.GetConst() * b1.p1.bid.GetConst()		)	;});});
 
-	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 7: (1 / %1%) * (1 / %2%) * %3% = %4%",		[&](LogRecord &r) { r %		b1.p1.ask.GetConst() % b2.p2.ask.GetConst() % b1.p3.bid.GetConst()		% (		(1 / b1.p1.ask.GetConst()) * (1 / b2.p2.ask.GetConst()) * b1.p3.bid.GetConst()	)	;});});
-	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 8: (1 / %1%) * %2% * (1 / %3%) = %4%",		[&](LogRecord &r) { r %		b1.p1.ask.GetConst() % b2.p3.bid.GetConst() % b1.p2.ask.GetConst()		% (		(1 / b1.p1.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p2.ask.GetConst())	)	;});});
-	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 9: (1 / %1%) * (1 / %2%) * %3% = %4%",		[&](LogRecord &r) { r %		b1.p2.ask.GetConst() % b2.p1.ask.GetConst() % b1.p3.bid.GetConst()		% (		(1 / b1.p2.ask.GetConst()) * (1 / b2.p1.ask.GetConst()) * b1.p3.bid.GetConst()	)	;});});
-	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 10: (1 / %1%) * %2% * (1 / %3%) = %4%",		[&](LogRecord &r) { r %		b1.p2.ask.GetConst() % b2.p3.bid.GetConst() % b1.p1.ask.GetConst()		% (		(1 / b1.p2.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p1.ask.GetConst())	)	;});});
-	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 11: %1% * (1 / %2%) * (1 / %3%) = %4%",		[&](LogRecord &r) { r %		b1.p3.bid.GetConst() % b2.p1.ask.GetConst() % b1.p2.ask.GetConst()		% (		b1.p3.bid.GetConst() * (1 / b2.p1.ask.GetConst()) * (1 / b1.p2.ask.GetConst())	)	;});});
-	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 12: %1% * (1 / %2%) * (1 / %3%) = %4%",		[&](LogRecord &r) { r %		b1.p3.bid.GetConst() % b2.p2.ask.GetConst() % b1.p1.ask.GetConst()		% (		b1.p3.bid.GetConst() * (1 / b2.p2.ask.GetConst()) * (1 / b1.p1.ask.GetConst())	)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 7: (1 / %1%) * (1 / %2%) * %3% = %4%",		[&](TradingRecord &r) { r %		b1.p1.ask.GetConst() % b2.p2.ask.GetConst() % b1.p3.bid.GetConst()		% (		(1 / b1.p1.ask.GetConst()) * (1 / b2.p2.ask.GetConst()) * b1.p3.bid.GetConst()	)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 8: (1 / %1%) * %2% * (1 / %3%) = %4%",		[&](TradingRecord &r) { r %		b1.p1.ask.GetConst() % b2.p3.bid.GetConst() % b1.p2.ask.GetConst()		% (		(1 / b1.p1.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p2.ask.GetConst())	)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 9: (1 / %1%) * (1 / %2%) * %3% = %4%",		[&](TradingRecord &r) { r %		b1.p2.ask.GetConst() % b2.p1.ask.GetConst() % b1.p3.bid.GetConst()		% (		(1 / b1.p2.ask.GetConst()) * (1 / b2.p1.ask.GetConst()) * b1.p3.bid.GetConst()	)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 10: (1 / %1%) * %2% * (1 / %3%) = %4%",		[&](TradingRecord &r) { r %		b1.p2.ask.GetConst() % b2.p3.bid.GetConst() % b1.p1.ask.GetConst()		% (		(1 / b1.p2.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p1.ask.GetConst())	)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 11: %1% * (1 / %2%) * (1 / %3%) = %4%",		[&](TradingRecord &r) { r %		b1.p3.bid.GetConst() % b2.p1.ask.GetConst() % b1.p2.ask.GetConst()		% (		b1.p3.bid.GetConst() * (1 / b2.p1.ask.GetConst()) * (1 / b1.p2.ask.GetConst())	)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 12: %1% * (1 / %2%) * (1 / %3%) = %4%",		[&](TradingRecord &r) { r %		b1.p3.bid.GetConst() % b2.p2.ask.GetConst() % b1.p1.ask.GetConst()		% (		b1.p3.bid.GetConst() * (1 / b2.p2.ask.GetConst()) * (1 / b1.p1.ask.GetConst())	)	;});});
 
 	AssertEq(EQUATIONS_COUNT, result.size());
 	result.shrink_to_fit();
@@ -446,7 +446,7 @@ void FxArb1::StartPositionsOpening(
 			GetTradingLog().Write(
 				"Can't trade: required %1% * %2% = %3% > %4%"
 					" for %5% %6%, but it's not.",
-				[&](LogRecord &record) {
+				[&](TradingRecord &record) {
 					record
 						%	security.conf->qty
 						%	security.conf->requiredVol
@@ -647,7 +647,7 @@ void FxArb1::DelayClose(EquationPosition &position) {
 	GetTradingLog().Write(
 		"Delaying positions closing by %1% for equation %2%"
 			", as strategy blocked...",
-		[&](LogRecord &record) {
+		[&](TradingRecord &record) {
 			record % position.GetSecurity() % position.GetEquationIndex();
 		});
 	m_equationsForDelayedClosing[position.GetEquationIndex()] = true;
@@ -663,7 +663,7 @@ void FxArb1::CloseDelayed(
 		GetTradingLog().Write(
 			"Closing delayed positions for equation %1%"
 				" (%2% / %3% / %4% / %5% / %6% / %7%)...",
-			[this, i](LogRecord &record) {
+			[this, i](TradingRecord &record) {
 				const auto &positions = GetEquationPositions(i);
 				record
 					%	i

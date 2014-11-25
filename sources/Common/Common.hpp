@@ -18,6 +18,7 @@
 #	if TRDK_CONCURRENCY_PROFILE == 0 // ::trdk::Lib::Concurrency::PROFILE_RELAX
 #		include <boost/thread/condition.hpp>
 #	endif
+#	include <boost/thread/thread.hpp>
 #	include <boost/thread/shared_mutex.hpp>
 #	include <boost/shared_ptr.hpp>
 #	include <boost/cast.hpp>

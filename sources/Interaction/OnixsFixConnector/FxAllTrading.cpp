@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "FixTrading.hpp"
 #include "Core/Security.hpp"
-#include "Core/AsyncLog.hpp"
+#include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -149,7 +149,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					GetTradingLog().Write(
 						"Skipping emulated \"day-market\" order %1%"
 							" \"new status\" for %2%...",
-						[&](LogRecord &record) {
+						[&](TradingRecord &record) {
 							record % order.id % order.security->GetSymbol();
 						});
 					return;
@@ -172,7 +172,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				"Emulating \"day-market\" order"
 					" by resending order %1%"
 					" for \"%2%\" with qty %3%->%4% (%5% times)...",
-				[&](LogRecord &record) {
+				[&](TradingRecord &record) {
 					record
 						% order.id
 						% order.security->GetSymbol()

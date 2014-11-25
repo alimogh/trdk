@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "FakeTradeSystem.hpp"
 #include "Core/Security.hpp"
-#include "Core/AsyncLog.hpp"
+#include "Core/TradingLog.hpp"
 
 namespace pt = boost::posix_time;
 
@@ -224,7 +224,7 @@ OrderId Fake::TradeSystem::SellAtMarketPrice(
 	m_pimpl->SendOrder(order);
 	GetTradingLog().Write(
 		"sell\t%2%\torder-id=%1% qty=%3% price=market",
-		[&](LogRecord &record) {
+		[&](TradingRecord &record) {
 			record % order.id % security.GetSymbol() % qty;
 		});
 	return order.id;
@@ -250,7 +250,7 @@ OrderId Fake::TradeSystem::Sell(
 	m_pimpl->SendOrder(order);
 	GetTradingLog().Write(
 		"buy\t%2%\torder-id=%1% type=LMT qty=%3% price=%4%",
-		[&](LogRecord &record) {
+		[&](TradingRecord &record) {
 			record
 				% order.id
 				% security.GetSymbol()
@@ -292,7 +292,7 @@ OrderId Fake::TradeSystem::SellImmediatelyOrCancel(
 	m_pimpl->SendOrder(order);
 	GetTradingLog().Write(
 		"sell\t%2%\torder-id=%1% type=IOC qty=%3% price=%4%",
-		[&](LogRecord &record) {
+		[&](TradingRecord &record) {
 			record
 				% order.id
 				% security.GetSymbol()
@@ -341,7 +341,7 @@ OrderId Fake::TradeSystem::BuyAtMarketPrice(
 	m_pimpl->SendOrder(order);
 	GetTradingLog().Write(
 		"buy\t%2%\torder-id=%1% qty=%3% price=market",
-		[&](LogRecord &record) {
+		[&](TradingRecord &record) {
 			record % order.id % security.GetSymbol() % qty;
 		});
 	return order.id;
@@ -367,7 +367,7 @@ OrderId Fake::TradeSystem::Buy(
 	m_pimpl->SendOrder(order);
 	GetTradingLog().Write(
 		"buy\t%2%\torder-id=%1% type=LMT qty=%3% price=%4%",
-		[&](LogRecord &record) {
+		[&](TradingRecord &record) {
 			record
 				% order.id
 				% security.GetSymbol()
@@ -409,7 +409,7 @@ OrderId Fake::TradeSystem::BuyImmediatelyOrCancel(
 	m_pimpl->SendOrder(order);
 	GetTradingLog().Write(
 		"buy\t%2%\torder-id=%1% type=IOC qty=%3% price=%4%",
-		[&](LogRecord &record) {
+		[&](TradingRecord &record) {
 			record
 				% order.id
 				% security.GetSymbol()
@@ -447,7 +447,7 @@ void Fake::TradeSystem::CancelOrder(OrderId) {
 void Fake::TradeSystem::CancelAllOrders(Security &security) {
 	GetTradingLog().Write(
 		"cancel\t%1%\torders=[all]",
-		[&security](LogRecord &record) {
+		[&security](TradingRecord &record) {
 			record % security.GetSymbol();
 		});
 }
