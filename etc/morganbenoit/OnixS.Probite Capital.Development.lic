@@ -1,0 +1,20 @@
+<license version="1.0">
+  <type>development</type>
+  <customer>
+    <name>Probite Capital</name>
+  </customer>
+  <period>
+    <since>2014-10-15</since>
+    <till>2014-12-03</till>
+  </period>
+  <dotNetProducts>
+    <product id="41" name="FIX Analyser" />
+  </dotNetProducts>
+  <dotNetCheckSum>cmWRmK45tuO1fOTFrE/w3IvpnrmKL2Dl/1Nd9mH/pnuu5hmmOvZtvZizJpZtEHgAfc944XdCorNlm0Ku0ySdzDgFTu+ODIluIpuNS/kErQCpiGQIpXS8UWsgvJ3B1OsxouILlBJTfZhMiECkDDpKKeGlMSHahQhFN5Mh7GmBKbg=</dotNetCheckSum>
+  <products>
+    <product id="1" name="OnixS FIX Engine for C++" />
+    <product id="2" name="OnixS FIX Engine for .NET" />
+    <product id="10" name="Hotspot ITCH Handler for C++" />
+  </products>
+  <checksum>B388C59CF4749BB091689405BD41B3BC</checksum>
+</license>
