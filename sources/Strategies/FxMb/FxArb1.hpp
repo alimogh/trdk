@@ -11,6 +11,7 @@
 #pragma once
 
 #include "EquationPosition.hpp"
+#include "FxMbStrategyLog.hpp"
 #include "Core/Strategy.hpp"
 
 namespace trdk { namespace Strategies { namespace FxMb {
@@ -229,10 +230,13 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			bool isCanceled;
 
+			StrategyLog::OpportunityNumber currentOpportunityNumber;
+
 			EquationOpenedPositions()
 					: activeCount(0),
 					waitsForReplyCount(0),
-					isCanceled(false) {
+					isCanceled(false),
+					currentOpportunityNumber(0) {
 				//...//
 			}
 
@@ -281,6 +285,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			return Broker(GetBrokerConf<id>());
 		}
 
+		StrategyLog & GetStrategyLog() {
+			return m_strategyLog;
+		}
+
 		const BrokerConf & GetBrokerConf(size_t id) const {
 			return const_cast<FxArb1 *>(this)->GetBrokerConf(id);
 		}
@@ -325,7 +333,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void CloseEquation(
 					size_t equationIndex,
 					const Position::CloseType &,
-					bool canBePartiallyClosed);
+					bool canBePartiallyClosed,
+					bool skipReport);
 
 		//! Cancels all opened for equation orders and close positions for it.
 		size_t CancelEquation(
@@ -354,9 +363,20 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					const Broker &,
 					const Broker &)
 				const;
+		void LogOpeningDetection(size_t equationIndex) const;
+		void LogOpeningExecuted(size_t equationIndex) const;
+		void LogClosingDetection(size_t equationIndex) const;
+		void LogClosingExecuted(size_t equationIndex) const;
+	
+		bool CheckCancelAndBlockCondition();
+		virtual bool OnCanceling() = 0;
 
 		bool IsInPositionOpenGracePeriod(const EquationOpenedPositions &) const;
 		void DisablePositionOpenGracePeriod();
+
+	private:
+		
+		void LogEquation(const char *, size_t, size_t, bool, bool) const;
 
 	private:
 
@@ -368,6 +388,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void CloseDelayed(Lib::TimeMeasurement::Milestones &);
 
 	private:
+
+		StrategyLog &m_strategyLog;
 
 		const Equations m_equations;
 

@@ -161,6 +161,17 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 		}
 
+		virtual bool OnCanceling() {
+			size_t ordersSent = 0;
+			for (size_t i = 0; i < EQUATIONS_COUNT; ++i) {
+				ordersSent += CancelEquation(
+					i,
+					Position::CLOSE_TYPE_ENGINE_STOP);
+			}
+			AssertGe(PAIRS_COUNT, ordersSent);
+			return ordersSent == 0;
+		}
+
 	private:
 
 		//! Calls and checks equation by index and open positions if equation
@@ -258,6 +269,11 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
 			toPositions.lastOpenTime = boost::get_system_time();
+			toPositions.currentOpportunityNumber
+				= GetStrategyLog().TakeOpportunityNumber();
+
+			LogClosingDetection(fromEquationIndex);
+			LogOpeningDetection(toEquationIndex);
 			
 		}
 

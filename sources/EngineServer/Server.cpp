@@ -54,7 +54,7 @@ void Server::Run(
 
 	fs::create_directories(settings.GetLogsDir());
 	{
-		const auto &logFilePath = settings.GetLogsDir() / "events.log";
+		const auto &logFilePath = settings.GetLogsDir() / "event.log";
 		info.eventsLogFile.reset(
 			new std::ofstream(
 				logFilePath.string().c_str(),

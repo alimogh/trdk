@@ -18,7 +18,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	class StrategyLog;
 
-	StrategyLog & GetStrategyLog(const Context &);
+	StrategyLog & GetStrategyLog(const trdk::Strategy &);
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -86,11 +86,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	class StrategyLog : private StrategyLogBase {
 
-		friend StrategyLog & GetStrategyLog(const Context &);
+		friend StrategyLog & GetStrategyLog(const trdk::Strategy &);
 
 	public:
 
 		typedef StrategyLogBase Base;
+		typedef size_t OpportunityNumber;
 
 	private:
 
@@ -103,6 +104,16 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void Write(const FormatCallback &formatCallback) {
 			Base::Write(formatCallback);
 		}
+
+	public:
+
+		OpportunityNumber TakeOpportunityNumber() {
+			return m_opportunityNumber++;
+		}
+
+	private:
+
+		boost::atomic<OpportunityNumber> m_opportunityNumber;
 
 	};
 

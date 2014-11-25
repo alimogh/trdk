@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "FxMbStrategyLog.hpp"
+#include "Core/Strategy.hpp"
 #include "Core/Context.hpp"
 #include "Core/Settings.hpp"
 
@@ -19,7 +20,8 @@ using namespace trdk::Strategies::FxMb;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-StrategyLog::StrategyLog() {
+StrategyLog::StrategyLog()
+	: m_opportunityNumber(1) {
 	//...//
 }
 
@@ -29,18 +31,19 @@ StrategyLog::~StrategyLog() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-StrategyLog & trdk::Strategies::FxMb::GetStrategyLog(const Context &context) {
+StrategyLog & trdk::Strategies::FxMb::GetStrategyLog(const Strategy &strategy) {
 
 	static std::ofstream file;
 	static StrategyLog instance;
+
+	const auto &logFilePath
+		= strategy.GetContext().GetSettings().GetLogsDir() / "strategy.log";
 	
 	if (!instance.IsEnabled()) {
-		const auto &logFilePath
-			= context.GetSettings().GetLogsDir() / "strategy.log";
 		boost::filesystem::create_directories(logFilePath.branch_path());
 		file.open(logFilePath.string().c_str());
 		if (!file) {
-			context.GetLog().Error(
+			strategy.GetLog().Error(
 				"Failed to open strategy log %1%.",
 				logFilePath);
 			throw SystemException("Failed to open strategy log");
@@ -48,6 +51,8 @@ StrategyLog & trdk::Strategies::FxMb::GetStrategyLog(const Context &context) {
 		instance.EnableStream(file);
 		Assert(instance.IsEnabled());
 	}
+	
+	strategy.GetLog().Info("Strategy log: %1%.", logFilePath);
 
 	return instance;
 

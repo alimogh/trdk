@@ -29,10 +29,12 @@ FxArb1::FxArb1(
 			const std::string &tag,
 			const IniSectionRef &conf)
 		: Base(context, name, tag),
+		m_strategyLog(Strategies::FxMb::GetStrategyLog(*this)),
 		m_equations(CreateEquations(conf.GetBase())),
 		m_isPairsByBrokerChecked(false),
 		m_positionOpenGracePeriod(
 			ReadPositionGracePeriod(conf, "position_open_grace_period_sec")) {
+
 	GetLog().Info(
 		"Using \"grace period\" for position closing: %1%.",
 		m_positionOpenGracePeriod);
@@ -287,7 +289,8 @@ FxArb1::Equations FxArb1::CreateEquations(const Ini &conf) const {
 void FxArb1::CloseEquation(
 			size_t equationIndex,
 			const Position::CloseType &closeType,
-			bool canBePartiallyClosed) {
+			bool canBePartiallyClosed,
+			bool skipReport) {
 	auto &positions = m_positionsByEquation[equationIndex];
 	// If it "closing" - can be not fully opened, by logic:
 	AssertEq(PAIRS_COUNT, positions.activeCount);
@@ -307,10 +310,13 @@ void FxArb1::CloseEquation(
 					// because "short" and it will buy to close position
 				:	position->GetSecurity().GetAskPriceScaled());
 		if (position->CloseAtMarketPrice(closeType)) {
-			AssertGt(PAIRS_COUNT, positions.waitsForReplyCount);
+			if (!skipReport) {
+				AssertGt(PAIRS_COUNT, positions.waitsForReplyCount);
+			}
 			++positions.waitsForReplyCount;
 		}
 	}
+	LogClosingDetection(equationIndex);
 	AssertEq(positions.activeCount, positions.waitsForReplyCount);
 }
 
@@ -348,6 +354,7 @@ size_t FxArb1::CancelEquation(
 		AssertEq(positions.activeCount, positions.waitsForReplyCount);
 		if (positions.waitsForReplyCount > 0) {
 			positions.isCanceled = true;
+			LogClosingDetection(equationIndex);
 		}
 		return positions.waitsForReplyCount;
 	} catch (...) {
@@ -514,6 +521,12 @@ void FxArb1::StartPositionsOpening(
 	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
 	equationPositions.lastOpenTime = boost::get_system_time();
+	equationPositions.currentOpportunityNumber
+		= m_strategyLog.TakeOpportunityNumber();
+
+	LogOpeningDetection(equationIndex);
+
+	equationPositions.lastOpenTime = boost::get_system_time();
 
 }
 
@@ -539,6 +552,28 @@ void FxArb1::OnPositionUpdate(Position &positionRef) {
 	auto &equationPositions
 		= GetEquationPositions(position.GetEquationIndex());
 
+	if (position.IsCanceled()) {
+		if (!position.IsCompleted()) {
+			// Answer from Trade System not received yet.
+			return;
+		}
+		AssertLt(0, equationPositions.activeCount);
+		AssertLt(0, equationPositions.waitsForReplyCount);
+		position.DeactivatieObservation();
+		--equationPositions.waitsForReplyCount;
+		if (!--equationPositions.activeCount) {
+			AssertEq(0, equationPositions.waitsForReplyCount);
+			position.GetTimeMeasurement().Measure(
+				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+			LogClosingExecuted(position.GetEquationIndex());
+			equationPositions.positions.clear();
+			Verify(CheckCancelAndBlockCondition());
+		}
+		// Objects with completed positions will be removed from system:
+		Assert(position.IsCompleted());
+		return;
+	}
+
 	if (!position.IsObservationActive()) {
 		Assert(!position.IsInactive());
 		return;
@@ -559,6 +594,9 @@ void FxArb1::OnPositionUpdate(Position &positionRef) {
 				AssertGe(PAIRS_COUNT, equationPositions.activeCount);
 				position.GetTimeMeasurement().Measure(
 					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+				if (equationPositions.activeCount >= PAIRS_COUNT) {
+					LogOpeningExecuted(position.GetEquationIndex());	
+				}
 				OnOpportunityReturn();
 			}
 				
@@ -575,8 +613,11 @@ void FxArb1::OnPositionUpdate(Position &positionRef) {
 				AssertEq(0, equationPositions.waitsForReplyCount);
 				position.GetTimeMeasurement().Measure(
 					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY);
+				LogClosingExecuted(position.GetEquationIndex());
 				equationPositions.positions.clear();
-				OnOpportunityReturn();
+				if (!CheckCancelAndBlockCondition()) {
+					OnOpportunityReturn();
+				}
 			}
 
 			// Objects with completed positions will be removed from system:
@@ -638,6 +679,136 @@ void FxArb1::OnOpportunityReturn() {
 	}
 	auto startegyTimeMeasurement = GetContext().StartStrategyTimeMeasurement();
 	OnOpportunityUpdate(startegyTimeMeasurement);
+}
+
+bool FxArb1::CheckCancelAndBlockCondition() {
+	if (/*!m_cancelAndBlockCondition || */!OnCanceling()) {
+		return false;
+	} 
+// 	const boost::mutex::scoped_lock lock(m_cancelAndBlockCondition->mutex);
+// 	Block();
+// 	m_cancelAndBlockCondition->condition.notify_all();
+// 	m_cancelAndBlockCondition = nullptr;
+	return true;
+}
+
+void FxArb1::LogOpeningDetection(size_t equationIndex) const {
+	AssertEq(
+		PAIRS_COUNT,
+		GetEquationPositions(equationIndex).activeCount);
+	LogEquation("Opening detected", equationIndex, equationIndex, false, false);
+}
+
+void FxArb1::LogOpeningExecuted(size_t equationIndex) const {
+	AssertEq(
+		PAIRS_COUNT,
+		GetEquationPositions(equationIndex).activeCount);
+	LogEquation("Opening executed", equationIndex, equationIndex, false, true);
+}
+
+void FxArb1::LogClosingDetection(size_t equationIndex) const {
+	const auto &equation = GetEquationPositions(equationIndex);
+	LogEquation(
+		"Closing detected",
+		equationIndex,
+		!equation.isCanceled
+			?	GetOppositeEquationIndex(equationIndex)
+			:	nEquationsIndex,
+		true,
+		false);
+}
+
+void FxArb1::LogClosingExecuted(size_t equationIndex) const {
+	const auto &equation = GetEquationPositions(equationIndex);
+	LogEquation(
+		"Closing executed",
+		equationIndex,
+		!equation.isCanceled
+			?	GetOppositeEquationIndex(equationIndex)
+			:	nEquationsIndex,
+		true,
+		true);
+}
+
+void FxArb1::LogEquation(
+			const char *action,
+			size_t equationIndex,
+			size_t initiatorIndex,
+			bool isClosing,
+			bool isCompleted)
+		const {
+
+	const auto &equationPositions = GetEquationPositions(equationIndex);
+	const auto &positions = equationPositions.positions;
+	if (positions.size() < PAIRS_COUNT) {
+		return;
+	}
+
+	const auto &p1 = *positions[0];
+	const auto &p2 = *positions[1];
+	const auto &p3 = *positions[2];
+
+	bool isP1Buy;
+	bool isP2Buy;
+	bool isP3Buy;
+
+	double p1Price;
+	double p2Price;
+	double p3Price;
+
+	const auto &getVals = [isClosing, isCompleted, equationIndex](
+				const Position &p,
+				bool &isBuy,
+				double &price) {
+		isBuy = p.GetType() == Position::TYPE_LONG
+			?	!isClosing
+			:	isClosing;
+		const auto &scaledPrice = !isCompleted
+			?	!isClosing
+				?	p.GetOpenStartPrice()
+				:	p.GetCloseStartPrice()
+			:	!isClosing
+				?	p.GetOpenPrice()
+				:	p.GetClosePrice();
+		AssertNe(0, scaledPrice);
+		price = p.GetSecurity().DescalePrice(scaledPrice);
+	};
+
+	getVals(p1, isP1Buy, p1Price);
+	getVals(p2, isP2Buy, p2Price);
+	getVals(p3, isP3Buy, p3Price);
+
+	m_strategyLog.Write(
+		[&](StrategyLogRecord &record) {
+			record
+
+				% equationPositions.currentOpportunityNumber
+		    
+				% action
+				% initiatorIndex
+		    
+				% p1.GetTradeSystem().GetTag()
+				% p1.GetSecurity().GetSymbol().GetSymbol()
+				% p1Price
+				% isP1Buy
+
+				% p2.GetTradeSystem().GetTag()
+				% p2.GetSecurity().GetSymbol().GetSymbol()
+				% p2Price
+				% isP2Buy
+
+				% p3.GetTradeSystem().GetTag()
+				% p3.GetSecurity().GetSymbol().GetSymbol()
+				% p3Price
+				% isP3Buy
+		    
+				% (initiatorIndex < (EQUATIONS_COUNT / 2))
+		
+				% p1.GetId()
+				% p2.GetId()
+				% p3.GetId();
+		});
+
 }
 
 void FxArb1::DelayClose(EquationPosition &position) {

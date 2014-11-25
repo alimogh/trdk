@@ -143,6 +143,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 						CloseEquation(
 							currentEquationIndex,
 							Position::CLOSE_TYPE_TAKE_PROFIT,
+							false,
 							false);
 						m_lastCloseTime = boost::get_system_time();
 						timeMeasurement.Measure(
@@ -186,8 +187,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		virtual void CloseDelayed(
 					size_t equationIndex,
 					TimeMeasurement::Milestones &) {
-			CloseEquation(equationIndex, Position::CLOSE_TYPE_NONE, true);
+			CloseEquation(equationIndex, Position::CLOSE_TYPE_NONE, true, true);
 			m_lastCloseTime = boost::get_system_time();
+		}
+
+		virtual bool OnCanceling() {
+			return true;
 		}
 
 		bool IsInPositionCloseGracePeriod() const {
