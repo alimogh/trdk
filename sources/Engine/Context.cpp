@@ -107,38 +107,6 @@ public:
 
 };
 
-template<typename Call>
-void Engine::Context::Implementation::CallEachStrategyAndBlock(
-			const Call &call) {
-	Strategy::CancelAndBlockCondition condition;
-	boost::mutex::scoped_lock lock(condition.mutex);
-	size_t totalCount = 0;
-	foreach (auto &tagetStrategies, m_state->strategies) {
-		foreach (auto &strategy, tagetStrategies.second) {
-			{
-				const Strategy::Lock strategyLock(strategy->GetMutex());
-				call(*strategy, condition);
-			}
-			++totalCount;
-		}
-	}
-	for ( ; ; ) {
-		size_t blockedCount = totalCount;
-		foreach (auto &tagetStrategies, m_state->strategies) {
-			foreach (auto &strategy, tagetStrategies.second) {
-				if (strategy->IsBlocked(true)) {
-					AssertLt(0, blockedCount);
-					--blockedCount;
-				}
-			}
-		}
-		if (!blockedCount) {
-			break;
-		}
-		condition.condition.wait(lock);
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 class Engine::Context::Implementation::State : private boost::noncopyable {
@@ -212,6 +180,38 @@ public:
 	}
 
 };
+
+template<typename Call>
+void Engine::Context::Implementation::CallEachStrategyAndBlock(
+			const Call &call) {
+	Strategy::CancelAndBlockCondition condition;
+	boost::mutex::scoped_lock lock(condition.mutex);
+	size_t totalCount = 0;
+	foreach (auto &tagetStrategies, m_state->strategies) {
+		foreach (auto &strategy, tagetStrategies.second) {
+			{
+				const Strategy::Lock strategyLock(strategy->GetMutex());
+				call(*strategy, condition);
+			}
+			++totalCount;
+		}
+	}
+	for ( ; ; ) {
+		size_t blockedCount = totalCount;
+		foreach (auto &tagetStrategies, m_state->strategies) {
+			foreach (auto &strategy, tagetStrategies.second) {
+				if (strategy->IsBlocked(true)) {
+					AssertLt(0, blockedCount);
+					--blockedCount;
+				}
+			}
+		}
+		if (!blockedCount) {
+			break;
+		}
+		condition.condition.wait(lock);
+	}
+}
 
 //////////////////////////////////////////////////////////////////////////
 
