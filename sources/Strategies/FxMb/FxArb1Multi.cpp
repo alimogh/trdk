@@ -270,7 +270,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			toPositions.lastOpenTime = boost::get_system_time();
 			toPositions.currentOpportunityNumber
-				= GetContext().TakeOpportunityNumber();
+				= GetStrategyLog().TakeOpportunityNumber();
 
 			LogClosingDetection(fromEquationIndex);
 			LogOpeningDetection(toEquationIndex);

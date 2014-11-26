@@ -10,9 +10,10 @@
 
 #include "Prec.hpp"
 #include "Util.hpp"
-#include "Core/Log.hpp"
+#include "Log.hpp"
+#include "Core/EventsLog.hpp"
 #include "Assert.hpp"
-#include "Common/Constants.h"
+#include "Constants.h"
 
 using namespace trdk;
 using namespace trdk::Debug;
@@ -27,7 +28,7 @@ using namespace trdk::Debug;
 
 namespace {
 
-	void BreakDebug() {
+	void BreakDebug() throw() {
 #		if IS_DEBUG_BREAK_ENABLED == 1
 #			if defined(BOOST_WINDOWS)
 				DebugBreak();
@@ -41,8 +42,7 @@ namespace {
 					" and other product log files at " TRDK_SUPPORT_EMAIL
 					" with descriptions of actions that you have made during"
 					" the occurrence of the failure.";
-			Log::Error(message);
-			Log::Trading("error", message);
+			EventsLog::BroadcastCriticalError(message);
 		}
 #		endif
 	}
@@ -63,8 +63,7 @@ namespace {
 					" \"%1%\" in function %2%, file %3%, line %4%.");
 			message % expr % function % file % line;
 			std::cerr << message.str() << std::endl;
-			Log::Error(message.str().c_str());
-			Log::Trading("assert", message.str().c_str());
+			EventsLog::BroadcastCriticalError(message.str());
 			BreakDebug();
 		}
 
@@ -79,8 +78,7 @@ namespace {
 					" - \"%1%\" in function %2%, file %3%, line %4%.");
 			message % expr % function % file % line % msg;
 			std::cerr << message.str() << std::endl;
-			Log::Error(message.str().c_str());
-			Log::Trading("assert", message.str().c_str());
+			EventsLog::BroadcastCriticalError(message.str());
 			BreakDebug();
 		}
 
@@ -111,8 +109,7 @@ namespace {
 			% file
 			% line;
 		std::cerr << message.str() << std::endl;
-		Log::Error(message.str().c_str());
-		Log::Trading("assert", message.str().c_str());
+		EventsLog::BroadcastCriticalError(message.str());
 		BreakDebug();
 	}
 
@@ -123,26 +120,30 @@ void Detail::ReportAssertFail(
 			const char *file,
 			int line)
 		throw() {
-	Log::Error(
-		"Assertion Failed (predefined): \"%1%\" in file %2%, line %3%.",
-		expr,
-		file,
-		line);
+	try {
+		boost::format message(
+			"Assertion Failed (predefined): \"%1%\" in file %2%, line %3%.");
+		message % expr % file % line;
+		EventsLog::BroadcastCriticalError(message.str());
+	} catch (...) {
+		BreakDebug();
+	}
 	BreakDebug();
 }
 
 void Detail::RegisterUnhandledException(
 			const char *function,
 			const char *file,
-			long line,
-			bool tradingLog) {
-	Log::RegisterUnhandledException(function, file, line, tradingLog);
+			long line)
+		throw() {
+	EventsLog::BroadcastUnhandledException(function, file, line);
 }
 
 void Detail::AssertFailNoExceptionImpl(
 			const char *function,
 			const char *file,
-			long line) {
-	RegisterUnhandledException(function, file, line, true);
+			long line)
+		throw() {
+	RegisterUnhandledException(function, file, line);
 	BreakDebug();
 }

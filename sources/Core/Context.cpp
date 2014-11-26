@@ -10,7 +10,9 @@
 
 #include "Prec.hpp"
 #include "Context.hpp"
-#include "Common/AsyncLog.hpp"
+#include "TradingLog.hpp"
+#include "EventsLog.hpp"
+#include "Settings.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -27,17 +29,6 @@ Context::Exception::Exception(const char *what) throw()
 
 Context::UnknownSecurity::UnknownSecurity() throw()
 		: Exception("Unknown security") {
-	//...//
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-Context::Log::Log(const Context &ctx)
-		: m_context(ctx) {
-	//...//
-}
-
-Context::Log::~Log() {
 	//...//
 }
 
@@ -65,8 +56,8 @@ namespace {
 
 	public:
 		
-		explicit LatanReport(trdk::Context::Log &log)
-				: m_log(log),
+		explicit LatanReport(Context &context)
+				: m_context(context),
 				m_stopFlag(false),
 				m_thread([&]{ThreadMain();}) {
 			//....//
@@ -105,9 +96,9 @@ namespace {
 			try {
 				
 				const auto reportPeriod = pt::seconds(30);
-				const fs::path logPath
-					= Lib::GetExeWorkingDir() / "logs" / "latan.report";
-				m_log.Info(
+				const fs::path &logPath
+					= m_context.GetSettings().GetLogsDir() / "latan.report";
+				m_context.GetLog().Info(
 					"Reporting Latan to to file %1% with period %2%...",
 					logPath,
 					reportPeriod);
@@ -172,11 +163,10 @@ namespace {
 				}
 
 			} catch (...) {
-				trdk::Log::RegisterUnhandledException(
+				EventsLog::BroadcastUnhandledException(
 					__FUNCTION__,
 					__FILE__,
-					__LINE__,
-					false);
+					__LINE__);
 				throw;
 			}
 		}
@@ -217,7 +207,7 @@ namespace {
 
 	private:
 
-		trdk::Context::Log &m_log;
+		trdk::Context &m_context;
 
 		struct Accums {
 			
@@ -249,174 +239,50 @@ class Context::Implementation : private boost::noncopyable {
 
 public:
 
-	struct EquationRecord : public AsyncLogRecord {
+	Context::Log &m_log;
+	Context::TradingLog &m_tradingLog;
 
-		typedef std::vector<char> String;
-		
-		pt::ptime time;
+	Settings m_settings;
 
-		struct PairRecord {
-			//! Name of Broker
-			String broker;
-			//! Name of Pair
-			String name;
-			double price;
-			bool isBuy;
-		};
-
-		OpportunityNumber opportunityNumber;
-
-		//! Opening detected, Opening executed, Closing detected, Closing executed
-		String action;
-		//! Number of equation that was detected
-		size_t equation;
-		
-		PairRecord pair1;
-		PairRecord pair2;
-		PairRecord pair3;
-
-		bool isResultOfY1;
-
-		PositionId position1Id;
-		PositionId position2Id;
-		PositionId position3Id;
-
-		static void SavePair(
-					const EquationRecordParam::PairRecordParam &param,
-					PairRecord &record) {
-			std::copy(
-				param.broker->begin(),
-				param.broker->end(),
-				std::back_inserter(record.broker));
-			record.broker.push_back(0);
-			std::copy(
-				param.name->begin(),
-				param.name->end(),
-				std::back_inserter(record.name));
-			record.name.push_back(0);
-			record.price = param.price;
-			record.isBuy = param.isBuy;
-		}
-
-		void Save(const pt::ptime &time, const EquationRecordParam &params) {
-
-			this->time = time;
-
-			opportunityNumber = params.opportunityNumber;
-
-			std::copy(
-				params.action,
-				params.action + strlen(params.action) + 1,
-				std::back_inserter(action));
-
-			equation = params.equation;
-
-			SavePair(params.pair1, pair1);
-			SavePair(params.pair2, pair2);
-			SavePair(params.pair3, pair3);
-
-			isResultOfY1 = params.isResultOfY1;
-
-			position1Id = params.position1Id;
-			position2Id = params.position2Id;
-			position3Id = params.position3Id;
-
-		}
-
-		static void FlushPair(PairRecord &record, LogState &log) {
-			*log.log
-				<< &record.broker[0] << ';'
-				<< &record.name[0] << ';'
-				<< record.price << ';'
-				<< (record.isBuy ? "BUY" : "SELL") << ';';
-			record.broker.clear();
-			record.name.clear();
-		}
-
-		void Flush(LogState &log) {
-			
-			Assert(log.log);
-			
-			*log.log
-				<< opportunityNumber << ';'
-				<< time << ';';
-
-			*log.log << &action[0] << ';';
-			action.clear();
-
-
-			if (equation != std::numeric_limits<size_t>::max()) {
-				*log.log
-					<< equation << ';'
-					<< (isResultOfY1 ? "Y1" : "Y2") << ';';
-			} else {
-				*log.log << "-;-;";
-			}
-			
-			FlushPair(pair1, log);
-			FlushPair(pair2, log);
-			FlushPair(pair3, log);
-
-			*log.log
-				<< position1Id << ';'
-				<< position2Id << ';'
-				<< position3Id << ';';
-
-			*log.log << std::endl;
-
-		}
-			
-	};
-
-	std::ofstream m_equationLogStream;
-	AsyncLog<EquationRecord> m_equationLog;
-
-	boost::atomic<OpportunityNumber> m_opportunityNumber;
-
-	Context::Log m_log;
 	Params m_params;
 
 	LatanReport m_latanReport;
 	
-	explicit Implementation(Context &context)
-			: m_opportunityNumber(1),
-			m_log(context),
+	explicit Implementation(
+				Context &context,
+				Log &log,
+				TradingLog &tradingLog,
+				const Settings &settings)
+			: m_log(log),
+			m_tradingLog(tradingLog),
+			m_settings(settings),
 			m_params(context),
-			m_latanReport(m_log) {
-		const fs::path logPath
-			= Lib::GetExeWorkingDir() / "logs" / "strategies.log";
-		boost::filesystem::create_directories(logPath.branch_path());
-		m_equationLogStream.open(
-			logPath.string().c_str(),
-			std::ios::out | std::ios::ate | std::ios::app);
-		if (!m_equationLogStream) {
-			throw Exception("Failed to open Strategies report file");
-		}
-		m_equationLog.EnableStream(m_equationLogStream);
+			m_latanReport(context) {
+		//...//
 	}
 
 };
 
 //////////////////////////////////////////////////////////////////////////
 
-Context::Context() {
-	m_pimpl = new Implementation(*this);
+Context::Context(Log &log, TradingLog &tradingLog, const Settings &settings) {
+	m_pimpl = new Implementation(*this, log, tradingLog, settings);
 }
 
 Context::~Context() {
 	delete m_pimpl;
 }
 
-OpportunityNumber Context::TakeOpportunityNumber() {
-	return m_pimpl->m_opportunityNumber++;
-}
-
 Context::Log & Context::GetLog() const throw() {
 	return m_pimpl->m_log;
 }
 
-void Context::LogEquation(const EquationRecordParam &params) const {
-	m_pimpl->m_equationLog.AppendRecord(boost::get_system_time(), params);
+Context::TradingLog & Context::GetTradingLog() const throw() {
+	return m_pimpl->m_tradingLog;
+}
+
+const Settings & Context::GetSettings() const {
+	return m_pimpl->m_settings;
 }
 
 Security & Context::GetSecurity(const Symbol &symbol) {

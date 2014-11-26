@@ -38,6 +38,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/FxArb1.o \
 	${OBJECTDIR}/FxArb1Mono.o \
 	${OBJECTDIR}/FxArb1Multi.o \
+	${OBJECTDIR}/FxMbStrategyLog.o \
 	${OBJECTDIR}/Util.o
 
 
@@ -83,6 +84,11 @@ ${OBJECTDIR}/FxArb1Multi.o: FxArb1Multi.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxArb1Multi.o FxArb1Multi.cpp
+
+${OBJECTDIR}/FxMbStrategyLog.o: FxMbStrategyLog.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxMbStrategyLog.o FxMbStrategyLog.cpp
 
 ${OBJECTDIR}/Util.o: Util.cpp 
 	${MKDIR} -p ${OBJECTDIR}

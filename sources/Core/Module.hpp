@@ -23,7 +23,7 @@ namespace trdk {
 
 	public:
 
-		class TRDK_CORE_API Log;
+		typedef trdk::ModuleEventsLog Log;
 
 		class TRDK_CORE_API SecurityList;
 
@@ -45,7 +45,7 @@ namespace trdk {
 
 	public:
 
-		trdk::Module::InstanceId GetInstanceId() const;
+		const trdk::Module::InstanceId & GetInstanceId() const;
 
 		trdk::Context & GetContext();
 		const trdk::Context & GetContext() const;
@@ -53,6 +53,7 @@ namespace trdk {
 		const std::string & GetTypeName() const throw();
 		const std::string & GetName() const throw();
 		const std::string & GetTag() const throw();
+		const std::string & GetStringId() const throw();
 
 	public:
 
@@ -93,106 +94,6 @@ namespace trdk {
 	};
 
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-class trdk::Module::Log : private boost::noncopyable {
-public:
-	explicit Log(const Module &);
-	~Log();
-public:
-	void Debug(const char *str) throw() {
-		m_log.DebugEx(
-			[this, str]() -> boost::format {
-				return std::move(GetFormat() % str);
-			});
-	}
-	template<typename... Params>
-	void Debug(const char *str, const Params &...params) throw() {
-		m_log.Debug(str, params...);
-	}
-	template<typename Callback>
-	void DebugEx(const Callback &callback) throw() {
-		m_log.DebugEx(
-			[this, &callback]() -> boost::format {
-				return std::move(GetFormat() % callback().str());
-			});
-	}
-public:
-	void Info(const char *str) throw() {
-		m_log.InfoEx(
-			[this, str]() -> boost::format {
-				return std::move(GetFormat() % str);
-			});
-	}
-	template<typename ...Params>
-	void Info(const char *str, const Params &...params) throw() {
-		m_log.Info(str, params...);
-	}
-	template<typename Callback>
-	void InfoEx(const Callback &callback) throw() {
-		m_log.InfoEx(
-			[this, &callback]() -> boost::format {
-				return std::move(GetFormat() % callback().str());
-			});
-	}
-public:
-	void Warn(const char *str) throw() {
-		m_log.WarnEx(
-			[this, str]() -> boost::format {
-				return std::move(GetFormat() % str);
-			});
-	}
-	template<typename... Params>
-	void Warn(const char *str, const Params &...params) throw() {
-		m_log.Warn(str, params...);
-	}
-	template<typename Callback>
-	void WarnEx(const Callback &callback) throw() {
-		m_log.WarnEx(
-			[this, &callback]() -> boost::format {
-				return std::move(GetFormat() % callback().str());
-			});
-	}
-public:
-	void Error(const char *str) throw() {
-		m_log.ErrorEx(
-			[this, str]() -> boost::format {
-				return std::move(GetFormat() % str);
-			});
-	}
-	template<typename... Params>
-	void Error(const char *str, const Params &...params) throw() {
-		m_log.Error(str, params...);
-	}
-	template<typename Callback>
-	void ErrorEx(const Callback &callback) throw() {
-		m_log.ErrorEx(
-			[this, &callback]() -> boost::format {
-				return std::move(GetFormat() % callback().str());
-			});
-	}
-public:
-	void Trading(const char *str) throw() {
-		m_log.Trading(m_tag, str);
-	}
-	template<typename Callback>
-	void TradingEx(const Callback &callback) throw() {
-		m_log.TradingEx(m_tag, callback);
-	}
-	template<typename... Params>
-	void Trading(const char *str, const Params &...params) throw() {
-		m_log.Trading(m_tag, str, params...);
-	}
-private:
-	boost::format GetFormat() const {
-		return m_format;
-	}
-private:
-	const std::string m_tag;
-	trdk::Context::Log &m_log;
-	const boost::format m_format;
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -281,8 +182,7 @@ public:
 namespace std {
 	TRDK_CORE_API std::ostream & operator <<(
 				std::ostream &,
-				const trdk::Module &)
-			throw();
+				const trdk::Module &);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -10,44 +10,11 @@
 
 #pragma once
 
+#include "EventsLog.hpp"
 #include "Fwd.hpp"
 #include "Api.h"
 
 namespace trdk {
-
-	////////////////////////////////////////////////////////////////////////////////
-
-	typedef size_t OpportunityNumber;
-
-	struct EquationRecordParam {
-		
-		struct PairRecordParam {
-			// Name of Broker
-			const std::string *broker;
-			// Name of Pair
-			const std::string *name;
-			double price;
-			bool isBuy;
-		};
-
-		OpportunityNumber opportunityNumber;
-
-		// Opening detected, Opening executed, Closing detected, Closing executed
-		const char *action;
-		// Number of equation that was detected
-		size_t equation;
-		
-		PairRecordParam pair1;
-		PairRecordParam pair2;
-		PairRecordParam pair3;
-
-		bool isResultOfY1;
-
-		PositionId position1Id;
-		PositionId position2Id;
-		PositionId position3Id;
-	
-	};
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -64,22 +31,23 @@ namespace trdk {
 			explicit UnknownSecurity() throw();
 		};
 
-		class TRDK_CORE_API Log;
+		typedef trdk::EventsLog Log;
+		typedef trdk::TradingLog TradingLog;
 
 		class TRDK_CORE_API Params;
 
 	public:
 
-		Context();
+		explicit Context(
+					trdk::Context::Log &,
+					trdk::Context::TradingLog &,
+					const trdk::Settings &);
 		virtual ~Context();
 
 	public:
 
-		OpportunityNumber TakeOpportunityNumber();
-
 		trdk::Context::Log & GetLog() const throw();
-
-		void LogEquation(const EquationRecordParam &) const;
+		trdk::Context::TradingLog & GetTradingLog() const throw();
 
 		trdk::Lib::TimeMeasurement::Milestones StartStrategyTimeMeasurement()
 				const;
@@ -88,19 +56,19 @@ namespace trdk {
 		trdk::Lib::TimeMeasurement::Milestones StartDispatchingTimeMeasurement()
 				const;
 
-		trdk::Security & GetSecurity(const trdk::Lib::Symbol &);
-		const trdk::Security & GetSecurity(const trdk::Lib::Symbol &) const;
+		//! Context setting with predefined key list and predefined behavior.
+		const trdk::Settings & GetSettings() const;
 
 	public:
-
-		//! Context setting with predefined key list and predefined behavior.
-		virtual const trdk::Settings & GetSettings() const = 0;
 
 		//! User context parameters. No predefined key list. Any key can be
 		//! changed.
 		trdk::Context::Params & GetParams();
 		//! User context parameters. No predefined key list.
 		const trdk::Context::Params & GetParams() const;
+
+		trdk::Security & GetSecurity(const trdk::Lib::Symbol &);
+		const trdk::Security & GetSecurity(const trdk::Lib::Symbol &) const;
 
 		//! Market Data Sources count.
 		/** @sa GetMarketDataSource
@@ -165,137 +133,6 @@ namespace trdk {
 
 		class Implementation;
 		Implementation *m_pimpl;
-
-	};
-
-	//////////////////////////////////////////////////////////////////////////
-
-	class trdk::Context::Log : private boost::noncopyable {
-	public:
-		explicit Log(const Context &);
-		~Log();
-	public:
-		void Debug(const char *str) throw() {
-			trdk::Log::Debug(str);
-		}
-		template<typename... Params>
-		void Debug(const char *str, const Params &...params) throw() {
-			trdk::Log::Debug(str, params...);
-		}
-		template<typename Callback>
-		void DebugEx(const Callback &callback) throw() {
-			trdk::Log::DebugEx(callback);
-		}
-	public:
-		void Info(const char *str) throw() {
-			trdk::Log::Info(str);
-		}
-		template<typename... Params>
-		void Info(const char *str, const Params &...params) throw() {
-			trdk::Log::Info(str, params...);
-		}
-		template<typename Callback>
-		void InfoEx(const Callback &callback) throw() {
-			trdk::Log::InfoEx(callback);
-		}
-	public:
-		void Warn(const char *str) throw() {
-			trdk::Log::Warn(str);
-		}
-		template<typename... Params>
-		void Warn(const char *str, const Params &...params) throw() {
-			trdk::Log::Warn(str, params...);
-		}
-		template<typename Callback>
-		void WarnEx(const Callback &callback) throw() {
-			trdk::Log::WarnEx(callback);
-		}
-	public:
-		void Error(const char *str) throw() {
-			trdk::Log::Error(str);
-		}
-		template<typename... Params>
-		void Error(const char *str, const Params &...params) throw() {
-			trdk::Log::Error(str, params...);
-		}
-		template<typename Callback>
-		void ErrorEx(const Callback &callback) throw() {
-			trdk::Log::ErrorEx(callback);
-		}
-	public:
-		void Trading(const std::string &tag, const char *str) throw() {
-			trdk::Log::Trading(tag, str);
-		}
-		template<typename Callback>
-		void TradingEx(const std::string &tag, const Callback &callback) throw() {
-			trdk::Log::TradingEx(tag, callback);
-		}
-		template<typename... Params>
-		void Trading(
-					const std::string &tag,
-					const char *str,
-					const Params &...params)
-				throw() {
-			trdk::Log::Trading(tag, str, params...);
-		}
-		
-		void Equation(const EquationRecordParam &params) {
-			m_context.LogEquation(params);
-		}
-	
-		void Equation(
-					const OpportunityNumber &opportunityNumber,
-					const char *action,
-					size_t equation,
-					const std::string &broker1,
-					const std::string &pair1,
-					double pair1Price,
-					bool isPair1Buy,
-					const std::string &broker2,
-					const std::string &pair2,
-					double pair2Price,
-					bool isPair2Buy,
-					const std::string &broker3,
-					const std::string &pair3,
-					double pair3Price,
-					bool isPair3Buy,
-					bool isResultOfY1,
-					const PositionId &position1Id,
-					const PositionId &position2Id,
-					const PositionId &position3Id) {
-			const EquationRecordParam params = {
-				opportunityNumber,
-				action,
-				equation,
-				{
-					&broker1,
-					&pair1,
-					pair1Price,
-					isPair1Buy
-				},
-				{
-					&broker2,
-					&pair2,
-					pair2Price,
-					isPair2Buy
-				},
-				{
-					&broker3,
-					&pair3,
-					pair3Price,
-					isPair3Buy
-				},
-				isResultOfY1,
-				position1Id,
-				position2Id,
-				position3Id
-			};
-			Equation(params);
-		}
-
-	private:
-
-		const trdk::Context &m_context;
 
 	};
 

@@ -29,8 +29,8 @@
 		void RegisterUnhandledException(
 				const char *,
 				const char *,
-				long,
-				bool);
+				long)
+			throw();
 		void ReportAssertFail(const char *, const char *, int) throw();
 	} } }
 #endif
@@ -77,8 +77,7 @@
 					trdk::Debug::Detail::RegisterUnhandledException(
 						BOOST_CURRENT_FUNCTION,
 						__FILE__,
-						__LINE__,
-						true);
+						__LINE__);
 					return std::string("[VARIABLE VALUE RETRIEVE ERROR]");
 				}
 			}
@@ -198,7 +197,11 @@
 
 #ifndef FILE_ASSERT_HPP_INCLUDED
 	namespace trdk { namespace Debug { namespace Detail {
-		void AssertFailNoExceptionImpl(const char *, const char *, long);
+		void AssertFailNoExceptionImpl(
+					const char *,
+					const char *,
+					long)
+				throw();
 	} } }
 #endif
 

@@ -16,17 +16,8 @@ namespace trdk {
 
 	class Security;
 	
-	class MarketDataSource;
-
-	typedef uintmax_t PositionId;
-	class Position;
-	class LongPosition;
-	class ShortPosition;
-	class PositionReporter;
-
 	class TradeSystem;
-
-	class Settings;
+	class MarketDataSource;
 
 	class Module;
 	class Consumer;
@@ -34,7 +25,20 @@ namespace trdk {
 	class Observer;
 	class Service;
 
+	typedef uintmax_t PositionId;
+	class Position;
+	class LongPosition;
+	class ShortPosition;
+	class PositionReporter;
+
+	class Settings;
+
 	class Terminal;
+
+	class EventsLog;
+	class ModuleEventsLog;
+	class TradingLog;
+	class ModuleTradingLog;
 
 	namespace SettingsReport {
 		typedef std::list<std::pair<std::string, std::string>> Report;

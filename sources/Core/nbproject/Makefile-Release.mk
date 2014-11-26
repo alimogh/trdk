@@ -36,11 +36,12 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/_ext/1528583316/Terminal.o \
+	${OBJECTDIR}/AsyncLog.o \
 	${OBJECTDIR}/Consumer.o \
 	${OBJECTDIR}/Context.o \
+	${OBJECTDIR}/EventsLog.o \
 	${OBJECTDIR}/Instrument.o \
 	${OBJECTDIR}/Interactor.o \
-	${OBJECTDIR}/Log.o \
 	${OBJECTDIR}/MarketDataSource.o \
 	${OBJECTDIR}/Module.o \
 	${OBJECTDIR}/Observer.o \
@@ -86,6 +87,11 @@ ${OBJECTDIR}/_ext/1528583316/Terminal.o: ../Interaction/OnixsHotspot/../../../so
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/1528583316/Terminal.o ../Interaction/OnixsHotspot/../../../sources/Core/Terminal.cpp
 
+${OBJECTDIR}/AsyncLog.o: AsyncLog.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/AsyncLog.o AsyncLog.cpp
+
 ${OBJECTDIR}/Consumer.o: Consumer.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
@@ -96,6 +102,11 @@ ${OBJECTDIR}/Context.o: Context.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Context.o Context.cpp
 
+${OBJECTDIR}/EventsLog.o: EventsLog.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/EventsLog.o EventsLog.cpp
+
 ${OBJECTDIR}/Instrument.o: Instrument.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
@@ -105,11 +116,6 @@ ${OBJECTDIR}/Interactor.o: Interactor.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Interactor.o Interactor.cpp
-
-${OBJECTDIR}/Log.o: Log.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Log.o Log.cpp
 
 ${OBJECTDIR}/MarketDataSource.o: MarketDataSource.cpp 
 	${MKDIR} -p ${OBJECTDIR}

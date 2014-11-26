@@ -29,6 +29,7 @@
 
 #ifdef BOOST_WINDOWS
 #	include <concrt.h>
+#	include <signal.h>
 #endif
 
 #include "Common/Common.hpp"

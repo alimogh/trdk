@@ -11,9 +11,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Log.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -68,11 +65,14 @@
     <ClCompile Include="Terminal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="EventsLog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AsyncLog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Log.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TradeSystem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -146,6 +146,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Terminal.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AsyncLog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EventsLog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TradingLog.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

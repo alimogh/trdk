@@ -11,6 +11,7 @@
 #pragma once
 
 #include "EquationPosition.hpp"
+#include "FxMbStrategyLog.hpp"
 #include "Core/Strategy.hpp"
 
 namespace trdk { namespace Strategies { namespace FxMb {
@@ -212,7 +213,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				void (
 					const Broker &b1,
 					const Broker &b2,
-					trdk::Module::Log &)>
+					Strategy::TradingLog &)>
 			EquationPrint;
 		typedef std::vector<
 				std::pair<Equation, EquationPrint>>
@@ -229,7 +230,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 			bool isCanceled;
 
-			OpportunityNumber currentOpportunityNumber;
+			StrategyLog::OpportunityNumber currentOpportunityNumber;
 
 			EquationOpenedPositions()
 					: activeCount(0),
@@ -285,6 +286,10 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		template<size_t id>
 		Broker GetBroker() {
 			return Broker(GetBrokerConf<id>());
+		}
+
+		StrategyLog & GetStrategyLog() {
+			return m_strategyLog;
 		}
 
 		const BrokerConf & GetBrokerConf(size_t id) const {
@@ -386,6 +391,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		void CloseDelayed(Lib::TimeMeasurement::Milestones &);
 
 	private:
+
+		StrategyLog &m_strategyLog;
 
 		const Equations m_equations;
 

@@ -24,7 +24,7 @@ FixTrading::FixTrading(
 			const IniSectionRef &conf)
 		: TradeSystem(context, tag),
 		m_account(conf.ReadKey("account", "")),
-		m_session(GetContext(), "trading", conf),
+		m_session(GetContext(), GetLog(), conf),
 		m_nextOrderId(1),
 		m_ordersCountReportsCounter(0),
 		m_currentToSend(&m_toSend.first),
@@ -62,11 +62,10 @@ void FixTrading::SendThreadMain() {
 						Send(order);
 					}
 				} catch (...) {
-					Log::RegisterUnhandledException(
+					EventsLog::BroadcastUnhandledException(
 						__FUNCTION__,
 						__FILE__,
-						__LINE__,
-						false);
+						__LINE__);
 					throw;
 				}
 				toSend.clear();
@@ -75,11 +74,10 @@ void FixTrading::SendThreadMain() {
 			m_sendCondition.wait(lock);
 		}
 	} catch (...) {
-		Log::RegisterUnhandledException(
+		EventsLog::BroadcastUnhandledException(
 			__FUNCTION__,
 			__FILE__,
-			__LINE__,
-			false);
+			__LINE__);
 		throw;
 	}
 }
@@ -201,8 +199,7 @@ FixTrading::Order FixTrading::TakeOrderId(
 		if (m_orders.size() >= 1000) {
 			if (!(++m_ordersCountReportsCounter % 1000)) {
 				GetLog().Warn(
-					"FIX orders storage too big (%1%): %2% records.",
-					GetTag(),
+					"Orders storage too big: %1% records.",
 					m_orders.size());
 				m_ordersCountReportsCounter = 0;
 			}
@@ -269,8 +266,7 @@ void FixTrading::NotifyOrderUpdate(
 		Order *const order = FindOrder(orderId);
 		if (!order) {
 			GetLog().Error(
-				"FIX Server (%1%) sent unknown %2% order ID %3%.",
-				GetTag(),
+				"Unknown %1% order ID %2% received.",
 				operation,
 				orderId);
 			return;
@@ -763,8 +759,7 @@ void FixTrading::CancelOrder(OrderId orderId) {
 		if (!order) {
 			lock.unlock();
 			GetLog().Warn(
-				"FIX Server (%1%) failed to find order with ID %2% to cancel.",
-				GetTag(),
+				"Failed to find order with ID %1% to cancel.",
 				orderId);
 			return;
 		}
@@ -876,8 +871,7 @@ void FixTrading::OnOrderRejected(
 	AssertEq("8", execReport.type());
 
 	GetLog().Error(
-		"FIX Server (%1%) Rejected order %2%: \"%3%\".",
-		GetTag(),
+		"Order %1% rejected by server: \"%2%\".",
 		GetMessageClOrderId(execReport),
 		reason);
 

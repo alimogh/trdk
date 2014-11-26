@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "FixTrading.hpp"
 #include "Core/Security.hpp"
+#include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -145,16 +146,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				if (
 						status == ORDER_STATUS_SUBMITTED
 						&& order.params.goodInSeconds) {
-					GetLog().TradingEx(
-						GetTag(),
-						[&]() -> boost::format {
-							boost::format message(
-								"Skipping emulated \"day-market\" order %1%"
-									" \"new status\" for %2%...");
-								message
-									% order.id
-									% order.security->GetSymbol();
-							return std::move(message);
+					GetTradingLog().Write(
+						"Skipping emulated \"day-market\" order %1%"
+							" \"new status\" for %2%...",
+						[&](TradingRecord &record) {
+							record % order.id % order.security->GetSymbol();
 						});
 					return;
 				}
@@ -172,20 +168,17 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			AssertLt(order.filledQty, order.qty);
 			const Qty newQty = order.qty - order.filledQty;
 
-			GetLog().TradingEx(
-				GetTag(),
-				[&]() -> boost::format {
-					boost::format message(
-						"Emulating \"day-market\" order"
-							" by resending order %1%"
-							" for \"%2%\" with qty %3%->%4% (%5% times)...");
-						message
-							% order.id
-							% order.security->GetSymbol()
-							% order.qty
-							% newQty
-							% *params.goodInSeconds;
-					return std::move(message);
+			GetTradingLog().Write(
+				"Emulating \"day-market\" order"
+					" by resending order %1%"
+					" for \"%2%\" with qty %3%->%4% (%5% times)...",
+				[&](TradingRecord &record) {
+					record
+						% order.id
+						% order.security->GetSymbol()
+						% order.qty
+						% newQty
+						% *params.goodInSeconds;
 				});
 
 			if (order.isSell) {
@@ -265,15 +258,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			}
 
 			GetLog().Error(
-				"FIX Server sent unknown Execution Report: \"%1%\".",
+				"Unknown Execution Report received: \"%1%\".",
 				boost::cref(message));
 
 		}
 
 		void OnReject(fix::Message &message) {
-			GetLog().Error(
-				"FIX Server sent unknown Reject: \"%1%\".",
-				message);
+			GetLog().Error("Unknown Reject received: \"%1%\".", message);
 		}
 
 

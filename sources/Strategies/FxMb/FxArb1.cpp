@@ -12,6 +12,7 @@
 #include "FxArb1.hpp"
 #include "Core/StrategyPositionReporter.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/TradingLog.hpp"
 #include "Util.hpp"
 
 using namespace trdk;
@@ -28,6 +29,7 @@ FxArb1::FxArb1(
 			const std::string &tag,
 			const IniSectionRef &conf)
 		: Base(context, name, tag),
+		m_strategyLog(Strategies::FxMb::GetStrategyLog(*this)),
 		m_equations(CreateEquations(conf.GetBase())),
 		m_isPairsByBrokerChecked(false),
 		m_cancelAndBlockCondition(nullptr),
@@ -226,9 +228,14 @@ FxArb1::Equations FxArb1::CreateEquations(const Ini &conf) const {
 		"Common",
 		"equation_result_comparison_value");
 	{
-		const char *const logMessage = "Equation result comparison value: %1%";
+		const char *const logMessage
+			= "Equation result comparison value: %1$.8f";
 		GetLog().Info(logMessage, comparisonValue);
-		GetLog().Trading(logMessage, comparisonValue);
+		GetTradingLog().Write(
+			logMessage,
+			[&](TradingRecord &r) {
+				r % comparisonValue;
+			});
 	}
 
 	typedef const Broker B;
@@ -257,31 +264,21 @@ FxArb1::Equations FxArb1::CreateEquations(const Ini &conf) const {
 
 	i = 0;
 
-	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 1: %1% * %2% * (1 / %3%) = %4%",	b1.p1.bid.GetConst(), b2.p2.bid.GetConst(), b1.p3.ask.GetConst(),	b1.p1.bid.GetConst() * b2.p2.bid.GetConst() * (1 / b1.p3.ask.GetConst())		);});
-	
-	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 2: %1% * (1 / %2%) * %3% = %4%",	b1.p1.bid.GetConst(), b2.p3.ask.GetConst(), b1.p2.bid.GetConst(),	b1.p1.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p2.bid.GetConst()		);});
-	
-	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 3: %1% * %2% * (1 / %3%) = %4%",	b1.p2.bid.GetConst(), b2.p1.bid.GetConst(), b1.p3.ask.GetConst(),	b1.p2.bid.GetConst() * b2.p1.bid.GetConst() * (1 / b1.p3.ask.GetConst())		);});
-	
-	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 4: %1% * (1 / %2%) * %3% = %4%",	b1.p2.bid.GetConst(), b2.p3.ask.GetConst(), b1.p1.bid.GetConst(),	b1.p2.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p1.bid.GetConst()		);});
-	
-	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 5: (1 / %1%) * %2% * %3% = %4%",	b1.p3.ask.GetConst(), b2.p1.bid.GetConst(), b1.p2.bid.GetConst(),	(1 / b1.p3.ask.GetConst()) * b2.p1.bid.GetConst() * b1.p2.bid.GetConst()		);});
-	
-	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 6: (1 / %1%) * %2% * %3% = %4%",	b1.p3.ask.GetConst(), b2.p2.bid.GetConst(), b1.p1.bid.GetConst(),	(1 / b1.p3.ask.GetConst()) * b2.p2.bid.GetConst() * b1.p1.bid.GetConst()		);});
-	
-	
+	typedef Strategy::TradingLog L;
 
-	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 7: (1 / %1%) * (1 / %2%) * %3% = %4%",		b1.p1.ask.GetConst(), b2.p2.ask.GetConst(), b1.p3.bid.GetConst(),		(1 / b1.p1.ask.GetConst()) * (1 / b2.p2.ask.GetConst()) * b1.p3.bid.GetConst()		);});
-	
-	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 8: (1 / %1%) * %2% * (1 / %3%) = %4%",		b1.p1.ask.GetConst(), b2.p3.bid.GetConst(), b1.p2.ask.GetConst(),		(1 / b1.p1.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p2.ask.GetConst())		);});
-	
-	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 9: (1 / %1%) * (1 / %2%) * %3% = %4%",		b1.p2.ask.GetConst(), b2.p1.ask.GetConst(), b1.p3.bid.GetConst(),		(1 / b1.p2.ask.GetConst()) * (1 / b2.p1.ask.GetConst()) * b1.p3.bid.GetConst()		);});
-	
-	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 10: (1 / %1%) * %2% * (1 / %3%) = %4%",		b1.p2.ask.GetConst(), b2.p3.bid.GetConst(), b1.p1.ask.GetConst(),		(1 / b1.p2.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p1.ask.GetConst())		);});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 1: %1% * %2% * (1 / %3%) = %4%",				[&](TradingRecord &r) { r %		b1.p1.bid.GetConst() % b2.p2.bid.GetConst() % b1.p3.ask.GetConst()		% (		b1.p1.bid.GetConst() * b2.p2.bid.GetConst() * (1 / b1.p3.ask.GetConst())		)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 2: %1% * (1 / %2%) * %3% = %4%",				[&](TradingRecord &r) { r %		b1.p1.bid.GetConst() % b2.p3.ask.GetConst() % b1.p2.bid.GetConst()		% (		b1.p1.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p2.bid.GetConst()		)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 3: %1% * %2% * (1 / %3%) = %4%",				[&](TradingRecord &r) { r %		b1.p2.bid.GetConst() % b2.p1.bid.GetConst() % b1.p3.ask.GetConst()		% (		b1.p2.bid.GetConst() * b2.p1.bid.GetConst() * (1 / b1.p3.ask.GetConst())		)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 4: %1% * (1 / %2%) * %3% = %4%",				[&](TradingRecord &r) { r %		b1.p2.bid.GetConst() % b2.p3.ask.GetConst() % b1.p1.bid.GetConst()		% (		b1.p2.bid.GetConst() * (1 / b2.p3.ask.GetConst()) * b1.p1.bid.GetConst()		)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 5: (1 / %1%) * %2% * %3% = %4%",				[&](TradingRecord &r) { r %		b1.p3.ask.GetConst() % b2.p1.bid.GetConst() % b1.p2.bid.GetConst()		% (		(1 / b1.p3.ask.GetConst()) * b2.p1.bid.GetConst() * b1.p2.bid.GetConst()		)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 6: (1 / %1%) * %2% * %3% = %4%",				[&](TradingRecord &r) { r %		b1.p3.ask.GetConst() % b2.p2.bid.GetConst() % b1.p1.bid.GetConst()		% (		(1 / b1.p3.ask.GetConst()) * b2.p2.bid.GetConst() * b1.p1.bid.GetConst()		)	;});});
 
-	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 11: %1% * (1 / %2%) * (1 / %3%) = %4%",		b1.p3.bid.GetConst(), b2.p1.ask.GetConst(), b1.p2.ask.GetConst(),		b1.p3.bid.GetConst() * (1 / b2.p1.ask.GetConst()) * (1 / b1.p2.ask.GetConst())		);});
-	
-	addPrint([](B &b1, B &b2, Module::Log &log) { log.Trading("Equation 12: %1% * (1 / %2%) * (1 / %3%) = %4%",		b1.p3.bid.GetConst(), b2.p2.ask.GetConst(), b1.p1.ask.GetConst(),		b1.p3.bid.GetConst() * (1 / b2.p2.ask.GetConst()) * (1 / b1.p1.ask.GetConst())		);});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 7: (1 / %1%) * (1 / %2%) * %3% = %4%",		[&](TradingRecord &r) { r %		b1.p1.ask.GetConst() % b2.p2.ask.GetConst() % b1.p3.bid.GetConst()		% (		(1 / b1.p1.ask.GetConst()) * (1 / b2.p2.ask.GetConst()) * b1.p3.bid.GetConst()	)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 8: (1 / %1%) * %2% * (1 / %3%) = %4%",		[&](TradingRecord &r) { r %		b1.p1.ask.GetConst() % b2.p3.bid.GetConst() % b1.p2.ask.GetConst()		% (		(1 / b1.p1.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p2.ask.GetConst())	)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 9: (1 / %1%) * (1 / %2%) * %3% = %4%",		[&](TradingRecord &r) { r %		b1.p2.ask.GetConst() % b2.p1.ask.GetConst() % b1.p3.bid.GetConst()		% (		(1 / b1.p2.ask.GetConst()) * (1 / b2.p1.ask.GetConst()) * b1.p3.bid.GetConst()	)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 10: (1 / %1%) * %2% * (1 / %3%) = %4%",		[&](TradingRecord &r) { r %		b1.p2.ask.GetConst() % b2.p3.bid.GetConst() % b1.p1.ask.GetConst()		% (		(1 / b1.p2.ask.GetConst()) * b2.p3.bid.GetConst() * (1 / b1.p1.ask.GetConst())	)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 11: %1% * (1 / %2%) * (1 / %3%) = %4%",		[&](TradingRecord &r) { r %		b1.p3.bid.GetConst() % b2.p1.ask.GetConst() % b1.p2.ask.GetConst()		% (		b1.p3.bid.GetConst() * (1 / b2.p1.ask.GetConst()) * (1 / b1.p2.ask.GetConst())	)	;});});
+	addPrint([](B &b1, B &b2, L &l) {	 l.Write("Equation 12: %1% * (1 / %2%) * (1 / %3%) = %4%",		[&](TradingRecord &r) { r %		b1.p3.bid.GetConst() % b2.p2.ask.GetConst() % b1.p1.ask.GetConst()		% (		b1.p3.bid.GetConst() * (1 / b2.p2.ask.GetConst()) * (1 / b1.p1.ask.GetConst())	)	;});});
 
 	AssertEq(EQUATIONS_COUNT, result.size());
 	result.shrink_to_fit();
@@ -395,7 +392,7 @@ void FxArb1::LogBrokersState(
 			const Broker &b2)
 		const {
 	// Logging current bid/ask values for all pairs (if logging enabled).
-	GetEquations()[equationIndex].second(b1, b2, GetLog());
+	GetEquations()[equationIndex].second(b1, b2, GetTradingLog());
 }
 
 void FxArb1::StartPositionsOpening(
@@ -454,19 +451,17 @@ void FxArb1::StartPositionsOpening(
 			?	security.conf->security->GetAskQty()
 			:	security.conf->security->GetBidQty();
 		if (security.conf->qty * security.conf->requiredVol > actualQty) {
-			GetLog().TradingEx(
-				[&security, actualQty, checkAsk]() -> boost::format {
-					boost::format message(
-						"Can't trade: required %1% * %2% = %3% > %4%"
-							" for %5% %6%, but it's not.");
-					message
+			GetTradingLog().Write(
+				"Can't trade: required %1% * %2% = %3% > %4%"
+					" for %5% %6%, but it's not.",
+				[&](TradingRecord &record) {
+					record
 						%	security.conf->qty
 						%	security.conf->requiredVol
 						%	actualQty
 						%	(security.conf->qty * security.conf->requiredVol)
 						%	security.conf->security->GetSymbol().GetSymbol()
 						%	(checkAsk ? "ask" : "bid");
-					return message;
 				});
 			return;
 		}
@@ -528,7 +523,7 @@ void FxArb1::StartPositionsOpening(
 
 	equationPositions.lastOpenTime = boost::get_system_time();
 	equationPositions.currentOpportunityNumber
-		= GetContext().TakeOpportunityNumber();
+		= m_strategyLog.TakeOpportunityNumber();
 
 	LogOpeningDetection(equationIndex);
 
@@ -822,33 +817,36 @@ void FxArb1::LogEquation(
 	getVals(p2, isP2Buy, p2Price);
 	getVals(p3, isP3Buy, p3Price);
 
-	GetContext().GetLog().Equation(
+	m_strategyLog.Write(
+		[&](StrategyLogRecord &record) {
+			record
 
-		equationPositions.currentOpportunityNumber,
+				% equationPositions.currentOpportunityNumber
 		    
-		action,
-		initiatorIndex,
+				% action
+				% initiatorIndex
 		    
-		p1.GetTradeSystem().GetTag(),
-		p1.GetSecurity().GetSymbol().GetSymbol(),
-		p1Price,
-		isP1Buy,
+				% p1.GetTradeSystem().GetTag()
+				% p1.GetSecurity().GetSymbol().GetSymbol()
+				% p1Price
+				% isP1Buy
 
-		p2.GetTradeSystem().GetTag(),
-		p2.GetSecurity().GetSymbol().GetSymbol(),
-		p2Price,
-		isP2Buy,
+				% p2.GetTradeSystem().GetTag()
+				% p2.GetSecurity().GetSymbol().GetSymbol()
+				% p2Price
+				% isP2Buy
 
-		p3.GetTradeSystem().GetTag(),
-		p3.GetSecurity().GetSymbol().GetSymbol(),
-		p3Price,
-		isP3Buy,
+				% p3.GetTradeSystem().GetTag()
+				% p3.GetSecurity().GetSymbol().GetSymbol()
+				% p3Price
+				% isP3Buy
 		    
-		initiatorIndex < (EQUATIONS_COUNT / 2),
+				% (initiatorIndex < (EQUATIONS_COUNT / 2))
 		
-		p1.GetId(),
-		p2.GetId(),
-		p3.GetId());
+				% p1.GetId()
+				% p2.GetId()
+				% p3.GetId();
+		});
 
 }
 
@@ -856,15 +854,11 @@ void FxArb1::DelayClose(EquationPosition &position) {
 	if (m_equationsForDelayedClosing[position.GetEquationIndex()]) {
 		return;
 	}
-	GetLog().TradingEx(
-		[&]() -> boost::format {
-			boost::format message(
-				"Delaying positions closing by %1% for equation %2%"
-					", as strategy blocked...");
-			message
-				% position.GetSecurity()
-				% position.GetEquationIndex();
-			return std::move(message);
+	GetTradingLog().Write(
+		"Delaying positions closing by %1% for equation %2%"
+			", as strategy blocked...",
+		[&](TradingRecord &record) {
+			record % position.GetSecurity() % position.GetEquationIndex();
 		});
 	m_equationsForDelayedClosing[position.GetEquationIndex()] = true;
 }
@@ -876,13 +870,12 @@ void FxArb1::CloseDelayed(
 		if (!m_equationsForDelayedClosing[i]) {
 			continue;
 		}
-		GetLog().TradingEx(
-			[this, i]() -> boost::format {
-				boost::format message(
-					"Closing delayed positions for equation %1%"
-						" (%2% / %3% / %4% / %5% / %6% / %7%)...");
+		GetTradingLog().Write(
+			"Closing delayed positions for equation %1%"
+				" (%2% / %3% / %4% / %5% / %6% / %7%)...",
+			[this, i](TradingRecord &record) {
 				const auto &positions = GetEquationPositions(i);
-				message
+				record
 					%	i
 					%	positions.activeCount
 					%	positions.waitsForReplyCount
@@ -890,7 +883,6 @@ void FxArb1::CloseDelayed(
 					%	positions.lastOpenTime
 					%	positions.lastCloseTime
 					%	positions.isCanceled;
-				return std::move(message);
 			});
 		CloseDelayed(i, timeMeasurement);
 		m_equationsForDelayedClosing[i] = false;

@@ -12,6 +12,7 @@
 #include "Position.hpp"
 #include "Strategy.hpp"
 #include "Settings.hpp"
+#include "TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -20,7 +21,7 @@ using namespace trdk::Lib;
 
 namespace {
 	
-	const std::string logTag = "position";
+	const char *logTag = "Position";
 
 	const OrderParams defaultOrderParams;
 
@@ -527,52 +528,48 @@ public:
 				const TradeSystem::OrderStatus &orderStatus)
 			const
 			throw() {
-		m_security.GetContext().GetLog().TradingEx(
+		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			[this, eventDesc, &orderStatus]() -> boost::format {
-				boost::format message(
-					"%12%\t%11%\t%1%\t%2%\topen-%3%\t%4%"
-						"\tqty=%5%->%6% price=%7%->%8% order-id=%9%"
-						" order-status=%10%");
-				message
-					%	m_security.GetSymbol()
-					%	m_position.GetTypeStr()
-					%	eventDesc
-					%	m_tag
-					%	m_position.GetPlanedQty()
-					%	m_position.GetOpenedQty()
-					%	m_security.DescalePrice(m_position.GetOpenStartPrice())
-					%	m_security.DescalePrice(m_position.GetOpenPrice())
-					%	m_position.GetOpenOrderId()
-					%	m_tradeSystem.GetStringStatus(orderStatus)
-					%	m_position.GetTradeSystem().GetTag()
-					%	m_id;
-				return std::move(message);
+			"%12%\t%11%\t%1%\t%2%\topen-%3%\t%4%"
+				"\tqty=%5%->%6% price=%7%->%8% order-id=%9%"
+				" order-status=%10%",
+			[this, eventDesc, &orderStatus](TradingRecord &record) {
+				record
+					% m_security.GetSymbol()
+					% m_position.GetTypeStr()
+					% eventDesc
+					% m_tag
+					% m_position.GetPlanedQty()
+					% m_position.GetOpenedQty()
+					% m_security.DescalePrice(m_position.GetOpenStartPrice())
+					% m_security.DescalePrice(m_position.GetOpenPrice())
+					% m_position.GetOpenOrderId()
+					% m_tradeSystem.GetStringStatus(orderStatus)
+					% m_position.GetTradeSystem().GetTag()
+					% m_id;
 			});
 	}
 
 	void ReportClosingStart(const char *eventDesc) const throw() {
-		m_security.GetContext().GetLog().TradingEx(
+		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			[this, eventDesc]() -> boost::format {
-				boost::format message(
-					"%13%\t%11%\t%1%\t%2%\tclose-%12%\t%3%\tqty=%4%->%5%"
-						" order-id=%6%->%7% has-orders=%8%/%9% is-error=%10%");
-				message
-					%	m_security
-					%	m_position.GetTypeStr()
-					%	m_tag
-					%	m_position.GetOpenedQty()
-					%	m_position.GetClosedQty()
-					%	m_position.GetOpenOrderId()
-					%	m_position.GetCloseOrderId()
-					%	m_position.HasActiveOpenOrders()
-					%	m_position.HasActiveCloseOrders()
-					%	(m_isError ? true : false)
-					%	m_position.GetTradeSystem().GetTag()
-					%	eventDesc
-					%	m_id;
-				return std::move(message);
+			"%13%\t%11%\t%1%\t%2%\tclose-%12%\t%3%\tqty=%4%->%5%"
+				" order-id=%6%->%7% has-orders=%8%/%9% is-error=%10%",
+			[this, eventDesc](TradingRecord &record) {
+				record
+					% m_security
+					% m_position.GetTypeStr()
+					% m_tag
+					% m_position.GetOpenedQty()
+					% m_position.GetClosedQty()
+					% m_position.GetOpenOrderId()
+					% m_position.GetCloseOrderId()
+					% m_position.HasActiveOpenOrders()
+					% m_position.HasActiveCloseOrders()
+					% (m_isError ? true : false)
+					% m_position.GetTradeSystem().GetTag()
+					% eventDesc
+					% m_id;
 			});
 	}
 
@@ -581,31 +578,28 @@ public:
 				const TradeSystem::OrderStatus &orderStatus)
 			const
 			throw() {
-		m_security.GetContext().GetLog().TradingEx(
+		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			[this, eventDesc, &orderStatus]() -> boost::format {
-				boost::format message(
-					"%14%\t%11%\t%1%\t%2%\tclose-%3%\t%4%"
-						"\tqty=%5%->%6% price=%15%->%7% order-id=%8%->%9%"
-						" order-status=%10% has-orders=%12%/%13%");
-				message
-					%	m_position.GetSecurity().GetSymbol()
-					%	m_position.GetTypeStr()
-					%	eventDesc
-					%	m_tag
-					%	m_position.GetOpenedQty()
-					%	m_position.GetClosedQty()
-					%	m_security.DescalePrice(m_position.GetClosePrice())
-					%	m_position.GetOpenOrderId()
-					%	m_position.GetCloseOrderId()
-					%	m_tradeSystem.GetStringStatus(orderStatus)
-					%	m_position.GetTradeSystem().GetTag()
-					%	m_position.HasActiveOpenOrders()
-					%	m_position.HasActiveCloseOrders()
-					%	m_id
-					%	m_security.DescalePrice(
-							m_position.GetCloseStartPrice());
-				return std::move(message);
+			"%14%\t%11%\t%1%\t%2%\tclose-%3%\t%4%"
+				"\tqty=%5%->%6% price=%15%->%7% order-id=%8%->%9%"
+				" order-status=%10% has-orders=%12%/%13%",
+			[this, eventDesc, &orderStatus](TradingRecord &record) {
+				record
+					% m_position.GetSecurity().GetSymbol()
+					% m_position.GetTypeStr()
+					% eventDesc
+					% m_tag
+					% m_position.GetOpenedQty()
+					% m_position.GetClosedQty()
+					% m_security.DescalePrice(m_position.GetClosePrice())
+					% m_position.GetOpenOrderId()
+					% m_position.GetCloseOrderId()
+					% m_tradeSystem.GetStringStatus(orderStatus)
+					% m_position.GetTradeSystem().GetTag()
+					% m_position.HasActiveOpenOrders()
+					% m_position.HasActiveCloseOrders()
+					% m_id
+					% m_security.DescalePrice(m_position.GetCloseStartPrice());
 			});
 	}
 
@@ -615,40 +609,37 @@ public:
 				const OrderId &newOrdeId)
 			const
 			throw() {
-		m_security.GetContext().GetLog().TradingEx(
+		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			[&]() -> boost::format {
-				boost::format message(
-					"%1%\t%2%\t%3%\t%4%\treplacing-%5%-order\t%6%\t%7%"
-						"\tqty=%8%->%9% price=%10%->%11%"
-						" bid=%12%/%13% ask=%14%/%15%");
-				message
-					%	m_id
-					%	m_position.GetTradeSystem().GetTag()
-					%	m_security.GetSymbol()
-					%	m_position.GetTypeStr()
-					%	(isOpening ? "open" : "close")
-					%	prevOrdeId
-					%	newOrdeId
-					%	m_position.GetOpenedQty()
-					%	m_position.GetClosedQty();
+			"%1%\t%2%\t%3%\t%4%\treplacing-%5%-order\t%6%\t%7%"
+				"\tqty=%8%->%9% price=%10%->%11%"
+				" bid=%12%/%13% ask=%14%/%15%",
+			[&](TradingRecord &record) {
+				record
+					% m_id
+					% m_position.GetTradeSystem().GetTag()
+					% m_security.GetSymbol()
+					% m_position.GetTypeStr()
+					% (isOpening ? "open" : "close")
+					% prevOrdeId
+					% newOrdeId
+					% m_position.GetOpenedQty()
+					% m_position.GetClosedQty();
 				if (isOpening) {
-					message
-						%	m_security.DescalePrice(
-								m_position.GetOpenStartPrice())
-						%	m_security.DescalePrice(m_position.GetOpenPrice());
+					record.Format(
+						m_security.DescalePrice(m_position.GetOpenStartPrice()),
+						m_security.DescalePrice(m_position.GetOpenPrice()));
 				} else {
-					message
-						%	m_security.DescalePrice(
-								m_position.GetCloseStartPrice())
-						%	m_security.DescalePrice(m_position.GetClosePrice());
+					record.Format(
+						m_security.DescalePrice(
+								m_position.GetCloseStartPrice()),
+						m_security.DescalePrice(m_position.GetClosePrice()));
 				}
-				message
-					%	m_security.GetBidPrice()
-					%	m_security.GetBidQty()
-					%	m_security.GetAskPrice()
-					%	m_security.GetAskQty();
-				return std::move(message);
+				record
+					% m_security.GetBidPrice()
+					% m_security.GetBidQty()
+					% m_security.GetAskPrice()
+					% m_security.GetAskQty();
 			});
 	}
 
@@ -731,20 +722,18 @@ public:
 			m_strategy->Register(m_position);
 		}
 
-		m_security.GetContext().GetLog().TradingEx(
+		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			[this, action]() -> boost::format {
-				boost::format message(
-					"%7%\t%5%\t%1%\t%2%\t%6%\t%3%\tqty=%4%");
-				message
-					%	m_security
-					%	m_position.GetTypeStr()
-					%	m_tag
-					%	m_position.GetPlanedQty()
-					%	m_position.GetTradeSystem().GetTag()
-					%	action
-					%	m_id;
-				return std::move(message);
+			"%7%\t%5%\t%1%\t%2%\t%6%\t%3%\tqty=%4%",
+			[this, action](TradingRecord &record) {
+				record
+					% m_security
+					% m_position.GetTypeStr()
+					% m_tag
+					% m_position.GetPlanedQty()
+					% m_position.GetTradeSystem().GetTag()
+					% action
+					% m_id;
 			});
 
 		try {

@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "Server.hpp"
-#include "Engine/Context.hpp"
+#include "Core/Settings.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -22,8 +22,15 @@ Server::Server() {
 	//..//
 }
 
-void Server::Run(const std::string &uuid, const fs::path &path) {
+void Server::Run(
+			const std::string &uuid,
+			const fs::path &path,
+			bool enableStdOutLog,
+			int argc,
+			const char *argv[]) {
+	
 	const Lock lock(m_mutex);
+	
 	{
 		const auto &index = m_engines.get<ByUuid>();
 		if (index.find(uuid) != index.end()) {
@@ -32,13 +39,72 @@ void Server::Run(const std::string &uuid, const fs::path &path) {
 			throw Exception(message.str().c_str());
 		}
 	}
+
 	boost::shared_ptr<IniFile> ini(new IniFile(path));
-	EngineInfo info = {
-		uuid,
-		boost::shared_ptr<Engine::Context>(new Engine::Context(ini))
-	};
+
+	EngineInfo info = {};
+	info.uuid = uuid;
+	info.eventsLog.reset(new Engine::Context::Log);
+	if (enableStdOutLog) {
+		info.eventsLog->EnableStdOut();
+	}
+	info.tradingLog.reset(new Engine::Context::TradingLog);
+
+	Settings settings(ini->ReadFileSystemPath("Common", "logs_dir") / uuid);
+
+	fs::create_directories(settings.GetLogsDir());
+	{
+		const auto &logFilePath = settings.GetLogsDir() / "event.log";
+		info.eventsLogFile.reset(
+			new std::ofstream(
+				logFilePath.string().c_str(),
+				std::ios::out | std::ios::ate | std::ios::app));
+		if (!*info.eventsLogFile) {
+			boost::format error("Failed to open events log file %1%.");
+			error % logFilePath;
+			throw Exception(error.str().c_str());
+		}
+		info.eventsLog->EnableStream(*info.eventsLogFile);
+	}
+	const auto &tradingLogFilePath = settings.GetLogsDir() / "trading.log";
+	if (ini->ReadBoolKey("Common", "trading_log")) {
+		info.tradingLogFile.reset(
+			new std::ofstream(
+				tradingLogFilePath.string().c_str(),
+				std::ios::out | std::ios::ate | std::ios::app));
+		if (!*info.tradingLogFile) {
+			boost::format error("Failed to open trading log file %1%.");
+			error % tradingLogFilePath;
+			throw Exception(error.str().c_str());
+		}
+		info.tradingLog->EnableStream(*info.tradingLogFile);
+	}
+	{
+		std::vector<std::string> cmd;
+		for (auto i = 0; i < argc; ++i) {
+			cmd.push_back(argv[i]);
+		}
+		info.eventsLog->Info("Command: \"%1%\".", boost::join(cmd, " "));
+		if (info.tradingLogFile) {
+			info.eventsLog->Info("Trading log: %1%.", tradingLogFilePath);
+		} else {
+			info.eventsLog->Info("Trading log: DISABLED.");
+		}
+	}
+
+	settings.Update(*ini, *info.eventsLog);
+
+	info.engine.reset(
+		new Engine::Context(
+			*info.eventsLog,
+			*info.tradingLog,
+			settings,
+			ini));
+
 	info.engine->Start();
+
 	m_engines.insert(info);
+
 }
 
 void Server::CancelAllAndStop() {

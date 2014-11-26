@@ -19,7 +19,15 @@ namespace trdk { namespace Engine {
 
 	public:
 
-		explicit Context(const boost::shared_ptr<const trdk::Lib::Ini> &conf);
+		typedef trdk::Context Base;
+
+	public:
+
+		explicit Context(
+					trdk::Context::Log &,
+					trdk::Context::TradingLog &,
+					const trdk::Settings &,
+					const boost::shared_ptr<const trdk::Lib::Ini> &conf);
 		virtual ~Context();
 
 	public:
@@ -32,8 +40,6 @@ namespace trdk { namespace Engine {
 		void Add(const trdk::Lib::Ini &);
 
 	public:
-
-		virtual const trdk::Settings & GetSettings() const;
 
 		virtual size_t GetMarketDataSourcesCount() const;
 		virtual const trdk::MarketDataSource & GetMarketDataSource(

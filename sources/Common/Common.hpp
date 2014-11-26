@@ -11,13 +11,15 @@
 #pragma once
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/thread/thread_time.hpp>
 #	include <boost/noncopyable.hpp>
 #	include <boost/enable_shared_from_this.hpp>
 #	include <boost/signals2.hpp>
 #	include <boost/thread/mutex.hpp>
+#	if TRDK_CONCURRENCY_PROFILE == 0 // ::trdk::Lib::Concurrency::PROFILE_RELAX
+#		include <boost/thread/condition.hpp>
+#	endif
+#	include <boost/thread/thread.hpp>
 #	include <boost/thread/shared_mutex.hpp>
-#	include <boost/thread/condition.hpp>
 #	include <boost/shared_ptr.hpp>
 #	include <boost/cast.hpp>
 #	include <boost/iterator/iterator_facade.hpp>
@@ -25,8 +27,8 @@
 #	include <boost/tuple/tuple_comparison.hpp>
 #	include <boost/format.hpp>
 #	include <boost/atomic.hpp>
-#	include <boost/ref.hpp>
 #	include <boost/date_time.hpp>
+#	include <boost/any.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Constants.h"
@@ -43,6 +45,6 @@
 #include "Common/Exception.hpp"
 #include "Common/TimeMeasurement.hpp"
 #include "Common/Spin.hpp"
+#include "Common/Log.hpp"
 
 #include "Core/Types.hpp"
-#include "Core/Log.hpp"

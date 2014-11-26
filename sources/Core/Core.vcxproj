@@ -241,14 +241,15 @@
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
   <ItemGroup>
+    <ClCompile Include="AsyncLog.cpp" />
     <ClCompile Include="Context.cpp" />
+    <ClCompile Include="EventsLog.cpp" />
     <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="Consumer.cpp" />
     <ClCompile Include="Interactor.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="Strategy.cpp" />
     <ClCompile Include="StrategyPositionState.cpp" />
-    <ClCompile Include="Log.cpp" />
     <ClCompile Include="MarketDataSource.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="Observer.cpp" />
@@ -275,7 +276,9 @@
     <ClCompile Include="Types.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AsyncLog.hpp" />
     <ClInclude Include="Context.hpp" />
+    <ClInclude Include="EventsLog.hpp" />
     <ClInclude Include="Interactor.hpp" />
     <ClInclude Include="ModuleRef.hpp" />
     <ClInclude Include="ModuleSecurityList.hpp" />
@@ -287,7 +290,6 @@
     <ClInclude Include="StrategyPositionState.hpp" />
     <ClInclude Include="Api.h" />
     <ClInclude Include="Instrument.hpp" />
-    <ClInclude Include="Log.hpp" />
     <ClInclude Include="MarketDataSource.hpp" />
     <ClInclude Include="Module.hpp" />
     <ClInclude Include="Observer.hpp" />
@@ -300,6 +302,7 @@
     <ClInclude Include="Settings.hpp" />
     <ClInclude Include="Terminal.hpp" />
     <ClInclude Include="TradeSystem.hpp" />
+    <ClInclude Include="TradingLog.hpp" />
     <ClInclude Include="Types.hpp" />
   </ItemGroup>
   <ItemGroup>

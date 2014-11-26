@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2014/09/15 20:21:09
+ *   Created: 2014/11/26 01:00:58
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,24 +8,20 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "AsyncLog.hpp"
+#include "Security.hpp"
 
-#include "Foreach.hpp"
+using namespace trdk;
 
-namespace trdk { namespace Lib { namespace Detail {
+void AsyncLogRecord::WriteToDumpStream(
+		const Security &security,
+		boost::format &os) {
+	os % security;
+}
 
-	template<typename Str, typename Stream>
-	void DumpMultiLineString(const Str &str, Stream &stream) {
-		foreach (char ch, str) {
-			if (ch == 0) {
-				break;
-			}
-			stream << ch;
-			if (ch == stream.widen('\n')) {
-				stream << "\t\t\t\t\t\t";
-			}
-		}
-		stream << std::endl;
-	}
-
-} } }
+void AsyncLogRecord::WriteToDumpStream(
+		const Security &security,
+		std::ostream &os) {
+	os << security;
+}
