@@ -51,75 +51,63 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{015FB121-6122-4A00-BFBB-545E9E73ABEE}</ProjectGuid>
-    <RootNamespace>Engine</RootNamespace>
+    <ProjectGuid>{4F025D92-8F15-4A05-97B6-CA680CB090D9}</ProjectGuid>
+    <RootNamespace>Services</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
@@ -131,7 +119,8 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="Enigne.props" />
+    <Import Project="..\Module.props" />
+    <Import Project="Services.props" />
     <Import Project="..\Distribution Standalone Debug.props" />
     <Import Project="..\Configuration Debug.props" />
   </ImportGroup>
@@ -140,7 +129,8 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="Enigne.props" />
+    <Import Project="..\Module.props" />
+    <Import Project="Services.props" />
     <Import Project="..\Distribution Standalone Debug.props" />
     <Import Project="..\Configuration Debug.props" />
   </ImportGroup>
@@ -150,7 +140,8 @@
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
     <Import Project="..\Static lib.props" />
-    <Import Project="Enigne.props" />
+    <Import Project="..\Module.props" />
+    <Import Project="Services.props" />
     <Import Project="..\Distribution Dll Debug.props" />
     <Import Project="..\Configuration Debug.props" />
   </ImportGroup>
@@ -160,7 +151,8 @@
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
     <Import Project="..\Static lib.props" />
-    <Import Project="Enigne.props" />
+    <Import Project="..\Module.props" />
+    <Import Project="Services.props" />
     <Import Project="..\Distribution Dll Debug.props" />
     <Import Project="..\Configuration Debug.props" />
   </ImportGroup>
@@ -169,7 +161,8 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="Enigne.props" />
+    <Import Project="..\Module.props" />
+    <Import Project="Services.props" />
     <Import Project="..\Distribution Standalone Release.props" />
     <Import Project="..\Configuration Release.props" />
   </ImportGroup>
@@ -178,7 +171,8 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="Enigne.props" />
+    <Import Project="..\Module.props" />
+    <Import Project="Services.props" />
     <Import Project="..\Distribution Standalone Release.props" />
     <Import Project="..\Configuration Release.props" />
   </ImportGroup>
@@ -188,7 +182,8 @@
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
     <Import Project="..\Static lib.props" />
-    <Import Project="Enigne.props" />
+    <Import Project="..\Module.props" />
+    <Import Project="Services.props" />
     <Import Project="..\Distribution Dll Release.props" />
     <Import Project="..\Configuration Release.props" />
   </ImportGroup>
@@ -198,7 +193,8 @@
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
     <Import Project="..\Static lib.props" />
-    <Import Project="Enigne.props" />
+    <Import Project="..\Module.props" />
+    <Import Project="Services.props" />
     <Import Project="..\Distribution Dll Release.props" />
     <Import Project="..\Configuration Release.props" />
   </ImportGroup>
@@ -207,7 +203,8 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="Enigne.props" />
+    <Import Project="..\Module.props" />
+    <Import Project="Services.props" />
     <Import Project="..\Distribution Standalone Test.props" />
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
@@ -216,7 +213,8 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="Enigne.props" />
+    <Import Project="..\Module.props" />
+    <Import Project="Services.props" />
     <Import Project="..\Distribution Standalone Test.props" />
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
@@ -226,7 +224,8 @@
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
     <Import Project="..\Static lib.props" />
-    <Import Project="Enigne.props" />
+    <Import Project="..\Module.props" />
+    <Import Project="Services.props" />
     <Import Project="..\Distribution Dll Test.props" />
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
@@ -236,40 +235,25 @@
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
     <Import Project="..\Static lib.props" />
-    <Import Project="Enigne.props" />
+    <Import Project="..\Module.props" />
+    <Import Project="Services.props" />
     <Import Project="..\Distribution Dll Test.props" />
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
   <ItemGroup>
-    <ProjectReference Include="..\Common\Common.vcxproj">
-      <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Core\Core.vcxproj">
-      <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\OnixsFixConnector\OnixsFixConnector.vcxproj">
-      <Project>{c86383e0-0a73-41e0-8263-9e05b608ce55}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interaction\OnixsHotspot\OnixsHotspot.vcxproj">
-      <Project>{029437f9-f5aa-42c1-bba0-8b12375e9148}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Services\Services.vcxproj">
-      <Project>{4f025d92-8f15-4a05-97b6-ca680cb090d9}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Strategies\FxMb\FxMb.vcxproj">
-      <Project>{741ec258-dbd7-4f89-a176-1a9c036216f8}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Version\Version.vcxproj">
-      <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
-    </ProjectReference>
+    <ClInclude Include="Api.h" />
+    <ClInclude Include="BarService.hpp" />
+    <ClInclude Include="BollingerBandsService.hpp" />
+    <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="LogService.hpp" />
+    <ClInclude Include="MovingAverageService.hpp" />
+    <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Context.cpp" />
-    <ClCompile Include="ContextBootstrap.cpp" />
-    <ClCompile Include="SubscriptionsManager.cpp" />
-    <ClCompile Include="Ini.cpp" />
-    <ClCompile Include="Dispatcher.cpp" />
+    <ClCompile Include="BarService.cpp" />
+    <ClCompile Include="BollingerBandsService.cpp" />
+    <ClCompile Include="LogService.cpp" />
+    <ClCompile Include="MovingAverageService.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -284,25 +268,23 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="SubscriberPtrWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Api.h" />
-    <ClInclude Include="Context.hpp" />
-    <ClInclude Include="ContextBootstrap.hpp" />
-    <ClInclude Include="Types.hpp" />
-    <ClInclude Include="SubscriptionsManager.hpp" />
-    <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="Ini.hpp" />
-    <ClInclude Include="Dispatcher.hpp" />
-    <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="SubscriberPtrWrapper.hpp" />
+    <ProjectReference Include="..\Common\Common.vcxproj">
+      <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Core\Core.vcxproj">
+      <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Version\Version.vcxproj">
+      <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Engine.rc" />
+    <None Include="Services.def" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Services\Services.vcxproj" />
+    <ResourceCompile Include="Services.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
