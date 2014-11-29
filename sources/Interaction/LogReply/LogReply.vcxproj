@@ -258,6 +258,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LogMarketDataSource.cpp" />
+    <ClCompile Include="LogSecurity.cpp" />
     <ClCompile Include="LogService.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
@@ -281,6 +282,7 @@
     <ClInclude Include="Api.h" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="LogSecurity.hpp" />
+    <ClInclude Include="Util.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="LogReply.rc" />

@@ -23,16 +23,36 @@ namespace trdk {  namespace Interaction { namespace LogReply {
 	public:
 
 		explicit LogSecurity(
-					Context &context,
-					const Lib::Symbol &symbol,
-					const trdk::MarketDataSource &source)
-				: Base(context, symbol, source) {
-			StartLevel1();
-		}
+				Context &,
+				const Lib::Symbol &,
+				const trdk::MarketDataSource &,
+				const boost::filesystem::path &sourceBase);
 
 	public:
 
-		using Base::StartBookUpdate;
+		void ResetSource();
+		
+		size_t GetReadRecordsCount() const;
+		const boost::posix_time::ptime & GetDataStartTime() const;
+
+		const boost::posix_time::ptime & GetCurrentTime() const;
+		bool Accept();
+
+	private:
+
+		bool Read();
+
+	private:
+
+		std::ifstream m_file;
+
+		const boost::posix_time::ptime m_dataStartTime;
+		const std::ifstream::streampos m_dataStartPos;
+
+		boost::posix_time::ptime m_currentTime;
+		bool m_isEof;
+
+		size_t m_readCount;
 
 	};
 

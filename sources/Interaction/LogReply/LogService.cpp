@@ -9,6 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Util.hpp"
 #include "Core/Service.hpp"
 #include "Core/MarketDataSource.hpp"
 
@@ -48,11 +49,10 @@ public:
 	virtual pt::ptime OnSecurityStart(const Security &security) {
 		Assert(m_files.find(security.GetSource().GetTag()) == m_files.end());
 		auto &f = m_files[security.GetSource().GetTag()];
-		std::string fileName
-			= security.GetSource().GetTag()
-				+ "_" + security.GetSymbol().GetSymbol();
-		boost::erase_all(fileName, "/");
-		f.open(fileName.c_str(), std::ios::trunc);
+		const fs::path &fileName = Detail::GetSecurityFilename(
+			security.GetSource(),
+			security.GetSymbol());
+		f.open(fileName.string().c_str(), std::ios::trunc);
 		Assert(f);
 		f
 			<< "TRDK Book Update Ticks Log version 1.0 "

@@ -20,6 +20,9 @@
     <ClCompile Include="LogService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LogSecurity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LogSecurity.hpp">
@@ -29,6 +32,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="Util.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="LogReply.def">
