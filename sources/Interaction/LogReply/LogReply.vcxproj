@@ -51,77 +51,57 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{741EC258-DBD7-4F89-A176-1A9C036216F8}</ProjectGuid>
-    <RootNamespace>FxMb</RootNamespace>
-    <ProjectName>Morgan Benoit FX strategies</ProjectName>
+    <ProjectGuid>{D2247A79-0ECC-4344-84C2-C13999567B64}</ProjectGuid>
+    <RootNamespace>Log replay</RootNamespace>
+    <ProjectName>Log reply</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -133,8 +113,8 @@
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="..\Strategy.props" />
-    <Import Project="FxMb.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="LogReply.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -144,8 +124,8 @@
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="..\Strategy.props" />
-    <Import Project="FxMb.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="LogReply.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -156,8 +136,8 @@
     <Import Project="..\..\Distribution Dll.props" />
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="..\Strategy.props" />
-    <Import Project="FxMb.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="LogReply.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -168,8 +148,8 @@
     <Import Project="..\..\Distribution Dll.props" />
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="..\Strategy.props" />
-    <Import Project="FxMb.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="LogReply.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -179,8 +159,8 @@
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="..\Strategy.props" />
-    <Import Project="FxMb.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="LogReply.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -190,8 +170,8 @@
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="..\Strategy.props" />
-    <Import Project="FxMb.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="LogReply.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -202,8 +182,8 @@
     <Import Project="..\..\Distribution Dll.props" />
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="..\Strategy.props" />
-    <Import Project="FxMb.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="LogReply.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -213,9 +193,9 @@
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
     <Import Project="..\..\Static lib.props" />
-    <Import Project="..\Strategy.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="FxMb.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="LogReply.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -225,8 +205,8 @@
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="..\Strategy.props" />
-    <Import Project="FxMb.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="LogReply.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -236,8 +216,8 @@
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="..\Strategy.props" />
-    <Import Project="FxMb.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="LogReply.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -248,8 +228,8 @@
     <Import Project="..\..\Distribution Dll.props" />
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="..\Strategy.props" />
-    <Import Project="FxMb.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="LogReply.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -260,41 +240,11 @@
     <Import Project="..\..\Distribution Dll.props" />
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="..\Strategy.props" />
-    <Import Project="FxMb.props" />
+    <Import Project="..\Interaction.props" />
+    <Import Project="LogReply.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\Common\Assert.cpp" />
-    <ClCompile Include="FxArb1.cpp" />
-    <ClCompile Include="FxArb1Mono.cpp" />
-    <ClCompile Include="FxArb1Multi.cpp" />
-    <ClCompile Include="FxMbStrategyLog.cpp" />
-    <ClCompile Include="Prec.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Util.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Api.h" />
-    <ClInclude Include="EquationPosition.hpp" />
-    <ClInclude Include="FxArb1.hpp" />
-    <ClInclude Include="FxMbStrategyLog.hpp" />
-    <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="Util.hpp" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Common.vcxproj">
       <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
@@ -307,10 +257,33 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="FxMb.rc" />
+    <ClCompile Include="LogMarketDataSource.cpp" />
+    <ClCompile Include="LogService.cpp" />
+    <ClCompile Include="Prec.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="FxMb.def" />
+    <None Include="LogReply.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Api.h" />
+    <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="LogSecurity.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="LogReply.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

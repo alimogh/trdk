@@ -103,10 +103,7 @@ namespace trdk { namespace Interaction { namespace Csv {
 
 	protected:
 
-		virtual trdk::Security & CreateSecurity(
-					Context &,
-					const trdk::Lib::Symbol &)
-				const;
+		virtual trdk::Security & CreateSecurity(const trdk::Lib::Symbol &);
 
 	private:
 

@@ -84,9 +84,7 @@ namespace trdk {
 		/** @sa trdk::MarketDataSource::FindSecurity
 		  * @sa trdk::MarketDataSource::GetActiveSecurityCount
 		  */
-		trdk::Security & GetSecurity(
-					trdk::Context &,
-					const trdk::Lib::Symbol &);
+		trdk::Security & GetSecurity(const trdk::Lib::Symbol &);
 
 		//! Finds security.
 		/** @sa trdk::MarketDataSource::GetSecurity
@@ -105,11 +103,7 @@ namespace trdk {
 
 	protected:
 
-		virtual trdk::Security & CreateSecurity(
-					trdk::Context &,
-					const trdk::Lib::Symbol &)
-				const
-				= 0;
+		virtual trdk::Security & CreateSecurity(const trdk::Lib::Symbol &) = 0;
 
 	private:
 

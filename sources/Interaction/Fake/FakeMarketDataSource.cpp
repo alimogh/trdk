@@ -105,12 +105,9 @@ void Fake::MarketDataSource::NotificationThread() {
 
 }
 
-Security & Fake::MarketDataSource::CreateSecurity(
-			Context &context,
-			const Symbol &symbol)
-		const {
+Security & Fake::MarketDataSource::CreateSecurity(const Symbol &symbol) {
 	auto result = boost::shared_ptr<Security>(
-		new Security(context, symbol, *this));
+		new Security(GetContext(), symbol, *this));
 	const_cast<MarketDataSource *>(this)
 		->m_securityList.push_back(result);
 	return *result;

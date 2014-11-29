@@ -155,12 +155,9 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 
 	protected:
 
-		virtual trdk::Security & CreateSecurity(
-					Context &context,
-					const Symbol &symbol)
-				const {
+		virtual trdk::Security & CreateSecurity(const Symbol &symbol) {
 			boost::shared_ptr<HotspotSecurity> result(
-				new HotspotSecurity(context, symbol, *this));
+				new HotspotSecurity(GetContext(), symbol, *this));
 			auto securities(m_securities);
 			Assert(
 				securities.find(result->GetSymbol().GetSymbol())

@@ -52,7 +52,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -77,6 +76,7 @@
     <ClInclude Include="FixSecurity.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="OnixsFixConnector.def">

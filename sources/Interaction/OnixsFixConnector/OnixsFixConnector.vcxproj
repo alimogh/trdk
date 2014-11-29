@@ -53,7 +53,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C86383E0-0A73-41E0-8263-9E05B608CE55}</ProjectGuid>
     <RootNamespace>OnixsFixConnector</RootNamespace>
-    <ProjectName>OnixS FIX Connector</ProjectName>
+    <ProjectName>OnixS FIX connector</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">

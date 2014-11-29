@@ -145,9 +145,7 @@ const std::string & MarketDataSource::GetStringId() const throw() {
 	return m_pimpl->m_stringId;
 }
 
-Security & MarketDataSource::GetSecurity(
-			Context &context,
-			const Symbol &symbol) {
+Security & MarketDataSource::GetSecurity(const Symbol &symbol) {
 	trdk::Security *result = FindSecurity(symbol);
 	if (result) {
 		return *result;
@@ -158,11 +156,11 @@ Security & MarketDataSource::GetSecurity(
 		if (result) {
 			return *result;
 		}
-		auto &newSecurity = CreateSecurity(context, symbol);
+		auto &newSecurity = CreateSecurity(symbol);
 		m_pimpl->m_securities[symbol] = &newSecurity;
 		result = &newSecurity;
 	}
-	context.GetLog().Debug("Loaded security \"%1%\".", *result);
+	GetLog().Debug("Loaded security \"%1%\".", *result);
 	return *result;
 }
 

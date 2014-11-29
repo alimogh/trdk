@@ -878,7 +878,7 @@ private:
 				m_context.ForEachMarketDataSource([&](
 							MarketDataSource &source)
 						-> bool {
-					auto &security = source.GetSecurity(m_context, symbol);
+					auto &security = source.GetSecurity(symbol);
 					try {
 						instance->RegisterSource(security);
 					} catch (...) {
@@ -1462,7 +1462,7 @@ private:
 					[&](MarketDataSource &source) -> bool {
 						Security *security = nullptr;
 						if (symbol) {
-							security = &source.GetSecurity(m_context, symbol);
+							security = &source.GetSecurity(symbol);
 						}
 						if (!uniqueInstance) {
 							ForEachModuleInstance(
@@ -1519,7 +1519,7 @@ private:
 					if (source != i->GetSource()) {
 						return true;
 					}
-					callback(source.GetSecurity(m_context, i->GetSymbol()));
+					callback(source.GetSecurity(i->GetSymbol()));
 					return true;
 				});
 			
