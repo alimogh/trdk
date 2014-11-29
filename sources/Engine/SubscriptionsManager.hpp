@@ -69,6 +69,10 @@ namespace trdk { namespace Engine {
 		void Activate();
 		void Suspend();
 
+		void SyncDispatching() {
+			m_dispatcher.SyncDispatching();
+		}
+
 	private:
 
 		void SubscribeToLevel1Updates(

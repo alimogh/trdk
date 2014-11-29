@@ -39,13 +39,22 @@ namespace trdk { namespace Engine {
 
 	private:
 
-		typedef  DispatcherConcurrencyPolicy::Mutex EventQueueMutex;
-		typedef  DispatcherConcurrencyPolicy::Lock EventQueueLock;
-		typedef  DispatcherConcurrencyPolicy::Condition EventQueueCondition;
+		typedef DispatcherConcurrencyPolicy::Mutex EventQueueMutex;
+		typedef DispatcherConcurrencyPolicy::Lock EventQueueLock;
+		typedef DispatcherConcurrencyPolicy::Condition EventQueueCondition;
 
 		struct EventListsSyncObjects {
+			
 			EventQueueMutex mutex;
 			EventQueueCondition newDataCondition;
+			EventQueueCondition syncCondition;
+			bool isSyncRequired;
+
+			EventListsSyncObjects()
+				: isSyncRequired(false) {
+				//...//
+			}
+
 		};
 
 		template<typename ListT>
@@ -83,6 +92,17 @@ namespace trdk { namespace Engine {
 						boost::shared_ptr<EventListsSyncObjects> &sync) {
 				Assert(!m_sync);
 				m_sync = sync;
+			}
+
+			void Sync() {
+				Assert(m_sync);
+				Lock lock(m_sync->mutex);
+				if (m_lists.first.empty() && m_lists.second.empty()) {
+					return;
+				}
+				m_sync->isSyncRequired = true;
+				m_sync->syncCondition.wait(lock);
+				Assert(!m_sync->isSyncRequired);
 			}
 
 			const char * GetName() const {
@@ -154,6 +174,7 @@ namespace trdk { namespace Engine {
 					|| m_current == &m_lists.second);
 
 				size_t heavyLoadsCount = 0;
+				bool isSyncRequired = false;
 				while (
 						!m_current->empty()
 						&& m_taksState == TASK_STATE_ACTIVE) {
@@ -180,6 +201,15 @@ namespace trdk { namespace Engine {
 					lock.lock();
 					timeMeasurement.Measure(Lib::TimeMeasurement::DM_COMPLETE_LIST);
 
+					if (isSyncRequired) {
+						Assert(m_sync->isSyncRequired);
+						m_sync->isSyncRequired = false;
+						m_sync->syncCondition.notify_all();
+					} else {
+						isSyncRequired = m_sync->isSyncRequired;
+					}
+
+					
 				}
 
 				return heavyLoadsCount > 0;
@@ -281,6 +311,16 @@ namespace trdk { namespace Engine {
 
 		void Activate();
 		void Suspend();
+
+		void SyncDispatching() {
+			m_bookUpdateTicks.Sync();
+			m_newBars.Sync();
+			m_brokerPositionsUpdates.Sync();
+			m_positionsUpdates.Sync();
+			m_level1Updates.Sync();
+			m_newTrades.Sync();
+			m_level1Ticks.Sync();
+		}
 
 	public:
 

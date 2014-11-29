@@ -677,6 +677,22 @@ Security::BookUpdateOperation::GetOffers() {
 	return m_pimpl->m_offers.operations;
 }
 
+void Security::BookUpdateOperation::Update(const BookUpdateTick &update) {
+	switch (update.side) {
+		case ORDER_SIDE_BID:
+			m_pimpl->m_bids.storage.updates.push_back(
+				boost::make_tuple(update.action, update.price, update.qty));
+			break;
+		case ORDER_SIDE_OFFER:
+			m_pimpl->m_offers.storage.updates.push_back(
+				boost::make_tuple(update.action, update.price, update.qty));
+			break;
+		default:
+			AssertEq(ORDER_SIDE_BID, update.side);
+			break;
+	}
+}
+
 void Security::BookUpdateOperation::Commit(
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	

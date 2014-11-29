@@ -344,6 +344,10 @@ void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
 
 }
 
+void Engine::Context::SyncDispatching() {
+	m_pimpl->m_state->subscriptionsManager.SyncDispatching();
+}
+
 size_t Engine::Context::GetMarketDataSourcesCount() const {
 	return m_pimpl->m_marketDataSources.size();
 }

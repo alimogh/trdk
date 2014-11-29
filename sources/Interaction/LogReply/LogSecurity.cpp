@@ -85,6 +85,12 @@ const pt::ptime & LogSecurity::GetCurrentTime() const {
 }
 
 bool LogSecurity::Accept() {
+	if (m_currentTick) {
+		BookUpdateOperation book = StartBookUpdate();
+		book.Update(*m_currentTick);
+		book.Commit(GetContext().StartStrategyTimeMeasurement());
+		m_currentTick.reset();
+	}
 	return Read();
 }
 
@@ -103,14 +109,68 @@ bool LogSecurity::Read() {
 
 	const auto currentTime = pt::time_from_string(&buffer[0]);
 	
+	m_file.getline(buffer, sizeof(buffer), '\t');
+	if (
+			strlen(buffer) != 1
+			|| (buffer[0] != '+'
+				&& buffer[0] != '-'
+				&& buffer[0] != '=')) {
+		GetSource().GetLog().Error(
+			"Failed to read log file to replay \"%1%\":"
+				" wrong format at record %2%.",
+			*this,
+			m_readCount + 1);
+		m_isEof = true;
+		return false;
+	}
+	BookUpdateTick tick = {};
+	tick.action = buffer[0] == '+'
+		?	BOOK_UPDATE_ACTION_NEW
+		:	buffer[0] == '='
+			?	BOOK_UPDATE_ACTION_UPDATE
+			:	BOOK_UPDATE_ACTION_DELETE;
+
+	m_file.getline(buffer, sizeof(buffer), '\t');
+	if (strlen(buffer) != 1 || (buffer[0] != 'o' && buffer[0] != 'b')) {
+		GetSource().GetLog().Error(
+			"Failed to read log file to replay \"%1%\":"
+				" wrong format at record %2%.",
+			*this,
+			m_readCount + 1);
+		m_isEof = true;
+		return false;
+	}
+	tick.side = buffer[0] == 'o' ? ORDER_SIDE_OFFER : ORDER_SIDE_BID;
+
+	m_file.getline(buffer, sizeof(buffer), '\t');
+	try {
+		tick.price = boost::lexical_cast<ScaledPrice>(&buffer[0]);
+	} catch (const boost::bad_lexical_cast &) {
+		GetSource().GetLog().Error(
+			"Failed to read log file to replay \"%1%\":"
+				" wrong format at record %2%.",
+			*this,
+			m_readCount + 1);
+		m_isEof = true;
+		return false;
+	}
+
 	m_file.getline(buffer, sizeof(buffer));
-	if (!buffer[0]) {
+	try {
+		tick.qty = boost::lexical_cast<Qty>(&buffer[0]);
+	} catch (const boost::bad_lexical_cast &) {
+		GetSource().GetLog().Error(
+			"Failed to read log file to replay \"%1%\":"
+				" wrong format at record %2%.",
+			*this,
+			m_readCount + 1);
 		m_isEof = true;
 		return false;
 	}
 
 	++m_readCount;
 	m_currentTime = currentTime;
+	m_currentTick = tick;
 
 	return true;
 

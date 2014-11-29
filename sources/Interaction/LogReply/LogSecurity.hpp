@@ -50,6 +50,8 @@ namespace trdk {  namespace Interaction { namespace LogReply {
 		const std::ifstream::streampos m_dataStartPos;
 
 		boost::posix_time::ptime m_currentTime;
+		boost::optional<BookUpdateTick> m_currentTick;
+
 		bool m_isEof;
 
 		size_t m_readCount;

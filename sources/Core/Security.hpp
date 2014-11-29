@@ -139,6 +139,8 @@ namespace trdk {
 			Side & GetBids();
 			Side & GetOffers();
 		public:
+			void Update(const trdk::BookUpdateTick &);
+		public:
 			void Commit(const trdk::Lib::TimeMeasurement::Milestones &);
 		private:
 			class Implementation;
