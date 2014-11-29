@@ -51,8 +51,8 @@ namespace trdk {
 		/** Information from broker, not relevant to trdk::Position.
 		  */
 		typedef void (BrokerPositionUpdateSlotSignature)(
-					trdk::Qty,
-					bool isInitial);
+				trdk::Qty,
+				bool isInitial);
 		typedef boost::function<BrokerPositionUpdateSlotSignature>
 			BrokerPositionUpdateSlot;
 		typedef boost::signals2::connection BrokerPositionUpdateSlotConnection;
@@ -99,6 +99,51 @@ namespace trdk {
 		typedef void (NewBarSlotSignature)(const Bar &);
 		typedef boost::function<NewBarSlotSignature> NewBarSlot;
 		typedef boost::signals2::connection NewBarSlotConnection;
+
+		typedef void (BookUpdateTickSlotSignature)(
+				const BookUpdateTick &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
+		typedef boost::function<BookUpdateTickSlotSignature> BookUpdateTickSlot;
+		typedef boost::signals2::connection BookUpdateTickSlotConnection;
+
+		class TRDK_CORE_API BookUpdateOperation : private boost::noncopyable {
+			friend class trdk::Security;
+		private:
+			class Storage;
+		public:
+			class TRDK_CORE_API Side : private boost::noncopyable {
+				friend class trdk::Security::BookUpdateOperation;
+			public:
+				explicit Side(
+						trdk::Security &,
+						trdk::Security::BookUpdateOperation::Storage &);
+			public:
+				trdk::Security & GetSecurity();
+			public:
+				void Add(const trdk::ScaledPrice &, const trdk::Qty &);
+				void Add(double price, const trdk::Qty &);
+				void Update(const trdk::ScaledPrice &, const trdk::Qty &);
+				void Update(double price, const trdk::Qty &);
+				void Delete(const trdk::ScaledPrice &);
+				void Delete(double price);
+			private:
+				trdk::Security &m_security;
+				trdk::Security::BookUpdateOperation::Storage &m_storage;
+			};
+		private:
+			explicit BookUpdateOperation(trdk::Security &);
+		public:
+			BookUpdateOperation(BookUpdateOperation &&);
+			~BookUpdateOperation();
+		public:
+			Side & GetBids();
+			Side & GetOffers();
+		public:
+			void Commit(const trdk::Lib::TimeMeasurement::Milestones &);
+		private:
+			class Implementation;
+			Implementation *m_pimpl;
+		};
 
 	public:
 
@@ -164,16 +209,24 @@ namespace trdk {
 	public:
 
 		Level1UpdateSlotConnection SubscribeToLevel1Updates(
-					const Level1UpdateSlot &)
+				const Level1UpdateSlot &)
 				const;
+		
 		Level1UpdateSlotConnection SubscribeToLevel1Ticks(
-					const Level1TickSlot &)
+				const Level1TickSlot &)
 				const;
+		
 		NewTradeSlotConnection SubscribeToTrades(const NewTradeSlot &) const;
+		
 		BrokerPositionUpdateSlotConnection SubscribeToBrokerPositionUpdates(
-					const BrokerPositionUpdateSlot &)
+				const BrokerPositionUpdateSlot &)
 				const;
+		
 		NewBarSlotConnection SubscribeToBars(const NewBarSlot &) const;
+		
+		BookUpdateTickSlotConnection SubscribeToBookUpdateTicks(
+				const BookUpdateTickSlot &)
+				const;
 
 	protected:
 
@@ -276,6 +329,8 @@ namespace trdk {
 		  * @param isInitial	true if it initial data at start.
 		  */
 		void SetBrokerPosition(trdk::Qty qty, bool isInitial);
+
+		trdk::Security::BookUpdateOperation StartBookUpdate();
 
 	private:
 

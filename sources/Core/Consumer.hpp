@@ -76,10 +76,15 @@ namespace trdk {
 	public:
 
 		void RaiseBrokerPositionUpdateEvent(
-					trdk::Security &,
-					trdk::Qty,
-					bool isInitial);
+				trdk::Security &,
+				trdk::Qty,
+				bool isInitial);
+
 		void RaiseNewBarEvent(trdk::Security &, const trdk::Security::Bar &);
+
+		void RaiseBookUpdateTickEvent(
+				trdk::Security &,
+				const trdk::BookUpdateTick &);
 
 	private:
 

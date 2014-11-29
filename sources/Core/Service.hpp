@@ -26,9 +26,9 @@ namespace trdk {
 	public:
 
 		explicit Service(
-				trdk::Context &,
-				const std::string &name,
-				const std::string &tag);
+			trdk::Context &,
+			const std::string &name,
+			const std::string &tag);
 		virtual ~Service();
 
 	public:
@@ -38,21 +38,21 @@ namespace trdk {
 		  * boost::posix_time::not_a_date_time.
 		  */
 		virtual boost::posix_time::ptime OnSecurityStart(
-					const trdk::Security &);
+				const trdk::Security &);
 
 		virtual bool OnLevel1Update(const trdk::Security &);
 
 		virtual bool OnLevel1Tick(
-					const trdk::Security &,
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &);
+				const trdk::Security &,
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &);
 
 		virtual bool OnNewTrade(
-					const trdk::Security &,
-					const boost::posix_time::ptime &,
-					trdk::ScaledPrice,
-					trdk::Qty,
-					trdk::OrderSide);
+				const trdk::Security &,
+				const boost::posix_time::ptime &,
+				trdk::ScaledPrice,
+				trdk::Qty,
+				trdk::OrderSide);
 
 		virtual bool OnServiceDataUpdate(const trdk::Service &);
 		
@@ -63,13 +63,18 @@ namespace trdk {
 		  * @param isInitial	true if it initial data at start.
 		  */
 		virtual bool OnBrokerPositionUpdate(
-					trdk::Security &security,
-					trdk::Qty qty,
-					bool isInitial);
+				trdk::Security &security,
+				trdk::Qty qty,
+				bool isInitial);
 
 		virtual bool OnNewBar(
-					const trdk::Security &,
-					const trdk::Security::Bar &);
+				const trdk::Security &,
+				const trdk::Security::Bar &);
+
+		virtual bool OnBookUpdateTick(
+				const trdk::Security &,
+				const trdk::BookUpdateTick &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	public:
 
@@ -85,23 +90,27 @@ namespace trdk {
 
 		bool RaiseLevel1UpdateEvent(const trdk::Security &);
 		bool RaiseLevel1TickEvent(
-					const trdk::Security &,
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &);
+				const trdk::Security &,
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &);
 		bool RaiseNewTradeEvent(
-					const trdk::Security &,
-					const boost::posix_time::ptime &,
-					trdk::ScaledPrice,
-					trdk::Qty,
-					trdk::OrderSide);
+				const trdk::Security &,
+				const boost::posix_time::ptime &,
+				trdk::ScaledPrice,
+				trdk::Qty,
+				trdk::OrderSide);
 		bool RaiseServiceDataUpdateEvent(const trdk::Service &);
 		bool RaiseBrokerPositionUpdateEvent(
-					trdk::Security &security,
-					trdk::Qty qty,
-					bool isInitial);
+				trdk::Security &security,
+				trdk::Qty qty,
+				bool isInitial);
 		bool RaiseNewBarEvent(
-					const trdk::Security &,
-					const trdk::Security::Bar &);
+				const trdk::Security &,
+				const trdk::Security::Bar &);
+		bool RaiseBookUpdateTickEvent(
+				const trdk::Security &,
+				const trdk::BookUpdateTick &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	private:
 

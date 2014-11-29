@@ -108,6 +108,7 @@ ${OBJECTDIR}/SubscriptionsManager.o: SubscriptionsManager.cpp
 	cd ../Interaction/OnixsFixConnector && ${MAKE}  -f Makefile CONF=Release
 	cd ../Strategies/FxMb && ${MAKE}  -f Makefile CONF=Release
 	cd ../Interaction/OnixsHotspot && ${MAKE}  -f Makefile CONF=Release
+	cd ../Services && ${MAKE}  -f Makefile CONF=Release
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
@@ -121,6 +122,7 @@ ${OBJECTDIR}/SubscriptionsManager.o: SubscriptionsManager.cpp
 	cd ../Interaction/OnixsFixConnector && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Strategies/FxMb && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Interaction/OnixsHotspot && ${MAKE}  -f Makefile CONF=Release clean
+	cd ../Services && ${MAKE}  -f Makefile CONF=Release clean
 
 # Enable dependency checking
 .dep.inc: .depcheck-impl

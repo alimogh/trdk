@@ -34,7 +34,7 @@ namespace {
 			private boost::noncopyable {
 	public:
 		explicit RaiseServiceDataUpdateEventVisitor(const Service &service)
-				: m_service(service) {
+			: m_service(service) {
 			//...//
 		}
 	public:		
@@ -82,7 +82,7 @@ namespace {
 	};
 	template<>
 	bool AvailabilityCheckVisitor::operator ()(
-				const Strategy &strategy)
+			const Strategy &strategy)
 			const {
 		return !strategy.IsBlocked();
 	}
@@ -137,8 +137,8 @@ void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
 		explicit Visitor(
 					Security &security,
 					TimeMeasurement::Milestones &timeMeasurement)
-				: m_security(security),
-				m_timeMeasurement(timeMeasurement) {
+			: m_security(security),
+			m_timeMeasurement(timeMeasurement) {
 			//...//
 		}
 	public:
@@ -169,7 +169,7 @@ void SubscriberPtrWrapper::RaiseLevel1TickEvent(const Level1Tick &tick) const {
 			private boost::noncopyable {
 	public:		
 		explicit Visitor(const Level1Tick &tick)
-				: m_tick(tick) {
+			: m_tick(tick) {
 			//...//
 		}
 	public:
@@ -180,7 +180,8 @@ void SubscriberPtrWrapper::RaiseLevel1TickEvent(const Level1Tick &tick) const {
 				m_tick.value);
 		}
 		void operator ()(Service &service) const {
-			if (	service.RaiseLevel1TickEvent(
+			if (	
+					service.RaiseLevel1TickEvent(
 						*m_tick.security,
 						m_tick.time,
 						m_tick.value)) {
@@ -208,7 +209,7 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(const Trade &trade) const {
 			private boost::noncopyable {
 	public:		
 		explicit Visitor(const Trade &trade)
-				: m_trade(trade) {
+			: m_trade(trade) {
 			//...//
 		}
 	public:
@@ -221,7 +222,8 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(const Trade &trade) const {
 				m_trade.side);
 		}
 		void operator ()(Service &service) const {
-			if (	service.RaiseNewTradeEvent(
+			if (	
+					service.RaiseNewTradeEvent(
 						*m_trade.security,
 						m_trade.time,
 						m_trade.price,
@@ -253,7 +255,7 @@ void SubscriberPtrWrapper::RaisePositionUpdateEvent(Position &position) const {
 			private boost::noncopyable {
 	public:		
 		explicit Visitor(Position &position)
-				: m_position(position) {
+			: m_position(position) {
 			//...//
 		}
 	public:
@@ -287,7 +289,7 @@ void SubscriberPtrWrapper::RaiseBrokerPositionUpdateEvent(
 			private boost::noncopyable {
 	public:		
 		explicit Visitor(const BrokerPosition &position)
-				: m_position(position) {
+			: m_position(position) {
 			//...//
 		}
 	public:
@@ -298,7 +300,8 @@ void SubscriberPtrWrapper::RaiseBrokerPositionUpdateEvent(
 				m_position.isInitial);
 		}
 		void operator ()(Service &service) const {
-			if (	service.RaiseBrokerPositionUpdateEvent(
+			if (	
+					service.RaiseBrokerPositionUpdateEvent(
 						*m_position.security,
 						m_position.qty,
 						m_position.isInitial)) {
@@ -320,8 +323,8 @@ void SubscriberPtrWrapper::RaiseBrokerPositionUpdateEvent(
 }
 
 void SubscriberPtrWrapper::RaiseNewBarEvent(
-			Security &security,
-			const Security::Bar &bar)
+		Security &security,
+		const Security::Bar &bar)
 		const {
 
 	class Visitor
@@ -329,10 +332,10 @@ void SubscriberPtrWrapper::RaiseNewBarEvent(
 			private boost::noncopyable {
 	public:		
 		explicit Visitor(
-					Security &security,
-					const Security::Bar &bar)
-				: m_source(security),
-				m_bar(bar) {
+				Security &security,
+				const Security::Bar &bar)
+			: m_source(security),
+			m_bar(bar) {
 			//...//
 		}
 	public:
@@ -353,6 +356,52 @@ void SubscriberPtrWrapper::RaiseNewBarEvent(
 	};
 
 	boost::apply_visitor(Visitor(security, bar), m_subscriber);
+
+}
+
+void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
+		Security &security,
+		const BookUpdateTick &tick,
+		const TimeMeasurement::Milestones &timeMeasurement) {
+	
+	class Visitor
+			: public boost::static_visitor<void>,
+			private boost::noncopyable {
+	public:		
+		explicit Visitor(
+				Security &security,
+				const BookUpdateTick &tick,
+				const TimeMeasurement::Milestones &timeMeasurement)
+			: m_source(security),
+			m_tick(tick),
+			m_timeMeasurement(timeMeasurement) {
+			//...//
+		}
+	public:
+		void operator ()(Strategy &) const {
+			AssertFail("Not supported.");
+		}
+		void operator ()(Service &service) const {
+			if (
+					service.RaiseBookUpdateTickEvent(
+						m_source,
+						m_tick,
+						m_timeMeasurement)) {
+				RaiseServiceDataUpdateEvent(service);
+			}
+		}
+		void operator ()(Observer &) const {
+			AssertFail("Not supported.");
+		}
+	private:
+		Security &m_source;
+		const BookUpdateTick &m_tick;
+		const TimeMeasurement::Milestones &m_timeMeasurement;
+	};
+
+	boost::apply_visitor(
+		Visitor(security, tick, timeMeasurement),
+		m_subscriber);
 
 }
 

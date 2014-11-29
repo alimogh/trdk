@@ -101,7 +101,7 @@ void FixStream::SubscribeToSecurities() {
 			fix::FIX42::Values::SubscriptionRequestType::Snapshot__plus__Updates);
 		mdRequest.set(
 			fix::FIX42::Tags::MarketDepth,
-			fix::FIX42::Values::MarketDepth::Top_of_Book);
+			fix::FIX42::Values::MarketDepth::Full_Book);
 		mdRequest.set(
 			fix::FIX42::Tags::MDUpdateType,
 			fix::FIX42::Values::MDUpdateType::Incremental_Refresh);
@@ -195,44 +195,45 @@ void FixStream::onInboundApplicationMsg(
 			message.get(fix::FIX42::Tags::MDReqRejReason));
 
 	} else if (message.type() == "X") {
-	
+
 		FixSecurity *const security = FindRequestSecurity(message);
 		if (!security) {
 			return;
 		}
 		
+		FixSecurity::BookUpdateOperation book = security->StartBookUpdate();
+
 		const fix::Group &entries
 			= message.getGroup(fix::FIX42::Tags::NoMDEntries);
+		AssertLt(0, entries.size());
 		for (size_t i = 0; i < entries.size(); ++i) {
 			
 			const auto &entry = entries[i];
-
-			const bool isDelete
-				=	entry.get(fix::FIX42::Tags::MDUpdateAction)
-						== fix::FIX42::Values::MDUpdateAction::Delete;
+			const auto &entryType = entry.get(fix::FIX42::Tags::MDEntryType);
+			Assert(
+				entryType == fix::FIX42::Values::MDEntryType::Bid
+					|| entryType == fix::FIX42::Values::MDEntryType::Offer);
+			FixSecurity::BookUpdateOperation::Side &side
+				= entryType == fix::FIX42::Values::MDEntryType::Bid
+						?	book.GetBids()
+						:	book.GetOffers();
 
 			const auto price = entry.getDouble(fix::FIX42::Tags::MDEntryPx);
-			const auto qty = ParseMdEntrySize(entry);
-			
-			const auto &entryType = entry.get(fix::FIX42::Tags::MDEntryType);
-			if (entryType == fix::FIX42::Values::MDEntryType::Bid) {
-				if (!isDelete) {
-					security->SetBid(price, qty, timeMeasurement);
-				} else {
-					security->SetBid(0, 0, timeMeasurement);
-				}
-			} else if (entryType == fix::FIX42::Values::MDEntryType::Offer) {
-				if (!isDelete) {
-					security->SetOffer(price, qty, timeMeasurement);
-				} else {
-					security->SetOffer(0, 0, timeMeasurement);
-				}
+			const auto &action = entry.get(fix::FIX42::Tags::MDUpdateAction);
+			if (action == fix::FIX42::Values::MDUpdateAction::Change) {
+				side.Update(price, ParseMdEntrySize(entry));
+			} else if (action == fix::FIX42::Values::MDUpdateAction::New) {
+				side.Add(price, ParseMdEntrySize(entry));
+			} else  if (action == fix::FIX42::Values::MDUpdateAction::Delete) {
+				side.Delete(price);
 			} else {
 				AssertFail("Unknown entry type.");
 				continue;
 			}
 
 		}
+
+		book.Commit(timeMeasurement);
 
 	}
 }

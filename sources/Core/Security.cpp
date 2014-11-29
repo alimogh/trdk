@@ -62,7 +62,7 @@ Security::Bar::Bar(
 	//...//
 }
 
-//////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 class Security::Implementation : private boost::noncopyable {
 
@@ -77,6 +77,8 @@ public:
 	mutable boost::signals2::signal<BrokerPositionUpdateSlotSignature>
 		m_brokerPositionUpdateSignal;
 	mutable boost::signals2::signal<NewBarSlotSignature> m_barSignal;
+	mutable boost::signals2::signal<BookUpdateTickSlotSignature>
+		m_bookUpdateTickSignal;
 
 	Level1 m_level1;
 	boost::atomic<Qty> m_brokerPosition;
@@ -349,6 +351,11 @@ Security::NewBarSlotConnection Security::SubscribeToBars(
 	return m_pimpl->m_barSignal.connect(slot);
 }
 
+Security::BookUpdateTickSlotConnection
+Security::SubscribeToBookUpdateTicks(const BookUpdateTickSlot &slot) const {
+	return m_pimpl->m_bookUpdateTickSignal.connect(slot);
+}
+
 bool Security::IsLevel1Required() const {
 	return IsLevel1UpdatesRequired() || IsLevel1TicksRequired();
 }
@@ -561,6 +568,137 @@ void Security::SetBrokerPosition(trdk::Qty qty, bool isInitial) {
 		return;
 	}
 	m_pimpl->m_brokerPositionUpdateSignal(qty, isInitial);
+}
+
+Security::BookUpdateOperation Security::StartBookUpdate() {
+	return BookUpdateOperation(*this);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+class Security::BookUpdateOperation::Storage : private boost::noncopyable {
+
+public:
+
+	std::vector<boost::tuple<BookUpdateAction, ScaledPrice, Qty>> updates;
+
+};
+
+class Security::BookUpdateOperation::Implementation
+		: private boost::noncopyable {
+
+public:
+
+	struct Side {
+
+		BookUpdateOperation::Storage storage;
+		BookUpdateOperation::Side operations;
+
+		explicit Side(Security &security)
+			: operations(security, storage) {
+			//...//
+		}
+
+	};
+	
+	Side m_bids;
+	Side m_offers;
+
+	explicit Implementation(Security &security)
+		: m_bids(security),
+		m_offers(security) {
+		//...//
+	}
+
+};
+
+Security::BookUpdateOperation::Side::Side(
+		Security &security,
+		Security::BookUpdateOperation::Storage &storage)
+	: m_security(security),
+	m_storage(storage) {
+	//...//
+}
+
+Security & Security::BookUpdateOperation::Side::GetSecurity() {
+	return m_security;
+}
+
+void Security::BookUpdateOperation::Side::Add(
+		const ScaledPrice &price,
+		const Qty &qty) {
+	m_storage.updates.push_back(
+		boost::make_tuple(BOOK_UPDATE_ACTION_NEW, price, qty));
+}
+void Security::BookUpdateOperation::Side::Add(
+		double price,
+		const trdk::Qty &qty) {
+	Add(m_security.ScalePrice(price), qty);
+}
+
+void Security::BookUpdateOperation::Side::Update(
+		const ScaledPrice &price,
+		const Qty &qty) {
+	m_storage.updates.push_back(
+		boost::make_tuple(BOOK_UPDATE_ACTION_UPDATE, price, qty));
+}
+void Security::BookUpdateOperation::Side::Update(double price, const Qty &qty) {
+	Update(m_security.ScalePrice(price), qty);
+}
+
+void Security::BookUpdateOperation::Side::Delete(const ScaledPrice &price) {
+	m_storage.updates.push_back(
+		boost::make_tuple(BOOK_UPDATE_ACTION_DELETE, price, 0));
+}
+void Security::BookUpdateOperation::Side::Delete(double price) {
+	Delete(m_security.ScalePrice(price));
+}
+
+Security::BookUpdateOperation::BookUpdateOperation(Security &security)
+	: m_pimpl(new Implementation(security)) {
+	//...//
+}
+
+Security::BookUpdateOperation::BookUpdateOperation(BookUpdateOperation &&rhs)
+	: m_pimpl(rhs.m_pimpl) {
+	rhs.m_pimpl = nullptr;
+}
+
+Security::BookUpdateOperation::~BookUpdateOperation() {
+	delete m_pimpl;
+}
+
+Security::BookUpdateOperation::Side & Security::BookUpdateOperation::GetBids() {
+	return m_pimpl->m_bids.operations;
+}
+
+Security::BookUpdateOperation::Side &
+Security::BookUpdateOperation::GetOffers() {
+	return m_pimpl->m_offers.operations;
+}
+
+void Security::BookUpdateOperation::Commit(
+		const TimeMeasurement::Milestones &timeMeasurement) {
+	
+	const auto &signal = [&](
+				const OrderSide &side,
+				Implementation::Side &sideData) {
+		const auto &bookUpdateTickSignal
+			= sideData.operations.GetSecurity().m_pimpl->m_bookUpdateTickSignal;
+		foreach (const auto &update, sideData.storage.updates) {
+			const BookUpdateTick tick = {
+				boost::get<0>(update),
+				side,
+				boost::get<1>(update),
+				boost::get<2>(update),
+			};
+			bookUpdateTickSignal(tick, timeMeasurement);
+		}
+	};
+
+	signal(ORDER_SIDE_BID, m_pimpl->m_bids);
+	signal(ORDER_SIDE_OFFER, m_pimpl->m_offers);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

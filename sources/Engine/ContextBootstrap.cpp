@@ -392,6 +392,7 @@ namespace {
 	enum SystemService {
 		SYSTEM_SERVICE_LEVEL1_UPDATES,
 		SYSTEM_SERVICE_LEVEL1_TICKS,
+		SYSTEM_SERVICE_BOOK_UPDATE_TICKS,
 		SYSTEM_SERVICE_TRADES,
 		SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES,
 		SYSTEM_SERVICE_BARS,
@@ -804,10 +805,11 @@ private:
 			conf);
 
 		static_assert(
-			numberOfSystemServices == 5,
+			numberOfSystemServices == 6,
 			"System service list changed.");
 		if (	boost::iequals(tag, Constants::Services::level1Updates)
 				|| boost::iequals(tag, Constants::Services::level1Ticks)
+				|| boost::iequals(tag, Constants::Services::bookUpdateTicks)
 				|| boost::iequals(tag, Constants::Services::trades)
 				|| boost::iequals(
 						tag,
@@ -886,9 +888,9 @@ private:
 							__LINE__);
 						throw Exception("Failed to attach security");
 					}
-					std::ostringstream oss;
-					oss << security;
-					securities.push_back(oss.str());
+					boost::format securityStr("%1% from %2%");
+					securityStr % security % security.GetSource().GetTag();
+					securities.push_back(securityStr.str());
 					return true;
 				});
 			}
@@ -1059,7 +1061,8 @@ private:
 					const SupplierRequest &request,
 					Module *uniqueInstance) {
 			typedef ModuleTrait<Module> Trait;
-			if (	boost::iequals(
+			if (
+					boost::iequals(
 						request.tag,
 						Constants::Services::level1Updates)) {
 				UpdateRequirementsList(
@@ -1069,9 +1072,10 @@ private:
 					SYSTEM_SERVICE_LEVEL1_UPDATES,
 					request,
 					result);
-			} else if (	boost::iequals(
-							request.tag,
-							Constants::Services::level1Ticks)) {
+			} else if (
+					boost::iequals(
+						request.tag,
+						Constants::Services::level1Ticks)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
@@ -1079,9 +1083,21 @@ private:
 					SYSTEM_SERVICE_LEVEL1_TICKS,
 					request,
 					result);
-			} else if (	boost::iequals(
-							request.tag,
-							Constants::Services::trades)) {
+			} else if (
+					boost::iequals(
+						request.tag,
+						Constants::Services::bookUpdateTicks)) {
+				UpdateRequirementsList(
+					Trait::GetType(),
+					tag,
+					uniqueInstance,
+					SYSTEM_SERVICE_BOOK_UPDATE_TICKS,
+					request,
+					result);
+			} else if (
+					boost::iequals(
+						request.tag,
+						Constants::Services::trades)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
@@ -1089,9 +1105,10 @@ private:
 					SYSTEM_SERVICE_TRADES,
 					request,
 					result);
-			} else if (	boost::iequals(
-							request.tag,
-							Constants::Services::brokerPositionsUpdates)) {
+			} else if (
+					boost::iequals(
+						request.tag,
+						Constants::Services::brokerPositionsUpdates)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
@@ -1099,9 +1116,10 @@ private:
 					SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES,
 					request,
 					result);
-			} else if (	boost::iequals(
-							request.tag,
-							Constants::Services::bars)) {
+			} else if (
+					boost::iequals(
+						request.tag,
+						Constants::Services::bars)) {
 				UpdateRequirementsList(
 					Trait::GetType(),
 					tag,
@@ -1408,7 +1426,7 @@ private:
 			void (SubscriptionsManager::*subscribe)(Security &, Module &)
 				= nullptr;
 			static_assert(
-				numberOfSystemServices == 5,
+				numberOfSystemServices == 6,
 				"System service list changed.");
 			switch (requirement.first) {
 				case SYSTEM_SERVICE_LEVEL1_UPDATES:
@@ -1416,6 +1434,10 @@ private:
 					break;
 				case SYSTEM_SERVICE_LEVEL1_TICKS:
 					subscribe = &SubscriptionsManager::SubscribeToLevel1Ticks;
+					break;
+				case SYSTEM_SERVICE_BOOK_UPDATE_TICKS:
+					subscribe
+						= &SubscriptionsManager::SubscribeToBookUpdateTicks;
 					break;
 				case SYSTEM_SERVICE_TRADES:
 					subscribe = &SubscriptionsManager::SubscribeToTrades;
@@ -1485,16 +1507,19 @@ private:
 			pred(*i);
 		}
 	}
-	template<typename Pred>
+	template<typename Callback>
 	void ForEachSubscribedSecurity(
 				Service &module,
-				const Pred &pred) {
+				const Callback &callback) {
 		const auto begin = module.GetSecurities().GetBegin();
 		const auto end = module.GetSecurities().GetEnd();
 		for (auto i = begin; i != end; ++i) {
 			m_context.ForEachMarketDataSource(
 				[&](MarketDataSource &source) -> bool {
-					pred(source.GetSecurity(m_context, i->GetSymbol()));
+					if (source != i->GetSource()) {
+						return true;
+					}
+					callback(source.GetSecurity(m_context, i->GetSymbol()));
 					return true;
 				});
 			

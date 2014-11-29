@@ -59,6 +59,10 @@ namespace trdk { namespace Engine {
 		void SubscribeToBars(trdk::Security &, trdk::Service &);
 		void SubscribeToBars(trdk::Security &, trdk::Observer &);
 
+		void SubscribeToBookUpdateTicks(trdk::Security &, trdk::Strategy &);
+		void SubscribeToBookUpdateTicks(trdk::Security &, trdk::Service &);
+		void SubscribeToBookUpdateTicks(trdk::Security &, trdk::Observer &);
+
 	public:
 
 		bool IsActive() const;
@@ -68,25 +72,29 @@ namespace trdk { namespace Engine {
 	private:
 
 		void SubscribeToLevel1Updates(
-					Security &,		
-					const SubscriberPtrWrapper &,
-					std::list<boost::signals2::connection> &);
+				Security &,		
+				const SubscriberPtrWrapper &,
+				std::list<boost::signals2::connection> &);
 		void SubscribeToLevel1Ticks(
-					Security &,
-					const SubscriberPtrWrapper &,
-					std::list<boost::signals2::connection> &);
+				Security &,
+				const SubscriberPtrWrapper &,
+				std::list<boost::signals2::connection> &);
 		void SubscribeToTrades(
-					Security &,
-					const SubscriberPtrWrapper &,
-					std::list<boost::signals2::connection> &);
+				Security &,
+				const SubscriberPtrWrapper &,
+				std::list<boost::signals2::connection> &);
 		void SubscribeToBrokerPositionUpdates(
-					Security &,
-					const SubscriberPtrWrapper &,
-					std::list<boost::signals2::connection> &);
+				Security &,
+				const SubscriberPtrWrapper &,
+				std::list<boost::signals2::connection> &);
 		void SubscribeToBars(
-					Security &,
-					const SubscriberPtrWrapper &,
-					std::list<boost::signals2::connection> &);
+				Security &,
+				const SubscriberPtrWrapper &,
+				std::list<boost::signals2::connection> &);
+		void SubscribeToBookUpdateTicks(
+				Security &,
+				const SubscriberPtrWrapper &,
+				std::list<boost::signals2::connection> &);
 
 		void Subscribe(Security &, Strategy &, const SubscribeImpl &);
 		void Subscribe(Security &, Service &, const SubscribeImpl &);

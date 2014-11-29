@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="94">
+<configurationDescriptor version="95">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
@@ -119,16 +119,6 @@
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
-          <makeArtifact PL="../Gateway/Service"
-                        CT="2"
-                        CN="Debug"
-                        AC="true"
-                        BL="false"
-                        WD="../Gateway/Service"
-                        BC="${MAKE}  -f Makefile CONF=Debug"
-                        CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libService.${CND_DLIB_EXT}">
-          </makeArtifact>
           <makeArtifact PL="../Strategies/Test"
                         CT="2"
                         CN="Debug"
@@ -168,6 +158,16 @@
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsHotspot_dbg.${CND_DLIB_EXT}">
+          </makeArtifact>
+          <makeArtifact PL="../Services"
+                        CT="2"
+                        CN="Debug"
+                        AC="true"
+                        BL="true"
+                        WD="../Services"
+                        BC="${MAKE}  -f Makefile CONF=Debug"
+                        CC="${MAKE}  -f Makefile CONF=Debug clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libServices_dbg.${CND_DLIB_EXT}">
           </makeArtifact>
         </requiredProjects>
       </compileType>
@@ -293,16 +293,6 @@
                         CC="${MAKE}  -f Makefile CONF=Release clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFake.${CND_DLIB_EXT}">
           </makeArtifact>
-          <makeArtifact PL="../Gateway/Service"
-                        CT="2"
-                        CN="Release"
-                        AC="false"
-                        BL="false"
-                        WD="../Gateway/Service"
-                        BC="${MAKE}  -f Makefile CONF=Release"
-                        CC="${MAKE}  -f Makefile CONF=Release clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libService.${CND_DLIB_EXT}">
-          </makeArtifact>
           <makeArtifact PL="../Strategies/Test"
                         CT="2"
                         CN="Release"
@@ -342,6 +332,16 @@
                         BC="${MAKE}  -f Makefile CONF=Release"
                         CC="${MAKE}  -f Makefile CONF=Release clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsHotspot.${CND_DLIB_EXT}">
+          </makeArtifact>
+          <makeArtifact PL="../Services"
+                        CT="2"
+                        CN="Release"
+                        AC="false"
+                        BL="true"
+                        WD="../Services"
+                        BC="${MAKE}  -f Makefile CONF=Release"
+                        CC="${MAKE}  -f Makefile CONF=Release clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libServices.${CND_DLIB_EXT}">
           </makeArtifact>
         </requiredProjects>
       </compileType>

@@ -251,6 +251,17 @@ namespace trdk { namespace Engine {
 		//!			std::list.
 		typedef EventQueue<std::vector<NewBarEvent>> NewBarEventQueue;
 
+		typedef boost::tuple<
+				Security *,
+				BookUpdateTick,
+				Lib::TimeMeasurement::Milestones,
+				SubscriberPtrWrapper>
+			BookUpdateTickEvent;
+		//! @todo	HAVY OPTIMIZATION!!! Use preallocated buffer here instead
+		//!			std::list.
+		typedef EventQueue<std::vector<BookUpdateTickEvent>>
+			BookUpdateTickEventQueue;
+
 	public:
 
 		explicit Dispatcher(Engine::Context &);
@@ -270,32 +281,37 @@ namespace trdk { namespace Engine {
 	public:
 
 		void SignalLevel1Update(
-					SubscriberPtrWrapper &,
-					Security &,
-					const Lib::TimeMeasurement::Milestones &);
+				SubscriberPtrWrapper &,
+				Security &,
+				const Lib::TimeMeasurement::Milestones &);
 		void SignalLevel1Tick(
-					SubscriberPtrWrapper &,
-					Security &,
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &,
-					bool flush);
+				SubscriberPtrWrapper &,
+				Security &,
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &,
+				bool flush);
 		void SignalNewTrade(
-					SubscriberPtrWrapper &,
-					Security &,
-					const boost::posix_time::ptime &,
-					ScaledPrice,
-					Qty,
-					OrderSide);
+				SubscriberPtrWrapper &,
+				Security &,
+				const boost::posix_time::ptime &,
+				ScaledPrice,
+				Qty,
+				OrderSide);
 		void SignalPositionUpdate(SubscriberPtrWrapper &, Position &);
 		void SignalBrokerPositionUpdate(
-					SubscriberPtrWrapper &,
-					Security &,
-					Qty,
-					bool isInitial);
-			void SignalNewBar(
-					SubscriberPtrWrapper &,
-					Security &,
-					const Security::Bar &);
+				SubscriberPtrWrapper &,
+				Security &,
+				Qty,
+				bool isInitial);
+		void SignalNewBar(
+				SubscriberPtrWrapper &,
+				Security &,
+				const Security::Bar &);
+		void SignalBookUpdateTick(
+				SubscriberPtrWrapper &,
+				Security &,
+				const BookUpdateTick &,
+				const Lib::TimeMeasurement::Milestones &);
 
 	private:
 
@@ -376,6 +392,13 @@ namespace trdk { namespace Engine {
 					const NewBarEvent &newBarEvent,
 					EventList &eventList) {
 			eventList.push_back(newBarEvent);
+			return true;
+		}
+		template<typename EventList>
+		static bool QueueEvent(
+					const BookUpdateTickEvent &bookUpdateTickEvent,
+					EventList &eventList) {
+			eventList.push_back(bookUpdateTickEvent);
 			return true;
 		}
 
@@ -930,6 +953,149 @@ namespace trdk { namespace Engine {
 
 		////////////////////////////////////////////////////////////////////////////////
 
+		template<
+			typename ListWithHighPriority,
+			typename ListWithLowPriority,
+			typename ListWithExtraLowPriority,
+			typename ListWithExtraLowPriority2,
+			typename ListWithExtraLowPriority3,
+			typename ListWithExtraLowPriority4,
+			typename ListWithExtraLowPriority5>
+		void StartNotificationTask(
+					boost::barrier &startBarrier,
+					ListWithHighPriority &listWithHighPriority,
+					ListWithLowPriority &listWithLowPriority,
+					ListWithExtraLowPriority &listWithExtraLowPriority,
+					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
+					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
+					ListWithExtraLowPriority4 &listWithExtraLowPriority4,
+					ListWithExtraLowPriority5 &listWithExtraLowPriority5,
+					unsigned int &threadsCounter) {
+			Lib::UseUnused(threadsCounter);
+			const auto lists = boost::make_tuple(
+				boost::ref(listWithHighPriority),
+				boost::ref(listWithLowPriority),
+				boost::ref(listWithExtraLowPriority),
+				boost::ref(listWithExtraLowPriority2),
+				boost::ref(listWithExtraLowPriority3),
+				boost::ref(listWithExtraLowPriority4),
+				boost::ref(listWithExtraLowPriority5));
+			m_threads.create_thread(
+				boost::bind(
+					&Dispatcher::NotificationTask<decltype(lists)>,
+					this,
+					boost::ref(startBarrier),
+					lists));
+			Assert(1 <= threadsCounter--);
+		}
+
+		template<
+			typename T1,
+			typename T2,
+			typename T3,
+			typename T4,
+			typename T5,
+			typename T6,
+			typename T7>
+		static std::string GetEventListsName(
+					const boost::tuple<T1, T2, T3, T4, T5, T6, T7> &lists) {
+			boost::format result("%1%, %2%, %3%, %4%, %5%, %6%, %7%");
+			result
+				% boost::get<0>(lists).GetName()
+				% boost::get<1>(lists).GetName()
+				% boost::get<2>(lists).GetName()
+				% boost::get<3>(lists).GetName()
+				% boost::get<4>(lists).GetName()
+				% boost::get<5>(lists).GetName()
+				% boost::get<6>(lists).GetName();
+			return result.str();
+		}
+
+		template<
+			typename T1,
+			typename T2,
+			typename T3,
+			typename T4,
+			typename T5,
+			typename T6,
+			typename T7>
+		static void AssignEventListsSyncObjects(
+					boost::shared_ptr<EventListsSyncObjects> &sync,
+					const boost::tuple<T1, T2, T3, T4, T5, T6, T7> &lists) {
+			boost::get<0>(lists).AssignSyncObjects(sync);
+			boost::get<1>(lists).AssignSyncObjects(sync);
+			boost::get<2>(lists).AssignSyncObjects(sync);
+			boost::get<3>(lists).AssignSyncObjects(sync);
+			boost::get<4>(lists).AssignSyncObjects(sync);
+			boost::get<5>(lists).AssignSyncObjects(sync);
+			boost::get<6>(lists).AssignSyncObjects(sync);
+		}
+
+		template<
+			typename T1,
+			typename T2,
+			typename T3,
+			typename T4,
+			typename T5,
+			typename T6,
+			typename T7>
+		void FlushEventListsCollection(
+					const boost::tuple<T1, T2, T3, T4, T5, T6, T7> &lists,
+					std::bitset<7> &deactivationMask,
+					EventQueueLock &lock,
+					Lib::TimeMeasurement::Milestones &timeMeasurement)
+				const {
+			do {
+				do {
+					do {
+						do {
+							do {
+								do {
+									FlushEventList<0>(
+										lists,
+										deactivationMask,
+										lock,
+										timeMeasurement);
+								} while (
+									FlushEventList<1>(
+										lists,
+										deactivationMask,
+										lock,
+										timeMeasurement));
+							} while (
+								FlushEventList<2>(
+									lists,
+									deactivationMask,
+									lock,
+									timeMeasurement));
+						} while (
+							FlushEventList<3>(
+								lists,
+								deactivationMask,
+								lock,
+								timeMeasurement));
+					} while (
+						FlushEventList<4>(
+							lists,
+							deactivationMask,
+							lock,
+							timeMeasurement));
+				} while (
+					FlushEventList<5>(
+						lists,
+						deactivationMask,
+						lock,
+						timeMeasurement));
+			} while (
+				FlushEventList<6>(
+					lists,
+					deactivationMask,
+					lock,
+					timeMeasurement));
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+
 		template<typename EventLists>
 		void NotificationTask(
 					boost::barrier &startBarrier,
@@ -988,6 +1154,7 @@ namespace trdk { namespace Engine {
 		PositionsUpdateEventQueue m_positionsUpdates;
 		BrokerPositionsUpdateEventQueue m_brokerPositionsUpdates;
 		NewBarEventQueue m_newBars;
+		BookUpdateTickEventQueue m_bookUpdateTicks;
 
 	};
 
@@ -1026,6 +1193,14 @@ namespace trdk { namespace Engine {
 		boost::get<2>(newBarEvent).RaiseNewBarEvent(
 			*boost::get<0>(newBarEvent),
 			boost::get<1>(newBarEvent));
+	}
+	template<>
+	inline void Dispatcher::RaiseEvent(
+			BookUpdateTickEvent &bookUpdateTickEvent) {
+		boost::get<3>(bookUpdateTickEvent).RaiseBookUpdateTickEvent(
+			*boost::get<0>(bookUpdateTickEvent),
+			boost::get<1>(bookUpdateTickEvent),
+			boost::get<2>(bookUpdateTickEvent));
 	}
 
 } }

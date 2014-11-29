@@ -43,3 +43,5 @@
 /sources/Interaction/OnixsHotspot/build/
 /sources/Interaction/OnixsHotspot/dist/
 /.svn
+/sources/Services/build/
+/sources/Services/dist/

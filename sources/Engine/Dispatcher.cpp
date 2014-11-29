@@ -27,10 +27,11 @@ Dispatcher::Dispatcher(Engine::Context &context)
 			m_newTrades("Trades", m_context),
 			m_positionsUpdates("Positions", m_context),
 			m_brokerPositionsUpdates("Broker Positions", m_context),
-			m_newBars("Bars", m_context) {
+			m_newBars("Bars", m_context),
+			m_bookUpdateTicks("Book Update Ticks", m_context) {
 	unsigned int threadsCount = 2;
 	boost::barrier startBarrier(threadsCount + 1);
-	StartNotificationTask(startBarrier, m_level1Updates, threadsCount);
+	StartNotificationTask(startBarrier, m_bookUpdateTicks, threadsCount);
 	StartNotificationTask(startBarrier, m_positionsUpdates, threadsCount);
 	AssertEq(0, threadsCount);
 	startBarrier.wait();
@@ -39,7 +40,7 @@ Dispatcher::Dispatcher(Engine::Context &context)
 Dispatcher::~Dispatcher() {
 	try {
 		m_context.GetLog().Debug("Stopping events dispatching...");
-		m_level1Updates.Stop();
+		m_bookUpdateTicks.Stop();
 		m_positionsUpdates.Stop();
 		m_threads.join_all();
 		m_context.GetLog().Debug("Events dispatching stopped.");
@@ -52,13 +53,13 @@ Dispatcher::~Dispatcher() {
 void Dispatcher::Activate() {
 	m_context.GetLog().Debug("Starting events dispatching...");
 	m_positionsUpdates.Activate();
-	m_level1Updates.Activate();
+	m_bookUpdateTicks.Activate();
 	m_context.GetLog().Debug("Events dispatching started.");
 }
 
 void Dispatcher::Suspend() {
 	m_context.GetLog().Debug("Suspending events dispatching...");
-	m_level1Updates.Suspend();
+	m_bookUpdateTicks.Suspend();
 	m_positionsUpdates.Suspend();
 	m_newBars.Suspend();
 	m_context.GetLog().Debug("Events dispatching suspended.");
@@ -166,6 +167,25 @@ void Dispatcher::SignalNewBar(
 			return;
 		}
 		m_newBars.Queue(boost::make_tuple(&security, bar, subscriber), true);
+	} catch (...) {
+		//! Blocking as irreversible error, data loss.
+		subscriber.Block();
+		throw;
+	}
+}
+
+void Dispatcher::SignalBookUpdateTick(
+			SubscriberPtrWrapper &subscriber,
+			Security &security,
+			const BookUpdateTick &tick,
+			const TimeMeasurement::Milestones &timeMeasurement) {
+	try {
+		if (subscriber.IsBlocked()) {
+			return;
+		}
+		m_bookUpdateTicks.Queue(
+			boost::make_tuple(&security, tick, timeMeasurement, subscriber),
+			true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		subscriber.Block();
