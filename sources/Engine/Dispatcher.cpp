@@ -27,13 +27,15 @@ Dispatcher::Dispatcher(Engine::Context &context)
 			m_newTrades("Trades", m_context),
 			m_positionsUpdates("Positions", m_context),
 			m_brokerPositionsUpdates("Broker Positions", m_context),
-			m_newBars("Bars", m_context) {
+			m_newBars("Bars", m_context),
+			m_bookUpdateTicks("Book Update Ticks", m_context) {
 	unsigned int threadsCount = 1;
 	boost::barrier startBarrier(threadsCount + 1);
 	StartNotificationTask(
 		startBarrier,
 		m_level1Updates,
 		m_level1Ticks,
+		m_bookUpdateTicks,
 		m_newTrades,
 		m_positionsUpdates,
 		m_newBars,
@@ -52,6 +54,7 @@ Dispatcher::~Dispatcher() {
 		m_positionsUpdates.Stop();
 		m_brokerPositionsUpdates.Stop();
 		m_newBars.Stop();
+		m_bookUpdateTicks.Stop();
 		m_threads.join_all();
 		m_context.GetLog().Debug("Events dispatching stopped.");
 	} catch (...) {
@@ -62,6 +65,7 @@ Dispatcher::~Dispatcher() {
 
 void Dispatcher::Activate() {
 	m_context.GetLog().Debug("Starting events dispatching...");
+	m_bookUpdateTicks.Activate();
 	m_newBars.Activate();
 	m_brokerPositionsUpdates.Activate();
 	m_positionsUpdates.Activate();
@@ -79,6 +83,7 @@ void Dispatcher::Suspend() {
 	m_positionsUpdates.Suspend();
 	m_brokerPositionsUpdates.Suspend();
 	m_newBars.Suspend();
+	m_bookUpdateTicks.Suspend();
 	m_context.GetLog().Debug("Events dispatching suspended.");
 }
 
@@ -184,6 +189,25 @@ void Dispatcher::SignalNewBar(
 			return;
 		}
 		m_newBars.Queue(boost::make_tuple(&security, bar, subscriber), true);
+	} catch (...) {
+		//! Blocking as irreversible error, data loss.
+		subscriber.Block();
+		throw;
+	}
+}
+
+void Dispatcher::SignalBookUpdateTick(
+			SubscriberPtrWrapper &subscriber,
+			Security &security,
+			const BookUpdateTick &tick,
+			const TimeMeasurement::Milestones &timeMeasurement) {
+	try {
+		if (subscriber.IsBlocked()) {
+			return;
+		}
+		m_bookUpdateTicks.Queue(
+			boost::make_tuple(&security, tick, timeMeasurement, subscriber),
+			true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		subscriber.Block();

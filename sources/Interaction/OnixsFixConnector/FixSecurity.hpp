@@ -14,7 +14,7 @@
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
-	class FixSecurity : public trdk::Security {
+	class FixSecurity : public Security {
 
 	public:
 
@@ -32,29 +32,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	public:
 
-		void SetBid(
-					double price,
-					const Qty &qty,
-					const Lib::TimeMeasurement::Milestones &timeMeasurement) {
-			SetLevel1(
-				boost::posix_time::microsec_clock::universal_time(),
-				Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-					ScalePrice(price)),
-				Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(qty),
-				timeMeasurement);
-		}
-
-		void SetOffer(
-					double price,
-					const Qty &qty,
-					const Lib::TimeMeasurement::Milestones &timeMeasurement) {
-			SetLevel1(
-				boost::posix_time::microsec_clock::universal_time(),
-				Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-					ScalePrice(price)),
-				Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(qty),
-				timeMeasurement);
-		}
+		using Base::StartBookUpdate;
 
 	};
 

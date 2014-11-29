@@ -13,6 +13,7 @@
 #include "Core/Strategy.hpp"
 #include "Core/Service.hpp"
 #include "Core/Observer.hpp"
+#include "Core/MarketDataSource.hpp"
 
 namespace pt = boost::posix_time;
 namespace ss = boost::signals2;
@@ -30,7 +31,11 @@ namespace {
 				Security &security,
 				const char *type)
 			throw () {
-		module.GetLog().Info("Subscribed to %1% from \"%2%\".", type, security);
+		module.GetLog().Info(
+			"Subscribed to %1% from \"%2%\" (source: \"%3%\").",
+			type,
+			security,
+			security.GetSource().GetTag());
 	}
 
 }
@@ -203,6 +208,33 @@ void SubscriptionsManager::SubscribeToBars(
 	Report(*subscriber, security, "new bars");
 }
 
+void SubscriptionsManager::SubscribeToBookUpdateTicks(
+			Security &security,
+			const SubscriberPtrWrapper &subscriber,
+			std::list<ss::connection> &slotConnections) {
+	const auto slot = Security::BookUpdateTickSlot(
+		boost::bind(
+			&Dispatcher::SignalBookUpdateTick,
+			&m_dispatcher,
+			subscriber,
+			boost::ref(security),
+			_1,
+			_2));
+	const auto &connection = security.SubscribeToBookUpdateTicks(slot);
+	try {
+		slotConnections.push_back(connection);
+	} catch (...) {
+		try {
+			connection.disconnect();
+		} catch (...) {
+			AssertFailNoException();
+			throw;
+		}
+		throw;
+	}
+	Report(*subscriber, security, "book update ticks");
+}
+
 void SubscriptionsManager::SubscribeToLevel1Updates(
 			Security &security,
 			Strategy &strategy) {
@@ -443,6 +475,51 @@ void SubscriptionsManager::SubscribeToBars(
 					const SubscriberPtrWrapper &subscriber,
 					std::list<ss::connection> &slotConnections) {
 			SubscribeToBars(security, subscriber, slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToBookUpdateTicks(
+		Security &security,
+		Strategy &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+				Security &security,
+				const SubscriberPtrWrapper &subscriber,
+				std::list<ss::connection> &slotConnections) {
+			SubscribeToBookUpdateTicks(security, subscriber, slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToBookUpdateTicks(
+		Security &security,
+		Service &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+				Security &security,
+				const SubscriberPtrWrapper &subscriber,
+				std::list<ss::connection> &slotConnections) {
+			SubscribeToBookUpdateTicks(security, subscriber, slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToBookUpdateTicks(
+		Security &security,
+		Observer &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+				Security &security,
+				const SubscriberPtrWrapper &subscriber,
+				std::list<ss::connection> &slotConnections) {
+			SubscribeToBookUpdateTicks(security, subscriber, slotConnections);
 		});
 }
 

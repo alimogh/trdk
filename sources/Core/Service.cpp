@@ -138,9 +138,9 @@ public:
 };
 
 Service::Service(
-			Context &context,
-			const std::string &name,
-			const std::string &tag)
+		Context &context,
+		const std::string &name,
+		const std::string &tag)
 		: Module(context, "Service", name, tag) {
 	m_pimpl = new Implementation(*this);
 }
@@ -159,19 +159,19 @@ bool Service::RaiseLevel1UpdateEvent(const Security &security) {
 }
 
 bool Service::RaiseLevel1TickEvent(
-			const Security &security,
-			const boost::posix_time::ptime &time,
-			const Level1TickValue &value) {
+		const Security &security,
+		const boost::posix_time::ptime &time,
+		const Level1TickValue &value) {
 	const Lock lock(GetMutex());
 	return OnLevel1Tick(security, time, value);
 }
 
 bool Service::RaiseNewTradeEvent(
-			const Security &security,
-			const boost::posix_time::ptime &time,
-			ScaledPrice price,
-			Qty qty,
-			OrderSide side) {
+		const Security &security,
+		const boost::posix_time::ptime &time,
+		ScaledPrice price,
+		Qty qty,
+		OrderSide side) {
 	const Lock lock(GetMutex());
 	return OnNewTrade(security, time, price, qty, side);
 }
@@ -182,18 +182,26 @@ bool Service::RaiseServiceDataUpdateEvent(const Service &service) {
 }
 
 bool Service::RaiseBrokerPositionUpdateEvent(
-			Security &security,
-			Qty qty,
-			bool isInitial) {
+		Security &security,
+		Qty qty,
+		bool isInitial) {
 	const Lock lock(GetMutex());
 	return OnBrokerPositionUpdate(security, qty, isInitial);
 }
 
 bool Service::RaiseNewBarEvent(
-			const Security &security,
-			const Security::Bar &bar) {
+		const Security &security,
+		const Security::Bar &bar) {
 	const Lock lock(GetMutex());
 	return OnNewBar(security, bar);
+}
+
+bool Service::RaiseBookUpdateTickEvent(
+		const Security &security,
+		const BookUpdateTick &tick,
+		const TimeMeasurement::Milestones &timeMeasurement) {
+	const Lock lock(GetMutex());
+	return OnBookUpdateTick(security, tick, timeMeasurement);
 }
 
 bool Service::OnLevel1Update(const Security &security) {
@@ -202,33 +210,33 @@ bool Service::OnLevel1Update(const Security &security) {
 			" (hasn't OnLevel1Update method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
-		"Module subscribed to Level 1 Updates, but can't work with it");
+		"Service subscribed to Level 1 Updates, but can't work with it");
 }
 
 bool Service::OnLevel1Tick(
-			const Security &security,
-			const boost::posix_time::ptime &,
-			const Level1TickValue &) {
+		const Security &security,
+		const boost::posix_time::ptime &,
+		const Level1TickValue &) {
 	GetLog().Error(
 		"Subscribed to %1% Level 1 Ticks, but can't work with it"
 			" (hasn't OnLevel1Tick method implementation).",
 			security);
 	throw MethodDoesNotImplementedError(
-		"Module subscribed to Level 1 Ticks, but can't work with it");
+		"Service subscribed to Level 1 Ticks, but can't work with it");
 }
 
 bool Service::OnNewTrade(
-					const Security &security,
-					const boost::posix_time::ptime &,
-					ScaledPrice,
-					Qty,
-					OrderSide) {
+		const Security &security,
+		const boost::posix_time::ptime &,
+		ScaledPrice,
+		Qty,
+		OrderSide) {
 	GetLog().Error(
 		"Subscribed to %1% new trades, but can't work with it"
 			" (hasn't OnNewTrade method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
-		"Module subscribed to new trades, but can't work with it");
+		"Service subscribed to new trades, but can't work with it");
 }
 
 bool Service::OnServiceDataUpdate(const Service &service) {
@@ -237,19 +245,19 @@ bool Service::OnServiceDataUpdate(const Service &service) {
 			" (hasn't OnServiceDataUpdate method implementation).",
 		service);
  	throw MethodDoesNotImplementedError(
- 		"Module subscribed to service, but can't work with it");
+ 		"Service subscribed to service, but can't work with it");
 }
 
 bool Service::OnBrokerPositionUpdate(
-			Security &security,
-			Qty,
-			bool /*isInitial*/) {
+		Security &security,
+		Qty,
+		bool /*isInitial*/) {
 	GetLog().Error(
 		"Subscribed to %1% Broker Positions Updates, but can't work with it"
 			" (hasn't OnBrokerPositionUpdate method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
-		"Module subscribed to Broker Positions Updates"
+		"Service subscribed to Broker Positions Updates"
 			", but can't work with it");
 }
 
@@ -259,7 +267,19 @@ bool Service::OnNewBar(const Security &security, const Security::Bar &) {
 			" (hasn't OnNewBar method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
-		"Module subscribed to new bars, but can't work with it");
+		"Service subscribed to new bars, but can't work with it");
+}
+
+bool Service::OnBookUpdateTick(
+		const Security &security,
+		const BookUpdateTick &,
+		const TimeMeasurement::Milestones &) {
+	GetLog().Error(
+		"Subscribed to %1% Book Update Ticks, but can't work with it"
+			" (hasn't OnNewBookUpdateTick method implementation).",
+		security);
+	throw MethodDoesNotImplementedError(
+		"Service subscribed to Book Update Ticks, but can't work with it");
 }
 
 void Service::RegisterSubscriber(Strategy &module) {

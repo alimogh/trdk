@@ -35,6 +35,7 @@ namespace trdk { namespace Engine { namespace Ini {
 		namespace Services {
 			extern const std::string level1Updates;
 			extern const std::string level1Ticks;
+			const std::string bookUpdateTicks = "Book Update Ticks";
 			extern const std::string trades;
 			extern const std::string brokerPositionsUpdates;
 			const std::string bars = "Bars";

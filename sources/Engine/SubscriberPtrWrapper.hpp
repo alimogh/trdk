@@ -27,12 +27,12 @@ namespace trdk { namespace Engine {
 			trdk::Level1TickValue value;
 			
 			explicit Level1Tick(
-						trdk::Security &security,
-						const boost::posix_time::ptime &time,
-						const trdk::Level1TickValue &value)
-					: security(&security),
-					time(time),
-					value(value) {
+					trdk::Security &security,
+					const boost::posix_time::ptime &time,
+					const trdk::Level1TickValue &value)
+				: security(&security),
+				time(time),
+				value(value) {
 				//...//
 			}
 
@@ -75,14 +75,18 @@ namespace trdk { namespace Engine {
 	public:
 
 		void RaiseLevel1UpdateEvent(
-					Security &,
-					Lib::TimeMeasurement::Milestones &)
+				Security &,
+				Lib::TimeMeasurement::Milestones &)
 				const;
 		void RaiseLevel1TickEvent(const Level1Tick &) const;
 		void RaiseNewTradeEvent(const Trade &) const;
 		void RaisePositionUpdateEvent(Position &) const;
 		void RaiseBrokerPositionUpdateEvent(const BrokerPosition &) const;
 		void RaiseNewBarEvent(Security &, const Security::Bar &) const;
+		void RaiseBookUpdateTickEvent(
+				Security &,
+				const BookUpdateTick &,
+				const Lib::TimeMeasurement::Milestones &);
 
 	private:
 

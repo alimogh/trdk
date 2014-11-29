@@ -12,15 +12,72 @@
 
 #include "Api.h"
 
+////////////////////////////////////////////////////////////////////////////////
+
 namespace trdk {
 
-	////////////////////////////////////////////////////////////////////////////////
-	
 	typedef boost::int32_t Qty;
 	
 	typedef boost::int64_t ScaledPrice;
 
-	////////////////////////////////////////////////////////////////////////////////
+	typedef boost::uint64_t OrderId;
+
+	enum OrderSide {
+		ORDER_SIDE_BUY,
+		ORDER_SIDE_BID = ORDER_SIDE_BUY,
+		ORDER_SIDE_SELL,
+		ORDER_SIDE_OFFER = ORDER_SIDE_SELL,
+		ORDER_SIDE_ASK = ORDER_SIDE_SELL,
+		numberOfOrderSides
+	};
+
+	//! Extended order parameters.
+	struct OrderParams {
+
+		//! Account.
+		boost::optional<std::string> account;
+		
+		//! Display size for Iceberg orders.
+		boost::optional<trdk::Qty> displaySize;
+		
+		//! Good Till Time.
+		/** Absolute value in Coordinated Universal Time (UTC). Incompatible
+		  * with goodInSeconds.
+		  * @sa trdk::OrderParams::goodInSeconds
+		  */
+		boost::optional<boost::posix_time::ptime> goodTillTime;
+		//! Good next N seconds.
+		/** Incompatible with goodTillTime.
+		  * @sa trdk::OrderParams::goodTillTime
+		  */
+		boost::optional<uintmax_t> goodInSeconds;
+
+		//! Order ID to replace.
+		boost::optional<uintmax_t> orderIdToReplace;
+
+		//! Order sent not by strategy.
+		bool isManualOrder;
+
+		explicit OrderParams()
+				: isManualOrder(false) {
+			//...//
+		}
+
+	};
+
+}
+
+namespace std {
+
+	TRDK_CORE_API std::ostream & operator <<(
+				std::ostream &,
+				const trdk::OrderParams &);
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace trdk {
 
 	enum Level1TickType {
 		LEVEL1_TICK_LAST_PRICE,
@@ -207,7 +264,6 @@ namespace trdk {
 		}
 	}
 
-	////////////////////////////////////////////////////////////////////////////////
 
 }
 
@@ -215,58 +271,19 @@ namespace trdk {
 
 namespace trdk {
 
-	typedef boost::uint64_t OrderId;
-
-	enum OrderSide {
-		ORDER_SIDE_BUY,
-		ORDER_SIDE_BID = ORDER_SIDE_BUY,
-		ORDER_SIDE_SELL,
-		ORDER_SIDE_OFFER = ORDER_SIDE_SELL,
-		ORDER_SIDE_ASK = ORDER_SIDE_SELL,
-		numberOfOrderSides
+	enum BookUpdateAction {
+		BOOK_UPDATE_ACTION_NEW,
+		BOOK_UPDATE_ACTION_UPDATE,
+		BOOK_UPDATE_ACTION_DELETE,
+		numberOfBookUpdateActions
 	};
 
-	//! Extended order parameters.
-	struct OrderParams {
-
-		//! Account.
-		boost::optional<std::string> account;
-		
-		//! Display size for Iceberg orders.
-		boost::optional<trdk::Qty> displaySize;
-		
-		//! Good Till Time.
-		/** Absolute value in Coordinated Universal Time (UTC). Incompatible
-		  * with goodInSeconds.
-		  * @sa trdk::OrderParams::goodInSeconds
-		  */
-		boost::optional<boost::posix_time::ptime> goodTillTime;
-		//! Good next N seconds.
-		/** Incompatible with goodTillTime.
-		  * @sa trdk::OrderParams::goodTillTime
-		  */
-		boost::optional<uintmax_t> goodInSeconds;
-
-		//! Order ID to replace.
-		boost::optional<uintmax_t> orderIdToReplace;
-
-		//! Order sent not by strategy.
-		bool isManualOrder;
-
-		explicit OrderParams()
-				: isManualOrder(false) {
-			//...//
-		}
-
+	struct BookUpdateTick {
+		BookUpdateAction action;
+		trdk::OrderSide side;
+		trdk::ScaledPrice price;
+		trdk::OrderId qty;
 	};
-
-}
-
-namespace std {
-
-	TRDK_CORE_API std::ostream & operator <<(
-				std::ostream &,
-				const trdk::OrderParams &);
 
 }
 
