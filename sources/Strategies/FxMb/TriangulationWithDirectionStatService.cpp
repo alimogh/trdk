@@ -13,6 +13,7 @@
 #include "Core/MarketDataSource.hpp"
 
 namespace pt = boost::posix_time;
+namespace accs = boost::accumulators;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -26,7 +27,9 @@ TriangulationWithDirectionStatService::TriangulationWithDirectionStatService(
 		const IniSectionRef &conf)
 	: Base(context, "TriangulationWithDirectionStatService", tag),
 	m_levelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")) {
+		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
+	m_emaSpeedSlow(conf.ReadTypedKey<double>("ema_speed_slow")),
+	m_emaSpeedFast(conf.ReadTypedKey<double>("ema_speed_fast")) {
 	//...//
 }
 
@@ -45,7 +48,8 @@ pt::ptime TriangulationWithDirectionStatService::OnSecurityStart(const Security 
 	}
 //! @todo fix me!!!
 //	Assert(!m_data[dataIndex]);
-	m_data[dataIndex].reset(new Source(security));
+	m_data[dataIndex].reset(
+		new Source(security, m_emaSpeedSlow, m_emaSpeedFast));
 	return pt::not_a_date_time;
 }
 
@@ -70,17 +74,17 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 	const Security::Book::Side &offersBook = security.GetBook().GetOffers();
 
 #	ifdef DEV_VER
-		if (offersBook.GetLevelsCount() >= 4 || bidsBook.GetLevelsCount() >= 4) {
-			std::cout << "############################### " << security << " " << security.GetSource().GetTag() << std::endl;
-			for (size_t i = offersBook.GetLevelsCount(); i > 0; --i) {
-				std::cout << offersBook.GetLevel(i - 1).GetPrice() << " - " << offersBook.GetLevel(i - 1).GetQty() << std::endl;
-			}
-			std::cout << "------ " << std::endl;
-			for (size_t i = 0; i < bidsBook.GetLevelsCount(); ++i) {
-				std::cout << bidsBook.GetLevel(i).GetPrice() << " - " << bidsBook.GetLevel(i).GetQty() << std::endl;
-			}
-			std::cout << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" << std::endl;
-		}
+// 		if (offersBook.GetLevelsCount() >= 4 || bidsBook.GetLevelsCount() >= 4) {
+// 			std::cout << "############################### " << security << " " << security.GetSource().GetTag() << std::endl;
+// 			for (size_t i = offersBook.GetLevelsCount(); i > 0; --i) {
+// 				std::cout << offersBook.GetLevel(i - 1).GetPrice() << " - " << offersBook.GetLevel(i - 1).GetQty() << std::endl;
+// 			}
+// 			std::cout << "------ " << std::endl;
+// 			for (size_t i = 0; i < bidsBook.GetLevelsCount(); ++i) {
+// 				std::cout << bidsBook.GetLevel(i).GetPrice() << " - " << bidsBook.GetLevel(i).GetQty() << std::endl;
+// 			}
+// 			std::cout << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" << std::endl;
+// 		}
 #	endif
 
 	struct Side {
@@ -137,8 +141,27 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 	data.midpoint /= 2;
 
 	Source &source = GetSource(security.GetSource().GetIndex());
+
+	source.slowEmaAcc(data.midpoint);
+	source.fastEmaAcc(data.midpoint);
+
+	const auto &now = GetContext().GetCurrentTime();
+	if (source.emaStart == pt::not_a_date_time) {
+		source.emaStart = now;
+		data.emaSlow = source.emaSlow;
+		data.emaFast = source.emaFast;
+	} else if (
+			now - source.emaStart >= pt::seconds(2) + pt::milliseconds(500)) {
+		data.emaSlow = accs::ema(source.slowEmaAcc);
+		data.emaFast = accs::ema(source.fastEmaAcc);
+		source.emaStart = now;
+	} else {
+		data.emaSlow = source.emaSlow;
+		data.emaFast = source.emaFast;
+	}
+
 	while (source.dataLock.test_and_set(boost::memory_order_acquire));
-	const bool hasChanges = source == data;
+	const bool hasChanges = source != data;
 	if (hasChanges) {
 		static_cast<Data &>(source) = data;
 	}

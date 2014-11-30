@@ -36,11 +36,11 @@
     <ClCompile Include="FxMbStrategyLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TriangulationWithDirection.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
     <ClCompile Include="TriangulationWithDirectionStatService.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TriangulationWithDirection.cpp">
+      <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

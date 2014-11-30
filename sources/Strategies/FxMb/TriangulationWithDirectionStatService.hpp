@@ -12,6 +12,67 @@
 
 #include "Core/Service.hpp"
 
+namespace boost { namespace accumulators {
+
+	BOOST_PARAMETER_NESTED_KEYWORD(tag, ema_speed, speed)
+
+	namespace impl {
+
+		template<typename Sample>
+		struct Ema : accumulator_base {
+
+			typedef Sample result_type;
+
+			template<typename Args>
+			Ema(const Args &args)
+					: m_speed(args[ema_speed]),
+					m_isStarted(false),
+					m_result(0) {
+				//...//
+			}
+
+			template<typename Args>
+			void operator ()(const Args &args) {
+				if (!m_isStarted) {
+					m_result = args[sample];
+					m_isStarted = true;
+				} else {
+					m_result
+						= (args[sample] * m_speed) + (m_result * (1 - m_speed));
+				}
+ 			}
+
+			result_type result(dont_care) const {
+				return m_result;
+			}
+
+		private:
+			
+			double m_speed;
+			bool m_isStarted;
+			result_type m_result;
+		
+		};
+
+	}
+
+	namespace tag {
+		struct Ema : depends_on<> {
+			typedef accumulators::impl::Ema<mpl::_1> impl;
+		};
+	}
+
+	namespace extract {
+		const extractor<tag::Ema> ema = {
+			//...//
+		};
+		BOOST_ACCUMULATORS_IGNORE_GLOBAL(ema)
+	}
+
+	using extract::ema;
+
+} }
+
 namespace trdk { namespace Strategies { namespace FxMb {
 
 	class TriangulationWithDirectionStatService : public Service {
@@ -45,6 +106,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					&&	Lib::IsEqual(emaSlow, rhs.emaSlow);
 			}
 
+			bool operator !=(const Data &rhs) const {
+				return !operator ==(rhs);
+			}
 
 		};
 
@@ -52,11 +116,27 @@ namespace trdk { namespace Strategies { namespace FxMb {
 				: public Data,
 				private boost::noncopyable {
 			
+			typedef boost::accumulators::accumulator_set<
+					double,
+					boost::accumulators::stats<boost::accumulators::tag::Ema>>
+				EmaAcc;
+
 			const Security *security;
 			mutable boost::atomic_flag dataLock;
 
-			explicit Source(const Security &security)
-				: security(&security) {
+			EmaAcc slowEmaAcc;
+			EmaAcc fastEmaAcc;
+			boost::posix_time::ptime emaStart;
+
+			explicit Source(
+					const Security &security,
+					double slowEmaSpeed,
+					double fastEmaSpeed)
+				: security(&security),
+				slowEmaAcc(
+					boost::accumulators::tag::ema_speed::speed = slowEmaSpeed),
+				fastEmaAcc(
+					boost::accumulators::tag::ema_speed::speed = fastEmaSpeed) {
 				//...//
 			}
 
@@ -114,6 +194,9 @@ namespace trdk { namespace Strategies { namespace FxMb {
 	private:
 
 		const size_t m_levelsCount;
+		
+		const double m_emaSpeedSlow;
+		const double m_emaSpeedFast;
 
 		std::vector<boost::shared_ptr<Source>> m_data;
 

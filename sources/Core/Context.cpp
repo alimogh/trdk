@@ -235,6 +235,12 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
+namespace {
+	typedef boost::shared_mutex CustomTimeMutex;
+	typedef boost::shared_lock<CustomTimeMutex> CustomTimeReadLock;
+	typedef boost::unique_lock<CustomTimeMutex> CustomTimeWriteLock;
+}
+
 class Context::Implementation : private boost::noncopyable {
 
 public:
@@ -247,6 +253,10 @@ public:
 	Params m_params;
 
 	LatanReport m_latanReport;
+
+	boost::atomic_bool m_isCustomCurrentTime;
+	CustomTimeMutex m_customCurrentTimeMutex;
+	pt::ptime m_customCurrentTime;
 	
 	explicit Implementation(
 				Context &context,
@@ -257,7 +267,8 @@ public:
 			m_tradingLog(tradingLog),
 			m_settings(settings),
 			m_params(context),
-			m_latanReport(context) {
+			m_latanReport(context),
+			m_isCustomCurrentTime(false) {
 		//...//
 	}
 
@@ -279,6 +290,22 @@ Context::Log & Context::GetLog() const throw() {
 
 Context::TradingLog & Context::GetTradingLog() const throw() {
 	return m_pimpl->m_tradingLog;
+}
+
+void Context::SetCurrentTime(const pt::ptime &time) {
+	AssertNe(pt::not_a_date_time, time); 
+	const CustomTimeWriteLock lock(m_pimpl->m_customCurrentTimeMutex);
+	m_pimpl->m_customCurrentTime = time;
+	m_pimpl->m_isCustomCurrentTime = true;
+}
+
+pt::ptime Context::GetCurrentTime() const {
+	if (!m_pimpl->m_isCustomCurrentTime) {
+		return GetLog().GetTime();
+	}
+	const CustomTimeReadLock lock(m_pimpl->m_customCurrentTimeMutex);
+	AssertNe(pt::not_a_date_time, m_pimpl->m_isCustomCurrentTime); 
+	return m_pimpl->m_customCurrentTime;
 }
 
 const Settings & Context::GetSettings() const {

@@ -59,6 +59,9 @@ namespace trdk {
 		//! Context setting with predefined key list and predefined behavior.
 		const trdk::Settings & GetSettings() const;
 
+		void SetCurrentTime(const boost::posix_time::ptime &);
+		boost::posix_time::ptime GetCurrentTime() const;
+
 	public:
 
 		//! Waits until each of dispatching queue will be empty (but not all
