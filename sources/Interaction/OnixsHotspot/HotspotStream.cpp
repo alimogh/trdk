@@ -26,10 +26,11 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 	public:
 
 		explicit HotspotStream(
+					size_t index,
 					Context &context,
 					const std::string &tag,
 					const IniSectionRef &conf)
-				: MarketDataSource(context, tag),
+				: MarketDataSource(index, context, tag),
 				m_handler(GetHandlerOptions(conf)) {
 			m_handler.registerListener(this);
 		}
@@ -228,11 +229,13 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 TRDK_INTERACTION_ONIXSHOTSPOT_API
 boost::shared_ptr<MarketDataSource>
 CreateStream(
+			size_t index,
 			Context &context,
 			const std::string &tag,
 			const IniSectionRef &configuration) {
 	return boost::shared_ptr<MarketDataSource>(
 		new trdk::Interaction::OnixsHotspot::HotspotStream(
+			index,
 			context,
 			tag,
 			configuration));

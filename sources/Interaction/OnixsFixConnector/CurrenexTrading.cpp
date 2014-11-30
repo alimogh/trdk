@@ -27,10 +27,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit CurrenexTrading(
-					Context &context,
-					const std::string &tag,
-					const Lib::IniSectionRef &conf)
-				: FixTrading(context, tag, conf) {
+				size_t index,
+				Context &context,
+				const std::string &tag,
+				const Lib::IniSectionRef &conf)
+			: FixTrading(index, context, tag, conf) {
 			//...//
 		}
 		
@@ -183,12 +184,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 TradeSystemFactoryResult
 CreateCurrenexTrading(
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &configuration) {
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration) {
 	TradeSystemFactoryResult result;
 	boost::get<0>(result).reset(
-		new CurrenexTrading(context, tag, configuration));
+		new CurrenexTrading(index, context, tag, configuration));
 	return result;
 }
 

@@ -302,10 +302,11 @@ public:
 public:
 
 	explicit LogMarketDataSource(
+			size_t index,
 			Context &context,
 			const std::string &tag,
 			const IniSectionRef &conf)
-		: Base(context, tag),
+		: Base(index, context, tag),
 		m_sourceBase(conf.ReadFileSystemPath("source")),
 		m_server(Server::GetInstance(GetContext())) {
 		if (!fs::is_directory(m_sourceBase)) {
@@ -353,11 +354,12 @@ private:
 TRDK_INTERACTION_LOGREPLY_API
 boost::shared_ptr<MarketDataSource>
 CreateMarketDataSource(
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &configuration) {
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration) {
 	return boost::shared_ptr<MarketDataSource>(
-		new LogMarketDataSource(context, tag, configuration));
+		new LogMarketDataSource(index, context, tag, configuration));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -19,11 +19,12 @@ using namespace trdk::Interaction::OnixsFixConnector;
 namespace fix = OnixS::FIX;
 
 FixStream::FixStream(
-			Context &context,
-			const std::string &tag,
-			const Lib::IniSectionRef &conf)
-		: MarketDataSource(context, tag),
-		m_session(GetContext(), GetLog(), conf) {
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const Lib::IniSectionRef &conf)
+	: MarketDataSource(index, context, tag),
+	m_session(GetContext(), GetLog(), conf) {
 	//...//
 }
 

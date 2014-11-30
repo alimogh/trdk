@@ -70,6 +70,8 @@ public:
 
 public:
 
+	const size_t m_index;
+
 	Context &m_context;
 
 	const std::string m_tag;
@@ -83,12 +85,16 @@ public:
 
 public:
 
-	explicit Implementation(Context &context, const std::string &tag)
-			: m_context(context),
-			m_tag(tag),
-			m_stringId(FormatStringId(m_tag)),
-			m_log(m_stringId, m_context.GetLog()),
-			m_tradingLog(m_tag, m_context.GetTradingLog()) {
+	explicit Implementation(
+			size_t index,
+			Context &context,
+			const std::string &tag)
+		: m_index(index),
+		m_context(context),
+		m_tag(tag),
+		m_stringId(FormatStringId(m_tag)),
+		m_log(m_stringId, m_context.GetLog()),
+		m_tradingLog(m_tag, m_context.GetTradingLog()) {
 		//...//
 	}
 
@@ -112,13 +118,20 @@ MarketDataSource::Error::Error(const char *what) throw()
 
 //////////////////////////////////////////////////////////////////////////
 
-MarketDataSource::MarketDataSource(Context &context, const std::string &tag)
-		: m_pimpl(new Implementation(context, tag)) {
+MarketDataSource::MarketDataSource(
+		size_t index,
+		Context &context,
+		const std::string &tag)
+	: m_pimpl(new Implementation(index, context, tag)) {
 	//...//
 }
 
 MarketDataSource::~MarketDataSource() {
 	delete m_pimpl;
+}
+
+size_t MarketDataSource::GetIndex() const {
+	return m_pimpl->m_index;
 }
 
 Context & MarketDataSource::GetContext() {

@@ -28,6 +28,7 @@ namespace trdk {
 		TradeSystemFactoryResult;
 
 	typedef trdk::TradeSystemFactoryResult (TradeSystemFactory)(
+			size_t index,
 			trdk::Context &,
 			const std::string &tag,
 			const trdk::Lib::IniSectionRef &);
@@ -142,7 +143,7 @@ namespace trdk {
 
 	public:
 
-		TradeSystem(trdk::Context &, const std::string &tag);
+		TradeSystem(size_t index, trdk::Context &, const std::string &tag);
 		virtual ~TradeSystem();
 
 	public:
@@ -150,6 +151,8 @@ namespace trdk {
 		static const char * GetStringStatus(OrderStatus);
 
 	public:
+
+		size_t GetIndex() const;
 
 		trdk::Context & GetContext();
 		const trdk::Context & GetContext() const;

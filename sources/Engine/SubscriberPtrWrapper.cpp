@@ -361,6 +361,7 @@ void SubscriberPtrWrapper::RaiseNewBarEvent(
 
 void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
 		Security &security,
+		size_t priceLevelIndex,
 		const BookUpdateTick &tick,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	
@@ -370,9 +371,11 @@ void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
 	public:		
 		explicit Visitor(
 				Security &security,
+				size_t priceLevelIndex,
 				const BookUpdateTick &tick,
 				const TimeMeasurement::Milestones &timeMeasurement)
 			: m_source(security),
+			m_priceLevelIndex(priceLevelIndex),
 			m_tick(tick),
 			m_timeMeasurement(timeMeasurement) {
 			//...//
@@ -385,6 +388,7 @@ void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
 			if (
 					service.RaiseBookUpdateTickEvent(
 						m_source,
+						m_priceLevelIndex,
 						m_tick,
 						m_timeMeasurement)) {
 				RaiseServiceDataUpdateEvent(service);
@@ -395,12 +399,13 @@ void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
 		}
 	private:
 		Security &m_source;
+		const size_t m_priceLevelIndex;
 		const BookUpdateTick &m_tick;
 		const TimeMeasurement::Milestones &m_timeMeasurement;
 	};
 
 	boost::apply_visitor(
-		Visitor(security, tick, timeMeasurement),
+		Visitor(security, priceLevelIndex, tick, timeMeasurement),
 		m_subscriber);
 
 }

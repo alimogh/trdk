@@ -19,11 +19,12 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::Fake;
 
 Fake::MarketDataSource::MarketDataSource(
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &)
-		: Base(context, tag),
-		m_stopFlag(false) {
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &)
+	: Base(index, context, tag),
+	m_stopFlag(false) {
 	//...//
 }
 

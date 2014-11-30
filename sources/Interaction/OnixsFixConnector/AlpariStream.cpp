@@ -24,10 +24,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit AlpariStream(
-					Context &context,
-					const std::string &tag,
-					const IniSectionRef &conf)
-				: FixStream(context, tag, conf) {
+				size_t index,
+				Context &context,
+				const std::string &tag,
+				const IniSectionRef &conf)
+			: FixStream(index, context, tag, conf) {
 			//...//
 		}
 
@@ -58,11 +59,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 boost::shared_ptr<MarketDataSource>
 CreateAlpariStream(
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &configuration) {
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration) {
 	return boost::shared_ptr<MarketDataSource>(
-		new AlpariStream(context, tag, configuration));
+		new AlpariStream(index, context, tag, configuration));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

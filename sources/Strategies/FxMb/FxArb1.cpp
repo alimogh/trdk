@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "FxArb1.hpp"
-#include "Core/StrategyPositionReporter.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingLog.hpp"
 #include "Util.hpp"
@@ -155,15 +154,6 @@ FxArb1::~FxArb1() {
 
 void FxArb1::UpdateAlogImplSettings(const IniSectionRef &) {
 	//...//
-}
-
-void FxArb1::ReportDecision(const Position &) const {
-	//...//
-}
-
-std::auto_ptr<PositionReporter> FxArb1::CreatePositionReporter() const {
-	return std::auto_ptr<PositionReporter>(
-		new StrategyPositionReporter<FxArb1>);
 }
 
 pt::ptime FxArb1::OnSecurityStart(Security &security) {

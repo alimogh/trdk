@@ -185,11 +185,12 @@ private:
 //////////////////////////////////////////////////////////////////////////
 
 Fake::TradeSystem::TradeSystem(
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &)
-		: Base(context, tag),
-		m_pimpl(new Implementation) {
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &)
+	: Base(index, context, tag),
+	m_pimpl(new Implementation) {
 	m_pimpl->m_self = this;
 }
 

@@ -368,7 +368,11 @@ MarketDataSource & Engine::Context::GetMarketDataSource(size_t index) {
 void Engine::Context::ForEachMarketDataSource(
 			const boost::function<bool (const MarketDataSource &)> &pred)
 		const {
+#	ifdef BOOST_ENABLE_ASSERT_HANDLER
+		size_t i = 0;
+#	endif
 	foreach (const auto &source, m_pimpl->m_marketDataSources) {
+		AssertEq(i, source->GetIndex());
 		if (!pred(*source)) {
 			return;
 		}
@@ -377,7 +381,11 @@ void Engine::Context::ForEachMarketDataSource(
 
 void Engine::Context::ForEachMarketDataSource(
 			const boost::function<bool (MarketDataSource &)> &pred) {
+#	ifdef BOOST_ENABLE_ASSERT_HANDLER
+		size_t i = 0;
+#	endif
 	foreach (auto &source, m_pimpl->m_marketDataSources) {
+		AssertEq(i++, source->GetIndex());
 		if (!pred(*source)) {
 			return;
 		}

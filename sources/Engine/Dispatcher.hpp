@@ -204,12 +204,19 @@ namespace trdk { namespace Engine {
 					if (isSyncRequired) {
 						Assert(m_sync->isSyncRequired);
 						m_sync->isSyncRequired = false;
+						isSyncRequired = false;
 						m_sync->syncCondition.notify_all();
 					} else {
 						isSyncRequired = m_sync->isSyncRequired;
 					}
 
 					
+				}
+
+				if (isSyncRequired) {
+					Assert(m_sync->isSyncRequired);
+					m_sync->isSyncRequired = false;
+					m_sync->syncCondition.notify_all();
 				}
 
 				return heavyLoadsCount > 0;
@@ -283,6 +290,7 @@ namespace trdk { namespace Engine {
 
 		typedef boost::tuple<
 				Security *,
+				size_t /* price level index */,
 				BookUpdateTick,
 				Lib::TimeMeasurement::Milestones,
 				SubscriberPtrWrapper>
@@ -354,6 +362,7 @@ namespace trdk { namespace Engine {
 		void SignalBookUpdateTick(
 				SubscriberPtrWrapper &,
 				Security &,
+				size_t priceLevelIndex,
 				const BookUpdateTick &,
 				const Lib::TimeMeasurement::Milestones &);
 
@@ -1241,10 +1250,11 @@ namespace trdk { namespace Engine {
 	template<>
 	inline void Dispatcher::RaiseEvent(
 			BookUpdateTickEvent &bookUpdateTickEvent) {
-		boost::get<3>(bookUpdateTickEvent).RaiseBookUpdateTickEvent(
+		boost::get<4>(bookUpdateTickEvent).RaiseBookUpdateTickEvent(
 			*boost::get<0>(bookUpdateTickEvent),
 			boost::get<1>(bookUpdateTickEvent),
-			boost::get<2>(bookUpdateTickEvent));
+			boost::get<2>(bookUpdateTickEvent),
+			boost::get<3>(bookUpdateTickEvent));
 	}
 
 } }

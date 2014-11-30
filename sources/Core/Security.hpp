@@ -100,7 +100,55 @@ namespace trdk {
 		typedef boost::function<NewBarSlotSignature> NewBarSlot;
 		typedef boost::signals2::connection NewBarSlotConnection;
 
+		////////////////////////////////////////////////////////////////////////////////
+
+		class BookUpdateOperation;
+
+		class TRDK_CORE_API Book : private boost::noncopyable {
+			friend class trdk::Security::BookUpdateOperation;
+		public:
+			class Level {
+			public:
+				explicit Level(
+						const trdk::ScaledPrice &price,
+						const trdk::Qty &qty)
+					: m_price(price),
+					m_qty(qty) {
+					//...//
+				}
+			public:
+				const trdk::ScaledPrice & GetPrice() const {
+					return m_price;
+				}
+				const trdk::Qty & GetQty() const {
+					return m_qty;
+				}
+			private:
+				trdk::ScaledPrice m_price;
+				trdk::Qty m_qty;
+			};
+			class TRDK_CORE_API Side : private boost::noncopyable {
+				friend class trdk::Security::BookUpdateOperation;
+			public:
+				Side();
+				~Side();
+			public:
+				size_t GetLevelsCount() const;
+				trdk::Security::Book::Level GetLevel(size_t levelIndex) const;
+			private:
+				class Implementation;
+				Implementation *m_pimpl;
+			};
+		public:
+			const trdk::Security::Book::Side & GetBids() const;
+			const trdk::Security::Book::Side & GetOffers() const;
+		private:
+			Side m_bids;
+			Side m_offers;
+		};
+
 		typedef void (BookUpdateTickSlotSignature)(
+				size_t priceLevelIndex,
 				const BookUpdateTick &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 		typedef boost::function<BookUpdateTickSlotSignature> BookUpdateTickSlot;
@@ -131,7 +179,9 @@ namespace trdk {
 				trdk::Security::BookUpdateOperation::Storage &m_storage;
 			};
 		private:
-			explicit BookUpdateOperation(trdk::Security &);
+			explicit BookUpdateOperation(
+					trdk::Security &,
+					trdk::Security::Book &);
 		public:
 			BookUpdateOperation(BookUpdateOperation &&);
 			~BookUpdateOperation();
@@ -146,6 +196,8 @@ namespace trdk {
 			class Implementation;
 			Implementation *m_pimpl;
 		};
+
+		////////////////////////////////////////////////////////////////////////////////
 
 	public:
 
@@ -207,6 +259,8 @@ namespace trdk {
 		/** Information from broker, not relevant to trdk::Position.
 		  */
 		trdk::Qty GetBrokerPosition() const;
+
+		const trdk::Security::Book & GetBook() const;
 
 	public:
 

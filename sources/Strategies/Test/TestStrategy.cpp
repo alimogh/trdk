@@ -14,7 +14,6 @@
 #include "Core/Strategy.hpp"
 #include "Core/Security.hpp"
 #include "Core/Position.hpp"
-#include "Core/PositionReporter.hpp"
 #include "Core/MarketDataSource.hpp"
 
 using namespace trdk::Lib;
@@ -41,17 +40,6 @@ namespace trdk { namespace Strategies { namespace Test {
 		
 		virtual ~TestStrategy() {
 			//...//
-		}
-
-	public:
-
-		virtual void ReportDecision(const Position &) const {
-			//...//
-		}
-
-		virtual std::auto_ptr<PositionReporter> CreatePositionReporter()
-				const {
-			return std::auto_ptr<PositionReporter>();
 		}
 
 	public:

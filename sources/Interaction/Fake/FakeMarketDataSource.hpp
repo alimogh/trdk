@@ -83,9 +83,10 @@ namespace trdk { namespace Interaction { namespace Fake {
 	public:
 
 		MarketDataSource(
-					Context &context,
-					const std::string &tag,
-					const Lib::IniSectionRef &);
+				size_t index,
+				Context &context,
+				const std::string &tag,
+				const Lib::IniSectionRef &);
 		virtual ~MarketDataSource();
 
 	public:

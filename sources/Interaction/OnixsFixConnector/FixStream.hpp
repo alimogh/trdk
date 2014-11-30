@@ -27,9 +27,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit FixStream(
-					Context &,
-					const std::string &tag,
-					const Lib::IniSectionRef &);
+				size_t index,
+				Context &,
+				const std::string &tag,
+				const Lib::IniSectionRef &);
 		virtual ~FixStream();
 
 	public:

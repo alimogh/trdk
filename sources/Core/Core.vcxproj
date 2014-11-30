@@ -254,7 +254,6 @@
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="Observer.cpp" />
     <ClCompile Include="Position.cpp" />
-    <ClCompile Include="PositionReporter.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
@@ -294,8 +293,6 @@
     <ClInclude Include="Module.hpp" />
     <ClInclude Include="Observer.hpp" />
     <ClInclude Include="Position.hpp" />
-    <ClInclude Include="PositionReporter.hpp" />
-    <ClInclude Include="StrategyPositionReporter.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Security.hpp" />
     <ClInclude Include="Fwd.hpp" />

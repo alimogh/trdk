@@ -87,6 +87,8 @@ public:
 
 	pt::ptime m_requestedDataStartTime;
 
+	Book m_book;
+
 public:
 
 	Implementation(const MarketDataSource &source)
@@ -571,7 +573,50 @@ void Security::SetBrokerPosition(trdk::Qty qty, bool isInitial) {
 }
 
 Security::BookUpdateOperation Security::StartBookUpdate() {
-	return BookUpdateOperation(*this);
+	return BookUpdateOperation(*this, m_pimpl->m_book);
+}
+
+const Security::Book & Security::GetBook() const {
+	return m_pimpl->m_book;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+class Security::Book::Side::Implementation : private boost::noncopyable {
+public:
+	std::map<ScaledPrice, Qty> m_levels;
+};
+
+Security::Book::Side::Side()
+	: m_pimpl(new Implementation) {
+	//...//
+}
+
+Security::Book::Side::~Side() {
+	delete m_pimpl;
+}
+
+size_t Security::Book::Side::GetLevelsCount() const {
+	return m_pimpl->m_levels.size();
+}
+
+Security::Book::Level Security::Book::Side::GetLevel(size_t index) const {
+	if (index >= m_pimpl->m_levels.size()) {
+		throw LogicError("Book price level is out of range");
+	}
+	auto level = m_pimpl->m_levels.cbegin();
+	std::advance(level, index);
+	return Level(abs(level->first), level->second);
+}
+
+///
+
+const Security::Book::Side & Security::Book::GetBids() const {
+	return m_bids;
+}
+
+const Security::Book::Side & Security::Book::GetOffers() const {
+	return m_offers;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -604,9 +649,12 @@ public:
 	Side m_bids;
 	Side m_offers;
 
-	explicit Implementation(Security &security)
+	Security::Book &m_book;
+
+	explicit Implementation(Security &security, Security::Book &book)
 		: m_bids(security),
-		m_offers(security) {
+		m_offers(security),
+		m_book(book) {
 		//...//
 	}
 
@@ -654,8 +702,10 @@ void Security::BookUpdateOperation::Side::Delete(double price) {
 	Delete(m_security.ScalePrice(price));
 }
 
-Security::BookUpdateOperation::BookUpdateOperation(Security &security)
-	: m_pimpl(new Implementation(security)) {
+Security::BookUpdateOperation::BookUpdateOperation(
+		Security &security,
+		Book &book)
+	: m_pimpl(new Implementation(security, book)) {
 	//...//
 }
 
@@ -696,6 +746,41 @@ void Security::BookUpdateOperation::Update(const BookUpdateTick &update) {
 void Security::BookUpdateOperation::Commit(
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	
+	const auto &update = [&](
+				const OrderSide &side,
+				Implementation::Side &sideData) {
+		foreach (const auto &update, sideData.storage.updates) {
+			const BookUpdateTick tick = {
+				boost::get<0>(update),
+				side,
+				boost::get<1>(update),
+				boost::get<2>(update),
+			};
+			Book::Side &side = tick.side == ORDER_SIDE_BID
+				?	m_pimpl->m_book.m_bids
+				:	m_pimpl->m_book.m_offers;
+			ScaledPrice price = tick.price;
+			if (tick.side == ORDER_SIDE_BUY) {
+				price = -price;
+			}
+			static_assert(
+				numberOfBookUpdateActions == 3,
+				"Action list changed.");
+			switch (tick.action) {
+				case BOOK_UPDATE_ACTION_NEW:
+				case BOOK_UPDATE_ACTION_UPDATE:
+					side.m_pimpl->m_levels[price] = tick.qty;
+					break;
+				case BOOK_UPDATE_ACTION_DELETE:
+					side.m_pimpl->m_levels.erase(price);
+					break;
+				default:
+					AssertEq(BOOK_UPDATE_ACTION_NEW, tick.action);
+					break;
+			}
+		}
+	};
+
 	const auto &signal = [&](
 				const OrderSide &side,
 				Implementation::Side &sideData) {
@@ -708,14 +793,15 @@ void Security::BookUpdateOperation::Commit(
 				boost::get<1>(update),
 				boost::get<2>(update),
 			};
-			bookUpdateTickSignal(tick, timeMeasurement);
+			bookUpdateTickSignal(0, tick, timeMeasurement);
 		}
 	};
 
+	update(ORDER_SIDE_BID, m_pimpl->m_bids);
+	update(ORDER_SIDE_OFFER, m_pimpl->m_offers);
 	signal(ORDER_SIDE_BID, m_pimpl->m_bids);
 	signal(ORDER_SIDE_OFFER, m_pimpl->m_offers);
 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-

@@ -20,12 +20,13 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::Csv;
 
 Csv::MarketDataSource::MarketDataSource(
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &configuration)
-		: Base(context, tag),
-		m_pimaryExchange(configuration.ReadKey("exchange")),
-		m_isStopped(true) {
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration)
+	: Base(index, context, tag),
+	m_pimaryExchange(configuration.ReadKey("exchange")),
+	m_isStopped(true) {
 	const auto filePath = configuration.ReadFileSystemPath("source");
 	GetLog().Info(
 		TRDK_INTERACTION_CSV_LOG_PREFFIX

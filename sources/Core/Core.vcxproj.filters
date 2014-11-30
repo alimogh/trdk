@@ -29,9 +29,6 @@
     <ClCompile Include="TradeSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PositionReporter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Observer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -88,9 +85,6 @@
     <ClInclude Include="Position.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PositionReporter.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Settings.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -113,9 +107,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="StrategyPositionState.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StrategyPositionReporter.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Service.hpp">

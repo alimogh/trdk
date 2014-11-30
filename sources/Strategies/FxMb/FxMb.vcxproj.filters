@@ -36,6 +36,12 @@
     <ClCompile Include="FxMbStrategyLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TriangulationWithDirection.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TriangulationWithDirectionStatService.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="FxMb.rc">
@@ -57,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FxMbStrategyLog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TriangulationWithDirectionStatService.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
