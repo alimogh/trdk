@@ -19,11 +19,12 @@ using namespace trdk::Interaction::OnixsFixConnector;
 namespace fix = OnixS::FIX;
 
 FixStream::FixStream(
-			Context &context,
-			const std::string &tag,
-			const Lib::IniSectionRef &conf)
-		: MarketDataSource(context, tag),
-		m_session(GetContext(), GetLog(), conf) {
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const Lib::IniSectionRef &conf)
+	: MarketDataSource(index, context, tag),
+	m_session(GetContext(), GetLog(), conf) {
 	//...//
 }
 
@@ -127,12 +128,9 @@ void FixStream::SubscribeToSecurities() {
 
 }
 
-Security & FixStream::CreateSecurity(
-			Context &context,
-			const Symbol &symbol)
-		const {
+Security & FixStream::CreateSecurity(const Symbol &symbol) {
 	boost::shared_ptr<FixSecurity> result(
-		new FixSecurity(context, symbol, *this));
+		new FixSecurity(GetContext(), symbol, *this));
 	const_cast<FixStream *>(this)
 		->m_securities.push_back(result);
 	return *result;

@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2014/08/14 10:01:50
+ *   Created: 2014/11/29 14:08:39
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -11,16 +11,6 @@
 #pragma once
 
 #include "Common/Assert.hpp"
-
-#include <bitset>
-
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/algorithm/string.hpp>
-#	include <boost/regex.hpp>
-#	include <boost/cast.hpp>
-#	include <boost/accumulators/accumulators.hpp>
-#	include <boost/accumulators/statistics.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
 

@@ -27,7 +27,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					const Lib::Symbol &symbol,
 					const trdk::MarketDataSource &source)
 				: Base(context, symbol, source) {
-			StartLevel1();
+			//...//
 		}
 
 	public:

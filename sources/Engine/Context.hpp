@@ -39,6 +39,8 @@ namespace trdk { namespace Engine {
 
 		void Add(const trdk::Lib::Ini &);
 
+		virtual void SyncDispatching();
+
 	public:
 
 		virtual size_t GetMarketDataSourcesCount() const;

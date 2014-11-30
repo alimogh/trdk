@@ -171,20 +171,11 @@ namespace trdk {
 		PositionList & GetPositions();
 		const PositionList & GetPositions() const;
 
-		PositionReporter & GetPositionReporter();
-		virtual void ReportDecision(const trdk::Position &) const = 0;
-
 	public:
 
 		PositionUpdateSlotConnection SubscribeToPositionsUpdates(
-					const PositionUpdateSlot &)
+				const PositionUpdateSlot &)
 				const;
-
-	protected:
-
-		virtual std::auto_ptr<PositionReporter> CreatePositionReporter()
-				const
-				= 0;
 
 	private:
 

@@ -172,10 +172,11 @@ private:
 
 	//! Loads Market Data Source by conf. section name.
 	void LoadTradeSystem(
-				const IniSectionRef &configurationSection,
-				const std::string &tag,
-				DllObjectPtr<TradeSystem> &tradeSystemResult,
-				DllObjectPtr<MarketDataSource> &marketDataSourceResult) {
+			size_t index,
+			const IniSectionRef &configurationSection,
+			const std::string &tag,
+			DllObjectPtr<TradeSystem> &tradeSystemResult,
+			DllObjectPtr<MarketDataSource> &marketDataSourceResult) {
 		
 		const std::string module
 			= configurationSection.ReadKey(Keys::module);
@@ -196,6 +197,7 @@ private:
 			
 			try {
 				factoryResult = dll->GetFunction<Factory>(factoryName)(
+					index,
 					m_context,
 					tag,
 					configurationSection);
@@ -207,6 +209,7 @@ private:
 						= DefaultValues::Factories::factoryNameStart
 							+ factoryName;
 					factoryResult = dll->GetFunction<Factory>(factoryName)(
+						index,
 						m_context,
 						tag,
 						configurationSection);
@@ -249,7 +252,8 @@ private:
 		foreach (const auto &section, m_conf.ReadSectionsList()) {
 			
 			std::string tag;
-			if (	!GetTradeSystemSection(section, tag)
+			if (	
+					!GetTradeSystemSection(section, tag)
 					&& !boost::iequals(section, Sections::tradeSystem)) {
 				continue;
 			}
@@ -257,6 +261,7 @@ private:
 			DllObjectPtr<TradeSystem> tradeSystem;
 			DllObjectPtr<MarketDataSource> marketDataSource;
 			LoadTradeSystem(
+				m_tradeSystems.size(),
 				IniSectionRef(m_conf, section),
 				tag,
 				tradeSystem,
@@ -277,7 +282,6 @@ private:
 
 		}
 	
-		
 		if (m_tradeSystems.empty()) {
 			throw Exception("No one TradeSystem found in configuration");
 		}
@@ -288,8 +292,9 @@ private:
 
 	//! Loads Market Data Source by conf. section name.
 	DllObjectPtr<MarketDataSource> LoadMarketDataSource(
-				const IniSectionRef &configurationSection,
-				const std::string &tag) {
+			size_t index,
+			const IniSectionRef &configurationSection,
+			const std::string &tag) {
 		
 		const std::string module
 			= configurationSection.ReadKey(Keys::module);
@@ -310,6 +315,7 @@ private:
 		
 			try {
 				factoryResult = dll->GetFunction<Factory>(factoryName)(
+					index,
 					m_context,
 					tag,
 					configurationSection);
@@ -321,6 +327,7 @@ private:
 						= DefaultValues::Factories::factoryNameStart
 							+ factoryName;
 					factoryResult = dll->GetFunction<Factory>(factoryName)(
+						index,
 						m_context,
 						tag,
 						configurationSection);
@@ -360,6 +367,7 @@ private:
 				continue;
 			}
 			const auto &source = LoadMarketDataSource(
+				m_marketDataSources.size(),
 				IniSectionRef(m_conf, section),
 				tag);
 			m_marketDataSources.push_back(source);
@@ -878,7 +886,7 @@ private:
 				m_context.ForEachMarketDataSource([&](
 							MarketDataSource &source)
 						-> bool {
-					auto &security = source.GetSecurity(m_context, symbol);
+					auto &security = source.GetSecurity(symbol);
 					try {
 						instance->RegisterSource(security);
 					} catch (...) {
@@ -1462,7 +1470,7 @@ private:
 					[&](MarketDataSource &source) -> bool {
 						Security *security = nullptr;
 						if (symbol) {
-							security = &source.GetSecurity(m_context, symbol);
+							security = &source.GetSecurity(symbol);
 						}
 						if (!uniqueInstance) {
 							ForEachModuleInstance(
@@ -1519,7 +1527,7 @@ private:
 					if (source != i->GetSource()) {
 						return true;
 					}
-					callback(source.GetSecurity(m_context, i->GetSymbol()));
+					callback(source.GetSecurity(i->GetSymbol()));
 					return true;
 				});
 			

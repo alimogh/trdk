@@ -21,11 +21,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests\Tests.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OnixS FIX Connector", "Interaction\OnixsFixConnector\OnixsFixConnector.vcxproj", "{76A595AB-DDE0-4972-8793-4818398E6B94}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Morgan Benoit FX Strategies", "Strategies\FxMb\FxMb.vcxproj", "{741EC258-DBD7-4F89-A176-1A9C036216F8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Morgan Benoit FX strategies", "Strategies\FxMb\FxMb.vcxproj", "{741EC258-DBD7-4F89-A176-1A9C036216F8}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OnixS Hotspot", "Interaction\OnixsHotspot\OnixsHotspot.vcxproj", "{029437F9-F5AA-42C1-BBA0-8B12375E9148}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Services", "Services\Services.vcxproj", "{4F025D92-8F15-4A05-97B6-CA680CB090D9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Log reply", "Interaction\LogReply\LogReply.vcxproj", "{D2247A79-0ECC-4344-84C2-C13999567B64}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "Strategy.hpp"
 #include "Service.hpp"
-#include "PositionReporter.hpp"
 #include "Settings.hpp"
 #include "TradingLog.hpp"
 
@@ -293,7 +292,6 @@ public:
 	BlockMutex m_blockMutex;
 	
 	PositionList m_positions;
-	PositionReporter *m_positionReporter;
 	boost::signals2::signal<PositionUpdateSlotSignature> m_positionUpdateSignal;
 
 public:
@@ -301,7 +299,6 @@ public:
 	explicit Implementation(Strategy &strategy)
 			: m_strategy(strategy),
 			m_isBlocked(false),
-			m_positionReporter(nullptr),
 			m_tradingLog(
 				m_strategy.GetTag(),
 				m_strategy.GetContext().GetTradingLog()) {
@@ -312,7 +309,6 @@ public:
 
 	void ForgetPosition(const Position &position) {
 		m_positions.Erase(position);
-		m_strategy.GetPositionReporter().ReportClosedPositon(position);
 	}
 
 };
@@ -377,13 +373,6 @@ void Strategy::Unregister(Position &position) throw() {
 		AssertFailNoException();
 		Block();
 	}
-}
-
-PositionReporter & Strategy::GetPositionReporter() {
-	if (!m_pimpl->m_positionReporter) {
-		m_pimpl->m_positionReporter = CreatePositionReporter().release();
-	}
-	return *m_pimpl->m_positionReporter;
 }
 
 void Strategy::RaiseLevel1UpdateEvent(

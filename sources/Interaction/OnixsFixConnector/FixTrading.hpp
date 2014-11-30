@@ -97,9 +97,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit FixTrading(
-					Context &,
-					const std::string &tag,
-					const Lib::IniSectionRef &);
+				size_t index,
+				Context &,
+				const std::string &tag,
+				const Lib::IniSectionRef &);
 		virtual ~FixTrading();
 
 	public:

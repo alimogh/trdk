@@ -198,10 +198,11 @@ bool Service::RaiseNewBarEvent(
 
 bool Service::RaiseBookUpdateTickEvent(
 		const Security &security,
+		size_t priceLevelIndex,
 		const BookUpdateTick &tick,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
-	return OnBookUpdateTick(security, tick, timeMeasurement);
+	return OnBookUpdateTick(security, priceLevelIndex, tick, timeMeasurement);
 }
 
 bool Service::OnLevel1Update(const Security &security) {
@@ -272,6 +273,7 @@ bool Service::OnNewBar(const Security &security, const Security::Bar &) {
 
 bool Service::OnBookUpdateTick(
 		const Security &security,
+		size_t /*priceLevelIndex*/,
 		const BookUpdateTick &,
 		const TimeMeasurement::Milestones &) {
 	GetLog().Error(

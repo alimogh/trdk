@@ -85,6 +85,7 @@ namespace trdk { namespace Engine {
 		void RaiseNewBarEvent(Security &, const Security::Bar &) const;
 		void RaiseBookUpdateTickEvent(
 				Security &,
+				size_t priceLevelIndex,
 				const BookUpdateTick &,
 				const Lib::TimeMeasurement::Milestones &);
 

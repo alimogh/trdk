@@ -177,6 +177,7 @@ void Dispatcher::SignalNewBar(
 void Dispatcher::SignalBookUpdateTick(
 			SubscriberPtrWrapper &subscriber,
 			Security &security,
+			size_t priceLevelIndex,
 			const BookUpdateTick &tick,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 	try {
@@ -184,7 +185,12 @@ void Dispatcher::SignalBookUpdateTick(
 			return;
 		}
 		m_bookUpdateTicks.Queue(
-			boost::make_tuple(&security, tick, timeMeasurement, subscriber),
+			boost::make_tuple(
+				&security,
+				priceLevelIndex,
+				tick,
+				timeMeasurement,
+				subscriber),
 			true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.

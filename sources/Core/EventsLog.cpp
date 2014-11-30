@@ -157,6 +157,8 @@ void EventsLog::BroadcastUnhandledException(
 				function,
 				file,
 				line);
+		} catch (int) {
+			message.CreateStandard("INT", "", function, file, line);
 		} catch (...) {
 			message.CreateStandard("UNKNOWN", "", function, file, line);
 		}

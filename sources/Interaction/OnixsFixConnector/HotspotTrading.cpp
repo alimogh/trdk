@@ -27,10 +27,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit HotspotTrading(
-					Context &context,
-					const std::string &tag,
-					const Lib::IniSectionRef &conf)
-				: FixTrading( context, tag, conf) {
+				size_t index,
+				Context &context,
+				const std::string &tag,
+				const Lib::IniSectionRef &conf)
+			: FixTrading(index, context, tag, conf) {
 			//...//
 		}
 		
@@ -195,12 +196,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 TradeSystemFactoryResult
 CreateHotspotTrading(
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &configuration) {
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration) {
 	TradeSystemFactoryResult result;
 	boost::get<0>(result).reset(
-		new HotspotTrading(context, tag, configuration));
+		new HotspotTrading(index, context, tag, configuration));
 	return result;
 }
 

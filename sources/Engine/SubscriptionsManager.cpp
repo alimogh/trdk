@@ -219,7 +219,8 @@ void SubscriptionsManager::SubscribeToBookUpdateTicks(
 			subscriber,
 			boost::ref(security),
 			_1,
-			_2));
+			_2,
+			_3));
 	const auto &connection = security.SubscribeToBookUpdateTicks(slot);
 	try {
 		slotConnections.push_back(connection);

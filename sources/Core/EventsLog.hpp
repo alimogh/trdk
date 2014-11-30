@@ -161,7 +161,6 @@ namespace trdk {
 
 		using Base::Write;
 		using Base::GetThreadId;
-		using Base::GetTime;
 
 		void Write(const char *tag, const char *message) throw() {
 			try {

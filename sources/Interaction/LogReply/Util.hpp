@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/08/26 00:09:20
+ *   Created: 2014/11/29 22:53:01
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,15 +8,19 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#include "Prec.hpp"
-#include "PositionReporter.hpp"
+#pragma once
 
-using namespace trdk;
+#include "Core/MarketDataSource.hpp"
 
-PositionReporter::PositionReporter() {
-	//...//
-}
+namespace trdk { namespace Interaction { namespace LogReply { namespace Detail {
 
-PositionReporter::~PositionReporter() {
-	//...//
-}
+	inline boost::filesystem::path GetSecurityFilename(
+			const MarketDataSource &source,
+			const Lib::Symbol &symbol) {
+		return
+			source.GetTag()
+				+ '_'
+				+ boost::erase_all_copy(symbol.GetSymbol(), "/");
+	}
+
+} } } }

@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/07/09 00:29:59
+ *   Created: 2014/11/29 14:22:50
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,22 +10,8 @@
 
 #pragma once
 
-#include "Fwd.hpp"
-#include "Api.h"
-
-namespace trdk {
-
-	class TRDK_CORE_API PositionReporter : private boost::noncopyable {
-
-	public:
-
-		PositionReporter();
-		virtual ~PositionReporter();
-
-	public:
-
-		virtual void ReportClosedPositon(const trdk::Position &) = 0;
-
-	};
-
-}
+#ifdef BOOST_WINDOWS
+#	define TRDK_INTERACTION_LOGREPLY_API
+#else
+#	define TRDK_INTERACTION_LOGREPLY_API extern "C"
+#endif

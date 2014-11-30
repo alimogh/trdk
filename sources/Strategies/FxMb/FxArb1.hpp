@@ -263,9 +263,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					Lib::TimeMeasurement::Milestones &);
 		virtual void OnPositionUpdate(Position &);
 
-		virtual void ReportDecision(const Position &) const;
-		virtual std::auto_ptr<PositionReporter> CreatePositionReporter() const;
-
 	protected:
 		
 		virtual void UpdateAlogImplSettings(const Lib::IniSectionRef &);

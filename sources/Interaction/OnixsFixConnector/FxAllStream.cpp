@@ -24,10 +24,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit FxAllStream(
-					Context &context,
-					const std::string &tag,
-					const IniSectionRef &conf)
-				: FixStream(context, tag, conf) {
+				size_t index,
+				Context &context,
+				const std::string &tag,
+				const IniSectionRef &conf)
+			: FixStream(index, context, tag, conf) {
 			//...//
 		}
 
@@ -62,11 +63,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 boost::shared_ptr<MarketDataSource>
 CreateFxAllStream(
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &configuration) {
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration) {
 	return boost::shared_ptr<MarketDataSource>(
-		new FxAllStream(context, tag, configuration));
+		new FxAllStream(index, context, tag, configuration));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
