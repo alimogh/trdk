@@ -35,7 +35,7 @@ namespace {
 		}
 	public:
 		const ServiceLogRecord & operator >>(std::ostream &os) const {
-			Dump(os, ";");
+			Dump(os, "\t");
 			return *this;
 		}
 	};
@@ -73,6 +73,46 @@ namespace {
 			ServiceLogOutStream,
 			TRDK_CONCURRENCY_PROFILE>
 		ServiceLogBase;
+
+	void WriteLogHead(ServiceLogRecord &record) {
+		
+		record % "time";
+			
+		for (size_t i = 1; i <= 3; ++i) {
+			for (size_t j = 1; j <= 2; ++j) {
+				record
+					% (boost::format("Pair %1%.%2% VWAP"			) % i % j).str()
+					% (boost::format("Pair %1%.%2% VWAP Prev1"		) % i % j).str()
+					% (boost::format("Pair %1%.%2% VWAP Prev2"		) % i % j).str()
+					% (boost::format("Pair %1%.%2% fastEMA"			) % i % j).str()
+					% (boost::format("Pair %1%.%2% fastEMA Prev1"	) % i % j).str()
+					% (boost::format("Pair %1%.%2% fastEMA Prev2"	) % i % j).str()
+					% (boost::format("Pair %1%.%2% slowEMA"			) % i % j).str()
+					% (boost::format("Pair %1%.%2% slowEMA Prev1"	) % i % j).str()
+					% (boost::format("Pair %1%.%2% slowEMA Prev2"	) % i % j).str();
+			}
+		}
+
+		for (size_t i = 1; i <= 3; ++i) {
+			for (size_t j = 1; j <= 2; ++j) {
+				for (size_t k = 4; k > 0; --k) {
+					record
+						% (boost::format("Pair %1%.%2% bid line %3% price") % i % j % k).str()
+						% (boost::format("Pair %1%.%2% bid line %3% qty") % i % j % k).str();
+				}
+			}
+		}
+		for (size_t i = 1; i <= 3; ++i) {
+			for (size_t j = 1; j <= 2; ++j) {
+				for (size_t k = 1; k <= 4; ++k) {
+					record
+						% (boost::format("Pair %1%.%2% offer line %3% price") % i % j % k).str()
+						% (boost::format("Pair %1%.%2% offer line %3% qty") % i % j % k).str();
+				}
+			}
+		}
+
+	}
 
 }
 
@@ -125,161 +165,7 @@ TriangulationWithDirectionStatService::TriangulationWithDirectionStatService(
 		}
 		m_serviceLog.EnableStream(m_serviceLogFile);
 
-		m_serviceLog.Write(
-			[](ServiceLogRecord &record) {
-				record
-					
-					% "time"
-										
-					% "Pair 1.1 VWAP"
-					% "Pair 1.1 VWAP Prev1"
-					% "Pair 1.1 VWAP Prev2"
-					% "Pair 1.1 fastEMA"
-					% "Pair 1.1 fastEMA Prev1"
-					% "Pair 1.1 fastEMA Prev2"
-					% "Pair 1.1 slowEMA"
-					% "Pair 1.1 slowEMA Prev1"
-					% "Pair 1.1 slowEMA Prev2"
-					% "Pair 1.1 bid price line 1"
-					% "Pair 1.1 bid qty line 1"
-					% "Pair 1.1 bid price line 2"
-					% "Pair 1.1 bid qty line 2"
-					% "Pair 1.1 bid price line 3"
-					% "Pair 1.1 bid qty line 3"
-					% "Pair 1.1 bid price line 4"
-					% "Pair 1.1 bid qty line 4"
-					% "Pair 1.1 bid price line 1"
-					% "Pair 1.1 offer qty line 1"
-					% "Pair 1.1 offer price line 2"
-					% "Pair 1.1 offer qty line 2"
-					% "Pair 1.1 offer price line 3"
-					% "Pair 1.1 offer qty line 3"
-					% "Pair 1.1 offer price line 4"
-					% "Pair 1.1 offer qty line 4"
-					% "Pair 1.2 VWAP"
-					% "Pair 1.2 VWAP Prev1"
-					% "Pair 1.2 VWAP Prev2"
-					% "Pair 1.2 fastEMA"
-					% "Pair 1.2 fastEMA Prev1"
-					% "Pair 1.2 fastEMA Prev2"
-					% "Pair 1.2 slowEMA"
-					% "Pair 1.2 slowEMA Prev1"
-					% "Pair 1.2 slowEMA Prev2"
-					% "Pair 1.2 bid price line 1"
-					% "Pair 1.2 bid qty line 1"
-					% "Pair 1.2 bid price line 2"
-					% "Pair 1.2 bid qty line 2"
-					% "Pair 1.2 bid price line 3"
-					% "Pair 1.2 bid qty line 3"
-					% "Pair 1.2 bid price line 4"
-					% "Pair 1.2 bid qty line 4"
-					% "Pair 1.2 offer qty line 1"
-					% "Pair 1.2 offer price line 2"
-					% "Pair 1.2 offer qty line 2"
-					% "Pair 1.2 offer price line 3"
-					% "Pair 1.2 offer qty line 3"
-					% "Pair 1.2 offer price line 4"
-					% "Pair 1.2 offer qty line 4"
-
-					% "Pair 2.1 VWAP"
-					% "Pair 2.1 VWAP Prev1"
-					% "Pair 2.1 VWAP Prev2"
-					% "Pair 2.1 fastEMA"
-					% "Pair 2.1 fastEMA Prev1"
-					% "Pair 2.1 fastEMA Prev2"
-					% "Pair 2.1 slowEMA"
-					% "Pair 2.1 slowEMA Prev1"
-					% "Pair 2.1 slowEMA Prev2"
-					% "Pair 2.1 bid price line 1"
-					% "Pair 2.1 bid qty line 1"
-					% "Pair 2.1 bid price line 2"
-					% "Pair 2.1 bid qty line 2"
-					% "Pair 2.1 bid price line 3"
-					% "Pair 2.1 bid qty line 3"
-					% "Pair 2.1 bid price line 4"
-					% "Pair 2.1 bid qty line 4"
-					% "Pair 2.1 offer qty line 1"
-					% "Pair 2.1 offer price line 2"
-					% "Pair 2.1 offer qty line 2"
-					% "Pair 2.1 offer price line 3"
-					% "Pair 2.1 offer qty line 3"
-					% "Pair 2.1 offer price line 4"
-					% "Pair 2.1 offer qty line 4"
-					% "Pair 2.2 VWAP"
-					% "Pair 2.2 VWAP Prev1"
-					% "Pair 2.2 VWAP Prev2"
-					% "Pair 2.2 fastEMA"
-					% "Pair 2.2 fastEMA Prev1"
-					% "Pair 2.2 fastEMA Prev2"
-					% "Pair 2.2 slowEMA"
-					% "Pair 2.2 slowEMA Prev1"
-					% "Pair 2.2 slowEMA Prev2"
-					% "Pair 2.2 bid price line 1"
-					% "Pair 2.2 bid qty line 1"
-					% "Pair 2.2 bid price line 2"
-					% "Pair 2.2 bid qty line 2"
-					% "Pair 2.2 bid price line 3"
-					% "Pair 2.2 bid qty line 3"
-					% "Pair 2.2 bid price line 4"
-					% "Pair 2.2 bid qty line 4"
-					% "Pair 2.2 offer qty line 1"
-					% "Pair 2.2 offer price line 2"
-					% "Pair 2.2 offer qty line 2"
-					% "Pair 2.2 offer price line 3"
-					% "Pair 2.2 offer qty line 3"
-					% "Pair 2.2 offer price line 4"
-					% "Pair 2.2 offer qty line 4"
-
-					% "Pair 3.1 VWAP"
-					% "Pair 3.1 VWAP Prev1"
-					% "Pair 3.1 VWAP Prev2"
-					% "Pair 3.1 fastEMA"
-					% "Pair 3.1 fastEMA Prev1"
-					% "Pair 3.1 fastEMA Prev2"
-					% "Pair 3.1 slowEMA"
-					% "Pair 3.1 slowEMA Prev1"
-					% "Pair 3.1 slowEMA Prev2"
-					% "Pair 3.1 bid price line 1"
-					% "Pair 3.1 bid qty line 1"
-					% "Pair 3.1 bid price line 2"
-					% "Pair 3.1 bid qty line 2"
-					% "Pair 3.1 bid price line 3"
-					% "Pair 3.1 bid qty line 3"
-					% "Pair 3.1 bid price line 4"
-					% "Pair 3.1 bid qty line 4"
-					% "Pair 3.1 offer qty line 1"
-					% "Pair 3.1 offer price line 2"
-					% "Pair 3.1 offer qty line 2"
-					% "Pair 3.1 offer price line 3"
-					% "Pair 3.1 offer qty line 3"
-					% "Pair 3.1 offer price line 4"
-					% "Pair 3.1 offer qty line 4"
-					% "Pair 3.2 VWAP"
-					% "Pair 3.2 VWAP Prev1"
-					% "Pair 3.2 VWAP Prev2"
-					% "Pair 3.2 fastEMA"
-					% "Pair 3.2 fastEMA Prev1"
-					% "Pair 3.2 fastEMA Prev2"
-					% "Pair 3.2 slowEMA"
-					% "Pair 3.2 slowEMA Prev1"
-					% "Pair 3.2 slowEMA Prev2"
-					% "Pair 3.2 bid price line 1"
-					% "Pair 3.2 bid qty line 1"
-					% "Pair 3.2 bid price line 2"
-					% "Pair 3.2 bid qty line 2"
-					% "Pair 3.2 bid price line 3"
-					% "Pair 3.2 bid qty line 3"
-					% "Pair 3.2 bid price line 4"
-					% "Pair 3.2 bid qty line 4"
-					% "Pair 3.2 offer qty line 1"
-					% "Pair 3.2 offer price line 2"
-					% "Pair 3.2 offer qty line 2"
-					% "Pair 3.2 offer price line 3"
-					% "Pair 3.2 offer qty line 3"
-					% "Pair 3.2 offer price line 4"
-					% "Pair 3.2 offer qty line 4";
-
-			});
+		m_serviceLog.Write(WriteLogHead);
 
 	}
 
@@ -354,66 +240,63 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 	struct Side {
 		Qty qty;
 		double vol;
-		double weightedAvgPrice;
+		double avgPrice;
 	};
 	Side bid = {};
 	Side offer = {};
+
+	Data data;
 
 	{
 	
 		const auto &sum = [&security](
 				size_t levelIndex,
 				const Security::Book::Side &source,
-				Side &result) {
+				Side &result,
+				Data::Levels::iterator &level) {
 			if (source.GetLevelsCount() <= levelIndex) {
 				return;
 			}
-			const auto &level = source.GetLevel(levelIndex);
-			result.qty += level.GetQty();
-			result.vol
-				+= level.GetQty() * security.DescalePrice(level.GetPrice());
+			const auto &sourceLevel = source.GetLevel(levelIndex);
+			level->price = security.DescalePrice(sourceLevel.GetPrice());
+			level->qty = sourceLevel.GetQty();
+			result.qty += level->qty;
+			result.vol += level->qty * level->price;
+			++level;
 		};
 
 		const auto realLevelsCount = std::max(
 			bidsBook.GetLevelsCount(),
 			offersBook.GetLevelsCount());
+		auto bidsLevel = data.bids.begin();
+		auto offersLevel = data.offers.begin();
 		for (	
 				size_t i = 0;
 				i < std::min(m_levelsCount, realLevelsCount);
 				++i) {
-			sum(i, bidsBook, bid);
-			sum(i, offersBook, offer);
+			sum(i, bidsBook, bid, bidsLevel);
+			sum(i, offersBook, offer, offersLevel);
 		}
 
 	}
 
-	Data data;
-
 	if (bid.qty != 0) {
-		data.weightedAvgBidPrice = bid.vol / bid.qty;
+		bid.avgPrice = bid.vol / bid.qty;
 	}
 	if (offer.qty != 0) {
-		data.weightedAvgOfferPrice = offer.vol / offer.qty;
+		offer.avgPrice = offer.vol / offer.qty;
 	}
 	
 	if (bid.qty != 0 || offer.qty != 0) {
 		data.theo
-			= (data.weightedAvgBidPrice * offer.qty + data.weightedAvgOfferPrice * bid.qty)
+			= (bid.avgPrice * offer.qty + offer.avgPrice * bid.qty)
 				/ (bid.qty + offer.qty);
 	}
 	
-	if (bidsBook.GetLevelsCount() > 0) {
-		data.midpoint += bidsBook.GetLevel(0).GetPrice();
-	}
-	if (offersBook.GetLevelsCount() > 0) {
-		data.midpoint += offersBook.GetLevel(0).GetPrice();
-	}
-	data.midpoint /= 2;
-
 	Source &source = GetSource(security.GetSource().GetIndex());
 
-	source.slowEmaAcc(data.midpoint);
-	source.fastEmaAcc(data.midpoint);
+	source.slowEmaAcc(data.theo);
+	source.fastEmaAcc(data.theo);
 
 	const auto &now = GetContext().GetCurrentTime();
 	if (source.emaStart == pt::not_a_date_time) {
@@ -437,7 +320,9 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 	}
 	source.dataLock.clear(boost::memory_order_release);
 
-	LogState();
+	if (hasChanges) {
+		LogState();
+	}
 
 	return hasChanges;
 
@@ -466,7 +351,13 @@ void TriangulationWithDirectionStatService::LogState() const {
 					% data.emaSlow
 					% data.emaSlow
 					% data.emaSlow;
-				foreach (const auto &line, data.bids) {
+			}
+		}
+		foreach (const TriangulationWithDirectionStatService *s, m_instancies) {
+			const auto &sourcesCount = s->m_data.size();
+			for (size_t i = 0; i < sourcesCount; ++i) {
+				const Data &data = s->GetData(i);
+				foreach_reversed (const auto &line, data.bids) {
 					record % line.price % line.qty;
 				}
 				foreach (const auto &line, data.offers) {

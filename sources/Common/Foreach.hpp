@@ -19,3 +19,4 @@ namespace boost {
 }
 
 #define foreach BOOST_FOREACH
+#define foreach_reversed BOOST_REVERSE_FOREACH

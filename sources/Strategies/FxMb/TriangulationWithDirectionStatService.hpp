@@ -85,19 +85,18 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		struct Data {
 
-			double theo;
-			double weightedAvgBidPrice;
-			double weightedAvgOfferPrice;
-			double midpoint;
-			double emaFast;
-			double emaSlow;
-
 			struct Level {
 				double price;
 				Qty qty;
 			};
-			boost::array<Level, 4> bids;
-			boost::array<Level, 4> offers;
+			typedef boost::array<Level, 4> Levels;
+
+			double theo;
+			double emaFast;
+			double emaSlow;
+
+			Levels bids;
+			Levels offers;
 
 			Data() {
 				memset(this, 0, sizeof(*this));
@@ -106,13 +105,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			bool operator ==(const Data &rhs) const {
 				return
 					Lib::IsEqual(theo, rhs.theo)
-					&&	Lib::IsEqual(
-							weightedAvgBidPrice,
-							rhs.weightedAvgBidPrice)
-					&&	Lib::IsEqual(
-							weightedAvgOfferPrice,
-							rhs.weightedAvgOfferPrice)
-					&&	Lib::IsEqual(midpoint, rhs.midpoint)
 					&&	Lib::IsEqual(emaFast, rhs.emaFast)
 					&&	Lib::IsEqual(emaSlow, rhs.emaSlow);
 			}
