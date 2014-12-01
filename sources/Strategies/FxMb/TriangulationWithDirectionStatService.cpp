@@ -11,6 +11,8 @@
 #include "Prec.hpp"
 #include "TriangulationWithDirectionStatService.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/Settings.hpp"
+#include "Core/AsyncLog.hpp"
 
 namespace pt = boost::posix_time;
 namespace accs = boost::accumulators;
@@ -21,6 +23,83 @@ using namespace trdk::Strategies::FxMb;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+
+	class ServiceLogRecord : public AsyncLogRecord {
+	public:
+		explicit ServiceLogRecord(
+				const Log::Time &time,
+				const Log::ThreadId &threadId)
+			: AsyncLogRecord(time, threadId) {
+			//...//
+		}
+	public:
+		const ServiceLogRecord & operator >>(std::ostream &os) const {
+			Dump(os, ";");
+			return *this;
+		}
+	};
+
+	inline std::ostream & operator <<(
+			std::ostream &os,
+			const ServiceLogRecord &record) {
+		record >> os;
+		return os;
+	}
+
+	class ServiceLogOutStream : private boost::noncopyable {
+	public:
+		void Write(const ServiceLogRecord &record) {
+			m_log.Write(record);
+		}
+		bool IsEnabled() const {
+			return m_log.IsEnabled();
+		}
+		void EnableStream(std::ostream &os) {
+			m_log.EnableStream(os);
+		}
+		Log::Time GetTime() {
+			return std::move(m_log.GetTime());
+		}
+		Log::ThreadId GetThreadId() const {
+			return std::move(m_log.GetThreadId());
+		}
+	private:
+		Log m_log;
+	};
+
+	typedef trdk::AsyncLog<
+			ServiceLogRecord,
+			ServiceLogOutStream,
+			TRDK_CONCURRENCY_PROFILE>
+		ServiceLogBase;
+
+}
+
+class TriangulationWithDirectionStatService::ServiceLog
+	: private ServiceLogBase {
+
+public:
+
+	typedef ServiceLogBase Base;
+
+public:
+
+	using Base::IsEnabled;
+	using Base::EnableStream;
+
+	template<typename FormatCallback>
+	void Write(const FormatCallback &formatCallback) {
+		Base::Write(formatCallback);
+	}
+
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+std::vector<TriangulationWithDirectionStatService *>
+TriangulationWithDirectionStatService::m_instancies;
+
 TriangulationWithDirectionStatService::TriangulationWithDirectionStatService(
 		Context &context,
 		const std::string &tag,
@@ -29,12 +108,197 @@ TriangulationWithDirectionStatService::TriangulationWithDirectionStatService(
 	m_levelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
 	m_emaSpeedSlow(conf.ReadTypedKey<double>("ema_speed_slow")),
-	m_emaSpeedFast(conf.ReadTypedKey<double>("ema_speed_fast")) {
-	//...//
+	m_emaSpeedFast(conf.ReadTypedKey<double>("ema_speed_fast")),
+	m_serviceLog(GetServiceLog(GetContext())) {
+	
+	if (conf.ReadBoolKey("log") && !m_serviceLog.IsEnabled()) {
+		
+		const auto &logPath
+			= GetContext().GetSettings().GetLogsDir() / "pretrade.log";
+		
+		GetContext().GetLog().Info("Log: %1%.", logPath);
+		m_serviceLogFile.open(
+			logPath.string().c_str(),
+			std::ios::app | std::ios::ate);
+		if (!m_serviceLogFile) {
+			throw ModuleError("Failed to open log file");
+		}
+		m_serviceLog.EnableStream(m_serviceLogFile);
+
+		m_serviceLog.Write(
+			[](ServiceLogRecord &record) {
+				record
+					
+					% "time"
+										
+					% "Pair 1.1 VWAP"
+					% "Pair 1.1 VWAP Prev1"
+					% "Pair 1.1 VWAP Prev2"
+					% "Pair 1.1 fastEMA"
+					% "Pair 1.1 fastEMA Prev1"
+					% "Pair 1.1 fastEMA Prev2"
+					% "Pair 1.1 slowEMA"
+					% "Pair 1.1 slowEMA Prev1"
+					% "Pair 1.1 slowEMA Prev2"
+					% "Pair 1.1 bid price line 1"
+					% "Pair 1.1 bid qty line 1"
+					% "Pair 1.1 bid price line 2"
+					% "Pair 1.1 bid qty line 2"
+					% "Pair 1.1 bid price line 3"
+					% "Pair 1.1 bid qty line 3"
+					% "Pair 1.1 bid price line 4"
+					% "Pair 1.1 bid qty line 4"
+					% "Pair 1.1 bid price line 1"
+					% "Pair 1.1 offer qty line 1"
+					% "Pair 1.1 offer price line 2"
+					% "Pair 1.1 offer qty line 2"
+					% "Pair 1.1 offer price line 3"
+					% "Pair 1.1 offer qty line 3"
+					% "Pair 1.1 offer price line 4"
+					% "Pair 1.1 offer qty line 4"
+					% "Pair 1.2 VWAP"
+					% "Pair 1.2 VWAP Prev1"
+					% "Pair 1.2 VWAP Prev2"
+					% "Pair 1.2 fastEMA"
+					% "Pair 1.2 fastEMA Prev1"
+					% "Pair 1.2 fastEMA Prev2"
+					% "Pair 1.2 slowEMA"
+					% "Pair 1.2 slowEMA Prev1"
+					% "Pair 1.2 slowEMA Prev2"
+					% "Pair 1.2 bid price line 1"
+					% "Pair 1.2 bid qty line 1"
+					% "Pair 1.2 bid price line 2"
+					% "Pair 1.2 bid qty line 2"
+					% "Pair 1.2 bid price line 3"
+					% "Pair 1.2 bid qty line 3"
+					% "Pair 1.2 bid price line 4"
+					% "Pair 1.2 bid qty line 4"
+					% "Pair 1.2 offer qty line 1"
+					% "Pair 1.2 offer price line 2"
+					% "Pair 1.2 offer qty line 2"
+					% "Pair 1.2 offer price line 3"
+					% "Pair 1.2 offer qty line 3"
+					% "Pair 1.2 offer price line 4"
+					% "Pair 1.2 offer qty line 4"
+
+					% "Pair 2.1 VWAP"
+					% "Pair 2.1 VWAP Prev1"
+					% "Pair 2.1 VWAP Prev2"
+					% "Pair 2.1 fastEMA"
+					% "Pair 2.1 fastEMA Prev1"
+					% "Pair 2.1 fastEMA Prev2"
+					% "Pair 2.1 slowEMA"
+					% "Pair 2.1 slowEMA Prev1"
+					% "Pair 2.1 slowEMA Prev2"
+					% "Pair 2.1 bid price line 1"
+					% "Pair 2.1 bid qty line 1"
+					% "Pair 2.1 bid price line 2"
+					% "Pair 2.1 bid qty line 2"
+					% "Pair 2.1 bid price line 3"
+					% "Pair 2.1 bid qty line 3"
+					% "Pair 2.1 bid price line 4"
+					% "Pair 2.1 bid qty line 4"
+					% "Pair 2.1 offer qty line 1"
+					% "Pair 2.1 offer price line 2"
+					% "Pair 2.1 offer qty line 2"
+					% "Pair 2.1 offer price line 3"
+					% "Pair 2.1 offer qty line 3"
+					% "Pair 2.1 offer price line 4"
+					% "Pair 2.1 offer qty line 4"
+					% "Pair 2.2 VWAP"
+					% "Pair 2.2 VWAP Prev1"
+					% "Pair 2.2 VWAP Prev2"
+					% "Pair 2.2 fastEMA"
+					% "Pair 2.2 fastEMA Prev1"
+					% "Pair 2.2 fastEMA Prev2"
+					% "Pair 2.2 slowEMA"
+					% "Pair 2.2 slowEMA Prev1"
+					% "Pair 2.2 slowEMA Prev2"
+					% "Pair 2.2 bid price line 1"
+					% "Pair 2.2 bid qty line 1"
+					% "Pair 2.2 bid price line 2"
+					% "Pair 2.2 bid qty line 2"
+					% "Pair 2.2 bid price line 3"
+					% "Pair 2.2 bid qty line 3"
+					% "Pair 2.2 bid price line 4"
+					% "Pair 2.2 bid qty line 4"
+					% "Pair 2.2 offer qty line 1"
+					% "Pair 2.2 offer price line 2"
+					% "Pair 2.2 offer qty line 2"
+					% "Pair 2.2 offer price line 3"
+					% "Pair 2.2 offer qty line 3"
+					% "Pair 2.2 offer price line 4"
+					% "Pair 2.2 offer qty line 4"
+
+					% "Pair 3.1 VWAP"
+					% "Pair 3.1 VWAP Prev1"
+					% "Pair 3.1 VWAP Prev2"
+					% "Pair 3.1 fastEMA"
+					% "Pair 3.1 fastEMA Prev1"
+					% "Pair 3.1 fastEMA Prev2"
+					% "Pair 3.1 slowEMA"
+					% "Pair 3.1 slowEMA Prev1"
+					% "Pair 3.1 slowEMA Prev2"
+					% "Pair 3.1 bid price line 1"
+					% "Pair 3.1 bid qty line 1"
+					% "Pair 3.1 bid price line 2"
+					% "Pair 3.1 bid qty line 2"
+					% "Pair 3.1 bid price line 3"
+					% "Pair 3.1 bid qty line 3"
+					% "Pair 3.1 bid price line 4"
+					% "Pair 3.1 bid qty line 4"
+					% "Pair 3.1 offer qty line 1"
+					% "Pair 3.1 offer price line 2"
+					% "Pair 3.1 offer qty line 2"
+					% "Pair 3.1 offer price line 3"
+					% "Pair 3.1 offer qty line 3"
+					% "Pair 3.1 offer price line 4"
+					% "Pair 3.1 offer qty line 4"
+					% "Pair 3.2 VWAP"
+					% "Pair 3.2 VWAP Prev1"
+					% "Pair 3.2 VWAP Prev2"
+					% "Pair 3.2 fastEMA"
+					% "Pair 3.2 fastEMA Prev1"
+					% "Pair 3.2 fastEMA Prev2"
+					% "Pair 3.2 slowEMA"
+					% "Pair 3.2 slowEMA Prev1"
+					% "Pair 3.2 slowEMA Prev2"
+					% "Pair 3.2 bid price line 1"
+					% "Pair 3.2 bid qty line 1"
+					% "Pair 3.2 bid price line 2"
+					% "Pair 3.2 bid qty line 2"
+					% "Pair 3.2 bid price line 3"
+					% "Pair 3.2 bid qty line 3"
+					% "Pair 3.2 bid price line 4"
+					% "Pair 3.2 bid qty line 4"
+					% "Pair 3.2 offer qty line 1"
+					% "Pair 3.2 offer price line 2"
+					% "Pair 3.2 offer qty line 2"
+					% "Pair 3.2 offer price line 3"
+					% "Pair 3.2 offer qty line 3"
+					% "Pair 3.2 offer price line 4"
+					% "Pair 3.2 offer qty line 4";
+
+			});
+
+	}
+
+	m_instancies.push_back(this);
+
 }
 
 TriangulationWithDirectionStatService::~TriangulationWithDirectionStatService() {
-	//...//
+	try {
+		const auto &pos = std::find(
+			m_instancies.begin(),
+			m_instancies.end(),
+			this);
+		Assert(pos != m_instancies.end());
+		m_instancies.erase(pos);
+	} catch (...) {
+		AssertFailNoException();
+		throw;
+	}
 }
 
 void TriangulationWithDirectionStatService::UpdateAlogImplSettings(const IniSectionRef &) {
@@ -123,14 +387,20 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 
 	}
 
-	Data data = {};
+	Data data;
 
-	data.weightedAvgBidPrice = bid.vol / bid.qty;
-	data.weightedAvgOfferPrice = offer.vol / offer.qty;
+	if (bid.qty != 0) {
+		data.weightedAvgBidPrice = bid.vol / bid.qty;
+	}
+	if (offer.qty != 0) {
+		data.weightedAvgOfferPrice = offer.vol / offer.qty;
+	}
 	
-	data.theo
-		= (data.weightedAvgBidPrice * offer.qty + data.weightedAvgOfferPrice * bid.qty)
-			/ (bid.qty + offer.qty);
+	if (bid.qty != 0 || offer.qty != 0) {
+		data.theo
+			= (data.weightedAvgBidPrice * offer.qty + data.weightedAvgOfferPrice * bid.qty)
+				/ (bid.qty + offer.qty);
+	}
 	
 	if (bidsBook.GetLevelsCount() > 0) {
 		data.midpoint += bidsBook.GetLevel(0).GetPrice();
@@ -167,8 +437,45 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 	}
 	source.dataLock.clear(boost::memory_order_release);
 
+	LogState();
+
 	return hasChanges;
 
+}
+
+TriangulationWithDirectionStatService::ServiceLog &
+TriangulationWithDirectionStatService::GetServiceLog(Context &) {
+	static ServiceLog instance;
+	return instance;
+}
+
+void TriangulationWithDirectionStatService::LogState() const {
+	const auto &write = [&](AsyncLogRecord &record) {
+		record % GetContext().GetCurrentTime().time_of_day();
+		foreach (const TriangulationWithDirectionStatService *s, m_instancies) {
+			const auto &sourcesCount = s->m_data.size();
+			for (size_t i = 0; i < sourcesCount; ++i) {
+				const Data &data = s->GetData(i);
+				record
+					% data.theo
+					% data.theo
+					% data.theo
+					% data.emaFast
+					% data.emaFast
+					% data.emaFast
+					% data.emaSlow
+					% data.emaSlow
+					% data.emaSlow;
+				foreach (const auto &line, data.bids) {
+					record % line.price % line.qty;
+				}
+				foreach (const auto &line, data.offers) {
+					record % line.price % line.qty;
+				}
+			}
+		}
+	};
+	m_serviceLog.Write(write);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

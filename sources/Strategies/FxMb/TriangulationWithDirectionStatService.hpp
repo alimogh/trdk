@@ -81,7 +81,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		typedef Service Base;
 
-	private:
+	public:
 
 		struct Data {
 
@@ -91,6 +91,17 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			double midpoint;
 			double emaFast;
 			double emaSlow;
+
+			struct Level {
+				double price;
+				Qty qty;
+			};
+			boost::array<Level, 4> bids;
+			boost::array<Level, 4> offers;
+
+			Data() {
+				memset(this, 0, sizeof(*this));
+			}
 
 			bool operator ==(const Data &rhs) const {
 				return
@@ -111,6 +122,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 
 		};
+
+	private:
 
 		struct Source
 				: public Data,
@@ -141,6 +154,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 
 		};
+
+		class ServiceLog;
 
 	public:
 
@@ -193,12 +208,23 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	private:
 
+		static ServiceLog & GetServiceLog(Context &);
+		void LogState() const;
+
+	private:
+
 		const size_t m_levelsCount;
 		
 		const double m_emaSpeedSlow;
 		const double m_emaSpeedFast;
 
+		std::ofstream m_serviceLogFile;
+		ServiceLog &m_serviceLog;
+
 		std::vector<boost::shared_ptr<Source>> m_data;
+
+		static std::vector<TriangulationWithDirectionStatService *>
+			m_instancies;
 
 	};
 
