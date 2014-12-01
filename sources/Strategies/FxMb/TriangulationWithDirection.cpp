@@ -33,13 +33,11 @@ public:
 public:
 
 	explicit TriangulationWithDirection(
-				Context &context,
-				const std::string &tag,
-				const IniSectionRef &)
-			: Base(context, "TriangulationWithDirection", tag) {
-		GetTradingLog().Write(
-			"symbol\tsource\ttheo\tmidpoint\tEMA fast\tEMA slow\tavg bid\tavg offer",
-			[](TradingRecord &) {});
+			Context &context,
+			const std::string &tag,
+			const IniSectionRef &)
+		: Base(context, "TriangulationWithDirection", tag) {
+		//...//
 	}
 		
 	virtual ~TriangulationWithDirection() {
@@ -55,28 +53,7 @@ public:
 	}
 
 	virtual void OnServiceDataUpdate(const Service &) {
-
-		foreach (const auto &stat, m_stat) {
-
-			for (size_t i = 0; i < 2; ++i) {
-				GetTradingLog().Write(
-					"%7%\t%8%\t%1$.5f\t%2$.5f\t%3$.5f\t%4$.5f\t%5$.5f\t%6$.5f",
-					[&stat, i](TradingRecord &record) {
-						const auto &data = stat->GetData(i);
-						record
-							% data.theo
-							% data.midpoint
-							% data.emaFast
-							% data.emaSlow
-							% data.weightedAvgBidPrice
-							% data.weightedAvgOfferPrice
-							% stat->GetSecurity(i).GetSource().GetTag()
-							% stat->GetSecurity(i);
-					});
-			}
-
-		}
-
+		//...//
 	}
 		
 protected:

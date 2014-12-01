@@ -62,6 +62,7 @@ public:
 
 	virtual bool OnBookUpdateTick(
 			const Security &security,
+			size_t /*priceLevelIndex*/,
 			const BookUpdateTick &tick,
 			const TimeMeasurement::Milestones &) {
 		Assert(m_files.find(security.GetSource().GetTag()) != m_files.end());

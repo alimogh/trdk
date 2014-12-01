@@ -81,27 +81,30 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		typedef Service Base;
 
-	private:
+	public:
 
 		struct Data {
 
+			struct Level {
+				double price;
+				Qty qty;
+			};
+			typedef boost::array<Level, 4> Levels;
+
 			double theo;
-			double weightedAvgBidPrice;
-			double weightedAvgOfferPrice;
-			double midpoint;
 			double emaFast;
 			double emaSlow;
+
+			Levels bids;
+			Levels offers;
+
+			Data() {
+				memset(this, 0, sizeof(*this));
+			}
 
 			bool operator ==(const Data &rhs) const {
 				return
 					Lib::IsEqual(theo, rhs.theo)
-					&&	Lib::IsEqual(
-							weightedAvgBidPrice,
-							rhs.weightedAvgBidPrice)
-					&&	Lib::IsEqual(
-							weightedAvgOfferPrice,
-							rhs.weightedAvgOfferPrice)
-					&&	Lib::IsEqual(midpoint, rhs.midpoint)
 					&&	Lib::IsEqual(emaFast, rhs.emaFast)
 					&&	Lib::IsEqual(emaSlow, rhs.emaSlow);
 			}
@@ -111,6 +114,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 
 		};
+
+	private:
 
 		struct Source
 				: public Data,
@@ -141,6 +146,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			}
 
 		};
+
+		class ServiceLog;
 
 	public:
 
@@ -193,12 +200,23 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	private:
 
+		static ServiceLog & GetServiceLog(Context &);
+		void LogState() const;
+
+	private:
+
 		const size_t m_levelsCount;
 		
 		const double m_emaSpeedSlow;
 		const double m_emaSpeedFast;
 
+		std::ofstream m_serviceLogFile;
+		ServiceLog &m_serviceLog;
+
 		std::vector<boost::shared_ptr<Source>> m_data;
+
+		static std::vector<TriangulationWithDirectionStatService *>
+			m_instancies;
 
 	};
 
