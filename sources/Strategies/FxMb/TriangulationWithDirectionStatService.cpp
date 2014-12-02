@@ -76,39 +76,33 @@ namespace {
 
 	void WriteLogHead(ServiceLogRecord &record) {
 		
-		record % "time";
+		record % "time" % "ECN";
 			
 		for (size_t i = 1; i <= 3; ++i) {
-			for (size_t j = 1; j <= 2; ++j) {
-				record
-					% (boost::format("Pair %1%.%2% VWAP"			) % i % j).str()
-					% (boost::format("Pair %1%.%2% VWAP Prev1"		) % i % j).str()
-					% (boost::format("Pair %1%.%2% VWAP Prev2"		) % i % j).str()
-					% (boost::format("Pair %1%.%2% fastEMA"			) % i % j).str()
-					% (boost::format("Pair %1%.%2% fastEMA Prev1"	) % i % j).str()
-					% (boost::format("Pair %1%.%2% fastEMA Prev2"	) % i % j).str()
-					% (boost::format("Pair %1%.%2% slowEMA"			) % i % j).str()
-					% (boost::format("Pair %1%.%2% slowEMA Prev1"	) % i % j).str()
-					% (boost::format("Pair %1%.%2% slowEMA Prev2"	) % i % j).str();
-			}
+			record
+				% (boost::format("Pair %1% VWAP"			) % i).str()
+				% (boost::format("Pair %1% VWAP Prev1"		) % i).str()
+				% (boost::format("Pair %1% VWAP Prev2"		) % i).str()
+				% (boost::format("Pair %1% fastEMA"			) % i).str()
+				% (boost::format("Pair %1% fastEMA Prev1"	) % i).str()
+				% (boost::format("Pair %1% fastEMA Prev2"	) % i).str()
+				% (boost::format("Pair %1% slowEMA"			) % i).str()
+				% (boost::format("Pair %1% slowEMA Prev1"	) % i).str()
+				% (boost::format("Pair %1% slowEMA Prev2"	) % i).str();
 		}
 
 		for (size_t i = 1; i <= 3; ++i) {
-			for (size_t j = 1; j <= 2; ++j) {
-				for (size_t k = 4; k > 0; --k) {
-					record
-						% (boost::format("Pair %1%.%2% bid line %3% price") % i % j % k).str()
-						% (boost::format("Pair %1%.%2% bid line %3% qty") % i % j % k).str();
-				}
+			for (size_t k = 4; k > 0; --k) {
+				record
+					% (boost::format("Pair %1% bid line %2% price") % i % k).str()
+					% (boost::format("Pair %1% bid line %2% qty")	% i % k).str();
 			}
 		}
 		for (size_t i = 1; i <= 3; ++i) {
-			for (size_t j = 1; j <= 2; ++j) {
-				for (size_t k = 1; k <= 4; ++k) {
-					record
-						% (boost::format("Pair %1%.%2% offer line %3% price") % i % j % k).str()
-						% (boost::format("Pair %1%.%2% offer line %3% qty") % i % j % k).str();
-				}
+			for (size_t k = 1; k <= 4; ++k) {
+				record
+					% (boost::format("Pair %1% offer line %2% price")	% i % k).str()
+					% (boost::format("Pair %1% offer line %2% qty")		% i % k).str();
 			}
 		}
 
@@ -246,6 +240,7 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 	Side offer = {};
 
 	Data data;
+	data.current.time = GetContext().GetCurrentTime();
 
 	{
 	
@@ -288,81 +283,104 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 	}
 	
 	if (bid.qty != 0 || offer.qty != 0) {
-		data.theo
+		data.current.theo
 			= (bid.avgPrice * offer.qty + offer.avgPrice * bid.qty)
 				/ (bid.qty + offer.qty);
 	}
 	
-	Source &source = GetSource(security.GetSource().GetIndex());
+	const auto &sourceIndex = security.GetSource().GetIndex();
+	Source &source = GetSource(sourceIndex);
 
-	source.slowEmaAcc(data.theo);
-	source.fastEmaAcc(data.theo);
+	source.slowEmaAcc(data.current.theo);
+	data.current.emaSlow = accs::ema(source.slowEmaAcc);
 
-	const auto &now = GetContext().GetCurrentTime();
-	if (source.emaStart == pt::not_a_date_time) {
-		source.emaStart = now;
-		data.emaSlow = source.emaSlow;
-		data.emaFast = source.emaFast;
-	} else if (
-			now - source.emaStart >= pt::seconds(2) + pt::milliseconds(500)) {
-		data.emaSlow = accs::ema(source.slowEmaAcc);
-		data.emaFast = accs::ema(source.fastEmaAcc);
-		source.emaStart = now;
-	} else {
-		data.emaSlow = source.emaSlow;
-		data.emaFast = source.emaFast;
+	source.fastEmaAcc(data.current.theo);
+	data.current.emaFast = accs::ema(source.fastEmaAcc);
+
+	source.points.push_back(data.current);
+	const auto &p2Time = data.current.time - pt::minutes(2);
+	const auto &p1Time = data.current.time - pt::milliseconds(500);
+	for (
+			auto it = source.points.cbegin();
+			it != source.points.cend();
+			) {
+		const auto &frontPoint = *it;
+		if (frontPoint.time <= p2Time) {
+			const auto next = it + 1;
+			AssertLe(frontPoint.time, next->time);
+			if (next == source.points.cend()) {
+				data.prev1
+					= data.prev2
+					= frontPoint;
+				break;
+			}
+			if (next->time <= p2Time) {
+				Assert(it == source.points.cbegin());
+				source.points.pop_front();
+				it = source.points.cbegin();
+				continue;
+			}
+			data.prev2 = frontPoint;
+			AssertLt(frontPoint.time, p1Time);
+			data.prev1 = frontPoint;
+		} else if (frontPoint.time <= p1Time) {
+			Assert(
+				data.prev2.time == pt::not_a_date_time
+				|| data.prev2.time < frontPoint.time);
+			data.prev1 = frontPoint;
+		} else {
+			break;
+		}
+		++it;
 	}
+	Assert(
+		data.prev1.time == pt::not_a_date_time
+		|| data.prev2.time == pt::not_a_date_time
+		|| (data.prev2.time <= data.prev1.time
+			&& data.prev1.time < data.current.time));
 
 	while (source.dataLock.test_and_set(boost::memory_order_acquire));
-	const bool hasChanges = source != data;
-	if (hasChanges) {
-		static_cast<Data &>(source) = data;
-	}
+	static_cast<Data &>(source) = data;
 	source.dataLock.clear(boost::memory_order_release);
 
-	if (hasChanges) {
-		LogState();
-	}
+	LogState(security.GetSource());
 
-	return hasChanges;
+	return true;
 
 }
 
 TriangulationWithDirectionStatService::ServiceLog &
-TriangulationWithDirectionStatService::GetServiceLog(Context &) {
+TriangulationWithDirectionStatService::GetServiceLog(
+		Context &) {
 	static ServiceLog instance;
 	return instance;
 }
 
-void TriangulationWithDirectionStatService::LogState() const {
+void TriangulationWithDirectionStatService::LogState(
+		const MarketDataSource &mds)
+		const {
 	const auto &write = [&](AsyncLogRecord &record) {
-		record % GetContext().GetCurrentTime().time_of_day();
+		record % GetContext().GetCurrentTime() % mds.GetTag().c_str(); 
 		foreach (const TriangulationWithDirectionStatService *s, m_instancies) {
-			const auto &sourcesCount = s->m_data.size();
-			for (size_t i = 0; i < sourcesCount; ++i) {
-				const Data &data = s->GetData(i);
-				record
-					% data.theo
-					% data.theo
-					% data.theo
-					% data.emaFast
-					% data.emaFast
-					% data.emaFast
-					% data.emaSlow
-					% data.emaSlow
-					% data.emaSlow;
-			}
+			const Data &data = s->GetData(mds.GetIndex());
+			record
+				% data.current.theo
+				% data.prev1.theo
+				% data.prev2.theo
+				% data.current.emaFast
+				% data.prev1.emaFast
+				% data.prev2.emaFast
+				% data.current.emaSlow
+				% data.prev1.emaSlow
+				% data.prev2.emaSlow;
 		}
 		foreach (const TriangulationWithDirectionStatService *s, m_instancies) {
-			const auto &sourcesCount = s->m_data.size();
-			for (size_t i = 0; i < sourcesCount; ++i) {
-				const Data &data = s->GetData(i);
-				foreach_reversed (const auto &line, data.bids) {
-					record % line.price % line.qty;
-				}
-				foreach (const auto &line, data.offers) {
-					record % line.price % line.qty;
-				}
+			const Data &data = s->GetData(mds.GetIndex());
+			foreach_reversed (const auto &line, data.bids) {
+				record % line.price % line.qty;
+			}
+			foreach (const auto &line, data.offers) {
+				record % line.price % line.qty;
 			}
 		}
 	};
