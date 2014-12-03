@@ -149,13 +149,16 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 		const BookUpdateTick &,
 		const TimeMeasurement::Milestones &) {
 
+	// Method will be called at each book update (add new price level, removed
+	// price level or price level updated).
+
 	AssertEq(
 		GetSecurity(security.GetSource().GetIndex()).GetSource().GetTag(),
 		security.GetSource().GetTag());
 	Assert(&GetSecurity(security.GetSource().GetIndex()) == &security);
-	UseUnused(security);
 
 	if (priceLevelIndex >= m_levelsCount) {
+		// Updated levels which we don't need.
 		return false;
 	}
 
@@ -187,6 +190,10 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 	Data data;
 	data.current.time = GetContext().GetCurrentTime();
 
+	Source &source = GetSource(security.GetSource().GetIndex());
+
+	////////////////////////////////////////////////////////////////////////////////
+	// Current prices and vol:
 	{
 	
 		const auto &sum = [&security](
@@ -208,18 +215,22 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 		const auto realLevelsCount = std::max(
 			bidsBook.GetLevelsCount(),
 			offersBook.GetLevelsCount());
+		const auto actualLinesCount = std::min(m_levelsCount, realLevelsCount);
+		
 		auto bidsLevel = data.bids.begin();
 		auto offersLevel = data.offers.begin();
-		for (	
-				size_t i = 0;
-				i < std::min(m_levelsCount, realLevelsCount);
-				++i) {
+
+		// Calls sum-function for each price level:
+		for (size_t i = 0; i < actualLinesCount; ++i) {
+			// accumulates prices and vol from current line:
 			sum(i, bidsBook, bid, bidsLevel);
 			sum(i, offersBook, offer, offersLevel);
 		}
 
 	}
-
+	
+	////////////////////////////////////////////////////////////////////////////////
+	// Average prices:
 	if (bid.qty != 0) {
 		bid.avgPrice = bid.vol / bid.qty;
 	}
@@ -227,69 +238,102 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 		offer.avgPrice = offer.vol / offer.qty;
 	}
 	
+	////////////////////////////////////////////////////////////////////////////////
+	// Theo:
 	if (bid.qty != 0 || offer.qty != 0) {
 		data.current.theo
 			= (bid.avgPrice * offer.qty + offer.avgPrice * bid.qty)
 				/ (bid.qty + offer.qty);
 	}
 	
-	const auto &sourceIndex = security.GetSource().GetIndex();
-	Source &source = GetSource(sourceIndex);
-
+	////////////////////////////////////////////////////////////////////////////////
+	// EMAs:
+	
+	// accumulates values for EMA:
 	source.slowEmaAcc(data.current.theo);
+	// gets current EMA value:
 	data.current.emaSlow = accs::ema(source.slowEmaAcc);
 
+	// accumulates values for EMA:
 	source.fastEmaAcc(data.current.theo);
+	// gets current EMA value:
 	data.current.emaFast = accs::ema(source.fastEmaAcc);
 
+	////////////////////////////////////////////////////////////////////////////////
+	// Preparing previous 2 points for actual strategy work:
 	source.points.push_back(data.current);
 	const auto &p2Time = data.current.time - pt::minutes(2);
 	const auto &p1Time = data.current.time - pt::milliseconds(500);
-	for (
-			auto it = source.points.cbegin();
-			it != source.points.cend();
-			) {
-		const auto &frontPoint = *it;
-		if (frontPoint.time <= p2Time) {
+	auto itP1 = source.points.cend();
+	auto itP2 = source.points.cend();
+	for (auto it = source.points.cbegin(); it != source.points.cend(); ) {
+		if (it->time <= p2Time) {
+			AssertLt(it->time, p1Time);
 			const auto next = it + 1;
-			AssertLe(frontPoint.time, next->time);
+			AssertLe(it->time, next->time);
 			if (next == source.points.cend()) {
-				data.prev1
-					= data.prev2
-					= frontPoint;
+				// Point only one, and it was a long time ago, so this value
+				// was actual at p1 and p2 too.
+				itP1
+					= itP2
+					= it;
 				break;
 			}
 			if (next->time <= p2Time) {
+				// Need to remove first point, it already too old for us:
 				Assert(it == source.points.cbegin());
 				source.points.pop_front();
 				it = source.points.cbegin();
 				continue;
 			}
-			data.prev2 = frontPoint;
-			AssertLt(frontPoint.time, p1Time);
-			data.prev1 = frontPoint;
-		} else if (frontPoint.time <= p1Time) {
-			Assert(
-				data.prev2.time == pt::not_a_date_time
-				|| data.prev2.time < frontPoint.time);
-			data.prev1 = frontPoint;
+			// As this time is sutable for p2 - it can be sutable for p1 too:
+			itP1
+				= itP2
+				= it;
+		} else if (it->time <= p1Time) {
+			// P2, if was, found, now searching only p1:
+			Assert(itP2 == source.points.cend() || itP2->time < it->time);
+			itP1 = it;
 		} else {
+			// All found (what exists):
 			break;
 		}
 		++it;
 	}
 	Assert(
-		data.prev1.time == pt::not_a_date_time
-		|| data.prev2.time == pt::not_a_date_time
-		|| (data.prev2.time <= data.prev1.time
-			&& data.prev1.time < data.current.time));
+		itP1 == source.points.cend()
+		|| itP2 == source.points.cend()
+		|| (itP2->time <= itP1->time && itP1->time < data.current.time));
+	if (itP1 != source.points.cend()) {
+		data.prev1 = *itP1;
+	} else {
+		// There is no history at start, and only at start:
+		AssertEq(data.prev1.time, pt::not_a_date_time);
+	}
+	if (itP2 != source.points.cend()) {
+		data.prev2 = *itP2;
+	} else {
+		// There is no history at start, and only at start:
+		AssertEq(data.prev2.time, pt::not_a_date_time);
+	}
 
+	////////////////////////////////////////////////////////////////////////////////
+	// Storing new values as actual:
+	
+	// Locking memory:
 	while (source.dataLock.test_and_set(boost::memory_order_acquire));
+	// Storing data:
 	static_cast<Data &>(source) = data;
+	// Unlocking memory:
 	source.dataLock.clear(boost::memory_order_release);
 
+	////////////////////////////////////////////////////////////////////////////////
+	
+	// Write pre-trade log:
 	LogState(security.GetSource());
 
+	// If this method returns true - strategy will be notified about actual data
+	// update:
 	return true;
 
 }
