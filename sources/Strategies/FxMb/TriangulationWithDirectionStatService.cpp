@@ -15,6 +15,7 @@
 #include "Core/AsyncLog.hpp"
 
 namespace pt = boost::posix_time;
+namespace fs = boost::filesystem;
 namespace accs = boost::accumulators;
 
 using namespace trdk;
@@ -35,7 +36,7 @@ namespace {
 		}
 	public:
 		const ServiceLogRecord & operator >>(std::ostream &os) const {
-			Dump(os, "\t");
+			Dump(os, ",");
 			return *this;
 		}
 	};
@@ -56,7 +57,7 @@ namespace {
 			return m_log.IsEnabled();
 		}
 		void EnableStream(std::ostream &os) {
-			m_log.EnableStream(os);
+			m_log.EnableStream(os, false);
 		}
 		Log::Time GetTime() {
 			return std::move(m_log.GetTime());
@@ -73,40 +74,6 @@ namespace {
 			ServiceLogOutStream,
 			TRDK_CONCURRENCY_PROFILE>
 		ServiceLogBase;
-
-	void WriteLogHead(ServiceLogRecord &record) {
-		
-		record % "time" % "ECN";
-			
-		for (size_t i = 1; i <= 3; ++i) {
-			record
-				% (boost::format("Pair %1% VWAP"			) % i).str()
-				% (boost::format("Pair %1% VWAP Prev1"		) % i).str()
-				% (boost::format("Pair %1% VWAP Prev2"		) % i).str()
-				% (boost::format("Pair %1% fastEMA"			) % i).str()
-				% (boost::format("Pair %1% fastEMA Prev1"	) % i).str()
-				% (boost::format("Pair %1% fastEMA Prev2"	) % i).str()
-				% (boost::format("Pair %1% slowEMA"			) % i).str()
-				% (boost::format("Pair %1% slowEMA Prev1"	) % i).str()
-				% (boost::format("Pair %1% slowEMA Prev2"	) % i).str();
-		}
-
-		for (size_t i = 1; i <= 3; ++i) {
-			for (size_t k = 4; k > 0; --k) {
-				record
-					% (boost::format("Pair %1% bid line %2% price") % i % k).str()
-					% (boost::format("Pair %1% bid line %2% qty")	% i % k).str();
-			}
-		}
-		for (size_t i = 1; i <= 3; ++i) {
-			for (size_t k = 1; k <= 4; ++k) {
-				record
-					% (boost::format("Pair %1% offer line %2% price")	% i % k).str()
-					% (boost::format("Pair %1% offer line %2% qty")		% i % k).str();
-			}
-		}
-
-	}
 
 }
 
@@ -143,28 +110,8 @@ TriangulationWithDirectionStatService::TriangulationWithDirectionStatService(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
 	m_emaSpeedSlow(conf.ReadTypedKey<double>("ema_speed_slow")),
 	m_emaSpeedFast(conf.ReadTypedKey<double>("ema_speed_fast")),
-	m_serviceLog(GetServiceLog(GetContext())) {
-	
-	if (conf.ReadBoolKey("log") && !m_serviceLog.IsEnabled()) {
-		
-		const auto &logPath
-			= GetContext().GetSettings().GetLogsDir() / "pretrade.log";
-		
-		GetContext().GetLog().Info("Log: %1%.", logPath);
-		m_serviceLogFile.open(
-			logPath.string().c_str(),
-			std::ios::app | std::ios::ate);
-		if (!m_serviceLogFile) {
-			throw ModuleError("Failed to open log file");
-		}
-		m_serviceLog.EnableStream(m_serviceLogFile);
-
-		m_serviceLog.Write(WriteLogHead);
-
-	}
-
+	m_serviceLog(GetServiceLog(GetContext(), conf)) {
 	m_instancies.push_back(this);
-
 }
 
 TriangulationWithDirectionStatService::~TriangulationWithDirectionStatService() {
@@ -190,8 +137,7 @@ pt::ptime TriangulationWithDirectionStatService::OnSecurityStart(const Security 
 	if (m_data.size() <= dataIndex) {
 		m_data.resize(dataIndex + 1);
 	}
-//! @todo fix me!!!
-//	Assert(!m_data[dataIndex]);
+	Assert(!m_data[dataIndex]);
 	m_data[dataIndex].reset(
 		new Source(security, m_emaSpeedSlow, m_emaSpeedFast));
 	return pt::not_a_date_time;
@@ -206,8 +152,7 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 	AssertEq(
 		GetSecurity(security.GetSource().GetIndex()).GetSource().GetTag(),
 		security.GetSource().GetTag());
-//! @todo Fix me!!!
-//	Assert(&GetSecurity(security.GetSource().GetIndex()) == &security);
+	Assert(&GetSecurity(security.GetSource().GetIndex()) == &security);
 	UseUnused(security);
 
 	if (priceLevelIndex >= m_levelsCount) {
@@ -351,14 +296,96 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 
 TriangulationWithDirectionStatService::ServiceLog &
 TriangulationWithDirectionStatService::GetServiceLog(
-		Context &) {
+		Context &context ,
+		const IniSectionRef &conf)
+		const {
+	
+	static std::ofstream file;
 	static ServiceLog instance;
+	
+	if (conf.ReadBoolKey("log") && !instance.IsEnabled()) {
+		
+		const pt::ptime &now = boost::posix_time::microsec_clock::local_time();
+		boost::format fileName(
+			"Pretrade_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.csv");
+		fileName
+			% now.date().year()
+			% now.date().month().as_number()
+			% now.date().day()
+			% now.time_of_day().hours()
+			% now.time_of_day().minutes()
+			% now.time_of_day().seconds();
+		const auto &logPath
+			= context.GetSettings().GetLogsDir() / "pretrade" / fileName.str();
+		
+		GetContext().GetLog().Info("Log: %1%.", logPath);
+		fs::create_directories(logPath.branch_path());
+		file.open(
+			logPath.string().c_str(),
+			std::ios::app | std::ios::ate);
+		if (!file) {
+			throw ModuleError("Failed to open log file");
+		}
+		instance.EnableStream(file);
+
+	}
+
 	return instance;
+
 }
 
 void TriangulationWithDirectionStatService::LogState(
 		const MarketDataSource &mds)
 		const {
+
+	static bool isLogHeadInited = false;
+	if (!isLogHeadInited) {
+		const auto writeLogHead = [&](ServiceLogRecord &record) {
+			record % "time" % "ECN";
+
+			foreach (
+					const TriangulationWithDirectionStatService *s,
+					m_instancies) {
+				const auto &symbol
+					= s->m_data.front()->security->GetSymbol().GetSymbol();
+				record
+					% (boost::format("%1% VWAP"				) % symbol).str()
+					% (boost::format("%1% VWAP prev1"		) % symbol).str()
+					% (boost::format("%1% VWAP prev2"		) % symbol).str()
+					% (boost::format("%1% EMA fast"			) % symbol).str()
+					% (boost::format("%1% EMA fast prev1"	) % symbol).str()
+					% (boost::format("%1% EMA fast prev2"	) % symbol).str()
+					% (boost::format("%1% EMA slow"			) % symbol).str()
+					% (boost::format("%1% EMA slow prev1"	) % symbol).str()
+					% (boost::format("%1% EMA slow prev2"	) % symbol).str();
+			}
+			foreach (
+					const TriangulationWithDirectionStatService *s,
+					m_instancies) {
+				const auto &symbol
+					= s->m_data.front()->security->GetSymbol().GetSymbol();
+				for (size_t k = 4; k > 0; --k) {
+					record
+						% (boost::format("%1% bid line %2% price")	% symbol % k).str()
+						% (boost::format("%1% bid line %2% qty")	% symbol % k).str();
+				}
+			}
+			foreach (
+					const TriangulationWithDirectionStatService *s,
+					m_instancies) {
+				const auto &symbol
+					= s->m_data.front()->security->GetSymbol().GetSymbol();
+				for (size_t k = 1; k <= 4; ++k) {
+					record
+						% (boost::format("%1% offer line %2% price")	% symbol % k).str()
+						% (boost::format("%1% offer line %2% qty")		% symbol % k).str();
+				}
+			}
+		};
+		m_serviceLog.Write(writeLogHead);
+		isLogHeadInited = true;
+	}
+
 	const auto &write = [&](AsyncLogRecord &record) {
 		record % GetContext().GetCurrentTime() % mds.GetTag().c_str(); 
 		foreach (const TriangulationWithDirectionStatService *s, m_instancies) {
@@ -385,6 +412,7 @@ void TriangulationWithDirectionStatService::LogState(
 		}
 	};
 	m_serviceLog.Write(write);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

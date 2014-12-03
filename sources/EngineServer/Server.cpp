@@ -64,7 +64,7 @@ void Server::Run(
 			error % logFilePath;
 			throw Exception(error.str().c_str());
 		}
-		info.eventsLog->EnableStream(*info.eventsLogFile);
+		info.eventsLog->EnableStream(*info.eventsLogFile, true);
 	}
 	const auto &tradingLogFilePath = settings.GetLogsDir() / "trading.log";
 	if (ini->ReadBoolKey("Common", "trading_log")) {
