@@ -262,7 +262,7 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 	////////////////////////////////////////////////////////////////////////////////
 	// Preparing previous 2 points for actual strategy work:
 	source.points.push_back(data.current);
-	const auto &p2Time = data.current.time - pt::minutes(2);
+	const auto &p2Time = data.current.time - pt::seconds(2);
 	const auto &p1Time = data.current.time - pt::milliseconds(500);
 	auto itP1 = source.points.cend();
 	auto itP2 = source.points.cend();
