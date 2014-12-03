@@ -42,7 +42,7 @@ namespace trdk { namespace Lib {
 			return m_isStreamEnabled || m_isStdOutEnabled;
 		}
 
-		void EnableStream(std::ostream &);
+		void EnableStream(std::ostream &, bool writeStartInfo);
 
 		void DisableStream() throw() {
 			m_isStreamEnabled = false;

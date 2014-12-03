@@ -210,12 +210,13 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			return *m_data[index];
 		}
 		const Source & GetSource(size_t index) const {
-			return const_cast<TriangulationWithDirectionStatService *>(this)->GetSource(index);
+			return const_cast<TriangulationWithDirectionStatService *>(this)
+				->GetSource(index);
 		}
 
 	private:
 
-		static ServiceLog & GetServiceLog(Context &);
+		ServiceLog & GetServiceLog(Context &, const Lib::IniSectionRef &) const;
 		void LogState(const MarketDataSource &) const;
 
 	private:
@@ -225,7 +226,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		const double m_emaSpeedSlow;
 		const double m_emaSpeedFast;
 
-		std::ofstream m_serviceLogFile;
 		ServiceLog &m_serviceLog;
 
 		std::vector<boost::shared_ptr<Source>> m_data;
