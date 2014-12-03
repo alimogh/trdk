@@ -91,7 +91,7 @@ bool LogSecurity::Accept() {
 		book.Commit(GetContext().StartStrategyTimeMeasurement());
 		m_currentTick.reset();
 	}
-	return Read();
+	return Read() && Read();
 }
 
 bool LogSecurity::Read() {
