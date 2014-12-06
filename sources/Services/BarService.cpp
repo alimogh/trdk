@@ -322,9 +322,9 @@ public:
 		}
 
 		std::unique_ptr<BarsLog> log(new BarsLog);
-		log->path = SymbolToFilePath(
-			//! @todo Use context log dir
-			Defaults::GetBarsDataLogDir(),
+		//! @todo Use context log dir
+		log->path = Defaults::GetBarsDataLogDir();
+		log->path /= SymbolToFileName(
 			//! @todo Generate unique filename
 			(boost::format("%1%_%2%")
 					% m_unitsStr
