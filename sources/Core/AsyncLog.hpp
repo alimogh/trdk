@@ -39,6 +39,7 @@ namespace trdk {
 			PT_FLOAT,
 			PT_DOUBLE,
 
+			PT_CHAR,
 			PT_STRING,
 			PT_PCHAR,
 
@@ -118,17 +119,33 @@ namespace trdk {
 			const auto &begin = m_params.cbegin(); 
 			const auto &end = m_params.cend();
 
+			bool skipDelimiter = false;
+
 			for (auto i = begin; i != end; ++i) {
 
-				if (delimiter && i != begin) {
-					WriteToDumpStream(delimiter, os);
-				}
-	
 				const ParamType &type = boost::get<0>(*i);
 				const boost::any &val = boost::get<1>(*i);
+
+				if (delimiter && i != begin) {
+					if (!skipDelimiter) {
+						if (
+								type != PT_CHAR
+								|| (boost::any_cast<char>(val) != '\n'
+										&& boost::any_cast<char>(val) != 0)) {
+							WriteToDumpStream(delimiter, os);
+						} else {
+							skipDelimiter = true;
+							if (boost::any_cast<char>(val) == 0) {
+								continue;
+							}
+						}
+					} else {
+						skipDelimiter = false;
+					}
+				}
 	
 				static_assert(
-					numberOfParamTypes == 15,
+					numberOfParamTypes == 16,
 					"Parameter type list changed.");
 				switch (type) {
 
@@ -167,6 +184,9 @@ namespace trdk {
 						WriteToDumpStream(boost::any_cast<double>(val), os);
 						break;
 
+					case PT_CHAR:
+						WriteToDumpStream(boost::any_cast<char>(val), os);
+						break;
 					case PT_STRING:
 						WriteToDumpStream(
 							boost::any_cast<const std::string &>(val),
@@ -250,11 +270,14 @@ namespace trdk {
 			StoreTypedParam(PT_DOUBLE, val);
 		}
 
-		void StoreParam(const char *val) {
-			StoreTypedParam(PT_PCHAR, val);
+		void StoreParam(char val) {
+			StoreTypedParam(PT_CHAR, val);
 		}
 		void StoreParam(const std::string &val) {
 			StoreTypedParam(PT_STRING, val);
+		}
+		void StoreParam(const char *val) {
+			StoreTypedParam(PT_PCHAR, val);
 		}
 
 		void StoreParam(const boost::posix_time::ptime &time) {

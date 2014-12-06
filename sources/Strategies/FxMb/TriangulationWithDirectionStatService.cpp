@@ -383,78 +383,170 @@ void TriangulationWithDirectionStatService::LogState(
 		const {
 
 	static bool isLogHeadInited = false;
+			
 	if (!isLogHeadInited) {
-		const auto writeLogHead = [&](ServiceLogRecord &record) {
-			record % "time" % "ECN";
+#		if 0 ////////////////////////////////////////////////////////////////////////////////
+			const auto writeLogHead = [&](ServiceLogRecord &record) {
+				record % "time" % "ECN";
 
-			foreach (
-					const TriangulationWithDirectionStatService *s,
-					m_instancies) {
-				const auto &symbol
-					= s->m_data.front()->security->GetSymbol().GetSymbol();
-				record
-					% (boost::format("%1% VWAP"				) % symbol).str()
-					% (boost::format("%1% VWAP prev1"		) % symbol).str()
-					% (boost::format("%1% VWAP prev2"		) % symbol).str()
-					% (boost::format("%1% EMA fast"			) % symbol).str()
-					% (boost::format("%1% EMA fast prev1"	) % symbol).str()
-					% (boost::format("%1% EMA fast prev2"	) % symbol).str()
-					% (boost::format("%1% EMA slow"			) % symbol).str()
-					% (boost::format("%1% EMA slow prev1"	) % symbol).str()
-					% (boost::format("%1% EMA slow prev2"	) % symbol).str();
-			}
-			foreach (
-					const TriangulationWithDirectionStatService *s,
-					m_instancies) {
-				const auto &symbol
-					= s->m_data.front()->security->GetSymbol().GetSymbol();
-				for (size_t k = 4; k > 0; --k) {
+				foreach (
+						const TriangulationWithDirectionStatService *s,
+						m_instancies) {
+					const auto &symbol
+						= s->m_data.front()->security->GetSymbol().GetSymbol();
 					record
-						% (boost::format("%1% bid line %2% price")	% symbol % k).str()
-						% (boost::format("%1% bid line %2% qty")	% symbol % k).str();
+						% (boost::format("%1% VWAP"				) % symbol).str()
+						% (boost::format("%1% VWAP prev1"		) % symbol).str()
+						% (boost::format("%1% VWAP prev2"		) % symbol).str()
+						% (boost::format("%1% EMA fast"			) % symbol).str()
+						% (boost::format("%1% EMA fast prev1"	) % symbol).str()
+						% (boost::format("%1% EMA fast prev2"	) % symbol).str()
+						% (boost::format("%1% EMA slow"			) % symbol).str()
+						% (boost::format("%1% EMA slow prev1"	) % symbol).str()
+						% (boost::format("%1% EMA slow prev2"	) % symbol).str();
 				}
+				foreach (
+						const TriangulationWithDirectionStatService *s,
+						m_instancies) {
+					const auto &symbol
+						= s->m_data.front()->security->GetSymbol().GetSymbol();
+					for (size_t k = 4; k > 0; --k) {
+						record
+							% (boost::format("%1% bid line %2% price")	% symbol % k).str()
+							% (boost::format("%1% bid line %2% qty")	% symbol % k).str();
+					}
+				}
+				foreach (
+						const TriangulationWithDirectionStatService *s,
+						m_instancies) {
+					const auto &symbol
+						= s->m_data.front()->security->GetSymbol().GetSymbol();
+					for (size_t k = 1; k <= 4; ++k) {
+						record
+							% (boost::format("%1% offer line %2% price")	% symbol % k).str()
+							% (boost::format("%1% offer line %2% qty")		% symbol % k).str();
+					}
+				}
+			};
+
+#		else ////////////////////////////////////////////////////////////////////////////////
+			const auto writeLogHead = [&](ServiceLogRecord &record) {
+				record % ' ';
+				foreach (const auto &s, m_data) {
+					record % s->security->GetSource().GetTag().c_str();
+				}
+				record
+					% '\n'
+					% "fastEMA" % m_emaSpeedFast % '\n'
+					% "slowEMA" % m_emaSpeedSlow % '\n'
+					% "Prev1 milliseconds" % pt::milliseconds(500) % '\n'
+					% "Prev2 milliseconds" % pt::seconds(2) % '\n';
+			};
+#		endif ////////////////////////////////////////////////////////////////////////////////
+	
+		m_serviceLog.Write(writeLogHead);
+		isLogHeadInited = true;
+	
+	}
+
+#	if 0 ////////////////////////////////////////////////////////////////////////////////
+		const auto &write = [&](ServiceLogRecord &record) {
+			record % GetContext().GetCurrentTime() % mds.GetTag().c_str(); 
+			foreach (
+					const TriangulationWithDirectionStatService *s,
+					m_instancies) {
+				const Data &data = s->GetData(mds.GetIndex());
+				record
+					% data.current.theo
+					% data.prev1.theo
+					% data.prev2.theo
+					% data.current.emaFast
+					% data.prev1.emaFast
+					% data.prev2.emaFast
+					% data.current.emaSlow
+					% data.prev1.emaSlow
+					% data.prev2.emaSlow;
 			}
 			foreach (
 					const TriangulationWithDirectionStatService *s,
 					m_instancies) {
-				const auto &symbol
-					= s->m_data.front()->security->GetSymbol().GetSymbol();
-				for (size_t k = 1; k <= 4; ++k) {
-					record
-						% (boost::format("%1% offer line %2% price")	% symbol % k).str()
-						% (boost::format("%1% offer line %2% qty")		% symbol % k).str();
+				const Data &data = s->GetData(mds.GetIndex());
+				foreach_reversed (const auto &line, data.bids) {
+					record % line.price % line.qty;
+				}
+				foreach (const auto &line, data.offers) {
+					record % line.price % line.qty;
 				}
 			}
 		};
-		m_serviceLog.Write(writeLogHead);
-		isLogHeadInited = true;
-	}
+#	else ////////////////////////////////////////////////////////////////////////////////
 
-	const auto &write = [&](AsyncLogRecord &record) {
-		record % GetContext().GetCurrentTime() % mds.GetTag().c_str(); 
-		foreach (const TriangulationWithDirectionStatService *s, m_instancies) {
-			const Data &data = s->GetData(mds.GetIndex());
-			record
-				% data.current.theo
-				% data.prev1.theo
-				% data.prev2.theo
-				% data.current.emaFast
-				% data.prev1.emaFast
-				% data.prev2.emaFast
-				% data.current.emaSlow
-				% data.prev1.emaSlow
-				% data.prev2.emaSlow;
-		}
-		foreach (const TriangulationWithDirectionStatService *s, m_instancies) {
-			const Data &data = s->GetData(mds.GetIndex());
-			foreach_reversed (const auto &line, data.bids) {
-				record % line.price % line.qty;
+		UseUnused(mds);
+
+		const auto writeValue = [&](
+				const TriangulationWithDirectionStatService *s,
+				ServiceLogRecord &record) {
+			const auto &mdsCount = GetContext().GetMarketDataSourcesCount();
+			const char *const security
+				= s->GetSecurity(0).GetSymbol().GetSymbol().c_str();
+			record % security % '\0' % " VWAP";
+			for (size_t i = 0; i < mdsCount; ++i) {
+				const Data &data = s->GetData(i);
+				record % data.current.theo;
 			}
-			foreach (const auto &line, data.offers) {
-				record % line.price % line.qty;
+			record % '\n' % security % '\0' % " VWAP Prev1";
+			for (size_t i = 0; i < mdsCount; ++i) {
+				const Data &data = s->GetData(i);
+				record % data.prev1.theo;
 			}
-		}
-	};
+			record % '\n' % security % '\0' % " VWAP Prev2";
+			for (size_t i = 0; i < mdsCount; ++i) {
+				const Data &data = s->GetData(i);
+				record % data.prev2.theo;
+			}
+			record % '\n' % security % '\0' % " fastEMA";
+			for (size_t i = 0; i < mdsCount; ++i) {
+				const Data &data = s->GetData(i);
+				record % data.current.emaFast;
+			}
+			record % '\n' % security % '\0' % " fastEMA Prev1";
+			for (size_t i = 0; i < mdsCount; ++i) {
+				const Data &data = s->GetData(i);
+				record % data.prev1.emaFast;
+			}
+			record % '\n' % security % '\0' % " fastEMA Prev2";
+			for (size_t i = 0; i < mdsCount; ++i) {
+				const Data &data = s->GetData(i);
+				record % data.prev2.emaFast;
+			}
+			record % '\n' % security % '\0' % " slowEMA";
+			for (size_t i = 0; i < mdsCount; ++i) {
+				const Data &data = s->GetData(i);
+				record % data.current.emaSlow;
+			}
+			record % '\n' % security % '\0' % " slowEMA Prev1";
+			for (size_t i = 0; i < mdsCount; ++i) {
+				const Data &data = s->GetData(i);
+				record % data.prev1.emaSlow;
+			}
+			record % '\n' % security % '\0' % " slowEMA Prev2";
+			for (size_t i = 0; i < mdsCount; ++i) {
+				const Data &data = s->GetData(i);
+				record % data.prev2.emaSlow;
+			}
+			record % '\n';
+		};
+
+		const auto &write = [&](ServiceLogRecord &record) {
+			foreach (
+					const TriangulationWithDirectionStatService *s,
+					m_instancies) {
+				writeValue(s, record);
+			}
+		};
+
+#	endif ////////////////////////////////////////////////////////////////////////////////
+	
 	m_serviceLog.Write(write);
 
 }
