@@ -1466,40 +1466,62 @@ private:
 				continue;
 			}
 			foreach (const Symbol &symbol, requirement.second) {
-				m_context.ForEachMarketDataSource(
-					[&](MarketDataSource &source) -> bool {
-						Security *security = nullptr;
-						if (symbol) {
-							security = &source.GetSecurity(symbol);
-						}
-						if (!uniqueInstance) {
-							ForEachModuleInstance(
-								module,
-								[&](Module &instance) {
-									SubscribeModuleStandaloneInstance(
-										instance,
-										subscribe,
-										security);
-								},
-								[&](Module &instance) {
-									SubscribeModuleSymbolInstance(
-										instance,
-										subscribe,
-										security);
-								});
-						} else if (isUniqueInstanceStandalone) {
-							SubscribeModuleStandaloneInstance(
-								*uniqueInstance,
-								subscribe,
-								security);
-						} else {
-							SubscribeModuleSymbolInstance(
-								*uniqueInstance,
-								subscribe,
-								security);
-						}
-						return true;
-					});
+				if (symbol) {
+					m_context.ForEachMarketDataSource(
+						[&](MarketDataSource &source) -> bool {
+							Security &security = source.GetSecurity(symbol);
+							if (!uniqueInstance) {
+								ForEachModuleInstance(
+									module,
+									[&](Module &instance) {
+										SubscribeModuleStandaloneInstance(
+											instance,
+											subscribe,
+											&security);
+									},
+									[&](Module &instance) {
+										SubscribeModuleSymbolInstance(
+											instance,
+											subscribe,
+											&security);
+									});
+							} else if (isUniqueInstanceStandalone) {
+								SubscribeModuleStandaloneInstance(
+									*uniqueInstance,
+									subscribe,
+									&security);
+							} else {
+								SubscribeModuleSymbolInstance(
+									*uniqueInstance,
+									subscribe,
+									&security);
+							}
+							return true;
+						});
+				} else {
+					if (!uniqueInstance) {
+						ForEachModuleInstance(
+							module,
+							[&](Module &instance) {
+								SubscribeModuleStandaloneInstance(
+									instance,
+									subscribe);
+							},
+							[&](Module &instance) {
+								SubscribeModuleSymbolInstance(
+									instance,
+									subscribe);
+							});
+					} else if (isUniqueInstanceStandalone) {
+						SubscribeModuleStandaloneInstance(
+							*uniqueInstance,
+							subscribe);
+					} else {
+						SubscribeModuleSymbolInstance(
+							*uniqueInstance,
+							subscribe);
+					}
+				}
 			}
 		}
 
