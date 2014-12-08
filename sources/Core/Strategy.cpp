@@ -341,8 +341,8 @@ Strategy::TradingLog & Strategy::GetTradingLog() const throw() {
 }
 
 void Strategy::OnLevel1Update(
-			Security &security,
-			TimeMeasurement::Milestones &) {
+		Security &security,
+		TimeMeasurement::Milestones &) {
 	GetLog().Error(
 		"Subscribed to %1% Level 1 Updates, but can't work with it"
 			" (hasn't OnLevel1Update method implementation).",
@@ -353,6 +353,19 @@ void Strategy::OnLevel1Update(
 
 void Strategy::OnPositionUpdate(Position &) {
 	//...//
+}
+
+void Strategy::OnBookUpdateTick(
+		Security &security,
+		size_t /*priceLevelIndex*/,
+		const BookUpdateTick &,
+		const TimeMeasurement::Milestones &) {
+	GetLog().Error(
+		"Subscribed to %1% Book Update Ticks, but can't work with it"
+			" (hasn't OnBookUpdateTick method implementation).",
+		security);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to Book Update Ticks, but can't work with it");
 }
 
 void Strategy::Register(Position &position) {
@@ -448,6 +461,18 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 		m_pimpl->ForgetPosition(position);
 	}
 
+}
+
+void Strategy::RaiseBookUpdateTickEvent(
+				Security &security,
+				size_t priceLevelIndex,
+				const BookUpdateTick &tick,
+				const TimeMeasurement::Milestones &timeMeasurement) {
+	const Lock lock(GetMutex());
+	if (IsBlocked()) {
+		return;
+	}
+	OnBookUpdateTick(security, priceLevelIndex, tick, timeMeasurement);
 }
 
 bool Strategy::IsBlocked(bool forever /* = false */) const {
