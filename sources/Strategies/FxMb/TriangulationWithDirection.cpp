@@ -28,8 +28,6 @@ using namespace trdk::Strategies::FxMb;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////////////
-
 namespace {
 
 	class StrategyLogRecord : public AsyncLogRecord {
@@ -146,7 +144,7 @@ public:
 		: Base(context, "TriangulationWithDirection", tag),
 		m_levelsCount(
 			conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
-		m_qty(conf.ReadTypedKey<double>("qty")),
+		m_qty(conf.ReadTypedKey<Qty>("qty")),
 		m_isLogInited(false)  {
 		
 		if (conf.ReadBoolKey("log")) {
@@ -210,6 +208,12 @@ public:
 		UpdateStat(service);
 
 		////////////////////////////////////////////////////////////////////////////////
+
+		if (p1 || p2) {
+			return;
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
 		// Y1 and Y2:
 		// 
 		
@@ -271,45 +275,6 @@ public:
 		};
 
 		////////////////////////////////////////////////////////////////////////////////
-		// Scenarios:
-		
-		size_t scenarios[3] = {};
-		for (size_t pair = 0; pair < 3; ++pair) {
-			if (
-					(isBuy[pair]
-						&& risingFalling[pair][0][0]
-						&& risingFalling[pair][1][0]
-						&& risingFalling[pair][2][0])
-					|| (!isBuy[pair]
-						&& risingFalling[pair][0][1]
-						&& risingFalling[pair][1][1]
-						&& risingFalling[pair][2][1])) {
-				scenarios[pair] = 1;
-			} else if (
-					(!isBuy[pair]
-						&& risingFalling[pair][0][0]
-						&& risingFalling[pair][1][0]
-						&& risingFalling[pair][2][0])
-					|| (isBuy[pair]
-						&& risingFalling[pair][0][1]
-						&& risingFalling[pair][1][1]
-						&& risingFalling[pair][2][1])) {
-				scenarios[pair] = 4;
-			}
-// #			ifdef BOOST_ENABLE_ASSERT_HANDLER
-// 			{
-// 				if (scenarios[pair]) {
-// 					for (size_t i = 0; i < pair; ++i) {
-// 						AssertNe(scenarios[i], scenarios[pair]);
-// 					}
-// 				}
-// 			}
-// #			endif
-		}
-// 		Assert(scenarios[0] == 1 || scenarios[1] == 1 || scenarios[2] == 1);
-// 		Assert(scenarios[0] == 4 || scenarios[1] == 4 || scenarios[2] == 4);
-
-		////////////////////////////////////////////////////////////////////////////////
 
 		if (!m_isLogInited) {
 			m_strategyLog.Write(
@@ -324,8 +289,6 @@ public:
 						record
 							%	pair % '\0' % " ECN"
 							%	pair % '\0' % " Direction"
-							%	pair % '\0' % " Order"
-/*							%	pair % '\0' % " Inversee"*/
 							%	pair % '\0' % " Bid"
 							%	pair % '\0' % " Ask"
 							%	pair % '\0' % " VWAP"
@@ -351,10 +314,6 @@ public:
 			record
 				%	security.GetSource().GetTag()
 				%	(isBuy[pair] ? "BUY" : "SELL")
-				%	(scenarios[pair] == 1
-						?	"1"
-						:	scenarios[pair] == 4 ? "4" : "2-3")
-/*				%	(opportunite[0] > 1.0 ? "FALSE" : "TRUE")*/
 				%	security.GetBidPrice()
 				%	security.GetAskPrice();
 			const auto &data = stat.service->GetData(ecn);
@@ -383,7 +342,111 @@ public:
 				}
 			});
 
+		const auto &createPosition = [&](
+				const size_t pair) 
+				-> boost::shared_ptr<Position> {
+			boost::shared_ptr<Position> result;
+			const auto &stat = m_stat[pair];
+			const auto &ecn = risingFalling[pair][0]
+				?	stat.bestBid.source
+				:	stat.bestAsk.source;
+			const Security &security = stat.service->GetSecurity(ecn);
+			if (isBuy[pair]) {
+				result.reset(
+					new LongPosition(
+						*this,
+						GetContext().GetTradeSystem(ecn),
+						//! @todo fixme:
+						const_cast<Security &>(security),
+						security.GetSymbol().GetCashCurrency(),
+						m_qty,
+						security.GetBidPriceScaled(),
+						TimeMeasurement::Milestones()));
+			} else {
+				result.reset(
+					new ShortPosition(
+						*this,
+						GetContext().GetTradeSystem(ecn),
+						//! @todo fixme:
+						const_cast<Security &>(security),
+						security.GetSymbol().GetCashCurrency(),
+						m_qty,
+						security.GetBidPriceScaled(),
+						TimeMeasurement::Milestones()));
+			}
+			return std::move(result);
+		};
+
+		p1 = createPosition(0);
+		p1->OpenImmediatelyOrCancel(p1->GetOpenStartPrice());
+		
+		p2 = createPosition(2);
+
 	}
+
+	void OnPositionUpdate(Position &position) {
+
+		if (position.IsError()) {
+			Assert(IsBlocked());
+			return;
+		}
+
+		if (!position.IsOpened()) {
+
+			boost::shared_ptr<Position> newPos;
+			if (position.GetType() == Position::TYPE_LONG) {
+				newPos.reset(
+					new LongPosition(
+						*this,
+						position.GetTradeSystem(),
+						position.GetSecurity(),
+						position.GetCurrency(),
+						position.GetPlanedQty(),
+						position.GetOpenStartPrice(),
+						TimeMeasurement::Milestones()));
+			} else {
+				newPos.reset(
+					new ShortPosition(
+						*this,
+						position.GetTradeSystem(),
+						position.GetSecurity(),
+						position.GetCurrency(),
+						position.GetPlanedQty(),
+						position.GetOpenStartPrice(),
+						TimeMeasurement::Milestones()));
+			}
+
+			newPos->OpenImmediatelyOrCancel(newPos->GetOpenStartPrice());
+
+			if (p1) {
+				Assert(p2);
+				Assert(&position == &*p1);
+				p1 = newPos;
+			} else {
+				Assert(p2);
+				Assert(&position == &*p2);
+				p2 = newPos;
+			}
+
+		} else {
+
+			Assert(position.IsOpened());
+
+			if (p1) {
+				Assert(p2);
+				Assert(&position == &*p1);
+				p1.reset();
+				p2->OpenImmediatelyOrCancel(p2->GetOpenStartPrice());
+			} else {
+				Assert(p2);
+				Assert(&position == &*p2);
+				p2.reset();
+			}
+
+		}
+
+	}
+
 
 private:
 
@@ -432,13 +495,16 @@ protected:
 private:
 
 	const size_t m_levelsCount;
-	const double m_qty;
+	const Qty m_qty;
 
 	std::ofstream m_strategyLogFile;
 	StrategyLog m_strategyLog;
 	bool m_isLogInited;
 
 	std::vector<Stat> m_stat;
+
+	boost::shared_ptr<Position> p1;
+	boost::shared_ptr<Position> p2;
 
 };
 
@@ -462,4 +528,3 @@ boost::shared_ptr<Strategy> CreateTwdStrategy(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
