@@ -646,13 +646,19 @@ public:
 
 	};
 	
+	const pt::ptime m_startTime;
+
+	Security &m_security;
+
 	Side m_bids;
 	Side m_offers;
 
 	Security::Book &m_book;
 
 	explicit Implementation(Security &security, Security::Book &book)
-		: m_bids(security),
+		: m_startTime(security.GetContext().GetCurrentTime()),
+		m_security(security),
+		m_bids(security),
 		m_offers(security),
 		m_book(book) {
 		//...//
@@ -745,7 +751,7 @@ void Security::BookUpdateOperation::Update(const BookUpdateTick &update) {
 
 void Security::BookUpdateOperation::Commit(
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	
+
 	const auto &update = [&](
 				const OrderSide &side,
 				Implementation::Side &sideData) {
@@ -799,6 +805,27 @@ void Security::BookUpdateOperation::Commit(
 
 	update(ORDER_SIDE_BID, m_pimpl->m_bids);
 	update(ORDER_SIDE_OFFER, m_pimpl->m_offers);
+
+	m_pimpl->m_security.SetLevel1(
+		m_pimpl->m_startTime,
+		Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+			m_pimpl->m_book.m_bids.GetLevelsCount() == 0
+				?	0
+				:	m_pimpl->m_book.m_bids.GetLevel(0).GetPrice()),
+		Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
+			m_pimpl->m_book.m_bids.GetLevelsCount() == 0
+				?	0
+				:	m_pimpl->m_book.m_bids.GetLevel(0).GetQty()),
+		Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+			m_pimpl->m_book.m_offers.GetLevelsCount() == 0
+				?	0
+				:	m_pimpl->m_book.m_offers.GetLevel(0).GetPrice()),
+		Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
+			m_pimpl->m_book.m_offers.GetLevelsCount() == 0
+				?	0
+				:	m_pimpl->m_book.m_offers.GetLevel(0).GetQty()),
+		timeMeasurement);
+
 	signal(ORDER_SIDE_BID, m_pimpl->m_bids);
 	signal(ORDER_SIDE_OFFER, m_pimpl->m_offers);
 
