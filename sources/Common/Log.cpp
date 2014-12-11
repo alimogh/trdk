@@ -29,7 +29,7 @@ Log::~Log() {
 	}
 }
 
-void Log::EnableStream(std::ostream &newLog) {
+void Log::EnableStream(std::ostream &newLog, bool writeStartInfo) {
 	bool isStarted = false;
 	{
 		Lock lock(m_streamMutex);
@@ -37,7 +37,7 @@ void Log::EnableStream(std::ostream &newLog) {
 		m_log = &newLog;
 		m_isStreamEnabled = true;
 	}
-	if (isStarted) {
+	if (isStarted && writeStartInfo) {
 		const auto &utc = boost::posix_time::microsec_clock::universal_time();
 		Write(
 			"Start",

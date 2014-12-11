@@ -20,15 +20,16 @@ namespace lt = boost::local_time;
 using namespace trdk;
 using namespace trdk::Lib;
 
-fs::path Lib::SymbolToFilePath(
-			const boost::filesystem::path &path,
+boost::filesystem::path Lib::SymbolToFileName(const std::string &symbol) {
+	std::string clearSymbol = boost::replace_all_copy(symbol, ":", "_");
+	boost::replace_all(clearSymbol, "/", "_");
+	return clearSymbol;
+}
+
+fs::path Lib::SymbolToFileName(
 			const std::string &symbol,
 			const std::string &ext) {
-	std::list<std::string> subs;
-	boost::split(subs, symbol, boost::is_any_of(":"));
-	fs::path result;
-	result /= path;
-	result /= boost::join(subs, "_");
+	fs::path result = SymbolToFileName(symbol);
 	result.replace_extension((boost::format(".%1%") % ext).str());
 	return std::move(result);
 }

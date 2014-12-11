@@ -85,33 +85,45 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		struct Data {
 
+			//! Only for logs, doesn't used by logic.
 			struct Level {
+				
 				double price;
 				Qty qty;
+
+				Level()
+					: price(.0),
+					qty(0) {
+					//...//
+				}
+			
 			};
+
+			//! Size only for logs, doesn't affect logic.
 			typedef boost::array<Level, 4> Levels;
 
-			double theo;
-			double emaFast;
-			double emaSlow;
+			struct Stat {
+				
+				boost::posix_time::ptime time;
+				double theo;
+				double emaSlow;
+				double emaFast;
+
+				Stat()
+					: theo(.0),
+					emaSlow(.0),
+					emaFast(.0) {
+					//...//
+				}
+
+			};
+
+			Stat current;
+			Stat prev1;
+			Stat prev2;
 
 			Levels bids;
 			Levels offers;
-
-			Data() {
-				memset(this, 0, sizeof(*this));
-			}
-
-			bool operator ==(const Data &rhs) const {
-				return
-					Lib::IsEqual(theo, rhs.theo)
-					&&	Lib::IsEqual(emaFast, rhs.emaFast)
-					&&	Lib::IsEqual(emaSlow, rhs.emaSlow);
-			}
-
-			bool operator !=(const Data &rhs) const {
-				return !operator ==(rhs);
-			}
 
 		};
 
@@ -125,13 +137,16 @@ namespace trdk { namespace Strategies { namespace FxMb {
 					double,
 					boost::accumulators::stats<boost::accumulators::tag::Ema>>
 				EmaAcc;
+			
+			typedef std::deque<Stat> Points;
 
 			const Security *security;
 			mutable boost::atomic_flag dataLock;
 
 			EmaAcc slowEmaAcc;
 			EmaAcc fastEmaAcc;
-			boost::posix_time::ptime emaStart;
+			
+			Points points;
 
 			explicit Source(
 					const Security &security,
@@ -195,13 +210,14 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			return *m_data[index];
 		}
 		const Source & GetSource(size_t index) const {
-			return const_cast<TriangulationWithDirectionStatService *>(this)->GetSource(index);
+			return const_cast<TriangulationWithDirectionStatService *>(this)
+				->GetSource(index);
 		}
 
 	private:
 
-		static ServiceLog & GetServiceLog(Context &);
-		void LogState() const;
+		ServiceLog & GetServiceLog(Context &, const Lib::IniSectionRef &) const;
+		void LogState(const MarketDataSource &) const;
 
 	private:
 
@@ -210,7 +226,6 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		const double m_emaSpeedSlow;
 		const double m_emaSpeedFast;
 
-		std::ofstream m_serviceLogFile;
 		ServiceLog &m_serviceLog;
 
 		std::vector<boost::shared_ptr<Source>> m_data;

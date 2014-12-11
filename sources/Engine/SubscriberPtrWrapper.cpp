@@ -381,8 +381,12 @@ void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
 			//...//
 		}
 	public:
-		void operator ()(Strategy &) const {
-			AssertFail("Not supported.");
+		void operator ()(Strategy &strategy) const {
+			strategy.RaiseBookUpdateTickEvent(
+				m_source,
+				m_priceLevelIndex,
+				m_tick,
+				m_timeMeasurement);
 		}
 		void operator ()(Service &service) const {
 			if (

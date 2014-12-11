@@ -119,10 +119,16 @@ namespace trdk {
 	public:
 
 		virtual void OnLevel1Update(
-					trdk::Security &,
-					trdk::Lib::TimeMeasurement::Milestones &);
+				trdk::Security &,
+				trdk::Lib::TimeMeasurement::Milestones &);
 
 		virtual void OnPositionUpdate(trdk::Position &);
+
+		virtual void OnBookUpdateTick(
+				trdk::Security &,
+				size_t priceLevelIndex,
+				const trdk::BookUpdateTick &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	public:
 
@@ -140,20 +146,25 @@ namespace trdk {
 	public:
 
 		void RaiseLevel1UpdateEvent(
-					trdk::Security &,
-					trdk::Lib::TimeMeasurement::Milestones &);
+				trdk::Security &,
+				trdk::Lib::TimeMeasurement::Milestones &);
 		void RaiseLevel1TickEvent(
-					trdk::Security &,
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &);
+				trdk::Security &,
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &);
 		void RaiseNewTradeEvent(
-					trdk::Security &,
-					const boost::posix_time::ptime &,
-					trdk::ScaledPrice,
-					trdk::Qty,
-					trdk::OrderSide);
+				trdk::Security &,
+				const boost::posix_time::ptime &,
+				trdk::ScaledPrice,
+				trdk::Qty,
+				trdk::OrderSide);
 		void RaiseServiceDataUpdateEvent(const trdk::Service &);
 		void RaisePositionUpdateEvent(trdk::Position &);
+		void RaiseBookUpdateTickEvent(
+				trdk::Security &,
+				size_t priceLevelIndex,
+				const trdk::BookUpdateTick &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	public:
 

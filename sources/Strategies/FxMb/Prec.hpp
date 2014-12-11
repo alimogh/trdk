@@ -24,6 +24,8 @@
 
 #include "Common/Common.hpp"
 
+#include "Core/Fwd.hpp"
+
 #include "Api.h"
 
 #include "Common/Assert.hpp"

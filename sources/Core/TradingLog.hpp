@@ -83,7 +83,7 @@ namespace trdk {
 		}
 
 		void EnableStream(std::ostream &os) {
-			m_log.EnableStream(os);
+			m_log.EnableStream(os, true);
 		}
 
 		trdk::Lib::Log::Time GetTime() {

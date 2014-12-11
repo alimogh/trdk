@@ -59,7 +59,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 		}
 
 		void EnableStream(std::ostream &os) {
-			m_log.EnableStream(os);
+			m_log.EnableStream(os, true);
 		}
 
 		trdk::Lib::Log::Time GetTime() {
