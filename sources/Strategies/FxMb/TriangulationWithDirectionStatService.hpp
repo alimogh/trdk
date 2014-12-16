@@ -73,9 +73,9 @@ namespace boost { namespace accumulators {
 
 } }
 
-namespace trdk { namespace Strategies { namespace FxMb {
+namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
-	class TriangulationWithDirectionStatService : public Service {
+	class StatService : public Service {
 
 	public:
 
@@ -166,12 +166,12 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 	public:
 
-		explicit TriangulationWithDirectionStatService(
+		explicit StatService(
 				Context &,
 				const std::string &tag,
 				const Lib::IniSectionRef &);
 	
-		virtual ~TriangulationWithDirectionStatService();
+		virtual ~StatService();
 
 	public:
 
@@ -210,8 +210,7 @@ namespace trdk { namespace Strategies { namespace FxMb {
 			return *m_data[index];
 		}
 		const Source & GetSource(size_t index) const {
-			return const_cast<TriangulationWithDirectionStatService *>(this)
-				->GetSource(index);
+			return const_cast<StatService *>(this)->GetSource(index);
 		}
 
 	private:
@@ -230,9 +229,8 @@ namespace trdk { namespace Strategies { namespace FxMb {
 
 		std::vector<boost::shared_ptr<Source>> m_data;
 
-		static std::vector<TriangulationWithDirectionStatService *>
-			m_instancies;
+		static std::vector<Twd::StatService *> m_instancies;
 
 	};
 
-} } }
+} } } }
