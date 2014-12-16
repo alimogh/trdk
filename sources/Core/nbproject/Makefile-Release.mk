@@ -46,7 +46,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/Module.o \
 	${OBJECTDIR}/Observer.o \
 	${OBJECTDIR}/Position.o \
-	${OBJECTDIR}/PositionReporter.o \
 	${OBJECTDIR}/Security.o \
 	${OBJECTDIR}/Service.o \
 	${OBJECTDIR}/Settings.o \
@@ -136,11 +135,6 @@ ${OBJECTDIR}/Position.o: Position.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Position.o Position.cpp
-
-${OBJECTDIR}/PositionReporter.o: PositionReporter.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/PositionReporter.o PositionReporter.cpp
 
 ${OBJECTDIR}/Security.o: Security.cpp 
 	${MKDIR} -p ${OBJECTDIR}
