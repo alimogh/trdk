@@ -294,6 +294,7 @@
     <ClInclude Include="EquationPosition.hpp" />
     <ClInclude Include="FxArb1.hpp" />
     <ClInclude Include="FxMbStrategyLog.hpp" />
+    <ClInclude Include="TriangulationWithDirectionPosition.hpp" />
     <ClInclude Include="TriangulationWithDirectionStatService.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Util.hpp" />

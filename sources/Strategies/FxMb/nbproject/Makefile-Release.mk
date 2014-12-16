@@ -39,6 +39,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/FxArb1Mono.o \
 	${OBJECTDIR}/FxArb1Multi.o \
 	${OBJECTDIR}/FxMbStrategyLog.o \
+	${OBJECTDIR}/TriangulationWithDirection.o \
+	${OBJECTDIR}/TriangulationWithDirectionStatService.o \
 	${OBJECTDIR}/Util.o
 
 
@@ -89,6 +91,16 @@ ${OBJECTDIR}/FxMbStrategyLog.o: FxMbStrategyLog.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxMbStrategyLog.o FxMbStrategyLog.cpp
+
+${OBJECTDIR}/TriangulationWithDirection.o: TriangulationWithDirection.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirection.o TriangulationWithDirection.cpp
+
+${OBJECTDIR}/TriangulationWithDirectionStatService.o: TriangulationWithDirectionStatService.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionStatService.o TriangulationWithDirectionStatService.cpp
 
 ${OBJECTDIR}/Util.o: Util.cpp 
 	${MKDIR} -p ${OBJECTDIR}

@@ -21,6 +21,7 @@ namespace accs = boost::accumulators;
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Strategies::FxMb;
+using namespace trdk::Strategies::FxMb::Twd;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -77,8 +78,7 @@ namespace {
 
 }
 
-class TriangulationWithDirectionStatService::ServiceLog
-	: private ServiceLogBase {
+class StatService::ServiceLog : private ServiceLogBase {
 
 public:
 
@@ -98,10 +98,9 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::vector<TriangulationWithDirectionStatService *>
-TriangulationWithDirectionStatService::m_instancies;
+std::vector<StatService *> StatService::m_instancies;
 
-TriangulationWithDirectionStatService::TriangulationWithDirectionStatService(
+StatService::StatService(
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &conf)
@@ -114,7 +113,7 @@ TriangulationWithDirectionStatService::TriangulationWithDirectionStatService(
 	m_instancies.push_back(this);
 }
 
-TriangulationWithDirectionStatService::~TriangulationWithDirectionStatService() {
+StatService::~StatService() {
 	try {
 		const auto &pos = std::find(
 			m_instancies.begin(),
@@ -128,11 +127,11 @@ TriangulationWithDirectionStatService::~TriangulationWithDirectionStatService() 
 	}
 }
 
-void TriangulationWithDirectionStatService::UpdateAlogImplSettings(const IniSectionRef &) {
+void StatService::UpdateAlogImplSettings(const IniSectionRef &) {
 	//...//
 }
 
-pt::ptime TriangulationWithDirectionStatService::OnSecurityStart(const Security &security) {
+pt::ptime StatService::OnSecurityStart(const Security &security) {
 	const auto &dataIndex = security.GetSource().GetIndex();
 	if (m_data.size() <= dataIndex) {
 		m_data.resize(dataIndex + 1);
@@ -143,7 +142,7 @@ pt::ptime TriangulationWithDirectionStatService::OnSecurityStart(const Security 
 	return pt::not_a_date_time;
 }
 
-bool TriangulationWithDirectionStatService::OnBookUpdateTick(
+bool StatService::OnBookUpdateTick(
 		const Security &security,
 		size_t priceLevelIndex,
 		const BookUpdateTick &,
@@ -338,8 +337,7 @@ bool TriangulationWithDirectionStatService::OnBookUpdateTick(
 
 }
 
-TriangulationWithDirectionStatService::ServiceLog &
-TriangulationWithDirectionStatService::GetServiceLog(
+StatService::ServiceLog & StatService::GetServiceLog(
 		Context &context ,
 		const IniSectionRef &conf)
 		const {
@@ -378,7 +376,7 @@ TriangulationWithDirectionStatService::GetServiceLog(
 
 }
 
-void TriangulationWithDirectionStatService::LogState(
+void StatService::LogState(
 		const MarketDataSource &mds)
 		const {
 
@@ -484,7 +482,7 @@ void TriangulationWithDirectionStatService::LogState(
 		UseUnused(mds);
 
 		const auto writeValue = [&](
-				const TriangulationWithDirectionStatService *s,
+				const StatService *s,
 				ServiceLogRecord &record) {
 			const auto &mdsCount = GetContext().GetMarketDataSourcesCount();
 			const char *const security
@@ -538,9 +536,7 @@ void TriangulationWithDirectionStatService::LogState(
 		};
 
 		const auto &write = [&](ServiceLogRecord &record) {
-			foreach (
-					const TriangulationWithDirectionStatService *s,
-					m_instancies) {
+			foreach (const StatService *s, m_instancies) {
 				writeValue(s, record);
 			}
 		};
@@ -559,7 +555,7 @@ boost::shared_ptr<Service> CreateTriangulationWithDirectionStatService(
 			const std::string &tag,
 			const IniSectionRef &configuration) {
 	return boost::shared_ptr<Service>(
-		new TriangulationWithDirectionStatService(context, tag, configuration));
+		new Twd::StatService(context, tag, configuration));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

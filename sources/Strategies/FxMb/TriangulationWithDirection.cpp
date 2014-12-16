@@ -9,6 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "TriangulationWithDirectionPosition.hpp"
 #include "TriangulationWithDirectionStatService.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
@@ -18,13 +19,14 @@
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 
-namespace trdk { namespace Strategies { namespace FxMb {
+namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	class TriangulationWithDirection;
-} } }
+} } } }
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Strategies::FxMb;
+using namespace trdk::Strategies::FxMb::Twd;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -101,7 +103,7 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class Strategies::FxMb::TriangulationWithDirection : public Strategy {
+class Strategies::FxMb::Twd::TriangulationWithDirection : public Strategy {
 		
 public:
 		
@@ -113,7 +115,7 @@ private:
 
 	struct Stat {
 
-		const TriangulationWithDirectionStatService *service;
+		const StatService *service;
 		
 		struct {
 			
@@ -135,6 +137,19 @@ private:
 
 	};
 
+	enum Pair {
+		//! Like a EUR/USD.
+		PAIR_AB,
+		//! Like a USD/JPY.
+		PAIR_BC,
+		//! Like a EUR/JPY.
+		PAIR_AC,
+		numberOfPairs = 3
+	};
+
+	typedef boost::array<boost::shared_ptr<Twd::Position>, numberOfPairs>
+		Orders;
+
 public:
 
 	explicit TriangulationWithDirection(
@@ -145,7 +160,13 @@ public:
 		m_levelsCount(
 			conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
 		m_qty(conf.ReadTypedKey<Qty>("qty")),
-		m_isLogInited(false)  {
+		m_opportunityNo(0) {
+
+		{
+			const Stat def = {};
+			m_stat.fill(def);
+		}
+		m_opportunity.fill(.0);
 		
 		if (conf.ReadBoolKey("log")) {
 		
@@ -188,277 +209,118 @@ public:
 		//...//
 	}
 
+public:
+
 	void WaitForCancelAndBlock(CancelAndBlockCondition &) {
 		//...//
 	}
 
+	bool HasOpportunity() const {
+		return m_opportunity[0] > 1.0 || m_opportunity[1] > 1.0;
+	}
+
+	bool IsActive() const {
+		return m_orders[0] ? true : false;
+	}
+
+public:
+		
 	virtual void OnServiceStart(const Service &service) {
+
 		const Stat statService = {
-			boost::polymorphic_downcast<const TriangulationWithDirectionStatService *>(
-				&service)
+			boost::polymorphic_downcast<const StatService *>(&service)
 		};
-		size_t index = statService.service->GetSecurity(0).GetSymbol().GetSymbol() == "EUR/USD"
-			?	0
-			:	statService.service->GetSecurity(0).GetSymbol().GetSymbol() == "EUR/JPY"
-				?	2
-				:	1;
-		m_stat.resize(3);
+		const auto &symbol
+			= statService.service->GetSecurity(0).GetSymbol().GetSymbol();
+		const size_t index
+			= symbol == "EUR/USD"
+				?	PAIR_AB
+				:	symbol == "EUR/JPY"
+					?	PAIR_AC
+					:	PAIR_BC;
+		Assert(!m_stat[index].service);
 		m_stat[index] = statService;
-		// see https://trello.com/c/ONnb5ai2
+
+		{
+			bool isFull = true;
+			foreach (const auto &s, m_stat) {
+				if (!s.service) {
+					isFull = false;
+					break;
+				}
+			}
+			if (isFull) {
+				WriteLogHead();
+			}
+		}
+
+// @todo see https://trello.com/c/ONnb5ai2
 //		m_stat.push_back(statService);
+
 	}
 
 	virtual void OnServiceDataUpdate(const Service &service) {
 
-		////////////////////////////////////////////////////////////////////////////////
-		// Updating min/max:
-
 		UpdateStat(service);
 
-		////////////////////////////////////////////////////////////////////////////////
-
-		if (p1 || p2) {
-			return;
+		if (IsActive()) {
+			CheckClosePossibility();
+		} else if (HasOpportunity()) {
+			CheckOpenPossibility();
 		}
-
-		////////////////////////////////////////////////////////////////////////////////
-		// Y1 and Y2:
-		// 
-		
-		const double opportunite[2] = {
-			m_stat[0].bestBid.price
-				* m_stat[1].bestBid.price
-				* m_stat[2].bestAsk.price,
-			m_stat[2].bestBid.price
-				* m_stat[1].bestAsk.price
-				* m_stat[0].bestAsk.price,
-		};
-		
-		if (opportunite[0] <= 1.0 && opportunite[1] <= 1.0) {
-			return;
-		}
-
-		////////////////////////////////////////////////////////////////////////////////
-		// Detecting current rising / falling:
-
-		const auto &isRising = [this](size_t pair, size_t period) {
-			const auto &stat = m_stat[pair];
-			const auto &statData = stat.service->GetData(stat.bestBid.source);
-			const auto &periodData = period == 0
-				?	statData.current
-				:	period == 1
-					?	statData.prev1
-					:	statData.prev2;
-			return
-				periodData.theo > periodData.emaFast
-				&& periodData.emaFast > periodData.emaSlow;
-		};
-
-		const auto &isFalling = [this](size_t pair, size_t period) {
-			const auto &stat = m_stat[pair];
-			const auto &statData = stat.service->GetData(stat.bestAsk.source);
-			const auto &periodData = period == 0
-				?	statData.current
-				:	period == 1
-					?	statData.prev1
-					:	statData.prev2;
-			return
-				periodData.theo < periodData.emaFast
-				&& periodData.emaFast < periodData.emaSlow;
-		};
-
-		/* pair, period, rising , falling */
-		bool risingFalling[3][3][2] = {};
-		for (size_t pair = 0; pair < m_stat.size(); ++pair) {
-			for (size_t period = 0; period < 3; ++period) {
-				risingFalling[pair][period][0] = isRising(pair, period);
-				risingFalling[pair][period][1] = isFalling(pair, period);
-			}
-		}
-
-		const bool isBuy[3] = {
-			risingFalling[0][0][0],
-			!risingFalling[1][0][1],
-			!risingFalling[0][0][0]
-		};
-
-		////////////////////////////////////////////////////////////////////////////////
-
-		if (!m_isLogInited) {
-			m_strategyLog.Write(
-				[&](StrategyLogRecord &record) {
-					record
-						%	"Horodatage"
-						%	"Action"
-						%	"Y1"
-						%	"Y2";
-					foreach (const auto &stat, m_stat) {
-						const char *pair = stat.service->GetSecurity(0).GetSymbol().GetSymbol().c_str();
-						record
-							%	pair % '\0' % " ECN"
-							%	pair % '\0' % " Direction"
-							%	pair % '\0' % " Bid"
-							%	pair % '\0' % " Ask"
-							%	pair % '\0' % " VWAP"
-							%	pair % '\0' % " VWAP Prev1"
-							%	pair % '\0' % " VWAP Prev2"
-							%	pair % '\0' % " fastEMA"
-							%	pair % '\0' % " fastEMA Prev1"
-							%	pair % '\0' % " fastEMA Prev2"
-							%	pair % '\0' % " slowEMA"
-							%	pair % '\0' % " slowEMA Prev1"
-							%	pair % '\0' % " slowEMA Prev2";
-					}
-				});
-			m_isLogInited = true;
-		}
-
-		const auto &writePair = [&](size_t pair, StrategyLogRecord &record) {
-			const auto &stat = m_stat[pair];
-			const auto &ecn = risingFalling[pair][0]
-				?	stat.bestBid.source
-				:	stat.bestAsk.source;
-			const Security &security = stat.service->GetSecurity(ecn);
-			record
-				%	security.GetSource().GetTag()
-				%	(isBuy[pair] ? "BUY" : "SELL")
-				%	security.GetBidPrice()
-				%	security.GetAskPrice();
-			const auto &data = stat.service->GetData(ecn);
-			record
-				%	data.current.theo
-				%	data.prev1.theo
-				%	data.prev2.theo
-				%	data.current.emaFast
-				%	data.prev1.emaFast
-				%	data.prev2.emaFast
-				%	data.current.emaSlow
-				%	data.prev1.emaSlow
-				%	data.prev2.emaSlow;
-		};
-		m_strategyLog.Write(
-			[&](StrategyLogRecord &record) {
-				record
-					%	GetContext().GetCurrentTime()
-					%	"Opening detected"
-					%	opportunite[0]
-					%	opportunite[1];
-				for (size_t i = 0; i < 3; ++i) {
-					writePair(i, record);
-					writePair(i, record);
-					writePair(i, record);
-				}
-			});
-
-		const auto &createPosition = [&](
-				const size_t pair) 
-				-> boost::shared_ptr<Position> {
-			boost::shared_ptr<Position> result;
-			const auto &stat = m_stat[pair];
-			const auto &ecn = risingFalling[pair][0]
-				?	stat.bestBid.source
-				:	stat.bestAsk.source;
-			const Security &security = stat.service->GetSecurity(ecn);
-			if (isBuy[pair]) {
-				result.reset(
-					new LongPosition(
-						*this,
-						GetContext().GetTradeSystem(ecn),
-						//! @todo fixme:
-						const_cast<Security &>(security),
-						security.GetSymbol().GetCashCurrency(),
-						m_qty,
-						security.GetBidPriceScaled(),
-						TimeMeasurement::Milestones()));
-			} else {
-				result.reset(
-					new ShortPosition(
-						*this,
-						GetContext().GetTradeSystem(ecn),
-						//! @todo fixme:
-						const_cast<Security &>(security),
-						security.GetSymbol().GetCashCurrency(),
-						m_qty,
-						security.GetBidPriceScaled(),
-						TimeMeasurement::Milestones()));
-			}
-			return std::move(result);
-		};
-
-		p1 = createPosition(0);
-		p1->OpenImmediatelyOrCancel(p1->GetOpenStartPrice());
-		
-		p2 = createPosition(2);
 
 	}
 
-	void OnPositionUpdate(Position &position) {
+	void OnPositionUpdate(trdk::Position &position) {
 
 		if (position.IsError()) {
 			Assert(IsBlocked());
 			return;
 		}
 
-		if (!position.IsOpened()) {
+		if (position.HasActiveOpenOrders()) {
+			return;
+		}
 
-			boost::shared_ptr<Position> newPos;
-			if (position.GetType() == Position::TYPE_LONG) {
-				newPos.reset(
-					new LongPosition(
-						*this,
-						position.GetTradeSystem(),
-						position.GetSecurity(),
-						position.GetCurrency(),
-						position.GetPlanedQty(),
-						position.GetOpenStartPrice(),
-						TimeMeasurement::Milestones()));
-			} else {
-				newPos.reset(
-					new ShortPosition(
-						*this,
-						position.GetTradeSystem(),
-						position.GetSecurity(),
-						position.GetCurrency(),
-						position.GetPlanedQty(),
-						position.GetOpenStartPrice(),
-						TimeMeasurement::Milestones()));
+		Twd::Position &order = dynamic_cast<Twd::Position &>(position);
+
+		if (order.IsCompleted()) {
+			return;
+		}
+
+		if (order.GetOpenedQty() == 0) {
+
+			if (order.GetLeg() == 1 && !HasOpportunity()) {
+				// We can stop here as operation not started yet:
+				LogAction("canceled");
+				m_orders.fill(boost::shared_ptr<Twd::Position>());
+				return;
 			}
 
-			newPos->OpenImmediatelyOrCancel(newPos->GetOpenStartPrice());
-
-			if (p1) {
-				Assert(p2);
-				Assert(&position == &*p1);
-				p1 = newPos;
-			} else {
-				Assert(p2);
-				Assert(&position == &*p2);
-				p2 = newPos;
-			}
+			ReplaceOrder(order);
 
 		} else {
+ 
+ 			Assert(order.IsOpened());
+			order.Complete();
 
-			Assert(position.IsOpened());
+			 if (order.GetLeg() == 1) {
+				GetLeg(2).Open();
+			 }
 
-			if (p1) {
-				Assert(p2);
-				Assert(&position == &*p1);
-				p1.reset();
-				p2->OpenImmediatelyOrCancel(p2->GetOpenStartPrice());
-			} else {
-				Assert(p2);
-				Assert(&position == &*p2);
-				p2.reset();
+			LogAction("executed");
+			
+			if (order.GetLeg() == 3) {
+				m_orders.fill(boost::shared_ptr<Twd::Position>());
 			}
 
 		}
 
 	}
 
-
 private:
 
-	//! Updating min/max.
+	//! Updating min/max and Y1/Y2.
 	void UpdateStat(const Service &service) {
 		
 		auto stat = m_stat.begin();
@@ -492,6 +354,332 @@ private:
 			stat->bestAsk.price = 1.0 / stat->bestAsk.price;
 		}
 
+		////////////////////////////////////////////////////////////////////////////////
+		// Y1 and Y2:
+		// 
+
+		m_opportunity[0]
+			= m_stat[PAIR_AB].bestBid.price
+				* m_stat[PAIR_BC].bestBid.price
+				* m_stat[PAIR_AC].bestAsk.price;
+		m_opportunity[0]
+			= m_stat[PAIR_AC].bestBid.price
+				* m_stat[PAIR_BC].bestAsk.price
+				* m_stat[PAIR_AB].bestAsk.price;
+
+	}
+
+	Twd::Position & GetLeg(size_t legNo) {
+		foreach (const auto &leg, m_orders) {
+			if (leg->GetLeg() == legNo) {
+				return *leg;
+			}
+		}
+		AssertNe(legNo, legNo);
+		throw std::logic_error("Unknown Leg No");
+	}
+
+	void ReplaceOrder(Twd::Position &oldOrder) {
+
+		boost::shared_ptr<Position> newOrder;
+		if (oldOrder.GetType() == Position::TYPE_LONG) {
+			newOrder.reset(
+				new Twd::LongPosition(
+					*this,
+					oldOrder.GetTradeSystem(),
+					oldOrder.GetSecurity(),
+					oldOrder.GetCurrency(),
+					oldOrder.GetPlanedQty(),
+					oldOrder.GetOpenStartPrice(),
+					TimeMeasurement::Milestones(),
+					oldOrder.GetLeg(),
+					oldOrder.IsByRising()));
+		} else {
+			newOrder.reset(
+				new Twd::ShortPosition(
+					*this,
+					oldOrder.GetTradeSystem(),
+					oldOrder.GetSecurity(),
+					oldOrder.GetCurrency(),
+					oldOrder.GetPlanedQty(),
+					oldOrder.GetOpenStartPrice(),
+					TimeMeasurement::Milestones(),
+					oldOrder.GetLeg(),
+					oldOrder.IsByRising()));
+		}
+
+		foreach (auto &order, m_orders) {
+			if (order->GetLeg() == newOrder->GetLeg()) {
+				order = newOrder;
+				order->Open();
+				return;
+			}
+		}
+
+		AssertNe(oldOrder.GetLeg(), oldOrder.GetLeg());
+		throw std::logic_error("Unknown Leg No from order");
+
+	}
+
+	void CheckOpenPossibility() {
+
+		////////////////////////////////////////////////////////////////////////////////
+		// Detecting current rising / falling:
+
+		const auto &getMovementSpeed = [this](const Pair &pair) -> double {
+			const auto &stat = m_stat[pair];
+			{
+				const auto &statData
+					= stat.service->GetData(stat.bestBid.source);
+				const bool isRising
+					= statData.current.theo > statData.current.emaFast
+						&& statData.current.emaFast > statData.current.emaSlow;
+				if (isRising) {
+					const auto diff
+						= statData.prev2.theo - statData.current.theo;
+					return fabs(diff);
+				}
+			}
+			{
+				const auto &statData
+					= stat.service->GetData(stat.bestAsk.source);
+				const bool isFalling
+					= statData.current.theo < statData.current.emaFast
+						&& statData.current.emaFast < statData.current.emaSlow;
+				if (isFalling) {
+					const auto diff
+						= statData.prev2.theo - statData.current.theo;
+					return fabs(diff) * -1.0;
+				}
+			}
+			return .0;
+		};
+
+		double movementSpeed[2] = {
+			getMovementSpeed(PAIR_AB),
+			getMovementSpeed(PAIR_AC)
+		};
+		if (IsZero(movementSpeed[0]) && IsZero(movementSpeed[1])) {
+			return;
+		}
+		if (!IsZero(movementSpeed[0]) && !IsZero(movementSpeed[1])) {
+			if (fabs(movementSpeed[0]) >= fabs(movementSpeed[1])) {
+				movementSpeed[1] = .0;
+			} else {
+				movementSpeed[0] = .0;
+			}
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+		// Orders
+		
+		size_t legsNo[2];
+		bool isRising;
+		if (!IsZero(movementSpeed[0])) {
+			Assert(IsZero(movementSpeed[1]));
+			isRising = movementSpeed[0] > 0;
+			legsNo[0] = 1;
+			legsNo[1] = 2;
+		} else {
+			Assert(!IsZero(movementSpeed[1]));
+			isRising = movementSpeed[1] > 0;
+			legsNo[1] = 1;
+			legsNo[0] = 2;
+		}
+
+		const auto &newPosition = [&](
+				const size_t pair,
+				size_t legNo,
+				bool isRising,
+				bool isBuy) 
+				-> boost::shared_ptr<Twd::Position> {
+			const auto &stat = m_stat[pair];
+			const auto &ecn = isRising
+				?	stat.bestBid.source
+				:	stat.bestAsk.source;
+			const Security &security = stat.service->GetSecurity(ecn);
+			boost::shared_ptr<Twd::Position> result;
+			if (isBuy) {
+				result.reset(
+					new Twd::LongPosition(
+						*this,
+						GetContext().GetTradeSystem(ecn),
+						//! @todo fixme:
+						const_cast<Security &>(security),
+						security.GetSymbol().GetCashCurrency(),
+						m_qty,
+						security.GetBidPriceScaled(),
+						TimeMeasurement::Milestones(),
+						legNo,
+						isRising));
+			} else {
+				result.reset(
+					new Twd::ShortPosition(
+						*this,
+						GetContext().GetTradeSystem(ecn),
+						//! @todo fixme:
+						const_cast<Security &>(security),
+						security.GetSymbol().GetCashCurrency(),
+						m_qty,
+						security.GetBidPriceScaled(),
+						TimeMeasurement::Milestones(),
+						legNo,
+						isRising));
+			}
+			if (result->GetLeg() == 1) {
+				result->Open();
+			}
+			return std::move(result);
+		};
+
+		Orders orders = {
+			newPosition(PAIR_AB, legsNo[0], isRising, isRising),
+			newPosition(PAIR_BC, 3, isRising, isRising),
+			newPosition(PAIR_AC, legsNo[1], !isRising, isRising)
+		};
+		orders.swap(m_orders);
+
+		++m_opportunityNo;
+		LogAction("detected");
+
+	}
+
+	void CheckClosePossibility() {
+
+		Twd::Position *lastLeg = nullptr;
+		foreach (const auto &leg, m_orders) {
+			switch (leg->GetLeg()) {
+				case 2:
+					if (!leg->IsCompleted()) {
+						return;
+					}
+					break;
+				case 3:
+					if (leg->IsStarted()) {
+						return;
+					}
+					Assert(!leg->IsCompleted());
+					lastLeg = &*leg;
+					break;
+			}
+		}
+		Assert(lastLeg);
+
+		const auto &stat = m_stat[PAIR_BC];
+		if (lastLeg->IsByRising()) {
+			const auto &statData
+				= stat.service->GetData(stat.bestBid.source);
+			if (statData.current.theo > statData.current.emaSlow) {
+				return;
+			}
+		} else {
+			const auto &statData
+				= stat.service->GetData(stat.bestAsk.source);
+			if (statData.current.theo < statData.current.emaSlow) {
+				return;
+			}
+		}
+
+		GetLeg(3).Open();
+		LogAction("detected");
+		
+	}
+
+private:
+
+	void WriteLogHead() {
+		m_strategyLog.Write(
+			[&](StrategyLogRecord &record) {
+				record
+					%	"No"
+					%	"Time"
+					%	"Action"
+					%	"Y1"
+					%	"Y2";
+				foreach (const auto &stat, m_stat) {
+					const char *pair
+						= stat
+							.service
+							->GetSecurity(0)
+							.GetSymbol()
+							.GetSymbol()
+							.c_str();
+					record
+						%	pair % '\0' % " ECN"
+						%	pair % '\0' % " Direction"
+						%	pair % '\0' % " Leg No."
+						%	pair % '\0' % " Order State"
+						%	pair % '\0' % " Exec price"
+						%	pair % '\0' % " Bid"
+						%	pair % '\0' % " Ask"
+						%	pair % '\0' % " VWAP"
+						%	pair % '\0' % " VWAP Prev1"
+						%	pair % '\0' % " VWAP Prev2"
+						%	pair % '\0' % " fastEMA"
+						%	pair % '\0' % " fastEMA Prev1"
+						%	pair % '\0' % " fastEMA Prev2"
+						%	pair % '\0' % " slowEMA"
+						%	pair % '\0' % " slowEMA Prev1"
+						%	pair % '\0' % " slowEMA Prev2";
+				}
+			});
+	}
+
+	void LogAction(const char *action) {
+
+		Assert(IsActive());
+
+		const auto &writePair = [&](size_t pair, StrategyLogRecord &record) {
+			const auto &stat = m_stat[pair];
+			const auto &order = *m_orders[pair];
+			const auto &ecn = order.IsByRising()
+				?	stat.bestBid.source
+				:	stat.bestAsk.source;
+			const Security &security = stat.service->GetSecurity(ecn);
+			record
+				%	security.GetSource().GetTag()
+				%	(order.GetType() == Position::TYPE_LONG ? "buy" : "sell")
+				%	order.GetLeg();
+			if (!order.IsStarted()) {
+				record % "wait" % '-';
+			} else if (!order.IsCompleted()) {
+				record
+					% "active"
+					% order.GetSecurity().DescalePrice(order.GetOpenStartPrice());
+			} else {
+				record
+					% "done"
+					% order.GetSecurity().DescalePrice(order.GetOpenPrice());
+			}
+			record 
+				%	security.GetBidPrice()
+				%	security.GetAskPrice();
+			const auto &data = stat.service->GetData(ecn);
+			record
+				%	data.current.theo
+				%	data.prev1.theo
+				%	data.prev2.theo
+				%	data.current.emaFast
+				%	data.prev1.emaFast
+				%	data.prev2.emaFast
+				%	data.current.emaSlow
+				%	data.prev1.emaSlow
+				%	data.prev2.emaSlow;
+		};
+
+		m_strategyLog.Write(
+			[&](StrategyLogRecord &record) {
+				record
+					%	m_opportunityNo
+					%	GetContext().GetCurrentTime()
+					%	action
+					%	m_opportunity[0]
+					%	m_opportunity[1];
+				for (size_t i = 0; i < numberOfPairs; ++i) {
+					writePair(i, record);
+				}
+			});
+
 	}
 
 protected:
@@ -507,12 +695,13 @@ private:
 
 	std::ofstream m_strategyLogFile;
 	StrategyLog m_strategyLog;
-	bool m_isLogInited;
 
-	std::vector<Stat> m_stat;
+	boost::array<Stat, numberOfPairs> m_stat;
 
-	boost::shared_ptr<Position> p1;
-	boost::shared_ptr<Position> p2;
+	boost::array<double, 2> m_opportunity;
+
+	size_t m_opportunityNo;
+	Orders m_orders;
 
 };
 

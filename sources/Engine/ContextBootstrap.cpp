@@ -1473,12 +1473,8 @@ private:
 							if (!uniqueInstance) {
 								ForEachModuleInstance(
 									module,
-									[&](Module &instance) {
-										SubscribeModuleStandaloneInstance(
-											instance,
-											subscribe,
-											&security);
-									},
+									// bind is a workaround for g++ internal error with lambda:
+									boost::bind(&ContextStateBootstrapper::SubscribeModuleStandaloneInstance<Module>, this, _1, subscribe, &security),
 									[&](Module &instance) {
 										SubscribeModuleSymbolInstance(
 											instance,
