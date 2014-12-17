@@ -255,7 +255,7 @@ public:
 
 		if (IsActive()) {
 			CheckClosePossibility();
-		} else if (HasOpportunity()) {
+		} else {
 			CheckOpenPossibility();
 		}
 
@@ -413,6 +413,10 @@ private:
 
 	void CheckOpenPossibility() {
 
+ 		if (!HasOpportunity()) {
+ 			return;
+ 		}
+
 		////////////////////////////////////////////////////////////////////////////////
 		// Detecting current rising / falling:
 
@@ -464,17 +468,22 @@ private:
 		// Orders
 		
 		size_t legsNo[2];
+		bool isBuy[2];
 		bool isRising;
 		if (!IsZero(movementSpeed[0])) {
 			Assert(IsZero(movementSpeed[1]));
 			isRising = movementSpeed[0] > 0;
 			legsNo[0] = 1;
+			isBuy[0] = isRising;
 			legsNo[1] = 2;
+			isBuy[1] = !isRising;
 		} else {
 			Assert(!IsZero(movementSpeed[1]));
 			isRising = movementSpeed[1] > 0;
-			legsNo[1] = 1;
 			legsNo[0] = 2;
+			isBuy[0] = !isRising;
+			legsNo[1] = 1;
+			isBuy[1] = isRising;
 		}
 
 		const auto &newPosition = [&](
@@ -523,9 +532,9 @@ private:
 		};
 
 		Orders orders = {
-			newPosition(PAIR_AB, legsNo[0], isRising, isRising),
-			newPosition(PAIR_BC, 3, isRising, isRising),
-			newPosition(PAIR_AC, legsNo[1], !isRising, isRising)
+			newPosition(PAIR_AB, legsNo[0], isRising, isBuy[0]),
+			newPosition(PAIR_BC, 3, isRising, isBuy[0]),
+			newPosition(PAIR_AC, legsNo[1], !isRising, isBuy[1])
 		};
 		orders.swap(m_orders);
 
