@@ -77,7 +77,7 @@ namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	boost::filesystem::path SymbolToFileName(const std::string &);
+	std::string SymbolToFileName(const std::string &);
 	boost::filesystem::path SymbolToFileName(
 				const std::string &symbol,
 				const std::string &);

@@ -115,8 +115,9 @@ StatService::StatService(
 			conf.ReadTypedKey<size_t>("prev2_duration_miliseconds"))),
 	m_emaSpeedSlow(conf.ReadTypedKey<double>("ema_speed_slow")),
 	m_emaSpeedFast(conf.ReadTypedKey<double>("ema_speed_fast")),
-	m_serviceLogTable(GetServiceLogTable(GetContext(), conf)),
-	m_serviceLogColumn(GetServiceLogColumn(GetContext(), conf)) {
+	m_isLogByPairOn(conf.ReadBoolKey("log.pair")),
+	m_pairLog(new ServiceLog),
+	m_serviceLog(GetServiceLog(conf)) {
 	m_instancies.push_back(this);
 	GetLog().Info(
 		"Prev1 duration: %1%; Prev2 duration: %2%.",
@@ -151,8 +152,8 @@ pt::ptime StatService::OnSecurityStart(const Security &security) {
 		m_data.resize(dataIndex + 1);
 	}
 	Assert(!m_data[dataIndex]);
-	m_data[dataIndex].reset(
-		new Source(security, m_emaSpeedSlow, m_emaSpeedFast));
+	auto &source = m_data[dataIndex];
+	source.reset(new Source(security, m_emaSpeedSlow, m_emaSpeedFast));
 	return pt::not_a_date_time;
 }
 
@@ -351,17 +352,13 @@ bool StatService::OnBookUpdateTick(
 
 }
 
-void StatService::CreateServiceLog(
-		Context &context,
-		const IniSectionRef &conf,
+void StatService::InitLog(
 		ServiceLog &log,
 		std::ofstream &file,
-		const char *suffix)
+		const std::string &suffix)
 		const {
 
-	if (!conf.ReadBoolKey("log") || log.IsEnabled()) {
-		return;
-	}
+	Assert(!log.IsEnabled());
 
 	static const pt::ptime now = pt::microsec_clock::local_time();
 	boost::format fileName(
@@ -375,7 +372,7 @@ void StatService::CreateServiceLog(
 		% now.time_of_day().seconds()
 		% suffix;
 	const auto &logPath
-		= context.GetSettings().GetLogsDir() / "pretrade" / fileName.str();
+		= GetContext().GetSettings().GetLogsDir() / "pretrade" / fileName.str();
 	
 	GetContext().GetLog().Info("Log: %1%.", logPath);
 	fs::create_directories(logPath.branch_path());
@@ -390,23 +387,14 @@ void StatService::CreateServiceLog(
 
 }
 
-StatService::ServiceLog & StatService::GetServiceLogColumn(
-		Context &context,
+StatService::ServiceLog & StatService::GetServiceLog(
 		const IniSectionRef &conf)
 		const {
 	static std::ofstream file;
 	static ServiceLog instance;
-	CreateServiceLog(context, conf, instance, file, "column");
-	return instance;
-}
-
-StatService::ServiceLog & StatService::GetServiceLogTable(
-		Context &context ,
-		const IniSectionRef &conf)
-		const {
-	static std::ofstream file;
-	static ServiceLog instance;
-	CreateServiceLog(context, conf, instance, file, "table");
+	if (conf.ReadBoolKey("log.full") && !instance.IsEnabled()) {
+		InitLog(instance, file, "full");
+	}
 	return instance;
 }
 
@@ -417,101 +405,88 @@ void StatService::LogState(
 	static bool isLogHeadInited = false;
 			
 	if (!isLogHeadInited) {
-		{
-
-			const auto writeLogHead = [&](ServiceLogRecord &record) {
-				record % "time" % "ECN";
-
-				foreach (const StatService *s, m_instancies) {
-					const auto &symbol
-						= s->m_data.front()->security->GetSymbol().GetSymbol();
-					record
-						% (boost::format("%1% VWAP"				) % symbol).str()
-						% (boost::format("%1% VWAP prev1"		) % symbol).str()
-						% (boost::format("%1% VWAP prev2"		) % symbol).str()
-						% (boost::format("%1% EMA fast"			) % symbol).str()
-						% (boost::format("%1% EMA fast prev1"	) % symbol).str()
-						% (boost::format("%1% EMA fast prev2"	) % symbol).str()
-						% (boost::format("%1% EMA slow"			) % symbol).str()
-						% (boost::format("%1% EMA slow prev1"	) % symbol).str()
-						% (boost::format("%1% EMA slow prev2"	) % symbol).str();
-				}
-				foreach (const StatService *s, m_instancies) {
-					const auto &symbol
-						= s->m_data.front()->security->GetSymbol().GetSymbol();
-					for (size_t k = 4; k > 0; --k) {
-						record
-							% (boost::format("%1% bid line %2% price")	% symbol % k).str()
-							% (boost::format("%1% bid line %2% qty")	% symbol % k).str();
-					}
-				}
-				foreach (const StatService *s, m_instancies) {
-					const auto &symbol
-						= s->m_data.front()->security->GetSymbol().GetSymbol();
-					for (size_t k = 1; k <= 4; ++k) {
-						record
-							% (boost::format("%1% offer line %2% price")	% symbol % k).str()
-							% (boost::format("%1% offer line %2% qty")		% symbol % k).str();
-					}
-				}
-			};
+	
+		const auto writeLogHead = [&](ServiceLogRecord &record) {
+			record % ' ';
+			foreach (const auto &s, m_data) {
+				record % s->security->GetSource().GetTag().c_str();
+			}
+			record
+				% '\n'
+				% "fastEMA" % m_emaSpeedFast % '\n'
+				% "slowEMA" % m_emaSpeedSlow % '\n'
+				% "Prev1" % m_prev1Duration % '\n'
+				% "Prev2" % m_prev2Duration % '\n';
+		};
 		
-			m_serviceLogTable.Write(writeLogHead);
-
-		}
-
-		{
-
-			const auto writeLogHead = [&](ServiceLogRecord &record) {
-				record % ' ';
-				foreach (const auto &s, m_data) {
-					record % s->security->GetSource().GetTag().c_str();
-				}
-				record
-					% '\n'
-					% "fastEMA" % m_emaSpeedFast % '\n'
-					% "slowEMA" % m_emaSpeedSlow % '\n'
-					% "Prev1" % m_prev1Duration % '\n'
-					% "Prev2" % m_prev2Duration % '\n';
-			};
-		
-			m_serviceLogColumn.Write(writeLogHead);
-		
-		}
+		m_serviceLog.Write(writeLogHead);
 
 		isLogHeadInited = true;
-	
+
+	}
+
+	if (m_isLogByPairOn) {
+
+		InitLog(
+			*m_pairLog,
+			m_pairLogFile,
+			SymbolToFileName(
+				m_data.front()->security->GetSymbol().GetSymbol()));
+
+		const auto writeLogHead = [&](ServiceLogRecord &record) {
+			record
+				% "time"
+				% "ECN"
+				% "VWAP"			
+				% "VWAP prev1"		
+				% "VWAP prev2"		
+				% "EMA fast"		
+				% "EMA fast prev1"	
+				% "EMA fast prev2"	
+				% "EMA slow"		
+				% "EMA slow prev1"	
+				% "EMA slow prev2";
+			for (size_t i = 4; i > 0; --i) {
+				record
+					% (boost::format("bid %1% price")	% i).str()
+					% (boost::format("bid %1% qty")	% i).str();
+			}
+			for (size_t i = 1; i <= 4; ++i) {
+				record
+					% (boost::format("offer %1% price")	% i).str()
+					% (boost::format("offer %1% qty")	% i).str();
+			}
+		};
+		m_pairLog->Write(writeLogHead);
+
+		m_isLogByPairOn = false;
+
 	}
 
 	{
 
 		const auto &write = [&](ServiceLogRecord &record) {
 			record % GetContext().GetCurrentTime() % mds.GetTag().c_str(); 
-			foreach (const StatService *s, m_instancies) {
-				const Data &data = s->GetData(mds.GetIndex());
-				record
-					% data.current.theo
-					% data.prev1.theo
-					% data.prev2.theo
-					% data.current.emaFast
-					% data.prev1.emaFast
-					% data.prev2.emaFast
-					% data.current.emaSlow
-					% data.prev1.emaSlow
-					% data.prev2.emaSlow;
+			const Data &data = GetData(mds.GetIndex());
+			record
+				% data.current.theo
+				% data.prev1.theo
+				% data.prev2.theo
+				% data.current.emaFast
+				% data.prev1.emaFast
+				% data.prev2.emaFast
+				% data.current.emaSlow
+				% data.prev1.emaSlow
+				% data.prev2.emaSlow;
+			foreach_reversed (const auto &line, data.bids) {
+				record % line.price % line.qty;
 			}
-			foreach (const StatService *s, m_instancies) {
-				const Data &data = s->GetData(mds.GetIndex());
-				foreach_reversed (const auto &line, data.bids) {
-					record % line.price % line.qty;
-				}
-				foreach (const auto &line, data.offers) {
-					record % line.price % line.qty;
-				}
+			foreach (const auto &line, data.offers) {
+				record % line.price % line.qty;
 			}
 		};
 
-		m_serviceLogTable.Write(write);
+		m_pairLog->Write(write);
 
 	}
 
@@ -577,7 +552,7 @@ void StatService::LogState(
 			}
 		};
 
-		m_serviceLogColumn.Write(write);
+		m_serviceLog.Write(write);
 
 	}
 
