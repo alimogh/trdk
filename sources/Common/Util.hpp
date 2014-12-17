@@ -61,7 +61,7 @@ namespace trdk { namespace Lib {
 	//////////////////////////////////////////////////////////////////////////
 
 	inline boost::int64_t Scale(double value, unsigned long scale) {
-		return long(boost::math::round(value * double(scale)));
+		return boost::int64_t(boost::math::round(value * double(scale)));
 	}
 
 	inline double Descale(boost::int64_t value, unsigned long scale) {
@@ -77,7 +77,7 @@ namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	boost::filesystem::path SymbolToFileName(const std::string &);
+	std::string SymbolToFileName(const std::string &);
 	boost::filesystem::path SymbolToFileName(
 				const std::string &symbol,
 				const std::string &);

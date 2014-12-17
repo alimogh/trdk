@@ -129,6 +129,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	private:
 
+		class ServiceLog;
+
 		struct Source
 				: public Data,
 				private boost::noncopyable {
@@ -161,8 +163,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			}
 
 		};
-
-		class ServiceLog;
 
 	public:
 
@@ -215,15 +215,30 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	private:
 
-		ServiceLog & GetServiceLog(Context &, const Lib::IniSectionRef &) const;
+		ServiceLog & GetServiceLog(
+				const Lib::IniSectionRef &)
+				const;
+		void InitLog(
+				ServiceLog &,
+				std::ofstream &,
+				const std::string &suffix)
+				const;
+
 		void LogState(const MarketDataSource &) const;
 
 	private:
 
 		const size_t m_levelsCount;
+
+		const boost::posix_time::time_duration m_prev1Duration;
+		const boost::posix_time::time_duration m_prev2Duration;
 		
 		const double m_emaSpeedSlow;
 		const double m_emaSpeedFast;
+
+		mutable bool m_isLogByPairOn;
+		mutable std::ofstream m_pairLogFile;
+		std::unique_ptr<ServiceLog> m_pairLog;
 
 		ServiceLog &m_serviceLog;
 

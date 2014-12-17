@@ -107,10 +107,25 @@ StatService::StatService(
 	: Base(context, "TriangulationWithDirectionStatService", tag),
 	m_levelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
+	m_prev1Duration(
+		pt::milliseconds(
+			conf.ReadTypedKey<size_t>("prev1_duration_miliseconds"))),
+	m_prev2Duration(
+		pt::milliseconds(
+			conf.ReadTypedKey<size_t>("prev2_duration_miliseconds"))),
 	m_emaSpeedSlow(conf.ReadTypedKey<double>("ema_speed_slow")),
 	m_emaSpeedFast(conf.ReadTypedKey<double>("ema_speed_fast")),
-	m_serviceLog(GetServiceLog(GetContext(), conf)) {
+	m_isLogByPairOn(conf.ReadBoolKey("log.pair")),
+	m_pairLog(new ServiceLog),
+	m_serviceLog(GetServiceLog(conf)) {
 	m_instancies.push_back(this);
+	GetLog().Info(
+		"Prev1 duration: %1%; Prev2 duration: %2%.",
+		m_prev1Duration,
+		m_prev2Duration);
+	if (m_prev2Duration <= m_prev1Duration) {
+		throw ModuleError("Prev2 duration can't be equal or less then Prev1");
+	}
 }
 
 StatService::~StatService() {
@@ -137,8 +152,8 @@ pt::ptime StatService::OnSecurityStart(const Security &security) {
 		m_data.resize(dataIndex + 1);
 	}
 	Assert(!m_data[dataIndex]);
-	m_data[dataIndex].reset(
-		new Source(security, m_emaSpeedSlow, m_emaSpeedFast));
+	auto &source = m_data[dataIndex];
+	source.reset(new Source(security, m_emaSpeedSlow, m_emaSpeedFast));
 	return pt::not_a_date_time;
 }
 
@@ -261,8 +276,8 @@ bool StatService::OnBookUpdateTick(
 	////////////////////////////////////////////////////////////////////////////////
 	// Preparing previous 2 points for actual strategy work:
 	source.points.push_back(data.current);
-	const auto &p2Time = data.current.time - pt::seconds(2);
-	const auto &p1Time = data.current.time - pt::milliseconds(500);
+	const auto &p2Time = data.current.time - m_prev2Duration;
+	const auto &p1Time = data.current.time - m_prev1Duration;
 	auto itP1 = source.points.cend();
 	auto itP2 = source.points.cend();
 	for (auto it = source.points.cbegin(); it != source.points.cend(); ) {
@@ -337,43 +352,50 @@ bool StatService::OnBookUpdateTick(
 
 }
 
-StatService::ServiceLog & StatService::GetServiceLog(
-		Context &context ,
-		const IniSectionRef &conf)
+void StatService::InitLog(
+		ServiceLog &log,
+		std::ofstream &file,
+		const std::string &suffix)
 		const {
-	
-	static std::ofstream file;
-	static ServiceLog instance;
-	
-	if (conf.ReadBoolKey("log") && !instance.IsEnabled()) {
-		
-		const pt::ptime &now = boost::posix_time::microsec_clock::local_time();
-		boost::format fileName(
-			"pretrade_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.csv");
-		fileName
-			% now.date().year()
-			% now.date().month().as_number()
-			% now.date().day()
-			% now.time_of_day().hours()
-			% now.time_of_day().minutes()
-			% now.time_of_day().seconds();
-		const auto &logPath
-			= context.GetSettings().GetLogsDir() / "pretrade" / fileName.str();
-		
-		GetContext().GetLog().Info("Log: %1%.", logPath);
-		fs::create_directories(logPath.branch_path());
-		file.open(
-			logPath.string().c_str(),
-			std::ios::app | std::ios::ate);
-		if (!file) {
-			throw ModuleError("Failed to open log file");
-		}
-		instance.EnableStream(file);
 
+	Assert(!log.IsEnabled());
+
+	static const pt::ptime now = pt::microsec_clock::local_time();
+	boost::format fileName(
+		"pretrade_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d_%7%.csv");
+	fileName
+		% now.date().year()
+		% now.date().month().as_number()
+		% now.date().day()
+		% now.time_of_day().hours()
+		% now.time_of_day().minutes()
+		% now.time_of_day().seconds()
+		% suffix;
+	const auto &logPath
+		= GetContext().GetSettings().GetLogsDir() / "pretrade" / fileName.str();
+	
+	GetContext().GetLog().Info("Log: %1%.", logPath);
+	fs::create_directories(logPath.branch_path());
+	file.open(
+		logPath.string().c_str(),
+		std::ios::app | std::ios::ate);
+	if (!file) {
+		throw ModuleError("Failed to open log file");
 	}
 
-	return instance;
+	log.EnableStream(file);
 
+}
+
+StatService::ServiceLog & StatService::GetServiceLog(
+		const IniSectionRef &conf)
+		const {
+	static std::ofstream file;
+	static ServiceLog instance;
+	if (conf.ReadBoolKey("log.full") && !instance.IsEnabled()) {
+		InitLog(instance, file, "full");
+	}
+	return instance;
 }
 
 void StatService::LogState(
@@ -383,103 +405,92 @@ void StatService::LogState(
 	static bool isLogHeadInited = false;
 			
 	if (!isLogHeadInited) {
-#		if 0 ////////////////////////////////////////////////////////////////////////////////
-			const auto writeLogHead = [&](ServiceLogRecord &record) {
-				record % "time" % "ECN";
-
-				foreach (
-						const TriangulationWithDirectionStatService *s,
-						m_instancies) {
-					const auto &symbol
-						= s->m_data.front()->security->GetSymbol().GetSymbol();
-					record
-						% (boost::format("%1% VWAP"				) % symbol).str()
-						% (boost::format("%1% VWAP prev1"		) % symbol).str()
-						% (boost::format("%1% VWAP prev2"		) % symbol).str()
-						% (boost::format("%1% EMA fast"			) % symbol).str()
-						% (boost::format("%1% EMA fast prev1"	) % symbol).str()
-						% (boost::format("%1% EMA fast prev2"	) % symbol).str()
-						% (boost::format("%1% EMA slow"			) % symbol).str()
-						% (boost::format("%1% EMA slow prev1"	) % symbol).str()
-						% (boost::format("%1% EMA slow prev2"	) % symbol).str();
-				}
-				foreach (
-						const TriangulationWithDirectionStatService *s,
-						m_instancies) {
-					const auto &symbol
-						= s->m_data.front()->security->GetSymbol().GetSymbol();
-					for (size_t k = 4; k > 0; --k) {
-						record
-							% (boost::format("%1% bid line %2% price")	% symbol % k).str()
-							% (boost::format("%1% bid line %2% qty")	% symbol % k).str();
-					}
-				}
-				foreach (
-						const TriangulationWithDirectionStatService *s,
-						m_instancies) {
-					const auto &symbol
-						= s->m_data.front()->security->GetSymbol().GetSymbol();
-					for (size_t k = 1; k <= 4; ++k) {
-						record
-							% (boost::format("%1% offer line %2% price")	% symbol % k).str()
-							% (boost::format("%1% offer line %2% qty")		% symbol % k).str();
-					}
-				}
-			};
-
-#		else ////////////////////////////////////////////////////////////////////////////////
-			const auto writeLogHead = [&](ServiceLogRecord &record) {
-				record % ' ';
-				foreach (const auto &s, m_data) {
-					record % s->security->GetSource().GetTag().c_str();
-				}
-				record
-					% '\n'
-					% "fastEMA" % m_emaSpeedFast % '\n'
-					% "slowEMA" % m_emaSpeedSlow % '\n'
-					% "Prev1 milliseconds" % pt::milliseconds(500) % '\n'
-					% "Prev2 milliseconds" % pt::seconds(2) % '\n';
-			};
-#		endif ////////////////////////////////////////////////////////////////////////////////
 	
+		const auto writeLogHead = [&](ServiceLogRecord &record) {
+			record % ' ';
+			foreach (const auto &s, m_data) {
+				record % s->security->GetSource().GetTag().c_str();
+			}
+			record
+				% '\n'
+				% "fastEMA" % m_emaSpeedFast % '\n'
+				% "slowEMA" % m_emaSpeedSlow % '\n'
+				% "Prev1" % m_prev1Duration % '\n'
+				% "Prev2" % m_prev2Duration % '\n';
+		};
+		
 		m_serviceLog.Write(writeLogHead);
+
 		isLogHeadInited = true;
-	
+
 	}
 
-#	if 0 ////////////////////////////////////////////////////////////////////////////////
-		const auto &write = [&](ServiceLogRecord &record) {
-			record % GetContext().GetCurrentTime() % mds.GetTag().c_str(); 
-			foreach (
-					const TriangulationWithDirectionStatService *s,
-					m_instancies) {
-				const Data &data = s->GetData(mds.GetIndex());
+	if (m_isLogByPairOn) {
+
+		InitLog(
+			*m_pairLog,
+			m_pairLogFile,
+			SymbolToFileName(
+				m_data.front()->security->GetSymbol().GetSymbol()));
+
+		const auto writeLogHead = [&](ServiceLogRecord &record) {
+			record
+				% "time"
+				% "ECN"
+				% "VWAP"			
+				% "VWAP prev1"		
+				% "VWAP prev2"		
+				% "EMA fast"		
+				% "EMA fast prev1"	
+				% "EMA fast prev2"	
+				% "EMA slow"		
+				% "EMA slow prev1"	
+				% "EMA slow prev2";
+			for (size_t i = 4; i > 0; --i) {
 				record
-					% data.current.theo
-					% data.prev1.theo
-					% data.prev2.theo
-					% data.current.emaFast
-					% data.prev1.emaFast
-					% data.prev2.emaFast
-					% data.current.emaSlow
-					% data.prev1.emaSlow
-					% data.prev2.emaSlow;
+					% (boost::format("bid %1% price")	% i).str()
+					% (boost::format("bid %1% qty")	% i).str();
 			}
-			foreach (
-					const TriangulationWithDirectionStatService *s,
-					m_instancies) {
-				const Data &data = s->GetData(mds.GetIndex());
-				foreach_reversed (const auto &line, data.bids) {
-					record % line.price % line.qty;
-				}
-				foreach (const auto &line, data.offers) {
-					record % line.price % line.qty;
-				}
+			for (size_t i = 1; i <= 4; ++i) {
+				record
+					% (boost::format("offer %1% price")	% i).str()
+					% (boost::format("offer %1% qty")	% i).str();
 			}
 		};
-#	else ////////////////////////////////////////////////////////////////////////////////
+		m_pairLog->Write(writeLogHead);
 
-		UseUnused(mds);
+		m_isLogByPairOn = false;
+
+	}
+
+	{
+
+		const auto &write = [&](ServiceLogRecord &record) {
+			record % GetContext().GetCurrentTime() % mds.GetTag().c_str(); 
+			const Data &data = GetData(mds.GetIndex());
+			record
+				% data.current.theo
+				% data.prev1.theo
+				% data.prev2.theo
+				% data.current.emaFast
+				% data.prev1.emaFast
+				% data.prev2.emaFast
+				% data.current.emaSlow
+				% data.prev1.emaSlow
+				% data.prev2.emaSlow;
+			foreach_reversed (const auto &line, data.bids) {
+				record % line.price % line.qty;
+			}
+			foreach (const auto &line, data.offers) {
+				record % line.price % line.qty;
+			}
+		};
+
+		m_pairLog->Write(write);
+
+	}
+
+	{
 
 		const auto writeValue = [&](
 				const StatService *s,
@@ -541,9 +552,9 @@ void StatService::LogState(
 			}
 		};
 
-#	endif ////////////////////////////////////////////////////////////////////////////////
-	
-	m_serviceLog.Write(write);
+		m_serviceLog.Write(write);
+
+	}
 
 }
 

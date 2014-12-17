@@ -20,10 +20,10 @@ namespace lt = boost::local_time;
 using namespace trdk;
 using namespace trdk::Lib;
 
-boost::filesystem::path Lib::SymbolToFileName(const std::string &symbol) {
+std::string Lib::SymbolToFileName(const std::string &symbol) {
 	std::string clearSymbol = boost::replace_all_copy(symbol, ":", "_");
 	boost::replace_all(clearSymbol, "/", "_");
-	return clearSymbol;
+	return std::move(clearSymbol);
 }
 
 fs::path Lib::SymbolToFileName(
