@@ -215,17 +215,36 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	private:
 
-		ServiceLog & GetServiceLog(Context &, const Lib::IniSectionRef &) const;
+		ServiceLog & GetServiceLogColumn(
+				Context &,
+				const Lib::IniSectionRef &)
+				const;
+		ServiceLog & GetServiceLogTable(
+				Context &,
+				const Lib::IniSectionRef &)
+				const;
+		void CreateServiceLog(
+				Context &,
+				const Lib::IniSectionRef &,
+				ServiceLog &,
+				std::ofstream &,
+				const char *suffix)
+				const;
+
 		void LogState(const MarketDataSource &) const;
 
 	private:
 
 		const size_t m_levelsCount;
+
+		const boost::posix_time::time_duration m_prev1Duration;
+		const boost::posix_time::time_duration m_prev2Duration;
 		
 		const double m_emaSpeedSlow;
 		const double m_emaSpeedFast;
 
-		ServiceLog &m_serviceLog;
+		ServiceLog &m_serviceLogTable;
+		ServiceLog &m_serviceLogColumn;
 
 		std::vector<boost::shared_ptr<Source>> m_data;
 

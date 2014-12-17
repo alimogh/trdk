@@ -107,10 +107,24 @@ StatService::StatService(
 	: Base(context, "TriangulationWithDirectionStatService", tag),
 	m_levelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
+	m_prev1Duration(
+		pt::milliseconds(
+			conf.ReadTypedKey<size_t>("prev1_duration_miliseconds"))),
+	m_prev2Duration(
+		pt::milliseconds(
+			conf.ReadTypedKey<size_t>("prev2_duration_miliseconds"))),
 	m_emaSpeedSlow(conf.ReadTypedKey<double>("ema_speed_slow")),
 	m_emaSpeedFast(conf.ReadTypedKey<double>("ema_speed_fast")),
-	m_serviceLog(GetServiceLog(GetContext(), conf)) {
+	m_serviceLogTable(GetServiceLogTable(GetContext(), conf)),
+	m_serviceLogColumn(GetServiceLogColumn(GetContext(), conf)) {
 	m_instancies.push_back(this);
+	GetLog().Info(
+		"Prev1 duration: %1%; Prev2 duration: %2%.",
+		m_prev1Duration,
+		m_prev2Duration);
+	if (m_prev2Duration <= m_prev1Duration) {
+		throw ModuleError("Prev2 duration can't be equal or less then Prev1");
+	}
 }
 
 StatService::~StatService() {
@@ -261,8 +275,8 @@ bool StatService::OnBookUpdateTick(
 	////////////////////////////////////////////////////////////////////////////////
 	// Preparing previous 2 points for actual strategy work:
 	source.points.push_back(data.current);
-	const auto &p2Time = data.current.time - pt::seconds(2);
-	const auto &p1Time = data.current.time - pt::milliseconds(500);
+	const auto &p2Time = data.current.time - m_prev2Duration;
+	const auto &p1Time = data.current.time - m_prev1Duration;
 	auto itP1 = source.points.cend();
 	auto itP2 = source.points.cend();
 	for (auto it = source.points.cbegin(); it != source.points.cend(); ) {
@@ -337,43 +351,63 @@ bool StatService::OnBookUpdateTick(
 
 }
 
-StatService::ServiceLog & StatService::GetServiceLog(
+void StatService::CreateServiceLog(
+		Context &context,
+		const IniSectionRef &conf,
+		ServiceLog &log,
+		std::ofstream &file,
+		const char *suffix)
+		const {
+
+	if (!conf.ReadBoolKey("log") || log.IsEnabled()) {
+		return;
+	}
+
+	static const pt::ptime now = pt::microsec_clock::local_time();
+	boost::format fileName(
+		"pretrade_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d_%7%.csv");
+	fileName
+		% now.date().year()
+		% now.date().month().as_number()
+		% now.date().day()
+		% now.time_of_day().hours()
+		% now.time_of_day().minutes()
+		% now.time_of_day().seconds()
+		% suffix;
+	const auto &logPath
+		= context.GetSettings().GetLogsDir() / "pretrade" / fileName.str();
+	
+	GetContext().GetLog().Info("Log: %1%.", logPath);
+	fs::create_directories(logPath.branch_path());
+	file.open(
+		logPath.string().c_str(),
+		std::ios::app | std::ios::ate);
+	if (!file) {
+		throw ModuleError("Failed to open log file");
+	}
+
+	log.EnableStream(file);
+
+}
+
+StatService::ServiceLog & StatService::GetServiceLogColumn(
+		Context &context,
+		const IniSectionRef &conf)
+		const {
+	static std::ofstream file;
+	static ServiceLog instance;
+	CreateServiceLog(context, conf, instance, file, "column");
+	return instance;
+}
+
+StatService::ServiceLog & StatService::GetServiceLogTable(
 		Context &context ,
 		const IniSectionRef &conf)
 		const {
-	
 	static std::ofstream file;
 	static ServiceLog instance;
-	
-	if (conf.ReadBoolKey("log") && !instance.IsEnabled()) {
-		
-		const pt::ptime &now = boost::posix_time::microsec_clock::local_time();
-		boost::format fileName(
-			"pretrade_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.csv");
-		fileName
-			% now.date().year()
-			% now.date().month().as_number()
-			% now.date().day()
-			% now.time_of_day().hours()
-			% now.time_of_day().minutes()
-			% now.time_of_day().seconds();
-		const auto &logPath
-			= context.GetSettings().GetLogsDir() / "pretrade" / fileName.str();
-		
-		GetContext().GetLog().Info("Log: %1%.", logPath);
-		fs::create_directories(logPath.branch_path());
-		file.open(
-			logPath.string().c_str(),
-			std::ios::app | std::ios::ate);
-		if (!file) {
-			throw ModuleError("Failed to open log file");
-		}
-		instance.EnableStream(file);
-
-	}
-
+	CreateServiceLog(context, conf, instance, file, "table");
 	return instance;
-
 }
 
 void StatService::LogState(
@@ -383,13 +417,12 @@ void StatService::LogState(
 	static bool isLogHeadInited = false;
 			
 	if (!isLogHeadInited) {
-#		if 0 ////////////////////////////////////////////////////////////////////////////////
+		{
+
 			const auto writeLogHead = [&](ServiceLogRecord &record) {
 				record % "time" % "ECN";
 
-				foreach (
-						const TriangulationWithDirectionStatService *s,
-						m_instancies) {
+				foreach (const StatService *s, m_instancies) {
 					const auto &symbol
 						= s->m_data.front()->security->GetSymbol().GetSymbol();
 					record
@@ -403,9 +436,7 @@ void StatService::LogState(
 						% (boost::format("%1% EMA slow prev1"	) % symbol).str()
 						% (boost::format("%1% EMA slow prev2"	) % symbol).str();
 				}
-				foreach (
-						const TriangulationWithDirectionStatService *s,
-						m_instancies) {
+				foreach (const StatService *s, m_instancies) {
 					const auto &symbol
 						= s->m_data.front()->security->GetSymbol().GetSymbol();
 					for (size_t k = 4; k > 0; --k) {
@@ -414,9 +445,7 @@ void StatService::LogState(
 							% (boost::format("%1% bid line %2% qty")	% symbol % k).str();
 					}
 				}
-				foreach (
-						const TriangulationWithDirectionStatService *s,
-						m_instancies) {
+				foreach (const StatService *s, m_instancies) {
 					const auto &symbol
 						= s->m_data.front()->security->GetSymbol().GetSymbol();
 					for (size_t k = 1; k <= 4; ++k) {
@@ -426,8 +455,13 @@ void StatService::LogState(
 					}
 				}
 			};
+		
+			m_serviceLogTable.Write(writeLogHead);
 
-#		else ////////////////////////////////////////////////////////////////////////////////
+		}
+
+		{
+
 			const auto writeLogHead = [&](ServiceLogRecord &record) {
 				record % ' ';
 				foreach (const auto &s, m_data) {
@@ -437,22 +471,23 @@ void StatService::LogState(
 					% '\n'
 					% "fastEMA" % m_emaSpeedFast % '\n'
 					% "slowEMA" % m_emaSpeedSlow % '\n'
-					% "Prev1 milliseconds" % pt::milliseconds(500) % '\n'
-					% "Prev2 milliseconds" % pt::seconds(2) % '\n';
+					% "Prev1" % m_prev1Duration % '\n'
+					% "Prev2" % m_prev2Duration % '\n';
 			};
-#		endif ////////////////////////////////////////////////////////////////////////////////
-	
-		m_serviceLog.Write(writeLogHead);
+		
+			m_serviceLogColumn.Write(writeLogHead);
+		
+		}
+
 		isLogHeadInited = true;
 	
 	}
 
-#	if 0 ////////////////////////////////////////////////////////////////////////////////
+	{
+
 		const auto &write = [&](ServiceLogRecord &record) {
 			record % GetContext().GetCurrentTime() % mds.GetTag().c_str(); 
-			foreach (
-					const TriangulationWithDirectionStatService *s,
-					m_instancies) {
+			foreach (const StatService *s, m_instancies) {
 				const Data &data = s->GetData(mds.GetIndex());
 				record
 					% data.current.theo
@@ -465,9 +500,7 @@ void StatService::LogState(
 					% data.prev1.emaSlow
 					% data.prev2.emaSlow;
 			}
-			foreach (
-					const TriangulationWithDirectionStatService *s,
-					m_instancies) {
+			foreach (const StatService *s, m_instancies) {
 				const Data &data = s->GetData(mds.GetIndex());
 				foreach_reversed (const auto &line, data.bids) {
 					record % line.price % line.qty;
@@ -477,9 +510,12 @@ void StatService::LogState(
 				}
 			}
 		};
-#	else ////////////////////////////////////////////////////////////////////////////////
 
-		UseUnused(mds);
+		m_serviceLogTable.Write(write);
+
+	}
+
+	{
 
 		const auto writeValue = [&](
 				const StatService *s,
@@ -541,9 +577,9 @@ void StatService::LogState(
 			}
 		};
 
-#	endif ////////////////////////////////////////////////////////////////////////////////
-	
-	m_serviceLog.Write(write);
+		m_serviceLogColumn.Write(write);
+
+	}
 
 }
 
