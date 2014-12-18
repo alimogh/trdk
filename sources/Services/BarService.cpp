@@ -674,7 +674,7 @@ BarService::~BarService() {
 }
 
 pt::ptime BarService::OnSecurityStart(const Security &) {
-	return boost::get_system_time() - GetBarSize();
+	return GetContext().GetCurrentTime() - GetBarSize();
 }
 
 bool BarService::OnNewBar(const Security &, const Security::Bar &bar) {

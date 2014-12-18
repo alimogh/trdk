@@ -69,7 +69,7 @@ void Fake::MarketDataSource::NotificationThread() {
 				const auto &timeMeasurement
 					= GetContext().StartStrategyTimeMeasurement();
  				s->AddTrade(
- 					boost::get_system_time(),
+ 					GetContext().GetCurrentTime(),
  					ORDER_SIDE_BUY,
  					10,
  					20,

@@ -482,7 +482,7 @@ bool Strategy::IsBlocked(bool forever /* = false */) const {
 		const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
 		if (
 				m_pimpl->m_blockEndTime == pt::not_a_date_time
-				|| m_pimpl->m_blockEndTime > boost::get_system_time()) {
+				|| m_pimpl->m_blockEndTime > GetContext().GetCurrentTime()) {
 			return true;
 		} else if (forever) {
 			return false;
@@ -504,7 +504,8 @@ void Strategy::Block() throw() {
 
 void Strategy::Block(const pt::time_duration &blockDuration) {
 	const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
-	const pt::ptime &blockEndTime = boost::get_system_time() + blockDuration;
+	const pt::ptime &blockEndTime
+		= GetContext().GetCurrentTime() + blockDuration;
 	if (
 			m_pimpl->m_isBlocked
 			&& m_pimpl->m_blockEndTime != pt::not_a_date_time

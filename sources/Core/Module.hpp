@@ -80,8 +80,6 @@ namespace trdk {
 
 		Mutex & GetMutex() const;
 
-		void ReportSettings(const trdk::SettingsReport::Report &) const;
-
 	private:
 
 		class Implementation;
