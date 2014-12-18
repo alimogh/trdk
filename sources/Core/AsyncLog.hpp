@@ -486,12 +486,13 @@ namespace trdk {
 			return m_log.IsEnabled();
 		}
 
-		void EnableStream(std::ostream &os) {
+		template<typename... LogParams>
+		void EnableStream(std::ostream &os, const LogParams &...logParams) {
 			std::unique_ptr<WriteTask> writeTask;
 			if (!m_writeTask) {
 				writeTask.reset(new WriteTask(m_log, m_queue));
 			}
-			m_log.EnableStream(os);
+			m_log.EnableStream(os, logParams...);
 			if (writeTask) {
 				m_writeTask = writeTask.release();
 			}

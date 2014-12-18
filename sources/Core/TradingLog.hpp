@@ -68,7 +68,12 @@ namespace trdk {
 	class TradingLogOutStream : private boost::noncopyable {
 
 	public:
-		
+
+		TradingLogOutStream()
+			: m_context(nullptr) {
+			//...//
+		}
+
 		void Write(const TradingRecord &record) {
 			m_log.Write(
 				record.GetTag(),
@@ -82,12 +87,14 @@ namespace trdk {
 			return m_log.IsEnabled();
 		}
 
-		void EnableStream(std::ostream &os) {
+		void EnableStream(std::ostream &os, const trdk::Context &context) {
+			m_context = &context;
 			m_log.EnableStream(os, true);
 		}
 
 		trdk::Lib::Log::Time GetTime() {
-			return std::move(m_log.GetTime());
+			Assert(m_context);
+			return std::move(m_context->GetCurrentTime());
 		}
 
 		trdk::Lib::Log::ThreadId GetThreadId() const {
@@ -97,6 +104,7 @@ namespace trdk {
 	private:
 
 		trdk::Lib::Log m_log;
+		const trdk::Context *m_context;
 	
 	};
 

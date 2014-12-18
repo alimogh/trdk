@@ -66,30 +66,12 @@ void Server::Run(
 		}
 		info.eventsLog->EnableStream(*info.eventsLogFile, true);
 	}
-	const auto &tradingLogFilePath = settings.GetLogsDir() / "trading.log";
-	if (ini->ReadBoolKey("Common", "trading_log")) {
-		info.tradingLogFile.reset(
-			new std::ofstream(
-				tradingLogFilePath.string().c_str(),
-				std::ios::out | std::ios::ate | std::ios::app));
-		if (!*info.tradingLogFile) {
-			boost::format error("Failed to open trading log file %1%.");
-			error % tradingLogFilePath;
-			throw Exception(error.str().c_str());
-		}
-		info.tradingLog->EnableStream(*info.tradingLogFile);
-	}
 	{
 		std::vector<std::string> cmd;
 		for (auto i = 0; i < argc; ++i) {
 			cmd.push_back(argv[i]);
 		}
 		info.eventsLog->Info("Command: \"%1%\".", boost::join(cmd, " "));
-		if (info.tradingLogFile) {
-			info.eventsLog->Info("Trading log: %1%.", tradingLogFilePath);
-		} else {
-			info.eventsLog->Info("Trading log: DISABLED.");
-		}
 	}
 
 	settings.Update(*ini, *info.eventsLog);
@@ -100,6 +82,25 @@ void Server::Run(
 			*info.tradingLog,
 			settings,
 			ini));
+
+	{
+		const auto &tradingLogFilePath = settings.GetLogsDir() / "trading.log";
+		if (ini->ReadBoolKey("Common", "trading_log")) {
+			info.tradingLogFile.reset(
+				new std::ofstream(
+					tradingLogFilePath.string().c_str(),
+					std::ios::out | std::ios::ate | std::ios::app));
+			if (!*info.tradingLogFile) {
+				boost::format error("Failed to open trading log file %1%.");
+				error % tradingLogFilePath;
+				throw Exception(error.str().c_str());
+			}
+			info.eventsLog->Info("Trading log: %1%.", tradingLogFilePath);
+			info.tradingLog->EnableStream(*info.tradingLogFile, *info.engine);
+		} else {
+			info.eventsLog->Info("Trading log: DISABLED.");
+		}
+	}
 
 	info.engine->Start();
 
