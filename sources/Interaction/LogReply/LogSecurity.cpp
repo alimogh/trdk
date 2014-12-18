@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "LogSecurity.hpp"
-#include "Util.hpp"
 #include "Core/MarketDataSource.hpp"
 
 namespace pt = boost::posix_time;
@@ -26,11 +25,36 @@ LogSecurity::LogSecurity(
 		const trdk::MarketDataSource &source,
 		const boost::filesystem::path &sourceBase)
 	: Base(context, symbol, source),
+	m_sourceDir(
+		sourceBase
+			/ GetSource().GetTag()
+			/ SymbolToFileName(GetSymbol().GetSymbol())),
 	m_isEof(false),
 	m_readCount(0) {
 
-	const fs::path filePath
-		= sourceBase / Detail::GetSecurityFilename(GetSource(), GetSymbol()); 
+	if (!fs::is_directory(m_sourceDir)) {
+		GetSource().GetLog().Error(
+			"Failed to find market data source folder %1% for \"%2%\".",
+			m_sourceDir,
+			*this);
+		throw ModuleError("Failed to find market data source folder");
+	}
+
+	fs::path filePath;
+	const fs::directory_iterator end;
+	for (fs::directory_iterator it(m_sourceDir); it != end; ++it) {
+		if (fs::is_regular_file(it->status())) {
+			filePath = it->path();
+		}
+	}
+	if (filePath.empty()) {
+		GetSource().GetLog().Error(
+			"Failed to find market data source in folder %1% for \"%2%\".",
+			m_sourceDir,
+			*this);
+		throw ModuleError("Failed to find market data source in folder");
+	}
+
 	m_file.open(filePath.string().c_str());
 	if (!m_file) {
 		GetSource().GetLog().Error(
@@ -41,12 +65,12 @@ LogSecurity::LogSecurity(
 		throw ModuleError("Failed to open market data source file");
 	}
 
-	char buffer[67] = {};
+	char buffer[255] = {};
 	m_file.getline(buffer, sizeof(buffer));
 	if (
 			!boost::istarts_with(
 				buffer,
-				"TRDK Book Update Ticks Log version 1.0 ")) {
+				"TRDK Book Update Ticks Log version 1.1 ")) {
 		GetSource().GetLog().Error(
 			"Failed to open market data source for \"%1%\" in file %2%:"
 				" wrong format.",
@@ -54,6 +78,10 @@ LogSecurity::LogSecurity(
 			filePath);
 		throw ModuleError("Failed to open market data source file");
 	}
+	GetSource().GetLog().Debug(
+		"Opened: \"%1%\" from %2%.",
+		&buffer[0],
+		filePath);
 
 	const_cast<std::ifstream::streampos &>(m_dataStartPos) = m_file.tellg();
 

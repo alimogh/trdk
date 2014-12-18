@@ -44,6 +44,8 @@ namespace trdk {  namespace Interaction { namespace LogReply {
 
 	private:
 
+		const boost::filesystem::path m_sourceDir;
+
 		std::ifstream m_file;
 
 		const boost::posix_time::ptime m_dataStartTime;
