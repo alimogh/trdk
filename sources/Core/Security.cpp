@@ -102,11 +102,11 @@ public:
 	}
 
 	unsigned int GetPriceScale() const throw() {
-		return 100000000;
+		return 1000000;
 	}
 
 	uint8_t GetPricePrecision() const throw() {
-		return 8;
+		return 6;
 	}
 
 	ScaledPrice ScalePrice(double price) const {
