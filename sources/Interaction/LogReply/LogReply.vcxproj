@@ -282,7 +282,6 @@
     <ClInclude Include="Api.h" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="LogSecurity.hpp" />
-    <ClInclude Include="Util.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="LogReply.rc" />

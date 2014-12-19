@@ -41,7 +41,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			m_leg(leg),
 			m_isByRising(isByRising),
 			m_isCompleted(false) {
-			//...//
+			Assert(!Lib::IsZero(startPrice));
 		}
 
 	public:

@@ -325,7 +325,7 @@ public:
 				if (m_oppositePosition->GetActiveQty() == 0) {
 					try {
 						m_oppositePosition->m_pimpl->m_closed.time
-							= boost::get_system_time();
+							= m_security.GetContext().GetCurrentTime();
 					} catch (...) {
 						AssertFailNoException();
 					}
@@ -351,7 +351,8 @@ public:
 
 				if (m_position.GetOpenedQty() > 0) {
 					try {
-						m_opened.time = boost::get_system_time();
+						m_opened.time
+							= m_security.GetContext().GetCurrentTime();
 					} catch (...) {
 						AssertFailNoException();
 					}
@@ -460,7 +461,7 @@ public:
 
 			if (m_position.GetActiveQty() == 0) {
 				try {
-					m_closed.time = boost::get_system_time();
+					m_closed.time = m_security.GetContext().GetCurrentTime();
 				} catch (...) {
 					m_isError = true;
 					AssertFailNoException();
@@ -664,7 +665,7 @@ public:
 			throw AlreadyStartedError();
 		}
 
-		m_opened.time = boost::get_system_time();
+		m_opened.time = m_security.GetContext().GetCurrentTime();
 		m_opened.qty = m_planedQty;
 		m_opened.orderId = openOrderId;
 

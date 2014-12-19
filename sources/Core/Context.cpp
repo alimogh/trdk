@@ -257,6 +257,8 @@ public:
 	boost::atomic_bool m_isCustomCurrentTime;
 	CustomTimeMutex m_customCurrentTimeMutex;
 	pt::ptime m_customCurrentTime;
+	boost::signals2::signal<CurrentTimeChangeSlotSignature>
+		m_customCurrentTimeChangeSignal;
 	
 	explicit Implementation(
 				Context &context,
@@ -292,11 +294,49 @@ Context::TradingLog & Context::GetTradingLog() const throw() {
 	return m_pimpl->m_tradingLog;
 }
 
-void Context::SetCurrentTime(const pt::ptime &time) {
+void Context::SetCurrentTime(const pt::ptime &time, bool signalAboutUpdate) {
+
 	AssertNe(pt::not_a_date_time, time); 
+#	ifdef BOOST_ENABLE_ASSERT_HANDLER
+		if (m_pimpl->m_customCurrentTime != pt::not_a_date_time) {
+			AssertLe(m_pimpl->m_customCurrentTime, time);
+		}
+#	endif
+
+	if (signalAboutUpdate) {
+		pt::ptime prevCurrentTime;
+		{
+			const CustomTimeReadLock readLock(m_pimpl->m_customCurrentTimeMutex);
+			if (m_pimpl->m_customCurrentTime == time) {
+				return;
+			}
+			prevCurrentTime = m_pimpl->m_customCurrentTime;
+		}
+		for ( ; ; ) {
+			m_pimpl->m_customCurrentTimeChangeSignal(time);
+			const CustomTimeReadLock readLock(m_pimpl->m_customCurrentTimeMutex);
+			if (prevCurrentTime == m_pimpl->m_customCurrentTime) {
+				break;
+			}
+			prevCurrentTime = m_pimpl->m_customCurrentTime;
+		}
+	}
+
 	const CustomTimeWriteLock lock(m_pimpl->m_customCurrentTimeMutex);
+#	ifdef BOOST_ENABLE_ASSERT_HANDLER
+		// Second test for changes in signal slot:
+		if (m_pimpl->m_customCurrentTime != pt::not_a_date_time) {
+			AssertLe(m_pimpl->m_customCurrentTime, time);
+		}
+#	endif
 	m_pimpl->m_customCurrentTime = time;
 	m_pimpl->m_isCustomCurrentTime = true;
+
+}
+
+Context::CurrentTimeChangeSlotConnection
+Context::SubscribeToCurrentTimeChange(const CurrentTimeChangeSlot &slot) {
+	return m_pimpl->m_customCurrentTimeChangeSignal.connect(slot);
 }
 
 pt::ptime Context::GetCurrentTime() const {

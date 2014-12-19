@@ -9,7 +9,6 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Util.hpp"
 #include "Core/Service.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Settings.hpp"
@@ -164,6 +163,12 @@ public:
 		if (!*m_files[source]) {
 			throw ModuleError("Failed to open log file");
 		}
+		*m_files[source]
+			<< "TRDK Book Update Ticks Log version 1.1 "
+			<< ' ' << TRDK_BUILD_IDENTITY
+			<< ' ' << GetContext().GetCurrentTime()
+			<< ' ' << security
+			<< std::endl;
 		m_logs[source].reset(new ServiceLog);
 		m_logs[source]->EnableStream(*m_files[source]);
 
@@ -180,7 +185,7 @@ public:
 		m_logs[security.GetSource().GetIndex()]->Write(
 			[&](Record &record) {
 				record
-					%	boost::get_system_time()
+					%	GetContext().GetCurrentTime()
 					%	(tick.action == BOOK_UPDATE_ACTION_NEW
  							?	'+'
  							:	tick.action == BOOK_UPDATE_ACTION_UPDATE

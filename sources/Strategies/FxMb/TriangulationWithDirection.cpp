@@ -370,7 +370,11 @@ private:
 	}
 
 	Twd::Position & GetLeg(size_t legNo) {
-		foreach (const auto &leg, m_orders) {
+		return GetLeg(m_orders, legNo);
+	}
+
+	static Twd::Position & GetLeg(Orders &orders, size_t legNo) {
+		foreach (const auto &leg, orders) {
 			if (leg->GetLeg() == legNo) {
 				return *leg;
 			}
@@ -496,6 +500,18 @@ private:
 			isBuy[1] = isRising;
 		}
 
+		struct HasNotMuchOpportunity {
+			const Security *security;
+			const char *side;
+			explicit HasNotMuchOpportunity(
+					const Security &security,
+					const char *side)
+				: security(&security),
+				side(side) {
+				//...//
+			}
+		};
+
 		const auto &newPosition = [&](
 				const size_t pair,
 				size_t legNo,
@@ -509,6 +525,9 @@ private:
 			const Security &security = stat.service->GetSecurity(ecn);
 			boost::shared_ptr<Twd::Position> result;
 			if (isBuy) {
+				if (security.GetAskQty() == 0) {
+					throw HasNotMuchOpportunity(security, "ask");
+				}
 				result.reset(
 					new Twd::LongPosition(
 						*this,
@@ -517,11 +536,14 @@ private:
 						const_cast<Security &>(security),
 						security.GetSymbol().GetCashCurrency(),
 						m_qty,
-						security.GetBidPriceScaled(),
+						security.GetAskPriceScaled(),
 						TimeMeasurement::Milestones(),
 						legNo,
 						isRising));
 			} else {
+				if (security.GetBidQty() == 0) {
+					throw HasNotMuchOpportunity(security, "bid");
+				}
 				result.reset(
 					new Twd::ShortPosition(
 						*this,
@@ -535,21 +557,33 @@ private:
 						legNo,
 						isRising));
 			}
-			if (result->GetLeg() == 1) {
-				result->Open();
-			}
 			return std::move(result);
 		};
 
-		Orders orders = {
-			newPosition(PAIR_AB, legsNo[0], isRising, isBuy[0]),
-			newPosition(PAIR_BC, 3, isRising, isBuy[0]),
-			newPosition(PAIR_AC, legsNo[1], !isRising, isBuy[1])
-		};
-		orders.swap(m_orders);
+		try {
 
-		++m_opportunityNo;
-		LogAction("detected");
+			Orders orders = {
+				newPosition(PAIR_AB, legsNo[0], isRising, isBuy[0]),
+				newPosition(PAIR_BC, 3, isRising, isBuy[0]),
+				newPosition(PAIR_AC, legsNo[1], !isRising, isBuy[1])
+			};
+			GetLeg(orders, 1).Open();
+			orders.swap(m_orders);
+
+			++m_opportunityNo;
+			LogAction("detected");
+
+		} catch (const HasNotMuchOpportunity &ex) {
+			GetTradingLog().Write(
+				"Skipped decision:"
+					" \"%1%\" has not much opportunity at \"%2%\" (%3%).",
+				[&ex](TradingRecord &record) {
+					record
+						% *ex.security
+						% ex.security->GetSource().GetTag()
+						% ex.side;
+				});
+		}
 
 	}
 

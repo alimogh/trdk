@@ -272,45 +272,6 @@ namespace {
 	static SettingsReportCache settingsReportcache;
 
 }
-void Module::ReportSettings(
-			const SettingsReport::Report &settings)
-		const {
-
-	const SettingsReportLock lock(mutex);
-
-	const SettingsReportCache::const_iterator cacheIt
-		= settingsReportcache.find(GetTag());
-	if (cacheIt != settingsReportcache.end() && cacheIt->second == settings) {
-		return;
-	}
-
-	static fs::path path;
-	if (path.string().empty()) {
-		path = Defaults::GetLogFilePath();
-		path /= "configuration.log";
-		fs::create_directories(path.branch_path());
-	}
-
-	{
-		std::ofstream f(
-			path.c_str(),
-			std::ios::out | std::ios::ate | std::ios::app);
-		if (!f) {
-			GetLog().Error("Failed to open log file %1%.", path);
-			throw Exception("Failed to open log file");
-		}
-		f
-			<< (boost::get_system_time() + GetEstDiff())
-			<< ' ' << GetName() << ':' << std::endl;
-		foreach (const auto &s, settings) {
-			f << "\t" << s.first << " = " << s.second << std::endl;
-		}
-		f << std::endl;
-	}
-
-	settingsReportcache[GetTag()] = settings;
-
-}
 
 //////////////////////////////////////////////////////////////////////////
 
