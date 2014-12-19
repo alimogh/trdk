@@ -228,7 +228,7 @@ namespace {
 			
 					if (!isSynced) {
 						m_context.SyncDispatching();
-						m_context.SetCurrentTime(m_currentTime);
+						m_context.SetCurrentTime(m_currentTime, true);
 						isSynced = true;
 					}
 

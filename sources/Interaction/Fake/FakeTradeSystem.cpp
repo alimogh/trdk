@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "FakeTradeSystem.hpp"
 #include "Core/Security.hpp"
-#include "Core/TradingLog.hpp"
 
 namespace pt = boost::posix_time;
 
@@ -32,6 +31,8 @@ namespace {
 		Qty qty;
 		ScaledPrice price;
 		OrderParams params;
+		pt::ptime submitTime;
+		pt::time_duration delay;
 	};
 
 }
@@ -44,32 +45,48 @@ public:
 
 	TradeSystem *m_self;
 
+	const bool m_isReplyMode;
+	const size_t m_delayMin;
+	const size_t m_delayMax;
+
 private:
 
 	typedef boost::mutex Mutex;
 	typedef Mutex::scoped_lock Lock;
 	typedef boost::condition_variable Condition;
 
-	typedef std::list<Order> Orders;
+	typedef std::deque<Order> Orders;
+
+	Context::CurrentTimeChangeSlotConnection m_currentTimeChangeSlotConnection;
 
 public:
 
-	Implementation()
-			: m_id(1),
+	explicit Implementation(const IniSectionRef &conf)
+			: m_isReplyMode(conf.ReadBoolKey("is_reply_mode")),
+			m_delayMin(conf.ReadTypedKey<size_t>("delay_microseconds.min")),
+			m_delayMax(conf.ReadTypedKey<size_t>("delay_microseconds.max")),
+			m_id(1),
 			m_isStarted(0),
 			m_currentOrders(&m_orders1) {
-		//...//
+		if (m_delayMin > m_delayMax) {
+			throw ModuleError("Min delay can't be more then max delay");
+		}
 	}
 
 	~Implementation() {
-		if (m_isStarted) {
-			m_self->GetLog().Debug("Stopping Fake Trade System task...");
-			{
-				const Lock lock(m_mutex);
-				m_isStarted = false;
-				m_condition.notify_all();
+		if (m_isReplyMode) {
+			if (m_isStarted) {
+				m_self->GetLog().Debug("Stopping Fake Trade System task...");
+				{
+					const Lock lock(m_mutex);
+					m_isStarted = false;
+					m_condition.notify_all();
+				}
+				m_thread.join();
 			}
-			m_thread.join();
+		} else {
+			m_self->GetLog().Debug("Stopping Fake Trade System replay...");
+			m_currentTimeChangeSlotConnection.disconnect();
 		}
 	}
 
@@ -85,21 +102,50 @@ public:
 	}
 
 	void Start() {
-		Lock lock(m_mutex);
-		Assert(!m_isStarted);
-		m_isStarted = true;
-		boost::thread(boost::bind(&Implementation::Task, this)).swap(m_thread);
-		m_condition.wait(lock);
+		if (!m_isReplyMode) {
+			Lock lock(m_mutex);
+			Assert(!m_isStarted);
+			boost::thread thread(boost::bind(&Implementation::Task, this));
+			m_isStarted = true;
+			thread.swap(m_thread);
+			m_condition.wait(lock);
+		} else {
+			m_self->GetLog().Info("Stated Fake Trade System reply...");
+			m_currentTimeChangeSlotConnection
+				= m_self->GetContext().SubscribeToCurrentTimeChange(
+					boost::bind(
+						&Implementation::OnCurrentTimeChanged,
+						this,
+						_1));
+		}
 	}
 
-	void SendOrder(const Order &order) {
-		if (!order.callback) {
-			return;
-		}
+	void SendOrder(Order &order) {
+		
+		Assert(order.callback);
+
+		const auto &now = m_self->GetContext().GetCurrentTime();
+		order.delay = ChooseDelay();
+
 		const Lock lock(m_mutex);
+		if (!m_currentOrders->empty()) {
+			const auto &lastOrder = m_currentOrders->back();
+			order.submitTime = lastOrder.submitTime + lastOrder.delay;
+		} else {
+			order.submitTime = now;
+		}
 		m_currentOrders->push_back(order);
+	
 		m_condition.notify_all();
+	
 	}
+
+private:
+
+	pt::time_duration ChooseDelay() const {
+		return pt::microseconds(500);
+	}
+
 
 private:
 
@@ -131,31 +177,15 @@ private:
 						? &m_orders2
 						: &m_orders1;
 				}
-				boost::this_thread::sleep(pt::milliseconds(4));
 				Assert(!orders->empty());
 				foreach (const Order &order, *orders) {
 					Assert(order.callback);
-					auto price = order.price
-						?	order.security->DescalePrice(order.price)
-						:	order.isSell
-							?	order.security->GetAskPrice()
-							:	order.security->GetBidPrice();
-					if (IsZero(price)) {
-						price = order.security->GetLastPrice();
+					Assert(!IsZero(order.price));
+					if (order.delay.total_nanoseconds() > 0) {
+						boost::this_thread::sleep(
+							boost::get_system_time() + order.delay);
 					}
-					Assert(!IsZero(price));
-					m_self->GetLog().Info(
-						"Fake Trade System executes order:"
-							" price=%1%, qty=%2%, %3%.",
-						price,
-						order.qty,
-						order.params);
-					order.callback(
-						order.id,
-						TradeSystem::ORDER_STATUS_FILLED,
-						order.qty,
-						0,
-						price);
+					ExecuteOrder(order);
 				}
 				orders->clear();
 			}
@@ -164,6 +194,59 @@ private:
 			throw;
 		}
 		m_self->GetLog().Info("Fake Trade System stopped.");
+	}
+
+	void OnCurrentTimeChanged(const pt::ptime &newTime) {
+	
+		Lock lock(m_mutex);
+		
+		if (m_currentOrders->empty()) {
+			return;
+		}
+		
+		while (!m_currentOrders->empty()) {
+			
+			const Order &order = m_currentOrders->front();
+			Assert(order.callback);
+			Assert(!IsZero(order.price));
+
+			const auto &orderExecTime = order.submitTime + order.delay;
+			if (orderExecTime >= newTime) {
+				break;
+			}
+
+			m_self->GetContext().SetCurrentTime(orderExecTime, false);
+			ExecuteOrder(order);
+			m_currentOrders->pop_front();
+
+			lock.unlock();
+			m_self->GetContext().SyncDispatching();
+			lock.lock();
+
+		}
+
+	}
+
+	void ExecuteOrder(const Order &order) {
+		bool isMatched = false;
+		ScaledPrice tradePrice = 0;
+		if (order.isSell) {
+			tradePrice = order.security->GetBidPriceScaled();
+			isMatched = order.price <= tradePrice;
+		} else {
+			tradePrice = order.security->GetAskPriceScaled();
+			isMatched = order.price >= tradePrice;
+		}
+		order.callback(
+			order.id,
+			isMatched
+				?	TradeSystem::ORDER_STATUS_FILLED
+				:	TradeSystem::ORDER_STATUS_CANCELLED,
+			order.qty,
+			0,
+			isMatched
+				?	order.security->DescalePrice(tradePrice)
+				:	.0);
 	}
 
 private:
@@ -188,10 +271,14 @@ Fake::TradeSystem::TradeSystem(
 		size_t index,
 		Context &context,
 		const std::string &tag,
-		const IniSectionRef &)
+		const IniSectionRef &conf)
 	: Base(index, context, tag),
-	m_pimpl(new Implementation) {
+	m_pimpl(new Implementation(conf)) {
 	m_pimpl->m_self = this;
+	GetLog().Info(
+		"Random delay: of %1% to %2% microseconds.",
+		m_pimpl->m_delayMin,
+		m_pimpl->m_delayMax);
 }
 
 Fake::TradeSystem::~TradeSystem() {
@@ -214,7 +301,7 @@ OrderId Fake::TradeSystem::SellAtMarketPrice(
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Validate(qty, params, false);
 	AssertLt(0, qty);
-	const Order order = {
+	Order order = {
 		&security,
 		true,
 		m_pimpl->TakeOrderId(),
@@ -223,11 +310,6 @@ OrderId Fake::TradeSystem::SellAtMarketPrice(
 		0,
 		params};
 	m_pimpl->SendOrder(order);
-	GetTradingLog().Write(
-		"sell\t%2%\torder-id=%1% qty=%3% price=market",
-		[&](TradingRecord &record) {
-			record % order.id % security.GetSymbol() % qty;
-		});
 	return order.id;
 }
 
@@ -240,7 +322,7 @@ OrderId Fake::TradeSystem::Sell(
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Validate(qty, params, false);
 	AssertLt(0, qty);
-	const Order order = {
+	Order order = {
 		&security,
 		false,
 		m_pimpl->TakeOrderId(),
@@ -249,15 +331,6 @@ OrderId Fake::TradeSystem::Sell(
 		price,
 		params};
 	m_pimpl->SendOrder(order);
-	GetTradingLog().Write(
-		"buy\t%2%\torder-id=%1% type=LMT qty=%3% price=%4%",
-		[&](TradingRecord &record) {
-			record
-				% order.id
-				% security.GetSymbol()
-				% qty
-				% security.DescalePrice(price);
-		});
 	return order.id;
 }
 
@@ -282,7 +355,7 @@ OrderId Fake::TradeSystem::SellImmediatelyOrCancel(
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Validate(qty, params, true);
-	const Order order = {
+	Order order = {
 		&security,
 		true,
 		m_pimpl->TakeOrderId(),
@@ -291,15 +364,6 @@ OrderId Fake::TradeSystem::SellImmediatelyOrCancel(
 		price,
 		params};
 	m_pimpl->SendOrder(order);
-	GetTradingLog().Write(
-		"sell\t%2%\torder-id=%1% type=IOC qty=%3% price=%4%",
-		[&](TradingRecord &record) {
-			record
-				% order.id
-				% security.GetSymbol()
-				% qty
-				% security.DescalePrice(price);
-		});
 	return order.id;
 }
 
@@ -311,7 +375,7 @@ OrderId Fake::TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Validate(qty, params, true);
 	AssertLt(0, qty);
-	const Order order = {
+	Order order = {
 		&security,
 		false,
 		m_pimpl->TakeOrderId(),
@@ -331,7 +395,7 @@ OrderId Fake::TradeSystem::BuyAtMarketPrice(
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Validate(qty, params, false);
 	AssertLt(0, qty);
-	const Order order = {
+	Order order = {
 		&security,
 		false,
 		m_pimpl->TakeOrderId(),
@@ -340,11 +404,6 @@ OrderId Fake::TradeSystem::BuyAtMarketPrice(
 		0,
 		params};
 	m_pimpl->SendOrder(order);
-	GetTradingLog().Write(
-		"buy\t%2%\torder-id=%1% qty=%3% price=market",
-		[&](TradingRecord &record) {
-			record % order.id % security.GetSymbol() % qty;
-		});
 	return order.id;
 }
 
@@ -357,7 +416,7 @@ OrderId Fake::TradeSystem::Buy(
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Validate(qty, params, false);
 	AssertLt(0, qty);
-	const Order order = {
+	Order order = {
 		&security,
 		false,
 		m_pimpl->TakeOrderId(),
@@ -366,15 +425,6 @@ OrderId Fake::TradeSystem::Buy(
 		price,
 		params};
 	m_pimpl->SendOrder(order);
-	GetTradingLog().Write(
-		"buy\t%2%\torder-id=%1% type=LMT qty=%3% price=%4%",
-		[&](TradingRecord &record) {
-			record
-				% order.id
-				% security.GetSymbol()
-				% qty
-				% security.DescalePrice(price);
-		});
 	return order.id;
 }
 
@@ -399,7 +449,7 @@ OrderId Fake::TradeSystem::BuyImmediatelyOrCancel(
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Validate(qty, params, true);
-	const Order order = {
+	Order order = {
 		&security,
 		false,
 		m_pimpl->TakeOrderId(),
@@ -408,15 +458,6 @@ OrderId Fake::TradeSystem::BuyImmediatelyOrCancel(
 		price,
 		params};
 	m_pimpl->SendOrder(order);
-	GetTradingLog().Write(
-		"buy\t%2%\torder-id=%1% type=IOC qty=%3% price=%4%",
-		[&](TradingRecord &record) {
-			record
-				% order.id
-				% security.GetSymbol()
-				% qty
-				% security.DescalePrice(price);
-		});
 	return order.id;
 }
 
@@ -428,7 +469,7 @@ OrderId Fake::TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Validate(qty, params, true);
 	AssertLt(0, qty);
-	const Order order = {
+	Order order = {
 		&security,
 		false,
 		m_pimpl->TakeOrderId(),
@@ -445,12 +486,9 @@ void Fake::TradeSystem::CancelOrder(OrderId) {
 	throw Exception("Method doesn't implemented");
 }
 
-void Fake::TradeSystem::CancelAllOrders(Security &security) {
-	GetTradingLog().Write(
-		"cancel\t%1%\torders=[all]",
-		[&security](TradingRecord &record) {
-			record % security.GetSymbol();
-		});
+void Fake::TradeSystem::CancelAllOrders(Security &) {
+	AssertFail("Doesn't implemented.");
+	throw Exception("Method doesn't implemented");
 }
 
 //////////////////////////////////////////////////////////////////////////

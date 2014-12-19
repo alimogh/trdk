@@ -36,6 +36,12 @@ namespace trdk {
 
 		class TRDK_CORE_API Params;
 
+		typedef void (CurrentTimeChangeSlotSignature)(
+					const boost::posix_time::ptime &newTime);
+		typedef boost::function<CurrentTimeChangeSlotSignature>
+			CurrentTimeChangeSlot;
+		typedef boost::signals2::connection CurrentTimeChangeSlotConnection;
+
 	public:
 
 		explicit Context(
@@ -59,8 +65,25 @@ namespace trdk {
 		//! Context setting with predefined key list and predefined behavior.
 		const trdk::Settings & GetSettings() const;
 
-		void SetCurrentTime(const boost::posix_time::ptime &);
 		boost::posix_time::ptime GetCurrentTime() const;
+
+		//! Sets current time.
+		/** If current time set  one time - real time will be used more.
+		  * @param newTime				New time, can be only greater or equal
+		  *								then current.
+		  * @param signalAboutUpdate	If true - signal about update will be
+		  *								sent for all subscribers.
+		  * @sa SubscribeToCurrentTimeChange
+		  */
+		void SetCurrentTime(
+				const boost::posix_time::ptime &newTime,
+				bool signalAboutUpdate);
+		//! Subscribes to time change by SetCurrentTime.
+		/** Signals before new time will be set for context.
+		  * @sa SetCurrentTime
+		  */
+		CurrentTimeChangeSlotConnection SubscribeToCurrentTimeChange(
+				const CurrentTimeChangeSlot &);
 
 	public:
 
