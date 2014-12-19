@@ -46,8 +46,11 @@ public:
 	TradeSystem *m_self;
 
 	const bool m_isReplyMode;
-	const size_t m_delayMin;
-	const size_t m_delayMax;
+
+	boost::mt19937 m_random;
+	boost::uniform_int<size_t> m_delayRange;
+	mutable boost::variate_generator<boost::mt19937, boost::uniform_int<size_t>>
+		m_delayGenerator;
 
 private:
 
@@ -63,12 +66,14 @@ public:
 
 	explicit Implementation(const IniSectionRef &conf)
 			: m_isReplyMode(conf.ReadBoolKey("is_reply_mode")),
-			m_delayMin(conf.ReadTypedKey<size_t>("delay_microseconds.min")),
-			m_delayMax(conf.ReadTypedKey<size_t>("delay_microseconds.max")),
+			m_delayRange(
+				conf.ReadTypedKey<size_t>("delay_microseconds.min"),
+				conf.ReadTypedKey<size_t>("delay_microseconds.max")),
+			m_delayGenerator(m_random, m_delayRange),
 			m_id(1),
 			m_isStarted(0),
 			m_currentOrders(&m_orders1) {
-		if (m_delayMin > m_delayMax) {
+		if (m_delayRange.min() > m_delayRange.max()) {
 			throw ModuleError("Min delay can't be more then max delay");
 		}
 	}
@@ -143,7 +148,7 @@ public:
 private:
 
 	pt::time_duration ChooseDelay() const {
-		return pt::microseconds(500);
+		return pt::microseconds(m_delayGenerator());
 	}
 
 
@@ -262,7 +267,6 @@ private:
 	Orders m_orders2;
 	Orders *m_currentOrders;
 
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -277,8 +281,8 @@ Fake::TradeSystem::TradeSystem(
 	m_pimpl->m_self = this;
 	GetLog().Info(
 		"Random delay: of %1% to %2% microseconds.",
-		m_pimpl->m_delayMin,
-		m_pimpl->m_delayMax);
+		m_pimpl->m_delayRange.min(),
+		m_pimpl->m_delayRange.max());
 }
 
 Fake::TradeSystem::~TradeSystem() {

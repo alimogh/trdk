@@ -14,6 +14,7 @@
 
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/thread.hpp>
+#	include <boost/random.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

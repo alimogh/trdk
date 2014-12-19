@@ -25,15 +25,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Prec.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FakeTradeSystem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FakeMarketDataSource.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Fake.def">
