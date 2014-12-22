@@ -82,7 +82,8 @@ void FixStream::SubscribeToSecurities() {
 		"Sending Market Data Requests for %1% securities...",
 		m_securities.size());
 
-	for (	fix::UInt32 sequrityIndex = 0;
+	for (
+			fix::UInt32 sequrityIndex = 0;
 			sequrityIndex < m_securities.size();
 			++sequrityIndex) {
 			
@@ -231,7 +232,7 @@ void FixStream::onInboundApplicationMsg(
 
 		}
 
-		book.Commit(timeMeasurement);
+		book.Commit(true, timeMeasurement);
 
 	}
 }

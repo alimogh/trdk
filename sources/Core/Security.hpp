@@ -191,7 +191,14 @@ namespace trdk {
 		public:
 			void Update(const trdk::BookUpdateTick &);
 		public:
-			void Commit(const trdk::Lib::TimeMeasurement::Milestones &);
+			//! Commits update.
+			/** @param adjustDirection	If true - deletes opposite price level
+			  *							if arrives level with the same price,
+			  *							but another direction.
+			  */
+			void Commit(
+					bool adjustDirection,
+					const trdk::Lib::TimeMeasurement::Milestones &);
 		private:
 			class Implementation;
 			Implementation *m_pimpl;

@@ -179,18 +179,30 @@ bool StatService::OnBookUpdateTick(
 	const Security::Book::Side &bidsBook = security.GetBook().GetBids();
 	const Security::Book::Side &offersBook = security.GetBook().GetOffers();
 
-#	ifdef DEV_VER
-// 		if (offersBook.GetLevelsCount() >= 4 || bidsBook.GetLevelsCount() >= 4) {
-// 			std::cout << "############################### " << security << " " << security.GetSource().GetTag() << std::endl;
-// 			for (size_t i = offersBook.GetLevelsCount(); i > 0; --i) {
-// 				std::cout << offersBook.GetLevel(i - 1).GetPrice() << " - " << offersBook.GetLevel(i - 1).GetQty() << std::endl;
-// 			}
-// 			std::cout << "------ " << std::endl;
-// 			for (size_t i = 0; i < bidsBook.GetLevelsCount(); ++i) {
-// 				std::cout << bidsBook.GetLevel(i).GetPrice() << " - " << bidsBook.GetLevel(i).GetQty() << std::endl;
-// 			}
-// 			std::cout << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" << std::endl;
-// 		}
+#	if defined(DEV_VER) && 0
+	{
+		if (	security.GetSymbol().GetSymbol() == "EUR/USD"
+				&& (offersBook.GetLevelsCount() >= 4
+					|| bidsBook.GetLevelsCount() >= 4)) {
+			std::cout
+				<< "############################### "
+				<< security << " " << security.GetSource().GetTag()
+				<< std::endl;
+			for (
+					size_t i = 0;
+					i < std::min(offersBook.GetLevelsCount(), bidsBook.GetLevelsCount());
+					++i) {
+				std::cout
+					<< bidsBook.GetLevel(i).GetQty()
+					<< ' ' << security.DescalePrice(bidsBook.GetLevel(i).GetPrice())
+					<< "\t\t\t"
+					<< security.DescalePrice(offersBook.GetLevel(i).GetPrice())
+					<< ' ' << offersBook.GetLevel(i).GetQty()
+					<< std::endl;
+			}
+			std::cout << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" << std::endl;
+		}
+	}
 #	endif
 
 	struct Side {
