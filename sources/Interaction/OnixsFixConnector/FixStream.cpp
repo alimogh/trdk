@@ -232,7 +232,7 @@ void FixStream::onInboundApplicationMsg(
 
 		}
 
-		book.Commit(timeMeasurement);
+		book.Commit(true, timeMeasurement);
 
 	}
 }

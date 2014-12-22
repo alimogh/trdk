@@ -750,21 +750,22 @@ void Security::BookUpdateOperation::Update(const BookUpdateTick &update) {
 }
 
 void Security::BookUpdateOperation::Commit(
+		bool adjustDirection,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 
 	const auto &update = [&](
-				const OrderSide &side,
+				const OrderSide &priceLevelDirection,
 				Implementation::Side &sideData) {
 		foreach (const auto &update, sideData.storage.updates) {
 			const BookUpdateTick tick = {
 				boost::get<0>(update),
-				side,
+				priceLevelDirection,
 				boost::get<1>(update),
 				boost::get<2>(update),
 			};
-			Book::Side &side = tick.side == ORDER_SIDE_BID
-				?	m_pimpl->m_book.m_bids
-				:	m_pimpl->m_book.m_offers;
+			auto &side = tick.side == ORDER_SIDE_BID
+				?	m_pimpl->m_book.m_bids.m_pimpl->m_levels
+				:	m_pimpl->m_book.m_offers.m_pimpl->m_levels;
 			ScaledPrice price = tick.price;
 			if (tick.side == ORDER_SIDE_BUY) {
 				price = -price;
@@ -775,10 +776,19 @@ void Security::BookUpdateOperation::Commit(
 			switch (tick.action) {
 				case BOOK_UPDATE_ACTION_NEW:
 				case BOOK_UPDATE_ACTION_UPDATE:
-					side.m_pimpl->m_levels[price] = tick.qty;
+					side[price] = tick.qty;
+					if (adjustDirection) {
+						auto &opposite = tick.side == ORDER_SIDE_BID
+							?	m_pimpl->m_book.m_offers.m_pimpl->m_levels
+							:	m_pimpl->m_book.m_bids.m_pimpl->m_levels;
+						const auto &pos = opposite.find(-price);
+						if (pos != opposite.end()) {
+							opposite.erase(pos);
+						}
+					}
 					break;
 				case BOOK_UPDATE_ACTION_DELETE:
-					side.m_pimpl->m_levels.erase(price);
+					side.erase(price);
 					break;
 				default:
 					AssertEq(BOOK_UPDATE_ACTION_NEW, tick.action);

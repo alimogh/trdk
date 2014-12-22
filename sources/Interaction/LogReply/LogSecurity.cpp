@@ -116,7 +116,7 @@ bool LogSecurity::Accept() {
 	if (m_currentTick) {
 		BookUpdateOperation book = StartBookUpdate();
 		book.Update(*m_currentTick);
-		book.Commit(GetContext().StartStrategyTimeMeasurement());
+		book.Commit(false, GetContext().StartStrategyTimeMeasurement());
 		m_currentTick.reset();
 	}
 	return Read();
