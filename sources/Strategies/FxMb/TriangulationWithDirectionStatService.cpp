@@ -179,7 +179,7 @@ bool StatService::OnBookUpdateTick(
 	const Security::Book::Side &bidsBook = security.GetBook().GetBids();
 	const Security::Book::Side &offersBook = security.GetBook().GetOffers();
 
-#	if defined(DEV_VER)
+#	if defined(DEV_VER) && 0
 	{
 		if (	security.GetSymbol().GetSymbol() == "EUR/USD"
 				&& (offersBook.GetLevelsCount() >= 4
@@ -188,13 +188,16 @@ bool StatService::OnBookUpdateTick(
 				<< "############################### "
 				<< security << " " << security.GetSource().GetTag()
 				<< std::endl;
-			for (size_t i = 0; i < 4; ++i) {
+			for (
+					size_t i = 0;
+					i < std::min(offersBook.GetLevelsCount(), bidsBook.GetLevelsCount());
+					++i) {
 				std::cout
-					<< size_t(bidsBook.GetLevel(i).GetQty() / 1000000)
+					<< bidsBook.GetLevel(i).GetQty()
 					<< ' ' << security.DescalePrice(bidsBook.GetLevel(i).GetPrice())
 					<< "\t\t\t"
 					<< security.DescalePrice(offersBook.GetLevel(i).GetPrice())
-					<< ' ' << size_t(offersBook.GetLevel(i).GetQty() / 10000000)
+					<< ' ' << offersBook.GetLevel(i).GetQty()
 					<< std::endl;
 			}
 			std::cout << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" << std::endl;
