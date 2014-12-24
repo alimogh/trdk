@@ -352,7 +352,7 @@ private:
 			= m_stat[PAIR_AB].bestBid.price
 				* m_stat[PAIR_BC].bestBid.price
 				* m_stat[PAIR_AC].bestAsk.price;
-		m_opportunity[0]
+		m_opportunity[1]
 			= m_stat[PAIR_AC].bestBid.price
 				* m_stat[PAIR_BC].bestAsk.price
 				* m_stat[PAIR_AB].bestAsk.price;

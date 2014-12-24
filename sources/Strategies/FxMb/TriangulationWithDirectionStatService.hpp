@@ -175,12 +175,12 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	public:
 
-		const Security & GetSecurity(size_t marketDataSouce) const {
-			return *GetSource(marketDataSouce).security;
+		const Security & GetSecurity(size_t marketDataSource) const {
+			return *GetSource(marketDataSource).security;
 		}
 
-		Data GetData(size_t marketDataSouce) const {
-			const Source &source = GetSource(marketDataSouce);
+		Data GetData(size_t marketDataSource) const {
+			const Source &source = GetSource(marketDataSource);
 			Data result;
 			while (source.dataLock.test_and_set(boost::memory_order_acquire));
 			result = source;

@@ -17,7 +17,7 @@ namespace fs = boost::filesystem;
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::Interaction::LogReply;
+using namespace trdk::Interaction::LogReplay;
 
 LogSecurity::LogSecurity(
 		Context &context,

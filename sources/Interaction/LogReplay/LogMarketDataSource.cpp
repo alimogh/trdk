@@ -15,13 +15,13 @@
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 
-namespace trdk { namespace Interaction { namespace LogReply { 
+namespace trdk { namespace Interaction { namespace LogReplay { 
 	class LogMarketDataSource;
 } } }
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::Interaction::LogReply;
+using namespace trdk::Interaction::LogReplay;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -139,7 +139,7 @@ namespace {
 			m_readingThread = boost::thread(
 				[this]() {
 					m_context.GetLog().Debug(
-						"Started Log Reply reading task...");
+						"Started Log Replay reading task...");
 					try {
 						for ( ; ; ) {
 							const Lock lock(m_mutex);
@@ -293,7 +293,7 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class Interaction::LogReply::LogMarketDataSource : public MarketDataSource {
+class Interaction::LogReplay::LogMarketDataSource : public MarketDataSource {
 
 public:
 
@@ -351,7 +351,7 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TRDK_INTERACTION_LOGREPLY_API
+TRDK_INTERACTION_LOGREPLAY_API
 boost::shared_ptr<MarketDataSource>
 CreateMarketDataSource(
 		size_t index,

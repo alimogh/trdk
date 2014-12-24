@@ -14,7 +14,7 @@
 #include "Core/Settings.hpp"
 #include "Core/AsyncLog.hpp"
 
-namespace trdk {  namespace Interaction { namespace LogReply {
+namespace trdk {  namespace Interaction { namespace LogReplay {
 		
 		class LogService;
 
@@ -25,7 +25,7 @@ namespace fs = boost::filesystem;
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::Interaction::LogReply;
+using namespace trdk::Interaction::LogReplay;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -99,7 +99,7 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class Interaction::LogReply::LogService : public trdk::Service {
+class Interaction::LogReplay::LogService : public trdk::Service {
 
 public:
 
@@ -214,7 +214,7 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TRDK_INTERACTION_LOGREPLY_API
+TRDK_INTERACTION_LOGREPLAY_API
 boost::shared_ptr<Service> CreateLogService(
 			Context &context,
 			const std::string &tag,

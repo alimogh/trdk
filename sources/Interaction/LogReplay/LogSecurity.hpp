@@ -12,7 +12,7 @@
 
 #include "Core/Security.hpp"
 
-namespace trdk {  namespace Interaction { namespace LogReply {
+namespace trdk {  namespace Interaction { namespace LogReplay {
 
 	class LogSecurity : public Security {
 

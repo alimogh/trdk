@@ -257,7 +257,7 @@
     <ProjectReference Include="..\Interaction\InteractiveBrokers\InteractiveBrokers.vcxproj">
       <Project>{befe87ae-1376-4c4c-87d5-73e782990306}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Interaction\LogReply\LogReply.vcxproj">
+    <ProjectReference Include="..\Interaction\LogReplay\LogReplay.vcxproj">
       <Project>{d2247a79-0ecc-4344-84c2-c13999567b64}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Interaction\OnixsFixConnector\OnixsFixConnector.vcxproj">

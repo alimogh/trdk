@@ -34,12 +34,12 @@
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="LogReply.def">
+    <None Include="LogReplay.def">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="LogReply.rc">
+    <ResourceCompile Include="LogReplay.rc">
       <Filter>Source Files</Filter>
     </ResourceCompile>
   </ItemGroup>

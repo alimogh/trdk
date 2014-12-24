@@ -11,7 +11,7 @@
 #pragma once
 
 #ifdef BOOST_WINDOWS
-#	define TRDK_INTERACTION_LOGREPLY_API
+#	define TRDK_INTERACTION_LOGREPLAY_API
 #else
-#	define TRDK_INTERACTION_LOGREPLY_API extern "C"
+#	define TRDK_INTERACTION_LOGREPLAY_API extern "C"
 #endif
