@@ -152,7 +152,7 @@ namespace trdk { namespace Engine {
 				Assert(
 					m_current == &m_lists.first
 					|| m_current == &m_lists.second);
-				if (Dispatcher::QueueEvent(event, *m_current) || !flush) {
+				if (Dispatcher::QueueEvent(event, *m_current) || flush) {
 					m_sync->newDataCondition.notify_one();
 				}
 				if (!(m_current->size() % 50)) {
@@ -164,7 +164,7 @@ namespace trdk { namespace Engine {
 			}
 
 			bool Flush(
-						Lock &lock, 
+						Lock &lock,
 						Lib::TimeMeasurement::Milestones &timeMeasurement) {
 
 				Assert(m_sync);
