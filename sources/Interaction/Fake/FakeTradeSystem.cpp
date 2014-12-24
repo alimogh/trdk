@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "FakeTradeSystem.hpp"
 #include "Core/Security.hpp"
+#include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
 
@@ -45,8 +46,6 @@ public:
 
 	TradeSystem *m_self;
 
-	const bool m_isReplyMode;
-
 	boost::mt19937 m_random;
 	boost::uniform_int<size_t> m_delayRange;
 	mutable boost::variate_generator<boost::mt19937, boost::uniform_int<size_t>>
@@ -65,8 +64,7 @@ private:
 public:
 
 	explicit Implementation(const IniSectionRef &conf)
-			: m_isReplyMode(conf.ReadBoolKey("is_reply_mode")),
-			m_delayRange(
+			: m_delayRange(
 				conf.ReadTypedKey<size_t>("delay_microseconds.min"),
 				conf.ReadTypedKey<size_t>("delay_microseconds.max")),
 			m_delayGenerator(m_random, m_delayRange),
@@ -79,7 +77,7 @@ public:
 	}
 
 	~Implementation() {
-		if (m_isReplyMode) {
+		if (!m_self->GetContext().GetSettings().IsReplayMode()) {
 			if (m_isStarted) {
 				m_self->GetLog().Debug("Stopping Fake Trade System task...");
 				{
@@ -107,7 +105,7 @@ public:
 	}
 
 	void Start() {
-		if (!m_isReplyMode) {
+		if (!m_self->GetContext().GetSettings().IsReplayMode()) {
 			Lock lock(m_mutex);
 			Assert(!m_isStarted);
 			boost::thread thread(boost::bind(&Implementation::Task, this));
@@ -115,7 +113,7 @@ public:
 			thread.swap(m_thread);
 			m_condition.wait(lock);
 		} else {
-			m_self->GetLog().Info("Stated Fake Trade System reply...");
+			m_self->GetLog().Info("Stated Fake Trade System replay...");
 			m_currentTimeChangeSlotConnection
 				= m_self->GetContext().SubscribeToCurrentTimeChange(
 					boost::bind(
@@ -243,7 +241,7 @@ private:
 			isMatched = order.price >= tradePrice;
 		}
 		order.callback(
-			order.id,
+			order.id, 
 			isMatched
 				?	TradeSystem::ORDER_STATUS_FILLED
 				:	TradeSystem::ORDER_STATUS_CANCELLED,
@@ -280,9 +278,9 @@ Fake::TradeSystem::TradeSystem(
 	m_pimpl(new Implementation(conf)) {
 	m_pimpl->m_self = this;
 	GetLog().Info(
-		"Random delay: of %1% to %2% microseconds.",
-		m_pimpl->m_delayRange.min(),
-		m_pimpl->m_delayRange.max());
+		"Random delay range: %1% - %2%.",
+		pt::microseconds(m_pimpl->m_delayRange.min()),
+		pt::microseconds(m_pimpl->m_delayRange.max()));
 }
 
 Fake::TradeSystem::~TradeSystem() {

@@ -279,6 +279,7 @@ namespace trdk {
 	};
 
 	struct BookUpdateTick {
+		boost::posix_time::ptime time;
 		BookUpdateAction action;
 		trdk::OrderSide side;
 		trdk::ScaledPrice price;

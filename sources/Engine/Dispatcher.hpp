@@ -97,10 +97,8 @@ namespace trdk { namespace Engine {
 			void Sync() {
 				Assert(m_sync);
 				Lock lock(m_sync->mutex);
-				if (m_lists.first.empty() && m_lists.second.empty()) {
-					return;
-				}
 				m_sync->isSyncRequired = true;
+				m_sync->newDataCondition.notify_one();
 				m_sync->syncCondition.wait(lock);
 				Assert(!m_sync->isSyncRequired);
 			}
@@ -153,7 +151,9 @@ namespace trdk { namespace Engine {
 					m_current == &m_lists.first
 					|| m_current == &m_lists.second);
 				if (Dispatcher::QueueEvent(event, *m_current) || flush) {
-					m_sync->newDataCondition.notify_one();
+					if (!m_context.GetSettings().IsReplayMode()) {
+						m_sync->newDataCondition.notify_one();
+					}
 				}
 				if (!(m_current->size() % 50)) {
 					m_context.GetLog().Warn(
@@ -174,7 +174,6 @@ namespace trdk { namespace Engine {
 					|| m_current == &m_lists.second);
 
 				size_t heavyLoadsCount = 0;
-				bool isSyncRequired = false;
 				while (
 						!m_current->empty()
 						&& m_taksState == TASK_STATE_ACTIVE) {
@@ -201,20 +200,9 @@ namespace trdk { namespace Engine {
 					lock.lock();
 					timeMeasurement.Measure(Lib::TimeMeasurement::DM_COMPLETE_LIST);
 
-					if (isSyncRequired) {
-						Assert(m_sync->isSyncRequired);
-						m_sync->isSyncRequired = false;
-						isSyncRequired = false;
-						m_sync->syncCondition.notify_all();
-					} else {
-						isSyncRequired = m_sync->isSyncRequired;
-					}
-
-					
 				}
 
-				if (isSyncRequired) {
-					Assert(m_sync->isSyncRequired);
+				if (m_sync->isSyncRequired) {
 					m_sync->isSyncRequired = false;
 					m_sync->syncCondition.notify_all();
 				}

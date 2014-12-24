@@ -148,7 +148,7 @@ namespace {
 							}
 							if (!PlayNextTimePoint()) {
 								m_context.GetLog().Info(
-									"Log reply task has no more data."
+									"Log replay task has no more data."
 										" Stopped at %1%.",
 									m_currentTime);
 								break;
@@ -158,7 +158,9 @@ namespace {
 						AssertFailNoException();
 						throw;
 					}
-					m_context.GetLog().Debug("Log Reply reading task stopped.");
+					m_context
+						.GetLog()
+						.Debug("Log Replay reading task stopped.");
 				});
 
 		}
@@ -201,8 +203,6 @@ namespace {
 
 			pt::ptime nextTime;
 
-			bool isSynced = false;
-
 			foreach (auto &service, m_securitites) {
 
 				foreach (auto &securityInfo, service.second) {
@@ -226,10 +226,9 @@ namespace {
 					}
 					AssertEq(m_currentTime, currentSecurityTime);
 			
-					if (!isSynced) {
+					if (m_context.GetCurrentTime() != m_currentTime) {
 						m_context.SyncDispatching();
 						m_context.SetCurrentTime(m_currentTime, true);
-						isSynced = true;
 					}
 
 					if (!securityInfo.security->Accept()) {

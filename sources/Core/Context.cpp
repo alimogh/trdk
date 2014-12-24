@@ -254,7 +254,6 @@ public:
 
 	LatanReport m_latanReport;
 
-	boost::atomic_bool m_isCustomCurrentTime;
 	CustomTimeMutex m_customCurrentTimeMutex;
 	pt::ptime m_customCurrentTime;
 	boost::signals2::signal<CurrentTimeChangeSlotSignature>
@@ -269,8 +268,7 @@ public:
 			m_tradingLog(tradingLog),
 			m_settings(settings),
 			m_params(context),
-			m_latanReport(context),
-			m_isCustomCurrentTime(false) {
+			m_latanReport(context) {
 		//...//
 	}
 
@@ -330,8 +328,6 @@ void Context::SetCurrentTime(const pt::ptime &time, bool signalAboutUpdate) {
 		}
 #	endif
 	m_pimpl->m_customCurrentTime = time;
-	m_pimpl->m_isCustomCurrentTime = true;
-
 }
 
 Context::CurrentTimeChangeSlotConnection
@@ -340,12 +336,12 @@ Context::SubscribeToCurrentTimeChange(const CurrentTimeChangeSlot &slot) {
 }
 
 pt::ptime Context::GetCurrentTime() const {
-	if (!m_pimpl->m_isCustomCurrentTime) {
+	if (!GetSettings().IsReplayMode()) {
 		return GetLog().GetTime();
+	} else {
+		const CustomTimeReadLock lock(m_pimpl->m_customCurrentTimeMutex);
+		return m_pimpl->m_customCurrentTime;
 	}
-	const CustomTimeReadLock lock(m_pimpl->m_customCurrentTimeMutex);
-	AssertNe(pt::not_a_date_time, m_pimpl->m_isCustomCurrentTime); 
-	return m_pimpl->m_customCurrentTime;
 }
 
 const Settings & Context::GetSettings() const {

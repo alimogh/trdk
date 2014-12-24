@@ -114,7 +114,7 @@ const pt::ptime & LogSecurity::GetCurrentTime() const {
 
 bool LogSecurity::Accept() {
 	if (m_currentTick) {
-		BookUpdateOperation book = StartBookUpdate();
+		BookUpdateOperation book = StartBookUpdate(GetCurrentTime());
 		book.Update(*m_currentTick);
 		book.Commit(false, GetContext().StartStrategyTimeMeasurement());
 		m_currentTick.reset();

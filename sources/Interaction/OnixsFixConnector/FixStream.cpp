@@ -182,6 +182,7 @@ void FixStream::onInboundApplicationMsg(
 			fix::Session *session) {
 
 	const auto &timeMeasurement = GetContext().StartStrategyTimeMeasurement();
+	const auto &now = GetContext().GetCurrentTime();
 			
 	Assert(session == &m_session.Get());
 	UseUnused(session);
@@ -200,7 +201,7 @@ void FixStream::onInboundApplicationMsg(
 			return;
 		}
 		
-		FixSecurity::BookUpdateOperation book = security->StartBookUpdate();
+		FixSecurity::BookUpdateOperation book = security->StartBookUpdate(now);
 
 		const fix::Group &entries
 			= message.getGroup(fix::FIX42::Tags::NoMDEntries);

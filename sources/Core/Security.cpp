@@ -572,8 +572,8 @@ void Security::SetBrokerPosition(trdk::Qty qty, bool isInitial) {
 	m_pimpl->m_brokerPositionUpdateSignal(qty, isInitial);
 }
 
-Security::BookUpdateOperation Security::StartBookUpdate() {
-	return BookUpdateOperation(*this, m_pimpl->m_book);
+Security::BookUpdateOperation Security::StartBookUpdate(const pt::ptime &time) {
+	return BookUpdateOperation(*this, m_pimpl->m_book, time);
 }
 
 const Security::Book & Security::GetBook() const {
@@ -646,7 +646,7 @@ public:
 
 	};
 	
-	const pt::ptime m_startTime;
+	const pt::ptime m_time;
 
 	Security &m_security;
 
@@ -655,8 +655,11 @@ public:
 
 	Security::Book &m_book;
 
-	explicit Implementation(Security &security, Security::Book &book)
-		: m_startTime(security.GetContext().GetCurrentTime()),
+	explicit Implementation(
+			Security &security,
+			Security::Book &book,
+			const pt::ptime &time)
+		: m_time(time),
 		m_security(security),
 		m_bids(security),
 		m_offers(security),
@@ -710,8 +713,9 @@ void Security::BookUpdateOperation::Side::Delete(double price) {
 
 Security::BookUpdateOperation::BookUpdateOperation(
 		Security &security,
-		Book &book)
-	: m_pimpl(new Implementation(security, book)) {
+		Book &book,
+		const pt::ptime &time)
+	: m_pimpl(new Implementation(security, book, time)) {
 	//...//
 }
 
@@ -758,6 +762,7 @@ void Security::BookUpdateOperation::Commit(
 				Implementation::Side &sideData) {
 		foreach (const auto &update, sideData.storage.updates) {
 			const BookUpdateTick tick = {
+				m_pimpl->m_time,
 				boost::get<0>(update),
 				priceLevelDirection,
 				boost::get<1>(update),
@@ -804,6 +809,7 @@ void Security::BookUpdateOperation::Commit(
 			= sideData.operations.GetSecurity().m_pimpl->m_bookUpdateTickSignal;
 		foreach (const auto &update, sideData.storage.updates) {
 			const BookUpdateTick tick = {
+				m_pimpl->m_time,
 				boost::get<0>(update),
 				side,
 				boost::get<1>(update),
@@ -817,7 +823,7 @@ void Security::BookUpdateOperation::Commit(
 	update(ORDER_SIDE_OFFER, m_pimpl->m_offers);
 
 	m_pimpl->m_security.SetLevel1(
-		m_pimpl->m_startTime,
+		m_pimpl->m_time,
 		Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
 			m_pimpl->m_book.m_bids.GetLevelsCount() == 0
 				?	0

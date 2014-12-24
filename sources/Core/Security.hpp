@@ -181,7 +181,8 @@ namespace trdk {
 		private:
 			explicit BookUpdateOperation(
 					trdk::Security &,
-					trdk::Security::Book &);
+					trdk::Security::Book &,
+					const boost::posix_time::ptime &);
 		public:
 			BookUpdateOperation(BookUpdateOperation &&);
 			~BookUpdateOperation();
@@ -393,7 +394,8 @@ namespace trdk {
 		  */
 		void SetBrokerPosition(trdk::Qty qty, bool isInitial);
 
-		trdk::Security::BookUpdateOperation StartBookUpdate();
+		trdk::Security::BookUpdateOperation StartBookUpdate(
+				const boost::posix_time::ptime &);
 
 	private:
 

@@ -185,7 +185,7 @@ public:
 		m_logs[security.GetSource().GetIndex()]->Write(
 			[&](Record &record) {
 				record
-					%	GetContext().GetCurrentTime()
+					%	tick.time
 					%	(tick.action == BOOK_UPDATE_ACTION_NEW
  							?	'+'
  							:	tick.action == BOOK_UPDATE_ACTION_UPDATE

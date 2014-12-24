@@ -18,9 +18,10 @@ namespace fs = boost::filesystem;
 using namespace trdk;
 using namespace trdk::Lib;
 
-Settings::Settings(const fs::path &logsDir)
-		: m_isLoaded(false),
-		m_logsDir(logsDir) {
+Settings::Settings(bool isReplayMode, const fs::path &logsDir)
+	: m_isLoaded(false),
+	m_isReplayMode(isReplayMode),
+	m_logsDir(logsDir) {
 	//...//
 }
 
