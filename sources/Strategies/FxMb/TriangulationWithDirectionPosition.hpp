@@ -59,12 +59,12 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_isByRising;
 		}
 
-		//! @todo remove this workaround
+		//! @todo remove this workaround: https://trello.com/c/QOBSd8RZ
 		bool IsCompleted() const {
 			return m_isCompleted;
 		}
 
-		//! @todo remove this workaround
+		//! @todo remove this workaround: https://trello.com/c/QOBSd8RZ
 		void Complete() {
 			Assert(!m_isCompleted);
 			m_isCompleted = true;
