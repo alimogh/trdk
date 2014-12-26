@@ -41,13 +41,15 @@ namespace trdk {
 
 	public:
 	
-		explicit Settings(const boost::filesystem::path &logsDir);
+		explicit Settings(
+				bool isReplayMode,
+				const boost::filesystem::path &logsDir);
 
 	public:
 
 		void Update(
-					const trdk::Lib::Ini &,
-					trdk::Context::Log &);
+				const trdk::Lib::Ini &,
+				trdk::Context::Log &);
 
 	private:
 
@@ -55,6 +57,10 @@ namespace trdk {
 		void UpdateStatic(const trdk::Lib::Ini &, trdk::Context::Log &);
 
 	public:
+
+		bool IsReplayMode() const throw() {
+			return m_isReplayMode;
+		}
 
 		const boost::filesystem::path & GetLogsDir() const {
 			return m_logsDir;
@@ -81,6 +87,7 @@ namespace trdk {
 
 		Values m_values;
 		bool m_isLoaded;
+		bool m_isReplayMode;
 		boost::filesystem::path m_logsDir;
 
 	};

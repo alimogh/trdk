@@ -198,11 +198,10 @@ bool Service::RaiseNewBarEvent(
 
 bool Service::RaiseBookUpdateTickEvent(
 		const Security &security,
-		size_t priceLevelIndex,
-		const BookUpdateTick &tick,
+		const Security::Book &book,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
-	return OnBookUpdateTick(security, priceLevelIndex, tick, timeMeasurement);
+	return OnBookUpdateTick(security, book, timeMeasurement);
 }
 
 bool Service::OnLevel1Update(const Security &security) {
@@ -273,8 +272,7 @@ bool Service::OnNewBar(const Security &security, const Security::Bar &) {
 
 bool Service::OnBookUpdateTick(
 		const Security &security,
-		size_t /*priceLevelIndex*/,
-		const BookUpdateTick &,
+		const Security::Book &,
 		const TimeMeasurement::Milestones &) {
 	GetLog().Error(
 		"Subscribed to %1% Book Update Ticks, but can't work with it"

@@ -50,7 +50,9 @@ void Server::Run(
 	}
 	info.tradingLog.reset(new Engine::Context::TradingLog);
 
-	Settings settings(ini->ReadFileSystemPath("Common", "logs_dir") / uuid);
+	Settings settings(
+		ini->ReadBoolKey("Common", "is_replay_mode"),
+		ini->ReadFileSystemPath("Common", "logs_dir") / uuid);
 
 	fs::create_directories(settings.GetLogsDir());
 	{
@@ -72,6 +74,9 @@ void Server::Run(
 			cmd.push_back(argv[i]);
 		}
 		info.eventsLog->Info("Command: \"%1%\".", boost::join(cmd, " "));
+		if (settings.IsReplayMode()) {
+			info.eventsLog->Warn("Replay mode.");
+		}
 	}
 
 	settings.Update(*ini, *info.eventsLog);

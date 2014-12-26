@@ -126,8 +126,7 @@ namespace trdk {
 
 		virtual void OnBookUpdateTick(
 				trdk::Security &,
-				size_t priceLevelIndex,
-				const trdk::BookUpdateTick &,
+				const trdk::Security::Book &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	public:
@@ -162,8 +161,7 @@ namespace trdk {
 		void RaisePositionUpdateEvent(trdk::Position &);
 		void RaiseBookUpdateTickEvent(
 				trdk::Security &,
-				size_t priceLevelIndex,
-				const trdk::BookUpdateTick &,
+				const trdk::Security::Book &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	public:

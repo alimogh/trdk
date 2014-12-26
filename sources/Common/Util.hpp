@@ -33,17 +33,22 @@ namespace trdk { namespace Lib {
 		return boost::equal(v1, v2);
 	}
 
-	inline bool IsEqual(const intmax_t v1, const intmax_t v2) {
+	inline bool IsEqual(const int32_t v1, const int32_t v2) {
 		return v1 == v2;
 	}
-
-	inline bool IsEqual(const uintmax_t v1, const uintmax_t v2) {
+	inline bool IsEqual(const uint32_t v1, const uint32_t v2) {
+		return v1 == v2;
+	}
+	inline bool IsEqual(const int64_t v1, const int64_t v2) {
+		return v1 == v2;
+	}
+	inline bool IsEqual(const uint64_t v1, const uint64_t v2) {
 		return v1 == v2;
 	}
 
 	template<typename T>
 	inline bool IsZero(const T &v) {
-		return IsEqual(v, 0);
+		return IsEqual(v, T(0));
 	}
 
 	inline bool IsEmpty(const char *const str) {

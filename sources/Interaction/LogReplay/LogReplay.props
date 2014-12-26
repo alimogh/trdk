@@ -5,7 +5,7 @@
   <PropertyGroup />
   <ItemDefinitionGroup>
     <Link>
-      <ModuleDefinitionFile>LogReply.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>LogReplay.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

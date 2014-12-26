@@ -285,19 +285,19 @@ public:
 		Twd::Position &order = dynamic_cast<Twd::Position &>(position);
 
 		if (order.IsCompleted()) {
+			//! @todo see https://trello.com/c/QOBSd8RZ
 			return;
 		}
 
 		if (order.GetOpenedQty() == 0) {
 
-			if (order.GetLeg() == 1 && !HasOpportunity()) {
-				// We can stop here as operation not started yet:
+			if (order.GetLeg() == 1) {
 				LogAction("canceled");
 				m_orders.fill(boost::shared_ptr<Twd::Position>());
-				return;
+				CheckOpenPossibility();
+			} else {
+				ReplaceOrder(order);
 			}
-
-			ReplaceOrder(order);
 
 		} else {
  
@@ -362,7 +362,7 @@ private:
 			= m_stat[PAIR_AB].bestBid.price
 				* m_stat[PAIR_BC].bestBid.price
 				* m_stat[PAIR_AC].bestAsk.price;
-		m_opportunity[0]
+		m_opportunity[1]
 			= m_stat[PAIR_AC].bestBid.price
 				* m_stat[PAIR_BC].bestAsk.price
 				* m_stat[PAIR_AB].bestAsk.price;

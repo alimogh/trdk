@@ -53,7 +53,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D2247A79-0ECC-4344-84C2-C13999567B64}</ProjectGuid>
     <RootNamespace>Log replay</RootNamespace>
-    <ProjectName>Log reply</ProjectName>
+    <ProjectName>Log replay</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">
@@ -114,7 +114,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="LogReply.props" />
+    <Import Project="LogReplay.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -125,7 +125,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="LogReply.props" />
+    <Import Project="LogReplay.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -137,7 +137,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="LogReply.props" />
+    <Import Project="LogReplay.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -149,7 +149,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="LogReply.props" />
+    <Import Project="LogReplay.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -160,7 +160,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="LogReply.props" />
+    <Import Project="LogReplay.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -171,7 +171,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="LogReply.props" />
+    <Import Project="LogReplay.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -183,7 +183,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="LogReply.props" />
+    <Import Project="LogReplay.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -195,7 +195,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="LogReply.props" />
+    <Import Project="LogReplay.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -206,7 +206,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="LogReply.props" />
+    <Import Project="LogReplay.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -217,7 +217,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="LogReply.props" />
+    <Import Project="LogReplay.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -229,7 +229,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="LogReply.props" />
+    <Import Project="LogReplay.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -241,7 +241,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="LogReply.props" />
+    <Import Project="LogReplay.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -276,7 +276,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="LogReply.def" />
+    <None Include="LogReplay.def" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api.h" />
@@ -284,7 +284,7 @@
     <ClInclude Include="LogSecurity.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="LogReply.rc" />
+    <ResourceCompile Include="LogReplay.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

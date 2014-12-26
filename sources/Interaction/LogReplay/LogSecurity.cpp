@@ -17,7 +17,7 @@ namespace fs = boost::filesystem;
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::Interaction::LogReply;
+using namespace trdk::Interaction::LogReplay;
 
 LogSecurity::LogSecurity(
 		Context &context,
@@ -70,7 +70,7 @@ LogSecurity::LogSecurity(
 	if (
 			!boost::istarts_with(
 				buffer,
-				"TRDK Book Update Ticks Log version 1.1 ")) {
+				"TRDK Book Snapshots Log version 1.0 ")) {
 		GetSource().GetLog().Error(
 			"Failed to open market data source for \"%1%\" in file %2%:"
 				" wrong format.",
@@ -86,8 +86,8 @@ LogSecurity::LogSecurity(
 	const_cast<std::ifstream::streampos &>(m_dataStartPos) = m_file.tellg();
 
 	if (Read()) {
-		AssertNe(pt::not_a_date_time, m_currentTime);
-		const_cast<pt::ptime &>(m_dataStartTime) = m_currentTime;
+		AssertNe(pt::not_a_date_time, m_currentSnapshot.time);
+		const_cast<pt::ptime &>(m_dataStartTime) = m_currentSnapshot.time;
 	}
 	
 }
@@ -97,7 +97,7 @@ void LogSecurity::ResetSource() {
 	m_file.seekg(m_dataStartPos, m_file.beg);
 	m_isEof = false;
 	Read();
-	AssertEq(m_dataStartTime, m_currentTime);
+	AssertEq(m_dataStartTime, m_currentSnapshot.time);
 }
 
 size_t LogSecurity::GetReadRecordsCount() const {
@@ -109,15 +109,16 @@ const pt::ptime & LogSecurity::GetDataStartTime() const {
 }
 
 const pt::ptime & LogSecurity::GetCurrentTime() const {
-	return m_currentTime;
+	return m_currentSnapshot.time;
 }
 
 bool LogSecurity::Accept() {
-	if (m_currentTick) {
-		BookUpdateOperation book = StartBookUpdate();
-		book.Update(*m_currentTick);
-		book.Commit(false, GetContext().StartStrategyTimeMeasurement());
-		m_currentTick.reset();
+	if (!m_currentSnapshot.isAccepted) {
+		BookUpdateOperation book = StartBookUpdate(GetCurrentTime());
+		book.GetBids().Swap(m_currentSnapshot.bids);
+		book.GetAsks().Swap(m_currentSnapshot.asks);
+		book.Commit(GetContext().StartStrategyTimeMeasurement());
+		m_currentSnapshot.isAccepted = true;
 	}
 	return Read();
 }
@@ -135,70 +136,74 @@ bool LogSecurity::Read() {
 		return false;
 	}
 
-	const auto currentTime = pt::time_from_string(&buffer[0]);
-	
-	m_file.getline(buffer, sizeof(buffer), '\t');
-	if (
-			strlen(buffer) != 1
-			|| (buffer[0] != '+'
-				&& buffer[0] != '-'
-				&& buffer[0] != '=')) {
-		GetSource().GetLog().Error(
-			"Failed to read log file to replay \"%1%\":"
-				" wrong format at record %2%.",
-			*this,
-			m_readCount + 1);
-		m_isEof = true;
-		return false;
-	}
-	BookUpdateTick tick = {};
-	tick.action = buffer[0] == '+'
-		?	BOOK_UPDATE_ACTION_NEW
-		:	buffer[0] == '='
-			?	BOOK_UPDATE_ACTION_UPDATE
-			:	BOOK_UPDATE_ACTION_DELETE;
+	Snapshot snapshot = {
+		pt::time_from_string(&buffer[0])
+	};
 
-	m_file.getline(buffer, sizeof(buffer), '\t');
-	if (strlen(buffer) != 1 || (buffer[0] != 'o' && buffer[0] != 'b')) {
-		GetSource().GetLog().Error(
-			"Failed to read log file to replay \"%1%\":"
-				" wrong format at record %2%.",
-			*this,
-			m_readCount + 1);
-		m_isEof = true;
-		return false;
-	}
-	tick.side = buffer[0] == 'o' ? ORDER_SIDE_OFFER : ORDER_SIDE_BID;
+	for (auto *side = &snapshot.bids; ; ) {
 
-	m_file.getline(buffer, sizeof(buffer), '\t');
-	try {
-		tick.price = boost::lexical_cast<ScaledPrice>(&buffer[0]);
-	} catch (const boost::bad_lexical_cast &) {
-		GetSource().GetLog().Error(
-			"Failed to read log file to replay \"%1%\":"
-				" wrong format at record %2%.",
-			*this,
-			m_readCount + 1);
-		m_isEof = true;
-		return false;
-	}
+		double price = .0;
+		Qty qty = 0;
 
-	m_file.getline(buffer, sizeof(buffer));
-	try {
-		tick.qty = boost::lexical_cast<Qty>(&buffer[0]);
-	} catch (const boost::bad_lexical_cast &) {
-		GetSource().GetLog().Error(
-			"Failed to read log file to replay \"%1%\":"
-				" wrong format at record %2%.",
-			*this,
-			m_readCount + 1);
-		m_isEof = true;
-		return false;
+		m_file.getline(buffer, sizeof(buffer), '\t');
+		if (!buffer[0]) {
+			GetSource().GetLog().Error(
+				"Failed to read log file to replay \"%1%\":"
+					" wrong format at record %2%.",
+				*this,
+				m_readCount + 1);
+			m_isEof = true;
+			return false;
+		} else if (!buffer[1]) {
+			if (buffer[0] == '|') {
+				if (side != &snapshot.bids) {
+					GetSource().GetLog().Error(
+						"Failed to read log file to replay \"%1%\":"
+							" wrong format at record %2%.",
+						*this,
+						m_readCount + 1);
+					m_isEof = true;
+					return false;
+				}
+				side = &snapshot.asks;
+			} else if (buffer[0] == '#') {
+				break;
+			}
+			continue;
+		}
+
+		try {
+			price = boost::lexical_cast<double>(&buffer[0]);
+		} catch (const boost::bad_lexical_cast &) {
+			GetSource().GetLog().Error(
+				"Failed to read log file to replay \"%1%\":"
+					" wrong format at record %2%.",
+				*this,
+				m_readCount + 1);
+			m_isEof = true;
+			return false;
+		}
+
+		m_file.getline(buffer, sizeof(buffer));
+		try {
+			qty = boost::lexical_cast<Qty>(&buffer[0]);
+		} catch (const boost::bad_lexical_cast &) {
+			GetSource().GetLog().Error(
+				"Failed to read log file to replay \"%1%\":"
+					" wrong format at record %2%.",
+				*this,
+				m_readCount + 1);
+			m_isEof = true;
+			return false;
+		}
+
+		side->emplace_back(price, qty);
+
 	}
 
 	++m_readCount;
-	m_currentTime = currentTime;
-	m_currentTick = tick;
+	snapshot.Swap(m_currentSnapshot);
+	m_currentSnapshot.isAccepted = false;
 
 	return true;
 

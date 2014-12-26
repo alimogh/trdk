@@ -15,13 +15,13 @@
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 
-namespace trdk { namespace Interaction { namespace LogReply { 
+namespace trdk { namespace Interaction { namespace LogReplay { 
 	class LogMarketDataSource;
 } } }
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::Interaction::LogReply;
+using namespace trdk::Interaction::LogReplay;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -139,7 +139,7 @@ namespace {
 			m_readingThread = boost::thread(
 				[this]() {
 					m_context.GetLog().Debug(
-						"Started Log Reply reading task...");
+						"Started Log Replay reading task...");
 					try {
 						for ( ; ; ) {
 							const Lock lock(m_mutex);
@@ -148,7 +148,7 @@ namespace {
 							}
 							if (!PlayNextTimePoint()) {
 								m_context.GetLog().Info(
-									"Log reply task has no more data."
+									"Log replay task has no more data."
 										" Stopped at %1%.",
 									m_currentTime);
 								break;
@@ -158,7 +158,9 @@ namespace {
 						AssertFailNoException();
 						throw;
 					}
-					m_context.GetLog().Debug("Log Reply reading task stopped.");
+					m_context
+						.GetLog()
+						.Debug("Log Replay reading task stopped.");
 				});
 
 		}
@@ -201,8 +203,6 @@ namespace {
 
 			pt::ptime nextTime;
 
-			bool isSynced = false;
-
 			foreach (auto &service, m_securitites) {
 
 				foreach (auto &securityInfo, service.second) {
@@ -226,11 +226,8 @@ namespace {
 					}
 					AssertEq(m_currentTime, currentSecurityTime);
 			
-					if (!isSynced) {
-						m_context.SyncDispatching();
-						m_context.SetCurrentTime(m_currentTime, true);
-						isSynced = true;
-					}
+					m_context.SyncDispatching();
+					m_context.SetCurrentTime(m_currentTime, true);
 
 					if (!securityInfo.security->Accept()) {
 						service.first->GetLog().Debug(
@@ -294,7 +291,7 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class Interaction::LogReply::LogMarketDataSource : public MarketDataSource {
+class Interaction::LogReplay::LogMarketDataSource : public MarketDataSource {
 
 public:
 
@@ -352,7 +349,7 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TRDK_INTERACTION_LOGREPLY_API
+TRDK_INTERACTION_LOGREPLAY_API
 boost::shared_ptr<MarketDataSource>
 CreateMarketDataSource(
 		size_t index,

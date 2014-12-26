@@ -12,6 +12,7 @@
 
 #include "FixSession.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/Security.hpp"
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
@@ -75,6 +76,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		std::string GetRequestSymbolStr(const OnixS::FIX::Message &) const;
 
 		virtual Qty ParseMdEntrySize(const OnixS::FIX::GroupInstance &) const;
+		virtual Qty ParseMdEntrySize(const OnixS::FIX::Message &) const;
 
 		virtual void OnLogout() = 0;
 		virtual void OnReconnecting() = 0;

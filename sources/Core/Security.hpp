@@ -103,102 +103,110 @@ namespace trdk {
 		////////////////////////////////////////////////////////////////////////////////
 
 		class BookUpdateOperation;
+		class BookSideUpdateOperation;
 
-		class TRDK_CORE_API Book : private boost::noncopyable {
+		class TRDK_CORE_API Book {
 			friend class trdk::Security::BookUpdateOperation;
 		public:
 			class Level {
+				friend class trdk::Security::BookSideUpdateOperation;
 			public:
-				explicit Level(
-						const trdk::ScaledPrice &price,
-						const trdk::Qty &qty)
+				Level()
+					: m_price(.0),
+					m_qty(0) {
+					//...//
+				}
+				explicit Level(double price, const trdk::Qty &qty)
 					: m_price(price),
 					m_qty(qty) {
 					//...//
 				}
 			public:
-				const trdk::ScaledPrice & GetPrice() const {
+				bool operator ==(const Level &rhs) const {
+					return
+						trdk::Lib::IsEqual(m_price,rhs.m_price)
+							&& trdk::Lib::IsEqual(m_qty,rhs.m_qty);
+				}
+				bool operator !=(const Level &rhs) const {
+					return !operator ==(rhs);
+				}
+			public:
+				double GetPrice() const {
 					return m_price;
 				}
 				const trdk::Qty & GetQty() const {
 					return m_qty;
 				}
 			private:
-				trdk::ScaledPrice m_price;
+				double m_price;
 				trdk::Qty m_qty;
 			};
-			class TRDK_CORE_API Side : private boost::noncopyable {
-				friend class trdk::Security::BookUpdateOperation;
+			class TRDK_CORE_API Side {
+				friend class trdk::Security::BookSideUpdateOperation;
 			public:
 				Side();
 				~Side();
 			public:
 				size_t GetLevelsCount() const;
-				trdk::Security::Book::Level GetLevel(size_t levelIndex) const;
+				const trdk::Security::Book::Level & GetLevel(
+						size_t levelIndex)
+						const;
 			private:
 				class Implementation;
 				Implementation *m_pimpl;
 			};
 		public:
-			const trdk::Security::Book::Side & GetBids() const;
-			const trdk::Security::Book::Side & GetOffers() const;
+			explicit Book(const boost::posix_time::ptime &);
+		public:
+			const boost::posix_time::ptime & GetTime() const {
+				return m_time;
+			}
+			const trdk::Security::Book::Side & GetBids() const {
+				return m_bids;
+			}
+			const trdk::Security::Book::Side & GetAsks() const {
+				return m_offers;
+			}
+			const trdk::Security::Book::Side & GetOffers() const {
+				return m_offers;
+			}
 		private:
+			boost::posix_time::ptime m_time;
 			Side m_bids;
 			Side m_offers;
 		};
 
 		typedef void (BookUpdateTickSlotSignature)(
-				size_t priceLevelIndex,
-				const BookUpdateTick &,
+				const boost::shared_ptr<const trdk::Security::Book> &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 		typedef boost::function<BookUpdateTickSlotSignature> BookUpdateTickSlot;
 		typedef boost::signals2::connection BookUpdateTickSlotConnection;
 
+		class TRDK_CORE_API BookSideUpdateOperation
+			: private boost::noncopyable {
+		public:
+			explicit BookSideUpdateOperation(trdk::Security::Book::Side &);
+		public:
+			void Swap(std::vector<trdk::Security::Book::Level> &);
+		private:
+			trdk::Security::Book::Side &m_storage;
+		};
+
 		class TRDK_CORE_API BookUpdateOperation : private boost::noncopyable {
 			friend class trdk::Security;
 		private:
-			class Storage;
-		public:
-			class TRDK_CORE_API Side : private boost::noncopyable {
-				friend class trdk::Security::BookUpdateOperation;
-			public:
-				explicit Side(
-						trdk::Security &,
-						trdk::Security::BookUpdateOperation::Storage &);
-			public:
-				trdk::Security & GetSecurity();
-			public:
-				void Add(const trdk::ScaledPrice &, const trdk::Qty &);
-				void Add(double price, const trdk::Qty &);
-				void Update(const trdk::ScaledPrice &, const trdk::Qty &);
-				void Update(double price, const trdk::Qty &);
-				void Delete(const trdk::ScaledPrice &);
-				void Delete(double price);
-			private:
-				trdk::Security &m_security;
-				trdk::Security::BookUpdateOperation::Storage &m_storage;
-			};
-		private:
 			explicit BookUpdateOperation(
-					trdk::Security &,
-					trdk::Security::Book &);
+					trdk::Security &security,
+					const boost::posix_time::ptime &);
 		public:
 			BookUpdateOperation(BookUpdateOperation &&);
 			~BookUpdateOperation();
 		public:
-			Side & GetBids();
-			Side & GetOffers();
+			BookSideUpdateOperation & GetBids();
+			BookSideUpdateOperation & GetOffers();
+			BookSideUpdateOperation & GetAsks();
 		public:
-			void Update(const trdk::BookUpdateTick &);
-		public:
-			//! Commits update.
-			/** @param adjustDirection	If true - deletes opposite price level
-			  *							if arrives level with the same price,
-			  *							but another direction.
-			  */
-			void Commit(
-					bool adjustDirection,
-					const trdk::Lib::TimeMeasurement::Milestones &);
+			void Commit(const trdk::Lib::TimeMeasurement::Milestones &);
 		private:
 			class Implementation;
 			Implementation *m_pimpl;
@@ -266,8 +274,6 @@ namespace trdk {
 		/** Information from broker, not relevant to trdk::Position.
 		  */
 		trdk::Qty GetBrokerPosition() const;
-
-		const trdk::Security::Book & GetBook() const;
 
 	public:
 
@@ -393,7 +399,8 @@ namespace trdk {
 		  */
 		void SetBrokerPosition(trdk::Qty qty, bool isInitial);
 
-		trdk::Security::BookUpdateOperation StartBookUpdate();
+		trdk::Security::BookUpdateOperation StartBookUpdate(
+				const boost::posix_time::ptime &);
 
 	private:
 

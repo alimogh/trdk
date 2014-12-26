@@ -248,7 +248,7 @@
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Interaction\LogReply\LogReply.vcxproj">
+    <ProjectReference Include="..\Interaction\LogReplay\LogReplay.vcxproj">
       <Project>{d2247a79-0ecc-4344-84c2-c13999567b64}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Interaction\OnixsFixConnector\OnixsFixConnector.vcxproj">

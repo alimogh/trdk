@@ -12,13 +12,31 @@
 
 #include "Core/Security.hpp"
 
-namespace trdk {  namespace Interaction { namespace LogReply {
+namespace trdk {  namespace Interaction { namespace LogReplay {
 
 	class LogSecurity : public Security {
 
 	public:
 
 		typedef trdk::Security Base;
+
+	private:
+
+		struct Snapshot {
+
+			boost::posix_time::ptime time;
+			std::vector<Security::Book::Level> bids;
+			std::vector<Security::Book::Level> asks;
+			bool isAccepted;
+
+			void Swap(Snapshot &rhs) {
+				std::swap(time, rhs.time);
+				bids.swap(rhs.bids);
+				asks.swap(rhs.asks);
+				std::swap(isAccepted, rhs.isAccepted);
+			}
+
+		};
 
 	public:
 
@@ -51,8 +69,7 @@ namespace trdk {  namespace Interaction { namespace LogReply {
 		const boost::posix_time::ptime m_dataStartTime;
 		const std::ifstream::streampos m_dataStartPos;
 
-		boost::posix_time::ptime m_currentTime;
-		boost::optional<BookUpdateTick> m_currentTick;
+		Snapshot m_currentSnapshot;
 
 		bool m_isEof;
 

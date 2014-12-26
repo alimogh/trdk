@@ -84,7 +84,7 @@ namespace trdk {
 
 		void RaiseBookUpdateTickEvent(
 				trdk::Security &,
-				const trdk::BookUpdateTick &);
+				const trdk::Security::Book &);
 
 	private:
 

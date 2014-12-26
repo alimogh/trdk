@@ -357,8 +357,7 @@ void Strategy::OnPositionUpdate(Position &) {
 
 void Strategy::OnBookUpdateTick(
 		Security &security,
-		size_t /*priceLevelIndex*/,
-		const BookUpdateTick &,
+		const Security::Book &,
 		const TimeMeasurement::Milestones &) {
 	GetLog().Error(
 		"Subscribed to %1% Book Update Ticks, but can't work with it"
@@ -465,14 +464,13 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 
 void Strategy::RaiseBookUpdateTickEvent(
 				Security &security,
-				size_t priceLevelIndex,
-				const BookUpdateTick &tick,
+				const Security::Book &book,
 				const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
 	if (IsBlocked()) {
 		return;
 	}
-	OnBookUpdateTick(security, priceLevelIndex, tick, timeMeasurement);
+	OnBookUpdateTick(security, book, timeMeasurement);
 }
 
 bool Strategy::IsBlocked(bool forever /* = false */) const {

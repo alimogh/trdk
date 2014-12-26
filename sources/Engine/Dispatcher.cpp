@@ -177,8 +177,7 @@ void Dispatcher::SignalNewBar(
 void Dispatcher::SignalBookUpdateTick(
 			SubscriberPtrWrapper &subscriber,
 			Security &security,
-			size_t priceLevelIndex,
-			const BookUpdateTick &tick,
+			const boost::shared_ptr<const Security::Book> &book,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 	try {
 		if (subscriber.IsBlocked()) {
@@ -187,8 +186,7 @@ void Dispatcher::SignalBookUpdateTick(
 		m_bookUpdateTicks.Queue(
 			boost::make_tuple(
 				&security,
-				priceLevelIndex,
-				tick,
+				book,
 				timeMeasurement,
 				subscriber),
 			true);

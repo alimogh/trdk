@@ -87,15 +87,16 @@ public:
 
 	pt::ptime m_requestedDataStartTime;
 
-	Book m_book;
+	boost::shared_ptr<Book> m_book;
 
 public:
 
 	Implementation(const MarketDataSource &source)
-			: m_source(source),
-			m_brokerPosition(0),
-			m_marketDataTime(0),
-			m_isLevel1Started(false) {
+		: m_source(source),
+		m_brokerPosition(0),
+		m_marketDataTime(0),
+		m_isLevel1Started(false),
+		m_book(new Book(pt::not_a_date_time)) {
 		foreach (auto &item, m_level1) {
 			Unset(item);
 		}
@@ -572,19 +573,15 @@ void Security::SetBrokerPosition(trdk::Qty qty, bool isInitial) {
 	m_pimpl->m_brokerPositionUpdateSignal(qty, isInitial);
 }
 
-Security::BookUpdateOperation Security::StartBookUpdate() {
-	return BookUpdateOperation(*this, m_pimpl->m_book);
-}
-
-const Security::Book & Security::GetBook() const {
-	return m_pimpl->m_book;
+Security::BookUpdateOperation Security::StartBookUpdate(const pt::ptime &time) {
+	return BookUpdateOperation(*this, time);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 class Security::Book::Side::Implementation : private boost::noncopyable {
 public:
-	std::map<ScaledPrice, Qty> m_levels;
+	std::vector<Security::Book::Level> m_levels;
 };
 
 Security::Book::Side::Side()
@@ -600,118 +597,66 @@ size_t Security::Book::Side::GetLevelsCount() const {
 	return m_pimpl->m_levels.size();
 }
 
-Security::Book::Level Security::Book::Side::GetLevel(size_t index) const {
+const Security::Book::Level & Security::Book::Side::GetLevel(
+		size_t index)
+		const {
 	if (index >= m_pimpl->m_levels.size()) {
 		throw LogicError("Book price level is out of range");
 	}
-	auto level = m_pimpl->m_levels.cbegin();
-	std::advance(level, index);
-	return Level(abs(level->first), level->second);
+	return m_pimpl->m_levels[index];
 }
 
 ///
 
-const Security::Book::Side & Security::Book::GetBids() const {
-	return m_bids;
-}
-
-const Security::Book::Side & Security::Book::GetOffers() const {
-	return m_offers;
+Security::Book::Book(const pt::ptime &time)
+	: m_time(time) {
+	//...//
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-class Security::BookUpdateOperation::Storage : private boost::noncopyable {
-
-public:
-
-	std::vector<boost::tuple<BookUpdateAction, ScaledPrice, Qty>> updates;
-
-};
 
 class Security::BookUpdateOperation::Implementation
 		: private boost::noncopyable {
 
 public:
 
-	struct Side {
-
-		BookUpdateOperation::Storage storage;
-		BookUpdateOperation::Side operations;
-
-		explicit Side(Security &security)
-			: operations(security, storage) {
-			//...//
-		}
-
-	};
-	
-	const pt::ptime m_startTime;
-
 	Security &m_security;
 
-	Side m_bids;
-	Side m_offers;
+	const boost::shared_ptr<Security::Book> m_book;
 
-	Security::Book &m_book;
+	BookSideUpdateOperation m_bids;
+	BookSideUpdateOperation m_offers;
 
-	explicit Implementation(Security &security, Security::Book &book)
-		: m_startTime(security.GetContext().GetCurrentTime()),
-		m_security(security),
-		m_bids(security),
-		m_offers(security),
-		m_book(book) {
+	explicit Implementation(
+			Security &security,
+			const boost::shared_ptr<Security::Book> &book)
+		: m_security(security),
+		m_book(book),
+		m_bids(m_book->m_bids),
+		m_offers(m_book->m_offers) {
 		//...//
 	}
 
 };
 
-Security::BookUpdateOperation::Side::Side(
-		Security &security,
-		Security::BookUpdateOperation::Storage &storage)
-	: m_security(security),
-	m_storage(storage) {
+Security::BookSideUpdateOperation::BookSideUpdateOperation(
+		Security::Book::Side &storage)
+	: m_storage(storage) {
 	//...//
 }
 
-Security & Security::BookUpdateOperation::Side::GetSecurity() {
-	return m_security;
-}
-
-void Security::BookUpdateOperation::Side::Add(
-		const ScaledPrice &price,
-		const Qty &qty) {
-	m_storage.updates.push_back(
-		boost::make_tuple(BOOK_UPDATE_ACTION_NEW, price, qty));
-}
-void Security::BookUpdateOperation::Side::Add(
-		double price,
-		const trdk::Qty &qty) {
-	Add(m_security.ScalePrice(price), qty);
-}
-
-void Security::BookUpdateOperation::Side::Update(
-		const ScaledPrice &price,
-		const Qty &qty) {
-	m_storage.updates.push_back(
-		boost::make_tuple(BOOK_UPDATE_ACTION_UPDATE, price, qty));
-}
-void Security::BookUpdateOperation::Side::Update(double price, const Qty &qty) {
-	Update(m_security.ScalePrice(price), qty);
-}
-
-void Security::BookUpdateOperation::Side::Delete(const ScaledPrice &price) {
-	m_storage.updates.push_back(
-		boost::make_tuple(BOOK_UPDATE_ACTION_DELETE, price, 0));
-}
-void Security::BookUpdateOperation::Side::Delete(double price) {
-	Delete(m_security.ScalePrice(price));
+void Security::BookSideUpdateOperation::Swap(
+		std::vector<Security::Book::Level> &rhs) {
+	rhs.swap(m_storage.m_pimpl->m_levels);
 }
 
 Security::BookUpdateOperation::BookUpdateOperation(
 		Security &security,
-		Book &book)
-	: m_pimpl(new Implementation(security, book)) {
+		const pt::ptime &time)
+	: m_pimpl(
+		new Implementation(
+			security,
+			boost::shared_ptr<Security::Book>(new Security::Book(time)))) {
 	//...//
 }
 
@@ -724,120 +669,64 @@ Security::BookUpdateOperation::~BookUpdateOperation() {
 	delete m_pimpl;
 }
 
-Security::BookUpdateOperation::Side & Security::BookUpdateOperation::GetBids() {
-	return m_pimpl->m_bids.operations;
+Security::BookSideUpdateOperation & Security::BookUpdateOperation::GetBids() {
+	return m_pimpl->m_bids;
 }
 
-Security::BookUpdateOperation::Side &
-Security::BookUpdateOperation::GetOffers() {
-	return m_pimpl->m_offers.operations;
+Security::BookSideUpdateOperation & Security::BookUpdateOperation::GetOffers() {
+	return m_pimpl->m_offers;
 }
 
-void Security::BookUpdateOperation::Update(const BookUpdateTick &update) {
-	switch (update.side) {
-		case ORDER_SIDE_BID:
-			m_pimpl->m_bids.storage.updates.push_back(
-				boost::make_tuple(update.action, update.price, update.qty));
-			break;
-		case ORDER_SIDE_OFFER:
-			m_pimpl->m_offers.storage.updates.push_back(
-				boost::make_tuple(update.action, update.price, update.qty));
-			break;
-		default:
-			AssertEq(ORDER_SIDE_BID, update.side);
-			break;
-	}
+Security::BookSideUpdateOperation & Security::BookUpdateOperation::GetAsks() {
+	return m_pimpl->m_offers;
 }
 
 void Security::BookUpdateOperation::Commit(
-		bool adjustDirection,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 
-	const auto &update = [&](
-				const OrderSide &priceLevelDirection,
-				Implementation::Side &sideData) {
-		foreach (const auto &update, sideData.storage.updates) {
-			const BookUpdateTick tick = {
-				boost::get<0>(update),
-				priceLevelDirection,
-				boost::get<1>(update),
-				boost::get<2>(update),
-			};
-			auto &side = tick.side == ORDER_SIDE_BID
-				?	m_pimpl->m_book.m_bids.m_pimpl->m_levels
-				:	m_pimpl->m_book.m_offers.m_pimpl->m_levels;
-			ScaledPrice price = tick.price;
-			if (tick.side == ORDER_SIDE_BUY) {
-				price = -price;
-			}
-			static_assert(
-				numberOfBookUpdateActions == 3,
-				"Action list changed.");
-			switch (tick.action) {
-				case BOOK_UPDATE_ACTION_NEW:
-				case BOOK_UPDATE_ACTION_UPDATE:
-					side[price] = tick.qty;
-					if (adjustDirection) {
-						auto &opposite = tick.side == ORDER_SIDE_BID
-							?	m_pimpl->m_book.m_offers.m_pimpl->m_levels
-							:	m_pimpl->m_book.m_bids.m_pimpl->m_levels;
-						const auto &pos = opposite.find(-price);
-						if (pos != opposite.end()) {
-							opposite.erase(pos);
-						}
-					}
-					break;
-				case BOOK_UPDATE_ACTION_DELETE:
-					side.erase(price);
-					break;
-				default:
-					AssertEq(BOOK_UPDATE_ACTION_NEW, tick.action);
-					break;
-			}
+#	if defined(BOOST_ENABLE_ASSERT_HANDLER)
+	{
+		for (
+				size_t i = 0;
+				i < m_pimpl->m_book->GetBids().GetLevelsCount();
+				++i) {
+			Assert(!IsZero(m_pimpl->m_book->GetBids().GetLevel(i).GetPrice()));
+			Assert(!IsZero(m_pimpl->m_book->GetBids().GetLevel(i).GetQty()));
 		}
-	};
-
-	const auto &signal = [&](
-				const OrderSide &side,
-				Implementation::Side &sideData) {
-		const auto &bookUpdateTickSignal
-			= sideData.operations.GetSecurity().m_pimpl->m_bookUpdateTickSignal;
-		foreach (const auto &update, sideData.storage.updates) {
-			const BookUpdateTick tick = {
-				boost::get<0>(update),
-				side,
-				boost::get<1>(update),
-				boost::get<2>(update),
-			};
-			bookUpdateTickSignal(0, tick, timeMeasurement);
+		for (
+				size_t i = 0;
+				i < m_pimpl->m_book->GetAsks().GetLevelsCount();
+				++i) {
+			Assert(!IsZero(m_pimpl->m_book->GetAsks().GetLevel(i).GetPrice()));
+			Assert(!IsZero(m_pimpl->m_book->GetAsks().GetLevel(i).GetQty()));
 		}
-	};
-
-	update(ORDER_SIDE_BID, m_pimpl->m_bids);
-	update(ORDER_SIDE_OFFER, m_pimpl->m_offers);
+	}
+#	endif
 
 	m_pimpl->m_security.SetLevel1(
-		m_pimpl->m_startTime,
+		m_pimpl->m_book->GetTime(),
 		Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-			m_pimpl->m_book.m_bids.GetLevelsCount() == 0
+			m_pimpl->m_book->GetBids().GetLevelsCount() == 0
 				?	0
-				:	m_pimpl->m_book.m_bids.GetLevel(0).GetPrice()),
+				:	m_pimpl->m_security.ScalePrice(m_pimpl->m_book->GetBids().GetLevel(0).GetPrice())),
 		Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
-			m_pimpl->m_book.m_bids.GetLevelsCount() == 0
+			m_pimpl->m_book->GetBids().GetLevelsCount() == 0
 				?	0
-				:	m_pimpl->m_book.m_bids.GetLevel(0).GetQty()),
+				:	m_pimpl->m_book->GetBids().GetLevel(0).GetQty()),
 		Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-			m_pimpl->m_book.m_offers.GetLevelsCount() == 0
+			m_pimpl->m_book->GetAsks().GetLevelsCount() == 0
 				?	0
-				:	m_pimpl->m_book.m_offers.GetLevel(0).GetPrice()),
+				:	m_pimpl->m_security.ScalePrice(m_pimpl->m_book->GetAsks().GetLevel(0).GetPrice())),
 		Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
-			m_pimpl->m_book.m_offers.GetLevelsCount() == 0
+			m_pimpl->m_book->GetAsks().GetLevelsCount() == 0
 				?	0
-				:	m_pimpl->m_book.m_offers.GetLevel(0).GetQty()),
+				:	m_pimpl->m_book->GetAsks().GetLevel(0).GetQty()),
 		timeMeasurement);
 
-	signal(ORDER_SIDE_BID, m_pimpl->m_bids);
-	signal(ORDER_SIDE_OFFER, m_pimpl->m_offers);
+	m_pimpl->m_security.m_pimpl->m_book = m_pimpl->m_book;
+	m_pimpl->m_security.m_pimpl->m_bookUpdateTickSignal(
+		m_pimpl->m_book,
+		timeMeasurement);
 
 }
 
