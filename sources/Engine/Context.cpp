@@ -216,11 +216,12 @@ void Engine::Context::Implementation::CallEachStrategyAndBlock(
 //////////////////////////////////////////////////////////////////////////
 
 Engine::Context::Context(
-			Context::Log &log,
-			Context::TradingLog &tradingLog,
-			const trdk::Settings &settings,
-			const boost::shared_ptr<const Lib::Ini> &conf)
-		: Base(log, tradingLog, settings) {
+		Context::Log &log,
+		Context::TradingLog &tradingLog,
+		const trdk::Settings &settings,
+		const pt::ptime &startTime,
+		const boost::shared_ptr<const Lib::Ini> &conf)
+	: Base(log, tradingLog, settings, startTime) {
 	m_pimpl = new Implementation(*this, conf);
 }
 

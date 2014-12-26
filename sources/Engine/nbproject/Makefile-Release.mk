@@ -105,6 +105,7 @@ ${OBJECTDIR}/SubscriptionsManager.o: SubscriptionsManager.cpp
 .build-subprojects:
 	cd ../Core && ${MAKE}  -f Makefile CONF=Release
 	cd ../Common && ${MAKE}  -f Makefile CONF=Release
+	cd ../Interaction/LogReplay && ${MAKE}  -f Makefile CONF=Release
 	cd ../Interaction/OnixsFixConnector && ${MAKE}  -f Makefile CONF=Release
 	cd ../Strategies/FxMb && ${MAKE}  -f Makefile CONF=Release
 	cd ../Interaction/OnixsHotspot && ${MAKE}  -f Makefile CONF=Release
@@ -118,6 +119,7 @@ ${OBJECTDIR}/SubscriptionsManager.o: SubscriptionsManager.cpp
 .clean-subprojects:
 	cd ../Core && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Common && ${MAKE}  -f Makefile CONF=Release clean
+	cd ../Interaction/LogReplay && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Interaction/OnixsFixConnector && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Strategies/FxMb && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Interaction/OnixsHotspot && ${MAKE}  -f Makefile CONF=Release clean
