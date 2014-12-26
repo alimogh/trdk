@@ -226,10 +226,8 @@ namespace {
 					}
 					AssertEq(m_currentTime, currentSecurityTime);
 			
-					if (m_context.GetCurrentTime() != m_currentTime) {
-						m_context.SyncDispatching();
-						m_context.SetCurrentTime(m_currentTime, true);
-					}
+					m_context.SyncDispatching();
+					m_context.SetCurrentTime(m_currentTime, true);
 
 					if (!securityInfo.security->Accept()) {
 						service.first->GetLog().Debug(

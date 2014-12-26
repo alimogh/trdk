@@ -46,6 +46,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			return Qty(entry.getDouble(fix::FIX42::Tags::MDEntrySize));
 		}
 
+		virtual Qty ParseMdEntrySize(const fix::Message &message) const {
+			return Qty(message.getDouble(fix::FIX42::Tags::MDEntrySize));
+		}
+
 		virtual void OnLogout() {
 			GetSession().ResetLocalSequenceNumbers(true, true);
 		}

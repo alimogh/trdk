@@ -268,24 +268,3 @@ namespace trdk {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-namespace trdk {
-
-	enum BookUpdateAction {
-		BOOK_UPDATE_ACTION_NEW,
-		BOOK_UPDATE_ACTION_UPDATE,
-		BOOK_UPDATE_ACTION_DELETE,
-		numberOfBookUpdateActions
-	};
-
-	struct BookUpdateTick {
-		boost::posix_time::ptime time;
-		BookUpdateAction action;
-		trdk::OrderSide side;
-		trdk::ScaledPrice price;
-		trdk::Qty qty;
-	};
-
-}
-
-////////////////////////////////////////////////////////////////////////////////

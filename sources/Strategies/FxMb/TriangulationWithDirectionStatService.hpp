@@ -85,23 +85,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		struct Data {
 
-			//! Only for logs, doesn't used by logic.
-			struct Level {
-				
-				double price;
-				Qty qty;
-
-				Level()
-					: price(.0),
-					qty(0) {
-					//...//
-				}
-			
-			};
-
-			//! Size only for logs, doesn't affect logic.
-			typedef boost::array<Level, 4> Levels;
-
 			struct Stat {
 				
 				boost::posix_time::ptime time;
@@ -122,8 +105,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			Stat prev1;
 			Stat prev2;
 
-			Levels bids;
-			Levels offers;
+			std::vector<Security::Book::Level> bids;
+			std::vector<Security::Book::Level> offers;
 
 		};
 
@@ -194,8 +177,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		virtual bool OnBookUpdateTick(
 				const Security &,
-				size_t priceLevelIndex,
-				const BookUpdateTick &,
+				const Security::Book &,
 				const Lib::TimeMeasurement::Milestones &);
 
 	protected:

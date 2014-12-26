@@ -20,6 +20,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		typedef trdk::Security Base;
 
+		typedef std::map<intmax_t, std::pair<bool, Security::Book::Level>>
+			BookSideSnapshot;
+
+	public:
+
+		BookSideSnapshot m_book;
+
 	public:
 
 		explicit FixSecurity(

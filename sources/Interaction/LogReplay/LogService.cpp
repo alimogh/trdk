@@ -164,7 +164,7 @@ public:
 			throw ModuleError("Failed to open log file");
 		}
 		*m_files[source]
-			<< "TRDK Book Update Ticks Log version 1.1 "
+			<< "TRDK Book Snapshots Log version 1.0"
 			<< ' ' << TRDK_BUILD_IDENTITY
 			<< ' ' << GetContext().GetCurrentTime()
 			<< ' ' << security
@@ -178,22 +178,28 @@ public:
 
 	virtual bool OnBookUpdateTick(
 			const Security &security,
-			size_t /*priceLevelIndex*/,
-			const BookUpdateTick &tick,
+			const Security::Book &book,
 			const TimeMeasurement::Milestones &) {
 		AssertGt(m_logs.size(), security.GetSource().GetIndex());
 		m_logs[security.GetSource().GetIndex()]->Write(
 			[&](Record &record) {
-				record
-					%	tick.time
-					%	(tick.action == BOOK_UPDATE_ACTION_NEW
- 							?	'+'
- 							:	tick.action == BOOK_UPDATE_ACTION_UPDATE
- 								?	'='
- 								:	'-')
-					%	(tick.side == ORDER_SIDE_BID ? 'b': 'o')
- 					%	tick.price
-					%	tick.qty;
+				record % book.GetTime();
+				{
+					const Security::Book::Side &bids = book.GetBids();
+					for (size_t i = 0; i < bids.GetLevelsCount(); ++i) {
+						const Security::Book::Level &b = bids.GetLevel(i);
+						record % b.GetPrice() % b.GetQty();
+					}
+				}
+				record % '|';
+				{
+					const Security::Book::Side &asks = book.GetAsks();
+					for (size_t i = 0; i < asks.GetLevelsCount(); ++i) {
+						const Security::Book::Level &l = asks.GetLevel(i);
+						record % l.GetPrice() % l.GetQty();
+					}
+				}
+				record % '#';
 			});
 		return false;
 	}

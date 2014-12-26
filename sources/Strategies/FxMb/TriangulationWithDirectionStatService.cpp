@@ -154,13 +154,17 @@ pt::ptime StatService::OnSecurityStart(const Security &security) {
 	Assert(!m_data[dataIndex]);
 	auto &source = m_data[dataIndex];
 	source.reset(new Source(security, m_emaSpeedSlow, m_emaSpeedFast));
+	{
+		const Security::Book::Level emptyLevel(.0, 0);
+		source->bids.resize(m_levelsCount, emptyLevel);
+		source->offers.resize(m_levelsCount, emptyLevel);
+	}
 	return pt::not_a_date_time;
 }
 
 bool StatService::OnBookUpdateTick(
 		const Security &security,
-		size_t priceLevelIndex,
-		const BookUpdateTick &,
+		const Security::Book &book,
 		const TimeMeasurement::Milestones &) {
 
 	// Method will be called at each book update (add new price level, removed
@@ -171,13 +175,8 @@ bool StatService::OnBookUpdateTick(
 		security.GetSource().GetTag());
 	Assert(&GetSecurity(security.GetSource().GetIndex()) == &security);
 
-	if (priceLevelIndex >= m_levelsCount) {
-		// Updated levels which we don't need.
-		return false;
-	}
-
-	const Security::Book::Side &bidsBook = security.GetBook().GetBids();
-	const Security::Book::Side &offersBook = security.GetBook().GetOffers();
+	const Security::Book::Side &bidsBook = book.GetBids();
+	const Security::Book::Side &offersBook = book.GetOffers();
 
 #	if defined(DEV_VER) && 0
 	{
@@ -214,27 +213,30 @@ bool StatService::OnBookUpdateTick(
 	Side offer = {};
 
 	Data data;
-	data.current.time = GetContext().GetCurrentTime();
 
 	Source &source = GetSource(security.GetSource().GetIndex());
 
 	////////////////////////////////////////////////////////////////////////////////
 	// Current prices and vol:
 	{
+
+		bool hasChanges = false;
 	
-		const auto &sum = [&security](
+		const auto &sum = [&](
 				size_t levelIndex,
 				const Security::Book::Side &source,
 				Side &result,
-				Data::Levels::iterator &level) {
+				std::vector<Security::Book::Level>::iterator &level) {
 			if (source.GetLevelsCount() <= levelIndex) {
 				return;
 			}
 			const auto &sourceLevel = source.GetLevel(levelIndex);
-			level->price = security.DescalePrice(sourceLevel.GetPrice());
-			level->qty = sourceLevel.GetQty();
-			result.qty += level->qty;
-			result.vol += level->qty * level->price;
+			if (sourceLevel != *level) {
+				hasChanges = true;
+			}
+			*level = sourceLevel;
+			result.qty += level->GetQty();
+			result.vol += level->GetQty() * level->GetPrice();
 			++level;
 		};
 
@@ -243,7 +245,9 @@ bool StatService::OnBookUpdateTick(
 			offersBook.GetLevelsCount());
 		const auto actualLinesCount = std::min(m_levelsCount, realLevelsCount);
 		
+		data.bids = source.bids;
 		auto bidsLevel = data.bids.begin();
+		data.offers = source.offers;
 		auto offersLevel = data.offers.begin();
 
 		// Calls sum-function for each price level:
@@ -253,7 +257,13 @@ bool StatService::OnBookUpdateTick(
 			sum(i, offersBook, offer, offersLevel);
 		}
 
+		if (!hasChanges) {
+			return false;
+		}
+
 	}
+
+	data.current.time = book.GetTime();
 	
 	////////////////////////////////////////////////////////////////////////////////
 	// Average prices:
@@ -491,10 +501,10 @@ void StatService::LogState(
 				% data.prev1.emaSlow
 				% data.prev2.emaSlow;
 			foreach_reversed (const auto &line, data.bids) {
-				record % line.price % line.qty;
+				record % line.GetPrice() % line.GetQty();
 			}
 			foreach (const auto &line, data.offers) {
-				record % line.price % line.qty;
+				record % line.GetPrice() % line.GetQty();
 			}
 		};
 

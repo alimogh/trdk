@@ -278,8 +278,7 @@ namespace trdk { namespace Engine {
 
 		typedef boost::tuple<
 				Security *,
-				size_t /* price level index */,
-				BookUpdateTick,
+				boost::shared_ptr<const Security::Book>,
 				Lib::TimeMeasurement::Milestones,
 				SubscriberPtrWrapper>
 			BookUpdateTickEvent;
@@ -350,8 +349,7 @@ namespace trdk { namespace Engine {
 		void SignalBookUpdateTick(
 				SubscriberPtrWrapper &,
 				Security &,
-				size_t priceLevelIndex,
-				const BookUpdateTick &,
+				const boost::shared_ptr<const Security::Book> &,
 				const Lib::TimeMeasurement::Milestones &);
 
 	private:
@@ -1238,11 +1236,10 @@ namespace trdk { namespace Engine {
 	template<>
 	inline void Dispatcher::RaiseEvent(
 			BookUpdateTickEvent &bookUpdateTickEvent) {
-		boost::get<4>(bookUpdateTickEvent).RaiseBookUpdateTickEvent(
+		boost::get<3>(bookUpdateTickEvent).RaiseBookUpdateTickEvent(
 			*boost::get<0>(bookUpdateTickEvent),
-			boost::get<1>(bookUpdateTickEvent),
-			boost::get<2>(bookUpdateTickEvent),
-			boost::get<3>(bookUpdateTickEvent));
+			*boost::get<1>(bookUpdateTickEvent),
+			boost::get<2>(bookUpdateTickEvent));
 	}
 
 } }
