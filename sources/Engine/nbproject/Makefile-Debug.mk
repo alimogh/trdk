@@ -106,6 +106,7 @@ ${OBJECTDIR}/SubscriptionsManager.o: SubscriptionsManager.cpp
 	cd ../Common && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Core && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Interaction/Fake && ${MAKE}  -f Makefile CONF=Debug
+	cd ../Interaction/LogReplay && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Strategies/Test && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Interaction/OnixsFixConnector && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Strategies/FxMb && ${MAKE}  -f Makefile CONF=Debug
@@ -121,6 +122,7 @@ ${OBJECTDIR}/SubscriptionsManager.o: SubscriptionsManager.cpp
 	cd ../Common && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Core && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Interaction/Fake && ${MAKE}  -f Makefile CONF=Debug clean
+	cd ../Interaction/LogReplay && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Strategies/Test && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Interaction/OnixsFixConnector && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Strategies/FxMb && ${MAKE}  -f Makefile CONF=Debug clean
