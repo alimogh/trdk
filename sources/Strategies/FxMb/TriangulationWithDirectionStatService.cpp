@@ -382,7 +382,7 @@ void StatService::InitLog(
 
 	Assert(!log.IsEnabled());
 
-	static const pt::ptime now = pt::microsec_clock::local_time();
+	const pt::ptime &now = GetContext().GetStartTime();
 	boost::format fileName(
 		"pretrade_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d_%7%.csv");
 	fileName

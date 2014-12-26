@@ -129,7 +129,7 @@ public:
 		Assert(!m_files[source]);
 		Assert(!m_logs[source]);
 
-		const pt::ptime &now = boost::posix_time::microsec_clock::local_time();
+		const pt::ptime &now = GetContext().GetStartTime();
 		boost::format subFolder("%1%%2$02d%3$02d");
 		subFolder
 			% now.date().year()

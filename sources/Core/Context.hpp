@@ -47,7 +47,8 @@ namespace trdk {
 		explicit Context(
 					trdk::Context::Log &,
 					trdk::Context::TradingLog &,
-					const trdk::Settings &);
+					const trdk::Settings &,
+					const boost::posix_time::ptime &startTime);
 		virtual ~Context();
 
 	public:
@@ -64,6 +65,8 @@ namespace trdk {
 
 		//! Context setting with predefined key list and predefined behavior.
 		const trdk::Settings & GetSettings() const;
+
+		const boost::posix_time::ptime & GetStartTime() const;
 
 		boost::posix_time::ptime GetCurrentTime() const;
 

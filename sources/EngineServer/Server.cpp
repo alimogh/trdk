@@ -23,12 +23,17 @@ Server::Server() {
 }
 
 void Server::Run(
-			const std::string &uuid,
-			const fs::path &path,
-			bool enableStdOutLog,
-			int argc,
-			const char *argv[]) {
-	
+		const std::string &uuid,
+		const fs::path &path,
+		bool enableStdOutLog,
+		int argc,
+		const char *argv[]) {
+
+	EngineInfo info = {};
+	info.uuid = uuid;
+	info.eventsLog.reset(new Engine::Context::Log);
+	const auto &startTime = info.eventsLog->GetTime();
+
 	const Lock lock(m_mutex);
 	
 	{
@@ -42,9 +47,6 @@ void Server::Run(
 
 	boost::shared_ptr<IniFile> ini(new IniFile(path));
 
-	EngineInfo info = {};
-	info.uuid = uuid;
-	info.eventsLog.reset(new Engine::Context::Log);
 	if (enableStdOutLog) {
 		info.eventsLog->EnableStdOut();
 	}
@@ -86,6 +88,7 @@ void Server::Run(
 			*info.eventsLog,
 			*info.tradingLog,
 			settings,
+			startTime,
 			ini));
 
 	{

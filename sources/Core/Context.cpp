@@ -250,6 +250,8 @@ public:
 
 	Settings m_settings;
 
+	const pt::ptime m_startTime;
+
 	Params m_params;
 
 	LatanReport m_latanReport;
@@ -260,15 +262,17 @@ public:
 		m_customCurrentTimeChangeSignal;
 	
 	explicit Implementation(
-				Context &context,
-				Log &log,
-				TradingLog &tradingLog,
-				const Settings &settings)
-			: m_log(log),
-			m_tradingLog(tradingLog),
-			m_settings(settings),
-			m_params(context),
-			m_latanReport(context) {
+			Context &context,
+			Log &log,
+			TradingLog &tradingLog,
+			const Settings &settings,
+			const pt::ptime &startTime)
+		: m_log(log),
+		m_tradingLog(tradingLog),
+		m_settings(settings),
+		m_startTime(startTime),
+		m_params(context),
+		m_latanReport(context) {
 		//...//
 	}
 
@@ -276,8 +280,12 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-Context::Context(Log &log, TradingLog &tradingLog, const Settings &settings) {
-	m_pimpl = new Implementation(*this, log, tradingLog, settings);
+Context::Context(
+		Log &log,
+		TradingLog &tradingLog,
+		const Settings &settings,
+		const pt::ptime &startTime) {
+	m_pimpl = new Implementation(*this, log, tradingLog, settings, startTime);
 }
 
 Context::~Context() {
@@ -333,6 +341,10 @@ void Context::SetCurrentTime(const pt::ptime &time, bool signalAboutUpdate) {
 Context::CurrentTimeChangeSlotConnection
 Context::SubscribeToCurrentTimeChange(const CurrentTimeChangeSlot &slot) {
 	return m_pimpl->m_customCurrentTimeChangeSignal.connect(slot);
+}
+
+const pt::ptime & Context::GetStartTime() const {
+	return m_pimpl->m_startTime;
 }
 
 pt::ptime Context::GetCurrentTime() const {
