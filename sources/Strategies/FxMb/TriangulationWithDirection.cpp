@@ -160,6 +160,8 @@ public:
 		m_levelsCount(
 			conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
 		m_qty(conf.ReadTypedKey<Qty>("qty")),
+		m_opportunityReportStep(
+			conf.ReadTypedKey<double>("opportunity_report_step")),
 		m_opportunityNo(0) {
 
 		{
@@ -167,6 +169,7 @@ public:
 			m_stat.fill(def);
 		}
 		m_opportunity.fill(.0);
+		m_reportedOpportunity.fill(.0);
 		
 		if (conf.ReadBoolKey("log")) {
 		
@@ -356,6 +359,22 @@ private:
 			= m_stat[PAIR_AC].bestBid.price
 				* m_stat[PAIR_BC].bestAsk.price
 				* m_stat[PAIR_AB].bestAsk.price;
+
+		const auto &isTimeToReport = [this](double current, double reported) {
+			return
+				current < (reported - m_opportunityReportStep)
+					|| (reported + m_opportunityReportStep) < current;
+		};
+		if (
+				isTimeToReport(m_opportunity[0], m_reportedOpportunity[0])
+				|| isTimeToReport(m_opportunity[1], m_reportedOpportunity[1])) {
+			GetTradingLog().Write(
+				"opportunity\t%1%\t%2%",
+				[this](TradingRecord &record) {
+					record % m_opportunity[0] % m_opportunity[1];
+				});
+			m_reportedOpportunity = m_opportunity;
+		}
 
 	}
 
@@ -732,6 +751,8 @@ private:
 	boost::array<Stat, numberOfPairs> m_stat;
 
 	boost::array<double, 2> m_opportunity;
+	boost::array<double, 2> m_reportedOpportunity;
+	const double m_opportunityReportStep;
 
 	size_t m_opportunityNo;
 	Orders m_orders;
