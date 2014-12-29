@@ -312,7 +312,7 @@ void FixStream::onInboundApplicationMsg(
 		[](
 				const Security::Book::Level &lhs,
 				const Security::Book::Level &rhs) {
-			return lhs.GetPrice() < rhs.GetPrice();
+			return lhs.GetPrice() > rhs.GetPrice();
 		});
 	std::sort(
 		asks.begin(),
@@ -320,7 +320,7 @@ void FixStream::onInboundApplicationMsg(
 		[](
 				const Security::Book::Level &lhs,
 				const Security::Book::Level &rhs) {
-			return lhs.GetPrice() > rhs.GetPrice();
+			return lhs.GetPrice() < rhs.GetPrice();
 		});
 
 	while (
