@@ -292,7 +292,7 @@ public:
 			if (order.GetLeg() == 1) {
 				OnCancel(order);
 			} else {
-				ReplaceOrder(order);
+				ReplaceOrder(order, order.GetLeg() == 3);
 			}
 
 			return;
@@ -302,7 +302,7 @@ public:
 			AssertEq(1, order.GetLeg());
 
 			if (order.GetActiveQty() == 0) {
-				LogLoss(order);
+				LogLossAtClose(order);
 				OnCancel(order);
 				return;
 			}
@@ -338,13 +338,14 @@ public:
 		
 			}
 		
-			GetLeg(2).Open();
+			GetLeg(2).OpenAtStartPrice();
 		
 		}
 
 		LogAction("executed", order.GetLeg());
 		
 		if (order.GetLeg() == 3) {
+			LogLossAtOpen(order);
 			m_orders.fill(boost::shared_ptr<Twd::Position>());
 		}
 
@@ -426,7 +427,7 @@ private:
 				isTimeToReport(m_opportunity[0], m_reportedOpportunity[0])
 				|| isTimeToReport(m_opportunity[1], m_reportedOpportunity[1])) {
 			GetTradingLog().Write(
-				"opportunity\tY1: %1% -> %2%\t%3% -> %4%",
+				"opportunity\tY1: %1% -> %2%\tY2: %3% -> %4%",
 				[this](TradingRecord &record) {
 					record
 						% m_reportedOpportunity[0]
@@ -526,7 +527,7 @@ private:
 		throw std::logic_error("Unknown Leg No");
 	}
 
-	void ReplaceOrder(Twd::Position &oldOrder) {
+	void ReplaceOrder(Twd::Position &oldOrder, bool useCurrentPrice) {
 
 		boost::shared_ptr<Position> newOrder;
 		if (oldOrder.GetType() == Position::TYPE_LONG) {
@@ -560,7 +561,11 @@ private:
 		foreach (auto &order, m_orders) {
 			if (order->GetLeg() == newOrder->GetLeg()) {
 				order = newOrder;
-				order->Open();
+				if (useCurrentPrice) {
+					order->OpenAtCurrentPrice();
+				} else {
+					order->OpenAtStartPrice();
+				}
 				return;
 			}
 		}
@@ -662,7 +667,7 @@ private:
 					!*m_opportunitySource.isRising,
 					m_opportunitySource.isBuy[1])
 			};
-			GetLeg(orders, 1).Open();
+			GetLeg(orders, 1).OpenAtStartPrice();
 			orders.swap(m_orders);
 
 			++m_opportunityNo;
@@ -720,7 +725,7 @@ private:
 		}
 
 		Twd::Position &leg = GetLeg(3);
-		leg.Open();
+		leg.OpenAtStartPrice();
 		LogAction("detected", leg.GetLeg());
 		
 	}
@@ -826,21 +831,12 @@ private:
 	}
 
 	void CloseLeg(Twd::Position &leg) {
-
 		Assert(!leg.HasActiveOrders());
-
-		const auto &closeStep = leg.TakeCloseStep();
-		const auto &closePrice = closeStep == 1
-			?	leg.GetOpenPrice()
-			:	leg.GetType() == Position::TYPE_LONG
-					?	leg.GetSecurity().GetBidPriceScaled()
-					:	leg.GetSecurity().GetAskPriceScaled();
-		leg.SetCloseStartPrice(closePrice);
-		
-		leg.CloseImmediatelyOrCancel(
-			Position::CLOSE_TYPE_STOP_LOSS,
-			closePrice);
-	
+		if (leg.TakeCloseStep() == 1) {
+			leg.CloseAtStartPrice(Position::CLOSE_TYPE_STOP_LOSS);
+		} else {
+			leg.CloseAtCurrentPrice(Position::CLOSE_TYPE_STOP_LOSS);
+		}
 	}
 
 	void OnCancel(const Twd::Position &reasonOrder) {
@@ -948,7 +944,57 @@ private:
 
 	}
 
-	void LogLoss(const Twd::Position &position) {
+	void LogLossAtOpen(const Twd::Position &position) {
+
+		Assert(!position.IsClosed());
+		Assert(position.IsOpened());
+		AssertLt(0, position.GetOpenedQty());
+
+		const char *type = nullptr;
+		const bool isLong = position.GetType() == Position::TYPE_LONG;
+
+		if (isLong) {
+			if (position.GetOpenStartPrice() < position.GetOpenPrice()) {
+				type = "loss";
+			} else if (position.GetOpenStartPrice() > position.GetOpenPrice()) {
+				type = "profit";
+			}
+		} else {
+			AssertEq(Position::TYPE_SHORT, position.GetType());
+			if (position.GetOpenStartPrice() > position.GetOpenPrice()) {
+				type = "loss";
+			} else if (position.GetOpenStartPrice() < position.GetOpenPrice()) {
+				type = "profit";
+			}
+		}
+
+		if (type == nullptr) {
+			return;
+		}
+
+		GetTradingLog().Write(
+			"%1%\topen\t%2%\t%3%\tleg: %4%\t%5%"
+				"\t%6% -> %7% = %8$f (vol. %9%)",
+			[&](TradingRecord &record) {
+				const Security &security = position.GetSecurity();
+				record
+					% type
+					% security
+					% security.GetSource().GetTag()
+					% position.GetLeg()
+					% (isLong ? "long" : "short");
+				const double openPrice
+					= security.DescalePrice(position.GetOpenStartPrice());
+				const double closePrice
+					= security.DescalePrice(position.GetOpenPrice());
+				record % openPrice % closePrice;
+				const double resultPrice = fabs(openPrice - closePrice);
+				record % resultPrice % (resultPrice * position.GetOpenedQty());
+			});
+
+	}
+
+	void LogLossAtClose(const Twd::Position &position) {
 
 		Assert(position.IsClosed());
 		AssertLt(0, position.GetOpenedQty());
@@ -959,11 +1005,15 @@ private:
 		if (isLong) {
 			if (position.GetOpenPrice() > position.GetClosePrice()) {
 				type = "loss";
+			} else if (position.GetOpenPrice() < position.GetClosePrice()) {
+				type = "profit";
 			}
 		} else {
 			AssertEq(Position::TYPE_SHORT, position.GetType());
 			if (position.GetOpenPrice() < position.GetClosePrice()) {
 				type = "loss";
+			} else if (position.GetOpenPrice() > position.GetClosePrice()) {
+				type = "profit";
 			}
 		}
 
@@ -972,7 +1022,8 @@ private:
 		}
 
 		GetTradingLog().Write(
-			"%1%\t%2%\t%3%\tleg: %4%\t%5%\t%6% -> %7% = %8% (%9%)",
+			"%1%\tclose\t%2%\t%3%\tleg: %4%\t%5%"
+				"\t%6% -> %7% = %8$f (vol. %9%)",
 			[&](TradingRecord &record) {
 				const Security &security = position.GetSecurity();
 				record
