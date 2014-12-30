@@ -61,8 +61,27 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	public:
 
-		void Open() {
+		void OpenAtStartPrice() {
 			OpenImmediatelyOrCancel(GetOpenStartPrice());
+		}
+
+		void OpenAtCurrentPrice() {
+			const auto &price = GetType() == Position::TYPE_LONG
+				?	GetSecurity().GetAskPriceScaled()
+				:	GetSecurity().GetBidPriceScaled();
+			OpenImmediatelyOrCancel(price);
+		}
+
+		void CloseAtStartPrice(const CloseType &closeType) {
+			CloseImmediatelyOrCancel(closeType, GetOpenStartPrice());
+		}
+
+		void CloseAtCurrentPrice(const CloseType &closeType) {
+			const auto &price = GetType() == Position::TYPE_LONG
+				?	GetSecurity().GetBidPriceScaled()
+				:	GetSecurity().GetAskPriceScaled();
+			SetCloseStartPrice(price);
+			CloseImmediatelyOrCancel(closeType, price);
 		}
 
 		size_t ResetCloseSteps() {
