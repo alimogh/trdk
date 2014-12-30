@@ -180,7 +180,9 @@ bool StatService::OnBookUpdateTick(
 
 #	if defined(DEV_VER) && 0
 	{
-		if (	security.GetSymbol().GetSymbol() == "EUR/USD"
+		if (	
+				security.GetSource().GetTag() == "Currenex"
+				&& security.GetSymbol().GetSymbol() == "EUR/USD"
 				&& (offersBook.GetLevelsCount() >= 4
 					|| bidsBook.GetLevelsCount() >= 4)) {
 			std::cout
@@ -193,9 +195,9 @@ bool StatService::OnBookUpdateTick(
 					++i) {
 				std::cout
 					<< bidsBook.GetLevel(i).GetQty()
-					<< ' ' << security.DescalePrice(bidsBook.GetLevel(i).GetPrice())
+					<< ' ' << bidsBook.GetLevel(i).GetPrice()
 					<< "\t\t\t"
-					<< security.DescalePrice(offersBook.GetLevel(i).GetPrice())
+					<< offersBook.GetLevel(i).GetPrice()
 					<< ' ' << offersBook.GetLevel(i).GetQty()
 					<< std::endl;
 			}

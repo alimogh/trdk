@@ -16,8 +16,20 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	////////////////////////////////////////////////////////////////////////////////
 
+	enum Pair {
+		//! Like a EUR/USD.
+		PAIR_AB,
+		//! Like a USD/JPY.
+		PAIR_BC,
+		//! Like a EUR/JPY.
+		PAIR_AC,
+		numberOfPairs = 3
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
 	class Position : virtual public trdk::Position {
-		
+
 	public:
 
 		explicit Position(
@@ -28,6 +40,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &startPrice,
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
+				const Pair &pair,
 				const size_t leg,
 				bool isByRising)
 			: trdk::Position(
@@ -38,9 +51,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				qty,
 				startPrice,
 				timeMeasurement),
+			m_pair(pair),
 			m_leg(leg),
 			m_isByRising(isByRising),
-			m_isCompleted(false) {
+			m_isCompleted(false),
+			m_closeStep(0) {
 			Assert(!Lib::IsZero(startPrice));
 		}
 
@@ -48,7 +63,20 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void Open() {
 			OpenImmediatelyOrCancel(GetOpenStartPrice());
-			// OpenAtMarketPrice();
+		}
+
+		size_t ResetCloseSteps() {
+			const auto closeStep = m_closeStep;
+			m_closeStep = 0;
+			return closeStep;
+		}
+
+		size_t TakeCloseStep() {
+			return m_closeStep++;
+		}
+
+		const Pair & GetPair() const {
+			return m_pair;
 		}
 
 		size_t GetLeg() const {
@@ -70,11 +98,19 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			m_isCompleted = true;
 		}
 
+		//! @todo remove this workaround: https://trello.com/c/QOBSd8RZ
+		void Uncomplete() {
+			Assert(m_isCompleted);
+			m_isCompleted = false;
+		}
+
 	private:
 
+		const Pair m_pair;
 		const size_t m_leg;
 		const bool m_isByRising;
 		bool m_isCompleted;
+		size_t m_closeStep;
 
 	};
 
@@ -92,6 +128,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &startPrice,
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
+				const Pair &pair,
 				const size_t leg,
 				bool isByRising)
 			: trdk::Position(
@@ -110,6 +147,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				qty,
 				startPrice,
 				timeMeasurement,
+				pair,
 				leg,
 				isByRising),
 			trdk::LongPosition(
@@ -133,15 +171,16 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	public:
 
 		explicit ShortPosition(
-					trdk::Strategy &strategy,
-					trdk::TradeSystem &tradeSystem,
-					trdk::Security &security,
-					const trdk::Lib::Currency &currency,
-					const trdk::Qty &qty,
-					const trdk::ScaledPrice &startPrice,
-					const Lib::TimeMeasurement::Milestones &timeMeasurement,
-					const size_t leg,
-					bool isByRising)
+				trdk::Strategy &strategy,
+				trdk::TradeSystem &tradeSystem,
+				trdk::Security &security,
+				const trdk::Lib::Currency &currency,
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &startPrice,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement,
+				const Pair &pair,
+				const size_t leg,
+				bool isByRising)
 			: trdk::Position(
 				strategy,
 				tradeSystem,
@@ -158,6 +197,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				qty,
 				startPrice,
 				timeMeasurement,
+				pair,
 				leg,
 				isByRising),
 			trdk::ShortPosition(

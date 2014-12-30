@@ -327,14 +327,14 @@ void FixStream::onInboundApplicationMsg(
 			!bids.empty()
 			&& !asks.empty()
 			&& bids.front().GetPrice() > asks.front().GetPrice()) {
-		GetTradingLog().Write(
-			"book adjust\t%1%\t%2% -> %3%",
-			[&](TradingRecord &record) {
-				record
-					% *security
-					% bids.front().GetPrice()
-					% asks.front().GetPrice();
-			});
+// 		GetTradingLog().Write(
+// 			"book adjust\t%1%\t%2% -> %3%",
+// 			[&](TradingRecord &record) {
+// 				record
+// 					% *security
+// 					% bids.front().GetPrice()
+// 					% asks.front().GetPrice();
+// 			});
 		bids.erase(bids.begin());
 	}
 
