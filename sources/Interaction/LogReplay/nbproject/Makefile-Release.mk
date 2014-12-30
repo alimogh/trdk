@@ -35,15 +35,9 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/AlpariStream.o \
-	${OBJECTDIR}/CurrenexStream.o \
-	${OBJECTDIR}/CurrenexTrading.o \
-	${OBJECTDIR}/FixSession.o \
-	${OBJECTDIR}/FixStream.o \
-	${OBJECTDIR}/FixTrading.o \
-	${OBJECTDIR}/FxAllStream.o \
-	${OBJECTDIR}/FxAllTrading.o \
-	${OBJECTDIR}/HotspotTrading.o
+	${OBJECTDIR}/LogService.o \
+	${OBJECTDIR}/LogSecurity.o \
+	${OBJECTDIR}/LogMarketDataSource.o
 
 
 # C Compiler Flags
