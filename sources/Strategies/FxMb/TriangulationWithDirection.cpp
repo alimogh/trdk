@@ -200,9 +200,8 @@ public:
 
 	bool HasOpportunity() const {
 		return 
-			m_opportunity[0] > .0
-			&& m_opportunity[1] > .0
-			&& (m_opportunity[0] > 1.0 || m_opportunity[1] > 1.0);
+			(m_opportunity[0] >= 1.0 && m_opportunity[1] > .0)
+			|| (m_opportunity[1] >= 1.0 && m_opportunity[0] > .0);
 	}
 
 	bool IsActive() const {
@@ -763,58 +762,58 @@ private:
 			return false;
 		}
 
-		const auto &checkPosition = [&](
-				size_t legNo,
-				const boost::optional<bool> &isRising)
-				-> bool {
-			Assert(&leg == &*m_orders[leg.GetPair()]);
-			if (!isRising || leg.IsByRising() != *isRising) {
-				GetTradingLog().Write(
-					"loss-detected\t%1%\t%2%\tleg:"
-						" %3%\t%4%\twas \"%5%\", now \"%6%\"",
-					[&](TradingRecord &record) {
-						printTradingRecordStart(record);
-						record
-							% (leg.IsByRising() ? "rising" : "falling")
-							% (isRising
-								?	*isRising ? "rising" : "falling"
-								:	"none");
-					});
-				return false;
-			} else if (leg.GetLeg() != legNo) {
-				GetTradingLog().Write(
-					"loss-detected\t%1%\t%2%\tleg: %3%\t%4%\tactual leg no: %5%",
-					[&](TradingRecord &record) {
-						printTradingRecordStart(record);
-						record % legNo;
-					});
-				return false;
-			} else {
-				return true;
-			}
-		};
-		switch (leg.GetPair()) {
-			case PAIR_AB:
-				const_cast<TriangulationWithDirection *>(this)
-					->CalcOpenPossibility();
-				if (
-						!checkPosition(
-							m_opportunitySource.legsNo[0],
-							m_opportunitySource.isRising)) {
-					return false;
-				}
-				break;
-			case PAIR_AC:
-				const_cast<TriangulationWithDirection *>(this)
-					->CalcOpenPossibility();
-				if (
-						!checkPosition(
-							m_opportunitySource.legsNo[1],
-							!m_opportunitySource.isRising)) {
-					return false;
-				}
-				break;
-		}
+// 		const auto &checkPosition = [&](
+// 				size_t legNo,
+// 				const boost::optional<bool> &isRising)
+// 				-> bool {
+// 			Assert(&leg == &*m_orders[leg.GetPair()]);
+// 			if (!isRising || leg.IsByRising() != *isRising) {
+// 				GetTradingLog().Write(
+// 					"loss-detected\t%1%\t%2%\tleg:"
+// 						" %3%\t%4%\twas \"%5%\", now \"%6%\"",
+// 					[&](TradingRecord &record) {
+// 						printTradingRecordStart(record);
+// 						record
+// 							% (leg.IsByRising() ? "rising" : "falling")
+// 							% (isRising
+// 								?	*isRising ? "rising" : "falling"
+// 								:	"none");
+// 					});
+// 				return false;
+// 			} else if (leg.GetLeg() != legNo) {
+// 				GetTradingLog().Write(
+// 					"loss-detected\t%1%\t%2%\tleg: %3%\t%4%\tactual leg no: %5%",
+// 					[&](TradingRecord &record) {
+// 						printTradingRecordStart(record);
+// 						record % legNo;
+// 					});
+// 				return false;
+// 			} else {
+// 				return true;
+// 			}
+// 		};
+// 		switch (leg.GetPair()) {
+// 			case PAIR_AB:
+// 				const_cast<TriangulationWithDirection *>(this)
+// 					->CalcOpenPossibility();
+// 				if (
+// 						!checkPosition(
+// 							m_opportunitySource.legsNo[0],
+// 							m_opportunitySource.isRising)) {
+// 					return false;
+// 				}
+// 				break;
+// 			case PAIR_AC:
+// 				const_cast<TriangulationWithDirection *>(this)
+// 					->CalcOpenPossibility();
+// 				if (
+// 						!checkPosition(
+// 							m_opportunitySource.legsNo[1],
+// 							!m_opportunitySource.isRising)) {
+// 					return false;
+// 				}
+// 				break;
+// 		}
 
 		return true;
 
