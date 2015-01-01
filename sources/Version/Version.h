@@ -24,8 +24,8 @@
 #define TRDK_NAME	"Trading Robot Development Kit"
 #define TRDK_NAME_W	L"Trading Robot Development Kit"
 
-#define TRDK_COPYRIGHT		"Copyright 2014 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
-#define TRDK_COPYRIGHT_W	L"Copyright 2014 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
+#define TRDK_COPYRIGHT		"Copyright 2015 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
+#define TRDK_COPYRIGHT_W	L"Copyright 2015 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
 
 #define TRDK_CONCURRENCY_PROFILE (::trdk::Lib::Concurrency::PROFILE_RELAX)
 
