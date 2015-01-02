@@ -924,14 +924,9 @@ private:
 		const auto &writePair = [&](size_t pair, StrategyLogRecord &record) {
 			const auto &stat = m_stat[pair];
 			const auto &order = *m_orders[pair];
-			const auto &bestEcn = order.IsByRising()
-				?	stat.bestBid.source
-				:	stat.bestAsk.source;
-			const Security &bestEcnSecurity
-				= stat.service->GetSecurity(bestEcn);
-			const Security &orderSecurity = order.GetSecurity();
+			const Security &security = order.GetSecurity();
 			record
-				%	orderSecurity.GetSource().GetTag()
+				%	security.GetSource().GetTag()
 				%	(order.GetType() == Position::TYPE_LONG ? "buy" : "sell")
 				%	order.GetLeg();
 			if (!order.IsStarted()) {
@@ -949,24 +944,25 @@ private:
 				record % "opening";
 			}
 			if (!IsZero(order.GetCloseStartPrice())) {
-				record % orderSecurity.DescalePrice(order.GetCloseStartPrice());
+				record % security.DescalePrice(order.GetCloseStartPrice());
 				if (order.IsClosed()) {
-					record % orderSecurity.DescalePrice(order.GetClosePrice());
+					record % security.DescalePrice(order.GetClosePrice());
 				} else {
 					record % ' ';
 				}
 			} else {
-				record % orderSecurity.DescalePrice(order.GetOpenStartPrice());
+				record % security.DescalePrice(order.GetOpenStartPrice());
 				if (order.IsOpened()) {
-					record % orderSecurity.DescalePrice(order.GetOpenPrice());
+					record % security.DescalePrice(order.GetOpenPrice());
 				} else {
 					record % ' ';
 				}
 			}
 			record 
-				%	bestEcnSecurity.GetBidPrice()
-				%	bestEcnSecurity.GetAskPrice();
-			const auto &data = stat.service->GetData(bestEcn);
+				%	security.GetBidPrice()
+				%	security.GetAskPrice();
+			const auto &data = stat.service->GetData(
+				security.GetSource().GetIndex());
 			record
 				%	data.current.theo
 				%	data.prev1.theo
