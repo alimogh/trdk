@@ -56,8 +56,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			m_leg(leg),
 			m_isByRising(isByRising),
 			m_ordersCount(ordersCount),
-			m_isActive(true),
-			m_closeStep(0) {
+			m_isActive(true) {
 			Assert(!Lib::IsZero(startPrice));
 		}
 
@@ -78,12 +77,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void CloseAtStartPrice(const CloseType &closeType) {
 			Assert(!m_isActive);
-			const bool isFirstClose = Lib::IsZero(GetCloseStartPrice());
 			const auto &price = GetOpenStartPrice();
-			SetCloseStartPrice(price);
 			CloseImmediatelyOrCancel(closeType, price);
 			m_isActive = true;
-			if (isFirstClose) {
+			if (Lib::IsZero(GetCloseStartPrice())) {
+				SetCloseStartPrice(price);
 				m_ordersCount = 1;
 			} else {
 				++m_ordersCount;
@@ -92,28 +90,17 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void CloseAtCurrentPrice(const CloseType &closeType) {
 			Assert(!m_isActive);
-			const bool isFirstClose = Lib::IsZero(GetCloseStartPrice());
 			const auto &price = GetType() == Position::TYPE_LONG
 				?	GetSecurity().GetBidPriceScaled()
 				:	GetSecurity().GetAskPriceScaled();
-			SetCloseStartPrice(price);
 			CloseImmediatelyOrCancel(closeType, price);
 			m_isActive = true;
-			if (isFirstClose) {
+			if (Lib::IsZero(GetCloseStartPrice())) {
+				SetCloseStartPrice(price);
 				m_ordersCount = 1;
 			} else {
 				++m_ordersCount;
 			}
-		}
-
-		size_t ResetCloseSteps() {
-			const auto closeStep = m_closeStep;
-			m_closeStep = 0;
-			return closeStep;
-		}
-
-		size_t TakeCloseStep() {
-			return m_closeStep++;
 		}
 
 		const Pair & GetPair() const {
@@ -150,7 +137,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		const bool m_isByRising;
 		size_t m_ordersCount;
 		bool m_isActive;
-		size_t m_closeStep;
 
 	};
 
