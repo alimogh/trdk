@@ -279,73 +279,111 @@ public:
 
 		Twd::Position &order = dynamic_cast<Twd::Position &>(position);
 
-		if (order.GetOpenedQty() == 0) {
-
-			Assert(IsZero(order.GetCloseStartPrice()));
-
-			if (order.IsCompleted()) {
-				//! @todo see https://trello.com/c/QOBSd8RZ
-				return;
-			}
-
-			if (order.GetLeg() == 1) {
-				OnCancel(order);
-			} else {
-				ReplaceOrder(order, order.GetLeg() == 3);
-			}
-
-			return;
-
-		} else if (!IsZero(order.GetCloseStartPrice())) {
-
-			AssertEq(1, order.GetLeg());
-
-			if (order.GetActiveQty() == 0) {
-				LogLossAtClose(order);
-				OnCancel(order);
-				return;
-			}
-
-			// Asking for second chance...
-
-		} else if (order.IsCompleted()) {
+		if (!order.IsActive()) {
 			//! @todo see https://trello.com/c/QOBSd8RZ
 			return;
 		}
- 
- 		Assert(order.IsOpened());
-		order.Complete();
+		order.Deactivate();
 
-		if (order.GetLeg() == 1) {
-
-			if (!CheckLeg(order)) {
+		if (order.GetOpenedQty() == 0) {
 		
-				if (IsZero(order.GetCloseStartPrice())) {
-					LogAction("canceling", order.GetLeg());
-				}
+			Assert(IsZero(order.GetCloseStartPrice()));
 		
-				order.Uncomplete();
-				CloseLeg(order);
+			switch (order.GetLeg()) {
 		
-				return;
+				case 1:
+					OnCancel("exec report", order);
+					break;
 		
-			} else if (order.ResetCloseSteps()) {
+				case 2:
+					{
+						Twd::Position &firstLeg = GetLeg(1);
+						Assert(!firstLeg.IsActive());
+						Assert(IsZero(firstLeg.GetCloseStartPrice()));
+						Assert(firstLeg.IsOpened());
+						AssertLt(0, firstLeg.GetActiveQty());
+						if (!CheckLeg(firstLeg)) {
+							CloseLeg(firstLeg);
+							LogAction(
+								"canceling",
+								"not executable",
+								firstLeg.GetLeg());
+						} else {
+							ReplaceOrder(order, false);
+						}
+					}
+					break;
 		
-				Assert(!IsZero(order.GetCloseStartPrice()));
-				order.SetCloseStartPrice(0);
-				LogAction("restoring", order.GetLeg());
+				case 3:
+					ReplaceOrder(order, true);
+					break;
 		
+				default:
+					AssertEq(1, order.GetLeg());
+					AssertFail("Unknown leg no.");
+					break;
+			
 			}
 		
-			GetLeg(2).OpenAtStartPrice();
+		} else if (!IsZero(order.GetCloseStartPrice())) {
+			
+			AssertLt(0, order.GetOpenedQty());
+			AssertEq(1, order.GetLeg());
+			
+			if (order.GetActiveQty() == 0) {
+				OnCancel("exec report", order, true, true);
+			} else {
+				CloseLeg(order);
+			}
 		
-		}
+		} else {
+ 
+ 			Assert(order.IsOpened());
+			Assert(IsZero(order.GetCloseStartPrice()));
+			AssertEq(0, order.GetClosedQty());
+			Assert(!order.HasActiveOrders());
 
-		LogAction("executed", order.GetLeg());
-		
-		if (order.GetLeg() == 3) {
-			LogLossAtOpen(order);
-			m_orders.fill(boost::shared_ptr<Twd::Position>());
+			switch (order.GetLeg()) {
+			
+				case 1:
+					if (!CheckLeg(order)) {
+						LogAction(
+							"executed",
+							"exec report",
+							order.GetLeg(),
+							&order);
+						CloseLeg(order);
+						LogAction(
+							"canceling",
+							"not executable",
+							order.GetLeg());
+						return;
+					}
+					GetLeg(2).OpenAtStartPrice();
+					LogAction("executed", "exec report", "1 -> 2", &order);
+					break;
+
+				case 3:
+					LogAction(
+						"executed",
+						"exec report",
+						order.GetLeg(),
+						&order,
+						true,
+						true);
+					m_orders.fill(boost::shared_ptr<Twd::Position>());
+					break;
+
+				default:
+					LogAction(
+						"executed",
+						"exec report",
+						order.GetLeg(),
+						&order);
+					break;
+			
+			}
+
 		}
 
 	}
@@ -426,7 +464,7 @@ private:
 				isTimeToReport(m_opportunity[0], m_reportedOpportunity[0])
 				|| isTimeToReport(m_opportunity[1], m_reportedOpportunity[1])) {
 			GetTradingLog().Write(
-				"opportunity\tY1: %1% -> %2%\tY2: %3% -> %4%",
+				"\topportunity\tY1: %1% -> %2%\tY2: %3% -> %4%",
 				[this](TradingRecord &record) {
 					record
 						% m_reportedOpportunity[0]
@@ -541,7 +579,8 @@ private:
 					TimeMeasurement::Milestones(),
 					oldOrder.GetPair(),
 					oldOrder.GetLeg(),
-					oldOrder.IsByRising()));
+					oldOrder.IsByRising(),
+					oldOrder.GetOrdersCount()));
 		} else {
 			newOrder.reset(
 				new Twd::ShortPosition(
@@ -554,7 +593,8 @@ private:
 					TimeMeasurement::Milestones(),
 					oldOrder.GetPair(),
 					oldOrder.GetLeg(),
-					oldOrder.IsByRising()));
+					oldOrder.IsByRising(),
+					oldOrder.GetOrdersCount()));
 		}
 
 		foreach (auto &order, m_orders) {
@@ -625,7 +665,8 @@ private:
 						TimeMeasurement::Milestones(),
 						pair,
 						legNo,
-						isRising));
+						isRising,
+						0));
 			} else {
 				if (security.GetBidQty() == 0) {
 					throw HasNotMuchOpportunity(security, "bid");
@@ -642,7 +683,8 @@ private:
 						TimeMeasurement::Milestones(),
 						pair,
 						legNo,
-						isRising));
+						isRising,
+						0));
 			}
 			return std::move(result);
 		};
@@ -670,11 +712,11 @@ private:
 			orders.swap(m_orders);
 
 			++m_opportunityNo;
-			LogAction("detected", 1);
+			LogAction("detected", "signal", "1");
 
 		} catch (const HasNotMuchOpportunity &ex) {
 			GetTradingLog().Write(
-				"Skipped decision:"
+				"\tskipped decision\t"
 					" \"%1%\" has not much opportunity at \"%2%\" (%3%).",
 				[&ex](TradingRecord &record) {
 					record
@@ -688,12 +730,11 @@ private:
 
 	void CheckClosePossibility() {
 
-		Twd::Position *lastLeg = nullptr;
 		foreach (const auto &leg, m_orders) {
 			switch (leg->GetLeg()) {
+				case 1:
 				case 2:
-					if (!leg->IsCompleted()) {
-						// No matter what the 1st let - no 2nd leg, no 3rd leg.
+					if (leg->IsActive()) {
 						return;
 					}
 					break;
@@ -701,15 +742,15 @@ private:
 					if (leg->IsStarted()) {
 						return;
 					}
-					Assert(!leg->IsCompleted());
-					lastLeg = &*leg;
+					Assert(leg->IsActive());
 					break;
 			}
 		}
-		Assert(lastLeg);
 
+		Twd::Position &leg = GetLeg(3);
 		const auto &stat = m_stat[PAIR_BC];
-		if (lastLeg->IsByRising()) {
+
+		if (leg.IsByRising()) {
 			const auto &statData
 				= stat.service->GetData(stat.bestBid.source);
 			if (statData.current.theo > statData.current.emaSlow) {
@@ -723,9 +764,8 @@ private:
 			}
 		}
 
-		Twd::Position &leg = GetLeg(3);
 		leg.OpenAtStartPrice();
-		LogAction("detected", leg.GetLeg());
+		LogAction("detected", "signal", leg.GetLeg());
 		
 	}
 
@@ -746,7 +786,7 @@ private:
 
 		if (!HasOpportunity()) {
 			GetTradingLog().Write(
-				"loss-detected\t%1%\t%2%\tleg: %3%\t%4%\tY1 = %5%, Y2 = %6%",
+				"\tloss-detected\t%1%\t%2%\tleg: %3%\t%4%\tY1 = %5%, Y2 = %6%",
 				[&](TradingRecord &record) {
 					printTradingRecordStart(record);
 					record % m_opportunity[0] % m_opportunity[1];
@@ -760,7 +800,7 @@ private:
 				(isLong && openPrice < security.GetAskPrice())
 				|| (!isLong && openPrice > security.GetBidPrice())) {
 			GetTradingLog().Write(
-				"loss-detected\t%1%\t%2%\tleg: %3%\t%4%\t%5% %6% %7%",
+				"\tloss-detected\t%1%\t%2%\tleg: %3%\t%4%\t%5% %6% %7%",
 				[&](TradingRecord &record) {
 					printTradingRecordStart(record);
 					if (isLong) {
@@ -772,74 +812,31 @@ private:
 			return false;
 		}
 
-// 		const auto &checkPosition = [&](
-// 				size_t legNo,
-// 				const boost::optional<bool> &isRising)
-// 				-> bool {
-// 			Assert(&leg == &*m_orders[leg.GetPair()]);
-// 			if (!isRising || leg.IsByRising() != *isRising) {
-// 				GetTradingLog().Write(
-// 					"loss-detected\t%1%\t%2%\tleg:"
-// 						" %3%\t%4%\twas \"%5%\", now \"%6%\"",
-// 					[&](TradingRecord &record) {
-// 						printTradingRecordStart(record);
-// 						record
-// 							% (leg.IsByRising() ? "rising" : "falling")
-// 							% (isRising
-// 								?	*isRising ? "rising" : "falling"
-// 								:	"none");
-// 					});
-// 				return false;
-// 			} else if (leg.GetLeg() != legNo) {
-// 				GetTradingLog().Write(
-// 					"loss-detected\t%1%\t%2%\tleg: %3%\t%4%\tactual leg no: %5%",
-// 					[&](TradingRecord &record) {
-// 						printTradingRecordStart(record);
-// 						record % legNo;
-// 					});
-// 				return false;
-// 			} else {
-// 				return true;
-// 			}
-// 		};
-// 		switch (leg.GetPair()) {
-// 			case PAIR_AB:
-// 				const_cast<TriangulationWithDirection *>(this)
-// 					->CalcOpenPossibility();
-// 				if (
-// 						!checkPosition(
-// 							m_opportunitySource.legsNo[0],
-// 							m_opportunitySource.isRising)) {
-// 					return false;
-// 				}
-// 				break;
-// 			case PAIR_AC:
-// 				const_cast<TriangulationWithDirection *>(this)
-// 					->CalcOpenPossibility();
-// 				if (
-// 						!checkPosition(
-// 							m_opportunitySource.legsNo[1],
-// 							!m_opportunitySource.isRising)) {
-// 					return false;
-// 				}
-// 				break;
-// 		}
-
 		return true;
 
 	}
 
 	void CloseLeg(Twd::Position &leg) {
 		Assert(!leg.HasActiveOrders());
-		if (leg.TakeCloseStep() == 1) {
+		if (IsZero(leg.GetCloseStartPrice())) {
 			leg.CloseAtStartPrice(Position::CLOSE_TYPE_STOP_LOSS);
 		} else {
 			leg.CloseAtCurrentPrice(Position::CLOSE_TYPE_STOP_LOSS);
 		}
 	}
 
-	void OnCancel(const Twd::Position &reasonOrder) {
-		LogAction("canceled", reasonOrder.GetLeg());
+	void OnCancel(
+			const char *reason,
+			const Twd::Position &reasonOrder,
+			bool showOrderPnl = false,
+			bool showTotalPnl = false) {
+		LogAction(
+			"canceled",
+			reason,
+			reasonOrder.GetLeg(),
+			&reasonOrder,
+			showOrderPnl,
+			showTotalPnl);
 		m_orders.fill(boost::shared_ptr<Twd::Position>());
 		CheckOpenPossibility();
 	}
@@ -853,7 +850,13 @@ private:
 					%	"No"
 					%	"Time"
 					%	"Action"
-					%	"Step No"
+					%	"Action reason"
+					%	"Action legs"
+					%	"Action orders count"
+					%	"PnL order (price)"
+					%	"PnL order (vol)"
+					%	"PnL total (price)"
+					%	"PnL total (vol)"
 					%	"Y1"
 					%	"Y2";
 				foreach (const auto &stat, m_stat) {
@@ -866,55 +869,110 @@ private:
 							.c_str();
 					record
 						%	pair % '\0' % " ECN"
-						%	pair % '\0' % " Direction"
-						%	pair % '\0' % " Leg No."
-						%	pair % '\0' % " Order State"
-						%	pair % '\0' % " Exec price"
-						%	pair % '\0' % " Bid"
-						%	pair % '\0' % " Ask"
+						%	pair % '\0' % " direction"
+						%	pair % '\0' % " leg no."
+						%	pair % '\0' % " order state" 
+						%	pair % '\0' % " price start"
+						%	pair % '\0' % " price exec"
+						%	pair % '\0' % " bid"
+						%	pair % '\0' % " ask"
 						%	pair % '\0' % " VWAP"
-						%	pair % '\0' % " VWAP Prev1"
-						%	pair % '\0' % " VWAP Prev2"
-						%	pair % '\0' % " fastEMA"
-						%	pair % '\0' % " fastEMA Prev1"
-						%	pair % '\0' % " fastEMA Prev2"
-						%	pair % '\0' % " slowEMA"
-						%	pair % '\0' % " slowEMA Prev1"
-						%	pair % '\0' % " slowEMA Prev2";
+						%	pair % '\0' % " VWAP prev1"
+						%	pair % '\0' % " VWAP prev2"
+						%	pair % '\0' % " EMA fast"
+						%	pair % '\0' % " EMA fast prev1"
+						%	pair % '\0' % " EMA fast prev2"
+						%	pair % '\0' % " EMA slow"
+						%	pair % '\0' % " EMA slow prev1"
+						%	pair % '\0' % " EMA slow prev2";
 				}
 			});
 	}
 
-	void LogAction(const char *action, size_t stepNo) {
+	void LogAction(
+			const char *action,
+			const char *reason,
+			size_t actionLeg,
+			const Twd::Position *const reasonOrder = nullptr,
+			bool showOrderPnl = false,
+			bool showTotalPnl = false) {
+		const char *actionLegStr;
+		switch (actionLeg) {
+			case 1:
+				actionLegStr = "1";
+				break;
+			case 2:
+				actionLegStr = "2";
+				break;
+			case 3:
+				actionLegStr = "3";
+				break;
+			default:
+				actionLegStr = "unknown";
+				AssertEq(1, actionLeg);
+				break;
+		}
+		LogAction(
+			action,
+			reason,
+			actionLegStr,
+			reasonOrder,
+			showOrderPnl,
+			showTotalPnl);
+	}
+
+	void LogAction(
+			const char *action,
+			const char *reason,
+			const char *actionLegs,
+			const Twd::Position *const reasonOrder = nullptr,
+			bool showOrderPnl = false,
+			bool showTotalPnl = false) {
 
 		Assert(IsActive());
 
 		const auto &writePair = [&](size_t pair, StrategyLogRecord &record) {
 			const auto &stat = m_stat[pair];
 			const auto &order = *m_orders[pair];
-			const auto &ecn = order.IsByRising()
-				?	stat.bestBid.source
-				:	stat.bestAsk.source;
-			const Security &security = stat.service->GetSecurity(ecn);
+			const Security &security = order.GetSecurity();
 			record
 				%	security.GetSource().GetTag()
 				%	(order.GetType() == Position::TYPE_LONG ? "buy" : "sell")
 				%	order.GetLeg();
 			if (!order.IsStarted()) {
-				record % "wait" % '-';
-			} else if (!order.IsCompleted()) {
-				record
-					% "active"
-					% order.GetSecurity().DescalePrice(order.GetOpenStartPrice());
+				AssertEq(0, order.GetOrdersCount());
+				record % "wait";
+			} else if (order.IsClosed()) {
+				record % "closed";
+			} else if (!IsZero(order.GetCloseStartPrice())) {
+				record % "closing";
+			} else if (order.IsOpened()) {
+				record % "opened";
+			} else if (!order.HasActiveOrders()) {
+				record % "canceled";
 			} else {
-				record
-					% "done"
-					% order.GetSecurity().DescalePrice(order.GetOpenPrice());
+				record % "opening";
+			}
+			if (!IsZero(order.GetCloseStartPrice())) {
+				record % security.DescalePrice(order.GetCloseStartPrice());
+				if (order.IsClosed()) {
+					record % security.DescalePrice(order.GetClosePrice());
+				} else {
+					record % ' ';
+				}
+			} else {
+				record % security.DescalePrice(order.GetOpenStartPrice());
+				if (order.IsOpened()) {
+					record % security.DescalePrice(order.GetOpenPrice());
+				} else {
+					record % ' ';
+				}
 			}
 			record 
 				%	security.GetBidPrice()
 				%	security.GetAskPrice();
-			const auto &data = stat.service->GetData(ecn);
+			const auto &data = stat.service->GetData(
+				security.GetSource().GetIndex());
 			record
 				%	data.current.theo
 				%	data.prev1.theo
@@ -927,117 +985,66 @@ private:
 				%	data.prev2.emaSlow;
 		};
 
+		const auto &writePnlOrder = [](
+				const Twd::Position &order,
+				StrategyLogRecord &record) {
+			Assert(order.IsOpened());
+			const auto &pnlScaled = order.GetType() == Position::TYPE_LONG
+				?	order.IsClosed()
+						?	order.GetClosePrice() - order.GetOpenPrice()
+						:	order.GetOpenStartPrice() - order.GetOpenPrice()  
+				:	order.IsClosed()
+						?	order.GetOpenPrice() - order.GetClosePrice() 
+						:	order.GetOpenPrice() - order.GetOpenStartPrice();
+			const double pnl = order.GetSecurity().DescalePrice(pnlScaled);
+			record % pnl % (pnl * order.GetOpenedQty());
+		};
+		
+		const auto &writePnlOrderIfSet = [&](StrategyLogRecord &record) {
+			if (!showOrderPnl || !reasonOrder) {
+				Assert(!showOrderPnl);
+				record % ' ' % ' ';
+				return;
+			}
+			writePnlOrder(*reasonOrder, record);
+		};
+
+		const auto &writePnlTotal = [&](StrategyLogRecord &record) {
+			if (!showTotalPnl) {
+				record % ' ' % ' ';
+				return;
+			}
+			if (GetLeg(3).IsActive()) {
+				Assert(GetLeg(1).IsOpened());
+				Assert(GetLeg(1).IsClosed());
+				Assert(!GetLeg(2).IsOpened());
+				writePnlOrder(GetLeg(1), record);
+			} else {
+				record % '-' % '-';
+			}
+		};
+
 		m_strategyLog.Write(
 			[&](StrategyLogRecord &record) {
 				record
-					%	m_opportunityNo
-					%	GetContext().GetCurrentTime()
-					%	action
-					%	stepNo
+					% m_opportunityNo
+					% GetContext().GetCurrentTime()
+					% action
+					% reason
+					% actionLegs;
+				if (reasonOrder) {
+					record % reasonOrder->GetOrdersCount();
+				} else {
+					record % ' ';
+				}	
+				writePnlOrderIfSet(record);
+				writePnlTotal(record);
+				record
 					%	m_opportunity[0]
 					%	m_opportunity[1];
 				for (size_t i = 0; i < numberOfPairs; ++i) {
 					writePair(i, record);
 				}
-			});
-
-	}
-
-	void LogLossAtOpen(const Twd::Position &position) {
-
-		Assert(!position.IsClosed());
-		Assert(position.IsOpened());
-		AssertLt(0, position.GetOpenedQty());
-
-		const char *type = nullptr;
-		const bool isLong = position.GetType() == Position::TYPE_LONG;
-
-		if (isLong) {
-			if (position.GetOpenStartPrice() < position.GetOpenPrice()) {
-				type = "loss";
-			} else if (position.GetOpenStartPrice() > position.GetOpenPrice()) {
-				type = "profit";
-			}
-		} else {
-			AssertEq(Position::TYPE_SHORT, position.GetType());
-			if (position.GetOpenStartPrice() > position.GetOpenPrice()) {
-				type = "loss";
-			} else if (position.GetOpenStartPrice() < position.GetOpenPrice()) {
-				type = "profit";
-			}
-		}
-
-		if (type == nullptr) {
-			return;
-		}
-
-		GetTradingLog().Write(
-			"%1%\topen\t%2%\t%3%\tleg: %4%\t%5%"
-				"\t%6% -> %7% = %8$f (vol. %9%)",
-			[&](TradingRecord &record) {
-				const Security &security = position.GetSecurity();
-				record
-					% type
-					% security
-					% security.GetSource().GetTag()
-					% position.GetLeg()
-					% (isLong ? "long" : "short");
-				const double openPrice
-					= security.DescalePrice(position.GetOpenStartPrice());
-				const double closePrice
-					= security.DescalePrice(position.GetOpenPrice());
-				record % openPrice % closePrice;
-				const double resultPrice = fabs(openPrice - closePrice);
-				record % resultPrice % (resultPrice * position.GetOpenedQty());
-			});
-
-	}
-
-	void LogLossAtClose(const Twd::Position &position) {
-
-		Assert(position.IsClosed());
-		AssertLt(0, position.GetOpenedQty());
-
-		const char *type = nullptr;
-		const bool isLong = position.GetType() == Position::TYPE_LONG;
-
-		if (isLong) {
-			if (position.GetOpenPrice() > position.GetClosePrice()) {
-				type = "loss";
-			} else if (position.GetOpenPrice() < position.GetClosePrice()) {
-				type = "profit";
-			}
-		} else {
-			AssertEq(Position::TYPE_SHORT, position.GetType());
-			if (position.GetOpenPrice() < position.GetClosePrice()) {
-				type = "loss";
-			} else if (position.GetOpenPrice() > position.GetClosePrice()) {
-				type = "profit";
-			}
-		}
-
-		if (type == nullptr) {
-			return;
-		}
-
-		GetTradingLog().Write(
-			"%1%\tclose\t%2%\t%3%\tleg: %4%\t%5%"
-				"\t%6% -> %7% = %8$f (vol. %9%)",
-			[&](TradingRecord &record) {
-				const Security &security = position.GetSecurity();
-				record
-					% type
-					% security
-					% security.GetSource().GetTag()
-					% position.GetLeg()
-					% (isLong ? "long" : "short");
-				const double openPrice
-					= security.DescalePrice(position.GetOpenPrice());
-				const double closePrice
-					= security.DescalePrice(position.GetClosePrice());
-				record % openPrice % closePrice;
-				const double resultPrice = fabs(openPrice - closePrice);
-				record % resultPrice % (resultPrice * position.GetOpenedQty());
 			});
 
 	}

@@ -4,7 +4,7 @@
 #define TRDK_VERSION_MAJOR_HIGH	1
 #define TRDK_VERSION_MAJOR_LOW	1
 #define TRDK_VERSION_MINOR_HIGH	0
-#define TRDK_VERSION_MINOR_LOW	0
+#define TRDK_VERSION_MINOR_LOW	5
 
 #define TRDK_VERSION_BRANCH		"morganbenoit"
 #define TRDK_VERSION_BRANCH_W	L"morganbenoit"
@@ -24,8 +24,8 @@
 #define TRDK_NAME	"Trading Robot Development Kit"
 #define TRDK_NAME_W	L"Trading Robot Development Kit"
 
-#define TRDK_COPYRIGHT		"Copyright 2014 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
-#define TRDK_COPYRIGHT_W	L"Copyright 2014 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
+#define TRDK_COPYRIGHT		"Copyright 2015 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
+#define TRDK_COPYRIGHT_W	L"Copyright 2015 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
 
 #define TRDK_CONCURRENCY_PROFILE (::trdk::Lib::Concurrency::PROFILE_HFT)
 
