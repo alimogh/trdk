@@ -328,11 +328,14 @@ public:
 			}
 		
 			GetLeg(2).OpenAtStartPrice();
+			LogAction("executed", "1 -> 2");
+		
+		} else {
+			
+			LogAction("executed", order.GetLeg());
 		
 		}
 
-		LogAction("executed", order.GetLeg());
-		
 		if (order.GetLeg() == 3) {
 			LogLossAtOpen(order);
 			m_orders.fill(boost::shared_ptr<Twd::Position>());
@@ -660,7 +663,7 @@ private:
 			orders.swap(m_orders);
 
 			++m_opportunityNo;
-			LogAction("detected", 1);
+			LogAction("detected", "1");
 
 		} catch (const HasNotMuchOpportunity &ex) {
 			GetTradingLog().Write(
@@ -843,7 +846,7 @@ private:
 					%	"No"
 					%	"Time"
 					%	"Action"
-					%	"Step No"
+					%	"Legs"
 					%	"Y1"
 					%	"Y2";
 				foreach (const auto &stat, m_stat) {
@@ -875,7 +878,28 @@ private:
 			});
 	}
 
-	void LogAction(const char *action, size_t stepNo) {
+	void LogAction(const char *action, size_t actionLeg) {
+		const char *actionLegStr;
+		switch (actionLeg) {
+			case 1:
+				actionLegStr = "1";
+				break;
+			case 2:
+				actionLegStr = "2";
+				break;
+			case 3:
+				actionLegStr = "3";
+				break;
+			default:
+				actionLegStr = "unknown";
+				AssertEq(1, actionLeg);
+				break;
+		}
+		LogAction(action, actionLegStr);
+
+	}
+
+	void LogAction(const char *action, const char *actionLegs) {
 
 		Assert(IsActive());
 
@@ -923,7 +947,7 @@ private:
 					%	m_opportunityNo
 					%	GetContext().GetCurrentTime()
 					%	action
-					%	stepNo
+					%	actionLegs
 					%	m_opportunity[0]
 					%	m_opportunity[1];
 				for (size_t i = 0; i < numberOfPairs; ++i) {
