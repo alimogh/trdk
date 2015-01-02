@@ -42,7 +42,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const size_t leg,
-				bool isByRising)
+				bool isByRising,
+				size_t ordersCount)
 			: trdk::Position(
 				strategy,
 				tradeSystem,
@@ -54,7 +55,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			m_pair(pair),
 			m_leg(leg),
 			m_isByRising(isByRising),
-			m_isCompleted(false),
+			m_ordersCount(ordersCount),
+			m_isActive(true),
 			m_closeStep(0) {
 			Assert(!Lib::IsZero(startPrice));
 		}
@@ -63,6 +65,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void OpenAtStartPrice() {
 			OpenImmediatelyOrCancel(GetOpenStartPrice());
+			++m_ordersCount;
 		}
 
 		void OpenAtCurrentPrice() {
@@ -70,18 +73,37 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				?	GetSecurity().GetAskPriceScaled()
 				:	GetSecurity().GetBidPriceScaled();
 			OpenImmediatelyOrCancel(price);
+			++m_ordersCount;
 		}
 
 		void CloseAtStartPrice(const CloseType &closeType) {
-			CloseImmediatelyOrCancel(closeType, GetOpenStartPrice());
+			Assert(!m_isActive);
+			const bool isFirstClose = Lib::IsZero(GetCloseStartPrice());
+			const auto &price = GetOpenStartPrice();
+			SetCloseStartPrice(price);
+			CloseImmediatelyOrCancel(closeType, price);
+			m_isActive = true;
+			if (isFirstClose) {
+				m_ordersCount = 1;
+			} else {
+				++m_ordersCount;
+			}
 		}
 
 		void CloseAtCurrentPrice(const CloseType &closeType) {
+			Assert(!m_isActive);
+			const bool isFirstClose = Lib::IsZero(GetCloseStartPrice());
 			const auto &price = GetType() == Position::TYPE_LONG
 				?	GetSecurity().GetBidPriceScaled()
 				:	GetSecurity().GetAskPriceScaled();
 			SetCloseStartPrice(price);
 			CloseImmediatelyOrCancel(closeType, price);
+			m_isActive = true;
+			if (isFirstClose) {
+				m_ordersCount = 1;
+			} else {
+				++m_ordersCount;
+			}
 		}
 
 		size_t ResetCloseSteps() {
@@ -106,21 +128,19 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_isByRising;
 		}
 
-		//! @todo remove this workaround: https://trello.com/c/QOBSd8RZ
-		bool IsCompleted() const {
-			return m_isCompleted;
+		size_t GetOrdersCount() const {
+			return m_ordersCount;
 		}
 
 		//! @todo remove this workaround: https://trello.com/c/QOBSd8RZ
-		void Complete() {
-			Assert(!m_isCompleted);
-			m_isCompleted = true;
+		bool IsActive() const {
+			return m_isActive;
 		}
 
-		//! @todo remove this workaround: https://trello.com/c/QOBSd8RZ
-		void Uncomplete() {
-			Assert(m_isCompleted);
-			m_isCompleted = false;
+ 		//! @todo remove this workaround: https://trello.com/c/QOBSd8RZ
+		void Deactivate() {
+			Assert(m_isActive);
+			m_isActive = false;
 		}
 
 	private:
@@ -128,7 +148,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		const Pair m_pair;
 		const size_t m_leg;
 		const bool m_isByRising;
-		bool m_isCompleted;
+		size_t m_ordersCount;
+		bool m_isActive;
 		size_t m_closeStep;
 
 	};
@@ -149,7 +170,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const size_t leg,
-				bool isByRising)
+				bool isByRising,
+				size_t ordersCount)
 			: trdk::Position(
 				strategy,
 				tradeSystem,
@@ -168,7 +190,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				timeMeasurement,
 				pair,
 				leg,
-				isByRising),
+				isByRising,
+				ordersCount),
 			trdk::LongPosition(
 				strategy,
 				tradeSystem,
@@ -199,7 +222,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const size_t leg,
-				bool isByRising)
+				bool isByRising,
+				size_t ordersCount)
 			: trdk::Position(
 				strategy,
 				tradeSystem,
@@ -218,7 +242,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				timeMeasurement,
 				pair,
 				leg,
-				isByRising),
+				isByRising,
+				ordersCount),
 			trdk::ShortPosition(
 				strategy,
 				tradeSystem,
