@@ -16,11 +16,11 @@ using namespace trdk;
 using namespace trdk::Lib;
 
 namespace { namespace Iso4217 {
-	const std::string usd = "USD";
-	const std::string eur = "EUR";
-	const std::string jpy = "JPY";
-	const std::string rub = "RUB";
-	const std::string gbp = "GBP";
+	const std::string usd = ConvertToIsoPch(CURRENCY_USD);
+	const std::string eur = ConvertToIsoPch(CURRENCY_EUR);
+	const std::string jpy = ConvertToIsoPch(CURRENCY_JPY);
+	const std::string rub = ConvertToIsoPch(CURRENCY_RUB);
+	const std::string gbp = ConvertToIsoPch(CURRENCY_GBP);
 } }
 
 const std::string & Lib::ConvertToIso(const Currency &currency) {
@@ -37,6 +37,26 @@ const std::string & Lib::ConvertToIso(const Currency &currency) {
 			return rub;
 		case CURRENCY_GBP:
 			return gbp;
+		default:
+			AssertEq(CURRENCY_USD, currency);
+			throw Exception("Internal error: Unknown currency ID");
+	}
+}
+
+const char * Lib::ConvertToIsoPch(const Currency &currency) {
+	using namespace Iso4217;
+	static_assert(numberOfCurrencies == 5, "Currency list changed.");
+	switch (currency) {
+		case CURRENCY_USD:
+			return "USD";
+		case CURRENCY_EUR:
+			return "EUR";
+		case CURRENCY_JPY:
+			return "JPY";
+		case CURRENCY_RUB:
+			return "RUB";
+		case CURRENCY_GBP:
+			return "GBR";
 		default:
 			AssertEq(CURRENCY_USD, currency);
 			throw Exception("Internal error: Unknown currency ID");

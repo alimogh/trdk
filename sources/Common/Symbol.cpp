@@ -43,7 +43,8 @@ Symbol::Data::Data()
 		: securityType(numberOfSecurityTypes),
 		strike(.0),
 		right(numberOfRights),
-		cashBaseCurrency(numberOfCurrencies) {
+		cashBaseCurrency(numberOfCurrencies),
+		cashQuoteCurrency(numberOfCurrencies) {
 	//...//
 }
 
@@ -64,7 +65,8 @@ Symbol::Data::Data(
 		symbol(symbol),
 		strike(.0),
 		right(numberOfRights),
-		cashBaseCurrency(numberOfCurrencies) {
+		cashBaseCurrency(numberOfCurrencies),
+		cashQuoteCurrency(numberOfCurrencies) {
 	//...//
 }
 
@@ -90,7 +92,8 @@ Symbol::Data::Data(
 		expirationDate(expirationDate),
 		strike(strike),
 		right(numberOfRights),
-		cashBaseCurrency(numberOfCurrencies) {
+		cashBaseCurrency(numberOfCurrencies),
+		cashQuoteCurrency(numberOfCurrencies) {
 	//...//
 }
 
@@ -208,6 +211,8 @@ Symbol Symbol::ParseCash(
 		:	defExchange;
 	result.m_data.primaryExchange = "FOREX";
 	result.m_data.cashBaseCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
+	result.m_data.cashQuoteCurrency
+		= ConvertCurrencyFromIso(symbolMatch.str(2));
 
 	return result;
 
@@ -251,7 +256,9 @@ Symbol Symbol::ParseCashFutureOption(
 	result.m_data.strike = strike;
 	result.m_data.right = right;
 	result.m_data.cashBaseCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
-	
+	result.m_data.cashQuoteCurrency
+		= ConvertCurrencyFromIso(symbolMatch.str(2));
+
 	return result;
 
 }
@@ -380,11 +387,18 @@ std::string Symbol::GetRightAsString() const {
 	}
 }
 
-Currency Symbol::GetCashBaseCurrency() const {
+const Currency & Symbol::GetCashBaseCurrency() const {
 	if (m_data.cashBaseCurrency == numberOfCurrencies) {
-		throw Lib::LogicError("Symbol has not Base Cash Currency");
+		throw Lib::LogicError("Symbol has not Base Currency");
 	}
 	return m_data.cashBaseCurrency;
+}
+
+const Currency & Symbol::GetCashQuoteCurrency() const {
+	if (m_data.cashQuoteCurrency == numberOfCurrencies) {
+		throw Lib::LogicError("Symbol has not Quote Currency");
+	}
+	return m_data.cashQuoteCurrency;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

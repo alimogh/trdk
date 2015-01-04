@@ -25,8 +25,16 @@ namespace trdk { namespace Lib {
 	//! Convert currency to string in ISO 4217 code.
 	/** http://en.wikipedia.org/wiki/ISO_4217
 	  * @sa ConvertCurrencyFromIso
+	  * @sa ConvertToIsoPch
 	  */
 	const std::string & ConvertToIso(const trdk::Lib::Currency &);
+
+	//! Convert currency to in ISO 4217 code (pointer to persistent C-string).
+	/** http://en.wikipedia.org/wiki/ISO_4217
+	  * @sa ConvertCurrencyFromIso
+	  * @sa ConvertToIso
+	  */
+	const char * ConvertToIsoPch(const trdk::Lib::Currency &);
 
 	//! Convert currency from ISO 4217 code.
 	/** http://en.wikipedia.org/wiki/ISO_4217
