@@ -474,7 +474,7 @@ void FxArb1::StartPositionsOpening(
 					*this,
 					*security.conf->tradeSystem,
 					*security.conf->security,
-					security.conf->security->GetSymbol().GetCashCurrency(),
+					security.conf->security->GetSymbol().GetCashBaseCurrency(),
 					security.conf->qty,
 					security.conf->security->GetAskPriceScaled(),
 					timeMeasurement));
@@ -487,7 +487,7 @@ void FxArb1::StartPositionsOpening(
 					*this,
 					*security.conf->tradeSystem,
 					*security.conf->security,
-					security.conf->security->GetSymbol().GetCashCurrency(),
+					security.conf->security->GetSymbol().GetCashBaseCurrency(),
 					security.conf->qty,
 					security.conf->security->GetBidPriceScaled(),
 					timeMeasurement));

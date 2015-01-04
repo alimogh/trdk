@@ -43,7 +43,7 @@ Symbol::Data::Data()
 		: securityType(numberOfSecurityTypes),
 		strike(.0),
 		right(numberOfRights),
-		cacheCurrency(numberOfCurrencies) {
+		cashBaseCurrency(numberOfCurrencies) {
 	//...//
 }
 
@@ -64,7 +64,7 @@ Symbol::Data::Data(
 		symbol(symbol),
 		strike(.0),
 		right(numberOfRights),
-		cacheCurrency(numberOfCurrencies) {
+		cashBaseCurrency(numberOfCurrencies) {
 	//...//
 }
 
@@ -90,7 +90,7 @@ Symbol::Data::Data(
 		expirationDate(expirationDate),
 		strike(strike),
 		right(numberOfRights),
-		cacheCurrency(numberOfCurrencies) {
+		cashBaseCurrency(numberOfCurrencies) {
 	//...//
 }
 
@@ -207,7 +207,7 @@ Symbol Symbol::ParseCash(
 		?	subs[1]
 		:	defExchange;
 	result.m_data.primaryExchange = "FOREX";
-	result.m_data.cacheCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
+	result.m_data.cashBaseCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
 
 	return result;
 
@@ -250,7 +250,7 @@ Symbol Symbol::ParseCashFutureOption(
 	result.m_data.expirationDate = expirationDate;
 	result.m_data.strike = strike;
 	result.m_data.right = right;
-	result.m_data.cacheCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
+	result.m_data.cashBaseCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
 	
 	return result;
 
@@ -380,11 +380,11 @@ std::string Symbol::GetRightAsString() const {
 	}
 }
 
-Currency Symbol::GetCashCurrency() const {
-	if (m_data.cacheCurrency == numberOfCurrencies) {
-		throw Lib::LogicError("Symbol has not Cash Currency");
+Currency Symbol::GetCashBaseCurrency() const {
+	if (m_data.cashBaseCurrency == numberOfCurrencies) {
+		throw Lib::LogicError("Symbol has not Base Cash Currency");
 	}
-	return m_data.cacheCurrency;
+	return m_data.cashBaseCurrency;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -649,7 +649,7 @@ private:
 						GetContext().GetTradeSystem(ecn),
 						//! @todo fixme:
 						const_cast<Security &>(security),
-						security.GetSymbol().GetCashCurrency(),
+						security.GetSymbol().GetCashBaseCurrency(),
 						m_qty,
 						security.GetAskPriceScaled(),
 						TimeMeasurement::Milestones(),
@@ -667,7 +667,7 @@ private:
 						GetContext().GetTradeSystem(ecn),
 						//! @todo fixme:
 						const_cast<Security &>(security),
-						security.GetSymbol().GetCashCurrency(),
+						security.GetSymbol().GetCashBaseCurrency(),
 						m_qty,
 						security.GetBidPriceScaled(),
 						TimeMeasurement::Milestones(),
