@@ -199,7 +199,7 @@ Symbol Symbol::ParseCash(
 	if (	!boost::regex_match(
 				subs[0],
 				symbolMatch,
-				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*[a-zA-Z]{3,3}$"))) {
+				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*([a-zA-Z]{3,3})$"))) {
 		throw StringFormatError();
 	}
 	
@@ -242,7 +242,7 @@ Symbol Symbol::ParseCashFutureOption(
 	if (	!boost::regex_match(
 				subs[0],
 				symbolMatch,
-				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*[a-zA-Z]{3,3}$"))) {
+				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*([a-zA-Z]{3,3})$"))) {
 		throw StringFormatError();
 	}
 

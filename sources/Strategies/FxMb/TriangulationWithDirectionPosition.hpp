@@ -71,6 +71,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			const auto &price = GetType() == Position::TYPE_LONG
 				?	GetSecurity().GetAskPriceScaled()
 				:	GetSecurity().GetBidPriceScaled();
+			if (Lib::IsZero(price)) {
+				OpenAtStartPrice();
+				return;
+			}
 			OpenImmediatelyOrCancel(price);
 			++m_ordersCount;
 		}
@@ -93,6 +97,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			const auto &price = GetType() == Position::TYPE_LONG
 				?	GetSecurity().GetBidPriceScaled()
 				:	GetSecurity().GetAskPriceScaled();
+			if (Lib::IsZero(price)) {
+				CloseAtStartPrice(closeType);
+				return;
+			}
 			CloseImmediatelyOrCancel(closeType, price);
 			m_isActive = true;
 			if (Lib::IsZero(GetCloseStartPrice())) {

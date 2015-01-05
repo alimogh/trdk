@@ -188,7 +188,7 @@ public:
 			m_cancelState(CANCEL_STATE_NOT_CANCELED),
 			m_tag(m_strategy->GetTag()),
 			m_timeMeasurement(timeMeasurement) {
-		AssertLt(0, m_planedQty);
+		//...//
 	}
 
 public:
