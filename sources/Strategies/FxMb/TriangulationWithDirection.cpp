@@ -359,7 +359,7 @@ public:
 							order.GetLeg());
 						return;
 					}
-					GetLeg(2).OpenAtStartPrice();
+					StartLeg2(order);
 					LogAction("executed", "exec report", "1 -> 2", &order);
 					break;
 
@@ -641,26 +641,31 @@ private:
 				const Pair &pair,
 				size_t legNo,
 				bool isRising,
-				bool isBuy) 
+				bool isBuy,
+				bool isBaseCurrency) 
 				-> boost::shared_ptr<Twd::Position> {
 			const auto &stat = m_stat[pair];
 			const auto &ecn = isRising
 				?	stat.bestBid.source
 				:	stat.bestAsk.source;
 			const Security &security = stat.service->GetSecurity(ecn);
+			const auto &currency = !isBaseCurrency
+				?	security.GetSymbol().GetCashQuoteCurrency()
+				:	security.GetSymbol().GetCashBaseCurrency();
 			boost::shared_ptr<Twd::Position> result;
 			if (isBuy) {
 				if (security.GetAskQty() == 0) {
 					throw HasNotMuchOpportunity(security, "ask");
 				}
+				Assert(!IsZero(security.GetAskPrice()));
 				result.reset(
 					new Twd::LongPosition(
 						*this,
 						GetContext().GetTradeSystem(ecn),
 						//! @todo fixme:
 						const_cast<Security &>(security),
-						security.GetSymbol().GetCashCurrency(),
-						m_qty,
+						currency,
+						0,
 						security.GetAskPriceScaled(),
 						TimeMeasurement::Milestones(),
 						pair,
@@ -671,14 +676,15 @@ private:
 				if (security.GetBidQty() == 0) {
 					throw HasNotMuchOpportunity(security, "bid");
 				}
+				Assert(!IsZero(security.GetBidPrice()));
 				result.reset(
 					new Twd::ShortPosition(
 						*this,
 						GetContext().GetTradeSystem(ecn),
 						//! @todo fixme:
 						const_cast<Security &>(security),
-						security.GetSymbol().GetCashCurrency(),
-						m_qty,
+						currency,
+						0,
 						security.GetBidPriceScaled(),
 						TimeMeasurement::Milestones(),
 						pair,
@@ -696,19 +702,24 @@ private:
 					PAIR_AB,
 					m_opportunitySource.legsNo[0],
 					*m_opportunitySource.isRising,
-					m_opportunitySource.isBuy[0]),
+					m_opportunitySource.isBuy[0],
+					m_opportunitySource.legsNo[0] == 1), 
 				newPosition(
 					PAIR_BC,
 					3,
 					*m_opportunitySource.isRising,
-					m_opportunitySource.isBuy[0]),
+					m_opportunitySource.isBuy[0],
+					m_opportunitySource.legsNo[0] == 1),
 				newPosition(
 					PAIR_AC,
 					m_opportunitySource.legsNo[1],
 					!*m_opportunitySource.isRising,
-					m_opportunitySource.isBuy[1])
+					m_opportunitySource.isBuy[1],
+					m_opportunitySource.legsNo[1] == 1)
 			};
-			GetLeg(orders, 1).OpenAtStartPrice();
+			Twd::Position &firstLeg = GetLeg(orders, 1);
+			firstLeg.SetPlanedQty(m_qty);
+			firstLeg.OpenAtStartPrice();
 			orders.swap(m_orders);
 
 			++m_opportunityNo;
@@ -748,23 +759,23 @@ private:
 		}
 
 		Twd::Position &leg = GetLeg(3);
+		AssertLt(0, leg.GetPlanedQty());
 		const auto &stat = m_stat[PAIR_BC];
 
+		const auto &ecn = leg.GetSecurity().GetSource().GetIndex();
 		if (leg.IsByRising()) {
-			const auto &statData
-				= stat.service->GetData(stat.bestBid.source);
+			const auto &statData = stat.service->GetData(ecn);
 			if (statData.current.theo > statData.current.emaSlow) {
 				return;
 			}
 		} else {
-			const auto &statData
-				= stat.service->GetData(stat.bestAsk.source);
+			const auto &statData = stat.service->GetData(ecn);
 			if (statData.current.theo < statData.current.emaSlow) {
 				return;
 			}
 		}
 
-		leg.OpenAtStartPrice();
+		leg.OpenAtCurrentPrice();
 		LogAction("detected", "signal", leg.GetLeg());
 		
 	}
@@ -825,6 +836,37 @@ private:
 		}
 	}
 
+	void StartLeg2(const Twd::Position &leg1) {
+		
+		Twd::Position &leg2 = GetLeg(2);
+		Twd::Position &leg3 = GetLeg(3);
+
+		AssertEq(0, leg2.GetPlanedQty());
+		AssertEq(0, leg3.GetPlanedQty());
+		
+		const auto &leg1Security = leg1.GetSecurity();
+		const double leg1Price = leg1Security.DescalePrice(leg1.GetOpenPrice());
+		const auto leg1Vol = leg1Price * leg1.GetOpenedQty();
+
+		const Security &leg3Security = leg3.GetSecurity();
+		const auto leg3Price = 120.0;
+		const auto &leg3QuoteCurrency
+			= leg3Security.GetSymbol().GetCashQuoteCurrency();
+		const auto &leg1QuoteCurrency
+			= leg1Security.GetSymbol().GetCashQuoteCurrency();
+		const auto leg2Qty = leg3QuoteCurrency == leg1QuoteCurrency
+			?	leg1Vol / leg3Price
+			:	leg1Vol * leg3Price;
+		
+		//! @todo remove "to qty"
+		leg2.SetPlanedQty(Qty(leg2Qty));
+		//! @todo remove "to qty"
+		leg3.SetPlanedQty(Qty(leg1Vol));
+
+		leg2.OpenAtStartPrice();
+
+	}
+
 	void OnCancel(
 			const char *reason,
 			const Twd::Position &reasonOrder,
@@ -846,6 +888,12 @@ private:
 	void WriteLogHead() {
 		m_strategyLog.Write(
 			[&](StrategyLogRecord &record) {
+				const auto &baseCurrency
+					= m_stat[0]
+						.service
+						->GetSecurity(0)
+						.GetSymbol()
+						.GetCashBaseCurrency();
 				record
 					%	"No"
 					%	"Time"
@@ -855,8 +903,8 @@ private:
 					%	"Action orders count"
 					%	"PnL order (price)"
 					%	"PnL order (vol)"
-					%	"PnL total (price)"
-					%	"PnL total (vol)"
+					%	"PnL ("
+						% '\0' % ConvertToIsoPch(baseCurrency) % '\0' % ")"
 					%	"Y1"
 					%	"Y2";
 				foreach (const auto &stat, m_stat) {
@@ -869,8 +917,10 @@ private:
 							.c_str();
 					record
 						%	pair % '\0' % " ECN"
-						%	pair % '\0' % " direction"
 						%	pair % '\0' % " leg no."
+						%	pair % '\0' % " direction"
+						%	pair % '\0'	% " order qty"
+						%	pair % '\0'	% " order currency"
 						%	pair % '\0' % " order state" 
 						%	pair % '\0' % " price start"
 						%	pair % '\0' % " price exec"
@@ -936,9 +986,15 @@ private:
 			const auto &order = *m_orders[pair];
 			const Security &security = order.GetSecurity();
 			record
-				%	security.GetSource().GetTag()
-				%	(order.GetType() == Position::TYPE_LONG ? "buy" : "sell")
-				%	order.GetLeg();
+				% security.GetSource().GetTag()
+				% order.GetLeg()
+				% (order.GetType() == Position::TYPE_LONG ? "buy" : "sell");
+			if (order.GetPlanedQty() == 0) {
+				record % ' ';
+			} else {
+				record % order.GetPlanedQty();
+			}
+			record % ConvertToIsoPch(order.GetCurrency());
 			if (!order.IsStarted()) {
 				AssertEq(0, order.GetOrdersCount());
 				record % "wait";
@@ -987,17 +1043,26 @@ private:
 
 		const auto &writePnlOrder = [](
 				const Twd::Position &order,
+				bool price,
+				bool vol,
 				StrategyLogRecord &record) {
+			Assert(price || vol);
 			Assert(order.IsOpened());
-			const auto &pnlScaled = order.GetType() == Position::TYPE_LONG
+			const auto &priceDiffScaled = order.GetType() == Position::TYPE_LONG
 				?	order.IsClosed()
 						?	order.GetClosePrice() - order.GetOpenPrice()
 						:	order.GetOpenStartPrice() - order.GetOpenPrice()  
 				:	order.IsClosed()
 						?	order.GetOpenPrice() - order.GetClosePrice() 
 						:	order.GetOpenPrice() - order.GetOpenStartPrice();
-			const double pnl = order.GetSecurity().DescalePrice(pnlScaled);
-			record % pnl % (pnl * order.GetOpenedQty());
+			const double priceDiff
+				= order.GetSecurity().DescalePrice(priceDiffScaled);
+			if (price) {
+				record % priceDiff;
+			}
+			if (vol) {
+				record % (priceDiff * order.GetOpenedQty());
+			}
 		};
 		
 		const auto &writePnlOrderIfSet = [&](StrategyLogRecord &record) {
@@ -1006,21 +1071,25 @@ private:
 				record % ' ' % ' ';
 				return;
 			}
-			writePnlOrder(*reasonOrder, record);
+			writePnlOrder(*reasonOrder, true, true, record);
 		};
 
 		const auto &writePnlTotal = [&](StrategyLogRecord &record) {
 			if (!showTotalPnl) {
-				record % ' ' % ' ';
+				record % ' ';
 				return;
 			}
 			if (GetLeg(3).IsActive()) {
 				Assert(GetLeg(1).IsOpened());
 				Assert(GetLeg(1).IsClosed());
 				Assert(!GetLeg(2).IsOpened());
-				writePnlOrder(GetLeg(1), record);
+				writePnlOrder(GetLeg(1), false, true, record);
 			} else {
-				record % '-' % '-';
+// 				const Twd::Position &secondLeg = GetLeg(2);
+// 				const double secondLegInBase
+// 					= Qty(secondLeg.GetOpenedQty() / secondLeg.GetOpenPrice());
+// 				record % (secondLegInBase - GetLeg(1).GetOpenedQty());
+				record % '-';
 			}
 		};
 

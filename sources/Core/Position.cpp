@@ -139,7 +139,7 @@ public:
 	Security &m_security;
 	const Currency m_currency;
 
-	Qty m_planedQty;
+	boost::atomic<Qty> m_planedQty;
 
 	const ScaledPrice m_openStartPrice;
 	DynamicData m_opened;
@@ -188,7 +188,7 @@ public:
 			m_cancelState(CANCEL_STATE_NOT_CANCELED),
 			m_tag(m_strategy->GetTag()),
 			m_timeMeasurement(timeMeasurement) {
-		AssertLt(0, m_planedQty);
+		//...//
 	}
 
 public:
@@ -666,7 +666,7 @@ public:
 		}
 
 		m_opened.time = m_security.GetContext().GetCurrentTime();
-		m_opened.qty = m_planedQty;
+		m_opened.qty = m_planedQty.load();
 		m_opened.orderId = openOrderId;
 
 		if (m_strategy) {
@@ -694,6 +694,7 @@ public:
 		Assert(!m_position.IsClosed());
 		Assert(!m_position.IsCompleted());
 		Assert(!m_position.HasActiveOrders());
+		AssertLt(0, m_position.GetPlanedQty());
 
 		auto qtyToOpen = m_position.GetNotOpenedQty();
 		const char *action = "open-pre";
@@ -1087,11 +1088,16 @@ Position::StateUpdateConnection Position::Subscribe(
 	return StateUpdateConnection(m_pimpl->m_stateUpdateSignal.connect(slot));
 }
 
+void Position::SetPlanedQty(const Qty &newPlanedQty) {
+	AssertLt(0, newPlanedQty);
+	m_pimpl->m_planedQty = newPlanedQty;
+}
+
 Qty Position::GetPlanedQty() const {
 	return m_pimpl->m_planedQty;
 }
 
-ScaledPrice Position::GetOpenStartPrice() const {
+const ScaledPrice & Position::GetOpenStartPrice() const {
 	return m_pimpl->m_openStartPrice;
 }
 
@@ -1105,7 +1111,7 @@ void Position::SetOpenedQty(const Qty &newQty) const throw() {
 	const Implementation::WriteLock lock(m_pimpl->m_mutex);
 	m_pimpl->m_opened.qty = newQty;
 	if (m_pimpl->m_opened.qty > m_pimpl->m_planedQty) {
-		m_pimpl->m_planedQty = m_pimpl->m_opened.qty;
+		m_pimpl->m_planedQty = m_pimpl->m_opened.qty.load();
 	}
 }
 
@@ -1135,7 +1141,7 @@ OrderId Position::OpenAtMarketPrice() {
 
 OrderId Position::OpenAtMarketPrice(const OrderParams &params) {
 	return m_pimpl->Open(
-		[&](Qty qty) -> OrderId {
+		[&](const Qty &qty) -> OrderId {
 			return DoOpenAtMarketPrice(qty, params);
 		});
 }

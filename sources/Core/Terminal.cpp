@@ -190,7 +190,7 @@ private:
 		Currency GetCurrency() const {
 			return m_currency != numberOfCurrencies
 				?	m_currency
-				:	m_security->GetSymbol().GetCashCurrency();
+				:	m_security->GetSymbol().GetCashBaseCurrency();
 		}
 		OrderParams GetOrderParams() const {
 			OrderParams result;
