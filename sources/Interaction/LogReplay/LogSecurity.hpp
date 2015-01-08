@@ -59,6 +59,7 @@ namespace trdk {  namespace Interaction { namespace LogReplay {
 	private:
 
 		bool Read();
+		bool ReadFieldFromFile(boost::array<char, 255> &);
 
 	private:
 
