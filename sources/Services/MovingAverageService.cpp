@@ -488,7 +488,9 @@ MovingAverageService::~MovingAverageService() {
 	delete m_pimpl;
 }
 
-bool MovingAverageService::OnServiceDataUpdate(const Service &service) {
+bool MovingAverageService::OnServiceDataUpdate(
+		const Service &service,
+		const TimeMeasurement::Milestones &) {
 	const auto &barService = m_pimpl->CastToBarService(service);
 	AssertLt(0, barService.GetSize());
 	return OnNewBar(barService.GetLastBar());

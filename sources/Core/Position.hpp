@@ -105,7 +105,7 @@ namespace trdk {
 
 		const trdk::Lib::Currency & GetCurrency() const;
 
-		Lib::TimeMeasurement::Milestones & GetTimeMeasurement();
+		const Lib::TimeMeasurement::Milestones & GetTimeMeasurement();
 
 	public:
 

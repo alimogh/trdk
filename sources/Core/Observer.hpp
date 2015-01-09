@@ -20,9 +20,9 @@ namespace trdk {
 	public:
 
 		Observer(
-				trdk::Context &,
-				const std::string &name,
-				const std::string &tag);
+			trdk::Context &,
+			const std::string &name,
+			const std::string &tag);
 		~Observer();
 
 	public:
@@ -33,16 +33,18 @@ namespace trdk {
 
 		void RaiseLevel1UpdateEvent(Security &);
 		void RaiseLevel1TickEvent(
-					trdk::Security &,
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &);
+				trdk::Security &,
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &);
 		void RaiseNewTradeEvent(
-					trdk::Security &,
-					const boost::posix_time::ptime &,
-					trdk::ScaledPrice,
-					trdk::Qty,
-					trdk::OrderSide);
-		void RaiseServiceDataUpdateEvent(const trdk::Service &);
+				trdk::Security &,
+				const boost::posix_time::ptime &,
+				trdk::ScaledPrice,
+				trdk::Qty,
+				trdk::OrderSide);
+		void RaiseServiceDataUpdateEvent(
+				const trdk::Service &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	};
 

@@ -244,14 +244,16 @@ public:
 
 	}
 
-	virtual void OnServiceDataUpdate(const Service &service) {
+	virtual void OnServiceDataUpdate(
+			const Service &service,
+			const TimeMeasurement::Milestones &timeMeasurement) {
 
 		UpdateStat(service);
 
 		if (IsActive()) {
-			CheckClosePossibility();
+			CheckClosePossibility(timeMeasurement);
 		} else {
-			CheckOpenPossibility();
+			CheckOpenPossibility(timeMeasurement);
 		}
 
 	}
@@ -604,11 +606,16 @@ private:
 
 	}
 
-	void CheckOpenPossibility() {
+	void CheckOpenPossibility(
+			const TimeMeasurement::Milestones &timeMeasurement) {
 
  		if (!HasOpportunity()) {
+			timeMeasurement.Measure(
+				TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
  			return;
  		}
+
+		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
 
 		CalcOpenPossibility();
 		if (!m_opportunitySource.isRising) {
@@ -657,7 +664,7 @@ private:
 						currency,
 						0,
 						security.GetAskPriceScaled(),
-						TimeMeasurement::Milestones(),
+						timeMeasurement,
 						pair,
 						legNo,
 						isRising,
@@ -676,7 +683,7 @@ private:
 						currency,
 						0,
 						security.GetBidPriceScaled(),
-						TimeMeasurement::Milestones(),
+						timeMeasurement,
 						pair,
 						legNo,
 						isRising,
@@ -707,13 +714,20 @@ private:
 					m_opportunitySource.isBuy[1],
 					m_opportunitySource.legsNo[1] == 1)
 			};
-			Twd::Position &firstLeg = GetLeg(orders, 1);
-			firstLeg.SetPlanedQty(m_qty);
-			firstLeg.OpenAtStartPrice();
-			orders.swap(m_orders);
 
+			{
+				Twd::Position &firstLeg = GetLeg(orders, 1);
+				firstLeg.SetPlanedQty(m_qty);
+				timeMeasurement.Measure(
+					TimeMeasurement::SM_STRATEGY_EXECUTION_START);
+				firstLeg.OpenAtStartPrice();
+			}
+
+			orders.swap(m_orders);
 			++m_opportunityNo;
 			LogAction("detected", "signal", "1");
+
+			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
 		} catch (const HasNotMuchOpportunity &ex) {
 			GetTradingLog().Write(
@@ -729,24 +743,31 @@ private:
 
 	}
 
-	void CheckClosePossibility() {
+	void CheckClosePossibility(
+			const TimeMeasurement::Milestones &timeMeasurement) {
 
 		foreach (const auto &leg, m_orders) {
 			switch (leg->GetLeg()) {
 				case 1:
 				case 2:
 					if (leg->IsActive()) {
+						timeMeasurement.Measure(
+							TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 						return;
 					}
 					break;
 				case 3:
 					if (leg->IsStarted()) {
+						timeMeasurement.Measure(
+							TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 						return;
 					}
 					Assert(leg->IsActive());
 					break;
 			}
 		}
+
+		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
 
 		Twd::Position &leg = GetLeg(3);
 		AssertLt(0, leg.GetPlanedQty());
@@ -764,9 +785,12 @@ private:
 				return;
 			}
 		}
-
+		
+		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_EXECUTION_START);
 		leg.OpenAtCurrentPrice();
 		LogAction("detected", "signal", leg.GetLeg());
+
+		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 		
 	}
 
@@ -870,7 +894,7 @@ private:
 			showOrderPnl,
 			showTotalPnl);
 		m_orders.fill(boost::shared_ptr<Twd::Position>());
-		CheckOpenPossibility();
+		CheckOpenPossibility(TimeMeasurement::Milestones());
 	}
 
 private:

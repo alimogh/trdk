@@ -46,7 +46,7 @@ namespace trdk { namespace Strategies { namespace Test {
 		
 		virtual void OnLevel1Update(
 					Security &security,
-					Lib::TimeMeasurement::Milestones &timeMeasurement) {
+					const Lib::TimeMeasurement::Milestones &timeMeasurement) {
 			GetContext().GetLog().Debug(
 				"%1% (%6%): bid = %2% / %3%, ask = %4% / %5%;",
 				security.GetSymbol(),

@@ -925,7 +925,7 @@ const Currency & Position::GetCurrency() const {
 	return m_pimpl->m_currency;
 }
 
-TimeMeasurement::Milestones & Position::GetTimeMeasurement() {
+const TimeMeasurement::Milestones & Position::GetTimeMeasurement() {
 	return m_pimpl->m_timeMeasurement;
 }
 

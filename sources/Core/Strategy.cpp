@@ -342,7 +342,7 @@ Strategy::TradingLog & Strategy::GetTradingLog() const throw() {
 
 void Strategy::OnLevel1Update(
 		Security &security,
-		TimeMeasurement::Milestones &) {
+		const TimeMeasurement::Milestones &) {
 	GetLog().Error(
 		"Subscribed to %1% Level 1 Updates, but can't work with it"
 			" (hasn't OnLevel1Update method implementation).",
@@ -389,7 +389,7 @@ void Strategy::Unregister(Position &position) throw() {
 
 void Strategy::RaiseLevel1UpdateEvent(
 			Security &security,
-			TimeMeasurement::Milestones &timeMeasurement) {
+			const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
 	if (IsBlocked()) {
 		return;
@@ -422,12 +422,14 @@ void Strategy::RaiseNewTradeEvent(
 	OnNewTrade(service, time, price, qty, side);
 }
 
-void Strategy::RaiseServiceDataUpdateEvent(const Service &service) {
+void Strategy::RaiseServiceDataUpdateEvent(
+		const Service &service,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
 	if (IsBlocked()) {
 		return;
 	}
-	OnServiceDataUpdate(service);
+	OnServiceDataUpdate(service, timeMeasurement);
 }
 
 void Strategy::RaisePositionUpdateEvent(Position &position) {
@@ -470,6 +472,7 @@ void Strategy::RaiseBookUpdateTickEvent(
 	if (IsBlocked()) {
 		return;
 	}
+	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
 	OnBookUpdateTick(security, book, timeMeasurement);
 }
 

@@ -84,7 +84,9 @@ namespace trdk { namespace Services {
 
 	public:
 
-		virtual bool OnServiceDataUpdate(const trdk::Service &);
+		virtual bool OnServiceDataUpdate(
+				const trdk::Service &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 
 		bool OnNewBar(const trdk::Services::BarService::Bar &);
 

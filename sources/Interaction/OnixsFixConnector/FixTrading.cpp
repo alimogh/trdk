@@ -425,7 +425,7 @@ fix::Message & FixTrading::GetPreallocatedMarketOrderMessage(
 
 void FixTrading::Send(
 			fix::Message &message,
-			TimeMeasurement::Milestones &timeMeasurement) {
+			const TimeMeasurement::Milestones &timeMeasurement) {
 	timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_SEND);
 	m_session.Get().send(&message);
 	timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_SENT);

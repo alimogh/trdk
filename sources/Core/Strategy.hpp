@@ -120,7 +120,7 @@ namespace trdk {
 
 		virtual void OnLevel1Update(
 				trdk::Security &,
-				trdk::Lib::TimeMeasurement::Milestones &);
+				const trdk::Lib::TimeMeasurement::Milestones &);
 
 		virtual void OnPositionUpdate(trdk::Position &);
 
@@ -139,7 +139,7 @@ namespace trdk {
 
 		void RaiseLevel1UpdateEvent(
 				trdk::Security &,
-				trdk::Lib::TimeMeasurement::Milestones &);
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		void RaiseLevel1TickEvent(
 				trdk::Security &,
 				const boost::posix_time::ptime &,
@@ -150,7 +150,9 @@ namespace trdk {
 				trdk::ScaledPrice,
 				trdk::Qty,
 				trdk::OrderSide);
-		void RaiseServiceDataUpdateEvent(const trdk::Service &);
+		void RaiseServiceDataUpdateEvent(
+				const trdk::Service &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		void RaisePositionUpdateEvent(trdk::Position &);
 		void RaiseBookUpdateTickEvent(
 				trdk::Security &,

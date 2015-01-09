@@ -27,35 +27,48 @@ namespace {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	void RaiseServiceDataUpdateEvent(Service &);
+	void RaiseServiceDataUpdateEvent(
+			Service &,
+			const TimeMeasurement::Milestones &);
 
 	class RaiseServiceDataUpdateEventVisitor
 			: public boost::static_visitor<void>,
 			private boost::noncopyable {
 	public:
-		explicit RaiseServiceDataUpdateEventVisitor(const Service &service)
-			: m_service(service) {
+		explicit RaiseServiceDataUpdateEventVisitor(
+				const Service &service,
+				const TimeMeasurement::Milestones &timeMeasurement)
+			: m_service(service),
+			m_timeMeasurement(timeMeasurement) {
 			//...//
 		}
 	public:		
 		void operator ()(Strategy &strategy) const {
-			strategy.RaiseServiceDataUpdateEvent(m_service);
+			strategy.RaiseServiceDataUpdateEvent(m_service, m_timeMeasurement);
 		}
 		void operator ()(Service &service) const {
-			if (!service.RaiseServiceDataUpdateEvent(m_service)) {
+			if (
+					!service.RaiseServiceDataUpdateEvent(
+						m_service,
+						m_timeMeasurement)) {
 				return;
 			}
-			RaiseServiceDataUpdateEvent(service);
+			RaiseServiceDataUpdateEvent(service, m_timeMeasurement);
 		}
 		void operator ()(Observer &observer) const {
-			observer.RaiseServiceDataUpdateEvent(m_service);
+			observer.RaiseServiceDataUpdateEvent(m_service, m_timeMeasurement);
 		}
 	private:
 		const Service &m_service;
+		const TimeMeasurement::Milestones &m_timeMeasurement;
 	};
 
-	void RaiseServiceDataUpdateEvent(Service &service) {
-		const RaiseServiceDataUpdateEventVisitor visitor(service);
+	void RaiseServiceDataUpdateEvent(
+			Service &service,
+			const TimeMeasurement::Milestones &timeMeasurement) {
+		const RaiseServiceDataUpdateEventVisitor visitor(
+			service,
+			timeMeasurement);
 		foreach (auto subscriber, service.GetSubscribers()) {
 			try {
 				boost::apply_visitor(visitor, subscriber);
@@ -126,8 +139,8 @@ void SubscriberPtrWrapper::Block() const throw() {
 }
 
 void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
-			Security &security,
-			TimeMeasurement::Milestones &timeMeasurement)
+		Security &security,
+		const TimeMeasurement::Milestones &timeMeasurement)
 		const {
 
 	class Visitor
@@ -136,7 +149,7 @@ void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
 	public:		
 		explicit Visitor(
 					Security &security,
-					TimeMeasurement::Milestones &timeMeasurement)
+					const TimeMeasurement::Milestones &timeMeasurement)
 			: m_security(security),
 			m_timeMeasurement(timeMeasurement) {
 			//...//
@@ -147,7 +160,7 @@ void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
 		}
 		void operator ()(Service &service) const {
 			if (service.RaiseLevel1UpdateEvent(m_security)) {
-				RaiseServiceDataUpdateEvent(service);
+				RaiseServiceDataUpdateEvent(service, m_timeMeasurement);
 			}
 		}
 		void operator ()(Observer &observer) const {
@@ -155,21 +168,27 @@ void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
 		}
 	private:
 		Security &m_security;
-		TimeMeasurement::Milestones &m_timeMeasurement;
+		const TimeMeasurement::Milestones &m_timeMeasurement;
 	};
 
 	boost::apply_visitor(Visitor(security, timeMeasurement), m_subscriber);
 
 }
 
-void SubscriberPtrWrapper::RaiseLevel1TickEvent(const Level1Tick &tick) const {
+void SubscriberPtrWrapper::RaiseLevel1TickEvent(
+		const Level1Tick &tick,
+		const TimeMeasurement::Milestones &timeMeasurement)
+		const {
 
 	class Visitor
 			: public boost::static_visitor<void>,
 			private boost::noncopyable {
 	public:		
-		explicit Visitor(const Level1Tick &tick)
-			: m_tick(tick) {
+		explicit Visitor(
+				const Level1Tick &tick,
+				const TimeMeasurement::Milestones &timeMeasurement)
+			: m_tick(tick),
+			m_timeMeasurement(timeMeasurement) {
 			//...//
 		}
 	public:
@@ -185,7 +204,7 @@ void SubscriberPtrWrapper::RaiseLevel1TickEvent(const Level1Tick &tick) const {
 						*m_tick.security,
 						m_tick.time,
 						m_tick.value)) {
-				RaiseServiceDataUpdateEvent(service);
+				RaiseServiceDataUpdateEvent(service, m_timeMeasurement);
 			}
 		}
 		void operator ()(Observer &observer) const {
@@ -196,20 +215,27 @@ void SubscriberPtrWrapper::RaiseLevel1TickEvent(const Level1Tick &tick) const {
 		}
 	private:
 		const Level1Tick &m_tick;
+		const TimeMeasurement::Milestones &m_timeMeasurement;
 	};
 
-	boost::apply_visitor(Visitor(tick), m_subscriber);
+	boost::apply_visitor(Visitor(tick, timeMeasurement), m_subscriber);
 
 }
 
-void SubscriberPtrWrapper::RaiseNewTradeEvent(const Trade &trade) const {
+void SubscriberPtrWrapper::RaiseNewTradeEvent(
+		const Trade &trade,
+		const TimeMeasurement::Milestones &timeMeasurement)
+		const {
 
 	class Visitor
 			: public boost::static_visitor<void>,
 			private boost::noncopyable {
 	public:		
-		explicit Visitor(const Trade &trade)
-			: m_trade(trade) {
+		explicit Visitor(
+				const Trade &trade,
+				const TimeMeasurement::Milestones &timeMeasurement)
+			: m_trade(trade),
+			m_timeMeasurement(timeMeasurement) {
 			//...//
 		}
 	public:
@@ -229,7 +255,7 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(const Trade &trade) const {
 						m_trade.price,
 						m_trade.qty,
 						m_trade.side)) {
-				RaiseServiceDataUpdateEvent(service);
+				RaiseServiceDataUpdateEvent(service, m_timeMeasurement);
 			}
 		}
 		void operator ()(Observer &observer) const {
@@ -242,9 +268,10 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(const Trade &trade) const {
 		}
 	private:
 		const Trade &m_trade;
+		const TimeMeasurement::Milestones &m_timeMeasurement;
 	};
 
-	boost::apply_visitor(Visitor(trade), m_subscriber);
+	boost::apply_visitor(Visitor(trade, timeMeasurement), m_subscriber);
 
 }
 
@@ -281,15 +308,19 @@ void SubscriberPtrWrapper::RaisePositionUpdateEvent(Position &position) const {
 }
 
 void SubscriberPtrWrapper::RaiseBrokerPositionUpdateEvent(
-			const BrokerPosition &position)
+		const BrokerPosition &position,
+		const TimeMeasurement::Milestones &timeMeasurement)
 		const {
 
 	class Visitor
 			: public boost::static_visitor<void>,
 			private boost::noncopyable {
 	public:		
-		explicit Visitor(const BrokerPosition &position)
-			: m_position(position) {
+		explicit Visitor(
+				const BrokerPosition &position,
+				const TimeMeasurement::Milestones &timeMeasurement)
+			: m_position(position),
+			m_timeMeasurement(timeMeasurement) {
 			//...//
 		}
 	public:
@@ -305,7 +336,7 @@ void SubscriberPtrWrapper::RaiseBrokerPositionUpdateEvent(
 						*m_position.security,
 						m_position.qty,
 						m_position.isInitial)) {
-				RaiseServiceDataUpdateEvent(service);
+				RaiseServiceDataUpdateEvent(service, m_timeMeasurement);
 			}
 		}
 		void operator ()(Observer &observer) const {
@@ -316,15 +347,17 @@ void SubscriberPtrWrapper::RaiseBrokerPositionUpdateEvent(
 		}
 	private:
 		const BrokerPosition &m_position;
+		const TimeMeasurement::Milestones &m_timeMeasurement;
 	};
 
-	boost::apply_visitor(Visitor(position), m_subscriber);
+	boost::apply_visitor(Visitor(position, timeMeasurement), m_subscriber);
 
 }
 
 void SubscriberPtrWrapper::RaiseNewBarEvent(
 		Security &security,
-		const Security::Bar &bar)
+		const Security::Bar &bar,
+		const TimeMeasurement::Milestones &timeMeasurement)
 		const {
 
 	class Visitor
@@ -333,9 +366,11 @@ void SubscriberPtrWrapper::RaiseNewBarEvent(
 	public:		
 		explicit Visitor(
 				Security &security,
-				const Security::Bar &bar)
+				const Security::Bar &bar,
+				const TimeMeasurement::Milestones &timeMeasurement)
 			: m_source(security),
-			m_bar(bar) {
+			m_bar(bar),
+			m_timeMeasurement(timeMeasurement) {
 			//...//
 		}
 	public:
@@ -344,7 +379,7 @@ void SubscriberPtrWrapper::RaiseNewBarEvent(
 		}
 		void operator ()(Service &service) const {
 			if (service.RaiseNewBarEvent(m_source, m_bar)) {
-				RaiseServiceDataUpdateEvent(service);
+				RaiseServiceDataUpdateEvent(service, m_timeMeasurement);
 			}
 		}
 		void operator ()(Observer &observer) const {
@@ -353,16 +388,20 @@ void SubscriberPtrWrapper::RaiseNewBarEvent(
 	private:
 		Security &m_source;
 		const Security::Bar &m_bar;
+		const TimeMeasurement::Milestones &m_timeMeasurement;
 	};
 
-	boost::apply_visitor(Visitor(security, bar), m_subscriber);
+	boost::apply_visitor(
+		Visitor(security, bar, timeMeasurement),
+		m_subscriber);
 
 }
 
 void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
 		Security &security,
 		const Security::Book &book,
-		const TimeMeasurement::Milestones &timeMeasurement) {
+		const TimeMeasurement::Milestones &timeMeasurement)
+		const {
 	
 	class Visitor
 			: public boost::static_visitor<void>,
@@ -390,7 +429,7 @@ void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
 						m_source,
 						m_book,
 						m_timeMeasurement)) {
-				RaiseServiceDataUpdateEvent(service);
+				RaiseServiceDataUpdateEvent(service, m_timeMeasurement);
 			}
 		}
 		void operator ()(Observer &) const {

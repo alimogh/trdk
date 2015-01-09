@@ -239,7 +239,9 @@ BollingerBandsService::~BollingerBandsService() {
 	delete m_pimpl;
 }
 
-bool BollingerBandsService::OnServiceDataUpdate(const Service &service) {
+bool BollingerBandsService::OnServiceDataUpdate(
+		const Service &service,
+		const TimeMeasurement::Milestones &) {
 	const auto &maService = m_pimpl->CastToMaService(service);
 	Assert(!maService.IsEmpty());
 	return OnNewData(maService.GetLastPoint());

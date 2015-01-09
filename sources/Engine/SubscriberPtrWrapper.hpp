@@ -76,17 +76,31 @@ namespace trdk { namespace Engine {
 
 		void RaiseLevel1UpdateEvent(
 				Security &,
-				Lib::TimeMeasurement::Milestones &)
+				const Lib::TimeMeasurement::Milestones &)
 				const;
-		void RaiseLevel1TickEvent(const Level1Tick &) const;
-		void RaiseNewTradeEvent(const Trade &) const;
+		void RaiseLevel1TickEvent(
+				const Level1Tick &,
+				const Lib::TimeMeasurement::Milestones &)
+				const;
+		void RaiseNewTradeEvent(
+				const Trade &,
+				const Lib::TimeMeasurement::Milestones &)
+				const;
 		void RaisePositionUpdateEvent(Position &) const;
-		void RaiseBrokerPositionUpdateEvent(const BrokerPosition &) const;
-		void RaiseNewBarEvent(Security &, const Security::Bar &) const;
+		void RaiseBrokerPositionUpdateEvent(
+				const BrokerPosition &,
+				const Lib::TimeMeasurement::Milestones &)
+				const;
+		void RaiseNewBarEvent(
+				Security &,
+				const Security::Bar &,
+				const Lib::TimeMeasurement::Milestones &) 
+				const;
 		void RaiseBookUpdateTickEvent(
 				Security &,
 				const Security::Book &,
-				const Lib::TimeMeasurement::Milestones &);
+				const Lib::TimeMeasurement::Milestones &)
+				const;
 
 	private:
 
