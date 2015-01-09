@@ -18,22 +18,7 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FxArb1Mono.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Common\Assert.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FxArb1.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FxArb1Multi.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Util.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FxMbStrategyLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TriangulationWithDirectionStatService.cpp">
@@ -51,15 +36,6 @@
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Api.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EquationPosition.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FxArb1.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Util.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FxMbStrategyLog.hpp">

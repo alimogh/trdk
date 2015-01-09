@@ -1,7 +1,5 @@
 
 EXPORTS
-	CreateFxArb1MonoStrategy
-	CreateFxArb1MultiStrategy
 
 	CreateTriangulationWithDirectionStatService
 	CreateTriangulationWithDirectionStrategy
