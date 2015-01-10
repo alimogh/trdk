@@ -150,6 +150,7 @@ namespace trdk {
 
 		trdk::Qty GetPlanedQty() const;
 		void SetPlanedQty(const trdk::Qty &);
+		void SetOpenStartPrice(const trdk::ScaledPrice &);
 		const trdk::ScaledPrice & GetOpenStartPrice() const;
 
 		trdk::OrderId GetOpenOrderId() const throw();

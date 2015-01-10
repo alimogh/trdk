@@ -57,17 +57,28 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			m_isByRising(isByRising),
 			m_ordersCount(ordersCount),
 			m_isActive(true) {
-			Assert(!Lib::IsZero(startPrice));
+			//...//
+		}
+
+	public:
+
+		void UpdateStartOpenPriceFromCurrent() {
+			const auto &price = GetType() == Position::TYPE_LONG
+				?	GetSecurity().GetAskPriceScaled()
+				:	GetSecurity().GetBidPriceScaled();
+			SetOpenStartPrice(price);
 		}
 
 	public:
 
 		void OpenAtStartPrice() {
+			AssertLt(.0, GetOpenStartPrice());
 			OpenImmediatelyOrCancel(GetOpenStartPrice());
 			++m_ordersCount;
 		}
 
 		void OpenAtCurrentPrice() {
+			AssertLt(.0, GetOpenStartPrice());
 			const auto &price = GetType() == Position::TYPE_LONG
 				?	GetSecurity().GetAskPriceScaled()
 				:	GetSecurity().GetBidPriceScaled();
