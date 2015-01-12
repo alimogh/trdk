@@ -461,7 +461,6 @@ private:
 
 
 			Assert(!IsZero(stat->bestAsk.price));
-			stat->bestAsk.price = 1.0 / stat->bestAsk.price;
 
 			////////////////////////////////////////////////////////////////////////////////
 			// Y1 and Y2:
@@ -470,11 +469,11 @@ private:
 			m_opportunity[0]
 				= m_stat[PAIR_AB].bestBid.price
 					* m_stat[PAIR_BC].bestBid.price
-					* m_stat[PAIR_AC].bestAsk.price;
+					* (1.0 / m_stat[PAIR_AC].bestAsk.price);
 			m_opportunity[1]
 				= m_stat[PAIR_AC].bestBid.price
-					* m_stat[PAIR_BC].bestAsk.price
-					* m_stat[PAIR_AB].bestAsk.price;
+					* (1.0 / m_stat[PAIR_BC].bestAsk.price)
+					* (1.0 / m_stat[PAIR_AB].bestAsk.price);
 
 		}
 
@@ -835,7 +834,6 @@ private:
 
 			orders.swap(m_orders);
 			++m_opportunityNo;
-			m_detectOpportunity = m_opportunity;
 			LogAction("detected", "signal", "1");
 
 			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
@@ -1043,6 +1041,10 @@ private:
 						%	pair % '\0' % " price exec"
 						%	pair % '\0' % " bid"
 						%	pair % '\0' % " ask"
+						%	pair % '\0' % " best bid"
+						%	pair % '\0' % " best bid ECN"
+						%	pair % '\0' % " best ask"
+						%	pair % '\0' % " best ask ECN"
 						%	pair % '\0' % " VWAP"
 						%	pair % '\0' % " VWAP prev1"
 						%	pair % '\0' % " VWAP prev2"
@@ -1181,9 +1183,18 @@ private:
 					record % ' ';
 				}
 			}
+			// Chosen ECN bid/ask:  ///////////////////////////////////////////////////////
 			record 
 				%	security.GetBidPrice()
 				%	security.GetAskPrice();
+			// Best bid/ask and ECNs: ////////////////////////////////////////////////////
+			const Context &context = GetContext();
+			record
+				%	stat.bestBid.price
+				%	context.GetMarketDataSource(stat.bestBid.source).GetTag()
+				%	stat.bestAsk.price
+				%	context.GetMarketDataSource(stat.bestAsk.source).GetTag();
+			// Stat data: //////////////////////////////////////////////////////////////////
 			const auto &data = stat.service->GetData(
 				security.GetSource().GetIndex());
 			record
@@ -1196,6 +1207,7 @@ private:
 				%	data.current.emaSlow
 				%	data.prev1.emaSlow
 				%	data.prev2.emaSlow;
+			////////////////////////////////////////////////////////////////////////////////
 		};
 
 		const auto &writeCancelPnl = [&](
@@ -1246,7 +1258,7 @@ private:
 				} else {
 					record % ' ' % ' ';
 				}
-				record % m_detectOpportunity[0] % m_detectOpportunity[1];
+				record % m_opportunity[0] % m_opportunity[1];
 				if (isTriangleCompleted) {
 					record % yExecuted % GetCurrentYTargeted();
 				} else {
@@ -1394,8 +1406,8 @@ private:
 				accs::stats<accs::tag::count, accs::tag::mean>>
 			losersCancels;
 		double losersPnl;
-		explicit Pnl(double comisssion)
-			: comisssion(comisssion),
+		explicit Pnl(double comission)
+			: comission(comission),
 			winnersPnl(.0),
 			losersPnl(.0) {
 			//...//
@@ -1415,7 +1427,6 @@ private:
 	} m_opportunitySource;
 
 	size_t m_opportunityNo;
-	boost::array<double, 2> m_detectOpportunity;
 	Orders m_orders;
 
 };
