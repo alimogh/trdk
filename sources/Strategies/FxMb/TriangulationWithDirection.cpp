@@ -18,6 +18,7 @@
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
+namespace accs = boost::accumulators;
 
 namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	class TriangulationWithDirection;
@@ -150,9 +151,12 @@ public:
 		m_levelsCount(
 			conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
 		m_qty(conf.ReadTypedKey<Qty>("qty")),
+		m_pnl(conf.ReadTypedKey<double>("commission")),
 		m_opportunityReportStep(
 			conf.ReadTypedKey<double>("opportunity_report_step")),
 		m_opportunityNo(0) {
+
+		GetLog().Info("Commission: %1%.", m_pnl.comission);
 
 		{
 			const Stat def = {};
@@ -161,11 +165,11 @@ public:
 		m_opportunity.fill(.0);
 		m_reportedOpportunity.fill(.0);
 		
-		if (conf.ReadBoolKey("log")) {
+		if (conf.ReadBoolKey("log.strategy")) {
 		
 			const pt::ptime &now = GetContext().GetStartTime();
 			boost::format fileName(
-				"strategy_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.csv");
+				"s_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.csv");
 			fileName
 				% now.date().year()
 				% now.date().month().as_number()
@@ -178,15 +182,41 @@ public:
 					/ "strategy"
 					/ fileName.str();
 		
-			GetContext().GetLog().Info("Log: %1%.", logPath);
+			GetContext().GetLog().Info("Triangles log: %1%.", logPath);
 			fs::create_directories(logPath.branch_path());
 			m_strategyLogFile.open(
 				logPath.string().c_str(),
 				std::ios::app | std::ios::ate);
 			if (!m_strategyLogFile) {
-				throw ModuleError("Failed to open log file");
+				throw ModuleError("Failed to open triangles log file");
 			}
 			m_strategyLog.EnableStream(m_strategyLogFile);
+
+		}
+
+		if (conf.ReadBoolKey("log.pnl")) {
+		
+			const auto &logPath
+				= context.GetSettings().GetLogsDir() / "strategy" / "pnl.csv";
+		
+			GetContext().GetLog().Info("PnL log: %1%.", logPath);
+			
+			const bool isNewFile = !fs::exists(logPath);
+			if (isNewFile) {
+				fs::create_directories(logPath.branch_path());
+			}
+			
+			m_pnlLogFile.open(
+				logPath.string().c_str(),
+				std::ios::app | std::ios::ate);
+			if (!m_pnlLogFile) {
+				throw ModuleError("Failed to open PnL log file");
+			}
+			m_pnlLog.EnableStream(m_pnlLogFile);
+
+			if (isNewFile) {
+				WritePnlLogHead();
+			}
 
 		}
 
@@ -235,7 +265,7 @@ public:
 				}
 			}
 			if (isFull) {
-				WriteLogHead();
+				WriteStrategyLogHead();
 			}
 		}
 
@@ -323,7 +353,7 @@ public:
 			AssertEq(1, order.GetLeg());
 			
 			if (order.GetActiveQty() == 0) {
-				OnCancel("exec report", order, true);
+				OnCancel("exec report", order);
 			} else {
 				CloseLeg(order);
 			}
@@ -970,23 +1000,15 @@ private:
 
 	}
 
-	void OnCancel(
-			const char *reason,
-			const Twd::Position &reasonOrder,
-			bool showOrderPnl = false) {
-		LogAction(
-			"canceled",
-			reason,
-			reasonOrder.GetLeg(),
-			&reasonOrder,
-			showOrderPnl);
+	void OnCancel(const char *reason, const Twd::Position &reasonOrder) {
+		LogAction("canceled", reason, reasonOrder.GetLeg(), &reasonOrder);
 		m_orders.fill(boost::shared_ptr<Twd::Position>());
 		CheckOpenPossibility(TimeMeasurement::Milestones());
 	}
 
 private:
 
-	void WriteLogHead() {
+	void WriteStrategyLogHead() {
 		m_strategyLog.Write(
 			[&](StrategyLogRecord &record) {
 				record
@@ -1044,12 +1066,37 @@ private:
 			});
 	}
 
+	void WritePnlLogHead() {
+		m_pnlLog.Write(
+			[&](StrategyLogRecord &record) {
+				record
+					%	"Date and logs #"
+					%	"Triangle ID (winner)"
+					%	"Winners"
+					%	"Triangle ID (loser)"
+					%	"Losers"
+					%	"Avg winners"
+					%	"Avg losers"
+					%	"# of winners"
+					%	"# of losers"
+					%	"Cancel ID (winner)"
+					%	"Winners"
+					%	"Cancel ID (loser)"
+					%	"Losers"
+					%	"Avg winners"
+					%	"Avg losers"
+					%	"# of winners"
+					%	"# of losers"
+					%	"P & L with commissions"
+					%	"P & L without commissions";
+			});
+	};
+
 	void LogAction(
 			const char *action,
 			const char *reason,
 			size_t actionLeg,
-			const Twd::Position *const reasonOrder = nullptr,
-			bool showOrderPnl = false) {
+			const Twd::Position *const reasonOrder = nullptr) {
 		const char *actionLegStr;
 		switch (actionLeg) {
 			case 1:
@@ -1070,16 +1117,14 @@ private:
 			action,
 			reason,
 			actionLegStr,
-			reasonOrder,
-			showOrderPnl);
+			reasonOrder);
 	}
 
 	void LogAction(
 			const char *action,
 			const char *reason,
 			const char *actionLegs,
-			const Twd::Position *const reasonOrder = nullptr,
-			bool showOrderPnl = false) {
+			const Twd::Position *const reasonOrder = nullptr) {
 
 		Assert(IsActive());
 
@@ -1153,13 +1198,9 @@ private:
 				%	data.prev2.emaSlow;
 		};
 
-		const auto &writeClosePnl = [&](StrategyLogRecord &record) {
-			if (!showOrderPnl || !reasonOrder) {
-				Assert(!showOrderPnl);
-				record % ' ' % ' ';
-				return;
-			}
-			const auto &order = *reasonOrder;
+		const auto &writeCancelPnl = [&](
+				const Twd::Position &order,
+				StrategyLogRecord &record) {
 			Assert(order.IsOpened());
 			Assert(order.IsClosed());
 			const auto &priceDiffScaled = order.GetType() == Position::TYPE_LONG
@@ -1169,6 +1210,22 @@ private:
 				= order.GetSecurity().DescalePrice(priceDiffScaled);
 			record % priceDiff % (priceDiff * order.GetOpenedQty());
 		};
+
+		const bool isTriangleCanceled
+			= reasonOrder
+				&& reasonOrder->GetLeg() == 1
+				&& reasonOrder->IsClosed();
+		const bool isTriangleCompleted
+			= reasonOrder
+				&& reasonOrder->GetLeg() == 3
+				&& reasonOrder->IsOpened();
+		Assert(
+			isTriangleCanceled != isTriangleCompleted
+				|| !isTriangleCompleted);
+
+		const double yExecuted = isTriangleCompleted
+			?	GetCurrentYExecuted()
+			:	.0;
 
 		m_strategyLog.Write(
 			[&](StrategyLogRecord &record) {
@@ -1182,14 +1239,16 @@ private:
 					record % reasonOrder->GetOrdersCount();
 				} else {
 					record % ' ';
-				}	
-				writeClosePnl(record);
+				}
+				if (isTriangleCanceled) {
+					Assert(reasonOrder);
+					writeCancelPnl(*reasonOrder, record);
+				} else {
+					record % ' ' % ' ';
+				}
 				record % m_detectOpportunity[0] % m_detectOpportunity[1];
-				if (
-						reasonOrder
-						&& reasonOrder->GetLeg() == 3
-						&& reasonOrder->IsOpened()) {
-					record % GetCurrentYExecuted() % GetCurrentYTargeted();
+				if (isTriangleCompleted) {
+					record % yExecuted % GetCurrentYTargeted();
 				} else {
 					record % ' ' % ' ';
 				}
@@ -1197,6 +1256,105 @@ private:
 					writePair(i, record);
 				}
 			});
+
+
+		const auto &writePnl = [&](StrategyLogRecord &record) {
+			const auto pnl = m_pnl.winnersPnl + m_pnl.losersPnl;
+			const auto count
+				= accs::count(m_pnl.winners) + accs::count(m_pnl.losers);
+			const auto commisson = m_pnl.comission * count;
+			record % (pnl - commisson) % pnl;
+		};
+		
+		if (isTriangleCompleted) {
+			
+			const bool isWinner = yExecuted >= 1;
+			if (isWinner) {
+				m_pnl.winners(yExecuted);
+				m_pnl.winnersPnl += yExecuted - 1;
+			} else {
+				m_pnl.losers(yExecuted);
+				m_pnl.losersPnl += yExecuted - 1;
+			}
+			
+			m_pnlLog.Write(
+				[&](StrategyLogRecord &record) {
+
+					record % ' ';
+
+					if (!isWinner) {
+						record % ' ' % ' ';
+					}
+					record % m_opportunityNo % yExecuted;
+
+					if (isWinner) {
+						record % ' ' % ' ';
+						record % accs::mean(m_pnl.winners);
+						record % ' ';
+						record % accs::count(m_pnl.winners);
+						record % ' ';
+					} else {
+						record % ' ' % accs::mean(m_pnl.losers);
+						record % ' ' % accs::count(m_pnl.losers);
+					}
+
+					for (auto i = 0; i < 8; ++i) {
+						record % ' ';
+					}
+
+					writePnl(record);
+
+				});
+
+		} else if (isTriangleCanceled) {
+
+			const Security &security = reasonOrder->GetSecurity();
+			const auto &entryPrice
+				= security.DescalePrice(reasonOrder->GetOpenPrice());
+			const auto &exitPrice
+				= security.DescalePrice(reasonOrder->GetClosePrice());
+			const auto yExecuted = reasonOrder->GetType() == Position::TYPE_LONG
+				?	(1 / entryPrice) * exitPrice
+				:	entryPrice * (1 / exitPrice);
+
+			m_pnlLog.Write(
+				[&](StrategyLogRecord &record) {
+			
+					const bool isWinner = yExecuted >= 1;
+					if (isWinner) {
+						m_pnl.winnersCancels(yExecuted);
+						m_pnl.winnersPnl += yExecuted - 1;
+					} else {
+						m_pnl.losersCancels(yExecuted);
+						m_pnl.losersPnl += yExecuted - 1;
+					}
+
+					{
+						const auto skipCount = isWinner ? 9 : 9 + 2;
+						for (auto i = 0; i < skipCount; ++i) {
+							record % ' ';
+						}
+					}
+
+					record % m_opportunityNo % yExecuted;
+
+					if (isWinner) {
+						record % ' ' % ' ';
+						record % accs::mean(m_pnl.winnersCancels);
+						record % ' ';
+						record % accs::count(m_pnl.winnersCancels);
+						record % ' ';
+					} else {
+						record % ' ' % accs::mean(m_pnl.losersCancels);
+						record % ' ' % accs::count(m_pnl.losersCancels);
+					}
+
+					writePnl(record);
+
+				});
+
+		}
+
 
 	}
 
@@ -1213,6 +1371,36 @@ private:
 
 	std::ofstream m_strategyLogFile;
 	StrategyLog m_strategyLog;
+
+	std::ofstream m_pnlLogFile;
+	StrategyLog m_pnlLog;
+	struct Pnl {
+		double comission;
+		accs::accumulator_set<
+				double,
+				accs::stats<accs::tag::count, accs::tag::mean>>
+			winners;
+		accs::accumulator_set<
+				double,
+				accs::stats<accs::tag::count, accs::tag::mean>>
+			winnersCancels;
+		double winnersPnl;
+		accs::accumulator_set<
+				double,
+				accs::stats<accs::tag::count, accs::tag::mean>>
+			losers;
+		accs::accumulator_set<
+				double,
+				accs::stats<accs::tag::count, accs::tag::mean>>
+			losersCancels;
+		double losersPnl;
+		explicit Pnl(double comisssion)
+			: comisssion(comisssion),
+			winnersPnl(.0),
+			losersPnl(.0) {
+			//...//
+		}
+	} m_pnl;
 
 	boost::array<Stat, numberOfPairs> m_stat;
 
