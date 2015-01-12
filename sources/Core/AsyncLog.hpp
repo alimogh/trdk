@@ -185,7 +185,12 @@ namespace trdk {
 						break;
 
 					case PT_CHAR:
-						WriteToDumpStream(boost::any_cast<char>(val), os);
+						{
+							const auto &ch = boost::any_cast<char>(val);
+							if (ch != ' ') {
+								WriteToDumpStream(ch, os);
+							}
+						}
 						break;
 					case PT_STRING:
 						WriteToDumpStream(
