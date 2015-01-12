@@ -73,7 +73,9 @@ void Consumer::OnNewTrade(
 		"Module subscribed to new trades, but can't work with it");
 }
 
-void Consumer::OnServiceDataUpdate(const Service &service) {
+void Consumer::OnServiceDataUpdate(
+		const Service &service,
+		const TimeMeasurement::Milestones &) {
 	GetLog().Error(
 		"Subscribed to \"%1%\", but can't work with it"
 			" (hasn't OnServiceDataUpdate method implementation).",

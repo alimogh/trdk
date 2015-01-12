@@ -176,9 +176,11 @@ bool Service::RaiseNewTradeEvent(
 	return OnNewTrade(security, time, price, qty, side);
 }
 
-bool Service::RaiseServiceDataUpdateEvent(const Service &service) {
+bool Service::RaiseServiceDataUpdateEvent(
+		const Service &service,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
-	return OnServiceDataUpdate(service);
+	return OnServiceDataUpdate(service, timeMeasurement);
 }
 
 bool Service::RaiseBrokerPositionUpdateEvent(
@@ -201,6 +203,7 @@ bool Service::RaiseBookUpdateTickEvent(
 		const Security::Book &book,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
+	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
 	return OnBookUpdateTick(security, book, timeMeasurement);
 }
 
@@ -239,7 +242,9 @@ bool Service::OnNewTrade(
 		"Service subscribed to new trades, but can't work with it");
 }
 
-bool Service::OnServiceDataUpdate(const Service &service) {
+bool Service::OnServiceDataUpdate(
+		const Service &service,
+		const TimeMeasurement::Milestones &) {
 	GetLog().Error(
 		"Subscribed to \"%1%\", but can't work with it"
 			" (hasn't OnServiceDataUpdate method implementation).",

@@ -27,6 +27,7 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 	////////////////////////////////////////////////////////////////////////////////
 
 	enum StrategyMilestone {
+		SM_DISPATCHING_DATA_STORE,
 		SM_DISPATCHING_DATA_ENQUEUE,
 		SM_DISPATCHING_DATA_DEQUEUE,
 		SM_DISPATCHING_DATA_RAISE,
@@ -67,9 +68,9 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 		}
 	public:
 		virtual void AddMeasurement(
-					const MilestoneIndex &,
-					const PeriodFromStart &)
-				= 0;
+				const MilestoneIndex &,
+				const PeriodFromStart &)
+			= 0;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -88,8 +89,14 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 		}
 
 		explicit Milestones(const boost::shared_ptr<StatAccum> &stat)
-				: m_start(Clock::now()),
-				m_stat(stat) {
+			: m_start(Clock::now()),
+			m_stat(stat) {
+			//...//
+		}
+
+		Milestones(Milestones &&rhs)
+			: m_start(std::move(rhs.m_start)),
+			m_stat(std::move(rhs.m_stat)) {
 			//...//
 		}
 
@@ -100,12 +107,15 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 	public:
 
 		void Measure(const MilestoneIndex &milestone) const {
+			if (!m_stat) {
+				return;
+			}
 			Add(milestone, GetNow());
 		}
 
 		void Add(
-					const MilestoneIndex &milestone,
-					const TimePoint &now)
+				const MilestoneIndex &milestone,
+				const TimePoint &now)
 				const {
 			Assert(m_stat);
 			m_stat->AddMeasurement(milestone, CalcPeriod(m_start, now));
@@ -118,8 +128,8 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 		}
 
 		static PeriodFromStart CalcPeriod(
-					const TimePoint &start,
-					const TimePoint &end) {
+				const TimePoint &start,
+				const TimePoint &end) {
 			typedef boost::chrono::microseconds Result;
 			const auto period = end - start;
 			return boost::chrono::duration_cast<Result>(period).count();
@@ -139,10 +149,10 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 	public:
 		
 		MilestoneStat()
-				: m_min(0),
-				m_max(0),
-				m_sum(0),
-				m_size(0) {
+			: m_min(0),
+			m_max(0),
+			m_sum(0),
+			m_size(0) {
 			//...//
 		}
 
@@ -151,7 +161,8 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 		MilestoneStat & operator |=(const PeriodFromStart &measurement) {
 			for ( ; ; ) {
 				auto prev = m_min.load(boost::memory_order_relaxed);
-				if (	(prev && measurement >= prev)
+				if (
+						(prev && measurement >= prev)
 						|| m_min.compare_exchange_weak(
 								prev,
 								measurement,
@@ -162,7 +173,8 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 			}
 			for ( ; ; ) {
 				auto prev = m_max.load(boost::memory_order_relaxed);
-				if (	(prev && measurement <= prev)
+				if (
+						(prev && measurement <= prev)
 						|| m_max.compare_exchange_weak(
 								prev,
 								measurement,
@@ -174,7 +186,8 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 			for ( ; ; ) {
 				auto prev = m_sum.load(boost::memory_order_relaxed);
 				auto sum = prev + measurement;
-				if (	m_sum.compare_exchange_weak(
+				if (
+						m_sum.compare_exchange_weak(
 							prev,
 							sum,
 							boost::memory_order_release,
@@ -240,8 +253,8 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 	public:
 
 		virtual void AddMeasurement(
-					const MilestoneIndex &milestone,
-					const PeriodFromStart &period) {
+				const MilestoneIndex &milestone,
+				const PeriodFromStart &period) {
 			AssertGt(m_milestones.size(), milestone);
 			if (milestone >= m_milestones.size()) {
 				return;
@@ -281,8 +294,8 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 } } }
 
 std::ostream & operator <<(
-			std::ostream &,
-			const trdk::Lib::TimeMeasurement::MilestoneStat &);
+		std::ostream &,
+		const trdk::Lib::TimeMeasurement::MilestoneStat &);
 std::wostream & operator <<(
-			std::wostream &,
-			const trdk::Lib::TimeMeasurement::MilestoneStat &);
+		std::wostream &,
+		const trdk::Lib::TimeMeasurement::MilestoneStat &);

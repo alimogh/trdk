@@ -141,7 +141,7 @@ public:
 
 	boost::atomic<Qty> m_planedQty;
 
-	const ScaledPrice m_openStartPrice;
+	ScaledPrice m_openStartPrice;
 	DynamicData m_opened;
 
 	ScaledPrice m_closeStartPrice;
@@ -925,7 +925,7 @@ const Currency & Position::GetCurrency() const {
 	return m_pimpl->m_currency;
 }
 
-TimeMeasurement::Milestones & Position::GetTimeMeasurement() {
+const TimeMeasurement::Milestones & Position::GetTimeMeasurement() {
 	return m_pimpl->m_timeMeasurement;
 }
 
@@ -1095,6 +1095,12 @@ void Position::SetPlanedQty(const Qty &newPlanedQty) {
 
 Qty Position::GetPlanedQty() const {
 	return m_pimpl->m_planedQty;
+}
+
+void Position::SetOpenStartPrice(const ScaledPrice &price) {
+	AssertLt(0, price);
+	AssertEq(0, m_pimpl->m_openStartPrice);
+	m_pimpl->m_openStartPrice = price;
 }
 
 const ScaledPrice & Position::GetOpenStartPrice() const {

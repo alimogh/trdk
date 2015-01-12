@@ -54,7 +54,9 @@ namespace trdk {
 				trdk::Qty,
 				trdk::OrderSide);
 
-		virtual bool OnServiceDataUpdate(const trdk::Service &);
+		virtual bool OnServiceDataUpdate(
+				const trdk::Service &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		
 		//! Notifies about broker position update.
 		/** @param security		Security.
@@ -99,7 +101,9 @@ namespace trdk {
 				trdk::ScaledPrice,
 				trdk::Qty,
 				trdk::OrderSide);
-		bool RaiseServiceDataUpdateEvent(const trdk::Service &);
+		bool RaiseServiceDataUpdateEvent(
+				const trdk::Service &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		bool RaiseBrokerPositionUpdateEvent(
 				trdk::Security &security,
 				trdk::Qty qty,

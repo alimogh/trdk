@@ -372,7 +372,7 @@ bool StatService::OnBookUpdateTick(
 
 	// If this method returns true - strategy will be notified about actual data
 	// update:
-	return true;
+	return !IsZero(data.prev2.theo);
 
 }
 

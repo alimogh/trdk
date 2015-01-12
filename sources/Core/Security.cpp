@@ -724,6 +724,8 @@ void Security::BookUpdateOperation::Commit(
 		timeMeasurement);
 
 	m_pimpl->m_security.m_pimpl->m_book = m_pimpl->m_book;
+	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_STORE);
+
 	m_pimpl->m_security.m_pimpl->m_bookUpdateTickSignal(
 		m_pimpl->m_book,
 		timeMeasurement);

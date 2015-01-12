@@ -16,10 +16,10 @@ using namespace trdk;
 using namespace trdk::Lib;
 
 Observer::Observer(
-			Context &context,
-			const std::string &name,
-			const std::string &tag)
-		: Consumer(context, "Observer", name, tag) {
+		Context &context,
+		const std::string &name,
+		const std::string &tag)
+	: Consumer(context, "Observer", name, tag) {
 	//...//
 }
 
@@ -42,24 +42,26 @@ void Observer::RaiseLevel1UpdateEvent(Security &security) {
 }
 
 void Observer::RaiseLevel1TickEvent(
-			Security &security,
-			const boost::posix_time::ptime &time,
-			const Level1TickValue &value) {
+		Security &security,
+		const boost::posix_time::ptime &time,
+		const Level1TickValue &value) {
 	const Lock lock(GetMutex());
 	OnLevel1Tick(security, time, value);
 }
 
 void Observer::RaiseNewTradeEvent(
-			Security &security,
-			const boost::posix_time::ptime &time,
-			trdk::ScaledPrice price,
-			trdk::Qty qty,
-			trdk::OrderSide side) {
+		Security &security,
+		const boost::posix_time::ptime &time,
+		trdk::ScaledPrice price,
+		trdk::Qty qty,
+		trdk::OrderSide side) {
 	const Lock lock(GetMutex());
 	OnNewTrade(security, time, price, qty, side);
 }
 
-void Observer::RaiseServiceDataUpdateEvent(const Service &service) {
+void Observer::RaiseServiceDataUpdateEvent(
+		const Service &service,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
-	OnServiceDataUpdate(service);
+	OnServiceDataUpdate(service, timeMeasurement);
 }

@@ -70,7 +70,10 @@ LogSecurity::LogSecurity(
 	if (
 			!boost::istarts_with(
 				buffer,
-				"TRDK Book Snapshots Log version 1.0 ")) {
+				"TRDK Book Snapshots Log version 1.0 ")
+			&&	!boost::istarts_with(
+					buffer,
+					"TRDK Book Snapshots Log version 1.1 ")) {
 		GetSource().GetLog().Error(
 			"Failed to open market data source for \"%1%\" in file %2%:"
 				" wrong format.",
@@ -83,7 +86,8 @@ LogSecurity::LogSecurity(
 		&buffer[0],
 		filePath);
 
-	const_cast<std::ifstream::streampos &>(m_dataStartPos) = m_file.tellg();
+	const_cast<std::ifstream::streampos &>(m_dataStartPos)
+		= m_file.tellg() - std::ifstream::streampos(1);
 
 	if (Read()) {
 		AssertNe(pt::not_a_date_time, m_currentSnapshot.time);
@@ -123,29 +127,65 @@ bool LogSecurity::Accept() {
 	return Read();
 }
 
+bool LogSecurity::ReadFieldFromFile(boost::array<char, 255> &buffer) {
+	
+	auto bufferIt = buffer.begin();
+	const auto bufferEnd = buffer.end() - 1;
+	
+	while (
+			bufferIt != bufferEnd
+			&& m_file.get(*bufferIt)
+			&& *bufferIt != '\t'
+			&& *bufferIt != '\n') {
+		if (*bufferIt != '#' && *bufferIt != '\r') {
+			++bufferIt;
+		}
+	}
+
+	bool isEndOfLine = *bufferIt == '\n';
+	Assert(bufferIt <= bufferEnd);
+	*bufferIt = 0;
+
+	return !isEndOfLine;
+
+}
+
 bool LogSecurity::Read() {
 	
 	if (m_isEof) {
 		return false;
 	}
 
-	char buffer[255] = {};
-	m_file.getline(buffer, sizeof(buffer), '\t');
-	if (!buffer[0]) {
+	boost::array<char, 255> buffer;
+
+	if (!ReadFieldFromFile(buffer) || !buffer[0]) {
 		m_isEof = true;
 		return false;
 	}
 
-	Snapshot snapshot = {
-		pt::time_from_string(&buffer[0])
-	};
+	Snapshot snapshot = {};
+
+	try {
+		snapshot.time = pt::time_from_string(&buffer[0]);
+	} catch (const std::exception &ex) {
+		GetSource().GetLog().Error(
+			"Failed to read log file to replay \"%1%\":"
+				" wrong format at record %2% (time excepted: \"%3%\").",
+			*this,
+			m_readCount + 1,
+			ex.what());
+		m_isEof = true;
+		return false;
+	}
 
 	for (auto *side = &snapshot.bids; ; ) {
 
 		double price = .0;
 		Qty qty = 0;
 
-		m_file.getline(buffer, sizeof(buffer), '\t');
+		if (!ReadFieldFromFile(buffer)) {
+			break;
+		}
 		if (!buffer[0]) {
 			GetSource().GetLog().Error(
 				"Failed to read log file to replay \"%1%\":"
@@ -154,21 +194,17 @@ bool LogSecurity::Read() {
 				m_readCount + 1);
 			m_isEof = true;
 			return false;
-		} else if (!buffer[1]) {
-			if (buffer[0] == '|') {
-				if (side != &snapshot.bids) {
-					GetSource().GetLog().Error(
-						"Failed to read log file to replay \"%1%\":"
-							" wrong format at record %2%.",
-						*this,
-						m_readCount + 1);
-					m_isEof = true;
-					return false;
-				}
-				side = &snapshot.asks;
-			} else if (buffer[0] == '#') {
-				break;
+		} else if (!buffer[1] && buffer[0] == '|') {
+			if (side != &snapshot.bids) {
+				GetSource().GetLog().Error(
+					"Failed to read log file to replay \"%1%\":"
+						" wrong format at record %2%.",
+					*this,
+					m_readCount + 1);
+				m_isEof = true;
+				return false;
 			}
+			side = &snapshot.asks;
 			continue;
 		}
 
@@ -177,14 +213,22 @@ bool LogSecurity::Read() {
 		} catch (const boost::bad_lexical_cast &) {
 			GetSource().GetLog().Error(
 				"Failed to read log file to replay \"%1%\":"
-					" wrong format at record %2%.",
+					" wrong format at record %2% (price expected).",
 				*this,
 				m_readCount + 1);
 			m_isEof = true;
 			return false;
 		}
 
-		m_file.getline(buffer, sizeof(buffer));
+		if (!ReadFieldFromFile(buffer)) {
+			GetSource().GetLog().Error(
+				"Failed to read log file to replay \"%1%\":"
+					" wrong format at record %2% (qty expected).",
+				*this,
+				m_readCount + 1);
+			m_isEof = true;
+			return false;
+		}
 		try {
 			qty = boost::lexical_cast<Qty>(&buffer[0]);
 		} catch (const boost::bad_lexical_cast &) {

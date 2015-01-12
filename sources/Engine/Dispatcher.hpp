@@ -434,6 +434,8 @@ namespace trdk { namespace Engine {
 					const BookUpdateTickEvent &bookUpdateTickEvent,
 					EventList &eventList) {
 			eventList.push_back(bookUpdateTickEvent);
+			boost::get<2>(bookUpdateTickEvent)
+				.Measure(Lib::TimeMeasurement::SM_DISPATCHING_DATA_ENQUEUE);
 			return true;
 		}
 
@@ -1156,7 +1158,8 @@ namespace trdk { namespace Engine {
 						deactivationMask,
 						lock,
 						timeMeasurement);
-					timeMeasurement.Measure(Lib::TimeMeasurement::DM_COMPLETE_ALL);
+					timeMeasurement.Measure(
+						Lib::TimeMeasurement::DM_COMPLETE_ALL);
 					if (deactivationMask.all()) {
 						break;
 					}
@@ -1205,37 +1208,47 @@ namespace trdk { namespace Engine {
 	}
 	template<>
 	inline void Dispatcher::RaiseEvent(Level1TickEvent &tick) {
-		boost::get<1>(tick).RaiseLevel1TickEvent(boost::get<0>(tick));
+		boost::get<1>(tick).RaiseLevel1TickEvent(
+			boost::get<0>(tick),
+			Lib::TimeMeasurement::Milestones());
 	}
 	template<>
 	inline void Dispatcher::RaiseEvent(NewTradeEvent &newTradeEvent) {
 		boost::get<1>(newTradeEvent).RaiseNewTradeEvent(
-			boost::get<0>(newTradeEvent));
+			boost::get<0>(newTradeEvent),
+			Lib::TimeMeasurement::Milestones());
 	}
 	template<>
-	inline void Dispatcher::RaiseEvent(PositionUpdateEvent &positionUpdateEvent) {
+	inline void Dispatcher::RaiseEvent(
+			PositionUpdateEvent &positionUpdateEvent) {
 		boost::get<1>(positionUpdateEvent).RaisePositionUpdateEvent(
 			*boost::get<0>(positionUpdateEvent));
 	}
 	template<>
 	inline void Dispatcher::RaiseEvent(
-				BrokerPositionUpdateEvent &positionUpdateEvent) {
+			BrokerPositionUpdateEvent &positionUpdateEvent) {
 		boost::get<1>(positionUpdateEvent).RaiseBrokerPositionUpdateEvent(
-			boost::get<0>(positionUpdateEvent));
+			boost::get<0>(positionUpdateEvent),
+			Lib::TimeMeasurement::Milestones());
 	}
 	template<>
 	inline void Dispatcher::RaiseEvent(NewBarEvent &newBarEvent) {
 		boost::get<2>(newBarEvent).RaiseNewBarEvent(
 			*boost::get<0>(newBarEvent),
-			boost::get<1>(newBarEvent));
+			boost::get<1>(newBarEvent),
+			Lib::TimeMeasurement::Milestones());
 	}
 	template<>
 	inline void Dispatcher::RaiseEvent(
 			BookUpdateTickEvent &bookUpdateTickEvent) {
+		Lib::TimeMeasurement::Milestones &timeMeasurement
+			= boost::get<2>(bookUpdateTickEvent);
+		timeMeasurement.Measure(
+			Lib::TimeMeasurement::SM_DISPATCHING_DATA_DEQUEUE);
 		boost::get<3>(bookUpdateTickEvent).RaiseBookUpdateTickEvent(
 			*boost::get<0>(bookUpdateTickEvent),
 			*boost::get<1>(bookUpdateTickEvent),
-			boost::get<2>(bookUpdateTickEvent));
+			timeMeasurement);
 	}
 
 } }

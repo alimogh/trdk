@@ -164,7 +164,7 @@ public:
 			throw ModuleError("Failed to open log file");
 		}
 		*m_files[source]
-			<< "TRDK Book Snapshots Log version 1.0"
+			<< "TRDK Book Snapshots Log version 1.1"
 			<< ' ' << TRDK_BUILD_IDENTITY
 			<< ' ' << GetContext().GetCurrentTime()
 			<< ' ' << security
@@ -198,8 +198,7 @@ public:
 						const Security::Book::Level &l = asks.GetLevel(i);
 						record % l.GetPrice() % l.GetQty();
 					}
-				}
-				record % '#';
+				};
 			});
 		return false;
 	}

@@ -18,6 +18,7 @@ using namespace trdk::Lib::TimeMeasurement;
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace { namespace StrategyStrings {
+	const std::string dispatchingDataStore = "data store";
 	const std::string dispatchingDataEnqueue = "data enqueue";
 	const std::string dispatchingDataDequeue = "data dequeue";
 	const std::string dispatchingDataRaise = "data raise";
@@ -31,11 +32,13 @@ const std::string & TimeMeasurement::GetMilestoneName(
 			const TimeMeasurement::StrategyMilestone &milestone) {
 	using namespace StrategyStrings;
 	static_assert(
-		numberOfStrategyMilestones == 8,
+		numberOfStrategyMilestones == 9,
 		"Milestone list changed.");
 	switch (milestone) {
 		default:
-			AssertEq(SM_DISPATCHING_DATA_ENQUEUE, milestone);
+			AssertEq(SM_DISPATCHING_DATA_STORE, milestone);
+		case SM_DISPATCHING_DATA_STORE:
+			return dispatchingDataStore;
 		case SM_DISPATCHING_DATA_ENQUEUE:
 			return dispatchingDataEnqueue;
 		case SM_DISPATCHING_DATA_DEQUEUE:

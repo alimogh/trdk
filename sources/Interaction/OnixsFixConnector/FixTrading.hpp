@@ -332,7 +332,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		void Send(
 				OnixS::FIX::Message &,
-				Lib::TimeMeasurement::Milestones &);
+				const Lib::TimeMeasurement::Milestones &);
 		void Send(const OrderToSend &);
 		void ScheduleSend(OrderToSend &);
 
