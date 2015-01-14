@@ -1387,7 +1387,11 @@ private:
 					record % ' ';
 				}
 				record % m_yDetected[Y1] % m_yDetected[Y2];
-				record % m_yCurrent[Y1] % m_yCurrent[Y2];
+				if (GetLeg(1).IsOpened()) {
+					record % m_yCurrent[Y1] % m_yCurrent[Y2];
+				} else {
+					record % ' ' % ' ';
+				}
 				if (isTriangleCompleted) {
 					record % yExecuted % GetCurrentYTargeted();
 				} else {
