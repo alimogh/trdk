@@ -173,6 +173,7 @@ public:
 			conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
 		m_qty(conf.ReadTypedKey<Qty>("qty")),
 		m_comission(conf.ReadTypedKey<double>("commission")),
+		m_currentY(numberOfYs),
 		m_opportunityReportStep(
 			conf.ReadTypedKey<double>("opportunity_report_step")),
 		m_opportunityNo(0) {
@@ -184,6 +185,7 @@ public:
 			m_stat.fill(def);
 		}
 		m_yDetected.fill(.0);
+		m_yCurrent.fill(.0);
 		m_yDetectedReported.fill(.0);
 		
 		if (conf.ReadBoolKey("log.strategy")) {
@@ -249,10 +251,22 @@ public:
 
 public:
 
-	bool HasOpportunity() const {
-		return 
+	bool HasDetectedOpportunity() const {
+		return
 			(m_yDetected[Y1] >= 1.0 && m_yDetected[Y2] > .0)
 			|| (m_yDetected[Y2] >= 1.0 && m_yDetected[Y1] > .0);
+	}
+
+	bool HasCurrentOpportunity() const {
+		AssertNe(numberOfYs, m_currentY);
+		return
+			(m_yCurrent[Y1] >= 1.0
+				&& m_yCurrent[Y2] > .0
+				&& m_currentY == Y1)
+			|| (
+				m_yCurrent[Y2] >= 1.0
+				&& m_yCurrent[Y1] > .0
+				&& m_currentY == Y2);
 	}
 
 	bool IsActive() const {
@@ -408,6 +422,9 @@ public:
 					order.GetLeg(),
 					&order);
 				m_orders.fill(boost::shared_ptr<Twd::Position>());
+#				ifdef BOOST_ENABLE_ASSERT_HANDLER
+					m_currentY = numberOfYs;
+#				endif
 				break;
 
 			default:
@@ -465,6 +482,7 @@ private:
 			
 			stat->Reset();
 			m_yDetected.fill(0);
+			m_yCurrent.fill(0);
 		
 		} else if (
 				IsZero(m_stat[PAIR_AB].bestBid.price)
@@ -475,6 +493,7 @@ private:
 				||	IsZero(m_stat[PAIR_AC].bestAsk.price)) {
 		
 			m_yDetected.fill(0);
+			m_yCurrent.fill(0);
 
 		} else {
 
@@ -487,6 +506,31 @@ private:
 					* (1.0 / m_stat[PAIR_BC].bestAsk.price)
 					* (1.0 / m_stat[PAIR_AB].bestAsk.price);
 			
+			AssertGt(1.1, m_yDetected[Y1]);
+			AssertLt(.9, m_yDetected[Y1]);
+			
+			AssertGt(1.1, m_yDetected[Y2]);
+			AssertLt(.9, m_yDetected[Y2]);
+
+			if (IsActive()) {
+			
+				m_yCurrent[Y1]
+					= m_orders[PAIR_AB]->GetSecurity().GetBidPrice()
+						* m_orders[PAIR_BC]->GetSecurity().GetBidPrice()
+						* (1 / m_orders[PAIR_AC]->GetSecurity().GetAskPrice());
+				m_yCurrent[Y2]
+					= m_orders[PAIR_AC]->GetSecurity().GetBidPrice()
+						* (1 / m_orders[PAIR_BC]->GetSecurity().GetAskPrice())
+						* (1 / m_orders[PAIR_AB]->GetSecurity().GetAskPrice());
+
+				AssertGt(1.1, m_yCurrent[Y1]);
+				AssertLt(.9, m_yCurrent[Y1]);
+			
+				AssertGt(1.1, m_yCurrent[Y2]);
+				AssertLt(.9, m_yCurrent[Y2]);
+			
+			}
+
 			AssertGt(1.1, m_yDetected[Y1]);
 			AssertLt(.9, m_yDetected[Y1]);
 			
@@ -594,7 +638,9 @@ private:
 
 	bool Detect(Detection &result) const {
 
-		Assert(HasOpportunity());
+		Assert(HasDetectedOpportunity());
+		Assert(!IsActive());
+		AssertEq(numberOfYs, m_currentY);
 
 		for (size_t pair = 0; pair < result.speed.size(); ++pair) {
 			
@@ -662,16 +708,13 @@ private:
 				if (!isnan(result.speed[PAIR_AB].falling)) {
 //! @todo:			Assert(isnan(result.speed[PAIR_AC].rising)); https://trello.com/c/NaVQzajm
 					result.fistLeg = PAIR_AB;
-				} else {
-//! @todo:			Assert(!isnan(result.speed[PAIR_AC].rising)); https://trello.com/c/NaVQzajm
+					return true;
+				} else if (!isnan(result.speed[PAIR_AC].rising)) {
 					result.fistLeg = PAIR_AC;
+					return true;
 				}
 			
-				return true;
-			
 			}
-
-			Assert(isnan(speedTest.fastestSpeed));
 
 		}
 
@@ -689,14 +732,13 @@ private:
 				result.y = Y2;
 			
 				if (!isnan(result.speed[PAIR_AB].rising)) {
-//! @todo:			Assert(isnan(result.speed[PAIR_AC].falling));
+//! @todo:			Assert(isnan(result.speed[PAIR_AC].falling));  https://trello.com/c/NaVQzajm
 					result.fistLeg = PAIR_AB;
-				} else {
-//! @todo:			Assert(!isnan(result.speed[PAIR_AC].falling));
+					return true;
+				} else if (!isnan(result.speed[PAIR_AC].falling)) {
 					result.fistLeg = PAIR_AC;
+					return true;
 				}
-			
-				return true;
 			
 			}
 
@@ -771,7 +813,9 @@ private:
 	void CheckOpenPossibility(
 			const TimeMeasurement::Milestones &timeMeasurement) {
 
- 		if (!HasOpportunity()) {
+		Assert(!IsActive());
+
+ 		if (!HasDetectedOpportunity()) {
 			timeMeasurement.Measure(
 				TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
  			return;
@@ -886,6 +930,7 @@ private:
 
 			orders.swap(m_orders);
 			++m_opportunityNo;
+			m_currentY = detection.y;
 			LogAction("detected", "signal", "1", nullptr, &detection.speed);
 
 			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
@@ -997,12 +1042,13 @@ private:
 				% (isLong ? "long" : "short");
 		};
 
-		if (!HasOpportunity()) {
+		if (!HasCurrentOpportunity()) {
 			GetTradingLog().Write(
-				"\tloss-detected\t%1%\t%2%\topp.: %3%\t%4%\tY1 = %5%, Y2 = %6%",
+				"\tloss-detected\t%1%\t%2%\topp.: %3%\t%4%"
+					"\tY1 = %5%, Y2 = %6%, current: Y%7%",
 				[&](TradingRecord &record) {
 					printTradingRecordStart(record);
-					record % m_yDetected[Y1] % m_yDetected[Y2];
+					record % m_yCurrent[Y1] % m_yCurrent[Y2] % (m_currentY + 1);
 				});
 			return PLT_LOSS;
 		}
@@ -1080,6 +1126,9 @@ private:
 	void OnCancel(const char *reason, const Twd::Position &reasonOrder) {
 		LogAction("canceled", reason, reasonOrder.GetLeg(), &reasonOrder);
 		m_orders.fill(boost::shared_ptr<Twd::Position>());
+#		ifdef BOOST_ENABLE_ASSERT_HANDLER
+			m_currentY = numberOfYs;
+#		endif
 		CheckOpenPossibility(TimeMeasurement::Milestones());
 	}
 
@@ -1500,6 +1549,8 @@ private:
 	boost::array<Stat, numberOfPairs> m_stat;
 
 	boost::array<double, numberOfYs> m_yDetected;
+	boost::array<double, numberOfYs> m_yCurrent;
+	Y m_currentY;
 	boost::array<double, numberOfYs> m_yDetectedReported;
 	const double m_opportunityReportStep;
 
