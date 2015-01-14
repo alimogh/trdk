@@ -1146,6 +1146,8 @@ private:
 					%	"Action orders count"
 					%	"Y1 detected"
 					%	"Y2 detected"
+					%	"New Y1"
+					%	"New Y2"
 					%	"Y executed"
 					%	"Y targeted";
 				foreach (const auto &stat, m_stat) {
@@ -1385,6 +1387,7 @@ private:
 					record % ' ';
 				}
 				record % m_yDetected[Y1] % m_yDetected[Y2];
+				record % m_yCurrent[Y1] % m_yCurrent[Y2];
 				if (isTriangleCompleted) {
 					record % yExecuted % GetCurrentYTargeted();
 				} else {
