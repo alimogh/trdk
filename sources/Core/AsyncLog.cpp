@@ -25,3 +25,13 @@ void AsyncLogRecord::WriteToDumpStream(
 		std::ostream &os) {
 	os << security;
 }
+
+void AsyncLogRecord::WriteToDumpStream(float val, std::ostream &os) {
+	os.precision(std::numeric_limits<float>::digits10);
+	os << val;
+}
+
+void AsyncLogRecord::WriteToDumpStream(double val, std::ostream &os) {
+	os.precision(std::numeric_limits<double>::digits10);
+	os << val;
+}

@@ -156,6 +156,12 @@ private:
 
 	};
 
+	enum ProfitLossTest {
+		PLT_LOSS = -1,
+		PLT_NONE = 0,
+		PLT_PROFIT
+	};
+
 public:
 
 	explicit TriangulationWithDirection(
@@ -339,13 +345,7 @@ public:
 						Assert(IsZero(firstLeg.GetCloseStartPrice()));
 						Assert(firstLeg.IsOpened());
 						AssertLt(0, firstLeg.GetActiveQty());
-						if (!CheckLeg(firstLeg)) {
-							CloseLeg(firstLeg);
-							LogAction(
-								"canceling",
-								"not executable",
-								firstLeg.GetLeg());
-						} else {
+						if (!CheckProfitLoss(firstLeg, false)) {
 							ReplaceOrder(order, false);
 						}
 					}
@@ -361,6 +361,8 @@ public:
 					break;
 			
 			}
+
+			return;
 		
 		} else if (!IsZero(order.GetCloseStartPrice())) {
 			
@@ -369,60 +371,53 @@ public:
 			
 			if (order.GetActiveQty() == 0) {
 				OnCancel("exec report", order);
-			} else {
-				CloseLeg(order);
+				return;
+			} else if (
+					order.GetCloseType() != Position::CLOSE_TYPE_TAKE_PROFIT) {
+				CloseLeg(order, order.GetCloseType());
+				return;
 			}
+
+			order.SetCloseStartPrice(0);
 		
-		} else {
+		}
  
- 			Assert(order.IsOpened());
-			Assert(IsZero(order.GetCloseStartPrice()));
-			AssertEq(0, order.GetClosedQty());
-			Assert(!order.HasActiveOrders());
+ 		Assert(order.IsOpened());
+		Assert(IsZero(order.GetCloseStartPrice()));
+		AssertEq(0, order.GetClosedQty());
+		Assert(!order.HasActiveOrders());
 
-			switch (order.GetLeg()) {
+		switch (order.GetLeg()) {
 			
-				case 1:
-					if (!CheckLeg(order)) {
-						LogAction(
-							"executed",
-							"exec report",
-							order.GetLeg(),
-							&order);
-						CloseLeg(order);
-						LogAction(
-							"canceling",
-							"not executable",
-							order.GetLeg());
-						return;
-					}
-					StartLeg2(order);
-					LogAction(
-						"executed",
-						"exec report",
-						"1 -> 2",
-						&order);
-					break;
+			case 1:
+				if (CheckProfitLoss(order, true)) {
+					return;
+				}
+				StartLeg2(order);
+				LogAction(
+					"executed",
+					"exec report",
+					"1 -> 2",
+					&order);
+				break;
 
-				case 3:
-					LogAction(
-						"executed",
-						"exec report",
-						order.GetLeg(),
-						&order);
-					m_orders.fill(boost::shared_ptr<Twd::Position>());
-					break;
+			case 3:
+				LogAction(
+					"executed",
+					"exec report",
+					order.GetLeg(),
+					&order);
+				m_orders.fill(boost::shared_ptr<Twd::Position>());
+				break;
 
-				default:
-					LogAction(
-						"executed",
-						"exec report",
-						order.GetLeg(),
-						&order);
-					break;
+			default:
+				LogAction(
+					"executed",
+					"exec report",
+					order.GetLeg(),
+					&order);
+				break;
 			
-			}
-
 		}
 
 	}
@@ -964,7 +959,30 @@ private:
 		
 	}
 
-	bool CheckLeg(const Twd::Position &leg) const {
+	bool CheckProfitLoss(Twd::Position &firstLeg, bool isJustOpened) {
+		Position::CloseType closeType;
+		const char *closeTypeStr;
+		switch (CheckLeg(firstLeg)) {
+			case PLT_LOSS:
+				closeType = Position::CLOSE_TYPE_STOP_LOSS;
+				closeTypeStr = "loss detected";
+				break;
+			case PLT_PROFIT:
+				closeType = Position::CLOSE_TYPE_TAKE_PROFIT;
+				closeTypeStr = "profit detected";
+				break;
+			default:
+				return false;
+		}
+		if (isJustOpened) {
+			LogAction("executed", "exec report", firstLeg.GetLeg(), &firstLeg);
+		}
+		CloseLeg(firstLeg, closeType);
+		LogAction("canceling", closeTypeStr, firstLeg.GetLeg());
+		return true;
+	}
+
+	ProfitLossTest CheckLeg(const Twd::Position &leg) const {
 
 		Assert(!leg.HasActiveOrders());
 
@@ -975,48 +993,56 @@ private:
 			record
 				% security
 				% security.GetSource().GetTag()
-				% leg.GetLeg()
+				% m_opportunityNo
 				% (isLong ? "long" : "short");
 		};
 
 		if (!HasOpportunity()) {
 			GetTradingLog().Write(
-				"\tloss-detected\t%1%\t%2%\tleg: %3%\t%4%\tY1 = %5%, Y2 = %6%",
+				"\tloss-detected\t%1%\t%2%\topp.: %3%\t%4%\tY1 = %5%, Y2 = %6%",
 				[&](TradingRecord &record) {
 					printTradingRecordStart(record);
 					record % m_yDetected[Y1] % m_yDetected[Y2];
 				});
-			return false;
+			return PLT_LOSS;
 		}
 
 		const auto &openPrice = security.DescalePrice(leg.GetOpenPrice());
-
-		if (
-				(isLong && openPrice < security.GetAskPrice())
-				|| (!isLong && openPrice > security.GetBidPrice())) {
+		double seenProfit;
+		double currentPrice;
+		if (isLong) {
+			currentPrice = security.GetBidPrice();
+			seenProfit = currentPrice - openPrice;
+		} else {
+			currentPrice = security.GetAskPrice();
+			seenProfit = openPrice - currentPrice;
+		}
+		const auto &targetProfit = m_comission * 2;
+		if (seenProfit > targetProfit) {
 			GetTradingLog().Write(
-				"\tloss-detected\t%1%\t%2%\tleg: %3%\t%4%\t%5% %6% %7%",
+				"\tprofit-detected\t%1%\t%2%\topp.: %3%\t%4%"
+					"\t%5% -> %6%  = %7$.7f > %8$.7f",
 				[&](TradingRecord &record) {
 					printTradingRecordStart(record);
-					if (isLong) {
-						record % openPrice % '<' % security.GetAskPrice();
-					} else {
-						record % openPrice % '>' % security.GetBidPrice();
-					}
+					record
+						% openPrice
+						% currentPrice
+						% seenProfit
+						% targetProfit;
 				});
-			return false;
+			return PLT_PROFIT;
 		}
 
-		return true;
+		return PLT_NONE;
 
 	}
 
-	void CloseLeg(Twd::Position &leg) {
+	void CloseLeg(Twd::Position &leg, const Position::CloseType &closeType) {
 		Assert(!leg.HasActiveOrders());
 		if (IsZero(leg.GetCloseStartPrice())) {
-			leg.CloseAtStartPrice(Position::CLOSE_TYPE_STOP_LOSS);
+			leg.CloseAtStartPrice(closeType);
 		} else {
-			leg.CloseAtCurrentPrice(Position::CLOSE_TYPE_STOP_LOSS);
+			leg.CloseAtCurrentPrice(closeType);
 		}
 	}
 
