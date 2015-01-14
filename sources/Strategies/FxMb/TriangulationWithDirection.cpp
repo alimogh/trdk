@@ -166,7 +166,7 @@ public:
 		m_levelsCount(
 			conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
 		m_qty(conf.ReadTypedKey<Qty>("qty")),
-		m_pnl(conf.ReadTypedKey<double>("commission")),
+		m_comission(conf.ReadTypedKey<double>("commission")),
 		m_opportunityReportStep(
 			conf.ReadTypedKey<double>("opportunity_report_step")),
 		m_opportunityNo(0) {
@@ -1148,7 +1148,8 @@ private:
 					%	"# of winners"
 					%	"# of losers"
 					%	"P & L with commissions"
-					%	"P & L without commissions";
+					%	"P & L without commissions"
+					%	"Commission";
 			});
 	};
 
@@ -1327,25 +1328,24 @@ private:
 
 		const auto &writePnl = [&](StrategyLogRecord &record) {
 			const auto pnl = m_pnl.winnersPnl + m_pnl.losersPnl;
-			const auto count
-				= accs::count(m_pnl.winners) + accs::count(m_pnl.losers);
-			const auto commisson = m_pnl.comission * count;
-			record % (pnl - commisson) % pnl;
+			record % (pnl - m_pnl.comission) % pnl % m_pnl.comission;
 		};
 		
 		if (isTriangleCompleted) {
 			
-			const bool isWinner = yExecuted >= 1;
-			if (isWinner) {
-				m_pnl.winners(yExecuted);
-				m_pnl.winnersPnl += yExecuted - 1;
-			} else {
-				m_pnl.losers(yExecuted);
-				m_pnl.losersPnl += yExecuted - 1;
-			}
-			
 			m_pnlLog.Write(
 				[&](StrategyLogRecord &record) {
+
+					m_pnl.comission += m_comission * 3;
+
+					const bool isWinner = yExecuted >= 1;
+					if (isWinner) {
+						m_pnl.winners(yExecuted);
+						m_pnl.winnersPnl += yExecuted - 1;
+					} else {
+						m_pnl.losers(yExecuted);
+						m_pnl.losersPnl += yExecuted - 1;
+					}
 
 					record % ' ';
 
@@ -1386,6 +1386,8 @@ private:
 
 			m_pnlLog.Write(
 				[&](StrategyLogRecord &record) {
+
+					m_pnl.comission += m_comission * 2;
 			
 					const bool isWinner = yExecuted >= 1;
 					if (isWinner) {
@@ -1434,6 +1436,7 @@ private:
 
 	const size_t m_levelsCount;
 	const Qty m_qty;
+	const double m_comission;
 
 	std::ofstream m_strategyLogFile;
 	StrategyLog m_strategyLog;
@@ -1441,7 +1444,9 @@ private:
 	std::ofstream m_pnlLogFile;
 	StrategyLog m_pnlLog;
 	struct Pnl {
+	
 		double comission;
+	
 		accs::accumulator_set<
 				double,
 				accs::stats<accs::tag::count, accs::tag::mean>>
@@ -1451,6 +1456,7 @@ private:
 				accs::stats<accs::tag::count, accs::tag::mean>>
 			winnersCancels;
 		double winnersPnl;
+	
 		accs::accumulator_set<
 				double,
 				accs::stats<accs::tag::count, accs::tag::mean>>
@@ -1459,13 +1465,15 @@ private:
 				double,
 				accs::stats<accs::tag::count, accs::tag::mean>>
 			losersCancels;
+	
 		double losersPnl;
-		explicit Pnl(double comission)
-			: comission(comission),
+	
+		explicit Pnl()
+			: comission(.0),
 			winnersPnl(.0),
 			losersPnl(.0) {
-			//...//
 		}
+	
 	} m_pnl;
 
 	boost::array<Stat, numberOfPairs> m_stat;
