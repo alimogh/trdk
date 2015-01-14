@@ -26,6 +26,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		numberOfPairs = 3
 	};
 
+	struct PairSpeed {
+		double rising;
+		double falling;
+	};
+
 	////////////////////////////////////////////////////////////////////////////////
 
 	class Position : virtual public trdk::Position {
@@ -42,7 +47,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const size_t leg,
-				bool isByRising,
 				size_t ordersCount)
 			: trdk::Position(
 				strategy,
@@ -54,7 +58,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				timeMeasurement),
 			m_pair(pair),
 			m_leg(leg),
-			m_isByRising(isByRising),
 			m_ordersCount(ordersCount),
 			m_isActive(true) {
 			//...//
@@ -130,10 +133,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_leg;
 		}
 
-		bool IsByRising() const {
-			return m_isByRising;
-		}
-
 		size_t GetOrdersCount() const {
 			return m_ordersCount;
 		}
@@ -153,7 +152,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		const Pair m_pair;
 		const size_t m_leg;
-		const bool m_isByRising;
 		size_t m_ordersCount;
 		bool m_isActive;
 
@@ -175,7 +173,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const size_t leg,
-				bool isByRising,
 				size_t ordersCount)
 			: trdk::Position(
 				strategy,
@@ -195,7 +192,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				timeMeasurement,
 				pair,
 				leg,
-				isByRising,
 				ordersCount),
 			trdk::LongPosition(
 				strategy,
@@ -227,7 +223,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const size_t leg,
-				bool isByRising,
 				size_t ordersCount)
 			: trdk::Position(
 				strategy,
@@ -247,7 +242,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				timeMeasurement,
 				pair,
 				leg,
-				isByRising,
 				ordersCount),
 			trdk::ShortPosition(
 				strategy,

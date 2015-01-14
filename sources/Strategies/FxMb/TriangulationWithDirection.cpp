@@ -141,6 +141,21 @@ private:
 	typedef boost::array<boost::shared_ptr<Twd::Position>, numberOfPairs>
 		Orders;
 
+	enum Y {
+		Y1,
+		Y2,
+		numberOfYs
+	};
+
+	struct Detection {
+		
+		Pair fistLeg;
+		Y y;
+
+		boost::array<PairSpeed, numberOfPairs> speed;
+
+	};
+
 public:
 
 	explicit TriangulationWithDirection(
@@ -162,8 +177,8 @@ public:
 			const Stat def = {};
 			m_stat.fill(def);
 		}
-		m_opportunity.fill(.0);
-		m_reportedOpportunity.fill(.0);
+		m_yDetected.fill(.0);
+		m_yDetectedReported.fill(.0);
 		
 		if (conf.ReadBoolKey("log.strategy")) {
 		
@@ -240,8 +255,8 @@ public:
 
 	bool HasOpportunity() const {
 		return 
-			(m_opportunity[0] >= 1.0 && m_opportunity[1] > .0)
-			|| (m_opportunity[1] >= 1.0 && m_opportunity[0] > .0);
+			(m_yDetected[Y1] >= 1.0 && m_yDetected[Y2] > .0)
+			|| (m_yDetected[Y2] >= 1.0 && m_yDetected[Y1] > .0);
 	}
 
 	bool IsActive() const {
@@ -464,26 +479,34 @@ private:
 		if (hasNotOpportunity) {
 			
 			stat->Reset();
-			
-			m_opportunity.fill(0);
+			m_yDetected.fill(0);
+		
+		} else if (
+				IsZero(m_stat[PAIR_AB].bestBid.price)
+				||	IsZero(m_stat[PAIR_AB].bestAsk.price)
+				||	IsZero(m_stat[PAIR_BC].bestBid.price)
+				||	IsZero(m_stat[PAIR_BC].bestAsk.price)
+				||	IsZero(m_stat[PAIR_AC].bestBid.price)
+				||	IsZero(m_stat[PAIR_AC].bestAsk.price)) {
+		
+			m_yDetected.fill(0);
 
 		} else {
 
-
-			Assert(!IsZero(stat->bestAsk.price));
-
-			////////////////////////////////////////////////////////////////////////////////
-			// Y1 and Y2:
-			// 
-
-			m_opportunity[0]
+			m_yDetected[Y1]
 				= m_stat[PAIR_AB].bestBid.price
 					* m_stat[PAIR_BC].bestBid.price
 					* (1.0 / m_stat[PAIR_AC].bestAsk.price);
-			m_opportunity[1]
+			m_yDetected[Y2]
 				= m_stat[PAIR_AC].bestBid.price
 					* (1.0 / m_stat[PAIR_BC].bestAsk.price)
 					* (1.0 / m_stat[PAIR_AB].bestAsk.price);
+			
+			AssertGt(1.1, m_yDetected[Y1]);
+			AssertLt(.9, m_yDetected[Y1]);
+			
+			AssertGt(1.1, m_yDetected[Y2]);
+			AssertLt(.9, m_yDetected[Y2]);
 
 		}
 
@@ -494,18 +517,18 @@ private:
 				|| (reported + m_opportunityReportStep) < current;
 		};
 		if (
-				isTimeToReport(m_opportunity[0], m_reportedOpportunity[0])
-				|| isTimeToReport(m_opportunity[1], m_reportedOpportunity[1])) {
+				isTimeToReport(m_yDetected[Y1], m_yDetectedReported[Y1])
+				|| isTimeToReport(m_yDetected[Y2], m_yDetectedReported[Y2])) {
 			GetTradingLog().Write(
 				"\topportunity\tY1: %1% -> %2%\tY2: %3% -> %4%",
 				[this](TradingRecord &record) {
 					record
-						% m_reportedOpportunity[0]
-						% m_opportunity[0]
-						% m_reportedOpportunity[1]
-						% m_opportunity[1];
+						% m_yDetectedReported[Y1]
+						% m_yDetected[Y1]
+						% m_yDetectedReported[Y2]
+						% m_yDetected[Y2];
 				});
-			m_reportedOpportunity = m_opportunity;
+			m_yDetectedReported = m_yDetected;
 		}
 
 	}
@@ -584,76 +607,117 @@ private:
 		}
 	}
 
-	void CalcOpenPossibility() {
+	bool Detect(Detection &result) const {
 
 		Assert(HasOpportunity());
 
-		////////////////////////////////////////////////////////////////////////////////
-		// Detecting current rising / falling:
-
-		const auto &getMovementSpeed = [this](const Pair &pair) -> double {
+		for (size_t pair = 0; pair < result.speed.size(); ++pair) {
+			
+			PairSpeed &speed = result.speed[pair];
 			const auto &stat = m_stat[pair];
+
 			{
-				const auto &statData
-					= stat.service->GetData(stat.bestBid.source);
+				const auto &data = stat.service->GetData(stat.bestBid.source);
 				const bool isRising
-					= statData.current.theo > statData.current.emaFast
-						&& statData.current.emaFast > statData.current.emaSlow;
-				if (isRising) {
-					const auto diff
-						= statData.prev2.theo - statData.current.theo;
-					return fabs(diff);
-				}
+					= data.current.theo > data.current.emaFast
+						&& data.current.emaFast > data.current.emaSlow;
+				speed.rising = isRising
+					?	data.current.theo - data.prev2.theo
+					:	std::numeric_limits<double>::quiet_NaN();
 			}
+
 			{
-				const auto &statData
-					= stat.service->GetData(stat.bestAsk.source);
+				const auto &data = stat.service->GetData(stat.bestAsk.source);
 				const bool isFalling
-					= statData.current.theo < statData.current.emaFast
-						&& statData.current.emaFast < statData.current.emaSlow;
-				if (isFalling) {
-					const auto diff
-						= statData.prev2.theo - statData.current.theo;
-					return fabs(diff) * -1.0;
-				}
+					= data.current.theo < data.current.emaFast
+						&& data.current.emaFast < data.current.emaSlow;
+				speed.falling = isFalling
+					?	data.prev2.theo - data.current.theo
+					:	std::numeric_limits<double>::quiet_NaN();
 			}
-			return .0;
-		};
 
-		double movementSpeed[2] = {
-			getMovementSpeed(PAIR_AB),
-			getMovementSpeed(PAIR_AC)
-		};
-		if (IsZero(movementSpeed[0]) && IsZero(movementSpeed[1])) {
-			m_opportunitySource.isRising.reset();
-			return;
-		}
-		if (!IsZero(movementSpeed[0]) && !IsZero(movementSpeed[1])) {
-			if (fabs(movementSpeed[0]) >= fabs(movementSpeed[1])) {
-				movementSpeed[1] = .0;
-			} else {
-				movementSpeed[0] = .0;
-			}
 		}
 
-		////////////////////////////////////////////////////////////////////////////////
-		// Orders
+		struct SpeedTest {
 		
-		if (!IsZero(movementSpeed[0])) {
-			Assert(IsZero(movementSpeed[1]));
-			m_opportunitySource.isRising = movementSpeed[0] > 0;
-			m_opportunitySource.legsNo[0] = 1;
-			m_opportunitySource.isBuy[0] = *m_opportunitySource.isRising;
-			m_opportunitySource.legsNo[1] = 2;
-			m_opportunitySource.isBuy[1] = !*m_opportunitySource.isRising;
-		} else {
-			Assert(!IsZero(movementSpeed[1]));
-			m_opportunitySource.isRising = movementSpeed[1] > 0;
-			m_opportunitySource.legsNo[0] = 2;
-			m_opportunitySource.isBuy[0] = !*m_opportunitySource.isRising;
-			m_opportunitySource.legsNo[1] = 1;
-			m_opportunitySource.isBuy[1] = *m_opportunitySource.isRising;
+			Pair fastestPair;
+			double fastestSpeed;
+
+			SpeedTest()
+				: fastestPair(numberOfPairs),
+				fastestSpeed(std::numeric_limits<double>::quiet_NaN()) {
+			}
+
+			void Test(const Pair &pair, double speed) {
+				if (
+						isnan(speed)
+						|| (!isnan(fastestSpeed) && fastestSpeed >= speed)) {
+					return;
+				}
+//! @todo:		compare prices for pairs https://trello.com/c/NaVQzajm
+				fastestSpeed = speed;
+				fastestPair = pair;
+			}
+
+		};
+
+		if (m_yDetected[Y1] >= 1.0) {
+			
+			SpeedTest speedTest;
+			speedTest.Test(PAIR_AB, result.speed[PAIR_AB].falling);
+			speedTest.Test(PAIR_BC, result.speed[PAIR_BC].falling);
+			speedTest.Test(PAIR_AC, result.speed[PAIR_AC].rising);
+
+			if (speedTest.fastestPair != numberOfPairs) {
+			
+				Assert(!isnan(speedTest.fastestSpeed));
+			
+				result.y = Y1;
+			
+				if (!isnan(result.speed[PAIR_AB].falling)) {
+//! @todo:			Assert(isnan(result.speed[PAIR_AC].rising)); https://trello.com/c/NaVQzajm
+					result.fistLeg = PAIR_AB;
+				} else {
+//! @todo:			Assert(!isnan(result.speed[PAIR_AC].rising)); https://trello.com/c/NaVQzajm
+					result.fistLeg = PAIR_AC;
+				}
+			
+				return true;
+			
+			}
+
+			Assert(isnan(speedTest.fastestSpeed));
+
 		}
+
+		if (m_yDetected[Y2] >= 1.0) {
+
+			SpeedTest speedTest;
+			speedTest.Test(PAIR_AB, result.speed[PAIR_AB].rising);
+			speedTest.Test(PAIR_BC, result.speed[PAIR_BC].rising);
+			speedTest.Test(PAIR_AC, result.speed[PAIR_AC].falling);
+
+			if (speedTest.fastestPair != numberOfPairs) {
+			
+				Assert(!isnan(speedTest.fastestSpeed));
+			
+				result.y = Y2;
+			
+				if (!isnan(result.speed[PAIR_AB].rising)) {
+//! @todo:			Assert(isnan(result.speed[PAIR_AC].falling));
+					result.fistLeg = PAIR_AB;
+				} else {
+//! @todo:			Assert(!isnan(result.speed[PAIR_AC].falling));
+					result.fistLeg = PAIR_AC;
+				}
+			
+				return true;
+			
+			}
+
+		}
+
+		return false;
 
 	}
 
@@ -686,7 +750,6 @@ private:
 					TimeMeasurement::Milestones(),
 					oldOrder.GetPair(),
 					oldOrder.GetLeg(),
-					oldOrder.IsByRising(),
 					oldOrder.GetOrdersCount()));
 		} else {
 			newOrder.reset(
@@ -700,7 +763,6 @@ private:
 					TimeMeasurement::Milestones(),
 					oldOrder.GetPair(),
 					oldOrder.GetLeg(),
-					oldOrder.IsByRising(),
 					oldOrder.GetOrdersCount()));
 		}
 
@@ -732,8 +794,8 @@ private:
 
 		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
 
-		CalcOpenPossibility();
-		if (!m_opportunitySource.isRising) {
+		Detection detection;
+		if (!Detect(detection)) {
 			return;
 		}
 
@@ -745,19 +807,17 @@ private:
 					const char *side)
 				: security(&security),
 				side(side) {
-				//...//
 			}
 		};
 
 		const auto &newPosition = [&](
 				const Pair &pair,
 				size_t legNo,
-				bool isRising,
 				bool isBuy,
 				bool isBaseCurrency) 
 				-> boost::shared_ptr<Twd::Position> {
 			const auto &stat = m_stat[pair];
-			const auto &ecn = isRising
+			const auto &ecn = !isBuy
 				?	stat.bestBid.source
 				:	stat.bestAsk.source;
 			const Security &security = stat.service->GetSecurity(ecn);
@@ -784,7 +844,6 @@ private:
 						timeMeasurement,
 						pair,
 						legNo,
-						isRising,
 						0));
 			} else {
 				if (security.GetBidQty() == 0) {
@@ -805,7 +864,6 @@ private:
 						timeMeasurement,
 						pair,
 						legNo,
-						isRising,
 						0));
 			}
 			return std::move(result);
@@ -813,25 +871,24 @@ private:
 
 		try {
 
+			AssertNe(PAIR_BC, detection.fistLeg);
+
 			Orders orders = {
 				newPosition(
 					PAIR_AB,
-					m_opportunitySource.legsNo[0],
-					*m_opportunitySource.isRising,
-					m_opportunitySource.isBuy[0],
-					m_opportunitySource.legsNo[0] == 1), 
+					detection.fistLeg == PAIR_AB ? 1 : 2,
+					detection.y == Y2,
+					detection.fistLeg == PAIR_AB), 
 				newPosition(
 					PAIR_BC,
 					3,
-					*m_opportunitySource.isRising,
-					m_opportunitySource.isBuy[0],
-					m_opportunitySource.legsNo[0] == 1),
+					detection.y == Y2,
+					detection.fistLeg == PAIR_AB),
 				newPosition(
 					PAIR_AC,
-					m_opportunitySource.legsNo[1],
-					!*m_opportunitySource.isRising,
-					m_opportunitySource.isBuy[1],
-					m_opportunitySource.legsNo[1] == 1)
+					detection.fistLeg == PAIR_AC ? 1 : 2,
+					detection.y == Y1,
+					detection.fistLeg == PAIR_AC)
 			};
 
 			{
@@ -844,7 +901,7 @@ private:
 
 			orders.swap(m_orders);
 			++m_opportunityNo;
-			LogAction("detected", "signal", "1");
+			LogAction("detected", "signal", "1", nullptr, &detection.speed);
 
 			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
@@ -891,10 +948,11 @@ private:
 		Twd::Position &leg = GetLeg(3);
 		AssertEq(0, leg.GetOpenStartPrice());
 		AssertLt(0, leg.GetPlanedQty());
-		const auto &stat = m_stat[PAIR_BC];
 
+		const auto &stat = m_stat[PAIR_BC];
 		const auto &ecn = leg.GetSecurity().GetSource().GetIndex();
-		if (leg.IsByRising()) {
+
+		if (GetLeg(1).GetType() == Position::TYPE_LONG) {
 			const auto &statData = stat.service->GetData(ecn);
 			if (statData.current.theo > statData.current.emaSlow) {
 				return;
@@ -936,7 +994,7 @@ private:
 				"\tloss-detected\t%1%\t%2%\tleg: %3%\t%4%\tY1 = %5%, Y2 = %6%",
 				[&](TradingRecord &record) {
 					printTradingRecordStart(record);
-					record % m_opportunity[0] % m_opportunity[1];
+					record % m_yDetected[Y1] % m_yDetected[Y2];
 				});
 			return false;
 		}
@@ -1026,8 +1084,6 @@ private:
 					%	"Action reason"
 					%	"Action legs"
 					%	"Action orders count"
-					%	"PnL close (price)"
-					%	"PnL close (vol)"
 					%	"Y1 detected"
 					%	"Y2 detected"
 					%	"Y executed"
@@ -1055,6 +1111,8 @@ private:
 						%	pair % '\0' % " best bid ECN"
 						%	pair % '\0' % " best ask"
 						%	pair % '\0' % " best ask ECN"
+						%	pair % '\0' % " rising speed"
+						%	pair % '\0' % " falling speed"
 						%	pair % '\0' % " VWAP"
 						%	pair % '\0' % " VWAP prev1"
 						%	pair % '\0' % " VWAP prev2"
@@ -1136,7 +1194,8 @@ private:
 			const char *action,
 			const char *reason,
 			const char *actionLegs,
-			const Twd::Position *const reasonOrder = nullptr) {
+			const Twd::Position *const reasonOrder = nullptr,
+			const boost::array<PairSpeed, numberOfPairs> *speed = nullptr) {
 
 		Assert(IsActive());
 
@@ -1204,6 +1263,21 @@ private:
 				%	context.GetMarketDataSource(stat.bestBid.source).GetTag()
 				%	stat.bestAsk.price
 				%	context.GetMarketDataSource(stat.bestAsk.source).GetTag();
+			// Rising/falling speed: ///////////////////////////////////////////////////////
+			if (speed) {
+				if (!isnan((*speed)[pair].rising)) {
+					record % (*speed)[pair].rising;
+				} else {
+					record % ' ';
+				}
+				if (!isnan((*speed)[pair].falling)) {
+					record % (*speed)[pair].falling;
+				} else {
+					record % ' ';
+				}
+			} else {
+				record % ' ' % ' ';
+			}
 			// Stat data: //////////////////////////////////////////////////////////////////
 			const auto &data = stat.service->GetData(
 				security.GetSource().GetIndex());
@@ -1218,19 +1292,6 @@ private:
 				%	data.prev1.emaSlow
 				%	data.prev2.emaSlow;
 			////////////////////////////////////////////////////////////////////////////////
-		};
-
-		const auto &writeCancelPnl = [&](
-				const Twd::Position &order,
-				StrategyLogRecord &record) {
-			Assert(order.IsOpened());
-			Assert(order.IsClosed());
-			const auto &priceDiffScaled = order.GetType() == Position::TYPE_LONG
-				?	order.GetClosePrice() - order.GetOpenPrice()
-				:	order.GetOpenPrice() - order.GetClosePrice();
-			const double priceDiff
-				= order.GetSecurity().DescalePrice(priceDiffScaled);
-			record % priceDiff % (priceDiff * order.GetOpenedQty());
 		};
 
 		const bool isTriangleCanceled
@@ -1262,13 +1323,7 @@ private:
 				} else {
 					record % ' ';
 				}
-				if (isTriangleCanceled) {
-					Assert(reasonOrder);
-					writeCancelPnl(*reasonOrder, record);
-				} else {
-					record % ' ' % ' ';
-				}
-				record % m_opportunity[0] % m_opportunity[1];
+				record % m_yDetected[Y1] % m_yDetected[Y2];
 				if (isTriangleCompleted) {
 					record % yExecuted % GetCurrentYTargeted();
 				} else {
@@ -1377,7 +1432,6 @@ private:
 
 		}
 
-
 	}
 
 protected:
@@ -1426,15 +1480,9 @@ private:
 
 	boost::array<Stat, numberOfPairs> m_stat;
 
-	boost::array<double, 2> m_opportunity;
-	boost::array<double, 2> m_reportedOpportunity;
+	boost::array<double, numberOfYs> m_yDetected;
+	boost::array<double, numberOfYs> m_yDetectedReported;
 	const double m_opportunityReportStep;
-
-	struct {
-		size_t legsNo[2];
-		bool isBuy[2];
-		boost::optional<bool> isRising;
-	} m_opportunitySource;
 
 	size_t m_opportunityNo;
 	Orders m_orders;
