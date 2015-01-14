@@ -314,6 +314,8 @@ namespace trdk {
 			os << param;
 		}
 		static void WriteToDumpStream(const trdk::Security &, std::ostream &);
+		static void WriteToDumpStream(float, std::ostream &);
+		static void WriteToDumpStream(double, std::ostream &);
 
 	private:
 

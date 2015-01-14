@@ -43,7 +43,7 @@ namespace {
 		}
 	public:
 		const StrategyLogRecord & operator >>(std::ostream &os) const {
-			Dump(os, ",");
+			Dump(os, "\t");
 			return *this;
 		}
 	};
@@ -156,6 +156,12 @@ private:
 
 	};
 
+	enum ProfitLossTest {
+		PLT_LOSS = -1,
+		PLT_NONE = 0,
+		PLT_PROFIT
+	};
+
 public:
 
 	explicit TriangulationWithDirection(
@@ -166,7 +172,8 @@ public:
 		m_levelsCount(
 			conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
 		m_qty(conf.ReadTypedKey<Qty>("qty")),
-		m_pnl(conf.ReadTypedKey<double>("commission")),
+		m_comission(conf.ReadTypedKey<double>("commission")),
+		m_currentY(numberOfYs),
 		m_opportunityReportStep(
 			conf.ReadTypedKey<double>("opportunity_report_step")),
 		m_opportunityNo(0) {
@@ -178,13 +185,14 @@ public:
 			m_stat.fill(def);
 		}
 		m_yDetected.fill(.0);
+		m_yCurrent.fill(.0);
 		m_yDetectedReported.fill(.0);
 		
 		if (conf.ReadBoolKey("log.strategy")) {
 		
 			const pt::ptime &now = GetContext().GetStartTime();
 			boost::format fileName(
-				"s_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.csv");
+				"s_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.log");
 			fileName
 				% now.date().year()
 				% now.date().month().as_number()
@@ -212,7 +220,7 @@ public:
 		if (conf.ReadBoolKey("log.pnl")) {
 		
 			const auto &logPath
-				= context.GetSettings().GetLogsDir() / "strategy" / "pnl.csv";
+				= context.GetSettings().GetLogsDir() / "pnl.log";
 		
 			GetContext().GetLog().Info("PnL log: %1%.", logPath);
 			
@@ -255,8 +263,23 @@ public:
 
 	bool HasOpportunity() const {
 		return 
+
+	bool HasDetectedOpportunity() const {
+		return
 			(m_yDetected[Y1] >= 1.0 && m_yDetected[Y2] > .0)
 			|| (m_yDetected[Y2] >= 1.0 && m_yDetected[Y1] > .0);
+	}
+
+	bool HasCurrentOpportunity() const {
+		AssertNe(numberOfYs, m_currentY);
+		return
+			(m_yCurrent[Y1] >= 1.0
+				&& m_yCurrent[Y2] > .0
+				&& m_currentY == Y1)
+			|| (
+				m_yCurrent[Y2] >= 1.0
+				&& m_yCurrent[Y1] > .0
+				&& m_currentY == Y2);
 	}
 
 	bool IsActive() const {
@@ -349,13 +372,7 @@ public:
 						Assert(IsZero(firstLeg.GetCloseStartPrice()));
 						Assert(firstLeg.IsOpened());
 						AssertLt(0, firstLeg.GetActiveQty());
-						if (!CheckLeg(firstLeg)) {
-							CloseLeg(firstLeg);
-							LogAction(
-								"canceling",
-								"not executable",
-								firstLeg.GetLeg());
-						} else {
+						if (!CheckProfitLoss(firstLeg, false)) {
 							ReplaceOrder(order, false);
 						}
 					}
@@ -371,6 +388,8 @@ public:
 					break;
 			
 			}
+
+			return;
 		
 		} else if (!IsZero(order.GetCloseStartPrice())) {
 			
@@ -379,60 +398,56 @@ public:
 			
 			if (order.GetActiveQty() == 0) {
 				OnCancel("exec report", order);
-			} else {
-				CloseLeg(order);
+				return;
+			} else if (
+					order.GetCloseType() != Position::CLOSE_TYPE_TAKE_PROFIT) {
+				CloseLeg(order, order.GetCloseType());
+				return;
 			}
+
+			order.SetCloseStartPrice(0);
 		
-		} else {
+		}
  
- 			Assert(order.IsOpened());
-			Assert(IsZero(order.GetCloseStartPrice()));
-			AssertEq(0, order.GetClosedQty());
-			Assert(!order.HasActiveOrders());
+ 		Assert(order.IsOpened());
+		Assert(IsZero(order.GetCloseStartPrice()));
+		AssertEq(0, order.GetClosedQty());
+		Assert(!order.HasActiveOrders());
 
-			switch (order.GetLeg()) {
+		switch (order.GetLeg()) {
 			
-				case 1:
-					if (!CheckLeg(order)) {
-						LogAction(
-							"executed",
-							"exec report",
-							order.GetLeg(),
-							&order);
-						CloseLeg(order);
-						LogAction(
-							"canceling",
-							"not executable",
-							order.GetLeg());
-						return;
-					}
-					StartLeg2(order);
-					LogAction(
-						"executed",
-						"exec report",
-						"1 -> 2",
-						&order);
-					break;
+			case 1:
+				if (CheckProfitLoss(order, true)) {
+					return;
+				}
+				StartLeg2(order);
+				LogAction(
+					"executed",
+					"exec report",
+					"1 -> 2",
+					&order);
+				break;
 
-				case 3:
-					LogAction(
-						"executed",
-						"exec report",
-						order.GetLeg(),
-						&order);
-					m_orders.fill(boost::shared_ptr<Twd::Position>());
-					break;
+			case 3:
+				LogAction(
+					"executed",
+					"exec report",
+					order.GetLeg(),
+					&order);
+				m_orders.fill(boost::shared_ptr<Twd::Position>());
+#				ifdef BOOST_ENABLE_ASSERT_HANDLER
+					m_currentY = numberOfYs;
+#				endif
+				break;
 
-				default:
-					LogAction(
-						"executed",
-						"exec report",
-						order.GetLeg(),
-						&order);
-					break;
+			default:
+				LogAction(
+					"executed",
+					"exec report",
+					order.GetLeg(),
+					&order);
+				break;
 			
-			}
-
 		}
 
 	}
@@ -480,6 +495,7 @@ private:
 			
 			stat->Reset();
 			m_yDetected.fill(0);
+			m_yCurrent.fill(0);
 		
 		} else if (
 				IsZero(m_stat[PAIR_AB].bestBid.price)
@@ -490,6 +506,7 @@ private:
 				||	IsZero(m_stat[PAIR_AC].bestAsk.price)) {
 		
 			m_yDetected.fill(0);
+			m_yCurrent.fill(0);
 
 		} else {
 
@@ -502,6 +519,31 @@ private:
 					* (1.0 / m_stat[PAIR_BC].bestAsk.price)
 					* (1.0 / m_stat[PAIR_AB].bestAsk.price);
 			
+			AssertGt(1.1, m_yDetected[Y1]);
+			AssertLt(.9, m_yDetected[Y1]);
+			
+			AssertGt(1.1, m_yDetected[Y2]);
+			AssertLt(.9, m_yDetected[Y2]);
+
+			if (IsActive()) {
+			
+				m_yCurrent[Y1]
+					= m_orders[PAIR_AB]->GetSecurity().GetBidPrice()
+						* m_orders[PAIR_BC]->GetSecurity().GetBidPrice()
+						* (1 / m_orders[PAIR_AC]->GetSecurity().GetAskPrice());
+				m_yCurrent[Y2]
+					= m_orders[PAIR_AC]->GetSecurity().GetBidPrice()
+						* (1 / m_orders[PAIR_BC]->GetSecurity().GetAskPrice())
+						* (1 / m_orders[PAIR_AB]->GetSecurity().GetAskPrice());
+
+				AssertGt(1.1, m_yCurrent[Y1]);
+				AssertLt(.9, m_yCurrent[Y1]);
+			
+				AssertGt(1.1, m_yCurrent[Y2]);
+				AssertLt(.9, m_yCurrent[Y2]);
+			
+			}
+
 			AssertGt(1.1, m_yDetected[Y1]);
 			AssertLt(.9, m_yDetected[Y1]);
 			
@@ -609,7 +651,9 @@ private:
 
 	bool Detect(Detection &result) const {
 
-		Assert(HasOpportunity());
+		Assert(HasDetectedOpportunity());
+		Assert(!IsActive());
+		AssertEq(numberOfYs, m_currentY);
 
 		for (size_t pair = 0; pair < result.speed.size(); ++pair) {
 			
@@ -677,16 +721,13 @@ private:
 				if (!isnan(result.speed[PAIR_AB].falling)) {
 //! @todo:			Assert(isnan(result.speed[PAIR_AC].rising)); https://trello.com/c/NaVQzajm
 					result.fistLeg = PAIR_AB;
-				} else {
-//! @todo:			Assert(!isnan(result.speed[PAIR_AC].rising)); https://trello.com/c/NaVQzajm
+					return true;
+				} else if (!isnan(result.speed[PAIR_AC].rising)) {
 					result.fistLeg = PAIR_AC;
+					return true;
 				}
 			
-				return true;
-			
 			}
-
-			Assert(isnan(speedTest.fastestSpeed));
 
 		}
 
@@ -704,14 +745,13 @@ private:
 				result.y = Y2;
 			
 				if (!isnan(result.speed[PAIR_AB].rising)) {
-//! @todo:			Assert(isnan(result.speed[PAIR_AC].falling));
+//! @todo:			Assert(isnan(result.speed[PAIR_AC].falling));  https://trello.com/c/NaVQzajm
 					result.fistLeg = PAIR_AB;
-				} else {
-//! @todo:			Assert(!isnan(result.speed[PAIR_AC].falling));
+					return true;
+				} else if (!isnan(result.speed[PAIR_AC].falling)) {
 					result.fistLeg = PAIR_AC;
+					return true;
 				}
-			
-				return true;
 			
 			}
 
@@ -786,7 +826,9 @@ private:
 	void CheckOpenPossibility(
 			const TimeMeasurement::Milestones &timeMeasurement) {
 
- 		if (!HasOpportunity()) {
+		Assert(!IsActive());
+
+ 		if (!HasDetectedOpportunity()) {
 			timeMeasurement.Measure(
 				TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
  			return;
@@ -901,6 +943,7 @@ private:
 
 			orders.swap(m_orders);
 			++m_opportunityNo;
+			m_currentY = detection.y;
 			LogAction("detected", "signal", "1", nullptr, &detection.speed);
 
 			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
@@ -974,7 +1017,30 @@ private:
 		
 	}
 
-	bool CheckLeg(const Twd::Position &leg) const {
+	bool CheckProfitLoss(Twd::Position &firstLeg, bool isJustOpened) {
+		Position::CloseType closeType;
+		const char *closeTypeStr;
+		switch (CheckLeg(firstLeg)) {
+			case PLT_LOSS:
+				closeType = Position::CLOSE_TYPE_STOP_LOSS;
+				closeTypeStr = "loss detected";
+				break;
+			case PLT_PROFIT:
+				closeType = Position::CLOSE_TYPE_TAKE_PROFIT;
+				closeTypeStr = "profit detected";
+				break;
+			default:
+				return false;
+		}
+		if (isJustOpened) {
+			LogAction("executed", "exec report", firstLeg.GetLeg(), &firstLeg);
+		}
+		CloseLeg(firstLeg, closeType);
+		LogAction("canceling", closeTypeStr, firstLeg.GetLeg());
+		return true;
+	}
+
+	ProfitLossTest CheckLeg(const Twd::Position &leg) const {
 
 		Assert(!leg.HasActiveOrders());
 
@@ -985,48 +1051,52 @@ private:
 			record
 				% security
 				% security.GetSource().GetTag()
-				% leg.GetLeg()
+				% m_opportunityNo
 				% (isLong ? "long" : "short");
 		};
 
-		if (!HasOpportunity()) {
+		if (!HasCurrentOpportunity()) {
 			GetTradingLog().Write(
-				"\tloss-detected\t%1%\t%2%\tleg: %3%\t%4%\tY1 = %5%, Y2 = %6%",
+				"\tloss-detected\t%1%\t%2%\topp.: %3%\t%4%"
+					"\tY1 = %5%, Y2 = %6%, current: Y%7%",
 				[&](TradingRecord &record) {
 					printTradingRecordStart(record);
-					record % m_yDetected[Y1] % m_yDetected[Y2];
+					record % m_yCurrent[Y1] % m_yCurrent[Y2] % (m_currentY + 1);
 				});
-			return false;
+			return PLT_LOSS;
 		}
 
 		const auto &openPrice = security.DescalePrice(leg.GetOpenPrice());
-
-		if (
-				(isLong && openPrice < security.GetAskPrice())
-				|| (!isLong && openPrice > security.GetBidPrice())) {
+		double seenProfit;
+		double currentPrice;
+		if (isLong) {
+			currentPrice = security.GetBidPrice();
+			seenProfit = currentPrice - openPrice;
+		} else {
+			currentPrice = security.GetAskPrice();
+			seenProfit = openPrice - currentPrice;
+		}
+		if (seenProfit > 0) {
 			GetTradingLog().Write(
-				"\tloss-detected\t%1%\t%2%\tleg: %3%\t%4%\t%5% %6% %7%",
+				"\tprofit-detected\t%1%\t%2%\topp.: %3%\t%4%"
+					"\t%5% -> %6%  = %7$.7f",
 				[&](TradingRecord &record) {
 					printTradingRecordStart(record);
-					if (isLong) {
-						record % openPrice % '<' % security.GetAskPrice();
-					} else {
-						record % openPrice % '>' % security.GetBidPrice();
-					}
+					record % openPrice % currentPrice % seenProfit;
 				});
-			return false;
+			return PLT_PROFIT;
 		}
 
-		return true;
+		return PLT_NONE;
 
 	}
 
-	void CloseLeg(Twd::Position &leg) {
+	void CloseLeg(Twd::Position &leg, const Position::CloseType &closeType) {
 		Assert(!leg.HasActiveOrders());
 		if (IsZero(leg.GetCloseStartPrice())) {
-			leg.CloseAtStartPrice(Position::CLOSE_TYPE_STOP_LOSS);
+			leg.CloseAtStartPrice(closeType);
 		} else {
-			leg.CloseAtCurrentPrice(Position::CLOSE_TYPE_STOP_LOSS);
+			leg.CloseAtCurrentPrice(closeType);
 		}
 	}
 
@@ -1069,6 +1139,9 @@ private:
 	void OnCancel(const char *reason, const Twd::Position &reasonOrder) {
 		LogAction("canceled", reason, reasonOrder.GetLeg(), &reasonOrder);
 		m_orders.fill(boost::shared_ptr<Twd::Position>());
+#		ifdef BOOST_ENABLE_ASSERT_HANDLER
+			m_currentY = numberOfYs;
+#		endif
 		CheckOpenPossibility(TimeMeasurement::Milestones());
 	}
 
@@ -1086,6 +1159,8 @@ private:
 					%	"Action orders count"
 					%	"Y1 detected"
 					%	"Y2 detected"
+					%	"New Y1"
+					%	"New Y2"
 					%	"Y executed"
 					%	"Y targeted";
 				foreach (const auto &stat, m_stat) {
@@ -1158,7 +1233,8 @@ private:
 					%	"# of winners"
 					%	"# of losers"
 					%	"P & L with commissions"
-					%	"P & L without commissions";
+					%	"P & L without commissions"
+					%	"Commission";
 			});
 	};
 
@@ -1324,6 +1400,7 @@ private:
 					record % ' ';
 				}
 				record % m_yDetected[Y1] % m_yDetected[Y2];
+				record % m_yCurrent[Y1] % m_yCurrent[Y2];
 				if (isTriangleCompleted) {
 					record % yExecuted % GetCurrentYTargeted();
 				} else {
@@ -1337,25 +1414,24 @@ private:
 
 		const auto &writePnl = [&](StrategyLogRecord &record) {
 			const auto pnl = m_pnl.winnersPnl + m_pnl.losersPnl;
-			const auto count
-				= accs::count(m_pnl.winners) + accs::count(m_pnl.losers);
-			const auto commisson = m_pnl.comission * count;
-			record % (pnl - commisson) % pnl;
+			record % (pnl - m_pnl.comission) % pnl % m_pnl.comission;
 		};
 		
 		if (isTriangleCompleted) {
 			
-			const bool isWinner = yExecuted >= 1;
-			if (isWinner) {
-				m_pnl.winners(yExecuted);
-				m_pnl.winnersPnl += yExecuted - 1;
-			} else {
-				m_pnl.losers(yExecuted);
-				m_pnl.losersPnl += yExecuted - 1;
-			}
-			
 			m_pnlLog.Write(
 				[&](StrategyLogRecord &record) {
+
+					m_pnl.comission += m_comission * 3;
+
+					const bool isWinner = yExecuted >= 1;
+					if (isWinner) {
+						m_pnl.winners(yExecuted);
+						m_pnl.winnersPnl += yExecuted - 1;
+					} else {
+						m_pnl.losers(yExecuted);
+						m_pnl.losersPnl += yExecuted - 1;
+					}
 
 					record % ' ';
 
@@ -1396,6 +1472,8 @@ private:
 
 			m_pnlLog.Write(
 				[&](StrategyLogRecord &record) {
+
+					m_pnl.comission += m_comission * 2;
 			
 					const bool isWinner = yExecuted >= 1;
 					if (isWinner) {
@@ -1444,6 +1522,7 @@ private:
 
 	const size_t m_levelsCount;
 	const Qty m_qty;
+	const double m_comission;
 
 	std::ofstream m_strategyLogFile;
 	StrategyLog m_strategyLog;
@@ -1451,7 +1530,9 @@ private:
 	std::ofstream m_pnlLogFile;
 	StrategyLog m_pnlLog;
 	struct Pnl {
+	
 		double comission;
+	
 		accs::accumulator_set<
 				double,
 				accs::stats<accs::tag::count, accs::tag::mean>>
@@ -1461,6 +1542,7 @@ private:
 				accs::stats<accs::tag::count, accs::tag::mean>>
 			winnersCancels;
 		double winnersPnl;
+	
 		accs::accumulator_set<
 				double,
 				accs::stats<accs::tag::count, accs::tag::mean>>
@@ -1469,18 +1551,22 @@ private:
 				double,
 				accs::stats<accs::tag::count, accs::tag::mean>>
 			losersCancels;
+	
 		double losersPnl;
-		explicit Pnl(double comission)
-			: comission(comission),
+	
+		explicit Pnl()
+			: comission(.0),
 			winnersPnl(.0),
 			losersPnl(.0) {
-			//...//
 		}
+	
 	} m_pnl;
 
 	boost::array<Stat, numberOfPairs> m_stat;
 
 	boost::array<double, numberOfYs> m_yDetected;
+	boost::array<double, numberOfYs> m_yCurrent;
+	Y m_currentY;
 	boost::array<double, numberOfYs> m_yDetectedReported;
 	const double m_opportunityReportStep;
 
