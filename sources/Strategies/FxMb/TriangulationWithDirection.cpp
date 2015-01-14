@@ -218,7 +218,7 @@ public:
 		if (conf.ReadBoolKey("log.pnl")) {
 		
 			const auto &logPath
-				= context.GetSettings().GetLogsDir() / "strategy" / "pnl.log";
+				= context.GetSettings().GetLogsDir() / "pnl.log";
 		
 			GetContext().GetLog().Info("PnL log: %1%.", logPath);
 			
