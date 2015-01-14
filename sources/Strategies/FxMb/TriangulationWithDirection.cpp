@@ -1017,18 +1017,13 @@ private:
 			currentPrice = security.GetAskPrice();
 			seenProfit = openPrice - currentPrice;
 		}
-		const auto &targetProfit = m_comission * 2;
-		if (seenProfit > targetProfit) {
+		if (seenProfit > 0) {
 			GetTradingLog().Write(
 				"\tprofit-detected\t%1%\t%2%\topp.: %3%\t%4%"
-					"\t%5% -> %6%  = %7$.7f > %8$.7f",
+					"\t%5% -> %6%  = %7$.7f",
 				[&](TradingRecord &record) {
 					printTradingRecordStart(record);
-					record
-						% openPrice
-						% currentPrice
-						% seenProfit
-						% targetProfit;
+					record % openPrice % currentPrice % seenProfit;
 				});
 			return PLT_PROFIT;
 		}
