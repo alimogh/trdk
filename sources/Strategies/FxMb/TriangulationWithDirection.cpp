@@ -43,7 +43,7 @@ namespace {
 		}
 	public:
 		const StrategyLogRecord & operator >>(std::ostream &os) const {
-			Dump(os, ",");
+			Dump(os, "\t");
 			return *this;
 		}
 	};
@@ -184,7 +184,7 @@ public:
 		
 			const pt::ptime &now = GetContext().GetStartTime();
 			boost::format fileName(
-				"s_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.csv");
+				"s_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.log");
 			fileName
 				% now.date().year()
 				% now.date().month().as_number()
@@ -212,7 +212,7 @@ public:
 		if (conf.ReadBoolKey("log.pnl")) {
 		
 			const auto &logPath
-				= context.GetSettings().GetLogsDir() / "strategy" / "pnl.csv";
+				= context.GetSettings().GetLogsDir() / "strategy" / "pnl.log";
 		
 			GetContext().GetLog().Info("PnL log: %1%.", logPath);
 			
