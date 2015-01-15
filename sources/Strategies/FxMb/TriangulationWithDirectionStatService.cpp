@@ -282,6 +282,7 @@ bool StatService::OnBookUpdateTick(
 		data.current.theo
 			= (bid.avgPrice * offer.qty + offer.avgPrice * bid.qty)
 				/ (bid.qty + offer.qty);
+		data.current.theo = Round(data.current.theo, security.GetPriceScale());
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////
@@ -290,12 +291,14 @@ bool StatService::OnBookUpdateTick(
 	// accumulates values for EMA:
 	source.slowEmaAcc(data.current.theo);
 	// gets current EMA value:
-	data.current.emaSlow = accs::ema(source.slowEmaAcc);
+	data.current.emaSlow
+		= Round(accs::ema(source.slowEmaAcc), security.GetPriceScale());
 
 	// accumulates values for EMA:
 	source.fastEmaAcc(data.current.theo);
 	// gets current EMA value:
-	data.current.emaFast = accs::ema(source.fastEmaAcc);
+	data.current.emaFast
+		= Round(accs::ema(source.fastEmaAcc), security.GetPriceScale());
 
 	////////////////////////////////////////////////////////////////////////////////
 	// Preparing previous 2 points for actual strategy work:
