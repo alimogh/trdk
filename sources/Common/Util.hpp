@@ -65,19 +65,23 @@ namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	inline boost::int64_t Scale(double value, unsigned long scale) {
+	inline boost::int64_t Scale(double value, uintmax_t scale) {
 		return boost::int64_t(boost::math::round(value * double(scale)));
 	}
 
-	inline double Descale(boost::int64_t value, unsigned long scale) {
+	inline double Descale(boost::int64_t value, uintmax_t scale) {
 		const auto result = value / double(scale);
 		return result;
 	}
 
-	inline double Descale(double value, unsigned long scale) {
+	inline double Descale(double value, uintmax_t scale) {
 		value = boost::math::round(value);
 		value /= double(scale);
 		return value;
+	}
+
+	inline double Round(double value, uintmax_t scale) {
+		return double(Scale(value, scale)) / scale;
 	}
 
 	//////////////////////////////////////////////////////////////////////////

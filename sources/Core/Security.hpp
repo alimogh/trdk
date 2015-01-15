@@ -244,6 +244,7 @@ namespace trdk {
 
 	public:
 
+		uintmax_t GetPriceScale() const;
 		uint8_t GetPricePrecision() const throw();
 
 		trdk::ScaledPrice ScalePrice(double price) const;

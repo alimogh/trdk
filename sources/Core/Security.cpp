@@ -48,6 +48,18 @@ namespace {
 		val = std::numeric_limits<Level1Value>::max();
 	}
 
+	uint8_t GetPrecision(const Symbol &symbol) {
+		if (boost::iequals(symbol.GetSymbol(), "EUR/USD")) {
+			return 5;
+		} else if (boost::iequals(symbol.GetSymbol(), "EUR/JPY")) {
+			return 3;
+		} else if (boost::iequals(symbol.GetSymbol(), "USD/JPY")) {
+			return 3;
+		} else {
+			return 6;
+		}
+	}
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,6 +82,9 @@ public:
 
 	const MarketDataSource &m_source;
 
+	const uint8_t m_pricePrecision;
+	const uintmax_t m_priceScale;
+
 	mutable boost::signals2::signal<Level1UpdateSlotSignature>
 		m_level1UpdateSignal;
 	mutable boost::signals2::signal<Level1TickSlotSignature> m_level1TickSignal;
@@ -91,8 +106,10 @@ public:
 
 public:
 
-	Implementation(const MarketDataSource &source)
+	Implementation(const MarketDataSource &source, const Symbol &symbol)
 		: m_source(source),
+		m_pricePrecision(GetPrecision(symbol)),
+		m_priceScale(size_t(std::pow(10, m_pricePrecision))),
 		m_brokerPosition(0),
 		m_marketDataTime(0),
 		m_isLevel1Started(false),
@@ -100,26 +117,6 @@ public:
 		foreach (auto &item, m_level1) {
 			Unset(item);
 		}
-	}
-
-	unsigned int GetPriceScale() const throw() {
-		return 1000000;
-	}
-
-	uint8_t GetPricePrecision() const throw() {
-		return 6;
-	}
-
-	ScaledPrice ScalePrice(double price) const {
-		return Scale(price, GetPriceScale());
-	}
-
-	double DescalePrice(ScaledPrice price) const {
-		return Descale(price, GetPriceScale());
-	}
-
-	double DescalePrice(double price) const {
-		return Descale(price, GetPriceScale());
 	}
 
 	bool AddLevel1Tick(
@@ -220,12 +217,11 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Security::Security(
-			Context &context,
-			const Symbol &symbol,
-			const MarketDataSource &source)
-		: Base(context, symbol),
-		m_pimpl(new Implementation(source)) {
-	//...//
+		Context &context,
+		const Symbol &symbol,
+		const MarketDataSource &source)
+	: Base(context, symbol),
+	m_pimpl(new Implementation(source, GetSymbol())) {
 }
 
 Security::~Security() {
@@ -236,19 +232,23 @@ const MarketDataSource & Security::GetSource() const {
 	return m_pimpl->m_source;
 }
 
+uintmax_t Security::GetPriceScale() const {
+	return m_pimpl->m_priceScale;
+}
+
 uint8_t Security::GetPricePrecision() const throw() {
-	return m_pimpl->GetPricePrecision();
+	return m_pimpl->m_pricePrecision;
 }
 
 ScaledPrice Security::ScalePrice(double price) const {
-	return m_pimpl->ScalePrice(price);
+	return ScaledPrice(Scale(price, GetPriceScale()));
 }
 
 double Security::DescalePrice(ScaledPrice price) const {
-	return m_pimpl->DescalePrice(price);
+	return Descale(price, GetPriceScale());
 }
 double Security::DescalePrice(double price) const {
-	return m_pimpl->DescalePrice(price);
+	return Descale(price, GetPriceScale());
 }
 
 pt::ptime Security::GetLastMarketDataTime() const {
