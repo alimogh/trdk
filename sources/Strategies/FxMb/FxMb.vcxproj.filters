@@ -38,13 +38,16 @@
     <ClInclude Include="Api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FxMbStrategyLog.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TriangulationWithDirectionStatService.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TriangulationWithDirectionPosition.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TriangulationWithDirectionTriangle.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TriangulationWithDirectionTypes.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

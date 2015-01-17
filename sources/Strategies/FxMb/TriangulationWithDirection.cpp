@@ -9,6 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "TriangulationWithDirectionTriangle.hpp"
 #include "TriangulationWithDirectionPosition.hpp"
 #include "TriangulationWithDirectionStatService.hpp"
 #include "Core/Strategy.hpp"
@@ -138,17 +139,8 @@ private:
 
 	};
 
-	typedef boost::array<boost::shared_ptr<Twd::Position>, numberOfPairs>
-		Orders;
-
-	enum Y {
-		Y1,
-		Y2,
-		numberOfYs
-	};
-
 	struct Detection {
-		
+
 		Pair fistLeg;
 		Y y;
 
@@ -887,20 +879,11 @@ private:
 
 			Orders orders = {
 				newPosition(
-					PAIR_AB,
-					detection.fistLeg == PAIR_AB ? 1 : 2,
-					detection.y == Y2,
-					detection.fistLeg == PAIR_AB), 
+					), 
 				newPosition(
-					PAIR_BC,
-					3,
-					detection.y == Y2,
-					detection.fistLeg == PAIR_AB),
+					),
 				newPosition(
-					PAIR_AC,
-					detection.fistLeg == PAIR_AC ? 1 : 2,
-					detection.y == Y1,
-					detection.fistLeg == PAIR_AC)
+					)
 			};
 
 			{
@@ -911,10 +894,32 @@ private:
 				firstLeg.OpenAtStartPrice();
 			}
 
-			orders.swap(m_orders);
-			++m_opportunityNo;
-			m_currentY = detection.y;
-			m_takeProfitTime = pt::not_a_date_time;
+			std::scoped_ptr<Triangle> triangle(
+				new Triangle(
+					m_lastTriangleId++,
+					detection.y,
+					{
+						PAIR_AB,
+						detection.fistLeg == PAIR_AB ? 1 : 2,
+						detection.y == Y2,
+						detection.fistLeg == PAIR_AB,
+					},
+					{
+						PAIR_BC,
+						3,
+						detection.y == Y2,
+						detection.fistLeg == PAIR_AB,
+					},
+					{
+						PAIR_AC,
+						detection.fistLeg == PAIR_AC ? 1 : 2,
+						detection.y == Y1,
+						detection.fistLeg == PAIR_AC,
+					}
+				));
+
+			triangle.swap(m_triangle);
+
 			UpdateYCurrent();
 			LogAction("detected", "signal", "1", nullptr, &detection.speed);
 
@@ -1133,11 +1138,7 @@ private:
 
 	void OnCancel(const char *reason, const Twd::Position &reasonOrder) {
 		LogAction("canceled", reason, reasonOrder.GetLeg(), &reasonOrder);
-		m_orders.fill(boost::shared_ptr<Twd::Position>());
-#		ifdef BOOST_ENABLE_ASSERT_HANDLER
-			m_currentY = numberOfYs;
-			m_takeProfitTime = pt::not_a_date_time;
-#		endif
+		m_triangle.reset();
 		CheckOpenPossibility(TimeMeasurement::Milestones());
 	}
 
@@ -1567,13 +1568,11 @@ private:
 
 	boost::array<double, numberOfYs> m_yDetected;
 	boost::array<double, numberOfYs> m_yCurrent;
-	Y m_currentY;
 	boost::array<double, numberOfYs> m_yDetectedReported;
 	const double m_opportunityReportStep;
 
-	size_t m_opportunityNo;
-	Orders m_orders;
-	mutable pt::ptime m_takeProfitTime;
+	Triangle::Id m_lastTriangleId;
+	boost::scoped_ptr<Triangle> m_triangle;
 
 };
 

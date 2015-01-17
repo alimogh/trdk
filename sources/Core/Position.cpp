@@ -141,7 +141,7 @@ public:
 
 	boost::atomic<Qty> m_planedQty;
 
-	ScaledPrice m_openStartPrice;
+	const ScaledPrice m_openStartPrice;
 	DynamicData m_opened;
 
 	ScaledPrice m_closeStartPrice;
@@ -188,7 +188,7 @@ public:
 			m_cancelState(CANCEL_STATE_NOT_CANCELED),
 			m_tag(m_strategy->GetTag()),
 			m_timeMeasurement(timeMeasurement) {
-		//...//
+		AssertLt(0, m_planedQty);
 	}
 
 public:
@@ -694,7 +694,6 @@ public:
 		Assert(!m_position.IsClosed());
 		Assert(!m_position.IsCompleted());
 		Assert(!m_position.HasActiveOrders());
-		AssertLt(0, m_position.GetPlanedQty());
 
 		auto qtyToOpen = m_position.GetNotOpenedQty();
 		const char *action = "open-pre";
@@ -1088,19 +1087,8 @@ Position::StateUpdateConnection Position::Subscribe(
 	return StateUpdateConnection(m_pimpl->m_stateUpdateSignal.connect(slot));
 }
 
-void Position::SetPlanedQty(const Qty &newPlanedQty) {
-	AssertLt(0, newPlanedQty);
-	m_pimpl->m_planedQty = newPlanedQty;
-}
-
 Qty Position::GetPlanedQty() const {
 	return m_pimpl->m_planedQty;
-}
-
-void Position::SetOpenStartPrice(const ScaledPrice &price) {
-	AssertLt(0, price);
-	AssertEq(0, m_pimpl->m_openStartPrice);
-	m_pimpl->m_openStartPrice = price;
 }
 
 const ScaledPrice & Position::GetOpenStartPrice() const {

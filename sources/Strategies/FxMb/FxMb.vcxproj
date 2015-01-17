@@ -286,10 +286,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api.h" />
-    <ClInclude Include="FxMbStrategyLog.hpp" />
     <ClInclude Include="TriangulationWithDirectionPosition.hpp" />
     <ClInclude Include="TriangulationWithDirectionStatService.hpp" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="TriangulationWithDirectionTriangle.hpp" />
+    <ClInclude Include="TriangulationWithDirectionTypes.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Common.vcxproj">
