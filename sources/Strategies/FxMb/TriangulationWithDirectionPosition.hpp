@@ -10,26 +10,10 @@
 
 #pragma once
 
+#include "TriangulationWithDirectionTypes.hpp"
 #include "Core/Position.hpp"
 
 namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
-
-	////////////////////////////////////////////////////////////////////////////////
-
-	enum Pair {
-		//! Like a EUR/USD.
-		PAIR_AB,
-		//! Like a USD/JPY.
-		PAIR_BC,
-		//! Like a EUR/JPY.
-		PAIR_AC,
-		numberOfPairs = 3
-	};
-
-	struct PairSpeed {
-		double rising;
-		double falling;
-	};
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -46,8 +30,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const trdk::ScaledPrice &startPrice,
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
-				const size_t leg,
-				size_t ordersCount)
+				const Leg &leg)
 			: trdk::Position(
 				strategy,
 				tradeSystem,
@@ -58,21 +41,14 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				timeMeasurement),
 			m_pair(pair),
 			m_leg(leg),
-			m_ordersCount(ordersCount),
 			m_isActive(true) {
-			//...//
 		}
-
-	public:
-
-		virtual void UpdateStartOpenPriceFromCurrent() = 0;
 
 	public:
 
 		void OpenAtStartPrice() {
 			AssertLt(.0, GetOpenStartPrice());
 			OpenImmediatelyOrCancel(GetOpenStartPrice());
-			++m_ordersCount;
 		}
 
 		virtual void OpenAtCurrentPrice() = 0;
@@ -84,9 +60,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			m_isActive = true;
 			if (Lib::IsZero(GetCloseStartPrice())) {
 				SetCloseStartPrice(price);
-				m_ordersCount = 1;
-			} else {
-				++m_ordersCount;
 			}
 		}
 
@@ -96,12 +69,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_pair;
 		}
 
-		size_t GetLeg() const {
+		const Leg & GetLeg() const {
 			return m_leg;
-		}
-
-		size_t GetOrdersCount() const {
-			return m_ordersCount;
 		}
 
 		//! @todo remove this workaround: https://trello.com/c/QOBSd8RZ
@@ -123,7 +92,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				return;
 			}
 			OpenImmediatelyOrCancel(price);
-			++m_ordersCount;
 		}
 
 		void CloseAt(const CloseType &closeType, const ScaledPrice &price) {
@@ -135,17 +103,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			m_isActive = true;
 			if (Lib::IsZero(GetCloseStartPrice())) {
 				SetCloseStartPrice(price);
-				m_ordersCount = 1;
-			} else {
-				++m_ordersCount;
 			}
 		}
 
 	private:
 
 		const Pair m_pair;
-		const size_t m_leg;
-		size_t m_ordersCount;
+		const Leg m_leg;
 		bool m_isActive;
 
 	};
@@ -165,8 +129,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const trdk::ScaledPrice &startPrice,
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
-				const size_t leg,
-				size_t ordersCount)
+				const Leg &leg)
 			: trdk::Position(
 				strategy,
 				tradeSystem,
@@ -184,8 +147,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				startPrice,
 				timeMeasurement,
 				pair,
-				leg,
-				ordersCount),
+				leg),
 			trdk::LongPosition(
 				strategy,
 				tradeSystem,
@@ -201,10 +163,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		}
 
 	public:
-
-		virtual void UpdateStartOpenPriceFromCurrent() {
-			SetOpenStartPrice(GetSecurity().GetAskPriceScaled());
-		}
 
 		virtual void OpenAtCurrentPrice() {
 			AssertLt(.0, GetOpenStartPrice());
@@ -233,8 +191,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const trdk::ScaledPrice &startPrice,
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
-				const size_t leg,
-				size_t ordersCount)
+				const Leg &leg)
 			: trdk::Position(
 				strategy,
 				tradeSystem,
@@ -252,8 +209,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				startPrice,
 				timeMeasurement,
 				pair,
-				leg,
-				ordersCount),
+				leg),
 			trdk::ShortPosition(
 				strategy,
 				tradeSystem,
@@ -270,10 +226,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	public:
 
-		virtual void UpdateStartOpenPriceFromCurrent() {
-			SetOpenStartPrice(GetSecurity().GetBidPriceScaled());
-		}
-
 		void OpenAtCurrentPrice() {
 			AssertLt(.0, GetOpenStartPrice());
 			OpenAt(GetSecurity().GetBidPriceScaled());
@@ -285,5 +237,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		}
 
 	};
+
+	////////////////////////////////////////////////////////////////////////////////
 
 } } } }

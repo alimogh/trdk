@@ -10,7 +10,11 @@
 
 #pragma once
 
+#include "TriangulationWithDirectionReport.hpp"
+#include "TriangulationWithDirectionPosition.hpp"
 #include "TriangulationWithDirectionTypes.hpp"
+#include "TriangulationWithDirectionStatService.hpp"
+#include "Y.hpp"
 
 namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
@@ -20,37 +24,272 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		typedef size_t Id;
 
-		struct LegParams {
-			Pair pair;
-			size_t legNo;
+		struct PairLegParams {
+			Pair id;
+			Leg leg;
 			bool isBuy;
 			bool isBaseCurrency;
 		};
 
-	private:
+		struct PairInfo : public PairLegParams {
+			
+			const BestBidAsk *bestBidAsk;
+			Security *security;
 
-		enum Leg {
-			LEG1,
-			LEG2,
-			LEG3,
-			numberOfLegs
+			size_t ordersCount;
+
+			PairInfo() {
+				//...//
+			}
+
+			explicit PairInfo(
+					const PairLegParams &params,
+					const BestBidAskPairs &bestBidAskRef)
+				: PairLegParams(params),
+				bestBidAsk(&bestBidAskRef[id]),
+				security(
+					//! @todo FIXME (const_cast)
+					const_cast<Security *>(
+						&bestBidAsk->service->GetSecurity(
+							!isBuy
+								?	bestBidAsk->bestBid.source
+								:	bestBidAsk->bestAsk.source))),
+				ordersCount(0) {	
+			}
+
 		};
-
-		typedef boost::array<boost::shared_ptr<Twd::Position>, numberOfPairs>
-			Orders;
 
 	public:
 
 		explicit Triangle(
+				TriangulationWithDirection &strategy,
+				ReportsState &reportsState,
 				const Id &id,
 				const Y &y,
-				const LegParams leg1,
-				const LegParams leg2,
-				const LegParams leg3) 
-				: m_id(id),
-				m_y(y),
-				m_legsPrams{leg1, leg2, leg3} {
-			//...//
+				const Qty &startQty,
+				const PairLegParams ab,
+				const PairLegParams bc,
+				const PairLegParams ac,
+				const BestBidAskPairs &bestBidAskRef) 
+			: m_strategy(strategy),
+			m_bestBidAsk(bestBidAskRef),
+			m_report(*this, reportsState),
+			m_id(id),
+			m_y(y),
+			m_qtyStart(startQty),
+			m_qtyLeg2(0) {
+
+#			ifdef BOOST_ENABLE_ASSERT_HANDLER
+				m_pairsLegs.fill(nullptr);
+#			endif
+			
+			m_pairs[PAIR_AB] = PairInfo(ab, m_bestBidAsk);
+			m_pairsLegs[m_pairs[PAIR_AB].leg] = &m_pairs[PAIR_AB];
+			
+			m_pairs[PAIR_BC] = PairInfo(bc, m_bestBidAsk);
+			m_pairsLegs[m_pairs[PAIR_BC].leg] = &m_pairs[PAIR_BC];
+			
+			m_pairs[PAIR_AC] = PairInfo(ac, m_bestBidAsk);
+			m_pairsLegs[m_pairs[PAIR_AC].leg] = &m_pairs[PAIR_AC];
+		
+#			ifdef BOOST_ENABLE_ASSERT_HANDLER
+				foreach (const PairInfo *info, m_pairsLegs) {
+					Assert(info);
+				}
+#			endif
+
+			UpdateYDirection();
+
+		}
+
+	public:
+
+		void StartLeg1(
+				const Lib::TimeMeasurement::Milestones &timeMeasurement,
+				const boost::array<PairSpeed, numberOfPairs> &pairsSpeed) {
+		
+			Assert(!m_legs[LEG1]);
+			Assert(!m_legs[LEG2]);
+			Assert(!m_legs[LEG3]);
+			if (m_legs[LEG1] || m_legs[LEG2] || m_legs[LEG3]) {
+				throw Lib::LogicError(
+					"Failed to start triangle leg 1 (wrong strategy logic)");
+			}
+
+			boost::shared_ptr<Twd::Position> order = CreateOrder(
+				LEG1,						
+				m_qtyStart,
+				timeMeasurement);
+			timeMeasurement.Measure(
+				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_START);
+
+			order->OpenAtStartPrice();
+			m_legs[LEG1] = order;
+
+			m_report.ReportAction(
+				"detected",
+				"signal",
+				"1",
+				nullptr,
+				&pairsSpeed);
+			timeMeasurement.Measure(
+				Lib::TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+
+		}
+
+		void StartLeg2() {
+
+			Assert(m_legs[LEG1]);
+			Assert(!m_legs[LEG2]);
+			Assert(!m_legs[LEG3]);
+
+			Assert(m_legs[LEG1]->IsOpened());
+			Assert(!m_legs[LEG1]->IsClosed());
+
+			if (
+					!m_legs[LEG1]
+					|| !m_legs[LEG1]->IsOpened()
+					|| m_legs[LEG1]->IsClosed()
+					|| m_legs[LEG2]
+					|| m_legs[LEG3]) {
+				throw Lib::LogicError(
+					"Failed to start triangle leg 2 (wrong strategy logic)");
+			}
+
+			if (!m_qtyLeg2) {
+
+				const auto &leg1Security = m_legs[LEG1]->GetSecurity();
+				const double leg1Price
+					= leg1Security.DescalePrice(m_legs[LEG1]->GetOpenPrice());
+				const auto leg1Vol = leg1Price * m_legs[LEG1]->GetOpenedQty();
+
+				const PairInfo &leg3Pair = GetPair(LEG3);
+				const double leg3Price = leg3Pair.isBuy
+					?	leg3Pair.bestBidAsk->bestAsk.price
+					:	leg3Pair.bestBidAsk->bestBid.price;
+
+				const auto &leg3QuoteCurrency
+					= leg3Pair
+						.bestBidAsk
+						->service
+						->GetSecurity(0)
+						.GetSymbol()
+						.GetCashQuoteCurrency();
+				const auto &leg1QuoteCurrency
+					= leg1Security.GetSymbol().GetCashQuoteCurrency();
+
+				m_qtyLeg2 = leg3QuoteCurrency == leg1QuoteCurrency
+					//! @todo remove "to qty"
+					?	Qty(leg1Vol / leg3Price)
+					:	Qty(leg1Vol * leg3Price);
+
+			}
+
+			boost::shared_ptr<Twd::Position> order = CreateOrder(
+				LEG2,
+				m_qtyLeg2,
+				Lib::TimeMeasurement::Milestones());
+			order->OpenAtStartPrice();
+
+			m_legs[LEG2] = order;
+
+		}
+
+		void StartLeg3(
+				const Lib::TimeMeasurement::Milestones &timeMeasurement) {
+
+			Assert(m_legs[LEG1]);
+			Assert(m_legs[LEG2]);
+			Assert(!m_legs[LEG3]);
+
+			Assert(m_legs[LEG1]->IsOpened());
+			Assert(!m_legs[LEG1]->IsClosed());
+
+			Assert(m_legs[LEG2]->IsOpened());
+			Assert(!m_legs[LEG2]->IsClosed());
+
+			if (
+					!m_legs[LEG1]
+					|| !m_legs[LEG1]->IsOpened()
+					|| m_legs[LEG1]->IsClosed()
+					|| !m_legs[LEG2]
+					|| !m_legs[LEG2]->IsOpened()
+					|| m_legs[LEG2]->IsClosed()
+					|| m_legs[LEG3]) {
+				throw Lib::LogicError(
+					"Failed to start triangle leg 3 (wrong strategy logic)");
+			}
+
+			const double leg1Price = m_legs[LEG1]->GetSecurity().DescalePrice(
+				m_legs[LEG1]->GetOpenPrice());
+			const auto leg1Vol = leg1Price * m_legs[LEG1]->GetOpenedQty();
+
+			const boost::shared_ptr<Twd::Position> order = CreateOrder(
+				LEG3,
+				//! @todo remove "to qty"
+				Qty(leg1Vol),
+				timeMeasurement);
+
+			timeMeasurement.Measure(
+				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_START);
+
+			order->OpenAtStartPrice();
+			m_legs[LEG3] = order;
+
+			m_report.ReportAction("detected", "signal", order->GetLeg());
+			timeMeasurement.Measure(
+				Lib::TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+
+		}
+
+		void Cancel(const Position::CloseType &closeType) {
+			
+			Assert(m_legs[LEG1]);
+			Assert(!m_legs[LEG2]);
+			Assert(!m_legs[LEG3]);
+
+			Assert(!m_legs[LEG1]->HasActiveOrders());
+
+			if (!m_legs[LEG1] || m_legs[LEG2] || m_legs[LEG3]) {
+				throw Lib::LogicError(
+					"Failed to cancel triangle (wrong strategy logic)");
+			}
+
+			if (Lib::IsZero(m_legs[LEG1]->GetCloseStartPrice())) {
+				m_legs[LEG1]->CloseAtStartPrice(closeType);
+			} else {
+				m_legs[LEG1]->CloseAtCurrentPrice(closeType);
+			}
+
+		}
+
+	public:
+
+		void OnLeg2Cancel() {
+			
+			Assert(m_legs[LEG1]);
+			Assert(m_legs[LEG2]);
+			Assert(!m_legs[LEG3]);
+
+			Assert(m_legs[LEG1]->IsOpened());
+			Assert(!m_legs[LEG2]->IsOpened());
+
+			m_legs[LEG2].reset();
+
+		}
+
+		void OnLeg3Cancel() {
+			
+			Assert(m_legs[LEG1]);
+			Assert(m_legs[LEG2]);
+			Assert(m_legs[LEG3]);
+
+			Assert(m_legs[LEG1]->IsOpened());
+			Assert(m_legs[LEG2]->IsOpened());
+			Assert(!m_legs[LEG3]->IsOpened());
+
+			m_legs[LEG3].reset();
+		
 		}
 
 	public:
@@ -63,15 +302,197 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_y;
 		}
 
+		TriangleReport & GetReport() {
+			return m_report;
+		}
+
+		Twd::Position & GetLeg(const Leg &leg) {
+			Assert(m_legs[leg]);
+			return *m_legs[leg];  
+		}
+		const Twd::Position & GetLeg(const Leg &leg) const {
+			return const_cast<Triangle *>(this)->GetLeg(leg);
+		}
+
+		Twd::Position & GetLeg(const Pair &pair) {
+			return GetLeg(m_pairs[pair].leg);
+		}
+		const Twd::Position & GetLeg(const Pair &pair) const {
+			return const_cast<Triangle *>(this)->GetLeg(pair);
+		}
+
+		bool IsLegStarted(const Leg &leg) const {
+			return m_legs[leg] ? true : false;
+		}
+		bool IsLegStarted(const Pair &pair) const {
+			return IsLegStarted(m_pairs[pair].leg);
+		}
+
+		bool IsLegExecuted(const Leg &leg) const {
+			return m_legs[leg] && m_legs[leg]->IsOpened();
+		}
+		bool IsLegExecuted(const Pair &pair) const {
+			return IsLegExecuted(m_pairs[pair].leg);
+		}
+
+		PairInfo & GetPair(const Pair &pair) {
+			return m_pairs[pair];
+		}
+
+		const PairInfo & GetPair(const Pair &pair) const {
+			return const_cast<Triangle *>(this)->GetPair(pair);
+		}
+
+		PairInfo & GetPair(const Leg &leg) {
+			return *m_pairsLegs[leg];
+		}
+
+		const PairInfo & GetPair(const Leg &leg) const {
+			return const_cast<Triangle *>(this)->GetPair(leg);
+		}
+
+		const BestBidAskPairs & GetBestBidAsk() const {
+			return m_bestBidAsk;
+		}
+
+		const TriangulationWithDirection & GetStrategy() const {
+			return m_strategy;
+		}
+
+	public:
+
+		const boost::posix_time::ptime & GetTakeProfitTime() const {
+			return m_takeProfitTime;
+		}
+
+		void ResetTakeProfitTime() {
+			namespace pt = boost::posix_time;
+			AssertNe(pt::not_a_date_time, m_takeProfitTime);
+			m_takeProfitTime = pt::not_a_date_time;
+		}
+
+		void SetTakeProfitTime(const boost::posix_time::ptime &time) {
+			namespace pt = boost::posix_time;
+			AssertEq(m_takeProfitTime, pt::not_a_date_time);
+			m_takeProfitTime = time;
+		}
+
+	public:
+
+		bool HasOpportunity() const {
+			return CheckOpportunity(m_yDirection) == GetY();
+		}
+
+		const YDirection & GetYDirection() const {
+			return m_yDirection;
+		}
+
+		void UpdateYDirection() {
+			CalcYDirection(
+				*m_pairs[PAIR_AB].security,
+				*m_pairs[PAIR_BC].security,
+				*m_pairs[PAIR_AC].security,
+				m_yDirection);
+		}
+
+		void ResetYDirection() {
+			Twd::ResetYDirection(m_yDirection);
+		}
+
+		double CalcYTargeted() const {
+
+			Assert(m_legs[LEG1] && m_legs[LEG2] && m_legs[LEG3]);
+			Assert(
+				m_legs[LEG1]->IsOpened()
+				&& m_legs[LEG2]->IsOpened()
+				&& m_legs[LEG3]->IsOpened());
+			Assert(
+				!m_legs[LEG1]->IsClosed()
+				&& !m_legs[LEG2]->IsClosed()
+				&& !m_legs[LEG3]->IsClosed());
+
+			const auto getPrice = [this](const Pair &pair) -> double {
+				const auto &result
+					= m_pairs[pair].security->DescalePrice(
+						GetLeg(pair).GetOpenStartPrice());
+				Assert(!Lib::IsZero(result));
+				return result;
+			};
+
+			if (m_y ==  Y1) {
+				return CalcY1(
+					getPrice(PAIR_AB),
+					getPrice(PAIR_BC),
+					getPrice(PAIR_AC));
+			} else {
+				AssertEq(Y2, m_y);
+				return CalcY2(
+					getPrice(PAIR_AB),
+					getPrice(PAIR_BC),
+					getPrice(PAIR_AC));
+			}
+
+		}
+
+		double CalcYExecuted() const {
+			
+			Assert(m_legs[LEG1] && m_legs[LEG2] && m_legs[LEG3]);
+			Assert(
+				m_legs[LEG1]->IsOpened()
+				&& m_legs[LEG2]->IsOpened()
+				&& m_legs[LEG3]->IsOpened());
+			Assert(
+				!m_legs[LEG1]->IsClosed()
+				&& !m_legs[LEG2]->IsClosed()
+				&& !m_legs[LEG3]->IsClosed());
+
+			const auto getPrice = [this](const Pair &pair) -> double {
+				const auto &result
+					= m_pairs[pair].security->DescalePrice(
+						GetLeg(pair).GetOpenPrice());
+				Assert(!Lib::IsZero(result));
+				return result;
+			};
+
+			if (m_y ==  Y1) {
+				return CalcY1(
+					getPrice(PAIR_AB),
+					getPrice(PAIR_BC),
+					getPrice(PAIR_AC));
+			} else {
+				AssertEq(Y2, m_y);
+				return CalcY2(
+					getPrice(PAIR_AB),
+					getPrice(PAIR_BC),
+					getPrice(PAIR_AC));
+			}
+		
+		}
+
+	private:
+
+		boost::shared_ptr<Twd::Position> CreateOrder(
+				const Leg &,
+				const Qty &,
+				const Lib::TimeMeasurement::Milestones &);
+
 	private:
 		
+		TriangulationWithDirection &m_strategy;
+		const BestBidAskPairs &m_bestBidAsk;
+
+		TriangleReport m_report;
+
 		const Id m_id;
 		const Y m_y;
+		const Qty m_qtyStart;
+		Qty m_qtyLeg2;
 		
-		const boost::array<LegParams, numberOfLegs> m_legsPrams;
+		boost::array<PairInfo, numberOfPairs> m_pairs;
+		boost::array<PairInfo *, numberOfLegs> m_pairsLegs;
+		boost::array<boost::shared_ptr<Twd::Position>, numberOfLegs> m_legs;
 
-		Orders m_orders;
-
+		YDirection m_yDirection;
 		boost::posix_time::ptime m_takeProfitTime;
 	
 	};

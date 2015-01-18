@@ -13,16 +13,73 @@
 namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	////////////////////////////////////////////////////////////////////////////////
-
-	enum Y {
-		Y1,
-		Y2,
-		numberOfYs
+		
+	enum Leg {
+		LEG1,
+		LEG2,
+		LEG3,
+		numberOfLegs
 	};
-	
-	typedef boost::array<double, numberOfYs> Y;
+
+	inline size_t GetLegNo(const Leg &leg) {
+		AssertGt(numberOfLegs, leg);
+		return leg + 1;
+	}
 
 	////////////////////////////////////////////////////////////////////////////////
 
+	enum Pair {
+		//! Like a EUR/USD.
+		PAIR_AB,
+		//! Like a USD/JPY.
+		PAIR_BC,
+		//! Like a EUR/JPY.
+		PAIR_AC,
+		numberOfPairs = 3
+	};
+
+	struct PairSpeed {
+		double rising;
+		double falling;
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	struct BestBidAsk {
+
+		const StatService *service;
+		
+		struct {
+			
+			double price;
+			size_t source;
+		
+			void Reset() {
+				price = 0;
+			}
+
+		}
+			bestBid,
+			bestAsk;
+
+		void Reset() {
+			bestBid.Reset();
+			bestAsk.Reset();
+		}
+
+	};
+
+	typedef boost::array<BestBidAsk, numberOfPairs> BestBidAskPairs;
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	class HasNotMuchOpportunityException : public Lib::Exception {
+	public:
+		explicit HasNotMuchOpportunityException() throw()
+			: Exception("Has no required opportunity") {
+		}
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
 
 } } } }
