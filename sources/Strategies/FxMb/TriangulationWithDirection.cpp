@@ -173,6 +173,8 @@ public:
 			conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
 		m_qty(conf.ReadTypedKey<Qty>("qty")),
 		m_comission(conf.ReadTypedKey<double>("commission")),
+		m_takeProfitWaitTime(
+			pt::seconds(conf.ReadTypedKey<long>("take_profit_wait_time_sec"))),
 		m_currentY(numberOfYs),
 		m_opportunityReportStep(
 			conf.ReadTypedKey<double>("opportunity_report_step")),
@@ -437,6 +439,7 @@ public:
 				m_orders.fill(boost::shared_ptr<Twd::Position>());
 #				ifdef BOOST_ENABLE_ASSERT_HANDLER
 					m_currentY = numberOfYs;
+					m_takeProfitTime = pt::not_a_date_time;
 #				endif
 				break;
 
@@ -526,22 +529,7 @@ private:
 			AssertLt(.9, m_yDetected[Y2]);
 
 			if (IsActive()) {
-			
-				m_yCurrent[Y1]
-					= m_orders[PAIR_AB]->GetSecurity().GetBidPrice()
-						* m_orders[PAIR_BC]->GetSecurity().GetBidPrice()
-						* (1 / m_orders[PAIR_AC]->GetSecurity().GetAskPrice());
-				m_yCurrent[Y2]
-					= m_orders[PAIR_AC]->GetSecurity().GetBidPrice()
-						* (1 / m_orders[PAIR_BC]->GetSecurity().GetAskPrice())
-						* (1 / m_orders[PAIR_AB]->GetSecurity().GetAskPrice());
-
-				AssertGt(1.1, m_yCurrent[Y1]);
-				AssertLt(.9, m_yCurrent[Y1]);
-			
-				AssertGt(1.1, m_yCurrent[Y2]);
-				AssertLt(.9, m_yCurrent[Y2]);
-			
+				UpdateYCurrent();
 			}
 
 			AssertGt(1.1, m_yDetected[Y1]);
@@ -572,6 +560,27 @@ private:
 				});
 			m_yDetectedReported = m_yDetected;
 		}
+
+	}
+
+	void UpdateYCurrent() {
+
+		Assert(IsActive());
+
+		m_yCurrent[Y1]
+			= m_orders[PAIR_AB]->GetSecurity().GetBidPrice()
+				* m_orders[PAIR_BC]->GetSecurity().GetBidPrice()
+				* (1 / m_orders[PAIR_AC]->GetSecurity().GetAskPrice());
+		m_yCurrent[Y2]
+			= m_orders[PAIR_AC]->GetSecurity().GetBidPrice()
+				* (1 / m_orders[PAIR_BC]->GetSecurity().GetAskPrice())
+				* (1 / m_orders[PAIR_AB]->GetSecurity().GetAskPrice());
+
+		AssertGt(1.1, m_yCurrent[Y1]);
+		AssertLt(.9, m_yCurrent[Y1]);
+			
+		AssertGt(1.1, m_yCurrent[Y2]);
+		AssertLt(.9, m_yCurrent[Y2]);
 
 	}
 
@@ -654,6 +663,7 @@ private:
 		Assert(HasDetectedOpportunity());
 		Assert(!IsActive());
 		AssertEq(numberOfYs, m_currentY);
+		AssertEq(m_takeProfitTime, pt::not_a_date_time);
 
 		for (size_t pair = 0; pair < result.speed.size(); ++pair) {
 			
@@ -666,7 +676,7 @@ private:
 					= data.current.theo > data.current.emaFast
 						&& data.current.emaFast > data.current.emaSlow;
 				speed.rising = isRising
-					?	data.current.theo - data.prev2.theo
+					?	(1.0 / data.prev2.theo) * data.current.theo
 					:	std::numeric_limits<double>::quiet_NaN();
 			}
 
@@ -676,85 +686,58 @@ private:
 					= data.current.theo < data.current.emaFast
 						&& data.current.emaFast < data.current.emaSlow;
 				speed.falling = isFalling
-					?	data.prev2.theo - data.current.theo
+					?	data.prev2.theo * (1.0 / data.current.theo)
 					:	std::numeric_limits<double>::quiet_NaN();
 			}
 
 		}
 
-		struct SpeedTest {
-		
-			Pair fastestPair;
-			double fastestSpeed;
-
-			SpeedTest()
-				: fastestPair(numberOfPairs),
-				fastestSpeed(std::numeric_limits<double>::quiet_NaN()) {
-			}
-
-			void Test(const Pair &pair, double speed) {
-				if (
-						isnan(speed)
-						|| (!isnan(fastestSpeed) && fastestSpeed >= speed)) {
-					return;
-				}
-//! @todo:		compare prices for pairs https://trello.com/c/NaVQzajm
-				fastestSpeed = speed;
-				fastestPair = pair;
-			}
-
-		};
-
 		if (m_yDetected[Y1] >= 1.0) {
-			
-			SpeedTest speedTest;
-			speedTest.Test(PAIR_AB, result.speed[PAIR_AB].falling);
-			speedTest.Test(PAIR_BC, result.speed[PAIR_BC].falling);
-			speedTest.Test(PAIR_AC, result.speed[PAIR_AC].rising);
-
-			if (speedTest.fastestPair != numberOfPairs) {
-			
-				Assert(!isnan(speedTest.fastestSpeed));
-			
+			if (
+					!isnan(result.speed[PAIR_AB].falling)
+					&& result.speed[PAIR_AB].falling > 0
+					&& !isnan(result.speed[PAIR_BC].rising)
+					&& result.speed[PAIR_BC].rising > 0
+					&& isnan(result.speed[PAIR_AC].rising)
+					&& isnan(result.speed[PAIR_AC].falling)) {
 				result.y = Y1;
-			
-				if (!isnan(result.speed[PAIR_AB].falling)) {
-//! @todo:			Assert(isnan(result.speed[PAIR_AC].rising)); https://trello.com/c/NaVQzajm
-					result.fistLeg = PAIR_AB;
-					return true;
-				} else if (!isnan(result.speed[PAIR_AC].rising)) {
-					result.fistLeg = PAIR_AC;
-					return true;
-				}
-			
+				result.fistLeg = PAIR_AB;
+				return true;
+			} else if (
+					!isnan(result.speed[PAIR_AC].rising)
+					&& result.speed[PAIR_AC].rising > 0
+					&& !isnan(result.speed[PAIR_BC].falling)
+					&& result.speed[PAIR_BC].falling > 0
+					&& isnan(result.speed[PAIR_AB].rising)
+					&& isnan(result.speed[PAIR_AB].falling)) {
+				result.y = Y1;
+				result.fistLeg = PAIR_AC;
+				return true;
 			}
-
 		}
 
 		if (m_yDetected[Y2] >= 1.0) {
-
-			SpeedTest speedTest;
-			speedTest.Test(PAIR_AB, result.speed[PAIR_AB].rising);
-			speedTest.Test(PAIR_BC, result.speed[PAIR_BC].rising);
-			speedTest.Test(PAIR_AC, result.speed[PAIR_AC].falling);
-
-			if (speedTest.fastestPair != numberOfPairs) {
-			
-				Assert(!isnan(speedTest.fastestSpeed));
-			
+			if (
+					!isnan(result.speed[PAIR_AB].rising)
+					&& result.speed[PAIR_AB].rising > 0
+					&& !isnan(result.speed[PAIR_BC].falling)
+					&& result.speed[PAIR_BC].falling > 0
+					&& isnan(result.speed[PAIR_AC].rising)
+					&& isnan(result.speed[PAIR_AC].falling)) {
 				result.y = Y2;
-			
-				if (!isnan(result.speed[PAIR_AB].rising)) {
-//! @todo:			Assert(isnan(result.speed[PAIR_AC].falling));  https://trello.com/c/NaVQzajm
-					result.fistLeg = PAIR_AB;
-					return true;
-				} else if (!isnan(result.speed[PAIR_AC].falling)) {
-					result.fistLeg = PAIR_AC;
-					return true;
-				}
-			
+				result.fistLeg = PAIR_AB;
+				return true;
+			} else if (
+					!isnan(result.speed[PAIR_AC].falling)
+					&& result.speed[PAIR_AC].falling > 0
+					&& !isnan(result.speed[PAIR_BC].rising)
+					&& result.speed[PAIR_BC].rising > 0
+					&& isnan(result.speed[PAIR_AB].rising)
+					&& isnan(result.speed[PAIR_AB].falling)) {
+				result.y = Y2;
+				result.fistLeg = PAIR_AC;
+				return true;
 			}
-
 		}
 
 		return false;
@@ -944,6 +927,8 @@ private:
 			orders.swap(m_orders);
 			++m_opportunityNo;
 			m_currentY = detection.y;
+			m_takeProfitTime = pt::not_a_date_time;
+			UpdateYCurrent();
 			LogAction("detected", "signal", "1", nullptr, &detection.speed);
 
 			timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_STOP);
@@ -1077,14 +1062,37 @@ private:
 			seenProfit = openPrice - currentPrice;
 		}
 		if (seenProfit > 0) {
+			const auto &now = GetContext().GetCurrentTime();
+			if (m_takeProfitTime == pt::not_a_date_time) {
+				m_takeProfitTime = now + m_takeProfitWaitTime;
+				GetTradingLog().Write(
+					"\tprofit-detected\t%1%\t%2%\topp.: %3%\t%4%"
+						"\t%5% -> %6%  = %7$.7f at %8%",
+					[&](TradingRecord &record) {
+						printTradingRecordStart(record);
+						record
+							% openPrice
+							% currentPrice
+							% seenProfit
+							% m_takeProfitTime;
+					});
+			} else if (m_takeProfitTime <= now) {
+				GetTradingLog().Write(
+					"\tprofit\t%1%\t%2%\topp.: %3%\t%4%\t%5% -> %6%  = %7$.7f",
+					[&](TradingRecord &record) {
+						printTradingRecordStart(record);
+						record % openPrice % currentPrice % seenProfit;
+					});
+				return PLT_PROFIT;
+			}	
+		} else if (m_takeProfitTime != pt::not_a_date_time) {
 			GetTradingLog().Write(
-				"\tprofit-detected\t%1%\t%2%\topp.: %3%\t%4%"
-					"\t%5% -> %6%  = %7$.7f",
+				"\tprofit-cancel\t%1%\t%2%\topp.: %3%\t%4% at %5%",
 				[&](TradingRecord &record) {
 					printTradingRecordStart(record);
-					record % openPrice % currentPrice % seenProfit;
+					record % m_takeProfitTime;
 				});
-			return PLT_PROFIT;
+			m_takeProfitTime = pt::not_a_date_time;
 		}
 
 		return PLT_NONE;
@@ -1141,6 +1149,7 @@ private:
 		m_orders.fill(boost::shared_ptr<Twd::Position>());
 #		ifdef BOOST_ENABLE_ASSERT_HANDLER
 			m_currentY = numberOfYs;
+			m_takeProfitTime = pt::not_a_date_time;
 #		endif
 		CheckOpenPossibility(TimeMeasurement::Milestones());
 	}
@@ -1527,6 +1536,7 @@ private:
 	const size_t m_levelsCount;
 	const Qty m_qty;
 	const double m_comission;
+	const pt::time_duration m_takeProfitWaitTime;
 
 	std::ofstream m_strategyLogFile;
 	StrategyLog m_strategyLog;
@@ -1576,6 +1586,7 @@ private:
 
 	size_t m_opportunityNo;
 	Orders m_orders;
+	mutable pt::ptime m_takeProfitTime;
 
 };
 
