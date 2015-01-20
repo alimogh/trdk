@@ -65,6 +65,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT}: ../../Common
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT}: ../../Core/dist/Release/GNU-Linux-x86/libCore.so
 
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT}: ${OBJECTFILES}
+	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
+
+
 ${OBJECTDIR}/TriangulationWithDirection.o: TriangulationWithDirection.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
