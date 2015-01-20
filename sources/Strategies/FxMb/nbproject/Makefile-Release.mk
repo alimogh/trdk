@@ -75,12 +75,12 @@ ${OBJECTDIR}/TriangulationWithDirectionStatService.o: TriangulationWithDirection
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionStatService.o TriangulationWithDirectionStatService.cpp
 
-${OBJECTDIR}/TriangulationWithDirection.o: TriangulationWithDirectionReport.cpp 
+${OBJECTDIR}/TriangulationWithDirectionReport.o: TriangulationWithDirectionReport.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionReport.o TriangulationWithDirectionReport.cpp
 
-${OBJECTDIR}/TriangulationWithDirection.o: TriangulationWithDirectionTriangle.cpp 
+${OBJECTDIR}/TriangulationWithDirectionTriangle.o: TriangulationWithDirectionTriangle.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionTriangle.o TriangulationWithDirectionTriangle.cpp
