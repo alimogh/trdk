@@ -35,13 +35,10 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/FxArb1.o \
-	${OBJECTDIR}/FxArb1Mono.o \
-	${OBJECTDIR}/FxArb1Multi.o \
-	${OBJECTDIR}/FxMbStrategyLog.o \
 	${OBJECTDIR}/TriangulationWithDirection.o \
 	${OBJECTDIR}/TriangulationWithDirectionStatService.o \
-	${OBJECTDIR}/Util.o
+	${OBJECTDIR}/TriangulationWithDirectionReport.o \
+	${OBJECTDIR}/TriangulationWithDirectionTriangle.o
 
 
 # C Compiler Flags

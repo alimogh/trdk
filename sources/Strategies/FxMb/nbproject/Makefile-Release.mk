@@ -35,13 +35,10 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/FxArb1.o \
-	${OBJECTDIR}/FxArb1Mono.o \
-	${OBJECTDIR}/FxArb1Multi.o \
-	${OBJECTDIR}/FxMbStrategyLog.o \
 	${OBJECTDIR}/TriangulationWithDirection.o \
 	${OBJECTDIR}/TriangulationWithDirectionStatService.o \
-	${OBJECTDIR}/Util.o
+	${OBJECTDIR}/TriangulationWithDirectionReport.o \
+	${OBJECTDIR}/TriangulationWithDirectionTriangle.o
 
 
 # C Compiler Flags
@@ -67,10 +64,6 @@ LDLIBSOPTIONS=../../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT}: ../../Common/dist/Release/GNU-Linux-x86/libcommon.a
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT}: ../../Core/dist/Release/GNU-Linux-x86/libCore.so
-
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT}: ${OBJECTFILES}
-	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
 
 ${OBJECTDIR}/TriangulationWithDirection.o: TriangulationWithDirection.cpp 
 	${MKDIR} -p ${OBJECTDIR}
