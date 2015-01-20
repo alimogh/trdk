@@ -72,26 +72,6 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb_dbg.${CND_DLIB_EXT}: ${OBJECT
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb_dbg.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
 
-${OBJECTDIR}/FxArb1.o: FxArb1.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxArb1.o FxArb1.cpp
-
-${OBJECTDIR}/FxArb1Mono.o: FxArb1Mono.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxArb1Mono.o FxArb1Mono.cpp
-
-${OBJECTDIR}/FxArb1Multi.o: FxArb1Multi.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxArb1Multi.o FxArb1Multi.cpp
-
-${OBJECTDIR}/FxMbStrategyLog.o: FxMbStrategyLog.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxMbStrategyLog.o FxMbStrategyLog.cpp
-
 ${OBJECTDIR}/TriangulationWithDirection.o: TriangulationWithDirection.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
@@ -102,10 +82,15 @@ ${OBJECTDIR}/TriangulationWithDirectionStatService.o: TriangulationWithDirection
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionStatService.o TriangulationWithDirectionStatService.cpp
 
-${OBJECTDIR}/Util.o: Util.cpp 
+${OBJECTDIR}/TriangulationWithDirection.o: TriangulationWithDirectionReport.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Util.o Util.cpp
+	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionReport.o TriangulationWithDirectionReport.cpp
+
+${OBJECTDIR}/TriangulationWithDirection.o: TriangulationWithDirectionTriangle.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionTriangle.o TriangulationWithDirectionTriangle.cpp
 
 # Subprojects
 .build-subprojects:
