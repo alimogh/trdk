@@ -268,6 +268,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\Common\Assert.cpp" />
     <ClCompile Include="TriangulationWithDirection.cpp" />
+    <ClCompile Include="TriangulationWithDirectionReport.cpp" />
     <ClCompile Include="TriangulationWithDirectionStatService.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
@@ -283,13 +284,19 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="TriangulationWithDirectionTriangle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api.h" />
-    <ClInclude Include="FxMbStrategyLog.hpp" />
+    <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="TriangulationWithDirection.hpp" />
+    <ClInclude Include="TriangulationWithDirectionReport.hpp" />
     <ClInclude Include="TriangulationWithDirectionPosition.hpp" />
     <ClInclude Include="TriangulationWithDirectionStatService.hpp" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="TriangulationWithDirectionTriangle.hpp" />
+    <ClInclude Include="TriangulationWithDirectionTypes.hpp" />
+    <ClInclude Include="Y.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Common.vcxproj">
