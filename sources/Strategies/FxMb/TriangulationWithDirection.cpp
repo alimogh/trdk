@@ -18,14 +18,24 @@
 
 namespace pt = boost::posix_time;
 
-namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
-	class TriangulationWithDirection;
-} } } }
-
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Strategies::FxMb;
 using namespace trdk::Strategies::FxMb::Twd;
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+	bool IsProfit(
+			bool isBuy,
+			const StatService::Data &data) {
+		return	isBuy
+			?	data.current.theo > data.current.emaSlow
+			:	data.current.theo < data.current.emaSlow;
+	}
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -474,19 +484,9 @@ void TriangulationWithDirection::CheckTriangleCompletion(
 	Triangle::PairInfo &leg3Info = m_triangle->GetPair(LEG3);
 	Security &security = leg3Info.GetBestSecurity();
 	const auto &ecn = security.GetSource().GetIndex();
-	const auto &data = leg3Info.bestBidAsk->service->GetData(ecn);
-	if (leg3Info.isBuy) {
-		if (data.current.theo > data.current.emaSlow) {
-			timeMeasurement.Measure(
-				TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
-			return;
-		}
-	} else {
-		if (data.current.theo < data.current.emaSlow) {
-			timeMeasurement.Measure(
-				TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
-			return;
-		}
+	if (!IsProfit(leg3Info.isBuy, leg3Info.bestBidAsk->service->GetData(ecn))) {
+		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
+		return;
 	}
 
 	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
@@ -508,6 +508,8 @@ bool TriangulationWithDirection::CheckProfitLoss(
 			closeType = Position::CLOSE_TYPE_TAKE_PROFIT;
 			closeTypeStr = "profit detected";
 			break;
+		case PLT_PROFIT_WAIT:
+			return true;
 		default:
 			return false;
 	}
@@ -557,6 +559,18 @@ TriangulationWithDirection::ProfitLossTest TriangulationWithDirection::CheckLeg(
 		return PLT_LOSS;
 	}
 
+	const auto &data
+		= m_bestBidAsk[leg.GetPair()]
+			.service->GetData(security.GetSource().GetIndex());
+	if (IsProfit(isLong, data)) {
+		GetTradingLog().Write(
+			"\tprofit\t%1%\t%2%\topp.: %3%\t%4%",
+			[&](TradingRecord &record) {
+				printTradingRecordStart(record);
+			});
+		return PLT_PROFIT;
+	}
+
 	const auto &openPrice = security.DescalePrice(leg.GetOpenPrice());
 	double seenProfit;
 	double currentPrice;
@@ -568,38 +582,19 @@ TriangulationWithDirection::ProfitLossTest TriangulationWithDirection::CheckLeg(
 		seenProfit = openPrice - currentPrice;
 	}
 	if (seenProfit > 0) {
-		const auto &now = GetContext().GetCurrentTime();
-		if (m_triangle->GetTakeProfitTime() == pt::not_a_date_time) {
-			m_triangle->SetTakeProfitTime(now + m_takeProfitWaitTime);
-			GetTradingLog().Write(
-				"\tprofit-detected\t%1%\t%2%\topp.: %3%\t%4%"
-					"\t%5% -> %6%  = %7$.7f at %8%",
-				[&](TradingRecord &record) {
-					printTradingRecordStart(record);
-					record
-						% openPrice
-						% currentPrice
-						% seenProfit
-						% m_triangle->GetTakeProfitTime();
-				});
-		} else if (m_triangle->GetTakeProfitTime() <= now) {
-			GetTradingLog().Write(
-				"\tprofit\t%1%\t%2%\topp.: %3%\t%4%\t%5% -> %6%  = %7$.7f",
-				[&](TradingRecord &record) {
-					printTradingRecordStart(record);
-					record % openPrice % currentPrice % seenProfit;
-				});
-			return PLT_PROFIT;
-		}	
-	} else if (m_triangle->GetTakeProfitTime() != pt::not_a_date_time) {
 		GetTradingLog().Write(
-			"\tprofit-cancel\t%1%\t%2%\topp.: %3%\t%4% at %5%",
+			"\tprofit-detected\t%1%\t%2%\topp.: %3%\t%4%"
+				"\t%5% -> %6%  = %7$.7f",
 			[&](TradingRecord &record) {
 				printTradingRecordStart(record);
-				record % m_triangle->GetTakeProfitTime();
+				record
+					% openPrice
+					% currentPrice
+					% seenProfit;
 			});
-		m_triangle->ResetTakeProfitTime();
+		return PLT_PROFIT_WAIT;
 	}
+	
 
 	return PLT_NONE;
 

@@ -40,7 +40,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		enum ProfitLossTest {
 			PLT_LOSS = -1,
 			PLT_NONE = 0,
-			PLT_PROFIT
+			PLT_PROFIT_WAIT,
+			PLT_PROFIT,
 		};
 
 	public:
