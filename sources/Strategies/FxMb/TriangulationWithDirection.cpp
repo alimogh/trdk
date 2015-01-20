@@ -151,7 +151,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				break;
 			case LEG3:
 				m_triangle->OnLeg3Cancel();
-				CheckTriangleCompletion(TimeMeasurement::Milestones());
+				m_triangle->StartLeg3(TimeMeasurement::Milestones());
 				break;
 			default:
 				AssertEq(LEG1, order.GetLeg());
@@ -471,8 +471,9 @@ void TriangulationWithDirection::CheckTriangleCompletion(
 		return;
 	}
 
-	const Triangle::PairInfo &leg3Info = m_triangle->GetPair(LEG3);
-	const auto &ecn = leg3Info.security->GetSource().GetIndex();
+	Triangle::PairInfo &leg3Info = m_triangle->GetPair(LEG3);
+	Security &security = leg3Info.GetBestSecurity();
+	const auto &ecn = security.GetSource().GetIndex();
 	const auto &data = leg3Info.bestBidAsk->service->GetData(ecn);
 	if (leg3Info.isBuy) {
 		if (data.current.theo > data.current.emaSlow) {
@@ -489,7 +490,7 @@ void TriangulationWithDirection::CheckTriangleCompletion(
 	}
 
 	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
-	m_triangle->StartLeg3(timeMeasurement);
+	m_triangle->StartLeg3(security, timeMeasurement);
 
 }
 

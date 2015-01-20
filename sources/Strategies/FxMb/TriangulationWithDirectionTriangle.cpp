@@ -23,51 +23,63 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		const Leg &leg,
 		const Qty &qty,
 		const TimeMeasurement::Milestones &timeMeasurement) {
+	return CreateOrder(
+		leg,
+		GetPair(leg).GetBestSecurity(),
+		qty,
+		timeMeasurement);
+}
+
+boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
+		const Leg &leg,
+		Security &security,
+		const Qty &qty,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 			
 	boost::shared_ptr<Twd::Position> result;
 			
 	PairInfo &pair = GetPair(leg);
 
 	const auto &currency = !pair.isBaseCurrency
-		?	pair.security->GetSymbol().GetCashQuoteCurrency()
-		:	pair.security->GetSymbol().GetCashBaseCurrency();
+		?	security.GetSymbol().GetCashQuoteCurrency()
+		:	security.GetSymbol().GetCashBaseCurrency();
 			
 	if (pair.isBuy) {
 
-		if (pair.security->GetAskQty() == 0) {
+		if (security.GetAskQty() == 0) {
 			throw HasNotMuchOpportunityException();
 		}
-		Assert(!Lib::IsZero(pair.security->GetAskPrice()));
+		Assert(!Lib::IsZero(security.GetAskPrice()));
 			
 		result.reset(
 			new Twd::LongPosition(
 				m_strategy,
 				m_strategy.GetContext().GetTradeSystem(
-					pair.security->GetSource().GetIndex()),
-				*pair.security,
+					security.GetSource().GetIndex()),
+				security,
 				currency,
 				qty,
-				pair.security->GetAskPriceScaled(),
+				security.GetAskPriceScaled(),
 				timeMeasurement,
 				pair.id,
 				pair.leg));
 			
 	} else {
 			
-		if (pair.security->GetBidQty() == 0) {
+		if (security.GetBidQty() == 0) {
 			throw HasNotMuchOpportunityException();
 		}
-		Assert(!Lib::IsZero(pair.security->GetBidPrice()));
+		Assert(!Lib::IsZero(security.GetBidPrice()));
 			
 		result.reset(
 			new Twd::ShortPosition(
 				m_strategy,
 				m_strategy.GetContext().GetTradeSystem(
-					pair.security->GetSource().GetIndex()),
-				*pair.security,
+					security.GetSource().GetIndex()),
+				security,
 				currency,
 				qty,
-				pair.security->GetBidPriceScaled(),
+				security.GetBidPriceScaled(),
 				timeMeasurement,
 				pair.id,
 				pair.leg));
