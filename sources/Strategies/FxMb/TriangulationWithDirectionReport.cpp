@@ -255,7 +255,7 @@ public:
 	
 	} stat;
 
-	class Pnl(Context &context, bool iEnabled, double comission)
+	Pnl(Context &context, bool iEnabled, double comission)
 		: comission(comission) {
 	
 		if (!iEnabled) {
