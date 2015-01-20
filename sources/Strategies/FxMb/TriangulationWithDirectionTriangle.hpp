@@ -262,11 +262,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					"Failed to cancel triangle (wrong strategy logic)");
 			}
 
-			if (Lib::IsZero(m_legs[LEG1]->GetCloseStartPrice())) {
-				m_legs[LEG1]->CloseAtStartPrice(closeType);
-			} else {
-				m_legs[LEG1]->CloseAtCurrentPrice(closeType);
-			}
+			m_legs[LEG1]->CloseAtCurrentPrice(closeType);
 
 		}
 
@@ -364,24 +360,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		const TriangulationWithDirection & GetStrategy() const {
 			return m_strategy;
-		}
-
-	public:
-
-		const boost::posix_time::ptime & GetTakeProfitTime() const {
-			return m_takeProfitTime;
-		}
-
-		void ResetTakeProfitTime() {
-			namespace pt = boost::posix_time;
-			AssertNe(pt::not_a_date_time, m_takeProfitTime);
-			m_takeProfitTime = pt::not_a_date_time;
-		}
-
-		void SetTakeProfitTime(const boost::posix_time::ptime &time) {
-			namespace pt = boost::posix_time;
-			AssertEq(m_takeProfitTime, pt::not_a_date_time);
-			m_takeProfitTime = time;
 		}
 
 	public:
@@ -511,7 +489,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		boost::array<boost::shared_ptr<Twd::Position>, numberOfLegs> m_legs;
 
 		YDirection m_yDirection;
-		boost::posix_time::ptime m_takeProfitTime;
 	
 	};
 
