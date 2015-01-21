@@ -490,7 +490,12 @@ void TriangulationWithDirection::CheckTriangleCompletion(
 	}
 
 	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
-	m_triangle->StartLeg3(security, timeMeasurement);
+	m_triangle->StartLeg3(
+		security,
+		leg3Info.isBuy
+				?	security.GetAskPrice()
+				:	security.GetBidPrice(),
+		timeMeasurement);
 
 }
 

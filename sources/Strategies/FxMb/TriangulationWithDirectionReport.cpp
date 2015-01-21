@@ -372,6 +372,7 @@ void TriangleReport::ReportAction(
 		const Twd::Position *const order = m_triangle.IsLegStarted(info.leg)
 			?	&m_triangle.GetLeg(info.leg)
 			:	nullptr;
+		const Security &security = m_triangle.GetCalcSecurity(pair);
 
 		if (order) {
 			record % order->GetSecurity().GetSource().GetTag();
@@ -430,14 +431,9 @@ void TriangleReport::ReportAction(
 		}
 
 		// Chosen ECN bid/ask:  ///////////////////////////////////////////////////////
-		if (order) {
-			const Security &security = order->GetSecurity();
-			record 
-				%	security.GetBidPrice()
-				%	security.GetAskPrice();
-		} else {
-			record % ' ' % ' ';
-		}
+		record 
+			%	security.GetBidPrice()
+			%	security.GetAskPrice();
 		
 		// Best bid/ask and ECNs: ////////////////////////////////////////////////////
 		record
@@ -471,25 +467,19 @@ void TriangleReport::ReportAction(
 		}
 		
 		// Stat data: //////////////////////////////////////////////////////////////////
-		if (order) {
-			const auto &data = info.bestBidAsk->service->GetData(
-				order->GetSecurity().GetSource().GetIndex());
-			record
-				%	data.current.theo
-				%	data.prev1.theo
-				%	data.prev2.theo
-				%	data.current.emaFast
-				%	data.prev1.emaFast
-				%	data.prev2.emaFast
-				%	data.current.emaSlow
-				%	data.prev1.emaSlow
-				%	data.prev2.emaSlow;
-		} else {
-			for (int i = 0; i < 9; ++i) {
-				record % ' ';
-			}
-		}
-	
+		const auto &data = info.bestBidAsk->service->GetData(
+			security.GetSource().GetIndex());
+		record
+			%	data.current.theo
+			%	data.prev1.theo
+			%	data.prev2.theo
+			%	data.current.emaFast
+			%	data.prev1.emaFast
+			%	data.prev2.emaFast
+			%	data.current.emaSlow
+			%	data.prev1.emaSlow
+			%	data.prev2.emaSlow;
+
 	};
 
 	const bool isTriangleCanceled
@@ -513,7 +503,7 @@ void TriangleReport::ReportAction(
 			= security.DescalePrice(reasonOrder->GetOpenPrice());
 		const auto &exitPrice
 			= security.DescalePrice(reasonOrder->GetClosePrice());
-		yExecuted = reasonOrder->GetType() == Position::TYPE_LONG
+		yExecuted = reasonOrder->GetType() == Position::TYPE_SHORT
 			?	(1 / entryPrice) * exitPrice
 			:	entryPrice * (1 / exitPrice);
 	}

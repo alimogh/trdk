@@ -21,18 +21,8 @@ using namespace trdk::Strategies::FxMb::Twd;
 
 boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		const Leg &leg,
-		const Qty &qty,
-		const TimeMeasurement::Milestones &timeMeasurement) {
-	return CreateOrder(
-		leg,
-		GetPair(leg).GetBestSecurity(),
-		qty,
-		timeMeasurement);
-}
-
-boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
-		const Leg &leg,
 		Security &security,
+		double price,
 		const Qty &qty,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 			
@@ -59,7 +49,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				security,
 				currency,
 				qty,
-				security.GetAskPriceScaled(),
+				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
 				pair.leg));
@@ -79,7 +69,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				security,
 				currency,
 				qty,
-				security.GetBidPriceScaled(),
+				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
 				pair.leg));
