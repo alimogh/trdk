@@ -38,10 +38,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		numberOfPairs = 3
 	};
 
-	struct PairSpeed {
-		double rising;
-		double falling;
-	};
+	typedef boost::array<double, numberOfPairs> PairsSpeed;
 
 	////////////////////////////////////////////////////////////////////////////////
 

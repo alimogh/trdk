@@ -20,7 +20,7 @@ using namespace trdk::Strategies::FxMb;
 using namespace trdk::Strategies::FxMb::Twd;
 
 boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
-		const Leg &leg,
+		PairInfo &pair,
 		Security &security,
 		double price,
 		const Qty &qty,
@@ -28,8 +28,6 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 			
 	boost::shared_ptr<Twd::Position> result;
 			
-	PairInfo &pair = GetPair(leg);
-
 	const auto &currency = !pair.isBaseCurrency
 		?	security.GetSymbol().GetCashQuoteCurrency()
 		:	security.GetSymbol().GetCashBaseCurrency();

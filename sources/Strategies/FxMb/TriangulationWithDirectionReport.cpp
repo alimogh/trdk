@@ -364,7 +364,7 @@ void TriangleReport::ReportAction(
 		const char *reason,
 		const char *actionLegs,
 		const Twd::Position *const reasonOrder /*= nullptr*/,
-		const boost::array<PairSpeed, numberOfPairs> *speed /*= nullptr*/) {
+		const PairsSpeed *speed /*= nullptr*/) {
 
 	const auto &writePair = [&](const Pair &pair, ReportRecord &record) {
 		
@@ -374,14 +374,11 @@ void TriangleReport::ReportAction(
 			:	nullptr;
 		const Security &security = m_triangle.GetCalcSecurity(pair);
 
-		if (order) {
-			record % order->GetSecurity().GetSource().GetTag();
-		} else {
-			record % ' ';
-		}
-		
-		record % GetLegNo(info.leg) % (info.isBuy ? "buy" : "sell");
-		
+		record
+			% security.GetSource().GetTag()
+			% GetLegNo(info.leg)
+			% (info.isBuy ? "buy" : "sell");
+
 		if (!order) {
 			record % ' ' % ' ';
 		} else {
@@ -416,15 +413,10 @@ void TriangleReport::ReportAction(
 				record % ' ';
 			}
 		} else {
-			const Security &security = order->GetSecurity();
-			const auto &openStartPrice = order->GetOpenStartPrice();
-			if (IsZero(openStartPrice)) {
-				record % ' ';
-			} else {
-				record % security.DescalePrice(openStartPrice);
-			}
+			record % info.startPrice;
 			if (order->IsOpened()) {
-				record % security.DescalePrice(order->GetOpenPrice());
+				record
+					% order->GetSecurity().DescalePrice(order->GetOpenPrice());
 			} else {
 				record % ' ';
 			}
@@ -452,15 +444,13 @@ void TriangleReport::ReportAction(
 
 		// Rising/falling speed: ///////////////////////////////////////////////////////
 		if (speed) {
-			if (!isnan((*speed)[pair].rising)) {
-				record % (*speed)[pair].rising;
+			if (IsZero((*speed)[pair])) {
+				record % ' ' % ' ';
+			}  else if ((*speed)[pair] > 0) {
+				record % (*speed)[pair] % ' ';
 			} else {
-				record % ' ';
-			}
-			if (!isnan((*speed)[pair].falling)) {
-				record % (*speed)[pair].falling;
-			} else {
-				record % ' ';
+				AssertGt(0, (*speed)[pair]);
+				record % ' ' % fabs((*speed)[pair]);
 			}
 		} else {
 			record % ' ' % ' ';
@@ -503,9 +493,7 @@ void TriangleReport::ReportAction(
 			= security.DescalePrice(reasonOrder->GetOpenPrice());
 		const auto &exitPrice
 			= security.DescalePrice(reasonOrder->GetClosePrice());
-		yExecuted = reasonOrder->GetType() == Position::TYPE_SHORT
-			?	(1 / entryPrice) * exitPrice
-			:	entryPrice * (1 / exitPrice);
+		yExecuted = (1 / entryPrice) * exitPrice;
 	}
 
 	m_state.strategy->log.Write(
@@ -527,10 +515,15 @@ void TriangleReport::ReportAction(
 			record
 				% m_triangle.GetYDirection()[Y1]
 				% m_triangle.GetYDirection()[Y2];
-			if (isTriangleCompleted) {
-				record % yExecuted % m_triangle.CalcYTargeted();
+			if (isTriangleCompleted || isTriangleCanceled) {
+				record % yExecuted;
 			} else {
-				record % ' ' % ' ';
+				record % ' ';
+			}
+			if (isTriangleCompleted) {
+				record % m_triangle.CalcYTargeted();
+			} else {
+				record % ' ';
 			}
 			for (size_t i = 0; i < numberOfPairs; ++i) {
 				writePair(Pair(i), record);
@@ -630,6 +623,127 @@ void TriangleReport::ReportAction(
 			});
 
 	}
+
+}
+
+void TriangleReport::ReportUpdate() {
+
+	const auto &writePair = [&](const Pair &pair, ReportRecord &record) {
+		
+		const Triangle::PairInfo &info = m_triangle.GetPair(pair);
+		const Twd::Position *const order = m_triangle.IsLegStarted(info.leg)
+			?	&m_triangle.GetLeg(info.leg)
+			:	nullptr;
+		const Security &security = m_triangle.GetCalcSecurity(pair);
+
+		record % security.GetSource().GetTag();
+
+		record % GetLegNo(info.leg) % (info.isBuy ? "buy" : "sell");
+		
+		if (!order) {
+			record % ' ' % ' ';
+		} else {
+			record
+				% order->GetPlanedQty()
+				% ConvertToIsoPch(order->GetCurrency());
+		}
+		
+		if (!order) {
+			record % "wait";
+		} else if (order->IsClosed()) {
+			record % "closed";
+		} else if (!IsZero(order->GetCloseStartPrice())) {
+			AssertLt(0, order->GetOpenStartPrice());
+			record % "closing";
+		} else if (order->IsOpened()) {
+			record % "opened";
+		} else if (!order->HasActiveOrders()) {
+			record % "canceled";
+		} else {
+			record % "opening";
+		}
+
+		if (!order) {
+			record % ' ' % ' ';
+		} else if (!IsZero(order->GetCloseStartPrice())) {
+			const Security &security = order->GetSecurity();
+			record % security.DescalePrice(order->GetCloseStartPrice());
+			if (order->IsClosed()) {
+				record % security.DescalePrice(order->GetClosePrice());
+			} else {
+				record % ' ';
+			}
+		} else {
+			record % info.startPrice;
+			if (order->IsOpened()) {
+				record
+					% order->GetSecurity().DescalePrice(order->GetOpenPrice());
+			} else {
+				record % ' ';
+			}
+		}
+
+		// Chosen ECN bid/ask:  ///////////////////////////////////////////////////////
+		record 
+			%	security.GetBidPrice()
+			%	security.GetAskPrice();
+		
+		// Best bid/ask and ECNs: ////////////////////////////////////////////////////
+		record
+			%	info.bestBidAsk->bestBid.price
+			%	m_triangle
+					.GetStrategy()
+					.GetContext()
+					.GetMarketDataSource(info.bestBidAsk->bestBid.source)
+					.GetTag()
+			%	info.bestBidAsk->bestAsk.price
+			%	m_triangle
+					.GetStrategy()
+					.GetContext()
+					.GetMarketDataSource(info.bestBidAsk->bestAsk.source)
+					.GetTag();
+
+		// Rising/falling speed: ///////////////////////////////////////////////////////
+		record % ' ' % ' ';
+		
+		// Stat data: //////////////////////////////////////////////////////////////////
+		const auto &data = info.bestBidAsk->service->GetData(
+			security.GetSource().GetIndex());
+		record
+			%	data.current.theo
+			%	data.prev1.theo
+			%	data.prev2.theo
+			%	data.current.emaFast
+			%	data.prev1.emaFast
+			%	data.prev2.emaFast
+			%	data.current.emaSlow
+			%	data.prev1.emaSlow
+			%	data.prev2.emaSlow;
+
+	};
+
+	m_state.strategy->log.Write(
+		[&](ReportRecord &record) {
+			record
+				% m_triangle.GetId()
+				% m_triangle.GetStrategy().GetContext().GetCurrentTime()
+				% "update"
+				% ' '
+				% ' '
+				% ' '
+				% m_triangle.GetStrategy().GetYDetectedDirection()[Y1]
+				% m_triangle.GetStrategy().GetYDetectedDirection()[Y2]
+				% m_triangle.GetYDirection()[Y1]
+				% m_triangle.GetYDirection()[Y2]
+				% ' '
+				% ' ';
+			for (size_t i = 0; i < numberOfPairs; ++i) {
+				writePair(Pair(i), record);
+			}
+		});
+
+
+	
 
 }
 

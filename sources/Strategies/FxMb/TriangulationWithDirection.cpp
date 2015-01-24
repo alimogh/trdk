@@ -46,9 +46,9 @@ TriangulationWithDirection::TriangulationWithDirection(
 	: Base(context, "TriangulationWithDirection", tag),
 	m_levelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
+	m_allowLeg1Closing(
+		conf.ReadTypedKey<bool>("allow_leg1_closing")),
 	m_qty(conf.ReadTypedKey<Qty>("qty")),
-	m_takeProfitWaitTime(
-		pt::seconds(conf.ReadTypedKey<long>("take_profit_wait_time_sec"))),
 	m_reports(
 		GetContext(),
 		conf.ReadTypedKey<double>("commission"),
@@ -63,6 +63,15 @@ TriangulationWithDirection::TriangulationWithDirection(
 	}
 	m_yDetected.fill(.0);
 	m_yDetectedReported.fill(.0);
+
+#	ifdef DEV_VER
+		m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
+		m_detectedEcns[Y2].fill(std::numeric_limits<size_t>::max());
+#	endif
+
+	GetLog().Info(
+		"Allow Leg 1 closing: %1%.",
+		m_allowLeg1Closing ? "yes" : "no");
 
 }
 
@@ -108,10 +117,12 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 		const Service &service,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 
-	UpdateBestBidAsk(service);
+	UpdateDirection(service);
 
 	if (m_triangle) {
-		CheckTriangleCompletion(timeMeasurement);
+		if (!CheckTriangleCompletion(timeMeasurement)) {
+			m_triangle->GetReport().ReportUpdate();
+		}
 	} else {
 		CheckNewTriangle(timeMeasurement);
 	}
@@ -194,7 +205,8 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 	AssertEq(0, order.GetClosedQty());
 	Assert(!order.HasActiveOrders());
 
-	switch (order.GetLeg()) {
+	const auto &leg = order.GetLeg();
+	switch (leg) {
 			
 		case LEG1:
 			if (CheckProfitLoss(order, true)) {
@@ -208,6 +220,16 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				&order);
 			break;
 
+		case LEG2:
+			AssertEq(LEG2, order.GetLeg());
+			m_triangle->GetReport().ReportAction(
+				"executed",
+				"exec report",
+				order.GetLeg(),
+				&order);
+			CheckTriangleCompletion(TimeMeasurement::Milestones());
+			break;
+
 		case LEG3:
 			m_triangle->GetReport().ReportAction(
 				"executed",
@@ -215,22 +237,23 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				order.GetLeg(),
 				&order);
 			m_triangle.reset();
+#			ifdef DEV_VER
+				m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
+				m_detectedEcns[Y2].fill(std::numeric_limits<size_t>::max());
+#			endif
 			break;
 
+
 		default:
-			AssertEq(LEG2, order.GetLeg());
-			m_triangle->GetReport().ReportAction(
-				"executed",
-				"exec report",
-				order.GetLeg(),
-				&order);
+			AssertEq(LEG1, leg);
 			break;
 			
+
 	}
 
 }
 
-void TriangulationWithDirection::UpdateBestBidAsk(const Service &service) {
+void TriangulationWithDirection::UpdateDirection(const Service &service) {
 		
 	auto bestBidAskIt = std::find_if(
 		m_bestBidAsk.begin(),
@@ -276,6 +299,11 @@ void TriangulationWithDirection::UpdateBestBidAsk(const Service &service) {
 			m_triangle->ResetYDirection();
 		}
 		
+#		ifdef DEV_VER
+			m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
+			m_detectedEcns[Y2].fill(std::numeric_limits<size_t>::max());
+#		endif
+
 	} else if (
 			IsZero(m_bestBidAsk[PAIR_AB].bestBid.price)
 			||	IsZero(m_bestBidAsk[PAIR_AB].bestAsk.price)
@@ -289,6 +317,11 @@ void TriangulationWithDirection::UpdateBestBidAsk(const Service &service) {
 			m_triangle->ResetYDirection();
 		}
 
+#		ifdef DEV_VER
+			m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
+			m_detectedEcns[Y2].fill(std::numeric_limits<size_t>::max());
+#		endif
+
 	} else {
 			
 		CalcYDirection(
@@ -300,6 +333,20 @@ void TriangulationWithDirection::UpdateBestBidAsk(const Service &service) {
 			m_bestBidAsk[PAIR_AC].bestAsk.price,
 			m_yDetected);
 
+		if (CheckOpportunity(m_yDetected) != Y_UNKNOWN) {
+			m_detectedEcns[Y1][PAIR_AB] = m_bestBidAsk[PAIR_AB].bestBid.source;
+			m_detectedEcns[Y1][PAIR_BC] = m_bestBidAsk[PAIR_BC].bestBid.source;
+			m_detectedEcns[Y1][PAIR_AC] = m_bestBidAsk[PAIR_AC].bestAsk.source;
+			m_detectedEcns[Y2][PAIR_AB] = m_bestBidAsk[PAIR_AB].bestAsk.source;
+			m_detectedEcns[Y2][PAIR_BC] = m_bestBidAsk[PAIR_BC].bestAsk.source;
+			m_detectedEcns[Y2][PAIR_AC] = m_bestBidAsk[PAIR_AC].bestBid.source;
+		} else {
+#			ifdef DEV_VER
+				m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
+				m_detectedEcns[Y2].fill(std::numeric_limits<size_t>::max());
+#			endif
+		}
+		
 		if (m_triangle) {
 			m_triangle->UpdateYDirection();
 		}
@@ -329,89 +376,124 @@ void TriangulationWithDirection::UpdateBestBidAsk(const Service &service) {
 
 }
 
-bool TriangulationWithDirection::Detect(Detection &result) const {
-
-	AssertNe(Y_UNKNOWN, CheckOpportunity(m_yDetected));
+void TriangulationWithDirection::CalcSpeed(
+		const Y &y,
+		Detection &result)
+		const {
 
 	for (size_t pair = 0; pair < result.speed.size(); ++pair) {
 			
-		PairSpeed &speed = result.speed[pair];
 		const auto &bestBidAsk = m_bestBidAsk[pair];
+		const auto &data = bestBidAsk.service->GetData(m_detectedEcns[y][pair]);
 
-		{
-			const auto &data
-				= bestBidAsk.service->GetData(bestBidAsk.bestBid.source);
-			const bool isRising
-				= data.current.theo > data.current.emaFast
-					&& data.current.emaFast > data.current.emaSlow;
-			speed.rising = isRising
-				?	(1.0 / data.prev2.theo) * data.current.theo
-				:	std::numeric_limits<double>::quiet_NaN();
-		}
+		Assert(
+			!(data.current.theo > data.current.emaFast
+				&& data.current.emaFast > data.current.emaSlow)
+			|| !(data.current.theo < data.current.emaFast
+					&& data.current.emaFast < data.current.emaSlow));
+		Assert(
+			!(data.current.theo < data.current.emaFast
+				&& data.current.emaFast < data.current.emaSlow)
+			|| !(data.current.theo > data.current.emaFast
+					&& data.current.emaFast > data.current.emaSlow));
 
-		{
-			const auto &data
-				= bestBidAsk.service->GetData(bestBidAsk.bestAsk.source);
-			const bool isFalling
-				= data.current.theo < data.current.emaFast
-					&& data.current.emaFast < data.current.emaSlow;
-			speed.falling = isFalling
-				?	data.prev2.theo * (1.0 / data.current.theo)
-				:	std::numeric_limits<double>::quiet_NaN();
+		if (
+			data.current.theo > data.current.emaFast
+ 				&& data.current.emaFast > data.current.emaSlow) {	
+			result.speed[pair] = data.prev2.theo > data.current.theo
+				?	(1.0 / data.current.theo) * data.prev2.theo
+				:	(1.0 / data.prev2.theo) * data.current.theo;
+		} else if (
+			data.current.theo < data.current.emaFast
+ 				&& data.current.emaFast < data.current.emaSlow) {
+			result.speed[pair] = data.prev2.theo > data.current.theo
+				?	(1.0 / data.current.theo) * data.prev2.theo
+				:	(1.0 / data.prev2.theo) * data.current.theo;
+			result.speed[pair] *= -1;
+		} else {
+			result.speed[pair] = 0;
 		}
 
 	}
 
-	if (m_yDetected[Y1] >= 1.0) {
-		if (
-				!isnan(result.speed[PAIR_AB].falling)
-				&& result.speed[PAIR_AB].falling > 0
-				&& !isnan(result.speed[PAIR_BC].rising)
-				&& result.speed[PAIR_BC].rising > 0
-				&& isnan(result.speed[PAIR_AC].rising)
-				&& isnan(result.speed[PAIR_AC].falling)) {
-			result.y = Y1;
-			result.fistLeg = PAIR_AB;
-			return true;
-		} else if (
-				!isnan(result.speed[PAIR_AC].rising)
-				&& result.speed[PAIR_AC].rising > 0
-				&& !isnan(result.speed[PAIR_BC].falling)
-				&& result.speed[PAIR_BC].falling > 0
-				&& isnan(result.speed[PAIR_AB].rising)
-				&& isnan(result.speed[PAIR_AB].falling)) {
-			result.y = Y1;
-			result.fistLeg = PAIR_AC;
-			return true;
-		}
-	}
+}
 
-	if (m_yDetected[Y2] >= 1.0) {
-		if (
-				!isnan(result.speed[PAIR_AB].rising)
-				&& result.speed[PAIR_AB].rising > 0
-				&& !isnan(result.speed[PAIR_BC].falling)
-				&& result.speed[PAIR_BC].falling > 0
-				&& isnan(result.speed[PAIR_AC].rising)
-				&& isnan(result.speed[PAIR_AC].falling)) {
-			result.y = Y2;
-			result.fistLeg = PAIR_AB;
-			return true;
-		} else if (
-				!isnan(result.speed[PAIR_AC].falling)
-				&& result.speed[PAIR_AC].falling > 0
-				&& !isnan(result.speed[PAIR_BC].rising)
-				&& result.speed[PAIR_BC].rising > 0
-				&& isnan(result.speed[PAIR_AB].rising)
-				&& isnan(result.speed[PAIR_AB].falling)) {
-			result.y = Y2;
-			result.fistLeg = PAIR_AC;
-			return true;
-		}
+bool TriangulationWithDirection::DetectByY1(Detection &result) const {
+
+	AssertLe(1.0, m_yDetected[Y1]);
+
+	CalcSpeed(Y1, result);
+
+	if (
+			result.speed[PAIR_AB] < 0
+			&& result.speed[PAIR_BC] > 0
+			&& fabs(result.speed[PAIR_AB]) > result.speed[PAIR_BC]
+			&& IsEqual(result.speed[PAIR_AC], .0)) {
+		result.y = Y1;
+		result.fistLeg = PAIR_AB;
+		return true;
+	} else if (
+			result.speed[PAIR_AC] > 0
+			&& result.speed[PAIR_BC] < 0
+			&& result.speed[PAIR_AC] > fabs(result.speed[PAIR_BC])
+			&& IsEqual(result.speed[PAIR_AB], .0)) {
+		result.y = Y1;
+		result.fistLeg = PAIR_AC;
+		return true;
 	}
 
 	return false;
 
+}
+
+bool TriangulationWithDirection::DetectByY2(Detection &result) const {
+
+	AssertLe(1.0, m_yDetected[Y2]);
+
+	CalcSpeed(Y2, result);
+
+	if (
+			result.speed[PAIR_AB] > 0
+			&& result.speed[PAIR_BC] < 0
+			&& result.speed[PAIR_AB] > fabs(result.speed[PAIR_BC])
+			&& IsEqual(result.speed[PAIR_AC], .0)) {
+		result.y = Y2;
+		result.fistLeg = PAIR_AB;
+		return true;
+	} else if (
+			result.speed[PAIR_AC] < 0
+			&& result.speed[PAIR_BC] > 0
+			&& fabs(result.speed[PAIR_AC]) > result.speed[PAIR_BC]
+			&& IsEqual(result.speed[PAIR_AB], .0)) {
+		result.y = Y2;
+		result.fistLeg = PAIR_AC;
+		return true;
+	}
+
+	return false;
+
+}
+
+bool TriangulationWithDirection::Detect(Detection &result) const {
+	AssertNe(Y_UNKNOWN, CheckOpportunity(m_yDetected));
+	if (m_yDetected[Y1] >= 1.0 && m_yDetected[Y2] <= m_yDetected[Y1]) {
+		if (
+				DetectByY1(result)
+				|| (m_yDetected[Y2] >= 1.0 && DetectByY2(result))) {
+			return true;
+		}
+	} else if (m_yDetected[Y2] >= 1.0) {
+		if (
+				DetectByY2(result)
+				|| (m_yDetected[Y1] >= 1.0 && DetectByY1(result))) {
+			return true;
+		}
+	} else if (m_yDetected[Y1] >= 1.0 && DetectByY1(result)) {
+		return true;
+	}
+	Assert(m_yDetected[Y1] < 1.0 || !DetectByY1(result));
+	Assert(m_yDetected[Y2] < 1.0 || !DetectByY2(result));
+	return false;
 }
 
 void TriangulationWithDirection::CheckNewTriangle(
@@ -433,9 +515,9 @@ void TriangulationWithDirection::CheckNewTriangle(
 	}
 	std::unique_ptr<Triangle> triangle(
 		new Triangle(
+			++m_lastTriangleId,
 			*this,
 			m_reports,
-			++m_lastTriangleId,
 			detection.y,
 			m_qty,
 			{
@@ -443,18 +525,21 @@ void TriangulationWithDirection::CheckNewTriangle(
 				detection.fistLeg == PAIR_AB ? LEG1 : LEG2,
 				detection.y == Y2,
 				detection.fistLeg == PAIR_AB,
+				m_detectedEcns[detection.y][PAIR_AB]
 			},
 			{
 				PAIR_BC,
 				LEG3,
 				detection.y == Y2,
 				detection.fistLeg == PAIR_AB,
+				m_detectedEcns[detection.y][PAIR_BC]
 			},
 			{
 				PAIR_AC,
 				detection.fistLeg == PAIR_AC ? LEG1 : LEG2,
 				detection.y == Y1,
 				detection.fistLeg == PAIR_AC,
+				m_detectedEcns[detection.y][PAIR_AC],
 			},
 			m_bestBidAsk));
 
@@ -467,9 +552,11 @@ void TriangulationWithDirection::CheckNewTriangle(
 	Assert(!m_triangle);
 	triangle.swap(m_triangle);
 
+	return;
+
 }
 
-void TriangulationWithDirection::CheckTriangleCompletion(
+bool TriangulationWithDirection::CheckTriangleCompletion(
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	
 	Assert(m_triangle);
@@ -478,30 +565,32 @@ void TriangulationWithDirection::CheckTriangleCompletion(
 			!m_triangle->IsLegExecuted(LEG1)
 			||	!m_triangle->IsLegExecuted(LEG2)
 			||	m_triangle->IsLegStarted(LEG3)) {
-		return;
+		return false;
 	}
 
 	Triangle::PairInfo &leg3Info = m_triangle->GetPair(LEG3);
-	Security &security = leg3Info.GetBestSecurity();
-	const auto &ecn = security.GetSource().GetIndex();
-	if (!IsProfit(leg3Info.isBuy, leg3Info.bestBidAsk->service->GetData(ecn))) {
+	const auto &ecn = leg3Info.security->GetSource().GetIndex();
+	const auto &data = leg3Info.bestBidAsk->service->GetData(ecn);
+	if (!IsProfit(leg3Info.isBuy, data)) {
 		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
-		return;
+		return false;
 	}
 
 	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
-	m_triangle->StartLeg3(
-		security,
-		leg3Info.isBuy
-				?	security.GetAskPrice()
-				:	security.GetBidPrice(),
-		timeMeasurement);
+
+	m_triangle->StartLeg3(timeMeasurement);
+
+	m_triangle->GetReport().ReportAction("detected", "signal", LEG3);
+	timeMeasurement.Measure(Lib::TimeMeasurement::SM_STRATEGY_DECISION_STOP);
+
+	return true;
 
 }
 
 bool TriangulationWithDirection::CheckProfitLoss(
 		Twd::Position &firstLeg,
 		bool isJustOpened) {
+
 	Position::CloseType closeType;
 	const char *closeTypeStr;
 	switch (CheckLeg(firstLeg)) {
@@ -518,6 +607,7 @@ bool TriangulationWithDirection::CheckProfitLoss(
 		default:
 			return false;
 	}
+
 	if (isJustOpened) {
 		m_triangle->GetReport().ReportAction(
 			"executed",
@@ -525,17 +615,24 @@ bool TriangulationWithDirection::CheckProfitLoss(
 			firstLeg.GetLeg(),
 			&firstLeg);
 	}
+
 	m_triangle->Cancel(closeType);
 	m_triangle->GetReport().ReportAction(
 		"canceling",
 		closeTypeStr,
 		firstLeg.GetLeg());
+
 	return true;
+
 }
 
 TriangulationWithDirection::ProfitLossTest TriangulationWithDirection::CheckLeg(
 		const Twd::Position &leg)
 		const {
+
+	if (!m_allowLeg1Closing) {
+		return PLT_NONE;
+	}
 
 	Assert(!leg.HasActiveOrders());
 
@@ -550,32 +647,6 @@ TriangulationWithDirection::ProfitLossTest TriangulationWithDirection::CheckLeg(
 			% (isLong ? "long" : "short");
 	};
 
-	if (!m_triangle->HasOpportunity()) {
-		GetTradingLog().Write(
-			"\tloss-detected\t%1%\t%2%\topp.: %3%\t%4%"
-				"\tY1 = %5%, Y2 = %6%, current: Y%7%",
-			[&](TradingRecord &record) {
-				printTradingRecordStart(record);
-				record
-					% m_triangle->GetYDirection()[Y1] 
-					% m_triangle->GetYDirection()[Y2]
-					% GetYNo(m_triangle->GetY());
-			});
-		return PLT_LOSS;
-	}
-
-	const auto &data
-		= m_bestBidAsk[leg.GetPair()]
-			.service->GetData(security.GetSource().GetIndex());
-	if (IsProfit(isLong, data)) {
-		GetTradingLog().Write(
-			"\tprofit\t%1%\t%2%\topp.: %3%\t%4%",
-			[&](TradingRecord &record) {
-				printTradingRecordStart(record);
-			});
-		return PLT_PROFIT;
-	}
-
 	const auto &openPrice = security.DescalePrice(leg.GetOpenPrice());
 	double seenProfit;
 	double currentPrice;
@@ -587,6 +658,21 @@ TriangulationWithDirection::ProfitLossTest TriangulationWithDirection::CheckLeg(
 		seenProfit = openPrice - currentPrice;
 	}
 	if (seenProfit > 0) {
+
+		const auto &data
+			= m_bestBidAsk[leg.GetPair()]
+				.service->GetData(security.GetSource().GetIndex());
+		if (IsProfit(isLong, data)) {
+			GetTradingLog().Write(
+				"\tprofit\t%1%\t%2%\topp.: %3%\t%4%\tVWAP: %5%\tEMA slow: %6%",
+				[&](TradingRecord &record) {
+					printTradingRecordStart(record);
+					record % data.current.theo % data.current.emaSlow;
+				});
+			return PLT_PROFIT;
+		}
+
+
 		GetTradingLog().Write(
 			"\tprofit-detected\t%1%\t%2%\topp.: %3%\t%4%"
 				"\t%5% -> %6%  = %7$.7f",
@@ -616,6 +702,7 @@ void TriangulationWithDirection::OnCancel(
 		&reasonOrder);
 	m_triangle.reset();
 	CheckNewTriangle(TimeMeasurement::Milestones());
+
 }
 
 void TriangulationWithDirection::UpdateAlogImplSettings(

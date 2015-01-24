@@ -29,31 +29,16 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			Leg leg;
 			bool isBuy;
 			bool isBaseCurrency;
+			size_t ecn;
 		};
 
 		struct PairInfo : public PairLegParams {
 			
 			const BestBidAsk *bestBidAsk;
+			Security *security;
+
+			double startPrice;
 			size_t ordersCount;
-
-			struct Start {
-				
-				Security *security;
-				double price;
-
-				Start() {
-					//...//
-				}
-
-				explicit Start(Security &security, bool isBuy)
-					: security(&security),
-					price(
-						isBuy
-							?	security.GetAskPrice()
-							:	security.GetBidPrice()) {
-				}
-
-			} start;
 
 			PairInfo() {
 				//...//
@@ -64,21 +49,27 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					const BestBidAskPairs &bestBidAskRef)
 				: PairLegParams(params),
 				bestBidAsk(&bestBidAskRef[id]),
-				ordersCount(0),
-				start(GetBestSecurity(), isBuy) {	
+				security(
+					//! @todo FIXME const_cast for security 
+					const_cast<Security *>(
+						&bestBidAsk->service->GetSecurity(ecn))),
+				startPrice(GetCurrentPrice()),
+				ordersCount(0) {
+			}
+
+			double GetCurrentPrice() const {
+				return isBuy
+					?	security->GetAskPrice()
+					:	security->GetBidPrice();
 			}
 
 			Security & GetBestSecurity() {
-				const Security &security = bestBidAsk->service->GetSecurity(
-					!isBuy
-						?	bestBidAsk->bestBid.source
-						:	bestBidAsk->bestAsk.source);
-				//! @todo FIXME (const_cast)
-				return const_cast<Security &>(security);
-			}
-
-			const Security & GetBestSecurity() const {
-				return const_cast<PairInfo *>(this)->GetBestSecurity();
+				//! @todo FIXME const_cast for security 
+				return const_cast<Security &>(
+					bestBidAsk->service->GetSecurity(
+						isBuy
+							?	bestBidAsk->bestAsk.source
+							:	bestBidAsk->bestBid.source));
 			}
 
 		};
@@ -86,9 +77,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	public:
 
 		explicit Triangle(
+				const Id &id,
 				TriangulationWithDirection &strategy,
 				ReportsState &reportsState,
-				const Id &id,
 				const Y &y,
 				const Qty &startQty,
 				const PairLegParams ab,
@@ -124,9 +115,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 							continue;
 						}
 						AssertNe(
-							subInfo.start.security->GetSymbol(),
-							info.start.security->GetSymbol());
-						Assert(subInfo.start.security != info.start.security);
+							subInfo.security->GetSymbol(),
+							info.security->GetSymbol());
+						Assert(subInfo.security != info.security);
 					}
 				}
 
@@ -144,7 +135,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void StartLeg1(
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
-				const boost::array<PairSpeed, numberOfPairs> &pairsSpeed) {
+				const PairsSpeed &pairsSpeed) {
 		
 			Assert(!IsLegStarted(LEG1));
 			Assert(!IsLegStarted(LEG2));
@@ -160,9 +151,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			PairInfo &pair = GetPair(LEG1);
 
 			boost::shared_ptr<Twd::Position> order = CreateOrder(
-				LEG1,						
-				*pair.start.security,
-				pair.start.price,
+				pair,
+				*pair.security,
+				pair.startPrice,
 				m_qtyStart,
 				timeMeasurement);
 			timeMeasurement.Measure(
@@ -230,10 +221,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 			}
 
+			PairInfo &pair = GetPair(LEG2);
 			boost::shared_ptr<Twd::Position> order = CreateOrder(
-				LEG2,
-				*GetPair(LEG2).start.security,
-				GetPair(LEG2).start.price,
+				pair,
+				*pair.security,
+				GetPair(LEG2).GetCurrentPrice(),
 				m_qtyLeg2,
 				Lib::TimeMeasurement::Milestones());
 			order->OpenAtStartPrice();
@@ -242,20 +234,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		}
 
-		void StartLeg3(const Lib::TimeMeasurement::Milestones &timeMeasurement) {
-			PairInfo &pair = GetPair(LEG3);
-			Security &security = pair.GetBestSecurity();
-			StartLeg3(
-				security,
-				pair.isBuy
-					?	security.GetAskPrice()
-					:	security.GetBidPrice(),
-				timeMeasurement);
-		}
-
 		void StartLeg3(
-				Security &security,
-				double price,
 				const Lib::TimeMeasurement::Milestones &timeMeasurement) {
 
 			Assert(IsLegStarted(LEG1));
@@ -284,10 +263,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				GetLeg(LEG1).GetOpenPrice());
 			const auto leg1Vol = leg1Price * GetLeg(LEG1).GetOpenedQty();
 
+			PairInfo &leg3Pair = GetPair(LEG3);
 			const boost::shared_ptr<Twd::Position> order = CreateOrder(
-				LEG3,
-				security,
-				price,
+				leg3Pair,
+				leg3Pair.GetBestSecurity(),
+				leg3Pair.GetCurrentPrice(),
 				//! @todo remove "to qty"
 				Qty(leg1Vol),
 				timeMeasurement);
@@ -297,10 +277,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 			order->OpenAtStartPrice();
 			m_legs[LEG3] = order;
-
-			m_report.ReportAction("detected", "signal", order->GetLeg());
-			timeMeasurement.Measure(
-				Lib::TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
 		}
 
@@ -417,12 +393,14 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		}
 
 		const Security & GetCalcSecurity(const Pair &pair) const {
-			if (IsLegStarted(pair)) {
-				return GetLeg(pair).GetSecurity();
-			} else if (GetPair(pair).leg == LEG3) {
-				return GetPair(pair).GetBestSecurity();
+			if (GetPair(pair).leg == LEG3) {
+				return IsLegExecuted(pair)
+					?	GetLeg(pair).GetSecurity()
+					:	*GetPair(pair).security;
 			} else {
-				return *GetPair(pair).start.security;
+				return IsLegStarted(pair)
+					?	GetLeg(pair).GetSecurity()
+					:	*GetPair(pair).security;
 			}
 		}
 
@@ -530,8 +508,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	private:
 
 		boost::shared_ptr<Twd::Position> CreateOrder(
-				const Leg &,
-				Security &,
+				PairInfo &,
+				Security &security,
 				double price,
 				const Qty &,
 				const Lib::TimeMeasurement::Milestones &);
