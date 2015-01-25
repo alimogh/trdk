@@ -53,6 +53,7 @@ TriangulationWithDirection::TriangulationWithDirection(
 		GetContext(),
 		conf.ReadTypedKey<double>("commission"),
 		conf.ReadBoolKey("log.strategy"),
+		conf.ReadBoolKey("log.updates"),
 		conf.ReadBoolKey("log.pnl")),
 	m_yReportStep(conf.ReadTypedKey<double>("log.y_report_step")),
 	m_lastTriangleId(0),

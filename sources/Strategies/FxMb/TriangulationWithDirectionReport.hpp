@@ -25,10 +25,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		class Pnl;
 		Pnl *pnl;
 
+		bool enablePriceUpdates;
+
 		ReportsState(
 				Context &,
 				double commission,
 				bool enableStrategyLog,
+				bool enablePriceUpdates,
 				bool enablePnlLog);
 		~ReportsState();
 

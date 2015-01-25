@@ -316,9 +316,11 @@ ReportsState::ReportsState(
 		Context &context,
 		double comission,
 		bool enableStrategyLog,
+		bool enablePriceUpdates,
 		bool enablePnlLog)
 	: strategy(new Startegy(context, enableStrategyLog)),
-	pnl(new Pnl(context, enablePnlLog, comission)) {
+	pnl(new Pnl(context, enablePnlLog, comission)),
+	enablePriceUpdates(enablePriceUpdates) {
 }
 
 void ReportsState::WriteStrategyLogHead(
@@ -628,6 +630,10 @@ void TriangleReport::ReportAction(
 
 void TriangleReport::ReportUpdate() {
 
+	if (!m_state.enablePriceUpdates) {
+		return;
+	}
+
 	const auto &writePair = [&](const Pair &pair, ReportRecord &record) {
 		
 		const Triangle::PairInfo &info = m_triangle.GetPair(pair);
@@ -741,9 +747,6 @@ void TriangleReport::ReportUpdate() {
 				writePair(Pair(i), record);
 			}
 		});
-
-
-	
 
 }
 
