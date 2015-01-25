@@ -25,10 +25,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		class Pnl;
 		Pnl *pnl;
 
+		bool enablePriceUpdates;
+
 		ReportsState(
 				Context &,
 				double commission,
 				bool enableStrategyLog,
+				bool enablePriceUpdates,
 				bool enablePnlLog);
 		~ReportsState();
 
@@ -59,7 +62,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const char *reason,
 				const char *actionLegs,
 				const Twd::Position *const reasonOrder = nullptr,
-				const boost::array<PairSpeed, numberOfPairs> *speed = nullptr);
+				const PairsSpeed *speed = nullptr);
+
+		void ReportUpdate();
 
 	private:
 

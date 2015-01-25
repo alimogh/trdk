@@ -29,12 +29,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		typedef std::vector<ScaledPrice> BookSide;
 
 		struct Detection {
-
 			Pair fistLeg;
 			Y y;
-
-			boost::array<PairSpeed, numberOfPairs> speed;
-
+			PairsSpeed speed;
 		};
 
 		enum ProfitLossTest {
@@ -75,12 +72,17 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	private:
 
-		void UpdateBestBidAsk(const Service &);
+		void UpdateDirection(const Service &);
 
 		bool Detect(Detection &result) const;
+		bool DetectByY1(Detection &result) const;
+		bool DetectByY2(Detection &result) const;
+		void CalcSpeed(const Y &, Detection &result) const;
 		
 		void CheckNewTriangle(const Lib::TimeMeasurement::Milestones &);
-		void CheckTriangleCompletion(const Lib::TimeMeasurement::Milestones &);
+		bool CheckTriangleCompletion(const Lib::TimeMeasurement::Milestones &);
+
+		void StartScheduledLeg();
 
 		bool CheckProfitLoss(Twd::Position &firstLeg, bool isJustOpened);
 
@@ -95,19 +97,26 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	private:
 
 		const size_t m_levelsCount;
+		const bool m_allowLeg1Closing;
+
 		const Qty m_qty;
-		const boost::posix_time::time_duration m_takeProfitWaitTime;
 
 		ReportsState m_reports;
 
 		BestBidAskPairs m_bestBidAsk;
 	
 		YDirection m_yDetected;
+		boost::array<
+				boost::array<size_t, numberOfPairs>,
+				numberOfYs>
+			m_detectedEcns;
 		YDirection m_yDetectedReported;
 		const double m_yReportStep;
 
 		Triangle::Id m_lastTriangleId;
 		std::unique_ptr<Triangle> m_triangle;
+
+		Leg m_scheduledLeg;
 
 	};
 

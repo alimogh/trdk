@@ -29,12 +29,15 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			Leg leg;
 			bool isBuy;
 			bool isBaseCurrency;
+			size_t ecn;
 		};
 
 		struct PairInfo : public PairLegParams {
 			
 			const BestBidAsk *bestBidAsk;
+			Security *security;
 
+			double startPrice;
 			size_t ordersCount;
 
 			PairInfo() {
@@ -46,16 +49,27 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					const BestBidAskPairs &bestBidAskRef)
 				: PairLegParams(params),
 				bestBidAsk(&bestBidAskRef[id]),
-				ordersCount(0) {	
+				security(
+					//! @todo FIXME const_cast for security 
+					const_cast<Security *>(
+						&bestBidAsk->service->GetSecurity(ecn))),
+				startPrice(GetCurrentPrice()),
+				ordersCount(0) {
+			}
+
+			double GetCurrentPrice() const {
+				return isBuy
+					?	security->GetAskPrice()
+					:	security->GetBidPrice();
 			}
 
 			Security & GetBestSecurity() {
-				const Security &security = bestBidAsk->service->GetSecurity(
-					!isBuy
-						?	bestBidAsk->bestBid.source
-						:	bestBidAsk->bestAsk.source);
-				//! @todo FIXME (const_cast)
-				return const_cast<Security &>(security);
+				//! @todo FIXME const_cast for security 
+				return const_cast<Security &>(
+					bestBidAsk->service->GetSecurity(
+						isBuy
+							?	bestBidAsk->bestAsk.source
+							:	bestBidAsk->bestBid.source));
 			}
 
 		};
@@ -63,9 +77,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	public:
 
 		explicit Triangle(
+				const Id &id,
 				TriangulationWithDirection &strategy,
 				ReportsState &reportsState,
-				const Id &id,
 				const Y &y,
 				const Qty &startQty,
 				const PairLegParams ab,
@@ -94,9 +108,23 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			m_pairsLegs[m_pairs[PAIR_AC].leg] = &m_pairs[PAIR_AC];
 		
 #			ifdef BOOST_ENABLE_ASSERT_HANDLER
+
+				foreach (const PairInfo &info, m_pairs) {
+					foreach (const PairInfo &subInfo, m_pairs) {
+						if (&subInfo == &info) {
+							continue;
+						}
+						AssertNe(
+							subInfo.security->GetSymbol(),
+							info.security->GetSymbol());
+						Assert(subInfo.security != info.security);
+					}
+				}
+
 				foreach (const PairInfo *info, m_pairsLegs) {
 					Assert(info);
 				}
+
 #			endif
 
 			UpdateYDirection();
@@ -107,18 +135,25 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void StartLeg1(
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
-				const boost::array<PairSpeed, numberOfPairs> &pairsSpeed) {
+				const PairsSpeed &pairsSpeed) {
 		
-			Assert(!m_legs[LEG1]);
-			Assert(!m_legs[LEG2]);
-			Assert(!m_legs[LEG3]);
-			if (m_legs[LEG1] || m_legs[LEG2] || m_legs[LEG3]) {
+			Assert(!IsLegStarted(LEG1));
+			Assert(!IsLegStarted(LEG2));
+			Assert(!IsLegStarted(LEG3));
+			if (
+					IsLegStarted(LEG1)
+					|| IsLegStarted(LEG2)
+					|| IsLegStarted(LEG3)) {
 				throw Lib::LogicError(
 					"Failed to start triangle leg 1 (wrong strategy logic)");
 			}
 
+			PairInfo &pair = GetPair(LEG1);
+
 			boost::shared_ptr<Twd::Position> order = CreateOrder(
-				LEG1,						
+				pair,
+				*pair.security,
+				pair.startPrice,
 				m_qtyStart,
 				timeMeasurement);
 			timeMeasurement.Measure(
@@ -140,29 +175,29 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void StartLeg2() {
 
-			Assert(m_legs[LEG1]);
-			Assert(!m_legs[LEG2]);
-			Assert(!m_legs[LEG3]);
+			Assert(IsLegStarted(LEG1));
+			Assert(!IsLegStarted(LEG2));
+			Assert(!IsLegStarted(LEG3));
 
-			Assert(m_legs[LEG1]->IsOpened());
-			Assert(!m_legs[LEG1]->IsClosed());
+			Assert(GetLeg(LEG1).IsOpened());
+			Assert(!GetLeg(LEG1).IsClosed());
 
 			if (
-					!m_legs[LEG1]
-					|| !m_legs[LEG1]->IsOpened()
-					|| m_legs[LEG1]->IsClosed()
-					|| m_legs[LEG2]
-					|| m_legs[LEG3]) {
+					!IsLegStarted(LEG1)
+					|| !GetLeg(LEG1).IsOpened()
+					|| GetLeg(LEG1).IsClosed()
+					|| IsLegStarted(LEG2)
+					|| IsLegStarted(LEG3)) {
 				throw Lib::LogicError(
 					"Failed to start triangle leg 2 (wrong strategy logic)");
 			}
 
 			if (!m_qtyLeg2) {
 
-				const auto &leg1Security = m_legs[LEG1]->GetSecurity();
+				const auto &leg1Security = GetLeg(LEG1).GetSecurity();
 				const double leg1Price
-					= leg1Security.DescalePrice(m_legs[LEG1]->GetOpenPrice());
-				const auto leg1Vol = leg1Price * m_legs[LEG1]->GetOpenedQty();
+					= leg1Security.DescalePrice(GetLeg(LEG1).GetOpenPrice());
+				const auto leg1Vol = leg1Price * GetLeg(LEG1).GetOpenedQty();
 
 				const PairInfo &leg3Pair = GetPair(LEG3);
 				const double leg3Price = leg3Pair.isBuy
@@ -186,8 +221,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 			}
 
+			PairInfo &pair = GetPair(LEG2);
 			boost::shared_ptr<Twd::Position> order = CreateOrder(
-				LEG2,
+				pair,
+				*pair.security,
+				GetPair(LEG2).GetCurrentPrice(),
 				m_qtyLeg2,
 				Lib::TimeMeasurement::Milestones());
 			order->OpenAtStartPrice();
@@ -196,43 +234,40 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		}
 
-		void StartLeg3(const Lib::TimeMeasurement::Milestones &timeMeasurement) {
-			StartLeg3(GetPair(LEG3).GetBestSecurity(), timeMeasurement);
-		}
-
 		void StartLeg3(
-				Security &security,
 				const Lib::TimeMeasurement::Milestones &timeMeasurement) {
 
-			Assert(m_legs[LEG1]);
-			Assert(m_legs[LEG2]);
-			Assert(!m_legs[LEG3]);
+			Assert(IsLegStarted(LEG1));
+			Assert(IsLegStarted(LEG2));
+			Assert(!IsLegStarted(LEG3));
 
-			Assert(m_legs[LEG1]->IsOpened());
-			Assert(!m_legs[LEG1]->IsClosed());
+			Assert(GetLeg(LEG1).IsOpened());
+			Assert(!GetLeg(LEG1).IsClosed());
 
-			Assert(m_legs[LEG2]->IsOpened());
-			Assert(!m_legs[LEG2]->IsClosed());
+			Assert(GetLeg(LEG2).IsOpened());
+			Assert(!GetLeg(LEG2).IsClosed());
 
 			if (
-					!m_legs[LEG1]
-					|| !m_legs[LEG1]->IsOpened()
-					|| m_legs[LEG1]->IsClosed()
-					|| !m_legs[LEG2]
-					|| !m_legs[LEG2]->IsOpened()
-					|| m_legs[LEG2]->IsClosed()
-					|| m_legs[LEG3]) {
+					!IsLegStarted(LEG1)
+					|| !GetLeg(LEG1).IsOpened()
+					|| GetLeg(LEG1).IsClosed()
+					|| !IsLegStarted(LEG2)
+					|| !GetLeg(LEG2).IsOpened()
+					|| GetLeg(LEG2).IsClosed()
+					|| IsLegStarted(LEG3)) {
 				throw Lib::LogicError(
 					"Failed to start triangle leg 3 (wrong strategy logic)");
 			}
 
-			const double leg1Price = m_legs[LEG1]->GetSecurity().DescalePrice(
-				m_legs[LEG1]->GetOpenPrice());
-			const auto leg1Vol = leg1Price * m_legs[LEG1]->GetOpenedQty();
+			const double leg1Price = GetLeg(LEG1).GetSecurity().DescalePrice(
+				GetLeg(LEG1).GetOpenPrice());
+			const auto leg1Vol = leg1Price * GetLeg(LEG1).GetOpenedQty();
 
+			PairInfo &leg3Pair = GetPair(LEG3);
 			const boost::shared_ptr<Twd::Position> order = CreateOrder(
-				LEG3,
-				security,
+				leg3Pair,
+				leg3Pair.GetBestSecurity(),
+				leg3Pair.GetCurrentPrice(),
 				//! @todo remove "to qty"
 				Qty(leg1Vol),
 				timeMeasurement);
@@ -243,26 +278,25 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			order->OpenAtStartPrice();
 			m_legs[LEG3] = order;
 
-			m_report.ReportAction("detected", "signal", order->GetLeg());
-			timeMeasurement.Measure(
-				Lib::TimeMeasurement::SM_STRATEGY_DECISION_STOP);
-
 		}
 
 		void Cancel(const Position::CloseType &closeType) {
 			
-			Assert(m_legs[LEG1]);
-			Assert(!m_legs[LEG2]);
-			Assert(!m_legs[LEG3]);
+			Assert(IsLegStarted(LEG1));
+			Assert(!IsLegStarted(LEG2));
+			Assert(!IsLegStarted(LEG3));
 
-			Assert(!m_legs[LEG1]->HasActiveOrders());
+			Assert(!GetLeg(LEG1).HasActiveOrders());
 
-			if (!m_legs[LEG1] || m_legs[LEG2] || m_legs[LEG3]) {
+			if (
+					!IsLegStarted(LEG1)
+					|| IsLegStarted(LEG2)
+					|| IsLegStarted(LEG3)) {
 				throw Lib::LogicError(
 					"Failed to cancel triangle (wrong strategy logic)");
 			}
 
-			m_legs[LEG1]->CloseAtCurrentPrice(closeType);
+			GetLeg(LEG1).CloseAtCurrentPrice(closeType);
 
 		}
 
@@ -270,12 +304,12 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void OnLeg2Cancel() {
 			
-			Assert(m_legs[LEG1]);
-			Assert(m_legs[LEG2]);
-			Assert(!m_legs[LEG3]);
+			Assert(IsLegStarted(LEG1));
+			Assert(IsLegStarted(LEG2));
+			Assert(!IsLegStarted(LEG3));
 
-			Assert(m_legs[LEG1]->IsOpened());
-			Assert(!m_legs[LEG2]->IsOpened());
+			Assert(GetLeg(LEG1).IsOpened());
+			Assert(!GetLeg(LEG2).IsOpened());
 
 			m_legs[LEG2].reset();
 
@@ -283,13 +317,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void OnLeg3Cancel() {
 			
-			Assert(m_legs[LEG1]);
-			Assert(m_legs[LEG2]);
-			Assert(m_legs[LEG3]);
+			Assert(IsLegStarted(LEG1));
+			Assert(IsLegStarted(LEG2));
+			Assert(IsLegStarted(LEG3));
 
-			Assert(m_legs[LEG1]->IsOpened());
-			Assert(m_legs[LEG2]->IsOpened());
-			Assert(!m_legs[LEG3]->IsOpened());
+			Assert(GetLeg(LEG1).IsOpened());
+			Assert(GetLeg(LEG2).IsOpened());
+			Assert(!GetLeg(LEG3).IsOpened());
 
 			m_legs[LEG3].reset();
 		
@@ -358,6 +392,12 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_bestBidAsk;
 		}
 
+		const Security & GetCalcSecurity(const Pair &pair) const {
+			return IsLegExecuted(pair)
+				?	GetLeg(pair).GetSecurity()
+				:	*GetPair(pair).security;
+		}
+
 		const TriangulationWithDirection & GetStrategy() const {
 			return m_strategy;
 		}
@@ -374,15 +414,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void UpdateYDirection() {
 			CalcYDirection(
-				IsLegStarted(PAIR_AB)
-					?	GetLeg(PAIR_AB).GetSecurity()
-					:	m_pairs[PAIR_AB].GetBestSecurity(),
-				IsLegStarted(PAIR_BC)
-					?	GetLeg(PAIR_BC).GetSecurity()
-					:	m_pairs[PAIR_BC].GetBestSecurity(),
-				IsLegStarted(PAIR_AC)
-					?	GetLeg(PAIR_AC).GetSecurity()
-					:	m_pairs[PAIR_AC].GetBestSecurity(),
+				GetCalcSecurity(PAIR_AB),
+				GetCalcSecurity(PAIR_BC),
+				GetCalcSecurity(PAIR_AC),
 				m_yDirection);
 		}
 
@@ -392,15 +426,17 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		double CalcYTargeted() const {
 
-			Assert(m_legs[LEG1] && m_legs[LEG2] && m_legs[LEG3]);
+			Assert(IsLegStarted(LEG1));
+			Assert(IsLegStarted(LEG2));
+			Assert(IsLegStarted(LEG3));
 			Assert(
-				m_legs[LEG1]->IsOpened()
-				&& m_legs[LEG2]->IsOpened()
-				&& m_legs[LEG3]->IsOpened());
+				GetLeg(LEG1).IsOpened()
+				&& GetLeg(LEG2).IsOpened()
+				&& GetLeg(LEG3).IsOpened());
 			Assert(
-				!m_legs[LEG1]->IsClosed()
-				&& !m_legs[LEG2]->IsClosed()
-				&& !m_legs[LEG3]->IsClosed());
+				!GetLeg(LEG1).IsClosed()
+				&& !GetLeg(LEG2).IsClosed()
+				&& !GetLeg(LEG3).IsClosed());
 
 			const auto getPrice = [this](const Pair &pair) -> double {
 				const Twd::Position &leg = GetLeg(pair);
@@ -427,15 +463,18 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		double CalcYExecuted() const {
 			
-			Assert(m_legs[LEG1] && m_legs[LEG2] && m_legs[LEG3]);
 			Assert(
-				m_legs[LEG1]->IsOpened()
-				&& m_legs[LEG2]->IsOpened()
-				&& m_legs[LEG3]->IsOpened());
+				IsLegStarted(LEG1)
+				&& IsLegStarted(LEG2)
+				&& IsLegStarted(LEG3));
 			Assert(
-				!m_legs[LEG1]->IsClosed()
-				&& !m_legs[LEG2]->IsClosed()
-				&& !m_legs[LEG3]->IsClosed());
+				GetLeg(LEG1).IsOpened()
+				&& GetLeg(LEG2).IsOpened()
+				&& GetLeg(LEG3).IsOpened());
+			Assert(
+				!GetLeg(LEG1).IsClosed()
+				&& !GetLeg(LEG2).IsClosed()
+				&& !GetLeg(LEG3).IsClosed());
 
 			const auto getPrice = [this](const Pair &pair) -> double {
 				const Twd::Position &leg = GetLeg(pair);
@@ -463,12 +502,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	private:
 
 		boost::shared_ptr<Twd::Position> CreateOrder(
-				const Leg &,
-				const Qty &,
-				const Lib::TimeMeasurement::Milestones &);
-		boost::shared_ptr<Twd::Position> CreateOrder(
-				const Leg &,
-				Security &,
+				PairInfo &,
+				Security &security,
+				double price,
 				const Qty &,
 				const Lib::TimeMeasurement::Milestones &);
 
