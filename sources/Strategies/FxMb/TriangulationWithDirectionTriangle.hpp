@@ -393,15 +393,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		}
 
 		const Security & GetCalcSecurity(const Pair &pair) const {
-			if (GetPair(pair).leg == LEG3) {
-				return IsLegExecuted(pair)
-					?	GetLeg(pair).GetSecurity()
-					:	*GetPair(pair).security;
-			} else {
-				return IsLegStarted(pair)
-					?	GetLeg(pair).GetSecurity()
-					:	*GetPair(pair).security;
-			}
+			return IsLegExecuted(pair)
+				?	GetLeg(pair).GetSecurity()
+				:	*GetPair(pair).security;
 		}
 
 		const TriangulationWithDirection & GetStrategy() const {

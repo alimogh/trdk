@@ -55,7 +55,8 @@ TriangulationWithDirection::TriangulationWithDirection(
 		conf.ReadBoolKey("log.strategy"),
 		conf.ReadBoolKey("log.pnl")),
 	m_yReportStep(conf.ReadTypedKey<double>("log.y_report_step")),
-	m_lastTriangleId(0) {
+	m_lastTriangleId(0),
+	m_scheduledLeg(LEG_UNKNOWN) {
 
 	{
 		const BestBidAsk def = {};
@@ -120,18 +121,63 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 	UpdateDirection(service);
 
 	if (m_triangle) {
+	
+		StartScheduledLeg();
+
 		if (!CheckTriangleCompletion(timeMeasurement)) {
 			m_triangle->GetReport().ReportUpdate();
 		}
+	
 	} else {
+
+		AssertEq(PAIR_UNKNOWN, m_scheduledLeg);
+
 		CheckNewTriangle(timeMeasurement);
+
 	}
+
+}
+
+void TriangulationWithDirection::StartScheduledLeg() {
+
+	Assert(m_triangle);
+
+	try {
+
+		static_assert(numberOfLegs == 3, "Legs list changed.");
+		switch (m_scheduledLeg) {
+		
+			case LEG2:
+				m_triangle->StartLeg2();
+				break;
+		
+			case LEG3:
+				m_triangle->StartLeg3(TimeMeasurement::Milestones());
+				break;
+
+			default:
+				AssertEq(LEG_UNKNOWN, m_scheduledLeg);
+			case LEG_UNKNOWN:
+				return;
+
+		}
+
+	} catch (const HasNotMuchOpportunityException &ex) {
+		GetLog().Warn(
+			"Failed to start scheduled leg %1%: \"%2%\".",
+			m_scheduledLeg,
+			ex);
+		return;
+	}
+
+	m_scheduledLeg = LEG_UNKNOWN;
 
 }
 
 void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 	
 	Assert(m_triangle);
+	AssertEq(LEG_UNKNOWN, m_scheduledLeg);
 
 	if (position.IsError()) {
 		Assert(IsBlocked());
@@ -166,13 +212,29 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 					AssertLt(0, firstLeg.GetActiveQty());
 					m_triangle->OnLeg2Cancel();
 					if (!CheckProfitLoss(firstLeg, false)) {
-						m_triangle->StartLeg2();
+						try {
+							m_triangle->StartLeg2();
+						} catch (const HasNotMuchOpportunityException &ex) {
+							m_scheduledLeg = LEG2;
+							GetLog().Warn(
+								"Failed to start leg 2: \"%1%\". Scheduled.",
+								ex);
+							return;
+						}
 					}
 				}
 				break;
 			case LEG3:
 				m_triangle->OnLeg3Cancel();
-				m_triangle->StartLeg3(TimeMeasurement::Milestones());
+				try {
+					m_triangle->StartLeg3(TimeMeasurement::Milestones());
+				} catch (const HasNotMuchOpportunityException &ex) {
+					m_scheduledLeg = LEG3;
+					GetLog().Warn(
+						"Failed to start leg 3: \"%1%\". Scheduled.",
+						ex);
+					return;
+				}
 				break;
 			default:
 				AssertEq(LEG1, order.GetLeg());
@@ -212,7 +274,13 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 			if (CheckProfitLoss(order, true)) {
 				return;
 			}
-			m_triangle->StartLeg2();
+			try {
+				m_triangle->StartLeg2();
+			} catch (const HasNotMuchOpportunityException &ex) {
+				m_scheduledLeg = LEG2;
+				GetLog().Warn("Failed to start leg 2: \"%1%\". Scheduled.", ex);
+				return;
+			}
 			m_triangle->GetReport().ReportAction(
 				"executed",
 				"exec report",
@@ -429,17 +497,34 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 			&& result.speed[PAIR_BC] > 0
 			&& fabs(result.speed[PAIR_AB]) > result.speed[PAIR_BC]
 			&& IsEqual(result.speed[PAIR_AC], .0)) {
+
 		result.y = Y1;
 		result.fistLeg = PAIR_AB;
+
 		return true;
+
 	} else if (
 			result.speed[PAIR_AC] > 0
 			&& result.speed[PAIR_BC] < 0
 			&& result.speed[PAIR_AC] > fabs(result.speed[PAIR_BC])
 			&& IsEqual(result.speed[PAIR_AB], .0)) {
+
 		result.y = Y1;
 		result.fistLeg = PAIR_AC;
+
 		return true;
+
+	} else if (
+			result.speed[PAIR_BC] < 0
+			&& result.speed[PAIR_AB] > 0
+			&& fabs(result.speed[PAIR_BC]) > result.speed[PAIR_AB]
+			&& IsEqual(result.speed[PAIR_AC], .0)) {
+
+		result.y = Y1;
+		result.fistLeg = PAIR_BC;
+
+		return true;
+
 	}
 
 	return false;
@@ -457,17 +542,34 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 			&& result.speed[PAIR_BC] < 0
 			&& result.speed[PAIR_AB] > fabs(result.speed[PAIR_BC])
 			&& IsEqual(result.speed[PAIR_AC], .0)) {
+
 		result.y = Y2;
 		result.fistLeg = PAIR_AB;
+
 		return true;
+
 	} else if (
 			result.speed[PAIR_AC] < 0
 			&& result.speed[PAIR_BC] > 0
 			&& fabs(result.speed[PAIR_AC]) > result.speed[PAIR_BC]
 			&& IsEqual(result.speed[PAIR_AB], .0)) {
+
 		result.y = Y2;
 		result.fistLeg = PAIR_AC;
+
 		return true;
+
+	} else if (
+			result.speed[PAIR_BC] > 0
+			&& result.speed[PAIR_AB] < 0
+			&& result.speed[PAIR_BC] > fabs(result.speed[PAIR_AB])
+			&& IsEqual(result.speed[PAIR_AC], .0)) {
+
+		result.y = Y2;
+		result.fistLeg = PAIR_BC;
+
+		return true;
+
 	}
 
 	return false;
@@ -522,21 +624,29 @@ void TriangulationWithDirection::CheckNewTriangle(
 			m_qty,
 			{
 				PAIR_AB,
-				detection.fistLeg == PAIR_AB ? LEG1 : LEG2,
+				detection.fistLeg == PAIR_AB
+					?	LEG1
+					:	detection.fistLeg == PAIR_AC
+						?	LEG2
+						:	LEG3,
 				detection.y == Y2,
 				detection.fistLeg == PAIR_AB,
 				m_detectedEcns[detection.y][PAIR_AB]
 			},
 			{
 				PAIR_BC,
-				LEG3,
+				detection.fistLeg == PAIR_BC
+					?	LEG1
+					:	LEG3,
 				detection.y == Y2,
 				detection.fistLeg == PAIR_AB,
 				m_detectedEcns[detection.y][PAIR_BC]
 			},
 			{
 				PAIR_AC,
-				detection.fistLeg == PAIR_AC ? LEG1 : LEG2,
+				detection.fistLeg == PAIR_AC
+					?	LEG1
+					:	LEG2,
 				detection.y == Y1,
 				detection.fistLeg == PAIR_AC,
 				m_detectedEcns[detection.y][PAIR_AC],
@@ -578,7 +688,13 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 
 	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
 
-	m_triangle->StartLeg3(timeMeasurement);
+	try {
+		m_triangle->StartLeg3(timeMeasurement);
+	} catch (const HasNotMuchOpportunityException &ex) {
+		m_scheduledLeg = LEG3;
+		GetLog().Warn("Failed to start leg 3: \"%1%\". Scheduled.", ex);
+		return false;
+	}
 
 	m_triangle->GetReport().ReportAction("detected", "signal", LEG3);
 	timeMeasurement.Measure(Lib::TimeMeasurement::SM_STRATEGY_DECISION_STOP);

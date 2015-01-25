@@ -18,7 +18,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		LEG1,
 		LEG2,
 		LEG3,
-		numberOfLegs
+		LEG_UNKNOWN,
+		numberOfLegs = LEG_UNKNOWN
 	};
 
 	inline size_t GetLegNo(const Leg &leg) {
@@ -35,7 +36,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		PAIR_BC,
 		//! Like a EUR/JPY.
 		PAIR_AC,
-		numberOfPairs = 3
+		PAIR_UNKNOWN,
+		numberOfPairs = PAIR_UNKNOWN
 	};
 
 	typedef boost::array<double, numberOfPairs> PairsSpeed;

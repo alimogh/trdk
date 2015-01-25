@@ -75,6 +75,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		void CheckNewTriangle(const Lib::TimeMeasurement::Milestones &);
 		bool CheckTriangleCompletion(const Lib::TimeMeasurement::Milestones &);
 
+		void StartScheduledLeg();
+
 		bool CheckProfitLoss(Twd::Position &firstLeg, bool isJustOpened);
 
 		ProfitLossTest CheckLeg(const Twd::Position &) const;
@@ -106,6 +108,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		Triangle::Id m_lastTriangleId;
 		std::unique_ptr<Triangle> m_triangle;
+
+		Leg m_scheduledLeg;
 
 	};
 
