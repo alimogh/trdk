@@ -1115,6 +1115,10 @@ ScaledPrice Position::GetOpenPrice() const {
 		:	0;
 }
 
+double Position::GetOpenedVolume() const {
+	return GetSecurity().DescalePrice(GetOpenPrice()) * GetOpenedQty();
+}
+
 ScaledPrice Position::GetCloseStartPrice() const {
 	return m_pimpl->m_closeStartPrice;
 }
