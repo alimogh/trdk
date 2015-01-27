@@ -114,14 +114,19 @@ namespace trdk {
 				Level()
 					: m_price(.0),
 					m_qty(0) {
-					//...//
 				}
 				explicit Level(double price, const trdk::Qty &qty)
 					: m_price(price),
 					m_qty(qty) {
-					//...//
+				}
+				void Swap(Level &rhs) throw() {
+					std::swap(rhs.m_price, m_price);
+					std::swap(rhs.m_qty, m_qty);
 				}
 			public:
+				void operator +=(const Level &rhs) {
+					m_qty += rhs.m_qty;
+				}
 				bool operator ==(const Level &rhs) const {
 					return
 						trdk::Lib::IsEqual(m_price,rhs.m_price)

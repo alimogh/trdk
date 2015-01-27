@@ -50,6 +50,15 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			// @todo Fix me!
 		}
 
+		virtual void SetupBookRequest(fix::Message &request) const {
+			request.set(
+				fix::FIX42::Tags::MarketDepth,
+				fix::FIX42::Values::MarketDepth::Full_Book);
+			request.set(
+				fix::FIX42::Tags::AggregatedBook,
+				fix::FIX42::Values::AggregatedBook::one_book_entry_per_side_per_price);
+		}
+
 	};
 
 } } }

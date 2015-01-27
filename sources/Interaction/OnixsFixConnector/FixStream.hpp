@@ -81,6 +81,17 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		virtual void OnLogout() = 0;
 		virtual void OnReconnecting() = 0;
 
+		virtual void SetupBookRequest(OnixS::FIX::Message &) const = 0;
+
+	private:
+
+		void AdjustBook(
+				const FixSecurity &security,
+				std::vector<Security::Book::Level> &bids,
+				std::vector<Security::Book::Level> asks,
+				const OnixS::FIX::Message &)
+				const;
+
 	private:
 
 		FixSession m_session;
