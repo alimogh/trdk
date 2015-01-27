@@ -48,7 +48,8 @@ TriangulationWithDirection::TriangulationWithDirection(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
 	m_allowLeg1Closing(
 		conf.ReadTypedKey<bool>("allow_leg1_closing")),
-	m_qty(conf.ReadTypedKey<Qty>("qty")),
+	m_qtyA(conf.ReadTypedKey<Qty>("qty.a")),
+	m_qtyB(conf.ReadTypedKey<Qty>("qty.b")),
 	m_reports(
 		GetContext(),
 		conf.ReadTypedKey<double>("commission"),
@@ -622,7 +623,9 @@ void TriangulationWithDirection::CheckNewTriangle(
 			*this,
 			m_reports,
 			detection.y,
-			m_qty,
+			detection.fistLeg == PAIR_AB
+				?	m_qtyA
+				:	m_qtyB,
 			{
 				PAIR_AB,
 				detection.fistLeg == PAIR_AB
@@ -631,7 +634,6 @@ void TriangulationWithDirection::CheckNewTriangle(
 						?	LEG2
 						:	LEG3,
 				detection.y == Y2,
-				detection.fistLeg == PAIR_AB,
 				m_detectedEcns[detection.y][PAIR_AB]
 			},
 			{
@@ -640,7 +642,6 @@ void TriangulationWithDirection::CheckNewTriangle(
 					?	LEG1
 					:	LEG3,
 				detection.y == Y2,
-				detection.fistLeg == PAIR_AB,
 				m_detectedEcns[detection.y][PAIR_BC]
 			},
 			{
@@ -649,7 +650,6 @@ void TriangulationWithDirection::CheckNewTriangle(
 					?	LEG1
 					:	LEG2,
 				detection.y == Y1,
-				detection.fistLeg == PAIR_AC,
 				m_detectedEcns[detection.y][PAIR_AC],
 			},
 			m_bestBidAsk));

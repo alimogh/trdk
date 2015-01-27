@@ -155,6 +155,7 @@ namespace trdk {
 		void SetOpenedQty(const trdk::Qty &) const throw();
 		trdk::Qty GetOpenedQty() const throw();
 		trdk::ScaledPrice GetOpenPrice() const;
+		double GetOpenedVolume() const;
 		Time GetOpenTime() const;
 
 		trdk::Qty GetNotOpenedQty() const;

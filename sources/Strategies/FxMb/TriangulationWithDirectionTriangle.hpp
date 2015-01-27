@@ -28,7 +28,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			Pair id;
 			Leg leg;
 			bool isBuy;
-			bool isBaseCurrency;
 			size_t ecn;
 		};
 
@@ -153,6 +152,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			boost::shared_ptr<Twd::Position> order = CreateOrder(
 				pair,
 				*pair.security,
+				true,
 				pair.startPrice,
 				m_qtyStart,
 				timeMeasurement);
@@ -194,37 +194,48 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 			if (!m_qtyLeg2) {
 
-				const auto &leg1Security = GetLeg(LEG1).GetSecurity();
-				const double leg1Price
-					= leg1Security.DescalePrice(GetLeg(LEG1).GetOpenPrice());
-				const auto leg1Vol = leg1Price * GetLeg(LEG1).GetOpenedQty();
+				if (GetPair(LEG1).id != PAIR_BC) {
 
-				const PairInfo &leg3Pair = GetPair(LEG3);
-				const double leg3Price = leg3Pair.isBuy
-					?	leg3Pair.bestBidAsk->bestAsk.price
-					:	leg3Pair.bestBidAsk->bestBid.price;
+					const auto &leg1Security = GetLeg(LEG1).GetSecurity();
+					const double leg1Price
+						= leg1Security.DescalePrice(
+							GetLeg(LEG1).GetOpenPrice());
+					const auto leg1Vol
+						= leg1Price * GetLeg(LEG1).GetOpenedQty();
 
-				const auto &leg3QuoteCurrency
-					= leg3Pair
-						.bestBidAsk
-						->service
-						->GetSecurity(0)
-						.GetSymbol()
-						.GetCashQuoteCurrency();
-				const auto &leg1QuoteCurrency
-					= leg1Security.GetSymbol().GetCashQuoteCurrency();
+					const PairInfo &leg3Pair = GetPair(LEG3);
+					const double leg3Price = leg3Pair.isBuy
+						?	leg3Pair.bestBidAsk->bestAsk.price
+						:	leg3Pair.bestBidAsk->bestBid.price;
 
-				m_qtyLeg2 = leg3QuoteCurrency == leg1QuoteCurrency
+					const auto &leg3QuoteCurrency
+						= leg3Pair
+							.bestBidAsk
+							->service
+							->GetSecurity(0)
+							.GetSymbol()
+							.GetCashQuoteCurrency();
+					const auto &leg1QuoteCurrency
+						= leg1Security.GetSymbol().GetCashQuoteCurrency();
+
+					m_qtyLeg2 = leg3QuoteCurrency == leg1QuoteCurrency
+						//! @todo remove "to qty"
+						?	Qty(leg1Vol / leg3Price)
+						:	Qty(leg1Vol * leg3Price);
+
+				} else {
+
 					//! @todo remove "to qty"
-					?	Qty(leg1Vol / leg3Price)
-					:	Qty(leg1Vol * leg3Price);
+					m_qtyLeg2 = Qty(GetLeg(LEG1).GetOpenedVolume());
+				
+				}
 
 			}
 
-			PairInfo &pair = GetPair(LEG2);
 			boost::shared_ptr<Twd::Position> order = CreateOrder(
-				pair,
-				*pair.security,
+				GetPair(LEG2),
+				*GetPair(LEG2).security,
+				false,
 				GetPair(LEG2).GetCurrentPrice(),
 				m_qtyLeg2,
 				Lib::TimeMeasurement::Milestones());
@@ -259,17 +270,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					"Failed to start triangle leg 3 (wrong strategy logic)");
 			}
 
-			const double leg1Price = GetLeg(LEG1).GetSecurity().DescalePrice(
-				GetLeg(LEG1).GetOpenPrice());
-			const auto leg1Vol = leg1Price * GetLeg(LEG1).GetOpenedQty();
-
-			PairInfo &leg3Pair = GetPair(LEG3);
 			const boost::shared_ptr<Twd::Position> order = CreateOrder(
-				leg3Pair,
-				leg3Pair.GetBestSecurity(),
-				leg3Pair.GetCurrentPrice(),
+				GetPair(LEG3),
+				GetPair(LEG3).GetBestSecurity(),
+				false,
+				GetPair(LEG3).GetCurrentPrice(),
 				//! @todo remove "to qty"
-				Qty(leg1Vol),
+				Qty(GetLeg(LEG1).GetOpenedVolume()),
 				timeMeasurement);
 
 			timeMeasurement.Measure(
@@ -504,6 +511,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		boost::shared_ptr<Twd::Position> CreateOrder(
 				PairInfo &,
 				Security &security,
+				bool isBaseCurrency,
 				double price,
 				const Qty &,
 				const Lib::TimeMeasurement::Milestones &);

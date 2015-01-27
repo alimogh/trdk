@@ -22,13 +22,14 @@ using namespace trdk::Strategies::FxMb::Twd;
 boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		PairInfo &pair,
 		Security &security,
+		bool isBaseCurrency,
 		double price,
 		const Qty &qty,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 			
 	boost::shared_ptr<Twd::Position> result;
 			
-	const auto &currency = !pair.isBaseCurrency
+	const auto &currency = !isBaseCurrency
 		?	security.GetSymbol().GetCashQuoteCurrency()
 		:	security.GetSymbol().GetCashBaseCurrency();
 			
