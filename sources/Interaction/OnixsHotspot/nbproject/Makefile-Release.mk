@@ -52,7 +52,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L../../../externals/OnixS.HotspotItchHandlerCpp-RHEL52-gcc412-x64-1_7_1_0/lib ../../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Release/GNU-Linux-x86 -L../../Core/dist/Release/GNU-Linux-x86 -lCore -lOnixS.HotspotItchHandlerCpp
+LDLIBSOPTIONS=-L../../../externals/OnixS.HotspotItchHandlerCpp-RHEL70-gcc482-x64-1_8_0_0/lib ../../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Release/GNU-Linux-x86 -L../../Core/dist/Release/GNU-Linux-x86 -lCore -lOnixS.HotspotItchHandlerCpp
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -69,7 +69,7 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsHotspot.${CND_DLIB_EXT}: ${OB
 ${OBJECTDIR}/HotspotStream.o: HotspotStream.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.HotspotItchHandlerCpp-RHEL52-gcc412-x64-1_7_1_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/HotspotStream.o HotspotStream.cpp
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.HotspotItchHandlerCpp-RHEL70-gcc482-x64-1_8_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/HotspotStream.o HotspotStream.cpp
 
 # Subprojects
 .build-subprojects:

@@ -103,14 +103,10 @@ void FixStream::SubscribeToSecurities() {
 			fix::FIX42::Tags::SubscriptionRequestType,
 			fix::FIX42::Values::SubscriptionRequestType::Snapshot__plus__Updates);
 		mdRequest.set(
-			fix::FIX42::Tags::MarketDepth,
-			fix::FIX42::Values::MarketDepth::Full_Book);
-		mdRequest.set(
 			fix::FIX42::Tags::MDUpdateType,
 			fix::FIX42::Values::MDUpdateType::Incremental_Refresh);
-		mdRequest.set(
-			fix::FIX42::Tags::AggregatedBook,
-			fix::FIX42::Values::AggregatedBook::one_book_entry_per_side_per_price);
+
+		SetupBookRequest(mdRequest);
 
 		auto mdEntryTypes
 			= mdRequest.setGroup(fix::FIX42::Tags::NoMDEntryTypes, 2);
@@ -211,29 +207,55 @@ void FixStream::onInboundApplicationMsg(
 		for (size_t i = 0; i < entries.size(); ++i) {
 
 			const auto &entry = entries[i];
-			const auto entryId = entry.getInt64(fix::FIX42::Tags::MDEntryID);
+			auto entryId = entry.getInt64(fix::FIX42::Tags::MDEntryID);
 			const auto &action = entry.get(fix::FIX42::Tags::MDUpdateAction);
 
 			if (action == fix::FIX42::Values::MDUpdateAction::Change) {
 
 				const auto price = entry.getDouble(fix::FIX42::Tags::MDEntryPx);
 				const auto &qty = ParseMdEntrySize(entry);
-				auto pos = security->m_book.find(entryId);
-				if (pos == security->m_book.end()) {
-					GetLog().Error(
-						"Failed to change price level"
-							" with ID %1%, price %2% and qty %3% for %4%.",
-						entryId,
-						price,
-						qty,
-						*security);
-					continue;
-				}
 
-				(*pos).second = std::make_pair(
+				if (entry.contain(fix::FIX42::Tags::MDEntryRefID)) {
+					
+					const auto entryRefId
+						= entry.get(fix::FIX42::Tags::MDEntryRefID);
+					auto pos = security->m_book.find(entryRefId);
+					if (pos == security->m_book.end()) {
+// 						GetLog().Error(
+// 							"Failed to delete price level with ref. ID %1% for %2%.",
+// 							entryRefId,
+// 							*security);
+					} else {
+						security->m_book.erase(pos);
+					}
+
+					security->m_book[entryId] = std::make_pair(
 					entry.get(fix::FIX42::Tags::MDEntryType)
 						== fix::FIX42::Values::MDEntryType::Bid,
-					Security::Book::Level(price, qty));
+					Security::Book::Level(
+						entry.getDouble(fix::FIX42::Tags::MDEntryPx),
+						ParseMdEntrySize(entry)));
+				
+				} else {
+
+					auto pos = security->m_book.find(entryId);
+					if (pos == security->m_book.end()) {
+						GetLog().Error(
+							"Failed to change price level"
+								" with ID %1%, price %2% and qty %3% for %4%.",
+							entryId,
+							price,
+							qty,
+							*security);
+						continue;
+					}
+
+					(*pos).second = std::make_pair(
+						entry.get(fix::FIX42::Tags::MDEntryType)
+							== fix::FIX42::Values::MDEntryType::Bid,
+						Security::Book::Level(price, qty));
+
+				}
 
 			} else if (action == fix::FIX42::Values::MDUpdateAction::New) {
 
@@ -323,25 +345,165 @@ void FixStream::onInboundApplicationMsg(
 			return lhs.GetPrice() < rhs.GetPrice();
 		});
 
-	while (
-			!bids.empty()
-			&& !asks.empty()
-			&& bids.front().GetPrice() > asks.front().GetPrice()) {
-// 		GetTradingLog().Write(
-// 			"book adjust\t%1%\t%2% -> %3%",
-// 			[&](TradingRecord &record) {
-// 				record
-// 					% *security
-// 					% bids.front().GetPrice()
-// 					% asks.front().GetPrice();
-// 			});
-		bids.erase(bids.begin());
-	}
+#	if defined(DEV_VER) && 0
+		if (	
+				GetTag() == "FXall"
+				&& security->GetSymbol().GetSymbol() == "USD/JPY") {
+			std::cout
+				<< "############################### "
+				<< security << " " << security->GetSource().GetTag()
+				<< std::endl;
+			for (
+					size_t i = 0;
+					i < std::min(asks.size(), bids.size());
+					++i) {
+				std::cout
+					<< bids[i].GetQty()
+					<< ' ' << bids[i].GetPrice()
+					<< "\t\t\t"
+					<< asks[i].GetPrice()
+					<< ' ' << asks[i].GetQty()
+					<< std::endl;
+			}
+			std::cout << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" << std::endl;
+
+			AdjustBook(*security, bids, asks, message);
+		}
+#	endif
+
+	AdjustBook(*security, bids, asks, message);
 
 	FixSecurity::BookUpdateOperation book = security->StartBookUpdate(now);
 	book.GetBids().Swap(bids);
 	book.GetAsks().Swap(asks);
 	book.Commit(timeMeasurement);
+
+}
+
+void FixStream::AdjustBook(
+		const FixSecurity &/*security*/,
+		std::vector<Security::Book::Level> &bids,
+		std::vector<Security::Book::Level> asks,
+		const fix::Message &/*message*/)
+		const {
+
+	if (bids.empty() || asks.empty()) {
+		return;
+	}
+
+	if (bids.front().GetPrice() <= asks.front().GetPrice()) {
+		return;
+	}
+
+// 	GetTradingLog().Write(
+// 		"book adjust\tswap\t%1%\t%2% <-> %3%\t%4%",
+// 		[&](TradingRecord &record) {
+// 			record
+// 				% security
+// 				% bids.front().GetPrice()
+// 				% asks.front().GetPrice()
+// 				% message.seqNum();
+// 		});
+	bids.front().Swap(asks.front());
+
+// 	const auto &dumpBook = [&]() -> std::string {
+// 		std::ostringstream result;
+// 		bool isFirst = true;
+// 		foreach (const auto &line, security.m_book) {
+// 			if (!isFirst) {
+// 				result << ", ";
+// 			} else {
+// 				isFirst = true;
+// 			}
+// 			result
+// 				<< "[" << line.first << ", "
+// 				<< (line.second.first ? "bid" : "ask")
+// 				<< ", " << line.second.second.GetPrice()
+// 				<< ", " << line.second.second.GetQty()
+// 				<< ']';
+// 		}
+// 		return result.str();
+// 	};
+// 	
+// 	const auto &validateBook = [&](
+// 			const std::vector<Security::Book::Level> &side,
+// 			bool isAsk) {
+// 		if (side.size() == 1) {
+// 			return;
+// 		}
+// 		const auto &topLevel = side.front();
+// 		const auto &nextLevel = *(side.begin() + 1);
+// 		if (	(isAsk
+// 					&& topLevel.GetPrice() < nextLevel.GetPrice())
+// 				|| (!isAsk
+// 					&& topLevel.GetPrice() > nextLevel.GetPrice())) {
+// 			return;
+// 		}
+// 		
+// 		GetLog().Warn(
+// 			"Intersected book detected!"
+// 				" %1% %2% %3% %4%."
+// 				" Message: \"%5%\". Current state: \"%6%\".",
+// 			isAsk ? "Ask" : "Bid",
+// 			topLevel.GetPrice(),
+// 			isAsk ? ">=" : "<=",
+// 			nextLevel.GetPrice(),
+// 			message,
+// 			dumpBook());
+// 	};
+// 
+// 	const auto &checkBook = [&](
+// 			std::vector<Security::Book::Level> &side,
+// 			bool isAsk) {
+// 		
+// 		if (side.size() == 1) {
+// 			return;
+// 		}
+// 		
+// 		const auto &topLevel = side.front();
+// 		auto &nextLevel = *(side.begin() + 1);
+// 		if (IsEqual(topLevel.GetPrice(), nextLevel.GetPrice())) {
+// 			nextLevel += topLevel;
+// 			side.erase(side.begin());
+// 			validateBook(side, isAsk);
+// 		} else if (
+// 				(isAsk && topLevel.GetPrice() > nextLevel.GetPrice())
+// 					|| (!isAsk && topLevel.GetPrice() < nextLevel.GetPrice())) {
+// 			GetTradingLog().Write(
+// 				"book adjust\terase\t%1%\t%2%\t%3%\t%4%",
+// 				[&](TradingRecord &record) {
+// 					record
+// 						% security
+// 						% (isAsk ? "ask" : "bid")
+// 						% side.front().GetPrice()
+// 						% message.seqNum();
+// 				});
+// 			side.erase(side.begin());
+// 			validateBook(side, isAsk);
+// 		}
+// 	
+// 	};
+// 
+// 	checkBook(asks, true);
+// 	checkBook(bids, false);
+// 
+// 	if (bids.empty()) {
+// 		GetLog().Warn(
+// 			"Bid list is empty for %1% after message with ID %2%."
+// 				"Current state: %3%.",
+// 			security,
+// 			message.seqNum(),
+// 			dumpBook());
+// 	}
+// 
+// 	if (asks.empty()) {
+// 		GetLog().Warn(
+// 			"Ask list is empty for %1% after message with ID %2%.",
+// 				"Current state: %3%.",
+// 			security,
+// 			message.seqNum(),
+// 			dumpBook());
+// 	}
 
 }
 
@@ -352,4 +514,3 @@ Qty FixStream::ParseMdEntrySize(const fix::GroupInstance &entry) const {
 Qty FixStream::ParseMdEntrySize(const fix::Message &message) const {
 	return message.getInt32(fix::FIX42::Tags::MDEntrySize);
 }
-

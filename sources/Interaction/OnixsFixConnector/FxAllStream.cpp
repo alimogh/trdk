@@ -58,6 +58,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			GetSession().ResetLocalSequenceNumbers(true, true);
 		}
 
+		virtual void SetupBookRequest(fix::Message &request) const {
+			request.set(fix::FIX42::Tags::MarketDepth, 4);
+		}
+
 	};
 
 } } }
