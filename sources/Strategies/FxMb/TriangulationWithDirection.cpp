@@ -183,22 +183,27 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 
 	if (position.IsError()) {
 		Assert(IsBlocked());
+		GetTradingLog().Write("1: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
 		return;
 	}
 
 	if (position.HasActiveOrders()) {
+		GetTradingLog().Write("2: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
 		return;
 	}
 
 	Twd::Position &order = dynamic_cast<Twd::Position &>(position);
 
 	if (!order.IsActive()) {
+		GetTradingLog().Write("3: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
 		//! @todo see https://trello.com/c/QOBSd8RZ
 		return;
 	}
 	order.Deactivate();
 
 	if (order.GetOpenedQty() == 0) {
+
+		GetTradingLog().Write("4: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
 		
 		Assert(IsZero(order.GetCloseStartPrice()));
 
@@ -247,6 +252,8 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 		return;
 		
 	} else if (!IsZero(order.GetCloseStartPrice())) {
+
+		GetTradingLog().Write("5: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
 			
 		AssertLt(0, order.GetOpenedQty());
 		AssertEq(LEG1, order.GetLeg());
@@ -263,6 +270,8 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 		order.SetCloseStartPrice(0);
 		
 	}
+
+	GetTradingLog().Write("6: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
  
  	Assert(order.IsOpened());
 	Assert(IsZero(order.GetCloseStartPrice()));
