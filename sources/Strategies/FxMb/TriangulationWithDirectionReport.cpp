@@ -157,6 +157,7 @@ public:
 					%	"Action reason"
 					%	"Action legs"
 					%	"Action orders count"
+					%	"Last Orders ID"
 					%	"Y1 detected"
 					%	"Y2 detected"
 					%	"New Y1"
@@ -508,8 +509,15 @@ void TriangleReport::ReportAction(
 				% actionLegs;
 			if (reasonOrder) {
 				record % m_triangle.GetPair(reasonOrder->GetLeg()).ordersCount;
+				if (reasonOrder->IsClosed()) {
+					record % reasonOrder->GetCloseOrderId();
+				} else if (reasonOrder->IsOpened()) {
+					record % reasonOrder->GetOpenOrderId();
+				} else {
+					record % ' ';
+				}
 			} else {
-				record % ' ';
+				record % ' ' % ' ';
 			}
 			record
 				% m_triangle.GetStrategy().GetYDetectedDirection()[Y1]
