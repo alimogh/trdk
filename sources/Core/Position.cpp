@@ -531,23 +531,30 @@ public:
 			throw() {
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%12%\t%11%\t%1%\t%2%\topen-%3%\t%4%"
-				"\tqty=%5%->%6% price=%7%->%8% order-id=%9%"
-				" order-status=%10%",
+			"%1%\t%2%\t%3%\t%4%\topen-%5%\t%6%"
+				"\tprice=%7%->%8%\t%9%\tqty=%10%->%11%"
+				"\tbid=%12%\task=%13%"
+				"\torder-id=%14%"
+				"\torder-status=%15%\thas-orders=%16%\tis-error=%17%",
 			[this, eventDesc, &orderStatus](TradingRecord &record) {
 				record
-					% m_security.GetSymbol()
+					% m_id
+					% m_position.GetTradeSystem().GetTag()
+					% m_security
 					% m_position.GetTypeStr()
 					% eventDesc
 					% m_tag
-					% m_position.GetPlanedQty()
-					% m_position.GetOpenedQty()
 					% m_security.DescalePrice(m_position.GetOpenStartPrice())
 					% m_security.DescalePrice(m_position.GetOpenPrice())
+					% ConvertToIsoPch(m_position.GetCurrency())
+					% m_position.GetPlanedQty()
+					% m_position.GetOpenedQty()
+					% m_security.GetBidPrice()
+					% m_security.GetAskPrice()
 					% m_position.GetOpenOrderId()
 					% m_tradeSystem.GetStringStatus(orderStatus)
-					% m_position.GetTradeSystem().GetTag()
-					% m_id;
+					% m_position.HasActiveOpenOrders()
+					% (m_isError ? true : false);
 			});
 	}
 
@@ -725,16 +732,20 @@ public:
 
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%7%\t%5%\t%1%\t%2%\t%6%\t%3%\tqty=%4%",
+			"%1%\t%2%\t%3%\t%4%\t%5%\t%6%\tstart-price=%7%\t%8%\tqty=%9%\tbid=%10%\task=%11%",
 			[this, action](TradingRecord &record) {
 				record
+					% m_id
+					% m_position.GetTradeSystem().GetTag()
 					% m_security
 					% m_position.GetTypeStr()
-					% m_tag
-					% m_position.GetPlanedQty()
-					% m_position.GetTradeSystem().GetTag()
 					% action
-					% m_id;
+					% m_tag
+					% m_security.DescalePrice(m_openStartPrice)
+					% ConvertToIsoPch(m_position.GetCurrency())
+					% m_position.GetPlanedQty()
+					% m_security.GetBidPrice()
+					% m_security.GetAskPrice();
 			});
 
 		try {
