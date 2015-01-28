@@ -234,7 +234,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 			boost::shared_ptr<Twd::Position> order = CreateOrder(
 				GetPair(LEG2),
-				*GetPair(LEG2).security,
+				GetPair(LEG2).GetBestSecurity(),
 				false,
 				GetPair(LEG2).GetCurrentPrice(),
 				m_qtyLeg2,
