@@ -533,9 +533,9 @@ public:
 			logTag,
 			"%1%\t%2%\t%3%\t%4%\topen-%5%\t%6%"
 				"\tprice=%7%->%8%\t%9%\tqty=%10%->%11%"
-				"\tbid=%12%\task=%13%"
-				"\torder-id=%14%"
-				"\torder-status=%15%\thas-orders=%16%\tis-error=%17%",
+				"\tbid=%12%/%13%\task=%14%/%15%"
+				"\torder-id=%16%"
+				"\torder-status=%17%\thas-orders=%18%\tis-error=%19%",
 			[this, eventDesc, &orderStatus](TradingRecord &record) {
 				record
 					% m_id
@@ -550,7 +550,9 @@ public:
 					% m_position.GetPlanedQty()
 					% m_position.GetOpenedQty()
 					% m_security.GetBidPrice()
+					% m_security.GetBidQty()
 					% m_security.GetAskPrice()
+					% m_security.GetAskQty()
 					% m_position.GetOpenOrderId()
 					% m_tradeSystem.GetStringStatus(orderStatus)
 					% m_position.HasActiveOpenOrders()
@@ -732,7 +734,9 @@ public:
 
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%1%\t%2%\t%3%\t%4%\t%5%\t%6%\tstart-price=%7%\t%8%\tqty=%9%\tbid=%10%\task=%11%",
+			"%1%\t%2%\t%3%\t%4%\t%5%\t%6%"
+				"\tstart-price=%7%\t%8%"
+				"\tqty=%9%\tbid=%10%/%11%\task=%12%/%13%",
 			[this, action](TradingRecord &record) {
 				record
 					% m_id
@@ -745,7 +749,9 @@ public:
 					% ConvertToIsoPch(m_position.GetCurrency())
 					% m_position.GetPlanedQty()
 					% m_security.GetBidPrice()
-					% m_security.GetAskPrice();
+					% m_security.GetBidQty()
+					% m_security.GetAskPrice()
+					% m_security.GetAskQty();
 			});
 
 		try {
