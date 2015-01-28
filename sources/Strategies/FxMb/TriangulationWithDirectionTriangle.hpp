@@ -270,13 +270,42 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					"Failed to start triangle leg 3 (wrong strategy logic)");
 			}
 
+			bool isBaseCurrency;
+			Qty qty = 0;
+			switch (GetPair(LEG1).id) {
+				case PAIR_AB:
+					//! @todo remove "to qty"
+					qty = Qty(GetLeg(LEG2).GetOpenedQty());
+					isBaseCurrency = false;
+					break;
+				case PAIR_AC:
+					//! @todo remove "to qty"
+					qty = Qty(GetLeg(LEG2).GetOpenedQty());
+					isBaseCurrency = true;
+					break;
+				case PAIR_BC:
+					{
+						const auto price
+							= GetLeg(LEG2)
+								.GetSecurity()
+								.DescalePrice(GetLeg(LEG2).GetOpenPrice());
+						//! @todo remove "to qty"
+						qty = Qty(GetLeg(LEG2).GetOpenedQty() / price);
+					}
+					isBaseCurrency = true;
+					break;
+				default:
+					AssertEq(PAIR_AB, GetPair(LEG1).id);
+					throw Lib::LogicError("Unknown pair for leg 1");
+					
+			}
+
 			const boost::shared_ptr<Twd::Position> order = CreateOrder(
 				GetPair(LEG3),
 				GetPair(LEG3).GetBestSecurity(),
-				false,
+				isBaseCurrency,
 				GetPair(LEG3).GetCurrentPrice(),
-				//! @todo remove "to qty"
-				Qty(GetLeg(LEG1).GetOpenedVolume()),
+				qty,
 				timeMeasurement);
 
 			timeMeasurement.Measure(
