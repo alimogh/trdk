@@ -178,9 +178,6 @@ void TriangulationWithDirection::StartScheduledLeg() {
 
 void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 	
-	Assert(m_triangle);
-	AssertEq(LEG_UNKNOWN, m_scheduledLeg);
-
 	if (position.IsError()) {
 		Assert(IsBlocked());
 		GetTradingLog().Write("1: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
@@ -199,6 +196,10 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 		//! @todo see https://trello.com/c/QOBSd8RZ
 		return;
 	}
+
+	Assert(m_triangle);
+	AssertEq(LEG_UNKNOWN, m_scheduledLeg);
+
 	order.Deactivate();
 
 	if (order.GetOpenedQty() == 0) {
