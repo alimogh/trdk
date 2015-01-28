@@ -57,9 +57,16 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			double abBidPrice,
 			double bcBidPrice,
 			double acAskPrice) {
+		if (Lib::IsZero(acAskPrice)) {
+			return 0;
+		}
 		const auto result = abBidPrice * bcBidPrice * (1 / acAskPrice);
 		AssertGt(1.1, result);
-		AssertLt(.9, result);
+#		ifdef BOOST_ENABLE_ASSERT_HANDLER
+			if (!Lib::IsZero(abBidPrice)  && !Lib::IsZero(bcBidPrice)) {
+				AssertLt(.9, result);
+			}
+#		endif
 		return result;
 	}
 
@@ -67,9 +74,16 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			double abAskPrice,
 			double bcAskPrice,
 			double acBidPrice) {
+		if (Lib::IsZero(bcAskPrice) || Lib::IsZero(abAskPrice)) {
+			return 0;
+		}
 		const auto result = acBidPrice * (1 / bcAskPrice) * (1 / abAskPrice);
 		AssertGt(1.1, result);
-		AssertLt(.9, result);
+#		ifdef BOOST_ENABLE_ASSERT_HANDLER
+			if (!Lib::IsZero(acBidPrice)) {
+				AssertLt(.9, result);
+			}
+#		endif	
 		return result;
 	}
 	inline double CalcY1(
