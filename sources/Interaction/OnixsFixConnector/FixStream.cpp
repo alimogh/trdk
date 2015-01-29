@@ -214,29 +214,34 @@ void FixStream::onInboundApplicationMsg(
 
 				const auto price = entry.getDouble(fix::FIX42::Tags::MDEntryPx);
 				const auto &qty = ParseMdEntrySize(entry);
+				bool isHandled = false;
 
 				if (entry.contain(fix::FIX42::Tags::MDEntryRefID)) {
 					
 					const auto entryRefId
-						= entry.get(fix::FIX42::Tags::MDEntryRefID);
-					auto pos = security->m_book.find(entryRefId);
-					if (pos == security->m_book.end()) {
-// 						GetLog().Error(
-// 							"Failed to delete price level with ref. ID %1% for %2%.",
-// 							entryRefId,
-// 							*security);
-					} else {
-						security->m_book.erase(pos);
+						= entry.getInt64(fix::FIX42::Tags::MDEntryRefID);
+					if (entryRefId != 1) {
+						isHandled = true;
+						auto pos = security->m_book.find(entryRefId);
+						if (pos == security->m_book.end()) {
+							GetLog().Error(
+								"Failed to delete price level with ref. ID %1% for %2%.",
+								entryRefId,
+								*security);
+						} else {
+							security->m_book.erase(pos);
+						}
+						security->m_book[entryId] = std::make_pair(
+							entry.get(fix::FIX42::Tags::MDEntryType)
+								== fix::FIX42::Values::MDEntryType::Bid,
+							Security::Book::Level(
+								entry.getDouble(fix::FIX42::Tags::MDEntryPx),
+								ParseMdEntrySize(entry)));
 					}
-
-					security->m_book[entryId] = std::make_pair(
-					entry.get(fix::FIX42::Tags::MDEntryType)
-						== fix::FIX42::Values::MDEntryType::Bid,
-					Security::Book::Level(
-						entry.getDouble(fix::FIX42::Tags::MDEntryPx),
-						ParseMdEntrySize(entry)));
 				
-				} else {
+				}
+				
+				if (!isHandled) {
 
 					auto pos = security->m_book.find(entryId);
 					if (pos == security->m_book.end()) {
@@ -347,11 +352,11 @@ void FixStream::onInboundApplicationMsg(
 
 #	if defined(DEV_VER) && 0
 		if (	
-				GetTag() == "FXall"
-				&& security->GetSymbol().GetSymbol() == "USD/JPY") {
+				GetTag() == "Currenex"
+				/*&& security->GetSymbol().GetSymbol() == "USD/JPY"*/) {
 			std::cout
 				<< "############################### "
-				<< security << " " << security->GetSource().GetTag()
+				<< *security << " " << security->GetSource().GetTag()
 				<< std::endl;
 			for (
 					size_t i = 0;
@@ -366,8 +371,6 @@ void FixStream::onInboundApplicationMsg(
 					<< std::endl;
 			}
 			std::cout << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" << std::endl;
-
-			AdjustBook(*security, bids, asks, message);
 		}
 #	endif
 
@@ -381,129 +384,129 @@ void FixStream::onInboundApplicationMsg(
 }
 
 void FixStream::AdjustBook(
-		const FixSecurity &/*security*/,
+		const FixSecurity &security,
 		std::vector<Security::Book::Level> &bids,
 		std::vector<Security::Book::Level> asks,
-		const fix::Message &/*message*/)
+		const fix::Message &message)
 		const {
 
-	if (bids.empty() || asks.empty()) {
-		return;
+	const auto &dumpBook = [&]() -> std::string {
+		std::ostringstream result;
+		bool isFirst = true;
+		foreach (const auto &line, security.m_book) {
+			if (!isFirst) {
+				result << ", ";
+			} else {
+				isFirst = true;
+			}
+			result
+				<< "[" << line.first << ", "
+				<< (line.second.first ? "bid" : "ask")
+				<< ", " << line.second.second.GetPrice()
+				<< ", " << line.second.second.GetQty()
+				<< ']';
+		}
+		return result.str();
+	};
+
+	if (!bids.empty() && !asks.empty()) {
+
+		if (bids.front().GetPrice() <= asks.front().GetPrice()) {
+			return;
+		}
+
+		GetTradingLog().Write(
+			"book adjust\tswap\t%1%\t%2% <-> %3%\t%4%",
+			[&](TradingRecord &record) {
+				record
+					% security
+					% bids.front().GetPrice()
+					% asks.front().GetPrice()
+					% message.seqNum();
+			});
+		bids.front().Swap(asks.front());
+
+		const auto &validateBook = [&](
+				const std::vector<Security::Book::Level> &side,
+				bool isAsk) {
+			if (side.size() == 1) {
+				return;
+			}
+			const auto &topLevel = side.front();
+			const auto &nextLevel = *(side.begin() + 1);
+			if (	(isAsk
+						&& topLevel.GetPrice() < nextLevel.GetPrice())
+					|| (!isAsk
+						&& topLevel.GetPrice() > nextLevel.GetPrice())) {
+				return;
+			}
+		
+			GetLog().Warn(
+				"Intersected book detected!"
+					" %1% %2% %3% %4%."
+					" Message: \"%5%\". Current state: \"%6%\".",
+				isAsk ? "Ask" : "Bid",
+				topLevel.GetPrice(),
+				isAsk ? ">=" : "<=",
+				nextLevel.GetPrice(),
+				message,
+				dumpBook());
+		};
+
+		const auto &checkBook = [&](
+				std::vector<Security::Book::Level> &side,
+				bool isAsk) {
+		
+			if (side.size() == 1) {
+				return;
+			}
+		
+			const auto &topLevel = side.front();
+			auto &nextLevel = *(side.begin() + 1);
+			if (IsEqual(topLevel.GetPrice(), nextLevel.GetPrice())) {
+				nextLevel += topLevel;
+				side.erase(side.begin());
+				validateBook(side, isAsk);
+			} else if (
+					(isAsk && topLevel.GetPrice() > nextLevel.GetPrice())
+						|| (!isAsk && topLevel.GetPrice() < nextLevel.GetPrice())) {
+				GetTradingLog().Write(
+					"book adjust\terase\t%1%\t%2%\t%3%\t%4%",
+					[&](TradingRecord &record) {
+						record
+							% security
+							% (isAsk ? "ask" : "bid")
+							% side.front().GetPrice()
+							% message.seqNum();
+					});
+				side.erase(side.begin());
+				validateBook(side, isAsk);
+			}
+	
+		};
+
+		checkBook(asks, true);
+		checkBook(bids, false);
+
 	}
 
-	if (bids.front().GetPrice() <= asks.front().GetPrice()) {
-		return;
+	if (bids.empty()) {
+		GetLog().Warn(
+			"Bid list is empty for %1% after message with ID %2%."
+				"Current state: %3%.",
+			security,
+			message.seqNum(),
+			dumpBook());
 	}
 
-// 	GetTradingLog().Write(
-// 		"book adjust\tswap\t%1%\t%2% <-> %3%\t%4%",
-// 		[&](TradingRecord &record) {
-// 			record
-// 				% security
-// 				% bids.front().GetPrice()
-// 				% asks.front().GetPrice()
-// 				% message.seqNum();
-// 		});
-	bids.front().Swap(asks.front());
-
-// 	const auto &dumpBook = [&]() -> std::string {
-// 		std::ostringstream result;
-// 		bool isFirst = true;
-// 		foreach (const auto &line, security.m_book) {
-// 			if (!isFirst) {
-// 				result << ", ";
-// 			} else {
-// 				isFirst = true;
-// 			}
-// 			result
-// 				<< "[" << line.first << ", "
-// 				<< (line.second.first ? "bid" : "ask")
-// 				<< ", " << line.second.second.GetPrice()
-// 				<< ", " << line.second.second.GetQty()
-// 				<< ']';
-// 		}
-// 		return result.str();
-// 	};
-// 	
-// 	const auto &validateBook = [&](
-// 			const std::vector<Security::Book::Level> &side,
-// 			bool isAsk) {
-// 		if (side.size() == 1) {
-// 			return;
-// 		}
-// 		const auto &topLevel = side.front();
-// 		const auto &nextLevel = *(side.begin() + 1);
-// 		if (	(isAsk
-// 					&& topLevel.GetPrice() < nextLevel.GetPrice())
-// 				|| (!isAsk
-// 					&& topLevel.GetPrice() > nextLevel.GetPrice())) {
-// 			return;
-// 		}
-// 		
-// 		GetLog().Warn(
-// 			"Intersected book detected!"
-// 				" %1% %2% %3% %4%."
-// 				" Message: \"%5%\". Current state: \"%6%\".",
-// 			isAsk ? "Ask" : "Bid",
-// 			topLevel.GetPrice(),
-// 			isAsk ? ">=" : "<=",
-// 			nextLevel.GetPrice(),
-// 			message,
-// 			dumpBook());
-// 	};
-// 
-// 	const auto &checkBook = [&](
-// 			std::vector<Security::Book::Level> &side,
-// 			bool isAsk) {
-// 		
-// 		if (side.size() == 1) {
-// 			return;
-// 		}
-// 		
-// 		const auto &topLevel = side.front();
-// 		auto &nextLevel = *(side.begin() + 1);
-// 		if (IsEqual(topLevel.GetPrice(), nextLevel.GetPrice())) {
-// 			nextLevel += topLevel;
-// 			side.erase(side.begin());
-// 			validateBook(side, isAsk);
-// 		} else if (
-// 				(isAsk && topLevel.GetPrice() > nextLevel.GetPrice())
-// 					|| (!isAsk && topLevel.GetPrice() < nextLevel.GetPrice())) {
-// 			GetTradingLog().Write(
-// 				"book adjust\terase\t%1%\t%2%\t%3%\t%4%",
-// 				[&](TradingRecord &record) {
-// 					record
-// 						% security
-// 						% (isAsk ? "ask" : "bid")
-// 						% side.front().GetPrice()
-// 						% message.seqNum();
-// 				});
-// 			side.erase(side.begin());
-// 			validateBook(side, isAsk);
-// 		}
-// 	
-// 	};
-// 
-// 	checkBook(asks, true);
-// 	checkBook(bids, false);
-// 
-// 	if (bids.empty()) {
-// 		GetLog().Warn(
-// 			"Bid list is empty for %1% after message with ID %2%."
-// 				"Current state: %3%.",
-// 			security,
-// 			message.seqNum(),
-// 			dumpBook());
-// 	}
-// 
-// 	if (asks.empty()) {
-// 		GetLog().Warn(
-// 			"Ask list is empty for %1% after message with ID %2%.",
-// 				"Current state: %3%.",
-// 			security,
-// 			message.seqNum(),
-// 			dumpBook());
-// 	}
+	if (asks.empty()) {
+		GetLog().Warn(
+			"Ask list is empty for %1% after message with ID %2%."
+				"Current state: %3%.",
+			security,
+			message.seqNum(),
+			dumpBook());
+	}
 
 }
 
