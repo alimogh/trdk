@@ -48,8 +48,7 @@ TriangulationWithDirection::TriangulationWithDirection(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
 	m_allowLeg1Closing(
 		conf.ReadTypedKey<bool>("allow_leg1_closing")),
-	m_qtyA(conf.ReadTypedKey<Qty>("qty.a")),
-	m_qtyB(conf.ReadTypedKey<Qty>("qty.b")),
+	m_qty(conf.ReadTypedKey<Qty>("qty")),
 	m_reports(
 		GetContext(),
 		conf.ReadTypedKey<double>("commission"),
@@ -633,9 +632,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 			*this,
 			m_reports,
 			detection.y,
-			detection.fistLeg == PAIR_AB
-				?	m_qtyA
-				:	m_qtyB,
+			m_qty,
 			{
 				PAIR_AB,
 				detection.fistLeg == PAIR_AB
