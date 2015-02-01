@@ -15,6 +15,7 @@
 #include "Ini.hpp"
 #include "Core/Settings.hpp"
 #include "Core/Terminal.hpp"
+#include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradeSystem.hpp"
 #include "Core/TradingLog.hpp"
@@ -188,9 +189,7 @@ Engine::Context::Context(
 }
 
 Engine::Context::~Context() {
-	if (m_pimpl->m_state) {
-		Stop();
-	}
+	Stop(STOP_MODE_IMMEDIATELY);
 	delete m_pimpl;
 }
 
@@ -302,9 +301,43 @@ void Engine::Context::Start() {
 
 }
 
-void Engine::Context::Stop() {
-	GetLog().Info("Stopping...");
+void Engine::Context::Stop(const StopMode &stopMode) {
+
+	if (!m_pimpl->m_state) {
+		return;
+	}
+
+	const char *stopModeStr = "unknown";
+	static_assert(numberOfStopModes == 3, "Stop mode list changed.");
+	switch (stopMode) {
+		case STOP_MODE_IMMEDIATELY:
+			stopModeStr = "immediately";
+			break;
+		case STOP_MODE_GRACEFULLY_ORDERS:
+			stopModeStr = "wait for orders before";
+			break;
+		case STOP_MODE_GRACEFULLY_POSITIONS:
+			stopModeStr = "wait for positions before";
+			break;
+	}
+
+	GetLog().Info("Stopping with mode \"%1%\"...", stopModeStr);
+
+	{
+		std::vector<Strategy *> stoppedStrategies;
+		foreach (auto &tagetStrategies, m_pimpl->m_state->strategies) {
+			foreach (auto &strategy, tagetStrategies.second) {
+				strategy->Stop(stopMode);
+				stoppedStrategies.push_back(&*strategy);
+			}
+		}
+		foreach (Strategy *strategy, stoppedStrategies) {
+			strategy->WaitForStop();
+		}
+	}
+
 	m_pimpl->m_state.reset();
+
 }
 
 void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {

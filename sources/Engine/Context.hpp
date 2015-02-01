@@ -34,7 +34,7 @@ namespace trdk { namespace Engine {
 	public:
 
 		void Start();
-		void Stop();
+		void Stop(const trdk::StopMode &);
 
 		void Add(const trdk::Lib::Ini &);
 

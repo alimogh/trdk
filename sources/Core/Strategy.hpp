@@ -132,8 +132,11 @@ namespace trdk {
 	public:
 
 		bool IsBlocked(bool forever = false) const;
+		void WaitForStop();
+
 		void Block() throw();
 		void Block(const boost::posix_time::time_duration &);
+		void Stop(const trdk::StopMode &);
 
 	public:
 
@@ -180,6 +183,12 @@ namespace trdk {
 		PositionUpdateSlotConnection SubscribeToPositionsUpdates(
 				const PositionUpdateSlot &)
 				const;
+
+	protected:
+
+		const trdk::StopMode & GetStopMode() const;
+		virtual void OnStopRequest(const trdk::StopMode &);
+		void ReportStop();
 
 	private:
 

@@ -94,19 +94,53 @@ namespace {
 				<< std::endl;
 			result = false;
 		}
-
-		getchar();
 		
 		if (result) {
+
+			StopMode stopMode = STOP_MODE_UNKNOWN;
+			std::cout << std::endl;
+			while (stopMode == STOP_MODE_UNKNOWN) {
+				std::cout
+					<< "To stop please enter:" << std::endl
+						<< "\t1 - normal stop,"
+							<< " wait until all positions will be completed;"
+							<< std::endl
+						<< "\t2 - gracefully stop,"
+							<< " wait for current orders only;"
+							<< std::endl
+						<< "\t9 - urgent stop, immediately." << std::endl
+					<< std::endl;
+				const char command = char(getchar());
+				switch (command) {
+					case '1':
+						stopMode = STOP_MODE_GRACEFULLY_POSITIONS;
+						break;
+					case '2':
+						stopMode = STOP_MODE_GRACEFULLY_ORDERS;
+						break;
+					case '9':
+					case 'u':
+					case 'U':
+						stopMode = STOP_MODE_IMMEDIATELY;
+						break;
+					default:
+						std::cout << "Unknown command." << std::endl;
+						break;
+				}
+			}
+
 			try {
-				server.StopAll();
+				server.StopAll(stopMode);
 			} catch (const Exception &ex) {
 				std::cerr
 					<< "Failed to stop engine: \"" << ex << "\"."
 					<< std::endl;
 				result = false;
-				getchar();
 			}
+
+			std::cout << "Stopped. Press any key to exit." << std::endl;
+			getchar();
+
 		}
 
 		return result;
@@ -175,9 +209,7 @@ int main(int argc, const char *argv[]) {
 	} catch (...) {
 		AssertFailNoException();
 	}
-#	ifdef DEV_VER
-		getchar();
-#	endif
+
 	return result;
 
 }

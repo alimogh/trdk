@@ -121,6 +121,8 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 		const Service &service,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 
+	Assert(!CheckCurrentStopRequest());
+
 	UpdateDirection(service);
 
 	if (m_triangle) {
@@ -181,19 +183,16 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 	
 	if (position.IsError()) {
 		Assert(IsBlocked());
-		GetTradingLog().Write("1: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
 		return;
 	}
 
 	if (position.HasActiveOrders()) {
-		GetTradingLog().Write("2: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
 		return;
 	}
 
 	Twd::Position &order = dynamic_cast<Twd::Position &>(position);
 
 	if (!order.IsActive()) {
-		GetTradingLog().Write("3: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
 		//! @todo see https://trello.com/c/QOBSd8RZ
 		return;
 	}
@@ -204,14 +203,13 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 	order.Deactivate();
 
 	if (order.GetOpenedQty() == 0) {
-
-		GetTradingLog().Write("4: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
-		
+	
 		Assert(IsZero(order.GetCloseStartPrice()));
 
 		switch (order.GetLeg()) {
 			case LEG1:
 				OnCancel("exec report", order);
+				CheckCurrentStopRequest();
 				break;
 			case LEG2:
 				{
@@ -220,7 +218,9 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 					Assert(firstLeg.IsOpened());
 					AssertLt(0, firstLeg.GetActiveQty());
 					m_triangle->OnLeg2Cancel();
-					if (!CheckProfitLoss(firstLeg, false)) {
+					if (CheckCurrentStopRequest()) {
+						break;
+					} else if (!CheckProfitLoss(firstLeg, false)) {
 						try {
 							m_triangle->StartLeg2();
 						} catch (const HasNotMuchOpportunityException &ex) {
@@ -235,6 +235,9 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				break;
 			case LEG3:
 				m_triangle->OnLeg3Cancel();
+				if (CheckCurrentStopRequest()) {
+					break;
+				}
 				try {
 					m_triangle->StartLeg3(TimeMeasurement::Milestones());
 				} catch (const HasNotMuchOpportunityException &ex) {
@@ -254,26 +257,26 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 		return;
 		
 	} else if (!IsZero(order.GetCloseStartPrice())) {
-
-		GetTradingLog().Write("5: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
 			
 		AssertLt(0, order.GetOpenedQty());
 		AssertEq(LEG1, order.GetLeg());
 			
 		if (order.GetActiveQty() == 0) {
 			OnCancel("exec report", order);
+			CheckCurrentStopRequest();
 			return;
 		} else if (
 				order.GetCloseType() != Position::CLOSE_TYPE_TAKE_PROFIT) {
+			if (CheckCurrentStopRequest()) {
+				return;
+			}
 			m_triangle->Cancel(order.GetCloseType());
 			return;
 		}
 
 		order.SetCloseStartPrice(0);
-		
-	}
 
-	GetTradingLog().Write("6: %1%", [&](TradingRecord &r) {r % position.GetOpenOrderId();});
+	}
  
  	Assert(order.IsOpened());
 	Assert(IsZero(order.GetCloseStartPrice()));
@@ -284,6 +287,14 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 	switch (leg) {
 			
 		case LEG1:
+			if (CheckCurrentStopRequest()) {
+				m_triangle->GetReport().ReportAction(
+					"executed",
+					"exec report",
+					LEG1,
+					&order);
+				return;
+			}
 			if (CheckProfitLoss(order, true)) {
 				return;
 			}
@@ -308,6 +319,9 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				"exec report",
 				order.GetLeg(),
 				&order);
+			if (CheckCurrentStopRequest()) {
+				return;
+			}
 			CheckTriangleCompletion(TimeMeasurement::Milestones());
 			break;
 
@@ -322,16 +336,53 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
 				m_detectedEcns[Y2].fill(std::numeric_limits<size_t>::max());
 #			endif
+			if (CheckCurrentStopRequest()) {
+				return;
+			}
 			break;
-
 
 		default:
 			AssertEq(LEG1, leg);
+			if (CheckCurrentStopRequest()) {
+				return;
+			}
 			break;
-			
 
 	}
 
+	Assert(!CheckCurrentStopRequest());
+
+}
+
+void TriangulationWithDirection::OnStopRequest(const StopMode &stopMode) {
+	CheckStopRequest(stopMode);
+}
+
+bool TriangulationWithDirection::CheckCurrentStopRequest() {
+	return CheckStopRequest(GetStopMode());
+}
+
+bool TriangulationWithDirection::CheckStopRequest(const StopMode &stopMode) {
+	static_assert(numberOfStopModes == 3, "Stop mode list changed.");
+	switch (stopMode) {
+		default:
+			AssertEq(STOP_MODE_IMMEDIATELY, stopMode);
+		case STOP_MODE_IMMEDIATELY:
+			ReportStop();
+			return true;
+		case STOP_MODE_GRACEFULLY_ORDERS:
+			if (!m_triangle || !m_triangle->HasActiveOrders()) {
+				ReportStop();
+			}
+			return true;
+		case STOP_MODE_GRACEFULLY_POSITIONS:
+			if (!m_triangle) {
+				ReportStop();
+			}
+			return true;
+		case STOP_MODE_UNKNOWN:
+			return false;
+	}
 }
 
 void TriangulationWithDirection::UpdateDirection(const Service &service) {

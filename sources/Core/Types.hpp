@@ -268,3 +268,17 @@ namespace trdk {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+namespace trdk {
+
+	enum StopMode {
+		STOP_MODE_IMMEDIATELY,
+		STOP_MODE_GRACEFULLY_ORDERS,
+		STOP_MODE_GRACEFULLY_POSITIONS,
+		STOP_MODE_UNKNOWN,
+		numberOfStopModes = STOP_MODE_UNKNOWN
+	};
+
+}
+
+////////////////////////////////////////////////////////////////////////////////

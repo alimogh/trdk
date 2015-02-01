@@ -63,6 +63,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &);
 		virtual void OnPositionUpdate(trdk::Position &);
 
+	protected:
+
+		virtual void OnStopRequest(const trdk::StopMode &);
+
 	private:
 
 		void UpdateDirection(const Service &);
@@ -82,6 +86,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		ProfitLossTest CheckLeg(const Twd::Position &) const;
 
 		void OnCancel(const char *reason, const Twd::Position &reasonOrder);
+
+		bool CheckStopRequest(const trdk::StopMode &);
+		bool CheckCurrentStopRequest();
 
 	protected:
 
