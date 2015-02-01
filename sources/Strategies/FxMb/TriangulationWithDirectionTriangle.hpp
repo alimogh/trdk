@@ -81,9 +81,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				ReportsState &reportsState,
 				const Y &y,
 				const Qty &startQty,
-				const PairLegParams ab,
-				const PairLegParams bc,
-				const PairLegParams ac,
+				const PairLegParams &ab,
+				const PairLegParams &bc,
+				const PairLegParams &ac,
 				const BestBidAskPairs &bestBidAskRef) 
 			: m_strategy(strategy),
 			m_bestBidAsk(bestBidAskRef),
@@ -124,6 +124,12 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				}
 
 #			endif
+
+			//! @todo make setting for account currency
+			m_conversionPricesBid = GetPair(PAIR_AB).security->GetBidPrice();
+			m_conversionPricesAsk = GetPair(PAIR_AB).security->GetAskPrice();
+			AssertLt(0, m_conversionPricesBid);
+			AssertLt(0, m_conversionPricesAsk);
 
 			UpdateYDirection();
 
@@ -476,7 +482,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		const Id m_id;
 		const Y m_y;
 		const Qty m_qtyStart;
-		
+		double m_conversionPricesBid;
+		double m_conversionPricesAsk;
+
 		boost::array<PairInfo, numberOfPairs> m_pairs;
 		boost::array<PairInfo *, numberOfLegs> m_pairsLegs;
 		boost::array<boost::shared_ptr<Twd::Position>, numberOfLegs> m_legs;

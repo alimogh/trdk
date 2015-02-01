@@ -49,15 +49,18 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 			case PAIR_AB:
 			case PAIR_AC:
 				qty = m_qtyStart;
+				AssertLt(0, qty);
 				break;
 			case PAIR_BC:
-				qty = m_qtyStart * GetPair(PAIR_AB).security->GetAskPrice();
+				qty = m_qtyStart * m_conversionPricesAsk;
+				AssertLt(0, qty);
 				break;
 			default:
 				AssertEq(PAIR_AB, pair.id);
 				throw Lib::LogicError("Unknown pair for leg");
 		}
 
+		AssertLt(0, qty);
 		if (security.GetAskQty() < qty) {
 			throw HasNotMuchOpportunityException();
 		}
@@ -79,10 +82,10 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 			
 	} else {
 		
-		const Qty qty
-			//! @todo remove "to qty"
-			= Qty(m_qtyStart * GetPair(PAIR_AB).security->GetBidPrice());
-			
+		//! @todo remove "to qty"
+		const Qty qty = Qty(m_qtyStart * m_conversionPricesBid);
+
+		AssertLt(0, qty);
 		if (security.GetBidQty() < qty) {
 			throw HasNotMuchOpportunityException();
 		}
