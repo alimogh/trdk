@@ -28,8 +28,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				Context &context,
 				const std::string &tag,
 				const IniSectionRef &conf)
-			: FixStream(index, context, tag, conf) {
-			//...//
+			: FixStream(index, context, tag, conf),
+			m_levelsCount(
+				conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")) {
+			GetLog().Info("Book size: %1% * 2 price levels.", m_levelsCount);
 		}
 
 		virtual ~FxAllStream() {
@@ -59,8 +61,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		}
 
 		virtual void SetupBookRequest(fix::Message &request) const {
-			request.set(fix::FIX42::Tags::MarketDepth, 4);
+			request.set(fix::FIX42::Tags::MarketDepth, m_levelsCount);
 		}
+
+	private:
+
+		const size_t m_levelsCount;
 
 	};
 

@@ -337,6 +337,15 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return IsLegExecuted(m_pairs[pair].leg);
 		}
 
+		bool HasActiveOrders() const {
+			foreach (const auto &leg, m_legs) {
+				if (leg && !leg->HasActiveOrders()) {
+					return false;
+				}
+			}
+			return true;
+		}
+
 		PairInfo & GetPair(const Pair &pair) {
 			return m_pairs[pair];
 		}

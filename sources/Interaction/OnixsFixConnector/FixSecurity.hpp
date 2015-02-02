@@ -26,14 +26,16 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		BookSideSnapshot m_book;
+		std::pair<size_t, size_t> m_bookMaxBookSize;
 
 	public:
 
 		explicit FixSecurity(
-					Context &context,
-					const Lib::Symbol &symbol,
-					const trdk::MarketDataSource &source)
-				: Base(context, symbol, source) {
+				Context &context,
+				const Lib::Symbol &symbol,
+				const trdk::MarketDataSource &source)
+			: Base(context, symbol, source),
+			m_bookMaxBookSize(std::make_pair(0, 0)) {
 			//...//
 		}
 

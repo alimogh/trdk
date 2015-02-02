@@ -63,9 +63,7 @@ namespace trdk { namespace EngineServer {
 					bool enableStdOutLog,
 					int argc,
 					const char *argv[]);
-		void CancelAllAndStop();
-		void WaitForCancelAndStop();
-		void StopAll();
+		void StopAll(const trdk::StopMode &);
 
 	private:
 

@@ -116,27 +116,22 @@ void Server::Run(
 
 }
 
-void Server::CancelAllAndStop() {
-	{
-		Lock lock(m_mutex);
-		foreach (const auto &e, m_engines) {
-			e.engine->CancelAllAndBlock();
-		}
-	}
-	StopAll();
-}
+void Server::StopAll(const trdk::StopMode &stopMode) {
 
-void Server::WaitForCancelAndStop() {
-	{
-		Lock lock(m_mutex);
-		foreach (const auto &e, m_engines) {
-			e.engine->WaitForCancelAndBlock();
-		}
-	}
-	StopAll();
-}
-
-void Server::StopAll() {
 	const Lock lock(m_mutex);
+
+	{
+		boost::thread_group stopThreads;
+		foreach (const EngineInfo &engineInfo, m_engines) {
+			stopThreads.create_thread(
+				[&]() {
+					const_cast<Engine::Context &>(*engineInfo.engine)
+						.Stop(stopMode);
+				});
+		}
+		stopThreads.join_all();
+	}
+
 	Engines().swap(m_engines);
+
 }

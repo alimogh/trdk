@@ -27,21 +27,6 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 			
 	boost::shared_ptr<Twd::Position> result;
 
-	/*
-		Let's say you want to invest 100 000 euros at each leg
-
-		Buy eur.usd = 100 000 euros
-		Buy usd.jpy = 100 000 euros x eur.usd ask (if base currency is euros)
-		Sell eur.jpy = 100 000 euros x eur.jpy bid
-
-		Let's reverse the directions
-
-		Sell eur.usd = 100 000 euros x eur.usd bid (if base currency is euros)
-		Sell usd.jpy = 100 000 x usd.jpy bid
-		Buy eur.jpy = 100 000
-
-	*/
-
 	if (pair.isBuy) {
 
 		double qty;
@@ -81,9 +66,22 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				pair.leg));
 			
 	} else {
-		
-		//! @todo remove "to qty"
-		const Qty qty = Qty(m_qtyStart * m_conversionPricesBid);
+
+		double qty;
+		switch (pair.id) {
+			case PAIR_AB:
+			case PAIR_AC:
+				qty = m_qtyStart;
+				AssertLt(0, qty);
+				break;
+			case PAIR_BC:
+				qty = m_qtyStart * GetPair(PAIR_BC).GetCurrentPrice();
+				AssertLt(0, qty);
+				break;
+			default:
+				AssertEq(PAIR_AB, pair.id);
+				throw Lib::LogicError("Unknown pair for leg");
+		}
 
 		AssertLt(0, qty);
 		if (security.GetBidQty() < qty) {
@@ -98,7 +96,8 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 					security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetCashBaseCurrency(),
-				qty,
+				//! @todo remove "to qty"
+				Qty(qty),
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,

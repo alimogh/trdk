@@ -222,6 +222,7 @@ public:
 
 	typedef boost::mutex BlockMutex;
 	typedef BlockMutex::scoped_lock BlockLock;
+	typedef boost::condition_variable StopCondition;
 
 	class PositionList : public Strategy::PositionList {
 
@@ -290,18 +291,21 @@ public:
 	boost::atomic_bool m_isBlocked;
 	pt::ptime m_blockEndTime;
 	BlockMutex m_blockMutex;
-	
+	StopCondition m_stopCondition;
+	StopMode m_stopMode;
+
 	PositionList m_positions;
 	boost::signals2::signal<PositionUpdateSlotSignature> m_positionUpdateSignal;
 
 public:
 
 	explicit Implementation(Strategy &strategy)
-			: m_strategy(strategy),
-			m_isBlocked(false),
-			m_tradingLog(
-				m_strategy.GetTag(),
-				m_strategy.GetContext().GetTradingLog()) {
+		: m_strategy(strategy),
+		m_isBlocked(false),
+		m_tradingLog(
+			m_strategy.GetTag(),
+			m_strategy.GetContext().GetTradingLog()),
+		m_stopMode(STOP_MODE_UNKNOWN) {
 		//...//
 	}
 
@@ -316,10 +320,10 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Strategy::Strategy(
-			trdk::Context &context,
-			const std::string &name,
-			const std::string &tag)
-		: Consumer(context, "Strategy", name, tag) {
+		trdk::Context &context,
+		const std::string &name,
+		const std::string &tag)
+	: Consumer(context, "Strategy", name, tag) {
 	m_pimpl = new Implementation(*this);
 }
 
@@ -501,6 +505,7 @@ void Strategy::Block() throw() {
 	m_pimpl->m_isBlocked = true;
 	m_pimpl->m_blockEndTime = pt::not_a_date_time;
 	GetLog().Error("Blocked.");
+	m_pimpl->m_stopCondition.notify_all();
 }
 
 void Strategy::Block(const pt::time_duration &blockDuration) {
@@ -516,6 +521,72 @@ void Strategy::Block(const pt::time_duration &blockDuration) {
 	m_pimpl->m_isBlocked = true;
 	m_pimpl->m_blockEndTime = blockEndTime;
 	GetLog().Warn("Blocked until %1%.", m_pimpl->m_blockEndTime);
+}
+
+void Strategy::Stop(const StopMode &stopMode) {
+	const Lock lock(GetMutex());
+	m_pimpl->m_stopMode = stopMode;
+	OnStopRequest(stopMode);
+}
+
+void Strategy::OnStopRequest(const StopMode &) {
+	ReportStop();
+}
+
+void Strategy::ReportStop() {
+
+	const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
+
+	static_assert(numberOfStopModes == 3, "Stop mode list changed.");
+	switch (GetStopMode()) {
+		case STOP_MODE_GRACEFULLY_ORDERS:
+			foreach (const auto &pos, GetPositions()) {
+				if (pos.HasActiveOrders()) {
+					GetLog().Error(
+						"Found position %1% with active orders at stop"
+							" with mode \"wait for positions before\".",
+					pos.GetId());
+				}
+				Assert(!pos.HasActiveOrders());
+			}
+			break;
+		case STOP_MODE_GRACEFULLY_POSITIONS:
+			if (!GetPositions().IsEmpty()) {
+//! @todo https://trello.com/c/2ywavBQW
+// 				GetLog().Error(
+// 					"Found %1% active positions at stop"
+// 						" with mode \"wait for positions before\".",
+// 					GetPositions().GetSize());
+// 				Assert(GetPositions().IsEmpty());
+			}
+			break;
+		case STOP_MODE_UNKNOWN:
+			throw LogicError("Strategy stop not requested");
+			break;
+	}
+
+	m_pimpl->m_isBlocked = true;
+	m_pimpl->m_blockEndTime = pt::not_a_date_time;
+
+	GetLog().Info("Stopped.");
+	m_pimpl->m_stopCondition.notify_all();
+
+}
+
+const StopMode & Strategy::GetStopMode() const {
+	return m_pimpl->m_stopMode;
+}
+
+void Strategy::WaitForStop() {
+	Implementation::BlockLock lock(m_pimpl->m_blockMutex);
+	if (
+			m_pimpl->m_isBlocked
+			&& m_pimpl->m_blockEndTime == pt::not_a_date_time) {
+		return;
+	}
+	m_pimpl->m_stopCondition.wait(lock);
+	Assert(m_pimpl->m_isBlocked);
+	AssertEq(m_pimpl->m_blockEndTime, pt::not_a_date_time);
 }
 
 Strategy::PositionUpdateSlotConnection Strategy::SubscribeToPositionsUpdates(

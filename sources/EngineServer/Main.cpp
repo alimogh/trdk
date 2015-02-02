@@ -94,67 +94,53 @@ namespace {
 				<< std::endl;
 			result = false;
 		}
-
-		if (result) {
 		
-			std::cout
-				<< std::endl
-				<< "To stop please enter:" << std::endl
-				<< "\t's' - normal stop,"
-					<< " wait until all positions will be closed and stop;"
-					<< std::endl
-				<< "\t'u' - urgent stop,"
-					<< " all position will be forcibly closed before;"
-					<< std::endl
-				<< std::endl;
-			
-			for ( ; ; ) {
-				const auto &stopMode = getchar();
-				if (stopMode == 's' || stopMode == 'S') {
-					std::cout
-						<< "Stopping engine with 'S'-scenario..."
-						<< "Waiting until all positions will be closed"
-							<< " by conditions..."
-						<< " To interrupt closing process use Ctrl + C."
-						<< std::endl;
-					try {
-						server.WaitForCancelAndStop();
-					} catch (const Exception &ex) {
-						EventsLog::BroadcastCriticalError(
-							(boost::format("Failed to stop engine: \"%1%\".")
-									% ex)
-								.str());
-						result = false;
-					}
-					break;
-				} else if (stopMode == 'u' || stopMode == 'U') {
-					std::cout
-						<< "Stopping engine with 'U'-scenario..."
-						<< "Closing all position before stop..."
-						<< " To interrupt closing process use Ctrl + C."
-						<< std::endl;
-					try {
-						server.CancelAllAndStop();
+		if (result) {
+
+			StopMode stopMode = STOP_MODE_UNKNOWN;
+			std::cout << std::endl;
+			while (stopMode == STOP_MODE_UNKNOWN) {
+				std::cout
+					<< "To stop please enter:" << std::endl
+						<< "\t1 - normal stop,"
+							<< " wait until all positions will be completed;"
+							<< std::endl
+						<< "\t2 - gracefully stop,"
+							<< " wait for current orders only;"
+							<< std::endl
+						<< "\t9 - urgent stop, immediately." << std::endl
+					<< std::endl;
+				const char command = char(getchar());
+				switch (command) {
+					case '1':
+						stopMode = STOP_MODE_GRACEFULLY_POSITIONS;
 						break;
-					} catch (const Exception &ex) {
-						EventsLog::BroadcastCriticalError(
-							(boost::format("Failed to stop engine: \"%1%\".")
-									% ex)
-								.str());
-						result = false;
-					}
-					break;
-				} else {
-					std::cout
-						<< "Unknown command."
-							<< " Please enter 's' (normal stop)"
-							<< " or 'u' (urgent)."
-							<< std::endl;
+					case '2':
+						stopMode = STOP_MODE_GRACEFULLY_ORDERS;
+						break;
+					case '9':
+					case 'u':
+					case 'U':
+						stopMode = STOP_MODE_IMMEDIATELY;
+						break;
+					default:
+						std::cout << "Unknown command." << std::endl;
+						break;
 				}
 			}
 
-		} else {
+			try {
+				server.StopAll(stopMode);
+			} catch (const Exception &ex) {
+				std::cerr
+					<< "Failed to stop engine: \"" << ex << "\"."
+					<< std::endl;
+				result = false;
+			}
+
+			std::cout << "Stopped. Press any key to exit." << std::endl;
 			getchar();
+
 		}
 
 		return result;
@@ -223,9 +209,7 @@ int main(int argc, const char *argv[]) {
 	} catch (...) {
 		AssertFailNoException();
 	}
-#	ifdef DEV_VER
-		getchar();
-#	endif
+
 	return result;
 
 }

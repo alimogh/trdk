@@ -15,10 +15,10 @@
 #include "Ini.hpp"
 #include "Core/Settings.hpp"
 #include "Core/Terminal.hpp"
+#include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradeSystem.hpp"
 #include "Core/TradingLog.hpp"
-#include "Core/Strategy.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -100,11 +100,6 @@ public:
 		m_context.GetTradingLog().WaitForFlush();
 	}
 
-public:
-
-	template<typename Call>
-	void CallEachStrategyAndBlock(const Call &);
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -181,38 +176,6 @@ public:
 
 };
 
-template<typename Call>
-void Engine::Context::Implementation::CallEachStrategyAndBlock(
-			const Call &call) {
-	Strategy::CancelAndBlockCondition condition;
-	boost::mutex::scoped_lock lock(condition.mutex);
-	size_t totalCount = 0;
-	foreach (auto &tagetStrategies, m_state->strategies) {
-		foreach (auto &strategy, tagetStrategies.second) {
-			{
-				const Strategy::Lock strategyLock(strategy->GetMutex());
-				call(*strategy, condition);
-			}
-			++totalCount;
-		}
-	}
-	for ( ; ; ) {
-		size_t blockedCount = totalCount;
-		foreach (auto &tagetStrategies, m_state->strategies) {
-			foreach (auto &strategy, tagetStrategies.second) {
-				if (strategy->IsBlocked(true)) {
-					AssertLt(0, blockedCount);
-					--blockedCount;
-				}
-			}
-		}
-		if (!blockedCount) {
-			break;
-		}
-		condition.condition.wait(lock);
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 Engine::Context::Context(
@@ -226,9 +189,7 @@ Engine::Context::Context(
 }
 
 Engine::Context::~Context() {
-	if (m_pimpl->m_state) {
-		Stop();
-	}
+	Stop(STOP_MODE_IMMEDIATELY);
 	delete m_pimpl;
 }
 
@@ -340,9 +301,43 @@ void Engine::Context::Start() {
 
 }
 
-void Engine::Context::Stop() {
-	GetLog().Info("Stopping...");
+void Engine::Context::Stop(const StopMode &stopMode) {
+
+	if (!m_pimpl->m_state) {
+		return;
+	}
+
+	const char *stopModeStr = "unknown";
+	static_assert(numberOfStopModes == 3, "Stop mode list changed.");
+	switch (stopMode) {
+		case STOP_MODE_IMMEDIATELY:
+			stopModeStr = "immediately";
+			break;
+		case STOP_MODE_GRACEFULLY_ORDERS:
+			stopModeStr = "wait for orders before";
+			break;
+		case STOP_MODE_GRACEFULLY_POSITIONS:
+			stopModeStr = "wait for positions before";
+			break;
+	}
+
+	GetLog().Info("Stopping with mode \"%1%\"...", stopModeStr);
+
+	{
+		std::vector<Strategy *> stoppedStrategies;
+		foreach (auto &tagetStrategies, m_pimpl->m_state->strategies) {
+			foreach (auto &strategy, tagetStrategies.second) {
+				strategy->Stop(stopMode);
+				stoppedStrategies.push_back(&*strategy);
+			}
+		}
+		foreach (Strategy *strategy, stoppedStrategies) {
+			strategy->WaitForStop();
+		}
+	}
+
 	m_pimpl->m_state.reset();
+
 }
 
 void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
@@ -459,22 +454,6 @@ Security * Engine::Context::FindSecurity(const Symbol &symbol) {
 
 const Security * Engine::Context::FindSecurity(const Symbol &symbol) const {
 	return const_cast<Context *>(this)->FindSecurity(symbol);
-}
-
-void Engine::Context::CancelAllAndBlock() {
-	m_pimpl->CallEachStrategyAndBlock(
-		[](Strategy &strategy, Strategy::CancelAndBlockCondition &condition) {
-			strategy.GetLog().Info("Cancel all, then block...");
-			strategy.CancelAllAndBlock(condition);
-		});
-}
-
-void Engine::Context::WaitForCancelAndBlock() {
-	m_pimpl->CallEachStrategyAndBlock(
-		[](Strategy &strategy, Strategy::CancelAndBlockCondition &condition) {
-			strategy.GetLog().Info("Waiting for cancel, then block...");
-			strategy.WaitForCancelAndBlock(condition);
-		});
 }
 
 //////////////////////////////////////////////////////////////////////////
