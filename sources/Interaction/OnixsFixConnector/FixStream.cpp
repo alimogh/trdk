@@ -393,6 +393,32 @@ void FixStream::onInboundApplicationMsg(
 
 	AdjustBook(*security, bids, asks, message);
 
+	{
+		std::pair<size_t, size_t> newBookSize(security->m_bookMaxBookSize);
+		if (newBookSize.first < bids.size()) {
+			newBookSize.first = bids.size();
+		} else if (newBookSize.first / 4 >= bids.size()) {
+			newBookSize.first = bids.size();
+		}
+		if (newBookSize.second < asks.size()) {
+			newBookSize.second = asks.size();
+		} else if (newBookSize.second / 4 >= asks.size()) {
+			newBookSize.second = asks.size();
+		}
+		if (newBookSize != security->m_bookMaxBookSize) {
+			security->m_bookMaxBookSize = newBookSize;
+			GetTradingLog().Write(
+				"book\tsize\t%1%\t%2%\t%3%\t%4%",
+				[&](TradingRecord &record) {
+					record
+						% *security
+						% security->m_bookMaxBookSize.first 
+						% security->m_bookMaxBookSize.second
+						% security->m_book.size();
+				});
+		}
+	}
+
 	FixSecurity::BookUpdateOperation book = security->StartBookUpdate(now);
 	book.GetBids().Swap(bids);
 	book.GetAsks().Swap(asks);
@@ -433,7 +459,7 @@ void FixStream::AdjustBook(
 		}
 
 		GetTradingLog().Write(
-			"book adjust\tswap\t%1%\t%2% <-> %3%\t%4%",
+			"book\tadjust\tswap\t%1%\t%2% <-> %3%\t%4%",
 			[&](TradingRecord &record) {
 				record
 					% security
@@ -488,7 +514,7 @@ void FixStream::AdjustBook(
 					(isAsk && topLevel.GetPrice() > nextLevel.GetPrice())
 						|| (!isAsk && topLevel.GetPrice() < nextLevel.GetPrice())) {
 				GetTradingLog().Write(
-					"book adjust\terase\t%1%\t%2%\t%3%\t%4%",
+					"book\tadjust\terase\t%1%\t%2%\t%3%\t%4%",
 					[&](TradingRecord &record) {
 						record
 							% security
@@ -510,7 +536,7 @@ void FixStream::AdjustBook(
 	if (bids.empty()) {
 		GetLog().Warn(
 			"Bid list is empty for %1% after message with ID %2%."
-				"Current state: %3%.",
+				" Current state: %3%.",
 			security,
 			message.seqNum(),
 			dumpBook());
@@ -519,7 +545,7 @@ void FixStream::AdjustBook(
 	if (asks.empty()) {
 		GetLog().Warn(
 			"Ask list is empty for %1% after message with ID %2%."
-				"Current state: %3%.",
+				" Current state: %3%.",
 			security,
 			message.seqNum(),
 			dumpBook());
