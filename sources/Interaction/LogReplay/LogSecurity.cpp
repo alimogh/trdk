@@ -127,7 +127,9 @@ bool LogSecurity::Accept() {
 	return Read();
 }
 
-bool LogSecurity::ReadFieldFromFile(boost::array<char, 255> &buffer) {
+bool LogSecurity::ReadFieldFromFile(
+		boost::array<char, 255> &buffer,
+		bool &isEndOfLine) {
 	
 	auto bufferIt = buffer.begin();
 	const auto bufferEnd = buffer.end() - 1;
@@ -137,16 +139,21 @@ bool LogSecurity::ReadFieldFromFile(boost::array<char, 255> &buffer) {
 			&& m_file.get(*bufferIt)
 			&& *bufferIt != '\t'
 			&& *bufferIt != '\n') {
-		if (*bufferIt != '#' && *bufferIt != '\r') {
+		if (*bufferIt != '\r') {
 			++bufferIt;
 		}
 	}
 
-	bool isEndOfLine = *bufferIt == '\n';
 	Assert(bufferIt <= bufferEnd);
-	*bufferIt = 0;
 
-	return !isEndOfLine;
+	isEndOfLine = *bufferIt == '\n';
+
+	if (bufferIt == buffer.begin()) {
+		return false;
+	}
+
+	*bufferIt = 0;
+	return true;
 
 }
 
@@ -157,8 +164,9 @@ bool LogSecurity::Read() {
 	}
 
 	boost::array<char, 255> buffer;
+	bool isEndOfLine = false;
 
-	if (!ReadFieldFromFile(buffer) || !buffer[0]) {
+	if (!ReadFieldFromFile(buffer, isEndOfLine) || isEndOfLine || !buffer[0]) {
 		m_isEof = true;
 		return false;
 	}
@@ -172,40 +180,46 @@ bool LogSecurity::Read() {
 			"Failed to read log file to replay \"%1%\":"
 				" wrong format at record %2% (time excepted: \"%3%\").",
 			*this,
-			m_readCount + 1,
+			m_readCount + 2,
 			ex.what());
 		m_isEof = true;
 		return false;
 	}
 
-	for (auto *side = &snapshot.bids; ; ) {
+	for (auto *side = &snapshot.bids; !isEndOfLine; ) {
 
 		double price = .0;
 		Qty qty = 0;
 
-		if (!ReadFieldFromFile(buffer)) {
-			break;
-		}
-		if (!buffer[0]) {
+		if (!ReadFieldFromFile(buffer, isEndOfLine) || !buffer[0]) {
+		
 			GetSource().GetLog().Error(
 				"Failed to read log file to replay \"%1%\":"
 					" wrong format at record %2%.",
 				*this,
-				m_readCount + 1);
+				m_readCount + 2);
 			m_isEof = true;
 			return false;
+		
+		} else if (isEndOfLine) {
+
+			break;
+		
 		} else if (!buffer[1] && buffer[0] == '|') {
+		
 			if (side != &snapshot.bids) {
 				GetSource().GetLog().Error(
 					"Failed to read log file to replay \"%1%\":"
 						" wrong format at record %2%.",
 					*this,
-					m_readCount + 1);
+					m_readCount + 2);
 				m_isEof = true;
 				return false;
 			}
 			side = &snapshot.asks;
+		
 			continue;
+		
 		}
 
 		try {
@@ -215,17 +229,26 @@ bool LogSecurity::Read() {
 				"Failed to read log file to replay \"%1%\":"
 					" wrong format at record %2% (price expected).",
 				*this,
-				m_readCount + 1);
+				m_readCount + 2);
+			m_isEof = true;
+			return false;
+		}
+		if (IsZero(price)) {
+			GetSource().GetLog().Error(
+				"Failed to read log file to replay \"%1%\":"
+					" zero-price at record %2%.",
+				*this,
+				m_readCount + 2);
 			m_isEof = true;
 			return false;
 		}
 
-		if (!ReadFieldFromFile(buffer)) {
+		if (!ReadFieldFromFile(buffer, isEndOfLine)) {
 			GetSource().GetLog().Error(
 				"Failed to read log file to replay \"%1%\":"
 					" wrong format at record %2% (qty expected).",
 				*this,
-				m_readCount + 1);
+				m_readCount + 2);
 			m_isEof = true;
 			return false;
 		}
@@ -236,9 +259,18 @@ bool LogSecurity::Read() {
 				"Failed to read log file to replay \"%1%\":"
 					" wrong format at record %2%.",
 				*this,
-				m_readCount + 1);
+				m_readCount + 2);
 			m_isEof = true;
 			return false;
+		}
+		if (IsZero(qty)) {
+			GetSource().GetLog().Error(
+				"Failed to read price-level update for \"%1%\":"
+					" zero-qty at record %2% (price: %3%).",
+				*this,
+				m_readCount + 2,
+				price);
+			continue;
 		}
 
 		side->emplace_back(price, qty);

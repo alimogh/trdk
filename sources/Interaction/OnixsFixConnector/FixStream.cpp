@@ -212,8 +212,16 @@ void FixStream::onInboundApplicationMsg(
 
 			if (action == fix::FIX42::Values::MDUpdateAction::Change) {
 
-				const auto price = entry.getDouble(fix::FIX42::Tags::MDEntryPx);
 				const auto &qty = ParseMdEntrySize(entry);
+				if (IsZero(qty)) {
+					GetLog().Error(
+						"Price level with zero-qty received for %1%: \"%2%\".",
+						*security,
+						message);
+					continue;
+				}
+
+				const auto price = entry.getDouble(fix::FIX42::Tags::MDEntryPx);
 				bool isHandled = false;
 
 				if (entry.contain(fix::FIX42::Tags::MDEntryRefID)) {
@@ -264,12 +272,21 @@ void FixStream::onInboundApplicationMsg(
 
 			} else if (action == fix::FIX42::Values::MDUpdateAction::New) {
 
+				const auto &qty = ParseMdEntrySize(entry);
+				if (IsZero(qty)) {
+					GetLog().Error(
+						"Price level with zero-qty received for %1%: \"%2%\".",
+						*security,
+						message);
+					continue;
+				}
+
 				security->m_book[entryId] = std::make_pair(
 					entry.get(fix::FIX42::Tags::MDEntryType)
 						== fix::FIX42::Values::MDEntryType::Bid,
 					Security::Book::Level(
 						entry.getDouble(fix::FIX42::Tags::MDEntryPx),
-						ParseMdEntrySize(entry)));
+						qty));
 
 			} else  if (action == fix::FIX42::Values::MDUpdateAction::Delete) {
 

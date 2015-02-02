@@ -28,11 +28,13 @@ using namespace trdk::Strategies::FxMb::Twd;
 namespace {
 
 	bool IsProfit(
-			bool isBuy,
+			const Triangle::PairInfo &pair,
 			const StatService::Data &data) {
-		return	isBuy
-			?	data.current.theo > data.current.emaSlow
-			:	data.current.theo < data.current.emaSlow;
+		return
+			(pair.isBuy
+				?	data.current.theo > data.current.emaSlow
+				:	data.current.theo < data.current.emaSlow)
+			&& pair.GetCurrentPrice() > 0;
 	}
 
 }
@@ -48,8 +50,7 @@ TriangulationWithDirection::TriangulationWithDirection(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
 	m_allowLeg1Closing(
 		conf.ReadTypedKey<bool>("allow_leg1_closing")),
-	m_qtyA(conf.ReadTypedKey<Qty>("qty.a")),
-	m_qtyB(conf.ReadTypedKey<Qty>("qty.b")),
+	m_qty(conf.ReadTypedKey<Qty>("qty")),
 	m_reports(
 		GetContext(),
 		conf.ReadTypedKey<double>("commission"),
@@ -633,9 +634,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 			*this,
 			m_reports,
 			detection.y,
-			detection.fistLeg == PAIR_AB
-				?	m_qtyA
-				:	m_qtyB,
+			m_qty,
 			{
 				PAIR_AB,
 				detection.fistLeg == PAIR_AB
@@ -692,7 +691,7 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 	Triangle::PairInfo &leg3Info = m_triangle->GetPair(LEG3);
 	const auto &ecn = leg3Info.security->GetSource().GetIndex();
 	const auto &data = leg3Info.bestBidAsk->service->GetData(ecn);
-	if (!IsProfit(leg3Info.isBuy, data)) {
+	if (!IsProfit(leg3Info, data)) {
 		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
 		return false;
 	}
@@ -789,7 +788,7 @@ TriangulationWithDirection::ProfitLossTest TriangulationWithDirection::CheckLeg(
 		const auto &data
 			= m_bestBidAsk[leg.GetPair()]
 				.service->GetData(security.GetSource().GetIndex());
-		if (IsProfit(isLong, data)) {
+		if (IsProfit(m_triangle->GetPair(leg.GetLeg()), data)) {
 			GetTradingLog().Write(
 				"\tprofit\t%1%\t%2%\topp.: %3%\t%4%\tVWAP: %5%\tEMA slow: %6%",
 				[&](TradingRecord &record) {

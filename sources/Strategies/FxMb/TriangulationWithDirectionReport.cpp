@@ -177,7 +177,6 @@ public:
 						%	pair % '\0' % " leg no."
 						%	pair % '\0' % " direction"
 						%	pair % '\0'	% " order qty"
-						%	pair % '\0'	% " order currency"
 						%	pair % '\0' % " order state" 
 						%	pair % '\0' % " price start"
 						%	pair % '\0' % " price exec"
@@ -383,11 +382,9 @@ void TriangleReport::ReportAction(
 			% (info.isBuy ? "buy" : "sell");
 
 		if (!order) {
-			record % ' ' % ' ';
+			record % ' ';
 		} else {
-			record
-				% order->GetPlanedQty()
-				% ConvertToIsoPch(order->GetCurrency());
+			record % order->GetPlanedQty();
 		}
 		
 		if (!order) {
