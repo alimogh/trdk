@@ -25,8 +25,8 @@ FixStream::FixStream(
 		const std::string &tag,
 		const Lib::IniSectionRef &conf)
 	: MarketDataSource(index, context, tag),
-	m_session(GetContext(), GetLog(), conf) {
-	//...//
+	m_session(GetContext(), GetLog(), conf),
+	m_isSubscribed(false) {
 }
 
 FixStream::~FixStream() {
@@ -124,6 +124,8 @@ void FixStream::SubscribeToSecurities() {
 
 	}
 
+	m_isSubscribed = true;
+
 }
 
 Security & FixStream::CreateSecurity(const Symbol &symbol) {
@@ -152,8 +154,48 @@ void FixStream::onStateChange(
 		OnReconnecting();
 	}
 	
+	if (
+			newState == fix::SessionState::Disconnected
+			|| newState == fix::SessionState::Reconnecting) {
+
+		const auto &now = GetContext().GetCurrentTime();
+
+		foreach (const auto &security, m_securities) {
+			if (security->m_book.empty()) {
+				continue;
+			}
+			GetTradingLog().Write(
+				"boost\terase\t%1%",
+				[&](TradingRecord &record) {
+					record % *security;
+				});
+			security->m_book.clear();
+
+			FixSecurity::BookUpdateOperation book
+				= security->StartBookUpdate(now);
+			{
+				std::vector<trdk::Security::Book::Level> empty;
+				book.GetBids().Swap(empty);
+			}
+			{
+				std::vector<trdk::Security::Book::Level> empty;
+				book.GetAsks().Swap(empty);
+			}
+			book.Commit(TimeMeasurement::Milestones());
+
+		}
+
+	}
+
 	if (newState == fix::SessionState::Disconnected) {
+
 		m_session.Reconnect();
+
+	} else if (
+			prevState != fix::SessionState::Active
+			&& newState == fix::SessionState::Active
+			&& m_isSubscribed) {
+		SubscribeToSecurities();
 	}
 
 }

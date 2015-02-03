@@ -97,6 +97,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		FixSession m_session;
 		std::vector<boost::shared_ptr<FixSecurity>> m_securities;
 
+		bool m_isSubscribed;
+
 	};
 
 } } }
