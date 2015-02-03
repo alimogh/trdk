@@ -25,8 +25,8 @@ FixStream::FixStream(
 		const std::string &tag,
 		const Lib::IniSectionRef &conf)
 	: MarketDataSource(index, context, tag),
-	m_session(GetContext(), GetLog(), conf) {
-	//...//
+	m_session(GetContext(), GetLog(), conf),
+	m_isSubscribed(false) {
 }
 
 FixStream::~FixStream() {
@@ -124,6 +124,8 @@ void FixStream::SubscribeToSecurities() {
 
 	}
 
+	m_isSubscribed = true;
+
 }
 
 Security & FixStream::CreateSecurity(const Symbol &symbol) {
@@ -152,8 +154,48 @@ void FixStream::onStateChange(
 		OnReconnecting();
 	}
 	
+	if (
+			newState == fix::SessionState::Disconnected
+			|| newState == fix::SessionState::Reconnecting) {
+
+		const auto &now = GetContext().GetCurrentTime();
+
+		foreach (const auto &security, m_securities) {
+			if (security->m_book.empty()) {
+				continue;
+			}
+			GetTradingLog().Write(
+				"boost\terase\t%1%",
+				[&](TradingRecord &record) {
+					record % *security;
+				});
+			security->m_book.clear();
+
+			FixSecurity::BookUpdateOperation book
+				= security->StartBookUpdate(now);
+			{
+				std::vector<trdk::Security::Book::Level> empty;
+				book.GetBids().Swap(empty);
+			}
+			{
+				std::vector<trdk::Security::Book::Level> empty;
+				book.GetAsks().Swap(empty);
+			}
+			book.Commit(TimeMeasurement::Milestones());
+
+		}
+
+	}
+
 	if (newState == fix::SessionState::Disconnected) {
+
 		m_session.Reconnect();
+
+	} else if (
+			prevState != fix::SessionState::Active
+			&& newState == fix::SessionState::Active
+			&& m_isSubscribed) {
+		SubscribeToSecurities();
 	}
 
 }
@@ -393,31 +435,24 @@ void FixStream::onInboundApplicationMsg(
 
 	AdjustBook(*security, bids, asks, message);
 
-	{
-		std::pair<size_t, size_t> newBookSize(security->m_bookMaxBookSize);
-		if (newBookSize.first < bids.size()) {
-			newBookSize.first = bids.size();
-		} else if (newBookSize.first / 4 >= bids.size()) {
-			newBookSize.first = bids.size();
-		}
-		if (newBookSize.second < asks.size()) {
-			newBookSize.second = asks.size();
-		} else if (newBookSize.second / 4 >= asks.size()) {
-			newBookSize.second = asks.size();
-		}
-		if (newBookSize != security->m_bookMaxBookSize) {
-			security->m_bookMaxBookSize = newBookSize;
-			GetTradingLog().Write(
-				"book\tsize\t%1%\t%2%\t%3%\t%4%",
-				[&](TradingRecord &record) {
-					record
-						% *security
-						% security->m_bookMaxBookSize.first 
-						% security->m_bookMaxBookSize.second
-						% security->m_book.size();
-				});
-		}
+	if (
+			security->m_bookMaxBookSize.first < bids.size()
+			|| security->m_bookMaxBookSize.first / 4 >= bids.size()
+			|| security->m_bookMaxBookSize.second < asks.size()
+			|| security->m_bookMaxBookSize.second / 4 >= asks.size()) {
+		security->m_bookMaxBookSize = std::make_pair(bids.size(), asks.size());
+		GetTradingLog().Write(
+			"book\tsize\t%1%\t%2%\t%3%\t%4%",
+			[&](TradingRecord &record) {
+				record
+					% *security
+					% security->m_bookMaxBookSize.first 
+					% security->m_bookMaxBookSize.second
+					% security->m_book.size();
+			});
 	}
+
+	AssertGe(security->m_book.size(), bids.size() + asks.size());
 
 	FixSecurity::BookUpdateOperation book = security->StartBookUpdate(now);
 	book.GetBids().Swap(bids);
@@ -433,123 +468,49 @@ void FixStream::AdjustBook(
 		const fix::Message &message)
 		const {
 
-	const auto &dumpBook = [&]() -> std::string {
-		std::ostringstream result;
-		bool isFirst = true;
-		foreach (const auto &line, security.m_book) {
-			if (!isFirst) {
-				result << ", ";
-			} else {
-				isFirst = true;
-			}
-			result
-				<< "[" << line.first << ", "
-				<< (line.second.first ? "bid" : "ask")
-				<< ", " << line.second.second.GetPrice()
-				<< ", " << line.second.second.GetQty()
-				<< ']';
-		}
-		return result.str();
-	};
+	if (bids.empty() || asks.empty()) {
+		return;
+	}
 
-	if (!bids.empty() && !asks.empty()) {
+	if (bids.front().GetPrice() <= asks.front().GetPrice()) {
+		return;
+	}
 
-		if (bids.front().GetPrice() <= asks.front().GetPrice()) {
+	GetTradingLog().Write(
+		"book\tadjust\t%1%\t%2% <-> %3%\t%4%",
+		[&](TradingRecord &record) {
+			record
+				% security
+				% bids.front().GetPrice()
+				% asks.front().GetPrice()
+				% message.seqNum();
+		});
+
+	bids.front().Swap(asks.front());
+
+	const auto &checkBook = [&](
+			std::vector<Security::Book::Level> &side,
+			bool isAsk) {
+		
+		if (side.size() == 1) {
 			return;
 		}
-
-		GetTradingLog().Write(
-			"book\tadjust\tswap\t%1%\t%2% <-> %3%\t%4%",
-			[&](TradingRecord &record) {
-				record
-					% security
-					% bids.front().GetPrice()
-					% asks.front().GetPrice()
-					% message.seqNum();
-			});
-		bids.front().Swap(asks.front());
-
-		const auto &validateBook = [&](
-				const std::vector<Security::Book::Level> &side,
-				bool isAsk) {
-			if (side.size() == 1) {
-				return;
-			}
-			const auto &topLevel = side.front();
-			const auto &nextLevel = *(side.begin() + 1);
-			if (	(isAsk
-						&& topLevel.GetPrice() < nextLevel.GetPrice())
-					|| (!isAsk
-						&& topLevel.GetPrice() > nextLevel.GetPrice())) {
-				return;
-			}
 		
-			GetLog().Warn(
-				"Intersected book detected!"
-					" %1% %2% %3% %4%."
-					" Message: \"%5%\". Current state: \"%6%\".",
-				isAsk ? "Ask" : "Bid",
-				topLevel.GetPrice(),
-				isAsk ? ">=" : "<=",
-				nextLevel.GetPrice(),
-				message,
-				dumpBook());
-		};
-
-		const auto &checkBook = [&](
-				std::vector<Security::Book::Level> &side,
-				bool isAsk) {
-		
-			if (side.size() == 1) {
-				return;
-			}
-		
-			const auto &topLevel = side.front();
-			auto &nextLevel = *(side.begin() + 1);
-			if (IsEqual(topLevel.GetPrice(), nextLevel.GetPrice())) {
-				nextLevel += topLevel;
-				side.erase(side.begin());
-				validateBook(side, isAsk);
-			} else if (
-					(isAsk && topLevel.GetPrice() > nextLevel.GetPrice())
-						|| (!isAsk && topLevel.GetPrice() < nextLevel.GetPrice())) {
-				GetTradingLog().Write(
-					"book\tadjust\terase\t%1%\t%2%\t%3%\t%4%",
-					[&](TradingRecord &record) {
-						record
-							% security
-							% (isAsk ? "ask" : "bid")
-							% side.front().GetPrice()
-							% message.seqNum();
-					});
-				side.erase(side.begin());
-				validateBook(side, isAsk);
-			}
+		auto &topLevel = side.front();
+		auto &nextLevel = *(side.begin() + 1);
+		if (IsEqual(topLevel.GetPrice(), nextLevel.GetPrice())) {
+			nextLevel += topLevel;
+			side.erase(side.begin());
+		} else if (
+				(isAsk && topLevel.GetPrice() > nextLevel.GetPrice())
+					|| (!isAsk && topLevel.GetPrice() < nextLevel.GetPrice())) {
+ 			topLevel.Swap(nextLevel);
+		}
 	
-		};
+	};
 
-		checkBook(asks, true);
-		checkBook(bids, false);
-
-	}
-
-	if (bids.empty()) {
-		GetLog().Warn(
-			"Bid list is empty for %1% after message with ID %2%."
-				" Current state: %3%.",
-			security,
-			message.seqNum(),
-			dumpBook());
-	}
-
-	if (asks.empty()) {
-		GetLog().Warn(
-			"Ask list is empty for %1% after message with ID %2%."
-				" Current state: %3%.",
-			security,
-			message.seqNum(),
-			dumpBook());
-	}
+	checkBook(asks, true);
+	checkBook(bids, false);
 
 }
 

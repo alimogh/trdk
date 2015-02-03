@@ -169,9 +169,11 @@ void TriangulationWithDirection::StartScheduledLeg() {
 
 	} catch (const HasNotMuchOpportunityException &ex) {
 		GetLog().Warn(
-			"Failed to start scheduled leg %1%: \"%2%\".",
+			"Failed to start scheduled leg %1%: \"%2%\". Required: %3% %4%.",
 			m_scheduledLeg,
-			ex);
+			ex,
+			ex.GetRequiredQty(),
+			ex.GetSecurity());
 		return;
 	}
 
@@ -226,8 +228,12 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 						} catch (const HasNotMuchOpportunityException &ex) {
 							m_scheduledLeg = LEG2;
 							GetLog().Warn(
-								"Failed to start leg 2: \"%1%\". Scheduled.",
-								ex);
+								"Failed to start leg 2: \"%1%\"."
+									" Required: %2% %3%."
+									" Scheduled.",
+								ex,
+								ex.GetRequiredQty(),
+								ex.GetSecurity());
 							return;
 						}
 					}
@@ -243,8 +249,12 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				} catch (const HasNotMuchOpportunityException &ex) {
 					m_scheduledLeg = LEG3;
 					GetLog().Warn(
-						"Failed to start leg 3: \"%1%\". Scheduled.",
-						ex);
+						"Failed to start leg 3: \"%1%\"."
+							" Required: %2% %3%."
+							" Scheduled.",
+						ex,
+						ex.GetRequiredQty(),
+						ex.GetSecurity());
 					return;
 				}
 				break;
@@ -302,7 +312,13 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				m_triangle->StartLeg2();
 			} catch (const HasNotMuchOpportunityException &ex) {
 				m_scheduledLeg = LEG2;
-				GetLog().Warn("Failed to start leg 2: \"%1%\". Scheduled.", ex);
+				GetLog().Warn(
+					"Failed to start leg 2: \"%1%\"."
+						" Required: %2% %3%."
+						" Scheduled.",
+					ex,
+					ex.GetRequiredQty(),
+					ex.GetSecurity());
 				return;
 			}
 			m_triangle->GetReport().ReportAction(
@@ -717,7 +733,11 @@ void TriangulationWithDirection::CheckNewTriangle(
 	try {
 		triangle->StartLeg1(timeMeasurement, detection.speed);
 	} catch (const HasNotMuchOpportunityException &ex) {
-		GetLog().Warn("Failed to start triangle: \"%1%\"", ex);
+		GetLog().Warn(
+			"Failed to start triangle: \"%1%\". Required: %2% %3%.",
+			ex,
+			ex.GetRequiredQty(),
+			ex.GetSecurity());
 	}
 
 	Assert(!m_triangle);
@@ -753,7 +773,13 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 		m_triangle->StartLeg3(timeMeasurement);
 	} catch (const HasNotMuchOpportunityException &ex) {
 		m_scheduledLeg = LEG3;
-		GetLog().Warn("Failed to start leg 3: \"%1%\". Scheduled.", ex);
+		GetLog().Warn(
+			"Failed to start leg 3: \"%1%\"."
+				" Required: %2% %3%."
+				" Scheduled.",
+			ex,
+			ex.GetRequiredQty(),
+			ex.GetSecurity());
 		return false;
 	}
 

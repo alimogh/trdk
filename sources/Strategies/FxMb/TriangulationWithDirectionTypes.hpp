@@ -74,9 +74,24 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	class HasNotMuchOpportunityException : public Lib::Exception {
 	public:
-		explicit HasNotMuchOpportunityException() throw()
-			: Exception("Has no required opportunity") {
+		explicit HasNotMuchOpportunityException(
+				const trdk::Security &security,
+				const trdk::Qty &requiredQty)
+			throw()
+			: Exception("Has no required opportunity"),
+			m_security(&security),
+			m_requiredQty(requiredQty) {
 		}
+	public:
+		const trdk::Security & GetSecurity() const {
+			return *m_security;
+		}
+		const trdk::Qty & GetRequiredQty() const {
+			return m_requiredQty;
+		}
+	private:
+		const trdk::Security *m_security;
+		trdk::Qty m_requiredQty;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////

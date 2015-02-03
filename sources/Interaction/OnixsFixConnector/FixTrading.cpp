@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "FixTrading.hpp"
 #include "Core/Security.hpp"
+#include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -206,7 +207,7 @@ FixTrading::Order FixTrading::TakeOrderId(
 			}
 		}
 	}
-	return std::move(order);
+	return order;
 }
 
 FixTrading::Order * FixTrading::FindOrder(
@@ -806,7 +807,50 @@ void FixTrading::onStateChange(
 	}
 	
 	if (newState == fix::SessionState::Disconnected) {
+		
 		m_session.Reconnect();
+	
+	} else if (
+			prevState != fix::SessionState::Active
+			&& newState == fix::SessionState::Active) {
+
+		for ( ; ; ) {
+		
+			Order orderCopy;
+			bool isFound = false;
+			{
+				const OrdersReadLock lock(m_ordersMutex);
+				foreach (auto &order, m_orders) {
+					if (order.isRemoved) {
+						continue;
+					}
+					order.isRemoved = true;
+					orderCopy = order;
+					isFound = true;
+					break;
+				}
+			}
+			if (!isFound) {
+				break;
+			}
+
+			GetTradingLog().Write(
+				"canceling order %1% at reconnect",
+				[&](TradingRecord &record) {
+					record % orderCopy.id;
+				});
+
+			orderCopy.callback(
+				orderCopy.id,
+				ORDER_STATUS_CANCELLED,
+				orderCopy.filledQty,
+				orderCopy.qty - orderCopy.filledQty,
+				0);
+
+		}
+
+		FlushRemovedOrders();
+
 	}
 
 }
