@@ -47,7 +47,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 		AssertLt(0, qty);
 		if (security.GetAskQty() < qty) {
-			throw HasNotMuchOpportunityException();
+			throw HasNotMuchOpportunityException(security, Qty(qty));
 		}
 		Assert(!Lib::IsZero(security.GetAskPrice()));
 			
@@ -75,7 +75,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				AssertLt(0, qty);
 				break;
 			case PAIR_BC:
-				qty = m_qtyStart * GetPair(PAIR_BC).GetCurrentPrice();
+				qty = m_qtyStart * m_conversionPricesBid;
 				AssertLt(0, qty);
 				break;
 			default:
@@ -85,7 +85,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 		AssertLt(0, qty);
 		if (security.GetBidQty() < qty) {
-			throw HasNotMuchOpportunityException();
+			throw HasNotMuchOpportunityException(security, Qty(qty));
 		}
 		Assert(!Lib::IsZero(security.GetBidPrice()));
 			
