@@ -194,6 +194,9 @@ namespace {
 			foreach (const auto &stat, accum.GetMilestones()) {
 				TimeMeasurementMilestone id
 					= static_cast<TimeMeasurementMilestone>(milestoneIndex++);
+				if (!stat) {
+					continue;
+				}
 				destination
 					<< "\t" << GetMilestoneName(id)
 					<< "\t" << stat

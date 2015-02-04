@@ -157,7 +157,7 @@ void TriangulationWithDirection::StartScheduledLeg() {
 				break;
 		
 			case LEG3:
-				m_triangle->StartLeg3(TimeMeasurement::Milestones());
+				m_triangle->StartLeg3(TimeMeasurement::Milestones(), true);
 				break;
 
 			default:
@@ -210,6 +210,8 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 
 		switch (order.GetLeg()) {
 			case LEG1:
+				position.GetTimeMeasurement().Measure(
+					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
 				OnCancel("exec report", order);
 				CheckCurrentStopRequest();
 				break;
@@ -245,7 +247,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 					break;
 				}
 				try {
-					m_triangle->StartLeg3(TimeMeasurement::Milestones());
+					m_triangle->StartLeg3(position.GetTimeMeasurement(), true);
 				} catch (const HasNotMuchOpportunityException &ex) {
 					m_scheduledLeg = LEG3;
 					GetLog().Warn(
@@ -270,13 +272,17 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 			
 		AssertLt(0, order.GetOpenedQty());
 		AssertEq(LEG1, order.GetLeg());
-			
+
 		if (order.GetActiveQty() == 0) {
+			position.GetTimeMeasurement().Measure(
+				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
 			OnCancel("exec report", order);
 			CheckCurrentStopRequest();
 			return;
 		} else if (
 				order.GetCloseType() != Position::CLOSE_TYPE_TAKE_PROFIT) {
+			position.GetTimeMeasurement().Measure(
+				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
 			if (CheckCurrentStopRequest()) {
 				return;
 			}
@@ -297,6 +303,8 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 	switch (leg) {
 			
 		case LEG1:
+			position.GetTimeMeasurement().Measure(
+				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
 			if (CheckCurrentStopRequest()) {
 				m_triangle->GetReport().ReportAction(
 					"executed",
@@ -342,6 +350,8 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 			break;
 
 		case LEG3:
+			position.GetTimeMeasurement().Measure(
+				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_2);
 			m_triangle->GetReport().ReportAction(
 				"executed",
 				"exec report",
@@ -685,11 +695,11 @@ void TriangulationWithDirection::CheckNewTriangle(
 
  	if (CheckOpportunity(m_yDetected) == Y_UNKNOWN) {
 		timeMeasurement.Measure(
-			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
+			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION_1);
  		return;
  	}
 
-	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
+	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START_1);
 
 	Detection detection;
 	if (!Detect(detection)) {
@@ -763,14 +773,14 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 	const auto &ecn = leg3Info.security->GetSource().GetIndex();
 	const auto &data = leg3Info.bestBidAsk->service->GetData(ecn);
 	if (!IsProfit(leg3Info, data)) {
-		timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION);
+		timeMeasurement.Measure(
+			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION_2);
 		return false;
 	}
 
-	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START);
-
+	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START_2);
 	try {
-		m_triangle->StartLeg3(timeMeasurement);
+		m_triangle->StartLeg3(timeMeasurement, false);
 	} catch (const HasNotMuchOpportunityException &ex) {
 		m_scheduledLeg = LEG3;
 		GetLog().Warn(
@@ -784,7 +794,6 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 	}
 
 	m_triangle->GetReport().ReportAction("detected", "signal", LEG3);
-	timeMeasurement.Measure(Lib::TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
 	return true;
 

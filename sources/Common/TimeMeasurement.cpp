@@ -18,21 +18,26 @@ using namespace trdk::Lib::TimeMeasurement;
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace { namespace StrategyStrings {
-	const std::string dispatchingDataStore = "data store";
-	const std::string dispatchingDataEnqueue = "data enqueue";
-	const std::string dispatchingDataDequeue = "data dequeue";
-	const std::string dispatchingDataRaise = "data raise";
-	const std::string strategyWithoutDecision = "strategy skip";
-	const std::string strategyDecisionStart = "strategy start";
-	const std::string strategyDecisionStop = "strategy stop";
-	const std::string executionStart = "exec start";
-	const std::string executionReply = "exec reply";
+	const std::string dispatchingDataStore		= "data store";
+	const std::string dispatchingDataEnqueue	= "data enqueue";
+	const std::string dispatchingDataDequeue	= "data dequeue";
+	const std::string dispatchingDataRaise		= "data raise";
+	const std::string strategyWithoutDecision1	= "strat skip 1";
+	const std::string strategyWithoutDecision2	= "strat skip 2";
+	const std::string strategyDecisionStart1	= "strat start 1";
+	const std::string strategyDecisionStart2	= "strat start 2";
+	const std::string executionStart1			= "exec start 1";
+	const std::string executionStart2			= "exec start 2";
+	const std::string executionStop1			= "exec stop 1";
+	const std::string executionStop2			= "exec stop 2";
+	const std::string executionReply1			= "exec reply 1";
+	const std::string executionReply2			= "exec reply 2";
 } }
 const std::string & TimeMeasurement::GetMilestoneName(
 			const TimeMeasurement::StrategyMilestone &milestone) {
 	using namespace StrategyStrings;
 	static_assert(
-		numberOfStrategyMilestones == 9,
+		numberOfStrategyMilestones == 14,
 		"Milestone list changed.");
 	switch (milestone) {
 		default:
@@ -45,26 +50,36 @@ const std::string & TimeMeasurement::GetMilestoneName(
 			return dispatchingDataDequeue;
 		case SM_DISPATCHING_DATA_RAISE:
 			return dispatchingDataRaise;
-		case SM_STRATEGY_WITHOUT_DECISION:
-			return strategyWithoutDecision;
-		case SM_STRATEGY_DECISION_START:
-			return strategyDecisionStart;
-		case SM_STRATEGY_EXECUTION_START:
-			return executionStart;
-		case SM_STRATEGY_DECISION_STOP:
-			return strategyDecisionStop;
-		case SM_STRATEGY_EXECUTION_REPLY:
-			return executionReply;
+		case SM_STRATEGY_WITHOUT_DECISION_1:
+			return strategyWithoutDecision1;
+		case SM_STRATEGY_WITHOUT_DECISION_2:
+			return strategyWithoutDecision2;
+		case SM_STRATEGY_DECISION_START_1:
+			return strategyDecisionStart1;
+		case SM_STRATEGY_DECISION_START_2:
+			return strategyDecisionStart2;
+		case SM_STRATEGY_EXECUTION_START_1:
+			return executionStart1;
+		case SM_STRATEGY_EXECUTION_START_2:
+			return executionStart2;
+		case SM_STRATEGY_EXECUTION_STOP_1:
+			return executionStop1;
+		case SM_STRATEGY_EXECUTION_STOP_2:
+			return executionStop2;
+		case SM_STRATEGY_EXECUTION_REPLY_1:
+			return executionReply1;
+		case SM_STRATEGY_EXECUTION_REPLY_2:
+			return executionReply2;
 	}
 }
 
 namespace { namespace TradeSystemStrings {
-	const std::string orderEnqueue = "order enqu";
-	const std::string orderPack = "order pack";
-	const std::string orderSend = "order send";
-	const std::string orderSent = "order sent";
-	const std::string orderReply = "reply recv";
-	const std::string orderReplyProcessed = "reply proc";
+	const std::string orderEnqueue			= "order enqu";
+	const std::string orderPack				= "order pack";
+	const std::string orderSend				= "order send";
+	const std::string orderSent				= "order sent";
+	const std::string orderReply			= "reply recv";
+	const std::string orderReplyProcessed	= "reply proc";
 } }
 const std::string & TimeMeasurement::GetMilestoneName(
 			const TimeMeasurement::TradeSystemMilestone &milestone) {
@@ -91,9 +106,9 @@ const std::string & TimeMeasurement::GetMilestoneName(
 }
 
 namespace { namespace DispatchingStrings {
-	const std::string list = "list";
-	const std::string all = "all";
-	const std::string newData = "new";
+	const std::string list		= "list";
+	const std::string all		= "all";
+	const std::string newData	= "new";
 } }
 const std::string & TimeMeasurement::GetMilestoneName(
 			const TimeMeasurement::DispatchingMilestone &milestone) {

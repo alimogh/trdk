@@ -159,10 +159,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				*pair.security,
 				pair.startPrice,
 				timeMeasurement);
-			timeMeasurement.Measure(
-				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_START);
 
+			timeMeasurement.Measure(
+				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_START_1);
 			order->OpenAtStartPrice();
+			timeMeasurement.Measure(
+				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_STOP_1);
+
 			m_legs[LEG1] = order;
 
 			m_report.ReportAction(
@@ -171,8 +174,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				"1",
 				nullptr,
 				&pairsSpeed);
-			timeMeasurement.Measure(
-				Lib::TimeMeasurement::SM_STRATEGY_DECISION_STOP);
 
 		}
 
@@ -207,7 +208,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		}
 
 		void StartLeg3(
-				const Lib::TimeMeasurement::Milestones &timeMeasurement) {
+				const Lib::TimeMeasurement::Milestones &timeMeasurement,
+				bool isResend) {
 
 			Assert(IsLegStarted(LEG1));
 			Assert(IsLegStarted(LEG2));
@@ -237,10 +239,16 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				GetPair(LEG3).GetCurrentPrice(),
 				timeMeasurement);
 
-			timeMeasurement.Measure(
-				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_START);
-
+			if (!isResend) {
+				timeMeasurement.Measure(
+					Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_START_2);
+			}
 			order->OpenAtStartPrice();
+			if (!isResend) {
+				timeMeasurement.Measure(
+					Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_STOP_2);
+			}
+
 			m_legs[LEG3] = order;
 
 		}
