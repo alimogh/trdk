@@ -22,16 +22,16 @@ namespace { namespace StrategyStrings {
 	const std::string dispatchingDataEnqueue	= "data enqueue";
 	const std::string dispatchingDataDequeue	= "data dequeue";
 	const std::string dispatchingDataRaise		= "data raise";
-	const std::string strategyWithoutDecision1	= "strat skip 1";
-	const std::string strategyWithoutDecision2	= "strat skip 2";
-	const std::string strategyDecisionStart1	= "strat start 1";
-	const std::string strategyDecisionStart2	= "strat start 2";
-	const std::string executionStart1			= "exec start 1";
-	const std::string executionStart2			= "exec start 2";
-	const std::string executionStop1			= "exec stop 1";
-	const std::string executionStop2			= "exec stop 2";
-	const std::string executionReply1			= "exec reply 1";
-	const std::string executionReply2			= "exec reply 2";
+	const std::string strategyWithoutDecision1	= "strat skip leg1";
+	const std::string strategyWithoutDecision2	= "strat skip leg3";
+	const std::string strategyDecisionStart1	= "strat start leg1";
+	const std::string strategyDecisionStart2	= "strat start leg3";
+	const std::string executionStart1			= "exec start leg1";
+	const std::string executionStart2			= "exec start leg3";
+	const std::string executionStop1			= "exec stop leg1";
+	const std::string executionStop2			= "exec stop leg3";
+	const std::string executionReply1			= "exec reply leg1";
+	const std::string executionReply2			= "exec reply leg3";
 } }
 const std::string & TimeMeasurement::GetMilestoneName(
 			const TimeMeasurement::StrategyMilestone &milestone) {

@@ -53,8 +53,14 @@ Dispatcher::Dispatcher(Engine::Context &context)
 			m_bookUpdateTicks("Book Update Ticks", m_context) {
 	unsigned int threadsCount = 2;
 	boost::barrier startBarrier(threadsCount + 1);
-	StartNotificationTask<DispatchingTimeMeasurementPolicy>(startBarrier, m_bookUpdateTicks, threadsCount);
-	StartNotificationTask<DispatchingTimeMeasurementPolicy>(startBarrier, m_positionsUpdates, threadsCount);
+	StartNotificationTask<DispatchingTimeMeasurementPolicy>(
+		startBarrier,
+		m_bookUpdateTicks,
+		threadsCount);
+	StartNotificationTask<NoMeasurementPolicy>(
+		startBarrier,
+		m_positionsUpdates,
+		threadsCount);
 	AssertEq(0, threadsCount);
 	startBarrier.wait();
 }
