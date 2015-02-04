@@ -18,6 +18,8 @@
 namespace trdk { namespace Lib { namespace Concurrency {
 
 	class SpinScopedLock;
+
+	////////////////////////////////////////////////////////////////////////////////
 	
 #	ifdef BOOST_WINDOWS
 
@@ -35,8 +37,8 @@ namespace trdk { namespace Lib { namespace Concurrency {
 		public:
 		
 			explicit SpinScopedLock(SpinMutex &mutex)
-					: Base(mutex),
-					m_mutex(mutex) {
+				: Base(mutex),
+				m_mutex(mutex) {
 				//...//
 			}
 		
@@ -104,7 +106,7 @@ namespace trdk { namespace Lib { namespace Concurrency {
 		public:
 		
 			explicit SpinScopedLock(SpinMutex &mutex)
-					: m_mutex(mutex) {
+				: m_mutex(mutex) {
 				Lock();
 			}
 					
@@ -149,12 +151,14 @@ namespace trdk { namespace Lib { namespace Concurrency {
 
 #	endif
 
+	////////////////////////////////////////////////////////////////////////////////
+
 	class SpinCondition : private boost::noncopyable {
 
 	public:
 
 		SpinCondition()
-				: m_waitersCount(0) {
+			: m_waitersCount(0) {
 			//...//
 		}
 
@@ -204,5 +208,67 @@ namespace trdk { namespace Lib { namespace Concurrency {
 		mutable boost::atomic_flag m_state;
 
 	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	class LazySpinCondition : private boost::noncopyable {
+
+	public:
+
+		LazySpinCondition()
+			: m_waitersCount(0) {
+			//...//
+		}
+
+		~LazySpinCondition() {
+			AssertEq(0, m_waitersCount);
+		}
+
+	public:
+		
+		void NotifyOne() {
+			m_state.clear();
+		}
+
+		void notify_one() {
+			NotifyOne();
+		}
+
+		void NotifyAll() {
+			while (m_waitersCount != 0) {
+				NotifyOne();
+			}
+		}
+
+ 		void notify_all() {
+			NotifyAll();
+		}
+
+		void Wait(trdk::Lib::Concurrency::SpinScopedLock &lock) const {
+			if (!m_state.test_and_set(boost::memory_order_acquire)) {
+				return;
+			}
+			++m_waitersCount;
+			lock.Unlock();
+			while (m_state.test_and_set(boost::memory_order_acquire)) {
+				boost::this_thread::sleep(boost::posix_time::seconds(1));
+			}
+			AssertLt(0, m_waitersCount);
+			--m_waitersCount;
+			lock.Lock();
+		}
+
+		void wait(trdk::Lib::Concurrency::SpinScopedLock &lock) const {
+			Wait(lock);
+		}
+
+	private:
+
+		mutable boost::atomic_size_t m_waitersCount;
+		mutable boost::atomic_flag m_state;
+
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
 
 } } }

@@ -342,15 +342,15 @@ namespace trdk {
 	struct AsyncLogConcurrencyPolicy<trdk::Lib::Concurrency::PROFILE_HFT> {
 		typedef trdk::Lib::Concurrency::SpinMutex Mutex;
 		typedef Mutex::ScopedLock Lock;
-		typedef trdk::Lib::Concurrency::SpinCondition Condition;
+		typedef trdk::Lib::Concurrency::LazySpinCondition Condition;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
 
 	template<
-			typename RecordT,
-			typename LogT,
-			trdk::Lib::Concurrency::Profile concurrencyProfile>
+		typename RecordT,
+		typename LogT,
+		trdk::Lib::Concurrency::Profile concurrencyProfile>
 	class AsyncLog : private boost::noncopyable {
 
 	public:
@@ -382,9 +382,9 @@ namespace trdk {
 		public:
 
 			explicit WriteTask(Log &log, Queue &queue)
-				:	m_log(log),
-					m_queue(queue),
-					m_answerCondition(nullptr) {
+				: m_log(log),
+				m_queue(queue),
+				m_answerCondition(nullptr) {
 				Lock lock(m_queue.mutex);
 				m_thread = boost::thread([&](){TaskMain();});
 				m_queue.condition.wait(lock);
