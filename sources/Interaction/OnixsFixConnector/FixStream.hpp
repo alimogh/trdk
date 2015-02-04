@@ -36,6 +36,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	public:
 
+		size_t GetLevelsCount() const {
+			return m_levelsCount;
+		}
+
+	public:
+
 		virtual void Connect(const trdk::Lib::IniSectionRef &);
 
 		virtual void SubscribeToSecurities();
@@ -98,6 +104,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		std::vector<boost::shared_ptr<FixSecurity>> m_securities;
 
 		bool m_isSubscribed;
+
+		const size_t m_levelsCount;
 
 	};
 
