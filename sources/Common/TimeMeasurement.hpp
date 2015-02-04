@@ -31,11 +31,16 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 		SM_DISPATCHING_DATA_ENQUEUE,
 		SM_DISPATCHING_DATA_DEQUEUE,
 		SM_DISPATCHING_DATA_RAISE,
-		SM_STRATEGY_WITHOUT_DECISION,
-		SM_STRATEGY_DECISION_START,
-		SM_STRATEGY_EXECUTION_START,
-		SM_STRATEGY_DECISION_STOP,
-		SM_STRATEGY_EXECUTION_REPLY,
+		SM_STRATEGY_WITHOUT_DECISION_1,
+		SM_STRATEGY_WITHOUT_DECISION_2,
+		SM_STRATEGY_DECISION_START_1,
+		SM_STRATEGY_DECISION_START_2,
+		SM_STRATEGY_EXECUTION_START_1,
+		SM_STRATEGY_EXECUTION_START_2,
+		SM_STRATEGY_EXECUTION_STOP_1,
+		SM_STRATEGY_EXECUTION_STOP_2,
+		SM_STRATEGY_EXECUTION_REPLY_1,
+		SM_STRATEGY_EXECUTION_REPLY_2,
 		numberOfStrategyMilestones
 	};
 	const std::string & GetMilestoneName(const StrategyMilestone &);
@@ -170,6 +175,10 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 
 	public:
 
+		operator bool() const {
+			return m_size > 0;
+		}
+
 		MilestoneStat & operator |=(const PeriodFromStart &measurement) {
 			for ( ; ; ) {
 				auto prev = m_min.load(boost::memory_order_relaxed);
@@ -301,7 +310,7 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 
 	};
 
-	//////////////////////////////////////////////////////// ////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
 
 } } }
 

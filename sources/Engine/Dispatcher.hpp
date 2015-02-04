@@ -164,8 +164,8 @@ namespace trdk { namespace Engine {
 			}
 
 			bool Flush(
-						Lock &lock,
-						Lib::TimeMeasurement::Milestones &timeMeasurement) {
+					Lock &lock,
+					const Lib::TimeMeasurement::Milestones &timeMeasurement) {
 
 				Assert(m_sync);
 				Assert(&m_sync->mutex == lock.mutex());
@@ -198,7 +198,8 @@ namespace trdk { namespace Engine {
 					}
 					listToRead->clear();
 					lock.lock();
-					timeMeasurement.Measure(Lib::TimeMeasurement::DM_COMPLETE_LIST);
+					timeMeasurement.Measure(
+						Lib::TimeMeasurement::DM_COMPLETE_LIST);
 
 				}
 
@@ -445,9 +446,9 @@ namespace trdk { namespace Engine {
 
 		template<typename EventList>
 		bool FlushEvents(
-					EventList &list,
-					EventQueueLock &lock,
-					Lib::TimeMeasurement::Milestones &timeMeasurement)
+				EventList &list,
+				EventQueueLock &lock,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			try {
 				return list.Flush(lock, timeMeasurement);
@@ -471,11 +472,11 @@ namespace trdk { namespace Engine {
 
 		template<size_t index, typename EventLists>
 		bool FlushEventList(
-					EventLists &lists,
-					std::bitset<boost::tuples::length<EventLists>::value>
-						&deactivationMask,
-					EventQueueLock &lock,
-					Lib::TimeMeasurement::Milestones &timeMeasurement)
+				EventLists &lists,
+				std::bitset<boost::tuples::length<EventLists>::value>
+					&deactivationMask,
+				EventQueueLock &lock,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			if (deactivationMask[index]) {
 				return false;
@@ -490,16 +491,18 @@ namespace trdk { namespace Engine {
 
 		////////////////////////////////////////////////////////////////////////////////
 
-		template<typename EventList>
+		template<typename DispatchingTimeMeasurementPolicy, typename EventList>
 		void StartNotificationTask(
-					boost::barrier &startBarrier,
-					EventList &list,
-					unsigned int &threadsCounter) {
+				boost::barrier &startBarrier,
+				EventList &list,
+				unsigned int &threadsCounter) {
 			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(boost::ref(list));
 			m_threads.create_thread(
 				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
+					&Dispatcher::NotificationTask<
+						decltype(lists),
+						DispatchingTimeMeasurementPolicy>,
 					this,
 					boost::ref(startBarrier),
 					lists));
@@ -514,36 +517,41 @@ namespace trdk { namespace Engine {
 		
 		template<typename T1>
 		static void AssignEventListsSyncObjects(
-					boost::shared_ptr<EventListsSyncObjects> &sync,
-					const boost::tuple<T1> &lists) {
+				boost::shared_ptr<EventListsSyncObjects> &sync,
+				const boost::tuple<T1> &lists) {
 			boost::get<0>(lists).AssignSyncObjects(sync);
 		}
 
 		template<typename T1>
 		void FlushEventListsCollection(
-					const boost::tuple<T1> &lists,
-					std::bitset<1> &deactivationMask,
-					EventQueueLock &lock,
-					Lib::TimeMeasurement::Milestones &timeMeasurement)
+				const boost::tuple<T1> &lists,
+				std::bitset<1> &deactivationMask,
+				EventQueueLock &lock,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			FlushEventList<0>(lists, deactivationMask, lock, timeMeasurement);
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
 
-		template<typename ListWithHighPriority, typename ListWithLowPriority>
+		template<
+			typename DispatchingTimeMeasurementPolicy,
+			typename ListWithHighPriority,
+			typename ListWithLowPriority>
 		void StartNotificationTask(
-					boost::barrier &startBarrier,
-					ListWithHighPriority &listWithHighPriority,
-					ListWithLowPriority &listWithLowPriority,
-					unsigned int &threadsCounter) {
+				boost::barrier &startBarrier,
+				ListWithHighPriority &listWithHighPriority,
+				ListWithLowPriority &listWithLowPriority,
+				unsigned int &threadsCounter) {
 			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
 				boost::ref(listWithLowPriority));
 			m_threads.create_thread(
 				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
+					&Dispatcher::NotificationTask<
+						decltype(lists),
+						DispatchingTimeMeasurementPolicy>,
 					this,
 					boost::ref(startBarrier),
 					lists));
@@ -552,7 +560,7 @@ namespace trdk { namespace Engine {
 
 		template<typename T1, typename T2>
 		static std::string GetEventListsName(
-					const boost::tuple<T1, T2> &lists) {
+				const boost::tuple<T1, T2> &lists) {
 			boost::format result("%1%, %2%");
 			result % boost::get<0>(lists).GetName() % boost::get<1>(lists).GetName();
 			return result.str();
@@ -560,18 +568,18 @@ namespace trdk { namespace Engine {
 
 		template<typename T1, typename T2>
 		static void AssignEventListsSyncObjects(
-					boost::shared_ptr<EventListsSyncObjects> &sync,
-					const boost::tuple<T1, T2> &lists) {
+				boost::shared_ptr<EventListsSyncObjects> &sync,
+				const boost::tuple<T1, T2> &lists) {
 			boost::get<0>(lists).AssignSyncObjects(sync);
 			boost::get<1>(lists).AssignSyncObjects(sync);
 		}
 		
 		template<typename T1, typename T2>
 		void FlushEventListsCollection(
-					const boost::tuple<T1, T2> &lists,
-					std::bitset<2> &deactivationMask,
-					EventQueueLock &lock,
-					Lib::TimeMeasurement::Milestones &timeMeasurement)
+				const boost::tuple<T1, T2> &lists,
+				std::bitset<2> &deactivationMask,
+				EventQueueLock &lock,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			do {
 				FlushEventList<0>(
@@ -590,15 +598,16 @@ namespace trdk { namespace Engine {
 		////////////////////////////////////////////////////////////////////////////////
 
 		template<
+			typename DispatchingTimeMeasurementPolicy,
 			typename ListWithHighPriority,
 			typename ListWithLowPriority,
 			typename ListWithExtraLowPriority>
 		void StartNotificationTask(
-					boost::barrier &startBarrier,
-					ListWithHighPriority &listWithHighPriority,
-					ListWithLowPriority &listWithLowPriority,
-					ListWithExtraLowPriority &listWithExtraLowPriority,
-					unsigned int &threadsCounter) {
+				boost::barrier &startBarrier,
+				ListWithHighPriority &listWithHighPriority,
+				ListWithLowPriority &listWithLowPriority,
+				ListWithExtraLowPriority &listWithExtraLowPriority,
+				unsigned int &threadsCounter) {
 			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
@@ -606,7 +615,9 @@ namespace trdk { namespace Engine {
 				boost::ref(listWithExtraLowPriority));
 			m_threads.create_thread(
 				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
+					&Dispatcher::NotificationTask<
+						decltype(lists),
+						DispatchingTimeMeasurementPolicy>,
 					this,
 					boost::ref(startBarrier),
 					lists));
@@ -626,8 +637,8 @@ namespace trdk { namespace Engine {
 
 		template<typename T1, typename T2, typename T3>
 		static void AssignEventListsSyncObjects(
-					boost::shared_ptr<EventListsSyncObjects> &sync,
-					const boost::tuple<T1, T2, T3> &lists) {
+				boost::shared_ptr<EventListsSyncObjects> &sync,
+				const boost::tuple<T1, T2, T3> &lists) {
 			boost::get<0>(lists).AssignSyncObjects(sync);
 			boost::get<1>(lists).AssignSyncObjects(sync);
 			boost::get<2>(lists).AssignSyncObjects(sync);
@@ -635,10 +646,10 @@ namespace trdk { namespace Engine {
 
 		template<typename T1, typename T2, typename T3>
 		void FlushEventListsCollection(
-					const boost::tuple<T1, T2, T3> &lists,
-					std::bitset<3> &deactivationMask,
-					EventQueueLock &lock,
-					Lib::TimeMeasurement::Milestones &timeMeasurement)
+				const boost::tuple<T1, T2, T3> &lists,
+				std::bitset<3> &deactivationMask,
+				EventQueueLock &lock,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			do {
 				do {
@@ -664,17 +675,18 @@ namespace trdk { namespace Engine {
 		////////////////////////////////////////////////////////////////////////////////
 
 		template<
+			typename DispatchingTimeMeasurementPolicy,
 			typename ListWithHighPriority,
 			typename ListWithLowPriority,
 			typename ListWithExtraLowPriority,
 			typename ListWithExtraLowPriority2>
 		void StartNotificationTask(
-					boost::barrier &startBarrier,
-					ListWithHighPriority &listWithHighPriority,
-					ListWithLowPriority &listWithLowPriority,
-					ListWithExtraLowPriority &listWithExtraLowPriority,
-					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
-					unsigned int &threadsCounter) {
+				boost::barrier &startBarrier,
+				ListWithHighPriority &listWithHighPriority,
+				ListWithLowPriority &listWithLowPriority,
+				ListWithExtraLowPriority &listWithExtraLowPriority,
+				ListWithExtraLowPriority2 &listWithExtraLowPriority2,
+				unsigned int &threadsCounter) {
 			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
@@ -683,7 +695,9 @@ namespace trdk { namespace Engine {
 				boost::ref(listWithExtraLowPriority2));
 			m_threads.create_thread(
 				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
+					&Dispatcher::NotificationTask<
+						decltype(lists),
+						DispatchingTimeMeasurementPolicy>,
 					this,
 					boost::ref(startBarrier),
 					lists));
@@ -704,8 +718,8 @@ namespace trdk { namespace Engine {
 
 		template<typename T1, typename T2, typename T3, typename T4>
 		static void AssignEventListsSyncObjects(
-					boost::shared_ptr<EventListsSyncObjects> &sync,
-					const boost::tuple<T1, T2, T3, T4> &lists) {
+				boost::shared_ptr<EventListsSyncObjects> &sync,
+				const boost::tuple<T1, T2, T3, T4> &lists) {
 			boost::get<0>(lists).AssignSyncObjects(sync);
 			boost::get<1>(lists).AssignSyncObjects(sync);
 			boost::get<2>(lists).AssignSyncObjects(sync);
@@ -714,10 +728,10 @@ namespace trdk { namespace Engine {
 
 		template<typename T1, typename T2, typename T3, typename T4>
 		void FlushEventListsCollection(
-					const boost::tuple<T1, T2, T3, T4> &lists,
-					std::bitset<4> &deactivationMask,
-					EventQueueLock &lock,
-					Lib::TimeMeasurement::Milestones &timeMeasurement)
+				const boost::tuple<T1, T2, T3, T4> &lists,
+				std::bitset<4> &deactivationMask,
+				EventQueueLock &lock,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			do {
 				do {
@@ -750,19 +764,20 @@ namespace trdk { namespace Engine {
 		////////////////////////////////////////////////////////////////////////////////
 
 		template<
+			typename DispatchingTimeMeasurementPolicy,
 			typename ListWithHighPriority,
 			typename ListWithLowPriority,
 			typename ListWithExtraLowPriority,
 			typename ListWithExtraLowPriority2,
 			typename ListWithExtraLowPriority3>
 		void StartNotificationTask(
-					boost::barrier &startBarrier,
-					ListWithHighPriority &listWithHighPriority,
-					ListWithLowPriority &listWithLowPriority,
-					ListWithExtraLowPriority &listWithExtraLowPriority,
-					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
-					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
-					unsigned int &threadsCounter) {
+				boost::barrier &startBarrier,
+				ListWithHighPriority &listWithHighPriority,
+				ListWithLowPriority &listWithLowPriority,
+				ListWithExtraLowPriority &listWithExtraLowPriority,
+				ListWithExtraLowPriority2 &listWithExtraLowPriority2,
+				ListWithExtraLowPriority3 &listWithExtraLowPriority3,
+				unsigned int &threadsCounter) {
 			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
@@ -772,7 +787,9 @@ namespace trdk { namespace Engine {
 				boost::ref(listWithExtraLowPriority3));
 			m_threads.create_thread(
 				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
+					&Dispatcher::NotificationTask
+						decltype(lists),
+						DispatchingTimeMeasurementPolicy>,
 					this,
 					boost::ref(startBarrier),
 					lists));
@@ -804,8 +821,8 @@ namespace trdk { namespace Engine {
 			typename T4,
 			typename T5>
 		static void AssignEventListsSyncObjects(
-					boost::shared_ptr<EventListsSyncObjects> &sync,
-					const boost::tuple<T1, T2, T3, T4, T5> &lists) {
+				boost::shared_ptr<EventListsSyncObjects> &sync,
+				const boost::tuple<T1, T2, T3, T4, T5> &lists) {
 			boost::get<0>(lists).AssignSyncObjects(sync);
 			boost::get<1>(lists).AssignSyncObjects(sync);
 			boost::get<2>(lists).AssignSyncObjects(sync);
@@ -820,10 +837,10 @@ namespace trdk { namespace Engine {
 			typename T4,
 			typename T5>
 		void FlushEventListsCollection(
-					const boost::tuple<T1, T2, T3, T4, T5> &lists,
-					std::bitset<5> &deactivationMask,
-					EventQueueLock &lock,
-					Lib::TimeMeasurement::Milestones &timeMeasurement)
+				const boost::tuple<T1, T2, T3, T4, T5> &lists,
+				std::bitset<5> &deactivationMask,
+				EventQueueLock &lock,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			do {
 				do {
@@ -863,6 +880,7 @@ namespace trdk { namespace Engine {
 		////////////////////////////////////////////////////////////////////////////////
 
 		template<
+			typename DispatchingTimeMeasurementPolicy,
 			typename ListWithHighPriority,
 			typename ListWithLowPriority,
 			typename ListWithExtraLowPriority,
@@ -870,14 +888,14 @@ namespace trdk { namespace Engine {
 			typename ListWithExtraLowPriority3,
 			typename ListWithExtraLowPriority4>
 		void StartNotificationTask(
-					boost::barrier &startBarrier,
-					ListWithHighPriority &listWithHighPriority,
-					ListWithLowPriority &listWithLowPriority,
-					ListWithExtraLowPriority &listWithExtraLowPriority,
-					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
-					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
-					ListWithExtraLowPriority4 &listWithExtraLowPriority4,
-					unsigned int &threadsCounter) {
+				boost::barrier &startBarrier,
+				ListWithHighPriority &listWithHighPriority,
+				ListWithLowPriority &listWithLowPriority,
+				ListWithExtraLowPriority &listWithExtraLowPriority,
+				ListWithExtraLowPriority2 &listWithExtraLowPriority2,
+				ListWithExtraLowPriority3 &listWithExtraLowPriority3,
+				ListWithExtraLowPriority4 &listWithExtraLowPriority4,
+				unsigned int &threadsCounter) {
 			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
@@ -888,7 +906,9 @@ namespace trdk { namespace Engine {
 				boost::ref(listWithExtraLowPriority4));
 			m_threads.create_thread(
 				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
+					&Dispatcher::NotificationTask<
+						decltype(lists),
+						DispatchingTimeMeasurementPolicy>,
 					this,
 					boost::ref(startBarrier),
 					lists));
@@ -923,8 +943,8 @@ namespace trdk { namespace Engine {
 			typename T5,
 			typename T6>
 		static void AssignEventListsSyncObjects(
-					boost::shared_ptr<EventListsSyncObjects> &sync,
-					const boost::tuple<T1, T2, T3, T4, T5, T6> &lists) {
+				boost::shared_ptr<EventListsSyncObjects> &sync,
+				const boost::tuple<T1, T2, T3, T4, T5, T6> &lists) {
 			boost::get<0>(lists).AssignSyncObjects(sync);
 			boost::get<1>(lists).AssignSyncObjects(sync);
 			boost::get<2>(lists).AssignSyncObjects(sync);
@@ -941,10 +961,10 @@ namespace trdk { namespace Engine {
 			typename T5,
 			typename T6>
 		void FlushEventListsCollection(
-					const boost::tuple<T1, T2, T3, T4, T5, T6> &lists,
-					std::bitset<6> &deactivationMask,
-					EventQueueLock &lock,
-					Lib::TimeMeasurement::Milestones &timeMeasurement)
+				const boost::tuple<T1, T2, T3, T4, T5, T6> &lists,
+				std::bitset<6> &deactivationMask,
+				EventQueueLock &lock,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			do {
 				do {
@@ -991,6 +1011,7 @@ namespace trdk { namespace Engine {
 		////////////////////////////////////////////////////////////////////////////////
 
 		template<
+			typename DispatchingTimeMeasurementPolicy,
 			typename ListWithHighPriority,
 			typename ListWithLowPriority,
 			typename ListWithExtraLowPriority,
@@ -999,15 +1020,15 @@ namespace trdk { namespace Engine {
 			typename ListWithExtraLowPriority4,
 			typename ListWithExtraLowPriority5>
 		void StartNotificationTask(
-					boost::barrier &startBarrier,
-					ListWithHighPriority &listWithHighPriority,
-					ListWithLowPriority &listWithLowPriority,
-					ListWithExtraLowPriority &listWithExtraLowPriority,
-					ListWithExtraLowPriority2 &listWithExtraLowPriority2,
-					ListWithExtraLowPriority3 &listWithExtraLowPriority3,
-					ListWithExtraLowPriority4 &listWithExtraLowPriority4,
-					ListWithExtraLowPriority5 &listWithExtraLowPriority5,
-					unsigned int &threadsCounter) {
+				boost::barrier &startBarrier,
+				ListWithHighPriority &listWithHighPriority,
+				ListWithLowPriority &listWithLowPriority,
+				ListWithExtraLowPriority &listWithExtraLowPriority,
+				ListWithExtraLowPriority2 &listWithExtraLowPriority2,
+				ListWithExtraLowPriority3 &listWithExtraLowPriority3,
+				ListWithExtraLowPriority4 &listWithExtraLowPriority4,
+				ListWithExtraLowPriority5 &listWithExtraLowPriority5,
+				unsigned int &threadsCounter) {
 			Lib::UseUnused(threadsCounter);
 			const auto lists = boost::make_tuple(
 				boost::ref(listWithHighPriority),
@@ -1019,7 +1040,9 @@ namespace trdk { namespace Engine {
 				boost::ref(listWithExtraLowPriority5));
 			m_threads.create_thread(
 				boost::bind(
-					&Dispatcher::NotificationTask<decltype(lists)>,
+					&Dispatcher::NotificationTask<
+						decltype(lists),
+						DispatchingTimeMeasurementPolicy>,
 					this,
 					boost::ref(startBarrier),
 					lists));
@@ -1077,10 +1100,10 @@ namespace trdk { namespace Engine {
 			typename T6,
 			typename T7>
 		void FlushEventListsCollection(
-					const boost::tuple<T1, T2, T3, T4, T5, T6, T7> &lists,
-					std::bitset<7> &deactivationMask,
-					EventQueueLock &lock,
-					Lib::TimeMeasurement::Milestones &timeMeasurement)
+				const boost::tuple<T1, T2, T3, T4, T5, T6, T7> &lists,
+				std::bitset<7> &deactivationMask,
+				EventQueueLock &lock,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement)
 				const {
 			do {
 				do {
@@ -1133,10 +1156,12 @@ namespace trdk { namespace Engine {
 
 		////////////////////////////////////////////////////////////////////////////////
 
-		template<typename EventLists>
+		template<
+			typename EventLists,
+			typename DispatchingTimeMeasurementPolicy>
 		void NotificationTask(
-					boost::barrier &startBarrier,
-					EventLists &lists)
+				boost::barrier &startBarrier,
+				EventLists &lists)
 				const {
 			bool isError = false;
 			try {
@@ -1151,8 +1176,9 @@ namespace trdk { namespace Engine {
 				startBarrier.wait();
 				EventQueueLock lock(sync->mutex);
 				for ( ; ; ) {
-					Lib::TimeMeasurement::Milestones timeMeasurement(
-						m_context.StartDispatchingTimeMeasurement());
+					const Lib::TimeMeasurement::Milestones timeMeasurement
+						= DispatchingTimeMeasurementPolicy::StartDispatchingTimeMeasurement(
+							m_context);
 					FlushEventListsCollection(
 						lists,
 						deactivationMask,

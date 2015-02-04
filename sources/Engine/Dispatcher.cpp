@@ -20,6 +20,28 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Engine;
 
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+	
+	struct NoMeasurementPolicy {
+		static TimeMeasurement::Milestones StartDispatchingTimeMeasurement(
+				const trdk::Context &) {
+			return TimeMeasurement::Milestones();
+		}
+	};
+
+	struct DispatchingTimeMeasurementPolicy {
+		static TimeMeasurement::Milestones StartDispatchingTimeMeasurement(
+				const trdk::Context &context) {
+			return context.StartDispatchingTimeMeasurement();
+		}
+	};
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 Dispatcher::Dispatcher(Engine::Context &context)
 			: m_context(context),
 			m_level1Updates("Level 1 Updates", m_context),
@@ -31,8 +53,8 @@ Dispatcher::Dispatcher(Engine::Context &context)
 			m_bookUpdateTicks("Book Update Ticks", m_context) {
 	unsigned int threadsCount = 2;
 	boost::barrier startBarrier(threadsCount + 1);
-	StartNotificationTask(startBarrier, m_bookUpdateTicks, threadsCount);
-	StartNotificationTask(startBarrier, m_positionsUpdates, threadsCount);
+	StartNotificationTask<DispatchingTimeMeasurementPolicy>(startBarrier, m_bookUpdateTicks, threadsCount);
+	StartNotificationTask<DispatchingTimeMeasurementPolicy>(startBarrier, m_positionsUpdates, threadsCount);
 	AssertEq(0, threadsCount);
 	startBarrier.wait();
 }

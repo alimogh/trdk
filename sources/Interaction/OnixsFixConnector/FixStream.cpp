@@ -26,12 +26,16 @@ FixStream::FixStream(
 		const Lib::IniSectionRef &conf)
 	: MarketDataSource(index, context, tag),
 	m_session(GetContext(), GetLog(), conf),
-	m_isSubscribed(false) {
+	m_isSubscribed(false),
+	m_levelsCount(
+		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")) {
+	GetLog().Info("Book size: %1% * 2 price levels.", m_levelsCount);
 }
 
 FixStream::~FixStream() {
 	//...//
 }
+
 
 void FixStream::Connect(const IniSectionRef &conf) {
 	if (m_session.IsConnected()) {
@@ -434,6 +438,14 @@ void FixStream::onInboundApplicationMsg(
 #	endif
 
 	AdjustBook(*security, bids, asks, message);
+	AssertGe(security->m_book.size(), bids.size() + asks.size());
+
+	if (bids.size() > m_levelsCount) {
+		bids.resize(m_levelsCount);
+	}
+	if (asks.size() > m_levelsCount) {
+		asks.resize(m_levelsCount);
+	}
 
 	if (
 			security->m_bookMaxBookSize.first < bids.size()
@@ -451,8 +463,6 @@ void FixStream::onInboundApplicationMsg(
 					% security->m_book.size();
 			});
 	}
-
-	AssertGe(security->m_book.size(), bids.size() + asks.size());
 
 	FixSecurity::BookUpdateOperation book = security->StartBookUpdate(now);
 	book.GetBids().Swap(bids);
