@@ -76,65 +76,15 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	public:
 
 		explicit Triangle(
-				const Id &id,
-				TriangulationWithDirection &strategy,
-				ReportsState &reportsState,
-				const Y &y,
+				const Id &,
+				TriangulationWithDirection &,
+				ReportsState &,
+				const Y &,
 				const Qty &startQty,
 				const PairLegParams &ab,
 				const PairLegParams &bc,
 				const PairLegParams &ac,
-				const BestBidAskPairs &bestBidAskRef) 
-			: m_strategy(strategy),
-			m_bestBidAsk(bestBidAskRef),
-			m_report(*this, reportsState),
-			m_id(id),
-			m_y(y),
-			m_qtyStart(startQty) {
-
-#			ifdef BOOST_ENABLE_ASSERT_HANDLER
-				m_pairsLegs.fill(nullptr);
-#			endif
-			
-			m_pairs[PAIR_AB] = PairInfo(ab, m_bestBidAsk);
-			m_pairsLegs[m_pairs[PAIR_AB].leg] = &m_pairs[PAIR_AB];
-			
-			m_pairs[PAIR_BC] = PairInfo(bc, m_bestBidAsk);
-			m_pairsLegs[m_pairs[PAIR_BC].leg] = &m_pairs[PAIR_BC];
-			
-			m_pairs[PAIR_AC] = PairInfo(ac, m_bestBidAsk);
-			m_pairsLegs[m_pairs[PAIR_AC].leg] = &m_pairs[PAIR_AC];
-		
-#			ifdef BOOST_ENABLE_ASSERT_HANDLER
-
-				foreach (const PairInfo &info, m_pairs) {
-					foreach (const PairInfo &subInfo, m_pairs) {
-						if (&subInfo == &info) {
-							continue;
-						}
-						AssertNe(
-							subInfo.security->GetSymbol(),
-							info.security->GetSymbol());
-						Assert(subInfo.security != info.security);
-					}
-				}
-
-				foreach (const PairInfo *info, m_pairsLegs) {
-					Assert(info);
-				}
-
-#			endif
-
-			//! @todo make setting for account currency
-			m_conversionPricesBid = GetPair(PAIR_AB).security->GetBidPrice();
-			m_conversionPricesAsk = GetPair(PAIR_AB).security->GetAskPrice();
-			AssertLt(0, m_conversionPricesBid);
-			AssertLt(0, m_conversionPricesAsk);
-
-			UpdateYDirection();
-
-		}
-
+				const BestBidAskPairs &bestBidAskRef);
 		~Triangle();
 
 	public:
@@ -400,6 +350,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_strategy;
 		}
 
+		const boost::posix_time::ptime & GetStartTime() const {
+			return m_startTime;
+		}
+
 	public:
 
 		bool HasOpportunity() const {
@@ -508,6 +462,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	private:
 		
 		TriangulationWithDirection &m_strategy;
+		const boost::posix_time::ptime m_startTime;
 		const BestBidAskPairs &m_bestBidAsk;
 
 		TriangleReport m_report;

@@ -225,6 +225,10 @@ public:
 	struct Stat {
 	
 		double comission;
+		accs::accumulator_set<
+				pt::time_duration,
+				accs::stats<accs::tag::mean>>
+			time;
 	
 		accs::accumulator_set<
 				double,
@@ -234,6 +238,10 @@ public:
 				double,
 				accs::stats<accs::tag::count, accs::tag::mean>>
 			winnersCancels;
+		accs::accumulator_set<
+				pt::time_duration,
+				accs::stats<accs::tag::mean>>
+			winnersTime;
 		double winnersPnl;
 	
 		accs::accumulator_set<
@@ -244,7 +252,10 @@ public:
 				double,
 				accs::stats<accs::tag::count, accs::tag::mean>>
 			losersCancels;
-	
+		accs::accumulator_set<
+				pt::time_duration,
+				accs::stats<accs::tag::mean>>
+			losersTime;
 		double losersPnl;
 	
 		explicit Stat()
@@ -292,10 +303,14 @@ public:
 					%	"Winners"
 					%	"Triangle ID (loser)"
 					%	"Losers"
+					%	"Triangle time"
 					%	"Avg winners"
+					%	"Avg winners time"
 					%	"Avg losers"
+					%	"Avg losers time"
 					%	"# of winners"
 					%	"# of losers"
+					%	"Avg time"
 					%	"Cancel ID (winner)"
 					%	"Winners"
 					%	"Cancel ID (loser)"
@@ -552,15 +567,25 @@ void TriangleReport::ReportAction(
 		m_state.pnl->log.Write(
 			[&](ReportRecord &record) {
 
+				AssertGt(
+					m_triangle.GetLeg(LEG3).GetOpenTime(),
+					m_triangle.GetStartTime());
+				const auto &time
+					= m_triangle.GetLeg(LEG3).GetOpenTime()
+						- m_triangle.GetStartTime();
+
 				m_state.pnl->stat.comission += m_state.pnl->comission * 3;
+				m_state.pnl->stat.time(time);
 
 				const bool isWinner = yExecuted >= 1;
 				if (isWinner) {
 					m_state.pnl->stat.winners(yExecuted);
 					m_state.pnl->stat.winnersPnl += yExecuted - 1;
+					m_state.pnl->stat.winnersTime(time);
 				} else {
 					m_state.pnl->stat.losers(yExecuted);
 					m_state.pnl->stat.losersPnl += yExecuted - 1;
+					m_state.pnl->stat.losersTime(time);
 				}
 
 				record % ' ';
@@ -569,17 +594,29 @@ void TriangleReport::ReportAction(
 					record % ' ' % ' ';
 				}
 				record % m_triangle.GetId() % yExecuted;
-
 				if (isWinner) {
 					record % ' ' % ' ';
-					record % accs::mean(m_state.pnl->stat.winners);
-					record % ' ';
-					record % accs::count(m_state.pnl->stat.winners);
-					record % ' ';
-				} else {
-					record % ' ' % accs::mean(m_state.pnl->stat.losers);
-					record % ' ' % accs::count(m_state.pnl->stat.losers);
 				}
+				record % time; 
+
+				if (accs::count(m_state.pnl->stat.winners) > 0) {
+					record 
+						% accs::mean(m_state.pnl->stat.winners)
+						% accs::mean(m_state.pnl->stat.winnersTime);
+				} else {
+					record % ' ' % ' ';
+				}
+				if (accs::count(m_state.pnl->stat.losers) > 0) {
+					record
+						% accs::mean(m_state.pnl->stat.losers)
+						% accs::mean(m_state.pnl->stat.losersTime);
+				} else {
+					record % ' ' % ' ';
+				}
+				record
+					% accs::count(m_state.pnl->stat.winners)
+					% accs::count(m_state.pnl->stat.losers)
+					% accs::mean(m_state.pnl->stat.time);
 
 				for (auto i = 0; i < 8; ++i) {
 					record % ' ';
