@@ -135,6 +135,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		}
 
+		~Triangle();
+
 	public:
 
 		void StartLeg1(
@@ -162,7 +164,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 			timeMeasurement.Measure(
 				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_START_1);
-			order->OpenAtStartPrice();
+			order->Open();
 			timeMeasurement.Measure(
 				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_STOP_1);
 
@@ -196,12 +198,19 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					"Failed to start triangle leg 2 (wrong strategy logic)");
 			}
 			
+			const auto &price = GetPair(LEG2).GetCurrentPrice();
+			if (Lib::IsZero(price)) {
+				throw HasNotMuchOpportunityException(
+					*GetPair(LEG2).security,
+					0);
+			}
+
 			boost::shared_ptr<Twd::Position> order = CreateOrder(
 				GetPair(LEG2),
 				GetPair(LEG2).GetBestSecurity(),
-				GetPair(LEG2).GetCurrentPrice(),
+				price,
 				Lib::TimeMeasurement::Milestones());
-			order->OpenAtStartPrice();
+			order->Open();
 
 			m_legs[LEG2] = order;
 
@@ -233,17 +242,24 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					"Failed to start triangle leg 3 (wrong strategy logic)");
 			}
 
+			const auto &price = GetPair(LEG3).GetCurrentPrice();
+			if (Lib::IsZero(price)) {
+				throw HasNotMuchOpportunityException(
+					*GetPair(LEG3).security,
+					0);
+			}
+
 			const boost::shared_ptr<Twd::Position> order = CreateOrder(
 				GetPair(LEG3),
 				GetPair(LEG3).GetBestSecurity(),
-				GetPair(LEG3).GetCurrentPrice(),
+				price,
 				timeMeasurement);
 
 			if (!isResend) {
 				timeMeasurement.Measure(
 					Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_START_2);
 			}
-			order->OpenAtStartPrice();
+			order->Open();
 			if (!isResend) {
 				timeMeasurement.Measure(
 					Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_STOP_2);
@@ -269,7 +285,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					"Failed to cancel triangle (wrong strategy logic)");
 			}
 
-			GetLeg(LEG1).CloseAtCurrentPrice(closeType);
+			GetLeg(LEG1).Close(closeType, GetPair(LEG1).GetCurrentPrice());
 
 		}
 

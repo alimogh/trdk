@@ -182,6 +182,9 @@ void TriangulationWithDirection::StartScheduledLeg() {
 }
 
 void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
+
+	Assert(m_triangle);
+	AssertEq(LEG_UNKNOWN, m_scheduledLeg);
 	
 	if (position.IsError()) {
 		Assert(IsBlocked());
@@ -192,20 +195,13 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 		return;
 	}
 
+	Assert(!position.IsCompleted() || position.GetOpenedQty() == 0);
+
 	Twd::Position &order = dynamic_cast<Twd::Position &>(position);
-
-	if (!order.IsActive()) {
-		//! @todo see https://trello.com/c/QOBSd8RZ
-		return;
-	}
-
-	Assert(m_triangle);
-	AssertEq(LEG_UNKNOWN, m_scheduledLeg);
-
-	order.Deactivate();
 
 	if (order.GetOpenedQty() == 0) {
 	
+		Assert(order.IsCompleted());
 		Assert(IsZero(order.GetCloseStartPrice()));
 
 		switch (order.GetLeg()) {
@@ -274,6 +270,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 		AssertEq(LEG1, order.GetLeg());
 
 		if (order.GetActiveQty() == 0) {
+			Assert(order.IsCompleted());
 			position.GetTimeMeasurement().Measure(
 				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
 			OnCancel("exec report", order);
@@ -281,6 +278,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 			return;
 		} else if (
 				order.GetCloseType() != Position::CLOSE_TYPE_TAKE_PROFIT) {
+			Assert(!order.IsCompleted());
 			position.GetTimeMeasurement().Measure(
 				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
 			if (CheckCurrentStopRequest()) {
@@ -293,7 +291,8 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 		order.SetCloseStartPrice(0);
 
 	}
- 
+
+	Assert(!order.IsCompleted()); 
  	Assert(order.IsOpened());
 	Assert(IsZero(order.GetCloseStartPrice()));
 	AssertEq(0, order.GetClosedQty());
@@ -338,11 +337,15 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 
 		case LEG2:
 			AssertEq(LEG2, order.GetLeg());
+
 			m_triangle->GetReport().ReportAction(
 				"executed",
 				"exec report",
 				order.GetLeg(),
 				&order);
+			order.MarkAsCompleted();
+			Assert(!m_triangle->GetLeg(LEG1).IsCompleted());
+			m_triangle->GetLeg(LEG1).MarkAsCompleted();
 			if (CheckCurrentStopRequest()) {
 				return;
 			}
@@ -352,6 +355,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 		case LEG3:
 			position.GetTimeMeasurement().Measure(
 				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_2);
+			order.MarkAsCompleted();
 			m_triangle->GetReport().ReportAction(
 				"executed",
 				"exec report",
@@ -369,10 +373,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 
 		default:
 			AssertEq(LEG1, leg);
-			if (CheckCurrentStopRequest()) {
-				return;
-			}
-			break;
+			throw LogicError("Leg is unknown");
 
 	}
 

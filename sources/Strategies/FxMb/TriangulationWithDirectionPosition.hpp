@@ -40,30 +40,25 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				startPrice,
 				timeMeasurement),
 			m_pair(pair),
-			m_leg(leg),
-			m_isActive(true) {
+			m_leg(leg) {
+			//...//
 		}
 
 	public:
 
-		void OpenAtStartPrice() {
+		void Open() {
 			AssertLt(.0, GetOpenStartPrice());
 			OpenImmediatelyOrCancel(GetOpenStartPrice());
 		}
 
-		virtual void OpenAtCurrentPrice() = 0;
-
-		void CloseAtStartPrice(const CloseType &closeType) {
-			Assert(!m_isActive);
-			const auto &price = GetOpenStartPrice();
-			CloseImmediatelyOrCancel(closeType, price);
-			m_isActive = true;
+		virtual void Close(const CloseType &closeType, double price) {
+			Assert(Lib::IsZero(price));
+			const auto &scaledPrice = GetSecurity().ScalePrice(price);
+			CloseImmediatelyOrCancel(closeType, scaledPrice);
 			if (Lib::IsZero(GetCloseStartPrice())) {
-				SetCloseStartPrice(price);
+				SetCloseStartPrice(scaledPrice);
 			}
 		}
-
-		virtual void CloseAtCurrentPrice(const CloseType &closeType) = 0;
 
 		const Pair & GetPair() const {
 			return m_pair;
@@ -73,44 +68,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_leg;
 		}
 
-		//! @todo remove this workaround: https://trello.com/c/QOBSd8RZ
-		bool IsActive() const {
-			return m_isActive;
-		}
-
- 		//! @todo remove this workaround: https://trello.com/c/QOBSd8RZ
-		void Deactivate() {
-			Assert(m_isActive);
-			m_isActive = false;
-		}
-
-	protected:
-
-		void OpenAt(const ScaledPrice &price) {
-			if (Lib::IsZero(price)) {
-				OpenAtStartPrice();
-				return;
-			}
-			OpenImmediatelyOrCancel(price);
-		}
-
-		void CloseAt(const CloseType &closeType, const ScaledPrice &price) {
-			if (Lib::IsZero(price)) {
-				CloseAtStartPrice(closeType);
-				return;
-			}
-			CloseImmediatelyOrCancel(closeType, price);
-			m_isActive = true;
-			if (Lib::IsZero(GetCloseStartPrice())) {
-				SetCloseStartPrice(price);
-			}
-		}
-
 	private:
 
 		const Pair m_pair;
 		const Leg m_leg;
-		bool m_isActive;
 
 	};
 
@@ -162,18 +123,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			//...//
 		}
 
-	public:
-
-		virtual void OpenAtCurrentPrice() {
-			AssertLt(.0, GetOpenStartPrice());
-			OpenAt(GetSecurity().GetAskPriceScaled());
-		}
-
-		virtual void CloseAtCurrentPrice(const CloseType &closeType) {
-			Assert(!IsActive());
-			CloseAt(closeType, GetSecurity().GetBidPriceScaled());
-		}
-
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -222,18 +171,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		~ShortPosition() {
 			//...//
-		}
-
-	public:
-
-		void OpenAtCurrentPrice() {
-			AssertLt(.0, GetOpenStartPrice());
-			OpenAt(GetSecurity().GetBidPriceScaled());
-		}
-
-		virtual void CloseAtCurrentPrice(const CloseType &closeType) {
-			Assert(!IsActive());
-			CloseAt(closeType, GetSecurity().GetAskPriceScaled());
 		}
 
 	};

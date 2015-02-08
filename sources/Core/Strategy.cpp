@@ -297,6 +297,8 @@ public:
 	PositionList m_positions;
 	boost::signals2::signal<PositionUpdateSlotSignature> m_positionUpdateSignal;
 
+	boost::array<const Position *, 2> m_delayedPositionToForget;
+
 public:
 
 	explicit Implementation(Strategy &strategy)
@@ -306,7 +308,7 @@ public:
 			m_strategy.GetTag(),
 			m_strategy.GetContext().GetTradingLog()),
 		m_stopMode(STOP_MODE_UNKNOWN) {
-		//...//
+		m_delayedPositionToForget.fill(nullptr);
 	}
 
 public:
@@ -441,6 +443,10 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 	Assert(position.IsStarted());
 
 	const Lock lock(GetMutex());
+
+	Assert(m_pimpl->m_delayedPositionToForget[0] == nullptr);
+	Assert(m_pimpl->m_delayedPositionToForget[1] == nullptr);
+
 	if (position.IsCompleted() && !m_pimpl->m_positions.IsExists(position)) {
 		return;
 	}
@@ -466,6 +472,31 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 		m_pimpl->ForgetPosition(position);
 	}
 
+	if (
+			m_pimpl->m_delayedPositionToForget[0]
+			&& m_pimpl->m_delayedPositionToForget[0] != &position) {
+		m_pimpl->ForgetPosition(*m_pimpl->m_delayedPositionToForget[0]);
+	}
+	if (
+			m_pimpl->m_delayedPositionToForget[1]
+			&& m_pimpl->m_delayedPositionToForget[1] != &position) {
+		m_pimpl->ForgetPosition(*m_pimpl->m_delayedPositionToForget[1]);
+	}
+	m_pimpl->m_delayedPositionToForget.fill(nullptr);
+
+}
+
+void Strategy::OnPositionMarkedAsCompleted(const Position &position) {
+	//! @todo Extend: delay several positions, don't remove from callback,
+	//! don't forget about all other callbacks where positions can be used.
+	Assert(
+		m_pimpl->m_delayedPositionToForget[0] == nullptr
+		|| m_pimpl->m_delayedPositionToForget[1] == nullptr);
+	if (!m_pimpl->m_delayedPositionToForget[0]) {
+		 m_pimpl->m_delayedPositionToForget[0] = &position;
+	} else {
+		 m_pimpl->m_delayedPositionToForget[1] = &position;
+	}
 }
 
 void Strategy::RaiseBookUpdateTickEvent(
@@ -552,12 +583,11 @@ void Strategy::ReportStop() {
 			break;
 		case STOP_MODE_GRACEFULLY_POSITIONS:
 			if (!GetPositions().IsEmpty()) {
-//! @todo https://trello.com/c/2ywavBQW
-// 				GetLog().Error(
-// 					"Found %1% active positions at stop"
-// 						" with mode \"wait for positions before\".",
-// 					GetPositions().GetSize());
-// 				Assert(GetPositions().IsEmpty());
+				GetLog().Error(
+					"Found %1% active positions at stop"
+						" with mode \"wait for positions before\".",
+					GetPositions().GetSize());
+				Assert(GetPositions().IsEmpty());
 			}
 			break;
 		case STOP_MODE_UNKNOWN:
