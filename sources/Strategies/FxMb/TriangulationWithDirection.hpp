@@ -98,8 +98,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		const size_t m_levelsCount;
 		const bool m_allowLeg1Closing;
-
 		const Qty m_qty;
+		size_t m_trianglesLimit;
 
 		ReportsState m_reports;
 

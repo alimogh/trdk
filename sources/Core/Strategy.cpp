@@ -535,7 +535,7 @@ void Strategy::Block() throw() {
 	const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
 	m_pimpl->m_isBlocked = true;
 	m_pimpl->m_blockEndTime = pt::not_a_date_time;
-	GetLog().Error("Blocked.");
+	GetLog().Info("Blocked.");
 	m_pimpl->m_stopCondition.notify_all();
 }
 

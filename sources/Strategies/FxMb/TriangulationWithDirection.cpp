@@ -27,6 +27,12 @@ using namespace trdk::Strategies::FxMb::Twd;
 
 namespace {
 
+	const size_t nTrianglesLimit = std::numeric_limits<size_t>::max();
+
+}
+
+namespace {
+
 	bool IsProfit(
 			const Triangle::PairInfo &pair,
 			const StatService::Data &data) {
@@ -35,6 +41,21 @@ namespace {
 				?	data.current.theo > data.current.emaSlow
 				:	data.current.theo < data.current.emaSlow)
 			&& pair.GetCurrentPrice() > 0;
+	}
+
+	size_t ReadMaxTrianglesCount(const IniSectionRef &conf, Module::Log &log) {
+		const char *const keyName = "limit.triangles";
+		if (
+				boost::iequals(
+					conf.ReadTypedKey<std::string>(keyName),
+					"unlimited")) {
+			log.Info("Maximum triangles count: UNLIMITED.");
+			return nTrianglesLimit;
+		} else {
+			const auto result = conf.ReadTypedKey<size_t>(keyName);
+			log.Info("Maximum triangles count: %1% triangles.", result);
+			return result;
+		}
 	}
 
 }
@@ -51,6 +72,7 @@ TriangulationWithDirection::TriangulationWithDirection(
 	m_allowLeg1Closing(
 		conf.ReadTypedKey<bool>("allow_leg1_closing")),
 	m_qty(conf.ReadTypedKey<Qty>("qty")),
+	m_trianglesLimit(ReadMaxTrianglesCount(conf, GetLog())),
 	m_reports(
 		GetContext(),
 		conf.ReadTypedKey<double>("commission"),
@@ -185,6 +207,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 
 	Assert(m_triangle);
 	AssertEq(LEG_UNKNOWN, m_scheduledLeg);
+	AssertLt(0, m_trianglesLimit);
 	
 	if (position.IsError()) {
 		Assert(IsBlocked());
@@ -366,6 +389,12 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
 				m_detectedEcns[Y2].fill(std::numeric_limits<size_t>::max());
 #			endif
+			if (
+					m_trianglesLimit != nTrianglesLimit
+					&& m_trianglesLimit-- <= 1) {
+				GetLog().Info("Executed triangles limit reached.");
+				Block();
+			}
 			if (CheckCurrentStopRequest()) {
 				return;
 			}
