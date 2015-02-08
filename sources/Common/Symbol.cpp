@@ -259,18 +259,21 @@ Symbol Symbol::ParseCashFutureOption(
 	if (subs[0].empty() || subs.size() > 2) {
 		throw StringFormatError();
 	}
+	
+	Symbol result;
+	result.m_securityType = SECURITY_TYPE_FUTURE_OPTION;
+	
 	boost::smatch symbolMatch;
 	if (	!boost::regex_match(
 				subs[0],
 				symbolMatch,
 				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*([a-zA-Z]{3,3})$"))) {
-		throw StringFormatError();
+		result.m_symbol = subs[0];
+		result.m_currency = "EUR";
+	} else {
+		result.m_symbol = symbolMatch[1].str();
+		result.m_currency = symbolMatch[2].str();
 	}
-
-	Symbol result;
-	result.m_securityType = SECURITY_TYPE_FUTURE_OPTION;
-	result.m_symbol = symbolMatch[1].str();
-	result.m_currency = symbolMatch[2].str();
 	result.m_exchange = subs.size() >= 2 && !subs[1].empty()
 		?	subs[1]
 		:	defExchange;
