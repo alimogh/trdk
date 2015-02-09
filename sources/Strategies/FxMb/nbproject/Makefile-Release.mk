@@ -45,8 +45,8 @@ OBJECTFILES= \
 CFLAGS=
 
 # CC Compiler Flags
-CCFLAGS=
-CXXFLAGS=
+CCFLAGS=-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
+CXXFLAGS=-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -67,7 +67,7 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT}: ../../Core/d
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -ltcmalloc -shared -fPIC
 
 ${OBJECTDIR}/TriangulationWithDirection.o: TriangulationWithDirection.cpp 
 	${MKDIR} -p ${OBJECTDIR}

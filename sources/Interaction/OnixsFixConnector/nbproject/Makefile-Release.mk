@@ -50,8 +50,8 @@ OBJECTFILES= \
 CFLAGS=
 
 # CC Compiler Flags
-CCFLAGS=
-CXXFLAGS=
+CCFLAGS=-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
+CXXFLAGS=-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -74,7 +74,7 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}:
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -ltcmalloc -shared -fPIC
 
 ${OBJECTDIR}/AlpariStream.o: AlpariStream.cpp 
 	${MKDIR} -p ${OBJECTDIR}

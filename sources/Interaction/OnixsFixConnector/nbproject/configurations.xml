@@ -66,6 +66,7 @@
             <pElem>../..</pElem>
             <pElem>../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include</pElem>
           </incDir>
+          <commandLine>-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
             <Elem>DEV_VER</Elem>
@@ -101,6 +102,7 @@
             </linkerLibProjectItem>
             <linkerLibFileItem>../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/lib/libffCppFixEngine.so</linkerLibFileItem>
           </linkerLibItems>
+          <commandLine>-ltcmalloc</commandLine>
         </linkerTool>
       </compileType>
       <item path="AlpariStream.cpp" ex="false" tool="1" flavor2="0">
@@ -167,6 +169,7 @@
             <pElem>../..</pElem>
             <pElem>../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include</pElem>
           </incDir>
+          <commandLine>-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_DISABLE_ASSERTS</Elem>
             <Elem>NDEBUG</Elem>
@@ -207,6 +210,7 @@
             </linkerLibProjectItem>
             <linkerLibFileItem>../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/lib/libffCppFixEngine.so</linkerLibFileItem>
           </linkerLibItems>
+          <commandLine>-ltcmalloc</commandLine>
         </linkerTool>
       </compileType>
       <item path="AlpariStream.cpp" ex="false" tool="1" flavor2="0">

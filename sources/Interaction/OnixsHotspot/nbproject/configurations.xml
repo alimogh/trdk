@@ -55,6 +55,7 @@
             <pElem>../..</pElem>
             <pElem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL70-gcc482-x64-1_8_0_0/include</pElem>
           </incDir>
+          <commandLine>-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
             <Elem>DEV_VER</Elem>
@@ -93,6 +94,7 @@
             </linkerLibProjectItem>
             <linkerLibLibItem>OnixS.HotspotItchHandlerCpp</linkerLibLibItem>
           </linkerLibItems>
+          <commandLine>-ltcmalloc</commandLine>
         </linkerTool>
       </compileType>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
@@ -134,6 +136,7 @@
             <pElem>../..</pElem>
             <pElem>../../../externals/OnixS.HotspotItchHandlerCpp-RHEL70-gcc482-x64-1_8_0_0/include</pElem>
           </incDir>
+          <commandLine>-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_DISABLE_ASSERTS</Elem>
             <Elem>NDEBUG</Elem>
@@ -177,6 +180,7 @@
             </linkerLibProjectItem>
             <linkerLibLibItem>OnixS.HotspotItchHandlerCpp</linkerLibLibItem>
           </linkerLibItems>
+          <commandLine>-ltcmalloc</commandLine>
         </linkerTool>
       </compileType>
       <item path="Api.h" ex="false" tool="3" flavor2="0">

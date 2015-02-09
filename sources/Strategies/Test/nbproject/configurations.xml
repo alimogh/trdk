@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="94">
+<configurationDescriptor version="95">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
@@ -53,6 +53,7 @@
           <incDir>
             <pElem>../..</pElem>
           </incDir>
+          <commandLine>-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
             <Elem>DEV_VER</Elem>
@@ -87,6 +88,7 @@
               </makeArtifact>
             </linkerLibProjectItem>
           </linkerLibItems>
+          <commandLine>-ltcmalloc</commandLine>
         </linkerTool>
       </compileType>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
@@ -120,6 +122,7 @@
           <incDir>
             <pElem>../..</pElem>
           </incDir>
+          <commandLine>-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_DISABLE_ASSERTS</Elem>
             <Elem>NDEBUG</Elem>
@@ -160,6 +163,7 @@
               </makeArtifact>
             </linkerLibProjectItem>
           </linkerLibItems>
+          <commandLine>-ltcmalloc</commandLine>
         </linkerTool>
       </compileType>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">

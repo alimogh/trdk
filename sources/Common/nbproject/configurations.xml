@@ -69,7 +69,7 @@
           <incDir>
             <pElem>..</pElem>
           </incDir>
-          <commandLine>-fpic</commandLine>
+          <commandLine>-fpic -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
             <Elem>DEV_VER</Elem>
@@ -165,7 +165,7 @@
           <incDir>
             <pElem>..</pElem>
           </incDir>
-          <commandLine>-fpic</commandLine>
+          <commandLine>-fpic -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_DISABLE_ASSERTS</Elem>
             <Elem>NDEBUG</Elem>
