@@ -91,7 +91,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	private:
 
-		void AdjustBook(
+		bool AdjustBook(
 				const FixSecurity &security,
 				std::vector<Security::Book::Level> &bids,
 				std::vector<Security::Book::Level> asks,

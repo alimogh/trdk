@@ -50,8 +50,8 @@ Triangle::Triangle(
 	m_pairs[PAIR_AC] = PairInfo(ac, m_bestBidAsk);
 	m_pairsLegs[m_pairs[PAIR_AC].leg] = &m_pairs[PAIR_AC];
 		
-#			ifdef BOOST_ENABLE_ASSERT_HANDLER
-
+#	ifdef BOOST_ENABLE_ASSERT_HANDLER
+	{
 		foreach (const PairInfo &info, m_pairs) {
 			foreach (const PairInfo &subInfo, m_pairs) {
 				if (&subInfo == &info) {
@@ -68,7 +68,8 @@ Triangle::Triangle(
 			Assert(info);
 		}
 
-#			endif
+	}
+#	endif
 
 	//! @todo make setting for account currency
 	m_conversionPricesBid = GetPair(PAIR_AB).security->GetBidPrice();

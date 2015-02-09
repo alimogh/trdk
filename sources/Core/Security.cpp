@@ -113,7 +113,7 @@ public:
 		m_brokerPosition(0),
 		m_marketDataTime(0),
 		m_isLevel1Started(false),
-		m_book(new Book(pt::not_a_date_time)) {
+		m_book(new Book(pt::not_a_date_time, false)) {
 		foreach (auto &item, m_level1) {
 			Unset(item);
 		}
@@ -573,8 +573,10 @@ void Security::SetBrokerPosition(trdk::Qty qty, bool isInitial) {
 	m_pimpl->m_brokerPositionUpdateSignal(qty, isInitial);
 }
 
-Security::BookUpdateOperation Security::StartBookUpdate(const pt::ptime &time) {
-	return BookUpdateOperation(*this, time);
+Security::BookUpdateOperation Security::StartBookUpdate(
+		const pt::ptime &time,
+		bool isRespected) {
+	return BookUpdateOperation(*this, time, isRespected);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -608,8 +610,9 @@ const Security::Book::Level & Security::Book::Side::GetLevel(
 
 ///
 
-Security::Book::Book(const pt::ptime &time)
-	: m_time(time) {
+Security::Book::Book(const pt::ptime &time, bool isRespected)
+	: m_time(time),
+	m_isRespected(isRespected) {
 	//...//
 }
 
@@ -652,11 +655,13 @@ void Security::BookSideUpdateOperation::Swap(
 
 Security::BookUpdateOperation::BookUpdateOperation(
 		Security &security,
-		const pt::ptime &time)
+		const pt::ptime &time,
+		bool isRespected)
 	: m_pimpl(
 		new Implementation(
 			security,
-			boost::shared_ptr<Security::Book>(new Security::Book(time)))) {
+			boost::shared_ptr<Security::Book>(
+				new Security::Book(time, isRespected)))) {
 	//...//
 }
 

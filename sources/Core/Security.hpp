@@ -115,27 +115,19 @@ namespace trdk {
 					: m_price(.0),
 					m_qty(0) {
 				}
-				explicit Level(double price, const trdk::Qty &qty)
-					: m_price(price),
+				explicit Level(
+						const boost::posix_time::ptime &time,
+						double price,
+						const trdk::Qty &qty)
+					: m_time(time),
+					m_price(price),
 					m_qty(qty) {
-				}
-				void Swap(Level &rhs) throw() {
-					std::swap(rhs.m_price, m_price);
-					std::swap(rhs.m_qty, m_qty);
+					//...//
 				}
 			public:
-				void operator +=(const Level &rhs) {
-					m_qty += rhs.m_qty;
+				const boost::posix_time::ptime & GetTime() const {
+					return m_time;
 				}
-				bool operator ==(const Level &rhs) const {
-					return
-						trdk::Lib::IsEqual(m_price,rhs.m_price)
-							&& trdk::Lib::IsEqual(m_qty,rhs.m_qty);
-				}
-				bool operator !=(const Level &rhs) const {
-					return !operator ==(rhs);
-				}
-			public:
 				double GetPrice() const {
 					return m_price;
 				}
@@ -143,6 +135,7 @@ namespace trdk {
 					return m_qty;
 				}
 			private:
+				boost::posix_time::ptime m_time;
 				double m_price;
 				trdk::Qty m_qty;
 			};
@@ -161,10 +154,13 @@ namespace trdk {
 				Implementation *m_pimpl;
 			};
 		public:
-			explicit Book(const boost::posix_time::ptime &);
+			explicit Book(const boost::posix_time::ptime &, bool isRespected);
 		public:
 			const boost::posix_time::ptime & GetTime() const {
 				return m_time;
+			}
+			bool IsRespected() const {
+				return m_isRespected;
 			}
 			const trdk::Security::Book::Side & GetBids() const {
 				return m_bids;
@@ -177,6 +173,7 @@ namespace trdk {
 			}
 		private:
 			boost::posix_time::ptime m_time;
+			bool m_isRespected;
 			Side m_bids;
 			Side m_offers;
 		};
@@ -202,7 +199,8 @@ namespace trdk {
 		private:
 			explicit BookUpdateOperation(
 					trdk::Security &security,
-					const boost::posix_time::ptime &);
+					const boost::posix_time::ptime &,
+					bool isRespected);
 		public:
 			BookUpdateOperation(BookUpdateOperation &&);
 			~BookUpdateOperation();
@@ -406,7 +404,8 @@ namespace trdk {
 		void SetBrokerPosition(trdk::Qty qty, bool isInitial);
 
 		trdk::Security::BookUpdateOperation StartBookUpdate(
-				const boost::posix_time::ptime &);
+				const boost::posix_time::ptime &,
+				bool isRespected);
 
 	private:
 
