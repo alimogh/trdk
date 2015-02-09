@@ -60,7 +60,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=../../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Release/GNU-Linux-x86 -L../../Core/dist/Release/GNU-Linux-x86 -lCore ../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/lib/../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/lib/libffCppFixEngine.so
+LDLIBSOPTIONS=../../Common/dist/Release/GNU-Linux-x86/libcommon.a -Wl,-rpath,../../Core/dist/Release/GNU-Linux-x86 -L../../Core/dist/Release/GNU-Linux-x86 -lCore ../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/lib/libffCppFixEngine.so
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -70,7 +70,7 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}:
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}: ../../Core/dist/Release/GNU-Linux-x86/libCore.so
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}: ../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/lib/../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/lib/libffCppFixEngine.so
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}: ../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/lib/libffCppFixEngine.so
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
@@ -79,47 +79,47 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libOnixsFixConnector.${CND_DLIB_EXT}:
 ${OBJECTDIR}/AlpariStream.o: AlpariStream.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include/../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/AlpariStream.o AlpariStream.cpp
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/AlpariStream.o AlpariStream.cpp
 
 ${OBJECTDIR}/CurrenexStream.o: CurrenexStream.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include/../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/CurrenexStream.o CurrenexStream.cpp
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/CurrenexStream.o CurrenexStream.cpp
 
 ${OBJECTDIR}/CurrenexTrading.o: CurrenexTrading.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include/../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/CurrenexTrading.o CurrenexTrading.cpp
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/CurrenexTrading.o CurrenexTrading.cpp
 
 ${OBJECTDIR}/FixSession.o: FixSession.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include/../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FixSession.o FixSession.cpp
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FixSession.o FixSession.cpp
 
 ${OBJECTDIR}/FixStream.o: FixStream.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include/../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FixStream.o FixStream.cpp
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FixStream.o FixStream.cpp
 
 ${OBJECTDIR}/FixTrading.o: FixTrading.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include/../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FixTrading.o FixTrading.cpp
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FixTrading.o FixTrading.cpp
 
 ${OBJECTDIR}/FxAllStream.o: FxAllStream.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include/../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxAllStream.o FxAllStream.cpp
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxAllStream.o FxAllStream.cpp
 
 ${OBJECTDIR}/FxAllTrading.o: FxAllTrading.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include/../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxAllTrading.o FxAllTrading.cpp
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxAllTrading.o FxAllTrading.cpp
 
 ${OBJECTDIR}/HotspotTrading.o: HotspotTrading.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include/../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/HotspotTrading.o HotspotTrading.cpp
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/HotspotTrading.o HotspotTrading.cpp
 
 # Subprojects
 .build-subprojects:

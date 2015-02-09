@@ -64,7 +64,7 @@
           <standard>8</standard>
           <incDir>
             <pElem>../..</pElem>
-            <pElem>../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include</pElem>
+            <pElem>../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include</pElem>
           </incDir>
           <preprocessorList>
             <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
@@ -99,7 +99,7 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore_dbg.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
-            <linkerLibFileItem>../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/lib/libffCppFixEngine.so</linkerLibFileItem>
+            <linkerLibFileItem>../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/lib/libffCppFixEngine.so</linkerLibFileItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -165,7 +165,7 @@
           <standard>8</standard>
           <incDir>
             <pElem>../..</pElem>
-            <pElem>../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/include</pElem>
+            <pElem>../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include</pElem>
           </incDir>
           <preprocessorList>
             <Elem>BOOST_DISABLE_ASSERTS</Elem>
@@ -205,7 +205,7 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCore.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
-            <linkerLibFileItem>../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/lib/../../../externals/OnixS.FixEngineCpp-RHEL52-gcc412-x64-3_15_1_0/lib/libffCppFixEngine.so</linkerLibFileItem>
+            <linkerLibFileItem>../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/lib/libffCppFixEngine.so</linkerLibFileItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

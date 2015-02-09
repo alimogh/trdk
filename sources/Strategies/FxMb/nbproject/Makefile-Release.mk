@@ -36,8 +36,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/TriangulationWithDirection.o \
-	${OBJECTDIR}/TriangulationWithDirectionStatService.o \
 	${OBJECTDIR}/TriangulationWithDirectionReport.o \
+	${OBJECTDIR}/TriangulationWithDirectionStatService.o \
 	${OBJECTDIR}/TriangulationWithDirectionTriangle.o
 
 
@@ -69,27 +69,25 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT}: ${OBJECTFILE
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
 
-
 ${OBJECTDIR}/TriangulationWithDirection.o: TriangulationWithDirection.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirection.o TriangulationWithDirection.cpp
-
-${OBJECTDIR}/TriangulationWithDirectionStatService.o: TriangulationWithDirectionStatService.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionStatService.o TriangulationWithDirectionStatService.cpp
 
 ${OBJECTDIR}/TriangulationWithDirectionReport.o: TriangulationWithDirectionReport.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionReport.o TriangulationWithDirectionReport.cpp
 
+${OBJECTDIR}/TriangulationWithDirectionStatService.o: TriangulationWithDirectionStatService.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionStatService.o TriangulationWithDirectionStatService.cpp
+
 ${OBJECTDIR}/TriangulationWithDirectionTriangle.o: TriangulationWithDirectionTriangle.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionTriangle.o TriangulationWithDirectionTriangle.cpp
-
 
 # Subprojects
 .build-subprojects:
