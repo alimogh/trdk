@@ -100,6 +100,9 @@ namespace trdk {
 		const trdk::TradeSystem & GetTradeSystem() const;
 		trdk::TradeSystem & GetTradeSystem();
 
+		const trdk::Strategy & GetStrategy() const throw();
+		trdk::Strategy & GetStrategy() throw();
+
 		const trdk::Security & GetSecurity() const throw();
 		trdk::Security & GetSecurity() throw();
 
@@ -128,10 +131,18 @@ namespace trdk {
 		/** @sa	IsCompleted
 		  */
 		bool IsStarted() const throw();
-		//! Started and now hasn't any orders and active qty.
+		//! Started and now hasn't any orders and active qty or market as
+		//! completed.
 		/** @sa	IsStarted
+		  * @sa MarkAsCompleted
 		  */
 		bool IsCompleted() const throw();
+		//! Marks position as completed without real closing.
+		/** Call not thread-safe! Must be called only from event-methods, or if
+		  * strategy locked by GetMutex().
+		  * @sa IsCompleted
+		  */
+		void MarkAsCompleted();
 
 		//! Open operation started, but error occurred at opening or closing.
 		bool IsError() const throw();

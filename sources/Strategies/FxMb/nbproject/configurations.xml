@@ -5,24 +5,23 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>Api.h</itemPath>
-      <itemPath>EquationPosition.hpp</itemPath>
-      <itemPath>FxArb1.hpp</itemPath>
-      <itemPath>FxMbStrategyLog.hpp</itemPath>
+      <itemPath>Fwd.hpp</itemPath>
+      <itemPath>TriangulationWithDirection.hpp</itemPath>
       <itemPath>TriangulationWithDirectionPosition.hpp</itemPath>
+      <itemPath>TriangulationWithDirectionReport.hpp</itemPath>
       <itemPath>TriangulationWithDirectionStatService.hpp</itemPath>
-      <itemPath>Util.hpp</itemPath>
+      <itemPath>TriangulationWithDirectionTriangle.hpp</itemPath>
+      <itemPath>TriangulationWithDirectionTypes.hpp</itemPath>
+      <itemPath>Y.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>FxArb1.cpp</itemPath>
-      <itemPath>FxArb1Mono.cpp</itemPath>
-      <itemPath>FxArb1Multi.cpp</itemPath>
-      <itemPath>FxMbStrategyLog.cpp</itemPath>
       <itemPath>Prec.cpp</itemPath>
       <itemPath>TriangulationWithDirection.cpp</itemPath>
+      <itemPath>TriangulationWithDirectionReport.cpp</itemPath>
       <itemPath>TriangulationWithDirectionStatService.cpp</itemPath>
-      <itemPath>Util.cpp</itemPath>
+      <itemPath>TriangulationWithDirectionTriangle.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -62,6 +61,7 @@
           <incDir>
             <pElem>../..</pElem>
           </incDir>
+          <commandLine>-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
             <Elem>DEV_VER</Elem>
@@ -96,29 +96,30 @@
               </makeArtifact>
             </linkerLibProjectItem>
           </linkerLibItems>
+          <commandLine>-ltcmalloc</commandLine>
         </linkerTool>
       </compileType>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="EquationPosition.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="FxArb1.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="FxArb1.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="FxArb1Mono.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="FxArb1Multi.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="FxMbStrategyLog.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="FxMbStrategyLog.hpp" ex="false" tool="3" flavor2="0">
+      <item path="Fwd.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="TriangulationWithDirection.cpp" ex="false" tool="1" flavor2="0">
       </item>
+      <item path="TriangulationWithDirection.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="TriangulationWithDirectionPosition.hpp"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="TriangulationWithDirectionReport.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="TriangulationWithDirectionReport.hpp"
             ex="false"
             tool="3"
             flavor2="0">
@@ -133,9 +134,22 @@
             tool="3"
             flavor2="0">
       </item>
-      <item path="Util.cpp" ex="false" tool="1" flavor2="0">
+      <item path="TriangulationWithDirectionTriangle.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
       </item>
-      <item path="Util.hpp" ex="false" tool="3" flavor2="0">
+      <item path="TriangulationWithDirectionTriangle.hpp"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="TriangulationWithDirectionTypes.hpp"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="Y.hpp" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="2">
@@ -164,6 +178,7 @@
           <incDir>
             <pElem>../..</pElem>
           </incDir>
+          <commandLine>-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_DISABLE_ASSERTS</Elem>
             <Elem>NDEBUG</Elem>
@@ -204,29 +219,30 @@
               </makeArtifact>
             </linkerLibProjectItem>
           </linkerLibItems>
+          <commandLine>-ltcmalloc</commandLine>
         </linkerTool>
       </compileType>
       <item path="Api.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="EquationPosition.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="FxArb1.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="FxArb1.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="FxArb1Mono.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="FxArb1Multi.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="FxMbStrategyLog.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="FxMbStrategyLog.hpp" ex="false" tool="3" flavor2="0">
+      <item path="Fwd.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Prec.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="TriangulationWithDirection.cpp" ex="false" tool="1" flavor2="0">
       </item>
+      <item path="TriangulationWithDirection.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="TriangulationWithDirectionPosition.hpp"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="TriangulationWithDirectionReport.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="TriangulationWithDirectionReport.hpp"
             ex="false"
             tool="3"
             flavor2="0">
@@ -241,9 +257,22 @@
             tool="3"
             flavor2="0">
       </item>
-      <item path="Util.cpp" ex="false" tool="1" flavor2="0">
+      <item path="TriangulationWithDirectionTriangle.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
       </item>
-      <item path="Util.hpp" ex="false" tool="3" flavor2="0">
+      <item path="TriangulationWithDirectionTriangle.hpp"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="TriangulationWithDirectionTypes.hpp"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="Y.hpp" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

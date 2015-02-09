@@ -787,7 +787,7 @@ namespace trdk { namespace Engine {
 				boost::ref(listWithExtraLowPriority3));
 			m_threads.create_thread(
 				boost::bind(
-					&Dispatcher::NotificationTask
+					&Dispatcher::NotificationTask<
 						decltype(lists),
 						DispatchingTimeMeasurementPolicy>,
 					this,

@@ -128,6 +128,7 @@
           <incDir>
             <pElem>..</pElem>
           </incDir>
+          <commandLine>-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
             <Elem>DEV_VER</Elem>
@@ -152,6 +153,7 @@
               </makeArtifact>
             </linkerLibProjectItem>
           </linkerLibItems>
+          <commandLine>-ltcmalloc</commandLine>
         </linkerTool>
         <requiredProjects>
           <makeArtifact PL="../Common"
@@ -283,6 +285,7 @@
           <incDir>
             <pElem>..</pElem>
           </incDir>
+          <commandLine>-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_DISABLE_ASSERTS</Elem>
             <Elem>NDEBUG</Elem>
@@ -312,6 +315,7 @@
               </makeArtifact>
             </linkerLibProjectItem>
           </linkerLibItems>
+          <commandLine>-ltcmalloc</commandLine>
         </linkerTool>
         <requiredProjects>
           <makeArtifact PL="../Common"

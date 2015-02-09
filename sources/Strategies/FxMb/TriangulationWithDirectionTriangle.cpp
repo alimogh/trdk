@@ -19,12 +19,82 @@ using namespace trdk::Lib;
 using namespace trdk::Strategies::FxMb;
 using namespace trdk::Strategies::FxMb::Twd;
 
+Triangle::Triangle(
+		const Id &id,
+		TriangulationWithDirection &strategy,
+		ReportsState &reportsState,
+		const Y &y,
+		const Qty &startQty,
+		const PairLegParams &ab,
+		const PairLegParams &bc,
+		const PairLegParams &ac,
+		const BestBidAskPairs &bestBidAskRef) 
+	: m_strategy(strategy),
+	m_startTime(m_strategy.GetContext().GetCurrentTime()),
+	m_bestBidAsk(bestBidAskRef),
+	m_report(*this, reportsState),
+	m_id(id),
+	m_y(y),
+	m_qtyStart(startQty) {
+
+#	ifdef BOOST_ENABLE_ASSERT_HANDLER
+		m_pairsLegs.fill(nullptr);
+#	endif
+			
+	m_pairs[PAIR_AB] = PairInfo(ab, m_bestBidAsk);
+	m_pairsLegs[m_pairs[PAIR_AB].leg] = &m_pairs[PAIR_AB];
+			
+	m_pairs[PAIR_BC] = PairInfo(bc, m_bestBidAsk);
+	m_pairsLegs[m_pairs[PAIR_BC].leg] = &m_pairs[PAIR_BC];
+			
+	m_pairs[PAIR_AC] = PairInfo(ac, m_bestBidAsk);
+	m_pairsLegs[m_pairs[PAIR_AC].leg] = &m_pairs[PAIR_AC];
+		
+#			ifdef BOOST_ENABLE_ASSERT_HANDLER
+
+		foreach (const PairInfo &info, m_pairs) {
+			foreach (const PairInfo &subInfo, m_pairs) {
+				if (&subInfo == &info) {
+					continue;
+				}
+				AssertNe(
+					subInfo.security->GetSymbol(),
+					info.security->GetSymbol());
+				Assert(subInfo.security != info.security);
+			}
+		}
+
+		foreach (const PairInfo *info, m_pairsLegs) {
+			Assert(info);
+		}
+
+#			endif
+
+	//! @todo make setting for account currency
+	m_conversionPricesBid = GetPair(PAIR_AB).security->GetBidPrice();
+	m_conversionPricesAsk = GetPair(PAIR_AB).security->GetAskPrice();
+	AssertLt(0, m_conversionPricesBid);
+	AssertLt(0, m_conversionPricesAsk);
+
+	UpdateYDirection();
+
+}
+
+Triangle::~Triangle() {
+	AssertEq(1, m_strategy.GetPositions().GetSize());
+	AssertNe(
+		LEG2,
+		dynamic_cast<Twd::Position &>(*m_strategy.GetPositions().GetBegin()).GetLeg());
+}
+
 boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		PairInfo &pair,
 		Security &security,
 		double price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-			
+
+	AssertLt(0, price);
+
 	boost::shared_ptr<Twd::Position> result;
 
 	if (pair.isBuy) {

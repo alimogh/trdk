@@ -47,8 +47,8 @@ OBJECTFILES= \
 CFLAGS=
 
 # CC Compiler Flags
-CCFLAGS=-fPIC
-CXXFLAGS=-fPIC
+CCFLAGS=-fPIC -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
+CXXFLAGS=-fPIC -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -69,7 +69,7 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngine.${CND_DLIB_EXT}: ../Common/
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngine.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngine.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngine.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -ltcmalloc -shared -fPIC
 
 ${OBJECTDIR}/Context.o: Context.cpp 
 	${MKDIR} -p ${OBJECTDIR}

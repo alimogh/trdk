@@ -36,8 +36,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/TriangulationWithDirection.o \
-	${OBJECTDIR}/TriangulationWithDirectionStatService.o \
 	${OBJECTDIR}/TriangulationWithDirectionReport.o \
+	${OBJECTDIR}/TriangulationWithDirectionStatService.o \
 	${OBJECTDIR}/TriangulationWithDirectionTriangle.o
 
 
@@ -45,8 +45,8 @@ OBJECTFILES= \
 CFLAGS=
 
 # CC Compiler Flags
-CCFLAGS=
-CXXFLAGS=
+CCFLAGS=-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
+CXXFLAGS=-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -67,28 +67,22 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb_dbg.${CND_DLIB_EXT}: ../../Co
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb_dbg.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb_dbg.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
-
-${OBJECTDIR}/FxArb1.o: FxArb1.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FxArb1.o FxArb1.cpp
-
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libFxMb_dbg.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -ltcmalloc -shared -fPIC
 
 ${OBJECTDIR}/TriangulationWithDirection.o: TriangulationWithDirection.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirection.o TriangulationWithDirection.cpp
 
-${OBJECTDIR}/TriangulationWithDirectionStatService.o: TriangulationWithDirectionStatService.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionStatService.o TriangulationWithDirectionStatService.cpp
-
 ${OBJECTDIR}/TriangulationWithDirectionReport.o: TriangulationWithDirectionReport.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionReport.o TriangulationWithDirectionReport.cpp
+
+${OBJECTDIR}/TriangulationWithDirectionStatService.o: TriangulationWithDirectionStatService.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I../.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TriangulationWithDirectionStatService.o TriangulationWithDirectionStatService.cpp
 
 ${OBJECTDIR}/TriangulationWithDirectionTriangle.o: TriangulationWithDirectionTriangle.cpp 
 	${MKDIR} -p ${OBJECTDIR}

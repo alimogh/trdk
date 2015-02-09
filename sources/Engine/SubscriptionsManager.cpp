@@ -635,7 +635,7 @@ void SubscriptionsManager::Subscribe(
 	ServiceSubscriberVisitor serviceSubscriberVisitor(
 		m_dispatcher,
 		newSlotConnections,
-		m_subscribedStrategies);
+		subscribedStrategies);
 	try {
 		foreach (const auto &serviceSubscriber, service.GetSubscribers()) {
 			boost::apply_visitor(serviceSubscriberVisitor, serviceSubscriber);

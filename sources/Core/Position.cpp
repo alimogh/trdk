@@ -135,7 +135,8 @@ public:
 
 	mutable StateUpdateSignal m_stateUpdateSignal;
 
-	Strategy *m_strategy;
+	Strategy &m_strategy;
+	bool m_isRegistered;
 	Security &m_security;
 	const Currency m_currency;
 
@@ -151,13 +152,13 @@ public:
 
 	volatile long m_isStarted;
 
+	bool m_isMarketAsCompleted;
+
 	boost::atomic_bool m_isError;
 	boost::atomic_bool m_isInactive;
 
 	boost::atomic<CancelState> m_cancelState;
 	boost::function<void ()> m_cancelMethod;
-
-	const std::string m_tag;
 
 	TimeMeasurement::Milestones m_timeMeasurement;
 
@@ -175,7 +176,8 @@ public:
 			: m_id(theNextPositionId++),
 			m_position(position),
 			m_tradeSystem(tradeSystem),
-			m_strategy(&strategy),
+			m_strategy(strategy),
+			m_isRegistered(false),
 			m_security(security),
 			m_currency(currency),
 			m_planedQty(qty),
@@ -183,10 +185,10 @@ public:
 			m_closeStartPrice(0),
 			m_closeType(CLOSE_TYPE_NONE),
 			m_isStarted(false),
+			m_isMarketAsCompleted(false),
 			m_isError(false),
 			m_isInactive(false),
 			m_cancelState(CANCEL_STATE_NOT_CANCELED),
-			m_tag(m_strategy->GetTag()),
 			m_timeMeasurement(timeMeasurement) {
 		AssertLt(0, m_planedQty);
 	}
@@ -543,7 +545,7 @@ public:
 					% m_security
 					% m_position.GetTypeStr()
 					% eventDesc
-					% m_tag
+					% m_strategy.GetTag()
 					% m_security.DescalePrice(m_position.GetOpenStartPrice())
 					% m_security.DescalePrice(m_position.GetOpenPrice())
 					% ConvertToIsoPch(m_position.GetCurrency())
@@ -569,7 +571,7 @@ public:
 				record
 					% m_security
 					% m_position.GetTypeStr()
-					% m_tag
+					% m_strategy.GetTag()
 					% m_position.GetOpenedQty()
 					% m_position.GetClosedQty()
 					% m_position.GetOpenOrderId()
@@ -598,7 +600,7 @@ public:
 					% m_position.GetSecurity().GetSymbol()
 					% m_position.GetTypeStr()
 					% eventDesc
-					% m_tag
+					% m_strategy.GetTag()
 					% m_position.GetOpenedQty()
 					% m_position.GetClosedQty()
 					% m_security.DescalePrice(m_position.GetClosePrice())
@@ -678,9 +680,9 @@ public:
 		m_opened.qty = m_planedQty.load();
 		m_opened.orderId = openOrderId;
 
-		if (m_strategy) {
-			m_strategy->Register(m_position);
-			m_strategy = nullptr;
+		if (!m_isRegistered) {
+			m_strategy.Register(m_position);
+			m_isRegistered = true;
 		}
 
 		ReportOpeningUpdate("restored", TradeSystem::ORDER_STATUS_FILLED);
@@ -710,7 +712,7 @@ public:
 		if (m_oppositePosition) {
 			oppositePositionLock.reset(
 				new WriteLock(m_oppositePosition->m_pimpl->m_mutex));
-			Assert(!m_oppositePosition->m_pimpl->m_strategy);
+			Assert(m_oppositePosition->m_pimpl->m_isRegistered);
 			Assert(m_oppositePosition->IsStarted());
 			Assert(!m_oppositePosition->IsError());
 			Assert(!m_oppositePosition->HasActiveOrders());
@@ -728,8 +730,10 @@ public:
 			m_oppositePosition->SetCloseStartPrice(m_openStartPrice);
 		}
 
-		if (m_strategy) {
-			m_strategy->Register(m_position);
+		if (!m_isRegistered) {
+			m_strategy.Register(m_position);
+			// supporting prev. logic (when was m_strategy = nullptr),
+			// don't know why set flag in other place.
 		}
 
 		m_security.GetContext().GetTradingLog().Write(
@@ -744,7 +748,7 @@ public:
 					% m_security
 					% m_position.GetTypeStr()
 					% action
-					% m_tag
+					% m_strategy.GetTag()
 					% m_security.DescalePrice(m_openStartPrice)
 					% ConvertToIsoPch(m_position.GetCurrency())
 					% m_position.GetPlanedQty()
@@ -756,7 +760,9 @@ public:
 
 		try {
 			const auto orderId = openImpl(qtyToOpen);
-			m_strategy = nullptr;
+			m_isRegistered = true;	// supporting prev. logic
+									// (when was m_strategy = nullptr),
+									// don't know why set flag only here.
 			m_opened.hasOrder = true;
 			AssertEq(nOrderId, m_opened.orderId);
 			m_opened.orderId = orderId;
@@ -769,8 +775,8 @@ public:
 			}
 			return orderId;
 		} catch (...) {
-			if (m_strategy) {
-				m_strategy->Unregister(m_position);
+			if (m_isRegistered) {
+				m_strategy.Unregister(m_position);
 			}
 			throw;
 		}
@@ -789,7 +795,7 @@ public:
 		}
 
 		Assert(!m_oppositePosition);
-		Assert(!m_strategy);
+		Assert(m_isRegistered);
 		Assert(m_position.IsStarted());
 		Assert(!m_position.IsError());
 		Assert(!m_position.HasActiveOrders());
@@ -897,7 +903,7 @@ Position::Position(
 	Assert(oppositePosition.IsOpened());
 	Assert(!oppositePosition.HasActiveCloseOrders());
 	Assert(!oppositePosition.IsClosed());
-	Assert(!oppositePosition.m_pimpl->m_strategy);
+	Assert(oppositePosition.m_pimpl->m_isRegistered);
 	Assert(oppositePosition.IsStarted());
 	Assert(!oppositePosition.IsError());
 	Assert(!oppositePosition.HasActiveOrders());
@@ -920,6 +926,14 @@ Position::~Position() {
 
 const PositionId & Position::GetId() const {
 	return m_pimpl->m_id;
+}
+
+const Strategy & Position::GetStrategy() const throw() {
+	return const_cast<Position *>(this)->GetStrategy();
+}
+
+Strategy & Position::GetStrategy() throw() {
+	return m_pimpl->m_strategy;
 }
 
 const Security & Position::GetSecurity() const throw() {
@@ -964,7 +978,15 @@ bool Position::IsStarted() const throw() {
 }
 
 bool Position::IsCompleted() const throw() {
-	return IsStarted() && !HasActiveOrders() && GetActiveQty() == 0;
+	return
+		m_pimpl->m_isMarketAsCompleted
+		|| (IsStarted() && !HasActiveOrders() && GetActiveQty() == 0);
+}
+
+void Position::MarkAsCompleted() {
+	Assert(!m_pimpl->m_isMarketAsCompleted);
+	m_pimpl->m_isMarketAsCompleted = true;
+	m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);
 }
 
 bool Position::IsError() const throw() {

@@ -41,7 +41,7 @@ OBJECTFILES= \
 
 
 # C Compiler Flags
-CFLAGS=
+CFLAGS=-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
 
 # CC Compiler Flags
 CCFLAGS=
@@ -68,7 +68,7 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine: ../Engine/dist/Release/G
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine ${OBJECTFILES} ${LDLIBSOPTIONS}
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine ${OBJECTFILES} ${LDLIBSOPTIONS} -ltcmalloc
 
 ${OBJECTDIR}/_ext/2108356922/Assert.o: ../Common/Assert.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/2108356922

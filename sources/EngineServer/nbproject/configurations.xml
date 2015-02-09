@@ -41,6 +41,7 @@
       </toolsSet>
       <compileType>
         <cTool>
+          <commandLine>-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_ENABLE_ASSERT_HANDLER</Elem>
             <Elem>DEV_VER</Elem>
@@ -103,6 +104,7 @@
             <linkerLibLibItem>boost_regex</linkerLibLibItem>
             <linkerLibLibItem>boost_thread</linkerLibLibItem>
           </linkerLibItems>
+          <commandLine>-ltcmalloc</commandLine>
         </linkerTool>
         <requiredProjects>
           <makeArtifact PL="../Common"
@@ -157,6 +159,7 @@
       <compileType>
         <cTool>
           <developmentMode>5</developmentMode>
+          <commandLine>-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free</commandLine>
           <preprocessorList>
             <Elem>BOOST_DISABLE_ASSERTS</Elem>
             <Elem>NDEBUG</Elem>
@@ -226,6 +229,7 @@
             <linkerLibLibItem>boost_regex</linkerLibLibItem>
             <linkerLibLibItem>boost_thread</linkerLibLibItem>
           </linkerLibItems>
+          <commandLine>-ltcmalloc</commandLine>
         </linkerTool>
         <requiredProjects>
           <makeArtifact PL="../Common"
