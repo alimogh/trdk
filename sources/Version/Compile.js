@@ -12,8 +12,8 @@
 //////////////////////////////////////////////////////////////////////////
 // Customization:
 
-var branch = "morganbenoit"
-var productName	= "Trading Robot Development Kit"
+var branch = "probitecapital"
+var productName	= "Probite Capital Trading Robot Development Kit"
 var vendorName = "Eugene V. Palchukovsky"
 var domain = "robotdk.com"
 var licenseServiceSubdomain = "licensing"
