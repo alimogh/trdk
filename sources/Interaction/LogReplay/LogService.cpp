@@ -164,7 +164,7 @@ public:
 			throw ModuleError("Failed to open log file");
 		}
 		*m_files[source]
-			<< "TRDK Book Snapshots Log version 1.1"
+			<< "TRDK Book Snapshots Log version 1.2"
 			<< ' ' << TRDK_BUILD_IDENTITY
 			<< ' ' << GetContext().GetCurrentTime()
 			<< ' ' << security
@@ -183,7 +183,9 @@ public:
 		AssertGt(m_logs.size(), security.GetSource().GetIndex());
 		m_logs[security.GetSource().GetIndex()]->Write(
 			[&](Record &record) {
-				record % book.GetTime();
+				record
+					% book.GetTime()
+					% (book.IsRespected() ? '+' : '-');
 				{
 					const Security::Book::Side &bids = book.GetBids();
 					for (size_t i = 0; i < bids.GetLevelsCount(); ++i) {

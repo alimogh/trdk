@@ -155,7 +155,7 @@ pt::ptime StatService::OnSecurityStart(const Security &security) {
 	auto &source = m_data[dataIndex];
 	source.reset(new Source(security, m_emaSpeedSlow, m_emaSpeedFast));
 	{
-		const Security::Book::Level emptyLevel(.0, 0);
+		const Security::Book::Level emptyLevel;
 		source->bids.resize(m_levelsCount, emptyLevel);
 		source->offers.resize(m_levelsCount, emptyLevel);
 	}
@@ -220,49 +220,37 @@ bool StatService::OnBookUpdateTick(
 
 	////////////////////////////////////////////////////////////////////////////////
 	// Current prices and vol:
-	{
 
-		bool hasChanges = false;
-	
-		const auto &sum = [&](
-				size_t levelIndex,
-				const Security::Book::Side &source,
-				Side &result,
-				std::vector<Security::Book::Level>::iterator &level) {
-			if (source.GetLevelsCount() <= levelIndex) {
-				return;
-			}
-			const auto &sourceLevel = source.GetLevel(levelIndex);
-			if (sourceLevel != *level) {
-				hasChanges = true;
-			}
-			*level = sourceLevel;
-			result.qty += level->GetQty();
-			result.vol += level->GetQty() * level->GetPrice();
-			++level;
-		};
+	const auto &sum = [&](
+			size_t levelIndex,
+			const Security::Book::Side &source,
+			Side &result,
+			std::vector<Security::Book::Level>::iterator &level) {
+		if (source.GetLevelsCount() <= levelIndex) {
+			return;
+		}
+		const auto &sourceLevel = source.GetLevel(levelIndex);
+		*level = sourceLevel;
+		result.qty += level->GetQty();
+		result.vol += level->GetQty() * level->GetPrice();
+		++level;
+	};
 
-		const auto realLevelsCount = std::max(
-			bidsBook.GetLevelsCount(),
-			offersBook.GetLevelsCount());
-		const auto actualLinesCount = std::min(m_levelsCount, realLevelsCount);
+	const auto realLevelsCount = std::max(
+		bidsBook.GetLevelsCount(),
+		offersBook.GetLevelsCount());
+	const auto actualLinesCount = std::min(m_levelsCount, realLevelsCount);
 		
-		data.bids = source.bids;
-		auto bidsLevel = data.bids.begin();
-		data.offers = source.offers;
-		auto offersLevel = data.offers.begin();
+	data.bids = source.bids;
+	auto bidsLevel = data.bids.begin();
+	data.offers = source.offers;
+	auto offersLevel = data.offers.begin();
 
-		// Calls sum-function for each price level:
-		for (size_t i = 0; i < actualLinesCount; ++i) {
-			// accumulates prices and vol from current line:
-			sum(i, bidsBook, bid, bidsLevel);
-			sum(i, offersBook, offer, offersLevel);
-		}
-
-		if (!hasChanges) {
-			return false;
-		}
-
+	// Calls sum-function for each price level:
+	for (size_t i = 0; i < actualLinesCount; ++i) {
+		// accumulates prices and vol from current line:
+		sum(i, bidsBook, bid, bidsLevel);
+		sum(i, offersBook, offer, offersLevel);
 	}
 
 	data.current.time = book.GetTime();
@@ -375,7 +363,7 @@ bool StatService::OnBookUpdateTick(
 
 	// If this method returns true - strategy will be notified about actual data
 	// update:
-	return !IsZero(data.prev2.theo);
+	return book.IsRespected() && !IsZero(data.prev2.theo);
 
 }
 

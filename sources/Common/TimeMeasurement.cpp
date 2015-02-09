@@ -18,20 +18,20 @@ using namespace trdk::Lib::TimeMeasurement;
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace { namespace StrategyStrings {
-	const std::string dispatchingDataStore		= "data store";
-	const std::string dispatchingDataEnqueue	= "data enqueue";
-	const std::string dispatchingDataDequeue	= "data dequeue";
-	const std::string dispatchingDataRaise		= "data raise";
-	const std::string strategyWithoutDecision1	= "strat skip leg1";
-	const std::string strategyWithoutDecision2	= "strat skip leg3";
+	const std::string dispatchingDataStore		= "data store      ";
+	const std::string dispatchingDataEnqueue	= "data enqueue    ";
+	const std::string dispatchingDataDequeue	= "data dequeue    ";
+	const std::string dispatchingDataRaise		= "data raise      ";
+	const std::string strategyWithoutDecision1	= "strat skip leg1 ";
+	const std::string strategyWithoutDecision2	= "strat skip leg3 ";
 	const std::string strategyDecisionStart1	= "strat start leg1";
 	const std::string strategyDecisionStart2	= "strat start leg3";
-	const std::string executionStart1			= "exec start leg1";
-	const std::string executionStart2			= "exec start leg3";
-	const std::string executionStop1			= "exec stop leg1";
-	const std::string executionStop2			= "exec stop leg3";
-	const std::string executionReply1			= "exec reply leg1";
-	const std::string executionReply2			= "exec reply leg3";
+	const std::string executionStart1			= "exec start leg1 ";
+	const std::string executionStart2			= "exec start leg3 ";
+	const std::string executionStop1			= "exec stop leg1  ";
+	const std::string executionStop2			= "exec stop leg3  ";
+	const std::string executionReply1			= "exec reply leg1 ";
+	const std::string executionReply2			= "exec reply leg3 ";
 } }
 const std::string & TimeMeasurement::GetMilestoneName(
 			const TimeMeasurement::StrategyMilestone &milestone) {
@@ -74,12 +74,12 @@ const std::string & TimeMeasurement::GetMilestoneName(
 }
 
 namespace { namespace TradeSystemStrings {
-	const std::string orderEnqueue			= "order enqu";
-	const std::string orderPack				= "order pack";
-	const std::string orderSend				= "order send";
-	const std::string orderSent				= "order sent";
-	const std::string orderReply			= "reply recv";
-	const std::string orderReplyProcessed	= "reply proc";
+	const std::string orderEnqueue				= "order enqu      ";
+	const std::string orderPack					= "order pack      ";
+	const std::string orderSend					= "order send      ";
+	const std::string orderSent					= "order sent      ";
+	const std::string orderReply				= "reply recv      ";
+	const std::string orderReplyProcessed		= "reply proc      ";
 } }
 const std::string & TimeMeasurement::GetMilestoneName(
 			const TimeMeasurement::TradeSystemMilestone &milestone) {
@@ -106,9 +106,9 @@ const std::string & TimeMeasurement::GetMilestoneName(
 }
 
 namespace { namespace DispatchingStrings {
-	const std::string list		= "list";
-	const std::string all		= "all";
-	const std::string newData	= "new";
+	const std::string list							= "list        ";
+	const std::string all							= "all         ";
+	const std::string newData						= "new         ";
 } }
 const std::string & TimeMeasurement::GetMilestoneName(
 			const TimeMeasurement::DispatchingMilestone &milestone) {

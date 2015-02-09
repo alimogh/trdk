@@ -176,7 +176,7 @@ void FixStream::onStateChange(
 			security->m_book.clear();
 
 			FixSecurity::BookUpdateOperation book
-				= security->StartBookUpdate(now);
+				= security->StartBookUpdate(now, false);
 			{
 				std::vector<trdk::Security::Book::Level> empty;
 				book.GetBids().Swap(empty);
@@ -279,7 +279,8 @@ void FixStream::onInboundApplicationMsg(
 						auto pos = security->m_book.find(entryRefId);
 						if (pos == security->m_book.end()) {
 							GetLog().Error(
-								"Failed to delete price level with ref. ID %1% for %2%.",
+								"Failed to delete price level with ref."
+									" ID %1% for %2%.",
 								entryRefId,
 								*security);
 						} else {
@@ -289,6 +290,7 @@ void FixStream::onInboundApplicationMsg(
 							entry.get(fix::FIX42::Tags::MDEntryType)
 								== fix::FIX42::Values::MDEntryType::Bid,
 							Security::Book::Level(
+								now,
 								entry.getDouble(fix::FIX42::Tags::MDEntryPx),
 								ParseMdEntrySize(entry)));
 					}
@@ -312,7 +314,7 @@ void FixStream::onInboundApplicationMsg(
 					(*pos).second = std::make_pair(
 						entry.get(fix::FIX42::Tags::MDEntryType)
 							== fix::FIX42::Values::MDEntryType::Bid,
-						Security::Book::Level(price, qty));
+						Security::Book::Level(now, price, qty));
 
 				}
 
@@ -331,6 +333,7 @@ void FixStream::onInboundApplicationMsg(
 					entry.get(fix::FIX42::Tags::MDEntryType)
 						== fix::FIX42::Values::MDEntryType::Bid,
 					Security::Book::Level(
+						now,
 						entry.getDouble(fix::FIX42::Tags::MDEntryPx),
 						qty));
 
@@ -371,6 +374,7 @@ void FixStream::onInboundApplicationMsg(
 				message.get(fix::FIX42::Tags::MDEntryType)
 					== fix::FIX42::Values::MDEntryType::Bid,
 				Security::Book::Level(
+					now,
 					message.getDouble(fix::FIX42::Tags::MDEntryPx),
 					ParseMdEntrySize(message)));
 
@@ -414,6 +418,7 @@ void FixStream::onInboundApplicationMsg(
 		});
 
 #	if defined(DEV_VER) && 0
+	{
 		if (	
 				GetTag() == "Currenex"
 				/*&& security->GetSymbol().GetSymbol() == "USD/JPY"*/) {
@@ -435,9 +440,10 @@ void FixStream::onInboundApplicationMsg(
 			}
 			std::cout << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" << std::endl;
 		}
+	}
 #	endif
 
-	AdjustBook(*security, bids, asks, message);
+	const bool isRespected = !AdjustBook(*security, bids, asks, message);
 	AssertGe(security->m_book.size(), bids.size() + asks.size());
 
 	if (bids.size() > m_levelsCount) {
@@ -464,63 +470,56 @@ void FixStream::onInboundApplicationMsg(
 			});
 	}
 
-	FixSecurity::BookUpdateOperation book = security->StartBookUpdate(now);
+	FixSecurity::BookUpdateOperation book
+		= security->StartBookUpdate(now, isRespected);
 	book.GetBids().Swap(bids);
 	book.GetAsks().Swap(asks);
 	book.Commit(timeMeasurement);
 
 }
 
-void FixStream::AdjustBook(
+bool FixStream::AdjustBook(
 		const FixSecurity &security,
 		std::vector<Security::Book::Level> &bids,
 		std::vector<Security::Book::Level> asks,
 		const fix::Message &message)
 		const {
 
-	if (bids.empty() || asks.empty()) {
-		return;
-	}
+	size_t count = 0;
 
-	if (bids.front().GetPrice() <= asks.front().GetPrice()) {
-		return;
-	}
-
-	GetTradingLog().Write(
-		"book\tadjust\t%1%\t%2% <-> %3%\t%4%",
-		[&](TradingRecord &record) {
-			record
-				% security
-				% bids.front().GetPrice()
-				% asks.front().GetPrice()
-				% message.seqNum();
-		});
-
-	bids.front().Swap(asks.front());
-
-	const auto &checkBook = [&](
-			std::vector<Security::Book::Level> &side,
-			bool isAsk) {
+	while (
+			!bids.empty()
+			&& !asks.empty()
+			&& bids.front().GetPrice() > asks.front().GetPrice()) {
 		
-		if (side.size() == 1) {
-			return;
+		bool isBidOlder = bids.front().GetTime() < asks.front().GetTime();
+		
+		GetTradingLog().Write(
+			"book\tadjust\t%1%\t%2% %3% %4%\t%5% %6% %7%\t%8%\t%9%",
+			[&](TradingRecord &record) {
+				record
+					% security
+					% bids.front().GetPrice()
+					% bids.front().GetTime()
+					% (isBidOlder ? 'X' : '+')
+					% asks.front().GetPrice()
+					% asks.front().GetTime()
+					% (isBidOlder ? '+' : 'X')
+					% message.seqNum()
+					% (count + 1);
+			});
+		
+		if (isBidOlder) {
+			bids.erase(bids.begin());
+		} else {
+			asks.erase(asks.begin());
 		}
 		
-		auto &topLevel = side.front();
-		auto &nextLevel = *(side.begin() + 1);
-		if (IsEqual(topLevel.GetPrice(), nextLevel.GetPrice())) {
-			nextLevel += topLevel;
-			side.erase(side.begin());
-		} else if (
-				(isAsk && topLevel.GetPrice() > nextLevel.GetPrice())
-					|| (!isAsk && topLevel.GetPrice() < nextLevel.GetPrice())) {
- 			topLevel.Swap(nextLevel);
-		}
+		++count;
 	
-	};
+	}
 
-	checkBook(asks, true);
-	checkBook(bids, false);
+	return count > 0;
 
 }
 

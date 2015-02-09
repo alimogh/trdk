@@ -123,19 +123,21 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 
 	public:
 
-		void Measure(const MilestoneIndex &milestone) const {
+		PeriodFromStart Measure(const MilestoneIndex &milestone) const {
 			if (!m_stat) {
-				return;
+				return 0;
 			}
-			Add(milestone, GetNow());
+			return Add(milestone, GetNow());
 		}
 
-		void Add(
+		PeriodFromStart Add(
 				const MilestoneIndex &milestone,
 				const TimePoint &now)
 				const {
 			Assert(m_stat);
-			m_stat->AddMeasurement(milestone, CalcPeriod(m_start, now));
+			const auto &period = CalcPeriod(m_start, now);
+			m_stat->AddMeasurement(milestone, period);
+			return period;
 		}
 
 	public:

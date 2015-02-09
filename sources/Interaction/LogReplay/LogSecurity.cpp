@@ -70,10 +70,7 @@ LogSecurity::LogSecurity(
 	if (
 			!boost::istarts_with(
 				buffer,
-				"TRDK Book Snapshots Log version 1.0 ")
-			&&	!boost::istarts_with(
-					buffer,
-					"TRDK Book Snapshots Log version 1.1 ")) {
+				"TRDK Book Snapshots Log version 1.2 ")) {
 		GetSource().GetLog().Error(
 			"Failed to open market data source for \"%1%\" in file %2%:"
 				" wrong format.",
@@ -118,7 +115,9 @@ const pt::ptime & LogSecurity::GetCurrentTime() const {
 
 bool LogSecurity::Accept() {
 	if (!m_currentSnapshot.isAccepted) {
-		BookUpdateOperation book = StartBookUpdate(GetCurrentTime());
+		BookUpdateOperation book = StartBookUpdate(
+			GetCurrentTime(),
+			m_currentSnapshot.isRespected);
 		book.GetBids().Swap(m_currentSnapshot.bids);
 		book.GetAsks().Swap(m_currentSnapshot.asks);
 		book.Commit(GetContext().StartStrategyTimeMeasurement());
@@ -185,6 +184,21 @@ bool LogSecurity::Read() {
 		m_isEof = true;
 		return false;
 	}
+	
+	if (
+			!ReadFieldFromFile(buffer, isEndOfLine)
+				|| !buffer[0]
+				|| !(buffer[0] == '+' || buffer[0] == '-')
+				|| !buffer[1]) {
+		GetSource().GetLog().Error(
+			"Failed to read log file to replay \"%1%\":"
+				" wrong format at record %2% (respect-flag excepted).",
+			*this,
+			m_readCount + 2);
+		m_isEof = true;
+		return false;
+	}
+	snapshot.isRespected = buffer[0] == '+';
 
 	for (auto *side = &snapshot.bids; !isEndOfLine; ) {
 
@@ -273,7 +287,7 @@ bool LogSecurity::Read() {
 			continue;
 		}
 
-		side->emplace_back(price, qty);
+		side->emplace_back(pt::not_a_date_time, price, qty);
 
 	}
 

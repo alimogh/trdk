@@ -56,11 +56,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const char *action,
 				const char *reason,
 				const Leg &actionLeg,
+				const Lib::TimeMeasurement::PeriodFromStart &delay,
 				const Twd::Position *const reasonOrder = nullptr);
 		void ReportAction(
 				const char *action,
 				const char *reason,
 				const char *actionLegs,
+				const Lib::TimeMeasurement::PeriodFromStart &delay,
 				const Twd::Position *const reasonOrder = nullptr,
 				const PairsSpeed *speed = nullptr);
 

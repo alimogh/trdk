@@ -158,6 +158,7 @@ public:
 					%	"Action legs"
 					%	"Action orders count"
 					%	"Last Orders ID"
+					%	"Delay"
 					%	"Y1 detected"
 					%	"Y2 detected"
 					%	"New Y1"
@@ -355,6 +356,7 @@ void TriangleReport::ReportAction(
 		const char *action,
 		const char *reason,
 		const Leg &actionLeg,
+		const TimeMeasurement::PeriodFromStart &delay,
 		const Twd::Position *const reasonOrder /*= nullptr*/) {
 	const char *actionLegStr;
 	switch (actionLeg) {
@@ -372,7 +374,7 @@ void TriangleReport::ReportAction(
 			AssertEq(1, actionLeg);
 			break;
 	}
-	ReportAction(action, reason, actionLegStr, reasonOrder);
+	ReportAction(action, reason, actionLegStr, delay, reasonOrder);
 }
 
 
@@ -380,6 +382,7 @@ void TriangleReport::ReportAction(
 		const char *action,
 		const char *reason,
 		const char *actionLegs,
+		const TimeMeasurement::PeriodFromStart &delay,
 		const Twd::Position *const reasonOrder /*= nullptr*/,
 		const PairsSpeed *speed /*= nullptr*/) {
 
@@ -530,6 +533,11 @@ void TriangleReport::ReportAction(
 				}
 			} else {
 				record % ' ' % ' ';
+			}
+			if (delay != 0) {
+				record % delay;
+			} else {
+				record % ' ';
 			}
 			record
 				% m_triangle.GetStrategy().GetYDetectedDirection()[Y1]
