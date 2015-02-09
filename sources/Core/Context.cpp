@@ -57,9 +57,9 @@ namespace {
 	public:
 		
 		explicit LatanReport(Context &context)
-				: m_context(context),
-				m_stopFlag(false),
-				m_thread([&]{ThreadMain();}) {
+			: m_context(context),
+			m_stopFlag(false),
+			m_thread([&]{ThreadMain();}) {
 			//....//
 		}
 
@@ -160,6 +160,7 @@ namespace {
 						"Dispatching",
 						*m_accums.dispatching,
 						log);
+					log << std::endl;
 				}
 
 			} catch (...) {
@@ -186,10 +187,7 @@ namespace {
 
 			++index;
 			
-			destination
-				<< "[" << tag << "." << index << "] "
-				<< pt::microsec_clock::universal_time() << ":"
-				<< std::endl;
+			const auto &now = pt::microsec_clock::universal_time();
 			size_t milestoneIndex = 0;
 			foreach (const auto &stat, accum.GetMilestones()) {
 				TimeMeasurementMilestone id
@@ -198,8 +196,9 @@ namespace {
 					continue;
 				}
 				destination
-					<< "\t" << GetMilestoneName(id)
-					<< "\t" << stat
+					<< index << '\t' << now << '\t' << tag 
+					<< '\t' << GetMilestoneName(id)
+					<< '\t' << stat
 					<< std::endl;
 			}
 
