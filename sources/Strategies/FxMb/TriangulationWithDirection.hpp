@@ -85,7 +85,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		ProfitLossTest CheckLeg(const Twd::Position &) const;
 
-		void OnCancel(const char *reason, const Twd::Position &reasonOrder);
+		void OnCancel(
+				const char *reason,
+				const Twd::Position &reasonOrder,
+				const Lib::TimeMeasurement::PeriodFromStart &);
 
 		bool CheckStopRequest(const trdk::StopMode &);
 		bool CheckCurrentStopRequest();

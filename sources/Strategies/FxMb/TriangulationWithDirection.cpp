@@ -229,9 +229,12 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 
 		switch (order.GetLeg()) {
 			case LEG1:
-				position.GetTimeMeasurement().Measure(
-					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
-				OnCancel("exec report", order);
+				{
+					const auto execReportDelay
+						= position.GetTimeMeasurement().Measure(
+							TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
+					OnCancel("exec report", order, execReportDelay);
+				}
 				CheckCurrentStopRequest();
 				break;
 			case LEG2:
@@ -294,9 +297,9 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 
 		if (order.GetActiveQty() == 0) {
 			Assert(order.IsCompleted());
-			position.GetTimeMeasurement().Measure(
+			const auto &execReportDelay = position.GetTimeMeasurement().Measure(
 				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
-			OnCancel("exec report", order);
+			OnCancel("exec report", order, execReportDelay);
 			CheckCurrentStopRequest();
 			return;
 		} else if (
@@ -325,15 +328,18 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 	switch (leg) {
 			
 		case LEG1:
-			position.GetTimeMeasurement().Measure(
-				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
-			if (CheckCurrentStopRequest()) {
-				m_triangle->GetReport().ReportAction(
-					"executed",
-					"exec report",
-					LEG1,
-					&order);
-				return;
+			{
+				const auto &execDelay = position.GetTimeMeasurement().Measure(
+					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
+				if (CheckCurrentStopRequest()) {
+					m_triangle->GetReport().ReportAction(
+						"executed",
+						"exec report",
+						LEG1,
+						execDelay,
+						&order);
+					return;
+				}
 			}
 			if (CheckProfitLoss(order, true)) {
 				return;
@@ -355,6 +361,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				"executed",
 				"exec report",
 				"1 -> 2",
+				0,
 				&order);
 			break;
 
@@ -365,6 +372,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				"executed",
 				"exec report",
 				order.GetLeg(),
+				0,
 				&order);
 			order.MarkAsCompleted();
 			Assert(!m_triangle->GetLeg(LEG1).IsCompleted());
@@ -372,18 +380,20 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 			if (CheckCurrentStopRequest()) {
 				return;
 			}
-			CheckTriangleCompletion(TimeMeasurement::Milestones());
 			break;
 
 		case LEG3:
-			position.GetTimeMeasurement().Measure(
-				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_2);
-			order.MarkAsCompleted();
-			m_triangle->GetReport().ReportAction(
-				"executed",
-				"exec report",
-				order.GetLeg(),
-				&order);
+			{
+				const auto &execDelay = position.GetTimeMeasurement().Measure(
+					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_2);
+				order.MarkAsCompleted();
+				m_triangle->GetReport().ReportAction(
+					"executed",
+					"exec report",
+					order.GetLeg(),
+					execDelay,
+					&order);
+			}
 			m_triangle.reset();
 #			ifdef DEV_VER
 				m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
@@ -808,7 +818,8 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 		return false;
 	}
 
-	timeMeasurement.Measure(TimeMeasurement::SM_STRATEGY_DECISION_START_2);
+	const auto orderDelay = timeMeasurement.Measure(
+		TimeMeasurement::SM_STRATEGY_DECISION_START_2);
 	try {
 		m_triangle->StartLeg3(timeMeasurement, false);
 	} catch (const HasNotMuchOpportunityException &ex) {
@@ -823,7 +834,8 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 		return false;
 	}
 
-	m_triangle->GetReport().ReportAction("detected", "signal", LEG3);
+	m_triangle->GetReport()
+		.ReportAction("detected", "signal", LEG3, orderDelay);
 
 	return true;
 
@@ -855,6 +867,7 @@ bool TriangulationWithDirection::CheckProfitLoss(
 			"executed",
 			"exec report",
 			firstLeg.GetLeg(),
+			0,
 			&firstLeg);
 	}
 
@@ -862,7 +875,8 @@ bool TriangulationWithDirection::CheckProfitLoss(
 	m_triangle->GetReport().ReportAction(
 		"canceling",
 		closeTypeStr,
-		firstLeg.GetLeg());
+		firstLeg.GetLeg(),
+		0);
 
 	return true;
 
@@ -935,16 +949,16 @@ TriangulationWithDirection::ProfitLossTest TriangulationWithDirection::CheckLeg(
 
 void TriangulationWithDirection::OnCancel(
 		const char *reason,
-		const Twd::Position &reasonOrder) {
+		const Twd::Position &reasonOrder,
+		const TimeMeasurement::PeriodFromStart &delay) {
 	Assert(m_triangle);
 	m_triangle->GetReport().ReportAction(
 		"canceled",
 		reason,
 		reasonOrder.GetLeg(),
+		delay,
 		&reasonOrder);
 	m_triangle.reset();
-	CheckNewTriangle(TimeMeasurement::Milestones());
-
 }
 
 void TriangulationWithDirection::UpdateAlogImplSettings(

@@ -115,7 +115,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			timeMeasurement.Measure(
 				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_START_1);
 			order->Open();
-			timeMeasurement.Measure(
+			const auto &orderDelay = timeMeasurement.Measure(
 				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_STOP_1);
 
 			m_legs[LEG1] = order;
@@ -124,6 +124,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				"detected",
 				"signal",
 				"1",
+				orderDelay,
 				nullptr,
 				&pairsSpeed);
 
@@ -166,7 +167,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		}
 
-		void StartLeg3(
+		Lib::TimeMeasurement::PeriodFromStart StartLeg3(
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				bool isResend) {
 
@@ -210,12 +211,15 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_START_2);
 			}
 			order->Open();
+			Lib::TimeMeasurement::PeriodFromStart orderDelay = 0;
 			if (!isResend) {
-				timeMeasurement.Measure(
+				orderDelay = timeMeasurement.Measure(
 					Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_STOP_2);
 			}
 
 			m_legs[LEG3] = order;
+
+			return orderDelay;
 
 		}
 
