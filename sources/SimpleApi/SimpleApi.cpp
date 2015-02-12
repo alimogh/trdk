@@ -57,11 +57,23 @@ int32_t trdk_InitLogToStdOut() {
 #ifdef DEV_VER
 	namespace {
 
+		static bool isCallsDebugingOn = false;
+
 		void InitDebugLog() {
 			if (theBridgeServer.IsLogInited()) {
 				return;
 			}
 			trdk_InitLog("C:/Jts/trdk.log");
+			isCallsDebugingOn = true;
+		}
+
+		bool CheckCallsDebuging() {
+			if (isCallsDebugingOn) {
+				isCallsDebugingOn = false;
+				return true;
+			} else {
+				return false;
+			}
 		}
 
 	}
@@ -70,6 +82,10 @@ int32_t trdk_InitLogToStdOut() {
 
 		void InitDebugLog() {
 			//...//
+		}
+
+		bool CheckCallsDebuging() {
+			return false;
 		}
 
 	}
@@ -120,13 +136,15 @@ double _stdcall trdk_GetImpliedVolatilityLast(
 				tradingClass)
 			.GetLastImpliedVolatility();
 		result *= 100;
-// 		Log::Debug(
-// 			"trdk_GetImpliedVolatilityLast result for \"%1%:%2%:%3%:%4%\": %5%.",
-// 			symbol,
-// 			boost::lexical_cast<std::string>(expirationDate),
-// 			strike,
-// 			right,
-// 			result);
+		if (CheckCallsDebuging()) {
+ 			Log::Debug(
+ 				"trdk_GetImpliedVolatilityLast result for \"%1%:%2%:%3%:%4%\": %5%.",
+ 				symbol,
+ 				boost::lexical_cast<std::string>(expirationDate),
+ 				strike,
+ 				right,
+ 				result);
+		}
 		return result;
 	} catch (const Exception &ex) {
 		Log::Error(
