@@ -106,7 +106,7 @@ StatService::StatService(
 		const IniSectionRef &conf)
 	: Base(context, "TriangulationWithDirectionStatService", tag),
 	m_levelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
+		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
 	m_prev1Duration(
 		pt::milliseconds(
 			conf.ReadTypedKey<size_t>("prev1_duration_miliseconds"))),
@@ -220,37 +220,49 @@ bool StatService::OnBookUpdateTick(
 
 	////////////////////////////////////////////////////////////////////////////////
 	// Current prices and vol:
+	{
 
-	const auto &sum = [&](
-			size_t levelIndex,
-			const Security::Book::Side &source,
-			Side &result,
-			std::vector<Security::Book::Level>::iterator &level) {
-		if (source.GetLevelsCount() <= levelIndex) {
-			return;
-		}
-		const auto &sourceLevel = source.GetLevel(levelIndex);
-		*level = sourceLevel;
-		result.qty += level->GetQty();
-		result.vol += level->GetQty() * level->GetPrice();
-		++level;
-	};
+		bool hasChanges = false;
+	
+		const auto &sum = [&](
+				size_t levelIndex,
+				const Security::Book::Side &source,
+				Side &result,
+				std::vector<Security::Book::Level>::iterator &level) {
+			if (source.GetLevelsCount() <= levelIndex) {
+				return;
+			}
+			const auto &sourceLevel = source.GetLevel(levelIndex);
+			if (sourceLevel != *level) {
+				hasChanges = true;
+			}
+			*level = sourceLevel;
+			result.qty += level->GetQty();
+			result.vol += level->GetQty() * level->GetPrice();
+			++level;
+		};
 
-	const auto realLevelsCount = std::max(
-		bidsBook.GetLevelsCount(),
-		offersBook.GetLevelsCount());
-	const auto actualLinesCount = std::min(m_levelsCount, realLevelsCount);
+		const auto realLevelsCount = std::max(
+			bidsBook.GetLevelsCount(),
+			offersBook.GetLevelsCount());
+		const auto actualLinesCount = std::min(m_levelsCount, realLevelsCount);
 		
-	data.bids = source.bids;
-	auto bidsLevel = data.bids.begin();
-	data.offers = source.offers;
-	auto offersLevel = data.offers.begin();
+		data.bids = source.bids;
+		auto bidsLevel = data.bids.begin();
+		data.offers = source.offers;
+		auto offersLevel = data.offers.begin();
 
-	// Calls sum-function for each price level:
-	for (size_t i = 0; i < actualLinesCount; ++i) {
-		// accumulates prices and vol from current line:
-		sum(i, bidsBook, bid, bidsLevel);
-		sum(i, offersBook, offer, offersLevel);
+		// Calls sum-function for each price level:
+		for (size_t i = 0; i < actualLinesCount; ++i) {
+			// accumulates prices and vol from current line:
+			sum(i, bidsBook, bid, bidsLevel);
+			sum(i, offersBook, offer, offersLevel);
+		}
+
+		if (!hasChanges) {
+			return false;
+		}
+
 	}
 
 	data.current.time = book.GetTime();

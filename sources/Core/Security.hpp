@@ -124,7 +124,22 @@ namespace trdk {
 					m_qty(qty) {
 					//...//
 				}
+				void Swap(Level &rhs) throw() {
+					std::swap(rhs.m_price, m_price);
+					std::swap(rhs.m_qty, m_qty);
+				}
 			public:
+				void operator +=(const Level &rhs) {
+					m_qty += rhs.m_qty;
+				}
+				bool operator ==(const Level &rhs) const {
+					return
+						trdk::Lib::IsEqual(m_price,rhs.m_price)
+							&& trdk::Lib::IsEqual(m_qty,rhs.m_qty);
+				}
+				bool operator !=(const Level &rhs) const {
+					return !operator ==(rhs);
+				}
 				const boost::posix_time::ptime & GetTime() const {
 					return m_time;
 				}
