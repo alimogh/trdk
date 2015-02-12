@@ -68,7 +68,7 @@ TriangulationWithDirection::TriangulationWithDirection(
 			const IniSectionRef &conf)
 	: Base(context, "TriangulationWithDirection", tag),
 	m_levelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")),
+		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
 	m_allowLeg1Closing(
 		conf.ReadTypedKey<bool>("allow_leg1_closing")),
 	m_qty(conf.ReadTypedKey<Qty>("qty")),

@@ -19,6 +19,110 @@ using namespace trdk::Interaction::OnixsFixConnector;
 
 namespace fix = OnixS::FIX;
 
+////////////////////////////////////////////////////////////////////////////////
+
+bool FixStream::BookSwapAdjuster::Adjust(
+		const FixSecurity &security,
+		std::vector<Security::Book::Level> &bids,
+		std::vector<Security::Book::Level> &asks,
+		const fix::Message &message)
+		const {
+
+	if (bids.empty() || asks.empty()) {
+		return false;
+	}
+
+	if (bids.front().GetPrice() <= asks.front().GetPrice()) {
+		return false;
+	}
+
+	GetTradingLog().Write(
+		"book\tadjust\t%1%\t%2% <-> %3%\t%4%",
+		[&](TradingRecord &record) {
+			record
+				% security
+				% bids.front().GetPrice()
+				% asks.front().GetPrice()
+				% message.seqNum();
+		});
+
+	bids.front().Swap(asks.front());
+
+	const auto &checkBook = [&](
+			std::vector<Security::Book::Level> &side,
+			bool isAsk) {
+		
+		if (side.size() == 1) {
+			return;
+		}
+		
+		auto &topLevel = side.front();
+		auto &nextLevel = *(side.begin() + 1);
+		if (IsEqual(topLevel.GetPrice(), nextLevel.GetPrice())) {
+			nextLevel += topLevel;
+			side.erase(side.begin());
+		} else if (
+				(isAsk && topLevel.GetPrice() > nextLevel.GetPrice())
+					|| (!isAsk && topLevel.GetPrice() < nextLevel.GetPrice())) {
+ 			topLevel.Swap(nextLevel);
+		}
+	
+	};
+
+	checkBook(asks, true);
+	checkBook(bids, false);
+
+	return true;
+
+}
+
+bool FixStream::BookDeleteOldAdjuster::Adjust(
+		const FixSecurity &security,
+		std::vector<Security::Book::Level> &bids,
+		std::vector<Security::Book::Level> &asks,
+		const fix::Message &message)
+		const {
+
+	size_t count = 0;
+
+	while (
+			!bids.empty()
+			&& !asks.empty()
+			&& bids.front().GetPrice() > asks.front().GetPrice()) {
+		
+		bool isBidOlder = bids.front().GetTime() < asks.front().GetTime();
+		
+		GetTradingLog().Write(
+			"book\tadjust\t%1%\t%2% %3% %4%\t%5% %6% %7%\t%8%\t%9%",
+			[&](TradingRecord &record) {
+				record
+					% security
+					% bids.front().GetPrice()
+					% bids.front().GetTime()
+					% (isBidOlder ? 'X' : '+')
+					% asks.front().GetPrice()
+					% asks.front().GetTime()
+					% (isBidOlder ? '+' : 'X')
+					% message.seqNum()
+					% (count + 1);
+			});
+		
+		if (isBidOlder) {
+			bids.erase(bids.begin());
+		} else {
+			asks.erase(asks.begin());
+		}
+		
+		++count;
+	
+	}
+
+	return count > 0;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 FixStream::FixStream(
 		size_t index,
 		Context &context,
@@ -27,15 +131,25 @@ FixStream::FixStream(
 	: MarketDataSource(index, context, tag),
 	m_session(GetContext(), GetLog(), conf),
 	m_isSubscribed(false),
-	m_levelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("Common", "levels_count")) {
-	GetLog().Info("Book size: %1% * 2 price levels.", m_levelsCount);
+	m_bookLevelsCount(
+		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
+	m_isBookLevelsExactly(
+		conf.GetBase().ReadBoolKey("Common", "book.levels.exactly")),
+	m_bookAdjuster(CreateBookAdjuster(conf)),
+	m_isBookAdjustRespected(
+		conf.GetBase().ReadBoolKey("Common", "book.adjust.respected")) {
+	GetLog().Info(
+		"Book size: %1% * 2 price levels (%2%)."
+			" Book adjusting method: %3% (%4%).",
+		m_bookLevelsCount,
+		m_isBookLevelsExactly ? "exactly" : "not exactly",
+		m_bookAdjuster->GetName(),
+		m_isBookAdjustRespected ? "respected" : "not respected");
 }
 
 FixStream::~FixStream() {
 	//...//
 }
-
 
 void FixStream::Connect(const IniSectionRef &conf) {
 	if (m_session.IsConnected()) {
@@ -51,7 +165,7 @@ void FixStream::Connect(const IniSectionRef &conf) {
 }
 
 FixSecurity * FixStream::FindRequestSecurity(
-			const fix::Message &requestResult) {
+		const fix::Message &requestResult) {
 	const auto securityIndex
 		= requestResult.getUInt64(fix::FIX42::Tags::MDReqID);
 	if (securityIndex >= m_securities.size()) {
@@ -443,14 +557,16 @@ void FixStream::onInboundApplicationMsg(
 	}
 #	endif
 
-	const bool isRespected = !AdjustBook(*security, bids, asks, message);
+	const bool isRespected
+		= !m_bookAdjuster->Adjust(*security, bids, asks, message)
+			|| m_isBookAdjustRespected;
 	AssertGe(security->m_book.size(), bids.size() + asks.size());
 
-	if (bids.size() > m_levelsCount) {
-		bids.resize(m_levelsCount);
+	if (bids.size() > m_bookLevelsCount) {
+		bids.resize(m_bookLevelsCount);
 	}
-	if (asks.size() > m_levelsCount) {
-		asks.resize(m_levelsCount);
+	if (asks.size() > m_bookLevelsCount) {
+		asks.resize(m_bookLevelsCount);
 	}
 
 	if (
@@ -470,56 +586,17 @@ void FixStream::onInboundApplicationMsg(
 			});
 	}
 
+	if (
+			m_isBookLevelsExactly
+			&& (bids.size() < m_bookLevelsCount || asks.size() < m_bookLevelsCount)) {
+		return;
+	}
+
 	FixSecurity::BookUpdateOperation book
 		= security->StartBookUpdate(now, isRespected);
 	book.GetBids().Swap(bids);
 	book.GetAsks().Swap(asks);
 	book.Commit(timeMeasurement);
-
-}
-
-bool FixStream::AdjustBook(
-		const FixSecurity &security,
-		std::vector<Security::Book::Level> &bids,
-		std::vector<Security::Book::Level> asks,
-		const fix::Message &message)
-		const {
-
-	size_t count = 0;
-
-	while (
-			!bids.empty()
-			&& !asks.empty()
-			&& bids.front().GetPrice() > asks.front().GetPrice()) {
-		
-		bool isBidOlder = bids.front().GetTime() < asks.front().GetTime();
-		
-		GetTradingLog().Write(
-			"book\tadjust\t%1%\t%2% %3% %4%\t%5% %6% %7%\t%8%\t%9%",
-			[&](TradingRecord &record) {
-				record
-					% security
-					% bids.front().GetPrice()
-					% bids.front().GetTime()
-					% (isBidOlder ? 'X' : '+')
-					% asks.front().GetPrice()
-					% asks.front().GetTime()
-					% (isBidOlder ? '+' : 'X')
-					% message.seqNum()
-					% (count + 1);
-			});
-		
-		if (isBidOlder) {
-			bids.erase(bids.begin());
-		} else {
-			asks.erase(asks.begin());
-		}
-		
-		++count;
-	
-	}
-
-	return count > 0;
 
 }
 
@@ -529,4 +606,19 @@ Qty FixStream::ParseMdEntrySize(const fix::GroupInstance &entry) const {
 
 Qty FixStream::ParseMdEntrySize(const fix::Message &message) const {
 	return message.getInt32(fix::FIX42::Tags::MDEntrySize);
+}
+
+FixStream::BookAdjuster * FixStream::CreateBookAdjuster(
+		const IniSectionRef &conf)
+		const {
+	const auto &method = conf.GetBase().ReadKey("Common", "book.adjust.method");
+	if (boost::iequals(method, "swap")) {
+		return new BookSwapAdjuster(GetTradingLog());
+	} else if (boost::iequals(method, "delete_old")) {
+		return new BookDeleteOldAdjuster(GetTradingLog());
+	} else if (boost::iequals(method, "none")) {
+		return new BookDummyAdjuster(GetTradingLog());
+	} else {
+		throw Ini::KeyFormatError("Unknown book adjusting method");
+	}
 }

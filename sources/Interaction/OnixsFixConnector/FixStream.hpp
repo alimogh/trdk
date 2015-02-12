@@ -25,6 +25,103 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		using Interactor::Error;
 
+	private:
+
+		class BookAdjuster : private boost::noncopyable {
+		public:
+			explicit BookAdjuster(
+					trdk::MarketDataSource::TradingLog &log)
+				: m_log(log) {
+				//...//
+			}
+			virtual ~BookAdjuster() {
+				//...//
+			}
+		public:
+			virtual const char * GetName() const = 0;
+			virtual bool Adjust(
+					const FixSecurity &security,
+					std::vector<Security::Book::Level> &bids,
+					std::vector<Security::Book::Level> &asks,
+					const OnixS::FIX::Message &)
+					const
+				= 0;
+		protected:
+			trdk::MarketDataSource::TradingLog & GetTradingLog() const {
+				return m_log;
+			}
+		private:
+			trdk::MarketDataSource::TradingLog &m_log;
+		};
+
+		class BookDummyAdjuster : public BookAdjuster {
+		public:
+			explicit BookDummyAdjuster(
+					trdk::MarketDataSource::TradingLog &log)
+				: BookAdjuster(log) {
+				//...//
+			}
+			virtual ~BookDummyAdjuster() {
+				//...//
+			}
+		public:
+			virtual const char * GetName() const {
+				return "none";
+			}
+			virtual bool Adjust(
+					const FixSecurity &,
+					std::vector<Security::Book::Level> &,
+					std::vector<Security::Book::Level> &,
+					const OnixS::FIX::Message &)
+					const {
+				return false;
+			}
+		};
+
+		class BookSwapAdjuster : public BookAdjuster {
+		public:
+			explicit BookSwapAdjuster(
+					trdk::MarketDataSource::TradingLog &log)
+				: BookAdjuster(log) {
+				//...//
+			}
+			virtual ~BookSwapAdjuster() {
+				//...//
+			}
+		public:
+			virtual const char * GetName() const {
+				return "swap";
+			}
+			virtual bool Adjust(
+					const FixSecurity &,
+					std::vector<Security::Book::Level> &,
+					std::vector<Security::Book::Level> &,
+					const OnixS::FIX::Message &)
+					const;
+		};
+
+		class BookDeleteOldAdjuster : public BookAdjuster {
+		public:
+			explicit BookDeleteOldAdjuster(
+					trdk::MarketDataSource::TradingLog &log)
+				: BookAdjuster(log) {
+				//...//
+			}
+			virtual ~BookDeleteOldAdjuster() {
+				//...//
+			}
+		public:
+			virtual const char * GetName() const {
+				return "delete old";
+			}
+			virtual bool Adjust(
+					const FixSecurity &,
+					std::vector<Security::Book::Level> &,
+					std::vector<Security::Book::Level> &,
+					const OnixS::FIX::Message &)
+					const;
+		};
+
 	public:
 
 		explicit FixStream(
@@ -37,7 +134,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		size_t GetLevelsCount() const {
-			return m_levelsCount;
+			return m_bookLevelsCount;
 		}
 
 	public:
@@ -91,12 +188,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	private:
 
-		bool AdjustBook(
-				const FixSecurity &security,
-				std::vector<Security::Book::Level> &bids,
-				std::vector<Security::Book::Level> asks,
-				const OnixS::FIX::Message &)
-				const;
+		BookAdjuster * CreateBookAdjuster(const Lib::IniSectionRef &) const;
 
 	private:
 
@@ -105,7 +197,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		bool m_isSubscribed;
 
-		const size_t m_levelsCount;
+		const size_t m_bookLevelsCount;
+		const bool m_isBookLevelsExactly;
+		const std::unique_ptr<const BookAdjuster> m_bookAdjuster;
+		const bool m_isBookAdjustRespected;
 
 	};
 
