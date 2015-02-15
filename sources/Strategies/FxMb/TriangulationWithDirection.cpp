@@ -67,8 +67,10 @@ TriangulationWithDirection::TriangulationWithDirection(
 			const std::string &tag,
 			const IniSectionRef &conf)
 	: Base(context, "TriangulationWithDirection", tag),
-	m_levelsCount(
+	m_bookLevelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
+	m_isBookLevelsExactly(
+		conf.GetBase().ReadBoolKey("Common", "book.levels.exactly")),
 	m_allowLeg1Closing(
 		conf.ReadTypedKey<bool>("allow_leg1_closing")),
 	m_qty(conf.ReadTypedKey<Qty>("qty")),
@@ -96,8 +98,10 @@ TriangulationWithDirection::TriangulationWithDirection(
 #	endif
 
 	GetLog().Info(
-		"Allow Leg 1 closing: %1%.",
-		m_allowLeg1Closing ? "yes" : "no");
+		"Allow Leg 1 closing: %1%. Book size: %2% * 2 price levels (%3%).",
+		m_allowLeg1Closing ? "yes" : "no",
+		m_bookLevelsCount,
+		m_isBookLevelsExactly ? "exactly" : "not exactly");
 
 }
 

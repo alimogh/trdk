@@ -575,7 +575,7 @@ void Strategy::ReportStop() {
 				if (pos.HasActiveOrders()) {
 					GetLog().Error(
 						"Found position %1% with active orders at stop"
-							" with mode \"wait for positions before\".",
+							" with mode \"wait for orders before\".",
 					pos.GetId());
 				}
 				Assert(!pos.HasActiveOrders());

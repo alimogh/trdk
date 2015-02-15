@@ -133,16 +133,13 @@ FixStream::FixStream(
 	m_isSubscribed(false),
 	m_bookLevelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
-	m_isBookLevelsExactly(
-		conf.GetBase().ReadBoolKey("Common", "book.levels.exactly")),
 	m_bookAdjuster(CreateBookAdjuster(conf)),
 	m_isBookAdjustRespected(
 		conf.GetBase().ReadBoolKey("Common", "book.adjust.respected")) {
 	GetLog().Info(
-		"Book size: %1% * 2 price levels (%2%)."
-			" Book adjusting method: %3% (%4%).",
+		"Book size: %1% * 2 price levels."
+			" Book adjusting method: %2% (%3%).",
 		m_bookLevelsCount,
-		m_isBookLevelsExactly ? "exactly" : "not exactly",
 		m_bookAdjuster->GetName(),
 		m_isBookAdjustRespected ? "respected" : "not respected");
 }
@@ -584,12 +581,6 @@ void FixStream::onInboundApplicationMsg(
 					% security->m_bookMaxBookSize.second
 					% security->m_book.size();
 			});
-	}
-
-	if (
-			m_isBookLevelsExactly
-			&& (bids.size() < m_bookLevelsCount || asks.size() < m_bookLevelsCount)) {
-		return;
 	}
 
 	FixSecurity::BookUpdateOperation book

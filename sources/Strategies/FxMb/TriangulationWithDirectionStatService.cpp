@@ -105,8 +105,10 @@ StatService::StatService(
 		const std::string &tag,
 		const IniSectionRef &conf)
 	: Base(context, "TriangulationWithDirectionStatService", tag),
-	m_levelsCount(
+	m_bookLevelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
+	m_isBookLevelsExactly(
+		conf.GetBase().ReadBoolKey("Common", "book.levels.exactly")),
 	m_prev1Duration(
 		pt::milliseconds(
 			conf.ReadTypedKey<size_t>("prev1_duration_miliseconds"))),
@@ -120,9 +122,12 @@ StatService::StatService(
 	m_serviceLog(GetServiceLog(conf)) {
 	m_instancies.push_back(this);
 	GetLog().Info(
-		"Prev1 duration: %1%; Prev2 duration: %2%.",
+		"Prev1 duration: %1%; Prev2 duration: %2%."
+			" Book size: %3% * 2 price levels (%4%).",
 		m_prev1Duration,
-		m_prev2Duration);
+		m_prev2Duration,
+		m_bookLevelsCount,
+		m_isBookLevelsExactly ? "exactly" : "not exactly");
 	if (m_prev2Duration <= m_prev1Duration) {
 		throw ModuleError("Prev2 duration can't be equal or less then Prev1");
 	}
@@ -156,8 +161,8 @@ pt::ptime StatService::OnSecurityStart(const Security &security) {
 	source.reset(new Source(security, m_emaSpeedSlow, m_emaSpeedFast));
 	{
 		const Security::Book::Level emptyLevel;
-		source->bids.resize(m_levelsCount, emptyLevel);
-		source->offers.resize(m_levelsCount, emptyLevel);
+		source->bids.resize(m_bookLevelsCount, emptyLevel);
+		source->offers.resize(m_bookLevelsCount, emptyLevel);
 	}
 	return pt::not_a_date_time;
 }
@@ -206,6 +211,12 @@ bool StatService::OnBookUpdateTick(
 	}
 #	endif
 
+	if (	m_isBookLevelsExactly
+			&& (bidsBook.GetLevelsCount() < m_bookLevelsCount
+				|| offersBook.GetLevelsCount() < m_bookLevelsCount)) {
+		return false;
+	}
+
 	struct Side {
 		Qty qty;
 		double vol;
@@ -245,7 +256,9 @@ bool StatService::OnBookUpdateTick(
 		const auto realLevelsCount = std::max(
 			bidsBook.GetLevelsCount(),
 			offersBook.GetLevelsCount());
-		const auto actualLinesCount = std::min(m_levelsCount, realLevelsCount);
+		const auto actualLinesCount = std::min(
+			m_bookLevelsCount,
+			realLevelsCount);
 		
 		data.bids = source.bids;
 		auto bidsLevel = data.bids.begin();
