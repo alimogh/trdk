@@ -99,7 +99,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	private:
 
-		const size_t m_levelsCount;
+		const size_t m_bookLevelsCount;
+		const bool m_isBookLevelsExactly;
 		const bool m_allowLeg1Closing;
 		const Qty m_qty;
 		size_t m_trianglesLimit;

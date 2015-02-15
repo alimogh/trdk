@@ -210,7 +210,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	private:
 
-		const size_t m_levelsCount;
+		const size_t m_bookLevelsCount;
+		const bool m_isBookLevelsExactly;
 
 		const boost::posix_time::time_duration m_prev1Duration;
 		const boost::posix_time::time_duration m_prev2Duration;
