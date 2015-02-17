@@ -28,6 +28,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		BookSideSnapshot m_book;
 		std::pair<size_t, size_t> m_bookMaxBookSize;
 
+		mutable std::pair<double, double> m_lastReportedAdjusting;
+
 	public:
 
 		explicit FixSecurity(
@@ -35,7 +37,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				const Lib::Symbol &symbol,
 				const trdk::MarketDataSource &source)
 			: Base(context, symbol, source),
-			m_bookMaxBookSize(std::make_pair(0, 0)) {
+			m_bookMaxBookSize(std::make_pair(0, 0)),
+			m_lastReportedAdjusting(std::make_pair(.0, .0)) {
 			//...//
 		}
 
