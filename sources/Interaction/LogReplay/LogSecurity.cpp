@@ -189,7 +189,7 @@ bool LogSecurity::Read() {
 			!ReadFieldFromFile(buffer, isEndOfLine)
 				|| !buffer[0]
 				|| !(buffer[0] == '+' || buffer[0] == '-')
-				|| !buffer[1]) {
+				|| buffer[1]) {
 		GetSource().GetLog().Error(
 			"Failed to read log file to replay \"%1%\":"
 				" wrong format at record %2% (respect-flag excepted).",
