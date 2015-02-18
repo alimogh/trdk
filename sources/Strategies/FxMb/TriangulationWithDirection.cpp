@@ -631,35 +631,41 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 	CalcSpeed(Y1, result);
 
 	if (
+			// | EUR/USD SELL 1 FALLING	| USD/JPY SELL 3 RISING	| EUR/JPY BUY 2 -	|
+			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
 			result.speed[PAIR_AB] < 0
 			&& result.speed[PAIR_BC] > 0
-			&& fabs(result.speed[PAIR_AB]) > result.speed[PAIR_BC]
-			&& IsEqual(result.speed[PAIR_AC], .0)) {
+			&& IsZero(result.speed[PAIR_AC])
+			&& fabs(result.speed[PAIR_AB]) > result.speed[PAIR_BC]) {
 
 		result.y = Y1;
-		result.fistLeg = PAIR_AB;
+		result.legs = {LEG1, LEG3, LEG2};
 
 		return true;
 
 	} else if (
-			result.speed[PAIR_AC] > 0
+			// | Y1 EUR/USD SELL 2 -	| USD/JPY SELL 3 RISING | EUR/JPY BUY 1 RISING	|
+			// | PAIR_AB				| PAIR_BC				| PAIR_AC				|
+			IsZero(result.speed[PAIR_AB])
+			&& result.speed[PAIR_BC] > 0
+			&& result.speed[PAIR_AC] > 0
+			/*&& result.speed[PAIR_BC] < result.speed[PAIR_AC]*/) {
+
+		result.y = Y1;
+		result.legs = {LEG2, LEG3, LEG1};
+
+		return true;
+
+	} else if (
+			// | EUR/USD SELL 3 RISING | USD/JPY SELL 1 FALLING | EUR/JPY BUY 2 -	|
+			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
+			result.speed[PAIR_AB] > 0
 			&& result.speed[PAIR_BC] < 0
-			&& result.speed[PAIR_AC] > fabs(result.speed[PAIR_BC])
-			&& IsEqual(result.speed[PAIR_AB], .0)) {
+			&& IsZero(result.speed[PAIR_AC])
+			&& result.speed[PAIR_AB] < fabs(result.speed[PAIR_BC])) {
 
 		result.y = Y1;
-		result.fistLeg = PAIR_AC;
-
-		return true;
-
-	} else if (
-			result.speed[PAIR_BC] < 0
-			&& result.speed[PAIR_AB] > 0
-			&& fabs(result.speed[PAIR_BC]) > result.speed[PAIR_AB]
-			&& IsEqual(result.speed[PAIR_AC], .0)) {
-
-		result.y = Y1;
-		result.fistLeg = PAIR_BC;
+		result.legs = {LEG3, LEG1, LEG2};
 
 		return true;
 
@@ -676,35 +682,41 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 	CalcSpeed(Y2, result);
 
 	if (
+			// | EUR/USD BUY 1 RISING	| USD/JPY BUY 3 FALLING | EUR/JPY SELL 2 -	|
+			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
 			result.speed[PAIR_AB] > 0
 			&& result.speed[PAIR_BC] < 0
-			&& result.speed[PAIR_AB] > fabs(result.speed[PAIR_BC])
-			&& IsEqual(result.speed[PAIR_AC], .0)) {
+			&& IsZero(result.speed[PAIR_AC])
+			&& result.speed[PAIR_AB] > fabs(result.speed[PAIR_BC])) {
 
 		result.y = Y2;
-		result.fistLeg = PAIR_AB;
+		result.legs = {LEG1, LEG3, LEG2};
 
 		return true;
 
 	} else if (
-			result.speed[PAIR_AC] < 0
+			// | EUR/USD BUY 2 -	| USD/JPY BUY 3 FALLING | EUR/JPY SELL 1 FALLING	|
+			// | PAIR_AB			| PAIR_BC				| PAIR_AC					|
+			IsZero(result.speed[PAIR_AB])
+			&& result.speed[PAIR_BC] < 0
+			&& result.speed[PAIR_AC] < 0
+			/*&& fabs(result.speed[PAIR_BC]) < fabs(result.speed[PAIR_AC])*/) {
+
+		result.y = Y2;
+		result.legs = {LEG2, LEG3, LEG1};
+
+		return true;
+
+	} else if (
+			// | EUR/USD BUY 3 FALLING	| USD/JPY BUY 1 RISING	| EUR/JPY SELL 2 -	|
+			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
+			result.speed[PAIR_AB] < 0
 			&& result.speed[PAIR_BC] > 0
-			&& fabs(result.speed[PAIR_AC]) > result.speed[PAIR_BC]
-			&& IsEqual(result.speed[PAIR_AB], .0)) {
+			&& IsZero(result.speed[PAIR_AC])
+			&& fabs(result.speed[PAIR_AB]) < result.speed[PAIR_BC]) {
 
 		result.y = Y2;
-		result.fistLeg = PAIR_AC;
-
-		return true;
-
-	} else if (
-			result.speed[PAIR_BC] > 0
-			&& result.speed[PAIR_AB] < 0
-			&& result.speed[PAIR_BC] > fabs(result.speed[PAIR_AB])
-			&& IsEqual(result.speed[PAIR_AC], .0)) {
-
-		result.y = Y2;
-		result.fistLeg = PAIR_BC;
+		result.legs = {LEG3, LEG1, LEG2};
 
 		return true;
 
@@ -762,27 +774,19 @@ void TriangulationWithDirection::CheckNewTriangle(
 			m_qty,
 			{
 				PAIR_AB,
-				detection.fistLeg == PAIR_AB
-					?	LEG1
-					:	detection.fistLeg == PAIR_AC
-						?	LEG2
-						:	LEG3,
+				detection.legs[PAIR_AB],
 				detection.y == Y2,
 				m_detectedEcns[detection.y][PAIR_AB]
 			},
 			{
 				PAIR_BC,
-				detection.fistLeg == PAIR_BC
-					?	LEG1
-					:	LEG3,
+				detection.legs[PAIR_BC],
 				detection.y == Y2,
 				m_detectedEcns[detection.y][PAIR_BC]
 			},
 			{
 				PAIR_AC,
-				detection.fistLeg == PAIR_AC
-					?	LEG1
-					:	LEG2,
+				detection.legs[PAIR_AC],
 				detection.y == Y1,
 				m_detectedEcns[detection.y][PAIR_AC],
 			},

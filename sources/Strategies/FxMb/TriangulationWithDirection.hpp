@@ -29,7 +29,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		typedef std::vector<ScaledPrice> BookSide;
 
 		struct Detection {
-			Pair fistLeg;
+			boost::array<Leg, numberOfPairs> legs;
 			Y y;
 			PairsSpeed speed;
 		};
