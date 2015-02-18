@@ -344,29 +344,29 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 						&order);
 					return;
 				}
+				if (CheckProfitLoss(order, true)) {
+					return;
+				}
+				try {
+					m_triangle->StartLeg2();
+				} catch (const HasNotMuchOpportunityException &ex) {
+					m_scheduledLeg = LEG2;
+					GetLog().Warn(
+						"Failed to start leg 2: \"%1%\"."
+							" Required: %2% %3%."
+							" Scheduled.",
+						ex,
+						ex.GetRequiredQty(),
+						ex.GetSecurity());
+					return;
+				}
+				m_triangle->GetReport().ReportAction(
+					"executed",
+					"exec report",
+					"1 -> 2",
+					execDelay,
+					&order);
 			}
-			if (CheckProfitLoss(order, true)) {
-				return;
-			}
-			try {
-				m_triangle->StartLeg2();
-			} catch (const HasNotMuchOpportunityException &ex) {
-				m_scheduledLeg = LEG2;
-				GetLog().Warn(
-					"Failed to start leg 2: \"%1%\"."
-						" Required: %2% %3%."
-						" Scheduled.",
-					ex,
-					ex.GetRequiredQty(),
-					ex.GetSecurity());
-				return;
-			}
-			m_triangle->GetReport().ReportAction(
-				"executed",
-				"exec report",
-				"1 -> 2",
-				0,
-				&order);
 			break;
 
 		case LEG2:
@@ -469,6 +469,9 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 	const auto &ecnsCount = GetContext().GetMarketDataSourcesCount();
 	bool hasNotOpportunity = false;
 	for (size_t ecn = 0; !hasNotOpportunity && ecn < ecnsCount; ++ecn) {
+ 		if (!bestBidAskIt->service->IsRespected(ecn)) {
+ 			continue;
+ 		}
 		const Security &security = bestBidAskIt->service->GetSecurity(ecn);
 		{
 			const auto &bid = security.GetBidPrice();
@@ -587,6 +590,7 @@ void TriangulationWithDirection::CalcSpeed(
 			
 		const auto &bestBidAsk = m_bestBidAsk[pair];
 		const auto &data = bestBidAsk.service->GetData(m_detectedEcns[y][pair]);
+		Assert(data.isRespected);
 
 		Assert(
 			!(data.current.theo > data.current.emaFast
@@ -816,7 +820,7 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 	Triangle::PairInfo &leg3Info = m_triangle->GetPair(LEG3);
 	const auto &ecn = leg3Info.security->GetSource().GetIndex();
 	const auto &data = leg3Info.bestBidAsk->service->GetData(ecn);
-	if (!IsProfit(leg3Info, data)) {
+	if (!data.isRespected || !IsProfit(leg3Info, data)) {
 		timeMeasurement.Measure(
 			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION_2);
 		return false;

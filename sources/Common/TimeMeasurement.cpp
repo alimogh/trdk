@@ -134,18 +134,18 @@ std::ostream & operator <<(std::ostream &os, const MilestoneStat &stat) {
 	os.setf(std::ios::left);
 	os
 		<< std::setfill(' ') << std::setw(10) << stat.GetSize()
-		<< std::setfill(' ') << std::setw(10) << stat.GetAvg()
-		<< std::setfill(' ') << std::setw(10) << stat.GetMin()
-		<< std::setfill(' ') << std::setw(10) << stat.GetMax();
+		<< '\t' << std::setfill(' ') << std::setw(10) << stat.GetAvg()
+		<< '\t' << std::setfill(' ') << std::setw(10) << stat.GetMin()
+		<< '\t' << std::setfill(' ') << std::setw(10) << stat.GetMax();
 	return os;
 }
 
 std::wostream & operator <<(std::wostream &os, const MilestoneStat &stat) {
 	os
 		<< std::setfill(L' ') << std::setw(10) << stat.GetSize()
-		<< std::setfill(L' ') << std::setw(10) << stat.GetAvg()
-		<< std::setfill(L' ') << std::setw(10) << stat.GetMin()
-		<< std::setfill(L' ') << std::setw(10) << stat.GetMax();
+		<< '\t' << std::setfill(L' ') << std::setw(10) << stat.GetAvg()
+		<< '\t' << std::setfill(L' ') << std::setw(10) << stat.GetMin()
+		<< '\t' << std::setfill(L' ') << std::setw(10) << stat.GetMax();
 	return os;
 }
 

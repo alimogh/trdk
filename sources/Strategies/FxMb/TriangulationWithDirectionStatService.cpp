@@ -278,6 +278,7 @@ bool StatService::OnBookUpdateTick(
 
 	}
 
+	data.isRespected = book.IsRespected();
 	data.current.time = book.GetTime();
 	
 	////////////////////////////////////////////////////////////////////////////////
@@ -388,7 +389,7 @@ bool StatService::OnBookUpdateTick(
 
 	// If this method returns true - strategy will be notified about actual data
 	// update:
-	return book.IsRespected() && !IsZero(data.prev2.theo);
+	return data.isRespected && !IsZero(data.prev2.theo);
 
 }
 

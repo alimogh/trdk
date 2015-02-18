@@ -28,23 +28,41 @@ bool FixStream::BookSwapAdjuster::Adjust(
 		const fix::Message &message)
 		const {
 
-	if (bids.empty() || asks.empty()) {
+	if (
+			bids.empty()
+			|| asks.empty()
+			|| bids.front().GetPrice() <= asks.front().GetPrice()) {
+		
+		if (
+				!IsZero(security.m_lastReportedAdjusting.first)
+				|| !IsZero(security.m_lastReportedAdjusting.second)) {
+			security.m_lastReportedAdjusting = std::make_pair(.0, .0);
+			GetTradingLog().Write(
+				"book\tadjust\t%1%\tnorm\t%2%",
+				[&](TradingRecord &record) {
+					record % security % message.seqNum();
+				});
+		}
+
 		return false;
+	
 	}
 
-	if (bids.front().GetPrice() <= asks.front().GetPrice()) {
-		return false;
+	if (
+			!IsEqual(bids.front().GetPrice(), security.m_lastReportedAdjusting.first)
+			|| !IsEqual(asks.front().GetPrice(), security.m_lastReportedAdjusting.second)) {
+		security.m_lastReportedAdjusting.first = bids.front().GetPrice();
+		security.m_lastReportedAdjusting.second = asks.front().GetPrice();
+		GetTradingLog().Write(
+			"book\tadjust\t%1%\t%2% <-> %3%\t%4%",
+			[&](TradingRecord &record) {
+				record
+					% security
+					% security.m_lastReportedAdjusting.first
+					% security.m_lastReportedAdjusting.second
+					% message.seqNum();
+			});
 	}
-
-	GetTradingLog().Write(
-		"book\tadjust\t%1%\t%2% <-> %3%\t%4%",
-		[&](TradingRecord &record) {
-			record
-				% security
-				% bids.front().GetPrice()
-				% asks.front().GetPrice()
-				% message.seqNum();
-		});
 
 	bids.front().Swap(asks.front());
 
