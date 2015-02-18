@@ -1,0 +1,19 @@
+<license version="1.0">
+  <type>production</type>
+  <customer>
+    <name>Morgan Benoit EIRL</name>
+  </customer>
+  <period>
+    <since>2014-12-16</since>
+    <till>2015-05-20</till>
+  </period>
+  <dotNetProducts>
+    <product id="41" name="FIX Analyser" />
+  </dotNetProducts>
+  <dotNetCheckSum>WK/P2ghZ+2xe1CTTTdfwYKT62jmtN/R0/49o2HhoRwE5ZepQ1qK5WZD0eTZg9pQgTzP5DLLu1pWIJor9L5QNZ8HRaSvreJ/XpE/0c1n/94YAmgthuOhAi3cicb569JtyPM0o4yzD13BHIZGjehi8uIY28YOnBDOqsnNvVzEF0hQ=</dotNetCheckSum>
+  <products>
+    <product id="1" name="OnixS FIX Engine for C++" />
+    <product id="2" name="OnixS FIX Engine for .NET" />
+  </products>
+  <checksum>98BFA3670FD86FF498F9E4FFD62A3D1F</checksum>
+</license>
