@@ -311,6 +311,7 @@ public:
 					%	"Avg losers time"
 					%	"# of winners"
 					%	"# of losers"
+					%	"% of winners"
 					%	"Avg time"
 					%	"Cancel ID (winner)"
 					%	"Winners"
@@ -607,10 +608,16 @@ void TriangleReport::ReportAction(
 				}
 				record % time; 
 
+				size_t winningPercentage = 0;
 				if (accs::count(m_state.pnl->stat.winners) > 0) {
 					record 
 						% accs::mean(m_state.pnl->stat.winners)
 						% accs::mean(m_state.pnl->stat.winnersTime);
+					winningPercentage
+						= (accs::count(m_state.pnl->stat.winners) * 100);
+					winningPercentage
+						/= accs::count(m_state.pnl->stat.winners)
+							+ accs::count(m_state.pnl->stat.losers);
 				} else {
 					record % ' ' % ' ';
 				}
@@ -624,6 +631,7 @@ void TriangleReport::ReportAction(
 				record
 					% accs::count(m_state.pnl->stat.winners)
 					% accs::count(m_state.pnl->stat.losers)
+					% winningPercentage % '\0' % '%'
 					% accs::mean(m_state.pnl->stat.time);
 
 				for (auto i = 0; i < 8; ++i) {
