@@ -649,7 +649,7 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 			IsZero(result.speed[PAIR_AB])
 			&& result.speed[PAIR_BC] > 0
 			&& result.speed[PAIR_AC] > 0
-			/*&& result.speed[PAIR_BC] < result.speed[PAIR_AC]*/) {
+			&& result.speed[PAIR_BC] < result.speed[PAIR_AC]) {
 
 		result.y = Y1;
 		result.legs = {LEG2, LEG3, LEG1};
@@ -700,7 +700,7 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 			IsZero(result.speed[PAIR_AB])
 			&& result.speed[PAIR_BC] < 0
 			&& result.speed[PAIR_AC] < 0
-			/*&& fabs(result.speed[PAIR_BC]) < fabs(result.speed[PAIR_AC])*/) {
+			&& fabs(result.speed[PAIR_BC]) < fabs(result.speed[PAIR_AC])) {
 
 		result.y = Y2;
 		result.legs = {LEG2, LEG3, LEG1};
