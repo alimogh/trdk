@@ -211,7 +211,8 @@ bool StatService::OnBookUpdateTick(
 	}
 #	endif
 
-	if (	m_isBookLevelsExactly
+	if (
+			m_isBookLevelsExactly
 			&& (bidsBook.GetLevelsCount() < m_bookLevelsCount
 				|| offersBook.GetLevelsCount() < m_bookLevelsCount)) {
 		return false;
