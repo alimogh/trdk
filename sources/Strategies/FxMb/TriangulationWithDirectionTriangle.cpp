@@ -82,10 +82,7 @@ Triangle::Triangle(
 }
 
 Triangle::~Triangle() {
-	AssertEq(1, m_strategy.GetPositions().GetSize());
-	AssertNe(
-		LEG2,
-		dynamic_cast<Twd::Position &>(*m_strategy.GetPositions().GetBegin()).GetLeg());
+	//...//
 }
 
 boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
