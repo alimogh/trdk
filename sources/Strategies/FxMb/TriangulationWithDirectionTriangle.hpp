@@ -62,6 +62,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					:	security->GetBidPrice();
 			}
 
+			double GetCurrentBestPrice() const {
+				const Security &security = GetBestSecurity();
+				return isBuy
+					?	security.GetAskPrice()
+					:	security.GetBidPrice();
+			}
+
 			Security & GetBestSecurity() {
 				//! @todo FIXME const_cast for security 
 				return const_cast<Security &>(
@@ -69,6 +76,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 						isBuy
 							?	bestBidAsk->bestAsk.source
 							:	bestBidAsk->bestBid.source));
+			}
+
+			const Security & GetBestSecurity() const {
+				return const_cast<PairInfo *>(this)->GetBestSecurity();
 			}
 
 		};
@@ -382,24 +393,20 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		double CalcYTargeted() const {
 
-			Assert(IsLegStarted(LEG1));
-			Assert(IsLegStarted(LEG2));
-			Assert(IsLegStarted(LEG3));
-			Assert(
-				GetLeg(LEG1).IsOpened()
-				&& GetLeg(LEG2).IsOpened()
-				&& GetLeg(LEG3).IsOpened());
-			Assert(
-				!GetLeg(LEG1).IsClosed()
-				&& !GetLeg(LEG2).IsClosed()
-				&& !GetLeg(LEG3).IsClosed());
-
 			const auto getPrice = [this](const Pair &pair) -> double {
-				const Twd::Position &leg = GetLeg(pair);
-				const auto &result
-					= leg.GetSecurity().DescalePrice(leg.GetOpenStartPrice());
-				Assert(!Lib::IsZero(result));
-				return result;
+				if (IsLegStarted(pair)) {
+					const Twd::Position &leg = GetLeg(pair);
+					const auto &result
+						= leg
+							.GetSecurity()
+							.DescalePrice(leg.GetOpenStartPrice());
+					Assert(!Lib::IsZero(result));
+					return result;
+				} else {
+					const PairInfo &pairInfo = GetPair(pair);
+					AssertNe(LEG1, pairInfo.leg);
+					return pairInfo.GetCurrentBestPrice();
+				}
 			};
 
 			if (m_y ==  Y1) {

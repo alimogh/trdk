@@ -169,13 +169,13 @@ namespace trdk {
 				Implementation *m_pimpl;
 			};
 		public:
-			explicit Book(const boost::posix_time::ptime &, bool isRespected);
+			explicit Book(const boost::posix_time::ptime &, bool isAdjusted);
 		public:
 			const boost::posix_time::ptime & GetTime() const {
 				return m_time;
 			}
-			bool IsRespected() const {
-				return m_isRespected;
+			bool IsAdjusted() const {
+				return m_isAdjusted;
 			}
 			const trdk::Security::Book::Side & GetBids() const {
 				return m_bids;
@@ -188,7 +188,7 @@ namespace trdk {
 			}
 		private:
 			boost::posix_time::ptime m_time;
-			bool m_isRespected;
+			bool m_isAdjusted;
 			Side m_bids;
 			Side m_offers;
 		};
@@ -293,6 +293,8 @@ namespace trdk {
 		/** Information from broker, not relevant to trdk::Position.
 		  */
 		trdk::Qty GetBrokerPosition() const;
+
+		bool IsBookAdjusted() const;
 
 	public:
 

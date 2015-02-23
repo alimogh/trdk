@@ -151,15 +151,11 @@ FixStream::FixStream(
 	m_isSubscribed(false),
 	m_bookLevelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
-	m_bookAdjuster(CreateBookAdjuster(conf)),
-	m_isBookAdjustRespected(
-		conf.GetBase().ReadBoolKey("Common", "book.adjust.respected")) {
+	m_bookAdjuster(CreateBookAdjuster(conf)) {
 	GetLog().Info(
-		"Book size: %1% * 2 price levels."
-			" Book adjusting method: %2% (%3%).",
+		"Book size: %1% * 2 price levels. Book adjusting method: %2%.",
 		m_bookLevelsCount,
-		m_bookAdjuster->GetName(),
-		m_isBookAdjustRespected ? "respected" : "not respected");
+		m_bookAdjuster->GetName());
 }
 
 FixStream::~FixStream() {
@@ -572,9 +568,11 @@ void FixStream::onInboundApplicationMsg(
 	}
 #	endif
 
-	const bool isRespected
-		= !m_bookAdjuster->Adjust(*security, bids, asks, message)
-			|| m_isBookAdjustRespected;
+	const bool isAdjusted = m_bookAdjuster->Adjust(
+		*security,
+		bids,
+		asks,
+		message);
 	AssertGe(security->m_book.size(), bids.size() + asks.size());
 
 	if (bids.size() > m_bookLevelsCount) {
@@ -582,6 +580,13 @@ void FixStream::onInboundApplicationMsg(
 	}
 	if (asks.size() > m_bookLevelsCount) {
 		asks.resize(m_bookLevelsCount);
+	}
+
+	if (
+			security->m_sentBids == bids
+			&& security->m_sentAsks == asks
+			&& security->IsBookAdjusted() == isAdjusted) {
+		return;
 	}
 
 	if (
@@ -601,8 +606,11 @@ void FixStream::onInboundApplicationMsg(
 			});
 	}
 
+	security->m_sentBids = bids;
+	security->m_sentAsks = asks;
+
 	FixSecurity::BookUpdateOperation book
-		= security->StartBookUpdate(now, isRespected);
+		= security->StartBookUpdate(now, isAdjusted);
 	book.GetBids().Swap(bids);
 	book.GetAsks().Swap(asks);
 	book.Commit(timeMeasurement);

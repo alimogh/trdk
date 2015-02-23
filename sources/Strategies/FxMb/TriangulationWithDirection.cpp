@@ -69,6 +69,8 @@ TriangulationWithDirection::TriangulationWithDirection(
 	: Base(context, "TriangulationWithDirection", tag),
 	m_bookLevelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
+	m_useAdjustedBookForTrades(
+		conf.GetBase().ReadBoolKey("Common", "book.adjust.trade")),
 	m_allowLeg1Closing(
 		conf.ReadTypedKey<bool>("allow_leg1_closing")),
 	m_qty(conf.ReadTypedKey<Qty>("qty")),
@@ -466,7 +468,9 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 	const auto &ecnsCount = GetContext().GetMarketDataSourcesCount();
 	bool hasNotOpportunity = false;
 	for (size_t ecn = 0; !hasNotOpportunity && ecn < ecnsCount; ++ecn) {
- 		if (!bestBidAskIt->service->IsRespected(ecn)) {
+ 		if (
+				!m_useAdjustedBookForTrades
+				&& bestBidAskIt->service->GetSecurity(ecn).IsBookAdjusted()) {
  			continue;
  		}
 		const Security &security = bestBidAskIt->service->GetSecurity(ecn);
@@ -587,7 +591,6 @@ void TriangulationWithDirection::CalcSpeed(
 			
 		const auto &bestBidAsk = m_bestBidAsk[pair];
 		const auto &data = bestBidAsk.service->GetData(m_detectedEcns[y][pair]);
-		Assert(data.isRespected);
 
 		Assert(
 			!(data.current.theo > data.current.emaFast
@@ -790,20 +793,18 @@ void TriangulationWithDirection::CheckNewTriangle(
 			},
 			m_bestBidAsk));
 
-	{
-		const Triangle::PairInfo &leg1Info = triangle->GetPair(LEG1);
-		const auto &ecn = leg1Info.security->GetSource().GetIndex();
-		if (!leg1Info.bestBidAsk->service->GetData(ecn).isRespected) {
-			GetTradingLog().Write(
-				"not respected\tleg 1\triangle=%1%\tpair=%2%\tecn=%3%",
-				[&](TradingRecord &record) {
-					record
-						% m_triangle->GetId()
-						% *leg1Info.security
-						% ecn;
-				});
-			return;
-		}
+	if (
+			triangle->GetPair(LEG1).security->IsBookAdjusted()
+			&& !m_useAdjustedBookForTrades) {
+		GetTradingLog().Write(
+			"not respected\tleg 1\triangle=%1%\tpair=%2%\tecn=%3%",
+			[&](TradingRecord &record) {
+				record
+					% m_triangle->GetId()
+					% *triangle->GetPair(LEG1).security
+					% triangle->GetPair(LEG1).security->GetSource().GetTag();
+			});
+		return;
 	}
 
 	try {
@@ -843,14 +844,17 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 		timeMeasurement.Measure(
 			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION_2);
 		return false;
-	} else if (!data.isRespected) {
+	} else if (
+			!m_useAdjustedBookForTrades
+			&& (leg3Info.security->IsBookAdjusted()
+				|| leg3Info.GetBestSecurity().IsBookAdjusted())) {
 		GetTradingLog().Write(
 			"not respected\tleg 3\triangle=%1%\tpair=%2%\tecn=%3%",
 			[&](TradingRecord &record) {
 				record
 					% m_triangle->GetId()
 					% *leg3Info.security
-					% ecn;
+					% leg3Info.security->GetSource().GetTag();
 			});
 		timeMeasurement.Measure(
 			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION_2);

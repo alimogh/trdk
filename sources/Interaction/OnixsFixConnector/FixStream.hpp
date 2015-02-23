@@ -199,7 +199,6 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		const size_t m_bookLevelsCount;
 		const std::unique_ptr<const BookAdjuster> m_bookAdjuster;
-		const bool m_isBookAdjustRespected;
 
 	};
 

@@ -30,6 +30,9 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		mutable std::pair<double, double> m_lastReportedAdjusting;
 
+		std::vector<Security::Book::Level> m_sentBids;
+		std::vector<Security::Book::Level> m_sentAsks;
+
 	public:
 
 		explicit FixSecurity(

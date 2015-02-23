@@ -546,11 +546,7 @@ void TriangleReport::ReportAction(
 			} else {
 				record % ' ';
 			}
-			if (isTriangleCompleted) {
-				record % m_triangle.CalcYTargeted();
-			} else {
-				record % ' ';
-			}
+			record % m_triangle.CalcYTargeted();
 			for (size_t i = 0; i < numberOfPairs; ++i) {
 				writePair(Pair(i), record);
 			}
