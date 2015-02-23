@@ -161,8 +161,6 @@ public:
 					%	"Delay"
 					%	"Y1 detected"
 					%	"Y2 detected"
-					%	"New Y1"
-					%	"New Y2"
 					%	"Y executed"
 					%	"Y targeted";
 				foreach (const auto &bestBidAsk, bestBidAskPairs) {
@@ -543,9 +541,6 @@ void TriangleReport::ReportAction(
 			record
 				% m_triangle.GetStrategy().GetYDetectedDirection()[Y1]
 				% m_triangle.GetStrategy().GetYDetectedDirection()[Y2];
-			record
-				% m_triangle.GetYDirection()[Y1]
-				% m_triangle.GetYDirection()[Y2];
 			if (isTriangleCompleted || isTriangleCanceled) {
 				record % yExecuted;
 			} else {

@@ -69,8 +69,6 @@ TriangulationWithDirection::TriangulationWithDirection(
 	: Base(context, "TriangulationWithDirection", tag),
 	m_bookLevelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
-	m_isBookLevelsExactly(
-		conf.GetBase().ReadBoolKey("Common", "book.levels.exactly")),
 	m_allowLeg1Closing(
 		conf.ReadTypedKey<bool>("allow_leg1_closing")),
 	m_qty(conf.ReadTypedKey<Qty>("qty")),
@@ -98,10 +96,9 @@ TriangulationWithDirection::TriangulationWithDirection(
 #	endif
 
 	GetLog().Info(
-		"Allow Leg 1 closing: %1%. Book size: %2% * 2 price levels (%3%).",
+		"Allow Leg 1 closing: %1%. Book size: %2% * 2 price levels.",
 		m_allowLeg1Closing ? "yes" : "no",
-		m_bookLevelsCount,
-		m_isBookLevelsExactly ? "exactly" : "not exactly");
+		m_bookLevelsCount);
 
 }
 
@@ -649,7 +646,7 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 			IsZero(result.speed[PAIR_AB])
 			&& result.speed[PAIR_BC] > 0
 			&& result.speed[PAIR_AC] > 0
-			/*&& result.speed[PAIR_BC] < result.speed[PAIR_AC]*/) {
+			&& result.speed[PAIR_BC] < result.speed[PAIR_AC]) {
 
 		result.y = Y1;
 		result.legs = {LEG2, LEG3, LEG1};
@@ -700,7 +697,7 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 			IsZero(result.speed[PAIR_AB])
 			&& result.speed[PAIR_BC] < 0
 			&& result.speed[PAIR_AC] < 0
-			/*&& fabs(result.speed[PAIR_BC]) < fabs(result.speed[PAIR_AC])*/) {
+			&& fabs(result.speed[PAIR_BC]) < fabs(result.speed[PAIR_AC])) {
 
 		result.y = Y2;
 		result.legs = {LEG2, LEG3, LEG1};
@@ -765,6 +762,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 	if (!Detect(detection)) {
 		return;
 	}
+
 	std::unique_ptr<Triangle> triangle(
 		new Triangle(
 			++m_lastTriangleId,
@@ -792,6 +790,22 @@ void TriangulationWithDirection::CheckNewTriangle(
 			},
 			m_bestBidAsk));
 
+	{
+		const Triangle::PairInfo &leg1Info = m_triangle->GetPair(LEG1);
+		const auto &ecn = leg1Info.security->GetSource().GetIndex();
+		if (!leg1Info.bestBidAsk->service->GetData(ecn).isRespected) {
+			GetTradingLog().Write(
+				"not respected\tleg 1\triangle=%1%\tpair=%2%\tecn=%3%",
+				[&](TradingRecord &record) {
+					record
+						% m_triangle->GetId()
+						% *leg1Info.security
+						% ecn;
+				});
+			return;
+		}
+	}
+
 	try {
 		triangle->StartLeg1(timeMeasurement, detection.speed);
 	} catch (const HasNotMuchOpportunityException &ex) {
@@ -800,6 +814,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 			ex,
 			ex.GetRequiredQty(),
 			ex.GetSecurity());
+		return;
 	}
 
 	Assert(!m_triangle);
@@ -824,7 +839,19 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 	Triangle::PairInfo &leg3Info = m_triangle->GetPair(LEG3);
 	const auto &ecn = leg3Info.security->GetSource().GetIndex();
 	const auto &data = leg3Info.bestBidAsk->service->GetData(ecn);
-	if (!data.isRespected || !IsProfit(leg3Info, data)) {
+	if (!IsProfit(leg3Info, data)) {
+		timeMeasurement.Measure(
+			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION_2);
+		return false;
+	} else if (!data.isRespected) {
+		GetTradingLog().Write(
+			"not respected\tleg 3\triangle=%1%\tpair=%2%\tecn=%3%",
+			[&](TradingRecord &record) {
+				record
+					% m_triangle->GetId()
+					% *leg3Info.security
+					% ecn;
+			});
 		timeMeasurement.Measure(
 			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION_2);
 		return false;
