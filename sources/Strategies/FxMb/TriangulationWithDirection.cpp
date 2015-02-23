@@ -791,7 +791,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 			m_bestBidAsk));
 
 	{
-		const Triangle::PairInfo &leg1Info = m_triangle->GetPair(LEG1);
+		const Triangle::PairInfo &leg1Info = triangle->GetPair(LEG1);
 		const auto &ecn = leg1Info.security->GetSource().GetIndex();
 		if (!leg1Info.bestBidAsk->service->GetData(ecn).isRespected) {
 			GetTradingLog().Write(
