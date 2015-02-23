@@ -164,7 +164,7 @@ public:
 			throw ModuleError("Failed to open log file");
 		}
 		*m_files[source]
-			<< "TRDK Book Snapshots Log version 1.2"
+			<< "TRDK Book Snapshots Log version 1.3"
 			<< ' ' << TRDK_BUILD_IDENTITY
 			<< ' ' << GetContext().GetCurrentTime()
 			<< ' ' << security
@@ -185,7 +185,7 @@ public:
 			[&](Record &record) {
 				record
 					% book.GetTime()
-					% (book.IsRespected() ? '+' : '-');
+					% (book.IsAdjusted() ? '+' : '-');
 				{
 					const Security::Book::Side &bids = book.GetBids();
 					for (size_t i = 0; i < bids.GetLevelsCount(); ++i) {

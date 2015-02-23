@@ -25,7 +25,7 @@ namespace trdk {  namespace Interaction { namespace LogReplay {
 		struct Snapshot {
 
 			boost::posix_time::ptime time;
-			bool isRespected;
+			bool isAdjusted;
 			std::vector<Security::Book::Level> bids;
 			std::vector<Security::Book::Level> asks;
 			bool isAccepted;

@@ -109,6 +109,8 @@ StatService::StatService(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
 	m_isBookLevelsExactly(
 		conf.GetBase().ReadBoolKey("Common", "book.levels.exactly")),
+	m_useAdjustedBookForCalculations(
+		conf.GetBase().ReadBoolKey("Common", "book.adjust.calculation")),
 	m_prev1Duration(
 		pt::milliseconds(
 			conf.ReadTypedKey<size_t>("prev1_duration_miliseconds"))),
@@ -123,11 +125,13 @@ StatService::StatService(
 	m_instancies.push_back(this);
 	GetLog().Info(
 		"Prev1 duration: %1%; Prev2 duration: %2%."
-			" Book size: %3% * 2 price levels (%4%).",
+			" Book size: %3% * 2 price levels (%4%)."
+			" Use adjusted book for calculations: %5%.",
 		m_prev1Duration,
 		m_prev2Duration,
 		m_bookLevelsCount,
-		m_isBookLevelsExactly ? "exactly" : "not exactly");
+		m_isBookLevelsExactly ? "exactly" : "not exactly",
+		m_useAdjustedBookForCalculations ? "yes" : "no");
 	if (m_prev2Duration <= m_prev1Duration) {
 		throw ModuleError("Prev2 duration can't be equal or less then Prev1");
 	}
@@ -179,6 +183,10 @@ bool StatService::OnBookUpdateTick(
 		GetSecurity(security.GetSource().GetIndex()).GetSource().GetTag(),
 		security.GetSource().GetTag());
 	Assert(&GetSecurity(security.GetSource().GetIndex()) == &security);
+
+	if (book.IsAdjusted() && !m_useAdjustedBookForCalculations) {
+		return false;
+	}
 
 	const Security::Book::Side &bidsBook = book.GetBids();
 	const Security::Book::Side &offersBook = book.GetOffers();
@@ -279,7 +287,6 @@ bool StatService::OnBookUpdateTick(
 
 	}
 
-	data.isRespected = book.IsRespected();
 	data.current.time = book.GetTime();
 	
 	////////////////////////////////////////////////////////////////////////////////
@@ -390,7 +397,7 @@ bool StatService::OnBookUpdateTick(
 
 	// If this method returns true - strategy will be notified about actual data
 	// update:
-	return data.isRespected && !IsZero(data.prev2.theo);
+	return !IsZero(data.prev2.theo);
 
 }
 

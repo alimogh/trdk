@@ -101,8 +101,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 			};
 
-			bool isRespected;
-
 			Stat current;
 			Stat prev1;
 			Stat prev2;
@@ -160,15 +158,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	public:
 
-		bool IsRespected(size_t marketDataSource) const {
-			const Source &source = GetSource(marketDataSource);
-			bool result;
-			while (source.dataLock.test_and_set(boost::memory_order_acquire));
-			result = source.isRespected;
-			source.dataLock.clear(boost::memory_order_release);
-			return result;
-		}
-
 		const Security & GetSecurity(size_t marketDataSource) const {
 			return *GetSource(marketDataSource).security;
 		}
@@ -223,6 +212,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		const size_t m_bookLevelsCount;
 		const bool m_isBookLevelsExactly;
+		const bool m_useAdjustedBookForCalculations;
 
 		const boost::posix_time::time_duration m_prev1Duration;
 		const boost::posix_time::time_duration m_prev2Duration;

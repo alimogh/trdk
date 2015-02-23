@@ -117,7 +117,7 @@ bool LogSecurity::Accept() {
 	if (!m_currentSnapshot.isAccepted) {
 		BookUpdateOperation book = StartBookUpdate(
 			GetCurrentTime(),
-			m_currentSnapshot.isRespected);
+			m_currentSnapshot.isAdjusted);
 		book.GetBids().Swap(m_currentSnapshot.bids);
 		book.GetAsks().Swap(m_currentSnapshot.asks);
 		book.Commit(GetContext().StartStrategyTimeMeasurement());
@@ -198,7 +198,7 @@ bool LogSecurity::Read() {
 		m_isEof = true;
 		return false;
 	}
-	snapshot.isRespected = buffer[0] == '+';
+	snapshot.isAdjusted = buffer[0] == '+';
 
 	for (auto *side = &snapshot.bids; !isEndOfLine; ) {
 

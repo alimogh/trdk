@@ -535,9 +535,9 @@ public:
 			logTag,
 			"%1%\t%2%\t%3%\t%4%\topen-%5%\t%6%"
 				"\tprice=%7%->%8%\t%9%\tqty=%10%->%11%"
-				"\tbid=%12%/%13%\task=%14%/%15%"
-				"\torder-id=%16%"
-				"\torder-status=%17%\thas-orders=%18%\tis-error=%19%",
+				"\tbid=%12%/%13%\task=%14%/%15%\tadjusted=%16%"
+				"\torder-id=%17%"
+				"\torder-status=%18%\thas-orders=%19%\tis-error=%20%",
 			[this, eventDesc, &orderStatus](TradingRecord &record) {
 				record
 					% m_id
@@ -555,6 +555,7 @@ public:
 					% m_security.GetBidQty()
 					% m_security.GetAskPrice()
 					% m_security.GetAskQty()
+					% (m_security.IsBookAdjusted() ? "yes" : "no")
 					% m_position.GetOpenOrderId()
 					% m_tradeSystem.GetStringStatus(orderStatus)
 					% m_position.HasActiveOpenOrders()

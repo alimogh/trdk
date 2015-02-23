@@ -103,6 +103,7 @@ public:
 	pt::ptime m_requestedDataStartTime;
 
 	boost::shared_ptr<Book> m_book;
+	boost::atomic_bool m_isBookAdjusted;
 
 public:
 
@@ -113,7 +114,8 @@ public:
 		m_brokerPosition(0),
 		m_marketDataTime(0),
 		m_isLevel1Started(false),
-		m_book(new Book(pt::not_a_date_time, false)) {
+		m_book(new Book(pt::not_a_date_time, false)),
+		m_isBookAdjusted(false) {
 		foreach (auto &item, m_level1) {
 			Unset(item);
 		}
@@ -573,6 +575,10 @@ void Security::SetBrokerPosition(trdk::Qty qty, bool isInitial) {
 	m_pimpl->m_brokerPositionUpdateSignal(qty, isInitial);
 }
 
+bool Security::IsBookAdjusted() const {
+	return m_pimpl->m_isBookAdjusted;
+}
+
 Security::BookUpdateOperation Security::StartBookUpdate(
 		const pt::ptime &time,
 		bool isRespected) {
@@ -610,9 +616,9 @@ const Security::Book::Level & Security::Book::Side::GetLevel(
 
 ///
 
-Security::Book::Book(const pt::ptime &time, bool isRespected)
+Security::Book::Book(const pt::ptime &time, bool isAdjusted)
 	: m_time(time),
-	m_isRespected(isRespected) {
+	m_isAdjusted(isAdjusted) {
 	//...//
 }
 
@@ -728,6 +734,8 @@ void Security::BookUpdateOperation::Commit(
 				:	m_pimpl->m_book->GetAsks().GetLevel(0).GetQty()),
 		timeMeasurement);
 
+	m_pimpl->m_security.m_pimpl->m_isBookAdjusted
+		= m_pimpl->m_book->IsAdjusted();
 	m_pimpl->m_security.m_pimpl->m_book = m_pimpl->m_book;
 	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_STORE);
 
