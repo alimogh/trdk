@@ -762,6 +762,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 	if (!Detect(detection)) {
 		return;
 	}
+
 	std::unique_ptr<Triangle> triangle(
 		new Triangle(
 			++m_lastTriangleId,
@@ -789,6 +790,22 @@ void TriangulationWithDirection::CheckNewTriangle(
 			},
 			m_bestBidAsk));
 
+	{
+		const Triangle::PairInfo &leg1Info = m_triangle->GetPair(LEG1);
+		const auto &ecn = leg1Info.security->GetSource().GetIndex();
+		if (!leg1Info.bestBidAsk->service->GetData(ecn).isRespected) {
+			GetTradingLog().Write(
+				"not respected\tleg 1\triangle=%1%\tpair=%2%\tecn=%3%",
+				[&](TradingRecord &record) {
+					record
+						% m_triangle->GetId()
+						% *leg1Info.security
+						% ecn;
+				});
+			return;
+		}
+	}
+
 	try {
 		triangle->StartLeg1(timeMeasurement, detection.speed);
 	} catch (const HasNotMuchOpportunityException &ex) {
@@ -797,6 +814,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 			ex,
 			ex.GetRequiredQty(),
 			ex.GetSecurity());
+		return;
 	}
 
 	Assert(!m_triangle);
@@ -821,7 +839,19 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 	Triangle::PairInfo &leg3Info = m_triangle->GetPair(LEG3);
 	const auto &ecn = leg3Info.security->GetSource().GetIndex();
 	const auto &data = leg3Info.bestBidAsk->service->GetData(ecn);
-	if (!data.isRespected || !IsProfit(leg3Info, data)) {
+	if (!IsProfit(leg3Info, data)) {
+		timeMeasurement.Measure(
+			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION_2);
+		return false;
+	} else if (!data.isRespected) {
+		GetTradingLog().Write(
+			"not respected\tleg 3\triangle=%1%\tpair=%2%\tecn=%3%",
+			[&](TradingRecord &record) {
+				record
+					% m_triangle->GetId()
+					% *leg3Info.security
+					% ecn;
+			});
 		timeMeasurement.Measure(
 			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION_2);
 		return false;
