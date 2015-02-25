@@ -20,13 +20,14 @@ namespace trdk { namespace SimpleApi {
 
 	public:
 
-		Security & ResolveFutOpt(
+		Security & ResolveOpt(
 					const std::string &symbol,
 					const std::string &exchange,
 					double expirationDate,
 					double strike,
 					const std::string &right,
-					const std::string &tradingClass)
+					const std::string &tradingClass,
+					const std::string &type)
 				const;
 
 		double GetCashBalance() const;

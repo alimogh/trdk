@@ -29,21 +29,23 @@ Bridge::Bridge(boost::shared_ptr<Engine::Context> context)
 	//...//
 }
 
-Security & Bridge::ResolveFutOpt(
+Security & Bridge::ResolveOpt(
 			const std::string &symbolStr,
 			const std::string &exchange,
 			double expirationDate,
 			double strike,
 			const std::string &right,
-			const std::string &tradingClass)
+			const std::string &tradingClass,
+			const std::string &type)
 		const {
-	const Symbol &symbol = Symbol::ParseCashFutureOption(
+	const Symbol &symbol = Symbol::ParseCashOption(
  		boost::erase_all_copy(symbolStr, ":"), // TRDK-reserver delimiter
 		boost::lexical_cast<std::string>(size_t(expirationDate)),
  		strike,
 		Symbol::ParseRight(right),
 		tradingClass,
- 		exchange);
+ 		exchange,
+		type);
 	return m_context->GetSecurity(symbol);
 }
 

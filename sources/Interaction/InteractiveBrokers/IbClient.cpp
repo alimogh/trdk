@@ -32,7 +32,7 @@ namespace {
 	Contract GetContract(const trdk::Security &security) {
 		Contract contract;
 		static_assert(
-			Symbol::numberOfSecurityTypes == 3,
+			Symbol::numberOfSecurityTypes == 4,
 			"Security type list changed.");
 		const Symbol &symbol = security.GetSymbol();
 		switch (symbol.GetSecurityType()) {
@@ -42,6 +42,13 @@ namespace {
 				break;
 			case Symbol::SECURITY_TYPE_FUTURE_OPTION:
 				contract.secType = "FOP";
+				contract.expiry = symbol.GetExpirationDate();
+				contract.strike = symbol.GetStrike();
+				contract.right = symbol.GetRightAsString();
+				contract.tradingClass = symbol.GetTradingClass();
+				break;
+			case Symbol::SECURITY_TYPE_OPTION:
+				contract.secType = "OPT";
 				contract.expiry = symbol.GetExpirationDate();
 				contract.strike = symbol.GetStrike();
 				contract.right = symbol.GetRightAsString();
@@ -65,7 +72,7 @@ namespace {
 				const OrderParams &/*orderParams*/) {
 		Contract contract;
 		static_assert(
-			Symbol::numberOfSecurityTypes == 3,
+			Symbol::numberOfSecurityTypes == 4,
 			"Security type list changed.");
 		const Symbol &symbol = security.GetSymbol();
 		switch (symbol.GetSecurityType()) {
@@ -75,6 +82,12 @@ namespace {
 				break;
 			case Symbol::SECURITY_TYPE_FUTURE_OPTION:
 				contract.secType = "FOP";
+				contract.expiry = symbol.GetExpirationDate();
+				contract.strike = symbol.GetStrike();
+				contract.right = symbol.GetRightAsString();
+				break;
+			case Symbol::SECURITY_TYPE_OPTION:
+				contract.secType = "OPT";
 				contract.expiry = symbol.GetExpirationDate();
 				contract.strike = symbol.GetStrike();
 				contract.right = symbol.GetRightAsString();

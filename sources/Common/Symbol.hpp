@@ -26,6 +26,7 @@ namespace trdk { namespace Lib {
 		enum SecurityType {
 			SECURITY_TYPE_STOCK,
 			SECURITY_TYPE_FUTURE_OPTION,
+			SECURITY_TYPE_OPTION,
 			SECURITY_TYPE_CASH,
 			numberOfSecurityTypes
 		};
@@ -84,15 +85,16 @@ namespace trdk { namespace Lib {
 					SecurityType securityType,
 					const std::string &line,
 					const std::string &defExchange);
-		static Symbol ParseCashFutureOption(
+		static Symbol ParseCashOption(
 					const std::string &line,
 					const std::string &expirationDate,
 					double strike,
 					const Right &,
 					const std::string &tradingClass,
-					const std::string &defExchange);
+					const std::string &defExchange,
+					const std::string &type);
 		//! Special code only for custom branch.
-		static Symbol ParseCashFutureOption(const std::string &line);
+		static Symbol ParseCashOption(const std::string &line);
 
 	public:
 

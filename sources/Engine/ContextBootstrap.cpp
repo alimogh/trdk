@@ -896,7 +896,7 @@ private:
 				++i) {
 			const std::string symbolRequest
 				= boost::copy_range<std::string>(*i);
-			Symbol symbol = Symbol::ParseCashFutureOption(symbolRequest);
+			Symbol symbol = Symbol::ParseCashOption(symbolRequest);
 			if (result.symbols.find(symbol) != result.symbols.end()) {
 				m_context.GetLog().Error(
 					"Requirements syntax error:"

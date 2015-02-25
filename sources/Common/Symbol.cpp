@@ -196,7 +196,7 @@ Symbol Symbol::ParseCash(
 	return result;
 }
 
-Symbol Symbol::ParseCashFutureOption(const std::string &line) {
+Symbol Symbol::ParseCashOption(const std::string &line) {
 
 	// Special code only for custom branch (for ex. with currency extract
 	// or exchange code)!
@@ -238,13 +238,14 @@ Symbol Symbol::ParseCashFutureOption(const std::string &line) {
 
 }
 
-Symbol Symbol::ParseCashFutureOption(
+Symbol Symbol::ParseCashOption(
 			const std::string &line,
 			const std::string &expirationDate,
 			double strike,
 			const Right &right,
 			const std::string &tradingClass,
-			const std::string &defExchange) {
+			const std::string &defExchange,
+			const std::string &type) {
 
 	Assert(!defExchange.empty());
 	if (defExchange.empty()) {
@@ -261,8 +262,15 @@ Symbol Symbol::ParseCashFutureOption(
 	}
 	
 	Symbol result;
-	result.m_securityType = SECURITY_TYPE_FUTURE_OPTION;
 	
+	if (type.empty() || boost::iequals("FOP", type)) {
+		result.m_securityType = SECURITY_TYPE_FUTURE_OPTION;
+	} else if (boost::iequals("OPT", type)) {
+		result.m_securityType =  SECURITY_TYPE_OPTION;
+	} else {
+		throw StringFormatError();
+	}
+
 	boost::smatch symbolMatch;
 	if (	!boost::regex_match(
 				subs[0],
@@ -442,7 +450,7 @@ const std::string & Symbol::GetTradingClass() const {
 
 std::ostream & std::operator <<(std::ostream &os, const Symbol &symbol) {
 	// If changing here - look at Symbol::GetHash, how hash creating.
-	static_assert(Symbol::numberOfSecurityTypes == 3, "Security list changed.");
+	static_assert(Symbol::numberOfSecurityTypes == 4, "Security list changed.");
 	switch (symbol.GetSecurityType()) {
 		case Symbol::SECURITY_TYPE_STOCK:
 			os
@@ -461,6 +469,17 @@ std::ostream & std::operator <<(std::ostream &os, const Symbol &symbol) {
 				<< ':' << symbol.GetRightAsString()
 				<< ':' << symbol.GetTradingClass()
 				<< " (FOP)";
+			break;
+		case Symbol::SECURITY_TYPE_OPTION:
+			os
+				<< symbol.GetSymbol()
+				<< ":" << symbol.GetCurrency()
+				<< ':' << symbol.GetExchange()
+				<< ':' << symbol.GetExpirationDate()
+				<< ':' << symbol.GetStrike()
+				<< ':' << symbol.GetRightAsString()
+				<< ':' << symbol.GetTradingClass()
+				<< " (OPT)";
 			break;
 		case Symbol::SECURITY_TYPE_CASH:
 			os
