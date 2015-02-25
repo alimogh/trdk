@@ -865,10 +865,9 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 		return false;
 	}
 
-	const auto orderDelay = timeMeasurement.Measure(
-		TimeMeasurement::SM_STRATEGY_DECISION_START_2);
+	Lib::TimeMeasurement::PeriodFromStart orderDelay;
 	try {
-		m_triangle->StartLeg3(timeMeasurement, false);
+		orderDelay = m_triangle->StartLeg3(timeMeasurement, false);
 	} catch (const HasNotMuchOpportunityException &ex) {
 		m_scheduledLeg = LEG3;
 		GetLog().Warn(
