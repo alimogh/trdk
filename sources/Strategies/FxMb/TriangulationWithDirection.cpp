@@ -609,12 +609,14 @@ void TriangulationWithDirection::CalcSpeed(
 			result.speed[pair] = data.prev2.theo > data.current.theo
 				?	(1.0 / data.current.theo) * data.prev2.theo
 				:	(1.0 / data.prev2.theo) * data.current.theo;
+			result.speed[pair] = -1;
 		} else if (
 			data.current.theo < data.current.emaFast
  				&& data.current.emaFast < data.current.emaSlow) {
 			result.speed[pair] = data.prev2.theo > data.current.theo
 				?	(1.0 / data.current.theo) * data.prev2.theo
 				:	(1.0 / data.prev2.theo) * data.current.theo;
+			result.speed[pair] = -1;
 			result.speed[pair] *= -1;
 		} else {
 			result.speed[pair] = 0;
