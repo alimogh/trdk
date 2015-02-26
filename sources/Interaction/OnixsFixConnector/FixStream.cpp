@@ -147,6 +147,7 @@ FixStream::FixStream(
 		const std::string &tag,
 		const Lib::IniSectionRef &conf)
 	: MarketDataSource(index, context, tag),
+	m_isBookLogEnabled(conf.ReadBoolKey("log.book_adjust")),
 	m_session(GetContext(), GetLog(), conf),
 	m_isSubscribed(false),
 	m_bookLevelsCount(
@@ -259,7 +260,7 @@ void FixStream::SubscribeToSecurities() {
 
 Security & FixStream::CreateSecurity(const Symbol &symbol) {
 	boost::shared_ptr<FixSecurity> result(
-		new FixSecurity(GetContext(), symbol, *this));
+		new FixSecurity(GetContext(), symbol, *this, m_isBookLogEnabled));
 	const_cast<FixStream *>(this)
 		->m_securities.push_back(result);
 	return *result;
@@ -614,6 +615,8 @@ void FixStream::onInboundApplicationMsg(
 	book.GetBids().Swap(bids);
 	book.GetAsks().Swap(asks);
 	book.Commit(timeMeasurement);
+
+	security->DumpAdjustedBook();
 
 }
 
