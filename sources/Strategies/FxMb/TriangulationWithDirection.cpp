@@ -609,16 +609,12 @@ void TriangulationWithDirection::CalcSpeed(
 			result.speed[pair] = data.prev2.theo > data.current.theo
 				?	(1.0 / data.current.theo) * data.prev2.theo
 				:	(1.0 / data.prev2.theo) * data.current.theo;
-			AssertLe(1, result.speed[pair]);
-			result.speed[pair] -= 1;
 		} else if (
 			data.current.theo < data.current.emaFast
  				&& data.current.emaFast < data.current.emaSlow) {
 			result.speed[pair] = data.prev2.theo > data.current.theo
 				?	(1.0 / data.current.theo) * data.prev2.theo
 				:	(1.0 / data.prev2.theo) * data.current.theo;
-			AssertLe(1, result.speed[pair]);
-			result.speed[pair] -= 1;
 			result.speed[pair] *= -1;
 		} else {
 			result.speed[pair] = 0;
@@ -637,8 +633,8 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 	if (
 			// | EUR/USD SELL 1 FALLING	| USD/JPY SELL 3 RISING	| EUR/JPY BUY 2 -	|
 			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
-			result.speed[PAIR_AB] < 0
-			&& result.speed[PAIR_BC] > 0
+			result.speed[PAIR_AB] < -1
+			&& result.speed[PAIR_BC] > 1
 			&& IsZero(result.speed[PAIR_AC])
 			&& fabs(result.speed[PAIR_AB]) > result.speed[PAIR_BC]) {
 
@@ -651,8 +647,8 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 			// | Y1 EUR/USD SELL 2 -	| USD/JPY SELL 3 RISING | EUR/JPY BUY 1 RISING	|
 			// | PAIR_AB				| PAIR_BC				| PAIR_AC				|
 			IsZero(result.speed[PAIR_AB])
-			&& result.speed[PAIR_BC] > 0
-			&& result.speed[PAIR_AC] > 0
+			&& result.speed[PAIR_BC] > 1
+			&& result.speed[PAIR_AC] > 1
 			&& result.speed[PAIR_BC] < result.speed[PAIR_AC]) {
 
 		result.y = Y1;
@@ -663,8 +659,8 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 	} else if (
 			// | EUR/USD SELL 3 RISING | USD/JPY SELL 1 FALLING | EUR/JPY BUY 2 -	|
 			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
-			result.speed[PAIR_AB] > 0
-			&& result.speed[PAIR_BC] < 0
+			result.speed[PAIR_AB] > 1
+			&& result.speed[PAIR_BC] < -1
 			&& IsZero(result.speed[PAIR_AC])
 			&& result.speed[PAIR_AB] < fabs(result.speed[PAIR_BC])) {
 
@@ -688,8 +684,8 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 	if (
 			// | EUR/USD BUY 1 RISING	| USD/JPY BUY 3 FALLING | EUR/JPY SELL 2 -	|
 			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
-			result.speed[PAIR_AB] > 0
-			&& result.speed[PAIR_BC] < 0
+			result.speed[PAIR_AB] > 1
+			&& result.speed[PAIR_BC] < -1
 			&& IsZero(result.speed[PAIR_AC])
 			&& result.speed[PAIR_AB] > fabs(result.speed[PAIR_BC])) {
 
@@ -702,8 +698,8 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 			// | EUR/USD BUY 2 -	| USD/JPY BUY 3 FALLING | EUR/JPY SELL 1 FALLING	|
 			// | PAIR_AB			| PAIR_BC				| PAIR_AC					|
 			IsZero(result.speed[PAIR_AB])
-			&& result.speed[PAIR_BC] < 0
-			&& result.speed[PAIR_AC] < 0
+			&& result.speed[PAIR_BC] < -1
+			&& result.speed[PAIR_AC] < -1
 			&& fabs(result.speed[PAIR_BC]) < fabs(result.speed[PAIR_AC])) {
 
 		result.y = Y2;
@@ -714,8 +710,8 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 	} else if (
 			// | EUR/USD BUY 3 FALLING	| USD/JPY BUY 1 RISING	| EUR/JPY SELL 2 -	|
 			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
-			result.speed[PAIR_AB] < 0
-			&& result.speed[PAIR_BC] > 0
+			result.speed[PAIR_AB] < -1
+			&& result.speed[PAIR_BC] > 1
 			&& IsZero(result.speed[PAIR_AC])
 			&& fabs(result.speed[PAIR_AB]) < result.speed[PAIR_BC]) {
 
