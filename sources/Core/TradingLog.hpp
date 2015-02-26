@@ -129,7 +129,7 @@ namespace trdk {
 				const char *tag,
 				const char *message,
 				const FormatCallback &formatCallback) {
-			Base::Write(formatCallback, tag, message);
+			FormatAndWrite(formatCallback, tag, message);
 		}
 
 	};

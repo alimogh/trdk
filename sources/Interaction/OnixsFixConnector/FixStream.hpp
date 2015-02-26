@@ -191,6 +191,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		BookAdjuster * CreateBookAdjuster(const Lib::IniSectionRef &) const;
 
 	private:
+		
+		const bool m_isBookLogEnabled;
 
 		FixSession m_session;
 		std::vector<boost::shared_ptr<FixSecurity>> m_securities;

@@ -98,7 +98,7 @@ namespace {
 
 		template<typename FormatCallback>
 		void Write(const FormatCallback &formatCallback) {
-			Base::Write(formatCallback);
+			Base::FormatAndWrite(formatCallback);
 		}
 
 	};
