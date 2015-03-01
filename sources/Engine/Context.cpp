@@ -125,12 +125,7 @@ public:
 	}
 
 	~State() {
-		// Suspend events...
-		try {
-			subscriptionsManager.Suspend();
-		} catch (...) {
-			AssertFailNoException();
-		}
+		Assert(!subscriptionsManager.IsActive());
 		// ... no new events expected, wait until old records will be flushed...
 		context.GetTradingLog().WaitForFlush();
 		// ... then we can destroy objects and unload DLLs...
@@ -336,6 +331,10 @@ void Engine::Context::Stop(const StopMode &stopMode) {
 		}
 	}
 
+	// Suspend events...
+	m_pimpl->m_state->subscriptionsManager.Suspend();
+	m_pimpl->m_marketDataSources.clear();
+	
 	m_pimpl->m_state.reset();
 
 }
