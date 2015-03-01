@@ -57,17 +57,8 @@ namespace {
 	public:
 
 		~Server() {
-			try {
-				{
-					const Lock lock(m_mutex);
-					AssertEq(0, m_securitites.size());
-					m_securitites.clear();
-				}
-				m_readingThread.join();
-			} catch (...) {
-				AssertFailNoException();
-				throw;
-			}
+			// See RemoveService to know why we don't wait for m_readingThread
+			// thread stop here.
 		}
 
 	public:
@@ -91,11 +82,22 @@ namespace {
 		}
 
 		void RemoveService(const MarketDataSource &service) {
-			const Lock lock(m_mutex);
-			auto subscribed(m_subscribed);
-			subscribed.erase(&service);
-			m_securitites.erase(&service);
-			subscribed.swap(m_subscribed);
+			bool isSubcriberListEmpty = false;
+			{
+				const Lock lock(m_mutex);
+				auto subscribed(m_subscribed);
+				subscribed.erase(&service);
+				m_securitites.erase(&service);
+				isSubcriberListEmpty = m_securitites.empty();
+				subscribed.swap(m_subscribed);
+			}
+			// Can't wait for thread stop in dtor, as server-object is a global
+			// object, and will be destroyed from DllMain, and we will get
+			// deadlock at system calls with thread.
+			// Please change comment in dtor if logic will be changed.
+			if (isSubcriberListEmpty) {
+				m_readingThread.join();
+			}
 		}
 
 		void SubscribeToSecurities(const MarketDataSource &service) {
