@@ -256,7 +256,7 @@ public:
 
 	Params m_params;
 
-	LatanReport m_latanReport;
+	std::unique_ptr<LatanReport> m_latanReport;
 
 	CustomTimeMutex m_customCurrentTimeMutex;
 	pt::ptime m_customCurrentTime;
@@ -273,8 +273,7 @@ public:
 		m_tradingLog(tradingLog),
 		m_settings(settings),
 		m_startTime(startTime),
-		m_params(context),
-		m_latanReport(context) {
+		m_params(context) {
 		//...//
 	}
 
@@ -288,6 +287,8 @@ Context::Context(
 		const Settings &settings,
 		const pt::ptime &startTime) {
 	m_pimpl = new Implementation(*this, log, tradingLog, settings, startTime);
+        m_pimpl->m_latanReport.reset(
+            new LatanReport(*this));
 }
 
 Context::~Context() {
@@ -387,15 +388,15 @@ const Context::Params & Context::GetParams() const {
 }
 
 TimeMeasurement::Milestones Context::StartStrategyTimeMeasurement() const {
-	return m_pimpl->m_latanReport.StartStrategyTimeMeasurement();
+	return m_pimpl->m_latanReport->StartStrategyTimeMeasurement();
 }
 
 TimeMeasurement::Milestones Context::StartTradeSystemTimeMeasurement() const {
-	return m_pimpl->m_latanReport.StartTradeSystemTimeMeasurement();
+	return m_pimpl->m_latanReport->StartTradeSystemTimeMeasurement();
 }
 
 TimeMeasurement::Milestones Context::StartDispatchingTimeMeasurement() const {
-	return m_pimpl->m_latanReport.StartDispatchingTimeMeasurement();
+	return m_pimpl->m_latanReport->StartDispatchingTimeMeasurement();
 }
 
 //////////////////////////////////////////////////////////////////////////
