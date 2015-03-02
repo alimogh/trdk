@@ -89,7 +89,6 @@ void Dispatcher::Suspend() {
 	m_context.GetLog().Debug("Suspending events dispatching...");
 	m_bookUpdateTicks.Suspend();
 	m_positionsUpdates.Suspend();
-	m_newBars.Suspend();
 	m_context.GetLog().Debug("Events dispatching suspended.");
 }
 
