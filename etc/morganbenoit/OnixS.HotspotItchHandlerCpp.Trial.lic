@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<license version="1.0">
+  <type>trial</type>
+  <customer>
+    <name>Evaluator</name>
+  </customer>
+  <period>
+    <since>2014-11-25</since>
+    <till>2015-02-23</till>
+  </period>
+  <products>
+    <product id="10" name="Hotspot ITCH Handler for C++" />
+  </products>
+  <checksum>EBA050F1C3E0CA5AD5780CE8CF71851E</checksum>
+</license>

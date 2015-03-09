@@ -102,7 +102,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				} else if (execType == fix::FIX41::Values::ExecType::Expired) {
 
 					if (ordStatus == fix::FIX40::Values::OrdStatus::Expired) {
-						OnOrderRejected(message, replyTime, "expired", true);
+						OnOrderCanceled(
+							message,
+							GetMessageClOrderId(message),
+							replyTime);
 						return;
 					}
 				
