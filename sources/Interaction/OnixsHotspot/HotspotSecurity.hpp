@@ -45,54 +45,37 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 
 	public:
 
-		void Flush(const Lib::TimeMeasurement::Milestones &timeMeasurement) {
+		void Flush(
+				const boost::posix_time::ptime &time,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement) {
 
-			if (!m_cache.asks.empty() && !m_cache.bids.empty()) {
-
-				SetLevel1(
-					boost::posix_time::microsec_clock::universal_time(),
-					Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-						ScalePrice(ConvertToDouble(m_cache.bids[0]->price()))),
-					Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
-						ConvertToUInt(m_cache.bids[0]->amount())),
-					Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-						ScalePrice(ConvertToDouble(m_cache.asks[0]->price()))),
-					Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
-						ConvertToUInt(m_cache.asks[0]->amount())),
-					timeMeasurement);
-
-				m_cache.asks.clear();
-				m_cache.bids.clear();
-
-			} else if (!m_cache.asks.empty())  {
-
-				AssertEq(0, m_cache.bids.size());
-
-				SetLevel1(
-					boost::posix_time::microsec_clock::universal_time(),
-					Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-						ScalePrice(ConvertToDouble(m_cache.asks[0]->price()))),
-					Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
-						ConvertToUInt(m_cache.asks[0]->amount())),
-					timeMeasurement);
-
-				m_cache.asks.clear();
-
-			} else if (!m_cache.bids.empty())  {
-
-				AssertEq(0, m_cache.asks.size());
-				
-				SetLevel1(
-					boost::posix_time::microsec_clock::universal_time(),
-					Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-						ScalePrice(ConvertToDouble(m_cache.bids[0]->price()))),
-					Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
-						ConvertToUInt(m_cache.bids[0]->amount())),
-					timeMeasurement);
-
-				m_cache.bids.clear();
-
+			std::vector<Book::Level> bids;
+			bids.reserve(m_cache.bids.size());
+			foreach (const auto &it, m_cache.bids) {
+				const auto &level = *it;
+				bids.emplace_back(
+					time,
+					ConvertToDouble(level.price()),
+					ConvertToUInt(level.amount()));
 			}
+
+			std::vector<Book::Level> asks;
+			asks.reserve(m_cache.asks.size());
+			foreach (const auto &it, m_cache.asks) {
+				const auto &level = *it;
+				asks.emplace_back(
+					time,
+					ConvertToDouble(level.price()),
+					ConvertToUInt(level.amount()));
+			}
+
+			BookUpdateOperation book = StartBookUpdate(time, false);
+			book.GetBids().Swap(bids);
+			book.GetAsks().Swap(asks);
+			book.Commit(timeMeasurement);
+
+			m_cache.bids.clear();
+			m_cache.asks.clear();
 
 		}
 

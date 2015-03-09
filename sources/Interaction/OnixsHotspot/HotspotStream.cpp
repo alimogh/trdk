@@ -140,6 +140,8 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 
 			const auto &timeMeasurement
 				= GetContext().StartStrategyTimeMeasurement();
+			const auto &now
+				= boost::posix_time::microsec_clock::universal_time();
 
 			const auto &securityPos = m_securities.find(pair.pair());
 			if (securityPos == m_securities.end()) {
@@ -150,7 +152,7 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 			pair.getAskPrices(&security.GetAsksCache());
 			pair.getBidPrices(&security.GetBidsCache());
 
-			security.Flush(timeMeasurement);
+			security.Flush(now, timeMeasurement);
 			
 		}
 
