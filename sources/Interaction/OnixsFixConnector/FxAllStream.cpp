@@ -59,7 +59,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		}
 
 		virtual void SetupBookRequest(fix::Message &request) const {
-			request.set(fix::FIX42::Tags::MarketDepth, int(GetLevelsCount()));
+			request.set(
+				fix::FIX42::Tags::MarketDepth,
+				// +3 - to get required book size after adjusting.
+				int(GetLevelsCount()) + 3);
 		}
 
 	};
