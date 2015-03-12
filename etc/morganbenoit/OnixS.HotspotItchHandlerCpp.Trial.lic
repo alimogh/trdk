@@ -5,11 +5,11 @@
     <name>Evaluator</name>
   </customer>
   <period>
-    <since>2014-11-25</since>
-    <till>2015-02-23</till>
+    <since>2015-01-28</since>
+    <till>2015-04-28</till>
   </period>
   <products>
     <product id="10" name="Hotspot ITCH Handler for C++" />
   </products>
-  <checksum>EBA050F1C3E0CA5AD5780CE8CF71851E</checksum>
+  <checksum>E88157F72D3E17BE91CB972ACB17A24F</checksum>
 </license>
