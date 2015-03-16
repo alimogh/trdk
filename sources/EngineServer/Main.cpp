@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Server.hpp"
+#include "Service.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -65,13 +66,14 @@ namespace {
 		return false;
 	}
 
-	bool RunServerStandalone(int argc, const char *argv[]) {
-		if (argc < 3 || !strlen(argv[2])) {
-			std::cerr << "No configuration file specified." << std::endl;
-			return false;
-		}
-		//! @todo Implement run standalone command
-		return false;
+	bool RunServerStandalone(int /*argc*/, const char * /*argv*/[]) {
+// 		if (argc < 3 || !strlen(argv[2])) {
+// 			std::cerr << "No configuration file specified." << std::endl;
+// 			return false;
+// 		}
+		ServiceServer service;
+		getchar();
+		return true;
 	}
 
 	bool DebugStrategy(int argc, const char *argv[]) {

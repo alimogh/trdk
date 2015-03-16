@@ -1,0 +1,66 @@
+/**************************************************************************
+ *   Created: 2015/03/17 02:23:02
+ *    Author: Eugene V. Palchukovsky
+ *    E-mail: eugene@palchukovsky.com
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
+ **************************************************************************/
+
+syntax = "proto2";
+
+package trdk.EngineServer.Service;
+
+////////////////////////////////////////////////////////////////////////////////
+
+message EngineInfo {
+	required string id = 1;
+}
+
+message EngineState {
+	required string id = 1;
+	required bool isActive = 2;
+}
+
+message ServerData {
+	
+	enum Type {
+		TYPE_ENGINE_INFO = 1;
+		TYPE_ENGINE_STATE = 2;
+	}
+
+	required Type type = 1;
+
+	optional EngineInfo engineInfo = 2;
+	optional EngineState engineState = 3;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message FullInfoRequest {
+	//...//
+}
+
+message EngineStartStopRequest {
+	required string id = 1;
+}
+
+message ClientRequest {
+	
+	enum Type {
+		TYPE_INFO_FULL = 1;
+		TYPE_ENGINE_START = 2;
+		TYPE_ENGINE_STOP = 3;
+	}
+
+	required Type type = 1;
+
+	optional FullInfoRequest fullInfo = 2;
+	optional EngineStartStopRequest engineStart = 3;
+	optional EngineStartStopRequest engineStop = 4;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////

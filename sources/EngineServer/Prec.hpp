@@ -19,6 +19,7 @@
 #	include <boost/multi_index/hashed_index.hpp>
 #	include <boost/thread/mutex.hpp>
 #	include <boost/algorithm/string.hpp>
+#	include <boost/asio.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
@@ -28,3 +29,7 @@
 #include <fstream>
 
 #include "Common/Assert.hpp"
+
+#ifdef SendMessage
+#	undef SendMessage
+#endif
