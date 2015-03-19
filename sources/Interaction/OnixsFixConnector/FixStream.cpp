@@ -19,128 +19,6 @@ using namespace trdk::Interaction::OnixsFixConnector;
 
 namespace fix = OnixS::FIX;
 
-////////////////////////////////////////////////////////////////////////////////
-
-bool FixStream::BookSwapAdjuster::Adjust(
-		const FixSecurity &security,
-		std::vector<Security::Book::Level> &bids,
-		std::vector<Security::Book::Level> &asks,
-		const fix::Message &message)
-		const {
-
-	if (
-			bids.empty()
-			|| asks.empty()
-			|| bids.front().GetPrice() <= asks.front().GetPrice()) {
-		
-		if (
-				!IsZero(security.m_lastReportedAdjusting.first)
-				|| !IsZero(security.m_lastReportedAdjusting.second)) {
-			security.m_lastReportedAdjusting = std::make_pair(.0, .0);
-			GetTradingLog().Write(
-				"book\tadjust\t%1%\tnorm\t%2%",
-				[&](TradingRecord &record) {
-					record % security % message.seqNum();
-				});
-		}
-
-		return false;
-	
-	}
-
-	if (
-			!IsEqual(bids.front().GetPrice(), security.m_lastReportedAdjusting.first)
-			|| !IsEqual(asks.front().GetPrice(), security.m_lastReportedAdjusting.second)) {
-		security.m_lastReportedAdjusting.first = bids.front().GetPrice();
-		security.m_lastReportedAdjusting.second = asks.front().GetPrice();
-		GetTradingLog().Write(
-			"book\tadjust\t%1%\t%2% <-> %3%\t%4%",
-			[&](TradingRecord &record) {
-				record
-					% security
-					% security.m_lastReportedAdjusting.first
-					% security.m_lastReportedAdjusting.second
-					% message.seqNum();
-			});
-	}
-
-	bids.front().Swap(asks.front());
-
-	const auto &checkBook = [&](
-			std::vector<Security::Book::Level> &side,
-			bool isAsk) {
-		
-		if (side.size() == 1) {
-			return;
-		}
-		
-		auto &topLevel = side.front();
-		auto &nextLevel = *(side.begin() + 1);
-		if (IsEqual(topLevel.GetPrice(), nextLevel.GetPrice())) {
-			nextLevel += topLevel;
-			side.erase(side.begin());
-		} else if (
-				(isAsk && topLevel.GetPrice() > nextLevel.GetPrice())
-					|| (!isAsk && topLevel.GetPrice() < nextLevel.GetPrice())) {
- 			topLevel.Swap(nextLevel);
-		}
-	
-	};
-
-	checkBook(asks, true);
-	checkBook(bids, false);
-
-	return true;
-
-}
-
-bool FixStream::BookDeleteOldAdjuster::Adjust(
-		const FixSecurity &security,
-		std::vector<Security::Book::Level> &bids,
-		std::vector<Security::Book::Level> &asks,
-		const fix::Message &message)
-		const {
-
-	size_t count = 0;
-
-	while (
-			!bids.empty()
-			&& !asks.empty()
-			&& bids.front().GetPrice() > asks.front().GetPrice()) {
-		
-		bool isBidOlder = bids.front().GetTime() < asks.front().GetTime();
-		
-		GetTradingLog().Write(
-			"book\tadjust\t%1%\t%2% %3% %4%\t%5% %6% %7%\t%8%\t%9%",
-			[&](TradingRecord &record) {
-				record
-					% security
-					% bids.front().GetPrice()
-					% bids.front().GetTime()
-					% (isBidOlder ? 'X' : '+')
-					% asks.front().GetPrice()
-					% asks.front().GetTime()
-					% (isBidOlder ? '+' : 'X')
-					% message.seqNum()
-					% (count + 1);
-			});
-		
-		if (isBidOlder) {
-			bids.erase(bids.begin());
-		} else {
-			asks.erase(asks.begin());
-		}
-		
-		++count;
-	
-	}
-
-	return count > 0;
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 FixStream::FixStream(
 		size_t index,
 		Context &context,
@@ -151,12 +29,8 @@ FixStream::FixStream(
 	m_session(GetContext(), GetLog(), conf),
 	m_isSubscribed(false),
 	m_bookLevelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
-	m_bookAdjuster(CreateBookAdjuster(conf)) {
-	GetLog().Info(
-		"Book size: %1% * 2 price levels. Book adjusting method: %2%.",
-		m_bookLevelsCount,
-		m_bookAdjuster->GetName());
+		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")) {
+	GetLog().Info("Book size: %1% * 2 price levels.", m_bookLevelsCount);
 }
 
 FixStream::~FixStream() {
@@ -569,18 +443,38 @@ void FixStream::onInboundApplicationMsg(
 	}
 #	endif
 
-	const bool isAdjusted = m_bookAdjuster->Adjust(
-		*security,
-		bids,
-		asks,
-		message);
+	const auto &bidsLevelsCountBeforeAdjusting = bids.size();
+	const auto &asksLevelsCountBeforeAdjusting = asks.size();
+
+	const bool isAdjusted
+		= Security::BookUpdateOperation::Adjust(*security, bids, asks);
 	AssertGe(security->m_book.size(), bids.size() + asks.size());
 
 	if (bids.size() > m_bookLevelsCount) {
 		bids.resize(m_bookLevelsCount);
+	} else if (
+			bidsLevelsCountBeforeAdjusting >= m_bookLevelsCount
+			&& bids.size() < m_bookLevelsCount) {
+		AssertLt(bids.size(), bidsLevelsCountBeforeAdjusting);
+		GetLog().Warn("Book too small after adjusting"
+			" (%1% bid price levels: %2% -> %3%).",
+			security->GetSymbol().GetSymbol(),
+			bidsLevelsCountBeforeAdjusting,
+			bids.size());
 	}
+
 	if (asks.size() > m_bookLevelsCount) {
 		asks.resize(m_bookLevelsCount);
+	} else if (
+			asksLevelsCountBeforeAdjusting >= m_bookLevelsCount
+			&& asks.size() < m_bookLevelsCount) {
+		AssertLt(asks.size(), asksLevelsCountBeforeAdjusting);
+		GetLog().Warn(
+			"Book too small after adjusting"
+				" (%1% ask price levels: %2% -> %3%).",
+			security->GetSymbol().GetSymbol(),
+			asksLevelsCountBeforeAdjusting,
+			asks.size());
 	}
 
 	if (
@@ -614,6 +508,7 @@ void FixStream::onInboundApplicationMsg(
 		= security->StartBookUpdate(now, isAdjusted);
 	book.GetBids().Swap(bids);
 	book.GetAsks().Swap(asks);
+	book.Adjust();
 	book.Commit(timeMeasurement);
 
 	security->DumpAdjustedBook();
@@ -626,19 +521,4 @@ Qty FixStream::ParseMdEntrySize(const fix::GroupInstance &entry) const {
 
 Qty FixStream::ParseMdEntrySize(const fix::Message &message) const {
 	return message.getInt32(fix::FIX42::Tags::MDEntrySize);
-}
-
-FixStream::BookAdjuster * FixStream::CreateBookAdjuster(
-		const IniSectionRef &conf)
-		const {
-	const auto &method = conf.GetBase().ReadKey("Common", "book.adjust.method");
-	if (boost::iequals(method, "swap")) {
-		return new BookSwapAdjuster(GetTradingLog());
-	} else if (boost::iequals(method, "delete_old")) {
-		return new BookDeleteOldAdjuster(GetTradingLog());
-	} else if (boost::iequals(method, "none")) {
-		return new BookDummyAdjuster(GetTradingLog());
-	} else {
-		throw Ini::KeyFormatError("Unknown book adjusting method");
-	}
 }

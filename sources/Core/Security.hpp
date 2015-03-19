@@ -155,6 +155,7 @@ namespace trdk {
 				trdk::Qty m_qty;
 			};
 			class TRDK_CORE_API Side {
+				friend class trdk::Security::BookUpdateOperation;
 				friend class trdk::Security::BookSideUpdateOperation;
 			public:
 				Side();
@@ -201,6 +202,7 @@ namespace trdk {
 
 		class TRDK_CORE_API BookSideUpdateOperation
 			: private boost::noncopyable {
+			friend class trdk::Security::BookUpdateOperation;
 		public:
 			explicit BookSideUpdateOperation(trdk::Security::Book::Side &);
 		public:
@@ -215,7 +217,7 @@ namespace trdk {
 			explicit BookUpdateOperation(
 					trdk::Security &security,
 					const boost::posix_time::ptime &,
-					bool isRespected);
+					bool isAdjusted);
 		public:
 			BookUpdateOperation(BookUpdateOperation &&);
 			~BookUpdateOperation();
@@ -223,6 +225,12 @@ namespace trdk {
 			BookSideUpdateOperation & GetBids();
 			BookSideUpdateOperation & GetOffers();
 			BookSideUpdateOperation & GetAsks();
+		public:
+			void Adjust();
+			static bool Adjust(
+					const trdk::Security &,
+					std::vector<trdk::Security::Book::Level> &bids,
+					std::vector<trdk::Security::Book::Level> &asks);
 		public:
 			void Commit(const trdk::Lib::TimeMeasurement::Milestones &);
 		private:
