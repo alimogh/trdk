@@ -271,7 +271,40 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">
     <TargetName>RobotEngine_test</TargetName>
   </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
+    <Link />
+    <Link>
+      <AdditionalDependencies>libprotobuf_x64_vs120_dbg.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
+    <Link />
+    <Link>
+      <AdditionalDependencies>libprotobuf_x64_vs120_dbg.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">
+    <Link>
+      <AdditionalDependencies>libprotobuf_x64_vs120.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">
+    <Link>
+      <AdditionalDependencies>libprotobuf_x64_vs120.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
+    <Link>
+      <AdditionalDependencies>libprotobuf_x64_vs120.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
+    <Link>
+      <AdditionalDependencies>libprotobuf_x64_vs120.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Client.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -288,10 +321,40 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Service.cpp" />
+    <ClCompile Include="trdk.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Client.hpp" />
     <ClInclude Include="Server.hpp" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="Service.hpp" />
+    <ClInclude Include="trdk.pb.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.vcxproj">
@@ -309,6 +372,95 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="EngineServer.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="trdk.proto">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">
+      </AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">
+      </AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">
+      </AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">
+      </AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">
+      </AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">
+      </AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
+      </AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
+      </AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">
+      </AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">
+      </AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
+      </AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
+      </AdditionalInputs>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

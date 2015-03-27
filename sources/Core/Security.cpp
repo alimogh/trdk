@@ -10,9 +10,11 @@
 
 #include "Prec.hpp"
 #include "Security.hpp"
+#include "MarketDataSource.hpp"
 #include "Position.hpp"
 #include "Settings.hpp"
 #include "Context.hpp"
+#include "TradingLog.hpp"
 
 namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
@@ -662,12 +664,12 @@ void Security::BookSideUpdateOperation::Swap(
 Security::BookUpdateOperation::BookUpdateOperation(
 		Security &security,
 		const pt::ptime &time,
-		bool isRespected)
+		bool isAdjusted)
 	: m_pimpl(
 		new Implementation(
 			security,
 			boost::shared_ptr<Security::Book>(
-				new Security::Book(time, isRespected)))) {
+				new Security::Book(time, isAdjusted)))) {
 	//...//
 }
 
@@ -678,6 +680,58 @@ Security::BookUpdateOperation::BookUpdateOperation(BookUpdateOperation &&rhs)
 
 Security::BookUpdateOperation::~BookUpdateOperation() {
 	delete m_pimpl;
+}
+
+void Security::BookUpdateOperation::Adjust() {
+	if (m_pimpl->m_book->IsAdjusted()) {
+		throw LogicError("Book already adjusted");
+	}
+	m_pimpl->m_book->m_isAdjusted = Adjust(
+		m_pimpl->m_security,
+		m_pimpl->m_bids.m_storage.m_pimpl->m_levels,
+		m_pimpl->m_offers.m_storage.m_pimpl->m_levels);
+}
+
+bool Security::BookUpdateOperation::Adjust(
+		const Security &security,
+		std::vector<trdk::Security::Book::Level> &bids,
+		std::vector<trdk::Security::Book::Level> &asks) {
+
+	size_t count = 0;
+
+	while (
+			!bids.empty()
+			&& !asks.empty()
+			&& bids.front().GetPrice() > asks.front().GetPrice()) {
+		
+		bool isBidOlder = bids.front().GetTime() < asks.front().GetTime();
+		
+		security.GetSource().GetTradingLog().Write(
+			"book\tadjust\t%1%\t%2% %3% %4%\t%5% %6% %7%\t%8%",
+			[&](TradingRecord &record) {
+				record
+					% security
+					% bids.front().GetPrice()
+					% bids.front().GetTime()
+					% (isBidOlder ? 'X' : '+')
+					% asks.front().GetPrice()
+					% asks.front().GetTime()
+					% (isBidOlder ? '+' : 'X')
+					% (count + 1);
+			});
+		
+		if (isBidOlder) {
+			bids.erase(bids.begin());
+		} else {
+			asks.erase(asks.begin());
+		}
+		
+		++count;
+	
+	}
+
+	return count > 0;
+
 }
 
 Security::BookSideUpdateOperation & Security::BookUpdateOperation::GetBids() {

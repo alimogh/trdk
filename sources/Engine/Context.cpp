@@ -125,7 +125,7 @@ public:
 	}
 
 	~State() {
-		Assert(!subscriptionsManager.IsActive());
+//		Assert(!subscriptionsManager.IsActive());
 		// ... no new events expected, wait until old records will be flushed...
 		context.GetTradingLog().WaitForFlush();
 		// ... then we can destroy objects and unload DLLs...

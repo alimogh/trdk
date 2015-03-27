@@ -894,10 +894,14 @@ void FixTrading::OnOrderCanceled(
 	AssertEq("8", execReport.type());
 	Assert(
 		fix::FIX41::Values::ExecType::Cancelled
-			== execReport.get(fix::FIX41::Tags::ExecType));
+				== execReport.get(fix::FIX41::Tags::ExecType)
+			|| fix::FIX41::Values::OrdStatus::Expired
+				== execReport.get(fix::FIX40::Tags::OrdStatus));
 	Assert(
 		fix::FIX41::Values::OrdStatus::Canceled
-			== execReport.get(fix::FIX40::Tags::OrdStatus));
+				== execReport.get(fix::FIX40::Tags::OrdStatus)
+			|| fix::FIX41::Values::OrdStatus::Expired
+				== execReport.get(fix::FIX40::Tags::OrdStatus));
 	NotifyOrderUpdate(
 		execReport,
 		orderId,

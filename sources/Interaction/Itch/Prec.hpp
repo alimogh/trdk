@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2013/02/08 13:59:27
+ *   Created: 2015/03/17 23:18:53
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -13,23 +13,17 @@
 #include "Common/Assert.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/filesystem.hpp>
-#	include <boost/multi_index_container.hpp>
-#	include <boost/multi_index/member.hpp>
-#	include <boost/multi_index/hashed_index.hpp>
-#	include <boost/thread/mutex.hpp>
-#	include <boost/algorithm/string.hpp>
 #	include <boost/asio.hpp>
+#	include <boost/thread.hpp>
+#	include <boost/algorithm/string.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
+
+#include <vector>
 
 #include "Common/Common.hpp"
 
-#include "Engine/Fwd.hpp"
-
-#include <fstream>
+#include "Core/Fwd.hpp"
+#include "Fwd.hpp"
+#include "Api.h"
 
 #include "Common/Assert.hpp"
-
-#ifdef SendMessage
-#	undef SendMessage
-#endif
