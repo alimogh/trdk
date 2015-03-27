@@ -71,8 +71,8 @@ namespace {
 // 			std::cerr << "No configuration file specified." << std::endl;
 // 			return false;
 // 		}
-		ServiceServer service;
-		getchar();
+// 		ServiceServer service;
+// 		getchar();
 		return true;
 	}
 
