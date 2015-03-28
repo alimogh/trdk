@@ -314,7 +314,7 @@ void FixTrading::FillOrderMessage(
 			const Currency &currency,
 			const Qty &qty,
 			const std::string &account,
-			const trdk::OrderParams &params,
+			const OrderParams &params,
 			fix::Message &message)
 		const {
 
@@ -366,7 +366,7 @@ fix::Message FixTrading::CreateOrderMessage(
 			const Security &security,
 			const Currency &currency,
 			const Qty &qty,
-			const trdk::OrderParams &params) {
+			const OrderParams &params) {
 	// Creates order FIX-message and sets common fields.
 	fix::Message result(
 		!params.orderIdToReplace ? "D" : "G",
@@ -387,7 +387,7 @@ fix::Message & FixTrading::GetPreallocatedOrderMessage(
 			const Security &security,
 			const Currency &currency,
 			const Qty &qty,
-			const trdk::OrderParams &params) {
+			const OrderParams &params) {
 	if (!m_preallocated.orderMessage) {
 		m_preallocated.orderMessage.reset(
 			new fix::Message("D", m_session.GetFixVersion()));
@@ -411,7 +411,7 @@ fix::Message & FixTrading::GetPreallocatedMarketOrderMessage(
 			const Security &security,
 			const Currency &currency,
 			const Qty &qty,
-			const trdk::OrderParams &params) {
+			const OrderParams &params) {
 	fix::Message &result = GetPreallocatedOrderMessage(
 		clOrderId,
 		security,
@@ -432,11 +432,11 @@ void FixTrading::Send(
 	timeMeasurement.Measure(TimeMeasurement::TSM_ORDER_SENT);
 }
 
-OrderId FixTrading::SellAtMarketPrice(
-			trdk::Security &security,
-			const trdk::Lib::Currency &currency,
-			trdk::Qty qty,
-			const trdk::OrderParams &params,
+OrderId FixTrading::SendSellAtMarketPrice(
+			Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -465,12 +465,12 @@ OrderId FixTrading::SellAtMarketPrice(
 	return order.id;
 }
 
-OrderId FixTrading::Sell(
-			trdk::Security &security,
-			const trdk::Lib::Currency &currency,
-			trdk::Qty qty,
-			trdk::ScaledPrice price,
-			const trdk::OrderParams &params,
+OrderId FixTrading::SendSell(
+			Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const ScaledPrice &price,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -503,24 +503,24 @@ OrderId FixTrading::Sell(
 	return order.id;
 }
 
-OrderId FixTrading::SellAtMarketPriceWithStopPrice(
-			trdk::Security &,
-			const trdk::Lib::Currency &,
-			trdk::Qty,
-			trdk::ScaledPrice /*stopPrice*/,
-			const trdk::OrderParams &,
+OrderId FixTrading::SendSellAtMarketPriceWithStopPrice(
+			Security &,
+			const Currency &,
+			const Qty &,
+			const ScaledPrice &/*stopPrice*/,
+			const OrderParams &,
 			const OrderStatusUpdateSlot &) {
 	throw Error(
-		"FixTrading::SellAtMarketPriceWithStopPrice"
+		"FixTrading::SendSellAtMarketPriceWithStopPrice"
 			" not implemented");
 }
 
-OrderId FixTrading::SellImmediatelyOrCancel(
-			trdk::Security &security,
-			const trdk::Lib::Currency &currency,
-			const trdk::Qty &qty,
-			const trdk::ScaledPrice &price,
-			const trdk::OrderParams &params,
+OrderId FixTrading::SendSellImmediatelyOrCancel(
+			Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const ScaledPrice &price,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -553,11 +553,11 @@ OrderId FixTrading::SellImmediatelyOrCancel(
 	return order.id;
 }
 
-OrderId FixTrading::SellAtMarketPriceImmediatelyOrCancel(
-			trdk::Security &security,
-			const trdk::Lib::Currency &currency,
-			const trdk::Qty &qty,
-			const trdk::OrderParams &params,
+OrderId FixTrading::SendSellAtMarketPriceImmediatelyOrCancel(
+			Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -589,11 +589,11 @@ OrderId FixTrading::SellAtMarketPriceImmediatelyOrCancel(
 	return order.id;
 }
 
-OrderId FixTrading::BuyAtMarketPrice(
-			trdk::Security &security,
-			const trdk::Lib::Currency &currency,
-			trdk::Qty qty,
-			const trdk::OrderParams &params,
+OrderId FixTrading::SendBuyAtMarketPrice(
+			Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -622,12 +622,12 @@ OrderId FixTrading::BuyAtMarketPrice(
 	return order.id;
 }
 
-OrderId FixTrading::Buy(
-			trdk::Security &security,
-			const trdk::Lib::Currency &currency,
-			trdk::Qty qty,
-			trdk::ScaledPrice price,
-			const trdk::OrderParams &params,
+OrderId FixTrading::SendBuy(
+			Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const ScaledPrice &price,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -660,24 +660,24 @@ OrderId FixTrading::Buy(
 	return order.id;
 }
 
-OrderId FixTrading::BuyAtMarketPriceWithStopPrice(
-			trdk::Security &,
-			const trdk::Lib::Currency &,
-			trdk::Qty,
-			trdk::ScaledPrice /*stopPrice*/,
-			const trdk::OrderParams &,
+OrderId FixTrading::SendBuyAtMarketPriceWithStopPrice(
+			Security &,
+			const Currency &,
+			const Qty &,
+			const ScaledPrice &/*stopPrice*/,
+			const OrderParams &,
 			const OrderStatusUpdateSlot &) {
 	throw Error(
-		"FixTrading::BuyAtMarketPriceWithStopPrice"
+		"FixTrading::SendBuyAtMarketPriceWithStopPrice"
 			" not implemented");
 }
 
-OrderId FixTrading::BuyImmediatelyOrCancel(
-			trdk::Security &security,
-			const trdk::Lib::Currency &currency,
-			const trdk::Qty &qty,
-			const trdk::ScaledPrice &price,
-			const trdk::OrderParams &params,
+OrderId FixTrading::SendBuyImmediatelyOrCancel(
+			Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const ScaledPrice &price,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -710,11 +710,11 @@ OrderId FixTrading::BuyImmediatelyOrCancel(
 	return order.id;
 }
 
-OrderId FixTrading::BuyAtMarketPriceImmediatelyOrCancel(
-			trdk::Security &security,
-			const trdk::Lib::Currency &currency,
-			const trdk::Qty &qty,
-			const trdk::OrderParams &params,
+OrderId FixTrading::SendBuyAtMarketPriceImmediatelyOrCancel(
+			Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const OrderParams &params,
 			const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
@@ -746,7 +746,7 @@ OrderId FixTrading::BuyAtMarketPriceImmediatelyOrCancel(
 	return order.id;
 }
 
-void FixTrading::CancelOrder(OrderId orderId) {
+void FixTrading::SendCancelOrder(const OrderId &orderId) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
 	fix::Message message("F", m_session.GetFixVersion());
@@ -779,8 +779,8 @@ void FixTrading::CancelOrder(OrderId orderId) {
 	Send(message, timeMeasurement);
 }
 
-void FixTrading::CancelAllOrders(trdk::Security &) {
-	throw Error("FixTrading::CancelAllOrders not implemented");
+void FixTrading::SendCancelAllOrders(Security &) {
+	throw Error("FixTrading::SendCancelAllOrders not implemented");
 }
 
 void FixTrading::Test() {

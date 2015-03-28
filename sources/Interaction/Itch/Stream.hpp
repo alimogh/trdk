@@ -64,7 +64,7 @@ namespace trdk { namespace Interaction { namespace Itch {
 
 	protected:
 
-		virtual trdk::Security & CreateSecurity(const Lib::Symbol &);
+		virtual trdk::Security & CreateNewSecurityObject(const Lib::Symbol &);
 
 	private:
 

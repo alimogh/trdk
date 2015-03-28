@@ -59,7 +59,7 @@ namespace trdk {
 		bool isManualOrder;
 
 		explicit OrderParams()
-				: isManualOrder(false) {
+			: isManualOrder(false) {
 			//...//
 		}
 
@@ -70,8 +70,8 @@ namespace trdk {
 namespace std {
 
 	TRDK_CORE_API std::ostream & operator <<(
-				std::ostream &,
-				const trdk::OrderParams &);
+			std::ostream &,
+			const trdk::OrderParams &);
 
 }
 
@@ -112,7 +112,7 @@ namespace trdk {
 	private:
 
 		explicit Level1TickValue(Level1TickType type)
-				: type(type) {
+			: type(type) {
 			//...//
 		}
 

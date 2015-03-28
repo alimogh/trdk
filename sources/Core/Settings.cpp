@@ -30,11 +30,6 @@ void Settings::Update(const Ini &conf, Context::Log &log) {
 		UpdateStatic(conf, log);
 		m_isLoaded = true;
 	}
-	UpdateDynamic(conf, log);
-}
-
-void Settings::UpdateDynamic(const Ini &, Context::Log &) {
-	//...//
 }
 
 void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {

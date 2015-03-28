@@ -280,7 +280,8 @@ void Csv::MarketDataSource::ReadFile() {
 
 }
 
-trdk::Security & Csv::MarketDataSource::CreateSecurity(const Symbol &symbol) {
+trdk::Security & Csv::MarketDataSource::CreateNewSecurityObject(
+		const Symbol &symbol) {
 	boost::shared_ptr<Csv::Security> result(
 		new Security(GetContext(), symbol, *this));
 	Subscribe(result);

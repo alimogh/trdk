@@ -337,7 +337,7 @@ public:
 
 protected:
 
-	virtual trdk::Security & CreateSecurity(const Symbol &symbol) {
+	virtual trdk::Security & CreateNewSecurityObject(const Symbol &symbol) {
 		return m_server.CreateSecurity(*this, symbol, m_sourceBase);
 	}
 

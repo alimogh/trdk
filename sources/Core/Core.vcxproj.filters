@@ -68,6 +68,9 @@
     <ClCompile Include="AsyncLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RiskControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TradeSystem.hpp">
@@ -146,6 +149,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TradingLog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RiskControl.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -109,7 +109,11 @@ namespace trdk {
 
 	protected:
 
-		virtual trdk::Security & CreateSecurity(const trdk::Lib::Symbol &) = 0;
+		trdk::Security & CreateSecurity(const trdk::Lib::Symbol &);
+
+		virtual trdk::Security & CreateNewSecurityObject(
+				const trdk::Lib::Symbol &)
+			= 0;
 
 	private:
 

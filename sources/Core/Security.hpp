@@ -254,6 +254,8 @@ namespace trdk {
 		//! this security object.
 		const trdk::MarketDataSource & GetSource() const;
 
+		RiskControlSecurityContext & GetRiskControlContext() const;
+
 	public:
 
 		//! Check security for valid market data and state.

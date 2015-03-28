@@ -1,0 +1,158 @@
+/**************************************************************************
+ *   Created: 2015/03/29 04:36:53
+ *    Author: Eugene V. Palchukovsky
+ *    E-mail: eugene@palchukovsky.com
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
+ **************************************************************************/
+
+#pragma once
+
+#include "TradeSystem.hpp"
+#include "Fwd.hpp"
+
+namespace trdk {
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	class RiskControlSecurityContext {
+
+		friend class trdk::RiskControl;
+
+	private:
+
+		RiskControlSecurityContext();
+
+		const RiskControlSecurityContext & operator =(
+				const RiskControlSecurityContext &);
+
+	private:
+
+		struct Side {
+
+			int8_t direction;
+			const char *name;
+
+			struct Settings {
+			
+				double limit;
+
+				double minPrice;
+				double maxPrice;
+		
+				trdk::Qty minQty;
+				trdk::Qty maxQty;
+
+				Settings();
+
+			} settings;
+
+			Side(int8_t direction);
+
+		}
+			shortSide,
+			longSide;
+
+		double position;
+
+	};
+
+
+	////////////////////////////////////////////////////////////////////////////////
+	
+	class RiskControl : private boost::noncopyable {
+
+	public:
+
+		class Exception : public trdk::Lib::Exception {
+		public:
+			explicit Exception(const char *what) throw();
+		};
+
+		class WrongSettingsException : public trdk::Lib::Exception {
+		public:
+			explicit WrongSettingsException(const char *what) throw();
+		};
+
+		class NumberOfOrdersLimitException
+			: public trdk::RiskControl::Exception {
+		public:
+			explicit NumberOfOrdersLimitException(const char *what) throw();
+		};
+
+		class NotEnoughFundsException
+			: public trdk::RiskControl::Exception {
+		public:
+			explicit NotEnoughFundsException(const char *what) throw();
+		};
+
+		class WrongOrderParameterException
+			: public trdk::RiskControl::Exception {
+		public:
+			explicit WrongOrderParameterException(const char *what) throw();
+		};
+
+		class SecurityContext;
+
+	public:
+
+		RiskControl(trdk::Context &, const trdk::Lib::Ini &);
+		~RiskControl();
+
+	public:
+
+		trdk::RiskControlSecurityContext && CreateSecurityContext(
+					const trdk::Lib::Symbol &)
+				const;
+
+	public:
+
+		void CheckNewBuyOrder(
+				const trdk::TradeSystem &,
+				const trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const boost::optional<trdk::ScaledPrice> &,
+				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+		void CheckNewSellOrder(
+				const trdk::TradeSystem &,
+				const trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const boost::optional<trdk::ScaledPrice> &,
+				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+
+		void ConfirmBuyOrder(
+				const trdk::TradeSystem::OrderStatus &,
+				const trdk::TradeSystem &,
+				const trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &orderQty,
+				const boost::optional<trdk::ScaledPrice> &orderPrice,
+				const trdk::Qty &filled,
+				double avgPrice,
+				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+		void ConfirmSellOrder(
+				const trdk::TradeSystem::OrderStatus &,
+				const trdk::TradeSystem &,
+				const trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &orderQty,
+				const boost::optional<trdk::ScaledPrice> &orderPrice,
+				const trdk::Qty &filled,
+				double avgPrice,
+				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+
+	private:
+
+		class Implementation;
+		Implementation *m_pimpl;
+
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+}
+

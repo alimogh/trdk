@@ -172,7 +172,7 @@ void Stream::SubscribeToSecurities() {
 	}
 }
 
-trdk::Security & Stream::CreateSecurity(const Symbol &symbol) {
+trdk::Security & Stream::CreateNewSecurityObject(const Symbol &symbol) {
 	boost::shared_ptr<Itch::Security> result(
 		new Itch::Security(GetContext(), symbol, *this, m_bookLevelsCount));
 	m_securities.push_back(result);

@@ -99,7 +99,8 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	protected:
 
-		virtual trdk::Security & CreateSecurity(const trdk::Lib::Symbol &);
+		virtual trdk::Security & CreateNewSecurityObject(
+				const trdk::Lib::Symbol &);
 
 	private:
 

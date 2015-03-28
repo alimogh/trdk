@@ -132,7 +132,7 @@ void FixStream::SubscribeToSecurities() {
 
 }
 
-Security & FixStream::CreateSecurity(const Symbol &symbol) {
+Security & FixStream::CreateNewSecurityObject(const Symbol &symbol) {
 	boost::shared_ptr<FixSecurity> result(
 		new FixSecurity(GetContext(), symbol, *this, m_isBookLogEnabled));
 	const_cast<FixStream *>(this)
