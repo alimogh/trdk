@@ -14,8 +14,27 @@ package trdk.EngineServer.Service;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+message EngineSettingsSection {
+
+	message Key {
+
+		required string name = 1;
+		required string value = 2;
+		
+	}
+
+	required string name = 1;
+	repeated Key keys = 2;
+
+}
+
+message EngineSettings {
+	repeated EngineSettingsSection sections = 1;
+}
+
 message EngineInfo {
 	required string id = 1;
+	required EngineSettings settings = 2;
 }
 
 message EngineState {
@@ -53,6 +72,7 @@ message ClientRequest {
 		TYPE_INFO_FULL = 1;
 		TYPE_ENGINE_START = 2;
 		TYPE_ENGINE_STOP = 3;
+		TYPE_ENGINE_SETTINGS = 4;
 	}
 
 	required Type type = 1;
@@ -60,6 +80,7 @@ message ClientRequest {
 	optional FullInfoRequest fullInfo = 2;
 	optional EngineStartStopRequest engineStart = 3;
 	optional EngineStartStopRequest engineStop = 4;
+	optional EngineSettings engineSettings = 5;
 
 }
 

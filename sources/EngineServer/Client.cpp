@@ -27,6 +27,21 @@ namespace {
 	boost::atomic_bool isActive(false);
 	const std::string engineId = "1E8F72E3-8EFC-492A-BCD8-9865FC3CFB91";
 
+	struct Key {
+		
+		std::string name;
+		std::string value;
+		
+		Key(const char *name, const char *value)
+			: name(name),
+			value(value) {
+			//...//
+		}
+
+	};
+
+	std::map<std::string, std::map<std::string, std::string>> settingsStorage;
+
 }
 
 Client::Client(io::io_service &ioService)
@@ -35,6 +50,27 @@ Client::Client(io::io_service &ioService)
 	m_istream(&m_inBuffer),
 	m_ostream(&m_outBuffer)*/ {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+	settingsStorage.clear();
+	{
+		auto &section = settingsStorage["Test.Section1"];
+		section["test_key_1"] = "asdfgzxcvb123456";
+		section["test_key_2"] = "1";
+		section["test_key_3"] = "true";
+	}
+
+	{
+		auto &section = settingsStorage["Test.Section2"];
+		section["test_key_x1"] = "10000";
+		section["test_key_x2"] = "false";
+	}
+	
+	{
+		auto &section = settingsStorage["Test.Section3"];
+		section["test_key_z1"] = "yes";
+		section["test_key_z2"] = "no";
+	}
+
 }
 
 Client::~Client() {
@@ -166,6 +202,9 @@ void Client::OnNewRequest(const proto::ClientRequest &request) {
 		case proto::ClientRequest::TYPE_ENGINE_STOP:
 			OnEngineStopRequest(request.enginestop());
 			break;
+		case proto::ClientRequest::TYPE_ENGINE_SETTINGS:
+			OnNewSettings(request.enginesettings());
+			break;
 		default:
 			//! @todo Write to log
 			std::cerr
@@ -179,14 +218,31 @@ void Client::OnNewRequest(const proto::ClientRequest &request) {
 void Client::OnFullInfoRequest(const proto::FullInfoRequest &) {
 	//! @todo Write to log
 	std::cout << "Resending current info snapshot..." << std::endl;
-	{
-		proto::ServerData message;
-		message.set_type(proto::ServerData::TYPE_ENGINE_INFO);
-		proto::EngineInfo &info = *message.mutable_engineinfo();
-		info.set_id(engineId);
-		Send(message);
-	}
+	SendEngineInfo();
 	SendEngineState();	
+}
+
+void Client::SendEngineInfo() {
+	
+	proto::ServerData message;
+	message.set_type(proto::ServerData::TYPE_ENGINE_INFO);
+
+	proto::EngineInfo &info = *message.mutable_engineinfo();
+	info.set_id(engineId);
+
+	proto::EngineSettings &settings = *info.mutable_settings();
+	foreach (const auto &storageSection, settingsStorage) {
+		proto::EngineSettingsSection &section = *settings.add_sections();
+		section.set_name(storageSection.first);
+		foreach (const auto &storageKey, storageSection.second) {
+			proto::EngineSettingsSection::Key &key = *section.add_keys();
+			key.set_name(storageKey.first);
+			key.set_value(storageKey.second);
+		}
+	}
+
+	Send(message);
+
 }
 
 void Client::SendEngineState() {
@@ -230,7 +286,7 @@ void Client::OnEngineStopRequest(const proto::EngineStartStopRequest &request) {
 			<< request.id() << "\" is unknown." << std::endl;
 		return;
 	}
-	if (isActive) {
+	if (!isActive) {
 		//! @todo Write to log
 		std::cerr
 			<< "Failed to stop engine, engine with ID \""
@@ -243,4 +299,65 @@ void Client::OnEngineStopRequest(const proto::EngineStartStopRequest &request) {
 	std::cout
 		<< "Stopping engine with ID \"" << request.id() << "\"..." << std::endl;
 	SendEngineState();
+}
+
+void Client::OnNewSettings(const proto::EngineSettings &settings) {
+
+	//! @todo remove
+	std::cout << "New settings:" << std::endl;
+
+	std::map<std::string, std::map<std::string, std::string>> newSettingsStorage;
+
+	for (int i = 0; i < settings.sections_size(); ++i) {
+
+		const proto::EngineSettingsSection &section = settings.sections(i);
+		const auto &sectionName = boost::trim_copy(section.name());
+		if (sectionName.empty()) {
+			//! @todo Write to log
+			std::cerr
+				<< "Failed to updates settings: empty section name."
+				<< std::endl;
+			return;
+		}
+
+		//! @todo remove
+		std::cout << "\tSection \"" << sectionName << "\":" << std::endl;
+		for (int k = 0; k < section.keys_size(); ++k) {
+
+			const proto::EngineSettingsSection::Key &key = section.keys(k);
+
+			const auto &keyName = boost::trim_copy(key.name());
+			if (keyName.empty()) {
+				//! @todo Write to log
+				std::cerr
+					<< "Failed to updates settings: empty key name in"
+					<< " section \"" << sectionName << "\"." << std::endl;
+				return;
+			}
+
+			const auto &keyValue =  boost::trim_copy(key.value());
+			if (keyValue.empty()) {
+				//! @todo Write to log
+				std::cerr
+					<< "Failed to updates settings: empty value for key \""
+					<< keyName << "\" in section \"" << sectionName << "\"."
+					<< std::endl;
+				return;
+			}
+
+			newSettingsStorage[sectionName][keyName] = keyValue;
+
+			//! @todo remove
+			std::cout
+				<< "\t\t" << key.name()
+				<< " = \"" << key.value() << "\"" << std::endl;
+
+		}
+
+	}
+
+	newSettingsStorage.swap(settingsStorage);
+
+	SendEngineInfo();
+
 }

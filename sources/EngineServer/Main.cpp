@@ -67,12 +67,8 @@ namespace {
 	}
 
 	bool RunServerStandalone(int /*argc*/, const char * /*argv*/[]) {
-// 		if (argc < 3 || !strlen(argv[2])) {
-// 			std::cerr << "No configuration file specified." << std::endl;
-// 			return false;
-// 		}
-// 		ServiceServer service;
-// 		getchar();
+		ServiceServer service;
+		getchar();
 		return true;
 	}
 

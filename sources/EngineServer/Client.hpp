@@ -19,6 +19,7 @@ namespace trdk { namespace EngineServer {
 		class ClientRequest;
 		class FullInfoRequest;
 		class EngineStartStopRequest;
+		class EngineSettings;
 	
 	}
 
@@ -62,10 +63,14 @@ namespace trdk { namespace EngineServer {
 		void OnNewMessage(
 				const boost::system::error_code &);
 		void OnNewRequest(const Service::ClientRequest &);
+		
 		void OnFullInfoRequest(const Service::FullInfoRequest &);
+		void OnNewSettings(const Service::EngineSettings &);
+		
 		void OnEngineStartRequest(const Service::EngineStartStopRequest &);
 		void OnEngineStopRequest(const Service::EngineStartStopRequest &);
-
+		
+		void SendEngineInfo();
 		void SendEngineState();
 
 private:

@@ -70,49 +70,60 @@ void Server::Run(
 		}
 		info.eventsLog->EnableStream(*info.eventsLogFile, true);
 	}
-	{
-		std::vector<std::string> cmd;
-		for (auto i = 0; i < argc; ++i) {
-			cmd.push_back(argv[i]);
-		}
-		info.eventsLog->Info("Command: \"%1%\".", boost::join(cmd, " "));
-		if (settings.IsReplayMode()) {
-			info.eventsLog->Warn("Replay mode.");
-		}
-	}
 
-	settings.Update(*ini, *info.eventsLog);
-
-	info.engine.reset(
-		new Engine::Context(
-			*info.eventsLog,
-			*info.tradingLog,
-			settings,
-			startTime,
-			ini));
-
-	{
-		const auto &tradingLogFilePath = settings.GetLogsDir() / "trading.log";
-		if (ini->ReadBoolKey("Common", "trading_log")) {
-			info.tradingLogFile.reset(
-				new std::ofstream(
-					tradingLogFilePath.string().c_str(),
-					std::ios::out | std::ios::ate | std::ios::app));
-			if (!*info.tradingLogFile) {
-				boost::format error("Failed to open trading log file %1%.");
-				error % tradingLogFilePath;
-				throw Exception(error.str().c_str());
+	try {
+	
+		{
+			std::vector<std::string> cmd;
+			for (auto i = 0; i < argc; ++i) {
+				cmd.push_back(argv[i]);
 			}
-			info.eventsLog->Info("Trading log: %1%.", tradingLogFilePath);
-			info.tradingLog->EnableStream(*info.tradingLogFile, *info.engine);
-		} else {
-			info.eventsLog->Info("Trading log: DISABLED.");
+			info.eventsLog->Info("Command: \"%1%\".", boost::join(cmd, " "));
+			if (settings.IsReplayMode()) {
+				info.eventsLog->Warn("Replay mode.");
+			}
 		}
+
+		settings.Update(*ini, *info.eventsLog);
+
+		info.engine.reset(
+			new Engine::Context(
+				*info.eventsLog,
+				*info.tradingLog,
+				settings,
+				startTime,
+				ini));
+
+		{
+			const auto &tradingLogFilePath
+				= settings.GetLogsDir() / "trading.log";
+			if (ini->ReadBoolKey("Common", "trading_log")) {
+				info.tradingLogFile.reset(
+					new std::ofstream(
+						tradingLogFilePath.string().c_str(),
+						std::ios::out | std::ios::ate | std::ios::app));
+				if (!*info.tradingLogFile) {
+					boost::format error("Failed to open trading log file %1%.");
+					error % tradingLogFilePath;
+					throw Exception(error.str().c_str());
+				}
+				info.eventsLog->Info("Trading log: %1%.", tradingLogFilePath);
+				info.tradingLog->EnableStream(*info.tradingLogFile, *info.engine);
+			} else {
+				info.eventsLog->Info("Trading log: DISABLED.");
+			}
+		}
+
+		info.engine->Start();
+
+		m_engines.insert(info);
+
+	} catch (const trdk::Lib::Exception &ex) {
+		info.eventsLog->Warn(
+			"Failed to init engine context: \"%1%\".",
+			ex.what());
+		throw Exception("Failed to init engine context");
 	}
-
-	info.engine->Start();
-
-	m_engines.insert(info);
 
 }
 
