@@ -53,22 +53,101 @@ Client::Client(io::io_service &ioService)
 
 	settingsStorage.clear();
 	{
-		auto &section = settingsStorage["Test.Section1"];
-		section["test_key_1"] = "asdfgzxcvb123456";
-		section["test_key_2"] = "1";
-		section["test_key_3"] = "true";
+		auto &section = settingsStorage["Common"];
+		section["is_replay_mode"] = "no";
+		section["logs_dir"] = "logs";
+		section["trading_log"] = "yes";
+		section["onixs_fix_engine_settings"] = "etc/FixEngineSettings.xml";
+		section["onixs_fix_reset_seq_num_flag"] = "yes";
+		section["onixs_fix_session_log"] = "yes";
+		section["book.levels.count"] = "4";
+		section["book.levels.exactly"] = "yes";
+		section["book.adjust.calculation"] = "yes";
+		section["book.adjust.trade"] = "yes";
 	}
-
 	{
-		auto &section = settingsStorage["Test.Section2"];
-		section["test_key_x1"] = "10000";
-		section["test_key_x2"] = "false";
+		auto &section = settingsStorage["RiskControl"];
+		section["flood_control.orders.period_ms"] = "1000";
+		section["flood_control.orders.max_number"] = "10";
+		section["limits.short.EUR/USD"] = "1000000";
+		section["limits.long.EUR/USD"] = "1000000";
 	}
-	
 	{
-		auto &section = settingsStorage["Test.Section3"];
-		section["test_key_z1"] = "yes";
-		section["test_key_z2"] = "no";
+		auto &section = settingsStorage["Defaults"];
+		section["primary_exchange"] = "FOREX";
+		section["currency"] = "USD";
+	}
+	{
+		auto &section = settingsStorage["TradeSystem.Hotspot"];
+		section["module"] = "OnixsFixConnector";
+		section["factory"] = "HotspotTrading";
+		section["server_host"] = "209.191.250.157";
+		section["server_port"] = "8029";
+		section["use_ssl"] = "false";
+		section["fix_version"] = "FIX 4.2";
+		section["sender_comp_id"] = "xxxxx";
+		section["sender_sub_id"] = "xxxxx";
+		section["target_comp_id"] = "FixServer";
+		section["username"] = "xxxxx";
+		section["password"] = "xxxxx";
+	}
+	{
+		auto &section = settingsStorage["MarketDataSource.Hotspot"];
+		section["module"] = "Itch";
+		section["factory"] = "HotspotStream";
+		section["server_host"] = "209.191.250.157";
+		section["server_port"] = "9013";
+		section["login"] = "xxxxx";
+		section["password"] = "xxxxx";
+	}
+	{
+		auto &section = settingsStorage["TradeSystem.Currenex"];
+		section["module"] = "OnixsFixConnector";
+		section["factory"] = "CurrenexTrading";
+		section["server_host"] = "integration-fix.currenex.com";
+		section["server_port"] = "443";
+		section["use_ssl"] = "false";
+		section["fix_version"] = "FIX 4.2";
+		section["sender_comp_id"] = "xxxxx";
+		section["target_comp_id"] = "CNX";
+		section["password"] = "xxxxx";
+	}
+	{
+		auto &section = settingsStorage["MarketDataSource.Currenex"];
+		section["module"] = "OnixsFixConnector";
+		section["factory"] = "CurrenexStream";
+		section["server_host"] = "integration-fix.currenex.com";
+		section["server_port"] = "442";
+		section["use_ssl"] = "false";
+		section["fix_version"] = "FIX 4.2";
+		section["sender_comp_id"] = "xxxxx";
+		section["target_comp_id"] = "CNX";
+		section["password"] = "xxxxx";
+		section["log.book_adjust"] = "no";
+	}
+	{
+		auto &section = settingsStorage["Service.TriangulationWithDirectionStat"];
+		section["module"] = "FxMb";
+		section["requires"] = "Book Update Ticks";
+		section["ema_speed_slow"] = "0.03";
+		section["ema_speed_fast"] = "0.1";
+		section["prev1_duration_miliseconds"] = "500";
+		section["prev2_duration_miliseconds"] = "2000";
+		section["log.full"] = "no";
+		section["log.pair"] = "no";
+	}
+	{
+		auto &section = settingsStorage["Strategy.TriangulationWithDirection"];
+		section["module"] = "FxMb";
+		section["requires"] = "TriangulationWithDirectionStat[EUR/USD], TriangulationWithDirectionStat[USD/JPY], TriangulationWithDirectionStat[EUR/JPY]";
+		section["qty"] = "100000";
+		section["commission"] = "0.000005";
+		section["allow_leg1_closing"] = "no";
+		section["limit.triangles"] = "unlimited";
+		section["log.strategy"] = "yes";
+		section["log.updates"] = "no";
+		section["log.pnl"] = "yes";
+		section["log.y_report_step"] = "0.0505";
 	}
 
 }
