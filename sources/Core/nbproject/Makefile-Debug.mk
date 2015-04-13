@@ -52,7 +52,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/Strategy.o \
 	${OBJECTDIR}/StrategyPositionState.o \
 	${OBJECTDIR}/TradeSystem.o \
-	${OBJECTDIR}/Types.o
+	${OBJECTDIR}/Types.o \
+	${OBJECTDIR}/RiskControl.o
 
 
 # C Compiler Flags
@@ -170,6 +171,11 @@ ${OBJECTDIR}/Types.o: Types.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_CORE -D_DEBUG -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Types.o Types.cpp
+
+${OBJECTDIR}/RiskControl.o: RiskControl.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -DTRADER_CORE -D_DEBUG -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/RiskControl.o RiskControl.cpp
 
 # Subprojects
 .build-subprojects:

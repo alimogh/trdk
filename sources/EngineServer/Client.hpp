@@ -38,7 +38,7 @@ namespace trdk { namespace EngineServer {
 			return m_socket;
 		}
 
-		std::string GetRemoteAddressAsString() const;
+		const std::string & GetRemoteAddressAsString() const;
 
 		void Start();
 
@@ -81,6 +81,8 @@ namespace trdk { namespace EngineServer {
 		std::vector<char> m_inBuffer;
 
 		boost::asio::ip::tcp::socket m_socket;
+
+		std::string m_remoteAddress;
 
 	};
 

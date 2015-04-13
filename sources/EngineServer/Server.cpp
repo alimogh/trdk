@@ -41,38 +41,39 @@ void Server::Run(
 	}
 
 	EngineInfo info = {};
-	info.id = id;
-	info.eventsLog.reset(new Engine::Context::Log);
-	const auto &startTime = info.eventsLog->GetTime();
-
-	boost::shared_ptr<IniFile> ini(new IniFile(path));
-
-	if (enableStdOutLog) {
-		info.eventsLog->EnableStdOut();
-	}
-	info.tradingLog.reset(new Engine::Context::TradingLog);
-
-	Settings settings(
-		ini->ReadBoolKey("Common", "is_replay_mode"),
-		ini->ReadFileSystemPath("Common", "logs_dir") / id);
-
-	fs::create_directories(settings.GetLogsDir());
-	{
-		const auto &logFilePath = settings.GetLogsDir() / "event.log";
-		info.eventsLogFile.reset(
-			new std::ofstream(
-				logFilePath.string().c_str(),
-				std::ios::out | std::ios::ate | std::ios::app));
-		if (!*info.eventsLogFile) {
-			boost::format error("Failed to open events log file %1%.");
-			error % logFilePath;
-			throw EngineServer::Exception(error.str().c_str());
-		}
-		info.eventsLog->EnableStream(*info.eventsLogFile, true);
-	}
 
 	try {
-	
+
+		info.id = id;
+		info.eventsLog.reset(new Engine::Context::Log);
+		const auto &startTime = info.eventsLog->GetTime();
+
+		boost::shared_ptr<IniFile> ini(new IniFile(path));
+
+		if (enableStdOutLog) {
+			info.eventsLog->EnableStdOut();
+		}
+		info.tradingLog.reset(new Engine::Context::TradingLog);
+
+		Settings settings(
+			ini->ReadBoolKey("Common", "is_replay_mode"),
+			ini->ReadFileSystemPath("Common", "logs_dir") / id);
+
+		fs::create_directories(settings.GetLogsDir());
+		{
+			const auto &logFilePath = settings.GetLogsDir() / "event.log";
+			info.eventsLogFile.reset(
+				new std::ofstream(
+					logFilePath.string().c_str(),
+					std::ios::out | std::ios::ate | std::ios::app));
+			if (!*info.eventsLogFile) {
+				boost::format error("Failed to open events log file %1%.");
+				error % logFilePath;
+				throw EngineServer::Exception(error.str().c_str());
+			}
+			info.eventsLog->EnableStream(*info.eventsLogFile, true);
+		}
+
 		info.eventsLog->Info("Engine ID: \"%1%\".", id);
 		info.eventsLog->Info("Command: \"%1%\".", commandInfo);
 		if (settings.IsReplayMode()) {
@@ -117,10 +118,14 @@ void Server::Run(
 		m_engines.insert(info);
 
 	} catch (const trdk::Lib::Exception &ex) {
-		info.eventsLog->Warn(
-			"Failed to init engine context: \"%1%\".",
-			ex.what());
-		throw EngineServer::Exception("Failed to init engine context");
+		if (info.eventsLog) {
+			info.eventsLog->Warn(
+				"Failed to init engine context: \"%1%\".",
+				ex.what());
+		}
+		boost::format message("Failed to init engine context: \"%1%\"");
+		message % ex.what();
+		throw EngineServer::Exception(message.str().c_str());
 	}
 
 }

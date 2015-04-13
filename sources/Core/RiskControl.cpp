@@ -25,6 +25,20 @@ namespace {
 	
 	const char *const logPrefix = "RiskControl";
 
+	template<Lib::Concurrency::Profile profile>
+	struct ConcurrencyPolicyT {
+		static_assert(
+			profile == Lib::Concurrency::PROFILE_RELAX,
+			"Wrong concurrency profile");
+		typedef boost::mutex Mutex;
+		typedef Mutex::scoped_lock Lock;
+	};
+	template<>
+	struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+		typedef Lib::Concurrency::SpinMutex Mutex;
+		typedef Mutex::ScopedLock Lock;
+	};
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -92,7 +106,7 @@ class RiskControl::Implementation : private boost::noncopyable {
 
 private:
 
-	const struct Settings {
+	struct Settings {
 			
 		struct OrdersFloodControl {
 			
@@ -121,19 +135,6 @@ private:
 
 	typedef boost::circular_buffer<pt::ptime> FloodControlBuffer;
 
-	template<Lib::Concurrency::Profile profile>
-	struct ConcurrencyPolicyT {
-		static_assert(
-			profile == Lib::Concurrency::PROFILE_RELAX,
-			"Wrong concurrency profile");
-		typedef boost::mutex Mutex;
-		typedef Mutex::scoped_lock Lock;
-	};
-	template<>
-	struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
-		typedef Lib::Concurrency::SpinMutex Mutex;
-		typedef Mutex::ScopedLock Lock;
-	};
 	typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy; 
 	typedef ConcurrencyPolicy::Mutex SideMutex;
 	typedef ConcurrencyPolicy::Lock SideLock;
@@ -514,27 +515,27 @@ RiskControlSecurityContext && RiskControl::CreateSecurityContext(
 
 	if (symbol.GetSymbol() == "EUR/JPY") {
 	
-		result.longSide.settings.maxPrice = 131.1;
-		result.longSide.settings.minPrice = 129.9;
+		result.longSide.settings.maxPrice = 140.0;
+		result.longSide.settings.minPrice = 120.0;
 
-		result.shortSide.settings.maxPrice = 131.1;
-		result.shortSide.settings.minPrice = 129.9;
+		result.shortSide.settings.maxPrice = 140.0;
+		result.shortSide.settings.minPrice = 120.0;
 
 	} else if (symbol.GetSymbol() == "EUR/USD") {
 
-		result.longSide.settings.maxPrice = 1.1;
+		result.longSide.settings.maxPrice = 1.2;
 		result.longSide.settings.minPrice = 1.0;
 
-		result.shortSide.settings.maxPrice = 1.1;
+		result.shortSide.settings.maxPrice = 1.2;
 		result.shortSide.settings.minPrice = 1.0;
 
 	} else if (symbol.GetSymbol() == "USD/JPY") {
 
-		result.longSide.settings.maxPrice = 121.0;
-		result.longSide.settings.minPrice = 119.0;
+		result.longSide.settings.maxPrice = 130.0;
+		result.longSide.settings.minPrice = 110.0;
 
-		result.shortSide.settings.maxPrice = 121.0;
-		result.shortSide.settings.minPrice = 119.0;
+		result.shortSide.settings.maxPrice = 130.0;
+		result.shortSide.settings.minPrice = 110.0;
 
 	}
 
