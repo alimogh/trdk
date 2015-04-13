@@ -26,6 +26,8 @@ namespace {
 		fs::path result = Normalize(GetExeWorkingDir() / inputValue);
 		if (fs::is_directory(result)) {
 			result /= "default.ini";
+		} else if (!result.has_extension()) {
+			result.replace_extension("ini");
 		}
 		return result;
 	}
