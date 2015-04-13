@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/TradingLog.hpp"
 #include "LogSecurity.hpp"
 
 namespace pt = boost::posix_time;
@@ -323,6 +324,9 @@ public:
 			AssertFailNoException();
 			throw;
 		}
+		// Each object, that implements CreateNewSecurityObject should waite for
+		// log flushing before destroying objects:
+		GetTradingLog().WaitForFlush();
 	}
 
 public:

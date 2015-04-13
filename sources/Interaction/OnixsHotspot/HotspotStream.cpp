@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "HotspotSecurity.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -46,6 +47,9 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 					__FILE__,
 					__LINE__);
 			}
+			// Each object, that implements CreateNewSecurityObject should waite for
+			// log flushing before destroying objects:
+			GetTradingLog().WaitForFlush();
 		}
 
 	public:

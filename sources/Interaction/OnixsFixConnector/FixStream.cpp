@@ -34,7 +34,9 @@ FixStream::FixStream(
 }
 
 FixStream::~FixStream() {
-	//...//
+	// Each object, that implements CreateNewSecurityObject should waite for
+	// log flushing before destroying objects:
+	GetTradingLog().WaitForFlush();
 }
 
 void FixStream::Connect(const IniSectionRef &conf) {
@@ -169,7 +171,7 @@ void FixStream::onStateChange(
 				continue;
 			}
 			GetTradingLog().Write(
-				"boost\terase\t%1%",
+				"book\terase\t%1%",
 				[&](TradingRecord &record) {
 					record % *security;
 				});

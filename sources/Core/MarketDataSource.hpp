@@ -111,6 +111,10 @@ namespace trdk {
 
 		trdk::Security & CreateSecurity(const trdk::Lib::Symbol &);
 
+		//! Creates security object.
+		/** Each object, that implements CreateNewSecurityObject should wait
+		  * for log flushing before destroying objects.
+		  */
 		virtual trdk::Security & CreateNewSecurityObject(
 				const trdk::Lib::Symbol &)
 			= 0;

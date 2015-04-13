@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "CsvMarketDataSource.hpp"
+#include "Core/TradingLog.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -49,6 +50,9 @@ Csv::MarketDataSource::~MarketDataSource() {
 			AssertFailNoException();
 		}
 	}
+	// Each object, that implements CreateNewSecurityObject should waite for
+	// log flushing before destroying objects:
+	GetTradingLog().WaitForFlush();
 }
 
 void Csv::MarketDataSource::Connect(const IniSectionRef &) {
