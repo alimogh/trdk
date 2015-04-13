@@ -12,6 +12,7 @@
 #include "Stream.hpp"
 #include "Client.hpp"
 #include "Security.hpp"
+#include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -98,6 +99,9 @@ Stream::~Stream() {
 		AssertFailNoException();
 		throw;
 	}
+	// Each object, that implements CreateNewSecurityObject should waite for
+	// log flushing before destroying objects:
+	GetTradingLog().WaitForFlush();
 }
 
 void Stream::Connect(const IniSectionRef &conf) {

@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "FakeMarketDataSource.hpp"
+#include "Core/TradingLog.hpp"
 
 namespace pt = boost::posix_time;
 
@@ -31,6 +32,9 @@ Fake::MarketDataSource::MarketDataSource(
 Fake::MarketDataSource::~MarketDataSource() {
 	m_stopFlag = true;
 	m_threads.join_all();
+	// Each object, that implements CreateNewSecurityObject should waite for
+	// log flushing before destroying objects:
+	GetTradingLog().WaitForFlush();
 }
 
 void Fake::MarketDataSource::Connect(const IniSectionRef &) {

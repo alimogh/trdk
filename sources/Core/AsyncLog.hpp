@@ -403,15 +403,17 @@ namespace trdk {
 	
 			void WaitForFlush() const {
 				Lock lock(m_queue.mutex);
-				if (!m_queue.activeBuffer || m_queue.activeBuffer->empty()) {
-					return;
+				while (m_answerCondition) {
+					m_answerCondition->wait(lock);
 				}
 				Condition answerCondition;
 				m_answerCondition = &answerCondition;
-				m_queue.condition.notify_one();
-				answerCondition.wait(lock);
-				Assert(!m_queue.activeBuffer || m_queue.activeBuffer->empty());
+				while (m_queue.activeBuffer && !m_queue.activeBuffer->empty()) {
+					m_queue.condition.notify_one();
+					answerCondition.wait(lock);
+				}
 				m_answerCondition = nullptr;
+				answerCondition.notify_all();
 			}
 
 		private:
