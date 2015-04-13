@@ -37,7 +37,10 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/_ext/2108356922/Assert.o \
 	${OBJECTDIR}/Main.o \
-	${OBJECTDIR}/Server.o
+	${OBJECTDIR}/Server.o \
+	${OBJECTDIR}/Service.o \
+	${OBJECTDIR}/Client.o \
+	${OBJECTDIR}/trdk.pb.o
 
 
 # C Compiler Flags
@@ -54,7 +57,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=../Common/dist/Debug/GNU-Linux-x86/libcommon_dbg.a -Wl,-rpath,../Core/dist/Debug/GNU-Linux-x86 -L../Core/dist/Debug/GNU-Linux-x86 -lCore_dbg -Wl,-rpath,../Engine/dist/Debug/GNU-Linux-x86 -L../Engine/dist/Debug/GNU-Linux-x86 -lEngine_dbg -lboost_system -lboost_filesystem -lboost_regex -lboost_thread
+LDLIBSOPTIONS=../Common/dist/Debug/GNU-Linux-x86/libcommon_dbg.a -Wl,-rpath,../Core/dist/Debug/GNU-Linux-x86 -L../Core/dist/Debug/GNU-Linux-x86 -lCore_dbg -Wl,-rpath,../Engine/dist/Debug/GNU-Linux-x86 -L../Engine/dist/Debug/GNU-Linux-x86 -lEngine_dbg -lboost_system -lboost_filesystem -lboost_regex -lboost_thread -lprotobuf
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -84,6 +87,21 @@ ${OBJECTDIR}/Server.o: Server.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Server.o Server.cpp
+
+${OBJECTDIR}/Service.o: Service.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Service.o Service.cpp
+
+${OBJECTDIR}/Client.o: Client.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Client.o Client.cpp
+
+${OBJECTDIR}/trdk.pb.o: trdk.pb.cc 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/trdk.pb.o trdk.pb.cc
 
 # Subprojects
 .build-subprojects:

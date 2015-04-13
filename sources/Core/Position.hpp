@@ -79,13 +79,13 @@ namespace trdk {
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
-				const Lib::TimeMeasurement::Milestones &);
+				const Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		explicit Position(
 				trdk::Strategy &,
 				trdk::Position &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
-				const Lib::TimeMeasurement::Milestones &);
+				const Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		virtual ~Position();
 
 	public:
@@ -173,7 +173,7 @@ namespace trdk {
 		trdk::Qty GetActiveQty() const throw();
 
 		trdk::OrderId GetCloseOrderId() const throw();
-		void SetCloseStartPrice(trdk::ScaledPrice);
+		void SetCloseStartPrice(const trdk::ScaledPrice &);
 		trdk::ScaledPrice GetCloseStartPrice() const;
 		trdk::ScaledPrice GetClosePrice() const;
 		trdk::Qty GetClosedQty() const throw();
@@ -193,50 +193,59 @@ namespace trdk {
 
 		trdk::OrderId OpenAtMarketPrice();
 		trdk::OrderId OpenAtMarketPrice(const trdk::OrderParams &);
-		trdk::OrderId Open(trdk::ScaledPrice);
-		trdk::OrderId Open(trdk::ScaledPrice, const trdk::OrderParams &);
+		trdk::OrderId Open(const trdk::ScaledPrice &);
+		trdk::OrderId Open(
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
 		trdk::OrderId OpenAtMarketPriceWithStopPrice(
-					trdk::ScaledPrice stopPrice);
+				const trdk::ScaledPrice &stopPrice);
 		trdk::OrderId OpenAtMarketPriceWithStopPrice(
-					trdk::ScaledPrice stopPrice,
-					const trdk::OrderParams &);
+				const trdk::ScaledPrice &stopPrice,
+				const trdk::OrderParams &);
 		trdk::OrderId OpenImmediatelyOrCancel(
-					const trdk::ScaledPrice &);
+				const trdk::ScaledPrice &);
 		trdk::OrderId OpenImmediatelyOrCancel(
-					trdk::ScaledPrice,
-					const trdk::OrderParams &);
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
 		trdk::OrderId OpenAtMarketPriceImmediatelyOrCancel();
 		trdk::OrderId OpenAtMarketPriceImmediatelyOrCancel(
-					const trdk::OrderParams &);
+				const trdk::OrderParams &);
 
-		trdk::OrderId CloseAtMarketPrice(CloseType);
-		trdk::OrderId CloseAtMarketPrice(CloseType, const trdk::OrderParams &);
-		trdk::OrderId Close(CloseType, trdk::ScaledPrice);
+		trdk::OrderId CloseAtMarketPrice(
+				const CloseType &);
+		trdk::OrderId CloseAtMarketPrice(
+				const CloseType &,
+				const trdk::OrderParams &);
 		trdk::OrderId Close(
-					CloseType,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &);
+				const CloseType &,
+				const trdk::ScaledPrice &);
+		trdk::OrderId Close(
+				const CloseType &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
 		trdk::OrderId CloseAtMarketPriceWithStopPrice(
-					CloseType,
-					trdk::ScaledPrice stopPrice);
+				const CloseType &,
+				const trdk::ScaledPrice &stopPrice);
 		trdk::OrderId CloseAtMarketPriceWithStopPrice(
-					CloseType,
-					trdk::ScaledPrice stopPrice,
-					const trdk::OrderParams &);
+				const CloseType &,
+				const trdk::ScaledPrice &stopPrice,
+				const trdk::OrderParams &);
 		trdk::OrderId CloseImmediatelyOrCancel(
-					const CloseType &,
-					const trdk::ScaledPrice &);
+				const CloseType &,
+				const trdk::ScaledPrice &);
 		trdk::OrderId CloseImmediatelyOrCancel(
-					const CloseType &,
-					const trdk::ScaledPrice &,
-					const trdk::OrderParams &);
+				const CloseType &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
 		trdk::OrderId CloseAtMarketPriceImmediatelyOrCancel(const CloseType &);
 		trdk::OrderId CloseAtMarketPriceImmediatelyOrCancel(
-					const CloseType &,
-					const trdk::OrderParams &);
+				const CloseType &,
+				const trdk::OrderParams &);
 
-		bool CancelAtMarketPrice(CloseType);
-		bool CancelAtMarketPrice(CloseType, const trdk::OrderParams &);
+		bool CancelAtMarketPrice(const CloseType &);
+		bool CancelAtMarketPrice(
+				const CloseType &,
+				const trdk::OrderParams &);
 		bool CancelAllOrders();
 
 	public:
@@ -246,67 +255,67 @@ namespace trdk {
 	protected:
 
 		virtual trdk::OrderId DoOpenAtMarketPrice(
-					trdk::Qty qty,
-					const trdk::OrderParams &)
-				= 0;
+				const trdk::Qty &qty,
+				const trdk::OrderParams &)
+			= 0;
 		virtual trdk::OrderId DoOpen(
-					trdk::Qty qty,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &)
-				= 0;
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &)
+			= 0;
 		virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
-					trdk::Qty qty,
-					trdk::ScaledPrice stopPrice,
-					const trdk::OrderParams &)
-				= 0;
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &stopPrice,
+				const trdk::OrderParams &)
+			= 0;
 		virtual trdk::OrderId DoOpenImmediatelyOrCancel(
-					const trdk::Qty &,
-					const trdk::ScaledPrice &,
-					const trdk::OrderParams &)
-				= 0;
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &)
+			= 0;
 		virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
-					const trdk::Qty &,
-					const trdk::OrderParams &)
-				= 0;
+				const trdk::Qty &,
+				const trdk::OrderParams &)
+			= 0;
 
 		virtual trdk::OrderId DoCloseAtMarketPrice(
-					trdk::Qty qty,
-					const trdk::OrderParams &)
-				= 0;
+				const trdk::Qty &qty,
+				const trdk::OrderParams &)
+			= 0;
 		virtual trdk::OrderId DoClose(
-					trdk::Qty qty,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &)
-				= 0;
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &)
+			= 0;
 		virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
-					trdk::Qty,
-					trdk::ScaledPrice stopPrice,
-					const trdk::OrderParams &)
-				= 0;
+				const trdk::Qty &,
+				const trdk::ScaledPrice &stopPrice,
+				const trdk::OrderParams &)
+			= 0;
 		virtual trdk::OrderId DoCloseImmediatelyOrCancel(
-					const trdk::Qty &,
-					const trdk::ScaledPrice &,
-					const trdk::OrderParams &)
-				= 0;
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &)
+			= 0;
 		virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
-					const trdk::Qty &,
-					const trdk::OrderParams &)
-				= 0;
+				const trdk::Qty &,
+				const trdk::OrderParams &)
+			= 0;
 
 	protected:
 
 		void UpdateOpening(
-					trdk::OrderId,
-					trdk::TradeSystem::OrderStatus,
-					trdk::Qty filled,
-					trdk::Qty remaining,
-					double avgPrice);
+				const trdk::OrderId &,
+				const trdk::TradeSystem::OrderStatus &,
+				const trdk::Qty &filled,
+				const trdk::Qty &remaining,
+				double avgPrice);
 		void UpdateClosing(
-					trdk::OrderId,
-					trdk::TradeSystem::OrderStatus,
-					trdk::Qty filled,
-					trdk::Qty remaining,
-					double avgPrice);
+				const trdk::OrderId &,
+				const trdk::TradeSystem::OrderStatus &,
+				const trdk::Qty &filled,
+				const trdk::Qty &remaining,
+				double avgPrice);
 
 	private:
 
@@ -345,42 +354,42 @@ namespace trdk {
 	protected:
 
 		virtual trdk::OrderId DoOpenAtMarketPrice(
-					trdk::Qty qty,
-					const trdk::OrderParams &);
+				const trdk::Qty &qty,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoOpen(
-					trdk::Qty qty,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &);
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
-					trdk::Qty qty,
-					trdk::ScaledPrice stopPrice,
-					const trdk::OrderParams &);
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &stopPrice,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoOpenImmediatelyOrCancel(
-					const  trdk::Qty &,
-					const trdk::ScaledPrice &,
-					const trdk::OrderParams &);
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
-					const trdk::Qty &,
-					const trdk::OrderParams &);
+				const trdk::Qty &,
+				const trdk::OrderParams &);
 
 		virtual trdk::OrderId DoCloseAtMarketPrice(
-					trdk::Qty qty,
-					const trdk::OrderParams &);
+				const trdk::Qty &qty,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoClose(
-					trdk::Qty qty,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &);
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
-					trdk::Qty,
-					trdk::ScaledPrice stopPrice,
-					const trdk::OrderParams &);
+				const trdk::Qty &,
+				const trdk::ScaledPrice &stopPrice,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoCloseImmediatelyOrCancel(
-					const trdk::Qty &,
-					const trdk::ScaledPrice &,
-					const trdk::OrderParams &);
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
-					const trdk::Qty &,
-					const trdk::OrderParams &);
+				const trdk::Qty &,
+				const trdk::OrderParams &);
 
 	};
 
@@ -414,42 +423,42 @@ namespace trdk {
 	protected:
 
 		virtual trdk::OrderId DoOpenAtMarketPrice(
-					trdk::Qty qty,
-					const trdk::OrderParams &);
+				const trdk::Qty &qty,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoOpen(
-					trdk::Qty qty,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &);
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
-					trdk::Qty qty,
-					trdk::ScaledPrice stopPrice,
-					const trdk::OrderParams &);
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &stopPrice,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoOpenImmediatelyOrCancel(
-					const trdk::Qty &,
-					const trdk::ScaledPrice &,
-					const trdk::OrderParams &);
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
-					const trdk::Qty &,
-					const trdk::OrderParams &);
+				const trdk::Qty &,
+				const trdk::OrderParams &);
 
 		virtual trdk::OrderId DoCloseAtMarketPrice(
-					trdk::Qty qty,
-					const trdk::OrderParams &);
+				const trdk::Qty &qty,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoClose(
-					trdk::Qty qty,
-					trdk::ScaledPrice,
-					const trdk::OrderParams &);
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
-					trdk::Qty,
-					trdk::ScaledPrice stopPrice,
-					const trdk::OrderParams &);
+				const trdk::Qty &,
+				const trdk::ScaledPrice &stopPrice,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoCloseImmediatelyOrCancel(
-					const trdk::Qty &,
-					const trdk::ScaledPrice &,
-					const trdk::OrderParams &);
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
 		virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
-					const trdk::Qty &,
-					const trdk::OrderParams &);
+				const trdk::Qty &,
+				const trdk::OrderParams &);
 
 	};
 

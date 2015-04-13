@@ -26,10 +26,14 @@ namespace { namespace StrategyStrings {
 	const std::string strategyWithoutDecision2	= "strat skip leg3 ";
 	const std::string strategyDecisionStart1	= "strat start leg1";
 	const std::string strategyDecisionStart2	= "strat start leg3";
+	const std::string preRiskControlStart		= "pre risk start  ";
+	const std::string preRiskControlComplete	= "pre risk compl  ";
 	const std::string executionStart1			= "exec start leg1 ";
 	const std::string executionStart2			= "exec start leg3 ";
-	const std::string executionStop1			= "exec stop leg1  ";
-	const std::string executionStop2			= "exec stop leg3  ";
+	const std::string executionStop1			= "exec compl leg1 ";
+	const std::string executionStop2			= "exec compl leg3 ";
+	const std::string postRiskControlStart		= "post risk start ";
+	const std::string postRiskControlComplete	= "post risk compl ";
 	const std::string executionReply1			= "exec reply leg1 ";
 	const std::string executionReply2			= "exec reply leg3 ";
 } }
@@ -37,7 +41,7 @@ const std::string & TimeMeasurement::GetMilestoneName(
 			const TimeMeasurement::StrategyMilestone &milestone) {
 	using namespace StrategyStrings;
 	static_assert(
-		numberOfStrategyMilestones == 14,
+		numberOfStrategyMilestones == 18,
 		"Milestone list changed.");
 	switch (milestone) {
 		default:
@@ -58,14 +62,22 @@ const std::string & TimeMeasurement::GetMilestoneName(
 			return strategyDecisionStart1;
 		case SM_STRATEGY_DECISION_START_2:
 			return strategyDecisionStart2;
+		case SM_PRE_RISK_CONTROL_START:
+			return preRiskControlStart;
+		case SM_PRE_RISK_CONTROL_COMPLETE:
+			return preRiskControlComplete;
 		case SM_STRATEGY_EXECUTION_START_1:
 			return executionStart1;
 		case SM_STRATEGY_EXECUTION_START_2:
 			return executionStart2;
-		case SM_STRATEGY_EXECUTION_STOP_1:
+		case SM_STRATEGY_EXECUTION_COMPLETE_1:
 			return executionStop1;
-		case SM_STRATEGY_EXECUTION_STOP_2:
+		case SM_STRATEGY_EXECUTION_COMPLETE_2:
 			return executionStop2;
+		case SM_POST_RISK_CONTROL_START:
+			return postRiskControlStart;
+		case SM_POST_RISK_CONTROL_COMPLETE:
+			return postRiskControlComplete;
 		case SM_STRATEGY_EXECUTION_REPLY_1:
 			return executionReply1;
 		case SM_STRATEGY_EXECUTION_REPLY_2:

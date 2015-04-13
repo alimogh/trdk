@@ -25,6 +25,7 @@
 #	include <boost/multi_index/ordered_index.hpp>
 #	include <boost/multi_index/mem_fun.hpp>
 #	include <boost/unordered_map.hpp>
+#	include <boost/circular_buffer.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #ifdef BOOST_WINDOWS

@@ -48,6 +48,7 @@ namespace trdk {
 					trdk::Context::Log &,
 					trdk::Context::TradingLog &,
 					const trdk::Settings &,
+					const trdk::Lib::Ini &,
 					const boost::posix_time::ptime &startTime);
 		virtual ~Context();
 
@@ -88,11 +89,12 @@ namespace trdk {
 		CurrentTimeChangeSlotConnection SubscribeToCurrentTimeChange(
 				const CurrentTimeChangeSlot &);
 
-	public:
-
 		//! Waits until each of dispatching queue will be empty (but not all
 		//! at the same moment).
 		virtual void SyncDispatching() = 0;
+
+		RiskControl & GetRiskControl();
+		const RiskControl & GetRiskControl() const;
 
 		//! User context parameters. No predefined key list. Any key can be
 		//! changed.

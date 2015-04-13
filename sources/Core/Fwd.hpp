@@ -25,6 +25,9 @@ namespace trdk {
 	class Observer;
 	class Service;
 
+	class RiskControl;
+	class RiskControlSecurityContext;
+
 	typedef uintmax_t PositionId;
 	class Position;
 	class LongPosition;

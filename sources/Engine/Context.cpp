@@ -179,7 +179,7 @@ Engine::Context::Context(
 		const trdk::Settings &settings,
 		const pt::ptime &startTime,
 		const boost::shared_ptr<const Lib::Ini> &conf)
-	: Base(log, tradingLog, settings, startTime) {
+	: Base(log, tradingLog, settings, *conf, startTime) {
 	m_pimpl = new Implementation(*this, conf);
 }
 

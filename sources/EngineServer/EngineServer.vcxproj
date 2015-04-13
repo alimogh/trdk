@@ -351,6 +351,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.hpp" />
+    <ClInclude Include="ClientRequestHandler.hpp" />
+    <ClInclude Include="Exception.hpp" />
+    <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Server.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Service.hpp" />

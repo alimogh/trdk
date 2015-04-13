@@ -113,7 +113,7 @@ Ini::SectionList Ini::ReadSectionsList() const {
 void Ini::ReadSection(
 			const std::string &section,
 			const boost::function<bool(const std::string &)> &readLine,
-			bool mustExist)
+			bool isRequired)
 		const {
 	const_cast<Ini *>(this)->Reset();
 	bool isInSection = false;
@@ -133,7 +133,7 @@ void Ini::ReadSection(
 			break;
 		}
 	}
-	if (!isInSection && mustExist) {
+	if (!isInSection && isRequired) {
 		boost::format message("Failed to find INI-section \"%1%\"");
 		message % section;
 		throw SectionNotExistsError(message.str().c_str());
@@ -184,7 +184,7 @@ void Ini::ForEachKey(
 			const boost::function<
 					bool(const std::string &, const std::string &)>
 				&pred,
-			bool mustExist)
+			bool isRequired)
 		const {
 	const auto &linePred = [&](const std::string &line) -> bool {
 		std::list<std::string> subs;
@@ -200,7 +200,7 @@ void Ini::ForEachKey(
  		boost::trim(value);
 		return pred(key, value);
 	};
-	ReadSection(section, linePred, mustExist);
+	ReadSection(section, linePred, isRequired);
 }
 
 std::string Ini::ReadKey(
@@ -336,7 +336,7 @@ std::list<std::string> Ini::ReadList() const {
 
 std::list<std::string> Ini::ReadList(
 			const std::string &section,
-			bool mustExist)
+			bool isRequired)
 		const {
 	std::list<std::string> result;
 	ReadSection(
@@ -345,7 +345,7 @@ std::list<std::string> Ini::ReadList(
 			result.push_back(line);
 			return true;
 		},
-		mustExist);
+		isRequired);
 	return result;
 }
 
@@ -428,9 +428,9 @@ void IniSectionRef::ForEachKey(
 			const boost::function<
 					bool(const std::string &key, const std::string &value)>
 				&pred,
-			bool mustExist)
+			bool isRequired)
 		const {
-	GetBase().ForEachKey(GetName(), pred, mustExist);
+	GetBase().ForEachKey(GetName(), pred, isRequired);
 }
 
 std::string IniSectionRef::ReadKey(const std::string &key) const {
@@ -467,8 +467,8 @@ bool IniSectionRef::ReadBoolKey(
 	return GetBase().ReadBoolKey(GetName(), key, defaultValue);
 }
 
-std::list<std::string> IniSectionRef::ReadList(bool mustExist) const {
-	return GetBase().ReadList(GetName(), mustExist);
+std::list<std::string> IniSectionRef::ReadList(bool isRequired) const {
+	return GetBase().ReadList(GetName(), isRequired);
 }
 
 std::set<Symbol> IniSectionRef::ReadSymbols(

@@ -10,49 +10,50 @@
 
 #include "Prec.hpp"
 #include "Client.hpp"
-
-#pragma warning(push, 1)
-#	include "trdk.pb.h"
-#pragma warning(pop)
+#include "ClientRequestHandler.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::EngineServer;
 
 namespace io = boost::asio;
-namespace proto = trdk::EngineServer::Service;
 
-namespace {
-
-	//! @todo Only for tests, remove.
-	boost::atomic_bool isActive(false);
-	const std::string engineId = "1E8F72E3-8EFC-492A-BCD8-9865FC3CFB91";
-
-}
-
-Client::Client(io::io_service &ioService)
-	: m_newxtMessageSize(0),
-	m_socket(ioService)/*,
-	m_istream(&m_inBuffer),
-	m_ostream(&m_outBuffer)*/ {
+Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
+	: m_requestHandler(requestHandler),
+	m_newxtMessageSize(0),
+	m_socket(ioService) {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 }
 
 Client::~Client() {
 	//! @todo Write to log
-	std::cout << "Closing client connection..." << std::endl;
+	std::cout
+		<< "Closing client connection from " << GetRemoteAddressAsString()
+		<< "..." << std::endl;
 }
 
-boost::shared_ptr<Client> Client::Create(io::io_service &ioService) {
-	return boost::shared_ptr<Client>(new Client(ioService));
+boost::shared_ptr<Client> Client::Create(
+		io::io_service &ioService,
+		ClientRequestHandler &handler) {
+	return boost::shared_ptr<Client>(new Client(ioService, handler));
+}
+
+std::string Client::GetRemoteAddressAsString() const {
+	const auto &endpoint = m_socket.remote_endpoint(); 
+	boost::format result("%1%:%2%");
+	result % endpoint.address() % endpoint.port();
+	return result.str();
 }
 
 void Client::Start() {
 	//! @todo Write to log
-	std::cout << "Opening client connection..." << std::endl;
+	std::cout
+		<< "Opening client connection from "
+		<< GetRemoteAddressAsString() << "..." << std::endl;
 	StartReadMessageSize();
 }
 
-void Client::Send(const proto::ServerData &message) {
+void Client::Send(const ServerData &message) {
 	// message.SerializeToOstream(&m_ostream);
 	std::ostringstream oss;
 	message.SerializeToOstream(&oss);
@@ -140,7 +141,7 @@ void Client::OnNewMessage(
 		return;
 	}
 
-	proto::ClientRequest request;
+	ClientRequest request;
 	const bool isParsed
 		= request.ParseFromArray(&m_inBuffer[0], int(m_inBuffer.size()));
 	
@@ -155,16 +156,19 @@ void Client::OnNewMessage(
 
 }
 
-void Client::OnNewRequest(const proto::ClientRequest &request) {
+void Client::OnNewRequest(const ClientRequest &request) {
 	switch (request.type()) {
-		case proto::ClientRequest::TYPE_INFO_FULL:
-			OnFullInfoRequest(request.fullinfo());
+		case ClientRequest::TYPE_INFO_FULL:
+			OnFullInfoRequest(request.full_info());
 			break;
-		case proto::ClientRequest::TYPE_ENGINE_START:
-			OnEngineStartRequest(request.enginestart());
+		case ClientRequest::TYPE_ENGINE_START:
+			OnEngineStartRequest(request.engine_start());
 			break;
-		case proto::ClientRequest::TYPE_ENGINE_STOP:
-			OnEngineStopRequest(request.enginestop());
+		case ClientRequest::TYPE_ENGINE_STOP:
+			OnEngineStopRequest(request.engine_stop());
+			break;
+		case ClientRequest::TYPE_ENGINE_SETTINGS:
+			OnNewSettings(request.engine_settings());
 			break;
 		default:
 			//! @todo Write to log
@@ -176,71 +180,130 @@ void Client::OnNewRequest(const proto::ClientRequest &request) {
 	}
 }
 
-void Client::OnFullInfoRequest(const proto::FullInfoRequest &) {
+void Client::OnFullInfoRequest(const FullInfoRequest &) {
 	//! @todo Write to log
 	std::cout << "Resending current info snapshot..." << std::endl;
-	{
-		proto::ServerData message;
-		message.set_type(proto::ServerData::TYPE_ENGINE_INFO);
-		proto::EngineInfo &info = *message.mutable_engineinfo();
-		info.set_id(engineId);
-		Send(message);
-	}
-	SendEngineState();	
+	SendEnginesInfo();
+	SendEnginesState();	
 }
 
-void Client::SendEngineState() {
-	proto::ServerData message;
-	message.set_type(proto::ServerData::TYPE_ENGINE_STATE);
-	proto::EngineState &state = *message.mutable_enginestate();
-	state.set_id(engineId);
-	state.set_isactive(isActive);
+void Client::SendEnginesInfo() {
+	m_requestHandler.ForEachEngineId(
+		boost::bind(&Client::SendEngineInfo, this, _1));
+}
+
+void Client::SendEngineInfo(const std::string &engineId) {
+	
+ 	ServerData message;
+ 	message.set_type(ServerData::TYPE_ENGINE_INFO);
+
+	EngineInfo &info = *message.mutable_engine_info();
+ 	info.set_engine_id(engineId);
+
+ 	EngineSettings &settings = *info.mutable_settings();
+
+	const IniFile ini(m_requestHandler.GetEngineSettings(engineId));
+	foreach (const auto &sectionName, ini.ReadSectionsList()) {
+		EngineSettingsSection &section = *settings.add_sections();
+		section.set_name(sectionName);
+		ini.ForEachKey(
+			sectionName,
+			[&](const std::string &keyName, const std::string &value) -> bool {
+				EngineSettingsSection::Key &key = *section.add_keys();
+				key.set_name(keyName);
+				key.set_value(value);
+				return true;
+			},
+			true);
+	}
+
+	Send(message);
+
+}
+
+void Client::SendEnginesState() {
+	m_requestHandler.ForEachEngineId(
+		boost::bind(&Client::SendEngineState, this, _1));
+}
+
+void Client::SendEngineState(const std::string &engineId) {
+	ServerData message;
+	message.set_type(ServerData::TYPE_ENGINE_STATE);	
+	EngineState &state = *message.mutable_engine_state();
+	state.set_engine_id(engineId);
+	state.set_is_started(m_requestHandler.IsEngineStarted(engineId));
 	Send(message);
 }
 
 void Client::OnEngineStartRequest(
-		const proto::EngineStartStopRequest &request) {
-	if (!boost::iequals(request.id(), engineId)) {
-		//! @todo Write to log
-		std::cerr
-			<< "Failed to start engine, engine with ID \""
-			<< request.id() << "\" is unknown." << std::endl;
-		return;
-	}
-	if (isActive) {
-		//! @todo Write to log
-		std::cerr
-			<< "Failed to start engine, engine with ID \""
-			<< request.id() << "\" already started." << std::endl;
-		SendEngineState();
-		return;
-	}
-	isActive = true;
-	//! @todo Write to log
-	std::cout
-		<< "Starting engine with ID \"" << request.id() << "\"..." << std::endl;
-	SendEngineState();
+		const EngineStartStopRequest &request) {
+	m_requestHandler.StartEngine(request.engine_id(), *this);
+	SendEngineState(request.engine_id());
 }
 
-void Client::OnEngineStopRequest(const proto::EngineStartStopRequest &request) {
-	if (!boost::iequals(request.id(), engineId)) {
-		//! @todo Write to log
-		std::cerr
-			<< "Failed to stop engine, engine with ID \""
-			<< request.id() << "\" is unknown." << std::endl;
-		return;
-	}
-	if (isActive) {
-		//! @todo Write to log
-		std::cerr
-			<< "Failed to stop engine, engine with ID \""
-			<< request.id() << "\" not started." << std::endl;
-		SendEngineState();
-		return;
-	}
-	isActive = false;
-	//! @todo Write to log
+void Client::OnEngineStopRequest(const EngineStartStopRequest &request) {
+	m_requestHandler.StopEngine(request.engine_id(), *this);
+	SendEngineState(request.engine_id());
+}
+
+void Client::OnNewSettings(const EngineSettingsApplyRequest &request) {
+
+	//! @todo remove
 	std::cout
-		<< "Stopping engine with ID \"" << request.id() << "\"..." << std::endl;
-	SendEngineState();
+		<< "New settings for \"" << request.engine_id() << "\" from "
+		<< GetRemoteAddressAsString() << "..." << std::endl;
+
+	std::map<std::string, std::map<std::string, std::string>>
+		newSettingsStorage;
+
+	std::ofstream ini(
+		m_requestHandler.GetEngineSettings(
+			request.engine_id()).string().c_str(),
+		std::ios::trunc);
+
+	for (int i = 0; i < request.settings().sections_size(); ++i) {
+
+		const EngineSettingsSection &section
+			= request.settings().sections(i);
+		const auto &sectionName = boost::trim_copy(section.name());
+		if (sectionName.empty()) {
+			//! @todo Write to log
+			std::cerr
+				<< "Failed to updates settings: empty section name."
+				<< std::endl;
+			return;
+		}
+
+		ini << "[" << sectionName << "]" << std::endl;
+		for (int k = 0; k < section.keys_size(); ++k) {
+
+			const EngineSettingsSection::Key &key = section.keys(k);
+
+			const auto &keyName = boost::trim_copy(key.name());
+			if (keyName.empty()) {
+				//! @todo Write to log
+				std::cerr
+					<< "Failed to updates settings: empty key name in"
+					<< " section \"" << sectionName << "\"." << std::endl;
+				return;
+			}
+
+			const auto &keyValue =  boost::trim_copy(key.value());
+			if (keyValue.empty()) {
+				//! @todo Write to log
+				std::cerr
+					<< "Failed to updates settings: empty value for key \""
+					<< keyName << "\" in section \"" << sectionName << "\"."
+					<< std::endl;
+				return;
+			}
+			
+			ini << "\t" << key.name() << " = " << key.value() << std::endl;
+
+		}
+
+	}
+
+	SendEngineInfo(request.engine_id());
+
 }

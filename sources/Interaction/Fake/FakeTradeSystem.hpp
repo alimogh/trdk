@@ -34,78 +34,78 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 		virtual bool IsConnected() const;
 
-	public:
+	protected:
 
-		virtual OrderId SellAtMarketPrice(
+		virtual OrderId SendSellAtMarketPrice(
 				trdk::Security &,
 				const trdk::Lib::Currency &,
-				trdk::Qty qty,
+				const trdk::Qty &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
-		virtual OrderId Sell(
-				trdk::Security &,
-				const trdk::Lib::Currency &,
-				trdk::Qty qty,
-				trdk::ScaledPrice,
-				const trdk::OrderParams &,
-				const OrderStatusUpdateSlot &);
-		virtual OrderId SellAtMarketPriceWithStopPrice(
-				trdk::Security &,
-				const trdk::Lib::Currency &,
-				trdk::Qty qty,
-				trdk::ScaledPrice stopPrice,
-				const trdk::OrderParams &,
-				const OrderStatusUpdateSlot &);
-		virtual OrderId SellImmediatelyOrCancel(
+		virtual OrderId SendSell(
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
-		virtual OrderId SellAtMarketPriceImmediatelyOrCancel(
+		virtual OrderId SendSellAtMarketPriceWithStopPrice(
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
+				const trdk::ScaledPrice &stopPrice,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
-
-		virtual OrderId BuyAtMarketPrice(
-				trdk::Security &,
-				const trdk::Lib::Currency &,
-				trdk::Qty qty,
-				const trdk::OrderParams &,
-				const OrderStatusUpdateSlot &);
-		virtual OrderId Buy(
-				trdk::Security &,
-				const trdk::Lib::Currency &,
-				trdk::Qty qty,
-				trdk::ScaledPrice,
-				const trdk::OrderParams &,
-				const OrderStatusUpdateSlot &);
-		virtual OrderId BuyAtMarketPriceWithStopPrice(
-				trdk::Security &,
-				const trdk::Lib::Currency &,
-				trdk::Qty qty,
-				trdk::ScaledPrice stopPrice,
-				const trdk::OrderParams &,
-				const OrderStatusUpdateSlot &);
-		virtual OrderId BuyImmediatelyOrCancel(
+		virtual OrderId SendSellImmediatelyOrCancel(
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
-		virtual OrderId BuyAtMarketPriceImmediatelyOrCancel(
+		virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &);
 
-		virtual void CancelOrder(OrderId);
-		virtual void CancelAllOrders(trdk::Security &);
+		virtual OrderId SendBuyAtMarketPrice(
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
+		virtual OrderId SendBuy(
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
+		virtual OrderId SendBuyAtMarketPriceWithStopPrice(
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &stopPrice,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
+		virtual OrderId SendBuyImmediatelyOrCancel(
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
+		virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
+
+		virtual void SendCancelOrder(const OrderId &);
+		virtual void SendCancelAllOrders(trdk::Security &);
 
 	public:
 

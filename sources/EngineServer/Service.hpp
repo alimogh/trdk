@@ -10,17 +10,41 @@
 
 #pragma once
 
+#include "Server.hpp"
+#include "ClientRequestHandler.hpp"
+
 namespace trdk { namespace EngineServer {
 
 	class Client;
 
-	class ServiceServer : private boost::noncopyable {
+	class Service : public ClientRequestHandler {
 
 	public:
 
-		ServiceServer();
+		explicit Service(const boost::filesystem::path &);
+		virtual ~Service();
+	
+	public:
+
+		bool IsEngineExists(const std::string &engineId) const;
+
+	public:
+
+		virtual void ForEachEngineId(
+				const boost::function<void (const std::string &engineId)> &)
+				const;
+		virtual bool IsEngineStarted(const std::string &engineId) const;
+		virtual void StartEngine(const std::string &engineId, Client &);
+		virtual void StopEngine(const std::string &engineId, Client &);
+		virtual const boost::filesystem::path & GetEngineSettings(
+				const std::string &engineId)
+				const;
 
 	private:
+
+		void LoadEngine(
+				const std::string &engineId,
+				const boost::filesystem::path &);
 
 		void StartAccept();
 		void HandleNewClient(
@@ -28,6 +52,13 @@ namespace trdk { namespace EngineServer {
 				const boost::system::error_code &);
 
 	private:
+
+		std::map<
+				std::string /* engine ID */,
+				boost::filesystem::path /* path to settings file */>
+			m_engines;
+
+		Server m_server;
 
 		boost::asio::io_service m_ioService;
 		boost::asio::ip::tcp::acceptor m_acceptor;

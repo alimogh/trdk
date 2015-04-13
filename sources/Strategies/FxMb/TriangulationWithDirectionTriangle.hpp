@@ -127,7 +127,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_START_1);
 			order->Open();
 			const auto &orderDelay = timeMeasurement.Measure(
-				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_STOP_1);
+				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_COMPLETE_1);
 
 			m_legs[LEG1] = order;
 
@@ -225,7 +225,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			Lib::TimeMeasurement::PeriodFromStart orderDelay = 0;
 			if (!isResend) {
 				orderDelay = timeMeasurement.Measure(
-					Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_STOP_2);
+					Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_COMPLETE_2);
 			}
 
 			m_legs[LEG3] = order;

@@ -22,7 +22,7 @@ namespace trdk {
 
 		typedef boost::posix_time::ptime Time;
 
-	public:
+	private:
 
 		struct Values {
 
@@ -53,7 +53,6 @@ namespace trdk {
 
 	private:
 
-		void UpdateDynamic(const trdk::Lib::Ini &, trdk::Context::Log &);
 		void UpdateStatic(const trdk::Lib::Ini &, trdk::Context::Log &);
 
 	public:

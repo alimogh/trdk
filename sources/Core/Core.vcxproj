@@ -272,6 +272,7 @@
     <ClCompile Include="Settings.cpp" />
     <ClCompile Include="Terminal.cpp" />
     <ClCompile Include="TradeSystem.cpp" />
+    <ClCompile Include="RiskControl.cpp" />
     <ClCompile Include="Types.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -299,6 +300,7 @@
     <ClInclude Include="Settings.hpp" />
     <ClInclude Include="Terminal.hpp" />
     <ClInclude Include="TradeSystem.hpp" />
+    <ClInclude Include="RiskControl.hpp" />
     <ClInclude Include="TradingLog.hpp" />
     <ClInclude Include="Types.hpp" />
   </ItemGroup>

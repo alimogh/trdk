@@ -10,17 +10,36 @@
 
 syntax = "proto2";
 
-package trdk.EngineServer.Service;
+package trdk.EngineServer;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+message EngineSettingsSection {
+
+	message Key {
+
+		required string name = 1;
+		required string value = 2;
+		
+	}
+
+	required string name = 1;
+	repeated Key keys = 2;
+
+}
+
+message EngineSettings {
+	repeated EngineSettingsSection sections = 1;
+}
+
 message EngineInfo {
-	required string id = 1;
+	required string engine_id = 1;
+	required EngineSettings settings = 2;
 }
 
 message EngineState {
-	required string id = 1;
-	required bool isActive = 2;
+	required string engine_id = 1;
+	required bool is_started = 2;
 }
 
 message ServerData {
@@ -32,8 +51,8 @@ message ServerData {
 
 	required Type type = 1;
 
-	optional EngineInfo engineInfo = 2;
-	optional EngineState engineState = 3;
+	optional EngineInfo engine_info = 2;
+	optional EngineState engine_state = 3;
 
 }
 
@@ -44,7 +63,12 @@ message FullInfoRequest {
 }
 
 message EngineStartStopRequest {
-	required string id = 1;
+	required string engine_id = 1;
+}
+
+message EngineSettingsApplyRequest {
+	required string engine_id = 1;
+	required EngineSettings settings = 2;
 }
 
 message ClientRequest {
@@ -53,13 +77,15 @@ message ClientRequest {
 		TYPE_INFO_FULL = 1;
 		TYPE_ENGINE_START = 2;
 		TYPE_ENGINE_STOP = 3;
+		TYPE_ENGINE_SETTINGS = 4;
 	}
 
 	required Type type = 1;
 
-	optional FullInfoRequest fullInfo = 2;
-	optional EngineStartStopRequest engineStart = 3;
-	optional EngineStartStopRequest engineStop = 4;
+	optional FullInfoRequest full_info = 2;
+	optional EngineStartStopRequest engine_start = 3;
+	optional EngineStartStopRequest engine_stop = 4;
+	optional EngineSettingsApplyRequest engine_settings = 5;
 
 }
 

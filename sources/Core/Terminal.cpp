@@ -220,6 +220,8 @@ private:
 			//...//
 		}
 		virtual void Execute() {
+			const auto &timeMeasurement
+				= m_tradeSystem.GetContext().StartStrategyTimeMeasurement();
 			AssertEq(std::string(), Validate());
 			const OrderParams &orderParams = GetOrderParams();
 			if (Lib::IsZero(m_price)) {
@@ -236,7 +238,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5));
+							_5),
+						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.SellAtMarketPriceImmediatelyOrCancel(
 						*m_security,
@@ -250,7 +253,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5));
+							_5),
+						timeMeasurement);
 				}
 			} else {
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
@@ -267,7 +271,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5));
+							_5),
+						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.SellImmediatelyOrCancel(
 						*m_security,
@@ -282,7 +287,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5));
+							_5),
+						timeMeasurement);
 				}
 			}
 		}
@@ -298,6 +304,8 @@ private:
 			//...//
 		}
 		virtual void Execute() {
+			const auto &timeMeasurement
+				= m_tradeSystem.GetContext().StartStrategyTimeMeasurement();
 			AssertEq(std::string(), Validate());
 			const OrderParams &orderParams = GetOrderParams();
 			if (Lib::IsZero(m_price)) {
@@ -314,7 +322,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5));
+							_5),
+						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.BuyAtMarketPriceImmediatelyOrCancel(
 						*m_security,
@@ -328,7 +337,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5));					
+							_5),
+						timeMeasurement);
 				}
 			} else {
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
@@ -345,7 +355,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5));
+							_5),
+						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.BuyImmediatelyOrCancel(
 						*m_security,
@@ -360,7 +371,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5));
+							_5),
+						timeMeasurement);
 				}
 			}
 		}

@@ -66,14 +66,18 @@ namespace {
 		return false;
 	}
 
-	bool RunServerStandalone(int /*argc*/, const char * /*argv*/[]) {
-// 		if (argc < 3 || !strlen(argv[2])) {
-// 			std::cerr << "No configuration file specified." << std::endl;
-// 			return false;
-// 		}
-// 		ServiceServer service;
-// 		getchar();
+	bool RunServerStandalone(int argc, const char *argv[]) {
+		
+		if (argc < 3 || !strlen(argv[2])) {
+			std::cerr << "No configuration file specified." << std::endl;
+			return false;
+		}
+
+		EngineServer::Service service(GetIniFilePath(argv[2]));
+	
+		getchar();
 		return true;
+	
 	}
 
 	bool DebugStrategy(int argc, const char *argv[]) {
@@ -83,18 +87,31 @@ namespace {
 			return false;
 		}
 
-		const char *const uuid = "DEBUG";
-	
 		Server server;
 		bool result = true;
 
-		try {
-			server.Run(uuid, GetIniFilePath(argv[2]), true, argc, argv);
-		} catch (const Exception &ex) {
-			std::cerr
-				<< "Failed to start engine: \"" << ex << "\"."
-				<< std::endl;
-			result = false;
+		{
+		
+			const char *const uuid = "DEBUG";
+
+			std::vector<std::string> cmd;
+			for (auto i = 0; i < argc; ++i) {
+				cmd.push_back(argv[i]);
+			}
+	
+			try {
+				server.Run(
+					uuid,
+					GetIniFilePath(argv[2]),
+					true,
+					boost::join(cmd, " "));
+			} catch (const Exception &ex) {
+				std::cerr
+					<< "Failed to start engine: \"" << ex << "\"."
+					<< std::endl;
+				result = false;
+			}
+
 		}
 		
 		if (result) {

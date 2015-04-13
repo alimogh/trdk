@@ -295,13 +295,12 @@ void Fake::TradeSystem::CreateConnection(const IniSectionRef &) {
 	m_pimpl->Start();
 }
 
-OrderId Fake::TradeSystem::SellAtMarketPrice(
+OrderId Fake::TradeSystem::SendSellAtMarketPrice(
 			Security &security,
 			const Currency &,
-			Qty qty,
+			const Qty &qty,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	Validate(qty, params, false);
 	AssertLt(0, qty);
 	Order order = {
 		&security,
@@ -315,14 +314,13 @@ OrderId Fake::TradeSystem::SellAtMarketPrice(
 	return order.id;
 }
 
-OrderId Fake::TradeSystem::Sell(
+OrderId Fake::TradeSystem::SendSell(
 			Security &security,
 			const Currency &,
-			Qty qty,
-			ScaledPrice price,
+			const Qty &qty,
+			const ScaledPrice &price,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	Validate(qty, params, false);
 	AssertLt(0, qty);
 	Order order = {
 		&security,
@@ -336,27 +334,25 @@ OrderId Fake::TradeSystem::Sell(
 	return order.id;
 }
 
-OrderId Fake::TradeSystem::SellAtMarketPriceWithStopPrice(
+OrderId Fake::TradeSystem::SendSellAtMarketPriceWithStopPrice(
 			Security &,
 			const Currency &,
-			Qty qty,
-			ScaledPrice /*stopPrice*/,
-			const OrderParams &params,
+			const Qty &qty,
+			const ScaledPrice &,
+			const OrderParams &,
 			const OrderStatusUpdateSlot &) {
-	Validate(qty, params, false);
 	AssertLt(0, qty);
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
 
-OrderId Fake::TradeSystem::SellImmediatelyOrCancel(
+OrderId Fake::TradeSystem::SendSellImmediatelyOrCancel(
 			Security &security,
 			const Currency &,
 			const Qty &qty,
 			const ScaledPrice &price,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	Validate(qty, params, true);
 	Order order = {
 		&security,
 		true,
@@ -369,13 +365,12 @@ OrderId Fake::TradeSystem::SellImmediatelyOrCancel(
 	return order.id;
 }
 
-OrderId Fake::TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
+OrderId Fake::TradeSystem::SendSellAtMarketPriceImmediatelyOrCancel(
 			Security &security,
 			const Currency &,
 			const Qty &qty,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	Validate(qty, params, true);
 	AssertLt(0, qty);
 	Order order = {
 		&security,
@@ -389,13 +384,12 @@ OrderId Fake::TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 	return order.id;
 }
 
-OrderId Fake::TradeSystem::BuyAtMarketPrice(
+OrderId Fake::TradeSystem::SendBuyAtMarketPrice(
 			Security &security,
 			const Currency &,
-			Qty qty,
+			const Qty &qty,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	Validate(qty, params, false);
 	AssertLt(0, qty);
 	Order order = {
 		&security,
@@ -409,48 +403,14 @@ OrderId Fake::TradeSystem::BuyAtMarketPrice(
 	return order.id;
 }
 
-OrderId Fake::TradeSystem::Buy(
-			Security &security,
-			const Currency &,
-			Qty qty,
-			ScaledPrice price,
-			const OrderParams &params,
-			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	Validate(qty, params, false);
-	AssertLt(0, qty);
-	Order order = {
-		&security,
-		false,
-		m_pimpl->TakeOrderId(),
-		statusUpdateSlot,
-		qty,
-		price,
-		params};
-	m_pimpl->SendOrder(order);
-	return order.id;
-}
-
-OrderId Fake::TradeSystem::BuyAtMarketPriceWithStopPrice(
-			Security &,
-			const Currency &,
-			Qty qty,
-			ScaledPrice /*stopPrice*/,
-			const OrderParams &params,
-			const OrderStatusUpdateSlot &) {
-	Validate(qty, params, false);
-	AssertLt(0, qty);
-	AssertFail("Doesn't implemented.");
-	throw Exception("Method doesn't implemented");
-}
-
-OrderId Fake::TradeSystem::BuyImmediatelyOrCancel(
+OrderId Fake::TradeSystem::SendBuy(
 			Security &security,
 			const Currency &,
 			const Qty &qty,
 			const ScaledPrice &price,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	Validate(qty, params, true);
+	AssertLt(0, qty);
 	Order order = {
 		&security,
 		false,
@@ -463,13 +423,44 @@ OrderId Fake::TradeSystem::BuyImmediatelyOrCancel(
 	return order.id;
 }
 
-OrderId Fake::TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
+OrderId Fake::TradeSystem::SendBuyAtMarketPriceWithStopPrice(
+			Security &,
+			const Currency &,
+			const Qty &qty,
+			const ScaledPrice &/*stopPrice*/,
+			const OrderParams &,
+			const OrderStatusUpdateSlot &) {
+	AssertLt(0, qty);
+	AssertFail("Doesn't implemented.");
+	UseUnused(qty);
+	throw Exception("Method doesn't implemented");
+}
+
+OrderId Fake::TradeSystem::SendBuyImmediatelyOrCancel(
+			Security &security,
+			const Currency &,
+			const Qty &qty,
+			const ScaledPrice &price,
+			const OrderParams &params,
+			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	Order order = {
+		&security,
+		false,
+		m_pimpl->TakeOrderId(),
+		statusUpdateSlot,
+		qty,
+		price,
+		params};
+	m_pimpl->SendOrder(order);
+	return order.id;
+}
+
+OrderId Fake::TradeSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
 			Security &security,
 			const Currency &,
 			const Qty &qty,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
-	Validate(qty, params, true);
 	AssertLt(0, qty);
 	Order order = {
 		&security,
@@ -483,12 +474,12 @@ OrderId Fake::TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 	return order.id;
 }
 
-void Fake::TradeSystem::CancelOrder(OrderId) {
+void Fake::TradeSystem::SendCancelOrder(const OrderId &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }
 
-void Fake::TradeSystem::CancelAllOrders(Security &) {
+void Fake::TradeSystem::SendCancelAllOrders(Security &) {
 	AssertFail("Doesn't implemented.");
 	throw Exception("Method doesn't implemented");
 }

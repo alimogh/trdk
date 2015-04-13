@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "MarketDataSource.hpp"
+#include "RiskControl.hpp"
 #include "Context.hpp"
 #include "Security.hpp"
 #include "TradingLog.hpp"
@@ -175,6 +176,12 @@ Security & MarketDataSource::GetSecurity(const Symbol &symbol) {
 	}
 	GetLog().Debug("Loaded security \"%1%\".", *result);
 	return *result;
+}
+
+Security & MarketDataSource::CreateSecurity(const Symbol &symbol) {
+	auto &result = CreateNewSecurityObject(symbol);
+	Assert(this == &result.GetSource());
+	return result;
 }
 
 Security * MarketDataSource::FindSecurity(const Symbol &symbol) {

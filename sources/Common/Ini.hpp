@@ -102,7 +102,7 @@ namespace trdk { namespace Lib {
 		void ReadSection(
 					const std::string &section,
 					const boost::function<bool(const std::string &)> &readLine,
-					bool mustExist)
+					bool isRequired)
 				const;
 
 		bool IsSectionExist(const std::string &section) const;
@@ -118,7 +118,7 @@ namespace trdk { namespace Lib {
 								const std::string &key,
 								const std::string &value)>
 						&pred,
-					bool mustExist)
+					bool isRequired)
 				const;
 
 		std::string ReadKey(
@@ -189,7 +189,7 @@ namespace trdk { namespace Lib {
 
 		std::list<std::string> ReadList(
 					const std::string &section,
-					bool mustExist)
+					bool isRequired)
 				const;
 
 		std::set<trdk::Lib::Symbol> ReadSymbols(
@@ -324,7 +324,7 @@ namespace trdk { namespace Lib {
 								const std::string &key,
 								const std::string &value)>
 						&pred,
-					bool mustExist)
+					bool isRequired)
 				const;
 
 		std::string ReadKey(const std::string &key) const;
@@ -360,7 +360,7 @@ namespace trdk { namespace Lib {
 		bool ReadBoolKey(const std::string &key, bool defaultValue) const;
 
 		std::list<std::string> ReadList(
-				bool mustExist)
+				bool isRequired)
 			const;
 
 		std::set<trdk::Lib::Symbol> ReadSymbols(

@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Context.hpp"
+#include "RiskControl.hpp"
 #include "TradingLog.hpp"
 #include "EventsLog.hpp"
 #include "Settings.hpp"
@@ -256,6 +257,8 @@ public:
 
 	Params m_params;
 
+	std::unique_ptr<RiskControl> m_riskControl;
+
 	std::unique_ptr<LatanReport> m_latanReport;
 
 	CustomTimeMutex m_customCurrentTimeMutex;
@@ -285,10 +288,16 @@ Context::Context(
 		Log &log,
 		TradingLog &tradingLog,
 		const Settings &settings,
+		const Ini &conf,
 		const pt::ptime &startTime) {
-	m_pimpl = new Implementation(*this, log, tradingLog, settings, startTime);
-        m_pimpl->m_latanReport.reset(
-            new LatanReport(*this));
+	m_pimpl = new Implementation(
+		*this,
+		 log,
+		 tradingLog,
+		 settings,
+		 startTime);
+	m_pimpl->m_riskControl.reset(new RiskControl(*this, conf));
+	m_pimpl->m_latanReport.reset(new LatanReport(*this));
 }
 
 Context::~Context() {
@@ -397,6 +406,14 @@ TimeMeasurement::Milestones Context::StartTradeSystemTimeMeasurement() const {
 
 TimeMeasurement::Milestones Context::StartDispatchingTimeMeasurement() const {
 	return m_pimpl->m_latanReport->StartDispatchingTimeMeasurement();
+}
+
+RiskControl & Context::GetRiskControl() {
+	return *m_pimpl->m_riskControl;
+}
+
+const RiskControl & Context::GetRiskControl() const {
+	return const_cast<Context *>(this)->GetRiskControl();
 }
 
 //////////////////////////////////////////////////////////////////////////
