@@ -18,6 +18,17 @@ using namespace trdk::EngineServer;
 
 namespace io = boost::asio;
 
+namespace {
+
+	std::string BuildRemoteAddressString(const io::ip::tcp::socket &socket) {
+		const auto &endpoint = socket.remote_endpoint(); 
+		boost::format result("%1%:%2%");
+		result % endpoint.address() % endpoint.port();
+		return result.str();
+	}
+
+}
+
 Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 	: m_requestHandler(requestHandler),
 	m_newxtMessageSize(0),
@@ -26,10 +37,15 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 }
 
 Client::~Client() {
-	//! @todo Write to log
-	std::cout
-		<< "Closing client connection from " << GetRemoteAddressAsString()
-		<< "..." << std::endl;
+	try {
+		//! @todo Write to log
+		std::cout
+			<< "Closing client connection from " << GetRemoteAddressAsString()
+			<< "..." << std::endl;
+	} catch (...) {
+		AssertFailNoException();
+		throw;
+	}
 }
 
 boost::shared_ptr<Client> Client::Create(
@@ -38,14 +54,12 @@ boost::shared_ptr<Client> Client::Create(
 	return boost::shared_ptr<Client>(new Client(ioService, handler));
 }
 
-std::string Client::GetRemoteAddressAsString() const {
-	const auto &endpoint = m_socket.remote_endpoint(); 
-	boost::format result("%1%:%2%");
-	result % endpoint.address() % endpoint.port();
-	return result.str();
+const std::string & Client::GetRemoteAddressAsString() const {
+	return m_remoteAddress;
 }
 
 void Client::Start() {
+	m_remoteAddress = BuildRemoteAddressString(m_socket);
 	//! @todo Write to log
 	std::cout
 		<< "Opening client connection from "
