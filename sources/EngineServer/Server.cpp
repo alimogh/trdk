@@ -123,7 +123,9 @@ void Server::Run(
 				"Failed to init engine context: \"%1%\".",
 				ex.what());
 		}
-		throw EngineServer::Exception("Failed to init engine context");
+		boost::format message("Failed to init engine context: \"%1%\"");
+		message % ex.what();
+		throw EngineServer::Exception(message.str().c_str());
 	}
 
 }
