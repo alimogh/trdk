@@ -4,7 +4,7 @@
 #define TRDK_VERSION_MAJOR_HIGH	1
 #define TRDK_VERSION_MAJOR_LOW	1
 #define TRDK_VERSION_MINOR_HIGH	0
-#define TRDK_VERSION_MINOR_LOW	37
+#define TRDK_VERSION_MINOR_LOW	38
 
 #define TRDK_VERSION_BRANCH		"probitecapital"
 #define TRDK_VERSION_BRANCH_W	L"probitecapital"
