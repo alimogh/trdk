@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Server.hpp"
+#include "Exception.hpp"
 #include "Core/Settings.hpp"
 
 namespace fs = boost::filesystem;
@@ -22,28 +23,27 @@ Server::Server() {
 	//..//
 }
 
+bool Server::IsStarted(const std::string &id) const {
+	const Lock lock(m_mutex);
+	return m_engines.get<ById>().find(id) != m_engines.get<ById>().end();
+}
+
 void Server::Run(
-		const std::string &uuid,
+		const std::string &id,
 		const fs::path &path,
 		bool enableStdOutLog,
-		int argc,
-		const char *argv[]) {
+		const std::string &commandInfo) {
+
+	if (IsStarted(id)) {
+		boost::format message("Engine with ID \"%1%\" already started");
+		message % id;
+		throw EngineServer::Exception(message.str().c_str());
+	}
 
 	EngineInfo info = {};
-	info.uuid = uuid;
+	info.id = id;
 	info.eventsLog.reset(new Engine::Context::Log);
 	const auto &startTime = info.eventsLog->GetTime();
-
-	const Lock lock(m_mutex);
-	
-	{
-		const auto &index = m_engines.get<ByUuid>();
-		if (index.find(uuid) != index.end()) {
-			boost::format message("Engine with UUID \"%1%\" already activated");
-			message % uuid;
-			throw Exception(message.str().c_str());
-		}
-	}
 
 	boost::shared_ptr<IniFile> ini(new IniFile(path));
 
@@ -54,7 +54,7 @@ void Server::Run(
 
 	Settings settings(
 		ini->ReadBoolKey("Common", "is_replay_mode"),
-		ini->ReadFileSystemPath("Common", "logs_dir") / uuid);
+		ini->ReadFileSystemPath("Common", "logs_dir") / id);
 
 	fs::create_directories(settings.GetLogsDir());
 	{
@@ -66,24 +66,19 @@ void Server::Run(
 		if (!*info.eventsLogFile) {
 			boost::format error("Failed to open events log file %1%.");
 			error % logFilePath;
-			throw Exception(error.str().c_str());
+			throw EngineServer::Exception(error.str().c_str());
 		}
 		info.eventsLog->EnableStream(*info.eventsLogFile, true);
 	}
 
 	try {
 	
-		{
-			std::vector<std::string> cmd;
-			for (auto i = 0; i < argc; ++i) {
-				cmd.push_back(argv[i]);
-			}
-			info.eventsLog->Info("Command: \"%1%\".", boost::join(cmd, " "));
-			if (settings.IsReplayMode()) {
-				info.eventsLog->Warn("Replay mode.");
-			}
+		info.eventsLog->Info("Engine ID: \"%1%\".", id);
+		info.eventsLog->Info("Command: \"%1%\".", commandInfo);
+		if (settings.IsReplayMode()) {
+			info.eventsLog->Warn("Replay mode.");
 		}
-
+		
 		settings.Update(*ini, *info.eventsLog);
 
 		info.engine.reset(
@@ -105,10 +100,12 @@ void Server::Run(
 				if (!*info.tradingLogFile) {
 					boost::format error("Failed to open trading log file %1%.");
 					error % tradingLogFilePath;
-					throw Exception(error.str().c_str());
+					throw EngineServer::Exception(error.str().c_str());
 				}
 				info.eventsLog->Info("Trading log: %1%.", tradingLogFilePath);
-				info.tradingLog->EnableStream(*info.tradingLogFile, *info.engine);
+				info.tradingLog->EnableStream(
+					*info.tradingLogFile,
+					*info.engine);
 			} else {
 				info.eventsLog->Info("Trading log: DISABLED.");
 			}
@@ -116,13 +113,14 @@ void Server::Run(
 
 		info.engine->Start();
 
+		const Lock lock(m_mutex);
 		m_engines.insert(info);
 
 	} catch (const trdk::Lib::Exception &ex) {
 		info.eventsLog->Warn(
 			"Failed to init engine context: \"%1%\".",
 			ex.what());
-		throw Exception("Failed to init engine context");
+		throw EngineServer::Exception("Failed to init engine context");
 	}
 
 }

@@ -10,24 +10,17 @@
 
 #pragma once
 
-namespace trdk { namespace EngineServer {
+#pragma warning(push, 1)
+#	include "trdk.pb.h"
+#pragma warning(pop)
 
-	namespace Service {
-		
-		class ServerData;
-		
-		class ClientRequest;
-		class FullInfoRequest;
-		class EngineStartStopRequest;
-		class EngineSettings;
-	
-	}
+namespace trdk { namespace EngineServer {
 
 	class Client : public boost::enable_shared_from_this<Client> {
 	
 	private:
 	
-		explicit Client(boost::asio::io_service &);
+		explicit Client(boost::asio::io_service &, ClientRequestHandler &);
 
 	public:
 
@@ -35,7 +28,9 @@ namespace trdk { namespace EngineServer {
 
 	public:
 
-		static boost::shared_ptr<Client> Create(boost::asio::io_service &);
+		static boost::shared_ptr<Client> Create(
+				boost::asio::io_service &,
+				ClientRequestHandler &);
 
 	public:
 
@@ -43,11 +38,13 @@ namespace trdk { namespace EngineServer {
 			return m_socket;
 		}
 
+		std::string GetRemoteAddressAsString() const;
+
 		void Start();
 
 	private:
 
-		void Send(const Service::ServerData &);
+		void Send(const ServerData &);
 
 		void FlushOutStream(const std::string &);
 
@@ -62,31 +59,29 @@ namespace trdk { namespace EngineServer {
 		void OnNewMessageSize(const boost::system::error_code &);
 		void OnNewMessage(
 				const boost::system::error_code &);
-		void OnNewRequest(const Service::ClientRequest &);
+		void OnNewRequest(const ClientRequest &);
 		
-		void OnFullInfoRequest(const Service::FullInfoRequest &);
-		void OnNewSettings(const Service::EngineSettings &);
+		void OnFullInfoRequest(const FullInfoRequest &);
+		void OnNewSettings(const EngineSettingsApplyRequest &);
 		
-		void OnEngineStartRequest(const Service::EngineStartStopRequest &);
-		void OnEngineStopRequest(const Service::EngineStartStopRequest &);
+		void OnEngineStartRequest(const EngineStartStopRequest &);
+		void OnEngineStopRequest(const EngineStartStopRequest &);
 		
-		void SendEngineInfo();
-		void SendEngineState();
+		void SendEngineInfo(const std::string &engeineId);
+		void SendEnginesInfo();
 
-private:
+		void SendEngineState(const std::string &engeineId);
+		void SendEnginesState();
 
-	int32_t m_newxtMessageSize;
-	std::vector<char> m_inBuffer;
+	private:
 
-	boost::asio::ip::tcp::socket m_socket;
-	
-// 	boost::asio::streambuf m_inBuffer;
-// 	std::istream m_istream;
+		ClientRequestHandler &m_requestHandler;
 
-// 	boost::asio::streambuf m_outBuffer;
-// 	std::ostream m_ostream;
+		int32_t m_newxtMessageSize;
+		std::vector<char> m_inBuffer;
 
-};
+		boost::asio::ip::tcp::socket m_socket;
 
+	};
 
 } }

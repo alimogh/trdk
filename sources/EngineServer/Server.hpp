@@ -24,7 +24,7 @@ namespace trdk { namespace EngineServer {
 
 		struct EngineInfo {
 
-			std::string uuid;
+			std::string id;
 
 			boost::shared_ptr<std::ofstream> eventsLogFile;
 			boost::shared_ptr<Engine::Context::Log> eventsLog;
@@ -35,7 +35,7 @@ namespace trdk { namespace EngineServer {
 
 		};
 
-		struct ByUuid {
+		struct ById {
 			//...//
 		};
 
@@ -43,13 +43,12 @@ namespace trdk { namespace EngineServer {
 				EngineInfo,
 				boost::multi_index::indexed_by<
 					boost::multi_index::hashed_unique<
-						boost::multi_index::tag<ByUuid>,
+						boost::multi_index::tag<ById>,
 						boost::multi_index::member<
 							EngineInfo,
 							std::string,
-							&EngineInfo::uuid>>>>
+							&EngineInfo::id>>>>
 			Engines;
-		typedef Engines::index<ByUuid>::type SubscribedBySubscriber;
 
 	public:
 
@@ -57,17 +56,18 @@ namespace trdk { namespace EngineServer {
 
 	public:
 
+		bool IsStarted(const std::string &id) const;
+
 		void Run(
-					const std::string &uuid,
-					const boost::filesystem::path &,
-					bool enableStdOutLog,
-					int argc,
-					const char *argv[]);
+				const std::string &id,
+				const boost::filesystem::path &,
+				bool enableStdOutLog,
+				const std::string &commandInfo);
 		void StopAll(const trdk::StopMode &);
 
 	private:
 
-		Mutex m_mutex;
+		mutable Mutex m_mutex;
 		Engines m_engines;
 
 	};

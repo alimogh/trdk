@@ -10,164 +10,50 @@
 
 #include "Prec.hpp"
 #include "Client.hpp"
-
-#pragma warning(push, 1)
-#	include "trdk.pb.h"
-#pragma warning(pop)
+#include "ClientRequestHandler.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::EngineServer;
 
 namespace io = boost::asio;
-namespace proto = trdk::EngineServer::Service;
 
-namespace {
-
-	//! @todo Only for tests, remove.
-	boost::atomic_bool isActive(false);
-	const std::string engineId = "1E8F72E3-8EFC-492A-BCD8-9865FC3CFB91";
-
-	struct Key {
-		
-		std::string name;
-		std::string value;
-		
-		Key(const char *name, const char *value)
-			: name(name),
-			value(value) {
-			//...//
-		}
-
-	};
-
-	std::map<std::string, std::map<std::string, std::string>> settingsStorage;
-
-}
-
-Client::Client(io::io_service &ioService)
-	: m_newxtMessageSize(0),
-	m_socket(ioService)/*,
-	m_istream(&m_inBuffer),
-	m_ostream(&m_outBuffer)*/ {
+Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
+	: m_requestHandler(requestHandler),
+	m_newxtMessageSize(0),
+	m_socket(ioService) {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-	settingsStorage.clear();
-	{
-		auto &section = settingsStorage["Common"];
-		section["is_replay_mode"] = "no";
-		section["logs_dir"] = "logs";
-		section["trading_log"] = "yes";
-		section["onixs_fix_engine_settings"] = "etc/FixEngineSettings.xml";
-		section["onixs_fix_reset_seq_num_flag"] = "yes";
-		section["onixs_fix_session_log"] = "yes";
-		section["book.levels.count"] = "4";
-		section["book.levels.exactly"] = "yes";
-		section["book.adjust.calculation"] = "yes";
-		section["book.adjust.trade"] = "yes";
-	}
-	{
-		auto &section = settingsStorage["RiskControl"];
-		section["flood_control.orders.period_ms"] = "1000";
-		section["flood_control.orders.max_number"] = "10";
-		section["limits.short.EUR/USD"] = "1000000";
-		section["limits.long.EUR/USD"] = "1000000";
-	}
-	{
-		auto &section = settingsStorage["Defaults"];
-		section["primary_exchange"] = "FOREX";
-		section["currency"] = "USD";
-	}
-	{
-		auto &section = settingsStorage["TradeSystem.Hotspot"];
-		section["module"] = "OnixsFixConnector";
-		section["factory"] = "HotspotTrading";
-		section["server_host"] = "209.191.250.157";
-		section["server_port"] = "8029";
-		section["use_ssl"] = "false";
-		section["fix_version"] = "FIX 4.2";
-		section["sender_comp_id"] = "xxxxx";
-		section["sender_sub_id"] = "xxxxx";
-		section["target_comp_id"] = "FixServer";
-		section["username"] = "xxxxx";
-		section["password"] = "xxxxx";
-	}
-	{
-		auto &section = settingsStorage["MarketDataSource.Hotspot"];
-		section["module"] = "Itch";
-		section["factory"] = "HotspotStream";
-		section["server_host"] = "209.191.250.157";
-		section["server_port"] = "9013";
-		section["login"] = "xxxxx";
-		section["password"] = "xxxxx";
-	}
-	{
-		auto &section = settingsStorage["TradeSystem.Currenex"];
-		section["module"] = "OnixsFixConnector";
-		section["factory"] = "CurrenexTrading";
-		section["server_host"] = "integration-fix.currenex.com";
-		section["server_port"] = "443";
-		section["use_ssl"] = "false";
-		section["fix_version"] = "FIX 4.2";
-		section["sender_comp_id"] = "xxxxx";
-		section["target_comp_id"] = "CNX";
-		section["password"] = "xxxxx";
-	}
-	{
-		auto &section = settingsStorage["MarketDataSource.Currenex"];
-		section["module"] = "OnixsFixConnector";
-		section["factory"] = "CurrenexStream";
-		section["server_host"] = "integration-fix.currenex.com";
-		section["server_port"] = "442";
-		section["use_ssl"] = "false";
-		section["fix_version"] = "FIX 4.2";
-		section["sender_comp_id"] = "xxxxx";
-		section["target_comp_id"] = "CNX";
-		section["password"] = "xxxxx";
-		section["log.book_adjust"] = "no";
-	}
-	{
-		auto &section = settingsStorage["Service.TriangulationWithDirectionStat"];
-		section["module"] = "FxMb";
-		section["requires"] = "Book Update Ticks";
-		section["ema_speed_slow"] = "0.03";
-		section["ema_speed_fast"] = "0.1";
-		section["prev1_duration_miliseconds"] = "500";
-		section["prev2_duration_miliseconds"] = "2000";
-		section["log.full"] = "no";
-		section["log.pair"] = "no";
-	}
-	{
-		auto &section = settingsStorage["Strategy.TriangulationWithDirection"];
-		section["module"] = "FxMb";
-		section["requires"] = "TriangulationWithDirectionStat[EUR/USD], TriangulationWithDirectionStat[USD/JPY], TriangulationWithDirectionStat[EUR/JPY]";
-		section["qty"] = "100000";
-		section["commission"] = "0.000005";
-		section["allow_leg1_closing"] = "no";
-		section["limit.triangles"] = "unlimited";
-		section["log.strategy"] = "yes";
-		section["log.updates"] = "no";
-		section["log.pnl"] = "yes";
-		section["log.y_report_step"] = "0.0505";
-	}
-
 }
 
 Client::~Client() {
 	//! @todo Write to log
-	std::cout << "Closing client connection..." << std::endl;
+	std::cout
+		<< "Closing client connection from " << GetRemoteAddressAsString()
+		<< "..." << std::endl;
 }
 
-boost::shared_ptr<Client> Client::Create(io::io_service &ioService) {
-	return boost::shared_ptr<Client>(new Client(ioService));
+boost::shared_ptr<Client> Client::Create(
+		io::io_service &ioService,
+		ClientRequestHandler &handler) {
+	return boost::shared_ptr<Client>(new Client(ioService, handler));
+}
+
+std::string Client::GetRemoteAddressAsString() const {
+	const auto &endpoint = m_socket.remote_endpoint(); 
+	boost::format result("%1%:%2%");
+	result % endpoint.address() % endpoint.port();
+	return result.str();
 }
 
 void Client::Start() {
 	//! @todo Write to log
-	std::cout << "Opening client connection..." << std::endl;
+	std::cout
+		<< "Opening client connection from "
+		<< GetRemoteAddressAsString() << "..." << std::endl;
 	StartReadMessageSize();
 }
 
-void Client::Send(const proto::ServerData &message) {
+void Client::Send(const ServerData &message) {
 	// message.SerializeToOstream(&m_ostream);
 	std::ostringstream oss;
 	message.SerializeToOstream(&oss);
@@ -255,7 +141,7 @@ void Client::OnNewMessage(
 		return;
 	}
 
-	proto::ClientRequest request;
+	ClientRequest request;
 	const bool isParsed
 		= request.ParseFromArray(&m_inBuffer[0], int(m_inBuffer.size()));
 	
@@ -270,19 +156,19 @@ void Client::OnNewMessage(
 
 }
 
-void Client::OnNewRequest(const proto::ClientRequest &request) {
+void Client::OnNewRequest(const ClientRequest &request) {
 	switch (request.type()) {
-		case proto::ClientRequest::TYPE_INFO_FULL:
-			OnFullInfoRequest(request.fullinfo());
+		case ClientRequest::TYPE_INFO_FULL:
+			OnFullInfoRequest(request.full_info());
 			break;
-		case proto::ClientRequest::TYPE_ENGINE_START:
-			OnEngineStartRequest(request.enginestart());
+		case ClientRequest::TYPE_ENGINE_START:
+			OnEngineStartRequest(request.engine_start());
 			break;
-		case proto::ClientRequest::TYPE_ENGINE_STOP:
-			OnEngineStopRequest(request.enginestop());
+		case ClientRequest::TYPE_ENGINE_STOP:
+			OnEngineStopRequest(request.engine_stop());
 			break;
-		case proto::ClientRequest::TYPE_ENGINE_SETTINGS:
-			OnNewSettings(request.enginesettings());
+		case ClientRequest::TYPE_ENGINE_SETTINGS:
+			OnNewSettings(request.engine_settings());
 			break;
 		default:
 			//! @todo Write to log
@@ -294,102 +180,91 @@ void Client::OnNewRequest(const proto::ClientRequest &request) {
 	}
 }
 
-void Client::OnFullInfoRequest(const proto::FullInfoRequest &) {
+void Client::OnFullInfoRequest(const FullInfoRequest &) {
 	//! @todo Write to log
 	std::cout << "Resending current info snapshot..." << std::endl;
-	SendEngineInfo();
-	SendEngineState();	
+	SendEnginesInfo();
+	SendEnginesState();	
 }
 
-void Client::SendEngineInfo() {
+void Client::SendEnginesInfo() {
+	m_requestHandler.ForEachEngineId(
+		boost::bind(&Client::SendEngineInfo, this, _1));
+}
+
+void Client::SendEngineInfo(const std::string &engineId) {
 	
-	proto::ServerData message;
-	message.set_type(proto::ServerData::TYPE_ENGINE_INFO);
+ 	ServerData message;
+ 	message.set_type(ServerData::TYPE_ENGINE_INFO);
 
-	proto::EngineInfo &info = *message.mutable_engineinfo();
-	info.set_id(engineId);
+	EngineInfo &info = *message.mutable_engine_info();
+ 	info.set_engine_id(engineId);
 
-	proto::EngineSettings &settings = *info.mutable_settings();
-	foreach (const auto &storageSection, settingsStorage) {
-		proto::EngineSettingsSection &section = *settings.add_sections();
-		section.set_name(storageSection.first);
-		foreach (const auto &storageKey, storageSection.second) {
-			proto::EngineSettingsSection::Key &key = *section.add_keys();
-			key.set_name(storageKey.first);
-			key.set_value(storageKey.second);
-		}
+ 	EngineSettings &settings = *info.mutable_settings();
+
+	const IniFile ini(m_requestHandler.GetEngineSettings(engineId));
+	foreach (const auto &sectionName, ini.ReadSectionsList()) {
+		EngineSettingsSection &section = *settings.add_sections();
+		section.set_name(sectionName);
+		ini.ForEachKey(
+			sectionName,
+			[&](const std::string &keyName, const std::string &value) -> bool {
+				EngineSettingsSection::Key &key = *section.add_keys();
+				key.set_name(keyName);
+				key.set_value(value);
+				return true;
+			},
+			true);
 	}
 
 	Send(message);
 
 }
 
-void Client::SendEngineState() {
-	proto::ServerData message;
-	message.set_type(proto::ServerData::TYPE_ENGINE_STATE);
-	proto::EngineState &state = *message.mutable_enginestate();
-	state.set_id(engineId);
-	state.set_isactive(isActive);
+void Client::SendEnginesState() {
+	m_requestHandler.ForEachEngineId(
+		boost::bind(&Client::SendEngineState, this, _1));
+}
+
+void Client::SendEngineState(const std::string &engineId) {
+	ServerData message;
+	message.set_type(ServerData::TYPE_ENGINE_STATE);	
+	EngineState &state = *message.mutable_engine_state();
+	state.set_engine_id(engineId);
+	state.set_is_started(m_requestHandler.IsEngineStarted(engineId));
 	Send(message);
 }
 
 void Client::OnEngineStartRequest(
-		const proto::EngineStartStopRequest &request) {
-	if (!boost::iequals(request.id(), engineId)) {
-		//! @todo Write to log
-		std::cerr
-			<< "Failed to start engine, engine with ID \""
-			<< request.id() << "\" is unknown." << std::endl;
-		return;
-	}
-	if (isActive) {
-		//! @todo Write to log
-		std::cerr
-			<< "Failed to start engine, engine with ID \""
-			<< request.id() << "\" already started." << std::endl;
-		SendEngineState();
-		return;
-	}
-	isActive = true;
-	//! @todo Write to log
-	std::cout
-		<< "Starting engine with ID \"" << request.id() << "\"..." << std::endl;
-	SendEngineState();
+		const EngineStartStopRequest &request) {
+	m_requestHandler.StartEngine(request.engine_id(), *this);
+	SendEngineState(request.engine_id());
 }
 
-void Client::OnEngineStopRequest(const proto::EngineStartStopRequest &request) {
-	if (!boost::iequals(request.id(), engineId)) {
-		//! @todo Write to log
-		std::cerr
-			<< "Failed to stop engine, engine with ID \""
-			<< request.id() << "\" is unknown." << std::endl;
-		return;
-	}
-	if (!isActive) {
-		//! @todo Write to log
-		std::cerr
-			<< "Failed to stop engine, engine with ID \""
-			<< request.id() << "\" not started." << std::endl;
-		SendEngineState();
-		return;
-	}
-	isActive = false;
-	//! @todo Write to log
-	std::cout
-		<< "Stopping engine with ID \"" << request.id() << "\"..." << std::endl;
-	SendEngineState();
+void Client::OnEngineStopRequest(const EngineStartStopRequest &request) {
+	m_requestHandler.StopEngine(request.engine_id(), *this);
+	SendEngineState(request.engine_id());
 }
 
-void Client::OnNewSettings(const proto::EngineSettings &settings) {
+void Client::OnNewSettings(const EngineSettingsApplyRequest &request) {
 
 	//! @todo remove
-	std::cout << "New settings:" << std::endl;
+	std::cout
+		<< "New settings for \"" << request.engine_id() << "\" from "
+		<< GetRemoteAddressAsString() << "..." << std::endl;
 
-	std::map<std::string, std::map<std::string, std::string>> newSettingsStorage;
+	std::map<std::string, std::map<std::string, std::string>>
+		newSettingsStorage;
 
-	for (int i = 0; i < settings.sections_size(); ++i) {
+	std::ofstream ini(
+		m_requestHandler.GetEngineSettings(
+			request.engine_id()).string().c_str(),
+		std::ios::trunc);
 
-		const proto::EngineSettingsSection &section = settings.sections(i);
+	for (int i = 0; i < request.settings().sections_size(); ++i) {
+
+		const EngineSettingsSection &section
+			= request.settings().sections(i);
 		const auto &sectionName = boost::trim_copy(section.name());
 		if (sectionName.empty()) {
 			//! @todo Write to log
@@ -399,11 +274,10 @@ void Client::OnNewSettings(const proto::EngineSettings &settings) {
 			return;
 		}
 
-		//! @todo remove
-		std::cout << "\tSection \"" << sectionName << "\":" << std::endl;
+		ini << "[" << sectionName << "]" << std::endl;
 		for (int k = 0; k < section.keys_size(); ++k) {
 
-			const proto::EngineSettingsSection::Key &key = section.keys(k);
+			const EngineSettingsSection::Key &key = section.keys(k);
 
 			const auto &keyName = boost::trim_copy(key.name());
 			if (keyName.empty()) {
@@ -423,20 +297,13 @@ void Client::OnNewSettings(const proto::EngineSettings &settings) {
 					<< std::endl;
 				return;
 			}
-
-			newSettingsStorage[sectionName][keyName] = keyValue;
-
-			//! @todo remove
-			std::cout
-				<< "\t\t" << key.name()
-				<< " = \"" << key.value() << "\"" << std::endl;
+			
+			ini << "\t" << key.name() << " = " << key.value() << std::endl;
 
 		}
 
 	}
 
-	newSettingsStorage.swap(settingsStorage);
-
-	SendEngineInfo();
+	SendEngineInfo(request.engine_id());
 
 }

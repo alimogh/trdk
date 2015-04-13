@@ -12,6 +12,13 @@
 
 #include "Common/Assert.hpp"
 
+#include "Engine/Fwd.hpp"
+#include "Fwd.hpp"
+
+#include "Common/Common.hpp"
+
+#include <fstream>
+
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/filesystem.hpp>
 #	include <boost/multi_index_container.hpp>
@@ -21,12 +28,6 @@
 #	include <boost/algorithm/string.hpp>
 #	include <boost/asio.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
-
-#include "Common/Common.hpp"
-
-#include "Engine/Fwd.hpp"
-
-#include <fstream>
 
 #include "Common/Assert.hpp"
 
