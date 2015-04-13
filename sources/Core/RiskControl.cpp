@@ -514,27 +514,27 @@ RiskControlSecurityContext && RiskControl::CreateSecurityContext(
 
 	if (symbol.GetSymbol() == "EUR/JPY") {
 	
-		result.longSide.settings.maxPrice = 131.1;
-		result.longSide.settings.minPrice = 129.9;
+		result.longSide.settings.maxPrice = 140.0;
+		result.longSide.settings.minPrice = 120.0;
 
-		result.shortSide.settings.maxPrice = 131.1;
-		result.shortSide.settings.minPrice = 129.9;
+		result.shortSide.settings.maxPrice = 140.0;
+		result.shortSide.settings.minPrice = 120.0;
 
 	} else if (symbol.GetSymbol() == "EUR/USD") {
 
-		result.longSide.settings.maxPrice = 1.1;
+		result.longSide.settings.maxPrice = 1.2;
 		result.longSide.settings.minPrice = 1.0;
 
-		result.shortSide.settings.maxPrice = 1.1;
+		result.shortSide.settings.maxPrice = 1.2;
 		result.shortSide.settings.minPrice = 1.0;
 
 	} else if (symbol.GetSymbol() == "USD/JPY") {
 
-		result.longSide.settings.maxPrice = 121.0;
-		result.longSide.settings.minPrice = 119.0;
+		result.longSide.settings.maxPrice = 130.0;
+		result.longSide.settings.minPrice = 110.0;
 
-		result.shortSide.settings.maxPrice = 121.0;
-		result.shortSide.settings.minPrice = 119.0;
+		result.shortSide.settings.maxPrice = 130.0;
+		result.shortSide.settings.minPrice = 110.0;
 
 	}
 
