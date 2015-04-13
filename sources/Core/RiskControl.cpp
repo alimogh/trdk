@@ -25,6 +25,20 @@ namespace {
 	
 	const char *const logPrefix = "RiskControl";
 
+	template<Lib::Concurrency::Profile profile>
+	struct ConcurrencyPolicyT {
+		static_assert(
+			profile == Lib::Concurrency::PROFILE_RELAX,
+			"Wrong concurrency profile");
+		typedef boost::mutex Mutex;
+		typedef Mutex::scoped_lock Lock;
+	};
+	template<>
+	struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+		typedef Lib::Concurrency::SpinMutex Mutex;
+		typedef Mutex::ScopedLock Lock;
+	};
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -92,7 +106,7 @@ class RiskControl::Implementation : private boost::noncopyable {
 
 private:
 
-	const struct Settings {
+	struct Settings {
 			
 		struct OrdersFloodControl {
 			
@@ -121,19 +135,6 @@ private:
 
 	typedef boost::circular_buffer<pt::ptime> FloodControlBuffer;
 
-	template<Lib::Concurrency::Profile profile>
-	struct ConcurrencyPolicyT {
-		static_assert(
-			profile == Lib::Concurrency::PROFILE_RELAX,
-			"Wrong concurrency profile");
-		typedef boost::mutex Mutex;
-		typedef Mutex::scoped_lock Lock;
-	};
-	template<>
-	struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
-		typedef Lib::Concurrency::SpinMutex Mutex;
-		typedef Mutex::ScopedLock Lock;
-	};
 	typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy; 
 	typedef ConcurrencyPolicy::Mutex SideMutex;
 	typedef ConcurrencyPolicy::Lock SideLock;
