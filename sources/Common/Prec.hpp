@@ -21,6 +21,8 @@
 #	include <boost/atomic.hpp>
 #	include <boost/date_time/posix_time/ptime.hpp>
 #	include <boost/date_time/posix_time/posix_time_io.hpp>
+//! @todo !!! remove Foo
+#	include <boost/signals2.hpp>
 #include "DisableBoostWarningsEnd.h"
 
 #include <iomanip>

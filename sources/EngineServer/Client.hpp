@@ -73,6 +73,8 @@ namespace trdk { namespace EngineServer {
 		void SendEngineState(const std::string &engeineId);
 		void SendEnginesState();
 
+		void OnFoo(const Foo &);
+
 	private:
 
 		ClientRequestHandler &m_requestHandler;
@@ -83,6 +85,8 @@ namespace trdk { namespace EngineServer {
 		boost::asio::ip::tcp::socket m_socket;
 
 		std::string m_remoteAddress;
+
+		FooSlotConnection m_fooSlotConnection;
 
 	};
 

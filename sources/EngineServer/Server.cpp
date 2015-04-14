@@ -29,6 +29,7 @@ bool Server::IsStarted(const std::string &id) const {
 }
 
 void Server::Run(
+		boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
 		const std::string &id,
 		const fs::path &path,
 		bool enableStdOutLog,
@@ -84,6 +85,7 @@ void Server::Run(
 
 		info.engine.reset(
 			new Engine::Context(
+				fooSlotConnection,
 				*info.eventsLog,
 				*info.tradingLog,
 				settings,

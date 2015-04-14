@@ -22,6 +22,10 @@ namespace trdk { namespace EngineServer {
 	
 	public:
 
+		virtual FooSlotConnection Subscribe(
+				const FooSlot &)
+			= 0;
+
 		virtual void ForEachEngineId(
 				const boost::function<void (const std::string &engineId)> &)
 				const

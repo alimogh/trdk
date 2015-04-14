@@ -139,7 +139,7 @@ void EngineServer::Service::StartEngine(
 	commandInfo % client.GetRemoteAddressAsString() % engine->second;
 
 	try {
-		m_server.Run(engine->first, engine->second, false, commandInfo.str());
+		m_server.Run(m_fooSlotConnection, engine->first, engine->second, false, commandInfo.str());
 	} catch (const EngineServer::Exception &ex) {
 		//! @todo Write to log
 		std::cerr
@@ -196,3 +196,4 @@ void EngineServer::Service::HandleNewClient(
 	}
 	StartAccept();
 }
+

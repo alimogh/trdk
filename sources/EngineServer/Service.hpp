@@ -40,6 +40,12 @@ namespace trdk { namespace EngineServer {
 				const std::string &engineId)
 				const;
 
+		virtual FooSlotConnection Subscribe(
+				const FooSlot &slot) {
+			return m_fooSlotConnection.connect(slot);
+		}
+		
+
 	private:
 
 		void LoadEngine(
@@ -64,6 +70,8 @@ namespace trdk { namespace EngineServer {
 		boost::asio::ip::tcp::acceptor m_acceptor;
 
 		boost::thread m_thread;
+
+		boost::signals2::signal<FooSlotSignature> m_fooSlotConnection;
 
 	};
 

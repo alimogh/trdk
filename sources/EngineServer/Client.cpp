@@ -42,6 +42,7 @@ Client::~Client() {
 		std::cout
 			<< "Closing client connection from " << GetRemoteAddressAsString()
 			<< "..." << std::endl;
+		m_fooSlotConnection.disconnect();
 	} catch (...) {
 		AssertFailNoException();
 		throw;
@@ -65,6 +66,32 @@ void Client::Start() {
 		<< "Opening client connection from "
 		<< GetRemoteAddressAsString() << "..." << std::endl;
 	StartReadMessageSize();
+	m_fooSlotConnection = m_requestHandler.Subscribe(
+		boost::bind(&Client::OnFoo, this, _1));
+}
+
+void Client::OnFoo(const Foo &foo) {
+	ServerData message;
+	message.set_type(ServerData::TYPE_PNL);	
+	Pnl &pnl = *message.mutable_pnl();
+	pnl.set_date_and_logs(foo.dateAndLogs);
+	pnl.set_triangle_id_winner(foo.triangleIdWinner);
+	pnl.set_winners(foo.winners);
+	pnl.set_triangle_id_loser(foo.triangleIdLoser);
+	pnl.set_losers(foo.losers);
+	pnl.set_triangle_time(foo.triangleTime);
+	pnl.set_avg_winners(foo.avgWinners);
+	pnl.set_avg_winners_time(foo.avgWinnersTime);
+	pnl.set_avg_losers(foo.avgLosers);
+	pnl.set_avg_losers_time(foo.avgLosersTime);
+	pnl.set_number_of_winners(foo.numberOfWinners);
+	pnl.set_number_of_losers(foo.numberOfLosers);
+	pnl.set_percent_of_winners(foo.percentOfWinners);
+	pnl.set_avg_time(foo.avgTime);
+	pnl.set_pnl_with_commissions(foo.pnlWithCommissions);
+	pnl.set_pnl_without_commissions(foo.pnlWithoutCommissions);
+	pnl.set_commission(foo.commission);
+	Send(message);
 }
 
 void Client::Send(const ServerData &message) {
