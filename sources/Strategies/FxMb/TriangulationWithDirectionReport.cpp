@@ -552,7 +552,7 @@ void TriangleReport::ReportAction(
 			}
 		});
 
-	Foo foo;
+	Foo foo = {};
 
 	const auto &writePnl = [&](ReportRecord &record) {
 		const auto pnl
