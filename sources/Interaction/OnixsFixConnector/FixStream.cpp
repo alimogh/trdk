@@ -510,7 +510,6 @@ void FixStream::onInboundApplicationMsg(
 		= security->StartBookUpdate(now, isAdjusted);
 	book.GetBids().Swap(bids);
 	book.GetAsks().Swap(asks);
-	book.Adjust();
 	book.Commit(timeMeasurement);
 
 	security->DumpAdjustedBook();
