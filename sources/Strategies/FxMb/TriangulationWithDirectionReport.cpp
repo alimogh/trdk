@@ -650,6 +650,8 @@ void TriangleReport::ReportAction(
 
 			});
 
+		m_triangle.GetStrategy().GetContext().m_fooSlotConnection(foo);
+
 	} else if (isTriangleCanceled) {
 
 		m_state.pnl->log.Write(
@@ -690,9 +692,9 @@ void TriangleReport::ReportAction(
 
 			});
 
-	}
+		m_triangle.GetStrategy().GetContext().m_fooSlotConnection(foo);
 
-	m_triangle.GetStrategy().GetContext().m_fooSlotConnection(foo);
+	}
 
 }
 
