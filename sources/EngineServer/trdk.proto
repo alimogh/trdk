@@ -14,27 +14,27 @@ package trdk.EngineServer;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-message EngineSettingsSection {
+message EngineInfo {
 
-	message Key {
+	message SettingsSection {
+
+		message Key {
+			required string name = 1;
+			required string value = 2;
+			optional string title = 3;
+			optional string type = 4;
+			
+		}
 
 		required string name = 1;
-		required string value = 2;
-		
+		repeated Key keys = 2;
+		optional string title = 3;
+
 	}
 
-	required string name = 1;
-	repeated Key keys = 2;
-
-}
-
-message EngineSettings {
-	repeated EngineSettingsSection sections = 1;
-}
-
-message EngineInfo {
 	required string engine_id = 1;
-	required EngineSettings settings = 2;
+	repeated SettingsSection settings = 2;
+
 }
 
 message EngineState {
@@ -42,17 +42,39 @@ message EngineState {
 	required bool is_started = 2;
 }
 
+message Pnl {
+	required string date_and_logs			= 1;
+	required uint64 triangle_id_winner		= 2;
+	required double winners					= 3;
+	required uint64 triangle_id_loser		= 4;
+	required double losers					= 5;
+	required string triangle_time			= 6;
+	required double avg_winners				= 7;
+	required string avg_winners_time		= 8;
+	required double avg_losers				= 9;
+	required string avg_losers_time			= 10;
+	required uint64 number_of_winners		= 11;
+	required uint64 number_of_losers		= 12;
+	required uint64 percent_of_winners		= 13;
+	required string avg_time				= 14;
+	required double pnl_with_commissions	= 15; 
+	required double pnl_without_commissions	= 16;
+	required double commission				= 17;
+};
+
 message ServerData {
 	
 	enum Type {
 		TYPE_ENGINE_INFO = 1;
 		TYPE_ENGINE_STATE = 2;
+		TYPE_PNL = 3;
 	}
 
 	required Type type = 1;
 
 	optional EngineInfo engine_info = 2;
 	optional EngineState engine_state = 3;
+	optional Pnl pnl = 4;
 
 }
 
@@ -67,8 +89,22 @@ message EngineStartStopRequest {
 }
 
 message EngineSettingsApplyRequest {
+	
+	message Section {
+
+		message Key {
+			required string name = 1;
+			required string value = 2;
+		}
+
+		required string name = 1;
+		repeated Key keys = 2;
+
+	}
+
 	required string engine_id = 1;
-	required EngineSettings settings = 2;
+	repeated Section sections = 2;
+
 }
 
 message ClientRequest {

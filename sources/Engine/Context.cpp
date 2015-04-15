@@ -174,12 +174,13 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Engine::Context::Context(
+		boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
 		Context::Log &log,
 		Context::TradingLog &tradingLog,
 		const trdk::Settings &settings,
 		const pt::ptime &startTime,
 		const boost::shared_ptr<const Lib::Ini> &conf)
-	: Base(log, tradingLog, settings, *conf, startTime) {
+	: Base(fooSlotConnection, log, tradingLog, settings, *conf, startTime) {
 	m_pimpl = new Implementation(*this, conf);
 }
 

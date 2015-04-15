@@ -91,6 +91,7 @@ namespace {
 
 		Server server;
 		bool result = true;
+		boost::signals2::signal<FooSlotSignature> fooSlotConnection;
 
 		{
 		
@@ -103,6 +104,7 @@ namespace {
 	
 			try {
 				server.Run(
+					fooSlotConnection,
 					uuid,
 					GetIniFilePath(argv[2]),
 					true,

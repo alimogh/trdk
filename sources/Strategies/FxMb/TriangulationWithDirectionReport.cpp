@@ -552,6 +552,7 @@ void TriangleReport::ReportAction(
 			}
 		});
 
+	Foo foo = {};
 
 	const auto &writePnl = [&](ReportRecord &record) {
 		const auto pnl
@@ -560,10 +561,13 @@ void TriangleReport::ReportAction(
 			% (pnl - m_state.pnl->stat.comission)
 			% pnl
 			% m_state.pnl->stat.comission;
+		foo.pnlWithCommissions = pnl - m_state.pnl->stat.comission;
+		foo.pnlWithoutCommissions = pnl;
+		foo.commission = m_state.pnl->stat.comission;
 	};
 		
 	if (isTriangleCompleted) {
-			
+
 		m_state.pnl->log.Write(
 			[&](ReportRecord &record) {
 
@@ -589,21 +593,28 @@ void TriangleReport::ReportAction(
 				}
 
 				record % ' ';
-
+				
 				if (!isWinner) {
 					record % ' ' % ' ';
+					foo.triangleIdLoser = m_triangle.GetId();
+					foo.losers = yExecuted;
 				}
 				record % m_triangle.GetId() % yExecuted;
 				if (isWinner) {
 					record % ' ' % ' ';
+					foo.triangleIdWinner = m_triangle.GetId();
+					foo.winners = yExecuted;
 				}
 				record % time; 
+				foo.triangleTime = pt::to_iso_string(time);
 
 				size_t winningPercentage = 0;
 				if (accs::count(m_state.pnl->stat.winners) > 0) {
 					record 
 						% accs::mean(m_state.pnl->stat.winners)
 						% accs::mean(m_state.pnl->stat.winnersTime);
+					foo.avgWinners = accs::mean(m_state.pnl->stat.winners);
+					foo.avgWinnersTime = pt::to_simple_string(accs::mean(m_state.pnl->stat.winnersTime));
 					winningPercentage
 						= (accs::count(m_state.pnl->stat.winners) * 100);
 					winningPercentage
@@ -616,6 +627,8 @@ void TriangleReport::ReportAction(
 					record
 						% accs::mean(m_state.pnl->stat.losers)
 						% accs::mean(m_state.pnl->stat.losersTime);
+					foo.avgLosers = accs::mean(m_state.pnl->stat.losers);
+					foo.avgLosersTime = pt::to_simple_string(accs::mean(m_state.pnl->stat.losersTime));
 				} else {
 					record % ' ' % ' ';
 				}
@@ -624,7 +637,11 @@ void TriangleReport::ReportAction(
 					% accs::count(m_state.pnl->stat.losers)
 					% winningPercentage % '\0' % '%'
 					% accs::mean(m_state.pnl->stat.time);
-
+				foo.numberOfWinners = accs::count(m_state.pnl->stat.winners);
+				foo.numberOfLosers = accs::count(m_state.pnl->stat.losers);
+				foo.percentOfWinners = winningPercentage;
+				foo.avgTime = pt::to_simple_string(accs::mean(m_state.pnl->stat.time));
+				
 				for (auto i = 0; i < 8; ++i) {
 					record % ' ';
 				}
@@ -674,6 +691,8 @@ void TriangleReport::ReportAction(
 			});
 
 	}
+
+	m_triangle.GetStrategy().GetContext().m_fooSlotConnection(foo);
 
 }
 

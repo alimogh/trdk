@@ -24,11 +24,12 @@ namespace trdk { namespace Engine {
 	public:
 
 		explicit Context(
-					trdk::Context::Log &,
-					trdk::Context::TradingLog &,
-					const trdk::Settings &,
-					const boost::posix_time::ptime &startTime,
-					const boost::shared_ptr<const trdk::Lib::Ini> &conf);
+				boost::signals2::signal<FooSlotSignature> &,
+				trdk::Context::Log &,
+				trdk::Context::TradingLog &,
+				const trdk::Settings &,
+				const boost::posix_time::ptime &startTime,
+				const boost::shared_ptr<const trdk::Lib::Ini> &conf);
 		virtual ~Context();
 
 	public:

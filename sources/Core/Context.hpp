@@ -44,7 +44,12 @@ namespace trdk {
 
 	public:
 
+		//! @todo !!! remove Foo
+		boost::signals2::signal<FooSlotSignature> &m_fooSlotConnection;
+
 		explicit Context(
+					//! @todo !!! remove Foo
+					boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
 					trdk::Context::Log &,
 					trdk::Context::TradingLog &,
 					const trdk::Settings &,
@@ -53,6 +58,8 @@ namespace trdk {
 		virtual ~Context();
 
 	public:
+
+
 
 		trdk::Context::Log & GetLog() const throw();
 		trdk::Context::TradingLog & GetTradingLog() const throw();

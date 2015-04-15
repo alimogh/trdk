@@ -285,11 +285,13 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Context::Context(
+		boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
 		Log &log,
 		TradingLog &tradingLog,
 		const Settings &settings,
 		const Ini &conf,
-		const pt::ptime &startTime) {
+		const pt::ptime &startTime)
+	: m_fooSlotConnection(fooSlotConnection) {
 	m_pimpl = new Implementation(
 		*this,
 		 log,

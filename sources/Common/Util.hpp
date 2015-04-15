@@ -17,6 +17,32 @@
 #	include <boost/filesystem.hpp>
 #include "DisableBoostWarningsEnd.h"
 
+//! @todo !!! remove Foo
+struct Foo {
+	std::string dateAndLogs;
+	size_t triangleIdWinner;
+	double winners;
+	size_t triangleIdLoser;
+	double losers;
+	std::string triangleTime;
+	double avgWinners;
+	std::string avgWinnersTime;
+	double avgLosers;
+	std::string avgLosersTime;
+	size_t numberOfWinners;
+	size_t numberOfLosers;
+	size_t percentOfWinners;
+	std::string avgTime;
+	double pnlWithCommissions;
+	double pnlWithoutCommissions;
+	double commission;
+};
+//! @todo !!! remove Foo
+typedef void (FooSlotSignature)(const Foo &);
+typedef boost::function<FooSlotSignature> FooSlot;
+typedef boost::signals2::connection FooSlotConnection;
+
+
 namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
