@@ -161,9 +161,10 @@ void FixSession::Connect(
 			m_fixVersion,
 			&listener,
 			sessionStorageType));
-	if (conf.ReadBoolKey("use_ssl")) {
-		session->encryptionMethod(fix::EncryptionMethod::SSL);
-	}
+
+	session->encryptionMethod(
+		fix::EncryptionMethod::Enum(conf.ReadTypedKey<int>("encrypt_method")));
+
 	if (!senderSubId.empty()) {
 		session->senderSubId(senderSubId);
 	}

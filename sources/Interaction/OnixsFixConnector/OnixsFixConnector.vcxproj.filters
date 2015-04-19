@@ -45,6 +45,9 @@
     <ClCompile Include="AlpariStream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="IntegralStream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OnixsFixConnector.rc">

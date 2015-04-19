@@ -354,6 +354,7 @@ void FixTrading::FillOrderMessage(
 		fix::Timestamp::utc(),
 		fix::TimestampFormat::YYYYMMDDHHMMSSMsec);
 	message.set(fix::FIX40::Tags::OrderQty, qty);
+	message.set(fix::FIX40::Tags::MinQty, qty);
 
 	if (!account.empty()) {
 		message.set(fix::FIX40::Tags::Account, account);
@@ -379,7 +380,7 @@ fix::Message FixTrading::CreateOrderMessage(
 		m_account,
 		params,
 		result);
-	return std::move(result);
+	return result;
 }
 
 fix::Message & FixTrading::GetPreallocatedOrderMessage(

@@ -335,6 +335,8 @@
     <ClCompile Include="FxAllStream.cpp" />
     <ClCompile Include="FxAllTrading.cpp" />
     <ClCompile Include="HotspotTrading.cpp" />
+    <ClCompile Include="IntegralStream.cpp" />
+    <ClCompile Include="IntegralTrading.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>

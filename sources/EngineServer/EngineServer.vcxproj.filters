@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Server.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Prec.cpp" />
+    <ClCompile Include="Service.cpp" />
+    <ClCompile Include="trdk.pb.cc">
+      <Filter>Service</Filter>
+    </ClCompile>
+    <ClCompile Include="Client.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Server.hpp" />
+    <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="Service.hpp" />
+    <ClInclude Include="trdk.pb.h">
+      <Filter>Service</Filter>
+    </ClInclude>
+    <ClInclude Include="Client.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="EngineServer.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Service">
+      <UniqueIdentifier>{ea720459-e14d-4b9a-922d-5c2c222b23df}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="trdk.proto">
+      <Filter>Service</Filter>
+    </None>
+  </ItemGroup>
+</Project>

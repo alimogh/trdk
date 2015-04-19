@@ -43,7 +43,9 @@ OBJECTFILES= \
 	${OBJECTDIR}/FixTrading.o \
 	${OBJECTDIR}/FxAllStream.o \
 	${OBJECTDIR}/FxAllTrading.o \
-	${OBJECTDIR}/HotspotTrading.o
+	${OBJECTDIR}/HotspotTrading.o \
+	${OBJECTDIR}/IntegralTrading.o \
+	${OBJECTDIR}/IntegralStream.o
 
 
 # C Compiler Flags
@@ -120,6 +122,16 @@ ${OBJECTDIR}/HotspotTrading.o: HotspotTrading.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/HotspotTrading.o HotspotTrading.cpp
+
+${OBJECTDIR}/IntegralTrading.o: IntegralTrading.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/IntegralTrading.o IntegralTrading.cpp
+
+${OBJECTDIR}/IntegralStream.o: IntegralStream.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I../.. -I../../../externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/IntegralStream.o IntegralStream.cpp
 
 # Subprojects
 .build-subprojects:
