@@ -10,3 +10,6 @@ EXPORTS
 
 	CreateFxAllTrading
 	CreateFxAllStream
+
+	CreateIntegralTrading
+	CreateIntegralStream

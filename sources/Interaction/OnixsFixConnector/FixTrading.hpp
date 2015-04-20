@@ -236,7 +236,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		/** Crates new order message each time, can be called from anywhere,
 		  * without synchronization.
 		  */
-		OnixS::FIX::Message CreateOrderMessage(
+		virtual OnixS::FIX::Message CreateOrderMessage(
 				const std::string &clOrderId,
 				const Security &,
 				const trdk::Lib::Currency &,
