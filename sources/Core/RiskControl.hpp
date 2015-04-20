@@ -103,7 +103,7 @@ namespace trdk {
 
 	public:
 
-		trdk::RiskControlSecurityContext && CreateSecurityContext(
+		trdk::RiskControlSecurityContext CreateSecurityContext(
 					const trdk::Lib::Symbol &)
 				const;
 

@@ -507,7 +507,7 @@ RiskControl::~RiskControl() {
 	delete m_pimpl;
 }
 
-RiskControlSecurityContext && RiskControl::CreateSecurityContext(
+RiskControlSecurityContext RiskControl::CreateSecurityContext(
 			const Symbol &symbol)
 		const {
 	
@@ -551,7 +551,7 @@ RiskControlSecurityContext && RiskControl::CreateSecurityContext(
 	result.shortSide.settings.limit
 		= Qty(result.shortSide.settings.maxQty * 10);
 
-	return std::move(result);
+	return result;
 
 }
 
