@@ -166,6 +166,16 @@ public:
 
 	void CheckNewBuyOrder(
 			const TradeSystem &,
+			const Security &,
+			const Currency &,
+			const Qty &,
+			const boost::optional<ScaledPrice> &,
+			const TimeMeasurement::Milestones &) {
+		//...//
+	}
+
+/*	void CheckNewBuyOrder(
+			const TradeSystem &,
 			const Security &security,
 			const Currency &,
 			const Qty &qty,
@@ -188,9 +198,19 @@ public:
 	
 		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
 	
-	}
+	} */
 
 	void CheckNewSellOrder(
+			const TradeSystem &,
+			const Security &,
+			const Currency &,
+			const Qty &,
+			const boost::optional<ScaledPrice> &,
+			const TimeMeasurement::Milestones &) {
+		//...//
+	}
+
+/*	void CheckNewSellOrder(
 			const TradeSystem &,
 			const Security &security,
 			const Currency &,
@@ -214,9 +234,22 @@ public:
 	
 		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
 	
-	}
+	}*/
 
 	void ConfirmBuyOrder(
+			const TradeSystem::OrderStatus &,
+			const TradeSystem &,
+			const Security &,
+			const Currency &,
+			const Qty &,
+			const boost::optional<ScaledPrice> &,
+			const Qty &,
+			double /*avgPrice*/,
+			const TimeMeasurement::Milestones &) {
+		//...//
+	}
+
+	/*void ConfirmBuyOrder(
 			const TradeSystem::OrderStatus &status,
 			const TradeSystem &,
 			const Security &security,
@@ -224,7 +257,7 @@ public:
 			const Qty &orderQty,
 			const boost::optional<ScaledPrice> &orderPrice,
 			const Qty &filled,
-			double /*avgPrice*/,
+			double avgPrice,
 			const TimeMeasurement::Milestones &timeMeasurement) {
  		
 		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
@@ -242,7 +275,7 @@ public:
 
 		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
 	
-	}
+	}*/
 
 	void ConfirmSellOrder(
 			const TradeSystem::OrderStatus &status,
