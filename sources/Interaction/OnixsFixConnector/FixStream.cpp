@@ -94,7 +94,8 @@ void FixStream::SubscribeToSecurities() {
 			sequrityIndex < m_securities.size();
 			++sequrityIndex) {
 			
-		const Symbol &symbol = m_securities[sequrityIndex]->GetSymbol();
+		const Security &security = *m_securities[sequrityIndex];
+		const Symbol &symbol = security.GetSymbol();
 		
 		fix::Message mdRequest("V", m_session.GetFixVersion());
 
@@ -112,7 +113,7 @@ void FixStream::SubscribeToSecurities() {
 			fix::FIX42::Tags::MDUpdateType,
 			fix::FIX42::Values::MDUpdateType::Incremental_Refresh);
 
-		SetupBookRequest(mdRequest);
+		SetupBookRequest(mdRequest, security);
 
 		auto mdEntryTypes
 			= mdRequest.setGroup(fix::FIX42::Tags::NoMDEntryTypes, 2);
@@ -364,21 +365,34 @@ void FixStream::onInboundApplicationMsg(
 
 		const fix::Group &entries
 			= message.getGroup(fix::FIX42::Tags::NoMDEntries);
-		AssertEq(1, entries.size());
+		const auto entryId = message.getInt64(fix::FIX42::Tags::MDReqID);
 		
 		for (size_t i = 0; i < entries.size(); ++i) {
 			
-			const auto entryId = message.getInt64(fix::FIX42::Tags::MDEntryID);
+			const auto &entry = entries[i];
 
-			Assert(security->m_book.find(entryId) == security->m_book.end());
-			
+			const auto &qty = ParseMdEntrySize(entry);
+			if (IsZero(qty)) {
+				GetLog().Error(
+					"Price level with zero-qty received for %1%: \"%2%\".",
+					*security,
+					entry);
+				continue;
+			}
+
+			if (
+				fix::FIX42::Values::QuoteCondition::Open_Active
+					 != entry.get(fix::FIX42::Tags::QuoteCondition)) {
+				GetLog().Error("Inactive stream for %1%.", *security);
+			}
+
 			security->m_book[entryId] = std::make_pair(
 				message.get(fix::FIX42::Tags::MDEntryType)
 					== fix::FIX42::Values::MDEntryType::Bid,
 				Security::Book::Level(
 					now,
-					message.getDouble(fix::FIX42::Tags::MDEntryPx),
-					ParseMdEntrySize(message)));
+					entry.getDouble(fix::FIX42::Tags::MDEntryPx),
+					qty));
 
 		}
 

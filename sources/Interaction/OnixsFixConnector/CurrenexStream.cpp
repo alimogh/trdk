@@ -50,7 +50,9 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			GetSession().ResetLocalSequenceNumbers(true, true);
 		}
 
-		virtual void SetupBookRequest(fix::Message &request) const {
+		virtual void SetupBookRequest(
+				fix::Message &request,
+				const Security &) const {
 			request.set(
 				fix::FIX42::Tags::MarketDepth,
 				fix::FIX42::Values::MarketDepth::Full_Book);

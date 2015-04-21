@@ -43,14 +43,20 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	protected:
 
 		virtual void OnLogout() {
-			GetSession().ResetLocalSequenceNumbers(true, true);
+			//...//
 		}
 
 		virtual void OnReconnecting() {
-			GetSession().ResetLocalSequenceNumbers(true, true);
+			//...//
 		}
 
-		virtual void SetupBookRequest(fix::Message &request) const {
+		virtual void SetupBookRequest(
+				fix::Message &request,
+				const Security &security)
+				const {
+			request.set(
+				fix::FIX42::Tags::MDUpdateType,
+				fix::FIX42::Values::MDUpdateType::Full_Refresh);
 			request.set(
 				fix::FIX42::Tags::MarketDepth,
 				// +3 - to get required book size after adjusting.
@@ -58,7 +64,19 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			request.set(
 				fix::FIX42::Tags::AggregatedBook,
 				fix::FIX42::Values::AggregatedBook::one_book_entry_per_side_per_price);
-			request.set(fix::FIX42::Tags::DeliverToCompID, "ALL");
+			if (security.GetSymbol().GetSymbol() == "EUR/USD") {
+				request.set(fix::FIX42::Tags::DeliverToCompID, "ALL");
+				// request.set(fix::FIX42::Tags::DeliverToCompID, "BRKX");
+			} else if (security.GetSymbol().GetSymbol() == "USD/JPY") {
+				// request.set(fix::FIX42::Tags::DeliverToCompID, "ALL");
+				request.set(fix::FIX42::Tags::DeliverToCompID, "BRKX");
+			} else if (security.GetSymbol().GetSymbol() == "EUR/JPY") {
+				// request.set(fix::FIX42::Tags::DeliverToCompID, "ALL");
+				request.set(fix::FIX42::Tags::DeliverToCompID, "BRKX");
+			} else {
+				// request.set(fix::FIX42::Tags::DeliverToCompID, "ALL");
+				request.set(fix::FIX42::Tags::DeliverToCompID, "BRKX");
+			}
 			request.set(
 				fix::FIX43::Tags::Product,
 				fix::FIX43::Values::Product::CURRENCY);
