@@ -18,6 +18,7 @@ using namespace trdk::Lib;
 using namespace trdk::Interaction::OnixsFixConnector;
 
 namespace fix = OnixS::FIX;
+namespace pt = boost::posix_time;
 
 FixStream::FixStream(
 		size_t index,
@@ -94,7 +95,8 @@ void FixStream::SubscribeToSecurities() {
 			sequrityIndex < m_securities.size();
 			++sequrityIndex) {
 			
-		const Symbol &symbol = m_securities[sequrityIndex]->GetSymbol();
+		const Security &security = *m_securities[sequrityIndex];
+		const Symbol &symbol = security.GetSymbol();
 		
 		fix::Message mdRequest("V", m_session.GetFixVersion());
 
@@ -112,7 +114,7 @@ void FixStream::SubscribeToSecurities() {
 			fix::FIX42::Tags::MDUpdateType,
 			fix::FIX42::Values::MDUpdateType::Incremental_Refresh);
 
-		SetupBookRequest(mdRequest);
+		SetupBookRequest(mdRequest, security);
 
 		auto mdEntryTypes
 			= mdRequest.setGroup(fix::FIX42::Tags::NoMDEntryTypes, 2);
@@ -262,7 +264,7 @@ void FixStream::onInboundApplicationMsg(
 
 				const auto &qty = ParseMdEntrySize(entry);
 				if (IsZero(qty)) {
-					GetLog().Error(
+					GetLog().Warn(
 						"Price level with zero-qty received for %1%: \"%2%\".",
 						*security,
 						message);
@@ -324,7 +326,7 @@ void FixStream::onInboundApplicationMsg(
 
 				const auto &qty = ParseMdEntrySize(entry);
 				if (IsZero(qty)) {
-					GetLog().Error(
+					GetLog().Warn(
 						"Price level with zero-qty received for %1%: \"%2%\".",
 						*security,
 						message);
@@ -362,25 +364,7 @@ void FixStream::onInboundApplicationMsg(
 
 	} else if (message.type() == "W") {
 
-		const fix::Group &entries
-			= message.getGroup(fix::FIX42::Tags::NoMDEntries);
-		AssertEq(1, entries.size());
-		
-		for (size_t i = 0; i < entries.size(); ++i) {
-			
-			const auto entryId = message.getInt64(fix::FIX42::Tags::MDEntryID);
-
-			Assert(security->m_book.find(entryId) == security->m_book.end());
-			
-			security->m_book[entryId] = std::make_pair(
-				message.get(fix::FIX42::Tags::MDEntryType)
-					== fix::FIX42::Values::MDEntryType::Bid,
-				Security::Book::Level(
-					now,
-					message.getDouble(fix::FIX42::Tags::MDEntryPx),
-					ParseMdEntrySize(message)));
-
-		}
+		OnMarketDataSnapshot(message, now, *security);
 
 	} else {
 		
@@ -422,8 +406,8 @@ void FixStream::onInboundApplicationMsg(
 #	if defined(DEV_VER) && 0
 	{
 		if (	
-				GetTag() == "Currenex"
-				/*&& security->GetSymbol().GetSymbol() == "USD/JPY"*/) {
+				GetTag() == "Integral"
+				&& security->GetSymbol().GetSymbol() == "EUR/USD") {
 			std::cout
 				<< "############################### "
 				<< *security << " " << security->GetSource().GetTag()
@@ -517,9 +501,10 @@ void FixStream::onInboundApplicationMsg(
 }
 
 Qty FixStream::ParseMdEntrySize(const fix::GroupInstance &entry) const {
-	return entry.getInt32(fix::FIX42::Tags::MDEntrySize);
+	return Qty(entry.getDouble(fix::FIX42::Tags::MDEntrySize));
 }
 
 Qty FixStream::ParseMdEntrySize(const fix::Message &message) const {
-	return message.getInt32(fix::FIX42::Tags::MDEntrySize);
+	return Qty(message.getDouble(fix::FIX42::Tags::MDEntrySize));
 }
+

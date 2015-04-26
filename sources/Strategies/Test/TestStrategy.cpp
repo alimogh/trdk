@@ -31,10 +31,12 @@ namespace trdk { namespace Strategies { namespace Test {
 	public:
 
 		explicit TestStrategy(
-					Context &context,
-					const std::string &name,
-					const std::string &tag)
-				: Super(context, name, tag) {
+				Context &context,
+				const std::string &name,
+				const std::string &tag,
+				const Lib::IniSectionRef &conf)
+			: Super(context, name, tag),
+			m_enabled(conf.ReadBoolKey("enabled")) {
 			//...//
 		}
 		
@@ -45,8 +47,13 @@ namespace trdk { namespace Strategies { namespace Test {
 	public:
 		
 		virtual void OnLevel1Update(
-					Security &security,
-					const Lib::TimeMeasurement::Milestones &timeMeasurement) {
+				Security &security,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement) {
+
+			if (!m_enabled) {
+				return;
+			}
+
 			GetContext().GetLog().Debug(
 				"%1% (%6%): bid = %2% / %3%, ask = %4% / %5%;",
 				security.GetSymbol(),
@@ -56,10 +63,10 @@ namespace trdk { namespace Strategies { namespace Test {
 				security.GetAskQty(),
 				security.GetSource().GetTag());
 			const auto &lastPrice = security.GetLastPriceScaled();
-// 			if (		lastPrice > security.ScalePrice(10.99)
-// 					|| lastPrice < security.ScalePrice(10.01)) {
-// 				return;
-// 			}
+			if (		lastPrice > security.ScalePrice(10.99)
+					|| lastPrice < security.ScalePrice(10.01)) {
+				return;
+			}
 			const auto &priceToBuy = lastPrice - security.ScalePrice(.01);
 			boost::shared_ptr<LongPosition> pos(
 				new LongPosition(
@@ -71,13 +78,25 @@ namespace trdk { namespace Strategies { namespace Test {
 					priceToBuy,
 					timeMeasurement));
 			pos->OpenAtMarketPrice();
+
 		}
 		
+		virtual void OnBookUpdateTick(
+				trdk::Security &,
+				const trdk::Security::Book &,
+				const trdk::Lib::TimeMeasurement::Milestones &) {
+			//...//
+		}
+
 	protected:
 		
 		virtual void UpdateAlogImplSettings(const Lib::IniSectionRef &) {
 			//...//
 		}
+
+	private:
+
+		const bool m_enabled;
 		
 	};
 	
@@ -95,9 +114,9 @@ namespace trdk { namespace Strategies { namespace Test {
 TRDK_STRATEGY_TEST_API boost::shared_ptr<trdk::Strategy> CreateStrategy(
 			trdk::Context &context,
 			const std::string &tag,
-			const trdk::Lib::IniSectionRef &) {
+			const trdk::Lib::IniSectionRef &conf) {
 	return boost::shared_ptr<trdk::Strategy>(
-		new trdk::Strategies::Test::TestStrategy(context, tag, "Test"));
+		new trdk::Strategies::Test::TestStrategy(context, tag, "Test", conf));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

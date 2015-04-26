@@ -87,13 +87,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				currency,
 				qty,
 				params);
-			result.set(fix::FIX42::Tags::DeliverToCompID, "ALL");
 			result.set(
 				fix::FIX43::Tags::Product,
 				fix::FIX43::Values::Product::CURRENCY);
-			result.set(
-				fix::FIX40::Tags::ExecInst,
-				fix::FIX40::Values::ExecInst::Market_peg);
+ 			result.set(
+ 				fix::FIX40::Tags::ExecInst,
+ 				"B P");
 			result.set(
 				fix::FIX41::Tags::SecurityType,
 				fix::FIX41::Values::SecurityType::Foreign_Exchange_Contract);
@@ -115,9 +114,6 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			order.set(
 				fix::FIX40::Tags::OrdType,
 				fix::FIX40::Values::OrdType::Market);
-			order.set(
-				fix::FIX40::Tags::TimeInForce,
-				fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
 			return order;
 		}
 

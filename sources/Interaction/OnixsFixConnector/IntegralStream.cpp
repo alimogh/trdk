@@ -43,14 +43,20 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	protected:
 
 		virtual void OnLogout() {
-			GetSession().ResetLocalSequenceNumbers(true, true);
+			//...//
 		}
 
 		virtual void OnReconnecting() {
-			GetSession().ResetLocalSequenceNumbers(true, true);
+			//...//
 		}
 
-		virtual void SetupBookRequest(fix::Message &request) const {
+		virtual void SetupBookRequest(
+				fix::Message &request,
+				const Security &)
+				const {
+			request.set(
+				fix::FIX42::Tags::MDUpdateType,
+				fix::FIX42::Values::MDUpdateType::Full_Refresh);
 			request.set(
 				fix::FIX42::Tags::MarketDepth,
 				// +3 - to get required book size after adjusting.
@@ -62,6 +68,42 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			request.set(
 				fix::FIX43::Tags::Product,
 				fix::FIX43::Values::Product::CURRENCY);
+		}
+
+		void OnMarketDataSnapshot(
+				const fix::Message &message,
+				const boost::posix_time::ptime &dataTime,
+				FixSecurity &security) {
+
+			FixSecurity::BookSideSnapshot book;
+			
+			const fix::Group &entries
+				= message.getGroup(fix::FIX42::Tags::NoMDEntries);
+			for (size_t i = 0; i < entries.size(); ++i) {
+
+				const auto &entry = entries[i];
+
+				const auto &qty = ParseMdEntrySize(entry);
+				if (IsZero(qty)) {
+					GetLog().Warn(
+						"Price level with zero-qty received for %1%: \"%2%\".",
+						security,
+						entry);
+					continue;
+				}
+
+				const double price
+					= entry.getDouble(fix::FIX42::Tags::MDEntryPx);
+				Assert(book.find(security.ScalePrice(price)) == book.end());
+				book[security.ScalePrice(price)]= std::make_pair(
+					message.get(fix::FIX42::Tags::MDEntryType)
+						== fix::FIX42::Values::MDEntryType::Bid,
+					Security::Book::Level(dataTime, price, qty));
+
+			}
+
+			book.swap(security.m_book);
+
 		}
 
 	};
