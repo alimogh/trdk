@@ -241,45 +241,18 @@ void Client::SendEngineInfo(const std::string &engineId) {
 	EngineInfo &info = *message.mutable_engine_info();
  	info.set_engine_id(engineId);
 
+ 	EngineSettings &settings = *info.mutable_settings();
+
 	const IniFile ini(m_requestHandler.GetEngineSettings(engineId));
 	foreach (const auto &sectionName, ini.ReadSectionsList()) {
-		auto &section = *info.add_settings();
+		auto &section = *settings.add_sections();
 		section.set_name(sectionName);
-		if (sectionName == "Strategy.TriangulationWithDirection") {
-			section.set_title("EUR/USD strategy");
-		} else if (sectionName == "Service.TriangulationWithDirectionStat") {
-			section.set_title("EUR/USD data");
-		}
 		ini.ForEachKey(
 			sectionName,
 			[&](const std::string &keyName, const std::string &value) -> bool {
 				auto &key = *section.add_keys();
 				key.set_name(keyName);
 				key.set_value(value);
-				if (sectionName == "Strategy.TriangulationWithDirection") {
-					if (keyName == "qty") {
-						key.set_title("Investment volume");
-						key.set_type("integer");
-					} else if (keyName == "commission") {
-						key.set_title("Trade commission");
-						key.set_type("double");
-					}
-				} else if (
-						sectionName == "Service.TriangulationWithDirectionStat") {
-					if (keyName == "ema_speed_slow") {
-						key.set_title("Slow EMA speed");
-						key.set_type("double");
-					} else if (keyName == "Slow EMA speed") {
-						key.set_title("Fast EMA speed");
-						key.set_type("double");
-					} else if (keyName == "prev1_duration_miliseconds") {
-						key.set_title("Period 1 duration (milliseconds)");
-						key.set_type("integer");
-					} else if (keyName == "prev2_duration_miliseconds") {
-						key.set_title("Period 2 duration (milliseconds)");
-						key.set_type("integer");
-					}
-				}
 				return true;
 			},
 			true);
@@ -329,9 +302,10 @@ void Client::OnNewSettings(const EngineSettingsApplyRequest &request) {
 			request.engine_id()).string().c_str(),
 		std::ios::trunc);
 
-	for (int i = 0; i < request.sections_size(); ++i) {
+	for (int i = 0; i < request.settings().sections().size(); ++i) {
 
-		const auto &section = request.sections(i);
+		const auto &section
+			= request.settings().sections(i);
 		const auto &sectionName = boost::trim_copy(section.name());
 		if (sectionName.empty()) {
 			//! @todo Write to log

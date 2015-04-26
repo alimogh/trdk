@@ -14,27 +14,27 @@ package trdk.EngineServer;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-message EngineInfo {
-
-	message SettingsSection {
+message EngineSettings {
+	
+	message Section {
 
 		message Key {
 			required string name = 1;
 			required string value = 2;
-			optional string title = 3;
-			optional string type = 4;
-			
 		}
-
+		
 		required string name = 1;
 		repeated Key keys = 2;
-		optional string title = 3;
 
 	}
 
-	required string engine_id = 1;
-	repeated SettingsSection settings = 2;
+	repeated Section sections = 1;
 
+}
+
+message EngineInfo {
+	required string engine_id = 1;
+	required EngineSettings settings = 2;
 }
 
 message EngineState {
@@ -89,22 +89,8 @@ message EngineStartStopRequest {
 }
 
 message EngineSettingsApplyRequest {
-	
-	message Section {
-
-		message Key {
-			required string name = 1;
-			required string value = 2;
-		}
-
-		required string name = 1;
-		repeated Key keys = 2;
-
-	}
-
 	required string engine_id = 1;
-	repeated Section sections = 2;
-
+	required EngineSettings settings = 2;
 }
 
 message ClientRequest {
