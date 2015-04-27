@@ -83,26 +83,30 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 				const auto &entry = entries[i];
 
-				const auto &qty = ParseMdEntrySize(entry);
-				if (IsZero(qty)) {
-					GetLog().Warn(
-						"Price level with zero-qty received for %1%: \"%2%\".",
-						security,
-						entry);
-					continue;
-				}
-
 				if (
 						entry.get(fix::FIX42::Tags::QuoteCondition)
 							!= fix::FIX42::Values::QuoteCondition::Open_Active) {
-					GetLog().Warn(
-						"Inactive stream for %1% (%2%).",
-						security,
-						message);
+					GetLog().Debug("Inactive stream for %1%.", security);
 				}
+
 
 				const double price
 					= entry.getDouble(fix::FIX42::Tags::MDEntryPx);
+				if (IsZero(price)) {
+					GetLog().Debug(
+						"Price level with zero-price received for %1%.",
+						security);
+					continue;
+				}
+
+				const auto &qty = ParseMdEntrySize(entry);
+				if (IsZero(qty)) {
+					GetLog().Debug(
+						"Price level with zero-qty received for %1%.",
+						security);
+					continue;
+				}
+
 				Assert(book.find(security.ScalePrice(price)) == book.end());
 				book[security.ScalePrice(price)] = std::make_pair(
 					entry.get(fix::FIX42::Tags::MDEntryType)
