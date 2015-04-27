@@ -92,11 +92,20 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					continue;
 				}
 
+				if (
+						entry.get(fix::FIX42::Tags::QuoteCondition)
+							!= fix::FIX42::Values::QuoteCondition::Open_Active) {
+					GetLog().Warn(
+						"Inactive stream for %1% (%2%).",
+						security,
+						message);
+				}
+
 				const double price
 					= entry.getDouble(fix::FIX42::Tags::MDEntryPx);
 				Assert(book.find(security.ScalePrice(price)) == book.end());
-				book[security.ScalePrice(price)]= std::make_pair(
-					message.get(fix::FIX42::Tags::MDEntryType)
+				book[security.ScalePrice(price)] = std::make_pair(
+					entry.get(fix::FIX42::Tags::MDEntryType)
 						== fix::FIX42::Values::MDEntryType::Bid,
 					Security::Book::Level(dataTime, price, qty));
 

@@ -1,7 +1,7 @@
-;1 sell EUR/USD price=0.93 qty=100000 time=ioc
-;2 buy EUR/USD price=0.93 qty=100000 time=ioc
-;3 sell EUR/USD price=0.93 qty=100000 time=ioc
-;4 buy EUR/USD price=0.93 qty=100000 time=ioc
+; 1 sell EUR/USD price=0.93 qty=100000 time=ioc
+; 2 buy EUR/USD price=0.93 qty=100000 time=ioc
+; 3 sell EUR/USD price=0.93 qty=100000 time=ioc
+; 4 buy EUR/USD price=0.93 qty=100000 time=ioc
 ; 5 sell EUR/USD price=0.93 qty=100000 time=ioc
 ; 6 buy EUR/USD price=0.93 qty=100000 time=ioc
 ; 7 sell EUR/USD price=0.93 qty=100000 time=ioc
