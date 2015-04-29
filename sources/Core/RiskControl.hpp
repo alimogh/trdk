@@ -60,7 +60,7 @@ namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
 	
-	class RiskControl : private boost::noncopyable {
+	class TRDK_CORE_API RiskControl : private boost::noncopyable {
 
 	public:
 
@@ -90,6 +90,12 @@ namespace trdk {
 			: public trdk::RiskControl::Exception {
 		public:
 			explicit WrongOrderParameterException(const char *what) throw();
+		};
+
+		class PnlIsOutOfRangeException
+			: public trdk::RiskControl::Exception {
+		public:
+			explicit PnlIsOutOfRangeException(const char *what) throw();
 		};
 
 		class SecurityContext;
@@ -142,6 +148,14 @@ namespace trdk {
 				const trdk::Amount &filled,
 				double avgPrice,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+
+	public:
+
+		void CheckTotalPnl(double pnl) const;
+		void CheckTotalWinRatio(
+				size_t totalWinRatio,
+				size_t operationsCount)
+				const;
 
 	private:
 

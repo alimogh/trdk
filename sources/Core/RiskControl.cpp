@@ -99,6 +99,13 @@ RiskControl::WrongOrderParameterException::WrongOrderParameterException(
 	//...//
 }
 
+RiskControl::PnlIsOutOfRangeException::PnlIsOutOfRangeException(
+		const char *what)
+	throw()
+	: Exception(what) {
+	//...//
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 class RiskControl::Implementation : private boost::noncopyable {
@@ -109,16 +116,24 @@ private:
 
 	public:
 
-		const IniSectionRef conf;
 		const pt::time_duration ordersFloodControlPeriod;
+		const std::pair<double, double> pnl;
+
+		const size_t winRatioFirstOperationsToSkip;
+		const uint16_t winRatioMinValue;
 
 	public:
 			
-		Settings(
-				const IniSectionRef &conf,
-				const pt::time_duration &ordersFloodControlPeriod)
-			: conf(conf),
-			ordersFloodControlPeriod(ordersFloodControlPeriod) {
+		explicit Settings(
+				const pt::time_duration &ordersFloodControlPeriod,
+				double minPnl,
+				double maxPnl,
+				size_t winRatioFirstOperationsToSkip,
+				uint16_t winRatioMinValue)
+			: ordersFloodControlPeriod(ordersFloodControlPeriod),
+			pnl(std::make_pair(-minPnl, maxPnl)),
+			winRatioFirstOperationsToSkip(winRatioFirstOperationsToSkip),
+			winRatioMinValue(winRatioMinValue) {
 			//...//
 		}
 		
@@ -136,20 +151,26 @@ public:
 
 	Context &m_context;
 	
+	const IniSectionRef m_conf;
 	const Settings m_settings;
 		
 	ModuleEventsLog m_log;
+	mutable ModuleTradingLog m_tradingLog;
 
 public:
 
 	explicit Implementation(Context &context, const IniSectionRef &conf)
 		: m_context(context),
+		m_conf(conf),
+		m_settings(
+			pt::milliseconds(
+				conf.ReadTypedKey<size_t>("flood_control.orders.period_ms")),
+			conf.ReadTypedKey<double>("pnl.loss"),
+			conf.ReadTypedKey<double>("pnl.profit"),
+			conf.ReadTypedKey<uint16_t>("win_ratio.first_operations_to_skip"),
+			conf.ReadTypedKey<uint16_t>("win_ratio.min")),
 		m_log(logPrefix, m_context.GetLog()),
 		m_tradingLog(logPrefix, m_context.GetTradingLog()),
-		m_settings(
-			conf,
-			pt::milliseconds(
-				conf.ReadTypedKey<size_t>("flood_control.orders.period_ms"))),
 		m_orderTimePoints(
 			conf.ReadTypedKey<size_t>("flood_control.orders.max_number")) {
 
@@ -157,11 +178,33 @@ public:
 			"Orders flood control: not more than %1% orders per %2%.",
 			m_orderTimePoints.capacity(),
 			m_settings.ordersFloodControlPeriod);
+		m_log.Info(
+			"Max profit: %1$f; Max loss: %2%.",
+			m_settings.pnl.second,
+			fabs(m_settings.pnl.first));
+		m_log.Info(
+			"Min win-ratio: %1%%% (skip first %2% operations).",
+			m_settings.winRatioMinValue,
+			m_settings.winRatioFirstOperationsToSkip);
 
 		if (
 				m_orderTimePoints.capacity() <= 0
 				|| m_settings.ordersFloodControlPeriod.total_nanoseconds() <= 0) {
 			throw WrongSettingsException("Wrong Order Flood Control settings");
+		}
+
+		if (
+				IsZero(m_settings.pnl.first)
+				|| IsZero(m_settings.pnl.second)
+				|| m_settings.pnl.first > .1
+				|| m_settings.pnl.second > .1) {
+			throw WrongSettingsException("Wrong PnL available range set");
+		}
+
+		if (
+				m_settings.winRatioMinValue <= 0
+				|| m_settings.winRatioMinValue > 100) {
+			throw WrongSettingsException("Wrong Min win-ratio set");
 		}
 
 	}
@@ -343,7 +386,7 @@ private:
 
 			m_tradingLog.Write(
 				"Price too low for new %1% %2% order:"
-					" %3$f, but can't be less then %4$f.",
+					" %3$f, but can't be less than %4$f.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
@@ -358,7 +401,7 @@ private:
 
 			m_tradingLog.Write(
 				"Price too high for new %1% %2% order:"
-					" %3$f, but can't be greater then %4$f.",
+					" %3$f, but can't be greater than %4$f.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
@@ -373,7 +416,7 @@ private:
 		
 			m_tradingLog.Write(
 				"Amount too low for new %1% %2% order:"
-					" %3%, but can't be less then %4%.",
+					" %3%, but can't be less than %4%.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
@@ -388,7 +431,7 @@ private:
 
 			m_tradingLog.Write(
 				"Amount too high for new %1% %2% order:"
-					" %3%, but can't be greater then %4%.",
+					" %3%, but can't be greater than %4%.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
@@ -488,8 +531,6 @@ private:
 	SideMutex m_buyMutex;
 	GlobalMutex m_globalMutex;
 
-	mutable ModuleTradingLog m_tradingLog;
-
 	FloodControlBuffer m_orderTimePoints;
 
 };
@@ -518,7 +559,7 @@ RiskControlSecurityContext RiskControl::CreateSecurityContext(
 			-> double {
 		boost::format key("%1%.%2%.%3%.%4%");
 		key % symbol.GetSymbol() % type % orderSide % limSide;
-		return m_pimpl->m_settings.conf.ReadTypedKey<double>(key.str());
+		return m_pimpl->m_conf.ReadTypedKey<double>(key.str());
 	};
 	const auto &readAmountLimit = [&](
 			const char *type,
@@ -527,7 +568,7 @@ RiskControlSecurityContext RiskControl::CreateSecurityContext(
 			-> Amount {
 		boost::format key("%1%.%2%.%3%.%4%");
 		key % symbol.GetSymbol() % type % orderSide % limSide;
-		return m_pimpl->m_settings.conf.ReadTypedKey<Amount>(key.str());
+		return m_pimpl->m_conf.ReadTypedKey<Amount>(key.str());
 	};
 
 	result.longSide.settings.maxPrice = readPriceLimit("price", "buy", "max");
@@ -636,6 +677,51 @@ void RiskControl::ConfirmSellOrder(
 		filled,
 		avgPrice,
 		timeMeasurement);
+}
+
+void RiskControl::CheckTotalPnl(double pnl) const {
+	
+	if (pnl < 0) {
+	
+		if (pnl < m_pimpl->m_settings.pnl.first) {
+			m_pimpl->m_tradingLog.Write(
+				"Total loss is out of allowed PnL range:"
+					" %1$f, but can't be more than %2$f.",
+				[&](TradingRecord &record) {
+					record % fabs(pnl) % fabs(m_pimpl->m_settings.pnl.first);
+				});
+			throw PnlIsOutOfRangeException(
+				"Total loss is out of allowed PnL range");
+		}
+	
+	} else if (pnl > m_pimpl->m_settings.pnl.second) {
+		m_pimpl->m_tradingLog.Write(
+			"Total profit is out of allowed PnL range:"
+				" %1$f, but can't be more than %2$f.",
+			[&](TradingRecord &record) {
+				record % pnl % m_pimpl->m_settings.pnl.second;
+			});
+		throw PnlIsOutOfRangeException(
+			"Total profit is out of allowed PnL range");
+	}
+
+}
+
+void RiskControl::CheckTotalWinRatio(
+		size_t totalWinRatio,
+		size_t operationsCount)
+		const {
+	AssertGe(100, totalWinRatio);
+	if (
+			operationsCount >=  m_pimpl->m_settings.winRatioFirstOperationsToSkip
+			&& totalWinRatio < m_pimpl->m_settings.winRatioMinValue) {
+		m_pimpl->m_tradingLog.Write(
+			"Total win-ratio is too small: %1%%%, but can't be less than %2%%%.",
+			[&](TradingRecord &record) {
+				record % totalWinRatio % m_pimpl->m_settings.winRatioMinValue;
+			});
+			throw PnlIsOutOfRangeException("Total win-ratio is too small");
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
