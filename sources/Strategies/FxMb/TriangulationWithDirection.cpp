@@ -44,15 +44,19 @@ namespace {
 	}
 
 	size_t ReadMaxTrianglesCount(const IniSectionRef &conf, Module::Log &log) {
-		const char *const keyName = "limit.triangles";
+		const char *const keyName
+			= "TriangulationWithDirection.triangles_limit";
 		if (
 				boost::iequals(
-					conf.ReadTypedKey<std::string>(keyName),
+					conf.GetBase().ReadTypedKey<std::string>(
+						"RiskControl",
+						keyName),
 					"unlimited")) {
 			log.Info("Maximum triangles count: UNLIMITED.");
 			return nTrianglesLimit;
 		} else {
-			const auto result = conf.ReadTypedKey<size_t>(keyName);
+			const auto result
+				= conf.GetBase().ReadTypedKey<size_t>("RiskControl", keyName);
 			log.Info("Maximum triangles count: %1% triangles.", result);
 			return result;
 		}
@@ -770,49 +774,53 @@ void TriangulationWithDirection::CheckNewTriangle(
 		return;
 	}
 
-	std::unique_ptr<Triangle> triangle(
-		new Triangle(
-			++m_lastTriangleId,
-			*this,
-			m_reports,
-			detection.y,
-			m_qty,
-			{
-				PAIR_AB,
-				detection.legs[PAIR_AB],
-				detection.y == Y2,
-				m_detectedEcns[detection.y][PAIR_AB]
-			},
-			{
-				PAIR_BC,
-				detection.legs[PAIR_BC],
-				detection.y == Y2,
-				m_detectedEcns[detection.y][PAIR_BC]
-			},
-			{
-				PAIR_AC,
-				detection.legs[PAIR_AC],
-				detection.y == Y1,
-				m_detectedEcns[detection.y][PAIR_AC],
-			},
-			m_bestBidAsk));
-
-	if (
-			triangle->GetPair(LEG1).security->IsBookAdjusted()
-			&& !m_useAdjustedBookForTrades) {
-		GetTradingLog().Write(
-			"not respected\tleg 1\triangle=%1%\tpair=%2%\tecn=%3%",
-			[&](TradingRecord &record) {
-				record
-					% m_triangle->GetId()
-					% *triangle->GetPair(LEG1).security
-					% triangle->GetPair(LEG1).security->GetSource().GetTag();
-			});
-		return;
-	}
+	std::unique_ptr<Triangle> triangle;
 
 	try {
+
+		triangle.reset(
+			new Triangle(
+				++m_lastTriangleId,
+				*this,
+				m_reports,
+				detection.y,
+				m_qty,
+				{
+					PAIR_AB,
+					detection.legs[PAIR_AB],
+					detection.y == Y2,
+					m_detectedEcns[detection.y][PAIR_AB]
+				},
+				{
+					PAIR_BC,
+					detection.legs[PAIR_BC],
+					detection.y == Y2,
+					m_detectedEcns[detection.y][PAIR_BC]
+				},
+				{
+					PAIR_AC,
+					detection.legs[PAIR_AC],
+					detection.y == Y1,
+					m_detectedEcns[detection.y][PAIR_AC],
+				},
+				m_bestBidAsk));
+
+		if (
+				triangle->GetPair(LEG1).security->IsBookAdjusted()
+				&& !m_useAdjustedBookForTrades) {
+			GetTradingLog().Write(
+				"not respected\tleg 1\triangle=%1%\tpair=%2%\tecn=%3%",
+				[&](TradingRecord &record) {
+					record
+						% m_triangle->GetId()
+						% *triangle->GetPair(LEG1).security
+						% triangle->GetPair(LEG1).security->GetSource().GetTag();
+				});
+			return;
+		}
+
 		triangle->StartLeg1(timeMeasurement, detection.speed);
+
 	} catch (const HasNotMuchOpportunityException &ex) {
 		GetLog().Warn(
 			"Failed to start triangle: \"%1%\". Required: %2% %3%.",
