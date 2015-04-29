@@ -343,6 +343,7 @@ OrderId Fake::TradeSystem::SendSellAtMarketPriceWithStopPrice(
 			const OrderStatusUpdateSlot &) {
 	AssertLt(0, qty);
 	AssertFail("Doesn't implemented.");
+	UseUnused(qty);
 	throw Exception("Method doesn't implemented");
 }
 

@@ -37,13 +37,11 @@ namespace trdk {
 
 			struct Settings {
 			
-				double limit;
-
 				double minPrice;
 				double maxPrice;
 		
-				trdk::Qty minQty;
-				trdk::Qty maxQty;
+				trdk::Amount minAmount;
+				trdk::Amount maxAmount;
 
 				Settings();
 
@@ -62,7 +60,7 @@ namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
 	
-	class RiskControl : private boost::noncopyable {
+	class TRDK_CORE_API RiskControl : private boost::noncopyable {
 
 	public:
 
@@ -94,6 +92,12 @@ namespace trdk {
 			explicit WrongOrderParameterException(const char *what) throw();
 		};
 
+		class PnlIsOutOfRangeException
+			: public trdk::RiskControl::Exception {
+		public:
+			explicit PnlIsOutOfRangeException(const char *what) throw();
+		};
+
 		class SecurityContext;
 
 	public:
@@ -103,7 +107,7 @@ namespace trdk {
 
 	public:
 
-		trdk::RiskControlSecurityContext && CreateSecurityContext(
+		trdk::RiskControlSecurityContext CreateSecurityContext(
 					const trdk::Lib::Symbol &)
 				const;
 
@@ -113,14 +117,14 @@ namespace trdk {
 				const trdk::TradeSystem &,
 				const trdk::Security &,
 				const trdk::Lib::Currency &,
-				const trdk::Qty &,
+				const trdk::Amount &,
 				const boost::optional<trdk::ScaledPrice> &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		void CheckNewSellOrder(
 				const trdk::TradeSystem &,
 				const trdk::Security &,
 				const trdk::Lib::Currency &,
-				const trdk::Qty &,
+				const trdk::Amount &,
 				const boost::optional<trdk::ScaledPrice> &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 
@@ -129,9 +133,9 @@ namespace trdk {
 				const trdk::TradeSystem &,
 				const trdk::Security &,
 				const trdk::Lib::Currency &,
-				const trdk::Qty &orderQty,
+				const trdk::Amount &orderAmount,
 				const boost::optional<trdk::ScaledPrice> &orderPrice,
-				const trdk::Qty &filled,
+				const trdk::Amount &filled,
 				double avgPrice,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		void ConfirmSellOrder(
@@ -139,11 +143,19 @@ namespace trdk {
 				const trdk::TradeSystem &,
 				const trdk::Security &,
 				const trdk::Lib::Currency &,
-				const trdk::Qty &orderQty,
+				const trdk::Amount &orderAmount,
 				const boost::optional<trdk::ScaledPrice> &orderPrice,
-				const trdk::Qty &filled,
+				const trdk::Amount &filled,
 				double avgPrice,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+
+	public:
+
+		void CheckTotalPnl(double pnl) const;
+		void CheckTotalWinRatio(
+				size_t totalWinRatio,
+				size_t operationsCount)
+				const;
 
 	private:
 

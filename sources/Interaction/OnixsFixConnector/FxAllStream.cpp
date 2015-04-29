@@ -42,14 +42,6 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	protected:
 
-		virtual Qty ParseMdEntrySize(const fix::GroupInstance &entry) const {
-			return Qty(entry.getDouble(fix::FIX42::Tags::MDEntrySize));
-		}
-
-		virtual Qty ParseMdEntrySize(const fix::Message &message) const {
-			return Qty(message.getDouble(fix::FIX42::Tags::MDEntrySize));
-		}
-
 		virtual void OnLogout() {
 			GetSession().ResetLocalSequenceNumbers(true, true);
 		}
@@ -58,11 +50,42 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			GetSession().ResetLocalSequenceNumbers(true, true);
 		}
 
-		virtual void SetupBookRequest(fix::Message &request) const {
+		virtual void SetupBookRequest(
+				fix::Message &request,
+				const Security &) const {
 			request.set(
 				fix::FIX42::Tags::MarketDepth,
 				// +3 - to get required book size after adjusting.
 				int(GetLevelsCount()) + 3);
+		}
+
+		virtual void OnMarketDataSnapshot(
+				const fix::Message &message,
+				const boost::posix_time::ptime &dataTime,
+				FixSecurity &security) {
+		
+			const fix::Group &entries
+				= message.getGroup(fix::FIX42::Tags::NoMDEntries);
+			if (entries.size() != 1) {
+				GetLog().Error(
+					"Warning Market Data Snapshot size for %1%: %2% (%3%).",
+					security,
+					entries.size(),
+					message);
+			}
+			AssertEq(1, entries.size());
+		
+			const auto entryId = message.getInt64(fix::FIX42::Tags::MDEntryID);
+			Assert(security.m_book.find(entryId) == security.m_book.end());
+		
+			security.m_book[entryId] = std::make_pair(
+				message.get(fix::FIX42::Tags::MDEntryType)
+					== fix::FIX42::Values::MDEntryType::Bid,
+				Security::Book::Level(
+					dataTime,
+					message.getDouble(fix::FIX42::Tags::MDEntryPx),
+					ParseMdEntrySize(message)));
+
 		}
 
 	};

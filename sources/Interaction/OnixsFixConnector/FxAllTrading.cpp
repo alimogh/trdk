@@ -90,9 +90,6 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			order.set(
 				fix::FIX40::Tags::OrdType,
 				fix::FIX40::Values::OrdType::Market);
-			order.set(
-				fix::FIX40::Tags::TimeInForce,
-				fix::FIX40::Values::TimeInForce::Immediate_or_Cancel);
 			return std::move(order);
 		}
 

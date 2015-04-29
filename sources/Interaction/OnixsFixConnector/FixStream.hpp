@@ -12,7 +12,7 @@
 
 #include "FixSession.hpp"
 #include "Core/MarketDataSource.hpp"
-#include "Core/Security.hpp"
+#include "FixSecurity.hpp"
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
@@ -85,10 +85,20 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		virtual Qty ParseMdEntrySize(const OnixS::FIX::GroupInstance &) const;
 		virtual Qty ParseMdEntrySize(const OnixS::FIX::Message &) const;
 
+		virtual void OnMarketDataSnapshot(
+				const OnixS::FIX::Message &,
+				const boost::posix_time::ptime &dataTime,
+				FixSecurity &security)
+			= 0;
+
 		virtual void OnLogout() = 0;
 		virtual void OnReconnecting() = 0;
 
-		virtual void SetupBookRequest(OnixS::FIX::Message &) const = 0;
+		virtual void SetupBookRequest(
+				OnixS::FIX::Message &,
+				const Security &)
+				const
+			= 0;
 
 	private:
 		

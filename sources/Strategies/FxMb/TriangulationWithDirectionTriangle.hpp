@@ -54,6 +54,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 						&bestBidAsk->service->GetSecurity(ecn))),
 				startPrice(GetCurrentPrice()),
 				ordersCount(0) {
+				if (Lib::IsZero(startPrice)) {
+					throw HasNotMuchOpportunityException(*security, 0);
+				}
 			}
 
 			double GetCurrentPrice() const {

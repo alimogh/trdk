@@ -18,6 +18,7 @@
 #include "Core/Settings.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Strategy.hpp"
+#include "Core/RiskControl.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -568,6 +569,9 @@ void TriangleReport::ReportAction(
 		
 	if (isTriangleCompleted) {
 
+		size_t winningPercentage = 0;
+		size_t trianglesCount = 0;
+
 		m_state.pnl->log.Write(
 			[&](ReportRecord &record) {
 
@@ -608,18 +612,18 @@ void TriangleReport::ReportAction(
 				record % time; 
 				foo.triangleTime = pt::to_iso_string(time);
 
-				size_t winningPercentage = 0;
 				if (accs::count(m_state.pnl->stat.winners) > 0) {
 					record 
 						% accs::mean(m_state.pnl->stat.winners)
 						% accs::mean(m_state.pnl->stat.winnersTime);
 					foo.avgWinners = accs::mean(m_state.pnl->stat.winners);
 					foo.avgWinnersTime = pt::to_simple_string(accs::mean(m_state.pnl->stat.winnersTime));
+					trianglesCount
+						= accs::count(m_state.pnl->stat.winners)
+							+ accs::count(m_state.pnl->stat.losers);
 					winningPercentage
 						= (accs::count(m_state.pnl->stat.winners) * 100);
-					winningPercentage
-						/= accs::count(m_state.pnl->stat.winners)
-							+ accs::count(m_state.pnl->stat.losers);
+					winningPercentage /= trianglesCount;
 				} else {
 					record % ' ' % ' ';
 				}
@@ -651,6 +655,16 @@ void TriangleReport::ReportAction(
 			});
 
 		m_triangle.GetStrategy().GetContext().m_fooSlotConnection(foo);
+		m_triangle
+			.GetStrategy()
+			.GetContext()
+			.GetRiskControl()
+			.CheckTotalPnl(foo.pnlWithCommissions);
+		m_triangle
+			.GetStrategy()
+			.GetContext()
+			.GetRiskControl()
+			.CheckTotalWinRatio(winningPercentage, trianglesCount);
 
 	} else if (isTriangleCanceled) {
 
@@ -693,6 +707,11 @@ void TriangleReport::ReportAction(
 			});
 
 		m_triangle.GetStrategy().GetContext().m_fooSlotConnection(foo);
+		m_triangle
+			.GetStrategy()
+			.GetContext()
+			.GetRiskControl()
+			.CheckTotalPnl(foo.pnlWithCommissions);
 
 	}
 

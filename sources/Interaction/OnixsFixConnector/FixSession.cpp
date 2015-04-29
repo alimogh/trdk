@@ -182,6 +182,12 @@ void FixSession::Connect(
 
 	// Asynchronous calls from FIX engine, must be in field before connected:
 	session.swap(m_session);
+
+	m_log.Debug(
+		"In-sequence number: %1%; Out-sequence number: %2%;",
+		m_session->inSeqNum(),
+		m_session->outSeqNum());
+
 	try {
 		m_session->logonAsInitiator(
 			m_host,

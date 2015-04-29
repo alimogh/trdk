@@ -57,11 +57,10 @@ RiskControlSecurityContext::Side::Side(int8_t direction)
 }
 
 RiskControlSecurityContext::Side::Settings::Settings() 
-	: limit(0),
-	minPrice(0),
+	: minPrice(0),
 	maxPrice(0),
-	minQty(0),
-	maxQty(0) {
+	minAmount(0),
+	maxAmount(0) {
 	//...//
 }
 
@@ -100,34 +99,41 @@ RiskControl::WrongOrderParameterException::WrongOrderParameterException(
 	//...//
 }
 
+RiskControl::PnlIsOutOfRangeException::PnlIsOutOfRangeException(
+		const char *what)
+	throw()
+	: Exception(what) {
+	//...//
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 class RiskControl::Implementation : private boost::noncopyable {
 
 private:
 
-	struct Settings {
+	struct Settings : private boost::noncopyable {
+
+	public:
+
+		const pt::time_duration ordersFloodControlPeriod;
+		const std::pair<double, double> pnl;
+
+		const size_t winRatioFirstOperationsToSkip;
+		const uint16_t winRatioMinValue;
+
+	public:
 			
-		struct OrdersFloodControl {
-			
-			boost::posix_time::time_duration period;
-			size_t maxNumber;
-			
-			OrdersFloodControl(const IniSectionRef &conf)
-				: period(
-					pt::milliseconds(
-						conf.ReadTypedKey<size_t>(
-							"flood_control.orders.period_ms"))),
-				maxNumber(
-					conf.ReadTypedKey<size_t>(
-						"flood_control.orders.max_number")) {
-				//...//
-			}
-			
-		} ordersFloodControl;
-			
-		Settings(const IniSectionRef &conf)
-			: ordersFloodControl(conf) {
+		explicit Settings(
+				const pt::time_duration &ordersFloodControlPeriod,
+				double minPnl,
+				double maxPnl,
+				size_t winRatioFirstOperationsToSkip,
+				uint16_t winRatioMinValue)
+			: ordersFloodControlPeriod(ordersFloodControlPeriod),
+			pnl(std::make_pair(-minPnl, maxPnl)),
+			winRatioFirstOperationsToSkip(winRatioFirstOperationsToSkip),
+			winRatioMinValue(winRatioMinValue) {
 			//...//
 		}
 		
@@ -143,22 +149,63 @@ private:
 
 public:
 
+	Context &m_context;
+	
+	const IniSectionRef m_conf;
+	const Settings m_settings;
+		
+	ModuleEventsLog m_log;
+	mutable ModuleTradingLog m_tradingLog;
+
+public:
+
 	explicit Implementation(Context &context, const IniSectionRef &conf)
 		: m_context(context),
+		m_conf(conf),
+		m_settings(
+			pt::milliseconds(
+				conf.ReadTypedKey<size_t>("flood_control.orders.period_ms")),
+			conf.ReadTypedKey<double>("pnl.loss"),
+			conf.ReadTypedKey<double>("pnl.profit"),
+			conf.ReadTypedKey<uint16_t>("win_ratio.first_operations_to_skip"),
+			conf.ReadTypedKey<uint16_t>("win_ratio.min")),
 		m_log(logPrefix, m_context.GetLog()),
 		m_tradingLog(logPrefix, m_context.GetTradingLog()),
-		m_settings(conf) {
-
-		if (
-				!m_settings.ordersFloodControl.maxNumber
-				|| !m_settings.ordersFloodControl.maxNumber) {
-			throw WrongSettingsException("Wrong Order Flood Control settings");
-		}
+		m_orderTimePoints(
+			conf.ReadTypedKey<size_t>("flood_control.orders.max_number")) {
 
 		m_log.Info(
 			"Orders flood control: not more than %1% orders per %2%.",
-			m_settings.ordersFloodControl.maxNumber,
-			m_settings.ordersFloodControl.period);
+			m_orderTimePoints.capacity(),
+			m_settings.ordersFloodControlPeriod);
+		m_log.Info(
+			"Max profit: %1$f; Max loss: %2%.",
+			m_settings.pnl.second,
+			fabs(m_settings.pnl.first));
+		m_log.Info(
+			"Min win-ratio: %1%%% (skip first %2% operations).",
+			m_settings.winRatioMinValue,
+			m_settings.winRatioFirstOperationsToSkip);
+
+		if (
+				m_orderTimePoints.capacity() <= 0
+				|| m_settings.ordersFloodControlPeriod.total_nanoseconds() <= 0) {
+			throw WrongSettingsException("Wrong Order Flood Control settings");
+		}
+
+		if (
+				IsZero(m_settings.pnl.first)
+				|| IsZero(m_settings.pnl.second)
+				|| m_settings.pnl.first > .1
+				|| m_settings.pnl.second > .1) {
+			throw WrongSettingsException("Wrong PnL available range set");
+		}
+
+		if (
+				m_settings.winRatioMinValue <= 0
+				|| m_settings.winRatioMinValue > 100) {
+			throw WrongSettingsException("Wrong Min win-ratio set");
+		}
 
 	}
 
@@ -168,7 +215,7 @@ public:
 			const TradeSystem &,
 			const Security &security,
 			const Currency &,
-			const Qty &qty,
+			const Amount &amount,
 			const boost::optional<ScaledPrice> &price,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 	
@@ -177,14 +224,14 @@ public:
 		const auto priceVal = !price ? security.GetBidPriceScaled() : *price;
 		const auto &side = security.GetRiskControlContext().longSide;
 
-		CheckNewOrderParams(security, qty, priceVal, side);
+		CheckNewOrderParams(security, amount, priceVal, side);
 
 		CheckOrdersFloodLevel();
 
-		{
-			const SideLock lock(m_buyMutex);
-			CheckNewOrder(security, qty, priceVal, side);
-		}
+// 		{
+// 			const SideLock lock(m_buyMutex);
+// 			CheckNewOrder(security, amount, priceVal, side);
+// 		}
 	
 		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
 	
@@ -194,7 +241,7 @@ public:
 			const TradeSystem &,
 			const Security &security,
 			const Currency &,
-			const Qty &qty,
+			const Amount &amount,
 			const boost::optional<ScaledPrice> &price,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 	
@@ -203,41 +250,41 @@ public:
 		const auto priceVal = !price ? security.GetAskPriceScaled() : *price;
 		const auto &side = security.GetRiskControlContext().shortSide;
 
-		CheckNewOrderParams(security, qty, priceVal, side);
+		CheckNewOrderParams(security, amount, priceVal, side);
 
 		CheckOrdersFloodLevel();
 
-		{
-			const SideLock lock(m_sellMutex);
-			CheckNewOrder(security, qty, priceVal, side);
-		}
+// 		{
+// 			const SideLock lock(m_sellMutex);
+// 			CheckNewOrder(security, amount, priceVal, side);
+// 		}
 	
 		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
 	
 	}
 
 	void ConfirmBuyOrder(
-			const TradeSystem::OrderStatus &status,
+			const TradeSystem::OrderStatus &/*status*/,
 			const TradeSystem &,
-			const Security &security,
+			const Security &/*security*/,
 			const Currency &,
-			const Qty &orderQty,
-			const boost::optional<ScaledPrice> &orderPrice,
-			const Qty &filled,
+			const Amount &/*orderAmount*/,
+			const boost::optional<ScaledPrice> &/*orderPrice*/,
+			const Amount &/*filled*/,
 			double /*avgPrice*/,
 			const TimeMeasurement::Milestones &timeMeasurement) {
  		
 		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
  	
 		{
-			const SideLock lock(m_buyMutex);
-			AssertLe(filled, orderQty);
-			ConfirmOrder(
-				status,
-				security,
-				orderQty - filled,
-				!orderPrice ? security.GetBidPriceScaled() : *orderPrice,
-				security.GetRiskControlContext().longSide);
+// 			const SideLock lock(m_buyMutex);
+// 			AssertLe(filled, orderAmount);
+// 			ConfirmOrder(
+// 				status,
+// 				security,
+// 				orderAmount - filled,
+// 				!orderPrice ? security.GetBidPriceScaled() : *orderPrice,
+// 				security.GetRiskControlContext().longSide);
 		}
 
 		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
@@ -245,27 +292,27 @@ public:
 	}
 
 	void ConfirmSellOrder(
-			const TradeSystem::OrderStatus &status,
+			const TradeSystem::OrderStatus &/*status*/,
 			const TradeSystem &,
-			const Security &security,
+			const Security &/*security*/,
 			const Currency &,
-			const Qty &orderQty,
-			const boost::optional<ScaledPrice> &orderPrice,
-			const Qty &filled,
+			const Amount &/*orderAmount*/,
+			const boost::optional<ScaledPrice> &/*orderPrice*/,
+			const Amount &/*filled*/,
 			double /*avgPrice*/,
 			const TimeMeasurement::Milestones &timeMeasurement) {
  		
 		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
  	
 		{
-			const SideLock lock(m_sellMutex);
-			AssertLe(filled, orderQty);
-			ConfirmOrder(
-				status,
-				security,
-				orderQty - filled,
-				!orderPrice ? security.GetBidPriceScaled() : *orderPrice,
-				security.GetRiskControlContext().shortSide);
+// 			const SideLock lock(m_sellMutex);
+// 			AssertLe(filled, orderAmount);
+// 			ConfirmOrder(
+// 				status,
+// 				security,
+// 				orderAmount - filled,
+// 				!orderPrice ? security.GetBidPriceScaled() : *orderPrice,
+// 				security.GetRiskControlContext().shortSide);
 		}
 
 		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
@@ -277,7 +324,7 @@ private:
 	void CheckOrdersFloodLevel() {
 
 		const auto &now = m_context.GetCurrentTime();
-		const auto &oldestTime = now - m_settings.ordersFloodControl.period;
+		const auto &oldestTime = now - m_settings.ordersFloodControlPeriod;
 
 		const GlobalLock lock(m_globalMutex);
 	
@@ -287,50 +334,48 @@ private:
 			m_orderTimePoints.pop_front();
 		}
 	
-		if (
-				m_orderTimePoints.size()
-					>= m_settings.ordersFloodControl.maxNumber) {
-			AssertLt(0, m_settings.ordersFloodControl.maxNumber);
+		if (m_orderTimePoints.size() >= m_orderTimePoints.capacity()) {
+			AssertLt(0, m_orderTimePoints.capacity());
+			AssertEq(m_orderTimePoints.capacity(), m_orderTimePoints.size());
 			m_tradingLog.Write(
 				"Number of orders for period limit is reached"
-					": %1% orders at last %2% (%3% -> %4%)"
+					": %1% orders over the past  %2% (%3% -> %4%)"
 					", but allowed not more than %5%.",
 				[&](TradingRecord &record) {
 					record
-						% m_orderTimePoints.size()
+						% (m_orderTimePoints.size() + 1)
+						% m_settings.ordersFloodControlPeriod
 						% m_orderTimePoints.front()
 						% m_orderTimePoints.back()
-						% m_settings.ordersFloodControl.period
-						% m_settings.ordersFloodControl.maxNumber;
+						% m_orderTimePoints.capacity();
 				});
 			throw NumberOfOrdersLimitException(
 				"Number of orders for period limit is reached");
 		} else if (
-				m_orderTimePoints.size() + 1
-					>= m_settings.ordersFloodControl.maxNumber
+				m_orderTimePoints.size() + 1 >= m_orderTimePoints.capacity()
 				&& !m_orderTimePoints.empty()) {
 			m_tradingLog.Write(
 				"Number of orders for period limit"
 					" will be reached with next order"
-					": %1% orders at last %2% (%3% -> %4%)"
+					": %1% orders over the past %2% (%3% -> %4%)"
 					", allowed not more than %5%.",
 				[&](TradingRecord &record) {
 					record
-						% m_orderTimePoints.size()
+						% (m_orderTimePoints.size() + 1)
+						% m_settings.ordersFloodControlPeriod
 						% m_orderTimePoints.front()
 						% m_orderTimePoints.back()
-						% m_settings.ordersFloodControl.period
-						% m_settings.ordersFloodControl.maxNumber;
+						% m_orderTimePoints.capacity();
 				});		
 		}
-	
+
 		m_orderTimePoints.push_back(now);
-	
+
 	}
 
 	void CheckNewOrderParams(
 			const Security &security,
-			const Qty &qty,
+			const Amount &amount,
 			const ScaledPrice &scaledPrice,
 			const RiskControlSecurityContext::Side &side)
 			const {
@@ -341,7 +386,7 @@ private:
 
 			m_tradingLog.Write(
 				"Price too low for new %1% %2% order:"
-					" %3$f, but can't be less then %4$f.",
+					" %3$f, but can't be less than %4$f.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
@@ -356,7 +401,7 @@ private:
 
 			m_tradingLog.Write(
 				"Price too high for new %1% %2% order:"
-					" %3$f, but can't be greater then %4$f.",
+					" %3$f, but can't be greater than %4$f.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
@@ -367,35 +412,35 @@ private:
 
 			throw WrongOrderParameterException("Order price too high");
 
-		} else if (qty < side.settings.minQty) {
+		} else if (amount < side.settings.minAmount) {
 		
 			m_tradingLog.Write(
-				"Quantity too low for new %1% %2% order:"
-					" %3%, but can't be less then %4%.",
+				"Amount too low for new %1% %2% order:"
+					" %3%, but can't be less than %4%.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
 						% security
-						% qty
-						% side.settings.minQty;
+						% amount
+						% side.settings.minAmount;
 				});
 
-			throw WrongOrderParameterException("Order quantity too low");
+			throw WrongOrderParameterException("Order amount too low");
 
-		} else if (qty > side.settings.maxQty) {
+		} else if (amount > side.settings.maxAmount) {
 
 			m_tradingLog.Write(
-				"Quantity too high for new %1% %2% order:"
-					" %3%, but can't be greater then %4%.",
+				"Amount too high for new %1% %2% order:"
+					" %3%, but can't be greater than %4%.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
 						% security
-						% qty
-						% side.settings.maxQty;
+						% amount
+						% side.settings.maxAmount;
 				});
 
-			throw WrongOrderParameterException("Order quantity too high");
+			throw WrongOrderParameterException("Order amount too high");
 
 		}
 
@@ -403,13 +448,13 @@ private:
 
 	void CheckNewOrder(
 			const Security &security,
-			const Qty &qty,
+			const Amount &amount,
 			const ScaledPrice &orderPrice,
 			const RiskControlSecurityContext::Side &side) {
 		
-		const auto volume = security.DescalePrice(orderPrice) * qty;
+		const auto volume = security.DescalePrice(orderPrice) * amount;
 		auto &position = security.GetRiskControlContext().position;
-		AssertLe(fabs(position), side.settings.limit);
+//		AssertLe(fabs(position), side.settings.limit);
 		const auto newPosition = position + (volume * side.direction);
 
 		m_tradingLog.Write(
@@ -424,13 +469,13 @@ private:
 					% side.name
 					% position
 					% volume
-					% newPosition
-					% side.settings.limit;
+					% newPosition/*
+					% side.settings.limit*/;
 			});
 
-		if (fabs(newPosition) > side.settings.limit) {
-			throw NotEnoughFundsException("Not enough funds for new order");
-		}
+// 		if (fabs(newPosition) > side.settings.limit) {
+// 			throw NotEnoughFundsException("Not enough funds for new order");
+// 		}
 
 		position = newPosition;
 
@@ -439,7 +484,7 @@ private:
 	void ConfirmOrder(
 			const TradeSystem::OrderStatus &status,
 			const Security &security,
-			const Qty &remainingQty,
+			const Amount &remainingAmount,
 			const ScaledPrice &orderPrice,
 			const RiskControlSecurityContext::Side &side) {
 
@@ -454,8 +499,8 @@ private:
 		}
 
 		auto &position = security.GetRiskControlContext().position;
-		AssertLe(fabs(position), side.settings.limit);
-		const auto volume = security.DescalePrice(orderPrice) * remainingQty;
+//		AssertLe(fabs(position), side.settings.limit);
+		const auto volume = security.DescalePrice(orderPrice) * remainingAmount;
 		const auto newPostion = position - (volume * side.direction);
 		
 		m_tradingLog.Write(
@@ -471,8 +516,8 @@ private:
 					% status
 					% position
 					% volume
-					% newPostion
-					% side.settings.limit;
+					% newPostion/*
+					% side.settings.limit*/;
 			});
 
 		position = newPostion;
@@ -482,15 +527,9 @@ private:
 		
 private:
 
-	Context &m_context;
-	const Settings m_settings;
-
 	SideMutex m_sellMutex;
 	SideMutex m_buyMutex;
 	GlobalMutex m_globalMutex;
-
-	ModuleEventsLog m_log;
-	mutable ModuleTradingLog m_tradingLog;
 
 	FloodControlBuffer m_orderTimePoints;
 
@@ -507,51 +546,60 @@ RiskControl::~RiskControl() {
 	delete m_pimpl;
 }
 
-RiskControlSecurityContext && RiskControl::CreateSecurityContext(
+RiskControlSecurityContext RiskControl::CreateSecurityContext(
 			const Symbol &symbol)
 		const {
-	
+
 	RiskControlSecurityContext result;
 
-	if (symbol.GetSymbol() == "EUR/JPY") {
+	const auto &readPriceLimit = [&](
+			const char *type,
+			const char *orderSide,
+			const char *limSide)
+			-> double {
+		boost::format key("%1%.%2%.%3%.%4%");
+		key % symbol.GetSymbol() % type % orderSide % limSide;
+		return m_pimpl->m_conf.ReadTypedKey<double>(key.str());
+	};
+	const auto &readAmountLimit = [&](
+			const char *type,
+			const char *orderSide,
+			const char *limSide)
+			-> Amount {
+		boost::format key("%1%.%2%.%3%.%4%");
+		key % symbol.GetSymbol() % type % orderSide % limSide;
+		return m_pimpl->m_conf.ReadTypedKey<Amount>(key.str());
+	};
+
+	result.longSide.settings.maxPrice = readPriceLimit("price", "buy", "max");
+	result.longSide.settings.minPrice = readPriceLimit("price", "buy", "min");
+	result.longSide.settings.maxAmount
+		= readAmountLimit("amount", "buy", "max");
+	result.longSide.settings.minAmount
+		= readAmountLimit("amount", "buy", "min");
 	
-		result.longSide.settings.maxPrice = 140.0;
-		result.longSide.settings.minPrice = 120.0;
+	result.shortSide.settings.maxPrice = readPriceLimit("price", "sell", "max");
+	result.shortSide.settings.minPrice = readPriceLimit("price", "sell", "min");
+	result.shortSide.settings.maxAmount
+		= readAmountLimit("amount", "buy", "max");
+	result.shortSide.settings.minAmount
+		= readAmountLimit("amount", "buy", "min");
 
-		result.shortSide.settings.maxPrice = 140.0;
-		result.shortSide.settings.minPrice = 120.0;
+	m_pimpl->m_log.Info(
+		"Order limits for %1%:"
+			" buy: %2% / %3% - %4% / %5%;"
+			" sell %6% / %7% - %8% / %9%;",
+		symbol,
+		result.longSide.settings.minPrice, 
+		result.longSide.settings.minAmount,
+		result.longSide.settings.maxPrice, 
+		result.longSide.settings.maxAmount,
+		result.shortSide.settings.minPrice, 
+		result.shortSide.settings.minAmount,
+		result.shortSide.settings.maxPrice, 
+		result.shortSide.settings.maxAmount);
 
-	} else if (symbol.GetSymbol() == "EUR/USD") {
-
-		result.longSide.settings.maxPrice = 1.2;
-		result.longSide.settings.minPrice = 1.0;
-
-		result.shortSide.settings.maxPrice = 1.2;
-		result.shortSide.settings.minPrice = 1.0;
-
-	} else if (symbol.GetSymbol() == "USD/JPY") {
-
-		result.longSide.settings.maxPrice = 130.0;
-		result.longSide.settings.minPrice = 110.0;
-
-		result.shortSide.settings.maxPrice = 130.0;
-		result.shortSide.settings.minPrice = 110.0;
-
-	}
-
-	result.longSide.settings.maxQty
-		= Qty(result.longSide.settings.minPrice * 100000);
-	result.longSide.settings.minQty = 1;
-	result.shortSide.settings.maxQty
-		= Qty(result.shortSide.settings.minPrice * 100000);
-	result.shortSide.settings.minQty = 1;
-
-	result.longSide.settings.limit
-		= Qty(result.longSide.settings.maxQty * 10);
-	result.shortSide.settings.limit
-		= Qty(result.shortSide.settings.maxQty * 10);
-
-	return std::move(result);
+	return result;
 
 }
 
@@ -559,7 +607,7 @@ void RiskControl::CheckNewBuyOrder(
 		const TradeSystem &tradeSystem,
 		const Security &security,
 		const Currency &currency,
-		const Qty &amount,
+		const Amount &amount,
 		const boost::optional<ScaledPrice> &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->CheckNewBuyOrder(
@@ -575,7 +623,7 @@ void RiskControl::CheckNewSellOrder(
 		const TradeSystem &tradeSystem,
 		const Security &security,
 		const Currency &currency,
-		const Qty &amount,
+		const Amount &amount,
 		const boost::optional<ScaledPrice> &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->CheckNewSellOrder(
@@ -592,9 +640,9 @@ void RiskControl::ConfirmBuyOrder(
 		const TradeSystem &tradeSystem,
 		const Security &security,
 		const Currency &currency,
-		const Qty &orderQty,
+		const Amount &orderAmount,
 		const boost::optional<ScaledPrice> &orderPrice,
-		const Qty &filled,
+		const Amount &filled,
 		double avgPrice,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->ConfirmBuyOrder(
@@ -602,7 +650,7 @@ void RiskControl::ConfirmBuyOrder(
 		tradeSystem,
 		security,
 		currency,
-		orderQty,
+		orderAmount,
 		orderPrice,
 		filled,
 		avgPrice,
@@ -614,9 +662,9 @@ void RiskControl::ConfirmSellOrder(
 		const TradeSystem &tradeSystem,
 		const Security &security,
 		const Currency &currency,
-		const Qty &orderQty,
+		const Amount &orderAmount,
 		const boost::optional<ScaledPrice> &orderPrice,
-		const Qty &filled,
+		const Amount &filled,
 		double avgPrice,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->ConfirmSellOrder(
@@ -624,11 +672,56 @@ void RiskControl::ConfirmSellOrder(
 		tradeSystem,
 		security,
 		currency,
-		orderQty,
+		orderAmount,
 		orderPrice,
 		filled,
 		avgPrice,
 		timeMeasurement);
+}
+
+void RiskControl::CheckTotalPnl(double pnl) const {
+	
+	if (pnl < 0) {
+	
+		if (pnl < m_pimpl->m_settings.pnl.first) {
+			m_pimpl->m_tradingLog.Write(
+				"Total loss is out of allowed PnL range:"
+					" %1$f, but can't be more than %2$f.",
+				[&](TradingRecord &record) {
+					record % fabs(pnl) % fabs(m_pimpl->m_settings.pnl.first);
+				});
+			throw PnlIsOutOfRangeException(
+				"Total loss is out of allowed PnL range");
+		}
+	
+	} else if (pnl > m_pimpl->m_settings.pnl.second) {
+		m_pimpl->m_tradingLog.Write(
+			"Total profit is out of allowed PnL range:"
+				" %1$f, but can't be more than %2$f.",
+			[&](TradingRecord &record) {
+				record % pnl % m_pimpl->m_settings.pnl.second;
+			});
+		throw PnlIsOutOfRangeException(
+			"Total profit is out of allowed PnL range");
+	}
+
+}
+
+void RiskControl::CheckTotalWinRatio(
+		size_t totalWinRatio,
+		size_t operationsCount)
+		const {
+	AssertGe(100, totalWinRatio);
+	if (
+			operationsCount >=  m_pimpl->m_settings.winRatioFirstOperationsToSkip
+			&& totalWinRatio < m_pimpl->m_settings.winRatioMinValue) {
+		m_pimpl->m_tradingLog.Write(
+			"Total win-ratio is too small: %1%%%, but can't be less than %2%%%.",
+			[&](TradingRecord &record) {
+				record % totalWinRatio % m_pimpl->m_settings.winRatioMinValue;
+			});
+			throw PnlIsOutOfRangeException("Total win-ratio is too small");
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
