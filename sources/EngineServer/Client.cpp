@@ -20,6 +20,21 @@ namespace io = boost::asio;
 
 namespace {
 
+	typedef boost::mutex SettingsMutex;
+	typedef SettingsMutex::scoped_lock SettingsLock;
+
+	std::map<
+			std::string,
+			std::map<
+				std::string,
+				std::map<std::string, std::string>>>
+		settings;
+	SettingsMutex settingsMutex;
+
+}
+
+namespace {
+
 	std::string BuildRemoteAddressString(const io::ip::tcp::socket &socket) {
 		const auto &endpoint = socket.remote_endpoint(); 
 		boost::format result("%1%:%2%");
@@ -33,7 +48,77 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 	: m_requestHandler(requestHandler),
 	m_newxtMessageSize(0),
 	m_socket(ioService) {
+	
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+	const SettingsLock lock(settingsMutex);
+	if (settings.empty()) {
+		
+		settings["Strategy.1"]["General"]["invest_amount"] = "1000000",
+        settings["Strategy.1"]["General"]["mode"] = "live";
+		
+		settings["Strategy.1"]["Sensitivity"]["lag.min"] = "150";
+		settings["Strategy.1"]["Sensitivity"]["lag.max"] = "200";
+		settings["Strategy.1"]["Sensitivity"]["book_levels_number"] = "4";
+		settings["Strategy.1"]["Sensitivity"]["book_levels_exactly"] = "true";
+		
+		settings["Strategy.1"]["Analysis"]["ema.slow"] = "0.01";
+        settings["Strategy.1"]["Analysis"]["ema.fast"] = "0.03";
+		
+		settings["Strategy.1"]["Sources"]["alpari"] = "false";
+        settings["Strategy.1"]["Sources"]["currenex"] = "false";
+		settings["Strategy.1"]["Sources"]["integral"] = "true";
+		settings["Strategy.1"]["Sources"]["hotspot"] = "true";
+		settings["Strategy.1"]["Sources"]["fxall"] = "false";
+	
+	
+		settings["Strategy.1"]["RiskControl"]["triangles_limit"] = "unlimited";
+
+		settings["General"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
+		settings["General"]["RiskControl"]["flood_control.orders.max_number"] = "3";
+
+		settings["General"]["RiskControl"]["pnl.profit"] = "0.001";
+		settings["General"]["RiskControl"]["pnl.loss"] = "0.001";
+
+		settings["General"]["RiskControl"]["win_ratio.min"] = "55";
+		settings["General"]["RiskControl"]["win_ratio.first_operations_to_skip"] = "5";
+
+		settings["General"]["RiskControl"]["EUR/USD.price.buy.max"] = "1.2000";
+		settings["General"]["RiskControl"]["EUR/USD.price.buy.min"] = "0.6000";
+		settings["General"]["RiskControl"]["EUR/USD.price.sell.max"] = "1.2000";
+		settings["General"]["RiskControl"]["EUR/USD.price.sell.min"] = "0.6000";
+		settings["General"]["RiskControl"]["EUR/USD.amount.buy.max"] = "1000000";
+		settings["General"]["RiskControl"]["EUR/USD.amount.buy.min"] = "100000";
+		settings["General"]["RiskControl"]["EUR/USD.amount.sell.max"] = "1000000";
+		settings["General"]["RiskControl"]["EUR/USD.amount.sell.min"] = "100000";
+
+		settings["General"]["RiskControl"]["EUR/JPY.price.buy.max"] = "170.0000";
+		settings["General"]["RiskControl"]["EUR/JPY.price.buy.min"] = "90.0000";
+		settings["General"]["RiskControl"]["EUR/JPY.price.sell.max"] = "170.0000";
+		settings["General"]["RiskControl"]["EUR/JPY.price.sell.min"] = "90.0000";
+		settings["General"]["RiskControl"]["EUR/JPY.amount.buy.max"] = "1000000";
+		settings["General"]["RiskControl"]["EUR/JPY.amount.buy.min"] = "100000";
+		settings["General"]["RiskControl"]["EUR/JPY.amount.sell.max"] = "1000000";
+		settings["General"]["RiskControl"]["EUR/JPY.amount.sell.min"] = "100000";
+
+		settings["General"]["RiskControl"]["USD/JPY.price.buy.max"] = "160.0000";
+		settings["General"]["RiskControl"]["USD/JPY.price.buy.min"] = "80.0000";
+		settings["General"]["RiskControl"]["USD/JPY.price.sell.max"] = "160.0000";
+		settings["General"]["RiskControl"]["USD/JPY.price.sell.min"] = "80.0000";
+		settings["General"]["RiskControl"]["USD/JPY.amount.buy.max"] = "1400000";
+		settings["General"]["RiskControl"]["USD/JPY.amount.buy.min"] = "80000";
+		settings["General"]["RiskControl"]["USD/JPY.amount.sell.max"] = "1400000";
+		settings["General"]["RiskControl"]["USD/JPY.amount.sell.min"] = "80000";
+
+		settings["General"]["RiskControl"]["EUR.limit.short"] = "10000000";
+		settings["General"]["RiskControl"]["EUR.limit.long"] = "10000000";
+		settings["General"]["RiskControl"]["USD.limit.short"] = "11000000";
+		settings["General"]["RiskControl"]["USD.limit.long"] = "11000000";
+		settings["General"]["RiskControl"]["JPY.limit.short"] = "1500000000";
+		settings["General"]["RiskControl"]["JPY.limit.long"] = "1500000000";
+	
+	}
+
 }
 
 Client::~Client() {
@@ -241,21 +326,20 @@ void Client::SendEngineInfo(const std::string &engineId) {
 	EngineInfo &info = *message.mutable_engine_info();
  	info.set_engine_id(engineId);
 
- 	EngineSettings &settings = *info.mutable_settings();
+ 	EngineSettings &settingsMessage = *info.mutable_settings();
 
-	const IniFile ini(m_requestHandler.GetEngineSettings(engineId));
-	foreach (const auto &sectionName, ini.ReadSectionsList()) {
-		auto &section = *settings.add_sections();
-		section.set_name(sectionName);
-		ini.ForEachKey(
-			sectionName,
-			[&](const std::string &keyName, const std::string &value) -> bool {
-				auto &key = *section.add_keys();
-				key.set_name(keyName);
-				key.set_value(value);
-				return true;
-			},
-			true);
+	foreach (const auto &group, settings) {
+		auto &messageGroup = *settingsMessage.add_group();
+		messageGroup.set_name(group.first);
+		foreach (const auto &section, group.second) {
+			auto &messageSection = *messageGroup.add_section();
+			messageSection.set_name(section.first);
+			foreach (const auto &key, section.second) {
+				auto &messageKey = *messageSection.add_key();
+				messageKey.set_name(key.first);
+ 				messageKey.set_value(key.second);
+			}
+		}
 	}
 
 	Send(message);
@@ -294,56 +378,38 @@ void Client::OnNewSettings(const EngineSettingsApplyRequest &request) {
 		<< "New settings for \"" << request.engine_id() << "\" from "
 		<< GetRemoteAddressAsString() << "..." << std::endl;
 
-	std::map<std::string, std::map<std::string, std::string>>
-		newSettingsStorage;
-
-	std::ofstream ini(
-		m_requestHandler.GetEngineSettings(
-			request.engine_id()).string().c_str(),
-		std::ios::trunc);
-
-	for (int i = 0; i < request.settings().sections().size(); ++i) {
-
-		const auto &section
-			= request.settings().sections(i);
-		const auto &sectionName = boost::trim_copy(section.name());
-		if (sectionName.empty()) {
-			//! @todo Write to log
-			std::cerr
-				<< "Failed to updates settings: empty section name."
-				<< std::endl;
-			return;
-		}
-
-		ini << "[" << sectionName << "]" << std::endl;
-		for (int k = 0; k < section.keys_size(); ++k) {
-
-			const auto &key = section.keys(k);
-
-			const auto &keyName = boost::trim_copy(key.name());
-			if (keyName.empty()) {
-				//! @todo Write to log
-				std::cerr
-					<< "Failed to updates settings: empty key name in"
-					<< " section \"" << sectionName << "\"." << std::endl;
-				return;
+	size_t count = 0;
+	for (
+			int groupIndex = 0;
+			groupIndex < request.settings().group().size();
+			++groupIndex) {
+		const auto &messageGroup = request.settings().group(groupIndex);
+		for (
+				int sectionIndex = 0;
+				sectionIndex < messageGroup.section().size();
+				++sectionIndex) {
+			const auto &messageSection = messageGroup.section(sectionIndex);
+			for (
+					int keyIndex = 0;
+					keyIndex < messageSection.key().size();
+					++keyIndex) {
+				const auto &messageKey = messageSection.key(keyIndex);
+				settings
+						[messageGroup.name()]
+						[messageSection.name()]
+						[messageKey.name()]
+					= messageKey.value();
+				std::cout
+					<< "\t" << messageGroup.name()
+					<< "::" << messageSection.name()
+					<< "::" << messageKey.name()
+					<< "=" << messageKey.value() << ";" << std::endl;
+				++count;
 			}
-
-			const auto &keyValue =  boost::trim_copy(key.value());
-			if (keyValue.empty()) {
-				//! @todo Write to log
-				std::cerr
-					<< "Failed to updates settings: empty value for key \""
-					<< keyName << "\" in section \"" << sectionName << "\"."
-					<< std::endl;
-				return;
-			}
-			
-			ini << "\t" << key.name() << " = " << key.value() << std::endl;
-
 		}
-
 	}
+
+	std::cout << "\tStored " << count << "keys." << std::endl;
 
 	SendEngineInfo(request.engine_id());
 

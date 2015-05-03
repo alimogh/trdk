@@ -15,20 +15,27 @@ package trdk.EngineServer;
 ////////////////////////////////////////////////////////////////////////////////
 
 message EngineSettings {
-	
-	message Section {
 
-		message Key {
-			required string name = 1;
-			required string value = 2;
-		}
+	message Group {
+	
+		message Section {
+
+			message Key {
+				required string name = 1;
+				required string value = 2;
+			}
 		
+			required string name = 1;
+			repeated Key key = 2;
+
+		}
+
 		required string name = 1;
-		repeated Key keys = 2;
+		repeated Section section = 2;
 
 	}
 
-	repeated Section sections = 1;
+	repeated Group group = 1;
 
 }
 
