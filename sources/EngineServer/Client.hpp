@@ -62,16 +62,27 @@ namespace trdk { namespace EngineServer {
 		void OnNewRequest(const ClientRequest &);
 		
 		void OnFullInfoRequest(const FullInfoRequest &);
-		void OnNewSettings(const EngineSettingsApplyRequest &);
 		
-		void OnEngineStartRequest(const EngineStartStopRequest &);
-		void OnEngineStopRequest(const EngineStartStopRequest &);
+		void OnEngineStartRequest(const EngineStartRequest &);
+		void OnEngineStopRequest(const EngineStopRequest &);
+		
+		void OnStrategyStartRequest(const StrategyStartRequest &);
+		void OnStrategyStopRequest(const StrategyStopRequest &);
+		void OnStrategySettingsSetRequest(const StrategySettingsSetRequest &);
 		
 		void SendEngineInfo(const std::string &engeineId);
 		void SendEnginesInfo();
 
 		void SendEngineState(const std::string &engeineId);
 		void SendEnginesState();
+		
+		void UpdateSettingsGroup(
+				const google::protobuf::RepeatedPtrField<SettingsSection> &request,
+				const std::string &groupName);
+		void UpdateSettingsGroup(
+				const google::protobuf::RepeatedPtrField<SettingsSection> &request,
+				const std::string &groupName,
+				const boost::function<bool(const std::string &)> &isKeyFiltered);
 
 		void OnFoo(const Foo &);
 

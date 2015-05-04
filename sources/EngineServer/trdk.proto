@@ -14,30 +14,27 @@ package trdk.EngineServer;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-message EngineSettings {
-
-	message Group {
+message SettingsSection {
 	
-		message Section {
-
-			message Key {
-				required string name = 1;
-				required string value = 2;
-			}
-		
-			required string name = 1;
-			repeated Key key = 2;
-
-		}
-
+	message Key {
 		required string name = 1;
-		repeated Section section = 2;
-
+		required string value = 2;
 	}
-
-	repeated Group group = 1;
+	
+	required string name = 1;
+	repeated Key key = 2;
 
 }
+
+message EngineSettings {
+	message Group {
+		required string name = 1;
+		repeated SettingsSection section = 2;
+	}
+	repeated Group group = 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 message EngineInfo {
 	required string engine_id = 1;
@@ -91,13 +88,30 @@ message FullInfoRequest {
 	//...//
 }
 
-message EngineStartStopRequest {
+message EngineStartRequest {
+	required string engine_id = 1;
+	repeated SettingsSection general_settings = 2;
+}
+
+message EngineStopRequest {
 	required string engine_id = 1;
 }
 
-message EngineSettingsApplyRequest {
+message StrategyStartRequest {
 	required string engine_id = 1;
-	required EngineSettings settings = 2;
+	required string strategy_id = 2;
+	repeated SettingsSection strategy_settings = 3;
+}
+
+message StrategyStopRequest {
+	required string engine_id = 1;
+	required string strategy_id = 2;
+}
+
+message StrategySettingsSetRequest {
+	required string engine_id = 1;
+	required string strategy_id = 2;
+	repeated SettingsSection section = 3;
 }
 
 message ClientRequest {
@@ -106,15 +120,19 @@ message ClientRequest {
 		TYPE_INFO_FULL = 1;
 		TYPE_ENGINE_START = 2;
 		TYPE_ENGINE_STOP = 3;
-		TYPE_ENGINE_SETTINGS = 4;
+		TYPE_STRATEGY_START = 4;
+		TYPE_STRATEGY_STOP = 5;
+		TYPE_STRATEGY_SETTINGS = 6;
 	}
 
 	required Type type = 1;
 
 	optional FullInfoRequest full_info = 2;
-	optional EngineStartStopRequest engine_start = 3;
-	optional EngineStartStopRequest engine_stop = 4;
-	optional EngineSettingsApplyRequest engine_settings = 5;
+	optional EngineStartRequest engine_start = 3;
+	optional EngineStopRequest engine_stop = 4;
+	optional StrategyStartRequest strategy_start = 5;
+	optional StrategyStopRequest strategy_stop = 6;
+	optional StrategySettingsSetRequest strategy_settings = 7;
 
 }
 

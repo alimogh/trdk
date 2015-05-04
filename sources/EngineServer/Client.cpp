@@ -17,6 +17,7 @@ using namespace trdk::Lib;
 using namespace trdk::EngineServer;
 
 namespace io = boost::asio;
+namespace pb = google::protobuf;
 
 namespace {
 
@@ -78,7 +79,7 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 		settings["Strategy.1"]["Sources"]["hotspot"] = "true";
 		settings["Strategy.1"]["Sources"]["fxall"] = "false";
 	
-		settings["Strategy.1"]["RiskControl"]["triangles_limit"] = "unlimited";
+		settings["Strategy.1"]["RiskControl"]["triangles_limit"] = "0";
 
 		settings["Strategy.1"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
 		settings["Strategy.1"]["RiskControl"]["flood_control.orders.max_number"] = "3";
@@ -116,12 +117,9 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 		settings["Strategy.1"]["RiskControl"]["USD/JPY.amount.sell.max"] = "1400000";
 		settings["Strategy.1"]["RiskControl"]["USD/JPY.amount.sell.min"] = "80000";
 
-		settings["Strategy.1"]["RiskControl"]["EUR.limit.short"] = "10000000";
-		settings["Strategy.1"]["RiskControl"]["EUR.limit.long"] = "10000000";
-		settings["Strategy.1"]["RiskControl"]["USD.limit.short"] = "11000000";
-		settings["Strategy.1"]["RiskControl"]["USD.limit.long"] = "11000000";
-		settings["Strategy.1"]["RiskControl"]["JPY.limit.short"] = "1500000000";
-		settings["Strategy.1"]["RiskControl"]["JPY.limit.long"] = "1500000000";
+		settings["Strategy.1"]["RiskControl"]["EUR.limit"] = "10000000";
+		settings["Strategy.1"]["RiskControl"]["USD.limit"] = "11000000";
+		settings["Strategy.1"]["RiskControl"]["JPY.limit"] = "1500000000";
 
 		settings["General"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
 		settings["General"]["RiskControl"]["flood_control.orders.max_number"] = "3";
@@ -159,12 +157,9 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 		settings["General"]["RiskControl"]["USD/JPY.amount.sell.max"] = "1400000";
 		settings["General"]["RiskControl"]["USD/JPY.amount.sell.min"] = "80000";
 
-		settings["General"]["RiskControl"]["EUR.limit.short"] = "10000000";
-		settings["General"]["RiskControl"]["EUR.limit.long"] = "10000000";
-		settings["General"]["RiskControl"]["USD.limit.short"] = "11000000";
-		settings["General"]["RiskControl"]["USD.limit.long"] = "11000000";
-		settings["General"]["RiskControl"]["JPY.limit.short"] = "1500000000";
-		settings["General"]["RiskControl"]["JPY.limit.long"] = "1500000000";
+		settings["General"]["RiskControl"]["EUR.limit"] = "10000000";
+		settings["General"]["RiskControl"]["USD.limit"] = "11000000";
+		settings["General"]["RiskControl"]["JPY.limit"] = "1500000000";
 	
 	}
 
@@ -342,8 +337,14 @@ void Client::OnNewRequest(const ClientRequest &request) {
 		case ClientRequest::TYPE_ENGINE_STOP:
 			OnEngineStopRequest(request.engine_stop());
 			break;
-		case ClientRequest::TYPE_ENGINE_SETTINGS:
-			OnNewSettings(request.engine_settings());
+		case ClientRequest::TYPE_STRATEGY_START:
+			OnStrategyStartRequest(request.strategy_start());
+			break;
+		case ClientRequest::TYPE_STRATEGY_STOP:
+			OnStrategyStopRequest(request.strategy_stop());
+			break;
+		case ClientRequest::TYPE_STRATEGY_SETTINGS:
+			OnStrategySettingsSetRequest(request.strategy_settings());
 			break;
 		default:
 			//! @todo Write to log
@@ -377,16 +378,19 @@ void Client::SendEngineInfo(const std::string &engineId) {
 
  	EngineSettings &settingsMessage = *info.mutable_settings();
 
-	foreach (const auto &group, settings) {
-		auto &messageGroup = *settingsMessage.add_group();
-		messageGroup.set_name(group.first);
-		foreach (const auto &section, group.second) {
-			auto &messageSection = *messageGroup.add_section();
-			messageSection.set_name(section.first);
-			foreach (const auto &key, section.second) {
-				auto &messageKey = *messageSection.add_key();
-				messageKey.set_name(key.first);
- 				messageKey.set_value(key.second);
+	{
+		const SettingsLock lock(settingsMutex);
+		foreach (const auto &group, settings) {
+			auto &messageGroup = *settingsMessage.add_group();
+			messageGroup.set_name(group.first);
+			foreach (const auto &section, group.second) {
+				auto &messageSection = *messageGroup.add_section();
+				messageSection.set_name(section.first);
+				foreach (const auto &key, section.second) {
+					auto &messageKey = *messageSection.add_key();
+					messageKey.set_name(key.first);
+ 					messageKey.set_value(key.second);
+				}
 			}
 		}
 	}
@@ -410,56 +414,206 @@ void Client::SendEngineState(const std::string &engineId) {
 }
 
 void Client::OnEngineStartRequest(
-		const EngineStartStopRequest &request) {
+		const EngineStartRequest &request) {
+	//! @todo Check for current state before work with settings.
+	{
+		const SettingsLock lock(settingsMutex);
+		UpdateSettingsGroup(request.general_settings(), "General");
+	}
 	m_requestHandler.StartEngine(request.engine_id(), *this);
 	SendEngineState(request.engine_id());
 }
 
-void Client::OnEngineStopRequest(const EngineStartStopRequest &request) {
+void Client::OnEngineStopRequest(const EngineStopRequest &request) {
 	m_requestHandler.StopEngine(request.engine_id(), *this);
 	SendEngineState(request.engine_id());
 }
 
-void Client::OnNewSettings(const EngineSettingsApplyRequest &request) {
+void Client::OnStrategyStartRequest(
+		const StrategyStartRequest &request) {
+	
+	std::cout << "Starting strategy..." << std::endl;
 
-	//! @todo remove
-	std::cout
-		<< "New settings for \"" << request.engine_id() << "\" from "
-		<< GetRemoteAddressAsString() << "..." << std::endl;
-
+	const std::string strategyKey
+		= (boost::format("Strategy.%1%") % request.strategy_id()).str();
+	
 	size_t count = 0;
-	for (
-			int groupIndex = 0;
-			groupIndex < request.settings().group().size();
-			++groupIndex) {
-		const auto &messageGroup = request.settings().group(groupIndex);
-		for (
-				int sectionIndex = 0;
-				sectionIndex < messageGroup.section().size();
-				++sectionIndex) {
-			const auto &messageSection = messageGroup.section(sectionIndex);
-			for (
-					int keyIndex = 0;
-					keyIndex < messageSection.key().size();
-					++keyIndex) {
-				const auto &messageKey = messageSection.key(keyIndex);
-				settings
-						[messageGroup.name()]
-						[messageSection.name()]
-						[messageKey.name()]
-					= messageKey.value();
-				std::cout
-					<< "\t" << messageGroup.name()
-					<< "::" << messageSection.name()
-					<< "::" << messageKey.name()
-					<< "=" << messageKey.value() << ";" << std::endl;
-				++count;
-			}
+	{
+	
+		const SettingsLock lock(settingsMutex);
+	
+		auto groupIt = settings.find(strategyKey);
+		if (groupIt == settings.end()) {
+			std::cerr
+				<< "Failed to find strategy with ID \"" 
+				<< request.strategy_id() << "\"." << std::endl;
+			return;
 		}
+	
+		auto &startFlag = groupIt->second["General"]["is_enbaled"];
+		if (boost::iequals(startFlag, "true")) {
+			std::cerr
+				<< "Failed to start strategy with ID \"" 
+				<< request.strategy_id() << "\" - already started." << std::endl;
+			return;			
+		}
+
+		UpdateSettingsGroup(
+			request.strategy_settings(),
+			strategyKey,
+			[&count](const std::string &keyName) -> bool {
+				if (
+						boost::equal(keyName, "name")
+						|| boost::equal(keyName, "module")
+						|| boost::equal(keyName, "type")
+						|| boost::equal(keyName, "pairs")
+						|| boost::equal(keyName, "is_enabled")) {
+					return false;
+				}
+				++count;
+				return true;
+			});
+	
+		startFlag = "true";
+	
 	}
 
-	std::cout << "\tStored " << count << "keys." << std::endl;
+	std::cout
+		<< "Stored " << count << " keys for strategy \""
+		<< request.strategy_id() << "\"." << std::endl;
+	std::cout
+		<< "Strategy \"" << request.strategy_id() << "\" started."
+		<< std::endl;
+	
+	
+	SendEngineInfo(request.engine_id());
+
+}
+
+void Client::OnStrategyStopRequest(const StrategyStopRequest &request) {
+	
+	std::cout << "Stopping strategy..." << std::endl;
+	
+	const std::string strategyKey
+		= (boost::format("Strategy.%1%") % request.strategy_id()).str();
+	
+	{
+
+		const SettingsLock lock(settingsMutex);
+
+		auto groupIt = settings.find(strategyKey);
+		if (groupIt == settings.end()) {
+			std::cerr
+				<< "Failed to find strategy with ID \"" 
+				<< request.strategy_id() << "\"." << std::endl;
+			return;
+		}
+
+		auto &startFlag = groupIt->second["General"]["is_enbaled"];
+		if (!boost::iequals(startFlag, "true")) {
+			std::cerr
+				<< "Failed to stop strategy with ID \"" 
+				<< request.strategy_id() << "\" - not started." << std::endl;
+			return;			
+		}
+		startFlag = "false";
+
+	}
+	
+	std::cout
+		<< "Strategy \"" << request.strategy_id() << "\" stopped."
+		<< std::endl;
 
 	SendEngineInfo(request.engine_id());
+
+}
+
+void Client::OnStrategySettingsSetRequest(
+		const StrategySettingsSetRequest &request) {
+
+	std::cout << "Set strategy settings..." << std::endl;
+
+	const std::string strategyKey
+		= (boost::format("Strategy.%1%") % request.strategy_id()).str();
+	
+	size_t count = 0;
+	{
+	
+		const SettingsLock lock(settingsMutex);
+	
+		auto groupIt = settings.find(strategyKey);
+		if (groupIt == settings.end()) {
+			std::cerr
+				<< "Failed to find strategy with ID \"" 
+				<< request.strategy_id() << "\"." << std::endl;
+			return;
+		}
+	
+		UpdateSettingsGroup(
+			request.section(),
+			strategyKey,
+			[&count](const std::string &keyName) -> bool {
+				if (
+						boost::equal(keyName, "name")
+						|| boost::equal(keyName, "module")
+						|| boost::equal(keyName, "type")
+						|| boost::equal(keyName, "pairs")
+						|| boost::equal(keyName, "is_enabled")) {
+					return false;
+				}
+				++count;
+				return true;
+			});
+	
+	}
+
+	std::cout
+		<< "\tStored " << count << " keys for strategy \""
+		<< request.strategy_id() << "\"." << std::endl;
+	
+	SendEngineInfo(request.engine_id());
+
+
+}
+
+void Client::UpdateSettingsGroup(
+		const google::protobuf::RepeatedPtrField<SettingsSection> &request,
+		const std::string &group) {
+	UpdateSettingsGroup(request, group, [](const std::string &) {return true;});
+}
+
+void Client::UpdateSettingsGroup(
+		const pb::RepeatedPtrField<SettingsSection> &request,
+		const std::string &group,
+		const boost::function<bool(const std::string &)> &isKeyFiltered) {
+
+	foreach (const auto &messageSection, request) {
+	
+		for (
+				int keyIndex = 0;
+				keyIndex < messageSection.key().size();
+				++keyIndex) {
+				
+			const auto &messageKey = messageSection.key(keyIndex);
+			if (!isKeyFiltered(messageKey.name())) {
+				continue;
+			}
+				
+			settings
+					[group]
+					[messageSection.name()]
+					[messageKey.name()]
+				= messageKey.value();
+				
+			std::cout
+				<< "\t" << group
+				<< "::" << messageSection.name()
+				<< "::" << messageKey.name()
+				<< "=" << messageKey.value() << ";"
+				<< std::endl;
+			
+		}
+
+	}
 
 }
