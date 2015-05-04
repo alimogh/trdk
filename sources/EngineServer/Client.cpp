@@ -54,8 +54,15 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 	const SettingsLock lock(settingsMutex);
 	if (settings.empty()) {
 		
+		settings["Strategy.1"]["General"]["name"] = "EUR/USD USD/JPY EUR/JPY",
+		settings["Strategy.1"]["General"]["module"] = "FxMb",
+		settings["Strategy.1"]["General"]["type"] = "TriangulationWithDirection",
+		settings["Strategy.1"]["General"]["pairs"] = "EUR/USD, USD/JPY, EUR/JPY",
+
+		settings["Strategy.1"]["General"]["is_enabled"] = "false";
+
 		settings["Strategy.1"]["General"]["invest_amount"] = "1000000",
-        settings["Strategy.1"]["General"]["mode"] = "live";
+		settings["Strategy.1"]["General"]["mode"] = "live";
 		
 		settings["Strategy.1"]["Sensitivity"]["lag.min"] = "150";
 		settings["Strategy.1"]["Sensitivity"]["lag.max"] = "200";
@@ -71,8 +78,50 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 		settings["Strategy.1"]["Sources"]["hotspot"] = "true";
 		settings["Strategy.1"]["Sources"]["fxall"] = "false";
 	
-	
 		settings["Strategy.1"]["RiskControl"]["triangles_limit"] = "unlimited";
+
+		settings["Strategy.1"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
+		settings["Strategy.1"]["RiskControl"]["flood_control.orders.max_number"] = "3";
+
+		settings["Strategy.1"]["RiskControl"]["pnl.profit"] = "0.001";
+		settings["Strategy.1"]["RiskControl"]["pnl.loss"] = "0.001";
+
+		settings["Strategy.1"]["RiskControl"]["win_ratio.min"] = "55";
+		settings["Strategy.1"]["RiskControl"]["win_ratio.first_operations_to_skip"] = "5";
+
+		settings["Strategy.1"]["RiskControl"]["EUR/USD.price.buy.max"] = "1.2000";
+		settings["Strategy.1"]["RiskControl"]["EUR/USD.price.buy.min"] = "0.6000";
+		settings["Strategy.1"]["RiskControl"]["EUR/USD.price.sell.max"] = "1.2000";
+		settings["Strategy.1"]["RiskControl"]["EUR/USD.price.sell.min"] = "0.6000";
+		settings["Strategy.1"]["RiskControl"]["EUR/USD.amount.buy.max"] = "1000000";
+		settings["Strategy.1"]["RiskControl"]["EUR/USD.amount.buy.min"] = "100000";
+		settings["Strategy.1"]["RiskControl"]["EUR/USD.amount.sell.max"] = "1000000";
+		settings["Strategy.1"]["RiskControl"]["EUR/USD.amount.sell.min"] = "100000";
+
+		settings["Strategy.1"]["RiskControl"]["EUR/JPY.price.buy.max"] = "170.0000";
+		settings["Strategy.1"]["RiskControl"]["EUR/JPY.price.buy.min"] = "90.0000";
+		settings["Strategy.1"]["RiskControl"]["EUR/JPY.price.sell.max"] = "170.0000";
+		settings["Strategy.1"]["RiskControl"]["EUR/JPY.price.sell.min"] = "90.0000";
+		settings["Strategy.1"]["RiskControl"]["EUR/JPY.amount.buy.max"] = "1000000";
+		settings["Strategy.1"]["RiskControl"]["EUR/JPY.amount.buy.min"] = "100000";
+		settings["Strategy.1"]["RiskControl"]["EUR/JPY.amount.sell.max"] = "1000000";
+		settings["Strategy.1"]["RiskControl"]["EUR/JPY.amount.sell.min"] = "100000";
+
+		settings["Strategy.1"]["RiskControl"]["USD/JPY.price.buy.max"] = "160.0000";
+		settings["Strategy.1"]["RiskControl"]["USD/JPY.price.buy.min"] = "80.0000";
+		settings["Strategy.1"]["RiskControl"]["USD/JPY.price.sell.max"] = "160.0000";
+		settings["Strategy.1"]["RiskControl"]["USD/JPY.price.sell.min"] = "80.0000";
+		settings["Strategy.1"]["RiskControl"]["USD/JPY.amount.buy.max"] = "1400000";
+		settings["Strategy.1"]["RiskControl"]["USD/JPY.amount.buy.min"] = "80000";
+		settings["Strategy.1"]["RiskControl"]["USD/JPY.amount.sell.max"] = "1400000";
+		settings["Strategy.1"]["RiskControl"]["USD/JPY.amount.sell.min"] = "80000";
+
+		settings["Strategy.1"]["RiskControl"]["EUR.limit.short"] = "10000000";
+		settings["Strategy.1"]["RiskControl"]["EUR.limit.long"] = "10000000";
+		settings["Strategy.1"]["RiskControl"]["USD.limit.short"] = "11000000";
+		settings["Strategy.1"]["RiskControl"]["USD.limit.long"] = "11000000";
+		settings["Strategy.1"]["RiskControl"]["JPY.limit.short"] = "1500000000";
+		settings["Strategy.1"]["RiskControl"]["JPY.limit.long"] = "1500000000";
 
 		settings["General"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
 		settings["General"]["RiskControl"]["flood_control.orders.max_number"] = "3";
