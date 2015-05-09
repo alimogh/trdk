@@ -21,6 +21,10 @@ namespace trdk {
 
 		friend class trdk::RiskControl;
 
+	public:
+
+		class Position;
+
 	private:
 
 		RiskControlSecurityContext();
@@ -40,8 +44,8 @@ namespace trdk {
 				double minPrice;
 				double maxPrice;
 		
-				trdk::Amount minAmount;
-				trdk::Amount maxAmount;
+				trdk::Qty minQty;
+				trdk::Qty maxQty;
 
 				Settings();
 
@@ -53,7 +57,8 @@ namespace trdk {
 			shortSide,
 			longSide;
 
-		double position;
+		boost::shared_ptr<Position> baseCurrencyPosition;
+		boost::shared_ptr<Position> quoteCurrencyPosition;
 
 	};
 
@@ -114,39 +119,35 @@ namespace trdk {
 	public:
 
 		void CheckNewBuyOrder(
-				const trdk::TradeSystem &,
 				const trdk::Security &,
 				const trdk::Lib::Currency &,
-				const trdk::Amount &,
-				const boost::optional<trdk::ScaledPrice> &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		void CheckNewSellOrder(
-				const trdk::TradeSystem &,
 				const trdk::Security &,
 				const trdk::Lib::Currency &,
-				const trdk::Amount &,
-				const boost::optional<trdk::ScaledPrice> &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 
 		void ConfirmBuyOrder(
 				const trdk::TradeSystem::OrderStatus &,
-				const trdk::TradeSystem &,
 				const trdk::Security &,
 				const trdk::Lib::Currency &,
-				const trdk::Amount &orderAmount,
-				const boost::optional<trdk::ScaledPrice> &orderPrice,
-				const trdk::Amount &filled,
-				double avgPrice,
+				const trdk::ScaledPrice &orderPrice,
+				const trdk::Qty &tradeQty,
+				const trdk::ScaledPrice &tradePrice,
+				const trdk::Qty &remainingQty,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		void ConfirmSellOrder(
 				const trdk::TradeSystem::OrderStatus &,
-				const trdk::TradeSystem &,
 				const trdk::Security &,
 				const trdk::Lib::Currency &,
-				const trdk::Amount &orderAmount,
-				const boost::optional<trdk::ScaledPrice> &orderPrice,
-				const trdk::Amount &filled,
-				double avgPrice,
+				const trdk::ScaledPrice &orderPrice,
+				const trdk::Qty &tradeQty,
+				const trdk::ScaledPrice &tradePrice,
+				const trdk::Qty &remainingQty,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 
 	public:

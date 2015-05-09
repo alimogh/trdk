@@ -43,10 +43,29 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+class RiskControlSecurityContext::Position : private boost::noncopyable {
+
+public:
+
+	const double shortLimit;
+	const double longLimit;
+
+	double position;
+
+public:
+
+	explicit Position(double shortLimit, double longLimit)
+		: shortLimit(shortLimit),
+		longLimit(longLimit),
+		position(0) {
+		//...//
+	}
+
+};
+
 RiskControlSecurityContext::RiskControlSecurityContext()
 	: shortSide(-1),
-	longSide(1),
-	position(0) {
+	longSide(1) {
 	//...//
 }
 
@@ -59,8 +78,8 @@ RiskControlSecurityContext::Side::Side(int8_t direction)
 RiskControlSecurityContext::Side::Settings::Settings() 
 	: minPrice(0),
 	maxPrice(0),
-	minAmount(0),
-	maxAmount(0) {
+	minQty(0),
+	maxQty(0) {
 	//...//
 }
 
@@ -147,6 +166,11 @@ private:
 	typedef ConcurrencyPolicy::Mutex GlobalMutex;
 	typedef ConcurrencyPolicy::Lock GlobalLock;
 
+	typedef std::map<
+			Currency,
+			boost::shared_ptr<RiskControlSecurityContext::Position>>
+		PositionsCache;
+
 public:
 
 	Context &m_context;
@@ -156,6 +180,8 @@ public:
 		
 	ModuleEventsLog m_log;
 	mutable ModuleTradingLog m_tradingLog;
+
+	PositionsCache m_positionsCache;
 
 public:
 
@@ -212,114 +238,127 @@ public:
 public:
 
 	void CheckNewBuyOrder(
-			const TradeSystem &,
 			const Security &security,
-			const Currency &,
-			const Amount &amount,
-			const boost::optional<ScaledPrice> &price,
+			const Currency &currency,
+			const Qty &qty,
+			const ScaledPrice &price,
 			const TimeMeasurement::Milestones &timeMeasurement) {
-	
-		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
-
-		const auto priceVal = !price ? security.GetBidPriceScaled() : *price;
-		const auto &side = security.GetRiskControlContext().longSide;
-
-		CheckNewOrderParams(security, amount, priceVal, side);
-
-		CheckOrdersFloodLevel();
-
-// 		{
-// 			const SideLock lock(m_buyMutex);
-// 			CheckNewOrder(security, amount, priceVal, side);
-// 		}
-	
-		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
-	
+		CheckNewOrder(
+			security,
+			currency,
+			qty,
+			price,
+			timeMeasurement,
+			security.GetRiskControlContext().longSide,
+			m_buyMutex);
 	}
 
 	void CheckNewSellOrder(
-			const TradeSystem &,
 			const Security &security,
-			const Currency &,
-			const Amount &amount,
-			const boost::optional<ScaledPrice> &price,
+			const Currency &currency,
+			const Qty &qty,
+			const ScaledPrice &price,
 			const TimeMeasurement::Milestones &timeMeasurement) {
-	
-		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
-	
-		const auto priceVal = !price ? security.GetAskPriceScaled() : *price;
-		const auto &side = security.GetRiskControlContext().shortSide;
-
-		CheckNewOrderParams(security, amount, priceVal, side);
-
-		CheckOrdersFloodLevel();
-
-// 		{
-// 			const SideLock lock(m_sellMutex);
-// 			CheckNewOrder(security, amount, priceVal, side);
-// 		}
-	
-		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
-	
+		CheckNewOrder(
+			security,
+			currency,
+			qty,
+			price,
+			timeMeasurement,
+			security.GetRiskControlContext().shortSide,
+			m_sellMutex);
 	}
 
 	void ConfirmBuyOrder(
-			const TradeSystem::OrderStatus &/*status*/,
-			const TradeSystem &,
-			const Security &/*security*/,
-			const Currency &,
-			const Amount &/*orderAmount*/,
-			const boost::optional<ScaledPrice> &/*orderPrice*/,
-			const Amount &/*filled*/,
-			double /*avgPrice*/,
-			const TimeMeasurement::Milestones &timeMeasurement) {
- 		
-		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
- 	
-		{
-// 			const SideLock lock(m_buyMutex);
-// 			AssertLe(filled, orderAmount);
-// 			ConfirmOrder(
-// 				status,
-// 				security,
-// 				orderAmount - filled,
-// 				!orderPrice ? security.GetBidPriceScaled() : *orderPrice,
-// 				security.GetRiskControlContext().longSide);
-		}
-
-		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
-	
+			const TradeSystem::OrderStatus &status,
+			const Security &security,
+			const Lib::Currency &currency,
+			const ScaledPrice &orderPrice,
+			const Qty &tradeQty,
+			const ScaledPrice &tradePrice,
+			const Qty &remainingQty,
+			const Lib::TimeMeasurement::Milestones &timeMeasurement) {
+ 		 ConfirmOrder(
+			status,
+			security,
+			currency,
+			orderPrice,
+			tradeQty,
+			tradePrice,
+			remainingQty,
+			timeMeasurement,
+			security.GetRiskControlContext().longSide,
+			m_buyMutex);
 	}
 
 	void ConfirmSellOrder(
-			const TradeSystem::OrderStatus &/*status*/,
-			const TradeSystem &,
-			const Security &/*security*/,
-			const Currency &,
-			const Amount &/*orderAmount*/,
-			const boost::optional<ScaledPrice> &/*orderPrice*/,
-			const Amount &/*filled*/,
-			double /*avgPrice*/,
+			const TradeSystem::OrderStatus &status,
+			const Security &security,
+			const Currency &currency,
+			const ScaledPrice &orderPrice,
+			const Qty &tradeQty,
+			const ScaledPrice &tradePrice,
+			const Qty &remainingQty,
 			const TimeMeasurement::Milestones &timeMeasurement) {
- 		
-		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
- 	
-		{
-// 			const SideLock lock(m_sellMutex);
-// 			AssertLe(filled, orderAmount);
-// 			ConfirmOrder(
-// 				status,
-// 				security,
-// 				orderAmount - filled,
-// 				!orderPrice ? security.GetBidPriceScaled() : *orderPrice,
-// 				security.GetRiskControlContext().shortSide);
-		}
-
-		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
-	
+ 		ConfirmOrder(
+			status,
+			security,
+			currency,
+			orderPrice,
+			tradeQty,
+			tradePrice,
+			remainingQty,
+			timeMeasurement,
+			security.GetRiskControlContext().shortSide,
+			m_sellMutex);
 	}
 
 private:
+
+	void CheckNewOrder(
+			const Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const ScaledPrice &price,
+			const TimeMeasurement::Milestones &timeMeasurement,
+			RiskControlSecurityContext::Side &side,
+			SideMutex &sideMutex) {
+		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
+		CheckNewOrderParams(security, qty, price, side);
+		CheckOrdersFloodLevel();
+		{
+			const SideLock lock(sideMutex);
+			CheckFundsForNewOrder(security, currency, qty, price, side);
+		}
+		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
+	}
+
+	void ConfirmOrder(
+			const TradeSystem::OrderStatus &status,
+			const Security &security,
+			const Currency &currency,
+			const ScaledPrice &orderPrice,
+			const Qty &tradeQty,
+			const ScaledPrice &tradePrice,
+			const Qty &remainingQty,
+			const TimeMeasurement::Milestones &timeMeasurement,
+			RiskControlSecurityContext::Side &side,
+			SideMutex &sideMutex) {
+		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
+		{
+			const SideLock lock(sideMutex);
+			ConfirmUsedFunds(
+				status,
+				security,
+				currency,
+				orderPrice,
+				tradeQty,
+				tradePrice,
+				remainingQty,
+				side);
+		}
+		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
+	}
 
 	void CheckOrdersFloodLevel() {
 
@@ -375,7 +414,7 @@ private:
 
 	void CheckNewOrderParams(
 			const Security &security,
-			const Amount &amount,
+			const Qty &qty,
 			const ScaledPrice &scaledPrice,
 			const RiskControlSecurityContext::Side &side)
 			const {
@@ -412,122 +451,306 @@ private:
 
 			throw WrongOrderParameterException("Order price too high");
 
-		} else if (amount < side.settings.minAmount) {
+		} else if (qty < side.settings.minQty) {
 		
 			m_tradingLog.Write(
-				"Amount too low for new %1% %2% order:"
+				"Qty too low for new %1% %2% order:"
 					" %3%, but can't be less than %4%.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
 						% security
-						% amount
-						% side.settings.minAmount;
+						% qty
+						% side.settings.minQty;
 				});
 
-			throw WrongOrderParameterException("Order amount too low");
+			throw WrongOrderParameterException("Order qty too low");
 
-		} else if (amount > side.settings.maxAmount) {
+		} else if (qty > side.settings.maxQty) {
 
 			m_tradingLog.Write(
-				"Amount too high for new %1% %2% order:"
+				"Qty too high for new %1% %2% order:"
 					" %3%, but can't be greater than %4%.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
 						% security
-						% amount
-						% side.settings.maxAmount;
+						% qty
+						% side.settings.maxQty;
 				});
 
-			throw WrongOrderParameterException("Order amount too high");
+			throw WrongOrderParameterException("Order qty too high");
 
 		}
 
 	}
 
-	void CheckNewOrder(
+	std::pair<double, double> CalcCacheOrderVolumes(
 			const Security &security,
-			const Amount &amount,
+			const Currency &currency,
+			const Qty &qty,
 			const ScaledPrice &orderPrice,
-			const RiskControlSecurityContext::Side &side) {
-		
-		const auto volume = security.DescalePrice(orderPrice) * amount;
-		auto &position = security.GetRiskControlContext().position;
-//		AssertLe(fabs(position), side.settings.limit);
-		const auto newPosition = position + (volume * side.direction);
+			const RiskControlSecurityContext::Side &side)
+			const {
 
-		m_tradingLog.Write(
-			"new order\t%1%\t%2%"
-				"\tcurrent pos: %3$f"
-				"\torder vol: %4$f"
-				"\tnew pos: %5$f"
-				"\tlimit: %6$f.",
-			[&](TradingRecord &record) {
-				record
-					% security
-					% side.name
-					% position
-					% volume
-					% newPosition/*
-					% side.settings.limit*/;
-			});
+		const Symbol &symbol = security.GetSymbol();
 
-// 		if (fabs(newPosition) > side.settings.limit) {
-// 			throw NotEnoughFundsException("Not enough funds for new order");
-// 		}
+		AssertEq(Symbol::SECURITY_TYPE_CASH, symbol.GetSecurityType());
+		AssertNe(symbol.GetCashBaseCurrency(), symbol.GetCashQuoteCurrency());		
+		Assert(
+			symbol.GetCashBaseCurrency() == currency
+			|| symbol.GetCashQuoteCurrency() == currency);
 
-		position = newPosition;
+		const auto quoteCurrencyDirection = side.direction * -1;
+
+		return symbol.GetCashBaseCurrency() == currency
+			?	std::make_pair(
+					qty * side.direction,
+					(qty * orderPrice) * quoteCurrencyDirection)
+			:	std::make_pair(
+					(qty * orderPrice) * side.direction,
+					qty * quoteCurrencyDirection);
 
 	}
 
-	void ConfirmOrder(
+	static double CalcFundsRest(
+			double position,
+			const RiskControlSecurityContext::Position &limits) {
+		return position < 0
+			? fabs(limits.shortLimit) - fabs(limits.shortLimit) 
+			: limits.longLimit - position;
+	}
+
+	void CheckFundsForNewOrder(
+			const Security &security,
+			const Currency &currency,
+			const Qty &qty,
+			const ScaledPrice &orderPrice,
+			const RiskControlSecurityContext::Side &side)
+			const {
+
+		const Symbol &symbol = security.GetSymbol();
+		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_CASH) {
+			throw WrongSettingsException("Unknown security type");
+		}
+
+		RiskControlSecurityContext &context = security.GetRiskControlContext();
+		RiskControlSecurityContext::Position &baseCurrency
+			= *context.baseCurrencyPosition;
+		RiskControlSecurityContext::Position &quoteCurrency
+			= *context.quoteCurrencyPosition;
+
+		const std::pair<double, double> blocked
+			= CalcCacheOrderVolumes(
+				security,
+				currency,
+				qty,
+				orderPrice,
+				side);
+		const std::pair<double, double> newPosition = std::make_pair(
+			baseCurrency.position + blocked.first,
+			quoteCurrency.position + blocked.second);
+		const std::pair<double, double> rest = std::make_pair(
+			CalcFundsRest(newPosition.first, baseCurrency),
+			CalcFundsRest(newPosition.second, quoteCurrency));
+		
+		m_tradingLog.Write(
+			"block funds\t%1%"
+				"\t%2%\tcurrent=%3$f block=%4$f result=%5$f rest=%6$f"
+				"\t%7%\tcurrent=%8$f block=%9$f result=%10$f rest=%11$f",
+			[&](TradingRecord &record) {
+				record
+					% side.name
+					% symbol.GetCashBaseCurrency()
+					% baseCurrency.position
+					% blocked.first
+					% newPosition.first
+					% rest.first
+					% symbol.GetCashQuoteCurrency()
+					% quoteCurrency.position
+					% blocked.second
+					% newPosition.second
+					% rest.second;
+			});
+
+ 		if (rest.first < 0) {
+ 			throw NotEnoughFundsException("Not enough funds for new order");
+ 		} else if (rest.second < 0) {
+			throw NotEnoughFundsException("Not enough funds for new order");
+		}
+
+		baseCurrency.position = newPosition.first;
+		quoteCurrency.position = newPosition.second;
+
+	}
+
+	void ConfirmUsedFunds(
 			const TradeSystem::OrderStatus &status,
 			const Security &security,
-			const Amount &remainingAmount,
+			const Currency &currency,
 			const ScaledPrice &orderPrice,
+			const Qty &tradeQty,
+			const ScaledPrice &tradePrice,
+			const Qty &remainingQty,
 			const RiskControlSecurityContext::Side &side) {
 
 		static_assert(
 			TradeSystem::numberOfOrderStatuses == 6,
 			"Status list changed.");
 		switch (status) {
+			default:
+				AssertEq(TradeSystem::ORDER_STATUS_ERROR, status);
+				return;
 			case TradeSystem::ORDER_STATUS_PENDIGN:
 			case TradeSystem::ORDER_STATUS_SUBMITTED:
+				break;
 			case TradeSystem::ORDER_STATUS_FILLED:
-				return;
+				AssertNe(0, tradePrice);
+				ConfirmBlockedFunds(
+					security,
+					currency,
+					orderPrice,
+					tradeQty,
+					tradePrice,
+					side);
+				break;
+			case TradeSystem::ORDER_STATUS_CANCELLED:
+			case TradeSystem::ORDER_STATUS_INACTIVE:
+			case TradeSystem::ORDER_STATUS_ERROR:
+				AssertEq(0, tradePrice);
+				UnblockFunds(
+					security,
+					currency,
+					orderPrice,
+					remainingQty,
+					side);
+				break;
 		}
-
-		auto &position = security.GetRiskControlContext().position;
-//		AssertLe(fabs(position), side.settings.limit);
-		const auto volume = security.DescalePrice(orderPrice) * remainingAmount;
-		const auto newPostion = position - (volume * side.direction);
-		
-		m_tradingLog.Write(
-			"return founds\t%1%\t%2%\t%3%"
-				"\tcurrent pos: %4$f"
-				"\treturn vol: %5$f"
-				"\tnew pos: %6$f"
-				"\tlimit: %7$f.",
-			[&](TradingRecord &record) {
-				record
-					% security
-					% side.name
-					% status
-					% position
-					% volume
-					% newPostion/*
-					% side.settings.limit*/;
-			});
-
-		position = newPostion;
 
 	}
 
+	void ConfirmBlockedFunds(
+			const Security &security,
+			const Currency &currency,
+			const ScaledPrice &orderPrice,
+			const Qty &tradeQty,
+			const ScaledPrice &tradePrice,
+			const RiskControlSecurityContext::Side &side) {
+
+		const Symbol &symbol = security.GetSymbol();
+		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_CASH) {
+			throw WrongSettingsException("Unknown security type");
+		}
+
+		RiskControlSecurityContext &context = security.GetRiskControlContext();
+		RiskControlSecurityContext::Position &baseCurrency
+			= *context.baseCurrencyPosition;
+		RiskControlSecurityContext::Position &quoteCurrency
+			= *context.quoteCurrencyPosition;
+
+		const std::pair<double, double> blocked
+			= CalcCacheOrderVolumes(
+				security,
+				currency,
+				tradeQty,
+				orderPrice,
+				side);
+		const std::pair<double, double> used
+			= CalcCacheOrderVolumes(
+				security,
+				currency,
+				tradeQty,
+				tradePrice,
+				side);
+
+		const std::pair<double, double> newPosition = std::make_pair(
+			baseCurrency.position - blocked.first + used.first,
+			quoteCurrency.position - blocked.second + used.second);
+
+		m_tradingLog.Write(
+			"use funds\t%1%"
+				"\t%2%\tcurrent=%3$f unblock=%4$f used=%5$f result=%6$f rest=%7$f"
+				"\t%8%\tcurrent=%9$f unblock=%10$f used=%11$f result=%12$f rest=%13$f",
+			[&](TradingRecord &record) {
+				record
+					% side.name
+					% symbol.GetCashBaseCurrency()
+					% baseCurrency.position
+					% blocked.first
+					% used.first
+					% newPosition.first
+					% CalcFundsRest(newPosition.first, baseCurrency)
+					% symbol.GetCashQuoteCurrency()
+					% quoteCurrency.position
+					% blocked.second
+					% used.second
+					% newPosition.second
+					% CalcFundsRest(newPosition.second, quoteCurrency);
+			});
+
+		baseCurrency.position = newPosition.first;
+		quoteCurrency.position = newPosition.second;
+
+	}
+
+	void UnblockFunds(
+			const Security &security,
+			const Currency &currency,
+			const ScaledPrice &orderPrice,
+			const Qty &remainingQty,
+			const RiskControlSecurityContext::Side &side) {
+
+		const Symbol &symbol = security.GetSymbol();
+		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_CASH) {
+			throw WrongSettingsException("Unknown security type");
+		}
+
+		RiskControlSecurityContext &context = security.GetRiskControlContext();
+		RiskControlSecurityContext::Position &baseCurrency
+			= *context.baseCurrencyPosition;
+		RiskControlSecurityContext::Position &quoteCurrency
+			= *context.quoteCurrencyPosition;
+
+		const std::pair<double, double> blocked
+			= CalcCacheOrderVolumes(
+				security,
+				currency,
+				remainingQty,
+				orderPrice,
+				side);
+		const std::pair<double, double> newPosition = std::make_pair(
+			baseCurrency.position - blocked.first,
+			quoteCurrency.position - blocked.second);
+
+		m_tradingLog.Write(
+			"unblock funds\t%1%"
+				"\t%2%\tcurrent=%3$f unblock=%4$f result=%5$f rest=%6$f"
+				"\t%7%\tcurrent=%8$f unblock=%9$f result=%10$f rest=%11$f",
+			[&](TradingRecord &record) {
+				record
+					% side.name
+					% symbol.GetCashBaseCurrency()
+					% baseCurrency.position
+					% blocked.first
+					% newPosition.first
+					% CalcFundsRest(newPosition.first, baseCurrency)
+					% symbol.GetCashQuoteCurrency()
+					% quoteCurrency.position
+					% blocked.second
+					% newPosition.second
+					% CalcFundsRest(newPosition.second, quoteCurrency);
+			});
+
+		baseCurrency.position = newPosition.first;
+		quoteCurrency.position = newPosition.second;
+
+	}
 		
 private:
 
+	//! Protects global positions by currency.
 	SideMutex m_sellMutex;
+	//! Protects global positions by currency.
 	SideMutex m_buyMutex;
 	GlobalMutex m_globalMutex;
 
@@ -552,130 +775,168 @@ RiskControlSecurityContext RiskControl::CreateSecurityContext(
 
 	RiskControlSecurityContext result;
 
-	const auto &readPriceLimit = [&](
-			const char *type,
-			const char *orderSide,
-			const char *limSide)
-			-> double {
-		boost::format key("%1%.%2%.%3%.%4%");
-		key % symbol.GetSymbol() % type % orderSide % limSide;
-		return m_pimpl->m_conf.ReadTypedKey<double>(key.str());
-	};
-	const auto &readAmountLimit = [&](
-			const char *type,
-			const char *orderSide,
-			const char *limSide)
-			-> Amount {
-		boost::format key("%1%.%2%.%3%.%4%");
-		key % symbol.GetSymbol() % type % orderSide % limSide;
-		return m_pimpl->m_conf.ReadTypedKey<Amount>(key.str());
-	};
+	{
 
-	result.longSide.settings.maxPrice = readPriceLimit("price", "buy", "max");
-	result.longSide.settings.minPrice = readPriceLimit("price", "buy", "min");
-	result.longSide.settings.maxAmount
-		= readAmountLimit("amount", "buy", "max");
-	result.longSide.settings.minAmount
-		= readAmountLimit("amount", "buy", "min");
+		const auto &readPriceLimit = [&](
+				const char *type,
+				const char *orderSide,
+				const char *limSide)
+				-> double {
+			boost::format key("%1%.%2%.%3%.%4%");
+			key % symbol.GetSymbol() % type % orderSide % limSide;
+			return m_pimpl->m_conf.ReadTypedKey<double>(key.str());
+		};
+		const auto &readQtyLimit = [&](
+				const char *type,
+				const char *orderSide,
+				const char *limSide)
+				-> Qty {
+			boost::format key("%1%.%2%.%3%.%4%");
+			key % symbol.GetSymbol() % type % orderSide % limSide;
+			return m_pimpl->m_conf.ReadTypedKey<Qty>(key.str());
+		};
+
+		result.longSide.settings.maxPrice
+			= readPriceLimit("price", "buy", "max");
+		result.longSide.settings.minPrice
+			= readPriceLimit("price", "buy", "min");
+		result.longSide.settings.maxQty
+			= readQtyLimit("qty", "buy", "max");
+		result.longSide.settings.minQty
+			= readQtyLimit("qty", "buy", "min");
 	
-	result.shortSide.settings.maxPrice = readPriceLimit("price", "sell", "max");
-	result.shortSide.settings.minPrice = readPriceLimit("price", "sell", "min");
-	result.shortSide.settings.maxAmount
-		= readAmountLimit("amount", "buy", "max");
-	result.shortSide.settings.minAmount
-		= readAmountLimit("amount", "buy", "min");
+		result.shortSide.settings.maxPrice
+			= readPriceLimit("price", "sell", "max");
+		result.shortSide.settings.minPrice
+			= readPriceLimit("price", "sell", "min");
+		result.shortSide.settings.maxQty
+			= readQtyLimit("qty", "buy", "max");
+		result.shortSide.settings.minQty
+			= readQtyLimit("qty", "buy", "min");
+
+	}
+
+	{
+
+		auto cache(m_pimpl->m_positionsCache);
+
+		const auto &readLimit = [&](
+				const Currency &currency,
+				const char *type) {
+			boost::format key("%1%.limit.%2%");
+			key % currency % type;
+			return m_pimpl->m_conf.ReadTypedKey<double>(key.str());
+		};
+
+		const auto &getPos = [&](
+				const Currency &currency)
+				-> boost::shared_ptr<RiskControlSecurityContext::Position> {
+			const auto &cacheIt = cache.find(symbol.GetCashBaseCurrency());
+			if (cacheIt == cache.cend()) {
+				const boost::shared_ptr<RiskControlSecurityContext::Position> pos(
+					new RiskControlSecurityContext::Position(
+						readLimit(currency, "short") * -1,
+						readLimit(currency, "long")));
+				m_pimpl->m_log.Info(
+					"%1% position limits: short = %2%, long = %3%.",
+					symbol,
+					fabs(pos->shortLimit),
+					pos->longLimit);
+				cache[currency] = pos;
+				return pos;
+			} else {
+				return cacheIt->second;
+			}
+		};
+
+		result.baseCurrencyPosition = getPos(symbol.GetCashBaseCurrency());
+		result.quoteCurrencyPosition = getPos(symbol.GetCashQuoteCurrency());
+
+	}
 
 	m_pimpl->m_log.Info(
 		"Order limits for %1%:"
 			" buy: %2% / %3% - %4% / %5%;"
-			" sell %6% / %7% - %8% / %9%;",
+			" sell: %6% / %7% - %8% / %9%;",
 		symbol,
 		result.longSide.settings.minPrice, 
-		result.longSide.settings.minAmount,
+		result.longSide.settings.minQty,
 		result.longSide.settings.maxPrice, 
-		result.longSide.settings.maxAmount,
+		result.longSide.settings.maxQty,
 		result.shortSide.settings.minPrice, 
-		result.shortSide.settings.minAmount,
+		result.shortSide.settings.minQty,
 		result.shortSide.settings.maxPrice, 
-		result.shortSide.settings.maxAmount);
+		result.shortSide.settings.maxQty);
 
 	return result;
 
 }
 
 void RiskControl::CheckNewBuyOrder(
-		const TradeSystem &tradeSystem,
 		const Security &security,
 		const Currency &currency,
-		const Amount &amount,
-		const boost::optional<ScaledPrice> &price,
+		const Qty &qty,
+		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->CheckNewBuyOrder(
-		tradeSystem,
 		security,
 		currency,
-		amount,
+		qty,
 		price,
 		timeMeasurement);
 }
 
 void RiskControl::CheckNewSellOrder(
-		const TradeSystem &tradeSystem,
 		const Security &security,
 		const Currency &currency,
-		const Amount &amount,
-		const boost::optional<ScaledPrice> &price,
+		const Qty &qty,
+		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->CheckNewSellOrder(
-		tradeSystem,
 		security,
 		currency,
-		amount,
+		qty,
 		price,
 		timeMeasurement);
 }
 
 void RiskControl::ConfirmBuyOrder(
 		const TradeSystem::OrderStatus &orderStatus,
-		const TradeSystem &tradeSystem,
 		const Security &security,
 		const Currency &currency,
-		const Amount &orderAmount,
-		const boost::optional<ScaledPrice> &orderPrice,
-		const Amount &filled,
-		double avgPrice,
+		const ScaledPrice &orderPrice,
+		const Qty &tradeQty,
+		const ScaledPrice &tradePrice,
+		const Qty &remainingQty,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->ConfirmBuyOrder(
 		orderStatus,
-		tradeSystem,
 		security,
 		currency,
-		orderAmount,
 		orderPrice,
-		filled,
-		avgPrice,
+		tradeQty,
+		tradePrice,
+		remainingQty,
 		timeMeasurement);
 }
 
 void RiskControl::ConfirmSellOrder(
 		const TradeSystem::OrderStatus &orderStatus,
-		const TradeSystem &tradeSystem,
 		const Security &security,
 		const Currency &currency,
-		const Amount &orderAmount,
-		const boost::optional<ScaledPrice> &orderPrice,
-		const Amount &filled,
-		double avgPrice,
+		const ScaledPrice &orderPrice,
+		const Qty &tradeQty,
+		const ScaledPrice &tradePrice,
+		const Qty &remainingQty,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->ConfirmSellOrder(
 		orderStatus,
-		tradeSystem,
 		security,
 		currency,
-		orderAmount,
 		orderPrice,
-		filled,
-		avgPrice,
+		tradeQty,
+		tradePrice,
+		remainingQty,
 		timeMeasurement);
 }
 

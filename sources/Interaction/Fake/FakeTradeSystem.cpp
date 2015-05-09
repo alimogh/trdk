@@ -240,16 +240,21 @@ private:
 			tradePrice = order.security->GetAskPriceScaled();
 			isMatched = order.price >= tradePrice;
 		}
-		order.callback(
-			order.id, 
-			isMatched
-				?	TradeSystem::ORDER_STATUS_FILLED
-				:	TradeSystem::ORDER_STATUS_CANCELLED,
-			order.qty,
-			0,
-			isMatched
-				?	order.security->DescalePrice(tradePrice)
-				:	.0);
+		if (isMatched) {
+			order.callback(
+				order.id, 
+				TradeSystem::ORDER_STATUS_FILLED,
+				order.qty,
+				0,
+				tradePrice);
+		} else {
+			order.callback(
+				order.id, 
+				TradeSystem::ORDER_STATUS_CANCELLED,
+				0,
+				order.qty,
+				0);
+		}
 	}
 
 private:

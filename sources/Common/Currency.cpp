@@ -15,6 +15,10 @@
 using namespace trdk;
 using namespace trdk::Lib;
 
+namespace trdk { namespace Lib {
+	const char * ConvertToIsoPch(const Currency &);
+} }
+
 namespace { namespace Iso4217 {
 	const std::string usd = ConvertToIsoPch(CURRENCY_USD);
 	const std::string eur = ConvertToIsoPch(CURRENCY_EUR);

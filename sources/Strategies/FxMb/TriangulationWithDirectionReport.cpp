@@ -738,9 +738,7 @@ void TriangleReport::ReportUpdate() {
 		if (!order) {
 			record % ' ' % ' ';
 		} else {
-			record
-				% order->GetPlanedQty()
-				% ConvertToIsoPch(order->GetCurrency());
+			record % order->GetPlanedQty() % order->GetCurrency();
 		}
 		
 		if (!order) {

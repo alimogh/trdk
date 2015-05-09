@@ -58,9 +58,9 @@ namespace trdk {
 				void(
 					const trdk::OrderId &,
 					const OrderStatus &,
-					const trdk::Qty &filled,
-					const trdk::Qty &remaining,
-					double avgPrice)>
+					const trdk::Qty &tradeQty,
+					const trdk::Qty &remainingQty,
+					const trdk::ScaledPrice &tradePrice)>
 			OrderStatusUpdateSlot;
 
 		struct Account {
@@ -114,7 +114,6 @@ namespace trdk {
 		public:
 			explicit OrderParamsError(
 				const char *what,
-				const boost::optional<trdk::ScaledPrice> &,
 				const trdk::Qty &,
 				const trdk::OrderParams &)
 				throw();

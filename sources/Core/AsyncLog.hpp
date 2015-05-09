@@ -46,6 +46,7 @@ namespace trdk {
 			PT_PTIME,
 			PT_TIME_DURATION,
 
+			PT_CURRENCY,
 			PT_SECURITY,
 
 			numberOfParamTypes
@@ -145,7 +146,7 @@ namespace trdk {
 				}
 	
 				static_assert(
-					numberOfParamTypes == 16,
+					numberOfParamTypes == 17,
 					"Parameter type list changed.");
 				switch (type) {
 
@@ -213,6 +214,12 @@ namespace trdk {
 						namespace pt = boost::posix_time;
 						WriteToDumpStream(
 							boost::any_cast<const pt::time_duration &>(val),
+							os);
+						break;
+
+					case PT_CURRENCY:
+						WriteToDumpStream(
+							*boost::any_cast<const Lib::Currency *>(val),
 							os);
 						break;
 
@@ -290,6 +297,10 @@ namespace trdk {
 		}
 		void StoreParam(const boost::posix_time::time_duration &time) {
 			StoreTypedParam(PT_TIME_DURATION, time);
+		}
+
+		void StoreParam(const trdk::Lib::Currency &currency) {
+			StoreTypedParam(PT_CURRENCY, currency);
 		}
 
 		void StoreParam(const trdk::Security &security) {

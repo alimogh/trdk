@@ -170,8 +170,8 @@ public:
 			Strategy &strategy,
 			Security &security,
 			const Currency &currency,
-			Qty qty,
-			ScaledPrice startPrice,
+			const Qty &qty,
+			const ScaledPrice &startPrice,
 			const TimeMeasurement::Milestones &timeMeasurement)
 		: m_id(theNextPositionId++),
 		m_position(position),
@@ -198,9 +198,9 @@ public:
 	void UpdateOpening(
 			const OrderId &orderId,
 			const TradeSystem::OrderStatus &orderStatus,
-			Qty filled,
-			const Qty &remaining,
-			double avgPrice) {
+			Qty tradeQty,
+			const Qty &remainingQty,
+			const ScaledPrice &tradePrice) {
 
 		UseUnused(orderId);
 
@@ -248,26 +248,26 @@ public:
 							+	(m_oppositePosition
 									?	m_oppositePosition->GetActiveQty()
 									:	0),
-						remaining);
-					AssertEq(0, filled);
-					AssertEq(0, avgPrice);
+						remainingQty);
+					AssertEq(0, tradeQty);
+					AssertEq(0, tradePrice);
 					return;
 				case TradeSystem::ORDER_STATUS_FILLED:
-					Assert(avgPrice > 0);
+					AssertLt(0, tradePrice);
 					if (m_oppositePosition) {
 						AssertGe(
 							m_oppositePosition->GetActiveQty()
 								+ m_position.GetPlanedQty(),
-							filled);
-						auto filledForOpposite = filled;
+							tradeQty);
+						auto filledForOpposite = tradeQty;
 						if (filledForOpposite > m_oppositePosition->GetActiveQty()) {
 							filledForOpposite
 								= m_oppositePosition->GetActiveQty();
 						}
-						AssertGe(filled, filledForOpposite);
-						filled -= filledForOpposite;
+						AssertGe(tradeQty, filledForOpposite);
+						tradeQty -= filledForOpposite;
 						m_oppositePosition->m_pimpl->m_closed.price.total
-							+= m_security.ScalePrice(avgPrice);
+							+= tradePrice;
 						++m_oppositePosition->m_pimpl->m_closed.price.count;
 						m_oppositePosition->m_pimpl->m_closed.qty
 							+= filledForOpposite;
@@ -277,17 +277,17 @@ public:
 							orderStatus);
 						updatedOppositePosition = m_oppositePosition;
 					}
-					if (filled != 0) {
+					if (tradeQty != 0) {
 						AssertEq(
-							m_opened.qty + filled + remaining,
+							m_opened.qty + tradeQty + remainingQty,
 							m_planedQty);
-						m_opened.price.total += m_security.ScalePrice(avgPrice);
+						m_opened.price.total += tradePrice;
 						++m_opened.price.count;
-						m_opened.qty += filled;
+						m_opened.qty += tradeQty;
 						AssertLe(0, m_opened.qty);
 						ReportOpeningUpdate("filled", orderStatus);
 					} else {
-						AssertNe(0, remaining);
+						AssertNe(0, remainingQty);
 					}
 					break;
 				case TradeSystem::ORDER_STATUS_INACTIVE:
@@ -334,7 +334,7 @@ public:
 					m_oppositePosition->m_pimpl->m_closed.hasOrder = false;
 					updatedOppositePosition = m_oppositePosition;
 					m_oppositePosition.reset();
-				} else if (remaining == 0) {
+				} else if (remainingQty == 0) {
 					AssertNe(0, m_oppositePosition->GetCloseStartPrice());
 					try {
 						m_oppositePosition->SetCloseStartPrice(0);
@@ -346,7 +346,7 @@ public:
 				}
 			}
 
-			if (remaining == 0) {
+			if (remainingQty == 0) {
 
 				AssertLe(m_opened.qty, m_planedQty);
 				Assert(m_opened.time.is_not_a_date_time());
@@ -372,7 +372,7 @@ public:
 		if (updatedOppositePosition) {
 			updatedOppositePosition->m_pimpl->SignalUpdate();
 		}
-		if (remaining == 0) {
+		if (remainingQty == 0) {
 			SignalUpdate();
 		}
 
@@ -381,9 +381,9 @@ public:
 	void UpdateClosing(
 			const OrderId &orderId,
 			const TradeSystem::OrderStatus &orderStatus,
-			const Qty &filled,
-			const Qty &remaining,
-			double avgPrice) {
+			const Qty &tradeQty,
+			const Qty &remainingQty,
+			const ScaledPrice &tradePrice) {
 
 		UseUnused(orderId);
 
@@ -421,15 +421,15 @@ public:
 					AssertEq(m_closed.price.count, 0);
 					return;
 				case TradeSystem::ORDER_STATUS_FILLED:
-					AssertEq(filled + remaining, m_opened.qty);
-					AssertLe(long(m_closed.qty) + filled, m_opened.qty);
-					Assert(avgPrice > 0);
-					m_closed.price.total += m_security.ScalePrice(avgPrice);
+					AssertEq(tradeQty + remainingQty, m_opened.qty);
+					AssertLe(Qty(m_closed.qty) + tradeQty, m_opened.qty);
+					AssertLt(0, tradePrice);
+					m_closed.price.total += tradePrice;
 					++m_closed.price.count;
-					m_closed.qty += filled;
+					m_closed.qty += tradeQty;
 					AssertGt(m_closed.qty, 0);
 					ReportClosingUpdate("filled", orderStatus);
-					if (remaining != 0) {
+					if (remainingQty != 0) {
 						return;
 					}
 					break;
@@ -520,7 +520,7 @@ public:
 					% m_strategy.GetTag()
 					% m_security.DescalePrice(m_position.GetOpenStartPrice())
 					% m_security.DescalePrice(m_position.GetOpenPrice())
-					% ConvertToIsoPch(m_position.GetCurrency())
+					% m_position.GetCurrency()
 					% m_position.GetPlanedQty()
 					% m_position.GetOpenedQty()
 					% m_security.GetBidPrice()
@@ -723,7 +723,7 @@ public:
 					% action
 					% m_strategy.GetTag()
 					% m_security.DescalePrice(m_openStartPrice)
-					% ConvertToIsoPch(m_position.GetCurrency())
+					% m_position.GetCurrency()
 					% m_position.GetPlanedQty()
 					% m_security.GetBidPrice()
 					% m_security.GetBidQty()
@@ -1028,29 +1028,29 @@ const std::string & Position::GetCloseTypeStr() const {
 void Position::UpdateOpening(
 		const OrderId &orderId,
 		const TradeSystem::OrderStatus &orderStatus,
-		const Qty &filled,
-		const Qty &remaining,
-		double avgPrice) {
+		const Qty &tradeQty,
+		const Qty &remainingQty,
+		const ScaledPrice &tradePrice) {
 	m_pimpl->UpdateOpening(
 		orderId,
 		orderStatus,
-		filled,
-		remaining,
-		avgPrice);
+		tradeQty,
+		remainingQty,
+		tradePrice);
 }
 
 void Position::UpdateClosing(
 		const OrderId &orderId,
 		const TradeSystem::OrderStatus &orderStatus,
-		const Qty &filled,
-		const Qty &remaining,
-		double avgPrice) {
+		const Qty &tradeQty,
+		const Qty &remainingQty,
+		const ScaledPrice &tradePrice) {
 	m_pimpl->UpdateClosing(
 		orderId,
 		orderStatus,
-		filled,
-		remaining,
-		avgPrice);
+		tradeQty,
+		remainingQty,
+		tradePrice);
 }
 
 Position::Time Position::GetOpenTime() const {
@@ -1164,7 +1164,7 @@ OrderId Position::Open(
 		const ScaledPrice &price,
 		const OrderParams &params) {
 	return m_pimpl->Open(
-		[&](Qty qty) -> OrderId {
+		[&](const Qty &qty) -> OrderId {
 			return DoOpen(qty, price, params);
 		});
 }
@@ -1178,7 +1178,7 @@ OrderId Position::OpenAtMarketPriceWithStopPrice(
 		const ScaledPrice &stopPrice,
 		const OrderParams &params) {
 	return m_pimpl->Open(
-		[&](Qty qty) -> OrderId {
+		[&](const Qty &qty) -> OrderId {
 			return DoOpenAtMarketPriceWithStopPrice(qty, stopPrice, params);
 		});
 }
@@ -1192,7 +1192,7 @@ OrderId Position::OpenImmediatelyOrCancel(
 		const ScaledPrice &price,
 		const OrderParams &params) {
 	return m_pimpl->Open(
-		[&](Qty qty) -> OrderId {
+		[&](const Qty &qty) -> OrderId {
 			return DoOpenImmediatelyOrCancel(qty, price, params);
 		});
 }
@@ -1219,7 +1219,7 @@ OrderId Position::CloseAtMarketPrice(
 		const OrderParams &params) {
 	return m_pimpl->Close(
 		closeType,
-		[&](Qty qty) -> OrderId {
+		[&](const Qty &qty) -> OrderId {
 			return DoCloseAtMarketPrice(qty, params);
 		});
 }
@@ -1234,7 +1234,7 @@ OrderId Position::Close(
 		const OrderParams &params) {
 	return m_pimpl->Close(
 		closeType,
-		[&](Qty qty) -> OrderId {
+		[&](const Qty &qty) -> OrderId {
 			return DoClose(qty, price, params);
 		});
 }
@@ -1254,7 +1254,7 @@ OrderId Position::CloseAtMarketPriceWithStopPrice(
 		const OrderParams &params) {
 	return m_pimpl->Close(
 		closeType,
-		[&](Qty qty) -> OrderId {
+		[&](const Qty &qty) -> OrderId {
 			return DoCloseAtMarketPriceWithStopPrice(qty, stopPrice, params);
 		});
 }
@@ -1300,7 +1300,7 @@ bool Position::CancelAtMarketPrice(
 		const OrderParams &params) {
 	return m_pimpl->CancelAtMarketPrice(
 		closeType,
-		[&](Qty qty) -> OrderId {
+		[&](const Qty &qty) -> OrderId {
 			return DoCloseAtMarketPrice(qty, params);
 		});
 }
@@ -1549,7 +1549,7 @@ OrderId LongPosition::DoCloseImmediatelyOrCancel(
 		const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	Assert(qty > 0);
+	AssertLt(0, qty);
 	return GetTradeSystem().SellImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
@@ -1572,7 +1572,7 @@ OrderId LongPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
 		const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	Assert(qty > 0);
+	AssertLt(0, qty);
 	return GetTradeSystem().SellAtMarketPriceImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),

@@ -305,7 +305,8 @@ void FixTrading::OnOrderStateChanged(
 		status,
 		ParseLastShares(message),
 		ParseLeavesQty(message),
-		message.getDouble(fix::FIX40::Tags::AvgPx));
+		order.security->ScalePrice(
+			message.getDouble(fix::FIX40::Tags::LastPx)));
 }
 
 void FixTrading::FillOrderMessage(
