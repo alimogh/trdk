@@ -79,6 +79,7 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 		settings["Strategy.1"]["Sources"]["hotspot"] = "true";
 		settings["Strategy.1"]["Sources"]["fxall"] = "false";
 	
+		settings["Strategy.1"]["RiskControl"]["triangle_orders_limit"] = "3";
 		settings["Strategy.1"]["RiskControl"]["triangles_limit"] = "0";
 
 		settings["Strategy.1"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
@@ -94,35 +95,37 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 		settings["Strategy.1"]["RiskControl"]["EUR/USD.price.buy.min"] = "0.6000";
 		settings["Strategy.1"]["RiskControl"]["EUR/USD.price.sell.max"] = "1.2000";
 		settings["Strategy.1"]["RiskControl"]["EUR/USD.price.sell.min"] = "0.6000";
-		settings["Strategy.1"]["RiskControl"]["EUR/USD.amount.buy.max"] = "1000000";
-		settings["Strategy.1"]["RiskControl"]["EUR/USD.amount.buy.min"] = "100000";
-		settings["Strategy.1"]["RiskControl"]["EUR/USD.amount.sell.max"] = "1000000";
-		settings["Strategy.1"]["RiskControl"]["EUR/USD.amount.sell.min"] = "100000";
+		settings["Strategy.1"]["RiskControl"]["EUR/USD.qty.buy.max"] = "1000000";
+		settings["Strategy.1"]["RiskControl"]["EUR/USD.qty.buy.min"] = "100000";
+		settings["Strategy.1"]["RiskControl"]["EUR/USD.qty.sell.max"] = "1000000";
+		settings["Strategy.1"]["RiskControl"]["EUR/USD.qty.sell.min"] = "100000";
 
 		settings["Strategy.1"]["RiskControl"]["EUR/JPY.price.buy.max"] = "170.0000";
 		settings["Strategy.1"]["RiskControl"]["EUR/JPY.price.buy.min"] = "90.0000";
 		settings["Strategy.1"]["RiskControl"]["EUR/JPY.price.sell.max"] = "170.0000";
 		settings["Strategy.1"]["RiskControl"]["EUR/JPY.price.sell.min"] = "90.0000";
-		settings["Strategy.1"]["RiskControl"]["EUR/JPY.amount.buy.max"] = "1000000";
-		settings["Strategy.1"]["RiskControl"]["EUR/JPY.amount.buy.min"] = "100000";
-		settings["Strategy.1"]["RiskControl"]["EUR/JPY.amount.sell.max"] = "1000000";
-		settings["Strategy.1"]["RiskControl"]["EUR/JPY.amount.sell.min"] = "100000";
+		settings["Strategy.1"]["RiskControl"]["EUR/JPY.qty.buy.max"] = "1000000";
+		settings["Strategy.1"]["RiskControl"]["EUR/JPY.qty.buy.min"] = "100000";
+		settings["Strategy.1"]["RiskControl"]["EUR/JPY.qty.sell.max"] = "1000000";
+		settings["Strategy.1"]["RiskControl"]["EUR/JPY.qty.sell.min"] = "100000";
 
 		settings["Strategy.1"]["RiskControl"]["USD/JPY.price.buy.max"] = "160.0000";
 		settings["Strategy.1"]["RiskControl"]["USD/JPY.price.buy.min"] = "80.0000";
 		settings["Strategy.1"]["RiskControl"]["USD/JPY.price.sell.max"] = "160.0000";
 		settings["Strategy.1"]["RiskControl"]["USD/JPY.price.sell.min"] = "80.0000";
-		settings["Strategy.1"]["RiskControl"]["USD/JPY.amount.buy.max"] = "1400000";
-		settings["Strategy.1"]["RiskControl"]["USD/JPY.amount.buy.min"] = "80000";
-		settings["Strategy.1"]["RiskControl"]["USD/JPY.amount.sell.max"] = "1400000";
-		settings["Strategy.1"]["RiskControl"]["USD/JPY.amount.sell.min"] = "80000";
+		settings["Strategy.1"]["RiskControl"]["USD/JPY.qty.buy.max"] = "1400000";
+		settings["Strategy.1"]["RiskControl"]["USD/JPY.qty.buy.min"] = "80000";
+		settings["Strategy.1"]["RiskControl"]["USD/JPY.qty.sell.max"] = "1400000";
+		settings["Strategy.1"]["RiskControl"]["USD/JPY.qty.sell.min"] = "80000";
 
 		settings["Strategy.1"]["RiskControl"]["EUR.limit"] = "10000000";
 		settings["Strategy.1"]["RiskControl"]["USD.limit"] = "11000000";
 		settings["Strategy.1"]["RiskControl"]["JPY.limit"] = "1500000000";
 
-		settings["General"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
+		settings["General"]["RiskControl"]["triangles_limit"] = "0";
+
 		settings["General"]["RiskControl"]["flood_control.orders.max_number"] = "3";
+		settings["General"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
 
 		settings["General"]["RiskControl"]["pnl.profit"] = "0.001";
 		settings["General"]["RiskControl"]["pnl.loss"] = "0.001";
@@ -134,28 +137,28 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 		settings["General"]["RiskControl"]["EUR/USD.price.buy.min"] = "0.6000";
 		settings["General"]["RiskControl"]["EUR/USD.price.sell.max"] = "1.2000";
 		settings["General"]["RiskControl"]["EUR/USD.price.sell.min"] = "0.6000";
-		settings["General"]["RiskControl"]["EUR/USD.amount.buy.max"] = "1000000";
-		settings["General"]["RiskControl"]["EUR/USD.amount.buy.min"] = "100000";
-		settings["General"]["RiskControl"]["EUR/USD.amount.sell.max"] = "1000000";
-		settings["General"]["RiskControl"]["EUR/USD.amount.sell.min"] = "100000";
+		settings["General"]["RiskControl"]["EUR/USD.qty.buy.max"] = "1000000";
+		settings["General"]["RiskControl"]["EUR/USD.qty.buy.min"] = "100000";
+		settings["General"]["RiskControl"]["EUR/USD.qty.sell.max"] = "1000000";
+		settings["General"]["RiskControl"]["EUR/USD.qty.sell.min"] = "100000";
 
 		settings["General"]["RiskControl"]["EUR/JPY.price.buy.max"] = "170.0000";
 		settings["General"]["RiskControl"]["EUR/JPY.price.buy.min"] = "90.0000";
 		settings["General"]["RiskControl"]["EUR/JPY.price.sell.max"] = "170.0000";
 		settings["General"]["RiskControl"]["EUR/JPY.price.sell.min"] = "90.0000";
-		settings["General"]["RiskControl"]["EUR/JPY.amount.buy.max"] = "1000000";
-		settings["General"]["RiskControl"]["EUR/JPY.amount.buy.min"] = "100000";
-		settings["General"]["RiskControl"]["EUR/JPY.amount.sell.max"] = "1000000";
-		settings["General"]["RiskControl"]["EUR/JPY.amount.sell.min"] = "100000";
+		settings["General"]["RiskControl"]["EUR/JPY.qty.buy.max"] = "1000000";
+		settings["General"]["RiskControl"]["EUR/JPY.qty.buy.min"] = "100000";
+		settings["General"]["RiskControl"]["EUR/JPY.qty.sell.max"] = "1000000";
+		settings["General"]["RiskControl"]["EUR/JPY.qty.sell.min"] = "100000";
 
 		settings["General"]["RiskControl"]["USD/JPY.price.buy.max"] = "160.0000";
 		settings["General"]["RiskControl"]["USD/JPY.price.buy.min"] = "80.0000";
 		settings["General"]["RiskControl"]["USD/JPY.price.sell.max"] = "160.0000";
 		settings["General"]["RiskControl"]["USD/JPY.price.sell.min"] = "80.0000";
-		settings["General"]["RiskControl"]["USD/JPY.amount.buy.max"] = "1400000";
-		settings["General"]["RiskControl"]["USD/JPY.amount.buy.min"] = "80000";
-		settings["General"]["RiskControl"]["USD/JPY.amount.sell.max"] = "1400000";
-		settings["General"]["RiskControl"]["USD/JPY.amount.sell.min"] = "80000";
+		settings["General"]["RiskControl"]["USD/JPY.qty.buy.max"] = "1400000";
+		settings["General"]["RiskControl"]["USD/JPY.qty.buy.min"] = "80000";
+		settings["General"]["RiskControl"]["USD/JPY.qty.sell.max"] = "1400000";
+		settings["General"]["RiskControl"]["USD/JPY.qty.sell.min"] = "80000";
 
 		settings["General"]["RiskControl"]["EUR.limit"] = "10000000";
 		settings["General"]["RiskControl"]["USD.limit"] = "11000000";
