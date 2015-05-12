@@ -85,51 +85,22 @@ RiskControlSecurityContext::Side::Settings::Settings()
 
 ////////////////////////////////////////////////////////////////////////////////
 
+class trdk::RiskControlScope : private boost::noncopyable {
 
-RiskControl::Exception::Exception(const char *what) throw()
-	: Lib::Exception(what) {
-	//...//
-}
+protected:
 
-RiskControl::WrongSettingsException::WrongSettingsException(
-		const char *what) throw()
-	: Exception(what) {
-	//...//
-}
-
-RiskControl::NumberOfOrdersLimitException::NumberOfOrdersLimitException(
-		const char *what)
-	throw()
-	: Exception(what) {
-	//...//
-}
-
-RiskControl::NotEnoughFundsException::NotEnoughFundsException(
-		const char *what)
-	throw()
-	: Exception(what) {
-	//...//
-}
-
-RiskControl::WrongOrderParameterException::WrongOrderParameterException(
-		const char *what)
-	throw()
-	: Exception(what) {
-	//...//
-}
-
-RiskControl::PnlIsOutOfRangeException::PnlIsOutOfRangeException(
-		const char *what)
-	throw()
-	: Exception(what) {
-	//...//
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-class RiskControl::Implementation : private boost::noncopyable {
+	typedef RiskControl::WrongSettingsException WrongSettingsException;
+	typedef RiskControl::NumberOfOrdersLimitException
+		NumberOfOrdersLimitException;
+	typedef RiskControl::WrongOrderParameterException
+		WrongOrderParameterException;
+	typedef RiskControl::NotEnoughFundsException NotEnoughFundsException;
 
 private:
+
+	typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy; 
+	typedef ConcurrencyPolicy::Mutex Mutex;
+	typedef ConcurrencyPolicy::Lock Lock;
 
 	struct Settings : private boost::noncopyable {
 
@@ -160,34 +131,12 @@ private:
 
 	typedef boost::circular_buffer<pt::ptime> FloodControlBuffer;
 
-	typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy; 
-	typedef ConcurrencyPolicy::Mutex SideMutex;
-	typedef ConcurrencyPolicy::Lock SideLock;
-	typedef ConcurrencyPolicy::Mutex GlobalMutex;
-	typedef ConcurrencyPolicy::Lock GlobalLock;
-
-	typedef std::map<
-			Currency,
-			boost::shared_ptr<RiskControlSecurityContext::Position>>
-		PositionsCache;
-
 public:
 
-	Context &m_context;
-	
-	const IniSectionRef m_conf;
-	const Settings m_settings;
-		
-	ModuleEventsLog m_log;
-	mutable ModuleTradingLog m_tradingLog;
-
-	PositionsCache m_positionsCache;
-
-public:
-
-	explicit Implementation(Context &context, const IniSectionRef &conf)
+	explicit RiskControlScope(Context &context, const IniSectionRef &conf)
 		: m_context(context),
-		m_conf(conf),
+		m_log(logPrefix, m_context.GetLog()),
+		m_tradingLog(logPrefix, m_context.GetTradingLog()),
 		m_settings(
 			pt::milliseconds(
 				conf.ReadTypedKey<size_t>("flood_control.orders.period_ms")),
@@ -195,8 +144,6 @@ public:
 			conf.ReadTypedKey<double>("pnl.profit"),
 			conf.ReadTypedKey<uint16_t>("win_ratio.first_operations_to_skip"),
 			conf.ReadTypedKey<uint16_t>("win_ratio.min")),
-		m_log(logPrefix, m_context.GetLog()),
-		m_tradingLog(logPrefix, m_context.GetTradingLog()),
 		m_orderTimePoints(
 			conf.ReadTypedKey<size_t>("flood_control.orders.max_number")) {
 
@@ -232,7 +179,6 @@ public:
 				|| m_settings.winRatioMinValue > 100) {
 			throw WrongSettingsException("Wrong Min win-ratio set");
 		}
-
 	}
 
 public:
@@ -241,32 +187,26 @@ public:
 			const Security &security,
 			const Currency &currency,
 			const Qty &qty,
-			const ScaledPrice &price,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+			const ScaledPrice &price) {
 		CheckNewOrder(
 			security,
 			currency,
 			qty,
 			price,
-			timeMeasurement,
-			security.GetRiskControlContext().longSide,
-			m_buyMutex);
+			security.GetRiskControlContext().longSide);
 	}
 
 	void CheckNewSellOrder(
 			const Security &security,
 			const Currency &currency,
 			const Qty &qty,
-			const ScaledPrice &price,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+			const ScaledPrice &price) {
 		CheckNewOrder(
 			security,
 			currency,
 			qty,
 			price,
-			timeMeasurement,
-			security.GetRiskControlContext().shortSide,
-			m_sellMutex);
+			security.GetRiskControlContext().shortSide);
 	}
 
 	void ConfirmBuyOrder(
@@ -276,8 +216,7 @@ public:
 			const ScaledPrice &orderPrice,
 			const Qty &tradeQty,
 			const ScaledPrice &tradePrice,
-			const Qty &remainingQty,
-			const Lib::TimeMeasurement::Milestones &timeMeasurement) {
+			const Qty &remainingQty) {
  		 ConfirmOrder(
 			status,
 			security,
@@ -286,9 +225,7 @@ public:
 			tradeQty,
 			tradePrice,
 			remainingQty,
-			timeMeasurement,
-			security.GetRiskControlContext().longSide,
-			m_buyMutex);
+			security.GetRiskControlContext().longSide);
 	}
 
 	void ConfirmSellOrder(
@@ -298,8 +235,7 @@ public:
 			const ScaledPrice &orderPrice,
 			const Qty &tradeQty,
 			const ScaledPrice &tradePrice,
-			const Qty &remainingQty,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+			const Qty &remainingQty) {
  		ConfirmOrder(
 			status,
 			security,
@@ -308,9 +244,7 @@ public:
 			tradeQty,
 			tradePrice,
 			remainingQty,
-			timeMeasurement,
-			security.GetRiskControlContext().shortSide,
-			m_sellMutex);
+			security.GetRiskControlContext().shortSide);
 	}
 
 private:
@@ -320,17 +254,10 @@ private:
 			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &price,
-			const TimeMeasurement::Milestones &timeMeasurement,
-			RiskControlSecurityContext::Side &side,
-			SideMutex &sideMutex) {
-		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
+			RiskControlSecurityContext::Side &side) {
 		CheckNewOrderParams(security, qty, price, side);
 		CheckOrdersFloodLevel();
-		{
-			const SideLock lock(sideMutex);
-			CheckFundsForNewOrder(security, currency, qty, price, side);
-		}
-		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
+		CheckFundsForNewOrder(security, currency, qty, price, side);
 	}
 
 	void ConfirmOrder(
@@ -341,23 +268,16 @@ private:
 			const Qty &tradeQty,
 			const ScaledPrice &tradePrice,
 			const Qty &remainingQty,
-			const TimeMeasurement::Milestones &timeMeasurement,
-			RiskControlSecurityContext::Side &side,
-			SideMutex &sideMutex) {
-		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
-		{
-			const SideLock lock(sideMutex);
-			ConfirmUsedFunds(
-				status,
-				security,
-				currency,
-				orderPrice,
-				tradeQty,
-				tradePrice,
-				remainingQty,
-				side);
-		}
-		timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
+			RiskControlSecurityContext::Side &side) {
+		ConfirmUsedFunds(
+			status,
+			security,
+			currency,
+			orderPrice,
+			tradeQty,
+			tradePrice,
+			remainingQty,
+			side);
 	}
 
 	void CheckOrdersFloodLevel() {
@@ -365,7 +285,7 @@ private:
 		const auto &now = m_context.GetCurrentTime();
 		const auto &oldestTime = now - m_settings.ordersFloodControlPeriod;
 
-		const GlobalLock lock(m_globalMutex);
+		const Lock lock(m_mutex);
 	
 		while (
 				!m_orderTimePoints.empty()
@@ -745,16 +665,97 @@ private:
 		quoteCurrency.position = newPosition.second;
 
 	}
-		
+
 private:
 
-	//! Protects global positions by currency.
-	SideMutex m_sellMutex;
-	//! Protects global positions by currency.
-	SideMutex m_buyMutex;
-	GlobalMutex m_globalMutex;
+	Context &m_context;
+
+	Mutex m_mutex;
+
+	ModuleEventsLog m_log;
+	mutable ModuleTradingLog m_tradingLog;
+	
+	const Settings m_settings;
 
 	FloodControlBuffer m_orderTimePoints;
+
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+RiskControl::Exception::Exception(const char *what) throw()
+	: Lib::Exception(what) {
+	//...//
+}
+
+RiskControl::WrongSettingsException::WrongSettingsException(
+		const char *what) throw()
+	: Exception(what) {
+	//...//
+}
+
+RiskControl::NumberOfOrdersLimitException::NumberOfOrdersLimitException(
+		const char *what)
+	throw()
+	: Exception(what) {
+	//...//
+}
+
+RiskControl::NotEnoughFundsException::NotEnoughFundsException(
+		const char *what)
+	throw()
+	: Exception(what) {
+	//...//
+}
+
+RiskControl::WrongOrderParameterException::WrongOrderParameterException(
+		const char *what)
+	throw()
+	: Exception(what) {
+	//...//
+}
+
+RiskControl::PnlIsOutOfRangeException::PnlIsOutOfRangeException(
+		const char *what)
+	throw()
+	: Exception(what) {
+	//...//
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+class RiskControl::Implementation : private boost::noncopyable {
+
+private:
+
+	typedef std::map<
+			Currency,
+			boost::shared_ptr<RiskControlSecurityContext::Position>>
+		PositionsCache;
+
+public:
+
+	Context &m_context;
+	ModuleEventsLog m_log;
+	ModuleTradingLog m_tradingLog;
+
+	const IniSectionRef m_conf;
+		
+	PositionsCache m_positionsCache;
+
+	RiskControlScope m_globalScope;
+
+public:
+
+	explicit Implementation(Context &context, const IniSectionRef &conf)
+		: m_context(context),
+		m_log(logPrefix, m_context.GetLog()),
+		m_tradingLog(logPrefix, m_context.GetTradingLog()),
+		m_conf(conf),
+		m_globalScope(m_context, m_conf) {
+		//...//
+	}
 
 };
 
@@ -770,7 +771,7 @@ RiskControl::~RiskControl() {
 }
 
 RiskControlSecurityContext RiskControl::CreateSecurityContext(
-			const Symbol &symbol)
+		const Symbol &symbol)
 		const {
 
 	RiskControlSecurityContext result;
@@ -878,12 +879,9 @@ void RiskControl::CheckNewBuyOrder(
 		const Qty &qty,
 		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	m_pimpl->CheckNewBuyOrder(
-		security,
-		currency,
-		qty,
-		price,
-		timeMeasurement);
+	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
+	m_pimpl->m_globalScope .CheckNewBuyOrder(security, currency, qty, price);
+	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
 }
 
 void RiskControl::CheckNewSellOrder(
@@ -892,12 +890,9 @@ void RiskControl::CheckNewSellOrder(
 		const Qty &qty,
 		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	m_pimpl->CheckNewSellOrder(
-		security,
-		currency,
-		qty,
-		price,
-		timeMeasurement);
+	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
+	m_pimpl->m_globalScope.CheckNewSellOrder(security, currency, qty, price);
+	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
 }
 
 void RiskControl::ConfirmBuyOrder(
@@ -909,15 +904,16 @@ void RiskControl::ConfirmBuyOrder(
 		const ScaledPrice &tradePrice,
 		const Qty &remainingQty,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	m_pimpl->ConfirmBuyOrder(
+	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_START);
+	m_pimpl->m_globalScope.ConfirmBuyOrder(
 		orderStatus,
 		security,
 		currency,
 		orderPrice,
 		tradeQty,
 		tradePrice,
-		remainingQty,
-		timeMeasurement);
+		remainingQty);
+	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_COMPLETE);
 }
 
 void RiskControl::ConfirmSellOrder(
@@ -929,60 +925,61 @@ void RiskControl::ConfirmSellOrder(
 		const ScaledPrice &tradePrice,
 		const Qty &remainingQty,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	m_pimpl->ConfirmSellOrder(
+	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_START);
+	m_pimpl->m_globalScope.ConfirmSellOrder(
 		orderStatus,
 		security,
 		currency,
 		orderPrice,
 		tradeQty,
 		tradePrice,
-		remainingQty,
-		timeMeasurement);
+		remainingQty);
+	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_COMPLETE);
 }
 
 void RiskControl::CheckTotalPnl(double pnl) const {
 	
 	if (pnl < 0) {
 	
-		if (pnl < m_pimpl->m_settings.pnl.first) {
-			m_pimpl->m_tradingLog.Write(
-				"Total loss is out of allowed PnL range:"
-					" %1$f, but can't be more than %2$f.",
-				[&](TradingRecord &record) {
-					record % fabs(pnl) % fabs(m_pimpl->m_settings.pnl.first);
-				});
-			throw PnlIsOutOfRangeException(
-				"Total loss is out of allowed PnL range");
-		}
+// 		if (pnl < m_pimpl->m_settings.pnl.first) {
+// 			m_pimpl->m_tradingLog.Write(
+// 				"Total loss is out of allowed PnL range:"
+// 					" %1$f, but can't be more than %2$f.",
+// 				[&](TradingRecord &record) {
+// 					record % fabs(pnl) % fabs(m_pimpl->m_settings.pnl.first);
+// 				});
+// 			throw PnlIsOutOfRangeException(
+// 				"Total loss is out of allowed PnL range");
+// 		}
 	
-	} else if (pnl > m_pimpl->m_settings.pnl.second) {
-		m_pimpl->m_tradingLog.Write(
-			"Total profit is out of allowed PnL range:"
-				" %1$f, but can't be more than %2$f.",
-			[&](TradingRecord &record) {
-				record % pnl % m_pimpl->m_settings.pnl.second;
-			});
-		throw PnlIsOutOfRangeException(
-			"Total profit is out of allowed PnL range");
+// 	} else if (pnl > m_pimpl->m_settings.pnl.second) {
+// 		m_pimpl->m_tradingLog.Write(
+// 			"Total profit is out of allowed PnL range:"
+// 				" %1$f, but can't be more than %2$f.",
+// 			[&](TradingRecord &record) {
+// 				record % pnl % m_pimpl->m_settings.pnl.second;
+// 			});
+// 		throw PnlIsOutOfRangeException(
+// 			"Total profit is out of allowed PnL range");
 	}
 
 }
 
-void RiskControl::CheckTotalWinRatio(
-		size_t totalWinRatio,
-		size_t operationsCount)
-		const {
-	AssertGe(100, totalWinRatio);
-	if (
-			operationsCount >=  m_pimpl->m_settings.winRatioFirstOperationsToSkip
-			&& totalWinRatio < m_pimpl->m_settings.winRatioMinValue) {
-		m_pimpl->m_tradingLog.Write(
-			"Total win-ratio is too small: %1%%%, but can't be less than %2%%%.",
-			[&](TradingRecord &record) {
-				record % totalWinRatio % m_pimpl->m_settings.winRatioMinValue;
-			});
-			throw PnlIsOutOfRangeException("Total win-ratio is too small");
-	}
-}
+// void RiskControl::CheckTotalWinRatio(
+// 		size_t totalWinRatio,
+// 		size_t operationsCount)
+// 		const {
+// 	AssertGe(100, totalWinRatio);
+// 	if (
+// 			operationsCount >=  m_pimpl->m_settings.winRatioFirstOperationsToSkip
+// 			&& totalWinRatio < m_pimpl->m_settings.winRatioMinValue) {
+// 		m_pimpl->m_tradingLog.Write(
+// 			"Total win-ratio is too small: %1%%%, but can't be less than %2%%%.",
+// 			[&](TradingRecord &record) {
+// 				record % totalWinRatio % m_pimpl->m_settings.winRatioMinValue;
+// 			});
+// 			throw PnlIsOutOfRangeException("Total win-ratio is too small");
+// 	}
+// }
 
 ////////////////////////////////////////////////////////////////////////////////

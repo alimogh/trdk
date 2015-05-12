@@ -27,6 +27,7 @@ namespace trdk {
 
 	class RiskControl;
 	class RiskControlSecurityContext;
+	class RiskControlScope;
 
 	typedef uintmax_t PositionId;
 	class Position;

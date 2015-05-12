@@ -20,6 +20,7 @@ namespace trdk {
 	class RiskControlSecurityContext {
 
 		friend class trdk::RiskControl;
+		friend class trdk::RiskControlScope;
 
 	public:
 
