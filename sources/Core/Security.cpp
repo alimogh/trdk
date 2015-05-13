@@ -85,7 +85,7 @@ public:
 
 	const MarketDataSource &m_source;
 
-	RiskControlSecurityContext m_riskControlContext;
+	const boost::shared_ptr<RiskControlSymbolContext> m_riskControlContext;
 
 	const uint8_t m_pricePrecision;
 	const uintmax_t m_priceScale;
@@ -115,7 +115,7 @@ public:
 	Implementation(const MarketDataSource &source, const Symbol &symbol)
 		: m_source(source),
 		m_riskControlContext(
-			source.GetContext().GetRiskControl().CreateSecurityContext(symbol)),
+			source.GetContext().GetRiskControl().CreateSymbolContext(symbol)),
 		m_pricePrecision(GetPrecision(symbol)),
 		m_priceScale(size_t(std::pow(10, m_pricePrecision))),
 		m_brokerPosition(0),
@@ -237,8 +237,8 @@ Security::~Security() {
 	delete m_pimpl;
 }
 
-RiskControlSecurityContext & Security::GetRiskControlContext() const {
-	return m_pimpl->m_riskControlContext;
+RiskControlSymbolContext & Security::GetRiskControlContext() {
+	return *m_pimpl->m_riskControlContext;
 }
 
 const MarketDataSource & Security::GetSource() const {

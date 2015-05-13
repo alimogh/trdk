@@ -173,14 +173,14 @@ namespace {
 }
 
 FixTrading::Order FixTrading::TakeOrderId(
-			Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			bool isSell,
-			const OrderType &type,
-			const OrderParams &params,
-			const OrderStatusUpdateSlot &callback,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+		Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		bool isSell,
+		const OrderType &type,
+		const OrderParams &params,
+		const OrderStatusUpdateSlot &callback,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	const auto orderId = m_nextOrderId++;
 	const Order order = {
 		false,
@@ -255,14 +255,16 @@ void FixTrading::FlushRemovedOrders() {
 }
 
 void FixTrading::NotifyOrderUpdate(
-			const fix::Message &updateMessage,
-			const OrderId &orderId,
-			const OrderStatus &status,
-			const char *operation,
-			bool isOrderCompleted,
-			const TimeMeasurement::Milestones::TimePoint &replyTime) {
+		const fix::Message &updateMessage,
+		const OrderId &orderId,
+		const OrderStatus &status,
+		const char *operation,
+		bool isOrderCompleted,
+		const TimeMeasurement::Milestones::TimePoint &replyTime) {
 	
 	Order orderCopy;
+	Qty tradeQty = 0;
+	double tradePrice = 0;
 	{
 		const OrdersReadLock lock(m_ordersMutex);
 		Order *const order = FindOrder(orderId);
@@ -279,7 +281,9 @@ void FixTrading::NotifyOrderUpdate(
 			AssertGe(
 				order->qty,
 				order->filledQty + ParseLeavesQty(updateMessage));
-			order->filledQty += ParseLastShares(updateMessage);
+			tradeQty = ParseLastShares(updateMessage);
+			order->filledQty += tradeQty;
+			tradePrice =  updateMessage.getDouble(fix::FIX40::Tags::LastPx);
 		}
 		orderCopy = *order;
 	}
@@ -287,7 +291,11 @@ void FixTrading::NotifyOrderUpdate(
 	orderCopy.timeMeasurement.Add(
 		TimeMeasurement::TSM_ORDER_REPLY_RECEIVED,
 		replyTime);
-	OnOrderStateChanged(updateMessage, status, orderCopy);
+	OnOrderStateChanged(
+		status,
+		orderCopy,
+		tradeQty,
+		orderCopy.security->ScalePrice(tradePrice));
 	if (isOrderCompleted) {
 		FlushRemovedOrders();
 	}
@@ -297,26 +305,27 @@ void FixTrading::NotifyOrderUpdate(
 }
 
 void FixTrading::OnOrderStateChanged(
-			const fix::Message &message,
-			const OrderStatus &status,
-			const Order &order) {
+		const OrderStatus &status,
+		const Order &order,
+		const Qty &tradeQty,
+		const ScaledPrice &tradePrice) {
+	AssertGe(order.qty, order.filledQty);
 	order.callback(
 		order.id,
 		status,
-		ParseLastShares(message),
-		ParseLeavesQty(message),
-		order.security->ScalePrice(
-			message.getDouble(fix::FIX40::Tags::LastPx)));
+		tradeQty,
+		order.qty - order.filledQty,
+		tradePrice);
 }
 
 void FixTrading::FillOrderMessage(
-			const std::string &clOrderId,
-			const Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const std::string &account,
-			const OrderParams &params,
-			fix::Message &message)
+		const std::string &clOrderId,
+		const Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		const std::string &account,
+		const OrderParams &params,
+		fix::Message &message)
 		const {
 
 	Assert(!clOrderId.empty());
@@ -364,11 +373,11 @@ void FixTrading::FillOrderMessage(
 }
 
 fix::Message FixTrading::CreateOrderMessage(
-			const std::string &clOrderId,
-			const Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const OrderParams &params) {
+		const std::string &clOrderId,
+		const Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		const OrderParams &params) {
 	// Creates order FIX-message and sets common fields.
 	fix::Message result(
 		!params.orderIdToReplace ? "D" : "G",
@@ -385,11 +394,11 @@ fix::Message FixTrading::CreateOrderMessage(
 }
 
 fix::Message & FixTrading::GetPreallocatedOrderMessage(
-			const std::string &clOrderId,
-			const Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const OrderParams &params) {
+		const std::string &clOrderId,
+		const Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		const OrderParams &params) {
 	if (!m_preallocated.orderMessage) {
 		m_preallocated.orderMessage.reset(
 			new fix::Message("D", m_session.GetFixVersion()));
@@ -409,11 +418,11 @@ fix::Message & FixTrading::GetPreallocatedOrderMessage(
 }
 
 fix::Message & FixTrading::GetPreallocatedMarketOrderMessage(
-			const std::string &clOrderId,
-			const Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const OrderParams &params) {
+		const std::string &clOrderId,
+		const Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		const OrderParams &params) {
 	fix::Message &result = GetPreallocatedOrderMessage(
 		clOrderId,
 		security,
@@ -435,11 +444,11 @@ void FixTrading::Send(
 }
 
 OrderId FixTrading::SendSellAtMarketPrice(
-			Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const OrderParams &params,
-			const OrderStatusUpdateSlot &callback) {
+		Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		const OrderParams &params,
+		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
@@ -468,12 +477,12 @@ OrderId FixTrading::SendSellAtMarketPrice(
 }
 
 OrderId FixTrading::SendSell(
-			Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const ScaledPrice &price,
-			const OrderParams &params,
-			const OrderStatusUpdateSlot &callback) {
+		Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		const ScaledPrice &price,
+		const OrderParams &params,
+		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
@@ -506,24 +515,24 @@ OrderId FixTrading::SendSell(
 }
 
 OrderId FixTrading::SendSellAtMarketPriceWithStopPrice(
-			Security &,
-			const Currency &,
-			const Qty &,
-			const ScaledPrice &/*stopPrice*/,
-			const OrderParams &,
-			const OrderStatusUpdateSlot &) {
+		Security &,
+		const Currency &,
+		const Qty &,
+		const ScaledPrice &/*stopPrice*/,
+		const OrderParams &,
+		const OrderStatusUpdateSlot &) {
 	throw Error(
 		"FixTrading::SendSellAtMarketPriceWithStopPrice"
 			" not implemented");
 }
 
 OrderId FixTrading::SendSellImmediatelyOrCancel(
-			Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const ScaledPrice &price,
-			const OrderParams &params,
-			const OrderStatusUpdateSlot &callback) {
+		Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		const ScaledPrice &price,
+		const OrderParams &params,
+		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
@@ -556,11 +565,11 @@ OrderId FixTrading::SendSellImmediatelyOrCancel(
 }
 
 OrderId FixTrading::SendSellAtMarketPriceImmediatelyOrCancel(
-			Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const OrderParams &params,
-			const OrderStatusUpdateSlot &callback) {
+		Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		const OrderParams &params,
+		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
 	const  auto &order = TakeOrderId(
@@ -592,11 +601,11 @@ OrderId FixTrading::SendSellAtMarketPriceImmediatelyOrCancel(
 }
 
 OrderId FixTrading::SendBuyAtMarketPrice(
-			Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const OrderParams &params,
-			const OrderStatusUpdateSlot &callback) {
+		Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		const OrderParams &params,
+		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
@@ -625,12 +634,12 @@ OrderId FixTrading::SendBuyAtMarketPrice(
 }
 
 OrderId FixTrading::SendBuy(
-			Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const ScaledPrice &price,
-			const OrderParams &params,
-			const OrderStatusUpdateSlot &callback) {
+		Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		const ScaledPrice &price,
+		const OrderParams &params,
+		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
@@ -663,24 +672,24 @@ OrderId FixTrading::SendBuy(
 }
 
 OrderId FixTrading::SendBuyAtMarketPriceWithStopPrice(
-			Security &,
-			const Currency &,
-			const Qty &,
-			const ScaledPrice &/*stopPrice*/,
-			const OrderParams &,
-			const OrderStatusUpdateSlot &) {
+		Security &,
+		const Currency &,
+		const Qty &,
+		const ScaledPrice &/*stopPrice*/,
+		const OrderParams &,
+		const OrderStatusUpdateSlot &) {
 	throw Error(
 		"FixTrading::SendBuyAtMarketPriceWithStopPrice"
 			" not implemented");
 }
 
 OrderId FixTrading::SendBuyImmediatelyOrCancel(
-			Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const ScaledPrice &price,
-			const OrderParams &params,
-			const OrderStatusUpdateSlot &callback) {
+		Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		const ScaledPrice &price,
+		const OrderParams &params,
+		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
@@ -713,11 +722,11 @@ OrderId FixTrading::SendBuyImmediatelyOrCancel(
 }
 
 OrderId FixTrading::SendBuyAtMarketPriceImmediatelyOrCancel(
-			Security &security,
-			const Currency &currency,
-			const Qty &qty,
-			const OrderParams &params,
-			const OrderStatusUpdateSlot &callback) {
+		Security &security,
+		const Currency &currency,
+		const Qty &qty,
+		const OrderParams &params,
+		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
 		= GetContext().StartTradeSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
@@ -858,9 +867,9 @@ void FixTrading::onStateChange(
 }
 
 void FixTrading::onError(
-			fix::ErrorReason::Enum reason,
-			const std::string &description,
-			fix::Session *session) {
+		fix::ErrorReason::Enum reason,
+		const std::string &description,
+		fix::Session *session) {
 	Assert(session == &m_session.Get());
 	m_session.LogError(reason, description, *session);
 	if (reason == fix::ErrorReason::MsgSeqNumTooLow) {
@@ -914,10 +923,10 @@ void FixTrading::OnOrderCanceled(
 }	
 
 void FixTrading::OnOrderRejected(
-			const fix::Message &execReport,
-			const TimeMeasurement::Milestones::TimePoint &replyTime,
-			const std::string &reason,
-			bool isMaxOperationLimitExceeded) {
+		const fix::Message &execReport,
+		const TimeMeasurement::Milestones::TimePoint &replyTime,
+		const std::string &reason,
+		bool isMaxOperationLimitExceeded) {
 
 	AssertEq("8", execReport.type());
 
@@ -939,8 +948,8 @@ void FixTrading::OnOrderRejected(
 }
 
 void FixTrading::OnOrderFill(
-			const fix::Message &execReport,
-			const TimeMeasurement::Milestones::TimePoint &replyTime) {
+		const fix::Message &execReport,
+		const TimeMeasurement::Milestones::TimePoint &replyTime) {
 	AssertEq("8", execReport.type());
 	NotifyOrderUpdate(
 		execReport,
@@ -952,8 +961,8 @@ void FixTrading::OnOrderFill(
 }
 		
 void FixTrading::OnOrderPartialFill(
-			const fix::Message &execReport,
-			const TimeMeasurement::Milestones::TimePoint &replyTime) {
+		const fix::Message &execReport,
+		const TimeMeasurement::Milestones::TimePoint &replyTime) {
 	AssertEq("8", execReport.type());
 	NotifyOrderUpdate(
 		execReport,

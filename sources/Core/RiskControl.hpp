@@ -17,52 +17,123 @@ namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	class RiskControlSecurityContext {
-
-		friend class trdk::RiskControl;
-		friend class trdk::RiskControlScope;
-
+	class RiskControlSymbolContext {
+	
 	public:
 
 		class Position;
+		struct Side;
+		struct Scope;
+
+		typedef boost::function<
+				boost::shared_ptr<trdk::RiskControlSymbolContext::Position>(
+					const trdk::Lib::Currency &,
+					double shortLimit,
+					double longLimit)>
+			PositionFabric;
+	
+	public:
+
+		explicit RiskControlSymbolContext(
+				const trdk::Lib::Symbol &,
+				const trdk::Lib::IniSectionRef &,
+				const PositionFabric &);
 
 	private:
 
-		RiskControlSecurityContext();
+		const RiskControlSymbolContext & operator =(
+				const RiskControlSymbolContext &);
 
-		const RiskControlSecurityContext & operator =(
-				const RiskControlSecurityContext &);
+	public:
+
+		const trdk::Lib::Symbol & GetSymbol() const;
+
+		void AddScope(
+				const trdk::Lib::IniSectionRef &,
+				const PositionFabric &,
+				size_t index);
+
+		Scope & GetScope(const RiskControlScope &);
+		Scope & GetScope(size_t index);
+		Scope & GetGlobalScope();
+		size_t GetScopesNumber() const;
 
 	private:
 
-		struct Side {
+		void InitScope(
+				Scope &,
+				const trdk::Lib::IniSectionRef &,
+				const PositionFabric &,
+				bool isAdditinalScope)
+				const;
 
-			int8_t direction;
-			const char *name;
+	private:
 
-			struct Settings {
-			
-				double minPrice;
-				double maxPrice;
-		
-				trdk::Qty minQty;
-				trdk::Qty maxQty;
-
-				Settings();
-
-			} settings;
-
-			Side(int8_t direction);
-
-		}
-			shortSide,
-			longSide;
-
-		boost::shared_ptr<Position> baseCurrencyPosition;
-		boost::shared_ptr<Position> quoteCurrencyPosition;
+		const trdk::Lib::Symbol m_symbol;
+		std::vector<boost::shared_ptr<Scope>> m_scopes;
 
 	};
 
+	//////////////////////////////////////////////////////////////////////////
+
+	class RiskControlScope : private boost::noncopyable {
+
+	public:
+
+		virtual ~RiskControlScope();
+
+	public:
+
+		virtual const std::string & GetName() const = 0;
+		virtual size_t GetIndex() const = 0;
+
+
+	public:
+
+		virtual void CheckNewBuyOrder(
+				trdk::Security &security,
+				const trdk::Lib::Currency &currency,
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &price)
+				= 0;
+		virtual void CheckNewSellOrder(
+				trdk::Security &security,
+				const trdk::Lib::Currency &currency,
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &price)
+				= 0;
+	
+		virtual void ConfirmBuyOrder(
+				const trdk::TradeSystem::OrderStatus &status,
+				trdk::Security &security,
+				const trdk::Lib::Currency &currency,
+				const trdk::ScaledPrice &orderPrice,
+				const trdk::Qty &tradeQty,
+				const trdk::ScaledPrice &tradePrice,
+				const trdk::Qty &remainingQty)
+				= 0;
+
+		virtual void ConfirmSellOrder(
+				const trdk::TradeSystem::OrderStatus &status,
+				trdk::Security &security,
+				const trdk::Lib::Currency &currency,
+				const trdk::ScaledPrice &orderPrice,
+				const trdk::Qty &tradeQty,
+				const trdk::ScaledPrice &tradePrice,
+				const trdk::Qty &remainingQty)
+				= 0;
+
+	public:
+
+		virtual void CheckTotalPnl(double pnl) const = 0;
+
+		virtual void CheckTotalWinRatio(
+				size_t totalWinRatio,
+				size_t operationsCount)
+				const
+				= 0;
+
+	};
 
 	////////////////////////////////////////////////////////////////////////////////
 	
@@ -104,7 +175,18 @@ namespace trdk {
 			explicit PnlIsOutOfRangeException(const char *what) throw();
 		};
 
-		class SecurityContext;
+		class WinRatioIsOutOfRangeException
+			: public trdk::RiskControl::Exception {
+		public:
+			explicit WinRatioIsOutOfRangeException(const char *what) throw();
+		};
+
+		class BlockedFunds : private boost::noncopyable {
+		public:
+			explicit BlockedFunds(trdk::Security &);
+		public:
+			trdk::Security & GetSecurity();
+		};
 
 	public:
 
@@ -113,48 +195,57 @@ namespace trdk {
 
 	public:
 
-		trdk::RiskControlSecurityContext CreateSecurityContext(
-					const trdk::Lib::Symbol &)
+		boost::shared_ptr<trdk::RiskControlSymbolContext> CreateSymbolContext(
+				const trdk::Lib::Symbol &)
+				const;
+		std::unique_ptr<trdk::RiskControlScope> CreateScope(
+				const std::string &name,
+				const trdk::Lib::IniSectionRef &)
 				const;
 
 	public:
 
 		void CheckNewBuyOrder(
-				const trdk::Security &,
+				trdk::RiskControlScope &,
+				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
-				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		void CheckNewSellOrder(
-				const trdk::Security &,
+				trdk::RiskControlScope &,
+				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
-				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+				const trdk::Lib::TimeMeasurement::Milestones &);
 
 		void ConfirmBuyOrder(
+				trdk::RiskControlScope &,
 				const trdk::TradeSystem::OrderStatus &,
-				const trdk::Security &,
+				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
 				const trdk::Qty &tradeQty,
 				const trdk::ScaledPrice &tradePrice,
 				const trdk::Qty &remainingQty,
-				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		void ConfirmSellOrder(
+				trdk::RiskControlScope &,
 				const trdk::TradeSystem::OrderStatus &,
-				const trdk::Security &,
+				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
 				const trdk::Qty &tradeQty,
 				const trdk::ScaledPrice &tradePrice,
 				const trdk::Qty &remainingQty,
-				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	public:
 
-		void CheckTotalPnl(double pnl) const;
+		void CheckTotalPnl(const trdk::RiskControlScope &, double pnl) const;
 		void CheckTotalWinRatio(
+				const trdk::RiskControlScope &,
 				size_t totalWinRatio,
 				size_t operationsCount)
 				const;

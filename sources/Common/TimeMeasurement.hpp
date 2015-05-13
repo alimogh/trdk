@@ -127,11 +127,16 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 
 	public:
 
-		PeriodFromStart Measure(const MilestoneIndex &milestone) const {
-			if (!m_stat) {
+		PeriodFromStart Measure(const MilestoneIndex &milestone) const throw() {
+			try {
+				if (!m_stat) {
+					return 0;
+				}
+				return Add(milestone, GetNow());
+			} catch (...) {
+				AssertFailNoException();
 				return 0;
 			}
-			return Add(milestone, GetNow());
 		}
 
 		PeriodFromStart Add(

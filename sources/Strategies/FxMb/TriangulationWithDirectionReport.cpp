@@ -41,6 +41,7 @@ namespace {
 				const Log::Time &time,
 				const Log::ThreadId &threadId)
 			: AsyncLogRecord(time, threadId) {
+			//...//
 		}
 
 	public:
@@ -654,17 +655,22 @@ void TriangleReport::ReportAction(
 
 			});
 
-		m_triangle.GetStrategy().GetContext().m_fooSlotConnection(foo);
-		m_triangle
-			.GetStrategy()
-			.GetContext()
-			.GetRiskControl()
-			.CheckTotalPnl(foo.pnlWithCommissions);
-		m_triangle
-			.GetStrategy()
-			.GetContext()
-			.GetRiskControl()
-			.CheckTotalWinRatio(winningPercentage, trianglesCount);
+		{
+			//! @todo see TRDK-40
+			Strategy &strategy
+				= const_cast<TriangulationWithDirection &>(
+					m_triangle.GetStrategy());
+			Context &context = strategy.GetContext();
+			RiskControl &riskControl = context.GetRiskControl();
+			context.m_fooSlotConnection(foo);
+			riskControl.CheckTotalPnl(
+				strategy.GetRiskControlScope(),
+				foo.pnlWithCommissions);
+			riskControl.CheckTotalWinRatio(
+				strategy.GetRiskControlScope(),
+				winningPercentage,
+				trianglesCount);
+		}
 
 	} else if (isTriangleCanceled) {
 
@@ -706,12 +712,18 @@ void TriangleReport::ReportAction(
 
 			});
 
-		m_triangle.GetStrategy().GetContext().m_fooSlotConnection(foo);
-		m_triangle
-			.GetStrategy()
-			.GetContext()
-			.GetRiskControl()
-			.CheckTotalPnl(foo.pnlWithCommissions);
+		{
+			//! @todo see TRDK-40
+			Strategy &strategy
+				= const_cast<TriangulationWithDirection &>(
+					m_triangle.GetStrategy());
+			Context &context = strategy.GetContext();
+			RiskControl &riskControl = context.GetRiskControl();
+			context.m_fooSlotConnection(foo);
+			riskControl.CheckTotalPnl(
+				strategy.GetRiskControlScope(),
+				foo.pnlWithCommissions);
+		}
 
 	}
 

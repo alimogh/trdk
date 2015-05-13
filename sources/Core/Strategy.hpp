@@ -109,12 +109,15 @@ namespace trdk {
 		explicit Strategy(
 				trdk::Context &,
 				const std::string &name,
-				const std::string &tag);
+				const std::string &tag,
+				const trdk::Lib::IniSectionRef &);
 		virtual ~Strategy();
 
 	public:
 
 		trdk::Strategy::TradingLog & GetTradingLog() const throw();
+
+		trdk::RiskControlScope & GetRiskControlScope();
 
 	public:
 

@@ -43,7 +43,7 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class RiskControlSecurityContext::Position : private boost::noncopyable {
+class RiskControlSymbolContext::Position : private boost::noncopyable {
 
 public:
 
@@ -63,29 +63,60 @@ public:
 
 };
 
-RiskControlSecurityContext::RiskControlSecurityContext()
-	: shortSide(-1),
-	longSide(1) {
-	//...//
-}
+struct RiskControlSymbolContext::Side : private boost::noncopyable {
 
-RiskControlSecurityContext::Side::Side(int8_t direction)
-	: direction(direction),
-	name(direction < 1 ? "short" : "long") {
-	AssertNe(0, direction);
-}
+	int8_t direction;
+	const char *name;
 
-RiskControlSecurityContext::Side::Settings::Settings() 
-	: minPrice(0),
-	maxPrice(0),
-	minQty(0),
-	maxQty(0) {
-	//...//
-}
+	struct Settings {
+			
+		double minPrice;
+		double maxPrice;
+		
+		trdk::Qty minQty;
+		trdk::Qty maxQty;
+
+		Settings()
+			: minPrice(0),
+			maxPrice(0),
+			minQty(0),
+			maxQty(0) {
+			//...//
+		}
+
+	} settings;
+
+	explicit Side(int8_t direction)
+		: direction(direction),
+		name(direction < 1 ? "short" : "long") {
+		AssertNe(0, direction);
+	}
+
+};
+
+struct RiskControlSymbolContext::Scope : private boost::noncopyable {
+
+	Side shortSide;
+	Side longSide;
+
+	boost::shared_ptr<Position> baseCurrencyPosition;
+	boost::shared_ptr<Position> quoteCurrencyPosition;
+
+	Scope()
+		: shortSide(-1),
+		longSide(1) {
+		//...//
+	}
+
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class trdk::RiskControlScope : private boost::noncopyable {
+RiskControlScope::~RiskControlScope() {
+ 	//...//
+}
+
+class StandardRiskControlScope : public RiskControlScope {
 
 protected:
 
@@ -95,22 +126,19 @@ protected:
 	typedef RiskControl::WrongOrderParameterException
 		WrongOrderParameterException;
 	typedef RiskControl::NotEnoughFundsException NotEnoughFundsException;
+	typedef RiskControl::PnlIsOutOfRangeException PnlIsOutOfRangeException;
+	typedef RiskControl::WinRatioIsOutOfRangeException
+		WinRatioIsOutOfRangeException;
 
-private:
-
-	typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy; 
-	typedef ConcurrencyPolicy::Mutex Mutex;
-	typedef ConcurrencyPolicy::Lock Lock;
-
-	struct Settings : private boost::noncopyable {
+	struct Settings {
 
 	public:
 
-		const pt::time_duration ordersFloodControlPeriod;
-		const std::pair<double, double> pnl;
+		pt::time_duration ordersFloodControlPeriod;
+		std::pair<double, double> pnl;
 
-		const size_t winRatioFirstOperationsToSkip;
-		const uint16_t winRatioMinValue;
+		size_t winRatioFirstOperationsToSkip;
+		uint16_t winRatioMinValue;
 
 	public:
 			
@@ -129,34 +157,45 @@ private:
 		
 	};
 
+private:
+
+	typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy; 
+	typedef ConcurrencyPolicy::Mutex Mutex;
+	typedef ConcurrencyPolicy::Lock Lock;
+
 	typedef boost::circular_buffer<pt::ptime> FloodControlBuffer;
 
 public:
 
-	explicit RiskControlScope(Context &context, const IniSectionRef &conf)
+	explicit StandardRiskControlScope(
+			Context &context,
+			const std::string &name,
+			size_t index,
+			const Settings &settings,
+			size_t maxOrdersNumber)
 		: m_context(context),
+		m_name(name),
+		m_index(index),
 		m_log(logPrefix, m_context.GetLog()),
 		m_tradingLog(logPrefix, m_context.GetTradingLog()),
-		m_settings(
-			pt::milliseconds(
-				conf.ReadTypedKey<size_t>("flood_control.orders.period_ms")),
-			conf.ReadTypedKey<double>("pnl.loss"),
-			conf.ReadTypedKey<double>("pnl.profit"),
-			conf.ReadTypedKey<uint16_t>("win_ratio.first_operations_to_skip"),
-			conf.ReadTypedKey<uint16_t>("win_ratio.min")),
-		m_orderTimePoints(
-			conf.ReadTypedKey<size_t>("flood_control.orders.max_number")) {
+		m_settings(settings),
+		m_orderTimePoints(maxOrdersNumber) {
 
 		m_log.Info(
-			"Orders flood control: not more than %1% orders per %2%.",
+			"Orders flood control for scope \"%1%\":"
+				" not more than %2% orders per %3%.",
+			m_name,
 			m_orderTimePoints.capacity(),
 			m_settings.ordersFloodControlPeriod);
 		m_log.Info(
-			"Max profit: %1$f; Max loss: %2%.",
+			"Max profit for scope \"%1%\": %2$f; max loss: %3%.",
+			m_name,
 			m_settings.pnl.second,
 			fabs(m_settings.pnl.first));
 		m_log.Info(
-			"Min win-ratio: %1%%% (skip first %2% operations).",
+			"Min win-ratio for scope \"%1%\": %2%%%"
+				" (skip first %3% operations).",
+			m_name,
 			m_settings.winRatioMinValue,
 			m_settings.winRatioFirstOperationsToSkip);
 
@@ -179,12 +218,27 @@ public:
 				|| m_settings.winRatioMinValue > 100) {
 			throw WrongSettingsException("Wrong Min win-ratio set");
 		}
+
+	}
+
+	virtual ~StandardRiskControlScope() {
+		//...//
 	}
 
 public:
 
-	void CheckNewBuyOrder(
-			const Security &security,
+	virtual const std::string & GetName() const {
+		return m_name;
+	}
+
+	virtual size_t GetIndex() const {
+		return m_index;
+	}
+
+public:
+
+	virtual void CheckNewBuyOrder(
+			Security &security,
 			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &price) {
@@ -193,11 +247,11 @@ public:
 			currency,
 			qty,
 			price,
-			security.GetRiskControlContext().longSide);
+			security.GetRiskControlContext().GetScope(*this).longSide);
 	}
 
-	void CheckNewSellOrder(
-			const Security &security,
+	virtual void CheckNewSellOrder(
+			Security &security,
 			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &price) {
@@ -206,12 +260,12 @@ public:
 			currency,
 			qty,
 			price,
-			security.GetRiskControlContext().shortSide);
+			security.GetRiskControlContext().GetScope(*this).shortSide);
 	}
 
-	void ConfirmBuyOrder(
+	virtual void ConfirmBuyOrder(
 			const TradeSystem::OrderStatus &status,
-			const Security &security,
+			Security &security,
 			const Lib::Currency &currency,
 			const ScaledPrice &orderPrice,
 			const Qty &tradeQty,
@@ -225,12 +279,12 @@ public:
 			tradeQty,
 			tradePrice,
 			remainingQty,
-			security.GetRiskControlContext().longSide);
+			security.GetRiskControlContext().GetScope(*this).longSide);
 	}
 
-	void ConfirmSellOrder(
+	virtual void ConfirmSellOrder(
 			const TradeSystem::OrderStatus &status,
-			const Security &security,
+			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
 			const Qty &tradeQty,
@@ -244,31 +298,89 @@ public:
 			tradeQty,
 			tradePrice,
 			remainingQty,
-			security.GetRiskControlContext().shortSide);
+			security.GetRiskControlContext().GetScope(*this).shortSide);
+	}
+
+public:
+
+	virtual void CheckTotalPnl(double pnl) const {
+	
+		if (pnl < 0) {
+	
+	 		if (pnl < m_settings.pnl.first) {
+	 			m_tradingLog.Write(
+	 				"Total loss is out of allowed PnL range for scope \"%1%\":"
+	 					" %2$f, but can't be more than %3$f.",
+	 				[&](TradingRecord &record) {
+	 					record
+							% GetName()
+							% fabs(pnl)
+							% fabs(m_settings.pnl.first);
+	 				});
+	 			throw PnlIsOutOfRangeException(
+	 				"Total loss is out of allowed PnL range");
+	 		}
+	
+		} else if (pnl > m_settings.pnl.second) {
+			m_tradingLog.Write(
+				"Total profit is out of allowed PnL range for scope \"%1%\":"
+					" %2$f, but can't be more than %3$f.",
+				[&](TradingRecord &record) {
+					record
+						% GetName()
+						% pnl
+						% m_settings.pnl.second;
+				});
+			throw PnlIsOutOfRangeException(
+				"Total profit is out of allowed PnL range");
+		}
+
+	}
+
+	virtual void CheckTotalWinRatio(
+			size_t totalWinRatio,
+			size_t operationsCount)
+			const {
+		AssertGe(100, totalWinRatio);
+		if (
+				operationsCount >=  m_settings.winRatioFirstOperationsToSkip
+				&& totalWinRatio < m_settings.winRatioMinValue) {
+			m_tradingLog.Write(
+				"Total win-ratio is too small for scope \"%1%\":"
+					" %2%%%, but can't be less than %3%%%.",
+				[&](TradingRecord &record) {
+					record
+						% GetName()
+						% totalWinRatio
+						% m_settings.winRatioMinValue;
+				});
+				throw WinRatioIsOutOfRangeException(
+					"Total win-ratio is too small");
+		}
 	}
 
 private:
 
 	void CheckNewOrder(
-			const Security &security,
+			Security &security,
 			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &price,
-			RiskControlSecurityContext::Side &side) {
+			RiskControlSymbolContext::Side &side) {
 		CheckNewOrderParams(security, qty, price, side);
 		CheckOrdersFloodLevel();
-		CheckFundsForNewOrder(security, currency, qty, price, side);
+		BlockFunds(security, currency, qty, price, side);
 	}
 
 	void ConfirmOrder(
 			const TradeSystem::OrderStatus &status,
-			const Security &security,
+			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
 			const Qty &tradeQty,
 			const ScaledPrice &tradePrice,
 			const Qty &remainingQty,
-			RiskControlSecurityContext::Side &side) {
+			RiskControlSymbolContext::Side &side) {
 		ConfirmUsedFunds(
 			status,
 			security,
@@ -297,11 +409,12 @@ private:
 			AssertLt(0, m_orderTimePoints.capacity());
 			AssertEq(m_orderTimePoints.capacity(), m_orderTimePoints.size());
 			m_tradingLog.Write(
-				"Number of orders for period limit is reached"
-					": %1% orders over the past  %2% (%3% -> %4%)"
-					", but allowed not more than %5%.",
+				"Number of orders for period limit is reached for scope \"%1%\""
+					": %2% orders over the past  %3% (%4% -> %5%)"
+					", but allowed not more than %6%.",
 				[&](TradingRecord &record) {
 					record
+						% GetName()
 						% (m_orderTimePoints.size() + 1)
 						% m_settings.ordersFloodControlPeriod
 						% m_orderTimePoints.front()
@@ -315,11 +428,12 @@ private:
 				&& !m_orderTimePoints.empty()) {
 			m_tradingLog.Write(
 				"Number of orders for period limit"
-					" will be reached with next order"
-					": %1% orders over the past %2% (%3% -> %4%)"
-					", allowed not more than %5%.",
+					" will be reached with next order for scope \"%1%\""
+					": %2% orders over the past %3% (%4% -> %5%)"
+					", allowed not more than %6%.",
 				[&](TradingRecord &record) {
 					record
+						% GetName()
 						% (m_orderTimePoints.size() + 1)
 						% m_settings.ordersFloodControlPeriod
 						% m_orderTimePoints.front()
@@ -336,7 +450,7 @@ private:
 			const Security &security,
 			const Qty &qty,
 			const ScaledPrice &scaledPrice,
-			const RiskControlSecurityContext::Side &side)
+			const RiskControlSymbolContext::Side &side)
 			const {
 
 		const auto price = security.DescalePrice(scaledPrice);
@@ -344,12 +458,13 @@ private:
 		if (price < side.settings.minPrice) {
 
 			m_tradingLog.Write(
-				"Price too low for new %1% %2% order:"
-					" %3$f, but can't be less than %4$f.",
+				"Price too low for new %1% %2% order in scope \"%3%\":"
+					" %4$f, but can't be less than %5$f.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
 						% security
+						% GetName()
 						% price
 						% side.settings.minPrice;
 				});
@@ -359,12 +474,13 @@ private:
 		} else if (price > side.settings.maxPrice) {
 
 			m_tradingLog.Write(
-				"Price too high for new %1% %2% order:"
-					" %3$f, but can't be greater than %4$f.",
+				"Price too high for new %1% %2% order in scope \"%3%\":"
+					" %4$f, but can't be greater than %5$f.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
 						% security
+						% GetName()
 						% price
 						% side.settings.maxPrice;
 				});
@@ -374,12 +490,13 @@ private:
 		} else if (qty < side.settings.minQty) {
 		
 			m_tradingLog.Write(
-				"Qty too low for new %1% %2% order:"
+				"Qty too low for new %1% %2% order in scope \"%3%\":"
 					" %3%, but can't be less than %4%.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
 						% security
+						% GetName()
 						% qty
 						% side.settings.minQty;
 				});
@@ -389,12 +506,13 @@ private:
 		} else if (qty > side.settings.maxQty) {
 
 			m_tradingLog.Write(
-				"Qty too high for new %1% %2% order:"
-					" %3%, but can't be greater than %4%.",
+				"Qty too high for new %1% %2% order in scope \"%3%\":"
+					" %4%, but can't be greater than %5%.",
 				[&](TradingRecord &record) {
 					record
 						% side.name
 						% security
+						% GetName()
 						% qty
 						% side.settings.maxQty;
 				});
@@ -405,13 +523,12 @@ private:
 
 	}
 
-	std::pair<double, double> CalcCacheOrderVolumes(
+	static std::pair<double, double> CalcCacheOrderVolumes(
 			const Security &security,
 			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &orderPrice,
-			const RiskControlSecurityContext::Side &side)
-			const {
+			const RiskControlSymbolContext::Side &side) {
 
 		const Symbol &symbol = security.GetSymbol();
 
@@ -422,31 +539,32 @@ private:
 			|| symbol.GetCashQuoteCurrency() == currency);
 
 		const auto quoteCurrencyDirection = side.direction * -1;
+		const auto realPrice = security.DescalePrice(orderPrice);
 
 		return symbol.GetCashBaseCurrency() == currency
 			?	std::make_pair(
 					qty * side.direction,
-					(qty * orderPrice) * quoteCurrencyDirection)
+					(qty * realPrice) * quoteCurrencyDirection)
 			:	std::make_pair(
-					(qty * orderPrice) * side.direction,
+					(qty * realPrice) * side.direction,
 					qty * quoteCurrencyDirection);
 
 	}
 
 	static double CalcFundsRest(
 			double position,
-			const RiskControlSecurityContext::Position &limits) {
+			const RiskControlSymbolContext::Position &limits) {
 		return position < 0
-			? fabs(limits.shortLimit) - fabs(limits.shortLimit) 
-			: limits.longLimit - position;
+			?	limits.shortLimit + position
+			:	limits.longLimit - position;
 	}
 
-	void CheckFundsForNewOrder(
-			const Security &security,
+	void BlockFunds(
+			Security &security,
 			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &orderPrice,
-			const RiskControlSecurityContext::Side &side)
+			const RiskControlSymbolContext::Side &side)
 			const {
 
 		const Symbol &symbol = security.GetSymbol();
@@ -454,10 +572,11 @@ private:
 			throw WrongSettingsException("Unknown security type");
 		}
 
-		RiskControlSecurityContext &context = security.GetRiskControlContext();
-		RiskControlSecurityContext::Position &baseCurrency
+		RiskControlSymbolContext::Scope &context
+			= security.GetRiskControlContext().GetScope(*this);
+		RiskControlSymbolContext::Position &baseCurrency
 			= *context.baseCurrencyPosition;
-		RiskControlSecurityContext::Position &quoteCurrency
+		RiskControlSymbolContext::Position &quoteCurrency
 			= *context.quoteCurrencyPosition;
 
 		const std::pair<double, double> blocked
@@ -475,11 +594,12 @@ private:
 			CalcFundsRest(newPosition.second, quoteCurrency));
 		
 		m_tradingLog.Write(
-			"block funds\t%1%"
-				"\t%2%\tcurrent=%3$f block=%4$f result=%5$f rest=%6$f"
-				"\t%7%\tcurrent=%8$f block=%9$f result=%10$f rest=%11$f",
+			"block funds\t%1%\t%2%"
+				"\t%3%: %4$f + %5$f = %6$f (%7$f);"
+				"\t%8%: %9$f + %10$f = %11$f (%12$f);",
 			[&](TradingRecord &record) {
 				record
+					% GetName()
 					% side.name
 					% symbol.GetCashBaseCurrency()
 					% baseCurrency.position
@@ -506,13 +626,13 @@ private:
 
 	void ConfirmUsedFunds(
 			const TradeSystem::OrderStatus &status,
-			const Security &security,
+			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
 			const Qty &tradeQty,
 			const ScaledPrice &tradePrice,
 			const Qty &remainingQty,
-			const RiskControlSecurityContext::Side &side) {
+			const RiskControlSymbolContext::Side &side) {
 
 		static_assert(
 			TradeSystem::numberOfOrderStatuses == 6,
@@ -550,22 +670,23 @@ private:
 	}
 
 	void ConfirmBlockedFunds(
-			const Security &security,
+			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
 			const Qty &tradeQty,
 			const ScaledPrice &tradePrice,
-			const RiskControlSecurityContext::Side &side) {
+			const RiskControlSymbolContext::Side &side) {
 
 		const Symbol &symbol = security.GetSymbol();
 		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_CASH) {
 			throw WrongSettingsException("Unknown security type");
 		}
 
-		RiskControlSecurityContext &context = security.GetRiskControlContext();
-		RiskControlSecurityContext::Position &baseCurrency
+		RiskControlSymbolContext::Scope &context
+			= security.GetRiskControlContext().GetScope(*this);
+		RiskControlSymbolContext::Position &baseCurrency
 			= *context.baseCurrencyPosition;
-		RiskControlSecurityContext::Position &quoteCurrency
+		RiskControlSymbolContext::Position &quoteCurrency
 			= *context.quoteCurrencyPosition;
 
 		const std::pair<double, double> blocked
@@ -588,11 +709,12 @@ private:
 			quoteCurrency.position - blocked.second + used.second);
 
 		m_tradingLog.Write(
-			"use funds\t%1%"
-				"\t%2%\tcurrent=%3$f unblock=%4$f used=%5$f result=%6$f rest=%7$f"
-				"\t%8%\tcurrent=%9$f unblock=%10$f used=%11$f result=%12$f rest=%13$f",
+			"use funds\t%1%\t%2%"
+				"\t%3%: %4$f - %5$f + %6$f = %7$f (%8$f);"
+				"\t%9%: %10$f - %11$f + %12$f = %13$f (%14$f);",
 			[&](TradingRecord &record) {
 				record
+					% GetName()
 					% side.name
 					% symbol.GetCashBaseCurrency()
 					% baseCurrency.position
@@ -614,21 +736,22 @@ private:
 	}
 
 	void UnblockFunds(
-			const Security &security,
+			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
 			const Qty &remainingQty,
-			const RiskControlSecurityContext::Side &side) {
+			const RiskControlSymbolContext::Side &side) {
 
 		const Symbol &symbol = security.GetSymbol();
 		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_CASH) {
 			throw WrongSettingsException("Unknown security type");
 		}
 
-		RiskControlSecurityContext &context = security.GetRiskControlContext();
-		RiskControlSecurityContext::Position &baseCurrency
+		RiskControlSymbolContext::Scope &context
+			= security.GetRiskControlContext().GetScope(*this);
+		RiskControlSymbolContext::Position &baseCurrency
 			= *context.baseCurrencyPosition;
-		RiskControlSecurityContext::Position &quoteCurrency
+		RiskControlSymbolContext::Position &quoteCurrency
 			= *context.quoteCurrencyPosition;
 
 		const std::pair<double, double> blocked
@@ -643,11 +766,12 @@ private:
 			quoteCurrency.position - blocked.second);
 
 		m_tradingLog.Write(
-			"unblock funds\t%1%"
-				"\t%2%\tcurrent=%3$f unblock=%4$f result=%5$f rest=%6$f"
-				"\t%7%\tcurrent=%8$f unblock=%9$f result=%10$f rest=%11$f",
+			"unblock funds\t%1%\t%2%"
+				"\t%3%: %4$f - %5$f = %6$f (%7$f);"
+				"\t%8%: %9$f - %10$f = %11$f (%12$f);",
 			[&](TradingRecord &record) {
 				record
+					% GetName()
 					% side.name
 					% symbol.GetCashBaseCurrency()
 					% baseCurrency.position
@@ -670,6 +794,9 @@ private:
 
 	Context &m_context;
 
+	const std::string m_name;
+	size_t m_index;
+
 	Mutex m_mutex;
 
 	ModuleEventsLog m_log;
@@ -681,6 +808,183 @@ private:
 
 };
 
+class GlobalRiskControlScope : public StandardRiskControlScope {
+public:
+	explicit GlobalRiskControlScope(
+			Context &context,
+			const IniSectionRef &conf,
+			const std::string &name,
+			size_t index)
+		: StandardRiskControlScope(
+			context,
+			name,
+			index,
+			Settings(
+				pt::milliseconds(
+					conf.ReadTypedKey<size_t>(
+						"flood_control.orders.period_ms")),
+				conf.ReadTypedKey<double>("pnl.loss"),
+				conf.ReadTypedKey<double>("pnl.profit"),
+				conf.ReadTypedKey<uint16_t>(
+					"win_ratio.first_operations_to_skip"),
+				conf.ReadTypedKey<uint16_t>("win_ratio.min")),
+			conf.ReadTypedKey<size_t>("flood_control.orders.max_number")) {
+		//...//
+	}
+};
+
+class LocalRiskControlScope : public StandardRiskControlScope {
+public:
+	explicit LocalRiskControlScope(
+			Context &context,
+			const IniSectionRef &conf,
+			const std::string &name,
+			size_t index)
+		: StandardRiskControlScope(
+			context,
+			name,
+			index,
+			Settings(
+				pt::milliseconds(
+					conf.ReadTypedKey<size_t>(
+						"risk_control.flood_control.orders.period_ms")),
+				conf.ReadTypedKey<double>("risk_control.pnl.loss"),
+				conf.ReadTypedKey<double>("risk_control.pnl.profit"),
+				conf.ReadTypedKey<uint16_t>(
+					"risk_control.win_ratio.first_operations_to_skip"),
+				conf.ReadTypedKey<uint16_t>("risk_control.win_ratio.min")),
+			conf.ReadTypedKey<size_t>(
+				"risk_control.flood_control.orders.max_number")) {
+		//...//
+	}
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+RiskControlSymbolContext::RiskControlSymbolContext(
+		const Symbol &symbol,
+		const IniSectionRef &conf,
+		const PositionFabric &positionFabric)
+	: m_symbol(symbol) {
+	m_scopes.emplace_back(new Scope);
+	InitScope(*m_scopes.back(), conf, positionFabric, false);
+}
+
+const Symbol & RiskControlSymbolContext::GetSymbol() const {
+	return m_symbol;
+}
+
+void RiskControlSymbolContext::AddScope(
+		const IniSectionRef &conf,
+		const PositionFabric &posFabric,
+		size_t index) {
+	if (index <= m_scopes.size()) {
+		m_scopes.resize(index + 1);
+	}
+	m_scopes[index].reset(new Scope);
+	InitScope(*m_scopes[index], conf, posFabric, true);
+}
+
+void RiskControlSymbolContext::InitScope(
+		Scope &scope,
+		const IniSectionRef &conf,
+		const PositionFabric &posFabric,
+		bool isAdditinalScope)
+		const {
+
+	{
+
+		const auto &readPriceLimit = [&](
+				const char *type,
+				const char *orderSide,
+				const char *limSide)
+				-> double {
+			boost::format key("%1%.%2%.%3%.%4%");
+			key % m_symbol.GetSymbol() % type % orderSide % limSide;
+			return conf.ReadTypedKey<double>(
+				!isAdditinalScope
+					?	key.str()
+					:	std::string("risk_control.") + key.str());
+		};
+		const auto &readQtyLimit = [&](
+				const char *type,
+				const char *orderSide,
+				const char *limSide)
+				-> Qty {
+			boost::format key("%1%.%2%.%3%.%4%");
+			key % m_symbol.GetSymbol() % type % orderSide % limSide;
+			return conf.ReadTypedKey<Qty>(
+				!isAdditinalScope
+					?	key.str()
+					:	std::string("risk_control.") + key.str());
+		};
+
+		scope.longSide.settings.maxPrice
+			= readPriceLimit("price", "buy", "max");
+		scope.longSide.settings.minPrice
+			= readPriceLimit("price", "buy", "min");
+		scope.longSide.settings.maxQty
+			= readQtyLimit("qty", "buy", "max");
+		scope.longSide.settings.minQty
+			= readQtyLimit("qty", "buy", "min");
+	
+		scope.shortSide.settings.maxPrice
+			= readPriceLimit("price", "sell", "max");
+		scope.shortSide.settings.minPrice
+			= readPriceLimit("price", "sell", "min");
+		scope.shortSide.settings.maxQty
+			= readQtyLimit("qty", "buy", "max");
+		scope.shortSide.settings.minQty
+			= readQtyLimit("qty", "buy", "min");
+
+	}
+
+	{
+
+		const auto &readLimit = [&](
+				const Currency &currency,
+				const char *type) {
+			boost::format key("%1%.limit.%2%");
+			key % currency % type;
+			return conf.ReadTypedKey<double>(
+				!isAdditinalScope
+					?	key.str()
+					:	std::string("risk_control.") + key.str());
+		};
+
+		scope.baseCurrencyPosition = posFabric(
+			m_symbol.GetCashBaseCurrency(),
+			readLimit(m_symbol.GetCashBaseCurrency(), "short"),
+			readLimit(m_symbol.GetCashBaseCurrency(), "long"));
+		scope.quoteCurrencyPosition = posFabric(
+			m_symbol.GetCashQuoteCurrency(),
+			readLimit(m_symbol.GetCashQuoteCurrency(), "short"),
+			readLimit(m_symbol.GetCashQuoteCurrency(), "long"));
+
+	}
+
+}
+
+RiskControlSymbolContext::Scope & RiskControlSymbolContext::GetScope(
+		const RiskControlScope &scope) {
+	return GetScope(scope.GetIndex());
+}
+
+RiskControlSymbolContext::Scope & RiskControlSymbolContext::GetScope(
+		size_t index) {
+	AssertGt(m_scopes.size(), index);
+	return *m_scopes[index];
+}
+
+RiskControlSymbolContext::Scope & RiskControlSymbolContext::GetGlobalScope() {
+	AssertGt(m_scopes.size(), 0);
+	return *m_scopes[0];
+}
+
+size_t RiskControlSymbolContext::GetScopesNumber() const {
+	return m_scopes.size();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 
@@ -690,7 +994,8 @@ RiskControl::Exception::Exception(const char *what) throw()
 }
 
 RiskControl::WrongSettingsException::WrongSettingsException(
-		const char *what) throw()
+		const char *what)
+		throw()
 	: Exception(what) {
 	//...//
 }
@@ -704,21 +1009,28 @@ RiskControl::NumberOfOrdersLimitException::NumberOfOrdersLimitException(
 
 RiskControl::NotEnoughFundsException::NotEnoughFundsException(
 		const char *what)
-	throw()
+		throw()
 	: Exception(what) {
 	//...//
 }
 
 RiskControl::WrongOrderParameterException::WrongOrderParameterException(
 		const char *what)
-	throw()
+		throw()
 	: Exception(what) {
 	//...//
 }
 
 RiskControl::PnlIsOutOfRangeException::PnlIsOutOfRangeException(
 		const char *what)
-	throw()
+		throw()
+	: Exception(what) {
+	//...//
+}
+
+RiskControl::WinRatioIsOutOfRangeException::WinRatioIsOutOfRangeException(
+		const char *what)
+		throw()
 	: Exception(what) {
 	//...//
 }
@@ -727,24 +1039,41 @@ RiskControl::PnlIsOutOfRangeException::PnlIsOutOfRangeException(
 
 class RiskControl::Implementation : private boost::noncopyable {
 
-private:
+public:
 
 	typedef std::map<
 			Currency,
-			boost::shared_ptr<RiskControlSecurityContext::Position>>
+			boost::shared_ptr<RiskControlSymbolContext::Position>>
 		PositionsCache;
+
+	struct ScopeInfo {
+		
+		std::string name;
+		IniSectionRef conf;
+		PositionsCache positionsCache;
+
+		explicit ScopeInfo(const std::string &name, const IniSectionRef &conf)
+			: name(name),
+			conf(conf) {
+			//...//
+		}
+
+	};
 
 public:
 
 	Context &m_context;
-	ModuleEventsLog m_log;
+	mutable ModuleEventsLog m_log;
 	ModuleTradingLog m_tradingLog;
 
 	const IniSectionRef m_conf;
-		
-	PositionsCache m_positionsCache;
 
-	RiskControlScope m_globalScope;
+	PositionsCache m_globalScopePositionsCache;
+	std::vector<boost::shared_ptr<RiskControlSymbolContext>> m_symbols;
+
+	GlobalRiskControlScope m_globalScope;
+	// Item can't be ptr as we will copy it when will create new scope.
+	std::vector<ScopeInfo> m_additionalScopesInfo;
 
 public:
 
@@ -753,8 +1082,86 @@ public:
 		m_log(logPrefix, m_context.GetLog()),
 		m_tradingLog(logPrefix, m_context.GetTradingLog()),
 		m_conf(conf),
-		m_globalScope(m_context, m_conf) {
+		m_globalScope(
+			m_context,
+			m_conf,
+			"Global",
+			m_additionalScopesInfo.size()) {
 		//...//
+	}
+
+public:
+
+	boost::shared_ptr<RiskControlSymbolContext::Position> CreatePosition(
+			const std::string &scopeName,
+			PositionsCache &cache,
+			const Currency &currency,
+			double shortLimit,
+			double longLimit)
+			const {
+		{
+			const auto &cacheIt = cache.find(currency);
+			if (cacheIt != cache.cend()) {
+				AssertEq(shortLimit, cacheIt->second->shortLimit);
+				AssertEq(longLimit, cacheIt->second->longLimit);
+				return cacheIt->second;
+			}
+		}
+		const boost::shared_ptr<RiskControlSymbolContext::Position> pos(
+			new RiskControlSymbolContext::Position(
+				shortLimit,
+				longLimit));
+		m_log.Info(
+			"%1% position limits for scope \"%2%\": short = %3$f, long = %4$f.",
+			currency,
+			scopeName,
+			pos->shortLimit,
+			pos->longLimit);
+		cache[currency] = pos;
+		return pos;
+	}
+
+	void ReportSymbolScopeSettings(
+			const RiskControlSymbolContext &symbol,
+			const RiskControlSymbolContext::Scope &scope,
+			const std::string &scopeName)
+			const {
+		m_log.Info(
+			"Order limits for %1% in scope \"%2%\":"
+				" buy: %3$f / %4% - %5$f / %6%;"
+				" sell: %7$f / %8% - %9$f / %10%;",
+			symbol.GetSymbol(),
+			scopeName,
+			scope.longSide.settings.minPrice, 
+			scope.longSide.settings.minQty,
+			scope.longSide.settings.maxPrice, 
+			scope.longSide.settings.maxQty,
+			scope.shortSide.settings.minPrice, 
+			scope.shortSide.settings.minQty,
+			scope.shortSide.settings.maxPrice, 
+			scope.shortSide.settings.maxQty);
+	}
+
+	void AddScope(
+			size_t scopeIndex,
+			ScopeInfo &scopeInfo,
+			RiskControlSymbolContext &symbolContex)
+			const {
+		symbolContex.AddScope(
+			scopeInfo.conf,
+			boost::bind(
+				&Implementation::CreatePosition,
+				this,
+				boost::cref(scopeInfo.name),
+				boost::ref(scopeInfo.positionsCache),
+				_1,
+				_2,
+				_3),
+			scopeIndex);
+		ReportSymbolScopeSettings(
+			symbolContex,
+			symbolContex.GetScope(scopeIndex),
+			scopeInfo.name);
 	}
 
 };
@@ -770,134 +1177,107 @@ RiskControl::~RiskControl() {
 	delete m_pimpl;
 }
 
-RiskControlSecurityContext RiskControl::CreateSecurityContext(
+boost::shared_ptr<RiskControlSymbolContext> RiskControl::CreateSymbolContext(
 		const Symbol &symbol)
 		const {
-
-	RiskControlSecurityContext result;
-
-	{
-
-		const auto &readPriceLimit = [&](
-				const char *type,
-				const char *orderSide,
-				const char *limSide)
-				-> double {
-			boost::format key("%1%.%2%.%3%.%4%");
-			key % symbol.GetSymbol() % type % orderSide % limSide;
-			return m_pimpl->m_conf.ReadTypedKey<double>(key.str());
-		};
-		const auto &readQtyLimit = [&](
-				const char *type,
-				const char *orderSide,
-				const char *limSide)
-				-> Qty {
-			boost::format key("%1%.%2%.%3%.%4%");
-			key % symbol.GetSymbol() % type % orderSide % limSide;
-			return m_pimpl->m_conf.ReadTypedKey<Qty>(key.str());
-		};
-
-		result.longSide.settings.maxPrice
-			= readPriceLimit("price", "buy", "max");
-		result.longSide.settings.minPrice
-			= readPriceLimit("price", "buy", "min");
-		result.longSide.settings.maxQty
-			= readQtyLimit("qty", "buy", "max");
-		result.longSide.settings.minQty
-			= readQtyLimit("qty", "buy", "min");
 	
-		result.shortSide.settings.maxPrice
-			= readPriceLimit("price", "sell", "max");
-		result.shortSide.settings.minPrice
-			= readPriceLimit("price", "sell", "min");
-		result.shortSide.settings.maxQty
-			= readQtyLimit("qty", "buy", "max");
-		result.shortSide.settings.minQty
-			= readQtyLimit("qty", "buy", "min");
-
-	}
-
+	auto posCache(m_pimpl->m_globalScopePositionsCache);
+	auto scopesInfoCache(m_pimpl->m_additionalScopesInfo);
+	
+	boost::shared_ptr<RiskControlSymbolContext> result(
+		new RiskControlSymbolContext(
+			symbol,
+			m_pimpl->m_conf,
+			boost::bind(
+				&Implementation::CreatePosition,
+				m_pimpl,
+				boost::cref(m_pimpl->m_globalScope.GetName()),
+				boost::ref(posCache),
+				_1,
+				_2,
+				_3)));
 	{
+		size_t scopeIndex = 1;
+		foreach (auto &scopeInfo, scopesInfoCache) {
+			m_pimpl->AddScope(scopeIndex, scopeInfo, *result);
+		}
+	}
+	
+	m_pimpl->ReportSymbolScopeSettings(
+		*result,
+		result->GetGlobalScope(),
+		m_pimpl->m_globalScope.GetName());
+	m_pimpl->m_symbols.push_back(result);
 
-		auto cache(m_pimpl->m_positionsCache);
+	scopesInfoCache.swap(m_pimpl->m_additionalScopesInfo);
+	posCache.swap(m_pimpl->m_globalScopePositionsCache);
 
-		const auto &readLimit = [&](
-				const Currency &currency,
-				const char *type) {
-			boost::format key("%1%.limit.%2%");
-			key % currency % type;
-			return m_pimpl->m_conf.ReadTypedKey<double>(key.str());
-		};
+	return result;
 
-		const auto &getPos = [&](
-				const Currency &currency)
-				-> boost::shared_ptr<RiskControlSecurityContext::Position> {
-			const auto &cacheIt = cache.find(symbol.GetCashBaseCurrency());
-			if (cacheIt == cache.cend()) {
-				const boost::shared_ptr<RiskControlSecurityContext::Position> pos(
-					new RiskControlSecurityContext::Position(
-						readLimit(currency, "short") * -1,
-						readLimit(currency, "long")));
-				m_pimpl->m_log.Info(
-					"%1% position limits: short = %2%, long = %3%.",
-					symbol,
-					fabs(pos->shortLimit),
-					pos->longLimit);
-				cache[currency] = pos;
-				return pos;
-			} else {
-				return cacheIt->second;
-			}
-		};
+}
 
-		result.baseCurrencyPosition = getPos(symbol.GetCashBaseCurrency());
-		result.quoteCurrencyPosition = getPos(symbol.GetCashQuoteCurrency());
+std::unique_ptr<RiskControlScope> RiskControl::CreateScope(
+		const std::string &name,
+		const IniSectionRef &conf)
+		const {
 
+	auto additionalScopesInfo(m_pimpl->m_additionalScopesInfo);
+	additionalScopesInfo.emplace_back(name, conf);
+
+	const auto scopeIndex = additionalScopesInfo.size();
+	AssertLt(0, scopeIndex ); // zero - always Global scope
+
+	Implementation::PositionsCache cache;
+	foreach (auto &symbolContex, m_pimpl->m_symbols) {
+		m_pimpl->AddScope(
+			scopeIndex,
+			additionalScopesInfo.back(),
+			*symbolContex);
 	}
 
-	m_pimpl->m_log.Info(
-		"Order limits for %1%:"
-			" buy: %2% / %3% - %4% / %5%;"
-			" sell: %6% / %7% - %8% / %9%;",
-		symbol,
-		result.longSide.settings.minPrice, 
-		result.longSide.settings.minQty,
-		result.longSide.settings.maxPrice, 
-		result.longSide.settings.maxQty,
-		result.shortSide.settings.minPrice, 
-		result.shortSide.settings.minQty,
-		result.shortSide.settings.maxPrice, 
-		result.shortSide.settings.maxQty);
+	std::unique_ptr<RiskControlScope> result(
+		new LocalRiskControlScope(
+			m_pimpl->m_context,
+			conf,
+			name,
+			scopeIndex));
+
+	additionalScopesInfo.swap(m_pimpl->m_additionalScopesInfo);
 
 	return result;
 
 }
 
 void RiskControl::CheckNewBuyOrder(
-		const Security &security,
+		RiskControlScope &scope,
+		Security &security,
 		const Currency &currency,
 		const Qty &qty,
 		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
-	m_pimpl->m_globalScope .CheckNewBuyOrder(security, currency, qty, price);
+	scope.CheckNewBuyOrder(security, currency, qty, price);
+	m_pimpl->m_globalScope.CheckNewBuyOrder(security, currency, qty, price);
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
 }
 
 void RiskControl::CheckNewSellOrder(
-		const Security &security,
+		RiskControlScope &scope,
+		Security &security,
 		const Currency &currency,
 		const Qty &qty,
 		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
+	scope.CheckNewSellOrder(security, currency, qty, price);
 	m_pimpl->m_globalScope.CheckNewSellOrder(security, currency, qty, price);
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
 }
 
 void RiskControl::ConfirmBuyOrder(
+		RiskControlScope &scope,
 		const TradeSystem::OrderStatus &orderStatus,
-		const Security &security,
+		Security &security,
 		const Currency &currency,
 		const ScaledPrice &orderPrice,
 		const Qty &tradeQty,
@@ -913,12 +1293,21 @@ void RiskControl::ConfirmBuyOrder(
 		tradeQty,
 		tradePrice,
 		remainingQty);
+	scope.ConfirmBuyOrder(
+		orderStatus,
+		security,
+		currency,
+		orderPrice,
+		tradeQty,
+		tradePrice,
+		remainingQty);
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_COMPLETE);
 }
 
 void RiskControl::ConfirmSellOrder(
+		RiskControlScope &scope,
 		const TradeSystem::OrderStatus &orderStatus,
-		const Security &security,
+		Security &security,
 		const Currency &currency,
 		const ScaledPrice &orderPrice,
 		const Qty &tradeQty,
@@ -934,52 +1323,33 @@ void RiskControl::ConfirmSellOrder(
 		tradeQty,
 		tradePrice,
 		remainingQty);
+	scope.ConfirmSellOrder(
+		orderStatus,
+		security,
+		currency,
+		orderPrice,
+		tradeQty,
+		tradePrice,
+		remainingQty);
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_COMPLETE);
 }
 
-void RiskControl::CheckTotalPnl(double pnl) const {
-	
-	if (pnl < 0) {
-	
-// 		if (pnl < m_pimpl->m_settings.pnl.first) {
-// 			m_pimpl->m_tradingLog.Write(
-// 				"Total loss is out of allowed PnL range:"
-// 					" %1$f, but can't be more than %2$f.",
-// 				[&](TradingRecord &record) {
-// 					record % fabs(pnl) % fabs(m_pimpl->m_settings.pnl.first);
-// 				});
-// 			throw PnlIsOutOfRangeException(
-// 				"Total loss is out of allowed PnL range");
-// 		}
-	
-// 	} else if (pnl > m_pimpl->m_settings.pnl.second) {
-// 		m_pimpl->m_tradingLog.Write(
-// 			"Total profit is out of allowed PnL range:"
-// 				" %1$f, but can't be more than %2$f.",
-// 			[&](TradingRecord &record) {
-// 				record % pnl % m_pimpl->m_settings.pnl.second;
-// 			});
-// 		throw PnlIsOutOfRangeException(
-// 			"Total profit is out of allowed PnL range");
-	}
-
+void RiskControl::CheckTotalPnl(
+		const RiskControlScope &scope,
+		double pnl)
+		const {
+	scope.CheckTotalPnl(pnl);
+	m_pimpl->m_globalScope.CheckTotalPnl(pnl);
 }
 
-// void RiskControl::CheckTotalWinRatio(
-// 		size_t totalWinRatio,
-// 		size_t operationsCount)
-// 		const {
-// 	AssertGe(100, totalWinRatio);
-// 	if (
-// 			operationsCount >=  m_pimpl->m_settings.winRatioFirstOperationsToSkip
-// 			&& totalWinRatio < m_pimpl->m_settings.winRatioMinValue) {
-// 		m_pimpl->m_tradingLog.Write(
-// 			"Total win-ratio is too small: %1%%%, but can't be less than %2%%%.",
-// 			[&](TradingRecord &record) {
-// 				record % totalWinRatio % m_pimpl->m_settings.winRatioMinValue;
-// 			});
-// 			throw PnlIsOutOfRangeException("Total win-ratio is too small");
-// 	}
-// }
+void RiskControl::CheckTotalWinRatio(
+		const RiskControlScope &scope,
+		size_t totalWinRatio,
+		size_t operationsCount)
+		const {
+	AssertGe(100, totalWinRatio);
+	scope.CheckTotalWinRatio(totalWinRatio, operationsCount);
+	m_pimpl->m_globalScope.CheckTotalWinRatio(totalWinRatio, operationsCount);
+}
 
 ////////////////////////////////////////////////////////////////////////////////

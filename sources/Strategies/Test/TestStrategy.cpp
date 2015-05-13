@@ -35,7 +35,7 @@ namespace trdk { namespace Strategies { namespace Test {
 				const std::string &name,
 				const std::string &tag,
 				const Lib::IniSectionRef &conf)
-			: Super(context, name, tag),
+			: Super(context, name, tag, conf),
 			m_enabled(conf.ReadBoolKey("enabled")) {
 			//...//
 		}

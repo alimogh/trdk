@@ -1383,6 +1383,7 @@ OrderId LongPosition::DoOpenAtMarketPrice(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1406,6 +1407,7 @@ OrderId LongPosition::DoOpen(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1429,6 +1431,7 @@ OrderId LongPosition::DoOpenAtMarketPriceWithStopPrice(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1452,6 +1455,7 @@ OrderId LongPosition::DoOpenImmediatelyOrCancel(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1473,6 +1477,7 @@ OrderId LongPosition::DoOpenAtMarketPriceImmediatelyOrCancel(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1494,6 +1499,7 @@ OrderId LongPosition::DoCloseAtMarketPrice(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1517,6 +1523,7 @@ OrderId LongPosition::DoClose(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1540,6 +1547,7 @@ OrderId LongPosition::DoCloseAtMarketPriceWithStopPrice(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1564,6 +1572,7 @@ OrderId LongPosition::DoCloseImmediatelyOrCancel(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1586,6 +1595,7 @@ OrderId LongPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1658,6 +1668,7 @@ OrderId ShortPosition::DoOpenAtMarketPrice(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1681,6 +1692,7 @@ OrderId ShortPosition::DoOpen(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1704,6 +1716,7 @@ OrderId ShortPosition::DoOpenAtMarketPriceWithStopPrice(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1727,6 +1740,7 @@ OrderId ShortPosition::DoOpenImmediatelyOrCancel(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1748,6 +1762,7 @@ OrderId ShortPosition::DoOpenAtMarketPriceImmediatelyOrCancel(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1769,6 +1784,7 @@ OrderId ShortPosition::DoCloseAtMarketPrice(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1790,6 +1806,7 @@ OrderId ShortPosition::DoClose(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1813,6 +1830,7 @@ OrderId ShortPosition::DoCloseAtMarketPriceWithStopPrice(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1836,6 +1854,7 @@ OrderId ShortPosition::DoCloseImmediatelyOrCancel(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 
@@ -1857,6 +1876,7 @@ OrderId ShortPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
 			_3,
 			_4,
 			_5),
+		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
 

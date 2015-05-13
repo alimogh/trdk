@@ -219,7 +219,7 @@ namespace trdk {
 
 					case PT_CURRENCY:
 						WriteToDumpStream(
-							*boost::any_cast<const Lib::Currency *>(val),
+							boost::any_cast<const Lib::Currency &>(val),
 							os);
 						break;
 
