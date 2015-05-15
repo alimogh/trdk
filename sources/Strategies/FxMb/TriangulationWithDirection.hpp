@@ -79,7 +79,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		void CheckNewTriangle(const Lib::TimeMeasurement::Milestones &);
 		bool CheckTriangleCompletion(const Lib::TimeMeasurement::Milestones &);
 
-		void StartScheduledLeg();
+		bool StartScheduledLeg();
 
 		bool CheckProfitLoss(Twd::Position &firstLeg, bool isJustOpened);
 

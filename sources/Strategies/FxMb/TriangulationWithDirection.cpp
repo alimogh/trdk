@@ -156,7 +156,9 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 
 	if (m_triangle) {
 	
-		StartScheduledLeg();
+		if (!StartScheduledLeg()) {
+			return;
+		}
 
 		if (!CheckTriangleCompletion(timeMeasurement)) {
 			m_triangle->GetReport().ReportUpdate();
@@ -172,30 +174,25 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 
 }
 
-void TriangulationWithDirection::StartScheduledLeg() {
+bool TriangulationWithDirection::StartScheduledLeg() {
 
 	Assert(m_triangle);
 
 	try {
-
 		static_assert(numberOfLegs == 3, "Legs list changed.");
 		switch (m_scheduledLeg) {
-		
 			case LEG2:
 				m_triangle->StartLeg2();
 				break;
-		
 			case LEG3:
 				m_triangle->StartLeg3(TimeMeasurement::Milestones(), true);
 				break;
-
 			default:
 				AssertEq(LEG_UNKNOWN, m_scheduledLeg);
+				break;
 			case LEG_UNKNOWN:
-				return;
-
+				return true;
 		}
-
 	} catch (const HasNotMuchOpportunityException &ex) {
 		GetLog().Warn(
 			"Failed to start scheduled leg %1%: \"%2%\". Required: %3% %4%.",
@@ -203,10 +200,11 @@ void TriangulationWithDirection::StartScheduledLeg() {
 			ex,
 			ex.GetRequiredQty(),
 			ex.GetSecurity());
-		return;
+		return false;
 	}
 
 	m_scheduledLeg = LEG_UNKNOWN;
+	return true;
 
 }
 
