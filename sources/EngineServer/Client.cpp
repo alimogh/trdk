@@ -55,6 +55,7 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 	const SettingsLock lock(settingsMutex);
 	if (settings.empty()) {
 		
+		settings["Strategy.1"]["General"]["id"] = "1",
 		settings["Strategy.1"]["General"]["name"] = "EUR/USD USD/JPY EUR/JPY",
 		settings["Strategy.1"]["General"]["module"] = "FxMb",
 		settings["Strategy.1"]["General"]["type"] = "TriangulationWithDirection",
