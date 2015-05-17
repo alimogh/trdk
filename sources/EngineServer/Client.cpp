@@ -379,6 +379,7 @@ void Client::SendEngineInfo(const std::string &engineId) {
 
 	EngineInfo &info = *message.mutable_engine_info();
  	info.set_engine_id(engineId);
+	info.set_is_started(m_requestHandler.IsEngineStarted(engineId));
 
  	EngineSettings &settingsMessage = *info.mutable_settings();
 
