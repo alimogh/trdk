@@ -453,7 +453,7 @@ void Client::OnStrategyStartRequest(
 			return;
 		}
 	
-		auto &startFlag = groupIt->second["General"]["is_enbaled"];
+		auto &startFlag = groupIt->second["General"]["is_enabled"];
 		if (boost::iequals(startFlag, "true")) {
 			std::cerr
 				<< "Failed to start strategy with ID \"" 
@@ -512,7 +512,7 @@ void Client::OnStrategyStopRequest(const StrategyStopRequest &request) {
 			return;
 		}
 
-		auto &startFlag = groupIt->second["General"]["is_enbaled"];
+		auto &startFlag = groupIt->second["General"]["is_enabled"];
 		if (!boost::iequals(startFlag, "true")) {
 			std::cerr
 				<< "Failed to stop strategy with ID \"" 
