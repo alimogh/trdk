@@ -38,7 +38,8 @@ message EngineSettings {
 
 message EngineInfo {
 	required string engine_id = 1;
-	required EngineSettings settings = 2;
+	required bool is_started = 2;
+	required EngineSettings settings = 3;
 }
 
 message EngineState {

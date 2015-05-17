@@ -55,6 +55,7 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 	const SettingsLock lock(settingsMutex);
 	if (settings.empty()) {
 		
+		settings["Strategy.1"]["General"]["id"] = "1",
 		settings["Strategy.1"]["General"]["name"] = "EUR/USD USD/JPY EUR/JPY",
 		settings["Strategy.1"]["General"]["module"] = "FxMb",
 		settings["Strategy.1"]["General"]["type"] = "TriangulationWithDirection",
@@ -378,6 +379,7 @@ void Client::SendEngineInfo(const std::string &engineId) {
 
 	EngineInfo &info = *message.mutable_engine_info();
  	info.set_engine_id(engineId);
+	info.set_is_started(m_requestHandler.IsEngineStarted(engineId));
 
  	EngineSettings &settingsMessage = *info.mutable_settings();
 
@@ -453,7 +455,7 @@ void Client::OnStrategyStartRequest(
 			return;
 		}
 	
-		auto &startFlag = groupIt->second["General"]["is_enbaled"];
+		auto &startFlag = groupIt->second["General"]["is_enabled"];
 		if (boost::iequals(startFlag, "true")) {
 			std::cerr
 				<< "Failed to start strategy with ID \"" 
@@ -512,7 +514,7 @@ void Client::OnStrategyStopRequest(const StrategyStopRequest &request) {
 			return;
 		}
 
-		auto &startFlag = groupIt->second["General"]["is_enbaled"];
+		auto &startFlag = groupIt->second["General"]["is_enabled"];
 		if (!boost::iequals(startFlag, "true")) {
 			std::cerr
 				<< "Failed to stop strategy with ID \"" 
