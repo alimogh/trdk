@@ -92,7 +92,8 @@ namespace trdk { namespace Lib {
 					const Right &,
 					const std::string &tradingClass,
 					const std::string &defExchange,
-					const std::string &type);
+					const std::string &type,
+					const std::string &currency);
 		//! Special code only for custom branch.
 		static Symbol ParseCashOption(const std::string &line);
 

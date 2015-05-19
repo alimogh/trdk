@@ -27,7 +27,8 @@ namespace trdk { namespace SimpleApi {
 					double strike,
 					const std::string &right,
 					const std::string &tradingClass,
-					const std::string &type)
+					const std::string &type,
+					const std::string &currency)
 				const;
 
 		double GetCashBalance() const;

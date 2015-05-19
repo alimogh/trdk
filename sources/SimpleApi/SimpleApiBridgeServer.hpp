@@ -53,7 +53,8 @@ namespace trdk { namespace SimpleApi {
 
 		Bridge & CheckBridge(
 					const BridgeId &,
-					const std::string &defaultExchange);
+					const std::string &defaultExchange,
+					bool recreate);
 
 		Bridge & GetBridge(const BridgeId &);
 		const Bridge & GetBridge(const BridgeId &) const;

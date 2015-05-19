@@ -36,7 +36,8 @@ Security & Bridge::ResolveOpt(
 			double strike,
 			const std::string &right,
 			const std::string &tradingClass,
-			const std::string &type)
+			const std::string &type,
+			const std::string &currency)
 		const {
 	const Symbol &symbol = Symbol::ParseCashOption(
  		boost::erase_all_copy(symbolStr, ":"), // TRDK-reserver delimiter
@@ -45,7 +46,8 @@ Security & Bridge::ResolveOpt(
 		Symbol::ParseRight(right),
 		tradingClass,
  		exchange,
-		type);
+		type,
+		currency);
 	return m_context->GetSecurity(symbol);
 }
 

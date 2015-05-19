@@ -111,6 +111,7 @@ int32_t _stdcall trdk_DestroyAllBridges() {
 
 double _stdcall trdk_GetImpliedVolatilityLast(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -128,7 +129,7 @@ double _stdcall trdk_GetImpliedVolatilityLast(
 		InitDebugLog();
 		const std::string exchangeStr(exchange);
 		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
+			.CheckBridge(bridgeId, exchangeStr, false)
 			.ResolveOpt(
 				symbol,
 				exchangeStr,
@@ -136,7 +137,8 @@ double _stdcall trdk_GetImpliedVolatilityLast(
 				strike,
 				right,
 				tradingClass,
-				optType)
+				optType,
+				currency)
 			.GetLastImpliedVolatility();
 		result *= 100;
 		if (CheckCallsDebuging()) {
@@ -166,6 +168,7 @@ double _stdcall trdk_GetImpliedVolatilityLast(
 
 double _stdcall trdk_GetImpliedVolatilityAsk(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -183,7 +186,7 @@ double _stdcall trdk_GetImpliedVolatilityAsk(
 		InitDebugLog();
 		const std::string exchangeStr(exchange);
 		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
+			.CheckBridge(bridgeId, exchangeStr, false)
 			.ResolveOpt(
 				symbol,
 				exchangeStr,
@@ -191,7 +194,8 @@ double _stdcall trdk_GetImpliedVolatilityAsk(
 				strike,
 				right,
 				tradingClass,
-				optType)
+				optType,
+				currency)
 			.GetAskImpliedVolatility();
 		result *= 100;
 // 		Log::Debug(
@@ -219,6 +223,7 @@ double _stdcall trdk_GetImpliedVolatilityAsk(
 
 double _stdcall trdk_GetImpliedVolatilityBid(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -236,7 +241,7 @@ double _stdcall trdk_GetImpliedVolatilityBid(
 		InitDebugLog();
 		const std::string exchangeStr(exchange);
 		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
+			.CheckBridge(bridgeId, exchangeStr, false)
 			.ResolveOpt(
 				symbol,
 				exchangeStr,
@@ -244,7 +249,8 @@ double _stdcall trdk_GetImpliedVolatilityBid(
 				strike,
 				right,
 				tradingClass,
-				optType)
+				optType,
+				currency)
 			.GetBidImpliedVolatility();
 		result *= 100;
 // 		Log::Debug(
@@ -272,6 +278,7 @@ double _stdcall trdk_GetImpliedVolatilityBid(
 
 int _stdcall trdk_GetFopLastQty(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -289,7 +296,7 @@ int _stdcall trdk_GetFopLastQty(
 		InitDebugLog();
 		const std::string exchangeStr(exchange);
 		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
+			.CheckBridge(bridgeId, exchangeStr, false)
 			.ResolveOpt(
 				symbol,
 				exchangeStr,
@@ -297,7 +304,8 @@ int _stdcall trdk_GetFopLastQty(
 				strike,
 				right,
 				tradingClass,
-				optType)
+				optType,
+				currency)
 			.GetLastQty();
 // 		Log::Debug(
 // 			"trdk_GetFopLastQty result for \"%1%:%2%:%3%:%4%\": %5%.",
@@ -324,6 +332,7 @@ int _stdcall trdk_GetFopLastQty(
 
 double _stdcall trdk_GetFopLastPrice(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -341,7 +350,7 @@ double _stdcall trdk_GetFopLastPrice(
 		InitDebugLog();
 		const std::string exchangeStr(exchange);
 		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
+			.CheckBridge(bridgeId, exchangeStr, false)
 			.ResolveOpt(
 				symbol,
 				exchangeStr,
@@ -349,7 +358,8 @@ double _stdcall trdk_GetFopLastPrice(
 				strike,
 				right,
 				tradingClass,
-				optType)
+				optType,
+				currency)
 			.GetLastPrice();
 // 		Log::Debug(
 // 			"trdk_GetFopLastPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
@@ -376,6 +386,7 @@ double _stdcall trdk_GetFopLastPrice(
 
 int _stdcall trdk_GetFopBidQty(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -393,7 +404,7 @@ int _stdcall trdk_GetFopBidQty(
 		InitDebugLog();
 		const std::string exchangeStr(exchange);
 		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
+			.CheckBridge(bridgeId, exchangeStr, false)
 			.ResolveOpt(
 				symbol,
 				exchangeStr,
@@ -401,7 +412,8 @@ int _stdcall trdk_GetFopBidQty(
 				strike,
 				right,
 				tradingClass,
-				optType)
+				optType,
+				currency)
 			.GetBidQty();
 // 		Log::Debug(
 // 			"trdk_GetFopBidQty result for \"%1%:%2%:%3%:%4%\": %5%.",
@@ -428,6 +440,7 @@ int _stdcall trdk_GetFopBidQty(
 
 double _stdcall trdk_GetFopBidPrice(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -445,7 +458,7 @@ double _stdcall trdk_GetFopBidPrice(
 		InitDebugLog();
 		const std::string exchangeStr(exchange);
 		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
+			.CheckBridge(bridgeId, exchangeStr, false)
 			.ResolveOpt(
 				symbol,
 				exchangeStr,
@@ -453,7 +466,8 @@ double _stdcall trdk_GetFopBidPrice(
 				strike,
 				right,
 				tradingClass,
-				optType)
+				optType,
+				currency)
 			.GetBidPrice();
 // 		Log::Debug(
 // 			"trdk_GetFopBidPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
@@ -480,6 +494,7 @@ double _stdcall trdk_GetFopBidPrice(
 
 int _stdcall trdk_GetFopAskQty(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -497,7 +512,7 @@ int _stdcall trdk_GetFopAskQty(
 		InitDebugLog();
 		const std::string exchangeStr(exchange);
 		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
+			.CheckBridge(bridgeId, exchangeStr, false)
 			.ResolveOpt(
 				symbol,
 				exchangeStr,
@@ -505,7 +520,8 @@ int _stdcall trdk_GetFopAskQty(
 				strike,
 				right,
 				tradingClass,
-				optType)
+				optType,
+				currency)
 			.GetAskQty();
 // 		Log::Debug(
 // 			"trdk_GetFopAskQty result for \"%1%:%2%:%3%:%4%\": %5%.",
@@ -532,6 +548,7 @@ int _stdcall trdk_GetFopAskQty(
 
 double _stdcall trdk_GetFopAskPrice(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -549,7 +566,7 @@ double _stdcall trdk_GetFopAskPrice(
 		InitDebugLog();
 		const std::string exchangeStr(exchange);
 		auto result = theBridgeServer
-			.CheckBridge(bridgeId, exchangeStr)
+			.CheckBridge(bridgeId, exchangeStr, false)
 			.ResolveOpt(
 				symbol,
 				exchangeStr,
@@ -557,7 +574,8 @@ double _stdcall trdk_GetFopAskPrice(
 				strike,
 				right,
 				tradingClass,
-				optType)
+				optType,
+				currency)
 			.GetAskPrice();
 // 		Log::Debug(
 // 			"trdk_GetFopAskPrice result for \"%1%:%2%:%3%:%4%\": %5%.",
@@ -600,6 +618,7 @@ void _stdcall trdk_SetImpliedVolatilityUpdatePeriod(int updatePeriod) {
 
 double _stdcall GetImpliedVolatilityLast(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -608,6 +627,7 @@ double _stdcall GetImpliedVolatilityLast(
 			const char *optType) {
 	return trdk_GetImpliedVolatilityLast(
 		symbol,
+		currency,
 		exchange,
 		expirationDate,
 		strike,
@@ -618,6 +638,7 @@ double _stdcall GetImpliedVolatilityLast(
 
 double _stdcall GetImpliedVolatilityAsk(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -626,6 +647,7 @@ double _stdcall GetImpliedVolatilityAsk(
 			const char *optType) {
 	return trdk_GetImpliedVolatilityAsk(
 		symbol,
+		currency,
 		exchange,
 		expirationDate,
 		strike,
@@ -636,6 +658,7 @@ double _stdcall GetImpliedVolatilityAsk(
 
 double _stdcall GetImpliedVolatilityBid(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -644,6 +667,7 @@ double _stdcall GetImpliedVolatilityBid(
 			const char *optType) {
 	return trdk_GetImpliedVolatilityBid(
 		symbol,
+		currency,
 		exchange,
 		expirationDate,
 		strike,
@@ -654,6 +678,7 @@ double _stdcall GetImpliedVolatilityBid(
 
 int GetFopLastTradeQty(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -662,6 +687,7 @@ int GetFopLastTradeQty(
 			const char *optType) {
 	return trdk_GetFopLastQty(
 		symbol,
+		currency,
 		exchange,
 		expirationDate,
 		strike,
@@ -672,6 +698,7 @@ int GetFopLastTradeQty(
 
 double GetFopLastTradePrice(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -680,6 +707,7 @@ double GetFopLastTradePrice(
 			const char *optType) {
 	return trdk_GetFopLastPrice(
 		symbol,
+		currency,
 		exchange,
 		expirationDate,
 		strike,
@@ -690,6 +718,7 @@ double GetFopLastTradePrice(
 
 int GetFopLastBidQty(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -698,6 +727,7 @@ int GetFopLastBidQty(
 			const char *optType) {
 	return trdk_GetFopBidQty(
 		symbol,
+		currency,
 		exchange,
 		expirationDate,
 		strike,
@@ -708,6 +738,7 @@ int GetFopLastBidQty(
 
 double GetFopLastBidPrice(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -716,6 +747,7 @@ double GetFopLastBidPrice(
 			const char *optType) {
 	return trdk_GetFopBidPrice(
 		symbol,
+		currency,
 		exchange,
 		expirationDate,
 		strike,
@@ -726,6 +758,7 @@ double GetFopLastBidPrice(
 
 int GetFopLastAskQty(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -734,6 +767,7 @@ int GetFopLastAskQty(
 			const char *optType) {
 	return trdk_GetFopAskQty(
 		symbol,
+		currency,
 		exchange,
 		expirationDate,
 		strike,
@@ -744,6 +778,7 @@ int GetFopLastAskQty(
 
 double GetFopLastAskPrice(
 			const char *symbol,
+			const char *currency,
 			const char *exchange,
 			double expirationDate,
 			double strike,
@@ -752,6 +787,7 @@ double GetFopLastAskPrice(
 			const char *optType) {
 	return trdk_GetFopAskPrice(
 		symbol,
+		currency,
 		exchange,
 		expirationDate,
 		strike,

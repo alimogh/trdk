@@ -144,9 +144,10 @@ void BridgeServer::DestoryAllBridge() {
 
 Bridge & BridgeServer::CheckBridge(
 			const BridgeId &id,
-			const std::string &defaultExchange) {
+			const std::string &defaultExchange,
+			bool recreate) {
 	if (id < m_pimpl->m_bridges.size()) {
-		if (m_pimpl->m_bridges[id]->CheckActive()) {
+		if (!recreate && m_pimpl->m_bridges[id]->CheckActive()) {
 			return *m_pimpl->m_bridges[id];
 		}
 		Verify(CreateBridge(defaultExchange, &id) == id);
