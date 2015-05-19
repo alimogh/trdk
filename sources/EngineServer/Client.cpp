@@ -24,12 +24,13 @@ namespace {
 	typedef boost::mutex SettingsMutex;
 	typedef SettingsMutex::scoped_lock SettingsLock;
 
-	std::map<
+	typedef std::map<
 			std::string,
 			std::map<
 				std::string,
 				std::map<std::string, std::string>>>
-		settings;
+		Settings;
+	Settings settings;
 	SettingsMutex settingsMutex;
 
 }
@@ -426,7 +427,7 @@ void Client::OnEngineStartRequest(
 		UpdateSettingsGroup(request.general_settings(), "General");
 	}
 	m_requestHandler.StartEngine(request.engine_id(), *this);
-	SendEngineState(request.engine_id());
+	SendEngineInfo(request.engine_id());
 }
 
 void Client::OnEngineStopRequest(const EngineStopRequest &request) {
@@ -592,6 +593,8 @@ void Client::UpdateSettingsGroup(
 		const std::string &group,
 		const boost::function<bool(const std::string &)> &isKeyFiltered) {
 
+	std::map<std::string, std::map<std::string, std::string>> newSettings;
+
 	foreach (const auto &messageSection, request) {
 	
 		for (
@@ -604,11 +607,20 @@ void Client::UpdateSettingsGroup(
 				continue;
 			}
 				
-			settings
-					[group]
-					[messageSection.name()]
-					[messageKey.name()]
-				= messageKey.value();
+			if (
+					settings[group].find(messageSection.name()) == settings[group].end()
+					|| settings[group][messageSection.name()].find(messageKey.name()) == settings[group][messageSection.name()].end()) {
+				std::cerr
+					<< "\tUnknown key "
+					<< group
+					<< "::" << messageSection.name()
+					<< "::" << messageKey.name()
+					<< "=" << messageKey.value() << ";"
+					<< std::endl;
+				return;
+			}
+
+			newSettings[messageSection.name()][messageKey.name()] = messageKey.value();
 				
 			std::cout
 				<< "\t" << group
@@ -620,5 +632,20 @@ void Client::UpdateSettingsGroup(
 		}
 
 	}
+
+	foreach (const auto &s, settings[group]) {
+		if (newSettings.find(s.first) == newSettings.end()) {
+			std::cerr << "\tSection " << group << "::" << s.first << " not set." << std::endl;
+			return;
+		}
+		foreach (const auto &k, s.second) {
+			if (newSettings[s.first].find(k.first) == newSettings[s.first].end()) {
+				std::cerr << "\tKey " << group  << "::" << s.first << "::" << k.first << " not set." << std::endl;
+				return;
+			}
+		}
+	}
+	
+	newSettings.swap(settings[group]);
 
 }
