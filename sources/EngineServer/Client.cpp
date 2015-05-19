@@ -56,73 +56,152 @@ Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
 	const SettingsLock lock(settingsMutex);
 	if (settings.empty()) {
 		
-		settings["Strategy.1"]["General"]["id"] = "1",
-		settings["Strategy.1"]["General"]["name"] = "EUR/USD USD/JPY EUR/JPY",
-		settings["Strategy.1"]["General"]["module"] = "FxMb",
-		settings["Strategy.1"]["General"]["type"] = "TriangulationWithDirection",
-		settings["Strategy.1"]["General"]["pairs"] = "EUR/USD, USD/JPY, EUR/JPY",
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["id"] = "CDBED493-7B08-434F-A5CB-77C9E4DC6CE6",
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["name"] = "EUR/USD USD/JPY EUR/JPY",
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["module"] = "FxMb",
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["type"] = "TriangulationWithDirection",
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["pairs"] = "EUR/USD, USD/JPY, EUR/JPY v1",
 
-		settings["Strategy.1"]["General"]["is_enabled"] = "false";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["is_enabled"] = "false";
 
-		settings["Strategy.1"]["General"]["invest_amount"] = "1000000",
-		settings["Strategy.1"]["General"]["mode"] = "live";
-		
-		settings["Strategy.1"]["Sensitivity"]["lag.min"] = "150";
-		settings["Strategy.1"]["Sensitivity"]["lag.max"] = "200";
-		settings["Strategy.1"]["Sensitivity"]["book_levels_number"] = "4";
-		settings["Strategy.1"]["Sensitivity"]["book_levels_exactly"] = "true";
-		
-		settings["Strategy.1"]["Analysis"]["ema.slow"] = "0.01";
-        settings["Strategy.1"]["Analysis"]["ema.fast"] = "0.03";
-		
-		settings["Strategy.1"]["Sources"]["alpari"] = "false";
-        settings["Strategy.1"]["Sources"]["currenex"] = "false";
-		settings["Strategy.1"]["Sources"]["integral"] = "true";
-		settings["Strategy.1"]["Sources"]["hotspot"] = "true";
-		settings["Strategy.1"]["Sources"]["fxall"] = "false";
-	
-		settings["Strategy.1"]["RiskControl"]["triangle_orders_limit"] = "3";
-		settings["Strategy.1"]["RiskControl"]["triangles_limit"] = "0";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["invest_amount"] = "1000000",
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["mode"] = "live";
 
-		settings["Strategy.1"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
-		settings["Strategy.1"]["RiskControl"]["flood_control.orders.max_number"] = "3";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sensitivity"]["lag.min"] = "150";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sensitivity"]["lag.max"] = "200";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sensitivity"]["book_levels_number"] = "4";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sensitivity"]["book_levels_exactly"] = "true";
 
-		settings["Strategy.1"]["RiskControl"]["pnl.profit"] = "0.001";
-		settings["Strategy.1"]["RiskControl"]["pnl.loss"] = "0.001";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Analysis"]["ema.slow"] = "0.01";
+        settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Analysis"]["ema.fast"] = "0.03";
 
-		settings["Strategy.1"]["RiskControl"]["win_ratio.min"] = "55";
-		settings["Strategy.1"]["RiskControl"]["win_ratio.first_operations_to_skip"] = "5";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sources"]["alpari"] = "false";
+        settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sources"]["currenex"] = "false";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sources"]["integral"] = "true";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sources"]["hotspot"] = "true";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sources"]["fxall"] = "false";
 
-		settings["Strategy.1"]["RiskControl"]["EUR/USD.price.buy.max"] = "1.2000";
-		settings["Strategy.1"]["RiskControl"]["EUR/USD.price.buy.min"] = "0.6000";
-		settings["Strategy.1"]["RiskControl"]["EUR/USD.price.sell.max"] = "1.2000";
-		settings["Strategy.1"]["RiskControl"]["EUR/USD.price.sell.min"] = "0.6000";
-		settings["Strategy.1"]["RiskControl"]["EUR/USD.qty.buy.max"] = "1000000";
-		settings["Strategy.1"]["RiskControl"]["EUR/USD.qty.buy.min"] = "100000";
-		settings["Strategy.1"]["RiskControl"]["EUR/USD.qty.sell.max"] = "1000000";
-		settings["Strategy.1"]["RiskControl"]["EUR/USD.qty.sell.min"] = "100000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["triangle_orders_limit"] = "3";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["triangles_limit"] = "0";
 
-		settings["Strategy.1"]["RiskControl"]["EUR/JPY.price.buy.max"] = "170.0000";
-		settings["Strategy.1"]["RiskControl"]["EUR/JPY.price.buy.min"] = "90.0000";
-		settings["Strategy.1"]["RiskControl"]["EUR/JPY.price.sell.max"] = "170.0000";
-		settings["Strategy.1"]["RiskControl"]["EUR/JPY.price.sell.min"] = "90.0000";
-		settings["Strategy.1"]["RiskControl"]["EUR/JPY.qty.buy.max"] = "1000000";
-		settings["Strategy.1"]["RiskControl"]["EUR/JPY.qty.buy.min"] = "100000";
-		settings["Strategy.1"]["RiskControl"]["EUR/JPY.qty.sell.max"] = "1000000";
-		settings["Strategy.1"]["RiskControl"]["EUR/JPY.qty.sell.min"] = "100000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["flood_control.orders.max_number"] = "3";
 
-		settings["Strategy.1"]["RiskControl"]["USD/JPY.price.buy.max"] = "160.0000";
-		settings["Strategy.1"]["RiskControl"]["USD/JPY.price.buy.min"] = "80.0000";
-		settings["Strategy.1"]["RiskControl"]["USD/JPY.price.sell.max"] = "160.0000";
-		settings["Strategy.1"]["RiskControl"]["USD/JPY.price.sell.min"] = "80.0000";
-		settings["Strategy.1"]["RiskControl"]["USD/JPY.qty.buy.max"] = "1400000";
-		settings["Strategy.1"]["RiskControl"]["USD/JPY.qty.buy.min"] = "80000";
-		settings["Strategy.1"]["RiskControl"]["USD/JPY.qty.sell.max"] = "1400000";
-		settings["Strategy.1"]["RiskControl"]["USD/JPY.qty.sell.min"] = "80000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["pnl.profit"] = "0.001";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["pnl.loss"] = "0.001";
 
-		settings["Strategy.1"]["RiskControl"]["EUR.limit"] = "10000000";
-		settings["Strategy.1"]["RiskControl"]["USD.limit"] = "11000000";
-		settings["Strategy.1"]["RiskControl"]["JPY.limit"] = "1500000000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["win_ratio.min"] = "55";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["win_ratio.first_operations_to_skip"] = "5";
+
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.price.buy.max"] = "1.2000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.price.buy.min"] = "0.6000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.price.sell.max"] = "1.2000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.price.sell.min"] = "0.6000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.qty.buy.max"] = "1000000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.qty.buy.min"] = "100000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.qty.sell.max"] = "1000000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.qty.sell.min"] = "100000";
+
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.price.buy.max"] = "170.0000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.price.buy.min"] = "90.0000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.price.sell.max"] = "170.0000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.price.sell.min"] = "90.0000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.qty.buy.max"] = "1000000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.qty.buy.min"] = "100000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.qty.sell.max"] = "1000000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.qty.sell.min"] = "100000";
+
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.price.buy.max"] = "160.0000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.price.buy.min"] = "80.0000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.price.sell.max"] = "160.0000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.price.sell.min"] = "80.0000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.qty.buy.max"] = "1400000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.qty.buy.min"] = "80000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.qty.sell.max"] = "1400000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.qty.sell.min"] = "80000";
+
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR.limit"] = "10000000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD.limit"] = "11000000";
+		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["JPY.limit"] = "1500000000";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["id"] = "105B1C0A-C24D-4048-A7CD-88D74382A73C",
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["name"] = "EUR/USD USD/JPY EUR/JPY v2",
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["module"] = "FxMb",
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["type"] = "TriangulationWithDirection",
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["pairs"] = "EUR/USD, USD/JPY, EUR/JPY",
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["is_enabled"] = "false";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["invest_amount"] = "1000000",
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["mode"] = "live";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sensitivity"]["lag.min"] = "150";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sensitivity"]["lag.max"] = "200";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sensitivity"]["book_levels_number"] = "4";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sensitivity"]["book_levels_exactly"] = "true";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Analysis"]["ema.slow"] = "0.01";
+        settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Analysis"]["ema.fast"] = "0.03";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sources"]["alpari"] = "false";
+        settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sources"]["currenex"] = "false";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sources"]["integral"] = "true";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sources"]["hotspot"] = "true";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sources"]["fxall"] = "false";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["triangle_orders_limit"] = "3";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["triangles_limit"] = "0";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["flood_control.orders.max_number"] = "3";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["pnl.profit"] = "0.001";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["pnl.loss"] = "0.001";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["win_ratio.min"] = "55";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["win_ratio.first_operations_to_skip"] = "5";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.price.buy.max"] = "1.2000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.price.buy.min"] = "0.6000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.price.sell.max"] = "1.2000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.price.sell.min"] = "0.6000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.qty.buy.max"] = "1000000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.qty.buy.min"] = "100000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.qty.sell.max"] = "1000000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.qty.sell.min"] = "100000";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.price.buy.max"] = "170.0000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.price.buy.min"] = "90.0000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.price.sell.max"] = "170.0000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.price.sell.min"] = "90.0000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.qty.buy.max"] = "1000000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.qty.buy.min"] = "100000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.qty.sell.max"] = "1000000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.qty.sell.min"] = "100000";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.price.buy.max"] = "160.0000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.price.buy.min"] = "80.0000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.price.sell.max"] = "160.0000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.price.sell.min"] = "80.0000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.qty.buy.max"] = "1400000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.qty.buy.min"] = "80000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.qty.sell.max"] = "1400000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.qty.sell.min"] = "80000";
+
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR.limit"] = "10000000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD.limit"] = "11000000";
+		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["JPY.limit"] = "1500000000";
+
+		settings["General"]["RiskControl"]["triangles_limit"] = "0";
+
+		settings["General"]["RiskControl"]["flood_control.orders.max_number"] = "3";
+		settings["General"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
+
+		settings["General"]["RiskControl"]["pnl.profit"] = "0.001";
+		settings["General"]["RiskControl"]["pnl.loss"] = "0.001";
+
+		settings["General"]["RiskControl"]["win_ratio.min"] = "55";
+		settings["General"]["RiskControl"]["win_ratio.first_operations_to_skip"] = "5";
 
 		settings["General"]["RiskControl"]["triangles_limit"] = "0";
 
