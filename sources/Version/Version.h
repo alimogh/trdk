@@ -1,10 +1,10 @@
 
 #pragma once
 
-#define TRDK_VERSION_MAJOR_HIGH	1
-#define TRDK_VERSION_MAJOR_LOW	1
+#define TRDK_VERSION_MAJOR_HIGH	2
+#define TRDK_VERSION_MAJOR_LOW	0
 #define TRDK_VERSION_MINOR_HIGH	0
-#define TRDK_VERSION_MINOR_LOW	50
+#define TRDK_VERSION_MINOR_LOW	51
 
 #define TRDK_VERSION_BRANCH		"probitecapital"
 #define TRDK_VERSION_BRANCH_W	L"probitecapital"
