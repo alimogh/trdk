@@ -70,7 +70,7 @@ TriangulationWithDirection::TriangulationWithDirection(
 			Context &context,
 			const std::string &tag,
 			const IniSectionRef &conf)
-	: Base(context, "TriangulationWithDirection", tag),
+	: Base(context, "TriangulationWithDirection", tag, conf),
 	m_bookLevelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
 	m_useAdjustedBookForTrades(

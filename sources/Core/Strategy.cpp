@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Strategy.hpp"
+#include "RiskControl.hpp"
 #include "Service.hpp"
 #include "Settings.hpp"
 #include "TradingLog.hpp"
@@ -287,6 +288,8 @@ public:
 	Strategy &m_strategy;
 
 	Strategy::TradingLog m_tradingLog;
+
+	const std::unique_ptr<RiskControlScope> m_riskControlScope;
 	
 	boost::atomic_bool m_isBlocked;
 	pt::ptime m_blockEndTime;
@@ -301,12 +304,16 @@ public:
 
 public:
 
-	explicit Implementation(Strategy &strategy)
+	explicit Implementation(Strategy &strategy, const IniSectionRef &conf)
 		: m_strategy(strategy),
 		m_isBlocked(false),
 		m_tradingLog(
 			m_strategy.GetTag(),
 			m_strategy.GetContext().GetTradingLog()),
+		m_riskControlScope(
+			m_strategy.GetContext().GetRiskControl().CreateScope(
+				m_strategy.GetTag(),
+				conf)),
 		m_stopMode(STOP_MODE_UNKNOWN) {
 		m_delayedPositionToForget.fill(nullptr);
 	}
@@ -324,9 +331,10 @@ public:
 Strategy::Strategy(
 		trdk::Context &context,
 		const std::string &name,
-		const std::string &tag)
+		const std::string &tag,
+		const IniSectionRef &conf)
 	: Consumer(context, "Strategy", name, tag) {
-	m_pimpl = new Implementation(*this);
+	m_pimpl = new Implementation(*this, conf);
 }
 
 Strategy::~Strategy() {
@@ -340,6 +348,10 @@ Strategy::~Strategy() {
 		AssertFailNoException();
 	}
 	delete m_pimpl;
+}
+
+RiskControlScope & Strategy::GetRiskControlScope() {
+	return *m_pimpl->m_riskControlScope;
 }
 
 Strategy::TradingLog & Strategy::GetTradingLog() const throw() {

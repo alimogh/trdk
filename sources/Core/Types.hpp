@@ -16,8 +16,7 @@
 
 namespace trdk {
 
-	typedef boost::int32_t Amount;
-	typedef trdk::Amount Qty;
+	typedef boost::int32_t Qty;
 	
 	typedef boost::int64_t ScaledPrice;
 

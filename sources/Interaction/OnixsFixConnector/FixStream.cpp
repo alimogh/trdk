@@ -244,12 +244,14 @@ void FixStream::onInboundApplicationMsg(
 
 	}
 
-	FixSecurity *const security = FindRequestSecurity(message);
-	if (!security) {
-		return;
-	}
+	FixSecurity *security;
 	
 	if (message.type() == "X") {
+
+		security = FindRequestSecurity(message);
+		if (!security) {
+			return;
+		}
 		
 		const fix::Group &entries
 			= message.getGroup(fix::FIX42::Tags::NoMDEntries);
@@ -364,6 +366,11 @@ void FixStream::onInboundApplicationMsg(
 
 	} else if (message.type() == "W") {
 
+		security = FindRequestSecurity(message);
+		if (!security) {
+			return;
+		}
+
 		OnMarketDataSnapshot(message, now, *security);
 
 	} else {
@@ -371,6 +378,8 @@ void FixStream::onInboundApplicationMsg(
 		return;
 	
 	}
+
+	Assert(security);
 
 	std::vector<Security::Book::Level> bids;
 	bids.reserve(security->m_book.size());

@@ -97,10 +97,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit FixTrading(
-				size_t index,
-				Context &,
-				const std::string &tag,
-				const Lib::IniSectionRef &);
+			size_t index,
+			Context &,
+			const std::string &tag,
+			const Lib::IniSectionRef &);
 		virtual ~FixTrading();
 
 	public:
@@ -110,17 +110,17 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		virtual void onStateChange(
-					OnixS::FIX::SessionState::Enum newState,
-					OnixS::FIX::SessionState::Enum prevState,
-					OnixS::FIX::Session *);
+				OnixS::FIX::SessionState::Enum newState,
+				OnixS::FIX::SessionState::Enum prevState,
+				OnixS::FIX::Session *);
 		virtual void onError (
-					OnixS::FIX::ErrorReason::Enum,
-					const std::string &description,
-					OnixS::FIX::Session *session);
+				OnixS::FIX::ErrorReason::Enum,
+				const std::string &description,
+				OnixS::FIX::Session *session);
 		virtual void onWarning (
-					OnixS::FIX::WarningReason::Enum,
-					const std::string &description,
-					OnixS::FIX::Session *);
+				OnixS::FIX::WarningReason::Enum,
+				const std::string &description,
+				OnixS::FIX::Session *);
 
 	public:
 
@@ -129,72 +129,72 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	protected:
 
 		virtual OrderId SendSellAtMarketPrice(
-					trdk::Security &,
-					const trdk::Lib::Currency &,
-					const trdk::Qty &qty,
-					const trdk::OrderParams &,
-					const OrderStatusUpdateSlot &);
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &qty,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
 		virtual OrderId SendSell(
-					trdk::Security &,
-					const trdk::Lib::Currency &,
-					const trdk::Qty &qty,
-					const trdk::ScaledPrice &,
-					const trdk::OrderParams &,
-					const OrderStatusUpdateSlot &);
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
 		virtual OrderId SendSellAtMarketPriceWithStopPrice(
-					trdk::Security &,
-					const trdk::Lib::Currency &,
-					const trdk::Qty &qty,
-					const trdk::ScaledPrice &stopPrice,
-					const trdk::OrderParams &,
-					const OrderStatusUpdateSlot &);
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &stopPrice,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
 		virtual OrderId SendSellImmediatelyOrCancel(
-					trdk::Security &,
-					const trdk::Lib::Currency &,
-					const trdk::Qty &,
-					const trdk::ScaledPrice &,
-					const trdk::OrderParams &,
-					const OrderStatusUpdateSlot &);
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
 		virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
-					trdk::Security &,
-					const trdk::Lib::Currency &,
-					const trdk::Qty &,
-					const trdk::OrderParams &,
-					const OrderStatusUpdateSlot &);
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
 
 		virtual OrderId SendBuyAtMarketPrice(
-					trdk::Security &,
-					const trdk::Lib::Currency &,
-					const trdk::Qty &qty,
-					const trdk::OrderParams &,
-					const OrderStatusUpdateSlot &);
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &qty,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
 		virtual OrderId SendBuy(
-					trdk::Security &,
-					const trdk::Lib::Currency &,
-					const trdk::Qty &qty,
-					const trdk::ScaledPrice &,
-					const trdk::OrderParams &,
-					const OrderStatusUpdateSlot &);
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
 		virtual OrderId SendBuyAtMarketPriceWithStopPrice(
-					trdk::Security &,
-					const trdk::Lib::Currency &,
-					const trdk::Qty &qty,
-					const trdk::ScaledPrice &stopPrice,
-					const trdk::OrderParams &,
-					const OrderStatusUpdateSlot &);
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &qty,
+				const trdk::ScaledPrice &stopPrice,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
 		virtual OrderId SendBuyImmediatelyOrCancel(
-					trdk::Security &,
-					const trdk::Lib::Currency &,
-					const trdk::Qty &,
-					const trdk::ScaledPrice &,
-					const trdk::OrderParams &,
-					const OrderStatusUpdateSlot &);
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
 		virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
-					trdk::Security &,
-					const trdk::Lib::Currency &,
-					const trdk::Qty &,
-					const trdk::OrderParams &,
-					const OrderStatusUpdateSlot &);
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::OrderParams &,
+				const OrderStatusUpdateSlot &);
 
 		virtual void SendCancelOrder(const OrderId &);
 		virtual void SendCancelAllOrders(trdk::Security &);
@@ -210,23 +210,23 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	protected:
 
 		void OnOrderNew(
-					const OnixS::FIX::Message &,
-					const Lib::TimeMeasurement::Milestones::TimePoint &);
+				const OnixS::FIX::Message &,
+				const Lib::TimeMeasurement::Milestones::TimePoint &);
 		void OnOrderCanceled(
-					const OnixS::FIX::Message &,
-					const OrderId &,
-					const Lib::TimeMeasurement::Milestones::TimePoint &);
+				const OnixS::FIX::Message &,
+				const OrderId &,
+				const Lib::TimeMeasurement::Milestones::TimePoint &);
 		void OnOrderRejected(
-					const OnixS::FIX::Message &,
-					const Lib::TimeMeasurement::Milestones::TimePoint &,
-					const std::string &reason,
-					bool isMaxOperationLimitExceeded);
+				const OnixS::FIX::Message &,
+				const Lib::TimeMeasurement::Milestones::TimePoint &,
+				const std::string &reason,
+				bool isMaxOperationLimitExceeded);
 		void OnOrderFill(
-					const OnixS::FIX::Message &,
-					const Lib::TimeMeasurement::Milestones::TimePoint &);
+				const OnixS::FIX::Message &,
+				const Lib::TimeMeasurement::Milestones::TimePoint &);
 		void OnOrderPartialFill(
-					const OnixS::FIX::Message &,
-					const Lib::TimeMeasurement::Milestones::TimePoint &);
+				const OnixS::FIX::Message &,
+				const Lib::TimeMeasurement::Milestones::TimePoint &);
 
 		virtual void OnLogout() = 0;
 
@@ -267,9 +267,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			= 0;
 
 		virtual void OnOrderStateChanged(
-				const OnixS::FIX::Message &,
 				const OrderStatus &,
-				const Order &);
+				const Order &,
+				const Qty &tradePrice,
+				const ScaledPrice &tradeQty);
 
 	protected:
 
@@ -283,14 +284,14 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		//! Takes next free order ID.
 		Order TakeOrderId(
-					Security &security,
-					const Lib::Currency &currency,
-					const Qty &qty,
-					bool isSell,
-					const OrderType &,
-					const OrderParams &,
-					const OrderStatusUpdateSlot &,
-					const Lib::TimeMeasurement::Milestones &);
+				Security &security,
+				const Lib::Currency &currency,
+				const Qty &qty,
+				bool isSell,
+				const OrderType &,
+				const OrderParams &,
+				const OrderStatusUpdateSlot &,
+				const Lib::TimeMeasurement::Milestones &);
 		//! Deletes unsent order (at error).
 		void DeleteErrorOrder(const OrderId &) throw();
 

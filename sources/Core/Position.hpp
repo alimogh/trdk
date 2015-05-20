@@ -307,15 +307,15 @@ namespace trdk {
 		void UpdateOpening(
 				const trdk::OrderId &,
 				const trdk::TradeSystem::OrderStatus &,
-				const trdk::Qty &filled,
-				const trdk::Qty &remaining,
-				double avgPrice);
+				const trdk::Qty &tradeQty,
+				const trdk::Qty &remainingQty,
+				const trdk::ScaledPrice &tradePrice);
 		void UpdateClosing(
 				const trdk::OrderId &,
 				const trdk::TradeSystem::OrderStatus &,
-				const trdk::Qty &filled,
-				const trdk::Qty &remaining,
-				double avgPrice);
+				const trdk::Qty &tradeQty,
+				const trdk::Qty &remainingQty,
+				const trdk::ScaledPrice &tradePrice);
 
 	private:
 

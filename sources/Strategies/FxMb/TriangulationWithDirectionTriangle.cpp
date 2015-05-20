@@ -73,9 +73,13 @@ Triangle::Triangle(
 
 	//! @todo make setting for account currency
 	m_conversionPricesBid = GetPair(PAIR_AB).security->GetBidPrice();
+	if (Lib::IsZero(m_conversionPricesBid)) {
+		throw HasNotMuchOpportunityException(*GetPair(PAIR_AB).security, 0);
+	}
 	m_conversionPricesAsk = GetPair(PAIR_AB).security->GetAskPrice();
-	AssertLt(0, m_conversionPricesBid);
-	AssertLt(0, m_conversionPricesAsk);
+	if (Lib::IsZero(m_conversionPricesAsk)) {
+		throw HasNotMuchOpportunityException(*GetPair(PAIR_AB).security, 0);
+	}
 
 	UpdateYDirection();
 

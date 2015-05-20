@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "Terminal.hpp"
 #include "TradeSystem.hpp"
+#include "RiskControl.hpp"
 #include "Security.hpp"
 #include "Common/FileSystemChangeNotificator.hpp"
 
@@ -22,6 +23,71 @@ using namespace trdk::Lib;
 class Terminal::Implementation : private boost::noncopyable {
 
 private:
+
+	class RiskControlScope : public trdk::RiskControlScope {
+	public:
+		RiskControlScope()
+			: m_name("Terminal") {
+			//...//
+		}
+		virtual ~RiskControlScope() {
+			//...//
+		}
+	public:
+		virtual const std::string & GetName() const {
+			return m_name;
+		}
+		virtual size_t GetIndex() const {
+			return 0;
+		}
+	public:
+		virtual void CheckNewBuyOrder(
+				Security &,
+				const Currency &,
+				const Qty &,
+				const ScaledPrice &) {
+			//...//
+		}
+		virtual void CheckNewSellOrder(
+				Security &,
+				const Currency &,
+				const Qty &,
+				const ScaledPrice &) {
+			//...//
+		}
+		virtual void ConfirmBuyOrder(
+				const TradeSystem::OrderStatus &,
+				Security &,
+				const Currency &,
+				const ScaledPrice &/*orderPrice*/,
+				const Qty &/*tradeQty*/,
+				const ScaledPrice &/*tradePrice*/,
+				const Qty &/*remainingQty*/) {
+			//...//
+		}
+		virtual void ConfirmSellOrder(
+				const TradeSystem::OrderStatus &,
+				Security &,
+				const Currency &,
+				const ScaledPrice &/*orderPrice*/,
+				const Qty &/*tradeQty*/,
+				const ScaledPrice &/*tradePrice*/,
+				const Qty &/*remainingQty*/) {
+			//...//
+		}
+	public:
+		virtual void CheckTotalPnl(double /*pnl*/) const {
+			//...//
+		}
+		virtual void CheckTotalWinRatio(
+				size_t /*totalWinRatio*/,
+				size_t /*operationsCount*/)
+				const {
+			//...//
+		}
+	private:
+		const std::string m_name;
+	};
 
 	class Command : private boost::noncopyable {
 	public:
@@ -57,13 +123,16 @@ private:
 			ORDER_TIME_DAY
 		};
 	public:
-		explicit OrderCommand(TradeSystem &tradeSystem)
-				: Command(tradeSystem),
-				m_orderTime(ORDER_TIME_NOT_SET),
-				m_security(nullptr),
-				m_qty(0),
-				m_price(-1.0),
-				m_currency(numberOfCurrencies) {
+		explicit OrderCommand(
+				TradeSystem &tradeSystem,
+				RiskControlScope &riskControlScope)
+			: Command(tradeSystem),
+			m_riskControlScope(riskControlScope),
+			m_orderTime(ORDER_TIME_NOT_SET),
+			m_security(nullptr),
+			m_qty(0),
+			m_price(-1.0),
+			m_currency(numberOfCurrencies) {
 			//...//
 		}
 		virtual ~OrderCommand() {
@@ -201,19 +270,22 @@ private:
 			return std::move(result);
 		}
 	protected:
+		RiskControlScope &m_riskControlScope;
 		OrderTime m_orderTime;
 		Security *m_security;
 		Qty m_qty;
 		double m_price;
 	private:
-		Lib::Currency m_currency;
+		Currency m_currency;
 		boost::optional<OrderId> m_replaceOrderId;
 	};
 
 	class SellCommand : public OrderCommand {
 	public:
-		explicit SellCommand(TradeSystem &tradeSystem)
-				: OrderCommand(tradeSystem) {
+		explicit SellCommand(
+				TradeSystem &tradeSystem,
+				RiskControlScope &riskControlScope)
+			: OrderCommand(tradeSystem, riskControlScope) {
 			//...//
 		}
 		virtual ~SellCommand() {
@@ -239,6 +311,7 @@ private:
 							_3,
 							_4,
 							_5),
+						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.SellAtMarketPriceImmediatelyOrCancel(
@@ -254,6 +327,7 @@ private:
 							_3,
 							_4,
 							_5),
+						m_riskControlScope,
 						timeMeasurement);
 				}
 			} else {
@@ -272,6 +346,7 @@ private:
 							_3,
 							_4,
 							_5),
+						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.SellImmediatelyOrCancel(
@@ -288,6 +363,7 @@ private:
 							_3,
 							_4,
 							_5),
+						m_riskControlScope,
 						timeMeasurement);
 				}
 			}
@@ -296,8 +372,10 @@ private:
 
 	class BuyCommand : public OrderCommand {
 	public:
-		explicit BuyCommand(TradeSystem &tradeSystem)
-				: OrderCommand(tradeSystem) {
+		explicit BuyCommand(
+				TradeSystem &tradeSystem,
+				RiskControlScope &riskControlScope)
+			: OrderCommand(tradeSystem, riskControlScope) {
 			//...//
 		}
 		virtual ~BuyCommand() {
@@ -323,6 +401,7 @@ private:
 							_3,
 							_4,
 							_5),
+						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.BuyAtMarketPriceImmediatelyOrCancel(
@@ -338,6 +417,7 @@ private:
 							_3,
 							_4,
 							_5),
+						m_riskControlScope,
 						timeMeasurement);
 				}
 			} else {
@@ -356,6 +436,7 @@ private:
 							_3,
 							_4,
 							_5),
+						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
 					m_tradeSystem.BuyImmediatelyOrCancel(
@@ -372,6 +453,7 @@ private:
 							_3,
 							_4,
 							_5),
+						m_riskControlScope,
 						timeMeasurement);
 				}
 			}
@@ -565,9 +647,11 @@ private:
 			} else if (!command) {
 		
 				if (boost::iequals(field, "buy")) {
-					command.reset(new BuyCommand(m_tradeSystem));
+					command.reset(
+						new BuyCommand(m_tradeSystem, m_riskControlScope));
 				} else if (boost::iequals(field, "sell")) {
-					command.reset(new SellCommand(m_tradeSystem));
+					command.reset(
+						new SellCommand(m_tradeSystem, m_riskControlScope));
 				} else if (boost::iequals(field, "cancel")) {
 					command.reset(new CancelCommand(m_tradeSystem));
 				} else if (boost::iequals(field, "test")) {
@@ -636,6 +720,7 @@ private:
 
 private:
 
+	RiskControlScope m_riskControlScope;
 	const boost::filesystem::path m_cmdFile;
 	trdk::TradeSystem &m_tradeSystem;
 	trdk::Lib::FileSystemChangeNotificator m_notificator;

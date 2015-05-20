@@ -58,9 +58,9 @@ namespace trdk {
 				void(
 					const trdk::OrderId &,
 					const OrderStatus &,
-					const trdk::Qty &filled,
-					const trdk::Qty &remaining,
-					double avgPrice)>
+					const trdk::Qty &tradeQty,
+					const trdk::Qty &remainingQty,
+					const trdk::ScaledPrice &tradePrice)>
 			OrderStatusUpdateSlot;
 
 		struct Account {
@@ -114,7 +114,6 @@ namespace trdk {
 		public:
 			explicit OrderParamsError(
 				const char *what,
-				const boost::optional<trdk::ScaledPrice> &,
 				const trdk::Qty &,
 				const trdk::OrderParams &)
 				throw();
@@ -209,6 +208,7 @@ namespace trdk {
 				const trdk::Qty &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &,
+				trdk::RiskControlScope &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		OrderId Sell(
 				trdk::Security &,
@@ -217,6 +217,7 @@ namespace trdk {
 				const trdk::ScaledPrice &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &,
+				trdk::RiskControlScope &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		OrderId SellAtMarketPriceWithStopPrice(
 				trdk::Security &,
@@ -225,6 +226,7 @@ namespace trdk {
 				const trdk::ScaledPrice &stopPrice,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &,
+				trdk::RiskControlScope &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		OrderId SellImmediatelyOrCancel(
 				trdk::Security &,
@@ -233,6 +235,7 @@ namespace trdk {
 				const trdk::ScaledPrice &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &,
+				trdk::RiskControlScope &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		OrderId SellAtMarketPriceImmediatelyOrCancel(
 				trdk::Security &,
@@ -240,6 +243,7 @@ namespace trdk {
 				const trdk::Qty &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &,
+				trdk::RiskControlScope &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 
 		OrderId BuyAtMarketPrice(
@@ -248,6 +252,7 @@ namespace trdk {
 				const trdk::Qty &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &,
+				trdk::RiskControlScope &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		OrderId Buy(
 				trdk::Security &,
@@ -256,6 +261,7 @@ namespace trdk {
 				const trdk::ScaledPrice &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &,
+				trdk::RiskControlScope &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		OrderId BuyAtMarketPriceWithStopPrice(
 				trdk::Security &,
@@ -264,6 +270,7 @@ namespace trdk {
 				const trdk::ScaledPrice &stopPrice,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &,
+				trdk::RiskControlScope &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		OrderId BuyImmediatelyOrCancel(
 				trdk::Security &,
@@ -272,6 +279,7 @@ namespace trdk {
 				const trdk::ScaledPrice &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &,
+				trdk::RiskControlScope &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		OrderId BuyAtMarketPriceImmediatelyOrCancel(
 				trdk::Security &,
@@ -279,6 +287,7 @@ namespace trdk {
 				const trdk::Qty &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &,
+				trdk::RiskControlScope &,
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 
 		void CancelOrder(const OrderId &);
