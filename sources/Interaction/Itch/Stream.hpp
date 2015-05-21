@@ -18,6 +18,11 @@ namespace trdk { namespace Interaction { namespace Itch {
 		: public trdk::MarketDataSource,
 		public DataHandler {
 
+	private:
+
+		typedef boost::mutex ClientMutex;
+		typedef ClientMutex::scoped_lock ClientLock;
+
 	public:
 
 		explicit Stream(
@@ -70,18 +75,30 @@ namespace trdk { namespace Interaction { namespace Itch {
 
 		Itch::Security & GetSecurity(const char *symbol);
 
+		void ConnectClient();
+		void ReconnectClient(const boost::system::error_code &);
+
 	private:
 
-		 boost::asio::io_service m_ioService;
-		 boost::thread_group m_serviceThreads;
+		std::string m_host;
+		size_t m_port;
+		std::string m_login;
+		std::string m_password;
 
-		 std::vector<boost::shared_ptr<Itch::Security>> m_securities;
+		boost::asio::io_service m_ioService;
+		boost::thread_group m_serviceThreads;
+		std::unique_ptr<boost::asio::deadline_timer> m_reconnectTimer;
 
+		std::vector<boost::shared_ptr<Itch::Security>> m_securities;
+
+		ClientMutex m_clientMutex;
 		boost::shared_ptr<Client> m_client;
 
 		bool m_hasNewData;
 
 		size_t m_bookLevelsCount;
+
+		boost::posix_time::ptime m_lastConnectTime;
 
 	};
 

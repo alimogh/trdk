@@ -14,6 +14,7 @@
 #include "Exception.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::EngineServer;
 
 namespace io = boost::asio;
@@ -191,7 +192,8 @@ void EngineServer::Service::HandleNewClient(
 	} else {
 		//! @todo Write to log
 		std::cerr
-			<< "Failed to accept new client: \"" << error << "\"."
+			<< "Failed to accept new client: \""
+			<< SysError(error.value()) << "\"."
 			<< std::endl;
 	}
 	StartAccept();

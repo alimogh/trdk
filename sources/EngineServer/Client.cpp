@@ -337,7 +337,9 @@ void Client::OnDataSent(
 		size_t /*bytesTransferred*/) {
 	if (error) {
 		//! @todo Write to log
-		std::cerr << "Failed to send data: \"" << error << "\"." << std::endl;
+		std::cerr
+			<< "Failed to send data: \"" << SysError(error.value()) << "\"."
+			<< std::endl;
 	}
 }
 
@@ -374,7 +376,7 @@ void Client::OnNewMessageSize(const boost::system::error_code &error) {
 		//! @todo Write to log
 		std::cerr
 			<< "Failed to read data from client: \""
-			<< error
+			<< SysError(error.value())
 			<< "\"." << std::endl;
 		return;
 	}
@@ -390,7 +392,7 @@ void Client::OnNewMessage(
 		//! @todo Write to log
 		std::cerr
 			<< "Failed to read data from client: \""
-			<< error
+			<< SysError(error.value())
 			<< "\"." << std::endl;
 		return;
 	}
