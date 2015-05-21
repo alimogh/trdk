@@ -37,7 +37,7 @@ namespace { namespace PerfTest {
 		if (error) {
 			std::cerr
 				<< "Failed to connect: \""
-				<< SysError(error.value()).GetString()
+				<< SysError(error.value())
 				<< "\", (network error: \"" <<  error << "\").";
 			AssertFail("Failed to connect.");
 		}
@@ -85,6 +85,10 @@ Stream::Stream(
 		const std::string &tag,
 		const IniSectionRef &conf)
 	: MarketDataSource(index, context, tag),
+	m_host(conf.ReadKey("server_host")),
+	m_port(conf.ReadTypedKey<size_t>("server_port")),
+	m_login(conf.ReadKey("login")),
+	m_password(conf.ReadKey("password")),
 	m_hasNewData(false),
 	m_bookLevelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")) {
@@ -104,24 +108,26 @@ Stream::~Stream() {
 	GetTradingLog().WaitForFlush();
 }
 
-void Stream::Connect(const IniSectionRef &conf) {
-
+void Stream::Connect(const IniSectionRef &) {
 	PerfTest::Start();
-
 	if (m_client) {
 		return;
 	}
+	ConnectClient();
+}
 
-	const auto &host = conf.ReadKey("server_host");
-	const auto &port = conf.ReadTypedKey<int>("server_port");
-	const auto &login = conf.ReadKey("login");
-	const auto &password = conf.ReadKey("password");
+void Stream::ConnectClient() {
 
 	GetLog().Debug(
 		"Connecting to \"%1%:%2%\" with login \"%3%\" and password...",
-		host,
-		port,
-		login);
+		m_host,
+		m_port,
+		m_login);
+
+	const ClientLock lock(m_clientMutex);
+
+	Assert(!m_client);
+	Assert(!m_reconnectTimer);
 
 	try {
 
@@ -129,19 +135,31 @@ void Stream::Connect(const IniSectionRef &conf) {
 			GetContext(),
 			*this,
 			m_ioService,
-			host,
-			port,
-			login,
-			password);
+			m_host,
+			m_port,
+			m_login,
+			m_password);
+		m_lastConnectTime = GetContext().GetCurrentTime();
 
-		for (size_t i = 0; i < 2; ++i) {
+		while (m_serviceThreads.size() < 2) {
 			m_serviceThreads.create_thread(
 				[&]() {
 					GetLog().Debug("Started IO-service thread...");
 					try {
 						m_ioService.run();
 					} catch (const Client::Exception &ex) {
-						OnConnectionClosed(ex.what(), true);
+						try {
+							const ClientLock lock(m_clientMutex);
+							if (m_client) {
+								m_client.reset();
+								GetLog().Error(
+									"Connection closed by unexpected error"
+										": \"%1%\".",
+									ex);
+							}
+						} catch (...) {
+							AssertFailNoException();
+						}
 					} catch (...) {
 						AssertFailNoException();
 						throw;
@@ -149,7 +167,7 @@ void Stream::Connect(const IniSectionRef &conf) {
 					GetLog().Debug("IO-service thread completed.");
 				});
 		}
-
+		
 	} catch (const Client::Exception &ex) {
 		m_client.reset();
 		GetLog().Error("Failed to connect to server: \"%1%\".", ex.what());
@@ -158,9 +176,9 @@ void Stream::Connect(const IniSectionRef &conf) {
 
 	GetLog().Info(
 		"Connected to \"%1%:%2%\" with login \"%3%\" and password.",
-		host,
-		port,
-		login);
+		m_host,
+		m_port,
+		m_login);
 
 }
 
@@ -244,15 +262,74 @@ void Stream::OnErrorFromServer(const std::string &error) {
 }
 
 void Stream::OnConnectionClosed(const std::string &reason, bool isError) {
+
+	const ClientLock lock(m_clientMutex);
+
+	Assert(m_lastConnectTime != pt::not_a_date_time);
+	Assert(m_lastConnectTime <= GetContext().GetCurrentTime());
 	if (!m_client) {
 		// On-sent notifications.
 		return;
 	}
+	Assert(!m_reconnectTimer);
+
 	if (isError) {
 		GetLog().Error("Connection with server closed: \"%1%\".", reason);
 	} else {
 		GetLog().Info("Connection with server closed: \"%1%\".", reason);
 	}
-	m_ioService.stop();
+
 	m_client.reset();
+
+	if (isError) {
+		
+		const auto &now = GetContext().GetCurrentTime();
+		if (now - m_lastConnectTime <= pt::minutes(1)) {
+	
+			const auto &sleepTime = pt::seconds(30);
+			GetLog().Info(
+				"Reconnecting at %1% (after %2%)...",
+				now + sleepTime,
+				sleepTime);
+	
+			std::unique_ptr<boost::asio::deadline_timer> timer(
+				new io::deadline_timer(m_ioService, sleepTime));
+			timer->async_wait(
+				[this] (const boost::system::error_code &error) {
+					{
+						const ClientLock lock(m_clientMutex);
+						m_reconnectTimer.reset();
+					}
+					ReconnectClient(error);
+				});
+			timer.swap(m_reconnectTimer);
+	
+		} else {
+
+			m_ioService.post(
+				boost::bind(
+					&Stream::ReconnectClient,
+					this,
+					boost::system::error_code()));
+	
+		}
+	
+	} else {
+	
+		m_ioService.stop();
+	
+	}
+	
+}
+
+void Stream::ReconnectClient(const boost::system::error_code &error) {
+
+	if (error) {
+		GetLog().Info("Reconnect canceled: \"%1%\".", SysError(error.value()));
+		return;
+	}
+	
+	GetLog().Info("Reconnecting...");
+	ConnectClient();
+
 }

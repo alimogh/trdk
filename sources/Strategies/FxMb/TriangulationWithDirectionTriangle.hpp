@@ -109,7 +109,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		
 			Assert(!IsLegStarted(LEG1));
 			Assert(!IsLegStarted(LEG2));
-			Assert(!IsLegStarted(LEG3));
+			Assert(!IsLegStarted(LEG3)); 
 			if (
 					IsLegStarted(LEG1)
 					|| IsLegStarted(LEG2)

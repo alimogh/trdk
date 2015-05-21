@@ -43,16 +43,17 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 
 Dispatcher::Dispatcher(Engine::Context &context)
-			: m_context(context),
-			m_level1Updates("Level 1 Updates", m_context),
-			m_level1Ticks("Level 1 Ticks", m_context),
-			m_newTrades("Trades", m_context),
-			m_positionsUpdates("Positions", m_context),
-			m_brokerPositionsUpdates("Broker Positions", m_context),
-			m_newBars("Bars", m_context),
-			m_bookUpdateTicks("Book Update Ticks", m_context) {
+		: m_context(context),
+		m_level1Updates("Level 1 Updates", m_context),
+		m_level1Ticks("Level 1 Ticks", m_context),
+		m_newTrades("Trades", m_context),
+		m_positionsUpdates("Positions", m_context),
+		m_brokerPositionsUpdates("Broker Positions", m_context),
+		m_newBars("Bars", m_context),
+		m_bookUpdateTicks("Book Update Ticks", m_context) {
 	unsigned int threadsCount = 2;
-	boost::barrier startBarrier(threadsCount + 1);
+	boost::shared_ptr<boost::barrier> startBarrier(
+		new boost::barrier(threadsCount + 1));
 	StartNotificationTask<DispatchingTimeMeasurementPolicy>(
 		startBarrier,
 		m_bookUpdateTicks,
@@ -62,7 +63,7 @@ Dispatcher::Dispatcher(Engine::Context &context)
 		m_positionsUpdates,
 		threadsCount);
 	AssertEq(0, threadsCount);
-	startBarrier.wait();
+	startBarrier->wait();
 }
 
 Dispatcher::~Dispatcher() {
@@ -93,9 +94,9 @@ void Dispatcher::Suspend() {
 }
 
 void Dispatcher::SignalLevel1Update(
-			SubscriberPtrWrapper &subscriber,
-			Security &security,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+		SubscriberPtrWrapper &subscriber,
+		Security &security,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	if (subscriber.IsBlocked()) {
 		return;
 	}
@@ -105,11 +106,11 @@ void Dispatcher::SignalLevel1Update(
 }
 
 void Dispatcher::SignalLevel1Tick(
-			SubscriberPtrWrapper &subscriber,
-			Security &security,
-			const boost::posix_time::ptime &time,
-			const Level1TickValue &value,
-			bool flush) {
+		SubscriberPtrWrapper &subscriber,
+		Security &security,
+		const boost::posix_time::ptime &time,
+		const Level1TickValue &value,
+		bool flush) {
 	try {
 		if (subscriber.IsBlocked()) {
 			return;
@@ -126,12 +127,12 @@ void Dispatcher::SignalLevel1Tick(
 }
 
 void Dispatcher::SignalNewTrade(
-			SubscriberPtrWrapper &subscriber,
-			Security &security,
-			const pt::ptime &time,
-			ScaledPrice price,
-			Qty qty,
-			OrderSide side) {
+		SubscriberPtrWrapper &subscriber,
+		Security &security,
+		const pt::ptime &time,
+		ScaledPrice price,
+		Qty qty,
+		OrderSide side) {
 	try {
 		if (subscriber.IsBlocked()) {
 			return;
@@ -151,8 +152,8 @@ void Dispatcher::SignalNewTrade(
 }
 
 void Dispatcher::SignalPositionUpdate(
-			SubscriberPtrWrapper &subscriber,
-			Position &position) {
+		SubscriberPtrWrapper &subscriber,
+		Position &position) {
 	try {
 		m_positionsUpdates.Queue(
 			boost::make_tuple(position.shared_from_this(), subscriber),
@@ -165,10 +166,10 @@ void Dispatcher::SignalPositionUpdate(
 }
 
 void Dispatcher::SignalBrokerPositionUpdate(
-			SubscriberPtrWrapper &subscriber,
-			Security &security,
-			Qty qty,
-			bool isInitial) {
+		SubscriberPtrWrapper &subscriber,
+		Security &security,
+		Qty qty,
+		bool isInitial) {
 	try {
 		const SubscriberPtrWrapper::BrokerPosition position = {
 			&security,
@@ -186,9 +187,9 @@ void Dispatcher::SignalBrokerPositionUpdate(
 }
 
 void Dispatcher::SignalNewBar(
-			SubscriberPtrWrapper &subscriber,
-			Security &security,
-			const Security::Bar &bar) {
+		SubscriberPtrWrapper &subscriber,
+		Security &security,
+		const Security::Bar &bar) {
 	try {
 		if (subscriber.IsBlocked()) {
 			return;
@@ -202,10 +203,10 @@ void Dispatcher::SignalNewBar(
 }
 
 void Dispatcher::SignalBookUpdateTick(
-			SubscriberPtrWrapper &subscriber,
-			Security &security,
-			const boost::shared_ptr<const Security::Book> &book,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+		SubscriberPtrWrapper &subscriber,
+		Security &security,
+		const boost::shared_ptr<const Security::Book> &book,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	try {
 		if (subscriber.IsBlocked()) {
 			return;

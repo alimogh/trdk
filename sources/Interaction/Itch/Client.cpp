@@ -31,7 +31,7 @@ namespace {
 		boost::format errorText(
 			"%1%:"
 			" \"%2%\", (network error: \"%3%\")");
-		errorText % what % SysError(error.value()).GetString() % error;
+		errorText % what % SysError(error.value()) % error;
 		return Client::Exception(errorText.str().c_str());
 	}
 
@@ -498,7 +498,7 @@ Client::Client(
 	if (error) {
 		boost::format errorText(
 			"Failed to connect: \"%1%\", (network error: \"%2%\")");
-		errorText % SysError(error.value()).GetString() % error;
+		errorText % SysError(error.value()) % error;
 		throw Exception(errorText.str().c_str());
 	}
 
@@ -523,7 +523,6 @@ boost::shared_ptr<Client> Client::Create(
 	boost::shared_ptr<Client> result(
 		new Client(context, handler, ioService, host, port));
 	result->Login(login, password);
-	result->StartRead(result->m_buffer.first, 0, result->m_buffer.second);
 	return result;
 }
 
@@ -558,23 +557,44 @@ void Client::Login(const std::string &login, const std::string &password) {
 	{
 	
  		boost::system::error_code error;
- 		const auto size = io::read(
+		
+		const auto maxAnswerSize = std::max(
+			SessionMessage::GetSizeByType(SessionMessage::TYPE_LOGIN_ACCEPTED),
+			SessionMessage::GetSizeByType(SessionMessage::TYPE_LOGIN_REJECTED));
+		const auto minAnswerSize = std::min(
+			SessionMessage::GetSizeByType(SessionMessage::TYPE_LOGIN_ACCEPTED),
+			SessionMessage::GetSizeByType(SessionMessage::TYPE_LOGIN_REJECTED));
+		AssertLe(minAnswerSize, m_buffer.first.size());
+		if (maxAnswerSize > m_buffer.first.size()) {
+			m_buffer.first.resize(maxAnswerSize);
+		}
+ 		
+		const auto size = io::read(
  			m_socket,
- 			io::buffer(m_buffer.first.data(), m_buffer.first.size()),
-			io::transfer_at_least(12),
+ 			io::buffer(m_buffer.first.data(), maxAnswerSize),
+			io::transfer_at_least(minAnswerSize),
  			error);
 		if (error || !size) {
 			throw GetNetworkException(
 				error,
 				"Failed to read login request response");
 		}
+		
+		const auto &dataEnd = m_buffer.first.begin() + size;
+		auto messageEnd = std::find(
+			m_buffer.first.begin(),
+			dataEnd,
+			Message::GetDelimiter());
+		if (messageEnd != dataEnd) {
+			++messageEnd;
+		}
 
 		const SessionMessage loginRequestResponse(
 			m_buffer.first.begin(),
-			m_buffer.first.begin() + size);
+			messageEnd);
 		switch (loginRequestResponse.GetType()) {
 			case SessionMessage::TYPE_LOGIN_ACCEPTED:
-				return;
+				break;
 			case SessionMessage::TYPE_LOGIN_REJECTED:
 				{
 					boost::format errorText("Login request rejected: \"%1%\"");
@@ -583,6 +603,18 @@ void Client::Login(const std::string &login, const std::string &password) {
 				}
 			default:
 				throw Exception("Unknown response at login request");
+		}
+
+		Assert(messageEnd <= dataEnd);
+		if (messageEnd < dataEnd) {
+			OnNewData(
+				m_buffer.first,
+				messageEnd - m_buffer.first.cbegin(),
+				m_buffer.second,
+				boost::system::error_code(),
+				dataEnd - messageEnd);
+		} else {
+			StartRead(m_buffer.first, 0, m_buffer.second);
 		}
 
 	}
@@ -646,7 +678,7 @@ void Client::OnNewData(
 
 	{
 		
-		const auto &rend = activeBuffer.rend() - bufferStartOffset;
+		const auto &rend = activeBuffer.crend() - bufferStartOffset;
 		const auto &rbegin = rend - transferredBytes;
 		const auto &tailIt = std::find(rbegin, rend, Message::GetDelimiter());
 		const size_t tailLen = tailIt - rbegin;
@@ -676,7 +708,7 @@ void Client::OnNewData(
 				nextBuffer.resize(activeBuffer.size() * 2);
 			}
 			const auto &end
-				= activeBuffer.begin() + bufferStartOffset + transferredBytes;
+				= activeBuffer.cbegin() + bufferStartOffset + transferredBytes;
 			const auto &begin = end - tailLen;
 			std::copy(begin, end, nextBuffer.begin());
 			transferredBytes -= tailLen;
@@ -688,7 +720,7 @@ void Client::OnNewData(
 	}
 
 	const auto &bufferEnd
-		= activeBuffer.begin() + transferredBytes + bufferStartOffset;
+		= activeBuffer.cbegin() + transferredBytes + bufferStartOffset;
 	for (auto it = activeBuffer.begin(); it < bufferEnd; ) {
 		
 		if (*it == SessionMessage::TYPE_SEQUENCED_DATA) {
@@ -720,7 +752,7 @@ void Client::OnNewData(
 			AssertNe(0, messageSize);
 			AssertGe(
 				it
-					- activeBuffer.begin()
+					- activeBuffer.cbegin()
 					+ transferredBytes
 					+ bufferStartOffset,
 				messageSize);
@@ -767,7 +799,7 @@ void Client::OnConnectionError(const boost::system::error_code &error) {
 	boost::format errorText(
 		"Connection to server closed by error:"
 			" \"%1%\", (network error: \"%2%\")");
-		errorText % SysError(error.value()).GetString() % error;
+		errorText % SysError(error.value()) % error;
 	m_dataHandler.OnConnectionClosed(errorText.str(), true);
 }
 
