@@ -497,7 +497,7 @@ namespace trdk { namespace Engine {
 
 		template<typename DispatchingTimeMeasurementPolicy, typename EventList>
 		void StartNotificationTask(
-				boost::barrier &startBarrier,
+				boost::shared_ptr<boost::barrier> startBarrier,
 				EventList &list,
 				unsigned int &threadsCounter) {
 			Lib::UseUnused(threadsCounter);
@@ -543,7 +543,7 @@ namespace trdk { namespace Engine {
 			typename ListWithHighPriority,
 			typename ListWithLowPriority>
 		void StartNotificationTask(
-				boost::barrier &startBarrier,
+				boost::shared_ptr<boost::barrier> startBarrier,
 				ListWithHighPriority &listWithHighPriority,
 				ListWithLowPriority &listWithLowPriority,
 				unsigned int &threadsCounter) {
@@ -607,7 +607,7 @@ namespace trdk { namespace Engine {
 			typename ListWithLowPriority,
 			typename ListWithExtraLowPriority>
 		void StartNotificationTask(
-				boost::barrier &startBarrier,
+				boost::shared_ptr<boost::barrier> startBarrier,
 				ListWithHighPriority &listWithHighPriority,
 				ListWithLowPriority &listWithLowPriority,
 				ListWithExtraLowPriority &listWithExtraLowPriority,
@@ -685,7 +685,7 @@ namespace trdk { namespace Engine {
 			typename ListWithExtraLowPriority,
 			typename ListWithExtraLowPriority2>
 		void StartNotificationTask(
-				boost::barrier &startBarrier,
+				boost::shared_ptr<boost::barrier> startBarrier,
 				ListWithHighPriority &listWithHighPriority,
 				ListWithLowPriority &listWithLowPriority,
 				ListWithExtraLowPriority &listWithExtraLowPriority,
@@ -775,7 +775,7 @@ namespace trdk { namespace Engine {
 			typename ListWithExtraLowPriority2,
 			typename ListWithExtraLowPriority3>
 		void StartNotificationTask(
-				boost::barrier &startBarrier,
+				boost::shared_ptr<boost::barrier> startBarrier,
 				ListWithHighPriority &listWithHighPriority,
 				ListWithLowPriority &listWithLowPriority,
 				ListWithExtraLowPriority &listWithExtraLowPriority,
@@ -892,7 +892,7 @@ namespace trdk { namespace Engine {
 			typename ListWithExtraLowPriority3,
 			typename ListWithExtraLowPriority4>
 		void StartNotificationTask(
-				boost::barrier &startBarrier,
+				boost::shared_ptr<boost::barrier> startBarrier,
 				ListWithHighPriority &listWithHighPriority,
 				ListWithLowPriority &listWithLowPriority,
 				ListWithExtraLowPriority &listWithExtraLowPriority,
@@ -1024,7 +1024,7 @@ namespace trdk { namespace Engine {
 			typename ListWithExtraLowPriority4,
 			typename ListWithExtraLowPriority5>
 		void StartNotificationTask(
-				boost::barrier &startBarrier,
+				boost::shared_ptr<boost::barrier> startBarrier,
 				ListWithHighPriority &listWithHighPriority,
 				ListWithLowPriority &listWithLowPriority,
 				ListWithExtraLowPriority &listWithExtraLowPriority,
@@ -1164,7 +1164,7 @@ namespace trdk { namespace Engine {
 			typename EventLists,
 			typename DispatchingTimeMeasurementPolicy>
 		void NotificationTask(
-				boost::barrier &startBarrier,
+				boost::shared_ptr<boost::barrier> startBarrier,
 				EventLists &lists)
 				const {
 			bool isError = false;
@@ -1177,7 +1177,8 @@ namespace trdk { namespace Engine {
 				boost::shared_ptr<EventListsSyncObjects> sync(
 					new EventListsSyncObjects);
 				AssignEventListsSyncObjects(sync, lists);
-				startBarrier.wait();
+				startBarrier->wait();
+				startBarrier.reset();
 				EventQueueLock lock(sync->mutex);
 				for ( ; ; ) {
 					const Lib::TimeMeasurement::Milestones timeMeasurement
@@ -1207,6 +1208,9 @@ namespace trdk { namespace Engine {
 			if (isError) {
 				//! @todo: Call engine instance stop instead.
 				exit(1);
+			}
+			if (startBarrier) {
+				startBarrier->wait();
 			}
 		}
 
