@@ -541,13 +541,15 @@ private:
 		const auto quoteCurrencyDirection = side.direction * -1;
 		const auto realPrice = security.DescalePrice(orderPrice);
 
-		return symbol.GetCashBaseCurrency() == currency
-			?	std::make_pair(
-					qty * side.direction,
-					(qty * realPrice) * quoteCurrencyDirection)
-			:	std::make_pair(
-					(qty * realPrice) * side.direction,
-					qty * quoteCurrencyDirection);
+		if (symbol.GetCashBaseCurrency() == currency) {
+			return std::make_pair(
+				qty * side.direction,
+				(qty * realPrice) * quoteCurrencyDirection);
+		} else {
+			return std::make_pair(
+				(qty * realPrice) * side.direction,
+				qty * quoteCurrencyDirection);
+		}
 
 	}
 
@@ -1200,6 +1202,7 @@ boost::shared_ptr<RiskControlSymbolContext> RiskControl::CreateSymbolContext(
 		size_t scopeIndex = 1;
 		foreach (auto &scopeInfo, scopesInfoCache) {
 			m_pimpl->AddScope(scopeIndex, scopeInfo, *result);
+			++scopeIndex;
 		}
 	}
 	
