@@ -53,7 +53,6 @@ namespace trdk {
 				const PositionFabric &,
 				size_t index);
 
-		Scope & GetScope(const RiskControlScope &);
 		Scope & GetScope(size_t index);
 		Scope & GetGlobalScope();
 		size_t GetScopesNumber() const;
@@ -85,8 +84,6 @@ namespace trdk {
 	public:
 
 		virtual const std::string & GetName() const = 0;
-		virtual size_t GetIndex() const = 0;
-
 
 	public:
 

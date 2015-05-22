@@ -231,10 +231,6 @@ public:
 		return m_name;
 	}
 
-	virtual size_t GetIndex() const {
-		return m_index;
-	}
-
 public:
 
 	virtual void CheckNewBuyOrder(
@@ -247,7 +243,7 @@ public:
 			currency,
 			qty,
 			price,
-			security.GetRiskControlContext().GetScope(*this).longSide);
+			security.GetRiskControlContext().GetScope(m_index).longSide);
 	}
 
 	virtual void CheckNewSellOrder(
@@ -260,7 +256,7 @@ public:
 			currency,
 			qty,
 			price,
-			security.GetRiskControlContext().GetScope(*this).shortSide);
+			security.GetRiskControlContext().GetScope(m_index).shortSide);
 	}
 
 	virtual void ConfirmBuyOrder(
@@ -279,7 +275,7 @@ public:
 			tradeQty,
 			tradePrice,
 			remainingQty,
-			security.GetRiskControlContext().GetScope(*this).longSide);
+			security.GetRiskControlContext().GetScope(m_index).longSide);
 	}
 
 	virtual void ConfirmSellOrder(
@@ -298,7 +294,7 @@ public:
 			tradeQty,
 			tradePrice,
 			remainingQty,
-			security.GetRiskControlContext().GetScope(*this).shortSide);
+			security.GetRiskControlContext().GetScope(m_index).shortSide);
 	}
 
 public:
@@ -575,7 +571,7 @@ private:
 		}
 
 		RiskControlSymbolContext::Scope &context
-			= security.GetRiskControlContext().GetScope(*this);
+			= security.GetRiskControlContext().GetScope(m_index);
 		RiskControlSymbolContext::Position &baseCurrency
 			= *context.baseCurrencyPosition;
 		RiskControlSymbolContext::Position &quoteCurrency
@@ -685,7 +681,7 @@ private:
 		}
 
 		RiskControlSymbolContext::Scope &context
-			= security.GetRiskControlContext().GetScope(*this);
+			= security.GetRiskControlContext().GetScope(m_index);
 		RiskControlSymbolContext::Position &baseCurrency
 			= *context.baseCurrencyPosition;
 		RiskControlSymbolContext::Position &quoteCurrency
@@ -750,7 +746,7 @@ private:
 		}
 
 		RiskControlSymbolContext::Scope &context
-			= security.GetRiskControlContext().GetScope(*this);
+			= security.GetRiskControlContext().GetScope(m_index);
 		RiskControlSymbolContext::Position &baseCurrency
 			= *context.baseCurrencyPosition;
 		RiskControlSymbolContext::Position &quoteCurrency
@@ -968,11 +964,6 @@ void RiskControlSymbolContext::InitScope(
 }
 
 RiskControlSymbolContext::Scope & RiskControlSymbolContext::GetScope(
-		const RiskControlScope &scope) {
-	return GetScope(scope.GetIndex());
-}
-
-RiskControlSymbolContext::Scope & RiskControlSymbolContext::GetScope(
 		size_t index) {
 	AssertGt(m_scopes.size(), index);
 	return *m_scopes[index];
@@ -1073,9 +1064,10 @@ public:
 	PositionsCache m_globalScopePositionsCache;
 	std::vector<boost::shared_ptr<RiskControlSymbolContext>> m_symbols;
 
-	GlobalRiskControlScope m_globalScope;
 	// Item can't be ptr as we will copy it when will create new scope.
 	std::vector<ScopeInfo> m_additionalScopesInfo;
+
+	GlobalRiskControlScope m_globalScope;
 
 public:
 
