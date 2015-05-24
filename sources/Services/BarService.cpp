@@ -285,11 +285,11 @@ public:
 		} else if (boost::iequals(m_unitsStr, "days")) {
 			m_units = UNITS_DAYS;
 			m_barSize = boost::posix_time::hours(m_barSizeUnits * 24);
-			throw Error("Days units doesn't yet implemented");
+			throw Error("Days units is not implemented");
 		} else if (boost::iequals(m_unitsStr, "weeks")) {
 			m_units = UNITS_WEEKS;
 			m_barSize = boost::posix_time::hours((m_barSizeUnits * 24) * 7);
-			throw Error("Weeks units doesn't yet implemented");
+			throw Error("Weeks units is not implemented");
 		} else {
 			m_service.GetLog().Error(
 				"Wrong size specified: \"%1%\". Unknown units."
@@ -431,10 +431,10 @@ public:
 				break;
 			case UNITS_DAYS:
 				//! @todo Implement days bar service
-				throw Error("Days units doesn't yet implemented");
+				throw Error("Days units is not implemented");
 			case UNITS_WEEKS:
 				//! @todo Implement days bar service
-				throw Error("Weeks units doesn't yet implemented");
+				throw Error("Weeks units is not implemented");
 			default:
 				AssertFail("Unknown units type");
 				throw Error("Unknown bar service units type");

@@ -40,6 +40,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/Server.o \
 	${OBJECTDIR}/Service.o \
 	${OBJECTDIR}/Client.o \
+	${OBJECTDIR}/Settings.o \
 	${OBJECTDIR}/trdk.pb.o
 
 
@@ -97,6 +98,11 @@ ${OBJECTDIR}/Client.o: Client.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Client.o Client.cpp
+
+${OBJECTDIR}/Settings.o: Settings.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Settings.o Settings.cpp
 
 ${OBJECTDIR}/trdk.pb.o: trdk.pb.cc 
 	${MKDIR} -p ${OBJECTDIR}

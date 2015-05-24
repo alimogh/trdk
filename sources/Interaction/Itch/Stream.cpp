@@ -91,7 +91,7 @@ Stream::Stream(
 	m_password(conf.ReadKey("password")),
 	m_hasNewData(false),
 	m_bookLevelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")) {
+		conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count")) {
 	//...//
 }
 

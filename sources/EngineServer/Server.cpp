@@ -30,12 +30,14 @@ bool Server::IsStarted(const std::string &id) const {
 
 void Server::Run(
 		boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
-		const std::string &id,
-		const fs::path &path,
+		EngineServer::Settings::EngineTransaction &settingsTransaction,
 		bool enableStdOutLog,
 		const std::string &commandInfo) {
 
-	if (IsStarted(id)) {
+	const Lock lock(m_mutex);
+
+	const auto &id = settingsTransaction.GetSettings().GetEngeineId();
+	if (m_engines.get<ById>().find(id) != m_engines.get<ById>().end()) {
 		boost::format message("Engine with ID \"%1%\" already started");
 		message % id;
 		throw EngineServer::Exception(message.str().c_str());
@@ -49,16 +51,19 @@ void Server::Run(
 		info.eventsLog.reset(new Engine::Context::Log);
 		const auto &startTime = info.eventsLog->GetTime();
 
-		boost::shared_ptr<IniFile> ini(new IniFile(path));
+		settingsTransaction.Commit();
+
+		boost::shared_ptr<IniFile> ini(
+			new IniFile(settingsTransaction.GetSettings().GetFilePath()));
 
 		if (enableStdOutLog) {
 			info.eventsLog->EnableStdOut();
 		}
 		info.tradingLog.reset(new Engine::Context::TradingLog);
 
-		Settings settings(
-			ini->ReadBoolKey("Common", "is_replay_mode"),
-			ini->ReadFileSystemPath("Common", "logs_dir") / id);
+		trdk::Settings settings(
+			ini->ReadBoolKey("General", "is_replay_mode"),
+			ini->ReadFileSystemPath("General", "logs_dir") / id);
 
 		fs::create_directories(settings.GetLogsDir());
 		{
@@ -95,7 +100,7 @@ void Server::Run(
 		{
 			const auto &tradingLogFilePath
 				= settings.GetLogsDir() / "trading.log";
-			if (ini->ReadBoolKey("Common", "trading_log")) {
+			if (ini->ReadBoolKey("General", "trading_log")) {
 				info.tradingLogFile.reset(
 					new std::ofstream(
 						tradingLogFilePath.string().c_str(),
@@ -116,7 +121,6 @@ void Server::Run(
 
 		info.engine->Start();
 
-		const Lock lock(m_mutex);
 		m_engines.insert(info);
 
 	} catch (const trdk::Lib::Exception &ex) {

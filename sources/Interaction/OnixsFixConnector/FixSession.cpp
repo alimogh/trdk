@@ -77,7 +77,7 @@ FixSession::FixSession(
 		AssertEq(0, fixEngineRefCounter.load());
 		const auto &settings
 			= configuration.GetBase().ReadFileSystemPath(
-				"Common",
+				"General",
 				"onixs_fix_engine_settings");
 		m_log.Info("Initializing FIX Engine with %1%...", settings);
 		try {
@@ -123,7 +123,7 @@ void FixSession::Connect(
 	m_host = conf.ReadKey("server_host");
 	m_port = conf.ReadTypedKey<int>("server_port");
 
-	const char *const resetSeqNumFlagSection = "Common";
+	const char *const resetSeqNumFlagSection = "General";
 	const char *const resetSeqNumFlagKey = "onixs_fix_reset_seq_num_flag";
 	const bool isLocalResetSeqNumFlagKey = conf.IsKeyExist(resetSeqNumFlagKey);
 	bool resetSeqNumFlag = isLocalResetSeqNumFlagKey
@@ -145,11 +145,11 @@ void FixSession::Connect(
 		resetSeqNumFlag ? "true" : "false");
 
 #	ifdef DEV_VER
-		conf.GetBase().ReadBoolKey("Common", "onixs_fix_session_log");
+		conf.GetBase().ReadBoolKey("General", "onixs_fix_session_log");
 		const auto &sessionStorageType = fix::SessionStorageType::FileBased;
 #	else
 		const auto &sessionStorageType
-			= conf.GetBase().ReadBoolKey("Common", "onixs_fix_session_log")
+			= conf.GetBase().ReadBoolKey("General", "onixs_fix_session_log")
 				?	fix::SessionStorageType::FileBased
 				:	fix::SessionStorageType::MemoryBased;
 #	endif

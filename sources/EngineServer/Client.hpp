@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "Settings.hpp"
+
 #pragma warning(push, 1)
 #	include "trdk.pb.h"
 #pragma warning(pop)
@@ -20,7 +22,9 @@ namespace trdk { namespace EngineServer {
 	
 	private:
 	
-		explicit Client(boost::asio::io_service &, ClientRequestHandler &);
+		explicit Client(
+				boost::asio::io_service &,
+				ClientRequestHandler &);
 
 	public:
 
@@ -41,6 +45,8 @@ namespace trdk { namespace EngineServer {
 		const std::string & GetRemoteAddressAsString() const;
 
 		void Start();
+
+		void SendError(const std::string &);
 
 	private:
 
@@ -69,6 +75,9 @@ namespace trdk { namespace EngineServer {
 		void OnStrategyStartRequest(const StrategyStartRequest &);
 		void OnStrategyStopRequest(const StrategyStopRequest &);
 		void OnStrategySettingsSetRequest(const StrategySettingsSetRequest &);
+
+		void SendServiceInfo();
+
 		
 		void SendEngineInfo(const std::string &engeineId);
 		void SendEnginesInfo();
@@ -76,13 +85,9 @@ namespace trdk { namespace EngineServer {
 		void SendEngineState(const std::string &engeineId);
 		void SendEnginesState();
 		
-		void UpdateSettingsGroup(
-				const google::protobuf::RepeatedPtrField<SettingsSection> &request,
-				const std::string &groupName);
-		void UpdateSettingsGroup(
-				const google::protobuf::RepeatedPtrField<SettingsSection> &request,
-				const std::string &groupName,
-				const boost::function<bool(const std::string &)> &isKeyFiltered);
+		static void UpdateSettings(
+				const google::protobuf::RepeatedPtrField<SettingsSection> &,
+				Settings::Transaction &);
 
 		void OnFoo(const Foo &);
 

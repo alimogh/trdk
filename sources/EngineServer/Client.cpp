@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "Client.hpp"
 #include "ClientRequestHandler.hpp"
+#include "Exception.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -18,22 +19,6 @@ using namespace trdk::EngineServer;
 
 namespace io = boost::asio;
 namespace pb = google::protobuf;
-
-namespace {
-
-	typedef boost::mutex SettingsMutex;
-	typedef SettingsMutex::scoped_lock SettingsLock;
-
-	typedef std::map<
-			std::string,
-			std::map<
-				std::string,
-				std::map<std::string, std::string>>>
-		Settings;
-	Settings settings;
-	SettingsMutex settingsMutex;
-
-}
 
 namespace {
 
@@ -46,206 +31,14 @@ namespace {
 
 }
 
-Client::Client(io::io_service &ioService, ClientRequestHandler &requestHandler)
+Client::Client(
+		io::io_service &ioService,
+		ClientRequestHandler &requestHandler)
 	: m_requestHandler(requestHandler),
 	m_newxtMessageSize(0),
 	m_socket(ioService) {
 	
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-	const SettingsLock lock(settingsMutex);
-	if (settings.empty()) {
-		
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["id"] = "CDBED493-7B08-434F-A5CB-77C9E4DC6CE6",
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["name"] = "EUR/USD USD/JPY EUR/JPY",
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["module"] = "FxMb",
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["type"] = "TriangulationWithDirection",
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["pairs"] = "EUR/USD, USD/JPY, EUR/JPY v1",
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["is_enabled"] = "false";
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["invest_amount"] = "1000000",
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["General"]["mode"] = "live";
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sensitivity"]["lag.min"] = "150";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sensitivity"]["lag.max"] = "200";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sensitivity"]["book_levels_number"] = "4";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sensitivity"]["book_levels_exactly"] = "true";
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Analysis"]["ema.slow"] = "0.01";
-        settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Analysis"]["ema.fast"] = "0.03";
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sources"]["alpari"] = "false";
-        settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sources"]["currenex"] = "false";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sources"]["integral"] = "true";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sources"]["hotspot"] = "true";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["Sources"]["fxall"] = "false";
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["triangle_orders_limit"] = "3";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["triangles_limit"] = "0";
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["flood_control.orders.max_number"] = "3";
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["pnl.profit"] = "0.001";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["pnl.loss"] = "0.001";
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["win_ratio.min"] = "55";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["win_ratio.first_operations_to_skip"] = "5";
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.price.buy.max"] = "1.2000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.price.buy.min"] = "0.6000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.price.sell.max"] = "1.2000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.price.sell.min"] = "0.6000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.qty.buy.max"] = "1000000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.qty.buy.min"] = "100000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.qty.sell.max"] = "1000000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/USD.qty.sell.min"] = "100000";
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.price.buy.max"] = "170.0000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.price.buy.min"] = "90.0000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.price.sell.max"] = "170.0000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.price.sell.min"] = "90.0000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.qty.buy.max"] = "1000000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.qty.buy.min"] = "100000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.qty.sell.max"] = "1000000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR/JPY.qty.sell.min"] = "100000";
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.price.buy.max"] = "160.0000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.price.buy.min"] = "80.0000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.price.sell.max"] = "160.0000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.price.sell.min"] = "80.0000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.qty.buy.max"] = "1400000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.qty.buy.min"] = "80000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.qty.sell.max"] = "1400000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD/JPY.qty.sell.min"] = "80000";
-
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["EUR.limit"] = "10000000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["USD.limit"] = "11000000";
-		settings["Strategy.CDBED493-7B08-434F-A5CB-77C9E4DC6CE6"]["RiskControl"]["JPY.limit"] = "1500000000";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["id"] = "105B1C0A-C24D-4048-A7CD-88D74382A73C",
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["name"] = "EUR/USD USD/JPY EUR/JPY v2",
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["module"] = "FxMb",
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["type"] = "TriangulationWithDirection",
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["pairs"] = "EUR/USD, USD/JPY, EUR/JPY",
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["is_enabled"] = "false";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["invest_amount"] = "1000000",
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["General"]["mode"] = "live";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sensitivity"]["lag.min"] = "150";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sensitivity"]["lag.max"] = "200";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sensitivity"]["book_levels_number"] = "4";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sensitivity"]["book_levels_exactly"] = "true";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Analysis"]["ema.slow"] = "0.01";
-        settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Analysis"]["ema.fast"] = "0.03";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sources"]["alpari"] = "false";
-        settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sources"]["currenex"] = "false";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sources"]["integral"] = "true";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sources"]["hotspot"] = "true";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["Sources"]["fxall"] = "false";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["triangle_orders_limit"] = "3";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["triangles_limit"] = "0";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["flood_control.orders.max_number"] = "3";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["pnl.profit"] = "0.001";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["pnl.loss"] = "0.001";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["win_ratio.min"] = "55";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["win_ratio.first_operations_to_skip"] = "5";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.price.buy.max"] = "1.2000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.price.buy.min"] = "0.6000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.price.sell.max"] = "1.2000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.price.sell.min"] = "0.6000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.qty.buy.max"] = "1000000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.qty.buy.min"] = "100000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.qty.sell.max"] = "1000000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/USD.qty.sell.min"] = "100000";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.price.buy.max"] = "170.0000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.price.buy.min"] = "90.0000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.price.sell.max"] = "170.0000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.price.sell.min"] = "90.0000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.qty.buy.max"] = "1000000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.qty.buy.min"] = "100000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.qty.sell.max"] = "1000000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR/JPY.qty.sell.min"] = "100000";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.price.buy.max"] = "160.0000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.price.buy.min"] = "80.0000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.price.sell.max"] = "160.0000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.price.sell.min"] = "80.0000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.qty.buy.max"] = "1400000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.qty.buy.min"] = "80000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.qty.sell.max"] = "1400000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD/JPY.qty.sell.min"] = "80000";
-
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["EUR.limit"] = "10000000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["USD.limit"] = "11000000";
-		settings["Strategy.105B1C0A-C24D-4048-A7CD-88D74382A73C"]["RiskControl"]["JPY.limit"] = "1500000000";
-
-		settings["General"]["RiskControl"]["triangles_limit"] = "0";
-
-		settings["General"]["RiskControl"]["flood_control.orders.max_number"] = "3";
-		settings["General"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
-
-		settings["General"]["RiskControl"]["pnl.profit"] = "0.001";
-		settings["General"]["RiskControl"]["pnl.loss"] = "0.001";
-
-		settings["General"]["RiskControl"]["win_ratio.min"] = "55";
-		settings["General"]["RiskControl"]["win_ratio.first_operations_to_skip"] = "5";
-
-		settings["General"]["RiskControl"]["triangles_limit"] = "0";
-
-		settings["General"]["RiskControl"]["flood_control.orders.max_number"] = "3";
-		settings["General"]["RiskControl"]["flood_control.orders.period_ms"] = "250";
-
-		settings["General"]["RiskControl"]["pnl.profit"] = "0.001";
-		settings["General"]["RiskControl"]["pnl.loss"] = "0.001";
-
-		settings["General"]["RiskControl"]["win_ratio.min"] = "55";
-		settings["General"]["RiskControl"]["win_ratio.first_operations_to_skip"] = "5";
-
-		settings["General"]["RiskControl"]["EUR/USD.price.buy.max"] = "1.2000";
-		settings["General"]["RiskControl"]["EUR/USD.price.buy.min"] = "0.6000";
-		settings["General"]["RiskControl"]["EUR/USD.price.sell.max"] = "1.2000";
-		settings["General"]["RiskControl"]["EUR/USD.price.sell.min"] = "0.6000";
-		settings["General"]["RiskControl"]["EUR/USD.qty.buy.max"] = "1000000";
-		settings["General"]["RiskControl"]["EUR/USD.qty.buy.min"] = "100000";
-		settings["General"]["RiskControl"]["EUR/USD.qty.sell.max"] = "1000000";
-		settings["General"]["RiskControl"]["EUR/USD.qty.sell.min"] = "100000";
-
-		settings["General"]["RiskControl"]["EUR/JPY.price.buy.max"] = "170.0000";
-		settings["General"]["RiskControl"]["EUR/JPY.price.buy.min"] = "90.0000";
-		settings["General"]["RiskControl"]["EUR/JPY.price.sell.max"] = "170.0000";
-		settings["General"]["RiskControl"]["EUR/JPY.price.sell.min"] = "90.0000";
-		settings["General"]["RiskControl"]["EUR/JPY.qty.buy.max"] = "1000000";
-		settings["General"]["RiskControl"]["EUR/JPY.qty.buy.min"] = "100000";
-		settings["General"]["RiskControl"]["EUR/JPY.qty.sell.max"] = "1000000";
-		settings["General"]["RiskControl"]["EUR/JPY.qty.sell.min"] = "100000";
-
-		settings["General"]["RiskControl"]["USD/JPY.price.buy.max"] = "160.0000";
-		settings["General"]["RiskControl"]["USD/JPY.price.buy.min"] = "80.0000";
-		settings["General"]["RiskControl"]["USD/JPY.price.sell.max"] = "160.0000";
-		settings["General"]["RiskControl"]["USD/JPY.price.sell.min"] = "80.0000";
-		settings["General"]["RiskControl"]["USD/JPY.qty.buy.max"] = "1400000";
-		settings["General"]["RiskControl"]["USD/JPY.qty.buy.min"] = "80000";
-		settings["General"]["RiskControl"]["USD/JPY.qty.sell.max"] = "1400000";
-		settings["General"]["RiskControl"]["USD/JPY.qty.sell.min"] = "80000";
-
-		settings["General"]["RiskControl"]["EUR.limit"] = "10000000";
-		settings["General"]["RiskControl"]["USD.limit"] = "11000000";
-		settings["General"]["RiskControl"]["JPY.limit"] = "1500000000";
-	
-	}
 
 }
 
@@ -278,6 +71,7 @@ void Client::Start() {
 	std::cout
 		<< "Opening client connection from "
 		<< GetRemoteAddressAsString() << "..." << std::endl;
+	SendServiceInfo();
 	StartReadMessageSize();
 	m_fooSlotConnection = m_requestHandler.Subscribe(
 		boost::bind(&Client::OnFoo, this, _1));
@@ -304,6 +98,23 @@ void Client::OnFoo(const Foo &foo) {
 	pnl.set_pnl_with_commissions(foo.pnlWithCommissions);
 	pnl.set_pnl_without_commissions(foo.pnlWithoutCommissions);
 	pnl.set_commission(foo.commission);
+	Send(message);
+}
+
+void Client::SendError(const std::string &errorText) {
+	ServerData message;
+	message.set_type(ServerData::TYPE_ERROR_MESSAGE);	
+	message.set_message(errorText);
+	Send(message);
+}
+
+void Client::SendServiceInfo() {
+	boost::format info(
+		"Service: \"%1%\". Build: \"" TRDK_BUILD_IDENTITY "\".");
+	info % m_requestHandler.GetName();
+	ServerData message;
+	message.set_type(ServerData::TYPE_SERVICE_INFO);	
+	message.set_message(info.str());
 	Send(message);
 }
 
@@ -445,8 +256,7 @@ void Client::OnNewRequest(const ClientRequest &request) {
 void Client::OnFullInfoRequest(const FullInfoRequest &) {
 	//! @todo Write to log
 	std::cout << "Resending current info snapshot..." << std::endl;
-	SendEnginesInfo();
-	SendEnginesState();	
+	SendEnginesInfo();	
 }
 
 void Client::SendEnginesInfo() {
@@ -464,23 +274,22 @@ void Client::SendEngineInfo(const std::string &engineId) {
 	info.set_is_started(m_requestHandler.IsEngineStarted(engineId));
 
  	EngineSettings &settingsMessage = *info.mutable_settings();
-
-	{
-		const SettingsLock lock(settingsMutex);
-		foreach (const auto &group, settings) {
-			auto &messageGroup = *settingsMessage.add_group();
-			messageGroup.set_name(group.first);
-			foreach (const auto &section, group.second) {
-				auto &messageSection = *messageGroup.add_section();
-				messageSection.set_name(section.first);
-				foreach (const auto &key, section.second) {
-					auto &messageKey = *messageSection.add_key();
-					messageKey.set_name(key.first);
- 					messageKey.set_value(key.second);
+	m_requestHandler.GetEngineSettings(engineId).GetClientSettings(
+		[&settingsMessage](const Settings::ClientSettings &settings) {
+			foreach (const auto &group, settings) {
+				auto &messageGroup = *settingsMessage.add_group();
+				messageGroup.set_name(group.first);
+				foreach (const auto &section, group.second) {
+					auto &messageSection = *messageGroup.add_section();
+					messageSection.set_name(section.first);
+					foreach (const auto &key, section.second) {
+						auto &messageKey = *messageSection.add_key();
+						messageKey.set_name(key.first);
+ 						messageKey.set_value(key.second);
+					}
 				}
 			}
-		}
-	}
+		});
 
 	Send(message);
 
@@ -502,114 +311,101 @@ void Client::SendEngineState(const std::string &engineId) {
 
 void Client::OnEngineStartRequest(
 		const EngineStartRequest &request) {
-	//! @todo Check for current state before work with settings.
-	{
-		const SettingsLock lock(settingsMutex);
-		UpdateSettingsGroup(request.general_settings(), "General");
+	
+	//! @todo Write to log
+	std::cout
+		<< "Starting engine \"" << request.engine_id() << "\" by request from "
+		<< GetRemoteAddressAsString() << "..." << std::endl;
+	boost::format commandInfo("%1% %2%");
+	commandInfo % GetRemoteAddressAsString() % request.engine_id();
+	
+	try {
+
+		auto settingsTransaction
+			= m_requestHandler.GetEngineSettings(request.engine_id())
+				.StartEngineTransaction();
+		UpdateSettings(request.general_settings(), settingsTransaction);
+	
+		m_requestHandler.StartEngine(settingsTransaction, commandInfo.str());
+
+	} catch (const EngineServer::Exception &ex) {
+		boost::format errorMessage("Failed to start engine: \"%1%\".");
+		errorMessage % ex;
+		//! @todo Write to log
+		std::cerr << errorMessage << std::endl;
+		SendError(errorMessage.str());
 	}
-	m_requestHandler.StartEngine(request.engine_id(), *this);
+
 	SendEngineInfo(request.engine_id());
+
 }
 
 void Client::OnEngineStopRequest(const EngineStopRequest &request) {
-	m_requestHandler.StopEngine(request.engine_id(), *this);
+
+	//! @todo Write to log
+	std::cout
+		<< "Stopping engine \"" << request.engine_id() << "\" by request from "
+		<< GetRemoteAddressAsString() << "..." << std::endl;
+
+	try {
+		m_requestHandler.StopEngine(request.engine_id());
+	} catch (const EngineServer::Exception &ex) {
+		boost::format errorMessage("Failed to stop engine: \"%1%\".");
+		errorMessage % ex;
+		//! @todo Write to log
+		std::cerr << errorMessage << std::endl;
+		SendError(errorMessage.str());
+	}
+
 	SendEngineState(request.engine_id());
+
 }
 
 void Client::OnStrategyStartRequest(
 		const StrategyStartRequest &request) {
-	
-	std::cout << "Starting strategy..." << std::endl;
 
-	const std::string strategyKey
-		= (boost::format("Strategy.%1%") % request.strategy_id()).str();
-	
-	size_t count = 0;
-	{
-	
-		const SettingsLock lock(settingsMutex);
-	
-		auto groupIt = settings.find(strategyKey);
-		if (groupIt == settings.end()) {
-			std::cerr
-				<< "Failed to find strategy with ID \"" 
-				<< request.strategy_id() << "\"." << std::endl;
-			return;
-		}
-	
-		auto &startFlag = groupIt->second["General"]["is_enabled"];
-		if (boost::iequals(startFlag, "true")) {
-			std::cerr
-				<< "Failed to start strategy with ID \"" 
-				<< request.strategy_id() << "\" - already started." << std::endl;
-			return;			
-		}
+	std::cout
+		<< "Starting strategy \"" << request.strategy_id() << "\"..."
+		<< std::endl;
 
-		UpdateSettingsGroup(
-			request.strategy_settings(),
-			strategyKey,
-			[&count](const std::string &keyName) -> bool {
-				if (
-						boost::equal(keyName, "name")
-						|| boost::equal(keyName, "module")
-						|| boost::equal(keyName, "type")
-						|| boost::equal(keyName, "pairs")
-						|| boost::equal(keyName, "is_enabled")) {
-					return false;
-				}
-				++count;
-				return true;
-			});
-	
-		startFlag = "true";
-	
+	try {
+		auto settingsTransaction
+			= m_requestHandler.GetEngineSettings(request.engine_id())
+				.StartStrategyTransaction(request.strategy_id());
+		settingsTransaction.Start();
+		UpdateSettings(request.strategy_settings(), settingsTransaction);
+		m_requestHandler.UpdateStrategy(settingsTransaction);
+	} catch (const EngineServer::Exception &ex) {
+		boost::format errorMessage("Failed to start strategy: \"%1%\".");
+		errorMessage % ex;
+		//! @todo Write to log
+		std::cerr << errorMessage << std::endl;
+		SendError(errorMessage.str());
 	}
 
-	std::cout
-		<< "Stored " << count << " keys for strategy \""
-		<< request.strategy_id() << "\"." << std::endl;
-	std::cout
-		<< "Strategy \"" << request.strategy_id() << "\" started."
-		<< std::endl;
-	
-	
 	SendEngineInfo(request.engine_id());
 
 }
 
 void Client::OnStrategyStopRequest(const StrategyStopRequest &request) {
-	
-	std::cout << "Stopping strategy..." << std::endl;
-	
-	const std::string strategyKey
-		= (boost::format("Strategy.%1%") % request.strategy_id()).str();
-	
-	{
 
-		const SettingsLock lock(settingsMutex);
-
-		auto groupIt = settings.find(strategyKey);
-		if (groupIt == settings.end()) {
-			std::cerr
-				<< "Failed to find strategy with ID \"" 
-				<< request.strategy_id() << "\"." << std::endl;
-			return;
-		}
-
-		auto &startFlag = groupIt->second["General"]["is_enabled"];
-		if (!boost::iequals(startFlag, "true")) {
-			std::cerr
-				<< "Failed to stop strategy with ID \"" 
-				<< request.strategy_id() << "\" - not started." << std::endl;
-			return;			
-		}
-		startFlag = "false";
-
-	}
-	
 	std::cout
-		<< "Strategy \"" << request.strategy_id() << "\" stopped."
+		<< "Stopping strategy \"" << request.strategy_id() << "\"..."
 		<< std::endl;
+
+	try {
+		auto settingsTransaction
+			= m_requestHandler.GetEngineSettings(request.engine_id())
+				.StartStrategyTransaction(request.strategy_id());
+		settingsTransaction.Stop();
+		m_requestHandler.UpdateStrategy(settingsTransaction);
+	} catch (const EngineServer::Exception &ex) {
+		boost::format errorMessage("Failed to stop strategy: \"%1%\".");
+		errorMessage % ex;
+		//! @todo Write to log
+		std::cerr << errorMessage << std::endl;
+		SendError(errorMessage.str());
+	}
 
 	SendEngineInfo(request.engine_id());
 
@@ -618,115 +414,42 @@ void Client::OnStrategyStopRequest(const StrategyStopRequest &request) {
 void Client::OnStrategySettingsSetRequest(
 		const StrategySettingsSetRequest &request) {
 
-	std::cout << "Set strategy settings..." << std::endl;
+	std::cout
+		<< "Changing settings for strategy \""
+		<< request.strategy_id() << "\"..." << std::endl;
 
-	const std::string strategyKey
-		= (boost::format("Strategy.%1%") % request.strategy_id()).str();
-	
-	size_t count = 0;
-	{
-	
-		const SettingsLock lock(settingsMutex);
-	
-		auto groupIt = settings.find(strategyKey);
-		if (groupIt == settings.end()) {
-			std::cerr
-				<< "Failed to find strategy with ID \"" 
-				<< request.strategy_id() << "\"." << std::endl;
-			return;
-		}
-	
-		UpdateSettingsGroup(
-			request.section(),
-			strategyKey,
-			[&count](const std::string &keyName) -> bool {
-				if (
-						boost::equal(keyName, "name")
-						|| boost::equal(keyName, "module")
-						|| boost::equal(keyName, "type")
-						|| boost::equal(keyName, "pairs")
-						|| boost::equal(keyName, "is_enabled")) {
-					return false;
-				}
-				++count;
-				return true;
-			});
-	
+	try {
+		auto settingsTransaction
+			= m_requestHandler.GetEngineSettings(request.engine_id())
+				.StartStrategyTransaction(request.strategy_id());
+		UpdateSettings(request.section(), settingsTransaction);
+		m_requestHandler.UpdateStrategy(settingsTransaction);
+	} catch (const EngineServer::Exception &ex) {
+		boost::format errorMessage(
+			"Failed to change strategy settings: \"%1%\".");
+		errorMessage % ex;
+		//! @todo Write to log
+		std::cerr << errorMessage << std::endl;
+		SendError(errorMessage.str());
 	}
 
-	std::cout
-		<< "\tStored " << count << " keys for strategy \""
-		<< request.strategy_id() << "\"." << std::endl;
-	
 	SendEngineInfo(request.engine_id());
 
-
 }
 
-void Client::UpdateSettingsGroup(
-		const google::protobuf::RepeatedPtrField<SettingsSection> &request,
-		const std::string &group) {
-	UpdateSettingsGroup(request, group, [](const std::string &) {return true;});
-}
-
-void Client::UpdateSettingsGroup(
+void Client::UpdateSettings(
 		const pb::RepeatedPtrField<SettingsSection> &request,
-		const std::string &group,
-		const boost::function<bool(const std::string &)> &isKeyFiltered) {
-
-	std::map<std::string, std::map<std::string, std::string>> newSettings;
-
+		Settings::Transaction &transaction) {
 	foreach (const auto &messageSection, request) {
-	
 		for (
 				int keyIndex = 0;
 				keyIndex < messageSection.key().size();
 				++keyIndex) {
-				
 			const auto &messageKey = messageSection.key(keyIndex);
-			if (!isKeyFiltered(messageKey.name())) {
-				continue;
-			}
-				
-			if (
-					settings[group].find(messageSection.name()) == settings[group].end()
-					|| settings[group][messageSection.name()].find(messageKey.name()) == settings[group][messageSection.name()].end()) {
-				std::cerr
-					<< "\tUnknown key "
-					<< group
-					<< "::" << messageSection.name()
-					<< "::" << messageKey.name()
-					<< "=" << messageKey.value() << ";"
-					<< std::endl;
-				return;
-			}
-
-			newSettings[messageSection.name()][messageKey.name()] = messageKey.value();
-				
-			std::cout
-				<< "\t" << group
-				<< "::" << messageSection.name()
-				<< "::" << messageKey.name()
-				<< "=" << messageKey.value() << ";"
-				<< std::endl;
-			
-		}
-
-	}
-
-	foreach (const auto &s, settings[group]) {
-		if (newSettings.find(s.first) == newSettings.end()) {
-			std::cerr << "\tSection " << group << "::" << s.first << " not set." << std::endl;
-			return;
-		}
-		foreach (const auto &k, s.second) {
-			if (newSettings[s.first].find(k.first) == newSettings[s.first].end()) {
-				std::cerr << "\tKey " << group  << "::" << s.first << "::" << k.first << " not set." << std::endl;
-				return;
-			}
+			transaction.Set(
+				messageSection.name(),
+				messageKey.name(),
+				messageKey.value());
 		}
 	}
-	
-	newSettings.swap(settings[group]);
-
 }

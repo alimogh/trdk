@@ -326,14 +326,16 @@ TradeSystem::Position TradeSystem::GetBrokerPostion(
 			const std::string &,
 			const Symbol &)
 		const {
-	throw MethodDoesNotImplementedError("Broker Position Info not implemented");
+	throw MethodDoesNotImplementedError(
+		"Broker Position Info is not implemented");
 }
 
 void TradeSystem::ForEachBrokerPostion(
 			const std::string &,
 			const boost::function<bool (const Position &)> &)
 		const {
-	throw MethodDoesNotImplementedError("Broker Position Info not implemented");
+	throw MethodDoesNotImplementedError(
+		"Broker Position Info is not implemented");
 }
 
 void TradeSystem::Connect(const IniSectionRef &conf) {

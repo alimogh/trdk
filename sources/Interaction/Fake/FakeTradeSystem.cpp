@@ -347,9 +347,9 @@ OrderId Fake::TradeSystem::SendSellAtMarketPriceWithStopPrice(
 			const OrderParams &,
 			const OrderStatusUpdateSlot &) {
 	AssertLt(0, qty);
-	AssertFail("Doesn't implemented.");
+	AssertFail("Is not implemented.");
 	UseUnused(qty);
-	throw Exception("Method doesn't implemented");
+	throw Exception("Method is not implemented");
 }
 
 OrderId Fake::TradeSystem::SendSellImmediatelyOrCancel(
@@ -437,9 +437,9 @@ OrderId Fake::TradeSystem::SendBuyAtMarketPriceWithStopPrice(
 			const OrderParams &,
 			const OrderStatusUpdateSlot &) {
 	AssertLt(0, qty);
-	AssertFail("Doesn't implemented.");
+	AssertFail("Is not implemented.");
 	UseUnused(qty);
-	throw Exception("Method doesn't implemented");
+	throw Exception("Method is not implemented");
 }
 
 OrderId Fake::TradeSystem::SendBuyImmediatelyOrCancel(
@@ -481,13 +481,13 @@ OrderId Fake::TradeSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
 }
 
 void Fake::TradeSystem::SendCancelOrder(const OrderId &) {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Method doesn't implemented");
+	AssertFail("Is not implemented.");
+	throw Exception("Method is not implemented");
 }
 
 void Fake::TradeSystem::SendCancelAllOrders(Security &) {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Method doesn't implemented");
+	AssertFail("Is not implemented.");
+	throw Exception("Method is not implemented");
 }
 
 //////////////////////////////////////////////////////////////////////////

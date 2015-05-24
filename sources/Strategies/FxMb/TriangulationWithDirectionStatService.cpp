@@ -106,11 +106,11 @@ StatService::StatService(
 		const IniSectionRef &conf)
 	: Base(context, "TriangulationWithDirectionStatService", tag),
 	m_bookLevelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
+		conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count")),
 	m_isBookLevelsExactly(
-		conf.GetBase().ReadBoolKey("Common", "book.levels.exactly")),
+		conf.GetBase().ReadBoolKey("General", "book.levels.exactly")),
 	m_useAdjustedBookForCalculations(
-		conf.GetBase().ReadBoolKey("Common", "book.adjust.calculation")),
+		conf.GetBase().ReadBoolKey("General", "book.adjust.calculation")),
 	m_prev1Duration(
 		pt::milliseconds(
 			conf.ReadTypedKey<size_t>("prev1_duration_miliseconds"))),

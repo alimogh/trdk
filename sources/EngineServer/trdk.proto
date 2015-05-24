@@ -73,13 +73,20 @@ message ServerData {
 		TYPE_ENGINE_INFO = 1;
 		TYPE_ENGINE_STATE = 2;
 		TYPE_PNL = 3;
+		TYPE_ERROR_MESSAGE = 4;
+		TYPE_SERVICE_INFO = 5;
 	}
 
 	required Type type = 1;
 
+	// TYPE_ENGINE_INFO
 	optional EngineInfo engine_info = 2;
+	// TYPE_ENGINE_STATE
 	optional EngineState engine_state = 3;
+	// TYPE_PNL
 	optional Pnl pnl = 4;
+	// TYPE_ERROR_MESSAGE and TYPE_SERVICE_INFO
+	optional string message = 5;
 
 }
 
