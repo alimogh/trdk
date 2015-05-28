@@ -75,6 +75,8 @@ namespace trdk { namespace Interaction { namespace Itch {
 
 		Itch::Security & GetSecurity(const char *symbol);
 
+		void ScheduleReconnect();
+
 		void ConnectClient();
 		void ReconnectClient(const boost::system::error_code &);
 
@@ -98,7 +100,7 @@ namespace trdk { namespace Interaction { namespace Itch {
 
 		size_t m_bookLevelsCount;
 
-		boost::posix_time::ptime m_lastConnectTime;
+		boost::posix_time::ptime m_lastConnectionAttempTime;
 
 	};
 
