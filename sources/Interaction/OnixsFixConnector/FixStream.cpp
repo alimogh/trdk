@@ -30,7 +30,7 @@ FixStream::FixStream(
 	m_session(GetContext(), GetLog(), conf),
 	m_isSubscribed(false),
 	m_bookLevelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")) {
+		conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count")) {
 	GetLog().Info("Book size: %1% * 2 price levels.", m_bookLevelsCount);
 }
 
@@ -451,8 +451,9 @@ void FixStream::onInboundApplicationMsg(
 			bidsLevelsCountBeforeAdjusting >= m_bookLevelsCount
 			&& bids.size() < m_bookLevelsCount) {
 		AssertLt(bids.size(), bidsLevelsCountBeforeAdjusting);
-		GetLog().Warn("Book too small after adjusting"
-			" (%1% bid price levels: %2% -> %3%).",
+		GetLog().Warn(
+			"Book too small after adjusting"
+				" (%1% bid price levels: %2% -> %3%).",
 			security->GetSymbol().GetSymbol(),
 			bidsLevelsCountBeforeAdjusting,
 			bids.size());
@@ -516,4 +517,3 @@ Qty FixStream::ParseMdEntrySize(const fix::GroupInstance &entry) const {
 Qty FixStream::ParseMdEntrySize(const fix::Message &message) const {
 	return Qty(message.getDouble(fix::FIX42::Tags::MDEntrySize));
 }
-

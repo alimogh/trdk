@@ -70,7 +70,13 @@ void EventsLog::BroadcastCriticalError(const std::string &message) throw() {
 		}
 		if (!isReported) {
 			std::cerr << message << std::endl;
-#			ifdef DEV_VER
+#			if BOOST_ENABLE_ASSERT_HANDLER == 1
+#				if defined(BOOST_WINDOWS)
+					DebugBreak();
+#				elif defined(_DEBUG)
+					__assert_fail("Debug break", "", 0, "");
+#				endif
+#			elif defined(DEV_VER)
 #				ifdef BOOST_WINDOWS
 					raise(SIGABRT);
 #				else

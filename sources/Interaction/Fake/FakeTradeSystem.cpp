@@ -33,7 +33,7 @@ namespace {
 		ScaledPrice price;
 		OrderParams params;
 		pt::ptime submitTime;
-		pt::time_duration delay;
+		pt::time_duration execDelay;
 	};
 
 }
@@ -47,9 +47,12 @@ public:
 	TradeSystem *m_self;
 
 	boost::mt19937 m_random;
-	boost::uniform_int<size_t> m_delayRange;
+	boost::uniform_int<size_t> m_executionDelayRange;
 	mutable boost::variate_generator<boost::mt19937, boost::uniform_int<size_t>>
-		m_delayGenerator;
+		m_executionDelayGenerator;
+	boost::uniform_int<size_t> m_reportDelayRange;
+	mutable boost::variate_generator<boost::mt19937, boost::uniform_int<size_t>>
+		m_reportDelayGenerator;
 
 private:
 
@@ -64,14 +67,20 @@ private:
 public:
 
 	explicit Implementation(const IniSectionRef &conf)
-			: m_delayRange(
-				conf.ReadTypedKey<size_t>("delay_microseconds.min"),
-				conf.ReadTypedKey<size_t>("delay_microseconds.max")),
-			m_delayGenerator(m_random, m_delayRange),
+			: m_executionDelayRange(
+				conf.ReadTypedKey<size_t>("delay_microseconds.execution.min"),
+				conf.ReadTypedKey<size_t>("delay_microseconds.execution.max")),
+			m_executionDelayGenerator(m_random, m_executionDelayRange),
+			m_reportDelayRange(
+				conf.ReadTypedKey<size_t>("delay_microseconds.report.min"),
+				conf.ReadTypedKey<size_t>("delay_microseconds.report.max")),
+			m_reportDelayGenerator(m_random, m_reportDelayRange),
 			m_id(1),
 			m_isStarted(0),
 			m_currentOrders(&m_orders1) {
-		if (m_delayRange.min() > m_delayRange.max()) {
+		if (
+				m_executionDelayRange.min() > m_executionDelayRange.max()
+				|| m_reportDelayRange.min() > m_reportDelayRange.max()) {
 			throw ModuleError("Min delay can't be more then max delay");
 		}
 	}
@@ -128,12 +137,26 @@ public:
 		Assert(order.callback);
 
 		const auto &now = m_self->GetContext().GetCurrentTime();
-		order.delay = ChooseDelay();
+		order.execDelay = ChooseExecutionDelay();
+		if (!m_self->GetContext().GetSettings().IsReplayMode()) {
+			const auto callback = order.callback;
+			order.callback
+				= [this, callback](
+						const OrderId &id,
+						const OrderStatus &status,
+						const Qty &tradeQty,
+						const Qty &remainingQty,
+						const ScaledPrice &tradePrice) {
+					boost::this_thread::sleep(
+						boost::get_system_time() + ChooseReportDelay());
+					callback(id, status, tradeQty, remainingQty, tradePrice);	
+				};  
+		}
 
 		const Lock lock(m_mutex);
 		if (!m_currentOrders->empty()) {
 			const auto &lastOrder = m_currentOrders->back();
-			order.submitTime = lastOrder.submitTime + lastOrder.delay;
+			order.submitTime = lastOrder.submitTime + lastOrder.execDelay;
 		} else {
 			order.submitTime = now;
 		}
@@ -144,11 +167,14 @@ public:
 	}
 
 private:
-
-	pt::time_duration ChooseDelay() const {
-		return pt::microseconds(m_delayGenerator());
+	
+	pt::time_duration ChooseExecutionDelay() const {
+		return pt::microseconds(m_executionDelayGenerator());
 	}
 
+	pt::time_duration ChooseReportDelay() const {
+		return pt::microseconds(m_reportDelayGenerator());
+	}
 
 private:
 
@@ -184,9 +210,9 @@ private:
 				foreach (const Order &order, *orders) {
 					Assert(order.callback);
 					Assert(!IsZero(order.price));
-					if (order.delay.total_nanoseconds() > 0) {
+					if (order.execDelay.total_nanoseconds() > 0) {
 						boost::this_thread::sleep(
-							boost::get_system_time() + order.delay);
+							boost::get_system_time() + order.execDelay);
 					}
 					ExecuteOrder(order);
 				}
@@ -213,7 +239,7 @@ private:
 			Assert(order.callback);
 			Assert(!IsZero(order.price));
 
-			const auto &orderExecTime = order.submitTime + order.delay;
+			const auto &orderExecTime = order.submitTime + order.execDelay;
 			if (orderExecTime >= newTime) {
 				break;
 			}
@@ -283,9 +309,11 @@ Fake::TradeSystem::TradeSystem(
 	m_pimpl(new Implementation(conf)) {
 	m_pimpl->m_self = this;
 	GetLog().Info(
-		"Random delay range: %1% - %2%.",
-		pt::microseconds(m_pimpl->m_delayRange.min()),
-		pt::microseconds(m_pimpl->m_delayRange.max()));
+		"Execution delay range: %1% - %2%; Report delay range: %3% - %4%.",
+		pt::microseconds(m_pimpl->m_executionDelayRange.min()),
+		pt::microseconds(m_pimpl->m_executionDelayRange.max()),
+		pt::microseconds(m_pimpl->m_reportDelayRange.min()),
+		pt::microseconds(m_pimpl->m_reportDelayRange.max()));
 }
 
 Fake::TradeSystem::~TradeSystem() {
@@ -347,9 +375,9 @@ OrderId Fake::TradeSystem::SendSellAtMarketPriceWithStopPrice(
 			const OrderParams &,
 			const OrderStatusUpdateSlot &) {
 	AssertLt(0, qty);
-	AssertFail("Doesn't implemented.");
+	AssertFail("Is not implemented.");
 	UseUnused(qty);
-	throw Exception("Method doesn't implemented");
+	throw Exception("Method is not implemented");
 }
 
 OrderId Fake::TradeSystem::SendSellImmediatelyOrCancel(
@@ -437,9 +465,9 @@ OrderId Fake::TradeSystem::SendBuyAtMarketPriceWithStopPrice(
 			const OrderParams &,
 			const OrderStatusUpdateSlot &) {
 	AssertLt(0, qty);
-	AssertFail("Doesn't implemented.");
+	AssertFail("Is not implemented.");
 	UseUnused(qty);
-	throw Exception("Method doesn't implemented");
+	throw Exception("Method is not implemented");
 }
 
 OrderId Fake::TradeSystem::SendBuyImmediatelyOrCancel(
@@ -481,13 +509,13 @@ OrderId Fake::TradeSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
 }
 
 void Fake::TradeSystem::SendCancelOrder(const OrderId &) {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Method doesn't implemented");
+	AssertFail("Is not implemented.");
+	throw Exception("Method is not implemented");
 }
 
 void Fake::TradeSystem::SendCancelAllOrders(Security &) {
-	AssertFail("Doesn't implemented.");
-	throw Exception("Method doesn't implemented");
+	AssertFail("Is not implemented.");
+	throw Exception("Method is not implemented");
 }
 
 //////////////////////////////////////////////////////////////////////////

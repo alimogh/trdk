@@ -9,6 +9,7 @@
       <Filter>Service</Filter>
     </ClCompile>
     <ClCompile Include="Client.cpp" />
+    <ClCompile Include="Settings.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Server.hpp" />
@@ -18,6 +19,10 @@
       <Filter>Service</Filter>
     </ClInclude>
     <ClInclude Include="Client.hpp" />
+    <ClInclude Include="ClientRequestHandler.hpp" />
+    <ClInclude Include="Exception.hpp" />
+    <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="Settings.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="EngineServer.rc" />
@@ -28,8 +33,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="trdk.proto">
+    <CustomBuild Include="trdk.proto">
       <Filter>Service</Filter>
-    </None>
+    </CustomBuild>
   </ItemGroup>
 </Project>

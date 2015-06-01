@@ -326,14 +326,16 @@ TradeSystem::Position TradeSystem::GetBrokerPostion(
 			const std::string &,
 			const Symbol &)
 		const {
-	throw MethodDoesNotImplementedError("Broker Position Info not implemented");
+	throw MethodDoesNotImplementedError(
+		"Broker Position Info is not implemented");
 }
 
 void TradeSystem::ForEachBrokerPostion(
 			const std::string &,
 			const boost::function<bool (const Position &)> &)
 		const {
-	throw MethodDoesNotImplementedError("Broker Position Info not implemented");
+	throw MethodDoesNotImplementedError(
+		"Broker Position Info is not implemented");
 }
 
 void TradeSystem::Connect(const IniSectionRef &conf) {
@@ -369,7 +371,7 @@ OrderId TradeSystem::SellAtMarketPrice(
 			currency,
 			qty,
 			params,
-			[&, callback](
+			[&, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -436,7 +438,7 @@ OrderId TradeSystem::Sell(
 			qty,
 			price,
 			params,
-			[&, callback](
+			[&, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -505,7 +507,7 @@ OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 			qty,
 			stopPrice,
 			params,
-			[&, callback](
+			[&, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -572,7 +574,7 @@ OrderId TradeSystem::SellImmediatelyOrCancel(
 			qty,
 			price,
 			params,
-			[&, callback](
+			[&, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -639,7 +641,7 @@ OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 			currency,
 			qty,
 			params,
-			[&, callback](
+			[&, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -706,7 +708,7 @@ OrderId TradeSystem::BuyAtMarketPrice(
 			currency,
 			qty,
 			params,
-			[&, callback](
+			[&, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -773,7 +775,7 @@ OrderId TradeSystem::Buy(
 			qty,
 			price,
 			params,
-			[&, callback](
+			[&, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -842,7 +844,7 @@ OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 			qty,
 			stopPrice,
 			params,
-			[&, callback](
+			[&, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -909,7 +911,7 @@ OrderId TradeSystem::BuyImmediatelyOrCancel(
 			qty,
 			price,
 			params,
-			[&, callback](
+			[&, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -976,7 +978,7 @@ OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 			currency,
 			qty,
 			params,
-			[&, callback](
+			[&, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,

@@ -21,24 +21,30 @@ namespace trdk { namespace EngineServer {
 
 	public:
 
-		explicit Service(const boost::filesystem::path &);
+		explicit Service(
+				const std::string &name,
+				const boost::filesystem::path &);
 		virtual ~Service();
-	
-	public:
-
-		bool IsEngineExists(const std::string &engineId) const;
 
 	public:
+
+		virtual const std::string & GetName() const {
+			return m_name;
+		}
 
 		virtual void ForEachEngineId(
-				const boost::function<void (const std::string &engineId)> &)
+				const boost::function<void(const std::string &engineId)> &)
 				const;
 		virtual bool IsEngineStarted(const std::string &engineId) const;
-		virtual void StartEngine(const std::string &engineId, Client &);
-		virtual void StopEngine(const std::string &engineId, Client &);
-		virtual const boost::filesystem::path & GetEngineSettings(
-				const std::string &engineId)
-				const;
+		virtual void StartEngine(
+				EngineServer::Settings::EngineTransaction &,
+				const std::string &commandInfo);
+		virtual void StopEngine(const std::string &engineId);
+		virtual Settings & GetEngineSettings(
+				const std::string &engineId);
+
+		virtual void UpdateStrategy(
+				EngineServer::Settings::StrategyTransaction &);
 
 		virtual FooSlotConnection Subscribe(
 				const FooSlot &slot) {
@@ -48,20 +54,22 @@ namespace trdk { namespace EngineServer {
 
 	private:
 
-		void LoadEngine(
-				const std::string &engineId,
-				const boost::filesystem::path &);
+		void LoadEngine(const boost::filesystem::path &);
 
 		void StartAccept();
 		void HandleNewClient(
 				const boost::shared_ptr<Client> &,
 				const boost::system::error_code &);
 
+		void CheckEngineIdExists(const std::string &id) const;
+
 	private:
+
+		const std::string m_name;
 
 		std::map<
 				std::string /* engine ID */,
-				boost::filesystem::path /* path to settings file */>
+				boost::shared_ptr<Settings>>
 			m_engines;
 
 		Server m_server;

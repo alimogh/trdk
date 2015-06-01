@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Settings.hpp"
 #include "Engine/Context.hpp"
 #include "Core/TradingLog.hpp"
 
@@ -60,8 +61,7 @@ namespace trdk { namespace EngineServer {
 
 		void Run(
 				boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
-				const std::string &id,
-				const boost::filesystem::path &,
+				EngineServer::Settings::EngineTransaction &,
 				bool enableStdOutLog,
 				const std::string &commandInfo);
 		void StopAll(const trdk::StopMode &);

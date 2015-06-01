@@ -322,6 +322,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Service.cpp" />
+    <ClCompile Include="Settings.cpp" />
     <ClCompile Include="trdk.pb.cc">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
@@ -357,6 +358,7 @@
     <ClInclude Include="Server.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Service.hpp" />
+    <ClInclude Include="Settings.hpp" />
     <ClInclude Include="trdk.pb.h" />
   </ItemGroup>
   <ItemGroup>

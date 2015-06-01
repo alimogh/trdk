@@ -36,7 +36,7 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 
 	Values values = {};
 
-	const IniSectionRef commonConf(conf, "Common");
+	const IniSectionRef commonConf(conf, "General");
 
 	{
 		const char *const exchangeKey = "exchange";

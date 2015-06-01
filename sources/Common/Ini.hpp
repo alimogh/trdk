@@ -74,14 +74,7 @@ namespace trdk { namespace Lib {
 
 		};
 
-		struct SectionLess
-				: public std::binary_function<std::string, std::string, bool> {
-			bool operator ()(const std::string &l, const std::string& r) const {
-				return boost::ilexicographical_compare(l, r);
-			}
-		};
-
-		typedef std::set<std::string, SectionLess> SectionList;
+		typedef std::vector<std::string> SectionList;
 
 	protected:
 
@@ -115,8 +108,8 @@ namespace trdk { namespace Lib {
 					const std::string &section,
 					const boost::function<
 							bool(
-								const std::string &key,
-								const std::string &value)>
+								std::string &key,
+								std::string &value)>
 						&pred,
 					bool isRequired)
 				const;
@@ -174,6 +167,10 @@ namespace trdk { namespace Lib {
 					const std::string &key,
 					unsigned long priceScale)
 				const;
+
+		static bool ConvertToBoolean(const std::string &);
+		static std::string GetBooleanTrue();
+		static std::string GetBooleanFalse();
 
 		bool ReadBoolKey(
 					const std::string &section,

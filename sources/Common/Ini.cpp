@@ -101,10 +101,12 @@ Ini::SectionList Ini::ReadSectionsList() const {
 		std::string line = ReadCurrentLine();
 		if (IsSection(line)) {
 			TrimSection(line);
-			if (result.find(line) != result.end()) {
-				throw SectionNotUnique();
+			foreach (const auto &i, result) {
+				if (boost::iequals(i, line)) {
+					throw SectionNotUnique();
+				}
 			}
-			result.insert(line);
+			result.emplace_back(line);
 		}
 	}
 	return result;
@@ -180,11 +182,9 @@ bool Ini::IsKeyExist(
 }
 
 void Ini::ForEachKey(
-			const std::string &section,
-			const boost::function<
-					bool(const std::string &, const std::string &)>
-				&pred,
-			bool isRequired)
+		const std::string &section,
+		const boost::function<bool(std::string &, std::string &)> &pred,
+		bool isRequired)
 		const {
 	const auto &linePred = [&](const std::string &line) -> bool {
 		std::list<std::string> subs;
@@ -194,7 +194,7 @@ void Ini::ForEachKey(
 			return true;
 		}
  		boost::trim(*subs.begin());
-		const std::string key = *subs.begin();
+		std::string key = *subs.begin();
  		subs.pop_front();
 		std::string value = boost::join(subs, "=");
  		boost::trim(value);
@@ -284,27 +284,54 @@ Ini::AbsoluteOrPercentsPrice Ini::ReadAbsoluteOrPercentsPriceKey(
 		throw KeyFormatError(message.str().c_str());
 	}
 }
+	
+namespace {
+	bool IsValueFromBooleanTrueEnum(const std::string &val) {
+		return
+			boost::iequals(val, "true")
+			|| boost::iequals(val, "yes")
+			|| val == "1";
+	}
+	bool IsValueFromBooleanFalseEnum(const std::string &val) {
+		return
+			boost::iequals(val, "false")
+			|| boost::iequals(val, "no")
+			|| val == "0";
+	}
+}	
+bool Ini::ConvertToBoolean(const std::string &val) {
+	if (IsValueFromBooleanTrueEnum(val)) {
+		return true;
+	} else if (!IsValueFromBooleanFalseEnum(val)) {
+		boost::format message(
+			"Wrong INI-key format \"%1%\","
+				" for boolean available values: true/false, yes/no, 1/0");
+		message % val;
+		throw KeyFormatError(message.str().c_str());
+	} else {
+		return false;
+	}
+}
+std::string Ini::GetBooleanTrue() {
+	return "true";
+}
+std::string Ini::GetBooleanFalse() {
+	return "false";
+}
 
 bool Ini::ReadBoolKey(
-			const std::string &section,
-			const std::string &key)
+		const std::string &section,
+		const std::string &key)
 		const {
-	const std::string val = ReadKey(section, key);
-	if (	boost::iequals(val, "true")
-			|| boost::iequals(val, "yes")
-			|| val == "1") {
-		return true;
-	} else if (
-				!boost::iequals(val, "false")
-				&& !boost::iequals(val, "no")
-				&& val != "0") {
+	const std::string &val = ReadKey(section, key);
+	try {
+		return ConvertToBoolean(val);
+	} catch (const KeyFormatError &) {
 		boost::format message(
 			"Wrong INI-key (\"%1%:%2%\") format:"
 				" \"for boolean available values: true/false, yes/no, 1/0");
 		message % section % key;
 		throw KeyFormatError(message.str().c_str());
-	} else {
-		return false;
 	}
 }
 

@@ -72,12 +72,12 @@ TriangulationWithDirection::TriangulationWithDirection(
 			const IniSectionRef &conf)
 	: Base(context, "TriangulationWithDirection", tag, conf),
 	m_bookLevelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")),
+		conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count")),
 	m_useAdjustedBookForTrades(
-		conf.GetBase().ReadBoolKey("Common", "book.adjust.trade")),
+		conf.GetBase().ReadBoolKey("General", "book.adjust.trade")),
 	m_allowLeg1Closing(
 		conf.ReadTypedKey<bool>("allow_leg1_closing")),
-	m_qty(conf.ReadTypedKey<Qty>("qty")),
+	m_qty(conf.ReadTypedKey<Qty>("invest_amount")),
 	m_trianglesLimit(ReadMaxTrianglesCount(conf, GetLog())),
 	m_reports(
 		GetContext(),

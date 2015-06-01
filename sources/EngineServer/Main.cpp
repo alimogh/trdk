@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "Server.hpp"
 #include "Service.hpp"
+#include "Settings.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -72,13 +73,28 @@ namespace {
 		
 		if (argc < 3 || !strlen(argv[2])) {
 			std::cerr << "No configuration file specified." << std::endl;
+			getchar();
 			return false;
 		}
 
-		EngineServer::Service service(GetIniFilePath(argv[2]));
-	
-		getchar();
-		return true;
+		try {
+
+			EngineServer::Service service(
+				boost::asio::ip::host_name(),
+				GetIniFilePath(argv[2]));
+
+			getchar();
+
+			return true;
+
+		} catch (const trdk::Lib::Exception &ex) {
+			std::cerr
+				<< "Failed to start server service: \""
+				<< ex << "\"." << std::endl;
+			getchar();
+		}
+
+		return false;
 	
 	}
 
@@ -95,21 +111,27 @@ namespace {
 
 		{
 		
-			const char *const uuid = "DEBUG";
-
 			std::vector<std::string> cmd;
 			for (auto i = 0; i < argc; ++i) {
 				cmd.push_back(argv[i]);
 			}
-	
+
 			try {
+
+				boost::shared_ptr<EngineServer::Settings> settings(
+					new EngineServer::Settings(
+						GetIniFilePath(argv[2]),
+						"___DEBUG",
+						"___DEBUG"));
+				auto engineStartTransaction = settings->StartEngineTransaction();
+				engineStartTransaction.CopyFromActual();
+
 				server.Run(
 					fooSlotConnection,
-					uuid,
-					GetIniFilePath(argv[2]),
+					engineStartTransaction,
 					true,
 					boost::join(cmd, " "));
-			} catch (const Exception &ex) {
+			} catch (const trdk::Lib::Exception &ex) {
 				std::cerr
 					<< "Failed to start engine: \"" << ex << "\"."
 					<< std::endl;
@@ -154,17 +176,17 @@ namespace {
 
 			try {
 				server.StopAll(stopMode);
-			} catch (const Exception &ex) {
+			} catch (const trdk::Lib::Exception &ex) {
 				std::cerr
 					<< "Failed to stop engine: \"" << ex << "\"."
 					<< std::endl;
 				result = false;
 			}
 
-			std::cout << "Stopped. Press any key to exit." << std::endl;
-			getchar();
-
 		}
+
+		std::cout << "Stopped. Press any key to exit." << std::endl;
+		getchar();
 
 		return result;
 

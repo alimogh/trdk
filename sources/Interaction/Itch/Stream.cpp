@@ -91,7 +91,7 @@ Stream::Stream(
 	m_password(conf.ReadKey("password")),
 	m_hasNewData(false),
 	m_bookLevelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("Common", "book.levels.count")) {
+		conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count")) {
 	//...//
 }
 
@@ -131,6 +131,7 @@ void Stream::ConnectClient() {
 
 	try {
 
+		m_lastConnectionAttempTime = GetContext().GetCurrentTime();
 		m_client = Client::Create(
 			GetContext(),
 			*this,
@@ -139,7 +140,6 @@ void Stream::ConnectClient() {
 			m_port,
 			m_login,
 			m_password);
-		m_lastConnectTime = GetContext().GetCurrentTime();
 
 		while (m_serviceThreads.size() < 2) {
 			m_serviceThreads.create_thread(
@@ -265,8 +265,8 @@ void Stream::OnConnectionClosed(const std::string &reason, bool isError) {
 
 	const ClientLock lock(m_clientMutex);
 
-	Assert(m_lastConnectTime != pt::not_a_date_time);
-	Assert(m_lastConnectTime <= GetContext().GetCurrentTime());
+	Assert(m_lastConnectionAttempTime != pt::not_a_date_time);
+	Assert(m_lastConnectionAttempTime <= GetContext().GetCurrentTime());
 	if (!m_client) {
 		// On-sent notifications.
 		return;
@@ -281,42 +281,41 @@ void Stream::OnConnectionClosed(const std::string &reason, bool isError) {
 
 	m_client.reset();
 
-	if (isError) {
-		
-		const auto &now = GetContext().GetCurrentTime();
-		if (now - m_lastConnectTime <= pt::minutes(1)) {
-	
-			const auto &sleepTime = pt::seconds(30);
-			GetLog().Info(
-				"Reconnecting at %1% (after %2%)...",
-				now + sleepTime,
-				sleepTime);
-	
-			std::unique_ptr<boost::asio::deadline_timer> timer(
-				new io::deadline_timer(m_ioService, sleepTime));
-			timer->async_wait(
-				[this] (const boost::system::error_code &error) {
-					{
-						const ClientLock lock(m_clientMutex);
-						m_reconnectTimer.reset();
-					}
-					ReconnectClient(error);
-				});
-			timer.swap(m_reconnectTimer);
-	
-		} else {
+	ScheduleReconnect();
 
-			m_ioService.post(
-				boost::bind(
-					&Stream::ReconnectClient,
-					this,
-					boost::system::error_code()));
+}
+
+
+void Stream::ScheduleReconnect() {
+
+	const auto &now = GetContext().GetCurrentTime();
+	if (now - m_lastConnectionAttempTime <= pt::minutes(1)) {
 	
-		}
+		const auto &sleepTime = pt::seconds(30);
+		GetLog().Info(
+			"Reconnecting at %1% (after %2%)...",
+			now + sleepTime,
+			sleepTime);
+	
+		std::unique_ptr<boost::asio::deadline_timer> timer(
+			new io::deadline_timer(m_ioService, sleepTime));
+		timer->async_wait(
+			[this] (const boost::system::error_code &error) {
+				{
+					const ClientLock lock(m_clientMutex);
+					m_reconnectTimer.reset();
+				}
+				ReconnectClient(error);
+			});
+		timer.swap(m_reconnectTimer);
 	
 	} else {
-	
-		m_ioService.stop();
+
+		m_ioService.post(
+			boost::bind(
+				&Stream::ReconnectClient,
+				this,
+				boost::system::error_code()));
 	
 	}
 	
@@ -330,6 +329,11 @@ void Stream::ReconnectClient(const boost::system::error_code &error) {
 	}
 	
 	GetLog().Info("Reconnecting...");
-	ConnectClient();
+	try {
+		ConnectClient();
+	} catch (const ConnectError &ex) {
+		GetLog().Error("Failed to reconnect: \"%1%\".", ex);
+		ScheduleReconnect();
+	}
 
 }
