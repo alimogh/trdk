@@ -369,7 +369,7 @@ OrderId TradeSystem::SellAtMarketPrice(
 			currency,
 			qty,
 			params,
-			[&, callback](
+			[&, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -436,7 +436,7 @@ OrderId TradeSystem::Sell(
 			qty,
 			price,
 			params,
-			[&, callback](
+			[&, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -505,7 +505,7 @@ OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 			qty,
 			stopPrice,
 			params,
-			[&, callback](
+			[&, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -572,7 +572,7 @@ OrderId TradeSystem::SellImmediatelyOrCancel(
 			qty,
 			price,
 			params,
-			[&, callback](
+			[&, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -639,7 +639,7 @@ OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 			currency,
 			qty,
 			params,
-			[&, callback](
+			[&, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -706,7 +706,7 @@ OrderId TradeSystem::BuyAtMarketPrice(
 			currency,
 			qty,
 			params,
-			[&, callback](
+			[&, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -773,7 +773,7 @@ OrderId TradeSystem::Buy(
 			qty,
 			price,
 			params,
-			[&, callback](
+			[&, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -842,7 +842,7 @@ OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 			qty,
 			stopPrice,
 			params,
-			[&, callback](
+			[&, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -909,7 +909,7 @@ OrderId TradeSystem::BuyImmediatelyOrCancel(
 			qty,
 			price,
 			params,
-			[&, callback](
+			[&, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
@@ -976,7 +976,7 @@ OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 			currency,
 			qty,
 			params,
-			[&, callback](
+			[&, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
