@@ -54,6 +54,8 @@ namespace {
 			numberOfGroups
 		};
 
+		bool isReadOnly;
+
 		std::string fileSection;
 		std::string fileKey;
 		FileSource fileSource;
@@ -70,7 +72,10 @@ namespace {
 	struct ByServiceGroup {
 		//...//
 	};
-	struct ByServiceGroupAndKey {
+	struct ByServiceGroupAndFileKey {
+		//...//
+	};
+	struct ByServiceFullPath {
 		//...//
 	};
 
@@ -96,7 +101,7 @@ namespace {
 						KeyMapping::ServiceGroup,
 						&KeyMapping::serviceGroup>>,
 				mi::ordered_unique<
-					mi::tag<ByServiceGroupAndKey>,
+					mi::tag<ByServiceGroupAndFileKey>,
 					mi::composite_key<
 						KeyMapping,
 						mi::member<
@@ -110,26 +115,23 @@ namespace {
 						mi::member<
 							KeyMapping,
 							std::string,
-							&KeyMapping::fileKey>>>
-#				if defined(BOOST_ENABLE_ASSERT_HANDLER)
-					,
-					mi::ordered_unique<
-						mi::composite_key<
+							&KeyMapping::fileKey>>>,
+				mi::ordered_unique<
+					mi::tag<ByServiceFullPath>,
+					mi::composite_key<
+						KeyMapping,
+						mi::member<
 							KeyMapping,
-							mi::member<
-								KeyMapping,
-								KeyMapping::ServiceGroup,
-								&KeyMapping::serviceGroup>,
-							mi::member<
-								KeyMapping,
-								std::string,
-								&KeyMapping::serviceSection>,
-							mi::member<
-								KeyMapping,
-								std::string,
-								&KeyMapping::serviceKey>>>
-#				endif							
-				>>
+							KeyMapping::ServiceGroup,
+							&KeyMapping::serviceGroup>,
+						mi::member<
+							KeyMapping,
+							std::string,
+							&KeyMapping::serviceSection>,
+						mi::member<
+							KeyMapping,
+							std::string,
+							&KeyMapping::serviceKey>>>>>
 		KeysMappings;
 
 	KeysMappings CreateKeysMappings() {
@@ -139,6 +141,7 @@ namespace {
 			KeysMappings mappings;
 
 			void Add(
+					bool isReadOnly,
 					const std::string &fileSection,
 					const std::string &fileKey,
 					const KeyMapping::FileSource &fileSource,
@@ -147,6 +150,7 @@ namespace {
 					const std::string &serviceKey) {
 				Verify(
 					mappings.insert({
+							isReadOnly,
 							fileSection,
 							fileKey,
 							fileSource,
@@ -158,30 +162,30 @@ namespace {
 
 		} result;
 
-		result.Add(	"RiskControl",	"TriangulationWithDirection.triangles_limit",		KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"triangles_limit");
-		result.Add(	"RiskControl",	"flood_control.orders.max_number",					KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"flood_control.orders.max_number");
-		result.Add(	"RiskControl",	"flood_control.orders.period_ms",					KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"flood_control.orders.period_ms");
-		result.Add(	"RiskControl",	"pnl.profit",										KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"pnl.profit");
-		result.Add(	"RiskControl",	"pnl.loss",											KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"pnl.loss");
-		result.Add(	"RiskControl",	"win_ratio.min",									KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"win_ratio.min");
-		result.Add(	"RiskControl",	"win_ratio.first_operations_to_skip",				KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"win_ratio.first_operations_to_skip");
-		result.Add(	"",				"id",												KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"id");
-		result.Add(	"",				"name",												KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"name");
-		result.Add(	"",				"module",											KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"module");
-		result.Add(	"",				"type",												KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"type");
-		result.Add(	"",				"is_enabled",										KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"is_enabled");
-		result.Add(	"",				"invest_amount",									KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"invest_amount");
-		result.Add(	"General",		"book.levels.count",								KeyMapping::FS_DIRECT,		KeyMapping::GROUP_STRATEGY_TWD,	"Sensitivity",	"book_levels_number");
-		result.Add(	"General",		"book.levels.exactly",								KeyMapping::FS_DIRECT,		KeyMapping::GROUP_STRATEGY_TWD,	"Sensitivity",	"book_levels_exactly");
-		result.Add(	"",				"ema_speed_slow",									KeyMapping::FS_SERVICE,		KeyMapping::GROUP_STRATEGY_TWD,	"Analysis",		"ema.slow");
-		result.Add(	"",				"ema_speed_fast",									KeyMapping::FS_SERVICE,		KeyMapping::GROUP_STRATEGY_TWD,	"Analysis",		"ema.fast");
-		result.Add(	"",				"risk_control.triangles_limit",						KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"triangles_limit");
-		result.Add(	"",				"risk_control.flood_control.orders.max_number",		KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"flood_control.orders.max_number");
-		result.Add(	"",				"risk_control.flood_control.orders.period_ms",		KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"flood_control.orders.period_ms");
-		result.Add(	"",				"risk_control.pnl.profit",							KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"pnl.profit");
-		result.Add(	"",				"risk_control.pnl.loss",							KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"pnl.loss");
-		result.Add(	"",				"risk_control.win_ratio.min",						KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"win_ratio.min");
-		result.Add(	"",				"risk_control.win_ratio.first_operations_to_skip",	KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"win_ratio.first_operations_to_skip");
+		result.Add(false,	"RiskControl",	"TriangulationWithDirection.triangles_limit",		KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"triangles_limit");
+		result.Add(false,	"RiskControl",	"flood_control.orders.max_number",					KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"flood_control.orders.max_number");
+		result.Add(false,	"RiskControl",	"flood_control.orders.period_ms",					KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"flood_control.orders.period_ms");
+		result.Add(false,	"RiskControl",	"pnl.profit",										KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"pnl.profit");
+		result.Add(false,	"RiskControl",	"pnl.loss",											KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"pnl.loss");
+		result.Add(false,	"RiskControl",	"win_ratio.min",									KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"win_ratio.min");
+		result.Add(false,	"RiskControl",	"win_ratio.first_operations_to_skip",				KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"win_ratio.first_operations_to_skip");
+		result.Add(true,	"",				"id",												KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"id");
+		result.Add(true,	"",				"name",												KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"name");
+		result.Add(true,	"",				"module",											KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"module");
+		result.Add(true,	"",				"factory",											KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"type");
+		result.Add(true,	"",				"is_enabled",										KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"is_enabled");
+		result.Add(false,	"",				"invest_amount",									KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"invest_amount");
+		result.Add(false,	"General",		"book.levels.count",								KeyMapping::FS_DIRECT,		KeyMapping::GROUP_STRATEGY_TWD,	"Sensitivity",	"book_levels_number");
+		result.Add(false,	"General",		"book.levels.exactly",								KeyMapping::FS_DIRECT,		KeyMapping::GROUP_STRATEGY_TWD,	"Sensitivity",	"book_levels_exactly");
+		result.Add(false,	"",				"ema_speed_slow",									KeyMapping::FS_SERVICE,		KeyMapping::GROUP_STRATEGY_TWD,	"Analysis",		"ema.slow");
+		result.Add(false,	"",				"ema_speed_fast",									KeyMapping::FS_SERVICE,		KeyMapping::GROUP_STRATEGY_TWD,	"Analysis",		"ema.fast");
+		result.Add(false,	"",				"risk_control.triangles_limit",						KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"triangles_limit");
+		result.Add(false,	"",				"risk_control.flood_control.orders.max_number",		KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"flood_control.orders.max_number");
+		result.Add(false,	"",				"risk_control.flood_control.orders.period_ms",		KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"flood_control.orders.period_ms");
+		result.Add(false,	"",				"risk_control.pnl.profit",							KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"pnl.profit");
+		result.Add(false,	"",				"risk_control.pnl.loss",							KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"pnl.loss");
+		result.Add(false,	"",				"risk_control.win_ratio.min",						KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"win_ratio.min");
+		result.Add(false,	"",				"risk_control.win_ratio.first_operations_to_skip",	KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"RiskControl",	"win_ratio.first_operations_to_skip");
 
 		return result.mappings;
 	
@@ -237,13 +241,17 @@ void Settings::Transaction::Set(
 	}
 
 	auto &section = m_clientSettings[sectionName];
-	if (section.find(keyName) != section.end()) {
-		boost::format message(
-			"Key %1%::%2%::%3% already set"
-				" by this settings update transaction");
-		message % m_groupName % sectionName % keyName;
-		throw OnError(message.str());
-	}
+	//! @todo WEBTERM-62 For strategy service sends not all keys
+	//! (also see Client::UpdateSettings and CopyFromActual):
+// 	if (section.find(keyName) != section.end()) {
+// 		boost::format message(
+// 			"Key %1%::%2%::%3% already set"
+// 				" by this settings update transaction");
+// 		message % m_groupName % sectionName % keyName;
+// 		throw OnError(message.str());
+// 	}
+
+	Validate(sectionName, keyName, value);
 
 	section.insert(std::make_pair(keyName, value));
 
@@ -251,14 +259,21 @@ void Settings::Transaction::Set(
 
 void Settings::Transaction::CopyFromActual() {
 	CheckBeforeChange();
-	if (!m_clientSettings.empty()) {
-		throw EngineServer::Exception(
-			"Settings update transaction is not empty");
-	}
+	//! @todo	TRDK-59 Remove workaround for strategy settings applying
+	//!			(also see Ctor):
+	//! @todo	WEBTERM-62 For strategy service sends not all keys
+	//!			(also see Client::UpdateSettings):
+// 	if (
+// 			m_clientSettings.size() != 1
+// 			|| m_clientSettings["General"].size() != 3) {
+// 	if (!m_clientSettings.empty()) {
+// 		throw EngineServer::Exception(
+// 			"Settings update transaction is not empty");
+// 	}
 	m_clientSettings = m_settings->m_clientSettins[m_groupName];
 }
 
-void Settings::Transaction::Commit() {
+bool Settings::Transaction::Commit() {
 	
 	CheckBeforeChange();
 
@@ -288,7 +303,7 @@ void Settings::Transaction::Commit() {
 					% m_groupName
 					% originalSection.first
 					% originalKey.first;
-				throw OnError(message.str());				
+				throw OnError(message.str());
 			}
 			if (newKey->second != originalKey.second) {
 				hasChanges = true;
@@ -296,9 +311,11 @@ void Settings::Transaction::Commit() {
 		}
 	}
 
-	if (hasChanges) {
-		Store();
+	if (!hasChanges) {
+		return false;
 	}
+	
+	Store();
 
 	AssertEq(0, m_clientSettings.empty());
 	Assert(m_lock);
@@ -307,6 +324,8 @@ void Settings::Transaction::Commit() {
 	const std::unique_ptr<const WriteLock> lock(m_lock.release());
 	m_isCommitted = true;
 	m_settings->LoadClientSettings(*lock);
+
+	return true;
 
 }
 
@@ -322,33 +341,44 @@ void Settings::Transaction::Store() {
 				" temporary file already exists");
 	}
 
-	{
+	try {
 
-		std::ofstream f(tmpFilePath.string().c_str(), std::ios::trunc);
-		if (!f) {
-			throw OnError("Failed to open settings file to store transaction");
+		{
+
+			std::ofstream f(tmpFilePath.string().c_str(), std::ios::trunc);
+			if (!f) {
+				throw OnError(
+					"Failed to open settings file to store transaction");
+			}
+
+			std::string currentSection;
+			const IniFile base(m_settings->GetFilePath());
+			foreach (auto &section, base.ReadSectionsList()) {
+				base.ForEachKey(
+					section,
+					[&](const std::string &key, std::string &value) -> bool {
+						OnKeyStore(section, key, value);
+						if (section != currentSection) {
+							f << "[" << section << "]" << std::endl;
+							currentSection = section;
+						}
+						f << "\t" << key << " = " << value << std::endl;
+						return true;
+					},
+					true);
+			}
+
 		}
 
-		std::string currentSection;
-		const IniFile base(m_settings->GetFilePath());
-		foreach (auto &section, base.ReadSectionsList()) {
-			base.ForEachKey(
-				section,
-				[&](const std::string &key, std::string &value) -> bool {
-					OnKeyStore(section, key, value);
-					if (section != currentSection) {
-						f << "[" << section << "]" << std::endl;
-						currentSection = section;
-					}
-					f << "\t" << key << " = " << value << std::endl;
-					return true;
-				},
-				true);
-		}
+		fs::rename(tmpFilePath, m_settings->m_actualSettingsPath);
 
+	} catch (const boost::filesystem::filesystem_error &ex) {
+		//! @todo Log
+		std::cerr
+			<< "Failed to commit settings: \"" << ex.what() << "\"."
+			<< std::endl;
+		throw OnError("Failed to commit settings: filesystem error");
 	}
-
-	fs::rename(tmpFilePath, m_settings->m_actualSettingsPath);
 
 }
 
@@ -370,7 +400,8 @@ void Settings::Transaction::CheckBeforeChange() {
 }
 
 EngineServer::Exception Settings::Transaction::OnError(
-		const std::string &error) {
+		const std::string &error)
+		const {
 	Assert(m_lock);
 	Assert(!m_hasErrors);
 	Assert(!m_isCommitted);
@@ -392,6 +423,32 @@ Settings::EngineTransaction::EngineTransaction(EngineTransaction &&rhs)
 
 Settings::EngineTransaction::~EngineTransaction() {
 	//...//
+}
+
+void Settings::EngineTransaction::Validate(
+		const std::string &section,
+		const std::string &key,
+		const std::string &value)
+		const {
+	
+	const auto &index = keysMappings.get<ByServiceFullPath>();
+	const auto &it = index.find(
+		boost::make_tuple(
+			KeyMapping::GROUP_GENERAL,
+			section,
+			key));
+	if (it == index.end()) {
+		return;
+	}
+	
+	if (
+			it->isReadOnly
+			&& value != m_settings->m_clientSettins[m_groupName][section][key]) {
+		boost::format message("Settings key %1%::%2% has read-only access");
+		message % section % key;
+		throw OnError(message.str());		
+	}
+
 }
 
 void Settings::EngineTransaction::OnKeyStore(
@@ -500,7 +557,14 @@ Settings::StrategyTransaction::StrategyTransaction(
 		const boost::shared_ptr<Settings> &settings,
 		const std::string &groupName)
 	: Transaction(settings, groupName) {
-	//...//
+	//! @todo TRDK-59	Remove workaround for strategy settings applying
+	//!					(also see CopyFromActual):
+	m_clientSettings["General"]["name"]
+		= m_settings->m_clientSettins[m_groupName]["General"]["name"];
+	m_clientSettings["General"]["module"]
+		= m_settings->m_clientSettins[m_groupName]["General"]["module"];
+	m_clientSettings["General"]["type"]
+		= m_settings->m_clientSettins[m_groupName]["General"]["type"];
 }
 
 Settings::StrategyTransaction::StrategyTransaction(StrategyTransaction &&rhs)
@@ -528,6 +592,32 @@ void Settings::StrategyTransaction::Stop() {
 	m_clientSettings["General"]["is_enabled"] = Ini::GetBooleanFalse();
 }
 
+void Settings::StrategyTransaction::Validate(
+		const std::string &section,
+		const std::string &key,
+		const std::string &value)
+		const {
+	
+	const auto &index = keysMappings.get<ByServiceFullPath>();
+	const auto &it = index.find(
+		boost::make_tuple(
+			KeyMapping::GROUP_STRATEGY_TWD,
+			section,
+			key));
+	if (it == index.end()) {
+		return;
+	}
+	
+	if (
+			it->isReadOnly
+			&& value != m_settings->m_clientSettins[m_groupName][section][key]) {
+		boost::format message("Settings key %1%::%2% has read-only access");
+		message % section % key;
+		throw OnError(message.str());		
+	}
+
+}
+
 void Settings::StrategyTransaction::OnKeyStore(
 		const std::string &section,
 		const std::string &key,
@@ -543,7 +633,7 @@ void Settings::StrategyTransaction::OnKeyStore(
 		return;
 	}
 
-	const auto &mapIndex = keysMappings.get<ByServiceGroupAndKey>();
+	const auto &mapIndex = keysMappings.get<ByServiceGroupAndFileKey>();
 	const auto &mapIt = mapIndex.find(
 		boost::make_tuple(
 			KeyMapping::GROUP_STRATEGY_TWD,
@@ -572,6 +662,12 @@ void Settings::StrategyTransaction::OnKeyStore(
 
 	}
 
+	Assert(
+		m_clientSettings.find(mapIt->serviceSection)
+			!= m_clientSettings.end());
+	Assert(
+		m_clientSettings.find(mapIt->serviceSection)->second.find(mapIt->serviceKey)
+			!= m_clientSettings.find(mapIt->serviceSection)->second.end());
 	value
 		= m_clientSettings
 			.find(mapIt->serviceSection)

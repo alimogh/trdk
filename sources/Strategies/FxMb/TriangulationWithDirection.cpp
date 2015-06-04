@@ -168,6 +168,12 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 
 		AssertEq(PAIR_UNKNOWN, m_scheduledLeg);
 
+		if (
+				m_prevTriangle
+				&& m_prevTriangleTime - GetContext().GetCurrentTime() <= pt::seconds(30)) {
+			m_prevTriangle->GetReport().ReportUpdate();
+		}
+
 		CheckNewTriangle(timeMeasurement);
 
 	}
@@ -399,7 +405,8 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 					execDelay,
 					&order);
 			}
-			m_triangle.reset();
+			m_prevTriangle.reset(m_triangle.release());
+			m_prevTriangleTime = GetContext().GetCurrentTime();
 #			ifdef DEV_VER
 				m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
 				m_detectedEcns[Y2].fill(std::numeric_limits<size_t>::max());

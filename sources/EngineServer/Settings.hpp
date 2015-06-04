@@ -57,10 +57,19 @@ namespace trdk { namespace EngineServer {
 					const std::string &value);
 			void CopyFromActual();
 		public:
-			void Commit();
+			//! Commits changes.
+			/** @return True if transaction has changes, false otherwise.
+			  */
+			bool Commit();
 		protected:
 			void CheckBeforeChange();
-			EngineServer::Exception OnError(const std::string &error);
+			EngineServer::Exception OnError(const std::string &error) const;
+			virtual void Validate(
+					const std::string &section,
+					const std::string &key,
+					const std::string &value)
+					const
+					= 0;
 			virtual void OnKeyStore(
 				const std::string &section,
 				const std::string &key,
@@ -73,9 +82,9 @@ namespace trdk { namespace EngineServer {
 			const boost::shared_ptr<Settings> m_settings;
 			const std::string m_groupName;
 			ClientSettingsGroup m_clientSettings;
-			bool m_hasErrors;
+			mutable bool m_hasErrors;
 		private:
-			std::unique_ptr<WriteLock> m_lock;
+			mutable std::unique_ptr<WriteLock> m_lock;
 			bool m_isCommitted;
 		};
 		class EngineTransaction : public Transaction {
@@ -84,11 +93,16 @@ namespace trdk { namespace EngineServer {
 			EngineTransaction(EngineTransaction &&);
 			virtual ~EngineTransaction();
 		protected:
+			virtual void Validate(
+					const std::string &section,
+					const std::string &key,
+					const std::string &value)
+					const;
 			virtual void OnKeyStore(
-				const std::string &section,
-				const std::string &key,
-				std::string &value)
-				const;
+					const std::string &section,
+					const std::string &key,
+					std::string &value)
+					const;
 		};
 		class StrategyTransaction : public Transaction {
 		public:
@@ -101,11 +115,16 @@ namespace trdk { namespace EngineServer {
 			void Start();
 			void Stop();
 		protected:
+			virtual void Validate(
+					const std::string &section,
+					const std::string &key,
+					const std::string &value)
+					const;
 			virtual void OnKeyStore(
-				const std::string &section,
-				const std::string &key,
-				std::string &value)
-				const;
+					const std::string &section,
+					const std::string &key,
+					std::string &value)
+					const;
 		};
 
 	public:

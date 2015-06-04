@@ -122,6 +122,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		Leg m_scheduledLeg;
 
+		std::unique_ptr<Triangle> m_prevTriangle;
+		boost::posix_time::ptime m_prevTriangleTime;
+
 	};
 
 } } } }
