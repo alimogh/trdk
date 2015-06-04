@@ -66,6 +66,8 @@ namespace trdk { namespace EngineServer {
 				const std::string &commandInfo);
 		void StopAll(const trdk::StopMode &);
 
+		void Update(EngineServer::Settings::Transaction &);
+
 	private:
 
 		mutable Mutex m_mutex;

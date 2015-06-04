@@ -372,8 +372,8 @@ void Client::OnStrategyStartRequest(
 		auto settingsTransaction
 			= m_requestHandler.GetEngineSettings(request.engine_id())
 				.StartStrategyTransaction(request.strategy_id());
-		settingsTransaction.Start();
 		UpdateSettings(request.strategy_settings(), settingsTransaction);
+		settingsTransaction.Start();
 		m_requestHandler.UpdateStrategy(settingsTransaction);
 	} catch (const EngineServer::Exception &ex) {
 		boost::format errorMessage("Failed to start strategy: \"%1%\".");
@@ -397,6 +397,7 @@ void Client::OnStrategyStopRequest(const StrategyStopRequest &request) {
 		auto settingsTransaction
 			= m_requestHandler.GetEngineSettings(request.engine_id())
 				.StartStrategyTransaction(request.strategy_id());
+		settingsTransaction.CopyFromActual();
 		settingsTransaction.Stop();
 		m_requestHandler.UpdateStrategy(settingsTransaction);
 	} catch (const EngineServer::Exception &ex) {
@@ -425,7 +426,7 @@ void Client::OnStrategySettingsSetRequest(
 		UpdateSettings(request.section(), settingsTransaction);
 		m_requestHandler.UpdateStrategy(settingsTransaction);
 	} catch (const EngineServer::Exception &ex) {
-		boost::format errorMessage(
+		boost::format errorMessage(	
 			"Failed to change strategy settings: \"%1%\".");
 		errorMessage % ex;
 		//! @todo Write to log
@@ -440,12 +441,20 @@ void Client::OnStrategySettingsSetRequest(
 void Client::UpdateSettings(
 		const pb::RepeatedPtrField<SettingsSection> &request,
 		Settings::Transaction &transaction) {
+	//! @todo	WEBTERM-62 For strategy service sends not all keys. Also see
+	//!			Settings class.
+	transaction.CopyFromActual();
 	foreach (const auto &messageSection, request) {
 		for (
 				int keyIndex = 0;
 				keyIndex < messageSection.key().size();
 				++keyIndex) {
 			const auto &messageKey = messageSection.key(keyIndex);
+			//! @todo	WEBTERM-61 Remove key is_enabled setting keys from
+			//!			web-service to server
+			if (messageKey.name() == "is_enabled") {
+				continue;
+			}
 			transaction.Set(
 				messageSection.name(),
 				messageKey.name(),

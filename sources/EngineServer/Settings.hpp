@@ -57,7 +57,10 @@ namespace trdk { namespace EngineServer {
 					const std::string &value);
 			void CopyFromActual();
 		public:
-			void Commit();
+			//! Commits changes.
+			/** @return True if transaction has changes, false otherwise.
+			  */
+			bool Commit();
 		protected:
 			void CheckBeforeChange();
 			EngineServer::Exception OnError(const std::string &error) const;

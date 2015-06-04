@@ -34,9 +34,10 @@ void Server::Run(
 		bool enableStdOutLog,
 		const std::string &commandInfo) {
 
+	const auto &id = settingsTransaction.GetSettings().GetEngeineId();
+
 	const Lock lock(m_mutex);
 
-	const auto &id = settingsTransaction.GetSettings().GetEngeineId();
 	if (m_engines.get<ById>().find(id) != m_engines.get<ById>().end()) {
 		boost::format message("Engine with ID \"%1%\" already started");
 		message % id;
@@ -155,3 +156,41 @@ void Server::StopAll(const trdk::StopMode &stopMode) {
 	Engines().swap(m_engines);
 
 }
+
+void Server::Update(
+		EngineServer::Settings::Transaction &settingsTransaction) {
+
+	const Lock lock(m_mutex);
+
+	auto engineIt
+		= m_engines.get<ById>().find(
+			settingsTransaction.GetSettings().GetEngeineId());
+	if (engineIt == m_engines.get<ById>().end()) {
+		try {
+			settingsTransaction.Commit();
+		} catch (const trdk::Lib::Exception &ex) {
+			boost::format message("Failed to update engine context: \"%1%\"");
+			message % ex.what();
+			throw EngineServer::Exception(message.str().c_str());
+		}
+		return;
+	}
+		
+	Engine::Context &engine = *engineIt->engine;
+	try {
+		if (!settingsTransaction.Commit()) {
+			return;
+		}
+		const IniFile ini(settingsTransaction.GetSettings().GetFilePath());
+		engine.Add(ini);
+	} catch (const trdk::Lib::Exception &ex) {
+		engineIt->eventsLog->Warn(
+			"Failed to update engine context: \"%1%\".",
+			ex.what());
+		boost::format message("Failed to update engine context: \"%1%\"");
+		message % ex.what();
+		throw EngineServer::Exception(message.str().c_str());
+	}
+
+}
+

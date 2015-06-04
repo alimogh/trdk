@@ -106,8 +106,8 @@ EngineServer::Settings & EngineServer::Service::GetEngineSettings(
 }
 
 void EngineServer::Service::UpdateStrategy(
-		EngineServer::Settings::StrategyTransaction &/*transaction*/) {
-	//...//				
+		EngineServer::Settings::StrategyTransaction &transaction) {
+	m_server.Update(transaction);
 }
 
 void EngineServer::Service::StartEngine(
