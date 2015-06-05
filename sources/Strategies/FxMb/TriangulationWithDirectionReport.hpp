@@ -66,7 +66,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Twd::Position *const reasonOrder = nullptr,
 				const PairsSpeed *speed = nullptr);
 
-		void ReportUpdate();
+		void ReportUpdate(bool isForced = false);
 
 	private:
 
