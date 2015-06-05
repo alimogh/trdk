@@ -168,10 +168,12 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 
 		AssertEq(PAIR_UNKNOWN, m_scheduledLeg);
 
-		if (
-				m_prevTriangle
-				&& m_prevTriangleTime - GetContext().GetCurrentTime() <= pt::seconds(30)) {
-			m_prevTriangle->GetReport().ReportUpdate();
+		if (m_prevTriangle) {
+			if (GetContext().GetCurrentTime() - m_prevTriangleTime <= pt::seconds(30)) {
+				m_prevTriangle->GetReport().ReportUpdate();
+			} else {
+				m_prevTriangle.reset();
+			}
 		}
 
 		CheckNewTriangle(timeMeasurement);
