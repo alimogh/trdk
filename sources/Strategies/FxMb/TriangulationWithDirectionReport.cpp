@@ -729,9 +729,9 @@ void TriangleReport::ReportAction(
 
 }
 
-void TriangleReport::ReportUpdate() {
+void TriangleReport::ReportUpdate(bool isForced) {
 
-	if (!m_state.enablePriceUpdates) {
+	if (!m_state.enablePriceUpdates && !isForced) {
 		return;
 	}
 
