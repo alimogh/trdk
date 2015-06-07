@@ -22,13 +22,8 @@ using namespace trdk::EngineServer;
 
 namespace {
 
-	const boost::regex generalSymbolRiskControlExp(
-		"[A-Z]{3,3}/[A-Z]{3,3}\\.(price|qty)\\.(buy|sell)\\.(min|max)");
 	const boost::regex generalCurrencyRiskControlExp(
 		"([A-Z]{3,3}\\.limit)\\.(long|short)");
-
-	const boost::regex strategySymbolRiskControlExp(
-		"risk_control.([A-Z]{3,3}/[A-Z]{3,3}\\.(price|qty)\\.(buy|sell)\\.(min|max))");
 	const boost::regex strategyCurrencyRiskControlExp(
 		"risk_control.([A-Z]{3,3}\\.limit)\\.(long|short)");
 
@@ -462,29 +457,17 @@ void Settings::EngineTransaction::OnKeyStore(
 	if (mapIt == mapIndex.end()) {
 
 		if (section == "RiskControl") {
-			if (boost::regex_match(key, generalSymbolRiskControlExp)) {
+			boost::smatch what;
+			if (boost::regex_match(key, what, generalCurrencyRiskControlExp)) {
 				Assert(
-					m_clientSettings.find("RiskControl")->second.find(key)
+					m_clientSettings.find("RiskControl")->second.find(what[1])
 						!= m_clientSettings.find("RiskControl")->second.end());
 				value
 					= m_clientSettings
 						.find("RiskControl")
 						->second
-						.find(key)
+						.find(what[1])
 						->second;
-			} else {
-				boost::smatch what;
-				if (boost::regex_match(key, what, generalCurrencyRiskControlExp)) {
-					Assert(
-						m_clientSettings.find("RiskControl")->second.find(what[1])
-							!= m_clientSettings.find("RiskControl")->second.end());
-					value
-						= m_clientSettings
-							.find("RiskControl")
-							->second
-							.find(what[1])
-							->second;
-				}
 			}
 		}
 
@@ -643,9 +626,7 @@ void Settings::StrategyTransaction::OnKeyStore(
 
 		if (source == KeyMapping::FS_STRATEGY) {
 			boost::smatch what;
-			if (
-					boost::regex_match(key, what, strategySymbolRiskControlExp)
-					|| boost::regex_match(key, what, strategyCurrencyRiskControlExp)) {
+			if (boost::regex_match(key, what, strategyCurrencyRiskControlExp)) {
 				Assert(
 					m_clientSettings.find("RiskControl")->second.find(what[1])
 						!= m_clientSettings.find("RiskControl")->second.end());
@@ -764,17 +745,13 @@ void Settings::LoadClientSettings(const WriteLock &) {
 		ini.ForEachKey(
 			from.GetName(),
 			[&](const std::string &key, const std::string &value) -> bool {
-				if (boost::regex_match(key, generalSymbolRiskControlExp)) {
-					to[key] = value;
-				} else {
-					boost::smatch what;
-					if (
-							boost::regex_match(key, what, generalCurrencyRiskControlExp)
-							&& (to.find(what[1]) == to.end()
-									 ||	boost::lexical_cast<double>(to[what[1]])
-											> boost::lexical_cast<double>(value))) {
-						to[what[1]] = value;
-					}
+				boost::smatch what;
+				if (
+						boost::regex_match(key, what, generalCurrencyRiskControlExp)
+						&& (to.find(what[1]) == to.end()
+									||	boost::lexical_cast<double>(to[what[1]])
+										> boost::lexical_cast<double>(value))) {
+					to[what[1]] = value;
 				}
 				return true;
 			},
@@ -854,13 +831,16 @@ void Settings::LoadClientSettings(const WriteLock &) {
 				sectionName,
 				[&](const std::string &key, const std::string &value) -> bool {
 					boost::smatch what;
-					if (
-							boost::regex_match(key, what, strategySymbolRiskControlExp)
-							|| (boost::regex_match(key, what, strategyCurrencyRiskControlExp)
-								&& (riskControl.find(what[1]) == riskControl.end()
-									 ||	boost::lexical_cast<double>(riskControl[what[1]])
-											> boost::lexical_cast<double>(value)))) {
+					if (!boost::regex_match(key, what, strategyCurrencyRiskControlExp)) {
+						return true;
+					}
+					auto pos = riskControl.find(what[1]);
+					if (pos == riskControl.end()) {
 						riskControl[what[1]] = value;
+					} else if (	
+							boost::lexical_cast<double>(pos->second)
+								> boost::lexical_cast<double>(value)) {
+						pos->second = value;
 					}
 					return true;
 				},

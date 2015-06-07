@@ -68,24 +68,6 @@ struct RiskControlSymbolContext::Side : private boost::noncopyable {
 	int8_t direction;
 	const char *name;
 
-	struct Settings {
-			
-		double minPrice;
-		double maxPrice;
-		
-		trdk::Qty minQty;
-		trdk::Qty maxQty;
-
-		Settings()
-			: minPrice(0),
-			maxPrice(0),
-			minQty(0),
-			maxQty(0) {
-			//...//
-		}
-
-	} settings;
-
 	explicit Side(int8_t direction)
 		: direction(direction),
 		name(direction < 1 ? "short" : "long") {
@@ -369,7 +351,6 @@ private:
 			const Qty &qty,
 			const ScaledPrice &price,
 			RiskControlSymbolContext::Side &side) {
-		CheckNewOrderParams(security, qty, price, side);
 		CheckOrdersFloodLevel();
 		BlockFunds(security, currency, qty, price, side);
 	}
@@ -445,51 +426,6 @@ private:
 		}
 
 		m_orderTimePoints.push_back(now);
-
-	}
-
-protected:
-
-	virtual void CheckNewOrderParams(
-			const Security &security,
-			const Qty &qty,
-			const ScaledPrice &,
-			const RiskControlSymbolContext::Side &side)
-			const {
-
-		if (qty < side.settings.minQty) {
-		
-			m_tradingLog.Write(
-				"Qty too low for new %1% %2% order in scope \"%3%\":"
-					" %3%, but can't be less than %4%.",
-				[&](TradingRecord &record) {
-					record
-						% side.name
-						% security
-						% GetName()
-						% qty
-						% side.settings.minQty;
-				});
-
-			throw WrongOrderParameterException("Order qty too low");
-
-		} else if (qty > side.settings.maxQty) {
-
-			m_tradingLog.Write(
-				"Qty too high for new %1% %2% order in scope \"%3%\":"
-					" %4%, but can't be greater than %5%.",
-				[&](TradingRecord &record) {
-					record
-						% side.name
-						% security
-						% GetName()
-						% qty
-						% side.settings.maxQty;
-				});
-
-			throw WrongOrderParameterException("Order qty too high");
-
-		}
 
 	}
 
@@ -812,61 +748,6 @@ public:
 		//...//
 	}
 
-	virtual ~GlobalRiskControlScope() {
-		//...//
-	}
-
-protected:
-
-	virtual void CheckNewOrderParams(
-			const Security &security,
-			const Qty &qty,
-			const ScaledPrice &scaledPrice,
-			const RiskControlSymbolContext::Side &side)
-			const {
-
-		Base::CheckNewOrderParams(security, qty, scaledPrice, side);
-
-		const auto price = security.DescalePrice(scaledPrice);
-
-		if (price < side.settings.minPrice) {
-
-			GetTradingLog().Write(
-				"Price too low for new %1% %2% order in scope \"%3%\":"
-					" %4$f, but can't be less than %5$f.",
-				[&](TradingRecord &record) {
-					record
-						% side.name
-						% security
-						% GetName()
-						% price
-						% side.settings.minPrice;
-				});
-
-			throw WrongOrderParameterException("Order price too low");
-
-		}
-		
-		if (price > side.settings.maxPrice) {
-
-			GetTradingLog().Write(
-				"Price too high for new %1% %2% order in scope \"%3%\":"
-					" %4$f, but can't be greater than %5$f.",
-				[&](TradingRecord &record) {
-					record
-						% side.name
-						% security
-						% GetName()
-						% price
-						% side.settings.maxPrice;
-				});
-
-			throw WrongOrderParameterException("Order price too high");
-
-		}
-
-	}
-
 };
 
 class LocalRiskControlScope : public StandardRiskControlScope {
@@ -927,54 +808,6 @@ void RiskControlSymbolContext::InitScope(
 		const PositionFabric &posFabric,
 		bool isAdditinalScope)
 		const {
-
-	{
-
-		const auto &readPriceLimit = [&](
-				const char *type,
-				const char *orderSide,
-				const char *limSide)
-				-> double {
-			boost::format key("%1%.%2%.%3%.%4%");
-			key % m_symbol.GetSymbol() % type % orderSide % limSide;
-			return conf.ReadTypedKey<double>(key.str());
-		};
-		const auto &readQtyLimit = [&](
-				const char *type,
-				const char *orderSide,
-				const char *limSide)
-				-> Qty {
-			boost::format key("%1%.%2%.%3%.%4%");
-			key % m_symbol.GetSymbol() % type % orderSide % limSide;
-			return conf.ReadTypedKey<Qty>(
-				!isAdditinalScope
-					?	key.str()
-					:	std::string("risk_control.") + key.str());
-		};
-
-		if (!isAdditinalScope) {
-			scope.longSide.settings.maxPrice
-				= readPriceLimit("price", "buy", "max");
-			scope.longSide.settings.minPrice
-				= readPriceLimit("price", "buy", "min");
-		}
-		scope.longSide.settings.maxQty
-			= readQtyLimit("qty", "buy", "max");
-		scope.longSide.settings.minQty
-			= readQtyLimit("qty", "buy", "min");
-	
-		if (!isAdditinalScope) {
-			scope.shortSide.settings.maxPrice
-				= readPriceLimit("price", "sell", "max");
-			scope.shortSide.settings.minPrice
-				= readPriceLimit("price", "sell", "min");
-		}
-		scope.shortSide.settings.maxQty
-			= readQtyLimit("qty", "buy", "max");
-		scope.shortSide.settings.minQty
-			= readQtyLimit("qty", "buy", "min");
-
-	}
 
 	{
 
@@ -1155,24 +988,11 @@ public:
 	}
 
 	void ReportSymbolScopeSettings(
-			const RiskControlSymbolContext &symbol,
-			const RiskControlSymbolContext::Scope &scope,
-			const std::string &scopeName)
+			const RiskControlSymbolContext &,
+			const RiskControlSymbolContext::Scope &,
+			const std::string &)
 			const {
-		m_log.Info(
-			"Order limits for %1% in scope \"%2%\":"
-				" buy: %3$f / %4% - %5$f / %6%;"
-				" sell: %7$f / %8% - %9$f / %10%;",
-			symbol.GetSymbol(),
-			scopeName,
-			scope.longSide.settings.minPrice, 
-			scope.longSide.settings.minQty,
-			scope.longSide.settings.maxPrice, 
-			scope.longSide.settings.maxQty,
-			scope.shortSide.settings.minPrice, 
-			scope.shortSide.settings.minQty,
-			scope.shortSide.settings.maxPrice, 
-			scope.shortSide.settings.maxQty);
+		//...//
 	}
 
 	void AddScope(
