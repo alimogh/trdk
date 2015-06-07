@@ -587,6 +587,49 @@ void Settings::StrategyTransaction::Validate(
 		const std::string &value)
 		const {
 	
+	if (section == "General") {
+		if (key == "mode") {
+			if (value != "paper") {
+				throw OnError(
+					"Failed to change trading mode"
+						", this engine instance supports only"
+						" \"Paper trading\".");
+			}
+		}
+	} else if (section == "Sources") {
+		if (key == "alpari") {
+			if (Ini::ConvertToBoolean(value)) {
+				throw OnError(
+					"Failed to enable Alpary Market Data Source"
+						", this engine instance doesn't support Alpary.");
+			}
+		} else if (key == "currenex") {
+			if (Ini::ConvertToBoolean(value)) {
+				throw OnError(
+					"Failed to enable Currenex Market Data Source"
+						", this engine instance doesn't support Currenex.");
+			}
+		} else if (key == "fxall") {
+			if (Ini::ConvertToBoolean(value)) {
+				throw OnError(
+					"Failed to enable FXall Market Data Source"
+						", this engine instance doesn't support FXall.");
+			}
+		} else if (key == "integral") {
+			if (!Ini::ConvertToBoolean(value)) {
+				throw OnError(
+					"Failed to disable Integral Market Data Source"
+						", this engine instance can't work without Integral.");
+			}
+		} else if (key == "hotspot") {
+			if (!Ini::ConvertToBoolean(value)) {
+				throw OnError(
+					"Failed to disable Hotspot Market Data Source"
+						", this engine instance can't work without Hotspot.");
+			}
+		}
+	}
+
 	const auto &index = keysMappings.get<ByServiceFullPath>();
 	const auto &it = index.find(
 		boost::make_tuple(
@@ -810,7 +853,7 @@ void Settings::LoadClientSettings(const WriteLock &) {
 		
 		{
 			auto &general = group["General"];
-			general["mode"] = "live";
+			general["mode"] = "paper";
 		}
 		{
 			auto &sensitivity = group["Sensitivity"];
