@@ -22,13 +22,8 @@ using namespace trdk::EngineServer;
 
 namespace {
 
-	const boost::regex generalSymbolRiskControlExp(
-		"[A-Z]{3,3}/[A-Z]{3,3}\\.(price|qty)\\.(buy|sell)\\.(min|max)");
 	const boost::regex generalCurrencyRiskControlExp(
 		"([A-Z]{3,3}\\.limit)\\.(long|short)");
-
-	const boost::regex strategySymbolRiskControlExp(
-		"risk_control.([A-Z]{3,3}/[A-Z]{3,3}\\.(price|qty)\\.(buy|sell)\\.(min|max))");
 	const boost::regex strategyCurrencyRiskControlExp(
 		"risk_control.([A-Z]{3,3}\\.limit)\\.(long|short)");
 
@@ -203,6 +198,7 @@ Settings::Transaction::Transaction(
 	: m_settings(settings),
 	m_groupName(groupName),
 	m_hasErrors(false),
+	m_lock(new Settings::WriteLock(m_settings->m_mutex)),
 	m_isCommitted(false) {
 	//...//
 }
@@ -241,15 +237,24 @@ void Settings::Transaction::Set(
 	}
 
 	auto &section = m_clientSettings[sectionName];
-	//! @todo WEBTERM-62 For strategy service sends not all keys
-	//! (also see Client::UpdateSettings and CopyFromActual):
-// 	if (section.find(keyName) != section.end()) {
-// 		boost::format message(
-// 			"Key %1%::%2%::%3% already set"
-// 				" by this settings update transaction");
-// 		message % m_groupName % sectionName % keyName;
-// 		throw OnError(message.str());
-// 	}
+	if (section.find(keyName) != section.end()) {
+		//! @todo	TRDK-59 Remove workaround for strategy settings applying
+		//!			(also see Ctor and and CopyFromActual):
+		if (
+				boost::starts_with(m_groupName, "Strategy.")
+				&& sectionName == "General"
+				&& (keyName == "name"
+					|| keyName == "module"
+					|| keyName == "type"
+					|| keyName == "is_enabled")) {
+			return;
+		}
+		boost::format message(
+			"Key %1%::%2%::%3% already set"
+				" by this settings update transaction");
+		message % m_groupName % sectionName % keyName;
+		throw OnError(message.str());
+	}
 
 	Validate(sectionName, keyName, value);
 
@@ -260,16 +265,14 @@ void Settings::Transaction::Set(
 void Settings::Transaction::CopyFromActual() {
 	CheckBeforeChange();
 	//! @todo	TRDK-59 Remove workaround for strategy settings applying
-	//!			(also see Ctor):
-	//! @todo	WEBTERM-62 For strategy service sends not all keys
-	//!			(also see Client::UpdateSettings):
-// 	if (
-// 			m_clientSettings.size() != 1
-// 			|| m_clientSettings["General"].size() != 3) {
-// 	if (!m_clientSettings.empty()) {
-// 		throw EngineServer::Exception(
-// 			"Settings update transaction is not empty");
-// 	}
+	//!			(also see Ctor and and Set):
+	// 	if (!m_clientSettings.empty()) {
+	if (
+			m_clientSettings.size() != 1
+			|| m_clientSettings["General"].size() != 4) {
+		throw EngineServer::Exception(
+			"Settings update transaction is not empty");
+	}
 	m_clientSettings = m_settings->m_clientSettins[m_groupName];
 }
 
@@ -393,10 +396,6 @@ void Settings::Transaction::CheckBeforeChange() {
 			"Settings update transaction is committed");
 	}
 
-	if (!m_lock) {
-		m_lock.reset(new Settings::WriteLock(m_settings->m_mutex));
-	} 
-
 }
 
 EngineServer::Exception Settings::Transaction::OnError(
@@ -462,29 +461,17 @@ void Settings::EngineTransaction::OnKeyStore(
 	if (mapIt == mapIndex.end()) {
 
 		if (section == "RiskControl") {
-			if (boost::regex_match(key, generalSymbolRiskControlExp)) {
+			boost::smatch what;
+			if (boost::regex_match(key, what, generalCurrencyRiskControlExp)) {
 				Assert(
-					m_clientSettings.find("RiskControl")->second.find(key)
+					m_clientSettings.find("RiskControl")->second.find(what[1])
 						!= m_clientSettings.find("RiskControl")->second.end());
 				value
 					= m_clientSettings
 						.find("RiskControl")
 						->second
-						.find(key)
+						.find(what[1])
 						->second;
-			} else {
-				boost::smatch what;
-				if (boost::regex_match(key, what, generalCurrencyRiskControlExp)) {
-					Assert(
-						m_clientSettings.find("RiskControl")->second.find(what[1])
-							!= m_clientSettings.find("RiskControl")->second.end());
-					value
-						= m_clientSettings
-							.find("RiskControl")
-							->second
-							.find(what[1])
-							->second;
-				}
 			}
 		}
 
@@ -558,13 +545,15 @@ Settings::StrategyTransaction::StrategyTransaction(
 		const std::string &groupName)
 	: Transaction(settings, groupName) {
 	//! @todo TRDK-59	Remove workaround for strategy settings applying
-	//!					(also see CopyFromActual):
+	//!					(also see CopyFromActual and Set):
 	m_clientSettings["General"]["name"]
 		= m_settings->m_clientSettins[m_groupName]["General"]["name"];
 	m_clientSettings["General"]["module"]
 		= m_settings->m_clientSettins[m_groupName]["General"]["module"];
 	m_clientSettings["General"]["type"]
 		= m_settings->m_clientSettins[m_groupName]["General"]["type"];
+	m_clientSettings["General"]["is_enabled"]
+		= m_settings->m_clientSettins[m_groupName]["General"]["is_enabled"];
 }
 
 Settings::StrategyTransaction::StrategyTransaction(StrategyTransaction &&rhs)
@@ -598,6 +587,49 @@ void Settings::StrategyTransaction::Validate(
 		const std::string &value)
 		const {
 	
+	if (section == "General") {
+		if (key == "mode") {
+			if (value != "paper") {
+				throw OnError(
+					"Failed to change trading mode"
+						", this engine instance supports only"
+						" \"Paper trading\".");
+			}
+		}
+	} else if (section == "Sources") {
+		if (key == "alpari") {
+			if (Ini::ConvertToBoolean(value)) {
+				throw OnError(
+					"Failed to enable Alpary Market Data Source"
+						", this engine instance doesn't support Alpary.");
+			}
+		} else if (key == "currenex") {
+			if (Ini::ConvertToBoolean(value)) {
+				throw OnError(
+					"Failed to enable Currenex Market Data Source"
+						", this engine instance doesn't support Currenex.");
+			}
+		} else if (key == "fxall") {
+			if (Ini::ConvertToBoolean(value)) {
+				throw OnError(
+					"Failed to enable FXall Market Data Source"
+						", this engine instance doesn't support FXall.");
+			}
+		} else if (key == "integral") {
+			if (!Ini::ConvertToBoolean(value)) {
+				throw OnError(
+					"Failed to disable Integral Market Data Source"
+						", this engine instance can't work without Integral.");
+			}
+		} else if (key == "hotspot") {
+			if (!Ini::ConvertToBoolean(value)) {
+				throw OnError(
+					"Failed to disable Hotspot Market Data Source"
+						", this engine instance can't work without Hotspot.");
+			}
+		}
+	}
+
 	const auto &index = keysMappings.get<ByServiceFullPath>();
 	const auto &it = index.find(
 		boost::make_tuple(
@@ -630,7 +662,7 @@ void Settings::StrategyTransaction::OnKeyStore(
 	} else if (boost::istarts_with(section, "Service.")) {
 		source = KeyMapping::FS_SERVICE;
 	} else {
-		return;
+		source = KeyMapping::FS_DIRECT;
 	}
 
 	const auto &mapIndex = keysMappings.get<ByServiceGroupAndFileKey>();
@@ -643,9 +675,7 @@ void Settings::StrategyTransaction::OnKeyStore(
 
 		if (source == KeyMapping::FS_STRATEGY) {
 			boost::smatch what;
-			if (
-					boost::regex_match(key, what, strategySymbolRiskControlExp)
-					|| boost::regex_match(key, what, strategyCurrencyRiskControlExp)) {
+			if (boost::regex_match(key, what, strategyCurrencyRiskControlExp)) {
 				Assert(
 					m_clientSettings.find("RiskControl")->second.find(what[1])
 						!= m_clientSettings.find("RiskControl")->second.end());
@@ -764,17 +794,13 @@ void Settings::LoadClientSettings(const WriteLock &) {
 		ini.ForEachKey(
 			from.GetName(),
 			[&](const std::string &key, const std::string &value) -> bool {
-				if (boost::regex_match(key, generalSymbolRiskControlExp)) {
-					to[key] = value;
-				} else {
-					boost::smatch what;
-					if (
-							boost::regex_match(key, what, generalCurrencyRiskControlExp)
-							&& (to.find(what[1]) == to.end()
-									 ||	boost::lexical_cast<double>(to[what[1]])
-											> boost::lexical_cast<double>(value))) {
-						to[what[1]] = value;
-					}
+				boost::smatch what;
+				if (
+						boost::regex_match(key, what, generalCurrencyRiskControlExp)
+						&& (to.find(what[1]) == to.end()
+									||	boost::lexical_cast<double>(to[what[1]])
+										> boost::lexical_cast<double>(value))) {
+					to[what[1]] = value;
 				}
 				return true;
 			},
@@ -827,12 +853,14 @@ void Settings::LoadClientSettings(const WriteLock &) {
 		
 		{
 			auto &general = group["General"];
-			general["mode"] = "live";
+			general["mode"] = "paper";
 		}
 		{
 			auto &sensitivity = group["Sensitivity"];
-			sensitivity["lag.min"] = "150";
-			sensitivity["lag.max"] = "200";
+			sensitivity["lag.execution.min"] = "150";
+			sensitivity["lag.execution.max"] = "200";
+			sensitivity["lag.report.min"] = "50000";
+			sensitivity["lag.report.max"] = "300000";
 		}
 		{
 			auto &sources = group["Sources"];
@@ -852,13 +880,16 @@ void Settings::LoadClientSettings(const WriteLock &) {
 				sectionName,
 				[&](const std::string &key, const std::string &value) -> bool {
 					boost::smatch what;
-					if (
-							boost::regex_match(key, what, strategySymbolRiskControlExp)
-							|| (boost::regex_match(key, what, strategyCurrencyRiskControlExp)
-								&& (riskControl.find(what[1]) == riskControl.end()
-									 ||	boost::lexical_cast<double>(riskControl[what[1]])
-											> boost::lexical_cast<double>(value)))) {
+					if (!boost::regex_match(key, what, strategyCurrencyRiskControlExp)) {
+						return true;
+					}
+					auto pos = riskControl.find(what[1]);
+					if (pos == riskControl.end()) {
 						riskControl[what[1]] = value;
+					} else if (	
+							boost::lexical_cast<double>(pos->second)
+								> boost::lexical_cast<double>(value)) {
+						pos->second = value;
 					}
 					return true;
 				},

@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "Server.hpp"
 #include "Service.hpp"
-#include "Settings.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -117,18 +116,10 @@ namespace {
 			}
 
 			try {
-
-				boost::shared_ptr<EngineServer::Settings> settings(
-					new EngineServer::Settings(
-						GetIniFilePath(argv[2]),
-						"___DEBUG",
-						"___DEBUG"));
-				auto engineStartTransaction = settings->StartEngineTransaction();
-				engineStartTransaction.CopyFromActual();
-
 				server.Run(
 					fooSlotConnection,
-					engineStartTransaction,
+					"__DEBUG",
+					GetIniFilePath(argv[2]),
 					true,
 					boost::join(cmd, " "));
 			} catch (const trdk::Lib::Exception &ex) {

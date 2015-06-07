@@ -37,12 +37,14 @@ namespace trdk { namespace EngineServer {
 				const;
 		virtual bool IsEngineStarted(const std::string &engineId) const;
 		virtual void StartEngine(
-				EngineServer::Settings::EngineTransaction &,
+				const std::string &engineId,
 				const std::string &commandInfo);
 		virtual void StopEngine(const std::string &engineId);
 		virtual Settings & GetEngineSettings(
 				const std::string &engineId);
 
+		virtual void UpdateEngine(
+				EngineServer::Settings::EngineTransaction &);
 		virtual void UpdateStrategy(
 				EngineServer::Settings::StrategyTransaction &);
 

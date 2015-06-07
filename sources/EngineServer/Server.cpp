@@ -30,11 +30,10 @@ bool Server::IsStarted(const std::string &id) const {
 
 void Server::Run(
 		boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
-		EngineServer::Settings::EngineTransaction &settingsTransaction,
+		const std::string &id,
+		const fs::path &path,
 		bool enableStdOutLog,
 		const std::string &commandInfo) {
-
-	const auto &id = settingsTransaction.GetSettings().GetEngeineId();
 
 	const Lock lock(m_mutex);
 
@@ -52,10 +51,7 @@ void Server::Run(
 		info.eventsLog.reset(new Engine::Context::Log);
 		const auto &startTime = info.eventsLog->GetTime();
 
-		settingsTransaction.Commit();
-
-		boost::shared_ptr<IniFile> ini(
-			new IniFile(settingsTransaction.GetSettings().GetFilePath()));
+		boost::shared_ptr<IniFile> ini(new IniFile(path));
 
 		if (enableStdOutLog) {
 			info.eventsLog->EnableStdOut();

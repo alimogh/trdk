@@ -45,14 +45,14 @@ namespace trdk { namespace Engine {
 
 		virtual size_t GetMarketDataSourcesCount() const;
 		virtual const trdk::MarketDataSource & GetMarketDataSource(
-						size_t index)
-					const;
+				size_t index)
+				const;
 		virtual trdk::MarketDataSource & GetMarketDataSource(size_t index);
 		virtual void ForEachMarketDataSource(
-						const boost::function<bool (const trdk::MarketDataSource &)> &)
-					const;
+				const boost::function<bool (const trdk::MarketDataSource &)> &)
+				const;
 		virtual void ForEachMarketDataSource(
-						const boost::function<bool (trdk::MarketDataSource &)> &);
+				const boost::function<bool (trdk::MarketDataSource &)> &);
 
 		virtual size_t GetTradeSystemsCount() const;
 		virtual const trdk::TradeSystem & GetTradeSystem(size_t index) const;
@@ -62,7 +62,7 @@ namespace trdk { namespace Engine {
 
 		virtual trdk::Security * FindSecurity(const trdk::Lib::Symbol &);
 		virtual const trdk::Security * FindSecurity(
-					const trdk::Lib::Symbol &)
+				const trdk::Lib::Symbol &)
 				const;
 
 	private:
