@@ -355,6 +355,12 @@ public:
 		}
 	}
 
+protected:
+
+	ModuleTradingLog & GetTradingLog() const {
+		return m_tradingLog;
+	}
+
 private:
 
 	void CheckNewOrder(
@@ -442,48 +448,16 @@ private:
 
 	}
 
-	void CheckNewOrderParams(
+protected:
+
+	virtual void CheckNewOrderParams(
 			const Security &security,
 			const Qty &qty,
-			const ScaledPrice &scaledPrice,
+			const ScaledPrice &,
 			const RiskControlSymbolContext::Side &side)
 			const {
 
-		const auto price = security.DescalePrice(scaledPrice);
-
-		if (price < side.settings.minPrice) {
-
-			m_tradingLog.Write(
-				"Price too low for new %1% %2% order in scope \"%3%\":"
-					" %4$f, but can't be less than %5$f.",
-				[&](TradingRecord &record) {
-					record
-						% side.name
-						% security
-						% GetName()
-						% price
-						% side.settings.minPrice;
-				});
-
-			throw WrongOrderParameterException("Order price too low");
-
-		} else if (price > side.settings.maxPrice) {
-
-			m_tradingLog.Write(
-				"Price too high for new %1% %2% order in scope \"%3%\":"
-					" %4$f, but can't be greater than %5$f.",
-				[&](TradingRecord &record) {
-					record
-						% side.name
-						% security
-						% GetName()
-						% price
-						% side.settings.maxPrice;
-				});
-
-			throw WrongOrderParameterException("Order price too high");
-
-		} else if (qty < side.settings.minQty) {
+		if (qty < side.settings.minQty) {
 		
 			m_tradingLog.Write(
 				"Qty too low for new %1% %2% order in scope \"%3%\":"
@@ -518,6 +492,8 @@ private:
 		}
 
 	}
+
+private:
 
 	static std::pair<double, double> CalcCacheOrderVolumes(
 			const Security &security,
@@ -807,13 +783,19 @@ private:
 };
 
 class GlobalRiskControlScope : public StandardRiskControlScope {
+
 public:
+
+	typedef StandardRiskControlScope Base;
+
+public:
+
 	explicit GlobalRiskControlScope(
 			Context &context,
 			const IniSectionRef &conf,
 			const std::string &name,
 			size_t index)
-		: StandardRiskControlScope(
+		: Base(
 			context,
 			name,
 			index,
@@ -829,6 +811,62 @@ public:
 			conf.ReadTypedKey<size_t>("flood_control.orders.max_number")) {
 		//...//
 	}
+
+	virtual ~GlobalRiskControlScope() {
+		//...//
+	}
+
+protected:
+
+	virtual void CheckNewOrderParams(
+			const Security &security,
+			const Qty &qty,
+			const ScaledPrice &scaledPrice,
+			const RiskControlSymbolContext::Side &side)
+			const {
+
+		Base::CheckNewOrderParams(security, qty, scaledPrice, side);
+
+		const auto price = security.DescalePrice(scaledPrice);
+
+		if (price < side.settings.minPrice) {
+
+			GetTradingLog().Write(
+				"Price too low for new %1% %2% order in scope \"%3%\":"
+					" %4$f, but can't be less than %5$f.",
+				[&](TradingRecord &record) {
+					record
+						% side.name
+						% security
+						% GetName()
+						% price
+						% side.settings.minPrice;
+				});
+
+			throw WrongOrderParameterException("Order price too low");
+
+		}
+		
+		if (price > side.settings.maxPrice) {
+
+			GetTradingLog().Write(
+				"Price too high for new %1% %2% order in scope \"%3%\":"
+					" %4$f, but can't be greater than %5$f.",
+				[&](TradingRecord &record) {
+					record
+						% side.name
+						% security
+						% GetName()
+						% price
+						% side.settings.maxPrice;
+				});
+
+			throw WrongOrderParameterException("Order price too high");
+
+		}
+
+	}
+
 };
 
 class LocalRiskControlScope : public StandardRiskControlScope {
@@ -899,10 +937,7 @@ void RiskControlSymbolContext::InitScope(
 				-> double {
 			boost::format key("%1%.%2%.%3%.%4%");
 			key % m_symbol.GetSymbol() % type % orderSide % limSide;
-			return conf.ReadTypedKey<double>(
-				!isAdditinalScope
-					?	key.str()
-					:	std::string("risk_control.") + key.str());
+			return conf.ReadTypedKey<double>(key.str());
 		};
 		const auto &readQtyLimit = [&](
 				const char *type,
@@ -917,19 +952,23 @@ void RiskControlSymbolContext::InitScope(
 					:	std::string("risk_control.") + key.str());
 		};
 
-		scope.longSide.settings.maxPrice
-			= readPriceLimit("price", "buy", "max");
-		scope.longSide.settings.minPrice
-			= readPriceLimit("price", "buy", "min");
+		if (!isAdditinalScope) {
+			scope.longSide.settings.maxPrice
+				= readPriceLimit("price", "buy", "max");
+			scope.longSide.settings.minPrice
+				= readPriceLimit("price", "buy", "min");
+		}
 		scope.longSide.settings.maxQty
 			= readQtyLimit("qty", "buy", "max");
 		scope.longSide.settings.minQty
 			= readQtyLimit("qty", "buy", "min");
 	
-		scope.shortSide.settings.maxPrice
-			= readPriceLimit("price", "sell", "max");
-		scope.shortSide.settings.minPrice
-			= readPriceLimit("price", "sell", "min");
+		if (!isAdditinalScope) {
+			scope.shortSide.settings.maxPrice
+				= readPriceLimit("price", "sell", "max");
+			scope.shortSide.settings.minPrice
+				= readPriceLimit("price", "sell", "min");
+		}
 		scope.shortSide.settings.maxQty
 			= readQtyLimit("qty", "buy", "max");
 		scope.shortSide.settings.minQty
