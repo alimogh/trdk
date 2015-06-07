@@ -234,6 +234,9 @@ void Client::OnNewRequest(const ClientRequest &request) {
 		case ClientRequest::TYPE_ENGINE_STOP:
 			OnEngineStopRequest(request.engine_stop());
 			break;
+		case ClientRequest::TYPE_ENGINE_SETTINGS:
+			OnEngineSettingsSetRequest(request.engine_settings());
+			break;
 		case ClientRequest::TYPE_STRATEGY_START:
 			OnStrategyStartRequest(request.strategy_start());
 			break;
@@ -318,16 +321,9 @@ void Client::OnEngineStartRequest(
 		<< GetRemoteAddressAsString() << "..." << std::endl;
 	boost::format commandInfo("%1% %2%");
 	commandInfo % GetRemoteAddressAsString() % request.engine_id();
-	
+
 	try {
-
-		auto settingsTransaction
-			= m_requestHandler.GetEngineSettings(request.engine_id())
-				.StartEngineTransaction();
-		UpdateSettings(request.general_settings(), settingsTransaction);
-	
-		m_requestHandler.StartEngine(settingsTransaction, commandInfo.str());
-
+		m_requestHandler.StartEngine(request.engine_id(), commandInfo.str());
 	} catch (const EngineServer::Exception &ex) {
 		boost::format errorMessage("Failed to start engine: \"%1%\".");
 		errorMessage % ex;
@@ -358,6 +354,32 @@ void Client::OnEngineStopRequest(const EngineStopRequest &request) {
 	}
 
 	SendEngineState(request.engine_id());
+
+}
+
+void Client::OnEngineSettingsSetRequest(
+		const EngineSettingsSetRequest &request) {
+
+	std::cout
+		<< "Changing general settings for engine \""
+		<< request.engine_id() << "\"..." << std::endl;
+
+	try {
+		auto settingsTransaction
+			= m_requestHandler.GetEngineSettings(request.engine_id())
+				.StartEngineTransaction();
+		UpdateSettings(request.general_settings(), settingsTransaction);
+		m_requestHandler.UpdateEngine(settingsTransaction);
+	} catch (const EngineServer::Exception &ex) {
+		boost::format errorMessage(	
+			"Failed to change general settings: \"%1%\".");
+		errorMessage % ex;
+		//! @todo Write to log
+		std::cerr << errorMessage << std::endl;
+		SendError(errorMessage.str());
+	}
+
+	SendEngineInfo(request.engine_id());
 
 }
 
@@ -441,9 +463,6 @@ void Client::OnStrategySettingsSetRequest(
 void Client::UpdateSettings(
 		const pb::RepeatedPtrField<SettingsSection> &request,
 		Settings::Transaction &transaction) {
-	//! @todo	WEBTERM-62 For strategy service sends not all keys. Also see
-	//!			Settings class.
-	transaction.CopyFromActual();
 	foreach (const auto &messageSection, request) {
 		for (
 				int keyIndex = 0;

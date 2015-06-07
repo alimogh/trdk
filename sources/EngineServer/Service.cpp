@@ -105,17 +105,24 @@ EngineServer::Settings & EngineServer::Service::GetEngineSettings(
 	return *m_engines.find(engineId)->second;
 }
 
+void EngineServer::Service::UpdateEngine(
+		EngineServer::Settings::EngineTransaction &transaction) {
+	m_server.Update(transaction);
+}
+
 void EngineServer::Service::UpdateStrategy(
 		EngineServer::Settings::StrategyTransaction &transaction) {
 	m_server.Update(transaction);
 }
 
 void EngineServer::Service::StartEngine(
-		EngineServer::Settings::EngineTransaction &transaction,
+		const std::string &engineId,
 		const std::string &commandInfo) {
+	const auto &settings = GetEngineSettings(engineId);
 	m_server.Run(
 		m_fooSlotConnection,
-		transaction,
+		settings.GetEngeineId(),
+		settings.GetFilePath(),
 		false,
 		commandInfo);
 }

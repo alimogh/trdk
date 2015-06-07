@@ -198,6 +198,7 @@ Settings::Transaction::Transaction(
 	: m_settings(settings),
 	m_groupName(groupName),
 	m_hasErrors(false),
+	m_lock(new Settings::WriteLock(m_settings->m_mutex)),
 	m_isCommitted(false) {
 	//...//
 }
@@ -236,15 +237,24 @@ void Settings::Transaction::Set(
 	}
 
 	auto &section = m_clientSettings[sectionName];
-	//! @todo WEBTERM-62 For strategy service sends not all keys
-	//! (also see Client::UpdateSettings and CopyFromActual):
-// 	if (section.find(keyName) != section.end()) {
-// 		boost::format message(
-// 			"Key %1%::%2%::%3% already set"
-// 				" by this settings update transaction");
-// 		message % m_groupName % sectionName % keyName;
-// 		throw OnError(message.str());
-// 	}
+	if (section.find(keyName) != section.end()) {
+		//! @todo	TRDK-59 Remove workaround for strategy settings applying
+		//!			(also see Ctor and and CopyFromActual):
+		if (
+				boost::starts_with(m_groupName, "Strategy.")
+				&& sectionName == "General"
+				&& (keyName == "name"
+					|| keyName == "module"
+					|| keyName == "type"
+					|| keyName == "is_enabled")) {
+			return;
+		}
+		boost::format message(
+			"Key %1%::%2%::%3% already set"
+				" by this settings update transaction");
+		message % m_groupName % sectionName % keyName;
+		throw OnError(message.str());
+	}
 
 	Validate(sectionName, keyName, value);
 
@@ -255,16 +265,14 @@ void Settings::Transaction::Set(
 void Settings::Transaction::CopyFromActual() {
 	CheckBeforeChange();
 	//! @todo	TRDK-59 Remove workaround for strategy settings applying
-	//!			(also see Ctor):
-	//! @todo	WEBTERM-62 For strategy service sends not all keys
-	//!			(also see Client::UpdateSettings):
-// 	if (
-// 			m_clientSettings.size() != 1
-// 			|| m_clientSettings["General"].size() != 3) {
-// 	if (!m_clientSettings.empty()) {
-// 		throw EngineServer::Exception(
-// 			"Settings update transaction is not empty");
-// 	}
+	//!			(also see Ctor and and Set):
+	// 	if (!m_clientSettings.empty()) {
+	if (
+			m_clientSettings.size() != 1
+			|| m_clientSettings["General"].size() != 4) {
+		throw EngineServer::Exception(
+			"Settings update transaction is not empty");
+	}
 	m_clientSettings = m_settings->m_clientSettins[m_groupName];
 }
 
@@ -387,10 +395,6 @@ void Settings::Transaction::CheckBeforeChange() {
 		throw EngineServer::Exception(
 			"Settings update transaction is committed");
 	}
-
-	if (!m_lock) {
-		m_lock.reset(new Settings::WriteLock(m_settings->m_mutex));
-	} 
 
 }
 
@@ -541,13 +545,15 @@ Settings::StrategyTransaction::StrategyTransaction(
 		const std::string &groupName)
 	: Transaction(settings, groupName) {
 	//! @todo TRDK-59	Remove workaround for strategy settings applying
-	//!					(also see CopyFromActual):
+	//!					(also see CopyFromActual and Set):
 	m_clientSettings["General"]["name"]
 		= m_settings->m_clientSettins[m_groupName]["General"]["name"];
 	m_clientSettings["General"]["module"]
 		= m_settings->m_clientSettins[m_groupName]["General"]["module"];
 	m_clientSettings["General"]["type"]
 		= m_settings->m_clientSettins[m_groupName]["General"]["type"];
+	m_clientSettings["General"]["is_enabled"]
+		= m_settings->m_clientSettins[m_groupName]["General"]["is_enabled"];
 }
 
 Settings::StrategyTransaction::StrategyTransaction(StrategyTransaction &&rhs)
@@ -613,7 +619,7 @@ void Settings::StrategyTransaction::OnKeyStore(
 	} else if (boost::istarts_with(section, "Service.")) {
 		source = KeyMapping::FS_SERVICE;
 	} else {
-		return;
+		source = KeyMapping::FS_DIRECT;
 	}
 
 	const auto &mapIndex = keysMappings.get<ByServiceGroupAndFileKey>();

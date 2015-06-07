@@ -71,6 +71,7 @@ namespace trdk { namespace EngineServer {
 		
 		void OnEngineStartRequest(const EngineStartRequest &);
 		void OnEngineStopRequest(const EngineStopRequest &);
+		void OnEngineSettingsSetRequest(const EngineSettingsSetRequest &);
 		
 		void OnStrategyStartRequest(const StrategyStartRequest &);
 		void OnStrategyStopRequest(const StrategyStopRequest &);

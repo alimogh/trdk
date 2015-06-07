@@ -98,11 +98,15 @@ message FullInfoRequest {
 
 message EngineStartRequest {
 	required string engine_id = 1;
-	repeated SettingsSection general_settings = 2;
 }
 
 message EngineStopRequest {
 	required string engine_id = 1;
+}
+
+message EngineSettingsSetRequest {
+	required string engine_id = 1;
+	repeated SettingsSection general_settings = 2;
 }
 
 message StrategyStartRequest {
@@ -128,19 +132,27 @@ message ClientRequest {
 		TYPE_INFO_FULL = 1;
 		TYPE_ENGINE_START = 2;
 		TYPE_ENGINE_STOP = 3;
-		TYPE_STRATEGY_START = 4;
-		TYPE_STRATEGY_STOP = 5;
-		TYPE_STRATEGY_SETTINGS = 6;
+		TYPE_ENGINE_SETTINGS = 4;
+		TYPE_STRATEGY_START = 5;
+		TYPE_STRATEGY_STOP = 6;
+		TYPE_STRATEGY_SETTINGS = 7;
 	}
 
 	required Type type = 1;
 
 	optional FullInfoRequest full_info = 2;
+	// TYPE_ENGINE_START
 	optional EngineStartRequest engine_start = 3;
+	// TYPE_ENGINE_STOP 
 	optional EngineStopRequest engine_stop = 4;
-	optional StrategyStartRequest strategy_start = 5;
-	optional StrategyStopRequest strategy_stop = 6;
-	optional StrategySettingsSetRequest strategy_settings = 7;
+	// TYPE_ENGINE_SETTINGS
+	optional EngineSettingsSetRequest engine_settings = 5;
+	// TYPE_STRATEGY_START
+	optional StrategyStartRequest strategy_start = 6;
+	// TYPE_STRATEGY_STOP
+	optional StrategyStopRequest strategy_stop = 7;
+	// TYPE_STRATEGY_SETTINGS
+	optional StrategySettingsSetRequest strategy_settings = 8;
 
 }
 

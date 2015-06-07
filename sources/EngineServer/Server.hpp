@@ -61,7 +61,8 @@ namespace trdk { namespace EngineServer {
 
 		void Run(
 				boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
-				EngineServer::Settings::EngineTransaction &,
+				const std::string &id,
+				const boost::filesystem::path &,
 				bool enableStdOutLog,
 				const std::string &commandInfo);
 		void StopAll(const trdk::StopMode &);
