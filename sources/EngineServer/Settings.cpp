@@ -831,8 +831,10 @@ void Settings::LoadClientSettings(const WriteLock &) {
 		}
 		{
 			auto &sensitivity = group["Sensitivity"];
-			sensitivity["lag.min"] = "150";
-			sensitivity["lag.max"] = "200";
+			sensitivity["lag.execution.min"] = "150";
+			sensitivity["lag.execution.max"] = "200";
+			sensitivity["lag.report.min"] = "50000";
+			sensitivity["lag.report.max"] = "300000";
 		}
 		{
 			auto &sources = group["Sources"];
