@@ -15,6 +15,7 @@ namespace trdk { namespace Engine {
 	struct TradeSystemHolder {
 		// Deinitialization order is important!
 		trdk::Lib::DllObjectPtr<TradeSystem> tradeSystem;
+		std::string section;
 		boost::shared_ptr<Terminal> terminal;
 	};
 	typedef std::vector<TradeSystemHolder> TradeSystems;
@@ -22,19 +23,25 @@ namespace trdk { namespace Engine {
 	typedef std::vector<trdk::Lib::DllObjectPtr<MarketDataSource>>
 		MarketDataSources;
 
+	template<typename Module>
+	struct ModuleHolder {
+		std::string section;
+		boost::shared_ptr<Module> module;
+	};
+
 	typedef std::map<
 			std::string /*tag*/,
-			std::vector<boost::shared_ptr<Strategy>>>
+			std::vector<ModuleHolder<Strategy>>>
 		Strategies;
 
 	typedef std::map<
 			std::string /*tag*/,
-			std::vector<boost::shared_ptr<Observer>>>
+			std::vector<ModuleHolder<Observer>>>
 		Observers;
 
 	typedef std::map<
 			std::string /*tag*/,
-			std::vector<boost::shared_ptr<Service>>>
+			std::vector<ModuleHolder<Service>>>
 		Services;
 
 	typedef std::set<boost::shared_ptr<trdk::Lib::Dll>> ModuleList;

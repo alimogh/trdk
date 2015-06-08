@@ -111,6 +111,10 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 		virtual void CreateConnection(const Lib::IniSectionRef &);
 
+	public:
+
+		virtual void OnSettingsUpdate(const Lib::IniSectionRef &);
+
 	private:
 
 		class Implementation;

@@ -32,10 +32,10 @@ namespace trdk {
 			class ConstIterator;
 		
 			class TRDK_CORE_API Iterator
-					: public boost::iterator_facade<
-						Iterator,
-						trdk::Position,
-						boost::bidirectional_traversal_tag> {
+				: public boost::iterator_facade<
+					Iterator,
+					trdk::Position,
+					boost::bidirectional_traversal_tag> {
 				friend class trdk::Strategy::PositionList::ConstIterator;
 			public:
 				class Implementation;
@@ -58,10 +58,10 @@ namespace trdk {
 			};
 
 			class TRDK_CORE_API ConstIterator
-					: public boost::iterator_facade<
-						ConstIterator,
-						const trdk::Position,
-						boost::bidirectional_traversal_tag> {
+				: public boost::iterator_facade<
+					ConstIterator,
+					const trdk::Position,
+					boost::bidirectional_traversal_tag> {
 				friend class trdk::Strategy::PositionList::Iterator;
 			public:
 				class Implementation;
@@ -191,8 +191,13 @@ namespace trdk {
 
 	protected:
 
+		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
+
+	protected:
+
 		const trdk::StopMode & GetStopMode() const;
 		virtual void OnStopRequest(const trdk::StopMode &);
+
 		void ReportStop();
 
 	private:
@@ -241,14 +246,14 @@ namespace boost {
 namespace std {
 	template<>
 	inline void swap(
-				trdk::Strategy::PositionList::Iterator &lhs,
-				trdk::Strategy::PositionList::Iterator &rhs) {
+			trdk::Strategy::PositionList::Iterator &lhs,
+			trdk::Strategy::PositionList::Iterator &rhs) {
 		lhs.Swap(rhs);
 	}
 	template<>
 	inline void swap(
-				trdk::Strategy::PositionList::ConstIterator &lhs,
-				trdk::Strategy::PositionList::ConstIterator &rhs) {
+			trdk::Strategy::PositionList::ConstIterator &lhs,
+			trdk::Strategy::PositionList::ConstIterator &rhs) {
 		lhs.Swap(rhs);
 	}
 }

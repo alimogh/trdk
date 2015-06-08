@@ -295,6 +295,10 @@ namespace trdk {
 
 		virtual void Test();
 
+	public:
+
+		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
+
 	protected:
 
 		virtual void CreateConnection(const trdk::Lib::IniSectionRef &) = 0;

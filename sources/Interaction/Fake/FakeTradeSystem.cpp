@@ -36,6 +36,10 @@ namespace {
 		pt::time_duration execDelay;
 	};
 
+	typedef boost::shared_mutex SettingsMutex;
+	typedef boost::shared_lock<SettingsMutex> SettingsReadLock;
+	typedef boost::unique_lock<SettingsMutex> SettingsWriteLock;
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -46,13 +50,46 @@ public:
 
 	TradeSystem *m_self;
 
-	boost::mt19937 m_random;
-	boost::uniform_int<size_t> m_executionDelayRange;
-	mutable boost::variate_generator<boost::mt19937, boost::uniform_int<size_t>>
-		m_executionDelayGenerator;
-	boost::uniform_int<size_t> m_reportDelayRange;
-	mutable boost::variate_generator<boost::mt19937, boost::uniform_int<size_t>>
-		m_reportDelayGenerator;
+	struct DelayGenerator {
+
+		boost::mt19937 random;
+		boost::uniform_int<size_t> executionDelayRange;
+		mutable boost::variate_generator<boost::mt19937, boost::uniform_int<size_t>>
+			executionDelayGenerator;
+		boost::uniform_int<size_t> reportDelayRange;
+		mutable boost::variate_generator<boost::mt19937, boost::uniform_int<size_t>>
+			reportDelayGenerator;
+
+		explicit DelayGenerator(const IniSectionRef &conf)
+			: executionDelayRange(
+				conf.ReadTypedKey<size_t>("delay_microseconds.execution.min"),
+				conf.ReadTypedKey<size_t>("delay_microseconds.execution.max")),
+			executionDelayGenerator(random, executionDelayRange),
+			reportDelayRange(
+				conf.ReadTypedKey<size_t>("delay_microseconds.report.min"),
+				conf.ReadTypedKey<size_t>("delay_microseconds.report.max")),
+			reportDelayGenerator(random, reportDelayRange) {
+			//...//
+		}
+
+		void Validate() const {
+			if (
+					executionDelayRange.min() > executionDelayRange.max()
+					|| reportDelayRange.min() > reportDelayRange.max()) {
+				throw ModuleError("Min delay can't be more then max delay");
+			}
+		}
+
+		void Report(TradeSystem::Log &log) const {
+			log.Info(
+				"Execution delay range: %1% - %2%; Report delay range: %3% - %4%.",
+				pt::microseconds(executionDelayRange.min()),
+				pt::microseconds(executionDelayRange.max()),
+				pt::microseconds(reportDelayRange.min()),
+				pt::microseconds(reportDelayRange.max()));
+		}
+
+	};
 
 private:
 
@@ -62,27 +99,20 @@ private:
 
 	typedef std::deque<Order> Orders;
 
-	Context::CurrentTimeChangeSlotConnection m_currentTimeChangeSlotConnection;
+public:
+
+	DelayGenerator m_delayGenerator;
+
+	mutable SettingsMutex m_settingsMutex;
 
 public:
 
 	explicit Implementation(const IniSectionRef &conf)
-			: m_executionDelayRange(
-				conf.ReadTypedKey<size_t>("delay_microseconds.execution.min"),
-				conf.ReadTypedKey<size_t>("delay_microseconds.execution.max")),
-			m_executionDelayGenerator(m_random, m_executionDelayRange),
-			m_reportDelayRange(
-				conf.ReadTypedKey<size_t>("delay_microseconds.report.min"),
-				conf.ReadTypedKey<size_t>("delay_microseconds.report.max")),
-			m_reportDelayGenerator(m_random, m_reportDelayRange),
+			: m_delayGenerator(conf),
 			m_id(1),
 			m_isStarted(0),
 			m_currentOrders(&m_orders1) {
-		if (
-				m_executionDelayRange.min() > m_executionDelayRange.max()
-				|| m_reportDelayRange.min() > m_reportDelayRange.max()) {
-			throw ModuleError("Min delay can't be more then max delay");
-		}
+		m_delayGenerator.Validate();
 	}
 
 	~Implementation() {
@@ -137,6 +167,7 @@ public:
 		Assert(order.callback);
 
 		const auto &now = m_self->GetContext().GetCurrentTime();
+
 		order.execDelay = ChooseExecutionDelay();
 		if (!m_self->GetContext().GetSettings().IsReplayMode()) {
 			const auto callback = order.callback;
@@ -154,6 +185,7 @@ public:
 		}
 
 		const Lock lock(m_mutex);
+
 		if (!m_currentOrders->empty()) {
 			const auto &lastOrder = m_currentOrders->back();
 			order.submitTime = lastOrder.submitTime + lastOrder.execDelay;
@@ -169,11 +201,13 @@ public:
 private:
 	
 	pt::time_duration ChooseExecutionDelay() const {
-		return pt::microseconds(m_executionDelayGenerator());
+		const SettingsReadLock lock(m_settingsMutex);
+		return pt::microseconds(m_delayGenerator.executionDelayGenerator());
 	}
 
 	pt::time_duration ChooseReportDelay() const {
-		return pt::microseconds(m_reportDelayGenerator());
+		const SettingsReadLock lock(m_settingsMutex);
+		return pt::microseconds(m_delayGenerator.reportDelayGenerator());
 	}
 
 private:
@@ -285,6 +319,8 @@ private:
 
 private:
 
+	Context::CurrentTimeChangeSlotConnection m_currentTimeChangeSlotConnection;
+
 	boost::atomic_uintmax_t m_id;
 	bool m_isStarted;
 
@@ -308,12 +344,7 @@ Fake::TradeSystem::TradeSystem(
 	: Base(index, context, tag),
 	m_pimpl(new Implementation(conf)) {
 	m_pimpl->m_self = this;
-	GetLog().Info(
-		"Execution delay range: %1% - %2%; Report delay range: %3% - %4%.",
-		pt::microseconds(m_pimpl->m_executionDelayRange.min()),
-		pt::microseconds(m_pimpl->m_executionDelayRange.max()),
-		pt::microseconds(m_pimpl->m_reportDelayRange.min()),
-		pt::microseconds(m_pimpl->m_reportDelayRange.max()));
+	m_pimpl->m_delayGenerator.Report(GetLog());
 }
 
 Fake::TradeSystem::~TradeSystem() {
@@ -516,6 +547,18 @@ void Fake::TradeSystem::SendCancelOrder(const OrderId &) {
 void Fake::TradeSystem::SendCancelAllOrders(Security &) {
 	AssertFail("Is not implemented.");
 	throw Exception("Method is not implemented");
+}
+
+void Fake::TradeSystem::OnSettingsUpdate(const IniSectionRef &conf) {
+
+	Base::OnSettingsUpdate(conf);
+
+	Implementation::DelayGenerator delayGenerator(conf);
+	delayGenerator.Validate();
+	const SettingsWriteLock lock(m_pimpl->m_settingsMutex);
+	m_pimpl->m_delayGenerator = delayGenerator;
+	delayGenerator.Report(GetLog());
+
 }
 
 //////////////////////////////////////////////////////////////////////////

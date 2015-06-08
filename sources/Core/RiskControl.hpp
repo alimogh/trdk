@@ -130,6 +130,10 @@ namespace trdk {
 				const
 				= 0;
 
+	public:
+
+		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &) = 0;
+
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -246,6 +250,10 @@ namespace trdk {
 				size_t totalWinRatio,
 				size_t operationsCount)
 				const;
+
+	public:
+	
+		void OnSettingsUpdate(const trdk::Lib::Ini &);
 
 	private:
 

@@ -151,10 +151,6 @@ StatService::~StatService() {
 	}
 }
 
-void StatService::UpdateAlogImplSettings(const IniSectionRef &) {
-	//...//
-}
-
 pt::ptime StatService::OnSecurityStart(const Security &security) {
 	const auto &dataIndex = security.GetSource().GetIndex();
 	if (m_data.size() <= dataIndex) {
@@ -607,13 +603,30 @@ void StatService::LogState(
 
 }
 
+void StatService::OnSettingsUpdate(const IniSectionRef &conf) {
+
+	Base::OnSettingsUpdate(conf);
+
+	const auto newEmaSpeedSlow = conf.ReadTypedKey<double>("ema_speed_slow");
+	const auto newEmaSpeedFast = conf.ReadTypedKey<double>("ema_speed_fast");
+	GetLog().Info(
+		"Set EMA speed: Slow %1% -> %2%; Fast %3% -> %4%.",
+		m_emaSpeedSlow,
+		newEmaSpeedSlow,
+		m_emaSpeedFast,
+		newEmaSpeedFast);
+	m_emaSpeedSlow = newEmaSpeedSlow;
+	m_emaSpeedFast = newEmaSpeedFast;
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 TRDK_STRATEGY_FXMB_API
 boost::shared_ptr<Service> CreateTriangulationWithDirectionStatService(
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &configuration) {
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration) {
 	return boost::shared_ptr<Service>(
 		new Twd::StatService(context, tag, configuration));
 }

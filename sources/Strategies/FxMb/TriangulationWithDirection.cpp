@@ -79,6 +79,7 @@ TriangulationWithDirection::TriangulationWithDirection(
 		conf.ReadTypedKey<bool>("allow_leg1_closing")),
 	m_qty(conf.ReadTypedKey<Qty>("invest_amount")),
 	m_trianglesLimit(ReadMaxTrianglesCount(conf, GetLog())),
+	m_trianglesRest(m_trianglesLimit),
 	m_reports(
 		GetContext(),
 		conf.ReadTypedKey<double>("commission"),
@@ -220,7 +221,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 
 	Assert(m_triangle);
 	AssertEq(LEG_UNKNOWN, m_scheduledLeg);
-	AssertLt(0, m_trianglesLimit);
+	AssertLt(0, m_trianglesRest);
 	
 	if (position.IsError()) {
 		Assert(IsBlocked());
@@ -414,8 +415,8 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				m_detectedEcns[Y2].fill(std::numeric_limits<size_t>::max());
 #			endif
 			if (
-					m_trianglesLimit != nTrianglesLimit
-					&& m_trianglesLimit-- <= 1) {
+					m_trianglesRest != nTrianglesLimit
+					&& m_trianglesRest-- <= 1) {
 				GetLog().Info("Executed triangles limit reached.");
 				Block();
 			}
@@ -1022,9 +1023,35 @@ void TriangulationWithDirection::OnCancel(
 	m_triangle.reset();
 }
 
-void TriangulationWithDirection::UpdateAlogImplSettings(
-		const IniSectionRef &) {
-	//...//
+void TriangulationWithDirection::OnSettingsUpdate(const IniSectionRef &conf) {
+
+	Base::OnSettingsUpdate(conf);
+	
+	{
+		const auto newTrianglesLimit = ReadMaxTrianglesCount(conf, GetLog());
+		if (newTrianglesLimit > m_trianglesLimit) {
+			m_trianglesRest += newTrianglesLimit - m_trianglesLimit;
+		} else if (newTrianglesLimit < m_trianglesLimit) {
+			if (m_trianglesLimit - newTrianglesLimit > m_trianglesRest) {
+				m_trianglesRest = 0;
+			} else {
+				m_trianglesRest -= m_trianglesLimit - newTrianglesLimit;
+			}
+		}
+		GetLog().Info(
+			"Set triangles limit: %1% -> %2% (%3%).",
+			m_trianglesLimit,
+			newTrianglesLimit,
+			m_trianglesRest);
+		m_trianglesLimit = newTrianglesLimit;
+	}
+
+	{
+		const auto newQty = conf.ReadTypedKey<Qty>("invest_amount");
+		GetLog().Info("Set invest amount: %1% -> %2%.", m_qty, newQty);
+		m_qty = newQty;
+	}
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

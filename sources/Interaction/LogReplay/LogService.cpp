@@ -205,12 +205,6 @@ public:
 		return false;
 	}
 
-protected:
-
-	virtual void UpdateAlogImplSettings(const IniSectionRef &) {
-		//.../
-	}
-
 private:
 
 	std::vector<boost::shared_ptr<std::ofstream>> m_files;

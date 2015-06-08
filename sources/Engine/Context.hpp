@@ -29,15 +29,16 @@ namespace trdk { namespace Engine {
 				trdk::Context::TradingLog &,
 				const trdk::Settings &,
 				const boost::posix_time::ptime &startTime,
-				const boost::shared_ptr<const trdk::Lib::Ini> &conf);
+				const trdk::Lib::Ini &);
 		virtual ~Context();
 
 	public:
 
-		void Start();
+		void Start(const trdk::Lib::Ini &);
 		void Stop(const trdk::StopMode &);
 
 		void Add(const trdk::Lib::Ini &);
+		void Update(const trdk::Lib::Ini &);
 
 		virtual void SyncDispatching();
 
@@ -57,6 +58,8 @@ namespace trdk { namespace Engine {
 		virtual size_t GetTradeSystemsCount() const;
 		virtual const trdk::TradeSystem & GetTradeSystem(size_t index) const;
 		virtual trdk::TradeSystem & GetTradeSystem(size_t index);
+		virtual void ForEachTradeSystem(
+				const boost::function<bool (trdk::TradeSystem &)> &);
 
 	protected:
 

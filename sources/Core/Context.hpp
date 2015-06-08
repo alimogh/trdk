@@ -162,6 +162,11 @@ namespace trdk {
 		  * @throw trdk::Lib::Exception
 		  */
 		virtual trdk::TradeSystem & GetTradeSystem(size_t index) = 0;
+		//! Applies the given predicate to the each trade system and
+		//! stops if predicate returns false.
+		virtual void ForEachTradeSystem(
+				const boost::function<bool (trdk::TradeSystem &)> &)
+				= 0;
 
 	protected:
 

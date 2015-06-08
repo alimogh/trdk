@@ -343,6 +343,15 @@ protected:
 		return m_tradingLog;
 	}
 
+	void SetSettings(const Settings &newSettings, size_t maxOrdersNumber) {
+		m_settings = newSettings;
+		m_orderTimePoints.resize(maxOrdersNumber);
+	}
+
+	virtual void OnSettingsUpdate(const IniSectionRef &) {
+		m_log.Warn("Failed to update current positions rest!");
+	}
+
 private:
 
 	void CheckNewOrder(
@@ -712,7 +721,7 @@ private:
 	ModuleEventsLog m_log;
 	mutable ModuleTradingLog m_tradingLog;
 	
-	const Settings m_settings;
+	Settings m_settings;
 
 	FloodControlBuffer m_orderTimePoints;
 
@@ -735,45 +744,78 @@ public:
 			context,
 			name,
 			index,
-			Settings(
-				pt::milliseconds(
-					conf.ReadTypedKey<size_t>(
-						"flood_control.orders.period_ms")),
-				conf.ReadTypedKey<double>("pnl.loss"),
-				conf.ReadTypedKey<double>("pnl.profit"),
-				conf.ReadTypedKey<uint16_t>(
-					"win_ratio.first_operations_to_skip"),
-				conf.ReadTypedKey<uint16_t>("win_ratio.min")),
+			ReadSettings(conf),
 			conf.ReadTypedKey<size_t>("flood_control.orders.max_number")) {
 		//...//
+	}
+
+	virtual ~GlobalRiskControlScope() {
+		//...//
+	}
+
+	virtual void OnSettingsUpdate(const IniSectionRef &conf) {
+		Base::OnSettingsUpdate(conf);
+		SetSettings(
+			ReadSettings(conf),
+			conf.ReadTypedKey<size_t>("flood_control.orders.max_number"));
+	}
+
+	Settings ReadSettings(const IniSectionRef &conf) {
+		return Settings(
+			pt::milliseconds(
+				conf.ReadTypedKey<size_t>("flood_control.orders.period_ms")),
+			conf.ReadTypedKey<double>("pnl.loss"),
+			conf.ReadTypedKey<double>("pnl.profit"),
+			conf.ReadTypedKey<uint16_t>("win_ratio.first_operations_to_skip"),
+			conf.ReadTypedKey<uint16_t>("win_ratio.min"));
 	}
 
 };
 
 class LocalRiskControlScope : public StandardRiskControlScope {
+
 public:
+
+	typedef StandardRiskControlScope Base;
+
 	explicit LocalRiskControlScope(
 			Context &context,
 			const IniSectionRef &conf,
 			const std::string &name,
 			size_t index)
-		: StandardRiskControlScope(
+		: Base(
 			context,
 			name,
 			index,
-			Settings(
-				pt::milliseconds(
-					conf.ReadTypedKey<size_t>(
-						"risk_control.flood_control.orders.period_ms")),
-				conf.ReadTypedKey<double>("risk_control.pnl.loss"),
-				conf.ReadTypedKey<double>("risk_control.pnl.profit"),
-				conf.ReadTypedKey<uint16_t>(
-					"risk_control.win_ratio.first_operations_to_skip"),
-				conf.ReadTypedKey<uint16_t>("risk_control.win_ratio.min")),
+			ReadSettings(conf),
 			conf.ReadTypedKey<size_t>(
 				"risk_control.flood_control.orders.max_number")) {
 		//...//
 	}
+
+	virtual ~LocalRiskControlScope() {
+		//...//
+	}
+
+	virtual void OnSettingsUpdate(const IniSectionRef &conf) {
+		Base::OnSettingsUpdate(conf);
+		SetSettings(
+			ReadSettings(conf),
+			conf.ReadTypedKey<size_t>("risk_control.flood_control.orders.max_number"));
+	}
+
+	Settings ReadSettings(const IniSectionRef &conf) {
+		return Settings(
+			pt::milliseconds(
+				conf.ReadTypedKey<size_t>(
+					"risk_control.flood_control.orders.period_ms")),
+			conf.ReadTypedKey<double>("risk_control.pnl.loss"),
+			conf.ReadTypedKey<double>("risk_control.pnl.profit"),
+			conf.ReadTypedKey<uint16_t>(
+				"risk_control.win_ratio.first_operations_to_skip"),
+			conf.ReadTypedKey<uint16_t>("risk_control.win_ratio.min"));
+	}
+
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1204,6 +1246,10 @@ void RiskControl::CheckTotalWinRatio(
 	AssertGe(100, totalWinRatio);
 	scope.CheckTotalWinRatio(totalWinRatio, operationsCount);
 	m_pimpl->m_globalScope.CheckTotalWinRatio(totalWinRatio, operationsCount);
+}
+
+void RiskControl::OnSettingsUpdate(const Ini &conf) {
+	m_pimpl->m_globalScope.OnSettingsUpdate(IniSectionRef(conf, "RiskControl"));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -51,7 +51,7 @@ void Server::Run(
 		info.eventsLog.reset(new Engine::Context::Log);
 		const auto &startTime = info.eventsLog->GetTime();
 
-		boost::shared_ptr<IniFile> ini(new IniFile(path));
+		const IniFile ini(path);
 
 		if (enableStdOutLog) {
 			info.eventsLog->EnableStdOut();
@@ -59,8 +59,8 @@ void Server::Run(
 		info.tradingLog.reset(new Engine::Context::TradingLog);
 
 		trdk::Settings settings(
-			ini->ReadBoolKey("General", "is_replay_mode"),
-			ini->ReadFileSystemPath("General", "logs_dir") / id);
+			ini.ReadBoolKey("General", "is_replay_mode"),
+			ini.ReadFileSystemPath("General", "logs_dir") / id);
 
 		fs::create_directories(settings.GetLogsDir());
 		{
@@ -83,7 +83,7 @@ void Server::Run(
 			info.eventsLog->Warn("Replay mode.");
 		}
 		
-		settings.Update(*ini, *info.eventsLog);
+		settings.Update(ini, *info.eventsLog);
 
 		info.engine.reset(
 			new Engine::Context(
@@ -97,7 +97,7 @@ void Server::Run(
 		{
 			const auto &tradingLogFilePath
 				= settings.GetLogsDir() / "trading.log";
-			if (ini->ReadBoolKey("General", "trading_log")) {
+			if (ini.ReadBoolKey("General", "trading_log")) {
 				info.tradingLogFile.reset(
 					new std::ofstream(
 						tradingLogFilePath.string().c_str(),
@@ -116,7 +116,7 @@ void Server::Run(
 			}
 		}
 
-		info.engine->Start();
+		info.engine->Start(ini);
 
 		m_engines.insert(info);
 
@@ -178,7 +178,7 @@ void Server::Update(
 			return;
 		}
 		const IniFile ini(settingsTransaction.GetSettings().GetFilePath());
-		engine.Add(ini);
+		engine.Update(ini);
 	} catch (const trdk::Lib::Exception &ex) {
 		engineIt->eventsLog->Warn(
 			"Failed to update engine context: \"%1%\".",
