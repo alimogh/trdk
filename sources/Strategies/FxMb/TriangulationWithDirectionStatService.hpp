@@ -182,7 +182,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	protected:
 
-		virtual void UpdateAlogImplSettings(const Lib::IniSectionRef &);
+		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
 
 	private:
 
@@ -217,8 +217,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		const boost::posix_time::time_duration m_prev1Duration;
 		const boost::posix_time::time_duration m_prev2Duration;
 		
-		const double m_emaSpeedSlow;
-		const double m_emaSpeedFast;
+		double m_emaSpeedSlow;
+		double m_emaSpeedFast;
 
 		mutable bool m_isLogByPairOn;
 		mutable std::ofstream m_pairLogFile;

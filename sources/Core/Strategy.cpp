@@ -417,9 +417,9 @@ void Strategy::RaiseLevel1UpdateEvent(
 }
 
 void Strategy::RaiseLevel1TickEvent(
-			trdk::Security &security,
-			const boost::posix_time::ptime &time,
-			const Level1TickValue &value) {
+		trdk::Security &security,
+		const boost::posix_time::ptime &time,
+		const Level1TickValue &value) {
 	const Lock lock(GetMutex());
 	if (IsBlocked()) {
 		return;
@@ -428,11 +428,11 @@ void Strategy::RaiseLevel1TickEvent(
 }
 
 void Strategy::RaiseNewTradeEvent(
-			Security &service,
-			const boost::posix_time::ptime &time,
-			ScaledPrice price,
-			Qty qty,
-			OrderSide side) {
+		Security &service,
+		const boost::posix_time::ptime &time,
+		ScaledPrice price,
+		Qty qty,
+		OrderSide side) {
 	const Lock lock(GetMutex());
 	if (IsBlocked()) {
 		return;
@@ -512,9 +512,9 @@ void Strategy::OnPositionMarkedAsCompleted(const Position &position) {
 }
 
 void Strategy::RaiseBookUpdateTickEvent(
-				Security &security,
-				const Security::Book &book,
-				const TimeMeasurement::Milestones &timeMeasurement) {
+		Security &security,
+		const Security::Book &book,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
 	if (IsBlocked()) {
 		return;
@@ -632,7 +632,7 @@ void Strategy::WaitForStop() {
 }
 
 Strategy::PositionUpdateSlotConnection Strategy::SubscribeToPositionsUpdates(
-			const PositionUpdateSlot &slot)
+		const PositionUpdateSlot &slot)
 		const {
 	return m_pimpl->m_positionUpdateSignal.connect(slot);
 }
@@ -645,4 +645,10 @@ const Strategy::PositionList & Strategy::GetPositions() const {
 	return const_cast<Strategy *>(this)->GetPositions();
 }
 
+void Strategy::OnSettingsUpdate(const IniSectionRef &conf) {
+	Consumer::OnSettingsUpdate(conf);
+	m_pimpl->m_riskControlScope->OnSettingsUpdate(conf);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
+

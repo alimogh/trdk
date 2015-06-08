@@ -93,11 +93,6 @@ namespace trdk { namespace Services {
 
 		bool OnNewData(const trdk::Services::MovingAverageService::Point &);
 
-	protected:
-
-		virtual void UpdateAlogImplSettings(
-					const trdk::Lib::IniSectionRef &);
-
 	private:
 
 		class Implementation;

@@ -65,6 +65,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	protected:
 
+		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
 		virtual void OnStopRequest(const trdk::StopMode &);
 
 	private:
@@ -93,17 +94,14 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		bool CheckStopRequest(const trdk::StopMode &);
 		bool CheckCurrentStopRequest();
 
-	protected:
-
-		virtual void UpdateAlogImplSettings(const Lib::IniSectionRef &);
-
 	private:
 
 		const size_t m_bookLevelsCount;
 		const bool m_useAdjustedBookForTrades;
 		const bool m_allowLeg1Closing;
-		const Qty m_qty;
+		Qty m_qty;
 		size_t m_trianglesLimit;
+		size_t m_trianglesRest;
 
 		ReportsState m_reports;
 

@@ -85,6 +85,10 @@ private:
 				const {
 			//...//
 		}
+	public:
+		virtual void OnSettingsUpdate(const IniSectionRef &) {
+			//...//
+		}
 	private:
 		const std::string m_name;
 	};

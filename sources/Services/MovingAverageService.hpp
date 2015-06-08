@@ -90,11 +90,6 @@ namespace trdk { namespace Services {
 
 		bool OnNewBar(const trdk::Services::BarService::Bar &);
 
-	protected:
-
-		virtual void UpdateAlogImplSettings(
-					const trdk::Lib::IniSectionRef &);
-
 	private:
 
 		class Implementation;

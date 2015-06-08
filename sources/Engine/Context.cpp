@@ -16,9 +16,12 @@
 #include "Core/Settings.hpp"
 #include "Core/Terminal.hpp"
 #include "Core/Strategy.hpp"
+#include "Core/Service.hpp"
+#include "Core/Observer.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradeSystem.hpp"
 #include "Core/TradingLog.hpp"
+#include "Core/RiskControl.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -33,7 +36,7 @@ namespace {
 
 	template<typename T>
 	size_t GetModulesCount(
-				const std::map<std::string, std::vector<T>> &modulesByTag) {
+			const std::map<std::string, std::vector<T>> &modulesByTag) {
 		size_t result = 0;
 		foreach (const auto &modules, modulesByTag) {
 			result += modules.second.size();
@@ -71,8 +74,6 @@ public:
 
 	Engine::Context &m_context;
 
-	boost::shared_ptr<const Lib::Ini> m_conf;
-
 	const fs::path m_fileLogsDir;
 
 	ModuleList m_modulesDlls;
@@ -84,13 +85,10 @@ public:
 
  public:
 
-	explicit Implementation(
-				Engine::Context &context,
-				const boost::shared_ptr<const Lib::Ini> &conf)
-			: m_context(context),
-			m_conf(conf) {
+	explicit Implementation(Engine::Context &context, const Lib::Ini &conf)
+		: m_context(context) {
 		BootContext(
-			*m_conf,
+			conf,
 			m_context,
 			m_tradeSystems,
 			m_marketDataSources);
@@ -119,8 +117,8 @@ public:
 public:
 
 	explicit State(Context &context)
-			: context(context),
-			subscriptionsManager(context) {
+		: context(context),
+		subscriptionsManager(context) {
 		//...//	
 	}
 
@@ -179,8 +177,8 @@ Engine::Context::Context(
 		Context::TradingLog &tradingLog,
 		const trdk::Settings &settings,
 		const pt::ptime &startTime,
-		const boost::shared_ptr<const Lib::Ini> &conf)
-	: Base(fooSlotConnection, log, tradingLog, settings, *conf, startTime) {
+		const Lib::Ini &conf)
+	: Base(fooSlotConnection, log, tradingLog, settings, conf, startTime) {
 	m_pimpl = new Implementation(*this, conf);
 }
 
@@ -189,7 +187,7 @@ Engine::Context::~Context() {
 	delete m_pimpl;
 }
 
-void Engine::Context::Start() {
+void Engine::Context::Start(const Lib::Ini &conf) {
 	
 	GetLog().Debug("Starting...");
 	Assert(!m_pimpl->m_state);
@@ -206,7 +204,7 @@ void Engine::Context::Start() {
 		new Implementation::State(*this));
 	try {
 		BootContextState(
-			*m_pimpl->m_conf,
+			conf,
 			*this,
 			state->subscriptionsManager,
 			state->strategies,
@@ -226,7 +224,7 @@ void Engine::Context::Start() {
 
 		auto &tradeSystem = *tradeSystemRef.tradeSystem;
 		const IniSectionRef conf(
-			*m_pimpl->m_conf,
+			conf,
 			GetMarketDataSourceSectionName(tradeSystemRef.tradeSystem));
 
 		try {
@@ -258,7 +256,7 @@ void Engine::Context::Start() {
 			try {
 				source.Connect(
 					IniSectionRef(
-						*m_pimpl->m_conf,
+						conf,
 						GetMarketDataSourceSectionName(source)));
 			} catch (const Interactor::ConnectError &ex) {
 				boost::format message(
@@ -322,9 +320,9 @@ void Engine::Context::Stop(const StopMode &stopMode) {
 	{
 		std::vector<Strategy *> stoppedStrategies;
 		foreach (auto &tagetStrategies, m_pimpl->m_state->strategies) {
-			foreach (auto &strategy, tagetStrategies.second) {
-				strategy->Stop(stopMode);
-				stoppedStrategies.push_back(&*strategy);
+			foreach (auto &strategyHolder, tagetStrategies.second) {
+				strategyHolder.module->Stop(stopMode);
+				stoppedStrategies.push_back(&*strategyHolder.module);
 			}
 		}
 		foreach (Strategy *strategy, stoppedStrategies) {
@@ -368,13 +366,58 @@ void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
 			try {
 				source.SubscribeToSecurities();
 			} catch (const Lib::Exception &ex) {
-				GetLog().Error(
+				source.GetLog().Error(
 					"Failed to make market data subscription: \"%1%\".",
 					ex);
 				throw Exception("Failed to make market data subscription");
 			}
 			return true;
 		});
+
+}
+
+namespace {
+
+	template<typename Modules> 
+	void UpdateModules(const Lib::Ini &conf, Modules &modules) {
+		foreach (auto &set, modules) {
+			foreach (auto &holder, set.second) {
+				try {
+					holder.module->RaiseSettingsUpdateEvent(
+						IniSectionRef(conf, holder.section));
+				} catch (const Lib::Exception &ex) {
+					holder.module->GetLog().Error(
+						"Failed to update settings: \"%1%\".",
+						ex);
+				}
+			}
+		}
+	}
+	
+}
+
+void Engine::Context::Update(const Lib::Ini &conf) {
+	
+	GetLog().Info("Updating setting...");
+
+	GetRiskControl().OnSettingsUpdate(conf);
+
+	foreach (auto &tradeSystem, m_pimpl->m_tradeSystems) {
+		try {
+			tradeSystem.tradeSystem->OnSettingsUpdate(
+				IniSectionRef(conf, tradeSystem.section));
+		} catch (const Lib::Exception &ex) {
+			tradeSystem.tradeSystem->GetLog().Error(
+				"Failed to update settings: \"%1%\".",
+				ex);
+		}
+	}
+
+	UpdateModules(conf, m_pimpl->m_state->services);
+	UpdateModules(conf, m_pimpl->m_state->strategies);
+	UpdateModules(conf, m_pimpl->m_state->observers);
+
+	GetLog().Debug("Setting update completed.");
 
 }
 
@@ -387,8 +430,8 @@ size_t Engine::Context::GetMarketDataSourcesCount() const {
 }
 
 const MarketDataSource & Engine::Context::GetMarketDataSource(
-				size_t index)
-			const {
+		size_t index)
+		const {
 	return const_cast<Engine::Context *>(this)->GetMarketDataSource(index);
 }
 
@@ -400,7 +443,7 @@ MarketDataSource & Engine::Context::GetMarketDataSource(size_t index) {
 }
 
 void Engine::Context::ForEachMarketDataSource(
-			const boost::function<bool (const MarketDataSource &)> &pred)
+		const boost::function<bool (const MarketDataSource &)> &pred)
 		const {
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
 		size_t i = 0;
@@ -414,7 +457,7 @@ void Engine::Context::ForEachMarketDataSource(
 }
 
 void Engine::Context::ForEachMarketDataSource(
-			const boost::function<bool (MarketDataSource &)> &pred) {
+		const boost::function<bool (MarketDataSource &)> &pred) {
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
 		size_t i = 0;
 #	endif
@@ -439,6 +482,19 @@ TradeSystem & Engine::Context::GetTradeSystem(size_t index) {
 
 const TradeSystem & Engine::Context::GetTradeSystem(size_t index) const {
 	return const_cast<Context *>(this)->GetTradeSystem(index);
+}
+
+void Engine::Context::ForEachTradeSystem(
+		const boost::function<bool (trdk::TradeSystem &)> &pred) {
+#	ifdef BOOST_ENABLE_ASSERT_HANDLER
+		size_t i = 0;
+#	endif
+	foreach (auto &tradeSystem, m_pimpl->m_tradeSystems) {
+		AssertEq(i, tradeSystem.tradeSystem->GetIndex());
+		if (!pred(*tradeSystem.tradeSystem)) {
+			return;
+		}
+	}
 }
 
 Security * Engine::Context::FindSecurity(const Symbol &symbol) {

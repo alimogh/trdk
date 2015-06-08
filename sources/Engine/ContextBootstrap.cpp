@@ -99,8 +99,8 @@ namespace {
 	}
 
 	bool GetTradeSystemSection(
-				const std::string &sectionName,
-				std::string &tagResult) {
+			const std::string &sectionName,
+			std::string &tagResult) {
 		std::list<std::string> subs;
 		boost::split(subs, sectionName, boost::is_any_of("."));
 		if (subs.empty() || subs.size() == 1) {
@@ -271,6 +271,7 @@ private:
 			Assert(tradeSystem);
 			TradeSystemHolder tradeSystemHolder;
 			tradeSystemHolder.tradeSystem = tradeSystem;
+			tradeSystemHolder.section = section;
 			m_tradeSystems.push_back(tradeSystemHolder);
 
 			// ...and can be Market Data Source at the same time:
@@ -724,7 +725,7 @@ private:
 				std::map<std::string /*tag*/, ModuleDll<Module>> &source,
 				std::map<
 						std::string /*tag*/,
-						std::vector<boost::shared_ptr<Module>>> *
+						std::vector<ModuleHolder<Module>>> *
 					result) {
 		
 		if (!result) {
@@ -737,10 +738,12 @@ private:
 			ModuleDll<Module> &moduleDll = module.second;
 			auto &resultTag = (*result)[tag];
 			foreach (auto &instance, moduleDll.symbolInstances) {
-				resultTag.push_back(instance.second);
+				resultTag.push_back(
+					{moduleDll.conf->GetName(), instance.second});
 			}
 			foreach (auto &instance, moduleDll.standaloneInstances) {
-				resultTag.push_back(instance);
+				resultTag.push_back(
+					{moduleDll.conf->GetName(), instance});
 			}
 			m_moduleListResult.insert(moduleDll.dll);
 		}
@@ -800,10 +803,10 @@ private:
 
 	template<typename Module>
 	void InitModule(
-				const IniSectionRef &conf,
-				const std::string &tag,
-				std::map<std::string /* tag */, ModuleDll<Module>> &modules,
-				RequirementsList &requirementList) {
+			const IniSectionRef &conf,
+			const std::string &tag,
+			std::map<std::string /* tag */, ModuleDll<Module>> &modules,
+			RequirementsList &requirementList) {
 
 		typedef ModuleTrait<Module> Trait;
 

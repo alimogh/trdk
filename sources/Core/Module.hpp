@@ -37,10 +37,10 @@ namespace trdk {
 	public:
 
 		explicit Module(
-					trdk::Context &,
-					const std::string &typeName,
-					const std::string &name,
-					const std::string &tag);
+				trdk::Context &,
+				const std::string &typeName,
+				const std::string &name,
+				const std::string &tag);
 		virtual ~Module();
 
 	public:
@@ -66,19 +66,17 @@ namespace trdk {
 
 	public:
 
+		void RaiseSettingsUpdateEvent(const trdk::Lib::IniSectionRef &);
+
 		virtual void OnServiceStart(const trdk::Service &);
-
-	public:
-
-		void UpdateSettings(const trdk::Lib::IniSectionRef &);
 
 	protected:
 
-		virtual void UpdateAlogImplSettings(
-					const trdk::Lib::IniSectionRef &)
-				= 0;
-
 		Mutex & GetMutex() const;
+
+	protected:
+
+		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
 
 	private:
 
@@ -98,10 +96,10 @@ public:
 	class ConstIterator;
 		
 	class TRDK_CORE_API Iterator
-			: public boost::iterator_facade<
-				Iterator,
-				trdk::Security,
-				boost::bidirectional_traversal_tag> {
+		: public boost::iterator_facade<
+			Iterator,
+			trdk::Security,
+			boost::bidirectional_traversal_tag> {
 		friend class trdk::Module::SecurityList::ConstIterator;
 	public:
 		class Implementation;
@@ -124,10 +122,10 @@ public:
 	};
 
 	class TRDK_CORE_API ConstIterator
-			: public boost::iterator_facade<
-				ConstIterator,
-				const trdk::Security,
-				boost::bidirectional_traversal_tag> {
+		: public boost::iterator_facade<
+			ConstIterator,
+			const trdk::Security,
+			boost::bidirectional_traversal_tag> {
 		friend class trdk::Module::SecurityList::Iterator;
 	public:
 		class Implementation;
@@ -175,8 +173,8 @@ public:
 
 namespace std {
 	TRDK_CORE_API std::ostream & operator <<(
-				std::ostream &,
-				const trdk::Module &);
+			std::ostream &,
+			const trdk::Module &);
 }
 
 //////////////////////////////////////////////////////////////////////////

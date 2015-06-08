@@ -701,11 +701,6 @@ const pt::time_duration & BarService::GetBarSize() const {
 	return m_pimpl->m_barSize;
 }
 
-void BarService::UpdateAlogImplSettings(
-			const IniSectionRef &configuration) {
-	m_pimpl->ReopenLog(configuration);
-}
-
 const BarService::Bar & BarService::GetBar(size_t index) const {
 	if (index >= GetSize()) {
 		throw BarDoesNotExistError(

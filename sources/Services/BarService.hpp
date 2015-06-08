@@ -166,11 +166,6 @@ namespace trdk { namespace Services {
 					size_t numberOfBars)
 				const;
 
-	protected:
-
-		virtual void UpdateAlogImplSettings(
-					const trdk::Lib::IniSectionRef &);
-
 	private:
 
 		class Implementation;

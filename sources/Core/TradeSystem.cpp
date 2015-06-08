@@ -1032,6 +1032,10 @@ void TradeSystem::Test() {
 		"Trading system does not support testing");
 }
 
+void TradeSystem::OnSettingsUpdate(const IniSectionRef &) {
+	//...//
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 std::ostream & std::operator <<(

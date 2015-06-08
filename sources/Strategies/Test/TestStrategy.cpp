@@ -88,12 +88,6 @@ namespace trdk { namespace Strategies { namespace Test {
 			//...//
 		}
 
-	protected:
-		
-		virtual void UpdateAlogImplSettings(const Lib::IniSectionRef &) {
-			//...//
-		}
-
 	private:
 
 		const bool m_enabled;

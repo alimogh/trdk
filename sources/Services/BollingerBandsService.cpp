@@ -314,10 +314,6 @@ BollingerBandsService::GetHistoryPointByReversedIndex(
 	return (*m_pimpl->m_history)[m_pimpl->m_history->GetSize() - index - 1];
 }
 
-void BollingerBandsService::UpdateAlogImplSettings(const IniSectionRef &) {
-	//...//
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef BOOST_WINDOWS

@@ -250,13 +250,17 @@ std::string Module::GetRequiredSuppliers() const {
 	return std::move(std::string());
 }
 
-void Module::UpdateSettings(const IniSectionRef &ini) {
-	const Lock lock(GetMutex());
-	UpdateAlogImplSettings(ini);
-}
-
 void Module::OnServiceStart(const Service &) {
 	//...//
+}
+
+void Module::OnSettingsUpdate(const trdk::Lib::IniSectionRef &) {
+	//...//
+}
+
+void Module::RaiseSettingsUpdateEvent(const IniSectionRef &conf) {
+	const Lock lock(GetMutex());
+	OnSettingsUpdate(conf);
 }
 
 namespace {
