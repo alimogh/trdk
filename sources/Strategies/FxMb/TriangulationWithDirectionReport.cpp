@@ -597,7 +597,12 @@ void TriangleReport::ReportAction(
 					m_state.pnl->stat.losersTime(time);
 				}
 
-				record % ' ';
+				{
+					const auto time
+						= m_triangle.GetStrategy().GetContext().GetCurrentTime();
+					record % time;
+					foo.dateAndLogs = boost::lexical_cast<std::string>(time);
+				}
 				
 				if (!isWinner) {
 					record % ' ' % ' ';
