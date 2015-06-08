@@ -656,11 +656,27 @@ void Settings::StrategyTransaction::OnKeyStore(
 		std::string &value)
 		const {
 
+	bool isTs = false;
+
 	KeyMapping::FileSource source = KeyMapping::numberOfFileSources;
 	if (boost::istarts_with(section, "Strategy.")) {
 		source = KeyMapping::FS_STRATEGY;
 	} else if (boost::istarts_with(section, "Service.")) {
 		source = KeyMapping::FS_SERVICE;
+	} else if (boost::istarts_with(section, "TradeSystem.")) {
+		if (key == "delay_microseconds.execution.min") {
+			isTs = true;
+			value = m_clientSettings.find("Sensitivity")->second.find("lag.execution.min")->second;
+		} else if (key == "delay_microseconds.execution.max") {
+			isTs = true;
+			value = m_clientSettings.find("Sensitivity")->second.find("lag.execution.max")->second;
+		} else if (key == "delay_microseconds.report.min") {
+			isTs = true;
+			value = m_clientSettings.find("Sensitivity")->second.find("lag.report.min")->second;
+		} else if (key == "delay_microseconds.report.max") {
+			isTs = true;
+			value = m_clientSettings.find("Sensitivity")->second.find("lag.report.max")->second;
+		}  
 	} else {
 		source = KeyMapping::FS_DIRECT;
 	}
@@ -857,10 +873,15 @@ void Settings::LoadClientSettings(const WriteLock &) {
 		}
 		{
 			auto &sensitivity = group["Sensitivity"];
-			sensitivity["lag.execution.min"] = "150";
-			sensitivity["lag.execution.max"] = "200";
-			sensitivity["lag.report.min"] = "50000";
-			sensitivity["lag.report.max"] = "300000";
+			const IniSectionRef iniSection(ini, "TradeSystem.Hotspot");
+			sensitivity["lag.execution.min"]
+				= iniSection.ReadKey("delay_microseconds.execution.min");
+			sensitivity["lag.execution.max"]
+				= iniSection.ReadKey("delay_microseconds.execution.max");
+			sensitivity["lag.report.min"]
+				= iniSection.ReadKey("delay_microseconds.report.min");
+			sensitivity["lag.report.max"]
+				= iniSection.ReadKey("delay_microseconds.report.max");
 		}
 		{
 			auto &sources = group["Sources"];
