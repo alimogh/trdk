@@ -52,6 +52,8 @@ namespace trdk { namespace EngineServer {
 				trdk::EngineServer::Settings::StrategyTransaction &)
 				= 0;
 
+		virtual void OnDisconnect(Client &) = 0;
+
 	};
 
 } }

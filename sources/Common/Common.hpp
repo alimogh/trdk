@@ -29,6 +29,8 @@
 #	include <boost/atomic.hpp>
 #	include <boost/date_time.hpp>
 #	include <boost/any.hpp>
+#	include <boost/uuid/uuid.hpp>
+#	include <boost/uuid/uuid_io.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Constants.h"

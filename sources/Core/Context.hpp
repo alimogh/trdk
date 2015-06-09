@@ -42,27 +42,47 @@ namespace trdk {
 			CurrentTimeChangeSlot;
 		typedef boost::signals2::connection CurrentTimeChangeSlotConnection;
 
+
+		enum State {
+			STATE_STARTED,
+			STATE_STOPPED_GRACEFULLY,
+			STATE_STOPPED_ERROR,
+			numberOfStates,
+		};
+		typedef void (StateUpdateSlotSignature)(
+				const State &newState,
+				const std::string *message /*= nullptr*/);
+		typedef boost::function<StateUpdateSlotSignature> StateUpdateSlot;
+		typedef boost::signals2::connection StateUpdateConnection;
+
 	public:
 
 		//! @todo !!! remove Foo
 		boost::signals2::signal<FooSlotSignature> &m_fooSlotConnection;
 
 		explicit Context(
-					//! @todo !!! remove Foo
-					boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
-					trdk::Context::Log &,
-					trdk::Context::TradingLog &,
-					const trdk::Settings &,
-					const trdk::Lib::Ini &,
-					const boost::posix_time::ptime &startTime);
+				//! @todo !!! remove Foo
+				boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
+				trdk::Context::Log &,
+				trdk::Context::TradingLog &,
+				const trdk::Settings &,
+				const trdk::Lib::Ini &,
+				const boost::posix_time::ptime &startTime);
 		virtual ~Context();
 
 	public:
 
-
-
 		trdk::Context::Log & GetLog() const throw();
 		trdk::Context::TradingLog & GetTradingLog() const throw();
+
+		//! Subscribes to state changes.
+		StateUpdateConnection SubscribeToStateUpdate(
+				const StateUpdateSlot &)
+				const;
+		//! Raises state update event.
+		void RaiseStateUpdate(const State &);
+		//! Raises state update event with message.
+		void RaiseStateUpdate(const State &, const std::string &message);
 
 		trdk::Lib::TimeMeasurement::Milestones StartStrategyTimeMeasurement()
 				const;
@@ -94,7 +114,8 @@ namespace trdk {
 		  * @sa SetCurrentTime
 		  */
 		CurrentTimeChangeSlotConnection SubscribeToCurrentTimeChange(
-				const CurrentTimeChangeSlot &);
+				const CurrentTimeChangeSlot &)
+				const;
 
 		//! Waits until each of dispatching queue will be empty (but not all
 		//! at the same moment).
@@ -122,9 +143,9 @@ namespace trdk {
 		  * @throw trdk::Lib::Exception
 		  */
 		virtual const trdk::MarketDataSource & GetMarketDataSource(
-						size_t index)
-					const
-					= 0;
+				size_t index)
+				const
+				= 0;
 		//! Returns Market Data Source by index.
 		/** Throws an exception if index in unknown.
 		  * @sa GetMarketDataSourcesCount
@@ -134,14 +155,14 @@ namespace trdk {
 		//! Applies the given predicate to the each market data source and
 		//! stops if predicate returns false.
 		virtual void ForEachMarketDataSource(
-						const boost::function<bool (const trdk::MarketDataSource &)> &)
-					const
-					= 0;
+				const boost::function<bool (const trdk::MarketDataSource &)> &)
+				const
+				= 0;
 		//! Applies the given predicate to the each market data source and
 		//! stops if predicate returns false.
 		virtual void ForEachMarketDataSource(
-						const boost::function<bool (trdk::MarketDataSource &)> &)
-					= 0;
+				const boost::function<bool (trdk::MarketDataSource &)> &)
+				= 0;
 
 		//! Trade Systems count.
 		/** @sa GetTradeSystem
@@ -153,9 +174,9 @@ namespace trdk {
 		  * @throw trdk::Lib::Exception
 		  */
 		virtual const trdk::TradeSystem & GetTradeSystem(
-						size_t index)
-					const
-					= 0;
+				size_t index)
+				const
+				= 0;
 		//! Returns Trade System by index.
 		/** Throws an exception if index in unknown.
 		  * @sa GetTradeSystemsCount
@@ -172,9 +193,9 @@ namespace trdk {
 
 		virtual trdk::Security * FindSecurity(const trdk::Lib::Symbol &) = 0;
 		virtual const trdk::Security * FindSecurity(
-						const trdk::Lib::Symbol &)
-					const
-					= 0;
+				const trdk::Lib::Symbol &)
+				const
+				= 0;
 
 	private:
 

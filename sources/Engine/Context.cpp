@@ -223,12 +223,12 @@ void Engine::Context::Start(const Lib::Ini &conf) {
 	foreach (auto &tradeSystemRef, m_pimpl->m_tradeSystems) {
 
 		auto &tradeSystem = *tradeSystemRef.tradeSystem;
-		const IniSectionRef conf(
+		const IniSectionRef confSection(
 			conf,
 			GetMarketDataSourceSectionName(tradeSystemRef.tradeSystem));
 
 		try {
-			tradeSystem.Connect(conf);
+			tradeSystem.Connect(confSection);
 		} catch (const Interactor::ConnectError &ex) {
 			boost::format message(
 				"Failed to connect to trading system: \"%1%\"");
@@ -242,10 +242,10 @@ void Engine::Context::Start(const Lib::Ini &conf) {
 		}
 
 		const char *const terminalCmdFileKey = "terminal_cmd_file";
-		if (conf.IsKeyExist(terminalCmdFileKey)) {
+		if (confSection.IsKeyExist(terminalCmdFileKey)) {
 			tradeSystemRef.terminal.reset(
 				new Terminal(
-					conf.ReadFileSystemPath(terminalCmdFileKey),
+					confSection.ReadFileSystemPath(terminalCmdFileKey),
 					tradeSystem));
 		}
 

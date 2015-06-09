@@ -170,7 +170,7 @@ public:
 			m_orderTimePoints.capacity(),
 			m_settings.ordersFloodControlPeriod);
 		m_log.Info(
-			"Max profit for scope \"%1%\": %2$f; max loss: %3%.",
+			"Max profit for scope \"%1%\": %2$f; max loss: %3$f.",
 			m_name,
 			m_settings.pnl.second,
 			fabs(m_settings.pnl.first));

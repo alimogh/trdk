@@ -46,6 +46,7 @@ namespace trdk { namespace EngineServer {
 
 		void Start();
 
+		void SendMessage(const std::string &);
 		void SendError(const std::string &);
 
 	private:

@@ -23,6 +23,8 @@
 #	include <boost/date_time/posix_time/posix_time_io.hpp>
 //! @todo !!! remove Foo
 #	include <boost/signals2.hpp>
+//! @todo !!! remove after Foo
+#	include <boost/uuid/uuid.hpp>
 #include "DisableBoostWarningsEnd.h"
 
 #include <iomanip>

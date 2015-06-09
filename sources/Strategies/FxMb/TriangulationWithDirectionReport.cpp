@@ -109,21 +109,24 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ReportsState::Startegy : private boost::noncopyable {
+class ReportsState::Strategy : private boost::noncopyable {
 
 public:
 
 	std::ofstream file;
 	ReportLog log;
 
-	explicit Startegy(Context &context, bool iEnabled) {
+	explicit Strategy(
+			Context &context,
+			const boost::uuids::uuid &strategyId,
+			bool iEnabled) {
 
 		if (!iEnabled) {
 			return;
 		}
 
 		const pt::ptime &now = context.GetStartTime();
-		boost::format fileName("s_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.log");
+		boost::format fileName("%1%%2$02d%3$02d_%4$02d%5$02d%6$02d.log");
 		fileName
 			% now.date().year()
 			% now.date().month().as_number()
@@ -133,7 +136,7 @@ public:
 			% now.time_of_day().seconds();
 		const auto &logPath
 			= context.GetSettings().GetLogsDir()
-				/ "strategy"
+				/ boost::lexical_cast<std::string>(strategyId)
 				/ fileName.str();
 		
 		context.GetLog().Info("Triangles log: %1%.", logPath);
@@ -218,8 +221,8 @@ class ReportsState::Pnl : private boost::noncopyable {
 
 public:
 
-	std::ofstream file;
-	ReportLog log;
+	static std::ofstream file;
+	static ReportLog log;
 
 	const double comission;
 
@@ -274,23 +277,27 @@ public:
 			return;
 		}
 
-		const auto &logPath = context.GetSettings().GetLogsDir() / "pnl.log";
-		context.GetLog().Info("PnL log: %1%.", logPath);
-			
-		const bool isNewFile = !fs::exists(logPath);
-		if (isNewFile) {
-			fs::create_directories(logPath.branch_path());
-		}
-			
-		file.open(logPath.string().c_str(), std::ios::app | std::ios::ate);
-		if (!file) {
-			throw ModuleError("Failed to open PnL log file");
-		}
-		
-		log.EnableStream(file);
+		if (!file.is_open()) {
 
-		if (isNewFile) {
-			WriteHead();
+			const auto &logPath = context.GetSettings().GetLogsDir() / "pnl.log";
+			context.GetLog().Info("PnL log: %1%.", logPath);
+			
+			const bool isNewFile = !fs::exists(logPath);
+			if (isNewFile) {
+				fs::create_directories(logPath.branch_path());
+			}
+			
+			file.open(logPath.string().c_str(), std::ios::app | std::ios::ate);
+			if (!file) {
+				throw ModuleError("Failed to open PnL log file");
+			}
+		
+			log.EnableStream(file);
+
+			if (isNewFile) {
+				WriteHead();
+			}
+
 		}
 	
 	}
@@ -299,43 +306,38 @@ public:
 		log.Write(
 			[](ReportRecord &record) {
 				record
-					%	"Date and logs #"
-					%	"Triangle ID (winner)"
-					%	"Winners"
-					%	"Triangle ID (loser)"
-					%	"Losers"
+					%	"Time"
+					%	"Strategy"
+					%	"Triangle ID"
+					%	"P&L"
 					%	"Triangle time"
 					%	"Avg winners"
 					%	"Avg winners time"
 					%	"Avg losers"
 					%	"Avg losers time"
+					%	"Avg time"
 					%	"# of winners"
 					%	"# of losers"
 					%	"% of winners"
-					%	"Avg time"
-					%	"Cancel ID (winner)"
-					%	"Winners"
-					%	"Cancel ID (loser)"
-					%	"Losers"
-					%	"Avg winners"
-					%	"Avg losers"
-					%	"# of winners"
-					%	"# of losers"
-					%	"P & L with commissions"
-					%	"P & L without commissions"
-					%	"Commission";
+					%	"Total P&L with commissions"
+					%	"Total P&L without commissions"
+					%	"Total commission";
 			});
 	}
 
 };
 
+std::ofstream ReportsState::Pnl::file;
+ReportLog ReportsState::Pnl::log;
+
 ReportsState::ReportsState(
 		Context &context,
+		const boost::uuids::uuid &strategyId,
 		double comission,
 		bool enableStrategyLog,
 		bool enablePriceUpdates,
 		bool enablePnlLog)
-	: strategy(new Startegy(context, enableStrategyLog)),
+	: strategy(new Strategy(context, strategyId, enableStrategyLog)),
 	pnl(new Pnl(context, enablePnlLog, comission)),
 	enablePriceUpdates(enablePriceUpdates) {
 }
@@ -554,7 +556,20 @@ void TriangleReport::ReportAction(
 			}
 		});
 
-	Foo foo = {};
+	Foo foo = {
+		m_triangle.GetStrategy().GetContext().GetCurrentTime(),
+		m_triangle.GetStrategy().GetId(),
+		m_triangle.GetId(),
+		yExecuted,
+	};
+
+	const auto &fooTotals = [&]() {
+		const auto pnl
+			= m_state.pnl->stat.winnersPnl + m_state.pnl->stat.losersPnl;
+		foo.totalPnlWithCommissions = pnl - m_state.pnl->stat.comission;
+		foo.totalPnlWithoutCommissions = pnl;
+		foo.totalCommission = m_state.pnl->stat.comission;
+	};
 
 	const auto &writePnl = [&](ReportRecord &record) {
 		const auto pnl
@@ -563,9 +578,6 @@ void TriangleReport::ReportAction(
 			% (pnl - m_state.pnl->stat.comission)
 			% pnl
 			% m_state.pnl->stat.comission;
-		foo.pnlWithCommissions = pnl - m_state.pnl->stat.comission;
-		foo.pnlWithoutCommissions = pnl;
-		foo.commission = m_state.pnl->stat.comission;
 	};
 		
 	if (isTriangleCompleted) {
@@ -597,33 +609,20 @@ void TriangleReport::ReportAction(
 					m_state.pnl->stat.losersTime(time);
 				}
 
-				{
-					const auto time
-						= m_triangle.GetStrategy().GetContext().GetCurrentTime();
-					record % time;
-					foo.dateAndLogs = boost::lexical_cast<std::string>(time);
-				}
-				
-				if (!isWinner) {
-					record % ' ' % ' ';
-					foo.triangleIdLoser = m_triangle.GetId();
-					foo.losers = yExecuted;
-				}
-				record % m_triangle.GetId() % yExecuted;
-				if (isWinner) {
-					record % ' ' % ' ';
-					foo.triangleIdWinner = m_triangle.GetId();
-					foo.winners = yExecuted;
-				}
-				record % time; 
-				foo.triangleTime = pt::to_iso_string(time);
+				record
+					% foo.time
+					% m_triangle.GetStrategy().GetTitle()
+					% m_triangle.GetId()
+					% yExecuted
+					% time; 
+				foo.triangleTime = time;
 
 				if (accs::count(m_state.pnl->stat.winners) > 0) {
 					record 
 						% accs::mean(m_state.pnl->stat.winners)
 						% accs::mean(m_state.pnl->stat.winnersTime);
 					foo.avgWinners = accs::mean(m_state.pnl->stat.winners);
-					foo.avgWinnersTime = pt::to_simple_string(accs::mean(m_state.pnl->stat.winnersTime));
+					foo.avgWinnersTime = accs::mean(m_state.pnl->stat.winnersTime);
 					trianglesCount
 						= accs::count(m_state.pnl->stat.winners)
 							+ accs::count(m_state.pnl->stat.losers);
@@ -638,25 +637,27 @@ void TriangleReport::ReportAction(
 						% accs::mean(m_state.pnl->stat.losers)
 						% accs::mean(m_state.pnl->stat.losersTime);
 					foo.avgLosers = accs::mean(m_state.pnl->stat.losers);
-					foo.avgLosersTime = pt::to_simple_string(accs::mean(m_state.pnl->stat.losersTime));
+					foo.avgLosersTime = accs::mean(m_state.pnl->stat.losersTime);
 				} else {
 					record % ' ' % ' ';
 				}
+
+				{
+					const auto &avgTime = accs::mean(m_state.pnl->stat.time);
+					record % avgTime;
+					foo.avgTime = avgTime;
+				}
+
 				record
 					% accs::count(m_state.pnl->stat.winners)
 					% accs::count(m_state.pnl->stat.losers)
-					% winningPercentage % '\0' % '%'
-					% accs::mean(m_state.pnl->stat.time);
+					% winningPercentage % '\0' % '%';
 				foo.numberOfWinners = accs::count(m_state.pnl->stat.winners);
 				foo.numberOfLosers = accs::count(m_state.pnl->stat.losers);
 				foo.percentOfWinners = winningPercentage;
-				foo.avgTime = pt::to_simple_string(accs::mean(m_state.pnl->stat.time));
 				
-				for (auto i = 0; i < 8; ++i) {
-					record % ' ';
-				}
-
 				writePnl(record);
+				fooTotals();
 
 			});
 
@@ -670,7 +671,7 @@ void TriangleReport::ReportAction(
 			context.m_fooSlotConnection(foo);
 			riskControl.CheckTotalPnl(
 				strategy.GetRiskControlScope(),
-				foo.pnlWithCommissions);
+				foo.totalPnlWithCommissions);
 			riskControl.CheckTotalWinRatio(
 				strategy.GetRiskControlScope(),
 				winningPercentage,
@@ -679,56 +680,18 @@ void TriangleReport::ReportAction(
 
 	} else if (isTriangleCanceled) {
 
-		m_state.pnl->log.Write(
-			[&](ReportRecord &record) {
-
-				m_state.pnl->stat.comission += m_state.pnl->comission * 2;
-			
-				const bool isWinner = yExecuted >= 1;
-				if (isWinner) {
-					m_state.pnl->stat.winnersCancels(yExecuted);
-					m_state.pnl->stat.winnersPnl += yExecuted - 1;
-				} else {
-					m_state.pnl->stat.losersCancels(yExecuted);
-					m_state.pnl->stat.losersPnl += yExecuted - 1;
-				}
-
-				{
-					const auto skipCount = isWinner ? 9 : 9 + 2;
-					for (auto i = 0; i < skipCount; ++i) {
-						record % ' ';
-					}
-				}
-
-				record % m_triangle.GetId() % yExecuted;
-
-				if (isWinner) {
-					record % ' ' % ' ';
-					record % accs::mean(m_state.pnl->stat.winnersCancels);
-					record % ' ';
-					record % accs::count(m_state.pnl->stat.winnersCancels);
-					record % ' ';
-				} else {
-					record % ' ' % accs::mean(m_state.pnl->stat.losersCancels);
-					record % ' ' % accs::count(m_state.pnl->stat.losersCancels);
-				}
-
-				writePnl(record);
-
-			});
-
-		{
-			//! @todo see TRDK-40
-			Strategy &strategy
-				= const_cast<TriangulationWithDirection &>(
-					m_triangle.GetStrategy());
-			Context &context = strategy.GetContext();
-			RiskControl &riskControl = context.GetRiskControl();
-			context.m_fooSlotConnection(foo);
-			riskControl.CheckTotalPnl(
-				strategy.GetRiskControlScope(),
-				foo.pnlWithCommissions);
-		}
+		fooTotals();
+		
+		//! @todo see TRDK-40
+		Strategy &strategy
+			= const_cast<TriangulationWithDirection &>(
+				m_triangle.GetStrategy());
+		Context &context = strategy.GetContext();
+		RiskControl &riskControl = context.GetRiskControl();
+		context.m_fooSlotConnection(foo);
+		riskControl.CheckTotalPnl(
+			strategy.GetRiskControlScope(),
+			foo.totalPnlWithCommissions);
 
 	}
 

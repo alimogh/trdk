@@ -286,6 +286,8 @@ public:
 public:
 
 	Strategy &m_strategy;
+	const boost::uuids::uuid m_id;
+	const std::string m_title;
 
 	Strategy::TradingLog m_tradingLog;
 
@@ -306,6 +308,8 @@ public:
 
 	explicit Implementation(Strategy &strategy, const IniSectionRef &conf)
 		: m_strategy(strategy),
+		m_id(boost::uuids::string_generator()(conf.ReadKey("id"))),
+		m_title(conf.ReadKey("title")),
 		m_isBlocked(false),
 		m_tradingLog(
 			m_strategy.GetTag(),
@@ -348,6 +352,14 @@ Strategy::~Strategy() {
 		AssertFailNoException();
 	}
 	delete m_pimpl;
+}
+
+const boost::uuids::uuid & Strategy::GetId() const {
+	return m_pimpl->m_id;
+}
+
+const std::string & Strategy::GetTitle() const {
+	return m_pimpl->m_title;
 }
 
 RiskControlScope & Strategy::GetRiskControlScope() {

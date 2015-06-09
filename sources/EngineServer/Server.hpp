@@ -59,7 +59,7 @@ namespace trdk { namespace EngineServer {
 
 		bool IsStarted(const std::string &id) const;
 
-		void Run(
+		trdk::Context & Run(
 				boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
 				const std::string &id,
 				const boost::filesystem::path &,
