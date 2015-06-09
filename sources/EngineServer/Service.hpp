@@ -19,6 +19,12 @@ namespace trdk { namespace EngineServer {
 
 	class Service : public ClientRequestHandler {
 
+	private:
+
+		typedef boost::shared_mutex ConnectionsMutex;
+		typedef boost::shared_lock<ConnectionsMutex> ConnectionsReadLock;
+		typedef boost::unique_lock<ConnectionsMutex> ConnectionsWriteLock;
+
 	public:
 
 		explicit Service(
@@ -62,8 +68,14 @@ namespace trdk { namespace EngineServer {
 		void HandleNewClient(
 				const boost::shared_ptr<Client> &,
 				const boost::system::error_code &);
+		virtual void OnDisconnect(Client &);
 
 		void CheckEngineIdExists(const std::string &id) const;
+
+		void OnContextStateChanges(
+				trdk::Context &,
+				const trdk::Context::State &,
+				const std::string *message = nullptr);
 
 	private:
 
@@ -82,6 +94,9 @@ namespace trdk { namespace EngineServer {
 		boost::thread m_thread;
 
 		boost::signals2::signal<FooSlotSignature> m_fooSlotConnection;
+
+		ConnectionsMutex m_connectionsMutex;
+		std::set<Client *> m_connections;
 
 	};
 

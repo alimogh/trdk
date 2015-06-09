@@ -265,6 +265,8 @@ public:
 	pt::ptime m_customCurrentTime;
 	boost::signals2::signal<CurrentTimeChangeSlotSignature>
 		m_customCurrentTimeChangeSignal;
+
+	boost::signals2::signal<StateUpdateSlotSignature> m_stateUpdateSignal;
 	
 	explicit Implementation(
 			Context &context,
@@ -353,7 +355,9 @@ void Context::SetCurrentTime(const pt::ptime &time, bool signalAboutUpdate) {
 }
 
 Context::CurrentTimeChangeSlotConnection
-Context::SubscribeToCurrentTimeChange(const CurrentTimeChangeSlot &slot) {
+Context::SubscribeToCurrentTimeChange(
+		const CurrentTimeChangeSlot &slot) 
+		const {
 	return m_pimpl->m_customCurrentTimeChangeSignal.connect(slot);
 }
 
@@ -416,6 +420,22 @@ RiskControl & Context::GetRiskControl() {
 
 const RiskControl & Context::GetRiskControl() const {
 	return const_cast<Context *>(this)->GetRiskControl();
+}
+
+Context::StateUpdateConnection Context::SubscribeToStateUpdate(
+		const StateUpdateSlot &slot)
+		const {
+	return m_pimpl->m_stateUpdateSignal.connect(slot);
+}
+
+void Context::RaiseStateUpdate(const State &newState) {
+	m_pimpl->m_stateUpdateSignal(newState, nullptr);
+}
+
+void Context::RaiseStateUpdate(
+		const State &newState,
+		const std::string &message) {
+	m_pimpl->m_stateUpdateSignal(newState, &message);
 }
 
 //////////////////////////////////////////////////////////////////////////

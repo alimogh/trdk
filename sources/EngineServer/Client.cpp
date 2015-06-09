@@ -49,6 +49,7 @@ Client::~Client() {
 		std::cout
 			<< "Closing client connection from " << GetRemoteAddressAsString()
 			<< "..." << std::endl;
+		m_requestHandler.OnDisconnect(*this);
 		m_fooSlotConnection.disconnect();
 	} catch (...) {
 		AssertFailNoException();
@@ -99,6 +100,13 @@ void Client::OnFoo(const Foo &foo) {
 	pnl.set_total_pnl_with_commissions(foo.totalPnlWithCommissions);
 	pnl.set_total_pnl_without_commissions(foo.totalPnlWithoutCommissions);
 	pnl.set_total_commission(foo.totalCommission);
+	Send(message);
+}
+
+void Client::SendMessage(const std::string &text) {
+	ServerData message;
+	message.set_type(ServerData::TYPE_SERVICE_INFO);	
+	message.set_message(text);
 	Send(message);
 }
 

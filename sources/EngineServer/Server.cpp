@@ -28,7 +28,7 @@ bool Server::IsStarted(const std::string &id) const {
 	return m_engines.get<ById>().find(id) != m_engines.get<ById>().end();
 }
 
-void Server::Run(
+Context & Server::Run(
 		boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
 		const std::string &id,
 		const fs::path &path,
@@ -119,6 +119,8 @@ void Server::Run(
 		info.engine->Start(ini);
 
 		m_engines.insert(info);
+
+		return *info.engine;
 
 	} catch (const trdk::Lib::Exception &ex) {
 		if (info.eventsLog) {

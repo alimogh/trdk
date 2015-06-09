@@ -119,12 +119,20 @@ void EngineServer::Service::StartEngine(
 		const std::string &engineId,
 		const std::string &commandInfo) {
 	const auto &settings = GetEngineSettings(engineId);
-	m_server.Run(
+	Context &context = m_server.Run(
 		m_fooSlotConnection,
 		settings.GetEngeineId(),
 		settings.GetFilePath(),
 		false,
 		commandInfo);
+	context.SubscribeToStateUpdate(
+		boost::bind(
+			&Service::OnContextStateChanges,
+			this,
+			boost::ref(context),
+			_1,
+			_2));
+	context.RaiseStateUpdate(Context::STATE_STARTED);
 }
 
 void EngineServer::Service::StopEngine(const std::string &engineId) {
@@ -149,7 +157,11 @@ void EngineServer::Service::HandleNewClient(
 		const boost::shared_ptr<Client> &newConnection,
 		const boost::system::error_code &error) {
 	if (!error) {
+		const ConnectionsWriteLock lock(m_connectionsMutex);
+		auto list(m_connections);
+		list.insert(&*newConnection);
 		newConnection->Start();
+		list.swap(m_connections);
 	} else {
 		//! @todo Write to log
 		std::cerr
@@ -160,10 +172,56 @@ void EngineServer::Service::HandleNewClient(
 	StartAccept();
 }
 
+void EngineServer::Service::OnDisconnect(Client &client) {
+	const ConnectionsWriteLock lock(m_connectionsMutex);
+	m_connections.erase(&client);
+}
+
 void EngineServer::Service::CheckEngineIdExists(const std::string &id) const {
 	if (m_engines.find(id) == m_engines.end()) {
 		boost::format message("Engine with ID \"%1%\" doesn't exist.");
 		message % id;
 		throw EngineServer::Exception(message.str().c_str());
+	}
+}
+
+void EngineServer::Service::OnContextStateChanges(
+		Context &,
+		const Context::State &state,
+		const std::string *updateMessage /*= nullptr*/) {
+	boost::function<void(Client &)> fun;
+	static_assert(Context::numberOfStates == 3, "List changed.");
+	std::string message;
+	switch (state) {
+		case Context::STATE_STARTED:
+			message = updateMessage
+				?	(boost::format("Engine started: %1%.") % *updateMessage).str()
+				:	"Engine started.";
+			fun = [&message](Client &client) {
+				client.SendMessage(message);
+			};
+			break;
+		case Context::STATE_STOPPED_GRACEFULLY:
+			message = updateMessage
+				?	(boost::format("Engine stopped: %1%.") % *updateMessage).str()
+				:	"Engine stopped.";
+			fun = [&message](Client &client) {
+				client.SendMessage(message);
+			};
+			break;
+		case Context::STATE_STOPPED_ERROR:
+		default:
+			message = updateMessage
+				?	(boost::format("Engine stopped with error: %1%.") % *updateMessage).str()
+				:	"Engine stopped with error.";
+			fun = [&message](Client &client) {
+				client.SendError(message);
+			};
+			break;
+
+	}
+	const ConnectionsReadLock lock(m_connectionsMutex);
+	foreach (Client *client, m_connections) {
+		fun(*client);
 	}
 }

@@ -456,12 +456,10 @@ namespace trdk { namespace Engine {
 				const {
 			try {
 				return list.Flush(lock, timeMeasurement);
-			} catch (const trdk::Lib::ModuleError &ex) {
-				const auto &moduleName = list.GetName();
+			} catch (const trdk::Lib::Exception &ex) {
 				m_context.GetLog().Error(
-					"Module error in dispatcher notification task"
-						" \"%1%\": \"%2%\".",
-					moduleName,
+					"Error in dispatcher notification task \"%1%\": \"%2%\".",
+					list.GetName(),
 					ex);
 				throw;
 			} catch (...) {
@@ -1167,7 +1165,9 @@ namespace trdk { namespace Engine {
 				boost::shared_ptr<boost::barrier> startBarrier,
 				EventLists &lists)
 				const {
-			bool isError = false;
+		
+			std::string error;
+		
 			try {
 				m_context.GetLog().Debug(
 					"Dispatcher notification task \"%1%\" started...",
@@ -1197,21 +1197,42 @@ namespace trdk { namespace Engine {
 					sync->newDataCondition.wait(lock);
 					timeMeasurement.Measure(Lib::TimeMeasurement::DM_NEW_DATA);
 				}
+		
+			} catch (const trdk::Lib::Exception &ex) {
+				// error already logged
+				error = ex.what();
 			} catch (...) {
 				// error already logged
-				isError = true;
 				AssertFailNoException();
+				error = "Unknwon error";
 			}
+			
+			try {
+				if (error.empty()) {
+					m_context.RaiseStateUpdate(
+						Context::STATE_STOPPED_GRACEFULLY);
+				} else {
+					m_context.RaiseStateUpdate(
+						Context::STATE_STOPPED_ERROR,
+						error);
+				}
+			} catch (const trdk::Lib::Exception &ex) {
+				m_context.GetLog().Error(
+					"Error context at state update notification \"%1%\".",
+					ex);
+			} catch (...) {
+				AssertFailNoException();
+				throw;
+			}
+
 			m_context.GetLog().Debug(
 				"Dispatcher notification task \"%1%\" stopped.",
 				GetEventListsName(lists));
-			if (isError) {
-				//! @todo: Call engine instance stop instead.
-				exit(1);
-			}
+			
 			if (startBarrier) {
 				startBarrier->wait();
 			}
+		
 		}
 
 	private:
