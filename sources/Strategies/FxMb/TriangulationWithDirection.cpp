@@ -67,9 +67,9 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 
 TriangulationWithDirection::TriangulationWithDirection(
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &conf)
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &conf)
 	: Base(context, "TriangulationWithDirection", tag, conf),
 	m_bookLevelsCount(
 		conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count")),
@@ -82,6 +82,7 @@ TriangulationWithDirection::TriangulationWithDirection(
 	m_trianglesRest(m_trianglesLimit),
 	m_reports(
 		GetContext(),
+		GetId(),
 		conf.ReadTypedKey<double>("commission"),
 		conf.ReadBoolKey("log.strategy"),
 		conf.ReadBoolKey("log.updates"),
@@ -123,7 +124,7 @@ void TriangulationWithDirection::OnServiceStart(const Service &service) {
 	const size_t index
 		= symbol == "EUR/USD"
 			?	PAIR_AB
-			:	symbol == "EUR/JPY"
+			:	symbol == "EUR/JPY" || symbol == "EUR/CHF"
 				?	PAIR_AC
 				:	PAIR_BC;
 	Assert(!m_bestBidAsk[index].service);

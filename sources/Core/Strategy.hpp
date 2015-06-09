@@ -115,6 +115,11 @@ namespace trdk {
 
 	public:
 
+		const boost::uuids::uuid & GetId() const;
+		const std::string & GetTitle() const;
+
+	public:
+
 		trdk::Strategy::TradingLog & GetTradingLog() const throw();
 
 		trdk::RiskControlScope & GetRiskControlScope();

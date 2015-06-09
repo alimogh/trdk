@@ -18,6 +18,7 @@ using namespace trdk::Lib;
 using namespace trdk::EngineServer;
 
 namespace io = boost::asio;
+namespace pt = boost::posix_time;
 namespace pb = google::protobuf;
 
 namespace {
@@ -81,23 +82,23 @@ void Client::OnFoo(const Foo &foo) {
 	ServerData message;
 	message.set_type(ServerData::TYPE_PNL);	
 	Pnl &pnl = *message.mutable_pnl();
-	pnl.set_date_and_logs(foo.dateAndLogs);
-	pnl.set_triangle_id_winner(foo.triangleIdWinner);
-	pnl.set_winners(foo.winners);
-	pnl.set_triangle_id_loser(foo.triangleIdLoser);
-	pnl.set_losers(foo.losers);
-	pnl.set_triangle_time(foo.triangleTime);
+	pnl.set_date(boost::lexical_cast<std::string>(foo.time.date()));
+	pnl.set_time(boost::lexical_cast<std::string>(foo.time.time_of_day()));
+	pnl.set_strategy_id(boost::lexical_cast<std::string>(foo.strategyId));
+	pnl.set_triangle_id(foo.triangleId);
+	pnl.set_pnl(foo.pnl);
+	pnl.set_triangle_time(pt::to_simple_string(foo.triangleTime));
 	pnl.set_avg_winners(foo.avgWinners);
-	pnl.set_avg_winners_time(foo.avgWinnersTime);
+	pnl.set_avg_winners_time(pt::to_simple_string(foo.avgWinnersTime));
 	pnl.set_avg_losers(foo.avgLosers);
-	pnl.set_avg_losers_time(foo.avgLosersTime);
+	pnl.set_avg_losers_time(pt::to_simple_string(foo.avgLosersTime));
+	pnl.set_avg_time(pt::to_simple_string(foo.avgTime));
 	pnl.set_number_of_winners(foo.numberOfWinners);
 	pnl.set_number_of_losers(foo.numberOfLosers);
 	pnl.set_percent_of_winners(foo.percentOfWinners);
-	pnl.set_avg_time(foo.avgTime);
-	pnl.set_pnl_with_commissions(foo.pnlWithCommissions);
-	pnl.set_pnl_without_commissions(foo.pnlWithoutCommissions);
-	pnl.set_commission(foo.commission);
+	pnl.set_total_pnl_with_commissions(foo.totalPnlWithCommissions);
+	pnl.set_total_pnl_without_commissions(foo.totalPnlWithoutCommissions);
+	pnl.set_total_commission(foo.totalCommission);
 	Send(message);
 }
 

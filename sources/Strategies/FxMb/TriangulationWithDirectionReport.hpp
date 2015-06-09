@@ -19,8 +19,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	struct ReportsState : private boost::noncopyable {
 		
-		class Startegy;
-		Startegy *strategy;
+		class Strategy;
+		Strategy *strategy;
 
 		class Pnl;
 		Pnl *pnl;
@@ -29,6 +29,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		ReportsState(
 				Context &,
+				const boost::uuids::uuid &strategyId,
 				double commission,
 				bool enableStrategyLog,
 				bool enablePriceUpdates,

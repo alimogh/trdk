@@ -19,23 +19,22 @@
 
 //! @todo !!! remove Foo
 struct Foo {
-	std::string dateAndLogs;
-	size_t triangleIdWinner;
-	double winners;
-	size_t triangleIdLoser;
-	double losers;
-	std::string triangleTime;
+	boost::posix_time::ptime time;
+	boost::uuids::uuid strategyId;
+	size_t triangleId;
+	double pnl;
+	boost::posix_time::time_duration triangleTime;
 	double avgWinners;
-	std::string avgWinnersTime;
+	boost::posix_time::time_duration avgWinnersTime;
 	double avgLosers;
-	std::string avgLosersTime;
+	boost::posix_time::time_duration avgLosersTime;
+	boost::posix_time::time_duration avgTime;
 	size_t numberOfWinners;
 	size_t numberOfLosers;
 	size_t percentOfWinners;
-	std::string avgTime;
-	double pnlWithCommissions;
-	double pnlWithoutCommissions;
-	double commission;
+	double totalPnlWithCommissions;
+	double totalPnlWithoutCommissions;
+	double totalCommission;
 };
 //! @todo !!! remove Foo
 typedef void (FooSlotSignature)(const Foo &);

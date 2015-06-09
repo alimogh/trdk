@@ -165,7 +165,7 @@ namespace {
 		result.Add(false,	"RiskControl",	"win_ratio.min",									KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"win_ratio.min");
 		result.Add(false,	"RiskControl",	"win_ratio.first_operations_to_skip",				KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"win_ratio.first_operations_to_skip");
 		result.Add(true,	"",				"id",												KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"id");
-		result.Add(true,	"",				"name",												KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"name");
+		result.Add(true,	"",				"title",											KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"name");
 		result.Add(true,	"",				"module",											KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"module");
 		result.Add(true,	"",				"factory",											KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"type");
 		result.Add(true,	"",				"is_enabled",										KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"is_enabled");
@@ -243,7 +243,7 @@ void Settings::Transaction::Set(
 		if (
 				boost::starts_with(m_groupName, "Strategy.")
 				&& sectionName == "General"
-				&& (keyName == "name"
+				&& (keyName == "title"
 					|| keyName == "module"
 					|| keyName == "type"
 					|| keyName == "is_enabled")) {
