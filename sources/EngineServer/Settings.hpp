@@ -25,7 +25,14 @@ namespace trdk { namespace EngineServer {
 				std::unordered_map<std::string /* key */, std::string /* value */>>
 			ClientSettingsGroup;
 
-		typedef std::unordered_map<std::string /* group */, ClientSettingsGroup>
+		struct ClientSettingsTaggedGroup {
+			std::string tag;
+			ClientSettingsGroup settings;
+		};
+
+		typedef std::unordered_map<
+				std::string /* group */,
+				ClientSettingsTaggedGroup>
 			ClientSettings;
 
 	private:
@@ -81,6 +88,7 @@ namespace trdk { namespace EngineServer {
 		protected:
 			const boost::shared_ptr<Settings> m_settings;
 			const std::string m_groupName;
+			const ClientSettingsTaggedGroup &m_source;
 			ClientSettingsGroup m_clientSettings;
 			mutable bool m_hasErrors;
 		private:

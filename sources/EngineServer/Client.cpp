@@ -291,7 +291,7 @@ void Client::SendEngineInfo(const std::string &engineId) {
 			foreach (const auto &group, settings) {
 				auto &messageGroup = *settingsMessage.add_group();
 				messageGroup.set_name(group.first);
-				foreach (const auto &section, group.second) {
+				foreach (const auto &section, group.second.settings) {
 					auto &messageSection = *messageGroup.add_section();
 					messageSection.set_name(section.first);
 					foreach (const auto &key, section.second) {

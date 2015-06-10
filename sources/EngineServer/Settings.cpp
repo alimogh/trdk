@@ -197,6 +197,7 @@ Settings::Transaction::Transaction(
 		const std::string &groupName)
 	: m_settings(settings),
 	m_groupName(groupName),
+	m_source(m_settings->m_clientSettins[m_groupName]),
 	m_hasErrors(false),
 	m_lock(new Settings::WriteLock(m_settings->m_mutex)),
 	m_isCommitted(false) {
@@ -206,6 +207,7 @@ Settings::Transaction::Transaction(
 Settings::Transaction::Transaction(Transaction &&rhs)
 	: m_settings(std::move(rhs.m_settings)),
 	m_groupName(std::move(rhs.m_groupName)),
+	m_source(m_settings->m_clientSettins[m_groupName]),
 	m_clientSettings(std::move(rhs.m_clientSettings)),
 	m_hasErrors(std::move(rhs.m_hasErrors)),
 	m_lock(std::move(rhs.m_lock)),
@@ -225,10 +227,9 @@ void Settings::Transaction::Set(
 	CheckBeforeChange();
 
 	{
-		const auto &group = m_settings->m_clientSettins[m_groupName];
-		const auto &section = group.find(sectionName);
+		const auto &section = m_source.settings.find(sectionName);
 		if (
-				section == group.end()
+				section == m_source.settings.end()
 				|| section->second.find(keyName) == section->second.end()) {
 			boost::format message("Key %1%::%2%::%3% is unknown");
 			message % m_groupName % sectionName % keyName;
@@ -243,7 +244,7 @@ void Settings::Transaction::Set(
 		if (
 				boost::starts_with(m_groupName, "Strategy.")
 				&& sectionName == "General"
-				&& (keyName == "title"
+				&& (keyName == "name"
 					|| keyName == "module"
 					|| keyName == "type"
 					|| keyName == "is_enabled")) {
@@ -273,7 +274,7 @@ void Settings::Transaction::CopyFromActual() {
 		throw EngineServer::Exception(
 			"Settings update transaction is not empty");
 	}
-	m_clientSettings = m_settings->m_clientSettins[m_groupName];
+	m_clientSettings = m_source.settings;
 }
 
 bool Settings::Transaction::Commit() {
@@ -285,9 +286,7 @@ bool Settings::Transaction::Commit() {
 	}
 
 	bool hasChanges = false;
-	foreach (
-			const auto &originalSection,
-			m_settings->m_clientSettins[m_groupName]) {
+	foreach (const auto &originalSection, m_source.settings) {
 		const auto &newSection = m_clientSettings.find(originalSection.first);
 		if (newSection == m_clientSettings.end()) {
 			boost::format message(
@@ -442,7 +441,7 @@ void Settings::EngineTransaction::Validate(
 	
 	if (
 			it->isReadOnly
-			&& value != m_settings->m_clientSettins[m_groupName][section][key]) {
+			&& value != m_source.settings.find(section)->second.find(key)->second) {
 		boost::format message("Settings key %1%::%2% has read-only access");
 		message % section % key;
 		throw OnError(message.str());		
@@ -547,13 +546,13 @@ Settings::StrategyTransaction::StrategyTransaction(
 	//! @todo TRDK-59	Remove workaround for strategy settings applying
 	//!					(also see CopyFromActual and Set):
 	m_clientSettings["General"]["name"]
-		= m_settings->m_clientSettins[m_groupName]["General"]["name"];
+		= m_source.settings.find("General")->second.find("name")->second;
 	m_clientSettings["General"]["module"]
-		= m_settings->m_clientSettins[m_groupName]["General"]["module"];
+		= m_source.settings.find("General")->second.find("module")->second;
 	m_clientSettings["General"]["type"]
-		= m_settings->m_clientSettins[m_groupName]["General"]["type"];
+		= m_source.settings.find("General")->second.find("type")->second;
 	m_clientSettings["General"]["is_enabled"]
-		= m_settings->m_clientSettins[m_groupName]["General"]["is_enabled"];
+		= m_source.settings.find("General")->second.find("is_enabled")->second;
 }
 
 Settings::StrategyTransaction::StrategyTransaction(StrategyTransaction &&rhs)
@@ -564,7 +563,7 @@ Settings::StrategyTransaction::StrategyTransaction(StrategyTransaction &&rhs)
 void Settings::StrategyTransaction::Start() {
 	CheckBeforeChange();
 	const auto &currenctState
-		= m_settings->m_clientSettins[m_groupName]["General"]["is_enabled"];
+		= m_source.settings.find("General")->second.find("is_enabled")->second;
  	if (Ini::ConvertToBoolean(currenctState)) {
 		throw OnError("Strategy already started");
 	}
@@ -574,7 +573,7 @@ void Settings::StrategyTransaction::Start() {
 void Settings::StrategyTransaction::Stop() {
 	CheckBeforeChange();
 	const auto &currenctState
-		= m_settings->m_clientSettins[m_groupName]["General"]["is_enabled"];
+		= m_source.settings.find("General")->second.find("is_enabled")->second;
  	if (!Ini::ConvertToBoolean(currenctState)) {
 		throw OnError("Strategy not started");
 	}
@@ -642,7 +641,7 @@ void Settings::StrategyTransaction::Validate(
 	
 	if (
 			it->isReadOnly
-			&& value != m_settings->m_clientSettins[m_groupName][section][key]) {
+			&& value !=  m_source.settings.find(section)->second.find(key)->second) {
 		boost::format message("Settings key %1%::%2% has read-only access");
 		message % section % key;
 		throw OnError(message.str());		
@@ -660,8 +659,14 @@ void Settings::StrategyTransaction::OnKeyStore(
 
 	KeyMapping::FileSource source = KeyMapping::numberOfFileSources;
 	if (boost::istarts_with(section, "Strategy.")) {
+		if (section != "Strategy." + m_source.tag) {
+			return;
+		}
 		source = KeyMapping::FS_STRATEGY;
 	} else if (boost::istarts_with(section, "Service.")) {
+		if (section != "Service." + m_source.tag) {
+			return;
+		}
 		source = KeyMapping::FS_SERVICE;
 	} else if (boost::istarts_with(section, "TradeSystem.")) {
 		if (key == "delay_microseconds.execution.min") {
@@ -799,14 +804,14 @@ void Settings::LoadClientSettings(const WriteLock &) {
 				KeyMapping::numberOfFileSources == 3,
 				"List changed.");
 			AssertEq(KeyMapping::FS_DIRECT, mapIt->fileSource);
-			to[mapIt->serviceSection][mapIt->serviceKey]
+			to.settings[mapIt->serviceSection][mapIt->serviceKey]
 				= ini.ReadKey(mapIt->fileSection, mapIt->fileKey);
 			++mapIt;
 		} 
 	}
 	{
 		const IniSectionRef from(ini, "RiskControl");
-		auto &to = result["General"]["RiskControl"];
+		auto &to = result["General"].settings["RiskControl"];
 		ini.ForEachKey(
 			from.GetName(),
 			[&](const std::string &key, const std::string &value) -> bool {
@@ -828,11 +833,10 @@ void Settings::LoadClientSettings(const WriteLock &) {
 		if (!boost::istarts_with(sectionName, "Strategy.")) {
 			continue;
 		}
-		const std::string strategyName
-			= sectionName.substr(sectionName.find('.') + 1);
 		const IniSectionRef from(ini, sectionName);
 		const auto &id = from.ReadKey("id");
 		auto &group = result[StrategyIdToSectionName(id)];
+		group.tag = sectionName.substr(sectionName.find('.') + 1);
 
 		const auto &mapIndex = keysMappings.get<ByServiceGroup>();
 		auto mapIt = mapIndex.lower_bound(KeyMapping::GROUP_STRATEGY_TWD);
@@ -848,19 +852,19 @@ void Settings::LoadClientSettings(const WriteLock &) {
 					break;
 				case KeyMapping::FS_SERVICE:
 					AssertEq(std::string(), mapIt->fileSection);
-					group[mapIt->serviceSection][mapIt->serviceKey]
+					group.settings[mapIt->serviceSection][mapIt->serviceKey]
 						= ini.ReadKey(
-							"Service." + strategyName,
+							"Service." + group.tag,
 							mapIt->fileKey);
 					break;
 				case KeyMapping::FS_STRATEGY:
 					AssertEq(std::string(), mapIt->fileSection);
-					group[mapIt->serviceSection][mapIt->serviceKey]
+					group.settings[mapIt->serviceSection][mapIt->serviceKey]
 						= ini.ReadKey(sectionName, mapIt->fileKey);
 					break;
 				case KeyMapping::FS_DIRECT:
 					Assert(!mapIt->fileSection.empty());
-					group[mapIt->serviceSection][mapIt->serviceKey]
+					group.settings[mapIt->serviceSection][mapIt->serviceKey]
 						= ini.ReadKey(mapIt->fileSection, mapIt->fileKey);
 					break;
 			}
@@ -868,11 +872,11 @@ void Settings::LoadClientSettings(const WriteLock &) {
 		} 
 		
 		{
-			auto &general = group["General"];
+			auto &general = group.settings["General"];
 			general["mode"] = "paper";
 		}
 		{
-			auto &sensitivity = group["Sensitivity"];
+			auto &sensitivity = group.settings["Sensitivity"];
 			const IniSectionRef iniSection(ini, "TradeSystem.Hotspot");
 			sensitivity["lag.execution.min"]
 				= iniSection.ReadKey("delay_microseconds.execution.min");
@@ -884,7 +888,7 @@ void Settings::LoadClientSettings(const WriteLock &) {
 				= iniSection.ReadKey("delay_microseconds.report.max");
 		}
 		{
-			auto &sources = group["Sources"];
+			auto &sources = group.settings["Sources"];
 			sources["alpari"] = "false";
 			sources["currenex"] = "false";
 			sources["integral"] = "true";
@@ -894,7 +898,7 @@ void Settings::LoadClientSettings(const WriteLock &) {
 
 		{
 			
-			auto &riskControl = group["RiskControl"];
+			auto &riskControl = group.settings["RiskControl"];
 			riskControl["triangle_orders_limit"] = "3";
 
 			ini.ForEachKey(
