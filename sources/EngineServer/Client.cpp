@@ -97,9 +97,6 @@ void Client::OnFoo(const Foo &foo) {
 	pnl.set_number_of_winners(foo.numberOfWinners);
 	pnl.set_number_of_losers(foo.numberOfLosers);
 	pnl.set_percent_of_winners(foo.percentOfWinners);
-	pnl.set_total_pnl_with_commissions(foo.totalPnlWithCommissions);
-	pnl.set_total_pnl_without_commissions(foo.totalPnlWithoutCommissions);
-	pnl.set_total_commission(foo.totalCommission);
 	Send(message);
 }
 

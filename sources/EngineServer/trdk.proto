@@ -62,9 +62,6 @@ message Pnl {
 	required uint64 number_of_winners				= 12;
 	required uint64 number_of_losers				= 13;
 	required uint64 percent_of_winners				= 14;
-	required double total_pnl_with_commissions		= 15; 
-	required double total_pnl_without_commissions	= 16;
-	required double total_commission				= 17;
 };
 
 message ServerData {

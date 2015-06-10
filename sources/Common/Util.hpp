@@ -32,9 +32,6 @@ struct Foo {
 	size_t numberOfWinners;
 	size_t numberOfLosers;
 	size_t percentOfWinners;
-	double totalPnlWithCommissions;
-	double totalPnlWithoutCommissions;
-	double totalCommission;
 };
 //! @todo !!! remove Foo
 typedef void (FooSlotSignature)(const Foo &);
