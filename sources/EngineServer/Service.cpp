@@ -20,18 +20,23 @@ using namespace trdk::EngineServer;
 namespace io = boost::asio;
 namespace fs = boost::filesystem;
 
+EngineServer::Service::Io::Io()
+	:	acceptor(
+			service,
+			io::ip::tcp::endpoint(io::ip::tcp::v4(), 3689)) {
+	//...//
+}
+
 EngineServer::Service::Service(
 		const std::string &name,
 		const fs::path &engineConfigFilePath)
 	: m_name(name),
-	m_acceptor(
-		m_ioService,
-		io::ip::tcp::endpoint(io::ip::tcp::v4(), 3689)) {
+	m_io(new Io) {
 
 	LoadEngine(engineConfigFilePath);
 
 	{
-		const auto &endpoint = m_acceptor.local_endpoint();
+		const auto &endpoint = m_io->acceptor.local_endpoint();
 		//! @todo Write to log
 		std::cout
 			<< "Opening endpoint "
@@ -47,7 +52,7 @@ EngineServer::Service::Service(
 				//! @todo Write to log
 				std::cout << "Starting IO task..." << std::endl;
 				//! @todo Write to log
-				m_ioService.run();
+				m_io->service.run();
 				std::cout << "IO task completed." << std::endl;
 			} catch (...) {
 				AssertFailNoException();
@@ -59,12 +64,13 @@ EngineServer::Service::Service(
 
 EngineServer::Service::~Service() {
 	try {
-		m_ioService.stop();
+		m_io->service.stop();
 		m_thread.join();
 	} catch (...) {
 		AssertFailNoException();
 		throw;
 	}
+	m_io.reset();
 }
 
 void EngineServer::Service::LoadEngine(const fs::path &configFilePath) {
@@ -142,9 +148,9 @@ void EngineServer::Service::StopEngine(const std::string &engineId) {
 
 void EngineServer::Service::StartAccept() {
 	const auto &newConnection = Client::Create(
-		m_acceptor.get_io_service(),
+		m_io->acceptor.get_io_service(),
 		*this);
-    m_acceptor.async_accept(
+    m_io->acceptor.async_accept(
 		newConnection->GetSocket(),
 		boost::bind(
 			&Service::HandleNewClient,
