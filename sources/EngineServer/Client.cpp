@@ -30,14 +30,36 @@ namespace {
 		return result.str();
 	}
 
+	void ConvertToUuid(const boost::uuids::uuid &source, Uuid &dest) {
+		AssertEq(16, source.size());
+		dest.set_data(&source, source.size());
+	}
+
+	boost::uuids::uuid ConvertFromUuid(const Uuid &source) {
+		const auto &data = source.data();
+		if (data.size() != 16) {
+			throw trdk::EngineServer::Exception("Wrong bytes number for Uuid");
+		}
+		boost::uuids::uuid result;
+		AssertEq(16, result.size());
+		memcpy(
+			&result,
+			reinterpret_cast<const boost::uuids::uuid::value_type *>(data.c_str()),
+			result.size());
+		return result;
+	}
+
 }
 
 Client::Client(
 		io::io_service &ioService,
 		ClientRequestHandler &requestHandler)
 	: m_requestHandler(requestHandler),
-	m_newxtMessageSize(0),
-	m_socket(ioService) {
+	m_nextMessageSize(0),
+	m_socket(ioService),
+	m_keepAliveSendTimer(ioService),
+	m_keepAliveCheckTimer(ioService),
+	m_isClientKeepAliveRecevied(false) {
 	
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -68,51 +90,71 @@ const std::string & Client::GetRemoteAddressAsString() const {
 }
 
 void Client::Start() {
+	
 	m_remoteAddress = BuildRemoteAddressString(m_socket);
 	//! @todo Write to log
 	std::cout
 		<< "Opening client connection from "
 		<< GetRemoteAddressAsString() << "..." << std::endl;
+	
 	SendServiceInfo();
 	StartReadMessageSize();
+
 	m_fooSlotConnection = m_requestHandler.Subscribe(
 		boost::bind(&Client::OnFoo, this, _1));
+
+	StartKeepAliveSender();
+	StartKeepAliveChecker();
+
+}
+
+void Client::Close() {
+	m_socket.close();
+	m_keepAliveSendTimer.cancel();
+	m_keepAliveCheckTimer.cancel();
 }
 
 void Client::OnFoo(const Foo &foo) {
 	ServerData message;
 	message.set_type(ServerData::TYPE_PNL);	
 	Pnl &pnl = *message.mutable_pnl();
-	pnl.set_date(boost::lexical_cast<std::string>(foo.time.date()));
-	pnl.set_time(boost::lexical_cast<std::string>(foo.time.time_of_day()));
-	pnl.set_strategy_id(boost::lexical_cast<std::string>(foo.strategyId));
+	pnl.set_time(pt::to_iso_string(foo.time));
+	ConvertToUuid(foo.strategyId, *pnl.mutable_strategy_id());
+	ConvertToUuid(
+		boost::uuids::random_generator()(),
+		*pnl.mutable_settings_revision());
 	pnl.set_triangle_id(foo.triangleId);
 	pnl.set_pnl(foo.pnl);
 	pnl.set_triangle_time(pt::to_simple_string(foo.triangleTime));
 	pnl.set_avg_winners(foo.avgWinners);
-	pnl.set_avg_winners_time(pt::to_simple_string(foo.avgWinnersTime));
+	if (foo.avgWinnersTime.total_nanoseconds() > 0) {
+		pnl.set_avg_winners_time(pt::to_simple_string(foo.avgWinnersTime));
+	} else {
+		pnl.set_avg_winners_time("-");
+	}
 	pnl.set_avg_losers(foo.avgLosers);
-	pnl.set_avg_losers_time(pt::to_simple_string(foo.avgLosersTime));
+	if (foo.avgLosersTime.total_nanoseconds() > 0) {
+		pnl.set_avg_losers_time(pt::to_simple_string(foo.avgLosersTime));
+	} else {
+		pnl.set_avg_losers_time("-");
+	}
 	pnl.set_avg_time(pt::to_simple_string(foo.avgTime));
 	pnl.set_number_of_winners(foo.numberOfWinners);
 	pnl.set_number_of_losers(foo.numberOfLosers);
 	pnl.set_percent_of_winners(foo.percentOfWinners);
-	pnl.set_total_pnl_with_commissions(foo.totalPnlWithCommissions);
-	pnl.set_total_pnl_without_commissions(foo.totalPnlWithoutCommissions);
-	pnl.set_total_commission(foo.totalCommission);
 	Send(message);
 }
 
 void Client::SendMessage(const std::string &text) {
 	ServerData message;
-	message.set_type(ServerData::TYPE_SERVICE_INFO);	
+	message.set_type(ServerData::TYPE_MESSAGE_INFO);	
 	message.set_message(text);
 	Send(message);
 }
 
 void Client::SendError(const std::string &errorText) {
 	ServerData message;
-	message.set_type(ServerData::TYPE_ERROR_MESSAGE);	
+	message.set_type(ServerData::TYPE_MESSAGE_ERROR);	
 	message.set_message(errorText);
 	Send(message);
 }
@@ -164,7 +206,7 @@ void Client::OnDataSent(
 }
 
 void Client::StartReadMessage() {
-	m_inBuffer.resize(m_newxtMessageSize);
+	m_inBuffer.resize(m_nextMessageSize);
 	io::async_read(
 		m_socket,
 		boost::asio::buffer(
@@ -181,9 +223,9 @@ void Client::StartReadMessageSize() {
 	io::async_read(
 		m_socket,
 		boost::asio::buffer(
-			&m_newxtMessageSize,
-			sizeof(m_newxtMessageSize)),
-		io::transfer_exactly(sizeof(m_newxtMessageSize)),
+			&m_nextMessageSize,
+			sizeof(m_nextMessageSize)),
+		io::transfer_exactly(sizeof(m_nextMessageSize)),
 		boost::bind(
 			&Client::OnNewMessageSize,
 			shared_from_this(),
@@ -198,6 +240,7 @@ void Client::OnNewMessageSize(const boost::system::error_code &error) {
 			<< "Failed to read data from client: \""
 			<< SysError(error.value())
 			<< "\"." << std::endl;
+		Close();
 		return;
 	}
 
@@ -214,26 +257,43 @@ void Client::OnNewMessage(
 			<< "Failed to read data from client: \""
 			<< SysError(error.value())
 			<< "\"." << std::endl;
+		Close();
 		return;
 	}
 
 	ClientRequest request;
-	const bool isParsed
-		= request.ParseFromArray(&m_inBuffer[0], int(m_inBuffer.size()));
-	
+	try {
+		if (!request.ParseFromArray(&m_inBuffer[0], int(m_inBuffer.size()))) {
+			//! @todo Write to log
+			std::cerr << "Failed to parse incoming request." << std::endl;
+			Close();
+			return;
+		}
+	} catch (const google::protobuf::FatalException &ex) {
+		//! @todo Write to log
+		std::cerr << "Protocol error: \"" << ex.what() <<"\"." << std::endl;
+		Close();
+		return;
+	}
+
 	StartReadMessageSize();
 	
-	if (isParsed) {
+	try {
 		OnNewRequest(request);
-	} else {
+	} catch (const google::protobuf::FatalException &ex) {
 		//! @todo Write to log
-		std::cerr << "Failed to parse incoming request." << std::endl;
-    }
+		std::cerr << "Protocol error: \"" << ex.what() <<"\"." << std::endl;
+		Close();
+		return;
+	}
 
 }
 
 void Client::OnNewRequest(const ClientRequest &request) {
 	switch (request.type()) {
+		case ClientRequest::TYPE_KEEP_ALIVE:
+			OnKeepAlive();
+			break;
 		case ClientRequest::TYPE_INFO_FULL:
 			OnFullInfoRequest(request.full_info());
 			break;
@@ -286,6 +346,13 @@ void Client::SendEngineInfo(const std::string &engineId) {
 	info.set_is_started(m_requestHandler.IsEngineStarted(engineId));
 
  	EngineSettings &settingsMessage = *info.mutable_settings();
+	settingsMessage.set_time(
+		pt::to_iso_string(
+			boost::posix_time::microsec_clock::local_time()));
+	ConvertToUuid(
+		boost::uuids::random_generator()(),
+		*settingsMessage.mutable_revision());
+
 	m_requestHandler.GetEngineSettings(engineId).GetClientSettings(
 		[&settingsMessage](const Settings::ClientSettings &settings) {
 			foreach (const auto &group, settings) {
@@ -447,8 +514,8 @@ void Client::OnStrategySettingsSetRequest(
 		const StrategySettingsSetRequest &request) {
 
 	std::cout
-		<< "Changing settings for strategy \""
-		<< request.strategy_id() << "\"..." << std::endl;
+		<< "Changing settings for strategy \"" << request.strategy_id() << "\"..."
+		<< std::endl;
 
 	try {
 		auto settingsTransaction
@@ -489,4 +556,65 @@ void Client::UpdateSettings(
 				messageKey.value());
 		}
 	}
+}
+
+void Client::StartKeepAliveSender() {
+
+	if (!m_socket.is_open()) {
+		return;
+	}
+
+	const boost::function<
+			void(const boost::shared_ptr<Client> &, const boost::system::error_code &)> callback
+		= [] (
+				const boost::shared_ptr<Client> &client,
+				const boost::system::error_code &error) {
+			if (error) {
+				return;
+			}
+			{
+				ServerData message;
+				message.set_type(ServerData::TYPE_KEEP_ALIVE);	
+				client->Send(message);
+			}
+			client->StartKeepAliveSender();
+		};
+
+	Verify(m_keepAliveSendTimer.expires_from_now(pt::minutes(1)) == 0);
+	m_keepAliveSendTimer.async_wait(
+		boost::bind(callback, shared_from_this(), _1));
+
+}
+
+void Client::OnKeepAlive() {
+    m_isClientKeepAliveRecevied = true;
+}
+
+void Client::StartKeepAliveChecker() {
+
+	if (!m_socket.is_open()) {
+		return;
+	}
+	
+	const boost::function<
+			void(const boost::shared_ptr<Client> &, const boost::system::error_code &)> callback
+		= [] (
+				const boost::shared_ptr<Client> &client,
+				const boost::system::error_code &error) {
+			if (error) {
+				return;
+			}
+			bool expectedState = true;
+			if (!client->m_isClientKeepAliveRecevied.compare_exchange_strong(expectedState, false)) {
+				std::cout << "No keep-alive packet from client, disconnecting..." << std::endl;
+				client->Close();
+				return;
+			}
+			client->StartKeepAliveChecker();
+		};
+	
+	Verify(m_keepAliveCheckTimer.expires_from_now(pt::seconds(70)) == 0);
+	m_keepAliveCheckTimer.async_wait(
+		boost::bind(callback, shared_from_this(), _1));
+
 }

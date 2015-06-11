@@ -563,14 +563,6 @@ void TriangleReport::ReportAction(
 		yExecuted,
 	};
 
-	const auto &fooTotals = [&]() {
-		const auto pnl
-			= m_state.pnl->stat.winnersPnl + m_state.pnl->stat.losersPnl;
-		foo.totalPnlWithCommissions = pnl - m_state.pnl->stat.comission;
-		foo.totalPnlWithoutCommissions = pnl;
-		foo.totalCommission = m_state.pnl->stat.comission;
-	};
-
 	const auto &writePnl = [&](ReportRecord &record) {
 		const auto pnl
 			= m_state.pnl->stat.winnersPnl + m_state.pnl->stat.losersPnl;
@@ -657,7 +649,6 @@ void TriangleReport::ReportAction(
 				foo.percentOfWinners = winningPercentage;
 				
 				writePnl(record);
-				fooTotals();
 
 			});
 
@@ -669,9 +660,10 @@ void TriangleReport::ReportAction(
 			Context &context = strategy.GetContext();
 			RiskControl &riskControl = context.GetRiskControl();
 			context.m_fooSlotConnection(foo);
-			riskControl.CheckTotalPnl(
-				strategy.GetRiskControlScope(),
-				foo.totalPnlWithCommissions);
+			//! @todo see TRDK-78
+// 			riskControl.CheckTotalPnl(
+// 				strategy.GetRiskControlScope(),
+// 				foo.totalPnlWithCommissions);
 			riskControl.CheckTotalWinRatio(
 				strategy.GetRiskControlScope(),
 				winningPercentage,
@@ -680,18 +672,16 @@ void TriangleReport::ReportAction(
 
 	} else if (isTriangleCanceled) {
 
-		fooTotals();
-		
 		//! @todo see TRDK-40
 		Strategy &strategy
 			= const_cast<TriangulationWithDirection &>(
 				m_triangle.GetStrategy());
 		Context &context = strategy.GetContext();
-		RiskControl &riskControl = context.GetRiskControl();
 		context.m_fooSlotConnection(foo);
-		riskControl.CheckTotalPnl(
-			strategy.GetRiskControlScope(),
-			foo.totalPnlWithCommissions);
+		//! @todo see TRDK-78
+// 		riskControl.CheckTotalPnl(
+// 			strategy.GetRiskControlScope(),
+// 			foo.totalPnlWithCommissions);
 
 	}
 

@@ -14,6 +14,13 @@ package trdk.EngineServer;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+message Uuid {
+	// Always has 16 bytes - binnary of RFC 4122.
+	required bytes data = 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 message SettingsSection {
 	
 	message Key {
@@ -27,11 +34,16 @@ message SettingsSection {
 }
 
 message EngineSettings {
+	
 	message Group {
 		required string name = 1;
 		repeated SettingsSection section = 2;
 	}
-	repeated Group group = 1;
+
+	required string time = 1;
+	required Uuid revision = 2;
+	repeated Group group = 3;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -48,9 +60,9 @@ message EngineState {
 }
 
 message Pnl {
-	required string date							= 1;
-	required string time							= 2;
-	required string strategy_id						= 3;
+	required string time							= 1;
+	required Uuid strategy_id						= 2;
+	required Uuid settings_revision					= 3;
 	required uint64 triangle_id						= 4;
 	required double pnl								= 5;
 	required string triangle_time					= 6;
@@ -62,19 +74,18 @@ message Pnl {
 	required uint64 number_of_winners				= 12;
 	required uint64 number_of_losers				= 13;
 	required uint64 percent_of_winners				= 14;
-	required double total_pnl_with_commissions		= 15; 
-	required double total_pnl_without_commissions	= 16;
-	required double total_commission				= 17;
 };
 
 message ServerData {
 	
 	enum Type {
-		TYPE_ENGINE_INFO = 1;
-		TYPE_ENGINE_STATE = 2;
-		TYPE_PNL = 3;
-		TYPE_ERROR_MESSAGE = 4;
-		TYPE_SERVICE_INFO = 5;
+		TYPE_KEEP_ALIVE = 1;
+		TYPE_ENGINE_INFO = 2;
+		TYPE_ENGINE_STATE = 3;
+		TYPE_PNL = 4;
+		TYPE_MESSAGE_ERROR = 5;
+		TYPE_MESSAGE_INFO = 6;
+		TYPE_SERVICE_INFO = 7;
 	}
 
 	required Type type = 1;
@@ -85,7 +96,7 @@ message ServerData {
 	optional EngineState engine_state = 3;
 	// TYPE_PNL
 	optional Pnl pnl = 4;
-	// TYPE_ERROR_MESSAGE and TYPE_SERVICE_INFO
+	// TYPE_MESSAGE_INFO, TYPE_MESSAGE_ERROR and TYPE_SERVICE_INFO
 	optional string message = 5;
 
 }
@@ -111,17 +122,20 @@ message EngineSettingsSetRequest {
 
 message StrategyStartRequest {
 	required string engine_id = 1;
+	// String of RFC 4122.
 	required string strategy_id = 2;
 	repeated SettingsSection strategy_settings = 3;
 }
 
 message StrategyStopRequest {
 	required string engine_id = 1;
+	// String of RFC 4122.
 	required string strategy_id = 2;
 }
 
 message StrategySettingsSetRequest {
 	required string engine_id = 1;
+	// String of RFC 4122.
 	required string strategy_id = 2;
 	repeated SettingsSection section = 3;
 }
@@ -129,13 +143,14 @@ message StrategySettingsSetRequest {
 message ClientRequest {
 	
 	enum Type {
-		TYPE_INFO_FULL = 1;
-		TYPE_ENGINE_START = 2;
-		TYPE_ENGINE_STOP = 3;
-		TYPE_ENGINE_SETTINGS = 4;
-		TYPE_STRATEGY_START = 5;
-		TYPE_STRATEGY_STOP = 6;
-		TYPE_STRATEGY_SETTINGS = 7;
+		TYPE_KEEP_ALIVE = 1;
+		TYPE_INFO_FULL = 2;
+		TYPE_ENGINE_START = 3;
+		TYPE_ENGINE_STOP = 4;
+		TYPE_ENGINE_SETTINGS = 5;
+		TYPE_STRATEGY_START = 6;
+		TYPE_STRATEGY_STOP = 7;
+		TYPE_STRATEGY_SETTINGS = 8;
 	}
 
 	required Type type = 1;

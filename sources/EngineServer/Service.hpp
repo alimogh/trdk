@@ -25,6 +25,17 @@ namespace trdk { namespace EngineServer {
 		typedef boost::shared_lock<ConnectionsMutex> ConnectionsReadLock;
 		typedef boost::unique_lock<ConnectionsMutex> ConnectionsWriteLock;
 
+	private:
+
+		struct Io {
+		
+			boost::asio::io_service service;
+			boost::asio::ip::tcp::acceptor acceptor;
+
+			Io();
+		
+		};
+
 	public:
 
 		explicit Service(
@@ -88,8 +99,7 @@ namespace trdk { namespace EngineServer {
 
 		Server m_server;
 
-		boost::asio::io_service m_ioService;
-		boost::asio::ip::tcp::acceptor m_acceptor;
+		std::unique_ptr<Io> m_io;
 
 		boost::thread m_thread;
 

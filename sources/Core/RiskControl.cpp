@@ -345,7 +345,7 @@ protected:
 
 	void SetSettings(const Settings &newSettings, size_t maxOrdersNumber) {
 		m_settings = newSettings;
-		m_orderTimePoints.resize(maxOrdersNumber);
+		m_orderTimePoints.set_capacity(maxOrdersNumber);
 	}
 
 	virtual void OnSettingsUpdate(const IniSectionRef &) {
