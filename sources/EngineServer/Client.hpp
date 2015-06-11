@@ -49,6 +49,8 @@ namespace trdk { namespace EngineServer {
 		void SendMessage(const std::string &);
 		void SendError(const std::string &);
 
+		void Close();
+
 	private:
 
 		void Send(const ServerData &);
@@ -102,7 +104,7 @@ namespace trdk { namespace EngineServer {
 
 		ClientRequestHandler &m_requestHandler;
 
-		int32_t m_newxtMessageSize;
+		int32_t m_nextMessageSize;
 		std::vector<char> m_inBuffer;
 
 		boost::asio::ip::tcp::socket m_socket;

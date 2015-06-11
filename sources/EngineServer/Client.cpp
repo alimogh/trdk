@@ -55,7 +55,7 @@ Client::Client(
 		io::io_service &ioService,
 		ClientRequestHandler &requestHandler)
 	: m_requestHandler(requestHandler),
-	m_newxtMessageSize(0),
+	m_nextMessageSize(0),
 	m_socket(ioService),
 	m_keepAliveSendTimer(ioService),
 	m_keepAliveCheckTimer(ioService),
@@ -108,20 +108,36 @@ void Client::Start() {
 
 }
 
+void Client::Close() {
+	m_socket.close();
+	m_keepAliveSendTimer.cancel();
+	m_keepAliveCheckTimer.cancel();
+}
+
 void Client::OnFoo(const Foo &foo) {
 	ServerData message;
 	message.set_type(ServerData::TYPE_PNL);	
 	Pnl &pnl = *message.mutable_pnl();
-	pnl.set_time(pt::to_iso_string(foo.time.time_of_day()));
+	pnl.set_time(pt::to_iso_string(foo.time));
 	ConvertToUuid(foo.strategyId, *pnl.mutable_strategy_id());
-	ConvertToUuid(boost::uuids::random_generator()(), *pnl.mutable_settings_revision());
+	ConvertToUuid(
+		boost::uuids::random_generator()(),
+		*pnl.mutable_settings_revision());
 	pnl.set_triangle_id(foo.triangleId);
 	pnl.set_pnl(foo.pnl);
 	pnl.set_triangle_time(pt::to_simple_string(foo.triangleTime));
 	pnl.set_avg_winners(foo.avgWinners);
-	pnl.set_avg_winners_time(pt::to_simple_string(foo.avgWinnersTime));
+	if (foo.avgWinnersTime.total_nanoseconds() > 0) {
+		pnl.set_avg_winners_time(pt::to_simple_string(foo.avgWinnersTime));
+	} else {
+		pnl.set_avg_winners_time("-");
+	}
 	pnl.set_avg_losers(foo.avgLosers);
-	pnl.set_avg_losers_time(pt::to_simple_string(foo.avgLosersTime));
+	if (foo.avgLosersTime.total_nanoseconds() > 0) {
+		pnl.set_avg_losers_time(pt::to_simple_string(foo.avgLosersTime));
+	} else {
+		pnl.set_avg_losers_time("-");
+	}
 	pnl.set_avg_time(pt::to_simple_string(foo.avgTime));
 	pnl.set_number_of_winners(foo.numberOfWinners);
 	pnl.set_number_of_losers(foo.numberOfLosers);
@@ -190,7 +206,7 @@ void Client::OnDataSent(
 }
 
 void Client::StartReadMessage() {
-	m_inBuffer.resize(m_newxtMessageSize);
+	m_inBuffer.resize(m_nextMessageSize);
 	io::async_read(
 		m_socket,
 		boost::asio::buffer(
@@ -207,9 +223,9 @@ void Client::StartReadMessageSize() {
 	io::async_read(
 		m_socket,
 		boost::asio::buffer(
-			&m_newxtMessageSize,
-			sizeof(m_newxtMessageSize)),
-		io::transfer_exactly(sizeof(m_newxtMessageSize)),
+			&m_nextMessageSize,
+			sizeof(m_nextMessageSize)),
+		io::transfer_exactly(sizeof(m_nextMessageSize)),
 		boost::bind(
 			&Client::OnNewMessageSize,
 			shared_from_this(),
@@ -224,6 +240,7 @@ void Client::OnNewMessageSize(const boost::system::error_code &error) {
 			<< "Failed to read data from client: \""
 			<< SysError(error.value())
 			<< "\"." << std::endl;
+		Close();
 		return;
 	}
 
@@ -240,21 +257,35 @@ void Client::OnNewMessage(
 			<< "Failed to read data from client: \""
 			<< SysError(error.value())
 			<< "\"." << std::endl;
+		Close();
 		return;
 	}
 
 	ClientRequest request;
-	const bool isParsed
-		= request.ParseFromArray(&m_inBuffer[0], int(m_inBuffer.size()));
-	
+	try {
+		if (!request.ParseFromArray(&m_inBuffer[0], int(m_inBuffer.size()))) {
+			//! @todo Write to log
+			std::cerr << "Failed to parse incoming request." << std::endl;
+			Close();
+			return;
+		}
+	} catch (const google::protobuf::FatalException &ex) {
+		//! @todo Write to log
+		std::cerr << "Protocol error: \"" << ex.what() <<"\"." << std::endl;
+		Close();
+		return;
+	}
+
 	StartReadMessageSize();
 	
-	if (isParsed) {
+	try {
 		OnNewRequest(request);
-	} else {
+	} catch (const google::protobuf::FatalException &ex) {
 		//! @todo Write to log
-		std::cerr << "Failed to parse incoming request." << std::endl;
-    }
+		std::cerr << "Protocol error: \"" << ex.what() <<"\"." << std::endl;
+		Close();
+		return;
+	}
 
 }
 
@@ -529,6 +560,10 @@ void Client::UpdateSettings(
 
 void Client::StartKeepAliveSender() {
 
+	if (!m_socket.is_open()) {
+		return;
+	}
+
 	const boost::function<
 			void(const boost::shared_ptr<Client> &, const boost::system::error_code &)> callback
 		= [] (
@@ -556,6 +591,10 @@ void Client::OnKeepAlive() {
 }
 
 void Client::StartKeepAliveChecker() {
+
+	if (!m_socket.is_open()) {
+		return;
+	}
 	
 	const boost::function<
 			void(const boost::shared_ptr<Client> &, const boost::system::error_code &)> callback
@@ -568,7 +607,7 @@ void Client::StartKeepAliveChecker() {
 			bool expectedState = true;
 			if (!client->m_isClientKeepAliveRecevied.compare_exchange_strong(expectedState, false)) {
 				std::cout << "No keep-alive packet from client, disconnecting..." << std::endl;
-				client->m_socket.close();
+				client->Close();
 				return;
 			}
 			client->StartKeepAliveChecker();
