@@ -34,6 +34,7 @@
 #	include <boost/multi_index/member.hpp>
 #	include <boost/multi_index/composite_key.hpp>
 #	include <boost/multi_index/ordered_index.hpp>
+#	include <boost/uuid/uuid_generators.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Assert.hpp"

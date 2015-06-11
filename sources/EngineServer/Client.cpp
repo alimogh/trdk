@@ -30,6 +30,25 @@ namespace {
 		return result.str();
 	}
 
+	void ConvertToUuid(const boost::uuids::uuid &source, Uuid &dest) {
+		AssertEq(16, source.size());
+		dest.set_data(&source, source.size());
+	}
+
+	boost::uuids::uuid ConvertFromUuid(const Uuid &source) {
+		const auto &data = source.data();
+		if (data.size() != 16) {
+			throw trdk::EngineServer::Exception("Wrong bytes number for Uuid");
+		}
+		boost::uuids::uuid result;
+		AssertEq(16, result.size());
+		memcpy(
+			&result,
+			reinterpret_cast<const boost::uuids::uuid::value_type *>(data.c_str()),
+			result.size());
+		return result;
+	}
+
 }
 
 Client::Client(
@@ -95,7 +114,8 @@ void Client::OnFoo(const Foo &foo) {
 	Pnl &pnl = *message.mutable_pnl();
 	pnl.set_date(boost::lexical_cast<std::string>(foo.time.date()));
 	pnl.set_time(boost::lexical_cast<std::string>(foo.time.time_of_day()));
-	pnl.set_strategy_id(boost::lexical_cast<std::string>(foo.strategyId));
+	ConvertToUuid(foo.strategyId, *pnl.mutable_strategy_id());
+	ConvertToUuid(boost::uuids::random_generator()(), *pnl.mutable_settings_revision());
 	pnl.set_triangle_id(foo.triangleId);
 	pnl.set_pnl(foo.pnl);
 	pnl.set_triangle_time(pt::to_simple_string(foo.triangleTime));
@@ -296,6 +316,13 @@ void Client::SendEngineInfo(const std::string &engineId) {
 	info.set_is_started(m_requestHandler.IsEngineStarted(engineId));
 
  	EngineSettings &settingsMessage = *info.mutable_settings();
+	settingsMessage.set_time(
+		pt::to_iso_string(
+			boost::posix_time::microsec_clock::local_time()));
+	ConvertToUuid(
+		boost::uuids::random_generator()(),
+		*settingsMessage.mutable_revision());
+
 	m_requestHandler.GetEngineSettings(engineId).GetClientSettings(
 		[&settingsMessage](const Settings::ClientSettings &settings) {
 			foreach (const auto &group, settings) {
@@ -457,8 +484,8 @@ void Client::OnStrategySettingsSetRequest(
 		const StrategySettingsSetRequest &request) {
 
 	std::cout
-		<< "Changing settings for strategy \""
-		<< request.strategy_id() << "\"..." << std::endl;
+		<< "Changing settings for strategy \"" << request.strategy_id() << "\"..."
+		<< std::endl;
 
 	try {
 		auto settingsTransaction
