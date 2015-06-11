@@ -60,21 +60,20 @@ message EngineState {
 }
 
 message Pnl {
-	required string date							= 1;
-	required string time							= 2;
-	required Uuid strategy_id						= 3;
-	required Uuid settings_revision					= 4;
-	required uint64 triangle_id						= 5;
-	required double pnl								= 6;
-	required string triangle_time					= 7;
-	required double avg_winners						= 8;
-	required string avg_winners_time				= 9;
-	required double avg_losers						= 10;
-	required string avg_losers_time					= 11;
-	required string avg_time						= 12;
-	required uint64 number_of_winners				= 13;
-	required uint64 number_of_losers				= 14;
-	required uint64 percent_of_winners				= 15;
+	required string time							= 1;
+	required Uuid strategy_id						= 2;
+	required Uuid settings_revision					= 3;
+	required uint64 triangle_id						= 4;
+	required double pnl								= 5;
+	required string triangle_time					= 6;
+	required double avg_winners						= 7;
+	required string avg_winners_time				= 8;
+	required double avg_losers						= 9;
+	required string avg_losers_time					= 10;
+	required string avg_time						= 11;
+	required uint64 number_of_winners				= 12;
+	required uint64 number_of_losers				= 13;
+	required uint64 percent_of_winners				= 14;
 };
 
 message ServerData {

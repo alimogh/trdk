@@ -112,8 +112,7 @@ void Client::OnFoo(const Foo &foo) {
 	ServerData message;
 	message.set_type(ServerData::TYPE_PNL);	
 	Pnl &pnl = *message.mutable_pnl();
-	pnl.set_date(boost::lexical_cast<std::string>(foo.time.date()));
-	pnl.set_time(boost::lexical_cast<std::string>(foo.time.time_of_day()));
+	pnl.set_time(pt::to_iso_string(foo.time.time_of_day()));
 	ConvertToUuid(foo.strategyId, *pnl.mutable_strategy_id());
 	ConvertToUuid(boost::uuids::random_generator()(), *pnl.mutable_settings_revision());
 	pnl.set_triangle_id(foo.triangleId);
