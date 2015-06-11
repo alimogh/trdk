@@ -68,6 +68,8 @@ namespace trdk { namespace EngineServer {
 				const boost::system::error_code &);
 		void OnNewRequest(const ClientRequest &);
 		
+		void OnKeepAlive();
+
 		void OnFullInfoRequest(const FullInfoRequest &);
 		
 		void OnEngineStartRequest(const EngineStartRequest &);
@@ -86,6 +88,9 @@ namespace trdk { namespace EngineServer {
 
 		void SendEngineState(const std::string &engeineId);
 		void SendEnginesState();
+
+		void StartKeepAliveSender();
+		void StartKeepAliveChecker();
 		
 		static void UpdateSettings(
 				const google::protobuf::RepeatedPtrField<SettingsSection> &,
@@ -105,6 +110,10 @@ namespace trdk { namespace EngineServer {
 		std::string m_remoteAddress;
 
 		FooSlotConnection m_fooSlotConnection;
+
+		boost::asio::deadline_timer m_keepAliveSendTimer;
+		boost::asio::deadline_timer m_keepAliveCheckTimer;
+		boost::atomic_bool m_isClientKeepAliveRecevied;
 
 	};
 

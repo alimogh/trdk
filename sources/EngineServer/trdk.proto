@@ -67,11 +67,13 @@ message Pnl {
 message ServerData {
 	
 	enum Type {
-		TYPE_ENGINE_INFO = 1;
-		TYPE_ENGINE_STATE = 2;
-		TYPE_PNL = 3;
-		TYPE_ERROR_MESSAGE = 4;
-		TYPE_SERVICE_INFO = 5;
+		TYPE_KEEP_ALIVE = 1;
+		TYPE_ENGINE_INFO = 2;
+		TYPE_ENGINE_STATE = 3;
+		TYPE_PNL = 4;
+		TYPE_MESSAGE_ERROR = 5;
+		TYPE_MESSAGE_INFO = 6;
+		TYPE_SERVICE_INFO = 7;
 	}
 
 	required Type type = 1;
@@ -82,7 +84,7 @@ message ServerData {
 	optional EngineState engine_state = 3;
 	// TYPE_PNL
 	optional Pnl pnl = 4;
-	// TYPE_ERROR_MESSAGE and TYPE_SERVICE_INFO
+	// TYPE_MESSAGE_INFO, TYPE_MESSAGE_ERROR and TYPE_SERVICE_INFO
 	optional string message = 5;
 
 }
@@ -126,13 +128,14 @@ message StrategySettingsSetRequest {
 message ClientRequest {
 	
 	enum Type {
-		TYPE_INFO_FULL = 1;
-		TYPE_ENGINE_START = 2;
-		TYPE_ENGINE_STOP = 3;
-		TYPE_ENGINE_SETTINGS = 4;
-		TYPE_STRATEGY_START = 5;
-		TYPE_STRATEGY_STOP = 6;
-		TYPE_STRATEGY_SETTINGS = 7;
+		TYPE_KEEP_ALIVE = 1;
+		TYPE_INFO_FULL = 2;
+		TYPE_ENGINE_START = 3;
+		TYPE_ENGINE_STOP = 4;
+		TYPE_ENGINE_SETTINGS = 5;
+		TYPE_STRATEGY_START = 6;
+		TYPE_STRATEGY_STOP = 7;
+		TYPE_STRATEGY_SETTINGS = 8;
 	}
 
 	required Type type = 1;

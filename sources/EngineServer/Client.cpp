@@ -37,7 +37,10 @@ Client::Client(
 		ClientRequestHandler &requestHandler)
 	: m_requestHandler(requestHandler),
 	m_newxtMessageSize(0),
-	m_socket(ioService) {
+	m_socket(ioService),
+	m_keepAliveSendTimer(ioService),
+	m_keepAliveCheckTimer(ioService),
+	m_isClientKeepAliveRecevied(false) {
 	
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -68,15 +71,22 @@ const std::string & Client::GetRemoteAddressAsString() const {
 }
 
 void Client::Start() {
+	
 	m_remoteAddress = BuildRemoteAddressString(m_socket);
 	//! @todo Write to log
 	std::cout
 		<< "Opening client connection from "
 		<< GetRemoteAddressAsString() << "..." << std::endl;
+	
 	SendServiceInfo();
 	StartReadMessageSize();
+
 	m_fooSlotConnection = m_requestHandler.Subscribe(
 		boost::bind(&Client::OnFoo, this, _1));
+
+	StartKeepAliveSender();
+	StartKeepAliveChecker();
+
 }
 
 void Client::OnFoo(const Foo &foo) {
@@ -102,14 +112,14 @@ void Client::OnFoo(const Foo &foo) {
 
 void Client::SendMessage(const std::string &text) {
 	ServerData message;
-	message.set_type(ServerData::TYPE_SERVICE_INFO);	
+	message.set_type(ServerData::TYPE_MESSAGE_INFO);	
 	message.set_message(text);
 	Send(message);
 }
 
 void Client::SendError(const std::string &errorText) {
 	ServerData message;
-	message.set_type(ServerData::TYPE_ERROR_MESSAGE);	
+	message.set_type(ServerData::TYPE_MESSAGE_ERROR);	
 	message.set_message(errorText);
 	Send(message);
 }
@@ -231,6 +241,9 @@ void Client::OnNewMessage(
 
 void Client::OnNewRequest(const ClientRequest &request) {
 	switch (request.type()) {
+		case ClientRequest::TYPE_KEEP_ALIVE:
+			OnKeepAlive();
+			break;
 		case ClientRequest::TYPE_INFO_FULL:
 			OnFullInfoRequest(request.full_info());
 			break;
@@ -486,4 +499,57 @@ void Client::UpdateSettings(
 				messageKey.value());
 		}
 	}
+}
+
+void Client::StartKeepAliveSender() {
+
+	const boost::function<
+			void(const boost::shared_ptr<Client> &, const boost::system::error_code &)> callback
+		= [] (
+				const boost::shared_ptr<Client> &client,
+				const boost::system::error_code &error) {
+			if (error) {
+				return;
+			}
+			{
+				ServerData message;
+				message.set_type(ServerData::TYPE_KEEP_ALIVE);	
+				client->Send(message);
+			}
+			client->StartKeepAliveSender();
+		};
+
+	Verify(m_keepAliveSendTimer.expires_from_now(pt::minutes(1)) == 0);
+	m_keepAliveSendTimer.async_wait(
+		boost::bind(callback, shared_from_this(), _1));
+
+}
+
+void Client::OnKeepAlive() {
+    m_isClientKeepAliveRecevied = true;
+}
+
+void Client::StartKeepAliveChecker() {
+	
+	const boost::function<
+			void(const boost::shared_ptr<Client> &, const boost::system::error_code &)> callback
+		= [] (
+				const boost::shared_ptr<Client> &client,
+				const boost::system::error_code &error) {
+			if (error) {
+				return;
+			}
+			bool expectedState = true;
+			if (!client->m_isClientKeepAliveRecevied.compare_exchange_strong(expectedState, false)) {
+				std::cout << "No keep-alive packet from client, disconnecting..." << std::endl;
+				client->m_socket.close();
+				return;
+			}
+			client->StartKeepAliveChecker();
+		};
+	
+	Verify(m_keepAliveCheckTimer.expires_from_now(pt::seconds(70)) == 0);
+	m_keepAliveCheckTimer.async_wait(
+		boost::bind(callback, shared_from_this(), _1));
+
 }
