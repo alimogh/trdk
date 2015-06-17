@@ -82,6 +82,8 @@ namespace trdk { namespace EngineServer {
 		void OnStrategyStopRequest(const StrategyStopRequest &);
 		void OnStrategySettingsSetRequest(const StrategySettingsSetRequest &);
 
+		void OnDebugPnlRequest();
+
 		void SendServiceInfo();
 
 		
@@ -116,6 +118,8 @@ namespace trdk { namespace EngineServer {
 		boost::asio::deadline_timer m_keepAliveSendTimer;
 		boost::asio::deadline_timer m_keepAliveCheckTimer;
 		boost::atomic_bool m_isClientKeepAliveRecevied;
+
+		size_t m_debugPnlRecordsNumber;
 
 	};
 

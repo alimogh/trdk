@@ -21,8 +21,11 @@
 struct Foo {
 	boost::posix_time::ptime time;
 	boost::uuids::uuid strategyId;
+	bool isLiveMode;
 	size_t triangleId;
 	double pnl;
+	double atr;
+	size_t updates_number;
 	boost::posix_time::time_duration triangleTime;
 	double avgWinners;
 	boost::posix_time::time_duration avgWinnersTime;

@@ -28,14 +28,16 @@ Triangle::Triangle(
 		const PairLegParams &ab,
 		const PairLegParams &bc,
 		const PairLegParams &ac,
-		const BestBidAskPairs &bestBidAskRef) 
+		const BestBidAskPairs &bestBidAskRef,
+		size_t bookUpdatesNumber) 
 	: m_strategy(strategy),
 	m_startTime(m_strategy.GetContext().GetCurrentTime()),
 	m_bestBidAsk(bestBidAskRef),
 	m_report(*this, reportsState),
 	m_id(id),
 	m_y(y),
-	m_qtyStart(startQty) {
+	m_qtyStart(startQty),
+	m_bookUpdatesNumber(bookUpdatesNumber) {
 
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
 		m_pairsLegs.fill(nullptr);

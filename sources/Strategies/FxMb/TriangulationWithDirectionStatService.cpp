@@ -180,6 +180,8 @@ bool StatService::OnBookUpdateTick(
 		security.GetSource().GetTag());
 	Assert(&GetSecurity(security.GetSource().GetIndex()) == &security);
 
+	UpdateTimes(book);
+
 	if (book.IsAdjusted() && !m_useAdjustedBookForCalculations) {
 		return false;
 	}
@@ -231,6 +233,8 @@ bool StatService::OnBookUpdateTick(
 	Side offer = {};
 
 	Data data;
+
+	data.updatesNumber = m_updatesTimes.size();
 
 	Source &source = GetSource(security.GetSource().GetIndex());
 
@@ -345,7 +349,7 @@ bool StatService::OnBookUpdateTick(
 				it = source.points.cbegin();
 				continue;
 			}
-			// As this time is sutable for p2 - it can be sutable for p1 too:
+			// As this time is suitable for p2 - it can be suitable for p1 too:
 			itP1
 				= itP2
 				= it;
@@ -619,6 +623,15 @@ void StatService::OnSettingsUpdate(const IniSectionRef &conf) {
 	m_emaSpeedFast = newEmaSpeedFast;
 
 }
+
+void StatService::UpdateTimes(const Security::Book &book) {
+	const auto &startTime = book.GetTime() - pt::seconds(30);
+	while (!m_updatesTimes.empty() && m_updatesTimes.front() < startTime) {
+		m_updatesTimes.pop_front();
+	}
+	m_updatesTimes.push_back(book.GetTime());
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 

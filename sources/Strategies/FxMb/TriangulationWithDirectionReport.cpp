@@ -167,7 +167,9 @@ public:
 					%	"Y1 detected"
 					%	"Y2 detected"
 					%	"Y executed"
-					%	"Y targeted";
+					%	"Y targeted"
+					%	"ATR"
+					%	"Updates (30 sec)";
 				foreach (const auto &bestBidAsk, bestBidAskPairs) {
 					const char *pair
 						= bestBidAsk
@@ -310,6 +312,8 @@ public:
 					%	"Strategy"
 					%	"Triangle ID"
 					%	"P&L"
+					%	"ATR"
+					%	"Updates (30 secs)"
 					%	"Triangle time"
 					%	"Avg winners"
 					%	"Avg winners time"
@@ -551,6 +555,10 @@ void TriangleReport::ReportAction(
 				record % ' ';
 			}
 			record % m_triangle.CalcYTargeted();
+
+			record % m_triangle.GetLastAtr();
+			record % m_triangle.GetBookUpdatesNumber();
+
 			for (size_t i = 0; i < numberOfPairs; ++i) {
 				writePair(Pair(i), record);
 			}
@@ -559,8 +567,11 @@ void TriangleReport::ReportAction(
 	Foo foo = {
 		m_triangle.GetStrategy().GetContext().GetCurrentTime(),
 		m_triangle.GetStrategy().GetId(),
+		false, // is live mode
 		m_triangle.GetId(),
 		yExecuted,
+		0, // atr
+		m_triangle.GetBookUpdatesNumber()
 	};
 
 	const auto &writePnl = [&](ReportRecord &record) {
@@ -606,6 +617,8 @@ void TriangleReport::ReportAction(
 					% m_triangle.GetStrategy().GetTitle()
 					% m_triangle.GetId()
 					% yExecuted
+					% m_triangle.GetLastAtr()
+					% m_triangle.GetBookUpdatesNumber()
 					% time; 
 				foo.triangleTime = time;
 
@@ -794,12 +807,14 @@ void TriangleReport::ReportUpdate(bool isForced) {
 				% ' '
 				% ' '
 				% ' '
+				% ' '
+				% ' '
 				% m_triangle.GetStrategy().GetYDetectedDirection()[Y1]
 				% m_triangle.GetStrategy().GetYDetectedDirection()[Y2]
-				% m_triangle.GetYDirection()[Y1]
-				% m_triangle.GetYDirection()[Y2]
 				% ' '
-				% ' ';
+				% ' '
+				% m_triangle.GetLastAtr()
+				% m_triangle.GetBookUpdatesNumber();
 			for (size_t i = 0; i < numberOfPairs; ++i) {
 				writePair(Pair(i), record);
 			}

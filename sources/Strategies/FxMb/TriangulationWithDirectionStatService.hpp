@@ -108,6 +108,15 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			std::vector<Security::Book::Level> bids;
 			std::vector<Security::Book::Level> offers;
 
+			double atr;
+			size_t updatesNumber;
+
+			Data()
+				: atr(0),
+				updatesNumber(0) {
+				//...//
+			}
+
 		};
 
 	private:
@@ -147,6 +156,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		};
 
+		typedef std::deque<boost::posix_time::ptime> UpdatesTimes;
+
 	public:
 
 		explicit StatService(
@@ -168,6 +179,16 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			while (source.dataLock.test_and_set(boost::memory_order_acquire));
 			result = source;
 			source.dataLock.clear(boost::memory_order_release);
+			return result;
+		}
+
+		size_t CalcUpdatesNumber() const {
+			size_t result = 0;
+			foreach (const auto &source, m_data) {
+				while (source->dataLock.test_and_set(boost::memory_order_acquire));
+				result += source->updatesNumber;
+				source->dataLock.clear(boost::memory_order_release);
+			}
 			return result;
 		}
 
@@ -208,6 +229,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void LogState(const MarketDataSource &) const;
 
+		void UpdateTimes(const Security::Book &);
+
 	private:
 
 		const size_t m_bookLevelsCount;
@@ -229,6 +252,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		std::vector<boost::shared_ptr<Source>> m_data;
 
 		static std::vector<Twd::StatService *> m_instancies;
+
+		UpdatesTimes m_updatesTimes;
 
 	};
 
