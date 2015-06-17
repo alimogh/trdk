@@ -98,7 +98,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const PairLegParams &ab,
 				const PairLegParams &bc,
 				const PairLegParams &ac,
-				const BestBidAskPairs &bestBidAskRef);
+				const BestBidAskPairs &bestBidAskRef,
+				size_t bookUpdatesNumber);
 		~Triangle();
 
 	public:
@@ -294,6 +295,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		const Y & GetY() const {
 			return m_y;
+		}
+
+		size_t GetBookUpdatesNumber() const {
+			return m_bookUpdatesNumber;
 		}
 
 		TriangleReport & GetReport() {
@@ -492,6 +497,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		boost::array<boost::shared_ptr<Twd::Position>, numberOfLegs> m_legs;
 
 		YDirection m_yDirection;
+
+		const size_t m_bookUpdatesNumber;
 	
 	};
 

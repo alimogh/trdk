@@ -59,7 +59,8 @@ Client::Client(
 	m_socket(ioService),
 	m_keepAliveSendTimer(ioService),
 	m_keepAliveCheckTimer(ioService),
-	m_isClientKeepAliveRecevied(false) {
+	m_isClientKeepAliveRecevied(false),
+	m_debugPnlRecordsNumber(0) {
 	
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -123,20 +124,26 @@ void Client::OnFoo(const Foo &foo) {
 	ConvertToUuid(
 		boost::uuids::random_generator()(),
 		*pnl.mutable_settings_revision());
+	pnl.set_mode(
+		foo.isLiveMode
+			?	TRADING_MODE_LIVE
+			:	TRADING_MODE_PAPER);
 	pnl.set_triangle_id(foo.triangleId);
 	pnl.set_pnl(foo.pnl);
+	pnl.set_atr(foo.atr);
+	pnl.set_updates_number(int32_t(foo.updates_number));
 	pnl.set_triangle_time(pt::to_simple_string(foo.triangleTime));
-	pnl.set_avg_winners(foo.avgWinners);
+	if (!IsZero(foo.avgWinners)) {
+		pnl.set_avg_winners(foo.avgWinners);
+	}
 	if (foo.avgWinnersTime.total_nanoseconds() > 0) {
 		pnl.set_avg_winners_time(pt::to_simple_string(foo.avgWinnersTime));
-	} else {
-		pnl.set_avg_winners_time("-");
 	}
-	pnl.set_avg_losers(foo.avgLosers);
+	if (!IsZero(foo.avgLosers)) {
+		pnl.set_avg_losers(foo.avgLosers);
+	}
 	if (foo.avgLosersTime.total_nanoseconds() > 0) {
 		pnl.set_avg_losers_time(pt::to_simple_string(foo.avgLosersTime));
-	} else {
-		pnl.set_avg_losers_time("-");
 	}
 	pnl.set_avg_time(pt::to_simple_string(foo.avgTime));
 	pnl.set_number_of_winners(foo.numberOfWinners);
@@ -314,6 +321,9 @@ void Client::OnNewRequest(const ClientRequest &request) {
 			break;
 		case ClientRequest::TYPE_STRATEGY_SETTINGS:
 			OnStrategySettingsSetRequest(request.strategy_settings());
+			break;
+		case ClientRequest::TYPE_DEBUG_PNL_REQUEST:
+			OnDebugPnlRequest();
 			break;
 		default:
 			//! @todo Write to log
@@ -618,3 +628,39 @@ void Client::StartKeepAliveChecker() {
 		boost::bind(callback, shared_from_this(), _1));
 
 }
+
+void Client::OnDebugPnlRequest() {
+
+	if (!m_socket.is_open()) {
+		return;
+	}
+	
+	Foo foo = {};
+	foo.time = boost::posix_time::microsec_clock::local_time();
+	foo.triangleId = ++m_debugPnlRecordsNumber;
+	foo.strategyId = boost::uuids::uuid(
+		boost::uuids::string_generator()(foo.triangleId % 2
+		?	"F3F0E70B-6074-4EFC-B3A0-1CF75F646CAA"
+		:	"CDBED493-7B08-434F-A5CB-77C9E4DC6CE6")),
+	foo.isLiveMode = foo.triangleId % 3 ? true : false;
+	foo.pnl = foo.triangleId % 3 ? .9999 : 1.0001;
+	foo.atr = 11.11;
+	foo.updates_number = 2222;
+	foo.triangleTime = pt::seconds(10);
+	if (foo.triangleId % 3) {
+		foo.avgWinners = 1.0002;
+		foo.avgWinnersTime = pt::seconds(11);
+	}
+	if (foo.triangleId % 4) {
+		foo.avgLosers = 0.9999;
+		foo.avgLosersTime = pt::seconds(13);
+	}
+	foo.avgTime = pt::seconds(14);
+	foo.numberOfWinners = 1;
+	foo.numberOfLosers = 2;
+	foo.percentOfWinners = 3;
+
+	OnFoo(foo);
+
+}
+

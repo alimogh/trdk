@@ -765,6 +765,22 @@ bool TriangulationWithDirection::Detect(Detection &result) const {
 	return false;
 }
 
+size_t TriangulationWithDirection::CalcBookUpdatesNumber(const Y &y) const {
+	return
+		+ CalcBookUpdatesNumber(PAIR_AB, y)
+		+ CalcBookUpdatesNumber(PAIR_BC, y)
+		+ CalcBookUpdatesNumber(PAIR_AC, y);
+}
+
+size_t TriangulationWithDirection::CalcBookUpdatesNumber(
+		const Pair &pair,
+		const Y &y)
+		const {
+	const auto &bestBidAsk = m_bestBidAsk[pair];
+	const auto &data = bestBidAsk.service->GetData(m_detectedEcns[y][pair]);
+	return data.updatesNumber;
+}
+
 void TriangulationWithDirection::CheckNewTriangle(
 		const TimeMeasurement::Milestones &timeMeasurement) {
 
@@ -812,7 +828,8 @@ void TriangulationWithDirection::CheckNewTriangle(
 					detection.y == Y1,
 					m_detectedEcns[detection.y][PAIR_AC],
 				},
-				m_bestBidAsk));
+				m_bestBidAsk,
+				CalcBookUpdatesNumber(detection.y)));
 
 		if (
 				triangle->GetPair(LEG1).security->IsBookAdjusted()

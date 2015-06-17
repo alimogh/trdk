@@ -94,6 +94,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		bool CheckStopRequest(const trdk::StopMode &);
 		bool CheckCurrentStopRequest();
 
+		size_t CalcBookUpdatesNumber(const Y &) const;
+		size_t CalcBookUpdatesNumber(const Pair &, const Y &) const;
+
 	private:
 
 		const size_t m_bookLevelsCount;

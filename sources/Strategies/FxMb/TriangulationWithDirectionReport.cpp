@@ -559,8 +559,11 @@ void TriangleReport::ReportAction(
 	Foo foo = {
 		m_triangle.GetStrategy().GetContext().GetCurrentTime(),
 		m_triangle.GetStrategy().GetId(),
+		false, // is live mode
 		m_triangle.GetId(),
 		yExecuted,
+		0, // atr
+		m_triangle.GetBookUpdatesNumber()
 	};
 
 	const auto &writePnl = [&](ReportRecord &record) {

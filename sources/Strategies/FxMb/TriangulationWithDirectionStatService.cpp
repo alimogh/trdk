@@ -232,6 +232,8 @@ bool StatService::OnBookUpdateTick(
 
 	Data data;
 
+	data.updatesNumber = 0;
+
 	Source &source = GetSource(security.GetSource().GetIndex());
 
 	////////////////////////////////////////////////////////////////////////////////

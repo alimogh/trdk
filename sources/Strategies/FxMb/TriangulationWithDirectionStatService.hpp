@@ -108,6 +108,15 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			std::vector<Security::Book::Level> bids;
 			std::vector<Security::Book::Level> offers;
 
+			double atr;
+			size_t updatesNumber;
+
+			Data()
+				: atr(0),
+				updatesNumber(0) {
+				//...//
+			}
+
 		};
 
 	private:

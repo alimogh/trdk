@@ -19,6 +19,11 @@ message Uuid {
 	required bytes data = 1;
 }
 
+enum TradingMode {
+	TRADING_MODE_LIVE = 1;
+	TRADING_MODE_PAPER = 2;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 message SettingsSection {
@@ -63,17 +68,20 @@ message Pnl {
 	required string time							= 1;
 	required Uuid strategy_id						= 2;
 	required Uuid settings_revision					= 3;
-	required uint64 triangle_id						= 4;
-	required double pnl								= 5;
-	required string triangle_time					= 6;
-	required double avg_winners						= 7;
-	required string avg_winners_time				= 8;
-	required double avg_losers						= 9;
-	required string avg_losers_time					= 10;
-	required string avg_time						= 11;
-	required uint64 number_of_winners				= 12;
-	required uint64 number_of_losers				= 13;
-	required uint64 percent_of_winners				= 14;
+	required TradingMode mode						= 4;
+	required uint64 triangle_id						= 5;
+	required double pnl								= 6;
+	required double	atr								= 7;
+	required uint32	updates_number					= 8;
+	required string triangle_time					= 9;
+	optional double avg_winners						= 10;
+	optional string avg_winners_time				= 11;
+	optional double avg_losers						= 12;
+	optional string avg_losers_time					= 13;
+	required string avg_time						= 14;
+	required uint64 number_of_winners				= 15;
+	required uint64 number_of_losers				= 16;
+	required uint64 percent_of_winners				= 17;
 };
 
 message ServerData {
@@ -151,6 +159,7 @@ message ClientRequest {
 		TYPE_STRATEGY_START = 6;
 		TYPE_STRATEGY_STOP = 7;
 		TYPE_STRATEGY_SETTINGS = 8;
+		TYPE_DEBUG_PNL_REQUEST = 9;
 	}
 
 	required Type type = 1;
