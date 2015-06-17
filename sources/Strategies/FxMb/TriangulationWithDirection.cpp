@@ -765,20 +765,12 @@ bool TriangulationWithDirection::Detect(Detection &result) const {
 	return false;
 }
 
-size_t TriangulationWithDirection::CalcBookUpdatesNumber(const Y &y) const {
-	return
-		+ CalcBookUpdatesNumber(PAIR_AB, y)
-		+ CalcBookUpdatesNumber(PAIR_BC, y)
-		+ CalcBookUpdatesNumber(PAIR_AC, y);
-}
-
-size_t TriangulationWithDirection::CalcBookUpdatesNumber(
-		const Pair &pair,
-		const Y &y)
-		const {
-	const auto &bestBidAsk = m_bestBidAsk[pair];
-	const auto &data = bestBidAsk.service->GetData(m_detectedEcns[y][pair]);
-	return data.updatesNumber;
+size_t TriangulationWithDirection::CalcBookUpdatesNumber() const {
+	size_t result = 0;
+	foreach (const auto &bestBidAsk, m_bestBidAsk) {
+		result += bestBidAsk.service->CalcUpdatesNumber();
+	}
+	return result;
 }
 
 void TriangulationWithDirection::CheckNewTriangle(
@@ -829,7 +821,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 					m_detectedEcns[detection.y][PAIR_AC],
 				},
 				m_bestBidAsk,
-				CalcBookUpdatesNumber(detection.y)));
+				CalcBookUpdatesNumber()));
 
 		if (
 				triangle->GetPair(LEG1).security->IsBookAdjusted()

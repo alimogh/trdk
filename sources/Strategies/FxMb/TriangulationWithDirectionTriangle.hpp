@@ -297,6 +297,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_y;
 		}
 
+		double GetLastAtr() const {
+			return .0;
+		}
+
 		size_t GetBookUpdatesNumber() const {
 			return m_bookUpdatesNumber;
 		}
