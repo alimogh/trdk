@@ -195,11 +195,15 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	public:
 
 		virtual boost::posix_time::ptime OnSecurityStart(const Security &);
-
 		virtual bool OnBookUpdateTick(
 				const Security &,
 				const Security::Book &,
 				const Lib::TimeMeasurement::Milestones &);
+
+		virtual void OnServiceStart(const trdk::Service &);
+		virtual bool OnServiceDataUpdate(
+				const trdk::Service &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	protected:
 

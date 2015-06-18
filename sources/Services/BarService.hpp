@@ -38,9 +38,11 @@ namespace trdk { namespace Services {
 			boost::posix_time::ptime time;
 			
 			trdk::ScaledPrice maxAskPrice;
+			trdk::ScaledPrice minAskPrice;
 			trdk::ScaledPrice openAskPrice;
 			trdk::ScaledPrice closeAskPrice;
 			
+			trdk::ScaledPrice maxBidPrice;
 			trdk::ScaledPrice minBidPrice;
 			trdk::ScaledPrice openBidPrice;
 			trdk::ScaledPrice closeBidPrice;
@@ -88,32 +90,37 @@ namespace trdk { namespace Services {
 	public:
 
 		explicit BarService(
-					Context &context,
-					const std::string &tag,
-					const Lib::IniSectionRef &);
+				Context &context,
+				const std::string &tag,
+				const Lib::IniSectionRef &);
 		virtual ~BarService();
 
 	public:
 
 		virtual boost::posix_time::ptime OnSecurityStart(
-					const trdk::Security &);
+				const trdk::Security &);
 
 		virtual bool OnNewBar(
-					const trdk::Security &,
-					const trdk::Security::Bar &);
+				const trdk::Security &,
+				const trdk::Security::Bar &);
 
 		virtual bool OnLevel1Tick(
-					const trdk::Security &,
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &);
+				const trdk::Security &,
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &);
 
 		virtual bool OnNewTrade(
-					const trdk::Security &,
-					const boost::posix_time::ptime &,
-					trdk::ScaledPrice,
-					trdk::Qty,
-					trdk::OrderSide);
-			
+				const trdk::Security &,
+				const boost::posix_time::ptime &,
+				trdk::ScaledPrice,
+				trdk::Qty,
+				trdk::OrderSide);
+
+		virtual bool OnBookUpdateTick(
+				const trdk::Security &security,
+				const trdk::Security::Book &book,
+				const trdk::Lib::TimeMeasurement::Milestones &);
+
 	public:
 
 		//! Each bar size.
@@ -151,19 +158,19 @@ namespace trdk { namespace Services {
 	public:
 
 		boost::shared_ptr<ScaledPriceStat> GetOpenPriceStat(
-					size_t numberOfBars)
+				size_t numberOfBars)
 				const;
 		boost::shared_ptr<ScaledPriceStat> GetClosePriceStat(
-					size_t numberOfBars)
+				size_t numberOfBars)
 				const;
 		boost::shared_ptr<ScaledPriceStat> GetHighPriceStat(
-					size_t numberOfBars)
+				size_t numberOfBars)
 				const;
 		boost::shared_ptr<ScaledPriceStat> GetLowPriceStat(
-					size_t numberOfBars)
+				size_t numberOfBars)
 				const;
 		boost::shared_ptr<QtyStat> GetTradingVolumeStat(
-					size_t numberOfBars)
+				size_t numberOfBars)
 				const;
 
 	private:

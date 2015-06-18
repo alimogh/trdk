@@ -13,6 +13,7 @@
 #include "Core/MarketDataSource.hpp"
 #include "Core/Settings.hpp"
 #include "Core/AsyncLog.hpp"
+#include "Services/BarService.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -165,6 +166,26 @@ pt::ptime StatService::OnSecurityStart(const Security &security) {
 		source->offers.resize(m_bookLevelsCount, emptyLevel);
 	}
 	return pt::not_a_date_time;
+}
+
+void StatService::OnServiceStart(const trdk::Service &) {
+
+}
+
+bool StatService::OnServiceDataUpdate(
+		const Service &service,
+		const TimeMeasurement::Milestones &) {
+	
+	const auto &barService
+		= *boost::polymorphic_downcast<const Services::BarService *>(&service);
+	AssertLt(0, barService.GetSize());
+	const auto &bar = barService.GetLastBar();
+
+	GetLog().Debug("Bid: close %1%, %2% / %3%;", bar.closeBidPrice, bar.maxBidPrice, bar.minBidPrice);
+	GetLog().Debug("Ask: close %1%, %2% / %3%;", bar.closeAskPrice, bar.maxAskPrice, bar.minAskPrice);
+	
+	return false;
+
 }
 
 bool StatService::OnBookUpdateTick(

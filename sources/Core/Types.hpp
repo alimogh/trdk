@@ -118,7 +118,6 @@ namespace trdk {
 
 	public:
 
-
 		template<trdk::Level1TickType type>
 		static Level1TickValue Create(
 					typename trdk::Level1TickValuePolicy<type>::ValueType

@@ -567,6 +567,9 @@ public:
 						if (!bar.openBidPrice) {
 							bar.openBidPrice = value.value.bidPrice;
 						}
+						bar.maxBidPrice = std::max(
+							bar.maxBidPrice,
+							value.value.bidPrice);
 						bar.minBidPrice = bar.minBidPrice
 							?	std::min(
 									bar.minBidPrice,
@@ -585,9 +588,11 @@ public:
 								bar.openAskPrice = security.GetAskPriceScaled();
 							}
 							bar.maxAskPrice = bar.openAskPrice;
+							bar.minAskPrice = bar.openAskPrice;
 							bar.closeAskPrice = bar.openAskPrice;
 						} else {
 							AssertNe(0, bar.maxAskPrice);
+							AssertNe(0, bar.minAskPrice);
 							AssertNe(0, bar.closeAskPrice);
 						}
 						
@@ -601,6 +606,11 @@ public:
 						bar.maxAskPrice = std::max(
 							bar.maxAskPrice,
 							value.value.askPrice);
+						bar.minAskPrice = bar.minAskPrice
+							?	std::min(
+									bar.minAskPrice,
+									value.value.askPrice)
+							:	bar.openAskPrice;
 						bar.closeAskPrice = value.value.askPrice;
 
 						if (!bar.openBidPrice) {
@@ -695,6 +705,36 @@ bool BarService::OnNewTrade(
 			Qty qty,
 			OrderSide) {
 	return m_pimpl->OnNewTrade(security, time, price, qty);
+}
+
+bool BarService::OnBookUpdateTick(
+			const Security &security,
+			const Security::Book &book,
+			const TimeMeasurement::Milestones &) {
+	bool result = false;
+	{
+		const auto &bids = book.GetBids();
+		if (bids.GetLevelsCount() > 0) {
+			const auto &price
+				= security.ScalePrice(bids.GetLevel(0).GetPrice());
+			const auto &tick
+				= Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(price);
+			result = m_pimpl->OnLevel1Tick(security, book.GetTime(), tick);
+		}
+	}
+	{
+		const auto &asks = book.GetAsks();
+		if (asks.GetLevelsCount() > 0) {
+			const auto &price
+				= security.ScalePrice(asks.GetLevel(0).GetPrice());
+			const auto &tick
+				= Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(price);
+			if (m_pimpl->OnLevel1Tick(security, book.GetTime(), tick)) {
+				result = true;
+			}
+		}
+	}
+	return result;
 }
 
 const pt::time_duration & BarService::GetBarSize() const {

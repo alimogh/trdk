@@ -13,6 +13,10 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Libs refs">
+      <UniqueIdentifier>{a555d013-f010-49dc-9b9c-53bf28c40f16}</UniqueIdentifier>
+      <Extensions>lib</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -73,5 +77,43 @@
     <None Include="FxMb.def">
       <Filter>Header Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\output\x64\lib\Release Standalone\Services.lib">
+      <Filter>Libs refs</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Release Standalone\Services.lib">
+      <Filter>Libs refs</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Release DLL\Services.lib">
+      <Filter>Libs refs</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Release DLL\Services.lib">
+      <Filter>Libs refs</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Debug Standalone\Services_dbg.lib">
+      <Filter>Libs refs</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Debug DLL\Services_dbg.lib">
+      <Filter>Libs refs</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Debug DLL\Services_dbg.lib">
+      <Filter>Libs refs</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Debug Standalone\Services_dbg.lib">
+      <Filter>Libs refs</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Test DLL\Services_test.lib">
+      <Filter>Libs refs</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Test Standalone\Services_test.lib">
+      <Filter>Libs refs</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Test Standalone\Services_test.lib">
+      <Filter>Libs refs</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Test DLL\Services_test.lib">
+      <Filter>Libs refs</Filter>
+    </Library>
   </ItemGroup>
 </Project>
