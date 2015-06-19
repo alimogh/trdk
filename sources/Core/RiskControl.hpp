@@ -78,10 +78,13 @@ namespace trdk {
 	class RiskControlScope : private boost::noncopyable {
 
 	public:
-
+		
+		explicit RiskControlScope(const trdk::TradingMode &);
 		virtual ~RiskControlScope();
 
 	public:
+
+		const trdk::TradingMode & GetTradingMode() const;
 
 		virtual const std::string & GetName() const = 0;
 
@@ -133,6 +136,10 @@ namespace trdk {
 	public:
 
 		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &) = 0;
+
+	private:
+
+		const trdk::TradingMode m_tradingMode;
 
 	};
 
@@ -191,8 +198,15 @@ namespace trdk {
 
 	public:
 
-		RiskControl(trdk::Context &, const trdk::Lib::Ini &);
+		RiskControl(
+				trdk::Context &,
+				const trdk::Lib::Ini &,
+				const trdk::TradingMode &);
 		~RiskControl();
+
+	public:
+
+		const trdk::TradingMode & GetTradingMode() const;
 
 	public:
 

@@ -220,33 +220,43 @@ void Engine::Context::Start(const Lib::Ini &conf) {
 	
 	state->subscriptionsManager.Activate();
 
-	foreach (auto &tradeSystemRef, m_pimpl->m_tradeSystems) {
+	foreach (auto &tradeSystemsByMode, m_pimpl->m_tradeSystems) {
 
-		auto &tradeSystem = *tradeSystemRef.tradeSystem;
-		const IniSectionRef confSection(
-			conf,
-			GetMarketDataSourceSectionName(tradeSystemRef.tradeSystem));
+		foreach (auto &tradeSystemRef, tradeSystemsByMode.holders) {
 
-		try {
-			tradeSystem.Connect(confSection);
-		} catch (const Interactor::ConnectError &ex) {
-			boost::format message(
-				"Failed to connect to trading system: \"%1%\"");
-			message % ex;
-			throw Interactor::ConnectError(message.str().c_str());
-		} catch (const Lib::Exception &ex) {
-			GetLog().Error(
-				"Failed to make trading system connection: \"%1%\".",
-				ex);
-			throw Exception("Failed to make trading system");
-		}
+			if (!tradeSystemRef.tradeSystem) {
+				AssertEq(std::string(), tradeSystemRef.section);
+				continue;
+			}
+			Assert(!tradeSystemRef.section.empty());
 
-		const char *const terminalCmdFileKey = "terminal_cmd_file";
-		if (confSection.IsKeyExist(terminalCmdFileKey)) {
-			tradeSystemRef.terminal.reset(
-				new Terminal(
-					confSection.ReadFileSystemPath(terminalCmdFileKey),
-					tradeSystem));
+			auto &tradeSystem = *tradeSystemRef.tradeSystem;
+			const IniSectionRef confSection(
+				conf,
+				GetMarketDataSourceSectionName(tradeSystemRef.tradeSystem));
+
+			try {
+				tradeSystem.Connect(confSection);
+			} catch (const Interactor::ConnectError &ex) {
+				boost::format message(
+					"Failed to connect to trading system: \"%1%\"");
+				message % ex;
+				throw Interactor::ConnectError(message.str().c_str());
+			} catch (const Lib::Exception &ex) {
+				GetLog().Error(
+					"Failed to make trading system connection: \"%1%\".",
+					ex);
+				throw Exception("Failed to make trading system");
+			}
+
+			const char *const terminalCmdFileKey = "terminal_cmd_file";
+			if (confSection.IsKeyExist(terminalCmdFileKey)) {
+				tradeSystemRef.terminal.reset(
+					new Terminal(
+						confSection.ReadFileSystemPath(terminalCmdFileKey),
+						tradeSystem));
+			}
+
 		}
 
 	}
@@ -400,16 +410,20 @@ void Engine::Context::Update(const Lib::Ini &conf) {
 	
 	GetLog().Info("Updating setting...");
 
-	GetRiskControl().OnSettingsUpdate(conf);
+	for (size_t i = 0; i < numberOfTradingModes; ++i) {
+		GetRiskControl(TradingMode(i)).OnSettingsUpdate(conf);
+	}
 
-	foreach (auto &tradeSystem, m_pimpl->m_tradeSystems) {
-		try {
-			tradeSystem.tradeSystem->OnSettingsUpdate(
-				IniSectionRef(conf, tradeSystem.section));
-		} catch (const Lib::Exception &ex) {
-			tradeSystem.tradeSystem->GetLog().Error(
-				"Failed to update settings: \"%1%\".",
-				ex);
+	foreach (auto &tradeSystemByMode, m_pimpl->m_tradeSystems) {
+		foreach (auto &tradeSystem, tradeSystemByMode.holders) {
+			try {
+				tradeSystem.tradeSystem->OnSettingsUpdate(
+					IniSectionRef(conf, tradeSystem.section));
+			} catch (const Lib::Exception &ex) {
+				tradeSystem.tradeSystem->GetLog().Error(
+					"Failed to update settings: \"%1%\".",
+					ex);
+			}
 		}
 	}
 
@@ -473,28 +487,23 @@ size_t Engine::Context::GetTradeSystemsCount() const {
 	return m_pimpl->m_tradeSystems.size();
 }
 
-TradeSystem & Engine::Context::GetTradeSystem(size_t index) {
+TradeSystem & Engine::Context::GetTradeSystem(
+		size_t index,
+		const TradingMode &mode) {
 	if (index >= m_pimpl->m_tradeSystems.size()) {
 		throw Exception("Trade System index is out of range");
 	}
-	return *m_pimpl->m_tradeSystems[index].tradeSystem;
-}
-
-const TradeSystem & Engine::Context::GetTradeSystem(size_t index) const {
-	return const_cast<Context *>(this)->GetTradeSystem(index);
-}
-
-void Engine::Context::ForEachTradeSystem(
-		const boost::function<bool (trdk::TradeSystem &)> &pred) {
-#	ifdef BOOST_ENABLE_ASSERT_HANDLER
-		size_t i = 0;
-#	endif
-	foreach (auto &tradeSystem, m_pimpl->m_tradeSystems) {
-		AssertEq(i, tradeSystem.tradeSystem->GetIndex());
-		if (!pred(*tradeSystem.tradeSystem)) {
-			return;
-		}
+	auto &holder = m_pimpl->m_tradeSystems[index].holders[mode];
+	if (!holder.tradeSystem) {
+		throw Exception("Trade System with such trading mode is not loaded");
 	}
+	return *holder.tradeSystem;
+}
+
+const TradeSystem & Engine::Context::GetTradeSystem(
+		size_t index,
+		const TradingMode &mode) const {
+	return const_cast<Context *>(this)->GetTradeSystem(index, mode);
 }
 
 Security * Engine::Context::FindSecurity(const Symbol &symbol) {

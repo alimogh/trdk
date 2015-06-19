@@ -10,6 +10,9 @@
 
 #pragma once
 
+//! @todo Remove after Foo!
+#include "Core/Types.hpp"
+
 #include "DisableBoostWarningsBegin.h"
 #	include <boost/date_time/posix_time/posix_time.hpp>
 #	include <boost/date_time/local_time/local_time.hpp>
@@ -21,7 +24,7 @@
 struct Foo {
 	boost::posix_time::ptime time;
 	boost::uuids::uuid strategyId;
-	bool isLiveMode;
+	trdk::TradingMode tradingMode;
 	size_t triangleId;
 	double pnl;
 	double atr;

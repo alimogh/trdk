@@ -105,7 +105,9 @@ namespace {
 		boost::split(subs, sectionName, boost::is_any_of("."));
 		if (subs.empty() || subs.size() == 1) {
 			return false;
-		} else if (!boost::iequals(*subs.begin(), Sections::tradeSystem)) {
+		} else if (
+				!boost::iequals(*subs.begin(), Sections::tradeSystem)
+				&& !boost::iequals(*subs.begin(), Sections::paperTradeSystem)) {
 			return false;
 		} else if (
 				(subs.size() == 2 && subs.rbegin()->empty())
@@ -175,6 +177,7 @@ private:
 			size_t index,
 			const IniSectionRef &configurationSection,
 			const std::string &tag,
+			const TradingMode &mode,
 			DllObjectPtr<TradeSystem> &tradeSystemResult,
 			DllObjectPtr<MarketDataSource> &marketDataSourceResult) {
 		
@@ -197,6 +200,7 @@ private:
 			
 			try {
 				factoryResult = dll->GetFunction<Factory>(factoryName)(
+					mode,
 					index,
 					m_context,
 					tag,
@@ -209,6 +213,7 @@ private:
 						= DefaultValues::Factories::factoryNameStart
 							+ factoryName;
 					factoryResult = dll->GetFunction<Factory>(factoryName)(
+						mode,
 						index,
 						m_context,
 						tag,
@@ -252,9 +257,20 @@ private:
 		foreach (const auto &section, m_conf.ReadSectionsList()) {
 			
 			std::string tag;
-			if (	
-					!GetTradeSystemSection(section, tag)
-					&& !boost::iequals(section, Sections::tradeSystem)) {
+			if (!GetTradeSystemSection(section, tag)) {
+				continue;
+			}
+
+			TradingMode mode;
+			if (
+					boost::iequals(section, Sections::tradeSystem)
+					|| boost::istarts_with(section, Sections::tradeSystem + ".")) {
+				mode = TRADING_MODE_LIVE;
+			} else if (
+					boost::iequals(section, Sections::paperTradeSystem)
+					|| boost::istarts_with(section, Sections::paperTradeSystem + ".")) {
+				mode = TRADING_MODE_PAPER;
+			} else {
 				continue;
 			}
 			
@@ -264,15 +280,32 @@ private:
 				m_tradeSystems.size(),
 				IniSectionRef(m_conf, section),
 				tag,
+				mode,
 				tradeSystem,
 				marketDataSource);
 
 			// It always must be a trade system service...
 			Assert(tradeSystem);
-			TradeSystemHolder tradeSystemHolder;
-			tradeSystemHolder.tradeSystem = tradeSystem;
-			tradeSystemHolder.section = section;
-			m_tradeSystems.push_back(tradeSystemHolder);
+			
+			bool isFound = false;
+			foreach (auto &holderByMode, m_tradeSystems) {
+				if (holderByMode.tag != tag) {
+					continue;
+				}
+				AssertEq(std::string(), holderByMode.holders[mode].section);
+				Assert(!holderByMode.holders[mode].tradeSystem);
+				holderByMode.holders[mode].tradeSystem = tradeSystem;
+				holderByMode.holders[mode].section = section;
+				isFound = true;
+				break;
+			}
+			if (!isFound) {
+				TradeSystemModesHolder holderByMode;
+				holderByMode.tag = tag;
+				holderByMode.holders[mode].tradeSystem = tradeSystem;
+				holderByMode.holders[mode].section = section;
+				m_tradeSystems.emplace_back(holderByMode);
+			}
 
 			// ...and can be Market Data Source at the same time:
 			if (marketDataSource) {
@@ -287,8 +320,6 @@ private:
 			throw Exception("No one TradeSystem found in configuration");
 		}
 
-		m_tradeSystems.shrink_to_fit();
-	
 	}
 
 	//! Loads Market Data Source by conf. section name.

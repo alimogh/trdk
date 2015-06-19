@@ -47,7 +47,10 @@ namespace trdk {
 			PT_TIME_DURATION,
 
 			PT_CURRENCY,
+			
 			PT_SECURITY,
+			
+			PT_TRADING_MODE,
 
 			numberOfParamTypes
 				
@@ -146,7 +149,7 @@ namespace trdk {
 				}
 	
 				static_assert(
-					numberOfParamTypes == 17,
+					numberOfParamTypes == 18,
 					"Parameter type list changed.");
 				switch (type) {
 
@@ -229,6 +232,12 @@ namespace trdk {
 							os);
 						break;
 
+					case PT_TRADING_MODE:
+						WriteToDumpStream(
+							boost::any_cast<const TradingMode &>(val),
+							os);
+						break;
+
 					default:
 						AssertEq(PT_UINT64, type);
 				}
@@ -305,6 +314,10 @@ namespace trdk {
 
 		void StoreParam(const trdk::Security &security) {
 			StoreTypedParam(PT_SECURITY, &security);
+		}
+
+		void StoreParam(const trdk::TradingMode &tradingMode) {
+			StoreTypedParam(PT_TRADING_MODE, tradingMode);
 		}
 
 		template<typename Param>

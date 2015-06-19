@@ -76,12 +76,12 @@ namespace trdk { namespace EngineServer {
 					const std::string &key,
 					const std::string &value)
 					const
-					= 0;
+				= 0;
 			virtual void OnKeyStore(
-				const std::string &section,
-				const std::string &key,
-				std::string &value)
-				const
+					const std::string &section,
+					const std::string &key,
+					std::string &value)
+					const
 				= 0;
 		private:
 			void Store();
@@ -139,16 +139,22 @@ namespace trdk { namespace EngineServer {
 	
 		explicit Settings(
 				const boost::filesystem::path &,
-				const std::string &serviceName);
+				const std::string &serviceName,
+				Service &);
 		explicit Settings(
 				const boost::filesystem::path &,
 				const std::string &serviceName,
-				const std::string &engineId);
+				const std::string &engineId,
+				Service &);
 
 	public:
 
 		const std::string & GetEngeineId() const;
 		const boost::filesystem::path & GetFilePath() const;
+
+		const Service & GetService() const {
+			return m_service;
+		}
 
 	public:
 
@@ -178,6 +184,8 @@ namespace trdk { namespace EngineServer {
 		mutable Mutex m_mutex;
 
 		ClientSettings m_clientSettins;
+
+		Service &m_service;
 	
 	};
 

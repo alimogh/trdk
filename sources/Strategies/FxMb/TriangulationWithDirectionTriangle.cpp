@@ -128,8 +128,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		result.reset(
 			new Twd::LongPosition(
 				m_strategy,
-				m_strategy.GetContext().GetTradeSystem(
-					security.GetSource().GetIndex()),
+				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetCashBaseCurrency(),
 				//! @todo remove "to qty"
@@ -166,8 +165,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		result.reset(
 			new Twd::ShortPosition(
 				m_strategy,
-				m_strategy.GetContext().GetTradeSystem(
-					security.GetSource().GetIndex()),
+				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetCashBaseCurrency(),
 				//! @todo remove "to qty"

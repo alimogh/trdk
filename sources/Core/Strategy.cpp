@@ -288,11 +288,14 @@ public:
 	Strategy &m_strategy;
 	const boost::uuids::uuid m_id;
 	const std::string m_title;
+	const TradingMode m_tradingMode;
 
 	Strategy::TradingLog m_tradingLog;
 
 	const std::unique_ptr<RiskControlScope> m_riskControlScope;
 	
+	boost::atomic_bool m_isEnabled;
+
 	boost::atomic_bool m_isBlocked;
 	pt::ptime m_blockEndTime;
 	BlockMutex m_blockMutex;
@@ -310,12 +313,15 @@ public:
 		: m_strategy(strategy),
 		m_id(boost::uuids::string_generator()(conf.ReadKey("id"))),
 		m_title(conf.ReadKey("title")),
+		m_tradingMode(
+			ConvertTradingModeFromString(conf.ReadKey("trading_mode"))),
+		m_isEnabled(conf.ReadBoolKey("is_enabled")),
 		m_isBlocked(false),
 		m_tradingLog(
 			m_strategy.GetTag(),
 			m_strategy.GetContext().GetTradingLog()),
 		m_riskControlScope(
-			m_strategy.GetContext().GetRiskControl().CreateScope(
+			m_strategy.GetContext().GetRiskControl(m_tradingMode).CreateScope(
 				m_strategy.GetTag(),
 				conf)),
 		m_stopMode(STOP_MODE_UNKNOWN) {
@@ -339,6 +345,10 @@ Strategy::Strategy(
 		const IniSectionRef &conf)
 	: Consumer(context, "Strategy", name, tag) {
 	m_pimpl = new Implementation(*this, conf);
+	GetLog().Info(
+		"%1%, %2% mode.",
+		m_pimpl->m_isEnabled ? "ENABLED" : "DISABLED",
+		boost::to_upper_copy(ConvertToString(GetTradingMode())));
 }
 
 Strategy::~Strategy() {
@@ -362,8 +372,16 @@ const std::string & Strategy::GetTitle() const {
 	return m_pimpl->m_title;
 }
 
+TradingMode Strategy::GetTradingMode() const {
+	return m_pimpl->m_tradingMode;
+}
+
 RiskControlScope & Strategy::GetRiskControlScope() {
 	return *m_pimpl->m_riskControlScope;
+}
+
+TradeSystem & Strategy::GetTradeSystem(size_t index) {
+	return GetContext().GetTradeSystem(index, GetTradingMode());
 }
 
 Strategy::TradingLog & Strategy::GetTradingLog() const throw() {
@@ -421,6 +439,9 @@ void Strategy::RaiseLevel1UpdateEvent(
 			Security &security,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
+	// 1st time already checked: before enqueue event (without locking),
+	// here - control check (under mutex as blocking and enabling - under
+	// the mutex too):
 	if (IsBlocked()) {
 		return;
 	}
@@ -433,6 +454,9 @@ void Strategy::RaiseLevel1TickEvent(
 		const boost::posix_time::ptime &time,
 		const Level1TickValue &value) {
 	const Lock lock(GetMutex());
+	// 1st time already checked: before enqueue event (without locking),
+	// here - control check (under mutex as blocking and enabling - under
+	// the mutex too):
 	if (IsBlocked()) {
 		return;
 	}
@@ -446,6 +470,9 @@ void Strategy::RaiseNewTradeEvent(
 		Qty qty,
 		OrderSide side) {
 	const Lock lock(GetMutex());
+	// 1st time already checked: before enqueue event (without locking),
+	// here - control check (under mutex as blocking and enabling - under
+	// the mutex too):
 	if (IsBlocked()) {
 		return;
 	}
@@ -456,6 +483,9 @@ void Strategy::RaiseServiceDataUpdateEvent(
 		const Service &service,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
+	// 1st time already checked: before enqueue event (without locking),
+	// here - control check (under mutex as blocking and enabling - under
+	// the mutex too):
 	if (IsBlocked()) {
 		return;
 	}
@@ -528,6 +558,9 @@ void Strategy::RaiseBookUpdateTickEvent(
 		const Security::Book &book,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
+	// 1st time already checked: before enqueue event (without locking),
+	// here - control check (under mutex as blocking and enabling - under
+	// the mutex too):
 	if (IsBlocked()) {
 		return;
 	}
@@ -536,23 +569,28 @@ void Strategy::RaiseBookUpdateTickEvent(
 }
 
 bool Strategy::IsBlocked(bool forever /* = false */) const {
-	if (!m_pimpl->m_isBlocked) {
-		return false;
-	} else {
-		const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
-		if (
-				m_pimpl->m_blockEndTime == pt::not_a_date_time
-				|| m_pimpl->m_blockEndTime > GetContext().GetCurrentTime()) {
-			return true;
-		} else if (forever) {
-			return false;
-			
-		}
-		m_pimpl->m_blockEndTime = pt::not_a_date_time;
-		m_pimpl->m_isBlocked = false;
-		GetLog().Info("Unblocked.");
+	
+	if (!m_pimpl->m_isEnabled || !m_pimpl->m_isBlocked) {
 		return false;
 	}
+
+	const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
+
+	if (
+			m_pimpl->m_blockEndTime == pt::not_a_date_time
+			|| m_pimpl->m_blockEndTime > GetContext().GetCurrentTime()) {
+		return true;
+	} else if (forever) {
+		return false;
+	}
+
+	m_pimpl->m_blockEndTime = pt::not_a_date_time;
+	m_pimpl->m_isBlocked = false;
+
+	GetLog().Info("Unblocked.");
+
+	return false;
+
 }
 
 void Strategy::Block() throw() {
@@ -658,8 +696,16 @@ const Strategy::PositionList & Strategy::GetPositions() const {
 }
 
 void Strategy::OnSettingsUpdate(const IniSectionRef &conf) {
+
 	Consumer::OnSettingsUpdate(conf);
+
+	if (m_pimpl->m_isEnabled != conf.ReadBoolKey("is_enabled")) {
+		m_pimpl->m_isEnabled = !m_pimpl->m_isEnabled;
+		GetLog().Info("%1%.", m_pimpl->m_isEnabled ? "ENABLED" : "DISABLED");
+	}
+
 	m_pimpl->m_riskControlScope->OnSettingsUpdate(conf);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

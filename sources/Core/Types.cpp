@@ -12,6 +12,7 @@
 #include "Types.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -44,3 +45,59 @@ std::ostream & std::operator <<(std::ostream &os, const OrderParams &params) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+TradingMode trdk::ConvertTradingModeFromString(const std::string &mode) {
+	
+	static_assert(numberOfTradingModes, "List changed.");
+
+	if (boost::iequals(mode, ConvertToString(TRADING_MODE_PAPER))) {
+		return TRADING_MODE_PAPER;
+	} else if (boost::iequals(mode, ConvertToString(TRADING_MODE_LIVE))) {
+		return TRADING_MODE_LIVE;
+	} else {
+		boost::format message(
+			"Wrong trading mode \"%1%\", allowed: \"%2%\" and \"%3%\".");
+		message
+			% mode
+			% ConvertToString(TRADING_MODE_PAPER)
+			% ConvertToString(TRADING_MODE_LIVE);
+		throw trdk::Lib::Exception(message.str().c_str());
+	}
+
+}
+
+namespace {
+
+	const char * ConvertToPch(const TradingMode &mode) {
+		static_assert(numberOfTradingModes, "List changed.");
+		switch (mode) {
+			case TRADING_MODE_LIVE:
+				return "live";
+			case TRADING_MODE_PAPER:
+				return "paper";
+			default:
+				AssertEq(TRADING_MODE_LIVE, mode);
+				return "UNKNOWN";
+		}
+	}
+
+	const std::string tradingModeLive = ConvertToPch(TRADING_MODE_LIVE);
+	const std::string tradingModePaper = ConvertToPch(TRADING_MODE_PAPER);
+	const std::string tradingModeUnknown = "UNKNOWN";
+
+}
+
+const std::string & trdk::ConvertToString(const TradingMode &mode) {
+	static_assert(numberOfTradingModes, "List changed.");
+	switch (mode) {
+		case TRADING_MODE_LIVE:
+			return tradingModeLive;
+		case TRADING_MODE_PAPER:
+			return tradingModePaper;
+		default:
+			AssertEq(TRADING_MODE_LIVE, mode);
+			return tradingModeUnknown;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////

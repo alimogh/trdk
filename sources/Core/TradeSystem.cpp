@@ -63,13 +63,17 @@ TradeSystem::PositionError::PositionError(
 
 namespace {
 	
-	std::string FormatStringId(const std::string &tag) {
+	std::string FormatStringId(
+			const std::string &tag,
+			const TradingMode &mode) {
 		std::string	result("TradeSystem");
 		if (!tag.empty()) {
 			result += '.';
 			result += tag;
 		}
-		return std::move(result);
+		result += '.';
+		result += ConvertToString(mode);
+		return result;
 	}
 
 }
@@ -79,6 +83,8 @@ class TradeSystem::Implementation : private boost::noncopyable {
 public:
 
 	TradeSystem *m_self;
+
+	const TradingMode m_mode;
 
 	const size_t m_index;
 
@@ -91,13 +97,15 @@ public:
 	TradeSystem::TradingLog m_tradingLog;
 
 	explicit Implementation(
+			const TradingMode &mode,
 			size_t index,
 			Context &context,
 			const std::string &tag)
-		: m_index(index),
+		: m_mode(mode),
+		m_index(index),
 		m_context(context),
 		m_tag(tag),
-		m_stringId(FormatStringId(m_tag)),
+		m_stringId(FormatStringId(m_tag, m_mode)),
 		m_log(m_stringId, m_context.GetLog()),
 		m_tradingLog(m_tag, m_context.GetTradingLog()) {
 		//...//
@@ -145,7 +153,7 @@ public:
 			const OrderParams &params,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 		ValidateNewOrder(qty, params);
-		m_context.GetRiskControl().CheckNewBuyOrder(
+		m_context.GetRiskControl(m_mode).CheckNewBuyOrder(
 			riskControlScope,
 			security,
 			currency,
@@ -163,7 +171,7 @@ public:
 			const OrderParams &params,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 		ValidateNewIocOrder(qty, params);
-		m_context.GetRiskControl().CheckNewBuyOrder(
+		m_context.GetRiskControl(m_mode).CheckNewBuyOrder(
 			riskControlScope,
 			security,
 			currency,
@@ -181,7 +189,7 @@ public:
 			const OrderParams &params,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 		ValidateNewOrder(qty, params);
-		m_context.GetRiskControl().CheckNewSellOrder(
+		m_context.GetRiskControl(m_mode).CheckNewSellOrder(
 			riskControlScope,
 			security,
 			currency,
@@ -199,7 +207,7 @@ public:
 			const OrderParams &params,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 		ValidateNewIocOrder(qty, params);
-		m_context.GetRiskControl().CheckNewSellOrder(
+		m_context.GetRiskControl(m_mode).CheckNewSellOrder(
 			riskControlScope,
 			security,
 			currency,
@@ -218,7 +226,7 @@ public:
 			const ScaledPrice &tradePrice,
 			const Qty &remainingQty,
 			const TimeMeasurement::Milestones &timeMeasurement) {
-		m_context.GetRiskControl().ConfirmBuyOrder(
+		m_context.GetRiskControl(m_mode).ConfirmBuyOrder(
 			riskControlScope,
 			orderStatus,
 			security,
@@ -240,7 +248,7 @@ public:
 			const ScaledPrice &tradePrice,
 			const Qty &remainingQty,
 			const TimeMeasurement::Milestones &timeMeasurement) {
-		m_context.GetRiskControl().ConfirmSellOrder(
+		m_context.GetRiskControl(m_mode).ConfirmSellOrder(
 			riskControlScope,
 			orderStatus,
 			security,
@@ -254,13 +262,21 @@ public:
 
 };
 
-TradeSystem::TradeSystem(size_t index, Context &context, const std::string &tag)
-	: m_pimpl(new Implementation(index, context, tag)) {
+TradeSystem::TradeSystem(
+		const TradingMode &mode,
+		size_t index,
+		Context &context,
+		const std::string &tag)
+	: m_pimpl(new Implementation(mode, index, context, tag)) {
 	m_pimpl->m_self = this;
 }
 
 TradeSystem::~TradeSystem() {
 	delete m_pimpl;
+}
+
+const TradingMode & TradeSystem::GetMode() const {
+	return m_pimpl->m_mode;
 }
 
 size_t TradeSystem::GetIndex() const {

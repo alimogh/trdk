@@ -257,7 +257,8 @@ public:
 
 	Params m_params;
 
-	std::unique_ptr<RiskControl> m_riskControl;
+	boost::array<std::unique_ptr<RiskControl>, numberOfTradingModes>	
+		m_riskControl;
 
 	std::unique_ptr<LatanReport> m_latanReport;
 
@@ -300,7 +301,10 @@ Context::Context(
 		 tradingLog,
 		 settings,
 		 startTime);
-	m_pimpl->m_riskControl.reset(new RiskControl(*this, conf));
+	for (size_t i = 0; i < m_pimpl->m_riskControl.size(); ++i) {
+		m_pimpl->m_riskControl[i].reset(
+			new RiskControl(*this, conf, TradingMode(i)));
+	}
 	m_pimpl->m_latanReport.reset(new LatanReport(*this));
 }
 
@@ -414,12 +418,12 @@ TimeMeasurement::Milestones Context::StartDispatchingTimeMeasurement() const {
 	return m_pimpl->m_latanReport->StartDispatchingTimeMeasurement();
 }
 
-RiskControl & Context::GetRiskControl() {
-	return *m_pimpl->m_riskControl;
+RiskControl & Context::GetRiskControl(const TradingMode &mode) {
+	return *m_pimpl->m_riskControl[mode];
 }
 
-const RiskControl & Context::GetRiskControl() const {
-	return const_cast<Context *>(this)->GetRiskControl();
+const RiskControl & Context::GetRiskControl(const TradingMode &mode) const {
+	return const_cast<Context *>(this)->GetRiskControl(mode);
 }
 
 Context::StateUpdateConnection Context::SubscribeToStateUpdate(

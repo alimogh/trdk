@@ -24,6 +24,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 	public:
 
 		TradeSystem(
+				const trdk::TradingMode &,
 				size_t index,
 				Context &context,
 				const std::string &tag,

@@ -124,10 +124,15 @@ void Client::OnFoo(const Foo &foo) {
 	ConvertToUuid(
 		boost::uuids::random_generator()(),
 		*pnl.mutable_settings_revision());
-	pnl.set_mode(
-		foo.isLiveMode
-			?	TRADING_MODE_LIVE
-			:	TRADING_MODE_PAPER);
+	static_assert(numberOfTradingModes == 2, "List changed.");
+	switch (foo.tradingMode) {
+		case trdk::TRADING_MODE_LIVE:
+			pnl.set_mode(EngineServer::TRADING_MODE_LIVE);
+			break;
+		case trdk::TRADING_MODE_PAPER:
+			pnl.set_mode(EngineServer::TRADING_MODE_PAPER);
+			break;
+	}
 	pnl.set_triangle_id(foo.triangleId);
 	pnl.set_pnl(foo.pnl);
 	pnl.set_atr(foo.atr);
@@ -642,7 +647,9 @@ void Client::OnDebugPnlRequest() {
 		boost::uuids::string_generator()(foo.triangleId % 2
 		?	"F3F0E70B-6074-4EFC-B3A0-1CF75F646CAA"
 		:	"CDBED493-7B08-434F-A5CB-77C9E4DC6CE6")),
-	foo.isLiveMode = foo.triangleId % 3 ? true : false;
+	foo.tradingMode = foo.triangleId % 3
+		?	trdk::TRADING_MODE_LIVE
+		:	trdk::TRADING_MODE_PAPER;
 	foo.pnl = foo.triangleId % 3 ? .9999 : 1.0001;
 	foo.atr = 11.11;
 	foo.updates_number = 2222;

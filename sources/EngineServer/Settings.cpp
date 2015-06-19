@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Settings.hpp"
+#include "Service.hpp"
 
 namespace fs = boost::filesystem;
 namespace mi = boost::multi_index;
@@ -169,6 +170,7 @@ namespace {
 		result.Add(true,	"",				"module",											KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"module");
 		result.Add(true,	"",				"factory",											KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"type");
 		result.Add(true,	"",				"is_enabled",										KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"is_enabled");
+		result.Add(false,	"",				"trading_mode",										KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"mode");
 		result.Add(false,	"",				"invest_amount",									KeyMapping::FS_STRATEGY,	KeyMapping::GROUP_STRATEGY_TWD,	"General",		"invest_amount");
 		result.Add(false,	"General",		"book.levels.count",								KeyMapping::FS_DIRECT,		KeyMapping::GROUP_STRATEGY_TWD,	"Sensitivity",	"book_levels_number");
 		result.Add(false,	"General",		"book.levels.exactly",								KeyMapping::FS_DIRECT,		KeyMapping::GROUP_STRATEGY_TWD,	"Sensitivity",	"book_levels_exactly");
@@ -192,7 +194,7 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
-Settings::Transaction::Transaction(
+EngineServer::Settings::Transaction::Transaction(
 		const boost::shared_ptr<Settings> &settings,
 		const std::string &groupName)
 	: m_settings(settings),
@@ -204,7 +206,7 @@ Settings::Transaction::Transaction(
 	//...//
 }
 
-Settings::Transaction::Transaction(Transaction &&rhs)
+EngineServer::Settings::Transaction::Transaction(Transaction &&rhs)
 	: m_settings(std::move(rhs.m_settings)),
 	m_groupName(std::move(rhs.m_groupName)),
 	m_source(m_settings->m_clientSettins[m_groupName]),
@@ -215,11 +217,11 @@ Settings::Transaction::Transaction(Transaction &&rhs)
 	//...//
 }
 
-Settings::Transaction::~Transaction() {
+EngineServer::Settings::Transaction::~Transaction() {
 	//...//
 }
 
-void Settings::Transaction::Set(
+void EngineServer::Settings::Transaction::Set(
 		const std::string &sectionName,
 		const std::string &keyName,
 		const std::string &value) {
@@ -263,7 +265,7 @@ void Settings::Transaction::Set(
 
 }
 
-void Settings::Transaction::CopyFromActual() {
+void EngineServer::Settings::Transaction::CopyFromActual() {
 	CheckBeforeChange();
 	//! @todo	TRDK-59 Remove workaround for strategy settings applying
 	//!			(also see Ctor and and Set):
@@ -277,7 +279,7 @@ void Settings::Transaction::CopyFromActual() {
 	m_clientSettings = m_source.settings;
 }
 
-bool Settings::Transaction::Commit() {
+bool EngineServer::Settings::Transaction::Commit() {
 	
 	CheckBeforeChange();
 
@@ -331,7 +333,7 @@ bool Settings::Transaction::Commit() {
 
 }
 
-void Settings::Transaction::Store() {
+void EngineServer::Settings::Transaction::Store() {
 	
 	fs::create_directories(m_settings->m_actualSettingsPath.branch_path());
 	auto tmpFilePath = m_settings->m_actualSettingsPath;
@@ -384,7 +386,7 @@ void Settings::Transaction::Store() {
 
 }
 
-void Settings::Transaction::CheckBeforeChange() {
+void EngineServer::Settings::Transaction::CheckBeforeChange() {
 
 	if (m_hasErrors) {
 		throw EngineServer::Exception("Settings update transaction has errors");
@@ -397,7 +399,7 @@ void Settings::Transaction::CheckBeforeChange() {
 
 }
 
-EngineServer::Exception Settings::Transaction::OnError(
+EngineServer::Exception EngineServer::Settings::Transaction::OnError(
 		const std::string &error)
 		const {
 	Assert(m_lock);
@@ -408,22 +410,22 @@ EngineServer::Exception Settings::Transaction::OnError(
 	return EngineServer::Exception(error.c_str());
 }
 
-Settings::EngineTransaction::EngineTransaction(
+EngineServer::Settings::EngineTransaction::EngineTransaction(
 		const boost::shared_ptr<Settings> &settings)
 	: Transaction(settings, "General") {
 	//...//
 }
 
-Settings::EngineTransaction::EngineTransaction(EngineTransaction &&rhs)
+EngineServer::Settings::EngineTransaction::EngineTransaction(EngineTransaction &&rhs)
 	: Transaction(std::move(rhs)) {
 	//...//
 }
 
-Settings::EngineTransaction::~EngineTransaction() {
+EngineServer::Settings::EngineTransaction::~EngineTransaction() {
 	//...//
 }
 
-void Settings::EngineTransaction::Validate(
+void EngineServer::Settings::EngineTransaction::Validate(
 		const std::string &section,
 		const std::string &key,
 		const std::string &value)
@@ -449,7 +451,7 @@ void Settings::EngineTransaction::Validate(
 
 }
 
-void Settings::EngineTransaction::OnKeyStore(
+void EngineServer::Settings::EngineTransaction::OnKeyStore(
 		const std::string &section,
 		const std::string &key,
 		std::string &value)
@@ -535,11 +537,11 @@ void Settings::EngineTransaction::OnKeyStore(
 
 }
 
-Settings::StrategyTransaction::~StrategyTransaction() {
+EngineServer::Settings::StrategyTransaction::~StrategyTransaction() {
 	//...//
 }
 
-Settings::StrategyTransaction::StrategyTransaction(
+EngineServer::Settings::StrategyTransaction::StrategyTransaction(
 		const boost::shared_ptr<Settings> &settings,
 		const std::string &groupName)
 	: Transaction(settings, groupName) {
@@ -555,12 +557,12 @@ Settings::StrategyTransaction::StrategyTransaction(
 		= m_source.settings.find("General")->second.find("is_enabled")->second;
 }
 
-Settings::StrategyTransaction::StrategyTransaction(StrategyTransaction &&rhs)
+EngineServer::Settings::StrategyTransaction::StrategyTransaction(StrategyTransaction &&rhs)
 	: Transaction(std::move(rhs)) {
 	//...//
 }
 
-void Settings::StrategyTransaction::Start() {
+void EngineServer::Settings::StrategyTransaction::Start() {
 	CheckBeforeChange();
 	const auto &currenctState
 		= m_source.settings.find("General")->second.find("is_enabled")->second;
@@ -570,7 +572,7 @@ void Settings::StrategyTransaction::Start() {
 	m_clientSettings["General"]["is_enabled"] = Ini::GetBooleanTrue();
 }
 
-void Settings::StrategyTransaction::Stop() {
+void EngineServer::Settings::StrategyTransaction::Stop() {
 	CheckBeforeChange();
 	const auto &currenctState
 		= m_source.settings.find("General")->second.find("is_enabled")->second;
@@ -580,20 +582,21 @@ void Settings::StrategyTransaction::Stop() {
 	m_clientSettings["General"]["is_enabled"] = Ini::GetBooleanFalse();
 }
 
-void Settings::StrategyTransaction::Validate(
+void EngineServer::Settings::StrategyTransaction::Validate(
 		const std::string &section,
 		const std::string &key,
 		const std::string &value)
 		const {
 	
 	if (section == "General") {
-		if (key == "mode") {
-			if (value != "paper") {
-				throw OnError(
-					"Failed to change trading mode"
-						", this engine instance supports only"
-						" \"Paper trading\".");
-			}
+		if (
+				key == "mode"
+				&& !boost::iequals(
+						value,
+						m_source.settings.find("General")->second.find("mode")->second)
+				&& m_settings->GetService().IsEngineStarted(m_settings->GetEngeineId())) {
+			throw OnError(
+				"Failed to change trading mode while engine is running.");
 		}
 	} else if (section == "Sources") {
 		if (key == "alpari") {
@@ -649,7 +652,7 @@ void Settings::StrategyTransaction::Validate(
 
 }
 
-void Settings::StrategyTransaction::OnKeyStore(
+void EngineServer::Settings::StrategyTransaction::OnKeyStore(
 		const std::string &section,
 		const std::string &key,
 		std::string &value)
@@ -668,7 +671,7 @@ void Settings::StrategyTransaction::OnKeyStore(
 			return;
 		}
 		source = KeyMapping::FS_SERVICE;
-	} else if (boost::istarts_with(section, "TradeSystem.")) {
+	} else if (boost::istarts_with(section, "PaperTradeSystem.")) {
 		if (key == "delay_microseconds.execution.min") {
 			isTs = true;
 			value = m_clientSettings.find("Sensitivity")->second.find("lag.execution.min")->second;
@@ -766,28 +769,32 @@ namespace {
 
 }
 
-Settings::Settings(
+EngineServer::Settings::Settings(
 		const fs::path &baseSettingsPath,
-		const std::string &serviceName)
+		const std::string &serviceName,
+		EngineServer::Service &service)
 	: m_engineId(ExtractEngeineId(baseSettingsPath)),
 	m_baseSettingsPath(baseSettingsPath),
 	m_actualSettingsPath(
-		BuildActualSettingsPath(m_baseSettingsPath, serviceName, m_engineId)) {
+		BuildActualSettingsPath(m_baseSettingsPath, serviceName, m_engineId)),
+	m_service(service) {
 	LoadClientSettings(WriteLock(m_mutex));
 }
 
-Settings::Settings(
+EngineServer::Settings::Settings(
 		const fs::path &baseSettingsPath,
 		const std::string &serviceName,
-		const std::string &engineId)
+		const std::string &engineId,
+		Service &service)
 	: m_engineId(engineId),
 	m_baseSettingsPath(baseSettingsPath),
 	m_actualSettingsPath(
-		BuildActualSettingsPath(m_baseSettingsPath, serviceName, m_engineId)) {
+		BuildActualSettingsPath(m_baseSettingsPath, serviceName, m_engineId)),
+	m_service(service) {
 	LoadClientSettings(WriteLock(m_mutex));
 }
 
-void Settings::LoadClientSettings(const WriteLock &) {
+void EngineServer::Settings::LoadClientSettings(const WriteLock &) {
 
 	ClientSettings result;
 
@@ -872,12 +879,8 @@ void Settings::LoadClientSettings(const WriteLock &) {
 		} 
 		
 		{
-			auto &general = group.settings["General"];
-			general["mode"] = "paper";
-		}
-		{
 			auto &sensitivity = group.settings["Sensitivity"];
-			const IniSectionRef iniSection(ini, "TradeSystem.Hotspot");
+			const IniSectionRef iniSection(ini, "PaperTradeSystem.Hotspot");
 			sensitivity["lag.execution.min"]
 				= iniSection.ReadKey("delay_microseconds.execution.min");
 			sensitivity["lag.execution.max"]
@@ -928,11 +931,11 @@ void Settings::LoadClientSettings(const WriteLock &) {
 
 }
 
-const std::string & Settings::GetEngeineId() const {
+const std::string & EngineServer::Settings::GetEngeineId() const {
 	return m_engineId;
 }
 
-const fs::path & Settings::GetFilePath() const {
+const fs::path & EngineServer::Settings::GetFilePath() const {
 	if (!fs::is_regular_file(m_baseSettingsPath)) {
 		// To detect errors at opening if base settings file is unavailable.
 		return m_baseSettingsPath;
@@ -943,11 +946,13 @@ const fs::path & Settings::GetFilePath() const {
 	}
 }
 
-Settings::EngineTransaction Settings::StartEngineTransaction() {
+EngineServer::Settings::EngineTransaction
+EngineServer::Settings::StartEngineTransaction() {
 	return EngineTransaction(shared_from_this()); 
 }
 
-Settings::StrategyTransaction Settings::StartStrategyTransaction(
+EngineServer::Settings::StrategyTransaction
+EngineServer::Settings::StartStrategyTransaction(
 		const std::string &strategyId) {
 	
 	const auto &it = m_clientSettins.find(StrategyIdToSectionName(strategyId));

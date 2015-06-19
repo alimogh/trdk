@@ -20,11 +20,12 @@ using namespace trdk::Interaction::OnixsFixConnector;
 namespace fix = OnixS::FIX;
 
 FixTrading::FixTrading(
+		const TradingMode &mode,
 		size_t index,
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &conf)
-	: TradeSystem(index, context, tag),
+	: TradeSystem(mode, index, context, tag),
 	m_account(conf.ReadKey("account", "")),
 	m_session(GetContext(), GetLog(), conf),
 	m_nextOrderId(1),
