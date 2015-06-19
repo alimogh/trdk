@@ -12,10 +12,10 @@
 //////////////////////////////////////////////////////////////////////////
 // Customization:
 
-var branch = "probitecapital"
-var productName	= "Probite Capital Trading Robot Development Kit"
-var vendorName = "Eugene V. Palchukovsky"
-var domain = "robotdk.com"
+var branch = "mbcm"
+var productName	= "MBCMTRADING Trading Robot Development Kit"
+var vendorName = "MBCMTRADING"
+var domain = "mb-cm.com"
 var licenseServiceSubdomain = "licensing"
 var supportEmail ="support@" + domain
 var copyright = "Copyright 2015 (C) " + vendorName + ", " + domain + ". All rights reserved."
