@@ -478,7 +478,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		boost::shared_ptr<Twd::Position> CreateOrder(
 				PairInfo &,
-				Security &security,
+				Security &,
 				double price,
 				const Lib::TimeMeasurement::Milestones &);
 
@@ -492,9 +492,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		const Id m_id;
 		const Y m_y;
-		const Qty m_qtyStart;
-		double m_conversionPricesBid;
-		double m_conversionPricesAsk;
+		const Qty m_aQty;
 
 		boost::array<PairInfo, numberOfPairs> m_pairs;
 		boost::array<PairInfo *, numberOfLegs> m_pairsLegs;
