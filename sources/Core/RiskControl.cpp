@@ -487,7 +487,7 @@ private:
 				(qty * realPrice) * quoteCurrencyDirection);
 		} else {
 			return std::make_pair(
-				(qty * realPrice) * side.direction,
+				(qty / realPrice) * side.direction,
 				qty * quoteCurrencyDirection);
 		}
 
