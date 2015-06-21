@@ -167,7 +167,7 @@ public:
 			size_t maxOrdersNumber)
 		: RiskControlScope(tradingMode),
 		m_context(context),
-		m_name(name),
+		m_name(ConvertToString(GetTradingMode()) + "." + name),
 		m_index(index),
 		m_log(logPrefix, m_context.GetLog()),
 		m_tradingLog(logPrefix, m_context.GetTradingLog()),
@@ -538,7 +538,7 @@ private:
 			CalcFundsRest(newPosition.second, quoteCurrency));
 		
 		m_tradingLog.Write(
-			"block funds\t%13%\t%1%\t%2%"
+			"block funds\t%1%\t%2%"
 				"\t%3%: %4$f + %5$f = %6$f (%7$f);"
 				"\t%8%: %9$f + %10$f = %11$f (%12$f);",
 			[&](TradingRecord &record) {
@@ -554,8 +554,7 @@ private:
 					% quoteCurrency.position
 					% blocked.second
 					% newPosition.second
-					% rest.second
-					% GetTradingMode();
+					% rest.second;
 			});
 
  		if (rest.first < 0) {
@@ -656,7 +655,7 @@ private:
 			quoteCurrency.position - blocked.second + used.second);
 
 		m_tradingLog.Write(
-			"use funds\t%15%\t%1%\t%2%"
+			"use funds\t%1%\t%2%"
 				"\t%3%: %4$f - %5$f + %6$f = %7$f (%8$f);"
 				"\t%9%: %10$f - %11$f + %12$f = %13$f (%14$f);",
 			[&](TradingRecord &record) {
@@ -674,8 +673,7 @@ private:
 					% blocked.second
 					% used.second
 					% newPosition.second
-					% CalcFundsRest(newPosition.second, quoteCurrency)
-					% GetTradingMode();
+					% CalcFundsRest(newPosition.second, quoteCurrency);
 			});
 
 		baseCurrency.position = newPosition.first;
@@ -716,7 +714,7 @@ private:
 			quoteCurrency.position - blocked.second);
 
 		m_tradingLog.Write(
-			"unblock funds\t%13%\t%1%\t%2%"
+			"unblock funds\t%1%\t%2%"
 				"\t%3%: %4$f - %5$f = %6$f (%7$f);"
 				"\t%8%: %9$f - %10$f = %11$f (%12$f);",
 			[&](TradingRecord &record) {
@@ -732,8 +730,7 @@ private:
 					% quoteCurrency.position
 					% blocked.second
 					% newPosition.second
-					% CalcFundsRest(newPosition.second, quoteCurrency)
-					% GetTradingMode();
+					% CalcFundsRest(newPosition.second, quoteCurrency);
 			});
 
 		baseCurrency.position = newPosition.first;
@@ -897,7 +894,8 @@ void RiskControlSymbolContext::InitScope(
 			return conf.ReadTypedKey<double>(
 				!isAdditinalScope
 					?	key.str()
-					:	std::string("risk_control.") + key.str());
+					:	std::string("risk_control.") + key.str(),
+				0);
 		};
 
 		scope.baseCurrencyPosition = posFabric(
@@ -1090,7 +1088,7 @@ public:
 			boost::bind(
 				&Implementation::CreatePosition,
 				this,
-				boost::cref(scopeInfo.name),
+				ConvertToString(m_tradingMode) + "." + scopeInfo.name,
 				boost::ref(scopeInfo.positionsCache),
 				_1,
 				_2,
