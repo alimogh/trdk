@@ -204,6 +204,8 @@ public:
 
 		UseUnused(orderId);
 
+		bool isCompleted = false;
+
 		boost::shared_ptr<Position> updatedOppositePosition;
 
 		{
@@ -234,6 +236,10 @@ public:
 				m_closed.orderId = orderId;
 			}
 
+			static_assert(
+				TradeSystem::numberOfOrderStatuses == 6,
+				"List changed.");
+
 			switch (orderStatus) {
 				default:
 					AssertFail("Unknown order status");
@@ -251,6 +257,7 @@ public:
 						remainingQty);
 					AssertEq(0, tradeQty);
 					AssertEq(0, tradePrice);
+					AssertLt(0, remainingQty);
 					return;
 				case TradeSystem::ORDER_STATUS_FILLED:
 					AssertLt(0, tradePrice);
@@ -289,8 +296,10 @@ public:
 					} else {
 						AssertNe(0, remainingQty);
 					}
+					isCompleted = remainingQty == 0;
 					break;
 				case TradeSystem::ORDER_STATUS_INACTIVE:
+					isCompleted = true;
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
 							"inactive",
@@ -302,6 +311,7 @@ public:
 					m_isInactive = true;
 					break;
 				case TradeSystem::ORDER_STATUS_ERROR:
+					isCompleted = true;
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
 							"error",
@@ -313,6 +323,7 @@ public:
 					m_isError = true;
 					break;
 				case TradeSystem::ORDER_STATUS_CANCELLED:
+					isCompleted = true;
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
 							"canceled",
@@ -334,7 +345,7 @@ public:
 					m_oppositePosition->m_pimpl->m_closed.hasOrder = false;
 					updatedOppositePosition = m_oppositePosition;
 					m_oppositePosition.reset();
-				} else if (remainingQty == 0) {
+				} else if (isCompleted) {
 					AssertNe(0, m_oppositePosition->GetCloseStartPrice());
 					try {
 						m_oppositePosition->SetCloseStartPrice(0);
@@ -346,7 +357,7 @@ public:
 				}
 			}
 
-			if (remainingQty == 0) {
+			if (isCompleted) {
 
 				AssertLe(m_opened.qty, m_planedQty);
 				Assert(m_opened.time.is_not_a_date_time());
@@ -372,7 +383,7 @@ public:
 		if (updatedOppositePosition) {
 			updatedOppositePosition->m_pimpl->SignalUpdate();
 		}
-		if (remainingQty == 0) {
+		if (isCompleted) {
 			SignalUpdate();
 		}
 
@@ -419,6 +430,7 @@ public:
 					AssertEq(m_closed.qty, 0);
 					AssertEq(m_closed.price.total, 0);
 					AssertEq(m_closed.price.count, 0);
+					AssertLt(0, remainingQty);
 					return;
 				case TradeSystem::ORDER_STATUS_FILLED:
 					AssertEq(tradeQty + remainingQty, m_opened.qty);
@@ -860,6 +872,7 @@ Position::Position(
 		const Qty &qty,
 		const ScaledPrice &startPrice,
 		const TimeMeasurement::Milestones &timeMeasurement) {
+	Assert(!strategy.IsBlocked());
 	m_pimpl = new Implementation(
 		*this,
 		tradeSystem,
@@ -878,6 +891,7 @@ Position::Position(
 		const Qty &qty,
 		const ScaledPrice &startPrice,
 		const TimeMeasurement::Milestones &timeMeasurement) {
+	Assert(!strategy.IsBlocked());
 	Assert(oppositePosition.IsOpened());
 	Assert(!oppositePosition.HasActiveCloseOrders());
 	Assert(!oppositePosition.IsClosed());
