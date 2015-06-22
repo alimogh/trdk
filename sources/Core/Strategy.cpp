@@ -570,7 +570,11 @@ void Strategy::RaiseBookUpdateTickEvent(
 
 bool Strategy::IsBlocked(bool forever /* = false */) const {
 	
-	if (!m_pimpl->m_isEnabled || !m_pimpl->m_isBlocked) {
+	if (!m_pimpl->m_isEnabled) {
+		return true;
+	}
+
+	if (!m_pimpl->m_isBlocked) {
 		return false;
 	}
 
