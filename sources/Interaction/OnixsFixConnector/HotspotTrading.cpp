@@ -90,7 +90,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
 					
 					//! @todo see TRDK-93 for details
-					const std::string reason = "Unknown reject reason";
+					const std::string reason
+						= "Unknown reject reason, see TRDK-93 for details";
 //						= message.get(fix::FIX40::Tags::Text);
 					OnOrderRejected(
 						message,
