@@ -76,7 +76,7 @@ EngineServer::Service::~Service() {
 void EngineServer::Service::LoadEngine(const fs::path &configFilePath) {
 
 	boost::shared_ptr<Settings> settings(
-		new Settings(configFilePath, GetName()));
+		new Settings(configFilePath, GetName(), *this));
 	if (m_engines.find(settings->GetEngeineId()) != m_engines.end()) {
 		boost::format message("Engine with ID \"%1%\" already loaded");
 		message % settings->GetEngeineId();

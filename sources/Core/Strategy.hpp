@@ -117,6 +117,7 @@ namespace trdk {
 
 		const boost::uuids::uuid & GetId() const;
 		const std::string & GetTitle() const;
+		trdk::TradingMode GetTradingMode() const;
 
 	public:
 
@@ -124,18 +125,7 @@ namespace trdk {
 
 		trdk::RiskControlScope & GetRiskControlScope();
 
-	public:
-
-		virtual void OnLevel1Update(
-				trdk::Security &,
-				const trdk::Lib::TimeMeasurement::Milestones &);
-
-		virtual void OnPositionUpdate(trdk::Position &);
-
-		virtual void OnBookUpdateTick(
-				trdk::Security &,
-				const trdk::Security::Book &,
-				const trdk::Lib::TimeMeasurement::Milestones &);
+		trdk::TradeSystem & GetTradeSystem(size_t index);
 
 	public:
 
@@ -196,9 +186,15 @@ namespace trdk {
 
 	protected:
 
+		virtual void OnLevel1Update(
+				trdk::Security &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
+		virtual void OnPositionUpdate(trdk::Position &);
+		virtual void OnBookUpdateTick(
+				trdk::Security &,
+				const trdk::Security::Book &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
-
-	protected:
 
 		const trdk::StopMode & GetStopMode() const;
 		virtual void OnStopRequest(const trdk::StopMode &);

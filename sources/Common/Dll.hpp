@@ -252,8 +252,9 @@ namespace trdk { namespace Lib {
 			Assert(operator bool());
 		}
 
-		~DllObjectPtr() {
-			//...//
+		void Swap(DllObjectPtr &rhs) throw() {
+			m_dll.swap(rhs.m_dll);
+			m_objFormDll.swap(rhs.m_objFormDll);
 		}
 
 	public:

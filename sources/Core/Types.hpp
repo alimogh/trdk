@@ -271,6 +271,16 @@ namespace trdk {
 
 namespace trdk {
 
+	enum TradingMode {
+		TRADING_MODE_PAPER,
+		TRADING_MODE_LIVE,
+		numberOfTradingModes,
+	};
+	TRDK_CORE_API trdk::TradingMode ConvertTradingModeFromString(
+			const std::string &);
+	TRDK_CORE_API const std::string & ConvertToString(
+			const trdk::TradingMode &);
+
 	enum StopMode {
 		STOP_MODE_IMMEDIATELY,
 		STOP_MODE_GRACEFULLY_ORDERS,
@@ -278,6 +288,17 @@ namespace trdk {
 		STOP_MODE_UNKNOWN,
 		numberOfStopModes = STOP_MODE_UNKNOWN
 	};
+
+}
+
+namespace std {
+
+	inline std::ostream & operator <<(
+			std::ostream &oss,
+			const trdk::TradingMode &mode) {
+		oss << trdk::ConvertToString(mode);
+		return oss;
+	}
 
 }
 

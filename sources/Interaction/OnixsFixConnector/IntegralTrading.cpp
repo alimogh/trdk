@@ -32,11 +32,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit IntegralTrading(
+				const TradingMode &mode,
 				size_t index,
 				Context &context,
 				const std::string &tag,
 				const Lib::IniSectionRef &conf)
-			: FixTrading(index, context, tag, conf) {
+			: FixTrading(mode, index, context, tag, conf) {
 			//...//
 		}
 		
@@ -222,13 +223,14 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 TradeSystemFactoryResult
 CreateIntegralTrading(
+		const TradingMode &mode,
 		size_t index,
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &configuration) {
 	TradeSystemFactoryResult result;
 	boost::get<0>(result).reset(
-		new IntegralTrading(index, context, tag, configuration));
+		new IntegralTrading(mode, index, context, tag, configuration));
 	return result;
 }
 

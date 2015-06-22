@@ -28,6 +28,7 @@ namespace trdk {
 		TradeSystemFactoryResult;
 
 	typedef trdk::TradeSystemFactoryResult (TradeSystemFactory)(
+			const trdk::TradingMode &,
 			size_t index,
 			trdk::Context &,
 			const std::string &tag,
@@ -144,6 +145,7 @@ namespace trdk {
 	public:
 
 		explicit TradeSystem(
+				const trdk::TradingMode &,
 				size_t index,
 				trdk::Context &,
 				const std::string &tag);
@@ -154,6 +156,8 @@ namespace trdk {
 		static const char * GetStringStatus(const OrderStatus &);
 
 	public:
+
+		const trdk::TradingMode & GetMode() const;
 
 		size_t GetIndex() const;
 

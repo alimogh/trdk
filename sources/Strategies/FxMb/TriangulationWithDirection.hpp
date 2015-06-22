@@ -55,16 +55,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_yDetected;
 		}
 
-	public:
+	protected:
 		
 		virtual void OnServiceStart(const Service &);
 		virtual void OnServiceDataUpdate(
 				const Service &,
 				const Lib::TimeMeasurement::Milestones &);
 		virtual void OnPositionUpdate(trdk::Position &);
-
-	protected:
-
 		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
 		virtual void OnStopRequest(const trdk::StopMode &);
 

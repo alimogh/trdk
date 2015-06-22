@@ -567,7 +567,7 @@ void TriangleReport::ReportAction(
 	Foo foo = {
 		m_triangle.GetStrategy().GetContext().GetCurrentTime(),
 		m_triangle.GetStrategy().GetId(),
-		false, // is live mode
+		m_triangle.GetStrategy().GetTradingMode(),
 		m_triangle.GetId(),
 		yExecuted,
 		0, // atr
@@ -671,7 +671,8 @@ void TriangleReport::ReportAction(
 				= const_cast<TriangulationWithDirection &>(
 					m_triangle.GetStrategy());
 			Context &context = strategy.GetContext();
-			RiskControl &riskControl = context.GetRiskControl();
+			RiskControl &riskControl
+				= context.GetRiskControl(strategy.GetTradingMode());
 			context.m_fooSlotConnection(foo);
 			//! @todo see TRDK-78
 // 			riskControl.CheckTotalPnl(

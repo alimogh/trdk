@@ -121,8 +121,8 @@ namespace trdk {
 		//! at the same moment).
 		virtual void SyncDispatching() = 0;
 
-		RiskControl & GetRiskControl();
-		const RiskControl & GetRiskControl() const;
+		RiskControl & GetRiskControl(const trdk::TradingMode &);
+		const RiskControl & GetRiskControl(const trdk::TradingMode &) const;
 
 		//! User context parameters. No predefined key list. Any key can be
 		//! changed.
@@ -174,7 +174,8 @@ namespace trdk {
 		  * @throw trdk::Lib::Exception
 		  */
 		virtual const trdk::TradeSystem & GetTradeSystem(
-				size_t index)
+				size_t index,
+				const trdk::TradingMode &)
 				const
 				= 0;
 		//! Returns Trade System by index.
@@ -182,12 +183,9 @@ namespace trdk {
 		  * @sa GetTradeSystemsCount
 		  * @throw trdk::Lib::Exception
 		  */
-		virtual trdk::TradeSystem & GetTradeSystem(size_t index) = 0;
-		//! Applies the given predicate to the each trade system and
-		//! stops if predicate returns false.
-		virtual void ForEachTradeSystem(
-				const boost::function<bool (trdk::TradeSystem &)> &)
-				= 0;
+		virtual trdk::TradeSystem & GetTradeSystem(
+				size_t index,
+				const trdk::TradingMode &) = 0;
 
 	protected:
 

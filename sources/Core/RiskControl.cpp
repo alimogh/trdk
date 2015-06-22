@@ -94,8 +94,17 @@ struct RiskControlSymbolContext::Scope : private boost::noncopyable {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+RiskControlScope::RiskControlScope(const TradingMode &tradingMode)
+	: m_tradingMode(tradingMode) {
+	//...//
+}
+
 RiskControlScope::~RiskControlScope() {
  	//...//
+}
+
+const TradingMode & RiskControlScope::GetTradingMode() const {
+	return m_tradingMode;
 }
 
 class StandardRiskControlScope : public RiskControlScope {
@@ -153,10 +162,12 @@ public:
 			Context &context,
 			const std::string &name,
 			size_t index,
+			const TradingMode &tradingMode,
 			const Settings &settings,
 			size_t maxOrdersNumber)
-		: m_context(context),
-		m_name(name),
+		: RiskControlScope(tradingMode),
+		m_context(context),
+		m_name(ConvertToString(GetTradingMode()) + "." + name),
 		m_index(index),
 		m_log(logPrefix, m_context.GetLog()),
 		m_tradingLog(logPrefix, m_context.GetTradingLog()),
@@ -225,7 +236,10 @@ public:
 			currency,
 			qty,
 			price,
-			security.GetRiskControlContext().GetScope(m_index).longSide);
+			security
+				.GetRiskControlContext(GetTradingMode())
+				.GetScope(m_index)
+				.longSide);
 	}
 
 	virtual void CheckNewSellOrder(
@@ -238,7 +252,10 @@ public:
 			currency,
 			qty,
 			price,
-			security.GetRiskControlContext().GetScope(m_index).shortSide);
+			security
+				.GetRiskControlContext(GetTradingMode())
+				.GetScope(m_index)
+				.shortSide);
 	}
 
 	virtual void ConfirmBuyOrder(
@@ -257,7 +274,10 @@ public:
 			tradeQty,
 			tradePrice,
 			remainingQty,
-			security.GetRiskControlContext().GetScope(m_index).longSide);
+			security
+				.GetRiskControlContext(GetTradingMode())
+				.GetScope(m_index)
+				.longSide);
 	}
 
 	virtual void ConfirmSellOrder(
@@ -276,7 +296,10 @@ public:
 			tradeQty,
 			tradePrice,
 			remainingQty,
-			security.GetRiskControlContext().GetScope(m_index).shortSide);
+			security
+				.GetRiskControlContext(GetTradingMode())
+				.GetScope(m_index)
+				.shortSide);
 	}
 
 public:
@@ -464,7 +487,7 @@ private:
 				(qty * realPrice) * quoteCurrencyDirection);
 		} else {
 			return std::make_pair(
-				(qty * realPrice) * side.direction,
+				(qty / realPrice) * side.direction,
 				qty * quoteCurrencyDirection);
 		}
 
@@ -492,7 +515,9 @@ private:
 		}
 
 		RiskControlSymbolContext::Scope &context
-			= security.GetRiskControlContext().GetScope(m_index);
+			= security
+				.GetRiskControlContext(GetTradingMode())
+				.GetScope(m_index);
 		RiskControlSymbolContext::Position &baseCurrency
 			= *context.baseCurrencyPosition;
 		RiskControlSymbolContext::Position &quoteCurrency
@@ -602,7 +627,9 @@ private:
 		}
 
 		RiskControlSymbolContext::Scope &context
-			= security.GetRiskControlContext().GetScope(m_index);
+			= security
+				.GetRiskControlContext(GetTradingMode())
+				.GetScope(m_index);
 		RiskControlSymbolContext::Position &baseCurrency
 			= *context.baseCurrencyPosition;
 		RiskControlSymbolContext::Position &quoteCurrency
@@ -667,7 +694,9 @@ private:
 		}
 
 		RiskControlSymbolContext::Scope &context
-			= security.GetRiskControlContext().GetScope(m_index);
+			= security
+				.GetRiskControlContext(GetTradingMode())
+				.GetScope(m_index);
 		RiskControlSymbolContext::Position &baseCurrency
 			= *context.baseCurrencyPosition;
 		RiskControlSymbolContext::Position &quoteCurrency
@@ -739,11 +768,13 @@ public:
 			Context &context,
 			const IniSectionRef &conf,
 			const std::string &name,
-			size_t index)
+			size_t index,
+			const TradingMode &tradingMode)
 		: Base(
 			context,
 			name,
 			index,
+			tradingMode,
 			ReadSettings(conf),
 			conf.ReadTypedKey<size_t>("flood_control.orders.max_number")) {
 		//...//
@@ -782,11 +813,13 @@ public:
 			Context &context,
 			const IniSectionRef &conf,
 			const std::string &name,
-			size_t index)
+			size_t index,
+			const TradingMode &tradingMode)
 		: Base(
 			context,
 			name,
 			index,
+			tradingMode,
 			ReadSettings(conf),
 			conf.ReadTypedKey<size_t>(
 				"risk_control.flood_control.orders.max_number")) {
@@ -861,7 +894,8 @@ void RiskControlSymbolContext::InitScope(
 			return conf.ReadTypedKey<double>(
 				!isAdditinalScope
 					?	key.str()
-					:	std::string("risk_control.") + key.str());
+					:	std::string("risk_control.") + key.str(),
+				0);
 		};
 
 		scope.baseCurrencyPosition = posFabric(
@@ -975,6 +1009,8 @@ public:
 
 	const IniSectionRef m_conf;
 
+	const TradingMode m_tradingMode;
+
 	PositionsCache m_globalScopePositionsCache;
 	std::vector<boost::shared_ptr<RiskControlSymbolContext>> m_symbols;
 
@@ -985,16 +1021,21 @@ public:
 
 public:
 
-	explicit Implementation(Context &context, const IniSectionRef &conf)
+	explicit Implementation(
+			Context &context,
+			const IniSectionRef &conf,
+			const TradingMode &tradingMode)
 		: m_context(context),
 		m_log(logPrefix, m_context.GetLog()),
 		m_tradingLog(logPrefix, m_context.GetTradingLog()),
 		m_conf(conf),
+		m_tradingMode(tradingMode),
 		m_globalScope(
 			m_context,
 			m_conf,
 			"Global",
-			m_additionalScopesInfo.size()) {
+			m_additionalScopesInfo.size(),
+			m_tradingMode) {
 		//...//
 	}
 
@@ -1047,7 +1088,7 @@ public:
 			boost::bind(
 				&Implementation::CreatePosition,
 				this,
-				boost::cref(scopeInfo.name),
+				ConvertToString(m_tradingMode) + "." + scopeInfo.name,
 				boost::ref(scopeInfo.positionsCache),
 				_1,
 				_2,
@@ -1063,13 +1104,24 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-RiskControl::RiskControl(Context &context, const Ini &conf)
-	: m_pimpl(new Implementation(context, IniSectionRef(conf, "RiskControl"))) {
+RiskControl::RiskControl(
+		Context &context,
+		const Ini &conf,
+		const TradingMode &tradingMode)
+	: m_pimpl(
+		new Implementation(
+			context,
+			IniSectionRef(conf, "RiskControl"),
+			tradingMode)) {
 	//...//
 }
 
 RiskControl::~RiskControl() {
 	delete m_pimpl;
+}
+
+const TradingMode & RiskControl::GetTradingMode() const {
+	return m_pimpl->m_tradingMode;
 }
 
 boost::shared_ptr<RiskControlSymbolContext> RiskControl::CreateSymbolContext(
@@ -1136,7 +1188,8 @@ std::unique_ptr<RiskControlScope> RiskControl::CreateScope(
 			m_pimpl->m_context,
 			conf,
 			name,
-			scopeIndex));
+			scopeIndex,
+			GetTradingMode()));
 
 	additionalScopesInfo.swap(m_pimpl->m_additionalScopesInfo);
 

@@ -337,11 +337,12 @@ private:
 //////////////////////////////////////////////////////////////////////////
 
 Fake::TradeSystem::TradeSystem(
+		const TradingMode &mode,
 		size_t index,
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &conf)
-	: Base(index, context, tag),
+	: Base(mode, index, context, tag),
 	m_pimpl(new Implementation(conf)) {
 	m_pimpl->m_self = this;
 	m_pimpl->m_delayGenerator.Report(GetLog());

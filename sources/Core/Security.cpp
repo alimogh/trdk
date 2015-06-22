@@ -85,7 +85,9 @@ public:
 
 	const MarketDataSource &m_source;
 
-	const boost::shared_ptr<RiskControlSymbolContext> m_riskControlContext;
+	boost::array<
+			boost::shared_ptr<RiskControlSymbolContext>, numberOfTradingModes>
+		m_riskControlContext;
 
 	const uint8_t m_pricePrecision;
 	const uintmax_t m_priceScale;
@@ -114,8 +116,6 @@ public:
 
 	Implementation(const MarketDataSource &source, const Symbol &symbol)
 		: m_source(source),
-		m_riskControlContext(
-			source.GetContext().GetRiskControl().CreateSymbolContext(symbol)),
 		m_pricePrecision(GetPrecision(symbol)),
 		m_priceScale(size_t(std::pow(10, m_pricePrecision))),
 		m_brokerPosition(0),
@@ -123,6 +123,12 @@ public:
 		m_isLevel1Started(false),
 		m_book(new Book(pt::not_a_date_time, false)),
 		m_isBookAdjusted(false) {
+		for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
+			m_riskControlContext[i]
+				= m_source.GetContext()
+					.GetRiskControl(TradingMode(i))
+					.CreateSymbolContext(symbol);
+		}
 		foreach (auto &item, m_level1) {
 			Unset(item);
 		}
@@ -237,8 +243,9 @@ Security::~Security() {
 	delete m_pimpl;
 }
 
-RiskControlSymbolContext & Security::GetRiskControlContext() {
-	return *m_pimpl->m_riskControlContext;
+RiskControlSymbolContext & Security::GetRiskControlContext(
+		const TradingMode &mode) {
+	return *m_pimpl->m_riskControlContext[mode];
 }
 
 const MarketDataSource & Security::GetSource() const {

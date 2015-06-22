@@ -26,8 +26,9 @@ private:
 
 	class RiskControlScope : public trdk::RiskControlScope {
 	public:
-		RiskControlScope()
-			: m_name("Terminal") {
+		RiskControlScope(const TradingMode &tradingMode)
+			: trdk::RiskControlScope(tradingMode),
+			m_name("Terminal") {
 			//...//
 		}
 		virtual ~RiskControlScope() {
@@ -536,6 +537,7 @@ public:
 	explicit Implementation(const fs::path &cmdFile, TradeSystem &tradeSystem)
 			: m_cmdFile(cmdFile),
 			m_tradeSystem(tradeSystem),
+			m_riskControlScope(m_tradeSystem.GetMode()),
 			m_notificator(m_cmdFile, [this]() {OnCmdFileChanged();}),
 			m_lastSeqnumber(0) {
 		m_tradeSystem.GetLog().Info(
@@ -724,9 +726,9 @@ private:
 
 private:
 
-	RiskControlScope m_riskControlScope;
 	const boost::filesystem::path m_cmdFile;
 	trdk::TradeSystem &m_tradeSystem;
+	RiskControlScope m_riskControlScope;
 	trdk::Lib::FileSystemChangeNotificator m_notificator;
 	size_t m_lastSeqnumber;
 

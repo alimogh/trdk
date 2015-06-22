@@ -505,7 +505,7 @@ public:
 			throw() {
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%1%\t%2%\t%3%\t%4%\topen-%5%\t%6%"
+			"%1%\t%2%.%21%\t%3%\t%4%\topen-%5%\t%6%"
 				"\tprice=%7%->%8%\t%9%\tqty=%10%->%11%"
 				"\tbid=%12%/%13%\task=%14%/%15%\tadjusted=%16%"
 				"\torder-id=%17%"
@@ -531,14 +531,15 @@ public:
 					% m_position.GetOpenOrderId()
 					% m_tradeSystem.GetStringStatus(orderStatus)
 					% m_position.HasActiveOpenOrders()
-					% (m_isError ? true : false);
+					% (m_isError ? true : false)
+					% m_tradeSystem.GetMode();
 			});
 	}
 
 	void ReportClosingStart(const char *eventDesc) const throw() {
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%13%\t%11%\t%1%\t%2%\tclose-%12%\t%3%\tqty=%4%->%5%"
+			"%13%\t%11%.%14%\t%1%\t%2%\tclose-%12%\t%3%\tqty=%4%->%5%"
 				" order-id=%6%->%7% has-orders=%8%/%9% is-error=%10%",
 			[this, eventDesc](TradingRecord &record) {
 				record
@@ -554,7 +555,8 @@ public:
 					% (m_isError ? true : false)
 					% m_position.GetTradeSystem().GetTag()
 					% eventDesc
-					% m_id;
+					% m_id
+					% m_position.GetTradeSystem().GetMode();
 			});
 	}
 
@@ -565,7 +567,7 @@ public:
 			throw() {
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%14%\t%11%\t%1%\t%2%\tclose-%3%\t%4%"
+			"%14%\t%11%.%15%\t%1%\t%2%\tclose-%3%\t%4%"
 				"\tqty=%5%->%6% price=%15%->%7% order-id=%8%->%9%"
 				" order-status=%10% has-orders=%12%/%13%",
 			[this, eventDesc, &orderStatus](TradingRecord &record) {
@@ -584,7 +586,8 @@ public:
 					% m_position.HasActiveOpenOrders()
 					% m_position.HasActiveCloseOrders()
 					% m_id
-					% m_security.DescalePrice(m_position.GetCloseStartPrice());
+					% m_security.DescalePrice(m_position.GetCloseStartPrice())
+					% m_tradeSystem.GetMode();
 			});
 	}
 
@@ -596,7 +599,7 @@ public:
 			throw() {
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%1%\t%2%\t%3%\t%4%\treplacing-%5%-order\t%6%\t%7%"
+			"%1%\t%2%.%16%\t%3%\t%4%\treplacing-%5%-order\t%6%\t%7%"
 				"\tqty=%8%->%9% price=%10%->%11%"
 				" bid=%12%/%13% ask=%14%/%15%",
 			[&](TradingRecord &record) {
@@ -624,7 +627,8 @@ public:
 					% m_security.GetBidPrice()
 					% m_security.GetBidQty()
 					% m_security.GetAskPrice()
-					% m_security.GetAskQty();
+					% m_security.GetAskQty()
+					% m_tradeSystem.GetMode();
 			});
 	}
 
@@ -711,7 +715,7 @@ public:
 
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%1%\t%2%\t%3%\t%4%\t%5%\t%6%"
+			"%1%\t%2%.%14%\t%3%\t%4%\t%5%\t%6%"
 				"\tstart-price=%7%\t%8%"
 				"\tqty=%9%\tbid=%10%/%11%\task=%12%/%13%",
 			[this, action](TradingRecord &record) {
@@ -728,7 +732,8 @@ public:
 					% m_security.GetBidPrice()
 					% m_security.GetBidQty()
 					% m_security.GetAskPrice()
-					% m_security.GetAskQty();
+					% m_security.GetAskQty()
+					% m_position.GetTradeSystem().GetMode();
 			});
 
 		try {

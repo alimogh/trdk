@@ -56,10 +56,12 @@ namespace trdk { namespace Engine {
 				const boost::function<bool (trdk::MarketDataSource &)> &);
 
 		virtual size_t GetTradeSystemsCount() const;
-		virtual const trdk::TradeSystem & GetTradeSystem(size_t index) const;
-		virtual trdk::TradeSystem & GetTradeSystem(size_t index);
-		virtual void ForEachTradeSystem(
-				const boost::function<bool (trdk::TradeSystem &)> &);
+		virtual const trdk::TradeSystem & GetTradeSystem(
+				size_t index,
+				const TradingMode &) const;
+		virtual trdk::TradeSystem & GetTradeSystem(
+				size_t index,
+				const TradingMode &);
 
 	protected:
 

@@ -12,6 +12,7 @@
 
 namespace trdk { namespace EngineServer {
 
+	class Service;
 	class Settings;
 
 	class ClientRequestHandler;

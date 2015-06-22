@@ -206,7 +206,7 @@ bool TriangulationWithDirection::StartScheduledLeg() {
 	} catch (const HasNotMuchOpportunityException &ex) {
 		GetLog().Warn(
 			"Failed to start scheduled leg %1%: \"%2%\". Required: %3% %4%.",
-			m_scheduledLeg,
+			GetLegNo(m_scheduledLeg),
 			ex,
 			ex.GetRequiredQty(),
 			ex.GetSecurity());
