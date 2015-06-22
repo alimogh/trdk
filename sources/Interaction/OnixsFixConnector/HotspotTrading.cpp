@@ -88,9 +88,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					return;
 
 				} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
-
-					const std::string &reason
-						= message.get(fix::FIX40::Tags::Text);
+					
+					//! @todo see TRDK-93 for details
+					const std::string reason = "Unknown reject reason";
+//						= message.get(fix::FIX40::Tags::Text);
 					OnOrderRejected(
 						message,
 						replyTime,
