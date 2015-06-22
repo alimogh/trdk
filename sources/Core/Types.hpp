@@ -39,6 +39,11 @@ namespace trdk {
 		
 		//! Display size for Iceberg orders.
 		boost::optional<trdk::Qty> displaySize;
+
+		//! Minimum trade quantity. Must be at most the order quantity.
+		/** For cache pair could be in different currency.
+		  */
+		boost::optional<trdk::Qty> minTradeQty;
 		
 		//! Good Till Time.
 		/** Absolute value in Coordinated Universal Time (UTC). Incompatible

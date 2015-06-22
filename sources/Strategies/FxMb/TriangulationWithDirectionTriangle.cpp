@@ -36,7 +36,7 @@ Triangle::Triangle(
 	m_report(*this, reportsState),
 	m_id(id),
 	m_y(y),
-	m_qtyStart(startQty),
+	m_aQty(startQty),
 	m_bookUpdatesNumber(bookUpdatesNumber) {
 
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
@@ -73,16 +73,6 @@ Triangle::Triangle(
 	}
 #	endif
 
-	//! @todo make setting for account currency
-	m_conversionPricesBid = GetPair(PAIR_AB).security->GetBidPrice();
-	if (Lib::IsZero(m_conversionPricesBid)) {
-		throw HasNotMuchOpportunityException(*GetPair(PAIR_AB).security, 0);
-	}
-	m_conversionPricesAsk = GetPair(PAIR_AB).security->GetAskPrice();
-	if (Lib::IsZero(m_conversionPricesAsk)) {
-		throw HasNotMuchOpportunityException(*GetPair(PAIR_AB).security, 0);
-	}
-
 	UpdateYDirection();
 
 }
@@ -103,26 +93,49 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 	if (pair.isBuy) {
 
-		double qty;
+		Currency currency;
+		double qty = m_aQty;
+		double baseCurrencyQty = qty;
 		switch (pair.id) {
 			case PAIR_AB:
 			case PAIR_AC:
-				qty = m_qtyStart;
-				AssertLt(0, qty);
+				currency = security.GetSymbol().GetCashBaseCurrency();
+				if (security.GetAskQty() < qty) {
+					throw HasNotMuchOpportunityException(security, Qty(qty));
+				}
 				break;
 			case PAIR_BC:
-				qty = m_qtyStart * m_conversionPricesAsk;
-				AssertLt(0, qty);
+				switch (pair.leg) {
+					case LEG1:
+						currency = security.GetSymbol().GetCashBaseCurrency();
+						qty *= GetPair(PAIR_AC).security->GetAskPrice();
+						qty /= GetPair(PAIR_BC).security->GetAskPrice();
+						baseCurrencyQty = qty;
+						break;
+					case LEG2:
+						AssertNe(LEG2, pair.leg);
+						throw LogicError("BC can be leg 2");
+					case LEG3:
+						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
+						currency = security.GetSymbol().GetCashQuoteCurrency();
+						qty = GetLeg(LEG2).GetOpenedVolume();
+						if (GetLeg(LEG2).GetPair() == PAIR_AB) {
+							qty *= GetPair(PAIR_BC).security->GetAskPrice();
+							baseCurrencyQty = GetLeg(LEG2).GetOpenedVolume();
+						} else {
+							baseCurrencyQty = qty / price;
+						}
+						break;
+				}
+				if (security.GetAskQty() < qty / price) {
+					throw HasNotMuchOpportunityException(security, Qty(qty));
+				}
 				break;
 			default:
 				AssertEq(PAIR_AB, pair.id);
 				throw Lib::LogicError("Unknown pair for leg");
 		}
 
-		AssertLt(0, qty);
-		if (security.GetAskQty() < qty) {
-			throw HasNotMuchOpportunityException(security, Qty(qty));
-		}
 		Assert(!Lib::IsZero(security.GetAskPrice()));
 			
 		result.reset(
@@ -130,26 +143,59 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy,
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
-				security.GetSymbol().GetCashBaseCurrency(),
+				currency,
 				//! @todo remove "to qty"
-				Qty(qty),
+				//! @todo see TRDK-92
+				Qty(boost::math::round(qty)),
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
-				pair.leg));
+				pair.leg,
+				//! @todo remove "to qty"
+				//! @todo see TRDK-92
+				//! @todo see TRDK-4
+				Qty(floor(baseCurrencyQty))));
 			
 	} else {
 
-		double qty;
+		Currency currency;
+		double qty = qty = m_aQty;
+		double baseCurrencyQty = qty;
 		switch (pair.id) {
 			case PAIR_AB:
 			case PAIR_AC:
-				qty = m_qtyStart;
+				currency = security.GetSymbol().GetCashBaseCurrency();
 				AssertLt(0, qty);
+				if (security.GetBidQty() < qty) {
+					throw HasNotMuchOpportunityException(security, Qty(qty));
+				}
 				break;
 			case PAIR_BC:
-				qty = m_qtyStart * m_conversionPricesBid;
-				AssertLt(0, qty);
+				switch (pair.leg) {
+					case LEG1:
+						currency = security.GetSymbol().GetCashBaseCurrency();
+						qty *= GetPair(PAIR_AC).security->GetBidPrice();
+						qty /= GetPair(PAIR_BC).security->GetBidPrice();
+						baseCurrencyQty = qty;
+						break;
+					case LEG2:
+						AssertNe(LEG2, pair.leg);
+						throw LogicError("BC can be leg 2");
+					case LEG3:
+						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
+						currency = security.GetSymbol().GetCashQuoteCurrency();
+						qty = GetLeg(LEG2).GetOpenedVolume();
+						if (GetLeg(LEG2).GetPair() == PAIR_AB) {
+							qty *= GetPair(PAIR_BC).security->GetBidPrice();
+							baseCurrencyQty = GetLeg(LEG2).GetOpenedVolume();
+						} else {
+							baseCurrencyQty = qty / price;
+						}
+						break;
+				}
+				if (security.GetBidQty() < qty / price) {
+					throw HasNotMuchOpportunityException(security, Qty(qty));
+				}
 				break;
 			default:
 				AssertEq(PAIR_AB, pair.id);
@@ -157,9 +203,6 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		}
 
 		AssertLt(0, qty);
-		if (security.GetBidQty() < qty) {
-			throw HasNotMuchOpportunityException(security, Qty(qty));
-		}
 		Assert(!Lib::IsZero(security.GetBidPrice()));
 			
 		result.reset(
@@ -167,13 +210,18 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy,
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
-				security.GetSymbol().GetCashBaseCurrency(),
+				currency,
 				//! @todo remove "to qty"
-				Qty(qty),
+				//! @todo see TRDK-92
+				Qty(boost::math::round(qty)),
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
-				pair.leg));
+				pair.leg,
+				//! @todo remove "to qty"
+				//! @todo see TRDK-92
+				//! @todo see TRDK-4
+				Qty(floor(baseCurrencyQty))));
 			
 	}
 
