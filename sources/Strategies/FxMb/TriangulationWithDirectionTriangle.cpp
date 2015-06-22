@@ -95,6 +95,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 		Currency currency;
 		double qty = m_aQty;
+		double baseCurrencyQty = qty;
 		switch (pair.id) {
 			case PAIR_AB:
 			case PAIR_AC:
@@ -109,6 +110,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						currency = security.GetSymbol().GetCashBaseCurrency();
 						qty *= GetPair(PAIR_AC).security->GetAskPrice();
 						qty /= GetPair(PAIR_BC).security->GetAskPrice();
+						baseCurrencyQty = qty;
 						break;
 					case LEG2:
 						AssertNe(LEG2, pair.leg);
@@ -119,6 +121,9 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						qty = GetLeg(LEG2).GetOpenedVolume();
 						if (GetLeg(LEG2).GetPair() == PAIR_AB) {
 							qty *= GetPair(PAIR_BC).security->GetAskPrice();
+							baseCurrencyQty = GetLeg(LEG2).GetOpenedVolume();
+						} else {
+							baseCurrencyQty = qty / price;
 						}
 						break;
 				}
@@ -145,12 +150,17 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
-				pair.leg));
+				pair.leg,
+				//! @todo remove "to qty"
+				//! @todo see TRDK-92
+				//! @todo see TRDK-4
+				Qty(floor(baseCurrencyQty))));
 			
 	} else {
 
 		Currency currency;
 		double qty = qty = m_aQty;
+		double baseCurrencyQty = qty;
 		switch (pair.id) {
 			case PAIR_AB:
 			case PAIR_AC:
@@ -166,6 +176,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						currency = security.GetSymbol().GetCashBaseCurrency();
 						qty *= GetPair(PAIR_AC).security->GetBidPrice();
 						qty /= GetPair(PAIR_BC).security->GetBidPrice();
+						baseCurrencyQty = qty;
 						break;
 					case LEG2:
 						AssertNe(LEG2, pair.leg);
@@ -175,7 +186,10 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						currency = security.GetSymbol().GetCashQuoteCurrency();
 						qty = GetLeg(LEG2).GetOpenedVolume();
 						if (GetLeg(LEG2).GetPair() == PAIR_AB) {
-							qty *= GetPair(PAIR_BC).security->GetAskPrice();
+							qty *= GetPair(PAIR_BC).security->GetBidPrice();
+							baseCurrencyQty = GetLeg(LEG2).GetOpenedVolume();
+						} else {
+							baseCurrencyQty = qty / price;
 						}
 						break;
 				}
@@ -203,7 +217,11 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
-				pair.leg));
+				pair.leg,
+				//! @todo remove "to qty"
+				//! @todo see TRDK-92
+				//! @todo see TRDK-4
+				Qty(floor(baseCurrencyQty))));
 			
 	}
 

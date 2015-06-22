@@ -30,7 +30,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const trdk::ScaledPrice &startPrice,
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
-				const Leg &leg)
+				const Leg &leg,
+				const Qty &baseCurrencyQty)
 			: trdk::Position(
 				strategy,
 				tradeSystem,
@@ -41,6 +42,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				timeMeasurement),
 			m_pair(pair),
 			m_leg(leg) {
+			const_cast<OrderParams &>(m_orderParams).minTradeQty
+				= baseCurrencyQty;
 			//...//
 		}
 
@@ -48,13 +51,14 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void Open() {
 			AssertLt(.0, GetOpenStartPrice());
-			OpenImmediatelyOrCancel(GetOpenStartPrice());
+
+			OpenImmediatelyOrCancel(GetOpenStartPrice(), m_orderParams);
 		}
 
 		virtual void Close(const CloseType &closeType, double price) {
 			Assert(Lib::IsZero(price));
 			const auto &scaledPrice = GetSecurity().ScalePrice(price);
-			CloseImmediatelyOrCancel(closeType, scaledPrice);
+			CloseImmediatelyOrCancel(closeType, scaledPrice, m_orderParams);
 			if (Lib::IsZero(GetCloseStartPrice())) {
 				SetCloseStartPrice(scaledPrice);
 			}
@@ -72,6 +76,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		const Pair m_pair;
 		const Leg m_leg;
+		const OrderParams m_orderParams;
 
 	};
 
@@ -90,7 +95,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const trdk::ScaledPrice &startPrice,
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
-				const Leg &leg)
+				const Leg &leg,
+				const Qty &baseCurrencyQty)
 			: trdk::Position(
 				strategy,
 				tradeSystem,
@@ -108,7 +114,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				startPrice,
 				timeMeasurement,
 				pair,
-				leg),
+				leg,
+				baseCurrencyQty),
 			trdk::LongPosition(
 				strategy,
 				tradeSystem,
@@ -140,7 +147,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const trdk::ScaledPrice &startPrice,
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
-				const Leg &leg)
+				const Leg &leg,
+				const Qty &baseCurrencyQty)
 			: trdk::Position(
 				strategy,
 				tradeSystem,
@@ -158,7 +166,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				startPrice,
 				timeMeasurement,
 				pair,
-				leg),
+				leg,
+				baseCurrencyQty),
 			trdk::ShortPosition(
 				strategy,
 				tradeSystem,
