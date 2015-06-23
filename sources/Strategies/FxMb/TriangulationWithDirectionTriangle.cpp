@@ -116,15 +116,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						AssertNe(LEG2, pair.leg);
 						throw LogicError("BC can be leg 2");
 					case LEG3:
+						AssertNe(PAIR_BC, GetLeg(LEG1).GetPair());
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
 						currency = security.GetSymbol().GetCashQuoteCurrency();
-						qty = GetLeg(LEG2).GetOpenedVolume();
-						if (GetLeg(LEG2).GetPair() == PAIR_AB) {
-							qty *= GetPair(PAIR_BC).security->GetAskPrice();
-							baseCurrencyQty = GetLeg(LEG2).GetOpenedVolume();
-						} else {
-							baseCurrencyQty = qty / price;
-						}
+						qty = GetLeg(PAIR_AC).GetOpenedVolume();
+						baseCurrencyQty
+							= qty / GetPair(PAIR_BC).security->GetAskPrice();
 						break;
 				}
 				if (security.GetAskQty() < qty / price) {
@@ -182,15 +179,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						AssertNe(LEG2, pair.leg);
 						throw LogicError("BC can be leg 2");
 					case LEG3:
+						AssertNe(PAIR_BC, GetLeg(LEG1).GetPair());
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
 						currency = security.GetSymbol().GetCashQuoteCurrency();
-						qty = GetLeg(LEG2).GetOpenedVolume();
-						if (GetLeg(LEG2).GetPair() == PAIR_AB) {
-							qty *= GetPair(PAIR_BC).security->GetBidPrice();
-							baseCurrencyQty = GetLeg(LEG2).GetOpenedVolume();
-						} else {
-							baseCurrencyQty = qty / price;
-						}
+						qty = GetLeg(PAIR_AC).GetOpenedVolume();
+						baseCurrencyQty
+							= qty / GetPair(PAIR_BC).security->GetBidPrice();
 						break;
 				}
 				if (security.GetBidQty() < qty / price) {
