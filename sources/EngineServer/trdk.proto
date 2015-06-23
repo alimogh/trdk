@@ -123,6 +123,10 @@ message EngineStopRequest {
 	required string engine_id = 1;
 }
 
+message EnginePositionCloseRequest {
+	required string engine_id = 1;
+}
+
 message EngineSettingsSetRequest {
 	required string engine_id = 1;
 	repeated SettingsSection general_settings = 2;
@@ -155,11 +159,12 @@ message ClientRequest {
 		TYPE_INFO_FULL = 2;
 		TYPE_ENGINE_START = 3;
 		TYPE_ENGINE_STOP = 4;
-		TYPE_ENGINE_SETTINGS = 5;
-		TYPE_STRATEGY_START = 6;
-		TYPE_STRATEGY_STOP = 7;
-		TYPE_STRATEGY_SETTINGS = 8;
-		TYPE_DEBUG_PNL_REQUEST = 9;
+		TYPE_ENGINE_POSITION_CLOSE = 5;
+		TYPE_ENGINE_SETTINGS = 6;
+		TYPE_STRATEGY_START = 7;
+		TYPE_STRATEGY_STOP = 8;
+		TYPE_STRATEGY_SETTINGS = 9;
+		TYPE_DEBUG_PNL_REQUEST = 10;
 	}
 
 	required Type type = 1;
@@ -169,14 +174,16 @@ message ClientRequest {
 	optional EngineStartRequest engine_start = 3;
 	// TYPE_ENGINE_STOP 
 	optional EngineStopRequest engine_stop = 4;
+	// TYPE_ENGINE_POSITION_CLOSE
+	optional EnginePositionCloseRequest engine_position_close = 5;
 	// TYPE_ENGINE_SETTINGS
-	optional EngineSettingsSetRequest engine_settings = 5;
+	optional EngineSettingsSetRequest engine_settings = 6;
 	// TYPE_STRATEGY_START
-	optional StrategyStartRequest strategy_start = 6;
+	optional StrategyStartRequest strategy_start = 7;
 	// TYPE_STRATEGY_STOP
-	optional StrategyStopRequest strategy_stop = 7;
+	optional StrategyStopRequest strategy_stop = 8;
 	// TYPE_STRATEGY_SETTINGS
-	optional StrategySettingsSetRequest strategy_settings = 8;
+	optional StrategySettingsSetRequest strategy_settings = 9;
 
 }
 

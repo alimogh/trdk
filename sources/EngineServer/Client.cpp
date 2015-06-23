@@ -315,6 +315,9 @@ void Client::OnNewRequest(const ClientRequest &request) {
 		case ClientRequest::TYPE_ENGINE_STOP:
 			OnEngineStopRequest(request.engine_stop());
 			break;
+		case ClientRequest::TYPE_ENGINE_POSITION_CLOSE:
+			OnEnginePositonCloseRequest(request.engine_position_close());
+			break;
 		case ClientRequest::TYPE_ENGINE_SETTINGS:
 			OnEngineSettingsSetRequest(request.engine_settings());
 			break;
@@ -446,6 +449,15 @@ void Client::OnEngineStopRequest(const EngineStopRequest &request) {
 
 	SendEngineState(request.engine_id());
 
+}
+
+void Client::OnEnginePositonCloseRequest(
+		const EnginePositionCloseRequest &request) {
+	//! @todo Write to log
+	std::cout
+		<< "Closing position for engine \"" << request.engine_id() << "\" by request from "
+		<< GetRemoteAddressAsString() << "..." << std::endl;
+	SendError("Method not implemented.");
 }
 
 void Client::OnEngineSettingsSetRequest(
