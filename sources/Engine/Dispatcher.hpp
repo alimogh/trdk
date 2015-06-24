@@ -1200,7 +1200,7 @@ namespace trdk { namespace Engine {
 			} catch (...) {
 				// error already logged
 				AssertFailNoException();
-				error = "Unknwon error";
+				error = "Unknown error";
 			}
 			
 			try {

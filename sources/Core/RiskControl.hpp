@@ -15,6 +15,10 @@
 
 namespace trdk {
 
+	//////////////////////////////////////////////////////////////////////////
+
+	typedef size_t RiskControlOperationId;
+
 	////////////////////////////////////////////////////////////////////////////////
 
 	class RiskControlSymbolContext {
@@ -91,29 +95,33 @@ namespace trdk {
 	public:
 
 		virtual void CheckNewBuyOrder(
-				trdk::Security &security,
-				const trdk::Lib::Currency &currency,
-				const trdk::Qty &qty,
-				const trdk::ScaledPrice &price)
+				const trdk::RiskControlOperationId &,
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &)
 				= 0;
 		virtual void CheckNewSellOrder(
-				trdk::Security &security,
-				const trdk::Lib::Currency &currency,
-				const trdk::Qty &qty,
-				const trdk::ScaledPrice &price)
+				const trdk::RiskControlOperationId &,
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &)
 				= 0;
 	
 		virtual void ConfirmBuyOrder(
-				const trdk::TradeSystem::OrderStatus &status,
-				trdk::Security &security,
-				const trdk::Lib::Currency &currency,
-				const trdk::ScaledPrice &orderPrice,
-				const trdk::Qty &tradeQty,
-				const trdk::ScaledPrice &tradePrice,
-				const trdk::Qty &remainingQty)
+				const trdk::RiskControlOperationId &,
+				const trdk::TradeSystem::OrderStatus &,
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::ScaledPrice &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &,
+				const trdk::Qty &)
 				= 0;
 
 		virtual void ConfirmSellOrder(
+				const trdk::RiskControlOperationId &,
 				const trdk::TradeSystem::OrderStatus &status,
 				trdk::Security &security,
 				const trdk::Lib::Currency &currency,
@@ -220,14 +228,14 @@ namespace trdk {
 
 	public:
 
-		void CheckNewBuyOrder(
+		trdk::RiskControlOperationId CheckNewBuyOrder(
 				trdk::RiskControlScope &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
-		void CheckNewSellOrder(
+		trdk::RiskControlOperationId CheckNewSellOrder(
 				trdk::RiskControlScope &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
@@ -236,6 +244,7 @@ namespace trdk {
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
 		void ConfirmBuyOrder(
+				const trdk::RiskControlOperationId &,
 				trdk::RiskControlScope &,
 				const trdk::TradeSystem::OrderStatus &,
 				trdk::Security &,
@@ -246,6 +255,7 @@ namespace trdk {
 				const trdk::Qty &remainingQty,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 		void ConfirmSellOrder(
+				const trdk::RiskControlOperationId &,
 				trdk::RiskControlScope &,
 				const trdk::TradeSystem::OrderStatus &,
 				trdk::Security &,

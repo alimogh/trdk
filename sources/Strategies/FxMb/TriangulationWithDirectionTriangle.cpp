@@ -14,6 +14,8 @@
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 
+#include "Core/TradingLog.hpp"
+
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Strategies::FxMb;
@@ -119,13 +121,19 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						AssertNe(PAIR_BC, GetLeg(LEG1).GetPair());
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
 						currency = security.GetSymbol().GetCashQuoteCurrency();
-						qty = GetLeg(LEG1).GetOpenedVolume();
-						if (GetLeg(LEG1).GetPair() == PAIR_AB) {
-							qty *= GetPair(PAIR_BC).security->GetAskPrice();
-							baseCurrencyQty = GetLeg(LEG1).GetOpenedVolume();
-						} else {
-							baseCurrencyQty = qty / price;
-						}
+						qty = GetLeg(PAIR_AC).GetOpenedVolume();
+						// Remove header
+						m_strategy.GetTradingLog().Write(
+							"PAIR_BC on Leg 3: buy, qty=%1$f, round=%2$f, scaled=%3%, descaled=%4$f",
+							[&](TradingRecord &record) {
+								record
+									% qty
+									% Qty(boost::math::round(qty))
+									% GetLeg(PAIR_AC).GetOpenPrice()
+									% GetLeg(PAIR_AC).GetSecurity().DescalePrice(GetLeg(PAIR_AC).GetOpenPrice());
+							});
+						baseCurrencyQty
+							= qty / GetPair(PAIR_BC).security->GetAskPrice();
 						break;
 				}
 				if (security.GetAskQty() < qty / price) {
@@ -186,13 +194,19 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						AssertNe(PAIR_BC, GetLeg(LEG1).GetPair());
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
 						currency = security.GetSymbol().GetCashQuoteCurrency();
-						qty = GetLeg(LEG1).GetOpenedVolume();
-						if (GetLeg(LEG1).GetPair() == PAIR_AB) {
-							qty *= GetPair(PAIR_BC).security->GetBidPrice();
-							baseCurrencyQty = GetLeg(LEG1).GetOpenedVolume();
-						} else {
-							baseCurrencyQty = qty / price;
-						}
+						qty = GetLeg(PAIR_AC).GetOpenedVolume();
+						// Remove header
+						m_strategy.GetTradingLog().Write(
+							"PAIR_BC on Leg 3: sell, qty=%1$f, round=%2$f, scaled=%3%, descaled=%4$f",
+							[&](TradingRecord &record) {
+								record
+									% qty
+									% Qty(boost::math::round(qty))
+									% GetLeg(PAIR_AC).GetOpenPrice()
+									% GetLeg(PAIR_AC).GetSecurity().DescalePrice(GetLeg(PAIR_AC).GetOpenPrice());
+							});
+						baseCurrencyQty
+							= qty / GetPair(PAIR_BC).security->GetBidPrice();
 						break;
 				}
 				if (security.GetBidQty() < qty / price) {
@@ -206,7 +220,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 		AssertLt(0, qty);
 		Assert(!Lib::IsZero(security.GetBidPrice()));
-			
+
 		result.reset(
 			new Twd::ShortPosition(
 				m_strategy,

@@ -172,7 +172,7 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 
 		if (m_prevTriangle) {
 			if (GetContext().GetCurrentTime() - m_prevTriangleTime <= pt::seconds(30)) {
-				m_prevTriangle->GetReport().ReportUpdate(true);
+				m_prevTriangle->GetReport().ReportUpdate();
 			} else {
 				m_prevTriangle.reset();
 			}

@@ -227,11 +227,13 @@ public:
 public:
 
 	virtual void CheckNewBuyOrder(
+			const RiskControlOperationId &operationId,
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &price) {
 		CheckNewOrder(
+			operationId,
 			security,
 			currency,
 			qty,
@@ -243,11 +245,13 @@ public:
 	}
 
 	virtual void CheckNewSellOrder(
+			const RiskControlOperationId &operationId,
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &price) {
 		CheckNewOrder(
+			operationId,
 			security,
 			currency,
 			qty,
@@ -259,6 +263,7 @@ public:
 	}
 
 	virtual void ConfirmBuyOrder(
+			const RiskControlOperationId &operationId,
 			const TradeSystem::OrderStatus &status,
 			Security &security,
 			const Lib::Currency &currency,
@@ -267,6 +272,7 @@ public:
 			const ScaledPrice &tradePrice,
 			const Qty &remainingQty) {
  		 ConfirmOrder(
+			operationId,
 			status,
 			security,
 			currency,
@@ -281,6 +287,7 @@ public:
 	}
 
 	virtual void ConfirmSellOrder(
+			const RiskControlOperationId &operationId,
 			const TradeSystem::OrderStatus &status,
 			Security &security,
 			const Currency &currency,
@@ -289,6 +296,7 @@ public:
 			const ScaledPrice &tradePrice,
 			const Qty &remainingQty) {
  		ConfirmOrder(
+			operationId,
 			status,
 			security,
 			currency,
@@ -378,16 +386,18 @@ protected:
 private:
 
 	void CheckNewOrder(
+			const RiskControlOperationId &operationId,
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &price,
 			RiskControlSymbolContext::Side &side) {
 		CheckOrdersFloodLevel();
-		BlockFunds(security, currency, qty, price, side);
+		BlockFunds(operationId, security, currency, qty, price, side);
 	}
 
 	void ConfirmOrder(
+			const RiskControlOperationId &operationId,
 			const TradeSystem::OrderStatus &status,
 			Security &security,
 			const Currency &currency,
@@ -397,6 +407,7 @@ private:
 			const Qty &remainingQty,
 			RiskControlSymbolContext::Side &side) {
 		ConfirmUsedFunds(
+			operationId,
 			status,
 			security,
 			currency,
@@ -502,6 +513,7 @@ private:
 	}
 
 	void BlockFunds(
+			const RiskControlOperationId &operationId,
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -536,20 +548,27 @@ private:
 		const std::pair<double, double> rest = std::make_pair(
 			CalcFundsRest(newPosition.first, baseCurrency),
 			CalcFundsRest(newPosition.second, quoteCurrency));
-		
+
 		m_tradingLog.Write(
-			"block funds\t%1%\t%2%"
-				"\t%3%: %4$f + %5$f = %6$f (%7$f);"
-				"\t%8%: %9$f + %10$f = %11$f (%12$f);",
+			"funds\tblock\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f =\t%7$f\t(%8$f)",
 			[&](TradingRecord &record) {
 				record
 					% GetName()
 					% side.name
+					% operationId
 					% symbol.GetCashBaseCurrency()
 					% baseCurrency.position
 					% blocked.first
 					% newPosition.first
-					% rest.first
+					% rest.first;
+			});
+		m_tradingLog.Write(
+			"funds\tblock\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f =\t%7$f\t(%8$f)",
+			[&](TradingRecord &record) {
+				record
+					% GetName()
+					% side.name
+					% operationId
 					% symbol.GetCashQuoteCurrency()
 					% quoteCurrency.position
 					% blocked.second
@@ -569,6 +588,7 @@ private:
 	}
 
 	void ConfirmUsedFunds(
+			const RiskControlOperationId &operationId,
 			const TradeSystem::OrderStatus &status,
 			Security &security,
 			const Currency &currency,
@@ -591,6 +611,7 @@ private:
 			case TradeSystem::ORDER_STATUS_FILLED:
 				AssertNe(0, tradePrice);
 				ConfirmBlockedFunds(
+					operationId,
 					security,
 					currency,
 					orderPrice,
@@ -603,6 +624,7 @@ private:
 			case TradeSystem::ORDER_STATUS_ERROR:
 				AssertEq(0, tradePrice);
 				UnblockFunds(
+					operationId,
 					security,
 					currency,
 					orderPrice,
@@ -614,6 +636,7 @@ private:
 	}
 
 	void ConfirmBlockedFunds(
+			const RiskControlOperationId &operationId,
 			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
@@ -655,19 +678,26 @@ private:
 			quoteCurrency.position - blocked.second + used.second);
 
 		m_tradingLog.Write(
-			"use funds\t%1%\t%2%"
-				"\t%3%: %4$f - %5$f + %6$f = %7$f (%8$f);"
-				"\t%9%: %10$f - %11$f + %12$f = %13$f (%14$f);",
+			"funds\tuse\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f +  %7$f =\t%8$f\t(%9$f)",
 			[&](TradingRecord &record) {
 				record
 					% GetName()
 					% side.name
+					% operationId
 					% symbol.GetCashBaseCurrency()
 					% baseCurrency.position
 					% blocked.first
 					% used.first
 					% newPosition.first
-					% CalcFundsRest(newPosition.first, baseCurrency)
+					% CalcFundsRest(newPosition.first, baseCurrency);
+			});
+		m_tradingLog.Write(
+			"funds\tuse\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f +  %7$f =\t%8$f\t(%9$f)",
+			[&](TradingRecord &record) {
+				record
+					% GetName()
+					% side.name
+					% operationId
 					% symbol.GetCashQuoteCurrency()
 					% quoteCurrency.position
 					% blocked.second
@@ -682,6 +712,7 @@ private:
 	}
 
 	void UnblockFunds(
+			const RiskControlOperationId &operationId,
 			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
@@ -714,19 +745,26 @@ private:
 			quoteCurrency.position - blocked.second);
 
 		m_tradingLog.Write(
-			"unblock funds\t%1%\t%2%"
-				"\t%3%: %4$f - %5$f = %6$f (%7$f);"
-				"\t%8%: %9$f - %10$f = %11$f (%12$f);",
+			"funds\tunblock\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f =\t%7$f\t(%8$f)",
 			[&](TradingRecord &record) {
 				record
 					% GetName()
 					% side.name
+					% operationId
 					% symbol.GetCashBaseCurrency()
 					% baseCurrency.position
 					% blocked.first
 					% newPosition.first
-					% CalcFundsRest(newPosition.first, baseCurrency)
-					% symbol.GetCashQuoteCurrency()
+					% CalcFundsRest(newPosition.first, baseCurrency);
+			});
+		m_tradingLog.Write(
+			"funds\tunblock\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f =\t%7$f\t(%8$f)",
+			[&](TradingRecord &record) {
+				record
+					% GetName()
+					% side.name
+					% operationId
+					% symbol.GetCashBaseCurrency()
 					% quoteCurrency.position
 					% blocked.second
 					% newPosition.second
@@ -1019,6 +1057,8 @@ public:
 
 	GlobalRiskControlScope m_globalScope;
 
+	boost::atomic<RiskControlOperationId> m_lastOperationId;
+
 public:
 
 	explicit Implementation(
@@ -1035,7 +1075,8 @@ public:
 			m_conf,
 			"Global",
 			m_additionalScopesInfo.size(),
-			m_tradingMode) {
+			m_tradingMode),
+		m_lastOperationId(0) {
 		//...//
 	}
 
@@ -1197,7 +1238,7 @@ std::unique_ptr<RiskControlScope> RiskControl::CreateScope(
 
 }
 
-void RiskControl::CheckNewBuyOrder(
+RiskControlOperationId RiskControl::CheckNewBuyOrder(
 		RiskControlScope &scope,
 		Security &security,
 		const Currency &currency,
@@ -1205,12 +1246,15 @@ void RiskControl::CheckNewBuyOrder(
 		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
-	scope.CheckNewBuyOrder(security, currency, qty, price);
-	m_pimpl->m_globalScope.CheckNewBuyOrder(security, currency, qty, price);
+	const RiskControlOperationId operationId = ++m_pimpl->m_lastOperationId;
+	scope.CheckNewBuyOrder(operationId, security, currency, qty, price);
+	m_pimpl->m_globalScope
+		.CheckNewBuyOrder(operationId, security, currency, qty, price);
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
+	return operationId;
 }
 
-void RiskControl::CheckNewSellOrder(
+RiskControlOperationId RiskControl::CheckNewSellOrder(
 		RiskControlScope &scope,
 		Security &security,
 		const Currency &currency,
@@ -1218,12 +1262,16 @@ void RiskControl::CheckNewSellOrder(
 		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
-	scope.CheckNewSellOrder(security, currency, qty, price);
-	m_pimpl->m_globalScope.CheckNewSellOrder(security, currency, qty, price);
+	const RiskControlOperationId operationId = ++m_pimpl->m_lastOperationId;
+	scope.CheckNewSellOrder(operationId, security, currency, qty, price);
+	m_pimpl->m_globalScope
+		.CheckNewSellOrder(operationId, security, currency, qty, price);
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
+	return operationId;
 }
 
 void RiskControl::ConfirmBuyOrder(
+		const RiskControlOperationId &operationId,
 		RiskControlScope &scope,
 		const TradeSystem::OrderStatus &orderStatus,
 		Security &security,
@@ -1235,6 +1283,7 @@ void RiskControl::ConfirmBuyOrder(
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_START);
 	m_pimpl->m_globalScope.ConfirmBuyOrder(
+		operationId,
 		orderStatus,
 		security,
 		currency,
@@ -1243,6 +1292,7 @@ void RiskControl::ConfirmBuyOrder(
 		tradePrice,
 		remainingQty);
 	scope.ConfirmBuyOrder(
+		operationId,
 		orderStatus,
 		security,
 		currency,
@@ -1254,6 +1304,7 @@ void RiskControl::ConfirmBuyOrder(
 }
 
 void RiskControl::ConfirmSellOrder(
+		const RiskControlOperationId &operationId,
 		RiskControlScope &scope,
 		const TradeSystem::OrderStatus &orderStatus,
 		Security &security,
@@ -1265,6 +1316,7 @@ void RiskControl::ConfirmSellOrder(
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_START);
 	m_pimpl->m_globalScope.ConfirmSellOrder(
+		operationId,
 		orderStatus,
 		security,
 		currency,
@@ -1273,6 +1325,7 @@ void RiskControl::ConfirmSellOrder(
 		tradePrice,
 		remainingQty);
 	scope.ConfirmSellOrder(
+		operationId,
 		orderStatus,
 		security,
 		currency,
