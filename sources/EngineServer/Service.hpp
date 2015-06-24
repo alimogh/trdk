@@ -60,6 +60,8 @@ namespace trdk { namespace EngineServer {
 		virtual Settings & GetEngineSettings(
 				const std::string &engineId);
 
+		virtual void ClosePositions(const std::string &engineId);
+
 		virtual void UpdateEngine(
 				EngineServer::Settings::EngineTransaction &);
 		virtual void UpdateStrategy(

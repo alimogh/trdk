@@ -88,6 +88,12 @@ namespace trdk { namespace Strategies { namespace Test {
 			//...//
 		}
 
+	protected:
+
+		virtual void OnPostionsCloseRequest() {
+			GetContext().GetLog().Debug("All positions closed.");
+		}
+
 	private:
 
 		const bool m_enabled;

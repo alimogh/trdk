@@ -40,6 +40,8 @@ namespace trdk { namespace Engine {
 		void Add(const trdk::Lib::Ini &);
 		void Update(const trdk::Lib::Ini &);
 
+		void ClosePositions();
+
 		virtual void SyncDispatching();
 
 	public:

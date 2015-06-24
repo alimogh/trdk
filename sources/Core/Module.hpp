@@ -73,6 +73,7 @@ namespace trdk {
 	protected:
 
 		Mutex & GetMutex() const;
+		Lock LockForOtherThreads() const;
 
 	protected:
 

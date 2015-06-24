@@ -521,4 +521,23 @@ const Security * Engine::Context::FindSecurity(const Symbol &symbol) const {
 	return const_cast<Context *>(this)->FindSecurity(symbol);
 }
 
+void Engine::Context::ClosePositions() {
+
+	if (!m_pimpl->m_state) {
+		return;
+	}
+
+	GetLog().Info("Closing positions...");
+
+	foreach (auto &tagetStrategies, m_pimpl->m_state->strategies) {
+		foreach (auto &strategyHolder, tagetStrategies.second) {
+			strategyHolder.module->ClosePositions();
+		}
+	}
+
+	GetLog().Debug("Closing positions: requests sent.");
+
+
+}
+
 //////////////////////////////////////////////////////////////////////////

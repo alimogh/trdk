@@ -621,7 +621,7 @@ void Strategy::Block(const pt::time_duration &blockDuration) {
 }
 
 void Strategy::Stop(const StopMode &stopMode) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	m_pimpl->m_stopMode = stopMode;
 	OnStopRequest(stopMode);
 }
@@ -710,6 +710,12 @@ void Strategy::OnSettingsUpdate(const IniSectionRef &conf) {
 
 	m_pimpl->m_riskControlScope->OnSettingsUpdate(conf);
 
+}
+
+void Strategy::ClosePositions() {
+	const auto lock = LockForOtherThreads();
+	GetLog().Info("Closing positions by request...");
+	OnPostionsCloseRequest();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

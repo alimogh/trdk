@@ -41,6 +41,8 @@ namespace trdk { namespace EngineServer {
 				= 0;
 		virtual void StopEngine(const std::string &engineId) = 0;
 
+		virtual void ClosePositions(const std::string &engineId) = 0;
+
 		virtual Settings & GetEngineSettings(
 				const std::string &engineId)
 				= 0;

@@ -218,6 +218,10 @@ Module::Mutex & Module::GetMutex() const {
 	return m_pimpl->m_mutex;
 }
 
+Module::Lock Module::LockForOtherThreads() const {
+	return Lock(m_pimpl->m_mutex);
+}
+
 const std::string & Module::GetTypeName() const throw() {
 	return m_pimpl->m_typeName;
 }

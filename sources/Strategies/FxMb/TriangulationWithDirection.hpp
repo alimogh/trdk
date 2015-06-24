@@ -64,6 +64,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		virtual void OnPositionUpdate(trdk::Position &);
 		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
 		virtual void OnStopRequest(const trdk::StopMode &);
+		virtual void OnPostionsCloseRequest();
 
 	private:
 

@@ -457,7 +457,15 @@ void Client::OnEnginePositonCloseRequest(
 	std::cout
 		<< "Closing position for engine \"" << request.engine_id() << "\" by request from "
 		<< GetRemoteAddressAsString() << "..." << std::endl;
-	SendError("Method not implemented.");
+	try {
+		m_requestHandler.ClosePositions(request.engine_id());
+	} catch (const EngineServer::Exception &ex) {
+		boost::format errorMessage("Failed to close positions: \"%1%\".");
+		errorMessage % ex;
+		//! @todo Write to log
+		std::cerr << errorMessage << std::endl;
+		SendError(errorMessage.str());
+	}
 }
 
 void Client::OnEngineSettingsSetRequest(

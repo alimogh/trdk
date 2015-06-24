@@ -69,6 +69,8 @@ namespace trdk { namespace EngineServer {
 
 		void Update(EngineServer::Settings::Transaction &);
 
+		void ClosePositions();
+
 	private:
 
 		mutable Mutex m_mutex;
