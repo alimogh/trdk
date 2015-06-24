@@ -471,6 +471,9 @@ OrderId FixTrading::SendSellAtMarketPrice(
 			qty,
 			params);
 		message.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Sell);
+		message.set(
+			fix::FIX40::Tags::TimeInForce,
+			fix::FIX40::Values::TimeInForce::Day);
 		Send(message, timeMeasurement);
 	} catch (...) {
 		DeleteErrorOrder(order.id);
@@ -628,6 +631,9 @@ OrderId FixTrading::SendBuyAtMarketPrice(
 			qty,
 			params);
 		message.set(fix::FIX40::Tags::Side, fix::FIX40::Values::Side::Buy);
+		message.set(
+			fix::FIX40::Tags::TimeInForce,
+			fix::FIX40::Values::TimeInForce::Day);
 		Send(message, timeMeasurement);
 	} catch (...) {
 		DeleteErrorOrder(order.id);

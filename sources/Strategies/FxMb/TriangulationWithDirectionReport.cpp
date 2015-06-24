@@ -223,8 +223,9 @@ class ReportsState::Pnl : private boost::noncopyable {
 
 public:
 
-	static std::ofstream file;
-	static ReportLog log;
+	static std::ofstream *file;
+	static ReportLog *log;
+	static size_t logUseCount;
 
 	const double comission;
 
@@ -279,7 +280,10 @@ public:
 			return;
 		}
 
-		if (!file.is_open()) {
+		if (logUseCount++ == 0) {
+
+			file = new std::ofstream;
+			log = new ReportLog;
 
 			const auto &logPath = context.GetSettings().GetLogsDir() / "pnl.log";
 			context.GetLog().Info("PnL log: %1%.", logPath);
@@ -289,12 +293,12 @@ public:
 				fs::create_directories(logPath.branch_path());
 			}
 			
-			file.open(logPath.string().c_str(), std::ios::app | std::ios::ate);
+			file->open(logPath.string().c_str(), std::ios::app | std::ios::ate);
 			if (!file) {
 				throw ModuleError("Failed to open PnL log file");
 			}
 		
-			log.EnableStream(file);
+			log->EnableStream(*file);
 
 			if (isNewFile) {
 				WriteHead();
@@ -304,8 +308,16 @@ public:
 	
 	}
 
+	~Pnl() {
+		AssertLt(0, logUseCount);
+		if (--logUseCount == 0) {
+			delete log;
+			delete file;
+		}
+	}
+
 	void WriteHead() {
-		log.Write(
+		log->Write(
 			[](ReportRecord &record) {
 				record
 					%	"Time"
@@ -331,8 +343,9 @@ public:
 
 };
 
-std::ofstream ReportsState::Pnl::file;
-ReportLog ReportsState::Pnl::log;
+std::ofstream *ReportsState::Pnl::file;
+ReportLog *ReportsState::Pnl::log;
+size_t ReportsState::Pnl::logUseCount = 0;
 
 ReportsState::ReportsState(
 		Context &context,
@@ -588,7 +601,7 @@ void TriangleReport::ReportAction(
 		size_t winningPercentage = 0;
 		size_t trianglesCount = 0;
 
-		m_state.pnl->log.Write(
+		m_state.pnl->log->Write(
 			[&](ReportRecord &record) {
 
 				AssertGt(

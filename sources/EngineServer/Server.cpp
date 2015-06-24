@@ -144,8 +144,7 @@ void Server::StopAll(const trdk::StopMode &stopMode) {
 		foreach (const EngineInfo &engineInfo, m_engines) {
 			stopThreads.create_thread(
 				[&]() {
-					const_cast<Engine::Context &>(*engineInfo.engine)
-						.Stop(stopMode);
+					engineInfo.engine->Stop(stopMode);
 				});
 		}
 		stopThreads.join_all();
@@ -192,3 +191,9 @@ void Server::Update(
 
 }
 
+void Server::ClosePositions() {
+	const Lock lock(m_mutex);
+	foreach (const EngineInfo &engineInfo, m_engines) {
+		engineInfo.engine->ClosePositions();
+	}
+}

@@ -166,7 +166,7 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 			m_triangle->GetReport().ReportUpdate();
 		}
 	
-	} else {
+	} else if (GetPositions().IsEmpty()) {
 
 		AssertEq(PAIR_UNKNOWN, m_scheduledLeg);
 
@@ -220,8 +220,21 @@ bool TriangulationWithDirection::StartScheduledLeg() {
 
 void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 
-	Assert(m_triangle);
 	AssertEq(LEG_UNKNOWN, m_scheduledLeg);
+
+	if (!m_triangle) {
+		// Closing opened position.
+		if (!position.IsCompleted()) {
+			GetLog().Error(
+				"Failed to close %1% position.",
+				position.GetSecurity());
+			Block();
+		} else {
+			GetLog().Info("%1% position closed.", position.GetSecurity());
+		}
+		return;
+	}
+
 	AssertLt(0, m_trianglesRest);
 	
 	if (position.IsError()) {
@@ -389,9 +402,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 				order.GetLeg(),
 				0,
 				&order);
-			order.MarkAsCompleted();
 			Assert(!m_triangle->GetLeg(LEG1).IsCompleted());
-			m_triangle->GetLeg(LEG1).MarkAsCompleted();
 			if (CheckCurrentStopRequest()) {
 				return;
 			}
@@ -401,7 +412,6 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 			{
 				const auto &execDelay = position.GetTimeMeasurement().Measure(
 					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_2);
-				order.MarkAsCompleted();
 				m_triangle->GetReport().ReportAction(
 					"executed",
 					"exec report",
@@ -409,6 +419,9 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 					execDelay,
 					&order);
 			}
+			m_triangle->GetLeg(LEG1).MarkAsCompleted();
+			m_triangle->GetLeg(LEG2).MarkAsCompleted();
+			order.MarkAsCompleted();
 			m_prevTriangle.reset(m_triangle.release());
 			m_prevTriangleTime = GetContext().GetCurrentTime();
 #			ifdef DEV_VER
@@ -1060,6 +1073,46 @@ void TriangulationWithDirection::OnSettingsUpdate(const IniSectionRef &conf) {
 		const auto newQty = conf.ReadTypedKey<Qty>("invest_amount");
 		GetLog().Info("Set invest amount: %1% -> %2%.", m_qty, newQty);
 		m_qty = newQty;
+	}
+
+}
+
+void TriangulationWithDirection::OnPostionsCloseRequest() {
+	
+	if (!m_triangle) {
+		GetLog().Info("Triangle not started, no opened positions.");
+		return;
+	}
+
+	m_prevTriangle.reset();
+	const std::unique_ptr<Triangle> triangle(m_triangle.release());
+
+	try {
+
+		if (m_scheduledLeg != LEG_UNKNOWN) {
+			GetLog().Info(
+				"Canceling scheduled leg %1%...",
+				GetLegNo(m_scheduledLeg));
+			m_scheduledLeg = LEG_UNKNOWN;
+		}
+
+		const auto cancelLeg = [this, &triangle](const Leg &leg) {
+			if (!triangle->IsLegStarted(leg)) {
+				return;
+			}
+			GetLog().Info("Canceling leg %1%...", GetLegNo(leg));
+			triangle
+				->GetLeg(leg)
+				.CancelAtMarketPrice(Position::CLOSE_TYPE_REQUEST);
+		};
+		cancelLeg(LEG1);
+		cancelLeg(LEG2);
+		cancelLeg(LEG3);
+
+	} catch (...) {
+		GetLog().Error("Failed to cancel triangle.");
+		Block();
+		throw;
 	}
 
 }

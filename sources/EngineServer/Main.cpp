@@ -135,17 +135,23 @@ namespace {
 
 			StopMode stopMode = STOP_MODE_UNKNOWN;
 			std::cout << std::endl;
+			bool skipInfo = false;
 			while (stopMode == STOP_MODE_UNKNOWN) {
-				std::cout
-					<< "To stop please enter:" << std::endl
-						<< "\t1 - normal stop,"
-							<< " wait until all positions will be completed;"
-							<< std::endl
-						<< "\t2 - gracefully stop,"
-							<< " wait for current orders only;"
-							<< std::endl
-						<< "\t9 - urgent stop, immediately." << std::endl
-					<< std::endl;
+				if (!skipInfo) {
+					std::cout
+						<< "To please enter:" << std::endl
+							<< "\t1 - normal stop,"
+								<< " wait until all positions will be completed;"
+								<< std::endl
+							<< "\t2 - gracefully stop,"
+								<< " wait for current orders only;"
+								<< std::endl
+							<< "\t5 - close all positions;" << std::endl
+							<< "\t9 - urgent stop, immediately." << std::endl
+						<< std::endl;
+				} else {
+					skipInfo = false;
+				}
 				const char command = char(getchar());
 				switch (command) {
 					case '1':
@@ -154,10 +160,16 @@ namespace {
 					case '2':
 						stopMode = STOP_MODE_GRACEFULLY_ORDERS;
 						break;
+					case '5':
+						server.ClosePositions();
+						break;
 					case '9':
 					case 'u':
 					case 'U':
 						stopMode = STOP_MODE_IMMEDIATELY;
+						break;
+					case  '\n':
+						skipInfo = true;
 						break;
 					default:
 						std::cout << "Unknown command." << std::endl;

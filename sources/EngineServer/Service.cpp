@@ -231,3 +231,8 @@ void EngineServer::Service::OnContextStateChanges(
 		fun(*client);
 	}
 }
+
+void EngineServer::Service::ClosePositions(const std::string &engineId) {
+	CheckEngineIdExists(engineId);
+	m_server.ClosePositions();
+}

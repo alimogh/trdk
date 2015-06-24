@@ -136,6 +136,8 @@ namespace trdk {
 		void Block(const boost::posix_time::time_duration &);
 		void Stop(const trdk::StopMode &);
 
+		void ClosePositions();
+
 	public:
 
 		void RaiseLevel1UpdateEvent(
@@ -198,8 +200,9 @@ namespace trdk {
 
 		const trdk::StopMode & GetStopMode() const;
 		virtual void OnStopRequest(const trdk::StopMode &);
-
 		void ReportStop();
+
+		virtual void OnPostionsCloseRequest() = 0;
 
 	private:
 
