@@ -43,6 +43,7 @@ private:
 		}
 	public:
 		virtual void CheckNewBuyOrder(
+				const RiskControlOperationId &,
 				Security &,
 				const Currency &,
 				const Qty &,
@@ -50,6 +51,7 @@ private:
 			//...//
 		}
 		virtual void CheckNewSellOrder(
+				const RiskControlOperationId &,
 				Security &,
 				const Currency &,
 				const Qty &,
@@ -57,6 +59,7 @@ private:
 			//...//
 		}
 		virtual void ConfirmBuyOrder(
+				const RiskControlOperationId &,
 				const TradeSystem::OrderStatus &,
 				Security &,
 				const Currency &,
@@ -67,6 +70,7 @@ private:
 			//...//
 		}
 		virtual void ConfirmSellOrder(
+				const RiskControlOperationId &,
 				const TradeSystem::OrderStatus &,
 				Security &,
 				const Currency &,

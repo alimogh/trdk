@@ -144,7 +144,7 @@ public:
 
 	}
 
-	void CheckNewBuyOrder(
+	RiskControlOperationId CheckNewBuyOrder(
 			RiskControlScope &riskControlScope,
 			Security &security,
 			const Currency &currency,
@@ -153,7 +153,7 @@ public:
 			const OrderParams &params,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 		ValidateNewOrder(qty, params);
-		m_context.GetRiskControl(m_mode).CheckNewBuyOrder(
+		return m_context.GetRiskControl(m_mode).CheckNewBuyOrder(
 			riskControlScope,
 			security,
 			currency,
@@ -162,7 +162,7 @@ public:
 			timeMeasurement);
 	}
 
-	void CheckNewBuyIocOrder(
+	RiskControlOperationId CheckNewBuyIocOrder(
 			RiskControlScope &riskControlScope,
 			Security &security,
 			const Currency &currency,
@@ -171,7 +171,7 @@ public:
 			const OrderParams &params,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 		ValidateNewIocOrder(qty, params);
-		m_context.GetRiskControl(m_mode).CheckNewBuyOrder(
+		return m_context.GetRiskControl(m_mode).CheckNewBuyOrder(
 			riskControlScope,
 			security,
 			currency,
@@ -180,7 +180,7 @@ public:
 			timeMeasurement);
 	}
 
-	void CheckNewSellOrder(
+	RiskControlOperationId CheckNewSellOrder(
 			RiskControlScope &riskControlScope,
 			Security &security,
 			const Currency &currency,
@@ -189,7 +189,7 @@ public:
 			const OrderParams &params,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 		ValidateNewOrder(qty, params);
-		m_context.GetRiskControl(m_mode).CheckNewSellOrder(
+		return m_context.GetRiskControl(m_mode).CheckNewSellOrder(
 			riskControlScope,
 			security,
 			currency,
@@ -198,7 +198,7 @@ public:
 			timeMeasurement);
 	}
 
-	void CheckNewSellIocOrder(
+	RiskControlOperationId CheckNewSellIocOrder(
 			RiskControlScope &riskControlScope,
 			Security &security,
 			const Currency &currency,
@@ -207,7 +207,7 @@ public:
 			const OrderParams &params,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 		ValidateNewIocOrder(qty, params);
-		m_context.GetRiskControl(m_mode).CheckNewSellOrder(
+		return m_context.GetRiskControl(m_mode).CheckNewSellOrder(
 			riskControlScope,
 			security,
 			currency,
@@ -217,6 +217,7 @@ public:
 	}
 
 	void ConfirmBuyOrder(
+			const RiskControlOperationId &riskControlOperationId,
 			RiskControlScope &riskControlScope,
 			const OrderStatus &orderStatus,
 			Security &security,
@@ -227,6 +228,7 @@ public:
 			const Qty &remainingQty,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 		m_context.GetRiskControl(m_mode).ConfirmBuyOrder(
+			riskControlOperationId,
 			riskControlScope,
 			orderStatus,
 			security,
@@ -239,6 +241,7 @@ public:
 	}
 
 	void ConfirmSellOrder(
+			const RiskControlOperationId &operationId,
 			RiskControlScope &riskControlScope,
 			const OrderStatus &orderStatus,
 			Security &security,
@@ -249,6 +252,7 @@ public:
 			const Qty &remainingQty,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 		m_context.GetRiskControl(m_mode).ConfirmSellOrder(
+			operationId,
 			riskControlScope,
 			orderStatus,
 			security,
@@ -372,7 +376,7 @@ OrderId TradeSystem::SellAtMarketPrice(
 
 	const auto supposedPrice = security.GetBidPriceScaled();
 
-	m_pimpl->CheckNewSellOrder(
+	const auto riskControlOperationId = m_pimpl->CheckNewSellOrder(
 		riskControlScope,
 		security,
 		currency,
@@ -387,13 +391,14 @@ OrderId TradeSystem::SellAtMarketPrice(
 			currency,
 			qty,
 			params,
-			[&, supposedPrice, timeMeasurement, callback](
+			[&, riskControlOperationId, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
 					const Qty &remainingQty,
 					const ScaledPrice &tradePrice) {
 				m_pimpl->ConfirmSellOrder(
+					riskControlOperationId,
 					riskControlScope,
 					orderStatus,
 					security,
@@ -414,6 +419,7 @@ OrderId TradeSystem::SellAtMarketPrice(
 		GetLog().Warn(
 			"Error while sending order, rollback trading check state...");
 		m_pimpl->ConfirmSellOrder(
+			riskControlOperationId,
 			riskControlScope,
 			ORDER_STATUS_ERROR,
 			security,
@@ -438,7 +444,7 @@ OrderId TradeSystem::Sell(
 		RiskControlScope &riskControlScope,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	
-	m_pimpl->CheckNewSellOrder(
+	const auto riskControlOperationId = m_pimpl->CheckNewSellOrder(
 		riskControlScope,
 		security,
 		currency,
@@ -454,13 +460,14 @@ OrderId TradeSystem::Sell(
 			qty,
 			price,
 			params,
-			[&, price, timeMeasurement, callback](
+			[&, riskControlOperationId, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
 					const Qty &remainingQty,
 					const ScaledPrice &tradePrice) {
 				m_pimpl->ConfirmSellOrder(
+					riskControlOperationId,
 					riskControlScope,
 					orderStatus,
 					security,
@@ -481,6 +488,7 @@ OrderId TradeSystem::Sell(
 		GetLog().Warn(
 			"Error while sending order, rollback trading check state...");
 		m_pimpl->ConfirmSellOrder(
+			riskControlOperationId,
 			riskControlScope,
 			ORDER_STATUS_ERROR,
 			security,
@@ -507,7 +515,7 @@ OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 
 	const auto supposedPrice = security.GetBidPriceScaled();
 
-	m_pimpl->CheckNewSellOrder(
+	const auto riskControlOperationId = m_pimpl->CheckNewSellOrder(
 		riskControlScope,
 		security,
 		currency,
@@ -523,13 +531,14 @@ OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 			qty,
 			stopPrice,
 			params,
-			[&, supposedPrice, timeMeasurement, callback](
+			[&, riskControlOperationId, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
 					const Qty &remainingQty,
 					const ScaledPrice &tradePrice) {
 				m_pimpl->ConfirmSellOrder(
+					riskControlOperationId,
 					riskControlScope,
 					orderStatus,
 					security,
@@ -550,6 +559,7 @@ OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 		GetLog().Warn(
 			"Error while sending order, rollback trading check state...");
 		m_pimpl->ConfirmSellOrder(
+			riskControlOperationId,
 			riskControlScope,
 			ORDER_STATUS_ERROR,
 			security,
@@ -574,7 +584,7 @@ OrderId TradeSystem::SellImmediatelyOrCancel(
 		RiskControlScope &riskControlScope,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 
-	m_pimpl->CheckNewSellIocOrder(
+	const auto riskControlOperationId = m_pimpl->CheckNewSellIocOrder(
 		riskControlScope,
 		security,
 		currency,
@@ -590,13 +600,14 @@ OrderId TradeSystem::SellImmediatelyOrCancel(
 			qty,
 			price,
 			params,
-			[&, price, timeMeasurement, callback](
+			[&, riskControlOperationId, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
 					const Qty &remainingQty,
 					const ScaledPrice &tradePrice) {
 				m_pimpl->ConfirmSellOrder(
+					riskControlOperationId,
 					riskControlScope,
 					orderStatus,
 					security,
@@ -617,6 +628,7 @@ OrderId TradeSystem::SellImmediatelyOrCancel(
 		GetLog().Warn(
 			"Error while sending order, rollback trading check state...");
 		m_pimpl->ConfirmSellOrder(
+			riskControlOperationId,
 			riskControlScope,
 			ORDER_STATUS_ERROR,
 			security,
@@ -642,7 +654,7 @@ OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 
 	const auto supposedPrice = security.GetBidPriceScaled();
 	
-	m_pimpl->CheckNewSellIocOrder(
+	const auto riskControlOperationId = m_pimpl->CheckNewSellIocOrder(
 		riskControlScope,
 		security,
 		currency,
@@ -657,13 +669,14 @@ OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 			currency,
 			qty,
 			params,
-			[&, supposedPrice, timeMeasurement, callback](
+			[&, riskControlOperationId, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
 					const Qty &remainingQty,
 					const ScaledPrice &tradePrice) {
 				m_pimpl->ConfirmSellOrder(
+					riskControlOperationId,
 					riskControlScope,
 					orderStatus,
 					security,
@@ -684,6 +697,7 @@ OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 		GetLog().Warn(
 			"Error while sending order, rollback trading check state...");
 		m_pimpl->ConfirmSellOrder(
+			riskControlOperationId,
 			riskControlScope,
 			ORDER_STATUS_ERROR,
 			security,
@@ -709,7 +723,7 @@ OrderId TradeSystem::BuyAtMarketPrice(
 
 	const auto supposedPrice = security.GetAskPriceScaled();
 
-	m_pimpl->CheckNewBuyOrder(
+	const auto riskControlOperationId = m_pimpl->CheckNewBuyOrder(
 		riskControlScope,
 		security,
 		currency,
@@ -724,13 +738,14 @@ OrderId TradeSystem::BuyAtMarketPrice(
 			currency,
 			qty,
 			params,
-			[&, supposedPrice, timeMeasurement, callback](
+			[&, riskControlOperationId, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
 					const Qty &remainingQty,
 					const ScaledPrice &tradePrice) {
 				m_pimpl->ConfirmBuyOrder(
+					riskControlOperationId,
 					riskControlScope,
 					orderStatus,
 					security,
@@ -751,6 +766,7 @@ OrderId TradeSystem::BuyAtMarketPrice(
 		GetLog().Debug(
 			"Error while sending order, rollback trading check state...");
 		m_pimpl->ConfirmBuyOrder(
+			riskControlOperationId,
 			riskControlScope,
 			ORDER_STATUS_ERROR,
 			security,
@@ -775,7 +791,7 @@ OrderId TradeSystem::Buy(
 		RiskControlScope &riskControlScope,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	
-	m_pimpl->CheckNewBuyOrder(
+	const auto riskControlOperationId =  m_pimpl->CheckNewBuyOrder(
 		riskControlScope,
 		security,
 		currency,
@@ -791,13 +807,14 @@ OrderId TradeSystem::Buy(
 			qty,
 			price,
 			params,
-			[&, price, timeMeasurement, callback](
+			[&, riskControlOperationId, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
 					const Qty &remainingQty,
 					const ScaledPrice &tradePrice) {
 				m_pimpl->ConfirmBuyOrder(
+					riskControlOperationId,
 					riskControlScope,
 					orderStatus,
 					security,
@@ -818,6 +835,7 @@ OrderId TradeSystem::Buy(
 		GetLog().Debug(
 			"Error while sending order, rollback trading check state...");
 		m_pimpl->ConfirmBuyOrder(
+			riskControlOperationId,
 			riskControlScope,
 			ORDER_STATUS_ERROR,
 			security,
@@ -844,7 +862,7 @@ OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 
 	const auto supposedPrice = security.GetAskPriceScaled();
 
-	m_pimpl->CheckNewBuyOrder(
+	const auto riskControlOperationId = m_pimpl->CheckNewBuyOrder(
 		riskControlScope,
 		security,
 		currency,
@@ -860,13 +878,14 @@ OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 			qty,
 			stopPrice,
 			params,
-			[&, supposedPrice, timeMeasurement, callback](
+			[&, riskControlOperationId, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
 					const Qty &remainingQty,
 					const ScaledPrice &tradePrice) {
 				m_pimpl->ConfirmBuyOrder(
+					riskControlOperationId,
 					riskControlScope,
 					orderStatus,
 					security,
@@ -887,6 +906,7 @@ OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 		GetLog().Debug(
 			"Error while sending order, rollback trading check state...");
 		m_pimpl->ConfirmBuyOrder(
+			riskControlOperationId,
 			riskControlScope,
 			ORDER_STATUS_ERROR,
 			security,
@@ -911,7 +931,7 @@ OrderId TradeSystem::BuyImmediatelyOrCancel(
 		RiskControlScope &riskControlScope,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 
-	m_pimpl->CheckNewBuyIocOrder(
+	const auto riskControlOperationId = m_pimpl->CheckNewBuyIocOrder(
 		riskControlScope,
 		security,
 		currency,
@@ -927,13 +947,14 @@ OrderId TradeSystem::BuyImmediatelyOrCancel(
 			qty,
 			price,
 			params,
-			[&, price, timeMeasurement, callback](
+			[&, riskControlOperationId, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
 					const Qty &remainingQty,
 					const ScaledPrice &tradePrice) {
 				m_pimpl->ConfirmBuyOrder(
+					riskControlOperationId,
 					riskControlScope,
 					orderStatus,
 					security,
@@ -954,6 +975,7 @@ OrderId TradeSystem::BuyImmediatelyOrCancel(
 		GetLog().Debug(
 			"Error while sending order, rollback trading check state...");
 		m_pimpl->ConfirmBuyOrder(
+			riskControlOperationId,
 			riskControlScope,
 			ORDER_STATUS_ERROR,
 			security,
@@ -979,7 +1001,7 @@ OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 	
 	const auto supposedPrice = security.GetAskPriceScaled();
 
-	m_pimpl->CheckNewBuyIocOrder(
+	const auto riskControlOperationId = m_pimpl->CheckNewBuyIocOrder(
 		riskControlScope,
 		security,
 		currency,
@@ -994,13 +1016,14 @@ OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 			currency,
 			qty,
 			params,
-			[&, supposedPrice, timeMeasurement, callback](
+			[&, riskControlOperationId, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const OrderStatus &orderStatus,
 					const Qty &tradeQty,
 					const Qty &remainingQty,
 					const ScaledPrice &tradePrice) {
 				m_pimpl->ConfirmBuyOrder(
+					riskControlOperationId,
 					riskControlScope,
 					orderStatus,
 					security,
@@ -1021,6 +1044,7 @@ OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 		GetLog().Debug(
 			"Error while sending order, rollback trading check state...");
 		m_pimpl->ConfirmBuyOrder(
+			riskControlOperationId,
 			riskControlScope,
 			ORDER_STATUS_ERROR,
 			security,
