@@ -14,6 +14,8 @@
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 
+#include "Core/TradingLog.hpp"
+
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Strategies::FxMb;
@@ -120,6 +122,16 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
 						currency = security.GetSymbol().GetCashQuoteCurrency();
 						qty = GetLeg(PAIR_AC).GetOpenedVolume();
+						// Remove header
+						m_strategy.GetTradingLog().Write(
+							"PAIR_BC on Leg 3: buy, qty=%1$f, round=%2$f, scaled=%3%, descaled=%4$f",
+							[&](TradingRecord &record) {
+								record
+									% qty
+									% Qty(boost::math::round(qty))
+									% GetLeg(PAIR_AC).GetOpenPrice()
+									% GetLeg(PAIR_AC).GetSecurity().DescalePrice(GetLeg(PAIR_AC).GetOpenPrice());
+							});
 						baseCurrencyQty
 							= qty / GetPair(PAIR_BC).security->GetAskPrice();
 						break;
@@ -183,6 +195,16 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
 						currency = security.GetSymbol().GetCashQuoteCurrency();
 						qty = GetLeg(PAIR_AC).GetOpenedVolume();
+						// Remove header
+						m_strategy.GetTradingLog().Write(
+							"PAIR_BC on Leg 3: sell, qty=%1$f, round=%2$f, scaled=%3%, descaled=%4$f",
+							[&](TradingRecord &record) {
+								record
+									% qty
+									% Qty(boost::math::round(qty))
+									% GetLeg(PAIR_AC).GetOpenPrice()
+									% GetLeg(PAIR_AC).GetSecurity().DescalePrice(GetLeg(PAIR_AC).GetOpenPrice());
+							});
 						baseCurrencyQty
 							= qty / GetPair(PAIR_BC).security->GetBidPrice();
 						break;
@@ -198,7 +220,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 		AssertLt(0, qty);
 		Assert(!Lib::IsZero(security.GetBidPrice()));
-			
+
 		result.reset(
 			new Twd::ShortPosition(
 				m_strategy,
