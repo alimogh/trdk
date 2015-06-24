@@ -133,7 +133,7 @@ namespace trdk { namespace Lib {
 			if (tag) {
 				os << '[' << tag << "]\t";
 			}
-			os << time << " [" << threadId << "]: ";
+			os << time << " [" << threadId << "]:\t";
 			if (module) {
 				os << '[' << *module << "] ";
 			}
