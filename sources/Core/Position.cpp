@@ -579,7 +579,7 @@ public:
 			throw() {
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%14%\t%11%.%15%\t%1%\t%2%\tclose-%3%\t%4%"
+			"%14%\t%11%.%16%\t%1%\t%2%\tclose-%3%\t%4%"
 				"\tqty=%5%->%6% price=%15%->%7% order-id=%8%->%9%"
 				" order-status=%10% has-orders=%12%/%13%",
 			[this, eventDesc, &orderStatus](TradingRecord &record) {
@@ -1014,6 +1014,7 @@ namespace { namespace CloseTypeStr {
 	const std::string stopLoss = "s/l";
 	const std::string timeout = "timeout";
 	const std::string schedule = "schedule";
+	const std::string request = "request";
 	const std::string engineStop = "engine stop";
 	const std::string openFailed = "open failed";
 	const std::string systemError = "sys error";
@@ -1021,7 +1022,7 @@ namespace { namespace CloseTypeStr {
 
 const std::string & Position::GetCloseTypeStr() const {
 	using namespace CloseTypeStr;
-	static_assert(numberOfCloseTypes == 8, "Close type list changed.");
+	static_assert(numberOfCloseTypes == 9, "Close type list changed.");
 	switch (GetCloseType()) {
 		default:
 			AssertEq(CLOSE_TYPE_NONE, GetCloseType());
@@ -1035,6 +1036,8 @@ const std::string & Position::GetCloseTypeStr() const {
 			return timeout;
 		case CLOSE_TYPE_SCHEDULE:
 			return schedule;
+		case CLOSE_TYPE_REQUEST:
+			return request;
 		case CLOSE_TYPE_ENGINE_STOP:
 			return engineStop;
 		case CLOSE_TYPE_OPEN_FAILED:
