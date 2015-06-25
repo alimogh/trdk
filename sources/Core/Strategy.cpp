@@ -305,7 +305,7 @@ public:
 	PositionList m_positions;
 	boost::signals2::signal<PositionUpdateSlotSignature> m_positionUpdateSignal;
 
-	boost::array<const Position *, 2> m_delayedPositionToForget;
+	boost::array<const Position *, 3> m_delayedPositionToForget;
 
 public:
 
@@ -500,6 +500,7 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 
 	Assert(m_pimpl->m_delayedPositionToForget[0] == nullptr);
 	Assert(m_pimpl->m_delayedPositionToForget[1] == nullptr);
+	Assert(m_pimpl->m_delayedPositionToForget[2] == nullptr);
 
 	if (position.IsCompleted() && !m_pimpl->m_positions.IsExists(position)) {
 		return;
@@ -536,6 +537,11 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 			&& m_pimpl->m_delayedPositionToForget[1] != &position) {
 		m_pimpl->ForgetPosition(*m_pimpl->m_delayedPositionToForget[1]);
 	}
+	if (
+			m_pimpl->m_delayedPositionToForget[2]
+			&& m_pimpl->m_delayedPositionToForget[2] != &position) {
+		m_pimpl->ForgetPosition(*m_pimpl->m_delayedPositionToForget[2]);
+	}
 	m_pimpl->m_delayedPositionToForget.fill(nullptr);
 
 }
@@ -545,11 +551,14 @@ void Strategy::OnPositionMarkedAsCompleted(const Position &position) {
 	//! don't forget about all other callbacks where positions can be used.
 	Assert(
 		m_pimpl->m_delayedPositionToForget[0] == nullptr
-		|| m_pimpl->m_delayedPositionToForget[1] == nullptr);
+		|| m_pimpl->m_delayedPositionToForget[1] == nullptr
+		|| m_pimpl->m_delayedPositionToForget[2] == nullptr);
 	if (!m_pimpl->m_delayedPositionToForget[0]) {
 		 m_pimpl->m_delayedPositionToForget[0] = &position;
-	} else {
+	} else if (!m_pimpl->m_delayedPositionToForget[1]) {
 		 m_pimpl->m_delayedPositionToForget[1] = &position;
+	} else {
+		 m_pimpl->m_delayedPositionToForget[2] = &position;
 	}
 }
 
