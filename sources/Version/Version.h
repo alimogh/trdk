@@ -15,8 +15,8 @@
 #define TRDK_DOMAIN		"mb-cm.com"
 #define TRDK_DOMAIN_W	L"mb-cm.com"
 
-#define TRDK_SUPPORT_EMAIL		"support@mb-cm.com"
-#define TRDK_SUPPORT_EMAIL_W	L"support@mb-cm.com"
+#define TRDK_SUPPORT_EMAIL		"eugene@mb-cm.com"
+#define TRDK_SUPPORT_EMAIL_W	L"eugene@mb-cm.com"
 
 #define TRDK_LICENSE_SERVICE_SUBDOMAIN		"licensing"
 #define TRDK_LICENSE_SERVICE_SUBDOMAIN_W	L"licensing"
@@ -27,5 +27,7 @@
 #define TRDK_COPYRIGHT		"Copyright 2015 (C) MBCMTRADING, mb-cm.com. All rights reserved."
 #define TRDK_COPYRIGHT_W	L"Copyright 2015 (C) MBCMTRADING, mb-cm.com. All rights reserved."
 
-#define TRDK_CONCURRENCY_PROFILE (::trdk::Lib::Concurrency::PROFILE_HFT)
+#define TRDK_CONCURRENCY_PROFILE_DEBUG (::trdk::Lib::Concurrency::PROFILE_RELAX)
+#define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::PROFILE_HFT)
+#define TRDK_CONCURRENCY_PROFILE_RELEASE (::trdk::Lib::Concurrency::PROFILE_HFT)
 

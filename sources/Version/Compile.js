@@ -17,9 +17,11 @@ var productName	= "MBCMTRADING Trading Robot Development Kit"
 var vendorName = "MBCMTRADING"
 var domain = "mb-cm.com"
 var licenseServiceSubdomain = "licensing"
-var supportEmail ="support@" + domain
+var supportEmail ="eugene@" + domain
 var copyright = "Copyright 2015 (C) " + vendorName + ", " + domain + ". All rights reserved."
-var concurrencyProfile = "PROFILE_HFT"
+var concurrencyProfileDebug = "PROFILE_RELAX"
+var concurrencyProfileTest = "PROFILE_HFT"
+var concurrencyProfileRelease = "PROFILE_HFT"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -118,7 +120,9 @@ function CreateVersionCppHeaderFile() {
 	var copyrightLine			= "#define TRDK_COPYRIGHT\t\t\"" + copyright + "\"";
 	var copyrightLineW = "#define TRDK_COPYRIGHT_W\tL\"" + copyright + "\"";
 
-	var concurrencyProfileLine = "#define TRDK_CONCURRENCY_PROFILE (::trdk::Lib::Concurrency::" + concurrencyProfile + ")"
+	var concurrencyProfileLineDebug = "#define TRDK_CONCURRENCY_PROFILE_DEBUG (::trdk::Lib::Concurrency::" + concurrencyProfileDebug + ")"
+	var concurrencyProfileLineTest = "#define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::" + concurrencyProfileTest + ")"
+	var concurrencyProfileLineRelease = "#define TRDK_CONCURRENCY_PROFILE_RELEASE (::trdk::Lib::Concurrency::" + concurrencyProfileRelease + ")"
 
 	var fullFileName = outputDir + "Version.h";
 	if (	IsExistsInFile(fullFileName, versionMajorHighLine)
@@ -132,7 +136,9 @@ function CreateVersionCppHeaderFile() {
 			&& IsExistsInFile(fullFileName, licenseServiceSubdomainLine)
 			&& IsExistsInFile(fullFileName, nameLine)
 			&& IsExistsInFile(fullFileName, copyrightLine)
-			&& IsExistsInFile(fullFileName, concurrencyProfileLine)) {
+			&& IsExistsInFile(fullFileName, concurrencyProfileLineDebug)
+			&& IsExistsInFile(fullFileName, concurrencyProfileLineTest)
+			&& IsExistsInFile(fullFileName, concurrencyProfileLineRelease)) {
 		return;
 	}
 
@@ -166,7 +172,9 @@ function CreateVersionCppHeaderFile() {
 	f.WriteLine(copyrightLine);
 	f.WriteLine(copyrightLineW);
 	f.WriteLine("");
-	f.WriteLine(concurrencyProfileLine);
+	f.WriteLine(concurrencyProfileLineDebug);
+	f.WriteLine(concurrencyProfileLineTest);
+	f.WriteLine(concurrencyProfileLineRelease);
 	f.WriteLine("");
 
 }

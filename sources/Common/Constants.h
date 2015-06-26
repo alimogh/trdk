@@ -26,6 +26,16 @@ namespace trdk { namespace Lib { namespace Concurrency {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#if defined(_DEBUG) && !defined(_TEST) && !defined(NDEBUG)
+#	define TRDK_CONCURRENCY_PROFILE TRDK_CONCURRENCY_PROFILE_DEBUG
+#elif defined(_TEST) && defined(NDEBUG) && !defined(NTEST)
+#	define TRDK_CONCURRENCY_PROFILE TRDK_CONCURRENCY_PROFILE_TEST
+#elif defined(NDEBUG) && !defined(_DEBUG) && defined(NTEST) && !defined(_TEST)
+#	define TRDK_CONCURRENCY_PROFILE TRDK_CONCURRENCY_PROFILE_RELEASE
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+
 #define _STR(a) #a
 #define _XSTR(a) _STR(a)
 #define _WSTR(a) L#a
