@@ -26,8 +26,10 @@ namespace trdk { namespace Lib {
 
 		enum SecurityType {
 			SECURITY_TYPE_STOCK,
-			SECURITY_TYPE_FUTURE_OPTION,
-			SECURITY_TYPE_CASH,
+			//! Foreign Exchange Contract.
+			SECURITY_TYPE_FOR_FUTURE_OPTION,
+			//! Foreign Exchange Contract.
+			SECURITY_TYPE_FOR_SPOT,
 			numberOfSecurityTypes
 		};
 
@@ -59,34 +61,34 @@ namespace trdk { namespace Lib {
 		Symbol();
 
 		explicit Symbol(
-					SecurityType,
-					const std::string &symbol);
+				SecurityType,
+				const std::string &symbol);
 
 		explicit Symbol(
-					const std::string &symbol,
-					const std::string &expirationDate,
-					double strike);
+				const std::string &symbol,
+				const std::string &expirationDate,
+				double strike);
 
 		explicit Symbol(
-					SecurityType,
-					const std::string &symbol,
-					const std::string &exchange,
-					const std::string &primaryExchange);
+				SecurityType,
+				const std::string &symbol,
+				const std::string &exchange,
+				const std::string &primaryExchange);
 
 		static Symbol Parse(
-					const std::string &line,
-					const std::string &defExchange,
-					const std::string &defPrimaryExchange);
-		static Symbol ParseCash(
-					SecurityType securityType,
-					const std::string &line,
-					const std::string &defExchange);
-		static Symbol ParseCashFutureOption(
-					const std::string &line,
-					const std::string &expirationDate,
-					double strike,
-					const Right &,
-					const std::string &defExchange);
+				const std::string &line,
+				const std::string &defExchange,
+				const std::string &defPrimaryExchange);
+		static Symbol ParseForeignExchangeContract(
+				SecurityType securityType,
+				const std::string &line,
+				const std::string &defExchange);
+		static Symbol ParseForeignExchangeContractFutureOption(
+				const std::string &line,
+				const std::string &expirationDate,
+				double strike,
+				const Right &,
+				const std::string &defExchange);
 
 		Symbol(const Symbol &);
 		Symbol & operator =(const Symbol &);

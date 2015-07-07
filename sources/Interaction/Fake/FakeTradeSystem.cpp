@@ -174,13 +174,14 @@ public:
 			order.callback
 				= [this, callback](
 						const OrderId &id,
+						const std::string &uuid,
 						const OrderStatus &status,
 						const Qty &tradeQty,
 						const Qty &remainingQty,
 						const ScaledPrice &tradePrice) {
 					boost::this_thread::sleep(
 						boost::get_system_time() + ChooseReportDelay());
-					callback(id, status, tradeQty, remainingQty, tradePrice);	
+					callback(id, uuid, status, tradeQty, remainingQty, tradePrice);	
 				};  
 		}
 
@@ -300,9 +301,12 @@ private:
 			tradePrice = order.security->GetAskPriceScaled();
 			isMatched = order.price >= tradePrice;
 		}
+		const auto &uuid
+			= boost::lexical_cast<std::string>(boost::uuids::random_generator()());
 		if (isMatched) {
 			order.callback(
-				order.id, 
+				order.id,
+				uuid,
 				TradeSystem::ORDER_STATUS_FILLED,
 				order.qty,
 				0,
@@ -310,6 +314,7 @@ private:
 		} else {
 			order.callback(
 				order.id, 
+				uuid,
 				TradeSystem::ORDER_STATUS_CANCELLED,
 				0,
 				order.qty,

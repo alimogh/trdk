@@ -11,10 +11,7 @@
 #pragma once
 
 #include "Settings.hpp"
-
-#pragma warning(push, 1)
-#	include "trdk.pb.h"
-#pragma warning(pop)
+#include "EngineService/Control.h"
 
 namespace trdk { namespace EngineServer {
 
@@ -53,7 +50,7 @@ namespace trdk { namespace EngineServer {
 
 	private:
 
-		void Send(const ServerData &);
+		void Send(const trdk::EngineService::Control::ServiceData &);
 
 		void FlushOutStream(const std::string &);
 
@@ -68,20 +65,28 @@ namespace trdk { namespace EngineServer {
 		void OnNewMessageSize(const boost::system::error_code &);
 		void OnNewMessage(
 				const boost::system::error_code &);
-		void OnNewRequest(const ClientRequest &);
+		void OnNewRequest(const trdk::EngineService::Control::ClientRequest &);
 		
 		void OnKeepAlive();
 
-		void OnFullInfoRequest(const FullInfoRequest &);
+		void OnFullInfoRequest(
+				const trdk::EngineService::Control::FullInfoRequest &);
 		
-		void OnEngineStartRequest(const EngineStartRequest &);
-		void OnEngineStopRequest(const EngineStopRequest &);
-		void OnEnginePositonCloseRequest(const EnginePositionCloseRequest &);
-		void OnEngineSettingsSetRequest(const EngineSettingsSetRequest &);
+		void OnEngineStartRequest(
+				const trdk::EngineService::Control::EngineStartRequest &);
+		void OnEngineStopRequest(
+				const trdk::EngineService::Control::EngineStopRequest &);
+		void OnEnginePositonCloseRequest(
+				const trdk::EngineService::Control::EnginePositionCloseRequest &);
+		void OnEngineSettingsSetRequest(
+				const trdk::EngineService::Control::EngineSettingsSetRequest &);
 		
-		void OnStrategyStartRequest(const StrategyStartRequest &);
-		void OnStrategyStopRequest(const StrategyStopRequest &);
-		void OnStrategySettingsSetRequest(const StrategySettingsSetRequest &);
+		void OnStrategyStartRequest(
+				const trdk::EngineService::Control::StrategyStartRequest &);
+		void OnStrategyStopRequest(
+				const trdk::EngineService::Control::StrategyStopRequest &);
+		void OnStrategySettingsSetRequest(
+				const trdk::EngineService::Control::StrategySettingsSetRequest &);
 
 		void OnDebugPnlRequest();
 
@@ -98,7 +103,7 @@ namespace trdk { namespace EngineServer {
 		void StartKeepAliveChecker();
 		
 		static void UpdateSettings(
-				const google::protobuf::RepeatedPtrField<SettingsSection> &,
+				const google::protobuf::RepeatedPtrField<trdk::EngineService::Control::SettingsSection> &,
 				Settings::Transaction &);
 
 		void OnFoo(const Foo &);

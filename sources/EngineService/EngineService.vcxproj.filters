@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="trdk.EngineService.Control.proto" />
+    <CustomBuild Include="trdk.EngineService.MarketData.proto" />
+    <CustomBuild Include="trdk.EngineService.proto" />
+    <CustomBuild Include="trdk.EngineService.DropCopy.proto" />
+    <CustomBuild Include="trdk.EngineService.MarketDataSource.proto" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="C++ stubs">
+      <UniqueIdentifier>{8b8b5817-addb-4542-921c-f2e4643e18b3}</UniqueIdentifier>
+      <Extensions>cc;h;</Extensions>
+    </Filter>
+    <Filter Include="Python stubs">
+      <UniqueIdentifier>{237bb925-ca82-4765-bd01-18956bfed3c1}</UniqueIdentifier>
+      <Extensions>py</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{3370279a-27f1-4a6c-adb8-63258e929f1a}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{85e30557-5513-4594-99bd-7858295a41b3}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="trdk.EngineService.Control.pb.cc">
+      <Filter>C++ stubs</Filter>
+    </ClCompile>
+    <ClCompile Include="trdk.EngineService.MarketData.pb.cc">
+      <Filter>C++ stubs</Filter>
+    </ClCompile>
+    <ClCompile Include="trdk.EngineService.pb.cc">
+      <Filter>C++ stubs</Filter>
+    </ClCompile>
+    <ClCompile Include="trdk.EngineService.DropCopy.pb.cc">
+      <Filter>C++ stubs</Filter>
+    </ClCompile>
+    <ClCompile Include="trdk.EngineService.MarketDataSource.pb.cc">
+      <Filter>C++ stubs</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="trdk.EngineService.Control.pb.h">
+      <Filter>C++ stubs</Filter>
+    </ClInclude>
+    <ClInclude Include="trdk.EngineService.MarketData.pb.h">
+      <Filter>C++ stubs</Filter>
+    </ClInclude>
+    <ClInclude Include="trdk.EngineService.pb.h">
+      <Filter>C++ stubs</Filter>
+    </ClInclude>
+    <ClInclude Include="DisableProtobufWarningsBegin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DisableProtobufWarningsEnd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineService.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MarketData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Control.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Lib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DropCopy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="trdk.EngineService.DropCopy.pb.h">
+      <Filter>C++ stubs</Filter>
+    </ClInclude>
+    <ClInclude Include="trdk.EngineService.MarketDataSource.pb.h">
+      <Filter>C++ stubs</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="trdk\EngineService_pb2.py">
+      <Filter>Python stubs</Filter>
+    </None>
+    <None Include="trdk\EngineService\Control_pb2.py">
+      <Filter>Python stubs</Filter>
+    </None>
+    <None Include="trdk\EngineService\MarketData_pb2.py">
+      <Filter>Python stubs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

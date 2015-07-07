@@ -27,6 +27,7 @@
 #	include <boost/unordered_map.hpp>
 #	include <boost/circular_buffer.hpp>
 #	include <boost/uuid/string_generator.hpp>
+#	include <boost/uuid/uuid_generators.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #ifdef BOOST_WINDOWS

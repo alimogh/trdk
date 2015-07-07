@@ -46,7 +46,8 @@ namespace trdk {
 		typedef trdk::ModuleTradingLog TradingLog;
 
 		enum OrderStatus {
-			ORDER_STATUS_PENDIGN,
+			ORDER_STATUS_SENT,
+			ORDER_STATUS_REQUESTED_CANCEL,
 			ORDER_STATUS_SUBMITTED,
 			ORDER_STATUS_CANCELLED,
 			ORDER_STATUS_FILLED,
@@ -58,6 +59,7 @@ namespace trdk {
 		typedef boost::function<
 				void(
 					const trdk::OrderId &,
+					const std::string &tradeSystemOrderId,
 					const OrderStatus &,
 					const trdk::Qty &tradeQty,
 					const trdk::Qty &remainingQty,

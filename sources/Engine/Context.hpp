@@ -65,6 +65,8 @@ namespace trdk { namespace Engine {
 				size_t index,
 				const TradingMode &);
 
+		virtual DropCopy * GetDropCopy();
+
 	protected:
 
 		virtual trdk::Security * FindSecurity(const trdk::Lib::Symbol &);

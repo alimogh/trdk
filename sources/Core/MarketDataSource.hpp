@@ -107,6 +107,10 @@ namespace trdk {
 
 		size_t GetActiveSecurityCount() const;
 
+		void ForEachSecurity(
+				const boost::function<bool (const trdk::Security &)> &)
+				const;
+
 	protected:
 
 		trdk::Security & CreateSecurity(const trdk::Lib::Symbol &);

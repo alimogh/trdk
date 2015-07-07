@@ -20,6 +20,7 @@ namespace trdk { namespace Engine { namespace Ini {
 		extern const std::string observer;
 		extern const std::string service;
 		const std::string contextParams = "Params";
+		const std::string dropCopy = "DropCopy";
 	}
 
 	namespace Keys {

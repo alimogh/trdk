@@ -1,0 +1,192 @@
+/**************************************************************************
+ *   Created: 2015/07/08 01:54:59
+ *    Author: Eugene V. Palchukovsky
+ *    E-mail: eugene@palchukovsky.com
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
+ **************************************************************************/
+
+syntax = "proto2";
+
+import "trdk.EngineService.proto";
+
+package trdk.EngineService.MarketData;
+
+////////////////////////////////////////////////////////////////////////////////
+
+message Security {
+
+	enum Type {
+		// Foreign Exchange Contract.
+		TYPE_FOR = 0;
+	}
+
+	enum Product {
+		PRODUCT_SPOT = 0;
+	}
+
+	// Symbol (for ex.: EUR/USD, LKOH, FB, MSFT).
+	required string symbol = 1;
+
+	required Product product = 2;
+	required Type type = 3;
+	
+	// Source (for ex.: Hotspot, Integral, NASDAQ).
+	required string source = 4;
+
+}
+
+message Dictionary {
+
+	message SecurityRecord {
+		required uint32 id = 1;
+		required Security security = 2;
+	}
+
+	repeated SecurityRecord securities = 1;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message OrderParameters {
+
+	enum Type {
+		// Limit price.
+		TYPE_LMT = 0;
+		// Market price.
+		TYPE_MKT = 1;
+	}
+
+	enum Side {
+		SIDE_SELL = 0;
+		SIDE_BUY = 1;
+	}
+
+	// Specifies how long the order remains in effect.
+	enum TimeInForce {
+		// Good Till Day.
+		TIME_IN_FORCE_DAY = 0;
+		// Good Till Cancel.
+		TIME_IN_FORCE_GTC = 1;
+		// At the Opening.
+		TIME_IN_FORCE_OPG = 2;
+		// Immediate or Cancel.
+		TIME_IN_FORCE_IOC = 3;
+		// Fill or Kill.
+		TIME_IN_FORCE_FOK = 4;
+	}
+
+	optional Type type = 1;
+	required uint32 security_id = 2;
+	required Side side = 3;
+	required double qty = 4;
+	// Order price depends from type. For ex. "market order" doesn't have price.
+	optional double price = 5;
+	optional TimeInForce time_in_force = 6;
+	required string currency = 7;
+	optional double min_qty = 8;
+	optional string user = 9;
+}
+
+enum OrderStatus {
+	// Order sent to trade system. Result is unknown.
+	ORDER_STATUS_SENT = 0;
+	// Recieved order submit confirmation, order active.
+	ORDER_STATUS_ACTIVE = 1;
+	// Fully filled. Not active.
+	ORDER_STATUS_FILLED = 2;
+	// Partially filled. Not active.
+	ORDER_STATUS_FILLED_PARTIALLY = 3;
+	// Error. Not active.
+	ORDER_STATUS_ERROR = 4;
+	// Cancel request sent to trade system. Result is unknown.
+	ORDER_STATUS_REQUESTED_CANCEL = 5;
+	// Canceled or rejected. Not active.
+	ORDER_STATUS_CANCELED = 6;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message PriceLevel {
+	required double price = 1;
+	required double qty = 2;
+};
+
+message BidAsk {
+	required PriceLevel bid = 1;
+	required PriceLevel ask = 2;
+}
+
+message BookUpdate {
+
+	required fixed64 timestamp = 1;
+
+	required uint32 security_id = 2;
+
+	// New price levels.
+	repeated PriceLevel new = 4;
+	// Updates price levels.
+	repeated PriceLevel updates = 5;
+	// Removed price levels. If has only one item with value "Quiet NaN" - all
+	// current levels removed.
+	repeated double removed = 6;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message Trade {
+
+	required string time = 1;
+
+	// Trade ID from source. Not unique.
+	required string id = 2;
+
+	required trdk.EngineService.Uuid strategy_id = 3;
+	required trdk.EngineService.TradingMode mode = 4;
+
+	required bool is_maker = 5;
+
+	required double price = 6;
+	required double qty = 7;
+	required double counter_amount = 8;
+
+	required trdk.EngineService.Uuid order_id = 9;
+	required string trade_system_order_id = 10;
+	required OrderParameters order_params = 11;
+
+	required BidAsk top_of_book = 12;
+
+}
+
+message Order {
+
+	// Order ID from engeine. Unique for each order.
+	required trdk.EngineService.Uuid id = 1;
+	// Order ID from source. Not unique.
+	optional string trade_system_order_id = 2;
+
+	required trdk.EngineService.Uuid strategy_id = 3;
+	required trdk.EngineService.TradingMode mode = 4;
+
+	required OrderParameters params = 5;
+
+	required OrderStatus status = 6;
+
+	optional string order_time = 7;
+	optional string execution_time = 8;
+
+	required double avg_trade_price = 9;
+
+	required double executed_qty = 10;
+	
+	optional double counter_amount = 11;
+
+	optional BidAsk top_of_book = 12;
+	
+}
+
+////////////////////////////////////////////////////////////////////////////////

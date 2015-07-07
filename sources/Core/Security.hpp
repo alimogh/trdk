@@ -22,6 +22,8 @@ namespace trdk {
 
 		typedef trdk::Instrument Base;
 
+		typedef uint32_t InstanceId;
+
 		typedef trdk::TradeSystem::OrderStatusUpdateSlot
 			OrderStatusUpdateSlot;
 
@@ -258,6 +260,8 @@ namespace trdk {
 				const trdk::TradingMode &);
 
 	public:
+
+		const trdk::Security::InstanceId & GetInstanceId() const;
 
 		//! Check security for valid market data and state.
 		bool IsStarted() const;

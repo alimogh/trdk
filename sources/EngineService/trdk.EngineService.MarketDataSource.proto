@@ -1,0 +1,54 @@
+/**************************************************************************
+ *   Created: 2015/07/12 17:21:51
+ *    Author: Eugene V. Palchukovsky
+ *    E-mail: eugene@palchukovsky.com
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
+ **************************************************************************/
+
+syntax = "proto2";
+
+import "trdk.EngineService.MarketData.proto";
+
+package trdk.EngineService.MarketDataSource;
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Market data request. Message from client to service
+// (second message after connect):
+message MarketDataRequest {
+
+	message Source {
+		// Source (for ex.: Hotspot, Integral, NASDAQ).
+		required string name = 1;
+		// Symbols (for ex.: EUR/USD, L	KOH, FB, MSFT).
+		repeated string symbol = 2;
+	}
+	
+	required fixed64 timestamp_from = 1;
+	required fixed64 timestamp_to = 2;
+
+	repeated Source sources = 3;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message ServiceData {
+
+	enum Type {
+		TYPE_KEEP_ALIVE = 1;
+		TYPE_BOOK_UPDATE = 2;
+	}
+
+	required Type type = 1;
+
+	// TYPE_BOOK_UPDATE
+	optional trdk.EngineService.MarketData.BookUpdate book_update = 2;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+

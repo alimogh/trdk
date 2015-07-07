@@ -132,6 +132,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Standalone Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -141,6 +142,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Standalone Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -150,6 +152,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
+    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Dll Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -159,6 +162,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
+    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Dll Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -168,6 +172,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Standalone Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -177,6 +182,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Standalone Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -186,6 +192,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
+    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Dll Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -195,6 +202,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
+    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Dll Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -204,6 +212,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Standalone Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -213,6 +222,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Standalone Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -222,6 +232,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
+    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Dll Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -231,6 +242,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
+    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Dll Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -273,35 +285,42 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
     <Link />
-    <Link>
-      <AdditionalDependencies>libprotobuf_x64_vs120_dbg.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <Link />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
     <Link />
-    <Link>
-      <AdditionalDependencies>libprotobuf_x64_vs120_dbg.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <Link />
+    <Link />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">
-    <Link>
-      <AdditionalDependencies>libprotobuf_x64_vs120.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <Link />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">
-    <Link>
-      <AdditionalDependencies>libprotobuf_x64_vs120.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <Link />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
-    <Link>
-      <AdditionalDependencies>libprotobuf_x64_vs120.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <Link />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
-    <Link>
-      <AdditionalDependencies>libprotobuf_x64_vs120.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <Link />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">
+    <Link />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">
+    <Link />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">
+    <Link />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">
+    <Link />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">
+    <Link />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">
+    <Link />
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Client.cpp" />
@@ -323,32 +342,6 @@
     </ClCompile>
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="Settings.cpp" />
-    <ClCompile Include="trdk.pb.cc">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">4512;4100;4244;4267;4018;4125;4127;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.hpp" />
@@ -359,7 +352,6 @@
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="Settings.hpp" />
-    <ClInclude Include="trdk.pb.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.vcxproj">
@@ -367,6 +359,9 @@
     </ProjectReference>
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\EngineService\EngineService.vcxproj">
+      <Project>{3017831f-4910-430b-9e74-1a5ea69a175c}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Engine\Engine.vcxproj">
       <Project>{015fb121-6122-4a00-bfbb-545e9e73abee}</Project>
@@ -377,95 +372,6 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="EngineServer.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="trdk.proto">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
-protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Compiling proto-file...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Compiling proto-file...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Compiling proto-file...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Compiling proto-file...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Compiling proto-file...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Compiling proto-file...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Compiling proto-file...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Compiling proto-file...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Compiling proto-file...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Compiling proto-file...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Compiling proto-file...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Compiling proto-file...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">$(ProjectDir)/trdk.pb.h;$(ProjectDir)/trdk.pb.cc</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">
-      </AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">
-      </AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">
-      </AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">
-      </AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">
-      </AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">
-      </AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
-      </AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
-      </AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">
-      </AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">
-      </AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
-      </AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
-      </AdditionalInputs>
-    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

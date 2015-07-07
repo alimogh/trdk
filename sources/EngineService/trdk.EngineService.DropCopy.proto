@@ -1,0 +1,37 @@
+/**************************************************************************
+ *   Created: 2015/07/12 17:18:59
+ *    Author: Eugene V. Palchukovsky
+ *    E-mail: eugene@palchukovsky.com
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
+ **************************************************************************/
+
+syntax = "proto2";
+
+import "trdk.EngineService.MarketData.proto";
+
+package trdk.EngineService.DropCopy;
+
+message ServiceData {
+
+	enum Type {
+		TYPE_KEEP_ALIVE = 0;
+		TYPE_DICTIONARY = 1;
+		TYPE_BOOK_UPDATE = 2;
+		TYPE_ORDER = 3;
+		TYPE_TRADE = 4;
+	}
+
+	required Type type = 1;
+
+	optional trdk.EngineService.MarketData.Dictionary dictionary = 2;
+	// TYPE_BOOK_UPDATE
+	optional trdk.EngineService.MarketData.BookUpdate book_update = 3;
+	// TYPE_ORDER
+	optional trdk.EngineService.MarketData.Order order = 4;
+	// TYPE_TRADE
+	optional trdk.EngineService.MarketData.Trade trade = 5;
+
+}

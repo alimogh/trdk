@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "Core/DropCopy.hpp"
+
 namespace trdk { namespace Engine {
 
 	struct TradeSystemHolder {
@@ -50,5 +52,7 @@ namespace trdk { namespace Engine {
 		Services;
 
 	typedef std::set<boost::shared_ptr<trdk::Lib::Dll>> ModuleList;
+
+	typedef trdk::Lib::DllObjectPtr<trdk::DropCopy> DropCopyModule;
 
 } }

@@ -300,8 +300,8 @@ namespace trdk { namespace Lib {
 	public:
 
 		explicit IniSectionRef(
-					const trdk::Lib::Ini &iniRef,
-					const std::string &sectionName);
+				const trdk::Lib::Ini &iniRef,
+				const std::string &sectionName);
 
 	public:
 

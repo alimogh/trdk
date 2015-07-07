@@ -31,6 +31,20 @@ namespace trdk {
 		numberOfOrderSides
 	};
 
+	enum TimeInForce {
+		// Good Till Day.
+		TIME_IN_FORCE_DAY,
+		// Good Till Cancel.
+		TIME_IN_FORCE_GTC,
+		// At the Opening.
+		TIME_IN_FORCE_OPG,
+		// Immediate or Cancel.
+		TIME_IN_FORCE_IOC,
+		// Fill or Kill.
+		TIME_IN_FORCE_FOK,
+		numberOfTimeInForces
+	};
+
 	//! Extended order parameters.
 	struct OrderParams {
 

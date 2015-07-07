@@ -19,6 +19,8 @@ namespace trdk {
 	class TradeSystem;
 	class MarketDataSource;
 
+	class DropCopy;
+
 	class Module;
 	class Consumer;
 	class Strategy;

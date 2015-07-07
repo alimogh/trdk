@@ -83,6 +83,9 @@ class Security::Implementation : private boost::noncopyable {
 
 public:
 
+	static boost::atomic<InstanceId> m_nextInstanceId;
+	const InstanceId m_instanceId;
+
 	const MarketDataSource &m_source;
 
 	boost::array<
@@ -115,7 +118,8 @@ public:
 public:
 
 	Implementation(const MarketDataSource &source, const Symbol &symbol)
-		: m_source(source),
+		: m_instanceId(m_nextInstanceId++),
+		m_source(source),
 		m_pricePrecision(GetPrecision(symbol)),
 		m_priceScale(size_t(std::pow(10, m_pricePrecision))),
 		m_brokerPosition(0),
@@ -229,6 +233,8 @@ public:
 
 };
 
+boost::atomic<Security::InstanceId> Security::Implementation::m_nextInstanceId(0);
+
 //////////////////////////////////////////////////////////////////////////
 
 Security::Security(
@@ -241,6 +247,10 @@ Security::Security(
 
 Security::~Security() {
 	delete m_pimpl;
+}
+
+const Security::InstanceId & Security::GetInstanceId() const {
+	return m_pimpl->m_instanceId;
 }
 
 RiskControlSymbolContext & Security::GetRiskControlContext(

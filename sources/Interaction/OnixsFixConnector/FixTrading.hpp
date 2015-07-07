@@ -60,6 +60,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			  */
 			bool isRemoved;
 			OrderId id;
+			std::string tradeSystemId;
 			std::string clOrderId;
 			trdk::Security *security;
 			trdk::Lib::Currency currency;
@@ -268,6 +269,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			= 0;
 
 		virtual void OnOrderStateChanged(
+				const std::string borkerOrderId,
 				const OrderStatus &,
 				const Order &,
 				const Qty &tradePrice,

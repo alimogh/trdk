@@ -186,6 +186,7 @@ FixTrading::Order FixTrading::TakeOrderId(
 	const Order order = {
 		false,
 		orderId,
+		std::string(),
 		GenerateClOrderId(orderId),
 		&security,
 		currency,
@@ -276,6 +277,14 @@ void FixTrading::NotifyOrderUpdate(
 				orderId);
 			return;
 		}
+		if (order->tradeSystemId.empty()) {
+			order->tradeSystemId = "<UNKNOWN>";// updateMessage.get(fix::FIX40::Tags::OrderID);
+		}
+// 		} else {
+// 			AssertEq(
+// 				updateMessage.get(fix::FIX40::Tags::OrderID),
+// 				order->tradeSystemId);
+// 		}
 		Assert(!order->isRemoved);
 		order->isRemoved = isOrderCompleted;
 		if (status == ORDER_STATUS_FILLED) {
@@ -293,6 +302,7 @@ void FixTrading::NotifyOrderUpdate(
 		TimeMeasurement::TSM_ORDER_REPLY_RECEIVED,
 		replyTime);
 	OnOrderStateChanged(
+		orderCopy.tradeSystemId,
 		status,
 		orderCopy,
 		tradeQty,
@@ -306,6 +316,7 @@ void FixTrading::NotifyOrderUpdate(
 }
 
 void FixTrading::OnOrderStateChanged(
+		const std::string borkerOrderId,
 		const OrderStatus &status,
 		const Order &order,
 		const Qty &tradeQty,
@@ -313,6 +324,7 @@ void FixTrading::OnOrderStateChanged(
 	AssertGe(order.qty, order.filledQty);
 	order.callback(
 		order.id,
+		borkerOrderId,
 		status,
 		tradeQty,
 		order.qty - order.filledQty,
@@ -862,6 +874,7 @@ void FixTrading::onStateChange(
 
 			orderCopy.callback(
 				orderCopy.id,
+				orderCopy.tradeSystemId,
 				ORDER_STATUS_CANCELLED,
 				orderCopy.filledQty,
 				orderCopy.qty - orderCopy.filledQty,

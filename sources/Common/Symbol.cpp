@@ -87,7 +87,7 @@ Symbol::Data::Data(
 			const std::string &symbol,
 			const std::string &expirationDate,
 			double strike)
-		: securityType(SECURITY_TYPE_FUTURE_OPTION),
+		: securityType(SECURITY_TYPE_FOR_FUTURE_OPTION),
 		symbol(symbol),
 		expirationDate(expirationDate),
 		strike(strike),
@@ -164,7 +164,10 @@ Symbol Symbol::Parse(
 		?	subs[1]
 		:	defPrimaryExchange;
 	if (boost::iequals(primaryExchange, "FOREX")) {
-		return ParseCash(Symbol::SECURITY_TYPE_CASH, line, defExchange);
+		return ParseForeignExchangeContract(
+			Symbol::SECURITY_TYPE_FOR_SPOT,
+			line,
+			defExchange);
 	}
 	
 	Symbol result;
@@ -182,7 +185,7 @@ Symbol Symbol::Parse(
 
 }
 
-Symbol Symbol::ParseCash(
+Symbol Symbol::ParseForeignExchangeContract(
 			SecurityType securityType,
 			const std::string &line,
 			const std::string &defExchange) {
@@ -218,7 +221,7 @@ Symbol Symbol::ParseCash(
 
 }
 
-Symbol Symbol::ParseCashFutureOption(
+Symbol Symbol::ParseForeignExchangeContractFutureOption(
 			const std::string &line,
 			const std::string &expirationDate,
 			double strike,
@@ -247,7 +250,7 @@ Symbol Symbol::ParseCashFutureOption(
 	}
 
 	Symbol result;
-	result.m_data.securityType = SECURITY_TYPE_FUTURE_OPTION;
+	result.m_data.securityType = SECURITY_TYPE_FOR_FUTURE_OPTION;
 	result.m_data.symbol = subs[0];
 	result.m_data.exchange = subs.size() >= 2 && !subs[1].empty()
 		?	subs[1]
@@ -415,7 +418,7 @@ std::ostream & std::operator <<(std::ostream &os, const Symbol &symbol) {
 				os << ':' << symbol.GetExchange();
 			}
 			break;
-		case Symbol::SECURITY_TYPE_FUTURE_OPTION:
+		case Symbol::SECURITY_TYPE_FOR_FUTURE_OPTION:
 			os << symbol.GetSymbol();
 			if (!symbol.GetExchange().empty()) {
 				os << ':' << symbol.GetExchange();
@@ -426,7 +429,7 @@ std::ostream & std::operator <<(std::ostream &os, const Symbol &symbol) {
 				<< ':' << symbol.GetRightAsString()
 				<< " (FOP)";
 			break;
-		case Symbol::SECURITY_TYPE_CASH:
+		case Symbol::SECURITY_TYPE_FOR_SPOT:
 			os
 				<< symbol.GetSymbol()
 				<< ":" << symbol.GetPrimaryExchange();

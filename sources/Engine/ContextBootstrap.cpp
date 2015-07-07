@@ -135,14 +135,14 @@ class ContextBootstrapper : private boost::noncopyable {
 public:
 
 	explicit ContextBootstrapper(
-				const Lib::Ini &conf,
-				Engine::Context &context,
-				TradeSystems &tradeSystemsRef,
-				MarketDataSources &marketDataSourcesRef)
-			: m_context(context),
-			m_conf(conf),
-			m_tradeSystems(tradeSystemsRef),
-			m_marketDataSources(marketDataSourcesRef) {
+			const Lib::Ini &conf,
+			Engine::Context &context,
+			TradeSystems &tradeSystemsRef,
+			MarketDataSources &marketDataSourcesRef)
+		: m_context(context),
+		m_conf(conf),
+		m_tradeSystems(tradeSystemsRef),
+		m_marketDataSources(marketDataSourcesRef) {
 		//...//
 	}
 
@@ -645,13 +645,15 @@ public:
 				Strategies &strategiesRef,
 				Observers &observersRef,
 				Services &servicesRef,
-				ModuleList &moduleListRef)
+				ModuleList &moduleListRef,
+				DropCopyModule &dropCopyRef)
 			: m_context(context),
 			m_subscriptionsManager(subscriptionsManagerRef),
 			m_strategiesResult(&strategiesRef),
 			m_observersResult(&observersRef),
 			m_servicesResult(&servicesRef),
 			m_moduleListResult(moduleListRef),
+			m_dropCopyResult(&dropCopyRef),
 			m_conf(confRef) {
 		//...//
 	}
@@ -669,6 +671,7 @@ public:
 			m_observersResult(nullptr),
 			m_servicesResult(&servicesRef),
 			m_moduleListResult(moduleListRef),
+			m_dropCopyResult(nullptr),
 			m_conf(confRef) {
 		//...//
 	}
@@ -737,6 +740,8 @@ public:
 			throw Exception("Failed to build modules relationship");
 		}
 
+		LoadDropCopy();
+
 		MakeModulesResult(m_strategies, m_strategiesResult);
 		MakeModulesResult(m_observers, m_observersResult);
 		MakeModulesResult(m_services, m_servicesResult);
@@ -749,15 +754,60 @@ public:
 
 private:
 
+	//////////////////////////////////////////////////////////////////////////
+
+	void LoadDropCopy() {
+
+		if (!m_dropCopyResult) {
+			return;
+		}
+
+		if (!m_conf.IsSectionExist(Sections::dropCopy)) {
+			*m_dropCopyResult = DropCopyModule();
+			return;
+		}
+		const IniSectionRef configurationSection(m_conf, Sections::dropCopy);
+		
+		boost::shared_ptr<Dll> dll(
+			new Dll(
+				"DropCopy",
+				configurationSection.ReadBoolKey(Keys::Dbg::autoName, true)));
+
+		typedef boost::shared_ptr<trdk::DropCopy> FactoryResult;
+		typedef DropCopyFactory Factory;
+		FactoryResult factoryResult;
+		
+		try {
+			factoryResult = dll->GetFunction<Factory>("CreateDropCopy")(
+				m_context,
+				configurationSection);
+		} catch (...) {
+			trdk::EventsLog::BroadcastUnhandledException(
+				__FUNCTION__,
+				__FILE__,
+				__LINE__);
+			throw Exception("Failed to load Drop Copy module");
+		}
+	
+		Assert(factoryResult);
+		if (!factoryResult) {
+			throw Exception(
+				"Failed to load Drop Copy module - no object returned");
+		}
+
+		*m_dropCopyResult = DllObjectPtr<trdk::DropCopy>(dll, factoryResult);
+
+	}
+
 	////////////////////////////////////////////////////////////////////////////////
 
 	template<typename Module>
 	void MakeModulesResult(
-				std::map<std::string /*tag*/, ModuleDll<Module>> &source,
-				std::map<
-						std::string /*tag*/,
-						std::vector<ModuleHolder<Module>>> *
-					result) {
+			std::map<std::string /*tag*/, ModuleDll<Module>> &source,
+			std::map<
+					std::string /*tag*/,
+					std::vector<ModuleHolder<Module>>> *
+				result) {
 		
 		if (!result) {
 			AssertEq(0, source.size());
@@ -1796,6 +1846,8 @@ private:
 	ObserverModules m_observers;
 	ServiceModules m_services;
 
+	DropCopyModule *m_dropCopyResult;
+
 	const Lib::Ini &m_conf;
 
 };
@@ -1842,7 +1894,8 @@ void Engine::BootContextState(
 			Strategies &strategiesRef,
 			Observers &observersRef,
 			Services &servicesRef,
-			ModuleList &moduleListRef) {
+			ModuleList &moduleListRef,
+			DropCopyModule &dropCopyRef) {
 	ContextStateBootstrapper(
 			conf,
 			context,
@@ -1850,7 +1903,8 @@ void Engine::BootContextState(
 			strategiesRef,
 			observersRef,
 			servicesRef,
-			moduleListRef)
+			moduleListRef,
+			dropCopyRef)
 		.Boot();
 }
 

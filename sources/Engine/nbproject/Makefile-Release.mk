@@ -105,12 +105,12 @@ ${OBJECTDIR}/SubscriptionsManager.o: SubscriptionsManager.cpp
 .build-subprojects:
 	cd ../Core && ${MAKE}  -f Makefile CONF=Release
 	cd ../Common && ${MAKE}  -f Makefile CONF=Release
-	cd ../Interaction/LogReplay && ${MAKE}  -f Makefile CONF=Release
 	cd ../Interaction/OnixsFixConnector && ${MAKE}  -f Makefile CONF=Release
 	cd ../Strategies/FxMb && ${MAKE}  -f Makefile CONF=Release
 	cd ../Interaction/OnixsHotspot && ${MAKE}  -f Makefile CONF=Release
 	cd ../Interaction/Fake && ${MAKE}  -f Makefile CONF=Release
 	cd ../Interaction/Itch && ${MAKE}  -f Makefile CONF=Release
+	cd ../DropCopy && ${MAKE}  -f Makefile CONF=Release
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
@@ -121,12 +121,12 @@ ${OBJECTDIR}/SubscriptionsManager.o: SubscriptionsManager.cpp
 .clean-subprojects:
 	cd ../Core && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Common && ${MAKE}  -f Makefile CONF=Release clean
-	cd ../Interaction/LogReplay && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Interaction/OnixsFixConnector && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Strategies/FxMb && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Interaction/OnixsHotspot && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Interaction/Fake && ${MAKE}  -f Makefile CONF=Release clean
 	cd ../Interaction/Itch && ${MAKE}  -f Makefile CONF=Release clean
+	cd ../DropCopy && ${MAKE}  -f Makefile CONF=Release clean
 
 # Enable dependency checking
 .dep.inc: .depcheck-impl

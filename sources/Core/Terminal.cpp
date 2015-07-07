@@ -237,8 +237,8 @@ private:
 			if (m_security) {
 				return false;
 			}
-			const Symbol symbol = Symbol::ParseCash(
-				Symbol::SECURITY_TYPE_CASH,
+			const Symbol symbol = Symbol::ParseForeignExchangeContract(
+				Symbol::SECURITY_TYPE_FOR_SPOT,
 				field,
 				"");
 			try {
@@ -250,20 +250,22 @@ private:
 		}
 		void OnReply(
 					const OrderId &orderId,
+					const std::string &tradeSystemOrderId,
 					const TradeSystem::OrderStatus &status,
 					const Qty &filled,
 					const Qty &remaining,
 					double avgPrice) {
 			m_tradeSystem.GetLog().Info(
 				"Terminal: Order reply received:"
-					" order ID = %1%, status = %6% (%2%), filled qty = %3%,"
-					" remaining qty = %4%, avgPrice = %5%.",
+					" order ID = %1% / %7%, status = %6% (%2%)"
+					", filled qty = %3%, remaining qty = %4%, avgPrice = %5%.",
 				orderId,
 				status,
 				filled,
 				remaining,
 				avgPrice,
-				TradeSystem::GetStringStatus(status));
+				TradeSystem::GetStringStatus(status),
+				tradeSystemOrderId);
 		}
 		Currency GetCurrency() const {
 			return m_currency != numberOfCurrencies
@@ -319,7 +321,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5),
+							_5,
+							_6),
 						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
@@ -335,7 +338,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5),
+							_5,
+							_6),
 						m_riskControlScope,
 						timeMeasurement);
 				}
@@ -354,7 +358,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5),
+							_5,
+							_6),
 						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
@@ -371,7 +376,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5),
+							_5,
+							_6),
 						m_riskControlScope,
 						timeMeasurement);
 				}
@@ -409,7 +415,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5),
+							_5,
+							_6),
 						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
@@ -425,7 +432,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5),
+							_5,
+							_6),
 						m_riskControlScope,
 						timeMeasurement);
 				}
@@ -444,7 +452,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5),
+							_5,
+							_6),
 						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
@@ -461,7 +470,8 @@ private:
 							_2,
 							_3,
 							_4,
-							_5),
+							_5,
+							_6),
 						m_riskControlScope,
 						timeMeasurement);
 				}

@@ -5,9 +5,6 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp" />
     <ClCompile Include="Service.cpp" />
-    <ClCompile Include="trdk.pb.cc">
-      <Filter>Service</Filter>
-    </ClCompile>
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="Settings.cpp" />
   </ItemGroup>
@@ -15,9 +12,6 @@
     <ClInclude Include="Server.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Service.hpp" />
-    <ClInclude Include="trdk.pb.h">
-      <Filter>Service</Filter>
-    </ClInclude>
     <ClInclude Include="Client.hpp" />
     <ClInclude Include="ClientRequestHandler.hpp" />
     <ClInclude Include="Exception.hpp" />
@@ -26,15 +20,5 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="EngineServer.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="Service">
-      <UniqueIdentifier>{ea720459-e14d-4b9a-922d-5c2c222b23df}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="trdk.proto">
-      <Filter>Service</Filter>
-    </CustomBuild>
   </ItemGroup>
 </Project>

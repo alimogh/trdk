@@ -15,6 +15,7 @@
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/thread.hpp>
 #	include <boost/random.hpp>
+#	include <boost/uuid/uuid_generators.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

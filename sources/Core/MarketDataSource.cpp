@@ -197,6 +197,16 @@ size_t MarketDataSource::GetActiveSecurityCount() const {
 	return m_pimpl->m_securities.size();
 }
 
+void MarketDataSource::ForEachSecurity(
+		const boost::function<bool (const Security &)> &pred)
+		const {
+	foreach (const auto &security, m_pimpl->m_securities) {
+		if (!pred(*security.second)) {
+			break;
+		}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 std::ostream & std::operator <<(

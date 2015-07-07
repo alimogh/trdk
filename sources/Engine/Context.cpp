@@ -113,6 +113,8 @@ public:
 	Strategies strategies;
 	Observers observers;
 	Services services;
+	
+	DropCopyModule dropCopy;
 
 public:
 
@@ -210,13 +212,24 @@ void Engine::Context::Start(const Lib::Ini &conf) {
 			state->strategies,
 			state->observers,
 			state->services,
-			moduleDlls);
+			moduleDlls,
+			state->dropCopy);
 	} catch (const Lib::Exception &ex) {
 		GetLog().Error("Failed to init engine context: \"%1%\".", ex);
 		throw Exception("Failed to init engine context");
 	}
 
 	state->ReportState();
+
+	if (state->dropCopy) {
+		const IniSectionRef dropCopyConf(conf, Ini::Sections::dropCopy);
+		try {
+			state->dropCopy->Start(dropCopyConf);
+		} catch (const Lib::Exception &ex) {
+			GetLog().Error("Failed to start Drop Copy: \"%1%\".", ex);
+			throw Exception("Failed to start Drop Copy");
+		}
+	}
 	
 	state->subscriptionsManager.Activate();
 
@@ -437,6 +450,10 @@ void Engine::Context::Update(const Lib::Ini &conf) {
 
 void Engine::Context::SyncDispatching() {
 	m_pimpl->m_state->subscriptionsManager.SyncDispatching();
+}
+
+DropCopy * Engine::Context::GetDropCopy() {
+	return &*m_pimpl->m_state->dropCopy;
 }
 
 size_t Engine::Context::GetMarketDataSourcesCount() const {

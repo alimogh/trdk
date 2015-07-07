@@ -125,6 +125,9 @@ namespace trdk {
 		RiskControl & GetRiskControl(const trdk::TradingMode &);
 		const RiskControl & GetRiskControl(const trdk::TradingMode &) const;
 
+		//! Returns Drop Copy or nullptr.
+		virtual DropCopy * GetDropCopy() = 0;
+
 		//! User context parameters. No predefined key list. Any key can be
 		//! changed.
 		trdk::Context::Params & GetParams();

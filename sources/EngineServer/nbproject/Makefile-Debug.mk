@@ -40,8 +40,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/Server.o \
 	${OBJECTDIR}/Service.o \
 	${OBJECTDIR}/Client.o \
-	${OBJECTDIR}/Settings.o \
-	${OBJECTDIR}/trdk.pb.o
+	${OBJECTDIR}/Settings.o
 
 
 # C Compiler Flags
@@ -58,7 +57,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=../Common/dist/Debug/GNU-Linux-x86/libcommon_dbg.a -Wl,-rpath,../Core/dist/Debug/GNU-Linux-x86 -L../Core/dist/Debug/GNU-Linux-x86 -lCore_dbg -Wl,-rpath,../Engine/dist/Debug/GNU-Linux-x86 -L../Engine/dist/Debug/GNU-Linux-x86 -lEngine_dbg -lboost_system -lboost_filesystem -lboost_regex -lboost_thread -lprotobuf
+LDLIBSOPTIONS=../Common/dist/Debug/GNU-Linux-x86/libcommon_dbg.a ../EngineService/dist/Debug/GNU-Linux-x86/libEngineService_dbg.a  -Wl,-rpath,../Core/dist/Debug/GNU-Linux-x86 -L../Core/dist/Debug/GNU-Linux-x86 -lCore_dbg -Wl,-rpath,../Engine/dist/Debug/GNU-Linux-x86 -L../Engine/dist/Debug/GNU-Linux-x86 -lEngine_dbg -lboost_system -lboost_filesystem -lboost_regex -lboost_thread -lprotobuf
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -69,6 +68,8 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine_dbg: ../Common/dist/Debug
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine_dbg: ../Core/dist/Debug/GNU-Linux-x86/libCore_dbg.so
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine_dbg: ../Engine/dist/Debug/GNU-Linux-x86/libEngine_dbg.so
+
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine_dbg: ../EngineService/dist/Debug/GNU-Linux-x86/libEngineService_dbg.a
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/RobotEngine_dbg: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
@@ -104,11 +105,6 @@ ${OBJECTDIR}/Settings.o: Settings.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Settings.o Settings.cpp
 
-${OBJECTDIR}/trdk.pb.o: trdk.pb.cc 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/trdk.pb.o trdk.pb.cc
-
 # Subprojects
 .build-subprojects:
 	cd ../Common && ${MAKE}  -f Makefile CONF=Debug
@@ -116,7 +112,7 @@ ${OBJECTDIR}/trdk.pb.o: trdk.pb.cc
 	cd ../Engine && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Common && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Core && ${MAKE}  -f Makefile CONF=Debug
-	cd ../Engine && ${MAKE}  -f Makefile CONF=Debug
+	cd ../EngineService && ${MAKE}  -f Makefile CONF=Debug
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
@@ -130,7 +126,7 @@ ${OBJECTDIR}/trdk.pb.o: trdk.pb.cc
 	cd ../Engine && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Common && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Core && ${MAKE}  -f Makefile CONF=Debug clean
-	cd ../Engine && ${MAKE}  -f Makefile CONF=Debug clean
+	cd ../EngineService && ${MAKE}  -f Makefile CONF=Debug clean
 
 # Enable dependency checking
 .dep.inc: .depcheck-impl

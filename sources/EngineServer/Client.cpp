@@ -12,10 +12,13 @@
 #include "Client.hpp"
 #include "ClientRequestHandler.hpp"
 #include "Exception.hpp"
+#include "EngineService/Utils.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::EngineServer;
+using namespace trdk::EngineService;
+using namespace trdk::EngineService::Control;
 
 namespace io = boost::asio;
 namespace pt = boost::posix_time;
@@ -28,25 +31,6 @@ namespace {
 		boost::format result("%1%:%2%");
 		result % endpoint.address() % endpoint.port();
 		return result.str();
-	}
-
-	void ConvertToUuid(const boost::uuids::uuid &source, Uuid &dest) {
-		AssertEq(16, source.size());
-		dest.set_data(&source, source.size());
-	}
-
-	boost::uuids::uuid ConvertFromUuid(const Uuid &source) {
-		const auto &data = source.data();
-		if (data.size() != 16) {
-			throw trdk::EngineServer::Exception("Wrong bytes number for Uuid");
-		}
-		boost::uuids::uuid result;
-		AssertEq(16, result.size());
-		memcpy(
-			&result,
-			reinterpret_cast<const boost::uuids::uuid::value_type *>(data.c_str()),
-			result.size());
-		return result;
 	}
 
 }
@@ -116,23 +100,15 @@ void Client::Close() {
 }
 
 void Client::OnFoo(const Foo &foo) {
-	ServerData message;
-	message.set_type(ServerData::TYPE_PNL);	
+	ServiceData message;
+	message.set_type(ServiceData::TYPE_PNL);	
 	Pnl &pnl = *message.mutable_pnl();
 	pnl.set_time(pt::to_iso_string(foo.time));
 	ConvertToUuid(foo.strategyId, *pnl.mutable_strategy_id());
 	ConvertToUuid(
 		boost::uuids::random_generator()(),
 		*pnl.mutable_settings_revision());
-	static_assert(numberOfTradingModes == 2, "List changed.");
-	switch (foo.tradingMode) {
-		case trdk::TRADING_MODE_LIVE:
-			pnl.set_mode(EngineServer::TRADING_MODE_LIVE);
-			break;
-		case trdk::TRADING_MODE_PAPER:
-			pnl.set_mode(EngineServer::TRADING_MODE_PAPER);
-			break;
-	}
+	Convert(foo.tradingMode, pnl);
 	pnl.set_triangle_id(foo.triangleId);
 	pnl.set_pnl(foo.pnl);
 	pnl.set_atr(foo.atr);
@@ -158,15 +134,15 @@ void Client::OnFoo(const Foo &foo) {
 }
 
 void Client::SendMessage(const std::string &text) {
-	ServerData message;
-	message.set_type(ServerData::TYPE_MESSAGE_INFO);	
+	ServiceData message;
+	message.set_type(ServiceData::TYPE_MESSAGE_INFO);	
 	message.set_message(text);
 	Send(message);
 }
 
 void Client::SendError(const std::string &errorText) {
-	ServerData message;
-	message.set_type(ServerData::TYPE_MESSAGE_ERROR);	
+	ServiceData message;
+	message.set_type(ServiceData::TYPE_MESSAGE_ERROR);	
 	message.set_message(errorText);
 	Send(message);
 }
@@ -175,13 +151,13 @@ void Client::SendServiceInfo() {
 	boost::format info(
 		"Service: \"%1%\". Build: \"" TRDK_BUILD_IDENTITY "\".");
 	info % m_requestHandler.GetName();
-	ServerData message;
-	message.set_type(ServerData::TYPE_SERVICE_INFO);	
+	ServiceData message;
+	message.set_type(ServiceData::TYPE_SERVICE_INFO);	
 	message.set_message(info.str());
 	Send(message);
 }
 
-void Client::Send(const ServerData &message) {
+void Client::Send(const ServiceData &message) {
 	// message.SerializeToOstream(&m_ostream);
 	std::ostringstream oss;
 	message.SerializeToOstream(&oss);
@@ -356,8 +332,8 @@ void Client::SendEnginesInfo() {
 
 void Client::SendEngineInfo(const std::string &engineId) {
 	
- 	ServerData message;
- 	message.set_type(ServerData::TYPE_ENGINE_INFO);
+ 	ServiceData message;
+ 	message.set_type(ServiceData::TYPE_ENGINE_INFO);
 
 	EngineInfo &info = *message.mutable_engine_info();
  	info.set_engine_id(engineId);
@@ -398,8 +374,8 @@ void Client::SendEnginesState() {
 }
 
 void Client::SendEngineState(const std::string &engineId) {
-	ServerData message;
-	message.set_type(ServerData::TYPE_ENGINE_STATE);	
+	ServiceData message;
+	message.set_type(ServiceData::TYPE_ENGINE_STATE);	
 	EngineState &state = *message.mutable_engine_state();
 	state.set_engine_id(engineId);
 	state.set_is_started(m_requestHandler.IsEngineStarted(engineId));
@@ -608,8 +584,8 @@ void Client::StartKeepAliveSender() {
 				return;
 			}
 			{
-				ServerData message;
-				message.set_type(ServerData::TYPE_KEEP_ALIVE);	
+				ServiceData message;
+				message.set_type(ServiceData::TYPE_KEEP_ALIVE);	
 				client->Send(message);
 			}
 			client->StartKeepAliveSender();

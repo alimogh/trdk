@@ -71,6 +71,9 @@
     <ClCompile Include="RiskControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DropCopy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TradeSystem.hpp">
@@ -152,6 +155,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RiskControl.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DropCopy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

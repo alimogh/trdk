@@ -483,7 +483,7 @@ private:
 
 		const Symbol &symbol = security.GetSymbol();
 
-		AssertEq(Symbol::SECURITY_TYPE_CASH, symbol.GetSecurityType());
+		AssertEq(Symbol::SECURITY_TYPE_FOR_SPOT, symbol.GetSecurityType());
 		AssertNe(symbol.GetCashBaseCurrency(), symbol.GetCashQuoteCurrency());		
 		Assert(
 			symbol.GetCashBaseCurrency() == currency
@@ -522,7 +522,7 @@ private:
 			const {
 
 		const Symbol &symbol = security.GetSymbol();
-		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_CASH) {
+		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_FOR_SPOT) {
 			throw WrongSettingsException("Unknown security type");
 		}
 
@@ -599,14 +599,15 @@ private:
 			const RiskControlSymbolContext::Side &side) {
 
 		static_assert(
-			TradeSystem::numberOfOrderStatuses == 6,
+			TradeSystem::numberOfOrderStatuses == 7,
 			"Status list changed.");
 		switch (status) {
 			default:
 				AssertEq(TradeSystem::ORDER_STATUS_ERROR, status);
 				return;
-			case TradeSystem::ORDER_STATUS_PENDIGN:
+			case TradeSystem::ORDER_STATUS_SENT:
 			case TradeSystem::ORDER_STATUS_SUBMITTED:
+			case TradeSystem::ORDER_STATUS_REQUESTED_CANCEL:
 				break;
 			case TradeSystem::ORDER_STATUS_FILLED:
 				AssertNe(0, tradePrice);
@@ -645,7 +646,7 @@ private:
 			const RiskControlSymbolContext::Side &side) {
 
 		const Symbol &symbol = security.GetSymbol();
-		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_CASH) {
+		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_FOR_SPOT) {
 			throw WrongSettingsException("Unknown security type");
 		}
 
@@ -720,7 +721,7 @@ private:
 			const RiskControlSymbolContext::Side &side) {
 
 		const Symbol &symbol = security.GetSymbol();
-		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_CASH) {
+		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_FOR_SPOT) {
 			throw WrongSettingsException("Unknown security type");
 		}
 

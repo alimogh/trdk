@@ -53,7 +53,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/StrategyPositionState.o \
 	${OBJECTDIR}/TradeSystem.o \
 	${OBJECTDIR}/Types.o \
-	${OBJECTDIR}/RiskControl.o
+	${OBJECTDIR}/RiskControl.o \
+	${OBJECTDIR}/DropCopy.o
 
 
 # C Compiler Flags
@@ -176,6 +177,11 @@ ${OBJECTDIR}/RiskControl.o: RiskControl.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/RiskControl.o RiskControl.cpp
+
+${OBJECTDIR}/DropCopy.o: DropCopy.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -DTRADER_CORE -I.. -std=c++11 -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/DropCopy.o DropCopy.cpp
 
 # Subprojects
 .build-subprojects:
