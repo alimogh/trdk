@@ -195,6 +195,11 @@ namespace {
 
 	}
 
+	bool ShowVersion(int /*argc*/, const char * /*argv*/[]) {
+		std::cout << TRDK_NAME " " TRDK_BUILD_IDENTITY << std::endl;
+		return true;
+	}
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -222,6 +227,8 @@ int main(int argc, const char *argv[]) {
 			commands["r"] = &RunServerStandalone; ++i;
 			commands["debug"] = &DebugStrategy; ++i;
 			commands["d"] = &DebugStrategy; ++i;
+			commands["version"] = &ShowVersion; ++i;
+			commands["v"] = &ShowVersion; ++i;
 			AssertEq(i, commands.size());
 			const Commands::const_iterator commandPos = commands.find(argv[1]);
 			if (commandPos != commands.end()) {
