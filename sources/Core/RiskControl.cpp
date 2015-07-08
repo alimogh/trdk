@@ -550,7 +550,7 @@ private:
 			CalcFundsRest(newPosition.second, quoteCurrency));
 
 		m_tradingLog.Write(
-			"funds\tblock\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f =\t%7$f\t(%8$f)",
+			"funds\tblock\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f =\t%7$f\t%8$f",
 			[&](TradingRecord &record) {
 				record
 					% GetName()
@@ -563,7 +563,7 @@ private:
 					% rest.first;
 			});
 		m_tradingLog.Write(
-			"funds\tblock\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f =\t%7$f\t(%8$f)",
+			"funds\tblock\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f =\t%7$f\t%8$f",
 			[&](TradingRecord &record) {
 				record
 					% GetName()
@@ -678,7 +678,7 @@ private:
 			quoteCurrency.position - blocked.second + used.second);
 
 		m_tradingLog.Write(
-			"funds\tuse\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f +  %7$f =\t%8$f\t(%9$f)",
+			"funds\tuse\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f +  %7$f =\t%8$f\t%9$f",
 			[&](TradingRecord &record) {
 				record
 					% GetName()
@@ -692,7 +692,7 @@ private:
 					% CalcFundsRest(newPosition.first, baseCurrency);
 			});
 		m_tradingLog.Write(
-			"funds\tuse\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f +  %7$f =\t%8$f\t(%9$f)",
+			"funds\tuse\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f +  %7$f =\t%8$f\t%9$f",
 			[&](TradingRecord &record) {
 				record
 					% GetName()
@@ -745,7 +745,7 @@ private:
 			quoteCurrency.position - blocked.second);
 
 		m_tradingLog.Write(
-			"funds\tunblock\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f =\t%7$f\t(%8$f)",
+			"funds\tunblock\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f =\t%7$f\t%8$f",
 			[&](TradingRecord &record) {
 				record
 					% GetName()
@@ -758,13 +758,13 @@ private:
 					% CalcFundsRest(newPosition.first, baseCurrency);
 			});
 		m_tradingLog.Write(
-			"funds\tunblock\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f =\t%7$f\t(%8$f)",
+			"funds\tunblock\t%1%\t%2%\t%3%\t%4%\t%5$f - %6$f =\t%7$f\t%8$f",
 			[&](TradingRecord &record) {
 				record
 					% GetName()
 					% side.name
 					% operationId
-					% symbol.GetCashBaseCurrency()
+					% symbol.GetCashQuoteCurrency()
 					% quoteCurrency.position
 					% blocked.second
 					% newPosition.second
@@ -1049,6 +1049,8 @@ public:
 
 	const TradingMode m_tradingMode;
 
+	const bool m_isPositionControlEnabled;
+
 	PositionsCache m_globalScopePositionsCache;
 	std::vector<boost::shared_ptr<RiskControlSymbolContext>> m_symbols;
 
@@ -1068,6 +1070,8 @@ public:
 		: m_context(context),
 		m_log(logPrefix, m_context.GetLog()),
 		m_tradingLog(logPrefix, m_context.GetTradingLog()),
+		m_isPositionControlEnabled(
+			conf.ReadBoolKey("is_position_control_enabled")),
 		m_conf(conf),
 		m_tradingMode(tradingMode),
 		m_globalScope(
@@ -1077,7 +1081,9 @@ public:
 			m_additionalScopesInfo.size(),
 			m_tradingMode),
 		m_lastOperationId(0) {
-		//...//
+		if (!m_isPositionControlEnabled) {
+			m_log.Warn("POSITION RISK CONTROL DISABLED!");
+		}
 	}
 
 public:
@@ -1245,6 +1251,9 @@ RiskControlOperationId RiskControl::CheckNewBuyOrder(
 		const Qty &qty,
 		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
+	if (!m_pimpl->m_isPositionControlEnabled) {
+		return 0;
+	}
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
 	const RiskControlOperationId operationId = ++m_pimpl->m_lastOperationId;
 	scope.CheckNewBuyOrder(operationId, security, currency, qty, price);
@@ -1261,6 +1270,9 @@ RiskControlOperationId RiskControl::CheckNewSellOrder(
 		const Qty &qty,
 		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
+	if (!m_pimpl->m_isPositionControlEnabled) {
+		return 0;
+	}
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
 	const RiskControlOperationId operationId = ++m_pimpl->m_lastOperationId;
 	scope.CheckNewSellOrder(operationId, security, currency, qty, price);
@@ -1281,6 +1293,10 @@ void RiskControl::ConfirmBuyOrder(
 		const ScaledPrice &tradePrice,
 		const Qty &remainingQty,
 		const TimeMeasurement::Milestones &timeMeasurement) {
+	if (!m_pimpl->m_isPositionControlEnabled) {
+		AssertEq(0, operationId);
+		return;
+	}
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_START);
 	m_pimpl->m_globalScope.ConfirmBuyOrder(
 		operationId,
@@ -1314,6 +1330,10 @@ void RiskControl::ConfirmSellOrder(
 		const ScaledPrice &tradePrice,
 		const Qty &remainingQty,
 		const TimeMeasurement::Milestones &timeMeasurement) {
+	if (!m_pimpl->m_isPositionControlEnabled) {
+		AssertEq(0, operationId);
+		return;
+	}
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_START);
 	m_pimpl->m_globalScope.ConfirmSellOrder(
 		operationId,
