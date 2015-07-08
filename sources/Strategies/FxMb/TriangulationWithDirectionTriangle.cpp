@@ -14,8 +14,6 @@
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 
-#include "Core/TradingLog.hpp"
-
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Strategies::FxMb;
@@ -47,9 +45,15 @@ Triangle::Triangle(
 			
 	m_pairs[PAIR_AB] = PairInfo(ab, m_bestBidAsk);
 	m_pairsLegs[m_pairs[PAIR_AB].leg] = &m_pairs[PAIR_AB];
-			
-	m_pairs[PAIR_BC] = PairInfo(bc, m_bestBidAsk);
-	m_pairsLegs[m_pairs[PAIR_BC].leg] = &m_pairs[PAIR_BC];
+	
+	{
+		auto &pair = m_pairs[PAIR_BC]; 
+		pair = PairInfo(bc, m_bestBidAsk);
+		m_pairsLegs[pair.leg] = &pair;
+		if (pair.leg == LEG3) {
+			pair.isBuy = !pair.isBuy;
+		}
+	}
 			
 	m_pairs[PAIR_AC] = PairInfo(ac, m_bestBidAsk);
 	m_pairsLegs[m_pairs[PAIR_AC].leg] = &m_pairs[PAIR_AC];
@@ -122,19 +126,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
 						currency = security.GetSymbol().GetCashQuoteCurrency();
 						qty = GetLeg(PAIR_AC).GetOpenedVolume();
-						// Remove header
-						m_strategy.GetTradingLog().Write(
-							"PAIR_BC on Leg 3: buy, qty=%1$f, round=%2$f, scaled=%3%, descaled=%4$f",
-							[&](TradingRecord &record) {
-								record
-									% qty
-									% Qty(boost::math::round(qty))
-									% GetLeg(PAIR_AC).GetOpenPrice()
-									% GetLeg(PAIR_AC).GetSecurity().DescalePrice(GetLeg(PAIR_AC).GetOpenPrice());
-							});
 						baseCurrencyQty
 							= qty / GetPair(PAIR_BC).security->GetAskPrice();
 						break;
+					default:
+						AssertEq(LEG1, pair.leg);
+						throw Lib::LogicError("Unknown leg for pair");
 				}
 				if (security.GetAskQty() < qty / price) {
 					throw HasNotMuchOpportunityException(security, Qty(qty));
@@ -146,7 +143,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		}
 
 		Assert(!Lib::IsZero(security.GetAskPrice()));
-			
+
 		result.reset(
 			new Twd::LongPosition(
 				m_strategy,
@@ -195,19 +192,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
 						currency = security.GetSymbol().GetCashQuoteCurrency();
 						qty = GetLeg(PAIR_AC).GetOpenedVolume();
-						// Remove header
-						m_strategy.GetTradingLog().Write(
-							"PAIR_BC on Leg 3: sell, qty=%1$f, round=%2$f, scaled=%3%, descaled=%4$f",
-							[&](TradingRecord &record) {
-								record
-									% qty
-									% Qty(boost::math::round(qty))
-									% GetLeg(PAIR_AC).GetOpenPrice()
-									% GetLeg(PAIR_AC).GetSecurity().DescalePrice(GetLeg(PAIR_AC).GetOpenPrice());
-							});
 						baseCurrencyQty
 							= qty / GetPair(PAIR_BC).security->GetBidPrice();
 						break;
+					default:
+						AssertEq(LEG1, pair.leg);
+						throw Lib::LogicError("Unknown leg for pair");
 				}
 				if (security.GetBidQty() < qty / price) {
 					throw HasNotMuchOpportunityException(security, Qty(qty));
