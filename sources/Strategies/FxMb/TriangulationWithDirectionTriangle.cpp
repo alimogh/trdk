@@ -51,7 +51,9 @@ Triangle::Triangle(
 		pair = PairInfo(bc, m_bestBidAsk);
 		m_pairsLegs[pair.leg] = &pair;
 		if (pair.leg == LEG3) {
-			pair.isBuy = !pair.isBuy;
+			pair.isBuyForOrder = !pair.isBuy;
+		} else {
+			AssertEq(pair.isBuy, pair.isBuyForOrder);
 		}
 	}
 			
@@ -97,7 +99,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 	boost::shared_ptr<Twd::Position> result;
 
-	if (pair.isBuy) {
+	if (pair.isBuyForOrder) {
 
 		Currency currency;
 		double qty = m_aQty;

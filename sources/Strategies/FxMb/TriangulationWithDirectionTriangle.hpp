@@ -27,12 +27,21 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		struct PairLegParams {
 			Pair id;
 			Leg leg;
+			//! Logic direction, ie we need to close position by logic.
+			/** @sa PairLegParams::isBuyForOrder
+			  */
 			bool isBuy;
 			size_t ecn;
 		};
 
 		struct PairInfo : public PairLegParams {
-			
+
+			//! Real direction, ie we should reverse logic direction by quote
+			//! currency.
+			/** @sa PairLegParams::isBuy
+			  */
+			bool isBuyForOrder;
+
 			const BestBidAsk *bestBidAsk;
 			Security *security;
 
@@ -47,6 +56,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					const PairLegParams &params,
 					const BestBidAskPairs &bestBidAskRef)
 				: PairLegParams(params),
+				isBuyForOrder(isBuy),
 				bestBidAsk(&bestBidAskRef[id]),
 				security(
 					//! @todo FIXME const_cast for security 
