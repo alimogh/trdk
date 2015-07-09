@@ -489,17 +489,17 @@ private:
 			symbol.GetCashBaseCurrency() == currency
 			|| symbol.GetCashQuoteCurrency() == currency);
 
-		const auto quoteCurrencyDirection = side.direction * -1;
 		const auto realPrice = security.DescalePrice(orderPrice);
 
+		//! @todo see TRDK-107 for order side details.
 		if (symbol.GetCashBaseCurrency() == currency) {
 			return std::make_pair(
 				qty * side.direction,
-				(qty * realPrice) * quoteCurrencyDirection);
+				(qty * realPrice) * (side.direction * -1));
 		} else {
 			return std::make_pair(
-				(qty / realPrice) * side.direction,
-				qty * quoteCurrencyDirection);
+				(qty / realPrice) * (side.direction * -1),
+				qty * side.direction);
 		}
 
 	}
@@ -1220,7 +1220,7 @@ std::unique_ptr<RiskControlScope> RiskControl::CreateScope(
 	additionalScopesInfo.emplace_back(name, conf);
 
 	const auto scopeIndex = additionalScopesInfo.size();
-	AssertLt(0, scopeIndex ); // zero - always Global scope
+	AssertLt(0, scopeIndex); // zero - always Global scope
 
 	Implementation::PositionsCache cache;
 	foreach (auto &symbolContex, m_pimpl->m_symbols) {
