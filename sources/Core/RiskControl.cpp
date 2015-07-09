@@ -1049,8 +1049,6 @@ public:
 
 	const TradingMode m_tradingMode;
 
-	const bool m_isPositionControlEnabled;
-
 	PositionsCache m_globalScopePositionsCache;
 	std::vector<boost::shared_ptr<RiskControlSymbolContext>> m_symbols;
 
@@ -1070,8 +1068,6 @@ public:
 		: m_context(context),
 		m_log(logPrefix, m_context.GetLog()),
 		m_tradingLog(logPrefix, m_context.GetTradingLog()),
-		m_isPositionControlEnabled(
-			conf.ReadBoolKey("is_position_control_enabled")),
 		m_conf(conf),
 		m_tradingMode(tradingMode),
 		m_globalScope(
@@ -1081,9 +1077,7 @@ public:
 			m_additionalScopesInfo.size(),
 			m_tradingMode),
 		m_lastOperationId(0) {
-		if (!m_isPositionControlEnabled) {
-			m_log.Warn("POSITION RISK CONTROL DISABLED!");
-		}
+		//...//
 	}
 
 public:
@@ -1251,9 +1245,6 @@ RiskControlOperationId RiskControl::CheckNewBuyOrder(
 		const Qty &qty,
 		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	if (!m_pimpl->m_isPositionControlEnabled) {
-		return 0;
-	}
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
 	const RiskControlOperationId operationId = ++m_pimpl->m_lastOperationId;
 	scope.CheckNewBuyOrder(operationId, security, currency, qty, price);
@@ -1270,9 +1261,6 @@ RiskControlOperationId RiskControl::CheckNewSellOrder(
 		const Qty &qty,
 		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	if (!m_pimpl->m_isPositionControlEnabled) {
-		return 0;
-	}
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
 	const RiskControlOperationId operationId = ++m_pimpl->m_lastOperationId;
 	scope.CheckNewSellOrder(operationId, security, currency, qty, price);
@@ -1293,10 +1281,6 @@ void RiskControl::ConfirmBuyOrder(
 		const ScaledPrice &tradePrice,
 		const Qty &remainingQty,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	if (!m_pimpl->m_isPositionControlEnabled) {
-		AssertEq(0, operationId);
-		return;
-	}
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_START);
 	m_pimpl->m_globalScope.ConfirmBuyOrder(
 		operationId,
@@ -1330,10 +1314,6 @@ void RiskControl::ConfirmSellOrder(
 		const ScaledPrice &tradePrice,
 		const Qty &remainingQty,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	if (!m_pimpl->m_isPositionControlEnabled) {
-		AssertEq(0, operationId);
-		return;
-	}
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_START);
 	m_pimpl->m_globalScope.ConfirmSellOrder(
 		operationId,
