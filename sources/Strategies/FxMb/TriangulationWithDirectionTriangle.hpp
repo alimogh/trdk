@@ -70,14 +70,14 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			}
 
 			double GetCurrentPrice() const {
-				return isBuy
+				return isBuyForOrder
 					?	security->GetAskPrice()
 					:	security->GetBidPrice();
 			}
 
 			double GetCurrentBestPrice() const {
 				const Security &security = GetBestSecurity();
-				return isBuy
+				return isBuyForOrder
 					?	security.GetAskPrice()
 					:	security.GetBidPrice();
 			}
@@ -86,7 +86,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				//! @todo FIXME const_cast for security 
 				return const_cast<Security &>(
 					bestBidAsk->service->GetSecurity(
-						isBuy
+						isBuyForOrder
 							?	bestBidAsk->bestAsk.source
 							:	bestBidAsk->bestBid.source));
 			}
