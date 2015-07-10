@@ -31,6 +31,18 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		return y + 1;
 	}
 
+	inline const char * ConvertToPch(const Y &y) {
+		switch (y) {
+			case Y1:
+				return "Y1";
+			case Y2:
+				return "Y2";
+			default:
+				AssertEq(Y1, y);
+				return "";
+		}
+	}
+
 	typedef boost::array<double, numberOfYs> YDirection;
 
 	////////////////////////////////////////////////////////////////////////////////

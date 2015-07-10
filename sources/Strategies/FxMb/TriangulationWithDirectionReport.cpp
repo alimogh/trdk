@@ -215,6 +215,36 @@ public:
 					% "Build: " TRDK_BUILD_IDENTITY
 					% "Build time: " __DATE__ " " __TIME__;
 			});
+	log.Write(
+		[&context, &bestBidAskPairs](ReportRecord &record) {
+			record
+				%	"No"
+				%	"Time"
+				%	"Action"
+				%	"Y1"
+				%	"Y2"
+				%	"Y1 or Y2";
+			foreach (const auto &bestBidAsk, bestBidAskPairs) {
+				const char *pair
+					= bestBidAsk
+						.service
+						->GetSecurity(0)
+						.GetSymbol()
+						.GetSymbol()
+						.c_str();
+				record
+					%	pair % '\0' % " leg no."
+					%	pair % '\0' % " direction"
+					%	pair % '\0' % " bid at start"
+					%	pair % '\0' % " ask at start"
+					%	pair % '\0' % " bid triangulation"
+					%	pair % '\0' % " ask triangulation"
+					%	pair % '\0' % " qty"
+					%	pair % '\0' % " tag 15"
+					%	pair % '\0' % " tag 54";
+			}
+		});
+
 	}
 
 };
@@ -522,6 +552,8 @@ void TriangleReport::ReportAction(
 		isTriangleCanceled != isTriangleCompleted
 			|| !isTriangleCompleted);
 
+	const auto &now = m_triangle.GetStrategy().GetContext().GetCurrentTime();
+
 	double yExecuted = .0;
 	if (isTriangleCompleted) {
 		yExecuted = m_triangle.CalcYExecuted();
@@ -538,7 +570,7 @@ void TriangleReport::ReportAction(
 		[&](ReportRecord &record) {
 			record
 				% m_triangle.GetId()
-				% m_triangle.GetStrategy().GetContext().GetCurrentTime()
+				% now
 				% action
 				% reason
 				% actionLegs;
@@ -578,7 +610,7 @@ void TriangleReport::ReportAction(
 		});
 
 	Foo foo = {
-		m_triangle.GetStrategy().GetContext().GetCurrentTime(),
+		now,
 		m_triangle.GetStrategy().GetId(),
 		m_triangle.GetStrategy().GetTradingMode(),
 		m_triangle.GetId(),
@@ -709,6 +741,49 @@ void TriangleReport::ReportAction(
 // 		riskControl.CheckTotalPnl(
 // 			strategy.GetRiskControlScope(),
 // 			foo.totalPnlWithCommissions);
+
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
+	if (isTriangleCompleted) {
+
+		const auto &writePair = [&](const Pair &pair, ReportRecord &record) {
+		
+		const Triangle::PairInfo &info = m_triangle.GetPair(pair);
+		const Twd::Position &order = m_triangle.GetLeg(info.leg);
+		const Security &security = m_triangle.GetCalcSecurity(pair);
+
+		record
+			% GetLegNo(info.leg)
+			% (info.isBuy ? "buy" : "sell");
+
+		record % ' ' % ' ';
+		record %  security.GetBidPrice() %	security.GetAskPrice();
+		record
+			%	order.GetOpenedQty()
+			%	order.GetCurrency()
+			%	(order.GetType() == Position::TYPE_LONG ? "buy" : "sell");
+
+	};
+
+		m_state.strategy->log.Write(
+			[&](ReportRecord &record) {
+				record
+					% m_triangle.GetId()
+					% now
+					% "verify";
+				const auto &yExecuted = m_triangle.CalcYExecuted();
+				if (m_triangle.GetY() == Y1) {
+					record % yExecuted % ' ';
+				} else {
+					record % ' ' % yExecuted;
+				}
+				record % ConvertToPch(m_triangle.GetY());
+				for (size_t i = 0; i < numberOfPairs; ++i) {
+					writePair(Pair(i), record);
+				}
+			});
 
 	}
 
