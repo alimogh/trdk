@@ -750,22 +750,22 @@ void TriangleReport::ReportAction(
 
 		const auto &writePair = [&](const Pair &pair, ReportRecord &record) {
 		
-		const Triangle::PairInfo &info = m_triangle.GetPair(pair);
-		const Twd::Position &order = m_triangle.GetLeg(info.leg);
-		const Security &security = m_triangle.GetCalcSecurity(pair);
+			const Triangle::PairInfo &info = m_triangle.GetPair(pair);
+			const Twd::Position &order = m_triangle.GetLeg(info.leg);
+			const Security &security = m_triangle.GetCalcSecurity(pair);
 
-		record
-			% GetLegNo(info.leg)
-			% (info.isBuy ? "buy" : "sell");
+			record
+				% GetLegNo(info.leg)
+				% (info.isBuy ? "buy" : "sell");
 
-		record % ' ' % ' ';
-		record %  security.GetBidPrice() %	security.GetAskPrice();
-		record
-			%	order.GetOpenedQty()
-			%	order.GetCurrency()
-			%	(order.GetType() == Position::TYPE_LONG ? "buy" : "sell");
+			record % ' ' % ' ';
+			record % security.GetBidPrice() % security.GetAskPrice();
+			record
+				%	order.GetOpenedQty()
+				%	order.GetCurrency()
+				%	(order.GetType() == Position::TYPE_LONG ? "buy" : "sell");
 
-	};
+		};
 
 		m_state.strategy->log.Write(
 			[&](ReportRecord &record) {

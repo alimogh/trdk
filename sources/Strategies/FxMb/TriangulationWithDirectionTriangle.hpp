@@ -69,17 +69,18 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				}
 			}
 
-			double GetCurrentPrice() const {
-				return isBuyForOrder
-					?	security->GetAskPrice()
-					:	security->GetBidPrice();
-			}
-
-			double GetCurrentBestPrice() const {
-				const Security &security = GetBestSecurity();
+			double GetCurrentPrice(const Security &security) const {
 				return isBuyForOrder
 					?	security.GetAskPrice()
 					:	security.GetBidPrice();
+			}
+			
+			double GetCurrentPrice() const {
+				return GetCurrentPrice(*security);
+			}
+
+			double GetCurrentBestPrice() const {
+				return GetCurrentPrice(GetBestSecurity());
 			}
 
 			Security & GetBestSecurity() {
@@ -174,16 +175,15 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					"Failed to start triangle leg 2 (wrong strategy logic)");
 			}
 			
-			const auto &price = GetPair(LEG2).GetCurrentPrice();
+			auto &security = GetPair(LEG2).GetBestSecurity();
+			const auto &price = GetPair(LEG2).GetCurrentPrice(security);
 			if (Lib::IsZero(price)) {
-				throw HasNotMuchOpportunityException(
-					*GetPair(LEG2).security,
-					0);
+				throw HasNotMuchOpportunityException(security, 0);
 			}
 
 			boost::shared_ptr<Twd::Position> order = CreateOrder(
 				GetPair(LEG2),
-				GetPair(LEG2).GetBestSecurity(),
+				security,
 				price,
 				Lib::TimeMeasurement::Milestones());
 			order->Open();
@@ -218,16 +218,15 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					"Failed to start triangle leg 3 (wrong strategy logic)");
 			}
 
-			const auto &price = GetPair(LEG3).GetCurrentPrice();
+			auto &security = GetPair(LEG3).GetBestSecurity();
+			const auto &price = GetPair(LEG3).GetCurrentPrice(security);
 			if (Lib::IsZero(price)) {
-				throw HasNotMuchOpportunityException(
-					*GetPair(LEG3).security,
-					0);
+				throw HasNotMuchOpportunityException(security, 0);
 			}
 
 			const boost::shared_ptr<Twd::Position> order = CreateOrder(
 				GetPair(LEG3),
-				GetPair(LEG3).GetBestSecurity(),
+				security,
 				price,
 				timeMeasurement);
 
