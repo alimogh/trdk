@@ -181,7 +181,9 @@ public:
 					record
 						%	pair % '\0' % " ECN"
 						%	pair % '\0' % " leg no."
+						%	pair % '\0' % " tag 15"
 						%	pair % '\0' % " direction"
+						%	pair % '\0' % " tag 54"
 						%	pair % '\0'	% " order qty"
 						%	pair % '\0' % " order state" 
 						%	pair % '\0' % " price start"
@@ -215,35 +217,35 @@ public:
 					% "Build: " TRDK_BUILD_IDENTITY
 					% "Build time: " __DATE__ " " __TIME__;
 			});
-	log.Write(
-		[&context, &bestBidAskPairs](ReportRecord &record) {
-			record
-				%	"No"
-				%	"Time"
-				%	"Action"
-				%	"Y1"
-				%	"Y2"
-				%	"Y1 or Y2";
-			foreach (const auto &bestBidAsk, bestBidAskPairs) {
-				const char *pair
-					= bestBidAsk
-						.service
-						->GetSecurity(0)
-						.GetSymbol()
-						.GetSymbol()
-						.c_str();
-				record
-					%	pair % '\0' % " leg no."
-					%	pair % '\0' % " direction"
-					%	pair % '\0' % " bid at start"
-					%	pair % '\0' % " ask at start"
-					%	pair % '\0' % " bid triangulation"
-					%	pair % '\0' % " ask triangulation"
-					%	pair % '\0' % " qty"
-					%	pair % '\0' % " tag 15"
-					%	pair % '\0' % " tag 54";
-			}
-		});
+// 	log.Write(
+// 		[&context, &bestBidAskPairs](ReportRecord &record) {
+// 			record
+// 				%	"No"
+// 				%	"Time"
+// 				%	"Action"
+// 				%	"Y1"
+// 				%	"Y2"
+// 				%	"Y1 or Y2";
+// 			foreach (const auto &bestBidAsk, bestBidAskPairs) {
+// 				const char *pair
+// 					= bestBidAsk
+// 						.service
+// 						->GetSecurity(0)
+// 						.GetSymbol()
+// 						.GetSymbol()
+// 						.c_str();
+// 				record
+// 					%	pair % '\0' % " leg no."
+// 					%	pair % '\0' % " direction"
+// 					%	pair % '\0' % " bid at start"
+// 					%	pair % '\0' % " ask at start"
+// 					%	pair % '\0' % " bid triangulation"
+// 					%	pair % '\0' % " ask triangulation"
+// 					%	pair % '\0' % " qty"
+// 					%	pair % '\0' % " tag 15"
+// 					%	pair % '\0' % " tag 54";
+// 			}
+// 		});
 
 	}
 
@@ -446,8 +448,15 @@ void TriangleReport::ReportAction(
 
 		record
 			% security.GetSource().GetTag()
-			% GetLegNo(info.leg)
-			% (info.isBuy ? "buy" : "sell");
+			% GetLegNo(info.leg);
+		if (order) {
+			record % order->GetCurrency();
+		} else {
+			record % ' ';
+		}
+		record
+			% (info.isBuy ? "buy" : "sell")
+			% (info.isBuyForOrder ? "buy" : "sell");
 
 		if (!order) {
 			record % ' ';
@@ -746,46 +755,46 @@ void TriangleReport::ReportAction(
 
 	//////////////////////////////////////////////////////////////////////////
 
-	if (isTriangleCompleted) {
-
-		const auto &writePair = [&](const Pair &pair, ReportRecord &record) {
-		
-			const Triangle::PairInfo &info = m_triangle.GetPair(pair);
-			const Twd::Position &order = m_triangle.GetLeg(info.leg);
-			const Security &security = m_triangle.GetCalcSecurity(pair);
-
-			record
-				% GetLegNo(info.leg)
-				% (info.isBuy ? "buy" : "sell");
-
-			record % ' ' % ' ';
-			record % security.GetBidPrice() % security.GetAskPrice();
-			record
-				%	order.GetOpenedQty()
-				%	order.GetCurrency()
-				%	(order.GetType() == Position::TYPE_LONG ? "buy" : "sell");
-
-		};
-
-		m_state.strategy->log.Write(
-			[&](ReportRecord &record) {
-				record
-					% m_triangle.GetId()
-					% now
-					% "verify";
-				const auto &yExecuted = m_triangle.CalcYExecuted();
-				if (m_triangle.GetY() == Y1) {
-					record % yExecuted % ' ';
-				} else {
-					record % ' ' % yExecuted;
-				}
-				record % ConvertToPch(m_triangle.GetY());
-				for (size_t i = 0; i < numberOfPairs; ++i) {
-					writePair(Pair(i), record);
-				}
-			});
-
-	}
+// 	if (isTriangleCompleted) {
+// 
+// 		const auto &writePair = [&](const Pair &pair, ReportRecord &record) {
+// 		
+// 			const Triangle::PairInfo &info = m_triangle.GetPair(pair);
+// 			const Twd::Position &order = m_triangle.GetLeg(info.leg);
+// 			const Security &security = m_triangle.GetCalcSecurity(pair);
+// 
+// 			record
+// 				% GetLegNo(info.leg)
+// 				% (info.isBuy ? "buy" : "sell");
+// 
+// 			record % ' ' % ' ';
+// 			record % security.GetBidPrice() % security.GetAskPrice();
+// 			record
+// 				%	order.GetOpenedQty()
+// 				%	order.GetCurrency()
+// 				%	(order.GetType() == Position::TYPE_LONG ? "buy" : "sell");
+// 
+// 		};
+// 
+// 		m_state.strategy->log.Write(
+// 			[&](ReportRecord &record) {
+// 				record
+// 					% m_triangle.GetId()
+// 					% now
+// 					% "verify";
+// 				const auto &yExecuted = m_triangle.CalcYExecuted();
+// 				if (m_triangle.GetY() == Y1) {
+// 					record % yExecuted % ' ';
+// 				} else {
+// 					record % ' ' % yExecuted;
+// 				}
+// 				record % ConvertToPch(m_triangle.GetY());
+// 				for (size_t i = 0; i < numberOfPairs; ++i) {
+// 					writePair(Pair(i), record);
+// 				}
+// 			});
+// 
+// 	}
 
 }
 
