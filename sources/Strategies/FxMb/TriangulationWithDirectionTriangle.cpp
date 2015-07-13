@@ -128,8 +128,9 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
 						currency = security.GetSymbol().GetCashQuoteCurrency();
 						qty = GetLeg(PAIR_AC).GetOpenedVolume();
+						// Why not GetAskPrice see TRDK-110.
 						baseCurrencyQty
-							= qty / GetPair(PAIR_BC).security->GetAskPrice();
+							= qty / GetPair(PAIR_BC).security->GetBidPrice();
 						break;
 					default:
 						AssertEq(LEG1, pair.leg);
@@ -194,8 +195,9 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
 						currency = security.GetSymbol().GetCashQuoteCurrency();
 						qty = GetLeg(PAIR_AC).GetOpenedVolume();
+						// Why not GetAskPrice see TRDK-110.
 						baseCurrencyQty
-							= qty / GetPair(PAIR_BC).security->GetBidPrice();
+							= qty / GetPair(PAIR_BC).security->GetAskPrice();
 						break;
 					default:
 						AssertEq(LEG1, pair.leg);
