@@ -880,7 +880,7 @@ void EngineServer::Settings::LoadClientSettings(const WriteLock &) {
 		
 		{
 			auto &sensitivity = group.settings["Sensitivity"];
-			const IniSectionRef iniSection(ini, "PaperTradeSystem.Hotspot");
+			const IniSectionRef iniSection(ini, "PaperTradeSystem.Integral");
 			sensitivity["lag.execution.min"]
 				= iniSection.ReadKey("delay_microseconds.execution.min");
 			sensitivity["lag.execution.max"]
