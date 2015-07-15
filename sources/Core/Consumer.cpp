@@ -123,20 +123,4 @@ const Consumer::SecurityList & Consumer::GetSecurities() const {
 	return const_cast<Consumer *>(this)->GetSecurities();
 }
 
-void Consumer::RaiseBrokerPositionUpdateEvent(
-			Security &security,
-			Qty qty,
-			bool isInitial) {
-	const Lock lock(GetMutex());
-	OnBrokerPositionUpdate(security, qty, isInitial);
-}
-
-
-void Consumer::RaiseNewBarEvent(
-			Security &security,
-			const Security::Bar &bar) {
-	const Lock lock(GetMutex());
-	return OnNewBar(security, bar);
-}
-
 ////////////////////////////////////////////////////////////////////////////////

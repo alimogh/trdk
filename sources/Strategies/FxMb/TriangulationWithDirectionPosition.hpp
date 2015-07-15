@@ -51,7 +51,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void Open() {
 			AssertLt(.0, GetOpenStartPrice());
-
 			OpenImmediatelyOrCancel(GetOpenStartPrice(), m_orderParams);
 		}
 

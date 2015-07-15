@@ -192,7 +192,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return result;
 		}
 
-	public:
+	protected:
 
 		virtual boost::posix_time::ptime OnSecurityStart(const Security &);
 
@@ -200,8 +200,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Security &,
 				const Security::Book &,
 				const Lib::TimeMeasurement::Milestones &);
-
-	protected:
 
 		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
 

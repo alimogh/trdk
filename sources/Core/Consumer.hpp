@@ -35,6 +35,23 @@ namespace trdk {
 		virtual boost::posix_time::ptime OnSecurityStart(trdk::Security &);
 
 	public:
+
+		void RegisterSource(trdk::Security &);
+
+		SecurityList & GetSecurities();
+		const SecurityList & GetSecurities() const;
+
+	public:
+
+		virtual void RaiseBrokerPositionUpdateEvent(
+				trdk::Security &,
+				trdk::Qty,
+				bool isInitial)
+				= 0;
+
+
+
+	protected:
 		
 		virtual void OnLevel1Tick(
 				trdk::Security &,
@@ -67,26 +84,6 @@ namespace trdk {
 				bool isInitial);
 
 		virtual void OnNewBar(trdk::Security &, const trdk::Security::Bar &);
-
-	public:
-
-		void RegisterSource(trdk::Security &);
-
-		SecurityList & GetSecurities();
-		const SecurityList & GetSecurities() const;
-
-	public:
-
-		void RaiseBrokerPositionUpdateEvent(
-				trdk::Security &,
-				trdk::Qty,
-				bool isInitial);
-
-		void RaiseNewBarEvent(trdk::Security &, const trdk::Security::Bar &);
-
-		void RaiseBookUpdateTickEvent(
-				trdk::Security &,
-				const trdk::Security::Book &);
 
 	private:
 

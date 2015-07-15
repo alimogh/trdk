@@ -133,12 +133,22 @@ namespace trdk {
 		void WaitForStop();
 
 		void Block() throw();
+		void Block(const std::string &reason) throw();
 		void Block(const boost::posix_time::time_duration &);
 		void Stop(const trdk::StopMode &);
 
 		void ClosePositions();
 
 	public:
+
+		virtual void RaiseBrokerPositionUpdateEvent(
+				trdk::Security &,
+				trdk::Qty,
+				bool isInitial);
+
+		virtual void RaiseNewBarEvent(
+				trdk::Security &,
+				const trdk::Security::Bar &);
 
 		void RaiseLevel1UpdateEvent(
 				trdk::Security &,

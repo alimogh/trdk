@@ -334,6 +334,42 @@ public:
 		m_positions.Erase(position);
 	}
 
+	void BlockByRiskControlEvent(
+			const RiskControl::Exception &ex,
+			const char *action)
+			const {
+		boost::format message("Risk Control event: \"%1%\" (at %2%).");
+		message % ex % action;
+		m_strategy.Block(message.str());
+	}
+
+	void Block(const std::string *reason = nullptr) throw() {
+		try {
+			const BlockLock lock(m_blockMutex);
+			m_isBlocked = true;
+			m_blockEndTime = pt::not_a_date_time;
+			reason
+				?	m_strategy.GetLog().Info(
+						"Blocked by reason: \"%s\".",
+						*reason)
+				:	m_strategy.GetLog().Info("Blocked.");
+			m_stopCondition.notify_all();
+		} catch (...)  {
+			AssertFailNoException();
+			terminate(); // is it can mutex or notify_all
+		}
+		try {
+			reason
+				?	m_strategy.GetContext().RaiseStateUpdate(
+						Context::STATE_STRATEGY_BLOCKED,
+						*reason)
+				:	m_strategy.GetContext().RaiseStateUpdate(
+						Context::STATE_STRATEGY_BLOCKED);
+		} catch (...)  {
+			AssertFailNoException();
+		}
+	}
+
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -446,7 +482,11 @@ void Strategy::RaiseLevel1UpdateEvent(
 		return;
 	}
 	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
-	OnLevel1Update(security, timeMeasurement);
+	try {
+		OnLevel1Update(security, timeMeasurement);
+	} catch (const ::trdk::RiskControl::Exception &ex) {
+		m_pimpl->BlockByRiskControlEvent(ex, "level 1 update");
+	}
 }
 
 void Strategy::RaiseLevel1TickEvent(
@@ -460,7 +500,11 @@ void Strategy::RaiseLevel1TickEvent(
 	if (IsBlocked()) {
 		return;
 	}
-	OnLevel1Tick(security, time, value);
+	try {
+		OnLevel1Tick(security, time, value);
+	} catch (const ::trdk::RiskControl::Exception &ex) {
+		m_pimpl->BlockByRiskControlEvent(ex, "level 1 tick");
+	}
 }
 
 void Strategy::RaiseNewTradeEvent(
@@ -476,7 +520,11 @@ void Strategy::RaiseNewTradeEvent(
 	if (IsBlocked()) {
 		return;
 	}
-	OnNewTrade(service, time, price, qty, side);
+	try {
+		OnNewTrade(service, time, price, qty, side);
+	} catch (const ::trdk::RiskControl::Exception &ex) {
+		m_pimpl->BlockByRiskControlEvent(ex, "new trade");
+	}
 }
 
 void Strategy::RaiseServiceDataUpdateEvent(
@@ -489,7 +537,11 @@ void Strategy::RaiseServiceDataUpdateEvent(
 	if (IsBlocked()) {
 		return;
 	}
-	OnServiceDataUpdate(service, timeMeasurement);
+	try {
+		OnServiceDataUpdate(service, timeMeasurement);
+	} catch (const ::trdk::RiskControl::Exception &ex) {
+		m_pimpl->BlockByRiskControlEvent(ex, "service data update");
+	}
 }
 
 void Strategy::RaisePositionUpdateEvent(Position &position) {
@@ -521,7 +573,12 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 		Block(blockPeriod);
 	}
 	
-	OnPositionUpdate(position);
+	try {
+		OnPositionUpdate(position);
+	} catch (const ::trdk::RiskControl::Exception &ex) {
+		m_pimpl->BlockByRiskControlEvent(ex, "position update");
+		return;
+	}
 
 	if (position.IsCompleted()) {
 		m_pimpl->ForgetPosition(position);
@@ -562,6 +619,39 @@ void Strategy::OnPositionMarkedAsCompleted(const Position &position) {
 	}
 }
 
+void Strategy::RaiseBrokerPositionUpdateEvent(
+		Security &security,
+		Qty qty,
+		bool isInitial) {
+	const Lock lock(GetMutex());
+	// 1st time already checked: before enqueue event (without locking),
+	// here - control check (under mutex as blocking and enabling - under
+	// the mutex too):
+	if (IsBlocked()) {
+		return;
+	}
+	try {
+		OnBrokerPositionUpdate(security, qty, isInitial);
+	} catch (const ::trdk::RiskControl::Exception &ex) {
+		m_pimpl->BlockByRiskControlEvent(ex, "broker position update");
+	}
+}
+
+void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
+	const Lock lock(GetMutex());
+	// 1st time already checked: before enqueue event (without locking),
+	// here - control check (under mutex as blocking and enabling - under
+	// the mutex too):
+	if (IsBlocked()) {
+		return;
+	}
+	try {
+		OnNewBar(security, bar);
+	} catch (const ::trdk::RiskControl::Exception &ex) {
+		m_pimpl->BlockByRiskControlEvent(ex, "new bar");
+	}
+}
+
 void Strategy::RaiseBookUpdateTickEvent(
 		Security &security,
 		const Security::Book &book,
@@ -574,7 +664,11 @@ void Strategy::RaiseBookUpdateTickEvent(
 		return;
 	}
 	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
-	OnBookUpdateTick(security, book, timeMeasurement);
+	try {
+		OnBookUpdateTick(security, book, timeMeasurement);
+	} catch (const ::trdk::RiskControl::Exception &ex) {
+		m_pimpl->BlockByRiskControlEvent(ex, "book update tick");
+	}
 }
 
 bool Strategy::IsBlocked(bool forever /* = false */) const {
@@ -607,11 +701,11 @@ bool Strategy::IsBlocked(bool forever /* = false */) const {
 }
 
 void Strategy::Block() throw() {
-	const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
-	m_pimpl->m_isBlocked = true;
-	m_pimpl->m_blockEndTime = pt::not_a_date_time;
-	GetLog().Info("Blocked.");
-	m_pimpl->m_stopCondition.notify_all();
+	m_pimpl->Block();
+}
+
+void Strategy::Block(const std::string &reason) throw() {
+	m_pimpl->Block(&reason);
 }
 
 void Strategy::Block(const pt::time_duration &blockDuration) {

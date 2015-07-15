@@ -36,6 +36,21 @@ void Observer::OnLevel1Update(Security &security) {
 		"Module subscribed to Level 1 updates, but can't work with it");
 }
 
+void Observer::RaiseBrokerPositionUpdateEvent(
+		Security &security,
+		Qty qty,
+		bool isInitial) {
+	const Lock lock(GetMutex());
+	OnBrokerPositionUpdate(security, qty, isInitial);
+}
+
+void Observer::RaiseNewBarEvent(
+		Security &security,
+		const Security::Bar &bar) {
+	const Lock lock(GetMutex());
+	return OnNewBar(security, bar);
+}
+
 void Observer::RaiseLevel1UpdateEvent(Security &security) {
 	const Lock lock(GetMutex());
 	OnLevel1Update(security);

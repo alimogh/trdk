@@ -432,13 +432,14 @@ Context::StateUpdateConnection Context::SubscribeToStateUpdate(
 	return m_pimpl->m_stateUpdateSignal.connect(slot);
 }
 
-void Context::RaiseStateUpdate(const State &newState) {
+void Context::RaiseStateUpdate(const State &newState) const {
 	m_pimpl->m_stateUpdateSignal(newState, nullptr);
 }
 
 void Context::RaiseStateUpdate(
 		const State &newState,
-		const std::string &message) {
+		const std::string &message)
+		const {
 	m_pimpl->m_stateUpdateSignal(newState, &message);
 }
 

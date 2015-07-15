@@ -27,9 +27,14 @@ namespace trdk {
 
 	public:
 
-		virtual void OnLevel1Update(trdk::Security &);
+		virtual void RaiseBrokerPositionUpdateEvent(
+				trdk::Security &,
+				trdk::Qty,
+				bool isInitial);
 
-	public:
+		virtual void RaiseNewBarEvent(
+				trdk::Security &,
+				const trdk::Security::Bar &);
 
 		void RaiseLevel1UpdateEvent(Security &);
 		void RaiseLevel1TickEvent(
@@ -45,6 +50,10 @@ namespace trdk {
 		void RaiseServiceDataUpdateEvent(
 				const trdk::Service &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
+
+	protected:
+
+		virtual void OnLevel1Update(trdk::Security &);
 
 	};
 

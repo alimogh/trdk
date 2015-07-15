@@ -44,9 +44,10 @@ namespace trdk {
 
 
 		enum State {
-			STATE_STARTED,
-			STATE_STOPPED_GRACEFULLY,
-			STATE_STOPPED_ERROR,
+			STATE_ENGINE_STARTED,
+			STATE_ENGINE_STOPPED_GRACEFULLY,
+			STATE_ENGINE_STOPPED_ERROR,
+			STATE_STRATEGY_BLOCKED,
 			numberOfStates,
 		};
 		typedef void (StateUpdateSlotSignature)(
@@ -80,9 +81,9 @@ namespace trdk {
 				const StateUpdateSlot &)
 				const;
 		//! Raises state update event.
-		void RaiseStateUpdate(const State &);
+		void RaiseStateUpdate(const State &) const;
 		//! Raises state update event with message.
-		void RaiseStateUpdate(const State &, const std::string &message);
+		void RaiseStateUpdate(const State &, const std::string &message) const;
 
 		trdk::Lib::TimeMeasurement::Milestones StartStrategyTimeMeasurement()
 				const;

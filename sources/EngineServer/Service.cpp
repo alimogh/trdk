@@ -138,7 +138,7 @@ void EngineServer::Service::StartEngine(
 			boost::ref(context),
 			_1,
 			_2));
-	context.RaiseStateUpdate(Context::STATE_STARTED);
+	context.RaiseStateUpdate(Context::STATE_ENGINE_STARTED);
 }
 
 void EngineServer::Service::StopEngine(const std::string &engineId) {
@@ -196,10 +196,10 @@ void EngineServer::Service::OnContextStateChanges(
 		const Context::State &state,
 		const std::string *updateMessage /*= nullptr*/) {
 	boost::function<void(Client &)> fun;
-	static_assert(Context::numberOfStates == 3, "List changed.");
+	static_assert(Context::numberOfStates == 4, "List changed.");
 	std::string message;
 	switch (state) {
-		case Context::STATE_STARTED:
+		case Context::STATE_ENGINE_STARTED:
 			message = updateMessage
 				?	(boost::format("Engine started: %1%.") % *updateMessage).str()
 				:	"Engine started.";
@@ -207,7 +207,7 @@ void EngineServer::Service::OnContextStateChanges(
 				client.SendMessage(message);
 			};
 			break;
-		case Context::STATE_STOPPED_GRACEFULLY:
+		case Context::STATE_ENGINE_STOPPED_GRACEFULLY:
 			message = updateMessage
 				?	(boost::format("Engine stopped: %1%.") % *updateMessage).str()
 				:	"Engine stopped.";
@@ -215,11 +215,26 @@ void EngineServer::Service::OnContextStateChanges(
 				client.SendMessage(message);
 			};
 			break;
-		case Context::STATE_STOPPED_ERROR:
-		default:
+		case Context::STATE_ENGINE_STOPPED_ERROR:
 			message = updateMessage
 				?	(boost::format("Engine stopped with error: %1%.") % *updateMessage).str()
 				:	"Engine stopped with error.";
+			fun = [&message](Client &client) {
+				client.SendError(message);
+			};
+			break;
+		case Context::STATE_STRATEGY_BLOCKED:
+			message = updateMessage
+				?	(boost::format("Strategy blocked: %1%.") % *updateMessage).str()
+				:	"Strategy blocked.";
+			fun = [&message](Client &client) {
+				client.SendError(message);
+			};
+			break;
+		default:
+			message = updateMessage
+				?	(boost::format("Unknown context error: %1%.") % *updateMessage).str()
+				:	"Unknown context error.";
 			fun = [&message](Client &client) {
 				client.SendError(message);
 			};

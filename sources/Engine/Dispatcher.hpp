@@ -1206,10 +1206,10 @@ namespace trdk { namespace Engine {
 			try {
 				if (error.empty()) {
 					m_context.RaiseStateUpdate(
-						Context::STATE_STOPPED_GRACEFULLY);
+						Context::STATE_ENGINE_STOPPED_GRACEFULLY);
 				} else {
 					m_context.RaiseStateUpdate(
-						Context::STATE_STOPPED_ERROR,
+						Context::STATE_ENGINE_STOPPED_ERROR,
 						error);
 				}
 			} catch (const trdk::Lib::Exception &ex) {

@@ -1110,6 +1110,7 @@ void TriangulationWithDirection::OnPostionsCloseRequest() {
 		cancelLeg(LEG3);
 
 	} catch (...) {
+		AssertFailNoException();
 		GetLog().Error("Failed to cancel triangle.");
 		Block();
 		throw;
