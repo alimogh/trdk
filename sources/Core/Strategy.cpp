@@ -14,6 +14,9 @@
 #include "Service.hpp"
 #include "Settings.hpp"
 #include "TradingLog.hpp"
+#ifndef BOOST_WINDOWS
+#	include <signal.h>
+#endif
 
 namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
@@ -356,7 +359,7 @@ public:
 			m_stopCondition.notify_all();
 		} catch (...)  {
 			AssertFailNoException();
-			terminate(); // is it can mutex or notify_all
+			raise(SIGTERM); // is it can mutex or notify_all, also see "include"
 		}
 		try {
 			reason
