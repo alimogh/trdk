@@ -135,6 +135,9 @@ StatService::StatService(
 	if (m_prev2Duration <= m_prev1Duration) {
 		throw ModuleError("Prev2 duration can't be equal or less then Prev1");
 	}
+	if (m_bookLevelsCount < 1) {
+		throw ModuleError("Book Size can't be \"zero\"");
+	}
 }
 
 StatService::~StatService() {

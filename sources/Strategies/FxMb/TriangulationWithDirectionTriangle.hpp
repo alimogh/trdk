@@ -226,6 +226,16 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				throw HasNotMuchOpportunityException(security, 0);
 			}
 
+			if (isResend) {
+				Assert(m_lastLeg3OrderParams.security);
+				if (
+						m_lastLeg3OrderParams.security == &security
+						&& Lib::IsEqual(m_lastLeg3OrderParams.price, price)) {
+					//! @sa TRDK-117
+					throw PriceNotChangedException();
+				}
+			}
+
 			const boost::shared_ptr<Twd::Position> order = CreateOrder(
 				GetPair(LEG3),
 				security,
@@ -244,6 +254,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			}
 
 			m_legs[LEG3] = order;
+			m_lastLeg3OrderParams.security = &security;
+			m_lastLeg3OrderParams.price = price;
 
 			return orderDelay;
 
@@ -512,7 +524,19 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		YDirection m_yDirection;
 
 		const size_t m_bookUpdatesNumber;
-	
+
+		struct LastStartParams {
+			
+			const Security *security;
+			double price;
+
+			LastStartParams()
+				: security(nullptr),
+				price(0) {
+			}
+
+		} m_lastLeg3OrderParams;
+
 	};
 
 } } } }

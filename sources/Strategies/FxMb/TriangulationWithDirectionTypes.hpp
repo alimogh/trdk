@@ -94,6 +94,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		trdk::Qty m_requiredQty;
 	};
 
+	class PriceNotChangedException : public Lib::Exception {
+	public:
+		explicit PriceNotChangedException() throw()
+			: Exception("Price not changed") {
+		}
+	};
+
 	////////////////////////////////////////////////////////////////////////////////
 
 } } } }

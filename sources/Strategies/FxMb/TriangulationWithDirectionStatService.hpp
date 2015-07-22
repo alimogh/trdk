@@ -114,7 +114,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			Data()
 				: atr(0),
 				updatesNumber(0) {
-				//...//
 			}
 
 		};
