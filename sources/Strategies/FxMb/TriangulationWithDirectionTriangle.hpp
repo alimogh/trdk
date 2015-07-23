@@ -179,6 +179,12 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			
 			auto &security = GetPair(LEG2).GetBestSecurity();
 			const auto &price = GetPair(LEG2).GetCurrentPrice(security);
+
+			if (!m_lastOrderParams.IsChanged(LEG2, security, price)) {
+				//! @sa TRDK-117
+				throw PriceNotChangedException();
+			}
+
 			if (Lib::IsZero(price)) {
 				throw HasNotMuchOpportunityException(security, 0);
 			}
@@ -191,6 +197,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			order->Open();
 
 			m_legs[LEG2] = order;
+			m_lastOrderParams.Set(LEG2, security, price);
 
 		}
 
@@ -222,18 +229,14 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 			auto &security = GetPair(LEG3).GetBestSecurity();
 			const auto &price = GetPair(LEG3).GetCurrentPrice(security);
-			if (Lib::IsZero(price)) {
-				throw HasNotMuchOpportunityException(security, 0);
+
+			if (!m_lastOrderParams.IsChanged(LEG3, security, price)) {
+				//! @sa TRDK-117
+				throw PriceNotChangedException();
 			}
 
-			if (isResend) {
-				Assert(m_lastLeg3OrderParams.security);
-				if (
-						m_lastLeg3OrderParams.security == &security
-						&& Lib::IsEqual(m_lastLeg3OrderParams.price, price)) {
-					//! @sa TRDK-117
-					throw PriceNotChangedException();
-				}
+			if (Lib::IsZero(price)) {
+				throw HasNotMuchOpportunityException(security, 0);
 			}
 
 			const boost::shared_ptr<Twd::Position> order = CreateOrder(
@@ -254,8 +257,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			}
 
 			m_legs[LEG3] = order;
-			m_lastLeg3OrderParams.security = &security;
-			m_lastLeg3OrderParams.price = price;
+			m_lastOrderParams.Set(LEG3, security, price);
 
 			return orderDelay;
 
@@ -525,17 +527,44 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		const size_t m_bookUpdatesNumber;
 
-		struct LastStartParams {
+		class LastStartParams {
 			
-			const Security *security;
-			double price;
+		public:
 
 			LastStartParams()
-				: security(nullptr),
-				price(0) {
+				: m_leg(numberOfLegs),
+				m_security(nullptr),
+				m_price(0) {
 			}
 
-		} m_lastLeg3OrderParams;
+			void Set(
+					const Leg &leg,
+					const Security &security,
+					double price) {
+				Assert(IsChanged(leg, security, price));
+				m_leg = leg;
+				m_security = &security;
+				m_price = price;
+			}
+
+			bool IsChanged(
+					const Leg &leg,
+					const Security &security,
+					double price)
+					const {
+				return
+					m_leg != leg
+					|| m_security != &security
+					|| !Lib::IsEqual(m_price, price);
+			}
+
+		private:
+
+			Leg m_leg;
+			const Security *m_security;
+			double m_price;
+
+		} m_lastOrderParams;
 
 	};
 

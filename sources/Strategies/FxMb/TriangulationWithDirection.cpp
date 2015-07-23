@@ -195,11 +195,7 @@ bool TriangulationWithDirection::StartScheduledLeg() {
 				m_triangle->StartLeg2();
 				break;
 			case LEG3:
-				try {
-					m_triangle->StartLeg3(TimeMeasurement::Milestones(), true);
-				} catch (const PriceNotChangedException &) {
-					return false;
-				}
+				m_triangle->StartLeg3(TimeMeasurement::Milestones(), true);
 				break;
 			default:
 				AssertEq(LEG_UNKNOWN, m_scheduledLeg);
@@ -214,6 +210,8 @@ bool TriangulationWithDirection::StartScheduledLeg() {
 			ex,
 			ex.GetRequiredQty(),
 			ex.GetSecurity());
+		return false;
+	} catch (const PriceNotChangedException &) {
 		return false;
 	}
 
@@ -290,6 +288,9 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 								ex,
 								ex.GetRequiredQty(),
 								ex.GetSecurity());
+							return;
+						} catch (const PriceNotChangedException &) {
+							m_scheduledLeg = LEG2;
 							return;
 						}
 					}
