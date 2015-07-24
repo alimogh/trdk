@@ -1,11 +1,3 @@
-#
-# Generated Makefile - do not edit!
-#
-# Edit the Makefile in the project folder instead (../Makefile). Each target
-# has a -pre and a -post target defined where you can add customized code.
-#
-# This makefile implements configuration specific macros and targets.
-
 
 # Environment
 MKDIR=mkdir
@@ -71,7 +63,7 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngineService.a: ${OBJECTFILES}
 ${OBJECTDIR}/Utils.o: Utils.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Utils.o Utils.cc
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Utils.o Utils.cpp
 
 ${OBJECTDIR}/trdk.EngineService.pb.o: trdk.EngineService.pb.cc 
 	${MKDIR} -p ${OBJECTDIR}
@@ -93,7 +85,7 @@ ${OBJECTDIR}/trdk.EngineService.Control.pb.o: trdk.EngineService.Control.pb.cc
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/trdk.EngineService.Control.pb.o trdk.EngineService.Control.pb.cc
 
-${OBJECTDIR}/trdk.trdk.EngineService.DropCopy.pb.o: trdk.EngineService.DropCopy.pb.cc 
+${OBJECTDIR}/trdk.EngineService.DropCopy.pb.o: trdk.EngineService.DropCopy.pb.cc 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/trdk.EngineService.DropCopy.pb.o trdk.EngineService.DropCopy.pb.cc

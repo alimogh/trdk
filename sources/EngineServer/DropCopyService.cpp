@@ -159,9 +159,16 @@ void DropCopyService::Start(const IniSectionRef &conf) {
 		throw Exception("Already started");
 	}
 
-	StartNewClient(
-		conf.ReadKey("host"),
-		boost::lexical_cast<std::string>(conf.ReadTypedKey<size_t>("port")));
+	try {
+		StartNewClient(
+			conf.ReadKey("host"),
+			boost::lexical_cast<std::string>(conf.ReadTypedKey<size_t>("port")));
+	} catch (const trdk::Lib::Exception &ex) {
+		GetLog().Error(
+			"Failed to connect to Drop Copy Storage: \"%1%\".",
+			ex.what());
+		throw Exception("Failed to connect to Drop Copy Storage");
+	}
 
 	while (m_ioServiceThreads.size() < 2) {
 		m_ioServiceThreads.create_thread(
@@ -185,16 +192,9 @@ void DropCopyService::StartNewClient(
 		const std::string &host,
 		const std::string &port) {
 	
-	boost::shared_ptr<DropCopyClient> newClient;
-	try {
-		newClient = DropCopyClient::Create(*this, host, port);
-	} catch (const trdk::Lib::Exception &ex) {
-		GetLog().Error(
-			"Failed to connect to Drop Copy Storage: \"%1%\".",
-			ex.what());
-		throw Exception("Failed to connect to Drop Copy Storage");
-	}
-	
+	boost::shared_ptr<DropCopyClient> newClient
+		= DropCopyClient::Create(*this, host, port);
+		
 	{
 
 		ServiceData message;
@@ -236,16 +236,60 @@ void DropCopyService::StartNewClient(
 }
 
 void DropCopyService::OnClientClose(const DropCopyClient &client) {
-	const NoClientsConditionLock noClientsConditionLock(m_noClientsConditionMutex);
-	const ClientsWriteLock lock(m_clientsMutex);
-	auto it = std::find(m_clients.begin(), m_clients.end(), &client);
-	if (it == m_clients.end()) {
-		return;
+	{
+		const NoClientsConditionLock noClientsConditionLock(m_noClientsConditionMutex);
+		const ClientsWriteLock lock(m_clientsMutex);
+		auto it = std::find(m_clients.begin(), m_clients.end(), &client);
+		if (it == m_clients.end()) {
+			return;
+		}
+		m_clients.erase(it);
+		if (m_clients.empty()) {
+			m_noClientsCondition.notify_all();
+		}
+		if (m_ioService.stopped()) {
+			return;
+		}
 	}
-	m_clients.erase(it);
-	if (m_clients.empty()) {
-		m_noClientsCondition.notify_all();
+
+	ReconnectClient(0, client.GetHost(), client.GetPort());
+
+}
+
+void DropCopyService::ReconnectClient(
+		size_t attemptIndex,
+		const std::string &host,
+		const std::string &port) {
+	
+	try {
+	
+		StartNewClient(host, port);
+	
+	} catch (const DropCopyClient::ConnectError &ex) {
+
+		GetLog().Warn(
+			"Failed to reconnect: \"%1%\". Trying again...",
+			ex.what());
+	
+		const auto &sleepTime
+			= pt::seconds(long(1 * std::min<size_t>(attemptIndex, 30)));
+		boost::shared_ptr<boost::asio::deadline_timer> timer(
+			new io::deadline_timer(m_ioService, sleepTime));
+		timer->async_wait(
+			[this, timer, host, port, attemptIndex] (
+					const boost::system::error_code &error) {
+				if (error) {
+					GetLog().Debug(
+						"Reconnect canceled: \"%1%\".",
+						SysError(error.value()));
+					return;
+				}
+				ReconnectClient(attemptIndex + 1, host, port);
+			});
+
+
 	}
+
 }
 
 void DropCopyService::Send(const ServiceData &message) {

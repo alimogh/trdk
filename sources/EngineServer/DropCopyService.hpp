@@ -101,6 +101,11 @@ namespace trdk { namespace EngineServer {
 	protected:
 
 		void StartNewClient(const std::string &host, const std::string &port);
+
+		void ReconnectClient(
+				size_t attemptIndex,
+				const std::string &host,
+				const std::string &port);
 		
 		void Send(const trdk::EngineService::DropCopy::ServiceData &);
 

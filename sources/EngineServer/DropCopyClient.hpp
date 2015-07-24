@@ -19,6 +19,15 @@ namespace trdk { namespace EngineServer {
 		: public boost::enable_shared_from_this<DropCopyClient>,
 		private boost::noncopyable {
 
+	public:
+
+		class ConnectError : public Lib::Exception {
+		public:
+			explicit ConnectError(const char *what) throw()
+				: Exception(what) {
+			}
+		};
+
 	protected:
 
 		explicit DropCopyClient(
@@ -36,6 +45,15 @@ namespace trdk { namespace EngineServer {
 				DropCopyService &,
 				const std::string &host,
 				const std::string &port);
+
+	public:
+
+		const std::string & GetHost() const {
+			return m_host;
+		}
+		const std::string & GetPort() const {
+			return m_port;
+		}
 
 	public:
 

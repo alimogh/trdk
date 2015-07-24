@@ -32,10 +32,6 @@ DropCopyClient::DropCopyClient(
 }
 
 DropCopyClient::~DropCopyClient() {
-	m_service.GetLog().Debug(
-		"Destroying connection to \"%1%:%2%\"..." ,
-		m_host,
-		m_port);
 	try {
 		m_service.OnClientClose(*this);
 	} catch (...) {
@@ -57,7 +53,7 @@ boost::shared_ptr<DropCopyClient> DropCopyClient::Create(
 
 void DropCopyClient::Connect() {
 
-	m_service.GetLog().Info("Connecting to \"%1%:%2%\"...", m_host, m_port);
+	m_service.GetLog().Debug("Connecting to \"%1%:%2%\"...", m_host, m_port);
 
 	const io::ip::tcp::resolver::query query(m_host, m_port);
 	boost::system::error_code error;
@@ -68,10 +64,10 @@ void DropCopyClient::Connect() {
 	if (error) {
 		boost::format errorText("\"%1%\", (network error: \"%2%\")");
 		errorText % SysError(error.value()) % error;
-		throw Exception(errorText.str().c_str());
+		throw ConnectError(errorText.str().c_str());
 	}
 
-	m_service.GetLog().Debug("Connected to \"%1%:%2%\".", m_host, m_port);
+	m_service.GetLog().Info("Connected to \"%1%:%2%\".", m_host, m_port);
 
 	StartRead();
 
