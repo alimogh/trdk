@@ -53,6 +53,6 @@ namespace trdk { namespace Engine {
 
 	typedef std::set<boost::shared_ptr<trdk::Lib::Dll>> ModuleList;
 
-	typedef trdk::Lib::DllObjectPtr<trdk::DropCopy> DropCopyModule;
+	typedef boost::shared_ptr<trdk::DropCopy> DropCopyModule;
 
 } }

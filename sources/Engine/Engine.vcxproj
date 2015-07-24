@@ -248,9 +248,6 @@
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\DropCopy\DropCopy.vcxproj">
-      <Project>{c9b22196-074f-4405-b4e3-93de9d368641}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\Interaction\Fake\Fake.vcxproj">
       <Project>{3e0187e3-f6e3-48e3-a0e4-1e454b0e7f40}</Project>
     </ProjectReference>

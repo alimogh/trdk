@@ -12,6 +12,7 @@
 #include "Server.hpp"
 #include "Exception.hpp"
 #include "Core/Settings.hpp"
+#include "DropCopyService.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -116,7 +117,16 @@ Context & Server::Run(
 			}
 		}
 
-		info.engine->Start(ini);
+		info.engine->Start(
+			ini,
+			[](
+					Context &contrext,
+					const IniSectionRef &conf)
+					-> boost::shared_ptr<DropCopy> {
+				boost::shared_ptr<DropCopy> result(
+					new DropCopyService(contrext, conf));
+				return result;
+			});
 
 		m_engines.insert(info);
 

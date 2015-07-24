@@ -30,7 +30,8 @@ namespace trdk { namespace Engine {
 			Observers &observersRef,
 			Services &servicesRef,
 			ModuleList &moduleListRef,
-			DropCopyModule &dropCopyRef);
+			DropCopyModule &dropCopyRef,
+			const boost::function<trdk::DropCopyFactory> &DropCopyFactory);
 
 	void BootNewStrategiesForContextState(
 			const trdk::Lib::Ini &newStrategiesConf,

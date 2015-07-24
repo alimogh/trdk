@@ -7,6 +7,8 @@
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="DropCopyClient.cpp" />
+    <ClCompile Include="DropCopyService.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Server.hpp" />
@@ -17,6 +19,8 @@
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Settings.hpp" />
+    <ClInclude Include="DropCopyClient.hpp" />
+    <ClInclude Include="DropCopyService.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="EngineServer.rc" />

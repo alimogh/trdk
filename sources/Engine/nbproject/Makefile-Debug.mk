@@ -110,7 +110,6 @@ ${OBJECTDIR}/SubscriptionsManager.o: SubscriptionsManager.cpp
 	cd ../Interaction/OnixsHotspot && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Interaction/Fake && ${MAKE}  -f Makefile CONF=Debug
 	cd ../Interaction/Itch && ${MAKE}  -f Makefile CONF=Debug
-	cd ../DropCopy && ${MAKE}  -f Makefile CONF=Debug
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
@@ -126,7 +125,6 @@ ${OBJECTDIR}/SubscriptionsManager.o: SubscriptionsManager.cpp
 	cd ../Interaction/OnixsHotspot && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Interaction/Fake && ${MAKE}  -f Makefile CONF=Debug clean
 	cd ../Interaction/Itch && ${MAKE}  -f Makefile CONF=Debug clean
-	cd ../DropCopy && ${MAKE}  -f Makefile CONF=Debug clean
 
 # Enable dependency checking
 .dep.inc: .depcheck-impl

@@ -189,7 +189,9 @@ Engine::Context::~Context() {
 	delete m_pimpl;
 }
 
-void Engine::Context::Start(const Lib::Ini &conf) {
+void Engine::Context::Start(
+		const Lib::Ini &conf,
+		const boost::function<DropCopyFactory> &dropCopyFactory) {
 	
 	GetLog().Debug("Starting...");
 	Assert(!m_pimpl->m_state);
@@ -213,7 +215,8 @@ void Engine::Context::Start(const Lib::Ini &conf) {
 			state->observers,
 			state->services,
 			moduleDlls,
-			state->dropCopy);
+			state->dropCopy,
+			dropCopyFactory);
 	} catch (const Lib::Exception &ex) {
 		GetLog().Error("Failed to init engine context: \"%1%\".", ex);
 		throw Exception("Failed to init engine context");

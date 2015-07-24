@@ -18,4 +18,7 @@ namespace trdk { namespace EngineServer {
 	class ClientRequestHandler;
 	class Client;
 
+	class DropCopyClient;
+	class DropCopyService;
+
 } }

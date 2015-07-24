@@ -40,8 +40,9 @@ OBJECTFILES= \
 	${OBJECTDIR}/Server.o \
 	${OBJECTDIR}/Service.o \
 	${OBJECTDIR}/Client.o \
-	${OBJECTDIR}/Settings.o
-
+	${OBJECTDIR}/Settings.o \
+	${OBJECTDIR}/DropCopyClient.o \
+	${OBJECTDIR}/DropCopyService.o
 
 # C Compiler Flags
 CFLAGS=-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
@@ -104,6 +105,16 @@ ${OBJECTDIR}/Settings.o: Settings.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Settings.o Settings.cpp
+
+${OBJECTDIR}/DropCopyService.o: DropCopyService.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/DropCopyService.o DropCopyService.cpp
+
+${OBJECTDIR}/DropCopyClient.o: DropCopyClient.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/DropCopyClient.o DropCopyClient.cpp
 
 # Subprojects
 .build-subprojects:

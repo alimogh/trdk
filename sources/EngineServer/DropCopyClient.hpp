@@ -13,27 +13,27 @@
 #include "EngineService/DropCopy.h"
 #include "Fwd.hpp"
 
-namespace trdk { namespace DropCopyService {
+namespace trdk { namespace EngineServer {
 
-	class Client
-		: public boost::enable_shared_from_this<Client>,
+	class DropCopyClient
+		: public boost::enable_shared_from_this<DropCopyClient>,
 		private boost::noncopyable {
 
 	protected:
 
-		explicit Client(
-				Service &,
+		explicit DropCopyClient(
+				DropCopyService &,
 				const std::string &host,
 				const std::string &port);
 
 	public:
 
-		~Client();
+		~DropCopyClient();
 
 	public:
 
-		static boost::shared_ptr<Client> Create(
-				Service &,
+		static boost::shared_ptr<DropCopyClient> Create(
+				DropCopyService &,
 				const std::string &host,
 				const std::string &port);
 
@@ -59,7 +59,7 @@ namespace trdk { namespace DropCopyService {
 
 	private:
 
-		Service &m_service;
+		DropCopyService &m_service;
 
 		const std::string m_host;
 		const std::string m_port;

@@ -9,8 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Service.hpp"
-#include "Client.hpp"
+#include "DropCopyService.hpp"
+#include "DropCopyClient.hpp"
 #include "EngineService/Utils.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -19,7 +19,7 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::DropCopyService;
+using namespace trdk::EngineServer;
 using namespace trdk::EngineService;
 using namespace trdk::EngineService::DropCopy;
 using namespace trdk::EngineService::MarketData;
@@ -130,12 +130,12 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
-DropCopyService::Service::Service(Context &context, const IniSectionRef &)
+DropCopyService::DropCopyService(Context &context, const IniSectionRef &)
 	: Base(context, "DropCopy") {
 	//...//
 }
 
-DropCopyService::Service::~Service() {
+DropCopyService::~DropCopyService() {
 	try {
 		m_ioService.stop();
 		{
@@ -151,7 +151,7 @@ DropCopyService::Service::~Service() {
 	}
 }
 
-void DropCopyService::Service::Start(const IniSectionRef &conf) {
+void DropCopyService::Start(const IniSectionRef &conf) {
 	
 	AssertEq(0, m_clients.size());
 	AssertEq(0, m_ioServiceThreads.size());
@@ -181,13 +181,13 @@ void DropCopyService::Service::Start(const IniSectionRef &conf) {
 
 }
 
-void DropCopyService::Service::StartNewClient(
+void DropCopyService::StartNewClient(
 		const std::string &host,
 		const std::string &port) {
 	
-	boost::shared_ptr<Client> newClient;
+	boost::shared_ptr<DropCopyClient> newClient;
 	try {
-		newClient = Client::Create(*this, host, port);
+		newClient = DropCopyClient::Create(*this, host, port);
 	} catch (const trdk::Lib::Exception &ex) {
 		GetLog().Error(
 			"Failed to connect to Drop Copy Storage: \"%1%\".",
@@ -235,7 +235,7 @@ void DropCopyService::Service::StartNewClient(
 
 }
 
-void DropCopyService::Service::OnClientClose(const Client &client) {
+void DropCopyService::OnClientClose(const DropCopyClient &client) {
 	const NoClientsConditionLock noClientsConditionLock(m_noClientsConditionMutex);
 	const ClientsWriteLock lock(m_clientsMutex);
 	auto it = std::find(m_clients.begin(), m_clients.end(), &client);
@@ -248,14 +248,14 @@ void DropCopyService::Service::OnClientClose(const Client &client) {
 	}
 }
 
-void DropCopyService::Service::Send(const ServiceData &message) {
+void DropCopyService::Send(const ServiceData &message) {
 	const ClientsReadLock lock(m_clientsMutex);
-	foreach (Client *client, m_clients) {
+	foreach (DropCopyClient *client, m_clients) {
 		client->Send(message);
 	}
 }
 
-void DropCopyService::Service::CopyOrder(
+void DropCopyService::CopyOrder(
 		const boost::uuids::uuid &uuid,
 		const pt::ptime *orderTime,
 		const std::string *tradeSystemId,
@@ -359,7 +359,7 @@ void DropCopyService::Service::CopyOrder(
 
 }
 
-void DropCopyService::Service::CopyTrade(
+void DropCopyService::CopyTrade(
 		const pt::ptime &time,
 		const std::string &id,
 		const trdk::Strategy &strategy,

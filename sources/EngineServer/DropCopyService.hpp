@@ -15,9 +15,9 @@
 #include "Fwd.hpp"
 #include "EngineService/DropCopy.h"
 
-namespace trdk { namespace DropCopyService {
+namespace trdk { namespace EngineServer {
 
-	class Service : public trdk::DropCopy {
+	class DropCopyService : public trdk::DropCopy {
 
 	public:
 
@@ -35,8 +35,8 @@ namespace trdk { namespace DropCopyService {
 
 	public:
 
-		explicit Service(trdk::Context &, const Lib::IniSectionRef &);
-		virtual ~Service();
+		explicit DropCopyService(trdk::Context &, const Lib::IniSectionRef &);
+		virtual ~DropCopyService();
 
 	public:
 
@@ -96,7 +96,7 @@ namespace trdk { namespace DropCopyService {
 
 	public:
 
-		void OnClientClose(const Client &);
+		void OnClientClose(const DropCopyClient &);
 
 	protected:
 
@@ -112,7 +112,7 @@ namespace trdk { namespace DropCopyService {
 		ClientsMutex m_clientsMutex;
 		NoClientsConditionMutex m_noClientsConditionMutex;
 		NoClientsCondition m_noClientsCondition;
-		std::vector<Client *> m_clients;
+		std::vector<DropCopyClient *> m_clients;
 
 	};
 

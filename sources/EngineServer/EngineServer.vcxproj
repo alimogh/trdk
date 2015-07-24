@@ -324,6 +324,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Client.cpp" />
+    <ClCompile Include="DropCopyClient.cpp" />
+    <ClCompile Include="DropCopyService.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -346,6 +348,8 @@
   <ItemGroup>
     <ClInclude Include="Client.hpp" />
     <ClInclude Include="ClientRequestHandler.hpp" />
+    <ClInclude Include="DropCopyClient.hpp" />
+    <ClInclude Include="DropCopyService.hpp" />
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Server.hpp" />

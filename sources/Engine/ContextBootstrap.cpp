@@ -646,7 +646,8 @@ public:
 				Observers &observersRef,
 				Services &servicesRef,
 				ModuleList &moduleListRef,
-				DropCopyModule &dropCopyRef)
+				DropCopyModule &dropCopyRef,
+				const boost::function<DropCopyFactory> &dropCopyFactory)
 			: m_context(context),
 			m_subscriptionsManager(subscriptionsManagerRef),
 			m_strategiesResult(&strategiesRef),
@@ -654,6 +655,7 @@ public:
 			m_servicesResult(&servicesRef),
 			m_moduleListResult(moduleListRef),
 			m_dropCopyResult(&dropCopyRef),
+			m_dropCopyFactory(dropCopyFactory),
 			m_conf(confRef) {
 		//...//
 	}
@@ -768,19 +770,9 @@ private:
 		}
 		const IniSectionRef configurationSection(m_conf, Sections::dropCopy);
 		
-		boost::shared_ptr<Dll> dll(
-			new Dll(
-				"DropCopy",
-				configurationSection.ReadBoolKey(Keys::Dbg::autoName, true)));
-
-		typedef boost::shared_ptr<trdk::DropCopy> FactoryResult;
-		typedef DropCopyFactory Factory;
-		FactoryResult factoryResult;
-		
 		try {
-			factoryResult = dll->GetFunction<Factory>("CreateDropCopy")(
-				m_context,
-				configurationSection);
+			*m_dropCopyResult
+				= m_dropCopyFactory(m_context, configurationSection);
 		} catch (...) {
 			trdk::EventsLog::BroadcastUnhandledException(
 				__FUNCTION__,
@@ -789,13 +781,13 @@ private:
 			throw Exception("Failed to load Drop Copy module");
 		}
 	
-		Assert(factoryResult);
-		if (!factoryResult) {
+		Assert(m_dropCopyResult);
+		if (!m_dropCopyResult) {
 			throw Exception(
 				"Failed to load Drop Copy module - no object returned");
 		}
 
-		*m_dropCopyResult = DllObjectPtr<trdk::DropCopy>(dll, factoryResult);
+
 
 	}
 
@@ -1847,6 +1839,7 @@ private:
 	ServiceModules m_services;
 
 	DropCopyModule *m_dropCopyResult;
+	boost::function<DropCopyFactory> m_dropCopyFactory;
 
 	const Lib::Ini &m_conf;
 
@@ -1895,7 +1888,8 @@ void Engine::BootContextState(
 			Observers &observersRef,
 			Services &servicesRef,
 			ModuleList &moduleListRef,
-			DropCopyModule &dropCopyRef) {
+			DropCopyModule &dropCopyRef,
+			const boost::function<DropCopyFactory> &dropCopyFactory) {
 	ContextStateBootstrapper(
 			conf,
 			context,
@@ -1904,7 +1898,8 @@ void Engine::BootContextState(
 			observersRef,
 			servicesRef,
 			moduleListRef,
-			dropCopyRef)
+			dropCopyRef,
+			dropCopyFactory)
 		.Boot();
 }
 
