@@ -35,11 +35,12 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/trdk.EngineService.pb.cc \
-	${OBJECTDIR}/trdk.EngineService.MarketData.pb.cc \
-	${OBJECTDIR}/trdk.EngineService.MarketDataSource.pb.cc \
-	${OBJECTDIR}/trdk.EngineService.Control.pb.cc \
-	${OBJECTDIR}/trdk.EngineService.DropCopy.pb.cc
+	${OBJECTDIR}/Utils.o \
+	${OBJECTDIR}/trdk.EngineService.pb.o \
+	${OBJECTDIR}/trdk.EngineService.MarketData.pb.o \
+	${OBJECTDIR}/trdk.EngineService.MarketDataSource.pb.o \
+	${OBJECTDIR}/trdk.EngineService.Control.pb.o \
+	${OBJECTDIR}/trdk.EngineService.DropCopy.pb.o
 
 # C Compiler Flags
 CFLAGS=
@@ -66,6 +67,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngineService_dbg.a: ${OBJECTFILES
 	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngineService_dbg.a
 	${AR} -rv ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngineService_dbg.a ${OBJECTFILES} 
 	$(RANLIB) ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngineService_dbg.a
+
+${OBJECTDIR}/Utils.o: Utils.cc 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Werror -DBOOST_ENABLE_ASSERT_HANDLER -DDEV_VER -D_DEBUG -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Utils.o Utils.cpp
 
 ${OBJECTDIR}/trdk.EngineService.pb.o: trdk.EngineService.pb.cc 
 	${MKDIR} -p ${OBJECTDIR}

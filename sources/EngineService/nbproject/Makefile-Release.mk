@@ -35,11 +35,12 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/trdk.EngineService.pb.cc \
-	${OBJECTDIR}/trdk.EngineService.MarketData.pb.cc \
-	${OBJECTDIR}/trdk.EngineService.MarketDataSource.pb.cc \
-	${OBJECTDIR}/trdk.EngineService.Control.pb.cc \
-	${OBJECTDIR}/trdk.EngineService.DropCopy.pb.cc
+	${OBJECTDIR}/Utils.o \
+	${OBJECTDIR}/trdk.EngineService.pb.o \
+	${OBJECTDIR}/trdk.EngineService.MarketData.pb.o \
+	${OBJECTDIR}/trdk.EngineService.MarketDataSource.pb.o \
+	${OBJECTDIR}/trdk.EngineService.Control.pb.o \
+	${OBJECTDIR}/trdk.EngineService.DropCopy.pb.o
 
 # C Compiler Flags
 CFLAGS=
@@ -66,6 +67,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngineService.a: ${OBJECTFILES}
 	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngineService.a
 	${AR} -rv ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngineService.a ${OBJECTFILES} 
 	$(RANLIB) ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libEngineService.a
+
+${OBJECTDIR}/Utils.o: Utils.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -Werror -DBOOST_DISABLE_ASSERTS -DNDEBUG -DNTEST -I.. -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Utils.o Utils.cc
 
 ${OBJECTDIR}/trdk.EngineService.pb.o: trdk.EngineService.pb.cc 
 	${MKDIR} -p ${OBJECTDIR}
