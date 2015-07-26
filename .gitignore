@@ -1,6 +1,5 @@
 /output
 /data
-/doc
 *.suo
 *.user
 /sources/Common/Debug
