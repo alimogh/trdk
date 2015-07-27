@@ -251,3 +251,9 @@ void EngineServer::Service::ClosePositions(const std::string &engineId) {
 	CheckEngineIdExists(engineId);
 	m_server.ClosePositions();
 }
+
+void EngineServer::Service::OnDebugDropCopyRequest() {
+	//! @todo Write to log
+	std::cout << "Generating Debug Drop Copy Records..." << std::endl;
+	m_server.GenerateDebugDropCopyRecords();
+}

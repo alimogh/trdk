@@ -93,6 +93,10 @@ namespace trdk {
 				const trdk::Qty &bestAskQty)
 			= 0;
 
+	public:
+
+		virtual void GenerateDebugEvents() = 0;
+
 	private:
 
 		class Implementation;

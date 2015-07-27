@@ -155,6 +155,7 @@ message ClientRequest {
 		TYPE_STRATEGY_STOP = 8;
 		TYPE_STRATEGY_SETTINGS = 9;
 		TYPE_DEBUG_PNL_REQUEST = 10;
+		TYPE_DEBUG_DROP_COPY_REQUEST = 11;
 	}
 
 	required Type type = 1;

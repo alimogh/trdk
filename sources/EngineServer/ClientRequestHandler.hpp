@@ -56,6 +56,8 @@ namespace trdk { namespace EngineServer {
 
 		virtual void OnDisconnect(Client &) = 0;
 
+		virtual void OnDebugDropCopyRequest() = 0;
+
 	};
 
 } }

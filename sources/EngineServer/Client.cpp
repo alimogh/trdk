@@ -309,6 +309,9 @@ void Client::OnNewRequest(const ClientRequest &request) {
 		case ClientRequest::TYPE_DEBUG_PNL_REQUEST:
 			OnDebugPnlRequest();
 			break;
+		case ClientRequest::TYPE_DEBUG_DROP_COPY_REQUEST:
+			m_requestHandler.OnDebugDropCopyRequest();
+			break;
 		default:
 			//! @todo Write to log
 			std::cerr
@@ -641,8 +644,8 @@ void Client::OnDebugPnlRequest() {
 	foo.triangleId = ++m_debugPnlRecordsNumber;
 	foo.strategyId = boost::uuids::uuid(
 		boost::uuids::string_generator()(foo.triangleId % 2
-		?	"F3F0E70B-6074-4EFC-B3A0-1CF75F646CAA"
-		:	"CDBED493-7B08-434F-A5CB-77C9E4DC6CE6")),
+			? "F3F0E70B-6074-4EFC-B3A0-1CF75F646CAA"
+			: "CDBED493-7B08-434F-A5CB-77C9E4DC6CE6")),
 	foo.tradingMode = foo.triangleId % 3
 		?	trdk::TRADING_MODE_LIVE
 		:	trdk::TRADING_MODE_PAPER;

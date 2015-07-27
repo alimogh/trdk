@@ -460,3 +460,96 @@ void DropCopyService::CopyTrade(
 	Send(message);
 
 }
+
+void DropCopyService::GenerateDebugEvents() {
+
+	{
+		ServiceData message;
+		message.set_type(ServiceData::TYPE_ORDER);
+		Order &order = *message.mutable_order();
+		ConvertToUuid(
+			boost::uuids::uuid(
+				boost::uuids::string_generator()(
+					"1C9F1A17-AA80-41E5-972C-CA770BEDA873")),
+			*order.mutable_id());
+		order.set_trade_system_order_id("XXXZZZYYY");
+		ConvertToUuid(
+			boost::uuids::uuid(
+				boost::uuids::string_generator()(
+					"DDA37FBD-1EB2-4552-8A95-19A4AD53D261")),
+			*order.mutable_strategy_id());
+		Convert(TRADING_MODE_LIVE, order);
+		{
+			auto &params = *order.mutable_params();
+			params.set_type(OrderParameters::TYPE_MKT);
+			params.set_security_id(1);
+			params.set_side(OrderParameters::SIDE_BUY);
+			params.set_qty(100000000);
+			params.set_price(987.123);
+			params.set_time_in_force(OrderParameters::TIME_IN_FORCE_IOC);
+			params.set_currency(ConvertToIso(CURRENCY_EUR));
+			params.set_min_qty(10000);
+			params.set_user("MRUSER");
+		}
+		order.set_status(ORDER_STATUS_ACTIVE);
+		order.set_order_time(
+			pt::to_iso_string(boost::posix_time::microsec_clock::local_time()));
+		order.set_execution_time(
+			pt::to_iso_string(boost::posix_time::microsec_clock::local_time()));
+		order.set_avg_trade_price(123.456);
+		order.set_executed_qty(9000000);
+		order.set_counter_amount(234.567);
+		Convert(
+			11.22,
+			2211,
+			33.44,
+			4455,
+			*order.mutable_top_of_book());
+		Send(message);
+	}
+
+	{
+		ServiceData message;
+		message.set_type(ServiceData::TYPE_TRADE);
+		Trade &trade = *message.mutable_trade();
+		trade.set_time(
+			pt::to_iso_string(boost::posix_time::microsec_clock::local_time()));
+		trade.set_id("ASDAD123123");
+		ConvertToUuid(
+			boost::uuids::uuid(
+			boost::uuids::string_generator()(
+				"DDA37FBD-1EB2-4552-8A95-19A4AD53D261")),
+			*trade.mutable_strategy_id());
+		Convert(TRADING_MODE_LIVE, trade);
+		trade.set_is_maker(false);
+		trade.set_price(123.45);
+		trade.set_qty(10000000);
+		trade.set_counter_amount(23.45);
+		ConvertToUuid(
+			boost::uuids::uuid(
+			boost::uuids::string_generator()(
+				"1C9F1A17-AA80-41E5-972C-CA770BEDA873")),
+			*trade.mutable_order_id());
+		trade.set_trade_system_order_id("SSSDDDFFF");
+		{
+			auto &params = *trade.mutable_order_params();
+			params.set_type(OrderParameters::TYPE_MKT);
+			params.set_security_id(1);
+			params.set_side(OrderParameters::SIDE_BUY);
+			params.set_qty(100000000);
+			params.set_price(987.123);
+			params.set_time_in_force(OrderParameters::TIME_IN_FORCE_IOC);
+			params.set_currency(ConvertToIso(CURRENCY_EUR));
+			params.set_user("MRUSER");
+		}
+		Convert(
+			11.22,
+			2211,
+			33.44,
+			4455,
+			*trade.mutable_top_of_book());
+		Send(message);
+	}
+
+}
+

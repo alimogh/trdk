@@ -71,8 +71,11 @@ namespace trdk { namespace EngineServer {
 				const FooSlot &slot) {
 			return m_fooSlotConnection.connect(slot);
 		}
-		
 
+		virtual void OnDisconnect(Client &);
+
+		virtual void OnDebugDropCopyRequest();
+	
 	private:
 
 		void LoadEngine(const boost::filesystem::path &);
@@ -81,7 +84,6 @@ namespace trdk { namespace EngineServer {
 		void HandleNewClient(
 				const boost::shared_ptr<Client> &,
 				const boost::system::error_code &);
-		virtual void OnDisconnect(Client &);
 
 		void CheckEngineIdExists(const std::string &id) const;
 

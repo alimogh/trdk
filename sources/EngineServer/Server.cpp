@@ -207,3 +207,14 @@ void Server::ClosePositions() {
 		engineInfo.engine->ClosePositions();
 	}
 }
+
+void Server::GenerateDebugDropCopyRecords() {
+	const Lock lock(m_mutex);
+	foreach(const EngineInfo &engineInfo, m_engines) {
+		DropCopy *const dropCopy = engineInfo.engine->GetDropCopy();
+		if (!dropCopy) {
+			continue;
+		}
+		dropCopy->GenerateDebugEvents();
+	}
+}

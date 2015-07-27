@@ -88,6 +88,8 @@ namespace trdk { namespace EngineServer {
 				double bestAskPrice,
 				const trdk::Qty &bestAskQty);
 
+		virtual void GenerateDebugEvents();
+
 	public:
 
 		boost::asio::io_service & GetIoService() {

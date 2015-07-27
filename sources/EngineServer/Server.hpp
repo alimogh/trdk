@@ -71,6 +71,8 @@ namespace trdk { namespace EngineServer {
 
 		void ClosePositions();
 
+		void GenerateDebugDropCopyRecords();
+
 	private:
 
 		mutable Mutex m_mutex;

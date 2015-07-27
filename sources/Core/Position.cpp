@@ -1020,7 +1020,6 @@ private:
 				:	nullptr,
 			nullptr /* user */,
 			status,
-			
 			!execTime.is_not_a_date_time() ? &execTime : nullptr,
 			avgTradePrice,
 			directionData.qty,
