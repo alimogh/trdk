@@ -74,7 +74,7 @@ void EventsLog::BroadcastCriticalError(const std::string &message) throw() {
 #				if defined(BOOST_WINDOWS)
 					DebugBreak();
 #				elif defined(_DEBUG)
-					__assert_fail("Debug break", "", 0, "");
+					raise(SIGTRAP);
 #				endif
 #			elif defined(DEV_VER)
 #				ifdef BOOST_WINDOWS
