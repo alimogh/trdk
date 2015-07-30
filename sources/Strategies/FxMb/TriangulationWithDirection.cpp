@@ -168,7 +168,7 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 	
 	} else if (GetPositions().IsEmpty()) {
 
-		AssertEq(PAIR_UNKNOWN, m_scheduledLeg);
+		AssertEq(LEG_UNKNOWN, m_scheduledLeg);
 
 		if (m_prevTriangle) {
 			if (GetContext().GetCurrentTime() - m_prevTriangleTime <= pt::seconds(30)) {

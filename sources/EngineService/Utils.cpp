@@ -12,7 +12,7 @@
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/cstdint.hpp>
 #	include <boost/optional.hpp>
-#	include <boost/date_time/posix_time/ptime.hpp>
+#	include <boost/date_time/posix_time/ptime.hpp> // for "Core/Types.hpp"
 #	include <boost/uuid/uuid.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 #include "Utils.hpp"
