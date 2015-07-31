@@ -169,8 +169,11 @@ void Stream::ConnectClient() {
 		}
 		
 	} catch (const Client::Exception &ex) {
-		m_client.reset();
 		GetLog().Error("Failed to connect to server: \"%1%\".", ex.what());
+		{
+			const ClientLock lock(m_clientMutex);
+			m_client.reset();
+		}
 		throw ConnectError("Failed to connect to server");
 	}
 
@@ -183,15 +186,27 @@ void Stream::ConnectClient() {
 }
 
 void Stream::SubscribeToSecurities() {
+	
 	GetLog().Info(
 		"Sending market data requests for %1% securities...",
 		m_securities.size());
+	
+	boost::shared_ptr<Client> client;
+	{
+		const ClientLock lock(m_clientMutex);
+		client = m_client;
+	}
+	if (!client) {
+		throw Exception("Connection closed");
+	}
+	
 	foreach (const auto &security, m_securities) {
 		const auto &symbol = security->GetSymbol().GetSymbol();
 		GetLog().Info("Sending market data request for %1%...", symbol);
 		security->ClearBook();
-		m_client->SendMarketDataSubscribeRequest(symbol);
+		client->SendMarketDataSubscribeRequest(symbol);
 	}
+
 }
 
 trdk::Security & Stream::CreateNewSecurityObject(const Symbol &symbol) {
