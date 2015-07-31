@@ -484,15 +484,15 @@ private:
 		const Symbol &symbol = security.GetSymbol();
 
 		AssertEq(Symbol::SECURITY_TYPE_FOR_SPOT, symbol.GetSecurityType());
-		AssertNe(symbol.GetCashBaseCurrency(), symbol.GetCashQuoteCurrency());		
+		AssertNe(symbol.GetFotBaseCurrency(), symbol.GetFotQuoteCurrency());
 		Assert(
-			symbol.GetCashBaseCurrency() == currency
-			|| symbol.GetCashQuoteCurrency() == currency);
+			symbol.GetFotBaseCurrency() == currency
+			|| symbol.GetFotQuoteCurrency() == currency);
 
 		const auto realPrice = security.DescalePrice(orderPrice);
 
 		//! @todo see TRDK-107 for order side details.
-		if (symbol.GetCashBaseCurrency() == currency) {
+		if (symbol.GetFotBaseCurrency() == currency) {
 			return std::make_pair(
 				qty * side.direction,
 				(qty * realPrice) * (side.direction * -1));
@@ -556,7 +556,7 @@ private:
 					% GetName()
 					% side.name
 					% operationId
-					% symbol.GetCashBaseCurrency()
+					% symbol.GetFotBaseCurrency()
 					% baseCurrency.position
 					% blocked.first
 					% newPosition.first
@@ -569,7 +569,7 @@ private:
 					% GetName()
 					% side.name
 					% operationId
-					% symbol.GetCashQuoteCurrency()
+					% symbol.GetFotQuoteCurrency()
 					% quoteCurrency.position
 					% blocked.second
 					% newPosition.second
@@ -685,7 +685,7 @@ private:
 					% GetName()
 					% side.name
 					% operationId
-					% symbol.GetCashBaseCurrency()
+					% symbol.GetFotBaseCurrency()
 					% baseCurrency.position
 					% blocked.first
 					% used.first
@@ -699,7 +699,7 @@ private:
 					% GetName()
 					% side.name
 					% operationId
-					% symbol.GetCashQuoteCurrency()
+					% symbol.GetFotQuoteCurrency()
 					% quoteCurrency.position
 					% blocked.second
 					% used.second
@@ -752,7 +752,7 @@ private:
 					% GetName()
 					% side.name
 					% operationId
-					% symbol.GetCashBaseCurrency()
+					% symbol.GetFotBaseCurrency()
 					% baseCurrency.position
 					% blocked.first
 					% newPosition.first
@@ -765,7 +765,7 @@ private:
 					% GetName()
 					% side.name
 					% operationId
-					% symbol.GetCashQuoteCurrency()
+					% symbol.GetFotQuoteCurrency()
 					% quoteCurrency.position
 					% blocked.second
 					% newPosition.second
@@ -938,13 +938,13 @@ void RiskControlSymbolContext::InitScope(
 		};
 
 		scope.baseCurrencyPosition = posFabric(
-			m_symbol.GetCashBaseCurrency(),
-			readLimit(m_symbol.GetCashBaseCurrency(), "short"),
-			readLimit(m_symbol.GetCashBaseCurrency(), "long"));
+			m_symbol.GetFotBaseCurrency(),
+			readLimit(m_symbol.GetFotBaseCurrency(), "short"),
+			readLimit(m_symbol.GetFotBaseCurrency(), "long"));
 		scope.quoteCurrencyPosition = posFabric(
-			m_symbol.GetCashQuoteCurrency(),
-			readLimit(m_symbol.GetCashQuoteCurrency(), "short"),
-			readLimit(m_symbol.GetCashQuoteCurrency(), "long"));
+			m_symbol.GetFotQuoteCurrency(),
+			readLimit(m_symbol.GetFotQuoteCurrency(), "short"),
+			readLimit(m_symbol.GetFotQuoteCurrency(), "long"));
 
 	}
 

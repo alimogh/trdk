@@ -107,7 +107,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		switch (pair.id) {
 			case PAIR_AB:
 			case PAIR_AC:
-				currency = security.GetSymbol().GetCashBaseCurrency();
+				currency = security.GetSymbol().GetFotBaseCurrency();
 				if (security.GetAskQty() < qty) {
 					throw HasNotMuchOpportunityException(security, Qty(qty));
 				}
@@ -115,7 +115,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 			case PAIR_BC:
 				switch (pair.leg) {
 					case LEG1:
-						currency = security.GetSymbol().GetCashBaseCurrency();
+						currency = security.GetSymbol().GetFotBaseCurrency();
 						qty *= GetPair(PAIR_AC).security->GetAskPrice();
 						qty /= GetPair(PAIR_BC).security->GetAskPrice();
 						baseCurrencyQty = qty;
@@ -126,7 +126,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 					case LEG3:
 						AssertNe(PAIR_BC, GetLeg(LEG1).GetPair());
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
-						currency = security.GetSymbol().GetCashQuoteCurrency();
+						currency = security.GetSymbol().GetFotQuoteCurrency();
 						qty = GetLeg(PAIR_AC).GetOpenedVolume();
 						// Why not GetBidPrice see TRDK-110.
 						baseCurrencyQty
@@ -173,7 +173,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		switch (pair.id) {
 			case PAIR_AB:
 			case PAIR_AC:
-				currency = security.GetSymbol().GetCashBaseCurrency();
+				currency = security.GetSymbol().GetFotBaseCurrency();
 				AssertLt(0, qty);
 				if (security.GetBidQty() < qty) {
 					throw HasNotMuchOpportunityException(security, Qty(qty));
@@ -182,7 +182,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 			case PAIR_BC:
 				switch (pair.leg) {
 					case LEG1:
-						currency = security.GetSymbol().GetCashBaseCurrency();
+						currency = security.GetSymbol().GetFotBaseCurrency();
 						qty *= GetPair(PAIR_AC).security->GetBidPrice();
 						qty /= GetPair(PAIR_BC).security->GetBidPrice();
 						baseCurrencyQty = qty;
@@ -193,7 +193,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 					case LEG3:
 						AssertNe(PAIR_BC, GetLeg(LEG1).GetPair());
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
-						currency = security.GetSymbol().GetCashQuoteCurrency();
+						currency = security.GetSymbol().GetFotQuoteCurrency();
 						qty = GetLeg(PAIR_AC).GetOpenedVolume();
 						// Why not GetAskPrice see TRDK-110.
 						baseCurrencyQty

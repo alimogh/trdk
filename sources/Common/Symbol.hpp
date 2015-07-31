@@ -117,8 +117,8 @@ namespace trdk { namespace Lib {
 		std::string GetRightAsString() const;
 		static Right ParseRight(const std::string &);
 
-		const trdk::Lib::Currency & GetCashBaseCurrency() const;
-		const trdk::Lib::Currency & GetCashQuoteCurrency() const;
+		const trdk::Lib::Currency & GetFotBaseCurrency() const;
+		const trdk::Lib::Currency & GetFotQuoteCurrency() const;
 
 		std::string GetAsString() const;
 
@@ -135,25 +135,25 @@ namespace trdk { namespace Lib {
 			double strike;
 			Right right;
 
-			trdk::Lib::Currency cashBaseCurrency;
-			trdk::Lib::Currency cashQuoteCurrency;
+			trdk::Lib::Currency fotBaseCurrency;
+			trdk::Lib::Currency fotQuoteCurrency;
 
 			Data();
 			
 			explicit Data(
-						SecurityType,
-						const std::string &symbol);
+					SecurityType,
+					const std::string &symbol);
 
 			explicit Data(
-						const std::string &symbol,
-						const std::string &expirationDate,
-						double strike);
+					const std::string &symbol,
+					const std::string &expirationDate,
+					double strike);
 
 			explicit Data(
-						SecurityType,
-						const std::string &symbol,
-						const std::string &exchange,
-						const std::string &primaryExchange);
+					SecurityType,
+					const std::string &symbol,
+					const std::string &exchange,
+					const std::string &primaryExchange);
 
 		} m_data;
 

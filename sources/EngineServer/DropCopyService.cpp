@@ -64,21 +64,37 @@ namespace {
 			const Qty *minQty,
 			const std::string *user,
 			OrderParameters &result) {
+		
 		if (price) {
 			result.set_type(
 				!Lib::IsZero(*price)
 					?	OrderParameters::TYPE_LMT
 					:	OrderParameters::TYPE_MKT);
 		}
+		
 		result.set_security_id(security.GetInstanceId());
-		result.set_side(
-			side == ORDER_SIDE_BUY
-				?	OrderParameters::SIDE_BUY
-				:	OrderParameters::SIDE_SELL);
+		
+		{
+			bool isBuy = side == ORDER_SIDE_BUY;
+			const Symbol &symbol = security.GetSymbol();
+			if (
+					symbol.GetSecurityType() == Symbol::SECURITY_TYPE_FOR_SPOT
+					&& symbol.GetFotBaseCurrency() != currency) {
+				AssertEq(symbol.GetFotQuoteCurrency(), currency);
+				//! @sa TRDK-141 why we changing direction at changed currency:
+				isBuy = !isBuy;
+			}
+			result.set_side(
+					isBuy
+						?	OrderParameters::SIDE_BUY
+						:	OrderParameters::SIDE_SELL);
+		}
+		
 		result.set_qty(qty);
 		if (price) {
 			result.set_price(*price);
 		}
+		
 		static_assert(numberOfTimeInForces == 5, "List changed.");
 		if (timeInForce) {
 			switch (*timeInForce) {
@@ -102,13 +118,17 @@ namespace {
 					break;
 			}
 		}
+		
 		result.set_currency(ConvertToIso(currency));
+		
 		if (minQty) {
 			result.set_min_qty(*minQty);
 		}
+		
 		if (user) {
 			result.set_user(*user);
 		}
+
 	}
 
 	void Convert(double price, const trdk::Qty &qty, PriceLevel &result) {

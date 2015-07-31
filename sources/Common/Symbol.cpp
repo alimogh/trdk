@@ -43,8 +43,8 @@ Symbol::Data::Data()
 		: securityType(numberOfSecurityTypes),
 		strike(.0),
 		right(numberOfRights),
-		cashBaseCurrency(numberOfCurrencies),
-		cashQuoteCurrency(numberOfCurrencies) {
+		fotBaseCurrency(numberOfCurrencies),
+		fotQuoteCurrency(numberOfCurrencies) {
 	//...//
 }
 
@@ -65,8 +65,8 @@ Symbol::Data::Data(
 		symbol(symbol),
 		strike(.0),
 		right(numberOfRights),
-		cashBaseCurrency(numberOfCurrencies),
-		cashQuoteCurrency(numberOfCurrencies) {
+		fotBaseCurrency(numberOfCurrencies),
+		fotQuoteCurrency(numberOfCurrencies) {
 	//...//
 }
 
@@ -92,8 +92,8 @@ Symbol::Data::Data(
 		expirationDate(expirationDate),
 		strike(strike),
 		right(numberOfRights),
-		cashBaseCurrency(numberOfCurrencies),
-		cashQuoteCurrency(numberOfCurrencies) {
+		fotBaseCurrency(numberOfCurrencies),
+		fotQuoteCurrency(numberOfCurrencies) {
 	//...//
 }
 
@@ -213,8 +213,8 @@ Symbol Symbol::ParseForeignExchangeContract(
 		?	subs[1]
 		:	defExchange;
 	result.m_data.primaryExchange = "FOREX";
-	result.m_data.cashBaseCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
-	result.m_data.cashQuoteCurrency
+	result.m_data.fotBaseCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
+	result.m_data.fotQuoteCurrency
 		= ConvertCurrencyFromIso(symbolMatch.str(2));
 
 	return result;
@@ -258,8 +258,8 @@ Symbol Symbol::ParseForeignExchangeContractFutureOption(
 	result.m_data.expirationDate = expirationDate;
 	result.m_data.strike = strike;
 	result.m_data.right = right;
-	result.m_data.cashBaseCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
-	result.m_data.cashQuoteCurrency
+	result.m_data.fotBaseCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
+	result.m_data.fotQuoteCurrency
 		= ConvertCurrencyFromIso(symbolMatch.str(2));
 
 	return result;
@@ -390,18 +390,18 @@ std::string Symbol::GetRightAsString() const {
 	}
 }
 
-const Currency & Symbol::GetCashBaseCurrency() const {
-	if (m_data.cashBaseCurrency == numberOfCurrencies) {
+const Currency & Symbol::GetFotBaseCurrency() const {
+	if (m_data.fotBaseCurrency == numberOfCurrencies) {
 		throw Lib::LogicError("Symbol has not Base Currency");
 	}
-	return m_data.cashBaseCurrency;
+	return m_data.fotBaseCurrency;
 }
 
-const Currency & Symbol::GetCashQuoteCurrency() const {
-	if (m_data.cashQuoteCurrency == numberOfCurrencies) {
+const Currency & Symbol::GetFotQuoteCurrency() const {
+	if (m_data.fotQuoteCurrency == numberOfCurrencies) {
 		throw Lib::LogicError("Symbol has not Quote Currency");
 	}
-	return m_data.cashQuoteCurrency;
+	return m_data.fotQuoteCurrency;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
