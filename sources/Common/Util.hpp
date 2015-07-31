@@ -30,14 +30,6 @@ struct Foo {
 	double atr;
 	size_t updates_number;
 	boost::posix_time::time_duration triangleTime;
-	double avgWinners;
-	boost::posix_time::time_duration avgWinnersTime;
-	double avgLosers;
-	boost::posix_time::time_duration avgLosersTime;
-	boost::posix_time::time_duration avgTime;
-	size_t numberOfWinners;
-	size_t numberOfLosers;
-	size_t percentOfWinners;
 };
 //! @todo !!! remove Foo
 typedef void (FooSlotSignature)(const Foo &);

@@ -680,8 +680,6 @@ void TriangleReport::ReportAction(
 					record 
 						% accs::mean(m_state.pnl->stat.winners)
 						% accs::mean(m_state.pnl->stat.winnersTime);
-					foo.avgWinners = accs::mean(m_state.pnl->stat.winners);
-					foo.avgWinnersTime = accs::mean(m_state.pnl->stat.winnersTime);
 					trianglesCount
 						= accs::count(m_state.pnl->stat.winners)
 							+ accs::count(m_state.pnl->stat.losers);
@@ -695,8 +693,6 @@ void TriangleReport::ReportAction(
 					record
 						% accs::mean(m_state.pnl->stat.losers)
 						% accs::mean(m_state.pnl->stat.losersTime);
-					foo.avgLosers = accs::mean(m_state.pnl->stat.losers);
-					foo.avgLosersTime = accs::mean(m_state.pnl->stat.losersTime);
 				} else {
 					record % ' ' % ' ';
 				}
@@ -704,16 +700,12 @@ void TriangleReport::ReportAction(
 				{
 					const auto &avgTime = accs::mean(m_state.pnl->stat.time);
 					record % avgTime;
-					foo.avgTime = avgTime;
 				}
 
 				record
 					% accs::count(m_state.pnl->stat.winners)
 					% accs::count(m_state.pnl->stat.losers)
 					% winningPercentage % '\0' % '%';
-				foo.numberOfWinners = accs::count(m_state.pnl->stat.winners);
-				foo.numberOfLosers = accs::count(m_state.pnl->stat.losers);
-				foo.percentOfWinners = winningPercentage;
 				
 				writePnl(record);
 

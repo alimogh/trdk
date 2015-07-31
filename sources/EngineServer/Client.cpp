@@ -114,22 +114,6 @@ void Client::OnFoo(const Foo &foo) {
 	pnl.set_atr(foo.atr);
 	pnl.set_updates_number(int32_t(foo.updates_number));
 	pnl.set_triangle_time(pt::to_simple_string(foo.triangleTime));
-	if (!IsZero(foo.avgWinners)) {
-		pnl.set_avg_winners(foo.avgWinners);
-	}
-	if (foo.avgWinnersTime.total_nanoseconds() > 0) {
-		pnl.set_avg_winners_time(pt::to_simple_string(foo.avgWinnersTime));
-	}
-	if (!IsZero(foo.avgLosers)) {
-		pnl.set_avg_losers(foo.avgLosers);
-	}
-	if (foo.avgLosersTime.total_nanoseconds() > 0) {
-		pnl.set_avg_losers_time(pt::to_simple_string(foo.avgLosersTime));
-	}
-	pnl.set_avg_time(pt::to_simple_string(foo.avgTime));
-	pnl.set_number_of_winners(foo.numberOfWinners);
-	pnl.set_number_of_losers(foo.numberOfLosers);
-	pnl.set_percent_of_winners(foo.percentOfWinners);
 	Send(message);
 }
 
@@ -653,18 +637,6 @@ void Client::OnDebugPnlRequest() {
 	foo.atr = 11.11;
 	foo.updates_number = 2222;
 	foo.triangleTime = pt::seconds(10);
-	if (foo.triangleId % 3) {
-		foo.avgWinners = 1.0002;
-		foo.avgWinnersTime = pt::seconds(11);
-	}
-	if (foo.triangleId % 4) {
-		foo.avgLosers = 0.9999;
-		foo.avgLosersTime = pt::seconds(13);
-	}
-	foo.avgTime = pt::seconds(14);
-	foo.numberOfWinners = 1;
-	foo.numberOfLosers = 2;
-	foo.percentOfWinners = 3;
 
 	OnFoo(foo);
 

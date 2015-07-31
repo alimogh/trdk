@@ -64,14 +64,6 @@ message Pnl {
 	required double	atr									= 7;
 	required uint32	updates_number						= 8;
 	required string triangle_time						= 9;
-	optional double avg_winners							= 10;
-	optional string avg_winners_time					= 11;
-	optional double avg_losers							= 12;
-	optional string avg_losers_time						= 13;
-	required string avg_time							= 14;
-	required uint64 number_of_winners					= 15;
-	required uint64 number_of_losers					= 16;
-	required uint64 percent_of_winners					= 17;
 };
 
 message ServiceData {
