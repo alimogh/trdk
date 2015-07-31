@@ -456,7 +456,7 @@ void Engine::Context::SyncDispatching() {
 }
 
 DropCopy * Engine::Context::GetDropCopy() {
-	return &*m_pimpl->m_state->dropCopy;
+	return m_pimpl->m_state->dropCopy.get();
 }
 
 size_t Engine::Context::GetMarketDataSourcesCount() const {
