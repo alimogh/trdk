@@ -265,8 +265,8 @@ void FixTrading::NotifyOrderUpdate(
 		const TimeMeasurement::Milestones::TimePoint &replyTime) {
 	
 	Order orderCopy;
-	Qty tradeQty = 0;
-	double tradePrice = 0;
+	TradeInfo tradeData = {};
+	TradeInfo *tradeInfo = nullptr;
 	{
 		const OrdersReadLock lock(m_ordersMutex);
 		Order *const order = FindOrder(orderId);
@@ -288,12 +288,15 @@ void FixTrading::NotifyOrderUpdate(
 		Assert(!order->isRemoved);
 		order->isRemoved = isOrderCompleted;
 		if (status == ORDER_STATUS_FILLED) {
+			tradeData.id = "<UNKNOWN>";
 			AssertGe(
 				order->qty,
 				order->filledQty + ParseLeavesQty(updateMessage));
-			tradeQty = ParseLastShares(updateMessage);
-			order->filledQty += tradeQty;
-			tradePrice =  updateMessage.getDouble(fix::FIX40::Tags::LastPx);
+			tradeData.qty = ParseLastShares(updateMessage);
+			order->filledQty += tradeData.qty;
+			tradeData.price = orderCopy.security->ScalePrice(
+				updateMessage.getDouble(fix::FIX40::Tags::LastPx));
+			tradeInfo = &tradeData;
 		}
 		orderCopy = *order;
 	}
@@ -305,8 +308,7 @@ void FixTrading::NotifyOrderUpdate(
 		orderCopy.tradeSystemId,
 		status,
 		orderCopy,
-		tradeQty,
-		orderCopy.security->ScalePrice(tradePrice));
+		tradeInfo);
 	if (isOrderCompleted) {
 		FlushRemovedOrders();
 	}
@@ -316,19 +318,17 @@ void FixTrading::NotifyOrderUpdate(
 }
 
 void FixTrading::OnOrderStateChanged(
-		const std::string borkerOrderId,
+		const std::string &borkerOrderId,
 		const OrderStatus &status,
 		const Order &order,
-		const Qty &tradeQty,
-		const ScaledPrice &tradePrice) {
+		const TradeInfo *trade) {
 	AssertGe(order.qty, order.filledQty);
 	order.callback(
 		order.id,
 		borkerOrderId,
 		status,
-		tradeQty,
 		order.qty - order.filledQty,
-		tradePrice);
+		trade);
 }
 
 void FixTrading::FillOrderMessage(
@@ -876,9 +876,8 @@ void FixTrading::onStateChange(
 				orderCopy.id,
 				orderCopy.tradeSystemId,
 				ORDER_STATUS_CANCELLED,
-				orderCopy.filledQty,
 				orderCopy.qty - orderCopy.filledQty,
-				0);
+				nullptr);
 
 		}
 

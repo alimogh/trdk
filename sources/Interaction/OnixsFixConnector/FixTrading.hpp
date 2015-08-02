@@ -268,12 +268,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				const trdk::OrderParams &)
 			= 0;
 
-		virtual void OnOrderStateChanged(
-				const std::string borkerOrderId,
+		void OnOrderStateChanged(
+				const std::string &borkerOrderId,
 				const OrderStatus &,
 				const Order &,
-				const Qty &tradePrice,
-				const ScaledPrice &tradeQty);
+				const TradeInfo *);
 
 	protected:
 

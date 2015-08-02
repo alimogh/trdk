@@ -56,14 +56,19 @@ namespace trdk {
 			numberOfOrderStatuses
 		};
 
+		struct TradeInfo {
+			std::string id;
+			trdk::Qty qty;
+			trdk::ScaledPrice price;
+		};
+
 		typedef boost::function<
 				void(
 					const trdk::OrderId &,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &,
-					const trdk::Qty &tradeQty,
 					const trdk::Qty &remainingQty,
-					const trdk::ScaledPrice &tradePrice)>
+					const TradeInfo *tradeInfo)>
 			OrderStatusUpdateSlot;
 
 		struct Account {

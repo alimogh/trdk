@@ -208,11 +208,8 @@ public:
 			const OrderId &orderId,
 			const std::string &tradeSystemOrderId,
 			const TradeSystem::OrderStatus &orderStatus,
-			Qty tradeQty,
 			const Qty &remainingQty,
-			const ScaledPrice &tradePrice) {
-
-		UseUnused(orderId);
+			const TradeSystem::TradeInfo *trade) {
 
 		bool isCompleted = false;
 
@@ -267,52 +264,56 @@ public:
 									?	m_oppositePosition->GetActiveQty()
 									:	0),
 						remainingQty);
-					AssertEq(0, tradeQty);
-					AssertEq(0, tradePrice);
+					Assert(!trade);
 					AssertLt(0, remainingQty);
 					return;
 				case TradeSystem::ORDER_STATUS_FILLED:
-					AssertLt(0, tradePrice);
-					if (m_oppositePosition) {
-						AssertGe(
-							m_oppositePosition->GetActiveQty()
-								+ m_position.GetPlanedQty(),
-							tradeQty);
-						auto filledForOpposite = tradeQty;
-						if (filledForOpposite > m_oppositePosition->GetActiveQty()) {
-							filledForOpposite
-								= m_oppositePosition->GetActiveQty();
-						}
-						AssertGe(tradeQty, filledForOpposite);
-						tradeQty -= filledForOpposite;
-						m_oppositePosition->m_pimpl->m_closed.price.total
-							+= tradePrice;
-						++m_oppositePosition->m_pimpl->m_closed.price.count;
-						m_oppositePosition->m_pimpl->m_closed.qty
-							+= filledForOpposite;
-						AssertLt(0, m_oppositePosition->m_pimpl->m_closed.qty);
-						m_oppositePosition->m_pimpl->ReportClosingUpdate(
-							"filled",
-							orderStatus);
-						updatedOppositePosition = m_oppositePosition;
+					if (!trade) {
+						throw Exception("Filled order has no trade information");
 					}
-					if (tradeQty != 0) {
-						AssertEq(
-							m_opened.qty + tradeQty + remainingQty,
-							m_planedQty);
-						m_opened.price.total += tradePrice;
-						++m_opened.price.count;
-						m_opened.qty += tradeQty;
-						AssertLe(0, m_opened.qty);
-						ReportOpeningUpdate("filled", orderStatus);
-					} else {
-						AssertNe(0, remainingQty);
+					{
+						auto tradeQty = trade->qty;
+						if (m_oppositePosition) {
+							AssertGe(
+								m_oppositePosition->GetActiveQty()
+									+ m_position.GetPlanedQty(),
+								tradeQty);
+							auto filledForOpposite = tradeQty;
+							if (filledForOpposite > m_oppositePosition->GetActiveQty()) {
+								filledForOpposite
+									= m_oppositePosition->GetActiveQty();
+							}
+							AssertGe(tradeQty, filledForOpposite);
+							tradeQty -= filledForOpposite;
+							m_oppositePosition->m_pimpl->m_closed.price.total
+								+= trade->price;
+							++m_oppositePosition->m_pimpl->m_closed.price.count;
+							m_oppositePosition->m_pimpl->m_closed.qty
+								+= filledForOpposite;
+							AssertLt(0, m_oppositePosition->m_pimpl->m_closed.qty);
+							m_oppositePosition->m_pimpl->ReportClosingUpdate(
+								"filled",
+								orderStatus);
+							updatedOppositePosition = m_oppositePosition;
+						}
+						if (tradeQty != 0) {
+							AssertEq(
+								m_opened.qty + tradeQty + remainingQty,
+								m_planedQty);
+							m_opened.price.total += trade->price;
+							++m_opened.price.count;
+							m_opened.qty += tradeQty;
+							AssertLe(0, m_opened.qty);
+							ReportOpeningUpdate("filled", orderStatus);
+						} else {
+							AssertNe(0, remainingQty);
+						}
 					}
 					isCompleted = remainingQty == 0;
 					CopyTrade(
-						"<UNKNOWN>",
-						m_security.DescalePrice(tradePrice),
-						tradeQty,
+						trade->id,
+						m_security.DescalePrice(trade->price),
+						trade->qty,
 						tradeSystemOrderId,
 						true);
 					break;
@@ -396,7 +397,11 @@ public:
 
 			}
 
-			CopyOrder(&tradeSystemOrderId, true, orderStatus);
+			CopyOrder(
+				&tradeSystemOrderId,
+				trade ? &trade->id : nullptr,
+				true,
+				orderStatus);
 
 		}
 		
@@ -413,11 +418,8 @@ public:
 			const OrderId &orderId,
 			const std::string &tradeSystemOrderId,
 			const TradeSystem::OrderStatus &orderStatus,
-			const Qty &tradeQty,
 			const Qty &remainingQty,
-			const ScaledPrice &tradePrice) {
-
-		UseUnused(orderId);
+			const TradeSystem::TradeInfo *trade) {
 
 		{
 
@@ -456,18 +458,21 @@ public:
 					AssertLt(0, remainingQty);
 					return;
 				case TradeSystem::ORDER_STATUS_FILLED:
-					AssertEq(tradeQty + remainingQty, m_opened.qty);
-					AssertLe(Qty(m_closed.qty) + tradeQty, m_opened.qty);
-					AssertLt(0, tradePrice);
-					m_closed.price.total += tradePrice;
+					if (!trade) {
+						throw Exception("Filled order has no trade information");
+					}
+					AssertEq(trade->qty + remainingQty, m_opened.qty);
+					AssertLe(Qty(m_closed.qty) + trade->qty, m_opened.qty);
+					AssertLt(0, trade->price);
+					m_closed.price.total += trade->price;
 					++m_closed.price.count;
-					m_closed.qty += tradeQty;
+					m_closed.qty += trade->qty;
 					AssertGt(m_closed.qty, 0);
 					ReportClosingUpdate("filled", orderStatus);
 					CopyTrade(
-						"<UNKNOWN>",
-						m_security.DescalePrice(tradePrice),
-						tradeQty,
+						trade->id,
+						m_security.DescalePrice(trade->price),
+						trade->qty,
 						tradeSystemOrderId,
 						false);
 					if (remainingQty != 0) {
@@ -501,7 +506,11 @@ public:
 
 			m_closed.hasOrder = false;
 
-			CopyOrder(&tradeSystemOrderId, false, orderStatus);
+			CopyOrder(
+				&tradeSystemOrderId,
+				trade ? &trade->id : nullptr,
+				false,
+				orderStatus);
 
 			if (CancelIfSet()) {
 				return;
@@ -807,7 +816,8 @@ public:
 				m_oppositePosition->m_pimpl->m_closed.orderId = orderId;
 			}
 			CopyOrder(
-				nullptr,
+				nullptr, // order ID (from trade system)
+				nullptr, // trade ID
 				true,
 				TradeSystem::ORDER_STATUS_SENT,
 				&timeInForce,
@@ -851,7 +861,8 @@ public:
 		m_closed.orderId = orderId;
 
 		CopyOrder(
-			nullptr,
+			nullptr, // order ID (from trade system)
+			nullptr, // trade ID
 			false,
 			TradeSystem::ORDER_STATUS_SENT,
 			&timeInForce,
@@ -953,6 +964,7 @@ private:
 
 	void CopyOrder(
 			const std::string *orderId,
+			const std::string *tradeId,
 			bool isOpen,
 			const TradeSystem::OrderStatus &status,
 			const TimeInForce *timeInForce = nullptr,
@@ -1021,6 +1033,8 @@ private:
 			nullptr /* user */,
 			status,
 			!execTime.is_not_a_date_time() ? &execTime : nullptr,
+			tradeId,
+			directionData.price.count,
 			avgTradePrice,
 			directionData.qty,
 			nullptr /* counterAmount */,
@@ -1266,32 +1280,28 @@ void Position::UpdateOpening(
 		const OrderId &orderId,
 		const std::string &tradeSystemOrderId,
 		const TradeSystem::OrderStatus &orderStatus,
-		const Qty &tradeQty,
 		const Qty &remainingQty,
-		const ScaledPrice &tradePrice) {
+		const TradeSystem::TradeInfo *trade) {
 	m_pimpl->UpdateOpening(
 		orderId,
 		tradeSystemOrderId,
 		orderStatus,
-		tradeQty,
 		remainingQty,
-		tradePrice);
+		trade);
 }
 
 void Position::UpdateClosing(
 		const OrderId &orderId,
 		const std::string &tradeSystemOrderId,
 		const TradeSystem::OrderStatus &orderStatus,
-		const Qty &tradeQty,
 		const Qty &remainingQty,
-		const ScaledPrice &tradePrice) {
+		const TradeSystem::TradeInfo *trade) {
 	m_pimpl->UpdateClosing(
 		orderId,
 		tradeSystemOrderId,
 		orderStatus,
-		tradeQty,
 		remainingQty,
-		tradePrice);
+		trade);
 }
 
 Position::Time Position::GetOpenTime() const {
@@ -1656,8 +1666,7 @@ OrderId LongPosition::DoOpenAtMarketPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -1681,8 +1690,7 @@ OrderId LongPosition::DoOpen(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -1706,8 +1714,7 @@ OrderId LongPosition::DoOpenAtMarketPriceWithStopPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -1731,8 +1738,7 @@ OrderId LongPosition::DoOpenImmediatelyOrCancel(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -1754,8 +1760,7 @@ OrderId LongPosition::DoOpenAtMarketPriceImmediatelyOrCancel(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -1777,8 +1782,7 @@ OrderId LongPosition::DoCloseAtMarketPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -1802,8 +1806,7 @@ OrderId LongPosition::DoClose(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -1827,8 +1830,7 @@ OrderId LongPosition::DoCloseAtMarketPriceWithStopPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -1853,8 +1855,7 @@ OrderId LongPosition::DoCloseImmediatelyOrCancel(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -1877,8 +1878,7 @@ OrderId LongPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -1951,8 +1951,7 @@ OrderId ShortPosition::DoOpenAtMarketPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -1976,8 +1975,7 @@ OrderId ShortPosition::DoOpen(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -2001,8 +1999,7 @@ OrderId ShortPosition::DoOpenAtMarketPriceWithStopPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -2026,8 +2023,7 @@ OrderId ShortPosition::DoOpenImmediatelyOrCancel(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -2049,8 +2045,7 @@ OrderId ShortPosition::DoOpenAtMarketPriceImmediatelyOrCancel(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -2072,8 +2067,7 @@ OrderId ShortPosition::DoCloseAtMarketPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -2095,8 +2089,7 @@ OrderId ShortPosition::DoClose(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -2120,8 +2113,7 @@ OrderId ShortPosition::DoCloseAtMarketPriceWithStopPrice(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -2145,8 +2137,7 @@ OrderId ShortPosition::DoCloseImmediatelyOrCancel(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }
@@ -2168,8 +2159,7 @@ OrderId ShortPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
 			_2,
 			_3,
 			_4,
-			_5,
-			_6),
+			_5),
 		GetStrategy().GetRiskControlScope(),
 		GetTimeMeasurement());
 }

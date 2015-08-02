@@ -26,6 +26,7 @@ using namespace trdk::EngineService::MarketData;
 
 namespace io = boost::asio;
 namespace pt = boost::posix_time;
+namespace pf = google::protobuf;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -334,6 +335,8 @@ void DropCopyService::CopyOrder(
 		const std::string *user,
 		const TradeSystem::OrderStatus &status,
 		const boost::posix_time::ptime *executionTime,
+		const std::string *lastTradeId,
+		size_t numberOfTrades,
 		double avgTradePrice,
 		const Qty &executedQty,
 		const double *counterAmount,
@@ -396,6 +399,10 @@ void DropCopyService::CopyOrder(
 	if (executionTime) {
 		order.set_execution_time(pt::to_iso_string(*executionTime));
 	}
+	if (lastTradeId) {
+		order.set_last_trade_id(*lastTradeId);
+	}
+	order.set_number_of_trades(pf::uint32(numberOfTrades));
 	order.set_avg_trade_price(avgTradePrice);
 	order.set_executed_qty(executedQty);
 	if (counterAmount) {
@@ -516,6 +523,8 @@ void DropCopyService::GenerateDebugEvents() {
 			pt::to_iso_string(boost::posix_time::microsec_clock::local_time()));
 		order.set_execution_time(
 			pt::to_iso_string(boost::posix_time::microsec_clock::local_time()));
+		order.set_last_trade_id("ASADASD12");
+		order.set_number_of_trades(10);
 		order.set_avg_trade_price(123.456);
 		order.set_executed_qty(9000000);
 		order.set_counter_amount(234.567);

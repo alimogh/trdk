@@ -64,9 +64,8 @@ private:
 				Security &,
 				const Currency &,
 				const ScaledPrice &/*orderPrice*/,
-				const Qty &/*tradeQty*/,
-				const ScaledPrice &/*tradePrice*/,
-				const Qty &/*remainingQty*/) {
+				const Qty &/*remainingQty*/,
+				const TradeSystem::TradeInfo *) {
 			//...//
 		}
 		virtual void ConfirmSellOrder(
@@ -75,9 +74,8 @@ private:
 				Security &,
 				const Currency &,
 				const ScaledPrice &/*orderPrice*/,
-				const Qty &/*tradeQty*/,
-				const ScaledPrice &/*tradePrice*/,
-				const Qty &/*remainingQty*/) {
+				const Qty &/*remainingQty*/,
+				const TradeSystem::TradeInfo *) {
 			//...//
 		}
 	public:
@@ -252,18 +250,17 @@ private:
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const TradeSystem::OrderStatus &status,
-					const Qty &filled,
 					const Qty &remaining,
-					double avgPrice) {
+					const TradeSystem::TradeInfo *trade) {
 			m_tradeSystem.GetLog().Info(
 				"Terminal: Order reply received:"
 					" order ID = %1% / %7%, status = %6% (%2%)"
 					", filled qty = %3%, remaining qty = %4%, avgPrice = %5%.",
 				orderId,
 				status,
-				filled,
+				trade ? trade->qty : 0,
 				remaining,
-				avgPrice,
+				trade ? trade->price : 0,
 				TradeSystem::GetStringStatus(status),
 				tradeSystemOrderId);
 		}
@@ -321,8 +318,7 @@ private:
 							_2,
 							_3,
 							_4,
-							_5,
-							_6),
+							_5),
 						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
@@ -338,8 +334,7 @@ private:
 							_2,
 							_3,
 							_4,
-							_5,
-							_6),
+							_5),
 						m_riskControlScope,
 						timeMeasurement);
 				}
@@ -358,8 +353,7 @@ private:
 							_2,
 							_3,
 							_4,
-							_5,
-							_6),
+							_5),
 						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
@@ -376,8 +370,7 @@ private:
 							_2,
 							_3,
 							_4,
-							_5,
-							_6),
+							_5),
 						m_riskControlScope,
 						timeMeasurement);
 				}
@@ -415,8 +408,7 @@ private:
 							_2,
 							_3,
 							_4,
-							_5,
-							_6),
+							_5),
 						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
@@ -432,8 +424,7 @@ private:
 							_2,
 							_3,
 							_4,
-							_5,
-							_6),
+							_5),
 						m_riskControlScope,
 						timeMeasurement);
 				}
@@ -452,8 +443,7 @@ private:
 							_2,
 							_3,
 							_4,
-							_5,
-							_6),
+							_5),
 						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
@@ -470,8 +460,7 @@ private:
 							_2,
 							_3,
 							_4,
-							_5,
-							_6),
+							_5),
 						m_riskControlScope,
 						timeMeasurement);
 				}

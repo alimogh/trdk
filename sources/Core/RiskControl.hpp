@@ -114,21 +114,19 @@ namespace trdk {
 				const trdk::TradeSystem::OrderStatus &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
-				const trdk::ScaledPrice &,
-				const trdk::Qty &,
-				const trdk::ScaledPrice &,
-				const trdk::Qty &)
+				const trdk::ScaledPrice &orderPrice,
+				const trdk::Qty &remainingQty,
+				const trdk::TradeSystem::TradeInfo *)
 				= 0;
 
 		virtual void ConfirmSellOrder(
 				const trdk::RiskControlOperationId &,
-				const trdk::TradeSystem::OrderStatus &status,
-				trdk::Security &security,
-				const trdk::Lib::Currency &currency,
+				const trdk::TradeSystem::OrderStatus &,
+				trdk::Security &,
+				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
-				const trdk::Qty &tradeQty,
-				const trdk::ScaledPrice &tradePrice,
-				const trdk::Qty &remainingQty)
+				const trdk::Qty &remainingQty,
+				const trdk::TradeSystem::TradeInfo *)
 				= 0;
 
 	public:
@@ -250,9 +248,8 @@ namespace trdk {
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
-				const trdk::Qty &tradeQty,
-				const trdk::ScaledPrice &tradePrice,
 				const trdk::Qty &remainingQty,
+				const trdk::TradeSystem::TradeInfo *,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 		void ConfirmSellOrder(
 				const trdk::RiskControlOperationId &,
@@ -261,9 +258,8 @@ namespace trdk {
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
-				const trdk::Qty &tradeQty,
-				const trdk::ScaledPrice &tradePrice,
 				const trdk::Qty &remainingQty,
+				const trdk::TradeSystem::TradeInfo *,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	public:

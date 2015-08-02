@@ -120,6 +120,9 @@ class TestServerHandler(SocketServer.BaseRequestHandler):
         counter_amount = "<NULL>"
         if order.HasField("counter_amount"):
             counter_amount = order.counter_amount
+        last_trade_id = "<NULL>"
+        if order.HasField("last_trade_id"):
+            last_trade_id = order.last_trade_id
 
         print "\tID: \"{0}\" / \"{1}\"; Strategy: \"{2}\"; Mode: \"{3}\";".format(
             order_id,
@@ -127,10 +130,8 @@ class TestServerHandler(SocketServer.BaseRequestHandler):
             str(uuid.UUID(bytes=order.strategy_id.data)).upper(),
             order.mode)
         self._print_order_parameters(order.params)
-        print "\tStatus: {0}; Order time: \"{1}\"; Exec. time: \"{2}\";".format(
-            status,
-            order_time,
-            execution_time)
+        print "\tStatus: {0}; Order time: \"{1}\"; Exec. time: \"{2}\";".format(status, order_time, execution_time)
+        print "\tLast trade ID: \"{0}\"; Number of trades: \"{1}\";".format(last_trade_id, order.number_of_trades)
         print "\tAvg. trade price: \"{0}\"; Executed qty: \"{1}\"; Counter amount: \"{2}\";".format(
             order.avg_trade_price,
             order.executed_qty,

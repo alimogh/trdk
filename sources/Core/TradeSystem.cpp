@@ -223,9 +223,8 @@ public:
 			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
-			const Qty &tradeQty,
-			const ScaledPrice &tradePrice,
 			const Qty &remainingQty,
+			const TradeInfo *trade,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 		m_context.GetRiskControl(m_mode).ConfirmBuyOrder(
 			riskControlOperationId,
@@ -234,9 +233,8 @@ public:
 			security,
 			currency,
 			orderPrice,
-			tradeQty,
-			tradePrice,
 			remainingQty,
+			trade,
 			timeMeasurement);
 	}
 
@@ -247,9 +245,8 @@ public:
 			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
-			const Qty &tradeQty,
-			const ScaledPrice &tradePrice,
 			const Qty &remainingQty,
+			const TradeInfo *trade,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 		m_context.GetRiskControl(m_mode).ConfirmSellOrder(
 			operationId,
@@ -258,9 +255,8 @@ public:
 			security,
 			currency,
 			orderPrice,
-			tradeQty,
-			tradePrice,
 			remainingQty,
+			trade,
 			timeMeasurement);
 	}
 
@@ -397,9 +393,8 @@ OrderId TradeSystem::SellAtMarketPrice(
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
-					const Qty &tradeQty,
 					const Qty &remainingQty,
-					const ScaledPrice &tradePrice) {
+					const TradeInfo *trade) {
 				m_pimpl->ConfirmSellOrder(
 					riskControlOperationId,
 					riskControlScope,
@@ -407,17 +402,15 @@ OrderId TradeSystem::SellAtMarketPrice(
 					security,
 					currency,
 					supposedPrice,
-					tradeQty,
-					tradePrice,
 					remainingQty,
+					trade,
 					timeMeasurement);
 				callback(
 					orderId,
 					tradeSystemOrderId,
 					orderStatus,
-					tradeQty,
 					remainingQty,
-					tradePrice);
+					trade);
 			});
 	} catch (...) {
 		GetLog().Warn(
@@ -429,9 +422,8 @@ OrderId TradeSystem::SellAtMarketPrice(
 			security,
 			currency,
 			supposedPrice,
-			0,
-			0,
 			qty,
+			nullptr,
 			timeMeasurement);
 		throw;
 	}
@@ -468,9 +460,8 @@ OrderId TradeSystem::Sell(
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
-					const Qty &tradeQty,
 					const Qty &remainingQty,
-					const ScaledPrice &tradePrice) {
+					const TradeInfo *trade) {
 				m_pimpl->ConfirmSellOrder(
 					riskControlOperationId,
 					riskControlScope,
@@ -478,17 +469,15 @@ OrderId TradeSystem::Sell(
 					security,
 					currency,
 					price,
-					tradeQty,
-					tradePrice,
 					remainingQty,
+					trade,
 					timeMeasurement);
 				callback(
 					orderId,
 					tradeSystemOrderId,
 					orderStatus,
-					tradeQty,
 					remainingQty,
-					tradePrice);
+					trade);
 			});
 	} catch (...) {
 		GetLog().Warn(
@@ -500,9 +489,8 @@ OrderId TradeSystem::Sell(
 			security,
 			currency,
 			price,
-			0,
-			0,
 			qty,
+			nullptr,
 			timeMeasurement);
 		throw;
 	}
@@ -541,9 +529,8 @@ OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
-					const Qty &tradeQty,
 					const Qty &remainingQty,
-					const ScaledPrice &tradePrice) {
+					const TradeInfo *trade) {
 				m_pimpl->ConfirmSellOrder(
 					riskControlOperationId,
 					riskControlScope,
@@ -551,17 +538,15 @@ OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 					security,
 					currency,
 					supposedPrice,
-					tradeQty,
-					tradePrice,
 					remainingQty,
+					trade,
 					timeMeasurement);
 				callback(
 					orderId,
 					tradeSystemOrderId,
 					orderStatus,
-					tradeQty,
 					remainingQty,
-					tradePrice);
+					trade);
 			});
 	} catch (...) {
 		GetLog().Warn(
@@ -573,9 +558,8 @@ OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 			security,
 			currency,
 			supposedPrice,
-			0,
-			0,
 			qty,
+			nullptr,
 			timeMeasurement);
 		throw;
 	}
@@ -612,9 +596,8 @@ OrderId TradeSystem::SellImmediatelyOrCancel(
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
-					const Qty &tradeQty,
 					const Qty &remainingQty,
-					const ScaledPrice &tradePrice) {
+					const TradeInfo *trade) {
 				m_pimpl->ConfirmSellOrder(
 					riskControlOperationId,
 					riskControlScope,
@@ -622,17 +605,15 @@ OrderId TradeSystem::SellImmediatelyOrCancel(
 					security,
 					currency,
 					price,
-					tradeQty,
-					tradePrice,
 					remainingQty,
+					trade,
 					timeMeasurement);
 				callback(
 					orderId,
 					tradeSystemOrderId,
 					orderStatus,
-					tradeQty,
 					remainingQty,
-					tradePrice);
+					trade);
 			});
 	} catch (...) {
 		GetLog().Warn(
@@ -644,9 +625,8 @@ OrderId TradeSystem::SellImmediatelyOrCancel(
 			security,
 			currency,
 			price,
-			0,
-			0,
 			qty,
+			nullptr,
 			timeMeasurement);
 		throw;
 	}
@@ -683,9 +663,8 @@ OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
-					const Qty &tradeQty,
 					const Qty &remainingQty,
-					const ScaledPrice &tradePrice) {
+					const TradeInfo *trade) {
 				m_pimpl->ConfirmSellOrder(
 					riskControlOperationId,
 					riskControlScope,
@@ -693,17 +672,15 @@ OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 					security,
 					currency,
 					supposedPrice,
-					tradeQty,
-					tradePrice,
 					remainingQty,
+					trade,
 					timeMeasurement);
 				callback(
 					orderId,
 					tradeSystemOrderId,
 					orderStatus,
-					tradeQty,
 					remainingQty,
-					tradePrice);
+					trade);
 			});
 	} catch (...) {
 		GetLog().Warn(
@@ -715,9 +692,8 @@ OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 			security,
 			currency,
 			supposedPrice,
-			0,
-			0,
 			qty,
+			nullptr,
 			timeMeasurement);
 		throw;
 	}
@@ -754,9 +730,8 @@ OrderId TradeSystem::BuyAtMarketPrice(
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
-					const Qty &tradeQty,
 					const Qty &remainingQty,
-					const ScaledPrice &tradePrice) {
+					const TradeInfo *trade) {
 				m_pimpl->ConfirmBuyOrder(
 					riskControlOperationId,
 					riskControlScope,
@@ -764,17 +739,15 @@ OrderId TradeSystem::BuyAtMarketPrice(
 					security,
 					currency,
 					supposedPrice,
-					tradeQty,
-					tradePrice,
 					remainingQty,
+					trade,
 					timeMeasurement);
 				callback(
 					orderId,
 					tradeSystemOrderId,
 					orderStatus,
-					tradeQty,
 					remainingQty,
-					tradePrice);
+					trade);
 			});
 	} catch (...) {
 		GetLog().Debug(
@@ -786,9 +759,8 @@ OrderId TradeSystem::BuyAtMarketPrice(
 			security,
 			currency,
 			supposedPrice,
-			0,
-			0,
 			qty,
+			nullptr,
 			timeMeasurement);
 		throw;
 	}
@@ -825,9 +797,8 @@ OrderId TradeSystem::Buy(
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
-					const Qty &tradeQty,
 					const Qty &remainingQty,
-					const ScaledPrice &tradePrice) {
+					const TradeInfo *trade) {
 				m_pimpl->ConfirmBuyOrder(
 					riskControlOperationId,
 					riskControlScope,
@@ -835,17 +806,15 @@ OrderId TradeSystem::Buy(
 					security,
 					currency,
 					price,
-					tradeQty,
-					tradePrice,
 					remainingQty,
+					trade,
 					timeMeasurement);
 				callback(
 					orderId,
 					tradeSystemOrderId,
 					orderStatus,
-					tradeQty,
 					remainingQty,
-					tradePrice);
+					trade);
 			});
 	} catch (...) {
 		GetLog().Debug(
@@ -857,9 +826,8 @@ OrderId TradeSystem::Buy(
 			security,
 			currency,
 			price,
-			0,
-			0,
 			qty,
+			nullptr,
 			timeMeasurement);
 		throw;
 	}
@@ -898,9 +866,8 @@ OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
-					const Qty &tradeQty,
 					const Qty &remainingQty,
-					const ScaledPrice &tradePrice) {
+					const TradeInfo *trade) {
 				m_pimpl->ConfirmBuyOrder(
 					riskControlOperationId,
 					riskControlScope,
@@ -908,17 +875,15 @@ OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 					security,
 					currency,
 					supposedPrice,
-					tradeQty,
-					tradePrice,
 					remainingQty,
+					trade,
 					timeMeasurement);
 				callback(
 					orderId,
 					tradeSystemOrderId,
 					orderStatus,
-					tradeQty,
 					remainingQty,
-					tradePrice);
+					trade);
 			});
 	} catch (...) {
 		GetLog().Debug(
@@ -930,9 +895,8 @@ OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 			security,
 			currency,
 			supposedPrice,
-			0,
-			0,
 			qty,
+			nullptr,
 			timeMeasurement);
 		throw;
 	}
@@ -969,9 +933,8 @@ OrderId TradeSystem::BuyImmediatelyOrCancel(
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
-					const Qty &tradeQty,
 					const Qty &remainingQty,
-					const ScaledPrice &tradePrice) {
+					const TradeInfo *trade) {
 				m_pimpl->ConfirmBuyOrder(
 					riskControlOperationId,
 					riskControlScope,
@@ -979,17 +942,15 @@ OrderId TradeSystem::BuyImmediatelyOrCancel(
 					security,
 					currency,
 					price,
-					tradeQty,
-					tradePrice,
 					remainingQty,
+					trade,
 					timeMeasurement);
 				callback(
 					orderId,
 					tradeSystemOrderId,
 					orderStatus,
-					tradeQty,
 					remainingQty,
-					tradePrice);
+					trade);
 			});
 	} catch (...) {
 		GetLog().Debug(
@@ -1001,9 +962,8 @@ OrderId TradeSystem::BuyImmediatelyOrCancel(
 			security,
 			currency,
 			price,
-			0,
-			0,
 			qty,
+			nullptr,
 			timeMeasurement);
 		throw;
 	}
@@ -1040,9 +1000,8 @@ OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
-					const Qty &tradeQty,
 					const Qty &remainingQty,
-					const ScaledPrice &tradePrice) {
+					const TradeInfo *trade) {
 				m_pimpl->ConfirmBuyOrder(
 					riskControlOperationId,
 					riskControlScope,
@@ -1050,17 +1009,15 @@ OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 					security,
 					currency,
 					supposedPrice,
-					tradeQty,
-					tradePrice,
 					remainingQty,
+					trade,
 					timeMeasurement);
 				callback(
 					orderId,
 					tradeSystemOrderId,
 					orderStatus,
-					tradeQty,
 					remainingQty,
-					tradePrice);
+					trade);
 			});
 	} catch (...) {
 		GetLog().Debug(
@@ -1072,9 +1029,8 @@ OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 			security,
 			currency,
 			supposedPrice,
-			0,
-			0,
 			qty,
+			nullptr,
 			timeMeasurement);
 		throw;
 	}

@@ -60,6 +60,8 @@ namespace trdk {
 				const std::string *user,
 				const trdk::TradeSystem::OrderStatus &,
 				const boost::posix_time::ptime *executionTime,
+				const std::string *lastTradeId,
+				size_t numberOfTrades,
 				double avgTradePrice,
 				const trdk::Qty &executedQty,
 				const double *counterAmount,

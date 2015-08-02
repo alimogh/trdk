@@ -268,18 +268,16 @@ public:
 			Security &security,
 			const Lib::Currency &currency,
 			const ScaledPrice &orderPrice,
-			const Qty &tradeQty,
-			const ScaledPrice &tradePrice,
-			const Qty &remainingQty) {
+			const Qty &remainingQty,
+			const TradeSystem::TradeInfo *trade) {
  		 ConfirmOrder(
 			operationId,
 			status,
 			security,
 			currency,
 			orderPrice,
-			tradeQty,
-			tradePrice,
 			remainingQty,
+			trade,
 			security
 				.GetRiskControlContext(GetTradingMode())
 				.GetScope(m_index)
@@ -292,18 +290,16 @@ public:
 			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
-			const Qty &tradeQty,
-			const ScaledPrice &tradePrice,
-			const Qty &remainingQty) {
+			const Qty &remainingQty,
+			const TradeSystem::TradeInfo *trade) {
  		ConfirmOrder(
 			operationId,
 			status,
 			security,
 			currency,
 			orderPrice,
-			tradeQty,
-			tradePrice,
 			remainingQty,
+			trade,
 			security
 				.GetRiskControlContext(GetTradingMode())
 				.GetScope(m_index)
@@ -402,9 +398,8 @@ private:
 			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
-			const Qty &tradeQty,
-			const ScaledPrice &tradePrice,
 			const Qty &remainingQty,
+			const TradeSystem::TradeInfo *trade,
 			RiskControlSymbolContext::Side &side) {
 		ConfirmUsedFunds(
 			operationId,
@@ -412,9 +407,8 @@ private:
 			security,
 			currency,
 			orderPrice,
-			tradeQty,
-			tradePrice,
 			remainingQty,
+			trade,
 			side);
 	}
 
@@ -593,9 +587,8 @@ private:
 			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
-			const Qty &tradeQty,
-			const ScaledPrice &tradePrice,
 			const Qty &remainingQty,
+			const TradeSystem::TradeInfo *trade,
 			const RiskControlSymbolContext::Side &side) {
 
 		static_assert(
@@ -610,20 +603,22 @@ private:
 			case TradeSystem::ORDER_STATUS_REQUESTED_CANCEL:
 				break;
 			case TradeSystem::ORDER_STATUS_FILLED:
-				AssertNe(0, tradePrice);
+				if (!trade) {
+					throw Exception("Filled order has no trade information");
+				}
+				AssertNe(0, trade->price);
 				ConfirmBlockedFunds(
 					operationId,
 					security,
 					currency,
 					orderPrice,
-					tradeQty,
-					tradePrice,
+					*trade,
 					side);
 				break;
 			case TradeSystem::ORDER_STATUS_CANCELLED:
 			case TradeSystem::ORDER_STATUS_INACTIVE:
 			case TradeSystem::ORDER_STATUS_ERROR:
-				AssertEq(0, tradePrice);
+				Assert(!trade);
 				UnblockFunds(
 					operationId,
 					security,
@@ -641,8 +636,7 @@ private:
 			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
-			const Qty &tradeQty,
-			const ScaledPrice &tradePrice,
+			const TradeSystem::TradeInfo &trade,
 			const RiskControlSymbolContext::Side &side) {
 
 		const Symbol &symbol = security.GetSymbol();
@@ -663,15 +657,15 @@ private:
 			= CalcCacheOrderVolumes(
 				security,
 				currency,
-				tradeQty,
+				trade.qty,
 				orderPrice,
 				side);
 		const std::pair<double, double> used
 			= CalcCacheOrderVolumes(
 				security,
 				currency,
-				tradeQty,
-				tradePrice,
+				trade.qty,
+				trade.price,
 				side);
 
 		const std::pair<double, double> newPosition = std::make_pair(
@@ -1278,9 +1272,8 @@ void RiskControl::ConfirmBuyOrder(
 		Security &security,
 		const Currency &currency,
 		const ScaledPrice &orderPrice,
-		const Qty &tradeQty,
-		const ScaledPrice &tradePrice,
 		const Qty &remainingQty,
+		const TradeSystem::TradeInfo *trade,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_START);
 	m_pimpl->m_globalScope.ConfirmBuyOrder(
@@ -1289,18 +1282,16 @@ void RiskControl::ConfirmBuyOrder(
 		security,
 		currency,
 		orderPrice,
-		tradeQty,
-		tradePrice,
-		remainingQty);
+		remainingQty,
+		trade);
 	scope.ConfirmBuyOrder(
 		operationId,
 		orderStatus,
 		security,
 		currency,
 		orderPrice,
-		tradeQty,
-		tradePrice,
-		remainingQty);
+		remainingQty,
+		trade);
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_COMPLETE);
 }
 
@@ -1311,9 +1302,8 @@ void RiskControl::ConfirmSellOrder(
 		Security &security,
 		const Currency &currency,
 		const ScaledPrice &orderPrice,
-		const Qty &tradeQty,
-		const ScaledPrice &tradePrice,
 		const Qty &remainingQty,
+		const TradeSystem::TradeInfo *trade,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_START);
 	m_pimpl->m_globalScope.ConfirmSellOrder(
@@ -1322,18 +1312,16 @@ void RiskControl::ConfirmSellOrder(
 		security,
 		currency,
 		orderPrice,
-		tradeQty,
-		tradePrice,
-		remainingQty);
+		remainingQty,
+		trade);
 	scope.ConfirmSellOrder(
 		operationId,
 		orderStatus,
 		security,
 		currency,
 		orderPrice,
-		tradeQty,
-		tradePrice,
-		remainingQty);
+		remainingQty,
+		trade);
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_COMPLETE);
 }
 

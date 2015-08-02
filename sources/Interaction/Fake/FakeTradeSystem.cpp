@@ -176,12 +176,11 @@ public:
 						const OrderId &id,
 						const std::string &uuid,
 						const OrderStatus &status,
-						const Qty &tradeQty,
 						const Qty &remainingQty,
-						const ScaledPrice &tradePrice) {
+						const TradeInfo *trade) {
 					boost::this_thread::sleep(
 						boost::get_system_time() + ChooseReportDelay());
-					callback(id, uuid, status, tradeQty, remainingQty, tradePrice);	
+					callback(id, uuid, status, remainingQty, trade);	
 				};  
 		}
 
@@ -293,32 +292,32 @@ private:
 
 	void ExecuteOrder(const Order &order) {
 		bool isMatched = false;
-		ScaledPrice tradePrice = 0;
+		TradeInfo trade = {};
 		if (order.isSell) {
-			tradePrice = order.security->GetBidPriceScaled();
-			isMatched = order.price <= tradePrice;
+			trade.price = order.security->GetBidPriceScaled();
+			isMatched = order.price <= trade.price;
 		} else {
-			tradePrice = order.security->GetAskPriceScaled();
-			isMatched = order.price >= tradePrice;
+			trade.price = order.security->GetAskPriceScaled();
+			isMatched = order.price >= trade.price;
 		}
-		const auto &uuid
-			= boost::lexical_cast<std::string>(boost::uuids::random_generator()());
+		const auto &tradeSysteOrderId
+			= (boost::format("PAPER%1%") % order.id).str();
 		if (isMatched) {
+			trade.id = tradeSysteOrderId;
+			trade.qty = order.qty;
 			order.callback(
 				order.id,
-				uuid,
+				tradeSysteOrderId,
 				TradeSystem::ORDER_STATUS_FILLED,
-				order.qty,
 				0,
-				tradePrice);
+				&trade);
 		} else {
 			order.callback(
 				order.id, 
-				uuid,
+				tradeSysteOrderId,
 				TradeSystem::ORDER_STATUS_CANCELLED,
-				0,
 				order.qty,
-				0);
+				nullptr);
 		}
 	}
 
