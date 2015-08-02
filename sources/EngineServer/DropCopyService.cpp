@@ -74,22 +74,11 @@ namespace {
 		}
 		
 		result.set_security_id(security.GetInstanceId());
-		
-		{
-			bool isBuy = side == ORDER_SIDE_BUY;
-			const Symbol &symbol = security.GetSymbol();
-			if (
-					symbol.GetSecurityType() == Symbol::SECURITY_TYPE_FOR_SPOT
-					&& symbol.GetFotBaseCurrency() != currency) {
-				AssertEq(symbol.GetFotQuoteCurrency(), currency);
-				//! @sa TRDK-141 why we changing direction at changed currency:
-				isBuy = !isBuy;
-			}
-			result.set_side(
-					isBuy
-						?	OrderParameters::SIDE_BUY
-						:	OrderParameters::SIDE_SELL);
-		}
+
+		result.set_side(
+			side == ORDER_SIDE_BUY
+				?	OrderParameters::SIDE_BUY
+				:	OrderParameters::SIDE_SELL);
 		
 		result.set_qty(qty);
 		if (price) {
