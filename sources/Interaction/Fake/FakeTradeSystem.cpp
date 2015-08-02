@@ -26,6 +26,7 @@ namespace {
 
 	struct Order {
 		Security *security;
+		Currency currency;
 		bool isSell;
 		OrderId id;
 		Fake::TradeSystem::OrderStatusUpdateSlot callback;
@@ -293,7 +294,16 @@ private:
 	void ExecuteOrder(const Order &order) {
 		bool isMatched = false;
 		TradeInfo trade = {};
-		if (order.isSell) {
+		bool isSell = order.isSell;
+		const Symbol &symbol = order.security->GetSymbol();
+		if (
+				symbol.GetSecurityType() == Symbol::SECURITY_TYPE_FOR_SPOT
+				&& symbol.GetFotBaseCurrency() != order.currency) {
+			AssertEq(symbol.GetFotQuoteCurrency(), order.currency);
+			//! @sa TRDK-133 why we changing direction at changed currency:
+			isSell = !isSell;
+		}
+		if (isSell) {
 			trade.price = order.security->GetBidPriceScaled();
 			isMatched = order.price <= trade.price;
 		} else {
@@ -366,26 +376,28 @@ void Fake::TradeSystem::CreateConnection(const IniSectionRef &) {
 
 OrderId Fake::TradeSystem::SendSellAtMarketPrice(
 			Security &security,
-			const Currency &,
+			const Currency &currency,
 			const Qty &qty,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	AssertLt(0, qty);
 	Order order = {
 		&security,
+		currency,
 		true,
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
 		qty,
 		0,
-		params};
+		params
+	};
 	m_pimpl->SendOrder(order);
 	return order.id;
 }
 
 OrderId Fake::TradeSystem::SendSell(
 			Security &security,
-			const Currency &,
+			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &price,
 			const OrderParams &params,
@@ -393,12 +405,14 @@ OrderId Fake::TradeSystem::SendSell(
 	AssertLt(0, qty);
 	Order order = {
 		&security,
+		currency,
 		false,
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
 		qty,
 		price,
-		params};
+		params
+	};
 	m_pimpl->SendOrder(order);
 	return order.id;
 }
@@ -418,64 +432,70 @@ OrderId Fake::TradeSystem::SendSellAtMarketPriceWithStopPrice(
 
 OrderId Fake::TradeSystem::SendSellImmediatelyOrCancel(
 			Security &security,
-			const Currency &,
+			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &price,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Order order = {
 		&security,
+		currency,
 		true,
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
 		qty,
 		price,
-		params};
+		params
+	};
 	m_pimpl->SendOrder(order);
 	return order.id;
 }
 
 OrderId Fake::TradeSystem::SendSellAtMarketPriceImmediatelyOrCancel(
 			Security &security,
-			const Currency &,
+			const Currency &currency,
 			const Qty &qty,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	AssertLt(0, qty);
 	Order order = {
 		&security,
+		currency,
 		false,
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
 		qty,
 		0,
-		params};
+		params
+	};
 	m_pimpl->SendOrder(order);
 	return order.id;
 }
 
 OrderId Fake::TradeSystem::SendBuyAtMarketPrice(
 			Security &security,
-			const Currency &,
+			const Currency &currency,
 			const Qty &qty,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	AssertLt(0, qty);
 	Order order = {
 		&security,
+		currency,
 		false,
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
 		qty,
 		0,
-		params};
+		params
+	};
 	m_pimpl->SendOrder(order);
 	return order.id;
 }
 
 OrderId Fake::TradeSystem::SendBuy(
 			Security &security,
-			const Currency &,
+			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &price,
 			const OrderParams &params,
@@ -483,12 +503,14 @@ OrderId Fake::TradeSystem::SendBuy(
 	AssertLt(0, qty);
 	Order order = {
 		&security,
+		currency,
 		false,
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
 		qty,
 		price,
-		params};
+		params
+	};
 	m_pimpl->SendOrder(order);
 	return order.id;
 }
@@ -508,38 +530,42 @@ OrderId Fake::TradeSystem::SendBuyAtMarketPriceWithStopPrice(
 
 OrderId Fake::TradeSystem::SendBuyImmediatelyOrCancel(
 			Security &security,
-			const Currency &,
+			const Currency &currency,
 			const Qty &qty,
 			const ScaledPrice &price,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	Order order = {
 		&security,
+		currency,
 		false,
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
 		qty,
 		price,
-		params};
+		params
+	};
 	m_pimpl->SendOrder(order);
 	return order.id;
 }
 
 OrderId Fake::TradeSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
 			Security &security,
-			const Currency &,
+			const Currency &currency,
 			const Qty &qty,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
 	AssertLt(0, qty);
 	Order order = {
 		&security,
+		currency,
 		false,
 		m_pimpl->TakeOrderId(),
 		statusUpdateSlot,
 		qty,
 		0,
-		params};
+		params
+	};
 	m_pimpl->SendOrder(order);
 	return order.id;
 }
