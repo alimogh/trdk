@@ -607,12 +607,14 @@ void Client::Login(const std::string &login, const std::string &password) {
 
 		Assert(messageEnd <= dataEnd);
 		if (messageEnd < dataEnd) {
+			const auto transferredBytes = dataEnd - messageEnd;
+			m_buffer.first.erase(m_buffer.first.begin(), messageEnd);
 			OnNewData(
 				m_buffer.first,
-				messageEnd - m_buffer.first.cbegin(),
+				0,
 				m_buffer.second,
 				boost::system::error_code(),
-				dataEnd - messageEnd);
+				transferredBytes);
 		} else {
 			StartRead(m_buffer.first, 0, m_buffer.second);
 		}
@@ -673,6 +675,7 @@ void Client::OnNewData(
 		uint32_t size = uint32_t(transferredBytes);
 		m_perfSourceFile.write(reinterpret_cast<char *>(&size), sizeof(size));
 		m_perfSourceFile.write(activeBuffer.data(), size);
+		m_perfSourceFile.flush();
 	}
 #	endif
 
@@ -759,8 +762,13 @@ void Client::OnNewData(
 			
 			switch (*it) {
 				default:
-					throw SessionMessage::UnknownMessageError(
-						"Wrong message: unknown type");
+					{
+						boost::format message(
+							"Wrong message: unknown type (%1%)");
+						message % *it;
+						throw SessionMessage::UnknownMessageError(
+							message.str().c_str());
+					}
 				case SessionMessage::TYPE_HEARTBEAT:
 					OnHeartbeat();
 					break;
