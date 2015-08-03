@@ -764,15 +764,22 @@ private:
 			return;
 		}
 
-		if (!m_conf.IsSectionExist(Sections::dropCopy)) {
+		std::unique_ptr<const IniSectionRef> configurationSection;
+		if (m_conf.IsSectionExist(Sections::dropCopy)) {
+			configurationSection.reset(
+				new IniSectionRef(m_conf, Sections::dropCopy));
+			if (!configurationSection->ReadBoolKey(Keys::isEnabled)) {
+				configurationSection.reset();
+			}
+		}
+		if (!configurationSection) {
 			*m_dropCopyResult = DropCopyModule();
 			return;
 		}
-		const IniSectionRef configurationSection(m_conf, Sections::dropCopy);
 		
 		try {
 			*m_dropCopyResult
-				= m_dropCopyFactory(m_context, configurationSection);
+				= m_dropCopyFactory(m_context, *configurationSection);
 		} catch (...) {
 			trdk::EventsLog::BroadcastUnhandledException(
 				__FUNCTION__,
