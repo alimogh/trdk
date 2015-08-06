@@ -170,10 +170,7 @@ void Stream::ConnectClient() {
 		
 	} catch (const Client::Exception &ex) {
 		GetLog().Error("Failed to connect to server: \"%1%\".", ex.what());
-		{
-			const ClientLock lock(m_clientMutex);
-			m_client.reset();
-		}
+		m_client.reset();
 		throw ConnectError("Failed to connect to server");
 	}
 
