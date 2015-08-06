@@ -11,6 +11,7 @@
 #pragma once
 
 #include "TriangulationWithDirectionTypes.hpp"
+#include "Fwd.hpp"
 #include "Core/Position.hpp"
 
 namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
@@ -23,6 +24,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		explicit Position(
 				trdk::Strategy &strategy,
+				const Triangle &triangle,
 				trdk::TradeSystem &tradeSystem,
 				trdk::Security &security,
 				const trdk::Lib::Currency &currency,
@@ -31,21 +33,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const Leg &leg,
-				const Qty &baseCurrencyQty)
-			: trdk::Position(
-				strategy,
-				tradeSystem,
-				security,
-				currency,
-				qty,
-				startPrice,
-				timeMeasurement),
-			m_pair(pair),
-			m_leg(leg) {
-			const_cast<OrderParams &>(m_orderParams).minTradeQty
-				= baseCurrencyQty;
-			//...//
-		}
+				const Qty &baseCurrencyQty);
 
 	public:
 
@@ -87,6 +75,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		explicit LongPosition(
 				trdk::Strategy &strategy,
+				const Triangle &triangle,
 				trdk::TradeSystem &tradeSystem,
 				trdk::Security &security,
 				const trdk::Lib::Currency &currency,
@@ -95,35 +84,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const Leg &leg,
-				const Qty &baseCurrencyQty)
-			: trdk::Position(
-				strategy,
-				tradeSystem,
-				security,
-				currency,
-				qty,
-				startPrice,
-				timeMeasurement),
-			Twd::Position(
-				strategy,
-				tradeSystem,
-				security,
-				currency,
-				qty,
-				startPrice,
-				timeMeasurement,
-				pair,
-				leg,
-				baseCurrencyQty),
-			trdk::LongPosition(
-				strategy,
-				tradeSystem,
-				security,
-				currency,
-				qty,
-				startPrice,
-				timeMeasurement) {
-		}
+				const Qty &baseCurrencyQty);
 
 		virtual ~LongPosition() {
 			//...//
@@ -139,6 +100,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		explicit ShortPosition(
 				trdk::Strategy &strategy,
+				const Triangle &triangle,
 				trdk::TradeSystem &tradeSystem,
 				trdk::Security &security,
 				const trdk::Lib::Currency &currency,
@@ -147,35 +109,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const Leg &leg,
-				const Qty &baseCurrencyQty)
-			: trdk::Position(
-				strategy,
-				tradeSystem,
-				security,
-				currency,
-				qty,
-				startPrice,
-				timeMeasurement),
-			Twd::Position(
-				strategy,
-				tradeSystem,
-				security,
-				currency,
-				qty,
-				startPrice,
-				timeMeasurement,
-				pair,
-				leg,
-				baseCurrencyQty),
-			trdk::ShortPosition(
-				strategy,
-				tradeSystem,
-				security,
-				currency,
-				qty,
-				startPrice,
-				timeMeasurement) {
-		}
+				const Qty &baseCurrencyQty);
 
 		~ShortPosition() {
 			//...//

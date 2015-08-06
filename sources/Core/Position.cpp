@@ -145,6 +145,8 @@ public:
 	mutable StateUpdateSignal m_stateUpdateSignal;
 
 	Strategy &m_strategy;
+	const uint64_t m_operationId;
+	const uint64_t m_subOperationId;
 	bool m_isRegistered;
 	Security &m_security;
 	const Currency m_currency;
@@ -177,6 +179,8 @@ public:
 			Position &position,
 			TradeSystem &tradeSystem,
 			Strategy &strategy,
+			uint64_t operationId,
+			uint64_t subOperationId,
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -186,6 +190,8 @@ public:
 		m_position(position),
 		m_tradeSystem(tradeSystem),
 		m_strategy(strategy),
+		m_operationId(operationId),
+		m_subOperationId(subOperationId),
 		m_isRegistered(false),
 		m_security(security),
 		m_currency(currency),
@@ -1019,6 +1025,8 @@ private:
 			!orderTime.is_not_a_date_time() ? &orderTime : nullptr,
 			orderId,
 			m_strategy,
+			&m_operationId,
+			&m_subOperationId,
 			m_security,
 			m_position.GetType() == TYPE_LONG
 				?	(isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL)
@@ -1065,6 +1073,8 @@ private:
 			m_strategy.GetContext().GetCurrentTime(),
 			id,
 			m_strategy,
+			&m_operationId,
+			&m_subOperationId,
 			false,
 			tradePrice,
 			tradeQty,
@@ -1095,6 +1105,8 @@ private:
 
 Position::Position(
 		Strategy &strategy,
+		uint64_t operationId,
+		uint64_t subOperationId,
 		TradeSystem &tradeSystem,
 		Security &security,
 		const Currency &currency,
@@ -1106,16 +1118,21 @@ Position::Position(
 		*this,
 		tradeSystem,
 		strategy,
+		operationId,
+		subOperationId,
 		security,
 		currency,
 		qty,
 		startPrice,
 		timeMeasurement);
+	//...//
 }
 
 
 Position::Position(
 		Strategy &strategy,
+		uint64_t operationId,
+		uint64_t subOperationId,
 		Position &oppositePosition,
 		const Qty &qty,
 		const ScaledPrice &startPrice,
@@ -1133,6 +1150,8 @@ Position::Position(
 		*this,
 		oppositePosition.m_pimpl->m_tradeSystem,
 		strategy,
+		operationId,
+		subOperationId,
 		oppositePosition.m_pimpl->m_security,
 		oppositePosition.m_pimpl->m_currency,
 		qty,
@@ -1602,6 +1621,8 @@ void Position::RestoreOpenState(OrderId openOrderId) {
 
 LongPosition::LongPosition(
 		Strategy &strategy,
+		uint64_t operationId,
+		uint64_t subOperationId,
 		TradeSystem &tradeSystem,
 		Security &security,
 		const Currency &currency,
@@ -1610,6 +1631,8 @@ LongPosition::LongPosition(
 		const TimeMeasurement::Milestones &timeMeasurement)
 	: Position(
 		strategy,
+		operationId,
+		subOperationId,
 		tradeSystem,
 		security,
 		currency,
@@ -1621,12 +1644,16 @@ LongPosition::LongPosition(
 
 LongPosition::LongPosition(
 		Strategy &strategy,
+		uint64_t operationId,
+		uint64_t subOperationId,
 		ShortPosition &oppositePosition,
 		const Qty &qty,
 		const ScaledPrice &startPrice,
 		const TimeMeasurement::Milestones &timeMeasurement)
 	: Position(
 		strategy,
+		operationId,
+		subOperationId,
 		oppositePosition,
 		qty,
 		startPrice,
@@ -1887,6 +1914,8 @@ OrderId LongPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
 
 ShortPosition::ShortPosition(
 		Strategy &strategy,
+		uint64_t operationId,
+		uint64_t subOperationId,
 		TradeSystem &tradeSystem,
 		Security &security,
 		const Currency &currency,
@@ -1895,6 +1924,8 @@ ShortPosition::ShortPosition(
 		const TimeMeasurement::Milestones &timeMeasurement)
 	: Position(
 		strategy,
+		operationId,
+		subOperationId,
 		tradeSystem,
 		security,
 		currency,
@@ -1906,12 +1937,16 @@ ShortPosition::ShortPosition(
 
 ShortPosition::ShortPosition(
 		Strategy &strategy,
+		uint64_t operationId,
+		uint64_t subOperationId,
 		LongPosition &oppositePosition,
 		const Qty &qty,
 		const ScaledPrice &startPrice,
 		const TimeMeasurement::Milestones &timeMeasurement)
 	: Position(
 		strategy,
+		operationId,
+		subOperationId,
 		oppositePosition,
 		qty,
 		startPrice,

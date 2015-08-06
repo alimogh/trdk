@@ -147,19 +147,20 @@ message Trade {
 
 	required trdk.EngineService.Uuid strategy_id = 3;
 	optional uint64 operation_id = 4;
-	required trdk.EngineService.TradingMode mode = 5;
+	optional uint64 sub_operation_id = 5; 
+	required trdk.EngineService.TradingMode mode = 6;
 
-	required bool is_maker = 6;
+	required bool is_maker = 7;
 
-	required double price = 7;
-	required double qty = 8;
-	required double counter_amount = 9;
+	required double price = 8;
+	required double qty = 9;
+	required double counter_amount = 10;
 
-	required trdk.EngineService.Uuid order_id = 10;
-	required string trade_system_order_id = 11;
-	required OrderParameters order_params = 12;
+	required trdk.EngineService.Uuid order_id = 11;
+	required string trade_system_order_id = 12;
+	required OrderParameters order_params = 13;
 
-	required BidAsk top_of_book = 13;
+	required BidAsk top_of_book = 14;
 
 }
 
@@ -172,24 +173,25 @@ message Order {
 
 	required trdk.EngineService.Uuid strategy_id = 3;
 	optional uint64 operation_id = 4;
-	required trdk.EngineService.TradingMode mode = 5;
+	optional uint64 sub_operation_id = 5;
+	required trdk.EngineService.TradingMode mode = 6;
 
-	required OrderParameters params = 6;
+	required OrderParameters params = 7;
 
-	required OrderStatus status = 7;
+	required OrderStatus status = 8;
 
-	optional string order_time = 8;
-	optional string execution_time = 9;
+	optional string order_time = 9;
+	optional string execution_time = 10;
 
-	optional string last_trade_id = 10;
-	required uint32 number_of_trades = 11;
-	required double avg_trade_price = 12;
+	optional string last_trade_id = 11;
+	required uint32 number_of_trades = 12;
+	required double avg_trade_price = 13;
 
-	required double executed_qty = 13;
+	required double executed_qty = 14;
 	
-	optional double counter_amount = 14;
+	optional double counter_amount = 15;
 
-	optional BidAsk top_of_book = 15;
+	optional BidAsk top_of_book = 16;
 	
 }
 

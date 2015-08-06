@@ -314,6 +314,8 @@ void DropCopyService::CopyOrder(
 		const pt::ptime *orderTime,
 		const std::string *tradeSystemId,
 		const Strategy &strategy,
+		const uint64_t *operationId,
+		const uint64_t *subOperationId,
 		const trdk::Security &security,
 		const OrderSide &side,
 		const Qty &orderQty,
@@ -343,6 +345,12 @@ void DropCopyService::CopyOrder(
 		order.set_trade_system_order_id(*tradeSystemId);
 	}
 	ConvertToUuid(strategy.GetId(), *order.mutable_strategy_id());
+	if (operationId) {
+		order.set_operation_id(*operationId);
+	}
+	if (subOperationId) {
+		order.set_sub_operation_id(*subOperationId);
+	}
 	Convert(strategy.GetTradingMode(), order);
 	Convert(
 		security,
@@ -423,6 +431,8 @@ void DropCopyService::CopyTrade(
 		const pt::ptime &time,
 		const std::string &id,
 		const trdk::Strategy &strategy,
+		const uint64_t *operationId,
+		const uint64_t *subOperationId,
 		bool isMaker,
 		double tradePrice,
 		const trdk::Qty &tradeQty,
@@ -450,6 +460,12 @@ void DropCopyService::CopyTrade(
 	trade.set_id(id);
 	ConvertToUuid(strategy.GetId(), *trade.mutable_strategy_id());
 	Convert(strategy.GetTradingMode(), trade);
+	if (operationId) {
+		trade.set_operation_id(*operationId);
+	}
+	if (subOperationId) {
+		trade.set_sub_operation_id(*subOperationId);
+	}
 	trade.set_is_maker(isMaker);
 	trade.set_price(tradePrice);
 	trade.set_qty(tradeQty);
