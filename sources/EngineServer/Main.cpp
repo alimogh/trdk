@@ -204,11 +204,85 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
+#if !defined(BOOST_WINDOWS)
+namespace {
+
+	void * WaitOsSignal(void *arg) {
+		try {
+			for (; ;) {
+				sigset_t signalSet;
+				int signalNumber = 0;
+				sigwait(&signalSet, &signalNumber);
+				std::cout
+					<< "OS Signal " << signalNumber
+					<< " received and suppressed." << std::endl;
+			}
+		} catch (...) {
+			AssertFailNoException();
+			throw;
+		}
+	}
+
+	void InstallOsSignalsHandler() {
+
+		// Start by masking suppressed signals at the primary thread. All other
+		// threads inherit this signal mask and therefore will have the same
+		// signals suppressed.
+		{
+			sigset_t signalSet;
+			sigemptyset(&signalSet);
+			sigaddset(&signalSet, SIGPIPE);
+			// sigaddset(&signalSet, SIGXXX1);
+			// sigaddset(&signalSet, SIGXXX2);
+		}
+
+		// Install the signal mask against primary thread.
+		{
+			sigset_t signalSet;
+			const auto status = pthread_sigmask(SIG_BLOCK, &signalSet, NULL);
+			if (status != 0) {
+				std::cerr
+					<< "Failed to install OS Signal Mask"
+					<< " (error: " << status << ")."
+					<< std::endl;
+				exit(1);
+			}
+		}
+
+		// Create the sigwait thread.
+		{
+			pthread_t signalThreadId;
+			const auto status
+				= pthread_create(&signalThreadId, NULL, WaitOsSignal, NULL);
+			if (status != 0) {
+				std::cerr
+					<< "Failed to install create thread for OS Signal Wait"
+					<< " (error: " << status << ")."
+					<< std::endl;
+				exit(1);
+			}
+		}
+
+	}
+
+}
+#else
+
+	void InstallOsSignalsHandler() {
+		//...//
+	}
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+
 int main(int argc, const char *argv[]) {
 	
 	int result = 3;
 	
 	try {
+
+		InstallOsSignalsHandler();
 
 		boost::function<bool (int, const char *[])> func;
 		if (argc > 1) {

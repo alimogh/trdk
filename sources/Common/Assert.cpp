@@ -26,17 +26,13 @@ using namespace trdk::Debug;
 #	define IS_DEBUG_BREAK_ENABLED 0
 #endif
 
-#if IS_DEBUG_BREAK_ENABLED == 1 && !defined(BOOST_WINDOWS) && defined(_DEBUG)
-#	include <signal.h>
-#endif
-
 namespace {
 
 	void BreakDebug() throw() {
 #		if IS_DEBUG_BREAK_ENABLED == 1
-#			if defined(BOOST_WINDOWS)
+#			if defined(BOOST_MSVC)
 				DebugBreak();
-#			elif defined(_DEBUG)
+#			elif defined(BOOST_GCC) && defined(_DEBUG)
 				raise(SIGTRAP);
 #			endif
 #		else

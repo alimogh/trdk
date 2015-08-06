@@ -10,6 +10,10 @@
 
 #pragma once
 
+#if defined(BOOST_GCC)
+#	include <signal.h>
+#endif
+
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/noncopyable.hpp>
 #	include <boost/enable_shared_from_this.hpp>

@@ -23,9 +23,9 @@
 #	include <boost/filesystem.hpp>
 #	include <boost/type_traits.hpp>
 #include "DisableBoostWarningsEnd.h"
-#ifdef BOOST_WINDOWS
+#if defined(BOOST_MSVC)
 #	include <Windows.h>
-#else
+#elif defined(BOOST_GCC)
 #	include <dlfcn.h>
 #endif
 
