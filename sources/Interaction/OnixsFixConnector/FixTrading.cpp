@@ -277,18 +277,31 @@ void FixTrading::NotifyOrderUpdate(
 				orderId);
 			return;
 		}
-		if (order->tradeSystemId.empty()) {
-			order->tradeSystemId = "<UNKNOWN>";// updateMessage.get(fix::FIX40::Tags::OrderID);
-		}
-// 		} else {
-// 			AssertEq(
-// 				updateMessage.get(fix::FIX40::Tags::OrderID),
-// 				order->tradeSystemId);
-// 		}
+#		if defined(BOOST_WINDOWS)
+			//! @sa TRDK-124 why Order ID disabled from windows
+			if (order->tradeSystemId.empty()) {
+				order->tradeSystemId = "<see TRDK-124>";
+			}
+#		else
+			if (order->tradeSystemId.empty()) {
+				order->tradeSystemId
+					= (std::string)updateMessage.get(fix::FIX40::Tags::OrderID);
+ 			} else {
+ 				AssertEq(
+ 					updateMessage.get(fix::FIX40::Tags::OrderID),
+ 					order->tradeSystemId);
+ 			}
+#		endif
 		Assert(!order->isRemoved);
 		order->isRemoved = isOrderCompleted;
 		if (status == ORDER_STATUS_FILLED) {
-			tradeData.id = "<UNKNOWN>";
+#			if defined(BOOST_WINDOWS)
+				//! @sa TRDK-146 why Order ID disabled from windows
+				tradeData.id = "<see TRDK-146>";
+#			else
+				tradeData.id
+					= (std::string)updateMessage.get(fix::FIX42::Tags::ExecID);
+#			endif
 			AssertGe(
 				order->qty,
 				order->filledQty + ParseLeavesQty(updateMessage));
