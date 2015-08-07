@@ -295,23 +295,26 @@ void FixTrading::NotifyOrderUpdate(
 		Assert(!order->isRemoved);
 		order->isRemoved = isOrderCompleted;
 		if (status == ORDER_STATUS_FILLED) {
-#			if defined(BOOST_WINDOWS)
-				//! @sa TRDK-146 why Order ID disabled from windows
-				tradeData.id = "<see TRDK-146>";
-#			else
-				tradeData.id
-					= (std::string)updateMessage.get(fix::FIX42::Tags::ExecID);
-#			endif
 			AssertGe(
 				order->qty,
 				order->filledQty + ParseLeavesQty(updateMessage));
-			tradeData.qty = ParseLastShares(updateMessage);
-			order->filledQty += tradeData.qty;
-			tradeData.price = orderCopy.security->ScalePrice(
-				updateMessage.getDouble(fix::FIX40::Tags::LastPx));
 			tradeInfo = &tradeData;
+			tradeInfo->qty = ParseLastShares(updateMessage);
+			order->filledQty += tradeData.qty;
 		}
 		orderCopy = *order;
+	}
+
+	if (tradeInfo) {
+#		if defined(BOOST_WINDOWS)
+			//! @sa TRDK-146 why Order ID disabled from windows
+			tradeInfo->id = "<see TRDK-146>";
+#		else
+			tradeInfo->id
+				= (std::string)updateMessage.get(fix::FIX42::Tags::ExecID);
+#		endif
+		tradeInfo->price = orderCopy.security->ScalePrice(
+			updateMessage.getDouble(fix::FIX40::Tags::LastPx));
 	}
 
 	orderCopy.timeMeasurement.Add(
