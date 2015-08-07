@@ -299,6 +299,7 @@ public:
 							AssertLt(0, m_oppositePosition->m_pimpl->m_closed.qty);
 							m_oppositePosition->m_pimpl->ReportClosingUpdate(
 								"filled",
+								tradeSystemOrderId,
 								orderStatus);
 							updatedOppositePosition = m_oppositePosition;
 						}
@@ -310,7 +311,10 @@ public:
 							++m_opened.price.count;
 							m_opened.qty += tradeQty;
 							AssertLe(0, m_opened.qty);
-							ReportOpeningUpdate("filled", orderStatus);
+							ReportOpeningUpdate(
+								"filled",
+								tradeSystemOrderId,
+								orderStatus);
 						} else {
 							AssertNe(0, remainingQty);
 						}
@@ -328,11 +332,15 @@ public:
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
 							"inactive",
+							tradeSystemOrderId,
 							orderStatus);
 						m_oppositePosition->m_pimpl->m_isInactive = true;
 						updatedOppositePosition = m_oppositePosition;
 					}
-					ReportOpeningUpdate("inactive", orderStatus);
+					ReportOpeningUpdate(
+						"inactive",
+						tradeSystemOrderId,
+						orderStatus);
 					m_isInactive = true;
 					break;
 				case TradeSystem::ORDER_STATUS_ERROR:
@@ -340,11 +348,15 @@ public:
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
 							"error",
+							tradeSystemOrderId,
 							orderStatus);
 						m_oppositePosition->m_pimpl->m_isError = true;
 						updatedOppositePosition = m_oppositePosition;
 					}
-					ReportOpeningUpdate("error", orderStatus);
+					ReportOpeningUpdate(
+						"error",
+						tradeSystemOrderId,
+						orderStatus);
 					m_isError = true;
 					break;
 				case TradeSystem::ORDER_STATUS_CANCELLED:
@@ -352,10 +364,14 @@ public:
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
 							"canceled",
+							tradeSystemOrderId,
 							orderStatus);
 						updatedOppositePosition = m_oppositePosition;
 					}
-					ReportOpeningUpdate("canceled", orderStatus);
+					ReportOpeningUpdate(
+						"canceled",
+						tradeSystemOrderId,
+						orderStatus);
 					break;
 			}
 	
@@ -474,7 +490,10 @@ public:
 					++m_closed.price.count;
 					m_closed.qty += trade->qty;
 					AssertGt(m_closed.qty, 0);
-					ReportClosingUpdate("filled", orderStatus);
+					ReportClosingUpdate(
+						"filled",
+						tradeSystemOrderId,
+						orderStatus);
 					CopyTrade(
 						trade->id,
 						m_security.DescalePrice(trade->price),
@@ -486,15 +505,24 @@ public:
 					}
 					break;
 				case TradeSystem::ORDER_STATUS_INACTIVE:
-					ReportClosingUpdate("error", orderStatus);
+					ReportClosingUpdate(
+						"error",
+						tradeSystemOrderId,
+						orderStatus);
 					m_isInactive = true;
 					break;
 				case TradeSystem::ORDER_STATUS_ERROR:
-					ReportClosingUpdate("error", orderStatus);
+					ReportClosingUpdate(
+						"error",
+						tradeSystemOrderId,
+						orderStatus);
 					m_isError = true;
 					break;
 				case TradeSystem::ORDER_STATUS_CANCELLED:
-					ReportClosingUpdate("canceled", orderStatus);
+					ReportClosingUpdate(
+						"canceled",
+						tradeSystemOrderId,
+						orderStatus);
 					break;
 			}
 	
@@ -558,6 +586,7 @@ public:
 
 	void ReportOpeningUpdate(
 				const char *eventDesc,
+				const std::string &tsOrderId,
 				const TradeSystem::OrderStatus &orderStatus)
 			const
 			throw() {
@@ -566,9 +595,9 @@ public:
 			"%1%\t%2%.%21%\t%3%\t%4%\topen-%5%\t%6%"
 				"\tprice=%7%->%8%\t%9%\tqty=%10%->%11%"
 				"\tbid=%12%/%13%\task=%14%/%15%\tadjusted=%16%"
-				"\torder-id=%17%"
+				"\torder-id=%17% ts-order-id=%22%"
 				"\torder-status=%18%\thas-orders=%19%\tis-error=%20%",
-			[this, eventDesc, &orderStatus](TradingRecord &record) {
+			[this, eventDesc, &orderStatus, &tsOrderId](TradingRecord &record) {
 				record
 					% m_id
 					% m_position.GetTradeSystem().GetTag()
@@ -590,7 +619,8 @@ public:
 					% m_tradeSystem.GetStringStatus(orderStatus)
 					% m_position.HasActiveOpenOrders()
 					% (m_isError ? true : false)
-					% m_tradeSystem.GetMode();
+					% m_tradeSystem.GetMode()
+					% tsOrderId;
 			});
 	}
 
@@ -620,15 +650,17 @@ public:
 
 	void ReportClosingUpdate(
 				const char *eventDesc,
+				const std::string &tsOrderId,
 				const TradeSystem::OrderStatus &orderStatus)
 			const
 			throw() {
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
 			"%14%\t%11%.%16%\t%1%\t%2%\tclose-%3%\t%4%"
-				"\tqty=%5%->%6% price=%15%->%7% order-id=%8%->%9%"
+				"\tqty=%5%->%6% price=%15%->%7%"
+				" order-id=%8%->%9% ts-order-id=%17%"
 				" order-status=%10% has-orders=%12%/%13%",
-			[this, eventDesc, &orderStatus](TradingRecord &record) {
+			[this, eventDesc, &orderStatus, &tsOrderId](TradingRecord &record) {
 				record
 					% m_position.GetSecurity().GetSymbol()
 					% m_position.GetTypeStr()
@@ -645,7 +677,8 @@ public:
 					% m_position.HasActiveCloseOrders()
 					% m_id
 					% m_security.DescalePrice(m_position.GetCloseStartPrice())
-					% m_tradeSystem.GetMode();
+					% m_tradeSystem.GetMode()
+					% tsOrderId;
 			});
 	}
 
@@ -720,7 +753,10 @@ public:
 			m_isRegistered = true;
 		}
 
-		ReportOpeningUpdate("restored", TradeSystem::ORDER_STATUS_FILLED);
+		ReportOpeningUpdate(
+			"restored",
+			std::string(),
+			TradeSystem::ORDER_STATUS_FILLED);
 
 		SignalUpdate();
 	
