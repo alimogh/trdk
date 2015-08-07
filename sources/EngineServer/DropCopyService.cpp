@@ -141,31 +141,32 @@ namespace {
 //////////////////////////////////////////////////////////////////////////
 
 DropCopyService::DropCopyService(Context &context, const IniSectionRef &)
-	: Base(context, "DropCopy") {
+	: Base(context, "DropCopy")
+	, m_io(new Io) {
 	//...//
 }
 
 DropCopyService::~DropCopyService() {
+	std::unique_ptr<Io> io;
 	try {
-		m_ioService.stop();
 		{
-			NoClientsConditionLock lock(m_noClientsConditionMutex);
-			while (!m_clients.empty()) {
-				m_noClientsCondition.wait(lock);
-			}
+			const ClientsWriteLock lock(m_clientsMutex);
+			io.reset(m_io.release());
 		}
-		m_ioServiceThreads.join_all();
+		io->service.stop();
+		io->threads.join_all();
 	} catch (...) {
 		AssertFailNoException();
 		throw;
 	}
+	io.reset();
 }
 
 void DropCopyService::Start(const IniSectionRef &conf) {
 	
-	AssertEq(0, m_clients.size());
-	AssertEq(0, m_ioServiceThreads.size());
-	if (m_ioServiceThreads.size() != 0) {
+	AssertEq(0, m_io->clients.size());
+	AssertEq(0, m_io->threads.size());
+	if (m_io->threads.size() != 0) {
 		throw Exception("Already started");
 	}
 
@@ -180,12 +181,12 @@ void DropCopyService::Start(const IniSectionRef &conf) {
 		throw Exception("Failed to connect to Drop Copy Storage");
 	}
 
-	while (m_ioServiceThreads.size() < 2) {
-		m_ioServiceThreads.create_thread(
+	while (m_io->threads.size() < 2) {
+		m_io->threads.create_thread(
 			[&]() {
 				GetLog().Debug("Started IO-service thread...");
 				try {
-					m_ioService.run();
+					m_io->service.run();
 				} catch (const Exception &ex) {
 					GetLog().Error("Unexpected error: \"%1%\".", ex);
 				} catch (...) {
@@ -238,28 +239,24 @@ void DropCopyService::StartNewClient(
 
 	}
 
-	const NoClientsConditionLock noClientsConditionLock(
-		m_noClientsConditionMutex);
 	const ClientsWriteLock lock(m_clientsMutex);
-	m_clients.push_back(&*newClient);
+	m_io->clients.push_back(&*newClient);
 
 }
 
 void DropCopyService::OnClientClose(const DropCopyClient &client) {
+
 	{
-		const NoClientsConditionLock noClientsConditionLock(m_noClientsConditionMutex);
 		const ClientsWriteLock lock(m_clientsMutex);
-		auto it = std::find(m_clients.begin(), m_clients.end(), &client);
-		if (it == m_clients.end()) {
+		if (!m_io) {
 			return;
 		}
-		m_clients.erase(it);
-		if (m_clients.empty()) {
-			m_noClientsCondition.notify_all();
-		}
-		if (m_ioService.stopped()) {
-			return;
-		}
+		auto it = std::find(
+			m_io->clients.begin(),
+			m_io->clients.end(),
+			&client);
+		Assert(it != m_io->clients.end());
+		m_io->clients.erase(it);
 	}
 
 	ReconnectClient(0, client.GetHost(), client.GetPort());
@@ -284,7 +281,7 @@ void DropCopyService::ReconnectClient(
 		const auto &sleepTime
 			= pt::seconds(long(1 * std::min<size_t>(attemptIndex, 30)));
 		boost::shared_ptr<boost::asio::deadline_timer> timer(
-			new io::deadline_timer(m_ioService, sleepTime));
+			new io::deadline_timer(m_io->service, sleepTime));
 		timer->async_wait(
 			[this, timer, host, port, attemptIndex] (
 					const boost::system::error_code &error) {
@@ -304,7 +301,7 @@ void DropCopyService::ReconnectClient(
 
 void DropCopyService::Send(const ServiceData &message) {
 	const ClientsReadLock lock(m_clientsMutex);
-	foreach (DropCopyClient *client, m_clients) {
+	foreach (DropCopyClient *client, m_io->clients) {
 		client->Send(message);
 	}
 }

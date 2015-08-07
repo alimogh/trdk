@@ -267,10 +267,12 @@ namespace {
 
 }
 #else
+namespace {
 
 	void InstallOsSignalsHandler() {
 		//...//
 	}
+
 }
 #endif
 

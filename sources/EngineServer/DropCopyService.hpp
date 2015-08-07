@@ -29,9 +29,14 @@ namespace trdk { namespace EngineServer {
 		typedef boost::shared_lock<ClientsMutex> ClientsReadLock;
 		typedef boost::unique_lock<ClientsMutex> ClientsWriteLock;
 
-		typedef boost::mutex NoClientsConditionMutex;
-		typedef NoClientsConditionMutex::scoped_lock NoClientsConditionLock;
-		typedef boost::condition_variable NoClientsCondition;
+		struct Io {
+
+			std::vector<DropCopyClient *> clients;
+
+			boost::thread_group threads;
+			boost::asio::io_service service;
+
+		};
 
 	public:
 
@@ -99,7 +104,7 @@ namespace trdk { namespace EngineServer {
 	public:
 
 		boost::asio::io_service & GetIoService() {
-			return m_ioService;
+			return m_io->service;
 		}
 
 	public:
@@ -119,13 +124,9 @@ namespace trdk { namespace EngineServer {
 
 	private:
 
-		boost::asio::io_service m_ioService;
-		boost::thread_group m_ioServiceThreads;
-
 		ClientsMutex m_clientsMutex;
-		NoClientsConditionMutex m_noClientsConditionMutex;
-		NoClientsCondition m_noClientsCondition;
-		std::vector<DropCopyClient *> m_clients;
+
+		std::unique_ptr<Io> m_io;
 
 	};
 
