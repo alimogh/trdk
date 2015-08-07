@@ -255,8 +255,11 @@ void DropCopyService::OnClientClose(const DropCopyClient &client) {
 			m_io->clients.begin(),
 			m_io->clients.end(),
 			&client);
-		Assert(it != m_io->clients.end());
-		m_io->clients.erase(it);
+		if (it != m_io->clients.end()) {
+			m_io->clients.erase(it);
+		} else {
+			// Connect error, object wasn't registered.
+		}
 	}
 
 	ReconnectClient(0, client.GetHost(), client.GetPort());
