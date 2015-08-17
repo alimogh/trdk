@@ -54,28 +54,15 @@ message EngineState {
 	required bool is_started = 2;
 }
 
-message Pnl {
-	required string time								= 1;
-	required trdk.EngineService.Uuid strategy_id		= 2;
-	required trdk.EngineService.Uuid settings_revision	= 3;
-	required trdk.EngineService.TradingMode mode		= 4;
-	required uint64 triangle_id							= 5;
-	required double pnl									= 6;
-	required double	atr									= 7;
-	required uint32	updates_number						= 8;
-	required string triangle_time						= 9;
-};
-
 message ServiceData {
 	
 	enum Type {
 		TYPE_KEEP_ALIVE = 1;
 		TYPE_ENGINE_INFO = 2;
 		TYPE_ENGINE_STATE = 3;
-		TYPE_PNL = 4;
-		TYPE_MESSAGE_ERROR = 5;
-		TYPE_MESSAGE_INFO = 6;
-		TYPE_SERVICE_INFO = 7;
+		TYPE_MESSAGE_ERROR = 4;
+		TYPE_MESSAGE_INFO = 5;
+		TYPE_SERVICE_INFO = 6;
 	}
 
 	required Type type = 1;
@@ -84,10 +71,8 @@ message ServiceData {
 	optional EngineInfo engine_info = 2;
 	// TYPE_ENGINE_STATE
 	optional EngineState engine_state = 3;
-	// TYPE_PNL
-	optional Pnl pnl = 4;
 	// TYPE_MESSAGE_INFO, TYPE_MESSAGE_ERROR and TYPE_SERVICE_INFO
-	optional string message = 5;
+	optional string message = 4;
 
 }
 
@@ -146,8 +131,6 @@ message ClientRequest {
 		TYPE_STRATEGY_START = 7;
 		TYPE_STRATEGY_STOP = 8;
 		TYPE_STRATEGY_SETTINGS = 9;
-		TYPE_DEBUG_PNL_REQUEST = 10;
-		TYPE_DEBUG_DROP_COPY_REQUEST = 11;
 	}
 
 	required Type type = 1;

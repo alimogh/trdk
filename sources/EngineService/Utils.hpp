@@ -13,25 +13,11 @@
 
 #include "EngineService.h"
 #include "Core/Types.hpp"
+#include "Common/Exception.hpp"
 
 namespace trdk { namespace EngineService {
 
-	template<typename Result>
-	void Convert(const trdk::TradingMode &source, Result &result) {
-		static_assert(numberOfTradingModes == 2, "List changed.");
-		switch (source) {
-			default:
-				AssertEq(trdk::TRADING_MODE_LIVE, source);
-				break;
-			case trdk::TRADING_MODE_LIVE:
-				result.set_mode(EngineService::TRADING_MODE_LIVE);
-				break;
-			case trdk::TRADING_MODE_PAPER:
-				result.set_mode(EngineService::TRADING_MODE_PAPER);
-				break;
-		}
-	}
-
+	trdk::EngineService::TradingMode Convert(const trdk::TradingMode &);
 	void ConvertToUuid(const boost::uuids::uuid &, Uuid &);
 	boost::uuids::uuid ConvertFromUuid(const Uuid &);
 

@@ -60,7 +60,7 @@ Twd::LongPosition::LongPosition(
 	: trdk::Position(
 		strategy,
 		triangle.GetId(),
-		uint64_t(leg),
+		GetLegNo(leg),
 		tradeSystem,
 		security,
 		currency,
@@ -82,7 +82,7 @@ Twd::LongPosition::LongPosition(
 	trdk::LongPosition(
 		strategy,
 		triangle.GetId(),
-		uint64_t(leg),
+		GetLegNo(leg),
 		tradeSystem,
 		security,
 		currency,
@@ -107,7 +107,7 @@ Twd::ShortPosition::ShortPosition(
 	: trdk::Position(
 		strategy,
 		triangle.GetId(),
-		uint64_t(leg),
+		GetLegNo(leg),
 		tradeSystem,
 		security,
 		currency,
@@ -129,7 +129,7 @@ Twd::ShortPosition::ShortPosition(
 	trdk::ShortPosition(
 		strategy,
 		triangle.GetId(),
-		uint64_t(leg),
+		GetLegNo(leg),
 		tradeSystem,
 		security,
 		currency,

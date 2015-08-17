@@ -11,6 +11,7 @@
 syntax = "proto2";
 
 import "trdk.EngineService.MarketData.proto";
+import "trdk.EngineService.Reports.proto";
 
 package trdk.EngineService.DropCopy;
 
@@ -22,6 +23,8 @@ message ServiceData {
 		TYPE_BOOK_UPDATE = 2;
 		TYPE_ORDER = 3;
 		TYPE_TRADE = 4;
+		TYPE_OPERATION_START = 5;
+		TYPE_OPERATION_END = 6;
 	}
 
 	required Type type = 1;
@@ -33,5 +36,9 @@ message ServiceData {
 	optional trdk.EngineService.MarketData.Order order = 4;
 	// TYPE_TRADE
 	optional trdk.EngineService.MarketData.Trade trade = 5;
+	// TYPE_OPERATION_START
+	optional trdk.EngineService.Reports.OperationStart operation_start = 6;
+	// TYPE_OPERATION_END
+	optional trdk.EngineService.Reports.OperationEnd operation_end = 7;
 
 }

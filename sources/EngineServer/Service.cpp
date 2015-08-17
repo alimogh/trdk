@@ -126,7 +126,6 @@ void EngineServer::Service::StartEngine(
 		const std::string &commandInfo) {
 	const auto &settings = GetEngineSettings(engineId);
 	Context &context = m_server.Run(
-		m_fooSlotConnection,
 		settings.GetEngeineId(),
 		settings.GetFilePath(),
 		false,
@@ -250,10 +249,4 @@ void EngineServer::Service::OnContextStateChanges(
 void EngineServer::Service::ClosePositions(const std::string &engineId) {
 	CheckEngineIdExists(engineId);
 	m_server.ClosePositions();
-}
-
-void EngineServer::Service::OnDebugDropCopyRequest() {
-	//! @todo Write to log
-	std::cout << "Generating Debug Drop Copy Records..." << std::endl;
-	m_server.GenerateDebugDropCopyRecords();
 }

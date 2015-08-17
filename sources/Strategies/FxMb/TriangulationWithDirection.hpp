@@ -115,7 +115,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		YDirection m_yDetectedReported;
 		const double m_yReportStep;
 
-		Triangle::Id m_lastTriangleId;
 		std::unique_ptr<Triangle> m_triangle;
 
 		Leg m_scheduledLeg;

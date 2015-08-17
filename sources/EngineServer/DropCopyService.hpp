@@ -47,28 +47,25 @@ namespace trdk { namespace EngineServer {
 
 		virtual void Start(const Lib::IniSectionRef &);
 
+	public:
+
 		virtual void CopyOrder(
-				const boost::uuids::uuid &uuid,
-				const boost::posix_time::ptime *orderTime,
+				const boost::uuids::uuid &id,
 				const std::string *tradeSystemId,
-				const trdk::Strategy &,
-				const uint64_t *operationId,
-				const uint64_t *subOperationId,
+				const boost::posix_time::ptime *orderTime,
+				const boost::posix_time::ptime *executionTime,
+				const trdk::TradeSystem::OrderStatus &,
+				const boost::uuids::uuid &operationId,
+				const int64_t *subOperationId,
 				const trdk::Security &,
 				const trdk::OrderSide &,
-				const trdk::Qty &orderQty,
-				const double *orderPrice,
+				const trdk::Qty &qty,
+				const double *price,
 				const trdk::TimeInForce *,
 				const trdk::Lib::Currency &,
 				const trdk::Qty *minQty,
 				const std::string *user,
-				const trdk::TradeSystem::OrderStatus &,
-				const boost::posix_time::ptime *executionTime,
-				const std::string *lastTradeId,
-				size_t numberOfTrades,
-				double avgTradePrice,
 				const trdk::Qty &executedQty,
-				const double *counterAmount,
 				const double *bestBidPrice,
 				const trdk::Qty *bestBidQty,
 				const double *bestAskPrice,
@@ -76,30 +73,24 @@ namespace trdk { namespace EngineServer {
 
 		virtual void CopyTrade(
 				const boost::posix_time::ptime &,
-				const std::string &id,
-				const trdk::Strategy &,
-				const uint64_t *operationId,
-				const uint64_t *subOperationId,
-				bool isMaker,
-				double tradePrice,
-				const trdk::Qty &tradeQty,
-				double counterAmount,
-				const boost::uuids::uuid &orderUuid,
-				const std::string &orderId,
-				const trdk::Security &,
-				const trdk::OrderSide &,
-				const trdk::Qty &orderQty,
-				double orderPrice,
-				const trdk::TimeInForce &,
-				const trdk::Lib::Currency &,
-				const trdk::Qty &minQty,
-				const std::string &user,
+				const std::string &tradeSystemTradeid,
+				const boost::uuids::uuid &orderId,
+				double price,
+				const trdk::Qty &qty,
 				double bestBidPrice,
 				const trdk::Qty &bestBidQty,
 				double bestAskPrice,
 				const trdk::Qty &bestAskQty);
 
-		virtual void GenerateDebugEvents();
+		virtual void ReportOperationStart(
+				const boost::uuids::uuid &id,
+				const boost::posix_time::ptime &,
+				const trdk::Strategy &,
+				size_t updatesNumber);
+		virtual void ReportOperationEnd(
+				const boost::uuids::uuid &id,
+				const boost::posix_time::ptime &,
+				double pnl);
 
 	public:
 

@@ -3,6 +3,7 @@
 /trdk/EngineService/MarketData_pb2.py
 /trdk/EngineService/MarketDataSource_pb2.py
 /trdk/EngineService/DropCopy_pb2.py
+/trdk/EngineService/Reports_pb2.py
 /trdk.EngineService.pb.cc
 /trdk.EngineService.pb.h
 /trdk.EngineService.MarketData.pb.cc
@@ -13,3 +14,5 @@
 /trdk.EngineService.Control.pb.h
 /trdk.EngineService.DropCopy.pb.cc
 /trdk.EngineService.DropCopy.pb.h
+/trdk.EngineService.Reports.pb.cc
+/trdk.EngineService.Reports.pb.h

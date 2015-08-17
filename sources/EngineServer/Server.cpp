@@ -30,7 +30,6 @@ bool Server::IsStarted(const std::string &id) const {
 }
 
 Context & Server::Run(
-		boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
 		const std::string &id,
 		const fs::path &path,
 		bool enableStdOutLog,
@@ -88,7 +87,6 @@ Context & Server::Run(
 
 		info.engine.reset(
 			new Engine::Context(
-				fooSlotConnection,
 				*info.eventsLog,
 				*info.tradingLog,
 				settings,
@@ -205,16 +203,5 @@ void Server::ClosePositions() {
 	const Lock lock(m_mutex);
 	foreach (const EngineInfo &engineInfo, m_engines) {
 		engineInfo.engine->ClosePositions();
-	}
-}
-
-void Server::GenerateDebugDropCopyRecords() {
-	const Lock lock(m_mutex);
-	foreach(const EngineInfo &engineInfo, m_engines) {
-		DropCopy *const dropCopy = engineInfo.engine->GetDropCopy();
-		if (!dropCopy) {
-			continue;
-		}
-		dropCopy->GenerateDebugEvents();
 	}
 }

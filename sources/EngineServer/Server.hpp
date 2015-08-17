@@ -60,7 +60,6 @@ namespace trdk { namespace EngineServer {
 		bool IsStarted(const std::string &id) const;
 
 		trdk::Context & Run(
-				boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
 				const std::string &id,
 				const boost::filesystem::path &,
 				bool enableStdOutLog,
@@ -70,8 +69,6 @@ namespace trdk { namespace EngineServer {
 		void Update(EngineServer::Settings::Transaction &);
 
 		void ClosePositions();
-
-		void GenerateDebugDropCopyRecords();
 
 	private:
 

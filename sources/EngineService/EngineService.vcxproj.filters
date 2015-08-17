@@ -6,6 +6,7 @@
     <CustomBuild Include="trdk.EngineService.proto" />
     <CustomBuild Include="trdk.EngineService.DropCopy.proto" />
     <CustomBuild Include="trdk.EngineService.MarketDataSource.proto" />
+    <CustomBuild Include="trdk.EngineService.Reports.proto" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="C++ stubs">
@@ -43,6 +44,9 @@
     </ClCompile>
     <ClCompile Include="Utils.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trdk.EngineService.Reports.pb.cc">
+      <Filter>C++ stubs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -85,6 +89,9 @@
     <ClInclude Include="Utils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="trdk.EngineService.Reports.pb.h">
+      <Filter>C++ stubs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="trdk\EngineService_pb2.py">
@@ -94,6 +101,15 @@
       <Filter>Python stubs</Filter>
     </None>
     <None Include="trdk\EngineService\MarketData_pb2.py">
+      <Filter>Python stubs</Filter>
+    </None>
+    <None Include="trdk\EngineService\MarketDataSource_pb2.py">
+      <Filter>Python stubs</Filter>
+    </None>
+    <None Include="trdk\EngineService\DropCopy_pb2.py">
+      <Filter>Python stubs</Filter>
+    </None>
+    <None Include="trdk\EngineService\Reports_pb2.py">
       <Filter>Python stubs</Filter>
     </None>
   </ItemGroup>

@@ -456,6 +456,7 @@ protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
     <ClCompile Include="trdk.EngineService.MarketData.pb.cc" />
     <ClCompile Include="trdk.EngineService.MarketDataSource.pb.cc" />
     <ClCompile Include="trdk.EngineService.pb.cc" />
+    <ClCompile Include="trdk.EngineService.Reports.pb.cc" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -471,6 +472,7 @@ protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
     <ClInclude Include="trdk.EngineService.MarketData.pb.h" />
     <ClInclude Include="trdk.EngineService.MarketDataSource.pb.h" />
     <ClInclude Include="trdk.EngineService.pb.h" />
+    <ClInclude Include="trdk.EngineService.Reports.pb.h" />
     <ClInclude Include="Utils.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -600,9 +602,75 @@ protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">$(ProjectDir)/trdk.EngineService.MarketDataSource.pb.h;$(ProjectDir)/trdk.EngineService.MarketDataSource.pb.cc</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">$(ProjectDir)/trdk.EngineService.MarketDataSource.pb.h;$(ProjectDir)/trdk.EngineService.MarketDataSource.pb.cc</Outputs>
     </CustomBuild>
+    <CustomBuild Include="trdk.EngineService.Reports.proto">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">echo protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)
+protoc.exe -I$(ProjectDir) --python_out=$(ProjectDir) %(FullPath)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Compiling proto-file...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Compiling proto-file...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Compiling proto-file...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Compiling proto-file...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Compiling proto-file...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Compiling proto-file...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Compiling proto-file...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Compiling proto-file...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Compiling proto-file...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Compiling proto-file...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Compiling proto-file...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Compiling proto-file...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">$(ProjectDir)/trdk.EngineService.Reports.pb.h;$(ProjectDir)/trdk.EngineService.Reports.pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">$(ProjectDir)/trdk.EngineService.Reports.pb.h;$(ProjectDir)/trdk.EngineService.Reports.pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">$(ProjectDir)/trdk.EngineService.Reports.pb.h;$(ProjectDir)/trdk.EngineService.Reports.pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">$(ProjectDir)/trdk.EngineService.Reports.pb.h;$(ProjectDir)/trdk.EngineService.Reports.pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">$(ProjectDir)/trdk.EngineService.Reports.pb.h;$(ProjectDir)/trdk.EngineService.Reports.pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">$(ProjectDir)/trdk.EngineService.Reports.pb.h;$(ProjectDir)/trdk.EngineService.Reports.pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">$(ProjectDir)/trdk.EngineService.Reports.pb.h;$(ProjectDir)/trdk.EngineService.Reports.pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">$(ProjectDir)/trdk.EngineService.Reports.pb.h;$(ProjectDir)/trdk.EngineService.Reports.pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">$(ProjectDir)/trdk.EngineService.Reports.pb.h;$(ProjectDir)/trdk.EngineService.Reports.pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">$(ProjectDir)/trdk.EngineService.Reports.pb.h;$(ProjectDir)/trdk.EngineService.Reports.pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">$(ProjectDir)/trdk.EngineService.Reports.pb.h;$(ProjectDir)/trdk.EngineService.Reports.pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">$(ProjectDir)/trdk.EngineService.Reports.pb.h;$(ProjectDir)/trdk.EngineService.Reports.pb.cc</Outputs>
+    </CustomBuild>
     <None Include="trdk\EngineService\Control_pb2.py" />
     <None Include="trdk\EngineService\MarketData_pb2.py" />
+    <None Include="trdk\EngineService\MarketDataSource_pb2.py" />
     <None Include="trdk\EngineService_pb2.py" />
+    <None Include="trdk\EngineService\Reports_pb2.py" />
+    <None Include="trdk\EngineService\DropCopy_pb2.py" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

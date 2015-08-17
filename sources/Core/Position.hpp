@@ -77,8 +77,8 @@ namespace trdk {
 
 		explicit Position(
 				trdk::Strategy &,
-				uint64_t operationId,
-				uint64_t subOperationId,
+				const boost::uuids::uuid &operationId,
+				int64_t subOperationId,
 				trdk::TradeSystem &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
@@ -87,8 +87,8 @@ namespace trdk {
 				const Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 		explicit Position(
 				trdk::Strategy &,
-				uint64_t operationId,
-				uint64_t subOperationId,
+				const boost::uuids::uuid &operationId,
+				int64_t subOperationId,
 				trdk::Position &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
@@ -339,8 +339,8 @@ namespace trdk {
 
 		explicit LongPosition(
 				trdk::Strategy &,
-				uint64_t operationId,
-				uint64_t subOperationId,
+				const boost::uuids::uuid &operationId,
+				int64_t subOperationId,
 				trdk::TradeSystem &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
@@ -349,8 +349,8 @@ namespace trdk {
 				const Lib::TimeMeasurement::Milestones &);
 		explicit LongPosition(
 				trdk::Strategy &,
-				uint64_t operationId,
-				uint64_t subOperationId,
+				const boost::uuids::uuid &operationId,
+				int64_t subOperationId,
 				trdk::ShortPosition &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
@@ -412,8 +412,8 @@ namespace trdk {
 
 		explicit ShortPosition(
 				trdk::Strategy &,
-				uint64_t operationId,
-				uint64_t subOperationId,
+				const boost::uuids::uuid &operationId,
+				int64_t subOperationId,
 				trdk::TradeSystem &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
@@ -422,8 +422,8 @@ namespace trdk {
 				const Lib::TimeMeasurement::Milestones &);
 		explicit ShortPosition(
 				trdk::Strategy &,
-				uint64_t operationId,
-				uint64_t subOperationId,
+				const boost::uuids::uuid &operationId,
+				int64_t subOperationId,
 				trdk::LongPosition &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,

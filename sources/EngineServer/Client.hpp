@@ -88,8 +88,6 @@ namespace trdk { namespace EngineServer {
 		void OnStrategySettingsSetRequest(
 				const trdk::EngineService::Control::StrategySettingsSetRequest &);
 
-		void OnDebugPnlRequest();
-
 		void SendServiceInfo();
 
 		
@@ -106,8 +104,6 @@ namespace trdk { namespace EngineServer {
 				const google::protobuf::RepeatedPtrField<trdk::EngineService::Control::SettingsSection> &,
 				Settings::Transaction &);
 
-		void OnFoo(const Foo &);
-
 	private:
 
 		ClientRequestHandler &m_requestHandler;
@@ -118,8 +114,6 @@ namespace trdk { namespace EngineServer {
 		boost::asio::ip::tcp::socket m_socket;
 
 		std::string m_remoteAddress;
-
-		FooSlotConnection m_fooSlotConnection;
 
 		boost::asio::deadline_timer m_keepAliveSendTimer;
 		boost::asio::deadline_timer m_keepAliveCheckTimer;

@@ -67,14 +67,7 @@ namespace trdk { namespace EngineServer {
 		virtual void UpdateStrategy(
 				EngineServer::Settings::StrategyTransaction &);
 
-		virtual FooSlotConnection Subscribe(
-				const FooSlot &slot) {
-			return m_fooSlotConnection.connect(slot);
-		}
-
 		virtual void OnDisconnect(Client &);
-
-		virtual void OnDebugDropCopyRequest();
 	
 	private:
 
@@ -106,8 +99,6 @@ namespace trdk { namespace EngineServer {
 		std::unique_ptr<Io> m_io;
 
 		boost::thread m_thread;
-
-		boost::signals2::signal<FooSlotSignature> m_fooSlotConnection;
 
 		ConnectionsMutex m_connectionsMutex;
 		std::set<Client *> m_connections;

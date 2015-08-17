@@ -25,7 +25,6 @@ namespace trdk { namespace Engine {
 	public:
 
 		explicit Context(
-				boost::signals2::signal<FooSlotSignature> &,
 				trdk::Context::Log &,
 				trdk::Context::TradingLog &,
 				const trdk::Settings &,
@@ -69,7 +68,7 @@ namespace trdk { namespace Engine {
 				size_t index,
 				const TradingMode &);
 
-		virtual DropCopy * GetDropCopy();
+		virtual DropCopy * GetDropCopy() const;
 
 	protected:
 

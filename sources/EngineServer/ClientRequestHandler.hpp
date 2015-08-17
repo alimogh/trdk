@@ -26,10 +26,6 @@ namespace trdk { namespace EngineServer {
 
 		virtual const std::string & GetName() const = 0;
 
-		virtual FooSlotConnection Subscribe(
-				const FooSlot &)
-				= 0;
-
 		virtual void ForEachEngineId(
 				const boost::function<void(const std::string &engineId)> &)
 				const
@@ -55,8 +51,6 @@ namespace trdk { namespace EngineServer {
 				= 0;
 
 		virtual void OnDisconnect(Client &) = 0;
-
-		virtual void OnDebugDropCopyRequest() = 0;
 
 	};
 

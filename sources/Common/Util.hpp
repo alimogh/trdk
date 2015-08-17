@@ -10,32 +10,12 @@
 
 #pragma once
 
-//! @todo Remove after Foo!
-#include "Core/Types.hpp"
-
 #include "DisableBoostWarningsBegin.h"
 #	include <boost/date_time/posix_time/posix_time.hpp>
 #	include <boost/date_time/local_time/local_time.hpp>
 #	include <boost/math/special_functions/round.hpp>
 #	include <boost/filesystem.hpp>
 #include "DisableBoostWarningsEnd.h"
-
-//! @todo !!! remove Foo
-struct Foo {
-	boost::posix_time::ptime time;
-	boost::uuids::uuid strategyId;
-	trdk::TradingMode tradingMode;
-	size_t triangleId;
-	double pnl;
-	double atr;
-	size_t updates_number;
-	boost::posix_time::time_duration triangleTime;
-};
-//! @todo !!! remove Foo
-typedef void (FooSlotSignature)(const Foo &);
-typedef boost::function<FooSlotSignature> FooSlot;
-typedef boost::signals2::connection FooSlotConnection;
-
 
 namespace trdk { namespace Lib {
 

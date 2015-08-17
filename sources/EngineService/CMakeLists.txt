@@ -8,6 +8,7 @@ file(
     trdk.EngineService.DropCopy.pb.cc
     trdk.EngineService.MarketData.pb.cc
     trdk.EngineService.MarketDataSource.pb.cc
+    trdk.EngineService.Reports.pb.cc
     trdk.EngineService.pb.cc
     Utils.cpp)
 

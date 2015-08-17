@@ -22,7 +22,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	public:
 
-		typedef size_t Id;
+		typedef boost::uuids::uuid Id;
 
 		struct PairLegParams {
 			Pair id;
@@ -111,8 +111,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const PairLegParams &ab,
 				const PairLegParams &bc,
 				const PairLegParams &ac,
-				const BestBidAskPairs &bestBidAskRef,
-				size_t bookUpdatesNumber);
+				const BestBidAskPairs &bestBidAskRef);
 		~Triangle();
 
 	public:
@@ -326,10 +325,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return .0;
 		}
 
-		size_t GetBookUpdatesNumber() const {
-			return m_bookUpdatesNumber;
-		}
-
 		TriangleReport & GetReport() {
 			return m_report;
 		}
@@ -524,8 +519,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		boost::array<boost::shared_ptr<Twd::Position>, numberOfLegs> m_legs;
 
 		YDirection m_yDirection;
-
-		const size_t m_bookUpdatesNumber;
 
 		class LastStartParams {
 			

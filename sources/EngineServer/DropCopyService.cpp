@@ -23,9 +23,11 @@ using namespace trdk::EngineServer;
 using namespace trdk::EngineService;
 using namespace trdk::EngineService::DropCopy;
 using namespace trdk::EngineService::MarketData;
+using namespace trdk::EngineService::Reports;
 
 namespace io = boost::asio;
 namespace pt = boost::posix_time;
+namespace uu = boost::uuids;
 namespace pf = google::protobuf;
 
 //////////////////////////////////////////////////////////////////////////
@@ -53,72 +55,6 @@ namespace {
 
 		result.set_source(source.GetSource().GetTag());
 	
-	}
-
-	void Convert(
-			const trdk::Security &security,
-			const OrderSide &side,
-			const Qty &qty,
-			const double *price,
-			const TimeInForce *timeInForce,
-			const Currency &currency,
-			const Qty *minQty,
-			const std::string *user,
-			OrderParameters &result) {
-		
-		if (price) {
-			result.set_type(
-				!Lib::IsZero(*price)
-					?	OrderParameters::TYPE_LMT
-					:	OrderParameters::TYPE_MKT);
-		}
-		
-		result.set_security_id(security.GetInstanceId());
-
-		result.set_side(
-			side == ORDER_SIDE_BUY
-				?	OrderParameters::SIDE_BUY
-				:	OrderParameters::SIDE_SELL);
-		
-		result.set_qty(qty);
-		if (price) {
-			result.set_price(*price);
-		}
-		
-		static_assert(numberOfTimeInForces == 5, "List changed.");
-		if (timeInForce) {
-			switch (*timeInForce) {
-				default:
-					AssertEq(TIME_IN_FORCE_DAY, *timeInForce);
-					break;
-				case TIME_IN_FORCE_DAY:
-					result.set_time_in_force(OrderParameters::TIME_IN_FORCE_DAY);
-					break;
-				case TIME_IN_FORCE_GTC:
-					result.set_time_in_force(OrderParameters::TIME_IN_FORCE_GTC);
-					break;
-				case TIME_IN_FORCE_OPG:
-					result.set_time_in_force(OrderParameters::TIME_IN_FORCE_OPG);
-					break;
-				case TIME_IN_FORCE_IOC:
-					result.set_time_in_force(OrderParameters::TIME_IN_FORCE_IOC);
-					break;
-				case TIME_IN_FORCE_FOK:
-					result.set_time_in_force(OrderParameters::TIME_IN_FORCE_FOK);
-					break;
-			}
-		}
-		
-		result.set_currency(ConvertToIso(currency));
-		
-		if (minQty) {
-			result.set_min_qty(*minQty);
-		}
-		
-		if (user) {
-			result.set_user(*user);
-		}
-
 	}
 
 	void Convert(double price, const trdk::Qty &qty, PriceLevel &result) {
@@ -310,27 +246,22 @@ void DropCopyService::Send(const ServiceData &message) {
 }
 
 void DropCopyService::CopyOrder(
-		const boost::uuids::uuid &uuid,
-		const pt::ptime *orderTime,
+		const uu::uuid &id,
 		const std::string *tradeSystemId,
-		const Strategy &strategy,
-		const uint64_t *operationId,
-		const uint64_t *subOperationId,
+		const pt::ptime *orderTime,
+		const pt::ptime *executionTime,
+		const TradeSystem::OrderStatus &status,
+		const uu::uuid &operationId,
+		const int64_t *subOperationId,
 		const trdk::Security &security,
 		const OrderSide &side,
-		const Qty &orderQty,
-		const double *orderPrice,
+		const Qty &qty,
+		const double *price,
 		const TimeInForce *timeInForce,
 		const Currency &currency,
 		const Qty *minQty,
 		const std::string *user,
-		const TradeSystem::OrderStatus &status,
-		const boost::posix_time::ptime *executionTime,
-		const std::string *lastTradeId,
-		size_t numberOfTrades,
-		double avgTradePrice,
 		const Qty &executedQty,
-		const double *counterAmount,
 		const double *bestBidPrice,
 		const Qty *bestBidQty,
 		const double *bestAskPrice,
@@ -340,71 +271,99 @@ void DropCopyService::CopyOrder(
 	message.set_type(ServiceData::TYPE_ORDER);
 	Order &order = *message.mutable_order();
 
-	ConvertToUuid(uuid, *order.mutable_id());	
+	ConvertToUuid(id, *order.mutable_id());	
 	if (tradeSystemId) {
 		order.set_trade_system_order_id(*tradeSystemId);
 	}
-	ConvertToUuid(strategy.GetId(), *order.mutable_strategy_id());
-	if (operationId) {
-		order.set_operation_id(*operationId);
-	}
-	if (subOperationId) {
-		order.set_sub_operation_id(*subOperationId);
-	}
-	Convert(strategy.GetTradingMode(), order);
-	Convert(
-		security,
-		side,
-		orderQty,
-		orderPrice,
-		timeInForce,
-		currency,
-		minQty,
-		user,
-		*order.mutable_params());
-	static_assert(TradeSystem::numberOfOrderStatuses == 7, "List changes.");
-	switch (status) {
-		default:
-			AssertEq(TradeSystem::ORDER_STATUS_SENT, status);
-			break;
-		case TradeSystem::ORDER_STATUS_SENT:
-			order.set_status(ORDER_STATUS_SENT);
-			break;
-		case TradeSystem::ORDER_STATUS_REQUESTED_CANCEL:
-			order.set_status(ORDER_STATUS_REQUESTED_CANCEL);
-			break;
-		case TradeSystem::ORDER_STATUS_SUBMITTED:
-			order.set_status(ORDER_STATUS_ACTIVE);
-			break;
-		case TradeSystem::ORDER_STATUS_CANCELLED:
-			order.set_status(ORDER_STATUS_CANCELED);
-			break;
-		case TradeSystem::ORDER_STATUS_FILLED:
-			order.set_status(
-				executedQty >= orderQty
-					?	ORDER_STATUS_FILLED
-					:	ORDER_STATUS_FILLED_PARTIALLY);
-			break;
-		case TradeSystem::ORDER_STATUS_INACTIVE:
-		case TradeSystem::ORDER_STATUS_ERROR:
-			order.set_status(ORDER_STATUS_ERROR);
-			break;
-	}
+
 	if (orderTime) {
 		order.set_order_time(pt::to_iso_string(*orderTime));
 	}
 	if (executionTime) {
 		order.set_execution_time(pt::to_iso_string(*executionTime));
 	}
-	if (lastTradeId) {
-		order.set_last_trade_id(*lastTradeId);
+
+	static_assert(TradeSystem::numberOfOrderStatuses == 7, "List changes.");
+	switch (status) {
+		default:
+			AssertEq(TradeSystem::ORDER_STATUS_SENT, status);
+			break;
+		case TradeSystem::ORDER_STATUS_SENT:
+			order.set_status(Order::STATUS_SENT);
+			break;
+		case TradeSystem::ORDER_STATUS_REQUESTED_CANCEL:
+			order.set_status(Order::STATUS_REQUESTED_CANCEL);
+			break;
+		case TradeSystem::ORDER_STATUS_SUBMITTED:
+			order.set_status(Order::STATUS_ACTIVE);
+			break;
+		case TradeSystem::ORDER_STATUS_CANCELLED:
+			order.set_status(Order::STATUS_CANCELED);
+			break;
+		case TradeSystem::ORDER_STATUS_FILLED:
+			order.set_status(
+				executedQty >= qty
+					?	Order::STATUS_FILLED
+					:	Order::STATUS_FILLED_PARTIALLY);
+			break;
+		case TradeSystem::ORDER_STATUS_INACTIVE:
+		case TradeSystem::ORDER_STATUS_ERROR:
+			order.set_status(Order::STATUS_ERROR);
+			break;
 	}
-	order.set_number_of_trades(pf::uint32(numberOfTrades));
-	order.set_avg_trade_price(avgTradePrice);
+
+	ConvertToUuid(operationId, *order.mutable_operation_id());
+	if (subOperationId) {
+		order.set_sub_operation_id(*subOperationId);
+	}
+
+	order.set_security_id(security.GetInstanceId());
+
+	order.set_side(
+		side == ORDER_SIDE_BUY ? Order::SIDE_BUY : Order::SIDE_SELL);
+	
+	order.set_qty(qty);
+	
+	if (price) {
+		order.set_type(!IsZero(*price) ? Order::TYPE_LMT : Order::TYPE_MKT);
+		order.set_price(*price);
+	}
+
+	static_assert(numberOfTimeInForces == 5, "List changed.");
+	if (timeInForce) {
+		switch (*timeInForce) {
+			default:
+				AssertEq(TIME_IN_FORCE_DAY, *timeInForce);
+				break;
+			case TIME_IN_FORCE_DAY:
+				order.set_time_in_force(Order::TIME_IN_FORCE_DAY);
+				break;
+			case TIME_IN_FORCE_GTC:
+				order.set_time_in_force(Order::TIME_IN_FORCE_GTC);
+				break;
+			case TIME_IN_FORCE_OPG:
+				order.set_time_in_force(Order::TIME_IN_FORCE_OPG);
+				break;
+			case TIME_IN_FORCE_IOC:
+				order.set_time_in_force(Order::TIME_IN_FORCE_IOC);
+				break;
+			case TIME_IN_FORCE_FOK:
+				order.set_time_in_force(Order::TIME_IN_FORCE_FOK);
+				break;
+		}
+	}
+
+	order.set_currency(ConvertToIso(currency));
+		
+	if (minQty) {
+		order.set_min_qty(*minQty);
+	}
+		
+	if (user) {
+		order.set_user(*user);
+	}
+
 	order.set_executed_qty(executedQty);
-	if (counterAmount) {
-		order.set_counter_amount(*counterAmount);
-	}
 
 	if (
 			bestBidPrice
@@ -429,24 +388,10 @@ void DropCopyService::CopyOrder(
 
 void DropCopyService::CopyTrade(
 		const pt::ptime &time,
-		const std::string &id,
-		const trdk::Strategy &strategy,
-		const uint64_t *operationId,
-		const uint64_t *subOperationId,
-		bool isMaker,
-		double tradePrice,
-		const trdk::Qty &tradeQty,
-		double counterAmount,
-		const boost::uuids::uuid &orderUuid,
-		const std::string &orderId,
-		const trdk::Security &security,
-		const OrderSide &side,
-		const Qty &orderQty,
-		double orderPrice,
-		const TimeInForce &timeInForce,
-		const Currency &currency,
-		const Qty &minQty,
-		const std::string &user,
+		const std::string &tradeSystemTradeid,
+		const uu::uuid &orderId,
+		double price,
+		const Qty &qty,
 		double bestBidPrice,
 		const Qty &bestBidQty,
 		double bestAskPrice,
@@ -457,31 +402,10 @@ void DropCopyService::CopyTrade(
 	Trade &trade = *message.mutable_trade();
 
 	trade.set_time(pt::to_iso_string(time));
-	trade.set_id(id);
-	ConvertToUuid(strategy.GetId(), *trade.mutable_strategy_id());
-	Convert(strategy.GetTradingMode(), trade);
-	if (operationId) {
-		trade.set_operation_id(*operationId);
-	}
-	if (subOperationId) {
-		trade.set_sub_operation_id(*subOperationId);
-	}
-	trade.set_is_maker(isMaker);
-	trade.set_price(tradePrice);
-	trade.set_qty(tradeQty);
-	trade.set_counter_amount(counterAmount);
-	ConvertToUuid(orderUuid, *trade.mutable_order_id());
-	trade.set_trade_system_order_id(orderId);
-	Convert(
-		security,
-		side,
-		orderQty,
-		&orderPrice,
-		&timeInForce,
-		currency,
-		&minQty,
-		&user,
-		*trade.mutable_order_params());
+	trade.set_trade_system_trade_id(tradeSystemTradeid);
+	ConvertToUuid(orderId, *trade.mutable_order_id());
+	trade.set_price(price);
+	trade.set_qty(qty);
 	Convert(
 		bestBidPrice,
 		bestBidQty,
@@ -493,97 +417,39 @@ void DropCopyService::CopyTrade(
 
 }
 
-void DropCopyService::GenerateDebugEvents() {
+void DropCopyService::ReportOperationStart(
+		const uu::uuid &id,
+		const pt::ptime &time,
+		const trdk::Strategy &strategy,
+		size_t updatesNumber) {
+	
+	ServiceData message;
+	message.set_type(ServiceData::TYPE_OPERATION_START);
+	OperationStart &operation = *message.mutable_operation_start();
 
-	{
-		ServiceData message;
-		message.set_type(ServiceData::TYPE_ORDER);
-		Order &order = *message.mutable_order();
-		ConvertToUuid(
-			boost::uuids::uuid(
-				boost::uuids::string_generator()(
-					"1C9F1A17-AA80-41E5-972C-CA770BEDA873")),
-			*order.mutable_id());
-		order.set_trade_system_order_id("XXXZZZYYY");
-		ConvertToUuid(
-			boost::uuids::uuid(
-				boost::uuids::string_generator()(
-					"DDA37FBD-1EB2-4552-8A95-19A4AD53D261")),
-			*order.mutable_strategy_id());
-		Convert(TRADING_MODE_LIVE, order);
-		{
-			auto &params = *order.mutable_params();
-			params.set_type(OrderParameters::TYPE_MKT);
-			params.set_security_id(1);
-			params.set_side(OrderParameters::SIDE_BUY);
-			params.set_qty(100000000);
-			params.set_price(987.123);
-			params.set_time_in_force(OrderParameters::TIME_IN_FORCE_IOC);
-			params.set_currency(ConvertToIso(CURRENCY_EUR));
-			params.set_min_qty(10000);
-			params.set_user("MRUSER");
-		}
-		order.set_status(ORDER_STATUS_ACTIVE);
-		order.set_order_time(
-			pt::to_iso_string(boost::posix_time::microsec_clock::local_time()));
-		order.set_execution_time(
-			pt::to_iso_string(boost::posix_time::microsec_clock::local_time()));
-		order.set_last_trade_id("ASADASD12");
-		order.set_number_of_trades(10);
-		order.set_avg_trade_price(123.456);
-		order.set_executed_qty(9000000);
-		order.set_counter_amount(234.567);
-		Convert(
-			11.22,
-			2211,
-			33.44,
-			4455,
-			*order.mutable_top_of_book());
-		Send(message);
-	}
+	ConvertToUuid(id, *operation.mutable_id());
+	operation.set_time(pt::to_iso_string(time));
+	operation.set_trading_mode(Convert(strategy.GetTradingMode()));
+	ConvertToUuid(strategy.GetId(), *operation.mutable_strategy_id());
+	operation.set_updates_number(pf::uint32(updatesNumber));
 
-	{
-		ServiceData message;
-		message.set_type(ServiceData::TYPE_TRADE);
-		Trade &trade = *message.mutable_trade();
-		trade.set_time(
-			pt::to_iso_string(boost::posix_time::microsec_clock::local_time()));
-		trade.set_id("ASDAD123123");
-		ConvertToUuid(
-			boost::uuids::uuid(
-			boost::uuids::string_generator()(
-				"DDA37FBD-1EB2-4552-8A95-19A4AD53D261")),
-			*trade.mutable_strategy_id());
-		Convert(TRADING_MODE_LIVE, trade);
-		trade.set_is_maker(false);
-		trade.set_price(123.45);
-		trade.set_qty(10000000);
-		trade.set_counter_amount(23.45);
-		ConvertToUuid(
-			boost::uuids::uuid(
-			boost::uuids::string_generator()(
-				"1C9F1A17-AA80-41E5-972C-CA770BEDA873")),
-			*trade.mutable_order_id());
-		trade.set_trade_system_order_id("SSSDDDFFF");
-		{
-			auto &params = *trade.mutable_order_params();
-			params.set_type(OrderParameters::TYPE_MKT);
-			params.set_security_id(1);
-			params.set_side(OrderParameters::SIDE_BUY);
-			params.set_qty(100000000);
-			params.set_price(987.123);
-			params.set_time_in_force(OrderParameters::TIME_IN_FORCE_IOC);
-			params.set_currency(ConvertToIso(CURRENCY_EUR));
-			params.set_user("MRUSER");
-		}
-		Convert(
-			11.22,
-			2211,
-			33.44,
-			4455,
-			*trade.mutable_top_of_book());
-		Send(message);
-	}
+	Send(message);
 
 }
 
+void DropCopyService::ReportOperationEnd(
+		const uu::uuid &id,
+		const pt::ptime &time,
+		double pnl) {
+	
+	ServiceData message;
+	message.set_type(ServiceData::TYPE_OPERATION_END);
+	OperationEnd &operation = *message.mutable_operation_end();
+
+	ConvertToUuid(id, *operation.mutable_id());
+	operation.set_time(pt::to_iso_string(time));
+	operation.set_pnl(pnl);
+
+	Send(message);
+
+}

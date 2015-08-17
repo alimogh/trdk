@@ -19,6 +19,7 @@ using namespace trdk;
 using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
+namespace uu = boost::uuids;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -93,7 +94,7 @@ public:
 		StateUpdateSignal;
 
 	struct StaticData {
-		boost::uuids::uuid uuid;
+		uu::uuid uuid;
 		bool hasPrice;
 		TimeInForce timeInForce;
 	};
@@ -145,8 +146,8 @@ public:
 	mutable StateUpdateSignal m_stateUpdateSignal;
 
 	Strategy &m_strategy;
-	const uint64_t m_operationId;
-	const uint64_t m_subOperationId;
+	const uu::uuid m_operationId;
+	const int64_t m_subOperationId;
 	bool m_isRegistered;
 	Security &m_security;
 	const Currency m_currency;
@@ -179,8 +180,8 @@ public:
 			Position &position,
 			TradeSystem &tradeSystem,
 			Strategy &strategy,
-			uint64_t operationId,
-			uint64_t subOperationId,
+			const uu::uuid &operationId,
+			int64_t subOperationId,
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -324,7 +325,6 @@ public:
 						trade->id,
 						m_security.DescalePrice(trade->price),
 						trade->qty,
-						tradeSystemOrderId,
 						true);
 					break;
 				case TradeSystem::ORDER_STATUS_INACTIVE:
@@ -419,11 +419,7 @@ public:
 
 			}
 
-			CopyOrder(
-				&tradeSystemOrderId,
-				trade ? &trade->id : nullptr,
-				true,
-				orderStatus);
+			CopyOrder(&tradeSystemOrderId, true, orderStatus);
 
 		}
 		
@@ -498,7 +494,6 @@ public:
 						trade->id,
 						m_security.DescalePrice(trade->price),
 						trade->qty,
-						tradeSystemOrderId,
 						false);
 					if (remainingQty != 0) {
 						return;
@@ -540,11 +535,7 @@ public:
 
 			m_closed.hasOrder = false;
 
-			CopyOrder(
-				&tradeSystemOrderId,
-				trade ? &trade->id : nullptr,
-				false,
-				orderStatus);
+			CopyOrder(&tradeSystemOrderId, false, orderStatus);
 
 			if (CancelIfSet()) {
 				return;
@@ -812,7 +803,7 @@ public:
 		}
 
 		const StaticData staticData = {
-			boost::uuids::random_generator()(),
+			uu::random_generator()(),
 			hasPrice,
 			timeInForce,
 		};
@@ -859,7 +850,6 @@ public:
 			}
 			CopyOrder(
 				nullptr, // order ID (from trade system)
-				nullptr, // trade ID
 				true,
 				TradeSystem::ORDER_STATUS_SENT,
 				&timeInForce,
@@ -897,14 +887,13 @@ public:
 
 		const auto orderId = closeImpl(m_position.GetActiveQty());
 		m_closeType = closeType;
-		m_closed.uuid = boost::uuids::random_generator()();
+		m_closed.uuid = uu::random_generator()();
 		m_closed.hasPrice = hasPrice;
 		m_closed.hasOrder = true;
 		m_closed.orderId = orderId;
 
 		CopyOrder(
 			nullptr, // order ID (from trade system)
-			nullptr, // trade ID
 			false,
 			TradeSystem::ORDER_STATUS_SENT,
 			&timeInForce,
@@ -1006,7 +995,6 @@ private:
 
 	void CopyOrder(
 			const std::string *orderId,
-			const std::string *tradeId,
 			bool isOpen,
 			const TradeSystem::OrderStatus &status,
 			const TimeInForce *timeInForce = nullptr,
@@ -1049,19 +1037,13 @@ private:
 			price = m_security.DescalePrice(m_position.GetOpenStartPrice());
 		}
 
-		double avgTradePrice = .0;
-		if (directionData.price.count != 0) {
-			avgTradePrice
-				= double(directionData.price.total) / directionData.price.count;
-			avgTradePrice = m_security.DescalePrice(avgTradePrice);
-		}
-
 		dropCopy->CopyOrder(
 			directionData.uuid,
-			!orderTime.is_not_a_date_time() ? &orderTime : nullptr,
 			orderId,
-			m_strategy,
-			&m_operationId,
+			!orderTime.is_not_a_date_time() ? &orderTime : nullptr,
+			!execTime.is_not_a_date_time() ? &execTime : nullptr,
+			status,
+			m_operationId,
 			&m_subOperationId,
 			m_security,
 			m_position.GetType() == TYPE_LONG
@@ -1075,13 +1057,7 @@ private:
 				?	&*orderParams->minTradeQty
 				:	nullptr,
 			nullptr /* user */,
-			status,
-			!execTime.is_not_a_date_time() ? &execTime : nullptr,
-			tradeId,
-			directionData.price.count,
-			avgTradePrice,
 			directionData.qty,
-			nullptr /* counterAmount */,
 			status == TradeSystem::ORDER_STATUS_SENT ? &bidPrice : nullptr,
 			status == TradeSystem::ORDER_STATUS_SENT ? &bidQty : nullptr,
 			status == TradeSystem::ORDER_STATUS_SENT ? &askPrice : nullptr,
@@ -1090,10 +1066,9 @@ private:
 	}
 
 	void CopyTrade(
-			const std::string &id,
-			double tradePrice,
-			const Qty &tradeQty,
-			const std::string &orderId,
+			const std::string &tradeSystemId,
+			double price,
+			const Qty &qty,
 			bool isOpen) {
 
 		DropCopy *const dropCopy = m_strategy.GetContext().GetDropCopy();
@@ -1107,26 +1082,10 @@ private:
 
 		dropCopy->CopyTrade(
 			m_strategy.GetContext().GetCurrentTime(),
-			id,
-			m_strategy,
-			&m_operationId,
-			&m_subOperationId,
-			false,
-			tradePrice,
-			tradeQty,
-			.0 /* double counterAmount*/,
+			tradeSystemId,
 			directionData.uuid,
-			orderId,
-			m_security,
-			m_position.GetType() == TYPE_LONG
-				?	(isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL)
-				:	(!isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL),
-			m_position.GetPlanedQty(),
-			m_security.DescalePrice(m_position.GetOpenStartPrice()),
-			directionData.timeInForce,
-			m_currency,
-			0,
-			"<UNKNOWN>",
+			price,
+			qty,
 			m_security.GetBidPrice(),
 			m_security.GetBidQty(),
 			m_security.GetAskPrice(),
@@ -1141,8 +1100,8 @@ private:
 
 Position::Position(
 		Strategy &strategy,
-		uint64_t operationId,
-		uint64_t subOperationId,
+		const uu::uuid &operationId,
+		int64_t subOperationId,
 		TradeSystem &tradeSystem,
 		Security &security,
 		const Currency &currency,
@@ -1167,8 +1126,8 @@ Position::Position(
 
 Position::Position(
 		Strategy &strategy,
-		uint64_t operationId,
-		uint64_t subOperationId,
+		const uu::uuid &operationId,
+		int64_t subOperationId,
 		Position &oppositePosition,
 		const Qty &qty,
 		const ScaledPrice &startPrice,
@@ -1657,8 +1616,8 @@ void Position::RestoreOpenState(OrderId openOrderId) {
 
 LongPosition::LongPosition(
 		Strategy &strategy,
-		uint64_t operationId,
-		uint64_t subOperationId,
+		const uu::uuid &operationId,
+		int64_t subOperationId,
 		TradeSystem &tradeSystem,
 		Security &security,
 		const Currency &currency,
@@ -1680,8 +1639,8 @@ LongPosition::LongPosition(
 
 LongPosition::LongPosition(
 		Strategy &strategy,
-		uint64_t operationId,
-		uint64_t subOperationId,
+		const uu::uuid &operationId,
+		int64_t subOperationId,
 		ShortPosition &oppositePosition,
 		const Qty &qty,
 		const ScaledPrice &startPrice,
@@ -1950,8 +1909,8 @@ OrderId LongPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
 
 ShortPosition::ShortPosition(
 		Strategy &strategy,
-		uint64_t operationId,
-		uint64_t subOperationId,
+		const uu::uuid &operationId,
+		int64_t subOperationId,
 		TradeSystem &tradeSystem,
 		Security &security,
 		const Currency &currency,
@@ -1973,8 +1932,8 @@ ShortPosition::ShortPosition(
 
 ShortPosition::ShortPosition(
 		Strategy &strategy,
-		uint64_t operationId,
-		uint64_t subOperationId,
+		const uu::uuid &operationId,
+		int64_t subOperationId,
 		LongPosition &oppositePosition,
 		const Qty &qty,
 		const ScaledPrice &startPrice,

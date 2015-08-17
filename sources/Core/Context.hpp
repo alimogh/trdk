@@ -58,12 +58,7 @@ namespace trdk {
 
 	public:
 
-		//! @todo !!! remove Foo
-		boost::signals2::signal<FooSlotSignature> &m_fooSlotConnection;
-
 		explicit Context(
-				//! @todo !!! remove Foo
-				boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
 				trdk::Context::Log &,
 				trdk::Context::TradingLog &,
 				const trdk::Settings &,
@@ -126,7 +121,7 @@ namespace trdk {
 		const RiskControl & GetRiskControl(const trdk::TradingMode &) const;
 
 		//! Returns Drop Copy or nullptr.
-		virtual DropCopy * GetDropCopy() = 0;
+		virtual DropCopy * GetDropCopy() const = 0;
 
 		//! User context parameters. No predefined key list. Any key can be
 		//! changed.

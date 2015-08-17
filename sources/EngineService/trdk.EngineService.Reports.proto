@@ -1,0 +1,29 @@
+/**************************************************************************
+ *   Created: 2015/08/16 02:58:59
+ *    Author: Eugene V. Palchukovsky
+ *    E-mail: eugene@palchukovsky.com
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
+ **************************************************************************/
+
+syntax = "proto2";
+
+import "trdk.EngineService.proto";
+
+package trdk.EngineService.Reports;
+
+message OperationStart {
+	required trdk.EngineService.Uuid id = 1;
+	required string time = 2;
+	required trdk.EngineService.TradingMode trading_mode = 3;
+	required trdk.EngineService.Uuid strategy_id = 4;
+	optional uint32	updates_number = 5;
+}
+
+message OperationEnd {
+	required trdk.EngineService.Uuid id = 1;
+	required string time = 2;
+	optional double pnl = 3;
+};

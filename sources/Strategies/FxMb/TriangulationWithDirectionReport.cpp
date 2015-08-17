@@ -168,8 +168,7 @@ public:
 					%	"Y2 detected"
 					%	"Y executed"
 					%	"Y targeted"
-					%	"ATR"
-					%	"Updates (30 sec)";
+					%	"ATR";
 				foreach (const auto &bestBidAsk, bestBidAskPairs) {
 					const char *pair
 						= bestBidAsk
@@ -267,7 +266,7 @@ public:
 		accs::accumulator_set<
 				pt::time_duration,
 				accs::stats<accs::tag::mean>>
-			time;
+			duration;
 	
 		accs::accumulator_set<
 				double,
@@ -280,7 +279,7 @@ public:
 		accs::accumulator_set<
 				pt::time_duration,
 				accs::stats<accs::tag::mean>>
-			winnersTime;
+			winnersDuration;
 		double winnersPnl;
 	
 		accs::accumulator_set<
@@ -294,7 +293,7 @@ public:
 		accs::accumulator_set<
 				pt::time_duration,
 				accs::stats<accs::tag::mean>>
-			losersTime;
+			losersDuration;
 		double losersPnl;
 	
 		explicit Stat()
@@ -357,7 +356,6 @@ public:
 					%	"Triangle ID"
 					%	"P&L"
 					%	"ATR"
-					%	"Updates (30 secs)"
 					%	"Triangle time"
 					%	"Avg winners"
 					%	"Avg winners time"
@@ -611,22 +609,11 @@ void TriangleReport::ReportAction(
 			record % m_triangle.CalcYTargeted();
 
 			record % m_triangle.GetLastAtr();
-			record % m_triangle.GetBookUpdatesNumber();
 
 			for (size_t i = 0; i < numberOfPairs; ++i) {
 				writePair(Pair(i), record);
 			}
 		});
-
-	Foo foo = {
-		now,
-		m_triangle.GetStrategy().GetId(),
-		m_triangle.GetStrategy().GetTradingMode(),
-		m_triangle.GetId(),
-		yExecuted,
-		0, // atr
-		m_triangle.GetBookUpdatesNumber()
-	};
 
 	const auto &writePnl = [&](ReportRecord &record) {
 		const auto pnl
@@ -648,38 +635,36 @@ void TriangleReport::ReportAction(
 				AssertGt(
 					m_triangle.GetLeg(LEG3).GetOpenTime(),
 					m_triangle.GetStartTime());
-				const auto &time
+				const auto &duration
 					= m_triangle.GetLeg(LEG3).GetOpenTime()
 						- m_triangle.GetStartTime();
 
 				m_state.pnl->stat.comission += m_state.pnl->comission * 3;
-				m_state.pnl->stat.time(time);
+				m_state.pnl->stat.duration(duration);
 
 				const bool isWinner = yExecuted >= 1;
 				if (isWinner) {
 					m_state.pnl->stat.winners(yExecuted);
 					m_state.pnl->stat.winnersPnl += yExecuted - 1;
-					m_state.pnl->stat.winnersTime(time);
+					m_state.pnl->stat.winnersDuration(duration);
 				} else {
 					m_state.pnl->stat.losers(yExecuted);
 					m_state.pnl->stat.losersPnl += yExecuted - 1;
-					m_state.pnl->stat.losersTime(time);
+					m_state.pnl->stat.losersDuration(duration);
 				}
 
 				record
-					% foo.time
+					% now
 					% m_triangle.GetStrategy().GetTitle()
 					% m_triangle.GetId()
 					% yExecuted
 					% m_triangle.GetLastAtr()
-					% m_triangle.GetBookUpdatesNumber()
-					% time; 
-				foo.triangleTime = time;
+					% duration; 
 
 				if (accs::count(m_state.pnl->stat.winners) > 0) {
 					record 
 						% accs::mean(m_state.pnl->stat.winners)
-						% accs::mean(m_state.pnl->stat.winnersTime);
+						% accs::mean(m_state.pnl->stat.winnersDuration);
 					trianglesCount
 						= accs::count(m_state.pnl->stat.winners)
 							+ accs::count(m_state.pnl->stat.losers);
@@ -692,14 +677,15 @@ void TriangleReport::ReportAction(
 				if (accs::count(m_state.pnl->stat.losers) > 0) {
 					record
 						% accs::mean(m_state.pnl->stat.losers)
-						% accs::mean(m_state.pnl->stat.losersTime);
+						% accs::mean(m_state.pnl->stat.losersDuration);
 				} else {
 					record % ' ' % ' ';
 				}
 
 				{
-					const auto &avgTime = accs::mean(m_state.pnl->stat.time);
-					record % avgTime;
+					const auto &avgDuration
+						= accs::mean(m_state.pnl->stat.duration);
+					record % avgDuration;
 				}
 
 				record
@@ -719,7 +705,6 @@ void TriangleReport::ReportAction(
 			Context &context = strategy.GetContext();
 			RiskControl &riskControl
 				= context.GetRiskControl(strategy.GetTradingMode());
-			context.m_fooSlotConnection(foo);
 			//! @todo see TRDK-78
 // 			riskControl.CheckTotalPnl(
 // 				strategy.GetRiskControlScope(),
@@ -732,12 +717,6 @@ void TriangleReport::ReportAction(
 
 	} else if (isTriangleCanceled) {
 
-		//! @todo see TRDK-40
-		Strategy &strategy
-			= const_cast<TriangulationWithDirection &>(
-				m_triangle.GetStrategy());
-		Context &context = strategy.GetContext();
-		context.m_fooSlotConnection(foo);
 		//! @todo see TRDK-78
 // 		riskControl.CheckTotalPnl(
 // 			strategy.GetRiskControlScope(),
@@ -903,8 +882,7 @@ void TriangleReport::ReportUpdate() {
 				% m_triangle.GetStrategy().GetYDetectedDirection()[Y2]
 				% ' '
 				% ' '
-				% m_triangle.GetLastAtr()
-				% m_triangle.GetBookUpdatesNumber();
+				% m_triangle.GetLastAtr();
 			for (size_t i = 0; i < numberOfPairs; ++i) {
 				writePair(Pair(i), record);
 			}

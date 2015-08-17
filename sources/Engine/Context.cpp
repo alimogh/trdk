@@ -174,13 +174,12 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 Engine::Context::Context(
-		boost::signals2::signal<FooSlotSignature> &fooSlotConnection,
 		Context::Log &log,
 		Context::TradingLog &tradingLog,
 		const trdk::Settings &settings,
 		const pt::ptime &startTime,
 		const Lib::Ini &conf)
-	: Base(fooSlotConnection, log, tradingLog, settings, conf, startTime) {
+	: Base(log, tradingLog, settings, conf, startTime) {
 	m_pimpl = new Implementation(*this, conf);
 }
 
@@ -455,7 +454,7 @@ void Engine::Context::SyncDispatching() {
 	m_pimpl->m_state->subscriptionsManager.SyncDispatching();
 }
 
-DropCopy * Engine::Context::GetDropCopy() {
+DropCopy * Engine::Context::GetDropCopy() const {
 	return m_pimpl->m_state->dropCopy.get();
 }
 

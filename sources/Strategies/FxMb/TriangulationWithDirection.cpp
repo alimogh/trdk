@@ -14,9 +14,11 @@
 #include "TriangulationWithDirectionStatService.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/DropCopy.hpp"
 #include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
+namespace uu = boost::uuids;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -88,7 +90,6 @@ TriangulationWithDirection::TriangulationWithDirection(
 		conf.ReadBoolKey("log.updates"),
 		conf.ReadBoolKey("log.pnl")),
 	m_yReportStep(conf.ReadTypedKey<double>("log.y_report_step")),
-	m_lastTriangleId(0),
 	m_scheduledLeg(LEG_UNKNOWN) {
 
 	{
@@ -417,6 +418,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 			break;
 
 		case LEG3:
+			m_prevTriangleTime = GetContext().GetCurrentTime();
 			{
 				const auto &execDelay = position.GetTimeMeasurement().Measure(
 					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_2);
@@ -427,11 +429,19 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 					execDelay,
 					&order);
 			}
+			{
+				DropCopy *const dropCopy = GetContext().GetDropCopy();
+				if (dropCopy) {
+					dropCopy->ReportOperationEnd(
+						m_triangle->GetId(),
+						m_prevTriangleTime,
+						m_triangle->CalcYExecuted());
+				}
+			}
 			m_triangle->GetLeg(LEG1).MarkAsCompleted();
 			m_triangle->GetLeg(LEG2).MarkAsCompleted();
 			order.MarkAsCompleted();
 			m_prevTriangle.reset(m_triangle.release());
-			m_prevTriangleTime = GetContext().GetCurrentTime();
 #			ifdef DEV_VER
 				m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
 				m_detectedEcns[Y2].fill(std::numeric_limits<size_t>::max());
@@ -818,7 +828,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 
 		triangle.reset(
 			new Triangle(
-				++m_lastTriangleId,
+				uu::random_generator()(),
 				*this,
 				m_reports,
 				detection.y,
@@ -841,8 +851,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 					detection.y == Y1,
 					m_detectedEcns[detection.y][PAIR_AC],
 				},
-				m_bestBidAsk,
-				CalcBookUpdatesNumber()));
+				m_bestBidAsk));
 
 		if (
 				triangle->GetPair(LEG1).security->IsBookAdjusted()
@@ -858,6 +867,17 @@ void TriangulationWithDirection::CheckNewTriangle(
 			return;
 		}
 
+		{
+			DropCopy *const dropCopy = GetContext().GetDropCopy();
+			if (dropCopy) {
+				dropCopy->ReportOperationStart(
+					triangle->GetId(),
+					triangle->GetStartTime(),
+					*this,
+					CalcBookUpdatesNumber());
+			}
+		}
+		
 		triangle->StartLeg1(timeMeasurement, detection.speed);
 
 	} catch (const HasNotMuchOpportunityException &ex) {
