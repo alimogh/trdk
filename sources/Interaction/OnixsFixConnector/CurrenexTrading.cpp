@@ -103,10 +103,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					OnOrderRejected(
 						message,
 						replyTime,
-						reason,
 						boost::iequals(
-							reason,
-							"maximum operation limit exceeded"));
+								reason,
+								"maximum operation limit exceeded")
+							?	ORDER_STATUS_INACTIVE
+							:	ORDER_STATUS_ERROR,
+						reason);
 					return;
 				} else if (execType == fix::FIX41::Values::ExecType::Expired) {
 

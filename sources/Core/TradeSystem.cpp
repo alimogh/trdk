@@ -302,7 +302,7 @@ TradeSystem::TradingLog & TradeSystem::GetTradingLog() const throw() {
 const char * TradeSystem::GetStringStatus(const OrderStatus &code) {
 
 	static_assert(
-		numberOfOrderStatuses == 7,
+		numberOfOrderStatuses == 8,
 		"Changed trade system order status list.");
 
 	switch (code) {
@@ -316,10 +316,12 @@ const char * TradeSystem::GetStringStatus(const OrderStatus &code) {
 			return "canceled";
 		case TradeSystem::ORDER_STATUS_FILLED:
 			return "filled";
+		case TradeSystem::ORDER_STATUS_REJECTED:
+			return "rejected";
 		case TradeSystem::ORDER_STATUS_INACTIVE:
 			return "inactive";
 		case TradeSystem::ORDER_STATUS_ERROR:
-			return "send error";
+			return "error";
 		default:
 			AssertFail("Unknown order status code");
 			return "unknown";

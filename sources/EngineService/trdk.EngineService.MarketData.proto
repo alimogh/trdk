@@ -135,8 +135,10 @@ message Order {
 		STATUS_ERROR = 4;
 		// Cancel request sent to trade system. Result is unknown.
 		STATUS_REQUESTED_CANCEL = 5;
-		// Canceled or rejected. Not active.
+		// Canceled. Not active.
 		STATUS_CANCELED = 6;
+		// Rejected. Not active.
+		STATUS_REJECTED = 7;
 	}
 
 	// Order ID from engine. Unique for each order.

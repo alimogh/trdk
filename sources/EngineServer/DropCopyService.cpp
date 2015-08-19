@@ -283,7 +283,7 @@ void DropCopyService::CopyOrder(
 		order.set_execution_time(pt::to_iso_string(*executionTime));
 	}
 
-	static_assert(TradeSystem::numberOfOrderStatuses == 7, "List changes.");
+	static_assert(TradeSystem::numberOfOrderStatuses == 8, "List changes.");
 	switch (status) {
 		default:
 			AssertEq(TradeSystem::ORDER_STATUS_SENT, status);
@@ -305,6 +305,9 @@ void DropCopyService::CopyOrder(
 				executedQty >= qty
 					?	Order::STATUS_FILLED
 					:	Order::STATUS_FILLED_PARTIALLY);
+			break;
+		case TradeSystem::ORDER_STATUS_REJECTED:
+			order.set_status(Order::STATUS_REJECTED);
 			break;
 		case TradeSystem::ORDER_STATUS_INACTIVE:
 		case TradeSystem::ORDER_STATUS_ERROR:

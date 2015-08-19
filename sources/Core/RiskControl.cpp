@@ -592,7 +592,7 @@ private:
 			const RiskControlSymbolContext::Side &side) {
 
 		static_assert(
-			TradeSystem::numberOfOrderStatuses == 7,
+			TradeSystem::numberOfOrderStatuses == 8,
 			"Status list changed.");
 		switch (status) {
 			default:
@@ -616,6 +616,7 @@ private:
 					side);
 				break;
 			case TradeSystem::ORDER_STATUS_CANCELLED:
+			case TradeSystem::ORDER_STATUS_REJECTED:
 			case TradeSystem::ORDER_STATUS_INACTIVE:
 			case TradeSystem::ORDER_STATUS_ERROR:
 				Assert(!trade);

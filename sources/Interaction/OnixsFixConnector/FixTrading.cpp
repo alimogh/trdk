@@ -891,7 +891,7 @@ void FixTrading::onStateChange(
 			orderCopy.callback(
 				orderCopy.id,
 				orderCopy.tradeSystemId,
-				ORDER_STATUS_CANCELLED,
+				ORDER_STATUS_REJECTED,
 				orderCopy.qty - orderCopy.filledQty,
 				nullptr);
 
@@ -962,22 +962,21 @@ void FixTrading::OnOrderCanceled(
 void FixTrading::OnOrderRejected(
 		const fix::Message &execReport,
 		const TimeMeasurement::Milestones::TimePoint &replyTime,
-		const std::string &reason,
-		bool isMaxOperationLimitExceeded) {
+		const OrderStatus &status,
+		const std::string &reason) {
 
 	AssertEq("8", execReport.type());
 
 	GetLog().Error(
-		"Order %1% rejected by server: \"%2%\".",
+		"Order %1% rejected by server: \"%2%\". Status: %3%.",
 		GetMessageClOrderId(execReport),
-		reason);
+		reason,
+		status);
 
 	NotifyOrderUpdate(
 		execReport,
 		GetMessageClOrderId(execReport),
-		isMaxOperationLimitExceeded
-			?	ORDER_STATUS_INACTIVE
-			:	ORDER_STATUS_ERROR,
+		status,
 		"REJECTED",
 		true,
 		replyTime);

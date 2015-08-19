@@ -89,17 +89,28 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 				} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
 					
-					//! @todo see TRDK-93 for details
-					const std::string reason
-						= "Unknown reject reason, see TRDK-93 for details";
-//						= message.get(fix::FIX40::Tags::Text);
-					OnOrderRejected(
-						message,
-						replyTime,
-						reason,
-						boost::istarts_with(
-							reason,
-							"orders are throttled to "));
+#					if defined(BOOST_WINDOWS)
+						//! @todo see TRDK-93 for details
+						const std::string reason
+							= "Unknown reject reason, see TRDK-93 for details";
+#					else
+						const std::string reason
+							= message.get(fix::FIX40::Tags::Text);
+#					endif
+
+					const auto status
+						=	boost::equals(
+									reason,
+									"Trade quantity must be greater than or equal to the Minimum Trade size.")
+							?	ORDER_STATUS_REJECTED
+							:	boost::istarts_with(
+										reason,
+										"orders are throttled to ")
+									?	ORDER_STATUS_INACTIVE
+									:	ORDER_STATUS_ERROR;
+					
+					OnOrderRejected(message, replyTime, status, reason);
+
 					return;
 
 				} else if (execType == fix::FIX41::Values::ExecType::Expired) {

@@ -251,7 +251,7 @@ public:
 			}
 
 			static_assert(
-				TradeSystem::numberOfOrderStatuses == 7,
+				TradeSystem::numberOfOrderStatuses == 8,
 				"List changed.");
 
 			switch (orderStatus) {
@@ -360,16 +360,17 @@ public:
 					m_isError = true;
 					break;
 				case TradeSystem::ORDER_STATUS_CANCELLED:
+				case TradeSystem::ORDER_STATUS_REJECTED:
 					isCompleted = true;
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
-							"canceled",
+							TradeSystem::GetStringStatus(orderStatus),
 							tradeSystemOrderId,
 							orderStatus);
 						updatedOppositePosition = m_oppositePosition;
 					}
 					ReportOpeningUpdate(
-						"canceled",
+						TradeSystem::GetStringStatus(orderStatus),
 						tradeSystemOrderId,
 						orderStatus);
 					break;
@@ -462,6 +463,9 @@ public:
 				m_closed.orderId = orderId;
 			}
 
+			static_assert(
+				TradeSystem::numberOfOrderStatuses == 8,
+				"List changed.");
 			switch (orderStatus) {
 				default:
 					AssertFail("Unknown order status");
@@ -514,8 +518,9 @@ public:
 					m_isError = true;
 					break;
 				case TradeSystem::ORDER_STATUS_CANCELLED:
+				case TradeSystem::ORDER_STATUS_REJECTED:
 					ReportClosingUpdate(
-						"canceled",
+						TradeSystem::GetStringStatus(orderStatus),
 						tradeSystemOrderId,
 						orderStatus);
 					break;
@@ -1015,7 +1020,7 @@ private:
 		Qty bidQty;
 		double askPrice;
 		Qty askQty;
-		static_assert(TradeSystem::numberOfOrderStatuses == 7, "List changed");
+		static_assert(TradeSystem::numberOfOrderStatuses == 8, "List changed");
 		switch (status) {
 			case TradeSystem::ORDER_STATUS_SENT:
 				orderTime = m_strategy.GetContext().GetCurrentTime();
@@ -1026,6 +1031,7 @@ private:
 				break;
 			case TradeSystem::ORDER_STATUS_CANCELLED:
 			case TradeSystem::ORDER_STATUS_FILLED:
+			case TradeSystem::ORDER_STATUS_REJECTED:
 			case TradeSystem::ORDER_STATUS_INACTIVE:
 			case TradeSystem::ORDER_STATUS_ERROR:
 				execTime = m_strategy.GetContext().GetCurrentTime();
