@@ -141,6 +141,12 @@ namespace trdk {
 
 	public:
 
+		virtual void ResetStatistics() = 0;
+		virtual trdk::FinancialResult GetStatistics() const = 0;
+		virtual trdk::FinancialResult TakeStatistics() = 0;
+
+	public:
+
 		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &) = 0;
 
 	private:

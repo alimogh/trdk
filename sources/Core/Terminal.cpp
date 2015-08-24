@@ -89,6 +89,25 @@ private:
 			//...//
 		}
 	public:
+		virtual void ResetStatistics() {
+			AssertFail(
+				"Statistics not available for this Risk Control Context implementation");
+			throw LogicError(
+				"Statistics not available for this Risk Control Context implementation");
+		}
+		virtual FinancialResult GetStatistics() const {
+			AssertFail(
+				"Statistics not available for this Risk Control Context implementation");
+			throw LogicError(
+				"Statistics not available for this Risk Control Context implementation");
+		}
+		virtual FinancialResult TakeStatistics() {
+			AssertFail(
+				"Statistics not available for this Risk Control Context implementation");
+			throw LogicError(
+				"Statistics not available for this Risk Control Context implementation");
+		}
+	public:
 		virtual void OnSettingsUpdate(const IniSectionRef &) {
 			//...//
 		}

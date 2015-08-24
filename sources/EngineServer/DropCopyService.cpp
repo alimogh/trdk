@@ -443,7 +443,8 @@ void DropCopyService::ReportOperationStart(
 void DropCopyService::ReportOperationEnd(
 		const uu::uuid &id,
 		const pt::ptime &time,
-		double pnl) {
+		double pnl,
+		const boost::shared_ptr<const FinancialResult> &financialResult) {
 	
 	ServiceData message;
 	message.set_type(ServiceData::TYPE_OPERATION_END);
@@ -452,6 +453,13 @@ void DropCopyService::ReportOperationEnd(
 	ConvertToUuid(id, *operation.mutable_id());
 	operation.set_time(pt::to_iso_string(time));
 	operation.set_pnl(pnl);
+
+	foreach (const auto &position, *financialResult) {
+		OperationEnd::FinancialResult &positionMessage
+			= *operation.add_financial_result();
+		positionMessage.set_currency(ConvertToIso(position.first));
+		positionMessage.set_value(position.second);
+	}
 
 	Send(message);
 

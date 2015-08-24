@@ -23,7 +23,15 @@ message OperationStart {
 }
 
 message OperationEnd {
+
+	message FinancialResult {
+		required string currency = 1;
+		required double value = 2;
+	};
+
 	required trdk.EngineService.Uuid id = 1;
 	required string time = 2;
 	optional double pnl = 3;
+	repeated FinancialResult financial_result = 4;
+
 };

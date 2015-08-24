@@ -8,6 +8,7 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
+#pragma once
 #include "AsyncLog.hpp"
 
 namespace trdk {

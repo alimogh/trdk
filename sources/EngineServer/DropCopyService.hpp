@@ -90,7 +90,8 @@ namespace trdk { namespace EngineServer {
 		virtual void ReportOperationEnd(
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &,
-				double pnl);
+				double pnl,
+				const boost::shared_ptr<const trdk::FinancialResult> &);
 
 	public:
 

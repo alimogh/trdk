@@ -12,8 +12,8 @@
 #pragma once
 
 #include "EngineService.h"
+#include "Common/Common.hpp"
 #include "Core/Types.hpp"
-#include "Common/Exception.hpp"
 
 namespace trdk { namespace EngineService {
 

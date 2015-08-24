@@ -47,6 +47,8 @@ class RiskControlSymbolContext::Position : private boost::noncopyable {
 
 public:
 
+	const Lib::Currency currency;
+
 	const double shortLimit;
 	const double longLimit;
 
@@ -54,8 +56,12 @@ public:
 
 public:
 
-	explicit Position(double shortLimit, double longLimit)
-		: shortLimit(shortLimit),
+	explicit Position(
+			const Lib::Currency &currency,
+			double shortLimit,
+			double longLimit)
+		: currency(currency),
+		shortLimit(shortLimit),
 		longLimit(longLimit),
 		position(0) {
 		//...//
@@ -148,11 +154,13 @@ protected:
 		
 	};
 
-private:
+protected:
 
 	typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy; 
 	typedef ConcurrencyPolicy::Mutex Mutex;
 	typedef ConcurrencyPolicy::Lock Lock;
+
+private:
 
 	typedef boost::circular_buffer<pt::ptime> FloodControlBuffer;
 
@@ -576,8 +584,11 @@ private:
 			throw NotEnoughFundsException("Not enough funds for new order");
 		}
 
-		baseCurrency.position = newPosition.first;
-		quoteCurrency.position = newPosition.second;
+		SetPositions(
+			newPosition.first,
+			baseCurrency,
+			newPosition.second,
+			quoteCurrency);
 
 	}
 
@@ -702,8 +713,11 @@ private:
 					% CalcFundsRest(newPosition.second, quoteCurrency);
 			});
 
-		baseCurrency.position = newPosition.first;
-		quoteCurrency.position = newPosition.second;
+		SetPositions(
+			newPosition.first,
+			baseCurrency,
+			newPosition.second,
+			quoteCurrency);
 
 	}
 
@@ -767,10 +781,24 @@ private:
 					% CalcFundsRest(newPosition.second, quoteCurrency);
 			});
 
-		baseCurrency.position = newPosition.first;
-		quoteCurrency.position = newPosition.second;
+
+		SetPositions(
+			newPosition.first,
+			baseCurrency,
+			newPosition.second,
+			quoteCurrency);
 
 	}
+
+private:
+
+	virtual void SetPositions(
+			double newbaseCurrencyValue,
+			RiskControlSymbolContext::Position &baseCurrencyState,
+			double newQuoteCurrencyValue,
+			RiskControlSymbolContext::Position &quoteCurrencyState)
+			const
+			= 0;
 
 private:
 
@@ -835,6 +863,39 @@ public:
 			conf.ReadTypedKey<uint16_t>("win_ratio.min"));
 	}
 
+	virtual void ResetStatistics() {
+		AssertFail(
+			"Statistics not available for this Risk Control Context implementation");
+		throw LogicError(
+			"Statistics not available for this Risk Control Context implementation");
+	}
+	
+	virtual FinancialResult GetStatistics() const {
+		AssertFail(
+			"Statistics not available for this Risk Control Context implementation");
+		throw LogicError(
+			"Statistics not available for this Risk Control Context implementation");
+	}
+
+	virtual FinancialResult TakeStatistics() {
+		AssertFail(
+			"Statistics not available for this Risk Control Context implementation");
+		throw LogicError(
+			"Statistics not available for this Risk Control Context implementation");
+	}
+
+private:
+
+	virtual void SetPositions(
+			double newbaseCurrencyValue,
+			RiskControlSymbolContext::Position &baseCurrencyState,
+			double newQuoteCurrencyValue,
+			RiskControlSymbolContext::Position &quoteCurrencyState)
+			const {
+		baseCurrencyState.position = newbaseCurrencyValue;
+		quoteCurrencyState.position = newQuoteCurrencyValue;
+	}
+
 };
 
 class LocalRiskControlScope : public StandardRiskControlScope {
@@ -856,7 +917,8 @@ public:
 			tradingMode,
 			ReadSettings(conf),
 			conf.ReadTypedKey<size_t>(
-				"risk_control.flood_control.orders.max_number")) {
+				"risk_control.flood_control.orders.max_number")),
+			m_stat(numberOfCurrencies, 0) {
 		//...//
 	}
 
@@ -882,6 +944,80 @@ public:
 				"risk_control.win_ratio.first_operations_to_skip"),
 			conf.ReadTypedKey<uint16_t>("risk_control.win_ratio.min"));
 	}
+
+	virtual void ResetStatistics() {
+		const Lock lock(m_statMutex);
+		foreach (auto &i, m_stat) {
+			i = 0;
+		}
+	}
+	
+	virtual FinancialResult GetStatistics() const {
+		FinancialResult result;
+		result.reserve(m_stat.size());
+		{
+			const Lock lock(m_statMutex);
+			for (size_t i = 0; i < m_stat.size(); ++i) {
+				AssertGt(numberOfCurrencies, i);
+				const auto &position = m_stat[i];
+				if (IsZero(position)) {
+					continue;
+				}
+				result.emplace_back(Currency(i), position);
+			}
+		}
+		return result;
+	}
+
+	virtual FinancialResult TakeStatistics() {
+		FinancialResult result;
+		result.reserve(m_stat.size());
+		{
+			const Lock lock(m_statMutex);
+			for (size_t i = 0; i < m_stat.size(); ++i) {
+				AssertGt(numberOfCurrencies, i);
+				auto &position = m_stat[i];
+				if (IsZero(position)) {
+					continue;
+				}
+				result.emplace_back(Currency(i), position);
+				position = 0;
+			}
+		}
+		return result;
+	}
+
+private:
+
+	virtual void SetPositions(
+			double newbaseCurrencyValue,
+			RiskControlSymbolContext::Position &baseCurrencyState,
+			double newQuoteCurrencyValue,
+			RiskControlSymbolContext::Position &quoteCurrencyState)
+			const {
+		const Lock lock(m_statMutex);
+		{
+			const auto &diff
+				= newbaseCurrencyValue - baseCurrencyState.position;
+			m_stat[baseCurrencyState.currency] += diff;
+			baseCurrencyState.position = newbaseCurrencyValue;
+		}
+		{
+			const auto &diff
+				= newQuoteCurrencyValue - quoteCurrencyState.position;
+			m_stat[quoteCurrencyState.currency] += diff;
+			quoteCurrencyState.position = newQuoteCurrencyValue;
+		}
+	}
+
+private:
+	
+	static_assert(
+		numberOfCurrencies == 6,
+		"List changes. Each new currency adds new item into static array here!"
+			"See Ctor.");
+	mutable std::vector<double> m_stat;
+	mutable Mutex m_statMutex;
 
 };
 
@@ -1095,6 +1231,7 @@ public:
 		}
 		const boost::shared_ptr<RiskControlSymbolContext::Position> pos(
 			new RiskControlSymbolContext::Position(
+				currency,
 				shortLimit,
 				longLimit));
 		m_log.Info(

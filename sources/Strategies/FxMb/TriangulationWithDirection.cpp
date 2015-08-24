@@ -15,6 +15,7 @@
 #include "Core/TradingLog.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/DropCopy.hpp"
+#include "Core/RiskControl.hpp"
 #include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
@@ -170,6 +171,7 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 	} else if (GetPositions().IsEmpty()) {
 
 		AssertEq(LEG_UNKNOWN, m_scheduledLeg);
+		AssertEq(0, GetRiskControlScope().GetStatistics().size());
 
 		if (m_prevTriangle) {
 			if (GetContext().GetCurrentTime() - m_prevTriangleTime <= pt::seconds(30)) {
@@ -432,10 +434,14 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 			{
 				DropCopy *const dropCopy = GetContext().GetDropCopy();
 				if (dropCopy) {
+					const boost::shared_ptr<const FinancialResult> financialResult(
+						new FinancialResult(
+							GetRiskControlScope().TakeStatistics()));
 					dropCopy->ReportOperationEnd(
 						m_triangle->GetId(),
 						m_prevTriangleTime,
-						m_triangle->CalcYExecuted());
+						m_triangle->CalcYExecuted(),
+						financialResult);
 				}
 			}
 			m_triangle->GetLeg(LEG1).MarkAsCompleted();
