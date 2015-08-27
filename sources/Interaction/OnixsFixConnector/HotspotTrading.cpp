@@ -104,8 +104,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 									"Trade quantity must be greater than or equal to the Minimum Trade size.")
 							?	ORDER_STATUS_REJECTED
 							:	boost::istarts_with(
-										reason,
-										"orders are throttled to ")
+											reason,
+											"orders are throttled to ")
 									?	ORDER_STATUS_INACTIVE
 									:	ORDER_STATUS_ERROR;
 					

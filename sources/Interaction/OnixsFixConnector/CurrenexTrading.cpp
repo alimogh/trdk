@@ -98,18 +98,32 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					//...//
 		
 				} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
-					const std::string &reason
-						= message.get(fix::FIX40::Tags::Text);
-					OnOrderRejected(
-						message,
-						replyTime,
-						boost::iequals(
-								reason,
-								"maximum operation limit exceeded")
-							?	ORDER_STATUS_INACTIVE
-							:	ORDER_STATUS_ERROR,
-						reason);
+					
+#					if defined(BOOST_WINDOWS)
+						//! @todo see TRDK-93 for details
+						const std::string reason
+							= "Unknown reject reason, see TRDK-93 for details";
+#					else
+						const std::string reason
+							= message.get(fix::FIX40::Tags::Text);
+#					endif
+
+					const auto status
+						=	boost::equals(
+									reason,
+									"min amount greater than max amount")
+							?	ORDER_STATUS_REJECTED
+							:	boost::iequals(
+											reason,
+											"maximum operation limit exceeded")
+									?	ORDER_STATUS_INACTIVE
+									:	ORDER_STATUS_ERROR;
+
+
+					OnOrderRejected(message, replyTime, status, reason);
+
 					return;
+
 				} else if (execType == fix::FIX41::Values::ExecType::Expired) {
 
 					if (ordStatus == fix::FIX40::Values::OrdStatus::Expired) {
