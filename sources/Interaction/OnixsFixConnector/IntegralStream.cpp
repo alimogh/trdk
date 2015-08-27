@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "FixStream.hpp"
+#include "Core/TradingLog.hpp"
 
 namespace fix = OnixS::FIX;
 
@@ -86,24 +87,32 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				if (
 						entry.get(fix::FIX42::Tags::QuoteCondition)
 							!= fix::FIX42::Values::QuoteCondition::Open_Active) {
-					GetLog().Debug("Inactive stream for %1%.", security);
+					GetTradingLog().Write(
+						"Inactive stream for %1%.",
+						[&security](TradingRecord &record)  {
+							record % security;
+						});
 				}
 
 
 				const double price
 					= entry.getDouble(fix::FIX42::Tags::MDEntryPx);
 				if (IsZero(price)) {
-					GetLog().Debug(
+					GetTradingLog().Write(
 						"Price level with zero-price received for %1%.",
-						security);
+						[&security](TradingRecord &record)  {
+							record % security;
+						});
 					continue;
 				}
 
 				const auto &qty = ParseMdEntrySize(entry);
 				if (IsZero(qty)) {
-					GetLog().Debug(
+					GetTradingLog().Write(
 						"Price level with zero-qty received for %1%.",
-						security);
+						[&security](TradingRecord &record)  {
+							record % security;
+						});
 					continue;
 				}
 
