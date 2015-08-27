@@ -55,6 +55,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_yDetected;
 		}
 
+		size_t CalcBookUpdatesNumber() const;
+
 	protected:
 		
 		virtual void OnServiceStart(const Service &);
@@ -91,8 +93,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		bool CheckStopRequest(const trdk::StopMode &);
 		bool CheckCurrentStopRequest();
-
-		size_t CalcBookUpdatesNumber() const;
 
 	private:
 

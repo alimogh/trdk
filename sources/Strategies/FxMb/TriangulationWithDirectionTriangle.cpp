@@ -11,6 +11,8 @@
 #include "Prec.hpp"
 #include "TriangulationWithDirectionTriangle.hpp"
 #include "TriangulationWithDirection.hpp"
+#include "Core/DropCopy.hpp"
+#include "Core/RiskControl.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 
@@ -239,4 +241,37 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		
 	return result;
 		
+}
+
+void Triangle::ReportStart() const {
+	
+	DropCopy *const dropCopy = m_strategy.GetContext().GetDropCopy();
+	if (!dropCopy) {
+		return;
+	}
+
+	dropCopy->ReportOperationStart(
+		GetId(),
+		GetStartTime(),
+		m_strategy,
+		m_strategy.CalcBookUpdatesNumber());
+
+}
+
+void Triangle::ReportEnd() const {
+	
+	DropCopy *const dropCopy = m_strategy.GetContext().GetDropCopy();
+	if (!dropCopy) {
+		return;
+	}
+	
+	const boost::shared_ptr<const FinancialResult> financialResult(
+		new FinancialResult(m_strategy.GetRiskControlScope().TakeStatistics()));
+	
+	dropCopy->ReportOperationEnd(
+		GetId(),
+		m_strategy.GetContext().GetCurrentTime(),
+		CalcYExecuted(),
+		financialResult);
+
 }

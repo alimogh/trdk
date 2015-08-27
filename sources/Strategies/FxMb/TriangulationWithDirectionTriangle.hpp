@@ -118,7 +118,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void StartLeg1(
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
-				const PairsSpeed &pairsSpeed) {
+				const PairsSpeed &pairsSpeed,
+				const Triangle *prevTriangle) {
 		
 			Assert(!IsLegStarted(LEG1));
 			Assert(!IsLegStarted(LEG2));
@@ -132,12 +133,23 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			}
 
 			PairInfo &pair = GetPair(LEG1);
+			auto &security = *pair.security;
+			const auto &price = pair.startPrice;
+
+			if (
+					prevTriangle
+					&& !prevTriangle->m_lastOrderParams.IsChanged(LEG1, security, price)) {
+				//! @sa TRDK-131
+				throw PriceNotChangedException();
+			}
 
 			boost::shared_ptr<Twd::Position> order = CreateOrder(
 				pair,
-				*pair.security,
-				pair.startPrice,
+				security,
+				price,
 				timeMeasurement);
+
+			ReportStart();
 
 			timeMeasurement.Measure(
 				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_START_1);
@@ -155,6 +167,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				nullptr,
 				&pairsSpeed);
 
+			m_lastOrderParams.Set(LEG1, security, price);
+			
 		}
 
 		void StartLeg2() {
@@ -309,6 +323,20 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 			m_legs[LEG3].reset();
 		
+		}
+
+		void OnLeg3Execution() {
+			
+			Assert(IsLegStarted(LEG1));
+			Assert(IsLegStarted(LEG2));
+			Assert(IsLegStarted(LEG3));
+			
+			Assert(GetLeg(LEG1).IsOpened());
+			Assert(GetLeg(LEG2).IsOpened());
+			Assert(GetLeg(LEG3).IsOpened());
+			
+			ReportEnd();
+
 		}
 
 	public:
@@ -501,6 +529,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				Security &,
 				double price,
 				const Lib::TimeMeasurement::Milestones &);
+
+		void ReportStart() const;
+		void ReportEnd() const;
 
 	private:
 		

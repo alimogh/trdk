@@ -14,8 +14,9 @@
 #include "TriangulationWithDirectionStatService.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/MarketDataSource.hpp"
-#include "Core/DropCopy.hpp"
-#include "Core/RiskControl.hpp"
+#ifdef BOOST_ENABLE_ASSERT_HANDLER
+#	include "Core/RiskControl.hpp"
+#endif
 #include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
@@ -173,11 +174,11 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 		AssertEq(LEG_UNKNOWN, m_scheduledLeg);
 		AssertEq(0, GetRiskControlScope().GetStatistics().size());
 
-		if (m_prevTriangle) {
-			if (GetContext().GetCurrentTime() - m_prevTriangleTime <= pt::seconds(30)) {
+		if (m_prevTriangle && m_prevTriangle->IsLegExecuted(LEG3)) {
+			const auto timeFromClose
+				= GetContext().GetCurrentTime() - m_prevTriangleTime;
+			if (timeFromClose <= pt::seconds(30)) {
 				m_prevTriangle->GetReport().ReportUpdate();
-			} else {
-				m_prevTriangle.reset();
 			}
 		}
 
@@ -215,6 +216,11 @@ bool TriangulationWithDirection::StartScheduledLeg() {
 			ex.GetSecurity());
 		return false;
 	} catch (const PriceNotChangedException &) {
+		GetTradingLog().Write(
+			"\twaiting for changes to execute leg %1%",
+			[this](TradingRecord &record) {
+				record % GetLegNo(m_scheduledLeg);
+			});
 		return false;
 	}
 
@@ -420,7 +426,6 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 			break;
 
 		case LEG3:
-			m_prevTriangleTime = GetContext().GetCurrentTime();
 			{
 				const auto &execDelay = position.GetTimeMeasurement().Measure(
 					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_2);
@@ -431,22 +436,11 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 					execDelay,
 					&order);
 			}
-			{
-				DropCopy *const dropCopy = GetContext().GetDropCopy();
-				if (dropCopy) {
-					const boost::shared_ptr<const FinancialResult> financialResult(
-						new FinancialResult(
-							GetRiskControlScope().TakeStatistics()));
-					dropCopy->ReportOperationEnd(
-						m_triangle->GetId(),
-						m_prevTriangleTime,
-						m_triangle->CalcYExecuted(),
-						financialResult);
-				}
-			}
+			m_triangle->OnLeg3Execution();
 			m_triangle->GetLeg(LEG1).MarkAsCompleted();
 			m_triangle->GetLeg(LEG2).MarkAsCompleted();
 			order.MarkAsCompleted();
+			m_prevTriangleTime = GetContext().GetCurrentTime();
 			m_prevTriangle.reset(m_triangle.release());
 #			ifdef DEV_VER
 				m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
@@ -863,7 +857,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 				triangle->GetPair(LEG1).security->IsBookAdjusted()
 				&& !m_useAdjustedBookForTrades) {
 			GetTradingLog().Write(
-				"not respected\tleg 1\triangle=%1%\tpair=%2%\tecn=%3%",
+				"\tnot respected\tleg 1\triangle=%1%\tpair=%2%\tecn=%3%",
 				[&](TradingRecord &record) {
 					record
 						% m_triangle->GetId()
@@ -873,18 +867,10 @@ void TriangulationWithDirection::CheckNewTriangle(
 			return;
 		}
 
-		{
-			DropCopy *const dropCopy = GetContext().GetDropCopy();
-			if (dropCopy) {
-				dropCopy->ReportOperationStart(
-					triangle->GetId(),
-					triangle->GetStartTime(),
-					*this,
-					CalcBookUpdatesNumber());
-			}
-		}
-		
-		triangle->StartLeg1(timeMeasurement, detection.speed);
+		triangle->StartLeg1(
+			timeMeasurement,
+			detection.speed,
+			m_prevTriangle ? &*m_prevTriangle : nullptr);
 
 	} catch (const HasNotMuchOpportunityException &ex) {
 		GetLog().Warn(
@@ -892,6 +878,13 @@ void TriangulationWithDirection::CheckNewTriangle(
 			ex,
 			ex.GetRequiredQty(),
 			ex.GetSecurity());
+		return;
+	} catch (const PriceNotChangedException &) {
+		GetTradingLog().Write(
+			"\twaiting for changes to execute leg\t%1%",
+			[this](TradingRecord &record) {
+				record % GetLegNo(LEG1);
+			});
 		return;
 	}
 
@@ -926,7 +919,7 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 			&& (leg3Info.security->IsBookAdjusted()
 				|| leg3Info.GetBestSecurity().IsBookAdjusted())) {
 		GetTradingLog().Write(
-			"not respected\tleg 3\triangle=%1%\tpair=%2%\tecn=%3%",
+			"\tnot respected\tleg 3\triangle=%1%\tpair=%2%\tecn=%3%",
 			[&](TradingRecord &record) {
 				record
 					% m_triangle->GetId()
@@ -1077,7 +1070,7 @@ void TriangulationWithDirection::OnCancel(
 		reasonOrder.GetLeg(),
 		delay,
 		&reasonOrder);
-	m_triangle.reset();
+	m_prevTriangle.reset(m_triangle.release());
 }
 
 void TriangulationWithDirection::OnSettingsUpdate(const IniSectionRef &conf) {
