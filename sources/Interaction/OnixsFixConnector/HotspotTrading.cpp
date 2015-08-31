@@ -97,11 +97,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 						const std::string reason
 							= message.get(fix::FIX40::Tags::Text);
 #					endif
-
 					const auto status
-						=	boost::equals(
+						=	(boost::equals(
 									reason,
-									"Trade quantity must be greater than or equal to the Minimum Trade size.")
+									"MinQty is larger than amount to be opened by this order")
+								||	boost::equals(
+										reason,
+										"Trade quantity must be greater than or equal to the Minimum Trade size."))
 							?	ORDER_STATUS_REJECTED
 							:	boost::istarts_with(
 											reason,
