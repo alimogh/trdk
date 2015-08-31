@@ -684,7 +684,8 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 			result.speed[PAIR_AB] < -1
 			&& result.speed[PAIR_BC] > 1
 			&& IsZero(result.speed[PAIR_AC])
-			&& fabs(result.speed[PAIR_AB]) > result.speed[PAIR_BC]) {
+			//! @sa TRDK-162 about falling/rising speed:
+			&& fabs(result.speed[PAIR_AB]) < result.speed[PAIR_BC]) {
 
 		result.y = Y1;
 		result.legs = {LEG1, LEG3, LEG2};
@@ -697,7 +698,8 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 			IsZero(result.speed[PAIR_AB])
 			&& result.speed[PAIR_BC] > 1
 			&& result.speed[PAIR_AC] > 1
-			&& result.speed[PAIR_BC] < result.speed[PAIR_AC]) {
+			//! @sa TRDK-162 about falling/rising speed:
+			&& result.speed[PAIR_BC] > result.speed[PAIR_AC]) {
 
 		result.y = Y1;
 		result.legs = {LEG2, LEG3, LEG1};
@@ -710,7 +712,8 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 			result.speed[PAIR_AB] > 1
 			&& result.speed[PAIR_BC] < -1
 			&& IsZero(result.speed[PAIR_AC])
-			&& result.speed[PAIR_AB] < fabs(result.speed[PAIR_BC])) {
+			//! @sa TRDK-162 about falling/rising speed:
+			&& result.speed[PAIR_AB] > fabs(result.speed[PAIR_BC])) {
 
 		result.y = Y1;
 		result.legs = {LEG3, LEG1, LEG2};
@@ -735,7 +738,8 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 			result.speed[PAIR_AB] > 1
 			&& result.speed[PAIR_BC] < -1
 			&& IsZero(result.speed[PAIR_AC])
-			&& result.speed[PAIR_AB] > fabs(result.speed[PAIR_BC])) {
+			//! @sa TRDK-162 about falling/rising speed:
+			&& result.speed[PAIR_AB] < fabs(result.speed[PAIR_BC])) {
 
 		result.y = Y2;
 		result.legs = {LEG1, LEG3, LEG2};
@@ -748,7 +752,8 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 			IsZero(result.speed[PAIR_AB])
 			&& result.speed[PAIR_BC] < -1
 			&& result.speed[PAIR_AC] < -1
-			&& fabs(result.speed[PAIR_BC]) < fabs(result.speed[PAIR_AC])) {
+			//! @sa TRDK-162 about falling/rising speed:
+			&& fabs(result.speed[PAIR_BC]) > fabs(result.speed[PAIR_AC])) {
 
 		result.y = Y2;
 		result.legs = {LEG2, LEG3, LEG1};
@@ -761,7 +766,8 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 			result.speed[PAIR_AB] < -1
 			&& result.speed[PAIR_BC] > 1
 			&& IsZero(result.speed[PAIR_AC])
-			&& fabs(result.speed[PAIR_AB]) < result.speed[PAIR_BC]) {
+			//! @sa TRDK-162 about falling/rising speed:
+			&& fabs(result.speed[PAIR_AB]) > result.speed[PAIR_BC]) {
 
 		result.y = Y2;
 		result.legs = {LEG3, LEG1, LEG2};
