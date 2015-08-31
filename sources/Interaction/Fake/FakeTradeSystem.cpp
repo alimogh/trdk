@@ -294,16 +294,7 @@ private:
 	void ExecuteOrder(const Order &order) {
 		bool isMatched = false;
 		TradeInfo trade = {};
-		bool isSell = order.isSell;
-		const Symbol &symbol = order.security->GetSymbol();
-		if (
-				symbol.GetSecurityType() == Symbol::SECURITY_TYPE_FOR_SPOT
-				&& symbol.GetFotBaseCurrency() != order.currency) {
-			AssertEq(symbol.GetFotQuoteCurrency(), order.currency);
-			//! @sa TRDK-133 why we changing direction at changed currency:
-			isSell = !isSell;
-		}
-		if (isSell) {
+		if (order.isSell) {
 			trade.price = order.security->GetBidPriceScaled();
 			isMatched = order.price <= trade.price;
 		} else {
