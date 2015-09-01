@@ -64,12 +64,12 @@ public:
 		explicit DelayGenerator(const IniSectionRef &conf)
 			: executionDelayRange(
 				conf.ReadTypedKey<size_t>("delay_microseconds.execution.min"),
-				conf.ReadTypedKey<size_t>("delay_microseconds.execution.max")),
-			executionDelayGenerator(random, executionDelayRange),
-			reportDelayRange(
+				conf.ReadTypedKey<size_t>("delay_microseconds.execution.max"))
+			, executionDelayGenerator(random, executionDelayRange)
+			, reportDelayRange(
 				conf.ReadTypedKey<size_t>("delay_microseconds.report.min"),
-				conf.ReadTypedKey<size_t>("delay_microseconds.report.max")),
-			reportDelayGenerator(random, reportDelayRange) {
+				conf.ReadTypedKey<size_t>("delay_microseconds.report.max"))
+			, reportDelayGenerator(random, reportDelayRange) {
 			//...//
 		}
 
@@ -92,6 +92,41 @@ public:
 
 	};
 
+	class ExecChanceGenerator {
+
+	public:
+
+		explicit ExecChanceGenerator(const IniSectionRef &conf)
+			: m_executionProbability(
+				conf.ReadTypedKey<uint16_t>("execution_probability")),
+			m_range(0, 100),
+			m_generator(m_random, m_range) {
+			//...//
+		}
+
+		void Validate() const {
+			if (m_executionProbability <= 0 || m_executionProbability > 100) {
+				throw ModuleError(
+					"Execution probability must be between 0% and 101%.");
+			}
+		}
+
+		bool HasChance() const {
+			return
+				m_executionProbability >= 100
+				|| m_generator() <= m_executionProbability;
+		}
+
+	private:
+
+		uint8_t m_executionProbability;
+		boost::mt19937 m_random;
+		boost::uniform_int<uint8_t> m_range;
+		mutable boost::variate_generator<boost::mt19937, boost::uniform_int<uint8_t>>
+			m_generator;
+
+	};
+
 private:
 
 	typedef boost::mutex Mutex;
@@ -103,17 +138,20 @@ private:
 public:
 
 	DelayGenerator m_delayGenerator;
+	ExecChanceGenerator m_execChanceGenerator;
 
 	mutable SettingsMutex m_settingsMutex;
 
 public:
 
 	explicit Implementation(const IniSectionRef &conf)
-			: m_delayGenerator(conf),
-			m_id(1),
-			m_isStarted(0),
-			m_currentOrders(&m_orders1) {
+		: m_delayGenerator(conf)
+		, m_execChanceGenerator(conf)
+		, m_id(1)
+		, m_isStarted(0)
+		, m_currentOrders(&m_orders1) {
 		m_delayGenerator.Validate();
+		m_execChanceGenerator.Validate();
 	}
 
 	~Implementation() {
@@ -303,7 +341,7 @@ private:
 		}
 		const auto &tradeSysteOrderId
 			= (boost::format("PAPER%1%") % order.id).str();
-		if (isMatched) {
+		if (isMatched && m_execChanceGenerator.HasChance()) {
 			trade.id = tradeSysteOrderId;
 			trade.qty = order.qty;
 			order.callback(
