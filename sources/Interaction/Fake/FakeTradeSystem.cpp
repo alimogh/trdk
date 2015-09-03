@@ -119,7 +119,7 @@ public:
 
 	private:
 
-		uint8_t m_executionProbability;
+		uint16_t m_executionProbability;
 		boost::mt19937 m_random;
 		boost::uniform_int<uint8_t> m_range;
 		mutable boost::variate_generator<boost::mt19937, boost::uniform_int<uint8_t>>
