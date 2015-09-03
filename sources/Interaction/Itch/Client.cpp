@@ -505,7 +505,7 @@ Client::Client(
 #	if DEV_VER
 		const size_t initiaBufferSize = 256;
 #	else
-		const size_t initiaBufferSize = 256 * 1024;
+		const size_t initiaBufferSize = 1024 * 1024;
 #	endif
 	m_buffer.first.resize(initiaBufferSize);
 	m_buffer.second.resize(m_buffer.first.size());
