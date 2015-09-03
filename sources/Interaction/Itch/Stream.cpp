@@ -348,4 +348,6 @@ void Stream::ReconnectClient(const boost::system::error_code &error) {
 		ScheduleReconnect();
 	}
 
+	SubscribeToSecurities();
+
 }

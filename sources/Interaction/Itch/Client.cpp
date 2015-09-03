@@ -480,10 +480,10 @@ Client::Client(
 		io::io_service &ioService,
 		const std::string &host,
 		size_t port)
-	: m_context(context),
-	m_dataHandler(handler),
-	m_ioService(ioService),
-	m_socket(m_ioService)
+	: m_context(context)
+	, m_dataHandler(handler)
+	, m_ioService(ioService)
+	, m_socket(m_ioService)
 #	ifdef TRDK_INTERACTION_ITCH_CLIENT_PERF_SOURCE
 		, m_perfSourceFile("itch.dump", std::ios::trunc | std::ios::binary)
 #	endif
