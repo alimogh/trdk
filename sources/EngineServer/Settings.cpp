@@ -158,7 +158,6 @@ namespace {
 
 		} result;
 
-		result.Add(false,	"RiskControl",	"TriangulationWithDirection.triangles_limit",		KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"triangles_limit");
 		result.Add(false,	"RiskControl",	"flood_control.orders.max_number",					KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"flood_control.orders.max_number");
 		result.Add(false,	"RiskControl",	"flood_control.orders.period_ms",					KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"flood_control.orders.period_ms");
 		result.Add(false,	"RiskControl",	"pnl.profit",										KeyMapping::FS_DIRECT,		KeyMapping::GROUP_GENERAL,		"RiskControl",	"pnl.profit");

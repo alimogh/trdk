@@ -48,19 +48,15 @@ namespace {
 	}
 
 	size_t ReadMaxTrianglesCount(const IniSectionRef &conf, Module::Log &log) {
-		const char *const keyName
-			= "TriangulationWithDirection.triangles_limit";
+		const char *const keyName = "risk_control.triangles_limit";
 		if (
 				boost::iequals(
-					conf.GetBase().ReadTypedKey<std::string>(
-						"RiskControl",
-						keyName),
+					conf.ReadTypedKey<std::string>(keyName),
 					"unlimited")) {
 			log.Info("Maximum triangles count: UNLIMITED.");
 			return nTrianglesLimit;
 		} else {
-			const auto result
-				= conf.GetBase().ReadTypedKey<size_t>("RiskControl", keyName);
+			const auto result = conf.ReadTypedKey<size_t>(keyName);
 			log.Info("Maximum triangles count: %1% triangles.", result);
 			return result;
 		}
