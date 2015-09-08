@@ -64,16 +64,23 @@ namespace trdk { namespace EngineServer {
 		void Connect();
 		void Close();
 
-		void StartRead();
+		void StartReadMessageSize();
+		void StartReadMessage();
 
 		void FlushOutStream(const std::string &);
 
-		void OnNewData(const boost::system::error_code &);
+		void OnNewMessageSize(const boost::system::error_code &);
+		void OnNewMessage(const boost::system::error_code &);
+		void OnNewRequest(const trdk::EngineService::DropCopy::ClientRequest &);
 		void OnDataSent(
 				//! @todo reimplement buffer
 				const boost::shared_ptr<std::vector<char>> &,
 				const boost::system::error_code &,
 				size_t /*bytesTransferred*/);
+
+		void OnKeepAlive();
+		void StartKeepAliveSender();
+		void StartKeepAliveChecker();
 
 	private:
 
@@ -85,6 +92,11 @@ namespace trdk { namespace EngineServer {
 		boost::asio::ip::tcp::socket m_socket;
 
 		int32_t m_nextMessageSize;
+		std::vector<char> m_inBuffer;
+
+		boost::asio::deadline_timer m_keepAliveSendTimer;
+		boost::asio::deadline_timer m_keepAliveCheckTimer;
+		boost::atomic_bool m_isClientKeepAliveRecevied;
 
 	};
 

@@ -119,8 +119,6 @@ namespace trdk { namespace EngineServer {
 		boost::asio::deadline_timer m_keepAliveCheckTimer;
 		boost::atomic_bool m_isClientKeepAliveRecevied;
 
-		size_t m_debugPnlRecordsNumber;
-
 	};
 
 } }

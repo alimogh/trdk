@@ -42,3 +42,13 @@ message ServiceData {
 	optional trdk.EngineService.Reports.OperationEnd operation_end = 7;
 
 }
+
+message ClientRequest {
+	
+	enum Type {
+		TYPE_KEEP_ALIVE = 1;
+	}
+
+	required Type type = 1;
+
+}

@@ -43,8 +43,7 @@ Client::Client(
 	m_socket(ioService),
 	m_keepAliveSendTimer(ioService),
 	m_keepAliveCheckTimer(ioService),
-	m_isClientKeepAliveRecevied(false),
-	m_debugPnlRecordsNumber(0) {
+	m_isClientKeepAliveRecevied(false) {
 	
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -211,6 +210,8 @@ void Client::OnNewMessage(
 		return;
 	}
 
+	StartReadMessageSize();
+
 	ClientRequest request;
 	try {
 		if (!request.ParseFromArray(&m_inBuffer[0], int(m_inBuffer.size()))) {
@@ -226,8 +227,6 @@ void Client::OnNewMessage(
 		return;
 	}
 
-	StartReadMessageSize();
-	
 	try {
 		OnNewRequest(request);
 	} catch (const google::protobuf::FatalException &ex) {
