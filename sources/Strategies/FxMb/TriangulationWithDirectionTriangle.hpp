@@ -388,11 +388,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		bool HasActiveOrders() const {
 			foreach (const auto &leg, m_legs) {
-				if (leg && !leg->HasActiveOrders()) {
-					return false;
+				if (leg && leg->HasActiveOrders()) {
+					return true;
 				}
 			}
-			return true;
+			return false;
 		}
 
 		PairInfo & GetPair(const Pair &pair) {

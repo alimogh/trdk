@@ -151,8 +151,6 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 		const Service &service,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 
-	Assert(!CheckCurrentStopRequest());
-
 	UpdateDirection(service);
 
 	if (m_triangle) {
