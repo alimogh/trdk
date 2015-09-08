@@ -17,6 +17,24 @@
 
 namespace trdk { namespace EngineServer {
 
+	template<Lib::Concurrency::Profile profile>
+	struct DropCopyConcurrencyPolicyT {
+		static_assert(
+			profile == Lib::Concurrency::PROFILE_RELAX,
+			"Wrong concurrency profile");
+		typedef boost::mutex Mutex;
+		typedef Mutex::scoped_lock Lock;
+		typedef boost::condition_variable LazyCondition;
+	};
+	template<>
+	struct DropCopyConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+		typedef Lib::Concurrency::SpinMutex Mutex;
+		typedef Mutex::ScopedLock Lock;
+		typedef Lib::Concurrency::SpinCondition LazyCondition;
+	};
+	typedef DropCopyConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
+		DropCopyConcurrencyPolicy;
+
 	class DropCopyService : public trdk::DropCopy {
 
 	public:
@@ -25,18 +43,104 @@ namespace trdk { namespace EngineServer {
 
 	private:
 
-		typedef boost::shared_mutex ClientsMutex;
-		typedef boost::shared_lock<ClientsMutex> ClientsReadLock;
-		typedef boost::unique_lock<ClientsMutex> ClientsWriteLock;
+		typedef boost::mutex ClientMutex;
+		typedef ClientMutex::scoped_lock ClientLock;
+		typedef boost::condition_variable ClientCondition;
 
 		struct Io {
 
-			std::vector<DropCopyClient *> clients;
+			DropCopyClient *client;
 
 			boost::thread_group threads;
 			boost::asio::io_service service;
 
+			Io()
+				: client(nullptr) {
+				//...//
+			}
+
 		};
+
+		class SendList : private boost::noncopyable {
+
+		public:
+
+			typedef boost::function<
+					bool(const trdk::EngineService::DropCopy::ServiceData &)>
+				SendCallback;
+
+		private:
+
+			typedef DropCopyConcurrencyPolicy ConcurrencyPolicy;
+			typedef ConcurrencyPolicy::Mutex Mutex;
+			typedef ConcurrencyPolicy::Lock Lock;
+			typedef ConcurrencyPolicy::LazyCondition Condition;
+
+			struct Queue {
+
+				typedef std::vector<trdk::EngineService::DropCopy::ServiceData>
+					Data;
+			
+				Data data;
+				boost::atomic_size_t size;
+
+				Queue()
+					: size(0) {
+					//...//
+				}
+
+				void Reset() {
+					data.clear();
+					size = 0;
+				}
+			
+			};
+
+		public:
+
+			explicit SendList(DropCopyService &);
+			~SendList();
+
+		public:
+
+			void Enqueue(trdk::EngineService::DropCopy::ServiceData &&);
+
+			void Start();
+			void Stop();
+			
+			void Flush();
+
+			void OnConnectionRestored();
+
+			size_t GetQueueSize() const;
+
+			void LogQueue();
+
+		private:
+
+			void SendTask();
+
+		public:
+
+			DropCopyService &m_service;
+			
+			Mutex m_mutex;
+			Condition m_dataCondition;
+
+			Condition m_connectionCondition;
+
+			bool m_flushFlag;
+			
+			std::pair<Queue, Queue> m_queues;
+			Queue *m_currentQueue;
+
+			bool m_isStopped;
+
+			boost::thread m_thread;
+
+		};
+
+		
 
 	public:
 
@@ -103,7 +207,7 @@ namespace trdk { namespace EngineServer {
 
 		void OnClientClose(const DropCopyClient &);
 
-	protected:
+	private:
 
 		void StartNewClient(const std::string &host, const std::string &port);
 
@@ -112,12 +216,18 @@ namespace trdk { namespace EngineServer {
 				const std::string &host,
 				const std::string &port);
 		
-		void Send(const trdk::EngineService::DropCopy::ServiceData &);
+		void EnqueueToSend(const trdk::EngineService::DropCopy::ServiceData &);
 
 	private:
 
-		ClientsMutex m_clientsMutex;
+		bool SendSync(const trdk::EngineService::DropCopy::ServiceData &);
 
+	private:
+
+		SendList m_sendList;
+		
+		ClientMutex m_clientMutex;
+		ClientCondition m_clientCondition;
 		std::unique_ptr<Io> m_io;
 
 	};

@@ -76,31 +76,212 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
+DropCopyService::SendList::SendList(DropCopyService &service)
+	: m_service(service)
+	, m_flushFlag(false)
+	, m_currentQueue(&m_queues.first)
+	, m_isStopped(true) {
+	//...//
+}
+
+DropCopyService::SendList::~SendList() {
+	try {
+		Stop();
+	} catch (...) {
+		AssertFailNoException();
+		throw;
+	}
+}
+
+size_t DropCopyService::SendList::GetQueueSize() const {
+	return m_queues.first.size + m_queues.second.size;
+}
+
+void DropCopyService::SendList::Start() {
+	const Lock lock(m_mutex);
+	Assert(m_isStopped); // Assert could be removed without doubt.
+	if (!m_isStopped) {
+		return;
+	}
+	m_thread = boost::thread(
+		[this]() {
+			m_service.GetLog().Debug("Send-thread started...");
+			m_isStopped = false;
+			try {
+				SendTask();
+			} catch (...) {
+				AssertFailNoException();
+				m_service.GetLog().Error("Fatal error in the send-thread.");
+				throw;
+			}
+			m_service.GetLog().Debug("Send-thread completed.");
+		});
+}
+
+void DropCopyService::SendList::Stop() {
+	{
+		const Lock lock(m_mutex);
+		if (!m_isStopped) {
+			m_isStopped = true;
+			m_dataCondition.notify_all();
+		}
+	}
+	m_thread.join();
+}
+
+void DropCopyService::SendList::Flush() {
+	Lock lock(m_mutex);
+	if (m_flushFlag) {
+		return;
+	}
+	m_flushFlag = true;
+	if (GetQueueSize() > 0) {
+		m_service.GetLog().Info("Flushing %1% messages...", GetQueueSize());
+	}
+	m_dataCondition.wait(lock);
+	Assert(!m_flushFlag);
+}
+
+void DropCopyService::SendList::LogQueue() {
+
+	if (GetQueueSize() == 0) {
+		AssertEq(0, m_queues.first.data.size());
+		AssertEq(0, m_queues.second.data.size());
+		m_service.GetLog().Debug("Messages queue is empty.");
+		return;
+	}
+
+	m_service.GetLog().Warn("Messages queue has %1% messages!", GetQueueSize());
+	size_t counter = 0;
+	const auto &logRecords = [&](const Queue &queue) {
+		foreach (const auto &message, queue.data) {
+			m_service.GetLog().Debug(
+				"Unsent message #%1%: \"%2%\".",
+				++counter,
+				message.DebugString());
+		}
+	};
+	{
+		const Lock lock(m_mutex);
+		logRecords(
+			m_currentQueue == &m_queues.first
+				?	m_queues.second
+				:	m_queues.first);
+		logRecords(*m_currentQueue);
+	}
+
+}
+
+void DropCopyService::SendList::Enqueue(ServiceData &&message) {
+	{
+		const Lock lock(m_mutex);
+		m_currentQueue->data.emplace_back(message);
+		m_dataCondition.notify_one();
+	}
+	++m_currentQueue->size;
+}
+
+void DropCopyService::SendList::SendTask() {
+
+	Lock lock(m_mutex);
+
+	while (!m_isStopped) {
+
+		if (m_currentQueue->data.empty()) {
+			m_dataCondition.wait(lock);
+			AssertEq(m_currentQueue->data.size(), m_currentQueue->size);
+			Assert(!m_currentQueue->data.empty() || m_isStopped);
+		}
+		
+		if (m_isStopped) {
+			break;
+		}
+
+		for (
+				size_t count = 1
+				; !m_currentQueue->data.empty() && !m_isStopped
+				; ++count) {
+
+			Queue *const listToRead = m_currentQueue;
+			AssertEq(listToRead->data.size(), listToRead->size);
+			m_currentQueue = m_currentQueue == &m_queues.first
+				?	&m_queues.second
+				:	&m_queues.first;
+		
+			lock.unlock();
+
+			if (!(count % 3)) {
+				m_service.GetLog().Warn(
+					"Large queue size to send: %1% messages."
+						" After %2% iterations queue still not empty.",
+					GetQueueSize(),
+					count);
+			}
+	
+			Assert(!listToRead->data.empty());
+			AssertEq(listToRead->data.size(), listToRead->size);
+			foreach (auto &message, listToRead->data) {
+				if (!m_service.SendSync(message)) {
+					break;
+				}
+				--listToRead->size;
+				AssertGt(listToRead->data.size(), listToRead->size);
+			}
+			listToRead->Reset();
+		
+			lock.lock();
+
+		}
+
+		if (m_flushFlag) {
+			m_flushFlag = false;
+			m_dataCondition.notify_all();
+		}
+
+	}
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 DropCopyService::DropCopyService(Context &context, const IniSectionRef &)
 	: Base(context, "DropCopy")
+	, m_sendList(*this)
 	, m_io(new Io) {
 	//...//
 }
 
 DropCopyService::~DropCopyService() {
+	
 	std::unique_ptr<Io> io;
+	
 	try {
+
+		m_sendList.Flush();
+
 		{
-			const ClientsWriteLock lock(m_clientsMutex);
+			const ClientLock lock(m_clientMutex);
 			io.reset(m_io.release());
+			m_clientCondition.notify_all();
 		}
 		io->service.stop();
+		m_sendList.Stop();
 		io->threads.join_all();
+
+		m_sendList.LogQueue();
+
 	} catch (...) {
 		AssertFailNoException();
 		throw;
 	}
+	
 	io.reset();
+
 }
 
 void DropCopyService::Start(const IniSectionRef &conf) {
 	
-	AssertEq(0, m_io->clients.size());
+	Assert(!m_io->client);
 	AssertEq(0, m_io->threads.size());
 	if (m_io->threads.size() != 0) {
 		throw Exception("Already started");
@@ -132,6 +313,8 @@ void DropCopyService::Start(const IniSectionRef &conf) {
 				GetLog().Debug("IO-service thread completed.");
 			});
 	}
+
+	m_sendList.Start();
 
 }
 
@@ -166,7 +349,7 @@ void DropCopyService::StartNewClient(
 		
 			});
 
-		newClient->Send(std::move(message));
+		newClient->Send(message);
 		
 		GetLog().Debug(
 			"Dictionary: Sent %1% securities from %2% market data sources.",
@@ -175,27 +358,29 @@ void DropCopyService::StartNewClient(
 
 	}
 
-	const ClientsWriteLock lock(m_clientsMutex);
-	m_io->clients.push_back(&*newClient);
+	const ClientLock lock(m_clientMutex);
+	Assert(!m_io->client);
+	m_io->client = &*newClient;
+	m_clientCondition.notify_all();
 
 }
 
 void DropCopyService::OnClientClose(const DropCopyClient &client) {
 
 	{
-		const ClientsWriteLock lock(m_clientsMutex);
+		
+		const ClientLock lock(m_clientMutex);
+		
 		if (!m_io) {
 			return;
+		} else if (!m_io->client) {
+			// Fleeing from a recursion after failed reconnection...
+			return;
 		}
-		auto it = std::find(
-			m_io->clients.begin(),
-			m_io->clients.end(),
-			&client);
-		if (it != m_io->clients.end()) {
-			m_io->clients.erase(it);
-		} else {
-			// Connect error, object wasn't registered.
-		}
+		
+		Assert(m_io->client == &client);
+		m_io->client = nullptr;
+
 	}
 
 	ReconnectClient(0, client.GetHost(), client.GetPort());
@@ -214,8 +399,9 @@ void DropCopyService::ReconnectClient(
 	} catch (const DropCopyClient::ConnectError &ex) {
 
 		GetLog().Warn(
-			"Failed to reconnect: \"%1%\". Trying again...",
-			ex.what());
+			"Failed to reconnect: \"%1%\". Trying again, %2% times...",
+			ex.what(),
+			attemptIndex + 1);
 	
 		const auto &sleepTime
 			= pt::seconds(long(1 * std::min<size_t>(attemptIndex, 30)));
@@ -233,16 +419,45 @@ void DropCopyService::ReconnectClient(
 				ReconnectClient(attemptIndex + 1, host, port);
 			});
 
-
 	}
 
 }
 
-void DropCopyService::Send(const ServiceData &message) {
-	const ClientsReadLock lock(m_clientsMutex);
-	foreach (DropCopyClient *client, m_io->clients) {
-		client->Send(message);
+bool DropCopyService::SendSync(const ServiceData &message) {
+
+	ClientLock lock(m_clientMutex);
+
+	for (bool byTimeOut = false; !m_io || !m_io->client; ) {
+
+		if (!m_io) {
+			GetLog().Warn(
+				"Failed to send message: service stopped."
+					" Current queue: %1% messages.",
+				m_sendList.GetQueueSize());
+			return false;
+		}
+		
+		if (!byTimeOut) {
+			GetLog().Warn(
+				"Message sending suspended, waiting for reconnect."
+					" Current queue: %1% messages.",
+				m_sendList.GetQueueSize());
+		}
+		
+		byTimeOut = !m_clientCondition.timed_wait(lock, pt::seconds(30));
+		if (byTimeOut) {
+			GetLog().Warn(
+				"Message sending still not active, waiting for reconnect."
+					" Current queue: %1% messages.",
+				m_sendList.GetQueueSize());
+		}
+
 	}
+
+	m_io->client->Send(message);
+
+	return true;
+
 }
 
 void DropCopyService::CopyOrder(
@@ -385,7 +600,7 @@ void DropCopyService::CopyOrder(
 			*order.mutable_top_of_book());
 	}
 
-	Send(message);
+	m_sendList.Enqueue(std::move(message));
 
 }
 
@@ -416,7 +631,7 @@ void DropCopyService::CopyTrade(
 		bestAskQty,
 		*trade.mutable_top_of_book());
 
-	Send(message);
+	m_sendList.Enqueue(std::move(message));
 
 }
 
@@ -436,7 +651,7 @@ void DropCopyService::ReportOperationStart(
 	ConvertToUuid(strategy.GetId(), *operation.mutable_strategy_id());
 	operation.set_updates_number(pf::uint32(updatesNumber));
 
-	Send(message);
+	m_sendList.Enqueue(std::move(message));
 
 }
 
@@ -461,6 +676,7 @@ void DropCopyService::ReportOperationEnd(
 		positionMessage.set_value(position.second);
 	}
 
-	Send(message);
+	m_sendList.Enqueue(std::move(message));
 
 }
+
