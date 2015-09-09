@@ -190,7 +190,6 @@ void DropCopyService::SendList::SendTask() {
 		if (m_currentQueue->data.empty()) {
 			m_dataCondition.wait(lock);
 			AssertEq(m_currentQueue->data.size(), m_currentQueue->size);
-			Assert(!m_currentQueue->data.empty() || m_isStopped);
 		}
 		
 		if (m_isStopped) {
