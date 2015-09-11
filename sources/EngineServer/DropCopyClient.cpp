@@ -207,6 +207,8 @@ void DropCopyClient::OnDataSent(
 		m_service.GetLog().Error(
 			"Failed to send data: \"%1%\".",
 			SysError(error.value()));
+		m_socket.close();
+		//! @todo also see issue TRDK-177.
 	}
 }
 
