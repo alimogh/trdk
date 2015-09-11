@@ -493,15 +493,16 @@ private:
 
 		const auto realPrice = security.DescalePrice(orderPrice);
 
-		//! @todo see TRDK-107 for order side details.
+		//! @sa TRDK-107, then then TRDK-176, for order side details.
+		const auto quoteCurrencyDirection = side.direction * -1;
 		if (symbol.GetFotBaseCurrency() == currency) {
 			return std::make_pair(
 				qty * side.direction,
-				(qty * realPrice) * (side.direction * -1));
+				(qty * realPrice) * quoteCurrencyDirection);
 		} else {
 			return std::make_pair(
-				(qty / realPrice) * (side.direction * -1),
-				qty * side.direction);
+				(qty / realPrice) * side.direction,
+				qty * quoteCurrencyDirection);
 		}
 
 	}
