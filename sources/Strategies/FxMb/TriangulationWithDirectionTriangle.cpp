@@ -50,11 +50,13 @@ Triangle::Triangle(
 		auto &pair = m_pairs[PAIR_BC]; 
 		pair = PairInfo(bc, m_bestBidAsk);
 		m_pairsLegs[pair.leg] = &pair;
-		if (pair.leg == LEG3) {
+		// Why we don't change order side for such orders - see TRDK-107,
+		// then TRDK-176.
+		/* if (pair.leg == LEG3) {
 			pair.isBuyForOrder = !pair.isBuy;
-		} else {
+		} else {*/
 			AssertEq(pair.isBuy, pair.isBuyForOrder);
-		}
+		/*}*/
 	}
 			
 	m_pairs[PAIR_AC] = PairInfo(ac, m_bestBidAsk);
