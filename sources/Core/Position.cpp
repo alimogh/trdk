@@ -864,6 +864,16 @@ public:
 			if (m_isRegistered) {
 				m_strategy.Unregister(m_position);
 			}
+			try {
+				CopyOrder(
+					nullptr, // order ID (from trade system)
+					true,
+					TradeSystem::ORDER_STATUS_ERROR,
+					&timeInForce,
+					&orderParams);
+			} catch (...) {
+				AssertFailNoException();
+			}
 			throw;
 		}
 	
