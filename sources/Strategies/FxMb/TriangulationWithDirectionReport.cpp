@@ -180,9 +180,7 @@ public:
 					record
 						%	pair % '\0' % " ECN"
 						%	pair % '\0' % " leg no."
-						%	pair % '\0' % " tag 15"
 						%	pair % '\0' % " direction"
-						%	pair % '\0' % " tag 54"
 						%	pair % '\0'	% " order qty"
 						%	pair % '\0' % " order state" 
 						%	pair % '\0' % " price start"
@@ -447,14 +445,8 @@ void TriangleReport::ReportAction(
 		record
 			% security.GetSource().GetTag()
 			% GetLegNo(info.leg);
-		if (order) {
-			record % order->GetCurrency();
-		} else {
-			record % ' ';
-		}
-		record
-			% (info.isBuy ? "buy" : "sell")
-			% (info.isBuyForOrder ? "buy" : "sell");
+
+		record % (info.isBuy ? "buy" : "sell");
 
 		if (!order) {
 			record % ' ';

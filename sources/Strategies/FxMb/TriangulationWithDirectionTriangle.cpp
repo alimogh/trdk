@@ -50,13 +50,6 @@ Triangle::Triangle(
 		auto &pair = m_pairs[PAIR_BC]; 
 		pair = PairInfo(bc, m_bestBidAsk);
 		m_pairsLegs[pair.leg] = &pair;
-		// Why we don't change order side for such orders - see TRDK-107,
-		// then TRDK-176.
-		/* if (pair.leg == LEG3) {
-			pair.isBuyForOrder = !pair.isBuy;
-		} else {*/
-			AssertEq(pair.isBuy, pair.isBuyForOrder);
-		/*}*/
 	}
 			
 	m_pairs[PAIR_AC] = PairInfo(ac, m_bestBidAsk);
@@ -101,15 +94,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 	boost::shared_ptr<Twd::Position> result;
 
-	if (pair.isBuyForOrder) {
+	if (pair.isBuy) {
 
-		Currency currency;
 		double qty = m_aQty;
-		double baseCurrencyQty = qty;
 		switch (pair.id) {
 			case PAIR_AB:
 			case PAIR_AC:
-				currency = security.GetSymbol().GetFotBaseCurrency();
 				if (security.GetAskQty() < qty) {
 					throw HasNotMuchOpportunityException(security, Qty(qty));
 				}
@@ -117,10 +107,8 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 			case PAIR_BC:
 				switch (pair.leg) {
 					case LEG1:
-						currency = security.GetSymbol().GetFotBaseCurrency();
 						qty *= GetPair(PAIR_AC).security->GetAskPrice();
 						qty /= GetPair(PAIR_BC).security->GetAskPrice();
-						baseCurrencyQty = qty;
 						break;
 					case LEG2:
 						AssertNe(LEG2, pair.leg);
@@ -128,11 +116,8 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 					case LEG3:
 						AssertNe(PAIR_BC, GetLeg(LEG1).GetPair());
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
-						currency = security.GetSymbol().GetFotQuoteCurrency();
-						qty = GetLeg(PAIR_AC).GetOpenedVolume();
-						// Why not GetBidPrice see TRDK-110.
-						baseCurrencyQty
-							= qty / GetPair(PAIR_BC).security->GetAskPrice();
+						//! @sa TRDK-186.
+						qty = (1 / price) * GetLeg(PAIR_AC).GetOpenedVolume();
 						break;
 					default:
 						AssertEq(LEG1, pair.leg);
@@ -155,7 +140,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				*this,
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
-				currency,
+				security.GetSymbol().GetFotBaseCurrency(),
 				//! @todo remove "to qty"
 				//! @todo see TRDK-92
 				Qty(boost::math::round(qty)),
@@ -165,18 +150,14 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				pair.leg,
 				//! @todo remove "to qty"
 				//! @todo see TRDK-92
-				//! @todo see TRDK-4
-				Qty(floor(baseCurrencyQty))));
+				Qty(boost::math::round(qty))));
 			
 	} else {
 
-		Currency currency;
-		double qty = qty = m_aQty;
-		double baseCurrencyQty = qty;
+		double qty = m_aQty;
 		switch (pair.id) {
 			case PAIR_AB:
 			case PAIR_AC:
-				currency = security.GetSymbol().GetFotBaseCurrency();
 				AssertLt(0, qty);
 				if (security.GetBidQty() < qty) {
 					throw HasNotMuchOpportunityException(security, Qty(qty));
@@ -185,10 +166,8 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 			case PAIR_BC:
 				switch (pair.leg) {
 					case LEG1:
-						currency = security.GetSymbol().GetFotBaseCurrency();
 						qty *= GetPair(PAIR_AC).security->GetBidPrice();
 						qty /= GetPair(PAIR_BC).security->GetBidPrice();
-						baseCurrencyQty = qty;
 						break;
 					case LEG2:
 						AssertNe(LEG2, pair.leg);
@@ -196,11 +175,8 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 					case LEG3:
 						AssertNe(PAIR_BC, GetLeg(LEG1).GetPair());
 						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
-						currency = security.GetSymbol().GetFotQuoteCurrency();
-						qty = GetLeg(PAIR_AC).GetOpenedVolume();
-						// Why not GetAskPrice see TRDK-110.
-						baseCurrencyQty
-							= qty / GetPair(PAIR_BC).security->GetBidPrice();
+						//! @sa TRDK-186.
+						qty = (1 / price) * GetLeg(PAIR_AC).GetOpenedVolume();
 						break;
 					default:
 						AssertEq(LEG1, pair.leg);
@@ -224,7 +200,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				*this,
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
-				currency,
+				security.GetSymbol().GetFotBaseCurrency(),
 				//! @todo remove "to qty"
 				//! @todo see TRDK-92
 				Qty(boost::math::round(qty)),
@@ -234,8 +210,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				pair.leg,
 				//! @todo remove "to qty"
 				//! @todo see TRDK-92
-				//! @todo see TRDK-4
-				Qty(floor(baseCurrencyQty))));
+				Qty(boost::math::round(qty))));
 			
 	}
 

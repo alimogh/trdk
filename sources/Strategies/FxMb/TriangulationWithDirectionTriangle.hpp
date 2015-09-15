@@ -36,12 +36,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		struct PairInfo : public PairLegParams {
 
-			//! Real direction, ie we should reverse logic direction by quote
-			//! currency.
-			/** @sa PairLegParams::isBuy
-			  */
-			bool isBuyForOrder;
-
 			const BestBidAsk *bestBidAsk;
 			Security *security;
 
@@ -49,17 +43,16 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			size_t ordersCount;
 
 			PairInfo() {
-				//...//
+				// Not used, only for containers.
 			}
 
 			explicit PairInfo(
 					const PairLegParams &params,
 					const BestBidAskPairs &bestBidAskRef)
 				: PairLegParams(params),
-				isBuyForOrder(isBuy),
 				bestBidAsk(&bestBidAskRef[id]),
 				security(
-					//! @todo FIXME const_cast for security 
+					//! @todo FIXME const_cast for security: TRDK-184
 					const_cast<Security *>(
 						&bestBidAsk->service->GetSecurity(ecn))),
 				startPrice(GetCurrentPrice()),
@@ -70,8 +63,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			}
 
 			double GetCurrentPrice(const Security &security) const {
-				//! @sa Why not isBuy - see TRDK-110.
-				return isBuyForOrder
+				//! @sa About price choosing (bid or ask) - see TRDK-110.
+				return isBuy
 					?	security.GetAskPrice()
 					:	security.GetBidPrice();
 			}
@@ -85,11 +78,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			}
 
 			Security & GetBestSecurity() {
-				//! @todo FIXME const_cast for security 
+				//! @todo FIXME const_cast for security: TRDK-184
 				return const_cast<Security &>(
 					bestBidAsk->service->GetSecurity(
-						//! @sa Why not isBuy - see TRDK-110.
-						isBuyForOrder
+						//! @sa About price choosing (bid or ask) - see TRDK-110.
+						isBuy
 							?	bestBidAsk->bestAsk.source
 							:	bestBidAsk->bestBid.source));
 			}

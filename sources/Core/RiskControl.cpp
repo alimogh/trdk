@@ -476,7 +476,11 @@ private:
 
 private:
 
-	static std::pair<double, double> CalcCacheOrderVolumes(
+	//! Calculates order volumes.
+	/** @return	First value - order subject (base currency, security
+	  *			and so on), second value - money or quote currency.
+	  */
+	static std::pair<double, double> CalcOrderVolumes(
 			const Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -492,18 +496,19 @@ private:
 			|| symbol.GetFotQuoteCurrency() == currency);
 
 		const auto realPrice = security.DescalePrice(orderPrice);
-
-		//! @sa TRDK-107, then then TRDK-176, for order side details.
 		const auto quoteCurrencyDirection = side.direction * -1;
-		if (symbol.GetFotBaseCurrency() == currency) {
-			return std::make_pair(
-				qty * side.direction,
-				(qty * realPrice) * quoteCurrencyDirection);
-		} else {
-			return std::make_pair(
-				(qty / realPrice) * side.direction,
-				qty * quoteCurrencyDirection);
-		}
+
+		//! @sa	See TRDK-107, TRDK-176 and TRDK-110 for order side details.
+		//!		But we don't any such logic here - we have "logic order side",
+		//!		it's enough to calculate the volume. Trade system will do the
+		//!		same, but using "native order side".
+		return symbol.GetFotBaseCurrency() == currency
+			?	std::make_pair(
+					qty * side.direction,
+					(qty * realPrice) * quoteCurrencyDirection)
+			:	std::make_pair(
+					(qty / realPrice) * side.direction,
+					qty * quoteCurrencyDirection);
 
 	}
 
@@ -539,7 +544,7 @@ private:
 			= *context.quoteCurrencyPosition;
 
 		const std::pair<double, double> blocked
-			= CalcCacheOrderVolumes(
+			= CalcOrderVolumes(
 				security,
 				currency,
 				qty,
@@ -667,14 +672,14 @@ private:
 			= *context.quoteCurrencyPosition;
 
 		const std::pair<double, double> blocked
-			= CalcCacheOrderVolumes(
+			= CalcOrderVolumes(
 				security,
 				currency,
 				trade.qty,
 				orderPrice,
 				side);
 		const std::pair<double, double> used
-			= CalcCacheOrderVolumes(
+			= CalcOrderVolumes(
 				security,
 				currency,
 				trade.qty,
@@ -745,7 +750,7 @@ private:
 			= *context.quoteCurrencyPosition;
 
 		const std::pair<double, double> blocked
-			= CalcCacheOrderVolumes(
+			= CalcOrderVolumes(
 				security,
 				currency,
 				remainingQty,
