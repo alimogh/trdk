@@ -502,13 +502,15 @@ private:
 		//!		But we don't any such logic here - we have "logic order side",
 		//!		it's enough to calculate the volume. Trade system will do the
 		//!		same, but using "native order side".
-		return symbol.GetFotBaseCurrency() == currency
-			?	std::make_pair(
-					qty * side.direction,
-					(qty * realPrice) * quoteCurrencyDirection)
-			:	std::make_pair(
-					(qty / realPrice) * side.direction,
-					qty * quoteCurrencyDirection);
+		if (symbol.GetFotBaseCurrency() == currency) {
+			return std::make_pair(
+				qty * side.direction,
+				(qty * realPrice) * quoteCurrencyDirection);
+		} else {
+			return std::make_pair(
+				(qty / realPrice) * side.direction,
+				qty * quoteCurrencyDirection);
+		}
 
 	}
 
