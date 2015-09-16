@@ -48,17 +48,9 @@ namespace trdk { namespace EngineServer {
 		typedef boost::condition_variable ClientCondition;
 
 		struct Io {
-
-			DropCopyClient *client;
-
 			boost::thread_group threads;
 			boost::asio::io_service service;
-
-			Io()
-				: client(nullptr) {
-				//...//
-			}
-
+			boost::shared_ptr<DropCopyClient> client;
 		};
 
 		class SendList : private boost::noncopyable {
@@ -205,7 +197,7 @@ namespace trdk { namespace EngineServer {
 
 	public:
 
-		void OnClientClose(const DropCopyClient &);
+		void OnClientClose();
 
 	private:
 
@@ -229,6 +221,8 @@ namespace trdk { namespace EngineServer {
 		ClientMutex m_clientMutex;
 		ClientCondition m_clientCondition;
 		std::unique_ptr<Io> m_io;
+
+		trdk::EngineService::DropCopy::ServiceData m_dictonary;
 
 	};
 

@@ -344,8 +344,8 @@ void Engine::Context::Stop(const StopMode &stopMode) {
 
 	{
 		std::vector<Strategy *> stoppedStrategies;
-		foreach (auto &tagetStrategies, m_pimpl->m_state->strategies) {
-			foreach (auto &strategyHolder, tagetStrategies.second) {
+		foreach (auto &strategyies, m_pimpl->m_state->strategies) {
+			foreach (auto &strategyHolder, strategyies.second) {
 				strategyHolder.module->Stop(stopMode);
 				stoppedStrategies.push_back(&*strategyHolder.module);
 			}

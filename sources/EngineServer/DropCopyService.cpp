@@ -135,11 +135,13 @@ void DropCopyService::SendList::Flush() {
 		return;
 	}
 	m_flushFlag = true;
-	if (GetQueueSize() > 0) {
-		m_service.GetLog().Info("Flushing %1% messages...", GetQueueSize());
+	m_dataCondition.notify_all();
+	while (m_flushFlag && !m_isStopped) {
+		if (GetQueueSize() > 0) {
+			m_service.GetLog().Info("Flushing %1% messages...", GetQueueSize());
+		}
+		m_dataCondition.wait(lock);
 	}
-	m_dataCondition.wait(lock);
-	Assert(!m_flushFlag);
 }
 
 void DropCopyService::SendList::LogQueue() {
@@ -286,6 +288,31 @@ void DropCopyService::Start(const IniSectionRef &conf) {
 		throw Exception("Already started");
 	}
 
+	{
+		ServiceData message;
+		message.set_type(ServiceData::TYPE_DICTIONARY);	
+		Dictionary &dictionary = *message.mutable_dictionary();
+		size_t securitiesNumber = 0;
+		GetContext().ForEachMarketDataSource(
+			[&](const MarketDataSource &source) -> bool {
+				source.ForEachSecurity(
+					[&](const Security &security) -> bool {
+						Dictionary::SecurityRecord &record
+							= *dictionary.add_securities();
+						record.set_id(security.GetInstanceId());
+						Convert(security, *record.mutable_security());
+						++securitiesNumber;
+						return true;
+					});
+				return true;
+			});
+		m_dictonary = message;
+		GetLog().Debug(
+			"Dictionary: Cached %1% securities from %2% market data sources.",
+			securitiesNumber,
+			GetContext().GetMarketDataSourcesCount());
+	}
+
 	try {
 		StartNewClient(
 			conf.ReadKey("host"),
@@ -324,65 +351,33 @@ void DropCopyService::StartNewClient(
 	boost::shared_ptr<DropCopyClient> newClient
 		= DropCopyClient::Create(*this, host, port);
 		
-	{
-
-		ServiceData message;
-		message.set_type(ServiceData::TYPE_DICTIONARY);	
-		Dictionary &dictionary = *message.mutable_dictionary();
-
-		size_t securitiesNumber = 0;
-		GetContext().ForEachMarketDataSource(
-			[&](const MarketDataSource &source) -> bool {
-			
-				source.ForEachSecurity(
-					[&](const Security &security) -> bool {
-						Dictionary::SecurityRecord &record
-							= *dictionary.add_securities();
-						record.set_id(security.GetInstanceId());
-						Convert(security, *record.mutable_security());
-						++securitiesNumber;
-						return true;
-					});
-		
-				return true;
-		
-			});
-
-		newClient->Send(message);
-		
-		GetLog().Debug(
-			"Dictionary: Sent %1% securities from %2% market data sources.",
-			securitiesNumber,
-			GetContext().GetMarketDataSourcesCount());
-
-	}
+	newClient->Send(m_dictonary);
+	GetLog().Debug("Dictionary: Sent.");
 
 	const ClientLock lock(m_clientMutex);
 	Assert(!m_io->client);
-	m_io->client = &*newClient;
+	m_io->client = newClient;
 	m_clientCondition.notify_all();
 
 }
 
-void DropCopyService::OnClientClose(const DropCopyClient &client) {
+void DropCopyService::OnClientClose() {
 
+	boost::shared_ptr<DropCopyClient> client;
 	{
-		
 		const ClientLock lock(m_clientMutex);
-		
 		if (!m_io) {
 			return;
-		} else if (!m_io->client) {
-			// Fleeing from a recursion after failed reconnection...
-			return;
-		}
-		
-		Assert(m_io->client == &client);
-		m_io->client = nullptr;
-
+		} 
+		client = m_io->client;
+		m_io->client.reset();
+	}
+	if (!client) {
+		// Fleeing from a recursion after failed reconnection...
+		return;
 	}
 
-	ReconnectClient(0, client.GetHost(), client.GetPort());
+	ReconnectClient(0, client->GetHost(), client->GetPort());
 
 }
 

@@ -37,10 +37,6 @@ namespace trdk { namespace EngineServer {
 
 	public:
 
-		~DropCopyClient();
-
-	public:
-
 		static boost::shared_ptr<DropCopyClient> Create(
 				DropCopyService &,
 				const std::string &host,
@@ -69,8 +65,12 @@ namespace trdk { namespace EngineServer {
 
 		void FlushOutStream(const std::string &);
 
-		void OnNewMessageSize(const boost::system::error_code &);
-		void OnNewMessage(const boost::system::error_code &);
+		void OnNewMessageSize(
+				const boost::system::error_code &,
+				std::size_t length);
+		void OnNewMessage(
+				const boost::system::error_code &,
+				std::size_t length);
 		void OnNewRequest(const trdk::EngineService::DropCopy::ClientRequest &);
 		void OnDataSent(
 				//! @todo reimplement buffer

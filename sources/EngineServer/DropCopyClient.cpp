@@ -36,16 +36,6 @@ DropCopyClient::DropCopyClient(
 	//...//
 }
 
-DropCopyClient::~DropCopyClient() {
-	try {
-		m_service.OnClientClose(*this);
-	} catch (...) {
-		AssertFailNoException();
-		throw;
-	}
-	
-}
-
 boost::shared_ptr<DropCopyClient> DropCopyClient::Create(
 		DropCopyService &service,
 		const std::string &host,
@@ -82,6 +72,7 @@ void DropCopyClient::Connect() {
 }
 
 void DropCopyClient::Close() {
+	m_service.OnClientClose();
 	m_socket.close();
 	m_keepAliveSendTimer.cancel();
 	m_keepAliveCheckTimer.cancel();
@@ -97,7 +88,8 @@ void DropCopyClient::StartReadMessageSize() {
 		boost::bind(
 			&DropCopyClient::OnNewMessageSize,
 			shared_from_this(),
-			io::placeholders::error));
+			io::placeholders::error,
+			io::placeholders::bytes_transferred));
 }
 
 void DropCopyClient::StartReadMessage() {
@@ -111,15 +103,23 @@ void DropCopyClient::StartReadMessage() {
 		boost::bind(
 			&DropCopyClient::OnNewMessage,
 			shared_from_this(),
-			io::placeholders::error));
+			io::placeholders::error,
+			io::placeholders::bytes_transferred));
 }
 
-void DropCopyClient::OnNewMessageSize(const boost::system::error_code &error) {
+void DropCopyClient::OnNewMessageSize(
+		const boost::system::error_code &error,
+		std::size_t length) {
 	
 	if (error) {
 		m_service.GetLog().Error(
-			"Failed to read data from remote side:  \"%1%\".",
+			"Connection error (1):  \"%1%\".",
 			SysError(error.value()));
+		Close();
+		return;
+	} else if (length == 0) {
+		m_service.GetLog().Error(
+			"Connection was gracefully closed by remote side (1).");
 		Close();
 		return;
 	}
@@ -128,12 +128,19 @@ void DropCopyClient::OnNewMessageSize(const boost::system::error_code &error) {
 
 }
 
-void DropCopyClient::OnNewMessage(const boost::system::error_code &error) {
+void DropCopyClient::OnNewMessage(
+		const boost::system::error_code &error,
+		std::size_t length) {
 
 	if (error) {
 		m_service.GetLog().Error(
-			"Connection closed with error: \"%1%\".",
+			"Connection error (2): \"%1%\".",
 			SysError(error.value()));
+		Close();
+		return;
+	} else if (length == 0) {
+		m_service.GetLog().Error(
+			"Connection was gracefully closed by remote side (2).");
 		Close();
 		return;
 	}
@@ -207,7 +214,7 @@ void DropCopyClient::OnDataSent(
 		m_service.GetLog().Error(
 			"Failed to send data: \"%1%\".",
 			SysError(error.value()));
-		m_socket.close();
+		Close();
 		//! @todo also see issue TRDK-177.
 	}
 }
