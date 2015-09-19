@@ -514,11 +514,6 @@ void Client::UpdateSettings(
 				keyIndex < messageSection.key().size();
 				++keyIndex) {
 			const auto &messageKey = messageSection.key(keyIndex);
-			//! @todo	WEBTERM-61 Remove key is_enabled setting keys from
-			//!			web-service to server
-			if (messageKey.name() == "is_enabled") {
-				continue;
-			}
 			transaction.Set(
 				messageSection.name(),
 				messageKey.name(),
