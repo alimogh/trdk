@@ -1,8 +1,314 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="CPP_MODULE" version="4">
   <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$" />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Assert.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Assert.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Currency.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Currency.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Defaults.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Defaults.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Exception.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Exception.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/FileSystemChangeNotificator.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/FileSystemChangeNotificator.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Ini.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Ini.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Log.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Log.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Symbol.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Symbol.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/SysError.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/SysError.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/TimeMeasurement.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/TimeMeasurement.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Util.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Common/Util.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/AsyncLog.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/AsyncLog.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Consumer.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Consumer.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Context.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Context.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/DropCopy.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/DropCopy.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/EventsLog.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/EventsLog.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Instrument.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Instrument.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Interactor.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Interactor.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/MarketDataSource.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/MarketDataSource.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Module.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Module.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Observer.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Observer.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Position.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Position.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Prec.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Prec.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/RiskControl.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/RiskControl.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Security.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Security.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Service.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Service.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Settings.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Settings.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Strategy.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Strategy.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/StrategyPositionState.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/StrategyPositionState.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Terminal.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Terminal.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/TradeSystem.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/TradeSystem.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Types.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Core/Types.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/Context.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/Context.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/ContextBootstrap.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/ContextBootstrap.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/Dispatcher.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/Dispatcher.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/Ini.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/Ini.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/SubscriberPtrWrapper.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/SubscriberPtrWrapper.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/SubscriptionsManager.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Engine/SubscriptionsManager.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/Client.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/Client.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/DropCopyClient.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/DropCopyClient.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/DropCopyService.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/DropCopyService.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/Main.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/Server.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/Server.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/Service.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/Service.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/Settings.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineServer/Settings.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineService/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineService/Utils.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineService/Utils.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.Control.pb.cc" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.DropCopy.pb.cc" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.MarketData.pb.cc" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.MarketDataSource.pb.cc" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.Reports.pb.cc" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.pb.cc" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Fake/Api.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Fake/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Fake/FakeMarketDataSource.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Fake/FakeMarketDataSource.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Fake/FakeTradeSystem.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Fake/FakeTradeSystem.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Itch/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Itch/Client.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Itch/Client.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Itch/HotspotStream.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Itch/Security.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Itch/Security.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Itch/Stream.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/Itch/Stream.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/AlpariStream.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/CurrenexStream.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/CurrenexTrading.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixSession.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixSession.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixStream.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixStream.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixTrading.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixTrading.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FxAllStream.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FxAllTrading.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/HotspotTrading.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/IntegralStream.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/IntegralTrading.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirection.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirection.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionPosition.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionPosition.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionReport.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionReport.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionStatService.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionStatService.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionTriangle.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionTriangle.hpp" isTestSource="false" />
+    </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library">
+      <library name="Header Search Paths">
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include" />
+          <root url="file://$MODULE_DIR$/sources" />
+          <root url="file:///usr/include" />
+          <root url="file:///usr/lib/gcc/x86_64-redhat-linux/4.8.3/include" />
+          <root url="file:///usr/local/include" />
+        </CLASSES>
+        <SOURCES>
+          <root url="file://$MODULE_DIR$/externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3_17_0_0/include" />
+          <root url="file://$MODULE_DIR$/sources" />
+          <root url="file:///usr/include" />
+          <root url="file:///usr/lib/gcc/x86_64-redhat-linux/4.8.3/include" />
+          <root url="file:///usr/local/include" />
+        </SOURCES>
+        <excluded>
+          <root url="file://$MODULE_DIR$/sources/Engine/SubscriberPtrWrapper.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Engine/Dispatcher.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Engine/SubscriptionsManager.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Engine/ContextBootstrap.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Engine/CMakeLists.txt" />
+          <root url="file://$MODULE_DIR$/sources/Engine/SubscriptionsManager.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Engine/Ini.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Engine/Ini.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Engine/ContextBootstrap.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Assert.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Symbol.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Symbol.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Defaults.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/TimeMeasurement.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/TimeMeasurement.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/SysError.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Defaults.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/SysError.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Exception.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Log.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Util.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Log.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Exception.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Util.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Currency.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/CMakeLists.txt" />
+          <root url="file://$MODULE_DIR$/sources/Common/Ini.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/FileSystemChangeNotificator.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Ini.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Currency.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/FileSystemChangeNotificator.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Common/Assert.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Prec.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Interactor.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/MarketDataSource.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Strategy.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Security.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Context.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/AsyncLog.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Types.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/EventsLog.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/DropCopy.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/StrategyPositionState.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Settings.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Service.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Module.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Instrument.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Terminal.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Observer.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Instrument.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/RiskControl.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/TradeSystem.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Consumer.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/AsyncLog.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Position.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Context.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Security.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/MarketDataSource.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Types.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Prec.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Strategy.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Settings.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Service.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/EventsLog.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/DropCopy.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/StrategyPositionState.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Interactor.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Terminal.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Module.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/RiskControl.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/TradeSystem.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/CMakeLists.txt" />
+          <root url="file://$MODULE_DIR$/sources/Core/Consumer.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Observer.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Position.hpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.Reports.pb.cc" />
+          <root url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.MarketData.pb.cc" />
+          <root url="file://$MODULE_DIR$/sources/EngineService/Utils.hpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.MarketDataSource.pb.cc" />
+          <root url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.DropCopy.pb.cc" />
+          <root url="file://$MODULE_DIR$/sources/EngineService/Utils.cpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.pb.cc" />
+          <root url="file://$MODULE_DIR$/sources/EngineService/CMakeLists.txt" />
+          <root url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.Control.pb.cc" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/Server.hpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/Server.cpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/Settings.hpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/Service.cpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/Settings.cpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/Service.hpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/DropCopyService.cpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/Client.cpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/Client.hpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/DropCopyService.hpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/CMakeLists.txt" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/DropCopyClient.hpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/Main.cpp" />
+          <root url="file://$MODULE_DIR$/sources/EngineServer/DropCopyClient.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixSession.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/CurrenexTrading.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/AlpariStream.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixSession.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixStream.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixStream.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/IntegralTrading.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/CurrenexStream.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixTrading.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FxAllStream.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/HotspotTrading.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixTrading.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/CMakeLists.txt" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/IntegralStream.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FxAllTrading.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Itch/Stream.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Itch/Security.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Itch/Client.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Itch/Stream.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Itch/Security.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Itch/HotspotStream.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Itch/Client.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Itch/CMakeLists.txt" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Fake/Api.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Fake/FakeTradeSystem.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Fake/FakeMarketDataSource.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Fake/FakeTradeSystem.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Fake/CMakeLists.txt" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/Fake/FakeMarketDataSource.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionStatService.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirection.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionReport.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionReport.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/FxMb/CMakeLists.txt" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionTriangle.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionPosition.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirection.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionPosition.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionStatService.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionTriangle.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Engine/Context.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Engine/Context.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Engine/Dispatcher.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Engine/SubscriberPtrWrapper.hpp" />
+        </excluded>
+      </library>
+    </orderEntry>
   </component>
 </module>
