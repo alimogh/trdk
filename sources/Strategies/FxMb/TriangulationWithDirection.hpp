@@ -94,6 +94,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		bool CheckStopRequest(const trdk::StopMode &);
 		bool CheckCurrentStopRequest();
 
+		void OnLeg1Execution(trdk::Position &);
+		void OnLeg2Execution(trdk::Position &);
+		void OnLeg3Execution(trdk::Position &);
+
 	private:
 
 		const size_t m_bookLevelsCount;
@@ -121,6 +125,21 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		std::unique_ptr<Triangle> m_prevTriangle;
 		boost::posix_time::ptime m_prevTriangleTime;
+
+		struct Stat {
+			boost::accumulators::accumulator_set<
+					double,
+					boost::accumulators::stats<
+						boost::accumulators::tag::count,
+						boost::accumulators::tag::mean>>
+				winners;
+			boost::accumulators::accumulator_set<
+					double,
+					boost::accumulators::stats<
+						boost::accumulators::tag::count,
+						boost::accumulators::tag::mean>>
+				losers;
+		} m_stat;
 
 	};
 

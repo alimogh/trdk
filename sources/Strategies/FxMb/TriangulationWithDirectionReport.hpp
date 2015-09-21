@@ -22,18 +22,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		class Strategy;
 		Strategy *strategy;
 
-		class Pnl;
-		Pnl *pnl;
-
 		bool enablePriceUpdates;
 
 		ReportsState(
 				Context &,
 				const boost::uuids::uuid &strategyId,
-				double commission,
 				bool enableStrategyLog,
-				bool enablePriceUpdates,
-				bool enablePnlLog);
+				bool enablePriceUpdates);
 		~ReportsState();
 
 		void WriteStrategyLogHead(const Context &, const BestBidAskPairs &);

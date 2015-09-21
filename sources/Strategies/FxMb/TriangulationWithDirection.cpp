@@ -21,6 +21,7 @@
 
 namespace pt = boost::posix_time;
 namespace uu = boost::uuids;
+namespace accs = boost::accumulators;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -83,10 +84,8 @@ TriangulationWithDirection::TriangulationWithDirection(
 	m_reports(
 		GetContext(),
 		GetId(),
-		conf.ReadTypedKey<double>("commission"),
 		conf.ReadBoolKey("log.strategy"),
-		conf.ReadBoolKey("log.updates"),
-		conf.ReadBoolKey("log.pnl")),
+		conf.ReadBoolKey("log.updates")),
 	m_yReportStep(conf.ReadTypedKey<double>("log.y_report_step")),
 	m_scheduledLeg(LEG_UNKNOWN) {
 
@@ -365,99 +364,19 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 
 	const auto &leg = order.GetLeg();
 	switch (leg) {
-			
 		case LEG1:
-			{
-				const auto &execDelay = position.GetTimeMeasurement().Measure(
-					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
-				if (CheckCurrentStopRequest()) {
-					m_triangle->GetReport().ReportAction(
-						"executed",
-						"exec report",
-						LEG1,
-						execDelay,
-						&order);
-					return;
-				}
-				if (CheckProfitLoss(order, true)) {
-					return;
-				}
-				try {
-					m_triangle->StartLeg2();
-				} catch (const HasNotMuchOpportunityException &ex) {
-					m_scheduledLeg = LEG2;
-					GetLog().Warn(
-						"Failed to start leg 2: \"%1%\"."
-							" Required: %2% %3%."
-							" Scheduled.",
-						ex,
-						ex.GetRequiredQty(),
-						ex.GetSecurity());
-					return;
-				}
-				m_triangle->GetReport().ReportAction(
-					"executed",
-					"exec report",
-					"1 -> 2",
-					execDelay,
-					&order);
-			}
+			OnLeg1Execution(position);
 			break;
-
 		case LEG2:
-			AssertEq(LEG2, order.GetLeg());
-
-			m_triangle->GetReport().ReportAction(
-				"executed",
-				"exec report",
-				order.GetLeg(),
-				0,
-				&order);
-			Assert(!m_triangle->GetLeg(LEG1).IsCompleted());
-			if (CheckCurrentStopRequest()) {
-				return;
-			}
+			OnLeg2Execution(position);
 			break;
-
 		case LEG3:
-			{
-				const auto &execDelay = position.GetTimeMeasurement().Measure(
-					TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_2);
-				m_triangle->GetReport().ReportAction(
-					"executed",
-					"exec report",
-					order.GetLeg(),
-					execDelay,
-					&order);
-			}
-			m_triangle->OnLeg3Execution();
-			m_triangle->GetLeg(LEG1).MarkAsCompleted();
-			m_triangle->GetLeg(LEG2).MarkAsCompleted();
-			order.MarkAsCompleted();
-			m_prevTriangleTime = GetContext().GetCurrentTime();
-			m_prevTriangle.reset(m_triangle.release());
-#			ifdef DEV_VER
-				m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
-				m_detectedEcns[Y2].fill(std::numeric_limits<size_t>::max());
-#			endif
-			if (
-					m_trianglesRest != nTrianglesLimit
-					&& m_trianglesRest-- <= 1) {
-				GetLog().Info("Executed triangles limit reached.");
-				Block();
-			}
-			if (CheckCurrentStopRequest()) {
-				return;
-			}
+			OnLeg3Execution(position);
 			break;
-
 		default:
 			AssertEq(LEG1, leg);
 			throw LogicError("Leg is unknown");
-
 	}
-
-	Assert(!CheckCurrentStopRequest());
 
 }
 
@@ -1142,6 +1061,124 @@ void TriangulationWithDirection::OnPostionsCloseRequest() {
 		Block();
 		throw;
 	}
+
+}
+
+void TriangulationWithDirection::OnLeg1Execution(trdk::Position &position) {
+	
+	Assert(m_triangle);
+
+	Twd::Position &order = dynamic_cast<Twd::Position &>(position);
+
+	const auto &execDelay = position.GetTimeMeasurement().Measure(
+		TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
+	
+	if (CheckCurrentStopRequest()) {
+		m_triangle->GetReport().ReportAction(
+			"executed",
+			"exec report",
+			LEG1,
+			execDelay,
+			&order);
+		return;
+	}
+	
+	if (CheckProfitLoss(order, true)) {
+		return;
+	}
+	
+	try {
+		m_triangle->StartLeg2();
+	} catch (const HasNotMuchOpportunityException &ex) {
+		m_scheduledLeg = LEG2;
+		GetLog().Warn(
+			"Failed to start leg 2: \"%1%\"."
+				" Required: %2% %3%."
+				" Scheduled.",
+			ex,
+			ex.GetRequiredQty(),
+			ex.GetSecurity());
+		return;
+	}
+	
+	m_triangle->GetReport().ReportAction(
+		"executed",
+		"exec report",
+		"1 -> 2",
+		execDelay,
+		&order);
+
+}
+
+void TriangulationWithDirection::OnLeg2Execution(trdk::Position &position) {
+
+	Assert(m_triangle);
+	Assert(!m_triangle->GetLeg(LEG1).IsCompleted());
+
+	Twd::Position &order = dynamic_cast<Twd::Position &>(position);
+	AssertEq(LEG2, order.GetLeg());
+
+	m_triangle->GetReport().ReportAction(
+		"executed",
+		"exec report",
+		order.GetLeg(),
+		0,
+		&order);
+
+	CheckCurrentStopRequest();
+
+}
+
+void TriangulationWithDirection::OnLeg3Execution(trdk::Position &position) {
+
+	Assert(m_triangle);
+
+	Twd::Position &order = dynamic_cast<Twd::Position &>(position);
+
+	{
+		const auto &execDelay = position.GetTimeMeasurement().Measure(
+			TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_2);
+		m_triangle->GetReport().ReportAction(
+			"executed",
+			"exec report",
+			order.GetLeg(),
+			execDelay,
+			&order);
+	}
+
+	m_triangle->OnLeg3Execution();
+	m_triangle->GetLeg(LEG1).MarkAsCompleted();
+	m_triangle->GetLeg(LEG2).MarkAsCompleted();
+
+	order.MarkAsCompleted();
+
+	{
+		const auto &y = m_triangle->CalcYExecuted();
+		(y >= 1 ? m_stat.winners : m_stat.losers)(y);
+	}
+	
+	m_prevTriangleTime = GetContext().GetCurrentTime();
+	m_prevTriangle.reset(m_triangle.release());
+
+#	ifdef DEV_VER
+		m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
+		m_detectedEcns[Y2].fill(std::numeric_limits<size_t>::max());
+#	endif
+
+	if (m_trianglesRest != nTrianglesLimit && m_trianglesRest-- <= 1) {
+		GetLog().Info("Executed triangles limit reached.");
+		Block();
+	} else {
+		const auto winsCount = accs::count(m_stat.winners);
+		const auto trianglesCount = winsCount + accs::count(m_stat.losers);
+		const auto winsRatio = (winsCount * 100) / trianglesCount;
+		GetContext().GetRiskControl(GetTradingMode()).CheckTotalWinRatio(
+			GetRiskControlScope(),
+			winsRatio,
+			trianglesCount);
+	}
+
+	CheckCurrentStopRequest();
 
 }
 

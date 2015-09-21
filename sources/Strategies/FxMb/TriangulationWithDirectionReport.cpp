@@ -18,14 +18,12 @@
 #include "Core/Settings.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Strategy.hpp"
-#include "Core/RiskControl.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Strategies::FxMb;
 using namespace trdk::Strategies::FxMb::Twd;
 
-namespace accs = boost::accumulators;
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 
@@ -248,142 +246,12 @@ public:
 
 };
 
-class ReportsState::Pnl : private boost::noncopyable {
-
-public:
-
-	static std::ofstream *file;
-	static ReportLog *log;
-	static size_t logUseCount;
-
-	const double comission;
-
-	struct Stat {
-	
-		double comission;
-		accs::accumulator_set<
-				pt::time_duration,
-				accs::stats<accs::tag::mean>>
-			duration;
-	
-		accs::accumulator_set<
-				double,
-				accs::stats<accs::tag::count, accs::tag::mean>>
-			winners;
-		accs::accumulator_set<
-				double,
-				accs::stats<accs::tag::count, accs::tag::mean>>
-			winnersCancels;
-		accs::accumulator_set<
-				pt::time_duration,
-				accs::stats<accs::tag::mean>>
-			winnersDuration;
-		double winnersPnl;
-	
-		accs::accumulator_set<
-				double,
-				accs::stats<accs::tag::count, accs::tag::mean>>
-			losers;
-		accs::accumulator_set<
-				double,
-				accs::stats<accs::tag::count, accs::tag::mean>>
-			losersCancels;
-		accs::accumulator_set<
-				pt::time_duration,
-				accs::stats<accs::tag::mean>>
-			losersDuration;
-		double losersPnl;
-	
-		explicit Stat()
-			: comission(.0),
-			winnersPnl(.0),
-			losersPnl(.0) {
-		}
-	
-	} stat;
-
-	Pnl(Context &context, bool iEnabled, double comission)
-		: comission(comission) {
-	
-		if (!iEnabled) {
-			return;
-		}
-
-		if (logUseCount++ == 0) {
-
-			file = new std::ofstream;
-			log = new ReportLog;
-
-			const auto &logPath = context.GetSettings().GetLogsDir() / "pnl.log";
-			context.GetLog().Info("PnL log: %1%.", logPath);
-			
-			const bool isNewFile = !fs::exists(logPath);
-			if (isNewFile) {
-				fs::create_directories(logPath.branch_path());
-			}
-			
-			file->open(logPath.string().c_str(), std::ios::app | std::ios::ate);
-			if (!file) {
-				throw ModuleError("Failed to open PnL log file");
-			}
-		
-			log->EnableStream(*file);
-
-			if (isNewFile) {
-				WriteHead();
-			}
-
-		}
-	
-	}
-
-	~Pnl() {
-		AssertLt(0, logUseCount);
-		if (--logUseCount == 0) {
-			delete log;
-			delete file;
-		}
-	}
-
-	void WriteHead() {
-		log->Write(
-			[](ReportRecord &record) {
-				record
-					%	"Time"
-					%	"Strategy"
-					%	"Triangle ID"
-					%	"P&L"
-					%	"ATR"
-					%	"Triangle time"
-					%	"Avg winners"
-					%	"Avg winners time"
-					%	"Avg losers"
-					%	"Avg losers time"
-					%	"Avg time"
-					%	"# of winners"
-					%	"# of losers"
-					%	"% of winners"
-					%	"Total P&L with commissions"
-					%	"Total P&L without commissions"
-					%	"Total commission";
-			});
-	}
-
-};
-
-std::ofstream *ReportsState::Pnl::file;
-ReportLog *ReportsState::Pnl::log;
-size_t ReportsState::Pnl::logUseCount = 0;
-
 ReportsState::ReportsState(
 		Context &context,
 		const boost::uuids::uuid &strategyId,
-		double comission,
 		bool enableStrategyLog,
-		bool enablePriceUpdates,
-		bool enablePnlLog)
+		bool enablePriceUpdates)
 	: strategy(new Strategy(context, strategyId, enableStrategyLog)),
-	pnl(new Pnl(context, enablePnlLog, comission)),
 	enablePriceUpdates(enablePriceUpdates) {
 }
 
@@ -394,7 +262,6 @@ void ReportsState::WriteStrategyLogHead(
 }
 
 ReportsState::~ReportsState() {
-	delete pnl;
 	delete strategy;
 }
 
@@ -539,37 +406,36 @@ void TriangleReport::ReportAction(
 
 	};
 
-	const bool isTriangleCanceled
-		= reasonOrder
-			&& reasonOrder->GetLeg() == LEG1
-			&& reasonOrder->IsClosed();
-	const bool isTriangleCompleted
-		= reasonOrder
-			&& reasonOrder->GetLeg() == LEG3
-			&& reasonOrder->IsOpened();
-	Assert(
-		isTriangleCanceled != isTriangleCompleted
-			|| !isTriangleCompleted);
-
-	const auto &now = m_triangle.GetStrategy().GetContext().GetCurrentTime();
-
-	double yExecuted = .0;
-	if (isTriangleCompleted) {
-		yExecuted = m_triangle.CalcYExecuted();
-	} else if (isTriangleCanceled) {
-		const Security &security = reasonOrder->GetSecurity();
-		const auto &entryPrice
-			= security.DescalePrice(reasonOrder->GetOpenPrice());
-		const auto &exitPrice
-			= security.DescalePrice(reasonOrder->GetClosePrice());
-		yExecuted = (1 / entryPrice) * exitPrice;
-	}
-
 	m_state.strategy->log.Write(
 		[&](ReportRecord &record) {
+
+			const bool isTriangleCanceled
+				= reasonOrder
+					&& reasonOrder->GetLeg() == LEG1
+					&& reasonOrder->IsClosed();
+			const bool isTriangleCompleted
+				= reasonOrder
+					&& reasonOrder->GetLeg() == LEG3
+					&& reasonOrder->IsOpened();
+			Assert(
+				isTriangleCanceled != isTriangleCompleted
+					|| !isTriangleCompleted);
+
+			double yExecuted;
+			if (isTriangleCompleted) {
+				yExecuted = m_triangle.CalcYExecuted();
+			} else if (isTriangleCanceled) {
+				const Security &security = reasonOrder->GetSecurity();
+				const auto &entryPrice
+					= security.DescalePrice(reasonOrder->GetOpenPrice());
+				const auto &exitPrice
+					= security.DescalePrice(reasonOrder->GetClosePrice());
+				yExecuted = (1 / entryPrice) * exitPrice;
+			}
+
 			record
 				% m_triangle.GetId()
-				% now
+				% m_triangle.GetStrategy().GetContext().GetCurrentTime()
 				% action
 				% reason
 				% actionLegs;
@@ -605,159 +471,8 @@ void TriangleReport::ReportAction(
 			for (size_t i = 0; i < numberOfPairs; ++i) {
 				writePair(Pair(i), record);
 			}
-		});
-
-	const auto &writePnl = [&](ReportRecord &record) {
-		const auto pnl
-			= m_state.pnl->stat.winnersPnl + m_state.pnl->stat.losersPnl;
-		record
-			% (pnl - m_state.pnl->stat.comission)
-			% pnl
-			% m_state.pnl->stat.comission;
-	};
 		
-	if (isTriangleCompleted) {
-
-		size_t winningPercentage = 0;
-		size_t trianglesCount = 0;
-
-		m_state.pnl->log->Write(
-			[&](ReportRecord &record) {
-
-				AssertGt(
-					m_triangle.GetLeg(LEG3).GetOpenTime(),
-					m_triangle.GetStartTime());
-				const auto &duration
-					= m_triangle.GetLeg(LEG3).GetOpenTime()
-						- m_triangle.GetStartTime();
-
-				m_state.pnl->stat.comission += m_state.pnl->comission * 3;
-				m_state.pnl->stat.duration(duration);
-
-				const bool isWinner = yExecuted >= 1;
-				if (isWinner) {
-					m_state.pnl->stat.winners(yExecuted);
-					m_state.pnl->stat.winnersPnl += yExecuted - 1;
-					m_state.pnl->stat.winnersDuration(duration);
-				} else {
-					m_state.pnl->stat.losers(yExecuted);
-					m_state.pnl->stat.losersPnl += yExecuted - 1;
-					m_state.pnl->stat.losersDuration(duration);
-				}
-
-				record
-					% now
-					% m_triangle.GetStrategy().GetTitle()
-					% m_triangle.GetId()
-					% yExecuted
-					% m_triangle.GetLastAtr()
-					% duration; 
-
-				if (accs::count(m_state.pnl->stat.winners) > 0) {
-					record 
-						% accs::mean(m_state.pnl->stat.winners)
-						% accs::mean(m_state.pnl->stat.winnersDuration);
-					trianglesCount
-						= accs::count(m_state.pnl->stat.winners)
-							+ accs::count(m_state.pnl->stat.losers);
-					winningPercentage
-						= (accs::count(m_state.pnl->stat.winners) * 100);
-					winningPercentage /= trianglesCount;
-				} else {
-					record % ' ' % ' ';
-				}
-				if (accs::count(m_state.pnl->stat.losers) > 0) {
-					record
-						% accs::mean(m_state.pnl->stat.losers)
-						% accs::mean(m_state.pnl->stat.losersDuration);
-				} else {
-					record % ' ' % ' ';
-				}
-
-				{
-					const auto &avgDuration
-						= accs::mean(m_state.pnl->stat.duration);
-					record % avgDuration;
-				}
-
-				record
-					% accs::count(m_state.pnl->stat.winners)
-					% accs::count(m_state.pnl->stat.losers)
-					% winningPercentage % '\0' % '%';
-				
-				writePnl(record);
-
-			});
-
-		{
-			//! @todo see TRDK-40
-			Strategy &strategy
-				= const_cast<TriangulationWithDirection &>(
-					m_triangle.GetStrategy());
-			Context &context = strategy.GetContext();
-			RiskControl &riskControl
-				= context.GetRiskControl(strategy.GetTradingMode());
-			//! @todo see TRDK-78
-// 			riskControl.CheckTotalPnl(
-// 				strategy.GetRiskControlScope(),
-// 				foo.totalPnlWithCommissions);
-			riskControl.CheckTotalWinRatio(
-				strategy.GetRiskControlScope(),
-				winningPercentage,
-				trianglesCount);
-		}
-
-	} else if (isTriangleCanceled) {
-
-		//! @todo see TRDK-78
-// 		riskControl.CheckTotalPnl(
-// 			strategy.GetRiskControlScope(),
-// 			foo.totalPnlWithCommissions);
-
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-
-// 	if (isTriangleCompleted) {
-// 
-// 		const auto &writePair = [&](const Pair &pair, ReportRecord &record) {
-// 		
-// 			const Triangle::PairInfo &info = m_triangle.GetPair(pair);
-// 			const Twd::Position &order = m_triangle.GetLeg(info.leg);
-// 			const Security &security = m_triangle.GetCalcSecurity(pair);
-// 
-// 			record
-// 				% GetLegNo(info.leg)
-// 				% (info.isBuy ? "buy" : "sell");
-// 
-// 			record % ' ' % ' ';
-// 			record % security.GetBidPrice() % security.GetAskPrice();
-// 			record
-// 				%	order.GetOpenedQty()
-// 				%	order.GetCurrency()
-// 				%	(order.GetType() == Position::TYPE_LONG ? "buy" : "sell");
-// 
-// 		};
-// 
-// 		m_state.strategy->log.Write(
-// 			[&](ReportRecord &record) {
-// 				record
-// 					% m_triangle.GetId()
-// 					% now
-// 					% "verify";
-// 				const auto &yExecuted = m_triangle.CalcYExecuted();
-// 				if (m_triangle.GetY() == Y1) {
-// 					record % yExecuted % ' ';
-// 				} else {
-// 					record % ' ' % yExecuted;
-// 				}
-// 				record % ConvertToPch(m_triangle.GetY());
-// 				for (size_t i = 0; i < numberOfPairs; ++i) {
-// 					writePair(Pair(i), record);
-// 				}
-// 			});
-// 
-// 	}
+		});
 
 }
 
