@@ -165,7 +165,9 @@ void TriangulationWithDirection::OnServiceDataUpdate(
 	} else if (GetPositions().IsEmpty()) {
 
 		AssertEq(LEG_UNKNOWN, m_scheduledLeg);
-		AssertEq(0, GetRiskControlScope().GetStatistics().size());
+		Assert(
+			!GetContext().GetDropCopy()
+			|| GetRiskControlScope().GetStatistics().empty());
 
 		if (m_prevTriangle && m_prevTriangle->IsLegExecuted(LEG3)) {
 			const auto timeFromClose
