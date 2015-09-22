@@ -107,6 +107,7 @@ FixSession::~FixSession() {
 			AssertFailNoException();
 		}
 	}
+	m_log.Debug("Session destroyed.");
 }
 
 void FixSession::Connect(
@@ -216,18 +217,31 @@ void FixSession::Reconnect() {
 }
 
 void FixSession::Disconnect() {
+
 	m_isSessionActive = false;
 	if (!m_session) {
 		return;
 	}
-	m_session->logout("Logout");
+
+	if (m_session->state() == fix::SessionState::Enum::Active) {
+		m_log.Debug("Sending logout...");
+		m_session->logout("Logout");
+		m_log.Debug("Logout sent.");
+	} else {
+		m_log.Debug("Session not active - no logout.");
+	}
+
+	m_log.Debug("Session shutdown...");
 	m_session->shutdown();
+	m_log.Debug("Waiting for FIX Engine threads stop (workaround)...");
+	boost::this_thread::sleep(boost::posix_time::seconds(4));
+
 }
 
 void FixSession::LogStateChange(
-			fix::SessionState::Enum newState,
-			fix::SessionState::Enum prevState,
-			fix::Session &session) {
+		fix::SessionState::Enum newState,
+		fix::SessionState::Enum prevState,
+		fix::Session &session) {
 	Assert(&session == &Get());
 	UseUnused(session);
 	const auto newStateStr = fix::SessionState::toString(newState);
