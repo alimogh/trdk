@@ -103,7 +103,7 @@ Stream::~Stream() {
 		AssertFailNoException();
 		throw;
 	}
-	// Each object, that implements CreateNewSecurityObject should waite for
+	// Each object, that implements CreateNewSecurityObject should wait for
 	// log flushing before destroying objects:
 	GetTradingLog().WaitForFlush();
 }
@@ -194,7 +194,7 @@ void Stream::SubscribeToSecurities() {
 		client = m_client;
 	}
 	if (!client) {
-		throw Exception("Connection closed");
+		throw ConnectError("Connection closed");
 	}
 	
 	foreach (const auto &security, m_securities) {
@@ -343,11 +343,11 @@ void Stream::ReconnectClient(const boost::system::error_code &error) {
 	GetLog().Info("Reconnecting...");
 	try {
 		ConnectClient();
+		SubscribeToSecurities();
 	} catch (const ConnectError &ex) {
 		GetLog().Error("Failed to reconnect: \"%1%\".", ex);
 		ScheduleReconnect();
+		return;
 	}
-
-	SubscribeToSecurities();
 
 }
