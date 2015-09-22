@@ -242,7 +242,12 @@ void EngineServer::Service::OnContextStateChanges(
 	}
 	const ConnectionsReadLock lock(m_connectionsMutex);
 	foreach (Client *client, m_connections) {
-		fun(*client);
+		try {
+			fun(*client);
+		} catch (const trdk::Lib::Exception &ex) {
+			//! @todo Write to log
+			std::cerr << "Failed to send message: \"" << ex << "\"." << std::endl;
+		}
 	}
 }
 
