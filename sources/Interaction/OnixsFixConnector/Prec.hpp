@@ -19,15 +19,19 @@
 #	include <boost/thread.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
+#ifdef BOOST_WINDOWS
+#	include <concrt.h>
+#endif
+
+#ifdef BOOST_WINDOWS
+	// For OnixS FIX Engine only
+#	include <winsock.h>
+#endif
 #include "DisableOnixsFixEngineWarningsBegin.h"
 #	include <OnixS/FIXEngine.h>
 #include "DisableOnixsFixEngineWarningsEnd.h"
 
 #include "Common/Common.hpp"
-
-#ifdef BOOST_WINDOWS
-#	include <concrt.h>
-#endif
 
 #include "Api.h"
 #include "Fwd.hpp"
