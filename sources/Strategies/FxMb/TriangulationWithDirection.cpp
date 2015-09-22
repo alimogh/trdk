@@ -14,9 +14,7 @@
 #include "TriangulationWithDirectionStatService.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/MarketDataSource.hpp"
-#ifdef BOOST_ENABLE_ASSERT_HANDLER
-#	include "Core/RiskControl.hpp"
-#endif
+#include "Core/RiskControl.hpp"
 #include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
