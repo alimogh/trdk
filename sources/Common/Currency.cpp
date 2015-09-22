@@ -63,7 +63,7 @@ const char * Lib::ConvertToIsoPch(const Currency &currency) {
 		case CURRENCY_RUB:
 			return "RUB";
 		case CURRENCY_GBP:
-			return "GBR";
+			return "GBP";
 		case CURRENCY_CHF:
 			return "CHF";
 		default:
