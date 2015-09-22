@@ -10,10 +10,14 @@
 
 #include "Prec.hpp"
 #include "Util.hpp"
+
 #include "Log.hpp"
 #include "Core/EventsLog.hpp"
 #include "Assert.hpp"
 #include "Constants.h"
+#if defined(BOOST_GCC) && defined(_DEBUG)
+#	include <sys/signal.h>
+#endif
 
 using namespace trdk;
 using namespace trdk::Debug;
