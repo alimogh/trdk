@@ -133,7 +133,13 @@ namespace trdk { namespace Lib {
 			if (tag) {
 				os << '[' << tag << "]\t";
 			}
-			os << time << " [" << threadId << "]:\t";
+			os << time;
+#			ifdef BOOST_WINDOWS
+				os << " [";
+#			else
+				os << " [0x" << std::ios::hex;
+#			endif
+			os << threadId << "]:\t";
 			if (module) {
 				os << '[' << *module << "] ";
 			}
