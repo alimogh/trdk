@@ -29,6 +29,17 @@ namespace {
 
 	const OrderParams defaultOrderParams;
 
+	class UuidGenerator : private boost::noncopyable {
+	public:
+		uu::uuid operator ()() {
+			const Lib::Concurrency::SpinScopedLock lock(m_mutex);
+			return m_generator();
+		}
+	private:
+		Lib::Concurrency::SpinMutex m_mutex;
+		uu::random_generator m_generator;
+	} generateUuid;
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -808,7 +819,7 @@ public:
 		}
 
 		const StaticData staticData = {
-			uu::random_generator()(),
+			generateUuid(),
 			hasPrice,
 			timeInForce,
 		};
@@ -902,7 +913,7 @@ public:
 
 		const auto orderId = closeImpl(m_position.GetActiveQty());
 		m_closeType = closeType;
-		m_closed.uuid = uu::random_generator()();
+		m_closed.uuid = generateUuid();
 		m_closed.hasPrice = hasPrice;
 		m_closed.hasOrder = true;
 		m_closed.orderId = orderId;

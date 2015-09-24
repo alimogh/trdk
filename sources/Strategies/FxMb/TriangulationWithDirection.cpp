@@ -18,7 +18,6 @@
 #include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
-namespace uu = boost::uuids;
 namespace accs = boost::accumulators;
 
 using namespace trdk;
@@ -747,7 +746,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 
 		triangle.reset(
 			new Triangle(
-				uu::random_generator()(),
+				m_generateUuid(),
 				*this,
 				m_reports,
 				detection.y,

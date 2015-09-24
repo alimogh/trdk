@@ -301,9 +301,7 @@ void Client::SendEngineInfo(const std::string &engineId) {
 	settingsMessage.set_time(
 		pt::to_iso_string(
 			boost::posix_time::microsec_clock::local_time()));
-	ConvertToUuid(
-		boost::uuids::random_generator()(),
-		*settingsMessage.mutable_revision());
+	ConvertToUuid(m_generateUuid(), *settingsMessage.mutable_revision());
 
 	m_requestHandler.GetEngineSettings(engineId).GetClientSettings(
 		[&settingsMessage](const Settings::ClientSettings &settings) {

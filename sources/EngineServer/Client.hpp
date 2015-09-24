@@ -106,6 +106,8 @@ namespace trdk { namespace EngineServer {
 
 	private:
 
+		boost::uuids::random_generator m_generateUuid;
+
 		ClientRequestHandler &m_requestHandler;
 
 		int32_t m_nextMessageSize;
