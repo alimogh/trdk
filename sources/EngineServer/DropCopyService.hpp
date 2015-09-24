@@ -53,6 +53,55 @@ namespace trdk { namespace EngineServer {
 			boost::shared_ptr<DropCopyClient> client;
 		};
 
+		struct OperationStart {
+			boost::uuids::uuid id;
+			boost::posix_time::ptime time;
+			const trdk::Strategy *strategy;
+			size_t updatesNumber;
+		};
+
+		struct OperationEnd {
+			boost::uuids::uuid id;
+			boost::posix_time::ptime time;
+			double pnl;
+			boost::shared_ptr<const trdk::FinancialResult> financialResult;
+		};
+
+		struct Order {
+			boost::uuids::uuid id;
+			boost::optional<std::string> tradeSystemId;
+			boost::optional<boost::posix_time::ptime> orderTime;
+			boost::optional<boost::posix_time::ptime> executionTime;
+			trdk::TradeSystem::OrderStatus status;
+			boost::uuids::uuid operationId;
+			boost::optional<int64_t> subOperationId;
+			const trdk::Security *security;
+			trdk::OrderSide side;
+			trdk::Qty qty;
+			boost::optional<double> price;
+			boost::optional<trdk::TimeInForce> timeInForce;
+			trdk::Lib::Currency currency;
+			boost::optional<trdk::Qty> minQty;
+			boost::optional<std::string> user;
+			trdk::Qty executedQty;
+			boost::optional<double> bestBidPrice;
+			boost::optional<trdk::Qty> bestBidQty;
+			boost::optional<double> bestAskPrice;
+			boost::optional<trdk::Qty> bestAskQty;
+		};
+
+		struct Trade {
+			boost::posix_time::ptime time;
+			std::string tradeSystemTradeid;
+			boost::uuids::uuid orderId;
+			double price;
+			Qty qty;
+			double bestBidPrice;
+			Qty bestBidQty;
+			double bestAskPrice;
+			Qty bestAskQty;
+		};
+
 		class SendList : private boost::noncopyable {
 
 		public:
@@ -63,6 +112,14 @@ namespace trdk { namespace EngineServer {
 
 		private:
 
+			enum MessageType {
+				MESSAGE_TYPE_OPERATION_START,
+				MESSAGE_TYPE_OPERATION_END,
+				MESSAGE_TYPE_ORDER,
+				MESSAGE_TYPE_TRADE,
+				numberOfMessageTypes
+			};
+
 			typedef DropCopyConcurrencyPolicy ConcurrencyPolicy;
 			typedef ConcurrencyPolicy::Mutex Mutex;
 			typedef ConcurrencyPolicy::Lock Lock;
@@ -70,8 +127,8 @@ namespace trdk { namespace EngineServer {
 
 			struct Queue {
 
-				typedef std::vector<trdk::EngineService::DropCopy::ServiceData>
-					Data;
+				typedef std::pair<MessageType, boost::any> Message;
+				typedef std::vector<Message> Data;
 			
 				Data data;
 				boost::atomic_size_t size;
@@ -95,7 +152,10 @@ namespace trdk { namespace EngineServer {
 
 		public:
 
-			void Enqueue(trdk::EngineService::DropCopy::ServiceData &&);
+			void Enqueue(OperationStart &&);
+			void Enqueue(OperationEnd &&);
+			void Enqueue(Order &&);
+			void Enqueue(Trade &&);
 
 			void Start();
 			void Stop();
@@ -110,7 +170,27 @@ namespace trdk { namespace EngineServer {
 
 		private:
 
+			void Enqueue(MessageType &&, boost::any &&);
+
 			void SendTask();
+
+		private:
+
+			trdk::EngineService::DropCopy::ServiceData CreateMessage(
+					const Queue::Message &)
+					const;
+			trdk::EngineService::DropCopy::ServiceData CreateMessage(
+					const OperationStart &)
+					const;
+			trdk::EngineService::DropCopy::ServiceData CreateMessage(
+					const OperationEnd &)
+					const;
+			trdk::EngineService::DropCopy::ServiceData CreateMessage(
+					const Order &)
+					const;
+			trdk::EngineService::DropCopy::ServiceData CreateMessage(
+					const Trade &)
+					const;
 
 		public:
 

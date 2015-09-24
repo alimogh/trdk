@@ -160,7 +160,7 @@ void DropCopyService::SendList::LogQueue() {
 			m_service.GetLog().Debug(
 				"Unsent message #%1%: \"%2%\".",
 				++counter,
-				message.DebugString());
+				CreateMessage(message).DebugString());
 		}
 	};
 	{
@@ -174,13 +174,248 @@ void DropCopyService::SendList::LogQueue() {
 
 }
 
-void DropCopyService::SendList::Enqueue(ServiceData &&message) {
+void DropCopyService::SendList::Enqueue(OperationStart &&message) {
+	Enqueue(MESSAGE_TYPE_OPERATION_START, message);
+}
+
+void DropCopyService::SendList::Enqueue(OperationEnd &&message) {
+	Enqueue(MESSAGE_TYPE_OPERATION_END, message);
+}
+
+void DropCopyService::SendList::Enqueue(Order &&message) {
+	Enqueue(MESSAGE_TYPE_ORDER, message);
+}
+
+void DropCopyService::SendList::Enqueue(Trade &&message) {
+	Enqueue(MESSAGE_TYPE_TRADE, message);
+}
+
+void DropCopyService::SendList::Enqueue(
+		MessageType &&messageType,
+		boost::any &&message) {
 	{
 		const Lock lock(m_mutex);
-		m_currentQueue->data.emplace_back(message);
-		m_dataCondition.notify_one();
+		m_currentQueue->data.emplace_back(messageType, message);
+		++m_currentQueue->size;
 	}
-	++m_currentQueue->size;
+	m_dataCondition.notify_one();
+}
+
+ServiceData DropCopyService::SendList::CreateMessage(
+		const Queue::Message &message)
+		const {
+	static_assert(numberOfMessageTypes == 4, "List changed.");
+	switch (message.first) {
+		case MESSAGE_TYPE_OPERATION_START:
+			return CreateMessage(
+				boost::any_cast<const OperationStart &>(message.second));
+		case MESSAGE_TYPE_OPERATION_END:
+			return CreateMessage(
+				boost::any_cast<const OperationEnd &>(message.second));
+		case MESSAGE_TYPE_ORDER:
+			return CreateMessage(
+				boost::any_cast<const Order &>(message.second));
+		case MESSAGE_TYPE_TRADE:
+			return CreateMessage(
+				boost::any_cast<const Trade &>(message.second));
+		default:
+			throw LogicError("Unknown message type for Drop Copy queue");
+	}
+}
+
+ServiceData DropCopyService::SendList::CreateMessage(
+		const OperationStart &message)
+		const {
+
+	ServiceData result;
+	result.set_type(ServiceData::TYPE_OPERATION_START);
+	Reports::OperationStart &operation = *result.mutable_operation_start();
+
+	ConvertToUuid(message.id, *operation.mutable_id());
+	operation.set_time(pt::to_iso_string(message.time));
+	operation.set_trading_mode(Convert(message.strategy->GetTradingMode()));
+	ConvertToUuid(message.strategy->GetId(), *operation.mutable_strategy_id());
+	operation.set_updates_number(pf::uint32(message.updatesNumber));
+
+	return result;
+
+}
+
+ServiceData DropCopyService::SendList::CreateMessage(
+		const OperationEnd &message)
+		const {
+	
+	ServiceData result;
+	result.set_type(ServiceData::TYPE_OPERATION_END);
+	Reports::OperationEnd &operation = *result.mutable_operation_end();
+
+	ConvertToUuid(message.id, *operation.mutable_id());
+	operation.set_time(pt::to_iso_string(message.time));
+	operation.set_pnl(message.pnl);
+
+	foreach (const auto &position, *message.financialResult) {
+		Reports::OperationEnd::FinancialResult &positionMessage
+			= *operation.add_financial_result();
+		positionMessage.set_currency(ConvertToIso(position.first));
+		positionMessage.set_value(position.second);
+	}
+	
+	return result;
+
+}
+
+ServiceData DropCopyService::SendList::CreateMessage(
+		const Order &message)
+		const {
+
+	ServiceData result;
+	result.set_type(ServiceData::TYPE_ORDER);
+	MarketData::Order &order = *result.mutable_order();
+
+	ConvertToUuid(message.id, *order.mutable_id());	
+	if (message.tradeSystemId) {
+		order.set_trade_system_order_id(*message.tradeSystemId);
+	}
+
+	if (message.orderTime) {
+		order.set_order_time(pt::to_iso_string(*message.orderTime));
+	}
+	if (message.executionTime) {
+		order.set_execution_time(pt::to_iso_string(*message.executionTime));
+	}
+
+	static_assert(TradeSystem::numberOfOrderStatuses == 8, "List changes.");
+	switch (message.status) {
+		default:
+			AssertEq(TradeSystem::ORDER_STATUS_SENT, message.status);
+			break;
+		case TradeSystem::ORDER_STATUS_SENT:
+			order.set_status(MarketData::Order::STATUS_SENT);
+			break;
+		case TradeSystem::ORDER_STATUS_REQUESTED_CANCEL:
+			order.set_status(MarketData::Order::STATUS_REQUESTED_CANCEL);
+			break;
+		case TradeSystem::ORDER_STATUS_SUBMITTED:
+			order.set_status(MarketData::Order::STATUS_ACTIVE);
+			break;
+		case TradeSystem::ORDER_STATUS_CANCELLED:
+			order.set_status(MarketData::Order::STATUS_CANCELED);
+			break;
+		case TradeSystem::ORDER_STATUS_FILLED:
+			order.set_status(
+				message.executedQty >= message.qty
+					?	MarketData::Order::STATUS_FILLED
+					:	MarketData::Order::STATUS_FILLED_PARTIALLY);
+			break;
+		case TradeSystem::ORDER_STATUS_REJECTED:
+			order.set_status(MarketData::Order::STATUS_REJECTED);
+			break;
+		case TradeSystem::ORDER_STATUS_INACTIVE:
+		case TradeSystem::ORDER_STATUS_ERROR:
+			order.set_status(MarketData::Order::STATUS_ERROR);
+			break;
+	}
+
+	ConvertToUuid(message.operationId, *order.mutable_operation_id());
+	if (message.subOperationId) {
+		order.set_sub_operation_id(*message.subOperationId);
+	}
+
+	order.set_security_id(message.security->GetInstanceId());
+
+	order.set_side(
+		message.side == ORDER_SIDE_BUY
+			?	MarketData::Order::SIDE_BUY
+			:	MarketData::Order::SIDE_SELL);
+	
+	order.set_qty(message.qty);
+	
+	if (message.price) {
+		order.set_type(
+			!IsZero(*message.price)
+				?	MarketData::Order::TYPE_LMT
+				:	MarketData::Order::TYPE_MKT);
+		order.set_price(*message.price);
+	}
+
+	static_assert(numberOfTimeInForces == 5, "List changed.");
+	if (message.timeInForce) {
+		switch (*message.timeInForce) {
+			default:
+				AssertEq(TIME_IN_FORCE_DAY, *message.timeInForce);
+				break;
+			case TIME_IN_FORCE_DAY:
+				order.set_time_in_force(MarketData::Order::TIME_IN_FORCE_DAY);
+				break;
+			case TIME_IN_FORCE_GTC:
+				order.set_time_in_force(MarketData::Order::TIME_IN_FORCE_GTC);
+				break;
+			case TIME_IN_FORCE_OPG:
+				order.set_time_in_force(MarketData::Order::TIME_IN_FORCE_OPG);
+				break;
+			case TIME_IN_FORCE_IOC:
+				order.set_time_in_force(MarketData::Order::TIME_IN_FORCE_IOC);
+				break;
+			case TIME_IN_FORCE_FOK:
+				order.set_time_in_force(MarketData::Order::TIME_IN_FORCE_FOK);
+				break;
+		}
+	}
+
+	order.set_currency(ConvertToIso(message.currency));
+		
+	if (message.minQty) {
+		order.set_min_qty(*message.minQty);
+	}
+		
+	if (message.user) {
+		order.set_user(*message.user);
+	}
+
+	order.set_executed_qty(message.executedQty);
+
+	if (
+			message.bestBidPrice
+			|| message.bestBidQty
+			|| message.bestAskPrice
+			|| message.bestAskQty) {
+		Assert(message.bestBidPrice);
+		Assert(message.bestBidQty);
+		Assert(message.bestAskPrice);
+		Assert(message.bestAskQty);
+		Convert(
+			message.bestBidPrice ? *message.bestBidPrice : 0,
+			message.bestBidQty ? *message.bestBidQty : 0,
+			message.bestAskPrice ? *message.bestAskPrice : 0,
+			message.bestAskQty ? *message.bestAskQty: 0,
+			*order.mutable_top_of_book());
+	}
+
+	return result;
+
+}
+
+ServiceData DropCopyService::SendList::CreateMessage(
+		const Trade &message)
+		const {
+
+	ServiceData result;
+	result.set_type(ServiceData::TYPE_TRADE);
+	MarketData::Trade &trade = *result.mutable_trade();
+
+	trade.set_time(pt::to_iso_string(message.time));
+	trade.set_trade_system_trade_id(message.tradeSystemTradeid);
+	ConvertToUuid(message.orderId, *trade.mutable_order_id());
+	trade.set_price(message.price);
+	trade.set_qty(message.qty);
+	Convert(
+		message.bestBidPrice,
+		message.bestBidQty,
+		message.bestAskPrice,
+		message.bestAskQty,
+		*trade.mutable_top_of_book());
+
+	return result;
 }
 
 void DropCopyService::SendList::SendTask() {
@@ -222,7 +457,7 @@ void DropCopyService::SendList::SendTask() {
 			Assert(!listToRead->data.empty());
 			AssertEq(listToRead->data.size(), listToRead->size);
 			foreach (auto &message, listToRead->data) {
-				if (!m_service.SendSync(message)) {
+				if (!m_service.SendSync(CreateMessage(message))) {
 					break;
 				}
 				--listToRead->size;
@@ -475,123 +710,61 @@ void DropCopyService::CopyOrder(
 		const Qty *bestBidQty,
 		const double *bestAskPrice,
 		const Qty *bestAskQty) {
-	
-	ServiceData message;
-	message.set_type(ServiceData::TYPE_ORDER);
-	Order &order = *message.mutable_order();
 
-	ConvertToUuid(id, *order.mutable_id());	
+	Order message = {
+		id,
+		boost::none,
+		boost::none,
+		boost::none,
+		status,
+		operationId,
+		boost::none,
+		&security,
+		side,
+		qty,
+		boost::none,
+		boost::none,
+		currency,
+		boost::none,
+		boost::none,
+		executedQty
+	};
+
 	if (tradeSystemId) {
-		order.set_trade_system_order_id(*tradeSystemId);
+		message.tradeSystemId = *tradeSystemId;
 	}
-
 	if (orderTime) {
-		order.set_order_time(pt::to_iso_string(*orderTime));
+		message.orderTime = *orderTime;
 	}
 	if (executionTime) {
-		order.set_execution_time(pt::to_iso_string(*executionTime));
+		message.executionTime = *executionTime;
 	}
-
-	static_assert(TradeSystem::numberOfOrderStatuses == 8, "List changes.");
-	switch (status) {
-		default:
-			AssertEq(TradeSystem::ORDER_STATUS_SENT, status);
-			break;
-		case TradeSystem::ORDER_STATUS_SENT:
-			order.set_status(Order::STATUS_SENT);
-			break;
-		case TradeSystem::ORDER_STATUS_REQUESTED_CANCEL:
-			order.set_status(Order::STATUS_REQUESTED_CANCEL);
-			break;
-		case TradeSystem::ORDER_STATUS_SUBMITTED:
-			order.set_status(Order::STATUS_ACTIVE);
-			break;
-		case TradeSystem::ORDER_STATUS_CANCELLED:
-			order.set_status(Order::STATUS_CANCELED);
-			break;
-		case TradeSystem::ORDER_STATUS_FILLED:
-			order.set_status(
-				executedQty >= qty
-					?	Order::STATUS_FILLED
-					:	Order::STATUS_FILLED_PARTIALLY);
-			break;
-		case TradeSystem::ORDER_STATUS_REJECTED:
-			order.set_status(Order::STATUS_REJECTED);
-			break;
-		case TradeSystem::ORDER_STATUS_INACTIVE:
-		case TradeSystem::ORDER_STATUS_ERROR:
-			order.set_status(Order::STATUS_ERROR);
-			break;
-	}
-
-	ConvertToUuid(operationId, *order.mutable_operation_id());
 	if (subOperationId) {
-		order.set_sub_operation_id(*subOperationId);
+		message.subOperationId = *subOperationId;
 	}
-
-	order.set_security_id(security.GetInstanceId());
-
-	order.set_side(
-		side == ORDER_SIDE_BUY ? Order::SIDE_BUY : Order::SIDE_SELL);
-	
-	order.set_qty(qty);
-	
 	if (price) {
-		order.set_type(!IsZero(*price) ? Order::TYPE_LMT : Order::TYPE_MKT);
-		order.set_price(*price);
+		message.price = *price;
 	}
-
-	static_assert(numberOfTimeInForces == 5, "List changed.");
 	if (timeInForce) {
-		switch (*timeInForce) {
-			default:
-				AssertEq(TIME_IN_FORCE_DAY, *timeInForce);
-				break;
-			case TIME_IN_FORCE_DAY:
-				order.set_time_in_force(Order::TIME_IN_FORCE_DAY);
-				break;
-			case TIME_IN_FORCE_GTC:
-				order.set_time_in_force(Order::TIME_IN_FORCE_GTC);
-				break;
-			case TIME_IN_FORCE_OPG:
-				order.set_time_in_force(Order::TIME_IN_FORCE_OPG);
-				break;
-			case TIME_IN_FORCE_IOC:
-				order.set_time_in_force(Order::TIME_IN_FORCE_IOC);
-				break;
-			case TIME_IN_FORCE_FOK:
-				order.set_time_in_force(Order::TIME_IN_FORCE_FOK);
-				break;
-		}
+		message.timeInForce = *timeInForce;
 	}
-
-	order.set_currency(ConvertToIso(currency));
-		
 	if (minQty) {
-		order.set_min_qty(*minQty);
+		message.minQty = *minQty;
 	}
-		
 	if (user) {
-		order.set_user(*user);
+		message.user = *user;
 	}
-
-	order.set_executed_qty(executedQty);
-
-	if (
-			bestBidPrice
-			|| bestBidQty
-			|| bestAskPrice
-			|| bestAskQty) {
-		Assert(bestBidPrice);
-		Assert(bestBidQty);
-		Assert(bestAskPrice);
-		Assert(bestAskQty);
-		Convert(
-			bestBidPrice ? *bestBidPrice : 0,
-			bestBidQty ? *bestBidQty : 0,
-			bestAskPrice ? *bestAskPrice : 0,
-			bestAskQty ? *bestAskQty: 0,
-			*order.mutable_top_of_book());
+	if (bestBidPrice) {
+		message.bestBidPrice = *bestBidPrice;
+	}
+	if (bestBidQty) {
+		message.bestBidQty = *bestBidQty;
+	}
+	if (bestAskPrice) {
+		message.bestAskPrice = *bestAskPrice;
+	}
+	if (bestAskQty) {
+		message.bestAskQty = *bestAskQty;
 	}
 
 	m_sendList.Enqueue(std::move(message));
@@ -608,25 +781,18 @@ void DropCopyService::CopyTrade(
 		const Qty &bestBidQty,
 		double bestAskPrice,
 		const Qty &bestAskQty) {
-
-	ServiceData message;
-	message.set_type(ServiceData::TYPE_TRADE);
-	Trade &trade = *message.mutable_trade();
-
-	trade.set_time(pt::to_iso_string(time));
-	trade.set_trade_system_trade_id(tradeSystemTradeid);
-	ConvertToUuid(orderId, *trade.mutable_order_id());
-	trade.set_price(price);
-	trade.set_qty(qty);
-	Convert(
+	Trade message = {
+		time,
+		tradeSystemTradeid,
+		orderId,
+		price,
+		qty,
 		bestBidPrice,
 		bestBidQty,
 		bestAskPrice,
-		bestAskQty,
-		*trade.mutable_top_of_book());
-
+		bestAskQty
+	};
 	m_sendList.Enqueue(std::move(message));
-
 }
 
 void DropCopyService::ReportOperationStart(
@@ -634,19 +800,8 @@ void DropCopyService::ReportOperationStart(
 		const pt::ptime &time,
 		const trdk::Strategy &strategy,
 		size_t updatesNumber) {
-	
-	ServiceData message;
-	message.set_type(ServiceData::TYPE_OPERATION_START);
-	OperationStart &operation = *message.mutable_operation_start();
-
-	ConvertToUuid(id, *operation.mutable_id());
-	operation.set_time(pt::to_iso_string(time));
-	operation.set_trading_mode(Convert(strategy.GetTradingMode()));
-	ConvertToUuid(strategy.GetId(), *operation.mutable_strategy_id());
-	operation.set_updates_number(pf::uint32(updatesNumber));
-
+	OperationStart message = {id, time, &strategy, updatesNumber};
 	m_sendList.Enqueue(std::move(message));
-
 }
 
 void DropCopyService::ReportOperationEnd(
@@ -654,23 +809,12 @@ void DropCopyService::ReportOperationEnd(
 		const pt::ptime &time,
 		double pnl,
 		const boost::shared_ptr<const FinancialResult> &financialResult) {
-	
-	ServiceData message;
-	message.set_type(ServiceData::TYPE_OPERATION_END);
-	OperationEnd &operation = *message.mutable_operation_end();
-
-	ConvertToUuid(id, *operation.mutable_id());
-	operation.set_time(pt::to_iso_string(time));
-	operation.set_pnl(pnl);
-
-	foreach (const auto &position, *financialResult) {
-		OperationEnd::FinancialResult &positionMessage
-			= *operation.add_financial_result();
-		positionMessage.set_currency(ConvertToIso(position.first));
-		positionMessage.set_value(position.second);
-	}
-
+	OperationEnd message = {
+		id,
+		time,
+		pnl,
+		financialResult
+	};
 	m_sendList.Enqueue(std::move(message));
-
 }
 
