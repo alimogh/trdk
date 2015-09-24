@@ -12,6 +12,17 @@
 
 namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
+	//////////////////////////////////////////////////////////////////////////
+
+	enum Y {
+		Y1,
+		Y2,
+		Y_UNKNOWN,
+		numberOfYs = Y_UNKNOWN
+	};
+
+	typedef boost::array<double, numberOfYs> YDirection;
+
 	////////////////////////////////////////////////////////////////////////////////
 		
 	enum Leg {
@@ -30,12 +41,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	////////////////////////////////////////////////////////////////////////////////
 
 	enum Pair {
-		//! Like a EUR/USD.
-		PAIR_AB,
-		//! Like a USD/JPY.
-		PAIR_BC,
-		//! Like a EUR/JPY.
-		PAIR_AC,
+		PAIR1,
+		PAIR2,
+		PAIR3,
 		PAIR_UNKNOWN,
 		numberOfPairs = PAIR_UNKNOWN
 	};

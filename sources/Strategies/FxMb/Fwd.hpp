@@ -12,6 +12,7 @@
 
 namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
+	class Product;
 	class Triangle;
 	class Position;
 	class StatService;

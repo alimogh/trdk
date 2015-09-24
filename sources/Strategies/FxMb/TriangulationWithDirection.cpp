@@ -12,6 +12,7 @@
 #include "TriangulationWithDirection.hpp"
 #include "TriangulationWithDirectionPosition.hpp"
 #include "TriangulationWithDirectionStatService.hpp"
+#include "Y.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/RiskControl.hpp"
@@ -111,6 +112,8 @@ TriangulationWithDirection::~TriangulationWithDirection() {
 
 void TriangulationWithDirection::OnServiceStart(const Service &service) {
 
+	Assert(!m_product);
+
 	const BestBidAsk statService = {
 		boost::polymorphic_downcast<const StatService *>(&service)
 	};
@@ -118,10 +121,10 @@ void TriangulationWithDirection::OnServiceStart(const Service &service) {
 		= statService.service->GetSecurity(0).GetSymbol().GetSymbol();
 	const size_t index
 		= symbol == "EUR/USD"
-			?	PAIR_AB
-			:	symbol == "EUR/JPY" || symbol == "EUR/CHF"
-				?	PAIR_AC
-				:	PAIR_BC;
+			?	PAIR1
+			:	symbol == "EUR/JPY" || symbol == "EUR/CHF" || symbol == "EUR/GBP"
+				?	PAIR3
+				:	PAIR2;
 	Assert(!m_bestBidAsk[index].service);
 	m_bestBidAsk[index] = statService;
 
@@ -134,6 +137,13 @@ void TriangulationWithDirection::OnServiceStart(const Service &service) {
 			}
 		}
 		if (isFull) {
+			m_product.reset(
+				new Product(
+					CURRENCY_EUR,
+					m_qty,
+					m_bestBidAsk[0].service->GetSecurity(0).GetSymbol(),
+					m_bestBidAsk[1].service->GetSecurity(0).GetSymbol(),
+					m_bestBidAsk[2].service->GetSecurity(0).GetSymbol()));
 			m_reports.WriteStrategyLogHead(GetContext(), m_bestBidAsk);
 		}
 	}
@@ -498,12 +508,12 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 #		endif
 
 	} else if (
-			IsZero(m_bestBidAsk[PAIR_AB].bestBid.price)
-			||	IsZero(m_bestBidAsk[PAIR_AB].bestAsk.price)
-			||	IsZero(m_bestBidAsk[PAIR_BC].bestBid.price)
-			||	IsZero(m_bestBidAsk[PAIR_BC].bestAsk.price)
-			||	IsZero(m_bestBidAsk[PAIR_AC].bestBid.price)
-			||	IsZero(m_bestBidAsk[PAIR_AC].bestAsk.price)) {
+			IsZero(m_bestBidAsk[PAIR1].bestBid.price)
+			||	IsZero(m_bestBidAsk[PAIR1].bestAsk.price)
+			||	IsZero(m_bestBidAsk[PAIR2].bestBid.price)
+			||	IsZero(m_bestBidAsk[PAIR2].bestAsk.price)
+			||	IsZero(m_bestBidAsk[PAIR3].bestBid.price)
+			||	IsZero(m_bestBidAsk[PAIR3].bestAsk.price)) {
 		
 		ResetYDirection(m_yDetected);
 		if (m_triangle) {
@@ -517,15 +527,22 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 
 	} else {
 			
-		CalcYDirection();
+		GetProduct().CalcYDirection(
+			m_bestBidAsk[PAIR1].bestBid.price,
+			m_bestBidAsk[PAIR1].bestAsk.price,
+			m_bestBidAsk[PAIR2].bestBid.price,
+			m_bestBidAsk[PAIR2].bestAsk.price,
+			m_bestBidAsk[PAIR3].bestBid.price,
+			m_bestBidAsk[PAIR3].bestAsk.price,
+			m_yDetected);
 
 		if (CheckOpportunity(m_yDetected) != Y_UNKNOWN) {
-			m_detectedEcns[Y1][PAIR_AB] = m_bestBidAsk[PAIR_AB].bestBid.source;
-			m_detectedEcns[Y1][PAIR_BC] = m_bestBidAsk[PAIR_BC].bestBid.source;
-			m_detectedEcns[Y1][PAIR_AC] = m_bestBidAsk[PAIR_AC].bestAsk.source;
-			m_detectedEcns[Y2][PAIR_AB] = m_bestBidAsk[PAIR_AB].bestAsk.source;
-			m_detectedEcns[Y2][PAIR_BC] = m_bestBidAsk[PAIR_BC].bestAsk.source;
-			m_detectedEcns[Y2][PAIR_AC] = m_bestBidAsk[PAIR_AC].bestBid.source;
+			m_detectedEcns[Y1][PAIR1] = m_bestBidAsk[PAIR1].bestBid.source;
+			m_detectedEcns[Y1][PAIR2] = m_bestBidAsk[PAIR2].bestBid.source;
+			m_detectedEcns[Y1][PAIR3] = m_bestBidAsk[PAIR3].bestAsk.source;
+			m_detectedEcns[Y2][PAIR1] = m_bestBidAsk[PAIR1].bestAsk.source;
+			m_detectedEcns[Y2][PAIR2] = m_bestBidAsk[PAIR2].bestAsk.source;
+			m_detectedEcns[Y2][PAIR3] = m_bestBidAsk[PAIR3].bestBid.source;
 		} else {
 #			ifdef DEV_VER
 				m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
@@ -617,11 +634,11 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 	if (
 			// | EUR/USD SELL 1 FALLING	| USD/JPY SELL 3 RISING	| EUR/JPY BUY 2 -	|
 			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
-			result.speed[PAIR_AB] < -1
-			&& result.speed[PAIR_BC] > 1
-			&& IsZero(result.speed[PAIR_AC])
+			result.speed[PAIR1] < -1
+			&& result.speed[PAIR2] > 1
+			&& IsZero(result.speed[PAIR3])
 			//! @sa TRDK-162 about falling/rising speed:
-			&& fabs(result.speed[PAIR_AB]) < result.speed[PAIR_BC]) {
+			&& fabs(result.speed[PAIR1]) < result.speed[PAIR2]) {
 
 		result.y = Y1;
 		result.legs = {LEG1, LEG3, LEG2};
@@ -631,11 +648,11 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 	} else if (
 			// | Y1 EUR/USD SELL 2 -	| USD/JPY SELL 3 RISING | EUR/JPY BUY 1 RISING	|
 			// | PAIR_AB				| PAIR_BC				| PAIR_AC				|
-			IsZero(result.speed[PAIR_AB])
-			&& result.speed[PAIR_BC] > 1
-			&& result.speed[PAIR_AC] > 1
+			IsZero(result.speed[PAIR1])
+			&& result.speed[PAIR2] > 1
+			&& result.speed[PAIR3] > 1
 			//! @sa TRDK-162 about falling/rising speed:
-			&& result.speed[PAIR_BC] > result.speed[PAIR_AC]) {
+			&& result.speed[PAIR2] > result.speed[PAIR3]) {
 
 		result.y = Y1;
 		result.legs = {LEG2, LEG3, LEG1};
@@ -645,11 +662,11 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 	} else if (
 			// | EUR/USD SELL 3 RISING | USD/JPY SELL 1 FALLING | EUR/JPY BUY 2 -	|
 			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
-			result.speed[PAIR_AB] > 1
-			&& result.speed[PAIR_BC] < -1
-			&& IsZero(result.speed[PAIR_AC])
+			result.speed[PAIR1] > 1
+			&& result.speed[PAIR2] < -1
+			&& IsZero(result.speed[PAIR3])
 			//! @sa TRDK-162 about falling/rising speed:
-			&& result.speed[PAIR_AB] > fabs(result.speed[PAIR_BC])) {
+			&& result.speed[PAIR1] > fabs(result.speed[PAIR2])) {
 
 		result.y = Y1;
 		result.legs = {LEG3, LEG1, LEG2};
@@ -671,11 +688,11 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 	if (
 			// | EUR/USD BUY 1 RISING	| USD/JPY BUY 3 FALLING | EUR/JPY SELL 2 -	|
 			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
-			result.speed[PAIR_AB] > 1
-			&& result.speed[PAIR_BC] < -1
-			&& IsZero(result.speed[PAIR_AC])
+			result.speed[PAIR1] > 1
+			&& result.speed[PAIR2] < -1
+			&& IsZero(result.speed[PAIR3])
 			//! @sa TRDK-162 about falling/rising speed:
-			&& result.speed[PAIR_AB] < fabs(result.speed[PAIR_BC])) {
+			&& result.speed[PAIR1] < fabs(result.speed[PAIR2])) {
 
 		result.y = Y2;
 		result.legs = {LEG1, LEG3, LEG2};
@@ -685,11 +702,11 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 	} else if (
 			// | EUR/USD BUY 2 -	| USD/JPY BUY 3 FALLING | EUR/JPY SELL 1 FALLING	|
 			// | PAIR_AB			| PAIR_BC				| PAIR_AC					|
-			IsZero(result.speed[PAIR_AB])
-			&& result.speed[PAIR_BC] < -1
-			&& result.speed[PAIR_AC] < -1
+			IsZero(result.speed[PAIR1])
+			&& result.speed[PAIR2] < -1
+			&& result.speed[PAIR3] < -1
 			//! @sa TRDK-162 about falling/rising speed:
-			&& fabs(result.speed[PAIR_BC]) > fabs(result.speed[PAIR_AC])) {
+			&& fabs(result.speed[PAIR2]) > fabs(result.speed[PAIR3])) {
 
 		result.y = Y2;
 		result.legs = {LEG2, LEG3, LEG1};
@@ -699,11 +716,11 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 	} else if (
 			// | EUR/USD BUY 3 FALLING	| USD/JPY BUY 1 RISING	| EUR/JPY SELL 2 -	|
 			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
-			result.speed[PAIR_AB] < -1
-			&& result.speed[PAIR_BC] > 1
-			&& IsZero(result.speed[PAIR_AC])
+			result.speed[PAIR1] < -1
+			&& result.speed[PAIR2] > 1
+			&& IsZero(result.speed[PAIR3])
 			//! @sa TRDK-162 about falling/rising speed:
-			&& fabs(result.speed[PAIR_AB]) > result.speed[PAIR_BC]) {
+			&& fabs(result.speed[PAIR1]) > result.speed[PAIR2]) {
 
 		result.y = Y2;
 		result.legs = {LEG3, LEG1, LEG2};
@@ -774,24 +791,23 @@ void TriangulationWithDirection::CheckNewTriangle(
 				*this,
 				m_reports,
 				detection.y,
-				m_qty,
 				{
-					PAIR_AB,
-					detection.legs[PAIR_AB],
-					detection.y == Y2,
-					m_detectedEcns[detection.y][PAIR_AB]
+					PAIR1,
+					detection.legs[PAIR1],
+					GetProduct().IsBuy(PAIR1, detection.y),
+					m_detectedEcns[detection.y][PAIR1]
 				},
 				{
-					PAIR_BC,
-					detection.legs[PAIR_BC],
-					detection.y == Y2,
-					m_detectedEcns[detection.y][PAIR_BC]
+					PAIR2,
+					detection.legs[PAIR2],
+					GetProduct().IsBuy(PAIR2, detection.y),
+					m_detectedEcns[detection.y][PAIR2]
 				},
 				{
-					PAIR_AC,
-					detection.legs[PAIR_AC],
-					detection.y == Y1,
-					m_detectedEcns[detection.y][PAIR_AC],
+					PAIR3,
+					detection.legs[PAIR3],
+					GetProduct().IsBuy(PAIR3, detection.y),
+					m_detectedEcns[detection.y][PAIR3],
 				},
 				m_bestBidAsk));
 

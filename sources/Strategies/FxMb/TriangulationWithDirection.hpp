@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "Y.hpp"
 #include "TriangulationWithDirectionTriangle.hpp"
 #include "TriangulationWithDirectionTypes.hpp"
 #include "TriangulationWithDirectionReport.hpp"
@@ -57,6 +56,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		size_t CalcBookUpdatesNumber() const;
 
+		const Product & GetProduct() const {
+			Assert(m_product);
+			return *m_product;
+		}
+
 	protected:
 		
 		virtual void OnServiceStart(const Service &);
@@ -102,6 +106,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	private:
 
 		boost::uuids::random_generator m_generateUuid;
+
+		std::unique_ptr<Product> m_product;
 
 		const size_t m_bookLevelsCount;
 		const bool m_useAdjustedBookForTrades;

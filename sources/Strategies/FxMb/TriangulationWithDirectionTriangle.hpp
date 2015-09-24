@@ -14,7 +14,6 @@
 #include "TriangulationWithDirectionPosition.hpp"
 #include "TriangulationWithDirectionTypes.hpp"
 #include "TriangulationWithDirectionStatService.hpp"
-#include "Y.hpp"
 
 namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
@@ -100,12 +99,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				TriangulationWithDirection &,
 				ReportsState &,
 				const Y &,
-				const Qty &startQty,
-				const PairLegParams &ab,
-				const PairLegParams &bc,
-				const PairLegParams &ac,
+				const PairLegParams &pair1,
+				const PairLegParams &pair2,
+				const PairLegParams &pair3,
 				const BestBidAskPairs &bestBidAskRef);
-		~Triangle();
 
 	public:
 
@@ -424,96 +421,19 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	public:
 
-		bool HasOpportunity() const {
-			return CheckOpportunity(m_yDirection) == GetY();
-		}
+		bool HasOpportunity() const;
 
 		const YDirection & GetYDirection() const {
 			return m_yDirection;
 		}
 
-		void UpdateYDirection() {
-			CalcYDirection(
-				GetCalcSecurity(PAIR_AB),
-				GetCalcSecurity(PAIR_BC),
-				GetCalcSecurity(PAIR_AC),
-				m_yDirection);
-		}
+		void UpdateYDirection();
 
-		void ResetYDirection() {
-			Twd::ResetYDirection(m_yDirection);
-		}
+		void ResetYDirection();
 
-		double CalcYTargeted() const {
+		double CalcYTargeted() const;
 
-			const auto getPrice = [this](const Pair &pair) -> double {
-				if (IsLegStarted(pair)) {
-					const Twd::Position &leg = GetLeg(pair);
-					const auto &result
-						= leg
-							.GetSecurity()
-							.DescalePrice(leg.GetOpenStartPrice());
-					Assert(!Lib::IsZero(result));
-					return result;
-				} else {
-					const PairInfo &pairInfo = GetPair(pair);
-					AssertNe(LEG1, pairInfo.leg);
-					return pairInfo.GetCurrentBestPrice();
-				}
-			};
-
-			if (m_y ==  Y1) {
-				return CalcY1(
-					getPrice(PAIR_AB),
-					getPrice(PAIR_BC),
-					getPrice(PAIR_AC));
-			} else {
-				AssertEq(Y2, m_y);
-				return CalcY2(
-					getPrice(PAIR_AB),
-					getPrice(PAIR_BC),
-					getPrice(PAIR_AC));
-			}
-
-		}
-
-		double CalcYExecuted() const {
-			
-			Assert(
-				IsLegStarted(LEG1)
-				&& IsLegStarted(LEG2)
-				&& IsLegStarted(LEG3));
-			Assert(
-				GetLeg(LEG1).IsOpened()
-				&& GetLeg(LEG2).IsOpened()
-				&& GetLeg(LEG3).IsOpened());
-			Assert(
-				!GetLeg(LEG1).IsClosed()
-				&& !GetLeg(LEG2).IsClosed()
-				&& !GetLeg(LEG3).IsClosed());
-
-			const auto getPrice = [this](const Pair &pair) -> double {
-				const Twd::Position &leg = GetLeg(pair);
-				const auto &result
-					= leg.GetSecurity().DescalePrice(leg.GetOpenPrice());
-				Assert(!Lib::IsZero(result));
-				return result;
-			};
-
-			if (m_y ==  Y1) {
-				return CalcY1(
-					getPrice(PAIR_AB),
-					getPrice(PAIR_BC),
-					getPrice(PAIR_AC));
-			} else {
-				AssertEq(Y2, m_y);
-				return CalcY2(
-					getPrice(PAIR_AB),
-					getPrice(PAIR_BC),
-					getPrice(PAIR_AC));
-			}
-		
-		}
+		double CalcYExecuted() const;
 
 	private:
 
@@ -536,7 +456,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		const Id m_id;
 		const Y m_y;
-		const Qty m_aQty;
 
 		boost::array<PairInfo, numberOfPairs> m_pairs;
 		boost::array<PairInfo *, numberOfLegs> m_pairsLegs;

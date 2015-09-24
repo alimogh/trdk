@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "TriangulationWithDirectionTriangle.hpp"
 #include "TriangulationWithDirection.hpp"
+#include "Y.hpp"
 #include "Core/DropCopy.hpp"
 #include "Core/RiskControl.hpp"
 #include "Core/Strategy.hpp"
@@ -26,34 +27,29 @@ Triangle::Triangle(
 		TriangulationWithDirection &strategy,
 		ReportsState &reportsState,
 		const Y &y,
-		const Qty &startQty,
-		const PairLegParams &ab,
-		const PairLegParams &bc,
-		const PairLegParams &ac,
+		const PairLegParams &pair1,
+		const PairLegParams &pair2,
+		const PairLegParams &pair3,
 		const BestBidAskPairs &bestBidAskRef) 
-	: m_strategy(strategy),
-	m_startTime(m_strategy.GetContext().GetCurrentTime()),
-	m_bestBidAsk(bestBidAskRef),
-	m_report(*this, reportsState),
-	m_id(id),
-	m_y(y),
-	m_aQty(startQty) {
+	: m_strategy(strategy)
+	, m_startTime(m_strategy.GetContext().GetCurrentTime())
+	, m_bestBidAsk(bestBidAskRef)
+	, m_report(*this, reportsState)
+	, m_id(id)
+	, m_y(y) {
 
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
 		m_pairsLegs.fill(nullptr);
 #	endif
-			
-	m_pairs[PAIR_AB] = PairInfo(ab, m_bestBidAsk);
-	m_pairsLegs[m_pairs[PAIR_AB].leg] = &m_pairs[PAIR_AB];
+
+	m_pairs[PAIR1] = PairInfo(pair1, m_bestBidAsk);
+	m_pairsLegs[m_pairs[PAIR1].leg] = &m_pairs[PAIR1];
 	
-	{
-		auto &pair = m_pairs[PAIR_BC]; 
-		pair = PairInfo(bc, m_bestBidAsk);
-		m_pairsLegs[pair.leg] = &pair;
-	}
+	m_pairs[PAIR2] = PairInfo(pair2, m_bestBidAsk);
+	m_pairsLegs[m_pairs[PAIR2].leg] = &m_pairs[PAIR2];
 			
-	m_pairs[PAIR_AC] = PairInfo(ac, m_bestBidAsk);
-	m_pairsLegs[m_pairs[PAIR_AC].leg] = &m_pairs[PAIR_AC];
+	m_pairs[PAIR3] = PairInfo(pair3, m_bestBidAsk);
+	m_pairsLegs[m_pairs[PAIR3].leg] = &m_pairs[PAIR3];
 		
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
 	{
@@ -68,7 +64,6 @@ Triangle::Triangle(
 				Assert(subInfo.security != info.security);
 			}
 		}
-
 		foreach (const PairInfo *info, m_pairsLegs) {
 			Assert(info);
 		}
@@ -80,8 +75,91 @@ Triangle::Triangle(
 
 }
 
-Triangle::~Triangle() {
-	//...//
+bool Triangle::HasOpportunity() const {
+	return CheckOpportunity(m_yDirection) == GetY();
+}
+
+void Triangle::ResetYDirection() {
+	Twd::ResetYDirection(m_yDirection);
+}
+
+void Triangle::UpdateYDirection() {
+	m_strategy.GetProduct().CalcYDirection(
+		GetCalcSecurity(PAIR1),
+		GetCalcSecurity(PAIR2),
+		GetCalcSecurity(PAIR3),
+		m_yDirection);
+}
+
+double Triangle::CalcYTargeted() const {
+
+	const auto getPrice = [this](const Pair &pair) -> double {
+		if (IsLegStarted(pair)) {
+			const Twd::Position &leg = GetLeg(pair);
+			const auto &result
+				= leg
+					.GetSecurity()
+					.DescalePrice(leg.GetOpenStartPrice());
+			Assert(!Lib::IsZero(result));
+			return result;
+		} else {
+			const PairInfo &pairInfo = GetPair(pair);
+			AssertNe(LEG1, pairInfo.leg);
+			return pairInfo.GetCurrentBestPrice();
+		}
+	};
+
+	if (m_y ==  Y1) {
+		return m_strategy.GetProduct().CalcY1(
+			getPrice(PAIR1),
+			getPrice(PAIR2),
+			getPrice(PAIR3));
+	} else {
+		AssertEq(Y2, m_y);
+		return m_strategy.GetProduct().CalcY2(
+			getPrice(PAIR1),
+			getPrice(PAIR2),
+			getPrice(PAIR3));
+	}
+
+}
+
+double Triangle::CalcYExecuted() const {
+			
+	Assert(
+		IsLegStarted(LEG1)
+		&& IsLegStarted(LEG2)
+		&& IsLegStarted(LEG3));
+	Assert(
+		GetLeg(LEG1).IsOpened()
+		&& GetLeg(LEG2).IsOpened()
+		&& GetLeg(LEG3).IsOpened());
+	Assert(
+		!GetLeg(LEG1).IsClosed()
+		&& !GetLeg(LEG2).IsClosed()
+		&& !GetLeg(LEG3).IsClosed());
+
+	const auto getPrice = [this](const Pair &pair) -> double {
+		const Twd::Position &leg = GetLeg(pair);
+		const auto &result
+			= leg.GetSecurity().DescalePrice(leg.GetOpenPrice());
+		Assert(!Lib::IsZero(result));
+		return result;
+	};
+
+	if (m_y ==  Y1) {
+		return m_strategy.GetProduct().CalcY1(
+			getPrice(PAIR1),
+			getPrice(PAIR2),
+			getPrice(PAIR3));
+	} else {
+		AssertEq(Y2, m_y);
+		return m_strategy.GetProduct().CalcY2(
+			getPrice(PAIR1),
+			getPrice(PAIR2),
+			getPrice(PAIR3));
+	}
+		
 }
 
 boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
@@ -94,45 +172,21 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 	boost::shared_ptr<Twd::Position> result;
 
+	const auto &qty = m_strategy.GetProduct().CalcOrderQty(
+		price,
+		pair.isBuy,
+		pair.id,
+		pair.leg,
+		*this);
+	AssertLt(0, qty);
+
 	if (pair.isBuy) {
 
-		double qty = m_aQty;
-		switch (pair.id) {
-			case PAIR_AB:
-			case PAIR_AC:
-				if (security.GetAskQty() < qty) {
-					throw HasNotMuchOpportunityException(security, Qty(qty));
-				}
-				break;
-			case PAIR_BC:
-				switch (pair.leg) {
-					case LEG1:
-						qty *= GetPair(PAIR_AC).security->GetAskPrice();
-						qty /= GetPair(PAIR_BC).security->GetAskPrice();
-						break;
-					case LEG2:
-						AssertNe(LEG2, pair.leg);
-						throw LogicError("BC can be leg 2");
-					case LEG3:
-						AssertNe(PAIR_BC, GetLeg(LEG1).GetPair());
-						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
-						//! @sa TRDK-186.
-						qty = (1 / price) * GetLeg(PAIR_AC).GetOpenedVolume();
-						break;
-					default:
-						AssertEq(LEG1, pair.leg);
-						throw Lib::LogicError("Unknown leg for pair");
-				}
-				if (security.GetAskQty() < qty / price) {
-					throw HasNotMuchOpportunityException(security, Qty(qty));
-				}
-				break;
-			default:
-				AssertEq(PAIR_AB, pair.id);
-				throw Lib::LogicError("Unknown pair for leg");
+		if (
+				security.GetAskQty() < qty
+				|| Lib::IsZero(security.GetAskPrice())) {
+			throw HasNotMuchOpportunityException(security, qty);
 		}
-
-		Assert(!Lib::IsZero(security.GetAskPrice()));
 
 		result.reset(
 			new Twd::LongPosition(
@@ -141,58 +195,20 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
-				//! @todo remove "to qty"
-				//! @todo see TRDK-92
-				Qty(boost::math::round(qty)),
+				qty,
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
 				pair.leg,
-				//! @todo remove "to qty"
-				//! @todo see TRDK-92
-				Qty(boost::math::round(qty))));
+				qty));
 			
 	} else {
 
-		double qty = m_aQty;
-		switch (pair.id) {
-			case PAIR_AB:
-			case PAIR_AC:
-				AssertLt(0, qty);
-				if (security.GetBidQty() < qty) {
-					throw HasNotMuchOpportunityException(security, Qty(qty));
-				}
-				break;
-			case PAIR_BC:
-				switch (pair.leg) {
-					case LEG1:
-						qty *= GetPair(PAIR_AC).security->GetBidPrice();
-						qty /= GetPair(PAIR_BC).security->GetBidPrice();
-						break;
-					case LEG2:
-						AssertNe(LEG2, pair.leg);
-						throw LogicError("BC can be leg 2");
-					case LEG3:
-						AssertNe(PAIR_BC, GetLeg(LEG1).GetPair());
-						AssertNe(PAIR_BC, GetLeg(LEG2).GetPair());
-						//! @sa TRDK-186.
-						qty = (1 / price) * GetLeg(PAIR_AC).GetOpenedVolume();
-						break;
-					default:
-						AssertEq(LEG1, pair.leg);
-						throw Lib::LogicError("Unknown leg for pair");
-				}
-				if (security.GetBidQty() < qty / price) {
-					throw HasNotMuchOpportunityException(security, Qty(qty));
-				}
-				break;
-			default:
-				AssertEq(PAIR_AB, pair.id);
-				throw Lib::LogicError("Unknown pair for leg");
+		if (
+				security.GetBidQty() < qty
+				|| Lib::IsZero(security.GetBidPrice())) {
+			throw HasNotMuchOpportunityException(security, qty);
 		}
-
-		AssertLt(0, qty);
-		Assert(!Lib::IsZero(security.GetBidPrice()));
 
 		result.reset(
 			new Twd::ShortPosition(
@@ -201,17 +217,13 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
-				//! @todo remove "to qty"
-				//! @todo see TRDK-92
-				Qty(boost::math::round(qty)),
+				qty,
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
 				pair.leg,
-				//! @todo remove "to qty"
-				//! @todo see TRDK-92
-				Qty(boost::math::round(qty))));
-			
+				qty));
+
 	}
 
 	++pair.ordersCount;
