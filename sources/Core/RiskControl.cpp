@@ -215,7 +215,7 @@ public:
 		}
 
 		if (
-				m_settings.winRatioMinValue <= 0
+				m_settings.winRatioMinValue < 0
 				|| m_settings.winRatioMinValue > 100) {
 			throw WrongSettingsException("Wrong Min win-ratio set");
 		}
