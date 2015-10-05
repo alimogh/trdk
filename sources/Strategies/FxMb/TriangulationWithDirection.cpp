@@ -422,13 +422,13 @@ bool TriangulationWithDirection::CheckStopRequest(const StopMode &stopMode) {
 
 void TriangulationWithDirection::CalcYDirection() {
 
-	Twd::CalcYDirection(
-		m_bestBidAsk[PAIR_AB].bestBid.price,
-		m_bestBidAsk[PAIR_AB].bestAsk.price,
-		m_bestBidAsk[PAIR_BC].bestBid.price,
-		m_bestBidAsk[PAIR_BC].bestAsk.price,
-		m_bestBidAsk[PAIR_AC].bestBid.price,
-		m_bestBidAsk[PAIR_AC].bestAsk.price,
+	GetProduct().CalcYDirection(
+		m_bestBidAsk[PAIR1].bestBid.price,
+		m_bestBidAsk[PAIR1].bestAsk.price,
+		m_bestBidAsk[PAIR2].bestBid.price,
+		m_bestBidAsk[PAIR2].bestAsk.price,
+		m_bestBidAsk[PAIR3].bestBid.price,
+		m_bestBidAsk[PAIR3].bestAsk.price,
 		m_yDetected);
 
 	//! @sa TRDK-209:
@@ -440,13 +440,14 @@ void TriangulationWithDirection::CalcYDirection() {
 		message
 			% m_yDetected[Y1]
 			% m_yDetected[Y2]
-			% m_bestBidAsk[PAIR_AB].bestBid.price
-			% m_bestBidAsk[PAIR_AB].bestAsk.price
-			% m_bestBidAsk[PAIR_BC].bestBid.price
-			% m_bestBidAsk[PAIR_BC].bestAsk.price
-			% m_bestBidAsk[PAIR_AC].bestBid.price
-			% m_bestBidAsk[PAIR_AC].bestAsk.price;
-		throw RiskControlException(message.str().c_str());
+			% m_bestBidAsk[PAIR1].bestBid.price
+			% m_bestBidAsk[PAIR1].bestAsk.price
+			% m_bestBidAsk[PAIR2].bestBid.price
+			% m_bestBidAsk[PAIR2].bestAsk.price
+			% m_bestBidAsk[PAIR3].bestBid.price
+			% m_bestBidAsk[PAIR3].bestAsk.price;
+		Block(message.str());
+		throw trdk::Lib::Exception("Wrong detection detected");
 	}
 
 }
@@ -527,14 +528,7 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 
 	} else {
 			
-		GetProduct().CalcYDirection(
-			m_bestBidAsk[PAIR1].bestBid.price,
-			m_bestBidAsk[PAIR1].bestAsk.price,
-			m_bestBidAsk[PAIR2].bestBid.price,
-			m_bestBidAsk[PAIR2].bestAsk.price,
-			m_bestBidAsk[PAIR3].bestBid.price,
-			m_bestBidAsk[PAIR3].bestAsk.price,
-			m_yDetected);
+		CalcYDirection();
 
 		if (CheckOpportunity(m_yDetected) != Y_UNKNOWN) {
 			m_detectedEcns[Y1][PAIR1] = m_bestBidAsk[PAIR1].bestBid.source;
