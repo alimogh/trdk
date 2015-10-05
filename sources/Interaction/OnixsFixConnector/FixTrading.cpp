@@ -134,26 +134,22 @@ void FixTrading::CreateConnection(const IniSectionRef &conf) {
 	}
 }
 
-namespace {
-	
-	OrderId ParseOrderId(const fix::StringRef &clOrderId) {
-		for (size_t i = clOrderId.size(); i > 0; --i) {
-			if (clOrderId[i - 1] == '.') {
-				return boost::lexical_cast<OrderId>(
-					&clOrderId[i],
-					clOrderId.size() - i);
-			}
+OrderId FixTrading::ParseOrderId(const fix::StringRef &clOrderId) {
+	for (size_t i = clOrderId.size(); i > 0; --i) {
+		if (clOrderId[i - 1] == '.') {
+			return boost::lexical_cast<OrderId>(
+				&clOrderId[i],
+				clOrderId.size() - i);
 		}
-		return 0;
 	}
-
+	return 0;
 }
 
 OrderId FixTrading::GetMessageClOrderId(const fix::Message &message) {
 	return ParseOrderId(message.getStringRef(fix::FIX40::Tags::ClOrdID));
 }
 
-OrderId FixTrading::GetMessageOrigClOrderId(const fix::Message &message) {
+OrderId FixTrading::GetMessageOrigClOrderId(const fix::Message &message) const {
 	return ParseOrderId(message.getStringRef(fix::FIX40::Tags::OrigClOrdID));
 }
 

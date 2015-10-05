@@ -28,10 +28,10 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 	public:
 
 		explicit FixStream(
-				size_t index,
-				Context &,
-				const std::string &tag,
-				const Lib::IniSectionRef &);
+					size_t index,
+					Context &,
+					const std::string &tag,
+					const Lib::IniSectionRef &);
 		virtual ~FixStream();
 
 	public:
@@ -59,7 +59,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					OnixS::FIX::ErrorReason::Enum,
 					const std::string &description,
 					OnixS::FIX::Session *session);
-		virtual void onWarning (
+		virtual void onWarning(
 					OnixS::FIX::WarningReason::Enum,
 					const std::string &description,
 					OnixS::FIX::Session *);
@@ -78,7 +78,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		FixSecurity * FindRequestSecurity(const OnixS::FIX::Message &);
 		const FixSecurity * FindRequestSecurity(
 					const OnixS::FIX::Message &)
-				const;
+					const;
 		
 		std::string GetRequestSymbolStr(const OnixS::FIX::Message &) const;
 
@@ -86,10 +86,9 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		virtual Qty ParseMdEntrySize(const OnixS::FIX::Message &) const;
 
 		virtual void OnMarketDataSnapshot(
-				const OnixS::FIX::Message &,
-				const boost::posix_time::ptime &dataTime,
-				FixSecurity &security)
-			= 0;
+					const OnixS::FIX::Message &,
+					const boost::posix_time::ptime &dataTime,
+					FixSecurity &security);
 
 		virtual void OnLogout() = 0;
 		virtual void OnReconnecting() = 0;

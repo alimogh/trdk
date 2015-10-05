@@ -14,7 +14,9 @@ file(
     FixSession.cpp
     CurrenexStream.cpp
     CurrenexTrading.cpp
-    AlpariStream.cpp)
+    AlpariStream.cpp
+    FastmatchTrading.cpp
+    FastmatchStream.cpp)
 trdk_add_precompiled_header("Prec.h" "Prec.cpp" source_list)
 
 add_library(OnixsFixConnector MODULE ${source_list})

@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2015/04/16 01:38:24
+ *   Created: 2015/09/29 23:37:46
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -20,11 +20,11 @@ using namespace trdk::Interaction::OnixsFixConnector;
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
-	class IntegralStream : public FixStream {
+	class FastmatchStream : public FixStream {
 
 	public:
 
-		explicit IntegralStream(
+		explicit FastmatchStream(
 				size_t index,
 				Context &context,
 				const std::string &tag,
@@ -33,7 +33,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			//...//
 		}
 
-		virtual ~IntegralStream() {
+		virtual ~FastmatchStream() {
 			try {
 				GetSession().Disconnect();
 			} catch (...) {
@@ -56,19 +56,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				const Security &)
 				const {
 			request.set(
-				fix::FIX42::Tags::MDUpdateType,
-				fix::FIX42::Values::MDUpdateType::Full_Refresh);
-			request.set(
 				fix::FIX42::Tags::MarketDepth,
 				// +3 - to get required book size after adjusting.
 				int(GetLevelsCount()) + 3);
 			request.set(
 				fix::FIX42::Tags::AggregatedBook,
 				fix::FIX42::Values::AggregatedBook::one_book_entry_per_side_per_price);
-			request.set(fix::FIX42::Tags::DeliverToCompID, "ALL");
-			request.set(
-				fix::FIX43::Tags::Product,
-				fix::FIX43::Values::Product::CURRENCY);
 		}
 
 	};
@@ -79,13 +72,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
 boost::shared_ptr<MarketDataSource>
-CreateIntegralStream(
+CreateFastmatchStream(
 		size_t index,
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &configuration) {
 	return boost::shared_ptr<MarketDataSource>(
-		new IntegralStream(index, context, tag, configuration));
+		new FastmatchStream(index, context, tag, configuration));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

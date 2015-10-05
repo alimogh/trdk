@@ -57,21 +57,45 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			const auto &replyTime = TimeMeasurement::Milestones::GetNow();
 			Assert(session == &GetSession().Get());
 			UseUnused(session);
-			if (message.type() != "8") {
-				return;
+			try {
+				if (message.type() != "8") {
+					return;
+				}
+				OnExecutionReport(message, replyTime);
+			} catch (const std::exception &ex) {
+				GetLog().Error(
+					"Fatal error"
+						" in the processing of incoming application messages"
+						": \"%1%\".",
+					ex.what());
+				throw;
+			} catch (...) {
+				AssertFailNoException();
+				throw;
 			}
-			OnExecutionReport(message, replyTime);
 		}
 
-		virtual void onInboundSessionMsg (
+		virtual void onInboundSessionMsg(
 				fix::Message &message,
 				fix::Session *session) {
 			Assert(session == &GetSession().Get());
 			UseUnused(session);
-			if (message.type() != "3") {
-				return;
+			try {
+				if (message.type() != "3") {
+					return;
+				}
+				OnReject(message);
+			} catch (const std::exception &ex) {
+				GetLog().Error(
+					"Fatal error"
+						" in the processing of incoming session messages"
+						": \"%1%\".",
+					ex.what());
+				throw;
+			} catch (...) {
+				AssertFailNoException();
+				throw;
 			}
-			OnReject(message);
 		}
 
 	protected:
@@ -138,7 +162,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				fix::FIX40::Tags::Price,
 				security.DescalePrice(price),
 				security.GetPricePrecision());
-			return std::move(order);
+			return order;
 		}
 
 	protected:
@@ -209,10 +233,6 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			GetLog().Error("Unknown Reject received: \"%1%\".", message);
 		}
 
-
-	private:
-
-		const std::string m_account;
 
 	};
 

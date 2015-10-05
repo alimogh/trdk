@@ -276,11 +276,15 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	protected:
 
+		static OrderId ParseOrderId(const OnixS::FIX::StringRef &);
+
 		virtual Qty ParseLastShares(const OnixS::FIX::Message &) const;
 		virtual Qty ParseLeavesQty(const OnixS::FIX::Message &) const;
 
 		static OrderId GetMessageClOrderId(const OnixS::FIX::Message &);
-		static OrderId GetMessageOrigClOrderId(const OnixS::FIX::Message &);
+		virtual OrderId GetMessageOrigClOrderId(
+				const OnixS::FIX::Message &)
+				const;
 
 	private:
 

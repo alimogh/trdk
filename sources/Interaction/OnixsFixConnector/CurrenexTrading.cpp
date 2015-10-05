@@ -55,91 +55,105 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			Assert(session == &GetSession().Get());
 			UseUnused(session);
 
-			if (message.type() != "8") {
-				return;
-			}
+			try {
 
-			const auto &execTransType = message.get(fix::FIX40::Tags::ExecTransType);
-
-			if (execTransType == fix::FIX40::Values::ExecTransType::New) {
-		
-				const auto &execType = message.get(fix::FIX41::Tags::ExecType);
-				const auto &ordStatus = message.get(fix::FIX40::Tags::OrdStatus);
-		
-				if (execType == fix::FIX41::Values::ExecType::New) {
-			
-					if (ordStatus == fix::FIX40::Values::OrdStatus::New) {
-						OnOrderNew(message, replyTime);
-						return;
-					}
-
-				} else if (execType == fix::FIX41::Values::ExecType::Cancelled) {
-
-					if (ordStatus == fix::FIX40::Values::OrdStatus::Canceled) {
-						OnOrderCanceled(
-							message,
-							GetMessageClOrderId(message),
-							replyTime);
-						return;
-					}
-
-				} else if (execType == fix::FIX41::Values::ExecType::Fill) {
-
-					if (ordStatus == fix::FIX40::Values::OrdStatus::Partially_filled) {
-						OnOrderPartialFill(message, replyTime);
-						return;
-					} else if (ordStatus == fix::FIX40::Values::OrdStatus::Filled) {
-						OnOrderFill(message, replyTime);
-						return;
-					}
-
-				} else if (execType == fix::FIX41::Values::ExecType::Suspended) {
-			
-					//...//
-		
-				} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
-					
-#					if defined(BOOST_WINDOWS)
-						//! @todo see TRDK-93 for details
-						const std::string reason
-							= "Unknown reject reason, see TRDK-93 for details";
-#					else
-						const std::string reason
-							= message.get(fix::FIX40::Tags::Text);
-#					endif
-
-					const auto status
-						=	boost::equals(
-									reason,
-									"min amount greater than max amount")
-							?	ORDER_STATUS_REJECTED
-							:	boost::iequals(
-											reason,
-											"maximum operation limit exceeded")
-									?	ORDER_STATUS_INACTIVE
-									:	ORDER_STATUS_ERROR;
-
-
-					OnOrderRejected(message, replyTime, status, reason);
-
+				if (message.type() != "8") {
 					return;
+				}
 
-				} else if (execType == fix::FIX41::Values::ExecType::Expired) {
+				const auto &execTransType = message.get(fix::FIX40::Tags::ExecTransType);
 
-					if (ordStatus == fix::FIX40::Values::OrdStatus::Expired) {
-						OnOrderCanceled(
-							message,
-							GetMessageClOrderId(message),
-							replyTime);
+				if (execTransType == fix::FIX40::Values::ExecTransType::New) {
+		
+					const auto &execType = message.get(fix::FIX41::Tags::ExecType);
+					const auto &ordStatus = message.get(fix::FIX40::Tags::OrdStatus);
+		
+					if (execType == fix::FIX41::Values::ExecType::New) {
+			
+						if (ordStatus == fix::FIX40::Values::OrdStatus::New) {
+							OnOrderNew(message, replyTime);
+							return;
+						}
+
+					} else if (execType == fix::FIX41::Values::ExecType::Cancelled) {
+
+						if (ordStatus == fix::FIX40::Values::OrdStatus::Canceled) {
+							OnOrderCanceled(
+								message,
+								GetMessageClOrderId(message),
+								replyTime);
+							return;
+						}
+
+					} else if (execType == fix::FIX41::Values::ExecType::Fill) {
+
+						if (ordStatus == fix::FIX40::Values::OrdStatus::Partially_filled) {
+							OnOrderPartialFill(message, replyTime);
+							return;
+						} else if (ordStatus == fix::FIX40::Values::OrdStatus::Filled) {
+							OnOrderFill(message, replyTime);
+							return;
+						}
+
+					} else if (execType == fix::FIX41::Values::ExecType::Suspended) {
+			
+						//...//
+		
+					} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
+					
+#						if defined(BOOST_WINDOWS)
+							//! @todo see TRDK-93 for details
+							const std::string reason
+								= "Unknown reject reason, see TRDK-93 for details";
+#						else
+							const std::string reason
+								= message.get(fix::FIX40::Tags::Text);
+#						endif
+
+						const auto status
+							=	boost::equals(
+										reason,
+										"min amount greater than max amount")
+								?	ORDER_STATUS_REJECTED
+								:	boost::iequals(
+												reason,
+												"maximum operation limit exceeded")
+										?	ORDER_STATUS_INACTIVE
+										:	ORDER_STATUS_ERROR;
+
+
+						OnOrderRejected(message, replyTime, status, reason);
+
 						return;
+
+					} else if (execType == fix::FIX41::Values::ExecType::Expired) {
+
+						if (ordStatus == fix::FIX40::Values::OrdStatus::Expired) {
+							OnOrderCanceled(
+								message,
+								GetMessageClOrderId(message),
+								replyTime);
+							return;
+						}
+
 					}
+		
+				} else if (execTransType == fix::FIX40::Values::ExecTransType::Status) {
+		
+					//...//
 
 				}
-		
-			} else if (execTransType == fix::FIX40::Values::ExecTransType::Status) {
-		
-				//...//
 
+			} catch (const std::exception &ex) {
+				GetLog().Error(
+					"Fatal error"
+						" in the processing of incoming application messages"
+						": \"%1%\".",
+					ex.what());
+				throw;
+			} catch (...) {
+				AssertFailNoException();
+				throw;
 			}
 
 			GetLog().Error(
@@ -165,7 +179,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			order.set(
 				fix::FIX40::Tags::OrdType,
 				fix::FIX41::Values::OrdType::Forex_Market);
-			return std::move(order);
+			return order;
 		}
 
 		virtual fix::Message CreateLimitOrderMessage(
@@ -188,7 +202,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				fix::FIX40::Tags::Price,
 				security.DescalePrice(price),
 				security.GetPricePrecision());
-			return std::move(order);
+			return order;
 		}
 
 		virtual void OnLogout() {

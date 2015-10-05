@@ -55,102 +55,116 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			Assert(session == &GetSession().Get());
 			UseUnused(session);
 
-			if (message.type() != "8") {
-				return;
-			}
+			try {
 
-			const auto &execTransType = message.get(fix::FIX40::Tags::ExecTransType);
+				if (message.type() != "8") {
+					return;
+				}
 
-			if (execTransType == fix::FIX40::Values::ExecTransType::New) {
+				const auto &execTransType = message.get(fix::FIX40::Tags::ExecTransType);
+
+				if (execTransType == fix::FIX40::Values::ExecTransType::New) {
 		
-				const auto &execType = message.get(fix::FIX41::Tags::ExecType);
-				const auto &ordStatus = message.get(fix::FIX40::Tags::OrdStatus);
+					const auto &execType = message.get(fix::FIX41::Tags::ExecType);
+					const auto &ordStatus = message.get(fix::FIX40::Tags::OrdStatus);
 		
-				if (execType == fix::FIX41::Values::ExecType::New) {
+					if (execType == fix::FIX41::Values::ExecType::New) {
 			
-					if (
-							ordStatus == fix::FIX42::Values::OrdStatus::Accepted_for_bidding
-							|| ordStatus == fix::FIX40::Values::OrdStatus::New) {
-						OnOrderNew(message, replyTime);
+						if (
+								ordStatus == fix::FIX42::Values::OrdStatus::Accepted_for_bidding
+								|| ordStatus == fix::FIX40::Values::OrdStatus::New) {
+							OnOrderNew(message, replyTime);
+							return;
+						}
+
+					} else if (execType == fix::FIX42::Values::ExecType::Pending_Cancel) {
+
 						return;
+
+					} else if (execType == fix::FIX41::Values::ExecType::Cancelled) {
+
+						OnOrderCanceled(
+							message,
+							GetMessageOrigClOrderId(message),
+							replyTime);
+						return;
+
+					} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
+					
+	#					if defined(BOOST_WINDOWS)
+							//! @todo see TRDK-93 for details
+							const std::string reason
+								= "Unknown reject reason, see TRDK-93 for details";
+	#					else
+							const std::string reason
+								= message.get(fix::FIX40::Tags::Text);
+	#					endif
+						const auto status
+							=	(boost::equals(
+										reason,
+										"MinQty is larger than amount to be opened by this order")
+									||	boost::equals(
+											reason,
+											"Trade quantity must be greater than or equal to the Minimum Trade size."))
+								?	ORDER_STATUS_REJECTED
+								:	boost::istarts_with(
+												reason,
+												"orders are throttled to ")
+										?	ORDER_STATUS_INACTIVE
+										:	ORDER_STATUS_ERROR;
+					
+						OnOrderRejected(message, replyTime, status, reason);
+
+						return;
+
+					} else if (execType == fix::FIX41::Values::ExecType::Expired) {
+
+						if (ordStatus == fix::FIX40::Values::OrdStatus::Expired) {
+							OnOrderCanceled(
+								message,
+								GetMessageClOrderId(message),
+								replyTime);
+							return;
+						}
+				
+					} else if (execType == "F") {
+				
+						// Custom Hotspot exec status "F = Trade"
+					
+						if (ordStatus == fix::FIX40::Values::OrdStatus::Partially_filled) {
+							OnOrderPartialFill(message, replyTime);
+							return;
+						} else if (ordStatus == fix::FIX40::Values::OrdStatus::Filled) {
+							OnOrderFill(message, replyTime);
+							return;
+						}
+				
 					}
 
-				} else if (execType == fix::FIX42::Values::ExecType::Pending_Cancel) {
-
-					return;
-
-				} else if (execType == fix::FIX41::Values::ExecType::Cancelled) {
+				} else if (execTransType == fix::FIX40::Values::ExecTransType::Cancel) {
 
 					OnOrderCanceled(
 						message,
-						GetMessageOrigClOrderId(message),
+						GetMessageClOrderId(message),
 						replyTime);
 					return;
+		
+				} else if (execTransType == fix::FIX40::Values::ExecTransType::Status) {
+		
+					//...//
 
-				} else if (execType == fix::FIX41::Values::ExecType::Rejected) {
-					
-#					if defined(BOOST_WINDOWS)
-						//! @todo see TRDK-93 for details
-						const std::string reason
-							= "Unknown reject reason, see TRDK-93 for details";
-#					else
-						const std::string reason
-							= message.get(fix::FIX40::Tags::Text);
-#					endif
-					const auto status
-						=	(boost::equals(
-									reason,
-									"MinQty is larger than amount to be opened by this order")
-								||	boost::equals(
-										reason,
-										"Trade quantity must be greater than or equal to the Minimum Trade size."))
-							?	ORDER_STATUS_REJECTED
-							:	boost::istarts_with(
-											reason,
-											"orders are throttled to ")
-									?	ORDER_STATUS_INACTIVE
-									:	ORDER_STATUS_ERROR;
-					
-					OnOrderRejected(message, replyTime, status, reason);
-
-					return;
-
-				} else if (execType == fix::FIX41::Values::ExecType::Expired) {
-
-					if (ordStatus == fix::FIX40::Values::OrdStatus::Expired) {
-						OnOrderCanceled(
-							message,
-							GetMessageClOrderId(message),
-							replyTime);
-						return;
-					}
-				
-				} else if (execType == "F") {
-				
-					// Custom Hotspot exec status "F = Trade"
-					
-					if (ordStatus == fix::FIX40::Values::OrdStatus::Partially_filled) {
-						OnOrderPartialFill(message, replyTime);
-						return;
-					} else if (ordStatus == fix::FIX40::Values::OrdStatus::Filled) {
-						OnOrderFill(message, replyTime);
-						return;
-					}
-				
 				}
 
-			} else if (execTransType == fix::FIX40::Values::ExecTransType::Cancel) {
-
-				OnOrderCanceled(
-					message,
-					GetMessageClOrderId(message),
-					replyTime);
-				return;
-		
-			} else if (execTransType == fix::FIX40::Values::ExecTransType::Status) {
-		
-				//...//
-
+			} catch (const std::exception &ex) {
+				GetLog().Error(
+					"Fatal error"
+						" in the processing of incoming application messages"
+						": \"%1%\".",
+					ex.what());
+				throw;
+			} catch (...) {
+				AssertFailNoException();
+				throw;
 			}
 
 			GetLog().Error(
@@ -176,7 +190,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			order.set(
 				fix::FIX40::Tags::OrdType,
 				fix::FIX41::Values::OrdType::Forex_Market);
-			return std::move(order);
+			return order;
 		}
 
 		virtual fix::Message CreateLimitOrderMessage(
@@ -199,7 +213,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				fix::FIX40::Tags::Price,
 				security.DescalePrice(price),
 				security.GetPricePrecision());
-			return std::move(order);
+			return order;
 		}
 
 		virtual void OnLogout() {

@@ -234,149 +234,163 @@ void FixStream::onInboundApplicationMsg(
 	Assert(session == &m_session.Get());
 	UseUnused(session);
 
-	if (message.type() == "Y") {
+	FixSecurity *security = nullptr;
+
+	try {
+
+		if (message.type() == "Y") {
 		
-		GetLog().Error(
-			"Failed to subscribe to %1% market data: \"%2%\".",
-			GetRequestSymbolStr(message),
-			message.get(fix::FIX42::Tags::MDReqRejReason));
-		return;
-
-	}
-
-	FixSecurity *security;
-	
-	if (message.type() == "X") {
-
-		security = FindRequestSecurity(message);
-		if (!security) {
+			GetLog().Error(
+				"Failed to subscribe to %1% market data: \"%2%\".",
+				GetRequestSymbolStr(message),
+				message.get(fix::FIX42::Tags::MDReqRejReason));
 			return;
+
 		}
+
+		if (message.type() == "X") {
+
+			security = FindRequestSecurity(message);
+			if (!security) {
+				return;
+			}
 		
-		const fix::Group &entries
-			= message.getGroup(fix::FIX42::Tags::NoMDEntries);
-		AssertLt(0, entries.size());
-		for (size_t i = 0; i < entries.size(); ++i) {
+			const fix::Group &entries
+				= message.getGroup(fix::FIX42::Tags::NoMDEntries);
+			AssertLt(0, entries.size());
+			for (size_t i = 0; i < entries.size(); ++i) {
 
-			const auto &entry = entries[i];
-			auto entryId = entry.getInt64(fix::FIX42::Tags::MDEntryID);
-			const auto &action = entry.get(fix::FIX42::Tags::MDUpdateAction);
+				const auto &entry = entries[i];
+				auto entryId = entry.getInt64(fix::FIX42::Tags::MDEntryID);
+				const auto &action = entry.get(fix::FIX42::Tags::MDUpdateAction);
 
-			if (action == fix::FIX42::Values::MDUpdateAction::Change) {
+				if (action == fix::FIX42::Values::MDUpdateAction::Change) {
 
-				const auto &qty = ParseMdEntrySize(entry);
-				if (IsZero(qty)) {
-					GetLog().Warn(
-						"Price level with zero-qty received for %1%: \"%2%\".",
-						*security,
-						message);
-					continue;
-				}
+					const auto &qty = ParseMdEntrySize(entry);
+					if (IsZero(qty)) {
+						GetLog().Warn(
+							"Price level with zero-qty received for %1%: \"%2%\".",
+							*security,
+							message);
+						continue;
+					}
 
-				const auto price = entry.getDouble(fix::FIX42::Tags::MDEntryPx);
-				bool isHandled = false;
+					const auto price = entry.getDouble(fix::FIX42::Tags::MDEntryPx);
+					bool isHandled = false;
 
-				if (entry.contain(fix::FIX42::Tags::MDEntryRefID)) {
+					if (entry.contain(fix::FIX42::Tags::MDEntryRefID)) {
 					
-					const auto entryRefId
-						= entry.getInt64(fix::FIX42::Tags::MDEntryRefID);
-					if (entryRefId != 1) {
-						isHandled = true;
-						auto pos = security->m_book.find(entryRefId);
-						if (pos == security->m_book.end()) {
-							GetLog().Error(
-								"Failed to delete price level with ref."
-									" ID %1% for %2%.",
-								entryRefId,
-								*security);
-						} else {
-							security->m_book.erase(pos);
+						const auto entryRefId
+							= entry.getInt64(fix::FIX42::Tags::MDEntryRefID);
+						if (entryRefId != 1) {
+							isHandled = true;
+							auto pos = security->m_book.find(entryRefId);
+							if (pos == security->m_book.end()) {
+								GetLog().Error(
+									"Failed to delete price level with ref."
+										" ID %1% for %2%.",
+									entryRefId,
+									*security);
+							} else {
+								security->m_book.erase(pos);
+							}
+							security->m_book[entryId] = std::make_pair(
+								entry.get(fix::FIX42::Tags::MDEntryType)
+									== fix::FIX42::Values::MDEntryType::Bid,
+								Security::Book::Level(
+									now,
+									entry.getDouble(fix::FIX42::Tags::MDEntryPx),
+									ParseMdEntrySize(entry)));
 						}
-						security->m_book[entryId] = std::make_pair(
-							entry.get(fix::FIX42::Tags::MDEntryType)
-								== fix::FIX42::Values::MDEntryType::Bid,
-							Security::Book::Level(
-								now,
-								entry.getDouble(fix::FIX42::Tags::MDEntryPx),
-								ParseMdEntrySize(entry)));
+				
 					}
 				
-				}
-				
-				if (!isHandled) {
+					if (!isHandled) {
+
+						auto pos = security->m_book.find(entryId);
+						if (pos == security->m_book.end()) {
+							GetLog().Error(
+								"Failed to change price level"
+									" with ID %1%, price %2% and qty %3% for %4%.",
+								entryId,
+								price,
+								qty,
+								*security);
+							continue;
+						}
+
+						(*pos).second = std::make_pair(
+							entry.get(fix::FIX42::Tags::MDEntryType)
+								== fix::FIX42::Values::MDEntryType::Bid,
+							Security::Book::Level(now, price, qty));
+
+					}
+
+				} else if (action == fix::FIX42::Values::MDUpdateAction::New) {
+
+					const auto &qty = ParseMdEntrySize(entry);
+					if (IsZero(qty)) {
+						GetLog().Warn(
+							"Price level with zero-qty received for %1%: \"%2%\".",
+							*security,
+							message);
+						continue;
+					}
+
+					security->m_book[entryId] = std::make_pair(
+						entry.get(fix::FIX42::Tags::MDEntryType)
+							== fix::FIX42::Values::MDEntryType::Bid,
+						Security::Book::Level(
+							now,
+							entry.getDouble(fix::FIX42::Tags::MDEntryPx),
+							qty));
+
+				} else  if (action == fix::FIX42::Values::MDUpdateAction::Delete) {
 
 					auto pos = security->m_book.find(entryId);
 					if (pos == security->m_book.end()) {
 						GetLog().Error(
-							"Failed to change price level"
-								" with ID %1%, price %2% and qty %3% for %4%.",
+							"Failed to delete price level with ID %1% for %2%.",
 							entryId,
-							price,
-							qty,
 							*security);
 						continue;
 					}
+					security->m_book.erase(pos);
 
-					(*pos).second = std::make_pair(
-						entry.get(fix::FIX42::Tags::MDEntryType)
-							== fix::FIX42::Values::MDEntryType::Bid,
-						Security::Book::Level(now, price, qty));
+				} else {
 
-				}
-
-			} else if (action == fix::FIX42::Values::MDUpdateAction::New) {
-
-				const auto &qty = ParseMdEntrySize(entry);
-				if (IsZero(qty)) {
-					GetLog().Warn(
-						"Price level with zero-qty received for %1%: \"%2%\".",
-						*security,
-						message);
+					AssertFail("Unknown entry type.");
 					continue;
+
 				}
-
-				security->m_book[entryId] = std::make_pair(
-					entry.get(fix::FIX42::Tags::MDEntryType)
-						== fix::FIX42::Values::MDEntryType::Bid,
-					Security::Book::Level(
-						now,
-						entry.getDouble(fix::FIX42::Tags::MDEntryPx),
-						qty));
-
-			} else  if (action == fix::FIX42::Values::MDUpdateAction::Delete) {
-
-				auto pos = security->m_book.find(entryId);
-				if (pos == security->m_book.end()) {
-					GetLog().Error(
-						"Failed to delete price level with ID %1% for %2%.",
-						entryId,
-						*security);
-					continue;
-				}
-				security->m_book.erase(pos);
-
-			} else {
-
-				AssertFail("Unknown entry type.");
-				continue;
 
 			}
 
-		}
+		} else if (message.type() == "W") {
 
-	} else if (message.type() == "W") {
+			security = FindRequestSecurity(message);
+			if (!security) {
+				return;
+			}
 
-		security = FindRequestSecurity(message);
-		if (!security) {
-			return;
-		}
+			OnMarketDataSnapshot(message, now, *security);
 
-		OnMarketDataSnapshot(message, now, *security);
-
-	} else {
+		} else {
 		
-		return;
+			return;
 	
+		}
+
+	} catch (const std::exception &ex) {
+		GetLog().Error(
+			"Fatal error"
+				" in the processing of incoming application messages"
+				": \"%1%\".",
+			ex.what());
+		throw;
+	} catch (...) {
+		AssertFailNoException();
+		throw;
 	}
 
 	Assert(security);
@@ -415,7 +429,7 @@ void FixStream::onInboundApplicationMsg(
 #	if defined(DEV_VER) && 0
 	{
 		if (	
-				GetTag() == "Integral"
+				GetTag() == "Fastmatch"
 				&& security->GetSymbol().GetSymbol() == "EUR/USD") {
 			std::cout
 				<< "############################### "
@@ -507,6 +521,63 @@ void FixStream::onInboundApplicationMsg(
 	book.Commit(timeMeasurement);
 
 	security->DumpAdjustedBook();
+
+}
+
+void FixStream::OnMarketDataSnapshot(
+		const fix::Message &message,
+		const boost::posix_time::ptime &dataTime,
+		FixSecurity &security) {
+
+	FixSecurity::BookSideSnapshot book;
+			
+	const fix::Group &entries
+		= message.getGroup(fix::FIX42::Tags::NoMDEntries);
+	for (size_t i = 0; i < entries.size(); ++i) {
+
+		const auto &entry = entries[i];
+
+		if (
+				entry.get(fix::FIX42::Tags::QuoteCondition)
+					!= fix::FIX42::Values::QuoteCondition::Open_Active) {
+			GetTradingLog().Write(
+				"Inactive stream for %1%.",
+				[&security](TradingRecord &record)  {
+					record % security;
+				});
+		}
+
+
+		const double price
+			= entry.getDouble(fix::FIX42::Tags::MDEntryPx);
+		if (IsZero(price)) {
+			GetTradingLog().Write(
+				"Price level with zero-price received for %1%.",
+				[&security](TradingRecord &record)  {
+					record % security;
+				});
+			continue;
+		}
+
+		const auto &qty = ParseMdEntrySize(entry);
+		if (IsZero(qty)) {
+			GetTradingLog().Write(
+				"Price level with zero-qty received for %1%.",
+				[&security](TradingRecord &record)  {
+					record % security;
+				});
+			continue;
+		}
+
+		Assert(book.find(security.ScalePrice(price)) == book.end());
+		book[security.ScalePrice(price)] = std::make_pair(
+			entry.get(fix::FIX42::Tags::MDEntryType)
+				== fix::FIX42::Values::MDEntryType::Bid,
+			Security::Book::Level(dataTime, price, qty));
+
+	}
+
+	book.swap(security.m_book);
 
 }
 

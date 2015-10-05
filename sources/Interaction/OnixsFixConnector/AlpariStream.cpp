@@ -78,7 +78,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				= message.getGroup(fix::FIX42::Tags::NoMDEntries);
 			if (entries.size() != 1) {
 				GetLog().Error(
-					"Wring Market Data Snapshot size for %1%: %2% (%3%).",
+					"Wrong Market Data Snapshot size for %1%: %2% (%3%).",
 					security,
 					entries.size(),
 					message);

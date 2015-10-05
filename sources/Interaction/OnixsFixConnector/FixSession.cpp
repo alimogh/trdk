@@ -177,9 +177,11 @@ void FixSession::Connect(
 		m_customLogonMessage.set(fix::FIX43::Tags::Username, username);
 	}
 
-	m_customLogonMessage.set(
-		fix::FIX43::Tags::Password,
-		conf.ReadKey("password"));
+	if (conf.IsKeyExist("password")) {
+		m_customLogonMessage.set(
+			fix::FIX43::Tags::Password,
+			conf.ReadKey("password"));
+	}
 
 	// Asynchronous calls from FIX engine, must be in field before connected:
 	session.swap(m_session);
