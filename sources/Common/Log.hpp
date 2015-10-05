@@ -135,9 +135,9 @@ namespace trdk { namespace Lib {
 			}
 			os << time;
 #			ifdef BOOST_WINDOWS
-				os << " [";
+				os << "\t[";
 #			else
-				os << " [0x" << std::ios::hex;
+				os << "\t[0x" << std::ios::hex;
 #			endif
 			os << threadId << "]:\t";
 			if (module) {
