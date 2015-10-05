@@ -263,13 +263,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				double abBidPrice,
 				double cbBidPrice,
 				double acAskPrice) {
-			if (Lib::IsZero(cbBidPrice) || Lib::IsZero(acAskPrice)) {
+			if (Lib::IsZero(abBidPrice)) {
 				return 0;
 			}
-			const auto result = abBidPrice * (1 / cbBidPrice) * (1 / acAskPrice);
+			const auto result = abBidPrice * cbBidPrice * (1 / acAskPrice);
 			AssertGt(1.1, result);
 #				ifdef BOOST_ENABLE_ASSERT_HANDLER
-					if (!Lib::IsZero(abBidPrice)) {
+					if (!Lib::IsZero(cbBidPrice) && !Lib::IsZero(acAskPrice)) {
 						AssertLt(.9, result);
 					}
 #				endif
@@ -280,13 +280,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				double abAskPrice,
 				double cbAskPrice,
 				double acBidPrice) {
-			if (Lib::IsZero(cbAskPrice) || Lib::IsZero(acBidPrice)) {
+			if (Lib::IsZero(abAskPrice)) {
 				return 0;
 			}
-			const auto result = abAskPrice * (1 / cbAskPrice) * (1 / acBidPrice);
+			const auto result = (1 / abAskPrice) * cbAskPrice * acBidPrice;
 			AssertGt(1.1, result);
 #				ifdef BOOST_ENABLE_ASSERT_HANDLER
-					if (!Lib::IsZero(abAskPrice)) {
+					if (!Lib::IsZero(cbAskPrice) && !Lib::IsZero(acBidPrice)) {
 						AssertLt(.9, result);
 					}
 #				endif	
@@ -411,7 +411,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				investmentCurrency,
 				pair3.GetSymbol().GetFotBaseCurrency());
 			AssertEq(
-				pair2.GetSymbol().GetFotQuoteCurrency(),
+				pair2.GetSymbol().GetFotBaseCurrency(),
 				pair3.GetSymbol().GetFotQuoteCurrency());
 			AssertNe(
 				investmentCurrency,
