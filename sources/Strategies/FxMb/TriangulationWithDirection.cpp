@@ -410,6 +410,38 @@ bool TriangulationWithDirection::CheckStopRequest(const StopMode &stopMode) {
 	}
 }
 
+void TriangulationWithDirection::CalcYDirection() {
+
+	Twd::CalcYDirection(
+		m_bestBidAsk[PAIR_AB].bestBid.price,
+		m_bestBidAsk[PAIR_AB].bestAsk.price,
+		m_bestBidAsk[PAIR_BC].bestBid.price,
+		m_bestBidAsk[PAIR_BC].bestAsk.price,
+		m_bestBidAsk[PAIR_AC].bestBid.price,
+		m_bestBidAsk[PAIR_AC].bestAsk.price,
+		m_yDetected);
+
+	//! @sa TRDK-209:
+	const auto maxAllowedY = 1.00095;
+	if (m_yDetected[Y1] > maxAllowedY || m_yDetected[Y2] > maxAllowedY) {
+		boost::format message(
+			"Wrong detection detected: %1%/%2%"
+				" by prices %3%/%4%, %5%/%6% and %7%/%8%");
+		message
+			% m_yDetected[Y1]
+			% m_yDetected[Y2]
+			% m_bestBidAsk[PAIR_AB].bestBid.price
+			% m_bestBidAsk[PAIR_AB].bestAsk.price
+			% m_bestBidAsk[PAIR_BC].bestBid.price
+			% m_bestBidAsk[PAIR_BC].bestAsk.price
+			% m_bestBidAsk[PAIR_AC].bestBid.price
+			% m_bestBidAsk[PAIR_AC].bestAsk.price;
+		Block(message.str());
+		throw trdk::Lib::Exception("Wrong detection detected");
+	}
+
+}
+
 void TriangulationWithDirection::UpdateDirection(const Service &service) {
 		
 	auto bestBidAskIt = std::find_if(
@@ -486,14 +518,7 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 
 	} else {
 			
-		CalcYDirection(
-			m_bestBidAsk[PAIR_AB].bestBid.price,
-			m_bestBidAsk[PAIR_AB].bestAsk.price,
-			m_bestBidAsk[PAIR_BC].bestBid.price,
-			m_bestBidAsk[PAIR_BC].bestAsk.price,
-			m_bestBidAsk[PAIR_AC].bestBid.price,
-			m_bestBidAsk[PAIR_AC].bestAsk.price,
-			m_yDetected);
+		CalcYDirection();
 
 		if (CheckOpportunity(m_yDetected) != Y_UNKNOWN) {
 			m_detectedEcns[Y1][PAIR_AB] = m_bestBidAsk[PAIR_AB].bestBid.source;
@@ -1165,8 +1190,7 @@ void TriangulationWithDirection::OnLeg3Execution(trdk::Position &position) {
 #	endif
 
 	if (m_trianglesRest != nTrianglesLimit && m_trianglesRest-- <= 1) {
-		GetLog().Info("Executed triangles limit reached.");
-		Block();
+		Block("Executed triangles limit reached");
 	} else {
 		const auto winsCount = accs::count(m_stat.winners);
 		const auto trianglesCount = winsCount + accs::count(m_stat.losers);

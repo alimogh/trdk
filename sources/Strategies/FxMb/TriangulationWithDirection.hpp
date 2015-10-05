@@ -71,6 +71,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	private:
 
 		void UpdateDirection(const Service &);
+		void CalcYDirection();
 
 		bool Detect(Detection &result) const;
 		bool DetectByY1(Detection &result) const;
