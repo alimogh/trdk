@@ -258,6 +258,7 @@ add_subdirectory(${TRDK_SOURCES_DIR}/Interaction/Fake)
 add_subdirectory(${TRDK_SOURCES_DIR}/Interaction/OnixsFixConnector)
 add_subdirectory(${TRDK_SOURCES_DIR}/Interaction/Itch)
 
+add_subdirectory(${TRDK_SOURCES_DIR}/Strategies/Test)
 add_subdirectory(${TRDK_SOURCES_DIR}/Strategies/FxMb)
 
 ################################################################################
