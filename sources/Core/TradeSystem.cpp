@@ -391,7 +391,7 @@ OrderId TradeSystem::SellAtMarketPrice(
 			currency,
 			qty,
 			params,
-			[&, riskControlOperationId, supposedPrice, timeMeasurement, callback](
+			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -458,7 +458,7 @@ OrderId TradeSystem::Sell(
 			qty,
 			price,
 			params,
-			[&, riskControlOperationId, price, timeMeasurement, callback](
+			[&, riskControlOperationId, currency, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -527,7 +527,7 @@ OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 			qty,
 			stopPrice,
 			params,
-			[&, riskControlOperationId, supposedPrice, timeMeasurement, callback](
+			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -594,7 +594,7 @@ OrderId TradeSystem::SellImmediatelyOrCancel(
 			qty,
 			price,
 			params,
-			[&, riskControlOperationId, price, timeMeasurement, callback](
+			[&, riskControlOperationId, currency, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -661,7 +661,7 @@ OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 			currency,
 			qty,
 			params,
-			[&, riskControlOperationId, supposedPrice, timeMeasurement, callback](
+			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -728,7 +728,7 @@ OrderId TradeSystem::BuyAtMarketPrice(
 			currency,
 			qty,
 			params,
-			[&, riskControlOperationId, supposedPrice, timeMeasurement, callback](
+			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -795,7 +795,7 @@ OrderId TradeSystem::Buy(
 			qty,
 			price,
 			params,
-			[&, riskControlOperationId, price, timeMeasurement, callback](
+			[&, riskControlOperationId, currency, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -864,7 +864,7 @@ OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 			qty,
 			stopPrice,
 			params,
-			[&, riskControlOperationId, supposedPrice, timeMeasurement, callback](
+			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -931,7 +931,7 @@ OrderId TradeSystem::BuyImmediatelyOrCancel(
 			qty,
 			price,
 			params,
-			[&, riskControlOperationId, price, timeMeasurement, callback](
+			[&, riskControlOperationId, currency, price, timeMeasurement, callback](
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -998,7 +998,7 @@ OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 			currency,
 			qty,
 			params,
-			[&, riskControlOperationId, supposedPrice, timeMeasurement, callback](
+			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
 					const OrderStatus &orderStatus,
