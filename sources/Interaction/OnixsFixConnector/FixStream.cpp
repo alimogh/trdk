@@ -35,7 +35,7 @@ FixStream::FixStream(
 }
 
 FixStream::~FixStream() {
-	// Each object, that implements CreateNewSecurityObject should waite for
+	// Each object, that implements CreateNewSecurityObject should wait for
 	// log flushing before destroying objects:
 	GetTradingLog().WaitForFlush();
 }
@@ -85,6 +85,12 @@ std::string FixStream::GetRequestSymbolStr(
 }
 
 void FixStream::SubscribeToSecurities() {
+
+	const StateLock lock(m_stateMutex);
+	if (m_state != fix::SessionState::Active) {
+		m_isSubscribed = true;
+		return;
+	}
 
 	GetLog().Info(
 		"Sending Market Data Requests for %1% securities...",
@@ -148,6 +154,11 @@ void FixStream::onStateChange(
 			fix::SessionState::Enum newState,
 			fix::SessionState::Enum prevState,
 			fix::Session *session) {
+
+	{
+		const StateLock lock(m_stateMutex);
+		m_state = newState;
+	}
 
 	Assert(session == &m_session.Get());
 	m_session.LogStateChange(newState, prevState, *session);

@@ -132,7 +132,7 @@ Context & Server::Run(
 
 	} catch (const trdk::Lib::Exception &ex) {
 		if (info.eventsLog) {
-			info.eventsLog->Warn(
+			info.eventsLog->Error(
 				"Failed to init engine context: \"%1%\".",
 				ex.what());
 		}

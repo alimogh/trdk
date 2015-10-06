@@ -21,6 +21,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			: public trdk::MarketDataSource,
 			public OnixS::FIX::ISessionListener {
 
+	private:
+
+		typedef boost::mutex StateMutex;
+		typedef StateMutex::scoped_lock StateLock;
+
 	public:
 
 		using Interactor::Error;
@@ -109,6 +114,9 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		bool m_isSubscribed;
 
 		const size_t m_bookLevelsCount;
+
+		StateMutex m_stateMutex;
+		OnixS::FIX::SessionState::Enum m_state;
 
 	};
 

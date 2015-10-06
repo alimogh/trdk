@@ -111,8 +111,8 @@ FixSession::~FixSession() {
 }
 
 void FixSession::Connect(
-			const IniSectionRef &conf,
-			fix::ISessionListener &listener) {
+		const IniSectionRef &conf,
+		fix::ISessionListener &listener) {
 
 	Assert(!m_session);
 
