@@ -233,6 +233,15 @@ private:
 				} catch (const boost::bad_lexical_cast &) {
 					throw Exception("Failed to parse order ID to replace");
 				}
+			} else if (boost::iequals(cmd, "min-qty")) {
+				if (m_minQty) {
+					throw Exception("Min qty already set");
+				}
+				try {
+					m_minQty = boost::lexical_cast<Qty>(val);
+				} catch (const boost::bad_lexical_cast &) {
+					throw Exception("Failed to parse min qty value");
+				}
 			} else {
 				throw Exception("Unknown command");
 			}
@@ -292,7 +301,10 @@ private:
 			OrderParams result;
 			result.isManualOrder = true;
 			if (m_replaceOrderId) {
-				result.orderIdToReplace = m_replaceOrderId;
+				result.orderIdToReplace = *m_replaceOrderId;
+			}
+			if (m_minQty) {
+				result.minTradeQty = *m_minQty;
 			}
 			return std::move(result);
 		}
@@ -305,6 +317,7 @@ private:
 	private:
 		Currency m_currency;
 		boost::optional<OrderId> m_replaceOrderId;
+		boost::optional<Qty> m_minQty;
 	};
 
 	class SellCommand : public OrderCommand {
