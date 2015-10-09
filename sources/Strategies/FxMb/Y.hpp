@@ -261,12 +261,12 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		static double CalcY1ByPrice(
 				double abBidPrice,
-				double cbBidPrice,
+				double cbAskPrice,
 				double acAskPrice) {
-			if (Lib::IsZero(cbBidPrice) || Lib::IsZero(acAskPrice)) {
+			if (Lib::IsZero(cbAskPrice) || Lib::IsZero(acAskPrice)) {
 				return 0;
 			}
-			const auto result = abBidPrice * (1 / cbBidPrice) * (1 / acAskPrice);
+			const auto result = abBidPrice * (1 / cbAskPrice) * (1 / acAskPrice);
 			AssertGt(1.1, result);
 #			ifdef BOOST_ENABLE_ASSERT_HANDLER
 				if (!Lib::IsZero(abBidPrice)) {
@@ -277,16 +277,16 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		}
 
 		static double CalcY2ByPrice(
-				double abAskPrice,
-				double cbAskPrice,
-				double acBidPrice) {
-			if (Lib::IsZero(abAskPrice)) {
+				double abBidPrice,
+				double cbBidPrice,
+				double acAskPrice) {
+			if (Lib::IsZero(cbBidPrice) || Lib::IsZero(acAskPrice)) {
 				return 0;
 			}
-			const auto result = (1 / abAskPrice) * cbAskPrice * acBidPrice;
+			const auto result = abBidPrice * (1 / cbBidPrice) * (1 / acAskPrice);
 			AssertGt(1.1, result);
 #			ifdef BOOST_ENABLE_ASSERT_HANDLER
-				if (!Lib::IsZero(cbAskPrice) && !Lib::IsZero(acBidPrice)) {
+				if (!Lib::IsZero(abBidPrice)) {
 					AssertLt(.9, result);
 				}
 #			endif	
@@ -299,7 +299,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Security &ac) {
 			return CalcY1ByPrice(
 				ab.GetBidPrice(),
-				cb.GetBidPrice(),
+				cb.GetAskPrice(),
 				ac.GetAskPrice());
 		}
 
@@ -308,9 +308,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Security &cb,
 				const Security &ac) {
 			return CalcY2ByPrice(
-				ab.GetAskPrice(),
-				cb.GetAskPrice(),
-				ac.GetBidPrice());
+				ab.GetBidPrice(),
+				cb.GetBidPrice(),
+				ac.GetAskPrice());
 		}
 
 		static  void CalcYDirectionByPrice(
@@ -321,8 +321,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				double acBidPrice,
 				double acAskPrice,
 				YDirection &result) {
-			const auto y1 = CalcY1ByPrice(abBidPrice, cbBidPrice, acAskPrice);
-			result[Y2] = CalcY2ByPrice(abAskPrice, cbAskPrice, acBidPrice);
+			const auto y1 = CalcY1ByPrice(abBidPrice, cbAskPrice, acAskPrice);
+			result[Y2] = CalcY2ByPrice(abBidPrice, cbBidPrice, acAskPrice);
 			result[Y1] = y1;
 		}
 
