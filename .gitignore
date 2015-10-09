@@ -1,7 +1,6 @@
 /output
 *.suo
 *.user
-/sources/PyApi/Python/.idea
 /sources/ipch
 *.pyc
 /sources/*.opensdf
