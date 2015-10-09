@@ -446,8 +446,7 @@ void TriangulationWithDirection::CalcYDirection() {
 			% m_bestBidAsk[PAIR2].bestAsk.price
 			% m_bestBidAsk[PAIR3].bestBid.price
 			% m_bestBidAsk[PAIR3].bestAsk.price;
-		Block(message.str());
-		throw trdk::Lib::Exception("Wrong detection detected");
+		throw RiskControlException(message.str().c_str());
 	}
 
 }
