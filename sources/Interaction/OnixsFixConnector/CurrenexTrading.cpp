@@ -26,13 +26,17 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	public:
 
+		typedef FixTrading Base;
+
+	public:
+
 		explicit CurrenexTrading(
 				const TradingMode &mode,
 				size_t index,
 				Context &context,
 				const std::string &tag,
 				const Lib::IniSectionRef &conf)
-			: FixTrading(mode, index, context, tag, conf) {
+			: Base(mode, index, context, tag, conf) {
 			//...//
 		}
 		
@@ -164,6 +168,34 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	protected:
 
+		virtual OnixS::FIX::Message CreateOrderMessage(
+				const std::string &clOrderId,
+				const Security &security,
+				const Currency &currency,
+				const Qty &qty,
+				const OrderParams &orderParams) {
+			auto result = Base::CreateOrderMessage(
+				clOrderId,
+				security,
+				currency,
+				qty,
+				orderParams);
+			switch (security.GetSymbol().GetSecurityType()) {
+				case Symbol::SECURITY_TYPE_FOR_FUTURE_OPTION:
+				case Symbol::SECURITY_TYPE_FOR_SPOT:
+					result.set(
+						fix::FIX43::Tags::Product,
+						fix::FIX43::Values::Product::CURRENCY);
+					break;
+				default:
+					GetLog().Error(
+						"Unsupported product type for order: %1%.",
+						security);
+					throw Error("Unsupported product type for order");
+			}
+			return result;
+		}
+
 		virtual fix::Message CreateMarketOrderMessage(
 					const std::string &clOrderId,
 					const Security &security,
@@ -183,12 +215,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		}
 
 		virtual fix::Message CreateLimitOrderMessage(
-					const std::string &clOrderId,
-					const Security &security,
-					const Currency &currency,
-					const Qty &qty,
-					const ScaledPrice &price,
-					const trdk::OrderParams &params) {
+				const std::string &clOrderId,
+				const Security &security,
+				const Currency &currency,
+				const Qty &qty,
+				const ScaledPrice &price,
+				const trdk::OrderParams &params) {
 			fix::Message order = CreateOrderMessage(
 				clOrderId,
 				security,
