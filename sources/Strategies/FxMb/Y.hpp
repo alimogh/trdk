@@ -68,11 +68,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			}
 			const auto result = abBidPrice * bcBidPrice * (1 / acAskPrice);
 			AssertGt(1.1, result);
-#				ifdef BOOST_ENABLE_ASSERT_HANDLER
-					if (!Lib::IsZero(abBidPrice)  && !Lib::IsZero(bcBidPrice)) {
-						AssertLt(.9, result);
-					}
-#				endif
+#			ifdef BOOST_ENABLE_ASSERT_HANDLER
+				if (!Lib::IsZero(abBidPrice)  && !Lib::IsZero(bcBidPrice)) {
+					AssertLt(.9, result);
+				}
+#			endif
 			return result;
 		}
 
@@ -85,11 +85,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			}
 			const auto result = acBidPrice * (1 / bcAskPrice) * (1 / abAskPrice);
 			AssertGt(1.1, result);
-#				ifdef BOOST_ENABLE_ASSERT_HANDLER
-					if (!Lib::IsZero(acBidPrice)) {
-						AssertLt(.9, result);
-					}
-#				endif	
+#			ifdef BOOST_ENABLE_ASSERT_HANDLER
+				if (!Lib::IsZero(acBidPrice)) {
+					AssertLt(.9, result);
+				}
+#			endif	
 			return result;
 		}
 		static  double CalcY1BySecurity(
@@ -263,16 +263,16 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				double abBidPrice,
 				double cbBidPrice,
 				double acAskPrice) {
-			if (Lib::IsZero(abBidPrice)) {
+			if (Lib::IsZero(cbBidPrice) || Lib::IsZero(acAskPrice)) {
 				return 0;
 			}
-			const auto result = abBidPrice * cbBidPrice * (1 / acAskPrice);
+			const auto result = abBidPrice * (1 / cbBidPrice) * (1 / acAskPrice);
 			AssertGt(1.1, result);
-#				ifdef BOOST_ENABLE_ASSERT_HANDLER
-					if (!Lib::IsZero(cbBidPrice) && !Lib::IsZero(acAskPrice)) {
-						AssertLt(.9, result);
-					}
-#				endif
+#			ifdef BOOST_ENABLE_ASSERT_HANDLER
+				if (!Lib::IsZero(abBidPrice)) {
+					AssertLt(.9, result);
+				}
+#			endif
 			return result;
 		}
 
@@ -285,11 +285,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			}
 			const auto result = (1 / abAskPrice) * cbAskPrice * acBidPrice;
 			AssertGt(1.1, result);
-#				ifdef BOOST_ENABLE_ASSERT_HANDLER
-					if (!Lib::IsZero(cbAskPrice) && !Lib::IsZero(acBidPrice)) {
-						AssertLt(.9, result);
-					}
-#				endif	
+#			ifdef BOOST_ENABLE_ASSERT_HANDLER
+				if (!Lib::IsZero(cbAskPrice) && !Lib::IsZero(acBidPrice)) {
+					AssertLt(.9, result);
+				}
+#			endif	
 			return result;
 		}
 
