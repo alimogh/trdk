@@ -161,7 +161,7 @@ namespace trdk {
 
 	public:
 
-		class Exception : public trdk::Lib::Exception {
+		class Exception : public trdk::Lib::RiskControlException {
 		public:
 			explicit Exception(const char *what) throw();
 		};

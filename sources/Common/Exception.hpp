@@ -68,6 +68,13 @@ namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
+	class RiskControlException : public trdk::Lib::Exception {
+	public:
+		explicit RiskControlException(const char *what) throw();
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+
 } }
 
 namespace std {

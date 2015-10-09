@@ -426,7 +426,7 @@ void TriangulationWithDirection::CalcYDirection() {
 	if (m_yDetected[Y1] > maxAllowedY || m_yDetected[Y2] > maxAllowedY) {
 		boost::format message(
 			"Wrong detection detected: %1%/%2%"
-				" by prices %3%/%4%, %5%/%6% and %7%/%8%");
+				" by prices %3%/%4%, %5%/%6%, %7%/%8%");
 		message
 			% m_yDetected[Y1]
 			% m_yDetected[Y2]
@@ -436,8 +436,7 @@ void TriangulationWithDirection::CalcYDirection() {
 			% m_bestBidAsk[PAIR_BC].bestAsk.price
 			% m_bestBidAsk[PAIR_AC].bestBid.price
 			% m_bestBidAsk[PAIR_AC].bestAsk.price;
-		Block(message.str());
-		throw trdk::Lib::Exception("Wrong detection detected");
+		throw RiskControlException(message.str().c_str());
 	}
 
 }
@@ -1190,7 +1189,7 @@ void TriangulationWithDirection::OnLeg3Execution(trdk::Position &position) {
 #	endif
 
 	if (m_trianglesRest != nTrianglesLimit && m_trianglesRest-- <= 1) {
-		Block("Executed triangles limit reached");
+		throw RiskControlException("Executed triangles limit reached");
 	} else {
 		const auto winsCount = accs::count(m_stat.winners);
 		const auto trianglesCount = winsCount + accs::count(m_stat.losers);

@@ -338,7 +338,7 @@ public:
 	}
 
 	void BlockByRiskControlEvent(
-			const RiskControl::Exception &ex,
+			const RiskControlException &ex,
 			const char *action)
 			const {
 		boost::format message("Risk Control event: \"%1%\" (at %2%).");
@@ -487,7 +487,7 @@ void Strategy::RaiseLevel1UpdateEvent(
 	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
 	try {
 		OnLevel1Update(security, timeMeasurement);
-	} catch (const ::trdk::RiskControl::Exception &ex) {
+	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "level 1 update");
 	}
 }
@@ -505,7 +505,7 @@ void Strategy::RaiseLevel1TickEvent(
 	}
 	try {
 		OnLevel1Tick(security, time, value);
-	} catch (const ::trdk::RiskControl::Exception &ex) {
+	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "level 1 tick");
 	}
 }
@@ -525,7 +525,7 @@ void Strategy::RaiseNewTradeEvent(
 	}
 	try {
 		OnNewTrade(service, time, price, qty, side);
-	} catch (const ::trdk::RiskControl::Exception &ex) {
+	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "new trade");
 	}
 }
@@ -542,7 +542,7 @@ void Strategy::RaiseServiceDataUpdateEvent(
 	}
 	try {
 		OnServiceDataUpdate(service, timeMeasurement);
-	} catch (const ::trdk::RiskControl::Exception &ex) {
+	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "service data update");
 	}
 }
@@ -578,7 +578,7 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 	
 	try {
 		OnPositionUpdate(position);
-	} catch (const ::trdk::RiskControl::Exception &ex) {
+	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "position update");
 		return;
 	}
@@ -635,7 +635,7 @@ void Strategy::RaiseBrokerPositionUpdateEvent(
 	}
 	try {
 		OnBrokerPositionUpdate(security, qty, isInitial);
-	} catch (const ::trdk::RiskControl::Exception &ex) {
+	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "broker position update");
 	}
 }
@@ -650,7 +650,7 @@ void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
 	}
 	try {
 		OnNewBar(security, bar);
-	} catch (const ::trdk::RiskControl::Exception &ex) {
+	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "new bar");
 	}
 }
@@ -669,7 +669,7 @@ void Strategy::RaiseBookUpdateTickEvent(
 	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
 	try {
 		OnBookUpdateTick(security, book, timeMeasurement);
-	} catch (const ::trdk::RiskControl::Exception &ex) {
+	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "book update tick");
 	}
 }

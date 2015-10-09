@@ -123,6 +123,8 @@
       <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/CurrenexStream.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/CurrenexTrading.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FastmatchStream.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FastmatchTrading.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixSession.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixSession.hpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixStream.cpp" isTestSource="false" />
@@ -145,6 +147,8 @@
       <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionStatService.hpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionTriangle.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/FxMb/TriangulationWithDirectionTriangle.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/Test/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sources/Strategies/Test/TestStrategy.cpp" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
@@ -165,6 +169,7 @@
           <root url="file:///usr/local/include" />
         </SOURCES>
         <excluded>
+          <root url="file://$MODULE_DIR$/sources/Core/RiskControl.hpp" />
           <root url="file://$MODULE_DIR$/sources/Engine/SubscriberPtrWrapper.cpp" />
           <root url="file://$MODULE_DIR$/sources/Engine/Dispatcher.cpp" />
           <root url="file://$MODULE_DIR$/sources/Engine/SubscriptionsManager.cpp" />
@@ -174,6 +179,7 @@
           <root url="file://$MODULE_DIR$/sources/Engine/Ini.hpp" />
           <root url="file://$MODULE_DIR$/sources/Engine/Ini.cpp" />
           <root url="file://$MODULE_DIR$/sources/Engine/ContextBootstrap.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/Test/CMakeLists.txt" />
           <root url="file://$MODULE_DIR$/sources/Common/Assert.cpp" />
           <root url="file://$MODULE_DIR$/sources/Common/Symbol.cpp" />
           <root url="file://$MODULE_DIR$/sources/Common/Symbol.hpp" />
@@ -226,7 +232,7 @@
           <root url="file://$MODULE_DIR$/sources/Core/Types.hpp" />
           <root url="file://$MODULE_DIR$/sources/Core/Prec.cpp" />
           <root url="file://$MODULE_DIR$/sources/Core/Strategy.hpp" />
-          <root url="file://$MODULE_DIR$/sources/Core/Settings.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FastmatchTrading.cpp" />
           <root url="file://$MODULE_DIR$/sources/Core/Service.cpp" />
           <root url="file://$MODULE_DIR$/sources/Core/EventsLog.cpp" />
           <root url="file://$MODULE_DIR$/sources/Core/DropCopy.cpp" />
@@ -234,12 +240,13 @@
           <root url="file://$MODULE_DIR$/sources/Core/Interactor.hpp" />
           <root url="file://$MODULE_DIR$/sources/Core/Terminal.hpp" />
           <root url="file://$MODULE_DIR$/sources/Core/Module.cpp" />
-          <root url="file://$MODULE_DIR$/sources/Core/RiskControl.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FastmatchStream.cpp" />
           <root url="file://$MODULE_DIR$/sources/Core/TradeSystem.hpp" />
           <root url="file://$MODULE_DIR$/sources/Core/CMakeLists.txt" />
           <root url="file://$MODULE_DIR$/sources/Core/Consumer.hpp" />
           <root url="file://$MODULE_DIR$/sources/Core/Observer.hpp" />
           <root url="file://$MODULE_DIR$/sources/Core/Position.hpp" />
+          <root url="file://$MODULE_DIR$/sources/Strategies/Test/TestStrategy.cpp" />
           <root url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.Reports.pb.cc" />
           <root url="file://$MODULE_DIR$/sources/EngineService/trdk.EngineService.MarketData.pb.cc" />
           <root url="file://$MODULE_DIR$/sources/EngineService/Utils.hpp" />
@@ -275,6 +282,7 @@
           <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FxAllStream.cpp" />
           <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/HotspotTrading.cpp" />
           <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FixTrading.cpp" />
+          <root url="file://$MODULE_DIR$/sources/Core/Settings.hpp" />
           <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/CMakeLists.txt" />
           <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/IntegralStream.cpp" />
           <root url="file://$MODULE_DIR$/sources/Interaction/OnixsFixConnector/FxAllTrading.cpp" />

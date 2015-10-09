@@ -1108,7 +1108,7 @@ size_t RiskControlSymbolContext::GetScopesNumber() const {
 
 
 RiskControl::Exception::Exception(const char *what) throw()
-	: Lib::Exception(what) {
+	: RiskControlException(what) {
 	//...//
 }
 

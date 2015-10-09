@@ -16,7 +16,7 @@ using namespace trdk::Lib;
 //////////////////////////////////////////////////////////////////////////
 
 Exception::Exception(const char *what) throw()
-		: m_doFree(false) {
+	: m_doFree(false) {
 	const size_t buffSize = (strlen(what) + 1) * sizeof(char);
 	m_what = static_cast<char *>(malloc(buffSize));
 	if (m_what) {
@@ -74,30 +74,37 @@ Exception & Exception::operator =(const Exception &rhs) throw() {
 //////////////////////////////////////////////////////////////////////////
 
 LogicError::LogicError(const char *what) throw()
-		: Exception(what) {
+	: Exception(what) {
 	//...//
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 SystemException::SystemException(const char *what) throw()
-		: Exception(what) {
+	: Exception(what) {
 	//...//
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 MethodDoesNotImplementedError::MethodDoesNotImplementedError(
-			const char *what)
-		 throw()
-		: Exception(what) {
+		const char *what)
+		throw()
+	: Exception(what) {
 	//...//
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 ModuleError::ModuleError(const char *what) throw()
-		: Exception(what) {
+	: Exception(what) {
+	//...//
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+RiskControlException::RiskControlException(const char *what) throw()
+	: Exception(what) {
 	//...//
 }
 
