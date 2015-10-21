@@ -103,6 +103,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		boost::uuids::random_generator m_generateUuid;
 
+		std::array<std::string, numberOfPairs> m_pairsOrder;
+
 		const size_t m_bookLevelsCount;
 		const bool m_useAdjustedBookForTrades;
 		const bool m_allowLeg1Closing;

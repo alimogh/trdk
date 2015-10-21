@@ -1021,7 +1021,7 @@ private:
 private:
 	
 	static_assert(
-		numberOfCurrencies == 6,
+		numberOfCurrencies == 7,
 		"List changes. Each new currency adds new item into static array here!"
 			"See Ctor.");
 	mutable std::vector<double> m_stat;

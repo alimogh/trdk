@@ -20,6 +20,7 @@ namespace trdk { namespace Lib {
 		CURRENCY_RUB,
 		CURRENCY_GBP,
 		CURRENCY_CHF,
+		CURRENCY_AUD,
 		numberOfCurrencies
 	};
 

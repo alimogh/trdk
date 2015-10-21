@@ -26,11 +26,12 @@ namespace { namespace Iso4217 {
 	const std::string rub = ConvertToIsoPch(CURRENCY_RUB);
 	const std::string gbp = ConvertToIsoPch(CURRENCY_GBP);
 	const std::string chf = ConvertToIsoPch(CURRENCY_CHF);
+	const std::string aud = ConvertToIsoPch(CURRENCY_AUD);
 } }
 
 const std::string & Lib::ConvertToIso(const Currency &currency) {
 	using namespace Iso4217;
-	static_assert(numberOfCurrencies == 6, "Currency list changed.");
+	static_assert(numberOfCurrencies == 7, "Currency list changed.");
 	switch (currency) {
 		case CURRENCY_USD:
 			return usd;
@@ -44,6 +45,8 @@ const std::string & Lib::ConvertToIso(const Currency &currency) {
 			return gbp;
 		case CURRENCY_CHF:
 			return chf;
+		case CURRENCY_AUD:
+			return aud;
 		default:
 			AssertEq(CURRENCY_USD, currency);
 			throw Exception("Internal error: Unknown currency ID");
@@ -52,7 +55,7 @@ const std::string & Lib::ConvertToIso(const Currency &currency) {
 
 const char * Lib::ConvertToIsoPch(const Currency &currency) {
 	using namespace Iso4217;
-	static_assert(numberOfCurrencies == 6, "Currency list changed.");
+	static_assert(numberOfCurrencies == 7, "Currency list changed.");
 	switch (currency) {
 		case CURRENCY_USD:
 			return "USD";
@@ -66,6 +69,8 @@ const char * Lib::ConvertToIsoPch(const Currency &currency) {
 			return "GBP";
 		case CURRENCY_CHF:
 			return "CHF";
+		case CURRENCY_AUD:
+			return "AUD";
 		default:
 			AssertEq(CURRENCY_USD, currency);
 			throw Exception("Internal error: Unknown currency ID");
@@ -74,7 +79,7 @@ const char * Lib::ConvertToIsoPch(const Currency &currency) {
 
 Currency Lib::ConvertCurrencyFromIso(const std::string &code) {
 	using namespace Iso4217;
-	static_assert(numberOfCurrencies == 6, "Currency list changed.");
+	static_assert(numberOfCurrencies == 7, "Currency list changed.");
 	if (boost::iequals(code, usd)) {
 		return CURRENCY_USD;
 	} else if (boost::iequals(code, eur)) {
@@ -87,6 +92,8 @@ Currency Lib::ConvertCurrencyFromIso(const std::string &code) {
 		return CURRENCY_GBP;
 	} else if (boost::iequals(code, chf)) {
 		return CURRENCY_CHF;
+	} else if (boost::iequals(code, aud)) {
+		return CURRENCY_AUD;
 	} else {
 		boost::format message("Currency code \"%1%\" is unknown");
 		message % code;

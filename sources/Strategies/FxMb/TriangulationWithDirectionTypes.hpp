@@ -72,13 +72,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	class HasNotMuchOpportunityException : public Lib::Exception {
+	class HasNotMuchOpportunityException : public Lib::ModuleError {
 	public:
 		explicit HasNotMuchOpportunityException(
 				const trdk::Security &security,
 				const trdk::Qty &requiredQty)
 			throw()
-			: Exception("Has no required opportunity"),
+			: ModuleError("Has no required opportunity"),
 			m_security(&security),
 			m_requiredQty(requiredQty) {
 		}
@@ -94,10 +94,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		trdk::Qty m_requiredQty;
 	};
 
-	class PriceNotChangedException : public Lib::Exception {
+	class PriceNotChangedException : public Lib::ModuleError {
 	public:
 		explicit PriceNotChangedException() throw()
-			: Exception("Price not changed") {
+			: ModuleError("Price not changed") {
 		}
 	};
 

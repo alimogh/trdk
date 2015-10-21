@@ -68,23 +68,27 @@ TriangulationWithDirection::TriangulationWithDirection(
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &conf)
-	: Base(context, "TriangulationWithDirection", tag, conf),
-	m_bookLevelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count")),
-	m_useAdjustedBookForTrades(
-		conf.GetBase().ReadBoolKey("General", "book.adjust.trade")),
-	m_allowLeg1Closing(
-		conf.ReadTypedKey<bool>("allow_leg1_closing")),
-	m_qty(conf.ReadTypedKey<Qty>("invest_amount")),
-	m_trianglesLimit(ReadMaxTrianglesCount(conf, GetLog())),
-	m_trianglesRest(m_trianglesLimit),
-	m_reports(
+	: Base(context, "TriangulationWithDirection", tag, conf)
+	, m_bookLevelsCount(
+		conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count"))
+	, m_useAdjustedBookForTrades(
+		conf.GetBase().ReadBoolKey("General", "book.adjust.trade"))
+	, m_allowLeg1Closing(
+		conf.ReadTypedKey<bool>("allow_leg1_closing"))
+	, m_qty(conf.ReadTypedKey<Qty>("invest_amount"))
+	, m_trianglesLimit(ReadMaxTrianglesCount(conf, GetLog()))
+	, m_trianglesRest(m_trianglesLimit)
+	, m_reports(
 		GetContext(),
 		GetId(),
 		conf.ReadBoolKey("log.strategy"),
-		conf.ReadBoolKey("log.updates")),
-	m_yReportStep(conf.ReadTypedKey<double>("log.y_report_step")),
-	m_scheduledLeg(LEG_UNKNOWN) {
+		conf.ReadBoolKey("log.updates"))
+	, m_yReportStep(conf.ReadTypedKey<double>("log.y_report_step"))
+	, m_scheduledLeg(LEG_UNKNOWN) {
+
+	m_pairsOrder[PAIR_AB] = conf.ReadKey("pair_1");
+	m_pairsOrder[PAIR_BC] = conf.ReadKey("pair_2");
+	m_pairsOrder[PAIR_AC] = conf.ReadKey("pair_3");
 
 	{
 		const BestBidAsk def = {};
@@ -116,30 +120,38 @@ void TriangulationWithDirection::OnServiceStart(const Service &service) {
 	};
 	const auto &symbol
 		= statService.service->GetSecurity(0).GetSymbol().GetSymbol();
-	const size_t index
-		= symbol == "EUR/USD"
-			?	PAIR_AB
-			:	symbol == "EUR/JPY" || symbol == "EUR/CHF"
-				?	PAIR_AC
-				:	PAIR_BC;
+	auto orderIt = std::find(
+		m_pairsOrder.begin(),
+		m_pairsOrder.end(),
+		symbol);
+	if (orderIt == m_pairsOrder.end()) {
+		GetLog().Error("Failed to set %1% - pair order is unknown.", symbol);
+		throw ModuleError("Pair order is unknown");
+	}
+	orderIt->clear();
+	
+	const size_t index = std::distance(m_pairsOrder.begin(), orderIt);
+	GetLog().Info("Using %1% as pair #%2%",  symbol, index + 1);
+	AssertLt(index, numberOfPairs);
 	Assert(!m_bestBidAsk[index].service);
 	m_bestBidAsk[index] = statService;
 
-	{
-		bool isFull = true;
-		foreach (const auto &s, m_bestBidAsk) {
-			if (!s.service) {
-				isFull = false;
-				break;
-			}
-		}
-		if (isFull) {
-			m_reports.WriteStrategyLogHead(GetContext(), m_bestBidAsk);
+	bool isFull = true;
+	foreach (const auto &s, m_bestBidAsk) {
+		if (!s.service) {
+			isFull = false;
+			break;
 		}
 	}
-
-// @todo see https://trello.com/c/ONnb5ai2
-//		m_stat.push_back(statService);
+	if (isFull) {
+		foreach (const auto &pair, m_pairsOrder) {
+			if (!pair.empty()) {
+				GetLog().Error("Pair %1% ordered by was not set.", pair);
+				throw ModuleError("Pair was not ordered");
+			}
+		}
+		m_reports.WriteStrategyLogHead(GetContext(), m_bestBidAsk);
+	}
 
 }
 
