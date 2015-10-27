@@ -45,7 +45,7 @@ namespace trdk {
 
 		virtual void RaiseBrokerPositionUpdateEvent(
 				trdk::Security &,
-				trdk::Qty,
+				const trdk::Qty &,
 				bool isInitial)
 				= 0;
 
@@ -61,9 +61,9 @@ namespace trdk {
 		virtual void OnNewTrade(
 				trdk::Security &,
 				const boost::posix_time::ptime &,
-				trdk::ScaledPrice,
-				trdk::Qty,
-				trdk::OrderSide);
+				const trdk::ScaledPrice &,
+				const trdk::Qty &,
+				const trdk::OrderSide &);
 		
 		virtual void OnServiceDataUpdate(
 				const trdk::Service &,
@@ -79,8 +79,8 @@ namespace trdk {
 		  * @param isInitial	true if it initial data at start.
 		  */
 		virtual void OnBrokerPositionUpdate(
-				trdk::Security &security,
-				trdk::Qty qty,
+				trdk::Security &,
+				const trdk::Qty &,
 				bool isInitial);
 
 		virtual void OnNewBar(trdk::Security &, const trdk::Security::Bar &);

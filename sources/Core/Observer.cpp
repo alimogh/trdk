@@ -38,7 +38,7 @@ void Observer::OnLevel1Update(Security &security) {
 
 void Observer::RaiseBrokerPositionUpdateEvent(
 		Security &security,
-		Qty qty,
+		const Qty &qty,
 		bool isInitial) {
 	const Lock lock(GetMutex());
 	OnBrokerPositionUpdate(security, qty, isInitial);
@@ -67,9 +67,9 @@ void Observer::RaiseLevel1TickEvent(
 void Observer::RaiseNewTradeEvent(
 		Security &security,
 		const boost::posix_time::ptime &time,
-		trdk::ScaledPrice price,
-		trdk::Qty qty,
-		trdk::OrderSide side) {
+		const trdk::ScaledPrice &price,
+		const trdk::Qty &qty,
+		const trdk::OrderSide &side) {
 	const Lock lock(GetMutex());
 	OnNewTrade(security, time, price, qty, side);
 }

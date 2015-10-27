@@ -284,6 +284,7 @@
     <ClInclude Include="Dll.hpp" />
     <ClInclude Include="Ini.hpp" />
     <ClInclude Include="Log.hpp" />
+    <ClInclude Include="Numeric.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="SegmentedVector.hpp" />
     <ClInclude Include="Spin.hpp" />

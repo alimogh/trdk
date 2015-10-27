@@ -48,7 +48,7 @@ void Itch::Security::OnNewOrder(
 	}
 	
 	{
-		const Order order = {time, isBuy, price, Qty(amount)};
+		const Order order = {time, isBuy, price, amount};
 		m_rawBook.emplace(orderId, std::move(order));
 	}
 
@@ -75,13 +75,10 @@ void Itch::Security::OnOrderModify(
 	AssertLe(it->second.time, time);
 	it->second.time = time;
 	
-	{
-		const auto &qty = Qty(amount);
-		AssertNe(qty, it->second.qty); // Can be removed.
-		if (qty != it->second.qty) {
-			it->second.qty = qty;
-			m_hasNewData = true;
-		}
+	AssertNe(amount, it->second.qty); // Can be removed.
+	if (amount != it->second.qty) {
+		it->second.qty = amount;
+		m_hasNewData = true;
 	}
 
 }

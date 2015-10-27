@@ -16,9 +16,9 @@
 
 namespace trdk {
 
-	typedef boost::int32_t Qty;
+	typedef trdk::Lib::Numeric<double> Qty;
 	
-	typedef boost::int64_t ScaledPrice;
+	typedef boost::int32_t ScaledPrice;
 
 	typedef boost::uint64_t OrderId;
 
@@ -111,180 +111,37 @@ namespace trdk {
 		numberOfLevel1TickTypes
 	};
 
-	template<Level1TickType tickType>
-	struct Level1TickValuePolicy {
-		//...//
-	};
-
 	struct Level1TickValue {
-
-		Level1TickType type;
-
-		union Value {
-			trdk::ScaledPrice lastPrice;
-			trdk::Qty lastQty;
-			trdk::ScaledPrice bidPrice;
-			trdk::Qty bidQty;
-			trdk::ScaledPrice askPrice;
-			trdk::Qty askQty;
-			trdk::Qty tradingVolume;
-		} value;
 
 	private:
 
-		explicit Level1TickValue(Level1TickType type)
-			: type(type) {
-			//...//
+		explicit Level1TickValue(Level1TickType type, double value)
+			: m_type(type),
+			m_value(value) {
 		}
 
 	public:
 
 
-		template<trdk::Level1TickType type>
-		static Level1TickValue Create(
-					typename trdk::Level1TickValuePolicy<type>::ValueType
-						value) {
-			Level1TickValue result(type);
-			trdk::Level1TickValuePolicy<type>::Get(result.value)
-				= value;
-			return result;
+		template<trdk::Level1TickType type, typename Value>
+		static Level1TickValue Create(const Value &value) {
+			return Level1TickValue(type, value);
 		}
 
-		intmax_t Get() const;
+		const Level1TickType & GetType() const {
+			return m_type;
+		}
+
+		double GetValue() const {
+			return m_value;
+		}
+
+	private:
+
+		Level1TickType m_type;
+		double m_value;
 
 	};
-
-	template<>
-	struct Level1TickValuePolicy<trdk::LEVEL1_TICK_LAST_PRICE> {
-		typedef trdk::ScaledPrice ValueType;
-		static ValueType Get(const trdk::Level1TickValue::Value &value) {
-			return Get(const_cast<trdk::Level1TickValue::Value &>(value));
-		}
-		static ValueType & Get(trdk::Level1TickValue::Value &value) {
-			return value.lastPrice;
-		}
-	};
-	template<>
-	struct Level1TickValuePolicy<trdk::LEVEL1_TICK_LAST_QTY> {
-		typedef trdk::Qty ValueType;
-		static ValueType Get(const trdk::Level1TickValue::Value &value) {
-			return Get(const_cast<trdk::Level1TickValue::Value &>(value));
-		}
-		static ValueType & Get(trdk::Level1TickValue::Value &value) {
-			return value.lastQty;
-		}
-	};
-	template<>
-	struct Level1TickValuePolicy<trdk::LEVEL1_TICK_BID_PRICE> {
-		typedef trdk::ScaledPrice ValueType;
-		static ValueType Get(const trdk::Level1TickValue::Value &value) {
-			return Get(const_cast<trdk::Level1TickValue::Value &>(value));
-		}
-		static ValueType & Get(trdk::Level1TickValue::Value &value) {
-			return value.bidPrice;
-		}
-	};
-	template<>
-	struct Level1TickValuePolicy<trdk::LEVEL1_TICK_BID_QTY> {
-		typedef trdk::Qty ValueType;
-		static ValueType Get(const trdk::Level1TickValue::Value &value) {
-			return Get(const_cast<trdk::Level1TickValue::Value &>(value));
-		}
-		static ValueType & Get(trdk::Level1TickValue::Value &value) {
-			return value.bidQty;
-		}
-	};
-	template<>
-	struct Level1TickValuePolicy<trdk::LEVEL1_TICK_ASK_PRICE> {
-		typedef trdk::ScaledPrice ValueType;
-		static ValueType Get(const trdk::Level1TickValue::Value &value) {
-			return Get(const_cast<trdk::Level1TickValue::Value &>(value));
-		}
-		static ValueType & Get(trdk::Level1TickValue::Value &value) {
-			return value.askPrice;
-		}
-	};
-	template<>
-	struct Level1TickValuePolicy<trdk::LEVEL1_TICK_ASK_QTY> {
-		typedef trdk::Qty ValueType;
-		static ValueType Get(const trdk::Level1TickValue::Value &value) {
-			return Get(const_cast<trdk::Level1TickValue::Value &>(value));
-		}
-		static ValueType & Get(trdk::Level1TickValue::Value &value) {
-			return value.askQty;
-		}
-	};
-	template<>
-	struct Level1TickValuePolicy<trdk::LEVEL1_TICK_TRADING_VOLUME> {
-		typedef trdk::Qty ValueType;
-		static ValueType Get(const trdk::Level1TickValue::Value &value) {
-			return Get(const_cast<trdk::Level1TickValue::Value &>(value));
-		}
-		static ValueType & Get(trdk::Level1TickValue::Value &value) {
-			return value.tradingVolume;
-		}
-	};
-
-	inline intmax_t Level1TickValue::Get() const {
-		static_assert(
-			numberOfLevel1TickTypes == 7,
-			"Changed Level 1 Tick type list.");
-		switch (type) {
-			case LEVEL1_TICK_LAST_PRICE:
-				{
-					typedef trdk::Level1TickValuePolicy<
-							LEVEL1_TICK_LAST_PRICE>
-						Policy;
-					return Policy::Get(value);
-				}
-			case LEVEL1_TICK_LAST_QTY:
-				{
-					typedef trdk::Level1TickValuePolicy<
-							LEVEL1_TICK_LAST_QTY>
-						Policy;
-					return Policy::Get(value);
-				}
-			case LEVEL1_TICK_BID_PRICE:
-				{
-					typedef trdk::Level1TickValuePolicy<
-							LEVEL1_TICK_BID_PRICE>
-						Policy;
-					return Policy::Get(value);
-				}
-			case LEVEL1_TICK_BID_QTY:
-				{
-					typedef trdk::Level1TickValuePolicy<
-							LEVEL1_TICK_BID_QTY>
-						Policy;
-					return Policy::Get(value);
-				}
-			case LEVEL1_TICK_ASK_PRICE:
-				{
-					typedef trdk::Level1TickValuePolicy<
-							LEVEL1_TICK_ASK_PRICE>
-						Policy;
-					return Policy::Get(value);
-				}
-			case LEVEL1_TICK_ASK_QTY:
-				{
-					typedef trdk::Level1TickValuePolicy<
-							LEVEL1_TICK_ASK_QTY>
-						Policy;
-					return Policy::Get(value);
-				}
-			case LEVEL1_TICK_TRADING_VOLUME:
-				{
-					typedef trdk::Level1TickValuePolicy<
-							LEVEL1_TICK_TRADING_VOLUME>
-						Policy;
-					return Policy::Get(value);
-				}
-			default:
-				AssertEq(LEVEL1_TICK_LAST_PRICE, type);
-				return 0;
-		}
-	}
-
 
 }
 

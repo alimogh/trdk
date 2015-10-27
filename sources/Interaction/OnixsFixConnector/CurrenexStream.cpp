@@ -51,11 +51,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		}
 
 		virtual Qty ParseMdEntrySize(const fix::GroupInstance &entry) const {
-			return entry.getInt32(fix::FIX42::Tags::MDEntrySize);
+			return entry.getDouble(fix::FIX42::Tags::MDEntrySize);
 		}
 
 		virtual Qty ParseMdEntrySize(const fix::Message &message) const {
-			return message.getInt32(fix::FIX42::Tags::MDEntrySize);
+			return message.getDouble(fix::FIX42::Tags::MDEntrySize);
 		}
 
 		virtual void SetupBookRequest(

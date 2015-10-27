@@ -130,9 +130,9 @@ void Dispatcher::SignalNewTrade(
 		SubscriberPtrWrapper &subscriber,
 		Security &security,
 		const pt::ptime &time,
-		ScaledPrice price,
-		Qty qty,
-		OrderSide side) {
+		const ScaledPrice &price,
+		const Qty &qty,
+		const OrderSide &side) {
 	try {
 		if (subscriber.IsBlocked()) {
 			return;
@@ -168,7 +168,7 @@ void Dispatcher::SignalPositionUpdate(
 void Dispatcher::SignalBrokerPositionUpdate(
 		SubscriberPtrWrapper &subscriber,
 		Security &security,
-		Qty qty,
+		const Qty &qty,
 		bool isInitial) {
 	try {
 		const SubscriberPtrWrapper::BrokerPosition position = {

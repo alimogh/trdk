@@ -278,7 +278,7 @@ void FixStream::onInboundApplicationMsg(
 				if (action == fix::FIX42::Values::MDUpdateAction::Change) {
 
 					const auto &qty = ParseMdEntrySize(entry);
-					if (IsZero(qty)) {
+					if (qty == .0) {
 						GetLog().Warn(
 							"Price level with zero-qty received for %1%: \"%2%\".",
 							*security,
@@ -340,7 +340,7 @@ void FixStream::onInboundApplicationMsg(
 				} else if (action == fix::FIX42::Values::MDUpdateAction::New) {
 
 					const auto &qty = ParseMdEntrySize(entry);
-					if (IsZero(qty)) {
+					if (qty == .0) {
 						GetLog().Warn(
 							"Price level with zero-qty received for %1%: \"%2%\".",
 							*security,
@@ -571,7 +571,7 @@ void FixStream::OnMarketDataSnapshot(
 		}
 
 		const auto &qty = ParseMdEntrySize(entry);
-		if (IsZero(qty)) {
+		if (qty == .0) {
 			GetTradingLog().Write(
 				"Price level with zero-qty received for %1%.",
 				[&security](TradingRecord &record)  {
@@ -594,9 +594,9 @@ void FixStream::OnMarketDataSnapshot(
 }
 
 Qty FixStream::ParseMdEntrySize(const fix::GroupInstance &entry) const {
-	return Qty(entry.getDouble(fix::FIX42::Tags::MDEntrySize));
+	return entry.getDouble(fix::FIX42::Tags::MDEntrySize);
 }
 
 Qty FixStream::ParseMdEntrySize(const fix::Message &message) const {
-	return Qty(message.getDouble(fix::FIX42::Tags::MDEntrySize));
+	return message.getDouble(fix::FIX42::Tags::MDEntrySize);
 }

@@ -513,9 +513,9 @@ void Strategy::RaiseLevel1TickEvent(
 void Strategy::RaiseNewTradeEvent(
 		Security &service,
 		const boost::posix_time::ptime &time,
-		ScaledPrice price,
-		Qty qty,
-		OrderSide side) {
+		const ScaledPrice &price,
+		const Qty &qty,
+		const OrderSide &side) {
 	const Lock lock(GetMutex());
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
@@ -624,7 +624,7 @@ void Strategy::OnPositionMarkedAsCompleted(const Position &position) {
 
 void Strategy::RaiseBrokerPositionUpdateEvent(
 		Security &security,
-		Qty qty,
+		const Qty &qty,
 		bool isInitial) {
 	const Lock lock(GetMutex());
 	// 1st time already checked: before enqueue event (without locking),

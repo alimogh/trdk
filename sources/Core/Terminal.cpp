@@ -196,7 +196,7 @@ private:
 				} catch (const boost::bad_lexical_cast &) {
 					//...//
 				}
-				if (m_qty <= 0) {
+				if (m_qty <= .0) {
 					throw Exception("Failed to parse qty value");
 				}
 			} else if (boost::iequals(cmd, "price")) {

@@ -30,9 +30,9 @@ private:
 		typedef std::list<Subscriber> Path;
 	public:
 		explicit FindSubscribedModule(const Subscriber &subscriberToFind)
-				: m_subscriberToFind(subscriberToFind),
-				m_path(*new Path),
-				m_isMyPath(true) {
+			: m_subscriberToFind(subscriberToFind),
+			m_path(*new Path),
+			m_isMyPath(true) {
 			//...//
 		}
 		~FindSubscribedModule() {
@@ -42,11 +42,11 @@ private:
 		}
 	private:
 		explicit FindSubscribedModule(
-					const Subscriber &subscriberToFind,
-					Path &path)
-				: m_subscriberToFind(subscriberToFind),
-				m_path(path),
-				m_isMyPath(false) {
+				const Subscriber &subscriberToFind,
+				Path &path)
+			: m_subscriberToFind(subscriberToFind),
+			m_path(path),
+			m_isMyPath(false) {
 			//...//
 		}
 	public:
@@ -65,9 +65,9 @@ private:
 		}
 	private:
 		static bool Find(
-					Service &service,
-					const Subscriber &subscriberToFind,
-					Path &path) {
+				Service &service,
+				const Subscriber &subscriberToFind,
+				Path &path) {
 			path.push_back(ModuleRef(service));
 			foreach (const auto &subscriber, service.GetSubscribers()) {
 				if (subscriber == subscriberToFind) {
@@ -97,7 +97,7 @@ public:
 	SubscriberList m_subscribers;
 
 	explicit Implementation(Service &service)
-			: m_service(service) {
+		: m_service(service) {
 		//...//
 	}
 
@@ -141,7 +141,7 @@ Service::Service(
 		Context &context,
 		const std::string &name,
 		const std::string &tag)
-		: Module(context, "Service", name, tag) {
+	: Module(context, "Service", name, tag) {
 	m_pimpl = new Implementation(*this);
 }
 
@@ -169,9 +169,9 @@ bool Service::RaiseLevel1TickEvent(
 bool Service::RaiseNewTradeEvent(
 		const Security &security,
 		const boost::posix_time::ptime &time,
-		ScaledPrice price,
-		Qty qty,
-		OrderSide side) {
+		const ScaledPrice &price,
+		const Qty &qty,
+		const OrderSide &side) {
 	const Lock lock(GetMutex());
 	return OnNewTrade(security, time, price, qty, side);
 }
@@ -185,7 +185,7 @@ bool Service::RaiseServiceDataUpdateEvent(
 
 bool Service::RaiseBrokerPositionUpdateEvent(
 		Security &security,
-		Qty qty,
+		const Qty &qty,
 		bool isInitial) {
 	const Lock lock(GetMutex());
 	return OnBrokerPositionUpdate(security, qty, isInitial);
@@ -231,9 +231,9 @@ bool Service::OnLevel1Tick(
 bool Service::OnNewTrade(
 		const Security &security,
 		const boost::posix_time::ptime &,
-		ScaledPrice,
-		Qty,
-		OrderSide) {
+		const ScaledPrice &,
+		const Qty &,
+		const OrderSide &) {
 	GetLog().Error(
 		"Subscribed to %1% new trades, but can't work with it"
 			" (hasn't OnNewTrade method implementation).",
@@ -255,7 +255,7 @@ bool Service::OnServiceDataUpdate(
 
 bool Service::OnBrokerPositionUpdate(
 		Security &security,
-		Qty,
+		const Qty &,
 		bool /*isInitial*/) {
 	GetLog().Error(
 		"Subscribed to %1% Broker Positions Updates, but can't work with it"

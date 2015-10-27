@@ -29,7 +29,7 @@ namespace trdk {
 
 		virtual void RaiseBrokerPositionUpdateEvent(
 				trdk::Security &,
-				trdk::Qty,
+				const trdk::Qty &,
 				bool isInitial);
 
 		virtual void RaiseNewBarEvent(
@@ -44,9 +44,9 @@ namespace trdk {
 		void RaiseNewTradeEvent(
 				trdk::Security &,
 				const boost::posix_time::ptime &,
-				trdk::ScaledPrice,
-				trdk::Qty,
-				trdk::OrderSide);
+				const trdk::ScaledPrice &,
+				const trdk::Qty &,
+				const trdk::OrderSide &);
 		void RaiseServiceDataUpdateEvent(
 				const trdk::Service &,
 				const trdk::Lib::TimeMeasurement::Milestones &);

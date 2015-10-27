@@ -30,12 +30,12 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 Consumer::Consumer(
-			Context &context,
-			const std::string &typeName,
-			const std::string &name,
-			const std::string &tag)
-		: Module(context, typeName, name, tag),
-		m_pimpl(new Implementation) {
+		Context &context,
+		const std::string &typeName,
+		const std::string &name,
+		const std::string &tag)
+	: Module(context, typeName, name, tag),
+	m_pimpl(new Implementation) {
 	//...//
 }
 
@@ -48,9 +48,9 @@ pt::ptime Consumer::OnSecurityStart(Security &) {
 }
 
 void Consumer::OnLevel1Tick(
-				Security &security,
-				const pt::ptime &,
-				const Level1TickValue &) {
+		Security &security,
+		const pt::ptime &,
+		const Level1TickValue &) {
 	GetLog().Error(
 		"Subscribed to %1% Level 1 Ticks, but can't work with it"
 			" (hasn't OnLevel1Tick method implementation).",
@@ -60,11 +60,11 @@ void Consumer::OnLevel1Tick(
 }
 
 void Consumer::OnNewTrade(
-					Security &security,
-					const pt::ptime &,
-					ScaledPrice,
-					Qty,
-					OrderSide) {
+		Security &security,
+		const pt::ptime &,
+		const ScaledPrice &,
+		const Qty &,
+		const OrderSide &) {
 	GetLog().Error(
 		"Subscribed to %1% new trades, but can't work with it"
 			" (hasn't OnNewTrade method implementation).",
@@ -85,9 +85,9 @@ void Consumer::OnServiceDataUpdate(
 }
 
 void Consumer::OnBrokerPositionUpdate(
-			Security &security,
-			Qty,
-			bool /*isInitial*/) {
+		Security &security,
+		const Qty &,
+		bool /*isInitial*/) {
 	GetLog().Error(
 		"Subscribed to %1% Broker Positions Updates, but can't work with it"
 			" (hasn't OnBrokerPositionUpdate method implementation).",

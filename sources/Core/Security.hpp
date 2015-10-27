@@ -28,24 +28,24 @@ namespace trdk {
 			OrderStatusUpdateSlot;
 
 		typedef void (Level1UpdateSlotSignature)(
-					const trdk::Lib::TimeMeasurement::Milestones &);
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Update one of more from following values:
 		//! best bid, best ask, last trade.
 		typedef boost::function<Level1UpdateSlotSignature> Level1UpdateSlot;
 		typedef boost::signals2::connection Level1UpdateSlotConnection;
 
 		typedef void (Level1TickSlotSignature)(
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &,
-					bool flush);
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &,
+				bool flush);
 		typedef boost::function<Level1TickSlotSignature> Level1TickSlot;
 		typedef boost::signals2::connection Level1TickSlotConnection;
 
 		typedef void (NewTradeSlotSignature)(
-					const boost::posix_time::ptime &,
-					trdk::ScaledPrice,
-					trdk::Qty,
-					trdk::OrderSide);
+				const boost::posix_time::ptime &,
+				const trdk::ScaledPrice &,
+				const trdk::Qty &,
+				const trdk::OrderSide &);
 		typedef boost::function<NewTradeSlotSignature> NewTradeSlot;
 		typedef boost::signals2::connection NewTradeSlotConnection;
 
@@ -53,7 +53,7 @@ namespace trdk {
 		/** Information from broker, not relevant to trdk::Position.
 		  */
 		typedef void (BrokerPositionUpdateSlotSignature)(
-				trdk::Qty,
+				const trdk::Qty &,
 				bool isInitial);
 		typedef boost::function<BrokerPositionUpdateSlotSignature>
 			BrokerPositionUpdateSlot;
@@ -114,8 +114,8 @@ namespace trdk {
 				friend class trdk::Security::BookSideUpdateOperation;
 			public:
 				Level()
-					: m_price(.0),
-					m_qty(0) {
+					: m_price(.0)
+					, m_qty(.0) {
 				}
 				explicit Level(
 						const boost::posix_time::ptime &time,
@@ -249,9 +249,9 @@ namespace trdk {
 	public:
 
 		explicit Security(
-					trdk::Context &,
-					const trdk::Lib::Symbol &,
-					const trdk::MarketDataSource &);
+				trdk::Context &,
+				const trdk::Lib::Symbol &,
+				const trdk::MarketDataSource &);
 		~Security();
 
 	public:
@@ -285,7 +285,7 @@ namespace trdk {
 		uint8_t GetPricePrecision() const throw();
 
 		trdk::ScaledPrice ScalePrice(double price) const;
-		double DescalePrice(trdk::ScaledPrice price) const;
+		double DescalePrice(const trdk::ScaledPrice &price) const;
 		double DescalePrice(double price) const;
 
 	public:
@@ -424,9 +424,9 @@ namespace trdk {
 
 		void AddTrade(
 					const boost::posix_time::ptime &,
-					trdk::OrderSide,
-					trdk::ScaledPrice,
-					trdk::Qty,
+					const trdk::OrderSide &,
+					const trdk::ScaledPrice &,
+					const trdk::Qty &,
 					const trdk::Lib::TimeMeasurement::Milestones &,
 					bool useAsLastTrade,
 					bool useForTradedVolume);
@@ -438,7 +438,7 @@ namespace trdk {
 		  * @param qty			Position size.
 		  * @param isInitial	true if it initial data at start.
 		  */
-		void SetBrokerPosition(trdk::Qty qty, bool isInitial);
+		void SetBrokerPosition(const trdk::Qty &, bool isInitial);
 
 		trdk::Security::BookUpdateOperation StartBookUpdate(
 				const boost::posix_time::ptime &,

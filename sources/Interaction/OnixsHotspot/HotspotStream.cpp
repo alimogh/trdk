@@ -235,10 +235,10 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 TRDK_INTERACTION_ONIXSHOTSPOT_API
 boost::shared_ptr<MarketDataSource>
 CreateStream(
-			size_t index,
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &configuration) {
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration) {
 	return boost::shared_ptr<MarketDataSource>(
 		new trdk::Interaction::OnixsHotspot::HotspotStream(
 			index,

@@ -96,12 +96,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 	if (pair.isBuy) {
 
-		double qty = m_aQty;
+		auto qty = m_aQty;
 		switch (pair.id) {
 			case PAIR_AB:
 			case PAIR_AC:
 				if (security.GetAskQty() < qty) {
-					throw HasNotMuchOpportunityException(security, Qty(qty));
+					throw HasNotMuchOpportunityException(security, qty);
 				}
 				break;
 			case PAIR_BC:
@@ -125,7 +125,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						throw Lib::LogicError("Unknown leg for pair");
 				}
 				if (security.GetAskQty() < qty / price) {
-					throw HasNotMuchOpportunityException(security, Qty(qty));
+					throw HasNotMuchOpportunityException(security, qty);
 				}
 				break;
 			default:
@@ -142,26 +142,22 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
-				//! @todo remove "to qty"
-				//! @todo see TRDK-92
-				Qty(boost::math::round(qty)),
+				qty,
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
 				pair.leg,
-				//! @todo remove "to qty"
-				//! @todo see TRDK-92
-				Qty(boost::math::round(qty))));
+				qty));
 			
 	} else {
 
-		double qty = m_aQty;
+		auto qty = m_aQty;
 		switch (pair.id) {
 			case PAIR_AB:
 			case PAIR_AC:
 				AssertLt(0, qty);
 				if (security.GetBidQty() < qty) {
-					throw HasNotMuchOpportunityException(security, Qty(qty));
+					throw HasNotMuchOpportunityException(security, qty);
 				}
 				break;
 			case PAIR_BC:
@@ -185,7 +181,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 						throw Lib::LogicError("Unknown leg for pair");
 				}
 				if (security.GetBidQty() < qty / price) {
-					throw HasNotMuchOpportunityException(security, Qty(qty));
+					throw HasNotMuchOpportunityException(security, qty);
 				}
 				break;
 			default:
@@ -203,16 +199,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
-				//! @todo remove "to qty"
-				//! @todo see TRDK-92
-				Qty(boost::math::round(qty)),
+				qty,
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
 				pair.leg,
-				//! @todo remove "to qty"
-				//! @todo see TRDK-92
-				Qty(boost::math::round(qty))));
+				qty));
 			
 	}
 

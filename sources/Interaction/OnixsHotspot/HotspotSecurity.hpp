@@ -24,10 +24,10 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 	public:
 
 		explicit HotspotSecurity(
-					Context &context,
-					const Lib::Symbol &symbol,
-					const MarketDataSource &source)
-				: Base(context, symbol, source) {
+				Context &context,
+				const Lib::Symbol &symbol,
+				const MarketDataSource &source)
+			: Base(context, symbol, source) {
 			StartLevel1();
 		}
 
@@ -56,7 +56,7 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 				bids.emplace_back(
 					time,
 					ConvertToDouble(level.price()),
-					ConvertToUInt(level.amount()));
+					ConvertToDouble(level.amount()));
 			}
 
 			std::vector<Book::Level> asks;
@@ -66,7 +66,7 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 				asks.emplace_back(
 					time,
 					ConvertToDouble(level.price()),
-					ConvertToUInt(level.amount()));
+					ConvertToDouble(level.amount()));
 			}
 
 			BookUpdateOperation book = StartBookUpdate(time, false);

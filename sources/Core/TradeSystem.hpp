@@ -103,7 +103,7 @@ namespace trdk {
 			explicit Position(
 					const std::string &account,
 					const Lib::Symbol &symbol,
-					Qty qty)
+					const Qty &qty)
 				: account(account),
 				symbol(symbol),
 				qty(qty) {
