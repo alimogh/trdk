@@ -21,7 +21,11 @@ trdk_add_precompiled_header("Prec.h" "Prec.cpp" source_list)
 
 add_library(OnixsFixConnector MODULE ${source_list})
 
-set(TRDK_EXTERNALS_ONIXS_FIX_ENGINE_DIR "${TRDK_EXTERNALS_DIR}OnixS.FixEngineCpp-RHEL70-gcc482-x64-3.19.0.0/")
+if(WIN32) # Cywin is UNIX and Windows, so test for WIN32 first
+    set(TRDK_EXTERNALS_ONIXS_FIX_ENGINE_DIR "${TRDK_EXTERNALS_DIR}OnixS.FixEngineCpp-Win-3.19.0.0/")
+else(UNIX)
+    set(TRDK_EXTERNALS_ONIXS_FIX_ENGINE_DIR "${TRDK_EXTERNALS_DIR}OnixS.FixEngineCpp-RHEL70-gcc482-x64-3.19.0.0/")
+endif()
 set(TRDK_EXTERNALS_ONIXS_FIX_ENGINE_LIB_DIR "${TRDK_EXTERNALS_ONIXS_FIX_ENGINE_DIR}lib/")
 
 include_directories("${TRDK_EXTERNALS_ONIXS_FIX_ENGINE_DIR}include")

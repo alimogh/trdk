@@ -112,6 +112,11 @@ if(MSVC)
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 
+	if(CYGWIN)
+		add_definitions(-D_WIN32_WINNT=0x0602)
+		add_definitions(-D__USE_W32_SOCKETS)
+	endif()
+
     ################################################################################
     ## Common compiler flags:
 
@@ -200,7 +205,9 @@ if(WIN32)
 	set(BOOST_LIBRARYDIR "$ENV{BOOST_ROOT}/lib64-msvc-12.0/")
 	set(Boost_USE_STATIC_LIBS ON)
 elseif(CYGWIN)
-	set(Boost_USE_STATIC_LIBS OFF)
+	set(Boost_INCLUDE_DIR /usr/local/include/)
+	set(BOOST_LIBRARYDIR "/usr/local/lib/")
+	set(Boost_USE_STATIC_LIBS ON)
 else()
 	set(Boost_USE_STATIC_LIBS OFF)
 endif()
@@ -252,7 +259,6 @@ add_subdirectory(${TRDK_SOURCES_DIR}/Core)
 
 add_subdirectory(${TRDK_SOURCES_DIR}/Engine)
 add_subdirectory(${TRDK_SOURCES_DIR}/EngineServer)
-add_subdirectory(${TRDK_SOURCES_DIR}/EngineService)
 
 add_subdirectory(${TRDK_SOURCES_DIR}/Interaction/Fake)
 add_subdirectory(${TRDK_SOURCES_DIR}/Interaction/OnixsFixConnector)

@@ -1,0 +1,11 @@
+#!/bin/sh
+
+git clone https://github.com/msgpack/msgpack-c msgpack-c
+cd msgpack-c
+git reset --hard dea3190d36ac7c3171239d72085d7ded4f40e950
+cd -
+
+git clone https://github.com/crossbario/autobahn-cpp.git autobahn
+cd autobahn
+git reset --hard 3f2592af5748d78674d648ce8956838d227ee911
+cd -

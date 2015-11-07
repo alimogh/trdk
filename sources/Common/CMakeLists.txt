@@ -19,4 +19,5 @@ trdk_add_precompiled_header("Prec.h" "Prec.cpp" source_list)
 
 add_library(Lib STATIC ${source_list})
 
+target_link_libraries(Lib LINK_PRIVATE ${Boost_LIBRARIES})
 target_include_directories(Lib PUBLIC ${TRDK_SOURCES_DIR})

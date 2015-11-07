@@ -17,6 +17,8 @@
 
 #include "Common/Common.hpp"
 
+#include <autobahn/autobahn.hpp>
+
 #include <fstream>
 #include <unordered_map>
 

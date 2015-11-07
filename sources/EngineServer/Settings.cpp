@@ -593,7 +593,7 @@ void EngineServer::Settings::StrategyTransaction::Validate(
 				&& !boost::iequals(
 						value,
 						m_source.settings.find("General")->second.find("mode")->second)
-				&& m_settings->GetService().IsEngineStarted(m_settings->GetEngeineId())) {
+				&& m_settings->GetService().IsEngineStarted(m_settings->GetEngineId())) {
 			throw OnError(
 				"Failed to change trading mode while engine is running.");
 		}
@@ -930,7 +930,7 @@ void EngineServer::Settings::LoadClientSettings(const WriteLock &) {
 
 }
 
-const std::string & EngineServer::Settings::GetEngeineId() const {
+const std::string & EngineServer::Settings::GetEngineId() const {
 	return m_engineId;
 }
 
@@ -959,7 +959,7 @@ EngineServer::Settings::StartStrategyTransaction(
 	if (it == m_clientSettins.end()) {
 		boost::format message(
 			"Strategy with ID \"%1%\" is not loaded into engine \"%2%\".");
-		message % strategyId % GetEngeineId();
+		message % strategyId % GetEngineId();
 		throw EngineServer::Exception(message.str().c_str());
 	}
 

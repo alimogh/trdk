@@ -156,6 +156,8 @@
       <library name="Header Search Paths">
         <CLASSES>
           <root url="file://$MODULE_DIR$/externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3.19.0.0/include" />
+          <root url="file://$MODULE_DIR$/externals/autobahn" />
+          <root url="file://$MODULE_DIR$/externals/msgpack-c/include" />
           <root url="file://$MODULE_DIR$/sources" />
           <root url="file:///usr/include" />
           <root url="file:///usr/lib/gcc/x86_64-redhat-linux/4.8.3/include" />
@@ -163,6 +165,8 @@
         </CLASSES>
         <SOURCES>
           <root url="file://$MODULE_DIR$/externals/OnixS.FixEngineCpp-RHEL70-gcc482-x64-3.19.0.0/include" />
+          <root url="file://$MODULE_DIR$/externals/autobahn" />
+          <root url="file://$MODULE_DIR$/externals/msgpack-c/include" />
           <root url="file://$MODULE_DIR$/sources" />
           <root url="file:///usr/include" />
           <root url="file:///usr/lib/gcc/x86_64-redhat-linux/4.8.3/include" />

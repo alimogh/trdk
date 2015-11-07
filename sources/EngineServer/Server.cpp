@@ -21,7 +21,7 @@ using namespace trdk::EngineServer;
 using namespace trdk::Lib;
 
 Server::Server() {
-	//..//
+	//...//
 }
 
 bool Server::IsStarted(const std::string &id) const {
@@ -171,7 +171,7 @@ void Server::Update(
 
 	auto engineIt
 		= m_engines.get<ById>().find(
-			settingsTransaction.GetSettings().GetEngeineId());
+			settingsTransaction.GetSettings().GetEngineId());
 	if (engineIt == m_engines.get<ById>().end()) {
 		try {
 			settingsTransaction.Commit();

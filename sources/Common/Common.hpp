@@ -25,6 +25,7 @@
 #	include <boost/thread/thread.hpp>
 #	include <boost/thread/shared_mutex.hpp>
 #	include <boost/shared_ptr.hpp>
+#	include <boost/make_shared.hpp>
 #	include <boost/cast.hpp>
 #	include <boost/iterator/iterator_facade.hpp>
 #	include <boost/tuple/tuple.hpp>

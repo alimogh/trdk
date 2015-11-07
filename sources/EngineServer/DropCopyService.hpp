@@ -13,7 +13,6 @@
 #include "Core/DropCopy.hpp"
 #include "Core/EventsLog.hpp"
 #include "Fwd.hpp"
-#include "EngineService/DropCopy.h"
 
 namespace trdk { namespace EngineServer {
 
@@ -104,12 +103,6 @@ namespace trdk { namespace EngineServer {
 
 		class SendList : private boost::noncopyable {
 
-		public:
-
-			typedef boost::function<
-					bool(const trdk::EngineService::DropCopy::ServiceData &)>
-				SendCallback;
-
 		private:
 
 			enum MessageType {
@@ -176,6 +169,7 @@ namespace trdk { namespace EngineServer {
 
 		private:
 
+/*
 			trdk::EngineService::DropCopy::ServiceData CreateMessage(
 					const Queue::Message &)
 					const;
@@ -191,6 +185,7 @@ namespace trdk { namespace EngineServer {
 			trdk::EngineService::DropCopy::ServiceData CreateMessage(
 					const Trade &)
 					const;
+*/
 
 		public:
 
@@ -287,12 +282,12 @@ namespace trdk { namespace EngineServer {
 				size_t attemptIndex,
 				const std::string &host,
 				const std::string &port);
-		
-		void EnqueueToSend(const trdk::EngineService::DropCopy::ServiceData &);
+
+//		void EnqueueToSend(const trdk::EngineService::DropCopy::ServiceData &);
 
 	private:
 
-		bool SendSync(const trdk::EngineService::DropCopy::ServiceData &);
+//		bool SendSync(const trdk::EngineService::DropCopy::ServiceData &);
 
 	private:
 
@@ -302,7 +297,7 @@ namespace trdk { namespace EngineServer {
 		ClientCondition m_clientCondition;
 		std::unique_ptr<Io> m_io;
 
-		trdk::EngineService::DropCopy::ServiceData m_dictonary;
+//		trdk::EngineService::DropCopy::ServiceData m_dictonary;
 
 	};
 

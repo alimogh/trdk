@@ -149,7 +149,7 @@ namespace trdk { namespace EngineServer {
 
 	public:
 
-		const std::string & GetEngeineId() const;
+		const std::string & GetEngineId() const;
 		const boost::filesystem::path & GetFilePath() const;
 
 		const Service & GetService() const {

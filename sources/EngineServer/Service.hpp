@@ -11,29 +11,25 @@
 #pragma once
 
 #include "Server.hpp"
-#include "ClientRequestHandler.hpp"
 
 namespace trdk { namespace EngineServer {
 
-	class Client;
-
-	class Service : public ClientRequestHandler {
+	class Service : private boost::noncopyable {
 
 	private:
 
-		typedef boost::shared_mutex ConnectionsMutex;
-		typedef boost::shared_lock<ConnectionsMutex> ConnectionsReadLock;
-		typedef boost::unique_lock<ConnectionsMutex> ConnectionsWriteLock;
+		typedef autobahn::wamp_session<
+				boost::asio::ip::tcp::socket,
+				boost::asio::ip::tcp::socket>
+			WampSession;
 
-	private:
+		struct Topics {
 
-		struct Io {
-		
-			boost::asio::io_service service;
-			boost::asio::ip::tcp::acceptor acceptor;
+			std::string onNewInstance;
+			std::string time;
 
-			Io();
-		
+			explicit Topics(const std::string &suffix);
+
 		};
 
 	public:
@@ -41,67 +37,57 @@ namespace trdk { namespace EngineServer {
 		explicit Service(
 				const std::string &name,
 				const boost::filesystem::path &);
-		virtual ~Service();
+		~Service();
 
 	public:
 
-		virtual const std::string & GetName() const {
-			return m_name;
+		bool IsEngineStarted(const std::string &) const {
+			//! @todo remove
+			return false;
 		}
-
-		virtual void ForEachEngineId(
-				const boost::function<void(const std::string &engineId)> &)
-				const;
-		virtual bool IsEngineStarted(const std::string &engineId) const;
-		virtual void StartEngine(
-				const std::string &engineId,
-				const std::string &commandInfo);
-		virtual void StopEngine(const std::string &engineId);
-		virtual Settings & GetEngineSettings(
-				const std::string &engineId);
-
-		virtual void ClosePositions(const std::string &engineId);
-
-		virtual void UpdateEngine(
-				EngineServer::Settings::EngineTransaction &);
-		virtual void UpdateStrategy(
-				EngineServer::Settings::StrategyTransaction &);
-
-		virtual void OnDisconnect(Client &);
-	
+		
 	private:
 
-		void LoadEngine(const boost::filesystem::path &);
-
-		void StartAccept();
-		void HandleNewClient(
-				const boost::shared_ptr<Client> &,
+		void Connect(const Lib::Ini &);
+		void OnConnect(
+				const std::string &host,
+				uint16_t port,
 				const boost::system::error_code &);
+	
+		void ScheduleNextCurrentTimeNotification();
 
-		void CheckEngineIdExists(const std::string &id) const;
+		void PublishEngine();
+		void PublishCurrentTime();
 
-		void OnContextStateChanges(
-				trdk::Context &,
-				const trdk::Context::State &,
-				const std::string *message = nullptr);
+// 		void StartEngine(const std::string &commandInfo);
+// 		void StopEngine(const std::string &engineId);
+// 
+// 		void OnContextStateChanges(
+// 				trdk::Context &,
+// 				const trdk::Context::State &,
+// 				const std::string *message = nullptr);
 
 	private:
 
 		const std::string m_name;
+		const std::string m_suffix;
+		const Topics m_topics;
 
-		std::map<
-				std::string /* engine ID */,
-				boost::shared_ptr<Settings>>
-			m_engines;
+		std::ofstream m_logFile;
+		EventsLog m_log;
 
+		Settings m_settings;
 		Server m_server;
 
-		std::unique_ptr<Io> m_io;
-
+		boost::asio::io_service m_io;
+		boost::asio::ip::tcp::socket m_socket;
+		std::shared_ptr<WampSession> m_session;
 		boost::thread m_thread;
 
-		ConnectionsMutex m_connectionsMutex;
-		std::set<Client *> m_connections;
+		boost::asio::deadline_timer m_currentTimePublishTimer;
+
+		boost::future<void> m_joinFuture;
+		boost::future<void> m_startFuture;
 
 	};
 

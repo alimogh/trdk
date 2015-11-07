@@ -427,7 +427,7 @@ IniFile::FileOpenError::FileOpenError() throw()
 
 IniFile::IniFile(const fs::path &path)
 		: m_path(FindIniFile(path)),
-		m_file(m_path.c_str()) {
+		m_file(m_path.string().c_str()) {
 	if (!m_file) {
 		throw FileOpenError();
 	}

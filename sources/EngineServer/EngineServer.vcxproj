@@ -132,7 +132,6 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Standalone Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -142,7 +141,6 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Standalone Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -152,7 +150,6 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Dll Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -162,7 +159,6 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Dll Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -172,7 +168,6 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Standalone Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -182,7 +177,6 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Standalone Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -192,7 +186,6 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Dll Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -202,7 +195,6 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Dll Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -212,7 +204,6 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Standalone Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -222,7 +213,6 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Standalone Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -232,7 +222,6 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Dll Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -242,7 +231,6 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Protobuf.props" />
     <Import Project="EngineServer.props" />
     <Import Project="..\Distribution Dll Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -323,7 +311,6 @@
     <Link />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Client.cpp" />
     <ClCompile Include="DropCopyClient.cpp" />
     <ClCompile Include="DropCopyService.cpp" />
     <ClCompile Include="Server.cpp" />
@@ -346,8 +333,6 @@
     <ClCompile Include="Settings.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Client.hpp" />
-    <ClInclude Include="ClientRequestHandler.hpp" />
     <ClInclude Include="DropCopyClient.hpp" />
     <ClInclude Include="DropCopyService.hpp" />
     <ClInclude Include="Exception.hpp" />

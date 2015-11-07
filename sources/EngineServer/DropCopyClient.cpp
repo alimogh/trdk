@@ -14,9 +14,6 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::EngineService;
-using namespace trdk::EngineService::DropCopy;
-using namespace trdk::EngineService::MarketData;
 using namespace trdk::EngineServer;
 
 namespace pt = boost::posix_time;
@@ -147,7 +144,7 @@ void DropCopyClient::OnNewMessage(
 
 	StartReadMessageSize();
 
-	ClientRequest request;
+/*	ClientRequest request;
 	try {
 		if (!request.ParseFromArray(&m_inBuffer[0], int(m_inBuffer.size()))) {
 			m_service.GetLog().Error("Failed to parse incoming request.");
@@ -166,11 +163,11 @@ void DropCopyClient::OnNewMessage(
 		m_service.GetLog().Error("Protocol error: \"%1%\".", ex.what());
 		Close();
 		return;
-	}
+	}*/
 
 }
 
-void DropCopyClient::OnNewRequest(const ClientRequest &request) {
+/*void DropCopyClient::OnNewRequest(const ClientRequest &request) {
 	switch (request.type()) {
 		case ClientRequest::TYPE_KEEP_ALIVE:
 			OnKeepAlive();
@@ -187,7 +184,7 @@ void DropCopyClient::Send(const ServiceData &message) {
 	std::ostringstream oss;
 	message.SerializeToOstream(&oss);
 	FlushOutStream(oss.str());
-}
+}*/
 
 void DropCopyClient::FlushOutStream(const std::string &s) {
 	boost::shared_ptr<std::vector<char>> buffer(
@@ -235,9 +232,9 @@ void DropCopyClient::StartKeepAliveSender() {
 				return;
 			}
 			{
-				ServiceData message;
+/*				ServiceData message;
 				message.set_type(ServiceData::TYPE_KEEP_ALIVE);	
-				client->Send(message);
+				client->Send(message);*/
 			}
 			client->StartKeepAliveSender();
 		};

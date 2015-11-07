@@ -17,10 +17,10 @@ add_executable(RobotEngine ${source_list})
 set_target_properties(RobotEngine PROPERTIES DEBUG_POSTFIX "_dbg")
 set_target_properties(RobotEngine PROPERTIES TEST_POSTFIX "_test")
 
-find_package(Protobuf REQUIRED)
-include_directories(${PROTOBUF_INCLUDE_DIRS})
+include_directories("${TRDK_EXTERNALS_DIR}autobahn/")
+include_directories("${TRDK_EXTERNALS_DIR}msgpack-c/include/")
 
 target_link_libraries(
     RobotEngine
     LINK_PRIVATE
-    dl ${Boost_LIBRARIES} ${PROTOBUF_LIBRARIES} Lib Core Engine EngineService)
+    dl ${Boost_LIBRARIES} Lib Core Engine)
