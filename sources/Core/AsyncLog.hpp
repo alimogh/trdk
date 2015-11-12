@@ -418,9 +418,9 @@ namespace trdk {
 		public:
 
 			explicit WriteTask(Log &log, Queue &queue)
-				: m_log(log),
-				m_queue(queue),
-				m_answerCondition(nullptr) {
+				: m_log(log)
+				, m_queue(queue)
+				, m_answerCondition(nullptr) {
 				Lock lock(m_queue.mutex);
 				m_thread = boost::thread([&](){TaskMain();});
 				m_queue.condition.wait(lock);

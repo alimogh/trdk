@@ -334,7 +334,7 @@ void FixTrading::OnOrderStateChanged(
 		const OrderStatus &status,
 		const Order &order,
 		const TradeInfo *trade) {
-	AssertGe(order.qty, order.filledQty);
+//	AssertGe(order.qty, order.filledQty);
 	order.callback(
 		order.id,
 		borkerOrderId,
@@ -388,9 +388,9 @@ void FixTrading::FillOrderMessage(
 		fix::FIX40::Tags::TransactTime,
 		fix::Timestamp::utc(),
 		fix::TimestampFormat::YYYYMMDDHHMMSSMsec);
-	message.set(fix::FIX40::Tags::OrderQty, qty);
+	message.set(fix::FIX40::Tags::OrderQty, qty, 2);
 	if (params.minTradeQty) {
-		message.set(fix::FIX40::Tags::MinQty, *params.minTradeQty);
+		message.set(fix::FIX40::Tags::MinQty, *params.minTradeQty, 2);
 	}
 
 	if (!account.empty()) {
