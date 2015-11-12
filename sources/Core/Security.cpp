@@ -108,6 +108,7 @@ public:
 	Level1 m_level1;
 	boost::atomic<Qty> m_brokerPosition;
 	boost::atomic_int64_t m_marketDataTime;
+	boost::atomic_size_t m_numberOfMarketDataUpdates;
 	boost::atomic_bool m_isLevel1Started;
 
 	pt::ptime m_requestedDataStartTime;
@@ -118,15 +119,16 @@ public:
 public:
 
 	Implementation(const MarketDataSource &source, const Symbol &symbol)
-		: m_instanceId(m_nextInstanceId++),
-		m_source(source),
-		m_pricePrecision(GetPrecision(symbol)),
-		m_priceScale(size_t(std::pow(10, m_pricePrecision))),
-		m_brokerPosition(0),
-		m_marketDataTime(0),
-		m_isLevel1Started(false),
-		m_book(new Book(pt::not_a_date_time, false)),
-		m_isBookAdjusted(false) {
+		: m_instanceId(m_nextInstanceId++)
+		, m_source(source)
+		, m_pricePrecision(GetPrecision(symbol))
+		, m_priceScale(size_t(std::pow(10, m_pricePrecision)))
+		, m_brokerPosition(0)
+		, m_marketDataTime(0)
+		, m_numberOfMarketDataUpdates(0)
+		, m_isLevel1Started(false)
+		, m_book(new Book(pt::not_a_date_time, false))
+		, m_isBookAdjusted(false) {
 		for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
 			m_riskControlContext[i]
 				= m_source.GetContext()
@@ -136,6 +138,13 @@ public:
 		foreach (auto &item, m_level1) {
 			Unset(item);
 		}
+	}
+
+	void UpdateMarketDataStat(const pt::ptime &time) {
+		Assert(!time.is_not_a_date_time());
+		AssertLe(GetLastMarketDataTime(), time);
+		m_marketDataTime = ConvertToMicroseconds(time);
+		++m_numberOfMarketDataUpdates;
 	}
 
 	bool AddLevel1Tick(
@@ -150,6 +159,7 @@ public:
 			timeMeasurement,
 			flush,
 			isPreviouslyChanged);
+		UpdateMarketDataStat(time);
 		m_level1TickSignal(time, tick, flush);
 		return isChanged;
 	}
@@ -217,10 +227,7 @@ public:
 			m_isLevel1Started = true;
 		}
 
-		Assert(!time.is_not_a_date_time());
-		AssertLe(GetLastMarketDataTime(), time);
-		m_marketDataTime = ConvertToMicroseconds(time);
-
+		UpdateMarketDataStat(time);
 		m_level1UpdateSignal(timeMeasurement);
 
 	}
@@ -283,6 +290,10 @@ double Security::DescalePrice(double price) const {
 
 pt::ptime Security::GetLastMarketDataTime() const {
 	return m_pimpl->GetLastMarketDataTime();
+}
+
+size_t Security::TakeNumberOfMarketDataUpdates() const {
+	return m_pimpl->m_numberOfMarketDataUpdates.exchange(0);
 }
 
 bool Security::IsLevel1Started() const {
@@ -588,11 +599,13 @@ void Security::AddTrade(
 		}
 	}
 
+	m_pimpl->UpdateMarketDataStat(time);
 	m_pimpl->m_tradeSignal(time, price, qty, side);
 
 }
 
 void Security::AddBar(const Bar &bar) {
+	m_pimpl->UpdateMarketDataStat(bar.time);
 	m_pimpl->m_barSignal(bar);
 }
 
@@ -819,6 +832,7 @@ void Security::BookUpdateOperation::Commit(
 	m_pimpl->m_security.m_pimpl->m_book = m_pimpl->m_book;
 	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_STORE);
 
+	m_pimpl->m_security.m_pimpl->UpdateMarketDataStat(m_pimpl->m_book->GetTime());
 	m_pimpl->m_security.m_pimpl->m_bookUpdateTickSignal(
 		m_pimpl->m_book,
 		timeMeasurement);

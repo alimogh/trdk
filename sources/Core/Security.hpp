@@ -287,6 +287,7 @@ namespace trdk {
 	public:
 
 		boost::posix_time::ptime GetLastMarketDataTime() const;
+		size_t TakeNumberOfMarketDataUpdates() const;
 
 	public:
 

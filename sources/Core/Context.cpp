@@ -11,6 +11,8 @@
 #include "Prec.hpp"
 #include "Context.hpp"
 #include "RiskControl.hpp"
+#include "MarketDataSource.hpp"
+#include "Security.hpp"
 #include "TradingLog.hpp"
 #include "EventsLog.hpp"
 #include "Settings.hpp"
@@ -58,9 +60,9 @@ namespace {
 	public:
 		
 		explicit LatanReport(Context &context)
-			: m_context(context),
-			m_stopFlag(false),
-			m_thread([&]{ThreadMain();}) {
+			: m_context(context)
+			, m_stopFlag(false)
+			, m_thread([&]{ThreadMain();}) {
 			//....//
 		}
 
@@ -146,6 +148,7 @@ namespace {
 						!m_stopFlag
 							&& !m_stopCondition.timed_wait(lock, reportPeriod);
 						) {
+
 					DumpAccum<TimeMeasurement::StrategyMilestone>(
 						strategyIndex,
 						"Strategy",
@@ -162,6 +165,17 @@ namespace {
 						*m_accums.dispatching,
 						log);
 					log << std::endl;
+
+					m_context.ForEachMarketDataSource(
+						[&](const MarketDataSource &dataSource) {
+							dataSource.ForEachSecurity(
+								[this, &log](const Security &security) {
+									DumpSecurity(security, log);
+									return true;
+								});
+							return true;
+						});
+
 				}
 
 			} catch (...) {
@@ -207,6 +221,18 @@ namespace {
 
 		}
 
+		void DumpSecurity(
+				const Security &security,
+				std::ostream &destination)
+				const {
+			destination
+				<< "security"
+				<< '\t' << pt::microsec_clock::universal_time()
+				<< '\t' << security.GetSymbol()
+				<< '\t' << security.TakeNumberOfMarketDataUpdates()
+				<< '\t' << security.GetLastMarketDataTime().time_of_day()
+				<< std::endl;
+		}
 
 	private:
 
