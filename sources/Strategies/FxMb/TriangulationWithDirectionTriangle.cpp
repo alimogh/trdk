@@ -143,7 +143,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		const auto unsentQtyPrecision = qty - double(cleanQty);
 		const auto additionalQty
 			= Qty(pair.bestBidAsk->unsentQtyPrecisionVolume + unsentQtyPrecision);
-		AssertLt(0, additionalQty);
+		AssertLe(0, additionalQty);
 
 		result.reset(
 			new Twd::LongPosition(

@@ -45,7 +45,7 @@ Twd::Position::Position(
 	, m_leg(leg)
 	, m_unsentQtyPrecision(unsentQtyPrecision)
 	, m_additionalQtyFromPrevOrders(additionalQtyFromPrevOrders) {
-	AssertLt(qty, m_additionalQtyFromPrevOrders);
+	AssertGe(qty, abs(m_additionalQtyFromPrevOrders));
 	const_cast<OrderParams &>(m_orderParams).minTradeQty = qty;
 }
 
