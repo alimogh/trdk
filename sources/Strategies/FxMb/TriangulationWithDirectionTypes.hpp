@@ -44,9 +44,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	struct BestBidAsk {
+	struct PairData {
 
 		const StatService *service;
+		double unsentQtyPrecisionVolume;
 		
 		struct {
 			
@@ -61,6 +62,18 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			bestBid,
 			bestAsk;
 
+		PairData()
+			: service(nullptr) {
+			//...//
+		}
+
+
+		explicit PairData(const StatService &service)
+			: service(&service)
+			, unsentQtyPrecisionVolume(0) {
+			//...//
+		}
+
 		void Reset() {
 			bestBid.Reset();
 			bestAsk.Reset();
@@ -68,7 +81,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	};
 
-	typedef boost::array<BestBidAsk, numberOfPairs> BestBidAskPairs;
+	typedef boost::array<PairData, numberOfPairs> PairsData;
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -78,9 +91,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const trdk::Security &security,
 				const trdk::Qty &requiredQty)
 			throw()
-			: ModuleError("Has no required opportunity"),
-			m_security(&security),
-			m_requiredQty(requiredQty) {
+			: ModuleError("Has no required opportunity")
+			, m_security(&security)
+			, m_requiredQty(requiredQty) {
+			//...//
 		}
 	public:
 		const trdk::Security & GetSecurity() const {

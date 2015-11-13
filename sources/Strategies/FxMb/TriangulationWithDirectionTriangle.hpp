@@ -36,7 +36,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		struct PairInfo : public PairLegParams {
 
-			const BestBidAsk *bestBidAsk;
+			PairData *pairData;
 			Security *security;
 
 			double startPrice;
@@ -48,15 +48,15 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 			explicit PairInfo(
 					const PairLegParams &params,
-					const BestBidAskPairs &bestBidAskRef)
-				: PairLegParams(params),
-				bestBidAsk(&bestBidAskRef[id]),
-				security(
+					PairsData &pairsData)
+				: PairLegParams(params)
+				, pairData(&pairsData[id])
+				, security(
 					//! @todo FIXME const_cast for security: TRDK-184
 					const_cast<Security *>(
-						&bestBidAsk->service->GetSecurity(ecn))),
-				startPrice(GetCurrentPrice()),
-				ordersCount(0) {
+						&pairData->service->GetSecurity(ecn)))
+				, startPrice(GetCurrentPrice())
+				, ordersCount(0) {
 				if (Lib::IsZero(startPrice)) {
 					throw HasNotMuchOpportunityException(*security, 0);
 				}
@@ -80,11 +80,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			Security & GetBestSecurity() {
 				//! @todo FIXME const_cast for security: TRDK-184
 				return const_cast<Security &>(
-					bestBidAsk->service->GetSecurity(
+					pairData->service->GetSecurity(
 						//! @sa About price choosing (bid or ask) - see TRDK-110.
 						isBuy
-							?	bestBidAsk->bestAsk.source
-							:	bestBidAsk->bestBid.source));
+							?	pairData->bestAsk.source
+							:	pairData->bestBid.source));
 			}
 
 			const Security & GetBestSecurity() const {
@@ -104,7 +104,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const PairLegParams &ab,
 				const PairLegParams &bc,
 				const PairLegParams &ac,
-				const BestBidAskPairs &bestBidAskRef);
+				PairsData &pairsDataRef);
 		~Triangle();
 
 	public:
@@ -150,7 +150,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			const auto &orderDelay = timeMeasurement.Measure(
 				Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_COMPLETE_1);
 
-			m_legs[LEG1] = order;
+			OnOrderSent(order);
 
 			m_report.ReportAction(
 				"detected",
@@ -160,8 +160,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				nullptr,
 				&pairsSpeed);
 
-			m_lastOrderParams.Set(LEG1, security, price);
-			
 		}
 
 		void StartLeg2() {
@@ -202,8 +200,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				Lib::TimeMeasurement::Milestones());
 			order->Open();
 
-			m_legs[LEG2] = order;
-			m_lastOrderParams.Set(LEG2, security, price);
+			OnOrderSent(order);
 
 		}
 
@@ -262,8 +259,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 					Lib::TimeMeasurement::SM_STRATEGY_EXECUTION_COMPLETE_2);
 			}
 
-			m_legs[LEG3] = order;
-			m_lastOrderParams.Set(LEG3, security, price);
+			OnOrderSent(order);
 
 			return orderDelay;
 
@@ -291,32 +287,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	public:
 
-		void OnLeg2Cancel() {
-			
-			Assert(IsLegStarted(LEG1));
-			Assert(IsLegStarted(LEG2));
-			Assert(!IsLegStarted(LEG3));
-
-			Assert(GetLeg(LEG1).IsOpened());
-			Assert(!GetLeg(LEG2).IsOpened());
-
-			m_legs[LEG2].reset();
-
-		}
-
-		void OnLeg3Cancel() {
-			
-			Assert(IsLegStarted(LEG1));
-			Assert(IsLegStarted(LEG2));
-			Assert(IsLegStarted(LEG3));
-
-			Assert(GetLeg(LEG1).IsOpened());
-			Assert(GetLeg(LEG2).IsOpened());
-			Assert(!GetLeg(LEG3).IsOpened());
-
-			m_legs[LEG3].reset();
-		
-		}
+		void OnLeg1Cancel();
+		void OnLeg2Cancel();
+		void OnLeg3Cancel();
 
 		void OnLeg3Execution() {
 			
@@ -404,8 +377,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return const_cast<Triangle *>(this)->GetPair(leg);
 		}
 
-		const BestBidAskPairs & GetBestBidAsk() const {
-			return m_bestBidAsk;
+		const PairsData & GetPairsData() const {
+			return m_pairsData;
 		}
 
 		const Security & GetCalcSecurity(const Pair &pair) const {
@@ -523,6 +496,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				double price,
 				const Lib::TimeMeasurement::Milestones &);
 
+		void OnOrderSent(const boost::shared_ptr<Twd::Position> &);
+		void OnOrderCanceled(boost::shared_ptr<Twd::Position> &);
+
 		void ReportStart() const;
 		void ReportEnd() const;
 
@@ -530,7 +506,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		
 		TriangulationWithDirection &m_strategy;
 		const boost::posix_time::ptime m_startTime;
-		const BestBidAskPairs &m_bestBidAsk;
+		PairsData &m_pairsData;
 
 		TriangleReport m_report;
 
@@ -549,9 +525,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		public:
 
 			LastStartParams()
-				: m_leg(numberOfLegs),
-				m_security(nullptr),
-				m_price(0) {
+				: m_leg(numberOfLegs)
+				, m_security(nullptr)
+				, m_price(0) {
+				//...//
 			}
 
 			void Set(

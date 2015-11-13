@@ -29,7 +29,8 @@ Twd::Position::Position(
 		const TimeMeasurement::Milestones &timeMeasurement,
 		const Pair &pair,
 		const Leg &leg,
-		const Qty &baseCurrencyQty)
+		double unsentQtyPrecision,
+		const Qty &additionalQtyFromPrevOrders)
 	: trdk::Position(
 		strategy,
 		triangle.GetId(),
@@ -39,10 +40,13 @@ Twd::Position::Position(
 		currency,
 		qty,
 		startPrice,
-		timeMeasurement),
-	m_pair(pair),
-	m_leg(leg) {
-	const_cast<OrderParams &>(m_orderParams).minTradeQty = baseCurrencyQty;
+		timeMeasurement)
+	, m_pair(pair)
+	, m_leg(leg)
+	, m_unsentQtyPrecision(unsentQtyPrecision)
+	, m_additionalQtyFromPrevOrders(additionalQtyFromPrevOrders) {
+	AssertLt(qty, m_additionalQtyFromPrevOrders);
+	const_cast<OrderParams &>(m_orderParams).minTradeQty = qty;
 }
 
 Twd::LongPosition::LongPosition(
@@ -56,7 +60,8 @@ Twd::LongPosition::LongPosition(
 		const TimeMeasurement::Milestones &timeMeasurement,
 		const Pair &pair,
 		const Leg &leg,
-		const Qty &baseCurrencyQty)
+		double unsentQtyPrecision,
+		const Qty &additionalQtyFromPrevOrders)
 	: trdk::Position(
 		strategy,
 		triangle.GetId(),
@@ -78,7 +83,8 @@ Twd::LongPosition::LongPosition(
 		timeMeasurement,
 		pair,
 		leg,
-		baseCurrencyQty),
+		unsentQtyPrecision,
+		additionalQtyFromPrevOrders),
 	trdk::LongPosition(
 		strategy,
 		triangle.GetId(),
@@ -103,7 +109,8 @@ Twd::ShortPosition::ShortPosition(
 		const TimeMeasurement::Milestones &timeMeasurement,
 		const Pair &pair,
 		const Leg &leg,
-		const Qty &baseCurrencyQty)
+		double unsentQtyPrecision,
+		const Qty &additionalQtyFromPrevOrders)
 	: trdk::Position(
 		strategy,
 		triangle.GetId(),
@@ -125,7 +132,8 @@ Twd::ShortPosition::ShortPosition(
 		timeMeasurement,
 		pair,
 		leg,
-		baseCurrencyQty),
+		unsentQtyPrecision,
+		additionalQtyFromPrevOrders),
 	trdk::ShortPosition(
 		strategy,
 		triangle.GetId(),

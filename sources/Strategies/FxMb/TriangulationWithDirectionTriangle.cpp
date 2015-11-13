@@ -15,6 +15,7 @@
 #include "Core/RiskControl.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -30,29 +31,29 @@ Triangle::Triangle(
 		const PairLegParams &ab,
 		const PairLegParams &bc,
 		const PairLegParams &ac,
-		const BestBidAskPairs &bestBidAskRef) 
-	: m_strategy(strategy),
-	m_startTime(m_strategy.GetContext().GetCurrentTime()),
-	m_bestBidAsk(bestBidAskRef),
-	m_report(*this, reportsState),
-	m_id(id),
-	m_y(y),
-	m_aQty(startQty) {
+		PairsData &pairDataRef) 
+	: m_strategy(strategy)
+	, m_startTime(m_strategy.GetContext().GetCurrentTime())
+	, m_pairsData(pairDataRef)
+	, m_report(*this, reportsState)
+	, m_id(id)
+	, m_y(y)
+	, m_aQty(startQty) {
 
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
 		m_pairsLegs.fill(nullptr);
 #	endif
 			
-	m_pairs[PAIR_AB] = PairInfo(ab, m_bestBidAsk);
+	m_pairs[PAIR_AB] = PairInfo(ab, m_pairsData);
 	m_pairsLegs[m_pairs[PAIR_AB].leg] = &m_pairs[PAIR_AB];
 	
 	{
 		auto &pair = m_pairs[PAIR_BC]; 
-		pair = PairInfo(bc, m_bestBidAsk);
+		pair = PairInfo(bc, m_pairsData);
 		m_pairsLegs[pair.leg] = &pair;
 	}
 			
-	m_pairs[PAIR_AC] = PairInfo(ac, m_bestBidAsk);
+	m_pairs[PAIR_AC] = PairInfo(ac, m_pairsData);
 	m_pairsLegs[m_pairs[PAIR_AC].leg] = &m_pairs[PAIR_AC];
 		
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
@@ -135,6 +136,15 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 		Assert(!Lib::IsZero(security.GetAskPrice()));
 
+		//! @sa TRDK-235
+		AssertGt(1.0, pair.pairData->unsentQtyPrecisionVolume);
+		AssertLt(-1.0, pair.pairData->unsentQtyPrecisionVolume);
+		auto cleanQty = Qty(qty);
+		const auto unsentQtyPrecision = qty - double(cleanQty);
+		const auto additionalQty
+			= Qty(pair.pairData->unsentQtyPrecisionVolume + unsentQtyPrecision);
+		AssertLt(0, additionalQty);
+
 		result.reset(
 			new Twd::LongPosition(
 				m_strategy,
@@ -142,16 +152,13 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
-				//! @todo remove "to qty"
-				//! @todo see TRDK-92
-				Qty(boost::math::round(qty)),
+				cleanQty + additionalQty,
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
 				pair.leg,
-				//! @todo remove "to qty"
-				//! @todo see TRDK-92
-				Qty(boost::math::round(qty))));
+				unsentQtyPrecision,
+				additionalQty));
 			
 	} else {
 
@@ -196,6 +203,15 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		AssertLt(0, qty);
 		Assert(!Lib::IsZero(security.GetBidPrice()));
 
+		//! @sa TRDK-235
+		AssertGt(1.0, pair.pairData->unsentQtyPrecisionVolume);
+		AssertLt(-1.0, pair.pairData->unsentQtyPrecisionVolume);
+		auto cleanQty = Qty(qty);
+		const auto unsentQtyPrecision = qty - double(cleanQty);
+		const auto additionalQty
+			= Qty(pair.pairData->unsentQtyPrecisionVolume - unsentQtyPrecision);
+		AssertGe(0, additionalQty);
+
 		result.reset(
 			new Twd::ShortPosition(
 				m_strategy,
@@ -203,23 +219,144 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
-				//! @todo remove "to qty"
-				//! @todo see TRDK-92
-				Qty(boost::math::round(qty)),
+				cleanQty + -(additionalQty),
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
 				pair.leg,
-				//! @todo remove "to qty"
-				//! @todo see TRDK-92
-				Qty(boost::math::round(qty))));
+				-unsentQtyPrecision,
+				additionalQty));
 			
 	}
 
-	++pair.ordersCount;
-		
 	return result;
 		
+}
+
+void Triangle::OnOrderSent(const boost::shared_ptr<Twd::Position> &order) {
+
+	PairInfo &pair = GetPair(order->GetLeg());
+
+	const auto prevUnsentDecimalVolume = pair.pairData->unsentQtyPrecisionVolume;
+	pair.pairData->unsentQtyPrecisionVolume += order->GetUnsentQtyPrecision();
+	pair.pairData->unsentQtyPrecisionVolume
+		-= order->GetAdditionalQtyFromPrevOrders();
+	if (
+			!IsZero(order->GetUnsentQtyPrecision())
+			|| !IsZero(order->GetAdditionalQtyFromPrevOrders())) {
+		m_strategy.GetTradingLog().Write(
+			"\tqty precision\tto order"
+				"\tqty: %1% + %2% = %3%"
+				"\tto cover: %4% + (%5%) - (%6%) = %7%",
+			[&](TradingRecord &record) {
+				record
+					% (order->GetPlanedQty() - order->GetAdditionalQtyFromPrevOrders())
+					% order->GetAdditionalQtyFromPrevOrders()
+					% order->GetPlanedQty();
+				record
+					% prevUnsentDecimalVolume
+					% pair.pairData->unsentQtyPrecisionVolume
+					% order->GetAdditionalQtyFromPrevOrders()
+					% pair.pairData->unsentQtyPrecisionVolume;
+			});
+	}
+
+	m_legs[pair.leg] = order;
+
+	m_lastOrderParams.Set(
+		pair.leg,
+		order->GetSecurity(),
+		order->GetSecurity().DescalePrice(order->GetOpenPrice()));
+
+	++pair.ordersCount;
+
+}
+
+void Triangle::OnOrderCanceled(boost::shared_ptr<Twd::Position> &leg) {
+	
+	Assert(leg);
+	
+	PairInfo &pair = GetPair(leg->GetLeg());
+	const auto prevUnsentDecimalVolume = pair.pairData->unsentQtyPrecisionVolume;
+	pair.pairData->unsentQtyPrecisionVolume -= leg->GetUnsentQtyPrecision();
+	pair.pairData->unsentQtyPrecisionVolume
+		+= leg->GetAdditionalQtyFromPrevOrders();
+	if (
+			!IsZero(leg->GetUnsentQtyPrecision())
+			|| !IsZero(leg->GetAdditionalQtyFromPrevOrders())) {
+		m_strategy.GetTradingLog().Write(
+			"\tqty precision\trollback"
+				"\tqty: %1% + %2% = %3%"
+				"\tto cover: %4% - (%5%) + (%6%) = %7%",
+			[&](TradingRecord &record) {
+				record
+					% (leg->GetPlanedQty() - leg->GetAdditionalQtyFromPrevOrders())
+					% leg->GetAdditionalQtyFromPrevOrders()
+					% leg->GetPlanedQty();
+				record
+					% prevUnsentDecimalVolume
+					% pair.pairData->unsentQtyPrecisionVolume
+					% leg->GetAdditionalQtyFromPrevOrders()
+					% pair.pairData->unsentQtyPrecisionVolume;
+			});
+	}
+
+	leg.reset();
+
+}
+
+void Triangle::OnLeg1Cancel() {
+
+	Assert(IsLegStarted(LEG1));
+	Assert(!IsLegStarted(LEG2));
+	Assert(!IsLegStarted(LEG3));
+
+	Assert(!GetLeg(LEG1).IsOpened());
+	Assert(!GetLeg(LEG2).IsOpened());
+
+	OnOrderCanceled(m_legs[LEG1]);
+
+}
+
+void Triangle::OnLeg2Cancel() {
+
+	Assert(IsLegStarted(LEG1));
+	Assert(IsLegStarted(LEG2));
+	Assert(!IsLegStarted(LEG3));
+
+	Assert(GetLeg(LEG1).IsOpened());
+	Assert(!GetLeg(LEG2).IsOpened());
+
+	OnOrderCanceled(m_legs[LEG2]);
+
+}
+
+void Triangle::OnLeg3Cancel() {
+
+	Assert(IsLegStarted(LEG1));
+	Assert(IsLegStarted(LEG2));
+	Assert(IsLegStarted(LEG3));
+
+	Assert(GetLeg(LEG1).IsOpened());
+	Assert(GetLeg(LEG2).IsOpened());
+	Assert(!GetLeg(LEG3).IsOpened());
+
+	OnOrderCanceled(m_legs[LEG3]);
+
+}
+
+void Triangle::OnLeg3Execution() {
+			
+	Assert(IsLegStarted(LEG1));
+	Assert(IsLegStarted(LEG2));
+	Assert(IsLegStarted(LEG3));
+			
+	Assert(GetLeg(LEG1).IsOpened());
+	Assert(GetLeg(LEG2).IsOpened());
+	Assert(GetLeg(LEG3).IsOpened());
+			
+	ReportEnd();
+
 }
 
 void Triangle::ReportStart() const {

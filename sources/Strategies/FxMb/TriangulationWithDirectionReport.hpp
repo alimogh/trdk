@@ -31,7 +31,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				bool enablePriceUpdates);
 		~ReportsState();
 
-		void WriteStrategyLogHead(const Context &, const BestBidAskPairs &);
+		void WriteStrategyLogHead(const Context &, const PairsData &);
 
 	};
 

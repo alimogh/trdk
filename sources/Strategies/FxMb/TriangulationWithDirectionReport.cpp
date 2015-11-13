@@ -148,11 +148,9 @@ public:
 	
 	}
 
-	void WriteHead(
-			const Context &context,
-			const BestBidAskPairs &bestBidAskPairs) {
+	void WriteHead(const Context &context, const PairsData &allPairsData) {
 		log.Write(
-			[&context, &bestBidAskPairs](ReportRecord &record) {
+			[&context, &allPairsData](ReportRecord &record) {
 				record
 					%	"No"
 					%	"Time"
@@ -167,9 +165,9 @@ public:
 					%	"Y executed"
 					%	"Y targeted"
 					%	"ATR";
-				foreach (const auto &bestBidAsk, bestBidAskPairs) {
+				foreach (const auto &pairData, allPairsData) {
 					const char *pair
-						= bestBidAsk
+						= pairData
 							.service
 							->GetSecurity(0)
 							.GetSymbol()
@@ -213,7 +211,7 @@ public:
 					% "Build time: " __DATE__ " " __TIME__;
 			});
 // 	log.Write(
-// 		[&context, &bestBidAskPairs](ReportRecord &record) {
+// 		[&context, &allPairsData](ReportRecord &record) {
 // 			record
 // 				%	"No"
 // 				%	"Time"
@@ -221,9 +219,9 @@ public:
 // 				%	"Y1"
 // 				%	"Y2"
 // 				%	"Y1 or Y2";
-// 			foreach (const auto &bestBidAsk, bestBidAskPairs) {
+// 			foreach (const auto &pairData, allPairsData) {
 // 				const char *pair
-// 					= bestBidAsk
+// 					= pairData
 // 						.service
 // 						->GetSecurity(0)
 // 						.GetSymbol()
@@ -257,8 +255,8 @@ ReportsState::ReportsState(
 
 void ReportsState::WriteStrategyLogHead(
 		const Context &context,
-		const BestBidAskPairs &bestBidAsk) {
-	strategy->WriteHead(context, bestBidAsk);
+		const PairsData &pairData) {
+	strategy->WriteHead(context, pairData);
 }
 
 ReportsState::~ReportsState() {
@@ -363,17 +361,17 @@ void TriangleReport::ReportAction(
 		
 		// Best bid/ask and ECNs: ////////////////////////////////////////////////////
 		record
-			%	info.bestBidAsk->bestBid.price
+			%	info.pairData->bestBid.price
 			%	m_triangle
 					.GetStrategy()
 					.GetContext()
-					.GetMarketDataSource(info.bestBidAsk->bestBid.source)
+					.GetMarketDataSource(info.pairData->bestBid.source)
 					.GetTag()
-			%	info.bestBidAsk->bestAsk.price
+			%	info.pairData->bestAsk.price
 			%	m_triangle
 					.GetStrategy()
 					.GetContext()
-					.GetMarketDataSource(info.bestBidAsk->bestAsk.source)
+					.GetMarketDataSource(info.pairData->bestAsk.source)
 					.GetTag();
 
 		// Rising/falling speed: ///////////////////////////////////////////////////////
@@ -391,7 +389,7 @@ void TriangleReport::ReportAction(
 		}
 		
 		// Stat data: //////////////////////////////////////////////////////////////////
-		const auto &data = info.bestBidAsk->service->GetData(
+		const auto &data = info.pairData->service->GetData(
 			security.GetSource().GetIndex());
 		record
 			%	data.current.theo
@@ -542,24 +540,24 @@ void TriangleReport::ReportUpdate() {
 		
 		// Best bid/ask and ECNs: ////////////////////////////////////////////////////
 		record
-			%	info.bestBidAsk->bestBid.price
+			%	info.pairData->bestBid.price
 			%	m_triangle
 					.GetStrategy()
 					.GetContext()
-					.GetMarketDataSource(info.bestBidAsk->bestBid.source)
+					.GetMarketDataSource(info.pairData->bestBid.source)
 					.GetTag()
-			%	info.bestBidAsk->bestAsk.price
+			%	info.pairData->bestAsk.price
 			%	m_triangle
 					.GetStrategy()
 					.GetContext()
-					.GetMarketDataSource(info.bestBidAsk->bestAsk.source)
+					.GetMarketDataSource(info.pairData->bestAsk.source)
 					.GetTag();
 
 		// Rising/falling speed: ///////////////////////////////////////////////////////
 		record % ' ' % ' ';
 		
 		// Stat data: //////////////////////////////////////////////////////////////////
-		const auto &data = info.bestBidAsk->service->GetData(
+		const auto &data = info.pairData->service->GetData(
 			security.GetSource().GetIndex());
 		record
 			%	data.current.theo
