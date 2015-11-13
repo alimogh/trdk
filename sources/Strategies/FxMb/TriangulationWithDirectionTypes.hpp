@@ -44,7 +44,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	struct PairData {
+	struct BestBidAsk {
 
 		const StatService *service;
 		double unsentQtyPrecisionVolume;
@@ -62,18 +62,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			bestBid,
 			bestAsk;
 
-		PairData()
-			: service(nullptr) {
-			//...//
-		}
-
-
-		explicit PairData(const StatService &service)
-			: service(&service)
-			, unsentQtyPrecisionVolume(0) {
-			//...//
-		}
-
 		void Reset() {
 			bestBid.Reset();
 			bestAsk.Reset();
@@ -81,7 +69,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	};
 
-	typedef boost::array<PairData, numberOfPairs> PairsData;
+	typedef boost::array<BestBidAsk, numberOfPairs> BestBidAskPairs;
 
 	////////////////////////////////////////////////////////////////////////////////
 

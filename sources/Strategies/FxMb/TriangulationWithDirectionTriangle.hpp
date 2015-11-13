@@ -36,7 +36,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		struct PairInfo : public PairLegParams {
 
-			PairData *pairData;
+			BestBidAsk *bestBidAsk;
 			Security *security;
 
 			double startPrice;
@@ -48,13 +48,13 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 			explicit PairInfo(
 					const PairLegParams &params,
-					PairsData &pairsData)
+					BestBidAskPairs &bestBidAskRef)
 				: PairLegParams(params)
-				, pairData(&pairsData[id])
+				, bestBidAsk(&bestBidAskRef[id])
 				, security(
 					//! @todo FIXME const_cast for security: TRDK-184
 					const_cast<Security *>(
-						&pairData->service->GetSecurity(ecn)))
+						&bestBidAsk->service->GetSecurity(ecn)))
 				, startPrice(GetCurrentPrice())
 				, ordersCount(0) {
 				if (Lib::IsZero(startPrice)) {
@@ -80,11 +80,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			Security & GetBestSecurity() {
 				//! @todo FIXME const_cast for security: TRDK-184
 				return const_cast<Security &>(
-					pairData->service->GetSecurity(
+					bestBidAsk->service->GetSecurity(
 						//! @sa About price choosing (bid or ask) - see TRDK-110.
 						isBuy
-							?	pairData->bestAsk.source
-							:	pairData->bestBid.source));
+							?	bestBidAsk->bestAsk.source
+							:	bestBidAsk->bestBid.source));
 			}
 
 			const Security & GetBestSecurity() const {
@@ -104,7 +104,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const PairLegParams &ab,
 				const PairLegParams &bc,
 				const PairLegParams &ac,
-				PairsData &pairsDataRef);
+				BestBidAskPairs &bestBidAskRef);
 		~Triangle();
 
 	public:
@@ -377,8 +377,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return const_cast<Triangle *>(this)->GetPair(leg);
 		}
 
-		const PairsData & GetPairsData() const {
-			return m_pairsData;
+		const BestBidAskPairs & GetBestBidAsk() const {
+			return m_bestBidAsk;
 		}
 
 		const Security & GetCalcSecurity(const Pair &pair) const {
@@ -506,7 +506,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		
 		TriangulationWithDirection &m_strategy;
 		const boost::posix_time::ptime m_startTime;
-		PairsData &m_pairsData;
+		BestBidAskPairs &m_bestBidAsk;
 
 		TriangleReport m_report;
 

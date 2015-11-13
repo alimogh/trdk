@@ -31,10 +31,10 @@ Triangle::Triangle(
 		const PairLegParams &ab,
 		const PairLegParams &bc,
 		const PairLegParams &ac,
-		PairsData &pairDataRef) 
+		BestBidAskPairs &bestBidAskRef) 
 	: m_strategy(strategy)
 	, m_startTime(m_strategy.GetContext().GetCurrentTime())
-	, m_pairsData(pairDataRef)
+	, m_bestBidAsk(bestBidAskRef)
 	, m_report(*this, reportsState)
 	, m_id(id)
 	, m_y(y)
@@ -44,16 +44,16 @@ Triangle::Triangle(
 		m_pairsLegs.fill(nullptr);
 #	endif
 			
-	m_pairs[PAIR_AB] = PairInfo(ab, m_pairsData);
+	m_pairs[PAIR_AB] = PairInfo(ab, m_bestBidAsk);
 	m_pairsLegs[m_pairs[PAIR_AB].leg] = &m_pairs[PAIR_AB];
 	
 	{
 		auto &pair = m_pairs[PAIR_BC]; 
-		pair = PairInfo(bc, m_pairsData);
+		pair = PairInfo(bc, m_bestBidAsk);
 		m_pairsLegs[pair.leg] = &pair;
 	}
 			
-	m_pairs[PAIR_AC] = PairInfo(ac, m_pairsData);
+	m_pairs[PAIR_AC] = PairInfo(ac, m_bestBidAsk);
 	m_pairsLegs[m_pairs[PAIR_AC].leg] = &m_pairs[PAIR_AC];
 		
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
@@ -137,12 +137,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		Assert(!Lib::IsZero(security.GetAskPrice()));
 
 		//! @sa TRDK-235
-		AssertGt(1.0, pair.pairData->unsentQtyPrecisionVolume);
-		AssertLt(-1.0, pair.pairData->unsentQtyPrecisionVolume);
+		AssertGt(1.0, pair.bestBidAsk->unsentQtyPrecisionVolume);
+		AssertLt(-1.0, pair.bestBidAsk->unsentQtyPrecisionVolume);
 		auto cleanQty = Qty(qty);
 		const auto unsentQtyPrecision = qty - double(cleanQty);
 		const auto additionalQty
-			= Qty(pair.pairData->unsentQtyPrecisionVolume + unsentQtyPrecision);
+			= Qty(pair.bestBidAsk->unsentQtyPrecisionVolume + unsentQtyPrecision);
 		AssertLt(0, additionalQty);
 
 		result.reset(
@@ -204,12 +204,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		Assert(!Lib::IsZero(security.GetBidPrice()));
 
 		//! @sa TRDK-235
-		AssertGt(1.0, pair.pairData->unsentQtyPrecisionVolume);
-		AssertLt(-1.0, pair.pairData->unsentQtyPrecisionVolume);
+		AssertGt(1.0, pair.bestBidAsk->unsentQtyPrecisionVolume);
+		AssertLt(-1.0, pair.bestBidAsk->unsentQtyPrecisionVolume);
 		auto cleanQty = Qty(qty);
 		const auto unsentQtyPrecision = qty - double(cleanQty);
 		const auto additionalQty
-			= Qty(pair.pairData->unsentQtyPrecisionVolume - unsentQtyPrecision);
+			= Qty(pair.bestBidAsk->unsentQtyPrecisionVolume - unsentQtyPrecision);
 		AssertGe(0, additionalQty);
 
 		result.reset(
@@ -237,9 +237,9 @@ void Triangle::OnOrderSent(const boost::shared_ptr<Twd::Position> &order) {
 
 	PairInfo &pair = GetPair(order->GetLeg());
 
-	const auto prevUnsentDecimalVolume = pair.pairData->unsentQtyPrecisionVolume;
-	pair.pairData->unsentQtyPrecisionVolume += order->GetUnsentQtyPrecision();
-	pair.pairData->unsentQtyPrecisionVolume
+	const auto prevUnsentDecimalVolume = pair.bestBidAsk->unsentQtyPrecisionVolume;
+	pair.bestBidAsk->unsentQtyPrecisionVolume += order->GetUnsentQtyPrecision();
+	pair.bestBidAsk->unsentQtyPrecisionVolume
 		-= order->GetAdditionalQtyFromPrevOrders();
 	if (
 			!IsZero(order->GetUnsentQtyPrecision())
@@ -255,9 +255,9 @@ void Triangle::OnOrderSent(const boost::shared_ptr<Twd::Position> &order) {
 					% order->GetPlanedQty();
 				record
 					% prevUnsentDecimalVolume
-					% pair.pairData->unsentQtyPrecisionVolume
+					% pair.bestBidAsk->unsentQtyPrecisionVolume
 					% order->GetAdditionalQtyFromPrevOrders()
-					% pair.pairData->unsentQtyPrecisionVolume;
+					% pair.bestBidAsk->unsentQtyPrecisionVolume;
 			});
 	}
 
@@ -277,9 +277,9 @@ void Triangle::OnOrderCanceled(boost::shared_ptr<Twd::Position> &leg) {
 	Assert(leg);
 	
 	PairInfo &pair = GetPair(leg->GetLeg());
-	const auto prevUnsentDecimalVolume = pair.pairData->unsentQtyPrecisionVolume;
-	pair.pairData->unsentQtyPrecisionVolume -= leg->GetUnsentQtyPrecision();
-	pair.pairData->unsentQtyPrecisionVolume
+	const auto prevUnsentDecimalVolume = pair.bestBidAsk->unsentQtyPrecisionVolume;
+	pair.bestBidAsk->unsentQtyPrecisionVolume -= leg->GetUnsentQtyPrecision();
+	pair.bestBidAsk->unsentQtyPrecisionVolume
 		+= leg->GetAdditionalQtyFromPrevOrders();
 	if (
 			!IsZero(leg->GetUnsentQtyPrecision())
@@ -295,9 +295,9 @@ void Triangle::OnOrderCanceled(boost::shared_ptr<Twd::Position> &leg) {
 					% leg->GetPlanedQty();
 				record
 					% prevUnsentDecimalVolume
-					% pair.pairData->unsentQtyPrecisionVolume
+					% pair.bestBidAsk->unsentQtyPrecisionVolume
 					% leg->GetAdditionalQtyFromPrevOrders()
-					% pair.pairData->unsentQtyPrecisionVolume;
+					% pair.bestBidAsk->unsentQtyPrecisionVolume;
 			});
 	}
 
@@ -342,20 +342,6 @@ void Triangle::OnLeg3Cancel() {
 	Assert(!GetLeg(LEG3).IsOpened());
 
 	OnOrderCanceled(m_legs[LEG3]);
-
-}
-
-void Triangle::OnLeg3Execution() {
-			
-	Assert(IsLegStarted(LEG1));
-	Assert(IsLegStarted(LEG2));
-	Assert(IsLegStarted(LEG3));
-			
-	Assert(GetLeg(LEG1).IsOpened());
-	Assert(GetLeg(LEG2).IsOpened());
-	Assert(GetLeg(LEG3).IsOpened());
-			
-	ReportEnd();
 
 }
 
