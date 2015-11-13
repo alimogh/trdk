@@ -23,4 +23,4 @@ include_directories("${TRDK_EXTERNALS_DIR}msgpack-c/include/")
 target_link_libraries(
     RobotEngine
     LINK_PRIVATE
-    dl ${Boost_LIBRARIES} Lib Core Engine)
+    pthread dl ${Boost_LIBRARIES} Lib Core Engine)

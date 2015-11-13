@@ -148,6 +148,7 @@ void EngineServer::Service::OnConnect(
 void EngineServer::Service::PublishEngine() {
 	const auto &info = std::make_tuple(
 		m_name,
+		"acd51d02-896b-11e5-af63-feff819cdc9f",
 		std::string(TRDK_BUILD_IDENTITY),
 		m_suffix);
 	m_session->publish(m_topics.onNewInstance, info);
