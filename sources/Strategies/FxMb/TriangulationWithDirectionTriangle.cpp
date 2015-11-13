@@ -245,10 +245,13 @@ void Triangle::OnOrderSent(const boost::shared_ptr<Twd::Position> &order) {
 			!IsZero(order->GetUnsentQtyPrecision())
 			|| !IsZero(order->GetAdditionalQtyFromPrevOrders())) {
 		m_strategy.GetTradingLog().Write(
-			"\tqty precision\tto order"
-				"\tqty: %1% + %2% = %3%"
-				"\tto cover: %4% + (%5%) - (%6%) = %7%",
+			"\tqty precision\torder\t%1%\t%2%"
+				"\tqty: %3% + %4% = %5%"
+				"\tto cover: %6% + (%7%) - (%8%) = %9%",
 			[&](TradingRecord &record) {
+				record
+					% order->GetSecurity().GetSymbol().GetSymbol()
+					% order->GetTypeStr();
 				record
 					% (order->GetPlanedQty() - order->GetAdditionalQtyFromPrevOrders())
 					% order->GetAdditionalQtyFromPrevOrders()
@@ -285,10 +288,13 @@ void Triangle::OnOrderCanceled(boost::shared_ptr<Twd::Position> &leg) {
 			!IsZero(leg->GetUnsentQtyPrecision())
 			|| !IsZero(leg->GetAdditionalQtyFromPrevOrders())) {
 		m_strategy.GetTradingLog().Write(
-			"\tqty precision\trollback"
-				"\tqty: %1% + %2% = %3%"
-				"\tto cover: %4% - (%5%) + (%6%) = %7%",
+			"\tqty precision\trollback\t%1%\t%2%"
+				"\tqty: %3% + %4% = %5%"
+				"\tto cover: %6% - (%7%) + (%8%) = %9%",
 			[&](TradingRecord &record) {
+				record
+					% leg->GetSecurity().GetSymbol().GetSymbol()
+					% leg->GetTypeStr();
 				record
 					% (leg->GetPlanedQty() - leg->GetAdditionalQtyFromPrevOrders())
 					% leg->GetAdditionalQtyFromPrevOrders()
