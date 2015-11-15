@@ -31,10 +31,10 @@ Triangle::Triangle(
 		const PairLegParams &ab,
 		const PairLegParams &bc,
 		const PairLegParams &ac,
-		BestBidAskPairs &bestBidAskRef) 
+		PairSetData &pairsDataRef) 
 	: m_strategy(strategy)
 	, m_startTime(m_strategy.GetContext().GetCurrentTime())
-	, m_bestBidAsk(bestBidAskRef)
+	, m_pairsData(pairsDataRef)
 	, m_report(*this, reportsState)
 	, m_id(id)
 	, m_y(y)
@@ -44,16 +44,16 @@ Triangle::Triangle(
 		m_pairsLegs.fill(nullptr);
 #	endif
 			
-	m_pairs[PAIR_AB] = PairInfo(ab, m_bestBidAsk);
+	m_pairs[PAIR_AB] = PairInfo(ab, m_pairsData);
 	m_pairsLegs[m_pairs[PAIR_AB].leg] = &m_pairs[PAIR_AB];
 	
 	{
 		auto &pair = m_pairs[PAIR_BC]; 
-		pair = PairInfo(bc, m_bestBidAsk);
+		pair = PairInfo(bc, m_pairsData);
 		m_pairsLegs[pair.leg] = &pair;
 	}
 			
-	m_pairs[PAIR_AC] = PairInfo(ac, m_bestBidAsk);
+	m_pairs[PAIR_AC] = PairInfo(ac, m_pairsData);
 	m_pairsLegs[m_pairs[PAIR_AC].leg] = &m_pairs[PAIR_AC];
 		
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
@@ -137,12 +137,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		Assert(!Lib::IsZero(security.GetAskPrice()));
 
 		//! @sa TRDK-235
-		AssertGt(1.0, pair.bestBidAsk->unsentQtyPrecisionVolume);
-		AssertLt(-1.0, pair.bestBidAsk->unsentQtyPrecisionVolume);
+		AssertGt(1.0, pair.pairData->unsentQtyPrecisionVolume);
+		AssertLt(-1.0, pair.pairData->unsentQtyPrecisionVolume);
 		auto cleanQty = Qty(qty);
 		const auto unsentQtyPrecision = qty - double(cleanQty);
 		const auto additionalQty
-			= Qty(pair.bestBidAsk->unsentQtyPrecisionVolume + unsentQtyPrecision);
+			= Qty(pair.pairData->unsentQtyPrecisionVolume + unsentQtyPrecision);
 		AssertLe(0, additionalQty);
 
 		result.reset(
@@ -204,12 +204,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		Assert(!Lib::IsZero(security.GetBidPrice()));
 
 		//! @sa TRDK-235
-		AssertGt(1.0, pair.bestBidAsk->unsentQtyPrecisionVolume);
-		AssertLt(-1.0, pair.bestBidAsk->unsentQtyPrecisionVolume);
+		AssertGt(1.0, pair.pairData->unsentQtyPrecisionVolume);
+		AssertLt(-1.0, pair.pairData->unsentQtyPrecisionVolume);
 		auto cleanQty = Qty(qty);
 		const auto unsentQtyPrecision = qty - double(cleanQty);
 		const auto additionalQty
-			= -Qty(pair.bestBidAsk->unsentQtyPrecisionVolume - unsentQtyPrecision);
+			= -Qty(pair.pairData->unsentQtyPrecisionVolume - unsentQtyPrecision);
 		AssertGe(0, additionalQty);
 
 		result.reset(
@@ -237,8 +237,8 @@ void Triangle::OnOrderSent(const boost::shared_ptr<Twd::Position> &order) {
 
 	PairInfo &pair = GetPair(order->GetLeg());
 
-	pair.bestBidAsk->unsentQtyPrecisionVolume += order->GetUnsentQtyPrecision();
-	pair.bestBidAsk->unsentQtyPrecisionVolume
+	pair.pairData->unsentQtyPrecisionVolume += order->GetUnsentQtyPrecision();
+	pair.pairData->unsentQtyPrecisionVolume
 		-= order->GetAdditionalQtyFromPrevOrders();
 
 	if (
@@ -258,12 +258,12 @@ void Triangle::OnOrderSent(const boost::shared_ptr<Twd::Position> &order) {
 					% order->GetAdditionalQtyFromPrevOrders()
 					% order->GetPlanedQty();
 				record
-					% (pair.bestBidAsk->unsentQtyPrecisionVolume
+					% (pair.pairData->unsentQtyPrecisionVolume
 						+ order->GetAdditionalQtyFromPrevOrders()
 						- order->GetUnsentQtyPrecision())
 					% order->GetUnsentQtyPrecision()
 					% order->GetAdditionalQtyFromPrevOrders()
-					% pair.bestBidAsk->unsentQtyPrecisionVolume;
+					% pair.pairData->unsentQtyPrecisionVolume;
 			});
 	}
 
@@ -284,8 +284,8 @@ void Triangle::OnOrderCanceled(boost::shared_ptr<Twd::Position> &leg) {
 	
 	PairInfo &pair = GetPair(leg->GetLeg());
 
-	pair.bestBidAsk->unsentQtyPrecisionVolume -= leg->GetUnsentQtyPrecision();
-	pair.bestBidAsk->unsentQtyPrecisionVolume
+	pair.pairData->unsentQtyPrecisionVolume -= leg->GetUnsentQtyPrecision();
+	pair.pairData->unsentQtyPrecisionVolume
 		+= leg->GetAdditionalQtyFromPrevOrders();
 
 	if (
@@ -306,12 +306,12 @@ void Triangle::OnOrderCanceled(boost::shared_ptr<Twd::Position> &leg) {
 					% leg->GetAdditionalQtyFromPrevOrders()
 					% leg->GetPlanedQty();
 				record
-					% (pair.bestBidAsk->unsentQtyPrecisionVolume
+					% (pair.pairData->unsentQtyPrecisionVolume
 						- leg->GetAdditionalQtyFromPrevOrders()
 						+ leg->GetUnsentQtyPrecision())
 					% leg->GetUnsentQtyPrecision()
 					% leg->GetAdditionalQtyFromPrevOrders()
-					% pair.bestBidAsk->unsentQtyPrecisionVolume;
+					% pair.pairData->unsentQtyPrecisionVolume;
 			});
 	}
 

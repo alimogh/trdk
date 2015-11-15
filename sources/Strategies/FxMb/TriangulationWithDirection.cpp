@@ -91,8 +91,8 @@ TriangulationWithDirection::TriangulationWithDirection(
 	m_pairsOrder[PAIR_AC] = conf.ReadKey("pair_3");
 
 	{
-		const BestBidAsk def = {};
-		m_bestBidAsk.fill(def);
+		const PairData def = {};
+		m_pairsData.fill(def);
 	}
 	m_yDetected.fill(.0);
 	m_yDetectedReported.fill(.0);
@@ -115,7 +115,7 @@ TriangulationWithDirection::~TriangulationWithDirection() {
 
 void TriangulationWithDirection::OnServiceStart(const Service &service) {
 
-	const BestBidAsk statService = {
+	const PairData statService = {
 		boost::polymorphic_downcast<const StatService *>(&service)
 	};
 	const auto &symbol
@@ -133,11 +133,11 @@ void TriangulationWithDirection::OnServiceStart(const Service &service) {
 	const size_t index = std::distance(m_pairsOrder.begin(), orderIt);
 	GetLog().Info("Using %1% as pair #%2%",  symbol, index + 1);
 	AssertLt(index, numberOfPairs);
-	Assert(!m_bestBidAsk[index].service);
-	m_bestBidAsk[index] = statService;
+	Assert(!m_pairsData[index].service);
+	m_pairsData[index] = statService;
 
 	bool isFull = true;
-	foreach (const auto &s, m_bestBidAsk) {
+	foreach (const auto &s, m_pairsData) {
 		if (!s.service) {
 			isFull = false;
 			break;
@@ -150,7 +150,7 @@ void TriangulationWithDirection::OnServiceStart(const Service &service) {
 				throw ModuleError("Pair was not ordered");
 			}
 		}
-		m_reports.WriteStrategyLogHead(GetContext(), m_bestBidAsk);
+		m_reports.WriteStrategyLogHead(GetContext(), m_pairsData);
 	}
 
 }
@@ -426,12 +426,12 @@ bool TriangulationWithDirection::CheckStopRequest(const StopMode &stopMode) {
 void TriangulationWithDirection::CalcYDirection() {
 
 	Twd::CalcYDirection(
-		m_bestBidAsk[PAIR_AB].bestBid.price,
-		m_bestBidAsk[PAIR_AB].bestAsk.price,
-		m_bestBidAsk[PAIR_BC].bestBid.price,
-		m_bestBidAsk[PAIR_BC].bestAsk.price,
-		m_bestBidAsk[PAIR_AC].bestBid.price,
-		m_bestBidAsk[PAIR_AC].bestAsk.price,
+		m_pairsData[PAIR_AB].bestBid.price,
+		m_pairsData[PAIR_AB].bestAsk.price,
+		m_pairsData[PAIR_BC].bestBid.price,
+		m_pairsData[PAIR_BC].bestAsk.price,
+		m_pairsData[PAIR_AC].bestBid.price,
+		m_pairsData[PAIR_AC].bestAsk.price,
 		m_yDetected);
 
 	//! @sa TRDK-209:
@@ -443,12 +443,12 @@ void TriangulationWithDirection::CalcYDirection() {
 		message
 			% m_yDetected[Y1]
 			% m_yDetected[Y2]
-			% m_bestBidAsk[PAIR_AB].bestBid.price
-			% m_bestBidAsk[PAIR_AB].bestAsk.price
-			% m_bestBidAsk[PAIR_BC].bestBid.price
-			% m_bestBidAsk[PAIR_BC].bestAsk.price
-			% m_bestBidAsk[PAIR_AC].bestBid.price
-			% m_bestBidAsk[PAIR_AC].bestAsk.price;
+			% m_pairsData[PAIR_AB].bestBid.price
+			% m_pairsData[PAIR_AB].bestAsk.price
+			% m_pairsData[PAIR_BC].bestBid.price
+			% m_pairsData[PAIR_BC].bestAsk.price
+			% m_pairsData[PAIR_AC].bestBid.price
+			% m_pairsData[PAIR_AC].bestAsk.price;
 		throw RiskControlException(message.str().c_str());
 	}
 
@@ -456,31 +456,31 @@ void TriangulationWithDirection::CalcYDirection() {
 
 void TriangulationWithDirection::UpdateDirection(const Service &service) {
 		
-	auto bestBidAskIt = std::find_if(
-		m_bestBidAsk.begin(),
-		m_bestBidAsk.end(),
-		[&service](const BestBidAsk &bestBidAsk) {
-			return bestBidAsk.service == &service;
+	auto pairsDataIt = std::find_if(
+		m_pairsData.begin(),
+		m_pairsData.end(),
+		[&service](const PairData &pairData) {
+			return pairData.service == &service;
 		}); 
-	Assert(bestBidAskIt != m_bestBidAsk.end());
+	Assert(pairsDataIt != m_pairsData.end());
 
-	bestBidAskIt->Reset();
+	pairsDataIt->Reset();
 	const auto &ecnsCount = GetContext().GetMarketDataSourcesCount();
 	bool hasNotOpportunity = false;
 	for (size_t ecn = 0; !hasNotOpportunity && ecn < ecnsCount; ++ecn) {
  		if (
 				!m_useAdjustedBookForTrades
-				&& bestBidAskIt->service->GetSecurity(ecn).IsBookAdjusted()) {
+				&& pairsDataIt->service->GetSecurity(ecn).IsBookAdjusted()) {
  			continue;
  		}
-		const Security &security = bestBidAskIt->service->GetSecurity(ecn);
+		const Security &security = pairsDataIt->service->GetSecurity(ecn);
 		{
 			const auto &bid = security.GetBidPrice();
 			if (IsZero(bid)) {
 				hasNotOpportunity = true;
-			} else if (bestBidAskIt->bestBid.price < bid) {
-				bestBidAskIt->bestBid.price = bid;
-				bestBidAskIt->bestBid.source = ecn;
+			} else if (pairsDataIt->bestBid.price < bid) {
+				pairsDataIt->bestBid.price = bid;
+				pairsDataIt->bestBid.source = ecn;
 			}
 		}
 		{
@@ -488,17 +488,17 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 			if (IsZero(ask)) {
 				hasNotOpportunity = true;
 			} else if (
-					bestBidAskIt->bestAsk.price > ask
-					|| IsZero(bestBidAskIt->bestAsk.price)) {
-				bestBidAskIt->bestAsk.price = ask;
-				bestBidAskIt->bestAsk.source = ecn;
+					pairsDataIt->bestAsk.price > ask
+					|| IsZero(pairsDataIt->bestAsk.price)) {
+				pairsDataIt->bestAsk.price = ask;
+				pairsDataIt->bestAsk.source = ecn;
 			}
 		}
 	}
 
 	if (hasNotOpportunity) {
 			
-		bestBidAskIt->Reset();
+		pairsDataIt->Reset();
 			
 		ResetYDirection(m_yDetected);
 		if (m_triangle) {
@@ -511,12 +511,12 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 #		endif
 
 	} else if (
-			IsZero(m_bestBidAsk[PAIR_AB].bestBid.price)
-			||	IsZero(m_bestBidAsk[PAIR_AB].bestAsk.price)
-			||	IsZero(m_bestBidAsk[PAIR_BC].bestBid.price)
-			||	IsZero(m_bestBidAsk[PAIR_BC].bestAsk.price)
-			||	IsZero(m_bestBidAsk[PAIR_AC].bestBid.price)
-			||	IsZero(m_bestBidAsk[PAIR_AC].bestAsk.price)) {
+			IsZero(m_pairsData[PAIR_AB].bestBid.price)
+			||	IsZero(m_pairsData[PAIR_AB].bestAsk.price)
+			||	IsZero(m_pairsData[PAIR_BC].bestBid.price)
+			||	IsZero(m_pairsData[PAIR_BC].bestAsk.price)
+			||	IsZero(m_pairsData[PAIR_AC].bestBid.price)
+			||	IsZero(m_pairsData[PAIR_AC].bestAsk.price)) {
 		
 		ResetYDirection(m_yDetected);
 		if (m_triangle) {
@@ -533,12 +533,12 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 		CalcYDirection();
 
 		if (CheckOpportunity(m_yDetected) != Y_UNKNOWN) {
-			m_detectedEcns[Y1][PAIR_AB] = m_bestBidAsk[PAIR_AB].bestBid.source;
-			m_detectedEcns[Y1][PAIR_BC] = m_bestBidAsk[PAIR_BC].bestBid.source;
-			m_detectedEcns[Y1][PAIR_AC] = m_bestBidAsk[PAIR_AC].bestAsk.source;
-			m_detectedEcns[Y2][PAIR_AB] = m_bestBidAsk[PAIR_AB].bestAsk.source;
-			m_detectedEcns[Y2][PAIR_BC] = m_bestBidAsk[PAIR_BC].bestAsk.source;
-			m_detectedEcns[Y2][PAIR_AC] = m_bestBidAsk[PAIR_AC].bestBid.source;
+			m_detectedEcns[Y1][PAIR_AB] = m_pairsData[PAIR_AB].bestBid.source;
+			m_detectedEcns[Y1][PAIR_BC] = m_pairsData[PAIR_BC].bestBid.source;
+			m_detectedEcns[Y1][PAIR_AC] = m_pairsData[PAIR_AC].bestAsk.source;
+			m_detectedEcns[Y2][PAIR_AB] = m_pairsData[PAIR_AB].bestAsk.source;
+			m_detectedEcns[Y2][PAIR_BC] = m_pairsData[PAIR_BC].bestAsk.source;
+			m_detectedEcns[Y2][PAIR_AC] = m_pairsData[PAIR_AC].bestBid.source;
 		} else {
 #			ifdef DEV_VER
 				m_detectedEcns[Y1].fill(std::numeric_limits<size_t>::max());
@@ -582,8 +582,8 @@ void TriangulationWithDirection::CalcSpeed(
 
 	for (size_t pair = 0; pair < result.speed.size(); ++pair) {
 			
-		const auto &bestBidAsk = m_bestBidAsk[pair];
-		const auto &data = bestBidAsk.service->GetData(m_detectedEcns[y][pair]);
+		const auto &pairData = m_pairsData[pair];
+		const auto &data = pairData.service->GetData(m_detectedEcns[y][pair]);
 
 		Assert(
 			!(data.current.theo > data.current.emaFast
@@ -753,8 +753,8 @@ bool TriangulationWithDirection::Detect(Detection &result) const {
 
 size_t TriangulationWithDirection::CalcBookUpdatesNumber() const {
 	size_t result = 0;
-	foreach (const auto &bestBidAsk, m_bestBidAsk) {
-		result += bestBidAsk.service->CalcUpdatesNumber();
+	foreach (const auto &pairData, m_pairsData) {
+		result += pairData.service->CalcUpdatesNumber();
 	}
 	return result;
 }
@@ -806,7 +806,7 @@ void TriangulationWithDirection::CheckNewTriangle(
 					detection.y == Y1,
 					m_detectedEcns[detection.y][PAIR_AC],
 				},
-				m_bestBidAsk));
+				m_pairsData));
 
 		if (
 				triangle->GetPair(LEG1).security->IsBookAdjusted()
@@ -864,7 +864,7 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 
 	Triangle::PairInfo &leg3Info = m_triangle->GetPair(LEG3);
 	const auto &ecn = leg3Info.security->GetSource().GetIndex();
-	const auto &data = leg3Info.bestBidAsk->service->GetData(ecn);
+	const auto &data = leg3Info.pairData->service->GetData(ecn);
 	if (!IsProfit(leg3Info, data)) {
 		timeMeasurement.Measure(
 			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION_2);
@@ -983,7 +983,7 @@ TriangulationWithDirection::ProfitLossTest TriangulationWithDirection::CheckLeg(
 	if (seenProfit > 0) {
 
 		const auto &data
-			= m_bestBidAsk[leg.GetPair()]
+			= m_pairsData[leg.GetPair()]
 				.service->GetData(security.GetSource().GetIndex());
 		if (IsProfit(m_triangle->GetPair(leg.GetLeg()), data)) {
 			GetTradingLog().Write(

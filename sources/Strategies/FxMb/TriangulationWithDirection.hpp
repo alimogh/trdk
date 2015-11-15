@@ -114,7 +114,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		ReportsState m_reports;
 
-		BestBidAskPairs m_bestBidAsk;
+		PairSetData m_pairsData;
 	
 		YDirection m_yDetected;
 		boost::array<

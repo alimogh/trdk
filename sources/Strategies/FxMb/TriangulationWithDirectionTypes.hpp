@@ -44,7 +44,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	struct BestBidAsk {
+	struct PairData {
 
 		const StatService *service;
 		double unsentQtyPrecisionVolume;
@@ -69,7 +69,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	};
 
-	typedef boost::array<BestBidAsk, numberOfPairs> BestBidAskPairs;
+	typedef boost::array<PairData, numberOfPairs> PairSetData;
 
 	////////////////////////////////////////////////////////////////////////////////
 
