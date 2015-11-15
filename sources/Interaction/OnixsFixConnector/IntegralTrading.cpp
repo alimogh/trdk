@@ -115,9 +115,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			result.set(
 				fix::FIX43::Tags::Product,
 				fix::FIX43::Values::Product::CURRENCY);
- 			result.set(
- 				fix::FIX40::Tags::ExecInst,
- 				"B P");
+			//! @sa TRDK-226:
+ 			result.set(fix::FIX40::Tags::ExecInst, "B");
 			result.set(
 				fix::FIX41::Tags::SecurityType,
 				fix::FIX41::Values::SecurityType::Foreign_Exchange_Contract);
