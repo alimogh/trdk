@@ -49,7 +49,7 @@ namespace {
 			TimeMeasurement::numberOfDispatchingMilestones>
 		DispatchingMilestonesStatAccum;
 
-	class LatanReport : private boost::noncopyable {
+	class StatReport : private boost::noncopyable {
 
 	private:
 
@@ -59,14 +59,26 @@ namespace {
 
 	public:
 		
-		explicit LatanReport(Context &context)
-			: m_context(context)
+		explicit StatReport(Context &context)
+			: m_strategyIndex(0)
+			, m_tsIndex(0)
+			, m_dispatchingIndex(0)
+			, m_isSecurititesStatStopped(true)
+			, m_context(context)
 			, m_stopFlag(false)
 			, m_thread([&]{ThreadMain();}) {
-			//....//
+
+			OpenStream("Latan", "latan.log", m_latanStream);
+			TestTimings(m_latanStream);
+
+			OpenStream(
+				"Securities Stat",
+				"sec_stat.log",
+				m_securititesStatStream);
+
 		}
 
-		~LatanReport() {
+		~StatReport() {
 			{
 				const Lock lock(m_mutex);
 				Assert(!m_stopFlag);
@@ -92,89 +104,78 @@ namespace {
 
 	private:
 
+		void OpenStream(
+				const std::string &name,
+				const std::string &file,
+				std::ofstream &stream)
+				const {
+
+			Assert(stream);
+
+			const fs::path &path
+					= m_context.GetSettings().GetLogsDir() / file;
+			m_context.GetLog().Info(
+				"Reporting %1% to file %2% with period %3%...",
+				name,
+				path,
+				m_reportPeriod);
+
+			boost::filesystem::create_directories(path.branch_path());
+
+			stream.open(path.string().c_str(), std::ios::ate | std::ios::app);
+			if (!stream) {
+				boost::format message("Failed to open %1% report file");
+				message % name;
+				throw Exception(message.str().c_str());
+			}
+
+			stream
+				<< std::endl
+				<< "=========================================================================="
+				<< std::endl << "Started at "
+				<< pt::microsec_clock::universal_time() << " with period "
+				<< m_reportPeriod << " (" << TRDK_BUILD_IDENTITY << ")."
+				<< std::endl;
+
+		}
+
+		void TestTimings(std::ofstream &stream) const {
+			using namespace trdk::Lib::TimeMeasurement;
+			typedef Milestones::Clock Clock;
+			const auto &test = [&](size_t period) {
+				const auto start = Clock::now();
+				boost::this_thread::sleep(pt::microseconds(period));
+				const auto now = Clock::now();
+				stream
+					<< period  << " = " << (now - start).count()
+					<< " / " << Milestones::CalcPeriod(start, now);
+			};
+			stream << "Test: ";
+			test(1000);
+			stream << ", ";
+			test(500);
+			stream << ", ";
+			test(100);
+			stream << ", ";
+			test(10);
+			stream << ", ";
+			test(1);
+			stream << "." << std::endl;
+		}
+
+
 		void ThreadMain() {
 
-			using namespace trdk::Lib::TimeMeasurement;
-
 			try {
-				
-				const auto reportPeriod = pt::seconds(30);
-				const fs::path &logPath
-					= m_context.GetSettings().GetLogsDir() / "latan.report";
-				m_context.GetLog().Info(
-					"Reporting Latan to to file %1% with period %2%...",
-					logPath,
-					reportPeriod);
-
-				boost::filesystem::create_directories(logPath.branch_path());
-				std::ofstream log(
-					logPath.string().c_str(),
-					std::ios::ate | std::ios::app);
-				if (!log) {
-					throw Exception("Failed to open Latan report file");
-				}
-
-				log
-					<< std::endl
-					<< "=========================================================================="
-					<< std::endl << "Started at "
-					<< pt::microsec_clock::universal_time() << " with period "
-					<< reportPeriod << " (" << TRDK_BUILD_IDENTITY << ")."
-					<< std::endl;
-				{
-					typedef Milestones::Clock Clock;
-					const auto &test = [&](size_t period) {
-						const auto start = Clock::now();
-						boost::this_thread::sleep(pt::microseconds(period));
-						const auto now = Clock::now();
-						log
-							<< period  << " = " << (now - start).count()
-							<< " / " << Milestones::CalcPeriod(start, now);
-					};
-					log << "Test: ";
-					test(1000); log << ", ";
-					test(500); log << ", ";
-					test(100); log << ", ";
-					test(10); log << ", ";
-					test(1);
-					log << "." << std::endl;
-				}
 
 				Lock lock(m_mutex);
-				for (
-						size_t strategyIndex = 0,
-							tsIndex = 0,
-							dispatchingIndex = 0;
+
+				while (
 						!m_stopFlag
-							&& !m_stopCondition.timed_wait(lock, reportPeriod);
-						) {
+							&& !m_stopCondition.timed_wait(lock, m_reportPeriod)) {
 
-					DumpAccum<TimeMeasurement::StrategyMilestone>(
-						strategyIndex,
-						"Strategy",
-						*m_accums.strategy,
-						log);
-					DumpAccum<TimeMeasurement::TradeSystemMilestone>(
-						tsIndex,
-						"TradeSystem",
-						*m_accums.tradeSystem,
-						log);
-					DumpAccum<TimeMeasurement::DispatchingMilestone>(
-						dispatchingIndex,
-						"Dispatching",
-						*m_accums.dispatching,
-						log);
-					log << std::endl;
-
-					m_context.ForEachMarketDataSource(
-						[&](const MarketDataSource &dataSource) {
-							dataSource.ForEachSecurity(
-								[this, &log](const Security &security) {
-									DumpSecurity(security, log);
-									return true;
-								});
-							return true;
-						});
+					DumpLatancy();
+					DumpSecurities();
 
 				}
 
@@ -185,6 +186,56 @@ namespace {
 					__LINE__);
 				throw;
 			}
+		}
+
+
+		void DumpLatancy() {
+			DumpAccum<TimeMeasurement::StrategyMilestone>(
+				m_strategyIndex,
+				"Strategy",
+				*m_accums.strategy,
+				m_latanStream);
+			DumpAccum<TimeMeasurement::TradeSystemMilestone>(
+				m_tsIndex,
+				"TradeSystem",
+				*m_accums.tradeSystem,
+				m_latanStream);
+			DumpAccum<TimeMeasurement::DispatchingMilestone>(
+				m_dispatchingIndex,
+				"Dispatching",
+				*m_accums.dispatching,
+				m_latanStream);
+			m_latanStream << std::endl;
+		}
+
+		void DumpSecurities() {
+
+			bool securitiesHaveData = false;
+
+			m_context.ForEachMarketDataSource(
+				[&](const MarketDataSource &dataSource) {
+					dataSource.ForEachSecurity(
+						[this, &securitiesHaveData](const Security &security) {
+							if (
+									DumpSecurity(
+										security,
+										m_securititesStatStream)) {
+								securitiesHaveData = true;
+							}
+							return true;
+						});
+					return true;
+				});
+
+			if (securitiesHaveData) {
+				m_securititesStatStream << std::endl;
+			} else if (!m_isSecurititesStatStopped) {
+				m_isSecurititesStatStopped = true;
+				m_securititesStatStream
+					<< "-- Data flow is stopped --------------------------------------------------"
+					<< std::endl;
+			}
+
 		}
 
 		template<
@@ -202,7 +253,7 @@ namespace {
 
 			++index;
 			
-			const auto &now = pt::microsec_clock::universal_time();
+			const auto &now = m_context.GetLog().GetTime();
 			size_t milestoneIndex = 0;
 			foreach (const auto &stat, accum.GetMilestones()) {
 				TimeMeasurementMilestone id
@@ -221,20 +272,37 @@ namespace {
 
 		}
 
-		void DumpSecurity(
+		bool DumpSecurity(
 				const Security &security,
 				std::ostream &destination)
 				const {
-			destination
-				<< "security"
-				<< '\t' << pt::microsec_clock::universal_time()
-				<< '\t' << security.GetSymbol()
-				<< '\t' << security.TakeNumberOfMarketDataUpdates()
-				<< '\t' << security.GetLastMarketDataTime().time_of_day()
-				<< std::endl;
+			const auto &numberOfMarketDataUpdates
+				= security.TakeNumberOfMarketDataUpdates();
+			if (
+					!m_isSecurititesStatStopped
+					|| !IsZero(numberOfMarketDataUpdates)) {
+				destination
+					<< '\t' << m_context.GetLog().GetTime()
+					<< '\t' << security.GetSource().GetTag()
+					<< '\t' << security.GetSymbol().GetSymbol()
+					<< '\t' << numberOfMarketDataUpdates
+					<< '\t' << security.GetLastMarketDataTime().time_of_day()
+					<< std::endl;
+			}
+			return !IsZero(numberOfMarketDataUpdates);
 		}
 
 	private:
+
+		const pt::time_duration m_reportPeriod;
+
+		std::ofstream m_securititesStatStream;
+		std::ofstream m_latanStream;
+
+		size_t m_strategyIndex;
+		size_t m_tsIndex;
+		size_t m_dispatchingIndex;
+		bool m_isSecurititesStatStopped;
 
 		trdk::Context &m_context;
 
@@ -286,7 +354,7 @@ public:
 	boost::array<std::unique_ptr<RiskControl>, numberOfTradingModes>	
 		m_riskControl;
 
-	std::unique_ptr<LatanReport> m_latanReport;
+	std::unique_ptr<StatReport> m_latanReport;
 
 	CustomTimeMutex m_customCurrentTimeMutex;
 	pt::ptime m_customCurrentTime;
@@ -329,7 +397,7 @@ Context::Context(
 		m_pimpl->m_riskControl[i].reset(
 			new RiskControl(*this, conf, TradingMode(i)));
 	}
-	m_pimpl->m_latanReport.reset(new LatanReport(*this));
+	m_pimpl->m_latanReport.reset(new StatReport(*this));
 }
 
 Context::~Context() {

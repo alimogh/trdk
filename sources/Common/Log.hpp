@@ -92,7 +92,7 @@ namespace trdk { namespace Lib {
 	public:
 
 		Time GetTime() const {
-			return std::move(boost::posix_time::microsec_clock::local_time());
+			return boost::posix_time::microsec_clock::local_time();
 		}
 
 		ThreadId GetThreadId() const {
