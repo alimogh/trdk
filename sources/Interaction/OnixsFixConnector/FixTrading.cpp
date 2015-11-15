@@ -334,7 +334,7 @@ void FixTrading::OnOrderStateChanged(
 		const OrderStatus &status,
 		const Order &order,
 		const TradeInfo *trade) {
-//	AssertGe(order.qty, order.filledQty);
+	AssertGe(order.qty, order.filledQty);
 	order.callback(
 		order.id,
 		borkerOrderId,

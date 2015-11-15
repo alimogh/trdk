@@ -142,12 +142,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
-				qty,
+				Round(qty, 2),
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
 				pair.leg,
-				qty));
+				Round(qty, 2)));
 			
 	} else {
 
@@ -199,12 +199,12 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
-				qty,
+				Round(qty, 2),
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
 				pair.leg,
-				qty));
+				Round(qty, 2)));
 			
 	}
 
