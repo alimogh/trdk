@@ -107,7 +107,8 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 			case PAIR_BC:
 				switch (pair.leg) {
 					case LEG1:
-						qty *= GetPair(PAIR_AC).security->GetAskPrice();
+						//! @sa TRDK-236
+						qty *= GetPair(PAIR_AC).security->GetBidPrice();
 						qty /= GetPair(PAIR_BC).security->GetAskPrice();
 						break;
 					case LEG2:
@@ -166,7 +167,8 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 			case PAIR_BC:
 				switch (pair.leg) {
 					case LEG1:
-						qty *= GetPair(PAIR_AC).security->GetBidPrice();
+						//! @sa TRDK-236
+						qty *= GetPair(PAIR_AC).security->GetAskPrice();
 						qty /= GetPair(PAIR_BC).security->GetBidPrice();
 						break;
 					case LEG2:
