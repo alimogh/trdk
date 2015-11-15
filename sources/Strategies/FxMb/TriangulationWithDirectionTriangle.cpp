@@ -209,7 +209,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		auto cleanQty = Qty(qty);
 		const auto unsentQtyPrecision = qty - double(cleanQty);
 		const auto additionalQty
-			= Qty(pair.bestBidAsk->unsentQtyPrecisionVolume - unsentQtyPrecision);
+			= -Qty(pair.bestBidAsk->unsentQtyPrecisionVolume - unsentQtyPrecision);
 		AssertGe(0, additionalQty);
 
 		result.reset(
@@ -219,7 +219,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
-				cleanQty + -(additionalQty),
+				cleanQty + additionalQty,
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
@@ -237,28 +237,31 @@ void Triangle::OnOrderSent(const boost::shared_ptr<Twd::Position> &order) {
 
 	PairInfo &pair = GetPair(order->GetLeg());
 
-	const auto prevUnsentDecimalVolume = pair.bestBidAsk->unsentQtyPrecisionVolume;
 	pair.bestBidAsk->unsentQtyPrecisionVolume += order->GetUnsentQtyPrecision();
 	pair.bestBidAsk->unsentQtyPrecisionVolume
 		-= order->GetAdditionalQtyFromPrevOrders();
+
 	if (
 			!IsZero(order->GetUnsentQtyPrecision())
 			|| !IsZero(order->GetAdditionalQtyFromPrevOrders())) {
 		m_strategy.GetTradingLog().Write(
-			"\tqty precision\torder\t%1%\t%2%"
+			"qty precision\torder\t%1%\t%2%"
 				"\tqty: %3% + %4% = %5%"
-				"\tto cover: %6% + (%7%) - (%8%) = %9%",
+				"\tuncovered: %6% + (%7%) - (%8%) = %9%",
 			[&](TradingRecord &record) {
 				record
 					% order->GetSecurity().GetSymbol().GetSymbol()
 					% order->GetTypeStr();
 				record
-					% (order->GetPlanedQty() - order->GetAdditionalQtyFromPrevOrders())
+					% (order->GetPlanedQty()
+						- order->GetAdditionalQtyFromPrevOrders())
 					% order->GetAdditionalQtyFromPrevOrders()
 					% order->GetPlanedQty();
 				record
-					% prevUnsentDecimalVolume
-					% pair.bestBidAsk->unsentQtyPrecisionVolume
+					% (pair.bestBidAsk->unsentQtyPrecisionVolume
+						+ order->GetAdditionalQtyFromPrevOrders()
+						- order->GetUnsentQtyPrecision())
+					% order->GetUnsentQtyPrecision()
 					% order->GetAdditionalQtyFromPrevOrders()
 					% pair.bestBidAsk->unsentQtyPrecisionVolume;
 			});
@@ -280,28 +283,33 @@ void Triangle::OnOrderCanceled(boost::shared_ptr<Twd::Position> &leg) {
 	Assert(leg);
 	
 	PairInfo &pair = GetPair(leg->GetLeg());
-	const auto prevUnsentDecimalVolume = pair.bestBidAsk->unsentQtyPrecisionVolume;
+
 	pair.bestBidAsk->unsentQtyPrecisionVolume -= leg->GetUnsentQtyPrecision();
 	pair.bestBidAsk->unsentQtyPrecisionVolume
 		+= leg->GetAdditionalQtyFromPrevOrders();
+
 	if (
 			!IsZero(leg->GetUnsentQtyPrecision())
 			|| !IsZero(leg->GetAdditionalQtyFromPrevOrders())) {
 		m_strategy.GetTradingLog().Write(
-			"\tqty precision\trollback\t%1%\t%2%"
+			"qty precision\trollback\t%1%\t%2%"
 				"\tqty: %3% + %4% = %5%"
-				"\tto cover: %6% - (%7%) + (%8%) = %9%",
+				"\tuncovered: %6% - (%7%) + (%8%) = %9%",
 			[&](TradingRecord &record) {
 				record
 					% leg->GetSecurity().GetSymbol().GetSymbol()
 					% leg->GetTypeStr();
 				record
-					% (leg->GetPlanedQty() - leg->GetAdditionalQtyFromPrevOrders())
+					% (
+						leg->GetPlanedQty()
+						- leg->GetAdditionalQtyFromPrevOrders())
 					% leg->GetAdditionalQtyFromPrevOrders()
 					% leg->GetPlanedQty();
 				record
-					% prevUnsentDecimalVolume
-					% pair.bestBidAsk->unsentQtyPrecisionVolume
+					% (pair.bestBidAsk->unsentQtyPrecisionVolume
+						- leg->GetAdditionalQtyFromPrevOrders()
+						+ leg->GetUnsentQtyPrecision())
+					% leg->GetUnsentQtyPrecision()
 					% leg->GetAdditionalQtyFromPrevOrders()
 					% pair.bestBidAsk->unsentQtyPrecisionVolume;
 			});
