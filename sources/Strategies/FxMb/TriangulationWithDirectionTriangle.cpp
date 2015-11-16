@@ -15,6 +15,7 @@
 #include "Core/RiskControl.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -135,6 +136,8 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 		Assert(!Lib::IsZero(security.GetAskPrice()));
 
+		const Qty orderQty = Round(qty, 2);
+
 		result.reset(
 			new Twd::LongPosition(
 				m_strategy,
@@ -142,13 +145,19 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
-				Round(qty, 2),
+				orderQty,
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
 				pair.leg,
-				Round(qty, 2)));
-			
+				orderQty));
+
+		m_strategy.GetTradingLog().Write(
+			"qty precision\tsell\t%1%\t%2%",
+			[&qty, &orderQty](TradingRecord &record) {
+				record % qty % orderQty;
+			});
+
 	} else {
 
 		auto qty = m_aQty;
@@ -192,6 +201,8 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		AssertLt(0, qty);
 		Assert(!Lib::IsZero(security.GetBidPrice()));
 
+		const Qty orderQty = Round(qty, 2);
+
 		result.reset(
 			new Twd::ShortPosition(
 				m_strategy,
@@ -199,13 +210,19 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
-				Round(qty, 2),
+				orderQty,
 				security.ScalePrice(price),
 				timeMeasurement,
 				pair.id,
 				pair.leg,
-				Round(qty, 2)));
-			
+				orderQty));
+
+		m_strategy.GetTradingLog().Write(
+			"qty precision\tsell\t%1%\t%2%",
+			[&qty, &orderQty](TradingRecord &record) {
+				record % qty % orderQty;
+			});
+
 	}
 
 	++pair.ordersCount;
