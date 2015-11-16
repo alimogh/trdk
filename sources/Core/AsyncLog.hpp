@@ -332,6 +332,11 @@ namespace trdk {
 			StoreTypedParam(PT_UUID, val);
 		}
 
+        template<typename T>
+        void StoreParam(const trdk::Lib::Numeric<T> &val) {
+            StoreParam(val.Get());
+        }
+
 		template<typename Param>
 		void StoreTypedParam(const ParamType &type, const Param &val) {
 			m_params.emplace_back(type, val);

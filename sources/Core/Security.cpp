@@ -123,7 +123,7 @@ public:
 		m_bookUpdateTickSignal;
 
 	Level1 m_level1;
-	boost::atomic<Qty> m_brokerPosition;
+	boost::atomic<Qty::ValueType> m_brokerPosition;
 	boost::atomic_int64_t m_marketDataTime;
 	boost::atomic_size_t m_numberOfMarketDataUpdates;
 	boost::atomic_bool m_isLevel1Started;
@@ -348,11 +348,11 @@ ScaledPrice Security::GetLastPriceScaled() const {
 }
 
 Qty Security::GetLastQty() const {
-	return GetIfSet<LEVEL1_TICK_LAST_QTY>(m_pimpl->m_level1);
+	return Qty(GetIfSet<LEVEL1_TICK_LAST_QTY>(m_pimpl->m_level1));
 }
 
 Qty Security::GetTradedVolume() const {
-	return GetIfSet<LEVEL1_TICK_TRADING_VOLUME>(m_pimpl->m_level1);
+	return Qty(GetIfSet<LEVEL1_TICK_TRADING_VOLUME>(m_pimpl->m_level1));
 }
 
 ScaledPrice Security::GetAskPriceScaled() const {
@@ -364,7 +364,7 @@ double Security::GetAskPrice() const {
 }
 
 Qty Security::GetAskQty() const {
-	return GetIfSet<LEVEL1_TICK_ASK_QTY>(m_pimpl->m_level1);
+	return Qty(GetIfSet<LEVEL1_TICK_ASK_QTY>(m_pimpl->m_level1));
 }
 
 ScaledPrice Security::GetBidPriceScaled() const {
@@ -376,11 +376,11 @@ double Security::GetBidPrice() const {
 }
 
 Qty Security::GetBidQty() const {
-	return GetIfSet<LEVEL1_TICK_BID_QTY>(m_pimpl->m_level1);
+	return Qty(GetIfSet<LEVEL1_TICK_BID_QTY>(m_pimpl->m_level1));
 }
 
 Qty Security::GetBrokerPosition() const {
-	return m_pimpl->m_brokerPosition;
+	return Qty(m_pimpl->m_brokerPosition.load());
 }
 
 Security::Level1UpdateSlotConnection Security::SubscribeToLevel1Updates(

@@ -72,7 +72,7 @@ namespace trdk { namespace Strategies { namespace Test {
 					GetTradeSystem(0),
 					security,
 					CURRENCY_EUR,
-					1000000,
+					Qty(1000000),
 					priceToBuy,
 					timeMeasurement));
 			pos->OpenAtMarketPrice();

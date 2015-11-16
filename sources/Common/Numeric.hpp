@@ -23,17 +23,15 @@ namespace trdk { namespace Lib {
 
 	public:
 
-		Numeric(const ValueType &value = 0)
+		explicit Numeric(const ValueType &value = 0)
 			: m_value(value) {
-		}
-		template<typename AnotherValueType>
-		Numeric(const Numeric<AnotherValueType> &rhs)
-			: m_value(rhs.m_value) {
+			//...//
 		}
 
 		template<typename AnotherValueType>
 		explicit Numeric(const Numeric<AnotherValueType> &&rhs)
 			: m_value(std::move(rhs.m_value)) {
+            //...//
 		}
 
 		void Swap(Numeric &rhs) throw() {
@@ -227,7 +225,7 @@ namespace trdk { namespace Lib {
 
 		template<typename AnotherValueType>
 		Numeric operator +(const AnotherValueType &rhs) const {
-			return m_value + rhs;
+			return Numeric(m_value + rhs);
 		}
 		template<typename AnotherValueType>
 		Numeric operator +(const Numeric<AnotherValueType> &rhs) const {
@@ -237,16 +235,16 @@ namespace trdk { namespace Lib {
 		friend Numeric<ValueType> operator +(
 				const Lhs &lhs,
 				const Numeric<ValueType> &rhs) {
-			return lhs + rhs.m_value;
+			return Numeric<ValueType>(lhs + rhs.m_value);
 		}
 
 		template<typename AnotherValueType>
 		Numeric operator -(const AnotherValueType &rhs) const {
-			return m_value - rhs;
+			return Numeric(m_value - rhs);
 		}
 		template<typename AnotherValueType>
 		Numeric operator -(const Numeric<AnotherValueType> &rhs) const {
-			return m_value - rhs.m_value;
+			return Numeric(m_value - rhs.m_value);
 		}
 		template<typename Lhs>
 		friend Numeric<ValueType> operator -(
@@ -257,25 +255,25 @@ namespace trdk { namespace Lib {
 
 		template<typename AnotherValueType>
 		Numeric operator *(const AnotherValueType &rhs) const {
-			return m_value * rhs;
+			return Numeric(m_value * rhs);
 		}
 		template<typename AnotherValueType>
 		Numeric operator *(const Numeric<AnotherValueType> &rhs) const {
-			return m_value * rhs.m_value;
+			return Numeric(m_value * rhs.m_value);
 		}
 		friend Numeric<ValueType> operator *(
 				const ValueType &lhs,
 				const Numeric<ValueType> &rhs) {
-			return lhs * rhs.m_value;
+			return Numeric<ValueType>(lhs * rhs.m_value);
 		}
 
 		template<typename AnotherValueType>
 		Numeric operator /(const AnotherValueType &rhs) const {
-			return m_value / rhs;
+			return Numeric(m_value / rhs);
 		}
 		template<typename AnotherValueType>
 		Numeric operator /(const Numeric<AnotherValueType> &rhs) const {
-			return m_value / rhs.m_value;
+			return Numeric(m_value / rhs.m_value);
 		}
 		template<typename Lhs>
 		friend Lhs operator /(const Lhs &lhs, const Numeric<ValueType> &rhs) {

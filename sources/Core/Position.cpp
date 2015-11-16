@@ -1087,7 +1087,7 @@ private:
 				?	&*orderParams->minTradeQty
 				:	nullptr,
 			nullptr /* user */,
-			directionData.qty.load(),
+			Qty(directionData.qty.load()),
 			status == TradeSystem::ORDER_STATUS_SENT ? &bidPrice : nullptr,
 			status == TradeSystem::ORDER_STATUS_SENT ? &bidQty : nullptr,
 			status == TradeSystem::ORDER_STATUS_SENT ? &askPrice : nullptr,
@@ -1372,7 +1372,7 @@ OrderId Position::GetCloseOrderId() const throw() {
 }
 
 Qty Position::GetClosedQty() const throw() {
-	return m_pimpl->m_closed.qty;
+	return Qty(m_pimpl->m_closed.qty.load());
 }
 
 Position::Time Position::GetCloseTime() const {
@@ -1395,7 +1395,7 @@ Position::StateUpdateConnection Position::Subscribe(
 }
 
 Qty Position::GetPlanedQty() const {
-	return m_pimpl->m_planedQty;
+	return Qty(m_pimpl->m_planedQty.load());
 }
 
 const ScaledPrice & Position::GetOpenStartPrice() const {
@@ -1406,7 +1406,7 @@ OrderId Position::GetOpenOrderId() const throw() {
 	return m_pimpl->m_opened.orderId;
 }
 Qty Position::GetOpenedQty() const throw() {
-	return m_pimpl->m_opened.qty;
+	return Qty(m_pimpl->m_opened.qty.load());
 }
 void Position::SetOpenedQty(const Qty &newQty) const throw() {
 	const Implementation::WriteLock lock(m_pimpl->m_mutex);

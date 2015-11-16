@@ -58,7 +58,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				startPrice(GetCurrentPrice()),
 				ordersCount(0) {
 				if (Lib::IsZero(startPrice)) {
-					throw HasNotMuchOpportunityException(*security, 0);
+					throw HasNotMuchOpportunityException(*security, Qty(0));
 				}
 			}
 
@@ -192,7 +192,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			}
 
 			if (Lib::IsZero(price)) {
-				throw HasNotMuchOpportunityException(security, 0);
+				throw HasNotMuchOpportunityException(security, Qty(0));
 			}
 
 			boost::shared_ptr<Twd::Position> order = CreateOrder(
@@ -242,7 +242,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			}
 
 			if (Lib::IsZero(price)) {
-				throw HasNotMuchOpportunityException(security, 0);
+				throw HasNotMuchOpportunityException(security, Qty(0));
 			}
 
 			const boost::shared_ptr<Twd::Position> order = CreateOrder(

@@ -594,9 +594,9 @@ void FixStream::OnMarketDataSnapshot(
 }
 
 Qty FixStream::ParseMdEntrySize(const fix::GroupInstance &entry) const {
-	return entry.getDouble(fix::FIX42::Tags::MDEntrySize);
+	return Qty(entry.getDouble(fix::FIX42::Tags::MDEntrySize));
 }
 
 Qty FixStream::ParseMdEntrySize(const fix::Message &message) const {
-	return message.getDouble(fix::FIX42::Tags::MDEntrySize);
+	return Qty(message.getDouble(fix::FIX42::Tags::MDEntrySize));
 }

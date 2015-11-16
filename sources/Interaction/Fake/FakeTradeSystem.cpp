@@ -348,7 +348,7 @@ private:
 				order.id,
 				tradeSysteOrderId,
 				TradeSystem::ORDER_STATUS_FILLED,
-				0,
+				Qty(0),
 				&trade);
 		} else {
 			order.callback(

@@ -1006,9 +1006,9 @@ void FixTrading::OnOrderPartialFill(
 }
 
 Qty FixTrading::ParseLastShares(const fix::Message &message) const {
-	return message.getDouble(fix::FIX40::Tags::LastShares);
+	return Qty(message.getDouble(fix::FIX40::Tags::LastShares));
 }
 
 Qty FixTrading::ParseLeavesQty(const fix::Message &message) const {
-	return message.getDouble(fix::FIX41::Tags::LeavesQty);
+	return Qty(message.getDouble(fix::FIX41::Tags::LeavesQty));
 }

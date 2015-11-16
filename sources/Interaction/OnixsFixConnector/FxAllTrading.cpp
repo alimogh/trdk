@@ -145,12 +145,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		virtual Qty ParseLastShares(const fix::Message &message) const {
 			return message.contain(fix::FIX43::Tags::LastQty)
-				?	message.getDouble(fix::FIX43::Tags::LastQty)
-				:	0;
+				?	Qty(message.getDouble(fix::FIX43::Tags::LastQty))
+				:	Qty(0);
 		}
 
 		virtual Qty ParseLeavesQty(const fix::Message &message) const {
-			return message.getDouble(fix::FIX41::Tags::LeavesQty);
+			return Qty(message.getDouble(fix::FIX41::Tags::LeavesQty));
 		}
 
 		virtual void OnLogout() {

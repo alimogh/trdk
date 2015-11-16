@@ -56,7 +56,7 @@ void Fake::MarketDataSource::NotificationThread() {
 		bar.highPrice = 15;
 		bar.lowPrice = 5;
 		bar.closePrice = 11;
-		bar.volume = 111;
+		bar.volume = Qty(111);
 		bar.count = 45;
 
 		const double bid = 12.99;
@@ -76,16 +76,16 @@ void Fake::MarketDataSource::NotificationThread() {
  					GetContext().GetCurrentTime(),
  					ORDER_SIDE_BUY,
  					10,
- 					20,
+ 					Qty(20),
  					timeMeasurement);
  				if (isBarTime) {
  					s->AddBar(bar);
  				}
 				s->SetLevel1(
 					bid + correction,
-					10000,
+					Qty(10000),
 					ask + correction,
-					10000,
+					Qty(10000),
 					timeMeasurement);
 			}
 

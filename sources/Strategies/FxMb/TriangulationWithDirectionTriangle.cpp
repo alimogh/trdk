@@ -136,7 +136,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 		Assert(!Lib::IsZero(security.GetAskPrice()));
 
-		const Qty orderQty = Round(qty, 2);
+		const Qty orderQty(Round(qty, 2));
 
 		result.reset(
 			new Twd::LongPosition(
@@ -201,7 +201,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		AssertLt(0, qty);
 		Assert(!Lib::IsZero(security.GetBidPrice()));
 
-		const Qty orderQty = Round(qty, 2);
+		const Qty orderQty(Round(qty, 2));
 
 		result.reset(
 			new Twd::ShortPosition(

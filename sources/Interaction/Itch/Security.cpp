@@ -48,7 +48,7 @@ void Itch::Security::OnNewOrder(
 	}
 	
 	{
-		const Order order = {time, isBuy, price, amount};
+		const Order order = {time, isBuy, price, Qty(amount)};
 		m_rawBook.emplace(orderId, std::move(order));
 	}
 
