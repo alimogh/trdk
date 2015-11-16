@@ -66,6 +66,8 @@ namespace trdk {
 				const boost::posix_time::ptime &startTime);
 		virtual ~Context();
 
+		void StartStatMonitoring();
+
 	public:
 
 		trdk::Context::Log & GetLog() const throw();

@@ -65,8 +65,30 @@ namespace {
 			, m_dispatchingIndex(0)
 			, m_isSecurititesStatStopped(true)
 			, m_context(context)
-			, m_stopFlag(false)
-			, m_thread([&]{ThreadMain();}) {
+			, m_isStarted(false)
+			, m_stopFlag(false) {
+			//...//
+		}
+
+		~StatReport() {
+			if (m_isStarted) {
+				{
+					const Lock lock(m_mutex);
+					Assert(!m_stopFlag);
+					m_stopFlag = true;
+					m_stopCondition.notify_all();
+				}
+				m_thread.join();
+			}
+		}
+
+	public:
+
+		void StartMonitoring() {
+
+			if (m_isStarted) {
+				throw LogicError("Failed to start Stat Monitoring twice");
+			}
 
 			OpenStream("Latan", "latan.log", m_latanStream);
 			TestTimings(m_latanStream);
@@ -76,19 +98,11 @@ namespace {
 				"sec_stat.log",
 				m_securititesStatStream);
 
-		}
+			m_thread = boost::thread([&]{ThreadMain();});
 
-		~StatReport() {
-			{
-				const Lock lock(m_mutex);
-				Assert(!m_stopFlag);
-				m_stopFlag = true;
-				m_stopCondition.notify_all();
-			}
-			m_thread.join();
-		}
+			m_isStarted = true;
 
-	public:
+		}
 
 		TimeMeasurement::Milestones StartStrategyTimeMeasurement() {
 			return TimeMeasurement::Milestones(m_accums.strategy);
@@ -172,7 +186,7 @@ namespace {
 
 				while (
 						!m_stopFlag
-							&& !m_stopCondition.timed_wait(lock, m_reportPeriod)) {
+						&& !m_stopCondition.timed_wait(lock, m_reportPeriod)) {
 
 					DumpLatancy();
 					DumpSecurities();
@@ -322,6 +336,7 @@ namespace {
 		} m_accums;
 
 		Mutex m_mutex;
+		bool m_isStarted;
 		bool m_stopFlag;
 		StopCondition m_stopCondition;
 		boost::thread m_thread;
@@ -354,7 +369,7 @@ public:
 	boost::array<std::unique_ptr<RiskControl>, numberOfTradingModes>	
 		m_riskControl;
 
-	std::unique_ptr<StatReport> m_latanReport;
+	std::unique_ptr<StatReport> m_statReport;
 
 	CustomTimeMutex m_customCurrentTimeMutex;
 	pt::ptime m_customCurrentTime;
@@ -397,11 +412,15 @@ Context::Context(
 		m_pimpl->m_riskControl[i].reset(
 			new RiskControl(*this, conf, TradingMode(i)));
 	}
-	m_pimpl->m_latanReport.reset(new StatReport(*this));
+	m_pimpl->m_statReport.reset(new StatReport(*this));
 }
 
 Context::~Context() {
 	delete m_pimpl;
+}
+
+void Context::StartStatMonitoring() {
+	m_pimpl->m_statReport->StartMonitoring();
 }
 
 Context::Log & Context::GetLog() const throw() {
@@ -499,15 +518,15 @@ const Context::Params & Context::GetParams() const {
 }
 
 TimeMeasurement::Milestones Context::StartStrategyTimeMeasurement() const {
-	return m_pimpl->m_latanReport->StartStrategyTimeMeasurement();
+	return m_pimpl->m_statReport->StartStrategyTimeMeasurement();
 }
 
 TimeMeasurement::Milestones Context::StartTradeSystemTimeMeasurement() const {
-	return m_pimpl->m_latanReport->StartTradeSystemTimeMeasurement();
+	return m_pimpl->m_statReport->StartTradeSystemTimeMeasurement();
 }
 
 TimeMeasurement::Milestones Context::StartDispatchingTimeMeasurement() const {
-	return m_pimpl->m_latanReport->StartDispatchingTimeMeasurement();
+	return m_pimpl->m_statReport->StartDispatchingTimeMeasurement();
 }
 
 RiskControl & Context::GetRiskControl(const TradingMode &mode) {

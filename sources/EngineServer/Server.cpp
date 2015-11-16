@@ -115,6 +115,8 @@ Context & Server::Run(
 			}
 		}
 
+		info.engine->StartStatMonitoring();
+
 		info.engine->Start(
 			ini,
 			[](
