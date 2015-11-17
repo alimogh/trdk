@@ -580,7 +580,8 @@ void FixStream::OnMarketDataSnapshot(
 			continue;
 		}
 
-		Assert(book.find(security.ScalePrice(price)) == book.end());
+		//! @sa TRDK-237 - Quotes by one price from snapshots.
+		// Assert(book.find(security.ScalePrice(price)) == book.end());
 		book[security.ScalePrice(price)] = std::make_pair(
 			entry.get(fix::FIX42::Tags::MDEntryType)
 				== fix::FIX42::Values::MDEntryType::Bid,
