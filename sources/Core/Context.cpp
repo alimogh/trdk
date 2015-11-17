@@ -60,7 +60,8 @@ namespace {
 	public:
 		
 		explicit StatReport(Context &context)
-			: m_strategyIndex(0)
+			: m_reportPeriod(pt::seconds(30))
+            , m_strategyIndex(0)
 			, m_tsIndex(0)
 			, m_dispatchingIndex(0)
 			, m_isSecurititesStatStopped(true)
@@ -243,6 +244,7 @@ namespace {
 
 			if (securitiesHaveData) {
 				m_securititesStatStream << std::endl;
+                m_isSecurititesStatStopped = false;
 			} else if (!m_isSecurititesStatStopped) {
 				m_isSecurititesStatStopped = true;
 				m_securititesStatStream
