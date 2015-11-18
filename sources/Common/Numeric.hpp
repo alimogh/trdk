@@ -38,10 +38,6 @@ namespace trdk { namespace Lib {
 			std::swap(m_value, rhs.m_value);
 		}
 
-		operator bool() const throw() {
-			return m_value ? true : false;
-		}
-
 		operator ValueType() const throw() {
 			return Get();
 		}

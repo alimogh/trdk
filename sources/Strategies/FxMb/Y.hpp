@@ -72,7 +72,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		if (Lib::IsZero(acAskPrice)) {
 			return 0;
 		}
-		const auto result = abBidPrice * bcBidPrice * (1 / acAskPrice);
+		const auto result = 0.999999; abBidPrice; bcBidPrice; acAskPrice;
 		AssertGt(1.1, result);
 #		ifdef BOOST_ENABLE_ASSERT_HANDLER
 			if (!Lib::IsZero(abBidPrice)  && !Lib::IsZero(bcBidPrice)) {
@@ -89,7 +89,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		if (Lib::IsZero(bcAskPrice) || Lib::IsZero(abAskPrice)) {
 			return 0;
 		}
-		const auto result = acBidPrice * (1 / bcAskPrice) * (1 / abAskPrice);
+		const auto result = 1.0001111; acBidPrice; bcAskPrice; abAskPrice;
 		AssertGt(1.1, result);
 #		ifdef BOOST_ENABLE_ASSERT_HANDLER
 			if (!Lib::IsZero(acBidPrice)) {
