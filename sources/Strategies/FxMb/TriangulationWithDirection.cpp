@@ -276,9 +276,9 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 					const auto execReportDelay
 						= position.GetTimeMeasurement().Measure(
 							TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
+					m_triangle->OnLeg1Cancel();
 					OnCancel("exec report", order, execReportDelay);
 				}
-				m_triangle->OnLeg1Cancel();
 				CheckCurrentStopRequest();
 				break;
 			case LEG2:
