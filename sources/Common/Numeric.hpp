@@ -229,7 +229,7 @@ namespace trdk { namespace Lib {
 		}
 		template<typename AnotherValueType>
 		Numeric operator +(const Numeric<AnotherValueType> &rhs) const {
-			return m_value + rhs.m_value;
+			return Numeric(m_value + rhs.m_value);
 		}
 		template<typename Lhs>
 		friend Numeric<ValueType> operator +(
