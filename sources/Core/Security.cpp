@@ -854,7 +854,7 @@ void Security::BookUpdateOperation::Commit(
 				:	m_pimpl->m_security.ScalePrice(m_pimpl->m_book->GetBids().GetLevel(0).GetPrice())),
 		Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
 			m_pimpl->m_book->GetBids().GetSize() == 0
-				?	0
+				?	Qty(0)
 				:	m_pimpl->m_book->GetBids().GetLevel(0).GetQty()),
 		Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
 			m_pimpl->m_book->GetAsks().GetSize() == 0
@@ -862,7 +862,7 @@ void Security::BookUpdateOperation::Commit(
 				:	m_pimpl->m_security.ScalePrice(m_pimpl->m_book->GetAsks().GetLevel(0).GetPrice())),
 		Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
 			m_pimpl->m_book->GetAsks().GetSize() == 0
-				?	0
+				?	Qty(0)
 				:	m_pimpl->m_book->GetAsks().GetLevel(0).GetQty()),
 		timeMeasurement);
 
