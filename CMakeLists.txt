@@ -157,7 +157,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
 
     if(NOT CYGWIN)
         # TCMalloc (also see compiler)
-        set(TRDK_LINK_FLAGS "${TRDK_LINK_FLAGS} -ltcmalloc")
+        set(TRDK_LINK_FLAGS "${TRDK_LINK_FLAGS} -ltcmalloc_minimal")
     endif()
 
     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${TRDK_LINK_FLAGS}")
