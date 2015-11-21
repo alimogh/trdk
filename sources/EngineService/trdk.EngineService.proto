@@ -1,0 +1,32 @@
+/**************************************************************************
+ *   Created: 2015/07/08 01:55:23
+ *    Author: Eugene V. Palchukovsky
+ *    E-mail: eugene@palchukovsky.com
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
+ **************************************************************************/
+
+syntax = "proto2";
+
+package trdk.EngineService;
+
+message Uuid {
+	// Always has 16 bytes - binnary of RFC 4122.
+	required bytes data = 1;
+}
+
+message Login {
+	required string login = 1;
+	required string password = 2;
+}
+
+message Keepalive {
+	//...//
+}
+
+enum TradingMode {
+	TRADING_MODE_LIVE = 1;
+	TRADING_MODE_PAPER = 2;
+}

@@ -1,0 +1,156 @@
+/**************************************************************************
+ *   Created: 2015/03/17 02:23:02
+ *    Author: Eugene V. Palchukovsky
+ *    E-mail: eugene@palchukovsky.com
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
+ **************************************************************************/
+
+syntax = "proto2";
+
+import "trdk.EngineService.proto";
+
+package trdk.EngineService.Control;
+
+////////////////////////////////////////////////////////////////////////////////
+
+message SettingsSection {
+	
+	message Key {
+		required string name = 1;
+		required string value = 2;
+	}
+	
+	required string name = 1;
+	repeated Key key = 2;
+
+}
+
+message EngineSettings {
+	
+	message Group {
+		required string name = 1;
+		repeated SettingsSection section = 2;
+	}
+
+	required string time = 1;
+	required trdk.EngineService.Uuid revision = 2;
+	repeated Group group = 3;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message EngineInfo {
+	required string engine_id = 1;
+	required bool is_started = 2;
+	required EngineSettings settings = 3;
+}
+
+message EngineState {
+	required string engine_id = 1;
+	required bool is_started = 2;
+}
+
+message ServiceData {
+	
+	enum Type {
+		TYPE_KEEP_ALIVE = 1;
+		TYPE_ENGINE_INFO = 2;
+		TYPE_ENGINE_STATE = 3;
+		TYPE_MESSAGE_ERROR = 4;
+		TYPE_MESSAGE_INFO = 5;
+		TYPE_SERVICE_INFO = 6;
+	}
+
+	required Type type = 1;
+
+	// TYPE_ENGINE_INFO
+	optional EngineInfo engine_info = 2;
+	// TYPE_ENGINE_STATE
+	optional EngineState engine_state = 3;
+	// TYPE_MESSAGE_INFO, TYPE_MESSAGE_ERROR and TYPE_SERVICE_INFO
+	optional string message = 4;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message FullInfoRequest {
+	//...//
+}
+
+message EngineStartRequest {
+	required string engine_id = 1;
+}
+
+message EngineStopRequest {
+	required string engine_id = 1;
+}
+
+message EnginePositionCloseRequest {
+	required string engine_id = 1;
+}
+
+message EngineSettingsSetRequest {
+	required string engine_id = 1;
+	repeated SettingsSection general_settings = 2;
+}
+
+message StrategyStartRequest {
+	required string engine_id = 1;
+	// String of RFC 4122.
+	required string strategy_id = 2;
+	repeated SettingsSection strategy_settings = 3;
+}
+
+message StrategyStopRequest {
+	required string engine_id = 1;
+	// String of RFC 4122.
+	required string strategy_id = 2;
+}
+
+message StrategySettingsSetRequest {
+	required string engine_id = 1;
+	// String of RFC 4122.
+	required string strategy_id = 2;
+	repeated SettingsSection section = 3;
+}
+
+message ClientRequest {
+	
+	enum Type {
+		TYPE_KEEP_ALIVE = 1;
+		TYPE_INFO_FULL = 2;
+		TYPE_ENGINE_START = 3;
+		TYPE_ENGINE_STOP = 4;
+		TYPE_ENGINE_POSITION_CLOSE = 5;
+		TYPE_ENGINE_SETTINGS = 6;
+		TYPE_STRATEGY_START = 7;
+		TYPE_STRATEGY_STOP = 8;
+		TYPE_STRATEGY_SETTINGS = 9;
+	}
+
+	required Type type = 1;
+
+	optional FullInfoRequest full_info = 2;
+	// TYPE_ENGINE_START
+	optional EngineStartRequest engine_start = 3;
+	// TYPE_ENGINE_STOP 
+	optional EngineStopRequest engine_stop = 4;
+	// TYPE_ENGINE_POSITION_CLOSE
+	optional EnginePositionCloseRequest engine_position_close = 5;
+	// TYPE_ENGINE_SETTINGS
+	optional EngineSettingsSetRequest engine_settings = 6;
+	// TYPE_STRATEGY_START
+	optional StrategyStartRequest strategy_start = 7;
+	// TYPE_STRATEGY_STOP
+	optional StrategyStopRequest strategy_stop = 8;
+	// TYPE_STRATEGY_SETTINGS
+	optional StrategySettingsSetRequest strategy_settings = 9;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////

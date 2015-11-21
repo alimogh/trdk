@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Service.hpp"
+#include "Client.hpp"
 #include "Exception.hpp"
 
 using namespace trdk;
@@ -26,6 +27,13 @@ EngineServer::Service::Topics::Topics(const std::string &suffix)
 	//...//
 }
 
+EngineServer::Service::InputIo::InputIo()
+	:	acceptor(
+			service,
+			io::ip::tcp::endpoint(io::ip::tcp::v4(), 3689)) {
+	//...//
+}
+
 EngineServer::Service::Service(
 		const std::string &name,
 		const fs::path &engineConfigFilePath)
@@ -34,7 +42,8 @@ EngineServer::Service::Service(
 	, m_topics(m_suffix)
 	, m_settings(engineConfigFilePath, m_name, *this)
 	, m_socket(m_io)
-	, m_currentTimePublishTimer(m_io) {
+	, m_currentTimePublishTimer(m_io)
+	, m_inputIo(new InputIo) {
 
 	m_log.EnableStdOut();
 
@@ -61,8 +70,33 @@ EngineServer::Service::Service(
 		m_settings.GetFilePath(),
 		m_name);
 
+	LoadEngine(engineConfigFilePath);
+
+	{
+		const auto &endpoint = m_inputIo->acceptor.local_endpoint();
+		//! @todo Write to log
+		std::cout
+			<< "Opening endpoint "
+			<< endpoint.address() << ":" << endpoint.port()
+			<< " for incoming connections..." << std::endl;
+	}
+
+	StartAccept();
 	Connect(settings);
-	
+
+	m_inputIoThread = boost::thread(
+		[&]() {
+			try {
+				//! @todo Write to log
+				std::cout << "Starting IO task..." << std::endl;
+				//! @todo Write to log
+				m_inputIo->service.run();
+				std::cout << "IO task completed." << std::endl;
+			} catch (...) {
+				AssertFailNoException();
+				throw;
+			}
+		});
 	m_thread = boost::thread(
 		[&]() {
 			try {
@@ -86,11 +120,14 @@ EngineServer::Service::~Service() {
 	try {
 		m_io.stop();
 		m_thread.join();
+		m_inputIo->service.stop();
+		m_thread.join();
 	} catch (...) {
 		AssertFailNoException();
 		throw;
 	}
 	m_io.reset();
+	m_inputIo.reset();
 }
 
 void EngineServer::Service::Connect(const Lib::Ini &config) {
@@ -183,10 +220,61 @@ void EngineServer::Service::PublishCurrentTime() {
 	m_session->publish(m_topics.time, pt::to_simple_string(m_log.GetTime()));
 }
 
-/*void EngineServer::Service::StartEngine(const std::string &commandInfo) {
+void EngineServer::Service::LoadEngine(const fs::path &configFilePath) {
+
+	boost::shared_ptr<Settings> settings(
+		new Settings(configFilePath, GetName(), *this));
+	if (m_engines.find(settings->GetEngineId()) != m_engines.end()) {
+		boost::format message("Engine with ID \"%1%\" already loaded");
+		message % settings->GetEngineId();
+		throw EngineServer::Exception(message.str().c_str());
+	}
+
+	m_engines[settings->GetEngineId()] = settings;
+	//! @todo Write to log
+	std::cout
+		<< "Loaded engine \"" << settings->GetEngineId() << "\""
+		<< " from " << configFilePath << "." << std::endl;
+
+}
+
+void EngineServer::Service::ForEachEngineId(
+		const boost::function<void(const std::string &engineId)> &func)
+		const {
+	foreach (const auto &engine, m_engines) {
+		func(engine.first);
+	}
+}
+
+bool EngineServer::Service::IsEngineStarted(const std::string &engineId) const {
+	CheckEngineIdExists(engineId);
+	return m_server.IsStarted(engineId);
+}
+
+EngineServer::Settings & EngineServer::Service::GetEngineSettings(
+		const std::string &engineId) {
+	CheckEngineIdExists(engineId);
+	// return m_engines[engineId];
+	return *m_engines.find(engineId)->second;
+}
+
+void EngineServer::Service::UpdateEngine(
+		EngineServer::Settings::EngineTransaction &transaction) {
+	m_server.Update(transaction);
+}
+
+void EngineServer::Service::UpdateStrategy(
+		EngineServer::Settings::StrategyTransaction &transaction) {
+	m_server.Update(transaction);
+}
+
+void EngineServer::Service::StartEngine(
+		const std::string &engineId,
+		const std::string &commandInfo) {
+	const auto &settings = GetEngineSettings(engineId);
 	Context &context = m_server.Run(
-		m_settings.GetEngineId(),
-		m_settings.GetFilePath(),
+		settings.GetEngineId(),
+		settings.GetFilePath(),
 		false,
 		commandInfo);
 	context.SubscribeToStateUpdate(
@@ -199,9 +287,55 @@ void EngineServer::Service::PublishCurrentTime() {
 	context.RaiseStateUpdate(Context::STATE_ENGINE_STARTED);
 }
 
-void EngineServer::Service::StopEngine() {
+void EngineServer::Service::StopEngine(const std::string &engineId) {
+	CheckEngineIdExists(engineId);
 	m_server.StopAll(STOP_MODE_GRACEFULLY_ORDERS);
-}s
+}
+
+void EngineServer::Service::StartAccept() {
+	const auto &newConnection = Client::Create(
+		m_inputIo->acceptor.get_io_service(),
+		*this);
+    m_inputIo->acceptor.async_accept(
+		newConnection->GetSocket(),
+		boost::bind(
+			&Service::HandleNewClient,
+			this,
+			newConnection,
+			io::placeholders::error));
+}
+
+void EngineServer::Service::HandleNewClient(
+		const boost::shared_ptr<Client> &newConnection,
+		const boost::system::error_code &error) {
+	if (!error) {
+		const ConnectionsWriteLock lock(m_connectionsMutex);
+		auto list(m_connections);
+		list.insert(&*newConnection);
+		newConnection->Start();
+		list.swap(m_connections);
+	} else {
+		//! @todo Write to log
+		std::cerr
+			<< "Failed to accept new client: \""
+			<< SysError(error.value()) << "\"."
+			<< std::endl;
+	}
+	StartAccept();
+}
+
+void EngineServer::Service::OnDisconnect(Client &client) {
+	const ConnectionsWriteLock lock(m_connectionsMutex);
+	m_connections.erase(&client);
+}
+
+void EngineServer::Service::CheckEngineIdExists(const std::string &id) const {
+	if (m_engines.find(id) == m_engines.end()) {
+		boost::format message("Engine with ID \"%1%\" doesn't exist.");
+		message % id;
+		throw EngineServer::Exception(message.str().c_str());
+	}
+}
 
 void EngineServer::Service::OnContextStateChanges(
 		Context &,
@@ -267,4 +401,3 @@ void EngineServer::Service::ClosePositions(const std::string &engineId) {
 	CheckEngineIdExists(engineId);
 	m_server.ClosePositions();
 }
-*/

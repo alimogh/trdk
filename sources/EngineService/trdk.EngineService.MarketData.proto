@@ -1,0 +1,173 @@
+/**************************************************************************
+ *   Created: 2015/07/08 01:54:59
+ *    Author: Eugene V. Palchukovsky
+ *    E-mail: eugene@palchukovsky.com
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
+ **************************************************************************/
+
+syntax = "proto2";
+
+import "trdk.EngineService.proto";
+
+package trdk.EngineService.MarketData;
+
+////////////////////////////////////////////////////////////////////////////////
+
+message Security {
+
+	enum Type {
+		// Foreign Exchange Contract.
+		TYPE_FOR = 0;
+	}
+
+	enum Product {
+		PRODUCT_SPOT = 0;
+	}
+
+	// Symbol (for ex.: EUR/USD, LKOH, FB, MSFT).
+	required string symbol = 1;
+
+	required Product product = 2;
+	required Type type = 3;
+	
+	// Source (for ex.: Hotspot, Integral, NASDAQ).
+	required string source = 4;
+
+}
+
+message Dictionary {
+
+	message SecurityRecord {
+		required uint32 id = 1;
+		required Security security = 2;
+	}
+
+	repeated SecurityRecord securities = 1;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message PriceLevel {
+	required double price = 1;
+	required double qty = 2;
+};
+
+message BidAsk {
+	required PriceLevel bid = 1;
+	required PriceLevel ask = 2;
+}
+
+message BookUpdate {
+
+	required fixed64 timestamp = 1;
+
+	required uint32 security_id = 2;
+
+	// New price levels.
+	repeated PriceLevel new = 4;
+	// Updates price levels.
+	repeated PriceLevel updates = 5;
+	// Removed price levels. If has only one item with value "Quiet NaN" - all
+	// current levels removed.
+	repeated double removed = 6;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message Trade {
+
+	required string time = 1;
+
+	// Trade ID from source. Not unique.
+	required string trade_system_trade_id = 2;
+	required trdk.EngineService.Uuid order_id = 3;
+
+	required double price = 4;
+	required double qty = 5;
+
+	required BidAsk top_of_book = 6;
+
+}
+
+message Order {
+
+	enum Type {
+		// Limit price.
+		TYPE_LMT = 0;
+		// Market price.
+		TYPE_MKT = 1;
+	}
+
+	enum Side {
+		SIDE_SELL = 0;
+		SIDE_BUY = 1;
+	}
+
+	// Specifies how long the order remains in effect.
+	enum TimeInForce {
+		// Good Till Day.
+		TIME_IN_FORCE_DAY = 0;
+		// Good Till Cancel.
+		TIME_IN_FORCE_GTC = 1;
+		// At the Opening.
+		TIME_IN_FORCE_OPG = 2;
+		// Immediate or Cancel.
+		TIME_IN_FORCE_IOC = 3;
+		// Fill or Kill.
+		TIME_IN_FORCE_FOK = 4;
+	}
+
+	enum Status {
+		// Order sent to trade system. Result is unknown.
+		STATUS_SENT = 0;
+		// Recieved order submit confirmation, order active.
+		STATUS_ACTIVE = 1;
+		// Fully filled. Not active.
+		STATUS_FILLED = 2;
+		// Partially filled. Not active.
+		STATUS_FILLED_PARTIALLY = 3;
+		// Error. Not active.
+		STATUS_ERROR = 4;
+		// Cancel request sent to trade system. Result is unknown.
+		STATUS_REQUESTED_CANCEL = 5;
+		// Canceled. Not active.
+		STATUS_CANCELED = 6;
+		// Rejected. Not active.
+		STATUS_REJECTED = 7;
+	}
+
+	// Order ID from engine. Unique for each order.
+	required trdk.EngineService.Uuid id = 1;
+	// Order ID from source. Not unique.
+	optional string trade_system_order_id = 2;
+
+	optional string order_time = 3;
+	optional string execution_time = 4;
+	required Status status = 5;
+
+	required trdk.EngineService.Uuid operation_id = 6;
+	optional int64 sub_operation_id = 7;
+
+	optional Type type = 8;
+	required uint32 security_id = 9;
+	required Side side = 10;
+	required double qty = 11;
+	// Order price depends from type. For ex. "market order" doesn't have price.
+	optional double price = 12;
+	optional TimeInForce time_in_force = 13;
+	required string currency = 14;
+	optional double min_qty = 15;
+	optional string user = 16;
+
+	required double executed_qty = 17;
+	
+	optional BidAsk top_of_book = 18;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////

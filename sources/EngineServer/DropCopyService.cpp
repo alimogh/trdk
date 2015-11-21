@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "DropCopyService.hpp"
 #include "DropCopyClient.hpp"
+#include "EngineService/Utils.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
@@ -19,10 +20,59 @@
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::EngineServer;
+using namespace trdk::EngineService;
+using namespace trdk::EngineService::DropCopy;
+using namespace trdk::EngineService::MarketData;
+using namespace trdk::EngineService::Reports;
 
 namespace io = boost::asio;
 namespace pt = boost::posix_time;
 namespace uu = boost::uuids;
+namespace pf = google::protobuf;
+
+//////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+	void Convert(
+			const trdk::Security &source,
+			MarketData::Security &result) {
+		
+		result.set_symbol(source.GetSymbol().GetSymbol());
+
+		static_assert(Symbol::numberOfSecurityTypes == 3, "List changed.");
+		switch (source.GetSymbol().GetSecurityType()) {
+			case Symbol::SECURITY_TYPE_FOR_SPOT:
+				result.set_product(MarketData::Security::PRODUCT_SPOT);
+				result.set_type(MarketData::Security::TYPE_FOR);
+				break;
+			default:
+				AssertEq(
+					Symbol::SECURITY_TYPE_FOR_SPOT,
+					source.GetSymbol().GetSecurityType());
+				throw Exception("Unknown security type");
+		}
+
+		result.set_source(source.GetSource().GetTag());
+	
+	}
+
+	void Convert(double price, const trdk::Qty &qty, PriceLevel &result) {
+		result.set_price(price);
+		result.set_qty(qty);
+	}
+
+	void Convert(
+			double bestBidPrice,
+			const trdk::Qty &bestBidQty,
+			double bestAskPrice,
+			const trdk::Qty &bestAskQty,
+			BidAsk &result) {
+		Convert(bestBidPrice, bestBidQty, *result.mutable_bid());
+		Convert(bestAskPrice, bestAskQty, *result.mutable_ask());
+	}
+	
+}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -107,10 +157,10 @@ void DropCopyService::SendList::LogQueue() {
 	size_t counter = 0;
 	const auto &logRecords = [&](const Queue &queue) {
 		foreach (const auto &message, queue.data) {
-/*			m_service.GetLog().Debug(
+			m_service.GetLog().Debug(
 				"Unsent message #%1%: \"%2%\".",
 				++counter,
-				CreateMessage(message).DebugString());*/
+				CreateMessage(message).DebugString());
 		}
 	};
 	{
@@ -151,7 +201,7 @@ void DropCopyService::SendList::Enqueue(
 	m_dataCondition.notify_one();
 }
 
-/*ServiceData DropCopyService::SendList::CreateMessage(
+ServiceData DropCopyService::SendList::CreateMessage(
 		const Queue::Message &message)
 		const {
 	static_assert(numberOfMessageTypes == 4, "List changed.");
@@ -367,7 +417,6 @@ ServiceData DropCopyService::SendList::CreateMessage(
 
 	return result;
 }
- */
 
 void DropCopyService::SendList::SendTask() {
 
@@ -408,9 +457,9 @@ void DropCopyService::SendList::SendTask() {
 			Assert(!listToRead->data.empty());
 			AssertEq(listToRead->data.size(), listToRead->size);
 			foreach (auto &message, listToRead->data) {
-/*				if (!m_service.SendSync(CreateMessage(message))) {
+				if (!m_service.SendSync(CreateMessage(message))) {
 					break;
-				}*/
+				}
 				--listToRead->size;
 				AssertGt(listToRead->data.size(), listToRead->size);
 			}
@@ -475,11 +524,11 @@ void DropCopyService::Start(const IniSectionRef &conf) {
 	}
 
 	{
-/*		ServiceData message;
+		ServiceData message;
 		message.set_type(ServiceData::TYPE_DICTIONARY);	
-		Dictionary &dictionary = *message.mutable_dictionary();*/
+		Dictionary &dictionary = *message.mutable_dictionary();
 		size_t securitiesNumber = 0;
-/*		GetContext().ForEachMarketDataSource(
+		GetContext().ForEachMarketDataSource(
 			[&](const MarketDataSource &source) -> bool {
 				source.ForEachSecurity(
 					[&](const Security &security) -> bool {
@@ -492,7 +541,7 @@ void DropCopyService::Start(const IniSectionRef &conf) {
 					});
 				return true;
 			});
-		m_dictonary = message; */
+		m_dictonary = message;
 		GetLog().Debug(
 			"Dictionary: Cached %1% securities from %2% market data sources.",
 			securitiesNumber,
@@ -537,7 +586,7 @@ void DropCopyService::StartNewClient(
 	boost::shared_ptr<DropCopyClient> newClient
 		= DropCopyClient::Create(*this, host, port);
 		
-//	newClient->Send(m_dictonary);
+	newClient->Send(m_dictonary);
 	GetLog().Debug("Dictionary: Sent.");
 
 	const ClientLock lock(m_clientMutex);
@@ -571,18 +620,18 @@ void DropCopyService::ReconnectClient(
 		size_t attemptIndex,
 		const std::string &host,
 		const std::string &port) {
-
+	
 	try {
-
+	
 		StartNewClient(host, port);
-
+	
 	} catch (const DropCopyClient::ConnectError &ex) {
 
 		GetLog().Warn(
 			"Failed to reconnect: \"%1%\". Trying again, %2% times...",
 			ex.what(),
 			attemptIndex + 1);
-
+	
 		const auto &sleepTime
 			= pt::seconds(long(1 * std::min<size_t>(attemptIndex, 30)));
 		boost::shared_ptr<boost::asio::deadline_timer> timer(
@@ -603,7 +652,7 @@ void DropCopyService::ReconnectClient(
 
 }
 
-/*bool DropCopyService::SendSync(const ServiceData &message) {
+bool DropCopyService::SendSync(const ServiceData &message) {
 
 	ClientLock lock(m_clientMutex);
 
@@ -638,7 +687,7 @@ void DropCopyService::ReconnectClient(
 
 	return true;
 
-}*/
+}
 
 void DropCopyService::CopyOrder(
 		const uu::uuid &id,
@@ -769,4 +818,3 @@ void DropCopyService::ReportOperationEnd(
 	m_sendList.Enqueue(std::move(message));
 }
 
-//////////////////////////////////////////////////////////////////////////

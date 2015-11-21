@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "EngineService/DropCopy.h"
 #include "Fwd.hpp"
 
 namespace trdk { namespace EngineServer {
@@ -52,7 +53,7 @@ namespace trdk { namespace EngineServer {
 
 	public:
 
-//		void Send(const trdk::EngineService::DropCopy::ServiceData &);
+		void Send(const trdk::EngineService::DropCopy::ServiceData &);
 
 	private:
 
@@ -70,7 +71,7 @@ namespace trdk { namespace EngineServer {
 		void OnNewMessage(
 				const boost::system::error_code &,
 				std::size_t length);
-//		void OnNewRequest(const trdk::EngineService::DropCopy::ClientRequest &);
+		void OnNewRequest(const trdk::EngineService::DropCopy::ClientRequest &);
 		void OnDataSent(
 				//! @todo reimplement buffer
 				const boost::shared_ptr<std::vector<char>> &,
