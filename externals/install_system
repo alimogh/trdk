@@ -1,0 +1,9 @@
+
+git clone https://github.com/gperftools/gperftools.git gperftools
+cd gperftools
+git reset --hard 7773ea64ee254700ef0ffc5673539f0e111a4f86
+./autogen.sh
+./configure --enable-minimal --with-tcmalloc-pagesize=64
+make
+make install
+cd ./..
