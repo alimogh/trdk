@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <boost/thread/future.hpp>
 #include "Server.hpp"
 #include "ClientRequestHandler.hpp"
 
@@ -30,6 +31,28 @@ namespace trdk { namespace EngineServer {
 
 	private:
 
+		class Exception : public EngineServer::Exception {
+		public:
+			explicit Exception(const char *what) throw()
+				: EngineServer::Exception(what) {
+				//...//
+			}
+		};
+		class ConnectError : public Exception {
+		public:
+			explicit ConnectError(const char *what) throw()
+				: Exception(what) {
+				//...//
+			}
+		};
+		class TimeoutException : public Exception {
+		public:
+			explicit TimeoutException(const char *what) throw()
+				: Exception(what) {
+				//...//
+			}
+		};
+
 		//! @todo Legacy support, to remove
 		struct InputIo {
 		
@@ -40,17 +63,62 @@ namespace trdk { namespace EngineServer {
 		
 		};
 
-		typedef autobahn::wamp_session<
-				boost::asio::ip::tcp::socket,
-				boost::asio::ip::tcp::socket>
-			WampSession;
+		struct Config {
+
+			std::string name;
+			std::string id;
+			std::string twsHost;
+			uint16_t twsPort;
+			bool wampDebug;
+			boost::posix_time::time_duration timeout;
+
+			explicit Config(const boost::filesystem::path &);
+
+		};
 
 		struct Topics {
 
-			std::string onNewInstance;
 			std::string time;
 
-			explicit Topics(const std::string &suffix);
+			Topics();
+			explicit Topics(uint64_t suffix);
+
+		};
+
+		typedef boost::mutex ConnectionMutex;
+		typedef boost::unique_lock<ConnectionMutex> ConnectionLock;
+		typedef boost::condition_variable ConnectionCondition;
+
+		class Connection
+			: private boost::noncopyable
+			, public boost::enable_shared_from_this<Connection> {
+
+		public:
+
+			typedef autobahn::wamp_session<
+					boost::asio::ip::tcp::socket,
+					boost::asio::ip::tcp::socket>
+				Session;
+
+			EventsLog &log;
+			boost::asio::ip::tcp::socket socket;
+			boost::asio::deadline_timer currentTimePublishTimer;
+			boost::asio::deadline_timer ioTimeoutTimer;
+			std::shared_ptr<Session> session;
+			Topics topics;
+
+			boost::shared_future<void> sessionStartFuture;
+			boost::shared_future<void> sessionJoinFuture;
+			boost::shared_future<void> engineRegistrationFuture;
+
+			explicit  Connection(
+					boost::asio::io_service &io,
+					EventsLog &log,
+					bool isWampDebugOn);
+
+			void ScheduleNextCurrentTimeNotification();
+			void ScheduleIoTimeout(const boost::posix_time::time_duration &);
+			void StopIoTimeout();
 
 		};
 
@@ -59,14 +127,14 @@ namespace trdk { namespace EngineServer {
 		explicit Service(
 				const std::string &name,
 				const boost::filesystem::path &);
-		//! @todo Virtual - is alegacy suppor, remove virtual
+		//! @todo Virtual - is legacy support, remove virtual
 		virtual ~Service();
 
 	public:
 
 		//! @todo Legacy support, to remove
 		virtual const std::string & GetName() const {
-			return m_name;
+			return m_config.name;
 		}
 
 		//! @todo Legacy support, to remove
@@ -101,9 +169,6 @@ namespace trdk { namespace EngineServer {
 	private:
 
 		//! @todo Legacy support, to remove
-		void LoadEngine(const boost::filesystem::path &);
-
-		//! @todo Legacy support, to remove
 		void StartAccept();
 		//! @todo Legacy support, to remove
 		void HandleNewClient(
@@ -120,44 +185,37 @@ namespace trdk { namespace EngineServer {
 
 	private:
 
-		void Connect(const Lib::Ini &);
-		void OnConnect(
-				const std::string &host,
-				uint16_t port,
-				const boost::system::error_code &);
-	
-		void ScheduleNextCurrentTimeNotification();
+		void StartIoThread();
 
-		void PublishEngine();
-		void PublishCurrentTime();
+		boost::shared_ptr<Connection> Connect();
+		void OnConnected(
+			boost::shared_ptr<Connection>,
+			const boost::system::error_code &);
+		void OnSessionStarted(boost::shared_ptr<Connection>, bool isStarted);
+		void OnSessionJoined(
+			boost::shared_ptr<Connection>,
+			const boost::optional<uint64_t> &sessionId);
+		void OnEngineRegistered(
+			boost::shared_ptr<Connection>,
+			const boost::optional<uint64_t> &instanceId,
+			const std::tuple<std::string, std::string, std::string> &);
+
+		void Reconnect();
+		void RepeatReconnection(const Exception &prevReconnectError);
+
 
 	private:
 
-		const std::string m_name;
-		const std::string m_suffix;
-		const Topics m_topics;
+		const Config m_config;
 
-		std::ofstream m_logFile;
-		EventsLog m_log;
+        //! Log file.
+        /** Should be first to be removed last.
+          */
+        std::ofstream m_logFile;
+        EventsLog m_log;
 
 		Settings m_settings;
 		Server m_server;
-
-		boost::asio::io_service m_io;
-		boost::asio::ip::tcp::socket m_socket;
-		std::shared_ptr<WampSession> m_session;
-		boost::thread m_thread;
-
-		boost::asio::deadline_timer m_currentTimePublishTimer;
-
-		boost::future<void> m_joinFuture;
-		boost::future<void> m_startFuture;
-
-		//! @todo Legacy support, to remove
-		std::map<
-				std::string /* engine ID */,
-				boost::shared_ptr<Settings>>
-			m_engines;
 
 		//! @todo Legacy support, to remove
 		std::unique_ptr<InputIo> m_inputIo;
@@ -168,6 +226,20 @@ namespace trdk { namespace EngineServer {
 		//! @todo Legacy support, to remove
 		std::set<Client *> m_connections;
 
-	};
+		size_t m_numberOfReconnects;
+
+		boost::thread m_thread;
+		//! IO service.
+		/** Should be last, to be removed first - all objects in service should
+		  * be removed before other objects in "this".
+		  */
+		std::unique_ptr<boost::asio::io_service> m_io;
+
+		ConnectionMutex m_connectionMutex;
+		ConnectionCondition m_connectionCondition;
+		boost::shared_ptr<Connection> m_connection;
+		bool m_isInited;
+
+    };
 
 } }

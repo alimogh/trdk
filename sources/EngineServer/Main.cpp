@@ -88,7 +88,7 @@ namespace {
 
 		} catch (const trdk::Lib::Exception &ex) {
 			std::cerr
-				<< "Failed to start server service: \""
+				<< "Failed to start engine service: \""
 				<< ex << "\"." << std::endl;
 			getchar();
 		}

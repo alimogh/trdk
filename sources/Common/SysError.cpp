@@ -115,7 +115,9 @@ std::string SysError::GetString() const {
 #	ifdef BOOST_WINDOWS
 		return GetStringFromSys<std::string>(m_errorNo, ::FormatMessageA);
 #	else // BOOST_WINDOWS
-		return boost::system::system_error(m_errorNo, boost::system::get_system_category()).what();
+		return boost::system::system_error(
+			m_errorNo,
+			boost::system::get_system_category()).what();
 #	endif // BOOST_WINDOWS
 }
 
