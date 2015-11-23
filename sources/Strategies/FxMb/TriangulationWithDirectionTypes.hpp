@@ -40,7 +40,15 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		numberOfPairs = PAIR_UNKNOWN
 	};
 
-	typedef boost::array<double, numberOfPairs> PairsSpeed;
+
+	enum Speed {
+		SPEED_VWAP,
+		SPEED_EMA_FAST,
+		SPEED_EMA_SLOW,
+		numberOfSpeeds
+	};
+	typedef boost::array<double, numberOfSpeeds> SpeedSet;
+	typedef boost::array<SpeedSet, numberOfPairs> PairsSpeed;
 
 	////////////////////////////////////////////////////////////////////////////////
 

@@ -18,6 +18,9 @@
 
 namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
+	//! Strategy "Triangulation with Direction".
+	/** @sa TRDK-241
+	  */
 	class TriangulationWithDirection : public Strategy {
 		
 	public:
@@ -76,7 +79,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		bool Detect(Detection &result) const;
 		bool DetectByY1(Detection &result) const;
 		bool DetectByY2(Detection &result) const;
-		void CalcSpeed(const Y &, Detection &result) const;
+		bool CalcSpeed(const Y &, Detection &result) const;
 		
 		void CheckNewTriangle(const Lib::TimeMeasurement::Milestones &);
 		bool CheckTriangleCompletion(const Lib::TimeMeasurement::Milestones &);

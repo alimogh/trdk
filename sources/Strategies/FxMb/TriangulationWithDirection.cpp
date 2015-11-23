@@ -574,7 +574,7 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 
 }
 
-void TriangulationWithDirection::CalcSpeed(
+bool TriangulationWithDirection::CalcSpeed(
 		const Y &y,
 		Detection &result)
 		const {
@@ -596,27 +596,156 @@ void TriangulationWithDirection::CalcSpeed(
 					&& data.current.emaFast > data.current.emaSlow));
 
 		if (IsZero(data.current.theo) || IsZero(data.prev2.theo)) {
-			// Special case: no speed.
-			result.speed[pair] = 1;
-		} else if (
-				data.current.theo > data.current.emaFast
- 				&& data.current.emaFast > data.current.emaSlow) {	
-			result.speed[pair] = data.prev2.theo > data.current.theo
-				?	(1.0 / data.current.theo) * data.prev2.theo
-				:	(1.0 / data.prev2.theo) * data.current.theo;
-		} else if (
-				data.current.theo < data.current.emaFast
- 				&& data.current.emaFast < data.current.emaSlow) {
-			result.speed[pair] = data.prev2.theo > data.current.theo
-				?	(1.0 / data.current.theo) * data.prev2.theo
-				:	(1.0 / data.prev2.theo) * data.current.theo;
-			result.speed[pair] *= -1;
+			return false;
+		}
+
+		if (
+				( // Rising:
+					//! @sa TRDK-240
+					data.current.theo > data.prev1.theo && data.prev1.theo > data.prev2.theo  
+					&& data.current.emaFast > data.prev1.emaFast && data.prev1.emaFast > data.prev2.emaFast
+					&& data.current.emaSlow > data.prev1.emaSlow && data.prev1.emaSlow > data.prev2.emaSlow
+					// Theo-test:
+					&& data.current.theo > data.current.emaFast
+ 					&& data.current.emaFast > data.current.emaSlow)
+				||	( // Falling:
+					//! @sa TRDK-240
+					data.current.theo < data.prev1.theo && data.prev1.theo < data.prev2.theo  
+					&& data.current.emaFast < data.prev1.emaFast && data.prev1.emaFast < data.prev2.emaFast
+					&& data.current.emaSlow < data.prev1.emaSlow && data.prev1.emaSlow < data.prev2.emaSlow
+					// Theo-test:
+					&& data.current.theo < data.current.emaFast
+ 					&& data.current.emaFast < data.current.emaSlow)) {
+		
+			class SpeedCalculator : private boost::noncopyable {
+			public:
+				explicit SpeedCalculator(SpeedSet &resultRef)
+					: m_result(resultRef) {
+#					ifdef BOOST_ENABLE_ASSERT_HANDLER
+						foreach (auto &i, m_result) {
+							typedef std::remove_reference<decltype(i)>::type I;
+							i = std::numeric_limits<I>::quiet_NaN();
+						}
+#					endif
+				}
+				~SpeedCalculator() {
+#					ifdef BOOST_ENABLE_ASSERT_HANDLER
+						foreach (const auto &i, m_result) {
+							Assert(!isnan(i));
+						}
+#					endif
+				}
+				void operator ()(
+						const Speed &type,
+						double current,
+						double prev) {
+					Assert(isnan(m_result[type]));
+					Assert(!IsEqual(current, prev));
+					m_result[type] = current > prev
+						?	((1.0 / prev) * current) - 1
+						:	-(((1.0 / current) * prev) - 1);
+				}
+			private:
+				SpeedSet &m_result;
+			} calcSpeed(result.speed[pair]);
+
+			//! @sa TRDK-240
+			static_assert(numberOfSpeeds == 3, "List changed.");
+			calcSpeed(SPEED_VWAP, data.current.theo, data.prev2.theo);
+			calcSpeed(SPEED_EMA_FAST, data.current.emaFast, data.prev2.emaFast);
+			calcSpeed(SPEED_EMA_SLOW, data.current.emaSlow, data.prev2.emaSlow);
+
 		} else {
+
 			// Not filling, not rising.
-			result.speed[pair] = 0;
+			result.speed[pair].fill(0);
+		
 		}
 
 	}
+
+	return true;
+
+}
+
+namespace {
+
+	class SpeedComparator : private boost::noncopyable {
+	
+	public:
+	
+		explicit SpeedComparator(const PairsSpeed &speedRef) 
+			: m_speed(speedRef) {
+			//...//
+		}
+	
+		bool HasAnySpeed(const Pair &pair) const {
+
+			AssertEq(
+				IsZero(m_speed[pair][SPEED_VWAP]),
+				IsZero(m_speed[pair][SPEED_EMA_FAST]));
+			AssertEq(
+				IsZero(m_speed[pair][SPEED_EMA_FAST]),
+				IsZero(m_speed[pair][SPEED_EMA_SLOW]));
+
+			return !IsZero(m_speed[pair].front());
+		}
+	
+		bool IsRising(const Pair &pair) const {
+		
+			AssertEq(
+				m_speed[pair][SPEED_VWAP] > 0,
+				m_speed[pair][SPEED_EMA_FAST] > 0);
+			AssertEq(
+				m_speed[pair][SPEED_EMA_FAST] > 0,
+				m_speed[pair][SPEED_EMA_SLOW] > 0);
+		
+			return m_speed[pair].front() > 0;
+		
+		}
+	
+		bool IsFalling(const Pair &pair) const {
+
+			AssertEq(
+				m_speed[pair][SPEED_VWAP] < 0,
+				m_speed[pair][SPEED_EMA_FAST] < 0);
+			AssertEq(
+				m_speed[pair][SPEED_EMA_FAST] < 0,
+				m_speed[pair][SPEED_EMA_SLOW] < 0);
+
+			return m_speed[pair].front() < 0;
+
+		}
+	
+		bool IsPair1Slower(const Pair &pair1, const Pair &pair2) const {
+
+			for (size_t i = 0; i < numberOfSpeeds; ++i) {
+				if (m_speed[pair1][i] >= m_speed[pair2][i]) {
+					return false;
+				}
+			}
+
+			return true;
+
+		}
+
+		bool IsPair1Faster(const Pair &pair1, const Pair &pair2) const {
+
+			for (size_t i = 0; i < numberOfSpeeds; ++i) {
+				if (fabs(m_speed[pair1][i]) <= fabs(m_speed[pair2][i])) {
+					return false;
+				}
+			}
+
+			return true;
+
+		}
+	
+	private:
+	
+		const PairsSpeed &m_speed;
+	
+	};
 
 }
 
@@ -624,16 +753,18 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 
 	AssertLe(1.0, m_yDetected[Y1]);
 
-	CalcSpeed(Y1, result);
+	if (!CalcSpeed(Y1, result)) {
+		return false;
+	}
+
+	const SpeedComparator comparator(result.speed);
 
 	if (
-			// | EUR/USD SELL 1 FALLING	| USD/JPY SELL 3 RISING	| EUR/JPY BUY 2 -	|
-			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
-			result.speed[PAIR_AB] < -1
-			&& result.speed[PAIR_BC] > 1
-			&& IsZero(result.speed[PAIR_AC])
+			comparator.IsFalling(PAIR_AB)
+			&& comparator.IsRising(PAIR_BC)
+			&& !comparator.HasAnySpeed(PAIR_AC)
 			//! @sa TRDK-162 about falling/rising speed:
-			&& fabs(result.speed[PAIR_AB]) < result.speed[PAIR_BC]) {
+			&& comparator.IsPair1Slower(PAIR_AB, PAIR_BC)) {
 
 		result.y = Y1;
 		result.legs = {LEG1, LEG3, LEG2};
@@ -641,13 +772,11 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 		return true;
 
 	} else if (
-			// | Y1 EUR/USD SELL 2 -	| USD/JPY SELL 3 RISING | EUR/JPY BUY 1 RISING	|
-			// | PAIR_AB				| PAIR_BC				| PAIR_AC				|
-			IsZero(result.speed[PAIR_AB])
-			&& result.speed[PAIR_BC] > 1
-			&& result.speed[PAIR_AC] > 1
+			!comparator.HasAnySpeed(PAIR_AB)
+			&& comparator.IsRising(PAIR_BC)
+			&& comparator.IsFalling(PAIR_AC)
 			//! @sa TRDK-162 about falling/rising speed:
-			&& result.speed[PAIR_BC] > result.speed[PAIR_AC]) {
+			&& comparator.IsPair1Faster(PAIR_BC, PAIR_AC)) {
 
 		result.y = Y1;
 		result.legs = {LEG2, LEG3, LEG1};
@@ -655,13 +784,11 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 		return true;
 
 	} else if (
-			// | EUR/USD SELL 3 RISING | USD/JPY SELL 1 FALLING | EUR/JPY BUY 2 -	|
-			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
-			result.speed[PAIR_AB] > 1
-			&& result.speed[PAIR_BC] < -1
-			&& IsZero(result.speed[PAIR_AC])
+			comparator.IsRising(PAIR_AB)
+			&& comparator.IsFalling(PAIR_BC)
+			&& !comparator.HasAnySpeed(PAIR_AC)
 			//! @sa TRDK-162 about falling/rising speed:
-			&& result.speed[PAIR_AB] > fabs(result.speed[PAIR_BC])) {
+			&& comparator.IsPair1Faster(PAIR_AB, PAIR_BC)) {
 
 		result.y = Y1;
 		result.legs = {LEG3, LEG1, LEG2};
@@ -678,16 +805,18 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 
 	AssertLe(1.0, m_yDetected[Y2]);
 
-	CalcSpeed(Y2, result);
+	if (!CalcSpeed(Y2, result)) {
+		return false;
+	}
+
+	const SpeedComparator comparator(result.speed);
 
 	if (
-			// | EUR/USD BUY 1 RISING	| USD/JPY BUY 3 FALLING | EUR/JPY SELL 2 -	|
-			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
-			result.speed[PAIR_AB] > 1
-			&& result.speed[PAIR_BC] < -1
-			&& IsZero(result.speed[PAIR_AC])
+			comparator.IsRising(PAIR_AB)
+			&& comparator.IsFalling(PAIR_BC)
+			&& !comparator.HasAnySpeed(PAIR_AC)
 			//! @sa TRDK-162 about falling/rising speed:
-			&& result.speed[PAIR_AB] < fabs(result.speed[PAIR_BC])) {
+			&& comparator.IsPair1Slower(PAIR_AB, PAIR_BC)) {
 
 		result.y = Y2;
 		result.legs = {LEG1, LEG3, LEG2};
@@ -695,13 +824,11 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 		return true;
 
 	} else if (
-			// | EUR/USD BUY 2 -	| USD/JPY BUY 3 FALLING | EUR/JPY SELL 1 FALLING	|
-			// | PAIR_AB			| PAIR_BC				| PAIR_AC					|
-			IsZero(result.speed[PAIR_AB])
-			&& result.speed[PAIR_BC] < -1
-			&& result.speed[PAIR_AC] < -1
+			!comparator.HasAnySpeed(PAIR_AB)
+			&& comparator.IsFalling(PAIR_BC)
+			&& comparator.IsFalling(PAIR_AC)
 			//! @sa TRDK-162 about falling/rising speed:
-			&& fabs(result.speed[PAIR_BC]) > fabs(result.speed[PAIR_AC])) {
+			&& comparator.IsPair1Faster(PAIR_BC, PAIR_AC)) {
 
 		result.y = Y2;
 		result.legs = {LEG2, LEG3, LEG1};
@@ -709,13 +836,11 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 		return true;
 
 	} else if (
-			// | EUR/USD BUY 3 FALLING	| USD/JPY BUY 1 RISING	| EUR/JPY SELL 2 -	|
-			// | PAIR_AB				| PAIR_BC				| PAIR_AC			|
-			result.speed[PAIR_AB] < -1
-			&& result.speed[PAIR_BC] > 1
-			&& IsZero(result.speed[PAIR_AC])
+			comparator.IsFalling(PAIR_AB)
+			&& comparator.IsRising(PAIR_BC)
+			&& !comparator.HasAnySpeed(PAIR_AC)
 			//! @sa TRDK-162 about falling/rising speed:
-			&& fabs(result.speed[PAIR_AB]) > result.speed[PAIR_BC]) {
+			&& comparator.IsPair1Faster(PAIR_AB, PAIR_BC)) {
 
 		result.y = Y2;
 		result.legs = {LEG3, LEG1, LEG2};

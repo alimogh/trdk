@@ -189,8 +189,9 @@ public:
 						%	pair % '\0' % " best bid ECN"
 						%	pair % '\0' % " best ask"
 						%	pair % '\0' % " best ask ECN"
-						%	pair % '\0' % " rising speed"
-						%	pair % '\0' % " falling speed"
+						%	pair % '\0' % " VWAP speed"
+						%	pair % '\0' % " EMA fast speed"
+						%	pair % '\0' % " EMA slow speed"
 						%	pair % '\0' % " VWAP"
 						%	pair % '\0' % " VWAP prev1"
 						%	pair % '\0' % " VWAP prev2"
@@ -378,16 +379,17 @@ void TriangleReport::ReportAction(
 
 		// Rising/falling speed: ///////////////////////////////////////////////////////
 		if (speed) {
-			if (IsZero((*speed)[pair])) {
-				record % ' ' % ' ';
-			}  else if ((*speed)[pair] > 0) {
-				record % (*speed)[pair] % ' ';
-			} else {
-				AssertGt(0, (*speed)[pair]);
-				record % ' ' % fabs((*speed)[pair]);
+			foreach (const auto &it, (*speed)[pair]) {
+				if (IsZero(it)) {
+					record % ' ';
+				}  else {
+					record % it;
+				}
 			}
 		} else {
-			record % ' ' % ' ';
+			for (size_t i = 0; i < numberOfSpeeds; ++i) {
+				record % ' ';
+			}
 		}
 		
 		// Stat data: //////////////////////////////////////////////////////////////////
@@ -596,5 +598,3 @@ void TriangleReport::ReportUpdate() {
 		});
 
 }
-
-
