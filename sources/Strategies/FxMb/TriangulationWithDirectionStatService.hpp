@@ -25,9 +25,9 @@ namespace boost { namespace accumulators {
 
 			template<typename Args>
 			Ema(const Args &args)
-					: m_speed(args[ema_speed]),
-					m_isStarted(false),
-					m_result(0) {
+				: m_speed(args[ema_speed])
+				, m_isStarted(false)
+				, m_result(0) {
 				//...//
 			}
 
@@ -83,79 +83,36 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	public:
 
-		struct Data {
+		struct Point {
+			boost::posix_time::ptime time;
+			double theo;
+			double emaSlow;
+			double emaFast;
+		};
 
-			struct Stat {
-				
-				boost::posix_time::ptime time;
-				double theo;
-				double emaSlow;
-				double emaFast;
-
-				Stat()
-					: theo(.0),
-					emaSlow(.0),
-					emaFast(.0) {
-					//...//
-				}
-
-			};
-
-			Stat current;
-			Stat prev1;
-			Stat prev2;
-
-			std::vector<Security::Book::Level> bids;
-			std::vector<Security::Book::Level> offers;
-
-			double atr;
-			size_t updatesNumber;
-
-			Data()
-				: atr(0),
-				updatesNumber(0) {
-			}
-
+		struct Stat {
+			size_t numberOfUpdates;
+			Point current;
+			Point prev1;
+			Point prev2;
 		};
 
 	private:
 
-		class ServiceLog;
+		typedef boost::accumulators::accumulator_set<
+				double,
+				boost::accumulators::stats<boost::accumulators::tag::Ema>>
+			EmaAcc;
 
-		struct Source
-				: public Data,
-				private boost::noncopyable {
-			
-			typedef boost::accumulators::accumulator_set<
-					double,
-					boost::accumulators::stats<boost::accumulators::tag::Ema>>
-				EmaAcc;
-			
-			typedef std::deque<Stat> Points;
+		typedef std::deque<Point> StatHistory;
+		typedef std::deque<boost::posix_time::ptime> NumberOfUpdatesHistory;
 
+		struct Source {
 			const Security *security;
-			mutable boost::atomic_flag dataLock;
-
-			EmaAcc slowEmaAcc;
-			EmaAcc fastEmaAcc;
-			
-			Points points;
-
-			explicit Source(
-					const Security &security,
-					double slowEmaSpeed,
-					double fastEmaSpeed)
-				: security(&security),
-				slowEmaAcc(
-					boost::accumulators::tag::ema_speed::speed = slowEmaSpeed),
-				fastEmaAcc(
-					boost::accumulators::tag::ema_speed::speed = fastEmaSpeed) {
-				//...//
-			}
-
+			boost::posix_time::ptime time;
+			Security::Book::Side bidsBook;
+			Security::Book::Side asksBook;
 		};
-
-		typedef std::deque<boost::posix_time::ptime> UpdatesTimes;
 
 	public:
 
@@ -169,26 +126,17 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	public:
 
 		const Security & GetSecurity(size_t marketDataSource) const {
-			return *GetSource(marketDataSource).security;
+			AssertLt(marketDataSource, m_sources.size());
+			Assert(m_sources[marketDataSource].security);
+			return *m_sources[marketDataSource].security;
 		}
 
-		Data GetData(size_t marketDataSource) const {
-			const Source &source = GetSource(marketDataSource);
-			Data result;
-			while (source.dataLock.test_and_set(boost::memory_order_acquire));
-			result = source;
-			source.dataLock.clear(boost::memory_order_release);
-			return result;
-		}
-
-		size_t CalcUpdatesNumber() const {
-			size_t result = 0;
-			foreach (const auto &source, m_data) {
-				while (source->dataLock.test_and_set(boost::memory_order_acquire));
-				result += source->updatesNumber;
-				source->dataLock.clear(boost::memory_order_release);
-			}
-			return result;
+		Stat GetStat() const {
+			Stat result;
+			while (m_statMutex.test_and_set(boost::memory_order_acquire));
+			result = m_stat;
+			m_statMutex.clear(boost::memory_order_release);
+			return m_stat;
 		}
 
 	protected:
@@ -204,53 +152,30 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 	private:
 
-		Source & GetSource(size_t index) {
-			AssertLt(index, m_data.size());
-			Assert(m_data[index]);
-			return *m_data[index];
-		}
-		const Source & GetSource(size_t index) const {
-			return const_cast<StatService *>(this)->GetSource(index);
-		}
-
-	private:
-
-		ServiceLog & GetServiceLog(
-				const Lib::IniSectionRef &)
-				const;
-		void InitLog(
-				ServiceLog &,
-				std::ofstream &,
-				const std::string &suffix)
-				const;
-
-		void LogState(const MarketDataSource &) const;
-
-		void UpdateTimes(const Security::Book &);
+		void UpdateNumberOfUpdates(const Security::Book &);
 
 	private:
 
 		const size_t m_bookLevelsCount;
-		const bool m_isBookLevelsExactly;
-		const bool m_useAdjustedBookForCalculations;
 
-		const boost::posix_time::time_duration m_prev1Duration;
-		const boost::posix_time::time_duration m_prev2Duration;
+		boost::posix_time::time_duration m_prev1Duration;
+		boost::posix_time::time_duration m_prev2Duration;
 		
 		double m_emaSpeedSlow;
 		double m_emaSpeedFast;
 
-		mutable bool m_isLogByPairOn;
-		mutable std::ofstream m_pairLogFile;
-		std::unique_ptr<ServiceLog> m_pairLog;
+		std::vector<Source> m_sources;
 
-		ServiceLog &m_serviceLog;
+		EmaAcc m_slowEmaAcc;
+		EmaAcc m_fastEmaAcc;
 
-		std::vector<boost::shared_ptr<Source>> m_data;
+		mutable boost::atomic_flag m_statMutex;
+		Stat m_stat;
+
+		StatHistory m_statHistory;
+		NumberOfUpdatesHistory m_numberOfUpdates;
 
 		static std::vector<Twd::StatService *> m_instancies;
-
-		UpdatesTimes m_updatesTimes;
 
 	};
 

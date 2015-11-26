@@ -628,7 +628,7 @@ Security::BookUpdateOperation Security::StartBookUpdate(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class Security::Book::Side::Implementation : private boost::noncopyable {
+class Security::Book::Side::Implementation {
 public:
 	std::vector<Security::Book::Level> m_levels;
 };
@@ -638,11 +638,30 @@ Security::Book::Side::Side()
 	//...//
 }
 
+Security::Book::Side::Side(const Side &rhs)
+	: m_pimpl(new Implementation(*rhs.m_pimpl)) {
+	//...//
+}
+
+Security::Book::Side::Side(Side &&rhs)
+	: m_pimpl(rhs.m_pimpl) {
+	rhs.m_pimpl = nullptr;
+}
+
 Security::Book::Side::~Side() {
 	delete m_pimpl;
 }
 
-size_t Security::Book::Side::GetLevelsCount() const {
+Security::Book::Side & Security::Book::Side::operator =(const Side &rhs) {
+	Security::Book::Side(rhs).Swap(*this);
+	return *this;
+}
+
+void Security::Book::Side::Swap(Side &rhs) throw() {
+	std::swap(m_pimpl, rhs.m_pimpl);
+}
+
+size_t Security::Book::Side::GetSize() const {
 	return m_pimpl->m_levels.size();
 }
 
@@ -792,14 +811,14 @@ void Security::BookUpdateOperation::Commit(
 	{
 		for (
 				size_t i = 0;
-				i < m_pimpl->m_book->GetBids().GetLevelsCount();
+				i < m_pimpl->m_book->GetBids().GetSize();
 				++i) {
 			Assert(!IsZero(m_pimpl->m_book->GetBids().GetLevel(i).GetPrice()));
 			Assert(!IsZero(m_pimpl->m_book->GetBids().GetLevel(i).GetQty()));
 		}
 		for (
 				size_t i = 0;
-				i < m_pimpl->m_book->GetAsks().GetLevelsCount();
+				i < m_pimpl->m_book->GetAsks().GetSize();
 				++i) {
 			Assert(!IsZero(m_pimpl->m_book->GetAsks().GetLevel(i).GetPrice()));
 			Assert(!IsZero(m_pimpl->m_book->GetAsks().GetLevel(i).GetQty()));
@@ -810,19 +829,19 @@ void Security::BookUpdateOperation::Commit(
 	m_pimpl->m_security.SetLevel1(
 		m_pimpl->m_book->GetTime(),
 		Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-			m_pimpl->m_book->GetBids().GetLevelsCount() == 0
+			m_pimpl->m_book->GetBids().GetSize() == 0
 				?	0
 				:	m_pimpl->m_security.ScalePrice(m_pimpl->m_book->GetBids().GetLevel(0).GetPrice())),
 		Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
-			m_pimpl->m_book->GetBids().GetLevelsCount() == 0
+			m_pimpl->m_book->GetBids().GetSize() == 0
 				?	0
 				:	m_pimpl->m_book->GetBids().GetLevel(0).GetQty()),
 		Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-			m_pimpl->m_book->GetAsks().GetLevelsCount() == 0
+			m_pimpl->m_book->GetAsks().GetSize() == 0
 				?	0
 				:	m_pimpl->m_security.ScalePrice(m_pimpl->m_book->GetAsks().GetLevel(0).GetPrice())),
 		Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
-			m_pimpl->m_book->GetAsks().GetLevelsCount() == 0
+			m_pimpl->m_book->GetAsks().GetSize() == 0
 				?	0
 				:	m_pimpl->m_book->GetAsks().GetLevel(0).GetQty()),
 		timeMeasurement);

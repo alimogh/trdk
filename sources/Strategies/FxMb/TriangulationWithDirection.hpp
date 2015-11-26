@@ -79,7 +79,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		bool Detect(Detection &result) const;
 		bool DetectByY1(Detection &result) const;
 		bool DetectByY2(Detection &result) const;
-		bool CalcSpeed(const Y &, Detection &result) const;
+		bool CalcSpeed(PairsSpeed &result) const;
 		
 		void CheckNewTriangle(const Lib::TimeMeasurement::Milestones &);
 		bool CheckTriangleCompletion(const Lib::TimeMeasurement::Milestones &);
@@ -108,8 +108,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		std::array<std::string, numberOfPairs> m_pairsOrder;
 
-		const size_t m_bookLevelsCount;
-		const bool m_useAdjustedBookForTrades;
 		const bool m_allowLeg1Closing;
 		Qty m_qty;
 		size_t m_trianglesLimit;

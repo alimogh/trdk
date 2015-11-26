@@ -93,9 +93,9 @@ namespace trdk {
 			boost::optional<size_t> count;
 
 			explicit Bar(
-		 				const boost::posix_time::ptime &,
-						const boost::posix_time::time_duration &,
-						Type);
+		 			const boost::posix_time::ptime &,
+					const boost::posix_time::time_duration &,
+					Type);
 
 		};
 		typedef void (NewBarSlotSignature)(const Bar &);
@@ -121,9 +121,9 @@ namespace trdk {
 						const boost::posix_time::ptime &time,
 						double price,
 						const trdk::Qty &qty)
-					: m_time(time),
-					m_price(price),
-					m_qty(qty) {
+					: m_time(time)
+					, m_price(price)
+					, m_qty(qty) {
 					//...//
 				}
 				void Swap(Level &rhs) throw() {
@@ -136,8 +136,8 @@ namespace trdk {
 				}
 				bool operator ==(const Level &rhs) const {
 					return
-						trdk::Lib::IsEqual(m_price,rhs.m_price)
-							&& trdk::Lib::IsEqual(m_qty,rhs.m_qty);
+						trdk::Lib::IsEqual(m_price, rhs.m_price)
+							&& trdk::Lib::IsEqual(m_qty, rhs.m_qty);
 				}
 				bool operator !=(const Level &rhs) const {
 					return !operator ==(rhs);
@@ -161,9 +161,13 @@ namespace trdk {
 				friend class trdk::Security::BookSideUpdateOperation;
 			public:
 				Side();
+				Side(Side &&);
+				Side(const Side &);
 				~Side();
+				Side & operator =(const Side &);
+				void Swap(Side &) throw();
 			public:
-				size_t GetLevelsCount() const;
+				size_t GetSize() const;
 				const trdk::Security::Book::Level & GetLevel(
 						size_t levelIndex)
 						const;

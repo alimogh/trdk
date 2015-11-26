@@ -37,7 +37,7 @@ namespace {
 
 	bool IsProfit(
 			const Triangle::PairInfo &pair,
-			const StatService::Data &data) {
+			const StatService::Stat &data) {
 		return
 			(pair.isBuy
 				?	data.current.theo > data.current.emaSlow
@@ -69,10 +69,6 @@ TriangulationWithDirection::TriangulationWithDirection(
 		const std::string &tag,
 		const IniSectionRef &conf)
 	: Base(context, "TriangulationWithDirection", tag, conf)
-	, m_bookLevelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count"))
-	, m_useAdjustedBookForTrades(
-		conf.GetBase().ReadBoolKey("General", "book.adjust.trade"))
 	, m_allowLeg1Closing(
 		conf.ReadTypedKey<bool>("allow_leg1_closing"))
 	, m_qty(conf.ReadTypedKey<Qty>("invest_amount"))
@@ -103,9 +99,8 @@ TriangulationWithDirection::TriangulationWithDirection(
 #	endif
 
 	GetLog().Info(
-		"Allow Leg 1 closing: %1%. Book size: %2% * 2 price levels.",
-		m_allowLeg1Closing ? "yes" : "no",
-		m_bookLevelsCount);
+		"Allow Leg 1 closing: %1%.",
+		m_allowLeg1Closing ? "yes" : "no");
 
 }
 
@@ -467,11 +462,6 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 	const auto &ecnsCount = GetContext().GetMarketDataSourcesCount();
 	bool hasNotOpportunity = false;
 	for (size_t ecn = 0; !hasNotOpportunity && ecn < ecnsCount; ++ecn) {
- 		if (
-				!m_useAdjustedBookForTrades
-				&& bestBidAskIt->service->GetSecurity(ecn).IsBookAdjusted()) {
- 			continue;
- 		}
 		const Security &security = bestBidAskIt->service->GetSecurity(ecn);
 		{
 			const auto &bid = security.GetBidPrice();
@@ -574,15 +564,11 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 
 }
 
-bool TriangulationWithDirection::CalcSpeed(
-		const Y &y,
-		Detection &result)
-		const {
+bool TriangulationWithDirection::CalcSpeed(PairsSpeed &result) const {
 
-	for (size_t pair = 0; pair < result.speed.size(); ++pair) {
+	for (size_t pair = 0; pair < result.size(); ++pair) {
 			
-		const auto &bestBidAsk = m_bestBidAsk[pair];
-		const auto &data = bestBidAsk.service->GetData(m_detectedEcns[y][pair]);
+		const auto &data = m_bestBidAsk[pair].service->GetStat();
 
 		Assert(
 			!(data.current.theo > data.current.emaFast
@@ -647,7 +633,7 @@ bool TriangulationWithDirection::CalcSpeed(
 				}
 			private:
 				SpeedSet &m_result;
-			} calcSpeed(result.speed[pair]);
+			} calcSpeed(result[pair]);
 
 			//! @sa TRDK-240
 			static_assert(numberOfSpeeds == 3, "List changed.");
@@ -658,7 +644,7 @@ bool TriangulationWithDirection::CalcSpeed(
 		} else {
 
 			// Not filling, not rising.
-			result.speed[pair].fill(0);
+			result[pair].fill(0);
 		
 		}
 
@@ -753,10 +739,6 @@ bool TriangulationWithDirection::DetectByY1(Detection &result) const {
 
 	AssertLe(1.0, m_yDetected[Y1]);
 
-	if (!CalcSpeed(Y1, result)) {
-		return false;
-	}
-
 	const SpeedComparator comparator(result.speed);
 
 	if (
@@ -805,10 +787,6 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 
 	AssertLe(1.0, m_yDetected[Y2]);
 
-	if (!CalcSpeed(Y2, result)) {
-		return false;
-	}
-
 	const SpeedComparator comparator(result.speed);
 
 	if (
@@ -854,7 +832,13 @@ bool TriangulationWithDirection::DetectByY2(Detection &result) const {
 }
 
 bool TriangulationWithDirection::Detect(Detection &result) const {
+	
 	AssertNe(Y_UNKNOWN, CheckOpportunity(m_yDetected));
+	
+	if (!CalcSpeed(result.speed)) {
+		return false;
+	}
+	
 	if (m_yDetected[Y1] >= 1.0 && m_yDetected[Y2] <= m_yDetected[Y1]) {
 		if (
 				DetectByY1(result)
@@ -870,15 +854,17 @@ bool TriangulationWithDirection::Detect(Detection &result) const {
 	} else if (m_yDetected[Y1] >= 1.0 && DetectByY1(result)) {
 		return true;
 	}
+
 	Assert(m_yDetected[Y1] < 1.0 || !DetectByY1(result));
 	Assert(m_yDetected[Y2] < 1.0 || !DetectByY2(result));
 	return false;
+
 }
 
 size_t TriangulationWithDirection::CalcBookUpdatesNumber() const {
 	size_t result = 0;
 	foreach (const auto &bestBidAsk, m_bestBidAsk) {
-		result += bestBidAsk.service->CalcUpdatesNumber();
+		result += bestBidAsk.service->GetStat().numberOfUpdates;
 	}
 	return result;
 }
@@ -932,20 +918,6 @@ void TriangulationWithDirection::CheckNewTriangle(
 				},
 				m_bestBidAsk));
 
-		if (
-				triangle->GetPair(LEG1).security->IsBookAdjusted()
-				&& !m_useAdjustedBookForTrades) {
-			GetTradingLog().Write(
-				"\tnot respected\tleg 1\triangle=%1%\tpair=%2%\tecn=%3%",
-				[&](TradingRecord &record) {
-					record
-						% m_triangle->GetId()
-						% *triangle->GetPair(LEG1).security
-						% triangle->GetPair(LEG1).security->GetSource().GetTag();
-				});
-			return;
-		}
-
 		triangle->StartLeg1(
 			timeMeasurement,
 			detection.speed,
@@ -987,24 +959,8 @@ bool TriangulationWithDirection::CheckTriangleCompletion(
 	}
 
 	Triangle::PairInfo &leg3Info = m_triangle->GetPair(LEG3);
-	const auto &ecn = leg3Info.security->GetSource().GetIndex();
-	const auto &data = leg3Info.bestBidAsk->service->GetData(ecn);
+	const auto &data = leg3Info.bestBidAsk->service->GetStat();
 	if (!IsProfit(leg3Info, data)) {
-		timeMeasurement.Measure(
-			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION_2);
-		return false;
-	} else if (
-			!m_useAdjustedBookForTrades
-			&& (leg3Info.security->IsBookAdjusted()
-				|| leg3Info.GetBestSecurity().IsBookAdjusted())) {
-		GetTradingLog().Write(
-			"\tnot respected\tleg 3\triangle=%1%\tpair=%2%\tecn=%3%",
-			[&](TradingRecord &record) {
-				record
-					% m_triangle->GetId()
-					% *leg3Info.security
-					% leg3Info.security->GetSource().GetTag();
-			});
 		timeMeasurement.Measure(
 			TimeMeasurement::SM_STRATEGY_WITHOUT_DECISION_2);
 		return false;
@@ -1106,9 +1062,7 @@ TriangulationWithDirection::ProfitLossTest TriangulationWithDirection::CheckLeg(
 	}
 	if (seenProfit > 0) {
 
-		const auto &data
-			= m_bestBidAsk[leg.GetPair()]
-				.service->GetData(security.GetSource().GetIndex());
+		const auto &data = m_bestBidAsk[leg.GetPair()].service->GetStat();
 		if (IsProfit(m_triangle->GetPair(leg.GetLeg()), data)) {
 			GetTradingLog().Write(
 				"\tprofit\t%1%\t%2%\topp.: %3%\t%4%\tVWAP: %5%\tEMA slow: %6%",

@@ -393,8 +393,7 @@ void TriangleReport::ReportAction(
 		}
 		
 		// Stat data: //////////////////////////////////////////////////////////////////
-		const auto &data = info.bestBidAsk->service->GetData(
-			security.GetSource().GetIndex());
+		const auto &data = info.bestBidAsk->service->GetStat();
 		record
 			%	data.current.theo
 			%	data.prev1.theo
@@ -561,8 +560,7 @@ void TriangleReport::ReportUpdate() {
 		record % ' ' % ' ';
 		
 		// Stat data: //////////////////////////////////////////////////////////////////
-		const auto &data = info.bestBidAsk->service->GetData(
-			security.GetSource().GetIndex());
+		const auto &data = info.bestBidAsk->service->GetStat();
 		record
 			%	data.current.theo
 			%	data.prev1.theo
