@@ -751,7 +751,7 @@ void Security::BookUpdateOperation::Adjust() {
 }
 
 bool Security::BookUpdateOperation::Adjust(
-		const Security &security,
+		const Security &,
 		std::vector<trdk::Security::Book::Level> &bids,
 		std::vector<trdk::Security::Book::Level> &asks) {
 
@@ -764,19 +764,19 @@ bool Security::BookUpdateOperation::Adjust(
 		
 		bool isBidOlder = bids.front().GetTime() < asks.front().GetTime();
 		
-		security.GetSource().GetTradingLog().Write(
-			"book\tadjust\t%1%\t%2% %3% %4%\t%5% %6% %7%\t%8%",
-			[&](TradingRecord &record) {
-				record
-					% security
-					% bids.front().GetPrice()
-					% bids.front().GetTime()
-					% (isBidOlder ? 'X' : '+')
-					% asks.front().GetPrice()
-					% asks.front().GetTime()
-					% (isBidOlder ? '+' : 'X')
-					% (count + 1);
-			});
+// 		security.GetSource().GetTradingLog().Write(
+// 			"book\tadjust\t%1%\t%2% %3% %4%\t%5% %6% %7%\t%8%",
+// 			[&](TradingRecord &record) {
+// 				record
+// 					% security
+// 					% bids.front().GetPrice()
+// 					% bids.front().GetTime()
+// 					% (isBidOlder ? 'X' : '+')
+// 					% asks.front().GetPrice()
+// 					% asks.front().GetTime()
+// 					% (isBidOlder ? '+' : 'X')
+// 					% (count + 1);
+// 			});
 		
 		if (isBidOlder) {
 			bids.erase(bids.begin());
