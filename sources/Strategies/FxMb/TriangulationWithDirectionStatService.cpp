@@ -32,12 +32,7 @@ StatService::StatService(
 	: Base(context, "TriangulationWithDirectionStatService", tag)
 	, m_bookLevelsCount(
 	 	conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count"))
-	, m_prev1Duration(
-	 	pt::milliseconds(
-	 		conf.ReadTypedKey<size_t>("prev1_duration_miliseconds")))
-	, m_prev2Duration(
-	 	pt::milliseconds(
-	 		conf.ReadTypedKey<size_t>("prev2_duration_miliseconds")))
+	, m_historySize(conf.ReadTypedKey<size_t>("stat_history_size", 3))
 	, m_emaSpeedSlow(conf.ReadTypedKey<double>("ema_speed_slow"))
 	, m_emaSpeedFast(conf.ReadTypedKey<double>("ema_speed_fast"))
 	, m_slowEmaAcc(accs::tag::ema_speed::speed = m_emaSpeedSlow)
@@ -46,14 +41,12 @@ StatService::StatService(
 	m_instancies.push_back(this);
 
 	GetLog().Info(
-		"Prev1 duration: %1%; Prev2 duration: %2%."
-			" Book size: %3% * 2 price levels.",
-		m_prev1Duration,
-		m_prev2Duration,
+		"History size: %1%. Book size: %2% * 2 price levels.",
+		m_historySize,
 		m_bookLevelsCount);
 
-	if (m_prev2Duration <= m_prev1Duration) {
-		throw ModuleError("Prev2 duration can't be equal or less then Prev1");
+	if (m_historySize < 2) {
+		throw ModuleError("History size can be less then 2.");
 	}
 
 	if (m_bookLevelsCount < 1) {
@@ -145,10 +138,6 @@ bool StatService::OnBookUpdateTick(
 	SideStat bidStat = {};
 	SideStat askStat = {};
 
-/*#	ifdef BOOST_ENABLE_ASSERT_HANDLER
-		PriceLevel prevBid = {};
-		PriceLevel prevAsk = {};
-#	endif*/
 	for (size_t i = 0; i < m_bookLevelsCount; ++i) {
 
 		PriceLevel bid = {};
@@ -190,14 +179,6 @@ bool StatService::OnBookUpdateTick(
 
 		Assert(!IsZero(bid.qty));
 		Assert(!IsZero(ask.price));
-/*#		ifdef BOOST_ENABLE_ASSERT_HANDLER
-			if (i != 0) {
-				AssertLt(prevBid.price, bid.price);
-				AssertGt(prevAsk.price, ask.price);
-			}
-			prevBid = bid;
-			prevAsk = ask;
-#		endif */
 
 		bidStat << bid;
 		askStat << ask;
@@ -214,20 +195,15 @@ bool StatService::OnBookUpdateTick(
 
 	UpdateNumberOfUpdates(book);
 
-	Point point = {book.GetTime()};
-	foreach (const Source &source, m_sources) {
-		if (source.time != pt::not_a_date_time && source.time > point.time) {
-			point.time = source.time;
-		}
-	}
-
 	////////////////////////////////////////////////////////////////////////////////
 	// Theo:
 	
-	point.theo = Round(
-		(bidStat.avgPrice * askStat.qty + askStat.avgPrice * bidStat.qty)
-			/ (bidStat.qty + askStat.qty),
-		security.GetPriceScale());
+	Point point = {
+		Round(
+			(bidStat.avgPrice * askStat.qty + askStat.avgPrice * bidStat.qty)
+				/ (bidStat.qty + askStat.qty),
+		security.GetPriceScale())
+	};
 
 	////////////////////////////////////////////////////////////////////////////////
 	// EMAs:
@@ -235,97 +211,35 @@ bool StatService::OnBookUpdateTick(
 	// accumulates values for EMA:
 	m_slowEmaAcc(point.theo);
 	// gets current EMA value:
-	point.emaSlow = Round(accs::ema(m_slowEmaAcc), security.GetPriceScale());
+	point.emaSlow = Round(
+		accs::ema(m_slowEmaAcc),
+		security.GetPriceScale());
 
 	// accumulates values for EMA:
 	m_fastEmaAcc(point.theo);
 	// gets current EMA value:
-	point.emaFast = Round(accs::ema(m_fastEmaAcc), security.GetPriceScale());
+	point.emaFast = Round(
+		accs::ema(m_fastEmaAcc),
+		security.GetPriceScale());
 
 	////////////////////////////////////////////////////////////////////////////////
 	// Preparing previous 2 points for actual strategy work:
 	
-	Stat stat = {m_numberOfUpdates.size(), point};
-	m_statHistory.emplace_back(point);
-	
-	const auto &p2Time = point.time - m_prev2Duration;
-	const auto &p1Time = point.time - m_prev1Duration;
-	
-	auto itP1 = m_statHistory.cend();
-	auto itP2 = m_statHistory.cend();
-	for (auto it = m_statHistory.cbegin(); it != m_statHistory.cend(); ) {
-	
-		if (it->time <= p2Time) {
-	
-			AssertLt(it->time, p1Time);
-			const auto next = it + 1;
-			AssertLe(it->time, next->time);
-			if (next == m_statHistory.cend()) {
-				// Point only one, and it was a long time ago, so this value
-				// was actual at p1 and p2 too.
-				itP1
-					= itP2
-					= it;
-				break;
-			}
-			if (next->time <= p2Time) {
-				// Need to remove first point, it already too old for us:
-				Assert(it == m_statHistory.cbegin());
-				m_statHistory.pop_front();
-				it = m_statHistory.cbegin();
-				continue;
-			}
-			// As this time is suitable for p2 - it can be suitable for p1 too:
-			itP1
-				= itP2
-				= it;
-		
-		} else if (it->time <= p1Time) {
-		
-			// P2, if was, found, now searching only p1:
-			Assert(itP2 == m_statHistory.cend() || itP2->time < it->time);
-			itP1 = it;
-		
-		} else {
-
-			// All found (what exists):
-			break;
-		
-		}
-		
-		++it;
-	
-	}
-	
-	Assert(
-		itP1 == m_statHistory.cend()
-		|| itP2 == m_statHistory.cend()
-		|| (itP2->time <= itP1->time && itP1->time < point.time));
-	if (itP1 != m_statHistory.cend()) {
-		stat.prev1 = *itP1;
-	} else {
-		// There is no history at start, and only at start:
-		AssertEq(stat.prev1.time, pt::not_a_date_time);
-	}
-	if (itP2 != m_statHistory.cend()) {
-		stat.prev2 = *itP2;
-	} else {
-		// There is no history at start, and only at start:
-		AssertEq(stat.prev2.time, pt::not_a_date_time);
-	}
-
-	////////////////////////////////////////////////////////////////////////////////
-	// Storing new values as actual:
-	
 	while (m_statMutex.test_and_set(boost::memory_order_acquire));
-	m_stat = stat;
+	m_stat.history.emplace_back(point);
+	while (m_stat.history.size() > m_historySize) {
+		m_stat.history.pop_front();
+	}
 	m_statMutex.clear(boost::memory_order_release);
 
 	////////////////////////////////////////////////////////////////////////////////
 	
 	// If this method returns true - strategy will be notified about actual data
 	// update:
-	return !IsZero(stat.prev2.theo);
+	AssertGe(m_historySize, m_stat.history.size());
+	return
+		m_stat.history.size() >= m_historySize
+		&& !IsZero(m_stat.history.front().theo);
 
 }
 
@@ -343,28 +257,28 @@ void StatService::OnSettingsUpdate(const IniSectionRef &conf) {
 
 	Base::OnSettingsUpdate(conf);
 
-	const auto newPrev1Duration = pt::milliseconds(
-		conf.ReadTypedKey<size_t>("prev1_duration_miliseconds"));
-	const auto newPrev2Duration = pt::milliseconds(
-		conf.ReadTypedKey<size_t>("prev2_duration_miliseconds"));
+	const auto newHistorySize = conf.ReadTypedKey<size_t>(
+		"stat_history_size",
+		m_historySize);
 
 	const auto newEmaSpeedSlow = conf.ReadTypedKey<double>("ema_speed_slow");
 	const auto newEmaSpeedFast = conf.ReadTypedKey<double>("ema_speed_fast");
 
 	bool reset = false;
 
-	if (
-			m_prev1Duration != newPrev1Duration
-			|| m_prev2Duration != newPrev2Duration) {
+	if (newHistorySize != m_historySize) {
 		GetLog().Info(
-			"Set new periods: Prev1 %1% -> %2%; Prev2 %3% -> %4%.",
-			m_prev1Duration,
-			newPrev1Duration,
-			m_prev2Duration,
-			newPrev2Duration);
-		m_prev1Duration = newPrev1Duration;
-		m_prev2Duration = newPrev2Duration;
-		reset = true;
+			"Set new history size: %1% -> %2%.",
+			m_historySize,
+			newHistorySize);
+		if (newHistorySize < 2) {
+			GetLog().Error(
+				"Failed to set new history size"
+					", history size can't be less then 2.");
+		} else {
+			m_historySize = newHistorySize;
+			reset = true;
+		}
 	}
 
 	if (m_emaSpeedSlow != m_emaSpeedSlow || m_emaSpeedFast != newEmaSpeedFast) {
@@ -388,8 +302,6 @@ void StatService::OnSettingsUpdate(const IniSectionRef &conf) {
 
 		m_slowEmaAcc = EmaAcc(accs::tag::ema_speed::speed = m_emaSpeedSlow);
 		m_fastEmaAcc = EmaAcc(accs::tag::ema_speed::speed = m_emaSpeedFast);
-
-		m_statHistory.clear();
 
 	}
 

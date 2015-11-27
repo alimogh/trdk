@@ -191,16 +191,19 @@ public:
 						%	pair % '\0' % " best ask ECN"
 						%	pair % '\0' % " VWAP speed"
 						%	pair % '\0' % " EMA fast speed"
-						%	pair % '\0' % " EMA slow speed"
-						%	pair % '\0' % " VWAP"
-						%	pair % '\0' % " VWAP prev1"
-						%	pair % '\0' % " VWAP prev2"
-						%	pair % '\0' % " EMA fast"
-						%	pair % '\0' % " EMA fast prev1"
-						%	pair % '\0' % " EMA fast prev2"
-						%	pair % '\0' % " EMA slow"
-						%	pair % '\0' % " EMA slow prev1"
-						%	pair % '\0' % " EMA slow prev2";
+						%	pair % '\0' % " EMA slow speed";
+					for (
+							size_t i = 0;
+							i < bestBidAsk.service->GetHistorySize();
+							++i) {
+						std::string prevSubstr;
+						if (i != 0) {
+							prevSubstr = (boost::format(" prev%1%") % i).str();
+						}
+						record % pair % '\0' % (std::string(" VWAP") + prevSubstr);
+						record % pair % '\0' % (std::string(" EMA fast") + prevSubstr);
+						record % pair % '\0' % (std::string(" EMA slow") + prevSubstr);
+					}
 				}
 				record % "Start: " % '\0' % context.GetStartTime();
 				{
@@ -393,17 +396,11 @@ void TriangleReport::ReportAction(
 		}
 		
 		// Stat data: //////////////////////////////////////////////////////////////////
-		const auto &data = info.bestBidAsk->service->GetStat();
-		record
-			%	data.current.theo
-			%	data.prev1.theo
-			%	data.prev2.theo
-			%	data.current.emaFast
-			%	data.prev1.emaFast
-			%	data.prev2.emaFast
-			%	data.current.emaSlow
-			%	data.prev1.emaSlow
-			%	data.prev2.emaSlow;
+		foreach_reversed (
+				const auto &point,
+				info.bestBidAsk->service->GetStat().history) {
+			record % point.theo % point.emaFast % point.emaSlow;
+		}
 
 	};
 
@@ -560,17 +557,11 @@ void TriangleReport::ReportUpdate() {
 		record % ' ' % ' ';
 		
 		// Stat data: //////////////////////////////////////////////////////////////////
-		const auto &data = info.bestBidAsk->service->GetStat();
-		record
-			%	data.current.theo
-			%	data.prev1.theo
-			%	data.prev2.theo
-			%	data.current.emaFast
-			%	data.prev1.emaFast
-			%	data.prev2.emaFast
-			%	data.current.emaSlow
-			%	data.prev1.emaSlow
-			%	data.prev2.emaSlow;
+		foreach_reversed (
+				const auto &point,
+				info.bestBidAsk->service->GetStat().history) {
+			record % point.theo % point.emaFast % point.emaSlow;
+		}
 
 	};
 

@@ -84,17 +84,20 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	public:
 
 		struct Point {
-			boost::posix_time::ptime time;
 			double theo;
 			double emaSlow;
 			double emaFast;
 		};
 
 		struct Stat {
+
+			typedef std::deque<Point> History;
+
 			size_t numberOfUpdates;
-			Point current;
-			Point prev1;
-			Point prev2;
+		
+			//! History from to "past" no "now", fixed-size array.
+			History history;
+		
 		};
 
 	private:
@@ -104,7 +107,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				boost::accumulators::stats<boost::accumulators::tag::Ema>>
 			EmaAcc;
 
-		typedef std::deque<Point> StatHistory;
 		typedef std::deque<boost::posix_time::ptime> NumberOfUpdatesHistory;
 
 		struct Source {
@@ -139,6 +141,10 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_stat;
 		}
 
+		size_t GetHistorySize() const {
+			return m_historySize;
+		}
+
 	protected:
 
 		virtual boost::posix_time::ptime OnSecurityStart(const Security &);
@@ -158,8 +164,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		const size_t m_bookLevelsCount;
 
-		boost::posix_time::time_duration m_prev1Duration;
-		boost::posix_time::time_duration m_prev2Duration;
+		size_t m_historySize;
 		
 		double m_emaSpeedSlow;
 		double m_emaSpeedFast;
@@ -172,7 +177,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		mutable boost::atomic_flag m_statMutex;
 		Stat m_stat;
 
-		StatHistory m_statHistory;
 		NumberOfUpdatesHistory m_numberOfUpdates;
 
 		static std::vector<Twd::StatService *> m_instancies;
