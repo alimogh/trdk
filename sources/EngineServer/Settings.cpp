@@ -9,6 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#ifndef TRDK_AUTOBAHN_DISABLED
 #include "Settings.hpp"
 #include "Service.hpp"
 
@@ -966,3 +967,5 @@ EngineServer::Settings::StartStrategyTransaction(
 	return StrategyTransaction(shared_from_this(), it->first);
 
 }
+
+#endif

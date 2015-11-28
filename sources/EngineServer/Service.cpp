@@ -8,8 +8,8 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#include <system_error>
 #include "Prec.hpp"
+#ifndef TRDK_AUTOBAHN_DISABLED
 #include "Service.hpp"
 #include "Client.hpp"
 
@@ -651,3 +651,5 @@ void EngineServer::Service::ClosePositions(const std::string &engineId) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+#endif

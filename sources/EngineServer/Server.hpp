@@ -66,7 +66,9 @@ namespace trdk { namespace EngineServer {
 				const std::string &commandInfo);
 		void StopAll(const trdk::StopMode &);
 
-		void Update(EngineServer::Settings::Transaction &);
+#		ifndef TRDK_AUTOBAHN_DISABLED
+			void Update(EngineServer::Settings::Transaction &);
+#		endif
 
 		void ClosePositions();
 

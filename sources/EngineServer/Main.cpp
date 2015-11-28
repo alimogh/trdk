@@ -78,9 +78,13 @@ namespace {
 
 		try {
 
-			EngineServer::Service service(
-				boost::asio::ip::host_name(),
-				GetIniFilePath(argv[2]));
+#			ifndef TRDK_AUTOBAHN_DISABLED
+				EngineServer::Service service(
+					boost::asio::ip::host_name(),
+					GetIniFilePath(argv[2]));
+#			else
+				std::cerr << "Service mode not supported." << std::endl;
+#			endif
 
 			getchar();
 

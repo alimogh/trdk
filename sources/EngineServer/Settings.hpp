@@ -10,6 +10,8 @@
 
 #pragma once
 
+#ifndef TRDK_AUTOBAHN_DISABLED
+
 #include "Exception.hpp"
 
 namespace trdk { namespace EngineServer {
@@ -190,3 +192,5 @@ namespace trdk { namespace EngineServer {
 	};
 
 } }
+
+#endif

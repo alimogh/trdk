@@ -164,42 +164,46 @@ void Server::StopAll(const trdk::StopMode &stopMode) {
 
 }
 
-void Server::Update(
-		EngineServer::Settings::Transaction &settingsTransaction) {
+#ifndef TRDK_AUTOBAHN_DISABLED
 
-	const Lock lock(m_mutex);
+	void Server::Update(
+			EngineServer::Settings::Transaction &settingsTransaction) {
 
-	auto engineIt
-		= m_engines.get<ById>().find(
-			settingsTransaction.GetSettings().GetEngineId());
-	if (engineIt == m_engines.get<ById>().end()) {
+		const Lock lock(m_mutex);
+
+		auto engineIt
+			= m_engines.get<ById>().find(
+				settingsTransaction.GetSettings().GetEngineId());
+		if (engineIt == m_engines.get<ById>().end()) {
+			try {
+				settingsTransaction.Commit();
+			} catch (const trdk::Lib::Exception &ex) {
+				boost::format message("Failed to update engine context: \"%1%\"");
+				message % ex.what();
+				throw EngineServer::Exception(message.str().c_str());
+			}
+			return;
+		}
+		
+		Engine::Context &engine = *engineIt->engine;
 		try {
-			settingsTransaction.Commit();
+			if (!settingsTransaction.Commit()) {
+				return;
+			}
+			const IniFile ini(settingsTransaction.GetSettings().GetFilePath());
+			engine.Update(ini);
 		} catch (const trdk::Lib::Exception &ex) {
+			engineIt->eventsLog->Warn(
+				"Failed to update engine context: \"%1%\".",
+				ex.what());
 			boost::format message("Failed to update engine context: \"%1%\"");
 			message % ex.what();
 			throw EngineServer::Exception(message.str().c_str());
 		}
-		return;
-	}
-		
-	Engine::Context &engine = *engineIt->engine;
-	try {
-		if (!settingsTransaction.Commit()) {
-			return;
-		}
-		const IniFile ini(settingsTransaction.GetSettings().GetFilePath());
-		engine.Update(ini);
-	} catch (const trdk::Lib::Exception &ex) {
-		engineIt->eventsLog->Warn(
-			"Failed to update engine context: \"%1%\".",
-			ex.what());
-		boost::format message("Failed to update engine context: \"%1%\"");
-		message % ex.what();
-		throw EngineServer::Exception(message.str().c_str());
+
 	}
 
-}
+#endif
 
 void Server::ClosePositions() {
 	const Lock lock(m_mutex);

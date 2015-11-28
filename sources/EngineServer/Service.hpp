@@ -10,7 +10,8 @@
 
 #pragma once
 
-#include <boost/thread/future.hpp>
+#ifndef TRDK_AUTOBAHN_DISABLED
+
 #include "Server.hpp"
 #include "ClientRequestHandler.hpp"
 
@@ -243,3 +244,5 @@ namespace trdk { namespace EngineServer {
     };
 
 } }
+
+#endif

@@ -10,6 +10,8 @@
 
 #pragma once
 
+#ifndef TRDK_AUTOBAHN_DISABLED
+
 #include "Settings.hpp"
 #include "EngineService/Control.h"
 
@@ -124,3 +126,5 @@ namespace trdk { namespace EngineServer {
 	};
 
 } }
+
+#endif

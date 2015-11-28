@@ -9,6 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#ifndef TRDK_AUTOBAHN_DISABLED
 #include "Client.hpp"
 #include "ClientRequestHandler.hpp"
 #include "Exception.hpp"
@@ -580,3 +581,5 @@ void Client::StartKeepAliveChecker() {
 		boost::bind(callback, shared_from_this(), _1));
 
 }
+
+#endif
