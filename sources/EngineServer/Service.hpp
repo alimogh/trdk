@@ -81,8 +81,7 @@ namespace trdk { namespace EngineServer {
 
 			std::string time;
 
-			Topics();
-			explicit Topics(uint64_t suffix);
+			explicit Topics(const std::string &suffix);
 
 		};
 
@@ -102,11 +101,11 @@ namespace trdk { namespace EngineServer {
 				Session;
 
 			EventsLog &log;
+			const Topics &topics;
 			boost::asio::ip::tcp::socket socket;
 			boost::asio::deadline_timer currentTimePublishTimer;
 			boost::asio::deadline_timer ioTimeoutTimer;
 			std::shared_ptr<Session> session;
-			Topics topics;
 
 			boost::shared_future<void> sessionStartFuture;
 			boost::shared_future<void> sessionJoinFuture;
@@ -114,6 +113,7 @@ namespace trdk { namespace EngineServer {
 
 			explicit  Connection(
 					boost::asio::io_service &io,
+					const Topics &topics,
 					EventsLog &log,
 					bool isWampDebugOn);
 
@@ -198,6 +198,7 @@ namespace trdk { namespace EngineServer {
 			const boost::optional<uint64_t> &sessionId);
 		void OnEngineRegistered(
 			boost::shared_ptr<Connection>,
+			uint64_t sessionId,
 			const boost::optional<uint64_t> &instanceId,
 			const std::tuple<std::string, std::string, std::string> &);
 
@@ -217,6 +218,8 @@ namespace trdk { namespace EngineServer {
 
 		Settings m_settings;
 		Server m_server;
+
+		const Topics m_topics;
 
 		//! @todo Legacy support, to remove
 		std::unique_ptr<InputIo> m_inputIo;

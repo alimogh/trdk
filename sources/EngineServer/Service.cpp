@@ -38,11 +38,7 @@ EngineServer::Service::Config::Config(const fs::path &configPath) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-EngineServer::Service::Topics::Topics() {
-	//...//
-}
-
-EngineServer::Service::Topics::Topics(uint64_t suffix)
+EngineServer::Service::Topics::Topics(const std::string &suffix)
 	: time((boost::format("trdk.engine.%1%.time") % suffix).str()) {
 	//...//
 }
@@ -51,9 +47,11 @@ EngineServer::Service::Topics::Topics(uint64_t suffix)
 
 EngineServer::Service::Connection::Connection(
 		io::io_service &io,
+		const Topics &topics,
 		EventsLog &log,
 		bool isWampDebugOn)
 	: log(log)
+	, topics(topics)
 	, socket(io)
 	, currentTimePublishTimer(io)
 	, ioTimeoutTimer(io)
@@ -63,7 +61,13 @@ EngineServer::Service::Connection::Connection(
 
 void EngineServer::Service::Connection::ScheduleNextCurrentTimeNotification() {
 
-	Verify(currentTimePublishTimer.expires_from_now(pt::seconds(1)) == 0);
+#	ifdef _DEBUG
+		const auto period = pt::minutes(1);
+#	else
+		const auto period = pt::seconds(1);
+#	endif
+
+	Verify(currentTimePublishTimer.expires_from_now(period) == 0);
 
 	auto weakSelf = boost::weak_ptr<Connection>(shared_from_this());
 	currentTimePublishTimer.async_wait(
@@ -136,6 +140,7 @@ EngineServer::Service::Service(
 		const fs::path &engineConfigFilePath)
 	: m_config(engineConfigFilePath)
 	, m_settings(engineConfigFilePath, m_config.name, *this)
+	, m_topics(m_config.id)
 	, m_inputIo(new InputIo)
 	, m_numberOfReconnects(0)
 	, m_io(new io::io_service)
@@ -238,6 +243,7 @@ boost::shared_ptr<EngineServer::Service::Connection> EngineServer::Service::Conn
 		m_config.twsPort);
 	auto connection = boost::make_shared<Connection>(
 		*m_io,
+		m_topics,
 		m_log,
 		m_config.wampDebug);
 	connection->ScheduleIoTimeout(m_config.timeout);
@@ -345,7 +351,7 @@ void EngineServer::Service::OnSessionJoined(
 		->session
 		->call("trdk.service.engine.register", engineInfo)
 		.then(
-			[this, connection, engineInfo](
+			[this, connection, sessionId, engineInfo](
 					boost::future<ab::wamp_call_result> callResult) {
 				connection->StopIoTimeout();
 				boost::optional<uint64_t> instanceId;
@@ -361,8 +367,12 @@ void EngineServer::Service::OnSessionJoined(
 						ex.what());
 				}
 				m_io->post(
-					[this, connection, instanceId, engineInfo]() {
-						OnEngineRegistered(connection, instanceId, engineInfo);
+					[this, connection, sessionId, instanceId, engineInfo]() {
+						OnEngineRegistered(
+							connection,
+							*sessionId,
+							instanceId,
+							engineInfo);
 					});
 			});
 
@@ -370,12 +380,25 @@ void EngineServer::Service::OnSessionJoined(
 
 void EngineServer::Service::OnEngineRegistered(
 		boost::shared_ptr<Connection> connection,
+		uint64_t sessionId,
 		const boost::optional<uint64_t> &instanceId,
 		const std::tuple<std::string, std::string, std::string> &engineInfo) {
 
 	if (!instanceId) {
 		throw ConnectError("Failed to register TWS engine instance");
 	}
+
+	connection->session->publish(
+		"trdk.engine.on_connected",
+		std::make_tuple(
+			m_config.id,
+			*instanceId,
+			m_config.name,
+			std::string(TRDK_BUILD_IDENTITY),
+			IsEngineStarted(m_settings.GetEngineId()),
+			sessionId));
+	connection->ScheduleNextCurrentTimeNotification();
+
 	m_log.Info(
 		"Registered TWS engine instance %1%"
 			" for engine \"%2% %3%\" with ID \"%4%\".",
@@ -383,9 +406,6 @@ void EngineServer::Service::OnEngineRegistered(
 		std::get<1>(engineInfo),
 		std::get<2>(engineInfo),
 		std::get<0>(engineInfo));
-
-	connection->topics = Topics(*instanceId);
-	connection->ScheduleNextCurrentTimeNotification();
 
 	{
 		const ConnectionLock lock(m_connectionMutex);
