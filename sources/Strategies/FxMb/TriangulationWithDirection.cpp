@@ -429,7 +429,11 @@ void TriangulationWithDirection::CalcYDirection() {
 		m_yDetected);
 
 	//! @sa TRDK-209:
-	const auto maxAllowedY = 1.00095;
+#	ifdef DEV_VER
+		const auto maxAllowedY = 1.10095;
+#	else
+		const auto maxAllowedY = 1.00095;
+#	endif
 	if (m_yDetected[Y1] > maxAllowedY || m_yDetected[Y2] > maxAllowedY) {
 		boost::format message(
 			"Wrong detection detected: %1%/%2%"
@@ -633,12 +637,12 @@ bool TriangulationWithDirection::CalcSpeed(PairsSpeed &result) const {
 				explicit Stat(const StatService::Point &prev, const Point &current)
 					: m_prev(prev)
 					, m_current(current) {
-					Assert(IsZero(m_prev.theo));
-					Assert(IsZero(m_prev.emaFast));
-					Assert(IsZero(m_prev.emaSlow));
-					Assert(IsZero(m_current.theo));
-					Assert(IsZero(m_current.emaFast));
-					Assert(IsZero(m_current.emaSlow));
+					Assert(!IsZero(m_prev.theo));
+					Assert(!IsZero(m_prev.emaFast));
+					Assert(!IsZero(m_prev.emaSlow));
+					Assert(!IsZero(m_current.theo));
+					Assert(!IsZero(m_current.emaFast));
+					Assert(!IsZero(m_current.emaSlow));
 				}
 				bool IsRising() const {
 					return
