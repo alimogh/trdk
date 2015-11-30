@@ -200,7 +200,9 @@ public:
 						if (i != 0) {
 							prevSubstr = (boost::format(" prev%1%") % i).str();
 						}
-						record % pair % '\0' % (std::string(" VWAP") + prevSubstr);
+						record % pair % '\0' % (std::string(" VWAP bid") + prevSubstr);
+						record % pair % '\0' % (std::string(" VWAP ask") + prevSubstr);
+						record % pair % '\0' % (std::string(" Theo") + prevSubstr);
 						record % pair % '\0' % (std::string(" EMA fast") + prevSubstr);
 						record % pair % '\0' % (std::string(" EMA slow") + prevSubstr);
 					}
@@ -399,7 +401,12 @@ void TriangleReport::ReportAction(
 		foreach_reversed (
 				const auto &point,
 				info.bestBidAsk->service->GetStat().history) {
-			record % point.theo % point.emaFast % point.emaSlow;
+			record
+				% point.vwapBid
+				% point.vwapAsk
+				% point.theo
+				% point.emaFast
+				% point.emaSlow;
 		}
 
 	};
@@ -560,7 +567,12 @@ void TriangleReport::ReportUpdate() {
 		foreach_reversed (
 				const auto &point,
 				info.bestBidAsk->service->GetStat().history) {
-			record % point.theo % point.emaFast % point.emaSlow;
+			record
+				% point.vwapBid
+				% point.vwapAsk
+				% point.theo
+				% point.emaFast
+				% point.emaSlow;
 		}
 
 	};

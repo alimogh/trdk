@@ -84,6 +84,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	public:
 
 		struct Point {
+			double vwapBid;
+			double vwapAsk;
 			double theo;
 			double emaSlow;
 			double emaFast;
@@ -114,6 +116,20 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			boost::posix_time::ptime time;
 			Security::Book::Side bidsBook;
 			Security::Book::Side asksBook;
+		};
+
+		struct PriceLevel {
+			
+			double price;
+			Qty qty;
+			
+			bool operator <(const PriceLevel &rhs) const {
+				return price < rhs.price;
+			}
+			bool operator >(const PriceLevel &rhs) const {
+				return price > rhs.price;
+			}
+		
 		};
 
 	public:
@@ -180,6 +196,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		NumberOfUpdatesHistory m_numberOfUpdates;
 
 		static std::vector<Twd::StatService *> m_instancies;
+
+		std::vector<PriceLevel> m_aggregatedBidsCache;
+		std::vector<PriceLevel> m_aggregatedAsksCache;
 
 	};
 

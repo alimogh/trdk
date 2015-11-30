@@ -39,9 +39,11 @@ namespace {
 			const Triangle::PairInfo &pair,
 			const StatService::Stat &data) {
 		return
+			//! @sa TRDK-241: VWAP crosses slowEMA, this is your signal to buy
+			//! leg 3 if it falls or sell leg 3 if it rises:
 			(pair.isBuy
-				?	data.history.back().theo > data.history.back().emaSlow
-				:	data.history.back().theo < data.history.back().emaSlow)
+				?	data.history.back().vwapAsk > data.history.back().emaSlow
+				:	data.history.back().vwapBid < data.history.back().emaSlow)
 			&& pair.GetCurrentPrice() > 0;
 	}
 
@@ -568,6 +570,113 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 
 }
 
+namespace {
+
+	class SpeedStat : private boost::noncopyable {
+
+	public:
+
+		typedef StatService::Point Point;
+	
+	public:
+	
+		explicit SpeedStat(
+				const StatService::Point &prev,
+				const Point &current)
+			: m_prev(prev)
+			, m_current(current) {
+			Assert(!IsZero(m_prev.vwapBid));
+			Assert(!IsZero(m_prev.vwapAsk));
+			Assert(!IsZero(m_prev.emaFast));
+			Assert(!IsZero(m_prev.emaSlow));
+			Assert(!IsZero(m_current.vwapBid));
+			Assert(!IsZero(m_current.vwapAsk));
+			Assert(!IsZero(m_current.emaFast));
+			Assert(!IsZero(m_current.emaSlow));
+		}
+	
+		bool IsRisingOrNot() const {
+			return
+				m_prev.vwapAsk <= m_current.vwapAsk
+				&& m_prev.emaFast <= m_current.emaFast
+				&& m_prev.emaSlow <= m_current.emaSlow;
+		}
+	
+		bool IsRisingOnly() const {
+			return
+				m_prev.vwapAsk < m_current.vwapAsk
+				&& m_prev.emaFast < m_current.emaFast
+				&& m_prev.emaSlow < m_current.emaSlow;
+		}
+	
+		bool IsFallingOrNot() const {
+			return
+				m_prev.vwapBid >= m_current.vwapBid
+				&& m_prev.emaFast >= m_current.emaFast
+				&& m_prev.emaSlow >= m_current.emaSlow;
+		}
+	
+		bool IsFallingOnly() const {
+			return
+				m_prev.vwapBid > m_current.vwapBid
+				&& m_prev.emaFast > m_current.emaFast
+				&& m_prev.emaSlow > m_current.emaSlow;
+		}
+	
+	private:
+
+		const Point &m_prev;
+		const Point &m_current;
+
+	};
+
+	class SpeedCalculator : private boost::noncopyable {
+
+	public:
+
+		explicit SpeedCalculator(SpeedSet &resultRef)
+			: m_result(resultRef)
+			, m_isActivated(false) {
+#			ifdef BOOST_ENABLE_ASSERT_HANDLER
+				typedef std::remove_reference<SpeedSet::value_type>::type I;
+				m_result.fill(std::numeric_limits<I>::quiet_NaN());
+#			endif
+		}
+
+		~SpeedCalculator() {
+			if (!m_isActivated) {
+				// Not filling, not rising.
+				m_result.fill(0);
+			} else {
+#			ifdef BOOST_ENABLE_ASSERT_HANDLER
+				foreach (const auto &i, m_result) {
+					Assert(!isnan(i));
+				}
+#			endif
+			}
+		}
+	
+		void operator ()(
+				const Speed &type,
+				double current,
+				double prev) {
+			Assert(isnan(m_result[type]));
+			Assert(!IsEqual(current, prev));
+			m_result[type] = current > prev
+				?	((1.0 / prev) * current) - 1
+				:	-(((1.0 / current) * prev) - 1);
+			m_isActivated = true;
+		}
+	
+	private:
+	
+		SpeedSet &m_result;
+		bool m_isActivated;
+	
+	};
+
+}
+
 bool TriangulationWithDirection::CalcSpeed(PairsSpeed &result) const {
 
 	typedef StatService::Stat::History History;
@@ -588,97 +697,29 @@ bool TriangulationWithDirection::CalcSpeed(PairsSpeed &result) const {
 			|| !(data.back().theo > data.back().emaFast
 					&& data.back().emaFast > data.back().emaSlow));
 
-		class SpeedCalculator : private boost::noncopyable {
-		public:
-			explicit SpeedCalculator(SpeedSet &resultRef)
-				: m_result(resultRef)
-				, m_isActivated(false) {
-#				ifdef BOOST_ENABLE_ASSERT_HANDLER
-					typedef std::remove_reference<SpeedSet::value_type>::type I;
-					m_result.fill(std::numeric_limits<I>::quiet_NaN());
-#				endif
-			}
-			~SpeedCalculator() {
-				if (!m_isActivated) {
-					// Not filling, not rising.
-					m_result.fill(0);
-				} else {
-#					ifdef BOOST_ENABLE_ASSERT_HANDLER
-					foreach (const auto &i, m_result) {
-						Assert(!isnan(i));
-					}
-#					endif
-				}
-			}
-			void operator ()(
-					const Speed &type,
-					double current,
-					double prev) {
-				Assert(isnan(m_result[type]));
-				Assert(!IsEqual(current, prev));
-				m_result[type] = current > prev
-					?	((1.0 / prev) * current) - 1
-					:	-(((1.0 / current) * prev) - 1);
-				m_isActivated = true;
-			}
-		private:
-			SpeedSet &m_result;
-			bool m_isActivated;
-		} calcSpeed(result[pair]);
-
 		//! @sa TRDK-240
-		boost::tribool isRising(boost::indeterminate);
 		AssertLe(2, data.size());
-		const auto &end = data.cend();
-		for (auto i = data.cbegin() + 1; i != end; ++i) {
-
-			class Stat : private boost::noncopyable {
-			public:
-				explicit Stat(const StatService::Point &prev, const Point &current)
-					: m_prev(prev)
-					, m_current(current) {
-					Assert(!IsZero(m_prev.theo));
-					Assert(!IsZero(m_prev.emaFast));
-					Assert(!IsZero(m_prev.emaSlow));
-					Assert(!IsZero(m_current.theo));
-					Assert(!IsZero(m_current.emaFast));
-					Assert(!IsZero(m_current.emaSlow));
-				}
-				bool IsRising() const {
-					return
-						m_prev.theo < m_current.theo
-						&& m_prev.emaFast < m_current.emaFast
-						&& m_prev.emaSlow < m_current.emaSlow;
-				}
-				bool IsFalling() const {
-					return
-						m_prev.theo > m_current.theo
-						&& m_prev.emaFast > m_current.emaFast
-						&& m_prev.emaSlow > m_current.emaSlow;
-				}
-			private:
-				const Point &m_prev;
-				const Point &m_current;
-			} stat(*(i - 1), *i);
-
-			if (isRising) {
-				if (!stat.IsRising()) {
-					isRising = boost::indeterminate;
-					break;
-				}
-			} else if (!isRising) {
-				if (!stat.IsFalling()) {
-					isRising = boost::indeterminate;
-					break;
-				}
-			} else if (stat.IsRising()) {
+		boost::tribool isRising(boost::indeterminate);
+		{
+			const SpeedStat stat(data.front(), data.back());
+			if (stat.IsRisingOnly()) {
 				isRising = true;
-			} else if (stat.IsFalling()) {
+			} else if (stat.IsFallingOnly()) {
 				isRising = false;
-			} else {
-				break;
 			}
-
+		}
+		for (
+				auto i = data.cbegin() + 1
+				; !boost::indeterminate(isRising) && i != data.cend()
+				; ++i) {
+			const SpeedStat stat(*(i - 1), *i);
+			if (isRising) {
+				if (!stat.IsRisingOrNot()) {
+					isRising = boost::indeterminate;
+				}
+			} else if (!stat.IsFallingOrNot()) {
+				isRising = boost::indeterminate;
+			}
 		}
 
 		// theo-test
@@ -698,10 +739,14 @@ bool TriangulationWithDirection::CalcSpeed(PairsSpeed &result) const {
 			continue;
 		}
 
-		
 		//! @sa TRDK-240
+		SpeedCalculator calcSpeed(result[pair]);
 		static_assert(numberOfSpeeds == 3, "List changed.");
-		calcSpeed(SPEED_VWAP, data.back().theo, data.front().theo);
+		if (isRising) {
+			calcSpeed(SPEED_VWAP, data.back().vwapAsk, data.front().vwapAsk);
+		} else {
+			calcSpeed(SPEED_VWAP, data.back().vwapBid, data.front().vwapBid);
+		}
 		calcSpeed(SPEED_EMA_FAST, data.back().emaFast, data.front().emaFast);
 		calcSpeed(SPEED_EMA_SLOW, data.back().emaSlow, data.front().emaSlow);
 
@@ -1122,11 +1167,12 @@ TriangulationWithDirection::ProfitLossTest TriangulationWithDirection::CheckLeg(
 		const auto &data = m_bestBidAsk[leg.GetPair()].service->GetStat();
 		if (IsProfit(m_triangle->GetPair(leg.GetLeg()), data)) {
 			GetTradingLog().Write(
-				"\tprofit\t%1%\t%2%\topp.: %3%\t%4%\tVWAP: %5%\tEMA slow: %6%",
+				"\tprofit\t%1%\t%2%\topp.: %3%\t%4%\tVWAP: %5%/%6%\tEMA slow: %7%",
 				[&](TradingRecord &record) {
 					printTradingRecordStart(record);
 					record
-						% data.history.back().theo
+						% data.history.back().vwapBid
+						% data.history.back().vwapAsk
 						% data.history.back().emaSlow;
 				});
 			return PLT_PROFIT;

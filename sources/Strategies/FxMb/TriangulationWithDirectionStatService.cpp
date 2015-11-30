@@ -53,6 +53,9 @@ StatService::StatService(
 		throw ModuleError("Book Size can't be \"zero\"");
 	}
 
+	m_aggregatedBidsCache.resize(m_bookLevelsCount);
+	m_aggregatedAsksCache.resize(m_bookLevelsCount);
+
 }
 
 StatService::~StatService() {
@@ -119,29 +122,11 @@ bool StatService::OnBookUpdateTick(
 	////////////////////////////////////////////////////////////////////////////////
 	// Aggregating books, preparing opportunity statistics:
 
-	struct PriceLevel {
-		double price;
-		Qty qty;
-	}; 
-	struct SideStat {
-		Qty qty;
-		double vol;
-		double avgPrice;
-		SideStat & operator <<(PriceLevel &rhs) {
-			Assert(!IsZero(rhs.price));
-			Assert(!IsZero(rhs.qty));
-			qty += rhs.qty;
-			vol += rhs.qty * rhs.price;
-			return *this;
-		}
-	};
-	SideStat bidStat = {};
-	SideStat askStat = {};
-
+	// Aggregating books:
 	for (size_t i = 0; i < m_bookLevelsCount; ++i) {
 
-		PriceLevel bid = {};
-		PriceLevel ask = {};
+		PriceLevel &bid = m_aggregatedBidsCache[i];
+		PriceLevel &ask = m_aggregatedAsksCache[i];
 
 		foreach (const Source &source, m_sources) {
 
@@ -180,30 +165,84 @@ bool StatService::OnBookUpdateTick(
 		Assert(!IsZero(bid.qty));
 		Assert(!IsZero(ask.price));
 
-		bidStat << bid;
-		askStat << ask;
-
 	}
+
+	// Sorting:
+	std::sort(
+		m_aggregatedBidsCache.begin(),
+		m_aggregatedBidsCache.end(),
+		std::greater<PriceLevel>());
+	std::sort(m_aggregatedAsksCache.begin(), m_aggregatedAsksCache.end());
+
+	// Inversing and calculation stat:
+	struct SideStat {
+		Qty qty;
+		double vol;
+		SideStat & operator <<(PriceLevel &rhs) {
+			Assert(!IsZero(rhs.price));
+			Assert(!IsZero(rhs.qty));
+			qty += rhs.qty;
+			vol += rhs.qty * rhs.price;
+			return *this;
+		}
+	};
+	SideStat bidStat = {};
+	SideStat askStat = {};
+	for (size_t i = 0; i < m_bookLevelsCount; ++i) {
+		if (m_aggregatedBidsCache[i] > m_aggregatedAsksCache[i]) {
+			Assert(m_aggregatedAsksCache[i] < m_aggregatedBidsCache[i]);
+			bidStat << m_aggregatedAsksCache[i];
+			askStat << m_aggregatedBidsCache[i];
+#			ifdef BOOST_ENABLE_ASSERT_HANDLER
+				std::swap(m_aggregatedBidsCache[i], m_aggregatedAsksCache[i]);
+#			endif
+		} else {
+			bidStat << m_aggregatedBidsCache[i];
+			askStat << m_aggregatedAsksCache[i];
+		}
+	}
+#	ifdef BOOST_ENABLE_ASSERT_HANDLER
+	{
+		foreach (const auto &i, m_aggregatedBidsCache) {
+			foreach (const auto &j, m_aggregatedAsksCache) {
+				AssertLe(i.price, j.price);
+			}
+		}
+		foreach (const auto &i, m_aggregatedAsksCache) {
+			foreach (const auto &j, m_aggregatedBidsCache) {
+				AssertGe(i.price, j.price);
+			}
+		}
+	}
+#	endif
 
 	Assert(!IsZero(bidStat.vol));
 	Assert(!IsZero(askStat.vol));
 	Assert(!IsZero(bidStat.qty));
 	Assert(!IsZero(askStat.qty));
-	
-	bidStat.avgPrice = bidStat.vol / bidStat.qty;
-	askStat.avgPrice = askStat.vol / askStat.qty;
+
+	////////////////////////////////////////////////////////////////////////////////
+	// Number of updates per pair:
 
 	UpdateNumberOfUpdates(book);
 
 	////////////////////////////////////////////////////////////////////////////////
+	// VWAP:
+
+	Point point = {
+		// VWAP bid
+		Round(bidStat.vol / bidStat.qty, security.GetPriceScale()),
+		// VWAP ask
+		Round(askStat.vol / askStat.qty, security.GetPriceScale()),
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
 	// Theo:
 	
-	Point point = {
-		Round(
-			(bidStat.avgPrice * askStat.qty + askStat.avgPrice * bidStat.qty)
-				/ (bidStat.qty + askStat.qty),
-		security.GetPriceScale())
-	};
+	point.theo = Round(
+		((point.vwapBid * bidStat.qty) + (point.vwapAsk * askStat.qty))
+			/ (bidStat.qty + askStat.qty),
+		security.GetPriceScale());
 
 	////////////////////////////////////////////////////////////////////////////////
 	// EMAs:
@@ -223,7 +262,7 @@ bool StatService::OnBookUpdateTick(
 		security.GetPriceScale());
 
 	////////////////////////////////////////////////////////////////////////////////
-	// Preparing previous 2 points for actual strategy work:
+	// Preparing previous points for actual strategy work:
 	
 	while (m_statMutex.test_and_set(boost::memory_order_acquire));
 	m_stat.history.emplace_back(point);
