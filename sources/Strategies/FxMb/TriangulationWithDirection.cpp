@@ -768,39 +768,15 @@ namespace {
 		}
 	
 		bool HasAnySpeed(const Pair &pair) const {
-
-			AssertEq(
-				IsZero(m_speed[pair][SPEED_VWAP]),
-				IsZero(m_speed[pair][SPEED_EMA_FAST]));
-			AssertEq(
-				IsZero(m_speed[pair][SPEED_EMA_FAST]),
-				IsZero(m_speed[pair][SPEED_EMA_SLOW]));
-
 			return !IsZero(m_speed[pair].front());
 		}
 	
 		bool IsRising(const Pair &pair) const {
-		
-			AssertEq(
-				m_speed[pair][SPEED_VWAP] > 0,
-				m_speed[pair][SPEED_EMA_FAST] > 0);
-			AssertEq(
-				m_speed[pair][SPEED_EMA_FAST] > 0,
-				m_speed[pair][SPEED_EMA_SLOW] > 0);
-		
 			return m_speed[pair].front() > 0;
 		
 		}
 	
 		bool IsFalling(const Pair &pair) const {
-
-			AssertEq(
-				m_speed[pair][SPEED_VWAP] < 0,
-				m_speed[pair][SPEED_EMA_FAST] < 0);
-			AssertEq(
-				m_speed[pair][SPEED_EMA_FAST] < 0,
-				m_speed[pair][SPEED_EMA_SLOW] < 0);
-
 			return m_speed[pair].front() < 0;
 
 		}
