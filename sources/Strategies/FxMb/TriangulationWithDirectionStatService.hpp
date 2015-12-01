@@ -84,6 +84,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	public:
 
 		struct Point {
+			boost::posix_time::ptime time;
 			double vwapBid;
 			double vwapAsk;
 			double theo;
@@ -93,7 +94,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		struct Stat {
 
-			typedef std::deque<Point> History;
+			typedef boost::array<Point, 3> History;
 
 			size_t numberOfUpdates;
 		
@@ -108,6 +109,9 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				double,
 				boost::accumulators::stats<boost::accumulators::tag::Ema>>
 			EmaAcc;
+
+		typedef std::deque<Point> History;
+		History m_history;
 
 		typedef std::deque<boost::posix_time::ptime> NumberOfUpdatesHistory;
 
@@ -158,7 +162,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		}
 
 		size_t GetHistorySize() const {
-			return m_historySize;
+			return 3;
 		}
 
 	protected:
@@ -179,8 +183,6 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	private:
 
 		const size_t m_bookLevelsCount;
-
-		size_t m_historySize;
 		
 		double m_emaSpeedSlow;
 		double m_emaSpeedFast;
