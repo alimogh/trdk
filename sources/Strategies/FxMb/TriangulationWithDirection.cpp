@@ -577,56 +577,70 @@ namespace {
 	public:
 
 		typedef StatService::Point Point;
+		typedef StatService::Stat::History History;
 	
 	public:
 	
 		explicit SpeedStat(
-				const StatService::Point &prev,
-				const Point &current)
-			: m_prev(prev)
-			, m_current(current) {
-			Assert(!IsZero(m_prev.vwapBid));
-			Assert(!IsZero(m_prev.vwapAsk));
-			Assert(!IsZero(m_prev.emaFast));
-			Assert(!IsZero(m_prev.emaSlow));
-			Assert(!IsZero(m_current.vwapBid));
-			Assert(!IsZero(m_current.vwapAsk));
-			Assert(!IsZero(m_current.emaFast));
-			Assert(!IsZero(m_current.emaSlow));
+				const History &history)
+			: m_history(history) {
+			//...//
 		}
 	
-		bool IsRisingOrNot() const {
-			return
-				m_prev.vwapAsk <= m_current.vwapAsk
-				&& m_prev.emaFast <= m_current.emaFast
-				&& m_prev.emaSlow <= m_current.emaSlow;
+		bool IsRising() const {
+			const bool isRising
+				= m_history.front().vwapAsk < m_history.back().vwapAsk
+				&& m_history.front().emaFast < m_history.back().emaFast
+				&& m_history.front().emaSlow < m_history.back().emaSlow;
+			if (!isRising) {
+				return false;
+			}
+			const auto delta
+				= m_history.front().vwapAsk < m_history[1].vwapAsk
+					&& m_history[1].vwapAsk < m_history.back().vwapAsk
+				?	1 / m_history.front().vwapAsk * m_history.back().vwapAsk
+				:	CalcDelta(
+						m_history.front().vwapAsk,
+						m_history[1].vwapAsk,
+						m_history.back().vwapAsk);
+			return delta >= 1.00015;
 		}
-	
-		bool IsRisingOnly() const {
-			return
-				m_prev.vwapAsk < m_current.vwapAsk
-				&& m_prev.emaFast < m_current.emaFast
-				&& m_prev.emaSlow < m_current.emaSlow;
+
+		bool IsFalling() const {
+			const bool isFalling
+				= m_history.front().vwapBid > m_history.back().vwapBid
+				&& m_history.front().emaFast > m_history.back().emaFast
+				&& m_history.front().emaSlow > m_history.back().emaSlow;
+			if (!isFalling) {
+				return false;
+			}
+			const auto delta
+				= m_history.front().vwapBid > m_history[1].vwapBid
+					&& m_history[1].vwapBid > m_history.back().vwapBid
+				?	1 / m_history.back().vwapBid * m_history.front().vwapBid
+				:	CalcDelta(
+						m_history.back().vwapBid,
+						m_history[1].vwapBid,
+						m_history.front().vwapBid);
+			return delta >= 1.00015;
 		}
-	
-		bool IsFallingOrNot() const {
-			return
-				m_prev.vwapBid >= m_current.vwapBid
-				&& m_prev.emaFast >= m_current.emaFast
-				&& m_prev.emaSlow >= m_current.emaSlow;
-		}
-	
-		bool IsFallingOnly() const {
-			return
-				m_prev.vwapBid > m_current.vwapBid
-				&& m_prev.emaFast > m_current.emaFast
-				&& m_prev.emaSlow > m_current.emaSlow;
+
+	private:
+
+		static double CalcDelta(double smaller, double middle, double larger)  {
+			AssertLt(smaller, larger);
+			const auto first = smaller < middle
+				?	1 / smaller * middle
+				:	1 / middle * smaller;
+			const auto second = larger < middle
+				?	1 / larger * middle
+				:	1 / middle * smaller;
+			return first * second;
 		}
 	
 	private:
 
-		const Point &m_prev;
-		const Point &m_current;
+		const History &m_history;
 
 	};
 
@@ -701,24 +715,11 @@ bool TriangulationWithDirection::CalcSpeed(PairsSpeed &result) const {
 		AssertLe(2, data.size());
 		boost::tribool isRising(boost::indeterminate);
 		{
-			const SpeedStat stat(data.front(), data.back());
-			if (stat.IsRisingOnly()) {
+			const SpeedStat stat(data);
+			if (stat.IsRising()) {
 				isRising = true;
-			} else if (stat.IsFallingOnly()) {
+			} else if (stat.IsFalling()) {
 				isRising = false;
-			}
-		}
-		for (
-				auto i = data.cbegin() + 1
-				; !boost::indeterminate(isRising) && i != data.cend()
-				; ++i) {
-			const SpeedStat stat(*(i - 1), *i);
-			if (isRising) {
-				if (!stat.IsRisingOrNot()) {
-					isRising = boost::indeterminate;
-				}
-			} else if (!stat.IsFallingOrNot()) {
-				isRising = boost::indeterminate;
 			}
 		}
 
