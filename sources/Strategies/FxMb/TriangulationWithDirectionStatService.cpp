@@ -37,6 +37,8 @@ StatService::StatService(
 	, m_slowEmaAcc(accs::tag::ema_speed::speed = m_emaSpeedSlow)
 	, m_fastEmaAcc(accs::tag::ema_speed::speed = m_emaSpeedFast) {
 
+	m_stat = {};
+
 	m_instancies.push_back(this);
 
 	if (m_bookLevelsCount < 1) {
@@ -326,6 +328,8 @@ bool StatService::OnBookUpdateTick(
 		AssertEq(m_stat.history[0].time, pt::not_a_date_time);
 	}
 	
+	m_stat.numberOfUpdates = m_numberOfUpdates.size();
+
 	m_statMutex.clear(boost::memory_order_release);
 
 	////////////////////////////////////////////////////////////////////////////////
