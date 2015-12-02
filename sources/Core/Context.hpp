@@ -74,7 +74,7 @@ namespace trdk {
 		trdk::Context::TradingLog & GetTradingLog() const throw();
 
 		//! Subscribes to state changes.
-		StateUpdateConnection SubscribeToStateUpdate(
+		StateUpdateConnection SubscribeToStateUpdates(
 				const StateUpdateSlot &)
 				const;
 		//! Raises state update event.

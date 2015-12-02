@@ -539,7 +539,7 @@ const RiskControl & Context::GetRiskControl(const TradingMode &mode) const {
 	return const_cast<Context *>(this)->GetRiskControl(mode);
 }
 
-Context::StateUpdateConnection Context::SubscribeToStateUpdate(
+Context::StateUpdateConnection Context::SubscribeToStateUpdates(
 		const StateUpdateSlot &slot)
 		const {
 	return m_pimpl->m_stateUpdateSignal.connect(slot);

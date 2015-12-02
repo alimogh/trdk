@@ -80,6 +80,7 @@ namespace trdk { namespace EngineServer {
 		struct Topics {
 
 			std::string time;
+			std::string state;
 
 			explicit Topics(const std::string &suffix);
 
@@ -133,6 +134,10 @@ namespace trdk { namespace EngineServer {
 
 	public:
 
+		bool IsEngineStarted() const;
+
+	public:
+
 		//! @todo Legacy support, to remove
 		virtual const std::string & GetName() const {
 			return m_config.name;
@@ -179,7 +184,7 @@ namespace trdk { namespace EngineServer {
 		//! @todo Legacy support, to remove
 		void CheckEngineIdExists(const std::string &id) const;
 
-		void OnContextStateChanges(
+		void OnContextStateChanged(
 				trdk::Context &,
 				const trdk::Context::State &,
 				const std::string *message = nullptr);
@@ -205,6 +210,7 @@ namespace trdk { namespace EngineServer {
 		void Reconnect();
 		void RepeatReconnection(const Exception &prevReconnectError);
 
+		void PublishState() const;
 
 	private:
 
@@ -239,7 +245,7 @@ namespace trdk { namespace EngineServer {
 		  */
 		std::unique_ptr<boost::asio::io_service> m_io;
 
-		ConnectionMutex m_connectionMutex;
+		mutable ConnectionMutex m_connectionMutex;
 		ConnectionCondition m_connectionCondition;
 		boost::shared_ptr<Connection> m_connection;
 		bool m_isInited;

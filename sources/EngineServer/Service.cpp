@@ -39,7 +39,8 @@ EngineServer::Service::Config::Config(const fs::path &configPath) {
 ////////////////////////////////////////////////////////////////////////////////
 
 EngineServer::Service::Topics::Topics(const std::string &suffix)
-	: time((boost::format("trdk.engine.%1%.time") % suffix).str()) {
+	: time((boost::format("trdk.engine.%1%.time") % suffix).str())
+	, state((boost::format("trdk.engine.%1%.state") % suffix).str()){
 	//...//
 }
 
@@ -395,7 +396,7 @@ void EngineServer::Service::OnEngineRegistered(
 			*instanceId,
 			m_config.name,
 			std::string(TRDK_BUILD_IDENTITY),
-			IsEngineStarted(m_settings.GetEngineId()),
+			IsEngineStarted(),
 			sessionId));
 	connection->ScheduleNextCurrentTimeNotification();
 
@@ -510,10 +511,25 @@ void EngineServer::Service::StartIoThread() {
 
 }
 
+void EngineServer::Service::PublishState() const {
+	const ConnectionLock lock(m_connectionMutex);
+	if (!m_connection) {
+		// State publishes each time at reconnect.
+		return;
+	}
+	m_connection->session->publish(
+		m_connection->topics.state,
+		std::make_tuple(IsEngineStarted()));
+}
+
 void EngineServer::Service::ForEachEngineId(
 		const boost::function<void(const std::string &engineId)> &func)
 		const {
 	func(m_settings.GetEngineId());
+}
+
+bool EngineServer::Service::IsEngineStarted() const {
+	return m_server.IsStarted(m_settings.GetEngineId());
 }
 
 bool EngineServer::Service::IsEngineStarted(const std::string &engineId) const {
@@ -547,9 +563,9 @@ void EngineServer::Service::StartEngine(
 		settings.GetFilePath(),
 		false,
 		commandInfo);
-	context.SubscribeToStateUpdate(
+	context.SubscribeToStateUpdates(
 		boost::bind(
-			&Service::OnContextStateChanges,
+			&Service::OnContextStateChanged,
 			this,
 			boost::ref(context),
 			_1,
@@ -560,6 +576,7 @@ void EngineServer::Service::StartEngine(
 void EngineServer::Service::StopEngine(const std::string &engineId) {
 	CheckEngineIdExists(engineId);
 	m_server.StopAll(STOP_MODE_GRACEFULLY_ORDERS);
+	PublishState();
 }
 
 void EngineServer::Service::StartAccept() {
@@ -605,10 +622,13 @@ void EngineServer::Service::CheckEngineIdExists(const std::string &id) const {
 	}
 }
 
-void EngineServer::Service::OnContextStateChanges(
+void EngineServer::Service::OnContextStateChanged(
 		Context &,
 		const Context::State &state,
 		const std::string *updateMessage) {
+
+	PublishState();
+
 	boost::function<void(Client &)> fun;
 	static_assert(Context::numberOfStates == 4, "List changed.");
 	std::string message;
