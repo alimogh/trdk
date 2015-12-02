@@ -582,10 +582,12 @@ namespace {
 	public:
 	
 		explicit SpeedStat(
-				const History &history)
-			: m_history(history) {
+				const History &history,
+				Strategy::TradingLog &log)
+			: m_history(history), m_log(log) {
 			//...//
 		}
+	Strategy::TradingLog &m_log;
 	
 		bool IsRising() const {
 			const bool isRising
@@ -595,15 +597,26 @@ namespace {
 			if (!isRising) {
 				return false;
 			}
-			const auto delta
+			const double delta
 				= m_history.front().vwapAsk < m_history[1].vwapAsk
 					&& m_history[1].vwapAsk < m_history.back().vwapAsk
-				?	1 / m_history.front().vwapAsk * m_history.back().vwapAsk
+				?	1.0/ m_history.front().vwapAsk * m_history.back().vwapAsk
 				:	CalcDelta(
 						m_history.front().vwapAsk,
 						m_history[1].vwapAsk,
 						m_history.back().vwapAsk);
-			return delta >= 1.00015;
+			const bool result = delta >= 1.00015;
+			m_log.Write(
+				"SpeedRatio\trising\t%1% -> %2% -> %3% = %4$.10f => %5%",
+				[&](TradingRecord &record) {
+					record
+						% m_history.front().vwapAsk
+						% m_history[1].vwapAsk
+						% m_history.back().vwapAsk
+						% delta
+						% (result ? "true" : "false");
+				});
+			return result;
 		}
 
 		bool IsFalling() const {
@@ -614,27 +627,38 @@ namespace {
 			if (!isFalling) {
 				return false;
 			}
-			const auto delta
+			const double delta
 				= m_history.front().vwapBid > m_history[1].vwapBid
 					&& m_history[1].vwapBid > m_history.back().vwapBid
-				?	1 / m_history.back().vwapBid * m_history.front().vwapBid
+				?	1.0 / m_history.back().vwapBid * m_history.front().vwapBid
 				:	CalcDelta(
 						m_history.back().vwapBid,
 						m_history[1].vwapBid,
 						m_history.front().vwapBid);
-			return delta >= 1.00015;
+			const bool result = delta >= 1.00015;
+			m_log.Write(
+				"SpeedRatio\tfalling\t%1% -> %2% -> %3% = %4$.10f => %5%",
+				[&](TradingRecord &record) {
+					record
+						% m_history.front().vwapBid
+						% m_history[1].vwapBid
+						% m_history.back().vwapBid
+						% delta
+						% (result ? "true" : "false");
+				});
+			return result;
 		}
 
 	private:
 
 		static double CalcDelta(double smaller, double middle, double larger)  {
 			AssertLt(smaller, larger);
-			const auto first = smaller < middle
-				?	1 / smaller * middle
-				:	1 / middle * smaller;
-			const auto second = larger < middle
-				?	1 / larger * middle
-				:	1 / middle * smaller;
+			const double first = smaller < middle
+				?	1.0 / smaller * middle
+				:	1.0 / middle * smaller;
+			const double second = larger < middle
+				?	1.0 / larger * middle
+				:	1.0 / middle * smaller;
 			return first * second;
 		}
 	
@@ -699,6 +723,10 @@ bool TriangulationWithDirection::CalcSpeed(PairsSpeed &result) const {
 	for (size_t pair = 0; pair < result.size(); ++pair) {
 			
 		const History &data = m_bestBidAsk[pair].service->GetStat().history;
+		//! @sa TRDK-240
+		// Takes control over speed value, default value too so shuld be created
+		// before first "continue", "break" or "return":
+		SpeedCalculator calcSpeed(result[pair]);
 
 		Assert(
 			!(data.back().theo > data.back().emaFast
@@ -715,7 +743,7 @@ bool TriangulationWithDirection::CalcSpeed(PairsSpeed &result) const {
 		AssertLe(2, data.size());
 		boost::tribool isRising(boost::indeterminate);
 		{
-			const SpeedStat stat(data);
+			const SpeedStat stat(data, GetTradingLog());
 			if (stat.IsRising()) {
 				isRising = true;
 			} else if (stat.IsFalling()) {
@@ -726,22 +754,20 @@ bool TriangulationWithDirection::CalcSpeed(PairsSpeed &result) const {
 		// theo-test
 		if (isRising) {
 			if (
-					data.back().theo <= data.back().emaFast
- 					&& data.back().emaFast <= data.back().emaSlow) {
+					!(data.back().theo > data.back().emaFast
+			  			&& data.back().emaFast > data.back().emaSlow)) {
 				continue;
 			}
 		} else if (!isRising) {
 			if (
-					data.back().theo >= data.back().emaFast
- 					&& data.back().emaFast >= data.back().emaSlow) {
+					!(data.back().theo < data.back().emaFast
+ 					&& data.back().emaFast < data.back().emaSlow)) {
 				continue;
 			}
 		} else {
 			continue;
 		}
 
-		//! @sa TRDK-240
-		SpeedCalculator calcSpeed(result[pair]);
 		static_assert(numberOfSpeeds == 3, "List changed.");
 		if (isRising) {
 			calcSpeed(SPEED_VWAP, data.back().vwapAsk, data.front().vwapAsk);
