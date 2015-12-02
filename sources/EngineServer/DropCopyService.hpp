@@ -57,7 +57,7 @@ namespace trdk { namespace EngineServer {
 			boost::uuids::uuid id;
 			boost::posix_time::ptime time;
 			const trdk::Strategy *strategy;
-			size_t updatesNumber;
+			size_t numberOfUpdates;
 		};
 
 		struct OperationEnd {
@@ -262,7 +262,7 @@ namespace trdk { namespace EngineServer {
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &,
 				const trdk::Strategy &,
-				size_t updatesNumber);
+				size_t numberOfUpdates);
 		virtual void ReportOperationEnd(
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &,

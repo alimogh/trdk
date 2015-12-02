@@ -342,13 +342,16 @@ bool StatService::OnBookUpdateTick(
 }
 
 void StatService::UpdateNumberOfUpdates(const Security::Book &book) {
+
+	m_numberOfUpdates.push_back(book.GetTime());
+	
 	const auto &startTime = book.GetTime() - pt::seconds(30);
 	while (
 			!m_numberOfUpdates.empty()
 			&& m_numberOfUpdates.front() < startTime) {
 		m_numberOfUpdates.pop_front();
 	}
-	m_numberOfUpdates.push_back(book.GetTime());
+
 }
 
 void StatService::OnSettingsUpdate(const IniSectionRef &conf) {

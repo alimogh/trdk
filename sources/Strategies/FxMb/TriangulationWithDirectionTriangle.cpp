@@ -233,7 +233,7 @@ void Triangle::ReportStart() const {
 		GetId(),
 		GetStartTime(),
 		m_strategy,
-		m_strategy.CalcBookUpdatesNumber());
+		m_strategy.CalcBookNumberOfUpdates());
 
 }
 

@@ -235,7 +235,7 @@ ServiceData DropCopyService::SendList::CreateMessage(
 	operation.set_time(pt::to_iso_string(message.time));
 	operation.set_trading_mode(Convert(message.strategy->GetTradingMode()));
 	ConvertToUuid(message.strategy->GetId(), *operation.mutable_strategy_id());
-	operation.set_updates_number(pf::uint32(message.updatesNumber));
+	operation.set_updates_number(pf::uint32(message.numberOfUpdates));
 
 	return result;
 
@@ -799,8 +799,8 @@ void DropCopyService::ReportOperationStart(
 		const uu::uuid &id,
 		const pt::ptime &time,
 		const trdk::Strategy &strategy,
-		size_t updatesNumber) {
-	OperationStart message = {id, time, &strategy, updatesNumber};
+		size_t numberOfUpdates) {
+	OperationStart message = {id, time, &strategy, numberOfUpdates};
 	m_sendList.Enqueue(std::move(message));
 }
 

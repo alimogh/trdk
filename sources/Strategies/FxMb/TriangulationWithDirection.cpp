@@ -966,7 +966,7 @@ bool TriangulationWithDirection::Detect(Detection &result) const {
 
 }
 
-size_t TriangulationWithDirection::CalcBookUpdatesNumber() const {
+size_t TriangulationWithDirection::CalcBookNumberOfUpdates() const {
 	size_t result = 0;
 	foreach (const auto &bestBidAsk, m_bestBidAsk) {
 		result += bestBidAsk.service->GetStat().numberOfUpdates;

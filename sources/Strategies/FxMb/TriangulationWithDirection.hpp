@@ -58,7 +58,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			return m_yDetected;
 		}
 
-		size_t CalcBookUpdatesNumber() const;
+		size_t CalcBookNumberOfUpdates() const;
 
 	protected:
 		
