@@ -325,11 +325,6 @@ void Client::SendEngineInfo(const std::string &engineId) {
 
 }
 
-void Client::SendEnginesState() {
-	m_requestHandler.ForEachEngineId(
-		boost::bind(&Client::SendEngineState, this, _1));
-}
-
 void Client::SendEngineState(const std::string &engineId) {
 	ServiceData message;
 	message.set_type(ServiceData::TYPE_ENGINE_STATE);	

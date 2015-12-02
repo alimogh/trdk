@@ -97,7 +97,6 @@ namespace trdk { namespace EngineServer {
 		void SendEnginesInfo();
 
 		void SendEngineState(const std::string &engeineId);
-		void SendEnginesState();
 
 		void StartKeepAliveSender();
 		void StartKeepAliveChecker();
