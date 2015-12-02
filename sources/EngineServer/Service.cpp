@@ -88,7 +88,7 @@ void EngineServer::Service::Connection::ScheduleNextCurrentTimeNotification() {
 			const auto &now = sharedSelf->log.GetTime();
 			sharedSelf->session->publish(
 				sharedSelf->topics.time,
-				std::make_tuple(pt::to_simple_string(now)));
+				std::make_tuple(ConvertToTimeT(now)));
 		});
 
 }
