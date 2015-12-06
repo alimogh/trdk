@@ -51,18 +51,34 @@ namespace {
 		val = std::numeric_limits<Level1Value>::max();
 	}
 
+	//! Returns symbol price precision.
+	/** @sa https://mbcm.robotdk.com:8443/x/K4AP
+	  */
 	uint8_t GetPrecision(const Symbol &symbol) {
 		if (boost::iequals(symbol.GetSymbol(), "EUR/USD")) {
 			return 5;
 		} else if (boost::iequals(symbol.GetSymbol(), "EUR/JPY")) {
 			return 3;
+		} else if (boost::iequals(symbol.GetSymbol(), "EUR/CHF")) {
+			return 5;
+		} else if (boost::iequals(symbol.GetSymbol(), "EUR/AUD")) {
+			return 5;
 		} else if (boost::iequals(symbol.GetSymbol(), "USD/JPY")) {
 			return 3;
+		} else if (boost::iequals(symbol.GetSymbol(), "USD/CHF")) {
+			return 5;
+		} else if (boost::iequals(symbol.GetSymbol(), "AUD/USD")) {
+			return 5;
+		} else if (boost::iequals(symbol.GetSymbol(), "AUD/JPY")) {
+			return 3;
 		} else {
+#			ifndef _TEST
+				AssertFail(
+					"Precision for security not set. Using default - 6.");
+#			endif
 			return 6;
 		}
 	}
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
