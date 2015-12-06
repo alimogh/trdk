@@ -14,12 +14,15 @@
 
 #include "Server.hpp"
 #include "ClientRequestHandler.hpp"
+#include "DropCopyService.hpp"
 
 namespace trdk { namespace EngineServer {
 
 	class Client;
 
-	class Service : public ClientRequestHandler {
+	class Service
+		: public ClientRequestHandler
+		, public trdk::DropCopy {
 
 	private:
 
@@ -171,6 +174,57 @@ namespace trdk { namespace EngineServer {
 
 		//! @todo Legacy support, to remove
 		virtual void OnDisconnect(Client &);
+
+	public:
+
+		//! @todo Legacy support, to remove (no DropCopy start)
+		virtual void Start(
+				const trdk::Lib::IniSectionRef &,
+				const Context &);
+
+		virtual void CopyOrder(
+				const boost::uuids::uuid &id,
+				const std::string *tradeSystemId,
+				const boost::posix_time::ptime *orderTime,
+				const boost::posix_time::ptime *executionTime,
+				const trdk::TradeSystem::OrderStatus &,
+				const boost::uuids::uuid &operationId,
+				const int64_t *subOperationId,
+				const trdk::Security &,
+				const trdk::OrderSide &,
+				const trdk::Qty &qty,
+				const double *price,
+				const trdk::TimeInForce *,
+				const trdk::Lib::Currency &,
+				const trdk::Qty *minQty,
+				const std::string *user,
+				const trdk::Qty &executedQty,
+				const double *bestBidPrice,
+				const trdk::Qty *bestBidQty,
+				const double *bestAskPrice,
+				const trdk::Qty *bestAskQty);
+
+		virtual void CopyTrade(
+				const boost::posix_time::ptime &,
+				const std::string &tradeSystemTradeId,
+				const boost::uuids::uuid &orderId,
+				double price,
+				const trdk::Qty &qty,
+				double bestBidPrice,
+				const trdk::Qty &bestBidQty,
+				double bestAskPrice,
+				const trdk::Qty &bestAskQty);
+
+		virtual void ReportOperationStart(
+				const boost::uuids::uuid &id,
+				const boost::posix_time::ptime &,
+				const trdk::Strategy &,
+				size_t updatesNumber);
+		virtual void ReportOperationEnd(
+				const boost::uuids::uuid &id,
+				const boost::posix_time::ptime &,
+				double pnl,
+				const boost::shared_ptr<const trdk::FinancialResult> &);
 	
 	private:
 
@@ -249,6 +303,9 @@ namespace trdk { namespace EngineServer {
 		ConnectionCondition m_connectionCondition;
 		boost::shared_ptr<Connection> m_connection;
 		bool m_isInited;
+
+		//! @todo Legacy support, to remove
+		trdk::EngineServer::DropCopyService m_legacyDropCopy;
 
     };
 

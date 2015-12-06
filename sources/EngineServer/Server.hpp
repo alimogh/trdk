@@ -63,7 +63,8 @@ namespace trdk { namespace EngineServer {
 				const std::string &id,
 				const boost::filesystem::path &,
 				bool enableStdOutLog,
-				const std::string &commandInfo);
+				const std::string &commandInfo,
+				DropCopy *dropCopy = nullptr);
 		void StopAll(const trdk::StopMode &);
 
 #		ifndef TRDK_AUTOBAHN_DISABLED

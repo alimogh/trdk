@@ -33,7 +33,8 @@ Context & Server::Run(
 		const std::string &id,
 		const fs::path &path,
 		bool enableStdOutLog,
-		const std::string &commandInfo) {
+		const std::string &commandInfo,
+		DropCopy *dropCopy) {
 
 	const Lock lock(m_mutex);
 
@@ -117,16 +118,7 @@ Context & Server::Run(
 
 		info.engine->StartStatMonitoring();
 
-		info.engine->Start(
-			ini,
-			[](
-					Context &contrext,
-					const IniSectionRef &conf)
-					-> boost::shared_ptr<DropCopy> {
-				boost::shared_ptr<DropCopy> result(
-					new DropCopyService(contrext, conf));
-				return result;
-			});
+		info.engine->Start(ini, dropCopy);
 
 		m_engines.insert(info);
 

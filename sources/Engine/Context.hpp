@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "Core/DropCopy.hpp"
+#include <Core/DropCopy.hpp>
 #include "Core/Context.hpp"
 #include "Api.h"
 
@@ -34,10 +34,7 @@ namespace trdk { namespace Engine {
 
 	public:
 
-		void Start(
-				const trdk::Lib::Ini &,
-				//! @todo remove #include too
-				const boost::function<trdk::DropCopyFactory> &);
+		void Start(const trdk::Lib::Ini &, trdk::DropCopy * = nullptr);
 		void Stop(const trdk::StopMode &);
 
 		void Add(const trdk::Lib::Ini &);

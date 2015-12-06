@@ -105,16 +105,16 @@ void DropCopyService::SendList::Start() {
 	}
 	m_thread = boost::thread(
 		[this]() {
-			m_service.GetLog().Debug("Send-thread started...");
+			m_service.m_log.Debug("Send-thread started...");
 			m_isStopped = false;
 			try {
 				SendTask();
 			} catch (...) {
 				AssertFailNoException();
-				m_service.GetLog().Error("Fatal error in the send-thread.");
+				m_service.m_log.Error("Fatal error in the send-thread.");
 				throw;
 			}
-			m_service.GetLog().Debug("Send-thread completed.");
+			m_service.m_log.Debug("Send-thread completed.");
 		});
 }
 
@@ -138,7 +138,7 @@ void DropCopyService::SendList::Flush() {
 	m_dataCondition.notify_all();
 	while (m_flushFlag && !m_isStopped) {
 		if (GetQueueSize() > 0) {
-			m_service.GetLog().Info("Flushing %1% messages...", GetQueueSize());
+			m_service.m_log.Info("Flushing %1% messages...", GetQueueSize());
 		}
 		m_dataCondition.wait(lock);
 	}
@@ -149,15 +149,15 @@ void DropCopyService::SendList::LogQueue() {
 	if (GetQueueSize() == 0) {
 		AssertEq(0, m_queues.first.data.size());
 		AssertEq(0, m_queues.second.data.size());
-		m_service.GetLog().Debug("Messages queue is empty.");
+		m_service.m_log.Debug("Messages queue is empty.");
 		return;
 	}
 
-	m_service.GetLog().Warn("Messages queue has %1% messages!", GetQueueSize());
+	m_service.m_log.Warn("Messages queue has %1% messages!", GetQueueSize());
 	size_t counter = 0;
 	const auto &logRecords = [&](const Queue &queue) {
 		foreach (const auto &message, queue.data) {
-			m_service.GetLog().Debug(
+			m_service.m_log.Debug(
 				"Unsent message #%1%: \"%2%\".",
 				++counter,
 				CreateMessage(message).DebugString());
@@ -404,7 +404,7 @@ ServiceData DropCopyService::SendList::CreateMessage(
 	MarketData::Trade &trade = *result.mutable_trade();
 
 	trade.set_time(pt::to_iso_string(message.time));
-	trade.set_trade_system_trade_id(message.tradeSystemTradeid);
+	trade.set_trade_system_trade_id(message.tradeSystemTradeId);
 	ConvertToUuid(message.orderId, *trade.mutable_order_id());
 	trade.set_price(message.price);
 	trade.set_qty(message.qty);
@@ -447,7 +447,7 @@ void DropCopyService::SendList::SendTask() {
 			lock.unlock();
 
 			if (!(count % 3)) {
-				m_service.GetLog().Warn(
+				m_service.m_log.Warn(
 					"Large queue size to send: %1% messages."
 						" After %2% iterations queue still not empty.",
 					GetQueueSize(),
@@ -480,8 +480,8 @@ void DropCopyService::SendList::SendTask() {
 
 //////////////////////////////////////////////////////////////////////////
 
-DropCopyService::DropCopyService(Context &context, const IniSectionRef &)
-	: Base(context, "DropCopy")
+DropCopyService::DropCopyService(EventsLog &log)
+	: m_log(log)
 	, m_sendList(*this)
 	, m_io(new Io) {
 	//...//
@@ -515,7 +515,7 @@ DropCopyService::~DropCopyService() {
 
 }
 
-void DropCopyService::Start(const IniSectionRef &conf) {
+void DropCopyService::Start(const IniSectionRef &conf, const Context &context) {
 	
 	Assert(!m_io->client);
 	AssertEq(0, m_io->threads.size());
@@ -528,7 +528,7 @@ void DropCopyService::Start(const IniSectionRef &conf) {
 		message.set_type(ServiceData::TYPE_DICTIONARY);	
 		Dictionary &dictionary = *message.mutable_dictionary();
 		size_t securitiesNumber = 0;
-		GetContext().ForEachMarketDataSource(
+		context.ForEachMarketDataSource(
 			[&](const MarketDataSource &source) -> bool {
 				source.ForEachSecurity(
 					[&](const Security &security) -> bool {
@@ -542,10 +542,10 @@ void DropCopyService::Start(const IniSectionRef &conf) {
 				return true;
 			});
 		m_dictonary = message;
-		GetLog().Debug(
+		m_log.Debug(
 			"Dictionary: Cached %1% securities from %2% market data sources.",
 			securitiesNumber,
-			GetContext().GetMarketDataSourcesCount());
+			context.GetMarketDataSourcesCount());
 	}
 
 	try {
@@ -553,7 +553,7 @@ void DropCopyService::Start(const IniSectionRef &conf) {
 			conf.ReadKey("host"),
 			boost::lexical_cast<std::string>(conf.ReadTypedKey<size_t>("port")));
 	} catch (const trdk::Lib::Exception &ex) {
-		GetLog().Error(
+		m_log.Error(
 			"Failed to connect to Drop Copy Storage: \"%1%\".",
 			ex.what());
 		throw Exception("Failed to connect to Drop Copy Storage");
@@ -562,16 +562,16 @@ void DropCopyService::Start(const IniSectionRef &conf) {
 	while (m_io->threads.size() < 2) {
 		m_io->threads.create_thread(
 			[&]() {
-				GetLog().Debug("Started IO-service thread...");
+				m_log.Debug("Started IO-service thread...");
 				try {
 					m_io->service.run();
 				} catch (const Exception &ex) {
-					GetLog().Error("Unexpected error: \"%1%\".", ex);
+					m_log.Error("Unexpected error: \"%1%\".", ex);
 				} catch (...) {
 					AssertFailNoException();
 					throw;
 				}
-				GetLog().Debug("IO-service thread completed.");
+				m_log.Debug("IO-service thread completed.");
 			});
 	}
 
@@ -587,7 +587,7 @@ void DropCopyService::StartNewClient(
 		= DropCopyClient::Create(*this, host, port);
 		
 	newClient->Send(m_dictonary);
-	GetLog().Debug("Dictionary: Sent.");
+	m_log.Debug("Dictionary: Sent.");
 
 	const ClientLock lock(m_clientMutex);
 	Assert(!m_io->client);
@@ -627,7 +627,7 @@ void DropCopyService::ReconnectClient(
 	
 	} catch (const DropCopyClient::ConnectError &ex) {
 
-		GetLog().Warn(
+		m_log.Warn(
 			"Failed to reconnect: \"%1%\". Trying again, %2% times...",
 			ex.what(),
 			attemptIndex + 1);
@@ -640,7 +640,7 @@ void DropCopyService::ReconnectClient(
 			[this, timer, host, port, attemptIndex] (
 					const boost::system::error_code &error) {
 				if (error) {
-					GetLog().Debug(
+					m_log.Debug(
 						"Reconnect canceled: \"%1%\".",
 						SysError(error.value()));
 					return;
@@ -659,7 +659,7 @@ bool DropCopyService::SendSync(const ServiceData &message) {
 	for (bool byTimeOut = false; !m_io || !m_io->client; ) {
 
 		if (!m_io) {
-			GetLog().Warn(
+			m_log.Warn(
 				"Failed to send message: service stopped."
 					" Current queue: %1% messages.",
 				m_sendList.GetQueueSize());
@@ -667,7 +667,7 @@ bool DropCopyService::SendSync(const ServiceData &message) {
 		}
 		
 		if (!byTimeOut) {
-			GetLog().Warn(
+			m_log.Warn(
 				"Message sending suspended, waiting for reconnect."
 					" Current queue: %1% messages.",
 				m_sendList.GetQueueSize());
@@ -675,7 +675,7 @@ bool DropCopyService::SendSync(const ServiceData &message) {
 		
 		byTimeOut = !m_clientCondition.timed_wait(lock, pt::seconds(30));
 		if (byTimeOut) {
-			GetLog().Warn(
+			m_log.Warn(
 				"Message sending still not active, waiting for reconnect."
 					" Current queue: %1% messages.",
 				m_sendList.GetQueueSize());
@@ -773,7 +773,7 @@ void DropCopyService::CopyOrder(
 
 void DropCopyService::CopyTrade(
 		const pt::ptime &time,
-		const std::string &tradeSystemTradeid,
+		const std::string &tradeSystemTradeId,
 		const uu::uuid &orderId,
 		double price,
 		const Qty &qty,
@@ -783,7 +783,7 @@ void DropCopyService::CopyTrade(
 		const Qty &bestAskQty) {
 	Trade message = {
 		time,
-		tradeSystemTradeid,
+		tradeSystemTradeId,
 		orderId,
 		price,
 		qty,

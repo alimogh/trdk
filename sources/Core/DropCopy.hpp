@@ -16,32 +16,19 @@
 
 namespace trdk {
 
-	//////////////////////////////////////////////////////////////////////////
-
-	//!	Drop Copy factory.
-	/** Result can't be nullptr.
-	  */
-	typedef boost::shared_ptr<trdk::DropCopy> (DropCopyFactory)(
-			trdk::Context &,
-			const trdk::Lib::IniSectionRef &);
-
-	//////////////////////////////////////////////////////////////////////////
-
 	class TRDK_CORE_API DropCopy {
 	
 	public:
 
-		explicit DropCopy(trdk::Context &, const std::string &tag);
+		DropCopy();
 		virtual ~DropCopy();
 
 	public:
 
-		Context & GetContext();
-		trdk::ModuleEventsLog & GetLog() const throw();
-
-	public:
-
-		virtual void Start(const trdk::Lib::IniSectionRef &) = 0;
+		virtual void Start(
+				const trdk::Lib::IniSectionRef &,
+				const trdk::Context &)
+			= 0;
 
 	public:
 
@@ -70,7 +57,7 @@ namespace trdk {
 
 		virtual void CopyTrade(
 				const boost::posix_time::ptime &,
-				const std::string &tradeSystemTradeid,
+				const std::string &tradeSystemTradeId,
 				const boost::uuids::uuid &orderId,
 				double price,
 				const trdk::Qty &qty,
@@ -93,13 +80,6 @@ namespace trdk {
 				const boost::shared_ptr<const trdk::FinancialResult> &)
 			= 0;
 
-	private:
-
-		class Implementation;
-		Implementation *m_pimpl;
-
 	};
-
-	//////////////////////////////////////////////////////////////////////////
 
 }

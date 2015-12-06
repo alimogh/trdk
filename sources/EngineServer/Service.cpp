@@ -21,6 +21,7 @@ namespace io = boost::asio;
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
 namespace sys = boost::system;
+namespace uuids = boost::uuids;
 namespace ab = autobahn;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -145,7 +146,8 @@ EngineServer::Service::Service(
 	, m_inputIo(new InputIo)
 	, m_numberOfReconnects(0)
 	, m_io(new io::io_service)
-	, m_isInited(false) {
+	, m_isInited(false)
+	, m_legacyDropCopy(m_log) {
 
 	m_log.EnableStdOut();
 
@@ -562,7 +564,8 @@ void EngineServer::Service::StartEngine(
 		settings.GetEngineId(),
 		settings.GetFilePath(),
 		false,
-		commandInfo);
+		commandInfo,
+		this);
 	context.SubscribeToStateUpdates(
 		boost::bind(
 			&Service::OnContextStateChanged,
@@ -688,6 +691,94 @@ void EngineServer::Service::OnContextStateChanged(
 void EngineServer::Service::ClosePositions(const std::string &engineId) {
 	CheckEngineIdExists(engineId);
 	m_server.ClosePositions();
+}
+
+void EngineServer::Service::Start(
+		const IniSectionRef &conf,
+		const Context &context) {
+	m_legacyDropCopy.Start(conf, context);
+}
+
+void EngineServer::Service::CopyOrder(
+		const uuids::uuid &id,
+		const std::string *tradeSystemId,
+		const pt::ptime *orderTime,
+		const pt::ptime *executionTime,
+		const TradeSystem::OrderStatus &status,
+		const uuids::uuid &operationId,
+		const int64_t *subOperationId,
+		const Security &security,
+		const OrderSide &side,
+		const Qty &qty,
+		const double *price,
+		const TimeInForce *timeInForce,
+		const Currency &currency,
+		const Qty *minQty,
+		const std::string *user,
+		const Qty &executedQty,
+		const double *bestBidPrice,
+		const Qty *bestBidQty,
+		const double *bestAskPrice,
+		const Qty *bestAskQty) {
+	m_legacyDropCopy.CopyOrder(
+		id,
+		tradeSystemId,
+		orderTime,
+		executionTime,
+		status,
+		operationId,
+		subOperationId,
+		security,
+		side,
+		qty,
+		price,
+		timeInForce,
+		currency,
+		minQty,
+		user,
+		executedQty,
+		bestBidPrice,
+		bestBidQty,
+		bestAskPrice,
+		bestAskQty);
+}
+
+void EngineServer::Service::CopyTrade(
+		const pt::ptime &time,
+		const std::string &tradeSystemTradeId,
+		const uuids::uuid &orderId,
+		double price,
+		const Qty &qty,
+		double bestBidPrice,
+		const Qty &bestBidQty,
+		double bestAskPrice,
+		const Qty &bestAskQty) {
+	m_legacyDropCopy.CopyTrade(
+		time,
+		tradeSystemTradeId,
+		orderId,
+		price,
+		qty,
+		bestBidPrice,
+		bestBidQty,
+		bestAskPrice,
+		bestAskQty);
+}
+
+void EngineServer::Service::ReportOperationStart(
+		const uuids::uuid &id,
+		const pt::ptime &time,
+		const Strategy &strategy,
+		size_t updatesNumber) {
+	m_legacyDropCopy.ReportOperationStart(id, time, strategy, updatesNumber);
+}
+
+void EngineServer::Service::ReportOperationEnd(
+		const uuids::uuid &id,
+		const pt::ptime &time,
+		double pnl,
+		const boost::shared_ptr<const FinancialResult> &financialResult) {
+	m_legacyDropCopy.ReportOperationEnd(id, time, pnl, financialResult);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

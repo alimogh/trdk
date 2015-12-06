@@ -639,42 +639,37 @@ class ContextStateBootstrapper : private boost::noncopyable {
 public:
 	
 	explicit ContextStateBootstrapper(
-				const Lib::Ini &confRef,
-				Engine::Context &context,
-				SubscriptionsManager &subscriptionsManagerRef,
-				Strategies &strategiesRef,
-				Observers &observersRef,
-				Services &servicesRef,
-				ModuleList &moduleListRef,
-				DropCopyModule &dropCopyRef,
-				const boost::function<DropCopyFactory> &dropCopyFactory)
-			: m_context(context),
-			m_subscriptionsManager(subscriptionsManagerRef),
-			m_strategiesResult(&strategiesRef),
-			m_observersResult(&observersRef),
-			m_servicesResult(&servicesRef),
-			m_moduleListResult(moduleListRef),
-			m_dropCopyResult(&dropCopyRef),
-			m_dropCopyFactory(dropCopyFactory),
-			m_conf(confRef) {
+			const Lib::Ini &confRef,
+			Engine::Context &context,
+			SubscriptionsManager &subscriptionsManagerRef,
+			Strategies &strategiesRef,
+			Observers &observersRef,
+			Services &servicesRef,
+			ModuleList &moduleListRef)
+		: m_context(context)
+		, m_subscriptionsManager(subscriptionsManagerRef)
+		, m_strategiesResult(&strategiesRef)
+		, m_observersResult(&observersRef)
+		, m_servicesResult(&servicesRef)
+		, m_moduleListResult(moduleListRef)
+		, m_conf(confRef) {
 		//...//
 	}
 
 	explicit ContextStateBootstrapper(
-				const Lib::Ini &confRef,
-				Engine::Context &context,
-				SubscriptionsManager &subscriptionsManagerRef,
-				Strategies &strategiesRef,
-				Services &servicesRef,
-				ModuleList &moduleListRef)
-			: m_context(context),
-			m_subscriptionsManager(subscriptionsManagerRef),
-			m_strategiesResult(&strategiesRef),
-			m_observersResult(nullptr),
-			m_servicesResult(&servicesRef),
-			m_moduleListResult(moduleListRef),
-			m_dropCopyResult(nullptr),
-			m_conf(confRef) {
+			const Lib::Ini &confRef,
+			Engine::Context &context,
+			SubscriptionsManager &subscriptionsManagerRef,
+			Strategies &strategiesRef,
+			Services &servicesRef,
+			ModuleList &moduleListRef)
+		: m_context(context)
+		, m_subscriptionsManager(subscriptionsManagerRef)
+		, m_strategiesResult(&strategiesRef)
+		, m_observersResult(nullptr)
+		, m_servicesResult(&servicesRef)
+		, m_moduleListResult(moduleListRef)
+		, m_conf(confRef) {
 		//...//
 	}
 
@@ -742,8 +737,6 @@ public:
 			throw Exception("Failed to build modules relationship");
 		}
 
-		LoadDropCopy();
-
 		MakeModulesResult(m_strategies, m_strategiesResult);
 		MakeModulesResult(m_observers, m_observersResult);
 		MakeModulesResult(m_services, m_servicesResult);
@@ -755,48 +748,6 @@ public:
 	}
 
 private:
-
-	//////////////////////////////////////////////////////////////////////////
-
-	void LoadDropCopy() {
-
-		if (!m_dropCopyResult) {
-			return;
-		}
-
-		std::unique_ptr<const IniSectionRef> configurationSection;
-		if (m_conf.IsSectionExist(Sections::dropCopy)) {
-			configurationSection.reset(
-				new IniSectionRef(m_conf, Sections::dropCopy));
-			if (!configurationSection->ReadBoolKey(Keys::isEnabled)) {
-				configurationSection.reset();
-			}
-		}
-		if (!configurationSection) {
-			*m_dropCopyResult = DropCopyModule();
-			return;
-		}
-		
-		try {
-			*m_dropCopyResult
-				= m_dropCopyFactory(m_context, *configurationSection);
-		} catch (...) {
-			trdk::EventsLog::BroadcastUnhandledException(
-				__FUNCTION__,
-				__FILE__,
-				__LINE__);
-			throw Exception("Failed to load Drop Copy module");
-		}
-	
-		Assert(m_dropCopyResult);
-		if (!m_dropCopyResult) {
-			throw Exception(
-				"Failed to load Drop Copy module - no object returned");
-		}
-
-
-
-	}
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -1845,9 +1796,6 @@ private:
 	ObserverModules m_observers;
 	ServiceModules m_services;
 
-	DropCopyModule *m_dropCopyResult;
-	boost::function<DropCopyFactory> m_dropCopyFactory;
-
 	const Lib::Ini &m_conf;
 
 };
@@ -1888,15 +1836,13 @@ void Engine::BootContext(
 }
 
 void Engine::BootContextState(
-			const Lib::Ini &conf,
-			Context &context,
-			SubscriptionsManager &subscriptionsManagerRef,
-			Strategies &strategiesRef,
-			Observers &observersRef,
-			Services &servicesRef,
-			ModuleList &moduleListRef,
-			DropCopyModule &dropCopyRef,
-			const boost::function<DropCopyFactory> &dropCopyFactory) {
+		const Lib::Ini &conf,
+		Context &context,
+		SubscriptionsManager &subscriptionsManagerRef,
+		Strategies &strategiesRef,
+		Observers &observersRef,
+		Services &servicesRef,
+		ModuleList &moduleListRef) {
 	ContextStateBootstrapper(
 			conf,
 			context,
@@ -1904,9 +1850,7 @@ void Engine::BootContextState(
 			strategiesRef,
 			observersRef,
 			servicesRef,
-			moduleListRef,
-			dropCopyRef,
-			dropCopyFactory)
+			moduleListRef)
 		.Boot();
 }
 

@@ -114,14 +114,15 @@ public:
 	Observers observers;
 	Services services;
 	
-	DropCopyModule dropCopy;
+	DropCopy *dropCopy;
 
 public:
 
-	explicit State(Context &context)
-		: context(context),
-		subscriptionsManager(context) {
-		//...//	
+	explicit State(Context &context, DropCopy *dropCopy)
+		: context(context)
+		, subscriptionsManager(context)
+		, dropCopy(dropCopy) {
+		//...//
 	}
 
 	~State() {
@@ -188,9 +189,7 @@ Engine::Context::~Context() {
 	delete m_pimpl;
 }
 
-void Engine::Context::Start(
-		const Lib::Ini &conf,
-		const boost::function<DropCopyFactory> &dropCopyFactory) {
+void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
 	
 	GetLog().Debug("Starting...");
 	Assert(!m_pimpl->m_state);
@@ -204,7 +203,7 @@ void Engine::Context::Start(
 	// sub-objects from this DLL:
 	ModuleList moduleDlls;
 	std::unique_ptr<Implementation::State> state(
-		new Implementation::State(*this));
+		new Implementation::State(*this, dropCopy));
 	try {
 		BootContextState(
 			conf,
@@ -213,9 +212,7 @@ void Engine::Context::Start(
 			state->strategies,
 			state->observers,
 			state->services,
-			moduleDlls,
-			state->dropCopy,
-			dropCopyFactory);
+			moduleDlls);
 	} catch (const Lib::Exception &ex) {
 		GetLog().Error("Failed to init engine context: \"%1%\".", ex);
 		throw Exception("Failed to init engine context");
@@ -226,7 +223,7 @@ void Engine::Context::Start(
 	if (state->dropCopy) {
 		const IniSectionRef dropCopyConf(conf, Ini::Sections::dropCopy);
 		try {
-			state->dropCopy->Start(dropCopyConf);
+			state->dropCopy->Start(dropCopyConf, *this);
 		} catch (const Lib::Exception &ex) {
 			GetLog().Error("Failed to start Drop Copy: \"%1%\".", ex);
 			throw Exception("Failed to start Drop Copy");
@@ -455,7 +452,7 @@ void Engine::Context::SyncDispatching() {
 }
 
 DropCopy * Engine::Context::GetDropCopy() const {
-	return m_pimpl->m_state->dropCopy.get();
+	return m_pimpl->m_state->dropCopy;
 }
 
 size_t Engine::Context::GetMarketDataSourcesCount() const {

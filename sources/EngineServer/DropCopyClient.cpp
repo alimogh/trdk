@@ -48,7 +48,7 @@ boost::shared_ptr<DropCopyClient> DropCopyClient::Create(
 
 void DropCopyClient::Connect() {
 
-	m_service.GetLog().Debug("Connecting to \"%1%:%2%\"...", m_host, m_port);
+	m_service.m_log.Debug("Connecting to \"%1%:%2%\"...", m_host, m_port);
 
 	const io::ip::tcp::resolver::query query(m_host, m_port);
 	boost::system::error_code error;
@@ -62,7 +62,7 @@ void DropCopyClient::Connect() {
 		throw ConnectError(errorText.str().c_str());
 	}
 
-	m_service.GetLog().Info("Connected to \"%1%:%2%\".", m_host, m_port);
+	m_service.m_log.Info("Connected to \"%1%:%2%\".", m_host, m_port);
 
 	StartReadMessageSize();
 
@@ -112,13 +112,13 @@ void DropCopyClient::OnNewMessageSize(
 		std::size_t length) {
 	
 	if (error) {
-		m_service.GetLog().Error(
+		m_service.m_log.Error(
 			"Connection error (1):  \"%1%\".",
 			SysError(error.value()));
 		Close();
 		return;
 	} else if (length == 0) {
-		m_service.GetLog().Error(
+		m_service.m_log.Error(
 			"Connection was gracefully closed by remote side (1).");
 		Close();
 		return;
@@ -133,13 +133,13 @@ void DropCopyClient::OnNewMessage(
 		std::size_t length) {
 
 	if (error) {
-		m_service.GetLog().Error(
+		m_service.m_log.Error(
 			"Connection error (2): \"%1%\".",
 			SysError(error.value()));
 		Close();
 		return;
 	} else if (length == 0) {
-		m_service.GetLog().Error(
+		m_service.m_log.Error(
 			"Connection was gracefully closed by remote side (2).");
 		Close();
 		return;
@@ -150,12 +150,12 @@ void DropCopyClient::OnNewMessage(
 	ClientRequest request;
 	try {
 		if (!request.ParseFromArray(&m_inBuffer[0], int(m_inBuffer.size()))) {
-			m_service.GetLog().Error("Failed to parse incoming request.");
+			m_service.m_log.Error("Failed to parse incoming request.");
 			Close();
 			return;
 		}
 	} catch (const google::protobuf::FatalException &ex) {
-		m_service.GetLog().Error("Protocol error: \"%1%\".", ex.what());
+		m_service.m_log.Error("Protocol error: \"%1%\".", ex.what());
 		Close();
 		return;
 	}
@@ -163,7 +163,7 @@ void DropCopyClient::OnNewMessage(
 	try {
 		OnNewRequest(request);
 	} catch (const google::protobuf::FatalException &ex) {
-		m_service.GetLog().Error("Protocol error: \"%1%\".", ex.what());
+		m_service.m_log.Error("Protocol error: \"%1%\".", ex.what());
 		Close();
 		return;
 	}
@@ -176,7 +176,7 @@ void DropCopyClient::OnNewRequest(const ClientRequest &request) {
 			OnKeepAlive();
 			break;
 		default:
-			m_service.GetLog().Error(
+			m_service.m_log.Error(
 				"Unknown request type received: %1%.",
 				request.type());
 			break;
@@ -211,7 +211,7 @@ void DropCopyClient::OnDataSent(
 		const boost::system::error_code &error,
 		size_t /*bytesTransferred*/) {
 	if (error) {
-		m_service.GetLog().Error(
+		m_service.m_log.Error(
 			"Failed to send data: \"%1%\".",
 			SysError(error.value()));
 		Close();
@@ -268,7 +268,7 @@ void DropCopyClient::StartKeepAliveChecker() {
 			}
 			bool expectedState = true;
 			if (!client->m_isClientKeepAliveRecevied.compare_exchange_strong(expectedState, false)) {
-				m_service.GetLog().Error(
+				m_service.m_log.Error(
 					"No keep-alive packet, disconnecting...");
 				client->Close();
 				return;

@@ -37,6 +37,8 @@ namespace trdk { namespace EngineServer {
 
 	class DropCopyService : public trdk::DropCopy {
 
+		friend class trdk::EngineServer::DropCopyClient;
+
 	public:
 
 		typedef DropCopy Base;
@@ -92,7 +94,7 @@ namespace trdk { namespace EngineServer {
 
 		struct Trade {
 			boost::posix_time::ptime time;
-			std::string tradeSystemTradeid;
+			std::string tradeSystemTradeId;
 			boost::uuids::uuid orderId;
 			double price;
 			Qty qty;
@@ -212,16 +214,14 @@ namespace trdk { namespace EngineServer {
 
 		};
 
-		
-
 	public:
 
-		explicit DropCopyService(trdk::Context &, const Lib::IniSectionRef &);
+		explicit DropCopyService(EventsLog &);
 		virtual ~DropCopyService();
 
 	public:
 
-		virtual void Start(const Lib::IniSectionRef &);
+		virtual void Start(const Lib::IniSectionRef &, const Context &);
 
 	public:
 
@@ -249,7 +249,7 @@ namespace trdk { namespace EngineServer {
 
 		virtual void CopyTrade(
 				const boost::posix_time::ptime &,
-				const std::string &tradeSystemTradeid,
+				const std::string &tradeSystemTradeId,
 				const boost::uuids::uuid &orderId,
 				double price,
 				const trdk::Qty &qty,
@@ -295,6 +295,8 @@ namespace trdk { namespace EngineServer {
 		bool SendSync(const trdk::EngineService::DropCopy::ServiceData &);
 
 	private:
+
+		EventsLog &m_log;
 
 		SendList m_sendList;
 		
