@@ -388,9 +388,20 @@ void FixTrading::FillOrderMessage(
 		fix::FIX40::Tags::TransactTime,
 		fix::Timestamp::utc(),
 		fix::TimestampFormat::YYYYMMDDHHMMSSMsec);
-	message.set(fix::FIX40::Tags::OrderQty, qty, 2);
+	if (params.qtyPrecision) {
+		message.set(fix::FIX40::Tags::OrderQty, qty, *params.qtyPrecision);
+	} else {
+		message.set(fix::FIX40::Tags::OrderQty, qty);
+	}
 	if (params.minTradeQty) {
-		message.set(fix::FIX40::Tags::MinQty, *params.minTradeQty, 2);
+		if (params.qtyPrecision) {
+			message.set(
+				fix::FIX40::Tags::MinQty,
+				*params.minTradeQty,
+				*params.qtyPrecision);
+		} else {
+			message.set(fix::FIX40::Tags::MinQty, *params.minTradeQty);
+		}
 	}
 
 	if (!account.empty()) {

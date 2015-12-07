@@ -32,13 +32,13 @@ Triangle::Triangle(
 		const PairLegParams &bc,
 		const PairLegParams &ac,
 		const BestBidAskPairs &bestBidAskRef) 
-	: m_strategy(strategy),
-	m_startTime(m_strategy.GetContext().GetCurrentTime()),
-	m_bestBidAsk(bestBidAskRef),
-	m_report(*this, reportsState),
-	m_id(id),
-	m_y(y),
-	m_aQty(startQty) {
+	: m_strategy(strategy)
+	, m_startTime(m_strategy.GetContext().GetCurrentTime())
+	, m_bestBidAsk(bestBidAskRef)
+	, m_report(*this, reportsState)
+	, m_id(id)
+	, m_y(y)
+	, m_aQty(startQty) {
 
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
 		m_pairsLegs.fill(nullptr);
@@ -95,6 +95,8 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 	boost::shared_ptr<Twd::Position> result;
 
+	const auto qtyPrecision = 2;
+
 	if (pair.isBuy) {
 
 		auto qty = m_aQty;
@@ -136,7 +138,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 
 		Assert(!Lib::IsZero(security.GetAskPrice()));
 
-		const Qty orderQty(Round(qty, 2));
+		const Qty orderQty(Round(qty, qtyPrecision));
 
 		result.reset(
 			new Twd::LongPosition(
@@ -150,7 +152,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				timeMeasurement,
 				pair.id,
 				pair.leg,
-				orderQty));
+				qtyPrecision));
 
 		m_strategy.GetTradingLog().Write(
 			"qty precision\tsell\t%1%\t%2%",
@@ -201,7 +203,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 		AssertLt(0, qty);
 		Assert(!Lib::IsZero(security.GetBidPrice()));
 
-		const Qty orderQty(Round(qty, 2));
+		const Qty orderQty(Round(qty, qtyPrecision));
 
 		result.reset(
 			new Twd::ShortPosition(
@@ -215,7 +217,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 				timeMeasurement,
 				pair.id,
 				pair.leg,
-				orderQty));
+				qtyPrecision));
 
 		m_strategy.GetTradingLog().Write(
 			"qty precision\tsell\t%1%\t%2%",

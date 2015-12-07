@@ -29,7 +29,7 @@ Twd::Position::Position(
 		const TimeMeasurement::Milestones &timeMeasurement,
 		const Pair &pair,
 		const Leg &leg,
-		const Qty &baseCurrencyQty)
+		uint8_t qtyPrecision)
 	: trdk::Position(
 		strategy,
 		triangle.GetId(),
@@ -42,7 +42,8 @@ Twd::Position::Position(
 		timeMeasurement),
 	m_pair(pair),
 	m_leg(leg) {
-	const_cast<OrderParams &>(m_orderParams).minTradeQty = baseCurrencyQty;
+	const_cast<OrderParams &>(m_orderParams).minTradeQty = qty;
+	const_cast<OrderParams &>(m_orderParams).qtyPrecision = qtyPrecision;
 }
 
 Twd::LongPosition::LongPosition(
@@ -56,7 +57,7 @@ Twd::LongPosition::LongPosition(
 		const TimeMeasurement::Milestones &timeMeasurement,
 		const Pair &pair,
 		const Leg &leg,
-		const Qty &baseCurrencyQty)
+		uint8_t qtyPrecision)
 	: trdk::Position(
 		strategy,
 		triangle.GetId(),
@@ -78,7 +79,7 @@ Twd::LongPosition::LongPosition(
 		timeMeasurement,
 		pair,
 		leg,
-		baseCurrencyQty),
+		qtyPrecision),
 	trdk::LongPosition(
 		strategy,
 		triangle.GetId(),
@@ -103,7 +104,7 @@ Twd::ShortPosition::ShortPosition(
 		const TimeMeasurement::Milestones &timeMeasurement,
 		const Pair &pair,
 		const Leg &leg,
-		const Qty &baseCurrencyQty)
+		uint8_t qtyPrecision)
 	: trdk::Position(
 		strategy,
 		triangle.GetId(),
@@ -125,7 +126,7 @@ Twd::ShortPosition::ShortPosition(
 		timeMeasurement,
 		pair,
 		leg,
-		baseCurrencyQty),
+		qtyPrecision),
 	trdk::ShortPosition(
 		strategy,
 		triangle.GetId(),

@@ -79,6 +79,11 @@ namespace trdk {
 		//! Order sent not by strategy.
 		bool isManualOrder;
 
+		//! Defines order quantity precision.
+		/** If set - order quantity will be rounded to this precision.
+		  */
+		boost::optional<uint8_t> qtyPrecision;
+
 		explicit OrderParams()
 			: isManualOrder(false) {
 			//...//

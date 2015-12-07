@@ -33,7 +33,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const Leg &leg,
-				const Qty &baseCurrencyQty);
+				uint8_t qtyPrecision);
 
 	public:
 
@@ -84,7 +84,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const Leg &leg,
-				const Qty &baseCurrencyQty);
+				uint8_t qtyPrecision);
 
 		virtual ~LongPosition() {
 			//...//
@@ -109,7 +109,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const Leg &leg,
-				const Qty &baseCurrencyQty);
+				uint8_t qtyPrecision);
 
 		~ShortPosition() {
 			//...//
