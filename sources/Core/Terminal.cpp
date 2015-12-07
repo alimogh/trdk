@@ -196,7 +196,7 @@ private:
 				} catch (const boost::bad_lexical_cast &) {
 					//...//
 				}
-				if (m_qty <= .0) {
+				if (m_qty <= 0) {
 					throw Exception("Failed to parse qty value");
 				}
 			} else if (boost::iequals(cmd, "price")) {
@@ -286,7 +286,7 @@ private:
 					", filled qty = %3%, remaining qty = %4%, avgPrice = %5%.",
 				orderId,
 				status,
-				trade ? trade->qty : 0,
+				trade ? trade->qty : Qty(0),
 				remaining,
 				trade ? trade->price : 0,
 				TradeSystem::GetStringStatus(status),

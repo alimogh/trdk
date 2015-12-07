@@ -85,12 +85,12 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 
 Security::Bar::Bar(
-			const pt::ptime &time,
-			const pt::time_duration &size,
-			Type type)
-		: time(time),
-		size(size),
-		type(type) {
+		const pt::ptime &time,
+		const pt::time_duration &size,
+		Type type)
+	: time(time)
+	, size(size)
+	, type(type) {
 	//...//
 }
 
@@ -598,14 +598,14 @@ void Security::AddTrade(
 		}
 	}
 	
-	AssertLt(.0, qty);
-	if (useForTradedVolume && qty > .0) {
+	AssertLt(0, qty);
+	if (useForTradedVolume && qty > 0) {
 		for ( ; ; ) {
 			const auto &prevVal
 				= m_pimpl->m_level1[LEVEL1_TICK_TRADING_VOLUME].load();
 			const auto newVal
 				= Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>(
-					IsSet(prevVal) ? prevVal + qty : qty);
+					IsSet(prevVal) ? Qty(prevVal + qty) : qty);
 			if (
 					m_pimpl->CompareAndSetLevel1(
 						time,
@@ -834,14 +834,14 @@ void Security::BookUpdateOperation::Commit(
 				i < m_pimpl->m_book->GetBids().GetSize();
 				++i) {
 			Assert(!IsZero(m_pimpl->m_book->GetBids().GetLevel(i).GetPrice()));
-			AssertNe(.0, m_pimpl->m_book->GetBids().GetLevel(i).GetQty());
+			AssertNe(0, m_pimpl->m_book->GetBids().GetLevel(i).GetQty());
 		}
 		for (
 				size_t i = 0;
 				i < m_pimpl->m_book->GetAsks().GetSize();
 				++i) {
 			Assert(!IsZero(m_pimpl->m_book->GetAsks().GetLevel(i).GetPrice()));
-			AssertNe(.0, m_pimpl->m_book->GetAsks().GetLevel(i).GetQty());
+			AssertNe(0, m_pimpl->m_book->GetAsks().GetLevel(i).GetQty());
 		}
 	}
 #	endif

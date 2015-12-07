@@ -23,15 +23,9 @@ namespace trdk { namespace Lib {
 
 	public:
 
-		explicit Numeric(const ValueType &value = 0)
+		Numeric(const ValueType &value = 0)
 			: m_value(value) {
 			//...//
-		}
-
-		template<typename AnotherValueType>
-		explicit Numeric(const Numeric<AnotherValueType> &&rhs)
-			: m_value(std::move(rhs.m_value)) {
-            //...//
 		}
 
 		void Swap(Numeric &rhs) throw() {
@@ -46,14 +40,8 @@ namespace trdk { namespace Lib {
 			return m_value;
 		}
 
-		template<typename AnotherValueType>
-		Numeric & operator =(const AnotherValueType &rhs) throw() {
+		Numeric & operator =(const ValueType &rhs) throw() {
 			m_value = rhs;
-			return *this;
-		}
-		template<typename AnotherValueType>
-		Numeric & operator =(const Numeric<AnotherValueType> &rhs) throw() {
-			m_value = rhs.m_value;
 			return *this;
 		}
 
@@ -61,7 +49,7 @@ namespace trdk { namespace Lib {
 		friend std::basic_ostream<StreamElem, StreamTraits> & operator <<(
 				std::basic_ostream<StreamElem, StreamTraits> &os,
 				const trdk::Lib::Numeric<ValueType> &numeric) {
-			os << numeric.m_value;
+			os << numeric.Get();
 			return os;
 		}
 
@@ -77,80 +65,50 @@ namespace trdk { namespace Lib {
 
 		template<typename AnotherValueType>
 		bool operator ==(const AnotherValueType &rhs) const {
-			return trdk::Lib::IsEqual(m_value, rhs);
+			return operator ==(Numeric(rhs));
 		}
-		template<typename AnotherValueType>
-		bool operator ==(const Numeric<AnotherValueType> &rhs) const {
+		bool operator ==(const Numeric &rhs) const {
 			return trdk::Lib::IsEqual(m_value, rhs.m_value);
-		}
-		template<typename Lhs>
-		friend bool operator ==(const Lhs &lhs, const Numeric<ValueType> &rhs) {
-			return trdk::Lib::IsEqual(lhs, rhs.m_value);
 		}
 
 		template<typename AnotherValueType>
 		bool operator !=(const AnotherValueType &rhs) const {
-			return !trdk::Lib::IsEqual(m_value, rhs);
+			return operator !=(Numeric(rhs));
 		}
-		template<typename AnotherValueType>
-		bool operator !=(const Numeric<AnotherValueType> &rhs) const {
+		bool operator !=(const Numeric &rhs) const {
 			return !trdk::Lib::IsEqual(m_value, rhs.m_value);
-		}
-		template<typename Lhs>
-		friend bool operator !=(const Lhs &lhs, const Numeric<ValueType> &rhs) {
-			return rhs != lhs;
 		}
 
 		template<typename AnotherValueType>
 		bool operator <(const AnotherValueType &rhs) const {
 			return m_value < rhs;
 		}
-		template<typename AnotherValueType>
-		bool operator <(const Numeric<AnotherValueType> &rhs) const {
+		bool operator <(const Numeric &rhs) const {
 			return m_value < rhs.m_value;
-		}
-		template<typename Lhs>
-		friend bool operator <(const Lhs &lhs, const Numeric<ValueType> &rhs) {
-			return lhs < rhs.m_value;
 		}
 
 		template<typename AnotherValueType>
 		bool operator <=(const AnotherValueType &rhs) const {
 			return m_value <= rhs;
 		}
-		template<typename AnotherValueType>
-		bool operator <=(const Numeric<AnotherValueType> &rhs) const {
+		bool operator <=(const Numeric &rhs) const {
 			return m_value <= rhs.m_value;
-		}
-		template<typename Lhs>
-		friend bool operator <=(const Lhs &lhs, const Numeric<ValueType> &rhs) {
-			return  lhs <= rhs.m_value;
 		}
 
 		template<typename AnotherValueType>
 		bool operator >(const AnotherValueType &rhs) const {
 			return m_value > rhs;
 		}
-		template<typename AnotherValueType>
-		bool operator >(const Numeric<AnotherValueType> &rhs) const {
+		bool operator >(const Numeric &rhs) const {
 			return m_value > rhs.m_value;
-		}
-		template<typename Lhs>
-		friend bool operator >(const Lhs &lhs, const Numeric<ValueType> &rhs) {
-			return lhs > rhs.m_value;
 		}
 
 		template<typename AnotherValueType>
 		bool operator >=(const AnotherValueType &rhs) const {
 			return m_value >= rhs;
 		}
-		template<typename AnotherValueType>
-		bool operator >=(const Numeric<AnotherValueType> &rhs) const {
+		bool operator >=(const Numeric &rhs) const {
 			return m_value >= rhs.m_value;
-		}
-		template<typename Lhs>
-		friend bool operator >=(const Lhs &lhs, const Numeric<ValueType> &rhs) {
-			return lhs >= rhs.m_value;
 		}
 
 	public:
@@ -160,15 +118,9 @@ namespace trdk { namespace Lib {
 			m_value += rhs;
 			return *this;
 		}
-		template<typename AnotherValueType>
-		Numeric & operator +=(const Numeric<AnotherValueType> &rhs) {
+		Numeric & operator +=(const Numeric &rhs) {
 			m_value += rhs.m_value;
 			return *this;
-		}
-		template<typename Lhs>
-		friend Lhs & operator +=(Lhs &lhs, const Numeric<ValueType> &rhs) {
-			lhs += rhs.m_value;
-			return lhs;
 		}
 
 		template<typename AnotherValueType>
@@ -176,31 +128,19 @@ namespace trdk { namespace Lib {
 			m_value -= rhs;
 			return *this;
 		}
-		template<typename AnotherValueType>
-		Numeric & operator -=(const Numeric<AnotherValueType> &rhs) {
+		Numeric & operator -=(const Numeric &rhs) {
 			m_value -= rhs.m_value;
 			return *this;
 		}
-		template<typename Lhs>
-		friend Lhs & operator -=(Lhs &lhs, const Numeric<ValueType> &rhs) {
-			lhs -= rhs.m_value;
-			return lhs;
-		}
 
 		template<typename AnotherValueType>
-		Numeric & operator *=(const AnotherValueType &rhs) {
+		Numeric & operator *=(const Numeric &rhs) {
 			m_value *= rhs;
 			return *this;
 		}
-		template<typename AnotherValueType>
-		Numeric & operator *=(const Numeric<AnotherValueType> &rhs) {
+		Numeric & operator *=(const Numeric &rhs) {
 			m_value *= rhs.m_value;
 			return *this;
-		}
-		template<typename Lhs>
-		friend Lhs & operator *=(Lhs &lhs, const Numeric<ValueType> &rhs) {
-			lhs *= rhs.m_value;
-			return lhs;
 		}
 
 		template<typename AnotherValueType>
@@ -208,72 +148,41 @@ namespace trdk { namespace Lib {
 			m_value /= rhs;
 			return *this;
 		}
-		template<typename AnotherValueType>
-		Numeric & operator /=(const Numeric<AnotherValueType> &rhs) {
+		Numeric & operator /=(const Numeric &rhs) {
 			m_value /= rhs.m_value;
 			return *this;
-		}
-		template<typename Lhs>
-		friend Lhs & operator /=(Lhs &lhs, const Numeric<ValueType> &rhs) {
-			lhs /= rhs.m_value;
-			return lhs;
 		}
 
 		template<typename AnotherValueType>
 		Numeric operator +(const AnotherValueType &rhs) const {
 			return Numeric(m_value + rhs);
 		}
-		template<typename AnotherValueType>
-		Numeric operator +(const Numeric<AnotherValueType> &rhs) const {
+		Numeric operator +(const Numeric &rhs) const {
 			return Numeric(m_value + rhs.m_value);
-		}
-		template<typename Lhs>
-		friend Numeric<ValueType> operator +(
-				const Lhs &lhs,
-				const Numeric<ValueType> &rhs) {
-			return Numeric<ValueType>(lhs + rhs.m_value);
 		}
 
 		template<typename AnotherValueType>
 		Numeric operator -(const AnotherValueType &rhs) const {
 			return Numeric(m_value - rhs);
 		}
-		template<typename AnotherValueType>
-		Numeric operator -(const Numeric<AnotherValueType> &rhs) const {
+		Numeric operator -(const Numeric &rhs) const {
 			return Numeric(m_value - rhs.m_value);
-		}
-		template<typename Lhs>
-		friend Numeric<ValueType> operator -(
-				const Lhs &lhs,
-				const Numeric<ValueType> &rhs) {
-			return lhs - rhs.m_value;
 		}
 
 		template<typename AnotherValueType>
 		Numeric operator *(const AnotherValueType &rhs) const {
 			return Numeric(m_value * rhs);
 		}
-		template<typename AnotherValueType>
-		Numeric operator *(const Numeric<AnotherValueType> &rhs) const {
+		Numeric operator *(const Numeric &rhs) const {
 			return Numeric(m_value * rhs.m_value);
-		}
-		friend Numeric<ValueType> operator *(
-				const ValueType &lhs,
-				const Numeric<ValueType> &rhs) {
-			return Numeric<ValueType>(lhs * rhs.m_value);
 		}
 
 		template<typename AnotherValueType>
 		Numeric operator /(const AnotherValueType &rhs) const {
 			return Numeric(m_value / rhs);
 		}
-		template<typename AnotherValueType>
-		Numeric operator /(const Numeric<AnotherValueType> &rhs) const {
+		Numeric operator /(const Numeric &rhs) const {
 			return Numeric(m_value / rhs.m_value);
-		}
-		template<typename Lhs>
-		friend Lhs operator /(const Lhs &lhs, const Numeric<ValueType> &rhs) {
-			return lhs / rhs.m_value;
 		}
 
 	private:

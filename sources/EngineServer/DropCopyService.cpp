@@ -387,7 +387,7 @@ ServiceData DropCopyService::SendList::CreateMessage(
 			message.bestBidPrice ? *message.bestBidPrice : 0,
 			message.bestBidQty ? *message.bestBidQty : Qty(0),
 			message.bestAskPrice ? *message.bestAskPrice : 0,
-			message.bestAskQty ? *message.bestAskQty : Qty(0),
+			message.bestAskQty ? *message.bestAskQty: Qty(0),
 			*order.mutable_top_of_book());
 	}
 

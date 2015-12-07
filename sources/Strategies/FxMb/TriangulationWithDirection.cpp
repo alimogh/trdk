@@ -258,11 +258,11 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 		return;
 	}
 
-	Assert(!position.IsCompleted() || position.GetOpenedQty() == .0);
+	Assert(!position.IsCompleted() || position.GetOpenedQty() == 0);
 
 	Twd::Position &order = dynamic_cast<Twd::Position &>(position);
 
-	if (order.GetOpenedQty() == .0) {
+	if (order.GetOpenedQty() == 0) {
 	
 		Assert(order.IsCompleted());
 		Assert(IsZero(order.GetCloseStartPrice()));
@@ -341,7 +341,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 		AssertLt(0, order.GetOpenedQty());
 		AssertEq(LEG1, order.GetLeg());
 
-		if (order.GetActiveQty() == .0) {
+		if (order.GetActiveQty() == 0) {
 			Assert(order.IsCompleted());
 			const auto &execReportDelay = position.GetTimeMeasurement().Measure(
 				TimeMeasurement::SM_STRATEGY_EXECUTION_REPLY_1);
@@ -367,7 +367,7 @@ void TriangulationWithDirection::OnPositionUpdate(trdk::Position &position) {
 	Assert(!order.IsCompleted()); 
  	Assert(order.IsOpened());
 	Assert(IsZero(order.GetCloseStartPrice()));
-	AssertEq(.0, order.GetClosedQty());
+	AssertEq(0, order.GetClosedQty());
 	Assert(!order.HasActiveOrders());
 
 	const auto &leg = order.GetLeg();

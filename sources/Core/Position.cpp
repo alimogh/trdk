@@ -251,8 +251,8 @@ public:
 			AssertEq(0, m_closed.price.count);
 			Assert(m_opened.time.is_not_a_date_time());
 			Assert(m_closed.time.is_not_a_date_time());
-			AssertLe(Qty(m_opened.qty), m_planedQty);
-			AssertEq(Qty(0), m_closed.qty);
+			AssertLe(m_opened.qty, m_planedQty);
+			AssertEq(0, m_closed.qty);
 			Assert(m_opened.hasOrder);
 			Assert(!m_closed.hasOrder);
 
@@ -273,17 +273,17 @@ public:
 				case TradeSystem::ORDER_STATUS_REQUESTED_CANCEL:
 					AssertFail("Status can be set only by this object.");
 				case TradeSystem::ORDER_STATUS_SUBMITTED:
-					AssertEq(Qty(0), m_opened.qty);
+					AssertEq(0, m_opened.qty);
 					AssertEq(0, m_opened.price.total);
 					AssertEq(0, m_opened.price.count);
 					AssertEq(
-						Qty(m_planedQty
+						m_planedQty
 							+	(m_oppositePosition
 									?	m_oppositePosition->GetActiveQty()
-									:	0)),
+									:	Qty(0)),
 						remainingQty);
 					Assert(!trade);
-					AssertLt(.0, remainingQty);
+					AssertLt(0, remainingQty);
 					return;
 				case TradeSystem::ORDER_STATUS_FILLED:
 					if (!trade) {
@@ -310,7 +310,7 @@ public:
 								= m_oppositePosition->m_pimpl->m_closed.qty
 									+ filledForOpposite;
 							AssertLt(
-								Qty(0),
+								0,
 								m_oppositePosition->m_pimpl->m_closed.qty);
 							m_oppositePosition->m_pimpl->ReportClosingUpdate(
 								"filled",
@@ -318,23 +318,23 @@ public:
 								orderStatus);
 							updatedOppositePosition = m_oppositePosition;
 						}
-						if (tradeQty != .0) {
+						if (tradeQty != 0) {
 							AssertEq(
-								Qty(m_opened.qty + tradeQty + remainingQty),
+								m_opened.qty + tradeQty + remainingQty,
 								m_planedQty);
 							m_opened.price.total += trade->price;
 							++m_opened.price.count;
 							m_opened.qty = m_opened.qty + tradeQty;
-							AssertLe(Qty(0), m_opened.qty);
+							AssertLe(0, m_opened.qty);
 							ReportOpeningUpdate(
 								"filled",
 								tradeSystemOrderId,
 								orderStatus);
 						} else {
-							AssertNe(.0, remainingQty);
+							AssertNe(0, remainingQty);
 						}
 					}
-					isCompleted = remainingQty == .0;
+					isCompleted = remainingQty == 0;
 					CopyTrade(
 						trade->id,
 						m_security.DescalePrice(trade->price),
@@ -391,7 +391,7 @@ public:
 			}
 	
 			if (m_oppositePosition) {
-				if (m_oppositePosition->GetActiveQty() == .0) {
+				if (m_oppositePosition->GetActiveQty() == 0) {
 					try {
 						m_oppositePosition->m_pimpl->m_closed.time
 							= m_security.GetContext().GetCurrentTime();
@@ -415,10 +415,10 @@ public:
 
 			if (isCompleted) {
 
-				AssertLe(Qty(m_opened.qty), m_planedQty);
+				AssertLe(m_opened.qty, m_planedQty);
 				Assert(m_opened.time.is_not_a_date_time());
 
-				if (m_position.GetOpenedQty() > .0) {
+				if (m_position.GetOpenedQty() > 0) {
 					try {
 						m_opened.time
 							= m_security.GetContext().GetCurrentTime();
@@ -464,8 +464,8 @@ public:
 			Assert(!m_position.IsCompleted());
 			Assert(!m_opened.time.is_not_a_date_time());
 			Assert(m_closed.time.is_not_a_date_time());
-			AssertLe(Qty(m_opened.qty), m_planedQty);
-			AssertLe(Qty(m_closed.qty), m_opened.qty);
+			AssertLe(m_opened.qty, m_planedQty);
+			AssertLe(m_closed.qty, m_opened.qty);
 			AssertNe(orderId, 0);
 			AssertNe(m_closed.orderId, 0);
 			AssertNe(m_opened.orderId, orderId);
@@ -488,22 +488,22 @@ public:
 				case TradeSystem::ORDER_STATUS_REQUESTED_CANCEL:
 					AssertFail("Status can be set only by this object.");
 				case TradeSystem::ORDER_STATUS_SUBMITTED:
-					AssertEq(Qty(m_closed.qty), .0);
+					AssertEq(m_closed.qty, 0);
 					AssertEq(m_closed.price.total, 0);
 					AssertEq(m_closed.price.count, 0);
-					AssertLt(.0, remainingQty);
+					AssertLt(0, remainingQty);
 					return;
 				case TradeSystem::ORDER_STATUS_FILLED:
 					if (!trade) {
 						throw Exception("Filled order has no trade information");
 					}
-					AssertEq(Qty(trade->qty + remainingQty), m_opened.qty);
-					AssertLe(Qty(m_closed.qty + trade->qty), m_opened.qty);
+					AssertEq(trade->qty + remainingQty, m_opened.qty);
+					AssertLe(m_closed.qty + trade->qty, m_opened.qty);
 					AssertLt(0, trade->price);
 					m_closed.price.total += trade->price;
 					++m_closed.price.count;
 					m_closed.qty = m_closed.qty + trade->qty;
-					AssertGt(Qty(m_closed.qty), .0);
+					AssertGt(m_closed.qty, 0);
 					ReportClosingUpdate(
 						"filled",
 						tradeSystemOrderId,
@@ -513,7 +513,7 @@ public:
 						m_security.DescalePrice(trade->price),
 						trade->qty,
 						false);
-					if (remainingQty != .0) {
+					if (remainingQty != 0) {
 						return;
 					}
 					break;
@@ -540,10 +540,10 @@ public:
 					break;
 			}
 	
-			AssertLe(Qty(m_opened.qty), m_planedQty);
+			AssertLe(m_opened.qty, m_planedQty);
 			Assert(m_closed.time.is_not_a_date_time());
 
-			if (m_position.GetActiveQty() == .0) {
+			if (m_position.GetActiveQty() == 0) {
 				try {
 					m_closed.time = m_security.GetContext().GetCurrentTime();
 				} catch (...) {
@@ -744,9 +744,9 @@ public:
 		Assert(!m_position.IsClosed());
 		Assert(!m_position.IsCompleted());
 		Assert(!m_position.HasActiveOrders());
-		AssertLt(Qty(0), m_planedQty);
-		AssertEq(Qty(0), m_opened.qty);
-		AssertEq(Qty(0), m_closed.qty);
+		AssertLt(0, m_planedQty);
+		AssertEq(0, m_opened.qty);
+		AssertEq(0, m_closed.qty);
 		Assert(m_opened.time.is_not_a_date_time());
 		Assert(m_closed.time.is_not_a_date_time());
 
@@ -1087,7 +1087,7 @@ private:
 				?	&*orderParams->minTradeQty
 				:	nullptr,
 			nullptr /* user */,
-			Qty(directionData.qty.load()),
+			directionData.qty.load(),
 			status == TradeSystem::ORDER_STATUS_SENT ? &bidPrice : nullptr,
 			status == TradeSystem::ORDER_STATUS_SENT ? &bidQty : nullptr,
 			status == TradeSystem::ORDER_STATUS_SENT ? &askPrice : nullptr,
@@ -1229,13 +1229,13 @@ Position::CloseType Position::GetCloseType() const throw() {
 }
 
 bool Position::IsOpened() const throw() {
-	return !HasActiveOpenOrders() && GetOpenedQty() > .0;
+	return !HasActiveOpenOrders() && GetOpenedQty() > 0;
 }
 bool Position::IsClosed() const throw() {
 	return
 		!HasActiveOrders()
-		&& GetOpenedQty() > .0
-		&& GetActiveQty() == .0;
+		&& GetOpenedQty() > 0
+		&& GetActiveQty() == 0;
 }
 
 bool Position::IsStarted() const throw() {
@@ -1245,7 +1245,7 @@ bool Position::IsStarted() const throw() {
 bool Position::IsCompleted() const throw() {
 	return
 		m_pimpl->m_isMarketAsCompleted
-		|| (IsStarted() && !HasActiveOrders() && GetActiveQty() == .0);
+		|| (IsStarted() && !HasActiveOrders() && GetActiveQty() == 0);
 }
 
 void Position::MarkAsCompleted() {
@@ -1372,7 +1372,7 @@ OrderId Position::GetCloseOrderId() const throw() {
 }
 
 Qty Position::GetClosedQty() const throw() {
-	return Qty(m_pimpl->m_closed.qty.load());
+	return m_pimpl->m_closed.qty.load();
 }
 
 Position::Time Position::GetCloseTime() const {
@@ -1395,7 +1395,7 @@ Position::StateUpdateConnection Position::Subscribe(
 }
 
 Qty Position::GetPlanedQty() const {
-	return Qty(m_pimpl->m_planedQty.load());
+	return m_pimpl->m_planedQty.load();
 }
 
 const ScaledPrice & Position::GetOpenStartPrice() const {
@@ -1406,7 +1406,7 @@ OrderId Position::GetOpenOrderId() const throw() {
 	return m_pimpl->m_opened.orderId;
 }
 Qty Position::GetOpenedQty() const throw() {
-	return Qty(m_pimpl->m_opened.qty.load());
+	return m_pimpl->m_opened.qty.load();
 }
 void Position::SetOpenedQty(const Qty &newQty) const throw() {
 	const Implementation::WriteLock lock(m_pimpl->m_mutex);
@@ -1893,7 +1893,7 @@ OrderId LongPosition::DoCloseImmediatelyOrCancel(
 		const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	AssertLt(.0, qty);
+	AssertLt(0, qty);
 	return GetTradeSystem().SellImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
@@ -1917,7 +1917,7 @@ OrderId LongPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
 		const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	AssertLt(.0, qty);
+	AssertLt(0, qty);
 	return GetTradeSystem().SellAtMarketPriceImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),

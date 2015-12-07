@@ -56,7 +56,7 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 				bids.emplace_back(
 					time,
 					ConvertToDouble(level.price()),
-					Qty(ConvertToDouble(level.amount())));
+					ConvertToDouble(level.amount()));
 			}
 
 			std::vector<Book::Level> asks;
@@ -66,7 +66,7 @@ namespace trdk { namespace Interaction { namespace OnixsHotspot {
 				asks.emplace_back(
 					time,
 					ConvertToDouble(level.price()),
-					Qty(ConvertToDouble(level.amount())));
+					ConvertToDouble(level.amount()));
 			}
 
 			BookUpdateOperation book = StartBookUpdate(time, false);
