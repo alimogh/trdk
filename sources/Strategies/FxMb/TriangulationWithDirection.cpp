@@ -734,7 +734,7 @@ namespace {
 		bool IsPair1Slower(const Pair &pair1, const Pair &pair2) const {
 
 			for (size_t i = 0; i < numberOfSpeeds; ++i) {
-				if (m_speed[pair1][i] >= m_speed[pair2][i]) {
+				if (fabs(m_speed[pair1][i]) >= fabs(m_speed[pair2][i])) {
 					return false;
 				}
 			}
