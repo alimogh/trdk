@@ -479,7 +479,7 @@ void Engine::Context::ForEachMarketDataSource(
 		size_t i = 0;
 #	endif
 	foreach (const auto &source, m_pimpl->m_marketDataSources) {
-		AssertEq(i, source->GetIndex());
+		AssertEq(i++, source->GetIndex());
 		if (!pred(*source)) {
 			return;
 		}
