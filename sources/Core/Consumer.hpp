@@ -49,8 +49,6 @@ namespace trdk {
 				bool isInitial)
 				= 0;
 
-
-
 	protected:
 		
 		virtual void OnLevel1Tick(

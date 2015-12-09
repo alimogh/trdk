@@ -24,6 +24,7 @@ namespace trdk {
 	public:
 
 		typedef trdk::ModuleEventsLog Log;
+		typedef trdk::ModuleTradingLog TradingLog;
 
 		class TRDK_CORE_API SecurityList;
 
@@ -58,6 +59,7 @@ namespace trdk {
 	public:
 
 		trdk::Module::Log & GetLog() const throw();
+		trdk::Module::TradingLog & GetTradingLog() const throw();
 
 	public:
 

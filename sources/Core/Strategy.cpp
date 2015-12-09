@@ -13,7 +13,6 @@
 #include "RiskControl.hpp"
 #include "Service.hpp"
 #include "Settings.hpp"
-#include "TradingLog.hpp"
 #ifndef BOOST_WINDOWS
 #	include <signal.h>
 #endif
@@ -293,8 +292,6 @@ public:
 	const std::string m_title;
 	const TradingMode m_tradingMode;
 
-	Strategy::TradingLog m_tradingLog;
-
 	const std::unique_ptr<RiskControlScope> m_riskControlScope;
 	
 	boost::atomic_bool m_isEnabled;
@@ -320,9 +317,6 @@ public:
 			ConvertTradingModeFromString(conf.ReadKey("trading_mode"))),
 		m_isEnabled(conf.ReadBoolKey("is_enabled")),
 		m_isBlocked(false),
-		m_tradingLog(
-			m_strategy.GetTag(),
-			m_strategy.GetContext().GetTradingLog()),
 		m_riskControlScope(
 			m_strategy.GetContext().GetRiskControl(m_tradingMode).CreateScope(
 				m_strategy.GetTag(),
@@ -421,10 +415,6 @@ RiskControlScope & Strategy::GetRiskControlScope() {
 
 TradeSystem & Strategy::GetTradeSystem(size_t index) {
 	return GetContext().GetTradeSystem(index, GetTradingMode());
-}
-
-Strategy::TradingLog & Strategy::GetTradingLog() const throw() {
-	return m_pimpl->m_tradingLog;
 }
 
 void Strategy::OnLevel1Update(

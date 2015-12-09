@@ -14,6 +14,7 @@
 #include "Service.hpp"
 #include "Security.hpp"
 #include "EventsLog.hpp"
+#include "TradingLog.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -83,12 +84,12 @@ void Module::SecurityList::Iterator::advance(difference_type n) {
 }
 
 Module::SecurityList::ConstIterator::ConstIterator(Implementation *pimpl)
-		: m_pimpl(pimpl) {
+	: m_pimpl(pimpl) {
 	Assert(m_pimpl);
 }
 
 Module::SecurityList::ConstIterator::ConstIterator(const Iterator &rhs)
-		: m_pimpl(new Implementation(rhs.m_pimpl->iterator)) {
+	: m_pimpl(new Implementation(rhs.m_pimpl->iterator)) {
 	//...//
 }
 
@@ -147,10 +148,10 @@ namespace {
 	boost::atomic<Module::InstanceId> nextFreeInstanceId(1);
 	
 	std::string FormatStringId(
-				const Module::InstanceId &instanceId,
-				const std::string &typeName,
-				const std::string &name,
-				const std::string &tag) {
+			const Module::InstanceId &instanceId,
+			const std::string &typeName,
+			const std::string &name,
+			const std::string &tag) {
 		std::ostringstream result;
 		result << typeName << '.' << name;
 		if (name != tag) {
@@ -178,31 +179,32 @@ public:
 	const std::string m_stringId;
 
 	Module::Log m_log;
+	Module::TradingLog m_tradingLog;
 
 	explicit Implementation(
-				Context &context,
-				const std::string &typeName,
-				const std::string &name,
-				const std::string &tag)
-			: m_instanceId(nextFreeInstanceId++),
-			m_context(context),
-			m_typeName(typeName),
-			m_name(name),
-			m_tag(tag),
-			m_stringId(
-				FormatStringId(m_instanceId, m_typeName, m_name, m_tag)),
-			m_log(m_stringId, m_context.GetLog()) {
+			Context &context,
+			const std::string &typeName,
+			const std::string &name,
+			const std::string &tag)
+		: m_instanceId(nextFreeInstanceId++)
+		, m_context(context)
+		, m_typeName(typeName)
+		, m_name(name)
+		, m_tag(tag)
+		, m_stringId(FormatStringId(m_instanceId, m_typeName, m_name, m_tag))
+		, m_log(m_stringId, m_context.GetLog())
+		, m_tradingLog(m_tag, m_context.GetTradingLog()) {
 		Assert(nextFreeInstanceId.is_lock_free());
 	}
 
 };
 
 Module::Module(
-			Context &context,
-			const std::string &typeName,
-			const std::string &name,
-			const std::string &tag)
-		: m_pimpl(new Implementation(context, typeName, name, tag)) {
+		Context &context,
+		const std::string &typeName,
+		const std::string &name,
+		const std::string &tag)
+	: m_pimpl(new Implementation(context, typeName, name, tag)) {
 	//...//
 }
 
@@ -248,6 +250,10 @@ const Context & Module::GetContext() const {
 
 Module::Log & Module::GetLog() const throw() {
 	return m_pimpl->m_log;
+}
+
+Module::TradingLog & Module::GetTradingLog() const throw() {
+	return m_pimpl->m_tradingLog;
 }
 
 std::string Module::GetRequiredSuppliers() const {

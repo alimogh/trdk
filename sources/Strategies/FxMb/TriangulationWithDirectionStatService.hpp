@@ -120,12 +120,19 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			boost::posix_time::ptime time;
 			Security::Book::Side bidsBook;
 			Security::Book::Side asksBook;
+			mutable bool isReported;
 		};
 
 		struct PriceLevel {
 			
 			double price;
 			Qty qty;
+
+			PriceLevel()
+				: price(0)
+				, qty(0) {
+				//...//
+			}
 			
 			bool operator <(const PriceLevel &rhs) const {
 				return price < rhs.price;
@@ -134,7 +141,14 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				return price > rhs.price;
 			}
 		
+			void Reset() {
+				price = 0;
+				qty = 0;
+			}
+
 		};
+
+		class ServiceLog;
 
 	public:
 
@@ -180,10 +194,16 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		void UpdateNumberOfUpdates(const Security::Book &);
 
+		void InitLog(ServiceLog &, std::ofstream &, const std::string &) const;
+		void LogState(bool isUpdateUsed) const;
+
 	private:
 
 		const size_t m_bookLevelsCount;
 		
+		const boost::posix_time::time_duration m_period1;
+		const boost::posix_time::time_duration m_period2;
+
 		double m_emaSpeedSlow;
 		double m_emaSpeedFast;
 
@@ -201,6 +221,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		std::vector<PriceLevel> m_aggregatedBidsCache;
 		std::vector<PriceLevel> m_aggregatedAsksCache;
+
+		mutable bool m_isLogByPairEnabled;
+		mutable std::ofstream m_pairLogFile;
+		std::unique_ptr<ServiceLog> m_pairLog;
+		mutable size_t m_pairLogNumberOfRows;
 
 	};
 

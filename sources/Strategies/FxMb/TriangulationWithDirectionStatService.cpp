@@ -12,7 +12,7 @@
 #include "TriangulationWithDirectionStatService.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Settings.hpp"
-#include "Core/AsyncLog.hpp"
+#include "Core/TradingLog.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -23,6 +23,81 @@ using namespace trdk::Lib;
 using namespace trdk::Strategies::FxMb;
 using namespace trdk::Strategies::FxMb::Twd;
 
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+	class ServiceLogRecord : public AsyncLogRecord {
+	public:
+		explicit ServiceLogRecord(
+				const Log::Time &time,
+				const Log::ThreadId &threadId)
+			: AsyncLogRecord(time, threadId) {
+			//...//
+		}
+	public:
+		const ServiceLogRecord & operator >>(std::ostream &os) const {
+			Dump(os, ",");
+			return *this;
+		}
+	};
+
+	inline std::ostream & operator <<(
+			std::ostream &os,
+			const ServiceLogRecord &record) {
+		record >> os;
+		return os;
+	}
+
+	class ServiceLogOutStream : private boost::noncopyable {
+	public:
+		void Write(const ServiceLogRecord &record) {
+			m_log.Write(record);
+		}
+		bool IsEnabled() const {
+			return m_log.IsEnabled();
+		}
+		void EnableStream(std::ostream &os) {
+			m_log.EnableStream(os, false);
+		}
+		Log::Time GetTime() {
+			return std::move(m_log.GetTime());
+		}
+		Log::ThreadId GetThreadId() const {
+			return std::move(m_log.GetThreadId());
+		}
+	private:
+		Log m_log;
+	};
+
+	typedef trdk::AsyncLog<
+			ServiceLogRecord,
+			ServiceLogOutStream,
+			TRDK_CONCURRENCY_PROFILE>
+		ServiceLogBase;
+
+}
+
+class StatService::ServiceLog : private ServiceLogBase {
+
+public:
+
+	typedef ServiceLogBase Base;
+
+public:
+
+	using Base::IsEnabled;
+	using Base::EnableStream;
+
+	template<typename FormatCallback>
+	void Write(const FormatCallback &formatCallback) {
+		FormatAndWrite(formatCallback);
+	}
+
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 std::vector<StatService *> StatService::m_instancies;
 
 StatService::StatService(
@@ -31,11 +106,16 @@ StatService::StatService(
 		const IniSectionRef &conf)
 	: Base(context, "TriangulationWithDirectionStatService", tag)
 	, m_bookLevelsCount(
-	 	conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count"))
+		conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count"))
+	, m_period1(pt::milliseconds(500))
+	, m_period2(pt::seconds(2))
 	, m_emaSpeedSlow(conf.ReadTypedKey<double>("ema_speed_slow"))
 	, m_emaSpeedFast(conf.ReadTypedKey<double>("ema_speed_fast"))
 	, m_slowEmaAcc(accs::tag::ema_speed::speed = m_emaSpeedSlow)
-	, m_fastEmaAcc(accs::tag::ema_speed::speed = m_emaSpeedFast) {
+	, m_fastEmaAcc(accs::tag::ema_speed::speed = m_emaSpeedFast)
+	, m_isLogByPairEnabled(conf.ReadBoolKey("log.pair"))
+	, m_pairLog(new ServiceLog)
+	, m_pairLogNumberOfRows(0) {
 
 	m_stat = {};
 
@@ -83,26 +163,10 @@ bool StatService::OnBookUpdateTick(
 	// price level or price level updated).
 
 	// Store each book update as "last book" to calculate stat by each book
-	// tick. But only if it has changes in top n-lines - if there are no
-	// changes in top lines - skip calculation and trading.
+	// tick.
 	{
 		Source &source = m_sources[security.GetSource().GetIndex()];
 		Assert(source.security == &security);
-		bool hasChanges = source.bidsBook.GetSize() != book.GetBids().GetSize();
-		for (
-			size_t i = 0;
-			!hasChanges && i < std::min(m_bookLevelsCount, book.GetBids().GetSize());
-			hasChanges = source.bidsBook.GetLevel(i) != book.GetBids().GetLevel(i), ++i);
-		if (!hasChanges) {
-			hasChanges = source.asksBook.GetSize() != book.GetAsks().GetSize();
-			for (
-				size_t i = 0;
-				!hasChanges && i < std::min(m_bookLevelsCount, book.GetAsks().GetSize());
-				hasChanges = source.asksBook.GetLevel(i) != book.GetAsks().GetLevel(i), ++i);
-			if (!hasChanges) {
-				return false;
-			}
-		}
 		Assert(
 			source.time == pt::not_a_date_time
 			|| source.time <= book.GetTime());
@@ -118,11 +182,43 @@ bool StatService::OnBookUpdateTick(
 	for (size_t i = 0; i < m_bookLevelsCount; ++i) {
 
 		PriceLevel &bid = m_aggregatedBidsCache[i];
+		bid.Reset();
+
 		PriceLevel &ask = m_aggregatedAsksCache[i];
+		ask.Reset();
 
 		foreach (const Source &source, m_sources) {
 
-			if (source.bidsBook.GetSize() > i) {
+			if (
+					source.bidsBook.GetSize() <= i
+					|| source.asksBook.GetSize() <= i) {
+				if (!source.isReported) {
+					GetTradingLog().Write(
+						"insufficient book data\t%1%\t%2%\t%3%x%4%",
+						[&](TradingRecord &record) {
+							record
+								% source.security->GetSymbol().GetSymbol()
+								% source.security->GetSource().GetTag()
+								% source.bidsBook.GetSize()
+								% source.asksBook.GetSize();
+						});
+					source.isReported = true;
+				}
+				return false;
+			} else if (source.isReported && i + 1 == m_bookLevelsCount) {
+				GetTradingLog().Write(
+					"book data received\t%1%\t%2%\t%3%x%4%",
+					[&](TradingRecord &record) {
+						record
+							% source.security->GetSymbol().GetSymbol()
+							% source.security->GetSource().GetTag()
+							% source.bidsBook.GetSize()
+							% source.asksBook.GetSize();
+					});
+				source.isReported = false;
+			}
+
+			{
 				const auto &sourceBid = source.bidsBook.GetLevel(i);
 				Assert(!IsZero(sourceBid.GetPrice()));
 				Assert(!IsZero(sourceBid.GetQty()));
@@ -136,7 +232,7 @@ bool StatService::OnBookUpdateTick(
 				}
 			}
 
-			if (source.asksBook.GetSize() > i) {
+			{
 				const auto &sourceAsk = source.asksBook.GetLevel(i);
 				Assert(!IsZero(sourceAsk.GetPrice()));
 				Assert(!IsZero(sourceAsk.GetQty()));
@@ -150,11 +246,9 @@ bool StatService::OnBookUpdateTick(
 
 		}
 
-		if (IsZero(bid.price) || IsZero(ask.price)) {
-			return false;
-		}
-
+		Assert(!IsZero(bid.price));
 		Assert(!IsZero(bid.qty));
+		Assert(!IsZero(ask.price));
 		Assert(!IsZero(ask.price));
 
 	}
@@ -245,29 +339,27 @@ bool StatService::OnBookUpdateTick(
 	// accumulates values for EMA:
 	m_slowEmaAcc(point.theo);
 	// gets current EMA value:
-	point.emaSlow = Round(
-		accs::ema(m_slowEmaAcc),
-		security.GetPriceScale());
+	point.emaSlow = Round(accs::ema(m_slowEmaAcc), security.GetPriceScale());
 
 	// accumulates values for EMA:
 	m_fastEmaAcc(point.theo);
 	// gets current EMA value:
-	point.emaFast = Round(
-		accs::ema(m_fastEmaAcc),
-		security.GetPriceScale());
+	point.emaFast = Round(accs::ema(m_fastEmaAcc), security.GetPriceScale());
 
 	////////////////////////////////////////////////////////////////////////////////
 	// Preparing previous 2 points for actual strategy work:
 	
 	m_history.push_back(point);
-	const auto &p2Time = point.time - pt::milliseconds(2000);
-	const auto &p1Time = point.time - pt::milliseconds(500);
+	const auto &p2Time = point.time - m_period2;
+	const auto &p1Time = point.time - m_period1;
+	AssertGt(point.time, p1Time);
+	AssertGt(p1Time, p2Time);
 	auto itP1 = m_history.cend();
 	auto itP2 = m_history.cend();
 	for (auto it = m_history.cbegin(); it != m_history.cend(); ) {
 		if (it->time <= p2Time) {
 			AssertLt(it->time, p1Time);
-			const auto next = it + 1;
+			const auto next = std::next(it);
 			AssertLe(it->time, next->time);
 			if (next == m_history.cend()) {
 				// Point only one, and it was a long time ago, so this value
@@ -298,46 +390,33 @@ bool StatService::OnBookUpdateTick(
 		}
 		++it;
 	}
-	Assert(
-		itP1 == m_history.cend()
-		|| itP2 == m_history.cend()
-		|| (itP2->time <= itP1->time && itP1->time < point.time));
+	if (itP2 == m_history.cend()) {
+		LogState(false);
+		return false;
+	}
+	Assert(itP1 != m_history.cend());
+	Assert(itP2->time <= itP1->time && itP1->time < point.time);
+	if (itP1 == itP2) {
+		LogState(false);
+		return false;
+	}
 
 	////////////////////////////////////////////////////////////////////////////////
 	// Storing calculated data for public access:
 
-	size_t numberOfHistoryPoints = 0;
-
 	while (m_statMutex.test_and_set(boost::memory_order_acquire));
-	
 	m_stat.history[2] = point;
-	
-	if (itP1 != m_history.cend()) {
-		m_stat.history[1] = *itP1;
-		++numberOfHistoryPoints;
-	} else {
-		// There is no history at start, and only at start:
-		AssertEq(m_stat.history[1].time, pt::not_a_date_time);
-	}
-	
-	if (itP2 != m_history.cend()) {
-		m_stat.history[0] = *itP2;
-		++numberOfHistoryPoints;
-	} else {
-		// There is no history at start, and only at start:
-		AssertEq(m_stat.history[0].time, pt::not_a_date_time);
-	}
-	
+	m_stat.history[1] = *itP1;
+	m_stat.history[0] = *itP2;
 	m_stat.numberOfUpdates = m_numberOfUpdates.size();
-
 	m_statMutex.clear(boost::memory_order_release);
 
 	////////////////////////////////////////////////////////////////////////////////
 	
 	// If this method returns true - strategy will be notified about actual data
 	// update:
-	AssertGe(2, numberOfHistoryPoints);
-	return numberOfHistoryPoints == 2 && !IsZero(m_stat.history.front().theo);
+	LogState(true);
+	return true;
 
 }
 
@@ -388,6 +467,140 @@ void StatService::OnSettingsUpdate(const IniSectionRef &conf) {
 		m_fastEmaAcc = EmaAcc(accs::tag::ema_speed::speed = m_emaSpeedFast);
 
 	}
+
+}
+
+void StatService::InitLog(
+		ServiceLog &log,
+		std::ofstream &file,
+		const std::string &suffix)
+		const {
+
+	Assert(!log.IsEnabled());
+
+	const pt::ptime &now = GetContext().GetStartTime();
+	boost::format fileName(
+		"pretrade_%1%%2$02d%3$02d_%4$02d%5$02d%6$02d_%7%_%8%.csv");
+	fileName
+		% now.date().year()
+		% now.date().month().as_number()
+		% now.date().day()
+		% now.time_of_day().hours()
+		% now.time_of_day().minutes()
+		% now.time_of_day().seconds()
+		% suffix
+		% GetTag();
+	const auto &logPath
+		= GetContext().GetSettings().GetLogsDir() / "pretrade" / fileName.str();
+	
+	GetContext().GetLog().Info("Log: %1%.", logPath);
+	fs::create_directories(logPath.branch_path());
+	file.open(
+		logPath.string().c_str(),
+		std::ios::app | std::ios::ate);
+	if (!file) {
+		throw ModuleError("Failed to open log file");
+	}
+
+	log.EnableStream(file);
+
+}
+
+void StatService::LogState(bool isUpdateUsed) const {
+
+	if (m_pairLogNumberOfRows >= 800000) {
+		return;
+	}
+	++m_pairLogNumberOfRows;
+
+	if (m_isLogByPairEnabled) {
+
+		InitLog(
+			*m_pairLog,
+			m_pairLogFile,
+			SymbolToFileName(
+				m_sources.front().security->GetSymbol().GetSymbol()));
+
+		const auto writeLogHead = [&](ServiceLogRecord &record) {
+
+			record
+				% "Time"
+				% "Used"
+				% "Point time"
+				% "Point time prev 1"
+				% "Point time prev 2"
+				% "Period start prev 1"
+				% "Period start prev 2";
+
+			for (size_t i = 0; i < m_bookLevelsCount; ++i) {
+				const auto index = boost::lexical_cast<std::string>(i + 1);
+				record
+					% (std::string("Bid Price ") + index)
+					% (std::string("Bid Size ") + index);
+			}
+			record % "VWAP Bid" % "VWAP Bid prev 1" % "VWAP Bid prev 2";
+
+			for (size_t i = 0; i < m_bookLevelsCount; ++i) {
+				const auto index = boost::lexical_cast<std::string>(i + 1);
+				record
+					% (std::string("Ask Price ") + index)
+					% (std::string("Ask Size ") + index);
+			}
+			record % "VWAP Ask" % "VWAP Ask prev 1" % "VWAP Ask prev 2";
+
+			record % "Theo" % "Theo prev 1" % "Theo prev 2";
+
+			record % "EMA Slow" % "EMA Slow prev 1" % "EMA Slow prev 2";
+			record % "EMA Fast" % "EMA Fast prev 1" % "EMA Fast prev 2";
+
+			record % "Number of updates";
+
+		};
+		m_pairLog->Write(writeLogHead);
+
+		m_isLogByPairEnabled = false;
+
+	}
+
+	m_pairLog->Write(
+		[&](ServiceLogRecord &record) {
+			
+			record % GetContext().GetCurrentTime();
+			record % (isUpdateUsed ? "yes" : "no");
+			foreach_reversed (const Point &i, m_stat.history) {
+				record % i.time;
+			}
+			record % (m_stat.history.back().time - m_period1);
+			record % (m_stat.history.back().time - m_period2);
+
+			foreach (const PriceLevel &i, m_aggregatedBidsCache) {
+				record % i.price % i.qty;
+			}
+			foreach_reversed (const Point &i, m_stat.history) {
+				record % i.vwapBid;
+			}
+
+			foreach (const PriceLevel &i, m_aggregatedAsksCache) {
+				record % i.price % i.qty;
+			}
+			foreach_reversed (const Point &i, m_stat.history) {
+				record % i.vwapAsk;
+			}
+
+			foreach_reversed (const Point &i, m_stat.history) {
+				record % i.theo;
+			}
+
+			foreach_reversed (const Point &i, m_stat.history) {
+				record % i.emaSlow;
+			}
+			foreach_reversed (const Point &i, m_stat.history) {
+				record % i.emaFast;
+			}
+
+			record % m_stat.numberOfUpdates;
+
+		});
 
 }
 

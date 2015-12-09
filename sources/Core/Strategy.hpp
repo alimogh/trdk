@@ -102,8 +102,6 @@ namespace trdk {
 
 		};
 
-		typedef trdk::ModuleTradingLog TradingLog;
-
 	public:
 
 		explicit Strategy(
@@ -120,8 +118,6 @@ namespace trdk {
 		trdk::TradingMode GetTradingMode() const;
 
 	public:
-
-		trdk::Strategy::TradingLog & GetTradingLog() const throw();
 
 		trdk::RiskControlScope & GetRiskControlScope();
 
