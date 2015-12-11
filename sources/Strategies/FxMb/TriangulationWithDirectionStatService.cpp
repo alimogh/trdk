@@ -165,14 +165,48 @@ bool StatService::OnBookUpdateTick(
 	// Store each book update as "last book" to calculate stat by each book
 	// tick.
 	{
+	
 		Source &source = m_sources[security.GetSource().GetIndex()];
 		Assert(source.security == &security);
 		Assert(
 			source.time == pt::not_a_date_time
 			|| source.time <= book.GetTime());
+	
+		if (
+				book.GetBids().GetSize() < m_bookLevelsCount
+				|| book.GetAsks().GetSize() < m_bookLevelsCount) {
+			if (source.isUsed) {
+				GetTradingLog().Write(
+					"insufficient book data\t%1%\t%2%\t%3%x%4%",
+					[&](TradingRecord &record) {
+						record
+							% source.security->GetSymbol().GetSymbol()
+							% source.security->GetSource().GetTag()
+							% book.GetBids().GetSize()
+							% book.GetAsks().GetSize();
+					});
+				source.isUsed = false;
+			}
+			// TRDK-268 Ignore the ECN with less than 4 levels
+			// (but use best price).
+			return false;
+		} else if (!source.isUsed) {
+			GetTradingLog().Write(
+				"book data received\t%1%\t%2%\t%3%x%4%",
+				[&](TradingRecord &record) {
+					record
+						% source.security->GetSymbol().GetSymbol()
+						% source.security->GetSource().GetTag()
+						% book.GetBids().GetSize()
+						% book.GetAsks().GetSize();
+				});
+			source.isUsed = true;
+		}
+
 		source.time = book.GetTime();
 		source.bidsBook = book.GetBids();
 		source.asksBook = book.GetAsks();
+
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -189,33 +223,8 @@ bool StatService::OnBookUpdateTick(
 
 		foreach (const Source &source, m_sources) {
 
-			if (
-					source.bidsBook.GetSize() <= i
-					|| source.asksBook.GetSize() <= i) {
-				if (!source.isReported) {
-					GetTradingLog().Write(
-						"insufficient book data\t%1%\t%2%\t%3%x%4%",
-						[&](TradingRecord &record) {
-							record
-								% source.security->GetSymbol().GetSymbol()
-								% source.security->GetSource().GetTag()
-								% source.bidsBook.GetSize()
-								% source.asksBook.GetSize();
-						});
-					source.isReported = true;
-				}
-				return false;
-			} else if (source.isReported && i + 1 == m_bookLevelsCount) {
-				GetTradingLog().Write(
-					"book data received\t%1%\t%2%\t%3%x%4%",
-					[&](TradingRecord &record) {
-						record
-							% source.security->GetSymbol().GetSymbol()
-							% source.security->GetSource().GetTag()
-							% source.bidsBook.GetSize()
-							% source.asksBook.GetSize();
-					});
-				source.isReported = false;
+			if (!source.isUsed) {
+				continue;
 			}
 
 			{
@@ -246,9 +255,10 @@ bool StatService::OnBookUpdateTick(
 
 		}
 
+		if (IsZero(bid.qty) || IsZero(ask.qty)) {
+			return false;
+		}
 		Assert(!IsZero(bid.price));
-		Assert(!IsZero(bid.qty));
-		Assert(!IsZero(ask.price));
 		Assert(!IsZero(ask.price));
 
 	}
@@ -314,6 +324,9 @@ bool StatService::OnBookUpdateTick(
 
 	Point point = {book.GetTime()};
 	foreach (const Source &source, m_sources) {
+		if (!source.isUsed) {
+			continue;
+		}
 		if (source.time != pt::not_a_date_time && source.time > point.time) {
 			point.time = source.time;
 		}

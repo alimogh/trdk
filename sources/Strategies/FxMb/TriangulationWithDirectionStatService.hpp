@@ -120,7 +120,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 			boost::posix_time::ptime time;
 			Security::Book::Side bidsBook;
 			Security::Book::Side asksBook;
-			mutable bool isReported;
+			mutable bool isUsed;
 		};
 
 		struct PriceLevel {
