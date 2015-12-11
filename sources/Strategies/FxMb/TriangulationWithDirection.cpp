@@ -38,12 +38,17 @@ namespace {
 	bool IsProfit(
 			const Triangle::PairInfo &pair,
 			const StatService::Stat &data) {
+		// TRDK-267: Rounding EMA for exit signal checking to resolve
+		// duration problem.
+		const double emaSlow = Round(
+			data.history.back().emaSlow,
+			pair.security->GetPriceScale());
 		return
-			//! @sa TRDK-241: VWAP crosses slowEMA, this is your signal to buy
-			//! leg 3 if it falls or sell leg 3 if it rises:
+			// TRDK-241: VWAP crosses slowEMA, this is your signal to buy
+			// leg 3 if it falls or sell leg 3 if it rises.
 			(pair.isBuy
-				?	data.history.back().vwapAsk > data.history.back().emaSlow
-				:	data.history.back().vwapBid < data.history.back().emaSlow)
+				?	data.history.back().vwapAsk > emaSlow
+				:	data.history.back().vwapBid < emaSlow)
 			&& pair.GetCurrentPrice() > 0;
 	}
 

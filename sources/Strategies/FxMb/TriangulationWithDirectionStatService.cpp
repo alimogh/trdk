@@ -333,17 +333,17 @@ bool StatService::OnBookUpdateTick(
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
-	// VWAP (see TRDK-267 about precision):
+	// VWAP and Theo (see TRDK-267 about precision):
 
 	point.vwapBid = bidStat.vol / bidStat.qty;
 	point.vwapAsk = askStat.vol / askStat.qty;
 
-	////////////////////////////////////////////////////////////////////////////////
-	// Theo (see TRDK-267 about precision):
-	
 	point.theo
 		= ((point.vwapBid * bidStat.qty) + (point.vwapAsk * askStat.qty))
 			/ (bidStat.qty + askStat.qty);
+
+	point.vwapBid = Round(point.vwapBid, security.GetPriceScale());
+	point.vwapAsk = Round(point.vwapAsk, security.GetPriceScale());
 
 	////////////////////////////////////////////////////////////////////////////////
 	// EMAs:
@@ -351,12 +351,12 @@ bool StatService::OnBookUpdateTick(
 	// accumulates values for EMA:
 	m_slowEmaAcc(point.theo);
 	// gets current EMA value (see TRDK-267 about precision):
-	point.emaSlow = accs::ema(m_slowEmaAcc), security.GetPriceScale();
+	point.emaSlow = accs::ema(m_slowEmaAcc);
 
 	// accumulates values for EMA:
 	m_fastEmaAcc(point.theo);
 	// gets current EMA value (see TRDK-267 about precision):
-	point.emaFast = accs::ema(m_fastEmaAcc), security.GetPriceScale();
+	point.emaFast = accs::ema(m_fastEmaAcc);
 
 	////////////////////////////////////////////////////////////////////////////////
 	// Preparing previous 2 points for actual strategy work:
