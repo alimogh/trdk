@@ -47,8 +47,8 @@ namespace {
 			// TRDK-241: VWAP crosses slowEMA, this is your signal to buy
 			// leg 3 if it falls or sell leg 3 if it rises.
 			(pair.isBuy
-				?	data.history.back().vwapAsk > emaSlow
-				:	data.history.back().vwapBid < emaSlow)
+				?	data.history.back().vwapBid > emaSlow
+				:	data.history.back().vwapAsk < emaSlow)
 			&& pair.GetCurrentPrice() > 0;
 	}
 
