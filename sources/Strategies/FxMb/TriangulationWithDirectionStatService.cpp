@@ -320,31 +320,30 @@ bool StatService::OnBookUpdateTick(
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
-	// VWAP:
+	// VWAP (see TRDK-267 about precision):
 
-	point.vwapBid = Round(bidStat.vol / bidStat.qty, security.GetPriceScale());
-	point.vwapAsk = Round(askStat.vol / askStat.qty, security.GetPriceScale());
+	point.vwapBid = bidStat.vol / bidStat.qty;
+	point.vwapAsk = askStat.vol / askStat.qty;
 
 	////////////////////////////////////////////////////////////////////////////////
-	// Theo:
+	// Theo (see TRDK-267 about precision):
 	
-	point.theo = Round(
-		((point.vwapBid * bidStat.qty) + (point.vwapAsk * askStat.qty))
-			/ (bidStat.qty + askStat.qty),
-		security.GetPriceScale());
+	point.theo
+		= ((point.vwapBid * bidStat.qty) + (point.vwapAsk * askStat.qty))
+			/ (bidStat.qty + askStat.qty);
 
 	////////////////////////////////////////////////////////////////////////////////
 	// EMAs:
 	
 	// accumulates values for EMA:
 	m_slowEmaAcc(point.theo);
-	// gets current EMA value:
-	point.emaSlow = Round(accs::ema(m_slowEmaAcc), security.GetPriceScale());
+	// gets current EMA value (see TRDK-267 about precision):
+	point.emaSlow = accs::ema(m_slowEmaAcc), security.GetPriceScale();
 
 	// accumulates values for EMA:
 	m_fastEmaAcc(point.theo);
-	// gets current EMA value:
-	point.emaFast = Round(accs::ema(m_fastEmaAcc), security.GetPriceScale());
+	// gets current EMA value (see TRDK-267 about precision):
+	point.emaFast = accs::ema(m_fastEmaAcc), security.GetPriceScale();
 
 	////////////////////////////////////////////////////////////////////////////////
 	// Preparing previous 2 points for actual strategy work:
