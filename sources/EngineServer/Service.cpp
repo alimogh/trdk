@@ -11,9 +11,8 @@
 #include "Prec.hpp"
 #ifndef TRDK_AUTOBAHN_DISABLED
 #include "Service.hpp"
-#include "Client.hpp"
+#include <Core/Strategy.hpp>
 
-using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::EngineServer;
 
@@ -26,8 +25,9 @@ namespace ab = autobahn;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-EngineServer::Service::Config::Config(const fs::path &configPath) {
-	const IniFile ini(configPath);
+Service::Config::Config(const fs::path &configPath)
+		: path(configPath) {
+	const IniFile ini(path);
 	const IniSectionRef section(ini, "Service");
 	name = section.ReadKey("name");
 	id = section.ReadKey("id");
@@ -35,19 +35,35 @@ EngineServer::Service::Config::Config(const fs::path &configPath) {
 	twsPort = section.ReadTypedKey<uint16_t>("tws_port");
 	timeout = pt::seconds(section.ReadTypedKey<size_t>("tws_timeout_seconds"));
 	wampDebug = section.ReadTypedKey<bool>("wamp_debug");
+	callOptions.set_timeout(
+		std::chrono::milliseconds(timeout.total_milliseconds()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-EngineServer::Service::Topics::Topics(const std::string &suffix)
-	: time((boost::format("trdk.engine.%1%.time") % suffix).str())
-	, state((boost::format("trdk.engine.%1%.state") % suffix).str()){
+Service::Topics::Topics(const std::string &suffix)
+	: registerEngine("trdk.service.engine.register")
+	, onEngineConnected("trdk.engine.on_connected")
+	, time((boost::format("trdk.engine.%1%.time") % suffix).str())
+	, state((boost::format("trdk.engine.%1%.state") % suffix).str())
+	, storeOperationStart("trdk.service.operation.store_start")
+	, storeOperationEnd("trdk.service.operation.store_end")
+	, storeOrder("trdk.service.order.store")
+	, storeTrade("trdk.service.trade.store")
+	, startEngine((boost::format("trdk.engine.%1%.start") % suffix).str())
+	, stopEngine((boost::format("trdk.engine.%1%.stop") % suffix).str())
+	, startDropCopy(
+		(boost::format("trdk.engine.%1%.drop_copy.start") % suffix).str())
+	, stopDropCopy(
+		(boost::format("trdk.engine.%1%.drop_copy.stop") % suffix).str())
+	, closePositions(
+		(boost::format("trdk.engine.%1%.close_positions") % suffix).str()) {
 	//...//
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-EngineServer::Service::Connection::Connection(
+Service::Connection::Connection(
 		io::io_service &io,
 		const Topics &topics,
 		EventsLog &log,
@@ -61,7 +77,7 @@ EngineServer::Service::Connection::Connection(
 	//...//
 }
 
-void EngineServer::Service::Connection::ScheduleNextCurrentTimeNotification() {
+void Service::Connection::ScheduleNextCurrentTimeNotification() {
 
 #	ifdef _DEBUG
 		const auto period = pt::minutes(1);
@@ -95,7 +111,7 @@ void EngineServer::Service::Connection::ScheduleNextCurrentTimeNotification() {
 
 }
 
-void EngineServer::Service::Connection::ScheduleIoTimeout(
+void Service::Connection::ScheduleIoTimeout(
 		const pt::time_duration &timeout) {
 
 	const auto &startTime = log.GetTime();
@@ -122,81 +138,318 @@ void EngineServer::Service::Connection::ScheduleIoTimeout(
 
 }
 
-void EngineServer::Service::Connection::StopIoTimeout() {
+void Service::Connection::StopIoTimeout() {
 	ioTimeoutTimer.cancel();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-EngineServer::Service::InputIo::InputIo()
-	:	acceptor(
-			service,
-			io::ip::tcp::endpoint(io::ip::tcp::v4(), 3689)) {
-	//...//
+Service::OrderCache::OrderCache(
+		const uuids::uuid &id,
+		const std::string *tradeSystemId,
+		const pt::ptime *orderTime,
+		const pt::ptime *executionTime,
+		const OrderStatus &status,
+		const uuids::uuid &operationId,
+		const int64_t *subOperationId,
+		const Security &security,
+		const TradeSystem &tradeSystem,
+		const OrderSide &side,
+		const Qty &qty,
+		const double *price,
+		const TimeInForce *timeInForce,
+		const Currency &currency,
+		const Qty *minQty,
+		const std::string *user,
+		const Qty &executedQty,
+		const double *bestBidPrice,
+		const Qty *bestBidQty,
+		const double *bestAskPrice,
+		const Qty *bestAskQty)
+	: id(id)
+	, status(status)
+	, operationId(operationId)
+	, security(&security)
+	, tradeSystem(&tradeSystem)
+	, side(side)
+	, qty(qty)
+	, currency(currency)
+	, executedQty(executedQty) {
+	if (tradeSystemId) {
+		this->tradeSystemId = *tradeSystemId;
+	}
+	if (orderTime) {
+		this->orderTime = *orderTime;
+	}
+	if (executionTime) {
+		this->executionTime = *executionTime;
+	}
+	if (subOperationId) {
+		this->subOperationId = *subOperationId;
+	}
+	if (price) {
+		this->price = *price;
+	}
+	if (timeInForce) {
+		this->timeInForce = *timeInForce;
+	}
+	if (minQty) {
+		this->minQty = *minQty;
+	}
+	if (user) {
+		this->user = *user;
+	}
+	if (bestBidPrice) {
+		this->bestBidPrice = *bestBidPrice;
+	}
+	if (bestBidQty) {
+		this->bestBidQty = *bestBidQty;
+	}
+	if (bestAskPrice) {
+		this->bestAskPrice = *bestAskPrice;
+	}
+	if (bestAskQty) {
+		this->bestAskQty = *bestAskQty;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-EngineServer::Service::Service(
+Service::DropCopy::DropCopy(Service &service)
+	: m_service(service)
+	, m_log(m_service.m_log)
+	, m_queue(m_log) {
+	//...//
+}
+
+Service::DropCopy::~DropCopy() {
+	//...//
+}
+
+void Service::DropCopy::OpenDataLog(const fs::path &logsDir) {
+
+	if (m_dataLogFile.is_open()) {
+		throw LogicError("Drop Copy log already is opened");
+	}
+
+	const auto dataLogFilePath = logsDir / "dropcopy.log";
+	m_dataLogFile.open(
+		dataLogFilePath.string().c_str(),
+		std::ios::out | std::ios::ate | std::ios::app);
+	if (!m_dataLogFile) {
+		m_log.Error(
+			"Failed to open file %1% for Drop Copy logging.",
+			dataLogFilePath);
+		throw Exception("Failed to open file for Drop Copy logging");
+	}
+
+	m_dataLog.EnableStream(m_dataLogFile, true);
+
+	m_log.Info("Logging Drop Copy into %1%.", dataLogFilePath);
+
+}
+
+void Service::DropCopy::OnConnectionRestored() {
+	m_queue.OnConnectionRestored();
+}
+
+void Service::DropCopy::Start() {
+	m_queue.Start();
+}
+
+void Service::DropCopy::Stop() {
+	m_queue.Stop();
+}
+
+bool Service::DropCopy::IsStarted() const {
+	return m_queue.IsStarted();
+}
+
+void Service::DropCopy::Flush() {
+	m_queue.Flush();
+}
+
+void Service::DropCopy::Dump() {
+	m_queue.Dump();
+}
+
+void Service::DropCopy::CopyOrder(
+		const uuids::uuid &id,
+		const std::string *tradeSystemId,
+		const pt::ptime *orderTime,
+		const pt::ptime *executionTime,
+		const OrderStatus &status,
+		const uuids::uuid &operationId,
+		const int64_t *subOperationId,
+		const Security &security,
+		const TradeSystem &tradeSystem,
+		const OrderSide &side,
+		const Qty &qty,
+		const double *price,
+		const TimeInForce *timeInForce,
+		const Currency &currency,
+		const Qty *minQty,
+		const std::string *user,
+		const Qty &executedQty,
+		const double *bestBidPrice,
+		const Qty *bestBidQty,
+		const double *bestAskPrice,
+		const Qty *bestAskQty) {
+	const OrderCache order(
+		id,
+		tradeSystemId,
+		orderTime,
+		executionTime,
+		status,
+		operationId,
+		subOperationId,
+		security,
+		tradeSystem,
+		side,
+		qty,
+		price,
+		timeInForce,
+		currency,
+		minQty,
+		user,
+		executedQty,
+		bestBidPrice,
+		bestBidQty,
+		bestAskPrice,
+		bestAskQty);
+	m_queue.Enqueue(
+		[this, order](size_t recordIndex, size_t attemptNo, bool dump) -> bool {
+			return m_service.StoreOrder(recordIndex, attemptNo, dump, order);
+		});
+}
+
+void Service::DropCopy::CopyTrade(
+		const pt::ptime &time,
+		const std::string &tradeSystemTradeId,
+		const uuids::uuid &orderId,
+		double price,
+		const Qty &qty,
+		double bestBidPrice,
+		const Qty &bestBidQty,
+		double bestAskPrice,
+		const Qty &bestAskQty) {
+	m_queue.Enqueue(
+		[
+					this,
+					time,
+					tradeSystemTradeId,
+					orderId,
+					price,
+					qty,
+					bestBidPrice,
+					bestBidQty,
+					bestAskPrice,
+					bestAskQty](
+				size_t recordIndex,
+				size_t attemptNo,
+				bool dump)
+				-> bool {
+			return m_service.StoreTrade(
+				recordIndex,
+				attemptNo,
+				dump,
+				time,
+				tradeSystemTradeId,
+				orderId,
+				price,
+				qty,
+				bestBidPrice,
+				bestBidQty,
+				bestAskPrice,
+				bestAskQty);
+		});
+}
+
+void Service::DropCopy::ReportOperationStart(
+		const uuids::uuid &id,
+		const pt::ptime &time,
+		const Strategy &strategy,
+		size_t numberOfUpdates) {
+	m_queue.Enqueue(
+		[this, id, time, &strategy, numberOfUpdates](
+				size_t recordIndex,
+				size_t attemptNo,
+				bool dump)
+				-> bool {
+			return m_service.StoreOperationStartReport(
+				recordIndex,
+				attemptNo,
+				dump,
+				id,
+				time,
+				strategy,
+				numberOfUpdates);
+		});
+}
+
+void Service::DropCopy::ReportOperationEnd(
+		const uuids::uuid &id,
+		const pt::ptime &time,
+		double pnl,
+		const boost::shared_ptr<const FinancialResult> &financialResult) {
+	m_queue.Enqueue(
+		[this, id, time, pnl, financialResult](
+				size_t recordIndex,
+				size_t attemptNo,
+				bool dump)
+				-> bool {
+			return m_service.StoreOperationEndReport(
+				recordIndex,
+				attemptNo,
+				dump,
+				id,
+				time,
+				pnl,
+				financialResult);
+		});
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+Service::Service(
 		const std::string &name,
 		const fs::path &engineConfigFilePath)
 	: m_config(engineConfigFilePath)
-	, m_settings(engineConfigFilePath, m_config.name, *this)
+	, m_engineState(ENGINE_STATE_STOPPED)
 	, m_topics(m_config.id)
-	, m_inputIo(new InputIo)
 	, m_numberOfReconnects(0)
 	, m_io(new io::io_service)
 	, m_isInited(false)
-	, m_legacyDropCopy(m_log) {
+	, m_dropCopy(*this) {
 
 	m_log.EnableStdOut();
 
-	const IniFile settings(m_settings.GetFilePath());
+	const IniFile settings(m_config.path);
 
-	const auto logFilePath = settings.ReadFileSystemPath("General", "logs_dir")
-		/ "service.log";
-	fs::create_directories(logFilePath.branch_path());
+	const auto logsDir = settings.ReadFileSystemPath("General", "logs_dir");
+	fs::create_directories(logsDir);
+
+	const auto logFilePath = logsDir / "service.log";
 	m_logFile.open(
 		logFilePath.string().c_str(),
 		std::ios::out | std::ios::ate | std::ios::app);
 	if (!m_logFile) {
 		m_log.Error("Failed to open file %1% for logging.", logFilePath);
-		throw EngineServer::Exception("Failed to open file for logging");
+		throw Exception("Failed to open file for logging");
 	}
 	m_log.EnableStream(m_logFile, true);
 
+	m_dropCopy.OpenDataLog(logsDir);
+
 	m_log.Info(
-		"Loaded engine \"%1%\" from %2% for engine service \"%3%\".",
-		m_settings.GetEngineId(),
-		m_settings.GetFilePath(),
+		"Loaded engine from %1% for engine service \"%2%\".",
+		m_config.path,
 		m_config.name);
 
 	{
-		const auto &endpoint = m_inputIo->acceptor.local_endpoint();
-		m_log.Info(
-			"Opening endpoint \"%1%:%2%\" for incoming connections...",
-			endpoint.address(),
-			endpoint.port());
-	}
-
-	StartAccept();
-	m_inputIoThread = boost::thread(
-		[&]() {
-			try {
-				m_log.Debug("Starting Input IO task...");
-				m_inputIo->service.run();
-				m_log.Debug("Input IO task completed");
-			} catch (...) {
-				AssertFailNoException();
-				throw;
-			}
-		});
-
-	//! @todo Legacy support, remove try-catch.
-	try {
 		ConnectionLock lock(m_connectionMutex);
 		auto connection = Connect();
-		StartIoThread();
+		RunIoThread();
 		m_connectionCondition.wait(lock);
 		bool isInited = false;
 		try {
@@ -211,35 +464,24 @@ EngineServer::Service::Service(
 		if (!isInited) {
 			throw Exception("Failed to start TWS session");
 		}
-	} catch (...) {
-		try {
-			m_inputIo->service.stop();
-			m_inputIoThread.join();
-			m_inputIo.reset();
-		} catch (...) {
-			AssertFailNoException();
-		}
-		throw;
 	}
 
 	m_log.Info("Engine service started.");
 
 }
 
-EngineServer::Service::~Service() {
+Service::~Service() {
 	try {
+		m_engineTask.join();
 		m_io->stop();
 		m_thread.join();
-		m_inputIo->service.stop();
-		m_inputIoThread.join();
 	} catch (...) {
 		AssertFailNoException();
 		throw;
 	}
-	m_inputIo.reset();
 }
 
-boost::shared_ptr<EngineServer::Service::Connection> EngineServer::Service::Connect() {
+boost::shared_ptr<Service::Connection> Service::Connect() {
 	m_log.Debug(
 		"Connecting to TWS at %1%:%2%...",
 		m_config.twsHost,
@@ -261,7 +503,7 @@ boost::shared_ptr<EngineServer::Service::Connection> EngineServer::Service::Conn
 	return connection;
 }
 
-void EngineServer::Service::OnConnected(
+void Service::OnConnected(
 		boost::shared_ptr<Connection> connection,
 		const sys::error_code &error) {
 
@@ -298,7 +540,7 @@ void EngineServer::Service::OnConnected(
 
 }
 
-void EngineServer::Service::OnSessionStarted(
+void Service::OnSessionStarted(
 		boost::shared_ptr<Connection> connection,
 		bool isStarted) {
 
@@ -330,7 +572,7 @@ void EngineServer::Service::OnSessionStarted(
 
 }
 
-void EngineServer::Service::OnSessionJoined(
+void Service::OnSessionJoined(
 		boost::shared_ptr<Connection> connection,
 		const boost::optional<uint64_t> &sessionId) {
 
@@ -352,7 +594,10 @@ void EngineServer::Service::OnSessionJoined(
 	connection->engineRegistrationFuture
 		= connection
 		->session
-		->call("trdk.service.engine.register", engineInfo)
+		->call(
+			connection->topics.registerEngine,
+			engineInfo,
+			m_config.callOptions)
 		.then(
 			[this, connection, sessionId, engineInfo](
 					boost::future<ab::wamp_call_result> callResult) {
@@ -381,7 +626,7 @@ void EngineServer::Service::OnSessionJoined(
 
 }
 
-void EngineServer::Service::OnEngineRegistered(
+void Service::OnEngineRegistered(
 		boost::shared_ptr<Connection> connection,
 		uint64_t sessionId,
 		const boost::optional<uint64_t> &instanceId,
@@ -391,16 +636,21 @@ void EngineServer::Service::OnEngineRegistered(
 		throw ConnectError("Failed to register TWS engine instance");
 	}
 
+	RegisterMethods(*connection);
+
+	const auto engineState = m_engineState.load();
 	connection->session->publish(
-		"trdk.engine.on_connected",
+		connection->topics.onEngineConnected,
 		std::make_tuple(
 			m_config.id,
 			*instanceId,
 			m_config.name,
 			std::string(TRDK_BUILD_IDENTITY),
-			IsEngineStarted(),
+			int(engineState),
 			sessionId));
 	connection->ScheduleNextCurrentTimeNotification();
+
+	m_dropCopy.OnConnectionRestored();
 
 	m_log.Info(
 		"Registered TWS engine instance %1%"
@@ -418,9 +668,17 @@ void EngineServer::Service::OnEngineRegistered(
 	}
 	m_connectionCondition.notify_all();
 
+	try {
+		if (engineState != m_engineState) {
+			PublishState();
+		}
+	} catch (...) {
+		AssertFailNoException();
+	}
+
 }
 
-void EngineServer::Service::Reconnect() {
+void Service::Reconnect() {
 	AssertEq(0, m_numberOfReconnects);
 	{
 		const ConnectionLock lock(m_connectionMutex);
@@ -429,7 +687,7 @@ void EngineServer::Service::Reconnect() {
 	Connect();
 }
 
-void EngineServer::Service::RepeatReconnection(
+void Service::RepeatReconnection(
 		const Exception &prevReconnectError) {
 
 	++m_numberOfReconnects;
@@ -464,7 +722,7 @@ void EngineServer::Service::RepeatReconnection(
 
 }
 
-void EngineServer::Service::StartIoThread() {
+void Service::RunIoThread() {
 
 	m_thread = boost::thread(
 		[this]() {
@@ -513,7 +771,29 @@ void EngineServer::Service::StartIoThread() {
 
 }
 
-void EngineServer::Service::PublishState() const {
+void Service::RegisterMethods(Service::Connection &connection) {
+
+	connection.session->provide(
+		connection.topics.startEngine,
+		[this](const autobahn::wamp_invocation &) {StartEngine();});
+	connection.session->provide(
+		connection.topics.stopEngine,
+		[this](const autobahn::wamp_invocation &) {StopEngine();});
+
+	connection.session->provide(
+		connection.topics.startDropCopy,
+		[this](const autobahn::wamp_invocation &) {StartDropCopy();});
+	connection.session->provide(
+		connection.topics.stopDropCopy,
+		[this](const autobahn::wamp_invocation &) {StopDropCopy();});
+
+	connection.session->provide(
+		connection.topics.closePositions,
+		[this](const autobahn::wamp_invocation &) {ClosePositions();});
+
+}
+
+void Service::PublishState() const {
 	const ConnectionLock lock(m_connectionMutex);
 	if (!m_connection) {
 		// State publishes each time at reconnect.
@@ -521,229 +801,404 @@ void EngineServer::Service::PublishState() const {
 	}
 	m_connection->session->publish(
 		m_connection->topics.state,
-		std::make_tuple(IsEngineStarted()));
+		std::make_tuple(int(m_engineState)));
 }
 
-void EngineServer::Service::ForEachEngineId(
-		const boost::function<void(const std::string &engineId)> &func)
-		const {
-	func(m_settings.GetEngineId());
+bool Service::IsEngineTaskActive() const {
+	return !m_engineTaskFuture.is_ready() && m_engineTaskFuture.valid();
 }
 
-bool EngineServer::Service::IsEngineStarted() const {
-	return m_server.IsStarted(m_settings.GetEngineId());
+template<typename Task>
+void Service::StartEngineTask(const Task &&taskImpl) {
+	Assert(!IsEngineTaskActive());
+	boost::packaged_task<void> task(std::move(taskImpl));
+	auto future = task.get_future();
+	boost::thread(std::move(task)).swap(m_engineTask);
+	future.swap(m_engineTaskFuture);
 }
 
-bool EngineServer::Service::IsEngineStarted(const std::string &engineId) const {
-	CheckEngineIdExists(engineId);
-	return m_server.IsStarted(engineId);
-}
+void Service::StartEngine() {
 
-EngineServer::Settings & EngineServer::Service::GetEngineSettings(
-		const std::string &engineId) {
-	CheckEngineIdExists(engineId);
-	// return m_engines[engineId];
-	return m_settings;
-}
+	m_log.Debug("Starting engine...");
 
-void EngineServer::Service::UpdateEngine(
-		EngineServer::Settings::EngineTransaction &transaction) {
-	m_server.Update(transaction);
-}
+	const EngineLock lock(m_engineMutex);
 
-void EngineServer::Service::UpdateStrategy(
-		EngineServer::Settings::StrategyTransaction &transaction) {
-	m_server.Update(transaction);
-}
-
-void EngineServer::Service::StartEngine(
-		const std::string &engineId,
-		const std::string &commandInfo) {
-	const auto &settings = GetEngineSettings(engineId);
-	Context &context = m_server.Run(
-		settings.GetEngineId(),
-		settings.GetFilePath(),
-		false,
-		commandInfo,
-		this);
-	context.SubscribeToStateUpdates(
-		boost::bind(
-			&Service::OnContextStateChanged,
-			this,
-			boost::ref(context),
-			_1,
-			_2));
-	context.RaiseStateUpdate(Context::STATE_ENGINE_STARTED);
-}
-
-void EngineServer::Service::StopEngine(const std::string &engineId) {
-	CheckEngineIdExists(engineId);
-	m_server.StopAll(STOP_MODE_GRACEFULLY_ORDERS);
-	PublishState();
-}
-
-void EngineServer::Service::StartAccept() {
-	const auto &newConnection = Client::Create(
-		m_inputIo->acceptor.get_io_service(),
-		*this);
-	m_inputIo->acceptor.async_accept(
-		newConnection->GetSocket(),
-		boost::bind(
-			&Service::HandleNewClient,
-			this,
-			newConnection,
-			io::placeholders::error));
-}
-
-void EngineServer::Service::HandleNewClient(
-		const boost::shared_ptr<Client> &newConnection,
-		const sys::error_code &error) {
-	if (!error) {
-		const ConnectionsWriteLock lock(m_connectionsMutex);
-		auto list(m_connections);
-		list.insert(&*newConnection);
-		newConnection->Start();
-		list.swap(m_connections);
-	} else {
-		m_log.Error(
-			"Failed to accept new client: \"%1%\".",
-			SysError(error.value()));
+	if (IsEngineTaskActive()) {
+		m_log.Warn(
+			"Failed to start engine"
+				" - service performs task which can change engine state.");
+		throw Exception("Service performs task which can change engine state");
+	} else if (m_engine) {
+		m_log.Warn("Failed to start engine - engine already is started.");
+		throw Exception("Engine already is started");
 	}
-	StartAccept();
-}
+	AssertEq(ENGINE_STATE_STOPPED, m_engineState);
 
-void EngineServer::Service::OnDisconnect(Client &client) {
-	const ConnectionsWriteLock lock(m_connectionsMutex);
-	m_connections.erase(&client);
-}
-
-void EngineServer::Service::CheckEngineIdExists(const std::string &id) const {
-	if (m_settings.GetEngineId() != id) {
-		boost::format message("Engine with ID \"%1%\" doesn't exist.");
-		message % id;
-		throw EngineServer::Exception(message.str().c_str());
+	if (!m_dropCopy.IsStarted()) {
+		m_log.Error("Failed to start engine - Drop Copy is not started.");
+		throw Exception("Drop Copy is not started");
 	}
+
+	StartEngineTask(
+		[this]() {
+			m_log.Debug("Started engine start task.");
+			try {
+				auto engine = boost::make_shared<Engine>(
+					m_config.path,
+						[this](
+							const Context::State &state,
+							const std::string *updateMessage) {
+						OnContextStateChanged(state, updateMessage);
+					},
+					m_dropCopy,
+					false);
+				{
+					const EngineLock lock(m_engineMutex);
+					Assert(!m_engine);
+					if (m_engineState != ENGINE_STATE_STARTED) {
+						m_log.Warn(
+							"Failed to start engine. Engine state is %1%.",
+							m_engineState);
+						return;
+					}
+					engine.swap(m_engine);
+				}
+			} catch (const trdk::Lib::Exception &ex) {
+				m_log.Warn("Failed to start engine: \"%1%\".", ex);
+				m_engineState = ENGINE_STATE_STOPPED;
+				try {
+					PublishState();
+				} catch (...) {
+					AssertFailNoException();
+					throw;
+				}
+				return;
+			} catch (...) {
+				AssertFailNoException();
+				throw;
+			}
+			m_log.Info("Engine started.");
+		});
+
+	m_engineState = ENGINE_STATE_STARTING;
+	try {
+		PublishState();
+	} catch (...) {
+		AssertFailNoException();
+		throw;
+	}
+
 }
 
-void EngineServer::Service::OnContextStateChanged(
-		Context &,
+void Service::StopEngine() {
+
+	m_log.Debug("Stopping engine...");
+
+	const EngineLock lock(m_engineMutex);
+
+	if (IsEngineTaskActive()) {
+		m_log.Warn(
+			"Failed to stop engine"
+				" - service performs task which can change engine state.");
+		throw Exception("Service performs task which can change engine state");
+	} else if (!m_engine) {
+		m_log.Warn("Failed to stop engine - engine already is stopped.");
+		throw Exception("Engine already is stopped");
+	}
+	AssertEq(ENGINE_STATE_STARTED, m_engineState);
+
+	StartEngineTask(
+		[this]() {
+			m_log.Debug("Started engine stop task.");
+			try {
+				m_engine->Stop(STOP_MODE_IMMEDIATELY);
+				const EngineLock lock(m_engineMutex);
+				m_engine.reset();
+				AssertEq(ENGINE_STATE_STOPPING, m_engineState);
+				m_engineState = ENGINE_STATE_STOPPED;
+				PublishState();
+			} catch (...) {
+				AssertFailNoException();
+				throw;
+			}
+			m_log.Info("Engine stopped.");
+		});
+
+	m_engineState = ENGINE_STATE_STOPPING;
+	try {
+		PublishState();
+	} catch (...) {
+		AssertFailNoException();
+		throw;
+	}
+
+}
+
+void Service::StartDropCopy() {
+	m_log.Debug("Starting Drop Copy...");
+	try {
+		m_dropCopy.Start();
+	} catch (const std::exception &ex) {
+		m_log.Warn("Failed to start Drop Copy: \"%1%\".", ex.what());
+		throw;
+	} catch (...) {
+		AssertFailNoException();
+		throw;
+	}
+	m_log.Info("Drop Copy strated.");
+}
+
+void Service::StopDropCopy() {
+	m_log.Debug("Stopping Drop Copy...");
+	try {
+		m_dropCopy.Stop();
+	} catch (const std::exception &ex) {
+		m_log.Warn("Failed to stop Drop Copy: \"%1%\".", ex.what());
+		throw;
+	} catch (...) {
+		AssertFailNoException();
+		throw;
+	}
+	m_log.Info("Drop Copy stopped.");
+}
+
+void Service::ClosePositions() {
+
+	m_log.Debug("Closing positions...");
+
+	const EngineLock lock(m_engineMutex);
+
+	if (IsEngineTaskActive()) {
+		m_log.Warn(
+			"Failed to close positions"
+				" - service performs task which can change engine state.");
+		throw Exception("Service performs task which can change engine state");
+	} else if (!m_engine) {
+		m_log.Warn("Failed to close positions - engine is stopped.");
+		throw Exception("Engine is stopped");
+	}
+
+	m_engine->ClosePositions();
+	m_log.Info("Positions closed.");
+
+}
+
+void Service::OnContextStateChanged(
 		const Context::State &state,
 		const std::string *updateMessage) {
 
-	PublishState();
+	const EngineLock lock(m_engineMutex);
 
-	boost::function<void(Client &)> fun;
 	static_assert(Context::numberOfStates == 4, "List changed.");
-	std::string message;
 	switch (state) {
+
 		case Context::STATE_ENGINE_STARTED:
-			message = updateMessage
-				?	(boost::format("Engine started: %1%.") % *updateMessage).str()
-				:	"Engine started.";
-			fun = [&message](Client &client) {
-				client.SendMessage(message);
-			};
+
+			!updateMessage
+				?	m_log.Info("Engine changed state to \"started\".")
+				:	m_log.Info(
+						"Engine changed state to \"started\": \"%s\".",
+						*updateMessage);
+			AssertEq(ENGINE_STATE_STARTING, m_engineState);
+			Assert(!m_engine);
+			m_engineState = ENGINE_STATE_STARTED;
+
+			PublishState();
+
 			break;
-		case Context::STATE_ENGINE_STOPPED_GRACEFULLY:
-			message = updateMessage
-				?	(boost::format("Engine stopped: %1%.") % *updateMessage).str()
-				:	"Engine stopped.";
-			fun = [&message](Client &client) {
-				client.SendMessage(message);
-			};
+
+		case Context::STATE_DISPATCHER_TASK_STOPPED_GRACEFULLY:
+		case Context::STATE_DISPATCHER_TASK_STOPPED_ERROR:
+
+			AssertNe(ENGINE_STATE_STOPPED, m_engineState);
+
+			{
+				const char *logRecord
+					= state == Context::STATE_DISPATCHER_TASK_STOPPED_GRACEFULLY
+					?	!updateMessage
+					  	?	"Engine dispatcher task stopped."
+						:	"Engine dispatcher task stopped: \"%s\"."
+					:	!updateMessage
+						?	"Engine dispatcher task stopped with error."
+						 :	"Engine dispatcher task stopped with error: \"%s\".";
+				if (m_engineState == ENGINE_STATE_STOPPING) {
+					!updateMessage
+						?	m_log.Debug(logRecord)
+						:	m_log.Debug(logRecord, *updateMessage);
+				} else if (
+						state == Context::STATE_DISPATCHER_TASK_STOPPED_ERROR) {
+					!updateMessage
+						?	m_log.Warn(logRecord)
+						:	m_log.Warn(logRecord, *updateMessage);
+				} else {
+					!updateMessage
+						?	m_log.Info(logRecord)
+						:	m_log.Info(logRecord, *updateMessage);
+				}
+			}
+
+			if (m_engine) {
+				if (!IsEngineTaskActive()) {
+					AssertEq(ENGINE_STATE_STARTED, m_engineState);
+					// Stopped by engine event, not by command. First dispatcher
+					// task stopped...
+					StartEngineTask(
+						[this]() {
+							m_log.Debug("Started engine d-tor task.");
+							m_engine.reset();
+							try {
+								const EngineLock lock(m_engineMutex);
+								m_engineState = ENGINE_STATE_STOPPED;
+								PublishState();
+							} catch (...) {
+								AssertFailNoException();
+								throw;
+							}
+							m_log.Debug("Finished engine d-tor task.");
+						});
+					m_engineState = ENGINE_STATE_STOPPING;
+					PublishState();
+				} else {
+					AssertEq(ENGINE_STATE_STOPPING, m_engineState);
+				}
+			} else {
+				if (m_engineState == ENGINE_STATE_STARTING) {
+					m_engineState = ENGINE_STATE_STOPPING;
+					PublishState();
+				}
+				AssertEq(ENGINE_STATE_STOPPING, m_engineState);
+			}
+
 			break;
-		case Context::STATE_ENGINE_STOPPED_ERROR:
-			message = updateMessage
-				?	(boost::format("Engine stopped with error: %1%.") % *updateMessage).str()
-				:	"Engine stopped with error.";
-			fun = [&message](Client &client) {
-				client.SendError(message);
-			};
-			break;
+
 		case Context::STATE_STRATEGY_BLOCKED:
-			message = updateMessage
-				?	(boost::format("Strategy blocked: %1%.") % *updateMessage).str()
-				:	"Strategy blocked.";
-			fun = [&message](Client &client) {
-				client.SendError(message);
-			};
-			break;
-		default:
-			message = updateMessage
-				?	(boost::format("Unknown context error: %1%.") % *updateMessage).str()
-				:	"Unknown context error.";
-			fun = [&message](Client &client) {
-				client.SendError(message);
-			};
+
+			!updateMessage
+				?	m_log.Warn("Engine notified about blocked startegy.")
+				:	m_log.Warn(
+						"Engine notified about blocked startegy: \"%s\".",
+						*updateMessage);
+
 			break;
 
 	}
-	const ConnectionsReadLock lock(m_connectionsMutex);
-	foreach (Client *client, m_connections) {
-		try {
-			fun(*client);
-		} catch (const trdk::Lib::Exception &ex) {
-			m_log.Error("Failed to send message: \"%1%\".", ex);
-		}
-	}
+
 }
 
-void EngineServer::Service::ClosePositions(const std::string &engineId) {
-	CheckEngineIdExists(engineId);
-	m_server.ClosePositions();
-}
-
-void EngineServer::Service::Start(
-		const IniSectionRef &conf,
-		const Context &context) {
-	m_legacyDropCopy.Start(conf, context);
-}
-
-void EngineServer::Service::CopyOrder(
+bool Service::StoreOperationStartReport(
+		size_t recordIndex,
+		size_t storeAttemptNo,
+		bool dump,
 		const uuids::uuid &id,
-		const std::string *tradeSystemId,
-		const pt::ptime *orderTime,
-		const pt::ptime *executionTime,
-		const TradeSystem::OrderStatus &status,
-		const uuids::uuid &operationId,
-		const int64_t *subOperationId,
-		const Security &security,
-		const OrderSide &side,
-		const Qty &qty,
-		const double *price,
-		const TimeInForce *timeInForce,
-		const Currency &currency,
-		const Qty *minQty,
-		const std::string *user,
-		const Qty &executedQty,
-		const double *bestBidPrice,
-		const Qty *bestBidQty,
-		const double *bestAskPrice,
-		const Qty *bestAskQty) {
-	m_legacyDropCopy.CopyOrder(
-		id,
-		tradeSystemId,
-		orderTime,
-		executionTime,
-		status,
-		operationId,
-		subOperationId,
-		security,
-		side,
-		qty,
-		price,
-		timeInForce,
-		currency,
-		minQty,
-		user,
-		executedQty,
-		bestBidPrice,
-		bestBidQty,
-		bestAskPrice,
-		bestAskQty);
+		const pt::ptime &time,
+		const Strategy &strategy,
+		size_t numberOfUpdates) {
+
+	DropCopyRecord record;
+	record["id"] = id;
+	record["time"] = time;
+	record["strategy_id"] = strategy.GetId();
+	record["number_of_updates"] = numberOfUpdates;
+
+	return StoreRecord(
+		&Topics::storeOperationStart,
+		recordIndex,
+		storeAttemptNo,
+		dump,
+		std::move(record));
+
 }
 
-void EngineServer::Service::CopyTrade(
+bool Service::StoreOperationEndReport(
+		size_t recordIndex,
+		size_t storeAttemptNo,
+		bool dump,
+		const uuids::uuid &id,
+		const pt::ptime &time,
+		double pnl,
+		const boost::shared_ptr<const FinancialResult> &financialResult) {
+
+	DropCopyRecord record;
+	record["id"] = id;
+	record["time"] = time;
+	record["pnl"] = pnl;
+	record["financial_result"] = financialResult;
+
+	return StoreRecord(
+		&Topics::storeOperationEnd,
+		recordIndex,
+		storeAttemptNo,
+		dump,
+		std::move(record));
+
+}
+
+bool Service::StoreOrder(
+		size_t recordIndex,
+		size_t storeAttemptNo,
+		bool dump,
+		const OrderCache &order) {
+
+	DropCopyRecord record;
+	record["id"] = order.id;
+	if (order.tradeSystemId) {
+		record["trade_system_id"] = *order.tradeSystemId;
+	}
+	if (order.orderTime) {
+		record["order_time"] = *order.orderTime;
+	}
+	if (order.executionTime) {
+		record["execution_time"] = *order.executionTime;
+	}
+	record["status"] = order.status;
+	record["operation_id"] = order.operationId;
+	if (order.subOperationId) {
+		record["sub_operation_id"] = *order.subOperationId;
+	}
+	record["symbol"] = order.security->GetSymbol().GetSymbol();
+	record["source"] = order.tradeSystem->GetTag();
+	record["side"] = order.side;
+	record["qty"] = order.qty;
+	if (order.price) {
+		record["price"] = *order.price;
+	}
+	if (order.timeInForce) {
+		record["time_in_force"] = *order.timeInForce;
+	}
+	record["currency"] = order.currency;
+	if (order.minQty) {
+		record["min_qty"] = *order.minQty;
+	}
+	if (order.user) {
+		record["user"] = *order.user;
+	}
+	record["executed_qty"] = order.executedQty;
+	if (order.bestBidPrice) {
+		record["best_bid_price"] = *order.bestBidPrice;
+	}
+	if (order.bestBidQty) {
+		record["best_bid_qty"] = *order.bestBidQty;
+	}
+	if (order.bestAskPrice) {
+		record["best_ask_price"] = *order.bestAskPrice;
+	}
+	if (order.bestAskQty) {
+		record["best_ask_qty"] = *order.bestAskQty;
+	}
+
+	return StoreRecord(
+		&Topics::storeOrder,
+		recordIndex,
+		storeAttemptNo,
+		dump,
+		std::move(record));
+
+}
+
+bool Service::StoreTrade(
+		size_t recordIndex,
+		size_t storeAttemptNo,
+		bool dump,
 		const pt::ptime &time,
 		const std::string &tradeSystemTradeId,
 		const uuids::uuid &orderId,
@@ -753,32 +1208,123 @@ void EngineServer::Service::CopyTrade(
 		const Qty &bestBidQty,
 		double bestAskPrice,
 		const Qty &bestAskQty) {
-	m_legacyDropCopy.CopyTrade(
-		time,
-		tradeSystemTradeId,
-		orderId,
-		price,
-		qty,
-		bestBidPrice,
-		bestBidQty,
-		bestAskPrice,
-		bestAskQty);
+
+	DropCopyRecord record;
+	record["time"] = time;
+	record["trade_system_id"] = tradeSystemTradeId;
+	record["order_id"] = orderId;
+	record["price"] = price;
+	record["qty"] = qty;
+	record["best_bid_price"] = bestBidPrice;
+	record["best_bid_qty"] = bestBidQty;
+	record["best_ask_price"] = bestAskPrice;
+	record["best_ask_qty"] = bestAskQty;
+
+	return StoreRecord(
+		&Topics::storeTrade,
+		recordIndex,
+		storeAttemptNo,
+		dump,
+		std::move(record));
+
 }
 
-void EngineServer::Service::ReportOperationStart(
-		const uuids::uuid &id,
-		const pt::ptime &time,
-		const Strategy &strategy,
-		size_t updatesNumber) {
-	m_legacyDropCopy.ReportOperationStart(id, time, strategy, updatesNumber);
+bool Service::StoreRecord(
+		const std::string Topics::*topic,
+		size_t recordIndex,
+		size_t storeAttemptNo,
+		bool dump,
+		const DropCopyRecord &&record) {
+
+	if (dump) {
+		DumpRecord(topic, recordIndex, storeAttemptNo, std::move(record));
+		return true;
+	}
+
+	AssertLt(0, storeAttemptNo);
+	if (storeAttemptNo == 1) {
+		m_dropCopy.GetDataLog().Info(
+			"store\t%1%\t%2%\t%3%\t%4%",
+			recordIndex,
+			storeAttemptNo,
+			m_connection->topics.*topic,
+			ConvertToLogString(record));
+	}
+
+	boost::future<autobahn::wamp_call_result> callFuture;
+	{
+
+		const ConnectionLock lock(m_connectionMutex);
+		if (!m_connection) {
+			m_dropCopy.GetDataLog().Warn(
+				"no connection\t%1%\t%2%\t%3%",
+				recordIndex,
+				storeAttemptNo,
+				m_connection->topics.*topic);
+			return false;
+		}
+
+		try {
+			callFuture = m_connection->session->call(
+				m_connection->topics.*topic,
+				std::make_tuple(),
+				record,
+				m_config.callOptions);
+		} catch (const std::exception &ex) {
+			m_log.Error(
+				"Failed to call TWS to store Drop Copy record: \"%1%\".",
+				ex.what());
+			m_dropCopy.GetDataLog().Error(
+				"store error\t%1%\t%2%\t%3%\t%4%",
+				recordIndex,
+				storeAttemptNo,
+				m_connection->topics.*topic,
+				ex.what());
+			return false;
+		}
+
+	}
+
+	try {
+		if (callFuture.get().argument<bool>(0)) {
+			m_dropCopy.GetDataLog().Info(
+				"stored\t%1%\t%2%\t%3%",
+				recordIndex,
+				storeAttemptNo,
+				m_connection->topics.*topic);
+		} else {
+			m_log.Error(
+				"Failed to store Drop Copy record: TWS retuned error."
+					" Record %1% will be skipped at attempt %2%.",
+				recordIndex,
+				storeAttemptNo);
+			DumpRecord(topic, recordIndex, storeAttemptNo, std::move(record));
+		}
+		return true;
+	} catch (const std::exception &ex) {
+		m_log.Error("Failed to store Drop Copy record: \"%1%\".", ex.what());
+		m_dropCopy.GetDataLog().Error(
+			"store error\t%1%\t%2%\t%3%\t%4%",
+			recordIndex,
+			storeAttemptNo,
+			m_connection->topics.*topic,
+			ex.what());
+		return false;
+	}
+
 }
 
-void EngineServer::Service::ReportOperationEnd(
-		const uuids::uuid &id,
-		const pt::ptime &time,
-		double pnl,
-		const boost::shared_ptr<const FinancialResult> &financialResult) {
-	m_legacyDropCopy.ReportOperationEnd(id, time, pnl, financialResult);
+void Service::DumpRecord(
+		const std::string Topics::*topic,
+		size_t recordIndex,
+		size_t storeAttemptNo,
+		const DropCopyRecord &&record) {
+	m_dropCopy.GetDataLog().Error(
+		"dump\t%1%\t%2%\t%3%\t%4%",
+		recordIndex,
+		storeAttemptNo,
+		m_connection->topics.*topic,
+		ConvertToLogString(record));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

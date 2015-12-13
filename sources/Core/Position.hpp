@@ -314,13 +314,13 @@ namespace trdk {
 		void UpdateOpening(
 				const trdk::OrderId &,
 				const std::string &tradeSystemOrderId,
-				const trdk::TradeSystem::OrderStatus &,
+				const trdk::OrderStatus &,
 				const trdk::Qty &remainingQty,
 				const trdk::TradeSystem::TradeInfo *);
 		void UpdateClosing(
 				const trdk::OrderId &,
 				const std::string &tradeSystemOrderId,
-				const trdk::TradeSystem::OrderStatus &,
+				const trdk::OrderStatus &,
 				const trdk::Qty &remainingQty,
 				const trdk::TradeSystem::TradeInfo *);
 

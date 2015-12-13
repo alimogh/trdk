@@ -22,9 +22,9 @@
 #endif
 
 #include <fstream>
-#include <unordered_map>
 
 #include "Common/DisableBoostWarningsBegin.h"
+#	include <boost/unordered_map.hpp>
 #	include <boost/filesystem.hpp>
 #	include <boost/thread/mutex.hpp>
 #	ifndef TRDK_AUTOBAHN_DISABLED

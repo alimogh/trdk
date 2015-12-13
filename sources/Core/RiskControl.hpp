@@ -111,7 +111,7 @@ namespace trdk {
 	
 		virtual void ConfirmBuyOrder(
 				const trdk::RiskControlOperationId &,
-				const trdk::TradeSystem::OrderStatus &,
+				const trdk::OrderStatus &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
@@ -121,7 +121,7 @@ namespace trdk {
 
 		virtual void ConfirmSellOrder(
 				const trdk::RiskControlOperationId &,
-				const trdk::TradeSystem::OrderStatus &,
+				const trdk::OrderStatus &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
@@ -250,7 +250,7 @@ namespace trdk {
 		void ConfirmBuyOrder(
 				const trdk::RiskControlOperationId &,
 				trdk::RiskControlScope &,
-				const trdk::TradeSystem::OrderStatus &,
+				const trdk::OrderStatus &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
@@ -260,7 +260,7 @@ namespace trdk {
 		void ConfirmSellOrder(
 				const trdk::RiskControlOperationId &,
 				trdk::RiskControlScope &,
-				const trdk::TradeSystem::OrderStatus &,
+				const trdk::OrderStatus &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,

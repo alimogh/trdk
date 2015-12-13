@@ -220,18 +220,6 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
 
 	state->ReportState();
 
-	if (state->dropCopy) {
-		const IniSectionRef dropCopyConf(conf, Ini::Sections::dropCopy);
-		try {
-			state->dropCopy->Start(dropCopyConf, *this);
-		} catch (const Lib::Exception &ex) {
-			GetLog().Error("Failed to start Drop Copy: \"%1%\".", ex);
-			throw Exception("Failed to start Drop Copy");
-		}
-	}
-	
-	state->subscriptionsManager.Activate();
-
 	foreach (auto &tradeSystemsByMode, m_pimpl->m_tradeSystems) {
 
 		foreach (auto &tradeSystemRef, tradeSystemsByMode.holders) {
@@ -312,8 +300,19 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
 			return true;
 		});
 
+	OnStarted();
+
 	m_pimpl->m_state.reset(state.release());
+	try {
+		m_pimpl->m_state->subscriptionsManager.Activate();
+	} catch (...) {
+		m_pimpl->m_state.reset();
+		throw;
+	}
+
 	moduleDlls.swap(m_pimpl->m_modulesDlls);
+
+	RaiseStateUpdate(Context::STATE_ENGINE_STARTED);
 
 }
 
@@ -339,6 +338,8 @@ void Engine::Context::Stop(const StopMode &stopMode) {
 
 	GetLog().Info("Stopping with mode \"%1%\"...", stopModeStr);
 
+	OnBeforeStop();
+
 	{
 		std::vector<Strategy *> stoppedStrategies;
 		foreach (auto &strategyies, m_pimpl->m_state->strategies) {
@@ -354,6 +355,15 @@ void Engine::Context::Stop(const StopMode &stopMode) {
 
 	// Suspend events...
 	m_pimpl->m_state->subscriptionsManager.Suspend();
+
+	{
+		DropCopy *const dropCopy = GetDropCopy();
+		if (dropCopy) {
+			dropCopy->Flush();
+			dropCopy->Dump();
+		}
+	}
+
 	m_pimpl->m_marketDataSources.clear();
 	
 	m_pimpl->m_state.reset();

@@ -42,11 +42,10 @@ namespace trdk {
 			CurrentTimeChangeSlot;
 		typedef boost::signals2::connection CurrentTimeChangeSlotConnection;
 
-
 		enum State {
 			STATE_ENGINE_STARTED,
-			STATE_ENGINE_STOPPED_GRACEFULLY,
-			STATE_ENGINE_STOPPED_ERROR,
+			STATE_DISPATCHER_TASK_STOPPED_GRACEFULLY,
+			STATE_DISPATCHER_TASK_STOPPED_ERROR,
 			STATE_STRATEGY_BLOCKED,
 			numberOfStates,
 		};
@@ -65,8 +64,6 @@ namespace trdk {
 				const trdk::Lib::Ini &,
 				const boost::posix_time::ptime &startTime);
 		virtual ~Context();
-
-		void StartStatMonitoring();
 
 	public:
 
@@ -187,6 +184,12 @@ namespace trdk {
 		virtual trdk::TradeSystem & GetTradeSystem(
 				size_t index,
 				const trdk::TradingMode &) = 0;
+
+
+	protected:
+
+		void OnStarted();
+		void OnBeforeStop();
 
 	protected:
 

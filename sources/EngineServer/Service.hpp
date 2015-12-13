@@ -12,26 +12,15 @@
 
 #ifndef TRDK_AUTOBAHN_DISABLED
 
-#include "Server.hpp"
-#include "ClientRequestHandler.hpp"
-#include "DropCopyService.hpp"
+#include <boost/thread/pthread/recursive_mutex.hpp>
+#include "Engine.hpp"
+#include "QueueService.hpp"
+#include "DropCopyRecord.hpp"
+#include "Exception.hpp"
 
 namespace trdk { namespace EngineServer {
 
-	class Client;
-
-	class Service
-		: public ClientRequestHandler
-		, public trdk::DropCopy {
-
-	private:
-
-		//! @todo Legacy support, to remove
-		typedef boost::shared_mutex ConnectionsMutex;
-		//! @todo Legacy support, to remove
-		typedef boost::shared_lock<ConnectionsMutex> ConnectionsReadLock;
-		//! @todo Legacy support, to remove
-		typedef boost::unique_lock<ConnectionsMutex> ConnectionsWriteLock;
+	class Service : private boost::noncopyable {
 
 	private:
 
@@ -57,24 +46,16 @@ namespace trdk { namespace EngineServer {
 			}
 		};
 
-		//! @todo Legacy support, to remove
-		struct InputIo {
-		
-			boost::asio::io_service service;
-			boost::asio::ip::tcp::acceptor acceptor;
-
-			InputIo();
-		
-		};
-
 		struct Config {
 
+			boost::filesystem::path path;
 			std::string name;
 			std::string id;
 			std::string twsHost;
 			uint16_t twsPort;
 			bool wampDebug;
 			boost::posix_time::time_duration timeout;
+			autobahn::wamp_call_options callOptions;
 
 			explicit Config(const boost::filesystem::path &);
 
@@ -82,12 +63,31 @@ namespace trdk { namespace EngineServer {
 
 		struct Topics {
 
+			std::string registerEngine;
+			std::string onEngineConnected;
+
 			std::string time;
 			std::string state;
+
+			std::string storeOperationStart;
+			std::string storeOperationEnd;
+			std::string storeOrder;
+			std::string storeTrade;
+
+			std::string startEngine;
+			std::string stopEngine;
+
+			std::string startDropCopy;
+			std::string stopDropCopy;
+
+			std::string closePositions;
 
 			explicit Topics(const std::string &suffix);
 
 		};
+
+		typedef boost::recursive_mutex EngineMutex;
+		typedef boost::unique_lock<EngineMutex> EngineLock;
 
 		typedef boost::mutex ConnectionMutex;
 		typedef boost::unique_lock<ConnectionMutex> ConnectionLock;
@@ -127,125 +127,198 @@ namespace trdk { namespace EngineServer {
 
 		};
 
+		struct OrderCache {
+
+			boost::uuids::uuid id;
+			boost::optional<std::string> tradeSystemId;
+			boost::optional<boost::posix_time::ptime> orderTime;
+			boost::optional<boost::posix_time::ptime> executionTime;
+			OrderStatus status;
+			boost::uuids::uuid operationId;
+			boost::optional<int64_t> subOperationId;
+			const Security *security;
+			const TradeSystem *tradeSystem;
+			OrderSide side;
+			Qty qty;
+			boost::optional<double> price;
+			boost::optional<TimeInForce> timeInForce;
+			Lib::Currency currency;
+			boost::optional<Qty> minQty;
+			boost::optional<std::string> user;
+			Qty executedQty;
+			boost::optional<double> bestBidPrice;
+			boost::optional<Qty> bestBidQty;
+			boost::optional<double> bestAskPrice;
+			boost::optional<Qty> bestAskQty;
+
+			explicit OrderCache(
+					const boost::uuids::uuid &id,
+					const std::string *tradeSystemId,
+					const boost::posix_time::ptime *orderTime,
+					const boost::posix_time::ptime *executionTime,
+					const OrderStatus &status,
+					const boost::uuids::uuid &operationId,
+					const int64_t *subOperationId,
+					const Security &security,
+					const TradeSystem &tradeSystem,
+					const OrderSide &side,
+					const Qty &qty,
+					const double *price,
+					const TimeInForce *timeInForce,
+					const Lib::Currency &currency,
+					const Qty *minQty,
+					const std::string *user,
+					const Qty &executedQty,
+					const double *bestBidPrice,
+					const Qty *bestBidQty,
+					const double *bestAskPrice,
+					const Qty *bestAskQty);
+
+		};
+
+		class DropCopy : public trdk::DropCopy {
+		public:
+			explicit DropCopy(Service &);
+			virtual ~DropCopy();
+		public:
+			void OpenDataLog(const boost::filesystem::path &logsDir);
+			void OnConnectionRestored();
+			EventsLog & GetDataLog() {
+				return m_dataLog;
+			}
+			void Start();
+			void Stop();
+			bool IsStarted() const;
+		public:
+			virtual void Flush();
+			virtual void Dump();
+		public:
+			virtual void CopyOrder(
+					const boost::uuids::uuid &id,
+					const std::string *tradeSystemId,
+					const boost::posix_time::ptime *orderTime,
+					const boost::posix_time::ptime *executionTime,
+					const trdk::OrderStatus &,
+					const boost::uuids::uuid &operationId,
+					const int64_t *subOperationId,
+					const trdk::Security &,
+					const trdk::TradeSystem &,
+					const trdk::OrderSide &,
+					const trdk::Qty &qty,
+					const double *price,
+					const trdk::TimeInForce *,
+					const trdk::Lib::Currency &,
+					const trdk::Qty *minQty,
+					const std::string *user,
+					const trdk::Qty &executedQty,
+					const double *bestBidPrice,
+					const trdk::Qty *bestBidQty,
+					const double *bestAskPrice,
+					const trdk::Qty *bestAskQty);
+			virtual void CopyTrade(
+					const boost::posix_time::ptime &,
+					const std::string &tradeSystemTradeId,
+					const boost::uuids::uuid &orderId,
+					double price,
+					const trdk::Qty &qty,
+					double bestBidPrice,
+					const trdk::Qty &bestBidQty,
+					double bestAskPrice,
+					const trdk::Qty &bestAskQty);
+			virtual void ReportOperationStart(
+					const boost::uuids::uuid &id,
+					const boost::posix_time::ptime &,
+					const trdk::Strategy &,
+					size_t updatesNumber);
+			virtual void ReportOperationEnd(
+					const boost::uuids::uuid &id,
+					const boost::posix_time::ptime &,
+					double pnl,
+					const boost::shared_ptr<const trdk::FinancialResult> &);
+		private:
+			Service &m_service;
+			EventsLog &m_log;
+			std::ofstream m_dataLogFile;
+			EventsLog m_dataLog;
+			QueueService m_queue;
+		};
+
+		//! @sa https://mbcm.robotdk.com:8443/display/API/Constants
+		enum EngineState {
+			ENGINE_STATE_STOPPED = 1100,
+			ENGINE_STATE_STOPPING = 1200,
+			ENGINE_STATE_STARTED = 2100,
+			ENGINE_STATE_STARTING = 2200,
+			numberOfEngineStates = 4
+		};
+
 	public:
 
 		explicit Service(
 				const std::string &name,
 				const boost::filesystem::path &);
-		//! @todo Virtual - is legacy support, remove virtual
-		virtual ~Service();
+		~Service();
 
-	public:
-
-		bool IsEngineStarted() const;
-
-	public:
-
-		//! @todo Legacy support, to remove
-		virtual const std::string & GetName() const {
-			return m_config.name;
-		}
-
-		//! @todo Legacy support, to remove
-		virtual void ForEachEngineId(
-				const boost::function<void(const std::string &engineId)> &)
-				const;
-		//! @todo Virtual - is alegacy suppor, remove virtual
-		virtual bool IsEngineStarted(const std::string &engineId) const;
-		//! @todo Legacy support, to remove
-		virtual void StartEngine(
-				const std::string &engineId,
-				const std::string &commandInfo);
-		//! @todo Legacy support, to remove
-		virtual void StopEngine(const std::string &engineId);
-		//! @todo Legacy support, to remove
-		virtual Settings & GetEngineSettings(
-				const std::string &engineId);
-
-		//! @todo Legacy support, to remove
-		virtual void ClosePositions(const std::string &engineId);
-
-		//! @todo Legacy support, to remove
-		virtual void UpdateEngine(
-				EngineServer::Settings::EngineTransaction &);
-		//! @todo Legacy support, to remove
-		virtual void UpdateStrategy(
-				EngineServer::Settings::StrategyTransaction &);
-
-		//! @todo Legacy support, to remove
-		virtual void OnDisconnect(Client &);
-
-	public:
-
-		//! @todo Legacy support, to remove (no DropCopy start)
-		virtual void Start(
-				const trdk::Lib::IniSectionRef &,
-				const Context &);
-
-		virtual void CopyOrder(
-				const boost::uuids::uuid &id,
-				const std::string *tradeSystemId,
-				const boost::posix_time::ptime *orderTime,
-				const boost::posix_time::ptime *executionTime,
-				const trdk::TradeSystem::OrderStatus &,
-				const boost::uuids::uuid &operationId,
-				const int64_t *subOperationId,
-				const trdk::Security &,
-				const trdk::OrderSide &,
-				const trdk::Qty &qty,
-				const double *price,
-				const trdk::TimeInForce *,
-				const trdk::Lib::Currency &,
-				const trdk::Qty *minQty,
-				const std::string *user,
-				const trdk::Qty &executedQty,
-				const double *bestBidPrice,
-				const trdk::Qty *bestBidQty,
-				const double *bestAskPrice,
-				const trdk::Qty *bestAskQty);
-
-		virtual void CopyTrade(
-				const boost::posix_time::ptime &,
-				const std::string &tradeSystemTradeId,
-				const boost::uuids::uuid &orderId,
-				double price,
-				const trdk::Qty &qty,
-				double bestBidPrice,
-				const trdk::Qty &bestBidQty,
-				double bestAskPrice,
-				const trdk::Qty &bestAskQty);
-
-		virtual void ReportOperationStart(
-				const boost::uuids::uuid &id,
-				const boost::posix_time::ptime &,
-				const trdk::Strategy &,
-				size_t updatesNumber);
-		virtual void ReportOperationEnd(
-				const boost::uuids::uuid &id,
-				const boost::posix_time::ptime &,
-				double pnl,
-				const boost::shared_ptr<const trdk::FinancialResult> &);
-	
 	private:
 
-		//! @todo Legacy support, to remove
-		void StartAccept();
-		//! @todo Legacy support, to remove
-		void HandleNewClient(
-				const boost::shared_ptr<Client> &,
-				const boost::system::error_code &);
-
-		//! @todo Legacy support, to remove
-		void CheckEngineIdExists(const std::string &id) const;
-
 		void OnContextStateChanged(
-				trdk::Context &,
 				const trdk::Context::State &,
 				const std::string *message = nullptr);
 
 	private:
 
-		void StartIoThread();
+		bool StoreOperationStartReport(
+				size_t recordIndex,
+				size_t storeAttemptNo,
+				bool dump,
+				const boost::uuids::uuid &id,
+				const boost::posix_time::ptime &,
+				const trdk::Strategy &,
+				size_t numberOfUpdates);
+		bool StoreOperationEndReport(
+				size_t recordIndex,
+				size_t storeAttemptNo,
+				bool dump,
+				const boost::uuids::uuid &id,
+				const boost::posix_time::ptime &,
+				double pnl,
+				const boost::shared_ptr<const FinancialResult> &);
+
+		bool StoreOrder(
+				size_t recordIndex,
+				size_t storeAttemptNo,
+				bool dump,
+				const OrderCache &);
+
+		bool StoreTrade(
+				size_t recordIndex,
+				size_t storeAttemptNo,
+				bool dump,
+				const boost::posix_time::ptime &,
+				const std::string &tradeSystemTradeId,
+				const boost::uuids::uuid &orderId,
+				double price,
+				const Qty &qty,
+				double bestBidPrice,
+				const Qty &bestBidQty,
+				double bestAskPrice,
+				const Qty &bestAskQty);
+
+		bool StoreRecord(
+				const std::string Topics::*topic,
+				size_t recordIndex,
+				size_t storeAttemptNo,
+				bool dump,
+				const DropCopyRecord &&);
+		void DumpRecord(
+				const std::string Topics::*topic,
+				size_t recordIndex,
+				size_t storeAttemptNo,
+				const DropCopyRecord &&);
+
+	private:
+
+		void RunIoThread();
 
 		boost::shared_ptr<Connection> Connect();
 		void OnConnected(
@@ -266,29 +339,40 @@ namespace trdk { namespace EngineServer {
 
 		void PublishState() const;
 
+		void RegisterMethods(Connection &);
+
+		void StartEngine();
+		void StopEngine();
+
+		void StartDropCopy();
+		void StopDropCopy();
+
+		void ClosePositions();
+
+		bool IsEngineTaskActive() const;
+
+		template<typename Task>
+		void StartEngineTask(const Task &&);
+
 	private:
 
 		const Config m_config;
 
-        //! Log file.
-        /** Should be first to be removed last.
-          */
-        std::ofstream m_logFile;
-        EventsLog m_log;
+		//! Log file.
+		/** Should be first to be removed last.
+		  */
+		std::ofstream m_logFile;
+		EventsLog m_log;
 
-		Settings m_settings;
-		Server m_server;
+		DropCopy m_dropCopy;
+
+		mutable EngineMutex m_engineMutex;
+		boost::atomic<EngineState> m_engineState;
+		boost::shared_ptr<Engine> m_engine;
+		boost::thread m_engineTask;
+		boost::future<void> m_engineTaskFuture;
 
 		const Topics m_topics;
-
-		//! @todo Legacy support, to remove
-		std::unique_ptr<InputIo> m_inputIo;
-		//! @todo Legacy support, to remove
-		boost::thread m_inputIoThread;
-		//! @todo Legacy support, to remove
-		ConnectionsMutex m_connectionsMutex;
-		//! @todo Legacy support, to remove
-		std::set<Client *> m_connections;
 
 		size_t m_numberOfReconnects;
 
@@ -304,10 +388,7 @@ namespace trdk { namespace EngineServer {
 		boost::shared_ptr<Connection> m_connection;
 		bool m_isInited;
 
-		//! @todo Legacy support, to remove
-		trdk::EngineServer::DropCopyService m_legacyDropCopy;
-
-    };
+	};
 
 } }
 

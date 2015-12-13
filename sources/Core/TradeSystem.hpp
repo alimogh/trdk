@@ -45,18 +45,6 @@ namespace trdk {
 		typedef trdk::ModuleEventsLog Log;
 		typedef trdk::ModuleTradingLog TradingLog;
 
-		enum OrderStatus {
-			ORDER_STATUS_SENT,
-			ORDER_STATUS_REQUESTED_CANCEL,
-			ORDER_STATUS_SUBMITTED,
-			ORDER_STATUS_CANCELLED,
-			ORDER_STATUS_FILLED,
-			ORDER_STATUS_REJECTED,
-			ORDER_STATUS_INACTIVE,
-			ORDER_STATUS_ERROR,
-			numberOfOrderStatuses
-		};
-
 		struct TradeInfo {
 			std::string id;
 			trdk::Qty qty;

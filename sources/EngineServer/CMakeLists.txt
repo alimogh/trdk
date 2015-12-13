@@ -5,12 +5,9 @@ file(
     GLOB
     source_list
     Service.cpp
-    Server.cpp
-    Client.cpp
-    DropCopyService.cpp
-    Settings.cpp
+    Engine.cpp
     Main.cpp
-    DropCopyClient.cpp)
+    QueueService.cpp)
 trdk_add_precompiled_header("Prec.h" "Prec.cpp" source_list)
 
 add_executable(RobotEngine ${source_list})
@@ -21,10 +18,7 @@ include_directories("${TRDK_EXTERNALS_DIR}autobahn/")
 
 include_directories("${TRDK_EXTERNALS_DIR}msgpack-c/include/")
 
-find_package(Protobuf REQUIRED)
-include_directories(${PROTOBUF_INCLUDE_DIRS})
-
 target_link_libraries(
     RobotEngine
     LINK_PRIVATE
-    pthread dl ${Boost_LIBRARIES} ${PROTOBUF_LIBRARIES} Lib Core Engine EngineService)
+    pthread dl ${Boost_LIBRARIES} Lib Core Engine)

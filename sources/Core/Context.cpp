@@ -72,14 +72,11 @@ namespace {
 		}
 
 		~StatReport() {
-			if (m_isStarted) {
-				{
-					const Lock lock(m_mutex);
-					Assert(!m_stopFlag);
-					m_stopFlag = true;
-					m_stopCondition.notify_all();
-				}
-				m_thread.join();
+			try {
+				StopMonitoring();
+			} catch (...) {
+				AssertFailNoException();
+				throw;
 			}
 		}
 
@@ -103,6 +100,20 @@ namespace {
 
 			m_isStarted = true;
 
+		}
+
+		void StopMonitoring() {
+			if (!m_isStarted) {
+				return;
+			}
+			{
+				const Lock lock(m_mutex);
+				Assert(!m_stopFlag);
+				m_stopFlag = true;
+			}
+			m_stopCondition.notify_all();
+			m_thread.join();
+			m_isStarted = false;
 		}
 
 		TimeMeasurement::Milestones StartStrategyTimeMeasurement() {
@@ -178,22 +189,16 @@ namespace {
 			stream << "." << std::endl;
 		}
 
-
 		void ThreadMain() {
-
+			m_context.GetLog().Debug("Started stat-monitoring task.");
 			try {
-
 				Lock lock(m_mutex);
-
 				while (
 						!m_stopFlag
 						&& !m_stopCondition.timed_wait(lock, m_reportPeriod)) {
-
 					DumpLatancy();
 					DumpSecurities();
-
 				}
-
 			} catch (...) {
 				EventsLog::BroadcastUnhandledException(
 					__FUNCTION__,
@@ -201,6 +206,7 @@ namespace {
 					__LINE__);
 				throw;
 			}
+			m_context.GetLog().Debug("Stat-monitoring task completed.");
 		}
 
 
@@ -421,8 +427,12 @@ Context::~Context() {
 	delete m_pimpl;
 }
 
-void Context::StartStatMonitoring() {
+void Context::OnStarted() {
 	m_pimpl->m_statReport->StartMonitoring();
+}
+
+void Context::OnBeforeStop() {
+	m_pimpl->m_statReport->StopMonitoring();
 }
 
 Context::Log & Context::GetLog() const throw() {

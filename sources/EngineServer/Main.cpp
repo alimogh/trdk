@@ -9,12 +9,11 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Server.hpp"
+#include "Engine.hpp"
 #include "Service.hpp"
 
 namespace fs = boost::filesystem;
 
-using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::EngineServer;
 
@@ -79,7 +78,7 @@ namespace {
 		try {
 
 #			ifndef TRDK_AUTOBAHN_DISABLED
-				EngineServer::Service service(
+				Service service(
 					boost::asio::ip::host_name(),
 					GetIniFilePath(argv[2]));
 #			else
@@ -108,7 +107,7 @@ namespace {
 			return false;
 		}
 
-		Server server;
+		std::unique_ptr<Engine> engine;
 		bool result = true;
 
 		{
@@ -119,11 +118,13 @@ namespace {
 			}
 
 			try {
-				server.Run(
-					"__DEBUG",
-					GetIniFilePath(argv[2]),
-					true,
-					boost::join(cmd, " "));
+				engine.reset(
+					new Engine(
+						GetIniFilePath(argv[2]),
+						[](const trdk::Context::State &, const std::string *) {
+							//...//
+						},
+						true));
 			} catch (const trdk::Lib::Exception &ex) {
 				std::cerr
 					<< "Failed to start engine: \"" << ex << "\"."
@@ -135,10 +136,10 @@ namespace {
 		
 		if (result) {
 
-			StopMode stopMode = STOP_MODE_UNKNOWN;
+			trdk::StopMode stopMode = trdk::STOP_MODE_UNKNOWN;
 			std::cout << std::endl;
 			bool skipInfo = false;
-			while (stopMode == STOP_MODE_UNKNOWN) {
+			while (stopMode == trdk::STOP_MODE_UNKNOWN) {
 				if (!skipInfo) {
 					std::cout
 						<< "To please enter:" << std::endl
@@ -157,18 +158,18 @@ namespace {
 				const char command = char(getchar());
 				switch (command) {
 					case '1':
-						stopMode = STOP_MODE_GRACEFULLY_POSITIONS;
+						stopMode = trdk::STOP_MODE_GRACEFULLY_POSITIONS;
 						break;
 					case '2':
-						stopMode = STOP_MODE_GRACEFULLY_ORDERS;
+						stopMode = trdk::STOP_MODE_GRACEFULLY_ORDERS;
 						break;
 					case '5':
-						server.ClosePositions();
+						engine->ClosePositions();
 						break;
 					case '9':
 					case 'u':
 					case 'U':
-						stopMode = STOP_MODE_IMMEDIATELY;
+						stopMode = trdk::STOP_MODE_IMMEDIATELY;
 						break;
 					case  '\n':
 						skipInfo = true;
@@ -180,7 +181,7 @@ namespace {
 			}
 
 			try {
-				server.StopAll(stopMode);
+				engine->Stop(stopMode);
 			} catch (const trdk::Lib::Exception &ex) {
 				std::cerr
 					<< "Failed to stop engine: \"" << ex << "\"."

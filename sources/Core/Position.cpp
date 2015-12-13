@@ -19,7 +19,7 @@ using namespace trdk;
 using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
-namespace uu = boost::uuids;
+namespace uuids = boost::uuids;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -31,13 +31,13 @@ namespace {
 
 	class UuidGenerator : private boost::noncopyable {
 	public:
-		uu::uuid operator ()() {
+		uuids::uuid operator ()() {
 			const Lib::Concurrency::SpinScopedLock lock(m_mutex);
 			return m_generator();
 		}
 	private:
 		Lib::Concurrency::SpinMutex m_mutex;
-		uu::random_generator m_generator;
+		uuids::random_generator m_generator;
 	} generateUuid;
 
 }
@@ -105,7 +105,7 @@ public:
 		StateUpdateSignal;
 
 	struct StaticData {
-		uu::uuid uuid;
+		uuids::uuid uuid;
 		bool hasPrice;
 		TimeInForce timeInForce;
 	};
@@ -157,7 +157,7 @@ public:
 	mutable StateUpdateSignal m_stateUpdateSignal;
 
 	Strategy &m_strategy;
-	const uu::uuid m_operationId;
+	const uuids::uuid m_operationId;
 	const int64_t m_subOperationId;
 	bool m_isRegistered;
 	Security &m_security;
@@ -191,7 +191,7 @@ public:
 			Position &position,
 			TradeSystem &tradeSystem,
 			Strategy &strategy,
-			const uu::uuid &operationId,
+			const uuids::uuid &operationId,
 			int64_t subOperationId,
 			Security &security,
 			const Currency &currency,
@@ -225,7 +225,7 @@ public:
 	void UpdateOpening(
 			const OrderId &orderId,
 			const std::string &tradeSystemOrderId,
-			const TradeSystem::OrderStatus &orderStatus,
+			const OrderStatus &orderStatus,
 			const Qty &remainingQty,
 			const TradeSystem::TradeInfo *trade) {
 
@@ -262,17 +262,17 @@ public:
 			}
 
 			static_assert(
-				TradeSystem::numberOfOrderStatuses == 8,
+				numberOfOrderStatuses == 9,
 				"List changed.");
 
 			switch (orderStatus) {
 				default:
 					AssertFail("Unknown order status");
 					return;
-				case TradeSystem::ORDER_STATUS_SENT:
-				case TradeSystem::ORDER_STATUS_REQUESTED_CANCEL:
+				case ORDER_STATUS_SENT:
+				case ORDER_STATUS_REQUESTED_CANCEL:
 					AssertFail("Status can be set only by this object.");
-				case TradeSystem::ORDER_STATUS_SUBMITTED:
+				case ORDER_STATUS_SUBMITTED:
 					AssertEq(0, m_opened.qty);
 					AssertEq(0, m_opened.price.total);
 					AssertEq(0, m_opened.price.count);
@@ -285,7 +285,8 @@ public:
 					Assert(!trade);
 					AssertLt(0, remainingQty);
 					return;
-				case TradeSystem::ORDER_STATUS_FILLED:
+				case ORDER_STATUS_FILLED:
+				case ORDER_STATUS_FILLED_PARTIALLY:
 					if (!trade) {
 						throw Exception("Filled order has no trade information");
 					}
@@ -341,7 +342,7 @@ public:
 						trade->qty,
 						true);
 					break;
-				case TradeSystem::ORDER_STATUS_INACTIVE:
+				case ORDER_STATUS_INACTIVE:
 					isCompleted = true;
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
@@ -357,7 +358,7 @@ public:
 						orderStatus);
 					m_isInactive = true;
 					break;
-				case TradeSystem::ORDER_STATUS_ERROR:
+				case ORDER_STATUS_ERROR:
 					isCompleted = true;
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
@@ -373,8 +374,8 @@ public:
 						orderStatus);
 					m_isError = true;
 					break;
-				case TradeSystem::ORDER_STATUS_CANCELLED:
-				case TradeSystem::ORDER_STATUS_REJECTED:
+				case ORDER_STATUS_CANCELLED:
+				case ORDER_STATUS_REJECTED:
 					isCompleted = true;
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
@@ -450,7 +451,7 @@ public:
 	void UpdateClosing(
 			const OrderId &orderId,
 			const std::string &tradeSystemOrderId,
-			const TradeSystem::OrderStatus &orderStatus,
+			const OrderStatus &orderStatus,
 			const Qty &remainingQty,
 			const TradeSystem::TradeInfo *trade) {
 
@@ -478,22 +479,23 @@ public:
 			}
 
 			static_assert(
-				TradeSystem::numberOfOrderStatuses == 8,
+				numberOfOrderStatuses == 9,
 				"List changed.");
 			switch (orderStatus) {
 				default:
 					AssertFail("Unknown order status");
 					return;
-				case TradeSystem::ORDER_STATUS_SENT:
-				case TradeSystem::ORDER_STATUS_REQUESTED_CANCEL:
+				case ORDER_STATUS_SENT:
+				case ORDER_STATUS_REQUESTED_CANCEL:
 					AssertFail("Status can be set only by this object.");
-				case TradeSystem::ORDER_STATUS_SUBMITTED:
+				case ORDER_STATUS_SUBMITTED:
 					AssertEq(m_closed.qty, 0);
 					AssertEq(m_closed.price.total, 0);
 					AssertEq(m_closed.price.count, 0);
 					AssertLt(0, remainingQty);
 					return;
-				case TradeSystem::ORDER_STATUS_FILLED:
+				case ORDER_STATUS_FILLED:
+				case ORDER_STATUS_FILLED_PARTIALLY:
 					if (!trade) {
 						throw Exception("Filled order has no trade information");
 					}
@@ -517,22 +519,22 @@ public:
 						return;
 					}
 					break;
-				case TradeSystem::ORDER_STATUS_INACTIVE:
+				case ORDER_STATUS_INACTIVE:
 					ReportClosingUpdate(
 						"error",
 						tradeSystemOrderId,
 						orderStatus);
 					m_isInactive = true;
 					break;
-				case TradeSystem::ORDER_STATUS_ERROR:
+				case ORDER_STATUS_ERROR:
 					ReportClosingUpdate(
 						"error",
 						tradeSystemOrderId,
 						orderStatus);
 					m_isError = true;
 					break;
-				case TradeSystem::ORDER_STATUS_CANCELLED:
-				case TradeSystem::ORDER_STATUS_REJECTED:
+				case ORDER_STATUS_CANCELLED:
+				case ORDER_STATUS_REJECTED:
 					ReportClosingUpdate(
 						TradeSystem::GetStringStatus(orderStatus),
 						tradeSystemOrderId,
@@ -597,7 +599,7 @@ public:
 	void ReportOpeningUpdate(
 				const char *eventDesc,
 				const std::string &tsOrderId,
-				const TradeSystem::OrderStatus &orderStatus)
+				const OrderStatus &orderStatus)
 			const
 			throw() {
 		m_security.GetContext().GetTradingLog().Write(
@@ -661,7 +663,7 @@ public:
 	void ReportClosingUpdate(
 				const char *eventDesc,
 				const std::string &tsOrderId,
-				const TradeSystem::OrderStatus &orderStatus)
+				const OrderStatus &orderStatus)
 			const
 			throw() {
 		m_security.GetContext().GetTradingLog().Write(
@@ -763,10 +765,7 @@ public:
 			m_isRegistered = true;
 		}
 
-		ReportOpeningUpdate(
-			"restored",
-			std::string(),
-			TradeSystem::ORDER_STATUS_FILLED);
+		ReportOpeningUpdate("restored", std::string(), ORDER_STATUS_FILLED);
 
 		SignalUpdate();
 	
@@ -870,7 +869,7 @@ public:
 			CopyOrder(
 				nullptr, // order ID (from trade system)
 				true,
-				TradeSystem::ORDER_STATUS_SENT,
+				ORDER_STATUS_SENT,
 				&timeInForce,
 				&orderParams);
 			return orderId;
@@ -882,7 +881,7 @@ public:
 				CopyOrder(
 					nullptr, // order ID (from trade system)
 					true,
-					TradeSystem::ORDER_STATUS_ERROR,
+					ORDER_STATUS_ERROR,
 					&timeInForce,
 					&orderParams);
 			} catch (...) {
@@ -924,7 +923,7 @@ public:
 		CopyOrder(
 			nullptr, // order ID (from trade system)
 			false,
-			TradeSystem::ORDER_STATUS_SENT,
+			ORDER_STATUS_SENT,
 			&timeInForce,
 			&orderParams);
 
@@ -1025,7 +1024,7 @@ private:
 	void CopyOrder(
 			const std::string *orderId,
 			bool isOpen,
-			const TradeSystem::OrderStatus &status,
+			const OrderStatus &status,
 			const TimeInForce *timeInForce = nullptr,
 			const OrderParams *orderParams = nullptr) {
 		
@@ -1044,20 +1043,21 @@ private:
 		Qty bidQty;
 		double askPrice;
 		Qty askQty;
-		static_assert(TradeSystem::numberOfOrderStatuses == 8, "List changed");
+		static_assert(numberOfOrderStatuses == 9, "List changed");
 		switch (status) {
-			case TradeSystem::ORDER_STATUS_SENT:
+			case ORDER_STATUS_SENT:
 				orderTime = m_strategy.GetContext().GetCurrentTime();
 				bidPrice = m_security.GetBidPrice();
 				bidQty = m_security.GetBidQty();
 				askPrice = m_security.GetAskPrice();
 				askQty = m_security.GetAskQty();
 				break;
-			case TradeSystem::ORDER_STATUS_CANCELLED:
-			case TradeSystem::ORDER_STATUS_FILLED:
-			case TradeSystem::ORDER_STATUS_REJECTED:
-			case TradeSystem::ORDER_STATUS_INACTIVE:
-			case TradeSystem::ORDER_STATUS_ERROR:
+			case ORDER_STATUS_CANCELLED:
+			case ORDER_STATUS_FILLED:
+			case ORDER_STATUS_FILLED_PARTIALLY:
+			case ORDER_STATUS_REJECTED:
+			case ORDER_STATUS_INACTIVE:
+			case ORDER_STATUS_ERROR:
 				execTime = m_strategy.GetContext().GetCurrentTime();
 				break;
 		}
@@ -1076,6 +1076,7 @@ private:
 			m_operationId,
 			&m_subOperationId,
 			m_security,
+			m_tradeSystem,
 			m_position.GetType() == TYPE_LONG
 				?	(isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL)
 				:	(!isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL),
@@ -1088,10 +1089,10 @@ private:
 				:	nullptr,
 			nullptr /* user */,
 			directionData.qty.load(),
-			status == TradeSystem::ORDER_STATUS_SENT ? &bidPrice : nullptr,
-			status == TradeSystem::ORDER_STATUS_SENT ? &bidQty : nullptr,
-			status == TradeSystem::ORDER_STATUS_SENT ? &askPrice : nullptr,
-			status == TradeSystem::ORDER_STATUS_SENT ? &askQty : nullptr);
+			status == ORDER_STATUS_SENT ? &bidPrice : nullptr,
+			status == ORDER_STATUS_SENT ? &bidQty : nullptr,
+			status == ORDER_STATUS_SENT ? &askPrice : nullptr,
+			status == ORDER_STATUS_SENT ? &askQty : nullptr);
 
 	}
 
@@ -1130,7 +1131,7 @@ private:
 
 Position::Position(
 		Strategy &strategy,
-		const uu::uuid &operationId,
+		const uuids::uuid &operationId,
 		int64_t subOperationId,
 		TradeSystem &tradeSystem,
 		Security &security,
@@ -1156,7 +1157,7 @@ Position::Position(
 
 Position::Position(
 		Strategy &strategy,
-		const uu::uuid &operationId,
+		const uuids::uuid &operationId,
 		int64_t subOperationId,
 		Position &oppositePosition,
 		const Qty &qty,
@@ -1323,7 +1324,7 @@ const std::string & Position::GetCloseTypeStr() const {
 void Position::UpdateOpening(
 		const OrderId &orderId,
 		const std::string &tradeSystemOrderId,
-		const TradeSystem::OrderStatus &orderStatus,
+		const OrderStatus &orderStatus,
 		const Qty &remainingQty,
 		const TradeSystem::TradeInfo *trade) {
 	m_pimpl->UpdateOpening(
@@ -1337,7 +1338,7 @@ void Position::UpdateOpening(
 void Position::UpdateClosing(
 		const OrderId &orderId,
 		const std::string &tradeSystemOrderId,
-		const TradeSystem::OrderStatus &orderStatus,
+		const OrderStatus &orderStatus,
 		const Qty &remainingQty,
 		const TradeSystem::TradeInfo *trade) {
 	m_pimpl->UpdateClosing(
@@ -1646,7 +1647,7 @@ void Position::RestoreOpenState(OrderId openOrderId) {
 
 LongPosition::LongPosition(
 		Strategy &strategy,
-		const uu::uuid &operationId,
+		const uuids::uuid &operationId,
 		int64_t subOperationId,
 		TradeSystem &tradeSystem,
 		Security &security,
@@ -1669,7 +1670,7 @@ LongPosition::LongPosition(
 
 LongPosition::LongPosition(
 		Strategy &strategy,
-		const uu::uuid &operationId,
+		const uuids::uuid &operationId,
 		int64_t subOperationId,
 		ShortPosition &oppositePosition,
 		const Qty &qty,
@@ -1939,7 +1940,7 @@ OrderId LongPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
 
 ShortPosition::ShortPosition(
 		Strategy &strategy,
-		const uu::uuid &operationId,
+		const uuids::uuid &operationId,
 		int64_t subOperationId,
 		TradeSystem &tradeSystem,
 		Security &security,
@@ -1962,7 +1963,7 @@ ShortPosition::ShortPosition(
 
 ShortPosition::ShortPosition(
 		Strategy &strategy,
-		const uu::uuid &operationId,
+		const uuids::uuid &operationId,
 		int64_t subOperationId,
 		LongPosition &oppositePosition,
 		const Qty &qty,

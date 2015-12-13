@@ -15,7 +15,9 @@
 #include "Core/Security.hpp"
 #include "Core/Position.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/DropCopy.hpp"
 
+using namespace trdk;
 using namespace trdk::Lib;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,7 +37,8 @@ namespace trdk { namespace Strategies { namespace Test {
 				const std::string &name,
 				const std::string &tag,
 				const Lib::IniSectionRef &conf)
-			: Super(context, name, tag, conf) {
+			: Super(context, name, tag, conf)
+			, m_numberOfOperations(0) {
 			//...//
 		}
 		
@@ -43,8 +46,108 @@ namespace trdk { namespace Strategies { namespace Test {
 			//...//
 		}
 
-	public:
-		
+	protected:
+
+		void OnPositionUpdate(Position &position) {
+
+			Assert(m_operationId);
+			if (position.IsError()) {
+				Assert(IsBlocked());
+				return;
+			}
+			if (position.HasActiveOrders()) {
+				return;
+			}
+			Assert(!position.IsCompleted() || position.GetOpenedQty() == 0);
+
+			DropCopy *const dropCopy = GetContext().GetDropCopy();
+			if (dropCopy) {
+
+				boost::shared_ptr<FinancialResult> financialResult(
+					new FinancialResult);
+				financialResult->push_back(std::make_pair(CURRENCY_AUD, 8877.111));
+				financialResult->push_back(std::make_pair(CURRENCY_CHF, -679.12));
+				financialResult->push_back(std::make_pair(CURRENCY_JPY, 787));
+
+				dropCopy->ReportOperationEnd(
+					*m_operationId,
+					GetContext().GetCurrentTime(),
+					9.99,
+					financialResult);
+
+			}
+
+			m_operationId.reset();
+
+		}
+
+		virtual void OnBookUpdateTick(
+				Security &security,
+				const Security::Book &book,
+				const TimeMeasurement::Milestones &timeMeasurement) {
+
+			if (m_numberOfOperations > 5) {
+				return;
+			}
+
+			if (!book.GetAsks().GetSize() || !book.GetBids().GetSize()) {
+				return;
+			}
+
+			if (m_operationId) {
+				return;
+			}
+
+			const auto &operationId = m_generateUuid();
+
+			const auto price = m_numberOfOperations % 2
+				?	book.GetAsks().GetLevel(0).GetPrice()
+				:	book.GetBids().GetLevel(0).GetPrice();
+			Assert(!IsZero(price));
+
+			boost::shared_ptr<Position> position;
+			if (m_numberOfOperations % 2) {
+				position.reset(
+					new LongPosition(
+						*this,
+						operationId,
+						m_numberOfOperations + 111,
+						GetTradeSystem(security.GetSource().GetIndex()),
+						security,
+						security.GetSymbol().GetFotBaseCurrency(),
+						100000,
+						security.ScalePrice(price),
+						timeMeasurement));
+			} else {
+				position.reset(
+					new ShortPosition(
+						*this,
+						operationId,
+						m_numberOfOperations + 111,
+						GetTradeSystem(security.GetSource().GetIndex()),
+						security,
+						security.GetSymbol().GetFotBaseCurrency(),
+						100000,
+						security.ScalePrice(price),
+						timeMeasurement));
+			}
+
+			DropCopy *const dropCopy = GetContext().GetDropCopy();
+			if (dropCopy) {
+				dropCopy->ReportOperationStart(
+					operationId,
+					GetContext().GetCurrentTime(),
+					*this,
+					999111999);
+			}
+
+			position->OpenImmediatelyOrCancel(security.ScalePrice(price));
+
+			m_operationId = operationId;
+			++m_numberOfOperations;
+
+		}
+
 		virtual void OnLevel1Update(
 				Security &security,
 				const Lib::TimeMeasurement::Milestones &timeMeasurement) {
@@ -78,15 +181,6 @@ namespace trdk { namespace Strategies { namespace Test {
 			pos->OpenAtMarketPrice();
 
 		}
-		
-		virtual void OnBookUpdateTick(
-				trdk::Security &,
-				const trdk::Security::Book &,
-				const trdk::Lib::TimeMeasurement::Milestones &) {
-			//...//
-		}
-
-	protected:
 
 		virtual void OnPostionsCloseRequest() {
 			GetContext().GetLog().Debug("All positions closed.");
@@ -95,6 +189,10 @@ namespace trdk { namespace Strategies { namespace Test {
 	private:
 
 		boost::uuids::random_generator m_generateUuid;
+
+		size_t m_numberOfOperations;
+
+		boost::optional<boost::uuids::uuid> m_operationId;
 		
 	};
 	
@@ -114,7 +212,7 @@ TRDK_STRATEGY_TEST_API boost::shared_ptr<trdk::Strategy> CreateStrategy(
 			const std::string &tag,
 			const trdk::Lib::IniSectionRef &conf) {
 	return boost::shared_ptr<trdk::Strategy>(
-		new trdk::Strategies::Test::TestStrategy(context, tag, "Test", conf));
+		new trdk::Strategies::Test::TestStrategy(context, "Test", tag, conf));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -272,7 +272,7 @@ public:
 
 	virtual void ConfirmBuyOrder(
 			const RiskControlOperationId &operationId,
-			const TradeSystem::OrderStatus &status,
+			const OrderStatus &status,
 			Security &security,
 			const Lib::Currency &currency,
 			const ScaledPrice &orderPrice,
@@ -294,7 +294,7 @@ public:
 
 	virtual void ConfirmSellOrder(
 			const RiskControlOperationId &operationId,
-			const TradeSystem::OrderStatus &status,
+			const OrderStatus &status,
 			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
@@ -402,7 +402,7 @@ private:
 
 	void ConfirmOrder(
 			const RiskControlOperationId &operationId,
-			const TradeSystem::OrderStatus &status,
+			const OrderStatus &status,
 			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
@@ -602,7 +602,7 @@ private:
 
 	void ConfirmUsedFunds(
 			const RiskControlOperationId &operationId,
-			const TradeSystem::OrderStatus &status,
+			const OrderStatus &status,
 			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
@@ -611,17 +611,18 @@ private:
 			const RiskControlSymbolContext::Side &side) {
 
 		static_assert(
-			TradeSystem::numberOfOrderStatuses == 8,
+			numberOfOrderStatuses == 9,
 			"Status list changed.");
 		switch (status) {
 			default:
-				AssertEq(TradeSystem::ORDER_STATUS_ERROR, status);
+				AssertEq(ORDER_STATUS_ERROR, status);
 				return;
-			case TradeSystem::ORDER_STATUS_SENT:
-			case TradeSystem::ORDER_STATUS_SUBMITTED:
-			case TradeSystem::ORDER_STATUS_REQUESTED_CANCEL:
+			case ORDER_STATUS_SENT:
+			case ORDER_STATUS_SUBMITTED:
+			case ORDER_STATUS_REQUESTED_CANCEL:
 				break;
-			case TradeSystem::ORDER_STATUS_FILLED:
+			case ORDER_STATUS_FILLED:
+			case ORDER_STATUS_FILLED_PARTIALLY:
 				if (!trade) {
 					throw Exception("Filled order has no trade information");
 				}
@@ -634,10 +635,10 @@ private:
 					*trade,
 					side);
 				break;
-			case TradeSystem::ORDER_STATUS_CANCELLED:
-			case TradeSystem::ORDER_STATUS_REJECTED:
-			case TradeSystem::ORDER_STATUS_INACTIVE:
-			case TradeSystem::ORDER_STATUS_ERROR:
+			case ORDER_STATUS_CANCELLED:
+			case ORDER_STATUS_REJECTED:
+			case ORDER_STATUS_INACTIVE:
+			case ORDER_STATUS_ERROR:
 				Assert(!trade);
 				UnblockFunds(
 					operationId,
@@ -1414,7 +1415,7 @@ RiskControlOperationId RiskControl::CheckNewSellOrder(
 void RiskControl::ConfirmBuyOrder(
 		const RiskControlOperationId &operationId,
 		RiskControlScope &scope,
-		const TradeSystem::OrderStatus &orderStatus,
+		const OrderStatus &orderStatus,
 		Security &security,
 		const Currency &currency,
 		const ScaledPrice &orderPrice,
@@ -1444,7 +1445,7 @@ void RiskControl::ConfirmBuyOrder(
 void RiskControl::ConfirmSellOrder(
 		const RiskControlOperationId &operationId,
 		RiskControlScope &scope,
-		const TradeSystem::OrderStatus &orderStatus,
+		const OrderStatus &orderStatus,
 		Security &security,
 		const Currency &currency,
 		const ScaledPrice &orderPrice,

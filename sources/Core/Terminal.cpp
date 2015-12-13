@@ -60,7 +60,7 @@ private:
 		}
 		virtual void ConfirmBuyOrder(
 				const RiskControlOperationId &,
-				const TradeSystem::OrderStatus &,
+				const OrderStatus &,
 				Security &,
 				const Currency &,
 				const ScaledPrice &/*orderPrice*/,
@@ -70,7 +70,7 @@ private:
 		}
 		virtual void ConfirmSellOrder(
 				const RiskControlOperationId &,
-				const TradeSystem::OrderStatus &,
+				const OrderStatus &,
 				Security &,
 				const Currency &,
 				const ScaledPrice &/*orderPrice*/,
@@ -277,7 +277,7 @@ private:
 		void OnReply(
 					const OrderId &orderId,
 					const std::string &tradeSystemOrderId,
-					const TradeSystem::OrderStatus &status,
+					const OrderStatus &status,
 					const Qty &remaining,
 					const TradeSystem::TradeInfo *trade) {
 			m_tradeSystem.GetLog().Info(

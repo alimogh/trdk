@@ -48,52 +48,50 @@ void Fake::MarketDataSource::NotificationThread() {
 
 	try {
 
-		Security::Bar bar(
-			pt::second_clock::local_time(),
-			pt::seconds(5),
-			Security::Bar::TRADES);
-		bar.openPrice = 10;
-		bar.highPrice = 15;
-		bar.lowPrice = 5;
-		bar.closePrice = 11;
-		bar.volume = 111;
-		bar.count = 45;
-
 		const double bid = 12.99;
-		const double ask = 13.99;					
+		const double ask = 13.99;
 		int correction = 1;
 
 		while (!m_stopFlag) {
 
-		
-			const auto &now = pt::second_clock::local_time();
-			bool isBarTime = bar.time + bar.size <= now;
+			const auto &now = GetContext().GetCurrentTime();
 
-			foreach (boost::shared_ptr<Security> s, m_securityList) {
+			foreach (const auto &s, m_securityList) {
+
 				const auto &timeMeasurement
 					= GetContext().StartStrategyTimeMeasurement();
- 				s->AddTrade(
- 					GetContext().GetCurrentTime(),
- 					ORDER_SIDE_BUY,
- 					10,
- 					20,
- 					timeMeasurement);
- 				if (isBarTime) {
- 					s->AddBar(bar);
- 				}
-				s->SetLevel1(
-					bid + correction,
-					10000,
-					ask + correction,
-					10000,
-					timeMeasurement);
+
+				Security::BookUpdateOperation book
+					= s->StartBookUpdate(now, false);
+				{
+					std::vector<Security::Book::Level> asks;
+					asks.reserve(10);
+					for (int i = 1; i <= 10; ++i) {
+						asks.push_back(
+							Security::Book::Level(
+								now,
+								ask + abs(correction * i),
+								i * 10000));
+					}
+					book.GetAsks().Swap(asks);
+				}
+				{
+					std::vector<Security::Book::Level> bids;
+					bids.reserve(10);
+					for (int i = 1; i <= 10; ++i) {
+						bids.push_back(
+							Security::Book::Level(
+								now,
+								bid - abs(correction * i),
+								i * 10000));
+					}
+					book.GetBids().Swap(bids);
+				}
+				book.Commit(timeMeasurement);
+
 			}
 
 			correction *= -1;
-
-			if (isBarTime) {
-				bar.time = now;
-			}
 
 			if (m_stopFlag) {
 				break;
@@ -112,9 +110,7 @@ void Fake::MarketDataSource::NotificationThread() {
 
 Security & Fake::MarketDataSource::CreateNewSecurityObject(
 		const Symbol &symbol) {
-	auto result = boost::shared_ptr<Security>(
-		new Security(GetContext(), symbol, *this));
-	const_cast<MarketDataSource *>(this)
-		->m_securityList.push_back(result);
+	auto result = boost::make_shared<FakeSecurity>(GetContext(), symbol, *this);
+	const_cast<MarketDataSource *>(this)->m_securityList.push_back(result);
 	return *result;
 }

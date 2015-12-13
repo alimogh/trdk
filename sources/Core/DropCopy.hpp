@@ -23,12 +23,17 @@ namespace trdk {
 		DropCopy();
 		virtual ~DropCopy();
 
+
 	public:
 
-		virtual void Start(
-				const trdk::Lib::IniSectionRef &,
-				const trdk::Context &)
-			= 0;
+		//! Synchronous flush for all buffered Drop Copy data.
+		/** Method doesn't guarantee to store all records - flushing can be
+		  * interrupted.
+		  */
+		virtual void Flush() = 0;
+
+		//! Dumps all unflushed data.
+		virtual void Dump() = 0;
 
 	public:
 
@@ -37,10 +42,11 @@ namespace trdk {
 				const std::string *tradeSystemId,
 				const boost::posix_time::ptime *orderTime,
 				const boost::posix_time::ptime *executionTime,
-				const trdk::TradeSystem::OrderStatus &,
+				const trdk::OrderStatus &,
 				const boost::uuids::uuid &operationId,
 				const int64_t *subOperationId,
 				const trdk::Security &,
+				const trdk::TradeSystem &,
 				const trdk::OrderSide &,
 				const trdk::Qty &qty,
 				const double *price,

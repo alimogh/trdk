@@ -323,10 +323,8 @@
     <Link />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Client.cpp" />
-    <ClCompile Include="DropCopyClient.cpp" />
-    <ClCompile Include="DropCopyService.cpp" />
-    <ClCompile Include="Server.cpp" />
+    <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="QueueService.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
@@ -343,19 +341,15 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Service.cpp" />
-    <ClCompile Include="Settings.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Client.hpp" />
-    <ClInclude Include="ClientRequestHandler.hpp" />
-    <ClInclude Include="DropCopyClient.hpp" />
-    <ClInclude Include="DropCopyService.hpp" />
+    <ClInclude Include="DropCopyRecord.hpp" />
+    <ClInclude Include="Engine.hpp" />
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="Server.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Service.hpp" />
-    <ClInclude Include="Settings.hpp" />
+    <ClInclude Include="QueueService.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.vcxproj">
@@ -363,9 +357,6 @@
     </ProjectReference>
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\EngineService\EngineService.vcxproj">
-      <Project>{3017831f-4910-430b-9e74-1a5ea69a175c}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Engine\Engine.vcxproj">
       <Project>{015fb121-6122-4a00-bfbb-545e9e73abee}</Project>

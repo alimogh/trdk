@@ -339,22 +339,22 @@ private:
 			trade.price = order.security->GetAskPriceScaled();
 			isMatched = order.price >= trade.price;
 		}
-		const auto &tradeSysteOrderId
+		const auto &tradeSystemOrderId
 			= (boost::format("PAPER%1%") % order.id).str();
 		if (isMatched && m_execChanceGenerator.HasChance()) {
-			trade.id = tradeSysteOrderId;
+			trade.id = tradeSystemOrderId;
 			trade.qty = order.qty;
 			order.callback(
 				order.id,
-				tradeSysteOrderId,
-				TradeSystem::ORDER_STATUS_FILLED,
+				tradeSystemOrderId,
+				ORDER_STATUS_FILLED,
 				0,
 				&trade);
 		} else {
 			order.callback(
 				order.id, 
-				tradeSysteOrderId,
-				TradeSystem::ORDER_STATUS_CANCELLED,
+				tradeSystemOrderId,
+				ORDER_STATUS_CANCELLED,
 				order.qty,
 				nullptr);
 		}

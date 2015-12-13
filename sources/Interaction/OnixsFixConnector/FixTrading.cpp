@@ -290,7 +290,9 @@ void FixTrading::NotifyOrderUpdate(
 #		endif
 		Assert(!order->isRemoved);
 		order->isRemoved = isOrderCompleted;
-		if (status == ORDER_STATUS_FILLED) {
+		if (
+				status == ORDER_STATUS_FILLED
+				|| status == ORDER_STATUS_FILLED_PARTIALLY) {
 			AssertGe(
 				order->qty,
 				order->filledQty + ParseLeavesQty(updateMessage));
@@ -1010,7 +1012,7 @@ void FixTrading::OnOrderPartialFill(
 	NotifyOrderUpdate(
 		execReport,
 		GetMessageClOrderId(execReport),
-		ORDER_STATUS_FILLED,
+		ORDER_STATUS_FILLED_PARTIALLY,
 		"PARTIAL FILL",
 		false,
 		replyTime);

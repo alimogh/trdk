@@ -22,28 +22,34 @@ namespace trdk {
 
 	typedef boost::uint64_t OrderId;
 
+	//! Order side
+	/** https://mbcm.robotdk.com:8443/display/API/Constants
+	  */
 	enum OrderSide {
-		ORDER_SIDE_BUY,
+		ORDER_SIDE_BUY = 0,
 		ORDER_SIDE_BID = ORDER_SIDE_BUY,
 		ORDER_SIDE_LONG = ORDER_SIDE_BUY,
-		ORDER_SIDE_SELL,
+		ORDER_SIDE_SELL = 1,
 		ORDER_SIDE_OFFER = ORDER_SIDE_SELL,
 		ORDER_SIDE_ASK = ORDER_SIDE_SELL,
 		ORDER_SIDE_SHORT = ORDER_SIDE_SELL,
 		numberOfOrderSides
 	};
 
+	//! Time in Force
+	/** https://mbcm.robotdk.com:8443/display/API/Constants
+	  */
 	enum TimeInForce {
 		// Good Till Day.
-		TIME_IN_FORCE_DAY,
+		TIME_IN_FORCE_DAY = 0,
 		// Good Till Cancel.
-		TIME_IN_FORCE_GTC,
+		TIME_IN_FORCE_GTC = 1,
 		// At the Opening.
-		TIME_IN_FORCE_OPG,
+		TIME_IN_FORCE_OPG = 2,
 		// Immediate or Cancel.
-		TIME_IN_FORCE_IOC,
+		TIME_IN_FORCE_IOC = 3,
 		// Fill or Kill.
-		TIME_IN_FORCE_FOK,
+		TIME_IN_FORCE_FOK = 4,
 		numberOfTimeInForces
 	};
 
@@ -89,6 +95,19 @@ namespace trdk {
 			//...//
 		}
 
+	};
+
+	enum OrderStatus {
+		ORDER_STATUS_SENT = 100,
+		ORDER_STATUS_REQUESTED_CANCEL = 200,
+		ORDER_STATUS_SUBMITTED = 300,
+		ORDER_STATUS_CANCELLED = 400,
+		ORDER_STATUS_FILLED = 500,
+		ORDER_STATUS_FILLED_PARTIALLY = 600,
+		ORDER_STATUS_REJECTED = 700,
+		ORDER_STATUS_INACTIVE = 800,
+		ORDER_STATUS_ERROR = 900,
+		numberOfOrderStatuses = 9
 	};
 
 }

@@ -259,7 +259,6 @@ add_subdirectory(${TRDK_SOURCES_DIR}/Core)
 
 add_subdirectory(${TRDK_SOURCES_DIR}/Engine)
 add_subdirectory(${TRDK_SOURCES_DIR}/EngineServer)
-add_subdirectory(${TRDK_SOURCES_DIR}/EngineService)
 
 add_subdirectory(${TRDK_SOURCES_DIR}/Interaction/Fake)
 add_subdirectory(${TRDK_SOURCES_DIR}/Interaction/OnixsFixConnector)

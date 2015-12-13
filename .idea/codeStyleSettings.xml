@@ -5,11 +5,10 @@
       <value>
         <option name="AUTODETECT_INDENTS" value="false" />
         <option name="RIGHT_MARGIN" value="80" />
+        <option name="FORMATTER_TAGS_ENABLED" value="true" />
+        <option name="FORMATTER_OFF_TAG" value=" *    Author: Eugene V. Palchukovsky" />
         <Objective-C>
-          <option name="INDENT_NAMESPACE_MEMBERS" value="0" />
-          <option name="INDENT_C_STRUCT_MEMBERS" value="0" />
-          <option name="INDENT_CLASS_MEMBERS" value="0" />
-          <option name="INDENT_INSIDE_CODE_BLOCK" value="0" />
+          <option name="SPACE_BEFORE_INIT_LIST" value="true" />
         </Objective-C>
         <Objective-C-extensions>
           <option name="GENERATE_INSTANCE_VARIABLES_FOR_PROPERTIES" value="ASK" />
@@ -43,6 +42,7 @@
           <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
         </XML>
         <codeStyleSettings language="ObjectiveC">
+          <option name="SPACE_WITHIN_BRACES" value="false" />
           <indentOptions>
             <option name="CONTINUATION_INDENT_SIZE" value="4" />
             <option name="USE_TAB_CHARACTER" value="true" />
