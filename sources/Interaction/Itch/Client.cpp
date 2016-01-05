@@ -74,9 +74,9 @@ public:
 	explicit Message(
 			const Buffer::iterator &begin,
 			const Buffer::iterator &end)
-		: m_begin(begin),
-		m_end(end),
-		m_back(*(end - 1)) {
+		: m_begin(begin)
+		, m_end(end)
+		, m_back(*(end - 1)) {
 		Assert(m_end >= m_begin);
 		if (m_end - m_begin < 2) {
 			throw MessageFormatError("Wrong message: buffer is empty");
@@ -89,9 +89,9 @@ public:
 			const Buffer::value_type &type,
 			Buffer::iterator begin,
 			Buffer::iterator end)
-		: m_begin(begin),
-		m_end(end),
-		m_back(*(m_end - 1)) {
+		: m_begin(begin)
+		, m_end(end)
+		, m_back(*(m_end - 1)) {
 		Assert(end > begin);
 		std::fill(m_begin, m_end, ' ');
 		*m_begin = Buffer::value_type(type);
@@ -965,6 +965,7 @@ void Client::OnOrderCancel(
 }
 
 void Client::SendMarketDataSubscribeRequest(const std::string &pair) {
+
 	Buffer buffer(
 		ClientMessage::GetSizeByType(
 			ClientMessage::TYPE_MARKET_DATA_SUBSCRIBE_REQUEST));
@@ -985,4 +986,5 @@ void Client::SendMarketDataSubscribeRequest(const std::string &pair) {
 			error,
 			"Failed to send Market Data Subscribe Request");
 	}
+
 }

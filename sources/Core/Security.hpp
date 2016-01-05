@@ -104,145 +104,11 @@ namespace trdk {
 
 		////////////////////////////////////////////////////////////////////////////////
 
-		class BookUpdateOperation;
-		class BookSideUpdateOperation;
-
-		class TRDK_CORE_API Book {
-			friend class trdk::Security::BookUpdateOperation;
-		public:
-			class Level {
-				friend class trdk::Security::BookSideUpdateOperation;
-			public:
-				Level()
-					: m_price(.0)
-					, m_qty(.0) {
-				}
-				explicit Level(
-						const boost::posix_time::ptime &time,
-						double price,
-						const trdk::Qty &qty)
-					: m_time(time)
-					, m_price(price)
-					, m_qty(qty) {
-					//...//
-				}
-				void Swap(Level &rhs) throw() {
-					std::swap(rhs.m_price, m_price);
-					std::swap(rhs.m_qty, m_qty);
-				}
-			public:
-				void operator +=(const Level &rhs) {
-					m_qty += rhs.m_qty;
-				}
-				bool operator ==(const Level &rhs) const {
-					return
-						trdk::Lib::IsEqual(m_price, rhs.m_price)
-							&& trdk::Lib::IsEqual(m_qty, rhs.m_qty);
-				}
-				bool operator !=(const Level &rhs) const {
-					return !operator ==(rhs);
-				}
-				const boost::posix_time::ptime & GetTime() const {
-					return m_time;
-				}
-				double GetPrice() const {
-					return m_price;
-				}
-				const trdk::Qty & GetQty() const {
-					return m_qty;
-				}
-			private:
-				boost::posix_time::ptime m_time;
-				double m_price;
-				trdk::Qty m_qty;
-			};
-			class TRDK_CORE_API Side {
-				friend class trdk::Security::BookUpdateOperation;
-				friend class trdk::Security::BookSideUpdateOperation;
-			public:
-				Side();
-				Side(Side &&);
-				Side(const Side &);
-				~Side();
-				Side & operator =(const Side &);
-				void Swap(Side &) throw();
-			public:
-				size_t GetSize() const;
-				const trdk::Security::Book::Level & GetLevel(
-						size_t levelIndex)
-						const;
-			private:
-				class Implementation;
-				Implementation *m_pimpl;
-			};
-		public:
-			explicit Book(const boost::posix_time::ptime &, bool isAdjusted);
-		public:
-			const boost::posix_time::ptime & GetTime() const {
-				return m_time;
-			}
-			bool IsAdjusted() const {
-				return m_isAdjusted;
-			}
-			const trdk::Security::Book::Side & GetBids() const {
-				return m_bids;
-			}
-			const trdk::Security::Book::Side & GetAsks() const {
-				return m_offers;
-			}
-			const trdk::Security::Book::Side & GetOffers() const {
-				return m_offers;
-			}
-		private:
-			boost::posix_time::ptime m_time;
-			bool m_isAdjusted;
-			Side m_bids;
-			Side m_offers;
-		};
-
 		typedef void (BookUpdateTickSlotSignature)(
-				const boost::shared_ptr<const trdk::Security::Book> &,
+				const trdk::PriceBook &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 		typedef boost::function<BookUpdateTickSlotSignature> BookUpdateTickSlot;
 		typedef boost::signals2::connection BookUpdateTickSlotConnection;
-
-		class TRDK_CORE_API BookSideUpdateOperation
-			: private boost::noncopyable {
-			friend class trdk::Security::BookUpdateOperation;
-		public:
-			explicit BookSideUpdateOperation(trdk::Security::Book::Side &);
-		public:
-			void Swap(std::vector<trdk::Security::Book::Level> &);
-		private:
-			trdk::Security::Book::Side &m_storage;
-		};
-
-		class TRDK_CORE_API BookUpdateOperation : private boost::noncopyable {
-			friend class trdk::Security;
-		private:
-			explicit BookUpdateOperation(
-					trdk::Security &security,
-					const boost::posix_time::ptime &,
-					bool isAdjusted);
-		public:
-			BookUpdateOperation(BookUpdateOperation &&);
-			~BookUpdateOperation();
-		public:
-			BookSideUpdateOperation & GetBids();
-			BookSideUpdateOperation & GetOffers();
-			BookSideUpdateOperation & GetAsks();
-		public:
-			void Adjust();
-			static bool Adjust(
-					const trdk::Security &,
-					std::vector<trdk::Security::Book::Level> &bids,
-					std::vector<trdk::Security::Book::Level> &asks);
-		public:
-			void Commit(const trdk::Lib::TimeMeasurement::Milestones &);
-		private:
-			class Implementation;
-			Implementation *m_pimpl;
-		};
 
 		////////////////////////////////////////////////////////////////////////////////
 
@@ -314,8 +180,6 @@ namespace trdk {
 		  */
 		trdk::Qty GetBrokerPosition() const;
 
-		bool IsBookAdjusted() const;
-
 	public:
 
 		Level1UpdateSlotConnection SubscribeToLevel1Updates(
@@ -355,81 +219,81 @@ namespace trdk {
 		  * will bee changed.
 		  */
 		void SetLevel1(
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &,
-					const trdk::Lib::TimeMeasurement::Milestones &);
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Sets two Level I parameters and one operation.
 		/** More optimal than call "set one parameter" two times. Subscribers
 		  * will be notified about Level I Update only if parameter will be
 		  * changed.
 		  */
 		void SetLevel1(
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &,
-					const trdk::Lib::TimeMeasurement::Milestones &);
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &,
+				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Sets three Level I parameters and one operation.
 		/** More optimal than call "set one parameter" three times. Subscribers
 		  * will be notified about Level I Update only if parameter will bee
 		  * changed.
 		  */
 		void SetLevel1(
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &,
-					const trdk::Lib::TimeMeasurement::Milestones &);
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &,
+				const trdk::Level1TickValue &,
+				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Sets four Level I parameters and one operation.
 		/** More optimal than call "set one parameter" four times. Subscribers
 		  * will be notified about Level I Update only if parameter will bee
 		  * changed.
 		  */
 		void SetLevel1(
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &,
-					const trdk::Lib::TimeMeasurement::Milestones &);
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &,
+				const trdk::Level1TickValue &,
+				const trdk::Level1TickValue &,
+				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 
 		//! Adds one Level I parameter tick.
 		/** Subscribers will be notified about Level I Update only if parameter
 		  * will bee changed. Level I Tick event will be generated in any case.
 		  */
 		void AddLevel1Tick(
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &,
-					const trdk::Lib::TimeMeasurement::Milestones &);
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Adds two Level I parameter ticks.
 		/** More optimal than call "add one tick" two times. Subscribers will
 		  * be notified about Level I Update only if parameter will be changed.
 		  * Level I Tick event will be generated in any case.
 		  */
 		void AddLevel1Tick(
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &,
-					const trdk::Lib::TimeMeasurement::Milestones &);
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &,
+				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Adds three Level I parameter ticks.
 		/** More optimal than call "add one tick" three times. Subscribers will
 		  * be notified about Level I Update only if parameter will be changed.
 		  * Level I Tick event will be generated in any case.
 		  */
 		void AddLevel1Tick(
-					const boost::posix_time::ptime &,
-					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &,
-					const trdk::Level1TickValue &,
-					const trdk::Lib::TimeMeasurement::Milestones &);
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &,
+				const trdk::Level1TickValue &,
+				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 
 		void AddTrade(
-					const boost::posix_time::ptime &,
-					const trdk::OrderSide &,
-					const trdk::ScaledPrice &,
-					const trdk::Qty &,
-					const trdk::Lib::TimeMeasurement::Milestones &,
-					bool useAsLastTrade,
-					bool useForTradedVolume);
+				const boost::posix_time::ptime &,
+				const trdk::OrderSide &,
+				const trdk::ScaledPrice &,
+				const trdk::Qty &,
+				const trdk::Lib::TimeMeasurement::Milestones &,
+				bool useAsLastTrade,
+				bool useForTradedVolume);
 
 		void AddBar(const Bar &);
 
@@ -440,9 +304,16 @@ namespace trdk {
 		  */
 		void SetBrokerPosition(const trdk::Qty &, bool isInitial);
 
-		trdk::Security::BookUpdateOperation StartBookUpdate(
-				const boost::posix_time::ptime &,
-				bool isRespected);
+		//! Sets price book snapshot with current data, but new time.
+		/** Not thread-safe, caller should provide thread synchronization.
+		  * @param book	New price book. Object can be used as temporary buffer
+		  *				and changed by this call, may have wrong data and state
+		  *				after.
+		  * @param timeMeasurement	Time measurement object.
+		  */
+		void SetBook(
+				trdk::PriceBook &book,
+				const trdk::Lib::TimeMeasurement::Milestones &timeMeasurement);
 
 	private:
 

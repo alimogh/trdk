@@ -17,6 +17,7 @@
 #	include	<boost/scoped_ptr.hpp>
 #	include	<boost/noncopyable.hpp>
 #	include <boost/thread.hpp>
+#	include <boost/unordered_map.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #ifdef BOOST_WINDOWS

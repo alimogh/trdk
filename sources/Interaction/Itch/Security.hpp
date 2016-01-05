@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Core/Security.hpp"
+#include "Core/PriceBook.hpp"
 
 namespace trdk { namespace Interaction { namespace Itch {
 
@@ -27,6 +28,7 @@ namespace trdk { namespace Interaction { namespace Itch {
 			bool isBuy;
 			double price;
 			Qty qty;
+			bool isUsed;
 		};
 
 	public:
@@ -34,8 +36,7 @@ namespace trdk { namespace Interaction { namespace Itch {
 		explicit Security(
 				Context &,
 				const Lib::Symbol &,
-				const MarketDataSource &,
-				size_t maxBookLevelsCount);
+				const MarketDataSource &);
 
 	public:
 
@@ -53,39 +54,23 @@ namespace trdk { namespace Interaction { namespace Itch {
 				const boost::posix_time::ptime &,
 				const Itch::OrderId &);
 
+		void ClearBook();
+
 		void Flush(
 				const boost::posix_time::ptime &,
 				const Lib::TimeMeasurement::Milestones &);
 
-		void ClearBook();
+	private:
+
+		void IncreaseNumberOfUpdates(bool isBuy) throw();
 
 	private:
 
-		template<typename SortFunc>
-		std::vector<Book::Level> SortBookSide(
-				std::vector<Book::Level> &cache,
-				const SortFunc &,
-				bool &isFull)
-				const;
+		bool m_hasBidUpdates;
+		bool m_hasAskUpdates;
 
-		size_t CheckBookSideSizeAfterAdjusting(
-				size_t sideSizeBeforAdjusting,
-				std::vector<Book::Level> &,
-				const char *sideName,
-				bool isFull)
-				const;
-
-	private:
-
-		const size_t m_maxBookLevelsCount;
-		//! Additional price levels to get required book size after adjusting.
-		size_t m_additionalBookLevelsCount;
-
-		bool m_hasNewData;
-		
-		std::map<Itch::OrderId, Order> m_rawBook;
-		std::vector<Book::Level> m_bidsCache;
-		std::vector<Book::Level> m_asksCache;
+		PriceBook m_snapshot;
+		boost::unordered_map<Itch::OrderId, Order> m_orderBook;
 
 	};
 

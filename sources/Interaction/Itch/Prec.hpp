@@ -16,6 +16,7 @@
 #	include <boost/asio.hpp>
 #	include <boost/thread.hpp>
 #	include <boost/algorithm/string.hpp>
+#	include <boost/unordered_map.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include <vector>

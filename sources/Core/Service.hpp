@@ -66,7 +66,7 @@ namespace trdk {
 				const trdk::Security::Bar &);
 		bool RaiseBookUpdateTickEvent(
 				const trdk::Security &,
-				const trdk::Security::Book &,
+				const trdk::PriceBook &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	protected:
@@ -113,7 +113,7 @@ namespace trdk {
 
 		virtual bool OnBookUpdateTick(
 				const trdk::Security &,
-				const trdk::Security::Book &,
+				const trdk::PriceBook &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	private:

@@ -80,9 +80,7 @@ QueueService::~QueueService() {
 	// All records should be flushed or dumped by engine:
 	AssertEq(0, GetSize());
 	try {
-		if (!m_isStopped) {
-			Stop();
-		}
+		Stop(true);
 	} catch (...) {
 		AssertFailNoException();
 		throw;
@@ -90,9 +88,6 @@ QueueService::~QueueService() {
 }
 
 size_t QueueService::GetSize() const {
-	Assert(
-		(m_queues.first.logicalSize + m_queues.second.logicalSize) > 0
-		|| (m_queues.first.data.empty() && m_queues.second.data.empty()));
 	return m_queues.first.logicalSize + m_queues.second.logicalSize;
 }
 
@@ -125,16 +120,18 @@ void QueueService::Start() {
 		});
 }
 
-void QueueService::Stop() {
+void QueueService::Stop(bool sync) {
 	{
 		const StateLock lock(m_stateMutex);
-		if (m_isStopped) {
+		if (m_isStopped && !sync) {
 			throw Exception("Alerady is stopped");
 		}
 		m_isStopped = true;
-		m_dataCondition.notify_all();
 	}
-	m_thread.join();
+	m_dataCondition.notify_all();
+	if (sync) {
+		m_thread.join();
+	}
 }
 
 void QueueService::Flush() {
@@ -171,21 +168,24 @@ void QueueService::RunDequeue() {
 
 	while (!m_isStopped) {
 
-		for (size_t count = 1; !m_isStopped && !IsEmpty(); ++count) {
+		size_t prevSize = 0;
+		size_t numberOfRisingIterations = 0;
+		while (!m_isStopped && !IsEmpty()) {
 
-			const DequeueLock dequeueLock(m_dequeueMutex);
-
-			Queue *const listToRead = 
-				m_currentQueue == &m_queues.first
+			Queue *listToRead;
+			{
+				const DequeueLock dequeueLock(m_dequeueMutex);
+				listToRead = m_currentQueue == &m_queues.first
 					?	!m_queues.second.data.empty()
 						?	&m_queues.second
 						:	&m_queues.first
 					:	!m_queues.first.data.empty()
 						?	&m_queues.first
 						:	&m_queues.second;
-			AssertLt(0, listToRead->data.size());
-			AssertLt(0, listToRead->logicalSize);
-			AssertGe(listToRead->data.size(), listToRead->logicalSize);
+				AssertLt(0, listToRead->data.size());
+				AssertLt(0, listToRead->logicalSize);
+				AssertGe(listToRead->data.size(), listToRead->logicalSize);
+			}
 			if (listToRead == m_currentQueue) {
 				m_currentQueue = m_currentQueue == &m_queues.first
 					?	&m_queues.second
@@ -194,31 +194,56 @@ void QueueService::RunDequeue() {
 
 			stateLock.unlock();
 
-			if (!(count % 3)) {
-				m_log.Warn(
-					"Large queue size to send: %1% messages."
-						" After %2% iterations queue still not empty.",
-					GetSize(),
-					count);
-			}
-	
-			Assert(!listToRead->data.empty());
-			AssertGe(listToRead->data.size(), listToRead->logicalSize);
-			for (
-					auto it = listToRead->GetLogicalBegin();
-					it != listToRead->data.cend();
-					++it) {
-				AssertLt(0, listToRead->logicalSize);
-				if (!it->Dequeue()) {
-					break;
+			{
+
+				const DequeueLock dequeueLock(m_dequeueMutex);
+
+				if (prevSize) {
+					if (prevSize < listToRead->logicalSize) {
+						if (++numberOfRisingIterations >= 3) {
+							m_log.Warn(
+								"Drop Copy queue size is rising"
+									": %1% -> %2% (%3%) at %4%.",
+									prevSize,
+									listToRead->logicalSize,
+									GetSize(),
+									numberOfRisingIterations);
+						}
+					} else {
+						if (numberOfRisingIterations >= 3) {
+							m_log.Debug(
+								"Drop Copy queue size rising is stopped"
+									": %1% -> %2% (%3%) at %4%.",
+									prevSize,
+									listToRead->logicalSize,
+									GetSize(),
+									numberOfRisingIterations);
+						}
+						numberOfRisingIterations = 0;
+					}
 				}
-				--listToRead->logicalSize;
-				AssertGt(listToRead->data.size(), listToRead->logicalSize);
+				prevSize = listToRead->logicalSize;
+	
+				Assert(!listToRead->data.empty());
+				AssertGe(listToRead->data.size(), listToRead->logicalSize);
+
+				for (
+						auto it = listToRead->GetLogicalBegin();
+						!m_isStopped && it != listToRead->data.cend();
+						++it) {
+					AssertLt(0, listToRead->logicalSize);
+					if (!it->Dequeue()) {
+						break;
+					}
+					--listToRead->logicalSize;
+					AssertGt(listToRead->data.size(), listToRead->logicalSize);
+				}
+				if (!listToRead->logicalSize) {
+					listToRead->Reset();
+				}
+
 			}
-			if (!listToRead->logicalSize) {
-				listToRead->Reset();
-			}
-		
+
 			stateLock.lock();
 
 			if (listToRead->logicalSize) {

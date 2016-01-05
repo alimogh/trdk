@@ -257,11 +257,15 @@ void Triangle::ReportEnd() const {
 	
 	const boost::shared_ptr<const FinancialResult> financialResult(
 		new FinancialResult(m_strategy.GetRiskControlScope().TakeStatistics()));
-	
+
+	const auto &pnl = CalcYExecuted();
 	dropCopy->ReportOperationEnd(
 		GetId(),
 		m_strategy.GetContext().GetCurrentTime(),
-		CalcYExecuted(),
+		pnl >= 1
+			?	OPERATION_RESULT_LOSS
+			:	OPERATION_RESULT_PROFIT,
+		pnl,
 		financialResult);
 
 }

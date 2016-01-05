@@ -205,7 +205,7 @@ void Dispatcher::SignalNewBar(
 void Dispatcher::SignalBookUpdateTick(
 		SubscriberPtrWrapper &subscriber,
 		Security &security,
-		const boost::shared_ptr<const Security::Book> &book,
+		const PriceBook &book,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	try {
 		if (subscriber.IsBlocked()) {

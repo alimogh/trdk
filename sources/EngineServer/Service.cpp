@@ -11,7 +11,10 @@
 #include "Prec.hpp"
 #ifndef TRDK_AUTOBAHN_DISABLED
 #include "Service.hpp"
-#include <Core/Strategy.hpp>
+#include "Pack.hpp"
+#include "Core/Strategy.hpp"
+#include "Core/PriceBook.hpp"
+#include "Core/MarketDataSource.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::EngineServer;
@@ -50,6 +53,7 @@ Service::Topics::Topics(const std::string &suffix)
 	, storeOperationEnd("trdk.service.operation.store_end")
 	, storeOrder("trdk.service.order.store")
 	, storeTrade("trdk.service.trade.store")
+	, storeBook("trdk.service.book.store")
 	, startEngine((boost::format("trdk.engine.%1%.start") % suffix).str())
 	, stopEngine((boost::format("trdk.engine.%1%.stop") % suffix).str())
 	, startDropCopy(
@@ -160,7 +164,6 @@ Service::OrderCache::OrderCache(
 		const TimeInForce *timeInForce,
 		const Currency &currency,
 		const Qty *minQty,
-		const std::string *user,
 		const Qty &executedQty,
 		const double *bestBidPrice,
 		const Qty *bestBidQty,
@@ -196,9 +199,6 @@ Service::OrderCache::OrderCache(
 	if (minQty) {
 		this->minQty = *minQty;
 	}
-	if (user) {
-		this->user = *user;
-	}
 	if (bestBidPrice) {
 		this->bestBidPrice = *bestBidPrice;
 	}
@@ -218,7 +218,8 @@ Service::OrderCache::OrderCache(
 Service::DropCopy::DropCopy(Service &service)
 	: m_service(service)
 	, m_log(m_service.m_log)
-	, m_queue(m_log) {
+	, m_queue(m_log)
+	, m_isSecondaryDataDisabled(false) {
 	//...//
 }
 
@@ -257,8 +258,8 @@ void Service::DropCopy::Start() {
 	m_queue.Start();
 }
 
-void Service::DropCopy::Stop() {
-	m_queue.Stop();
+void Service::DropCopy::Stop(bool sync) {
+	m_queue.Stop(sync);
 }
 
 bool Service::DropCopy::IsStarted() const {
@@ -289,7 +290,6 @@ void Service::DropCopy::CopyOrder(
 		const TimeInForce *timeInForce,
 		const Currency &currency,
 		const Qty *minQty,
-		const std::string *user,
 		const Qty &executedQty,
 		const double *bestBidPrice,
 		const Qty *bestBidQty,
@@ -311,7 +311,6 @@ void Service::DropCopy::CopyOrder(
 		timeInForce,
 		currency,
 		minQty,
-		user,
 		executedQty,
 		bestBidPrice,
 		bestBidQty,
@@ -390,10 +389,11 @@ void Service::DropCopy::ReportOperationStart(
 void Service::DropCopy::ReportOperationEnd(
 		const uuids::uuid &id,
 		const pt::ptime &time,
+		const OperationResult &result,
 		double pnl,
 		const boost::shared_ptr<const FinancialResult> &financialResult) {
 	m_queue.Enqueue(
-		[this, id, time, pnl, financialResult](
+		[this, id, time, result, pnl, financialResult](
 				size_t recordIndex,
 				size_t attemptNo,
 				bool dump)
@@ -404,9 +404,53 @@ void Service::DropCopy::ReportOperationEnd(
 				dump,
 				id,
 				time,
+				result,
 				pnl,
 				financialResult);
 		});
+}
+
+void Service::DropCopy::CopyBook(
+		const Security &security,
+		const PriceBook &book) {
+
+#	ifdef DEV_VER
+		const auto &maxQueueSize = 1000;
+#	else
+		const auto &maxQueueSize = 100000;
+#	endif
+	const auto &queueSize = m_queue.GetSize();
+	if (queueSize > maxQueueSize) {
+		if (!m_isSecondaryDataDisabled) {
+			m_isSecondaryDataDisabled = true;
+			m_log.Error(
+				"Secondary Drop Copy data is disabled - queue is too big"
+					" (queue size %1% is greater than maximum allowed %2%).",
+				queueSize,
+				maxQueueSize);
+		}
+		return;
+	} else if (m_isSecondaryDataDisabled) {
+		m_isSecondaryDataDisabled = false;
+		m_log.Info(
+			"Secondary Drop Copy data is enabled again (queue size is %1%).",
+			queueSize);
+	}
+
+	m_queue.Enqueue(
+		[this, &security, book](
+				size_t recordIndex,
+				size_t attemptNo,
+				bool dump)
+				-> bool {
+			return m_service.StoreBook(
+				recordIndex,
+				attemptNo,
+				dump,
+				security,
+				book);
+		});
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -419,7 +463,6 @@ Service::Service(
 	, m_topics(m_config.id)
 	, m_numberOfReconnects(0)
 	, m_io(new io::io_service)
-	, m_isInited(false)
 	, m_dropCopy(*this) {
 
 	m_log.EnableStdOut();
@@ -457,7 +500,7 @@ Service::Service(
 				= connection->sessionStartFuture.timed_wait(m_config.timeout)
 				&& connection->sessionJoinFuture.timed_wait(m_config.timeout)
 				&& connection->engineRegistrationFuture.timed_wait(m_config.timeout)
-				&& m_isInited;
+				&& m_instanceId;
 		} catch (const std::exception &ex) {
 			//...//
 		}
@@ -472,7 +515,8 @@ Service::Service(
 
 Service::~Service() {
 	try {
-		m_engineTask.join();
+		m_dropCopyTask.Join();
+		m_engineTask.Join();
 		m_io->stop();
 		m_thread.join();
 	} catch (...) {
@@ -634,6 +678,10 @@ void Service::OnEngineRegistered(
 
 	if (!instanceId) {
 		throw ConnectError("Failed to register TWS engine instance");
+	} else if (m_instanceId && *m_instanceId != *&instanceId) {
+		throw ConnectError(
+			"Failed to register TWS engine instance"
+				": Engine Instance ID is changed");
 	}
 
 	RegisterMethods(*connection);
@@ -664,7 +712,7 @@ void Service::OnEngineRegistered(
 		const ConnectionLock lock(m_connectionMutex);
 		m_numberOfReconnects = 0;
 		connection.swap(m_connection);
-		m_isInited = true;
+		m_instanceId = *instanceId;
 	}
 	m_connectionCondition.notify_all();
 
@@ -735,7 +783,7 @@ void Service::RunIoThread() {
 					break;
 				} catch (const trdk::EngineServer::Service::Exception &ex) {
 					m_connectionCondition.notify_all();
-					if (!m_isInited) {
+					if (!m_instanceId) {
 						break;
 					}
 					m_io.reset(new io::io_service);
@@ -752,9 +800,16 @@ void Service::RunIoThread() {
 						ex.code().message(),
 						ex.code().value());
 					m_connectionCondition.notify_all();
-					if (ex.code().value() != sys::errc::broken_pipe) {
-						throw;
-					} else if (!m_isInited) {
+					switch (ex.code().value()) {
+						case sys::errc::connection_aborted:
+						case sys::errc::connection_already_in_progress:
+						case sys::errc::connection_refused:
+						case sys::errc::connection_reset:
+							break;
+						default:
+							throw;
+					}
+					if (!m_instanceId) {
 						break;
 					}
 					m_io.reset(new io::io_service);
@@ -804,26 +859,13 @@ void Service::PublishState() const {
 		std::make_tuple(int(m_engineState)));
 }
 
-bool Service::IsEngineTaskActive() const {
-	return !m_engineTaskFuture.is_ready() && m_engineTaskFuture.valid();
-}
-
-template<typename Task>
-void Service::StartEngineTask(const Task &&taskImpl) {
-	Assert(!IsEngineTaskActive());
-	boost::packaged_task<void> task(std::move(taskImpl));
-	auto future = task.get_future();
-	boost::thread(std::move(task)).swap(m_engineTask);
-	future.swap(m_engineTaskFuture);
-}
-
 void Service::StartEngine() {
 
 	m_log.Debug("Starting engine...");
 
 	const EngineLock lock(m_engineMutex);
 
-	if (IsEngineTaskActive()) {
+	if (m_engineTask.IsActive()) {
 		m_log.Warn(
 			"Failed to start engine"
 				" - service performs task which can change engine state.");
@@ -839,7 +881,7 @@ void Service::StartEngine() {
 		throw Exception("Drop Copy is not started");
 	}
 
-	StartEngineTask(
+	m_engineTask.Start(
 		[this]() {
 			m_log.Debug("Started engine start task.");
 			try {
@@ -896,7 +938,7 @@ void Service::StopEngine() {
 
 	const EngineLock lock(m_engineMutex);
 
-	if (IsEngineTaskActive()) {
+	if (m_engineTask.IsActive()) {
 		m_log.Warn(
 			"Failed to stop engine"
 				" - service performs task which can change engine state.");
@@ -907,7 +949,7 @@ void Service::StopEngine() {
 	}
 	AssertEq(ENGINE_STATE_STARTED, m_engineState);
 
-	StartEngineTask(
+	m_engineTask.Start(
 		[this]() {
 			m_log.Debug("Started engine stop task.");
 			try {
@@ -917,6 +959,7 @@ void Service::StopEngine() {
 				AssertEq(ENGINE_STATE_STOPPING, m_engineState);
 				m_engineState = ENGINE_STATE_STOPPED;
 				PublishState();
+				m_bookSentTime.clear();
 			} catch (...) {
 				AssertFailNoException();
 				throw;
@@ -950,8 +993,27 @@ void Service::StartDropCopy() {
 
 void Service::StopDropCopy() {
 	m_log.Debug("Stopping Drop Copy...");
+	const EngineLock lock(m_engineMutex);
+	if (m_dropCopyTask.IsActive()) {
+		m_log.Warn(
+			"Failed to stop Drop Copy"
+				" - service performs task which can change Drop Copy state.");
+		throw Exception(
+			"Service performs task which can change Drop Copy state");
+	}
 	try {
-		m_dropCopy.Stop();
+		m_dropCopy.Stop(false);
+		m_dropCopyTask.Start(
+			[this]() {
+				m_log.Debug("Started Drop Copy stop-task.");
+				try {
+					m_dropCopy.Stop(true);
+				} catch (...) {
+					AssertFailNoException();
+					throw;
+				}
+				m_log.Info("Drop Copy stopped.");
+			});
 	} catch (const std::exception &ex) {
 		m_log.Warn("Failed to stop Drop Copy: \"%1%\".", ex.what());
 		throw;
@@ -959,7 +1021,6 @@ void Service::StopDropCopy() {
 		AssertFailNoException();
 		throw;
 	}
-	m_log.Info("Drop Copy stopped.");
 }
 
 void Service::ClosePositions() {
@@ -968,7 +1029,7 @@ void Service::ClosePositions() {
 
 	const EngineLock lock(m_engineMutex);
 
-	if (IsEngineTaskActive()) {
+	if (m_engineTask.IsActive()) {
 		m_log.Warn(
 			"Failed to close positions"
 				" - service performs task which can change engine state.");
@@ -1038,11 +1099,11 @@ void Service::OnContextStateChanged(
 			}
 
 			if (m_engine) {
-				if (!IsEngineTaskActive()) {
+				if (!m_engineTask.IsActive()) {
 					AssertEq(ENGINE_STATE_STARTED, m_engineState);
 					// Stopped by engine event, not by command. First dispatcher
 					// task stopped...
-					StartEngineTask(
+					m_engineTask.Start(
 						[this]() {
 							m_log.Debug("Started engine d-tor task.");
 							m_engine.reset();
@@ -1096,7 +1157,9 @@ bool Service::StoreOperationStartReport(
 
 	DropCopyRecord record;
 	record["id"] = id;
-	record["time"] = time;
+	record["engine_instance_id"] = *m_instanceId;
+	record["start_time"] = time;
+	record["trading_mode"] = strategy.GetTradingMode();
 	record["strategy_id"] = strategy.GetId();
 	record["number_of_updates"] = numberOfUpdates;
 
@@ -1115,12 +1178,14 @@ bool Service::StoreOperationEndReport(
 		bool dump,
 		const uuids::uuid &id,
 		const pt::ptime &time,
+		const OperationResult &result,
 		double pnl,
 		const boost::shared_ptr<const FinancialResult> &financialResult) {
 
 	DropCopyRecord record;
 	record["id"] = id;
 	record["time"] = time;
+	record["result"] = result;
 	record["pnl"] = pnl;
 	record["financial_result"] = financialResult;
 
@@ -1155,6 +1220,7 @@ bool Service::StoreOrder(
 	if (order.subOperationId) {
 		record["sub_operation_id"] = *order.subOperationId;
 	}
+	record["type"] = ORDER_TYPE_LIMIT;
 	record["symbol"] = order.security->GetSymbol().GetSymbol();
 	record["source"] = order.tradeSystem->GetTag();
 	record["side"] = order.side;
@@ -1169,21 +1235,18 @@ bool Service::StoreOrder(
 	if (order.minQty) {
 		record["min_qty"] = *order.minQty;
 	}
-	if (order.user) {
-		record["user"] = *order.user;
-	}
 	record["executed_qty"] = order.executedQty;
 	if (order.bestBidPrice) {
-		record["best_bid_price"] = *order.bestBidPrice;
+		record["bid_price"] = *order.bestBidPrice;
 	}
 	if (order.bestBidQty) {
-		record["best_bid_qty"] = *order.bestBidQty;
+		record["bid_qty"] = *order.bestBidQty;
 	}
 	if (order.bestAskPrice) {
-		record["best_ask_price"] = *order.bestAskPrice;
+		record["ask_price"] = *order.bestAskPrice;
 	}
 	if (order.bestAskQty) {
-		record["best_ask_qty"] = *order.bestAskQty;
+		record["ask_qty"] = *order.bestAskQty;
 	}
 
 	return StoreRecord(
@@ -1215,10 +1278,10 @@ bool Service::StoreTrade(
 	record["order_id"] = orderId;
 	record["price"] = price;
 	record["qty"] = qty;
-	record["best_bid_price"] = bestBidPrice;
-	record["best_bid_qty"] = bestBidQty;
-	record["best_ask_price"] = bestAskPrice;
-	record["best_ask_qty"] = bestAskQty;
+	record["bid_price"] = bestBidPrice;
+	record["bid_qty"] = bestBidQty;
+	record["ask_price"] = bestAskPrice;
+	record["ask_qty"] = bestAskQty;
 
 	return StoreRecord(
 		&Topics::storeTrade,
@@ -1309,8 +1372,9 @@ bool Service::StoreRecord(
 			storeAttemptNo,
 			m_connection->topics.*topic,
 			ex.what());
-		return false;
 	}
+
+	return false;
 
 }
 
@@ -1325,6 +1389,71 @@ void Service::DumpRecord(
 		storeAttemptNo,
 		m_connection->topics.*topic,
 		ConvertToLogString(record));
+}
+
+bool Service::StoreBook(
+		size_t recordIndex,
+		size_t storeAttemptNo,
+		bool dump,
+		const Security &security,
+		const PriceBook &book) {
+
+	if (dump) {
+		return true;
+	}
+
+	boost::future<autobahn::wamp_call_result> callFuture;
+	{
+
+		const ConnectionLock lock(m_connectionMutex);
+		if (!m_connection) {
+			return true;
+		}
+
+		{
+			auto it = m_bookSentTime.find(&security);
+			if (it == m_bookSentTime.cend()) {
+				m_bookSentTime.emplace(&security, book.GetTime());
+			} else {
+				AssertLe(it->second, book.GetTime());
+				if (book.GetTime() - it->second <= pt::seconds(1)) {
+					return true;
+				}
+				it->second = book.GetTime();
+			}
+		}
+
+		try {
+			callFuture = m_connection->session->call(
+				m_connection->topics.storeBook,
+				std::make_tuple(
+					security.GetSource().GetTag(),
+					security.GetSymbol().GetSymbol(),
+					ConvertToMicroseconds(book.GetTime()),
+					book.GetBid(),
+					book.GetAsk()),
+				m_config.callOptions);
+		} catch (const std::exception &ex) {
+			m_log.Error(
+				"Failed to call TWS to store Price Book into Drop Copy storage"
+					 ": \"%1%\".",
+				ex.what());
+			return true;
+		}
+
+	}
+
+	try {
+		callFuture.wait();
+	} catch (const std::exception &ex) {
+		m_log.Error(
+			"Failed to store Price Book into Drop Copy storage"
+				": \"%1%\".",
+			ex.what());
+	}
+
+	return true;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

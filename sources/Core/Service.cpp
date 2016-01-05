@@ -200,7 +200,7 @@ bool Service::RaiseNewBarEvent(
 
 bool Service::RaiseBookUpdateTickEvent(
 		const Security &security,
-		const Security::Book &book,
+		const PriceBook &book,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
 	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
@@ -277,7 +277,7 @@ bool Service::OnNewBar(const Security &security, const Security::Bar &) {
 
 bool Service::OnBookUpdateTick(
 		const Security &security,
-		const Security::Book &,
+		const PriceBook &,
 		const TimeMeasurement::Milestones &) {
 	GetLog().Error(
 		"Subscribed to %1% Book Update Ticks, but can't work with it"

@@ -292,18 +292,24 @@ private:
 				if (holderByMode.tag != tag) {
 					continue;
 				}
-				AssertEq(std::string(), holderByMode.holders[mode].section);
-				Assert(!holderByMode.holders[mode].tradeSystem);
-				holderByMode.holders[mode].tradeSystem = tradeSystem;
-				holderByMode.holders[mode].section = section;
+				AssertLt(0, mode);
+				AssertGe(holderByMode.holders.size(), mode);
+				AssertEq(
+					std::string(),
+					holderByMode.holders[mode - 1].section);
+				Assert(!holderByMode.holders[mode - 1].tradeSystem);
+				holderByMode.holders[mode - 1].tradeSystem = tradeSystem;
+				holderByMode.holders[mode - 1].section = section;
 				isFound = true;
 				break;
 			}
 			if (!isFound) {
 				TradeSystemModesHolder holderByMode;
 				holderByMode.tag = tag;
-				holderByMode.holders[mode].tradeSystem = tradeSystem;
-				holderByMode.holders[mode].section = section;
+				AssertLt(0, mode);
+				AssertGe(holderByMode.holders.size(), mode);
+				holderByMode.holders[mode - 1].tradeSystem = tradeSystem;
+				holderByMode.holders[mode - 1].section = section;
 				m_tradeSystems.emplace_back(holderByMode);
 			}
 

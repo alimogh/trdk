@@ -254,9 +254,6 @@
     <ProjectReference Include="..\Interaction\OnixsFixConnector\OnixsFixConnector.vcxproj">
       <Project>{c86383e0-0a73-41e0-8263-9e05b608ce55}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Interaction\OnixsHotspot\OnixsHotspot.vcxproj">
-      <Project>{029437f9-f5aa-42c1-bba0-8b12375e9148}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\Strategies\FxMb\FxMb.vcxproj">
       <Project>{741ec258-dbd7-4f89-a176-1a9c036216f8}</Project>
     </ProjectReference>

@@ -23,7 +23,8 @@ namespace trdk { namespace Engine {
 	};
 	struct TradeSystemModesHolder {
 		std::string tag;
-		boost::array<TradeSystemHolder, numberOfTradingModes> holders;
+		static_assert(numberOfTradingModes == 3, "List changed.");
+		boost::array<TradeSystemHolder, 2> holders;
 	};
 	typedef std::vector<TradeSystemModesHolder> TradeSystems;
 	

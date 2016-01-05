@@ -53,7 +53,6 @@ namespace trdk {
 				const trdk::TimeInForce *,
 				const trdk::Lib::Currency &,
 				const trdk::Qty *minQty,
-				const std::string *user,
 				const trdk::Qty &executedQty,
 				const double *bestBidPrice,
 				const trdk::Qty *bestBidQty,
@@ -82,8 +81,14 @@ namespace trdk {
 		virtual void ReportOperationEnd(
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &,
+				const trdk::OperationResult &,
 				double pnl,
 				const boost::shared_ptr<const trdk::FinancialResult> &)
+			= 0;
+
+		virtual void CopyBook(
+				const trdk::Security &,
+				const trdk::PriceBook &)
 			= 0;
 
 	};

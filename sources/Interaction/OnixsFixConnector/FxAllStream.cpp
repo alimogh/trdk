@@ -10,8 +10,10 @@
 
 #include "Prec.hpp"
 #include "FixStream.hpp"
+#include "Core/PriceBook.hpp"
 
 namespace fix = OnixS::FIX;
+namespace pt = boost::posix_time;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -55,13 +57,12 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				const Security &) const {
 			request.set(
 				fix::FIX42::Tags::MarketDepth,
-				// +3 - to get required book size after adjusting.
-				int(GetLevelsCount()) + 3);
+				int(PriceBook::GetSideMaxSize()));
 		}
 
 		virtual void OnMarketDataSnapshot(
 				const fix::Message &message,
-				const boost::posix_time::ptime &dataTime,
+				const pt::ptime &time,
 				FixSecurity &security) {
 		
 			const fix::Group &entries
@@ -74,17 +75,14 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 					message);
 			}
 			AssertEq(1, entries.size());
-		
-			const auto entryId = message.getInt64(fix::FIX42::Tags::MDEntryID);
-			Assert(security.m_book.find(entryId) == security.m_book.end());
-		
-			security.m_book[entryId] = std::make_pair(
+
+			security.OnNewEntry(
+				message.getInt64(fix::FIX42::Tags::MDEntryID),
+				time,
 				message.get(fix::FIX42::Tags::MDEntryType)
 					== fix::FIX42::Values::MDEntryType::Bid,
-				Security::Book::Level(
-					dataTime,
-					message.getDouble(fix::FIX42::Tags::MDEntryPx),
-					ParseMdEntrySize(message)));
+				message.getDouble(fix::FIX42::Tags::MDEntryPx),
+				ParseMdEntrySize(message));
 
 		}
 

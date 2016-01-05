@@ -165,7 +165,7 @@ namespace trdk {
 		void RaisePositionUpdateEvent(trdk::Position &);
 		void RaiseBookUpdateTickEvent(
 				trdk::Security &,
-				const trdk::Security::Book &,
+				const trdk::PriceBook &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	public:
@@ -200,7 +200,7 @@ namespace trdk {
 		virtual void OnPositionUpdate(trdk::Position &);
 		virtual void OnBookUpdateTick(
 				trdk::Security &,
-				const trdk::Security::Book &,
+				const trdk::PriceBook &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
 

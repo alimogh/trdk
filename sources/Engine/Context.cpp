@@ -81,12 +81,14 @@ public:
 	TradeSystems m_tradeSystems;
 	MarketDataSources m_marketDataSources;
 
+	bool m_isStopped;
 	std::unique_ptr<State> m_state;
 
  public:
 
 	explicit Implementation(Engine::Context &context, const Lib::Ini &conf)
-		: m_context(context) {
+		: m_context(context)
+		, m_isStopped(false) {
 		BootContext(
 			conf,
 			m_context,
@@ -185,40 +187,42 @@ Engine::Context::Context(
 }
 
 Engine::Context::~Context() {
-	Stop(STOP_MODE_IMMEDIATELY);
+	if (!m_pimpl->m_isStopped) {
+		Stop(STOP_MODE_IMMEDIATELY);
+	}
 	delete m_pimpl;
 }
 
 void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
 	
 	GetLog().Debug("Starting...");
-	Assert(!m_pimpl->m_state);
-	Assert(m_pimpl->m_modulesDlls.empty());
-	if (m_pimpl->m_state || !m_pimpl->m_modulesDlls.empty()) {
-		GetLog().Warn("Already was started!");
-		return;
+
+	if (m_pimpl->m_isStopped) {
+		throw LogicError("Already is stopped");
+	} else if (m_pimpl->m_state) {
+		throw LogicError("Already is started");
 	}
+	Assert(m_pimpl->m_modulesDlls.empty());
 
 	// It must be destroyed after state-object, as it state-object has
 	// sub-objects from this DLL:
-	ModuleList moduleDlls;
-	std::unique_ptr<Implementation::State> state(
-		new Implementation::State(*this, dropCopy));
+
+	m_pimpl->m_state.reset(new Implementation::State(*this, dropCopy));
 	try {
 		BootContextState(
 			conf,
 			*this,
-			state->subscriptionsManager,
-			state->strategies,
-			state->observers,
-			state->services,
-			moduleDlls);
+			m_pimpl->m_state->subscriptionsManager,
+			m_pimpl->m_state->strategies,
+			m_pimpl->m_state->observers,
+			m_pimpl->m_state->services,
+			m_pimpl->m_modulesDlls);
 	} catch (const Lib::Exception &ex) {
 		GetLog().Error("Failed to init engine context: \"%1%\".", ex);
 		throw Exception("Failed to init engine context");
 	}
 
-	state->ReportState();
+	m_pimpl->m_state->ReportState();
 
 	foreach (auto &tradeSystemsByMode, m_pimpl->m_tradeSystems) {
 
@@ -260,7 +264,7 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
 		}
 
 	}
-	
+
 	ForEachMarketDataSource(
 		[&](MarketDataSource &source) -> bool {
 			try {
@@ -302,15 +306,7 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
 
 	OnStarted();
 
-	m_pimpl->m_state.reset(state.release());
-	try {
-		m_pimpl->m_state->subscriptionsManager.Activate();
-	} catch (...) {
-		m_pimpl->m_state.reset();
-		throw;
-	}
-
-	moduleDlls.swap(m_pimpl->m_modulesDlls);
+	m_pimpl->m_state->subscriptionsManager.Activate();
 
 	RaiseStateUpdate(Context::STATE_ENGINE_STARTED);
 
@@ -318,9 +314,12 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
 
 void Engine::Context::Stop(const StopMode &stopMode) {
 
-	if (!m_pimpl->m_state) {
+	if (m_pimpl->m_isStopped) {
+		throw LogicError("Already is stopped");
+	} else if (!m_pimpl->m_state) {
 		return;
 	}
+	m_pimpl->m_isStopped = true;
 
 	const char *stopModeStr = "unknown";
 	static_assert(numberOfStopModes == 3, "Stop mode list changed.");
@@ -365,7 +364,7 @@ void Engine::Context::Stop(const StopMode &stopMode) {
 	}
 
 	m_pimpl->m_marketDataSources.clear();
-	
+
 	m_pimpl->m_state.reset();
 
 }
@@ -432,7 +431,11 @@ void Engine::Context::Update(const Lib::Ini &conf) {
 	
 	GetLog().Info("Updating setting...");
 
-	for (size_t i = 0; i < numberOfTradingModes; ++i) {
+	static_assert(numberOfTradingModes == 3, "List changed.");
+	for (size_t i = 1; i <= numberOfTradingModes; ++i) {
+		if (i == TRADING_MODE_BACKTESTING) {
+			continue;
+		}
 		GetRiskControl(TradingMode(i)).OnSettingsUpdate(conf);
 	}
 
@@ -519,7 +522,9 @@ TradeSystem & Engine::Context::GetTradeSystem(
 	if (index >= m_pimpl->m_tradeSystems.size()) {
 		throw Exception("Trade System index is out of range");
 	}
-	auto &holder = m_pimpl->m_tradeSystems[index].holders[mode];
+	AssertLt(0, mode);
+	AssertGe(m_pimpl->m_tradeSystems[index].holders.size(), mode);
+	auto &holder = m_pimpl->m_tradeSystems[index].holders[mode - 1];
 	if (!holder.tradeSystem) {
 		throw Exception("Trade System with such trading mode is not loaded");
 	}

@@ -110,6 +110,12 @@ namespace trdk {
 		numberOfOrderStatuses = 9
 	};
 
+	enum OrderType {
+		ORDER_TYPE_LIMIT = 0,
+		ORDER_TYPE_MARKET = 1,
+		numberOfOrderTypes = 2
+	};
+
 }
 
 namespace std {
@@ -174,9 +180,10 @@ namespace trdk {
 namespace trdk {
 
 	enum TradingMode {
-		TRADING_MODE_PAPER,
-		TRADING_MODE_LIVE,
-		numberOfTradingModes,
+		TRADING_MODE_LIVE = 1,
+		TRADING_MODE_PAPER = 2,
+		TRADING_MODE_BACKTESTING = 3,
+		numberOfTradingModes = 3
 	};
 	TRDK_CORE_API trdk::TradingMode ConvertTradingModeFromString(
 			const std::string &);
@@ -207,6 +214,13 @@ namespace std {
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace trdk {
+
+	enum OperationResult {
+		OPERATION_RESULT_UNCOMPLETED = 0,
+		OPERATION_RESULT_PROFIT = 1,
+		OPERATION_RESULT_LOSS = 2,
+		numberOfOperationResults = 3
+	};
 
 	typedef std::vector<std::pair<trdk::Lib::Currency, double>> FinancialResult;
 

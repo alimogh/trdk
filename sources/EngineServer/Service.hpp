@@ -73,6 +73,7 @@ namespace trdk { namespace EngineServer {
 			std::string storeOperationEnd;
 			std::string storeOrder;
 			std::string storeTrade;
+			std::string storeBook;
 
 			std::string startEngine;
 			std::string stopEngine;
@@ -144,7 +145,6 @@ namespace trdk { namespace EngineServer {
 			boost::optional<TimeInForce> timeInForce;
 			Lib::Currency currency;
 			boost::optional<Qty> minQty;
-			boost::optional<std::string> user;
 			Qty executedQty;
 			boost::optional<double> bestBidPrice;
 			boost::optional<Qty> bestBidQty;
@@ -167,7 +167,6 @@ namespace trdk { namespace EngineServer {
 					const TimeInForce *timeInForce,
 					const Lib::Currency &currency,
 					const Qty *minQty,
-					const std::string *user,
 					const Qty &executedQty,
 					const double *bestBidPrice,
 					const Qty *bestBidQty,
@@ -187,7 +186,7 @@ namespace trdk { namespace EngineServer {
 				return m_dataLog;
 			}
 			void Start();
-			void Stop();
+			void Stop(bool sync);
 			bool IsStarted() const;
 		public:
 			virtual void Flush();
@@ -209,7 +208,6 @@ namespace trdk { namespace EngineServer {
 					const trdk::TimeInForce *,
 					const trdk::Lib::Currency &,
 					const trdk::Qty *minQty,
-					const std::string *user,
 					const trdk::Qty &executedQty,
 					const double *bestBidPrice,
 					const trdk::Qty *bestBidQty,
@@ -233,14 +231,19 @@ namespace trdk { namespace EngineServer {
 			virtual void ReportOperationEnd(
 					const boost::uuids::uuid &id,
 					const boost::posix_time::ptime &,
+					const trdk::OperationResult &,
 					double pnl,
 					const boost::shared_ptr<const trdk::FinancialResult> &);
+			virtual void CopyBook(
+					const trdk::Security &,
+					const trdk::PriceBook &);
 		private:
 			Service &m_service;
 			EventsLog &m_log;
 			std::ofstream m_dataLogFile;
 			EventsLog m_dataLog;
 			QueueService m_queue;
+			boost::atomic_bool m_isSecondaryDataDisabled;
 		};
 
 		//! @sa https://mbcm.robotdk.com:8443/display/API/Constants
@@ -250,6 +253,27 @@ namespace trdk { namespace EngineServer {
 			ENGINE_STATE_STARTED = 2100,
 			ENGINE_STATE_STARTING = 2200,
 			numberOfEngineStates = 4
+		};
+
+		class Task : private boost::noncopyable {
+		public:
+			bool IsActive() const {
+				return !m_future.is_ready() && m_future.valid();
+			}
+			template<typename TaskImpl>
+			void Start(const TaskImpl &&taskImpl) {
+				Assert(!IsActive());
+				boost::packaged_task<void> task(std::move(taskImpl));
+				auto future = task.get_future();
+				boost::thread(std::move(task)).swap(m_thread);
+				future.swap(m_future);
+			}
+			void Join() {
+				m_thread.join();
+			}
+		private:
+			boost::thread m_thread;
+			boost::future<void> m_future;
 		};
 
 	public:
@@ -281,6 +305,7 @@ namespace trdk { namespace EngineServer {
 				bool dump,
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &,
+				const trdk::OperationResult &,
 				double pnl,
 				const boost::shared_ptr<const FinancialResult> &);
 
@@ -316,6 +341,13 @@ namespace trdk { namespace EngineServer {
 				size_t storeAttemptNo,
 				const DropCopyRecord &&);
 
+		bool StoreBook(
+				size_t recordIndex,
+				size_t storeAttemptNo,
+				bool dump,
+				const trdk::Security &,
+				const trdk::PriceBook &);
+
 	private:
 
 		void RunIoThread();
@@ -349,11 +381,6 @@ namespace trdk { namespace EngineServer {
 
 		void ClosePositions();
 
-		bool IsEngineTaskActive() const;
-
-		template<typename Task>
-		void StartEngineTask(const Task &&);
-
 	private:
 
 		const Config m_config;
@@ -365,12 +392,12 @@ namespace trdk { namespace EngineServer {
 		EventsLog m_log;
 
 		DropCopy m_dropCopy;
+		Task m_dropCopyTask;
 
 		mutable EngineMutex m_engineMutex;
 		boost::atomic<EngineState> m_engineState;
 		boost::shared_ptr<Engine> m_engine;
-		boost::thread m_engineTask;
-		boost::future<void> m_engineTaskFuture;
+		Task m_engineTask;
 
 		const Topics m_topics;
 
@@ -386,7 +413,15 @@ namespace trdk { namespace EngineServer {
 		mutable ConnectionMutex m_connectionMutex;
 		ConnectionCondition m_connectionCondition;
 		boost::shared_ptr<Connection> m_connection;
-		bool m_isInited;
+		//! Engine instance ID and "in initialized" flag.
+		/** To change Instance ID engine should be restarted and updated.
+		  * So it writes only one time at first connect, and if it will be
+		  * changed at next reconnects - it will be treated as error.
+		  */
+		boost::optional<uint64_t> m_instanceId;
+
+		boost::unordered_map<const void *, boost::posix_time::ptime>
+			m_bookSentTime;
 
 	};
 

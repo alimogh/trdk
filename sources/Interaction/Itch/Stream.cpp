@@ -84,14 +84,12 @@ Stream::Stream(
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &conf)
-	: MarketDataSource(index, context, tag),
-	m_host(conf.ReadKey("server_host")),
-	m_port(conf.ReadTypedKey<size_t>("server_port")),
-	m_login(conf.ReadKey("login")),
-	m_password(conf.ReadKey("password")),
-	m_hasNewData(false),
-	m_bookLevelsCount(
-		conf.GetBase().ReadTypedKey<size_t>("General", "book.levels.count")) {
+	: MarketDataSource(index, context, tag)
+	, m_host(conf.ReadKey("server_host"))
+	, m_port(conf.ReadTypedKey<size_t>("server_port"))
+	, m_login(conf.ReadKey("login"))
+	, m_password(conf.ReadKey("password"))
+	, m_hasNewData(false) {
 	//...//
 }
 
@@ -207,8 +205,8 @@ void Stream::SubscribeToSecurities() {
 }
 
 trdk::Security & Stream::CreateNewSecurityObject(const Symbol &symbol) {
-	boost::shared_ptr<Itch::Security> result(
-		new Itch::Security(GetContext(), symbol, *this, m_bookLevelsCount));
+	const auto result
+		= boost::make_shared<Itch::Security>(GetContext(), symbol, *this);
 	m_securities.push_back(result);
 	return *result;
 }

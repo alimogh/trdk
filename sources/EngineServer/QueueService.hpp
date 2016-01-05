@@ -96,7 +96,7 @@ namespace trdk { namespace EngineServer {
 	public:
 
 		void Start();
-		void Stop();
+		void Stop(bool sync);
 		bool IsStarted() const;
 
 		void Enqueue(Callback &&);

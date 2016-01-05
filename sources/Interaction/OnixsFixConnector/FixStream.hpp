@@ -41,12 +41,6 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	public:
 
-		size_t GetLevelsCount() const {
-			return m_bookLevelsCount;
-		}
-
-	public:
-
 		virtual void Connect(const trdk::Lib::IniSectionRef &);
 
 		virtual void SubscribeToSecurities();
@@ -105,15 +99,11 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			= 0;
 
 	private:
-		
-		const bool m_isBookLogEnabled;
 
 		FixSession m_session;
 		std::vector<boost::shared_ptr<FixSecurity>> m_securities;
 
 		bool m_isSubscribed;
-
-		const size_t m_bookLevelsCount;
 
 		StateMutex m_stateMutex;
 		OnixS::FIX::SessionState::Enum m_state;

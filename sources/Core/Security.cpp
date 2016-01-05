@@ -11,8 +11,10 @@
 #include "Prec.hpp"
 #include "Security.hpp"
 #include "RiskControl.hpp"
+#include "DropCopy.hpp"
 #include "MarketDataSource.hpp"
 #include "Position.hpp"
+#include "PriceBook.hpp"
 #include "Settings.hpp"
 #include "Context.hpp"
 #include "TradingLog.hpp"
@@ -105,8 +107,8 @@ public:
 
 	const MarketDataSource &m_source;
 
-	boost::array<
-			boost::shared_ptr<RiskControlSymbolContext>, numberOfTradingModes>
+	static_assert(numberOfTradingModes == 3, "List changed.");
+	boost::array<boost::shared_ptr<RiskControlSymbolContext>, 2>
 		m_riskControlContext;
 
 	const uint8_t m_pricePrecision;
@@ -130,9 +132,6 @@ public:
 
 	pt::ptime m_requestedDataStartTime;
 
-	boost::shared_ptr<Book> m_book;
-	boost::atomic_bool m_isBookAdjusted;
-
 public:
 
 	Implementation(const MarketDataSource &source, const Symbol &symbol)
@@ -143,18 +142,19 @@ public:
 		, m_brokerPosition(0)
 		, m_marketDataTime(0)
 		, m_numberOfMarketDataUpdates(0)
-		, m_isLevel1Started(false)
-		, m_book(new Book(pt::not_a_date_time, false))
-		, m_isBookAdjusted(false) {
+		, m_isLevel1Started(false) {
+		
+		static_assert(numberOfTradingModes == 3, "List changed.");
 		for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
-			m_riskControlContext[i]
-				= m_source.GetContext()
-					.GetRiskControl(TradingMode(i))
-					.CreateSymbolContext(symbol);
+			m_riskControlContext[i] = m_source.GetContext()
+				.GetRiskControl(TradingMode(i + 1))
+				.CreateSymbolContext(symbol);
 		}
+	
 		foreach (auto &item, m_level1) {
 			Unset(item);
 		}
+
 	}
 
 	void UpdateMarketDataStat(const pt::ptime &time) {
@@ -280,7 +280,9 @@ const Security::InstanceId & Security::GetInstanceId() const {
 
 RiskControlSymbolContext & Security::GetRiskControlContext(
 		const TradingMode &mode) {
-	return *m_pimpl->m_riskControlContext[mode];
+	AssertLt(0, mode);
+	AssertGe(m_pimpl->m_riskControlContext.size(), mode);
+	return *m_pimpl->m_riskControlContext[mode - 1];
 }
 
 const MarketDataSource & Security::GetSource() const {
@@ -636,245 +638,83 @@ void Security::SetBrokerPosition(const Qty &qty, bool isInitial) {
 	m_pimpl->m_brokerPositionUpdateSignal(qty, isInitial);
 }
 
-bool Security::IsBookAdjusted() const {
-	return m_pimpl->m_isBookAdjusted;
-}
-
-Security::BookUpdateOperation Security::StartBookUpdate(
-		const pt::ptime &time,
-		bool isRespected) {
-	return BookUpdateOperation(*this, time, isRespected);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-class Security::Book::Side::Implementation {
-public:
-	std::vector<Security::Book::Level> m_levels;
-};
-
-Security::Book::Side::Side()
-	: m_pimpl(new Implementation) {
-	//...//
-}
-
-Security::Book::Side::Side(const Side &rhs)
-	: m_pimpl(new Implementation(*rhs.m_pimpl)) {
-	//...//
-}
-
-Security::Book::Side::Side(Side &&rhs)
-	: m_pimpl(rhs.m_pimpl) {
-	rhs.m_pimpl = nullptr;
-}
-
-Security::Book::Side::~Side() {
-	delete m_pimpl;
-}
-
-Security::Book::Side & Security::Book::Side::operator =(const Side &rhs) {
-	Security::Book::Side(rhs).Swap(*this);
-	return *this;
-}
-
-void Security::Book::Side::Swap(Side &rhs) throw() {
-	std::swap(m_pimpl, rhs.m_pimpl);
-}
-
-size_t Security::Book::Side::GetSize() const {
-	return m_pimpl->m_levels.size();
-}
-
-const Security::Book::Level & Security::Book::Side::GetLevel(
-		size_t index)
-		const {
-	if (index >= m_pimpl->m_levels.size()) {
-		throw LogicError("Book price level is out of range");
-	}
-	return m_pimpl->m_levels[index];
-}
-
-///
-
-Security::Book::Book(const pt::ptime &time, bool isAdjusted)
-	: m_time(time),
-	m_isAdjusted(isAdjusted) {
-	//...//
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-class Security::BookUpdateOperation::Implementation
-		: private boost::noncopyable {
-
-public:
-
-	Security &m_security;
-
-	const boost::shared_ptr<Security::Book> m_book;
-
-	BookSideUpdateOperation m_bids;
-	BookSideUpdateOperation m_offers;
-
-	explicit Implementation(
-			Security &security,
-			const boost::shared_ptr<Security::Book> &book)
-		: m_security(security),
-		m_book(book),
-		m_bids(m_book->m_bids),
-		m_offers(m_book->m_offers) {
-		//...//
-	}
-
-};
-
-Security::BookSideUpdateOperation::BookSideUpdateOperation(
-		Security::Book::Side &storage)
-	: m_storage(storage) {
-	//...//
-}
-
-void Security::BookSideUpdateOperation::Swap(
-		std::vector<Security::Book::Level> &rhs) {
-	rhs.swap(m_storage.m_pimpl->m_levels);
-}
-
-Security::BookUpdateOperation::BookUpdateOperation(
-		Security &security,
-		const pt::ptime &time,
-		bool isAdjusted)
-	: m_pimpl(
-		new Implementation(
-			security,
-			boost::shared_ptr<Security::Book>(
-				new Security::Book(time, isAdjusted)))) {
-	//...//
-}
-
-Security::BookUpdateOperation::BookUpdateOperation(BookUpdateOperation &&rhs)
-	: m_pimpl(rhs.m_pimpl) {
-	rhs.m_pimpl = nullptr;
-}
-
-Security::BookUpdateOperation::~BookUpdateOperation() {
-	delete m_pimpl;
-}
-
-void Security::BookUpdateOperation::Adjust() {
-	if (m_pimpl->m_book->IsAdjusted()) {
-		throw LogicError("Book already adjusted");
-	}
-	m_pimpl->m_book->m_isAdjusted = Adjust(
-		m_pimpl->m_security,
-		m_pimpl->m_bids.m_storage.m_pimpl->m_levels,
-		m_pimpl->m_offers.m_storage.m_pimpl->m_levels);
-}
-
-bool Security::BookUpdateOperation::Adjust(
-		const Security &,
-		std::vector<trdk::Security::Book::Level> &bids,
-		std::vector<trdk::Security::Book::Level> &asks) {
-
-	size_t count = 0;
-
-	while (
-			!bids.empty()
-			&& !asks.empty()
-			&& bids.front().GetPrice() > asks.front().GetPrice()) {
-		
-		bool isBidOlder = bids.front().GetTime() < asks.front().GetTime();
-		
-// 		security.GetSource().GetTradingLog().Write(
-// 			"book\tadjust\t%1%\t%2% %3% %4%\t%5% %6% %7%\t%8%",
-// 			[&](TradingRecord &record) {
-// 				record
-// 					% security
-// 					% bids.front().GetPrice()
-// 					% bids.front().GetTime()
-// 					% (isBidOlder ? 'X' : '+')
-// 					% asks.front().GetPrice()
-// 					% asks.front().GetTime()
-// 					% (isBidOlder ? '+' : 'X')
-// 					% (count + 1);
-// 			});
-		
-		if (isBidOlder) {
-			bids.erase(bids.begin());
-		} else {
-			asks.erase(asks.begin());
-		}
-		
-		++count;
-	
-	}
-
-	return count > 0;
-
-}
-
-Security::BookSideUpdateOperation & Security::BookUpdateOperation::GetBids() {
-	return m_pimpl->m_bids;
-}
-
-Security::BookSideUpdateOperation & Security::BookUpdateOperation::GetOffers() {
-	return m_pimpl->m_offers;
-}
-
-Security::BookSideUpdateOperation & Security::BookUpdateOperation::GetAsks() {
-	return m_pimpl->m_offers;
-}
-
-void Security::BookUpdateOperation::Commit(
+void Security::SetBook(
+		PriceBook &book,
 		const TimeMeasurement::Milestones &timeMeasurement) {
+
+	AssertNe(pt::not_a_date_time, book.GetTime());
 
 #	if defined(BOOST_ENABLE_ASSERT_HANDLER)
 	{
-		for (
-				size_t i = 0;
-				i < m_pimpl->m_book->GetBids().GetSize();
-				++i) {
-			Assert(!IsZero(m_pimpl->m_book->GetBids().GetLevel(i).GetPrice()));
-			AssertNe(0, m_pimpl->m_book->GetBids().GetLevel(i).GetQty());
+		for (size_t i = 0; i < book.GetBid().GetSize(); ++i) {
+			Assert(!IsZero(book.GetBid().GetLevel(i).GetPrice()));
+			AssertNe(0, book.GetBid().GetLevel(i).GetQty());
+			AssertNe(pt::not_a_date_time, book.GetBid().GetLevel(i).GetTime());
+			if (i > 0) {
+				AssertGt(
+					book.GetBid().GetLevel(i - 1).GetPrice(),
+					book.GetBid().GetLevel(i).GetPrice());
+			}
 		}
-		for (
-				size_t i = 0;
-				i < m_pimpl->m_book->GetAsks().GetSize();
-				++i) {
-			Assert(!IsZero(m_pimpl->m_book->GetAsks().GetLevel(i).GetPrice()));
-			AssertNe(0, m_pimpl->m_book->GetAsks().GetLevel(i).GetQty());
+		for (size_t i = 0; i < book.GetAsk().GetSize(); ++i) {
+			Assert(!IsZero(book.GetAsk().GetLevel(i).GetPrice()));
+			AssertNe(0, book.GetAsk().GetLevel(i).GetQty());
+			AssertNe(pt::not_a_date_time, book.GetAsk().GetLevel(i).GetTime());
+			if (i > 0) {
+				AssertLt(
+					book.GetAsk().GetLevel(i - 1).GetPrice(),
+					book.GetAsk().GetLevel(i).GetPrice());
+			}
 		}
 	}
 #	endif
 
-	m_pimpl->m_security.SetLevel1(
-		m_pimpl->m_book->GetTime(),
+	{
+		DropCopy *const dropCopy = GetContext().GetDropCopy();
+		if (dropCopy) {
+			dropCopy->CopyBook(*this, book);
+		}
+	}
+
+	// Adjusting:
+	while (
+			!book.GetBid().IsEmpty()
+			&& !book.GetAsk().IsEmpty()
+			&& book.GetBid().GetTop().GetPrice()
+				> book.GetAsk().GetTop().GetPrice()) {
+		bool isBidOlder
+			= book.GetBid().GetTop().GetTime()
+				< book.GetAsk().GetTop().GetTime();
+		if (isBidOlder) {
+			book.GetBid().PopTop();
+		} else {
+			book.GetAsk().PopTop();
+		}
+	}
+
+	SetLevel1(
+		book.GetTime(),
 		Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-			m_pimpl->m_book->GetBids().GetSize() == 0
+			book.GetBid().IsEmpty()
 				?	0
-				:	m_pimpl->m_security.ScalePrice(m_pimpl->m_book->GetBids().GetLevel(0).GetPrice())),
+				:	ScalePrice(book.GetBid().GetTop().GetPrice())),
 		Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
-			m_pimpl->m_book->GetBids().GetSize() == 0
+			book.GetBid().IsEmpty()
 				?	Qty(0)
-				:	m_pimpl->m_book->GetBids().GetLevel(0).GetQty()),
+				:	book.GetBid().GetTop().GetQty()),
 		Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-			m_pimpl->m_book->GetAsks().GetSize() == 0
+			book.GetAsk().IsEmpty()
 				?	0
-				:	m_pimpl->m_security.ScalePrice(m_pimpl->m_book->GetAsks().GetLevel(0).GetPrice())),
+				:	ScalePrice(book.GetAsk().GetTop().GetPrice())),
 		Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
-			m_pimpl->m_book->GetAsks().GetSize() == 0
+			book.GetAsk().IsEmpty()
 				?	Qty(0)
-				:	m_pimpl->m_book->GetAsks().GetLevel(0).GetQty()),
+				:	book.GetAsk().GetTop().GetQty()),
 		timeMeasurement);
-
-	m_pimpl->m_security.m_pimpl->m_isBookAdjusted
-		= m_pimpl->m_book->IsAdjusted();
-	m_pimpl->m_security.m_pimpl->m_book = m_pimpl->m_book;
 	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_STORE);
-
-	m_pimpl->m_security.m_pimpl->UpdateMarketDataStat(m_pimpl->m_book->GetTime());
-	m_pimpl->m_security.m_pimpl->m_bookUpdateTickSignal(
-		m_pimpl->m_book,
-		timeMeasurement);
+	m_pimpl->UpdateMarketDataStat(book.GetTime());
+	
+	m_pimpl->m_bookUpdateTickSignal(book, timeMeasurement);
 
 }
 

@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Core/Service.hpp"
+#include "Core/PriceBook.hpp"
 
 namespace boost { namespace accumulators {
 
@@ -118,8 +119,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		struct Source {
 			const Security *security;
 			boost::posix_time::ptime time;
-			Security::Book::Side bidsBook;
-			Security::Book::Side asksBook;
+			PriceBook::Bid bidsBook;
+			PriceBook::Ask asksBook;
 			mutable bool isUsed;
 		};
 
@@ -185,14 +186,14 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		virtual bool OnBookUpdateTick(
 				const Security &,
-				const Security::Book &,
+				const PriceBook &,
 				const Lib::TimeMeasurement::Milestones &);
 
 		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
 
 	private:
 
-		void UpdateNumberOfUpdates(const Security::Book &);
+		void UpdateNumberOfUpdates(const PriceBook &);
 
 		void InitLog(ServiceLog &, std::ofstream &, const std::string &) const;
 		void LogState(bool isUpdateUsed) const;

@@ -434,7 +434,7 @@ void Strategy::OnPositionUpdate(Position &) {
 
 void Strategy::OnBookUpdateTick(
 		Security &security,
-		const Security::Book &,
+		const PriceBook &,
 		const TimeMeasurement::Milestones &) {
 	GetLog().Error(
 		"Subscribed to %1% Book Update Ticks, but can't work with it"
@@ -647,7 +647,7 @@ void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
 
 void Strategy::RaiseBookUpdateTickEvent(
 		Security &security,
-		const Security::Book &book,
+		const PriceBook &book,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
 	// 1st time already checked: before enqueue event (without locking),

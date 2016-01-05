@@ -12,6 +12,7 @@ file(
     FixTrading.cpp
     FixStream.cpp
     FixSession.cpp
+    FixSecurity.cpp
     CurrenexStream.cpp
     CurrenexTrading.cpp
     AlpariStream.cpp

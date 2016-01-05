@@ -12,6 +12,7 @@
 #include "FixStream.hpp"
 
 namespace fix = OnixS::FIX;
+namespace pt = boost::posix_time;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -71,7 +72,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		virtual void OnMarketDataSnapshot(
 				const fix::Message &message,
-				const boost::posix_time::ptime &dataTime,
+				const pt::ptime &time,
 				FixSecurity &security) {
 		
 			const fix::Group &entries
@@ -86,15 +87,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			AssertEq(1, entries.size());
 		
 			const auto entryId = message.getInt64(fix::FIX42::Tags::MDEntryID);
-			Assert(security.m_book.find(entryId) == security.m_book.end());
-		
-			security.m_book[entryId] = std::make_pair(
+			security.OnNewEntry(
+				entryId,
+				time,
 				message.get(fix::FIX42::Tags::MDEntryType)
 					== fix::FIX42::Values::MDEntryType::Bid,
-				Security::Book::Level(
-					dataTime,
-					message.getDouble(fix::FIX42::Tags::MDEntryPx),
-					ParseMdEntrySize(message)));
+				message.getDouble(fix::FIX42::Tags::MDEntryPx),
+				ParseMdEntrySize(message));
 
 		}
 

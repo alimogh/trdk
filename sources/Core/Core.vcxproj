@@ -286,6 +286,7 @@
     <ClInclude Include="ModuleSecurityList.hpp" />
     <ClInclude Include="ModuleVariant.hpp" />
     <ClInclude Include="Consumer.hpp" />
+    <ClInclude Include="PriceBook.hpp" />
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="SettingsReport.hpp" />
     <ClInclude Include="Strategy.hpp" />

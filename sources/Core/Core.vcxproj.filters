@@ -160,6 +160,9 @@
     <ClInclude Include="DropCopy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PriceBook.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Core.rc">

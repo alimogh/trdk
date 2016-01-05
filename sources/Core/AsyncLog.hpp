@@ -569,21 +569,6 @@ namespace trdk {
 
 	protected:
 
-		template<typename... RecordParams>
-		void WriteX(const RecordParams &...recordParams) {
-			if (!IsEnabled()) {
-				return;
-			}
-			Record record(
-				m_log.GetTime(),
-				m_log.GetThreadId(),
-				recordParams...);
-			const Lock lock(m_queue.mutex);
-			Assert(m_queue.activeBuffer);
-			m_queue.activeBuffer->push_back(std::move(record));
-			m_queue.condition.notify_one();
-		}
-
 		template<typename FormatCallback, typename... RecordParams>
 		void FormatAndWrite(
 				const FormatCallback &formatCallback,

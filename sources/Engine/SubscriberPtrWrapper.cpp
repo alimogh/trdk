@@ -399,7 +399,7 @@ void SubscriberPtrWrapper::RaiseNewBarEvent(
 
 void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
 		Security &security,
-		const Security::Book &book,
+		const PriceBook &book,
 		const TimeMeasurement::Milestones &timeMeasurement)
 		const {
 	
@@ -409,11 +409,11 @@ void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
 	public:		
 		explicit Visitor(
 				Security &security,
-				const Security::Book &book,
+				const PriceBook &book,
 				const TimeMeasurement::Milestones &timeMeasurement)
-			: m_source(security),
-			m_book(book),
-			m_timeMeasurement(timeMeasurement) {
+			: m_source(security)
+			, m_book(book)
+			, m_timeMeasurement(timeMeasurement) {
 			//...//
 		}
 	public:
@@ -437,7 +437,7 @@ void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
 		}
 	private:
 		Security &m_source;
-		const Security::Book &m_book;
+		const PriceBook &m_book;
 		const TimeMeasurement::Milestones &m_timeMeasurement;
 	};
 

@@ -98,8 +98,6 @@ namespace trdk { namespace Interaction { namespace Itch {
 
 		bool m_hasNewData;
 
-		size_t m_bookLevelsCount;
-
 		boost::posix_time::ptime m_lastConnectionAttempTime;
 
 	};

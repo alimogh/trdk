@@ -98,7 +98,7 @@ namespace trdk { namespace Engine {
 				const;
 		void RaiseBookUpdateTickEvent(
 				Security &,
-				const Security::Book &,
+				const PriceBook &,
 				const Lib::TimeMeasurement::Milestones &)
 				const;
 

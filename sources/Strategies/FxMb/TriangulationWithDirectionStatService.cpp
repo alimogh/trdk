@@ -156,7 +156,7 @@ pt::ptime StatService::OnSecurityStart(const Security &security) {
 
 bool StatService::OnBookUpdateTick(
 		const Security &security,
-		const Security::Book &book,
+		const PriceBook &book,
 		const TimeMeasurement::Milestones &) {
 
 	// Method will be called at each book update (add new price level, removed
@@ -173,8 +173,8 @@ bool StatService::OnBookUpdateTick(
 			|| source.time <= book.GetTime());
 	
 		if (
-				book.GetBids().GetSize() < m_bookLevelsCount
-				|| book.GetAsks().GetSize() < m_bookLevelsCount) {
+				book.GetBid().GetSize() < m_bookLevelsCount
+				|| book.GetAsk().GetSize() < m_bookLevelsCount) {
 			if (source.isUsed) {
 				GetTradingLog().Write(
 					"insufficient book data\t%1%\t%2%\t%3%x%4%",
@@ -182,8 +182,8 @@ bool StatService::OnBookUpdateTick(
 						record
 							% source.security->GetSymbol().GetSymbol()
 							% source.security->GetSource().GetTag()
-							% book.GetBids().GetSize()
-							% book.GetAsks().GetSize();
+							% book.GetBid().GetSize()
+							% book.GetAsk().GetSize();
 					});
 				source.isUsed = false;
 			}
@@ -197,15 +197,15 @@ bool StatService::OnBookUpdateTick(
 					record
 						% source.security->GetSymbol().GetSymbol()
 						% source.security->GetSource().GetTag()
-						% book.GetBids().GetSize()
-						% book.GetAsks().GetSize();
+						% book.GetBid().GetSize()
+						% book.GetAsk().GetSize();
 				});
 			source.isUsed = true;
 		}
 
 		source.time = book.GetTime();
-		source.bidsBook = book.GetBids();
-		source.asksBook = book.GetAsks();
+		source.bidsBook = book.GetBid();
+		source.asksBook = book.GetAsk();
 
 	}
 
@@ -449,7 +449,7 @@ bool StatService::OnBookUpdateTick(
 
 }
 
-void StatService::UpdateNumberOfUpdates(const Security::Book &book) {
+void StatService::UpdateNumberOfUpdates(const PriceBook &book) {
 
 	m_numberOfUpdates.push_back(book.GetTime());
 	

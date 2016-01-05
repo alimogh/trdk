@@ -14,6 +14,7 @@
 #include "Context.hpp"
 #include "Fwd.hpp"
 #include "Core/Settings.hpp"
+#include "Core/PriceBook.hpp"
 
 namespace trdk { namespace Engine {
 	
@@ -279,7 +280,7 @@ namespace trdk { namespace Engine {
 
 		typedef boost::tuple<
 				Security *,
-				boost::shared_ptr<const Security::Book>,
+				PriceBook,
 				Lib::TimeMeasurement::Milestones,
 				SubscriberPtrWrapper>
 			BookUpdateTickEvent;
@@ -346,7 +347,7 @@ namespace trdk { namespace Engine {
 		void SignalBookUpdateTick(
 				SubscriberPtrWrapper &,
 				Security &,
-				const boost::shared_ptr<const Security::Book> &,
+				const PriceBook &,
 				const Lib::TimeMeasurement::Milestones &);
 
 	private:
@@ -1299,7 +1300,7 @@ namespace trdk { namespace Engine {
 			Lib::TimeMeasurement::SM_DISPATCHING_DATA_DEQUEUE);
 		boost::get<3>(bookUpdateTickEvent).RaiseBookUpdateTickEvent(
 			*boost::get<0>(bookUpdateTickEvent),
-			*boost::get<1>(bookUpdateTickEvent),
+			boost::get<1>(bookUpdateTickEvent),
 			timeMeasurement);
 	}
 

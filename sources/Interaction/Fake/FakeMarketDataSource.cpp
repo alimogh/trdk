@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "FakeMarketDataSource.hpp"
 #include "Core/TradingLog.hpp"
+#include "Core/PriceBook.hpp"
 
 namespace pt = boost::posix_time;
 
@@ -48,55 +49,61 @@ void Fake::MarketDataSource::NotificationThread() {
 
 	try {
 
-		const double bid = 12.99;
-		const double ask = 13.99;
-		int correction = 1;
+		const double bidStart = 70.00;
+		const double askStart = 80.00;
+
+		bool isCorrectionPositive = true;
+		boost::mt19937 random;
+		boost::uniform_int<uint16_t> topRandomRange(0, 1100);
+		boost::variate_generator<boost::mt19937, boost::uniform_int<uint16_t>>
+			generateTopRandom(random, topRandomRange);
+		boost::uniform_int<uint8_t> stepRandomRange(0, 2);
+		boost::variate_generator<boost::mt19937, boost::uniform_int<uint8_t>>
+			generateStepRandom(random, stepRandomRange);
 
 		while (!m_stopFlag) {
 
 			const auto &now = GetContext().GetCurrentTime();
+
+			double bid
+				= bidStart
+				+ ((double(generateTopRandom()) / 100)  * (isCorrectionPositive ? 1 : -1));
+			double ask
+				= askStart
+				+ ((double(generateTopRandom()) / 100) * (isCorrectionPositive ? 1 : -1));
+			isCorrectionPositive = !isCorrectionPositive;
 
 			foreach (const auto &s, m_securityList) {
 
 				const auto &timeMeasurement
 					= GetContext().StartStrategyTimeMeasurement();
 
-				Security::BookUpdateOperation book
-					= s->StartBookUpdate(now, false);
-				{
-					std::vector<Security::Book::Level> asks;
-					asks.reserve(10);
-					for (int i = 1; i <= 10; ++i) {
-						asks.push_back(
-							Security::Book::Level(
-								now,
-								ask + abs(correction * i),
-								i * 10000));
-					}
-					book.GetAsks().Swap(asks);
+				PriceBook book(now);
+				
+				for (int i = 1; i <= book.GetSideMaxSize(); ++i) {
+					book.GetAsk().Add(
+						now,
+						Round(ask, s->GetPriceScale()),
+						i * ((generateTopRandom() + 1) * 10000));
+					ask += (double(generateStepRandom()) / 100) + 0.01;
 				}
-				{
-					std::vector<Security::Book::Level> bids;
-					bids.reserve(10);
-					for (int i = 1; i <= 10; ++i) {
-						bids.push_back(
-							Security::Book::Level(
-								now,
-								bid - abs(correction * i),
-								i * 10000));
-					}
-					book.GetBids().Swap(bids);
+				
+				for (int i = 1; i <= book.GetSideMaxSize(); ++i) {
+					book.GetBid().Add(
+						now,
+						Round(bid, s->GetPriceScale()),
+						i * ((generateTopRandom() + 1) * 20000));
+					bid -= (double(generateStepRandom()) / 100) + 0.01;
 				}
-				book.Commit(timeMeasurement);
+
+				s->SetBook(book, timeMeasurement);
 
 			}
-
-			correction *= -1;
 
 			if (m_stopFlag) {
 				break;
 			}
-			boost::this_thread::sleep(pt::milliseconds(1));
+			boost::this_thread::sleep(pt::seconds(20));
 		
 		}
 	} catch (...) {

@@ -28,7 +28,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	public:
 
-		using Security::StartBookUpdate;
+		using Security::SetBook;
 
 	};
 

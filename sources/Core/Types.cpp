@@ -48,7 +48,7 @@ std::ostream & std::operator <<(std::ostream &os, const OrderParams &params) {
 
 TradingMode trdk::ConvertTradingModeFromString(const std::string &mode) {
 	
-	static_assert(numberOfTradingModes, "List changed.");
+	static_assert(numberOfTradingModes == 3, "List changed.");
 
 	if (boost::iequals(mode, ConvertToString(TRADING_MODE_PAPER))) {
 		return TRADING_MODE_PAPER;
@@ -69,12 +69,14 @@ TradingMode trdk::ConvertTradingModeFromString(const std::string &mode) {
 namespace {
 
 	const char * ConvertToPch(const TradingMode &mode) {
-		static_assert(numberOfTradingModes, "List changed.");
+		static_assert(numberOfTradingModes == 3, "List changed.");
 		switch (mode) {
 			case TRADING_MODE_LIVE:
 				return "live";
 			case TRADING_MODE_PAPER:
 				return "paper";
+			case TRADING_MODE_BACKTESTING:
+				return "backtesting";
 			default:
 				AssertEq(TRADING_MODE_LIVE, mode);
 				return "UNKNOWN";
@@ -83,6 +85,8 @@ namespace {
 
 	const std::string tradingModeLive = ConvertToPch(TRADING_MODE_LIVE);
 	const std::string tradingModePaper = ConvertToPch(TRADING_MODE_PAPER);
+	const std::string tradingModeBacktesting
+		= ConvertToPch(TRADING_MODE_BACKTESTING);
 	const std::string tradingModeUnknown = "UNKNOWN";
 
 }
@@ -94,6 +98,8 @@ const std::string & trdk::ConvertToString(const TradingMode &mode) {
 			return tradingModeLive;
 		case TRADING_MODE_PAPER:
 			return tradingModePaper;
+		case TRADING_MODE_BACKTESTING:
+			return tradingModeBacktesting;
 		default:
 			AssertEq(TRADING_MODE_LIVE, mode);
 			return tradingModeUnknown;

@@ -330,6 +330,7 @@
     <ClCompile Include="CurrenexStream.cpp" />
     <ClCompile Include="FastmatchStream.cpp" />
     <ClCompile Include="FastmatchTrading.cpp" />
+    <ClCompile Include="FixSecurity.cpp" />
     <ClCompile Include="FixSession.cpp" />
     <ClCompile Include="CurrenexTrading.cpp" />
     <ClCompile Include="FixStream.cpp" />

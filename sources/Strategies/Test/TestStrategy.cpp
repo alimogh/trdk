@@ -13,12 +13,15 @@
 #include "Common/Common.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/Security.hpp"
+#include "Core/PriceBook.hpp"
 #include "Core/Position.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/DropCopy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
+
+namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -38,7 +41,11 @@ namespace trdk { namespace Strategies { namespace Test {
 				const std::string &tag,
 				const Lib::IniSectionRef &conf)
 			: Super(context, name, tag, conf)
-			, m_numberOfOperations(0) {
+			, m_numberOfOperations(0)
+			, m_finResultRange(0, 1000)
+			, m_numberOfUpdatesRange(250, 75000)
+			, m_generateFinResultRandom(m_random, m_finResultRange)
+			, m_generateNumberOfUpdatesRandom(m_random, m_numberOfUpdatesRange) {
 			//...//
 		}
 		
@@ -60,20 +67,32 @@ namespace trdk { namespace Strategies { namespace Test {
 			}
 			Assert(!position.IsCompleted() || position.GetOpenedQty() == 0);
 
-			DropCopy *const dropCopy = GetContext().GetDropCopy();
-			if (dropCopy) {
+			if (position.GetOpenedQty()) {
 
-				boost::shared_ptr<FinancialResult> financialResult(
-					new FinancialResult);
-				financialResult->push_back(std::make_pair(CURRENCY_AUD, 8877.111));
-				financialResult->push_back(std::make_pair(CURRENCY_CHF, -679.12));
-				financialResult->push_back(std::make_pair(CURRENCY_JPY, 787));
+				DropCopy *const dropCopy = GetContext().GetDropCopy();
+				if (dropCopy) {
 
-				dropCopy->ReportOperationEnd(
-					*m_operationId,
-					GetContext().GetCurrentTime(),
-					9.99,
-					financialResult);
+					boost::shared_ptr<FinancialResult> financialResult(
+						new FinancialResult);
+					financialResult->push_back(
+						std::make_pair(
+							position.GetSecurity().GetSymbol().GetFotBaseCurrency(),
+							m_generateFinResultRandom()));
+					financialResult->push_back(
+						std::make_pair(
+							position.GetSecurity().GetSymbol().GetFotQuoteCurrency(),
+							m_generateFinResultRandom()));
+
+					dropCopy->ReportOperationEnd(
+						*m_operationId,
+						GetContext().GetCurrentTime(),
+						!(m_numberOfOperations % 3)
+							?	OPERATION_RESULT_LOSS
+							:	OPERATION_RESULT_PROFIT,
+						9.99,
+						financialResult);
+
+				}
 
 			}
 
@@ -83,26 +102,29 @@ namespace trdk { namespace Strategies { namespace Test {
 
 		virtual void OnBookUpdateTick(
 				Security &security,
-				const Security::Book &book,
+				const PriceBook &book,
 				const TimeMeasurement::Milestones &timeMeasurement) {
 
-			if (m_numberOfOperations > 5) {
-				return;
-			}
-
-			if (!book.GetAsks().GetSize() || !book.GetBids().GetSize()) {
-				return;
-			}
-
 			if (m_operationId) {
+				return;
+			}
+
+			const auto &now = GetContext().GetCurrentTime();
+			if (
+					m_lastOperationTime != pt::not_a_date_time
+					&& now - m_lastOperationTime > pt::minutes(3)) {
+				return;
+			}
+
+			if (book.GetAsk().IsEmpty() || book.GetBid().IsEmpty()) {
 				return;
 			}
 
 			const auto &operationId = m_generateUuid();
 
 			const auto price = m_numberOfOperations % 2
-				?	book.GetAsks().GetLevel(0).GetPrice()
-				:	book.GetBids().GetLevel(0).GetPrice();
+				?	book.GetAsk().GetTop().GetPrice()
+				:	book.GetBid().GetTop().GetPrice();
 			Assert(!IsZero(price));
 
 			boost::shared_ptr<Position> position;
@@ -123,11 +145,11 @@ namespace trdk { namespace Strategies { namespace Test {
 					new ShortPosition(
 						*this,
 						operationId,
-						m_numberOfOperations + 111,
+						m_numberOfOperations + 222,
 						GetTradeSystem(security.GetSource().GetIndex()),
 						security,
 						security.GetSymbol().GetFotBaseCurrency(),
-						100000,
+						200000,
 						security.ScalePrice(price),
 						timeMeasurement));
 			}
@@ -138,13 +160,15 @@ namespace trdk { namespace Strategies { namespace Test {
 					operationId,
 					GetContext().GetCurrentTime(),
 					*this,
-					999111999);
+					m_generateNumberOfUpdatesRandom());
 			}
 
 			position->OpenImmediatelyOrCancel(security.ScalePrice(price));
 
 			m_operationId = operationId;
 			++m_numberOfOperations;
+
+			m_lastOperationTime = now;
 
 		}
 
@@ -193,7 +217,16 @@ namespace trdk { namespace Strategies { namespace Test {
 		size_t m_numberOfOperations;
 
 		boost::optional<boost::uuids::uuid> m_operationId;
-		
+		pt::ptime m_lastOperationTime;
+
+		boost::mt19937 m_random;
+		boost::uniform_int<uint32_t> m_finResultRange;
+		boost::uniform_int<uint32_t> m_numberOfUpdatesRange;
+		boost::variate_generator<boost::mt19937, boost::uniform_int<uint32_t>>
+			m_generateFinResultRandom;
+		boost::variate_generator<boost::mt19937, boost::uniform_int<uint32_t>>
+			m_generateNumberOfUpdatesRandom;
+
 	};
 	
 } } }

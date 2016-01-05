@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "FixStream.hpp"
 #include "Core/TradingLog.hpp"
+#include "Core/PriceBook.hpp"
 
 namespace fix = OnixS::FIX;
 
@@ -57,8 +58,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				const {
 			request.set(
 				fix::FIX42::Tags::MarketDepth,
-				// +3 - to get required book size after adjusting.
-				int(GetLevelsCount()) + 3);
+				int(PriceBook::GetSideMaxSize()));
 			request.set(
 				fix::FIX42::Tags::AggregatedBook,
 				fix::FIX42::Values::AggregatedBook::one_book_entry_per_side_per_price);

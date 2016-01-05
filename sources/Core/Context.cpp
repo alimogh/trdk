@@ -374,8 +374,8 @@ public:
 
 	Params m_params;
 
-	boost::array<std::unique_ptr<RiskControl>, numberOfTradingModes>	
-		m_riskControl;
+	static_assert(numberOfTradingModes == 3, "List changed.");
+	boost::array<std::unique_ptr<RiskControl>, 2> m_riskControl;
 
 	std::unique_ptr<StatReport> m_statReport;
 
@@ -416,11 +416,15 @@ Context::Context(
 		 tradingLog,
 		 settings,
 		 startTime);
+
+	static_assert(numberOfTradingModes == 3, "List changed.");
 	for (size_t i = 0; i < m_pimpl->m_riskControl.size(); ++i) {
 		m_pimpl->m_riskControl[i].reset(
-			new RiskControl(*this, conf, TradingMode(i)));
+			new RiskControl(*this, conf, TradingMode(i + 1)));
 	}
+
 	m_pimpl->m_statReport.reset(new StatReport(*this));
+
 }
 
 Context::~Context() {
@@ -542,7 +546,10 @@ TimeMeasurement::Milestones Context::StartDispatchingTimeMeasurement() const {
 }
 
 RiskControl & Context::GetRiskControl(const TradingMode &mode) {
-	return *m_pimpl->m_riskControl[mode];
+	static_assert(numberOfTradingModes == 3, "List changed.");
+	AssertLt(0, mode);
+	AssertGe(m_pimpl->m_riskControl.size(), mode);
+	return *m_pimpl->m_riskControl[mode - 1];
 }
 
 const RiskControl & Context::GetRiskControl(const TradingMode &mode) const {

@@ -604,11 +604,11 @@ public:
 			throw() {
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%1%\t%2%.%21%\t%3%\t%4%\topen-%5%\t%6%"
+			"%1%\t%2%.%20%\t%3%\t%4%\topen-%5%\t%6%"
 				"\tprice=%7%->%8%\t%9%\tqty=%10%->%11%"
-				"\tbid=%12%/%13%\task=%14%/%15%\tadjusted=%16%"
-				"\torder-id=%17% ts-order-id=%22%"
-				"\torder-status=%18%\thas-orders=%19%\tis-error=%20%",
+				"\tbid=%12%/%13%\task=%14%/%15%"
+				"\torder-id=%16% ts-order-id=%21%"
+				"\torder-status=%17%\thas-orders=%18%\tis-error=%19%",
 			[this, eventDesc, &orderStatus, &tsOrderId](TradingRecord &record) {
 				record
 					% m_id
@@ -626,7 +626,6 @@ public:
 					% m_security.GetBidQty()
 					% m_security.GetAskPrice()
 					% m_security.GetAskQty()
-					% (m_security.IsBookAdjusted() ? "yes" : "no")
 					% m_position.GetOpenOrderId()
 					% m_tradeSystem.GetStringStatus(orderStatus)
 					% m_position.HasActiveOpenOrders()
@@ -1087,7 +1086,6 @@ private:
 			orderParams && orderParams->minTradeQty
 				?	&*orderParams->minTradeQty
 				:	nullptr,
-			nullptr /* user */,
 			directionData.qty.load(),
 			status == ORDER_STATUS_SENT ? &bidPrice : nullptr,
 			status == ORDER_STATUS_SENT ? &bidQty : nullptr,

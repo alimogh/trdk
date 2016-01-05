@@ -18,13 +18,16 @@ namespace trdk { namespace EngineServer {
 			boost::uuids::uuid,
 			boost::posix_time::ptime,
 			double,
-			size_t,
-			int64_t,
+			intmax_t,
+			uintmax_t,
 			Qty,
 			Lib::Currency,
 			TimeInForce,
 			OrderSide,
-			OrderStatus>
+			OrderStatus,
+			OrderType,
+			OperationResult,
+			TradingMode>
 		DropCopyRecordField;
 
 	typedef boost::unordered_map<
@@ -68,6 +71,10 @@ namespace trdk { namespace EngineServer { namespace Details {
 			m_stream.pack(int(value));
 		}
 
+		void operator ()(const TradingMode &value) {
+			m_stream.pack(int(value));
+		}
+
 		void operator ()(const OrderSide &value) {
 			m_stream.pack(int(value));
 		}
@@ -76,12 +83,20 @@ namespace trdk { namespace EngineServer { namespace Details {
 			m_stream.pack(int(value));
 		}
 
+		void operator ()(const OrderType &value) {
+			m_stream.pack(int(value));
+		}
+
+		void operator ()(const OperationResult &value) {
+			m_stream.pack(int(value));
+		}
+
 		void operator ()(const boost::uuids::uuid &value) {
 			m_stream.pack(boost::uuids::to_string(value));
 		}
 
 		void operator ()(const boost::posix_time::ptime &value) {
-			m_stream.pack(Lib::ConvertToTimeT(value));
+			m_stream.pack(Lib::ConvertToMicroseconds(value));
 		}
 
 		template<typename T>
@@ -153,38 +168,3 @@ namespace trdk { namespace EngineServer {
 	}
 
 } }
-
-namespace msgpack {
-	MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) { namespace adaptor {
-
-		template<>
-		struct pack<trdk::EngineServer::DropCopyRecord> {
-
-			template<typename Stream>
-			packer<Stream> & operator ()(
-					msgpack::packer<Stream> &stream,
-					const trdk::EngineServer::DropCopyRecord &record)
-					const {
-
-				stream.pack_map(record.size());
-
-				foreach (const auto &i, record) {
-
-					stream.pack(i.first);
-
-					using namespace trdk::EngineServer::Details;
-					typedef DropCopyRecordFieldMsgpackVisitor<decltype(stream)>
-						Visitor;
-					Visitor visitor(stream);
-					boost::apply_visitor(visitor, i.second);
-
-				}
-
-				return stream;
-
-			}
-
-		};
-
-	} }
-}
