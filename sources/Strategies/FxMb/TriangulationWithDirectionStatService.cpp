@@ -331,6 +331,17 @@ bool StatService::OnBookUpdateTick(
 			point.time = source.time;
 		}
 	}
+	if (!m_history.empty() && m_history.back().time > point.time) {
+		GetLog().Warn(
+			"Price book update lag deteced!"
+				" Recevied update from %1% for %2% with time %3%"
+				", but previous update has time %4%.",
+			security.GetSource().GetTag(),
+			security,
+			point.time,
+			m_history.back().time);
+		point.time = m_history.back().time;
+	}
 
 	////////////////////////////////////////////////////////////////////////////////
 	// VWAP and Theo (see TRDK-267 about precision):
@@ -360,12 +371,18 @@ bool StatService::OnBookUpdateTick(
 
 	////////////////////////////////////////////////////////////////////////////////
 	// Preparing previous 2 points for actual strategy work:
-	
+
+	Assert(
+		m_history.empty()
+		|| (m_history.front().time <= m_history.back().time));
+	Assert(m_history.empty() || (m_history.back().time <= point.time));
 	m_history.push_back(point);
+
 	const auto &p2Time = point.time - m_period2;
 	const auto &p1Time = point.time - m_period1;
 	AssertGt(point.time, p1Time);
 	AssertGt(p1Time, p2Time);
+
 	auto itP1 = m_history.cend();
 	auto itP2 = m_history.cend();
 	for (auto it = m_history.cbegin(); it != m_history.cend(); ) {
