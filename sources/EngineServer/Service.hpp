@@ -248,10 +248,10 @@ namespace trdk { namespace EngineServer {
 
 		//! @sa https://mbcm.robotdk.com:8443/display/API/Constants
 		enum EngineState {
-			ENGINE_STATE_STOPPED = 1100,
-			ENGINE_STATE_STOPPING = 1200,
-			ENGINE_STATE_STARTED = 2100,
-			ENGINE_STATE_STARTING = 2200,
+			ENGINE_STATE_STARTED = 1100,
+			ENGINE_STATE_STARTING = 1200,
+			ENGINE_STATE_STOPPED = 2100,
+			ENGINE_STATE_STOPPING = 2200,
 			numberOfEngineStates = 4
 		};
 
