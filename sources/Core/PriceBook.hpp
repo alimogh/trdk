@@ -139,16 +139,18 @@ namespace trdk {
 			}
 
 			void PopTop() {
-			
+
+				AssertGe(m_levels.size(), m_offset + m_size);
 				if (IsEmpty()) {
 					throw trdk::Lib::LogicError("Price book is empty");
 				}
 				AssertGt(m_levels.size(), m_offset);
 				AssertLt(0, m_size);
-			
+
 				++m_offset;
 				--m_size;
-				AssertLe(m_levels.size(), m_offset + m_size);
+
+				AssertGt(m_levels.size(), m_offset + m_size);
 			
 			}
 
@@ -247,12 +249,12 @@ namespace trdk {
 				static_assert(
 					isAscendingSort,
 					"Failed to find template specialization.");
-				return std::upper_bound(
+				return std::lower_bound(
 					begin,
 					end,
 					price,
-					[](double lhs, const Level &rhs) {
-						  return lhs < rhs.GetPrice();
+					[](const Level &lhs, double rhs) {
+						  return lhs.GetPrice() < rhs;
 					});
 			}
 
@@ -330,11 +332,11 @@ namespace trdk {
 			const PriceBook::Side<false>::Storage::iterator &begin,
 			const PriceBook::Side<false>::Storage::iterator &end,
 			double price) {
-		return std::lower_bound(
+		return std::upper_bound(
 			begin,
 			end,
 			price,
-			[](const Level &lhs, double rhs) {return lhs.GetPrice() > rhs;});
+			[](double lhs, const Level &rhs) {return lhs > rhs.GetPrice();});
 	}
 
 }
