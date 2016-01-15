@@ -24,8 +24,8 @@
 #define TRDK_NAME	"MBCMTRADING Trading Robot Development Kit"
 #define TRDK_NAME_W	L"MBCMTRADING Trading Robot Development Kit"
 
-#define TRDK_COPYRIGHT		"Copyright 2015 (C) MBCMTRADING, mb-cm.com. All rights reserved."
-#define TRDK_COPYRIGHT_W	L"Copyright 2015 (C) MBCMTRADING, mb-cm.com. All rights reserved."
+#define TRDK_COPYRIGHT		"Copyright 2016 (C) MBCMTRADING, mb-cm.com. All rights reserved."
+#define TRDK_COPYRIGHT_W	L"Copyright 2016 (C) MBCMTRADING, mb-cm.com. All rights reserved."
 
 #define TRDK_CONCURRENCY_PROFILE_DEBUG (::trdk::Lib::Concurrency::PROFILE_RELAX)
 #define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::PROFILE_HFT)
