@@ -805,6 +805,7 @@ void Service::RunIoThread() {
 						case sys::errc::connection_already_in_progress:
 						case sys::errc::connection_refused:
 						case sys::errc::connection_reset:
+						case sys::errc::broken_pipe:
 							break;
 						default:
 							throw;
