@@ -38,10 +38,52 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				GetSession().Disconnect();
 			} catch (...) {
 				AssertFailNoException();
+				throw;
 			}
 		}
 
 	protected:
+
+		virtual void OnNewEntry(
+				FixSecurity &security,
+				const fix::Int64 &entryId,
+				const pt::ptime &time,
+				bool isBid,
+				double price,
+				const Qty &qty) {
+			security.SetEntry(entryId, time, isBid, price, qty);
+		}
+		
+		virtual void OnEntryReplace(
+				FixSecurity &,
+				const OnixS::FIX::Int64 &,
+				const OnixS::FIX::Int64 &,
+				const boost::posix_time::ptime &,
+				bool,
+				double,
+				const Qty &) {
+			GetLog().Error("Method \"replace entry\" is not implemented.");
+			AssertFail("Method \"replace entry\" is not implemented");
+			throw Error("Method \"replace entry\" is not implemented");
+		}
+		
+		virtual void OnEntryUpdate(
+				FixSecurity &,
+				const fix::Int64 &,
+				const pt::ptime &,
+				bool,
+				double,
+				const Qty &) {
+			GetLog().Error("Method \"update entry\" is not implemented.");
+			AssertFail("Method \"update entry\" is not implemented");
+			throw Error("Method \"update entry\" is not implemented");
+		}
+		
+		virtual void OnEntryDelete(
+				FixSecurity &security,
+				const fix::Int64 &entryId) {
+			security.OnEntryDelete(entryId);
+		}
 
 		virtual void OnLogout() {
 			GetSession().ResetLocalSequenceNumbers(true, true);

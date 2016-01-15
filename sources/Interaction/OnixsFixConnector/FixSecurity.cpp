@@ -61,6 +61,18 @@ void FixSecurity::OnNewEntry(
 
 }
 
+void FixSecurity::SetEntry(
+		const fix::Int64 &entryId,
+		const pt::ptime &time,
+		bool isBid,
+		double price,
+		const Qty &qty) {
+	Assert(m_flush == &FixSecurity::FlushBookIterativeUpdates);
+	const Entry order = {time, isBid, price, qty};
+	m_orderBook.emplace(entryId, std::move(order));
+	IncreaseNumberOfUpdates(isBid);
+}
+
 void FixSecurity::OnEntryReplace(
 		const fix::Int64 &prevEntryId,
 		const fix::Int64 &newEntryId,
@@ -181,10 +193,6 @@ void FixSecurity::FlushBookIterativeUpdates(
 		const pt::ptime &time,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 
-	Assert(m_snapshot.GetTime() == pt::not_a_date_time);
-	Assert(m_snapshot.GetBid().IsEmpty());
-	Assert(m_snapshot.GetAsk().IsEmpty());
-
 	if (!m_hasBidUpdates && !m_hasAskUpdates) {
 		return;
 	}
@@ -234,8 +242,5 @@ void FixSecurity::FlushBookShanpshot(
 }
 
 void FixSecurity::IncreaseNumberOfUpdates(bool isBid) throw() {
-	Assert(m_snapshot.GetTime() == pt::not_a_date_time);
-	Assert(m_snapshot.GetBid().IsEmpty());
-	Assert(m_snapshot.GetAsk().IsEmpty());
 	isBid ? m_hasBidUpdates : m_hasAskUpdates = true;
 }

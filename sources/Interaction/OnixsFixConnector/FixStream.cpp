@@ -267,7 +267,8 @@ void FixStream::onInboundApplicationMsg(
 							= entry.getInt64(fix::FIX42::Tags::MDEntryRefID);
 						if (entryRefId != 1) {
 							isHandled = true;
-							security->OnEntryReplace(
+							OnEntryReplace(
+								*security,
 								entryRefId,
 								entryId,
 								now,
@@ -279,7 +280,8 @@ void FixStream::onInboundApplicationMsg(
 					}
 				
 					if (!isHandled) {
-						security->OnEntryUpdate(
+						OnEntryUpdate(
+							*security,
 							entryId,
 							now,
 							entry.get(fix::FIX42::Tags::MDEntryType)
@@ -299,7 +301,8 @@ void FixStream::onInboundApplicationMsg(
 						continue;
 					}
 
-					security->OnNewEntry(
+					OnNewEntry(
+						*security,
 						entryId,
 						now,
 						entry.get(fix::FIX42::Tags::MDEntryType)
@@ -310,7 +313,7 @@ void FixStream::onInboundApplicationMsg(
 				} else  if (
 						action == fix::FIX42::Values::MDUpdateAction::Delete) {
 
-					security->OnEntryDelete(entryId);
+					OnEntryDelete(*security, entryId);
 
 				} else {
 
@@ -410,4 +413,41 @@ Qty FixStream::ParseMdEntrySize(const fix::GroupInstance &entry) const {
 
 Qty FixStream::ParseMdEntrySize(const fix::Message &message) const {
 	return Qty(message.getDouble(fix::FIX42::Tags::MDEntrySize));
+}
+
+void FixStream::OnNewEntry(
+		FixSecurity &security,
+		const fix::Int64 &entryId,
+		const pt::ptime &time,
+		bool isBid,
+		double price,
+		const Qty &qty) {
+	security.OnNewEntry(entryId, time, isBid, price, qty);
+}
+
+void FixStream::OnEntryReplace(
+		FixSecurity &security,
+		const fix::Int64 &prevEntryId,
+		const fix::Int64 &newEntryId,
+		const pt::ptime &time,
+		bool isBid,
+		double price,
+		const Qty &qty) {
+	security.OnEntryReplace(prevEntryId, newEntryId, time, isBid, price, qty);
+}
+
+void FixStream::OnEntryUpdate(
+		FixSecurity &security,
+		const fix::Int64 &entryId,
+		const pt::ptime &time,
+		bool isBid,
+		double price,
+		const Qty &qty) {
+	security.OnEntryUpdate(entryId, time, isBid, price, qty);
+}
+
+void FixStream::OnEntryDelete(
+		FixSecurity &security,
+		const fix::Int64 &entryId) {
+	security.OnEntryDelete(entryId);
 }

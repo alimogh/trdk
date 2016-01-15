@@ -105,6 +105,7 @@ FixSession::~FixSession() {
 			fix::Engine::shutdown();
 		} catch (...) {
 			AssertFailNoException();
+			throw;
 		}
 	}
 	m_log.Debug("Session destroyed.");

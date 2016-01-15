@@ -65,6 +65,13 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				double price,
 				const Qty &);
 		void OnEntryDelete(const OnixS::FIX::Int64 &entryId);
+
+		void SetEntry(
+				const OnixS::FIX::Int64 &entryId,
+				const boost::posix_time::ptime &,
+				bool isBid,
+				double price,
+				const Qty &);
 		
 		void ClearBook();
 

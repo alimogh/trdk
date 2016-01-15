@@ -74,6 +74,32 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	protected:
 
+		virtual void OnNewEntry(
+				FixSecurity &,
+				const OnixS::FIX::Int64 &entryId,
+				const boost::posix_time::ptime &,
+				bool isBid,
+				double price,
+				const Qty &);
+		virtual void OnEntryReplace(
+				FixSecurity &,
+				const OnixS::FIX::Int64 &prevEntryId,
+				const OnixS::FIX::Int64 &newEntryId,
+				const boost::posix_time::ptime &,
+				bool isBid,
+				double price,
+				const Qty &);
+		virtual void OnEntryUpdate(
+				FixSecurity &,
+				const OnixS::FIX::Int64 &entryId,
+				const boost::posix_time::ptime &,
+				bool isBid,
+				double price,
+				const Qty &);
+		virtual void OnEntryDelete(
+				FixSecurity &,
+				const OnixS::FIX::Int64 &entryId);
+
 		FixSecurity * FindRequestSecurity(const OnixS::FIX::Message &);
 		const FixSecurity * FindRequestSecurity(
 					const OnixS::FIX::Message &)

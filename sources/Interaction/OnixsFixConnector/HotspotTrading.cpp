@@ -41,6 +41,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				GetSession().Disconnect();
 			} catch (...) {
 				AssertFailNoException();
+				throw;
 			}
 		}
 
