@@ -483,6 +483,7 @@ Service::Service(
 	m_log.EnableStream(m_logFile, true);
 
 	m_dropCopy.OpenDataLog(logsDir);
+	m_dropCopy.Start();
 
 	m_log.Info(
 		"Loaded engine from %1% for engine service \"%2%\".",
@@ -1428,6 +1429,7 @@ bool Service::StoreBook(
 			callFuture = m_connection->session->call(
 				m_connection->topics.storeBook,
 				std::make_tuple(
+					*m_instanceId,
 					security.GetSource().GetTag(),
 					security.GetSymbol().GetSymbol(),
 					ConvertToMicroseconds(book.GetTime()),

@@ -73,7 +73,7 @@ QueueService::QueueService(EventsLog &log)
 	, m_nextRecordIndex(0)
 	, m_currentQueue(&m_queues.first)
 	, m_isStopped(true) {
-	Start();
+	//...//
 }
 
 QueueService::~QueueService() {
