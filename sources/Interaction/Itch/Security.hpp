@@ -72,6 +72,8 @@ namespace trdk { namespace Interaction { namespace Itch {
 		PriceBook m_snapshot;
 		boost::unordered_map<Itch::OrderId, Order> m_orderBook;
 
+		Itch::OrderId m_maxNewOrderId;
+
 	};
 
 } } }

@@ -25,7 +25,8 @@ Itch::Security::Security(
 		const MarketDataSource &source)
 	: Base(context, symbol, source)
 	, m_hasBidUpdates(false)
-	, m_hasAskUpdates(false) {
+	, m_hasAskUpdates(false)
+	, m_maxNewOrderId(0) {
 	StartLevel1();
 }
 
@@ -43,6 +44,9 @@ void Itch::Security::OnNewOrder(
 			orderId,
 			m_orderBook.size());
 		AssertFail("Received order with not unique ID.");
+	} else {
+		AssertLt(m_maxNewOrderId, orderId);
+		m_maxNewOrderId = orderId;
 	}
 
 	IncreaseNumberOfUpdates(isBuy);
@@ -53,14 +57,19 @@ void Itch::Security::OnOrderModify(
 		const pt::ptime &time,
 		const Itch::OrderId &orderId,
 		double amount) {
-	
+
 	const auto &it = m_orderBook.find(orderId);
 	if (it == m_orderBook.cend()) {
- 		GetSource().GetLog().Warn(
- 			"Failed to update order in quote book:"
- 				" filed to find order with ID %1% (book size: %2%).",
- 			orderId,
- 			m_orderBook.size());
+		if (orderId >= m_maxNewOrderId && m_maxNewOrderId) {
+ 			GetSource().GetLog().Warn(
+ 				"Failed to update order in quote book:"
+	 				" filed to find order with ID %1%"
+					" (book size: %2%, max. ID: %3%).",
+ 				orderId,
+ 				m_orderBook.size(),
+				m_maxNewOrderId);
+			AssertLt(orderId, m_maxNewOrderId);
+		}
 		return;
 	}
 	Order &order = it->second; 
@@ -85,11 +94,16 @@ void Itch::Security::OnOrderCancel(
 
 	const auto &it = m_orderBook.find(orderId);
 	if (it == m_orderBook.end()) {
-		GetSource().GetLog().Warn(
- 			"Failed to delete order from quote book:"
- 				" filed to find order with ID %1% (book size: %2%).",
- 			orderId,
- 			m_orderBook.size());
+		if (orderId >= m_maxNewOrderId && m_maxNewOrderId) {
+			GetSource().GetLog().Warn(
+ 				"Failed to delete order from quote book:"
+ 					" filed to find order with ID %1%"
+					" (book size: %2%, max. ID: %3%).",
+ 				orderId,
+ 				m_orderBook.size(),
+				m_maxNewOrderId);
+			AssertLt(orderId, m_maxNewOrderId);
+		}
 		return;
 	}
 

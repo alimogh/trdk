@@ -211,7 +211,7 @@ namespace trdk {
 					return true;
 				}
 				
-				Assert(end < m_levels.end());
+				Assert(end <= m_levels.end());
 				Assert(m_levels.begin() + m_size == end);
 				
 				Storage::iterator it;
