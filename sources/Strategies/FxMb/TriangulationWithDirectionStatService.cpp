@@ -333,8 +333,8 @@ bool StatService::OnBookUpdateTick(
 	}
 	if (!m_history.empty() && m_history.back().time > point.time) {
 		GetLog().Warn(
-			"Price book update lag deteced!"
-				" Recevied update from %1% for %2% with time %3%"
+			"Price book update lag detected!"
+				" Received update from %1% for %2% with time %3%"
 				", but previous update has time %4%.",
 			security.GetSource().GetTag(),
 			security,
