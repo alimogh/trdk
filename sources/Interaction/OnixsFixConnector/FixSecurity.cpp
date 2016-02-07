@@ -242,5 +242,5 @@ void FixSecurity::FlushBookShanpshot(
 }
 
 void FixSecurity::IncreaseNumberOfUpdates(bool isBid) throw() {
-	isBid ? m_hasBidUpdates : m_hasAskUpdates = true;
+	(isBid ? m_hasBidUpdates : m_hasAskUpdates) = true;
 }

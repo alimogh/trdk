@@ -16,7 +16,7 @@ namespace trdk {
 
 	class PriceBook {
 
-	private:
+	public:
 
 		enum {
 			SIDE_MAX_SIZE = 10
@@ -57,8 +57,9 @@ namespace trdk {
 				return m_time;
 			}
 			void UpdateTime(const boost::posix_time::ptime &time) {
-				AssertNe(boost::posix_time::not_a_date_time, m_time);
-				if (time > m_time) {
+				if (
+						m_time == boost::posix_time::not_a_date_time
+						|| time > m_time) {
 					m_time = time; 
 				}
 			}
@@ -171,14 +172,23 @@ namespace trdk {
 				const auto &begin = m_levels.begin();
 				const auto &end = begin + m_size;
 				const auto &pos = FindPrice(begin, end, price);
-				Assert(pos <= end);
-				Assert(pos < m_levels.cend());
-				Assert(pos >= begin);
+				TrdkAssert(pos <= end);
+				TrdkAssert(pos < m_levels.cend());
+				TrdkAssert(pos >= begin);
 
-				if (pos != end && trdk::Lib::IsEqual(pos->GetPrice(), price)) {
+				if (pos == end) {
+					*pos = Level(time, price, qty);
+					++m_size;
+					return;
+				}
+
+				if (trdk::Lib::IsEqual(pos->GetPrice(), price)) {
 					throw trdk::Lib::Exception("Not unique price level found");
 				}
 				
+				for (auto it = end; it != pos; --it) {
+					*it = *std::prev(it);
+				}
 				*pos = Level(time, price, qty);
 				++m_size;
 
@@ -195,14 +205,23 @@ namespace trdk {
 				const auto &begin = m_levels.begin();
 				const auto &end = begin + m_size;
 				const auto &pos = FindPrice(begin, end, price);
-				Assert(pos <= end);
-				Assert(pos >= begin);
+				TrdkAssert(pos <= end);
+				TrdkAssert(pos >= begin);
 
-				if (pos == end && m_size >= m_levels.size()) {
-					AssertEq(m_levels.size(), m_size);
-					AssertEq(m_levels.end(), end);
-					return false;
-				}
+				if (pos == end) {
+
+					if (m_size >= m_levels.size()) {
+						AssertEq(m_levels.size(), m_size);
+						AssertEq(m_levels.end(), end);
+						return false;
+					}
+				
+					TrdkAssert(end < m_levels.cend());
+					*pos = Level(time, price, qty);
+					++m_size;
+					return true;
+
+				} 
 				
 				if (trdk::Lib::IsEqual(pos->GetPrice(), price)) {
 					Level &level = *pos;
@@ -211,17 +230,14 @@ namespace trdk {
 					return true;
 				}
 				
-				Assert(end <= m_levels.end());
-				Assert(m_levels.begin() + m_size == end);
-				
 				Storage::iterator it;
 				if (m_size < m_levels.size()) {
-					Assert(end < m_levels.cend());
+					TrdkAssert(end < m_levels.cend());
 					it = end;
 					++m_size;
 				} else {
 					AssertEq(m_levels.size(), m_size);
-					Assert(end == m_levels.cend());
+					TrdkAssert(end == m_levels.cend());
 					it = std::prev(end);
 				}
 				for ( ; it != pos; --it) {
@@ -254,7 +270,7 @@ namespace trdk {
 					end,
 					price,
 					[](const Level &lhs, double rhs) {
-						  return lhs.GetPrice() < rhs;
+						return lhs.GetPrice() < rhs;
 					});
 			}
 
@@ -292,7 +308,7 @@ namespace trdk {
 			return m_time;
 		}
 		void SetTime(const boost::posix_time::ptime &time) {
-			Assert(
+			TrdkAssert(
 				m_time == boost::posix_time::not_a_date_time
 				|| m_time <= time);
 			m_time = time;
@@ -332,11 +348,13 @@ namespace trdk {
 			const PriceBook::Side<false>::Storage::iterator &begin,
 			const PriceBook::Side<false>::Storage::iterator &end,
 			double price) {
-		return std::upper_bound(
+		return std::lower_bound(
 			begin,
 			end,
 			price,
-			[](double lhs, const Level &rhs) {return lhs > rhs.GetPrice();});
+			[](const Level &lhs, double rhs) {
+				return lhs.GetPrice() > rhs;
+			});
 	}
 
 }

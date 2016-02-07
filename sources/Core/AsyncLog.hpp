@@ -521,7 +521,7 @@ namespace trdk {
 		~AsyncLog() {
 			try {
 				const Lock lock(m_queue.mutex);
-				Assert(m_queue.activeBuffer);
+				TrdkAssert(m_queue.activeBuffer);
 				m_queue.activeBuffer = nullptr;
 				m_queue.condition.notify_one();
 			} catch (...) {

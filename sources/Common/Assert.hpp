@@ -18,10 +18,12 @@
 
 #undef assert
 #undef Assert
+#undef TrdkAssert
 #undef Verify
 #undef AssertFail
 
 #define Assert(expr) BOOST_ASSERT(expr)
+#define TrdkAssert(expr) BOOST_ASSERT(expr)
 #define Verify(expr) BOOST_VERIFY(expr)
 
 #ifndef FILE_ASSERT_HPP_INCLUDED

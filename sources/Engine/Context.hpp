@@ -46,6 +46,10 @@ namespace trdk { namespace Engine {
 
 	public:
 
+		virtual RiskControl & GetRiskControl(const trdk::TradingMode &);
+		virtual const RiskControl & GetRiskControl(const trdk::TradingMode &)
+				const;
+
 		virtual size_t GetMarketDataSourcesCount() const;
 		virtual const trdk::MarketDataSource & GetMarketDataSource(
 				size_t index)

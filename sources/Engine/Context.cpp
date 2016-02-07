@@ -74,6 +74,9 @@ public:
 
 	Engine::Context &m_context;
 
+	static_assert(numberOfTradingModes == 3, "List changed.");
+	boost::array<std::unique_ptr<RiskControl>, 2> m_riskControl;
+
 	const fs::path m_fileLogsDir;
 
 	ModuleList m_modulesDlls;
@@ -89,15 +92,30 @@ public:
 	explicit Implementation(Engine::Context &context, const Lib::Ini &conf)
 		: m_context(context)
 		, m_isStopped(false) {
+
+		static_assert(numberOfTradingModes == 3, "List changed.");
+		for (size_t i = 0; i < m_riskControl.size(); ++i) {
+			m_riskControl[i].reset(
+				new RiskControl(m_context, conf, TradingMode(i + 1)));
+		}
+
 		BootContext(
 			conf,
 			m_context,
 			m_tradeSystems,
 			m_marketDataSources);
+	
 	}
 
 	~Implementation() {
 		m_context.GetTradingLog().WaitForFlush();
+	}
+
+	RiskControl & GetRiskControl(const TradingMode &mode) {
+		static_assert(numberOfTradingModes == 3, "List changed.");
+		AssertLt(0, mode);
+		AssertGe(m_riskControl.size(), mode);
+		return *m_riskControl[mode - 1];
 	}
 
 };
@@ -182,7 +200,7 @@ Engine::Context::Context(
 		const trdk::Settings &settings,
 		const pt::ptime &startTime,
 		const Lib::Ini &conf)
-	: Base(log, tradingLog, settings, conf, startTime) {
+	: Base(log, tradingLog, settings, startTime) {
 	m_pimpl = new Implementation(*this, conf);
 }
 
@@ -466,6 +484,19 @@ void Engine::Context::SyncDispatching() {
 
 DropCopy * Engine::Context::GetDropCopy() const {
 	return m_pimpl->m_state->dropCopy;
+}
+
+RiskControl & Engine::Context::GetRiskControl(const TradingMode &mode) {
+	static_assert(numberOfTradingModes == 3, "List changed.");
+	AssertLt(0, mode);
+	AssertGe(m_pimpl->m_riskControl.size(), mode);
+	return *m_pimpl->m_riskControl[mode - 1];
+}
+
+const RiskControl & Engine::Context::GetRiskControl(
+		const TradingMode &mode)
+		const {
+	return m_pimpl->GetRiskControl(mode);
 }
 
 size_t Engine::Context::GetMarketDataSourcesCount() const {

@@ -61,7 +61,6 @@ namespace trdk {
 				trdk::Context::Log &,
 				trdk::Context::TradingLog &,
 				const trdk::Settings &,
-				const trdk::Lib::Ini &,
 				const boost::posix_time::ptime &startTime);
 		virtual ~Context();
 
@@ -116,8 +115,11 @@ namespace trdk {
 		//! at the same moment).
 		virtual void SyncDispatching() = 0;
 
-		RiskControl & GetRiskControl(const trdk::TradingMode &);
-		const RiskControl & GetRiskControl(const trdk::TradingMode &) const;
+		virtual RiskControl & GetRiskControl(const trdk::TradingMode &) = 0;
+		virtual const RiskControl & GetRiskControl(
+				const trdk::TradingMode &)
+				const
+				= 0;
 
 		//! Returns Drop Copy or nullptr.
 		virtual DropCopy * GetDropCopy() const = 0;
@@ -183,7 +185,8 @@ namespace trdk {
 		  */
 		virtual trdk::TradeSystem & GetTradeSystem(
 				size_t index,
-				const trdk::TradingMode &) = 0;
+				const trdk::TradingMode &)
+				= 0;
 
 
 	protected:

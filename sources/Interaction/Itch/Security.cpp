@@ -120,7 +120,7 @@ void Itch::Security::OnOrderCancel(
 }
 
 void Itch::Security::IncreaseNumberOfUpdates(bool isBuy) throw() {
-	isBuy ? m_hasBidUpdates : m_hasAskUpdates = true;
+	(isBuy ? m_hasBidUpdates : m_hasAskUpdates) = true;
 }
 
 void Itch::Security::Flush(

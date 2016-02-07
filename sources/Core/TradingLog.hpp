@@ -94,7 +94,7 @@ namespace trdk {
 		}
 
 		trdk::Lib::Log::Time GetTime() {
-			Assert(m_context);
+			TrdkAssert(m_context);
 			return std::move(m_context->GetCurrentTime());
 		}
 

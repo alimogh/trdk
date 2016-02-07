@@ -15,14 +15,10 @@
 #include "Common/Common.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/noncopyable.hpp>
-#	include <boost/format.hpp>
+#	include <boost/random.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #undef Assert
-
-//! @todo	try later to disable _VARIADIC_MAX=10 in GMock/GTest (after 1.7)
-//!			and VS project Tests (after VS 2012).
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

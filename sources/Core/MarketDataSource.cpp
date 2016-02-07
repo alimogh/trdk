@@ -90,12 +90,12 @@ public:
 			size_t index,
 			Context &context,
 			const std::string &tag)
-		: m_index(index),
-		m_context(context),
-		m_tag(tag),
-		m_stringId(FormatStringId(m_tag)),
-		m_log(m_stringId, m_context.GetLog()),
-		m_tradingLog(m_tag, m_context.GetTradingLog()) {
+		: m_index(index)
+		, m_context(context)
+		, m_tag(tag)
+		, m_stringId(FormatStringId(m_tag))
+		, m_log(m_stringId, m_context.GetLog())
+		, m_tradingLog(m_tag, m_context.GetTradingLog()) {
 		//...//
 	}
 
