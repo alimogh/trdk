@@ -37,36 +37,6 @@ namespace {
 
 namespace {
 
-	bool RunServerService(int /*argc*/, const char * /*argv*/[]) {
-		//! @todo Implement service installation
-		return false;
-	}
-
-	bool InstallServerService(int /*argc*/, const char * /*argv*/[]) {
-		//! @todo Implement service installation
-		return false;
-	}
-
-	bool UninstallServerService(int /*argc*/, const char * /*argv*/[]) {
-		//! @todo Implement service commands
-		return false;
-	}
-
-	bool StartServerService(int /*argc*/, const char * /*argv*/[]) {
-		//! @todo Implement service commands
-		return false;
-	}
-
-	bool StopServerService(int /*argc*/, const char * /*argv*/[]) {
-		//! @todo Implement service commands
-		return false;
-	}
-
-	bool ShowServerServiceStatus(int /*argc*/, const char * /*argv*/[]) {
-		//! @todo Implement service commands
-		return false;
-	}
-
 	bool RunServerStandalone(int argc, const char *argv[]) {
 		
 		if (argc < 3 || !strlen(argv[2])) {
@@ -295,13 +265,6 @@ int main(int argc, const char *argv[]) {
 			typedef std::map<std::string, decltype(func)> Commands;
 			Commands commands;
 			size_t i = 0;
-			commands["service"] = &RunServerService; ++i;
-			commands["install"] = &InstallServerService; ++i;
-			commands["uninstall"] = &UninstallServerService; ++i;
-			commands["start"] = &StartServerService; ++i;
-			commands["stop"] = &StopServerService; ++i;
-			commands["status"] = &ShowServerServiceStatus; ++i;
-			commands["s"] = &ShowServerServiceStatus; ++i;
 			commands["standalone"] = &RunServerStandalone; ++i;
 			commands["r"] = &RunServerStandalone; ++i;
 			commands["debug"] = &DebugStrategy; ++i;
