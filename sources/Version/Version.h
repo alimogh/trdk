@@ -5,8 +5,8 @@
 #define TRDK_VERSION_BUILD	1
 #define TRDK_VERSION_STATUS	0
 
-#define TRDK_VERSION_BRANCH		"mbcm"
-#define TRDK_VERSION_BRANCH_W	L"mbcm"
+#define TRDK_VERSION_BRANCH		"master"
+#define TRDK_VERSION_BRANCH_W	L"master"
 
 #define TRDK_VENDOR		"MBCMTRADING"
 #define TRDK_VENDOR_W	L"MBCMTRADING"
