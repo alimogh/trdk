@@ -27,9 +27,9 @@ void AsyncLogRecord::WriteToDumpStream(
 }
 
 void AsyncLogRecord::WriteToDumpStream(float val, std::ostream &os) {
-	os << std::fixed << std::setprecision(10) << val;
+	os << std::fixed << std::setprecision(8) << val;
 }
 
 void AsyncLogRecord::WriteToDumpStream(double val, std::ostream &os) {
-	os << std::fixed << std::setprecision(10) << val;
+	os << std::fixed << std::setprecision(8) << val;
 }

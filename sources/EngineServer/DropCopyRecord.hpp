@@ -144,6 +144,17 @@ namespace trdk { namespace EngineServer { namespace Details {
 			return result.str();
 		}
 
+		std::string operator ()(float value) const {
+			std::ostringstream result;
+			result << std::fixed << std::setprecision(8) << value;
+			return result.str();
+		}
+		std::string operator ()(double value) const {
+			std::ostringstream result;
+			result << std::fixed << std::setprecision(8) << value;
+			return result.str();
+		}
+
 		template<typename T>
 		std::string operator ()(const T &value) const {
 			return boost::lexical_cast<std::string>(value);
