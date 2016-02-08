@@ -151,7 +151,7 @@ namespace trdk {
 				++m_offset;
 				--m_size;
 
-				AssertGt(m_levels.size(), m_offset + m_size);
+				AssertGe(m_levels.size(), m_offset + m_size);
 			
 			}
 

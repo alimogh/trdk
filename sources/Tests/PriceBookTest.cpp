@@ -457,6 +457,37 @@ namespace trdk { namespace Tests {
 		EXPECT_DOUBLE_EQ(3, ask.GetLevel(2).GetPrice());
 		EXPECT_DOUBLE_EQ(4, ask.GetLevel(2).GetQty());
 
+		bid.PopTop();
+		ask.PopTop();
+
+		EXPECT_DOUBLE_EQ(2, bid.GetLevel(0).GetPrice());
+		EXPECT_DOUBLE_EQ(3, bid.GetLevel(0).GetQty());
+		EXPECT_DOUBLE_EQ(1, bid.GetLevel(1).GetPrice());
+		EXPECT_DOUBLE_EQ(2, bid.GetLevel(1).GetQty());
+
+		EXPECT_DOUBLE_EQ(2, ask.GetLevel(0).GetPrice());
+		EXPECT_DOUBLE_EQ(3, ask.GetLevel(0).GetQty());
+		EXPECT_DOUBLE_EQ(3, ask.GetLevel(1).GetPrice());
+		EXPECT_DOUBLE_EQ(4, ask.GetLevel(1).GetQty());
+
+		bid.PopTop();
+		ask.PopTop();
+
+		EXPECT_DOUBLE_EQ(1, bid.GetLevel(0).GetPrice());
+		EXPECT_DOUBLE_EQ(2, bid.GetLevel(0).GetQty());
+
+		EXPECT_DOUBLE_EQ(3, ask.GetLevel(0).GetPrice());
+		EXPECT_DOUBLE_EQ(4, ask.GetLevel(0).GetQty());
+
+		bid.PopTop();
+		ask.PopTop();
+
+		EXPECT_THROW(bid.GetLevel(0), trdk::Lib::LogicError);
+		EXPECT_THROW(ask.GetLevel(0), trdk::Lib::LogicError);
+
+		EXPECT_THROW(bid.PopTop(), trdk::Lib::LogicError);
+		EXPECT_THROW(ask.PopTop(), trdk::Lib::LogicError);
+
 	}
 
 	TEST(BookPriceTest, AddPredefinedLevels) {
@@ -486,6 +517,37 @@ namespace trdk { namespace Tests {
 		EXPECT_DOUBLE_EQ(2, ask.GetLevel(1).GetQty());
 		EXPECT_DOUBLE_EQ(3, ask.GetLevel(2).GetPrice());
 		EXPECT_DOUBLE_EQ(3, ask.GetLevel(2).GetQty());
+
+		bid.PopTop();
+		ask.PopTop();
+
+		EXPECT_DOUBLE_EQ(2, bid.GetLevel(0).GetPrice());
+		EXPECT_DOUBLE_EQ(2, bid.GetLevel(0).GetQty());
+		EXPECT_DOUBLE_EQ(1, bid.GetLevel(1).GetPrice());
+		EXPECT_DOUBLE_EQ(1, bid.GetLevel(1).GetQty());
+
+		EXPECT_DOUBLE_EQ(2, ask.GetLevel(0).GetPrice());
+		EXPECT_DOUBLE_EQ(2, ask.GetLevel(0).GetQty());
+		EXPECT_DOUBLE_EQ(3, ask.GetLevel(1).GetPrice());
+		EXPECT_DOUBLE_EQ(3, ask.GetLevel(1).GetQty());
+
+		bid.PopTop();
+		ask.PopTop();
+
+		EXPECT_DOUBLE_EQ(1, bid.GetLevel(0).GetPrice());
+		EXPECT_DOUBLE_EQ(1, bid.GetLevel(0).GetQty());
+
+		EXPECT_DOUBLE_EQ(3, ask.GetLevel(0).GetPrice());
+		EXPECT_DOUBLE_EQ(3, ask.GetLevel(0).GetQty());
+
+		bid.PopTop();
+		ask.PopTop();
+
+		EXPECT_THROW(bid.GetLevel(0), trdk::Lib::LogicError);
+		EXPECT_THROW(ask.GetLevel(0), trdk::Lib::LogicError);
+
+		EXPECT_THROW(bid.PopTop(), trdk::Lib::LogicError);
+		EXPECT_THROW(ask.PopTop(), trdk::Lib::LogicError);
 
 	}
 
