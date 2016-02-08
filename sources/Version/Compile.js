@@ -67,14 +67,13 @@ function IsExistsInFile(filePath, line) {
 function GetVersion() {
 	var f = fileSystem.OpenTextFile(inputFile, 1, false);
 	if (f.AtEndOfStream != true) {
-		var expression = /^\s*(\d+)\.(\d+)\.(\d+)\.(\d+)\s*$/;
+		var expression = /^\s*(\d+)\.(\d+)\.(\d+)\s*$/;
 		var match = expression.exec(f.ReadLine());
 		if (match) {
 			var version = new Object;
-			version.majorHigh = match[1];
-			version.majorLow = match[2];
-			version.minorHigh = match[3];
-			version.minorLow = match[4];
+			version.release = match[1];
+			version.build = match[2];
+			version.status = match[3];
 			return version;
 		} else {
 			shell.Popup("Version compiling: could not parse version file.");
@@ -94,10 +93,9 @@ function CreateVersionCppHeaderFile() {
 		return;
 	}
 
-	var versionMajorHighLine	= "#define TRDK_VERSION_MAJOR_HIGH\t" + version.majorHigh;
-	var versionMajorLowLine		= "#define TRDK_VERSION_MAJOR_LOW\t" + version.majorLow;
-	var versionMinorHighLine	= "#define TRDK_VERSION_MINOR_HIGH\t" + version.minorHigh;
-	var versionMinorLowLine		= "#define TRDK_VERSION_MINOR_LOW\t" + version.minorLow;
+	var versionReleaseLine		= "#define TRDK_VERSION_RELEASE\t" + version.release;
+	var versionBuildLine		= "#define TRDK_VERSION_BUILD\t" + version.build;
+	var versionStatusLine		= "#define TRDK_VERSION_STATUS\t" + version.status;
 
 	var versionBranchLine		= "#define TRDK_VERSION_BRANCH\t\t\"" + branch + "\"";
 	var versionBranchLineW		= "#define TRDK_VERSION_BRANCH_W\tL\"" + branch + "\"";
@@ -125,10 +123,10 @@ function CreateVersionCppHeaderFile() {
 	var concurrencyProfileLineRelease = "#define TRDK_CONCURRENCY_PROFILE_RELEASE (::trdk::Lib::Concurrency::" + concurrencyProfileRelease + ")"
 
 	var fullFileName = outputDir + "Version.h";
-	if (	IsExistsInFile(fullFileName, versionMajorHighLine)
-			&& IsExistsInFile(fullFileName, versionMajorLowLine)
-			&& IsExistsInFile(fullFileName, versionMinorHighLine)
-			&& IsExistsInFile(fullFileName, versionMinorLowLine)
+	if (
+			IsExistsInFile(fullFileName, versionReleaseLine)
+			&& IsExistsInFile(fullFileName, versionBuildLine)
+			&& IsExistsInFile(fullFileName, versionStatusLine)
 			&& IsExistsInFile(fullFileName, versionBranchLine)
 			&& IsExistsInFile(fullFileName, vendorLine)
 			&& IsExistsInFile(fullFileName, domainLine)
@@ -146,10 +144,9 @@ function CreateVersionCppHeaderFile() {
 	f.WriteLine("");
 	f.WriteLine("#pragma once");
 	f.WriteLine("");
-	f.WriteLine(versionMajorHighLine);
-	f.WriteLine(versionMajorLowLine);
-	f.WriteLine(versionMinorHighLine);
-	f.WriteLine(versionMinorLowLine);
+	f.WriteLine(versionReleaseLine);
+	f.WriteLine(versionBuildLine);
+	f.WriteLine(versionStatusLine);
 	f.WriteLine("");
 	f.WriteLine(versionBranchLine);
 	f.WriteLine(versionBranchLineW);
@@ -188,10 +185,9 @@ function CreateVersionCmdFile() {
 
 	var f = fileSystem.CreateTextFile(outputDir + "SetVersion.cmd", true);
 	f.WriteLine("");
-	f.WriteLine("set TrdkVersionMajorHigh=" + version.majorHigh);
-	f.WriteLine("set TrdkVersionMajorLow=" + version.majorLow);
-	f.WriteLine("set TrdkVersionMinorHigh=" + version.minorHigh);
-	f.WriteLine("set TrdkVersionMinorLow=" + version.minorLow);
+	f.WriteLine("set TrdkVersionRelease=" + version.release);
+	f.WriteLine("set TrdkVersionBuild=" + version.build);
+	f.WriteLine("set TrdkVersionStatus=" + version.status);
 	f.WriteLine("set TrdkVersionBranch=" + branch);
 	f.WriteLine("");
 	f.WriteLine("set TrdkVersion=%TrdkVersionMajorHigh%.%TrdkVersionMajorLow%.%TrdkVersionMinorHigh%");
