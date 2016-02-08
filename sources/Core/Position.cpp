@@ -89,8 +89,6 @@ namespace {
 	typedef PostionConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
 		PostionConcurrencyPolicy;
 
-	boost::atomic<PositionId> theNextPositionId(0);
-	
 }
 
 class Position::Implementation : private boost::noncopyable {
@@ -118,8 +116,8 @@ public:
 			boost::atomic_intmax_t total;
 			boost::atomic_size_t count;
 			Price()
-					: total(0),
-					count(0) {
+				: total(0)
+				, count(0) {
 				//...//
 			}
 		} price;
@@ -129,10 +127,10 @@ public:
 		boost::atomic_bool hasOrder;
 
 		DynamicData()
-			: orderId(nOrderId),
-			qty(0),
-			comission(0),
-			hasOrder(false) {
+			: orderId(nOrderId)
+			, qty(0)
+			, comission(0)
+			, hasOrder(false) {
 			//...//
 		}
 
@@ -145,8 +143,6 @@ public:
 	};
 
 public:
-
-	const PositionId m_id;
 
 	Position &m_position;
 
@@ -198,8 +194,7 @@ public:
 			const Qty &qty,
 			const ScaledPrice &startPrice,
 			const TimeMeasurement::Milestones &timeMeasurement)
-		: m_id(theNextPositionId++)
-		, m_position(position)
+		: m_position(position)
 		, m_tradeSystem(tradeSystem)
 		, m_strategy(strategy)
 		, m_operationId(operationId)
@@ -257,7 +252,7 @@ public:
 			Assert(!m_closed.hasOrder);
 
 			if (m_opened.orderId != orderId) {
-				ReportOrderIdReplace("open", m_closed.orderId, orderId);
+				ReportOrderIdReplace(true, tradeSystemOrderId);
 				m_closed.orderId = orderId;
 			}
 
@@ -474,7 +469,7 @@ public:
 			Assert(m_closed.hasOrder);
 
 			if (m_closed.orderId != orderId) {
-				ReportOrderIdReplace("close", m_closed.orderId, orderId);
+				ReportOrderIdReplace(false, tradeSystemOrderId);
 				m_closed.orderId = orderId;
 			}
 
@@ -596,141 +591,128 @@ public:
 		}
 	}
 
+	void ReportOpeningStart(const char *eventDesc) const throw() {
+		m_security.GetContext().GetTradingLog().Write(
+			logTag,
+			"%1%\t%2%\torder=%3%\t%4%\t%5%\t%6%\t%7%.%8%"
+				"\tprice=%9$.8f\t%10%\tqty=%11$.8f",
+			[this, eventDesc](TradingRecord &record) {
+				record
+					% m_strategy.GetTag() // 1
+					% m_operationId // 2
+					% m_opened.uuid // 3
+					% eventDesc
+					% m_position.GetTypeStr() // 5
+					% m_security.GetSymbol().GetSymbol() // 6
+					% m_position.GetTradeSystem().GetTag() // 7
+					% m_tradeSystem.GetMode() // 8
+					% m_security.DescalePrice(m_openStartPrice) // 9
+					% m_position.GetCurrency() // 10
+					% m_position.GetPlanedQty(); // 11 and last
+			});
+	}
+
 	void ReportOpeningUpdate(
-				const char *eventDesc,
-				const std::string &tsOrderId,
-				const OrderStatus &orderStatus)
+			const char *eventDesc,
+			const std::string &tsOrderId,
+			const OrderStatus &orderStatus)
 			const
 			throw() {
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%1%\t%2%.%20%\t%3%\t%4%\topen-%5%\t%6%"
-				"\tprice=%7%->%8%\t%9%\tqty=%10%->%11%"
-				"\tbid=%12%/%13%\task=%14%/%15%"
-				"\torder-id=%16% ts-order-id=%21%"
-				"\torder-status=%17%\thas-orders=%18%\tis-error=%19%",
-			[this, eventDesc, &orderStatus, &tsOrderId](TradingRecord &record) {
+			"%1%\t%2%\torder=%3%/%4%\topen-%5%->%6%\t%7%\t%8%\t%9%.%10%"
+				"\tprice=%11$.8f->%12$.8f\t%13%\tqty=%14$.8f->%15$.8f",
+			[this, eventDesc, &tsOrderId, &orderStatus](
+					TradingRecord &record) {
 				record
-					% m_id
-					% m_position.GetTradeSystem().GetTag()
-					% m_security
-					% m_position.GetTypeStr()
-					% eventDesc
-					% m_strategy.GetTag()
-					% m_security.DescalePrice(m_position.GetOpenStartPrice())
-					% m_security.DescalePrice(m_position.GetOpenPrice())
-					% m_position.GetCurrency()
-					% m_position.GetPlanedQty()
-					% m_position.GetOpenedQty()
-					% m_security.GetBidPrice()
-					% m_security.GetBidQty()
-					% m_security.GetAskPrice()
-					% m_security.GetAskQty()
-					% m_position.GetOpenOrderId()
-					% m_tradeSystem.GetStringStatus(orderStatus)
-					% m_position.HasActiveOpenOrders()
-					% (m_isError ? true : false)
-					% m_tradeSystem.GetMode()
-					% tsOrderId;
+					% m_strategy.GetTag() // 1
+					% m_operationId // 2
+					% m_opened.uuid // 3
+					% tsOrderId // 4
+					% eventDesc // 5
+					% m_tradeSystem.GetStringStatus(orderStatus) // 6
+					% m_position.GetTypeStr() // 7
+					% m_security.GetSymbol().GetSymbol() // 8
+					% m_position.GetTradeSystem().GetTag() // 9
+					% m_tradeSystem.GetMode() // 10
+					% m_security.DescalePrice(m_position.GetOpenStartPrice()) // 11
+					% m_security.DescalePrice(m_position.GetOpenPrice()) // 12
+					% m_position.GetCurrency() // 13
+					% m_position.GetPlanedQty() // 14
+					% m_position.GetOpenedQty(); // 15 and last
+					
 			});
 	}
 
 	void ReportClosingStart(const char *eventDesc) const throw() {
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%13%\t%11%.%14%\t%1%\t%2%\tclose-%12%\t%3%\tqty=%4%->%5%"
-				" order-id=%6%->%7% has-orders=%8%/%9% is-error=%10%",
+			"%1%\t%2%\torder=%3%\tclose-%4%\t%5%\t%6%\t%7%.%8%"
+				"\tprice=%9$.8f->%10$.8f\t%11%\tqty=%12$.8f",
 			[this, eventDesc](TradingRecord &record) {
 				record
-					% m_security
-					% m_position.GetTypeStr()
-					% m_strategy.GetTag()
-					% m_position.GetOpenedQty()
-					% m_position.GetClosedQty()
-					% m_position.GetOpenOrderId()
-					% m_position.GetCloseOrderId()
-					% m_position.HasActiveOpenOrders()
-					% m_position.HasActiveCloseOrders()
-					% (m_isError ? true : false)
-					% m_position.GetTradeSystem().GetTag()
-					% eventDesc
-					% m_id
-					% m_position.GetTradeSystem().GetMode();
+					% m_strategy.GetTag() // 1
+					% m_operationId // 2
+					% m_closed.uuid // 3
+					% eventDesc // 4
+					% m_position.GetTypeStr() // 5
+					% m_security.GetSymbol().GetSymbol() // 6
+					% m_position.GetTradeSystem().GetTag() // 7
+					% m_tradeSystem.GetMode() // 8
+					% m_security.DescalePrice(m_position.GetOpenPrice()) // 9
+					% m_security.DescalePrice(m_position.GetCloseStartPrice()) // 10
+					% m_position.GetCurrency() // 11
+					% m_position.GetOpenedQty(); // 12 and last
 			});
 	}
 
 	void ReportClosingUpdate(
-				const char *eventDesc,
-				const std::string &tsOrderId,
-				const OrderStatus &orderStatus)
+			const char *eventDesc,
+			const std::string &tsOrderId,
+			const OrderStatus &orderStatus)
 			const
 			throw() {
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%14%\t%11%.%16%\t%1%\t%2%\tclose-%3%\t%4%"
-				"\tqty=%5%->%6% price=%15%->%7%"
-				" order-id=%8%->%9% ts-order-id=%17%"
-				" order-status=%10% has-orders=%12%/%13%",
-			[this, eventDesc, &orderStatus, &tsOrderId](TradingRecord &record) {
+			"%1%\t%2%\torder=%3%/%4%\tclose-%5%->%6%\t%7%\t%8%\t%9%.%10%"
+				"\tprice=%11$.8f->%12$.8f\t%13%\tqty=%14$.8f->%15$.8f",
+			[this, eventDesc, &tsOrderId, &orderStatus](
+					TradingRecord &record) {
 				record
-					% m_position.GetSecurity().GetSymbol()
-					% m_position.GetTypeStr()
-					% eventDesc
-					% m_strategy.GetTag()
-					% m_position.GetOpenedQty()
-					% m_position.GetClosedQty()
-					% m_security.DescalePrice(m_position.GetClosePrice())
-					% m_position.GetOpenOrderId()
-					% m_position.GetCloseOrderId()
-					% m_tradeSystem.GetStringStatus(orderStatus)
-					% m_position.GetTradeSystem().GetTag()
-					% m_position.HasActiveOpenOrders()
-					% m_position.HasActiveCloseOrders()
-					% m_id
-					% m_security.DescalePrice(m_position.GetCloseStartPrice())
-					% m_tradeSystem.GetMode()
-					% tsOrderId;
+					% m_strategy.GetTag() // 1
+					% m_operationId // 2
+					% m_closed.uuid // 3
+					% tsOrderId // 4
+					% eventDesc // 5
+					% m_tradeSystem.GetStringStatus(orderStatus) // 6
+					% m_position.GetTypeStr() // 7
+					% m_security.GetSymbol().GetSymbol() // 8
+					% m_position.GetTradeSystem().GetTag() // 9
+					% m_tradeSystem.GetMode() // 10
+					% m_security.DescalePrice(m_position.GetCloseStartPrice()) // 11
+					% m_security.DescalePrice(m_position.GetClosePrice()) // 12
+					% m_position.GetCurrency() // 13
+					% m_position.GetOpenedQty() // 14
+					% m_position.GetClosedQty(); // 15 and last
 			});
 	}
 
 	void ReportOrderIdReplace(
-				bool isOpening,
-				const OrderId &prevOrdeId,
-				const OrderId &newOrdeId)
+			bool isOpening,
+			const std::string &tsOrderId)
 			const
 			throw() {
 		m_security.GetContext().GetTradingLog().Write(
 			logTag,
-			"%1%\t%2%.%16%\t%3%\t%4%\treplacing-%5%-order\t%6%\t%7%"
-				"\tqty=%8%->%9% price=%10%->%11%"
-				" bid=%12%/%13% ask=%14%/%15%",
+			"%1%\t%2%\torder=%3%/%4%\ttreplacing-%5%-order\t%6%",
 			[&](TradingRecord &record) {
 				record
-					% m_id
-					% m_position.GetTradeSystem().GetTag()
-					% m_security.GetSymbol()
-					% m_position.GetTypeStr()
-					% (isOpening ? "open" : "close")
-					% prevOrdeId
-					% newOrdeId
-					% m_position.GetOpenedQty()
-					% m_position.GetClosedQty();
-				if (isOpening) {
-					record.Format(
-						m_security.DescalePrice(m_position.GetOpenStartPrice()),
-						m_security.DescalePrice(m_position.GetOpenPrice()));
-				} else {
-					record.Format(
-						m_security.DescalePrice(
-								m_position.GetCloseStartPrice()),
-						m_security.DescalePrice(m_position.GetClosePrice()));
-				}
-				record
-					% m_security.GetBidPrice()
-					% m_security.GetBidQty()
-					% m_security.GetAskPrice()
-					% m_security.GetAskQty()
-					% m_tradeSystem.GetMode();
+					% m_strategy.GetTag() // 1
+					% m_operationId // 2
+					% (isOpening ? m_opened.uuid : m_closed.uuid) // 3
+					% tsOrderId // 4
+					% (isOpening ? "open" : "close") // 5
+					% (!isOpening ? m_opened.uuid : m_closed.uuid); // 6 and last
 			});
 	}
 
@@ -825,29 +807,8 @@ public:
 			timeInForce,
 		};
 
-		m_security.GetContext().GetTradingLog().Write(
-			logTag,
-			"%1%\t%2%.%14%\t%3%\t%4%\t%5%\t%6%"
-				"\tstart-price=%7%\t%8%"
-				"\tqty=%9%\tbid=%10%/%11%\task=%12%/%13% uuid=%15%",
-			[&](TradingRecord &record) {
-				record
-					% m_id
-					% m_position.GetTradeSystem().GetTag()
-					% m_security
-					% m_position.GetTypeStr()
-					% action
-					% m_strategy.GetTag()
-					% m_security.DescalePrice(m_openStartPrice)
-					% m_position.GetCurrency()
-					% m_position.GetPlanedQty()
-					% m_security.GetBidPrice()
-					% m_security.GetBidQty()
-					% m_security.GetAskPrice()
-					% m_security.GetAskQty()
-					% m_position.GetTradeSystem().GetMode()
-					% staticData.uuid;
-			});
+		m_opened.uuid = staticData.uuid;
+		ReportOpeningStart(action);
 
 		try {
 			const auto orderId = openImpl(qtyToOpen);
@@ -897,7 +858,8 @@ public:
 			const CloseImpl &closeImpl,
 			const TimeInForce &timeInForce,
 			const OrderParams &orderParams,
-			bool hasPrice) {
+			bool hasPrice,
+			bool hasUuid) {
 		
 		if (!m_position.IsOpened()) {
 			throw NotOpenedError();
@@ -912,9 +874,13 @@ public:
 		Assert(!m_position.HasActiveOrders());
 		Assert(!m_position.IsCompleted());
 
+		if (!hasUuid) {
+			m_closed.uuid = generateUuid();
+		}
+		ReportClosingStart("pre");
+
 		const auto orderId = closeImpl(m_position.GetActiveQty());
 		m_closeType = closeType;
-		m_closed.uuid = generateUuid();
 		m_closed.hasPrice = hasPrice;
 		m_closed.hasOrder = true;
 		m_closed.orderId = orderId;
@@ -937,14 +903,14 @@ public:
 			const TimeInForce &timeInForce,
 			const OrderParams &orderParams,
 			bool hasPrice) {
-		ReportClosingStart("pre");
 		const Implementation::WriteLock lock(m_mutex);
 		return CloseUnsafe(
 			closeType,
 			closeImpl,
 			timeInForce,
 			orderParams,
-			hasPrice);
+			hasPrice,
+			false);
 	}
 
 	template<typename CancelMethodImpl>
@@ -954,18 +920,23 @@ public:
 			const TimeInForce &timeInForce,
 			const OrderParams &orderParams,
 			bool hasPrice) {
+		
 		const WriteLock lock(m_mutex);
 		if (m_position.IsCanceled()) {
 			Assert(!m_position.HasActiveOpenOrders());
 			Assert(!m_position.HasActiveCloseOrders());
 			return false;
 		}
+
+		m_closed.uuid = generateUuid();
 		ReportClosingStart("cancel-pre");
+
 		if (	m_position.IsClosed()
 				|| (	!m_position.IsOpened()
 						&& !m_position.HasActiveOpenOrders())) {
 			return false;
 		}
+
 		if (CancelAllOrders()) {
 			boost::function<void ()> delayedCancelMethod
 				= [
@@ -984,7 +955,8 @@ public:
 						cancelMethodImpl,
 						timeInForce,
 						orderParams,
-						hasPrice);
+						hasPrice,
+						true);
 				};
 			Assert(m_position.HasActiveOrders());
 			delayedCancelMethod.swap(m_cancelMethod);
@@ -997,11 +969,14 @@ public:
 				cancelMethodImpl,
 				timeInForce,
 				orderParams,
-				hasPrice);
+				hasPrice,
+				true);
 			AssertEq(int(CANCEL_STATE_NOT_CANCELED), int(m_cancelState));
 			m_cancelState = CANCEL_STATE_CANCELED;
 		}
+
 		return true;
+	
 	}
 
 	bool CancelAllOrders() {
@@ -1152,7 +1127,6 @@ Position::Position(
 	//...//
 }
 
-
 Position::Position(
 		Strategy &strategy,
 		const uuids::uuid &operationId,
@@ -1188,8 +1162,8 @@ Position::~Position() {
 	delete m_pimpl;
 }
 
-const PositionId & Position::GetId() const {
-	return m_pimpl->m_id;
+const uuids::uuid & Position::GetId() const {
+	return m_pimpl->m_operationId;
 }
 
 const Strategy & Position::GetStrategy() const throw() {

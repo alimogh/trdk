@@ -32,7 +32,6 @@ namespace trdk {
 	class RiskControlSymbolContext;
 	class RiskControlScope;
 
-	typedef uintmax_t PositionId;
 	class Position;
 	class LongPosition;
 	class ShortPosition;
