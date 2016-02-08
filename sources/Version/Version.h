@@ -2,7 +2,7 @@
 #pragma once
 
 #define TRDK_VERSION_RELEASE	2
-#define TRDK_VERSION_BUILD	1
+#define TRDK_VERSION_BUILD	2
 #define TRDK_VERSION_STATUS	0
 
 #define TRDK_VERSION_BRANCH		"master"
