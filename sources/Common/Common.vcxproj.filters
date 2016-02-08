@@ -115,5 +115,8 @@
     <ClInclude Include="Numeric.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VersionInfo.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

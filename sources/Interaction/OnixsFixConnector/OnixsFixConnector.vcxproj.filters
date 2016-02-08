@@ -60,6 +60,9 @@
     <ClCompile Include="FixSecurity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OnixsFixConnector.rc">

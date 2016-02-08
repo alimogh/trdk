@@ -284,6 +284,7 @@
     </ClCompile>
     <ClCompile Include="Security.cpp" />
     <ClCompile Include="Stream.cpp" />
+    <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api.h" />

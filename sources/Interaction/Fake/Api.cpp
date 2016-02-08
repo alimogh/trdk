@@ -11,12 +11,7 @@
 #include "Prec.hpp"
 #include "FakeTradeSystem.hpp"
 #include "FakeMarketDataSource.hpp"
-
-#ifdef BOOST_WINDOWS
-#	define TRDK_INTERACTION_FAKE_API
-#else
-#	define TRDK_INTERACTION_FAKE_API extern "C"
-#endif
+#include "Api.h"
 
 TRDK_INTERACTION_FAKE_API
 trdk::TradeSystemFactoryResult CreateTradeSystem(

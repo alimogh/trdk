@@ -4,7 +4,8 @@ add_definitions(-DTRDK_STRATEGY_TEST)
 file(
     GLOB
     source_list
-    TestStrategy.cpp)
+    TestStrategy.cpp
+    Version.cpp)
 trdk_add_precompiled_header("Prec.h" "Prec.cpp" source_list)
 
 add_library(TestStrategy MODULE ${source_list})

@@ -1,3 +1,4 @@
 
 EXPORTS
 	CreateHotspotStream
+	GetTrdkModuleVersionInfoV1

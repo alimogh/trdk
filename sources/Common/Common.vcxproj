@@ -296,6 +296,7 @@
     <ClInclude Include="TimeMeasurement.hpp" />
     <ClInclude Include="UseUnused.hpp" />
     <ClInclude Include="Util.hpp" />
+    <ClInclude Include="VersionInfo.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Version\Version.vcxproj">

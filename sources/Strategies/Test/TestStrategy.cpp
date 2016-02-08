@@ -17,6 +17,7 @@
 #include "Core/Position.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/DropCopy.hpp"
+#include "Api.h"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -234,12 +235,6 @@ namespace trdk { namespace Strategies { namespace Test {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-
-#ifdef BOOST_WINDOWS
-#	define TRDK_STRATEGY_TEST_API
-#else
-#	define TRDK_STRATEGY_TEST_API extern "C"
-#endif
 
 TRDK_STRATEGY_TEST_API boost::shared_ptr<trdk::Strategy> CreateStrategy(
 			trdk::Context &context,

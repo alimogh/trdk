@@ -30,3 +30,5 @@
 #define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::PROFILE_HFT)
 #define TRDK_CONCURRENCY_PROFILE_RELEASE (::trdk::Lib::Concurrency::PROFILE_HFT)
 
+#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {"Core", "Engine", "Fake", "OnixsFixConnector", "Itch", "TestStrategy", "FxMb", };
+

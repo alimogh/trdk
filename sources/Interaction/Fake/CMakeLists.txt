@@ -6,7 +6,8 @@ file(
     source_list
     Api.cpp
     FakeMarketDataSource.cpp
-    FakeTradeSystem.cpp)
+    FakeTradeSystem.cpp
+    Version.cpp)
 trdk_add_precompiled_header("Prec.h" "Prec.cpp" source_list)
 
 add_library(Fake MODULE ${source_list})

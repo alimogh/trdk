@@ -275,6 +275,7 @@
     <ClCompile Include="TradeSystem.cpp" />
     <ClCompile Include="RiskControl.cpp" />
     <ClCompile Include="Types.cpp" />
+    <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AsyncLog.hpp" />

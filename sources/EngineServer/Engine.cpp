@@ -12,6 +12,7 @@
 #include "Engine.hpp"
 #include "Exception.hpp"
 #include "Core/Settings.hpp"
+#include "Common/VersionInfo.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -78,6 +79,8 @@ void Engine::Run(
 		if (settings.IsReplayMode()) {
 			m_eventsLog.Warn("Replay mode.");
 		}
+
+		VerifyModules();
 
 		settings.Update(ini, m_eventsLog);
 
@@ -149,7 +152,72 @@ void Engine::Stop(const trdk::StopMode &stopMode) {
 
 void Engine::ClosePositions() {
 	if (!m_context) {
-		throw Exception("Failed to close engine poisitons, engine is stopped");
+		throw Exception("Failed to close engine poisitions, engine is stopped");
 	}
 	m_context->ClosePositions();
+}
+
+void Engine::VerifyModules() const {
+	
+	boost::unordered_map<std::string, bool /* is required */> moduleList;
+	{
+		const std::string fullModuleList[]
+			= TRDK_GET_MODUE_FILE_NAME_LIST();
+		foreach (const auto &module, fullModuleList) {
+			Assert(moduleList.count(module) == 0);
+			moduleList[module] = false;
+		}
+	}
+	{
+		const std::string requiredModuleList[]
+			= TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST();
+		foreach (const auto &module, requiredModuleList) {
+			AssertEq(1, moduleList.count(module));
+			moduleList[module] = true;
+		}
+	}
+	
+	foreach (const auto &module, moduleList) {
+
+		try {
+			
+			Dll dll(module.first, true);
+		
+			const auto getVerInfo
+				= dll.GetFunction<void(VersionInfoV1 *)>(
+					"GetTrdkModuleVersionInfoV1");
+		
+			VersionInfoV1 realModuleVersion;
+			getVerInfo(&realModuleVersion);
+			const VersionInfoV1 expectedModuleVersion(module.first);
+			if (realModuleVersion != expectedModuleVersion) {
+				m_eventsLog.Error(
+					"Module %1% has wrong version"
+						": \"%2%\", but must be \"%3%\".",
+					dll.GetFile(),
+					realModuleVersion,
+					expectedModuleVersion);
+				throw EngineServer::Exception("Module has wrong version");
+			}
+
+			m_eventsLog.Debug("Found module %1%.", dll.GetFile());
+		
+		} catch (const Dll::Error &ex) {
+			
+			if (!module.second) {
+				continue;
+			}
+			
+			m_eventsLog.Error(
+				"Failed to verify the version of the required module \"%1%\""
+					": \"%2%\".",
+				module.first,
+				ex.what());
+			throw EngineServer::Exception(
+				"Failed to verify the version of the required module ");
+		
+		}
+	
+	}
+
 }

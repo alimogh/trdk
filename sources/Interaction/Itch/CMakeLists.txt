@@ -7,7 +7,8 @@ file(
     Client.cpp
     HotspotStream.cpp
     Security.cpp
-    Stream.cpp)
+    Stream.cpp
+    Version.cpp)
 trdk_add_precompiled_header("Prec.h" "Prec.cpp" source_list)
 
 add_library(Itch MODULE ${source_list})

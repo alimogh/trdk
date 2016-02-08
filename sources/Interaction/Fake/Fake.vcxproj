@@ -282,8 +282,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="FakeTradeSystem.cpp" />
+    <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Api.h" />
     <ClInclude Include="FakeMarketDataSource.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="FakeTradeSystem.hpp" />

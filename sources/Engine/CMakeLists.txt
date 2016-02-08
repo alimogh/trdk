@@ -9,7 +9,8 @@ file(
     ContextBootstrap.cpp
     Context.cpp
     SubscriberPtrWrapper.cpp
-    Ini.cpp)
+    Ini.cpp
+    Version.cpp)
 trdk_add_precompiled_header("Prec.h" "Prec.cpp" source_list)
 
 add_library(Engine SHARED ${source_list})

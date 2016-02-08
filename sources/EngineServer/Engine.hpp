@@ -44,10 +44,12 @@ namespace trdk { namespace EngineServer {
 				DropCopy *dropCopy,
 				bool enableStdOutLog);
 
+		void VerifyModules() const;
+
 	private:
 
 		std::ofstream m_eventsLogFile;
-		trdk::Engine::Context::Log m_eventsLog;
+		mutable trdk::Engine::Context::Log m_eventsLog;
 
 		std::ofstream m_tradingLogFile;
 		trdk::Engine::Context::TradingLog m_tradingLog;

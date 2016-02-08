@@ -8,7 +8,8 @@ file(
     TriangulationWithDirectionReport.cpp
     TriangulationWithDirectionStatService.cpp
     TriangulationWithDirectionTriangle.cpp
-    TriangulationWithDirectionPosition.cpp)
+    TriangulationWithDirectionPosition.cpp
+    Version.cpp)
 trdk_add_precompiled_header("Prec.h" "Prec.cpp" source_list)
 
 add_library(FxMb MODULE ${source_list})

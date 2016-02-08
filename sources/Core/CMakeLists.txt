@@ -24,7 +24,7 @@ file(
     Service.cpp
     StrategyPositionState.cpp
     Instrument.cpp
-    Prec.cpp)
+    Version.cpp)
 trdk_add_precompiled_header("Prec.h" "Prec.cpp" source_list)
 
 add_library(Core SHARED ${source_list})

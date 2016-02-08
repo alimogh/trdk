@@ -22,6 +22,15 @@ var copyright = "Copyright 2016 (C) " + vendorName + ", " + domain + ". All righ
 var concurrencyProfileDebug = "PROFILE_RELAX"
 var concurrencyProfileTest = "PROFILE_HFT"
 var concurrencyProfileRelease = "PROFILE_HFT"
+var requiredModules = [
+	'Core',
+	'Engine',
+	'Fake',
+	'OnixsFixConnector',
+	'Itch',
+	'TestStrategy',
+	'FxMb'
+]
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -122,6 +131,12 @@ function CreateVersionCppHeaderFile() {
 	var concurrencyProfileLineTest = "#define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::" + concurrencyProfileTest + ")"
 	var concurrencyProfileLineRelease = "#define TRDK_CONCURRENCY_PROFILE_RELEASE (::trdk::Lib::Concurrency::" + concurrencyProfileRelease + ")"
 
+	var requiredModulesLine = '';
+	for (var i = 0; i < requiredModules.length; ++i) {
+		requiredModulesLine += '"' + requiredModules[i] + '", ';
+	}
+	requiredModulesLine = '#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {' + requiredModulesLine + '};';
+
 	var fullFileName = outputDir + "Version.h";
 	if (
 			IsExistsInFile(fullFileName, versionReleaseLine)
@@ -136,7 +151,8 @@ function CreateVersionCppHeaderFile() {
 			&& IsExistsInFile(fullFileName, copyrightLine)
 			&& IsExistsInFile(fullFileName, concurrencyProfileLineDebug)
 			&& IsExistsInFile(fullFileName, concurrencyProfileLineTest)
-			&& IsExistsInFile(fullFileName, concurrencyProfileLineRelease)) {
+			&& IsExistsInFile(fullFileName, concurrencyProfileLineRelease)
+			&& IsExistsInFile(fullFileName, requiredModulesLine)) {
 		return;
 	}
 
@@ -172,6 +188,8 @@ function CreateVersionCppHeaderFile() {
 	f.WriteLine(concurrencyProfileLineDebug);
 	f.WriteLine(concurrencyProfileLineTest);
 	f.WriteLine(concurrencyProfileLineRelease);
+	f.WriteLine("");
+	f.WriteLine(requiredModulesLine);
 	f.WriteLine("");
 
 }
