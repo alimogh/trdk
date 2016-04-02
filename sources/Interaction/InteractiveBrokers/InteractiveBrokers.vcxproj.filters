@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="API">
+      <UniqueIdentifier>{efb14cf2-a706-46af-889d-9133bece0667}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{28e06aed-c6fc-462e-9f36-9197fc6f908b}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{95e43b65-4e2d-4413-9bf2-7e169466b86a}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Prec.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Api\EClientSocket.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="Api\EClientSocketBase.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="Api\EPosixClientSocket.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="Api.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IbSecurity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IbClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IbTradeSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\CommissionReport.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\CommonDefs.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\Contract.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\EClient.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\EClientSocket.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\EClientSocketBase.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\EClientSocketBaseImpl.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\EPosixClientSocket.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\EPosixClientSocketPlatform.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\EWrapper.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\Execution.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\IBString.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\Order.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\OrderState.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\ScannerSubscription.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\shared_ptr.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\StdAfx.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\TagValue.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\TwsSocketClientErrors.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="IbSecurity.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IbClient.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IbTradeSystem.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Prec.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Api\version">
+      <Filter>API</Filter>
+    </None>
+    <None Include="InteractiveBrokers.def">
+      <Filter>Header Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="InteractiveBrokers.rc">
+      <Filter>Source Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
