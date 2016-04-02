@@ -51,9 +51,13 @@ Dispatcher::Dispatcher(Engine::Context &context)
 		m_brokerPositionsUpdates("Broker Positions", m_context),
 		m_newBars("Bars", m_context),
 		m_bookUpdateTicks("Book Update Ticks", m_context) {
-	unsigned int threadsCount = 2;
+	unsigned int threadsCount = 1;
 	boost::shared_ptr<boost::barrier> startBarrier(
 		new boost::barrier(threadsCount + 1));
+	// @sa Dispatcher::~Dispatcher
+	// @sa Dispatcher::Activate
+	// @sa Dispatcher::Suspend
+	// @sa Dispatcher::IsActive
 	StartNotificationTask<DispatchingTimeMeasurementPolicy>(
 		startBarrier,
 		m_bookUpdateTicks,
@@ -69,8 +73,17 @@ Dispatcher::Dispatcher(Engine::Context &context)
 Dispatcher::~Dispatcher() {
 	try {
 		m_context.GetLog().Debug("Stopping events dispatching...");
+		// @sa Dispatcher::Dispatcher
+		// @sa Dispatcher::Activate
+		// @sa Dispatcher::Suspend
+		// @sa Dispatcher::IsActive
+		// m_level1Updates.Stop();
+		// m_level1Ticks.Stop();
 		m_bookUpdateTicks.Stop();
+		// m_newTrades.Stop();
 		m_positionsUpdates.Stop();
+		// m_newBars.Stop();
+		// m_brokerPositionsUpdates.Stop();
 		m_threads.join_all();
 		m_context.GetLog().Debug("Events dispatching stopped.");
 	} catch (...) {
@@ -81,16 +94,49 @@ Dispatcher::~Dispatcher() {
 
 void Dispatcher::Activate() {
 	m_context.GetLog().Debug("Starting events dispatching...");
-	m_positionsUpdates.Activate();
+	// @sa Dispatcher::Dispatcher
+	// @sa Dispatcher::~Dispatcher
+	// @sa Dispatcher::Suspend
+	// @sa Dispatcher::IsActive
+	// m_level1Updates.Activate();
+	// m_level1Ticks.Activate();
 	m_bookUpdateTicks.Activate();
+	// m_newTrades.Activate();
+	m_positionsUpdates.Activate();
+	// m_newBars.Activate();
+	// m_brokerPositionsUpdates.Activate();
 	m_context.GetLog().Debug("Events dispatching started.");
 }
 
 void Dispatcher::Suspend() {
 	m_context.GetLog().Debug("Suspending events dispatching...");
+	// @sa Dispatcher::Disptcher
+	// @sa Dispatcher::~Dispatcher
+	// @sa Dispatcher::Activate
+	// @sa Dispatcher::IsActive
+	// m_level1Updates.Suspend();
+	// m_level1Ticks.Suspend();
 	m_bookUpdateTicks.Suspend();
+	// m_newTrades.Suspend();
 	m_positionsUpdates.Suspend();
+	// m_newBars.Suspend();
+	// m_brokerPositionsUpdates.Suspend();
 	m_context.GetLog().Debug("Events dispatching suspended.");
+}
+
+bool Dispatcher::IsActive() const {
+	// @sa Dispatcher::Disptcher
+	// @sa Dispatcher::~Dispatcher
+	// @sa Dispatcher::Activate
+	// @sa Dispatcher::Suspend
+	return
+		// m_level1Updates.IsActive()
+		// || m_level1Ticks.IsActive()
+		m_bookUpdateTicks.IsActive()
+		// || m_newTrades.IsActive()
+		|| m_positionsUpdates.IsActive();
+		// || m_newBars.IsActive()
+		// || m_brokerPositionsUpdates.IsActive();
 }
 
 void Dispatcher::SignalLevel1Update(
