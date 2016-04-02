@@ -296,11 +296,7 @@ namespace trdk { namespace Engine {
 
 	public:
 
-		bool IsActive() const {
-			return
-				m_positionsUpdates.IsActive()
-				|| m_level1Updates.IsActive();
-		}
+		bool IsActive() const;
 
 		void Activate();
 		void Suspend();
@@ -625,7 +621,7 @@ namespace trdk { namespace Engine {
 
 		template<typename T1, typename T2, typename T3>
 		static std::string GetEventListsName(
-					const boost::tuple<T1, T2, T3> &lists) {
+				const boost::tuple<T1, T2, T3> &lists) {
 			boost::format result("%1%, %2%, %3%");
 			result
 				% boost::get<0>(lists).GetName()

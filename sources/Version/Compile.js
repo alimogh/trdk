@@ -13,23 +13,23 @@
 // Customization:
 
 var branch = "master"
-var productName	= "MBCMTRADING Trading Robot Development Kit"
-var vendorName = "MBCMTRADING"
-var domain = "mb-cm.com"
+var productName	= "Trading Robot Development Kit"
+var vendorName = "Eugene V. Palchukovsky"
+var domain = "robotdk.com"
 var licenseServiceSubdomain = "licensing"
-var supportEmail ="eugene@" + domain
+var supportEmail = "support@" + domain
 var copyright = "Copyright 2016 (C) " + vendorName + ", " + domain + ". All rights reserved."
 var concurrencyProfileDebug = "PROFILE_RELAX"
-var concurrencyProfileTest = "PROFILE_HFT"
-var concurrencyProfileRelease = "PROFILE_HFT"
+var concurrencyProfileTest = "PROFILE_RELAX"
+var concurrencyProfileRelease = "PROFILE_RELAX"
 var requiredModules = [
-	'Core',
-	'Engine',
-	'Fake',
-	'OnixsFixConnector',
-	'Itch',
-	'TestStrategy',
-	'FxMb'
+	'Core'
+	, 'Engine'
+	, 'Fake'
+	, 'OnixsFixConnector'
+	, 'Itch'
+	, 'TestStrategy'
+	, 'FxMb'
 ]
 
 //////////////////////////////////////////////////////////////////////////
