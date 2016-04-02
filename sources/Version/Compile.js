@@ -12,7 +12,7 @@
 //////////////////////////////////////////////////////////////////////////
 // Customization:
 
-var branch = "master"
+var branch = "MB"
 var productName	= "MBCMTRADING Trading Robot Development Kit"
 var vendorName = "MBCMTRADING"
 var domain = "mb-cm.com"
