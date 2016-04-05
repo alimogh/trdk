@@ -29,6 +29,7 @@ var requiredModules = [
 	, 'OnixsFixConnector'
 	, 'Itch'
 	, 'InteractiveBrokers'
+	, 'Services'
 	, 'TestStrategy'
 	, 'FxMb'
 	, 'GadM'

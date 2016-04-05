@@ -47,4 +47,7 @@
   <ItemGroup>
     <ResourceCompile Include="Tests.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Indicators.xlsx" />
+  </ItemGroup>
 </Project>
