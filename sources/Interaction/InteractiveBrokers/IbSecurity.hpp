@@ -24,10 +24,10 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 	public:
 
 		explicit Security(
-					Context &,
-					const Lib::Symbol &,
-					const MarketDataSource &,
-					bool isTestSource);
+				Context &,
+				const Lib::Symbol &,
+				const MarketDataSource &,
+				bool isTestSource);
 
 	public:
 
@@ -55,18 +55,20 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		}
 
 		void AddLevel1Tick(
-					const boost::posix_time::ptime &time,
-					const Level1TickValue &tick) {
-			CheckLastTrade(time, tick);
-			Base::AddLevel1Tick(time, tick);
+				const boost::posix_time::ptime &time,
+				const Level1TickValue &tick,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement) {
+			CheckLastTrade(time, tick, timeMeasurement);
+			Base::AddLevel1Tick(time, tick, timeMeasurement);
 		}
 		void AddLevel1Tick(
-					const boost::posix_time::ptime &time,
-					const Level1TickValue &tick1,
-					const Level1TickValue &tick2) {
-			CheckLastTrade(time, tick1);
-			CheckLastTrade(time, tick2);
-			Base::AddLevel1Tick(time, tick1, tick2);
+				const boost::posix_time::ptime &time,
+				const Level1TickValue &tick1,
+				const Level1TickValue &tick2,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement) {
+			CheckLastTrade(time, tick1, timeMeasurement);
+			CheckLastTrade(time, tick2, timeMeasurement);
+			Base::AddLevel1Tick(time, tick1, tick2, timeMeasurement);
 		}
 
 		void AddBar(const Bar &bar) {
@@ -80,34 +82,36 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 	private:
 
 		void CheckLastTrade(
-					const boost::posix_time::ptime &time,
-					const Level1TickValue &tick) {
+				const boost::posix_time::ptime &time,
+				const Level1TickValue &tick,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement) {
 			if (!m_isTestSource || !IsTradesRequired()) {
 				return;
 			}
 			// real time bar not available from TWS demo account:
-			switch (tick.type) {
+			switch (tick.GetType()) {
 				case LEVEL1_TICK_LAST_PRICE:
 					{
 						auto lastQty = GetLastQty();
-						if (!lastQty) {
+						if (Lib::IsZero(lastQty)) {
 							if (!m_firstTradeTick) {
 								m_firstTradeTick = tick;
 								break;
-							} else if (m_firstTradeTick->type == tick.type) {
+							} else if (m_firstTradeTick->GetType() == tick.GetType()) {
 								break;
 							} else {
 								AssertEq(
 									LEVEL1_TICK_LAST_QTY,
-									m_firstTradeTick->type);
-								lastQty = m_firstTradeTick->value.lastQty;
+									m_firstTradeTick->GetType());
+								lastQty = m_firstTradeTick->GetValue();
 							}
 						}
 						AddTrade(
 							time,
 							ORDER_SIDE_SELL,
-							tick.value.lastPrice,
+							ScaledPrice(tick.GetValue()),
 							lastQty,
+							timeMeasurement,
 							false,
 							true);
 					}
@@ -115,24 +119,26 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 				case LEVEL1_TICK_LAST_QTY:
 					{
 						auto lastPrice = GetLastPriceScaled();
-						if (!lastPrice) {
+						if (Lib::IsZero(lastPrice)) {
 							if (!m_firstTradeTick) {
 								m_firstTradeTick = tick;
 								break;
-							} else if (m_firstTradeTick->type == tick.type) {
+							} else if (m_firstTradeTick->GetType() == tick.GetType()) {
 								break;
 							} else {
 								AssertEq(
 									LEVEL1_TICK_LAST_PRICE,
-									m_firstTradeTick->type);
-								lastPrice = m_firstTradeTick->value.lastPrice;
+									m_firstTradeTick->GetType());
+								lastPrice
+									= ScaledPrice(m_firstTradeTick->GetValue());
 							}
 						}
 						AddTrade(
 							time,
 							ORDER_SIDE_BUY,
 							lastPrice,
-							tick.value.lastQty,
+							tick.GetValue(),
+							timeMeasurement,
 							false,
 							true);
 					}

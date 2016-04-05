@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2013/05/01 16:45:19
+ *   Created: 2016/04/02 14:24:03
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,19 +9,3 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "IbSecurity.hpp"
-
-using namespace trdk;
-using namespace trdk::Interaction;
-using namespace trdk::Interaction::InteractiveBrokers;
-namespace ib = trdk::Interaction::InteractiveBrokers;
-
-ib::Security::Security(
-		Context &context,
-		const Lib::Symbol &symbol,
-		const MarketDataSource &source,
-		bool isTestSource)
-	: Base(context, symbol, source),
-	m_isTestSource(isTestSource) {
-	//...//
-}

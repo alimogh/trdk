@@ -28,6 +28,7 @@ var requiredModules = [
 	, 'Fake'
 	, 'OnixsFixConnector'
 	, 'Itch'
+	, 'InteractiveBrokers'
 	, 'TestStrategy'
 	, 'FxMb'
 ]

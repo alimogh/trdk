@@ -17,15 +17,6 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Api\EClientSocket.cpp">
-      <Filter>API</Filter>
-    </ClCompile>
-    <ClCompile Include="Api\EClientSocketBase.cpp">
-      <Filter>API</Filter>
-    </ClCompile>
-    <ClCompile Include="Api\EPosixClientSocket.cpp">
-      <Filter>API</Filter>
-    </ClCompile>
     <ClCompile Include="Api.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -38,11 +29,33 @@
     <ClCompile Include="IbTradeSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Api\EClientSocket.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="Api\EClientSocketBase.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="Api\EPosixClientSocket.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="Version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IbSecurity.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IbClient.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IbTradeSystem.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Api\CommissionReport.h">
       <Filter>API</Filter>
     </ClInclude>
@@ -55,19 +68,10 @@
     <ClInclude Include="Api\EClient.h">
       <Filter>API</Filter>
     </ClInclude>
-    <ClInclude Include="Api\EClientSocket.h">
-      <Filter>API</Filter>
-    </ClInclude>
     <ClInclude Include="Api\EClientSocketBase.h">
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="Api\EClientSocketBaseImpl.h">
-      <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="Api\EPosixClientSocket.h">
-      <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="Api\EPosixClientSocketPlatform.h">
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="Api\EWrapper.h">
@@ -100,16 +104,18 @@
     <ClInclude Include="Api\TwsSocketClientErrors.h">
       <Filter>API</Filter>
     </ClInclude>
-    <ClInclude Include="IbSecurity.hpp">
+    <ClInclude Include="Api\EClientSocket.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\EPosixClientSocket.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api\EPosixClientSocketPlatform.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IbClient.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IbTradeSystem.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Api\version">

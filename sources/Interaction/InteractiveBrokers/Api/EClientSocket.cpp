@@ -64,7 +64,7 @@ EClientSocket::~EClientSocket()
 	eDisconnect();
 }
 
-bool EClientSocket::eConnect( const char *host, UINT port, int clientId)
+bool EClientSocket::eConnect( const char *host, UINT port, int clientId, bool extraAuth)
 {
 	// already connected?
 	if( isConnected()) {
@@ -101,6 +101,7 @@ bool EClientSocket::eConnect( const char *host, UINT port, int clientId)
 	}
 
 	setClientId( clientId);
+	setExtraAuth( extraAuth);
 
 	{
 		// Wait till we are fully connected (or for an error)

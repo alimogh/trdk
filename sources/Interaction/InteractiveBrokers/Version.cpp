@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2013/05/01 16:45:19
+ *   Created: 2016/04/05 07:26:01
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,19 +9,12 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "IbSecurity.hpp"
+#include "Common/VersionInfo.hpp"
+#include "Api.h"
 
-using namespace trdk;
-using namespace trdk::Interaction;
-using namespace trdk::Interaction::InteractiveBrokers;
-namespace ib = trdk::Interaction::InteractiveBrokers;
-
-ib::Security::Security(
-		Context &context,
-		const Lib::Symbol &symbol,
-		const MarketDataSource &source,
-		bool isTestSource)
-	: Base(context, symbol, source),
-	m_isTestSource(isTestSource) {
-	//...//
+extern "C" TRDK_INTERACTION_INTERACTIVEBROKERS_API
+void GetTrdkModuleVersionInfoV1(
+		trdk::Lib::VersionInfoV1 *result) {
+	*result = trdk::Lib::VersionInfoV1(
+		TRDK_INTERACTION_INTERACTIVEBROKERS_FILE_NAME);
 }

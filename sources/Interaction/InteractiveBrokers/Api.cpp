@@ -10,33 +10,25 @@
 
 #include "Prec.hpp"
 #include "IbTradeSystem.hpp"
+#include "Api.h"
 
-#ifdef BOOST_WINDOWS
-#	define TRDK_INTERACTION_INTERACTIVEBROKERS_API
-#else
-#	define TRDK_INTERACTION_INTERACTIVEBROKERS_API extern "C"
-#endif
-
-using namespace trdk;
-using namespace trdk::Lib;
 namespace ib = trdk::Interaction::InteractiveBrokers;
 
 TRDK_INTERACTION_INTERACTIVEBROKERS_API
-TradeSystemFactoryResult CreateTradeSystem(
-			const IniSectionRef &configuration,
-			Context::Log &log) {
-	TradeSystemFactoryResult result;
-	boost::shared_ptr<ib::TradeSystem> tradeSystem(
-		new ib::TradeSystem(configuration, log));
+trdk::TradeSystemFactoryResult CreateTradeSystem(
+		const trdk::TradingMode &mode,
+		size_t index,
+		trdk::Context &context,
+		const std::string &tag,
+		const trdk::Lib::IniSectionRef &configuration) {
+	trdk::TradeSystemFactoryResult result;
+	const auto &tradeSystem = boost::make_shared<ib::TradeSystem>(
+		mode,
+		index,
+		context,
+		tag,
+		configuration);
 	boost::get<0>(result) = tradeSystem;
 	boost::get<1>(result) = tradeSystem;
 	return result;
-}
-
-TRDK_INTERACTION_INTERACTIVEBROKERS_API
-boost::shared_ptr<MarketDataSource> CreateMarketDataSource(
-			const IniSectionRef &configuration,
-			Context::Log &log) {
-	return boost::shared_ptr<MarketDataSource>(
-		new ib::TradeSystem(configuration, log));
 }

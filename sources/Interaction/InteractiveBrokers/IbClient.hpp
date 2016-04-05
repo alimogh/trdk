@@ -23,14 +23,12 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		typedef std::list<boost::function<void()>> OrderCallbackList;
 
 		typedef void (OrderStatusSlotSignature)(
-				trdk::OrderId id,
-				trdk::OrderId parentId,
-				TradeSystem::OrderStatus,
-				long filled,
-				long remaining,
-				double avgFillPrice,
+				const trdk::OrderId &,
+				int permanentOrderId,
+				const trdk::OrderStatus &,
+				const Qty &filled,
+				const Qty &remaining,
 				double lastFillPrice,
-				const std::string &whyHeld,
 				OrderCallbackList &);
 		typedef boost::function<OrderStatusSlotSignature> OrderStatusSlot;
 
@@ -59,7 +57,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		typedef Mutex::scoped_lock Lock;
 		typedef boost::condition_variable Condition;
 
-		typedef std::map<std::string, TradeSystem::OrderStatus>
+		typedef std::map<std::string, trdk::OrderStatus>
 			OrderStatusesMap;
 
 		struct BySecurity {
@@ -118,11 +116,10 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		Client(
 				InteractiveBrokers::TradeSystem &,
-				Context::Log &,
 				bool isNoHistoryMode,
-				int clientId = 0,
-				const std::string &host = "127.0.0.1",
-				unsigned short port = 7496);
+				int clientId,
+				const std::string &host,
+				unsigned short port);
 		virtual ~Client();
 
 	public:
@@ -228,15 +225,17 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		void HandleError(const int id, const int code, const IBString &);
 
-		Security * GetMarketDataRequest(TickerId);
-		Security * GetHistoryRequest(TickerId);
-		Security * GetBarsRequest(TickerId);
+		Security * GetMarketDataRequest(const TickerId &);
+		Security * GetHistoryRequest(const TickerId &);
+		Security * GetBarsRequest(const TickerId &);
 
 		static bool IsSubscribed(const SecurityRequestList &, const Security &);
 		static bool IsSubscribed(
 					const SecurityRequestList &,
 					const PostponedSecurityRequestList &,
 					const Security &);
+
+		void ApplyOrderParams(const OrderParams &, Order &) const;
 
 	private:
 
@@ -371,11 +370,15 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 				const IBString &);
 		virtual void accountSummaryEnd(int);
 
+		virtual void verifyMessageAPI(const IBString &);
+		virtual void verifyCompleted(bool, const IBString &);
+
+		virtual void displayGroupList( int reqId, const IBString &);
+		virtual void displayGroupUpdated( int reqId, const IBString &);
+
 	private:
 
 		InteractiveBrokers::TradeSystem &m_ts;
-
-		Context::Log &m_log;
 
 		const bool m_isNoHistoryMode;
 
