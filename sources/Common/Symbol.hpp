@@ -30,6 +30,10 @@ namespace trdk { namespace Lib {
 			SECURITY_TYPE_FOR_FUTURE_OPTION,
 			//! Foreign Exchange Contract.
 			SECURITY_TYPE_FOR_SPOT,
+			// Future Contract.
+			SECURITY_TYPE_FUTURE,
+			// Future Option Contract.
+			SECURITY_TYPE_FUTURE_OPTION,
 			numberOfSecurityTypes
 		};
 
@@ -59,19 +63,19 @@ namespace trdk { namespace Lib {
 	public:
 
 		Symbol();
-
 		explicit Symbol(
-				SecurityType,
-				const std::string &symbol);
-
+				const SecurityType &,
+				const std::string &symbol,
+				const trdk::Lib::Currency &);
 		explicit Symbol(
 				const std::string &symbol,
+				const trdk::Lib::Currency &,
 				const std::string &expirationDate,
 				double strike);
-
 		explicit Symbol(
-				SecurityType,
+				const SecurityType &,
 				const std::string &symbol,
+				const trdk::Lib::Currency &,
 				const std::string &exchange,
 				const std::string &primaryExchange);
 
@@ -80,7 +84,7 @@ namespace trdk { namespace Lib {
 				const std::string &defExchange,
 				const std::string &defPrimaryExchange);
 		static Symbol ParseForeignExchangeContract(
-				SecurityType securityType,
+				const SecurityType &securityType,
 				const std::string &line,
 				const std::string &defExchange);
 		static Symbol ParseForeignExchangeContractFutureOption(
@@ -105,7 +109,7 @@ namespace trdk { namespace Lib {
 
 	public:
 
-		SecurityType GetSecurityType() const;
+		const SecurityType & GetSecurityType() const;
 
 		const std::string & GetSymbol() const;
 		const std::string & GetExchange() const;
@@ -117,6 +121,7 @@ namespace trdk { namespace Lib {
 		std::string GetRightAsString() const;
 		static Right ParseRight(const std::string &);
 
+		const trdk::Lib::Currency & GetCurrency() const;
 		const trdk::Lib::Currency & GetFotBaseCurrency() const;
 		const trdk::Lib::Currency & GetFotQuoteCurrency() const;
 
@@ -136,22 +141,26 @@ namespace trdk { namespace Lib {
 			Right right;
 
 			trdk::Lib::Currency fotBaseCurrency;
-			trdk::Lib::Currency fotQuoteCurrency;
+			//! Currency and FOR Quote Currency.
+			trdk::Lib::Currency currency;
 
 			Data();
 			
 			explicit Data(
-					SecurityType,
-					const std::string &symbol);
+					const SecurityType &,
+					const std::string &symbol,
+					const trdk::Lib::Currency &);
 
 			explicit Data(
 					const std::string &symbol,
+					const trdk::Lib::Currency &,
 					const std::string &expirationDate,
 					double strike);
 
 			explicit Data(
-					SecurityType,
+					const SecurityType &,
 					const std::string &symbol,
+					const trdk::Lib::Currency &,
 					const std::string &exchange,
 					const std::string &primaryExchange);
 

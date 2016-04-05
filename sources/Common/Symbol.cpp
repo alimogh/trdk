@@ -18,64 +18,67 @@ using namespace trdk::Lib;
 ////////////////////////////////////////////////////////////////////////////////
 
 Symbol::Error::Error(const char *what) throw()
-		: Exception(what) {
+	: Exception(what) {
 	//...//
 }
 
 Symbol::StringFormatError::StringFormatError() throw()
-		: Error("Wrong symbol string format") {
+	: Error("Wrong symbol string format") {
 	//...//
 }
 
 Symbol::ParameterError::ParameterError(const char *what) throw()
-		: Error(what) {
+	: Error(what) {
 	//...//
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 Symbol::Symbol()
-		: m_hash(0) {
+	: m_hash(0) {
 	//...//
 }
 
 Symbol::Data::Data()
-		: securityType(numberOfSecurityTypes),
-		strike(.0),
-		right(numberOfRights),
-		fotBaseCurrency(numberOfCurrencies),
-		fotQuoteCurrency(numberOfCurrencies) {
+	: securityType(numberOfSecurityTypes)
+	, strike(.0)
+	, right(numberOfRights)
+	, fotBaseCurrency(numberOfCurrencies)
+	, currency(numberOfCurrencies) {
 	//...//
 }
 
 Symbol::Symbol(
-			SecurityType securityType,
-			const std::string &symbol)
-		: m_data(securityType, symbol),
-		m_hash(0) {
+		const SecurityType &securityType,
+		const std::string &symbol,
+		const Currency &currency)
+	: m_data(securityType, symbol, currency)
+	, m_hash(0) {
 	if (m_data.symbol.empty()) {
 		throw ParameterError("Symbol can't be empty");
 	}
 }
 
 Symbol::Data::Data(
-			SecurityType securityType,
-			const std::string &symbol)
-		: securityType(securityType),
-		symbol(symbol),
-		strike(.0),
-		right(numberOfRights),
-		fotBaseCurrency(numberOfCurrencies),
-		fotQuoteCurrency(numberOfCurrencies) {
-	//...//
+		const SecurityType &securityType,
+		const std::string &symbol,
+		const Currency &currency)
+	: securityType(securityType)
+	, symbol(symbol)
+	, strike(.0)
+	, right(numberOfRights)
+	, fotBaseCurrency(numberOfCurrencies)
+	, currency(currency) {
+	AssertNe(currency, numberOfCurrencies);
 }
 
 Symbol::Symbol(
-			const std::string &symbol,
-			const std::string &expirationDate,
-			double strike)
-		: m_data(symbol, expirationDate, strike),
-		m_hash(0) {
+		const std::string &symbol,
+		const Currency &currency,
+		const std::string &expirationDate,
+		double strike)
+	: m_data(symbol, currency, expirationDate, strike)
+	, m_hash(0) {
 	Assert(!m_data.expirationDate.empty());
 	Assert(!IsZero(m_data.strike));
 	if (m_data.symbol.empty()) {
@@ -85,25 +88,27 @@ Symbol::Symbol(
 
 Symbol::Data::Data(
 			const std::string &symbol,
+			const Currency &currency,
 			const std::string &expirationDate,
 			double strike)
-		: securityType(SECURITY_TYPE_FOR_FUTURE_OPTION),
-		symbol(symbol),
-		expirationDate(expirationDate),
-		strike(strike),
-		right(numberOfRights),
-		fotBaseCurrency(numberOfCurrencies),
-		fotQuoteCurrency(numberOfCurrencies) {
-	//...//
+	: securityType(SECURITY_TYPE_FOR_FUTURE_OPTION)
+	, symbol(symbol)
+	, expirationDate(expirationDate)
+	, strike(strike)
+	, right(numberOfRights)
+	, fotBaseCurrency(numberOfCurrencies)
+	, currency(currency) {
+	AssertNe(currency, numberOfCurrencies);
 }
 
 Symbol::Symbol(
-			SecurityType securityType,
-			const std::string &symbol,
-			const std::string &exchange,
-			const std::string &primaryExchange)
-		: m_data(securityType, symbol, exchange, primaryExchange),
-		m_hash(0) {
+		const SecurityType &securityType,
+		const std::string &symbol,
+		const Currency &currency,
+		const std::string &exchange,
+		const std::string &primaryExchange)
+	: m_data(securityType, symbol, currency, exchange, primaryExchange)
+	, m_hash(0) {
 	Assert(!m_data.symbol.empty());
 	Assert(!m_data.exchange.empty());
 	Assert(!m_data.primaryExchange.empty());
@@ -117,22 +122,24 @@ Symbol::Symbol(
 }
 
 Symbol::Data::Data(
-			SecurityType securityType,
-			const std::string &symbol,
-			const std::string &exchange,
-			const std::string &primaryExchange)
-		: securityType(securityType),
-		symbol(symbol),
-		exchange(exchange),
-		primaryExchange(primaryExchange),
-		strike(.0),
-		right(numberOfRights) {
-	//...//
+		const SecurityType &securityType,
+		const std::string &symbol,
+		const Currency &currency,
+		const std::string &exchange,
+		const std::string &primaryExchange)
+	: securityType(securityType)
+	, symbol(symbol)
+	, exchange(exchange)
+	, primaryExchange(primaryExchange)
+	, strike(.0)
+	, right(numberOfRights)
+	, currency(currency) {
+	AssertNe(currency, numberOfCurrencies);
 }
 
 Symbol::Symbol(const Symbol &rhs)
-		: m_data(rhs.m_data),
-		m_hash(rhs.m_hash.load()) {
+	: m_data(rhs.m_data)
+	, m_hash(rhs.m_hash.load()) {
 	//...//
 }
 
@@ -145,9 +152,9 @@ Symbol & Symbol::operator =(const Symbol &rhs) {
 }
 
 Symbol Symbol::Parse(
-			const std::string &line,
-			const std::string &defExchange,
-			const std::string &defPrimaryExchange) {
+		const std::string &line,
+		const std::string &defExchange,
+		const std::string &defPrimaryExchange) {
 	
 	if (defPrimaryExchange.empty()) {
 		throw ParameterError(
@@ -186,9 +193,9 @@ Symbol Symbol::Parse(
 }
 
 Symbol Symbol::ParseForeignExchangeContract(
-			SecurityType securityType,
-			const std::string &line,
-			const std::string &defExchange) {
+		const SecurityType &securityType,
+		const std::string &line,
+		const std::string &defExchange) {
 
 	std::vector<std::string> subs;
 	boost::split(subs, line, boost::is_any_of(":"));
@@ -214,7 +221,7 @@ Symbol Symbol::ParseForeignExchangeContract(
 		:	defExchange;
 	result.m_data.primaryExchange = "FOREX";
 	result.m_data.fotBaseCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
-	result.m_data.fotQuoteCurrency
+	result.m_data.currency
 		= ConvertCurrencyFromIso(symbolMatch.str(2));
 
 	return result;
@@ -222,11 +229,11 @@ Symbol Symbol::ParseForeignExchangeContract(
 }
 
 Symbol Symbol::ParseForeignExchangeContractFutureOption(
-			const std::string &line,
-			const std::string &expirationDate,
-			double strike,
-			const Right &right,
-			const std::string &defExchange) {
+		const std::string &line,
+		const std::string &expirationDate,
+		double strike,
+		const Right &right,
+		const std::string &defExchange) {
 
 	Assert(!defExchange.empty());
 	if (defExchange.empty()) {
@@ -259,7 +266,7 @@ Symbol Symbol::ParseForeignExchangeContractFutureOption(
 	result.m_data.strike = strike;
 	result.m_data.right = right;
 	result.m_data.fotBaseCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
-	result.m_data.fotQuoteCurrency
+	result.m_data.currency
 		= ConvertCurrencyFromIso(symbolMatch.str(2));
 
 	return result;
@@ -333,7 +340,7 @@ Symbol::Hash Symbol::GetHash() const {
 	return m_hash;
 }
 
-Symbol::SecurityType Symbol::GetSecurityType() const {
+const Symbol::SecurityType & Symbol::GetSecurityType() const {
 	return m_data.securityType;
 }
 
@@ -346,6 +353,9 @@ const std::string & Symbol::GetExchange() const {
 }
 		
 const std::string & Symbol::GetPrimaryExchange() const {
+	if (m_data.primaryExchange.empty()) {
+		throw Lib::LogicError("Symbol doesn't have Primary Exchange");
+	}
 	return m_data.primaryExchange;
 }
 
@@ -359,7 +369,7 @@ double Symbol::GetStrike() const {
 
 const Symbol::Right & Symbol::GetRight() const {
 	if (m_data.right == numberOfRights) {
-		throw Lib::LogicError("Symbol has not Right");
+		throw Lib::LogicError("Symbol doesn't have Right");
 	}
 	return m_data.right;
 }
@@ -390,25 +400,32 @@ std::string Symbol::GetRightAsString() const {
 	}
 }
 
+const Currency & Symbol::GetCurrency() const {
+	if (m_data.currency == numberOfCurrencies) {
+		throw Lib::LogicError("Symbol doesn't have Currency");
+	}
+	return m_data.currency;
+}
+
 const Currency & Symbol::GetFotBaseCurrency() const {
 	if (m_data.fotBaseCurrency == numberOfCurrencies) {
-		throw Lib::LogicError("Symbol has not Base Currency");
+		throw Lib::LogicError("Symbol doesn't have Base Currency");
 	}
 	return m_data.fotBaseCurrency;
 }
 
 const Currency & Symbol::GetFotQuoteCurrency() const {
-	if (m_data.fotQuoteCurrency == numberOfCurrencies) {
-		throw Lib::LogicError("Symbol has not Quote Currency");
+	if (m_data.currency == numberOfCurrencies) {
+		throw Lib::LogicError("Symbol doesn't have Quote Currency");
 	}
-	return m_data.fotQuoteCurrency;
+	return m_data.currency;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 std::ostream & std::operator <<(std::ostream &os, const Symbol &symbol) {
 	// If changing here - look at Symbol::GetHash, how hash creating.
-	static_assert(Symbol::numberOfSecurityTypes == 3, "Security list changed.");
+	static_assert(Symbol::numberOfSecurityTypes == 5, "Security list changed.");
 	switch (symbol.GetSecurityType()) {
 		case Symbol::SECURITY_TYPE_STOCK:
 			os
@@ -440,6 +457,7 @@ std::ostream & std::operator <<(std::ostream &os, const Symbol &symbol) {
 			break;
 		default:
 			AssertEq(Symbol::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
+			os << "<UNKNOWN>";
 			break;
 	}
 	return os;
