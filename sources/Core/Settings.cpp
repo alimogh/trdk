@@ -45,7 +45,7 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 		values.defaultExchange
 			= defaultsConf.ReadKey(exchangeKey, std::string());
 		values.defaultPrimaryExchange
-			= defaultsConf.ReadKey(primaryExchangeKey);
+			= defaultsConf.ReadKey(primaryExchangeKey, std::string());
 		log.Info(
 			"Default settings: %1% = \"%2%\"; %3% = \"%4%\";",
 			exchangeKey,
