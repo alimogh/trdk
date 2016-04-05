@@ -210,7 +210,7 @@ bool Service::RaiseBookUpdateTickEvent(
 bool Service::OnLevel1Update(const Security &security) {
 	GetLog().Error(
 		"Subscribed to %1% Level 1 Updates, but can't work with it"
-			" (hasn't OnLevel1Update method implementation).",
+			" (doesn't have OnLevel1Update method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
 		"Service subscribed to Level 1 Updates, but can't work with it");
@@ -222,7 +222,7 @@ bool Service::OnLevel1Tick(
 		const Level1TickValue &) {
 	GetLog().Error(
 		"Subscribed to %1% Level 1 Ticks, but can't work with it"
-			" (hasn't OnLevel1Tick method implementation).",
+			" (doesn't have OnLevel1Tick method implementation).",
 			security);
 	throw MethodDoesNotImplementedError(
 		"Service subscribed to Level 1 Ticks, but can't work with it");
@@ -236,7 +236,7 @@ bool Service::OnNewTrade(
 		const OrderSide &) {
 	GetLog().Error(
 		"Subscribed to %1% new trades, but can't work with it"
-			" (hasn't OnNewTrade method implementation).",
+			" (doesn't have OnNewTrade method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
 		"Service subscribed to new trades, but can't work with it");
@@ -247,7 +247,7 @@ bool Service::OnServiceDataUpdate(
 		const TimeMeasurement::Milestones &) {
 	GetLog().Error(
 		"Subscribed to \"%1%\", but can't work with it"
-			" (hasn't OnServiceDataUpdate method implementation).",
+			" (doesn't have OnServiceDataUpdate method implementation).",
 		service);
  	throw MethodDoesNotImplementedError(
  		"Service subscribed to service, but can't work with it");
@@ -259,7 +259,7 @@ bool Service::OnBrokerPositionUpdate(
 		bool /*isInitial*/) {
 	GetLog().Error(
 		"Subscribed to %1% Broker Positions Updates, but can't work with it"
-			" (hasn't OnBrokerPositionUpdate method implementation).",
+			" (doesn't have OnBrokerPositionUpdate method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
 		"Service subscribed to Broker Positions Updates"
@@ -269,7 +269,7 @@ bool Service::OnBrokerPositionUpdate(
 bool Service::OnNewBar(const Security &security, const Security::Bar &) {
 	GetLog().Error(
 		"Subscribed to %1% new bars, but can't work with it"
-			" (hasn't OnNewBar method implementation).",
+			" (doesn't have OnNewBar method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
 		"Service subscribed to new bars, but can't work with it");
@@ -281,7 +281,7 @@ bool Service::OnBookUpdateTick(
 		const TimeMeasurement::Milestones &) {
 	GetLog().Error(
 		"Subscribed to %1% Book Update Ticks, but can't work with it"
-			" (hasn't OnNewBookUpdateTick method implementation).",
+			" (doesn't have OnNewBookUpdateTick method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
 		"Service subscribed to Book Update Ticks, but can't work with it");

@@ -53,7 +53,7 @@ void Consumer::OnLevel1Tick(
 		const Level1TickValue &) {
 	GetLog().Error(
 		"Subscribed to %1% Level 1 Ticks, but can't work with it"
-			" (hasn't OnLevel1Tick method implementation).",
+			" (doesn't have OnLevel1Tick method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to Level 1 Ticks, but can't work with it");
@@ -67,7 +67,7 @@ void Consumer::OnNewTrade(
 		const OrderSide &) {
 	GetLog().Error(
 		"Subscribed to %1% new trades, but can't work with it"
-			" (hasn't OnNewTrade method implementation).",
+			" (doesn't have OnNewTrade method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to new trades, but can't work with it");
@@ -78,7 +78,7 @@ void Consumer::OnServiceDataUpdate(
 		const TimeMeasurement::Milestones &) {
 	GetLog().Error(
 		"Subscribed to \"%1%\", but can't work with it"
-			" (hasn't OnServiceDataUpdate method implementation).",
+			" (doesn't have OnServiceDataUpdate method implementation).",
 		service);
  	throw MethodDoesNotImplementedError(
  		"Module subscribed to service, but can't work with it");
@@ -90,7 +90,7 @@ void Consumer::OnBrokerPositionUpdate(
 		bool /*isInitial*/) {
 	GetLog().Error(
 		"Subscribed to %1% Broker Positions Updates, but can't work with it"
-			" (hasn't OnBrokerPositionUpdate method implementation).",
+			" (doesn't have OnBrokerPositionUpdate method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to Broker Positions Updates, but can't work with it");
@@ -99,7 +99,7 @@ void Consumer::OnBrokerPositionUpdate(
 void Consumer::OnNewBar(Security &security, const Security::Bar &) {
 	GetLog().Error(
 		"Subscribed to %1% new bars, but can't work with it"
-			" (hasn't OnNewBar method implementation).",
+			" (doesn't have OnNewBar method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
 		"Module subscribed to new bars, but can't work with it");

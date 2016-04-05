@@ -318,8 +318,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 		//! Sets common fields and returns reference to preallocated order
 		//! FIX-message.
-		/** Uses only one object for all messages, hasn't synchronization, can
-		  * called only from one thread.
+		/** Uses only one object for all messages, doesn't have synchronization,
+		  * can called only from one thread.
 		  */
 		OnixS::FIX::Message & GetPreallocatedOrderMessage(
 				const std::string &clOrderId,
@@ -329,8 +329,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				const trdk::OrderParams &);
 		//! Sets common fields for market orders and returns reference to
 		//! preallocated market order FIX-message.
-		/** Uses only one object for all messages, hasn't synchronization, can
-		  * called only from one thread.
+		/** Uses only one object for all messages, doesn't have synchronization,
+		  * can called only from one thread.
 		  */
 		OnixS::FIX::Message & GetPreallocatedMarketOrderMessage(
 				const std::string &clOrderId,

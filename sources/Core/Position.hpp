@@ -122,13 +122,13 @@ namespace trdk {
 		CloseType GetCloseType() const throw();
 		const std::string & GetCloseTypeStr() const;
 
-		//! Has opened qty and hasn't active open-orders.
+		//! Has opened qty and doesn't have active open-orders.
 		/** @sa	IsClosed
 		  */
 		bool IsOpened() const throw();
 		//! Closed.
-		/** First was opened, then closed, hasn't active quantity and active
-		  * orders.
+		/** First was opened, then closed, doesn't have active quantity and
+		  * active orders.
 		  * @sa	IsOpened
 		  */
 		bool IsClosed() const throw();
@@ -138,7 +138,7 @@ namespace trdk {
 		/** @sa	IsCompleted
 		  */
 		bool IsStarted() const throw();
-		//! Started and now hasn't any orders and active qty or market as
+		//! Started and now doesn't have any orders and active qty or market as
 		//! completed.
 		/** @sa	IsStarted
 		  * @sa MarkAsCompleted
