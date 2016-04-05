@@ -31,6 +31,7 @@ var requiredModules = [
 	, 'InteractiveBrokers'
 	, 'TestStrategy'
 	, 'FxMb'
+	, 'GadM'
 ]
 
 //////////////////////////////////////////////////////////////////////////
