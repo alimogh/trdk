@@ -141,17 +141,16 @@ namespace trdk {
 		numberOfLevel1TickTypes
 	};
 
-	struct Level1TickValue {
+	class Level1TickValue {
 
 	private:
 
-		explicit Level1TickValue(Level1TickType type, double value)
+		explicit Level1TickValue(const Level1TickType &type, double value)
 			: m_type(type),
 			m_value(value) {
 		}
 
 	public:
-
 
 		template<trdk::Level1TickType type, typename Value>
 		static Level1TickValue Create(const Value &value) {

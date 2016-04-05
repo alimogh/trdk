@@ -18,17 +18,4 @@ namespace pt = boost::posix_time;
 
 namespace trdk { namespace Tests {
 
-	TEST(DISABLED_SecurityTest, PriceBookAdjusting) {
-
-		MockContext context;
-		MockMarketDataSource dataSource(0, context, "test");
-		Security security(
-			context,
-			Lib::Symbol(
-				Lib::Symbol::SECURITY_TYPE_FOR_FUTURE_OPTION,
-				"EUR/USD"),
-			dataSource);
-
-	}
-
 } }
