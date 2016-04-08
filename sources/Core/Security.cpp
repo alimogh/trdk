@@ -57,7 +57,7 @@ namespace {
 	//! Returns symbol price precision.
 	/** @sa https://mbcm.robotdk.com:8443/x/K4AP
 	  */
-	uint8_t GetPrecision(const Symbol &symbol) {
+	uint8_t GetPrecision(const Symbol &symbol, const MarketDataSource &source) {
 		if (boost::iequals(symbol.GetSymbol(), "EUR/USD")) {
 			return 5;
 		} else if (boost::iequals(symbol.GetSymbol(), "EUR/JPY")) {
@@ -75,11 +75,12 @@ namespace {
 		} else if (boost::iequals(symbol.GetSymbol(), "AUD/JPY")) {
 			return 3;
 		} else {
-#			ifndef _TEST
-				AssertFail(
-					"Precision for security not set. Using default - 6.");
-#			endif
-			return 6;
+			const uint8_t result = 6;
+			source.GetLog().Warn(
+				"Precision for \"%1%\" not set. Using default - %2%.",
+				symbol,
+				int(result));
+			return result;
 		}
 	}
 }
@@ -137,7 +138,7 @@ public:
 	Implementation(const MarketDataSource &source, const Symbol &symbol)
 		: m_instanceId(m_nextInstanceId++)
 		, m_source(source)
-		, m_pricePrecision(GetPrecision(symbol))
+		, m_pricePrecision(GetPrecision(symbol, source))
 		, m_priceScale(size_t(std::pow(10, m_pricePrecision)))
 		, m_brokerPosition(0)
 		, m_marketDataTime(0)
@@ -282,6 +283,9 @@ RiskControlSymbolContext & Security::GetRiskControlContext(
 		const TradingMode &mode) {
 	AssertLt(0, mode);
 	AssertGe(m_pimpl->m_riskControlContext.size(), mode);
+	// If context is not set - riscontrol is disabled and nobody should call
+	// this method:
+	Assert(m_pimpl->m_riskControlContext[mode - 1]);
 	return *m_pimpl->m_riskControlContext[mode - 1];
 }
 
