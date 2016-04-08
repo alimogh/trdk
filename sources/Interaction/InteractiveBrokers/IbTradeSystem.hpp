@@ -30,14 +30,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		friend class trdk::Interaction::InteractiveBrokers::Client;
 
-	public:
-
-		typedef std::set<Security *> Securities;
-
 	private:
 	
-		typedef std::list<Security *> UnsubscribedSecurities;
-
 		struct ByAccount {
 			//...//
 		};
@@ -273,8 +267,9 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		std::unique_ptr<Client> m_client;
 		PlacedOrderSet m_placedOrders;
 
-		Securities m_securities;
-		mutable UnsubscribedSecurities m_unsubscribedSecurities;
+		std::vector<boost::shared_ptr<Security>>  m_securities;
+		mutable std::deque<boost::shared_ptr<Security>>
+			m_unsubscribedSecurities;
 
 		std::unique_ptr<Account> m_account;
 

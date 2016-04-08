@@ -48,9 +48,9 @@ namespace trdk { namespace Services {
 	public:
 
 		explicit BollingerBandsService(
-					Context &,
-					const std::string &tag,
-					const Lib::IniSectionRef &);
+				Context &,
+				const std::string &tag,
+				const Lib::IniSectionRef &);
 		virtual ~BollingerBandsService();
 
 	public:

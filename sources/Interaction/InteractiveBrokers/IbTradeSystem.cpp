@@ -147,10 +147,10 @@ void ib::TradeSystem::SubscribeToSecurities() {
 		return;
 	}
 	while (!m_unsubscribedSecurities.empty()) {
- 		auto &security = **m_unsubscribedSecurities.begin();
+ 		auto security = m_unsubscribedSecurities.front();
 		m_unsubscribedSecurities.pop_front();
-		m_securities.insert(&security);
-		m_client->SubscribeToMarketData(security);
+		m_securities.push_back(security);
+		m_client->SubscribeToMarketData(*security);
  	}
 }
 
@@ -204,7 +204,7 @@ trdk::Security & ib::TradeSystem::CreateNewSecurityObject(
 		symbol,
 		*this,
 		m_isTestSource);
-	m_unsubscribedSecurities.push_back(&*result);
+	m_unsubscribedSecurities.push_back(result);
 	return *result;
 }
 

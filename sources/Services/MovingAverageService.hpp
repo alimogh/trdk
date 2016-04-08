@@ -47,9 +47,9 @@ namespace trdk { namespace Services {
 	public:
 
 		explicit MovingAverageService(
-					Context &,
-					const std::string &tag,
-					const Lib::IniSectionRef &);
+				Context &,
+				const std::string &tag,
+				const Lib::IniSectionRef &);
 		virtual ~MovingAverageService();
 
 	public:
@@ -88,7 +88,9 @@ namespace trdk { namespace Services {
 				const trdk::Service &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
-		bool OnNewBar(const trdk::Services::BarService::Bar &);
+		bool OnNewBar(
+				const trdk::Security &,
+				const trdk::Services::BarService::Bar &);
 
 	private:
 

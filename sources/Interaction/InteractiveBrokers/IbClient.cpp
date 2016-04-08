@@ -53,15 +53,19 @@ namespace {
 	Contract GetContract(const trdk::Security &security) {
 		Contract contract;
 		static_assert(
-			Symbol::numberOfSecurityTypes == 5,
+			numberOfSecurityTypes == 5,
 			"Security type list changed.");
 		const Symbol &symbol = security.GetSymbol();
 		switch (symbol.GetSecurityType()) {
-			case Symbol::SECURITY_TYPE_STOCK:
+			case SECURITY_TYPE_STOCK:
 				contract.secType = "STK";
 				contract.primaryExchange = symbol.GetPrimaryExchange();
 				break;
-			case Symbol::SECURITY_TYPE_FUTURE_OPTION:
+			case SECURITY_TYPE_FUTURES:
+				contract.secType = "FUT";
+				contract.expiry = symbol.GetExpirationDate();
+				break;
+			case SECURITY_TYPE_FUTURES_OPTIONS:
 				contract.secType = "FOP";
 				contract.expiry = symbol.GetExpirationDate();
 				contract.strike = symbol.GetStrike();
@@ -83,15 +87,15 @@ namespace {
 				const OrderParams &/*orderParams*/) {
 		Contract contract;
 		static_assert(
-			Symbol::numberOfSecurityTypes == 5,
+			numberOfSecurityTypes == 5,
 			"Security type list changed.");
 		const Symbol &symbol = security.GetSymbol();
 		switch (symbol.GetSecurityType()) {
-			case Symbol::SECURITY_TYPE_STOCK:
+			case SECURITY_TYPE_STOCK:
 				contract.secType = "STK";
 				contract.primaryExchange = symbol.GetPrimaryExchange();
 				break;
-			case Symbol::SECURITY_TYPE_FUTURE_OPTION:
+			case SECURITY_TYPE_FUTURES_OPTIONS:
 				contract.secType = "FOP";
 				contract.expiry = symbol.GetExpirationDate();
 				contract.strike = symbol.GetStrike();
@@ -280,7 +284,7 @@ void Client::StartData() {
 
 	bool isBrokerPositionsRequred = m_ts.m_positions ? true : false;
 	if (!isBrokerPositionsRequred) {
-		foreach (const Security *security, m_ts.m_securities) {
+		foreach (const auto &security, m_ts.m_securities) {
 			if (security->IsBrokerPositionRequired()) {
 				isBrokerPositionsRequred = true;
 				break;
@@ -372,8 +376,6 @@ void Client::Subscribe(const OrderStatusSlot &orderStatusSlot) const {
 }
 
 void Client::SubscribeToMarketData(ib::Security &security) const {
-
-	Assert(m_ts.m_securities.find(&security) != m_ts.m_securities.end());
 
 	if (security.IsTradesRequired() && !security.IsTestSource()) {
 		throw trdk::TradeSystem::Error(
@@ -595,8 +597,6 @@ void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
 	//! @todo support postponed Level 2 subscription 
 
 	AssertFail("Market Depth Level II not yet supported by security.");
-
-	Assert(m_ts.m_securities.find(&security) != m_ts.m_securities.end());
 
 	const Lock lock(m_mutex);
 	if (IsSubscribed(m_marketDepthLevel2Requests, security)) {
@@ -1748,7 +1748,7 @@ void Client::position(
 
 	//! @todo place for optimization (if position will be used not only at
 	//! start):
-	foreach (ib::Security *security, m_ts.m_securities) {
+	foreach (auto &security, m_ts.m_securities) {
 		//! @todo compares only symbols, not exchanges
 		if (security->GetSymbol().GetSymbol() == contract.symbol) {
 			security->SetBrokerPosition(size, isInitial);
@@ -1762,15 +1762,10 @@ void Client::position(
 
 		if (contract.secType == "STK") {
 			symbol = Symbol(
-				Symbol::SECURITY_TYPE_STOCK,
-				contract.symbol,
-				ConvertCurrencyFromIso(contract.currency));
-		} else if (contract.secType == "FOP") {
-			symbol = Symbol(
-				contract.symbol,
-				ConvertCurrencyFromIso(contract.currency),
-				contract.expiry,
-				contract.strike);
+				(boost::format("%1%/%2%::STK")
+						% contract.symbol
+						% contract.currency)
+					.str());
 		} else {
 			boost::format message(
 				"Security type \"%1%\" is not supported by position list");

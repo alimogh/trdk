@@ -155,6 +155,77 @@ namespace trdk {
 
 	};
 
+	class EmptyRiskControlScope : public trdk::RiskControlScope {
+	
+	public:
+	
+		explicit EmptyRiskControlScope(
+				const TradingMode &,
+				const std::string &name);
+		virtual ~EmptyRiskControlScope();
+
+	public:
+
+		virtual const std::string & GetName() const;
+
+	public:
+
+		virtual void CheckNewBuyOrder(
+				const trdk::RiskControlOperationId &,
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &);
+		virtual void CheckNewSellOrder(
+				const trdk::RiskControlOperationId &,
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::Qty &,
+				const trdk::ScaledPrice &);
+	
+		virtual void ConfirmBuyOrder(
+				const trdk::RiskControlOperationId &,
+				const trdk::OrderStatus &,
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::ScaledPrice &orderPrice,
+				const trdk::Qty &remainingQty,
+				const trdk::TradeSystem::TradeInfo *);
+
+		virtual void ConfirmSellOrder(
+				const trdk::RiskControlOperationId &,
+				const trdk::OrderStatus &,
+				trdk::Security &,
+				const trdk::Lib::Currency &,
+				const trdk::ScaledPrice &orderPrice,
+				const trdk::Qty &remainingQty,
+				const trdk::TradeSystem::TradeInfo *);
+
+	public:
+
+		virtual void CheckTotalPnl(double pnl) const;
+
+		virtual void CheckTotalWinRatio(
+				size_t totalWinRatio,
+				size_t operationsCount)
+				const;
+
+	public:
+
+		virtual void ResetStatistics();
+		virtual trdk::FinancialResult GetStatistics() const;
+		virtual trdk::FinancialResult TakeStatistics();
+
+	public:
+
+		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
+	
+	private:
+	
+		const std::string m_name;
+	
+	};
+
 	////////////////////////////////////////////////////////////////////////////////
 	
 	class TRDK_CORE_API RiskControl : private boost::noncopyable {

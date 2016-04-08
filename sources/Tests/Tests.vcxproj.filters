@@ -32,9 +32,6 @@
     <ClCompile Include="PriceBookTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
-    <ClCompile Include="SecurityTest.cpp">
-      <Filter>Tests</Filter>
-    </ClCompile>
     <ClCompile Include="MockContext.cpp">
       <Filter>Mocks</Filter>
     </ClCompile>
@@ -43,11 +40,52 @@
     </ClCompile>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp" />
+    <ClCompile Include="SymbolTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Tests.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Indicators.xlsx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\output\x86\lib\Debug DLL\Services_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Debug Standalone\Services_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Test DLL\Services_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Test Standalone\Services_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Release DLL\Services.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Release Standalone\Services.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Debug DLL\Services_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Debug Standalone\Services_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Test DLL\Services_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Test Standalone\Services_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Release DLL\Services.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Release Standalone\Services.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
   </ItemGroup>
 </Project>

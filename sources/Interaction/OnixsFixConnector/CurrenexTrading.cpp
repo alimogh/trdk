@@ -182,8 +182,8 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 				qty,
 				orderParams);
 			switch (security.GetSymbol().GetSecurityType()) {
-				case Symbol::SECURITY_TYPE_FOR_FUTURE_OPTION:
-				case Symbol::SECURITY_TYPE_FOR_SPOT:
+				case SECURITY_TYPE_FOR:
+				case SECURITY_TYPE_FOR_FUTURES_OPTIONS:
 					result.set(
 						fix::FIX43::Tags::Product,
 						fix::FIX43::Values::Product::CURRENCY);

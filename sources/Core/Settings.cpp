@@ -39,19 +39,47 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 	const IniSectionRef commonConf(conf, "General");
 
 	{
-		const char *const exchangeKey = "exchange";
-		const char *const primaryExchangeKey = "primary_exchange";
+		
+		const char *const currencyKey = "currency";
+		const char *const securityTypeKey = "security_type";
 		const IniSectionRef defaultsConf(conf, "Defaults");
-		values.defaultExchange
-			= defaultsConf.ReadKey(exchangeKey, std::string());
-		values.defaultPrimaryExchange
-			= defaultsConf.ReadKey(primaryExchangeKey, std::string());
+
+		std::string currency = defaultsConf.ReadKey(currencyKey);
+		if (!currency.empty()) {
+			try {
+				values.defaultCurrency = ConvertCurrencyFromIso(currency);
+			 } catch (const Exception &ex) {
+				boost::format error(
+					"Failed to parse default currency ISO 4217 code"
+						" \"%1%\": \"2%\"");
+				error % currency % ex.what();
+				throw Exception(error.str().c_str());
+			 }
+			 currency = ConvertToIso(values.defaultCurrency);
+		}
+
+		std::string securityType = defaultsConf.ReadKey(securityTypeKey);
+		if (!securityType.empty()) {
+			try {
+				values.defaultSecurityType
+					= ConvertSecurityTypeFromString(securityType);
+			} catch (const Exception &ex) {
+				boost::format error(
+					"Failed to parse default security type"
+						" \"%1%\": \"2%\"");
+				error % securityType % ex.what();
+				throw Exception(error.str().c_str());
+			}
+			securityType = ConvertToString(values.defaultSecurityType);
+		}
+
 		log.Info(
 			"Default settings: %1% = \"%2%\"; %3% = \"%4%\";",
-			exchangeKey,
-			values.defaultExchange,
-			primaryExchangeKey,
-			values.defaultPrimaryExchange);
+			currencyKey,
+			currency,
+			securityTypeKey,
+			securityType);
+	
 	}
 
 	m_values = values;

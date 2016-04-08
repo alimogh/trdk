@@ -9,11 +9,13 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "MockContext.hpp"
 #include "Services/BollingerBandsService.hpp"
-#include "Context.hpp"
 
 namespace lib = trdk::Lib;
 namespace svc = trdk::Services;
+
+using namespace trdk::Tests;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -137,7 +139,7 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace trdk { namespace Testing {
+namespace trdk { namespace Tests {
 
 	class BollingerBandsServiceTest : public testing::Test {
 
@@ -160,7 +162,7 @@ namespace trdk { namespace Testing {
 			for (size_t i = 0; i < _countof(source); ++i) {
 			
 				const svc::MovingAverageService::Point ma = {
-					lib::Scale(source[i][0], 100),
+					ScaledPrice(lib::Scale(source[i][0], 100)),
 					double(lib::Scale(source[i][1], 100))
 				};
 			
@@ -203,16 +205,12 @@ namespace trdk { namespace Testing {
 
 	protected:
 
-		Context m_context;
+		MockContext m_context;
 		std::unique_ptr<svc::BollingerBandsService> m_service;
 
 	};
 
 } }
-
-////////////////////////////////////////////////////////////////////////////////
-
-using namespace trdk::Testing;
 
 TEST_F(BollingerBandsServiceTest, RealTimeWithHistory) {
 	
@@ -246,7 +244,7 @@ TEST_F(BollingerBandsServiceTest, RealTimeWithHistory) {
 			++offset;
 			++pos;
 		}
-		ASSERT_LT(pos, intmax_t(_countof(source)));
+		ASSERT_LT(pos, _countof(source));
 		
 		const svc::BollingerBandsService::Point &point
 			= m_service->GetHistoryPoint(i);
@@ -286,7 +284,7 @@ TEST_F(BollingerBandsServiceTest, RealTimeWithHistory) {
 			++offset;
 			--pos;
 		}
-		ASSERT_LT(intmax_t(0), pos);
+		ASSERT_LT(0, pos);
 
 		const svc::BollingerBandsService::Point &point
 			= m_service->GetHistoryPointByReversedIndex(i);

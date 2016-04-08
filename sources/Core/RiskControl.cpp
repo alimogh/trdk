@@ -113,6 +113,86 @@ const TradingMode & RiskControlScope::GetTradingMode() const {
 	return m_tradingMode;
 }
 
+EmptyRiskControlScope::EmptyRiskControlScope(
+		const TradingMode &tradingMode,
+		const std::string &name)
+	: RiskControlScope(tradingMode),
+	m_name(name) {
+	//...//
+}
+EmptyRiskControlScope::~EmptyRiskControlScope() {
+	//...//
+}
+const std::string & EmptyRiskControlScope::GetName() const {
+	return m_name;
+}
+void EmptyRiskControlScope::CheckNewBuyOrder(
+		const RiskControlOperationId &,
+		Security &,
+		const Currency &,
+		const Qty &,
+		const ScaledPrice &) {
+	//...//
+}
+void EmptyRiskControlScope::CheckNewSellOrder(
+		const RiskControlOperationId &,
+		Security &,
+		const Currency &,
+		const Qty &,
+		const ScaledPrice &) {
+	//...//
+}
+void EmptyRiskControlScope::ConfirmBuyOrder(
+		const RiskControlOperationId &,
+		const OrderStatus &,
+		Security &,
+		const Currency &,
+		const ScaledPrice &/*orderPrice*/,
+		const Qty &/*remainingQty*/,
+		const TradeSystem::TradeInfo *) {
+	//...//
+}
+void EmptyRiskControlScope::ConfirmSellOrder(
+		const RiskControlOperationId &,
+		const OrderStatus &,
+		Security &,
+		const Currency &,
+		const ScaledPrice &/*orderPrice*/,
+		const Qty &/*remainingQty*/,
+		const TradeSystem::TradeInfo *) {
+	//...//
+}
+void EmptyRiskControlScope::CheckTotalPnl(double /*pnl*/) const {
+	//...//
+}
+void EmptyRiskControlScope::CheckTotalWinRatio(
+		size_t /*totalWinRatio*/,
+		size_t /*operationsCount*/)
+		const {
+	//...//
+}
+void EmptyRiskControlScope::ResetStatistics() {
+	AssertFail(
+		"Statistics not available for this Risk Control Context implementation");
+	throw LogicError(
+		"Statistics not available for this Risk Control Context implementation");
+}
+FinancialResult EmptyRiskControlScope::GetStatistics() const {
+	AssertFail(
+		"Statistics not available for this Risk Control Context implementation");
+	throw LogicError(
+		"Statistics not available for this Risk Control Context implementation");
+}
+FinancialResult EmptyRiskControlScope::TakeStatistics() {
+	AssertFail(
+		"Statistics not available for this Risk Control Context implementation");
+	throw LogicError(
+		"Statistics not available for this Risk Control Context implementation");
+}
+void EmptyRiskControlScope::OnSettingsUpdate(const IniSectionRef &) {
+	//...//
+}
+
 class StandardRiskControlScope : public RiskControlScope {
 
 protected:
@@ -489,7 +569,7 @@ private:
 
 		const Symbol &symbol = security.GetSymbol();
 
-		AssertEq(Symbol::SECURITY_TYPE_FOR_SPOT, symbol.GetSecurityType());
+		AssertEq(SECURITY_TYPE_FOR, symbol.GetSecurityType());
 		AssertNe(symbol.GetFotBaseCurrency(), symbol.GetFotQuoteCurrency());
 		Assert(
 			symbol.GetFotBaseCurrency() == currency
@@ -532,7 +612,7 @@ private:
 			const {
 
 		const Symbol &symbol = security.GetSymbol();
-		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_FOR_SPOT) {
+		if (symbol.GetSecurityType() != SECURITY_TYPE_FOR) {
 			throw WrongSettingsException("Unknown security type");
 		}
 
@@ -661,7 +741,7 @@ private:
 			const RiskControlSymbolContext::Side &side) {
 
 		const Symbol &symbol = security.GetSymbol();
-		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_FOR_SPOT) {
+		if (symbol.GetSecurityType() != SECURITY_TYPE_FOR) {
 			throw WrongSettingsException("Unknown security type");
 		}
 
@@ -739,7 +819,7 @@ private:
 			const RiskControlSymbolContext::Side &side) {
 
 		const Symbol &symbol = security.GetSymbol();
-		if (symbol.GetSecurityType() != Symbol::SECURITY_TYPE_FOR_SPOT) {
+		if (symbol.GetSecurityType() != SECURITY_TYPE_FOR) {
 			throw WrongSettingsException("Unknown security type");
 		}
 
@@ -1196,7 +1276,7 @@ public:
 	// Item can't be ptr as we will copy it when will create new scope.
 	std::vector<ScopeInfo> m_additionalScopesInfo;
 
-	GlobalRiskControlScope m_globalScope;
+	std::unique_ptr<GlobalRiskControlScope> m_globalScope;
 
 	boost::atomic<RiskControlOperationId> m_lastOperationId;
 
@@ -1206,19 +1286,21 @@ public:
 			Context &context,
 			const IniSectionRef &conf,
 			const TradingMode &tradingMode)
-		: m_context(context),
-		m_log(logPrefix, m_context.GetLog()),
-		m_tradingLog(logPrefix, m_context.GetTradingLog()),
-		m_conf(conf),
-		m_tradingMode(tradingMode),
-		m_globalScope(
-			m_context,
-			m_conf,
-			"Global",
-			m_additionalScopesInfo.size(),
-			m_tradingMode),
-		m_lastOperationId(0) {
-		//...//
+		: m_context(context)
+		, m_log(logPrefix, m_context.GetLog())
+		, m_tradingLog(logPrefix, m_context.GetTradingLog())
+		, m_conf(conf)
+		, m_tradingMode(tradingMode)
+		, m_lastOperationId(0) {
+		if (m_conf.ReadBoolKey("is_enabled")) {
+			m_globalScope.reset(
+				new GlobalRiskControlScope(
+					m_context,
+					m_conf,
+					"Global",
+					m_additionalScopesInfo.size(),
+					m_tradingMode));
+		}
 	}
 
 public:
@@ -1310,6 +1392,10 @@ const TradingMode & RiskControl::GetTradingMode() const {
 boost::shared_ptr<RiskControlSymbolContext> RiskControl::CreateSymbolContext(
 		const Symbol &symbol)
 		const {
+
+	if (!m_pimpl->m_globalScope) {
+		return boost::shared_ptr<RiskControlSymbolContext>();
+	}
 	
 	auto posCache(m_pimpl->m_globalScopePositionsCache);
 	auto scopesInfoCache(m_pimpl->m_additionalScopesInfo);
@@ -1321,7 +1407,7 @@ boost::shared_ptr<RiskControlSymbolContext> RiskControl::CreateSymbolContext(
 			boost::bind(
 				&Implementation::CreatePosition,
 				m_pimpl,
-				boost::cref(m_pimpl->m_globalScope.GetName()),
+				boost::cref(m_pimpl->m_globalScope->GetName()),
 				boost::ref(posCache),
 				_1,
 				_2,
@@ -1337,7 +1423,7 @@ boost::shared_ptr<RiskControlSymbolContext> RiskControl::CreateSymbolContext(
 	m_pimpl->ReportSymbolScopeSettings(
 		*result,
 		result->GetGlobalScope(),
-		m_pimpl->m_globalScope.GetName());
+		m_pimpl->m_globalScope->GetName());
 	m_pimpl->m_symbols.push_back(result);
 
 	scopesInfoCache.swap(m_pimpl->m_additionalScopesInfo);
@@ -1351,6 +1437,11 @@ std::unique_ptr<RiskControlScope> RiskControl::CreateScope(
 		const std::string &name,
 		const IniSectionRef &conf)
 		const {
+
+	if (!m_pimpl->m_globalScope) {
+		return std::unique_ptr<RiskControlScope>(
+			new EmptyRiskControlScope(GetTradingMode(), name));
+	}
 
 	auto additionalScopesInfo(m_pimpl->m_additionalScopesInfo);
 	additionalScopesInfo.emplace_back(name, conf);
@@ -1387,11 +1478,15 @@ RiskControlOperationId RiskControl::CheckNewBuyOrder(
 		const Qty &qty,
 		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
+	if (!m_pimpl->m_globalScope) {
+		return 0;
+	}
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
 	const RiskControlOperationId operationId = ++m_pimpl->m_lastOperationId;
 	scope.CheckNewBuyOrder(operationId, security, currency, qty, price);
-	m_pimpl->m_globalScope
-		.CheckNewBuyOrder(operationId, security, currency, qty, price);
+	m_pimpl
+		->m_globalScope
+		->CheckNewBuyOrder(operationId, security, currency, qty, price);
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
 	return operationId;
 }
@@ -1403,11 +1498,15 @@ RiskControlOperationId RiskControl::CheckNewSellOrder(
 		const Qty &qty,
 		const ScaledPrice &price,
 		const TimeMeasurement::Milestones &timeMeasurement) {
+	if (!m_pimpl->m_globalScope) {
+		return 0;
+	}
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_START);
 	const RiskControlOperationId operationId = ++m_pimpl->m_lastOperationId;
 	scope.CheckNewSellOrder(operationId, security, currency, qty, price);
-	m_pimpl->m_globalScope
-		.CheckNewSellOrder(operationId, security, currency, qty, price);
+	m_pimpl
+		->m_globalScope
+		->CheckNewSellOrder(operationId, security, currency, qty, price);
 	timeMeasurement.Measure(TimeMeasurement::SM_PRE_RISK_CONTROL_COMPLETE);
 	return operationId;
 }
@@ -1422,8 +1521,12 @@ void RiskControl::ConfirmBuyOrder(
 		const Qty &remainingQty,
 		const TradeSystem::TradeInfo *trade,
 		const TimeMeasurement::Milestones &timeMeasurement) {
+	if (!m_pimpl->m_globalScope) {
+		AssertEq(0, operationId);
+		return;
+	}
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_START);
-	m_pimpl->m_globalScope.ConfirmBuyOrder(
+	m_pimpl->m_globalScope->ConfirmBuyOrder(
 		operationId,
 		orderStatus,
 		security,
@@ -1452,8 +1555,12 @@ void RiskControl::ConfirmSellOrder(
 		const Qty &remainingQty,
 		const TradeSystem::TradeInfo *trade,
 		const TimeMeasurement::Milestones &timeMeasurement) {
+	if (!m_pimpl->m_globalScope) {
+		AssertEq(0, operationId);
+		return;
+	}
 	timeMeasurement.Measure(TimeMeasurement::SM_POST_RISK_CONTROL_START);
-	m_pimpl->m_globalScope.ConfirmSellOrder(
+	m_pimpl->m_globalScope->ConfirmSellOrder(
 		operationId,
 		orderStatus,
 		security,
@@ -1477,7 +1584,7 @@ void RiskControl::CheckTotalPnl(
 		double pnl)
 		const {
 	scope.CheckTotalPnl(pnl);
-	m_pimpl->m_globalScope.CheckTotalPnl(pnl);
+	m_pimpl->m_globalScope->CheckTotalPnl(pnl);
 }
 
 void RiskControl::CheckTotalWinRatio(
@@ -1485,13 +1592,20 @@ void RiskControl::CheckTotalWinRatio(
 		size_t totalWinRatio,
 		size_t operationsCount)
 		const {
+	if (!m_pimpl->m_globalScope) {
+		return;
+	}
 	AssertGe(100, totalWinRatio);
 	scope.CheckTotalWinRatio(totalWinRatio, operationsCount);
-	m_pimpl->m_globalScope.CheckTotalWinRatio(totalWinRatio, operationsCount);
+	m_pimpl->m_globalScope->CheckTotalWinRatio(totalWinRatio, operationsCount);
 }
 
 void RiskControl::OnSettingsUpdate(const Ini &conf) {
-	m_pimpl->m_globalScope.OnSettingsUpdate(IniSectionRef(conf, "RiskControl"));
+	if (!m_pimpl->m_globalScope) {
+		return;
+	}
+	m_pimpl->m_globalScope->OnSettingsUpdate(
+		IniSectionRef(conf, "RiskControl"));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

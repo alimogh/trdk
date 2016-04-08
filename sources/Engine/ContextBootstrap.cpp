@@ -924,7 +924,7 @@ private:
 			foreach (auto symbol, symbols) {
 				Assert(symbol);
 				m_context.ForEachMarketDataSource([&](
-							MarketDataSource &source)
+						MarketDataSource &source)
 						-> bool {
 					auto &security = source.GetSecurity(symbol);
 					try {
@@ -1078,19 +1078,25 @@ private:
 				++i) {
 			const std::string symbolRequest
 				= boost::copy_range<std::string>(*i);
-			Symbol symbol = Symbol::Parse(
-				symbolRequest,
-				m_context.GetSettings().GetDefaultExchange(),
-				m_context.GetSettings().GetDefaultPrimaryExchange());
-			if (result.symbols.find(symbol) != result.symbols.end()) {
-				m_context.GetLog().Error(
-					"Requirements syntax error:"
-						" duplicate entry \"%1%\" in \"%2%\".",
-					symbol,
-					request);
-				throw Exception("Requirements syntax error");
+			try {
+				const Symbol symbol(
+					symbolRequest,
+					m_context.GetSettings().GetDefaultSecurityType(),
+					m_context.GetSettings().GetDefaultCurrency());
+				if (result.symbols.find(symbol) != result.symbols.end()) {
+					m_context.GetLog().Error(
+						"Requirements syntax error:"
+							" duplicate entry \"%1%\" in \"%2%\".",
+						symbol,
+						request);
+					throw Exception("Requirements syntax error");
+				}
+				result.symbols.insert(symbol);
+			} catch (const trdk::Lib::Symbol::Error &ex) {
+				boost::format error("Failed to parse symbol \"%1%\": \"%2%\"");
+				error % symbolRequest % ex.what();
+				throw Exception(error.str().c_str());
 			}
-			result.symbols.insert(symbol);
 		}
 
 		return result;
@@ -1676,8 +1682,8 @@ private:
 			tag);
 		const IniFile symbolsIni(symbolsFilePath);
 		std::set<Symbol> symbols = symbolsIni.ReadSymbols(
-			m_context.GetSettings().GetDefaultExchange(),
-			m_context.GetSettings().GetDefaultPrimaryExchange());
+			m_context.GetSettings().GetDefaultSecurityType(),
+			m_context.GetSettings().GetDefaultCurrency());
 
 		try {
 			foreach (const auto &iniSymbol, symbols) {

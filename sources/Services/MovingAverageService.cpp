@@ -64,12 +64,12 @@ namespace {
 		static_assert(numberOfMaSources == 1, "MA Sources list changed.");
 	public:
 		explicit ExtractFrameValueVisitor(const BarService::Bar &barRef)
-				: m_bar(&barRef) {
+			: m_bar(&barRef) {
 			//...//
 		}
 	public:
 		ScaledPrice operator ()(
-					const MaSourceToType<MA_SOURCE_CLOSE_TRADE_PRICE> &)
+				const MaSourceToType<MA_SOURCE_CLOSE_TRADE_PRICE> &)
 				const {
 			return m_bar->closeTradePrice;
 		}
@@ -117,10 +117,10 @@ namespace boost { namespace accumulators {
 
 			template<typename Args>
 			Ema(const Args &args)
-					: m_windowSize(args[rolling_window_size]),
-					m_smoothingConstant(2 / (double(m_windowSize) + 1)),
-					m_isStarted(false),
-					m_sum(0) {
+				: m_windowSize(args[rolling_window_size])
+				, m_smoothingConstant(2 / (double(m_windowSize) + 1))
+				, m_isStarted(false)
+				, m_sum(0) {
 				//...//
 			}
 
@@ -181,8 +181,8 @@ namespace boost { namespace accumulators {
 
 			template<typename Args>
 			SmMa(const Args &args)
-					: m_windowSize(args[rolling_window_size]),
-					m_val(0) {
+				: m_windowSize(args[rolling_window_size])
+				, m_val(0) {
 				//...//
 			}
 
@@ -268,7 +268,7 @@ namespace {
 	class AccumVisitor : public boost::static_visitor<void> {
 	public:
 		explicit AccumVisitor(ScaledPrice frameValue)
-				: m_frameValue(frameValue) {
+			: m_frameValue(frameValue) {
 			//...//
 		}
 	public:
@@ -304,19 +304,19 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 
 MovingAverageService::Error::Error(const char *what) throw()
-		: Exception(what) {
+	: Exception(what) {
 	//...//
 }
 
 MovingAverageService::ValueDoesNotExistError::ValueDoesNotExistError(
-			const char *what) throw()
-		: Error(what) {
+		const char *what) throw()
+	: Error(what) {
 	//...//
 }
 
 MovingAverageService::HasNotHistory::HasNotHistory(
-			const char *what) throw()
-		: Error(what) {
+		const char *what) throw()
+	: Error(what) {
 	//...//
 }
 
@@ -347,11 +347,11 @@ public:
 public:
 
 	explicit Implementation(
-				MovingAverageService &service,
-				const IniSectionRef &configuration)
-			: m_service(service),
-			m_isEmpty(true),
-			m_sourceInfo(MaSourceToType<MA_SOURCE_CLOSE_TRADE_PRICE>()) {
+			MovingAverageService &service,
+			const IniSectionRef &configuration)
+		: m_service(service)
+		, m_isEmpty(true)
+		, m_sourceInfo(MaSourceToType<MA_SOURCE_CLOSE_TRADE_PRICE>()) {
 
 		m_period = configuration.ReadTypedKey<uintmax_t>(
 			Configuration::Keys::period);
@@ -463,7 +463,7 @@ public:
 
 	void CheckHistoryIndex(size_t index) const {
 		if (!m_history) {
-			throw HasNotHistory("MovingAverageService hasn't history");
+			throw HasNotHistory("MovingAverageService doesn't have history");
 		} else if (index >= m_history->GetSize()) {
 			throw ValueDoesNotExistError(
 				m_history->IsEmpty()
@@ -477,10 +477,10 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 MovingAverageService::MovingAverageService(
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &configuration)
-		: Service(context, "MovingAverageService", tag) {
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration)
+	: Service(context, "MovingAverageService", tag) {
 	m_pimpl = new Implementation(*this, configuration);
 }
 
@@ -493,10 +493,12 @@ bool MovingAverageService::OnServiceDataUpdate(
 		const TimeMeasurement::Milestones &) {
 	const auto &barService = m_pimpl->CastToBarService(service);
 	AssertLt(0, barService.GetSize());
-	return OnNewBar(barService.GetLastBar());
+	return OnNewBar(barService.GetSecurity(), barService.GetLastBar());
 }
 
-bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
+bool MovingAverageService::OnNewBar(
+		const Security &security,
+		const BarService::Bar &bar) {
 	
 	// Called from dispatcher, locking is not required.
 
@@ -524,7 +526,8 @@ bool MovingAverageService::OnNewBar(const BarService::Bar &bar) {
 
 	const Point newPoint = {
 		frameValue,
-		boost::apply_visitor(GetValueVisitor(), *m_pimpl->m_acc),
+		security.ScalePrice(
+			boost::apply_visitor(GetValueVisitor(), *m_pimpl->m_acc)),
 	};
 	m_pimpl->m_lastValue = newPoint;
 	m_pimpl->m_isEmpty = false;
@@ -542,7 +545,6 @@ bool MovingAverageService::IsEmpty() const {
 }
 
 MovingAverageService::Point MovingAverageService::GetLastPoint() const {
-	const Lock lock(GetMutex());
 	if (!m_pimpl->m_lastValue) {
 		throw ValueDoesNotExistError("MovingAverageService is empty");
 	}
@@ -550,48 +552,37 @@ MovingAverageService::Point MovingAverageService::GetLastPoint() const {
 }
 
 size_t MovingAverageService::GetHistorySize() const {
-	const Lock lock(GetMutex());
 	if (!m_pimpl->m_history) {
-		throw HasNotHistory("MovingAverageService hasn't history");
+		throw HasNotHistory("MovingAverageService doesn't have history");
 	}
 	return m_pimpl->m_history->GetSize();
 }
 
 MovingAverageService::Point MovingAverageService::GetHistoryPoint(
-			size_t index)
+		size_t index)
 		const {
-	const Lock lock(GetMutex());
 	m_pimpl->CheckHistoryIndex(index);
 	return (*m_pimpl->m_history)[index];
 }
 
 MovingAverageService::Point
 MovingAverageService::GetHistoryPointByReversedIndex(
-			size_t index)
+		size_t index)
 		const {
-	const Lock lock(GetMutex());
 	m_pimpl->CheckHistoryIndex(index);
 	return (*m_pimpl->m_history)[m_pimpl->m_history->GetSize() - index - 1];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef BOOST_WINDOWS
-	boost::shared_ptr<trdk::Service> CreateMovingAverageService(
-				Context &context,
-				const std::string &tag,
-				const IniSectionRef &configuration) {
-		return boost::shared_ptr<trdk::Service>(
-			new MovingAverageService(context, tag, configuration));
-	}
-#else
-	extern "C" boost::shared_ptr<trdk::Service> CreateMovingAverageService(
-				Context &context,
-				const std::string &tag,
-				const IniSectionRef &configuration) {
-		return boost::shared_ptr<trdk::Service>(
-			new MovingAverageService(context, tag, configuration));
-	}
-#endif
+TRDK_SERVICES_API boost::shared_ptr<trdk::Service> CreateMovingAverageService(
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration) {
+	return boost::make_shared<MovingAverageService>(
+		context,
+		tag,
+		configuration);
+}
 
 ////////////////////////////////////////////////////////////////////////////////

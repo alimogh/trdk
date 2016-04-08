@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "SecurityType.hpp"
 #include "Currency.hpp"
 #include "Exception.hpp"
 #include <iosfwd>
@@ -23,19 +24,6 @@ namespace trdk { namespace Lib {
 	public:
 
 		typedef size_t Hash;
-
-		enum SecurityType {
-			SECURITY_TYPE_STOCK,
-			//! Foreign Exchange Contract.
-			SECURITY_TYPE_FOR_FUTURE_OPTION,
-			//! Foreign Exchange Contract.
-			SECURITY_TYPE_FOR_SPOT,
-			// Future Contract.
-			SECURITY_TYPE_FUTURE,
-			// Future Option Contract.
-			SECURITY_TYPE_FUTURE_OPTION,
-			numberOfSecurityTypes
-		};
 
 		enum Right {
 			RIGHT_PUT,
@@ -52,7 +40,7 @@ namespace trdk { namespace Lib {
 
 		class StringFormatError : public Error {
 		public:
-			StringFormatError() throw();
+			explicit StringFormatError(const char *what) throw();
 		};
 
 		class ParameterError : public Error {
@@ -64,43 +52,17 @@ namespace trdk { namespace Lib {
 
 		Symbol();
 		explicit Symbol(
-				const SecurityType &,
-				const std::string &symbol,
-				const trdk::Lib::Currency &);
-		explicit Symbol(
-				const std::string &symbol,
-				const trdk::Lib::Currency &,
-				const std::string &expirationDate,
-				double strike);
-		explicit Symbol(
-				const SecurityType &,
-				const std::string &symbol,
-				const trdk::Lib::Currency &,
-				const std::string &exchange,
-				const std::string &primaryExchange);
-
-		static Symbol Parse(
 				const std::string &line,
-				const std::string &defExchange,
-				const std::string &defPrimaryExchange);
-		static Symbol ParseForeignExchangeContract(
-				const SecurityType &securityType,
-				const std::string &line,
-				const std::string &defExchange);
-		static Symbol ParseForeignExchangeContractFutureOption(
-				const std::string &line,
-				const std::string &expirationDate,
-				double strike,
-				const Right &,
-				const std::string &defExchange);
-
+				const trdk::Lib::SecurityType &defSecurityType
+					= trdk::Lib::numberOfSecurityTypes,
+				const Currency &defCurrency = trdk::Lib::numberOfCurrencies);
+		
 		Symbol(const Symbol &);
 		Symbol & operator =(const Symbol &);
 
 	public:
 
 		operator bool() const;
-
 		bool operator <(const Symbol &rhs) const;
 		bool operator ==(const Symbol &rhs) const;
 		bool operator !=(const Symbol &rhs) const;
@@ -109,7 +71,7 @@ namespace trdk { namespace Lib {
 
 	public:
 
-		const SecurityType & GetSecurityType() const;
+		const trdk::Lib::SecurityType & GetSecurityType() const;
 
 		const std::string & GetSymbol() const;
 		const std::string & GetExchange() const;
@@ -131,7 +93,7 @@ namespace trdk { namespace Lib {
 
 		struct Data {
 
-			SecurityType securityType;
+			trdk::Lib::SecurityType securityType;
 			std::string symbol;
 			std::string exchange;
 			std::string primaryExchange;
@@ -145,24 +107,6 @@ namespace trdk { namespace Lib {
 			trdk::Lib::Currency currency;
 
 			Data();
-			
-			explicit Data(
-					const SecurityType &,
-					const std::string &symbol,
-					const trdk::Lib::Currency &);
-
-			explicit Data(
-					const std::string &symbol,
-					const trdk::Lib::Currency &,
-					const std::string &expirationDate,
-					double strike);
-
-			explicit Data(
-					const SecurityType &,
-					const std::string &symbol,
-					const trdk::Lib::Currency &,
-					const std::string &exchange,
-					const std::string &primaryExchange);
 
 		} m_data;
 

@@ -69,6 +69,11 @@ namespace trdk { namespace Lib {
 		return boost::int64_t(boost::math::round(value * double(scale)));
 	}
 
+	inline double Descale(boost::int32_t value, uintmax_t scale) {
+		const auto result = value / double(scale);
+		return result;
+	}
+
 	inline double Descale(boost::int64_t value, uintmax_t scale) {
 		const auto result = value / double(scale);
 		return result;

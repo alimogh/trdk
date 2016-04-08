@@ -185,19 +185,19 @@ namespace trdk { namespace Lib {
 		std::list<std::string> ReadList() const;
 
 		std::list<std::string> ReadList(
-					const std::string &section,
-					bool isRequired)
+				const std::string &section,
+				bool isRequired)
 				const;
 
 		std::set<trdk::Lib::Symbol> ReadSymbols(
-					const std::string &defExchange,
-					const std::string &defPrimaryExchange)
+				const trdk::Lib::SecurityType &defSecurityType,
+				const trdk::Lib::Currency &defCurrency)
 				const;
 
 		std::set<trdk::Lib::Symbol> ReadSymbols(
-					const std::string &section,
-					const std::string &defExchange,
-					const std::string &defPrimaryExchange)
+				const std::string &section,
+				const trdk::Lib::SecurityType &defSecurityType,
+				const trdk::Lib::Currency &defCurrency)
 				const;
 
 	protected:
@@ -361,8 +361,8 @@ namespace trdk { namespace Lib {
 			const;
 
 		std::set<trdk::Lib::Symbol> ReadSymbols(
-				const std::string &defExchange,
-				const std::string &defPrimaryExchange)
+			const trdk::Lib::SecurityType &defSecurityType,
+			const trdk::Lib::Currency &defCurrency)
 			const;
 
 	private:

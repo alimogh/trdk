@@ -25,18 +25,8 @@ namespace trdk {
 	private:
 
 		struct Values {
-
-			//! Default security Exchange.
-			/** Path: Defaults::exchange
-			  * Ex.: exchange = SMART
-			  */
-			std::string defaultExchange;
-			//! Default security Primary Exchange.
-			/** Path: Defaults::primary_exchange
-			  * Ex.: primary_exchange = ARCA
-			  */
-			std::string defaultPrimaryExchange;
-
+			trdk::Lib::SecurityType defaultSecurityType;
+			trdk::Lib::Currency defaultCurrency;
 		};
 
 	public:
@@ -47,9 +37,7 @@ namespace trdk {
 
 	public:
 
-		void Update(
-				const trdk::Lib::Ini &,
-				trdk::Context::Log &);
+		void Update(const trdk::Lib::Ini &, trdk::Context::Log &);
 
 	private:
 
@@ -65,21 +53,21 @@ namespace trdk {
 			return m_logsDir;
 		}
 
-		//! Default security Exchange.
-		/** Path: Defaults::exchange
-		  * Ex.: exchange = SMART
-		  * @sa trdk::Settings::GetDefaultPrimaryExchange
+		//! Default security Currency.
+		/** Path: Defaults::currency
+		  * Ex.: "currency = USD"
 		  */
-		const std::string & GetDefaultExchange() const {
-			return m_values.defaultExchange;
+		const trdk::Lib::Currency & GetDefaultCurrency() const {
+			return m_values.defaultCurrency;
 		}
-		//! Default security Primary Exchange.
-		/** Path: Defaults::primary_exchange
-		  * Ex.: primary_exchange = ARCA
-		  * @sa trdk::Settings::GetDefaultExchange
+
+		//! Default security Security Type.
+		/** Path: Defaults::currency.
+		  * Values: STK, FUT, FOP, FOR, FORFOP
+		  * Ex.: "security_type = FOP"
 		  */
-		const std::string & GetDefaultPrimaryExchange() const {
-			return m_values.defaultPrimaryExchange;
+		const trdk::Lib::SecurityType & GetDefaultSecurityType() const {
+			return m_values.defaultSecurityType;
 		}
 
 	private:

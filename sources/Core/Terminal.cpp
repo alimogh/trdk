@@ -24,97 +24,6 @@ class Terminal::Implementation : private boost::noncopyable {
 
 private:
 
-	class RiskControlScope : public trdk::RiskControlScope {
-	public:
-		RiskControlScope(const TradingMode &tradingMode)
-			: trdk::RiskControlScope(tradingMode),
-			m_name("Terminal") {
-			//...//
-		}
-		virtual ~RiskControlScope() {
-			//...//
-		}
-	public:
-		virtual const std::string & GetName() const {
-			return m_name;
-		}
-		virtual size_t GetIndex() const {
-			return 0;
-		}
-	public:
-		virtual void CheckNewBuyOrder(
-				const RiskControlOperationId &,
-				Security &,
-				const Currency &,
-				const Qty &,
-				const ScaledPrice &) {
-			//...//
-		}
-		virtual void CheckNewSellOrder(
-				const RiskControlOperationId &,
-				Security &,
-				const Currency &,
-				const Qty &,
-				const ScaledPrice &) {
-			//...//
-		}
-		virtual void ConfirmBuyOrder(
-				const RiskControlOperationId &,
-				const OrderStatus &,
-				Security &,
-				const Currency &,
-				const ScaledPrice &/*orderPrice*/,
-				const Qty &/*remainingQty*/,
-				const TradeSystem::TradeInfo *) {
-			//...//
-		}
-		virtual void ConfirmSellOrder(
-				const RiskControlOperationId &,
-				const OrderStatus &,
-				Security &,
-				const Currency &,
-				const ScaledPrice &/*orderPrice*/,
-				const Qty &/*remainingQty*/,
-				const TradeSystem::TradeInfo *) {
-			//...//
-		}
-	public:
-		virtual void CheckTotalPnl(double /*pnl*/) const {
-			//...//
-		}
-		virtual void CheckTotalWinRatio(
-				size_t /*totalWinRatio*/,
-				size_t /*operationsCount*/)
-				const {
-			//...//
-		}
-	public:
-		virtual void ResetStatistics() {
-			AssertFail(
-				"Statistics not available for this Risk Control Context implementation");
-			throw LogicError(
-				"Statistics not available for this Risk Control Context implementation");
-		}
-		virtual FinancialResult GetStatistics() const {
-			AssertFail(
-				"Statistics not available for this Risk Control Context implementation");
-			throw LogicError(
-				"Statistics not available for this Risk Control Context implementation");
-		}
-		virtual FinancialResult TakeStatistics() {
-			AssertFail(
-				"Statistics not available for this Risk Control Context implementation");
-			throw LogicError(
-				"Statistics not available for this Risk Control Context implementation");
-		}
-	public:
-		virtual void OnSettingsUpdate(const IniSectionRef &) {
-			//...//
-		}
-	private:
-		const std::string m_name;
-	};
-
 	class Command : private boost::noncopyable {
 	public:
 		class Exception : public Lib::Exception {
@@ -263,10 +172,7 @@ private:
 			if (m_security) {
 				return false;
 			}
-			const Symbol symbol = Symbol::ParseForeignExchangeContract(
-				Symbol::SECURITY_TYPE_FOR_SPOT,
-				field,
-				"");
+			const Symbol symbol(field);
 			try {
 				m_security = &m_tradeSystem.GetContext().GetSecurity(symbol);
 				return true;
@@ -572,7 +478,7 @@ public:
 	explicit Implementation(const fs::path &cmdFile, TradeSystem &tradeSystem)
 			: m_cmdFile(cmdFile),
 			m_tradeSystem(tradeSystem),
-			m_riskControlScope(m_tradeSystem.GetMode()),
+			m_riskControlScope(m_tradeSystem.GetMode(), "Terminal"),
 			m_notificator(m_cmdFile, [this]() {OnCmdFileChanged();}),
 			m_lastSeqnumber(0) {
 		m_tradeSystem.GetLog().Info(
@@ -763,7 +669,7 @@ private:
 
 	const boost::filesystem::path m_cmdFile;
 	trdk::TradeSystem &m_tradeSystem;
-	RiskControlScope m_riskControlScope;
+	EmptyRiskControlScope m_riskControlScope;
 	trdk::Lib::FileSystemChangeNotificator m_notificator;
 	size_t m_lastSeqnumber;
 

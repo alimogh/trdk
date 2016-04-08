@@ -266,6 +266,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="SecurityType.cpp" />
     <ClCompile Include="Symbol.cpp" />
     <ClCompile Include="SysError.cpp" />
     <ClCompile Include="Exception.cpp" />
@@ -286,6 +287,7 @@
     <ClInclude Include="Log.hpp" />
     <ClInclude Include="Numeric.hpp" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="SecurityType.hpp" />
     <ClInclude Include="SegmentedVector.hpp" />
     <ClInclude Include="Spin.hpp" />
     <ClInclude Include="Symbol.hpp" />

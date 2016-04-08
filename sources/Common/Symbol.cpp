@@ -22,8 +22,8 @@ Symbol::Error::Error(const char *what) throw()
 	//...//
 }
 
-Symbol::StringFormatError::StringFormatError() throw()
-	: Error("Wrong symbol string format") {
+Symbol::StringFormatError::StringFormatError(const char *what) throw()
+	: Error(what) {
 	//...//
 }
 
@@ -49,92 +49,186 @@ Symbol::Data::Data()
 }
 
 Symbol::Symbol(
-		const SecurityType &securityType,
-		const std::string &symbol,
-		const Currency &currency)
-	: m_data(securityType, symbol, currency)
-	, m_hash(0) {
-	if (m_data.symbol.empty()) {
-		throw ParameterError("Symbol can't be empty");
+		const std::string &line,
+		const SecurityType &defSecurityType,
+		const Currency &defCurrency)
+	: m_hash(0) {
+
+	/*
+		 AAPL/201305/USD:NASDAQ/SMART:FUT
+		 AAPL/201305/USD:NASDAQ:FUT
+		 AAPL/201305/USD::FUT
+		 AAPL/USD::STK
+		 AAPL/USD
+		 AAPL
+	*/
+
+	if (line.empty()) {
+		throw StringFormatError("Symbol string can't be empty");
 	}
-}
 
-Symbol::Data::Data(
-		const SecurityType &securityType,
-		const std::string &symbol,
-		const Currency &currency)
-	: securityType(securityType)
-	, symbol(symbol)
-	, strike(.0)
-	, right(numberOfRights)
-	, fotBaseCurrency(numberOfCurrencies)
-	, currency(currency) {
-	AssertNe(currency, numberOfCurrencies);
-}
-
-Symbol::Symbol(
-		const std::string &symbol,
-		const Currency &currency,
-		const std::string &expirationDate,
-		double strike)
-	: m_data(symbol, currency, expirationDate, strike)
-	, m_hash(0) {
-	Assert(!m_data.expirationDate.empty());
-	Assert(!IsZero(m_data.strike));
-	if (m_data.symbol.empty()) {
-		throw ParameterError("Symbol can't be empty");
+	std::vector<std::string> subs;
+	boost::split(subs, line, boost::is_any_of(":"));
+	foreach (auto &s, subs) {
+		boost::trim(s);
 	}
-}
-
-Symbol::Data::Data(
-			const std::string &symbol,
-			const Currency &currency,
-			const std::string &expirationDate,
-			double strike)
-	: securityType(SECURITY_TYPE_FOR_FUTURE_OPTION)
-	, symbol(symbol)
-	, expirationDate(expirationDate)
-	, strike(strike)
-	, right(numberOfRights)
-	, fotBaseCurrency(numberOfCurrencies)
-	, currency(currency) {
-	AssertNe(currency, numberOfCurrencies);
-}
-
-Symbol::Symbol(
-		const SecurityType &securityType,
-		const std::string &symbol,
-		const Currency &currency,
-		const std::string &exchange,
-		const std::string &primaryExchange)
-	: m_data(securityType, symbol, currency, exchange, primaryExchange)
-	, m_hash(0) {
-	Assert(!m_data.symbol.empty());
-	Assert(!m_data.exchange.empty());
-	Assert(!m_data.primaryExchange.empty());
-	if (m_data.symbol.empty()) {
-		throw ParameterError("Symbol can't be empty");
-	} else if (m_data.exchange.empty()) {
-		throw ParameterError("Symbol exchange can't be empty");
-	} else if (m_data.primaryExchange.empty()) {
-		throw ParameterError("Symbol primary exchange can't be empty");
+	if (subs.empty() || subs.size() > 3 || line.empty()) {
+		throw StringFormatError("Format is invalid");
 	}
-}
+	
+	//////////////////////////////////////////////////////////////////////////
+	// Security type - always, last by ":". If type provided - exchanges should
+	// be set or exchange filed should be empty
+	// (ex.: XXX::FUT - two ":" is empty exchange).
 
-Symbol::Data::Data(
-		const SecurityType &securityType,
-		const std::string &symbol,
-		const Currency &currency,
-		const std::string &exchange,
-		const std::string &primaryExchange)
-	: securityType(securityType)
-	, symbol(symbol)
-	, exchange(exchange)
-	, primaryExchange(primaryExchange)
-	, strike(.0)
-	, right(numberOfRights)
-	, currency(currency) {
-	AssertNe(currency, numberOfCurrencies);
+	AssertEq(numberOfSecurityTypes, m_data.securityType);
+	if (subs.size() > 2) {
+		if (subs[2].empty()) {
+			throw StringFormatError("Security type field is empty");
+		}
+		try {
+			m_data.securityType = ConvertSecurityTypeFromString(subs[2]);
+		} catch (const trdk::Lib::Exception &ex) {
+			throw StringFormatError(ex.what());
+		}
+	} else if (defSecurityType == numberOfSecurityTypes) {
+		throw StringFormatError("Security type is not set");
+	} else {
+		m_data.securityType = defSecurityType;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	// Symbol parsing (separated by "/").
+	
+	std::vector<std::string> symbolSubs;
+	boost::split(symbolSubs, subs[0], boost::is_any_of("/"));
+	foreach (auto &s, symbolSubs) {
+		boost::trim(s);
+		if (s.empty()) {
+			throw StringFormatError("One or more symbol fields are empty");
+		}
+	}
+	
+	symbolSubs.front().swap(m_data.symbol);
+	
+	static_assert(numberOfSecurityTypes == 5, "List changed.");
+	size_t currencyIndex = 0;
+	switch (m_data.securityType) {
+		case SECURITY_TYPE_STOCK:
+			if (symbolSubs.size() > 2) {
+				throw StringFormatError("Too many fields for stock symbol");
+			}
+			currencyIndex = 1;
+			break;
+		case SECURITY_TYPE_FUTURES:
+			if (symbolSubs.size() > 3) {
+				throw StringFormatError("Too many fields for futures symbol");
+			} else if (symbolSubs.size() < 2 || symbolSubs[1].empty()) {
+				throw StringFormatError("Expiration date is not set");
+			}
+			symbolSubs[1].swap(m_data.expirationDate);
+			currencyIndex = 2;
+			break;
+		case SECURITY_TYPE_FUTURES_OPTIONS:
+			throw Exception("Futures options symbols are not supported");
+		case SECURITY_TYPE_FOR:
+			if (symbolSubs.size() > 2) {
+				throw StringFormatError(
+					"Too many fields for foreign currency exchange symbol");
+			}
+			currencyIndex = 1;
+			break;
+		case SECURITY_TYPE_FOR_FUTURES_OPTIONS:
+			throw Exception(
+				"Foreign currency exchange futures options symbols"
+					" are not supported");
+		default:
+			AssertEq(SECURITY_TYPE_STOCK, m_data.securityType);
+			throw Exception("System error: Unknown security ID");
+	}
+	
+	AssertLt(0, currencyIndex);
+	if (symbolSubs.size() > currencyIndex) {
+		// Currency is always last:
+		AssertEq(currencyIndex + 1, symbolSubs.size()); 
+		try {
+			m_data.currency
+				= ConvertCurrencyFromIso(symbolSubs[currencyIndex]);
+		} catch (const trdk::Lib::Exception &ex) {
+			throw StringFormatError(ex.what());
+		}
+	} else if (defCurrency == numberOfCurrencies) {
+		throw StringFormatError("Currency is not set");
+	} else {
+		m_data.currency = defCurrency;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Exchange.
+
+	if (subs.size() > 1 && !subs[1].empty()) {
+		
+		std::vector<std::string> exchangeSubs;
+		boost::split(exchangeSubs, subs[1], boost::is_any_of("/"));
+		if (!exchangeSubs.empty()) {
+		
+			foreach (auto &s, exchangeSubs) {
+				boost::trim(s);
+				if (s.empty()) {
+					throw StringFormatError(
+						"One or more exchange fields are empty");
+				}
+			}
+		
+			static_assert(numberOfSecurityTypes == 5, "List changed.");
+			switch (m_data.securityType) {
+				case SECURITY_TYPE_STOCK:
+					if (exchangeSubs.size() > 2) {
+						throw StringFormatError(
+							"Too many fields for stock exchange");
+					} else if (exchangeSubs.size() > 1) {
+						exchangeSubs[0].swap(m_data.primaryExchange);
+						exchangeSubs[1].swap(m_data.exchange);
+					} else {
+						exchangeSubs[0].swap(m_data.exchange);
+					}
+					break;
+				case SECURITY_TYPE_FUTURES:
+					if (exchangeSubs.size() > 1) {
+						throw StringFormatError(
+							"Too many fields for futures exchange");
+					}
+					exchangeSubs[0].swap(m_data.exchange);
+					break;
+				case SECURITY_TYPE_FUTURES_OPTIONS:
+					throw Exception(
+						"Futures options exchanges are not supported");
+				case SECURITY_TYPE_FOR:
+					if (exchangeSubs.size() > 1) {
+						throw StringFormatError(
+							"Too many fields for"
+								" foreign currency exchange exchange");
+					}
+					exchangeSubs[0].swap(m_data.exchange);
+					break;
+				case SECURITY_TYPE_FOR_FUTURES_OPTIONS:
+					throw Exception(
+						"Foreign currency exchange futures options exchanges"
+							" are not supported");
+				default:
+					AssertEq(SECURITY_TYPE_STOCK, m_data.securityType);
+					throw Exception("System error: Unknown security ID");
+
+			}
+		}
+
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
+
 }
 
 Symbol::Symbol(const Symbol &rhs)
@@ -151,142 +245,15 @@ Symbol & Symbol::operator =(const Symbol &rhs) {
 	return *this;
 }
 
-Symbol Symbol::Parse(
-		const std::string &line,
-		const std::string &defExchange,
-		const std::string &defPrimaryExchange) {
-	
-	if (defPrimaryExchange.empty()) {
-		throw ParameterError(
-			"Default symbol primary exchange can't be empty");
-	}
-
-	std::vector<std::string> subs;
-	boost::split(subs, line, boost::is_any_of(":"));
-	foreach (auto &s, subs) {
-		boost::trim(s);
-	}
-
-	std::string primaryExchange = subs.size() >= 2 && !subs[1].empty()
-		?	subs[1]
-		:	defPrimaryExchange;
-	if (boost::iequals(primaryExchange, "FOREX")) {
-		return ParseForeignExchangeContract(
-			Symbol::SECURITY_TYPE_FOR_SPOT,
-			line,
-			defExchange);
-	}
-	
-	Symbol result;
-	result.m_data.securityType = Symbol::SECURITY_TYPE_STOCK;
-	primaryExchange.swap(result.m_data.primaryExchange);
-	result.m_data.symbol = subs[0];
-	if (result.m_data.symbol.empty()) {
-		throw StringFormatError();
-	}
-	result.m_data.exchange = subs.size() >= 3 && !subs[2].empty()
-		?	subs[2]
-		:	defExchange;
-
-	return result;
-
+Symbol::operator bool() const {
+	return m_data.securityType != numberOfSecurityTypes;
 }
 
-Symbol Symbol::ParseForeignExchangeContract(
-		const SecurityType &securityType,
-		const std::string &line,
-		const std::string &defExchange) {
-
-	std::vector<std::string> subs;
-	boost::split(subs, line, boost::is_any_of(":"));
-	foreach (auto &s, subs) {
-		boost::trim(s);
-	}
-	if (subs[0].empty() || subs.size() > 2) {
-		throw StringFormatError();
-	}
-	boost::smatch symbolMatch;
-	if (	!boost::regex_match(
-				subs[0],
-				symbolMatch,
-				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*([a-zA-Z]{3,3})$"))) {
-		throw StringFormatError();
-	}
-	
-	Symbol result;
-	result.m_data.securityType = securityType;
-	result.m_data.symbol = subs[0];
-	result.m_data.exchange = subs.size() >= 2 && !subs[1].empty()
-		?	subs[1]
-		:	defExchange;
-	result.m_data.primaryExchange = "FOREX";
-	result.m_data.fotBaseCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
-	result.m_data.currency
-		= ConvertCurrencyFromIso(symbolMatch.str(2));
-
-	return result;
-
-}
-
-Symbol Symbol::ParseForeignExchangeContractFutureOption(
-		const std::string &line,
-		const std::string &expirationDate,
-		double strike,
-		const Right &right,
-		const std::string &defExchange) {
-
-	Assert(!defExchange.empty());
-	if (defExchange.empty()) {
-		throw ParameterError("Default symbol exchange can't be empty");
-	}
-
-	std::vector<std::string> subs;
-	boost::split(subs, line, boost::is_any_of(":"));
-	foreach (auto &s, subs) {
-		boost::trim(s);
-	}
-	if (subs[0].empty() || subs.size() > 2) {
-		throw StringFormatError();
-	}
-	boost::smatch symbolMatch;
-	if (	!boost::regex_match(
-				subs[0],
-				symbolMatch,
-				boost::regex("^([a-zA-Z]{3,3})[^a-zA-Z]*([a-zA-Z]{3,3})$"))) {
-		throw StringFormatError();
-	}
-
-	Symbol result;
-	result.m_data.securityType = SECURITY_TYPE_FOR_FUTURE_OPTION;
-	result.m_data.symbol = subs[0];
-	result.m_data.exchange = subs.size() >= 2 && !subs[1].empty()
-		?	subs[1]
-		:	defExchange;
-	result.m_data.expirationDate = expirationDate;
-	result.m_data.strike = strike;
-	result.m_data.right = right;
-	result.m_data.fotBaseCurrency = ConvertCurrencyFromIso(symbolMatch.str(1));
-	result.m_data.currency
-		= ConvertCurrencyFromIso(symbolMatch.str(2));
-
-	return result;
-
-}
 
 std::string Symbol::GetAsString() const {
 	std::ostringstream os;
 	os << *this;
 	return os.str();
-}
-
-Symbol::operator bool() const {
-	Assert(
-		m_data.securityType != numberOfSecurityTypes
-		|| (m_data.symbol.empty()
-			&& m_data.exchange.empty()
-			&& m_data.primaryExchange.empty()
-			&& m_hash == 0));
-	return m_data.securityType != numberOfSecurityTypes;
 }
 
 bool Symbol::operator <(const Symbol &rhs) const {
@@ -298,8 +265,20 @@ bool Symbol::operator <(const Symbol &rhs) const {
 		return true;
 	} else if (m_data.exchange != rhs.m_data.exchange) {
 		return false;
+	} else if (m_data.currency < rhs.m_data.currency) {
+		return true;
+	} else if (m_data.currency != rhs.m_data.currency) {
+		return false;
+	} else if (m_data.symbol < rhs.m_data.symbol) {
+		return true;
+	} else if (m_data.symbol != rhs.m_data.symbol) {
+		return false;
+	} else if (m_data.securityType < rhs.m_data.securityType) {
+		return true;
+	} else if (m_data.securityType != rhs.m_data.securityType) {
+		return false;
 	} else {
-		return m_data.symbol < rhs.m_data.symbol;
+		return m_data.expirationDate < rhs.m_data.expirationDate;
 	}
 }
 
@@ -320,7 +299,10 @@ bool Symbol::operator ==(const Symbol &rhs) const {
 		return m_hash == rhs.m_hash;
 	} else {
 		return
-			m_data.symbol == rhs.m_data.symbol
+			m_data.securityType == rhs.m_data.securityType
+			&& m_data.currency == rhs.m_data.currency
+			&& m_data.symbol == rhs.m_data.symbol
+			&& m_data.expirationDate == rhs.m_data.expirationDate
 			&& m_data.exchange == rhs.m_data.exchange
 			&& m_data.primaryExchange == rhs.m_data.primaryExchange;
 	}
@@ -340,15 +322,20 @@ Symbol::Hash Symbol::GetHash() const {
 	return m_hash;
 }
 
-const Symbol::SecurityType & Symbol::GetSecurityType() const {
+const SecurityType & Symbol::GetSecurityType() const {
+	AssertNe(numberOfSecurityTypes, m_data.securityType);
 	return m_data.securityType;
 }
 
 const std::string & Symbol::GetSymbol() const {
+	Assert(!m_data.symbol.empty());
 	return m_data.symbol;
 }
-		
+
 const std::string & Symbol::GetExchange() const {
+	if (m_data.exchange.empty()) {
+		throw Lib::LogicError("Symbol doesn't have Exchange");
+	}
 	return m_data.exchange;
 }
 		
@@ -360,6 +347,9 @@ const std::string & Symbol::GetPrimaryExchange() const {
 }
 
 const std::string & Symbol::GetExpirationDate() const {
+	if (m_data.expirationDate.empty()) {
+		throw Lib::LogicError("Symbol doesn't have Expiration Date");
+	}
 	return m_data.expirationDate;
 }
 
@@ -401,9 +391,7 @@ std::string Symbol::GetRightAsString() const {
 }
 
 const Currency & Symbol::GetCurrency() const {
-	if (m_data.currency == numberOfCurrencies) {
-		throw Lib::LogicError("Symbol doesn't have Currency");
-	}
+	AssertNe(numberOfCurrencies, m_data.currency);
 	return m_data.currency;
 }
 
@@ -425,41 +413,37 @@ const Currency & Symbol::GetFotQuoteCurrency() const {
 
 std::ostream & std::operator <<(std::ostream &os, const Symbol &symbol) {
 	// If changing here - look at Symbol::GetHash, how hash creating.
-	static_assert(Symbol::numberOfSecurityTypes == 5, "Security list changed.");
+	static_assert(numberOfSecurityTypes == 5, "List changed.");
 	switch (symbol.GetSecurityType()) {
-		case Symbol::SECURITY_TYPE_STOCK:
+		case SECURITY_TYPE_STOCK:
 			os
 				<< symbol.GetSymbol()
-				<< ":" << symbol.GetPrimaryExchange();
+				<< '/' << symbol.GetCurrency()
+				<< ':' << symbol.GetPrimaryExchange();
 			if (!symbol.GetExchange().empty()) {
 				os << ':' << symbol.GetExchange();
 			}
 			break;
-		case Symbol::SECURITY_TYPE_FOR_FUTURE_OPTION:
-			os << symbol.GetSymbol();
+		case SECURITY_TYPE_FOR:
+			os << symbol.GetSymbol() << '/' << symbol.GetCurrency();
 			if (!symbol.GetExchange().empty()) {
 				os << ':' << symbol.GetExchange();
 			}
-			os
-				<< ':' << symbol.GetExpirationDate()
-				<< ':' << symbol.GetStrike()
-				<< ':' << symbol.GetRightAsString()
-				<< " (FOP)";
 			break;
-		case Symbol::SECURITY_TYPE_FOR_SPOT:
+		case SECURITY_TYPE_FUTURES:
 			os
 				<< symbol.GetSymbol()
-				<< ":" << symbol.GetPrimaryExchange();
-			if (!symbol.GetExchange().empty()) {
-				os << ':' << symbol.GetExchange();
-			}
-			os << " (CASH)";
+				<< '/' << symbol.GetExpirationDate()
+				<< '/' << symbol.GetCurrency()
+				<< ':' << symbol.GetExchange();
 			break;
+		case SECURITY_TYPE_FOR_FUTURES_OPTIONS:
 		default:
-			AssertEq(Symbol::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
+			AssertEq(SECURITY_TYPE_STOCK, symbol.GetSecurityType());
 			os << "<UNKNOWN>";
-			break;
+			return os;
 	}
+	os << " (" << symbol.GetSecurityType() << ')';
 	return os;
 }
 

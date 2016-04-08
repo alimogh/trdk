@@ -35,39 +35,40 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 
 Ini::Error::Error(const char *what) throw()
-		: Exception(what) {
+	: Exception(what) {
 	//...//
 }
 
 Ini::KeyNotExistsError::KeyNotExistsError(const char *what) throw()
-		: Error(what) {
+	: Error(what) {
 	//...//
 }
 
 Ini::SectionNotExistsError::SectionNotExistsError(const char *what) throw()
-		: Error(what) {
+	: Error(what) {
 	//...//
 }
 
 Ini::KeyFormatError::KeyFormatError(const char *what) throw()
-		: Error(what) {
+	: Error(what) {
 	//...//
 }
 
 Ini::SectionNotUnique::SectionNotUnique() throw()
-		: Error("Section is not unique")  {
+	: Error("Section is not unique")  {
 	//...//
 }
 
 boost::int64_t Ini::AbsoluteOrPercentsPrice::Get(
-			boost::int64_t fullVal)
+		boost::int64_t fullVal)
 		const {
 	return isAbsolute
 		?	value.absolute
 		:	boost::int64_t(boost::math::round(fullVal * value.percents));
 }
 
-std::string Ini::AbsoluteOrPercentsPrice::GetStr(unsigned long priceScale)
+std::string Ini::AbsoluteOrPercentsPrice::GetStr(
+		unsigned long priceScale)
 		const {
 	return isAbsolute
 		?	boost::lexical_cast<std::string>(
@@ -113,9 +114,9 @@ Ini::SectionList Ini::ReadSectionsList() const {
 }
 
 void Ini::ReadSection(
-			const std::string &section,
-			const boost::function<bool(const std::string &)> &readLine,
-			bool isRequired)
+		const std::string &section,
+		const boost::function<bool(const std::string &)> &readLine,
+		bool isRequired)
 		const {
 	const_cast<Ini *>(this)->Reset();
 	bool isInSection = false;
@@ -204,8 +205,8 @@ void Ini::ForEachKey(
 }
 
 std::string Ini::ReadKey(
-			const std::string &section,
-			const std::string &key)
+		const std::string &section,
+		const std::string &key)
 		const {
 	bool isKeyExists = false;
 	std::string result;
@@ -240,9 +241,9 @@ std::string Ini::ReadKey(
 }
 
 std::string Ini::ReadKey(
-			const std::string &section,
-			const std::string &key,
-			const std::string &defaultValue)
+		const std::string &section,
+		const std::string &key,
+		const std::string &defaultValue)
 		const {
 	try {
 		return ReadKey(section, key);
@@ -252,16 +253,16 @@ std::string Ini::ReadKey(
 }
 
 fs::path Ini::ReadFileSystemPath(
-			const std::string &section,
-			const std::string &key)
+		const std::string &section,
+		const std::string &key)
 		const {
 	return Normalize(fs::path(ReadKey(section, key)));
 }
 
 Ini::AbsoluteOrPercentsPrice Ini::ReadAbsoluteOrPercentsPriceKey(
-			const std::string &section,
-			const std::string &key,
-			unsigned long priceScale)
+		const std::string &section,
+		const std::string &key,
+		unsigned long priceScale)
 		const {
 	AbsoluteOrPercentsPrice result = {};
 	std::string val = ReadKey(section, key);
@@ -336,9 +337,9 @@ bool Ini::ReadBoolKey(
 }
 
 bool Ini::ReadBoolKey(
-			const std::string &section,
-			const std::string &key,
-			bool defaultValue)
+		const std::string &section,
+		const std::string &key,
+		bool defaultValue)
 		const {
 	try {
 		return ReadBoolKey(section, key);
@@ -362,8 +363,8 @@ std::list<std::string> Ini::ReadList() const {
 }
 
 std::list<std::string> Ini::ReadList(
-			const std::string &section,
-			bool isRequired)
+		const std::string &section,
+		bool isRequired)
 		const {
 	std::list<std::string> result;
 	ReadSection(
@@ -377,26 +378,24 @@ std::list<std::string> Ini::ReadList(
 }
 
 std::set<Symbol> Ini::ReadSymbols(
-			const std::string &defExchange,
-			const std::string &defPrimaryExchange)
+		const SecurityType &defSecurityType,
+		const Currency &defCurrency)
 		const {
 	std::set<Symbol> result;
 	foreach (const auto &l, ReadList())  {
-		result.insert(
-			Symbol::Parse(l, defExchange, defPrimaryExchange));
+		result.insert(Symbol(l, defSecurityType, defCurrency));
 	}
 	return result;
 }
 
 std::set<Symbol> Ini::ReadSymbols(
-			const std::string &section,
-			const std::string &defExchange,
-			const std::string &defPrimaryExchange)
+		const std::string &section,
+		const SecurityType &defSecurityType,
+		const Currency &defCurrency)
 		const {
 	std::set<Symbol> result;
 	foreach (const auto &l, ReadList(section, true))  {
-		result.insert(
-			Symbol::Parse(l, defExchange, defPrimaryExchange));
+		result.insert(Symbol(l, defSecurityType, defCurrency));
 	}
 	return result;
 }
@@ -440,10 +439,10 @@ IniFile::~IniFile() {
 //////////////////////////////////////////////////////////////////////////
 
 IniSectionRef::IniSectionRef(
-			const Ini &base,
-			const std::string &name)
-		: m_base(&base),
-		m_name(name) {
+		const Ini &base,
+		const std::string &name)
+	: m_base(&base)
+	, m_name(name) {
 	//...//
 }
 
@@ -452,10 +451,10 @@ bool IniSectionRef::IsKeyExist(const std::string &key) const {
 }
 
 void IniSectionRef::ForEachKey(
-			const boost::function<
-					bool(const std::string &key, const std::string &value)>
-				&pred,
-			bool isRequired)
+		const boost::function<
+				bool(const std::string &key, const std::string &value)>
+			&pred,
+		bool isRequired)
 		const {
 	GetBase().ForEachKey(GetName(), pred, isRequired);
 }
@@ -465,9 +464,9 @@ std::string IniSectionRef::ReadKey(const std::string &key) const {
 }
 
 std::string IniSectionRef::ReadKey(
-				const std::string &key,
-				const std::string &defaultValue)
-			const {
+		const std::string &key,
+		const std::string &defaultValue)
+		const {
 	return GetBase().ReadKey(GetName(), key, defaultValue);
 }
 
@@ -477,8 +476,8 @@ fs::path IniSectionRef::ReadFileSystemPath(const std::string &key) const {
 
 IniFile::AbsoluteOrPercentsPrice
 IniSectionRef::ReadAbsoluteOrPercentsPriceKey(
-			const std::string &key,
-			unsigned long priceScale)
+		const std::string &key,
+		unsigned long priceScale)
 		const {
 	return GetBase().ReadAbsoluteOrPercentsPriceKey(GetName(), key, priceScale);
 }
@@ -488,8 +487,8 @@ bool IniSectionRef::ReadBoolKey(const std::string &key) const {
 }
 
 bool IniSectionRef::ReadBoolKey(
-			const std::string &key,
-			bool defaultValue)
+		const std::string &key,
+		bool defaultValue)
 		const {
 	return GetBase().ReadBoolKey(GetName(), key, defaultValue);
 }
@@ -499,10 +498,10 @@ std::list<std::string> IniSectionRef::ReadList(bool isRequired) const {
 }
 
 std::set<Symbol> IniSectionRef::ReadSymbols(
-			const std::string &defExchange,
-			const std::string &defPrimaryExchange)
+		const SecurityType &defSecurityType,
+		const Currency &defCurrency)
 		const {
-	return GetBase().ReadSymbols(GetName(), defExchange, defPrimaryExchange);
+	return GetBase().ReadSymbols(GetName(), defSecurityType, defCurrency);
 }
 
 std::ostream & std::operator <<(

@@ -10,10 +10,13 @@
 
 #include "Prec.hpp"
 #include "Services/MovingAverageService.hpp"
-#include "Context.hpp"
+#include "MockContext.hpp"
+#include "MockMarketDataSource.hpp"
 
 namespace lib = trdk::Lib;
 namespace svc = trdk::Services;
+
+using namespace trdk::Tests;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -164,168 +167,178 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace trdk { namespace Testing {
+namespace trdk { namespace Tests {
 
+	////////////////////////////////////////////////////////////////////////////////
+	
 	template<typename Policy>
 	class MovingAverageServiceTypedTest : public testing::Test {
 		//...//
 	};
 	TYPED_TEST_CASE_P(MovingAverageServiceTypedTest);
 
-} }
+	////////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////////////
-
-using namespace trdk::Testing;
-
-TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
+	TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 	
-	typedef typename TypeParam Policy;
+		typedef typename TypeParam Policy;
 
-	boost::format settingsString(
-		"[Section]\n"
-			"type = %1%\n"
-			"history = yes\n"
-			"period = 10");
-	settingsString % Policy::GetType();
-	const lib::IniString settings(settingsString.str());
-	Context context;
+		boost::format settingsString(
+			"[Section]\n"
+				"type = %1%\n"
+				"history = yes\n"
+				"period = 10");
+		settingsString % Policy::GetType();
+		const lib::IniString settings(settingsString.str());
+		
+		MockContext context;
+		MockMarketDataSource marketDataSource(0, context, std::string("0"));
+		const Security security(
+			context,
+			lib::Symbol("TEST_SCALE2"),
+			marketDataSource);
 
-	svc::MovingAverageService service(
-		context,
-		"Tag",
-		lib::IniSectionRef(settings, "Section"));
+		svc::MovingAverageService service(
+			context,
+			"Tag",
+			lib::IniSectionRef(settings, "Section"));
 
-	for (size_t i = 0; i < _countof(source); ++i) {
-		svc::BarService::Bar bar;
-		bar.closeTradePrice = lib::Scale(source[i][0], 100);
-		ASSERT_EQ(
-				!lib::IsZero(source[i][Policy::GetColumn()]),
-				service.OnNewBar(bar))
-			<< "i = " << i << ";"
-			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
-		if (!lib::IsZero(source[i][Policy::GetColumn()])) {
-			EXPECT_EQ(
-					source[i][0],
-					lib::Descale(service.GetLastPoint().source, 100))
+		
+		for (size_t i = 0; i < _countof(source); ++i) {
+			svc::BarService::Bar bar;
+			bar.closeTradePrice = ScaledPrice(lib::Scale(source[i][0], 100));
+			ASSERT_EQ(
+					!lib::IsZero(source[i][Policy::GetColumn()]),
+					service.OnNewBar(security, bar))
 				<< "i = " << i << ";"
-				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
-				<< " service.GetLastPoint().value = "
-					<< service.GetLastPoint().value << ";";
-			EXPECT_EQ(
-					source[i][Policy::GetColumn()],
-					lib::Descale(service.GetLastPoint().value, 100))
-				<< "i = " << i << ";"
-				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
-				<< " service.GetLastPoint().value = "
-					<< service.GetLastPoint().value << ";";
+				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
+			if (!lib::IsZero(source[i][Policy::GetColumn()])) {
+				EXPECT_DOUBLE_EQ(
+						source[i][0],
+						service.GetLastPoint().source)
+					<< "i = " << i << ";"
+					<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
+					<< " service.GetLastPoint().value = "
+						<< service.GetLastPoint().value << ";";
+				EXPECT_EQ(
+						source[i][Policy::GetColumn()],
+						service.GetLastPoint().value)
+					<< "i = " << i << ";"
+					<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
+					<< " service.GetLastPoint().value = "
+						<< service.GetLastPoint().value << ";";
+			}
 		}
+
+		ASSERT_NO_THROW(service.GetHistorySize());
+		ASSERT_EQ(_countof(source) - 10, service.GetHistorySize());
+		EXPECT_THROW(
+			service.GetHistoryPoint(_countof(source) - 10),
+			svc::MovingAverageService::ValueDoesNotExistError);
+		EXPECT_THROW(
+			service.GetHistoryPointByReversedIndex(_countof(source) - 10),
+			svc::MovingAverageService::ValueDoesNotExistError);
+
+		size_t offset = 9;
+		for (size_t i = 0; i < service.GetHistorySize(); ++i) {
+			auto pos = i + offset;
+			if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
+				++offset;
+				++pos;
+			}
+			ASSERT_EQ(
+					source[pos][Policy::GetColumn()],
+					lib::Descale(service.GetHistoryPoint(i).value, 100))
+				<< "i = " << i << ";"
+				<< " pos = " << pos << ";";
+		}
+		offset = 0;
+		for (size_t i = 0; i < service.GetHistorySize(); ++i) {
+			auto pos = _countof(source) - 1 - i - offset;
+			if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
+				++offset;
+				--pos;
+			}
+			ASSERT_EQ(
+					source[pos][Policy::GetColumn()],
+					lib::Descale(
+						service.GetHistoryPointByReversedIndex(i).value,
+						100))
+				<< "i = " << i << ";"
+				<< " pos = " << pos << ";";
+		}
+
 	}
 
-	ASSERT_NO_THROW(service.GetHistorySize());
-	ASSERT_EQ(_countof(source) - 10, service.GetHistorySize());
-	EXPECT_THROW(
-		service.GetHistoryPoint(_countof(source) - 10),
-		svc::MovingAverageService::ValueDoesNotExistError);
-	EXPECT_THROW(
-		service.GetHistoryPointByReversedIndex(_countof(source) - 10),
-		svc::MovingAverageService::ValueDoesNotExistError);
+	TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 
-	size_t offset = 9;
-	for (size_t i = 0; i < service.GetHistorySize(); ++i) {
-		auto pos = i + offset;
-		if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
-			++offset;
-			++pos;
-		}
-		ASSERT_EQ(
-				source[pos][Policy::GetColumn()],
-				lib::Descale(service.GetHistoryPoint(i).value, 100))
-			<< "i = " << i << ";"
-			<< " pos = " << pos << ";";
-	}
-	offset = 0;
-	for (size_t i = 0; i < service.GetHistorySize(); ++i) {
-		auto pos = _countof(source) - 1 - i - offset;
-		if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
-			++offset;
-			--pos;
-		}
-		ASSERT_EQ(
-				source[pos][Policy::GetColumn()],
-				lib::Descale(
-					service.GetHistoryPointByReversedIndex(i).value,
-					100))
-			<< "i = " << i << ";"
-			<< " pos = " << pos << ";";
-	}
+		typedef typename TypeParam Policy;
 
-}
+		boost::format settingsString(
+			"[Section]\n"
+				"type = %1%\n"
+				"period = 10");
+		settingsString % Policy::GetType();
+		const lib::IniString settings(settingsString.str());
+		
+		MockContext context;
+		MockMarketDataSource marketDataSource(0, context, std::string("0"));
+		const Security security(
+			context,
+			lib::Symbol("TEST_SCALE2"),
+			marketDataSource);
 
-TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
+		svc::MovingAverageService service(
+			context,
+			"Tag",
+			lib::IniSectionRef(settings, "Section"));
 
-	typedef typename TypeParam Policy;
-
-	boost::format settingsString(
-		"[Section]\n"
-			"type = %1%\n"
-			"period = 10");
-	settingsString % Policy::GetType();
-	const lib::IniString settings(settingsString.str());
-	Context context;
-
-	svc::MovingAverageService service(
-		context,
-		"Tag",
-		lib::IniSectionRef(settings, "Section"));
-
-	for (size_t i = 0; i < _countof(source); ++i) {
-		svc::BarService::Bar bar;
-		bar.closeTradePrice = lib::Scale(source[i][0], 100);
-		ASSERT_EQ(
-				!lib::IsZero(source[i][Policy::GetColumn()]),
-				service.OnNewBar(bar))
-			<< "i = " << i << ";"
-			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
-		if (!lib::IsZero(source[i][Policy::GetColumn()])) {
-			EXPECT_EQ(
-					source[i][0],
-					lib::Descale(service.GetLastPoint().source, 100))
+		for (size_t i = 0; i < _countof(source); ++i) {
+			svc::BarService::Bar bar;
+			bar.closeTradePrice = ScaledPrice(lib::Scale(source[i][0], 100));
+			ASSERT_EQ(
+					!lib::IsZero(source[i][Policy::GetColumn()]),
+					service.OnNewBar(security, bar))
 				<< "i = " << i << ";"
-				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
-				<< " service.GetLastPoint().value = "
-					<< service.GetLastPoint().value << ";";
-			EXPECT_EQ(
-					source[i][Policy::GetColumn()],
-					lib::Descale(service.GetLastPoint().value, 100))
-				<< "i = " << i << ";"
-				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
-				<< " service.GetLastPoint().value = "
-					<< service.GetLastPoint().value << ";";
+				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
+			if (!lib::IsZero(source[i][Policy::GetColumn()])) {
+				EXPECT_EQ(
+						source[i][0],
+						lib::Descale(service.GetLastPoint().source, 100))
+					<< "i = " << i << ";"
+					<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
+					<< " service.GetLastPoint().value = "
+						<< service.GetLastPoint().value << ";";
+				EXPECT_EQ(
+						source[i][Policy::GetColumn()],
+						lib::Descale(service.GetLastPoint().value, 100))
+					<< "i = " << i << ";"
+					<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
+					<< " service.GetLastPoint().value = "
+						<< service.GetLastPoint().value << ";";
+			}
 		}
+
+		EXPECT_THROW(
+			service.GetHistorySize(),
+			svc::MovingAverageService::HasNotHistory);
+		EXPECT_THROW(
+			service.GetHistoryPoint(0),
+			svc::MovingAverageService::HasNotHistory);
+		EXPECT_THROW(
+			service.GetHistoryPointByReversedIndex(0),
+			svc::MovingAverageService::HasNotHistory);
+
 	}
 
-	EXPECT_THROW(
-		service.GetHistorySize(),
-		svc::MovingAverageService::HasNotHistory);
-	EXPECT_THROW(
-		service.GetHistoryPoint(0),
-		svc::MovingAverageService::HasNotHistory);
-	EXPECT_THROW(
-		service.GetHistoryPointByReversedIndex(0),
-		svc::MovingAverageService::HasNotHistory);
+	////////////////////////////////////////////////////////////////////////////////
 
-}
+	REGISTER_TYPED_TEST_CASE_P(
+		MovingAverageServiceTypedTest,
+		RealTimeWithHistory,
+		RealTimeWithoutHistory);
 
-////////////////////////////////////////////////////////////////////////////////
-
-
-REGISTER_TYPED_TEST_CASE_P(
-	MovingAverageServiceTypedTest,
-	RealTimeWithHistory,
-	RealTimeWithoutHistory);
-
-namespace trdk { namespace Testing {
+	////////////////////////////////////////////////////////////////////////////////
 
 	typedef ::testing::Types<SmaTrait, EmaTrait, SmMaTrait>
 		MovingAverageServiceTestPolicies;
@@ -334,6 +347,8 @@ namespace trdk { namespace Testing {
 		MovingAverageService,
 		MovingAverageServiceTypedTest,
 		MovingAverageServiceTestPolicies);
+
+	////////////////////////////////////////////////////////////////////////////////
 
 } }
 

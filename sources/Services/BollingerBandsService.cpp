@@ -29,19 +29,19 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 
 BollingerBandsService::Error::Error(const char *what) throw()
-		: Exception(what) {
+	: Exception(what) {
 	//...//
 }
 
 BollingerBandsService::ValueDoesNotExistError::ValueDoesNotExistError(
-			const char *what) throw()
-		: Error(what) {
+		const char *what) throw()
+	: Error(what) {
 	//...//
 }
 
 BollingerBandsService::HasNotHistory::HasNotHistory(
-			const char *what) throw()
-		: Error(what) {
+		const char *what) throw()
+	: Error(what) {
 	//...//
 }
 
@@ -58,8 +58,8 @@ namespace { namespace Configuration {
 	}
 
 	size_t LoadPeriodSetting(
-				const IniSectionRef &configuration,
-				BollingerBandsService &service) {
+			const IniSectionRef &configuration,
+			BollingerBandsService &service) {
 		const auto &result
 			= configuration.ReadTypedKey<uintmax_t>(Keys::period, 20);
 		if (result <= 1) {
@@ -72,8 +72,8 @@ namespace { namespace Configuration {
 	}
 
 	size_t LoadDeviationSetting(
-				const IniSectionRef &configuration,
-				BollingerBandsService &service) {
+			const IniSectionRef &configuration,
+			BollingerBandsService &service) {
 		const auto &result
 			= configuration.ReadTypedKey<uintmax_t>(Keys::deviation, 2);
 		if (result <= 0) {
@@ -86,8 +86,8 @@ namespace { namespace Configuration {
 	}
 
 	History * LoadHistorySetting(
-				const IniSectionRef &configuration,
-				BollingerBandsService &) {
+			const IniSectionRef &configuration,
+			BollingerBandsService &) {
 		if (!configuration.ReadBoolKey(Keys::isHistoryOn, false)) {
 			return nullptr;
 		}
@@ -113,7 +113,7 @@ namespace boost { namespace accumulators {
 
 			template<typename Args>
 			StandardDeviationForBb(const Args &args)
-					: m_windowSize(args[rolling_window_size]) {
+				: m_windowSize(args[rolling_window_size]) {
 				//...//
 			}
 
@@ -182,16 +182,16 @@ public:
 public:
 
 	explicit Implementation(
-				BollingerBandsService &service,
-				const IniSectionRef &configuration)
-			: m_service(service),
-			m_isEmpty(true),
-			m_period(
-				Configuration::LoadPeriodSetting(configuration, m_service)),
-			m_deviation(
-				Configuration::LoadDeviationSetting(configuration, m_service)),
-			m_stat(accs::tag::rolling_window::window_size = m_period),
-			m_history(
+			BollingerBandsService &service,
+			const IniSectionRef &configuration)
+		: m_service(service)
+		, m_isEmpty(true)
+		, m_period(
+			Configuration::LoadPeriodSetting(configuration, m_service))
+		, m_deviation(
+			Configuration::LoadDeviationSetting(configuration, m_service))
+		, m_stat(accs::tag::rolling_window::window_size = m_period)
+		, m_history(
 				Configuration::LoadHistorySetting(configuration, m_service)) {
 		m_service.GetLog().Info(
 			"Initial: %1% = %2%, %3% = %4% frames, %5% = %6%.",
@@ -202,7 +202,7 @@ public:
 
 	void CheckHistoryIndex(size_t index) const {
 		if (!m_history) {
-			throw HasNotHistory("BollingerBandsService hasn't history");
+			throw HasNotHistory("BollingerBandsService doesn't have history");
 		} else if (index >= m_history->GetSize()) {
 			throw ValueDoesNotExistError(
 				m_history->IsEmpty()
@@ -228,10 +228,10 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 BollingerBandsService::BollingerBandsService(
-			Context &context,
-			const std::string &tag,
-			const IniSectionRef &configuration)
-		: Service(context, "BollingerBandsService", tag) {
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration)
+	: Service(context, "BollingerBandsService", tag) {
 	m_pimpl = new Implementation(*this, configuration);
 }
 
@@ -282,7 +282,6 @@ bool BollingerBandsService::IsEmpty() const {
 }
 
 BollingerBandsService::Point BollingerBandsService::GetLastPoint() const {
-	const Lock lock(GetMutex());
 	if (!m_pimpl->m_lastValue) {
 		throw ValueDoesNotExistError("MovingAverageService is empty");
 	}
@@ -290,48 +289,37 @@ BollingerBandsService::Point BollingerBandsService::GetLastPoint() const {
 }
 
 size_t BollingerBandsService::GetHistorySize() const {
-	const Lock lock(GetMutex());
 	if (!m_pimpl->m_history) {
-		throw HasNotHistory("MovingAverageService hasn't history");
+		throw HasNotHistory("MovingAverageService doesn't have history");
 	}
 	return m_pimpl->m_history->GetSize();
 }
 
 BollingerBandsService::Point BollingerBandsService::GetHistoryPoint(
-			size_t index)
+		size_t index)
 		const {
-	const Lock lock(GetMutex());
 	m_pimpl->CheckHistoryIndex(index);
 	return (*m_pimpl->m_history)[index];
 }
 
 BollingerBandsService::Point
 BollingerBandsService::GetHistoryPointByReversedIndex(
-			size_t index)
+		size_t index)
 		const {
-	const Lock lock(GetMutex());
 	m_pimpl->CheckHistoryIndex(index);
 	return (*m_pimpl->m_history)[m_pimpl->m_history->GetSize() - index - 1];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef BOOST_WINDOWS
-	boost::shared_ptr<trdk::Service> CreateBollingerBandsService(
-				Context &context,
-				const std::string &tag,
-				const IniSectionRef &configuration) {
-		return boost::shared_ptr<trdk::Service>(
-			new BollingerBandsService(context, tag, configuration));
-	}
-#else
-	extern "C" boost::shared_ptr<trdk::Service> CreateBollingerBandsService(
-				Context &context,
-				const std::string &tag,
-				const IniSectionRef &configuration) {
-		return boost::shared_ptr<trdk::Service>(
-			new BollingerBandsService(context, tag, configuration));
-	}
-#endif
+TRDK_SERVICES_API boost::shared_ptr<trdk::Service> CreateBollingerBandsService(
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration) {
+	return boost::make_shared<BollingerBandsService>(
+		context,
+		tag,
+		configuration);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
