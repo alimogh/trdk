@@ -60,9 +60,12 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 
 		size_t CalcBookNumberOfUpdates() const;
 
+	public:
+
+		virtual void OnServiceStart(const Service &);
+
 	protected:
 		
-		virtual void OnServiceStart(const Service &);
 		virtual void OnServiceDataUpdate(
 				const Service &,
 				const Lib::TimeMeasurement::Milestones &);
