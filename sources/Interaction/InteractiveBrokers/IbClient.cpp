@@ -1268,13 +1268,17 @@ void Client::tickPrice(
 			valueCtor = Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>;
 			break;
 	}
-	const auto &timeMeasurement = m_ts.GetContext().StartStrategyTimeMeasurement();
+	const auto &timeMeasurement
+		= m_ts.GetContext().StartStrategyTimeMeasurement();
 	const auto &now = m_ts.GetContext().GetCurrentTime();
 	ib::Security *const security = GetMarketDataRequest(tickerId);
 	if (!security) {
 		return;
 	}
-	security->AddLevel1Tick(now, valueCtor(security->ScalePrice(price)), timeMeasurement);
+	security->AddLevel1Tick(
+		now,
+		valueCtor(security->ScalePrice(price)),
+		timeMeasurement);
 }
 
 void Client::tickSize(
