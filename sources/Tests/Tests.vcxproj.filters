@@ -12,6 +12,9 @@
     <Filter Include="Tests">
       <UniqueIdentifier>{4669332f-e99e-471a-92ee-eaecea72e893}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Tests\Strategies">
+      <UniqueIdentifier>{e17ee512-ff28-4bd5-ae4c-58f13ecf33f7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MockContext.hpp">
@@ -42,6 +45,9 @@
     <ClCompile Include="Prec.cpp" />
     <ClCompile Include="SymbolTest.cpp">
       <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="GadMEmaFuturesStrategyTest.cpp">
+      <Filter>Tests\Strategies</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
