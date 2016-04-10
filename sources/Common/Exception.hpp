@@ -27,6 +27,10 @@ namespace trdk { namespace Lib {
 
 		Exception & operator =(const Exception &) throw();
 
+		friend std::ostream & operator <<(
+				std::ostream &,
+				const trdk::Lib::Exception &);
+
 	public:
 
 		virtual const char * what() const throw();
@@ -76,11 +80,3 @@ namespace trdk { namespace Lib {
 	//////////////////////////////////////////////////////////////////////////
 
 } }
-
-namespace std {
-
-	std::ostream & operator <<(
-			std::ostream &,
-			const trdk::Lib::Exception &);
-
-}

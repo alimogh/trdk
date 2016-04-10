@@ -13,18 +13,20 @@
 #include "Core/TradingLog.hpp"
 #include "Core/Settings.hpp"
 
+using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::Tests;
 
 namespace {
-	trdk::Context::Log contextLog;
-	trdk::Context::TradingLog tradingLog;
+	Context::Log contextLog;
+	Context::TradingLog tradingLog;
 }
 
 MockContext::MockContext()
 	: Context(
 		contextLog,
 		tradingLog,
-		trdk::Settings(false, boost::filesystem::path()),
+		Settings(false, boost::filesystem::path()),
 		boost::posix_time::microsec_clock::local_time()) {
 	//...//
 }

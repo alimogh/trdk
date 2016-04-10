@@ -35,7 +35,8 @@ namespace { namespace Configuration { namespace Keys {
 namespace {
 
 	enum MaSource {
-		MA_SOURCE_CLOSE_TRADE_PRICE,
+		MA_SOURCE_CLOSE_PRICE,
+		MA_SOURCE_LAST_PRICE,
 		numberOfMaSources
 	};
 
@@ -47,7 +48,8 @@ namespace {
 	};
 
 	typedef boost::variant<
-			MaSourceToType<MA_SOURCE_CLOSE_TRADE_PRICE>>
+			MaSourceToType<MA_SOURCE_CLOSE_PRICE>,
+			MaSourceToType<MA_SOURCE_LAST_PRICE>>
 		MaSourceInfo;
 
 	struct GetMaSourceVisitor : public boost::static_visitor<MaSource> {
@@ -60,22 +62,47 @@ namespace {
 		return boost::apply_visitor(GetMaSourceVisitor(), info);
 	}
 
-	class ExtractFrameValueVisitor : public boost::static_visitor<ScaledPrice> {
-		static_assert(numberOfMaSources == 1, "MA Sources list changed.");
+	class ExtractBarValueVisitor : public boost::static_visitor<ScaledPrice> {
+		static_assert(numberOfMaSources == 2, "MA Sources list changed.");
 	public:
-		explicit ExtractFrameValueVisitor(const BarService::Bar &barRef)
+		explicit ExtractBarValueVisitor(const BarService::Bar &barRef)
 			: m_bar(&barRef) {
 			//...//
 		}
 	public:
-		ScaledPrice operator ()(
-				const MaSourceToType<MA_SOURCE_CLOSE_TRADE_PRICE> &)
+		const ScaledPrice & operator ()(
+				const MaSourceToType<MA_SOURCE_CLOSE_PRICE> &)
 				const {
 			return m_bar->closeTradePrice;
+		}
+		template<MaSource source>
+		const ScaledPrice & operator ()(const MaSourceToType<source> &) const {
+			throw MovingAverageService::Error(
+				"Service is not configured to work with bars");
 		}
 	private:
 		const BarService::Bar *m_bar;
 	};
+	class CheckTickValueVisitor : public boost::static_visitor<bool> {
+		static_assert(numberOfMaSources == 2, "MA Sources list changed.");
+	public:
+		explicit CheckTickValueVisitor(const Level1TickValue &tick)
+			: m_tick(&tick) {
+			//...//
+		}
+	public:
+		bool operator ()(const MaSourceToType<MA_SOURCE_LAST_PRICE> &) const {
+			return m_tick->GetType() == LEVEL1_TICK_LAST_PRICE;
+		}
+		template<MaSource source>
+		bool operator ()(const MaSourceToType<source> &) const {
+			throw MovingAverageService::Error(
+				"Service is not configured to work with tick values");
+		}
+	private:
+		const Level1TickValue *m_tick;
+	};
+
 
 	template<MaSource maSource, typename MaSourcesMap>
 	void InsertMaSourceInfo(const char *keyVal, MaSourcesMap &maSourcesMap) {
@@ -83,21 +110,23 @@ namespace {
 #		ifdef DEV_VER
 			foreach (const auto &i, maSourcesMap) {
 				AssertNe(std::string(keyVal), i.second.first);
-				AssertNe(maSource, GetMaSource(*i.second.second));
+				AssertNe(maSource, GetMaSource(i.second.second));
 			}
 #		endif
-		maSourcesMap[maSource]
-			= std::make_pair(std::string(keyVal), MaSourceToType<maSource>());
+		maSourcesMap.emplace(
+			maSource,
+			std::make_pair<std::string, MaSourceInfo>(
+				keyVal,
+				MaSourceToType<maSource>()));
 	}
 		
-	std::map<MaSource, std::pair<std::string, boost::optional<MaSourceInfo>>>
+	boost::unordered_map<MaSource, std::pair<std::string, MaSourceInfo>>
 	GetSources() {
-		std::map<
-				MaSource,
-				std::pair<std::string, boost::optional<MaSourceInfo>>>
+		boost::unordered_map<MaSource, std::pair<std::string, MaSourceInfo>>
 			result;
-		static_assert(numberOfMaSources == 1, "MA Sources list changed.");
-		InsertMaSourceInfo<MA_SOURCE_CLOSE_TRADE_PRICE>("close price", result);
+		static_assert(numberOfMaSources == 2, "MA Sources list changed.");
+		InsertMaSourceInfo<MA_SOURCE_CLOSE_PRICE>("close price", result);
+		InsertMaSourceInfo<MA_SOURCE_LAST_PRICE>("last price", result);
 		AssertEq(numberOfMaSources, result.size());
 		return result;
 	}
@@ -267,7 +296,7 @@ namespace {
 
 	class AccumVisitor : public boost::static_visitor<void> {
 	public:
-		explicit AccumVisitor(ScaledPrice frameValue)
+		explicit AccumVisitor(double frameValue)
 			: m_frameValue(frameValue) {
 			//...//
 		}
@@ -277,7 +306,7 @@ namespace {
 			acc(m_frameValue);
 		}
 	private:
-		ScaledPrice m_frameValue;
+		double m_frameValue;
 	};
 
 	struct GetAccSizeVisitor : public boost::static_visitor<size_t> {
@@ -351,7 +380,7 @@ public:
 			const IniSectionRef &configuration)
 		: m_service(service)
 		, m_isEmpty(true)
-		, m_sourceInfo(MaSourceToType<MA_SOURCE_CLOSE_TRADE_PRICE>()) {
+		, m_sourceInfo(MaSourceToType<MA_SOURCE_CLOSE_PRICE>()) {
 
 		m_period = configuration.ReadTypedKey<uintmax_t>(
 			Configuration::Keys::period);
@@ -366,8 +395,8 @@ public:
 		std::map<MaType, std::string> types = GetTypes();
 		MaType type = numberOfMaTypes;
 		{
-			const auto &typeStr = configuration.ReadKey(
-				Configuration::Keys::type);
+			const auto &typeStr
+				= configuration.ReadKey(Configuration::Keys::type);
 			foreach (const auto &i, types) {
 				if (boost::iequals(i.second, typeStr)) {
 					type = i.first;
@@ -408,15 +437,14 @@ public:
 			}
 		}
 
-		//! @todo to std::map<MaSource, std::string> &sources in new  MSVC 2012
 		auto sources = GetSources();
-		if (configuration.IsKeyExist(Configuration::Keys::source)) {
+		{
 			const auto &sourceStr
 				= configuration.ReadKey(Configuration::Keys::source);
 			bool exists = false;
 			foreach (const auto &i, sources) {
 				if (boost::iequals(i.second.first, sourceStr)) {
-					m_sourceInfo = *i.second.second;
+					m_sourceInfo = i.second.second;
 					exists = true;
 					break;
 				}
@@ -424,15 +452,13 @@ public:
 			if (!exists) {
 				m_service.GetLog().Error(
 					"Unknown Moving Average source specified: \"%1%\"."
-						"Supported: close price (default).",
+						"Supported: \"close price\" and \"last price\".",
 					sourceStr);
 				throw Exception("Unknown Moving Average source");
 			}
 		}
 
-		if (	configuration.ReadBoolKey(
-					Configuration::Keys::isHistoryOn,
-					false)) {
+		if (configuration.ReadBoolKey(Configuration::Keys::isHistoryOn)) {
 			m_history.reset(new History);
 		}
 
@@ -472,6 +498,46 @@ public:
 		}
 	}
 
+	bool OnNewValue(
+			const Security &security,
+			const pt::ptime &valueTime,
+			double newValue) {
+
+		if (IsZero(newValue)) {
+			if (	m_lastZeroTime == pt::not_a_date_time
+					|| valueTime - m_lastZeroTime >= pt::minutes(1)) {
+				if (m_lastZeroTime != pt::not_a_date_time) {
+					m_service.GetLog().Debug("Recently received only zeros.");
+				}
+				m_lastZeroTime = valueTime;
+			}
+			return false;
+		}
+		m_lastZeroTime = pt::not_a_date_time;
+		const AccumVisitor accumVisitor(newValue);
+		boost::apply_visitor(accumVisitor, *m_acc);
+
+		if (boost::apply_visitor(GetAccSizeVisitor(), *m_acc) < m_period) {
+			return false;
+		}
+
+		const Point newPoint = {
+			newValue,
+			RoundByScale(
+				boost::apply_visitor(GetValueVisitor(), *m_acc),
+				security.GetPriceScale())
+		};
+		m_lastValue = newPoint;
+		m_isEmpty = false;
+
+		if (m_history) {
+			m_history->PushBack(newPoint);
+		}
+
+		return true;
+
+	}
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -496,48 +562,23 @@ bool MovingAverageService::OnServiceDataUpdate(
 	return OnNewBar(barService.GetSecurity(), barService.GetLastBar());
 }
 
+bool MovingAverageService::OnLevel1Tick(
+		const Security &security,
+		const pt::ptime &time,
+		const Level1TickValue &tick) {
+	const CheckTickValueVisitor visitor(tick);
+	return boost::apply_visitor(visitor, m_pimpl->m_sourceInfo)
+		?	m_pimpl->OnNewValue(security, time, tick.GetValue())
+		:	false;
+}
+
 bool MovingAverageService::OnNewBar(
 		const Security &security,
 		const BarService::Bar &bar) {
-	
-	// Called from dispatcher, locking is not required.
-
-	const ExtractFrameValueVisitor extractVisitor(bar);
-	const auto frameValue
-		= boost::apply_visitor(extractVisitor, m_pimpl->m_sourceInfo);
-	if (IsZero(frameValue)) {
-		if (	m_pimpl->m_lastZeroTime == pt::not_a_date_time
-				|| bar.time - m_pimpl->m_lastZeroTime >= pt::minutes(1)) {
-			if (m_pimpl->m_lastZeroTime != pt::not_a_date_time) {
-				GetLog().Debug("Recently received only zeros.");
-			}
-			m_pimpl->m_lastZeroTime = bar.time;
-		}
-		return false;
-	}
-	m_pimpl->m_lastZeroTime = pt::not_a_date_time;
-	const AccumVisitor accumVisitor(frameValue);
-	boost::apply_visitor(accumVisitor, *m_pimpl->m_acc);
-
-	if (	boost::apply_visitor(GetAccSizeVisitor(), *m_pimpl->m_acc)
-			< m_pimpl->m_period) {
-		return false;
-	}
-
-	const Point newPoint = {
-		frameValue,
-		security.ScalePrice(
-			boost::apply_visitor(GetValueVisitor(), *m_pimpl->m_acc)),
-	};
-	m_pimpl->m_lastValue = newPoint;
-	m_pimpl->m_isEmpty = false;
-
-	if (m_pimpl->m_history) {
-		m_pimpl->m_history->PushBack(newPoint);
-	}
-
-	return true;
-
+ 	const ExtractBarValueVisitor visitor(bar);
+ 	const auto &value = security.DescalePrice(
+		boost::apply_visitor(visitor, m_pimpl->m_sourceInfo));
+ 	return m_pimpl->OnNewValue(security, bar.time, value);
 }
 
 bool MovingAverageService::IsEmpty() const {

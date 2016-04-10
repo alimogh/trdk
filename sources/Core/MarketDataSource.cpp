@@ -209,9 +209,9 @@ void MarketDataSource::ForEachSecurity(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::ostream & std::operator <<(
-			std::ostream &oss,
-			const MarketDataSource &marketDataSource) {
+std::ostream & trdk::operator <<(
+		std::ostream &oss,
+		const MarketDataSource &marketDataSource) {
 	oss << marketDataSource.GetStringId();
 	return oss;
 }

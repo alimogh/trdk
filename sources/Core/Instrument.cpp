@@ -56,13 +56,9 @@ Context & Instrument::GetContext() {
 	return m_pimpl->m_context;
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-std::ostream & std::operator <<(
-			std::ostream &oss,
-			const Instrument &instrument) {
+std::ostream & trdk::operator <<(
+		std::ostream &oss,
+		const Instrument &instrument) {
 	oss << instrument.GetSymbol();
 	return oss;
 }
-
-//////////////////////////////////////////////////////////////////////////

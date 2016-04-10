@@ -85,8 +85,8 @@ namespace trdk { namespace Lib {
 		return value;
 	}
 
-	inline double Round(double value, uintmax_t scale) {
-		return double(Scale(value, scale)) / scale;
+	inline double RoundByScale(double value, uintmax_t scale) {
+		return boost::math::round(value * scale) / scale;
 	}
 
 	//////////////////////////////////////////////////////////////////////////

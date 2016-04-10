@@ -58,14 +58,20 @@ namespace trdk { namespace Lib {
 				const Currency &defCurrency = trdk::Lib::numberOfCurrencies);
 		
 		Symbol(const Symbol &);
+		
 		Symbol & operator =(const Symbol &);
 
-	public:
-
 		operator bool() const;
+
 		bool operator <(const Symbol &rhs) const;
 		bool operator ==(const Symbol &rhs) const;
 		bool operator !=(const Symbol &rhs) const;
+
+		friend std::ostream & operator <<(
+				std::ostream &,
+				const trdk::Lib::Symbol &);
+
+	public:
 
 		Hash GetHash() const;
 
@@ -117,12 +123,6 @@ namespace trdk { namespace Lib {
 } }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-namespace std {
-
-	std::ostream & operator <<(std::ostream &, const trdk::Lib::Symbol &);
-
-}
 
 namespace stdext {
 

@@ -289,7 +289,7 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
-std::ostream & std::operator <<(std::ostream &oss, const Module &module) {
+std::ostream & trdk::operator <<(std::ostream &oss, const Module &module) {
 	oss << module.GetStringId();
 	return oss;
 }

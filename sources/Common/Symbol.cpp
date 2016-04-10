@@ -338,7 +338,7 @@ const std::string & Symbol::GetExchange() const {
 	}
 	return m_data.exchange;
 }
-		
+
 const std::string & Symbol::GetPrimaryExchange() const {
 	if (m_data.primaryExchange.empty()) {
 		throw Lib::LogicError("Symbol doesn't have Primary Exchange");
@@ -411,23 +411,23 @@ const Currency & Symbol::GetFotQuoteCurrency() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::ostream & std::operator <<(std::ostream &os, const Symbol &symbol) {
+std::ostream & trdk::Lib::operator <<(std::ostream &os, const Symbol &symbol) {
 	// If changing here - look at Symbol::GetHash, how hash creating.
 	static_assert(numberOfSecurityTypes == 5, "List changed.");
 	switch (symbol.GetSecurityType()) {
 		case SECURITY_TYPE_STOCK:
-			os
-				<< symbol.GetSymbol()
-				<< '/' << symbol.GetCurrency()
-				<< ':' << symbol.GetPrimaryExchange();
-			if (!symbol.GetExchange().empty()) {
-				os << ':' << symbol.GetExchange();
+			os << symbol.GetSymbol() << '/' << symbol.GetCurrency();
+			if (!symbol.m_data.primaryExchange.empty()) {
+				os << ':' << symbol.m_data.primaryExchange;
+			}
+			if (!symbol.m_data.exchange.empty()) {
+				os << ':' << symbol.m_data.exchange;
 			}
 			break;
 		case SECURITY_TYPE_FOR:
 			os << symbol.GetSymbol() << '/' << symbol.GetCurrency();
-			if (!symbol.GetExchange().empty()) {
-				os << ':' << symbol.GetExchange();
+			if (!symbol.m_data.exchange.empty()) {
+				os << ':' << symbol.m_data.exchange;
 			}
 			break;
 		case SECURITY_TYPE_FUTURES:

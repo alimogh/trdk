@@ -504,9 +504,9 @@ std::set<Symbol> IniSectionRef::ReadSymbols(
 	return GetBase().ReadSymbols(GetName(), defSecurityType, defCurrency);
 }
 
-std::ostream & std::operator <<(
-			std::ostream &os,
-			const IniSectionRef &section) {
+std::ostream & trdk::Lib::operator <<(
+		std::ostream &os,
+		const IniSectionRef &section) {
 	os << section.GetName();
 	return os;
 }

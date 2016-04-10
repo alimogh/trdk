@@ -353,8 +353,8 @@ bool StatService::OnBookUpdateTick(
 		= ((point.vwapBid * bidStat.qty) + (point.vwapAsk * askStat.qty))
 			/ (bidStat.qty + askStat.qty);
 
-	point.vwapBid = Round(point.vwapBid, security.GetPriceScale());
-	point.vwapAsk = Round(point.vwapAsk, security.GetPriceScale());
+	point.vwapBid = RoundByScale(point.vwapBid, security.GetPriceScale());
+	point.vwapAsk = RoundByScale(point.vwapAsk, security.GetPriceScale());
 
 	////////////////////////////////////////////////////////////////////////////////
 	// EMAs:

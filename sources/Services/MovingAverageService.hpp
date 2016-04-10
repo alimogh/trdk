@@ -40,7 +40,7 @@ namespace trdk { namespace Services {
 
 		//! Value data point.
  		struct Point {
-			ScaledPrice source;
+			double source;
 			double value;
 		};
 
@@ -87,6 +87,11 @@ namespace trdk { namespace Services {
 		virtual bool OnServiceDataUpdate(
 				const trdk::Service &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
+
+		virtual bool OnLevel1Tick(
+				const trdk::Security &,
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &);
 
 		bool OnNewBar(
 				const trdk::Security &,

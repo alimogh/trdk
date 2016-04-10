@@ -22,7 +22,6 @@ namespace trdk { namespace Tests {
 		MockContext();
 		virtual ~MockContext();
 
-
 	public:
 
 		MOCK_METHOD0(SyncDispatching, void());

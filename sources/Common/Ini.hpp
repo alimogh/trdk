@@ -303,6 +303,10 @@ namespace trdk { namespace Lib {
 				const trdk::Lib::Ini &iniRef,
 				const std::string &sectionName);
 
+		friend std::ostream & operator <<(
+				std::ostream &,
+				const trdk::Lib::IniSectionRef &);
+
 	public:
 
 		const std::string & GetName() const {
@@ -375,15 +379,3 @@ namespace trdk { namespace Lib {
 	//////////////////////////////////////////////////////////////////////////
 
 } }
-
-//////////////////////////////////////////////////////////////////////////
-
-namespace std {
-	
-	std::ostream & operator <<(
-				std::ostream &,
-				const trdk::Lib::IniSectionRef &);
-
-}
-
-//////////////////////////////////////////////////////////////////////////

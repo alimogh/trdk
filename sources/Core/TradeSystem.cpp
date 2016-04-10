@@ -1060,7 +1060,7 @@ void TradeSystem::OnSettingsUpdate(const IniSectionRef &) {
 
 //////////////////////////////////////////////////////////////////////////
 
-std::ostream & std::operator <<(
+std::ostream & trdk::operator <<(
 		std::ostream &oss,
 		const TradeSystem &tradeSystem) {
 	oss << tradeSystem.GetStringId();

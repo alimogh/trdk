@@ -19,6 +19,7 @@
 #	include <boost/accumulators/statistics/rolling_mean.hpp>
 #	include <boost/variant.hpp>
 #	include <boost/optional.hpp>
+#	include <boost/unordered_map.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

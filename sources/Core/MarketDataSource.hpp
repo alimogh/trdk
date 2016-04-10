@@ -61,6 +61,10 @@ namespace trdk {
 			return !operator ==(rhs);
 		}
 
+		TRDK_CORE_API friend std::ostream & operator <<(
+				std::ostream &,
+				const trdk::MarketDataSource &);
+
 	public:
 
 		size_t GetIndex() const;
@@ -133,13 +137,3 @@ namespace trdk {
 	////////////////////////////////////////////////////////////////////////////////
 
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-namespace std {
-	TRDK_CORE_API std::ostream & operator <<(
-				std::ostream &,
-				const trdk::MarketDataSource &);
-}
-
-////////////////////////////////////////////////////////////////////////////////

@@ -231,6 +231,13 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 			return *this;
 		}
 
+		friend std::ostream & operator <<(
+				std::ostream &,
+				const trdk::Lib::TimeMeasurement::MilestoneStat &);
+		friend std::wostream & operator <<(
+				std::wostream &,
+				const trdk::Lib::TimeMeasurement::MilestoneStat &);
+
 	public:
 
 		size_t GetSize() const {
@@ -324,10 +331,3 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 	////////////////////////////////////////////////////////////////////////////////
 
 } } }
-
-std::ostream & operator <<(
-		std::ostream &,
-		const trdk::Lib::TimeMeasurement::MilestoneStat &);
-std::wostream & operator <<(
-		std::wostream &,
-		const trdk::Lib::TimeMeasurement::MilestoneStat &);

@@ -42,6 +42,13 @@ namespace trdk { namespace Lib {
 		explicit SysError(int errorNo) throw();
 		~SysError() throw();
 
+		friend std::ostream & operator <<(
+				std::ostream &,
+				const trdk::Lib::SysError &);
+		friend std::wostream & operator <<(
+				std::wostream &,
+				const trdk::Lib::SysError &);
+
 	public:
 
 		std::wstring GetStringW() const;
@@ -60,12 +67,5 @@ namespace trdk { namespace Lib {
 	};
 
 } }
-
-namespace std {
-
-	std::ostream & operator <<(std::ostream &, const trdk::Lib::SysError &);
-	std::wostream & operator <<(std::wostream &, const trdk::Lib::SysError &);
-
-}
 
 ////////////////////////////////////////////////////////////////////////////////

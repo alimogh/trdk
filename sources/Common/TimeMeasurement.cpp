@@ -142,7 +142,9 @@ const std::string & TimeMeasurement::GetMilestoneName(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::ostream & operator <<(std::ostream &os, const MilestoneStat &stat) {
+std::ostream & TimeMeasurement::operator <<(
+		std::ostream &os,
+		const MilestoneStat &stat) {
 	os.setf(std::ios::left);
 	os
 		<< std::setfill(' ') << std::setw(10) << stat.GetSize()
@@ -152,7 +154,9 @@ std::ostream & operator <<(std::ostream &os, const MilestoneStat &stat) {
 	return os;
 }
 
-std::wostream & operator <<(std::wostream &os, const MilestoneStat &stat) {
+std::wostream & TimeMeasurement::operator <<(
+		std::wostream &os,
+		const MilestoneStat &stat) {
 	os
 		<< std::setfill(L' ') << std::setw(10) << stat.GetSize()
 		<< '\t' << std::setfill(L' ') << std::setw(10) << stat.GetAvg()

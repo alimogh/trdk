@@ -40,13 +40,9 @@ namespace trdk { namespace Lib {
 
 } }
 
-namespace std {
-
-	inline std::ostream & operator <<(
-			std::ostream &oss,
-			const trdk::Lib::Currency &currency) {
-		oss << trdk::Lib::ConvertToIso(currency);
-		return oss;
-	}
-
+inline std::ostream & operator <<(
+		std::ostream &oss,
+		const trdk::Lib::Currency &currency) {
+	oss << trdk::Lib::ConvertToIso(currency);
+	return oss;
 }

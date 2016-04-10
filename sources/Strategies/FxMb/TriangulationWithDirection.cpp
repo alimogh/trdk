@@ -40,7 +40,7 @@ namespace {
 			const StatService::Stat &data) {
 		// TRDK-267: Rounding EMA for exit signal checking to resolve
 		// duration problem.
-		const double emaSlow = Round(
+		const double emaSlow = RoundByScale(
 			data.history.back().emaSlow,
 			pair.security->GetPriceScale());
 		return

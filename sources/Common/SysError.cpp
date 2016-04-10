@@ -125,12 +125,14 @@ int SysError::GetErrorNo() const {
 	return m_errorNo;
 }
 
-std::ostream & std::operator <<(std::ostream &os, const SysError &error) {
+std::ostream & trdk::Lib::operator <<(std::ostream &os, const SysError &error) {
 	os << error.GetString() << " (code: " << error.GetErrorNo() << ")";
 	return os;
 }
 
-std::wostream & std::operator <<(std::wostream &os, const SysError &error) {
+std::wostream & trdk::Lib::operator <<(
+		std::wostream &os,
+		const SysError &error) {
 	os << error.GetStringW() << " (code: " << error.GetErrorNo() << ")";
 	return os;
 }

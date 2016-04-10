@@ -30,13 +30,9 @@ namespace trdk { namespace Lib {
 
 } }
 
-namespace std {
-
-	inline std::ostream & operator <<(
-			std::ostream &oss,
-			const trdk::Lib::SecurityType &securityType) {
-		oss << trdk::Lib::ConvertToString(securityType);
-		return oss;
-	}
-
+inline std::ostream & operator <<(
+		std::ostream &oss,
+		const trdk::Lib::SecurityType &securityType) {
+	oss << trdk::Lib::ConvertToString(securityType);
+	return oss;
 }

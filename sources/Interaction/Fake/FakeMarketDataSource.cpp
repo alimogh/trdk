@@ -83,7 +83,7 @@ void Fake::MarketDataSource::NotificationThread() {
 				for (int i = 1; i <= book.GetSideMaxSize(); ++i) {
 					book.GetAsk().Add(
 						now,
-						Round(ask, s->GetPriceScale()),
+						RoundByScale(ask, s->GetPriceScale()),
 						i * ((generateTopRandom() + 1) * 10000));
 					ask += (double(generateStepRandom()) / 100) + 0.01;
 				}
@@ -91,7 +91,7 @@ void Fake::MarketDataSource::NotificationThread() {
 				for (int i = 1; i <= book.GetSideMaxSize(); ++i) {
 					book.GetBid().Add(
 						now,
-						Round(bid, s->GetPriceScale()),
+						RoundByScale(bid, s->GetPriceScale()),
 						i * ((generateTopRandom() + 1) * 20000));
 					bid -= (double(generateStepRandom()) / 100) + 0.01;
 				}

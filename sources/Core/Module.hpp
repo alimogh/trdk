@@ -44,6 +44,10 @@ namespace trdk {
 				const std::string &tag);
 		virtual ~Module();
 
+		TRDK_CORE_API friend std::ostream & operator <<(
+				std::ostream &,
+				const trdk::Module &);
+
 	public:
 
 		const trdk::Module::InstanceId & GetInstanceId() const;
@@ -171,13 +175,5 @@ public:
 	virtual ConstIterator Find(const trdk::Lib::Symbol &) const = 0;
 
 };
-
-//////////////////////////////////////////////////////////////////////////
-
-namespace std {
-	TRDK_CORE_API std::ostream & operator <<(
-			std::ostream &,
-			const trdk::Module &);
-}
 
 //////////////////////////////////////////////////////////////////////////

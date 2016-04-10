@@ -74,6 +74,8 @@ namespace {
 			return 5;
 		} else if (boost::iequals(symbol.GetSymbol(), "AUD/JPY")) {
 			return 3;
+		} else if (boost::iequals(symbol.GetSymbol(), "TEST_SCALE2")) {
+			return 2;
 		} else {
 			const uint8_t result = 6;
 			source.GetLog().Warn(

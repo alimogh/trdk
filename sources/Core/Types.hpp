@@ -118,13 +118,9 @@ namespace trdk {
 
 }
 
-namespace std {
-
-	TRDK_CORE_API std::ostream & operator <<(
-			std::ostream &,
-			const trdk::OrderParams &);
-
-}
+TRDK_CORE_API std::ostream & operator <<(
+		std::ostream &,
+		const trdk::OrderParams &);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -199,15 +195,11 @@ namespace trdk {
 
 }
 
-namespace std {
-
-	inline std::ostream & operator <<(
-			std::ostream &oss,
-			const trdk::TradingMode &mode) {
-		oss << trdk::ConvertToString(mode);
-		return oss;
-	}
-
+inline std::ostream & operator <<(
+		std::ostream &oss,
+		const trdk::TradingMode &mode) {
+	oss << trdk::ConvertToString(mode);
+	return oss;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

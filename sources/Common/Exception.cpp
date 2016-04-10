@@ -71,6 +71,13 @@ Exception & Exception::operator =(const Exception &rhs) throw() {
 	return *this;
 }
 
+std::ostream & trdk::Lib::operator <<(
+		std::ostream &oss,
+		const trdk::Lib::Exception &ex) {
+	oss << ex.what();
+	return oss;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 LogicError::LogicError(const char *what) throw()
@@ -106,15 +113,6 @@ ModuleError::ModuleError(const char *what) throw()
 RiskControlException::RiskControlException(const char *what) throw()
 	: Exception(what) {
 	//...//
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-std::ostream & std::operator <<(
-			std::ostream &oss,
-			const trdk::Lib::Exception &ex) {
-	oss << ex.what();
-	return oss;
 }
 
 //////////////////////////////////////////////////////////////////////////
