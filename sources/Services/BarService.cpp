@@ -401,10 +401,14 @@ public:
 				<< std::setw(2) << time.seconds();
 		}
 		m_barsLog->file
-			<< csvDelimeter << m_currentBar->openTradePrice
-			<< csvDelimeter << m_currentBar->highTradePrice
-			<< csvDelimeter << m_currentBar->lowTradePrice
-			<< csvDelimeter << m_currentBar->closeTradePrice
+			<< csvDelimeter
+				<< m_security->DescalePrice(m_currentBar->openTradePrice)
+			<< csvDelimeter
+				<< m_security->DescalePrice(m_currentBar->highTradePrice)
+			<< csvDelimeter
+				<< m_security->DescalePrice(m_currentBar->lowTradePrice)
+			<< csvDelimeter
+				<< m_security->DescalePrice(m_currentBar->closeTradePrice)
 			<< csvDelimeter << m_currentBar->tradingVolume
 			<< std::endl;
 	}
