@@ -29,6 +29,7 @@
 #	include <boost/multi_index/ordered_index.hpp>
 #	include <boost/multi_index/hashed_index.hpp>
 #	include <boost/multi_index/member.hpp>
+#	include <boost/unordered_map.hpp>
 #	include <boost/regex.hpp>
 #	include <boost/math/special_functions/fpclassify.hpp>
 #include "Common/DisableBoostWarningsEnd.h"

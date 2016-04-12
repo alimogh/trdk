@@ -1004,7 +1004,7 @@ Client::OrderStatusesMap Client::GetOrderStatusesMap() {
 	r.insert(mp("Cancelled", ORDER_STATUS_CANCELLED));
 	r.insert(mp("ApiCancelled", ORDER_STATUS_CANCELLED));
 	r.insert(mp("Filled", ORDER_STATUS_FILLED));
-	r.insert(mp("Inactive", ORDER_STATUS_INACTIVE));
+	r.insert(mp("Inactive", ORDER_STATUS_ERROR));
 	return r;
 }
 
@@ -1222,6 +1222,15 @@ void Client::orderStatus(
 		return;
 	}
 	Assert(m_seqNumber < 0 || m_seqNumber > id);
+	if (statusPos->second == ORDER_STATUS_ERROR) {
+		m_ts.GetTsLog().Error(
+			"Order %1% has been accepted by the system (simulated orders)"
+			 " or an exchange (native orders) but that currently the order"
+			 " is inactive due to system, exchange or other issues."
+			 " Trading system order status: \"%2%\".",
+		id,
+		statusText);
+	}
 	m_orderStatusSignal(
 		id,
 		permId,

@@ -87,7 +87,7 @@ void ib::TradeSystem::CreateConnection(const IniSectionRef &settings) {
 				const OrdersWriteLock lock(m_ordersMutex);
 				const auto pos = index.find(id);
 				if (pos == index.end()) {
-					GetTsLog().Warn(
+					/* GetTsLog().Debug(
 						"Failed to find order by ID \"%1%\""
 							" (status %2%, filled %3%, remaining %4%"
 							", last price %5%). ",
@@ -95,7 +95,7 @@ void ib::TradeSystem::CreateConnection(const IniSectionRef &settings) {
 						status,
 						filled,
 						remaining,
-						lastFillPrice);
+						lastFillPrice); */
 					return;
 				}
 				callBack = pos->callback;

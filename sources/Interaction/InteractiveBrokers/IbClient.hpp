@@ -57,7 +57,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		typedef Mutex::scoped_lock Lock;
 		typedef boost::condition_variable Condition;
 
-		typedef std::map<std::string, trdk::OrderStatus>
+		typedef boost::unordered_map<std::string, trdk::OrderStatus>
 			OrderStatusesMap;
 
 		struct BySecurity {
