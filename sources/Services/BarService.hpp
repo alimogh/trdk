@@ -20,6 +20,8 @@ namespace trdk { namespace Services {
 
 	public:
 
+		typedef trdk::Service Base;
+
 		//! General service error.
 		class Error : public trdk::Lib::Exception {
 		public:
@@ -113,11 +115,6 @@ namespace trdk { namespace Services {
 				trdk::ScaledPrice,
 				trdk::Qty,
 				trdk::OrderSide);
-			
-	public:
-
-		//! Each bar size.
- 		const boost::posix_time::time_duration & GetBarSize() const;
 
 	public:
 

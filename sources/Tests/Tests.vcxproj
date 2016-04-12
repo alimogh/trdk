@@ -355,6 +355,7 @@
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BarServiceTest.cpp" />
     <ClCompile Include="BollingerBandsServiceTest.cpp" />
     <ClCompile Include="MockContext.cpp" />
     <ClCompile Include="MockMarketDataSource.cpp" />

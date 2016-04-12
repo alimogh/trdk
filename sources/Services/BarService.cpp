@@ -25,6 +25,8 @@ namespace accs = boost::accumulators;
 
 namespace {
 
+	const char csvDelimeter = ',';
+
 	template<typename Tag>
 	struct TagToExtractor {
 		//...//
@@ -105,8 +107,6 @@ namespace {
 
 	};
 
-	const char csvDelimeter = ',';
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -173,10 +173,9 @@ public:
 		UNITS_HOURS,
 		UNITS_DAYS,
 		UNITS_WEEKS,
+		UNITS_TICKS,
 		numberOfUnits
 	};
-
-	typedef std::vector<Bar> Bars;
 
 	struct BarsLog {
 		std::ofstream file;
@@ -194,11 +193,19 @@ public:
 	
 	std::string m_barSizeStr;
 	long m_barSizeUnits;
-	pt::time_duration m_barSize;
+	pt::time_duration m_timedBarSize;
+	size_t m_countedBarSize;
 
-	Bars m_bars;
+	std::vector<Bar> m_bars;
 	Bar *m_currentBar;
 	boost::posix_time::ptime m_currentBarEnd;
+	struct CurrentBarTicksCount {
+		size_t value;
+		CurrentBarTicksCount()
+			: value(0) {
+			//...//
+		}
+	} m_currentBarTicksCount;
 
 	std::unique_ptr<BarsLog> m_barsLog;
 
@@ -209,6 +216,7 @@ public:
 			const IniSectionRef &configuration)
 		: m_service(service)
 		, m_security(nullptr)
+		, m_countedBarSize(0)
 		, m_currentBar(nullptr)
 		, m_barsLog(nullptr) {
 
@@ -238,7 +246,7 @@ public:
 			throw Error("Wrong bar size settings");
 		}
 
-		static_assert(numberOfUnits == 5, "Units list changed.");
+		static_assert(numberOfUnits == 6, "Units list changed.");
 		if (boost::iequals(m_unitsStr, "seconds")) {
 			if (m_barSizeUnits < 5) {
 				// reqRealTimeBars: Currently only 5 second bars are supported,
@@ -264,7 +272,7 @@ public:
 				throw Error("Wrong bar size settings");
 			}
 			m_units = UNITS_SECONDS;
-			m_barSize = boost::posix_time::seconds(m_barSizeUnits);
+			m_timedBarSize = boost::posix_time::seconds(m_barSizeUnits);
 		} else if (boost::iequals(m_unitsStr, "minutes")) {
 			if (60 % m_barSizeUnits) {
 				m_service.GetLog().Error(
@@ -274,35 +282,48 @@ public:
 				throw Error("Wrong bar size settings");
 			}
 			m_units = UNITS_MINUTES;
-			m_barSize = boost::posix_time::minutes(m_barSizeUnits);
+			m_timedBarSize = boost::posix_time::minutes(m_barSizeUnits);
 		} else if (boost::iequals(m_unitsStr, "hours")) {
 			m_units = UNITS_HOURS;
-			m_barSize = boost::posix_time::hours(m_barSizeUnits);
+			m_timedBarSize = boost::posix_time::hours(m_barSizeUnits);
 		} else if (boost::iequals(m_unitsStr, "days")) {
 			m_units = UNITS_DAYS;
-			m_barSize = boost::posix_time::hours(m_barSizeUnits * 24);
+			m_timedBarSize = boost::posix_time::hours(m_barSizeUnits * 24);
 			throw Error("Days units is not implemented");
 		} else if (boost::iequals(m_unitsStr, "weeks")) {
 			m_units = UNITS_WEEKS;
-			m_barSize = boost::posix_time::hours((m_barSizeUnits * 24) * 7);
+			m_timedBarSize = boost::posix_time::hours((m_barSizeUnits * 24) * 7);
 			throw Error("Weeks units is not implemented");
+		} else if (boost::iequals(m_unitsStr, "ticks")) {
+			m_units = UNITS_TICKS;
+			m_countedBarSize = m_barSizeUnits;
 		} else {
 			m_service.GetLog().Error(
 				"Wrong size specified: \"%1%\". Unknown units."
-					"Supported: seconds, minutes, hours, days and weeks.",
+					" Supported: seconds, minutes, hours, days, weeks"
+					" and ticks.",
 				m_unitsStr);
 			throw Error("Wrong bar size settings");
 		}
 
 		ReopenLog(configuration);
 
-		m_service.GetLog().Info("Stated with size \"%1%\".", m_barSize);
+		if (!m_countedBarSize) {
+			m_service.GetLog().Info(
+				"Stated with size \"%1%\".",
+				m_timedBarSize);
+		} else {
+			m_service.GetLog().Info(
+				"Stated with size \"%1% %2%\".",
+				m_countedBarSize,
+				m_unitsStr);
+		}
 
 	}
 
 	void ReopenLog(const IniSectionRef &configuration) {
 
-		const std::string logType = configuration.ReadKey("log", "none");
+		const std::string logType = configuration.ReadKey("log");
 		if (boost::iequals(logType, "none")) {
 			if (m_barsLog) {
 				m_barsLog.reset();
@@ -364,7 +385,6 @@ public:
 		if (!m_barsLog || !m_currentBar) {
 			return;
 		}
-		const auto barStartTime = m_currentBarEnd - m_barSize;
 		{
 			const auto date = m_currentBar->time.date();
 			m_barsLog->file
@@ -394,9 +414,10 @@ public:
 			pt::ptime &startTime,
 			pt::ptime &endTime)
 		const {
-		AssertNe(pt::not_a_date_time, tradeTime);
+		AssertNe(tradeTime, pt::not_a_date_time);
+		AssertEq(startTime, pt::not_a_date_time);
 		const auto time = tradeTime.time_of_day();
-		static_assert(numberOfUnits == 5, "Units list changed.");
+		static_assert(numberOfUnits == 6, "Units list changed.");
 		switch (m_units) {
 			case UNITS_SECONDS:
 				endTime
@@ -431,55 +452,63 @@ public:
 			case UNITS_WEEKS:
 				//! @todo Implement days bar service
 				throw Error("Weeks units is not implemented");
+			case UNITS_TICKS:
+				AssertEq(endTime, pt::not_a_date_time);
+				startTime = tradeTime;
+				break;
 			default:
 				AssertFail("Unknown units type");
 				throw Error("Unknown bar service units type");
 		}
 	}
 
-	template<typename Pred>
-	bool ContinueBar(const Pred &pred) {
+	template<typename Callback>
+	bool ContinueBar(const Callback &callback) {
 		Assert(!m_bars.empty());
-		AssertNe(pt::not_a_date_time, m_currentBarEnd);
-		pred(*m_currentBar);
+		callback(*m_currentBar);
 		return false;
 	}
 
-	template<typename Pred>
-	bool StartNewBar(const pt::ptime &time, const Pred &pred) {
+	template<typename Callback>
+	bool StartNewBar(const pt::ptime &time, const Callback &callback) {
 		LogCurrentBar();
 		m_bars.resize(m_bars.size() + 1);
 		m_currentBar = &m_bars.back();
+		m_currentBarTicksCount = CurrentBarTicksCount();
 		GetBarTimePoints(time, m_currentBar->time, m_currentBarEnd);
-		pred(*m_currentBar);
+		callback(*m_currentBar);
 		return m_bars.size() > 1;
 	}
 
-	template<typename Pred>
+	template<typename Callback>
 	bool AppendStat(
 			const Security &security,
 			const pt::ptime &time,
-			const Pred &pred) {
+			const Callback &callback) {
 		if (!m_currentBar) {
 			Assert(!m_security);
 			m_security = &security;
-			return StartNewBar(time, pred);
+			return StartNewBar(time, callback);
 		} else {
 			Assert(m_security == &security);
-			return m_currentBarEnd > time
-				?	ContinueBar(pred)
-				:	StartNewBar(time, pred);
+			const bool isNewBar
+				= (!m_currentBarEnd.is_not_a_date_time()
+						&& m_currentBarEnd > time)
+				|| m_currentBarTicksCount.value >= m_countedBarSize;
+			return isNewBar
+				? StartNewBar(time, callback)
+				: ContinueBar(callback);
 		}
 	}
 
 	bool OnNewBar(const Security &security, const Security::Bar &sourceBar) {
 		
-		AssertGe(m_barSize, sourceBar.size);
-		if (m_barSize < sourceBar.size) {
+		AssertGe(m_timedBarSize, sourceBar.size);
+		if (m_timedBarSize < sourceBar.size) {
 			m_service.GetLog().Error(
 				"Can't work with source bar size %1% as service bar size %2%.",
 				sourceBar.size,
-				m_barSize);
+				m_timedBarSize);
 			throw Error("Wrong source bar size");
 		}
 
@@ -527,6 +556,7 @@ public:
 						setClose(sourceBar, statBar.closeTradePrice);
 						setMax(sourceBar, statBar.highTradePrice);
 						setMin(sourceBar, statBar.lowTradePrice);
+						++m_currentBarTicksCount.value;
 						break;
 					case Security::Bar::BID:
 						setMin(sourceBar, statBar.minBidPrice);
@@ -550,86 +580,126 @@ public:
 			const Security &security,
 			const pt::ptime &time,
 			const Level1TickValue &value) {
+
 		switch (value.GetType()) {
-			case LEVEL1_TICK_ASK_PRICE:
-				break;
-			default:
+			case LEVEL1_TICK_BID_QTY:
+			case LEVEL1_TICK_ASK_QTY:
+			case LEVEL1_TICK_TRADING_VOLUME:
 				return false;
 		};
+
 		return AppendStat(
 			security,
 			time,
 			[this, &value](Bar &bar) {
+
+				static_assert(numberOfLevel1TickTypes == 7, "List changed");
 			
 				switch (value.GetType()) {
 			
+					case LEVEL1_TICK_LAST_PRICE:
+						bar.closeTradePrice = ScaledPrice(value.GetValue());
+						if (!bar.openTradePrice) {
+							AssertEq(0, bar.highTradePrice);
+							AssertEq(0, bar.lowTradePrice);
+							bar.openTradePrice
+								= bar.highTradePrice
+								= bar.lowTradePrice
+								= bar.closeTradePrice;
+						} else {
+							AssertNe(0, bar.highTradePrice);
+							AssertNe(0, bar.lowTradePrice);
+							if (bar.highTradePrice < bar.closeTradePrice) {
+								bar.highTradePrice = bar.closeTradePrice;
+							}
+							if (bar.lowTradePrice > bar.closeTradePrice) {
+								bar.lowTradePrice = bar.closeTradePrice;
+							}
+							AssertLe(bar.lowTradePrice, bar.highTradePrice);
+						}
+						RestoreBarFieldsFromPrevBar(
+							bar.openBidPrice,
+							bar.closeBidPrice,
+							bar.minBidPrice,
+							[](const Bar &bar) {return bar.closeBidPrice;},
+							[this]() {return m_security->GetBidPriceScaled();});
+						RestoreBarFieldsFromPrevBar(
+							bar.openAskPrice,
+							bar.closeAskPrice,
+							bar.maxAskPrice,
+							[](const Bar &bar) {return bar.closeAskPrice;},
+							[this]() {return m_security->GetAskPriceScaled();});
+						++m_currentBarTicksCount.value;
+						break;
+					
+					case LEVEL1_TICK_LAST_QTY:
+						bar.tradingVolume += value.GetValue();
+						RestoreBarTradePriceFromPrevBar(bar);
+						RestoreBarFieldsFromPrevBar(
+							bar.openBidPrice,
+							bar.closeBidPrice,
+							bar.minBidPrice,
+							[](const Bar &bar) {return bar.closeBidPrice;},
+							[this]() {return m_security->GetBidPriceScaled();});
+						RestoreBarFieldsFromPrevBar(
+							bar.openAskPrice,
+							bar.closeAskPrice,
+							bar.maxAskPrice,
+							[](const Bar &bar) {return bar.closeAskPrice;},
+							[this]() {return m_security->GetAskPriceScaled();});
+						++m_currentBarTicksCount.value;
+						break;
+
+					case LEVEL1_TICK_BID_PRICE:
+						bar.closeBidPrice = ScaledPrice(value.GetValue());
+						if (!bar.openBidPrice) {
+							bar.openBidPrice = bar.closeBidPrice;
+							AssertEq(0, bar.minBidPrice);
+							bar.minBidPrice = bar.closeBidPrice;
+						} else if (bar.minBidPrice > bar.closeBidPrice) {
+							bar.minBidPrice = bar.closeBidPrice;
+						}
+						AssertNe(0, bar.openBidPrice);
+						AssertNe(0, bar.minBidPrice);
+						AssertNe(0, bar.closeBidPrice);
+						RestoreBarTradePriceFromPrevBar(bar);
+						RestoreBarFieldsFromPrevBar(
+							bar.openAskPrice,
+							bar.closeAskPrice,
+							bar.maxAskPrice,
+							[](const Bar &bar) {return bar.closeAskPrice;},
+							[this]() {return m_security->GetAskPriceScaled();});
+						break;
+
+					case LEVEL1_TICK_ASK_PRICE:
+						bar.closeAskPrice = ScaledPrice(value.GetValue());
+						if (!bar.openAskPrice) {
+							bar.openAskPrice = bar.closeAskPrice;
+							AssertEq(0, bar.maxAskPrice);
+							bar.maxAskPrice = bar.closeAskPrice;
+						} else if (bar.maxAskPrice < bar.closeAskPrice) {
+							bar.maxAskPrice = bar.closeAskPrice;
+						}
+						AssertNe(0, bar.openAskPrice);
+						AssertNe(0, bar.maxAskPrice);
+						AssertNe(0, bar.closeAskPrice);
+						RestoreBarTradePriceFromPrevBar(bar);
+						RestoreBarFieldsFromPrevBar(
+							bar.openBidPrice,
+							bar.closeBidPrice,
+							bar.minBidPrice,
+							[](const Bar &bar) {return bar.closeBidPrice;},
+							[this]() {return m_security->GetBidPriceScaled();});
+						break;
+
 					default:
 						AssertEq(LEVEL1_TICK_BID_PRICE, value.GetType());
 						return;
 			
-					case LEVEL1_TICK_BID_PRICE:
-						
-						if (IsZero(bar.openBidPrice)) {
-							bar.openBidPrice = ScaledPrice(value.GetValue());
-						}
-						bar.minBidPrice = bar.minBidPrice
-							?	std::min(
-									bar.minBidPrice,
-									ScaledPrice(value.GetValue()))
-							:	bar.openBidPrice;
-						bar.closeBidPrice = ScaledPrice(value.GetValue());
-						
-						if (IsZero(bar.openAskPrice)) {
-							AssertEq(0, bar.maxAskPrice);
-							AssertEq(0, bar.closeAskPrice);
-							if (!m_bars.empty()) {
-								bar.openAskPrice = m_bars.back().closeAskPrice;
-							}
-							if (IsZero(bar.openAskPrice)) {
-								bar.openAskPrice
-									= m_security->GetAskPriceScaled();
-							}
-							bar.maxAskPrice = bar.openAskPrice;
-							bar.closeAskPrice = bar.openAskPrice;
-						} else {
-							AssertNe(0, bar.maxAskPrice);
-							AssertNe(0, bar.closeAskPrice);
-						}
-						
-						break;
-			
-					case LEVEL1_TICK_ASK_PRICE:
-
-						if (IsZero(bar.openAskPrice)) {
-							bar.openAskPrice = ScaledPrice(value.GetValue());
-						}
-						bar.maxAskPrice = std::max(
-							bar.maxAskPrice,
-							ScaledPrice(value.GetValue()));
-						bar.closeAskPrice = ScaledPrice(value.GetValue());
-
-						if (IsZero(bar.openBidPrice)) {
-							AssertEq(0, bar.minBidPrice);
-							AssertEq(0, bar.closeBidPrice);
-							if (!m_bars.empty()) {
-								bar.openBidPrice = m_bars.back().closeBidPrice;
-							}
-							if (IsZero(bar.openBidPrice)) {
-								bar.openBidPrice
-									= m_security->GetBidPriceScaled();
-							}
-							bar.minBidPrice = bar.openBidPrice;
-							bar.closeBidPrice = bar.openBidPrice;
-						} else {
-							AssertNe(0, bar.minBidPrice);
-							AssertNe(0, bar.closeBidPrice);
-						}
-
-						break;
-			
 				}
 
 			});
+	
 	}
 
 	bool OnNewTrade(
@@ -655,12 +725,55 @@ public:
 					:	price;
 				bar.closeTradePrice = price;
 				bar.tradingVolume += qty;
+				++m_currentBarTicksCount.value;
 			});
 	}
 
 	template<typename Stat>
 	boost::shared_ptr<Stat> CreateStat(size_t size) const {
 		return boost::shared_ptr<Stat>(new Stat(m_service, size));
+	}
+	
+	void RestoreBarTradePriceFromPrevBar(Bar &bar) {
+		if (bar.openTradePrice) {
+			AssertLt(0, bar.closeTradePrice);
+			AssertLt(0, bar.highTradePrice);
+			AssertLt(0, bar.lowTradePrice);
+			return;
+		}
+		if (m_bars.size() > 1) {
+			bar.openTradePrice = (m_bars.rbegin() + 1)->closeTradePrice;
+		} else {
+			bar.openTradePrice = m_security->GetLastPriceScaled();
+		}
+		bar.highTradePrice
+			= bar.lowTradePrice
+			= bar.closeTradePrice
+			= bar.openTradePrice;
+	}
+
+	template<typename GetBarClosePrice, typename GetCurrentPrice>
+	void RestoreBarFieldsFromPrevBar(
+			ScaledPrice &openPriceField,
+			ScaledPrice &closePriceField,
+			ScaledPrice &minMaxPriceField,
+			const GetBarClosePrice &getBarClosePrice,
+			const GetCurrentPrice &getCurrentPrice)
+			const {
+		if (openPriceField) {
+			AssertLt(0, minMaxPriceField);
+			AssertLt(0, closePriceField);
+			return;
+		}
+		AssertEq(0, minMaxPriceField);
+		AssertEq(0, closePriceField);
+		if (m_bars.size() > 1) {
+			openPriceField = getBarClosePrice(*(m_bars.rbegin() + 1));
+		} else {
+			openPriceField = getCurrentPrice();
+		}
+		minMaxPriceField = openPriceField;
+		closePriceField = openPriceField;
 	}
 
 };
@@ -671,7 +784,7 @@ BarService::BarService(
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &configuration)
-	: Service(context, "BarsService", tag) {
+	: Base(context, "BarsService", tag) {
 	m_pimpl = new Implementation(*this, configuration);
 }
 
@@ -679,8 +792,10 @@ BarService::~BarService() {
 	delete m_pimpl;
 }
 
-pt::ptime BarService::OnSecurityStart(const Security &) {
-	return GetContext().GetCurrentTime() - GetBarSize();
+pt::ptime BarService::OnSecurityStart(const Security &security) {
+	return !m_pimpl->m_countedBarSize
+		?	GetContext().GetCurrentTime() - m_pimpl->m_timedBarSize
+		:	Base::OnSecurityStart(security);
 }
 
 bool BarService::OnNewBar(const Security &security, const Security::Bar &bar) {
@@ -708,10 +823,6 @@ const Security & BarService::GetSecurity() const {
 		throw Error("Service doesn't have data security");
 	}
 	return *m_pimpl->m_security;
-}
-
-const pt::time_duration & BarService::GetBarSize() const {
-	return m_pimpl->m_barSize;
 }
 
 const BarService::Bar & BarService::GetBar(size_t index) const {
@@ -800,7 +911,7 @@ boost::shared_ptr<BarService::QtyStat> BarService::GetTradingVolumeStat(
 
 //////////////////////////////////////////////////////////////////////////
 
-TRDK_SERVICES_API boost::shared_ptr<trdk::Service> CreateBarsService(
+TRDK_SERVICES_API boost::shared_ptr<trdk::Service> CreateBarService(
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &configuration) {
