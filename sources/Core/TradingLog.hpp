@@ -42,6 +42,13 @@ namespace trdk {
 		const char * GetTag() const {
 			return m_tag;
 		}
+
+		friend std::ostream & operator <<(
+				std::ostream &os,
+				const TradingRecord &record) {
+			record >> os;
+			return os;
+		}
 			
 		const TradingRecord & operator >>(std::ostream &os) const {
 			boost::format format(m_message);
@@ -56,13 +63,6 @@ namespace trdk {
 		const char *m_message;
 
 	};
-
-	inline std::ostream & operator <<(
-			std::ostream &os,
-			const TradingRecord &record) {
-		record >> os;
-		return os;
-	}
 
 	////////////////////////////////////////////////////////////////////////////////
 

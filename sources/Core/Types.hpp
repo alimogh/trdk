@@ -95,6 +95,10 @@ namespace trdk {
 			//...//
 		}
 
+		TRDK_CORE_API friend std::ostream & operator <<(
+				std::ostream &,
+				const trdk::OrderParams &);
+
 	};
 
 	enum OrderStatus {
@@ -117,10 +121,6 @@ namespace trdk {
 	};
 
 }
-
-TRDK_CORE_API std::ostream & operator <<(
-		std::ostream &,
-		const trdk::OrderParams &);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -193,13 +193,13 @@ namespace trdk {
 		numberOfStopModes = STOP_MODE_UNKNOWN
 	};
 
-}
+	inline std::ostream & operator <<(
+			std::ostream &oss,
+			const trdk::TradingMode &mode) {
+		oss << trdk::ConvertToString(mode);
+		return oss;
+	}
 
-inline std::ostream & operator <<(
-		std::ostream &oss,
-		const trdk::TradingMode &mode) {
-	oss << trdk::ConvertToString(mode);
-	return oss;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -36,18 +36,17 @@ namespace {
 			//...//
 		}
 	public:
+		friend std::ostream & operator <<(
+				std::ostream &os,
+				const ServiceLogRecord &record) {
+			record >> os;
+			return os;
+		}
 		const ServiceLogRecord & operator >>(std::ostream &os) const {
 			Dump(os, ",");
 			return *this;
 		}
 	};
-
-	inline std::ostream & operator <<(
-			std::ostream &os,
-			const ServiceLogRecord &record) {
-		record >> os;
-		return os;
-	}
 
 	class ServiceLogOutStream : private boost::noncopyable {
 	public:

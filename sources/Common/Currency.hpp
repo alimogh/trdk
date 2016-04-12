@@ -38,11 +38,12 @@ namespace trdk { namespace Lib {
 	  */
 	trdk::Lib::Currency ConvertCurrencyFromIso(const std::string &);
 
+	inline std::ostream & operator <<(
+			std::ostream &oss,
+			const trdk::Lib::Currency &currency) {
+		oss << trdk::Lib::ConvertToIso(currency);
+		return oss;
+	}
+
 } }
 
-inline std::ostream & operator <<(
-		std::ostream &oss,
-		const trdk::Lib::Currency &currency) {
-	oss << trdk::Lib::ConvertToIso(currency);
-	return oss;
-}

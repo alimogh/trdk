@@ -36,7 +36,7 @@ namespace {
 
 }
 
-std::ostream & operator <<(std::ostream &os, const OrderParams &params) {
+std::ostream & trdk::operator <<(std::ostream &os, const OrderParams &params) {
 	size_t count = 0;
 	DumpOrderParam("displaySize", params.displaySize, count, os);
 	DumpOrderParam("goodTillTime", params.goodTillTime, count, os);

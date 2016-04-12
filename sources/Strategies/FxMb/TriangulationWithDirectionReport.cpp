@@ -44,19 +44,19 @@ namespace {
 
 	public:
 
+		friend std::ostream & operator <<(
+				std::ostream &os,
+				const ReportRecord &record) {
+			record >> os;
+			return os;
+		}
+
 		const ReportRecord & operator >>(std::ostream &os) const {
 			Dump(os, "\t");
 			return *this;
 		}
 
 	};
-
-	inline std::ostream & operator <<(
-			std::ostream &os,
-			const ReportRecord &record) {
-		record >> os;
-		return os;
-	}
 
 	class ReportLogOutStream : private boost::noncopyable {
 	public:

@@ -28,11 +28,13 @@ namespace trdk { namespace Lib {
 	const std::string & ConvertToString(const trdk::Lib::SecurityType &);
 	trdk::Lib::SecurityType ConvertSecurityTypeFromString(const std::string &);
 
+	inline std::ostream & operator <<(
+			std::ostream &oss,
+			const trdk::Lib::SecurityType &securityType) {
+		oss << trdk::Lib::ConvertToString(securityType);
+		return oss;
+	}
+
 } }
 
-inline std::ostream & operator <<(
-		std::ostream &oss,
-		const trdk::Lib::SecurityType &securityType) {
-	oss << trdk::Lib::ConvertToString(securityType);
-	return oss;
-}
+
