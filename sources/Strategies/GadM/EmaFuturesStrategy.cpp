@@ -165,7 +165,7 @@ namespace trdk { namespace Strategies { namespace GadM {
 		virtual pt::ptime OnSecurityStart(Security &security) {
 			if (!m_security) {
 				m_security = &security;
-				GetLog().Info("Using \"%1%\" to trade...", m_security);
+				GetLog().Info("Using \"%1%\" to trade...", *m_security);
 			} else if (m_security != &security) {
 				throw Exception(
 					"Strategy can not work with more than one security");
@@ -208,6 +208,10 @@ namespace trdk { namespace Strategies { namespace GadM {
 				throw Exception("Failed to resolve EMA service");
 			}
 
+			//! @todo Find another solution, without const_cast:
+			OnSecurityStart(
+				const_cast<Security &>(*maService->GetSecurities().GetBegin()));
+
 		}
 
 	protected:
@@ -215,10 +219,11 @@ namespace trdk { namespace Strategies { namespace GadM {
 		virtual void OnServiceDataUpdate(
 				const Service &service,
 				const Milestones &timeMeasurement) {
+			m_ema[FAST].CheckSource(service)
+				|| m_ema[SLOW].CheckSource(service);
 			if (!IsDataStarted()) {
 				return;
 			}
-			UpdateEma(service);
 			GetPositions().GetSize() > 0
 				?	CheckPositionCloseSignal(timeMeasurement)
 				:	CheckPositionOpenSignal(timeMeasurement);
@@ -246,14 +251,6 @@ namespace trdk { namespace Strategies { namespace GadM {
 			}
 			// Data not collected yet.
 			return false;
-		}
-
-		void UpdateEma(const Service &service) {
-			Assert(m_ema[FAST].HasSource());
-			Assert(m_ema[SLOW].HasSource());
-			Verify(
-				m_ema[FAST].CheckSource(service)
-				|| m_ema[SLOW].CheckSource(service));
 		}
 
 		void CheckPositionOpenSignal(const Milestones &timeMeasurement) {
