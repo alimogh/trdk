@@ -40,9 +40,6 @@
     <ClCompile Include="MovingAverageService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BollingerBandsService.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

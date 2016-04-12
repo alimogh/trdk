@@ -26,9 +26,6 @@
     <ClCompile Include="MovingAverageServiceTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
-    <ClCompile Include="BollingerBandsServiceTest.cpp">
-      <Filter>Tests</Filter>
-    </ClCompile>
     <ClCompile Include="PriceBookTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>

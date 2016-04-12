@@ -12,7 +12,7 @@
 //////////////////////////////////////////////////////////////////////////
 // Customization:
 
-var branch = "master"
+var branch = "GadM"
 var productName	= "Trading Robot Development Kit"
 var vendorName = "Eugene V. Palchukovsky"
 var domain = "robotdk.com"
@@ -26,12 +26,9 @@ var requiredModules = [
 	'Core'
 	, 'Engine'
 	, 'Fake'
-	, 'OnixsFixConnector'
-	, 'Itch'
 	, 'InteractiveBrokers'
 	, 'Services'
 	, 'TestStrategy'
-	, 'FxMb'
 	, 'GadM'
 ]
 

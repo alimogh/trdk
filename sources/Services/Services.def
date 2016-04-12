@@ -2,4 +2,3 @@
 EXPORTS
 	CreateBarService
 	CreateMovingAverageService
-	CreateBollingerBandsService
