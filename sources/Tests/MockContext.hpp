@@ -25,11 +25,11 @@ namespace trdk { namespace Tests {
 	public:
 
 		MOCK_METHOD0(SyncDispatching, void());
-
-		MOCK_METHOD1(GetRiskControl, RiskControl &(const trdk::TradingMode &));
-		MOCK_CONST_METHOD1(
-			GetRiskControl,
-			const RiskControl &(const trdk::TradingMode &));
+		
+		virtual RiskControl & GetRiskControl(const trdk::TradingMode &);
+		virtual const RiskControl & GetRiskControl(
+				const trdk::TradingMode &)
+				const;
 
 		MOCK_CONST_METHOD0(GetDropCopy, DropCopy *());
 

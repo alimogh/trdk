@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "MockContext.hpp"
+#include "Core/RiskControl.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/Settings.hpp"
 
@@ -33,4 +34,18 @@ MockContext::MockContext()
 
 MockContext::~MockContext() {
 	//...//
+}
+
+RiskControl & MockContext::GetRiskControl(const TradingMode &tradingMode) {
+	static RiskControl riskControl(
+		*this,
+		IniString("[RiskControl]\nis_enabled = no"),
+		tradingMode);
+	return riskControl;
+}
+
+const RiskControl & MockContext::GetRiskControl(
+		const TradingMode &tradingMode)
+		const {
+	return const_cast<MockContext *>(this)->GetRiskControl(tradingMode);
 }
