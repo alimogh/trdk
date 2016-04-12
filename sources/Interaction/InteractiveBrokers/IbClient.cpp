@@ -95,6 +95,10 @@ namespace {
 				contract.secType = "STK";
 				contract.primaryExchange = symbol.GetPrimaryExchange();
 				break;
+			case SECURITY_TYPE_FUTURES:
+				contract.secType = "FUT";
+				contract.expiry = symbol.GetExpirationDate();
+				break;
 			case SECURITY_TYPE_FUTURES_OPTIONS:
 				contract.secType = "FOP";
 				contract.expiry = symbol.GetExpirationDate();
