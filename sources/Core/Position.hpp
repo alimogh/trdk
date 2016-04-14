@@ -84,7 +84,8 @@ namespace trdk {
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
-				const Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+				const trdk::Lib::TimeMeasurement::Milestones &
+					strategyTimeMeasurement);
 		explicit Position(
 				trdk::Strategy &,
 				const boost::uuids::uuid &operationId,
@@ -92,7 +93,17 @@ namespace trdk {
 				trdk::Position &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
-				const Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+				const trdk::Lib::TimeMeasurement::Milestones &
+					strategyTimeMeasurement);
+	
+	protected:
+
+		//! Ctor only for virtual inheritance, always throws exception.
+		Position();
+
+	public:
+
+		
 		virtual ~Position();
 
 	public:
@@ -346,7 +357,7 @@ namespace trdk {
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
-				const Lib::TimeMeasurement::Milestones &);
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		explicit LongPosition(
 				trdk::Strategy &,
 				const boost::uuids::uuid &operationId,
@@ -354,7 +365,15 @@ namespace trdk {
 				trdk::ShortPosition &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
-				const Lib::TimeMeasurement::Milestones &);
+				const trdk::Lib::TimeMeasurement::Milestones &);
+
+	protected:
+
+		//! Ctor only for virtual inheritance, always throws exception.
+		LongPosition();
+
+	public:
+
 		virtual ~LongPosition();
 
 	public:
@@ -419,7 +438,7 @@ namespace trdk {
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
-				const Lib::TimeMeasurement::Milestones &);
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		explicit ShortPosition(
 				trdk::Strategy &,
 				const boost::uuids::uuid &operationId,
@@ -427,7 +446,15 @@ namespace trdk {
 				trdk::LongPosition &,
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
-				const Lib::TimeMeasurement::Milestones &);
+				const trdk::Lib::TimeMeasurement::Milestones &);
+
+	protected:
+
+		//! Ctor only for virtual inheritance, always throws exception.
+		ShortPosition();
+
+	public:
+
 		virtual ~ShortPosition();
 
 	public:

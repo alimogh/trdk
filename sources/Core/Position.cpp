@@ -1158,6 +1158,14 @@ Position::Position(
 	m_pimpl->m_oppositePosition = oppositePosition.shared_from_this();
 }
 
+#pragma warning(push)
+#pragma warning(disable: 4702)
+Position::Position() {
+	AssertFail("Position::Position exists only for virtual inheritance");
+	throw LogicError("Position::Position exists only for virtual inheritance");
+}
+#pragma warning(pop)
+
 Position::~Position() {
 	delete m_pimpl;
 }
@@ -1659,6 +1667,10 @@ LongPosition::LongPosition(
 	//...//
 }
 
+LongPosition::LongPosition() {
+	//...//
+}
+
 LongPosition::~LongPosition() {
 	//...//
 }
@@ -1949,6 +1961,10 @@ ShortPosition::ShortPosition(
 		qty,
 		startPrice,
 		timeMeasurement) {
+	//...//
+}
+
+ShortPosition::ShortPosition() {
 	//...//
 }
 

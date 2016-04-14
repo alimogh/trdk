@@ -177,11 +177,6 @@ public:
 		numberOfUnits
 	};
 
-	struct BarsLog {
-		std::ofstream file;
-		fs::path path;
-	};
-
 public:
 
 	BarService &m_service;
@@ -207,7 +202,7 @@ public:
 		}
 	} m_currentBarTicksCount;
 
-	std::unique_ptr<BarsLog> m_barsLog;
+	std::unique_ptr<std::ofstream> m_barsLog;
 
 public:
 
@@ -306,7 +301,20 @@ public:
 			throw Error("Wrong bar size settings");
 		}
 
-		ReopenLog(configuration);
+		{
+			const std::string logType = configuration.ReadKey("log");
+			if (boost::iequals(logType, "none")) {
+				m_service.GetLog().Info("Logging disabled.");
+			} else if (!boost::iequals(logType, "csv")) {
+				m_service.GetLog().Error(
+					"Wrong log type settings: \"%1%\". Unknown type."
+						" Supported: none and CSV.",
+					logType);
+				throw Error("Wrong bars log type");
+			} else {
+				m_barsLog.reset(new std::ofstream);
+			}
+		}
 
 		if (!m_countedBarSize) {
 			m_service.GetLog().Info(
@@ -321,50 +329,45 @@ public:
 
 	}
 
-	void ReopenLog(const IniSectionRef &configuration) {
+	void OpenLog() {
 
-		const std::string logType = configuration.ReadKey("log");
-		if (boost::iequals(logType, "none")) {
-			if (m_barsLog) {
-				m_barsLog.reset();
-				m_service.GetLog().Info("Logging disabled.");
-			}
+		Assert(m_security);
+		Assert(m_currentBar);
+		Assert(!m_barsLog || !m_barsLog->is_open());
+
+		if (!m_barsLog) {
 			return;
-		} else if (!boost::iequals(logType, "csv")) {
-			m_service.GetLog().Error(
-				"Wrong log type settings: \"%1%\". Unknown type."
-					" Supported: none and CSV.",
-				logType);
-			throw Error("Wrong bars log type");
 		}
 
-		std::unique_ptr<BarsLog> log(new BarsLog);
 		//! @todo Use context log dir
-		log->path = Defaults::GetBarsDataLogDir();
-		log->path /= SymbolToFileName(
-			//! @todo Generate unique filename
-			(boost::format("%1%_%2%")
+		fs::path path = Defaults::GetBarsDataLogDir();
+		path /= SymbolToFileName(
+			(boost::format("%1%_%2%%3%_%4%%5%%6%_%7%%8%%9%")
+					% m_security->GetSymbol()
 					% m_unitsStr
-					% m_barSizeStr)
+					% m_barSizeStr
+					% m_currentBar->time.date().year()
+					% m_currentBar->time.date().month().as_number()
+					% m_currentBar->time.date().day()
+					% m_currentBar->time.time_of_day().hours()
+					% m_currentBar->time.time_of_day().minutes()
+					% m_currentBar->time.time_of_day().seconds())
 				.str(),
-			logType);
-		if (m_barsLog && m_barsLog->path == log->path) {
-			return;
-		}
+			"csv");
 
-		const bool isNew = !fs::exists(log->path);
+		const bool isNew = !fs::exists(path);
 		if (isNew) {
-			fs::create_directories(log->path.branch_path());
+			fs::create_directories(path.branch_path());
 		}
-		log->file.open(
-			log->path.string(),
+		m_barsLog->open(
+			path.string(),
 			std::ios::out | std::ios::ate | std::ios::app);
-		if (!log->file) {
-			m_service.GetLog().Error("Failed to open log file %1%", log->path);
+		if (!*m_barsLog) {
+			m_service.GetLog().Error("Failed to open log file %1%", path);
 			throw Error("Failed to open log file");
 		}
 		if (isNew) {
-			log->file
+			*m_barsLog
 				<< "Date"
 				<< csvDelimeter << "Time"
 				<< csvDelimeter << "Open"
@@ -374,10 +377,9 @@ public:
 				<< csvDelimeter << "Volume"
 				<< std::endl;
 		}
-		log->file << std::setfill('0');
+		*m_barsLog << std::setfill('0');
 
-		m_service.GetLog().Info("Logging into %1%.", log->path);
-		std::swap(log, m_barsLog);
+		m_service.GetLog().Info("Logging into %1%.", path);
 
 	}
 
@@ -387,20 +389,20 @@ public:
 		}
 		{
 			const auto date = m_currentBar->time.date();
-			m_barsLog->file
+			*m_barsLog
 				<< date.year()
 				<< std::setw(2) << date.month().as_number()
 				<< std::setw(2) << date.day();
 		}
 		{
 			const auto time = m_currentBar->time.time_of_day();
-			m_barsLog->file
+			*m_barsLog
 				<< csvDelimeter
 				<< std::setw(2) << time.hours()
 				<< std::setw(2) << time.minutes()
 				<< std::setw(2) << time.seconds();
 		}
-		m_barsLog->file
+		*m_barsLog
 			<< csvDelimeter
 				<< m_security->DescalePrice(m_currentBar->openTradePrice)
 			<< csvDelimeter
@@ -492,7 +494,9 @@ public:
 		if (!m_currentBar) {
 			Assert(!m_security);
 			m_security = &security;
-			return StartNewBar(time, callback);
+			const bool hasChanges = StartNewBar(time, callback);
+			OpenLog();
+			return hasChanges;
 		} else {
 			Assert(m_security == &security);
 			const bool isNewBar

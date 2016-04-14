@@ -23,7 +23,8 @@ using namespace trdk::Lib;
 std::string Lib::SymbolToFileName(const std::string &symbol) {
 	std::string clearSymbol = boost::replace_all_copy(symbol, ":", "_");
 	boost::replace_all(clearSymbol, "/", "_");
-	return std::move(clearSymbol);
+	boost::replace_all(clearSymbol, " ", "_");
+	return clearSymbol;
 }
 
 fs::path Lib::SymbolToFileName(
@@ -31,7 +32,7 @@ fs::path Lib::SymbolToFileName(
 			const std::string &ext) {
 	fs::path result = SymbolToFileName(symbol);
 	result.replace_extension((boost::format(".%1%") % ext).str());
-	return std::move(result);
+	return result;
 }
 
 namespace {
@@ -45,7 +46,7 @@ boost::shared_ptr<lt::posix_time_zone> Lib::GetEstTimeZone() {
 
 pt::time_duration Lib::GetEstDiff() {
 	const lt::local_date_time estTime(boost::get_system_time(), GetEstTimeZone());
-	return std::move(estTime.local_time() - estTime.utc_time());
+	return estTime.local_time() - estTime.utc_time();
 }
 
 namespace {
@@ -73,7 +74,7 @@ int64_t Lib::ConvertToMicroseconds(const pt::ptime &source) {
 }
 
 pt::ptime Lib::ConvertToPTimeFromMicroseconds(int64_t source) {
-	return std::move(unixEpochStart + pt::microseconds(source));
+	return unixEpochStart + pt::microseconds(source);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -97,7 +98,7 @@ namespace {
 						throw SystemException(message.str().c_str());
 					}
 					AssertLe(resultSize, buffer.size());
-					return std::move(fs::path(&buffer[0]));
+					return fs::path(&buffer[0]);
 				}
 				bufferSize *= 2;
 			}
@@ -114,18 +115,18 @@ namespace {
 				message % error;
 				throw SystemException(message.str().c_str());
 			}
-			return std::move(fs::path(path, path + count));
+			return fs::path(path, path + count);
 		}
 #	endif
 
 }
 
 fs::path Lib::GetExeFilePath() {
-	return std::move(GetModuleFilePath(NULL));
+	return GetModuleFilePath(NULL);
 }
 
 fs::path Lib::GetExeWorkingDir() {
-	return std::move(GetExeFilePath().parent_path());
+	return GetExeFilePath().parent_path();
 }
 
 #ifdef BOOST_WINDOWS
@@ -142,7 +143,7 @@ fs::path Lib::GetExeWorkingDir() {
 			message % error;
 			throw SystemException(message.str().c_str());
 		}
-		return std::move(GetModuleFilePath(handle));
+		return GetModuleFilePath(handle);
 	}
 #else
 	fs::path Lib::GetDllFilePath() {
@@ -153,7 +154,7 @@ fs::path Lib::GetExeWorkingDir() {
 #endif
 
 fs::path Lib::GetDllFileDir() {
-	return std::move(GetDllFilePath().parent_path());
+	return GetDllFilePath().parent_path();
 }
 
 fs::path Lib::Normalize(const fs::path &path) {
@@ -162,7 +163,7 @@ fs::path Lib::Normalize(const fs::path &path) {
 	}
 	fs::path result = GetExeWorkingDir() / path;
 	Assert(result.has_root_path());
-	return std::move(result);
+	return result;
 }
 
 fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
@@ -172,7 +173,7 @@ fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
 	}
 	fs::path result = workingDir / path;
 	Assert(result.has_root_path());
-	return std::move(result);
+	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
