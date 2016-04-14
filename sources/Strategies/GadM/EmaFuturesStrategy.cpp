@@ -9,9 +9,11 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "EmaFuturesStrategyPosition.hpp"
 #include "Services/MovingAverageService.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -22,72 +24,14 @@ namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace {
-
-	template<typename Position>
-	struct PositionTrait {
-		//...//
-	};
-	template<>
-	struct PositionTrait<LongPosition> {
-		/** Submit a limit order, on the same side of the spread the system
-		  * want to trade, joining the current level. So if we are buying,
-		  * submit a buy at the current best bid level. In the jargon this is
-		  * a passive behavior, waiting for the market to come to us.
-		  */
-		static ScaledPrice GetCurrentOpenAggressivePrice(
-				const Security &security) {
-			return security.GetAskPriceScaled();
-		}
-		static ScaledPrice GetCurrentOpenPassivePrice(
-				const Security &security) {
-			return security.GetBidPriceScaled();
-		}
-		static ScaledPrice GetCurrentCloseAggressivePrice(
-				const Security &security) {
-			return security.GetBidPriceScaled();
-		}
-		static ScaledPrice GetCurrentClosePassivePrice(
-				const Security &security) {
-			return security.GetAskPriceScaled();
-		}
-	};
-	template<>
-	struct PositionTrait<ShortPosition> {
-		/** Submit a limit order, on the same side of the spread the system
-		  * want to trade, joining the current level. So if we are buying,
-		  * submit a buy at the current best bid level. In the jargon this is
-		  * a passive behavior, waiting for the market to come to us.
-		  */
-		static ScaledPrice GetCurrentOpenAggressivePrice(
-				const Security &security) {
-			return security.GetBidPriceScaled();
-		}
-		static ScaledPrice GetCurrentOpenPassivePrice(
-				const Security &security) {
-			return security.GetAskPriceScaled();
-		}
-		static ScaledPrice GetCurrentCloseAggressivePrice(
-				const Security &security) {
-			return security.GetAskPriceScaled();
-		}
-		static ScaledPrice GetCurrentClosePassivePrice(
-				const Security &security) {
-			return security.GetBidPriceScaled();
-		}
-	};
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 namespace trdk { namespace Strategies { namespace GadM {
+namespace EmaFuturesStrategy {
 
-	class EmaFuturesStrategy : public Strategy {
+	class Strategy : public trdk::Strategy {
 
 	public:
 
-		typedef Strategy Base;
+		typedef trdk::Strategy Base;
 
 	private:
 	
@@ -144,19 +88,26 @@ namespace trdk { namespace Strategies { namespace GadM {
 
 	public:
 
-		explicit EmaFuturesStrategy(
+		explicit Strategy(
 				Context &context,
 				const std::string &tag,
 				const IniSectionRef &conf)
 			: Base(context, "EmaFutures", tag, conf)
 			, m_numberOfContracts(
 				conf.ReadTypedKey<uint32_t>("number_of_contracts"))
+			, m_passiveOrderMaxLifetime(
+				pt::seconds(
+					conf.ReadTypedKey<unsigned int>(
+						"passive_order_max_lifetime_sec")))
 			, m_security(nullptr)
 			, m_fastEmaDirection(DIRECTION_LEVEL) {
-			//.../
+			GetLog().Info(
+				"Number of contracts: %1%. Passive order max. lifetime: %2%.",
+				m_numberOfContracts,
+				m_passiveOrderMaxLifetime);
 		}
 		
-		virtual ~EmaFuturesStrategy() {
+		virtual ~Strategy() {
 			//...//
 		}
 
@@ -216,17 +167,42 @@ namespace trdk { namespace Strategies { namespace GadM {
 
 	protected:
 
+		virtual void OnLevel1Update(Security &, const Milestones &) {
+			//...//
+		}
+		
+		virtual void OnPositionUpdate(trdk::Position &position) {
+			Position &startegyPosition = dynamic_cast<Position &>(position);
+			CheckSlowOrderFilling(startegyPosition);
+			startegyPosition.Sync();
+		}
+
 		virtual void OnServiceDataUpdate(
 				const Service &service,
 				const Milestones &timeMeasurement) {
+			
 			m_ema[FAST].CheckSource(service)
 				|| m_ema[SLOW].CheckSource(service);
 			if (!IsDataStarted()) {
 				return;
 			}
+			
+			const Direction &signal = UpdateDirection();
+			if (signal != DIRECTION_LEVEL) {
+				GetTradingLog().Write(
+					"Signal to %1%: slow=%2%, fast=%3%",
+					[&](TradingRecord &record) {
+						record
+							% (signal == DIRECTION_UP ? "BUY" : "SELL")
+							% m_ema[SLOW].GetValue()
+							% m_ema[FAST].GetValue();
+					});
+			}
+			
 			GetPositions().GetSize() > 0
-				?	CheckPositionCloseSignal(timeMeasurement)
-				:	CheckPositionOpenSignal(timeMeasurement);
+				?	CheckPositionCloseSignal(signal, timeMeasurement)
+				:	CheckPositionOpenSignal(signal, timeMeasurement);
+		
 		}
 
 		virtual void OnPostionsCloseRequest() {
@@ -253,87 +229,94 @@ namespace trdk { namespace Strategies { namespace GadM {
 			return false;
 		}
 
-		void CheckPositionOpenSignal(const Milestones &timeMeasurement) {
+		void CheckPositionOpenSignal(
+				const Direction &signal,
+				const Milestones &timeMeasurement) {
 
 			Assert(m_security);
 			AssertEq(0, GetPositions().GetSize());
 
 			boost::shared_ptr<Position> position;
-			switch (UpdateDirection()) {
+			switch (signal) {
 				case DIRECTION_LEVEL:
 					timeMeasurement.Measure(SM_STRATEGY_WITHOUT_DECISION_1);
 					return;
 				case DIRECTION_UP:
-					position = CreateOrder<LongPosition>(timeMeasurement);
+					position = CreatePosition<LongPosition>(timeMeasurement);
 					break;
 				case DIRECTION_DOWN:
-					position = CreateOrder<ShortPosition>(timeMeasurement);
+					position = CreatePosition<ShortPosition>(timeMeasurement);
 					break;
 				default:
 					throw LogicError("Internal error: Unknown direction");
 			}
 			Assert(position);
 
-			timeMeasurement.Measure(SM_STRATEGY_EXECUTION_START_1);
-			position->Open(position->GetOpenStartPrice());
+			position->Sync();
 			timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_1);
+			Assert(position->HasActiveOpenOrders());
 
 		}
 
-		void CheckPositionCloseSignal(const Milestones &timeMeasurement) {
+		void CheckPositionCloseSignal(
+				const Direction &signal,
+				const Milestones &timeMeasurement) {
 
 			Assert(m_security);
 			AssertEq(1, GetPositions().GetSize());
 
-			const auto &direction = UpdateDirection();
-
-			Position &position = *GetPositions().GetBegin();
-			if (position.IsCompleted()) {
+			Position &position
+				= dynamic_cast<Position &>(*GetPositions().GetBegin());
+			if (position.GetIntention() > INTENTION_HOLD) {
 				return;
 			}
 
-			switch (direction) {
+			switch (signal) {
 				case  DIRECTION_LEVEL:
-					CheckSlowOrderExecution(timeMeasurement);
 					return;
 				case DIRECTION_UP:
 					if (position.GetType() == Position::TYPE_LONG) {
-						timeMeasurement.Measure(SM_STRATEGY_WITHOUT_DECISION_2);
 						return;
 					}
 					break;
 				case DIRECTION_DOWN:
 					if (position.GetType() == Position::TYPE_SHORT) {
-						timeMeasurement.Measure(SM_STRATEGY_WITHOUT_DECISION_2);
 						return;
 					}
 					break;
 			}
 
-			timeMeasurement.Measure(SM_STRATEGY_EXECUTION_START_2);
-			if (position.IsOpened()) {
-				const auto price = position.GetType() == Position::TYPE_LONG
-					?	PositionTrait<LongPosition>::GetCurrentClosePassivePrice(
-							*m_security)
-					:	PositionTrait<ShortPosition>::GetCurrentClosePassivePrice(
-							*m_security);
-				position.Close(Position::CLOSE_TYPE_TAKE_PROFIT, price);
-			} else {
+			if (!position.GetActiveQty()) {
+				Assert(position.HasActiveOrders());
+				Assert(position.HasActiveOpenOrders());
 				position.CancelAllOrders();
+				return;
 			}
+
+			position.SetIntention(INTENTION_CLOSE_PASSIVE);
 			timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
 
 		}
 
-		void CheckSlowOrderExecution(const Milestones &timeMeasurement) {
-			// if too slow: {
-			// timeMeasurement.Measure(SM_STRATEGY_EXECUTION_START_2);
-			//		cancel passive order and send aggressive here
-			// timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
-			// } else
-			{
-				timeMeasurement.Measure(SM_STRATEGY_EXECUTION_START_2);
+		void CheckSlowOrderFilling(Position &position) {
+
+			if (
+					position.GetIntention() != INTENTION_OPEN_PASSIVE
+					&& position.GetIntention() != INTENTION_CLOSE_PASSIVE) {
+				return;
 			}
+
+			const auto orderExpirationTime
+				= position.GetStartTime() + m_passiveOrderMaxLifetime;
+			if (orderExpirationTime < GetContext().GetCurrentTime()) {
+				return;
+			}
+
+			position.SetIntention(
+				position.GetIntention() == INTENTION_OPEN_PASSIVE
+					?	INTENTION_OPEN_AGGRESIVE
+					:	INTENTION_CLOSE_AGGRESIVE);
+
 		}
 
 		Direction UpdateDirection() {
@@ -360,10 +343,12 @@ namespace trdk { namespace Strategies { namespace GadM {
 						case DIRECTION_UP:
 						case DIRECTION_DOWN:
 							return m_fastEmaDirection;
+							break;
 						case DIRECTION_LEVEL:
 							return fastEmaDirection == DIRECTION_DOWN
 								?	DIRECTION_UP
 								:	DIRECTION_DOWN;
+							break;
 						default:
 							throw LogicError(
 								"Internal error: Unknown direction");
@@ -373,24 +358,22 @@ namespace trdk { namespace Strategies { namespace GadM {
 		}
 
 		template<typename Position>
-		boost::shared_ptr<Position> CreateOrder(
+		boost::shared_ptr<Position> CreatePosition(
 				const Milestones &timeMeasurement) {
 			Assert(m_security);
 			return boost::make_shared<Position>(
 				*this,
 				m_generateUuid(),
-				0,
 				GetTradeSystem(m_security->GetSource().GetIndex()),
 				*m_security,
-				m_security->GetSymbol().GetCurrency(),
 				m_numberOfContracts,
-				PositionTrait<Position>::GetCurrentOpenPassivePrice(*m_security),
 				timeMeasurement);
 		}
 
 	private:
 
 		const Qty m_numberOfContracts;
+		const pt::time_duration m_passiveOrderMaxLifetime;
 
 		Security *m_security;
 
@@ -401,7 +384,7 @@ namespace trdk { namespace Strategies { namespace GadM {
 
 	};
 
-} } }
+} } } }
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -410,7 +393,7 @@ TRDK_STRATEGY_GADM_API boost::shared_ptr<Strategy> CreateEmaFuturesStrategy(
 		const std::string &tag,
 		const IniSectionRef &conf) {
 	using namespace trdk::Strategies::GadM;
-	return boost::make_shared<EmaFuturesStrategy>(context, tag, conf);
+	return boost::make_shared<EmaFuturesStrategy::Strategy>(context, tag, conf);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
