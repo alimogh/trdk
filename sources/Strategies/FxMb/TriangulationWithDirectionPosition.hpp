@@ -23,14 +23,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 	public:
 
 		explicit Position(
-				trdk::Strategy &strategy,
-				const Triangle &triangle,
-				trdk::TradeSystem &tradeSystem,
-				trdk::Security &security,
-				const trdk::Lib::Currency &currency,
 				const trdk::Qty &qty,
-				const trdk::ScaledPrice &startPrice,
-				const Lib::TimeMeasurement::Milestones &timeMeasurement,
 				const Pair &pair,
 				const Leg &leg,
 				uint8_t qtyPrecision);
