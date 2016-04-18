@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "EmaFuturesStrategyPosition.hpp"
 #include "Core/Strategy.hpp"
+#include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -23,9 +24,10 @@ namespace ids = boost::uuids;
 ////////////////////////////////////////////////////////////////////////////////
 
 EmaFuturesStrategy::Position::Position()
-	: m_startTime(GetStrategy().GetContext().GetCurrentTime())
-	, m_intention(INTENTION_OPEN_PASSIVE)
-	, m_isIntentionInAction(false)  {
+	: m_intention(INTENTION_OPEN_PASSIVE)
+	, m_isSent(false)
+	, m_isPassiveOpen(true)
+	, m_isPassiveClose(true) {
 	//...//
 }
 
@@ -45,87 +47,135 @@ const Intention & EmaFuturesStrategy::Position::GetIntention() const {
 void EmaFuturesStrategy::Position::SetIntention(Intention intention) {
 	AssertNe(m_intention, intention);
 	AssertNe(INTENTION_OPEN_PASSIVE, intention);
-	bool isIntentionInAction = false;
-	Sync(intention, isIntentionInAction);
+	GetStrategy().GetTradingLog().Write(
+		"intention\t%1%->%2%\t%3%\t%4%\t%5%",
+		[&](TradingRecord &record) {
+			record
+				% m_intention
+				% intention
+				% (m_isPassiveOpen ? "true" : "false")
+				% (m_isPassiveClose ? "true" : "false")
+				% (m_isSent ? "true" : "false");
+		});
+	Sync(intention);
 	m_intention = intention;
-	m_isIntentionInAction = isIntentionInAction;
 }
 
 void EmaFuturesStrategy::Position::Sync() {
-	Sync(m_intention, m_isIntentionInAction);
+	Sync(m_intention);
 }
 
-void EmaFuturesStrategy::Position::Sync(
-		Intention &intention,
-		bool &isIntentionInAction) {
+void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 
-	static_assert(numberOfIntentions == 5, "List changed.");
+	static_assert(numberOfIntentions == 6, "List changed.");
 	switch (intention) {
 
 		case INTENTION_OPEN_PASSIVE:
+			Assert(m_isPassiveOpen);
+			if (IsOpened()) {
+				Assert(m_isSent);
+				intention = INTENTION_HOLD;
+
+			} else if (HasActiveOrders()) {
+				Assert(m_isSent);
+			} else if (m_isSent) {
+				throw Exception(
+					"Order canceled by trading system without request");
+			} else {
+				Open(GetOpenStartPrice());
+				m_isPassiveOpen = true;
+				m_isSent = true;
+				m_startTime = GetStrategy().GetContext().GetCurrentTime();
+			}
+			break;
+
+		case INTENTION_DONOT_OPEN:
+			Assert(!IsOpened());
+			if (HasActiveOpenOrders()) {
+				Assert(m_isSent);
+				CancelAllOrders();
+				m_isSent = false;
+			} else if (m_isSent) {
+				throw Exception(
+					"Order canceled by trading system without request");
+			} else {
+				intention = INTENTION_HOLD;
+				m_isSent = false;
+			}
+			break;
+
 		case INTENTION_OPEN_AGGRESIVE:
 			if (IsOpened()) {
-				Assert(!IsCompleted());
-				Assert(isIntentionInAction);
+				Assert(m_isSent);
 				intention = INTENTION_HOLD;
-				isIntentionInAction = false;
+				m_isSent = false;
 			} else if (HasActiveOrders()) {
-				if (intention == INTENTION_OPEN_AGGRESIVE) {
-					if (!isIntentionInAction) {
-						CancelAllOrders();
-					}
-				} else {
-					Assert(isIntentionInAction);
+				Assert(m_isSent);
+				if (m_isPassiveOpen) {
+					CancelAllOrders();
+					m_isSent = false;
 				}
-			} else if (!isIntentionInAction) {
-				if (!IsCanceled()) {
-					throw Lib::Exception("Failed to open position");
-				}
-				intention = INTENTION_HOLD;
+			} else if (m_isSent) {
+				throw Exception(
+					"Order canceled by trading system without request");
 			} else {
-				Open(
-					intention == INTENTION_OPEN_PASSIVE
-						?	GetOpenStartPrice()
-						:	GetMarketOpenPrice());
-				isIntentionInAction = true;
+				Open(GetMarketOpenPrice());
+				m_isPassiveOpen = false;
+				m_isSent = true;
 			}
 			break;
 
 		case INTENTION_HOLD:
-			Assert(!isIntentionInAction);
-			return;
+			Assert(!m_isSent);
+			break;
 
 		case INTENTION_CLOSE_PASSIVE:
+			Assert(IsOpened());
+			Assert(m_isPassiveClose);
+			Assert(!HasActiveOpenOrders());
+			if (IsCompleted()) {
+				Assert(m_isSent);
+				intention = INTENTION_HOLD;
+			} else if (HasActiveOrders()) {
+				Assert(m_isSent);
+				Assert(!HasActiveOpenOrders());
+			} else if (m_isSent) {
+				throw Exception(
+					"Order canceled by trading system without request");
+			} else {
+				Close(CLOSE_TYPE_TAKE_PROFIT, GetPassiveClosePrice());
+				m_isPassiveClose = true;
+				m_isSent = true;
+				m_startTime = GetStrategy().GetContext().GetCurrentTime();
+			}
+			break;
+
 		case INTENTION_CLOSE_AGGRESIVE:
 			Assert(IsOpened());
+			Assert(!HasActiveOpenOrders());
 			if (IsCompleted()) {
+				Assert(m_isSent);
 				intention = INTENTION_HOLD;
-				isIntentionInAction = false;
 			} else if (HasActiveOrders()) {
-				if (intention == INTENTION_CLOSE_AGGRESIVE) {
-					if (!isIntentionInAction) {
-						CancelAllOrders();
-					}
-				} else {
-					Assert(isIntentionInAction);
+				Assert(m_isSent);
+				Assert(!HasActiveOpenOrders());
+				if (m_isPassiveClose) {
+					CancelAllOrders();
+					m_isSent = false;
 				}
-			} else if (!isIntentionInAction) {
-				if (!IsCanceled()) {
-					throw Lib::Exception("Failed to close position");
-				}
-				intention = INTENTION_HOLD;
+			} else if (m_isSent) {
+				throw Exception(
+					"Order canceled by trading system without request");
 			} else {
-				Close(
-					CLOSE_TYPE_TAKE_PROFIT,
-					intention == INTENTION_CLOSE_PASSIVE
-						?	GetMarketClosePrice() //! @todo fixme
-						:	GetMarketClosePrice());
-				isIntentionInAction = true;
+				Close(CLOSE_TYPE_TAKE_PROFIT, GetMarketClosePrice());
+				m_isPassiveClose = false;
+				m_isSent = true;
 			}
 			break;
 		
 		default:
-			AssertEq(INTENTION_OPEN_PASSIVE, m_intention);
+			AssertEq(INTENTION_OPEN_PASSIVE, intention);
+			break;
 	
 	}
 
@@ -149,8 +199,7 @@ EmaFuturesStrategy::LongPosition::LongPosition(
 		security.GetSymbol().GetCurrency(),
 		qty,
 		security.GetBidPriceScaled(),
-		strategyTimeMeasurement)
-	, trdk::LongPosition() {
+		strategyTimeMeasurement) {
 	//...//
 }
 
@@ -164,6 +213,18 @@ ScaledPrice EmaFuturesStrategy::LongPosition::GetMarketOpenPrice() const {
 
 ScaledPrice EmaFuturesStrategy::LongPosition::GetMarketClosePrice() const {
 	return GetSecurity().GetBidPriceScaled();
+}
+
+ScaledPrice EmaFuturesStrategy::LongPosition::GetPassiveClosePrice() const {
+	return GetSecurity().GetAskPriceScaled();
+}
+
+bool EmaFuturesStrategy::LongPosition::IsPriceAllowed(double priceDelta) const {
+	Assert(HasActiveOrders());
+	//! @todo
+	return HasActiveOpenOrders()
+		?	(GetOpenStartPrice() + priceDelta <= GetMarketOpenPrice())
+		:	(GetCloseStartPrice() - priceDelta >= GetMarketClosePrice());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -198,6 +259,20 @@ ScaledPrice EmaFuturesStrategy::ShortPosition::GetMarketOpenPrice() const {
 
 ScaledPrice EmaFuturesStrategy::ShortPosition::GetMarketClosePrice() const {
 	return GetSecurity().GetAskPriceScaled();
+}
+
+ScaledPrice EmaFuturesStrategy::ShortPosition::GetPassiveClosePrice() const {
+	return GetSecurity().GetBidPriceScaled();
+}
+
+bool EmaFuturesStrategy::ShortPosition::IsPriceAllowed(
+		double priceDelta)
+		const {
+	Assert(HasActiveOrders());
+	//! @todo
+	return HasActiveOpenOrders()
+		?	(GetOpenStartPrice() - priceDelta >= GetMarketOpenPrice())
+		:	(GetCloseStartPrice() + priceDelta <= GetMarketClosePrice());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
