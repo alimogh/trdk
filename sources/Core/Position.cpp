@@ -169,8 +169,6 @@ public:
 
 	boost::atomic<CloseType> m_closeType;
 
-	volatile long m_isStarted;
-
 	bool m_isMarketAsCompleted;
 
 	boost::atomic_bool m_isError;
@@ -206,7 +204,6 @@ public:
 		, m_openStartPrice(startPrice)
 		, m_closeStartPrice(0)
 		, m_closeType(CLOSE_TYPE_NONE)
-		, m_isStarted(false)
 		, m_isMarketAsCompleted(false)
 		, m_isError(false)
 		, m_isInactive(false)
@@ -761,15 +758,13 @@ public:
 		
 		const WriteLock lock(m_mutex);
 		std::unique_ptr<const WriteLock> oppositePositionLock;
-		if (m_position.IsStarted()) {
+		if (m_position.HasActiveOrders() || m_closed.orderId != nOrderId) {
 			throw AlreadyStartedError();
 		}
 		
 		Assert(!m_position.IsOpened());
 		Assert(!m_position.IsError());
 		Assert(!m_position.IsClosed());
-		Assert(!m_position.IsCompleted());
-		Assert(!m_position.HasActiveOrders());
 
 		auto qtyToOpen = m_position.GetNotOpenedQty();
 		const char *action = "open-pre";
@@ -781,7 +776,6 @@ public:
 			Assert(m_oppositePosition->IsStarted());
 			Assert(!m_oppositePosition->IsError());
 			Assert(!m_oppositePosition->HasActiveOrders());
-			Assert(!m_oppositePosition->IsCompleted());
 			AssertEq(0, m_oppositePosition->GetCloseStartPrice());
 			if (!m_oppositePosition->IsOpened()) {
 				throw NotOpenedError();
@@ -817,10 +811,7 @@ public:
 									// don't know why set flag only here.
 			m_opened.StaticData::operator =(staticData);
 			m_opened.hasOrder = true;
-			AssertEq(nOrderId, m_opened.orderId);
 			m_opened.orderId = orderId;
-			Assert(!m_isStarted);
-			m_isStarted = true;
 			if (m_oppositePosition) {
 				m_oppositePosition->m_pimpl->m_closeType = CLOSE_TYPE_NONE;
 				m_oppositePosition->m_pimpl->m_closed.hasOrder = true;

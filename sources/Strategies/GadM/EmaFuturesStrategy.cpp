@@ -27,6 +27,33 @@ namespace pt = boost::posix_time;
 namespace trdk { namespace Strategies { namespace GadM {
 namespace EmaFuturesStrategy {
 
+	////////////////////////////////////////////////////////////////////////////////
+
+	enum Direction {
+		DIRECTION_UP,
+		DIRECTION_LEVEL,
+		DIRECTION_DOWN
+	};
+	
+	const char * ConvertToPch(const Direction &source) {
+		switch (source) {
+			case DIRECTION_UP:
+				return "UP";
+				break;
+			case DIRECTION_LEVEL:
+				return "LEVEL";
+				break;
+			case DIRECTION_DOWN:
+				return "DOWN";
+				break;
+			default:
+				AssertEq(DIRECTION_UP, source);
+				return "<UNKNOWN>";
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+
 	class Strategy : public trdk::Strategy {
 
 	public:
@@ -80,12 +107,6 @@ namespace EmaFuturesStrategy {
 			numberOfEmaTypes
 		};
 
-		enum Direction {
-			DIRECTION_UP,
-			DIRECTION_LEVEL,
-			DIRECTION_DOWN
-		};
-
 	public:
 
 		explicit Strategy(
@@ -99,12 +120,16 @@ namespace EmaFuturesStrategy {
 				pt::seconds(
 					conf.ReadTypedKey<unsigned int>(
 						"passive_order_max_lifetime_sec")))
+			, m_orderPriceDelta(conf.ReadTypedKey<double>("order_price_delta"))
 			, m_security(nullptr)
 			, m_fastEmaDirection(DIRECTION_LEVEL) {
 			GetLog().Info(
-				"Number of contracts: %1%. Passive order max. lifetime: %2%.",
+				"Number of contracts: %1%."
+					" Passive order max. lifetime: %2%."
+					" Order price delta: %3%.",
 				m_numberOfContracts,
-				m_passiveOrderMaxLifetime);
+				m_passiveOrderMaxLifetime,
+				m_orderPriceDelta);
 		}
 		
 		virtual ~Strategy() {
@@ -167,8 +192,18 @@ namespace EmaFuturesStrategy {
 
 	protected:
 
-		virtual void OnLevel1Update(Security &, const Milestones &) {
-			//...//
+		virtual void OnLevel1Update(Security &security, const Milestones &) {
+			
+			Assert(m_security == &security);
+			UseUnused(security);
+			
+			if (!GetPositions().GetSize()) {
+				return;
+			}
+
+			CheckSlowOrderFilling(
+				dynamic_cast<Position &>(*GetPositions().GetBegin()));
+		
 		}
 		
 		virtual void OnPositionUpdate(trdk::Position &position) {
@@ -190,19 +225,22 @@ namespace EmaFuturesStrategy {
 			const Direction &signal = UpdateDirection();
 			if (signal != DIRECTION_LEVEL) {
 				GetTradingLog().Write(
-					"Signal to %1%: slow=%2%, fast=%3%",
+					"signal\t%1%\tslow-ema=%2%\tfast-ema=%3%\t%4%\tbid=%5%\task=%6%",
 					[&](TradingRecord &record) {
 						record
 							% (signal == DIRECTION_UP ? "BUY" : "SELL")
 							% m_ema[SLOW].GetValue()
-							% m_ema[FAST].GetValue();
+							% m_ema[FAST].GetValue()
+							% ConvertToPch(m_fastEmaDirection)
+							% m_security->GetBidPrice()
+							% m_security->GetAskPrice();
 					});
 			}
-			
+
 			GetPositions().GetSize() > 0
 				?	CheckPositionCloseSignal(signal, timeMeasurement)
 				:	CheckPositionOpenSignal(signal, timeMeasurement);
-		
+
 		}
 
 		virtual void OnPostionsCloseRequest() {
@@ -289,7 +327,10 @@ namespace EmaFuturesStrategy {
 			if (!position.GetActiveQty()) {
 				Assert(position.HasActiveOrders());
 				Assert(position.HasActiveOpenOrders());
-				position.CancelAllOrders();
+				GetTradingLog().Write(
+					"canceling slow empty order by close signal",
+					[&](TradingRecord &) {});
+				position.SetIntention(INTENTION_DONOT_OPEN);
 				return;
 			}
 
@@ -300,22 +341,71 @@ namespace EmaFuturesStrategy {
 
 		void CheckSlowOrderFilling(Position &position) {
 
-			if (
-					position.GetIntention() != INTENTION_OPEN_PASSIVE
-					&& position.GetIntention() != INTENTION_CLOSE_PASSIVE) {
-				return;
+			static_assert(numberOfIntentions == 6, "List changed.");
+			switch (position.GetIntention()) {
+				
+				case INTENTION_HOLD:
+				case INTENTION_DONOT_OPEN:
+					return;
+				
+				case INTENTION_OPEN_PASSIVE:
+				case INTENTION_CLOSE_PASSIVE:
+					{
+						const auto orderExpirationTime
+							= position.GetStartTime() + m_passiveOrderMaxLifetime;
+						const auto &now = GetContext().GetCurrentTime();
+						if (orderExpirationTime > now) {
+							return;
+						}
+						GetTradingLog().Write(
+							"slow-order\ttime\tstart=%1%\tend=%2%\tnow=%3%\t%4%",
+							[&](TradingRecord &record) {
+								record
+									%	position.GetStartTime()
+									%	orderExpirationTime
+									%	now
+									%	(position.GetIntention() == INTENTION_OPEN_PASSIVE
+										?	"passive"
+										:	"aggressive");
+							});
+						position.SetIntention(
+							position.GetIntention() == INTENTION_OPEN_PASSIVE
+								?	INTENTION_OPEN_AGGRESIVE
+								:	INTENTION_CLOSE_AGGRESIVE);
+						break;
+					}
+
 			}
 
-			const auto orderExpirationTime
-				= position.GetStartTime() + m_passiveOrderMaxLifetime;
-			if (orderExpirationTime < GetContext().GetCurrentTime()) {
-				return;
+			if (!position.IsPriceAllowed(m_orderPriceDelta)) {
+				GetTradingLog().Write(
+					"slow-order\tprice\tstart=%1%\tend=%2%\tnow=%3%\t%4%",
+					[&](TradingRecord &record) {
+						Assert(position.HasActiveOrders());
+						//! @todo:
+						if (position.HasActiveOpenOrders()) {
+							record
+								%	position.GetOpenStartPrice()
+								%	(position.GetOpenStartPrice()
+									+ m_orderPriceDelta)
+								%	position.GetMarketOpenPrice();
+						} else {
+							record
+								%	position.GetCloseStartPrice()
+								%	(position.GetCloseStartPrice()
+									+ m_orderPriceDelta)
+								%	position.GetMarketClosePrice();
+						}
+						%	(position.GetIntention() == INTENTION_OPEN_PASSIVE
+							?	"passive"
+							:	"aggressive");
+					});
+				//! @todo
+				position.SetIntention(
+					position.GetIntention() == INTENTION_OPEN_PASSIVE
+						?	INTENTION_OPEN_AGGRESIVE
+						:	INTENTION_CLOSE_AGGRESIVE);
 			}
-
-			position.SetIntention(
-				position.GetIntention() == INTENTION_OPEN_PASSIVE
-					?	INTENTION_OPEN_AGGRESIVE
-					:	INTENTION_CLOSE_AGGRESIVE);
 
 		}
 
@@ -333,6 +423,15 @@ namespace EmaFuturesStrategy {
 			}
 
 			std::swap(fastEmaDirection, m_fastEmaDirection);
+			GetTradingLog().Write(
+				"fast-ema\t%1%->%2%\tslow-ema=%3%\tfast-ema=%4%",
+				[&](TradingRecord &record) {
+					record
+						% ConvertToPch(fastEmaDirection)
+						% ConvertToPch(m_fastEmaDirection)
+						% m_ema[SLOW]
+						% m_ema[FAST];
+				});
 
 			switch (fastEmaDirection) {
 				case  DIRECTION_LEVEL:
@@ -374,6 +473,7 @@ namespace EmaFuturesStrategy {
 
 		const Qty m_numberOfContracts;
 		const pt::time_duration m_passiveOrderMaxLifetime;
+		const double  m_orderPriceDelta;
 
 		Security *m_security;
 

@@ -19,6 +19,7 @@ namespace EmaFuturesStrategy {
 
 	enum Intention {
 		INTENTION_OPEN_PASSIVE,
+		INTENTION_DONOT_OPEN,
 		INTENTION_OPEN_AGGRESIVE,
 		INTENTION_HOLD,
 		INTENTION_CLOSE_PASSIVE,
@@ -49,23 +50,24 @@ namespace EmaFuturesStrategy {
 
 		void Sync();
 
-	protected:
+		virtual bool IsPriceAllowed(double priceDelta) const = 0;
 
 		virtual ScaledPrice GetMarketOpenPrice() const = 0;
 		virtual ScaledPrice GetMarketClosePrice() const = 0;
+		virtual ScaledPrice GetPassiveClosePrice() const = 0;
 
 	private:
 
-	
-		void Sync(Intention &, bool &);
-
+		void Sync(Intention &);
 
 	private:
 
-		const Time m_startTime;
+		Time m_startTime;
 		
 		Intention m_intention;
-		bool m_isIntentionInAction;
+		bool m_isSent;
+		bool m_isPassiveOpen;
+		bool m_isPassiveClose;
 	
 	};
 
@@ -81,9 +83,11 @@ namespace EmaFuturesStrategy {
 				const Qty &,
 				const Lib::TimeMeasurement::Milestones &);
 		virtual ~LongPosition();
-	protected:
+	public:
+		virtual bool IsPriceAllowed(double priceDelta) const;
 		virtual ScaledPrice GetMarketOpenPrice() const;
 		virtual ScaledPrice GetMarketClosePrice() const;
+		virtual ScaledPrice GetPassiveClosePrice() const;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -98,9 +102,11 @@ namespace EmaFuturesStrategy {
 				const Qty &,
 				const Lib::TimeMeasurement::Milestones &);
 		virtual ~ShortPosition();
-	protected:
+	public:
+		virtual bool IsPriceAllowed(double priceDelta) const;
 		virtual ScaledPrice GetMarketOpenPrice() const;
 		virtual ScaledPrice GetMarketClosePrice() const;
+		virtual ScaledPrice GetPassiveClosePrice() const;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////

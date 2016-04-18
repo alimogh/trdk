@@ -77,7 +77,7 @@ namespace {
 		} else if (boost::iequals(symbol.GetSymbol(), "TEST_SCALE2")) {
 			return 2;
 		} else {
-			const uint8_t result = 6;
+			const uint8_t result = 2;
 			source.GetLog().Warn(
 				"Precision for \"%1%\" not set. Using default - %2%.",
 				symbol,
