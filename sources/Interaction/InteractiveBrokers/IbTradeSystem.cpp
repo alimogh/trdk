@@ -107,7 +107,7 @@ void ib::TradeSystem::CreateConnection(const IniSectionRef &settings) {
 						AssertGt(filled, pos->filled);
 						tradeData.price
 							= pos->security->ScalePrice(lastFillPrice);
-						tradeData.qty = pos->filled - filled;
+						tradeData.qty = filled - pos->filled;
 						tradeInfo = &tradeData;
 						pos->UpdateFilled(filled);
 						if (remaining == 0) {
