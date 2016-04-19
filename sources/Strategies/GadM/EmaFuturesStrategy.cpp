@@ -159,7 +159,7 @@ namespace EmaFuturesStrategy {
 						" to work with MovingAverageService");
 			}
 
-			if (boost::istarts_with(maService->GetTag(), "fast")) {
+			if (boost::iends_with(maService->GetTag(), "fastema")) {
 				GetLog().Info(
 					"Using EMA service \"%1%\" as fast EMA...",
 					maService->GetTag());
@@ -168,7 +168,7 @@ namespace EmaFuturesStrategy {
 						"Strategy should have one one fast EMA service");
 				}
 				m_ema[FAST] = Ema(*maService);
-			} else if (boost::istarts_with(maService->GetTag(), "slow")) {
+			} else if (boost::iends_with(maService->GetTag(), "slowema")) {
 				GetLog().Info(
 					"Using EMA service \"%1%\" as slow EMA...",
 					maService->GetTag());
