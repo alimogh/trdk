@@ -27,7 +27,9 @@ EmaFuturesStrategy::Position::Position()
 	: m_intention(INTENTION_OPEN_PASSIVE)
 	, m_isSent(false)
 	, m_isPassiveOpen(true)
-	, m_isPassiveClose(true) {
+	, m_isPassiveClose(true)
+	, m_closeType(CLOSE_TYPE_NONE)
+	, m_maxProfit(0) {
 	//...//
 }
 
@@ -44,19 +46,23 @@ const Intention & EmaFuturesStrategy::Position::GetIntention() const {
 	return m_intention;
 }
 
-void EmaFuturesStrategy::Position::SetIntention(Intention intention) {
+void EmaFuturesStrategy::Position::SetIntention(
+		Intention intention,
+		const CloseType &closeType) {
 	AssertNe(m_intention, intention);
 	AssertNe(INTENTION_OPEN_PASSIVE, intention);
 	GetStrategy().GetTradingLog().Write(
-		"intention\t%1%->%2%\t%3%\t%4%\t%5%",
+		"intention\t%1%->%2%\t%3%\t%4%\t%5%\t%6%",
 		[&](TradingRecord &record) {
 			record
 				% m_intention
 				% intention
 				% (m_isPassiveOpen ? "true" : "false")
 				% (m_isPassiveClose ? "true" : "false")
-				% (m_isSent ? "true" : "false");
+				% (m_isSent ? "true" : "false")
+				% closeType;
 		});
+	m_closeType = closeType;
 	Sync(intention);
 	m_intention = intention;
 }
@@ -85,8 +91,8 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 		case INTENTION_OPEN_PASSIVE:
 			Assert(m_isPassiveOpen);
 			if (IsOpened()) {
-				Assert(m_isSent);
 				intention = INTENTION_HOLD;
+				m_isSent = false;
 			} else if (HasActiveOrders()) {
 				//...//
 			} else if (m_isSent) {
@@ -116,7 +122,6 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 
 		case INTENTION_OPEN_AGGRESIVE:
 			if (IsOpened()) {
-				Assert(m_isSent);
 				intention = INTENTION_HOLD;
 				m_isSent = false;
 			} else if (HasActiveOrders()) {
@@ -128,7 +133,7 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				throw Exception(
 					"Order canceled by trading system without request");
 			} else {
-				Open(GetSecurity().ScalePrice(GetMarketOpenPrice()));
+				Open(GetMarketOpenPrice());
 				m_isPassiveOpen = false;
 				m_isSent = true;
 			}
@@ -143,18 +148,15 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 			Assert(m_isPassiveClose);
 			Assert(!HasActiveOpenOrders());
 			if (IsCompleted()) {
-				Assert(m_isSent);
 				intention = INTENTION_HOLD;
 			} else if (HasActiveOrders()) {
-				Assert(m_isSent);
 				Assert(!HasActiveOpenOrders());
 			} else if (m_isSent) {
 				throw Exception(
 					"Order canceled by trading system without request");
 			} else {
-				Close(
-					CLOSE_TYPE_TAKE_PROFIT,
-					GetSecurity().ScalePrice(GetPassiveClosePrice()));
+				SetCloseStartPrice(GetPassiveClosePrice());
+				Close(m_closeType, GetCloseStartPrice());
 				m_isPassiveClose = true;
 				m_isSent = true;
 				m_startTime = GetStrategy().GetContext().GetCurrentTime();
@@ -165,10 +167,8 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 			Assert(IsOpened());
 			Assert(!HasActiveOpenOrders());
 			if (IsCompleted()) {
-				Assert(m_isSent);
 				intention = INTENTION_HOLD;
 			} else if (HasActiveOrders()) {
-				Assert(m_isSent);
 				Assert(!HasActiveOpenOrders());
 				if (m_isPassiveClose) {
 					CancelAllOrders();
@@ -178,9 +178,8 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				throw Exception(
 					"Order canceled by trading system without request");
 			} else {
-				Close(
-					CLOSE_TYPE_TAKE_PROFIT,
-					GetSecurity().ScalePrice(GetMarketClosePrice()));
+				SetCloseStartPrice(GetMarketClosePrice());
+				Close(m_closeType, GetCloseStartPrice());
 				m_isPassiveClose = false;
 				m_isSent = true;
 			}
@@ -192,6 +191,20 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 	
 	}
 
+}
+
+EmaFuturesStrategy::Position::PriceCheckResult
+EmaFuturesStrategy::Position::CheckTakeProfit(
+		double trailingPercentage) {
+	PriceCheckResult result = {};
+	result.current = CaclCurrentProfit();
+	if (result.current > m_maxProfit) {
+		m_maxProfit = result.current;
+	}
+	result.start = m_maxProfit;
+	result.margin = ScaledPrice(m_maxProfit * trailingPercentage);
+	result.isAllowed = result.current > result.margin;
+	return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -220,20 +233,20 @@ EmaFuturesStrategy::LongPosition::~LongPosition() {
 	//...//
 }
 
-double EmaFuturesStrategy::LongPosition::GetMarketOpenPrice() const {
-	return GetSecurity().GetAskPrice();
+ScaledPrice EmaFuturesStrategy::LongPosition::GetMarketOpenPrice() const {
+	return GetSecurity().GetAskPriceScaled();
 }
 
-double EmaFuturesStrategy::LongPosition::GetMarketClosePrice() const {
-	return GetSecurity().GetBidPrice();
+ScaledPrice EmaFuturesStrategy::LongPosition::GetMarketClosePrice() const {
+	return GetSecurity().GetBidPriceScaled();
 }
 
-double EmaFuturesStrategy::LongPosition::GetPassiveOpenPrice() const {
-	return GetSecurity().GetBidPrice();
+ScaledPrice EmaFuturesStrategy::LongPosition::GetPassiveOpenPrice() const {
+	return GetSecurity().GetBidPriceScaled();
 }
 
-double EmaFuturesStrategy::LongPosition::GetPassiveClosePrice() const {
-	return GetSecurity().GetAskPrice();
+ScaledPrice EmaFuturesStrategy::LongPosition::GetPassiveClosePrice() const {
+	return GetSecurity().GetAskPriceScaled();
 }
 
 EmaFuturesStrategy::LongPosition::PriceCheckResult
@@ -241,25 +254,65 @@ EmaFuturesStrategy::LongPosition::CheckOrderPrice(double priceDelta) const {
 	Assert(HasActiveOrders());
 	PriceCheckResult result = {};
 	if (HasActiveOpenOrders()) {
-		result.start = GetSecurity().DescalePrice(GetOpenStartPrice());
-		result.margin = result.start + priceDelta;
+		result.start = GetOpenStartPrice();
+		result.margin = result.start + GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_OPEN_PASSIVE
 			?	GetPassiveOpenPrice()
 			:	GetMarketOpenPrice();
-		result.isAllowed
-			= result.margin < result.current
-			|| IsEqual(result.margin, result.current);
+		result.isAllowed = result.margin >= result.current;
 	} else {
-		result.start = GetSecurity().DescalePrice(GetCloseStartPrice());
-		result.margin = result.start - priceDelta;
+		result.start = GetCloseStartPrice();
+		result.margin = result.start - GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_CLOSE_PASSIVE
 			?	GetPassiveClosePrice()
 			:	GetMarketClosePrice();
-		result.isAllowed
-			= result.margin > result.current
-			|| IsEqual(result.margin, result.current);
+		result.isAllowed = result.margin <= result.current;
 	}
+	Assert(!IsZero(result.start));
+	Assert(!IsZero(result.margin));
+	Assert(!IsZero(result.current));
 	return result;
+}
+
+EmaFuturesStrategy::LongPosition::PriceCheckResult
+EmaFuturesStrategy::LongPosition::CheckStopLossByPrice(
+		double priceDelta)
+		const {
+	Assert(!IsZero(GetOpenPrice()));
+	AssertEq(INTENTION_HOLD, GetIntention());
+	PriceCheckResult result = {};
+	result.start = GetOpenPrice();
+	result.margin = result.start - GetSecurity().ScalePrice(priceDelta);;
+	result.current = GetMarketClosePrice();
+	result.isAllowed = result.current >= result.margin;
+	return result;
+}
+
+EmaFuturesStrategy::LongPosition::PriceCheckResult
+EmaFuturesStrategy::LongPosition::CheckStopLossByLoss(
+		double maxLossMoneyPerContract)
+		const {
+	Assert(!IsZero(GetOpenPrice()));
+	AssertEq(INTENTION_HOLD, GetIntention());
+	PriceCheckResult result = {};
+	result.start = ScaledPrice(GetOpenPrice() * GetActiveQty());
+	result.margin
+		= result.start
+		- (ScaledPrice(GetActiveQty())
+		* GetSecurity().ScalePrice(maxLossMoneyPerContract));
+	result.current = ScaledPrice(GetActiveQty() * GetMarketClosePrice());
+	result.isAllowed = result.current >= result.margin;
+	return result;
+}
+
+ScaledPrice EmaFuturesStrategy::LongPosition::CaclCurrentProfit() const {
+	Assert(!IsZero(GetOpenPrice()));
+	Assert(!IsZero(GetActiveQty()));
+	AssertEq(INTENTION_HOLD, GetIntention());
+	return 
+		ScaledPrice(GetOpenPrice() * GetActiveQty())
+		- ScaledPrice(GetActiveQty() * GetMarketClosePrice());
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -288,20 +341,20 @@ EmaFuturesStrategy::ShortPosition::~ShortPosition() {
 	//...//
 }
 
-double EmaFuturesStrategy::ShortPosition::GetMarketOpenPrice() const {
-	return GetSecurity().GetBidPrice();
+ScaledPrice EmaFuturesStrategy::ShortPosition::GetMarketOpenPrice() const {
+	return GetSecurity().GetBidPriceScaled();
 }
 
-double EmaFuturesStrategy::ShortPosition::GetMarketClosePrice() const {
-	return GetSecurity().GetAskPrice();
+ScaledPrice EmaFuturesStrategy::ShortPosition::GetMarketClosePrice() const {
+	return GetSecurity().GetAskPriceScaled();
 }
 
-double EmaFuturesStrategy::ShortPosition::GetPassiveOpenPrice() const {
-	return GetSecurity().GetAskPrice();
+ScaledPrice EmaFuturesStrategy::ShortPosition::GetPassiveOpenPrice() const {
+	return GetSecurity().GetAskPriceScaled();
 }
 
-double EmaFuturesStrategy::ShortPosition::GetPassiveClosePrice() const {
-	return GetSecurity().GetBidPrice();
+ScaledPrice EmaFuturesStrategy::ShortPosition::GetPassiveClosePrice() const {
+	return GetSecurity().GetBidPriceScaled();
 }
 
 EmaFuturesStrategy::ShortPosition::PriceCheckResult
@@ -311,25 +364,66 @@ EmaFuturesStrategy::ShortPosition::CheckOrderPrice(
 	Assert(HasActiveOrders());
 	PriceCheckResult result = {};
 	if (HasActiveOpenOrders()) {
-		result.start = GetSecurity().DescalePrice(GetOpenStartPrice());
-		result.margin = result.start - priceDelta;
+		result.start = GetOpenStartPrice();
+		result.margin = result.start - GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_OPEN_PASSIVE
 			?	GetPassiveOpenPrice()
 			:	GetMarketOpenPrice();
-		result.isAllowed
-			= result.margin > result.current
-			|| IsEqual(result.margin, result.current);
+		result.isAllowed = result.margin <= result.current;
 	} else {
-		result.start = GetSecurity().DescalePrice(GetCloseStartPrice());
-		result.margin = result.start + priceDelta;
+		result.start = GetCloseStartPrice();
+		result.margin = result.start + GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_CLOSE_PASSIVE
 			?	GetPassiveClosePrice()
 			:	GetMarketClosePrice();
-		result.isAllowed
-			= result.margin < result.current
-			|| IsEqual(result.margin, result.current);
+		result.isAllowed = result.margin >= result.current;
 	}
+	Assert(!IsZero(result.start));
+	Assert(!IsZero(result.margin));
+	Assert(!IsZero(result.current));
 	return result;
+}
+
+EmaFuturesStrategy::ShortPosition::PriceCheckResult
+EmaFuturesStrategy::ShortPosition::CheckStopLossByPrice(
+		double priceDelta)
+		const {
+	Assert(!IsZero(GetOpenPrice()));
+	AssertEq(INTENTION_HOLD, GetIntention());
+	PriceCheckResult result = {};
+	result.start = GetOpenPrice();
+	result.margin = result.start + GetSecurity().ScalePrice(priceDelta);
+	result.current = GetMarketClosePrice();
+	result.isAllowed = result.current <= result.margin;
+	return result;
+}
+
+EmaFuturesStrategy::ShortPosition::PriceCheckResult
+EmaFuturesStrategy::ShortPosition::CheckStopLossByLoss(
+		double maxLossMoneyPerContract)
+		const {
+	Assert(!IsZero(GetOpenPrice()));
+	Assert(!IsZero(GetActiveQty()));
+	AssertEq(INTENTION_HOLD, GetIntention());
+	PriceCheckResult result = {};
+	result.start = ScaledPrice(GetOpenPrice() * GetActiveQty());
+	result.margin
+		= result.start
+		+	(ScaledPrice(GetActiveQty())
+			* GetSecurity().ScalePrice(maxLossMoneyPerContract));
+	result.current = ScaledPrice(GetActiveQty() * GetMarketClosePrice());
+	result.isAllowed = result.current <= result.margin;
+	return result;
+}
+
+ScaledPrice EmaFuturesStrategy::ShortPosition::CaclCurrentProfit() const {
+	Assert(!IsZero(GetOpenPrice()));
+	Assert(!IsZero(GetActiveQty()));
+	AssertEq(INTENTION_HOLD, GetIntention());
+	return 
+		ScaledPrice(GetActiveQty() * GetMarketClosePrice())
+		- ScaledPrice(GetOpenPrice() * GetActiveQty());
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

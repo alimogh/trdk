@@ -37,9 +37,9 @@ namespace EmaFuturesStrategy {
 
 		struct PriceCheckResult {
 			bool isAllowed;
-			double start;
-			double margin;
-			double current;
+			ScaledPrice start;
+			ScaledPrice margin;
+			ScaledPrice current;
 		};
 
 	public:
@@ -53,20 +53,31 @@ namespace EmaFuturesStrategy {
 
 		const Intention & GetIntention() const;
 		
-		void SetIntention(Intention);
+		void SetIntention(Intention, const CloseType &);
 
 		void MoveOrderToCurrentPrice();
 
 		void Sync();
 
 		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const = 0;
+		virtual PriceCheckResult CheckStopLossByPrice(
+				double priceDelta)
+				const
+				= 0;
+		virtual PriceCheckResult CheckStopLossByLoss(
+				double maxLossMoneyPerContract)
+				const
+				= 0;
+		PriceCheckResult CheckTakeProfit(double trailingPercentage);
 
 	protected:
 	
-		virtual double GetPassiveOpenPrice() const = 0;
-		virtual double GetMarketOpenPrice() const = 0;
-		virtual double GetPassiveClosePrice() const = 0;
-		virtual double GetMarketClosePrice() const = 0;
+		virtual ScaledPrice GetPassiveOpenPrice() const = 0;
+		virtual ScaledPrice GetMarketOpenPrice() const = 0;
+		virtual ScaledPrice GetPassiveClosePrice() const = 0;
+		virtual ScaledPrice GetMarketClosePrice() const = 0;
+
+		virtual ScaledPrice CaclCurrentProfit() const = 0;
 		
 
 	private:
@@ -81,6 +92,10 @@ namespace EmaFuturesStrategy {
 		bool m_isSent;
 		bool m_isPassiveOpen;
 		bool m_isPassiveClose;
+
+		CloseType m_closeType;
+
+		ScaledPrice m_maxProfit;
 	
 	};
 
@@ -98,11 +113,16 @@ namespace EmaFuturesStrategy {
 		virtual ~LongPosition();
 	public:
 		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
+		virtual PriceCheckResult CheckStopLossByPrice(double priceDelta) const;
+		virtual PriceCheckResult CheckStopLossByLoss(
+				double maxLossMoneyPerContract)
+				const;
 	protected:
-		virtual double GetPassiveOpenPrice() const;
-		virtual double GetMarketOpenPrice() const;
-		virtual double GetPassiveClosePrice() const;
-		virtual double GetMarketClosePrice() const;
+		virtual ScaledPrice GetPassiveOpenPrice() const;
+		virtual ScaledPrice GetMarketOpenPrice() const;
+		virtual ScaledPrice GetPassiveClosePrice() const;
+		virtual ScaledPrice GetMarketClosePrice() const;
+		virtual ScaledPrice CaclCurrentProfit() const;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -119,11 +139,16 @@ namespace EmaFuturesStrategy {
 		virtual ~ShortPosition();
 	public:
 		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
+		virtual PriceCheckResult CheckStopLossByPrice(double priceDelta) const;
+		virtual PriceCheckResult CheckStopLossByLoss(
+				double maxLossMoneyPerContract)
+				const;
 	protected:
-		virtual double GetPassiveOpenPrice() const;
-		virtual double GetMarketOpenPrice() const;
-		virtual double GetPassiveClosePrice() const;
-		virtual double GetMarketClosePrice() const;
+		virtual ScaledPrice GetPassiveOpenPrice() const;
+		virtual ScaledPrice GetMarketOpenPrice() const;
+		virtual ScaledPrice GetPassiveClosePrice() const;
+		virtual ScaledPrice GetMarketClosePrice() const;
+		virtual ScaledPrice CaclCurrentProfit() const;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
