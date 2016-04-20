@@ -25,8 +25,6 @@ namespace uuids = boost::uuids;
 
 namespace {
 	
-	const char *logTag = "Position";
-
 	const OrderParams defaultOrderParams;
 
 	class UuidGenerator : private boost::noncopyable {
@@ -589,23 +587,21 @@ public:
 	}
 
 	void ReportOpeningStart(const char *eventDesc) const throw() {
-		m_security.GetContext().GetTradingLog().Write(
-			logTag,
-			"%1%\t%2%\torder=%3%\t%4%\t%5%\t%6%\t%7%.%8%"
-				"\tprice=%9$.8f\t%10%\tqty=%11$.8f",
+		m_strategy.GetTradingLog().Write(
+			"order\tpos=%1%\torder=%2%\t%3%\t%4%\t%5%\t%6%.%7%"
+				"\tprice=%8$.8f\t%9%\tqty=%10$.8f",
 			[this, eventDesc](TradingRecord &record) {
 				record
-					% m_strategy.GetTag() // 1
-					% m_operationId // 2
-					% m_opened.uuid // 3
-					% eventDesc
-					% m_position.GetTypeStr() // 5
-					% m_security.GetSymbol().GetSymbol() // 6
-					% m_position.GetTradeSystem().GetTag() // 7
-					% m_tradeSystem.GetMode() // 8
-					% m_security.DescalePrice(m_openStartPrice) // 9
-					% m_position.GetCurrency() // 10
-					% m_position.GetPlanedQty(); // 11 and last
+					% m_operationId // 1
+					% m_opened.uuid // 2
+					% eventDesc // 3
+					% m_position.GetTypeStr() // 4
+					% m_security.GetSymbol().GetSymbol() // 5
+					% m_position.GetTradeSystem().GetTag() // 6
+					% m_tradeSystem.GetMode() // 7
+					% m_security.DescalePrice(m_openStartPrice) // 8
+					% m_position.GetCurrency() // 9
+					% m_position.GetPlanedQty(); // 10 and last
 			});
 	}
 
@@ -615,51 +611,47 @@ public:
 			const OrderStatus &orderStatus)
 			const
 			throw() {
-		m_security.GetContext().GetTradingLog().Write(
-			logTag,
-			"%1%\t%2%\torder=%3%/%4%\topen-%5%->%6%\t%7%\t%8%\t%9%.%10%"
-				"\tprice=%11$.8f->%12$.8f\t%13%\tqty=%14$.8f->%15$.8f",
+		m_strategy.GetTradingLog().Write(
+			"order\t%1%\tpos=%1%\torder=%2%/%3%\topen-%4%->%5%\t%6%\t%7%\t%8%.%9%"
+				"\tprice=%10$.8f->%11$.8f\t%12%\tqty=%13$.8f->%14$.8f",
 			[this, eventDesc, &tsOrderId, &orderStatus](
 					TradingRecord &record) {
 				record
-					% m_strategy.GetTag() // 1
-					% m_operationId // 2
-					% m_opened.uuid // 3
-					% tsOrderId // 4
-					% eventDesc // 5
-					% m_tradeSystem.GetStringStatus(orderStatus) // 6
-					% m_position.GetTypeStr() // 7
-					% m_security.GetSymbol().GetSymbol() // 8
-					% m_position.GetTradeSystem().GetTag() // 9
-					% m_tradeSystem.GetMode() // 10
-					% m_security.DescalePrice(m_position.GetOpenStartPrice()) // 11
-					% m_security.DescalePrice(m_position.GetOpenPrice()) // 12
-					% m_position.GetCurrency() // 13
-					% m_position.GetPlanedQty() // 14
-					% m_position.GetOpenedQty(); // 15 and last
+					% m_operationId // 1
+					% m_opened.uuid // 2
+					% tsOrderId // 3
+					% eventDesc // 4
+					% m_tradeSystem.GetStringStatus(orderStatus) // 5
+					% m_position.GetTypeStr() // 6
+					% m_security.GetSymbol().GetSymbol() // 7
+					% m_position.GetTradeSystem().GetTag() // 8
+					% m_tradeSystem.GetMode() // 9
+					% m_security.DescalePrice(m_position.GetOpenStartPrice()) // 10
+					% m_security.DescalePrice(m_position.GetOpenPrice()) // 11
+					% m_position.GetCurrency() // 12
+					% m_position.GetPlanedQty() // 13
+					% m_position.GetOpenedQty(); // 14 and last
 					
 			});
 	}
 
 	void ReportClosingStart(const char *eventDesc) const throw() {
-		m_security.GetContext().GetTradingLog().Write(
-			logTag,
-			"%1%\t%2%\torder=%3%\tclose-%4%\t%5%\t%6%\t%7%.%8%"
-				"\tprice=%9$.8f->%10$.8f\t%11%\tqty=%12$.8f",
+		m_strategy.GetTradingLog().Write(
+			"order\tpos=%1%\torder=%2%\tclose-%3%\t%4%\t%5%\t%6%.%7%"
+				"\tprice=%8$.8f->%9$.8f\t%10%\tqty=%11$.8f",
 			[this, eventDesc](TradingRecord &record) {
 				record
-					% m_strategy.GetTag() // 1
-					% m_operationId // 2
-					% m_closed.uuid // 3
-					% eventDesc // 4
-					% m_position.GetTypeStr() // 5
-					% m_security.GetSymbol().GetSymbol() // 6
-					% m_position.GetTradeSystem().GetTag() // 7
-					% m_tradeSystem.GetMode() // 8
-					% m_security.DescalePrice(m_position.GetOpenPrice()) // 9
-					% m_security.DescalePrice(m_position.GetCloseStartPrice()) // 10
-					% m_position.GetCurrency() // 11
-					% m_position.GetOpenedQty(); // 12 and last
+					% m_operationId // 1
+					% m_closed.uuid // 2
+					% eventDesc // 3
+					% m_position.GetTypeStr() // 4
+					% m_security.GetSymbol().GetSymbol() // 5
+					% m_position.GetTradeSystem().GetTag() // 6
+					% m_tradeSystem.GetMode() // 7
+					% m_security.DescalePrice(m_position.GetOpenPrice()) // 8
+					% m_security.DescalePrice(m_position.GetCloseStartPrice()) // 9
+					% m_position.GetCurrency() // 10
+					% m_position.GetOpenedQty(); // 11 and last
 			});
 	}
 
@@ -669,28 +661,25 @@ public:
 			const OrderStatus &orderStatus)
 			const
 			throw() {
-		m_security.GetContext().GetTradingLog().Write(
-			logTag,
-			"%1%\t%2%\torder=%3%/%4%\tclose-%5%->%6%\t%7%\t%8%\t%9%.%10%"
-				"\tprice=%11$.8f->%12$.8f\t%13%\tqty=%14$.8f->%15$.8f",
-			[this, eventDesc, &tsOrderId, &orderStatus](
-					TradingRecord &record) {
+		m_strategy.GetTradingLog().Write(
+			"order\tpos=%1%\torder=%2%/%3%\tclose-%4%->%5%\t%6%\t%7%\t%8%.%9%"
+				"\tprice=%10$.8f->%11$.8f\t%12%\tqty=%13$.8f->%14$.8f",
+			[this, eventDesc, &tsOrderId, &orderStatus](TradingRecord &record) {
 				record
-					% m_strategy.GetTag() // 1
-					% m_operationId // 2
-					% m_closed.uuid // 3
-					% tsOrderId // 4
-					% eventDesc // 5
-					% m_tradeSystem.GetStringStatus(orderStatus) // 6
-					% m_position.GetTypeStr() // 7
-					% m_security.GetSymbol().GetSymbol() // 8
-					% m_position.GetTradeSystem().GetTag() // 9
-					% m_tradeSystem.GetMode() // 10
-					% m_security.DescalePrice(m_position.GetCloseStartPrice()) // 11
-					% m_security.DescalePrice(m_position.GetClosePrice()) // 12
-					% m_position.GetCurrency() // 13
-					% m_position.GetOpenedQty() // 14
-					% m_position.GetClosedQty(); // 15 and last
+					% m_operationId // 1
+					% m_closed.uuid // 2
+					% tsOrderId // 3
+					% eventDesc // 4
+					% m_tradeSystem.GetStringStatus(orderStatus) // 5
+					% m_position.GetTypeStr() // 6
+					% m_security.GetSymbol().GetSymbol() // 7
+					% m_position.GetTradeSystem().GetTag() // 8
+					% m_tradeSystem.GetMode() // 9
+					% m_security.DescalePrice(m_position.GetCloseStartPrice()) // 10
+					% m_security.DescalePrice(m_position.GetClosePrice()) // 11
+					% m_position.GetCurrency() // 12
+					% m_position.GetOpenedQty() // 13
+					% m_position.GetClosedQty(); // 14 and last
 			});
 	}
 
@@ -699,17 +688,15 @@ public:
 			const std::string &tsOrderId)
 			const
 			throw() {
-		m_security.GetContext().GetTradingLog().Write(
-			logTag,
-			"%1%\t%2%\torder=%3%/%4%\ttreplacing-%5%-order\t%6%",
+		m_strategy.GetTradingLog().Write(
+			"order\tpos=%1%\torder=%2%/%3%\ttreplacing-%4%-order\t%5%",
 			[&](TradingRecord &record) {
 				record
-					% m_strategy.GetTag() // 1
-					% m_operationId // 2
-					% (isOpening ? m_opened.uuid : m_closed.uuid) // 3
-					% tsOrderId // 4
-					% (isOpening ? "open" : "close") // 5
-					% (!isOpening ? m_opened.uuid : m_closed.uuid); // 6 and last
+					% m_operationId // 1
+					% (isOpening ? m_opened.uuid : m_closed.uuid) // 2
+					% tsOrderId // 3
+					% (isOpening ? "open" : "close") // 4
+					% (!isOpening ? m_opened.uuid : m_closed.uuid); // 5 and last
 			});
 	}
 
@@ -1636,7 +1623,19 @@ LongPosition::LongPosition(
 		qty,
 		startPrice,
 		timeMeasurement) {
-	//...//
+	GetStrategy().GetTradingLog().Write(
+		"position\tnew\tlong\tpos=%1%\t%2%\t%3%.%4%"
+			"\tprice=%5$.8f\t%6%\tqty=%7$.8f",
+		[this](TradingRecord &record) {
+			record
+				% GetId() // 1
+				% GetSecurity().GetSymbol().GetSymbol() // 2
+				% GetTradeSystem().GetTag() // 3
+				% GetTradeSystem().GetMode() // 4
+				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 5
+				% GetCurrency() // 6
+				% GetPlanedQty(); // 7 and last
+		});
 }
 
 LongPosition::LongPosition(
@@ -1655,15 +1654,42 @@ LongPosition::LongPosition(
 		qty,
 		startPrice,
 		timeMeasurement) {
-	//...//
+	GetStrategy().GetTradingLog().Write(
+		"position\tcontinue\tlong\tpos=%1%->%2%\t%3%\t%4%.%5%"
+			"\tprice=%6$.8f\t%7%\tqty=%8$.8f",
+		[this, &oppositePosition](TradingRecord &record) {
+			record
+				% GetId() // 1
+				% oppositePosition.GetId() // 2
+				% GetSecurity().GetSymbol().GetSymbol() // 3
+				% GetTradeSystem().GetTag() // 4
+				% GetTradeSystem().GetMode() // 5
+				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 6
+				% GetCurrency() // 7
+				% GetPlanedQty(); // 8 and last
+		});
 }
 
 LongPosition::LongPosition() {
-	//...//
+	GetStrategy().GetTradingLog().Write(
+		"position\tnew\tlong\tpos=%1%\t%2%\t%3%.%4%"
+			"\tprice=%5$.8f\t%6%\tqty=%7$.8f",
+		[this](TradingRecord &record) {
+			record
+				% GetId() // 1
+				% GetSecurity().GetSymbol().GetSymbol() // 2
+				% GetTradeSystem().GetTag() // 3
+				% GetTradeSystem().GetMode() // 4
+				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 5
+				% GetCurrency() // 6
+				% GetPlanedQty(); // 7 and last
+		});
 }
 
 LongPosition::~LongPosition() {
-	//...//
+	GetStrategy().GetTradingLog().Write(
+		"position\tdel\tlong\tpos=%1%",
+		[this](TradingRecord &record) {record % GetId();});
 }
 
 LongPosition::Type LongPosition::GetType() const {
@@ -1933,7 +1959,19 @@ ShortPosition::ShortPosition(
 		qty,
 		startPrice,
 		timeMeasurement) {
-	//...//
+	GetStrategy().GetTradingLog().Write(
+		"position\tnew\tshort\tpos=%1%\t%2%\t%3%.%4%"
+			"\tprice=%5$.8f\t%6%\tqty=%7$.8f",
+		[this](TradingRecord &record) {
+			record
+				% GetId() // 1
+				% GetSecurity().GetSymbol().GetSymbol() // 2
+				% GetTradeSystem().GetTag() // 3
+				% GetTradeSystem().GetMode() // 4
+				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 5
+				% GetCurrency() // 6
+				% GetPlanedQty(); // 7 and last
+		});
 }
 
 ShortPosition::ShortPosition(
@@ -1952,18 +1990,45 @@ ShortPosition::ShortPosition(
 		qty,
 		startPrice,
 		timeMeasurement) {
-	//...//
+	GetStrategy().GetTradingLog().Write(
+		"position\tcontinue\tshort\tpos=%1%->%2%\t%3%\t%4%.%5%"
+			"\tprice=%6$.8f\t%7%\tqty=%8$.8f",
+		[this, &oppositePosition](TradingRecord &record) {
+			record
+				% GetId() // 1
+				% oppositePosition.GetId() // 2
+				% GetSecurity().GetSymbol().GetSymbol() // 3
+				% GetTradeSystem().GetTag() // 4
+				% GetTradeSystem().GetMode() // 5
+				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 6
+				% GetCurrency() // 7
+				% GetPlanedQty(); // 8 and last
+		});
 }
 
 ShortPosition::ShortPosition() {
-	//...//
+	GetStrategy().GetTradingLog().Write(
+		"position\tnew\tshort\tpos=%1%\t%2%\t%3%.%4%"
+			"\tprice=%5$.8f\t%6%\tqty=%7$.8f",
+		[this](TradingRecord &record) {
+			record
+				% GetId() // 1
+				% GetSecurity().GetSymbol().GetSymbol() // 2
+				% GetTradeSystem().GetTag() // 3
+				% GetTradeSystem().GetMode() // 4
+				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 5
+				% GetCurrency() // 6
+				% GetPlanedQty(); // 7 and last
+		});
 }
 
 ShortPosition::~ShortPosition() {
-	//...//
+	GetStrategy().GetTradingLog().Write(
+		"position\tdel\tshort\tpos=%1%",
+		[this](TradingRecord &record) {record % GetId();});
 }
 
-LongPosition::Type ShortPosition::GetType() const {
+ShortPosition::Type ShortPosition::GetType() const {
 	return TYPE_SHORT;
 }
 

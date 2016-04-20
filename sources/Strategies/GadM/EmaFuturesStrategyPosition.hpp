@@ -35,6 +35,13 @@ namespace EmaFuturesStrategy {
 
 		typedef trdk::Position Base;
 
+		struct PriceCheckResult {
+			bool isAllowed;
+			ScaledPrice start;
+			ScaledPrice margin;
+			ScaledPrice current;
+		};
+
 	public:
 
 		Position();
@@ -46,15 +53,32 @@ namespace EmaFuturesStrategy {
 
 		const Intention & GetIntention() const;
 		
-		void SetIntention(Intention);
+		void SetIntention(Intention, const CloseType &);
+
+		void MoveOrderToCurrentPrice();
 
 		void Sync();
 
-		virtual bool IsPriceAllowed(double priceDelta) const = 0;
+		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const = 0;
+		virtual PriceCheckResult CheckStopLossByPrice(
+				double priceDelta)
+				const
+				= 0;
+		virtual PriceCheckResult CheckStopLossByLoss(
+				double maxLossMoneyPerContract)
+				const
+				= 0;
+		PriceCheckResult CheckTakeProfit(double trailingPercentage);
 
+	protected:
+	
+		virtual ScaledPrice GetPassiveOpenPrice() const = 0;
 		virtual ScaledPrice GetMarketOpenPrice() const = 0;
-		virtual ScaledPrice GetMarketClosePrice() const = 0;
 		virtual ScaledPrice GetPassiveClosePrice() const = 0;
+		virtual ScaledPrice GetMarketClosePrice() const = 0;
+
+		virtual ScaledPrice CaclCurrentProfit() const = 0;
+		
 
 	private:
 
@@ -68,6 +92,10 @@ namespace EmaFuturesStrategy {
 		bool m_isSent;
 		bool m_isPassiveOpen;
 		bool m_isPassiveClose;
+
+		CloseType m_closeType;
+
+		ScaledPrice m_maxProfit;
 	
 	};
 
@@ -84,10 +112,17 @@ namespace EmaFuturesStrategy {
 				const Lib::TimeMeasurement::Milestones &);
 		virtual ~LongPosition();
 	public:
-		virtual bool IsPriceAllowed(double priceDelta) const;
+		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
+		virtual PriceCheckResult CheckStopLossByPrice(double priceDelta) const;
+		virtual PriceCheckResult CheckStopLossByLoss(
+				double maxLossMoneyPerContract)
+				const;
+	protected:
+		virtual ScaledPrice GetPassiveOpenPrice() const;
 		virtual ScaledPrice GetMarketOpenPrice() const;
-		virtual ScaledPrice GetMarketClosePrice() const;
 		virtual ScaledPrice GetPassiveClosePrice() const;
+		virtual ScaledPrice GetMarketClosePrice() const;
+		virtual ScaledPrice CaclCurrentProfit() const;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -103,10 +138,17 @@ namespace EmaFuturesStrategy {
 				const Lib::TimeMeasurement::Milestones &);
 		virtual ~ShortPosition();
 	public:
-		virtual bool IsPriceAllowed(double priceDelta) const;
+		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
+		virtual PriceCheckResult CheckStopLossByPrice(double priceDelta) const;
+		virtual PriceCheckResult CheckStopLossByLoss(
+				double maxLossMoneyPerContract)
+				const;
+	protected:
+		virtual ScaledPrice GetPassiveOpenPrice() const;
 		virtual ScaledPrice GetMarketOpenPrice() const;
-		virtual ScaledPrice GetMarketClosePrice() const;
 		virtual ScaledPrice GetPassiveClosePrice() const;
+		virtual ScaledPrice GetMarketClosePrice() const;
+		virtual ScaledPrice CaclCurrentProfit() const;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////

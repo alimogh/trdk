@@ -443,7 +443,7 @@ std::ostream & trdk::Lib::operator <<(std::ostream &os, const Symbol &symbol) {
 			os << "<UNKNOWN>";
 			return os;
 	}
-	os << " (" << symbol.GetSecurityType() << ')';
+	os << "(" << symbol.GetSecurityType() << ')';
 	return os;
 }
 
