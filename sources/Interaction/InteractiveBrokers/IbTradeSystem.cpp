@@ -73,14 +73,13 @@ void ib::TradeSystem::CreateConnection(const IniSectionRef &settings) {
 	client->Subscribe(
 		[this](
 				const OrderId &id,
-				int permanentOrderId,
+				int permOrderId,
 				const OrderStatus &status,
 				const Qty &filled,
 				const Qty &remaining,
 				double lastFillPrice,
 				Client::OrderCallbackList &callBackList) {
 			TradeInfo tradeData = {};
-			TradeInfo *tradeInfo = nullptr;
 			OrderStatusUpdateSlot callBack;
 			{
 				auto &index = m_placedOrders.get<ByOrder>();
@@ -103,12 +102,13 @@ void ib::TradeSystem::CreateConnection(const IniSectionRef &settings) {
 					default:
 						return;
 					case ORDER_STATUS_FILLED:
-						Assert(filled > 0);
+						AssertLt(0, filled);
 						AssertGt(filled, pos->filled);
 						tradeData.price
 							= pos->security->ScalePrice(lastFillPrice);
+						AssertLt(0, tradeData.price);
 						tradeData.qty = filled - pos->filled;
-						tradeInfo = &tradeData;
+						AssertLt(0, tradeData.qty);
 						pos->UpdateFilled(filled);
 						if (remaining == 0) {
 							index.erase(pos);
@@ -125,13 +125,18 @@ void ib::TradeSystem::CreateConnection(const IniSectionRef &settings) {
 				return;
 			}
 			callBackList.push_back(
-				boost::bind(
-					callBack,
-					id,
-					boost::lexical_cast<std::string>(permanentOrderId),
-					status,
-					remaining,
-					tradeInfo));
+				[callBack, id, permOrderId, status, remaining, tradeData]() {
+					const TradeInfo *const tradeDataPtr
+						= !IsZero(tradeData.qty)
+							?	&tradeData
+							:	nullptr;	
+					callBack(
+						id,
+						boost::lexical_cast<std::string>(permOrderId),
+						status,
+						remaining,
+						tradeDataPtr);
+				});
 		});
 
 	client->StartData();
