@@ -585,6 +585,9 @@ namespace trdk {
 			Assert(m_queue.activeBuffer);
 			m_queue.activeBuffer->push_back(std::move(record));
 			m_queue.condition.notify_one();
+#			ifdef _DEBUG
+				WaitForFlush();
+#			endif
 		}
 
 	private:
