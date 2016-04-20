@@ -35,6 +35,13 @@ namespace EmaFuturesStrategy {
 
 		typedef trdk::Position Base;
 
+		struct PriceCheckResult {
+			bool isAllowed;
+			double start;
+			double margin;
+			double current;
+		};
+
 	public:
 
 		Position();
@@ -48,13 +55,19 @@ namespace EmaFuturesStrategy {
 		
 		void SetIntention(Intention);
 
+		void MoveOrderToCurrentPrice();
+
 		void Sync();
 
-		virtual bool IsPriceAllowed(double priceDelta) const = 0;
+		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const = 0;
 
-		virtual ScaledPrice GetMarketOpenPrice() const = 0;
-		virtual ScaledPrice GetMarketClosePrice() const = 0;
-		virtual ScaledPrice GetPassiveClosePrice() const = 0;
+	protected:
+	
+		virtual double GetPassiveOpenPrice() const = 0;
+		virtual double GetMarketOpenPrice() const = 0;
+		virtual double GetPassiveClosePrice() const = 0;
+		virtual double GetMarketClosePrice() const = 0;
+		
 
 	private:
 
@@ -84,10 +97,12 @@ namespace EmaFuturesStrategy {
 				const Lib::TimeMeasurement::Milestones &);
 		virtual ~LongPosition();
 	public:
-		virtual bool IsPriceAllowed(double priceDelta) const;
-		virtual ScaledPrice GetMarketOpenPrice() const;
-		virtual ScaledPrice GetMarketClosePrice() const;
-		virtual ScaledPrice GetPassiveClosePrice() const;
+		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
+	protected:
+		virtual double GetPassiveOpenPrice() const;
+		virtual double GetMarketOpenPrice() const;
+		virtual double GetPassiveClosePrice() const;
+		virtual double GetMarketClosePrice() const;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -103,10 +118,12 @@ namespace EmaFuturesStrategy {
 				const Lib::TimeMeasurement::Milestones &);
 		virtual ~ShortPosition();
 	public:
-		virtual bool IsPriceAllowed(double priceDelta) const;
-		virtual ScaledPrice GetMarketOpenPrice() const;
-		virtual ScaledPrice GetMarketClosePrice() const;
-		virtual ScaledPrice GetPassiveClosePrice() const;
+		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
+	protected:
+		virtual double GetPassiveOpenPrice() const;
+		virtual double GetMarketOpenPrice() const;
+		virtual double GetPassiveClosePrice() const;
+		virtual double GetMarketClosePrice() const;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////

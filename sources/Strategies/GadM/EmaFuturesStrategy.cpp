@@ -225,7 +225,8 @@ namespace EmaFuturesStrategy {
 			const Direction &signal = UpdateDirection();
 			if (signal != DIRECTION_LEVEL) {
 				GetTradingLog().Write(
-					"signal\t%1%\tslow-ema=%2%\tfast-ema=%3%\t%4%\tbid=%5%\task=%6%",
+					"signal\t%1%\tslow-ema=%2%\tfast-ema=%3%"
+						"\t%4%\tbid=%5%\task=%6%",
 					[&](TradingRecord &record) {
 						record
 							% (signal == DIRECTION_UP ? "BUY" : "SELL")
@@ -340,72 +341,95 @@ namespace EmaFuturesStrategy {
 		}
 
 		void CheckSlowOrderFilling(Position &position) {
+			
+			if (!position.HasActiveOrders()) {
+				return;
+			}
 
 			static_assert(numberOfIntentions == 6, "List changed.");
 			switch (position.GetIntention()) {
-				
 				case INTENTION_HOLD:
 				case INTENTION_DONOT_OPEN:
 					return;
-				
+			}
+
+			!CheckOrderAge(position) || !CheckOrderPrice(position);
+
+		}
+
+		bool CheckOrderAge(Position &position) {
+
+			static_assert(numberOfIntentions == 6, "List changed.");
+			switch (position.GetIntention()) {
 				case INTENTION_OPEN_PASSIVE:
 				case INTENTION_CLOSE_PASSIVE:
-					{
-						const auto orderExpirationTime
-							= position.GetStartTime() + m_passiveOrderMaxLifetime;
-						const auto &now = GetContext().GetCurrentTime();
-						if (orderExpirationTime > now) {
-							return;
-						}
-						GetTradingLog().Write(
-							"slow-order\ttime\tstart=%1%\tend=%2%\tnow=%3%\t%4%",
-							[&](TradingRecord &record) {
-								record
-									%	position.GetStartTime()
-									%	orderExpirationTime
-									%	now
-									%	(position.GetIntention() == INTENTION_OPEN_PASSIVE
-										?	"passive"
-										:	"aggressive");
-							});
-						position.SetIntention(
-							position.GetIntention() == INTENTION_OPEN_PASSIVE
-								?	INTENTION_OPEN_AGGRESIVE
-								:	INTENTION_CLOSE_AGGRESIVE);
-						break;
-					}
-
+					break;
+				default:
+					return true;
 			}
 
-			if (!position.IsPriceAllowed(m_orderPriceDelta)) {
-				GetTradingLog().Write(
-					"slow-order\tprice\tstart=%1%\tend=%2%\tnow=%3%\t%4%",
-					[&](TradingRecord &record) {
-						Assert(position.HasActiveOrders());
-						//! @todo:
-						if (position.HasActiveOpenOrders()) {
-							record
-								%	position.GetOpenStartPrice()
-								%	(position.GetOpenStartPrice()
-									+ m_orderPriceDelta)
-								%	position.GetMarketOpenPrice();
-						} else {
-							record
-								%	position.GetCloseStartPrice()
-								%	(position.GetCloseStartPrice()
-									+ m_orderPriceDelta)
-								%	position.GetMarketClosePrice();
-						}
+			const auto orderExpirationTime
+				= position.GetStartTime() + m_passiveOrderMaxLifetime;
+			const auto &now = GetContext().GetCurrentTime();
+			if (orderExpirationTime > now) {
+				return true;
+			}
+
+			GetTradingLog().Write(
+				"slow-order\ttime\tstart=%1%\tmargin=%2%\tnow=%3%\t%4%(%5%)"
+					"\tbid=%6%\task=%7%",
+				[&](TradingRecord &record) {
+					record
+						%	position.GetStartTime().time_of_day()
+						%	orderExpirationTime.time_of_day()
+						%	now.time_of_day()
 						%	(position.GetIntention() == INTENTION_OPEN_PASSIVE
+								||	position.GetIntention()
+										== INTENTION_CLOSE_PASSIVE
 							?	"passive"
-							:	"aggressive");
-					});
-				//! @todo
-				position.SetIntention(
-					position.GetIntention() == INTENTION_OPEN_PASSIVE
-						?	INTENTION_OPEN_AGGRESIVE
-						:	INTENTION_CLOSE_AGGRESIVE);
+							:	"aggressive")
+						%	position.GetIntention()
+						%	position.GetSecurity().GetBidPrice()
+						%	position.GetSecurity().GetAskPrice();
+				});
+
+			position.SetIntention(
+				position.GetIntention() == INTENTION_OPEN_PASSIVE
+					?	INTENTION_OPEN_AGGRESIVE
+					:	INTENTION_CLOSE_AGGRESIVE);
+
+			return false;
+
+		}
+
+		bool CheckOrderPrice(Position &position) {
+
+			const Position::PriceCheckResult &result
+				= position.CheckOrderPrice(m_orderPriceDelta);
+			if (result.isAllowed) {
+				return true;
 			}
+
+			GetTradingLog().Write(
+				"slow-order\tprice\tstart=%1%\tmargin=%2%\tnow=%3%\t%4%(%5%)"
+					"\tbid=%6%\task=%7%",
+				[&](TradingRecord &record) {
+					record % result.start % result.margin % result.current;
+					record
+						%	(position.GetIntention() == INTENTION_OPEN_PASSIVE
+								||	position.GetIntention()
+										== INTENTION_CLOSE_PASSIVE
+							?	"passive"
+							:	"aggressive")
+						%	position.GetIntention()
+						%	position.GetSecurity().GetBidPrice()
+						%	position.GetSecurity().GetAskPrice();;
+				});
+			
+			position.MoveOrderToCurrentPrice();
+			
+			return false;
+
 
 		}
 
