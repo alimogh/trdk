@@ -581,13 +581,12 @@ namespace trdk {
 				m_log.GetThreadId(),
 				recordParams...);
 			formatCallback(record);
-			const Lock lock(m_queue.mutex);
-			Assert(m_queue.activeBuffer);
-			m_queue.activeBuffer->push_back(std::move(record));
-			m_queue.condition.notify_one();
-#			ifdef _DEBUG
-				WaitForFlush();
-#			endif
+			{
+				const Lock lock(m_queue.mutex);
+				Assert(m_queue.activeBuffer);
+				m_queue.activeBuffer->push_back(std::move(record));
+				m_queue.condition.notify_one();
+			}
 		}
 
 	private:
