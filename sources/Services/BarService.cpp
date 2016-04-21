@@ -477,13 +477,17 @@ public:
 
 	template<typename Callback>
 	bool StartNewBar(const pt::ptime &time, const Callback &callback) {
-		LogCurrentBar();
+		const bool isSignificantBar
+			= m_bars.size() > 0 && !IsZero(m_currentBar->lowTradePrice);
+		if (isSignificantBar) {
+			LogCurrentBar();
+		}
 		m_bars.resize(m_bars.size() + 1);
 		m_currentBar = &m_bars.back();
 		m_currentBarTicksCount = CurrentBarTicksCount();
 		GetBarTimePoints(time, m_currentBar->time, m_currentBarEnd);
 		callback(*m_currentBar);
-		return m_bars.size() > 1;
+		return isSignificantBar;
 	}
 
 	template<typename Callback>
@@ -499,10 +503,9 @@ public:
 			return hasChanges;
 		} else {
 			Assert(m_security == &security);
-			const bool isNewBar
-				= (!m_currentBarEnd.is_not_a_date_time()
-						&& m_currentBarEnd > time)
-				|| m_currentBarTicksCount.value >= m_countedBarSize;
+			const bool isNewBar = !m_currentBarEnd.is_not_a_date_time()
+				?	m_currentBarEnd < time
+				:	m_currentBarTicksCount.value >= m_countedBarSize;
 			return isNewBar
 				? StartNewBar(time, callback)
 				: ContinueBar(callback);
