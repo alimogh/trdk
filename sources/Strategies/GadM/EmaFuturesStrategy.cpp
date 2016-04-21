@@ -173,7 +173,7 @@ namespace EmaFuturesStrategy {
 				throw Exception(
 					"Strategy can not work with more than one security");
 			}
-			return Base::OnSecurityStart(security);
+			return GetContext().GetCurrentTime() - pt::minutes(15) * 100;
 		}
 
 		virtual void OnServiceStart(const Service &service) {
