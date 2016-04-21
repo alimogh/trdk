@@ -68,7 +68,9 @@ namespace EmaFuturesStrategy {
 				double maxLossMoneyPerContract)
 				const
 				= 0;
-		PriceCheckResult CheckTakeProfit(double trailingPercentage);
+		PriceCheckResult CheckTakeProfit(
+				double minProfit,
+				double trailingPercentage);
 
 	protected:
 	
