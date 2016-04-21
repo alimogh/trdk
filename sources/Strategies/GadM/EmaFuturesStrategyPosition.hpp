@@ -19,9 +19,9 @@ namespace EmaFuturesStrategy {
 
 	enum Intention {
 		INTENTION_OPEN_PASSIVE,
-		INTENTION_DONOT_OPEN,
 		INTENTION_OPEN_AGGRESIVE,
 		INTENTION_HOLD,
+		INTENTION_DONOT_OPEN,
 		INTENTION_CLOSE_PASSIVE,
 		INTENTION_CLOSE_AGGRESIVE,
 		numberOfIntentions
@@ -68,7 +68,9 @@ namespace EmaFuturesStrategy {
 				double maxLossMoneyPerContract)
 				const
 				= 0;
-		PriceCheckResult CheckTakeProfit(double trailingPercentage);
+		PriceCheckResult CheckTakeProfit(
+				double minProfit,
+				double trailingPercentage);
 
 	protected:
 	

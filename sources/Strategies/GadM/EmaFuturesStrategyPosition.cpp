@@ -195,6 +195,7 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 
 EmaFuturesStrategy::Position::PriceCheckResult
 EmaFuturesStrategy::Position::CheckTakeProfit(
+		double minProfit,
 		double trailingPercentage) {
 	PriceCheckResult result = {};
 	result.current = CaclCurrentProfit();
@@ -203,7 +204,11 @@ EmaFuturesStrategy::Position::CheckTakeProfit(
 	}
 	result.start = m_maxProfit;
 	result.margin = ScaledPrice(m_maxProfit * trailingPercentage);
-	result.isAllowed = result.current > result.margin;
+	const ScaledPrice minProfitVol
+		= GetSecurity().ScalePrice(minProfit) * ScaledPrice(GetActiveQty());
+	result.isAllowed
+		= m_maxProfit < minProfitVol
+		|| result.current > result.margin;
 	return result;
 }
 

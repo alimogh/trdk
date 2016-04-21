@@ -130,6 +130,9 @@ namespace EmaFuturesStrategy {
 					conf.ReadTypedKey<unsigned int>(
 						"passive_order_max_lifetime_sec")))
 			, m_orderPriceDelta(conf.ReadTypedKey<double>("order_price_delta"))
+			, m_minProfitToActivateTakeProfit(
+				conf.ReadTypedKey<double>(
+					"min_profit_per_contract_to_activate_take_profit"))
 			, m_takeProfitTrailingPercentage(
 				conf.ReadTypedKey<int>("take_profit_trailing_tercentage") 
 				/ 100.0)
@@ -142,14 +145,18 @@ namespace EmaFuturesStrategy {
 					" Passive order max. lifetime: %2%."
 					" Order price delta: %3%."
 					" Take-profit trailing: %4%%%"
-					" Max loss: %5% * %6% = %7%.",
-				m_numberOfContracts,
-				m_passiveOrderMaxLifetime,
-				m_orderPriceDelta,
-				int(m_takeProfitTrailingPercentage * 100),
-				m_maxLossMoneyPerContract,
-				m_numberOfContracts,
-				m_maxLossMoneyPerContract * m_numberOfContracts);
+						" will be activated after profit %5% * %6% = %7%"
+					" Max loss: %8% * %9% = %10%.",
+				m_numberOfContracts, // 1
+				m_passiveOrderMaxLifetime, // 2
+				m_orderPriceDelta, // 3
+				int(m_takeProfitTrailingPercentage * 100), // 4
+				m_minProfitToActivateTakeProfit, // 5
+				m_numberOfContracts, // 6
+				m_minProfitToActivateTakeProfit * m_numberOfContracts, // 7
+				m_maxLossMoneyPerContract, // 8
+				m_numberOfContracts, // 9
+				m_maxLossMoneyPerContract * m_numberOfContracts); // 10
 		}
 		
 		virtual ~Strategy() {
@@ -166,7 +173,7 @@ namespace EmaFuturesStrategy {
 				throw Exception(
 					"Strategy can not work with more than one security");
 			}
-			return Base::OnSecurityStart(security);
+			return GetContext().GetCurrentTime() - pt::minutes(15) * 100;
 		}
 
 		virtual void OnServiceStart(const Service &service) {
@@ -390,8 +397,9 @@ namespace EmaFuturesStrategy {
 				return false;
 			}
 			Assert(position.GetActiveQty());
-			const Position::PriceCheckResult result
-				= position.CheckStopLossByLoss(m_maxLossMoneyPerContract);
+			const Position::PriceCheckResult result = position.CheckTakeProfit(
+				m_minProfitToActivateTakeProfit,
+				m_maxLossMoneyPerContract);
 			if (result.isAllowed) {
 				return false;
 			}
@@ -609,6 +617,7 @@ namespace EmaFuturesStrategy {
 		const Qty m_numberOfContracts;
 		const pt::time_duration m_passiveOrderMaxLifetime;
 		const double m_orderPriceDelta;
+		const double m_minProfitToActivateTakeProfit;
 		const double m_takeProfitTrailingPercentage;
 		const double m_maxLossMoneyPerContract;
 
