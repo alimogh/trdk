@@ -1061,6 +1061,7 @@ void Client::HandleError(
 		case 110:	// The price does not conform to the minimum price
 					// variation for this contract.
 		case 201:	// Order rejected - Reason:
+		default:
 			m_orderStatusSignal(
 				id,
 				0,
