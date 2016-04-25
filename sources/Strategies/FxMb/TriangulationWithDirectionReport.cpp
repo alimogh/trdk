@@ -345,10 +345,10 @@ void TriangleReport::ReportAction(
 		if (!order) {
 			record % ' ' % ' ';
 		} else if (!IsZero(order->GetCloseStartPrice())) {
-			const Security &security = order->GetSecurity();
-			record % security.DescalePrice(order->GetCloseStartPrice());
+			const Security &orderSecurity = order->GetSecurity();
+			record % orderSecurity.DescalePrice(order->GetCloseStartPrice());
 			if (order->IsClosed()) {
-				record % security.DescalePrice(order->GetClosePrice());
+				record % orderSecurity.DescalePrice(order->GetClosePrice());
 			} else {
 				record % ' ';
 			}
@@ -523,10 +523,10 @@ void TriangleReport::ReportUpdate() {
 		if (!order) {
 			record % ' ' % ' ';
 		} else if (!IsZero(order->GetCloseStartPrice())) {
-			const Security &security = order->GetSecurity();
-			record % security.DescalePrice(order->GetCloseStartPrice());
+			const Security &orderSecurity = order->GetSecurity();
+			record % orderSecurity.DescalePrice(order->GetCloseStartPrice());
 			if (order->IsClosed()) {
-				record % security.DescalePrice(order->GetClosePrice());
+				record % orderSecurity.DescalePrice(order->GetClosePrice());
 			} else {
 				record % ' ';
 			}

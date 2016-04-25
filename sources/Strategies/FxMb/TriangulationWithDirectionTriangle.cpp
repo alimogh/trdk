@@ -58,8 +58,8 @@ Triangle::Triangle(
 		
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
 	{
-		foreach (const PairInfo &info, m_pairs) {
-			foreach (const PairInfo &subInfo, m_pairs) {
+		for (const PairInfo &info: m_pairs) {
+			for (const PairInfo &subInfo: m_pairs) {
 				if (&subInfo == &info) {
 					continue;
 				}
@@ -69,11 +69,9 @@ Triangle::Triangle(
 				Assert(subInfo.security != info.security);
 			}
 		}
-
-		foreach (const PairInfo *info, m_pairsLegs) {
+		for (const PairInfo *info: m_pairsLegs) {
 			Assert(info);
 		}
-
 	}
 #	endif
 

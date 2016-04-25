@@ -46,7 +46,7 @@ FixTrading::~FixTrading() {
 		m_sendThread.join();
 	} catch (...) {
 		AssertFailNoException();
-		throw;
+		terminate();
 	}
 }
 

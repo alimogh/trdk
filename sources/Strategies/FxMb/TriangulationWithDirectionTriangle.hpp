@@ -62,11 +62,11 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 				}
 			}
 
-			double GetCurrentPrice(const Security &security) const {
+			double GetCurrentPrice(const Security &actualSecurity) const {
 				//! @sa About price choosing (bid or ask) - see TRDK-110.
 				return isBuy
-					?	security.GetAskPrice()
-					:	security.GetBidPrice();
+					?	actualSecurity.GetAskPrice()
+					:	actualSecurity.GetBidPrice();
 			}
 			
 			double GetCurrentPrice() const {

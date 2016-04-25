@@ -83,7 +83,7 @@ QueueService::~QueueService() {
 		Stop(true);
 	} catch (...) {
 		AssertFailNoException();
-		throw;
+		terminate();
 	}
 }
 

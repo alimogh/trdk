@@ -139,7 +139,7 @@ StatService::~StatService() {
 		m_instancies.erase(pos);
 	} catch (...) {
 		AssertFailNoException();
-		throw;
+		terminate();
 	}
 }
 
@@ -298,13 +298,13 @@ bool StatService::OnBookUpdateTick(
 	}
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
 	{
-		foreach (const auto &i, m_aggregatedBidsCache) {
-			foreach (const auto &j, m_aggregatedAsksCache) {
+		for (const auto &i: m_aggregatedBidsCache) {
+			for (const auto &j: m_aggregatedAsksCache) {
 				AssertLe(i.price, j.price);
 			}
 		}
-		foreach (const auto &i, m_aggregatedAsksCache) {
-			foreach (const auto &j, m_aggregatedBidsCache) {
+		for (const auto &i: m_aggregatedAsksCache) {
+			for (const auto &j: m_aggregatedBidsCache) {
 				AssertGe(i.price, j.price);
 			}
 		}

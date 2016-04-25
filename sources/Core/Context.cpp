@@ -75,7 +75,6 @@ namespace {
 				StopMonitoring();
 			} catch (...) {
 				AssertFailNoException();
-				throw;
 			}
 		}
 

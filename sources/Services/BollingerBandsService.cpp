@@ -123,11 +123,11 @@ namespace boost { namespace accumulators {
 					return 0;
 				}
 				result_type result = 0;
-				const auto &mean = rolling_mean(args);
+				const auto &currentMean = rolling_mean(args);
 				const auto window = rolling_window_plus1(args)
 					.advance_begin(is_rolling_window_plus1_full(args));
 				foreach (const auto &i, window) {
-					const auto diff = i - mean;
+					const auto diff = i - currentMean;
 					result += (diff * diff);
 				}
 				AssertLt(0, rolling_count(args));

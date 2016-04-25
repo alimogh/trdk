@@ -99,7 +99,7 @@ Stream::~Stream() {
 		m_serviceThreads.join_all();
 	} catch (...) {
 		AssertFailNoException();
-		throw;
+		terminate();
 	}
 	// Each object, that implements CreateNewSecurityObject should wait for
 	// log flushing before destroying objects:

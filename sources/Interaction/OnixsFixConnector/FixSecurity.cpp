@@ -99,8 +99,8 @@ void FixSecurity::OnEntryReplace(
 	
 	m_orderBook.erase(pos);
 	{
-		const Entry order = {time, isBid, price, qty};
-		if (!m_orderBook.emplace(newEntryId, std::move(order)).second) {
+		const Entry orderInfo = {time, isBid, price, qty};
+		if (!m_orderBook.emplace(newEntryId, std::move(orderInfo)).second) {
 			GetSource().GetLog().Error(
 				"Received replace-entry with not unique new ID %1% -> %2%"
 					" (book size: %3%).",

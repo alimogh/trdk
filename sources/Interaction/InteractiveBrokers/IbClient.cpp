@@ -197,7 +197,7 @@ Client::~Client() {
 
 	} catch (...) {
 		AssertFailNoException();
-		throw;
+		terminate();
 	}
 
 }

@@ -155,8 +155,8 @@ namespace boost { namespace accumulators {
 
 			template<typename Args>
 			void operator ()(const Args &args) {
-				const auto count = rolling_count(args);
-				if (count < m_windowSize) {
+				const auto &currentCount = rolling_count(args);
+				if (currentCount < m_windowSize) {
 					return;
 				}
 				if (!m_isStarted) {
@@ -217,9 +217,9 @@ namespace boost { namespace accumulators {
 
 			template<typename Args>
 			void operator ()(const Args &args) {
-				const auto count = rolling_count(args) + 1;
-				if (count <= m_windowSize) {
-					if (count == m_windowSize) {
+				const auto &currentCount = rolling_count(args) + 1;
+				if (currentCount <= m_windowSize) {
+					if (currentCount == m_windowSize) {
 						m_val = rolling_mean(args);
 					}
 					return;

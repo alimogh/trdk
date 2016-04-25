@@ -162,7 +162,7 @@ namespace trdk { namespace Tests {
 			for (size_t i = 0; i < _countof(source); ++i) {
 			
 				const svc::MovingAverageService::Point ma = {
-					ScaledPrice(lib::Scale(source[i][0], 100)),
+					double(lib::Scale(source[i][0], 100)),
 					double(lib::Scale(source[i][1], 100))
 				};
 			

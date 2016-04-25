@@ -6,10 +6,8 @@
     <IncludePath>$(SolutionDir)..\externals\autobahn\;$(SolutionDir)..\externals\msgpack-c\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
-    <ClCompile />
     <ClCompile>
       <PreprocessorDefinitions>TRDK_AUTOBAHN_DISABLED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
-  <ItemGroup />
 </Project>
