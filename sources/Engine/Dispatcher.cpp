@@ -90,7 +90,7 @@ Dispatcher::~Dispatcher() {
 		m_context.GetLog().Debug("Events dispatching stopped.");
 	} catch (...) {
 		AssertFailNoException();
-		throw;
+		terminate();
 	}
 }
 

@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Emas.hpp"
 #include "Core/Position.hpp"
 
 namespace trdk { namespace Strategies { namespace GadM {
@@ -44,16 +45,25 @@ namespace EmaFuturesStrategy {
 
 	public:
 
-		Position();
+		explicit Position(
+			const Direction &openReason,
+			const SlowFastEmas &emas,
+			std::ostream &reportStream);
 		virtual ~Position();
 
 	public:
 
 		const Time & GetStartTime() const;
+		const Time & GetCloseStartTime() const;
+
+		const CloseType & GetOpenType() const;
 
 		const Intention & GetIntention() const;
 		
-		void SetIntention(Intention, const CloseType &);
+		void SetIntention(
+				Intention,
+				const CloseType &,
+				const Direction &closeReason);
 
 		void MoveOrderToCurrentPrice();
 
@@ -72,6 +82,8 @@ namespace EmaFuturesStrategy {
 				double minProfit,
 				double trailingPercentage);
 
+		static void OpenReport(std::ostream &);
+
 	protected:
 	
 		virtual ScaledPrice GetPassiveOpenPrice() const = 0;
@@ -80,7 +92,8 @@ namespace EmaFuturesStrategy {
 		virtual ScaledPrice GetMarketClosePrice() const = 0;
 
 		virtual ScaledPrice CaclCurrentProfit() const = 0;
-		
+
+		void Report() throw();
 
 	private:
 
@@ -89,15 +102,23 @@ namespace EmaFuturesStrategy {
 	private:
 
 		Time m_startTime;
+		Time m_closeStartTime;
 		
 		Intention m_intention;
 		bool m_isSent;
 		bool m_isPassiveOpen;
 		bool m_isPassiveClose;
 
+		const SlowFastEmas &m_emas;
+		
 		CloseType m_closeType;
+		boost::array<Direction, 2> m_reasons;
+		boost::array<std::pair<double, double>, 2> m_signalsBidAsk;
+		boost::array<std::pair<double, double>, 2> m_signalsEmas;
 
 		ScaledPrice m_maxProfit;
+
+		std::ostream &m_reportStream;
 	
 	};
 
@@ -111,7 +132,10 @@ namespace EmaFuturesStrategy {
 				TradeSystem &,
 				Security &,
 				const Qty &,
-				const Lib::TimeMeasurement::Milestones &);
+				const Lib::TimeMeasurement::Milestones &,
+				const Direction &openReason,
+				const SlowFastEmas &emas,
+				std::ostream &reportStream);
 		virtual ~LongPosition();
 	public:
 		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
@@ -137,7 +161,10 @@ namespace EmaFuturesStrategy {
 				TradeSystem &,
 				Security &,
 				const Qty &,
-				const Lib::TimeMeasurement::Milestones &);
+				const Lib::TimeMeasurement::Milestones &,
+				const Direction &openReason,
+				const SlowFastEmas &emas,
+				std::ostream &reportStream);
 		virtual ~ShortPosition();
 	public:
 		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;

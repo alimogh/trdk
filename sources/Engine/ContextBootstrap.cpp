@@ -254,7 +254,7 @@ private:
 	  */
 	void LoadTradeSystems() {
 	
-		foreach (const auto &section, m_conf.ReadSectionsList()) {
+		for (const auto &section: m_conf.ReadSectionsList()) {
 			
 			std::string tag;
 			if (!GetTradeSystemSection(section, tag)) {
@@ -288,7 +288,7 @@ private:
 			Assert(tradeSystem);
 			
 			bool isFound = false;
-			foreach (auto &holderByMode, m_tradeSystems) {
+			for (auto &holderByMode: m_tradeSystems) {
 				if (holderByMode.tag != tag) {
 					continue;
 				}
@@ -398,7 +398,7 @@ private:
 	  */
 	void LoadMarketDataSources() {
 	
-		foreach (const auto &section, m_conf.ReadSectionsList()) {
+		for (const auto &section: m_conf.ReadSectionsList()) {
 			std::string tag;
 			if (	!GetMarketDataSourceSection(section, tag)
 					&& !boost::iequals(section, Sections::marketDataSource)) {
@@ -624,10 +624,10 @@ namespace {
 				ModuleDll<Module> &module,
 				const PredForStandalone &predForStandalone,
 				const PredForSymbols &predForSymbols) {
-		foreach (auto &instance, module.standaloneInstances) {
+		for (auto &instance: module.standaloneInstances) {
 			predForStandalone(*instance);
 		}
-		foreach (auto &instance, module.symbolInstances) {
+		for (auto &instance: module.symbolInstances) {
 			predForSymbols(*instance.second);
 		}
 	}
@@ -690,7 +690,7 @@ public:
 		const auto sections = m_conf.ReadSectionsList();
 
 		RequirementsList requirementList;
-		foreach (const auto &sectionName, sections) {
+		for (const auto &sectionName: sections) {
 			std::string type;
 			std::string tag;
 			std::unique_ptr<const IniSectionRef> section(
@@ -770,22 +770,22 @@ private:
 			return;
 		}
 		
-		foreach (auto &module, source) {
+		for (auto &module: source) {
 			const std::string &tag = module.first;
 			ModuleDll<Module> &moduleDll = module.second;
 			auto &resultTag = (*result)[tag];
-			foreach (auto &instance, moduleDll.symbolInstances) {
+			for (auto &instance: moduleDll.symbolInstances) {
 				resultTag.push_back(
 					{moduleDll.conf->GetName(), instance.second});
 			}
-			foreach (auto &instance, moduleDll.standaloneInstances) {
+			for (auto &instance: moduleDll.standaloneInstances) {
 				resultTag.push_back(
 					{moduleDll.conf->GetName(), instance});
 			}
 			m_moduleListResult.insert(moduleDll.dll);
 		}
 		
-		foreach (auto &tag, *result) {
+		for (auto &tag: *result) {
 			tag.second.shrink_to_fit();
 		}
 
@@ -883,7 +883,7 @@ private:
 		const std::set<Symbol> symbolInstances
 			= GetSymbolInstances(Trait(), tag, *module.conf);
 		if (!symbolInstances.empty()) {
-			foreach (const auto &symbol, symbolInstances) {
+			for (const auto &symbol: symbolInstances) {
 				CreateModuleInstance(tag, symbol, module);
 			}
 		} else {
@@ -921,7 +921,7 @@ private:
 		DllObjectPtr<Module> instanceDllPtr(module.dll, instance);
 		if (!symbols.empty()) {
 			std::vector<std::string> securities;
-			foreach (auto symbol, symbols) {
+			for (const auto &symbol: symbols) {
 				Assert(symbol);
 				m_context.ForEachMarketDataSource([&](
 						MarketDataSource &source)
@@ -1001,9 +1001,9 @@ private:
 				++i) {
 			bool isNewRequirement = !isSymbolListOpened;
 			if (!isSymbolListOpened) {
- 				isSymbolListOpened
- 					= std::find(boost::begin(*i), boost::end(*i), '[')
- 						!= boost::end(*i);
+				isSymbolListOpened
+					= std::find(boost::begin(*i), boost::end(*i), '[')
+						!= boost::end(*i);
 			}
 			if (
 					isSymbolListOpened
@@ -1107,7 +1107,7 @@ private:
 	void ReadRequirementsList(
 				ModuleDll<Module> &module,
 				const std::string &tag,
- 				RequirementsList &result) {
+				RequirementsList &result) {
 		
 		typedef ModuleTrait<Module> Trait;
 
@@ -1194,7 +1194,7 @@ private:
 		{
 			const auto &list = ParseSupplierRequestList(
 				module.conf->ReadKey(Keys::requires, std::string()));
-			foreach (const std::string &request, list) {
+			for (const std::string &request: list) {
 				parseRequest(ParseSupplierRequest(request), nullptr);
 			}
 		}
@@ -1212,7 +1212,7 @@ private:
 				throw Exception("Failed to read module requirement list");
 			}
 			const auto &list = ParseSupplierRequestList(strList);
-			foreach (const auto &request, list) {
+			for (const auto &request: list) {
 				parseRequest(ParseSupplierRequest(request), &instance);
 			}
 		};
@@ -1260,9 +1260,9 @@ private:
 					= requirements.requiredModules[supplierRequest.tag];
 #				ifdef DEV_VER
 					if (supplierRequest.symbols.size() > 1) {
- 						foreach (const auto &symbol, supplierRequest.symbols) {
- 							Assert(symbol);
- 						}
+						for (const auto &symbol: supplierRequest.symbols) {
+							Assert(symbol);
+						}
 					}
 #				endif
 				module.insert(supplierRequest.symbols);
@@ -1271,8 +1271,8 @@ private:
 	}
 
 	void BindWithModuleRequirements(const RequirementsList &requirements) {
-		foreach (
-				const TagRequirementsList &moduleRequirements,
+		for (
+				const TagRequirementsList &moduleRequirements:
 				requirements.get<BySubscriber>()) {
 			static_assert(
 				numberOfModuleTypes == 3,
@@ -1303,8 +1303,8 @@ private:
 	}
 	
 	void BindWithSystemRequirements(const RequirementsList &requirements) {
-		foreach (
-				const TagRequirementsList &moduleRequirements,
+		for (
+				const TagRequirementsList &moduleRequirements:
 				requirements.get<BySubscriber>()) {
 			static_assert(
 				numberOfModuleTypes == 3,
@@ -1349,7 +1349,7 @@ private:
 		}
 		ModuleDll<Module> &module = modulePos->second;
 
-		foreach (const auto &requirement, requirements.requiredModules) {
+		for (const auto &requirement: requirements.requiredModules) {
 			const auto &requirementTag = requirement.first;
 			const auto requredModulePos = m_services.find(requirementTag);
 			if (requredModulePos == m_services.end()) {
@@ -1358,24 +1358,24 @@ private:
 					requirementTag);
 				throw Exception("Unknown service in requirement list");
 			}
- 			ModuleDll<Service> &requredModule = requredModulePos->second;
- 			foreach (const std::set<Symbol> &symbols, requirement.second) {
+			ModuleDll<Service> &requredModule = requredModulePos->second;
+			for (const std::set<Symbol> &symbols: requirement.second) {
 
 				const auto createBySymbolSet = [&](
 							const std::set<Symbol> &symbols,
 							std::string &symbolsStrList)
 						-> boost::shared_ptr<Service> {
 					std::list<std::string> symbolsStr;
-					foreach (const Symbol &symbol, symbols) {
+					for (const Symbol &symbol: symbols) {
 						Assert(symbol);
 						symbolsStr.push_back(symbol.GetAsString());
 					}
 					std::string symbolsStrListTmp
 						= boost::join(symbolsStr, ", ");
- 					const auto requredServicePos
- 						= requredModule.symbolInstances.find(symbols);
+					const auto requredServicePos
+						= requredModule.symbolInstances.find(symbols);
 					boost::shared_ptr<Service> result;
- 					if (	requredServicePos
+					if (	requredServicePos
 							!= requredModule.symbolInstances.end()) {
 						result = requredServicePos->second.GetObjPtr();
 					} else {
@@ -1386,14 +1386,14 @@ private:
 						Assert(
 							requredModule.symbolInstances.find(symbols)
 							!= requredModule.symbolInstances.end());
- 					}
+					}
 					symbolsStrListTmp.swap(symbolsStrList);
 					return result;
 				};
 
 				if (symbols.size() == 1 && !*symbols.begin()) {
 
-					foreach (auto &instance, module.symbolInstances) {
+					for (auto &instance: module.symbolInstances) {
 						std::string symbolsStrList;
 						boost::shared_ptr<Service> requredService
 							= createBySymbolSet(instance.first, symbolsStrList);
@@ -1410,14 +1410,14 @@ private:
 					boost::shared_ptr<Service> requredService
 						= createBySymbolSet(symbols, symbolsStrList);
 
-					foreach (auto &instance, module.standaloneInstances) {
+					for (auto &instance: module.standaloneInstances) {
 						requredService->RegisterSubscriber(*instance);
 						instance->GetLog().Info(
 							"Subscribed to \"%1%\" with security(ies) \"%2%\".",
 							*requredService,
 							symbolsStrList);
 					}
-					foreach (auto &instance, module.symbolInstances) {
+					for (auto &instance: module.symbolInstances) {
 						requredService->RegisterSubscriber(*instance.second);
 						instance.second->GetLog().Info(
 							"Subscribed to \"%1%\" with security(ies) \"%2%\".",
@@ -1427,7 +1427,7 @@ private:
 
 				}
 				
- 			}
+			}
 		}
 
 	}
@@ -1453,7 +1453,7 @@ private:
 			uniqueInstance = boost::polymorphic_downcast<Module *>(
 				requirements.uniqueInstance);
 			isUniqueInstanceStandalone = false;
-			foreach (auto &instance, module.standaloneInstances) {
+			for (auto &instance: module.standaloneInstances) {
 				if (&*instance == uniqueInstance) {
 					isUniqueInstanceStandalone = true;
 					break;
@@ -1462,7 +1462,7 @@ private:
 #			ifdef DEV_VER
 				if (!isUniqueInstanceStandalone) {
 					bool isExist = false;
-					foreach (auto &instance, module.symbolInstances) {
+					for (auto &instance: module.symbolInstances) {
 						if (&*instance.second == uniqueInstance) {
 							isExist = true;
 							break;
@@ -1474,8 +1474,8 @@ private:
 		}
 
 		// Subscribing to system services:
-		foreach (
-				const auto &requirement,
+		for (
+				const auto &requirement:
 				requirements.requiredSystemServices) {
 			void (SubscriptionsManager::*subscribe)(Security &, Module &)
 				= nullptr;
@@ -1511,7 +1511,7 @@ private:
 			if (!subscribe) {
 				continue;
 			}
-			foreach (const Symbol &symbol, requirement.second) {
+			for (const Symbol &symbol: requirement.second) {
 				if (symbol) {
 					m_context.ForEachMarketDataSource(
 						[&](MarketDataSource &source) -> bool {
@@ -1660,9 +1660,9 @@ private:
 		fs::path symbolsFilePath;
 		if (dynamic_cast<const IniFile *>(&conf.GetBase())) {
 			try {
- 				symbolsFilePath = Normalize(
- 					conf.ReadKey(Keys::instances),
- 					boost::polymorphic_downcast<const IniFile *>(
+				symbolsFilePath = Normalize(
+					conf.ReadKey(Keys::instances),
+					boost::polymorphic_downcast<const IniFile *>(
 							&conf.GetBase())
 						->GetPath()
 						.branch_path());
@@ -1686,7 +1686,7 @@ private:
 			m_context.GetSettings().GetDefaultCurrency());
 
 		try {
-			foreach (const auto &iniSymbol, symbols) {
+			for (const auto &iniSymbol: symbols) {
 				result.insert(Symbol(iniSymbol));
 			}
 		} catch (const Lib::Ini::Error &ex) {

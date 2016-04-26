@@ -38,7 +38,7 @@ namespace {
 	size_t GetModulesCount(
 			const std::map<std::string, std::vector<T>> &modulesByTag) {
 		size_t result = 0;
-		foreach (const auto &modules, modulesByTag) {
+		for (const auto &modules: modulesByTag) {
 			result += modules.second.size();
 		}
 		return result;
@@ -242,9 +242,9 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
 
 	m_pimpl->m_state->ReportState();
 
-	foreach (auto &tradeSystemsByMode, m_pimpl->m_tradeSystems) {
+	for (auto &tradeSystemsByMode: m_pimpl->m_tradeSystems) {
 
-		foreach (auto &tradeSystemRef, tradeSystemsByMode.holders) {
+		for (auto &tradeSystemRef: tradeSystemsByMode.holders) {
 
 			if (!tradeSystemRef.tradeSystem) {
 				AssertEq(std::string(), tradeSystemRef.section);
@@ -359,13 +359,13 @@ void Engine::Context::Stop(const StopMode &stopMode) {
 
 	{
 		std::vector<Strategy *> stoppedStrategies;
-		foreach (auto &strategyies, m_pimpl->m_state->strategies) {
-			foreach (auto &strategyHolder, strategyies.second) {
+		for (auto &strategyies: m_pimpl->m_state->strategies) {
+			for (auto &strategyHolder: strategyies.second) {
 				strategyHolder.module->Stop(stopMode);
 				stoppedStrategies.push_back(&*strategyHolder.module);
 			}
 		}
-		foreach (Strategy *strategy, stoppedStrategies) {
+		for (Strategy *strategy: stoppedStrategies) {
 			strategy->WaitForStop();
 		}
 	}
@@ -429,8 +429,8 @@ namespace {
 
 	template<typename Modules> 
 	void UpdateModules(const Lib::Ini &conf, Modules &modules) {
-		foreach (auto &set, modules) {
-			foreach (auto &holder, set.second) {
+		for (auto &set: modules) {
+			for (auto &holder: set.second) {
 				try {
 					holder.module->RaiseSettingsUpdateEvent(
 						IniSectionRef(conf, holder.section));
@@ -457,8 +457,8 @@ void Engine::Context::Update(const Lib::Ini &conf) {
 		GetRiskControl(TradingMode(i)).OnSettingsUpdate(conf);
 	}
 
-	foreach (auto &tradeSystemByMode, m_pimpl->m_tradeSystems) {
-		foreach (auto &tradeSystem, tradeSystemByMode.holders) {
+	for (auto &tradeSystemByMode: m_pimpl->m_tradeSystems) {
+		for (auto &tradeSystem: tradeSystemByMode.holders) {
 			try {
 				tradeSystem.tradeSystem->OnSettingsUpdate(
 					IniSectionRef(conf, tradeSystem.section));
@@ -522,7 +522,7 @@ void Engine::Context::ForEachMarketDataSource(
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
 		size_t i = 0;
 #	endif
-	foreach (const auto &source, m_pimpl->m_marketDataSources) {
+	for (const auto &source: m_pimpl->m_marketDataSources) {
 		AssertEq(i++, source->GetIndex());
 		if (!pred(*source)) {
 			return;
@@ -535,7 +535,7 @@ void Engine::Context::ForEachMarketDataSource(
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
 		size_t i = 0;
 #	endif
-	foreach (auto &source, m_pimpl->m_marketDataSources) {
+	for (auto &source: m_pimpl->m_marketDataSources) {
 		AssertEq(i++, source->GetIndex());
 		if (!pred(*source)) {
 			return;
@@ -591,8 +591,8 @@ void Engine::Context::ClosePositions() {
 
 	GetLog().Info("Closing positions...");
 
-	foreach (auto &tagetStrategies, m_pimpl->m_state->strategies) {
-		foreach (auto &strategyHolder, tagetStrategies.second) {
+	for (auto &tagetStrategies: m_pimpl->m_state->strategies) {
+		for (auto &strategyHolder: tagetStrategies.second) {
 			strategyHolder.module->ClosePositions();
 		}
 	}
