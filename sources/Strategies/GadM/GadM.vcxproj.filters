@@ -51,6 +51,9 @@
     <ClInclude Include="EmaFuturesStrategyPosition.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Emas.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="GadM.def">

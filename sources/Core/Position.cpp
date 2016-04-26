@@ -1242,8 +1242,8 @@ bool Position::HasActiveCloseOrders() const throw() {
 
 namespace { namespace CloseTypeStr {
 	const std::string none = "-";
-	const std::string takeProfit = "t/p";
-	const std::string stopLoss = "s/l";
+	const std::string takeProfit = "take profit";
+	const std::string stopLoss = "stop loss";
 	const std::string timeout = "timeout";
 	const std::string schedule = "schedule";
 	const std::string request = "request";
@@ -1332,6 +1332,10 @@ OrderId Position::GetCloseOrderId() const throw() {
 
 Qty Position::GetClosedQty() const throw() {
 	return m_pimpl->m_closed.qty.load();
+}
+
+double Position::GetClosedVolume() const {
+	return GetSecurity().DescalePrice(GetClosePrice()) * GetClosedQty();
 }
 
 Position::Time Position::GetCloseTime() const {

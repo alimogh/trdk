@@ -103,7 +103,6 @@ namespace trdk {
 
 	public:
 
-		
 		virtual ~Position();
 
 	public:
@@ -195,6 +194,7 @@ namespace trdk {
 		trdk::ScaledPrice GetCloseStartPrice() const;
 		trdk::ScaledPrice GetClosePrice() const;
 		trdk::Qty GetClosedQty() const throw();
+		double GetClosedVolume() const;
 		Time GetCloseTime() const;
 
 		trdk::ScaledPrice GetCommission() const;

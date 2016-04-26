@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "EmaFuturesStrategyPosition.hpp"
-#include "Services/MovingAverageService.hpp"
+#include "Emas.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingLog.hpp"
@@ -21,6 +21,7 @@ using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::Services;
 
 namespace pt = boost::posix_time;
+namespace fs = boost::filesystem;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -29,92 +30,11 @@ namespace EmaFuturesStrategy {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	enum Direction {
-		DIRECTION_UP,
-		DIRECTION_LEVEL,
-		DIRECTION_DOWN
-	};
-	
-	const char * ConvertToPch(const Direction &source) {
-		switch (source) {
-			case DIRECTION_UP:
-				return "UP";
-				break;
-			case DIRECTION_LEVEL:
-				return "LEVEL";
-				break;
-			case DIRECTION_DOWN:
-				return "DOWN";
-				break;
-			default:
-				AssertEq(DIRECTION_UP, source);
-				return "<UNKNOWN>";
-		}
-	}
-
-	////////////////////////////////////////////////////////////////////////////////
-
 	class Strategy : public trdk::Strategy {
 
 	public:
 
 		typedef trdk::Strategy Base;
-
-	private:
-	
-		class Ema {
-		public:
-			Ema()
-				: m_value(0)
-				, m_service(nullptr)
-				, m_numberOfUpdates(0) {
-				//...//
-			}
-			explicit Ema(const MovingAverageService &service)
-				: m_value(0)
-				, m_service(&service)
-				, m_numberOfUpdates(0) {
-				//...//
-			}
-			operator bool() const {
-				return HasData();
-			}
-			bool HasSource() const {
-				return m_service ? true : false;
-			}
-			bool HasData() const {
-				return !IsZero(m_value);
-			}
-			bool CheckSource(const Service &service, bool isStarted) {
-				Assert(HasSource());
-				if (m_service != &service) {
-					return false;
-				}
-				m_value = m_service->GetLastPoint().value;
-				if (isStarted) {
-					++m_numberOfUpdates;
-				}
-				return true;
-			}
-			double GetValue() const {
-				Assert(HasSource());
-				Assert(HasData());
-				return m_value;
-			}
-			size_t GetNumberOfUpdates() const {
-				return m_numberOfUpdates;
-			}
-		private:
-			double m_value;
-			const MovingAverageService *m_service;
-			size_t m_numberOfUpdates;
-		};
-
-		enum EmaType {
-			FAST = 0,
-			SLOW = 1,
-			numberOfEmaTypes
-		};
 
 	public:
 
@@ -134,7 +54,7 @@ namespace EmaFuturesStrategy {
 				conf.ReadTypedKey<double>(
 					"min_profit_per_contract_to_activate_take_profit"))
 			, m_takeProfitTrailingPercentage(
-				conf.ReadTypedKey<int>("take_profit_trailing_tercentage") 
+				conf.ReadTypedKey<int>("take_profit_trailing_percentage") 
 				/ 100.0)
 			, m_maxLossMoneyPerContract(
 				conf.ReadTypedKey<double>("max_loss_per_contract"))
@@ -157,6 +77,7 @@ namespace EmaFuturesStrategy {
 				m_maxLossMoneyPerContract, // 8
 				m_numberOfContracts, // 9
 				m_maxLossMoneyPerContract * m_numberOfContracts); // 10
+			OpenStartegyLog();
 		}
 		
 		virtual ~Strategy() {
@@ -323,10 +244,14 @@ namespace EmaFuturesStrategy {
 					timeMeasurement.Measure(SM_STRATEGY_WITHOUT_DECISION_1);
 					return;
 				case DIRECTION_UP:
-					position = CreatePosition<LongPosition>(timeMeasurement);
+					position = CreatePosition<LongPosition>(
+						signal,
+						timeMeasurement);
 					break;
 				case DIRECTION_DOWN:
-					position = CreatePosition<ShortPosition>(timeMeasurement);
+					position = CreatePosition<ShortPosition>(
+						signal,
+						timeMeasurement);
 					break;
 				default:
 					throw LogicError("Internal error: Unknown direction");
@@ -379,13 +304,15 @@ namespace EmaFuturesStrategy {
 					[&](const TradingRecord &) {});
 				position.SetIntention(
 					INTENTION_DONOT_OPEN,
-					Position::CLOSE_TYPE_OPEN_FAILED);
+					Position::CLOSE_TYPE_OPEN_FAILED,
+					DIRECTION_LEVEL);
 				return;
 			}
 
 			position.SetIntention(
 				INTENTION_CLOSE_PASSIVE,
-				Position::CLOSE_TYPE_NONE);
+				Position::CLOSE_TYPE_NONE,
+				signal);
 			timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
 
 		}
@@ -417,7 +344,8 @@ namespace EmaFuturesStrategy {
 			});
 			position.SetIntention(
 				INTENTION_CLOSE_PASSIVE,
-				Position::CLOSE_TYPE_TAKE_PROFIT);
+				Position::CLOSE_TYPE_TAKE_PROFIT,
+				DIRECTION_LEVEL);
 			timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
 			return true;
 		}
@@ -448,7 +376,8 @@ namespace EmaFuturesStrategy {
 			});
 			position.SetIntention(
 				INTENTION_CLOSE_PASSIVE,
-				Position::CLOSE_TYPE_STOP_LOSS);
+				Position::CLOSE_TYPE_STOP_LOSS,
+				DIRECTION_LEVEL);
 			timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
 			return true;
 		}
@@ -481,8 +410,11 @@ namespace EmaFuturesStrategy {
 					return true;
 			}
 
+			const auto &startTime = position.HasActiveCloseOrders()
+				?	position.GetCloseStartTime()
+				:	position.GetStartTime();
 			const auto orderExpirationTime
-				= position.GetStartTime() + m_passiveOrderMaxLifetime;
+				=  startTime + m_passiveOrderMaxLifetime;
 			const auto &now = GetContext().GetCurrentTime();
 			if (orderExpirationTime > now) {
 				return true;
@@ -493,7 +425,7 @@ namespace EmaFuturesStrategy {
 					"\tbid=%6%\task=%7%",
 				[&](TradingRecord &record) {
 					record
-						%	position.GetStartTime().time_of_day()
+						%	startTime.time_of_day()
 						%	orderExpirationTime.time_of_day()
 						%	now.time_of_day()
 						%	(position.GetIntention() == INTENTION_OPEN_PASSIVE
@@ -510,7 +442,8 @@ namespace EmaFuturesStrategy {
 				position.GetIntention() == INTENTION_OPEN_PASSIVE
 					?	INTENTION_OPEN_AGGRESIVE
 					:	INTENTION_CLOSE_AGGRESIVE,
-				Position::CLOSE_TYPE_NONE);
+				Position::CLOSE_TYPE_NONE,
+				DIRECTION_LEVEL);
 
 			return false;
 
@@ -601,6 +534,7 @@ namespace EmaFuturesStrategy {
 
 		template<typename Position>
 		boost::shared_ptr<Position> CreatePosition(
+				const Direction &reason,
 				const Milestones &timeMeasurement) {
 			Assert(m_security);
 			return boost::make_shared<Position>(
@@ -609,7 +543,41 @@ namespace EmaFuturesStrategy {
 				GetTradeSystem(m_security->GetSource().GetIndex()),
 				*m_security,
 				m_numberOfContracts,
-				timeMeasurement);
+				timeMeasurement,
+				reason,
+				m_ema,
+				m_strategyLog);
+		}
+
+		void OpenStartegyLog() {
+
+			fs::path path = Defaults::GetPositionsLogDir();
+			const auto &now = GetContext().GetCurrentTime();
+			path /= SymbolToFileName(
+				(boost::format("%1%_%2%%3%%4%_%5%%6%%7%")
+					% GetTag()
+					% now.date().year()
+					% now.date().month().as_number()
+					% now.date().day()
+					% now.time_of_day().hours()
+					% now.time_of_day().minutes()
+					% now.time_of_day().seconds())
+				.str(),
+				"csv");
+			fs::create_directories(path.branch_path());
+
+			m_strategyLog.open(
+				path.string(),
+				std::ios::out | std::ios::ate | std::ios::app);
+			if (!m_strategyLog) {
+				GetLog().Error("Failed to open strategy log file %1%", path);
+				throw Exception("Failed to open strategy log file");
+			} else {
+				GetLog().Info("Strategy log: %1%.", path);
+			}
+
+			Position::OpenReport(m_strategyLog);
+
 		}
 
 	private:
@@ -623,10 +591,12 @@ namespace EmaFuturesStrategy {
 
 		Security *m_security;
 
-		boost::array<Ema, numberOfEmaTypes> m_ema;
+		SlowFastEmas m_ema;
 		Direction m_fastEmaDirection;
 
 		boost::uuids::random_generator m_generateUuid;
+
+		std::ofstream m_strategyLog;
 
 	};
 
