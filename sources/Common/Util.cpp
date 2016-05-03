@@ -22,6 +22,7 @@ using namespace trdk::Lib;
 
 std::string Lib::SymbolToFileName(const std::string &symbol) {
 	std::string clearSymbol = boost::replace_all_copy(symbol, ":", "_");
+	boost::replace_all(clearSymbol, "*", "xx");
 	boost::replace_all(clearSymbol, "/", "_");
 	boost::replace_all(clearSymbol, " ", "_");
 	return clearSymbol;

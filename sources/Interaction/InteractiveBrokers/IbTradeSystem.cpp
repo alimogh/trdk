@@ -32,6 +32,30 @@ ib::TradeSystem::TradeSystem(
 	if (conf.ReadBoolKey("positions", false)) {
 		m_positions.reset(new Positions);
 	}
+	{
+		const auto &expirationCalendarFilePath = conf.ReadFileSystemPath(
+			"expiration_calendar_csv",
+			std::string());
+		if (!expirationCalendarFilePath.empty()) {
+			GetMdsLog().Debug(
+				"Loading expiration calendar from %1%...",
+				expirationCalendarFilePath);
+			m_expirationCalendar.ReloadCsv(expirationCalendarFilePath);
+			const ExpirationCalendar::Stat stat
+				= m_expirationCalendar.CalcStat();
+			const char *const message
+				= "Expiration calendar has %1% symbols and %2% expirations.";
+			stat.numberOfExpirations && stat.numberOfSymbols
+				?	GetMdsLog().Info(
+						message,
+						stat.numberOfSymbols,
+						stat.numberOfExpirations)
+				:	GetMdsLog().Warn(
+						message,
+						stat.numberOfSymbols,
+						stat.numberOfExpirations);
+		}
+	}
 }
 
 ib::TradeSystem::~TradeSystem() {
@@ -152,11 +176,11 @@ void ib::TradeSystem::SubscribeToSecurities() {
 		return;
 	}
 	while (!m_unsubscribedSecurities.empty()) {
- 		auto security = m_unsubscribedSecurities.front();
+		auto security = m_unsubscribedSecurities.front();
 		m_unsubscribedSecurities.pop_front();
 		m_securities.push_back(security);
 		m_client->SubscribeToMarketData(*security);
- 	}
+	}
 }
 
 const ib::TradeSystem::Account & ib::TradeSystem::GetAccount() const {

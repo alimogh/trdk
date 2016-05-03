@@ -79,7 +79,7 @@ void Module::SecurityList::Iterator::decrement() {
 	--m_pimpl->iterator;
 }
 
-void Module::SecurityList::Iterator::advance(difference_type n) {
+void Module::SecurityList::Iterator::advance(const difference_type &n) {
 	std::advance(m_pimpl->iterator, n);
 }
 
@@ -137,7 +137,7 @@ void Module::SecurityList::ConstIterator::decrement() {
 	--m_pimpl->iterator;
 }
 
-void Module::SecurityList::ConstIterator::advance(difference_type n) {
+void Module::SecurityList::ConstIterator::advance(const difference_type &n) {
 	std::advance(m_pimpl->iterator, n);
 }
 

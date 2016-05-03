@@ -37,7 +37,7 @@ namespace trdk { namespace Tests {
 		}
 		try {
 			lib::Symbol(
-				"XXX/201305/USD:NYMEX:FUX",
+				"XXX/USD:NYMEX:FUX",
 				lib::SECURITY_TYPE_FOR,
 				lib::CURRENCY_AUD);
 			EXPECT_TRUE(false) << "Exception expected.";
@@ -48,7 +48,7 @@ namespace trdk { namespace Tests {
 		}
 		try {
 			lib::Symbol(
-				"XXX/201305/USD:NYMEX:",
+				"XXX/USD:NYMEX:",
 				lib::SECURITY_TYPE_FOR,
 				lib::CURRENCY_AUD);
 			EXPECT_TRUE(false) << "Exception expected.";
@@ -59,104 +59,125 @@ namespace trdk { namespace Tests {
 		}
 	}
 
-	TEST(SymbolTest, Futures) {
+	TEST(SymbolTest, FuturesOk) {
 		{
-			const lib::Symbol symbol("XXX/201305/USD:NYMEX:FUT");
+			const lib::Symbol symbol("XXX/USD:NYMEX:FUT");
 			EXPECT_EQ(lib::SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
 			EXPECT_EQ(std::string("XXX"), symbol.GetSymbol().c_str());
-			EXPECT_EQ(std::string("201305"), symbol.GetExpirationDate());
+			EXPECT_TRUE(symbol.IsExplicit());
 			EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
 			EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
 			EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+			EXPECT_EQ(std::string("XXX/USD:NYMEX(FUT)"), symbol.GetAsString());
 		}
 		{
 			const lib::Symbol symbol(
-				"XXX/201305/USD:NYMEX:FUT",
+				"XXX/USD:NYMEX:FUT",
 				lib::SECURITY_TYPE_STOCK);
 			EXPECT_EQ(lib::SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
 			EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
-			EXPECT_EQ(std::string("201305"), symbol.GetExpirationDate());
+			EXPECT_TRUE(symbol.IsExplicit());
 			EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
 			EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
 			EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+			EXPECT_EQ(std::string("XXX/USD:NYMEX(FUT)"), symbol.GetAsString());
 		}
 		{
 			const lib::Symbol symbol(
-				"XXX/201305/USD:NYMEX:FUT",
+				"XXX/USD:NYMEX:FUT",
 				lib::SECURITY_TYPE_STOCK,
 				lib::CURRENCY_AUD);
 			EXPECT_EQ(lib::SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
 			EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
-			EXPECT_EQ(std::string("201305"), symbol.GetExpirationDate());
+			EXPECT_TRUE(symbol.IsExplicit());
 			EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
 			EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
 			EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+			EXPECT_EQ(std::string("XXX/USD:NYMEX(FUT)"), symbol.GetAsString());
 		}
 		{
 			const lib::Symbol symbol(
-				"XXX/201305/USD:NYMEX",
+				"XXX/USD:NYMEX",
 				lib::SECURITY_TYPE_FUTURES,
 				lib::CURRENCY_AUD);
 			EXPECT_EQ(lib::SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
 			EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
-			EXPECT_EQ(std::string("201305"), symbol.GetExpirationDate());
+			EXPECT_TRUE(symbol.IsExplicit());
 			EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
 			EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
 			EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+			EXPECT_EQ(std::string("XXX/USD:NYMEX(FUT)"), symbol.GetAsString());
 		}
 		{
 			const lib::Symbol symbol(
-				"XXX/201305/USD:NYMEX",
+				"XXX/USD:NYMEX",
 				lib::SECURITY_TYPE_FUTURES,
 				lib::CURRENCY_AUD);
 			EXPECT_EQ(lib::SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
 			EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
-			EXPECT_EQ(std::string("201305"), symbol.GetExpirationDate());
+			EXPECT_TRUE(symbol.IsExplicit());
 			EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
 			EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
 			EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+			EXPECT_EQ(std::string("XXX/USD:NYMEX(FUT)"), symbol.GetAsString());
 		}
 		{
 			const lib::Symbol symbol(
-				"XXX/201305:NYMEX",
+				"XXX:NYMEX",
 				lib::SECURITY_TYPE_FUTURES,
 				lib::CURRENCY_AUD);
 			EXPECT_EQ(lib::SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
 			EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
-			EXPECT_EQ(std::string("201305"), symbol.GetExpirationDate());
+			EXPECT_TRUE(symbol.IsExplicit());
 			EXPECT_EQ(lib::CURRENCY_AUD, symbol.GetCurrency());
 			EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
 			EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+			EXPECT_EQ(std::string("XXX/AUD:NYMEX(FUT)"), symbol.GetAsString());
 		}
 		{
 			const lib::Symbol symbol(
-				"XXX/201305",
+				"XXX",
 				lib::SECURITY_TYPE_FUTURES,
 				lib::CURRENCY_AUD);
 			EXPECT_EQ(lib::SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
 			EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
-			EXPECT_EQ(std::string("201305"), symbol.GetExpirationDate());
+			EXPECT_TRUE(symbol.IsExplicit());
 			EXPECT_EQ(lib::CURRENCY_AUD, symbol.GetCurrency());
 			EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
 			EXPECT_THROW(symbol.GetExchange(), lib::LogicError);
+			EXPECT_EQ(std::string("XXX/AUD(FUT)"), symbol.GetAsString());
 		}
 		{
-			const lib::Symbol symbol("XXX/201305/USD::FUT");
+			const lib::Symbol symbol("XXX/USD::FUT");
 			EXPECT_EQ(lib::SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
 			EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
-			EXPECT_EQ(std::string("201305"), symbol.GetExpirationDate());
+			EXPECT_TRUE(symbol.IsExplicit());
 			EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
 			EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
 			EXPECT_THROW(symbol.GetExchange(), lib::LogicError);
+			EXPECT_EQ(std::string("XXX/USD(FUT)"), symbol.GetAsString());
 		}
+		{
+			const lib::Symbol symbol("XXX*/USD::FUT");
+			EXPECT_EQ(lib::SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
+			EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+			EXPECT_FALSE(symbol.IsExplicit());
+			EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+			EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+			EXPECT_THROW(symbol.GetExchange(), lib::LogicError);
+			EXPECT_EQ(std::string("XXX*/USD(FUT)"), symbol.GetAsString());
+		}
+	}
+
+	TEST(SymbolTest, FuturesErrors) {
 		try {
 			lib::Symbol(
-				"XXX:NYMEX",
+				"XXX/20161328/USD::FUT",
 				lib::SECURITY_TYPE_FUTURES,
 				lib::CURRENCY_AUD);
 			EXPECT_TRUE(false) << "Exception expected.";
 		} catch (const lib::Symbol::StringFormatError &ex) {
-			EXPECT_STREQ("Expiration date is not set", ex.what());
+			EXPECT_STREQ("Too many fields for futures symbol", ex.what());
 		} catch (...) {
 			EXPECT_THROW(throw, lib::Symbol::StringFormatError);
 		}
@@ -169,7 +190,7 @@ namespace trdk { namespace Tests {
 			EXPECT_THROW(throw, lib::Symbol::StringFormatError);
 		}
 		try {
-			lib::Symbol("XXX/201305/USS:NYMEX:FUT");
+			lib::Symbol("XXX/USS:NYMEX:FUT");
 			EXPECT_TRUE(false) << "Exception expected.";
 		} catch (const lib::Symbol::StringFormatError &ex) {
 			EXPECT_STREQ("Currency code \"USS\" is unknown", ex.what());

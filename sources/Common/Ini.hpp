@@ -93,41 +93,41 @@ namespace trdk { namespace Lib {
 		SectionList ReadSectionsList() const;
 
 		void ReadSection(
-					const std::string &section,
-					const boost::function<bool(const std::string &)> &readLine,
-					bool isRequired)
+				const std::string &section,
+				const boost::function<bool(const std::string &)> &readLine,
+				bool isRequired)
 				const;
 
 		bool IsSectionExist(const std::string &section) const;
 		bool IsKeyExist(
-					const std::string &section,
-					const std::string &key)
+				const std::string &section,
+				const std::string &key)
 				const;
 
 		void ForEachKey(
-					const std::string &section,
-					const boost::function<
-							bool(
-								std::string &key,
-								std::string &value)>
-						&pred,
-					bool isRequired)
+				const std::string &section,
+				const boost::function<
+						bool(
+							std::string &key,
+							std::string &value)>
+					&pred,
+				bool isRequired)
 				const;
 
 		std::string ReadKey(
-					const std::string &section,
-					const std::string &key)
+				const std::string &section,
+				const std::string &key)
 				const;
 		std::string ReadKey(
-					const std::string &section,
-					const std::string &key,
-					const std::string &defaultValue)
+				const std::string &section,
+				const std::string &key,
+				const std::string &defaultValue)
 				const;
 
 		template<typename T>
 		T ReadTypedKey(
-					const std::string &section,
-					const std::string &key)
+				const std::string &section,
+				const std::string &key)
 				const {
 			try {
 				return boost::lexical_cast<T>(ReadKey(section, key));
@@ -141,9 +141,9 @@ namespace trdk { namespace Lib {
 		
 		template<typename T>
 		T ReadTypedKey(
-					const std::string &section,
-					const std::string &key,
-					const T &defaultValue)
+				const std::string &section,
+				const std::string &key,
+				const T &defaultValue)
 				const {
 			try {
 				return boost::lexical_cast<T>(ReadKey(section, key));
@@ -158,14 +158,19 @@ namespace trdk { namespace Lib {
 		}
 
 		boost::filesystem::path ReadFileSystemPath(
-					const std::string &section,
-					const std::string &key)
+				const std::string &section,
+				const std::string &key)
+				const;
+		boost::filesystem::path ReadFileSystemPath(
+				const std::string &section,
+				const std::string &key,
+				const std::string &defaultValue)
 				const;
 
 		AbsoluteOrPercentsPrice ReadAbsoluteOrPercentsPriceKey(
-					const std::string &section,
-					const std::string &key,
-					unsigned long priceScale)
+				const std::string &section,
+				const std::string &key,
+				unsigned long priceScale)
 				const;
 
 		static bool ConvertToBoolean(const std::string &);
@@ -173,13 +178,13 @@ namespace trdk { namespace Lib {
 		static std::string GetBooleanFalse();
 
 		bool ReadBoolKey(
-					const std::string &section,
-					const std::string &key)
+				const std::string &section,
+				const std::string &key)
 				const;
 		bool ReadBoolKey(
-					const std::string &section,
-					const std::string &key,
-					bool defaultValue)
+				const std::string &section,
+				const std::string &key,
+				bool defaultValue)
 				const;
 
 		std::list<std::string> ReadList() const;
@@ -193,7 +198,6 @@ namespace trdk { namespace Lib {
 				const trdk::Lib::SecurityType &defSecurityType,
 				const trdk::Lib::Currency &defCurrency)
 				const;
-
 		std::set<trdk::Lib::Symbol> ReadSymbols(
 				const std::string &section,
 				const trdk::Lib::SecurityType &defSecurityType,
@@ -277,7 +281,7 @@ namespace trdk { namespace Lib {
 	public:
 
 		explicit IniString(const std::string &source)
-				: m_source(source) {
+			: m_source(source) {
 			//...//
 		}
 
@@ -320,18 +324,18 @@ namespace trdk { namespace Lib {
 		bool IsKeyExist(const std::string &key) const;
 
 		void ForEachKey(
-					const boost::function<
-							bool(
-								const std::string &key,
-								const std::string &value)>
-						&pred,
-					bool isRequired)
+				const boost::function<
+						bool(
+							const std::string &key,
+							const std::string &value)>
+					&pred,
+				bool isRequired)
 				const;
 
 		std::string ReadKey(const std::string &key) const;
 		std::string ReadKey(
-					const std::string &key,
-					const std::string &defaultValue)
+				const std::string &key,
+				const std::string &defaultValue)
 				const;
 
 		template<typename T>
@@ -341,20 +345,24 @@ namespace trdk { namespace Lib {
 
 		template<typename T>
 		T ReadTypedKey(
-					const std::string &key,
-					const T &defaultValue)
+				const std::string &key,
+				const T &defaultValue)
 				const {
 			return GetBase().ReadTypedKey<T>(GetName(), key, defaultValue);
 		}
 
 		boost::filesystem::path ReadFileSystemPath(
-					const std::string &key)
+				const std::string &key)
+				const;
+		boost::filesystem::path ReadFileSystemPath(
+				const std::string &key,
+				const std::string &defaultValue)
 				const;
 
 		trdk::Lib::IniFile::AbsoluteOrPercentsPrice
 		ReadAbsoluteOrPercentsPriceKey(
-					const std::string &key,
-					unsigned long priceScale)
+				const std::string &key,
+				unsigned long priceScale)
 				const;
 
 		bool ReadBoolKey(const std::string &key) const;

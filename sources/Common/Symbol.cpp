@@ -13,6 +13,7 @@
 #include "Foreach.hpp"
 #include "Util.hpp"
 
+using namespace trdk;
 using namespace trdk::Lib;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,6 +42,7 @@ Symbol::Symbol()
 
 Symbol::Data::Data()
 	: securityType(numberOfSecurityTypes)
+	, isExplicit(true)
 	, strike(.0)
 	, right(numberOfRights)
 	, fotBaseCurrency(numberOfCurrencies)
@@ -123,13 +125,14 @@ Symbol::Symbol(
 			currencyIndex = 1;
 			break;
 		case SECURITY_TYPE_FUTURES:
-			if (symbolSubs.size() > 3) {
+			if (symbolSubs.size() > 2) {
 				throw StringFormatError("Too many fields for futures symbol");
-			} else if (symbolSubs.size() < 2 || symbolSubs[1].empty()) {
-				throw StringFormatError("Expiration date is not set");
 			}
-			symbolSubs[1].swap(m_data.expirationDate);
-			currencyIndex = 2;
+			if (m_data.symbol.back() == '*') {
+				m_data.symbol.pop_back();
+				m_data.isExplicit = false;
+			}
+			currencyIndex = 1;
 			break;
 		case SECURITY_TYPE_FUTURES_OPTIONS:
 			throw Exception("Futures options symbols are not supported");
@@ -278,7 +281,7 @@ bool Symbol::operator <(const Symbol &rhs) const {
 	} else if (m_data.securityType != rhs.m_data.securityType) {
 		return false;
 	} else {
-		return m_data.expirationDate < rhs.m_data.expirationDate;
+		return m_data.isExplicit < rhs.m_data.isExplicit;
 	}
 }
 
@@ -301,8 +304,8 @@ bool Symbol::operator ==(const Symbol &rhs) const {
 		return
 			m_data.securityType == rhs.m_data.securityType
 			&& m_data.currency == rhs.m_data.currency
+			&& m_data.isExplicit == rhs.m_data.isExplicit
 			&& m_data.symbol == rhs.m_data.symbol
-			&& m_data.expirationDate == rhs.m_data.expirationDate
 			&& m_data.exchange == rhs.m_data.exchange
 			&& m_data.primaryExchange == rhs.m_data.primaryExchange;
 	}
@@ -313,7 +316,7 @@ bool Symbol::operator !=(const Symbol &rhs) const {
 }
 
 Symbol::Hash Symbol::GetHash() const {
- 	if (!m_hash) {
+	if (!m_hash) {
 		std::ostringstream oss;
 		oss << *this;
 		const_cast<Symbol *>(this)->m_hash = boost::hash_value(oss.str());
@@ -346,11 +349,9 @@ const std::string & Symbol::GetPrimaryExchange() const {
 	return m_data.primaryExchange;
 }
 
-const std::string & Symbol::GetExpirationDate() const {
-	if (m_data.expirationDate.empty()) {
-		throw Lib::LogicError("Symbol doesn't have Expiration Date");
-	}
-	return m_data.expirationDate;
+bool Symbol::IsExplicit() const {
+	Assert(m_data.securityType == SECURITY_TYPE_FUTURES || m_data.isExplicit);
+	return m_data.isExplicit;
 }
 
 double Symbol::GetStrike() const {
@@ -416,6 +417,7 @@ std::ostream & trdk::Lib::operator <<(std::ostream &os, const Symbol &symbol) {
 	static_assert(numberOfSecurityTypes == 5, "List changed.");
 	switch (symbol.GetSecurityType()) {
 		case SECURITY_TYPE_STOCK:
+			Assert(symbol.IsExplicit());
 			os << symbol.GetSymbol() << '/' << symbol.GetCurrency();
 			if (!symbol.m_data.primaryExchange.empty()) {
 				os << ':' << symbol.m_data.primaryExchange;
@@ -425,19 +427,24 @@ std::ostream & trdk::Lib::operator <<(std::ostream &os, const Symbol &symbol) {
 			}
 			break;
 		case SECURITY_TYPE_FOR:
+			Assert(symbol.IsExplicit());
 			os << symbol.GetSymbol() << '/' << symbol.GetCurrency();
 			if (!symbol.m_data.exchange.empty()) {
 				os << ':' << symbol.m_data.exchange;
 			}
 			break;
 		case SECURITY_TYPE_FUTURES:
-			os
-				<< symbol.GetSymbol()
-				<< '/' << symbol.GetExpirationDate()
-				<< '/' << symbol.GetCurrency()
-				<< ':' << symbol.GetExchange();
+			os << symbol.GetSymbol();
+			if (!symbol.IsExplicit()) {
+				os << '*';
+			}
+			os << '/' << symbol.GetCurrency();
+			if (!symbol.m_data.exchange.empty()) {
+				os << ':' << symbol.m_data.exchange;
+			}
 			break;
 		case SECURITY_TYPE_FOR_FUTURES_OPTIONS:
+			Assert(symbol.IsExplicit());
 		default:
 			AssertEq(SECURITY_TYPE_STOCK, symbol.GetSecurityType());
 			os << "<UNKNOWN>";

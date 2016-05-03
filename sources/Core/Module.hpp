@@ -123,7 +123,7 @@ public:
 		bool equal(const ConstIterator &) const;
 		void increment();
 		void decrement();
-		void advance(difference_type);
+		void advance(const difference_type &);
 	private:
 		Implementation *m_pimpl;
 	};
@@ -150,7 +150,7 @@ public:
 		bool equal(const ConstIterator &) const;
 		void increment();
 		void decrement();
-		void advance(difference_type);
+		void advance(const difference_type &);
 	private:
 		Implementation *m_pimpl;
 	};

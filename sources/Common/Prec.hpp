@@ -21,7 +21,14 @@
 #	include <boost/atomic.hpp>
 #	include <boost/date_time/posix_time/ptime.hpp>
 #	include <boost/date_time/posix_time/posix_time_io.hpp>
+#	include <boost/date_time/gregorian/gregorian_io.hpp>
 #	include <boost/uuid/uuid.hpp>
+#	include <boost/unordered_map.hpp>
+#	include <boost/multi_index_container.hpp>
+#	include <boost/multi_index/member.hpp>
+#	include <boost/multi_index/ordered_index.hpp>
+#	include <boost/shared_ptr.hpp>
+#	include <boost/make_shared.hpp>
 #include "DisableBoostWarningsEnd.h"
 
 #include <iomanip>

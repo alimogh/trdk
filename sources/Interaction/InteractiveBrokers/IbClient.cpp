@@ -18,6 +18,7 @@ using namespace trdk::Interaction::InteractiveBrokers;
 
 namespace ib = trdk::Interaction::InteractiveBrokers;
 namespace pt = boost::posix_time;
+namespace gr = boost::gregorian;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -50,76 +51,6 @@ namespace {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	Contract GetContract(const trdk::Security &security) {
-		Contract contract;
-		static_assert(
-			numberOfSecurityTypes == 5,
-			"Security type list changed.");
-		const Symbol &symbol = security.GetSymbol();
-		switch (symbol.GetSecurityType()) {
-			case SECURITY_TYPE_STOCK:
-				contract.secType = "STK";
-				contract.primaryExchange = symbol.GetPrimaryExchange();
-				break;
-			case SECURITY_TYPE_FUTURES:
-				contract.secType = "FUT";
-				contract.expiry = symbol.GetExpirationDate();
-				break;
-			case SECURITY_TYPE_FUTURES_OPTIONS:
-				contract.secType = "FOP";
-				contract.expiry = symbol.GetExpirationDate();
-				contract.strike = symbol.GetStrike();
-				contract.right = symbol.GetRightAsString();
-				break;
-			default:
-				throw MethodDoesNotImplementedError(
-					"Security type is not supported");
-				break;
-		}
-		contract.symbol = symbol.GetSymbol();
-		contract.currency = ConvertToIso(symbol.GetCurrency());
-		contract.exchange = symbol.GetExchange();
-		return contract;
-	}
-
-	Contract GetContract(
-				const trdk::Security &security,
-				const OrderParams &/*orderParams*/) {
-		Contract contract;
-		static_assert(
-			numberOfSecurityTypes == 5,
-			"Security type list changed.");
-		const Symbol &symbol = security.GetSymbol();
-		switch (symbol.GetSecurityType()) {
-			case SECURITY_TYPE_STOCK:
-				contract.secType = "STK";
-				contract.primaryExchange = symbol.GetPrimaryExchange();
-				break;
-			case SECURITY_TYPE_FUTURES:
-				contract.secType = "FUT";
-				contract.expiry = symbol.GetExpirationDate();
-				break;
-			case SECURITY_TYPE_FUTURES_OPTIONS:
-				contract.secType = "FOP";
-				contract.expiry = symbol.GetExpirationDate();
-				contract.strike = symbol.GetStrike();
-				contract.right = symbol.GetRightAsString();
-				break;
-			default:
-				{
-					boost::format message(
-						"Security type \"%1%\" is not supported");
-					message % symbol.GetSecurityType();
-					throw MethodDoesNotImplementedError(message.str().c_str());
-				}
-				break;
-		}
-		contract.symbol = symbol.GetSymbol();
-		contract.currency = ConvertToIso(symbol.GetCurrency());
-		contract.exchange = symbol.GetExchange();
-		return contract;
-	}
-
 	void FormatOrderDateTime(const pt::ptime &dateTime, IBString &destination) {
 		// Format: 20060505 08:00:00 {time zone}
 		boost::format result("%d%02d%02d %02d:%02d:%02d UTC");
@@ -133,6 +64,30 @@ namespace {
 		}
 		destination = result.str();
 	}
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	IBString FormatLocalSymbol(
+			std::string symbol,
+			const ExpirationCalendar::Contract &expirationInfo) {
+		if (expirationInfo.year > 2019 || expirationInfo.year < 2010) {
+			throw MethodDoesNotImplementedError(
+				"Work with features from < 2010 or > 2019 is not implemented");
+		}
+		symbol.push_back(char(expirationInfo.code));
+		symbol += boost::lexical_cast<IBString>(expirationInfo.year - 2010);
+		return symbol;
+	}
+
+	IBString FormatExpirationDate(const gr::date &source) {
+		boost::format result("%d%02d%02d");
+		result % source.year() % int(source.month()) % source.day();
+		return result.str();
+	}
+
+
+
+	////////////////////////////////////////////////////////////////////////////////
 
 }
 
@@ -269,6 +224,61 @@ void Client::Task() {
 	m_ts.GetTsLog().Debug("Client task finished.");
 }
 
+
+Contract Client::GetContract(const trdk::Security &security) const {
+	Contract contract;
+	static_assert(
+		numberOfSecurityTypes == 5,
+		"Security type list changed.");
+	const Symbol &symbol = security.GetSymbol();
+	switch (symbol.GetSecurityType()) {
+		case SECURITY_TYPE_STOCK:
+			contract.secType = "STK";
+			contract.primaryExchange = symbol.GetPrimaryExchange();
+			break;
+		case SECURITY_TYPE_FUTURES:
+			contract.secType = "FUT";
+			contract.localSymbol = symbol.GetSymbol();
+			if (!symbol.IsExplicit()) {
+				const auto &now
+					= m_ts.GetContext().GetCurrentTime() + GetEstDiff();
+				const auto &expiration
+					= m_ts.m_expirationCalendar.Find(symbol, now);
+				if (!expiration) {
+					boost::format error(
+						"Failed to find expiration info for \"%1%\" and %2%");
+					error % symbol % now;
+					throw trdk::MarketDataSource::Error(error.str().c_str());
+				}
+				contract.localSymbol = FormatLocalSymbol(
+					symbol.GetSymbol(),
+					*expiration);
+				contract.expiry
+					= FormatExpirationDate(expiration->expirationDate);
+			}
+			break;
+		case SECURITY_TYPE_FUTURES_OPTIONS:
+			contract.secType = "FOP";
+			contract.strike = symbol.GetStrike();
+			contract.right = symbol.GetRightAsString();
+			break;
+		default:
+			throw MethodDoesNotImplementedError(
+				"Security type is not supported");
+			break;
+	}
+	// contract.symbol = symbol.GetSymbol();
+	contract.currency = ConvertToIso(symbol.GetCurrency());
+	contract.exchange = symbol.GetExchange();
+	return contract;
+}
+
+Contract Client::GetContract(
+		const trdk::Security &security,
+		const OrderParams &)
+		const {
+	return GetContract(security);
+}
 
 void Client::StartData() {
 	
@@ -466,11 +476,14 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 			boost::join(genericTicklist, ","),
 			false,
 			TagValueListSPtr());
-		
+
 		m_ts.GetMdsLog().Info(
 			"Sent Level I market data subscription request for \"%1%\""
-				" (ticker ID: %2%).",
+				" (symbol \"%2%\", ticker ID: %3%).",
 			*request.security,
+			(!contract.localSymbol.empty()
+				? contract.localSymbol
+				: contract.symbol),
 			request.tickerId);
 		
 		requests.swap(m_marketDataRequests);
@@ -524,47 +537,80 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 		return false;
 	}
 			
-	const SecurityRequest request(
+	SecurityRequest request(
 		security,
 		const_cast<Client *>(this)->TakeTickerId());
 
-	const auto &contract = GetContract(*request.security);
+	auto contract = GetContract(*request.security);
 
 	const pt::ptime &now = m_ts.GetContext().GetCurrentTime();
 	if (now <= security.GetRequestedDataStartTime() ) {
 		return false;
 	}
 
+	pt::ptime edtRequestEnd;
+	const pt::ptime edtRequestStart
+		= security.GetRequestedDataStartTime() + GetEstDiff();
+	if (security.GetSymbol().GetSecurityType() == SECURITY_TYPE_FUTURES) {
+		request.expiration = m_ts.m_expirationCalendar.Find(
+			request.security->GetSymbol(),
+			edtRequestStart);
+		if (!request.expiration) {
+			boost::format error(
+				"Failed to find expiration info for \"%1%\" and %2%");
+			error % *request.security % edtRequestStart;
+			throw trdk::MarketDataSource::Error(error.str().c_str());
+		}
+// 		contract.localSymbol = FormatLocalSymbol(
+// 			request.security->GetSymbol().GetSymbol(),
+// 			*request.expiration);
+		contract.expiry
+			= FormatExpirationDate(request.expiration->expirationDate);
+		auto nextExpiration = request.expiration;
+		if (++nextExpiration) {
+			edtRequestEnd = pt::ptime(nextExpiration->expirationDate);
+			edtRequestEnd += pt::hours(24);
+		}
+	}
+	if (edtRequestEnd.is_not_a_date_time()) {
+		edtRequestEnd = now + GetEstDiff();
+	}
+
+	{
+		const auto maxDuration = pt::seconds(86400);
+		if (edtRequestEnd - edtRequestStart > maxDuration) {
+			edtRequestEnd = edtRequestStart + maxDuration;
+		}
+	}
+
 	auto requests(m_historyRequest);
 	requests.insert(request);
 
-	const pt::ptime edtNow = now + GetEstDiff();
-	const pt::ptime edtRequestStart
-		= security.GetRequestedDataStartTime() + GetEstDiff();
-
 	std::ostringstream endTimeOss;
 	endTimeOss
-		<< edtNow.date().year()
+		<< edtRequestEnd.date().year()
 		<< std::setw(2) << std::setfill('0')
 			<< unsigned short(now.date().month())
 		<< std::setw(2) << std::setfill('0')
-			<< edtNow.date().day()
+			<< edtRequestEnd.date().day()
 		<< ' '
 		<< std::setw(2) << std::setfill('0')
-			<< edtNow.time_of_day().hours()
+			<< edtRequestEnd.time_of_day().hours()
 		<< ':'
 		<< std::setw(2) << std::setfill('0')
-			<< edtNow.time_of_day().minutes()
+			<< edtRequestEnd.time_of_day().minutes()
 		<< ':'
 		<< std::setw(2) << std::setfill('0')
-		<< edtNow.time_of_day().seconds();
+		<< edtRequestEnd.time_of_day().seconds();
 	const auto &endTime = endTimeOss.str();
 
 	const auto period
 		= (boost::format("%1% S")
-				% std::max(60, (edtNow - edtRequestStart).total_seconds()))
+				%	std::max(60, (edtRequestEnd - edtRequestStart)
+						.total_seconds()))
 			.str();
 
+	// @sa https://www.interactivebrokers.com/en/software/api/apiguide/tables/historical_data_limitations.htm
 	m_client->reqHistoricalData(
 		request.tickerId,
 		contract,
@@ -582,10 +628,14 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 	m_ts.GetMdsLog().Info(
 		"Sent Level I"
 			" market data history request for \"%1%\": %2% - %3%"
-			" (end time: \"%4%\", period: \"%5%\", ticker ID: %6%).",
+			" (symbol: \"%4%\""
+			", end time: \"%5%\", period: \"%6%\", ticker ID: %7%).",
 		*request.security,
-		security.GetRequestedDataStartTime(),
-		now,
+		(edtRequestStart - GetEstDiff()),
+		(edtRequestEnd - GetEstDiff()),
+		(!contract.localSymbol.empty()
+			? contract.localSymbol
+			: contract.symbol),
 		endTime,
 		period,
 		request.tickerId);
@@ -623,8 +673,12 @@ void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
 
 	m_ts.GetMdsLog().Info(
 		"Sent Level II"
-			" market depth subscription request for \"%1%\" (ticker ID: %2%).",
+			" market depth subscription request for \"%1%\""
+			" (symbol \"%2%\", ticker ID: %3%).",
 		*request.security,
+		(!contract.localSymbol.empty()
+			?	contract.localSymbol
+			:	contract.symbol),
 		request.tickerId);
 
 	requests.swap(m_marketDepthLevel2Requests);
