@@ -52,7 +52,7 @@ namespace trdk {
 				bool equal(const ConstIterator &) const;
 				void increment();
 				void decrement();
-				void advance(difference_type);
+				void advance(const difference_type &);
 			private:
 				Implementation *m_pimpl;
 			};
@@ -79,7 +79,7 @@ namespace trdk {
 				bool equal(const ConstIterator &) const;
 				void increment();
 				void decrement();
-				void advance(difference_type);
+				void advance(const difference_type &);
 			private:
 				Implementation *m_pimpl;
 			};
@@ -212,8 +212,8 @@ namespace trdk {
 
 	private:
 
- 		class Implementation;
- 		Implementation *m_pimpl;
+		class Implementation;
+		Implementation *m_pimpl;
 
 	};
 
@@ -243,14 +243,14 @@ namespace trdk {
 }
 
 namespace boost {
-    template<>
-    struct range_mutable_iterator<trdk::Strategy::PositionList> {
-        typedef trdk::Strategy::PositionList::Iterator type;
-    };
-    template<>
-    struct range_const_iterator<trdk::Strategy::PositionList> {
-        typedef trdk::Strategy::PositionList::ConstIterator type;
-    };
+	template<>
+	struct range_mutable_iterator<trdk::Strategy::PositionList> {
+		typedef trdk::Strategy::PositionList::Iterator type;
+	};
+	template<>
+	struct range_const_iterator<trdk::Strategy::PositionList> {
+		typedef trdk::Strategy::PositionList::ConstIterator type;
+	};
 }
 
 namespace std {

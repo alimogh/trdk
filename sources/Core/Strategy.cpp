@@ -166,7 +166,7 @@ void Strategy::PositionList::Iterator::increment() {
 void Strategy::PositionList::Iterator::decrement() {
 	--m_pimpl->iterator;
 }
-void Strategy::PositionList::Iterator::advance(difference_type n) {
+void Strategy::PositionList::Iterator::advance(const difference_type &n) {
 	std::advance(m_pimpl->iterator, n);
 }
 
@@ -213,7 +213,7 @@ void Strategy::PositionList::ConstIterator::increment() {
 void Strategy::PositionList::ConstIterator::decrement() {
 	--m_pimpl->iterator;
 }
-void Strategy::PositionList::ConstIterator::advance(difference_type n) {
+void Strategy::PositionList::ConstIterator::advance(const difference_type &n) {
 	std::advance(m_pimpl->iterator, n);
 }
 

@@ -357,6 +357,7 @@
   <ItemGroup>
     <ClCompile Include="BarServiceTest.cpp" />
     <ClCompile Include="BollingerBandsServiceTest.cpp" />
+    <ClCompile Include="ExpirationCalendarTest.cpp" />
     <ClCompile Include="MockContext.cpp" />
     <ClCompile Include="MockMarketDataSource.cpp" />
     <ClCompile Include="PriceBookTest.cpp" />

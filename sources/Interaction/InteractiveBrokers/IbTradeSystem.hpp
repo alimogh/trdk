@@ -14,6 +14,7 @@
 #include "Core/TradeSystem.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Context.hpp"
+#include "Common/ExpirationCalendar.hpp"
 #include "Fwd.hpp"
 
 namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
@@ -275,6 +276,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		mutable PositionsMutex m_positionsMutex;
 		std::unique_ptr<Positions> m_positions;
+
+		Lib::ExpirationCalendar m_expirationCalendar;
 
 	};
 

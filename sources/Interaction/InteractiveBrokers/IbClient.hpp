@@ -72,10 +72,11 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 			
 			Security *security;
 			TickerId tickerId;
+			Lib::ExpirationCalendar::Iterator expiration;
 
 			explicit SecurityRequest(Security &security, TickerId tickerId)
-					: security(&security),
-					tickerId(tickerId) {
+				: security(&security),
+				tickerId(tickerId) {
 				//...//
 			}
 
@@ -191,6 +192,9 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		void SubscribeToMarketDepthLevel2(Security &) const;
 
 	private:
+
+		Contract Client::GetContract(const trdk::Security &) const;
+		Contract GetContract(const trdk::Security &, const OrderParams &) const;
 
 		void PostponeMarketDataSubscription(Security &) const;
 		void FlushPostponedMarketDataSubscription() const;

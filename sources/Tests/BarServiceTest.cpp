@@ -151,8 +151,8 @@ namespace trdk { namespace Tests {
 		
 		EXPECT_EQ(34 + 1, service.GetLastBar().openTradePrice); // prev close
 		EXPECT_EQ(38 + 1, service.GetLastBar().closeTradePrice);
- 		EXPECT_EQ(38 + 1, service.GetLastBar().highTradePrice);
- 		EXPECT_EQ(34 + 1, service.GetLastBar().lowTradePrice);
+		EXPECT_EQ(38 + 1, service.GetLastBar().highTradePrice);
+		EXPECT_EQ(34 + 1, service.GetLastBar().lowTradePrice);
 		EXPECT_EQ(
 			(35 + 2) + (36 + 2) + (37 + 2) + (38 + 2),
 			service.GetLastBar().tradingVolume);

@@ -83,7 +83,15 @@ namespace trdk { namespace Lib {
 		const std::string & GetExchange() const;
 		const std::string & GetPrimaryExchange() const;
 
-		const std::string & GetExpirationDate() const;
+		//! Explicit symbol has all in the name what required to specify symbol,
+		//! dates and so on.
+		/* Futures will not be "explicit" if doesn't have contract period in the
+		 * name, ex.: CL* - not explicit, CLM6 - explicit.
+		 * @sa GetSecurityType
+		 * @return true if symbol is explicit, false if symbol is not explicit.
+		 */
+		bool IsExplicit() const;
+
 		double GetStrike() const;
 		const Right & GetRight() const;
 		std::string GetRightAsString() const;
@@ -104,7 +112,7 @@ namespace trdk { namespace Lib {
 			std::string exchange;
 			std::string primaryExchange;
 
-			std::string expirationDate;
+			bool isExplicit;
 			double strike;
 			Right right;
 
@@ -128,7 +136,7 @@ namespace stdext {
 
 	inline size_t hash_value(const trdk::Lib::Symbol &symbol) {
 		return symbol.GetHash();
-    };
+	};
 
 }
 

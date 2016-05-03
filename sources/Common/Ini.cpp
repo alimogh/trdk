@@ -194,11 +194,11 @@ void Ini::ForEachKey(
 		if (subs.size() < 2) {
 			return true;
 		}
- 		boost::trim(*subs.begin());
+		boost::trim(*subs.begin());
 		std::string key = *subs.begin();
- 		subs.pop_front();
+		subs.pop_front();
 		std::string value = boost::join(subs, "=");
- 		boost::trim(value);
+		boost::trim(value);
 		return pred(key, value);
 	};
 	ReadSection(section, linePred, isRequired);
@@ -257,6 +257,14 @@ fs::path Ini::ReadFileSystemPath(
 		const std::string &key)
 		const {
 	return Normalize(fs::path(ReadKey(section, key)));
+}
+
+fs::path Ini::ReadFileSystemPath(
+		const std::string &section,
+		const std::string &key,
+		const std::string &defaultValue)
+		const {
+	return Normalize(fs::path(ReadKey(section, key, defaultValue)));
 }
 
 Ini::AbsoluteOrPercentsPrice Ini::ReadAbsoluteOrPercentsPriceKey(
@@ -472,6 +480,12 @@ std::string IniSectionRef::ReadKey(
 
 fs::path IniSectionRef::ReadFileSystemPath(const std::string &key) const {
 	return GetBase().ReadFileSystemPath(GetName(), key);
+}
+fs::path IniSectionRef::ReadFileSystemPath(
+		const std::string &key,
+		const std::string &defaultValue)
+		const {
+	return GetBase().ReadFileSystemPath(GetName(), key, defaultValue);
 }
 
 IniFile::AbsoluteOrPercentsPrice

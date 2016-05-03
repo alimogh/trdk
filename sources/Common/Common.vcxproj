@@ -250,6 +250,7 @@
     <ClCompile Include="Assert.cpp" />
     <ClCompile Include="Currency.cpp" />
     <ClCompile Include="Defaults.cpp" />
+    <ClCompile Include="ExpirationCalendar.cpp" />
     <ClCompile Include="Ini.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -283,6 +284,7 @@
     <ClInclude Include="DisableBoostWarningsEnd.h" />
     <ClInclude Include="DisableBoostWarningsBegin.h" />
     <ClInclude Include="Dll.hpp" />
+    <ClInclude Include="ExpirationCalendar.hpp" />
     <ClInclude Include="Ini.hpp" />
     <ClInclude Include="Log.hpp" />
     <ClInclude Include="Numeric.hpp" />
