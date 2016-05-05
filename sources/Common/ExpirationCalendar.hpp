@@ -53,9 +53,11 @@ namespace trdk { namespace Lib {
 				boost::incrementable_traversal_tag> {
 		public:
 			Iterator();
-			explicit Iterator(
-					const boost::shared_ptr<IteratorImplementation> &);
+			explicit Iterator(std::unique_ptr<IteratorImplementation> &&);
+			Iterator(const Iterator &);
 			~Iterator();
+			Iterator & operator =(const Iterator &);
+			void Swap(Iterator &) noexcept;
 		public:
 			operator bool() const;
 			const trdk::Lib::ExpirationCalendar::Contract & dereference() const;
@@ -63,7 +65,7 @@ namespace trdk { namespace Lib {
 			void increment();
 			void advance(const difference_type &);
 		private:
-			boost::shared_ptr<IteratorImplementation> m_pimpl;
+			std::unique_ptr<IteratorImplementation> m_pimpl;
 		};
 
 		struct Stat {

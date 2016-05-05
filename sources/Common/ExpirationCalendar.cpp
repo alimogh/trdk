@@ -67,7 +67,6 @@ public:
 		return m_it == m_cont.end();
 	}
 
-	IteratorImplementation(const IteratorImplementation &) = delete;
 	void operator =(const IteratorImplementation &) = delete;
 
 };
@@ -77,13 +76,29 @@ ExpirationCalendar::Iterator::Iterator() {
 }
 
 ExpirationCalendar::Iterator::Iterator(
-		const boost::shared_ptr<IteratorImplementation> &impl)
-	: m_pimpl(impl) {
+		std::unique_ptr<IteratorImplementation> &&impl)
+	: m_pimpl(std::move(impl)) {
 	//...//
+}
+
+ExpirationCalendar::Iterator::Iterator(const Iterator &rhs) {
+	if (rhs.m_pimpl) {
+		m_pimpl.reset(new IteratorImplementation(*rhs.m_pimpl));
+	}
 }
 
 ExpirationCalendar::Iterator::~Iterator() {
 	//...//
+}
+
+ExpirationCalendar::Iterator & ExpirationCalendar::Iterator::operator =(
+		const Iterator &rhs) {
+	Iterator(rhs).Swap(*this);
+	return *this;
+}
+
+void ExpirationCalendar::Iterator::Swap(Iterator &rhs) noexcept {
+	m_pimpl.swap(rhs.m_pimpl);
 }
 
 ExpirationCalendar::Iterator::operator bool() const {
@@ -117,8 +132,6 @@ class ExpirationCalendar::Implementation {
 
 public:
 
-	static const pt::time_duration m_maxExpirationPeriod;
-
 	ContractsBySymbol m_contracts;
 
 public:
@@ -126,10 +139,6 @@ public:
 	void operator =(const Implementation &) = delete;
 
 };
-
-const pt::time_duration
-ExpirationCalendar::Implementation::m_maxExpirationPeriod
-	= pt::hours(24 * int(30 * 1.5));
 
 ExpirationCalendar::ExpirationCalendar()
 	: m_pimpl(new Implementation) {
@@ -310,34 +319,13 @@ void ExpirationCalendar::ReloadCsv(const fs::path &filePath) {
 
 	}
 
-	for (const auto &symbol: contracts) {
-		const auto &index = symbol.second.get<ByExpirationDate>();
-		Assert(!index.empty());
-		for (auto i = std::next(index.begin()); i != index.end(); ++i) {
-			const auto prevExpirationDate = std::prev(i)->expirationDate;
-			const pt::ptime prev(prevExpirationDate);
-			const pt::ptime current(i->expirationDate);
-			if (prev + m_pimpl->m_maxExpirationPeriod < current) {
-				boost::format error(
-					"No info about expiration between %1% and %2% for \"%3%\""
-					" in CSV-file %4%");
-				error
-					% prevExpirationDate
-					% i->expirationDate
-					% symbol.first
-					% filePath;
-				throw Exception(error.str().c_str());
-			}
-		}
-	}
-
 	contracts.swap(m_pimpl->m_contracts);
 
 }
 
 ExpirationCalendar::Iterator ExpirationCalendar::Find(
 		const Symbol &symbol,
-		const pt::ptime &start)
+		const pt::ptime &startTime)
 		const {
 
 	if (symbol.GetSecurityType() != SECURITY_TYPE_FUTURES) {
@@ -352,21 +340,16 @@ ExpirationCalendar::Iterator ExpirationCalendar::Find(
 		return Iterator();
 	}
 
+	const gr::date &startDate = startTime.date();
 	const auto &contract = contractPos->second.get<ByExpirationDate>();
-	const auto &begin = contract.lower_bound(start.date());
-	if (begin == contract.end()) {
-		return Iterator();
-	}
-	
-	const pt::ptime expirationDate(begin->expirationDate);
-	if (
-			expirationDate < start
-			|| start + m_pimpl->m_maxExpirationPeriod < expirationDate) {
+	const auto &begin = contract.lower_bound(startDate);
+	if (begin == contract.end() || begin->expirationDate < startDate) {
 		return Iterator();
 	}
 
 	return Iterator(
-		boost::make_shared<IteratorImplementation>(contract, begin));
+		std::unique_ptr<IteratorImplementation>(
+			new IteratorImplementation(contract, begin)));
 
 }
 

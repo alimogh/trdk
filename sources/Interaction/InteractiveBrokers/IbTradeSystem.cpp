@@ -18,6 +18,7 @@ using namespace trdk::Lib;
 using namespace trdk::Interaction::InteractiveBrokers;
 
 namespace ib = trdk::Interaction::InteractiveBrokers;
+namespace pt = boost::posix_time;
 
 
 ib::TradeSystem::TradeSystem(
@@ -228,12 +229,37 @@ void ib::TradeSystem::ForEachBrokerPostion(
 
 trdk::Security & ib::TradeSystem::CreateNewSecurityObject(
 		const Symbol &symbol) {
+
 	const auto &result = boost::make_shared<ib::Security>(
 		GetContext(),
 		symbol,
 		*this,
 		m_isTestSource);
-	m_unsubscribedSecurities.push_back(result);
+	
+	switch (symbol.GetSecurityType()) {
+		case SECURITY_TYPE_FUTURES:
+			{
+				const auto &now = GetContext().GetCurrentTime() + GetEstDiff();
+				const auto &expiration = m_expirationCalendar.Find(symbol, now);
+				if (!expiration) {
+					boost::format error(
+						"Failed to find expiration info for \"%1%\" and %2%");
+					error % symbol % now;
+					throw trdk::MarketDataSource::Error(error.str().c_str());
+				}
+				GetMdsLog().Info(
+					"Current expiration date for \"%1%\": %2% (%3%%4%%5%).",
+					symbol,
+					expiration->expirationDate,
+					symbol.GetSymbol(),
+					char(expiration->code),
+					expiration->year - 2010);
+				result->SetExpiration(pt::ptime(expiration->expirationDate));
+			}
+			break;
+	}
+
+	m_unsubscribedSecurities.emplace_back(result);
 	return *result;
 }
 

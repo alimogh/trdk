@@ -161,6 +161,8 @@ namespace EmaFuturesStrategy {
 		}
 		
 		virtual void OnPositionUpdate(trdk::Position &position) {
+			Assert(m_security);
+			Assert(m_security->IsOnline());
 			Position &startegyPosition = dynamic_cast<Position &>(position);
 			CheckSlowOrderFilling(startegyPosition);
 			startegyPosition.Sync();
@@ -169,7 +171,7 @@ namespace EmaFuturesStrategy {
 		virtual void OnServiceDataUpdate(
 				const Service &service,
 				const Milestones &timeMeasurement) {
-			
+
 			m_ema[FAST].CheckSource(service, m_ema[SLOW])
 				|| m_ema[SLOW].CheckSource(service, m_ema[FAST]);
 			if (!IsDataActual()) {
@@ -177,6 +179,10 @@ namespace EmaFuturesStrategy {
 			}
 			
 			const Direction &signal = UpdateDirection();
+			Assert(m_security);
+			if (!m_security->IsOnline()) {
+				return;
+			}
 			if (signal != DIRECTION_LEVEL) {
 				GetTradingLog().Write(
 					"signal\t%1%\tslow-ema=%2%\tfast-ema=%3%"

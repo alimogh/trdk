@@ -79,14 +79,6 @@ namespace {
 		return symbol;
 	}
 
-	IBString FormatExpirationDate(const gr::date &source) {
-		boost::format result("%d%02d%02d");
-		result % source.year() % int(source.month()) % source.day();
-		return result.str();
-	}
-
-
-
 	////////////////////////////////////////////////////////////////////////////////
 
 }
@@ -234,11 +226,12 @@ Contract Client::GetContract(const trdk::Security &security) const {
 	switch (symbol.GetSecurityType()) {
 		case SECURITY_TYPE_STOCK:
 			contract.secType = "STK";
+			contract.symbol = symbol.GetSymbol();
 			contract.primaryExchange = symbol.GetPrimaryExchange();
 			break;
 		case SECURITY_TYPE_FUTURES:
 			contract.secType = "FUT";
-			contract.localSymbol = symbol.GetSymbol();
+			contract.includeExpired = true;
 			if (!symbol.IsExplicit()) {
 				const auto &now
 					= m_ts.GetContext().GetCurrentTime() + GetEstDiff();
@@ -253,12 +246,13 @@ Contract Client::GetContract(const trdk::Security &security) const {
 				contract.localSymbol = FormatLocalSymbol(
 					symbol.GetSymbol(),
 					*expiration);
-				contract.expiry
-					= FormatExpirationDate(expiration->expirationDate);
+			} else {
+				contract.localSymbol = symbol.GetSymbol();
 			}
 			break;
 		case SECURITY_TYPE_FUTURES_OPTIONS:
 			contract.secType = "FOP";
+			contract.symbol = symbol.GetSymbol();
 			contract.strike = symbol.GetStrike();
 			contract.right = symbol.GetRightAsString();
 			break;
@@ -267,7 +261,6 @@ Contract Client::GetContract(const trdk::Security &security) const {
 				"Security type is not supported");
 			break;
 	}
-	// contract.symbol = symbol.GetSymbol();
 	contract.currency = ConvertToIso(symbol.GetCurrency());
 	contract.exchange = symbol.GetExchange();
 	return contract;
@@ -385,11 +378,11 @@ bool Client::ProcessMessages() {
 
 }
 
-void Client::Subscribe(const OrderStatusSlot &orderStatusSlot) const {
+void Client::Subscribe(const OrderStatusSlot &orderStatusSlot) {
 	m_orderStatusSignal.connect(orderStatusSlot);
 }
 
-void Client::SubscribeToMarketData(ib::Security &security) const {
+void Client::SubscribeToMarketData(ib::Security &security) {
 
 	if (security.IsTradesRequired() && !security.IsTestSource()) {
 		throw trdk::TradeSystem::Error(
@@ -426,7 +419,7 @@ void Client::PostponeMarketDataSubscription(ib::Security &security) const {
 	m_postponedMarketDataRequests.push_back(&security);
 }
 
-void Client::FlushPostponedMarketDataSubscription() const {
+void Client::FlushPostponedMarketDataSubscription() {
 	AssertLe(CONNECTION_STATE_READY, m_connectionState);
 	while (!m_postponedMarketDataRequests.empty()) {
 		DoMarketDataSubscription(**m_postponedMarketDataRequests.begin());
@@ -434,7 +427,7 @@ void Client::FlushPostponedMarketDataSubscription() const {
 	}
 }
 
-void Client::DoMarketDataSubscription(ib::Security &security) const {
+void Client::DoMarketDataSubscription(ib::Security &security) {
 	Assert(!IsSubscribed(m_marketDataRequests, security));
 	Assert(
 		security.IsLevel1Required()
@@ -445,7 +438,7 @@ void Client::DoMarketDataSubscription(ib::Security &security) const {
 	}
 }
 
-void Client::SendMarketDataRequest(ib::Security &security) const {
+void Client::SendMarketDataRequest(ib::Security &security) {
 
 	Assert(!m_mutex.try_lock());
 	Assert(
@@ -461,11 +454,12 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 
 		const SecurityRequest request(
 			security,
-			const_cast<Client *>(this)->TakeTickerId());
+			const_cast<Client *>(this)->TakeTickerId(),
+			0);
 		const auto &contract = GetContract(*request.security);
 
 		auto requests(m_marketDataRequests);
-		requests.insert(request);
+		Verify(requests.insert(request).second);
 
 		std::list<IBString> genericTicklist;
 		genericTicklist.push_back("233");
@@ -485,6 +479,8 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 				? contract.localSymbol
 				: contract.symbol),
 			request.tickerId);
+
+		request.security->SetOnline();
 		
 		requests.swap(m_marketDataRequests);
 
@@ -498,7 +494,8 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 
 			const SecurityRequest request(
 				security,
-				const_cast<Client *>(this)->TakeTickerId());
+				const_cast<Client *>(this)->TakeTickerId(),
+				0);
 			const auto &contract = GetContract(*request.security);
 
 			auto requests(m_barsRequest);
@@ -521,6 +518,10 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 				*request.security,
 				request.tickerId);
 
+			if (!request.security->IsOnline()) {
+				request.security->SetOnline();
+			}
+
 			requests.swap(m_barsRequest);
 
 		}
@@ -529,28 +530,43 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 
 }
 
-bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
-
+bool Client::SendMarketDataHistoryRequest(ib::Security &security) {
 	Assert(!m_isNoHistoryMode);
-
-	if (security.GetRequestedDataStartTime() == pt::not_a_date_time) {
+	const auto &requestedDataStartTime = security.GetRequestedDataStartTime();
+	if (requestedDataStartTime == pt::not_a_date_time) {
 		return false;
 	}
-			
+	return SendMarketDataHistoryRequest(
+		security,
+		requestedDataStartTime + GetEstDiff(),
+		0);
+}
+
+bool Client::SendMarketDataHistoryRequest(
+		ib::Security &security,
+		const pt::ptime &edtRequestStart,
+		size_t numberOfPrevRequests) {
+
 	SecurityRequest request(
 		security,
-		const_cast<Client *>(this)->TakeTickerId());
+		const_cast<Client *>(this)->TakeTickerId(),
+		numberOfPrevRequests);
+	if (request.numberOfPrevRequests >= 7) {
+		// Making six or more historical data requests for the same Contract,
+		// Exchange and Tick Type within two seconds
+		// @sa https://www.interactivebrokers.com/en/software/api/apiguide/tables/historical_data_limitations.htm
+		boost::this_thread::sleep(pt::seconds(2));
+		request.numberOfPrevRequests = 1;
+	}
 
 	auto contract = GetContract(*request.security);
 
 	const pt::ptime &now = m_ts.GetContext().GetCurrentTime();
-	if (now <= security.GetRequestedDataStartTime() ) {
+	if (now <= edtRequestStart) {
 		return false;
 	}
 
 	pt::ptime edtRequestEnd;
-	const pt::ptime edtRequestStart
-		= security.GetRequestedDataStartTime() + GetEstDiff();
 	if (security.GetSymbol().GetSecurityType() == SECURITY_TYPE_FUTURES) {
 		request.expiration = m_ts.m_expirationCalendar.Find(
 			request.security->GetSymbol(),
@@ -561,11 +577,9 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 			error % *request.security % edtRequestStart;
 			throw trdk::MarketDataSource::Error(error.str().c_str());
 		}
-// 		contract.localSymbol = FormatLocalSymbol(
-// 			request.security->GetSymbol().GetSymbol(),
-// 			*request.expiration);
-		contract.expiry
-			= FormatExpirationDate(request.expiration->expirationDate);
+		contract.localSymbol = FormatLocalSymbol(
+			request.security->GetSymbol().GetSymbol(),
+			*request.expiration);
 		auto nextExpiration = request.expiration;
 		if (++nextExpiration) {
 			edtRequestEnd = pt::ptime(nextExpiration->expirationDate);
@@ -573,7 +587,7 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 		}
 	}
 	if (edtRequestEnd.is_not_a_date_time()) {
-		edtRequestEnd = now + GetEstDiff();
+		edtRequestEnd = now;
 	}
 
 	{
@@ -583,14 +597,16 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 		}
 	}
 
+	request.requestEndTime = edtRequestEnd;
+
 	auto requests(m_historyRequest);
-	requests.insert(request);
+	Verify(requests.emplace(std::move(request)).second);
 
 	std::ostringstream endTimeOss;
 	endTimeOss
 		<< edtRequestEnd.date().year()
 		<< std::setw(2) << std::setfill('0')
-			<< unsigned short(now.date().month())
+			<< unsigned short(edtRequestEnd.date().month())
 		<< std::setw(2) << std::setfill('0')
 			<< edtRequestEnd.date().day()
 		<< ' '
@@ -619,34 +635,37 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 		// Sends as often as possible, but only for bars it doesn't make sense
 		// less as 5 second as "Currently only 5 second bars are supported, if
 		// any other value is used, an exception will be thrown" for real bars:
-		security.IsLevel1Required() ? "1 secs" : "5 secs",
-		"BID_ASK",
+		"15 mins",
+		"TRADES",
 		0,
 		1,
 		TagValueListSPtr());
 	
-	m_ts.GetMdsLog().Info(
-		"Sent Level I"
-			" market data history request for \"%1%\": %2% - %3%"
-			" (symbol: \"%4%\""
-			", end time: \"%5%\", period: \"%6%\", ticker ID: %7%).",
-		*request.security,
-		(edtRequestStart - GetEstDiff()),
-		(edtRequestEnd - GetEstDiff()),
-		(!contract.localSymbol.empty()
-			? contract.localSymbol
-			: contract.symbol),
-		endTime,
-		period,
-		request.tickerId);
+	if (numberOfPrevRequests == 0) {
+		m_ts.GetMdsLog().Info(
+			"Sent Level I"
+				" market data history request for \"%1%\": %2% - %3%"
+				" (symbol: \"%4%\""
+				", end time: \"%5%\", period: \"%6%\", ticker ID: %7%).",
+			*request.security,
+			(edtRequestStart - GetEstDiff()),
+			(edtRequestEnd - GetEstDiff()),
+			(!contract.localSymbol.empty()
+				? contract.localSymbol
+				: contract.symbol),
+			endTime,
+			period,
+			request.tickerId);
+	}
 
+	//! @todo Implement request list clearing after finish.
 	requests.swap(m_historyRequest);
 			
 	return true;
 	
 }
 
-void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
+void Client::SubscribeToMarketDepthLevel2(ib::Security &security) {
 
 	//! @todo support postponed Level 2 subscription 
 
@@ -660,7 +679,8 @@ void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
 
 	const SecurityRequest request(
 		security,
-		const_cast<Client *>(this)->TakeTickerId());
+		const_cast<Client *>(this)->TakeTickerId(),
+		0);
 	auto requests(m_marketDepthLevel2Requests);
 	requests.insert(request);
 
@@ -1102,12 +1122,15 @@ void Client::HandleError(
 		case 162:	// Historical market data Service error message.
 		case 321:	// Server error when validating an API client request.
 			{
-				ib::Security *const security = GetHistoryRequest(id);
-				if (	security
+				const SecurityRequest *const request = GetHistoryRequest(id);
+				if (
+						request
 						// sometimes TWS sends it two or more times:
-						&& !IsSubscribed(m_marketDataRequests, *security)) {
+						&&	!IsSubscribed(
+								m_marketDataRequests,
+								*request->security)) {
 					//! @todo Check data type.
-					SendMarketDataRequest(*security);
+					SendMarketDataRequest(*request->security);
 				}
 			}
 			break;
@@ -1188,7 +1211,7 @@ ib::Security * Client::GetMarketDataRequest(const TickerId &tickerId) {
 	return &*pos->security;
 }
 
-ib::Security * Client::GetHistoryRequest(const TickerId &tickerId) {
+const Client::SecurityRequest * Client::GetHistoryRequest(const TickerId &tickerId) {
 	const auto &index = m_historyRequest.get<ByTicker>();
 	const auto &pos = index.find(tickerId);
 	if (pos == index.end()) {
@@ -1197,7 +1220,7 @@ ib::Security * Client::GetHistoryRequest(const TickerId &tickerId) {
 			tickerId);
 		return nullptr;
 	}
-	return &*pos->security;
+	return &*pos;
 }
 
 ib::Security * Client::GetBarsRequest(const TickerId &tickerId) {
@@ -1630,7 +1653,7 @@ namespace {
 			log.Error(
 				"Failed to extract history point date time from \"%1%\".",
 				source);
-			throw Exception("Failed to extract history point date time from");
+			throw Exception("Failed to extract history point date time");
 		}
 		
 		try {
@@ -1648,7 +1671,7 @@ namespace {
 			log.Error(
 				"Failed to extract history point date time from \"%1%\".",
 				source);
-			throw Exception("Failed to extract history point date time from");
+			throw Exception("Failed to extract history point date time");
 		}
 	
 	}
@@ -1670,14 +1693,16 @@ void Client::historicalData(
 	const auto &timeMeasurement
 		= m_ts.GetContext().StartStrategyTimeMeasurement();
 
-	ib::Security *const security = GetHistoryRequest(tickerId);
-	if (!security) {
+	const SecurityRequest *const request = GetHistoryRequest(tickerId);
+	if (!request) {
 		return;
 	}
+	Assert(request->security);
 	Assert(
-		security->IsLevel1Required()
-		|| security->IsBarsRequired()
-		|| (security->IsTestSource() && security->IsTradesRequired()));
+		request->security->IsLevel1Required()
+		||	request->security->IsBarsRequired()
+		||	(request->security->IsTestSource()
+				&& request->security->IsTradesRequired()));
 	
 	const bool isFinished = boost::starts_with(timeStr, "f");
 	Assert(!isFinished || boost::starts_with(timeStr, "finished-"));
@@ -1691,38 +1716,112 @@ void Client::historicalData(
 			timeStr,
 			m_ts.GetMdsLog(),
 			isFinished);
-		const auto &lowPriceScaled = security->ScalePrice(lowPrice);
-		const auto &highPriceScaled = security->ScalePrice(highPrice);
+		if (time <= request->security->GetLastMarketDataTime()) {
+			// Already received by previous request (IB can adjust request start
+			// time).
+			return;
+		}
 
-		if (security->IsLevel1Required()) {
-			security->AddLevel1Tick(
+		const auto &openPriceScaled = request->security->ScalePrice(openPrice);
+		const auto &lowPriceScaled = request->security->ScalePrice(lowPrice);
+		const auto &highPriceScaled = request->security->ScalePrice(highPrice);
+		const auto &closePriceScaled
+			= request->security->ScalePrice(closePrice);
+
+		if (request->security->IsLevel1Required()) {
+// 			request->security->AddLevel1Tick(
+// 				time,
+// 				Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(lowPriceScaled),
+// 				Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+// 					highPriceScaled),
+// 				timeMeasurement);
+			request->security->AddLevel1Tick(
 				time,
-				Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(lowPriceScaled),
-				Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
+					openPriceScaled),
+				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
 					highPriceScaled),
+				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
+					lowPriceScaled),
+				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
+					closePriceScaled),
 				timeMeasurement);
 		}
 	
-		if (security->IsBarsRequired()) {
+		if (request->security->IsBarsRequired()) {
 			ib::Security::Bar bar(
 				time,
 				//! See request for detail about frame size:
-				pt::seconds(security->IsLevel1Required() ? 1 : 5),
+				pt::seconds(request->security->IsLevel1Required() ? 1 : 5),
 				ib::Security::Bar::TRADES);
-			bar.openPrice = security->ScalePrice(openPrice);
+			bar.openPrice = request->security->ScalePrice(openPrice);
 			bar.highPrice = highPriceScaled;
 			bar.lowPrice = lowPriceScaled;
-			bar.closePrice = security->ScalePrice(closePrice);
+			bar.closePrice = request->security->ScalePrice(closePrice);
 			bar.volume = volume;
 			bar.count = barCount;
-			security->AddBar(bar);	
+			request->security->AddBar(bar);
 		}
-	
-	} else {
-	
-		SendMarketDataRequest(*security);
+
+		return;
 	
 	}
+
+	Assert(request->expiration);
+	Assert(!request->requestEndTime.is_not_a_date_time());
+
+	const auto contractHistoryEnd
+		= pt::ptime(request->expiration->expirationDate)
+		+ pt::hours(24);
+	if (request->requestEndTime < contractHistoryEnd) {
+// 		m_ts.GetMdsLog().Debug(
+// 			"Finished Level I"
+// 				" market data history sub-expiration-request"
+// 				" for \"%1%\" (%2%%3%%4%, expiration: %5%"
+// 				", ticker ID: %6%).",
+// 			*request->security,
+// 			request->security->GetSymbol().GetSymbol(),
+// 			char(request->expiration->code),
+// 			request->expiration->year - 2010,
+// 			request->expiration->expirationDate,
+// 			request->tickerId);
+		if (
+				SendMarketDataHistoryRequest(
+					*request->security,
+					request->requestEndTime,
+					request->numberOfPrevRequests)) {
+			return;
+		}
+	} else {
+		auto nextExpiration = request->expiration;
+		if (++nextExpiration) {
+			m_ts.GetMdsLog().Debug(
+				"Finished Level I"
+					" market data history contract request"
+					" for \"%1%\" (%2%%3%%4%, expiration: %5%"
+					", ticker ID: %6%).",
+				*request->security,
+				request->security->GetSymbol().GetSymbol(),
+				char(request->expiration->code),
+				request->expiration->year - 2010,
+				request->expiration->expirationDate,
+				request->tickerId);
+			if (
+					SendMarketDataHistoryRequest(
+						*request->security,
+						request->requestEndTime,
+						request->numberOfPrevRequests)) {
+				return;
+			}
+		}
+	}
+	
+	m_ts.GetMdsLog().Debug(
+		"Finished Level I market data history request for \"%1%\""
+			" (ticker ID: %2%).",
+		*request->security,
+		request->tickerId);
+	SendMarketDataRequest(*request->security);
 
 }
 

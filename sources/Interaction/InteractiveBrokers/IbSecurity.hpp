@@ -70,6 +70,26 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 			CheckLastTrade(time, tick2, timeMeasurement);
 			Base::AddLevel1Tick(time, tick1, tick2, timeMeasurement);
 		}
+		void AddLevel1Tick(
+				const boost::posix_time::ptime &time,
+				const Level1TickValue &tick1,
+				const Level1TickValue &tick2,
+				const Level1TickValue &tick3,
+				const Level1TickValue &tick4,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement) {
+			CheckLastTrade(time, tick1, timeMeasurement);
+			CheckLastTrade(time, tick2, timeMeasurement);
+			CheckLastTrade(time, tick3, timeMeasurement);
+			CheckLastTrade(time, tick4, timeMeasurement);
+			Base::AddLevel1Tick(
+				time,
+				tick1,
+				tick2,
+				tick3,
+				tick4,
+				timeMeasurement);
+		}
+
 
 		void AddBar(const Bar &bar) {
 			Base::AddBar(bar);
@@ -78,6 +98,9 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		void SetBrokerPosition(Qty qty, bool isInitial) {
 			Base::SetBrokerPosition(qty, isInitial);
 		}
+
+		using Base::SetExpiration;
+		using Base::SetOnline;
 
 	private:
 

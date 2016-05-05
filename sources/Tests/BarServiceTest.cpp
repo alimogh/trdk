@@ -104,7 +104,8 @@ namespace trdk { namespace Tests {
 		const trdk::Security security(
 			context,
 			lib::Symbol("TEST_SCALE2/USD::STK"),
-			marketDataSource);
+			marketDataSource,
+			true);
 		svc::BarService service(
 			context,
 			"Tag",

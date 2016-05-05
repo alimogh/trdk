@@ -73,10 +73,17 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 			Security *security;
 			TickerId tickerId;
 			Lib::ExpirationCalendar::Iterator expiration;
+			boost::posix_time::ptime requestEndTime;
+			
+			size_t numberOfPrevRequests;
 
-			explicit SecurityRequest(Security &security, TickerId tickerId)
-				: security(&security),
-				tickerId(tickerId) {
+			explicit SecurityRequest(
+					Security &security,
+					const TickerId &tickerId,
+					size_t numberOfPrevRequests)
+				: security(&security)
+				, tickerId(tickerId)
+				, numberOfPrevRequests(numberOfPrevRequests + 1) {
 				//...//
 			}
 
@@ -89,13 +96,13 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		typedef boost::multi_index_container<
 			SecurityRequest,
 			boost::multi_index::indexed_by<
-				boost::multi_index::ordered_unique<
+				boost::multi_index::hashed_non_unique<
 					boost::multi_index::tag<BySecurity>,
 					boost::multi_index::member<
 						SecurityRequest,
 						Security *,
 						&SecurityRequest::security>>,
-				boost::multi_index::ordered_unique<
+				boost::multi_index::hashed_unique<
 					boost::multi_index::tag<ByTicker>,
 					boost::multi_index::member<
 						SecurityRequest,
@@ -186,10 +193,10 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
-		void Subscribe(const OrderStatusSlot &) const;
+		void Subscribe(const OrderStatusSlot &);
 		
-		void SubscribeToMarketData(Security &) const;
-		void SubscribeToMarketDepthLevel2(Security &) const;
+		void SubscribeToMarketData(Security &);
+		void SubscribeToMarketDepthLevel2(Security &);
 
 	private:
 
@@ -197,12 +204,16 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		Contract GetContract(const trdk::Security &, const OrderParams &) const;
 
 		void PostponeMarketDataSubscription(Security &) const;
-		void FlushPostponedMarketDataSubscription() const;
+		void FlushPostponedMarketDataSubscription();
 
-		void DoMarketDataSubscription(Security &) const;
+		void DoMarketDataSubscription(Security &);
 
-		void SendMarketDataRequest(Security &) const;
-		bool SendMarketDataHistoryRequest(Security &) const;
+		void SendMarketDataRequest(Security &);
+		bool SendMarketDataHistoryRequest(Security &);
+		bool SendMarketDataHistoryRequest(
+				Security &,
+				const boost::posix_time::ptime &,
+				size_t numberOfPrevRequests);
 
 		void Task();
 
@@ -230,7 +241,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		void HandleError(const int id, const int code, const IBString &);
 
 		Security * GetMarketDataRequest(const TickerId &);
-		Security * GetHistoryRequest(const TickerId &);
+		const SecurityRequest * GetHistoryRequest(const TickerId &);
 		Security * GetBarsRequest(const TickerId &);
 
 		static bool IsSubscribed(const SecurityRequestList &, const Security &);
