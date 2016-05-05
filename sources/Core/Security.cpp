@@ -132,12 +132,17 @@ public:
 	boost::atomic_int64_t m_marketDataTime;
 	boost::atomic_size_t m_numberOfMarketDataUpdates;
 	boost::atomic_bool m_isLevel1Started;
+	boost::atomic_bool m_isOnline;
+	boost::atomic_int64_t m_expirationTime;
 
 	pt::ptime m_requestedDataStartTime;
 
 public:
 
-	Implementation(const MarketDataSource &source, const Symbol &symbol)
+	Implementation(
+			const MarketDataSource &source,
+			const Symbol &symbol,
+			bool isOnline)
 		: m_instanceId(m_nextInstanceId++)
 		, m_source(source)
 		, m_pricePrecision(GetPrecision(symbol, source))
@@ -145,7 +150,9 @@ public:
 		, m_brokerPosition(0)
 		, m_marketDataTime(0)
 		, m_numberOfMarketDataUpdates(0)
-		, m_isLevel1Started(false) {
+		, m_isLevel1Started(false)
+		, m_isOnline(isOnline)
+		, m_expirationTime(0) {
 		
 		static_assert(numberOfTradingModes == 3, "List changed.");
 		for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
@@ -268,9 +275,10 @@ boost::atomic<Security::InstanceId> Security::Implementation::m_nextInstanceId(0
 Security::Security(
 		Context &context,
 		const Symbol &symbol,
-		const MarketDataSource &source)
+		const MarketDataSource &source,
+		bool isOnline)
 	: Base(context, symbol),
-	m_pimpl(new Implementation(source, GetSymbol())) {
+	m_pimpl(new Implementation(source, GetSymbol(), isOnline)) {
 }
 
 Security::~Security() {
@@ -324,6 +332,16 @@ size_t Security::TakeNumberOfMarketDataUpdates() const {
 
 bool Security::IsLevel1Started() const {
 	return m_pimpl->m_isLevel1Started;
+}
+
+bool Security::IsOnline() const {
+	return m_pimpl->m_isOnline;
+}
+
+void Security::SetOnline() {
+	Assert(!m_pimpl->m_isOnline);
+	m_pimpl->m_isOnline = true;
+	GetContext().GetLog().Info("%1% now is online.", *this);
 }
 
 void Security::StartLevel1() {
@@ -541,7 +559,6 @@ void Security::AddLevel1Tick(
 			const Level1TickValue &tick1,
 			const Level1TickValue &tick2,
 			const TimeMeasurement::Milestones &timeMeasurement) {
-	AssertNe(tick1.GetType(), tick2.GetType());
 	m_pimpl->AddLevel1Tick(
 		time,
 		tick2,
@@ -556,9 +573,6 @@ void Security::AddLevel1Tick(
 			const Level1TickValue &tick2,
 			const Level1TickValue &tick3,
 			const TimeMeasurement::Milestones &timeMeasurement) {
-	AssertNe(tick1.GetType(), tick2.GetType());
-	AssertNe(tick1.GetType(), tick3.GetType());
-	AssertNe(tick2.GetType(), tick3.GetType());
 	m_pimpl->AddLevel1Tick(
 		time,
 		tick3,
@@ -575,6 +589,36 @@ void Security::AddLevel1Tick(
 				timeMeasurement,
 				false,
 				false)));
+}
+
+void Security::AddLevel1Tick(
+			const pt::ptime &time,
+			const Level1TickValue &tick1,
+			const Level1TickValue &tick2,
+			const Level1TickValue &tick3,
+			const Level1TickValue &tick4,
+			const TimeMeasurement::Milestones &timeMeasurement) {
+	m_pimpl->AddLevel1Tick(
+		time,
+		tick4,
+		timeMeasurement,
+		true,
+		m_pimpl->AddLevel1Tick(
+			time,
+			tick3,
+			timeMeasurement,
+			false,
+			m_pimpl->AddLevel1Tick(
+				time,
+				tick2,
+				timeMeasurement,
+				false,
+				m_pimpl->AddLevel1Tick(
+					time,
+					tick1,
+					timeMeasurement,
+					false,
+					false))));
 }
 
 void Security::AddTrade(
@@ -722,6 +766,20 @@ void Security::SetBook(
 	
 	m_pimpl->m_bookUpdateTickSignal(book, timeMeasurement);
 
+}
+
+pt::ptime Security::GetExpiration() const {
+	const auto expirationTime = m_pimpl->m_expirationTime.load();
+	if (!expirationTime) {
+		boost::format error("%1% doesn't have expiration");
+		error % *this;
+		throw LogicError(error.str().c_str());
+	}
+	return ConvertToPTimeFromMicroseconds(expirationTime);
+}
+
+void Security::SetExpiration(const pt::ptime &expirationTime) {
+	m_pimpl->m_expirationTime = ConvertToMicroseconds(expirationTime);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

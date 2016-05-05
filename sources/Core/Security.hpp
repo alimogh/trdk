@@ -117,7 +117,8 @@ namespace trdk {
 		explicit Security(
 				trdk::Context &,
 				const trdk::Lib::Symbol &,
-				const trdk::MarketDataSource &);
+				const trdk::MarketDataSource &,
+				bool isOnline);
 		~Security();
 
 	public:
@@ -136,6 +137,9 @@ namespace trdk {
 		//! Check security for valid market data and state.
 		bool IsStarted() const;
 		bool IsLevel1Started() const;
+
+		//! Returns true if security has online data, not history.
+		bool IsOnline() const;
 
 		//! Sets requested data start time if it not later than existing.
 		void SetRequestedDataStartTime(const boost::posix_time::ptime &);
@@ -180,6 +184,11 @@ namespace trdk {
 		  */
 		trdk::Qty GetBrokerPosition() const;
 
+		//! Returns next expiration time.
+		/** Throws exception if expiration is not provided.
+		  */
+		boost::posix_time::ptime GetExpiration() const;
+
 	public:
 
 		Level1UpdateSlotConnection SubscribeToLevel1Updates(
@@ -203,6 +212,8 @@ namespace trdk {
 				const;
 
 	protected:
+
+		void SetOnline();
 
 		bool IsLevel1Required() const;
 		bool IsLevel1UpdatesRequired() const;
@@ -267,7 +278,9 @@ namespace trdk {
 		//! Adds two Level I parameter ticks.
 		/** More optimal than call "add one tick" two times. Subscribers will
 		  * be notified about Level I Update only if parameter will be changed.
-		  * Level I Tick event will be generated in any case.
+		  * Level I Tick event will be generated in any case. First tick will be
+		  * added first in the notification queue, last - will be added last.
+		  * All ticks can have one type or various.
 		  */
 		void AddLevel1Tick(
 				const boost::posix_time::ptime &,
@@ -277,10 +290,26 @@ namespace trdk {
 		//! Adds three Level I parameter ticks.
 		/** More optimal than call "add one tick" three times. Subscribers will
 		  * be notified about Level I Update only if parameter will be changed.
-		  * Level I Tick event will be generated in any case.
+		  * Level I Tick event will be generated in any case. First tick will be
+		  * added first in the notification queue, last - will be added last.
+		  * All ticks can have one type or various.
 		  */
 		void AddLevel1Tick(
 				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &,
+				const trdk::Level1TickValue &,
+				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
+		//! Adds four Level I parameter ticks.
+		/** More optimal than call "add one tick" three times. Subscribers will
+		  * be notified about Level I Update only if parameter will be changed.
+		  * Level I Tick event will be generated in any case. First tick will be
+		  * added first in the notification queue, last - will be added last.
+		  * All ticks can have one type or various.
+		  */
+		void AddLevel1Tick(
+				const boost::posix_time::ptime &,
+				const trdk::Level1TickValue &,
 				const trdk::Level1TickValue &,
 				const trdk::Level1TickValue &,
 				const trdk::Level1TickValue &,
@@ -314,6 +343,8 @@ namespace trdk {
 		void SetBook(
 				trdk::PriceBook &book,
 				const trdk::Lib::TimeMeasurement::Milestones &timeMeasurement);
+
+		void SetExpiration(const boost::posix_time::ptime &);
 
 	private:
 

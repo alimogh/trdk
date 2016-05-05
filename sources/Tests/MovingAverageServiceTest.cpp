@@ -200,7 +200,8 @@ namespace trdk { namespace Tests {
 		const Security security(
 			context,
 			lib::Symbol("TEST_SCALE2/USD::STK"),
-			marketDataSource);
+			marketDataSource,
+			true);
 
 		svc::MovingAverageService serviceForBars(
 			context,
@@ -368,7 +369,8 @@ namespace trdk { namespace Tests {
 		const Security security(
 			context,
 			lib::Symbol("TEST_SCALE2/USD::STK"),
-			marketDataSource);
+			marketDataSource,
+			true);
 
 		svc::MovingAverageService serviceForBars(
 			context,

@@ -185,6 +185,8 @@ public:
 
 	std::string m_unitsStr;
 	Units m_units;
+
+	size_t m_numberOfHistoryBars;
 	
 	std::string m_barSizeStr;
 	long m_barSizeUnits;
@@ -211,6 +213,7 @@ public:
 			const IniSectionRef &configuration)
 		: m_service(service)
 		, m_security(nullptr)
+		, m_numberOfHistoryBars(1)
 		, m_countedBarSize(0)
 		, m_currentBar(nullptr)
 		, m_barsLog(nullptr) {
@@ -316,10 +319,27 @@ public:
 			}
 		}
 
+		{
+			const auto numberOfHistoryBars = configuration.ReadTypedKey<size_t>(
+				"number_of_history_bars",
+				m_numberOfHistoryBars);
+			if (numberOfHistoryBars != m_numberOfHistoryBars) {
+				if (m_countedBarSize) {
+					throw Error(
+						"Can't use \"number of history bars\""
+							" with bar type \"number of updates\""
+							" as history start time is unknown");
+				}
+				m_numberOfHistoryBars = numberOfHistoryBars;
+			}
+		}
+
+
 		if (!m_countedBarSize) {
 			m_service.GetLog().Info(
-				"Stated with size \"%1%\".",
-				m_timedBarSize);
+				"Stated with size \"%1%\" (number of history bars: %2%).",
+				m_timedBarSize,
+				m_numberOfHistoryBars);
 		} else {
 			m_service.GetLog().Info(
 				"Stated with size \"%1% %2%\".",
@@ -804,9 +824,10 @@ BarService::~BarService() {
 }
 
 pt::ptime BarService::OnSecurityStart(const Security &security) {
-	return !m_pimpl->m_countedBarSize
-		?	GetContext().GetCurrentTime() - m_pimpl->m_timedBarSize
-		:	Base::OnSecurityStart(security);
+	return m_pimpl->m_countedBarSize
+		?	Base::OnSecurityStart(security)
+		:	(GetContext().GetCurrentTime()
+			- (m_pimpl->m_timedBarSize * int(m_pimpl->m_numberOfHistoryBars)));
 }
 
 bool BarService::OnNewBar(const Security &security, const Security::Bar &bar) {
