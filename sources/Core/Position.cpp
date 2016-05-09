@@ -1246,6 +1246,7 @@ namespace { namespace CloseTypeStr {
 	const std::string stopLoss = "stop loss";
 	const std::string timeout = "timeout";
 	const std::string schedule = "schedule";
+	const std::string rollover = "rollover";
 	const std::string request = "request";
 	const std::string engineStop = "engine stop";
 	const std::string openFailed = "open failed";
@@ -1254,7 +1255,7 @@ namespace { namespace CloseTypeStr {
 
 const std::string & Position::GetCloseTypeStr() const {
 	using namespace CloseTypeStr;
-	static_assert(numberOfCloseTypes == 9, "Close type list changed.");
+	static_assert(numberOfCloseTypes == 10, "Close type list changed.");
 	switch (GetCloseType()) {
 		default:
 			AssertEq(CLOSE_TYPE_NONE, GetCloseType());
@@ -1268,6 +1269,8 @@ const std::string & Position::GetCloseTypeStr() const {
 			return timeout;
 		case CLOSE_TYPE_SCHEDULE:
 			return schedule;
+		case CLOSE_TYPE_ROLLOVER:
+			return rollover;
 		case CLOSE_TYPE_REQUEST:
 			return request;
 		case CLOSE_TYPE_ENGINE_STOP:

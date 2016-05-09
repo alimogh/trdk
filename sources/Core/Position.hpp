@@ -45,6 +45,7 @@ namespace trdk {
 			CLOSE_TYPE_STOP_LOSS,
 			CLOSE_TYPE_TIMEOUT,
 			CLOSE_TYPE_SCHEDULE,
+			CLOSE_TYPE_ROLLOVER,
 			//! Closed by request, not by logic or error.
 			CLOSE_TYPE_REQUEST,
 			//! Closed by engine stop.
