@@ -58,15 +58,22 @@ namespace EmaFuturesStrategy {
 				/ 100.0)
 			, m_maxLossMoneyPerContract(
 				conf.ReadTypedKey<double>("max_loss_per_contract"))
+			, m_timeToRollOverBeforeExpiration(
+				pt::hours(
+					conf.ReadTypedKey<unsigned int>(
+						"days_to_rollover_before_expiration")
+					* 24))
 			, m_security(nullptr)
-			, m_fastEmaDirection(DIRECTION_LEVEL) {
+			, m_fastEmaDirection(DIRECTION_LEVEL)
+			, m_rollOverPositionType(Position::numberOfTypes) {
 			GetLog().Info(
 				"Number of contracts: %1%."
 					" Passive order max. lifetime: %2%."
 					" Order price delta: %3%."
 					" Take-profit trailing: %4%%%"
-						" will be activated after profit %5% * %6% = %7%"
-					" Max loss: %8% * %9% = %10%.",
+						" will be activated after profit %5% * %6% = %7%."
+					" Max loss: %8% * %9% = %10%."
+					" Time to roll over before expiration: %11%.",
 				m_numberOfContracts, // 1
 				m_passiveOrderMaxLifetime, // 2
 				m_orderPriceDelta, // 3
@@ -76,7 +83,8 @@ namespace EmaFuturesStrategy {
 				m_minProfitToActivateTakeProfit * m_numberOfContracts, // 7
 				m_maxLossMoneyPerContract, // 8
 				m_numberOfContracts, // 9
-				m_maxLossMoneyPerContract * m_numberOfContracts); // 10
+				m_maxLossMoneyPerContract * m_numberOfContracts, // 10
+				m_timeToRollOverBeforeExpiration); // 11
 			OpenStartegyLog();
 		}
 		
@@ -163,7 +171,7 @@ namespace EmaFuturesStrategy {
 		virtual void OnPositionUpdate(trdk::Position &position) {
 			Assert(m_security);
 			Assert(m_security->IsOnline());
-			Position &startegyPosition = dynamic_cast<Position &>(position);
+			auto &startegyPosition = dynamic_cast<Position &>(position);
 			CheckSlowOrderFilling(startegyPosition);
 			startegyPosition.Sync();
 		}
@@ -180,7 +188,7 @@ namespace EmaFuturesStrategy {
 			
 			const Direction &signal = UpdateDirection();
 			Assert(m_security);
-			if (!m_security->IsOnline()) {
+			if (!m_security->IsOnline() || RollOver(timeMeasurement)) {
 				return;
 			}
 			if (signal != DIRECTION_LEVEL) {
@@ -277,7 +285,7 @@ namespace EmaFuturesStrategy {
 			Assert(m_security);
 			AssertEq(1, GetPositions().GetSize());
 
-			Position &position
+			auto &position
 				= dynamic_cast<Position &>(*GetPositions().GetBegin());
 			if (position.GetIntention() > INTENTION_HOLD) {
 				return;
@@ -586,6 +594,76 @@ namespace EmaFuturesStrategy {
 
 		}
 
+		bool RollOver(const Milestones &timeMeasurement) {
+
+			const auto &expirationTime = m_security->GetExpiration();
+			const auto &now = GetContext().GetCurrentTime();
+
+			if (expirationTime < now) {
+				boost::shared_ptr<Position> position;
+				switch (m_rollOverPositionType) {
+					default:
+						return false;
+					case Position::TYPE_LONG:
+						AssertEq(0, GetPositions().GetSize());
+						position = CreatePosition<LongPosition>(
+							DIRECTION_LEVEL,
+							timeMeasurement);
+						break;
+					case Position::TYPE_SHORT:
+						AssertEq(0, GetPositions().GetSize());
+						position = CreatePosition<ShortPosition>(
+							DIRECTION_LEVEL,
+							timeMeasurement);
+						break;
+				}
+				Assert(position);
+				position->Sync();
+				timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_1);
+				Assert(position->HasActiveOpenOrders());
+				m_rollOverPositionType = Position::numberOfTypes;
+				return true;
+			}
+
+			const auto &timeToRollOver
+				= expirationTime - m_timeToRollOverBeforeExpiration;
+			if (now < expirationTime) {
+				return false;
+			}
+
+			if (!GetPositions().GetSize()) {
+				return true;
+			} else if (m_rollOverPositionType != Position::numberOfTypes) {
+				AssertEq(
+					dynamic_cast<Position &>(*GetPositions().GetBegin())
+						.GetType(),
+					m_rollOverPositionType);
+				return true;
+			}
+
+			AssertEq(Position::numberOfTypes, m_rollOverPositionType);
+			auto &position
+				= dynamic_cast<Position &>(*GetPositions().GetBegin());
+
+			GetTradingLog().Write(
+				"rollover\texpiration=%1%\ttime-to-rollover=%2%\tposition=%3%",
+				[&](TradingRecord &record) {
+					record
+						% m_security->GetExpiration()
+						% timeToRollOver
+						% position.GetId();
+				});
+
+			position.SetIntention(
+				INTENTION_CLOSE_PASSIVE,
+				Position::CLOSE_TYPE_ROLLOVER,
+				DIRECTION_LEVEL);
+			m_rollOverPositionType = position.GetType();
+
+			return true;
+
+		}
+
 	private:
 
 		const Qty m_numberOfContracts;
@@ -594,6 +672,7 @@ namespace EmaFuturesStrategy {
 		const double m_minProfitToActivateTakeProfit;
 		const double m_takeProfitTrailingPercentage;
 		const double m_maxLossMoneyPerContract;
+		const pt::time_duration m_timeToRollOverBeforeExpiration;
 
 		Security *m_security;
 
@@ -603,6 +682,8 @@ namespace EmaFuturesStrategy {
 		boost::uuids::random_generator m_generateUuid;
 
 		std::ofstream m_strategyLog;
+
+		Position::Type m_rollOverPositionType;
 
 	};
 

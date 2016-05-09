@@ -551,7 +551,7 @@ bool Client::SendMarketDataHistoryRequest(
 		security,
 		const_cast<Client *>(this)->TakeTickerId(),
 		numberOfPrevRequests);
-	if (request.numberOfPrevRequests >= 7) {
+	if (request.numberOfPrevRequests >= 6) {
 		// Making six or more historical data requests for the same Contract,
 		// Exchange and Tick Type within two seconds
 		// @sa https://www.interactivebrokers.com/en/software/api/apiguide/tables/historical_data_limitations.htm
