@@ -538,19 +538,26 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) {
 	}
 	return SendMarketDataHistoryRequest(
 		security,
-		requestedDataStartTime + GetEstDiff(),
-		0);
+		requestedDataStartTime + GetEstDiff());
+}
+
+bool Client::SendMarketDataHistoryRequest(
+		ib::Security &security,
+		const pt::ptime &edtRequestStart) {
+	return SendMarketDataHistoryRequest(security, edtRequestStart, 0, .0);
 }
 
 bool Client::SendMarketDataHistoryRequest(
 		ib::Security &security,
 		const pt::ptime &edtRequestStart,
-		size_t numberOfPrevRequests) {
+		size_t numberOfPrevRequests,
+		double prevClosePrice) {
 
 	SecurityRequest request(
 		security,
 		const_cast<Client *>(this)->TakeTickerId(),
 		numberOfPrevRequests);
+	request.prevClosePrice = prevClosePrice;
 	if (request.numberOfPrevRequests >= 6) {
 		// Making six or more historical data requests for the same Contract,
 		// Exchange and Tick Type within two seconds
@@ -1722,11 +1729,33 @@ void Client::historicalData(
 			return;
 		}
 
+		// To generate a normalized historical data series for the above
+		// sequence, call CL MAY'15 as Contract A and CL APR'15 as Contract B.
+		// Then follow the steps below :
+		// 1.  Take the closing price of Contract B and Contract A on 20150317.
+		// 2.  Calculate the ratio of
+		// closingPrice(Contract A) / closingPrice(Contract B).
+		const auto ratio = !IsZero(request->prevClosePrice)
+			?	(closePrice / request->prevClosePrice)
+			:	1.0;
+		// 3.  Multiply all Contract B data for 20150317 and all prior dates
+		// by this ratio.This results in the adjusted time series of Contract
+		// B having the SAME closing price on 20150317 as Contract A.
+		openPrice *= ratio;
+		highPrice *= ratio;
+		lowPrice *= ratio;
+		closePrice *= ratio;
+
 		const auto &openPriceScaled = request->security->ScalePrice(openPrice);
 		const auto &lowPriceScaled = request->security->ScalePrice(lowPrice);
 		const auto &highPriceScaled = request->security->ScalePrice(highPrice);
 		const auto &closePriceScaled
 			= request->security->ScalePrice(closePrice);
+
+		AssertLe(0, openPriceScaled);
+		AssertLe(0, lowPriceScaled);
+		AssertLe(0, highPriceScaled);
+		AssertLe(0, closePriceScaled);
 
 		if (request->security->IsLevel1Required()) {
 // 			request->security->AddLevel1Tick(
@@ -1789,7 +1818,8 @@ void Client::historicalData(
 				SendMarketDataHistoryRequest(
 					*request->security,
 					request->requestEndTime,
-					request->numberOfPrevRequests)) {
+					request->numberOfPrevRequests,
+					.0)) {
 			return;
 		}
 	} else {
@@ -1810,7 +1840,8 @@ void Client::historicalData(
 					SendMarketDataHistoryRequest(
 						*request->security,
 						request->requestEndTime,
-						request->numberOfPrevRequests)) {
+						request->numberOfPrevRequests,
+						request->prevClosePrice)) {
 				return;
 			}
 		}
