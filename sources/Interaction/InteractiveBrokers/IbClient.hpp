@@ -76,6 +76,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 			boost::posix_time::ptime requestEndTime;
 			
 			size_t numberOfPrevRequests;
+			double prevClosePrice;
 
 			explicit SecurityRequest(
 					Security &security,
@@ -83,7 +84,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 					size_t numberOfPrevRequests)
 				: security(&security)
 				, tickerId(tickerId)
-				, numberOfPrevRequests(numberOfPrevRequests + 1) {
+				, numberOfPrevRequests(numberOfPrevRequests + 1)
+				, prevClosePrice(.0) {
 				//...//
 			}
 
@@ -212,8 +214,12 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		bool SendMarketDataHistoryRequest(Security &);
 		bool SendMarketDataHistoryRequest(
 				Security &,
+				const boost::posix_time::ptime &);
+		bool SendMarketDataHistoryRequest(
+				Security &,
 				const boost::posix_time::ptime &,
-				size_t numberOfPrevRequests);
+				size_t numberOfPrevRequests,
+				double prevClosePrice);
 
 		void Task();
 

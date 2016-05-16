@@ -341,7 +341,10 @@ bool Security::IsOnline() const {
 void Security::SetOnline() {
 	Assert(!m_pimpl->m_isOnline);
 	m_pimpl->m_isOnline = true;
-	GetContext().GetLog().Info("%1% now is online.", *this);
+	GetContext().GetLog().Info(
+		"%1% now is online. Last data time: %2%.",
+		*this,
+		GetLastMarketDataTime());
 }
 
 void Security::StartLevel1() {
