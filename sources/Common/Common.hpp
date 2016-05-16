@@ -41,6 +41,8 @@
 
 #include "Common/Constants.h"
 
+#include "Common/Fwd.hpp"
+
 #include "Common/Dll.hpp"
 #include "Common/Util.hpp"
 #include "Common/Defaults.hpp"

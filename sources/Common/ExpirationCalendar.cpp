@@ -25,14 +25,14 @@ namespace {
 	};
 
 	typedef boost::multi_index_container<
-		ExpirationCalendar::Contract,
+		ContractExpiration,
 		mi::indexed_by<
 			mi::ordered_unique<
 				mi::tag<ByExpirationDate>,
 				mi::member<
-					ExpirationCalendar::Contract,
+					ContractExpiration,
 					gr::date,
-					&ExpirationCalendar::Contract::expirationDate>>>>
+					&ContractExpiration::expirationDate>>>>
 		SymbolContracts;
 
 	typedef boost::unordered_map<std::string, SymbolContracts>
@@ -105,8 +105,7 @@ ExpirationCalendar::Iterator::operator bool() const {
 	return m_pimpl && !m_pimpl->IsEnd();
 }
 
-const ExpirationCalendar::Contract & ExpirationCalendar::Iterator::dereference()
-		const {
+const ContractExpiration & ExpirationCalendar::Iterator::dereference() const {
 	Assert(m_pimpl);
 	return *m_pimpl->m_it;
 }
@@ -185,7 +184,7 @@ void ExpirationCalendar::ReloadCsv(const fs::path &filePath) {
 		}
 
 		std::string symbol;
-		Contract contract = {};
+		ContractExpiration contract = {};
 
 		typedef boost::split_iterator<std::string::iterator> SpitIterator;
 		for (
@@ -268,40 +267,40 @@ void ExpirationCalendar::ReloadCsv(const fs::path &filePath) {
 
 		switch (contract.expirationDate.month()) {
 			case gr::Jan:
-				contract.code = CODE_FEBRUARY;
+				contract.code = ContractExpiration::CODE_FEBRUARY;
 				break;
 			case gr::Feb:
-				contract.code = CODE_MARCH;
+				contract.code = ContractExpiration::CODE_MARCH;
 				break;
 			case gr::Mar:
-				contract.code = CODE_APRIL;
+				contract.code = ContractExpiration::CODE_APRIL;
 				break;
 			case gr::Apr:
-				contract.code = CODE_MAY;
+				contract.code = ContractExpiration::CODE_MAY;
 				break;
 			case gr::May:
-				contract.code = CODE_JUNE;
+				contract.code = ContractExpiration::CODE_JUNE;
 				break;
 			case gr::Jun:
-				contract.code = CODE_JULY;
+				contract.code = ContractExpiration::CODE_JULY;
 				break;
 			case gr::Jul:
-				contract.code = CODE_AUGUST;
+				contract.code = ContractExpiration::CODE_AUGUST;
 				break;
 			case gr::Aug:
-				contract.code = CODE_SEPTEMBER;
+				contract.code = ContractExpiration::CODE_SEPTEMBER;
 				break;
 			case gr::Sep:
-				contract.code = CODE_OCTOBER;
+				contract.code = ContractExpiration::CODE_OCTOBER;
 				break;
 			case gr::Oct:
-				contract.code = CODE_NOVEMBER;
+				contract.code = ContractExpiration::CODE_NOVEMBER;
 				break;
 			case gr::Nov:
-				contract.code = CODE_DECEMBER;
+				contract.code = ContractExpiration::CODE_DECEMBER;
 				break;
 			case gr::Dec:
-				contract.code = CODE_JANUARY;
+				contract.code = ContractExpiration::CODE_JANUARY;
 				++contract.year;
 				break;
 			default:

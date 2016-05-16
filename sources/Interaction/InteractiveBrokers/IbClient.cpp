@@ -69,7 +69,7 @@ namespace {
 
 	IBString FormatLocalSymbol(
 			std::string symbol,
-			const ExpirationCalendar::Contract &expirationInfo) {
+			const ContractExpiration &expirationInfo) {
 		if (expirationInfo.year > 2019 || expirationInfo.year < 2010) {
 			throw MethodDoesNotImplementedError(
 				"Work with features from < 2010 or > 2019 is not implemented");
@@ -232,23 +232,11 @@ Contract Client::GetContract(const trdk::Security &security) const {
 		case SECURITY_TYPE_FUTURES:
 			contract.secType = "FUT";
 			contract.includeExpired = true;
-			if (!symbol.IsExplicit()) {
-				const auto &now
-					= m_ts.GetContext().GetCurrentTime();
-				const auto &expiration
-					= m_ts.m_expirationCalendar.Find(symbol, now);
-				if (!expiration) {
-					boost::format error(
-						"Failed to find expiration info for \"%1%\" and %2%");
-					error % symbol % now;
-					throw trdk::MarketDataSource::Error(error.str().c_str());
-				}
-				contract.localSymbol = FormatLocalSymbol(
-					symbol.GetSymbol(),
-					*expiration);
-			} else {
-				contract.localSymbol = symbol.GetSymbol();
-			}
+			contract.localSymbol = !symbol.IsExplicit()
+				?	FormatLocalSymbol(
+						symbol.GetSymbol(),
+						security.GetExpiration())
+				:	symbol.GetSymbol();
 			break;
 		case SECURITY_TYPE_FUTURES_OPTIONS:
 			contract.secType = "FOP";
@@ -640,7 +628,7 @@ bool Client::SendMarketDataHistoryRequest(
 		// Sends as often as possible, but only for bars it doesn't make sense
 		// less as 5 second as "Currently only 5 second bars are supported, if
 		// any other value is used, an exception will be thrown" for real bars:
-		"15 mins",
+		"5 mins",
 		"TRADES",
 		0,
 		1,

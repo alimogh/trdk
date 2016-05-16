@@ -69,6 +69,7 @@ namespace trdk { namespace Tests {
 	protected:
 
 		typedef trdk::Lib::ExpirationCalendar Calendar;
+		typedef trdk::Lib::ContractExpiration Expiration;
 
 	public:
 
@@ -102,7 +103,7 @@ namespace trdk { namespace Tests {
 				lib::Symbol("XXX1/USD::FUT"),
 				pt::ptime(gr::date(2016, gr::Apr, 6)));
 			ASSERT_TRUE(it);
-			EXPECT_EQ(Calendar::CODE_JUNE, it->code);
+			EXPECT_EQ(Expiration::CODE_JUNE, it->code);
 			EXPECT_EQ(2016, it->year);
 			EXPECT_EQ(gr::date(2016, gr::May, 20), it->expirationDate);
 			EXPECT_FALSE(++it);
@@ -112,7 +113,7 @@ namespace trdk { namespace Tests {
 				lib::Symbol("XXX1/USD::FUT"),
 				pt::ptime(gr::date(2016, gr::May, 20)));
 			ASSERT_TRUE(it);
-			EXPECT_EQ(Calendar::CODE_JUNE, it->code);
+			EXPECT_EQ(Expiration::CODE_JUNE, it->code);
 			EXPECT_EQ(2016, it->year);
 			EXPECT_EQ(gr::date(2016, gr::May, 20), it->expirationDate);
 			EXPECT_FALSE(++it);
@@ -124,7 +125,7 @@ namespace trdk { namespace Tests {
 				lib::Symbol("XXX2/USD::FUT"),
 				pt::ptime(gr::date(2015, gr::Sep, 25)));
 			ASSERT_TRUE(it);
-			EXPECT_EQ(Calendar::CODE_DECEMBER, it->code);
+			EXPECT_EQ(Expiration::CODE_DECEMBER, it->code);
 			EXPECT_EQ(2015, it->year);
 			EXPECT_EQ(gr::date(2015, gr::Nov, 10), it->expirationDate);
 			EXPECT_TRUE(++it);
@@ -143,7 +144,7 @@ namespace trdk { namespace Tests {
 				lib::Symbol("XXX2/USD::FUT"),
 				pt::ptime(gr::date(2016, gr::Feb, 1)));
 			ASSERT_TRUE(it);
-			EXPECT_EQ(Calendar::CODE_MARCH, it->code);
+			EXPECT_EQ(Expiration::CODE_MARCH, it->code);
 			EXPECT_EQ(2016, it->year);
 			EXPECT_EQ(gr::date(2016, gr::Feb, 19), it->expirationDate);
 			EXPECT_TRUE(++it);
@@ -156,43 +157,43 @@ namespace trdk { namespace Tests {
 				lib::Symbol("XXX2/USD::FUT"),
 				pt::ptime(gr::date(2015, gr::Sep, 26)));
 			ASSERT_TRUE(it);
-			EXPECT_EQ(Calendar::CODE_DECEMBER, it->code);
+			EXPECT_EQ(Expiration::CODE_DECEMBER, it->code);
 			EXPECT_EQ(2015, it->year);
 			EXPECT_EQ(gr::date(2015, gr::Nov, 10), it->expirationDate);
 			
 			// {"XXX2", 20151225},
 			ASSERT_TRUE(++it);
-			EXPECT_EQ(Calendar::CODE_JANUARY, it->code);
+			EXPECT_EQ(Expiration::CODE_JANUARY, it->code);
 			EXPECT_EQ(2016, it->year);
 			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it->expirationDate);
 
 			// {"XXX2", 20160118},
 			ASSERT_TRUE(++it);
-			EXPECT_EQ(Calendar::CODE_FEBRUARY, it->code);
+			EXPECT_EQ(Expiration::CODE_FEBRUARY, it->code);
 			EXPECT_EQ(2016, it->year);
 			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it->expirationDate);
 		
 			// {"XXX2", 20160219},
 			ASSERT_TRUE(++it);
-			EXPECT_EQ(Calendar::CODE_MARCH, it->code);
+			EXPECT_EQ(Expiration::CODE_MARCH, it->code);
 			EXPECT_EQ(2016, it->year);
 			EXPECT_EQ(gr::date(2016, gr::Feb, 19), it->expirationDate);
 
 			// {"XXX2", 20160317},
 			ASSERT_TRUE(++it);
-			EXPECT_EQ(Calendar::CODE_APRIL, it->code);
+			EXPECT_EQ(Expiration::CODE_APRIL, it->code);
 			EXPECT_EQ(2016, it->year);
 			EXPECT_EQ(gr::date(2016, gr::Mar, 17), it->expirationDate);
 
 			// {"XXX2", 20160420},
 			ASSERT_TRUE(++it);
-			EXPECT_EQ(Calendar::CODE_MAY, it->code);
+			EXPECT_EQ(Expiration::CODE_MAY, it->code);
 			EXPECT_EQ(2016, it->year);
 			EXPECT_EQ(gr::date(2016, gr::Apr, 20), it->expirationDate);
 
 			// {"XXX2", 20160521},
 			ASSERT_TRUE(++it);
-			EXPECT_EQ(Calendar::CODE_JUNE, it->code);
+			EXPECT_EQ(Expiration::CODE_JUNE, it->code);
 			EXPECT_EQ(2016, it->year);
 			EXPECT_EQ(gr::date(2016, gr::May, 21), it->expirationDate);
 

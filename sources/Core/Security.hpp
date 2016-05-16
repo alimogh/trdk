@@ -186,8 +186,10 @@ namespace trdk {
 
 		//! Returns next expiration time.
 		/** Throws exception if expiration is not provided.
+		  * @sa GetExpiration
+		  * @todo Operation is not thread-safe!
 		  */
-		boost::posix_time::ptime GetExpiration() const;
+		const trdk::Lib::ContractExpiration & GetExpiration() const;
 
 	public:
 
@@ -344,7 +346,11 @@ namespace trdk {
 				trdk::PriceBook &book,
 				const trdk::Lib::TimeMeasurement::Milestones &timeMeasurement);
 
-		void SetExpiration(const boost::posix_time::ptime &);
+		//! Sets new expiration.
+		/** @sa GetExpiration
+		  * @todo Operation is not thread-safe!
+		  */
+		void SetExpiration(const trdk::Lib::ContractExpiration &);
 
 	private:
 
