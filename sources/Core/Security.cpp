@@ -18,6 +18,7 @@
 #include "Settings.hpp"
 #include "Context.hpp"
 #include "TradingLog.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
@@ -133,7 +134,8 @@ public:
 	boost::atomic_size_t m_numberOfMarketDataUpdates;
 	boost::atomic_bool m_isLevel1Started;
 	boost::atomic_bool m_isOnline;
-	boost::atomic_int64_t m_expirationTime;
+
+	boost::optional<ContractExpiration> m_expiration;
 
 	pt::ptime m_requestedDataStartTime;
 
@@ -151,8 +153,7 @@ public:
 		, m_marketDataTime(0)
 		, m_numberOfMarketDataUpdates(0)
 		, m_isLevel1Started(false)
-		, m_isOnline(isOnline)
-		, m_expirationTime(0) {
+		, m_isOnline(isOnline) {
 		
 		static_assert(numberOfTradingModes == 3, "List changed.");
 		for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
@@ -771,18 +772,17 @@ void Security::SetBook(
 
 }
 
-pt::ptime Security::GetExpiration() const {
-	const auto expirationTime = m_pimpl->m_expirationTime.load();
-	if (!expirationTime) {
+const ContractExpiration & Security::GetExpiration() const {
+	if (!m_pimpl->m_expiration) {
 		boost::format error("%1% doesn't have expiration");
 		error % *this;
 		throw LogicError(error.str().c_str());
 	}
-	return ConvertToPTimeFromMicroseconds(expirationTime);
+	return *m_pimpl->m_expiration;
 }
 
-void Security::SetExpiration(const pt::ptime &expirationTime) {
-	m_pimpl->m_expirationTime = ConvertToMicroseconds(expirationTime);
+void Security::SetExpiration(const ContractExpiration &expiration) {
+	m_pimpl->m_expiration = expiration;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

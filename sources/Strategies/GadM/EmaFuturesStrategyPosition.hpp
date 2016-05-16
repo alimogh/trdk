@@ -58,6 +58,8 @@ namespace EmaFuturesStrategy {
 
 		const CloseType & GetOpenType() const;
 
+		const Direction & GetOpenReason() const;
+
 		const Intention & GetIntention() const;
 		
 		void SetIntention(

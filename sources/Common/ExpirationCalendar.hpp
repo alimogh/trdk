@@ -17,9 +17,7 @@
 
 namespace trdk { namespace Lib {
 
-	class ExpirationCalendar {
-
-	public:
+	struct ContractExpiration {
 
 		//! Futures contract code.
 		/** https://en.wikipedia.org/wiki/Futures_contract#Codes
@@ -38,18 +36,22 @@ namespace trdk { namespace Lib {
 			CODE_NOVEMBER = 'X',
 			CODE_DECEMBER = 'Z'
 		};
+		
+		Code code;
+		uint16_t year;
+		boost::gregorian::date expirationDate;
+	
+	};
 
-		struct Contract {
-			Code code;
-			uint16_t year;
-			boost::gregorian::date expirationDate;
-		};
+	class ExpirationCalendar {
+
+	public:
 
 		class IteratorImplementation;
 
 		class Iterator : public boost::iterator_facade<
 				Iterator,
-				const Contract,
+				const ContractExpiration,
 				boost::incrementable_traversal_tag> {
 		public:
 			Iterator();
@@ -60,7 +62,7 @@ namespace trdk { namespace Lib {
 			void Swap(Iterator &) noexcept;
 		public:
 			operator bool() const;
-			const trdk::Lib::ExpirationCalendar::Contract & dereference() const;
+			const trdk::Lib::ContractExpiration & dereference() const;
 			bool equal(const Iterator &) const;
 			void increment();
 			void advance(const difference_type &);

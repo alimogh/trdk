@@ -285,6 +285,7 @@
     <ClInclude Include="DisableBoostWarningsBegin.h" />
     <ClInclude Include="Dll.hpp" />
     <ClInclude Include="ExpirationCalendar.hpp" />
+    <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Ini.hpp" />
     <ClInclude Include="Log.hpp" />
     <ClInclude Include="Numeric.hpp" />

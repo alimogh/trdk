@@ -68,6 +68,10 @@ EmaFuturesStrategy::Position::GetCloseStartTime() const {
 	return m_closeStartTime;
 }
 
+const Direction & EmaFuturesStrategy::Position::GetOpenReason() const {
+	return m_reasons[0];
+}
+
 const Intention & EmaFuturesStrategy::Position::GetIntention() const {
 	return m_intention;
 }

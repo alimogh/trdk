@@ -14,6 +14,7 @@
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingLog.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -64,8 +65,7 @@ namespace EmaFuturesStrategy {
 						"days_to_rollover_before_expiration")
 					* 24))
 			, m_security(nullptr)
-			, m_fastEmaDirection(DIRECTION_LEVEL)
-			, m_rollOverPositionType(Position::numberOfTypes) {
+			, m_fastEmaDirection(DIRECTION_LEVEL) {
 			GetLog().Info(
 				"Number of contracts: %1%."
 					" Passive order max. lifetime: %2%."
@@ -169,11 +169,16 @@ namespace EmaFuturesStrategy {
 		}
 		
 		virtual void OnPositionUpdate(trdk::Position &position) {
+
 			Assert(m_security);
 			Assert(m_security->IsOnline());
+
 			auto &startegyPosition = dynamic_cast<Position &>(position);
 			CheckSlowOrderFilling(startegyPosition);
 			startegyPosition.Sync();
+
+			FinishRollOver(startegyPosition);
+
 		}
 
 		virtual void OnServiceDataUpdate(
@@ -188,7 +193,7 @@ namespace EmaFuturesStrategy {
 			
 			const Direction &signal = UpdateDirection();
 			Assert(m_security);
-			if (!m_security->IsOnline() || RollOver(timeMeasurement)) {
+			if (!m_security->IsOnline() || StartRollOver()) {
 				return;
 			}
 			if (signal != DIRECTION_LEVEL) {
@@ -594,62 +599,40 @@ namespace EmaFuturesStrategy {
 
 		}
 
-		bool RollOver(const Milestones &timeMeasurement) {
+		bool StartRollOver() {
 
-			const auto &expirationTime = m_security->GetExpiration();
+			const auto &expirationTime
+				= pt::ptime(m_security->GetExpiration().expirationDate);
 			const auto &now = GetContext().GetCurrentTime();
-
 			if (expirationTime < now) {
-				boost::shared_ptr<Position> position;
-				switch (m_rollOverPositionType) {
-					default:
-						return false;
-					case Position::TYPE_LONG:
-						AssertEq(0, GetPositions().GetSize());
-						position = CreatePosition<LongPosition>(
-							DIRECTION_LEVEL,
-							timeMeasurement);
-						break;
-					case Position::TYPE_SHORT:
-						AssertEq(0, GetPositions().GetSize());
-						position = CreatePosition<ShortPosition>(
-							DIRECTION_LEVEL,
-							timeMeasurement);
-						break;
-				}
-				Assert(position);
-				position->Sync();
-				timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_1);
-				Assert(position->HasActiveOpenOrders());
-				m_rollOverPositionType = Position::numberOfTypes;
-				return true;
+				throw Exception("Expiration is missed");
 			}
 
 			const auto &timeToRollOver
 				= expirationTime - m_timeToRollOverBeforeExpiration;
-			if (now < expirationTime) {
+			if (now < timeToRollOver) {
+				AssertLt(now, expirationTime);
 				return false;
 			}
 
 			if (!GetPositions().GetSize()) {
-				return true;
-			} else if (m_rollOverPositionType != Position::numberOfTypes) {
-				AssertEq(
-					dynamic_cast<Position &>(*GetPositions().GetBegin())
-						.GetType(),
-					m_rollOverPositionType);
-				return true;
+				// Added to the custom branch for GadM:
+				// m_security->GetSource().SwitchToNewContract(*m_security);
+				// AssertLt(now, m_security->GetExpiration());
+				return false;
 			}
-
-			AssertEq(Position::numberOfTypes, m_rollOverPositionType);
+			
 			auto &position
 				= dynamic_cast<Position &>(*GetPositions().GetBegin());
+			if (position.HasActiveCloseOrders()) {
+				return true;
+			}
 
 			GetTradingLog().Write(
 				"rollover\texpiration=%1%\ttime-to-rollover=%2%\tposition=%3%",
 				[&](TradingRecord &record) {
 					record
-						% m_security->GetExpiration()
+						% pt::ptime(m_security->GetExpiration().expirationDate)
 						% timeToRollOver
 						% position.GetId();
 				});
@@ -658,9 +641,41 @@ namespace EmaFuturesStrategy {
 				INTENTION_CLOSE_PASSIVE,
 				Position::CLOSE_TYPE_ROLLOVER,
 				DIRECTION_LEVEL);
-			m_rollOverPositionType = position.GetType();
 
 			return true;
+
+		}
+
+		void FinishRollOver(Position &oldPosition) {
+
+			if (
+					!oldPosition.IsCompleted()
+					|| oldPosition.GetCloseType()
+						!= Position::CLOSE_TYPE_ROLLOVER) {
+				return;
+			}
+
+			// Added to the custom branch for GadM:
+			// m_security->GetSource().SwitchToNewContract(*m_security);
+
+			AssertLt(0, oldPosition.GetOpenedQty());
+			boost::shared_ptr<Position> newPosition;
+			switch (oldPosition.GetType()) {
+				case Position::TYPE_LONG:
+					newPosition = CreatePosition<LongPosition>(
+						oldPosition.GetOpenReason(),
+						oldPosition.GetTimeMeasurement());
+					break;
+				case Position::TYPE_SHORT:
+					newPosition = CreatePosition<ShortPosition>(
+						oldPosition.GetOpenReason(),
+						oldPosition.GetTimeMeasurement());
+					break;
+			}
+
+			Assert(newPosition);
+			newPosition->Sync();
+			Assert(newPosition->HasActiveOpenOrders());
 
 		}
 
@@ -682,8 +697,6 @@ namespace EmaFuturesStrategy {
 		boost::uuids::random_generator m_generateUuid;
 
 		std::ofstream m_strategyLog;
-
-		Position::Type m_rollOverPositionType;
 
 	};
 

@@ -130,5 +130,8 @@
     <ClInclude Include="ExpirationCalendar.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

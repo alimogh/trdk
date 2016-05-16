@@ -255,7 +255,7 @@ trdk::Security & ib::TradeSystem::CreateNewSecurityObject(
 					symbol.GetSymbol(),
 					char(expiration->code),
 					expiration->year - 2010);
-				result->SetExpiration(pt::ptime(expiration->expirationDate));
+				result->SetExpiration(*expiration);
 			}
 			break;
 	}
