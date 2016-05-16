@@ -178,6 +178,9 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 					bool (const trdk::TradeSystem::Position &)> &)
 			const;
 
+		//! CUSTOMIZED MERHOD for GadM. Switches security to new contact.
+		virtual void SwitchToNewContract(trdk::Security &);
+
 	protected:
 
 		virtual void CreateConnection(const trdk::Lib::IniSectionRef &);

@@ -29,6 +29,9 @@ namespace trdk { namespace Tests {
 
 		MOCK_METHOD0(SubscribeToSecurities, void());
 
+		//! CUSTOMIZED MERHOD for GadM
+		MOCK_METHOD1(SwitchToNewContract, void(trdk::Security &));
+
 	protected:
 
 		MOCK_METHOD1(

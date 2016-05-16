@@ -617,8 +617,10 @@ namespace EmaFuturesStrategy {
 
 			if (!GetPositions().GetSize()) {
 				// Added to the custom branch for GadM:
-				// m_security->GetSource().SwitchToNewContract(*m_security);
-				// AssertLt(now, m_security->GetExpiration());
+				m_security->GetSource().SwitchToNewContract(*m_security);
+				AssertLt(
+					now,
+					pt::ptime(m_security->GetExpiration().expirationDate));
 				return false;
 			}
 			
@@ -656,7 +658,7 @@ namespace EmaFuturesStrategy {
 			}
 
 			// Added to the custom branch for GadM:
-			// m_security->GetSource().SwitchToNewContract(*m_security);
+			m_security->GetSource().SwitchToNewContract(*m_security);
 
 			AssertLt(0, oldPosition.GetOpenedQty());
 			boost::shared_ptr<Position> newPosition;

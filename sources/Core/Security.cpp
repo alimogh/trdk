@@ -109,7 +109,7 @@ public:
 	static boost::atomic<InstanceId> m_nextInstanceId;
 	const InstanceId m_instanceId;
 
-	const MarketDataSource &m_source;
+	MarketDataSource &m_source;
 
 	static_assert(numberOfTradingModes == 3, "List changed.");
 	boost::array<boost::shared_ptr<RiskControlSymbolContext>, 2>
@@ -142,7 +142,7 @@ public:
 public:
 
 	Implementation(
-			const MarketDataSource &source,
+			MarketDataSource &source,
 			const Symbol &symbol,
 			bool isOnline)
 		: m_instanceId(m_nextInstanceId++)
@@ -276,7 +276,7 @@ boost::atomic<Security::InstanceId> Security::Implementation::m_nextInstanceId(0
 Security::Security(
 		Context &context,
 		const Symbol &symbol,
-		const MarketDataSource &source,
+		MarketDataSource &source,
 		bool isOnline)
 	: Base(context, symbol),
 	m_pimpl(new Implementation(source, GetSymbol(), isOnline)) {
@@ -300,8 +300,12 @@ RiskControlSymbolContext & Security::GetRiskControlContext(
 	return *m_pimpl->m_riskControlContext[mode - 1];
 }
 
-const MarketDataSource & Security::GetSource() const {
+MarketDataSource & Security::GetSource() {
 	return m_pimpl->m_source;
+}
+
+const MarketDataSource & Security::GetSource() const {
+	return const_cast<Security *>(this)->GetSource();
 }
 
 uintmax_t Security::GetPriceScale() const {

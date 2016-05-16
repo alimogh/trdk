@@ -115,6 +115,11 @@ namespace trdk {
 				const boost::function<bool (const trdk::Security &)> &)
 				const;
 
+	public:
+
+		//! CUSTOMIZED MERHOD for GadM. Switches security to new contact.
+		virtual void SwitchToNewContract(trdk::Security &) = 0;
+
 	protected:
 
 		trdk::Security & CreateSecurity(const trdk::Lib::Symbol &);

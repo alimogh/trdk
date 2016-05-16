@@ -456,3 +456,7 @@ void ib::TradeSystem::RegOrder(const PlacedOrder &order) {
 		== m_placedOrders.get<ByOrder>().end());
 	m_placedOrders.insert(order);
 }
+
+void ib::TradeSystem::SwitchToNewContract(trdk::Security &security) {
+	m_client->SwitchToNewContract(dynamic_cast<Security &>(security));
+}

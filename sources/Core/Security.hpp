@@ -117,14 +117,16 @@ namespace trdk {
 		explicit Security(
 				trdk::Context &,
 				const trdk::Lib::Symbol &,
-				const trdk::MarketDataSource &,
+				trdk::MarketDataSource &,
 				bool isOnline);
-		~Security();
+		// CUSTOMIZED MERHOD for GadM (virtual, for dynamic casting)
+		virtual ~Security();
 
 	public:
 
 		//! Returns Market Data Source object which provides market data for
 		//! this security object.
+		trdk::MarketDataSource & GetSource();
 		const trdk::MarketDataSource & GetSource() const;
 
 		RiskControlSymbolContext & GetRiskControlContext(

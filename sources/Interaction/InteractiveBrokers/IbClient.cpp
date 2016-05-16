@@ -101,7 +101,8 @@ Client::Client(
 	, m_thread(nullptr)
 	, m_orderStatusesMap(GetOrderStatusesMap())
 	, m_seqNumber(-1)
-	, m_accountInfo(nullptr) {
+	, m_accountInfo(nullptr)
+	, m_securityInSwitching(nullptr) {
 	m_client.reset(new EPosixClientSocket(this));
 	LogConnectionAttempt();
 	const bool connectResult = m_client->eConnect(
@@ -422,29 +423,39 @@ void Client::DoMarketDataSubscription(ib::Security &security) {
 		|| security.IsBarsRequired()
 		|| (security.IsTestSource() && security.IsTradesRequired()));
 	if (m_isNoHistoryMode || !SendMarketDataHistoryRequest(security)) {
+		/* CUSTOMIZED MERHOD for GadM - history request ALWAYS returns true
 		SendMarketDataRequest(security);
+		*/
+		AssertFail("History request ALWAYS should return true.");
 	}
 }
 
-void Client::SendMarketDataRequest(ib::Security &security) {
+void Client::SendMarketDataRequest(
+		ib::Security &security,
+		const ExpirationCalendar::Iterator &expiration) {
 
 	Assert(!m_mutex.try_lock());
 	Assert(
 		security.IsLevel1Required()
 		|| security.IsBarsRequired()
 		|| (security.IsTestSource() && security.IsTradesRequired()));
-	Assert(!IsSubscribed(m_marketDataRequests, security));
 
 	if (	security.IsLevel1Required()
 			|| (security.IsTestSource()
 				&& (security.IsBarsRequired()
 					|| security.IsTradesRequired()))) {
 
-		const SecurityRequest request(
+		SecurityRequest request(
 			security,
 			const_cast<Client *>(this)->TakeTickerId(),
 			0);
-		const auto &contract = GetContract(*request.security);
+		
+		request.expiration = expiration;
+		auto contract = GetContract(*request.security);
+		Assert(!security.GetSymbol().IsExplicit());
+		contract.localSymbol = FormatLocalSymbol(
+			security.GetSymbol().GetSymbol(),
+			*request.expiration);
 
 		auto requests(m_marketDataRequests);
 		Verify(requests.insert(request).second);
@@ -468,7 +479,11 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 				: contract.symbol),
 			request.tickerId);
 
-		request.security->SetOnline();
+		if (!request.security->IsOnline()) {
+			request.security->SetOnline();
+		} else {
+			Assert(m_securityInSwitching);
+		}
 		
 		requests.swap(m_marketDataRequests);
 
@@ -1139,7 +1154,9 @@ void Client::HandleError(
 								m_marketDataRequests,
 								*request->security)) {
 					//! @todo Check data type.
-					SendMarketDataRequest(*request->security);
+					SendMarketDataRequest(
+						*request->security,
+						request->expiration);
 				}
 			}
 			break;
@@ -1378,6 +1395,15 @@ void Client::tickPrice(
 	if (!security) {
 		return;
 	}
+	if (m_securityInSwitching && m_securityInSwitching == security) {
+		{
+			boost::mutex::scoped_lock lock(m_switchMutex);
+			Assert(m_securityInSwitching);
+			Assert(m_securityInSwitching == security);
+			m_securityInSwitching = nullptr;
+		}
+		m_switchCondition.notify_all();
+	}
 	security->AddLevel1Tick(
 		now,
 		valueCtor(security->ScalePrice(price)),
@@ -1414,6 +1440,15 @@ void Client::tickSize(
 	ib::Security *const security = GetMarketDataRequest(tickerId);
 	if (!security) {
 		return;
+	}
+	if (m_securityInSwitching && m_securityInSwitching == security) {
+		{
+			boost::mutex::scoped_lock lock(m_switchMutex);
+			Assert(m_securityInSwitching);
+			Assert(m_securityInSwitching == security);
+			m_securityInSwitching = nullptr;
+		}
+		m_switchCondition.notify_all();
 	}
 	security->AddLevel1Tick(now, valueCtor(size), timeMeasurement);
 }
@@ -1857,7 +1892,7 @@ void Client::historicalData(
 			" (ticker ID: %2%).",
 		*request->security,
 		request->tickerId);
-	SendMarketDataRequest(*request->security);
+	SendMarketDataRequest(*request->security, request->expiration);
 
 }
 
@@ -2050,6 +2085,67 @@ void Client::displayGroupUpdated(
 		int /*reqId*/,
 		const IBString &/*contractInfo*/) {
 	AssertFail("Unexpected method call.");
+}
+
+void Client::SwitchToNewContract(ib::Security &security) {
+
+	boost::mutex::scoped_lock switchLock(m_switchMutex);
+	Assert(!m_securityInSwitching);
+
+	auto &index = m_marketDataRequests.get<BySecurity>();
+	auto oldRequest = index.find(&security);
+	if (oldRequest == index.end()) {
+		throw MarketDataSource::Error("Failed to find old request");
+	}
+
+	const auto prevExpiration = oldRequest->expiration;
+	auto nextExpiration = oldRequest->expiration;
+	if (!++nextExpiration) {
+		throw MarketDataSource::Error("Failed to find next expiration");
+	}
+
+	{
+	
+		Lock lock(m_mutex);
+
+		m_ts.GetMdsLog().Info(
+			"Switching %1% contract from %2% (%3%) to %4% (%5%)...",
+			security,
+			FormatLocalSymbol(
+				security.GetSymbol().GetSymbol(),
+				*prevExpiration),
+			prevExpiration->expirationDate,
+			FormatLocalSymbol(
+				security.GetSymbol().GetSymbol(),
+				*nextExpiration),
+			nextExpiration->expirationDate);
+	
+		m_client->cancelMktData(oldRequest->tickerId);
+
+		m_securityInSwitching = &security;
+	
+		SendMarketDataRequest(security, nextExpiration);
+
+		security.SetExpiration(*nextExpiration);
+
+	}
+
+	m_switchCondition.wait(switchLock);
+	
+	Assert(!m_securityInSwitching);
+
+	m_ts.GetMdsLog().Info(
+		"%1% switched to next contract %4% (%5%) from %2% (%3%).",
+		security,
+		FormatLocalSymbol(
+			security.GetSymbol().GetSymbol(),
+			*prevExpiration),
+		prevExpiration->expirationDate,
+		FormatLocalSymbol(
+			security.GetSymbol().GetSymbol(),
+			*nextExpiration),
+		nextExpiration->expirationDate);
+	
 }
 
 ///////////////////////////////////////////////////////////////////////////////
