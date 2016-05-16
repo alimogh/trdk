@@ -25,10 +25,8 @@ var concurrencyProfileRelease = "PROFILE_RELAX"
 var requiredModules = [
 	'Core'
 	, 'Engine'
-	, 'Fake'
 	, 'InteractiveBrokers'
 	, 'Services'
-	, 'TestStrategy'
 	, 'GadM'
 ]
 
