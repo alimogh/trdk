@@ -37,21 +37,59 @@ fs::path Lib::SymbolToFileName(
 }
 
 namespace {
-	const lt::posix_time_zone estTimeZone("EST-5EDT,M4.1.0,M10.5.0");
+	
+	boost::shared_ptr<lt::posix_time_zone> GetEstTimeZone() {
+		static const lt::posix_time_zone estTimeZone("EST-5EDT,M4.1.0,M10.5.0");
+		return boost::make_shared<lt::posix_time_zone>(estTimeZone);
+	}
+
+	pt::time_duration CalcTimeZoneOffset(
+			const pt::ptime &time1,
+			const pt::ptime &time2) {
+		pt::time_duration result = time1 - time2;
+		if (result != pt::time_duration(result.hours(), 0, 0)) {
+			const auto minutes = abs(result.minutes());
+			if (
+					(minutes > 55 && minutes <= 59)
+					|| (minutes >= 0 && minutes <= 5)) {
+				result = pt::time_duration(
+					result.hours(),
+					0,
+					0);
+			} else {
+				AssertFail(
+					"Time zone offset with 15 and 30 mins is not supported.");
+			}
+		}
+		return result;
+	}
+
 }
 
-boost::shared_ptr<lt::posix_time_zone> Lib::GetEstTimeZone() {
-	return boost::shared_ptr<lt::posix_time_zone>(
-		new  lt::posix_time_zone(estTimeZone));
+const pt::time_duration & Lib::GetEstDiff() {
+	static const pt::time_duration result = CalcTimeZoneOffset(
+		lt::local_date_time(boost::get_system_time(), GetEstTimeZone())
+			.local_time(),
+		lt::local_date_time(boost::get_system_time(), GetEstTimeZone())
+			.utc_time());
+	return result;
 }
 
-pt::time_duration Lib::GetEstDiff() {
-	const lt::local_date_time estTime(boost::get_system_time(), GetEstTimeZone());
-	return estTime.local_time() - estTime.utc_time();
+const pt::time_duration & Lib::GetEstDiffLocal() {
+	static const pt::time_duration result = CalcTimeZoneOffset(
+		lt::local_date_time(boost::get_system_time(), GetEstTimeZone())
+			.local_time(),
+		lt::local_date_time(
+				pt::second_clock::local_time(),
+				lt::time_zone_ptr())
+			.local_time());
+	return result;
 }
 
 namespace {
+
 	const pt::ptime unixEpochStart(boost::gregorian::date(1970, 1, 1));
+
 }
 
 time_t Lib::ConvertToTimeT(const pt::ptime &source) {

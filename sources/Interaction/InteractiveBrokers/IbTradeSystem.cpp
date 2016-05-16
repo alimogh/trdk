@@ -239,7 +239,8 @@ trdk::Security & ib::TradeSystem::CreateNewSecurityObject(
 	switch (symbol.GetSecurityType()) {
 		case SECURITY_TYPE_FUTURES:
 			{
-				const auto &now = GetContext().GetCurrentTime() + GetEstDiff();
+				const auto &now
+					= GetContext().GetCurrentTime()/* + GetEstDiffLocal()*/;
 				const auto &expiration = m_expirationCalendar.Find(symbol, now);
 				if (!expiration) {
 					boost::format error(

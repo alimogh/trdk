@@ -14,6 +14,8 @@
 
 using namespace trdk::Lib;
 
+namespace pt = boost::posix_time;
+
 Log::Log()
 		: m_log(nullptr),
 		m_isStreamEnabled(false),
@@ -38,7 +40,7 @@ void Log::EnableStream(std::ostream &newLog, bool writeStartInfo) {
 		m_isStreamEnabled = true;
 	}
 	if (isStarted && writeStartInfo) {
-		const auto &utc = boost::posix_time::microsec_clock::universal_time();
+		const auto &utc = pt::microsec_clock::universal_time();
 		Write(
 			"Start",
 			GetTime(),
