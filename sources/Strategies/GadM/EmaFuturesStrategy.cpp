@@ -602,7 +602,8 @@ namespace EmaFuturesStrategy {
 		bool StartRollOver() {
 
 			const auto &expirationTime
-				= pt::ptime(m_security->GetExpiration().expirationDate);
+				= pt::ptime(m_security->GetExpiration().expirationDate)
+				+ pt::hours(16);
 			const auto &now = GetContext().GetCurrentTime();
 			if (expirationTime < now) {
 				throw Exception("Expiration is missed");
