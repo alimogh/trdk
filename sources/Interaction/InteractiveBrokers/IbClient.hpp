@@ -72,20 +72,14 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 			
 			Security *security;
 			TickerId tickerId;
+
 			Lib::ExpirationCalendar::Iterator expiration;
-			boost::posix_time::ptime requestEndTime;
-			
-			size_t numberOfPrevRequests;
-			double prevClosePrice;
 
 			explicit SecurityRequest(
 					Security &security,
-					const TickerId &tickerId,
-					size_t numberOfPrevRequests)
+					const TickerId &tickerId)
 				: security(&security)
-				, tickerId(tickerId)
-				, numberOfPrevRequests(numberOfPrevRequests + 1)
-				, prevClosePrice(.0) {
+				, tickerId(tickerId) {
 				//...//
 			}
 
@@ -94,7 +88,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 			}
 
 		};
-
 		typedef boost::multi_index_container<
 			SecurityRequest,
 			boost::multi_index::indexed_by<
@@ -111,16 +104,73 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 						TickerId,
 						&SecurityRequest::tickerId>>>>
 			SecurityRequestList;
-
 		//! @todo Use field "type" instead separated lists.
 		typedef SecurityRequestList MarketLevel1Requests;
-		typedef SecurityRequestList MarketLevel1HistoryRequests;
 		typedef SecurityRequestList MarketDepthLevel2Requests;
 		typedef SecurityRequestList TicksRequests;
 		typedef SecurityRequestList BarsRequests;
 
+		struct SecurityHistoryRequest : public SecurityRequest {
+			
+			boost::posix_time::ptime requestsSequenceStartTime;
+			boost::posix_time::ptime subRequestStart;
+			boost::posix_time::ptime subRequestEnd;
+			
+			size_t numberOfPrevRequests;
+			double prevClosePrice;
+
+			explicit SecurityHistoryRequest(
+					Security &security,
+					const TickerId &tickerId,
+					size_t numberOfPrevRequests,
+					const boost::posix_time::ptime &requestsSequenceStartTime,
+					const boost::posix_time::ptime &requestEnd)
+				: SecurityRequest(security, tickerId)
+				, numberOfPrevRequests(numberOfPrevRequests + 1)
+				, prevClosePrice(.0)
+				, requestsSequenceStartTime(requestsSequenceStartTime)
+				, subRequestStart(requestsSequenceStartTime)
+				, subRequestEnd(requestEnd) {
+				//...//
+			}
+
+		};
+		typedef boost::multi_index_container<
+			SecurityHistoryRequest,
+			boost::multi_index::indexed_by<
+				boost::multi_index::hashed_non_unique<
+					boost::multi_index::tag<BySecurity>,
+					boost::multi_index::member<
+						SecurityRequest,
+						Security *,
+						&SecurityRequest::security>>,
+				boost::multi_index::hashed_unique<
+					boost::multi_index::tag<ByTicker>,
+					boost::multi_index::member<
+						SecurityRequest,
+						TickerId,
+						&SecurityRequest::tickerId>>>>
+			MarketLevel1HistoryRequests;
+
 		typedef std::list<Security *> PostponedSecurityRequestList;
 		typedef PostponedSecurityRequestList PostponedMarketLevel1Requests;
+
+		struct HistoryUpdate {
+		
+			boost::posix_time::ptime time;
+			double openPrice;
+			double highPrice;
+			double lowPrice;
+			double closePrice;
+			Lib::ExpirationCalendar::Iterator expiration;
+
+			bool operator <(const HistoryUpdate &rhs) const {
+				return
+					time < rhs.time
+					|| (time == rhs.time && *expiration < *rhs.expiration);
+			}
+		
+		};
 
 	public:
 
@@ -221,10 +271,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		bool SendMarketDataHistoryRequest(Security &);
 		bool SendMarketDataHistoryRequest(
 				Security &,
-				const boost::posix_time::ptime &);
-		bool SendMarketDataHistoryRequest(
-				Security &,
-				const boost::posix_time::ptime &,
+				const boost::posix_time::ptime &start,
+				const boost::posix_time::ptime &end,
 				size_t numberOfPrevRequests,
 				double prevClosePrice);
 
@@ -254,7 +302,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		void HandleError(const int id, const int code, const IBString &);
 
 		Security * GetMarketDataRequest(const TickerId &);
-		const SecurityRequest * GetHistoryRequest(const TickerId &);
+		const SecurityHistoryRequest * GetHistoryRequest(const TickerId &);
 		Security * GetBarsRequest(const TickerId &);
 
 		static bool IsSubscribed(const SecurityRequestList &, const Security &);
@@ -264,6 +312,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 					const Security &);
 
 		void ApplyOrderParams(const OrderParams &, Order &) const;
+
+		void FlushHistory(Security &);
 
 	private:
 
@@ -443,6 +493,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		//! @todo Check data type at history finish
 		//! @todo Check data type at error.
 		mutable MarketLevel1HistoryRequests m_historyRequest;
+		boost::unordered_map<Security *, std::vector<HistoryUpdate>>
+			m_historyUpdates;
 
 		mutable BarsRequests m_barsRequest;
 

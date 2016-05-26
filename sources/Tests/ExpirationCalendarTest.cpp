@@ -275,6 +275,11 @@ namespace trdk { namespace Tests {
 		ASSERT_TRUE(it1);
 		EXPECT_EQ(gr::date(2015, gr::Nov, 10), it1->expirationDate);
 
+		EXPECT_EQ(gr::date(2015, gr::Dec, 25), std::next(it1)->expirationDate);
+		EXPECT_EQ(
+			gr::date(2015, gr::Nov, 10),
+			std::prev(std::next(it1))->expirationDate);
+
 		auto it2 = ++it1;
 		ASSERT_TRUE(it2);
 		EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->expirationDate);
@@ -283,6 +288,34 @@ namespace trdk { namespace Tests {
 		ASSERT_TRUE(++it2);
 		EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->expirationDate);
 		EXPECT_EQ(gr::date(2016, gr::Jan, 18), it2->expirationDate);
+
+		{
+			auto it3 = it2++;
+			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->expirationDate);
+			EXPECT_EQ(gr::date(2016, gr::Feb, 19), it2->expirationDate);
+			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it3->expirationDate);
+		}
+
+		{
+			auto it4 = --it2;
+			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->expirationDate);
+			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it2->expirationDate);
+			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it4->expirationDate);
+		}
+
+		{
+			auto it5 = it2--;
+			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->expirationDate);
+			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it2->expirationDate);
+			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it5->expirationDate);
+		}
+
+		{
+			ASSERT_TRUE(--it2);
+			auto it5 = --it2;
+			EXPECT_FALSE(it2);
+			EXPECT_FALSE(it5);
+		}
 
 	}
 

@@ -63,10 +63,6 @@ public:
 		//...//
 	}
 
-	bool IsEnd() const {
-		return m_it == m_cont.end();
-	}
-
 	void operator =(const IteratorImplementation &) = delete;
 
 };
@@ -102,7 +98,7 @@ void ExpirationCalendar::Iterator::Swap(Iterator &rhs) noexcept {
 }
 
 ExpirationCalendar::Iterator::operator bool() const {
-	return m_pimpl && !m_pimpl->IsEnd();
+	return m_pimpl && m_pimpl->m_it != m_pimpl->m_cont.cend();
 }
 
 const ContractExpiration & ExpirationCalendar::Iterator::dereference() const {
@@ -118,6 +114,15 @@ bool ExpirationCalendar::Iterator::equal(const Iterator &rhs) const {
 void ExpirationCalendar::Iterator::increment() {
 	Assert(m_pimpl);
 	++m_pimpl->m_it;
+}
+
+void ExpirationCalendar::Iterator::decrement() {
+	Assert(m_pimpl);
+	if (m_pimpl->m_it == m_pimpl->m_cont.cbegin()) {
+		m_pimpl.reset();
+	} else {
+		--m_pimpl->m_it;
+	}
 }
 
 void ExpirationCalendar::Iterator::advance(const difference_type &offset) {
