@@ -40,6 +40,10 @@ namespace trdk { namespace Lib {
 		Code code;
 		uint16_t year;
 		boost::gregorian::date expirationDate;
+
+		bool operator <(const ContractExpiration &rhs) const {
+			return expirationDate < rhs.expirationDate;
+		}
 	
 	};
 
@@ -50,9 +54,9 @@ namespace trdk { namespace Lib {
 		class IteratorImplementation;
 
 		class Iterator : public boost::iterator_facade<
-				Iterator,
-				const ContractExpiration,
-				boost::incrementable_traversal_tag> {
+			Iterator,
+			const ContractExpiration,
+			boost::bidirectional_traversal_tag> {
 		public:
 			Iterator();
 			explicit Iterator(std::unique_ptr<IteratorImplementation> &&);
@@ -65,6 +69,7 @@ namespace trdk { namespace Lib {
 			const trdk::Lib::ContractExpiration & dereference() const;
 			bool equal(const Iterator &) const;
 			void increment();
+			void decrement();
 			void advance(const difference_type &);
 		private:
 			std::unique_ptr<IteratorImplementation> m_pimpl;
