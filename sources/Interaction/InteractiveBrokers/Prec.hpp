@@ -32,6 +32,7 @@
 #	include <boost/unordered_map.hpp>
 #	include <boost/regex.hpp>
 #	include <boost/math/special_functions/fpclassify.hpp>
+#	include <boost/unordered_map.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include <concrt.h>

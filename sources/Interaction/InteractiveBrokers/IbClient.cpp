@@ -19,6 +19,7 @@ using namespace trdk::Interaction::InteractiveBrokers;
 namespace ib = trdk::Interaction::InteractiveBrokers;
 namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
+namespace fs = boost::filesystem;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -440,10 +441,7 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 				&& (security.IsBarsRequired()
 					|| security.IsTradesRequired()))) {
 
-		const SecurityRequest request(
-			security,
-			const_cast<Client *>(this)->TakeTickerId(),
-			0);
+		const SecurityRequest request(security, TakeTickerId());
 		const auto &contract = GetContract(*request.security);
 
 		auto requests(m_marketDataRequests);
@@ -480,10 +478,7 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 			= {"TRADES" , "BID" , "ASK" /*, MIDPOINT*/};
 		foreach (const char *const whatToShow, whatToShowList) {
 
-			const SecurityRequest request(
-				security,
-				const_cast<Client *>(this)->TakeTickerId(),
-				0);
+			const SecurityRequest request(security, TakeTickerId());
 			const auto &contract = GetContract(*request.security);
 
 			auto requests(m_barsRequest);
@@ -524,25 +519,38 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) {
 	if (requestedDataStartTime == pt::not_a_date_time) {
 		return false;
 	}
-	return SendMarketDataHistoryRequest(security, requestedDataStartTime);
-}
-
-bool Client::SendMarketDataHistoryRequest(
-		ib::Security &security,
-		const pt::ptime &requestStart) {
-	return SendMarketDataHistoryRequest(security, requestStart, 0, .0);
+	return SendMarketDataHistoryRequest(
+		security,
+		requestedDataStartTime,
+		m_ts.GetContext().GetCurrentTime(),
+		0,
+		.0);
 }
 
 bool Client::SendMarketDataHistoryRequest(
 		ib::Security &security,
 		const pt::ptime &requestStart,
+		const pt::ptime &requestEnd,
 		size_t numberOfPrevRequests,
 		double prevClosePrice) {
 
-	SecurityRequest request(
+	if (requestStart >= requestEnd) {
+		return false;
+	}
+	const pt::ptime &now = m_ts.GetContext().GetCurrentTime();
+	if (now <= requestStart) {
+		return false;
+	}
+
+	SecurityHistoryRequest request(
 		security,
-		const_cast<Client *>(this)->TakeTickerId(),
-		numberOfPrevRequests);
+		TakeTickerId(),
+		numberOfPrevRequests,
+		requestStart,
+		requestEnd);
+
+	auto contract = GetContract(*request.security);
+
 	request.prevClosePrice = prevClosePrice;
 	if (request.numberOfPrevRequests >= 6) {
 		// Making six or more historical data requests for the same Contract,
@@ -552,71 +560,67 @@ bool Client::SendMarketDataHistoryRequest(
 		request.numberOfPrevRequests = 1;
 	}
 
-	auto contract = GetContract(*request.security);
-
-	const pt::ptime &now = m_ts.GetContext().GetCurrentTime();
-	if (now <= requestStart) {
-		return false;
-	}
-
-	pt::ptime requestEnd;
 	if (security.GetSymbol().GetSecurityType() == SECURITY_TYPE_FUTURES) {
-		request.expiration = m_ts.m_expirationCalendar.Find(
-			request.security->GetSymbol(),
-			requestStart);
-		if (!request.expiration) {
-			boost::format error(
-				"Failed to find expiration info for \"%1%\" and %2%");
-			error % *request.security % requestStart;
-			throw trdk::MarketDataSource::Error(error.str().c_str());
+		for (
+				request.expiration = m_ts.m_expirationCalendar.Find(
+					request.security->GetSymbol(),
+					request.subRequestEnd);
+				;) {
+			if (!request.expiration) {
+				boost::format error(
+					"Failed to find expiration info for \"%1%\" and %2%");
+				error % *request.security % requestStart;
+				throw trdk::MarketDataSource::Error(error.str().c_str());
+			}
+			contract.localSymbol = FormatLocalSymbol(
+				request.security->GetSymbol().GetSymbol(),
+				*request.expiration);
+			const auto &prevExpiration = std::prev(request.expiration);
+			if (prevExpiration) {
+				request.subRequestStart = pt::ptime(prevExpiration->expirationDate);
+				request.subRequestStart += pt::hours(24);
+				if (request.subRequestStart >= request.subRequestEnd) {
+					AssertEq(request.subRequestStart, request.subRequestEnd);
+					--request.expiration;
+					continue;
+				}
+				break;
+			}
 		}
-		contract.localSymbol = FormatLocalSymbol(
-			request.security->GetSymbol().GetSymbol(),
-			*request.expiration);
-		auto nextExpiration = request.expiration;
-		if (++nextExpiration) {
-			requestEnd = pt::ptime(nextExpiration->expirationDate);
-			requestEnd += pt::hours(24);
-		}
-	}
-	if (requestEnd.is_not_a_date_time()) {
-		requestEnd = now;
 	}
 
 	{
 		const auto maxDuration = pt::seconds(86400);
-		if (requestEnd - requestStart > maxDuration) {
-			requestEnd = requestStart + maxDuration;
+		if (request.subRequestEnd - request.subRequestStart > maxDuration) {
+			request.subRequestStart = request.subRequestEnd - maxDuration;
 		}
 	}
-
-	request.requestEndTime = requestEnd;
 
 	auto requests(m_historyRequest);
 	Verify(requests.emplace(std::move(request)).second);
 
 	std::ostringstream endTimeOss;
 	endTimeOss
-		<< requestEnd.date().year()
+		<< request.subRequestEnd.date().year()
 		<< std::setw(2) << std::setfill('0')
-			<< unsigned short(requestEnd.date().month())
+			<< unsigned short(request.subRequestEnd.date().month())
 		<< std::setw(2) << std::setfill('0')
-			<< requestEnd.date().day()
+			<< request.subRequestEnd.date().day()
 		<< ' '
 		<< std::setw(2) << std::setfill('0')
-			<< requestEnd.time_of_day().hours()
+			<< request.subRequestEnd.time_of_day().hours()
 		<< ':'
 		<< std::setw(2) << std::setfill('0')
-			<< requestEnd.time_of_day().minutes()
+			<< request.subRequestEnd.time_of_day().minutes()
 		<< ':'
 		<< std::setw(2) << std::setfill('0')
-		<< requestEnd.time_of_day().seconds();
+		<< request.subRequestEnd.time_of_day().seconds();
 	const auto &endTime = endTimeOss.str();
 
 	const auto period
 		= (boost::format("%1% S")
-				%	std::max(60, (requestEnd - requestStart)
-						.total_seconds()))
+				% std::max(60, (request.subRequestEnd - request.subRequestStart)
+					.total_seconds()))
 			.str();
 
 	// @sa https://www.interactivebrokers.com/en/software/api/apiguide/tables/historical_data_limitations.htm
@@ -644,8 +648,8 @@ bool Client::SendMarketDataHistoryRequest(
 			m_ts.GetMdsLog().Info(
 				message,
 				*request.security,
-				requestStart,
-				requestEnd,
+				request.subRequestStart,
+				request.subRequestEnd,
 				(!contract.localSymbol.empty()
 					? contract.localSymbol
 					: contract.symbol),
@@ -656,8 +660,8 @@ bool Client::SendMarketDataHistoryRequest(
 			m_ts.GetMdsLog().Debug(
 				message,
 				*request.security,
-				requestStart,
-				requestEnd,
+				request.subRequestStart,
+				request.subRequestEnd,
 				(!contract.localSymbol.empty()
 					? contract.localSymbol
 					: contract.symbol),
@@ -686,10 +690,7 @@ void Client::SubscribeToMarketDepthLevel2(ib::Security &security) {
 	}
 	CheckState();
 
-	const SecurityRequest request(
-		security,
-		const_cast<Client *>(this)->TakeTickerId(),
-		0);
+	const SecurityRequest request(security, TakeTickerId());
 	auto requests(m_marketDepthLevel2Requests);
 	requests.insert(request);
 
@@ -1025,6 +1026,9 @@ void Client::LogError(const int id, const int code, const IBString &message) {
 		case 502: // Couldn't connect to TWS.
 			m_ts.GetTsLog().Error("Couldn't connect to TWS: \"%1%\".", message);
 			break;
+		case 1100:
+			m_ts.GetTsLog().Error("Connection lost: \"%1%\".", message);
+			break;
 		// case 2100:	// New account data requested from TWS. API client has
 						// been unsubscribed from account data.
 		// case 2101:	// Unable to subscribe to account as the following
@@ -1220,7 +1224,8 @@ ib::Security * Client::GetMarketDataRequest(const TickerId &tickerId) {
 	return &*pos->security;
 }
 
-const Client::SecurityRequest * Client::GetHistoryRequest(const TickerId &tickerId) {
+const Client::SecurityHistoryRequest * Client::GetHistoryRequest(
+		const TickerId &tickerId) {
 	const auto &index = m_historyRequest.get<ByTicker>();
 	const auto &pos = index.find(tickerId);
 	if (pos == index.end()) {
@@ -1643,9 +1648,7 @@ void Client::managedAccounts( const IBString &/*accountsList*/) {
 	//...//
 }
 
-void Client::receiveFA(
-			faDataType /*pFaDataType*/,
-			const IBString &/*cxml*/) {
+void Client::receiveFA(faDataType /*pFaDataType*/, const IBString &/*cxml*/) {
 	//...//
 }
 
@@ -1702,10 +1705,7 @@ void Client::historicalData(
 		double /*WAP*/,
 		int /*hasGaps*/) {
 
-	const auto &timeMeasurement
-		= m_ts.GetContext().StartStrategyTimeMeasurement();
-
-	const SecurityRequest *const request = GetHistoryRequest(tickerId);
+	const SecurityHistoryRequest *const request = GetHistoryRequest(tickerId);
 	if (!request) {
 		return;
 	}
@@ -1728,69 +1728,50 @@ void Client::historicalData(
 			timeStr,
 			m_ts.GetMdsLog(),
 			isFinished);
-		if (time <= request->security->GetLastMarketDataTime()) {
-			// Already received by previous request (IB can adjust request start
-			// time if requested data for non-working day).
-			return;
-		}
+		const bool isRequiredTime
+			=request->subRequestStart <= time && time <= request->subRequestEnd;
 
-		// To generate a normalized historical data series for the above
-		// sequence, call CL MAY'15 as Contract A and CL APR'15 as Contract B.
-		// Then follow the steps below :
-		// 1.  Take the closing price of Contract B and Contract A on 20150317.
-		// 2.  Calculate the ratio of
-		// closingPrice(Contract A) / closingPrice(Contract B).
-		const auto ratio = !IsZero(request->prevClosePrice)
-			?	(closePrice / request->prevClosePrice)
-			:	1.0;
-		// 3.  Multiply all Contract B data for 20150317 and all prior dates
-		// by this ratio.This results in the adjusted time series of Contract
-		// B having the SAME closing price on 20150317 as Contract A.
-		openPrice *= ratio;
-		highPrice *= ratio;
-		lowPrice *= ratio;
-		closePrice *= ratio;
-
-		const auto &openPriceScaled = request->security->ScalePrice(openPrice);
-		const auto &lowPriceScaled = request->security->ScalePrice(lowPrice);
-		const auto &highPriceScaled = request->security->ScalePrice(highPrice);
-		const auto &closePriceScaled
-			= request->security->ScalePrice(closePrice);
-
-		AssertLe(0, openPriceScaled);
-		AssertLe(0, lowPriceScaled);
-		AssertLe(0, highPriceScaled);
-		AssertLe(0, closePriceScaled);
-
-		if (request->security->IsLevel1Required()) {
-// 			request->security->AddLevel1Tick(
-// 				time,
-// 				Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(lowPriceScaled),
-// 				Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-// 					highPriceScaled),
-// 				timeMeasurement);
-			request->security->AddLevel1Tick(
-				time,
-				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
-					openPriceScaled),
-				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
-					highPriceScaled),
-				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
-					lowPriceScaled),
-				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
-					closePriceScaled),
-				timeMeasurement);
+		if (isRequiredTime && request->security->IsLevel1Required()) {
+			const auto &prevExpiration = std::prev(request->expiration);
+			if (
+					!prevExpiration
+					|| pt::ptime(prevExpiration->expirationDate) < time) {
+				Assert(
+					m_historyUpdates.find(request->security)
+						== m_historyUpdates.cend()
+					|| !m_historyUpdates[request->security].empty());
+#				ifdef BOOST_DISABLE_ASSERTS
+					if (
+							m_historyUpdates.find(request->security)
+								!= m_historyUpdates.cend()) {
+						AssertLt(
+							m_historyUpdates[request->security].back().time,
+							time);
+					}
+#				endif
+				const HistoryUpdate update = {
+					time,
+					openPrice,
+					highPrice,
+					lowPrice,
+					closePrice,
+					request->expiration
+				};
+				m_historyUpdates[request->security]
+					.emplace_back(std::move(update));
+			}
 		}
 	
-		if (request->security->IsBarsRequired()) {
+		if (isRequiredTime && request->security->IsBarsRequired()) {
+			AssertFail("History bars is not supported anymore");
 			ib::Security::Bar bar(
 				time,
 				//! See request for detail about frame size:
 				pt::seconds(request->security->IsLevel1Required() ? 1 : 5),
 				ib::Security::Bar::TRADES);
 			bar.openPrice = request->security->ScalePrice(openPrice);
-			bar.highPrice = highPriceScaled;
-			bar.lowPrice = lowPriceScaled;
+			bar.highPrice = request->security->ScalePrice(highPrice);
+			bar.lowPrice = request->security->ScalePrice(lowPrice);
 			bar.closePrice = request->security->ScalePrice(closePrice);
 			bar.volume = volume;
 			bar.count = barCount;
@@ -1802,62 +1783,213 @@ void Client::historicalData(
 	}
 
 	Assert(request->expiration);
-	Assert(!request->requestEndTime.is_not_a_date_time());
-
-	const auto contractHistoryEnd
-		= pt::ptime(request->expiration->expirationDate)
-		+ pt::hours(24);
-	if (request->requestEndTime < contractHistoryEnd) {
-//		m_ts.GetMdsLog().Debug(
-// 			"Finished Level I"
-// 				" market data history sub-expiration-request"
-// 				" for \"%1%\" (%2%%3%%4%, expiration: %5%"
-// 				", ticker ID: %6%).",
-// 			*request->security,
-// 			request->security->GetSymbol().GetSymbol(),
-// 			char(request->expiration->code),
-// 			request->expiration->year - 2010,
-// 			request->expiration->expirationDate,
-// 			request->tickerId);
+	
+	const auto &prevExpiration = std::prev(request->expiration);
+	if (prevExpiration) {
 		if (
-				SendMarketDataHistoryRequest(
-					*request->security,
-					request->requestEndTime,
-					request->numberOfPrevRequests,
-					.0)) {
-			return;
-		}
-	} else {
-		auto nextExpiration = request->expiration;
-		if (++nextExpiration) {
+				request->subRequestStart
+				<= pt::ptime(prevExpiration->expirationDate)) {
+			AssertEq(
+				pt::ptime(prevExpiration->expirationDate),
+				request->subRequestStart);
 			m_ts.GetMdsLog().Debug(
 				"Finished Level I"
 					" market data history contract request"
 					" for \"%1%\" (%2%%3%%4%, expiration: %5%"
-					", ticker ID: %6%).",
+						", ticker ID: %6%).",
 				*request->security,
 				request->security->GetSymbol().GetSymbol(),
 				char(request->expiration->code),
 				request->expiration->year - 2010,
 				request->expiration->expirationDate,
 				request->tickerId);
-			if (
-					SendMarketDataHistoryRequest(
-						*request->security,
-						request->requestEndTime,
-						request->numberOfPrevRequests,
-						request->prevClosePrice)) {
-				return;
-			}
+		}
+		if (
+				SendMarketDataHistoryRequest(
+					*request->security,
+					request->requestsSequenceStartTime,
+					request->subRequestStart,
+					request->numberOfPrevRequests,
+					.0)) {
+			return;
 		}
 	}
-	
+
 	m_ts.GetMdsLog().Debug(
 		"Finished Level I market data history request for \"%1%\""
 			" (ticker ID: %2%).",
 		*request->security,
 		request->tickerId);
+	FlushHistory(*request->security);
 	SendMarketDataRequest(*request->security);
+
+}
+
+namespace {
+
+	template<typename HistoryUpdate>
+	void FlushHistoryUpdate(
+			const HistoryUpdate &raw,
+			const HistoryUpdate &adjusted,
+			double adjustRatio,
+			ib::Security &security,
+			const ContractExpiration &expiration,
+			std::ostream &log,
+			Context &context) {
+
+		AssertEq(raw.time, adjusted.time);
+		Assert(IsEqual(raw.openPrice * adjustRatio, adjusted.openPrice));
+		Assert(IsEqual(raw.highPrice* adjustRatio, adjusted.highPrice));
+		Assert(IsEqual(raw.lowPrice * adjustRatio, adjusted.lowPrice));
+		Assert(IsEqual(raw.closePrice * adjustRatio, adjusted.closePrice));
+
+		log
+			<< raw.time
+			<< ',' << char(expiration.code) << (expiration.year - 2010)
+			<< ',' << expiration.expirationDate
+			<< ',' << adjustRatio
+			<< ',' << raw.openPrice
+			<< ',' << adjusted.openPrice
+			<< ',' << raw.closePrice
+			<< ',' << adjusted.closePrice
+			<< ',' << raw.highPrice
+			<< ',' << adjusted.highPrice
+			<< ',' << raw.lowPrice
+			<< ',' << adjusted.lowPrice
+			<< std::endl;
+
+		security.AddLevel1Tick(
+			raw.time,
+			Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
+				security.ScalePrice(adjusted.openPrice)),
+			Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
+				security.ScalePrice(adjusted.highPrice)),
+			Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
+				security.ScalePrice(adjusted.lowPrice)),
+			Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
+				security.ScalePrice(adjusted.closePrice)),
+			context.StartStrategyTimeMeasurement());
+
+	}
+
+}
+
+void Client::FlushHistory(ib::Security &security) {
+
+	const auto &securityHistoyIt = m_historyUpdates.find(&security);
+	if (securityHistoyIt == m_historyUpdates.cend()) {
+		return;
+	}
+	auto &securityHistory = securityHistoyIt->second;
+	Assert(!securityHistory.empty());
+
+	const auto &now = m_ts.GetContext().GetCurrentTime();
+
+	fs::path logPath = Defaults::GetLogFilePath() / "History";
+	logPath /= SymbolToFileName(
+		(boost::format("%1%_%2%%3%%4%_%5%%6%%7%")
+			 % security.GetSymbol()
+			 % now.date().year()
+			 % now.date().month().as_number()
+			 % now.date().day()
+			 % now.time_of_day().hours()
+			 % now.time_of_day().minutes()
+			 % now.time_of_day().seconds())
+		.str(),
+		"csv");
+	m_ts.GetMdsLog().Debug(
+		"Flushing %1% records history records (%2%)...",
+		securityHistory.size(),
+		logPath);
+
+	const bool isNew = !fs::exists(logPath);
+	if (isNew) {
+		fs::create_directories(logPath.branch_path());
+	}
+	std::ofstream log(
+		logPath.string(),
+		std::ios::out | std::ios::ate | std::ios::app);
+	if (!log) {
+		m_ts.GetMdsLog().Error("Failed to open log file %1%", logPath);
+		throw trdk::MarketDataSource::Error("Failed to open log file");
+	}
+	log
+		<< "Time"
+		<< ",Contact"
+		<< ",Expiration"
+		<< ",Adj. ratio"
+		<< ",Open (raw),Open (adj)"
+		<< ",Close (raw),Close (adj)"
+		<< ",High (raw),High (adj)"
+		<< ",Low (raw),Low (adj)"
+		<< std::endl;
+
+	std::sort(securityHistory.begin(), securityHistory.end());
+
+	auto startB = securityHistory.cbegin();
+	// https://www.interactivebrokers.com/en/software/tws/usersguidebook/technicalanalytics/continuous.htm
+	for (auto i = startB; i != securityHistory.cend(); ++i) {
+		
+		if (startB->expiration == i->expiration) {
+			continue;
+		}
+		
+		const auto closeB = std::prev(i);
+		auto closeA = i;
+		for ( ; ; ++closeA) {
+			const auto &nextCloseA = std::next(closeA);
+			if (
+					nextCloseA == securityHistory.cend()
+					|| nextCloseA->expiration != closeA->expiration) {
+				break;
+			}
+		}
+		
+		// To generate a normalized historical data series for the above
+		// sequence, call CL MAY'15 as Contract A and CL APR'15 as Contract B.
+		// Then follow the steps below:
+		// 1.	Take the closing price of Contract B and Contract A on
+		//		20150317.
+		// 2.	Calculate the ratio of
+		//		closingPrice(Contract A) / closingPrice(Contract B).
+		const auto ratio = closeA->closePrice / closeB->closePrice;
+		
+		// Multiply all Contract B data for 20150317 and all prior dates
+		// by this ratio. This results in the adjusted time series of Contract B
+		// having the SAME closing price on 20150317 as Contract A.
+		for ( ; startB != i; ++startB) {
+			auto adjusted = *startB;
+			adjusted.openPrice *= ratio;
+			adjusted.highPrice *= ratio;
+			adjusted.lowPrice *= ratio;
+			adjusted.closePrice *= ratio;
+			FlushHistoryUpdate(
+				*startB,
+				adjusted,
+				ratio,
+				security,
+				*startB->expiration,
+				log,
+				m_ts.GetContext());
+		}
+	
+	}
+
+	// Actual data.
+	for (auto i = startB; i != securityHistory.cend(); ++i) {
+		FlushHistoryUpdate(
+			*i,
+			*i,
+			1.0,
+			security,
+			*i->expiration,
+			log,
+			m_ts.GetContext());
+	}
+
+	m_historyUpdates.erase(securityHistoyIt);
+
+	m_ts.GetMdsLog().Debug("History flushing completed.");
 
 }
 
