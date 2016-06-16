@@ -1040,8 +1040,8 @@ void Client::LogError(const int id, const int code, const IBString &message) {
 		case 502: // Couldn't connect to TWS.
 			m_ts.GetTsLog().Error("Couldn't connect to TWS: \"%1%\".", message);
 			break;
-		case 1100:
-			m_ts.GetTsLog().Error("Connection lost: \"%1%\".", message);
+		case 1100: // Connectivity between IB and TWS has been lost.
+			m_ts.GetTsLog().Warn(message.c_str());
 			break;
 		// case 2100:	// New account data requested from TWS. API client has
 						// been unsubscribed from account data.
@@ -1187,7 +1187,6 @@ void Client::HandleError(
 				.0,
 				m_callBackList);
 			break;
-		case 1100:	// Connectivity between IB and TWS has been lost.
 		case 1300:	// TWS socket port has been reset and this connection is
 					// being dropped.
 			AssertEq(-1, id);
