@@ -44,9 +44,6 @@
     <ClCompile Include="TimeMeasurement.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Log.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SecurityType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -113,9 +110,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Spin.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Log.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Numeric.hpp">

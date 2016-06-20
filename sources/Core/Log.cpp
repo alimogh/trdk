@@ -10,8 +10,8 @@
 
 #include "Prec.hpp"
 #include "Log.hpp"
-#include "Util.hpp"
 
+using namespace trdk;
 using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
@@ -28,6 +28,7 @@ Log::~Log() {
 		Write("Start", GetTime(), GetThreadId(), nullptr, "Closed.");
 	} catch (...) {
 		AssertFailNoException();
+		terminate();
 	}
 }
 
@@ -52,5 +53,29 @@ void Log::EnableStream(std::ostream &newLog, bool writeStartInfo) {
 						" Build time: \"" __DATE__ " " __TIME__ "\".")
 				%	utc
 				%	(utc + GetEstDiff()));
+	}
+}
+
+void Log::AppendRecordHead(
+		const char *tag,
+		const boost::posix_time::ptime &time,
+		const ThreadId &threadId,
+		const std::string *module,
+		std::ostream &os) {
+	// The method should be in this obj-file to use one
+	// boost::date_time::time_facet for all modules or each module will create
+	// own and it will crash program after DLL unloading.
+	if (tag) {
+		os << '[' << tag << "]\t";
+	}
+	os << time;
+#			ifdef BOOST_WINDOWS
+	os << "\t[";
+#			else
+	os << "\t[0x" << std::ios::hex;
+#			endif
+	os << threadId << "]:\t";
+	if (module) {
+		os << '[' << *module << "] ";
 	}
 }

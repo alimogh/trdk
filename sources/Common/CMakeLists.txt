@@ -10,7 +10,6 @@ file(
     Currency.cpp
     Util.cpp
     SysError.cpp
-    Log.cpp
     FileSystemChangeNotificator.cpp
     Exception.cpp
     Defaults.cpp

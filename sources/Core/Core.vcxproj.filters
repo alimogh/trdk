@@ -77,6 +77,9 @@
     <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TradeSystem.hpp">
@@ -164,6 +167,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PriceBook.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Log.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

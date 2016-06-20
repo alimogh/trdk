@@ -252,7 +252,6 @@
     <ClCompile Include="Defaults.cpp" />
     <ClCompile Include="ExpirationCalendar.cpp" />
     <ClCompile Include="Ini.cpp" />
-    <ClCompile Include="Log.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -287,7 +286,6 @@
     <ClInclude Include="ExpirationCalendar.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Ini.hpp" />
-    <ClInclude Include="Log.hpp" />
     <ClInclude Include="Numeric.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="SecurityType.hpp" />

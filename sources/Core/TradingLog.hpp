@@ -27,8 +27,8 @@ namespace trdk {
 	public:
 
 		explicit TradingRecord(
-				const trdk::Lib::Log::Time &time,
-				const trdk::Lib::Log::ThreadId &threadId,
+				const trdk::Log::Time &time,
+				const trdk::Log::ThreadId &threadId,
 				const char *tag,
 				const char *message)
 			: Base(time, threadId),
@@ -93,18 +93,18 @@ namespace trdk {
 			m_log.EnableStream(os, true);
 		}
 
-		trdk::Lib::Log::Time GetTime() {
+		trdk::Log::Time GetTime() {
 			TrdkAssert(m_context);
 			return std::move(m_context->GetCurrentTime());
 		}
 
-		trdk::Lib::Log::ThreadId GetThreadId() const {
+		trdk::Log::ThreadId GetThreadId() const {
 			return std::move(m_log.GetThreadId());
 		}
 
 	private:
 
-		trdk::Lib::Log m_log;
+		trdk::Log m_log;
 		const trdk::Context *m_context;
 	
 	};
