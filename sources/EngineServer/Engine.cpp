@@ -214,7 +214,7 @@ void Engine::VerifyModules() const {
 				module.first,
 				ex.what());
 			throw EngineServer::Exception(
-				"Failed to verify the version of the required module ");
+				"Failed to verify the version of the required module");
 		
 		}
 	
