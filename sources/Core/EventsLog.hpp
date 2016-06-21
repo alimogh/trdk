@@ -16,7 +16,7 @@ namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	class TRDK_CORE_API EventsLog : public trdk::Lib::Log {
+	class TRDK_CORE_API EventsLog : public trdk::Log {
 
 	public:
 

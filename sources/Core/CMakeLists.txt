@@ -24,6 +24,7 @@ file(
     Service.cpp
     StrategyPositionState.cpp
     Instrument.cpp
+    Log.cpp
     Version.cpp)
 trdk_add_precompiled_header("Prec.h" "Prec.cpp" source_list)
 

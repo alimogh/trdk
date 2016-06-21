@@ -55,7 +55,7 @@
 #include "Common/Exception.hpp"
 #include "Common/TimeMeasurement.hpp"
 #include "Common/Spin.hpp"
-#include "Common/Log.hpp"
 #include "Common/Numeric.hpp"
 
 #include "Core/Types.hpp"
+#include "Core/Log.hpp"

@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "Util.hpp"
 
-#include "Log.hpp"
+#include "Core/Log.hpp"
 #include "Core/EventsLog.hpp"
 #include "Assert.hpp"
 #include "Constants.h"

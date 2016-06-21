@@ -10,11 +10,11 @@
 
 #pragma once
 
-#include "Foreach.hpp"
+#include "Api.h"
 
-namespace trdk { namespace Lib {
+namespace trdk {
 
-	class Log : private boost::noncopyable {
+	class TRDK_CORE_API Log : private boost::noncopyable {
 
 	public:
 
@@ -26,7 +26,7 @@ namespace trdk { namespace Lib {
 			typedef pthread_t ThreadId;
 #		endif
 
-	protected:
+	private:
 	
 		typedef boost::mutex Mutex;
 		typedef Mutex::scoped_lock Lock;
@@ -126,24 +126,10 @@ namespace trdk { namespace Lib {
 
 		static void AppendRecordHead(
 				const char *tag,
-				const boost::posix_time::ptime &time,
-				const ThreadId &threadId,
+				const boost::posix_time::ptime &,
+				const ThreadId &,
 				const std::string *module,
-				std::ostream &os) {
-			if (tag) {
-				os << '[' << tag << "]\t";
-			}
-			os << time;
-#			ifdef BOOST_WINDOWS
-				os << "\t[";
-#			else
-				os << "\t[0x" << std::ios::hex;
-#			endif
-			os << threadId << "]:\t";
-			if (module) {
-				os << '[' << *module << "] ";
-			}
-		}
+				std::ostream &);
 		static void AppendRecordEnd(std::ostream &os) {
 			os << std::endl;
 		}
@@ -167,4 +153,4 @@ namespace trdk { namespace Lib {
 
 	};
 
-} }
+}
