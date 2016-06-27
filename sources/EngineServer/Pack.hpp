@@ -11,25 +11,47 @@
 #include "DropCopyRecord.hpp"
 #include "Core/PriceBook.hpp"
 
-namespace msgpack { MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) { namespace adaptor {
+namespace trdk { namespace EngineServer { namespace Details {
+
+	typedef uint32_t PackSizeT;
+
+	template<typename Stream, bool isAscendingSort>
+	msgpack::packer<Stream> & Pack(
+			msgpack::packer<Stream> &o,
+			const trdk::PriceBook::Side<isAscendingSort> &v) {
+		const auto size = std::min<size_t>(5, v.GetSize());
+		o.pack_array(PackSizeT(size));
+		for (size_t i = 0; i < size; ++i) {
+			const auto &level = v.GetLevel(i);
+			o.pack_array(2);
+			o.pack(level.GetPrice());
+			o.pack(level.GetQty().Get());
+		}
+		return o;
+	}
+
+} } }
+
+namespace msgpack { namespace v1 { namespace adaptor {
 
 	template<>
-	template<bool isAscendingSort>
-	struct pack<trdk::PriceBook::Side<isAscendingSort>> {
+	struct pack<trdk::PriceBook::Bid> {
 		template<typename Stream>
 		msgpack::packer<Stream> & operator ()(
 				msgpack::packer<Stream> &o,
-				const trdk::PriceBook::Side<isAscendingSort> &v)
+				const trdk::PriceBook::Bid &v)
 				const {
-			const auto size = std::min<size_t>(5, v.GetSize());
-			o.pack_array(size);
-			for (size_t i = 0; i < size; ++i) {
-				const auto &level = v.GetLevel(i);
-				o.pack_array(2);
-				o.pack(level.GetPrice());
-				o.pack(level.GetQty().Get());
-			}
-			return o;
+			return trdk::EngineServer::Details::Pack(o, v);
+		}
+	};
+	template<>
+	struct pack<trdk::PriceBook::Ask> {
+		template<typename Stream>
+		msgpack::packer<Stream> & operator ()(
+				msgpack::packer<Stream> &o,
+				const trdk::PriceBook::Ask &v)
+				const {
+			return trdk::EngineServer::Details::Pack(o, v);
 		}
 	};
 
@@ -42,7 +64,8 @@ namespace msgpack { MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) { name
 				const trdk::EngineServer::DropCopyRecord &record)
 				const {
 
-			stream.pack_map(record.size());
+			stream.pack_map(
+				trdk::EngineServer::Details::PackSizeT(record.size()));
 
 			foreach (const auto &i, record) {
 

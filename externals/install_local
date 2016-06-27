@@ -1,12 +1,12 @@
 
 git clone https://github.com/msgpack/msgpack-c msgpack-c
 cd msgpack-c
-git reset --hard dea3190d36ac7c3171239d72085d7ded4f40e950
+git checkout cpp-1.4.0
 cd ./..
 
 git clone https://github.com/crossbario/autobahn-cpp.git autobahn
 cd autobahn
-git reset --hard 3f2592af5748d78674d648ce8956838d227ee911
+git reset --hard 72aa1b56b026a24a7361593f5afa1265a9d37815
 cd ./..
 
 git clone https://github.com/google/googletest.git googletest

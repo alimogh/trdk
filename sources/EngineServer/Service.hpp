@@ -10,9 +10,6 @@
 
 #pragma once
 
-#ifndef TRDK_AUTOBAHN_DISABLED
-
-#include <boost/thread/pthread/recursive_mutex.hpp>
 #include "Engine.hpp"
 #include "QueueService.hpp"
 #include "DropCopyRecord.hpp"
@@ -116,7 +113,7 @@ namespace trdk { namespace EngineServer {
 			boost::shared_future<void> sessionJoinFuture;
 			boost::shared_future<void> engineRegistrationFuture;
 
-			explicit  Connection(
+			explicit Connection(
 					boost::asio::io_service &io,
 					const Topics &topics,
 					EventsLog &log,
@@ -278,9 +275,7 @@ namespace trdk { namespace EngineServer {
 
 	public:
 
-		explicit Service(
-				const std::string &name,
-				const boost::filesystem::path &);
+		explicit Service(const boost::filesystem::path &);
 		~Service();
 
 	private:
@@ -354,11 +349,11 @@ namespace trdk { namespace EngineServer {
 
 		boost::shared_ptr<Connection> Connect();
 		void OnConnected(
-			boost::shared_ptr<Connection>,
+			const boost::shared_ptr<Connection> &,
 			const boost::system::error_code &);
 		void OnSessionStarted(boost::shared_ptr<Connection>, bool isStarted);
 		void OnSessionJoined(
-			boost::shared_ptr<Connection>,
+			const boost::shared_ptr<Connection> &,
 			const boost::optional<uint64_t> &sessionId);
 		void OnEngineRegistered(
 			boost::shared_ptr<Connection>,
@@ -426,5 +421,3 @@ namespace trdk { namespace EngineServer {
 	};
 
 } }
-
-#endif

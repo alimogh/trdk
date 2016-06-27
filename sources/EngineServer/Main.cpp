@@ -46,19 +46,9 @@ namespace {
 		}
 
 		try {
-
-#			ifndef TRDK_AUTOBAHN_DISABLED
-				Service service(
-					boost::asio::ip::host_name(),
-					GetIniFilePath(argv[2]));
-#			else
-				std::cerr << "Service mode not supported." << std::endl;
-#			endif
-
+			Service service(GetIniFilePath(argv[2]));
 			getchar();
-
 			return true;
-
 		} catch (const trdk::Lib::Exception &ex) {
 			std::cerr
 				<< "Failed to start engine service: \""
