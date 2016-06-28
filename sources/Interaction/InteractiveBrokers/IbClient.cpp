@@ -585,7 +585,8 @@ bool Client::SendMarketDataHistoryRequest(
 				*request.expiration);
 			const auto &prevExpiration = std::prev(request.expiration);
 			if (prevExpiration) {
-				request.subRequestStart = pt::ptime(prevExpiration->expirationDate);
+				request.subRequestStart
+					= pt::ptime(prevExpiration->expirationDate);
 				request.subRequestStart += pt::hours(24);
 				if (request.subRequestStart >= request.subRequestEnd) {
 					AssertEq(request.subRequestStart, request.subRequestEnd);
