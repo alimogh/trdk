@@ -64,6 +64,10 @@ namespace EmaFuturesStrategy {
 					conf.ReadTypedKey<unsigned int>(
 						"days_to_rollover_before_expiration")
 					* 24))
+			, m_timeOfDayToRollOver(
+				pt::hours(
+					conf.ReadTypedKey<uint16_t>(
+						"time_of_day_to_rollover_hours")))
 			, m_security(nullptr)
 			, m_fastEmaDirection(DIRECTION_LEVEL) {
 			GetLog().Info(
@@ -73,7 +77,7 @@ namespace EmaFuturesStrategy {
 					" Take-profit trailing: %4%%%"
 						" will be activated after profit %5% * %6% = %7%."
 					" Max loss: %8% * %9% = %10%."
-					" Time to roll over before expiration: %11%.",
+					" Time to roll over before expiration: %11% at %12%.",
 				m_numberOfContracts, // 1
 				m_passiveOrderMaxLifetime, // 2
 				m_orderPriceDelta, // 3
@@ -84,7 +88,8 @@ namespace EmaFuturesStrategy {
 				m_maxLossMoneyPerContract, // 8
 				m_numberOfContracts, // 9
 				m_maxLossMoneyPerContract * m_numberOfContracts, // 10
-				m_timeToRollOverBeforeExpiration); // 11
+				m_timeToRollOverBeforeExpiration, // 11
+				m_timeOfDayToRollOver);
 			OpenStartegyLog();
 		}
 		
@@ -603,7 +608,7 @@ namespace EmaFuturesStrategy {
 
 			const auto &expirationTime
 				= pt::ptime(m_security->GetExpiration().expirationDate)
-				+ pt::hours(16);
+				+ m_timeOfDayToRollOver;
 			const auto &now = GetContext().GetCurrentTime();
 			if (expirationTime < now) {
 				throw Exception("Expiration is missed");
@@ -689,6 +694,7 @@ namespace EmaFuturesStrategy {
 		const double m_takeProfitTrailingPercentage;
 		const double m_maxLossMoneyPerContract;
 		const pt::time_duration m_timeToRollOverBeforeExpiration;
+		const pt::time_duration m_timeOfDayToRollOver;
 
 		Security *m_security;
 
