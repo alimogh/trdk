@@ -73,8 +73,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 			Security *security;
 			TickerId tickerId;
 
-			Lib::ExpirationCalendar::Iterator expiration;
-
 			explicit SecurityRequest(
 					Security &security,
 					const TickerId &tickerId)
@@ -111,6 +109,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		typedef SecurityRequestList BarsRequests;
 
 		struct SecurityHistoryRequest : public SecurityRequest {
+			
+			Lib::ExpirationCalendar::Iterator expiration;
 			
 			boost::posix_time::ptime requestsSequenceStartTime;
 			boost::posix_time::ptime subRequestStart;
@@ -265,9 +265,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		void DoMarketDataSubscription(Security &);
 
-		void SendMarketDataRequest(
-				Security &,
-				const Lib::ExpirationCalendar::Iterator &);
+		void SendMarketDataRequest(Security &);
 		bool SendMarketDataHistoryRequest(Security &);
 		bool SendMarketDataHistoryRequest(
 				Security &,

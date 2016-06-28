@@ -431,28 +431,22 @@ void Client::DoMarketDataSubscription(ib::Security &security) {
 	}
 }
 
-void Client::SendMarketDataRequest(
-		ib::Security &security,
-		const ExpirationCalendar::Iterator &expiration) {
+void Client::SendMarketDataRequest(ib::Security &security) {
 
 	Assert(!m_mutex.try_lock());
 	Assert(
 		security.IsLevel1Required()
 		|| security.IsBarsRequired()
 		|| (security.IsTestSource() && security.IsTradesRequired()));
+	Assert(!IsSubscribed(m_marketDataRequests, security));
 
 	if (	security.IsLevel1Required()
 			|| (security.IsTestSource()
 				&& (security.IsBarsRequired()
 					|| security.IsTradesRequired()))) {
 
-		SecurityRequest request(security, TakeTickerId());
-		request.expiration = expiration;
-		auto contract = GetContract(*request.security);
-		Assert(!security.GetSymbol().IsExplicit());
-		contract.localSymbol = FormatLocalSymbol(
-			security.GetSymbol().GetSymbol(),
-			*request.expiration);
+		const SecurityRequest request(security, TakeTickerId());
+		const auto &contract = GetContract(*request.security);
 
 		auto requests(m_marketDataRequests);
 		Verify(requests.insert(request).second);
@@ -1157,9 +1151,7 @@ void Client::HandleError(
 								m_marketDataRequests,
 								*request->security)) {
 					//! @todo Check data type.
-					SendMarketDataRequest(
-						*request->security,
-						request->expiration);
+					SendMarketDataRequest(*request->security);
 				}
 			}
 			break;
@@ -1854,7 +1846,7 @@ void Client::historicalData(
 		*request->security,
 		request->tickerId);
 	FlushHistory(*request->security);
-	SendMarketDataRequest(*request->security, request->expiration);
+	SendMarketDataRequest(*request->security);
 
 }
 
@@ -2228,10 +2220,24 @@ void Client::SwitchToNewContract(ib::Security &security) {
 		throw MarketDataSource::Error("Failed to find old request");
 	}
 
-	const auto prevExpiration = oldRequest->expiration;
-	auto nextExpiration = oldRequest->expiration;
+	const auto prevExpiration = m_ts.m_expirationCalendar.Find(
+		security.GetSymbol(),
+		m_ts.GetContext().GetCurrentTime());
+	if (!prevExpiration) {
+		boost::format error(
+			"Failed to find current expiration info for \"%1%\"");
+		error % security;
+		throw trdk::MarketDataSource::Error(error.str().c_str());
+	}
+	AssertEq(
+		security.GetExpiration().expirationDate,
+		prevExpiration->expirationDate);
+	auto nextExpiration = prevExpiration;
 	if (!++nextExpiration) {
-		throw MarketDataSource::Error("Failed to find next expiration");
+		boost::format error(
+			"Failed to find next expiration info for \"%1%\"");
+		error % security;
+		throw trdk::MarketDataSource::Error(error.str().c_str());
 	}
 
 	{
@@ -2254,9 +2260,8 @@ void Client::SwitchToNewContract(ib::Security &security) {
 
 		m_securityInSwitching = &security;
 	
-		SendMarketDataRequest(security, nextExpiration);
-
 		security.SetExpiration(*nextExpiration);
+		SendMarketDataRequest(security);
 
 	}
 
