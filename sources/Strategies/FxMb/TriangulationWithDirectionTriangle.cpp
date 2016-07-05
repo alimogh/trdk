@@ -232,38 +232,34 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 }
 
 void Triangle::ReportStart() const {
-	
-	DropCopy *const dropCopy = m_strategy.GetContext().GetDropCopy();
-	if (!dropCopy) {
-		return;
-	}
-
-	dropCopy->ReportOperationStart(
-		GetId(),
-		GetStartTime(),
-		m_strategy,
-		m_strategy.CalcBookNumberOfUpdates());
+	m_strategy.GetContext().InvokeDropCopy(
+		[this](DropCopy &dropCopy) {
+			dropCopy.ReportOperationStart(
+				GetId(),
+				GetStartTime(),
+				m_strategy,
+				m_strategy.CalcBookNumberOfUpdates());
+		});;
 
 }
 
 void Triangle::ReportEnd() const {
+	m_strategy.GetContext().InvokeDropCopy(
+		[this](DropCopy &dropCopy) {
 	
-	DropCopy *const dropCopy = m_strategy.GetContext().GetDropCopy();
-	if (!dropCopy) {
-		return;
-	}
-	
-	const boost::shared_ptr<const FinancialResult> financialResult(
-		new FinancialResult(m_strategy.GetRiskControlScope().TakeStatistics()));
+			const boost::shared_ptr<const FinancialResult> financialResult(
+				new FinancialResult(
+					m_strategy.GetRiskControlScope().TakeStatistics()));
 
-	const auto &pnl = CalcYExecuted();
-	dropCopy->ReportOperationEnd(
-		GetId(),
-		m_strategy.GetContext().GetCurrentTime(),
-		pnl >= 1
-			?	OPERATION_RESULT_LOSS
-			:	OPERATION_RESULT_PROFIT,
-		pnl,
-		financialResult);
+			const auto &pnl = CalcYExecuted();
+			dropCopy.ReportOperationEnd(
+				GetId(),
+				m_strategy.GetContext().GetCurrentTime(),
+				pnl <= 1
+					?	OPERATION_RESULT_LOSS
+					:	OPERATION_RESULT_PROFIT,
+				pnl,
+				financialResult);
 
+		});
 }

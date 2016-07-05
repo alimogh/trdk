@@ -121,8 +121,14 @@ namespace trdk {
 				const
 				= 0;
 
-		//! Returns Drop Copy or nullptr.
-		virtual DropCopy * GetDropCopy() const = 0;
+		template<typename Method>
+		void InvokeDropCopy(const Method &method) const {
+			auto *const dropCopy = GetDropCopy();
+			if (!dropCopy) {
+				return;
+			}
+			method(*dropCopy);
+		}
 
 		//! User context parameters. No predefined key list. Any key can be
 		//! changed.
@@ -188,7 +194,11 @@ namespace trdk {
 				const trdk::TradingMode &)
 				= 0;
 
+	protected:
 
+		//! Returns Drop Copy or nullptr.
+		virtual DropCopy * GetDropCopy() const = 0;
+	
 	protected:
 
 		void OnStarted();

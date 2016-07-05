@@ -70,31 +70,37 @@ namespace trdk { namespace Strategies { namespace Test {
 
 			if (position.GetOpenedQty()) {
 
-				DropCopy *const dropCopy = GetContext().GetDropCopy();
-				if (dropCopy) {
+				GetContext().InvokeDropCopy(
+					[this, &position](DropCopy &dropCopy) {
 
-					boost::shared_ptr<FinancialResult> financialResult(
-						new FinancialResult);
-					financialResult->push_back(
-						std::make_pair(
-							position.GetSecurity().GetSymbol().GetFotBaseCurrency(),
-							m_generateFinResultRandom()));
-					financialResult->push_back(
-						std::make_pair(
-							position.GetSecurity().GetSymbol().GetFotQuoteCurrency(),
-							m_generateFinResultRandom()));
+						boost::shared_ptr<FinancialResult> financialResult(
+							new FinancialResult);
+						financialResult->emplace_back(
+							std::make_pair(
+								position
+									.GetSecurity()
+									.GetSymbol()
+									.GetFotBaseCurrency(),
+								m_generateFinResultRandom()));
+						financialResult->emplace_back(
+							std::make_pair(
+								position
+									.GetSecurity()
+									.GetSymbol()
+									.GetFotQuoteCurrency(),
+								m_generateFinResultRandom()));
 
-					dropCopy->ReportOperationEnd(
-						*m_operationId,
-						GetContext().GetCurrentTime(),
-						m_generateFinResultRandom() >= 800
-							?	OPERATION_RESULT_LOSS
-							:	OPERATION_RESULT_PROFIT,
-						m_generateFinResultRandom()
-							/ m_generateFinResultRandom(),
-						financialResult);
+						dropCopy.ReportOperationEnd(
+							*m_operationId,
+							GetContext().GetCurrentTime(),
+							m_generateFinResultRandom() >= 800
+								?	OPERATION_RESULT_LOSS
+								:	OPERATION_RESULT_PROFIT,
+							m_generateFinResultRandom()
+								/ m_generateFinResultRandom(),
+							financialResult);
 
-				}
+					});
 
 			}
 
@@ -156,14 +162,14 @@ namespace trdk { namespace Strategies { namespace Test {
 						timeMeasurement));
 			}
 
-			DropCopy *const dropCopy = GetContext().GetDropCopy();
-			if (dropCopy) {
-				dropCopy->ReportOperationStart(
-					operationId,
-					GetContext().GetCurrentTime(),
-					*this,
-					m_generateNumberOfUpdatesRandom());
-			}
+			GetContext().InvokeDropCopy(
+				[this, &operationId](DropCopy &dropCopy) {
+					dropCopy.ReportOperationStart(
+						operationId,
+						GetContext().GetCurrentTime(),
+						*this,
+						m_generateNumberOfUpdatesRandom());
+				});
 
 			position->OpenImmediatelyOrCancel(security.ScalePrice(price));
 

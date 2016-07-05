@@ -980,70 +980,71 @@ private:
 			const TimeInForce *timeInForce = nullptr,
 			const OrderParams *orderParams = nullptr) {
 		
-		DropCopy *const dropCopy = m_strategy.GetContext().GetDropCopy();
-		if (!dropCopy) {
-			return;
-		}
+		m_strategy.GetContext().InvokeDropCopy(
+			[&](DropCopy &dropCopy) {
 
-		const DynamicData &directionData = isOpen
-			?	m_opened
-			:	m_closed;
+				const DynamicData &directionData = isOpen
+					?	m_opened
+					:	m_closed;
 
-		pt::ptime orderTime;
-		pt::ptime execTime;
-		double bidPrice;
-		Qty bidQty;
-		double askPrice;
-		Qty askQty;
-		static_assert(numberOfOrderStatuses == 9, "List changed");
-		switch (status) {
-			case ORDER_STATUS_SENT:
-				orderTime = m_strategy.GetContext().GetCurrentTime();
-				bidPrice = m_security.GetBidPrice();
-				bidQty = m_security.GetBidQty();
-				askPrice = m_security.GetAskPrice();
-				askQty = m_security.GetAskQty();
-				break;
-			case ORDER_STATUS_CANCELLED:
-			case ORDER_STATUS_FILLED:
-			case ORDER_STATUS_FILLED_PARTIALLY:
-			case ORDER_STATUS_REJECTED:
-			case ORDER_STATUS_INACTIVE:
-			case ORDER_STATUS_ERROR:
-				execTime = m_strategy.GetContext().GetCurrentTime();
-				break;
-		}
+				pt::ptime orderTime;
+				pt::ptime execTime;
+				double bidPrice;
+				Qty bidQty;
+				double askPrice;
+				Qty askQty;
+				static_assert(numberOfOrderStatuses == 9, "List changed");
+				switch (status) {
+					case ORDER_STATUS_SENT:
+						orderTime = m_strategy.GetContext().GetCurrentTime();
+						bidPrice = m_security.GetBidPrice();
+						bidQty = m_security.GetBidQty();
+						askPrice = m_security.GetAskPrice();
+						askQty = m_security.GetAskQty();
+						break;
+					case ORDER_STATUS_CANCELLED:
+					case ORDER_STATUS_FILLED:
+					case ORDER_STATUS_FILLED_PARTIALLY:
+					case ORDER_STATUS_REJECTED:
+					case ORDER_STATUS_INACTIVE:
+					case ORDER_STATUS_ERROR:
+						execTime = m_strategy.GetContext().GetCurrentTime();
+						break;
+				}
 
-		double price = .0;
-		if (directionData.hasPrice) {
-			price = m_security.DescalePrice(m_position.GetOpenStartPrice());
-		}
+				double price = .0;
+				if (directionData.hasPrice) {
+					price = m_security.DescalePrice(
+						m_position.GetOpenStartPrice());
+				}
 
-		dropCopy->CopyOrder(
-			directionData.uuid,
-			orderId,
-			!orderTime.is_not_a_date_time() ? &orderTime : nullptr,
-			!execTime.is_not_a_date_time() ? &execTime : nullptr,
-			status,
-			m_operationId,
-			&m_subOperationId,
-			m_security,
-			m_tradeSystem,
-			m_position.GetType() == TYPE_LONG
-				?	(isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL)
-				:	(!isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL),
-			m_position.GetPlanedQty(),
-			directionData.hasPrice ? &price : nullptr,
-			timeInForce,
-			m_position.GetCurrency(),
-			orderParams && orderParams->minTradeQty
-				?	&*orderParams->minTradeQty
-				:	nullptr,
-			directionData.qty.load(),
-			status == ORDER_STATUS_SENT ? &bidPrice : nullptr,
-			status == ORDER_STATUS_SENT ? &bidQty : nullptr,
-			status == ORDER_STATUS_SENT ? &askPrice : nullptr,
-			status == ORDER_STATUS_SENT ? &askQty : nullptr);
+				dropCopy.CopyOrder(
+					directionData.uuid,
+					orderId,
+					!orderTime.is_not_a_date_time() ? &orderTime : nullptr,
+					!execTime.is_not_a_date_time() ? &execTime : nullptr,
+					status,
+					m_operationId,
+					&m_subOperationId,
+					m_security,
+					m_tradeSystem,
+					m_position.GetType() == TYPE_LONG
+						?	(isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL)
+						:	(!isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL),
+					m_position.GetPlanedQty(),
+					directionData.hasPrice ? &price : nullptr,
+					timeInForce,
+					m_position.GetCurrency(),
+					orderParams && orderParams->minTradeQty
+						?	&*orderParams->minTradeQty
+						:	nullptr,
+					directionData.qty.load(),
+					status == ORDER_STATUS_SENT ? &bidPrice : nullptr,
+					status == ORDER_STATUS_SENT ? &bidQty : nullptr,
+					status == ORDER_STATUS_SENT ? &askPrice : nullptr,
+					status == ORDER_STATUS_SENT ? &askQty : nullptr);
+
+			});
 
 	}
 
@@ -1053,25 +1054,25 @@ private:
 			const Qty &qty,
 			bool isOpen) {
 
-		DropCopy *const dropCopy = m_strategy.GetContext().GetDropCopy();
-		if (!dropCopy) {
-			return;
-		}
+		m_strategy.GetContext().InvokeDropCopy(
+			[&](DropCopy &dropCopy) {
 
-		const DynamicData &directionData = isOpen
-			?	m_opened
-			:	m_closed;
+				const DynamicData &directionData = isOpen
+					?	m_opened
+					:	m_closed;
 
-		dropCopy->CopyTrade(
-			m_strategy.GetContext().GetCurrentTime(),
-			tradeSystemId,
-			directionData.uuid,
-			price,
-			qty,
-			m_security.GetBidPrice(),
-			m_security.GetBidQty(),
-			m_security.GetAskPrice(),
-			m_security.GetAskQty());
+				dropCopy.CopyTrade(
+					m_strategy.GetContext().GetCurrentTime(),
+					tradeSystemId,
+					directionData.uuid,
+					price,
+					qty,
+					m_security.GetBidPrice(),
+					m_security.GetBidQty(),
+					m_security.GetAskPrice(),
+					m_security.GetAskQty());
+
+			});
 
 	}
 
