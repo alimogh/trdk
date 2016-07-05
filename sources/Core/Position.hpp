@@ -370,7 +370,6 @@ namespace trdk {
 
 	protected:
 
-		//! Ctor only for virtual inheritance, always throws exception.
 		LongPosition();
 
 	public:
@@ -451,7 +450,6 @@ namespace trdk {
 
 	protected:
 
-		//! Ctor only for virtual inheritance, always throws exception.
 		ShortPosition();
 
 	public:
