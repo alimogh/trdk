@@ -11,6 +11,8 @@
 #include "Prec.hpp"
 #include "EmaFuturesStrategyPosition.hpp"
 #include "Core/Strategy.hpp"
+#include "Core/DropCopy.hpp"
+#include "Core/RiskControl.hpp"
 #include "Core/TradingLog.hpp"
 
 using namespace trdk;
@@ -54,7 +56,31 @@ EmaFuturesStrategy::Position::Position(
 }
 
 EmaFuturesStrategy::Position::~Position() {
-	//...//
+	if (GetOpenedQty()) {
+		try {
+			GetStrategy().GetContext().InvokeDropCopy(
+				[this](DropCopy &dropCopy) {
+					const double pnl = GetType() == TYPE_LONG
+						? GetOpenedVolume() / GetClosedVolume()
+						: GetClosedVolume() / GetOpenedVolume();
+					dropCopy.ReportOperationEnd(
+						GetId(),
+						GetCloseTime(),
+						IsEqual(pnl, 1.0) || pnl < 1.0
+							? OPERATION_RESULT_LOSS
+							: OPERATION_RESULT_PROFIT,
+						pnl,
+						boost::make_shared<FinancialResult>());
+				});
+		} catch (const std::exception &ex) {
+			GetStrategy().GetLog().Error(
+				"Failed to report operation end: \"%1%\".",
+				ex.what());
+		} catch (...) {
+			AssertFailNoException();
+			terminate();
+		}
+	}
 }
 
 const EmaFuturesStrategy::Position::Time &
@@ -175,10 +201,20 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				throw Exception(
 					"Order canceled by trading system without request");
 			} else {
+				const auto startTime
+					= GetStrategy().GetContext().GetCurrentTime();
+				GetStrategy().GetContext().InvokeDropCopy(
+					[this, &startTime](DropCopy &dropCopy) {
+					dropCopy.ReportOperationStart(
+						GetId(),
+						startTime,
+						GetStrategy(),
+						0);
+				});
 				Open(GetOpenStartPrice());
 				m_isPassiveOpen = true;
 				m_isSent = true;
-				m_startTime = GetStrategy().GetContext().GetCurrentTime();
+				m_startTime = std::move(startTime);
 			}
 			break;
 
