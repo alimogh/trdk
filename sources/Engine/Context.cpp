@@ -53,7 +53,13 @@ namespace {
 	}
 
 	std::string GetMarketDataSourceSectionName(const TradeSystem &tradeSystem) {
-		std::string result = Engine::Ini::Sections::tradeSystem;
+		static_assert(numberOfTradingModes == 3, "List changed.");
+		Assert(
+			tradeSystem.GetMode() == TRADING_MODE_LIVE
+			|| tradeSystem.GetMode() == TRADING_MODE_PAPER);
+		std::string result = tradeSystem.GetMode() == TRADING_MODE_LIVE
+			?	Engine::Ini::Sections::tradeSystem
+			:	Engine::Ini::Sections::paperTradeSystem;
 		if (!tradeSystem.GetTag().empty()) {
 			result += "." + tradeSystem.GetTag();
 		}
