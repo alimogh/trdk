@@ -234,13 +234,8 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 void Triangle::ReportStart() const {
 	m_strategy.GetContext().InvokeDropCopy(
 		[this](DropCopy &dropCopy) {
-			dropCopy.ReportOperationStart(
-				GetId(),
-				GetStartTime(),
-				m_strategy,
-				m_strategy.CalcBookNumberOfUpdates());
+			dropCopy.ReportOperationStart(GetId(), GetStartTime(), m_strategy);
 		});;
-
 }
 
 void Triangle::ReportEnd() const {

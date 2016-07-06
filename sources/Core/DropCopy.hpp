@@ -75,8 +75,7 @@ namespace trdk {
 		virtual void ReportOperationStart(
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &,
-				const trdk::Strategy &,
-				size_t updatesNumber)
+				const trdk::Strategy &)
 			= 0;
 		virtual void ReportOperationEnd(
 				const boost::uuids::uuid &id,

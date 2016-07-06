@@ -368,10 +368,9 @@ void EngineServer::Service::DropCopy::CopyTrade(
 void EngineServer::Service::DropCopy::ReportOperationStart(
 		const uuids::uuid &id,
 		const pt::ptime &time,
-		const Strategy &strategy,
-		size_t numberOfUpdates) {
+		const Strategy &strategy) {
 	m_queue.Enqueue(
-		[this, id, time, &strategy, numberOfUpdates](
+		[this, id, time, &strategy](
 				size_t recordIndex,
 				size_t attemptNo,
 				bool dump)
@@ -382,8 +381,7 @@ void EngineServer::Service::DropCopy::ReportOperationStart(
 				dump,
 				id,
 				time,
-				strategy,
-				numberOfUpdates);
+				strategy);
 		});
 }
 
@@ -1160,8 +1158,7 @@ bool EngineServer::Service::StoreOperationStartReport(
 		bool dump,
 		const uuids::uuid &id,
 		const pt::ptime &time,
-		const Strategy &strategy,
-		size_t numberOfUpdates) {
+		const Strategy &strategy) {
 
 	DropCopyRecord record;
 	record["id"] = id;
@@ -1169,7 +1166,6 @@ bool EngineServer::Service::StoreOperationStartReport(
 	record["start_time"] = time;
 	record["trading_mode"] = strategy.GetTradingMode();
 	record["strategy_id"] = strategy.GetId();
-	record["number_of_updates"] = numberOfUpdates;
 
 	return StoreRecord(
 		&Topics::storeOperationStart,

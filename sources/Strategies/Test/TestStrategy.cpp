@@ -44,9 +44,7 @@ namespace trdk { namespace Strategies { namespace Test {
 			: Super(context, name, tag, conf)
 			, m_numberOfOperations(0)
 			, m_finResultRange(0, 1000)
-			, m_numberOfUpdatesRange(250, 75000)
-			, m_generateFinResultRandom(m_random, m_finResultRange)
-			, m_generateNumberOfUpdatesRandom(m_random, m_numberOfUpdatesRange) {
+			, m_generateFinResultRandom(m_random, m_finResultRange) {
 			//...//
 		}
 		
@@ -167,8 +165,7 @@ namespace trdk { namespace Strategies { namespace Test {
 					dropCopy.ReportOperationStart(
 						operationId,
 						GetContext().GetCurrentTime(),
-						*this,
-						m_generateNumberOfUpdatesRandom());
+						*this);
 				});
 
 			position->OpenImmediatelyOrCancel(security.ScalePrice(price));
@@ -229,11 +226,8 @@ namespace trdk { namespace Strategies { namespace Test {
 
 		boost::mt19937 m_random;
 		boost::uniform_int<uint32_t> m_finResultRange;
-		boost::uniform_int<uint32_t> m_numberOfUpdatesRange;
 		boost::variate_generator<boost::mt19937, boost::uniform_int<uint32_t>>
 			m_generateFinResultRandom;
-		boost::variate_generator<boost::mt19937, boost::uniform_int<uint32_t>>
-			m_generateNumberOfUpdatesRandom;
 
 	};
 	

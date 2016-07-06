@@ -223,8 +223,7 @@ namespace trdk { namespace EngineServer {
 			virtual void ReportOperationStart(
 					const boost::uuids::uuid &id,
 					const boost::posix_time::ptime &,
-					const trdk::Strategy &,
-					size_t updatesNumber);
+					const trdk::Strategy &);
 			virtual void ReportOperationEnd(
 					const boost::uuids::uuid &id,
 					const boost::posix_time::ptime &,
@@ -292,8 +291,7 @@ namespace trdk { namespace EngineServer {
 				bool dump,
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &,
-				const trdk::Strategy &,
-				size_t numberOfUpdates);
+				const trdk::Strategy &);
 		bool StoreOperationEndReport(
 				size_t recordIndex,
 				size_t storeAttemptNo,

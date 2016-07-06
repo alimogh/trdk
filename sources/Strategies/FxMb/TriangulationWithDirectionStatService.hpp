@@ -216,6 +216,8 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		mutable boost::atomic_flag m_statMutex;
 		Stat m_stat;
 
+		//! @todo GUI doesn't have this value anymore, should be removed here
+		//! too.
 		NumberOfUpdatesHistory m_numberOfUpdates;
 
 		static std::vector<Twd::StatService *> m_instancies;
