@@ -56,31 +56,7 @@ EmaFuturesStrategy::Position::Position(
 }
 
 EmaFuturesStrategy::Position::~Position() {
-	if (GetOpenedQty()) {
-		try {
-			GetStrategy().GetContext().InvokeDropCopy(
-				[this](DropCopy &dropCopy) {
-					const double pnl = GetType() == TYPE_LONG
-						? GetOpenedVolume() / GetClosedVolume()
-						: GetClosedVolume() / GetOpenedVolume();
-					dropCopy.ReportOperationEnd(
-						GetId(),
-						GetCloseTime(),
-						IsEqual(pnl, 1.0) || pnl < 1.0
-							? OPERATION_RESULT_LOSS
-							: OPERATION_RESULT_PROFIT,
-						pnl,
-						boost::make_shared<FinancialResult>());
-				});
-		} catch (const std::exception &ex) {
-			GetStrategy().GetLog().Error(
-				"Failed to report operation end: \"%1%\".",
-				ex.what());
-		} catch (...) {
-			AssertFailNoException();
-			terminate();
-		}
-	}
+	//...//
 }
 
 const EmaFuturesStrategy::Position::Time &
@@ -372,11 +348,35 @@ void EmaFuturesStrategy::Position::OpenReport(std::ostream &reportStream) {
 
 void EmaFuturesStrategy::Position::Report() throw() {
 
-	try {
+	if (!GetOpenedQty() || !IsCompleted()) {
+		return;
+	}
 
-		if (!GetOpenedQty() || !IsCompleted()) {
-			return;
-		}
+	try {
+		GetStrategy().GetContext().InvokeDropCopy(
+			[this](DropCopy &dropCopy) {
+				const double pnl = GetType() == TYPE_LONG
+					? GetOpenedVolume() / GetClosedVolume()
+					: GetClosedVolume() / GetOpenedVolume();
+				dropCopy.ReportOperationEnd(
+					GetId(),
+					GetCloseTime(),
+					IsEqual(pnl, 1.0) || pnl < 1.0
+						? OPERATION_RESULT_LOSS
+						: OPERATION_RESULT_PROFIT,
+					pnl,
+					boost::make_shared<FinancialResult>());
+			});
+	} catch (const std::exception &ex) {
+		GetStrategy().GetLog().Error(
+			"Failed to report operation end: \"%1%\".",
+			ex.what());
+	} catch (...) {
+		AssertFailNoException();
+		terminate();
+	}
+
+	try {
 
 		// 1. Open Start Time, 2. Open Time, 3. Opening Duration:
 		m_reportStream
@@ -497,7 +497,7 @@ EmaFuturesStrategy::LongPosition::LongPosition(
 	: trdk::Position(
 		startegy,
 		operationId,
-		0,
+		1,
 		tradeSystem,
 		security,
 		security.GetSymbol().GetCurrency(),
@@ -608,7 +608,7 @@ EmaFuturesStrategy::ShortPosition::ShortPosition(
 	: trdk::Position(
 		startegy,
 		operationId,
-		0,
+		1,
 		tradeSystem,
 		security,
 		security.GetSymbol().GetCurrency(),
