@@ -1188,7 +1188,7 @@ bool EngineServer::Service::StoreOperationEndReport(
 
 	DropCopyRecord record;
 	record["id"] = id;
-	record["time"] = time;
+	record["end_time"] = time;
 	record["result"] = result;
 	record["pnl"] = pnl;
 	record["financial_result"] = financialResult;
