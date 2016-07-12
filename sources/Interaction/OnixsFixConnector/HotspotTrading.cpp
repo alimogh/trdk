@@ -228,14 +228,14 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 ////////////////////////////////////////////////////////////////////////////////
 
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
-TradeSystemFactoryResult
+TradingSystemFactoryResult
 CreateHotspotTrading(
 		const TradingMode &mode,
 		size_t index,
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &configuration) {
-	TradeSystemFactoryResult result;
+	TradingSystemFactoryResult result;
 	boost::get<0>(result).reset(
 		new HotspotTrading(mode, index, context, tag, configuration));
 	return result;

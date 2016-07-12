@@ -69,7 +69,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		explicit LongPosition(
 				trdk::Strategy &strategy,
 				const Triangle &triangle,
-				trdk::TradeSystem &tradeSystem,
+				trdk::TradingSystem &tradingSystem,
 				trdk::Security &security,
 				const trdk::Lib::Currency &currency,
 				const trdk::Qty &qty,
@@ -94,7 +94,7 @@ namespace trdk { namespace Strategies { namespace FxMb { namespace Twd {
 		explicit ShortPosition(
 				trdk::Strategy &strategy,
 				const Triangle &triangle,
-				trdk::TradeSystem &tradeSystem,
+				trdk::TradingSystem &tradingSystem,
 				trdk::Security &security,
 				const trdk::Lib::Currency &currency,
 				const trdk::Qty &qty,

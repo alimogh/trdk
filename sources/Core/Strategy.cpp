@@ -413,8 +413,8 @@ RiskControlScope & Strategy::GetRiskControlScope() {
 	return *m_pimpl->m_riskControlScope;
 }
 
-TradeSystem & Strategy::GetTradeSystem(size_t index) {
-	return GetContext().GetTradeSystem(index, GetTradingMode());
+TradingSystem & Strategy::GetTradingSystem(size_t index) {
+	return GetContext().GetTradingSystem(index, GetTradingMode());
 }
 
 void Strategy::OnLevel1Update(

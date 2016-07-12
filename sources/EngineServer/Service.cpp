@@ -151,14 +151,14 @@ void EngineServer::Service::Connection::StopIoTimeout() {
 
 EngineServer::Service::OrderCache::OrderCache(
 		const uuids::uuid &id,
-		const std::string *tradeSystemId,
+		const std::string *tradingSystemId,
 		const pt::ptime *orderTime,
 		const pt::ptime *executionTime,
 		const OrderStatus &status,
 		const uuids::uuid &operationId,
 		const int64_t *subOperationId,
 		const Security &security,
-		const TradeSystem &tradeSystem,
+		const TradingSystem &tradingSystem,
 		const OrderSide &side,
 		const Qty &qty,
 		const double *price,
@@ -174,13 +174,13 @@ EngineServer::Service::OrderCache::OrderCache(
 	, status(status)
 	, operationId(operationId)
 	, security(&security)
-	, tradeSystem(&tradeSystem)
+	, tradingSystem(&tradingSystem)
 	, side(side)
 	, qty(qty)
 	, currency(currency)
 	, executedQty(executedQty) {
-	if (tradeSystemId) {
-		this->tradeSystemId = *tradeSystemId;
+	if (tradingSystemId) {
+		this->tradingSystemId = *tradingSystemId;
 	}
 	if (orderTime) {
 		this->orderTime = *orderTime;
@@ -277,14 +277,14 @@ void EngineServer::Service::DropCopy::Dump() {
 
 void EngineServer::Service::DropCopy::CopyOrder(
 		const uuids::uuid &id,
-		const std::string *tradeSystemId,
+		const std::string *tradingSystemId,
 		const pt::ptime *orderTime,
 		const pt::ptime *executionTime,
 		const OrderStatus &status,
 		const uuids::uuid &operationId,
 		const int64_t *subOperationId,
 		const Security &security,
-		const TradeSystem &tradeSystem,
+		const TradingSystem &tradingSystem,
 		const OrderSide &side,
 		const Qty &qty,
 		const double *price,
@@ -298,14 +298,14 @@ void EngineServer::Service::DropCopy::CopyOrder(
 		const Qty *bestAskQty) {
 	const OrderCache order(
 		id,
-		tradeSystemId,
+		tradingSystemId,
 		orderTime,
 		executionTime,
 		status,
 		operationId,
 		subOperationId,
 		security,
-		tradeSystem,
+		tradingSystem,
 		side,
 		qty,
 		price,
@@ -325,7 +325,7 @@ void EngineServer::Service::DropCopy::CopyOrder(
 
 void EngineServer::Service::DropCopy::CopyTrade(
 		const pt::ptime &time,
-		const std::string &tradeSystemTradeId,
+		const std::string &tradingSystemTradeId,
 		const uuids::uuid &orderId,
 		double price,
 		const Qty &qty,
@@ -337,7 +337,7 @@ void EngineServer::Service::DropCopy::CopyTrade(
 		[
 					this,
 					time,
-					tradeSystemTradeId,
+					tradingSystemTradeId,
 					orderId,
 					price,
 					qty,
@@ -354,7 +354,7 @@ void EngineServer::Service::DropCopy::CopyTrade(
 				attemptNo,
 				dump,
 				time,
-				tradeSystemTradeId,
+				tradingSystemTradeId,
 				orderId,
 				price,
 				qty,
@@ -454,7 +454,9 @@ void EngineServer::Service::DropCopy::CopyBook(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-EngineServer::Service::Service(const fs::path &engineConfigFilePath)
+EngineServer::Service::Service(
+		const fs::path &engineConfigFilePath,
+		const pt::time_duration &startDelay)
 	: m_config(engineConfigFilePath)
 	, m_engineState(ENGINE_STATE_STOPPED)
 	, m_topics(m_config.id)
@@ -489,7 +491,7 @@ EngineServer::Service::Service(const fs::path &engineConfigFilePath)
 
 	{
 		ConnectionLock lock(m_connectionMutex);
-		auto connection = Connect();
+		auto connection = Connect(startDelay);
 		RunIoThread();
 		m_connectionCondition.wait(lock);
 		bool isInited = false;
@@ -523,7 +525,8 @@ EngineServer::Service::~Service() {
 	}
 }
 
-boost::shared_ptr<EngineServer::Service::Connection> EngineServer::Service::Connect() {
+boost::shared_ptr<EngineServer::Service::Connection> EngineServer::Service::Connect(
+		const pt::time_duration &startDelay) {
 	m_log.Debug(
 		"Connecting to TWS at %1%:%2%...",
 		m_config.twsHost,
@@ -538,16 +541,17 @@ boost::shared_ptr<EngineServer::Service::Connection> EngineServer::Service::Conn
 		io::ip::tcp::endpoint(
 			io::ip::address::from_string(m_config.twsHost),
 			m_config.twsPort),
-		[this, connection](const sys::error_code &error) {
+		[this, connection, startDelay](const sys::error_code &error) {
 			connection->StopIoTimeout();
-			OnConnected(connection, error);
+			OnConnected(connection, error, startDelay);
 		});
 	return connection;
 }
 
 void EngineServer::Service::OnConnected(
 		const boost::shared_ptr<Connection> &connection,
-		const sys::error_code &error) {
+		const sys::error_code &error,
+		const pt::time_duration &startDelay) {
 
 	if (error) {
 		m_log.Error(
@@ -562,7 +566,7 @@ void EngineServer::Service::OnConnected(
 
 	connection->ScheduleIoTimeout(m_config.timeout);
 	connection->sessionStartFuture = connection->session->start().then(
-		[this, connection](boost::future<bool> isStartedFuture) {
+		[this, connection, startDelay](boost::future<bool> isStartedFuture) {
 			connection->StopIoTimeout();
 			bool isStarted;
 			try {
@@ -575,8 +579,8 @@ void EngineServer::Service::OnConnected(
 					ex.what());
 			}
 			m_io->post(
-				[this, connection, isStarted]() {
-					OnSessionStarted(connection, isStarted);
+				[this, connection, isStarted, startDelay]() {
+					OnSessionStarted(connection, isStarted, startDelay);
 				});
 		});
 
@@ -584,7 +588,8 @@ void EngineServer::Service::OnConnected(
 
 void EngineServer::Service::OnSessionStarted(
 		boost::shared_ptr<Connection> connection,
-		bool isStarted) {
+		bool isStarted,
+		const pt::time_duration &startDelay) {
 
 	if (!isStarted) {
 		throw ConnectError("TWS session not started");
@@ -594,7 +599,8 @@ void EngineServer::Service::OnSessionStarted(
 	connection->ScheduleIoTimeout(m_config.timeout);
 	connection->sessionJoinFuture
 		= connection->session->join("tws").then(
-			[this, connection](boost::future<uint64_t> sessionIdFuture) {
+			[this, connection, startDelay](
+					boost::future<uint64_t> sessionIdFuture) {
 				connection->StopIoTimeout();
 				boost::optional<uint64_t> sessionId;
 				try {
@@ -607,8 +613,8 @@ void EngineServer::Service::OnSessionStarted(
 						ex.what());
 				}
 				m_io->post(
-					[this, connection, sessionId]() {
-						OnSessionJoined(connection, sessionId);
+					[this, connection, sessionId, startDelay]() {
+						OnSessionJoined(connection, sessionId, startDelay);
 					});
 			});
 
@@ -616,7 +622,8 @@ void EngineServer::Service::OnSessionStarted(
 
 void EngineServer::Service::OnSessionJoined(
 		const boost::shared_ptr<Connection> &connection,
-		const boost::optional<uint64_t> &sessionId) {
+		const boost::optional<uint64_t> &sessionId,
+		const pt::time_duration &startDelay) {
 
 	if (!sessionId) {
 		throw ConnectError("Failed to join to TWS session");
@@ -626,6 +633,13 @@ void EngineServer::Service::OnSessionJoined(
 		*sessionId,
 		m_config.twsHost,
 		m_config.twsPort);
+	if (!startDelay.is_not_a_date_time()) {
+		m_log.Info(
+			"Waiting %1% for the engine instance registration...",
+			startDelay);
+		boost::this_thread::sleep(startDelay);
+		m_log.Debug("Registering...");
+	}
 
 	const auto &engineInfo = std::make_tuple(
 		m_config.id,
@@ -1210,8 +1224,8 @@ bool EngineServer::Service::StoreOrder(
 
 	DropCopyRecord record;
 	record["id"] = order.id;
-	if (order.tradeSystemId) {
-		record["trade_system_id"] = *order.tradeSystemId;
+	if (order.tradingSystemId) {
+		record["trade_system_id"] = *order.tradingSystemId;
 	}
 	if (order.orderTime) {
 		record["order_time"] = *order.orderTime;
@@ -1226,7 +1240,7 @@ bool EngineServer::Service::StoreOrder(
 	}
 	record["type"] = ORDER_TYPE_LIMIT;
 	record["symbol"] = order.security->GetSymbol().GetSymbol();
-	record["source"] = order.tradeSystem->GetTag();
+	record["source"] = order.tradingSystem->GetTag();
 	record["side"] = order.side;
 	record["qty"] = order.qty;
 	if (order.price) {
@@ -1267,7 +1281,7 @@ bool EngineServer::Service::StoreTrade(
 		size_t storeAttemptNo,
 		bool dump,
 		const pt::ptime &time,
-		const std::string &tradeSystemTradeId,
+		const std::string &tradingSystemTradeId,
 		const uuids::uuid &orderId,
 		double price,
 		const Qty &qty,
@@ -1278,7 +1292,7 @@ bool EngineServer::Service::StoreTrade(
 
 	DropCopyRecord record;
 	record["time"] = time;
-	record["trade_system_id"] = tradeSystemTradeId;
+	record["trade_system_id"] = tradingSystemTradeId;
 	record["order_id"] = orderId;
 	record["price"] = price;
 	record["qty"] = qty;

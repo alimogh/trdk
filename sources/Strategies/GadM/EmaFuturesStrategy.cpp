@@ -564,7 +564,7 @@ namespace EmaFuturesStrategy {
 			return boost::make_shared<Position>(
 				*this,
 				m_generateUuid(),
-				GetTradeSystem(m_security->GetSource().GetIndex()),
+				GetTradingSystem(m_security->GetSource().GetIndex()),
 				*m_security,
 				m_numberOfContracts,
 				timeMeasurement,

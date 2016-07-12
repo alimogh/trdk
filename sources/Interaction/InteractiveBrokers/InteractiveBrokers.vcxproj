@@ -359,7 +359,7 @@
     </ClCompile>
     <ClCompile Include="IbClient.cpp" />
     <ClCompile Include="IbSecurity.cpp" />
-    <ClCompile Include="IbTradeSystem.cpp" />
+    <ClCompile Include="IbTradingSystem.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
@@ -400,7 +400,7 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="IbClient.hpp" />
     <ClInclude Include="IbSecurity.hpp" />
-    <ClInclude Include="IbTradeSystem.hpp" />
+    <ClInclude Include="IbTradingSystem.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>

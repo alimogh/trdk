@@ -92,8 +92,8 @@ namespace trdk { namespace EngineServer {
 		typedef boost::condition_variable ConnectionCondition;
 
 		class Connection
-			: private boost::noncopyable
-			, public boost::enable_shared_from_this<Connection> {
+			: private boost::noncopyable,
+			public boost::enable_shared_from_this<Connection> {
 
 		public:
 
@@ -128,14 +128,14 @@ namespace trdk { namespace EngineServer {
 		struct OrderCache {
 
 			boost::uuids::uuid id;
-			boost::optional<std::string> tradeSystemId;
+			boost::optional<std::string> tradingSystemId;
 			boost::optional<boost::posix_time::ptime> orderTime;
 			boost::optional<boost::posix_time::ptime> executionTime;
 			OrderStatus status;
 			boost::uuids::uuid operationId;
 			boost::optional<int64_t> subOperationId;
 			const Security *security;
-			const TradeSystem *tradeSystem;
+			const TradingSystem *tradingSystem;
 			OrderSide side;
 			Qty qty;
 			boost::optional<double> price;
@@ -150,14 +150,14 @@ namespace trdk { namespace EngineServer {
 
 			explicit OrderCache(
 					const boost::uuids::uuid &id,
-					const std::string *tradeSystemId,
+					const std::string *tradingSystemId,
 					const boost::posix_time::ptime *orderTime,
 					const boost::posix_time::ptime *executionTime,
 					const OrderStatus &status,
 					const boost::uuids::uuid &operationId,
 					const int64_t *subOperationId,
 					const Security &security,
-					const TradeSystem &tradeSystem,
+					const TradingSystem &tradingSystem,
 					const OrderSide &side,
 					const Qty &qty,
 					const double *price,
@@ -191,14 +191,14 @@ namespace trdk { namespace EngineServer {
 		public:
 			virtual void CopyOrder(
 					const boost::uuids::uuid &id,
-					const std::string *tradeSystemId,
+					const std::string *tradingSystemId,
 					const boost::posix_time::ptime *orderTime,
 					const boost::posix_time::ptime *executionTime,
 					const trdk::OrderStatus &,
 					const boost::uuids::uuid &operationId,
 					const int64_t *subOperationId,
 					const trdk::Security &,
-					const trdk::TradeSystem &,
+					const trdk::TradingSystem &,
 					const trdk::OrderSide &,
 					const trdk::Qty &qty,
 					const double *price,
@@ -212,7 +212,7 @@ namespace trdk { namespace EngineServer {
 					const trdk::Qty *bestAskQty);
 			virtual void CopyTrade(
 					const boost::posix_time::ptime &,
-					const std::string &tradeSystemTradeId,
+					const std::string &tradingSystemTradeId,
 					const boost::uuids::uuid &orderId,
 					double price,
 					const trdk::Qty &qty,
@@ -274,7 +274,9 @@ namespace trdk { namespace EngineServer {
 
 	public:
 
-		explicit Service(const boost::filesystem::path &);
+		explicit Service(
+				const boost::filesystem::path &engineConfigFilePath,
+				const boost::posix_time::time_duration &startDelay);
 		~Service();
 
 	private:
@@ -313,7 +315,7 @@ namespace trdk { namespace EngineServer {
 				size_t storeAttemptNo,
 				bool dump,
 				const boost::posix_time::ptime &,
-				const std::string &tradeSystemTradeId,
+				const std::string &tradingSystemTradeId,
 				const boost::uuids::uuid &orderId,
 				double price,
 				const Qty &qty,
@@ -345,19 +347,26 @@ namespace trdk { namespace EngineServer {
 
 		void RunIoThread();
 
-		boost::shared_ptr<Connection> Connect();
+		boost::shared_ptr<Connection> Connect(
+				const boost::posix_time::time_duration &startDelay
+					= boost::posix_time::time_duration());
 		void OnConnected(
-			const boost::shared_ptr<Connection> &,
-			const boost::system::error_code &);
-		void OnSessionStarted(boost::shared_ptr<Connection>, bool isStarted);
+				const boost::shared_ptr<Connection> &,
+				const boost::system::error_code &,
+				const boost::posix_time::time_duration &startDelay);
+		void OnSessionStarted(
+				boost::shared_ptr<Connection>,
+				bool isStarted,
+				const boost::posix_time::time_duration &startDelay);
 		void OnSessionJoined(
-			const boost::shared_ptr<Connection> &,
-			const boost::optional<uint64_t> &sessionId);
+				const boost::shared_ptr<Connection> &,
+				const boost::optional<uint64_t> &sessionId,
+				const boost::posix_time::time_duration &startDelay);
 		void OnEngineRegistered(
-			boost::shared_ptr<Connection>,
-			uint64_t sessionId,
-			const boost::optional<uint64_t> &instanceId,
-			const std::tuple<std::string, std::string, std::string> &);
+				boost::shared_ptr<Connection>,
+				uint64_t sessionId,
+				const boost::optional<uint64_t> &instanceId,
+				const std::tuple<std::string, std::string, std::string> &);
 
 		void Reconnect();
 		void RepeatReconnection(const Exception &prevReconnectError);

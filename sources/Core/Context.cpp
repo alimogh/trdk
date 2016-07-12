@@ -42,8 +42,8 @@ namespace {
 			TimeMeasurement::numberOfStrategyMilestones>
 		StrategyMilestonesStatAccum;
 	typedef TimeMeasurement::MilestonesStatAccum<
-			TimeMeasurement::numberOfTradeSystemMilestones>
-		TradeSystemMilestonesStatAccum;
+			TimeMeasurement::numberOfTradingSystemMilestones>
+		TradingSystemMilestonesStatAccum;
 	typedef TimeMeasurement::MilestonesStatAccum<
 			TimeMeasurement::numberOfDispatchingMilestones>
 		DispatchingMilestonesStatAccum;
@@ -118,8 +118,8 @@ namespace {
 			return TimeMeasurement::Milestones(m_accums.strategy);
 		}
 
-		TimeMeasurement::Milestones StartTradeSystemTimeMeasurement() {
-			return TimeMeasurement::Milestones(m_accums.tradeSystem);
+		TimeMeasurement::Milestones StartTradingSystemTimeMeasurement() {
+			return TimeMeasurement::Milestones(m_accums.tradingSystem);
 		}
 
 		TimeMeasurement::Milestones StartDispatchingTimeMeasurement() {
@@ -214,10 +214,10 @@ namespace {
 				"Strategy",
 				*m_accums.strategy,
 				m_latanStream);
-			DumpAccum<TimeMeasurement::TradeSystemMilestone>(
+			DumpAccum<TimeMeasurement::TradingSystemMilestone>(
 				m_tsIndex,
-				"TradeSystem",
-				*m_accums.tradeSystem,
+				"TradingSystem",
+				*m_accums.tradingSystem,
 				m_latanStream);
 			DumpAccum<TimeMeasurement::DispatchingMilestone>(
 				m_dispatchingIndex,
@@ -329,12 +329,12 @@ namespace {
 		struct Accums {
 			
 			boost::shared_ptr<StrategyMilestonesStatAccum> strategy;
-			boost::shared_ptr<TradeSystemMilestonesStatAccum> tradeSystem;
+			boost::shared_ptr<TradingSystemMilestonesStatAccum> tradingSystem;
 			boost::shared_ptr<DispatchingMilestonesStatAccum> dispatching;
 
 			Accums()
 					: strategy(new StrategyMilestonesStatAccum),
-					tradeSystem(new TradeSystemMilestonesStatAccum),
+					tradingSystem(new TradingSystemMilestonesStatAccum),
 					dispatching(new DispatchingMilestonesStatAccum) {
 				//...//
 			}
@@ -525,8 +525,8 @@ TimeMeasurement::Milestones Context::StartStrategyTimeMeasurement() const {
 	return m_pimpl->m_statReport->StartStrategyTimeMeasurement();
 }
 
-TimeMeasurement::Milestones Context::StartTradeSystemTimeMeasurement() const {
-	return m_pimpl->m_statReport->StartTradeSystemTimeMeasurement();
+TimeMeasurement::Milestones Context::StartTradingSystemTimeMeasurement() const {
+	return m_pimpl->m_statReport->StartTradingSystemTimeMeasurement();
 }
 
 TimeMeasurement::Milestones Context::StartDispatchingTimeMeasurement() const {

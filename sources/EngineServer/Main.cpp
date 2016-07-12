@@ -12,10 +12,43 @@
 #include "Engine.hpp"
 #include "Service.hpp"
 
-namespace fs = boost::filesystem;
-
 using namespace trdk::Lib;
 using namespace trdk::EngineServer;
+
+namespace fs = boost::filesystem;
+namespace pt = boost::posix_time;
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace trdk { namespace EngineServer {
+
+	namespace CommandLine {
+
+		namespace Commands {
+	
+			const char *const debug = "debug";
+			const char *const debugShort = "d";
+
+			const char *const standalone = "standalone";
+			const char *const standaloneShort = "s";
+
+			const char *const version = "version";
+			const char *const versionShort = "v";
+			
+			const char *const help = "help";
+			const char *const helpEx = "--help";
+			const char *const helpShort = "h";
+			const char *const helpShortEx = "-h";
+
+		}
+
+		namespace Options {
+			const char *const startDelay = "--start_delay";
+		}
+
+	}
+
+} }
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -37,16 +70,44 @@ namespace {
 
 namespace {
 
-	bool RunServerStandalone(int argc, const char *argv[]) {
+	bool RunService(int argc, const char *argv[]) {
 		
 		if (argc < 3 || !strlen(argv[2])) {
 			std::cerr << "No configuration file specified." << std::endl;
-			getchar();
 			return false;
 		}
 
+		pt::time_duration startDelay;
+		if (argc > 3) {
+			auto i = 3;
+			if (strcmp(argv[i], CommandLine::Options::startDelay)) {
+				std::cerr
+					<< "Unknown option \"" << argv[i] << "\"."
+					<< std::endl;
+				return false;
+			}
+			const auto valueArgIndex = i + 1;
+			if (valueArgIndex >= argc) {
+				std::cerr
+					<< "Option " << CommandLine::Options::startDelay
+					<< " has no value." << std::endl;
+				return false;
+			}
+			try {
+				const auto value
+					= boost::lexical_cast<unsigned short>(argv[valueArgIndex]);
+				startDelay = pt::seconds(value);
+			} catch (const boost::bad_lexical_cast &ex) {
+				std::cerr
+					<< "Failed to read " << CommandLine::Options::startDelay
+					<< " value \"" << argv[valueArgIndex] << "\":"
+					<< " \"" << ex.what() << "\"." << std::endl;
+				return false;
+			}
+		}
+
 		try {
-			Service service(GetIniFilePath(argv[2]));
+			Service service(GetIniFilePath(argv[2]), startDelay);
 			getchar();
 			return true;
 		} catch (const trdk::Lib::Exception &ex) {
@@ -64,6 +125,9 @@ namespace {
 	
 		if (argc < 3 || !strlen(argv[2])) {
 			std::cerr << "No configuration file specified." << std::endl;
+			return false;
+		} else if (argc > 3) {
+			std::cerr << "Unknown option \"" << argv[3] << "\"." << std::endl;
 			return false;
 		}
 
@@ -163,6 +227,47 @@ namespace {
 		return true;
 	}
 
+	bool ShowHelp(int argc, const char *argv[]) {
+
+		using namespace trdk::EngineServer::CommandLine::Commands;
+		using namespace trdk::EngineServer::CommandLine::Options;
+
+		std::cout << std::endl;
+
+		if (!ShowVersion(argc, argv)) {
+			return false;
+		}
+
+		std::cout
+			<< std::endl
+			<< "Usage: "
+				<< argv[0]
+				<< " command command-args  [ --options [options-args] ]"
+				<< std::endl
+			<< std::endl
+			<< "Command:" << std::endl
+			<< std::endl
+				<< "    " << standalone << " (or " << standaloneShort << ")"
+				" \"path to INI-file or path to default.ini directory\""
+				<< std::endl
+				<< std::endl
+				<< "    " << debug << " (or " << debugShort << ")"
+				<< " \"path to INI-file or path to default.ini directory\""
+				<< std::endl
+				<< std::endl
+				<< "    " << help << " (or " << helpShort << ")" << std::endl
+			<< std::endl
+			<< "Options:" << std::endl
+			<< std::endl
+				<< "    " << startDelay << " \"number of seconds to wait before"
+				<< " service start\"" << std::endl
+			<< std::endl
+			<< std::endl;
+
+		return true;
+
+	}
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -251,40 +356,54 @@ int main(int argc, const char *argv[]) {
 
 		boost::function<bool (int, const char *[])> func;
 		if (argc > 1) {
+			
+			using namespace trdk::EngineServer::CommandLine::Commands;
+			using namespace trdk::EngineServer::CommandLine::Options;
+			
 			Verify(--result >= 0);
-			typedef std::map<std::string, decltype(func)> Commands;
-			Commands commands;
-			size_t i = 0;
-			commands["standalone"] = &RunServerStandalone; ++i;
-			commands["r"] = &RunServerStandalone; ++i;
-			commands["debug"] = &DebugStrategy; ++i;
-			commands["d"] = &DebugStrategy; ++i;
-			commands["version"] = &ShowVersion; ++i;
-			commands["v"] = &ShowVersion; ++i;
-			AssertEq(i, commands.size());
-			const Commands::const_iterator commandPos = commands.find(argv[1]);
-			if (commandPos != commands.end()) {
+
+			boost::unordered_map<std::string, decltype(func)> commands;
+
+			Verify(
+				commands.emplace(
+						std::make_pair(standalone, &RunService))
+					.second);
+			Verify(
+				commands.emplace(
+						std::make_pair(standaloneShort, &RunService))
+					.second);
+			
+			Verify(
+				commands.emplace(std::make_pair(debug, &DebugStrategy)).second);
+			Verify(
+				commands.emplace(std::make_pair(debugShort, &DebugStrategy))
+					.second);
+			
+			Verify(
+				commands.emplace(std::make_pair(version, &ShowVersion)).second);
+			Verify(
+				commands.emplace(std::make_pair(versionShort, &ShowVersion))
+					.second);
+
+			Verify(
+				commands.emplace(std::make_pair(help, &ShowHelp)).second);
+			Verify(
+				commands.emplace(std::make_pair(helpShort, &ShowHelp))
+					.second);
+			Verify(
+				commands.emplace(std::make_pair(helpEx, &ShowHelp)).second);
+			Verify(
+				commands.emplace(std::make_pair(helpShortEx, &ShowHelp))
+					.second);
+
+			const auto &commandPos = commands.find(argv[1]);
+			if (commandPos != commands.cend()) {
 				Verify(--result >= 0);
 				func = commandPos->second;
 			} else {
-				std::list<std::string> commandsStr; 
-				foreach (const auto &cmd, commands) {
-					if (cmd.first.size() > 1) {
-						commandsStr.push_back(cmd.first);
-					}
-				}
-				std::cerr
-					<< "No command specified." << std::endl
-					<< "Usage: " << argv[0]
-					<< " [ " << boost::join(commandsStr, " ] | [ ") << " ]"
-					<< std::endl
-					<< std::endl
-					<< "Debug:" << std::endl
-					<< "    d, debug \"path to INI-file"
-						<< " or path to default.ini directory\"" << std::endl
-					<< std::endl
-					<< std::endl;
+				std::cerr << "No command specified." << std::endl;
 			}
+
 		}
 		
 		if (func) {

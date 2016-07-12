@@ -14,19 +14,19 @@
 
 namespace trdk { namespace Engine {
 
-	struct TradeSystemHolder {
+	struct TradingSystemHolder {
 		std::string tag;
 		// Deinitialization order is important!
-		trdk::Lib::DllObjectPtr<trdk::TradeSystem> tradeSystem;
+		trdk::Lib::DllObjectPtr<trdk::TradingSystem> tradingSystem;
 		std::string section;
 		boost::shared_ptr<Terminal> terminal;
 	};
-	struct TradeSystemModesHolder {
+	struct TradingSystemModesHolder {
 		std::string tag;
 		static_assert(numberOfTradingModes == 3, "List changed.");
-		boost::array<TradeSystemHolder, 2> holders;
+		boost::array<TradingSystemHolder, 2> holders;
 	};
-	typedef std::vector<TradeSystemModesHolder> TradeSystems;
+	typedef std::vector<TradingSystemModesHolder> TradingSystems;
 	
 	typedef std::vector<trdk::Lib::DllObjectPtr<MarketDataSource>>
 		MarketDataSources;

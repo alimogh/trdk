@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "IbClient.hpp"
-#include "IbTradeSystem.hpp"
+#include "IbTradingSystem.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -87,7 +87,7 @@ namespace {
 ///////////////////////////////////////////////////////////////////////////////
 
 Client::Client(
-		ib::TradeSystem &ts,
+		ib::TradingSystem &ts,
 		bool isNoHistoryMode,
 		int clientId,
 		const std::string &host,
@@ -302,7 +302,7 @@ void Client::StartData() {
 		m_ts.GetMdsLog().Error("No seqnumber received.");
 		m_connectionState = CONNECTION_STATE_NOT_CONNECTED;
 		m_condition.notify_all();
-		throw trdk::TradeSystem::ConnectError("No seqnumber received");
+		throw trdk::TradingSystem::ConnectError("No seqnumber received");
 	}
 
 }
@@ -374,7 +374,7 @@ void Client::Subscribe(const OrderStatusSlot &orderStatusSlot) {
 void Client::SubscribeToMarketData(ib::Security &security) {
 
 	if (security.IsTradesRequired() && !security.IsTestSource()) {
-		throw trdk::TradeSystem::Error(
+		throw trdk::TradingSystem::Error(
 			"Interactive Brokers doesn't provide trades info");
 	} else if (
 			!security.IsLevel1Required()
@@ -1185,7 +1185,7 @@ void Client::CheckState() const {
 		m_ts.GetTsLog().Error("No seqnumber specified.");
 	}
 	if (m_seqNumber < 0 || !m_connectionState) {
-		throw TradeSystem::ConnectionDoesntExistError(
+		throw TradingSystem::ConnectionDoesntExistError(
 			"Connection doesn't exist");
 	}
 }
@@ -2114,11 +2114,11 @@ void Client::position(
 
 		if (symbol) {
 
-			ib::TradeSystem::Position position(account, symbol, size);
+			ib::TradingSystem::Position position(account, symbol, size);
 
-			auto &index = m_ts.m_positions->get<ib::TradeSystem::BySymbol>();
+			auto &index = m_ts.m_positions->get<ib::TradingSystem::BySymbol>();
 
-			const ib::TradeSystem::PositionsWriteLock positionsLock(
+			const ib::TradingSystem::PositionsWriteLock positionsLock(
 				m_ts.m_positionsMutex);
 
 			auto it = index.find(
@@ -2131,7 +2131,7 @@ void Client::position(
 			} else {
 				index.modify(
 					it,
-					[&position](ib::TradeSystem::Position &storage) {
+					[&position](ib::TradingSystem::Position &storage) {
 						storage = position;
 					});
 			}

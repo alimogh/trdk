@@ -12,7 +12,7 @@
 #include "ContextBootstrap.hpp"
 #include "Ini.hpp"
 #include "Core/MarketDataSource.hpp"
-#include "Core/TradeSystem.hpp"
+#include "Core/TradingSystem.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/Observer.hpp"
 #include "Core/Service.hpp"
@@ -98,7 +98,7 @@ namespace {
 		return true;
 	}
 
-	bool GetTradeSystemSection(
+	bool GetTradingSystemSection(
 			const std::string &sectionName,
 			std::string &tagResult) {
 		std::list<std::string> subs;
@@ -106,14 +106,14 @@ namespace {
 		if (subs.empty() || subs.size() == 1) {
 			return false;
 		} else if (
-				!boost::iequals(*subs.begin(), Sections::tradeSystem)
-				&& !boost::iequals(*subs.begin(), Sections::paperTradeSystem)) {
+				!boost::iequals(*subs.begin(), Sections::tradingSystem)
+				&& !boost::iequals(*subs.begin(), Sections::paperTradingSystem)) {
 			return false;
 		} else if (
 				(subs.size() == 2 && subs.rbegin()->empty())
 				|| subs.size() != 2) {
 			boost::format message(
-				"Wrong Trade System section name format: \"%1%\", %2%");
+				"Wrong Trading System section name format: \"%1%\", %2%");
 			message % sectionName;
 			if (subs.size() < 2 || subs.rbegin()->empty()) {
 				message % "expected tag name after dot";
@@ -137,11 +137,11 @@ public:
 	explicit ContextBootstrapper(
 			const Lib::Ini &conf,
 			Engine::Context &context,
-			TradeSystems &tradeSystemsRef,
+			TradingSystems &tradingSystemsRef,
 			MarketDataSources &marketDataSourcesRef)
 		: m_context(context),
 		m_conf(conf),
-		m_tradeSystems(tradeSystemsRef),
+		m_tradingSystems(tradingSystemsRef),
 		m_marketDataSources(marketDataSourcesRef) {
 		//...//
 	}
@@ -150,12 +150,12 @@ public:
 
 	void Boot() {
 		LoadContextParams();
-		AssertEq(0, m_tradeSystems.size());
+		AssertEq(0, m_tradingSystems.size());
 		AssertEq(0, m_marketDataSources.size());
-		LoadTradeSystems();
-		AssertLt(0, m_tradeSystems.size());
+		LoadTradingSystems();
+		AssertLt(0, m_tradingSystems.size());
 		LoadMarketDataSources();
-		AssertLt(0, m_tradeSystems.size());
+		AssertLt(0, m_tradingSystems.size());
 		AssertLt(0, m_marketDataSources.size());
 	}
 
@@ -173,27 +173,27 @@ private:
 	}
 
 	//! Loads Market Data Source by conf. section name.
-	void LoadTradeSystem(
+	void LoadTradingSystem(
 			size_t index,
 			const IniSectionRef &configurationSection,
 			const std::string &tag,
 			const TradingMode &mode,
-			DllObjectPtr<TradeSystem> &tradeSystemResult,
+			DllObjectPtr<TradingSystem> &tradingSystemResult,
 			DllObjectPtr<MarketDataSource> &marketDataSourceResult) {
 		
 		const std::string module
 			= configurationSection.ReadKey(Keys::module);
 		std::string factoryName = configurationSection.ReadKey(
 			Keys::factory,
-			DefaultValues::Factories::tradeSystem);
+			DefaultValues::Factories::tradingSystem);
 		
 		boost::shared_ptr<Dll> dll(
 			new Dll(
 				module,
 				configurationSection.ReadBoolKey(Keys::Dbg::autoName, true)));
 
-		typedef TradeSystemFactoryResult FactoryResult;
-		typedef TradeSystemFactory Factory;
+		typedef TradingSystemFactoryResult FactoryResult;
+		typedef TradingSystemFactory Factory;
 		FactoryResult factoryResult;
 		
 		try {
@@ -228,16 +228,16 @@ private:
 				__FUNCTION__,
 				__FILE__,
 				__LINE__);
-			throw Exception("Failed to load trade system module");
+			throw Exception("Failed to load trading system module");
 		}
 	
 		Assert(boost::get<0>(factoryResult));
 		if (!boost::get<0>(factoryResult)) {
 			throw Exception(
-				"Failed to load trade system module - no object returned");
+				"Failed to load trading system module - no object returned");
 		}
 
-		tradeSystemResult = DllObjectPtr<TradeSystem>(
+		tradingSystemResult = DllObjectPtr<TradingSystem>(
 			dll,
 			boost::get<0>(factoryResult));
 		if (boost::get<1>(factoryResult)) {
@@ -248,47 +248,47 @@ private:
 
 	}
 
-	//! Loads Trade Systems.
-	/** Reads all sections from configuration, filters Trade Systems
+	//! Loads Trading Systems.
+	/** Reads all sections from configuration, filters Trading Systems
 	  * sections and loads service for it.
 	  */
-	void LoadTradeSystems() {
+	void LoadTradingSystems() {
 	
 		for (const auto &section: m_conf.ReadSectionsList()) {
 			
 			std::string tag;
-			if (!GetTradeSystemSection(section, tag)) {
+			if (!GetTradingSystemSection(section, tag)) {
 				continue;
 			}
 
 			TradingMode mode;
 			if (
-					boost::iequals(section, Sections::tradeSystem)
-					|| boost::istarts_with(section, Sections::tradeSystem + ".")) {
+					boost::iequals(section, Sections::tradingSystem)
+					|| boost::istarts_with(section, Sections::tradingSystem + ".")) {
 				mode = TRADING_MODE_LIVE;
 			} else if (
-					boost::iequals(section, Sections::paperTradeSystem)
-					|| boost::istarts_with(section, Sections::paperTradeSystem + ".")) {
+					boost::iequals(section, Sections::paperTradingSystem)
+					|| boost::istarts_with(section, Sections::paperTradingSystem + ".")) {
 				mode = TRADING_MODE_PAPER;
 			} else {
 				continue;
 			}
 			
-			DllObjectPtr<TradeSystem> tradeSystem;
+			DllObjectPtr<TradingSystem> tradingSystem;
 			DllObjectPtr<MarketDataSource> marketDataSource;
-			LoadTradeSystem(
-				m_tradeSystems.size(),
+			LoadTradingSystem(
+				m_tradingSystems.size(),
 				IniSectionRef(m_conf, section),
 				tag,
 				mode,
-				tradeSystem,
+				tradingSystem,
 				marketDataSource);
 
-			// It always must be a trade system service...
-			Assert(tradeSystem);
+			// It always must be a trading system service...
+			Assert(tradingSystem);
 			
 			bool isFound = false;
-			for (auto &holderByMode: m_tradeSystems) {
+			for (auto &holderByMode: m_tradingSystems) {
 				if (holderByMode.tag != tag) {
 					continue;
 				}
@@ -297,33 +297,33 @@ private:
 				AssertEq(
 					std::string(),
 					holderByMode.holders[mode - 1].section);
-				Assert(!holderByMode.holders[mode - 1].tradeSystem);
-				holderByMode.holders[mode - 1].tradeSystem = tradeSystem;
+				Assert(!holderByMode.holders[mode - 1].tradingSystem);
+				holderByMode.holders[mode - 1].tradingSystem = tradingSystem;
 				holderByMode.holders[mode - 1].section = section;
 				isFound = true;
 				break;
 			}
 			if (!isFound) {
-				TradeSystemModesHolder holderByMode;
+				TradingSystemModesHolder holderByMode;
 				holderByMode.tag = tag;
 				AssertLt(0, mode);
 				AssertGe(holderByMode.holders.size(), mode);
-				holderByMode.holders[mode - 1].tradeSystem = tradeSystem;
+				holderByMode.holders[mode - 1].tradingSystem = tradingSystem;
 				holderByMode.holders[mode - 1].section = section;
-				m_tradeSystems.emplace_back(holderByMode);
+				m_tradingSystems.emplace_back(holderByMode);
 			}
 
 			// ...and can be Market Data Source at the same time:
 			if (marketDataSource) {
 				m_context.GetLog().Info(
-					"Using Trade System as Market Data Source.");
+					"Using Trading System as Market Data Source.");
 				m_marketDataSources.push_back(marketDataSource);
 			}
 
 		}
 	
-		if (m_tradeSystems.empty()) {
-			throw Exception("No one TradeSystem found in configuration");
+		if (m_tradingSystems.empty()) {
+			throw Exception("No one TradingSystem found in configuration");
 		}
 
 	}
@@ -426,7 +426,7 @@ private:
 
 	const Lib::Ini &m_conf;
 
-	TradeSystems &m_tradeSystems;
+	TradingSystems &m_tradingSystems;
 	MarketDataSources &m_marketDataSources;
 
 };
@@ -1837,12 +1837,12 @@ std::set<Symbol> ContextStateBootstrapper::GetSymbolInstances(
 void Engine::BootContext(
 			const Lib::Ini &conf,
 			Context &context,
-			TradeSystems &tradeSystemsRef,
+			TradingSystems &tradingSystemsRef,
 			MarketDataSources &marketDataSourcesRef) {
 	ContextBootstrapper(
 			conf,
 			context,
-			tradeSystemsRef,
+			tradingSystemsRef,
 			marketDataSourcesRef)
 		.Boot();
 }

@@ -6,7 +6,7 @@ file(
     source_list
     Api.cpp
     FakeMarketDataSource.cpp
-    FakeTradeSystem.cpp
+    FakeTradingSystem.cpp
     Version.cpp)
 trdk_add_precompiled_header("Prec.h" "Prec.cpp" source_list)
 

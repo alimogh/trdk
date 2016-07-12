@@ -9,20 +9,20 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "FakeTradeSystem.hpp"
+#include "FakeTradingSystem.hpp"
 #include "FakeMarketDataSource.hpp"
 #include "Api.h"
 
 TRDK_INTERACTION_FAKE_API
-trdk::TradeSystemFactoryResult CreateTradeSystem(
+trdk::TradingSystemFactoryResult CreateTradingSystem(
 		const trdk::TradingMode &mode,
 		size_t index,
 		trdk::Context &context,
 		const std::string &tag,
 		const trdk::Lib::IniSectionRef &configuration) {
-	trdk::TradeSystemFactoryResult result;
+	trdk::TradingSystemFactoryResult result;
 	boost::get<0>(result).reset(
-		new trdk::Interaction::Fake::TradeSystem(
+		new trdk::Interaction::Fake::TradingSystem(
 			mode,
 			index,
 			context,

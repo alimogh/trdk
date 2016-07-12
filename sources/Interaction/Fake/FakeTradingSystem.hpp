@@ -10,26 +10,26 @@
 
 #pragma once
 
-#include "Core/TradeSystem.hpp"
+#include "Core/TradingSystem.hpp"
 #include "Core/Context.hpp"
 
 namespace trdk { namespace Interaction { namespace Fake {
 
-	class TradeSystem : public trdk::TradeSystem {
+	class TradingSystem : public trdk::TradingSystem {
 
 	public:
 
-		typedef trdk::TradeSystem Base;
+		typedef trdk::TradingSystem Base;
 
 	public:
 
-		TradeSystem(
+		TradingSystem(
 				const trdk::TradingMode &,
 				size_t index,
 				Context &context,
 				const std::string &tag,
 				const Lib::IniSectionRef &);
-		virtual ~TradeSystem();
+		virtual ~TradingSystem();
 
 	public:
 

@@ -25,7 +25,7 @@ FixTrading::FixTrading(
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &conf)
-	: TradeSystem(mode, index, context, tag),
+	: TradingSystem(mode, index, context, tag),
 	m_account(conf.ReadKey("account", "")),
 	m_session(GetContext(), GetLog(), conf),
 	m_nextOrderId(1),
@@ -275,17 +275,17 @@ void FixTrading::NotifyOrderUpdate(
 		}
 #		if defined(BOOST_WINDOWS)
 			//! @sa TRDK-124 why Order ID disabled from windows
-			if (order->tradeSystemId.empty()) {
-				order->tradeSystemId = "<see TRDK-124>";
+			if (order->tradingSystemId.empty()) {
+				order->tradingSystemId = "<see TRDK-124>";
 			}
 #		else
-			if (order->tradeSystemId.empty()) {
-				order->tradeSystemId
+			if (order->tradingSystemId.empty()) {
+				order->tradingSystemId
 					= (std::string)updateMessage.get(fix::FIX40::Tags::OrderID);
  			} else {
  				AssertEq(
  					updateMessage.get(fix::FIX40::Tags::OrderID),
- 					order->tradeSystemId);
+ 					order->tradingSystemId);
  			}
 #		endif
 		Assert(!order->isRemoved);
@@ -319,7 +319,7 @@ void FixTrading::NotifyOrderUpdate(
 		TimeMeasurement::TSM_ORDER_REPLY_RECEIVED,
 		replyTime);
 	OnOrderStateChanged(
-		orderCopy.tradeSystemId,
+		orderCopy.tradingSystemId,
 		status,
 		orderCopy,
 		tradeInfo);
@@ -490,7 +490,7 @@ OrderId FixTrading::SendSellAtMarketPrice(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
-		= GetContext().StartTradeSystemTimeMeasurement();
+		= GetContext().StartTradingSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
 		security,
 		currency,
@@ -527,7 +527,7 @@ OrderId FixTrading::SendSell(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
-		= GetContext().StartTradeSystemTimeMeasurement();
+		= GetContext().StartTradingSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
 		security,
 		currency,
@@ -577,7 +577,7 @@ OrderId FixTrading::SendSellImmediatelyOrCancel(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
-		= GetContext().StartTradeSystemTimeMeasurement();
+		= GetContext().StartTradingSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
 		security,
 		currency,
@@ -614,7 +614,7 @@ OrderId FixTrading::SendSellAtMarketPriceImmediatelyOrCancel(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
-		= GetContext().StartTradeSystemTimeMeasurement();
+		= GetContext().StartTradingSystemTimeMeasurement();
 	const  auto &order = TakeOrderId(
 		security,
 		currency,
@@ -650,7 +650,7 @@ OrderId FixTrading::SendBuyAtMarketPrice(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
-		= GetContext().StartTradeSystemTimeMeasurement();
+		= GetContext().StartTradingSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
 		security,
 		currency,
@@ -687,7 +687,7 @@ OrderId FixTrading::SendBuy(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
-		= GetContext().StartTradeSystemTimeMeasurement();
+		= GetContext().StartTradingSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
 		security,
 		currency,
@@ -737,7 +737,7 @@ OrderId FixTrading::SendBuyImmediatelyOrCancel(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
-		= GetContext().StartTradeSystemTimeMeasurement();
+		= GetContext().StartTradingSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
 		security,
 		currency,
@@ -774,7 +774,7 @@ OrderId FixTrading::SendBuyAtMarketPriceImmediatelyOrCancel(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &callback) {
 	TimeMeasurement::Milestones timeMeasurement
-		= GetContext().StartTradeSystemTimeMeasurement();
+		= GetContext().StartTradingSystemTimeMeasurement();
 	const auto &order = TakeOrderId(
 		security,
 		currency,
@@ -805,7 +805,7 @@ OrderId FixTrading::SendBuyAtMarketPriceImmediatelyOrCancel(
 
 void FixTrading::SendCancelOrder(const OrderId &orderId) {
 	TimeMeasurement::Milestones timeMeasurement
-		= GetContext().StartTradeSystemTimeMeasurement();
+		= GetContext().StartTradingSystemTimeMeasurement();
 	fix::Message message("F", m_session.GetFixVersion());
 	message.set(fix::FIX40::Tags::ClOrdID, GenerateClOrderId(m_nextOrderId++));
 	message.set(
@@ -899,7 +899,7 @@ void FixTrading::onStateChange(
 
 			orderCopy.callback(
 				orderCopy.id,
-				orderCopy.tradeSystemId,
+				orderCopy.tradingSystemId,
 				ORDER_STATUS_REJECTED,
 				orderCopy.qty - orderCopy.filledQty,
 				nullptr);

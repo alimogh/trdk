@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "TradeSystem.hpp"
+#include "TradingSystem.hpp"
 #include "Fwd.hpp"
 
 namespace trdk {
@@ -116,7 +116,7 @@ namespace trdk {
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
 				const trdk::Qty &remainingQty,
-				const trdk::TradeSystem::TradeInfo *)
+				const trdk::TradingSystem::TradeInfo *)
 				= 0;
 
 		virtual void ConfirmSellOrder(
@@ -126,7 +126,7 @@ namespace trdk {
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
 				const trdk::Qty &remainingQty,
-				const trdk::TradeSystem::TradeInfo *)
+				const trdk::TradingSystem::TradeInfo *)
 				= 0;
 
 	public:
@@ -190,7 +190,7 @@ namespace trdk {
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
 				const trdk::Qty &remainingQty,
-				const trdk::TradeSystem::TradeInfo *);
+				const trdk::TradingSystem::TradeInfo *);
 
 		virtual void ConfirmSellOrder(
 				const trdk::RiskControlOperationId &,
@@ -199,7 +199,7 @@ namespace trdk {
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
 				const trdk::Qty &remainingQty,
-				const trdk::TradeSystem::TradeInfo *);
+				const trdk::TradingSystem::TradeInfo *);
 
 	public:
 
@@ -326,7 +326,7 @@ namespace trdk {
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
 				const trdk::Qty &remainingQty,
-				const trdk::TradeSystem::TradeInfo *,
+				const trdk::TradingSystem::TradeInfo *,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 		void ConfirmSellOrder(
 				const trdk::RiskControlOperationId &,
@@ -336,7 +336,7 @@ namespace trdk {
 				const trdk::Lib::Currency &,
 				const trdk::ScaledPrice &orderPrice,
 				const trdk::Qty &remainingQty,
-				const trdk::TradeSystem::TradeInfo *,
+				const trdk::TradingSystem::TradeInfo *,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	public:

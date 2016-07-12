@@ -467,7 +467,7 @@ void TriangulationWithDirection::UpdateDirection(const Service &service) {
 	Assert(bestBidAskIt != m_bestBidAsk.end());
 
 	bestBidAskIt->Reset();
-	const auto &ecnsCount = GetContext().GetMarketDataSourcesCount();
+	const auto &ecnsCount = GetContext().GetNumberOfMarketDataSources();
 	bool hasNotOpportunity = false;
 	for (size_t ecn = 0; !hasNotOpportunity && ecn < ecnsCount; ++ecn) {
 		const Security &security = bestBidAskIt->service->GetSecurity(ecn);

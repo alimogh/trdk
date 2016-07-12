@@ -78,8 +78,8 @@ public:
 	const std::string m_tag;
 	const std::string m_stringId;
 
-	TradeSystem::Log m_log;
-	TradeSystem::TradingLog m_tradingLog;
+	TradingSystem::Log m_log;
+	TradingSystem::TradingLog m_tradingLog;
 
 	SecuritiesMutex m_securitiesMutex;
 	Securities m_securities;

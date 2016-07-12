@@ -11,7 +11,7 @@
 #pragma once
 
 #include "FixSession.hpp"
-#include "Core/TradeSystem.hpp"
+#include "Core/TradingSystem.hpp"
 
 namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
@@ -42,7 +42,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 
 	//! FIX trade connection with OnixS C++ FIX Engine.
 	class FixTrading
-			: public trdk::TradeSystem,
+			: public trdk::TradingSystem,
 			public OnixS::FIX::ISessionListener {
 
 	protected:
@@ -60,7 +60,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 			  */
 			bool isRemoved;
 			OrderId id;
-			std::string tradeSystemId;
+			std::string tradingSystemId;
 			std::string clOrderId;
 			trdk::Security *security;
 			trdk::Lib::Currency currency;

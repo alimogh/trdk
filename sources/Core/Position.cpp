@@ -144,7 +144,7 @@ public:
 
 	Position &m_position;
 
-	TradeSystem &m_tradeSystem;
+	TradingSystem &m_tradingSystem;
 
 	mutable Mutex m_mutex;
 
@@ -181,7 +181,7 @@ public:
 
 	explicit Implementation(
 			Position &position,
-			TradeSystem &tradeSystem,
+			TradingSystem &tradingSystem,
 			Strategy &strategy,
 			const uuids::uuid &operationId,
 			int64_t subOperationId,
@@ -191,7 +191,7 @@ public:
 			const ScaledPrice &startPrice,
 			const TimeMeasurement::Milestones &timeMeasurement)
 		: m_position(position)
-		, m_tradeSystem(tradeSystem)
+		, m_tradingSystem(tradingSystem)
 		, m_strategy(strategy)
 		, m_operationId(operationId)
 		, m_subOperationId(subOperationId)
@@ -214,10 +214,10 @@ public:
 
 	void UpdateOpening(
 			const OrderId &orderId,
-			const std::string &tradeSystemOrderId,
+			const std::string &tradingSystemOrderId,
 			const OrderStatus &orderStatus,
 			const Qty &remainingQty,
-			const TradeSystem::TradeInfo *trade) {
+			const TradingSystem::TradeInfo *trade) {
 
 		bool isCompleted = false;
 
@@ -247,7 +247,7 @@ public:
 			Assert(!m_closed.hasOrder);
 
 			if (m_opened.orderId != orderId) {
-				ReportOrderIdReplace(true, tradeSystemOrderId);
+				ReportOrderIdReplace(true, tradingSystemOrderId);
 				m_closed.orderId = orderId;
 			}
 
@@ -305,7 +305,7 @@ public:
 								m_oppositePosition->m_pimpl->m_closed.qty);
 							m_oppositePosition->m_pimpl->ReportClosingUpdate(
 								"filled",
-								tradeSystemOrderId,
+								tradingSystemOrderId,
 								orderStatus);
 							updatedOppositePosition = m_oppositePosition;
 						}
@@ -319,7 +319,7 @@ public:
 							AssertLe(0, m_opened.qty);
 							ReportOpeningUpdate(
 								"filled",
-								tradeSystemOrderId,
+								tradingSystemOrderId,
 								orderStatus);
 						} else {
 							AssertNe(0, remainingQty);
@@ -337,14 +337,14 @@ public:
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
 							"inactive",
-							tradeSystemOrderId,
+							tradingSystemOrderId,
 							orderStatus);
 						m_oppositePosition->m_pimpl->m_isInactive = true;
 						updatedOppositePosition = m_oppositePosition;
 					}
 					ReportOpeningUpdate(
 						"inactive",
-						tradeSystemOrderId,
+						tradingSystemOrderId,
 						orderStatus);
 					m_isInactive = true;
 					break;
@@ -353,14 +353,14 @@ public:
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
 							"error",
-							tradeSystemOrderId,
+							tradingSystemOrderId,
 							orderStatus);
 						m_oppositePosition->m_pimpl->m_isError = true;
 						updatedOppositePosition = m_oppositePosition;
 					}
 					ReportOpeningUpdate(
 						"error",
-						tradeSystemOrderId,
+						tradingSystemOrderId,
 						orderStatus);
 					m_isError = true;
 					break;
@@ -369,14 +369,14 @@ public:
 					isCompleted = true;
 					if (m_oppositePosition) {
 						m_oppositePosition->m_pimpl->ReportClosingUpdate(
-							TradeSystem::GetStringStatus(orderStatus),
-							tradeSystemOrderId,
+							TradingSystem::GetStringStatus(orderStatus),
+							tradingSystemOrderId,
 							orderStatus);
 						updatedOppositePosition = m_oppositePosition;
 					}
 					ReportOpeningUpdate(
-						TradeSystem::GetStringStatus(orderStatus),
-						tradeSystemOrderId,
+						TradingSystem::GetStringStatus(orderStatus),
+						tradingSystemOrderId,
 						orderStatus);
 					break;
 			}
@@ -425,7 +425,7 @@ public:
 
 			}
 
-			CopyOrder(&tradeSystemOrderId, true, orderStatus);
+			CopyOrder(&tradingSystemOrderId, true, orderStatus);
 
 		}
 		
@@ -440,10 +440,10 @@ public:
 
 	void UpdateClosing(
 			const OrderId &orderId,
-			const std::string &tradeSystemOrderId,
+			const std::string &tradingSystemOrderId,
 			const OrderStatus &orderStatus,
 			const Qty &remainingQty,
-			const TradeSystem::TradeInfo *trade) {
+			const TradingSystem::TradeInfo *trade) {
 
 		{
 
@@ -464,7 +464,7 @@ public:
 			Assert(m_closed.hasOrder);
 
 			if (m_closed.orderId != orderId) {
-				ReportOrderIdReplace(false, tradeSystemOrderId);
+				ReportOrderIdReplace(false, tradingSystemOrderId);
 				m_closed.orderId = orderId;
 			}
 
@@ -498,7 +498,7 @@ public:
 					AssertGt(m_closed.qty, 0);
 					ReportClosingUpdate(
 						"filled",
-						tradeSystemOrderId,
+						tradingSystemOrderId,
 						orderStatus);
 					CopyTrade(
 						trade->id,
@@ -512,22 +512,22 @@ public:
 				case ORDER_STATUS_INACTIVE:
 					ReportClosingUpdate(
 						"error",
-						tradeSystemOrderId,
+						tradingSystemOrderId,
 						orderStatus);
 					m_isInactive = true;
 					break;
 				case ORDER_STATUS_ERROR:
 					ReportClosingUpdate(
 						"error",
-						tradeSystemOrderId,
+						tradingSystemOrderId,
 						orderStatus);
 					m_isError = true;
 					break;
 				case ORDER_STATUS_CANCELLED:
 				case ORDER_STATUS_REJECTED:
 					ReportClosingUpdate(
-						TradeSystem::GetStringStatus(orderStatus),
-						tradeSystemOrderId,
+						TradingSystem::GetStringStatus(orderStatus),
+						tradingSystemOrderId,
 						orderStatus);
 					break;
 			}
@@ -546,7 +546,7 @@ public:
 
 			m_closed.hasOrder = false;
 
-			CopyOrder(&tradeSystemOrderId, false, orderStatus);
+			CopyOrder(&tradingSystemOrderId, false, orderStatus);
 
 			if (CancelIfSet()) {
 				return;
@@ -597,8 +597,8 @@ public:
 					% eventDesc // 3
 					% m_position.GetTypeStr() // 4
 					% m_security.GetSymbol().GetSymbol() // 5
-					% m_position.GetTradeSystem().GetTag() // 6
-					% m_tradeSystem.GetMode() // 7
+					% m_position.GetTradingSystem().GetTag() // 6
+					% m_tradingSystem.GetMode() // 7
 					% m_security.DescalePrice(m_openStartPrice) // 8
 					% m_position.GetCurrency() // 9
 					% m_position.GetPlanedQty(); // 10 and last
@@ -621,11 +621,11 @@ public:
 					% m_opened.uuid // 2
 					% tsOrderId // 3
 					% eventDesc // 4
-					% m_tradeSystem.GetStringStatus(orderStatus) // 5
+					% m_tradingSystem.GetStringStatus(orderStatus) // 5
 					% m_position.GetTypeStr() // 6
 					% m_security.GetSymbol().GetSymbol() // 7
-					% m_position.GetTradeSystem().GetTag() // 8
-					% m_tradeSystem.GetMode() // 9
+					% m_position.GetTradingSystem().GetTag() // 8
+					% m_tradingSystem.GetMode() // 9
 					% m_security.DescalePrice(m_position.GetOpenStartPrice()) // 10
 					% m_security.DescalePrice(m_position.GetOpenPrice()) // 11
 					% m_position.GetCurrency() // 12
@@ -646,8 +646,8 @@ public:
 					% eventDesc // 3
 					% m_position.GetTypeStr() // 4
 					% m_security.GetSymbol().GetSymbol() // 5
-					% m_position.GetTradeSystem().GetTag() // 6
-					% m_tradeSystem.GetMode() // 7
+					% m_position.GetTradingSystem().GetTag() // 6
+					% m_tradingSystem.GetMode() // 7
 					% m_security.DescalePrice(m_position.GetOpenPrice()) // 8
 					% m_security.DescalePrice(m_position.GetCloseStartPrice()) // 9
 					% m_position.GetCurrency() // 10
@@ -670,11 +670,11 @@ public:
 					% m_closed.uuid // 2
 					% tsOrderId // 3
 					% eventDesc // 4
-					% m_tradeSystem.GetStringStatus(orderStatus) // 5
+					% m_tradingSystem.GetStringStatus(orderStatus) // 5
 					% m_position.GetTypeStr() // 6
 					% m_security.GetSymbol().GetSymbol() // 7
-					% m_position.GetTradeSystem().GetTag() // 8
-					% m_tradeSystem.GetMode() // 9
+					% m_position.GetTradingSystem().GetTag() // 8
+					% m_tradingSystem.GetMode() // 9
 					% m_security.DescalePrice(m_position.GetCloseStartPrice()) // 10
 					% m_security.DescalePrice(m_position.GetClosePrice()) // 11
 					% m_position.GetCurrency() // 12
@@ -805,7 +805,7 @@ public:
 				m_oppositePosition->m_pimpl->m_closed.orderId = orderId;
 			}
 			CopyOrder(
-				nullptr, // order ID (from trade system)
+				nullptr, // order ID (from trading system)
 				true,
 				ORDER_STATUS_SENT,
 				&timeInForce,
@@ -817,7 +817,7 @@ public:
 			}
 			try {
 				CopyOrder(
-					nullptr, // order ID (from trade system)
+					nullptr, // order ID (from trading system)
 					true,
 					ORDER_STATUS_ERROR,
 					&timeInForce,
@@ -864,7 +864,7 @@ public:
 		m_closed.orderId = orderId;
 
 		CopyOrder(
-			nullptr, // order ID (from trade system)
+			nullptr, // order ID (from trading system)
 			false,
 			ORDER_STATUS_SENT,
 			&timeInForce,
@@ -960,12 +960,12 @@ public:
 	bool CancelAllOrders() {
 		bool isCanceled = false;
 		if (m_opened.hasOrder) {
-			m_tradeSystem.CancelOrder(m_opened.orderId);
+			m_tradingSystem.CancelOrder(m_opened.orderId);
 			isCanceled = true;
 		}
 		if (m_closed.hasOrder) {
 			Assert(!isCanceled);
-			m_tradeSystem.CancelOrder(m_closed.orderId);
+			m_tradingSystem.CancelOrder(m_closed.orderId);
 			isCanceled = true;
 		}
 		return isCanceled;
@@ -1027,7 +1027,7 @@ private:
 					m_operationId,
 					&m_subOperationId,
 					m_security,
-					m_tradeSystem,
+					m_tradingSystem,
 					m_position.GetType() == TYPE_LONG
 						?	(isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL)
 						:	(!isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL),
@@ -1049,7 +1049,7 @@ private:
 	}
 
 	void CopyTrade(
-			const std::string &tradeSystemId,
+			const std::string &tradingSystemId,
 			double price,
 			const Qty &qty,
 			bool isOpen) {
@@ -1063,7 +1063,7 @@ private:
 
 				dropCopy.CopyTrade(
 					m_strategy.GetContext().GetCurrentTime(),
-					tradeSystemId,
+					tradingSystemId,
 					directionData.uuid,
 					price,
 					qty,
@@ -1085,7 +1085,7 @@ Position::Position(
 		Strategy &strategy,
 		const uuids::uuid &operationId,
 		int64_t subOperationId,
-		TradeSystem &tradeSystem,
+		TradingSystem &tradingSystem,
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -1094,7 +1094,7 @@ Position::Position(
 	Assert(!strategy.IsBlocked());
 	m_pimpl = new Implementation(
 		*this,
-		tradeSystem,
+		tradingSystem,
 		strategy,
 		operationId,
 		subOperationId,
@@ -1125,7 +1125,7 @@ Position::Position(
 	Assert(!oppositePosition.IsCompleted());
 	m_pimpl = new Implementation(
 		*this,
-		oppositePosition.m_pimpl->m_tradeSystem,
+		oppositePosition.m_pimpl->m_tradingSystem,
 		strategy,
 		operationId,
 		subOperationId,
@@ -1168,12 +1168,12 @@ Security & Position::GetSecurity() throw() {
 	return m_pimpl->m_security;
 }
 
-const TradeSystem & Position::GetTradeSystem() const {
-	return const_cast<Position *>(this)->GetTradeSystem();
+const TradingSystem & Position::GetTradingSystem() const {
+	return const_cast<Position *>(this)->GetTradingSystem();
 }
 
-TradeSystem & Position::GetTradeSystem() {
-	return m_pimpl->m_tradeSystem;
+TradingSystem & Position::GetTradingSystem() {
+	return m_pimpl->m_tradingSystem;
 }
 
 const Currency & Position::GetCurrency() const {
@@ -1285,13 +1285,13 @@ const std::string & Position::GetCloseTypeStr() const {
 
 void Position::UpdateOpening(
 		const OrderId &orderId,
-		const std::string &tradeSystemOrderId,
+		const std::string &tradingSystemOrderId,
 		const OrderStatus &orderStatus,
 		const Qty &remainingQty,
-		const TradeSystem::TradeInfo *trade) {
+		const TradingSystem::TradeInfo *trade) {
 	m_pimpl->UpdateOpening(
 		orderId,
-		tradeSystemOrderId,
+		tradingSystemOrderId,
 		orderStatus,
 		remainingQty,
 		trade);
@@ -1299,13 +1299,13 @@ void Position::UpdateOpening(
 
 void Position::UpdateClosing(
 		const OrderId &orderId,
-		const std::string &tradeSystemOrderId,
+		const std::string &tradingSystemOrderId,
 		const OrderStatus &orderStatus,
 		const Qty &remainingQty,
-		const TradeSystem::TradeInfo *trade) {
+		const TradingSystem::TradeInfo *trade) {
 	m_pimpl->UpdateClosing(
 		orderId,
-		tradeSystemOrderId,
+		tradingSystemOrderId,
 		orderStatus,
 		remainingQty,
 		trade);
@@ -1615,7 +1615,7 @@ LongPosition::LongPosition(
 		Strategy &strategy,
 		const uuids::uuid &operationId,
 		int64_t subOperationId,
-		TradeSystem &tradeSystem,
+		TradingSystem &tradingSystem,
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -1625,7 +1625,7 @@ LongPosition::LongPosition(
 		strategy,
 		operationId,
 		subOperationId,
-		tradeSystem,
+		tradingSystem,
 		security,
 		currency,
 		qty,
@@ -1638,8 +1638,8 @@ LongPosition::LongPosition(
 			record
 				% GetId() // 1
 				% GetSecurity().GetSymbol().GetSymbol() // 2
-				% GetTradeSystem().GetTag() // 3
-				% GetTradeSystem().GetMode() // 4
+				% GetTradingSystem().GetTag() // 3
+				% GetTradingSystem().GetMode() // 4
 				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 5
 				% GetCurrency() // 6
 				% GetPlanedQty(); // 7 and last
@@ -1670,8 +1670,8 @@ LongPosition::LongPosition(
 				% GetId() // 1
 				% oppositePosition.GetId() // 2
 				% GetSecurity().GetSymbol().GetSymbol() // 3
-				% GetTradeSystem().GetTag() // 4
-				% GetTradeSystem().GetMode() // 5
+				% GetTradingSystem().GetTag() // 4
+				% GetTradingSystem().GetMode() // 5
 				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 6
 				% GetCurrency() // 7
 				% GetPlanedQty(); // 8 and last
@@ -1686,8 +1686,8 @@ LongPosition::LongPosition() {
 			record
 				% GetId() // 1
 				% GetSecurity().GetSymbol().GetSymbol() // 2
-				% GetTradeSystem().GetTag() // 3
-				% GetTradeSystem().GetMode() // 4
+				% GetTradingSystem().GetTag() // 3
+				% GetTradingSystem().GetMode() // 4
 				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 5
 				% GetCurrency() // 6
 				% GetPlanedQty(); // 7 and last
@@ -1716,7 +1716,7 @@ OrderId LongPosition::DoOpenAtMarketPrice(
 		const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().BuyAtMarketPrice(
+	return GetTradingSystem().BuyAtMarketPrice(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -1739,7 +1739,7 @@ OrderId LongPosition::DoOpen(
 		const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().Buy(
+	return GetTradingSystem().Buy(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -1763,7 +1763,7 @@ OrderId LongPosition::DoOpenAtMarketPriceWithStopPrice(
 		const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().BuyAtMarketPriceWithStopPrice(
+	return GetTradingSystem().BuyAtMarketPriceWithStopPrice(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -1787,7 +1787,7 @@ OrderId LongPosition::DoOpenImmediatelyOrCancel(
 		const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().BuyImmediatelyOrCancel(
+	return GetTradingSystem().BuyImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -1810,7 +1810,7 @@ OrderId LongPosition::DoOpenAtMarketPriceImmediatelyOrCancel(
 		const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().BuyAtMarketPriceImmediatelyOrCancel(
+	return GetTradingSystem().BuyAtMarketPriceImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -1832,7 +1832,7 @@ OrderId LongPosition::DoCloseAtMarketPrice(
 		const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().SellAtMarketPrice(
+	return GetTradingSystem().SellAtMarketPrice(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -1855,7 +1855,7 @@ OrderId LongPosition::DoClose(
 		const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().Sell(
+	return GetTradingSystem().Sell(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -1879,7 +1879,7 @@ OrderId LongPosition::DoCloseAtMarketPriceWithStopPrice(
 		const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().SellAtMarketPriceWithStopPrice(
+	return GetTradingSystem().SellAtMarketPriceWithStopPrice(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -1904,7 +1904,7 @@ OrderId LongPosition::DoCloseImmediatelyOrCancel(
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	AssertLt(0, qty);
-	return GetTradeSystem().SellImmediatelyOrCancel(
+	return GetTradingSystem().SellImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -1928,7 +1928,7 @@ OrderId LongPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
 	Assert(IsOpened());
 	Assert(!IsClosed());
 	AssertLt(0, qty);
-	return GetTradeSystem().SellAtMarketPriceImmediatelyOrCancel(
+	return GetTradingSystem().SellAtMarketPriceImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -1951,7 +1951,7 @@ ShortPosition::ShortPosition(
 		Strategy &strategy,
 		const uuids::uuid &operationId,
 		int64_t subOperationId,
-		TradeSystem &tradeSystem,
+		TradingSystem &tradingSystem,
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -1961,7 +1961,7 @@ ShortPosition::ShortPosition(
 		strategy,
 		operationId,
 		subOperationId,
-		tradeSystem,
+		tradingSystem,
 		security,
 		currency,
 		qty,
@@ -1974,8 +1974,8 @@ ShortPosition::ShortPosition(
 			record
 				% GetId() // 1
 				% GetSecurity().GetSymbol().GetSymbol() // 2
-				% GetTradeSystem().GetTag() // 3
-				% GetTradeSystem().GetMode() // 4
+				% GetTradingSystem().GetTag() // 3
+				% GetTradingSystem().GetMode() // 4
 				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 5
 				% GetCurrency() // 6
 				% GetPlanedQty(); // 7 and last
@@ -2006,8 +2006,8 @@ ShortPosition::ShortPosition(
 				% GetId() // 1
 				% oppositePosition.GetId() // 2
 				% GetSecurity().GetSymbol().GetSymbol() // 3
-				% GetTradeSystem().GetTag() // 4
-				% GetTradeSystem().GetMode() // 5
+				% GetTradingSystem().GetTag() // 4
+				% GetTradingSystem().GetMode() // 5
 				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 6
 				% GetCurrency() // 7
 				% GetPlanedQty(); // 8 and last
@@ -2022,8 +2022,8 @@ ShortPosition::ShortPosition() {
 			record
 				% GetId() // 1
 				% GetSecurity().GetSymbol().GetSymbol() // 2
-				% GetTradeSystem().GetTag() // 3
-				% GetTradeSystem().GetMode() // 4
+				% GetTradingSystem().GetTag() // 3
+				% GetTradingSystem().GetMode() // 4
 				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 5
 				% GetCurrency() // 6
 				% GetPlanedQty(); // 7 and last
@@ -2052,7 +2052,7 @@ OrderId ShortPosition::DoOpenAtMarketPrice(
 		const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().SellAtMarketPrice(
+	return GetTradingSystem().SellAtMarketPrice(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -2075,7 +2075,7 @@ OrderId ShortPosition::DoOpen(
 		const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().Sell(
+	return GetTradingSystem().Sell(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -2099,7 +2099,7 @@ OrderId ShortPosition::DoOpenAtMarketPriceWithStopPrice(
 		const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().SellAtMarketPriceWithStopPrice(
+	return GetTradingSystem().SellAtMarketPriceWithStopPrice(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -2123,7 +2123,7 @@ OrderId ShortPosition::DoOpenImmediatelyOrCancel(
 		const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().SellImmediatelyOrCancel(
+	return GetTradingSystem().SellImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -2146,7 +2146,7 @@ OrderId ShortPosition::DoOpenAtMarketPriceImmediatelyOrCancel(
 		const OrderParams &params) {
 	Assert(!IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().SellAtMarketPriceImmediatelyOrCancel(
+	return GetTradingSystem().SellAtMarketPriceImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -2168,7 +2168,7 @@ OrderId ShortPosition::DoCloseAtMarketPrice(
 		const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().BuyAtMarketPrice(
+	return GetTradingSystem().BuyAtMarketPrice(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -2189,7 +2189,7 @@ OrderId ShortPosition::DoClose(
 		const Qty &qty,
 		const ScaledPrice &price,
 		const OrderParams &params) {
-	return GetTradeSystem().Buy(
+	return GetTradingSystem().Buy(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -2213,7 +2213,7 @@ OrderId ShortPosition::DoCloseAtMarketPriceWithStopPrice(
 		const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().BuyAtMarketPriceWithStopPrice(
+	return GetTradingSystem().BuyAtMarketPriceWithStopPrice(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -2237,7 +2237,7 @@ OrderId ShortPosition::DoCloseImmediatelyOrCancel(
 		const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().BuyImmediatelyOrCancel(
+	return GetTradingSystem().BuyImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
 		qty,
@@ -2260,7 +2260,7 @@ OrderId ShortPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
 		const OrderParams &params) {
 	Assert(IsOpened());
 	Assert(!IsClosed());
-	return GetTradeSystem().BuyAtMarketPriceImmediatelyOrCancel(
+	return GetTradingSystem().BuyAtMarketPriceImmediatelyOrCancel(
 		GetSecurity(),
 		GetCurrency(),
 		qty,

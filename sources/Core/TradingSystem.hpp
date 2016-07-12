@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "Context.hpp"	//! @todo	remove context from TradeSystem as it can be
-						//!			one for all contexts.
+#include "Context.hpp"	//! @todo	remove context from TradingSystem as it
+						//!			can be one for all contexts.
 #include "Interactor.hpp"
 #include "Fwd.hpp"
 #include "Api.h"
@@ -21,11 +21,11 @@ namespace trdk {
 	////////////////////////////////////////////////////////////////////////////////
 
 	typedef boost::tuple<
-			boost::shared_ptr<trdk::TradeSystem> /* can't be nullptr */,
+			boost::shared_ptr<trdk::TradingSystem> /* can't be nullptr */,
 			boost::shared_ptr<trdk::MarketDataSource> /* can be nullptr */ >
-		TradeSystemFactoryResult;
+		TradingSystemFactoryResult;
 
-	typedef trdk::TradeSystemFactoryResult (TradeSystemFactory)(
+	typedef trdk::TradingSystemFactoryResult (TradingSystemFactory)(
 			const trdk::TradingMode &,
 			size_t index,
 			trdk::Context &,
@@ -34,7 +34,7 @@ namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	class TRDK_CORE_API TradeSystem : virtual public trdk::Interactor {
+	class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
 	public:
 
@@ -52,7 +52,7 @@ namespace trdk {
 		typedef boost::function<
 				void(
 					const trdk::OrderId &,
-					const std::string &tradeSystemOrderId,
+					const std::string &tradingSystemOrderId,
 					const OrderStatus &,
 					const trdk::Qty &remainingQty,
 					const TradeInfo *tradeInfo)>
@@ -138,16 +138,16 @@ namespace trdk {
 
 	public:
 
-		explicit TradeSystem(
+		explicit TradingSystem(
 				const trdk::TradingMode &,
 				size_t index,
 				trdk::Context &,
 				const std::string &tag);
-		virtual ~TradeSystem();
+		virtual ~TradingSystem();
 
 		TRDK_CORE_API friend std::ostream & operator <<(
 				std::ostream &,
-				const trdk::TradeSystem &);
+				const trdk::TradingSystem &);
 
 	public:
 
@@ -162,11 +162,11 @@ namespace trdk {
 		trdk::Context & GetContext();
 		const trdk::Context & GetContext() const;
 
-		trdk::TradeSystem::Log & GetLog() const throw();
-		trdk::TradeSystem::TradingLog & GetTradingLog() const throw();
+		trdk::TradingSystem::Log & GetLog() const throw();
+		trdk::TradingSystem::TradingLog & GetTradingLog() const throw();
 
-		//! Identifies Trade System object by verbose name. 
-		/** Trade System Tag unique, but can be empty for one of objects.
+		//! Identifies Trading System object by verbose name. 
+		/** Trading System Tag unique, but can be empty for one of objects.
 		  */
 		const std::string & GetTag() const;
 
@@ -182,12 +182,12 @@ namespace trdk {
 		//! Returns default account info.
 		/** All values is unscaled. If default account hasn't been set - throws
 		  * an exception.
-		  * @throw trdk::TradeSystem::UnknownAccountError
+		  * @throw trdk::TradingSystem::UnknownAccountError
 		  */
-		virtual const trdk::TradeSystem::Account & GetAccount() const;
+		virtual const trdk::TradingSystem::Account & GetAccount() const;
 
 		//! Returns broker position by symbol.
-		virtual trdk::TradeSystem::Position GetBrokerPostion(
+		virtual trdk::TradingSystem::Position GetBrokerPostion(
 				const std::string &account,
 				const trdk::Lib::Symbol &)
 				const;

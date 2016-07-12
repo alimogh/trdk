@@ -6,7 +6,7 @@ file(
     source_list
     Position.cpp
     Types.cpp
-    TradeSystem.cpp
+    TradingSystem.cpp
     Terminal.cpp
     Strategy.cpp
     Settings.cpp

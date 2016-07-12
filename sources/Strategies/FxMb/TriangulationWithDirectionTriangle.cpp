@@ -142,7 +142,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 			new Twd::LongPosition(
 				m_strategy,
 				*this,
-				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
+				m_strategy.GetTradingSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
 				orderQty,
@@ -207,7 +207,7 @@ boost::shared_ptr<Twd::Position> Triangle::CreateOrder(
 			new Twd::ShortPosition(
 				m_strategy,
 				*this,
-				m_strategy.GetTradeSystem(security.GetSource().GetIndex()),
+				m_strategy.GetTradingSystem(security.GetSource().GetIndex()),
 				security,
 				security.GetSymbol().GetFotBaseCurrency(),
 				orderQty,

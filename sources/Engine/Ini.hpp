@@ -14,8 +14,8 @@ namespace trdk { namespace Engine { namespace Ini {
 
 	namespace Sections {
 		extern const std::string strategy;
-		extern const std::string tradeSystem;
-		const std::string paperTradeSystem = "PaperTradeSystem";
+		extern const std::string tradingSystem;
+		const std::string paperTradingSystem = "PaperTradingSystem";
 		extern const std::string marketDataSource;
 		extern const std::string observer;
 		extern const std::string service;
@@ -47,7 +47,7 @@ namespace trdk { namespace Engine { namespace Ini {
 	namespace DefaultValues {
 		namespace Factories {
 			extern const std::string factoryNameStart;
-			extern const std::string tradeSystem;
+			extern const std::string tradingSystem;
 			extern const std::string marketDataSource;
 		}
 		namespace Modules {

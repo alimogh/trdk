@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "TradeSystem.hpp"
+#include "TradingSystem.hpp"
 #include "RiskControl.hpp"
 #include "Security.hpp"
 #include "TradingLog.hpp"
@@ -19,12 +19,12 @@ using namespace trdk::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
-TradeSystem::Error::Error(const char *what) throw()
+TradingSystem::Error::Error(const char *what) throw()
 	: Base::Error(what) {
 	//...//
 }
 
-TradeSystem::OrderParamsError::OrderParamsError(
+TradingSystem::OrderParamsError::OrderParamsError(
 		const char *what,
 		const Qty &,
 		const OrderParams &)
@@ -33,26 +33,26 @@ TradeSystem::OrderParamsError::OrderParamsError(
 	//...//
 }
 
-TradeSystem::SendingError::SendingError() throw()
-		: Error("Failed to send data to trade system") {
+TradingSystem::SendingError::SendingError() throw()
+		: Error("Failed to send data to trading system") {
 	//...//
 }
 
-TradeSystem::ConnectionDoesntExistError::ConnectionDoesntExistError(
+TradingSystem::ConnectionDoesntExistError::ConnectionDoesntExistError(
 		const char *what)
 	throw()
 	: Error(what) {
 	//...//
 }
 
-TradeSystem::UnknownAccountError::UnknownAccountError(
+TradingSystem::UnknownAccountError::UnknownAccountError(
 		const char *what)
 	throw()
 	: Error(what) {
 	//...//
 }
 
-TradeSystem::PositionError::PositionError(
+TradingSystem::PositionError::PositionError(
 		const char *what)
 	throw()
 	: Error(what) {
@@ -66,7 +66,7 @@ namespace {
 	std::string FormatStringId(
 			const std::string &tag,
 			const TradingMode &mode) {
-		std::string	result("TradeSystem");
+		std::string	result("TradingSystem");
 		if (!tag.empty()) {
 			result += '.';
 			result += tag;
@@ -78,11 +78,11 @@ namespace {
 
 }
 
-class TradeSystem::Implementation : private boost::noncopyable {
+class TradingSystem::Implementation : private boost::noncopyable {
 
 public:
 
-	TradeSystem *m_self;
+	TradingSystem *m_self;
 
 	const TradingMode m_mode;
 
@@ -93,8 +93,8 @@ public:
 	const std::string m_tag;
 	const std::string m_stringId;
 
-	TradeSystem::Log m_log;
-	TradeSystem::TradingLog m_tradingLog;
+	TradingSystem::Log m_log;
+	TradingSystem::TradingLog m_tradingLog;
 
 	explicit Implementation(
 			const TradingMode &mode,
@@ -262,7 +262,7 @@ public:
 
 };
 
-TradeSystem::TradeSystem(
+TradingSystem::TradingSystem(
 		const TradingMode &mode,
 		size_t index,
 		Context &context,
@@ -271,39 +271,39 @@ TradeSystem::TradeSystem(
 	m_pimpl->m_self = this;
 }
 
-TradeSystem::~TradeSystem() {
+TradingSystem::~TradingSystem() {
 	delete m_pimpl;
 }
 
-const TradingMode & TradeSystem::GetMode() const {
+const TradingMode & TradingSystem::GetMode() const {
 	return m_pimpl->m_mode;
 }
 
-size_t TradeSystem::GetIndex() const {
+size_t TradingSystem::GetIndex() const {
 	return m_pimpl->m_index;
 }
 
-Context & TradeSystem::GetContext() {
+Context & TradingSystem::GetContext() {
 	return m_pimpl->m_context;
 }
 
-const Context & TradeSystem::GetContext() const {
-	return const_cast<TradeSystem *>(this)->GetContext();
+const Context & TradingSystem::GetContext() const {
+	return const_cast<TradingSystem *>(this)->GetContext();
 }
 
-TradeSystem::Log & TradeSystem::GetLog() const throw() {
+TradingSystem::Log & TradingSystem::GetLog() const throw() {
 	return m_pimpl->m_log;
 }
 
-TradeSystem::TradingLog & TradeSystem::GetTradingLog() const throw() {
+TradingSystem::TradingLog & TradingSystem::GetTradingLog() const throw() {
 	return m_pimpl->m_tradingLog;
 }
 
-const char * TradeSystem::GetStringStatus(const OrderStatus &code) {
+const char * TradingSystem::GetStringStatus(const OrderStatus &code) {
 
 	static_assert(
 		numberOfOrderStatuses == 9,
-		"Changed trade system order status list.");
+		"Changed trading system order status list.");
 
 	switch (code) {
 		case ORDER_STATUS_SENT:
@@ -331,20 +331,20 @@ const char * TradeSystem::GetStringStatus(const OrderStatus &code) {
 
 }
 
-const std::string & TradeSystem::GetTag() const {
+const std::string & TradingSystem::GetTag() const {
 	return m_pimpl->m_tag;
 }
 
-const std::string & TradeSystem::GetStringId() const throw() {
+const std::string & TradingSystem::GetStringId() const throw() {
 	return m_pimpl->m_stringId;
 }
 
-const TradeSystem::Account & TradeSystem::GetAccount() const {
+const TradingSystem::Account & TradingSystem::GetAccount() const {
 	throw MethodDoesNotImplementedError(
 		"Account Cash Balance not implemented");
 }
 
-TradeSystem::Position TradeSystem::GetBrokerPostion(
+TradingSystem::Position TradingSystem::GetBrokerPostion(
 			const std::string &,
 			const Symbol &)
 		const {
@@ -352,7 +352,7 @@ TradeSystem::Position TradeSystem::GetBrokerPostion(
 		"Broker Position Info is not implemented");
 }
 
-void TradeSystem::ForEachBrokerPostion(
+void TradingSystem::ForEachBrokerPostion(
 			const std::string &,
 			const boost::function<bool (const Position &)> &)
 		const {
@@ -360,14 +360,14 @@ void TradeSystem::ForEachBrokerPostion(
 		"Broker Position Info is not implemented");
 }
 
-void TradeSystem::Connect(const IniSectionRef &conf) {
+void TradingSystem::Connect(const IniSectionRef &conf) {
 	if (IsConnected()) {
 		return;
 	}
 	CreateConnection(conf);
 }
 
-OrderId TradeSystem::SellAtMarketPrice(
+OrderId TradingSystem::SellAtMarketPrice(
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -395,7 +395,7 @@ OrderId TradeSystem::SellAtMarketPrice(
 			params,
 			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
-					const std::string &tradeSystemOrderId,
+					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
 					const Qty &remainingQty,
 					const TradeInfo *trade) {
@@ -411,7 +411,7 @@ OrderId TradeSystem::SellAtMarketPrice(
 					timeMeasurement);
 				callback(
 					orderId,
-					tradeSystemOrderId,
+					tradingSystemOrderId,
 					orderStatus,
 					remainingQty,
 					trade);
@@ -434,7 +434,7 @@ OrderId TradeSystem::SellAtMarketPrice(
 
 }
 
-OrderId TradeSystem::Sell(
+OrderId TradingSystem::Sell(
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -462,7 +462,7 @@ OrderId TradeSystem::Sell(
 			params,
 			[&, riskControlOperationId, currency, price, timeMeasurement, callback](
 					const OrderId &orderId,
-					const std::string &tradeSystemOrderId,
+					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
 					const Qty &remainingQty,
 					const TradeInfo *trade) {
@@ -478,7 +478,7 @@ OrderId TradeSystem::Sell(
 					timeMeasurement);
 				callback(
 					orderId,
-					tradeSystemOrderId,
+					tradingSystemOrderId,
 					orderStatus,
 					remainingQty,
 					trade);
@@ -501,7 +501,7 @@ OrderId TradeSystem::Sell(
 
 }
 
-OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
+OrderId TradingSystem::SellAtMarketPriceWithStopPrice(
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -531,7 +531,7 @@ OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 			params,
 			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
-					const std::string &tradeSystemOrderId,
+					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
 					const Qty &remainingQty,
 					const TradeInfo *trade) {
@@ -547,7 +547,7 @@ OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 					timeMeasurement);
 				callback(
 					orderId,
-					tradeSystemOrderId,
+					tradingSystemOrderId,
 					orderStatus,
 					remainingQty,
 					trade);
@@ -570,7 +570,7 @@ OrderId TradeSystem::SellAtMarketPriceWithStopPrice(
 
 }
 
-OrderId TradeSystem::SellImmediatelyOrCancel(
+OrderId TradingSystem::SellImmediatelyOrCancel(
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -598,7 +598,7 @@ OrderId TradeSystem::SellImmediatelyOrCancel(
 			params,
 			[&, riskControlOperationId, currency, price, timeMeasurement, callback](
 					const OrderId &orderId,
-					const std::string &tradeSystemOrderId,
+					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
 					const Qty &remainingQty,
 					const TradeInfo *trade) {
@@ -614,7 +614,7 @@ OrderId TradeSystem::SellImmediatelyOrCancel(
 					timeMeasurement);
 				callback(
 					orderId,
-					tradeSystemOrderId,
+					tradingSystemOrderId,
 					orderStatus,
 					remainingQty,
 					trade);
@@ -637,7 +637,7 @@ OrderId TradeSystem::SellImmediatelyOrCancel(
 
 }
 
-OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
+OrderId TradingSystem::SellAtMarketPriceImmediatelyOrCancel(
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -665,7 +665,7 @@ OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 			params,
 			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
-					const std::string &tradeSystemOrderId,
+					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
 					const Qty &remainingQty,
 					const TradeInfo *trade) {
@@ -681,7 +681,7 @@ OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 					timeMeasurement);
 				callback(
 					orderId,
-					tradeSystemOrderId,
+					tradingSystemOrderId,
 					orderStatus,
 					remainingQty,
 					trade);
@@ -704,7 +704,7 @@ OrderId TradeSystem::SellAtMarketPriceImmediatelyOrCancel(
 
 }
 
-OrderId TradeSystem::BuyAtMarketPrice(
+OrderId TradingSystem::BuyAtMarketPrice(
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -732,7 +732,7 @@ OrderId TradeSystem::BuyAtMarketPrice(
 			params,
 			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
-					const std::string &tradeSystemOrderId,
+					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
 					const Qty &remainingQty,
 					const TradeInfo *trade) {
@@ -748,7 +748,7 @@ OrderId TradeSystem::BuyAtMarketPrice(
 					timeMeasurement);
 				callback(
 					orderId,
-					tradeSystemOrderId,
+					tradingSystemOrderId,
 					orderStatus,
 					remainingQty,
 					trade);
@@ -771,7 +771,7 @@ OrderId TradeSystem::BuyAtMarketPrice(
 
 }
 
-OrderId TradeSystem::Buy(
+OrderId TradingSystem::Buy(
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -799,7 +799,7 @@ OrderId TradeSystem::Buy(
 			params,
 			[&, riskControlOperationId, currency, price, timeMeasurement, callback](
 					const OrderId &orderId,
-					const std::string &tradeSystemOrderId,
+					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
 					const Qty &remainingQty,
 					const TradeInfo *trade) {
@@ -815,7 +815,7 @@ OrderId TradeSystem::Buy(
 					timeMeasurement);
 				callback(
 					orderId,
-					tradeSystemOrderId,
+					tradingSystemOrderId,
 					orderStatus,
 					remainingQty,
 					trade);
@@ -838,7 +838,7 @@ OrderId TradeSystem::Buy(
 
 }
 
-OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
+OrderId TradingSystem::BuyAtMarketPriceWithStopPrice(
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -868,7 +868,7 @@ OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 			params,
 			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
-					const std::string &tradeSystemOrderId,
+					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
 					const Qty &remainingQty,
 					const TradeInfo *trade) {
@@ -884,7 +884,7 @@ OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 					timeMeasurement);
 				callback(
 					orderId,
-					tradeSystemOrderId,
+					tradingSystemOrderId,
 					orderStatus,
 					remainingQty,
 					trade);
@@ -907,7 +907,7 @@ OrderId TradeSystem::BuyAtMarketPriceWithStopPrice(
 
 }
 
-OrderId TradeSystem::BuyImmediatelyOrCancel(
+OrderId TradingSystem::BuyImmediatelyOrCancel(
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -935,7 +935,7 @@ OrderId TradeSystem::BuyImmediatelyOrCancel(
 			params,
 			[&, riskControlOperationId, currency, price, timeMeasurement, callback](
 					const OrderId &orderId,
-					const std::string &tradeSystemOrderId,
+					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
 					const Qty &remainingQty,
 					const TradeInfo *trade) {
@@ -951,7 +951,7 @@ OrderId TradeSystem::BuyImmediatelyOrCancel(
 					timeMeasurement);
 				callback(
 					orderId,
-					tradeSystemOrderId,
+					tradingSystemOrderId,
 					orderStatus,
 					remainingQty,
 					trade);
@@ -974,7 +974,7 @@ OrderId TradeSystem::BuyImmediatelyOrCancel(
 
 }
 
-OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
+OrderId TradingSystem::BuyAtMarketPriceImmediatelyOrCancel(
 		Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -1002,7 +1002,7 @@ OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 			params,
 			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
 					const OrderId &orderId,
-					const std::string &tradeSystemOrderId,
+					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
 					const Qty &remainingQty,
 					const TradeInfo *trade) {
@@ -1018,7 +1018,7 @@ OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 					timeMeasurement);
 				callback(
 					orderId,
-					tradeSystemOrderId,
+					tradingSystemOrderId,
 					orderStatus,
 					remainingQty,
 					trade);
@@ -1041,20 +1041,20 @@ OrderId TradeSystem::BuyAtMarketPriceImmediatelyOrCancel(
 
 }
 
-void TradeSystem::CancelOrder(const OrderId &order) {
+void TradingSystem::CancelOrder(const OrderId &order) {
 	SendCancelOrder(order);
 }
 
-void TradeSystem::CancelAllOrders(Security &security) {
+void TradingSystem::CancelAllOrders(Security &security) {
 	SendCancelAllOrders(security);
 }
 
-void TradeSystem::Test() {
+void TradingSystem::Test() {
 	throw MethodDoesNotImplementedError(
 		"Trading system does not support testing");
 }
 
-void TradeSystem::OnSettingsUpdate(const IniSectionRef &) {
+void TradingSystem::OnSettingsUpdate(const IniSectionRef &) {
 	//...//
 }
 
@@ -1062,8 +1062,8 @@ void TradeSystem::OnSettingsUpdate(const IniSectionRef &) {
 
 std::ostream & trdk::operator <<(
 		std::ostream &oss,
-		const TradeSystem &tradeSystem) {
-	oss << tradeSystem.GetStringId();
+		const TradingSystem &tradingSystem) {
+	oss << tradingSystem.GetStringId();
 	return oss;
 }
 

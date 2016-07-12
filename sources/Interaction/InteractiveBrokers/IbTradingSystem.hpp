@@ -11,7 +11,7 @@
 #pragma once
 
 #include "IbSecurity.hpp"
-#include "Core/TradeSystem.hpp"
+#include "Core/TradingSystem.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Context.hpp"
 #include "Common/ExpirationCalendar.hpp"
@@ -25,8 +25,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
-	class TradeSystem
-		: public trdk::TradeSystem,
+	class TradingSystem
+		: public trdk::TradingSystem,
 		public trdk::MarketDataSource {
 
 		friend class trdk::Interaction::InteractiveBrokers::Client;
@@ -54,8 +54,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		typedef Concurrency::reader_writer_lock PositionsMutex;
 		typedef PositionsMutex::scoped_lock_read PositionsReadLock;
 		typedef PositionsMutex::scoped_lock PositionsWriteLock;
-		struct Position : public trdk::TradeSystem::Position {
-			typedef trdk::TradeSystem::Position Base;
+		struct Position : public trdk::TradingSystem::Position {
+			typedef trdk::TradingSystem::Position Base;
 			Position() {
 				//...//
 			}
@@ -79,17 +79,17 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 					boost::multi_index::ordered_non_unique<
 						boost::multi_index::tag<ByAccount>,
 						boost::multi_index::member<
-							trdk::TradeSystem::Position,
+							trdk::TradingSystem::Position,
 							std::string,
-							&trdk::TradeSystem::Position::account>>,
+							&trdk::TradingSystem::Position::account>>,
 					boost::multi_index::hashed_unique<
 						boost::multi_index::tag<BySymbol>,
 						boost::multi_index::composite_key<
 							Position,
 							boost::multi_index::member<
-								trdk::TradeSystem::Position,
+								trdk::TradingSystem::Position,
 								std::string,
-								&trdk::TradeSystem::Position::account>,
+								&trdk::TradingSystem::Position::account>,
 							boost::multi_index::const_mem_fun<
 								Position,
 								const Lib::Currency &,
@@ -137,20 +137,20 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	public:
 
-		explicit TradeSystem(
+		explicit TradingSystem(
 				const TradingMode &,
 				size_t index,
 				Context &,
 				const std::string &tag,
 				const Lib::IniSectionRef &);
-		virtual ~TradeSystem();
+		virtual ~TradingSystem();
 
 	public:
 
-		using trdk::TradeSystem::GetContext;
+		using trdk::TradingSystem::GetContext;
 
-		trdk::TradeSystem::Log & GetTsLog() throw() {
-			return trdk::TradeSystem::GetLog();
+		trdk::TradingSystem::Log & GetTsLog() throw() {
+			return trdk::TradingSystem::GetLog();
 		}
 
 		trdk::MarketDataSource::Log & GetMdsLog() throw() {
@@ -168,14 +168,14 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		virtual const Account & GetAccount() const;
 
-		virtual trdk::TradeSystem::Position GetBrokerPostion(
+		virtual trdk::TradingSystem::Position GetBrokerPostion(
 				const std::string &account,
 				const trdk::Lib::Symbol &)
 			const;
-		virtual void TradeSystem::ForEachBrokerPostion(
+		virtual void TradingSystem::ForEachBrokerPostion(
 				const std::string &,
 				const boost::function<
-					bool (const trdk::TradeSystem::Position &)> &)
+					bool (const trdk::TradingSystem::Position &)> &)
 			const;
 
 	protected:
