@@ -11,7 +11,7 @@
 #pragma once
 
 #include "Instrument.hpp"
-#include "TradeSystem.hpp"
+#include "TradingSystem.hpp"
 #include "Api.h"
 
 namespace trdk {
@@ -24,7 +24,7 @@ namespace trdk {
 
 		typedef uint32_t InstanceId;
 
-		typedef trdk::TradeSystem::OrderStatusUpdateSlot
+		typedef trdk::TradingSystem::OrderStatusUpdateSlot
 			OrderStatusUpdateSlot;
 
 		typedef void (Level1UpdateSlotSignature)(

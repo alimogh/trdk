@@ -15,6 +15,7 @@
     <ClInclude Include="QueueService.hpp" />
     <ClInclude Include="DropCopyRecord.hpp" />
     <ClInclude Include="Engine.hpp" />
+    <ClInclude Include="Pack.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="EngineServer.rc" />

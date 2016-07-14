@@ -12,7 +12,7 @@
 
 namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
-	class TradeSystem;
+	class TradingSystem;
 	class Client;
 
 } } }

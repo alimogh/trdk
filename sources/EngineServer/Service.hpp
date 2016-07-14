@@ -10,9 +10,6 @@
 
 #pragma once
 
-#ifndef TRDK_AUTOBAHN_DISABLED
-
-#include <boost/thread/pthread/recursive_mutex.hpp>
 #include "Engine.hpp"
 #include "QueueService.hpp"
 #include "DropCopyRecord.hpp"
@@ -95,8 +92,8 @@ namespace trdk { namespace EngineServer {
 		typedef boost::condition_variable ConnectionCondition;
 
 		class Connection
-			: private boost::noncopyable
-			, public boost::enable_shared_from_this<Connection> {
+			: private boost::noncopyable,
+			public boost::enable_shared_from_this<Connection> {
 
 		public:
 
@@ -116,7 +113,7 @@ namespace trdk { namespace EngineServer {
 			boost::shared_future<void> sessionJoinFuture;
 			boost::shared_future<void> engineRegistrationFuture;
 
-			explicit  Connection(
+			explicit Connection(
 					boost::asio::io_service &io,
 					const Topics &topics,
 					EventsLog &log,
@@ -131,14 +128,14 @@ namespace trdk { namespace EngineServer {
 		struct OrderCache {
 
 			boost::uuids::uuid id;
-			boost::optional<std::string> tradeSystemId;
+			boost::optional<std::string> tradingSystemId;
 			boost::optional<boost::posix_time::ptime> orderTime;
 			boost::optional<boost::posix_time::ptime> executionTime;
 			OrderStatus status;
 			boost::uuids::uuid operationId;
 			boost::optional<int64_t> subOperationId;
 			const Security *security;
-			const TradeSystem *tradeSystem;
+			const TradingSystem *tradingSystem;
 			OrderSide side;
 			Qty qty;
 			boost::optional<double> price;
@@ -153,14 +150,14 @@ namespace trdk { namespace EngineServer {
 
 			explicit OrderCache(
 					const boost::uuids::uuid &id,
-					const std::string *tradeSystemId,
+					const std::string *tradingSystemId,
 					const boost::posix_time::ptime *orderTime,
 					const boost::posix_time::ptime *executionTime,
 					const OrderStatus &status,
 					const boost::uuids::uuid &operationId,
 					const int64_t *subOperationId,
 					const Security &security,
-					const TradeSystem &tradeSystem,
+					const TradingSystem &tradingSystem,
 					const OrderSide &side,
 					const Qty &qty,
 					const double *price,
@@ -194,14 +191,14 @@ namespace trdk { namespace EngineServer {
 		public:
 			virtual void CopyOrder(
 					const boost::uuids::uuid &id,
-					const std::string *tradeSystemId,
+					const std::string *tradingSystemId,
 					const boost::posix_time::ptime *orderTime,
 					const boost::posix_time::ptime *executionTime,
 					const trdk::OrderStatus &,
 					const boost::uuids::uuid &operationId,
 					const int64_t *subOperationId,
 					const trdk::Security &,
-					const trdk::TradeSystem &,
+					const trdk::TradingSystem &,
 					const trdk::OrderSide &,
 					const trdk::Qty &qty,
 					const double *price,
@@ -215,7 +212,7 @@ namespace trdk { namespace EngineServer {
 					const trdk::Qty *bestAskQty);
 			virtual void CopyTrade(
 					const boost::posix_time::ptime &,
-					const std::string &tradeSystemTradeId,
+					const std::string &tradingSystemTradeId,
 					const boost::uuids::uuid &orderId,
 					double price,
 					const trdk::Qty &qty,
@@ -226,8 +223,7 @@ namespace trdk { namespace EngineServer {
 			virtual void ReportOperationStart(
 					const boost::uuids::uuid &id,
 					const boost::posix_time::ptime &,
-					const trdk::Strategy &,
-					size_t updatesNumber);
+					const trdk::Strategy &);
 			virtual void ReportOperationEnd(
 					const boost::uuids::uuid &id,
 					const boost::posix_time::ptime &,
@@ -279,8 +275,8 @@ namespace trdk { namespace EngineServer {
 	public:
 
 		explicit Service(
-				const std::string &name,
-				const boost::filesystem::path &);
+				const boost::filesystem::path &engineConfigFilePath,
+				const boost::posix_time::time_duration &startDelay);
 		~Service();
 
 	private:
@@ -297,8 +293,7 @@ namespace trdk { namespace EngineServer {
 				bool dump,
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &,
-				const trdk::Strategy &,
-				size_t numberOfUpdates);
+				const trdk::Strategy &);
 		bool StoreOperationEndReport(
 				size_t recordIndex,
 				size_t storeAttemptNo,
@@ -320,7 +315,7 @@ namespace trdk { namespace EngineServer {
 				size_t storeAttemptNo,
 				bool dump,
 				const boost::posix_time::ptime &,
-				const std::string &tradeSystemTradeId,
+				const std::string &tradingSystemTradeId,
 				const boost::uuids::uuid &orderId,
 				double price,
 				const Qty &qty,
@@ -352,19 +347,26 @@ namespace trdk { namespace EngineServer {
 
 		void RunIoThread();
 
-		boost::shared_ptr<Connection> Connect();
+		boost::shared_ptr<Connection> Connect(
+				const boost::posix_time::time_duration &startDelay
+					= boost::posix_time::time_duration());
 		void OnConnected(
-			boost::shared_ptr<Connection>,
-			const boost::system::error_code &);
-		void OnSessionStarted(boost::shared_ptr<Connection>, bool isStarted);
+				const boost::shared_ptr<Connection> &,
+				const boost::system::error_code &,
+				const boost::posix_time::time_duration &startDelay);
+		void OnSessionStarted(
+				boost::shared_ptr<Connection>,
+				bool isStarted,
+				const boost::posix_time::time_duration &startDelay);
 		void OnSessionJoined(
-			boost::shared_ptr<Connection>,
-			const boost::optional<uint64_t> &sessionId);
+				const boost::shared_ptr<Connection> &,
+				const boost::optional<uint64_t> &sessionId,
+				const boost::posix_time::time_duration &startDelay);
 		void OnEngineRegistered(
-			boost::shared_ptr<Connection>,
-			uint64_t sessionId,
-			const boost::optional<uint64_t> &instanceId,
-			const std::tuple<std::string, std::string, std::string> &);
+				boost::shared_ptr<Connection>,
+				uint64_t sessionId,
+				const boost::optional<uint64_t> &instanceId,
+				const std::tuple<std::string, std::string, std::string> &);
 
 		void Reconnect();
 		void RepeatReconnection(const Exception &prevReconnectError);
@@ -426,5 +428,3 @@ namespace trdk { namespace EngineServer {
 	};
 
 } }
-
-#endif

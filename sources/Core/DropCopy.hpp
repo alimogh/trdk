@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "TradeSystem.hpp"
+#include "TradingSystem.hpp"
 #include "Fwd.hpp"
 #include "Api.h"
 
@@ -39,14 +39,14 @@ namespace trdk {
 
 		virtual void CopyOrder(
 				const boost::uuids::uuid &id,
-				const std::string *tradeSystemId,
+				const std::string *tradingSystemId,
 				const boost::posix_time::ptime *orderTime,
 				const boost::posix_time::ptime *executionTime,
 				const trdk::OrderStatus &,
 				const boost::uuids::uuid &operationId,
 				const int64_t *subOperationId,
 				const trdk::Security &,
-				const trdk::TradeSystem &,
+				const trdk::TradingSystem &,
 				const trdk::OrderSide &,
 				const trdk::Qty &qty,
 				const double *price,
@@ -62,7 +62,7 @@ namespace trdk {
 
 		virtual void CopyTrade(
 				const boost::posix_time::ptime &,
-				const std::string &tradeSystemTradeId,
+				const std::string &tradingSystemTradeId,
 				const boost::uuids::uuid &orderId,
 				double price,
 				const trdk::Qty &qty,
@@ -75,8 +75,7 @@ namespace trdk {
 		virtual void ReportOperationStart(
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &,
-				const trdk::Strategy &,
-				size_t updatesNumber)
+				const trdk::Strategy &)
 			= 0;
 		virtual void ReportOperationEnd(
 				const boost::uuids::uuid &id,

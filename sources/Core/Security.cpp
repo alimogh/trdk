@@ -727,12 +727,10 @@ void Security::SetBook(
 	}
 #	endif
 
-	{
-		DropCopy *const dropCopy = GetContext().GetDropCopy();
-		if (dropCopy) {
-			dropCopy->CopyBook(*this, book);
-		}
-	}
+	GetContext().InvokeDropCopy(
+		[this, &book](DropCopy &dropCopy) {
+			dropCopy.CopyBook(*this, book);
+		});
 
 	// Adjusting:
 	while (

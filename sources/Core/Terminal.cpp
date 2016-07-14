@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "Terminal.hpp"
-#include "TradeSystem.hpp"
+#include "TradingSystem.hpp"
 #include "RiskControl.hpp"
 #include "Security.hpp"
 #include "Common/FileSystemChangeNotificator.hpp"
@@ -34,8 +34,8 @@ private:
 			}
 		};
 	public:
-		explicit Command(TradeSystem &tradeSystem)
-				: m_tradeSystem(tradeSystem) {
+		explicit Command(TradingSystem &tradingSystem)
+				: m_tradingSystem(tradingSystem) {
 			//...//
 		}
 		virtual ~Command() {
@@ -45,7 +45,7 @@ private:
 		virtual std::string Validate() const = 0;
 		virtual void Execute() = 0;
 	protected:
-		TradeSystem &m_tradeSystem;
+		TradingSystem &m_tradingSystem;
 	};
 
 	class OrderCommand
@@ -59,9 +59,9 @@ private:
 		};
 	public:
 		explicit OrderCommand(
-				TradeSystem &tradeSystem,
+				TradingSystem &tradingSystem,
 				RiskControlScope &riskControlScope)
-			: Command(tradeSystem),
+			: Command(tradingSystem),
 			m_riskControlScope(riskControlScope),
 			m_orderTime(ORDER_TIME_NOT_SET),
 			m_security(nullptr),
@@ -174,7 +174,7 @@ private:
 			}
 			const Symbol symbol(field);
 			try {
-				m_security = &m_tradeSystem.GetContext().GetSecurity(symbol);
+				m_security = &m_tradingSystem.GetContext().GetSecurity(symbol);
 				return true;
 			} catch (const Context::UnknownSecurity &) {
 				throw Exception("Failed to find security for command");
@@ -182,11 +182,11 @@ private:
 		}
 		void OnReply(
 					const OrderId &orderId,
-					const std::string &tradeSystemOrderId,
+					const std::string &tradingSystemOrderId,
 					const OrderStatus &status,
 					const Qty &remaining,
-					const TradeSystem::TradeInfo *trade) {
-			m_tradeSystem.GetLog().Info(
+					const TradingSystem::TradeInfo *trade) {
+			m_tradingSystem.GetLog().Info(
 				"Terminal: Order reply received:"
 					" order ID = %1% / %7%, status = %6% (%2%)"
 					", filled qty = %3%, remaining qty = %4%, avgPrice = %5%.",
@@ -195,8 +195,8 @@ private:
 				trade ? trade->qty : Qty(0),
 				remaining,
 				trade ? trade->price : 0,
-				TradeSystem::GetStringStatus(status),
-				tradeSystemOrderId);
+				TradingSystem::GetStringStatus(status),
+				tradingSystemOrderId);
 		}
 		Currency GetCurrency() const {
 			return m_currency != numberOfCurrencies
@@ -229,9 +229,9 @@ private:
 	class SellCommand : public OrderCommand {
 	public:
 		explicit SellCommand(
-				TradeSystem &tradeSystem,
+				TradingSystem &tradingSystem,
 				RiskControlScope &riskControlScope)
-			: OrderCommand(tradeSystem, riskControlScope) {
+			: OrderCommand(tradingSystem, riskControlScope) {
 			//...//
 		}
 		virtual ~SellCommand() {
@@ -239,12 +239,12 @@ private:
 		}
 		virtual void Execute() {
 			const auto &timeMeasurement
-				= m_tradeSystem.GetContext().StartStrategyTimeMeasurement();
+				= m_tradingSystem.GetContext().StartStrategyTimeMeasurement();
 			AssertEq(std::string(), Validate());
 			const OrderParams &orderParams = GetOrderParams();
 			if (Lib::IsZero(m_price)) {
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
-					m_tradeSystem.SellAtMarketPrice(
+					m_tradingSystem.SellAtMarketPrice(
 						*m_security,
 						GetCurrency(),
 						m_qty,
@@ -260,7 +260,7 @@ private:
 						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
-					m_tradeSystem.SellAtMarketPriceImmediatelyOrCancel(
+					m_tradingSystem.SellAtMarketPriceImmediatelyOrCancel(
 						*m_security,
 						GetCurrency(),
 						m_qty,
@@ -278,7 +278,7 @@ private:
 				}
 			} else {
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
-					m_tradeSystem.Sell(
+					m_tradingSystem.Sell(
 						*m_security,
 						GetCurrency(),
 						m_qty,
@@ -295,7 +295,7 @@ private:
 						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
-					m_tradeSystem.SellImmediatelyOrCancel(
+					m_tradingSystem.SellImmediatelyOrCancel(
 						*m_security,
 						GetCurrency(),
 						m_qty,
@@ -319,9 +319,9 @@ private:
 	class BuyCommand : public OrderCommand {
 	public:
 		explicit BuyCommand(
-				TradeSystem &tradeSystem,
+				TradingSystem &tradingSystem,
 				RiskControlScope &riskControlScope)
-			: OrderCommand(tradeSystem, riskControlScope) {
+			: OrderCommand(tradingSystem, riskControlScope) {
 			//...//
 		}
 		virtual ~BuyCommand() {
@@ -329,12 +329,12 @@ private:
 		}
 		virtual void Execute() {
 			const auto &timeMeasurement
-				= m_tradeSystem.GetContext().StartStrategyTimeMeasurement();
+				= m_tradingSystem.GetContext().StartStrategyTimeMeasurement();
 			AssertEq(std::string(), Validate());
 			const OrderParams &orderParams = GetOrderParams();
 			if (Lib::IsZero(m_price)) {
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
-					m_tradeSystem.BuyAtMarketPrice(
+					m_tradingSystem.BuyAtMarketPrice(
 						*m_security,
 						GetCurrency(),
 						m_qty,
@@ -350,7 +350,7 @@ private:
 						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
-					m_tradeSystem.BuyAtMarketPriceImmediatelyOrCancel(
+					m_tradingSystem.BuyAtMarketPriceImmediatelyOrCancel(
 						*m_security,
 						GetCurrency(),
 						m_qty,
@@ -368,7 +368,7 @@ private:
 				}
 			} else {
 				if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
-					m_tradeSystem.Buy(
+					m_tradingSystem.Buy(
 						*m_security,
 						GetCurrency(),
 						m_qty,
@@ -385,7 +385,7 @@ private:
 						m_riskControlScope,
 						timeMeasurement);
 				} else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
-					m_tradeSystem.BuyImmediatelyOrCancel(
+					m_tradingSystem.BuyImmediatelyOrCancel(
 						*m_security,
 						GetCurrency(),
 						m_qty,
@@ -410,8 +410,8 @@ private:
 		: public Command,
 		public boost::enable_shared_from_this<CancelCommand> {
 	public:
-		explicit CancelCommand(TradeSystem &tradeSystem)
-				: Command(tradeSystem) {
+		explicit CancelCommand(TradingSystem &tradingSystem)
+				: Command(tradingSystem) {
 			//...//
 		}
 		virtual ~CancelCommand() {
@@ -445,7 +445,7 @@ private:
 		}
 		virtual void Execute() {
 			AssertEq(std::string(), Validate());
-			m_tradeSystem.CancelOrder(*m_orderId);
+			m_tradingSystem.CancelOrder(*m_orderId);
 		}
 	private:
 		boost::optional<OrderId> m_orderId;
@@ -455,8 +455,8 @@ private:
 		: public Command,
 		public boost::enable_shared_from_this<TestCommand> {
 	public:
-		explicit TestCommand(TradeSystem &tradeSystem)
-				: Command(tradeSystem) {
+		explicit TestCommand(TradingSystem &tradingSystem)
+				: Command(tradingSystem) {
 			//...//
 		}
 		virtual ~TestCommand() {
@@ -469,19 +469,19 @@ private:
 			return "";
 		}
 		virtual void Execute() {
-			m_tradeSystem.Test();
+			m_tradingSystem.Test();
 		}
 	};
 
 public:
 
-	explicit Implementation(const fs::path &cmdFile, TradeSystem &tradeSystem)
+	explicit Implementation(const fs::path &cmdFile, TradingSystem &tradingSystem)
 			: m_cmdFile(cmdFile),
-			m_tradeSystem(tradeSystem),
-			m_riskControlScope(m_tradeSystem.GetMode(), "Terminal"),
+			m_tradingSystem(tradingSystem),
+			m_riskControlScope(m_tradingSystem.GetMode(), "Terminal"),
 			m_notificator(m_cmdFile, [this]() {OnCmdFileChanged();}),
 			m_lastSeqnumber(0) {
-		m_tradeSystem.GetLog().Info(
+		m_tradingSystem.GetLog().Info(
 			"Terminal: Starting with commands file %1%...",
 			m_cmdFile);
 		m_notificator.Start();
@@ -493,7 +493,7 @@ private:
 
 		std::ifstream f(m_cmdFile.string().c_str());
 		if (!f) {
-			m_tradeSystem.GetLog().Error(
+			m_tradingSystem.GetLog().Error(
 				"Terminal: Failed to open terminal commands file %1%.",
 				m_cmdFile);
 			return;
@@ -513,7 +513,7 @@ private:
 
 		AssertGe(line, execsCount);
 		if (line >= 0) {
-			m_tradeSystem.GetLog().Debug(
+			m_tradingSystem.GetLog().Debug(
 				"Terminal: processed file %1%"
 					" (lines: %2%, commands executed: %3%). ",
 				m_cmdFile,
@@ -567,7 +567,7 @@ private:
 				}
 
 				if (seqnumber <= 0) {
-					m_tradeSystem.GetLog().Error(
+					m_tradingSystem.GetLog().Error(
 						"Terminal: Failed to parse seqnumber"
 							" \"%1%\" at %2%:%3%."
 							" Must be a positive value greater than zero.",
@@ -576,7 +576,7 @@ private:
 						lineNo);
 					return false;
 				} else if (knownSeqnumber + 1 != seqnumber) {
-					m_tradeSystem.GetLog().Error(
+					m_tradingSystem.GetLog().Error(
 						"Terminal: Wrong terminal command seqnumber \"%1%\""
 							" at %2%:%3%, last seqnumber was %4%.",
 						seqnumber,
@@ -595,16 +595,16 @@ private:
 		
 				if (boost::iequals(field, "buy")) {
 					command.reset(
-						new BuyCommand(m_tradeSystem, m_riskControlScope));
+						new BuyCommand(m_tradingSystem, m_riskControlScope));
 				} else if (boost::iequals(field, "sell")) {
 					command.reset(
-						new SellCommand(m_tradeSystem, m_riskControlScope));
+						new SellCommand(m_tradingSystem, m_riskControlScope));
 				} else if (boost::iequals(field, "cancel")) {
-					command.reset(new CancelCommand(m_tradeSystem));
+					command.reset(new CancelCommand(m_tradingSystem));
 				} else if (boost::iequals(field, "test")) {
-					command.reset(new TestCommand(m_tradeSystem));
+					command.reset(new TestCommand(m_tradingSystem));
 				} else {
-					m_tradeSystem.GetLog().Error(
+					m_tradingSystem.GetLog().Error(
 						"Terminal: Failed to parse command \"%1%\" at %2%:%3%."
 							" Must be %4%.",
 						field,
@@ -619,7 +619,7 @@ private:
 				try {
 					command->ParseField(field);
 				} catch (const Command::Exception &ex) {
-					m_tradeSystem.GetLog().Error(
+					m_tradingSystem.GetLog().Error(
 						"Terminal: Failed to parse command parameter \"%1%\""
 							" at \"%2%\":%3%. %4%.",
 						field,
@@ -638,7 +638,7 @@ private:
 		}
 
 		if (!command) {
-			m_tradeSystem.GetLog().Error(
+			m_tradingSystem.GetLog().Error(
 				"Terminal: No command set at %1%:%2%. Must be %3%.",
 				m_cmdFile,
 				lineNo,
@@ -648,7 +648,7 @@ private:
 
 		const std::string &commandErrorText = command->Validate();
 		if (!commandErrorText.empty()) {
-			m_tradeSystem.GetLog().Error(
+			m_tradingSystem.GetLog().Error(
 				"Terminal: Failed to get command parameter at %1%:%2% - %3%",
 				m_cmdFile,
 				lineNo,
@@ -668,15 +668,15 @@ private:
 private:
 
 	const boost::filesystem::path m_cmdFile;
-	trdk::TradeSystem &m_tradeSystem;
+	trdk::TradingSystem &m_tradingSystem;
 	EmptyRiskControlScope m_riskControlScope;
 	trdk::Lib::FileSystemChangeNotificator m_notificator;
 	size_t m_lastSeqnumber;
 
 };
 
-Terminal::Terminal(const fs::path &cmdFile, TradeSystem &tradeSystem)
-		: m_pimpl(new Implementation(cmdFile, tradeSystem)) {
+Terminal::Terminal(const fs::path &cmdFile, TradingSystem &tradingSystem)
+		: m_pimpl(new Implementation(cmdFile, tradingSystem)) {
 	//...//
 }
 

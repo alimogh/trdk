@@ -80,7 +80,7 @@ namespace trdk {
 
 		trdk::Lib::TimeMeasurement::Milestones StartStrategyTimeMeasurement()
 				const;
-		trdk::Lib::TimeMeasurement::Milestones StartTradeSystemTimeMeasurement()
+		trdk::Lib::TimeMeasurement::Milestones StartTradingSystemTimeMeasurement()
 				const;
 		trdk::Lib::TimeMeasurement::Milestones StartDispatchingTimeMeasurement()
 				const;
@@ -121,8 +121,14 @@ namespace trdk {
 				const
 				= 0;
 
-		//! Returns Drop Copy or nullptr.
-		virtual DropCopy * GetDropCopy() const = 0;
+		template<typename Method>
+		void InvokeDropCopy(const Method &method) const {
+			auto *const dropCopy = GetDropCopy();
+			if (!dropCopy) {
+				return;
+			}
+			method(*dropCopy);
+		}
 
 		//! User context parameters. No predefined key list. Any key can be
 		//! changed.
@@ -136,10 +142,10 @@ namespace trdk {
 		//! Market Data Sources count.
 		/** @sa GetMarketDataSource
 		  */
-		virtual size_t GetMarketDataSourcesCount() const = 0;
+		virtual size_t GetNumberOfMarketDataSources() const = 0;
 		//! Returns Market Data Source by index.
 		/** Throws an exception if index in unknown.
-		  * @sa GetMarketDataSourcesCount
+		  * @sa GetNumberOfMarketDataSources
 		  * @throw trdk::Lib::Exception
 		  */
 		virtual const trdk::MarketDataSource & GetMarketDataSource(
@@ -148,7 +154,7 @@ namespace trdk {
 				= 0;
 		//! Returns Market Data Source by index.
 		/** Throws an exception if index in unknown.
-		  * @sa GetMarketDataSourcesCount
+		  * @sa GetNumberOfMarketDataSources
 		  * @throw trdk::Lib::Exception
 		  */
 		virtual trdk::MarketDataSource & GetMarketDataSource(size_t index) = 0;
@@ -164,31 +170,35 @@ namespace trdk {
 				const boost::function<bool (trdk::MarketDataSource &)> &)
 				= 0;
 
-		//! Trade Systems count.
-		/** @sa GetTradeSystem
+		//! Trading Systems count.
+		/** @sa GetTradingSystem
 		  */
-		virtual size_t GetTradeSystemsCount() const = 0;
-		//! Returns Trade System by index.
+		virtual size_t GetNumberOfTradingSystems() const = 0;
+		//! Returns Trading System by index.
 		/** Throws an exception if index in unknown.
-		  * @sa GetTradeSystemsCount
+		  * @sa GetNumberOfTradingSystems
 		  * @throw trdk::Lib::Exception
 		  */
-		virtual const trdk::TradeSystem & GetTradeSystem(
+		virtual const trdk::TradingSystem & GetTradingSystem(
 				size_t index,
 				const trdk::TradingMode &)
 				const
 				= 0;
-		//! Returns Trade System by index.
+		//! Returns Trading System by index.
 		/** Throws an exception if index in unknown.
-		  * @sa GetTradeSystemsCount
+		  * @sa GetNumberOfTradingSystems
 		  * @throw trdk::Lib::Exception
 		  */
-		virtual trdk::TradeSystem & GetTradeSystem(
+		virtual trdk::TradingSystem & GetTradingSystem(
 				size_t index,
 				const trdk::TradingMode &)
 				= 0;
 
+	protected:
 
+		//! Returns Drop Copy or nullptr.
+		virtual DropCopy * GetDropCopy() const = 0;
+	
 	protected:
 
 		void OnStarted();

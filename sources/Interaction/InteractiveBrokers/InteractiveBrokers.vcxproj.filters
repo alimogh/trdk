@@ -26,9 +26,6 @@
     <ClCompile Include="IbClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="IbTradeSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Api\EClientSocket.cpp">
       <Filter>API</Filter>
     </ClCompile>
@@ -41,6 +38,9 @@
     <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="IbTradingSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Fwd.hpp">
@@ -50,9 +50,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="IbClient.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IbTradeSystem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Prec.hpp" />
@@ -114,6 +111,9 @@
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="Api.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IbTradingSystem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

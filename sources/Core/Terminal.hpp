@@ -18,7 +18,9 @@ namespace trdk {
 
 	public:
 
-		explicit Terminal(const boost::filesystem::path &, trdk::TradeSystem &);
+		explicit Terminal(
+				const boost::filesystem::path &,
+				trdk::TradingSystem &);
 		~Terminal();
 
 	private:

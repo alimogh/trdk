@@ -10,7 +10,7 @@
 
 #include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
-#include "Core/TradeSystem.hpp"
+#include "Core/TradingSystem.hpp"
 #include "Core/RiskControl.hpp"
 
 namespace trdk { namespace Tests {
@@ -33,7 +33,7 @@ namespace trdk { namespace Tests {
 
 		MOCK_CONST_METHOD0(GetDropCopy, DropCopy *());
 
-		MOCK_CONST_METHOD0(GetMarketDataSourcesCount, size_t());
+		MOCK_CONST_METHOD0(GetNumberOfMarketDataSources, size_t());
 
 		MOCK_CONST_METHOD1(
 			GetMarketDataSource,
@@ -49,13 +49,13 @@ namespace trdk { namespace Tests {
 			ForEachMarketDataSource,
 			void(const boost::function<bool (trdk::MarketDataSource &)> &));
 
-		MOCK_CONST_METHOD0(GetTradeSystemsCount,  size_t ());
+		MOCK_CONST_METHOD0(GetNumberOfTradingSystems,  size_t ());
 		MOCK_CONST_METHOD2(
-			GetTradeSystem,
-			const trdk::TradeSystem &(size_t index, const trdk::TradingMode &));
+			GetTradingSystem,
+			const trdk::TradingSystem &(size_t index, const trdk::TradingMode &));
 		MOCK_METHOD2(
-			GetTradeSystem,
-			trdk::TradeSystem &(size_t index, const trdk::TradingMode &));
+			GetTradingSystem,
+			trdk::TradingSystem &(size_t index, const trdk::TradingMode &));
 
 	protected:
 	

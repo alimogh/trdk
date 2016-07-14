@@ -1,4 +1,4 @@
 
 EXPORTS
-	CreateTradeSystem
+	CreateTradingSystem
 	GetTrdkModuleVersionInfoV1

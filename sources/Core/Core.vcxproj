@@ -273,8 +273,8 @@
     <ClCompile Include="Security.cpp" />
     <ClCompile Include="Settings.cpp" />
     <ClCompile Include="Terminal.cpp" />
-    <ClCompile Include="TradeSystem.cpp" />
     <ClCompile Include="RiskControl.cpp" />
+    <ClCompile Include="TradingSystem.cpp" />
     <ClCompile Include="Types.cpp" />
     <ClCompile Include="Version.cpp" />
   </ItemGroup>
@@ -305,9 +305,9 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Settings.hpp" />
     <ClInclude Include="Terminal.hpp" />
-    <ClInclude Include="TradeSystem.hpp" />
     <ClInclude Include="RiskControl.hpp" />
     <ClInclude Include="TradingLog.hpp" />
+    <ClInclude Include="TradingSystem.hpp" />
     <ClInclude Include="Types.hpp" />
   </ItemGroup>
   <ItemGroup>

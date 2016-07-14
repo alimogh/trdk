@@ -19,7 +19,7 @@ using namespace trdk::Engine;
 using namespace trdk::Engine::Ini;
 
 const std::string Sections::strategy = "Strategy";
-const std::string Sections::tradeSystem = "TradeSystem";
+const std::string Sections::tradingSystem = "TradingSystem";
 const std::string Sections::marketDataSource = "MarketDataSource";
 const std::string Sections::observer = "Observer";
 const std::string Sections::service = "Service";
@@ -36,8 +36,8 @@ const std::string Constants::Services::brokerPositionsUpdates
 	= "Broker Positions";
 
 const std::string DefaultValues::Factories::factoryNameStart = "Create";
-const std::string DefaultValues::Factories::tradeSystem
-	= DefaultValues::Factories::factoryNameStart + "TradeSystem";
+const std::string DefaultValues::Factories::tradingSystem
+	= DefaultValues::Factories::factoryNameStart + "TradingSystem";
 const std::string DefaultValues::Factories::marketDataSource
 	= DefaultValues::Factories::factoryNameStart + "MarketDataSource";
 

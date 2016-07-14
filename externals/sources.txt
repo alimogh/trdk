@@ -1,0 +1,1 @@
+Open SSL: http://www.npcglib.org/~stathis/blog/precompiled-openssl/ (openssl-1.0.1t-vs2015.7z for MSVC 2015)

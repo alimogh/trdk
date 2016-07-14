@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "IbTradeSystem.hpp"
+#include "IbTradingSystem.hpp"
 #include "IbClient.hpp"
 #include "Core/Security.hpp"
 
@@ -21,13 +21,13 @@ namespace ib = trdk::Interaction::InteractiveBrokers;
 namespace pt = boost::posix_time;
 
 
-ib::TradeSystem::TradeSystem(
+ib::TradingSystem::TradingSystem(
 		const TradingMode &mode,
 		size_t index,
 		Context &context,
 		const std::string &tag,
 		const Lib::IniSectionRef &conf)
-	: trdk::TradeSystem(mode, index, context, tag)
+	: trdk::TradingSystem(mode, index, context, tag)
 	, trdk::MarketDataSource(index, context, tag)
 	, m_isTestSource(conf.ReadBoolKey("test_source", false)) {
 	if (conf.ReadBoolKey("positions", false)) {
@@ -59,11 +59,11 @@ ib::TradeSystem::TradeSystem(
 	}
 }
 
-ib::TradeSystem::~TradeSystem() {
+ib::TradingSystem::~TradingSystem() {
 	//...//
 }
 
-void ib::TradeSystem::Connect(const IniSectionRef &settings) {
+void ib::TradingSystem::Connect(const IniSectionRef &settings) {
 	// Implementation for trdk::MarketDataSource.
 	if (IsConnected()) {
 		return;
@@ -72,11 +72,11 @@ void ib::TradeSystem::Connect(const IniSectionRef &settings) {
 	CreateConnection(settings);
 }
 
-bool ib::TradeSystem::IsConnected() const {
+bool ib::TradingSystem::IsConnected() const {
 	return m_client ? true : false;
 }
 
-void ib::TradeSystem::CreateConnection(const IniSectionRef &settings) {
+void ib::TradingSystem::CreateConnection(const IniSectionRef &settings) {
 
 	Assert(!m_client);
 	Assert(m_securities.empty());
@@ -171,7 +171,7 @@ void ib::TradeSystem::CreateConnection(const IniSectionRef &settings) {
 
 }
 
-void ib::TradeSystem::SubscribeToSecurities() {
+void ib::TradingSystem::SubscribeToSecurities() {
 	Assert(m_client);
 	if (!m_client) {
 		return;
@@ -184,14 +184,14 @@ void ib::TradeSystem::SubscribeToSecurities() {
 	}
 }
 
-const ib::TradeSystem::Account & ib::TradeSystem::GetAccount() const {
+const ib::TradingSystem::Account & ib::TradingSystem::GetAccount() const {
 	if (!m_account) {
 		throw UnknownAccountError("Account not specified");
 	}
 	return *m_account;
 }
 
-trdk::TradeSystem::Position ib::TradeSystem::GetBrokerPostion(
+trdk::TradingSystem::Position ib::TradingSystem::GetBrokerPostion(
 		const std::string &account,
 		const Symbol &symbol)
 		const {
@@ -210,13 +210,13 @@ trdk::TradeSystem::Position ib::TradeSystem::GetBrokerPostion(
 			return *it;
 		}
 	}
-	return trdk::TradeSystem::Position();
+	return trdk::TradingSystem::Position();
 }
 
-void ib::TradeSystem::ForEachBrokerPostion(
+void ib::TradingSystem::ForEachBrokerPostion(
 		const std::string &account,
 		const boost::function<
-			bool (const trdk::TradeSystem::Position &)> &pred)
+			bool (const trdk::TradingSystem::Position &)> &pred)
 		const {
 	if (!m_positions) {
 		throw PositionError("Positions storage not enabled");
@@ -227,7 +227,7 @@ void ib::TradeSystem::ForEachBrokerPostion(
 	for (auto it = index.lower_bound(account); it != end && pred(*it); ++it);
 }
 
-trdk::Security & ib::TradeSystem::CreateNewSecurityObject(
+trdk::Security & ib::TradingSystem::CreateNewSecurityObject(
 		const Symbol &symbol) {
 
 	const auto &result = boost::make_shared<ib::Security>(
@@ -263,11 +263,11 @@ trdk::Security & ib::TradeSystem::CreateNewSecurityObject(
 	return *result;
 }
 
-void ib::TradeSystem::SendCancelOrder(const trdk::OrderId &orderId) {
+void ib::TradingSystem::SendCancelOrder(const trdk::OrderId &orderId) {
 	m_client->CancelOrder(orderId);
 }
 
-void ib::TradeSystem::SendCancelAllOrders(trdk::Security &security) {
+void ib::TradingSystem::SendCancelAllOrders(trdk::Security &security) {
 	std::list<trdk::OrderId> ids;
 	std::list<std::string> idsStr;
 	{
@@ -288,13 +288,14 @@ void ib::TradeSystem::SendCancelAllOrders(trdk::Security &security) {
 		});
 }
 
-trdk::OrderId ib::TradeSystem::SendSellAtMarketPrice(
+trdk::OrderId ib::TradingSystem::SendSellAtMarketPrice(
 		trdk::Security &security,
 		const Currency &currency,
 		const Qty &qty,
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &statusUpdateSlot) {
 	AssertEq(security.GetSymbol().GetCurrency(), currency);
+	UseUnused(currency);
 	PlacedOrder order = {};
 	order.id = m_client->PlaceSellOrder(security, qty, params);
 	order.security = &security;
@@ -304,7 +305,7 @@ trdk::OrderId ib::TradeSystem::SendSellAtMarketPrice(
 }
 
 
-trdk::OrderId ib::TradeSystem::SendSell(
+trdk::OrderId ib::TradingSystem::SendSell(
 		trdk::Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -312,6 +313,7 @@ trdk::OrderId ib::TradeSystem::SendSell(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &statusUpdateSlot) {
 	AssertEq(security.GetSymbol().GetCurrency(), currency);
+	UseUnused(currency);
 	const auto rawPrice = security.DescalePrice(price);
 	PlacedOrder order = {};
 	order.id = m_client->PlaceSellOrder(security, qty, rawPrice, params);
@@ -321,7 +323,7 @@ trdk::OrderId ib::TradeSystem::SendSell(
 	return order.id;
 }
 
-trdk::OrderId ib::TradeSystem::SendSellAtMarketPriceWithStopPrice(
+trdk::OrderId ib::TradingSystem::SendSellAtMarketPriceWithStopPrice(
 		trdk::Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -329,6 +331,7 @@ trdk::OrderId ib::TradeSystem::SendSellAtMarketPriceWithStopPrice(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &statusUpdateSlot) {
 	AssertEq(security.GetSymbol().GetCurrency(), currency);
+	UseUnused(currency);
 	const auto rawStopPrice = security.DescalePrice(stopPrice);
 	PlacedOrder order = {};
 	order.id = m_client->PlaceSellOrderWithMarketPrice(
@@ -342,7 +345,7 @@ trdk::OrderId ib::TradeSystem::SendSellAtMarketPriceWithStopPrice(
 	return order.id;
 }
 
-trdk::OrderId ib::TradeSystem::SendSellImmediatelyOrCancel(
+trdk::OrderId ib::TradingSystem::SendSellImmediatelyOrCancel(
 		trdk::Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -350,6 +353,7 @@ trdk::OrderId ib::TradeSystem::SendSellImmediatelyOrCancel(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &statusUpdateSlot) {
 	AssertEq(security.GetSymbol().GetCurrency(), currency);
+	UseUnused(currency);
 	const double rawPrice = security.DescalePrice(price);
 	const PlacedOrder order = {
 		m_client->PlaceSellIocOrder(security, qty, rawPrice, params),
@@ -360,13 +364,14 @@ trdk::OrderId ib::TradeSystem::SendSellImmediatelyOrCancel(
 	return order.id;
 }
 
-trdk::OrderId ib::TradeSystem::SendBuyAtMarketPrice(
+trdk::OrderId ib::TradingSystem::SendBuyAtMarketPrice(
 		trdk::Security &security,
 		const Currency &currency,
 		const Qty &qty,
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &statusUpdateSlot) {
 	AssertEq(security.GetSymbol().GetCurrency(), currency);
+	UseUnused(currency);
 	PlacedOrder order = {};
 	order.id = m_client->PlaceBuyOrder(security, qty, params);
 	order.security = &security;
@@ -375,7 +380,7 @@ trdk::OrderId ib::TradeSystem::SendBuyAtMarketPrice(
 	return order.id;
 }
 
-trdk::OrderId ib::TradeSystem::SendSellAtMarketPriceImmediatelyOrCancel(
+trdk::OrderId ib::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
 		trdk::Security &,
 		const trdk::Lib::Currency &,
 		const trdk::Qty &,
@@ -384,7 +389,7 @@ trdk::OrderId ib::TradeSystem::SendSellAtMarketPriceImmediatelyOrCancel(
 	throw MethodDoesNotImplementedError("Method is not implemented");
 }
 
-trdk::OrderId ib::TradeSystem::SendBuy(
+trdk::OrderId ib::TradingSystem::SendBuy(
 		trdk::Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -392,6 +397,7 @@ trdk::OrderId ib::TradeSystem::SendBuy(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &statusUpdateSlot) {
 	AssertEq(security.GetSymbol().GetCurrency(), currency);
+	UseUnused(currency);
 	const auto rawPrice = security.DescalePrice(price);
 	PlacedOrder order = {};
 	order.id = m_client->PlaceBuyOrder(security, qty, rawPrice, params);
@@ -401,7 +407,7 @@ trdk::OrderId ib::TradeSystem::SendBuy(
 	return order.id;
 }
 
-trdk::OrderId ib::TradeSystem::SendBuyAtMarketPriceWithStopPrice(
+trdk::OrderId ib::TradingSystem::SendBuyAtMarketPriceWithStopPrice(
 		trdk::Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -409,6 +415,7 @@ trdk::OrderId ib::TradeSystem::SendBuyAtMarketPriceWithStopPrice(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &statusUpdateSlot) {
 	AssertEq(security.GetSymbol().GetCurrency(), currency);
+	UseUnused(currency);
 	const auto rawStopPrice = security.DescalePrice(stopPrice);
 	PlacedOrder order = {};
 	order.id = m_client->PlaceBuyOrderWithMarketPrice(
@@ -422,7 +429,7 @@ trdk::OrderId ib::TradeSystem::SendBuyAtMarketPriceWithStopPrice(
 	return order.id;
 }
 
-trdk::OrderId ib::TradeSystem::SendBuyImmediatelyOrCancel(
+trdk::OrderId ib::TradingSystem::SendBuyImmediatelyOrCancel(
 		trdk::Security &security,
 		const Currency &currency,
 		const Qty &qty,
@@ -430,6 +437,7 @@ trdk::OrderId ib::TradeSystem::SendBuyImmediatelyOrCancel(
 		const OrderParams &params,
 		const OrderStatusUpdateSlot &statusUpdateSlot) {
 	AssertEq(security.GetSymbol().GetCurrency(), currency);
+	UseUnused(currency);
 	const double rawPrice = security.DescalePrice(price);
 	const PlacedOrder order = {
 		m_client->PlaceBuyIocOrder(security, qty, rawPrice, params),
@@ -439,7 +447,7 @@ trdk::OrderId ib::TradeSystem::SendBuyImmediatelyOrCancel(
 	return order.id;
 }
 
-trdk::OrderId ib::TradeSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
+trdk::OrderId ib::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
 		trdk::Security &,
 		const trdk::Lib::Currency &,
 		const trdk::Qty &,
@@ -448,7 +456,7 @@ trdk::OrderId ib::TradeSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
 	throw MethodDoesNotImplementedError("Method is not implemented");
 }
 
-void ib::TradeSystem::RegOrder(const PlacedOrder &order) {
+void ib::TradingSystem::RegOrder(const PlacedOrder &order) {
 	const OrdersWriteLock lock(m_ordersMutex);
 	Assert(
 		m_placedOrders.get<ByOrder>().find(order.id)
@@ -456,6 +464,6 @@ void ib::TradeSystem::RegOrder(const PlacedOrder &order) {
 	m_placedOrders.insert(order);
 }
 
-void ib::TradeSystem::SwitchToNewContract(trdk::Security &security) {
+void ib::TradingSystem::SwitchToNewContract(trdk::Security &security) {
 	m_client->SwitchToNewContract(dynamic_cast<Security &>(security));
 }

@@ -80,7 +80,7 @@ namespace trdk {
 				trdk::Strategy &,
 				const boost::uuids::uuid &operationId,
 				int64_t subOperationId,
-				trdk::TradeSystem &,
+				trdk::TradingSystem &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
@@ -115,8 +115,8 @@ namespace trdk {
 
 	public:
 
-		const trdk::TradeSystem & GetTradeSystem() const;
-		trdk::TradeSystem & GetTradeSystem();
+		const trdk::TradingSystem & GetTradingSystem() const;
+		trdk::TradingSystem & GetTradingSystem();
 
 		const trdk::Strategy & GetStrategy() const throw();
 		trdk::Strategy & GetStrategy() throw();
@@ -325,16 +325,16 @@ namespace trdk {
 
 		void UpdateOpening(
 				const trdk::OrderId &,
-				const std::string &tradeSystemOrderId,
+				const std::string &tradingSystemOrderId,
 				const trdk::OrderStatus &,
 				const trdk::Qty &remainingQty,
-				const trdk::TradeSystem::TradeInfo *);
+				const trdk::TradingSystem::TradeInfo *);
 		void UpdateClosing(
 				const trdk::OrderId &,
-				const std::string &tradeSystemOrderId,
+				const std::string &tradingSystemOrderId,
 				const trdk::OrderStatus &,
 				const trdk::Qty &remainingQty,
-				const trdk::TradeSystem::TradeInfo *);
+				const trdk::TradingSystem::TradeInfo *);
 
 	private:
 
@@ -353,7 +353,7 @@ namespace trdk {
 				trdk::Strategy &,
 				const boost::uuids::uuid &operationId,
 				int64_t subOperationId,
-				trdk::TradeSystem &,
+				trdk::TradingSystem &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
@@ -370,7 +370,6 @@ namespace trdk {
 
 	protected:
 
-		//! Ctor only for virtual inheritance, always throws exception.
 		LongPosition();
 
 	public:
@@ -434,7 +433,7 @@ namespace trdk {
 				trdk::Strategy &,
 				const boost::uuids::uuid &operationId,
 				int64_t subOperationId,
-				trdk::TradeSystem &,
+				trdk::TradingSystem &,
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
@@ -451,7 +450,6 @@ namespace trdk {
 
 	protected:
 
-		//! Ctor only for virtual inheritance, always throws exception.
 		ShortPosition();
 
 	public:

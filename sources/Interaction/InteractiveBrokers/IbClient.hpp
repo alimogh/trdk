@@ -11,7 +11,7 @@
 #pragma once
 
 #include "IbSecurity.hpp"
-#include "IbTradeSystem.hpp"
+#include "IbTradingSystem.hpp"
 #include "Core/Context.hpp"
 
 namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
@@ -175,7 +175,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 	public:
 
 		Client(
-				InteractiveBrokers::TradeSystem &,
+				InteractiveBrokers::TradingSystem &,
 				bool isNoHistoryMode,
 				int clientId,
 				const std::string &host,
@@ -187,7 +187,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		//! Sets account, can be empty, must be called before StartData.
 		void SetAccount(
 					const std::string &account,
-					TradeSystem::Account &accountInfoRef) {
+					TradingSystem::Account &accountInfoRef) {
 			AssertEq(std::string(), m_account);
 			Assert(!m_accountInfo);
 			m_account = account;
@@ -454,7 +454,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 	private:
 
-		InteractiveBrokers::TradeSystem &m_ts;
+		InteractiveBrokers::TradingSystem &m_ts;
 
 		const bool m_isNoHistoryMode;
 
@@ -497,7 +497,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		mutable BarsRequests m_barsRequest;
 
 		std::string m_account;
-		TradeSystem::Account *m_accountInfo;
+		TradingSystem::Account *m_accountInfo;
 
 		//! CUSTOMIZED MERHOD for GadM. Switches security to new contact.
 		boost::mutex m_switchMutex;

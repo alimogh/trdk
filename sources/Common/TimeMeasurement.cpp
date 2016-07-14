@@ -85,7 +85,7 @@ const std::string & TimeMeasurement::GetMilestoneName(
 	}
 }
 
-namespace { namespace TradeSystemStrings {
+namespace { namespace TradingSystemStrings {
 	const std::string orderEnqueue				= "order enqu      ";
 	const std::string orderPack					= "order pack      ";
 	const std::string orderSend					= "order send      ";
@@ -94,10 +94,10 @@ namespace { namespace TradeSystemStrings {
 	const std::string orderReplyProcessed		= "reply proc      ";
 } }
 const std::string & TimeMeasurement::GetMilestoneName(
-			const TimeMeasurement::TradeSystemMilestone &milestone) {
-	using namespace TradeSystemStrings;
+			const TimeMeasurement::TradingSystemMilestone &milestone) {
+	using namespace TradingSystemStrings;
 	static_assert(
-		numberOfTradeSystemMilestones == 6,
+		numberOfTradingSystemMilestones == 6,
 		"Milestone list changed.");
 	switch (milestone) {
 		default:

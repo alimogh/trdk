@@ -121,7 +121,7 @@ namespace trdk {
 
 		trdk::RiskControlScope & GetRiskControlScope();
 
-		trdk::TradeSystem & GetTradeSystem(size_t index);
+		trdk::TradingSystem & GetTradingSystem(size_t index);
 
 	public:
 

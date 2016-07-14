@@ -131,7 +131,7 @@ namespace EmaFuturesStrategy {
 		explicit LongPosition(
 				Strategy &,
 				const boost::uuids::uuid &,
-				TradeSystem &,
+				TradingSystem &,
 				Security &,
 				const Qty &,
 				const Lib::TimeMeasurement::Milestones &,
@@ -160,7 +160,7 @@ namespace EmaFuturesStrategy {
 		explicit ShortPosition(
 				Strategy &,
 				const boost::uuids::uuid &,
-				TradeSystem &,
+				TradingSystem &,
 				Security &,
 				const Qty &,
 				const Lib::TimeMeasurement::Milestones &,

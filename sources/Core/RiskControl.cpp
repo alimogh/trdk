@@ -149,7 +149,7 @@ void EmptyRiskControlScope::ConfirmBuyOrder(
 		const Currency &,
 		const ScaledPrice &/*orderPrice*/,
 		const Qty &/*remainingQty*/,
-		const TradeSystem::TradeInfo *) {
+		const TradingSystem::TradeInfo *) {
 	//...//
 }
 void EmptyRiskControlScope::ConfirmSellOrder(
@@ -159,7 +159,7 @@ void EmptyRiskControlScope::ConfirmSellOrder(
 		const Currency &,
 		const ScaledPrice &/*orderPrice*/,
 		const Qty &/*remainingQty*/,
-		const TradeSystem::TradeInfo *) {
+		const TradingSystem::TradeInfo *) {
 	//...//
 }
 void EmptyRiskControlScope::CheckTotalPnl(double /*pnl*/) const {
@@ -357,7 +357,7 @@ public:
 			const Lib::Currency &currency,
 			const ScaledPrice &orderPrice,
 			const Qty &remainingQty,
-			const TradeSystem::TradeInfo *trade) {
+			const TradingSystem::TradeInfo *trade) {
  		 ConfirmOrder(
 			operationId,
 			status,
@@ -379,7 +379,7 @@ public:
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
 			const Qty &remainingQty,
-			const TradeSystem::TradeInfo *trade) {
+			const TradingSystem::TradeInfo *trade) {
  		ConfirmOrder(
 			operationId,
 			status,
@@ -487,7 +487,7 @@ private:
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
 			const Qty &remainingQty,
-			const TradeSystem::TradeInfo *trade,
+			const TradingSystem::TradeInfo *trade,
 			RiskControlSymbolContext::Side &side) {
 		ConfirmUsedFunds(
 			operationId,
@@ -580,7 +580,7 @@ private:
 
 		//! @sa	See TRDK-107, TRDK-176 and TRDK-110 for order side details.
 		//!		But we don't any such logic here - we have "logic order side",
-		//!		it's enough to calculate the volume. Trade system will do the
+		//!		it's enough to calculate the volume. Trading system will do the
 		//!		same, but using "native order side".
 		if (symbol.GetFotBaseCurrency() == currency) {
 			return std::make_pair(
@@ -687,7 +687,7 @@ private:
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
 			const Qty &remainingQty,
-			const TradeSystem::TradeInfo *trade,
+			const TradingSystem::TradeInfo *trade,
 			const RiskControlSymbolContext::Side &side) {
 
 		static_assert(
@@ -737,7 +737,7 @@ private:
 			Security &security,
 			const Currency &currency,
 			const ScaledPrice &orderPrice,
-			const TradeSystem::TradeInfo &trade,
+			const TradingSystem::TradeInfo &trade,
 			const RiskControlSymbolContext::Side &side) {
 
 		const Symbol &symbol = security.GetSymbol();
@@ -1519,7 +1519,7 @@ void RiskControl::ConfirmBuyOrder(
 		const Currency &currency,
 		const ScaledPrice &orderPrice,
 		const Qty &remainingQty,
-		const TradeSystem::TradeInfo *trade,
+		const TradingSystem::TradeInfo *trade,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	if (!m_pimpl->m_globalScope) {
 		AssertEq(0, operationId);
@@ -1553,7 +1553,7 @@ void RiskControl::ConfirmSellOrder(
 		const Currency &currency,
 		const ScaledPrice &orderPrice,
 		const Qty &remainingQty,
-		const TradeSystem::TradeInfo *trade,
+		const TradingSystem::TradeInfo *trade,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	if (!m_pimpl->m_globalScope) {
 		AssertEq(0, operationId);
