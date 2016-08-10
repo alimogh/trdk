@@ -71,6 +71,7 @@ namespace trdk { namespace EngineServer {
 			std::string storeOrder;
 			std::string storeTrade;
 			std::string storeBook;
+			std::string storeBar;
 
 			std::string startEngine;
 			std::string stopEngine;
@@ -172,6 +173,16 @@ namespace trdk { namespace EngineServer {
 
 		};
 
+		struct BarCache {
+			const Security *security;
+			boost::posix_time::ptime time;
+			boost::posix_time::time_duration size;
+			ScaledPrice open;
+			ScaledPrice close;
+			ScaledPrice high;
+			ScaledPrice low;
+		};
+
 		class DropCopy : public trdk::DropCopy {
 		public:
 			explicit DropCopy(Service &);
@@ -233,6 +244,14 @@ namespace trdk { namespace EngineServer {
 			virtual void CopyBook(
 					const trdk::Security &,
 					const trdk::PriceBook &);
+			virtual void CopyBar(
+					const trdk::Security &,
+					const boost::posix_time::ptime &,
+					const boost::posix_time::time_duration &,
+					const trdk::ScaledPrice &openTradePrice,
+					const trdk::ScaledPrice &closeTradePrice,
+					const trdk::ScaledPrice &highTradePrice,
+					const trdk::ScaledPrice &lowTradePrice);
 		private:
 			Service &m_service;
 			EventsLog &m_log;
@@ -324,6 +343,19 @@ namespace trdk { namespace EngineServer {
 				double bestAskPrice,
 				const Qty &bestAskQty);
 
+		bool StoreBook(
+				size_t recordIndex,
+				size_t storeAttemptNo,
+				bool dump,
+				const trdk::Security &,
+				const trdk::PriceBook &);
+
+		bool StoreBar(
+				size_t recordIndex,
+				size_t storeAttemptNo,
+				bool dump,
+				const BarCache &);
+
 		bool StoreRecord(
 				const std::string Topics::*topic,
 				size_t recordIndex,
@@ -335,13 +367,6 @@ namespace trdk { namespace EngineServer {
 				size_t recordIndex,
 				size_t storeAttemptNo,
 				const DropCopyRecord &&);
-
-		bool StoreBook(
-				size_t recordIndex,
-				size_t storeAttemptNo,
-				bool dump,
-				const trdk::Security &,
-				const trdk::PriceBook &);
 
 	private:
 

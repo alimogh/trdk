@@ -90,6 +90,16 @@ namespace trdk {
 				const trdk::PriceBook &)
 			= 0;
 
+		virtual void CopyBar(
+				const trdk::Security &,
+				const boost::posix_time::ptime &,
+				const boost::posix_time::time_duration &,
+				const trdk::ScaledPrice &openTradePrice,
+				const trdk::ScaledPrice &closeTradePrice,
+				const trdk::ScaledPrice &highTradePrice,
+				const trdk::ScaledPrice &lowTradePrice)
+			= 0;
+
 	};
 
 }
