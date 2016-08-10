@@ -55,6 +55,7 @@ EngineServer::Service::Topics::Topics(const std::string &suffix)
 	, storeOrder("trdk.service.order.store")
 	, storeTrade("trdk.service.trade.store")
 	, storeBook("trdk.service.book.store")
+	, storeBar("trdk.service.bar.store")
 	, startEngine((boost::format("trdk.engine.%1%.start") % suffix).str())
 	, stopEngine((boost::format("trdk.engine.%1%.stop") % suffix).str())
 	, startDropCopy(
@@ -450,6 +451,29 @@ void EngineServer::Service::DropCopy::CopyBook(
 				book);
 		});
 
+}
+
+void EngineServer::Service::DropCopy::CopyBar(
+		const Security &security,
+		const pt::ptime &time,
+		const pt::time_duration &size,
+		const ScaledPrice &openTradePrice,
+		const ScaledPrice &closeTradePrice,
+		const ScaledPrice &highTradePrice,
+		const ScaledPrice &lowTradePrice) {
+	const BarCache bar = {
+		&security,
+		time,
+		size,
+		openTradePrice,
+		closeTradePrice,
+		highTradePrice,
+		lowTradePrice
+	};
+	m_queue.Enqueue(
+		[this, bar](size_t recordIndex, size_t attemptNo, bool dump) -> bool {
+			return m_service.StoreBar(recordIndex, attemptNo, dump, bar);
+		});
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1303,6 +1327,33 @@ bool EngineServer::Service::StoreTrade(
 
 	return StoreRecord(
 		&Topics::storeTrade,
+		recordIndex,
+		storeAttemptNo,
+		dump,
+		std::move(record));
+
+}
+
+bool EngineServer::Service::StoreBar(
+		size_t recordIndex,
+		size_t storeAttemptNo,
+		bool dump,
+		const BarCache &bar) {
+
+	DropCopyRecord record;
+	record["engine"] = *m_instanceId;
+	record["source"] = bar.security->GetSource().GetTag();
+	record["symbol"] = bar.security->GetSymbol().GetSymbol();
+	record["time"] = ConvertToMicroseconds(bar.time);
+	AssertLt(0, bar.size.total_seconds());
+	record["size"] = int64_t(bar.size.total_seconds());
+	record["open"] = bar.security->DescalePrice(bar.open);
+	record["close"] = bar.security->DescalePrice(bar.close);
+	record["high"] = bar.security->DescalePrice(bar.high);
+	record["low"] = bar.security->DescalePrice(bar.low);
+
+	return StoreRecord(
+		&Topics::storeBar,
 		recordIndex,
 		storeAttemptNo,
 		dump,

@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "BarService.hpp"
+#include "Core/DropCopy.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 
@@ -439,7 +440,7 @@ public:
 			const pt::ptime &tradeTime,
 			pt::ptime &startTime,
 			pt::ptime &endTime)
-		const {
+			const {
 		AssertNe(tradeTime, pt::not_a_date_time);
 		AssertEq(startTime, pt::not_a_date_time);
 		const auto time = tradeTime.time_of_day();
@@ -453,7 +454,7 @@ public:
 					+ pt::seconds(
 						((time.seconds() / m_barSizeUnits) + 1)
 							* m_barSizeUnits);
-				startTime = endTime - pt::seconds(m_barSizeUnits);
+				startTime = endTime - m_timedBarSize;
 				break;
 			case UNITS_MINUTES:
 				endTime
@@ -462,7 +463,7 @@ public:
 					+ pt::minutes(
 						((time.minutes() / m_barSizeUnits) + 1)
 							* m_barSizeUnits);
-				startTime = endTime - pt::minutes(m_barSizeUnits);
+				startTime = endTime - m_timedBarSize;
 				break;
 			case UNITS_HOURS:
 				endTime
@@ -470,7 +471,7 @@ public:
 					+ pt::hours(
 						((time.hours() / m_barSizeUnits) + 1)
 							* m_barSizeUnits);
-				startTime = endTime - pt::hours(m_barSizeUnits);
+				startTime = endTime - m_timedBarSize;
 				break;
 			case UNITS_DAYS:
 				//! @todo Implement days bar service
@@ -501,6 +502,20 @@ public:
 			= m_bars.size() > 0 && !IsZero(m_currentBar->lowTradePrice);
 		if (isSignificantBar) {
 			LogCurrentBar();
+		}
+		if (!m_currentBarEnd.is_not_a_date_time() && !m_bars.empty()) {
+			m_service.GetContext().InvokeDropCopy(
+				[this](DropCopy &dropCopy) {
+					const Bar &bar = m_bars.back();
+					dropCopy.CopyBar(
+						*m_security,
+						bar.time,
+						m_timedBarSize,
+						bar.openTradePrice,
+						bar.closeTradePrice,
+						bar.highTradePrice,
+						bar.lowTradePrice);
+				});
 		}
 		m_bars.resize(m_bars.size() + 1);
 		m_currentBar = &m_bars.back();
