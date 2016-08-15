@@ -73,6 +73,9 @@ namespace trdk { namespace EngineServer {
 			std::string storeBook;
 			std::string storeBar;
 
+			std::string registerAbstractDataSource;
+			std::string storeAbstractDataPoint;
+
 			std::string startEngine;
 			std::string stopEngine;
 
@@ -252,6 +255,14 @@ namespace trdk { namespace EngineServer {
 					const trdk::ScaledPrice &closeTradePrice,
 					const trdk::ScaledPrice &highTradePrice,
 					const trdk::ScaledPrice &lowTradePrice);
+			virtual trdk::DropCopy::AbstractDataSourceId RegisterAbstractDataSource(
+					const boost::uuids::uuid &instance,
+					const boost::uuids::uuid &type,
+					const std::string &name);
+			virtual void CopyAbstractDataPoint(
+					const trdk::DropCopy::AbstractDataSourceId &,
+					const boost::posix_time::ptime &,
+					double value);
 		private:
 			Service &m_service;
 			EventsLog &m_log;
@@ -356,6 +367,14 @@ namespace trdk { namespace EngineServer {
 				bool dump,
 				const BarCache &);
 
+		bool StoreAbstractDataPoint(
+				size_t recordIndex,
+				size_t storeAttemptNo,
+				bool dump,
+				const trdk::DropCopy::AbstractDataSourceId &,
+				const boost::posix_time::ptime &,
+				double value);
+
 		bool StoreRecord(
 				const std::string Topics::*topic,
 				size_t recordIndex,
@@ -367,6 +386,11 @@ namespace trdk { namespace EngineServer {
 				size_t recordIndex,
 				size_t storeAttemptNo,
 				const DropCopyRecord &&);
+
+		trdk::DropCopy::AbstractDataSourceId RegisterAbstractDataSource(
+				const boost::uuids::uuid &instance,
+				const boost::uuids::uuid &type,
+				const std::string &name);
 
 	private:
 

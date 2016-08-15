@@ -20,6 +20,7 @@
 #	include <boost/variant.hpp>
 #	include <boost/optional.hpp>
 #	include <boost/unordered_map.hpp>
+#	include <boost/uuid/string_generator.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
