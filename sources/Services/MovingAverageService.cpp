@@ -11,9 +11,11 @@
 #include "Prec.hpp"
 #include "MovingAverageService.hpp"
 #include "BarService.hpp"
+#include "Core/DropCopy.hpp"
 
 namespace pt = boost::posix_time;
 namespace accs = boost::accumulators;
+namespace uuids = boost::uuids;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -373,6 +375,8 @@ public:
 
 	pt::ptime m_lastZeroTime;
 
+	boost::optional<DropCopy::AbstractDataSourceId> m_dropCopyMaSourceId;
+
 public:
 
 	explicit Implementation(
@@ -462,8 +466,25 @@ public:
 			m_history.reset(new History);
 		}
 
+		std::string dropCopyMaSourceIdStr;
+		m_service.GetContext().InvokeDropCopy(
+			[&](DropCopy &dropCopy) {
+				const auto &generator = uuids::string_generator();
+				m_dropCopyMaSourceId = dropCopy.RegisterAbstractDataSource(
+					generator(configuration.ReadKey("id")),
+					generator("C58AA2A7-BD32-4CA2-9587-A45C0F819759"),
+					m_service.GetTag() + "1");
+				dropCopyMaSourceIdStr = boost::lexical_cast<std::string>(
+					*m_dropCopyMaSourceId);
+			});
+		if (dropCopyMaSourceIdStr.empty()) {
+			Assert(!m_dropCopyMaSourceId);
+			dropCopyMaSourceIdStr = "not used";
+		}
+
 		m_service.GetLog().Info(
-			"Initial: %1% = %2%, %3% = %4% frames, %5% = %6%, %7% = %8%.",
+			"Initial: %1% = %2%, %3% = %4% frames, %5% = %6%, %7% = %8%"
+				", drop copy ID = %9%.",
 			Configuration::Keys::type,
 			types[type],
 			Configuration::Keys::period,
@@ -471,7 +492,8 @@ public:
 			Configuration::Keys::source,
 			sources[GetMaSource(m_sourceInfo)].first,
 			Configuration::Keys::isHistoryOn,
-			m_history ? "yes" : "no");
+			m_history ? "yes" : "no",
+			dropCopyMaSourceIdStr);
 
 	}
 
@@ -533,6 +555,14 @@ public:
 		if (m_history) {
 			m_history->PushBack(newPoint);
 		}
+
+		m_service.GetContext().InvokeDropCopy(
+			[this, &valueTime, &newPoint](DropCopy &dropCopy) {
+				dropCopy.CopyAbstractDataPoint(
+					*m_dropCopyMaSourceId,
+					valueTime,
+					newPoint.value);
+			});
 
 		return true;
 

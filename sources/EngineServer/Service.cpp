@@ -56,6 +56,8 @@ EngineServer::Service::Topics::Topics(const std::string &suffix)
 	, storeTrade("trdk.service.trade.store")
 	, storeBook("trdk.service.book.store")
 	, storeBar("trdk.service.bar.store")
+	, registerAbstractDataSource("trdk.service.abstract_data_source.register")
+	, storeAbstractDataPoint("trdk.service.abstract_data.store")
 	, startEngine((boost::format("trdk.engine.%1%.start") % suffix).str())
 	, stopEngine((boost::format("trdk.engine.%1%.stop") % suffix).str())
 	, startDropCopy(
@@ -473,6 +475,34 @@ void EngineServer::Service::DropCopy::CopyBar(
 	m_queue.Enqueue(
 		[this, bar](size_t recordIndex, size_t attemptNo, bool dump) -> bool {
 			return m_service.StoreBar(recordIndex, attemptNo, dump, bar);
+		});
+}
+
+EngineServer::Service::DropCopy::AbstractDataSourceId
+EngineServer::Service::DropCopy::RegisterAbstractDataSource(
+		const uuids::uuid &instance,
+		const uuids::uuid &type,
+		const std::string &name) {
+	return m_service.RegisterAbstractDataSource(instance, type, name);
+}
+
+void EngineServer::Service::DropCopy::CopyAbstractDataPoint(
+		const AbstractDataSourceId &source,
+		const pt::ptime &time,
+		double value) {
+	m_queue.Enqueue(
+		[this, source, time, value](
+				size_t recordIndex,
+				size_t attemptNo,
+				bool dump)
+				-> bool {
+			return m_service.StoreAbstractDataPoint(
+				recordIndex,
+				attemptNo,
+				dump,
+				source,
+				time,
+				value);
 		});
 }
 
@@ -1361,6 +1391,31 @@ bool EngineServer::Service::StoreBar(
 
 }
 
+bool EngineServer::Service::StoreAbstractDataPoint(
+		size_t recordIndex,
+		size_t storeAttemptNo,
+		bool dump,
+		const DropCopy::AbstractDataSourceId &source,
+		const pt::ptime &time,
+		double value) {
+
+	DropCopyRecord record;
+	{
+		const intmax_t sourceInt = source;
+		record["source"] = sourceInt;
+	}
+	record["time"] = ConvertToMicroseconds(time);
+	record["value"] = value;
+
+	return StoreRecord(
+		&Topics::storeAbstractDataPoint,
+		recordIndex,
+		storeAttemptNo,
+		dump,
+		std::move(record));
+
+}
+
 bool EngineServer::Service::StoreRecord(
 		const std::string Topics::*topic,
 		size_t recordIndex,
@@ -1426,7 +1481,7 @@ bool EngineServer::Service::StoreRecord(
 				m_connection->topics.*topic);
 		} else {
 			m_log.Error(
-				"Failed to store Drop Copy record: TWS retuned error."
+				"Failed to store Drop Copy record: TWS returned error."
 					" Record %1% will be skipped at attempt %2%.",
 				recordIndex,
 				storeAttemptNo);
@@ -1523,6 +1578,92 @@ bool EngineServer::Service::StoreBook(
 	}
 
 	return true;
+
+}
+
+EngineServer::Service::DropCopy::AbstractDataSourceId
+EngineServer::Service::RegisterAbstractDataSource(
+		const uuids::uuid &instance,
+		const uuids::uuid &type,
+		const std::string &name) {
+
+	DropCopyRecord record;
+	record["instance"] = instance;
+	record["type"] = type;
+	record["engine"] = *m_instanceId;
+	record["name"] = name;
+
+	const auto &topic = m_connection->topics.registerAbstractDataSource;
+
+	m_dropCopy.GetDataLog().Info(
+		"store\t%1%\t%2%\t%3%\t%4%",
+		0,
+		1,
+		topic,
+		ConvertToLogString(record));
+
+	boost::future<autobahn::wamp_call_result> callFuture;
+	{
+
+		const ConnectionLock lock(m_connectionMutex);
+		if (!m_connection) {
+			m_dropCopy.GetDataLog().Warn(
+				"no connection\t%1%\t%2%\t%3%",
+				0,
+				1,
+				topic);
+			throw DropCopy::Exception("Has no TWS connection");
+		}
+
+		try {
+			callFuture = m_connection->session->call(
+				topic,
+				std::make_tuple(),
+				record,
+				m_config.callOptions);
+		} catch (const std::exception &ex) {
+			m_log.Error(
+				"Failed to call TWS to register Abstract Data Source: \"%1%\".",
+				ex.what());
+			m_dropCopy.GetDataLog().Error(
+				"store error\t%1%\t%2%\t%3%\t%4%",
+				0,
+				1,
+				topic,
+				ex.what());
+			throw DropCopy::Exception("Failed to call TWS");
+		}
+
+	}
+
+	try {
+		const auto &result
+			= callFuture.get().argument<DropCopy::AbstractDataSourceId>(0);
+		if (result != 0) {
+			m_dropCopy.GetDataLog().Info(
+				"result\t%1%\t%2%\t%3%\t%4%",
+				0,
+				1,
+				topic,
+				result);
+			return result;
+		}
+	} catch (const std::exception &ex) {
+		m_log.Error(
+			"Failed to call TWS to register Abstract Data Source: \"%1%\".",
+			ex.what());
+		m_dropCopy.GetDataLog().Error(
+			"store error\t%1%\t%2%\t%3%\t%4%",
+			0,
+			1,
+			topic,
+			ex.what());
+	}
+
+	m_log.Error(
+		"Failed to call TWS to register Abstract Data Source"
+				": TWS returned error.");
+	throw DropCopy::Exception("Failed to call TWS");
 
 }
 

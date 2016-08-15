@@ -17,6 +17,17 @@
 namespace trdk {
 
 	class TRDK_CORE_API DropCopy {
+
+	public:
+
+		typedef std::int32_t AbstractDataSourceId;
+
+	public:
+
+		class TRDK_CORE_API Exception : public trdk::Lib::Exception {
+		public:
+			explicit Exception(const char *what) throw();
+		};
 	
 	public:
 
@@ -98,6 +109,17 @@ namespace trdk {
 				const trdk::ScaledPrice &closeTradePrice,
 				const trdk::ScaledPrice &highTradePrice,
 				const trdk::ScaledPrice &lowTradePrice)
+			= 0;
+
+		virtual trdk::DropCopy::AbstractDataSourceId RegisterAbstractDataSource(
+				const boost::uuids::uuid &instance,
+				const boost::uuids::uuid &type,
+				const std::string &name)
+			= 0;
+		virtual void CopyAbstractDataPoint(
+				const trdk::DropCopy::AbstractDataSourceId &,
+				const boost::posix_time::ptime &,
+				double value)
 			= 0;
 
 	};
