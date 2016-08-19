@@ -2258,6 +2258,7 @@ void Client::SwitchToNewContract(ib::Security &security) {
 			nextExpiration->expirationDate);
 	
 		m_client->cancelMktData(oldRequest->tickerId);
+		m_marketDataRequests.erase(oldRequest);
 
 		m_securityInSwitching = &security;
 	
