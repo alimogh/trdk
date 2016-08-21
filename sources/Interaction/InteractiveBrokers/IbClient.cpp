@@ -137,6 +137,9 @@ Client::~Client() {
 			delete m_thread;
 		}
 
+ 		m_client->eDisconnect();
+ 		m_client.reset();
+
 		m_ts.GetTsLog().Info(
 			"Connection with \"%1%:%2%\" (client ID %3%) is closed.",
 			host,
@@ -324,16 +327,20 @@ bool Client::ProcessMessages() {
 #		pragma warning(push)
 #		pragma warning(disable: 4389)
 #		pragma warning(disable: 4127)
-		FD_ZERO(&readSet);
-		errorSet
-			= writeSet
-			= readSet;
-		FD_SET(m_client->fd(), &readSet);
+#	endif
+	
+	FD_ZERO(&readSet);
+	FD_SET(m_client->fd(), &readSet);
+	
+	FD_ZERO(&writeSet);
+	if (!m_client->isOutBufferEmpty()) {
+		FD_SET(m_client->fd(), &writeSet);
+	}
 
-		if (!m_client->isOutBufferEmpty()) {
-			FD_SET(m_client->fd(), &writeSet);
-		}
-		FD_CLR(m_client->fd(), &errorSet);
+	FD_ZERO(&errorSet);
+	FD_CLR(m_client->fd(), &errorSet);
+
+#	ifdef _WINDOWS
 #		pragma warning(pop)
 #	endif
 
@@ -346,7 +353,7 @@ bool Client::ProcessMessages() {
 		&selectWaitTime);
 	if (selectResult == 0) { // timeout
 		return false;
-	} else  if (selectResult < 0) {
+	} else if (selectResult < 0) {
 		m_ts.GetTsLog().Debug(
 			"Connection process operation returned DISCONNECT.");
 		m_connectionState = CONNECTION_STATE_NOT_CONNECTED;
