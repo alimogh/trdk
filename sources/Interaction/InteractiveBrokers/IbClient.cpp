@@ -26,7 +26,7 @@ namespace fs = boost::filesystem;
 namespace {
 
 	const pt::time_duration pingRequestPeriod = pt::seconds(120);
-	const pt::time_duration timeout = pt::seconds(60);
+	const pt::time_duration timeout = pt::seconds(10);
 	const pt::time_duration maxIterationTime = pt::milliseconds(10);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -156,7 +156,7 @@ void Client::Task() {
 	pt::ptime nextIterationTime
 		= boost::get_system_time() + maxIterationTime;
 	size_t heavyCount = 0;
-	for (std::auto_ptr<Lock> lock(new Lock(m_mutex)); ; ) {
+	for (Lock lock(m_mutex); ; ) {
 		try {
 			m_clientNow = boost::get_system_time();
 			if (isInited) {
@@ -165,16 +165,16 @@ void Client::Task() {
 				}
 				if (nextIterationTime > m_clientNow) {
 					heavyCount = 0;
-					m_condition.timed_wait(*lock, nextIterationTime);
+					m_condition.timed_wait(lock, nextIterationTime);
 				} else if (
 						heavyCount == 5
 						|| (heavyCount > 5 && !(++heavyCount % 10))) {
-					lock->unlock();
+					lock.unlock();
 					m_ts.GetTsLog().Warn(
 						"Connection task is heavily loaded"
 							" (iterations without sleep: %1%).",
 						heavyCount);
-					lock->lock();
+					lock.lock();
 				}
 				m_clientNow = boost::get_system_time();
 			}
@@ -184,14 +184,17 @@ void Client::Task() {
 				if (m_callBackList.size() > 0) {
 					OrderCallbackList callBackList;
 					callBackList.swap(m_callBackList);
-					lock.reset();
+					lock.unlock();
 					std::for_each(
 						callBackList.begin(),
 						callBackList.end(),
 						[] (OrderCallbackList::value_type &callBack) {
 							callBack();
 						});
-					lock.reset(new Lock(m_mutex));
+					lock.lock();
+				} else {
+					lock.unlock();
+					lock.lock();
 				}
 			}
 			if (!isInited) {
@@ -199,17 +202,17 @@ void Client::Task() {
 				if (isInited) {
 					m_condition.notify_all();
 				} else {
-					lock->unlock();
+					lock.unlock();
 					m_ts.GetTsLog().Debug("Waiting for seqnumber...");
 					boost::this_thread::sleep(pt::milliseconds(500));
-					lock->lock();
+					lock.lock();
 				}
 			}
 			if (!m_connectionState) {
 				break;
 			}
 		} catch (...) {
-			lock.reset();
+			lock.unlock();
 			AssertFailNoException();
 			throw;
 		}
