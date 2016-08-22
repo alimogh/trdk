@@ -270,6 +270,10 @@ bool EngineServer::Service::DropCopy::IsStarted() const {
 	return m_queue.IsStarted();
 }
 
+size_t EngineServer::Service::DropCopy::TakeRecordNumber() {
+	return m_queue.TakeRecordNumber();
+}
+
 void EngineServer::Service::DropCopy::Flush() {
 	m_queue.Flush();
 }
@@ -321,8 +325,12 @@ void EngineServer::Service::DropCopy::CopyOrder(
 		bestAskPrice,
 		bestAskQty);
 	m_queue.Enqueue(
-		[this, order](size_t recordIndex, size_t attemptNo, bool dump) -> bool {
-			return m_service.StoreOrder(recordIndex, attemptNo, dump, order);
+		[this, order](
+				size_t recordNumber,
+				size_t attemptNo,
+				bool dump)
+				-> bool {
+			return m_service.StoreOrder(recordNumber, attemptNo, dump, order);
 		});
 }
 
@@ -348,12 +356,12 @@ void EngineServer::Service::DropCopy::CopyTrade(
 					bestBidQty,
 					bestAskPrice,
 					bestAskQty](
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t attemptNo,
 				bool dump)
 				-> bool {
 			return m_service.StoreTrade(
-				recordIndex,
+				recordNumber,
 				attemptNo,
 				dump,
 				time,
@@ -374,12 +382,12 @@ void EngineServer::Service::DropCopy::ReportOperationStart(
 		const Strategy &strategy) {
 	m_queue.Enqueue(
 		[this, id, time, &strategy](
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t attemptNo,
 				bool dump)
 				-> bool {
 			return m_service.StoreOperationStartReport(
-				recordIndex,
+				recordNumber,
 				attemptNo,
 				dump,
 				id,
@@ -396,12 +404,12 @@ void EngineServer::Service::DropCopy::ReportOperationEnd(
 		const boost::shared_ptr<const FinancialResult> &financialResult) {
 	m_queue.Enqueue(
 		[this, id, time, result, pnl, financialResult](
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t attemptNo,
 				bool dump)
 				-> bool {
 			return m_service.StoreOperationEndReport(
-				recordIndex,
+				recordNumber,
 				attemptNo,
 				dump,
 				id,
@@ -441,12 +449,12 @@ void EngineServer::Service::DropCopy::CopyBook(
 
 	m_queue.Enqueue(
 		[this, &security, book](
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t attemptNo,
 				bool dump)
 				-> bool {
 			return m_service.StoreBook(
-				recordIndex,
+				recordNumber,
 				attemptNo,
 				dump,
 				security,
@@ -473,8 +481,8 @@ void EngineServer::Service::DropCopy::CopyBar(
 		lowTradePrice
 	};
 	m_queue.Enqueue(
-		[this, bar](size_t recordIndex, size_t attemptNo, bool dump) -> bool {
-			return m_service.StoreBar(recordIndex, attemptNo, dump, bar);
+		[this, bar](size_t recordNumber, size_t attemptNo, bool dump) -> bool {
+			return m_service.StoreBar(recordNumber, attemptNo, dump, bar);
 		});
 }
 
@@ -492,12 +500,12 @@ void EngineServer::Service::DropCopy::CopyAbstractDataPoint(
 		double value) {
 	m_queue.Enqueue(
 		[this, source, time, value](
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t attemptNo,
 				bool dump)
 				-> bool {
 			return m_service.StoreAbstractDataPoint(
-				recordIndex,
+				recordNumber,
 				attemptNo,
 				dump,
 				source,
@@ -1062,7 +1070,7 @@ void EngineServer::Service::StartDropCopy() {
 		AssertFailNoException();
 		throw;
 	}
-	m_log.Info("Drop Copy strated.");
+	m_log.Info("Drop Copy started.");
 }
 
 void EngineServer::Service::StopDropCopy() {
@@ -1221,7 +1229,7 @@ void EngineServer::Service::OnContextStateChanged(
 }
 
 bool EngineServer::Service::StoreOperationStartReport(
-		size_t recordIndex,
+		size_t recordNumber,
 		size_t storeAttemptNo,
 		bool dump,
 		const uuids::uuid &id,
@@ -1237,7 +1245,7 @@ bool EngineServer::Service::StoreOperationStartReport(
 
 	return StoreRecord(
 		&Topics::storeOperationStart,
-		recordIndex,
+		recordNumber,
 		storeAttemptNo,
 		dump,
 		std::move(record));
@@ -1245,7 +1253,7 @@ bool EngineServer::Service::StoreOperationStartReport(
 }
 
 bool EngineServer::Service::StoreOperationEndReport(
-		size_t recordIndex,
+		size_t recordNumber,
 		size_t storeAttemptNo,
 		bool dump,
 		const uuids::uuid &id,
@@ -1263,7 +1271,7 @@ bool EngineServer::Service::StoreOperationEndReport(
 
 	return StoreRecord(
 		&Topics::storeOperationEnd,
-		recordIndex,
+		recordNumber,
 		storeAttemptNo,
 		dump,
 		std::move(record));
@@ -1271,7 +1279,7 @@ bool EngineServer::Service::StoreOperationEndReport(
 }
 
 bool EngineServer::Service::StoreOrder(
-		size_t recordIndex,
+		size_t recordNumber,
 		size_t storeAttemptNo,
 		bool dump,
 		const OrderCache &order) {
@@ -1323,7 +1331,7 @@ bool EngineServer::Service::StoreOrder(
 
 	return StoreRecord(
 		&Topics::storeOrder,
-		recordIndex,
+		recordNumber,
 		storeAttemptNo,
 		dump,
 		std::move(record));
@@ -1331,7 +1339,7 @@ bool EngineServer::Service::StoreOrder(
 }
 
 bool EngineServer::Service::StoreTrade(
-		size_t recordIndex,
+		size_t recordNumber,
 		size_t storeAttemptNo,
 		bool dump,
 		const pt::ptime &time,
@@ -1357,7 +1365,7 @@ bool EngineServer::Service::StoreTrade(
 
 	return StoreRecord(
 		&Topics::storeTrade,
-		recordIndex,
+		recordNumber,
 		storeAttemptNo,
 		dump,
 		std::move(record));
@@ -1365,7 +1373,7 @@ bool EngineServer::Service::StoreTrade(
 }
 
 bool EngineServer::Service::StoreBar(
-		size_t recordIndex,
+		size_t recordNumber,
 		size_t storeAttemptNo,
 		bool dump,
 		const BarCache &bar) {
@@ -1384,7 +1392,7 @@ bool EngineServer::Service::StoreBar(
 
 	return StoreRecord(
 		&Topics::storeBar,
-		recordIndex,
+		recordNumber,
 		storeAttemptNo,
 		dump,
 		std::move(record));
@@ -1392,7 +1400,7 @@ bool EngineServer::Service::StoreBar(
 }
 
 bool EngineServer::Service::StoreAbstractDataPoint(
-		size_t recordIndex,
+		size_t recordNumber,
 		size_t storeAttemptNo,
 		bool dump,
 		const DropCopy::AbstractDataSourceId &source,
@@ -1409,7 +1417,7 @@ bool EngineServer::Service::StoreAbstractDataPoint(
 
 	return StoreRecord(
 		&Topics::storeAbstractDataPoint,
-		recordIndex,
+		recordNumber,
 		storeAttemptNo,
 		dump,
 		std::move(record));
@@ -1418,13 +1426,13 @@ bool EngineServer::Service::StoreAbstractDataPoint(
 
 bool EngineServer::Service::StoreRecord(
 		const std::string Topics::*topic,
-		size_t recordIndex,
+		size_t recordNumber,
 		size_t storeAttemptNo,
 		bool dump,
 		const DropCopyRecord &&record) {
 
 	if (dump) {
-		DumpRecord(topic, recordIndex, storeAttemptNo, std::move(record));
+		DumpRecord(topic, recordNumber, storeAttemptNo, std::move(record));
 		return true;
 	}
 
@@ -1432,7 +1440,7 @@ bool EngineServer::Service::StoreRecord(
 	if (storeAttemptNo == 1) {
 		m_dropCopy.GetDataLog().Info(
 			"store\t%1%\t%2%\t%3%\t%4%",
-			recordIndex,
+			recordNumber,
 			storeAttemptNo,
 			m_connection->topics.*topic,
 			ConvertToLogString(record));
@@ -1445,7 +1453,7 @@ bool EngineServer::Service::StoreRecord(
 		if (!m_connection) {
 			m_dropCopy.GetDataLog().Warn(
 				"no connection\t%1%\t%2%\t%3%",
-				recordIndex,
+				recordNumber,
 				storeAttemptNo,
 				m_connection->topics.*topic);
 			return false;
@@ -1463,7 +1471,7 @@ bool EngineServer::Service::StoreRecord(
 				ex.what());
 			m_dropCopy.GetDataLog().Error(
 				"store error\t%1%\t%2%\t%3%\t%4%",
-				recordIndex,
+				recordNumber,
 				storeAttemptNo,
 				m_connection->topics.*topic,
 				ex.what());
@@ -1476,23 +1484,23 @@ bool EngineServer::Service::StoreRecord(
 		if (callFuture.get().argument<bool>(0)) {
 			m_dropCopy.GetDataLog().Info(
 				"stored\t%1%\t%2%\t%3%",
-				recordIndex,
+				recordNumber,
 				storeAttemptNo,
 				m_connection->topics.*topic);
 		} else {
 			m_log.Error(
 				"Failed to store Drop Copy record: TWS returned error."
 					" Record %1% will be skipped at attempt %2%.",
-				recordIndex,
+				recordNumber,
 				storeAttemptNo);
-			DumpRecord(topic, recordIndex, storeAttemptNo, std::move(record));
+			DumpRecord(topic, recordNumber, storeAttemptNo, std::move(record));
 		}
 		return true;
 	} catch (const std::exception &ex) {
 		m_log.Error("Failed to store Drop Copy record: \"%1%\".", ex.what());
 		m_dropCopy.GetDataLog().Error(
 			"store error\t%1%\t%2%\t%3%\t%4%",
-			recordIndex,
+			recordNumber,
 			storeAttemptNo,
 			m_connection->topics.*topic,
 			ex.what());
@@ -1504,19 +1512,19 @@ bool EngineServer::Service::StoreRecord(
 
 void EngineServer::Service::DumpRecord(
 		const std::string Topics::*topic,
-		size_t recordIndex,
+		size_t recordNumber,
 		size_t storeAttemptNo,
 		const DropCopyRecord &&record) {
 	m_dropCopy.GetDataLog().Error(
 		"dump\t%1%\t%2%\t%3%\t%4%",
-		recordIndex,
+		recordNumber,
 		storeAttemptNo,
 		m_connection->topics.*topic,
 		ConvertToLogString(record));
 }
 
 bool EngineServer::Service::StoreBook(
-		size_t /*recordIndex*/,
+		size_t /*recordNumber*/,
 		size_t /*storeAttemptNo*/,
 		bool dump,
 		const Security &security,
@@ -1595,9 +1603,11 @@ EngineServer::Service::RegisterAbstractDataSource(
 
 	const auto &topic = m_connection->topics.registerAbstractDataSource;
 
+	const auto &recordNumber = m_dropCopy.TakeRecordNumber();
+
 	m_dropCopy.GetDataLog().Info(
 		"store\t%1%\t%2%\t%3%\t%4%",
-		0,
+		recordNumber,
 		1,
 		topic,
 		ConvertToLogString(record));
@@ -1609,7 +1619,7 @@ EngineServer::Service::RegisterAbstractDataSource(
 		if (!m_connection) {
 			m_dropCopy.GetDataLog().Warn(
 				"no connection\t%1%\t%2%\t%3%",
-				0,
+				recordNumber,
 				1,
 				topic);
 			throw DropCopy::Exception("Has no TWS connection");
@@ -1627,7 +1637,7 @@ EngineServer::Service::RegisterAbstractDataSource(
 				ex.what());
 			m_dropCopy.GetDataLog().Error(
 				"store error\t%1%\t%2%\t%3%\t%4%",
-				0,
+				recordNumber,
 				1,
 				topic,
 				ex.what());
@@ -1642,7 +1652,7 @@ EngineServer::Service::RegisterAbstractDataSource(
 		if (result != 0) {
 			m_dropCopy.GetDataLog().Info(
 				"result\t%1%\t%2%\t%3%\t%4%",
-				0,
+				recordNumber,
 				1,
 				topic,
 				result);
@@ -1654,7 +1664,7 @@ EngineServer::Service::RegisterAbstractDataSource(
 			ex.what());
 		m_dropCopy.GetDataLog().Error(
 			"store error\t%1%\t%2%\t%3%\t%4%",
-			0,
+			recordNumber,
 			1,
 			topic,
 			ex.what());

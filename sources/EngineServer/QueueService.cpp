@@ -70,7 +70,7 @@ QueueService::Queue::Data::iterator QueueService::Queue::GetLogicalBegin() {
 QueueService::QueueService(EventsLog &log)
 	: m_log(log)
 	, m_flushFlag(false)
-	, m_nextRecordIndex(0)
+	, m_nextRecordNumber(1)
 	, m_currentQueue(&m_queues.first)
 	, m_isStopped(true) {
 	//...//
@@ -154,9 +154,9 @@ void QueueService::Enqueue(Callback &&callback) {
 	{
 		const StateLock lock(m_stateMutex);
 		m_currentQueue->data.emplace_back(
-			m_nextRecordIndex,
+			m_nextRecordNumber,
 			std::move(callback));
-		++m_nextRecordIndex;
+		++m_nextRecordNumber;
 		++m_currentQueue->logicalSize;
 	}
 	m_dataCondition.notify_one();
@@ -328,6 +328,11 @@ void QueueService::Dump() {
 
 	m_log.Info("Drop Copy record dumped.");
 
+}
+
+size_t QueueService::TakeRecordNumber() {
+	const StateLock lock(m_stateMutex);
+	return m_nextRecordNumber++;
 }
 
 //////////////////////////////////////////////////////////////////////////

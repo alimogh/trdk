@@ -199,6 +199,7 @@ namespace trdk { namespace EngineServer {
 			void Start();
 			void Stop(bool sync);
 			bool IsStarted() const;
+			size_t TakeRecordNumber();
 		public:
 			virtual void Flush();
 			virtual void Dump();
@@ -318,14 +319,14 @@ namespace trdk { namespace EngineServer {
 	private:
 
 		bool StoreOperationStartReport(
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &,
 				const trdk::Strategy &);
 		bool StoreOperationEndReport(
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
 				const boost::uuids::uuid &id,
@@ -335,13 +336,13 @@ namespace trdk { namespace EngineServer {
 				const boost::shared_ptr<const FinancialResult> &);
 
 		bool StoreOrder(
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
 				const OrderCache &);
 
 		bool StoreTrade(
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
 				const boost::posix_time::ptime &,
@@ -355,20 +356,20 @@ namespace trdk { namespace EngineServer {
 				const Qty &bestAskQty);
 
 		bool StoreBook(
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
 				const trdk::Security &,
 				const trdk::PriceBook &);
 
 		bool StoreBar(
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
 				const BarCache &);
 
 		bool StoreAbstractDataPoint(
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
 				const trdk::DropCopy::AbstractDataSourceId &,
@@ -377,13 +378,13 @@ namespace trdk { namespace EngineServer {
 
 		bool StoreRecord(
 				const std::string Topics::*topic,
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
 				const DropCopyRecord &&);
 		void DumpRecord(
 				const std::string Topics::*topic,
-				size_t recordIndex,
+				size_t recordNumber,
 				size_t storeAttemptNo,
 				const DropCopyRecord &&);
 
