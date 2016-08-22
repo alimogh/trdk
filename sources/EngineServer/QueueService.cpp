@@ -124,7 +124,7 @@ void QueueService::Stop(bool sync) {
 	{
 		const StateLock lock(m_stateMutex);
 		if (m_isStopped && !sync) {
-			throw Exception("Alerady is stopped");
+			throw Exception("Already is stopped");
 		}
 		m_isStopped = true;
 	}
@@ -143,7 +143,8 @@ void QueueService::Flush() {
 		return;
 	}
 	m_flushFlag = true;
-	while (m_flushFlag && !m_isStopped && !IsEmpty()) {
+	m_dataCondition.notify_all();
+	while (m_flushFlag && !m_isStopped) {
 		m_log.Info("Flushing %1% Drop Copy messages...", GetSize());
 		// Will wait as long as it will require, without timeout...
 		m_dataCondition.wait(lock);
@@ -252,16 +253,12 @@ void QueueService::RunDequeue() {
 
 		}
 
-		if (m_flushFlag && IsEmpty()) {
+		if (m_flushFlag) {
 			m_flushFlag = false;
 			m_dataCondition.notify_all();
 		}
 
 		if (m_isStopped) {
-			if (m_flushFlag) {
-				m_flushFlag = false;
-				m_dataCondition.notify_all();
-			}
 			break;
 		}
 
@@ -326,7 +323,7 @@ void QueueService::Dump() {
 
 	}
 
-	m_log.Info("Drop Copy record dumped.");
+	m_log.Info("Drop Copy records dumped.");
 
 }
 

@@ -37,13 +37,14 @@ namespace trdk {
 
 	public:
 
-		//! Synchronous flush for all buffered Drop Copy data.
-		/** Method doesn't guarantee to store all records - flushing can be
-		  * interrupted.
+		//! Tries to flush buffered Drop Copy data.
+		/** The method doesn't guarantee to store all records, it just initiates
+		  * new send attempt. Synchronous. Can be interrupted from another
+		  * thread.
 		  */
 		virtual void Flush() = 0;
 
-		//! Dumps all unflushed data.
+		//! Dumps all buffer data and removes it from buffer.
 		virtual void Dump() = 0;
 
 	public:
