@@ -196,7 +196,7 @@ public:
 
 	std::vector<Bar> m_bars;
 	Bar *m_currentBar;
-	boost::posix_time::ptime m_currentBarEnd;
+	pt::ptime m_currentBarEnd;
 	struct CurrentBarTicksCount {
 		size_t value;
 		CurrentBarTicksCount()
@@ -271,7 +271,7 @@ public:
 				throw Error("Wrong bar size settings");
 			}
 			m_units = UNITS_SECONDS;
-			m_timedBarSize = boost::posix_time::seconds(m_barSizeUnits);
+			m_timedBarSize = pt::seconds(m_barSizeUnits);
 		} else if (boost::iequals(m_unitsStr, "minutes")) {
 			if (60 % m_barSizeUnits) {
 				m_service.GetLog().Error(
@@ -281,17 +281,17 @@ public:
 				throw Error("Wrong bar size settings");
 			}
 			m_units = UNITS_MINUTES;
-			m_timedBarSize = boost::posix_time::minutes(m_barSizeUnits);
+			m_timedBarSize = pt::minutes(m_barSizeUnits);
 		} else if (boost::iequals(m_unitsStr, "hours")) {
 			m_units = UNITS_HOURS;
-			m_timedBarSize = boost::posix_time::hours(m_barSizeUnits);
+			m_timedBarSize = pt::hours(m_barSizeUnits);
 		} else if (boost::iequals(m_unitsStr, "days")) {
 			m_units = UNITS_DAYS;
-			m_timedBarSize = boost::posix_time::hours(m_barSizeUnits * 24);
+			m_timedBarSize = pt::hours(m_barSizeUnits * 24);
 			throw Error("Days units is not implemented");
 		} else if (boost::iequals(m_unitsStr, "weeks")) {
 			m_units = UNITS_WEEKS;
-			m_timedBarSize = boost::posix_time::hours((m_barSizeUnits * 24) * 7);
+			m_timedBarSize = pt::hours((m_barSizeUnits * 24) * 7);
 			throw Error("Weeks units is not implemented");
 		} else if (boost::iequals(m_unitsStr, "ticks")) {
 			m_units = UNITS_TICKS;
@@ -493,6 +493,7 @@ public:
 	bool ContinueBar(const Callback &callback) {
 		Assert(!m_bars.empty());
 		callback(*m_currentBar);
+		CopyCurrentBar();
 		return false;
 	}
 
@@ -503,25 +504,12 @@ public:
 		if (isSignificantBar) {
 			LogCurrentBar();
 		}
-		if (!m_currentBarEnd.is_not_a_date_time() && !m_bars.empty()) {
-			m_service.GetContext().InvokeDropCopy(
-				[this](DropCopy &dropCopy) {
-					const Bar &bar = m_bars.back();
-					dropCopy.CopyBar(
-						*m_security,
-						bar.time,
-						m_timedBarSize,
-						bar.openTradePrice,
-						bar.closeTradePrice,
-						bar.highTradePrice,
-						bar.lowTradePrice);
-				});
-		}
 		m_bars.resize(m_bars.size() + 1);
 		m_currentBar = &m_bars.back();
 		m_currentBarTicksCount = CurrentBarTicksCount();
 		GetBarTimePoints(time, m_currentBar->time, m_currentBarEnd);
 		callback(*m_currentBar);
+		CopyCurrentBar();
 		return isSignificantBar;
 	}
 
@@ -820,6 +808,24 @@ public:
 		}
 		minMaxPriceField = openPriceField;
 		closePriceField = openPriceField;
+	}
+
+	void CopyCurrentBar() const {
+		Assert(m_currentBar);
+		if (m_currentBarEnd.is_not_a_date_time()) {
+			return;
+		}
+		m_service.GetContext().InvokeDropCopy(
+			[this](DropCopy &dropCopy) {
+				dropCopy.CopyBar(
+					*m_security,
+					m_currentBar->time,
+					m_timedBarSize,
+					m_currentBar->openTradePrice,
+					m_currentBar->closeTradePrice,
+					m_currentBar->highTradePrice,
+					m_currentBar->lowTradePrice);
+			});
 	}
 
 };
