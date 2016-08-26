@@ -1,0 +1,4 @@
+
+EXPORTS
+	CreateMarketDataSource
+	GetTrdkModuleVersionInfoV1
