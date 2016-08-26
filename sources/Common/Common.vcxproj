@@ -252,6 +252,8 @@
     <ClCompile Include="Defaults.cpp" />
     <ClCompile Include="ExpirationCalendar.cpp" />
     <ClCompile Include="Ini.cpp" />
+    <ClCompile Include="NetworkClient.cpp" />
+    <ClCompile Include="NetworkClientService.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -286,6 +288,9 @@
     <ClInclude Include="ExpirationCalendar.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Ini.hpp" />
+    <ClInclude Include="NetworkClient.hpp" />
+    <ClInclude Include="NetworkClientService.hpp" />
+    <ClInclude Include="NetworkClientServiceIo.hpp" />
     <ClInclude Include="Numeric.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="SecurityType.hpp" />

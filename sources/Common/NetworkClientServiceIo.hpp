@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/05/17 01:08:41
+ *   Created: 2016/08/26 07:57:40
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -12,11 +12,14 @@
 
 namespace trdk { namespace Lib {
 
-	struct ContractExpiration;
-
-	class NetworkClient;
-	class NetworkClientService;
-	class NetworkClientServiceIo;
+	class NetworkClientServiceIo : private boost::noncopyable {
+	public:
+		boost::asio::io_service & GetService() {
+			return m_service;
+		}
+	private:
+		boost::asio::io_service m_service;
+	};
 
 } }
 
