@@ -14,20 +14,19 @@
 #include "Api.h"
 
 TRDK_INTERACTION_FAKE_API
-trdk::TradingSystemFactoryResult CreateTradingSystem(
+boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
 		const trdk::TradingMode &mode,
 		size_t index,
 		trdk::Context &context,
 		const std::string &tag,
 		const trdk::Lib::IniSectionRef &configuration) {
-	trdk::TradingSystemFactoryResult result;
-	boost::get<0>(result).reset(
-		new trdk::Interaction::Fake::TradingSystem(
+	const auto &result
+		= boost::make_shared<trdk::Interaction::Fake::TradingSystem>(
 			mode,
 			index,
 			context,
 			tag,
-			configuration));
+			configuration);
 	return result;
 }
 

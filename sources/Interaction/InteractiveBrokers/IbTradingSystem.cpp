@@ -23,12 +23,13 @@ namespace pt = boost::posix_time;
 
 ib::TradingSystem::TradingSystem(
 		const TradingMode &mode,
-		size_t index,
+		size_t tradingSystemIndex,
+		size_t marketDataSourceIndex,
 		Context &context,
 		const std::string &tag,
 		const Lib::IniSectionRef &conf)
-	: trdk::TradingSystem(mode, index, context, tag)
-	, trdk::MarketDataSource(index, context, tag)
+	: trdk::TradingSystem(mode, tradingSystemIndex, context, tag)
+	, trdk::MarketDataSource(marketDataSourceIndex, context, tag)
 	, m_isTestSource(conf.ReadBoolKey("test_source", false)) {
 	if (conf.ReadBoolKey("positions", false)) {
 		m_positions.reset(new Positions);

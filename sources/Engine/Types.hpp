@@ -28,8 +28,11 @@ namespace trdk { namespace Engine {
 	};
 	typedef std::vector<TradingSystemModesHolder> TradingSystems;
 	
-	typedef std::vector<trdk::Lib::DllObjectPtr<MarketDataSource>>
-		MarketDataSources;
+	struct MarketDataSourceHolder {
+		const std::string section;
+		trdk::Lib::DllObjectPtr<MarketDataSource> marketDataSource;
+	};
+	typedef std::vector<MarketDataSourceHolder> MarketDataSources;
 
 	template<typename Module>
 	struct ModuleHolder {

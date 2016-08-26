@@ -230,16 +230,19 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 ////////////////////////////////////////////////////////////////////////////////
 
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
-TradingSystemFactoryResult
+boost::shared_ptr<trdk::TradingSystem>
 CreateFastmatchTrading(
 		const TradingMode &mode,
 		size_t index,
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &configuration) {
-	TradingSystemFactoryResult result;
-	boost::get<0>(result).reset(
-		new FastmatchTrading(mode, index, context, tag, configuration));
+	const auto &result = boost::make_shared<FastmatchTrading>(
+		mode,
+		index,
+		context,
+		tag,
+		configuration);
 	return result;
 }
 

@@ -100,18 +100,40 @@ namespace {
 
 	bool GetTradingSystemSection(
 			const std::string &sectionName,
-			std::string &tagResult) {
+			std::string &tagResult,
+			bool &hasMarkedDataSourceResult,
+			TradingMode &tradingModeResult) {
+
 		std::list<std::string> subs;
 		boost::split(subs, sectionName, boost::is_any_of("."));
 		if (subs.empty() || subs.size() == 1) {
 			return false;
+		}
+		
+		if (boost::iequals(*subs.begin(), Sections::tradingSystem)) {
+			hasMarkedDataSourceResult = false;
+			tradingModeResult = TRADING_MODE_LIVE;
 		} else if (
-				!boost::iequals(*subs.begin(), Sections::tradingSystem)
-				&& !boost::iequals(*subs.begin(), Sections::paperTradingSystem)) {
+				boost::iequals(*subs.begin(), Sections::paperTradingSystem)) {
+			hasMarkedDataSourceResult = false;
+			tradingModeResult = TRADING_MODE_PAPER;
+		} else if (
+				boost::iequals(
+					*subs.begin(),
+					Sections::tradingSystemAndMarketDataSource)) {
+			hasMarkedDataSourceResult = true;
+			tradingModeResult = TRADING_MODE_LIVE;
+		} else if (
+				boost::iequals(
+					*subs.begin(),
+					Sections::paperTradingSystemAndMarketDataSource)) {
+			hasMarkedDataSourceResult = true;
+			tradingModeResult = TRADING_MODE_PAPER;
+		} else {
 			return false;
-		} else if (
-				(subs.size() == 2 && subs.rbegin()->empty())
-				|| subs.size() != 2) {
+		}
+		
+		if ((subs.size() == 2 && subs.rbegin()->empty()) || subs.size() != 2) {
 			boost::format message(
 				"Wrong Trading System section name format: \"%1%\", %2%");
 			message % sectionName;
@@ -122,8 +144,11 @@ namespace {
 			}
 			throw Exception(message.str().c_str());
 		}
+
 		subs.rbegin()->swap(tagResult);
+
 		return true;
+
 	}
 
 }
@@ -172,15 +197,92 @@ private:
 		m_conf.ForEachKey(Sections::contextParams, pred, false);
 	}
 
-	//! Loads Market Data Source by conf. section name.
-	void LoadTradingSystem(
+	boost::tuple<DllObjectPtr<TradingSystem>, DllObjectPtr<MarketDataSource>>
+	LoadTradingSystemAndMarketDataSource(
+			size_t tradingSystemIndex,
+			size_t marketDataSourceIndex,
+			const IniSectionRef &configurationSection,
+			const std::string &tag,
+			const TradingMode &mode) {
+		
+		const std::string module
+			= configurationSection.ReadKey(Keys::module);
+		std::string factoryName = configurationSection.ReadKey(
+			Keys::factory,
+			DefaultValues::Factories::tradingSystemAndMarketDataSource);
+		
+		boost::shared_ptr<Dll> dll(
+			new Dll(
+				module,
+				configurationSection.ReadBoolKey(Keys::Dbg::autoName, true)));
+
+		typedef TradingSystemAndMarketDataSourceFactory Factory;
+
+		TradingSystemAndMarketDataSourceFactoryResult factoryResult = {};
+		try {
+			
+			try {
+				factoryResult = dll->GetFunction<Factory>(factoryName)(
+					mode,
+					tradingSystemIndex,
+					marketDataSourceIndex,
+					m_context,
+					tag,
+					configurationSection);
+			} catch (const Dll::DllFuncException &) {
+				if (
+						!boost::istarts_with(
+							factoryName,
+							DefaultValues::Factories::factoryNameStart)) {
+					factoryName
+						= DefaultValues::Factories::factoryNameStart
+							+ factoryName;
+					factoryResult = dll->GetFunction<Factory>(factoryName)(
+						mode,
+						tradingSystemIndex,
+						marketDataSourceIndex,
+						m_context,
+						tag,
+						configurationSection);
+				} else {
+					throw;
+				}
+			}
+		
+		} catch (...) {
+			trdk::EventsLog::BroadcastUnhandledException(
+				__FUNCTION__,
+				__FILE__,
+				__LINE__);
+			throw Exception("Failed to load trading system module");
+		}
+	
+		if (!factoryResult.tradingSystem) {
+			throw Exception(
+				"Failed to load trading system and market data source module"
+					" - trading system object is not existent");
+		}
+
+		if (!factoryResult.marketDataSource) {
+			throw Exception(
+				"Failed to load trading system and market data source module"
+					" - market data source object is not existent");
+		}
+
+		return boost::make_tuple(
+			DllObjectPtr<TradingSystem>(dll, factoryResult.tradingSystem),
+			DllObjectPtr<MarketDataSource>(
+				dll,
+				factoryResult.marketDataSource));
+
+	}
+
+	DllObjectPtr<TradingSystem> LoadTradingSystem(
 			size_t index,
 			const IniSectionRef &configurationSection,
 			const std::string &tag,
-			const TradingMode &mode,
-			DllObjectPtr<TradingSystem> &tradingSystemResult,
-			DllObjectPtr<MarketDataSource> &marketDataSourceResult) {
-		
+			const TradingMode &mode) {
+
 		const std::string module
 			= configurationSection.ReadKey(Keys::module);
 		std::string factoryName = configurationSection.ReadKey(
@@ -192,7 +294,7 @@ private:
 				module,
 				configurationSection.ReadBoolKey(Keys::Dbg::autoName, true)));
 
-		typedef TradingSystemFactoryResult FactoryResult;
+		typedef boost::shared_ptr<TradingSystem> FactoryResult;
 		typedef TradingSystemFactory Factory;
 		FactoryResult factoryResult;
 		
@@ -231,20 +333,13 @@ private:
 			throw Exception("Failed to load trading system module");
 		}
 	
-		Assert(boost::get<0>(factoryResult));
-		if (!boost::get<0>(factoryResult)) {
+		if (!factoryResult) {
 			throw Exception(
-				"Failed to load trading system module - no object returned");
+				"Failed to load trading system module"
+					" - object is not existent");
 		}
 
-		tradingSystemResult = DllObjectPtr<TradingSystem>(
-			dll,
-			boost::get<0>(factoryResult));
-		if (boost::get<1>(factoryResult)) {
-			marketDataSourceResult = DllObjectPtr<MarketDataSource>(
-				dll,
-				boost::get<1>(factoryResult));
-		}
+		return DllObjectPtr<TradingSystem>(dll, factoryResult);
 
 	}
 
@@ -257,32 +352,41 @@ private:
 		for (const auto &section: m_conf.ReadSectionsList()) {
 			
 			std::string tag;
-			if (!GetTradingSystemSection(section, tag)) {
-				continue;
-			}
-
-			TradingMode mode;
+			bool hasMarketDataSource = false;
+			TradingMode mode = numberOfTradingModes;
 			if (
-					boost::iequals(section, Sections::tradingSystem)
-					|| boost::istarts_with(section, Sections::tradingSystem + ".")) {
-				mode = TRADING_MODE_LIVE;
-			} else if (
-					boost::iequals(section, Sections::paperTradingSystem)
-					|| boost::istarts_with(section, Sections::paperTradingSystem + ".")) {
-				mode = TRADING_MODE_PAPER;
-			} else {
+					!GetTradingSystemSection(
+						section,
+						tag,
+						hasMarketDataSource,
+						mode)) {
 				continue;
 			}
-			
+			AssertNe(numberOfTradingModes, mode);
+
 			DllObjectPtr<TradingSystem> tradingSystem;
-			DllObjectPtr<MarketDataSource> marketDataSource;
-			LoadTradingSystem(
-				m_tradingSystems.size(),
-				IniSectionRef(m_conf, section),
-				tag,
-				mode,
-				tradingSystem,
-				marketDataSource);
+			if (!hasMarketDataSource) {
+				tradingSystem = LoadTradingSystem(
+					m_tradingSystems.size(),
+					IniSectionRef(m_conf, section),
+					tag,
+					mode);
+				Assert(tradingSystem);
+			} else {
+				MarketDataSourceHolder marketDataSource = {section};
+				boost::tie(tradingSystem, marketDataSource.marketDataSource)
+					= LoadTradingSystemAndMarketDataSource(
+						m_tradingSystems.size(),
+						m_marketDataSources.size(),
+						IniSectionRef(m_conf, section),
+						tag,
+						mode);
+				Assert(tradingSystem);
+				Assert(marketDataSource.marketDataSource);
+				m_context.GetLog().Info(
+					"Using Trading System as Market Data Source.");
+				m_marketDataSources.emplace_back(marketDataSource);
+			}
 
 			// It always must be a trading system service...
 			Assert(tradingSystem);
@@ -313,17 +417,10 @@ private:
 				m_tradingSystems.emplace_back(holderByMode);
 			}
 
-			// ...and can be Market Data Source at the same time:
-			if (marketDataSource) {
-				m_context.GetLog().Info(
-					"Using Trading System as Market Data Source.");
-				m_marketDataSources.push_back(marketDataSource);
-			}
-
 		}
 	
 		if (m_tradingSystems.empty()) {
-			throw Exception("No one TradingSystem found in configuration");
+			throw Exception("No one trading system found in configuration");
 		}
 
 	}
@@ -381,13 +478,13 @@ private:
 				__LINE__);
 			throw Exception("Failed to load market data source module");
 		}
-	
-		Assert(factoryResult);
+
 		if (!factoryResult) {
 			throw Exception(
-				"Failed to load market data source module - no object returned");
+				"Failed to load market data source module"
+					" - object is not existent");
 		}
-		
+
 		return DllObjectPtr<MarketDataSource>(dll, factoryResult);
 
 	}
@@ -404,16 +501,18 @@ private:
 					&& !boost::iequals(section, Sections::marketDataSource)) {
 				continue;
 			}
-			const auto &source = LoadMarketDataSource(
-				m_marketDataSources.size(),
-				IniSectionRef(m_conf, section),
-				tag);
-			m_marketDataSources.push_back(source);
+			const MarketDataSourceHolder holder = {
+				section,
+				LoadMarketDataSource(
+					m_marketDataSources.size(),
+					IniSectionRef(m_conf, section),
+					tag)
+			};
+			m_marketDataSources.emplace_back(holder);
 		}
 	
-		
 		if (m_marketDataSources.empty()) {
-			throw Exception("No one Market Data Source found in configuration");
+			throw Exception("No one market data source found in configuration");
 		}
 
 		m_marketDataSources.shrink_to_fit();

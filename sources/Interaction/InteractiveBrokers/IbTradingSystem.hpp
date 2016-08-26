@@ -139,7 +139,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		explicit TradingSystem(
 				const TradingMode &,
-				size_t index,
+				size_t tradingSystemIndex,
+				size_t marketDataSourceIndex,
 				Context &,
 				const std::string &tag,
 				const Lib::IniSectionRef &);

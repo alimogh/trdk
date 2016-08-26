@@ -234,16 +234,19 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 ////////////////////////////////////////////////////////////////////////////////
 
 TRDK_INTERACTION_ONIXSFIXCONNECTOR_API
-TradingSystemFactoryResult
+boost::shared_ptr<trdk::TradingSystem>
 CreateFxAllTrading(
 		const TradingMode &mode,
 		size_t index,
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &configuration) {
-	TradingSystemFactoryResult result;
-	boost::get<0>(result).reset(
-		new FxAllTrading(mode, index, context, tag, configuration));
+	const auto &result = boost::make_shared<FxAllTrading>(
+		mode,
+		index,
+		context,
+		tag,
+		configuration);
 	return result;
 }
 
