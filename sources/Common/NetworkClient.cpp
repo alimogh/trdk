@@ -181,13 +181,14 @@ public:
 
 		Assert(transferedRend > lastMessageRbegin);
 		Assert(lastMessageRbegin.base() < activeBuffer.cend());
-		Assert(
-			activeBuffer.cbegin() + bufferStartOffset
-			< lastMessageRbegin.base());
-		m_self.HandleNewMessages(
-			activeBuffer.cbegin() + bufferStartOffset,
-			lastMessageRbegin.base(),
-			timeMeasurement);
+		Assert(activeBuffer.cbegin() < lastMessageRbegin.base());
+		{
+			const auto &begin = activeBuffer.begin();
+			const auto &len = std::distance(
+				activeBuffer.cbegin(),
+				lastMessageRbegin.base());
+			m_self.HandleNewMessages(begin, begin + len, timeMeasurement);
+		}
 
 		if (activeBuffer.size() != nextBuffer.size()) {
 			AssertLt(activeBuffer.size(), nextBuffer.size());
@@ -227,18 +228,28 @@ NetworkClient::NetworkClient(
 		size_t port)
 	: m_pimpl(new Implementation(service, *this)) {
 
-	const ip::tcp::resolver::query query(
-		host,
-		boost::lexical_cast<std::string>(port));
+	try {
 
-	boost::system::error_code error;
-	io::connect(
-		m_pimpl->m_socket,
-		ip::tcp::resolver(m_pimpl->m_service.GetIo().GetService())
-			.resolve(query),
-		error);
-	if (error) {
-		throw GetNetworkException(error, "Failed to connect");
+		const ip::tcp::resolver::query query(
+			host,
+			boost::lexical_cast<std::string>(port));
+
+		{
+			boost::system::error_code error;
+			io::connect(
+				m_pimpl->m_socket,
+				ip::tcp::resolver(m_pimpl->m_service.GetIo().GetService())
+					.resolve(query),
+				error);
+			if (error) {
+				throw GetNetworkException(error, "Failed to connect");
+			}
+		}
+
+	} catch (const std::exception &ex) {
+		boost::format errorText("Failed to connect: \"%1%\"");
+		errorText % ex.what();
+		throw NetworkClient::Exception(errorText.str().c_str());
 	}
 
 }
@@ -315,6 +326,10 @@ bool NetworkClient::CheckResponceSynchronously(
 	Assert(strlen(actionName));
 	Assert(!errorResponse || strlen(errorResponse));
 
+	// Available only before asynchronous mode start:
+	AssertEq(0, m_pimpl->m_buffer.first.size());
+	AssertEq(0, m_pimpl->m_buffer.second.size());
+
 	const size_t expectedResponseSize = strlen(expectedResponse);
 
 	std::vector<char> serverResponse(
@@ -333,13 +348,13 @@ bool NetworkClient::CheckResponceSynchronously(
 		boost::format message(
 			"Failed to read %1% response: \"%2%\", (network error: \"%3%\")");
 		message % actionName % SysError(error.value()) % error;
-		throw NetworkClient::Exception(message.str().c_str());
+		throw Exception(message.str().c_str());
 	}
 
 	if (!serverResponseSize) {
 		boost::format message("Connection closed by server at %1%");
 		message % actionName;
-		throw NetworkClient::Exception(message.str().c_str());
+		throw Exception(message.str().c_str());
 	}
 
 	if (
@@ -365,10 +380,35 @@ bool NetworkClient::CheckResponceSynchronously(
 		}
 		boost::format logMessage("Unexpected %1% response from server");
 		logMessage % actionName;
-		throw NetworkClient::Exception(logMessage.str().c_str());
+		throw Exception(logMessage.str().c_str());
 	}
 
 	return true;
+
+}
+
+void NetworkClient::Send(const std::string &&message) {
+
+	Assert(!message.empty());
+
+	// Available only after asynchronous mode start:
+	AssertLt(0, m_pimpl->m_buffer.first.size());
+	AssertLt(0, m_pimpl->m_buffer.second.size());
+
+	const auto &self = shared_from_this();
+	const auto &messageCopy
+		= boost::make_shared<std::string>(std::move(message));
+	const boost::function<void(const boost::system::error_code &)> &callback
+		= [self, messageCopy](const boost::system::error_code &error) {
+			if (error) {
+				self->m_pimpl->OnConnectionError(error);
+			}
+		};
+
+	io::async_write(
+		m_pimpl->m_socket,
+		io::buffer(*messageCopy),
+		boost::bind(callback, io::placeholders::error));
 
 }
 
@@ -378,6 +418,10 @@ void NetworkClient::SendSynchronously(
 
 	Assert(requestName);
 	Assert(strlen(requestName));
+
+	// Available only before asynchronous mode start:
+	AssertEq(0, m_pimpl->m_buffer.first.size());
+	AssertEq(0, m_pimpl->m_buffer.second.size());
 
 	boost::system::error_code error;
 	const auto size = io::write(
@@ -400,7 +444,7 @@ void NetworkClient::SendSynchronously(
 		}
 		boost::format exceptionMessage("Failed to send %1%");
 		exceptionMessage % requestName;
-		throw NetworkClient::Exception(exceptionMessage.str().c_str());
+		throw Exception(exceptionMessage.str().c_str());
 	}
 
 }

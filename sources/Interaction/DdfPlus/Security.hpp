@@ -15,17 +15,27 @@
 namespace trdk { namespace Interaction { namespace DdfPlus {
 
 	class Security : public trdk::Security {
+
+	public:
+
+		typedef trdk::Security Base;
 	
 	public:
 
 		explicit Security(
-				Context &context,
-				const Lib::Symbol &symbol,
-				const MarketDataSource &source)
-			: trdk::Security(context, symbol, source, true) {
-			//...//
-		}
-	
+				Context &,
+				const Lib::Symbol &,
+				const MarketDataSource &);
+
+	public:
+
+		using Base::SetExpiration;
+		using Base::IsLevel1Required;
+
+	public:
+
+		std::string GenerateDdfPlusCode() const;
+
 	};
 
 } } }

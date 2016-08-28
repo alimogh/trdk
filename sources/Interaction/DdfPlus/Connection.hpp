@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Common/NetworkClientService.hpp"
+#include "Fwd.hpp"
 
 namespace trdk { namespace Interaction { namespace DdfPlus {
 
@@ -49,6 +50,9 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 		const ConnectionDataHandler & GetHandler() const;
 
 		const Credentials & GetCredentials() const;
+
+		void SubscribeToMarketData(
+				const std::vector<boost::shared_ptr<DdfPlus::Security>> &);
 
 	protected:
 

@@ -13,7 +13,6 @@
 #include "NetworkClient.hpp"
 #include "NetworkClientServiceIo.hpp"
 #include "SysError.hpp"
-#include "UseUnused.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -59,11 +58,10 @@ public:
 		//...//
 	}
 
-	void Connect(const ClientLock &&lock) {
+	void Connect() {
 
-		Assert(lock.owns_lock());
-		UseUnused(lock);
-	
+		const ClientLock lock(m_clientMutex);
+
 		Assert(!m_client);
 		Assert(!m_reconnectTimer);
 
@@ -75,30 +73,7 @@ public:
 
 			while (m_serviceThreads.size() < 2) {
 				m_serviceThreads.create_thread(
-					[&]() {
-						m_self.LogDebug("Started IO-service thread...");
-						try {
-							m_io.GetService().run();
-						} catch (const NetworkClient::Exception &ex) {
-							try {
-								const ClientLock lock(m_clientMutex);
-								if (m_client) {
-									m_client.reset();
-									boost::format message(
-										"Connection closed by unexpected error"
-											": \"%1%\".");
-									message % ex;
-									m_self.LogError(message.str());
-								}
-							} catch (...) {
-								AssertFailNoException();
-							}
-						} catch (...) {
-							AssertFailNoException();
-							throw;
-						}
-						m_self.LogDebug("IO-service thread completed.");
-					});
+					boost::bind(&Implementation::RunServiceThread, this));
 			}
 		
 		} catch (const NetworkClient::Exception &ex) {
@@ -108,10 +83,36 @@ public:
 				m_self.LogError(message.str());
 			}
 			m_client.reset();
-			throw NetworkClientService::Exception(
-				"Failed to connect to server");
+			throw Exception("Failed to connect to server");
 		}
 
+	}
+
+	void RunServiceThread() {
+		m_self.LogDebug("Started IO-service thread...");
+		for ( ; ; ) {
+			try {
+				m_io.GetService().run();
+				break;
+			} catch (const NetworkClient::Exception &ex) {
+				try {
+					const ClientLock lock(m_clientMutex);
+					if (m_client) {
+						m_client.reset();
+						boost::format message(
+							"Connection closed by unexpected error: \"%1%\".");
+						message % ex;
+						m_self.LogError(message.str());
+					}
+				} catch (...) {
+					AssertFailNoException();
+				}
+			} catch (...) {
+				AssertFailNoException();
+				throw;
+			}
+		}
+		m_self.LogDebug("IO-service thread completed.");
 	}
 
 	void ScheduleReconnect() {
@@ -131,57 +132,49 @@ public:
 				sleepTime);
 			timer->async_wait(
 				[this](const boost::system::error_code &error) {
-					const ClientLock lock(m_clientMutex);
 					m_reconnectTimer.reset();
-					Reconnect(std::move(lock), error);
+					if (error) {
+						boost::format message("Reconnect canceled: \"%1%\".");
+						message % SysError(error.value());
+						m_self.LogInfo(message.str());
+						return;
+					}
+					Reconnect();
 				});
-			timer = std::move(m_reconnectTimer);
+			m_reconnectTimer = std::move(timer);
 
 		} else {
 
-			m_io.GetService().post(
-				[this]() {
-					const ClientLock lock(m_clientMutex);
-					Reconnect(std::move(lock));
-				});
+			m_io.GetService().post([this]() {Reconnect();});
 
 		}
 
 	}
 
-	void Reconnect(
-			const ClientLock &&lock,
-			const boost::system::error_code &error) {
-		if (error) {
-			boost::format message("Reconnect canceled: \"%1%\".");
-			message % SysError(error.value());
-			m_self.LogInfo(message.str());
-			return;
-		}
-		Reconnect(std::move(lock));
-	}
-
-	void Reconnect(const ClientLock &&lock) {
+	void Reconnect() {
 
 		Assert(!m_client);
 
 		m_self.LogInfo("Reconnecting...");
 
 		try {
-			Connect(std::move(lock));
+			Connect();
 		} catch (const NetworkClientService::Exception &ex) {
+			Assert(!m_client);
 			{
 				boost::format message("Failed to reconnect: \"%1%\".");
 				message % ex;
 				m_self.LogError(message.str());
 			}
 			ScheduleReconnect();
+			return;
 		}
 
 		try {
 			m_self.OnConnectionRestored();
 		} catch (...) {
-			const ClientLock resetLock(m_clientMutex);
+			const ClientLock lock(m_clientMutex);
+			Assert(m_client);
 			m_client.reset();
 			throw;
 		}
@@ -206,25 +199,38 @@ NetworkClientService::~NetworkClientService() {
 }
 
 void NetworkClientService::Connect() {
-	const ClientLock lock(m_pimpl->m_clientMutex);
-	Assert(!m_pimpl->m_client);
-	if (m_pimpl->m_client) {
-		return;
+	{
+		const ClientLock lock(m_pimpl->m_clientMutex);
+		Assert(!m_pimpl->m_client);
+		if (m_pimpl->m_client) {
+			return;
+		}
 	}
-	m_pimpl->Connect(std::move(lock));
+	m_pimpl->Connect();
 }
 
 void NetworkClientService::OnDisconnect() {
-	const ClientLock lock(m_pimpl->m_clientMutex);
-	Assert(m_pimpl->m_client);
-	if (!m_pimpl->m_client) {
-		return;
+	{
+		const ClientLock lock(m_pimpl->m_clientMutex);
+		Assert(m_pimpl->m_client);
+		if (!m_pimpl->m_client) {
+			return;
+		}
+		m_pimpl->m_client.reset();
 	}
-	m_pimpl->m_client.reset();
-	m_pimpl->Reconnect(std::move(lock));
+	m_pimpl->Reconnect();
 }
 
 NetworkClientServiceIo & NetworkClientService::GetIo() {
 	return m_pimpl->m_io;
+}
+
+void NetworkClientService::InvokeClient(
+		const boost::function<void(NetworkClient &)> &callback) {
+	const ClientLock lock(m_pimpl->m_clientMutex);
+	if (!m_pimpl->m_client) {
+		throw Exception("Has no active connection");
+	}
+	callback(*m_pimpl->m_client);
 }
 

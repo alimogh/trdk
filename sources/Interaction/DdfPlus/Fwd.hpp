@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/08/23 23:27:53
+ *   Created: 2016/08/26 23:11:34
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,15 +10,9 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
+namespace trdk { namespace Interaction { namespace DdfPlus {
 
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/algorithm/string/join.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
+	class Security;
 
-#include "Common/Common.hpp"
+} } }
 
-#include "Core/Fwd.hpp"
-#include "Api.h"
-
-#include "Common/Assert.hpp"

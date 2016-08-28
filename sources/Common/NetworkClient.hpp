@@ -71,8 +71,8 @@ namespace trdk { namespace Lib {
 		/** This range has one or more messages.
 		  */
 		virtual void HandleNewMessages(
-				const Buffer::const_iterator &begin,
-				const Buffer::const_iterator &end,
+				const Buffer::iterator &begin,
+				const Buffer::iterator &end,
 				const trdk::Lib::TimeMeasurement::Milestones &)
 			= 0;
 
@@ -80,6 +80,8 @@ namespace trdk { namespace Lib {
 
 		virtual trdk::Lib::NetworkClientService & GetService();
 		virtual const trdk::Lib::NetworkClientService & GetService() const;
+
+		void Send(const std::string &&);
 
 		bool CheckResponceSynchronously(
 				const char *actionName,

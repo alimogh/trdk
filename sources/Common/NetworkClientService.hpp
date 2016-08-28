@@ -54,6 +54,20 @@ namespace trdk { namespace Lib {
 
 		virtual void OnConnectionRestored() = 0;
 
+	protected:
+
+		template<typename Client>
+		void InvokeClient(const boost::function<void(Client &)> &callback) {
+			InvokeClient(
+				[callback](trdk::Lib::NetworkClient &client) {
+					callback(*boost::polymorphic_downcast<Client *>(&client));
+				});
+		}
+
+		void InvokeClient(	
+			const boost::function<void(trdk::Lib::NetworkClient &)> &);
+
+
 	private:
 
 		class Implementation;

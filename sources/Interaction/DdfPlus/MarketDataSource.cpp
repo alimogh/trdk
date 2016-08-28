@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "MarketDataSource.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -66,24 +67,28 @@ void DdfPlus::MarketDataSource::Connect(const IniSectionRef &) {
 
 void DdfPlus::MarketDataSource::SubscribeToSecurities() {
 	
-	GetLog().Info(
-		"Sending market data requests for %1% securities...",
-		m_securities.size());
-
-// 	boost::shared_ptr<Client> client;
-// 	{
-// 		const ClientLock lock(m_clientMutex);
-// 		client = m_client;
-// 	}
-// 	if (!client) {
-// 		throw ConnectError("Connection closed");
-// 	}
-
-	foreach(const auto &security, m_securities) {
-		const auto &symbol = security->GetSymbol().GetSymbol();
-		GetLog().Info("Sending market data request for %1%...", symbol);
-		// client->SendMarketDataSubscribeRequest(symbol);
+	{
+		std::vector<std::string> symbols;
+		for (const auto &security: m_securities) {
+			boost::format symbol("%1% (%2%)");
+			symbol % *security % security->GenerateDdfPlusCode();
+			symbols.emplace_back(symbol.str());
+		}
+		GetLog().Info(
+			"Sending market data request for %1% securities: %2%...",
+			m_securities.size(),
+			boost::join(symbols, ", "));
 	}
+
+	try {
+		m_connection.SubscribeToMarketData(m_securities);
+	} catch (const DdfPlus::Connection::Exception &ex) {
+		GetLog().Error(
+			"Failed to send market data request: \"%1%\".",
+			ex);
+		throw Error("Failed to send market data request");
+	}
+	GetLog().Debug("Market data request sent.");
 
 }
 
@@ -96,10 +101,36 @@ const trdk::MarketDataSource & DdfPlus::MarketDataSource::GetSource() const {
 
 trdk::Security & DdfPlus::MarketDataSource::CreateNewSecurityObject(
 		const Symbol &symbol) {
+	
 	const auto result
 		= boost::make_shared<DdfPlus::Security>(GetContext(), symbol, *this);
-	m_securities.push_back(result);
+
+	switch (result->GetSymbol().GetSecurityType()) {
+		case SECURITY_TYPE_FUTURES:
+		{
+			const auto &now = GetContext().GetCurrentTime();
+			const auto &expiration
+				= GetContext().GetExpirationCalendar().Find(symbol, now);
+			if (!expiration) {
+				boost::format error(
+					"Failed to find expiration info for \"%1%\" and %2%");
+				error % symbol % now;
+				throw trdk::MarketDataSource::Error(error.str().c_str());
+			}
+			result->SetExpiration(*expiration);
+			GetLog().Info(
+				"Current expiration date for \"%1%\": %2% (%3%).",
+				symbol,
+				result->GetExpiration().expirationDate,
+				result->GenerateDdfPlusCode());
+		}
+		break;
+	}
+
+	m_securities.emplace_back(result);
+
 	return *result;
+
 }
 
 TRDK_INTERACTION_DDFPLUS_API boost::shared_ptr<trdk::MarketDataSource>
