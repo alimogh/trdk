@@ -34,30 +34,6 @@ ib::TradingSystem::TradingSystem(
 	if (conf.ReadBoolKey("positions", false)) {
 		m_positions.reset(new Positions);
 	}
-	{
-		const auto &expirationCalendarFilePath = conf.ReadFileSystemPath(
-			"expiration_calendar_csv",
-			std::string());
-		if (!expirationCalendarFilePath.empty()) {
-			GetMdsLog().Debug(
-				"Loading expiration calendar from %1%...",
-				expirationCalendarFilePath);
-			m_expirationCalendar.ReloadCsv(expirationCalendarFilePath);
-			const ExpirationCalendar::Stat stat
-				= m_expirationCalendar.CalcStat();
-			const char *const message
-				= "Expiration calendar has %1% symbols and %2% expirations.";
-			stat.numberOfExpirations && stat.numberOfSymbols
-				?	GetMdsLog().Info(
-						message,
-						stat.numberOfSymbols,
-						stat.numberOfExpirations)
-				:	GetMdsLog().Warn(
-						message,
-						stat.numberOfSymbols,
-						stat.numberOfExpirations);
-		}
-	}
 }
 
 ib::TradingSystem::~TradingSystem() {
@@ -241,7 +217,8 @@ trdk::Security & ib::TradingSystem::CreateNewSecurityObject(
 		case SECURITY_TYPE_FUTURES:
 			{
 				const auto &now = GetContext().GetCurrentTime();
-				const auto &expiration = m_expirationCalendar.Find(symbol, now);
+				const auto &expiration
+					= GetContext().GetExpirationCalendar().Find(symbol, now);
 				if (!expiration) {
 					boost::format error(
 						"Failed to find expiration info for \"%1%\" and %2%");

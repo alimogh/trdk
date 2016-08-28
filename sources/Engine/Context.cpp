@@ -22,6 +22,7 @@
 #include "Core/TradingSystem.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/RiskControl.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -65,6 +66,8 @@ public:
 
 	ModuleList m_modulesDlls;
 
+	std::unique_ptr<ExpirationCalendar> m_expirationCalendar;
+
 	TradingSystems m_tradingSystems;
 	MarketDataSources m_marketDataSources;
 
@@ -81,6 +84,34 @@ public:
 		for (size_t i = 0; i < m_riskControl.size(); ++i) {
 			m_riskControl[i].reset(
 				new RiskControl(m_context, conf, TradingMode(i + 1)));
+		}
+
+		{
+			const auto &expirationCalendarFilePath = conf.ReadFileSystemPath(
+				"Expiration",
+				"calendar_csv",
+				"");
+			if (!expirationCalendarFilePath.empty()) {
+				m_context.GetLog().Debug(
+					"Loading expiration calendar from %1%...",
+					expirationCalendarFilePath);
+				m_expirationCalendar.reset(new ExpirationCalendar);
+				m_expirationCalendar->ReloadCsv(expirationCalendarFilePath);
+				const ExpirationCalendar::Stat stat
+					= m_expirationCalendar->CalcStat();
+				const char *const message
+					= "Expiration calendar has %1% symbols"
+						" and %2% expirations.";
+				stat.numberOfExpirations && stat.numberOfSymbols
+					?	m_context.GetLog().Info(
+							message,
+							stat.numberOfSymbols,
+							stat.numberOfExpirations)
+					:	m_context.GetLog().Warn(
+							message,
+							stat.numberOfSymbols,
+							stat.numberOfExpirations);
+			}
 		}
 
 		BootContext(
@@ -475,6 +506,13 @@ const RiskControl & Engine::Context::GetRiskControl(
 		const TradingMode &mode)
 		const {
 	return m_pimpl->GetRiskControl(mode);
+}
+
+const ExpirationCalendar & Engine::Context::GetExpirationCalendar() const {
+	if (!m_pimpl->m_expirationCalendar) {
+		throw Exception("Expiration calendar is not supported");
+	}
+	return *m_pimpl->m_expirationCalendar;
 }
 
 size_t Engine::Context::GetNumberOfMarketDataSources() const {

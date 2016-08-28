@@ -572,9 +572,11 @@ bool Client::SendMarketDataHistoryRequest(
 
 	if (security.GetSymbol().GetSecurityType() == SECURITY_TYPE_FUTURES) {
 		for (
-				request.expiration = m_ts.m_expirationCalendar.Find(
-					request.security->GetSymbol(),
-					request.subRequestEnd);
+				request.expiration
+					= m_ts
+					.GetContext()
+					.GetExpirationCalendar()
+					.Find(request.security->GetSymbol(), request.subRequestEnd);
 				;) {
 			if (!request.expiration) {
 				boost::format error(

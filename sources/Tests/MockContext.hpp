@@ -12,6 +12,7 @@
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingSystem.hpp"
 #include "Core/RiskControl.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 namespace trdk { namespace Tests {
 
@@ -33,6 +34,10 @@ namespace trdk { namespace Tests {
 
 		MOCK_CONST_METHOD0(GetDropCopy, DropCopy *());
 
+		MOCK_CONST_METHOD0(
+			GetExpirationCalendar,
+			const trdk::Lib::ExpirationCalendar &());
+
 		MOCK_CONST_METHOD0(GetNumberOfMarketDataSources, size_t());
 
 		MOCK_CONST_METHOD1(
@@ -44,10 +49,10 @@ namespace trdk { namespace Tests {
 			trdk::MarketDataSource &(size_t index));
 		MOCK_CONST_METHOD1(
 			ForEachMarketDataSource,
-			void(const boost::function<bool (const trdk::MarketDataSource &)> &));
+			void(const boost::function<bool(const trdk::MarketDataSource &)> &));
 		MOCK_METHOD1(
 			ForEachMarketDataSource,
-			void(const boost::function<bool (trdk::MarketDataSource &)> &));
+			void(const boost::function<bool(trdk::MarketDataSource &)> &));
 
 		MOCK_CONST_METHOD0(GetNumberOfTradingSystems,  size_t ());
 		MOCK_CONST_METHOD2(

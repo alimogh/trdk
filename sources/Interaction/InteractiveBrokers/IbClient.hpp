@@ -13,6 +13,7 @@
 #include "IbSecurity.hpp"
 #include "IbTradingSystem.hpp"
 #include "Core/Context.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 

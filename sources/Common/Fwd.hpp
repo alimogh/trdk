@@ -13,6 +13,7 @@
 namespace trdk { namespace Lib {
 
 	struct ContractExpiration;
+	class ExpirationCalendar;
 
 	class NetworkClient;
 	class NetworkClientService;

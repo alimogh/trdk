@@ -50,6 +50,9 @@ namespace trdk { namespace Engine {
 		virtual const RiskControl & GetRiskControl(const trdk::TradingMode &)
 				const;
 
+		virtual const trdk::Lib::ExpirationCalendar & GetExpirationCalendar()
+				const;
+
 		virtual size_t GetNumberOfMarketDataSources() const;
 		virtual const trdk::MarketDataSource & GetMarketDataSource(
 				size_t index)
