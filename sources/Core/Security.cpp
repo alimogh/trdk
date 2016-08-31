@@ -256,6 +256,7 @@ public:
 			m_isLevel1Started = true;
 		}
 
+		timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_STORE);
 		UpdateMarketDataStat(time);
 		m_level1UpdateSignal(timeMeasurement);
 
@@ -763,7 +764,6 @@ void Security::SetBook(
 				?	Qty(0)
 				:	book.GetAsk().GetTop().GetQty()),
 		timeMeasurement);
-	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_STORE);
 	m_pimpl->UpdateMarketDataStat(book.GetTime());
 	
 	m_pimpl->m_bookUpdateTickSignal(book, timeMeasurement);
