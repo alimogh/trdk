@@ -95,19 +95,22 @@ public:
 				m_io.GetService().run();
 				break;
 			} catch (const NetworkClient::Exception &ex) {
+				const ClientLock lock(m_clientMutex);
 				try {
-					const ClientLock lock(m_clientMutex);
+					boost::format message("Fatal error: \"%1%\".");
+					message % ex;
+					m_self.LogError(message.str());
 					if (m_client) {
+						const auto client = m_client;
+						// See OnDisconnect to know why it should be reset here.
 						m_client.reset();
-						boost::format message(
-							"Connection closed by unexpected error: \"%1%\".");
-						message % ex;
-						m_self.LogError(message.str());
+						client->Stop();
 					}
-					break;
 				} catch (...) {
 					AssertFailNoException();
+					throw;
 				}
+				break;
 			} catch (...) {
 				AssertFailNoException();
 				throw;
@@ -213,10 +216,10 @@ void NetworkClientService::Connect() {
 void NetworkClientService::OnDisconnect() {
 	{
 		const ClientLock lock(m_pimpl->m_clientMutex);
-		Assert(m_pimpl->m_client);
 		if (!m_pimpl->m_client) {
+			// Forcibly disconnected.
 			return;
-		}
+		} 
 		m_pimpl->m_client.reset();
 	}
 	m_pimpl->Reconnect();

@@ -21,22 +21,6 @@ namespace io = boost::asio;
 namespace ip = io::ip;
 namespace pt = boost::posix_time;
 
-////////////////////////////////////////////////////////////////////////////////
-
-namespace {
-
-	NetworkClient::Exception GetNetworkException(
-			const boost::system::error_code &error,
-			const char *what) {
-		boost::format errorText("%1%: \"%2%\", (network error: \"%3%\")");
-		errorText % what % SysError(error.value()) % error;
-		return NetworkClient::Exception(errorText.str().c_str());
-	}
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 NetworkClient::Exception::Exception(const char *what) throw()
 	: Lib::Exception(what) {
 	//...//
@@ -94,7 +78,7 @@ public:
 			Buffer &nextBuffer) {
 	
 		AssertLt(bufferStartOffset, activeBuffer.size());
-	
+
 		auto self = m_self.shared_from_this();
 		using Handler
 			= boost::function<void(const boost::system::error_code &, size_t)>;
@@ -113,16 +97,22 @@ public:
 				transferredBytes);
 		};
 		
-		io::async_read(
-			m_socket,
- 			io::buffer(
-				activeBuffer.data() + bufferStartOffset,
-				activeBuffer.size() - bufferStartOffset),
-			io::transfer_at_least(1),
-			boost::bind(
-				handler,
-				io::placeholders::error,
-				io::placeholders::bytes_transferred));
+		try {
+			io::async_read(
+				m_socket,
+				io::buffer(
+					activeBuffer.data() + bufferStartOffset,
+					activeBuffer.size() - bufferStartOffset),
+				io::transfer_at_least(1),
+				boost::bind(
+					handler,
+					io::placeholders::error,
+					io::placeholders::bytes_transferred));
+		} catch (const std::exception &ex) {
+			boost::format message("Failed to start read: \"%1%\"");
+			message % ex.what();
+			throw Exception(message.str().c_str());
+		}
 
 	}
 
@@ -313,14 +303,14 @@ NetworkClient::NetworkClient(
 					.resolve(query),
 				error);
 			if (error) {
-				throw GetNetworkException(error, "Failed to connect");
+				boost::format errorText("\"%1%\" (network error: \"%2%\")");
+				errorText % SysError(error.value()) % error;
+				throw ConnectError(errorText.str().c_str());
 			}
 		}
 
 	} catch (const std::exception &ex) {
-		boost::format errorText("Failed to connect: \"%1%\"");
-		errorText % ex.what();
-		throw NetworkClient::ConnectError(errorText.str().c_str());
+		throw ConnectError(ex.what());
 	}
 
 }
@@ -388,6 +378,15 @@ void NetworkClient::Start() {
 
 	m_pimpl->StartRead(m_pimpl->m_buffer.first, 0, m_pimpl->m_buffer.second);
 
+}
+
+void NetworkClient::Stop() {
+	if (!m_pimpl->m_socket.is_open()) {
+		return;
+	}
+	LogInfo("Closing connection...");
+	m_pimpl->m_socket.shutdown(io::ip::tcp::socket::shutdown_both);
+	m_pimpl->m_socket.close();
 }
 
 bool NetworkClient::CheckResponceSynchronously(
@@ -480,10 +479,16 @@ void NetworkClient::Send(const std::string &&message) {
 			}
 		};
 
-	io::async_write(
-		m_pimpl->m_socket,
-		io::buffer(*messageCopy),
-		boost::bind(callback, io::placeholders::error));
+	try {
+		io::async_write(
+			m_pimpl->m_socket,
+			io::buffer(*messageCopy),
+			boost::bind(callback, io::placeholders::error));
+	} catch (const std::exception &ex) {
+		boost::format error("Failed to write to socket: \"%1%\"");
+		error % ex.what();
+		throw Exception(error.str().c_str());
+	}
 
 }
 

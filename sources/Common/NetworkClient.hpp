@@ -62,6 +62,7 @@ namespace trdk { namespace Lib {
 	public:
 
 		void Start();
+		void Stop();
 
 	protected:
 
