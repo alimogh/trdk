@@ -27,9 +27,24 @@ namespace trdk { namespace Lib {
 			explicit Exception(const char *what) throw();
 		};
 
-		class ConnectError : public Exception {
+		class ConnectError : public trdk::Lib::NetworkClient::Exception {
 		public:
 			explicit ConnectError(const char *what) throw();
+		};
+
+		class ProtocolError : public trdk::Lib::NetworkClient::Exception {
+		public:
+			explicit ProtocolError(
+					const char *what,
+					const char *bufferAddres,
+					char expectedByte)
+					throw();
+		public:
+			const char * GetBufferAddress() const;
+			char GetExpectedByte() const;
+		private:
+			const char *m_bufferAddres;
+			char m_expectedByte;
 		};
 
 	protected:
@@ -84,6 +99,11 @@ namespace trdk { namespace Lib {
 			= 0;
 
 	protected:
+
+		//! Returns number of received bytes.
+		/** Thread-safe only from HandleNewMessages call.
+		  */
+		size_t GetNumberOfReceivedBytes() const;
 
 		virtual trdk::Lib::NetworkClientService & GetService();
 		virtual const trdk::Lib::NetworkClientService & GetService() const;

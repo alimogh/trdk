@@ -47,6 +47,22 @@ NetworkClient::ConnectError::ConnectError(const char *what) throw()
 	//...//
 }
 
+NetworkClient::ProtocolError::ProtocolError(
+		const char *what,
+		const char *bufferAddres,
+		char expectedByte)
+	: Exception(what)
+	, m_bufferAddres(bufferAddres)
+	, m_expectedByte(expectedByte) {
+	//...//
+}
+const char * NetworkClient::ProtocolError::GetBufferAddress() const {
+	return m_bufferAddres;
+}
+char NetworkClient::ProtocolError::GetExpectedByte() const {
+	return m_expectedByte;
+}
+
 class NetworkClient::Implementation : private boost::noncopyable {
 
 public:
@@ -62,10 +78,13 @@ public:
 	std::pair<Buffer, Buffer> m_buffer;
 	BufferMutex m_bufferMutex;
 
+	size_t m_numberOfReceivedBytes;
+
 	explicit Implementation(NetworkClientService &service, NetworkClient &self)
 		: m_self(self)
 		, m_service(service)
-		, m_socket(m_service.GetIo().GetService()) {
+		, m_socket(m_service.GetIo().GetService())
+		, m_numberOfReceivedBytes(0) {
 		//...//
 	}
 
@@ -138,6 +157,8 @@ public:
 		// StartRead and buffers size change.
 		const BufferLock bufferLock(m_bufferMutex);
 
+		m_numberOfReceivedBytes += transferredBytes;
+
 		if (unreceivedMessageLen > 0) {
 
 			// At the end of the buffer located message start without end. That
@@ -172,7 +193,6 @@ public:
 			if (
 					bufferStartOffset + transferredBytes == activeBuffer.size()
 					&& nextBuffer.size() <= activeBuffer.size()) {
-				AssertEq(activeBuffer.size(), nextBuffer.size());
 				nextBuffer.clear();
 				const auto newSize = activeBuffer.size() * 2;
 				{
@@ -202,11 +222,51 @@ public:
 		Assert(lastMessageRbegin.base() < activeBuffer.cend());
 		Assert(activeBuffer.cbegin() < lastMessageRbegin.base());
 		{
+			
 			const auto &begin = activeBuffer.begin();
 			const auto &len = std::distance(
 				activeBuffer.cbegin(),
 				lastMessageRbegin.base());
-			m_self.HandleNewMessages(now, begin, begin + len, timeMeasurement);
+			const auto &end = begin + len;
+			
+			try {
+			
+				m_self.HandleNewMessages(now, begin, end, timeMeasurement);
+			
+			} catch (const trdk::Lib::NetworkClient::ProtocolError &ex) {
+			
+				std::ostringstream ss;
+				ss << "Protocol error: \"" << ex << "\".";
+			
+				ss << " Active buffer: [ ";
+				Assert(&*begin < ex.GetBufferAddress());
+				Assert(ex.GetBufferAddress() < &*(end));
+				for (auto it = begin; it != end; ++it) {
+					const bool isHighlighted = &*it == ex.GetBufferAddress();
+					if (isHighlighted) {
+						ss << '<';
+					}
+					ss
+						<< std::hex << std::setfill('0') << std::setw(2)
+						<< (*it & 0xff);
+					if (isHighlighted) {
+						ss << '>';
+					}
+					ss << ' ';
+				}
+				ss << "].";
+
+				ss
+					<< " Expected byte: 0x"
+					<< std::hex << std::setfill('0') << std::setw(2)
+					<< (ex.GetExpectedByte() & 0xff)
+					<< '.';
+				m_self.LogError(ss.str());
+				
+				throw Exception("Protocol error");
+			
+			}
+		
 		}
 
 		// activeBuffer.size() may be greater if handler of prev thread raised
@@ -267,6 +327,10 @@ NetworkClient::NetworkClient(
 
 NetworkClient::~NetworkClient() {
 	//...//
+}
+
+size_t NetworkClient::GetNumberOfReceivedBytes() const {
+	return m_pimpl->m_numberOfReceivedBytes;
 }
 
 NetworkClientService & NetworkClient::GetService() {
