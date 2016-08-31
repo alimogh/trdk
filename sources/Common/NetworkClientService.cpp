@@ -104,6 +104,7 @@ public:
 						message % ex;
 						m_self.LogError(message.str());
 					}
+					break;
 				} catch (...) {
 					AssertFailNoException();
 				}

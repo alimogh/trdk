@@ -42,6 +42,11 @@ NetworkClient::Exception::Exception(const char *what) throw()
 	//...//
 }
 
+NetworkClient::ConnectError::ConnectError(const char *what) throw()
+	: Exception(what) {
+	//...//
+}
+
 class NetworkClient::Implementation : private boost::noncopyable {
 
 public:
@@ -110,6 +115,7 @@ public:
 			size_t transferredBytes) {
 
 		const auto &timeMeasurement = m_self.StartMessageMeasurement();
+		const auto &now = m_self.GetCurrentTime();
 
 		if (error) {
 			OnConnectionError(error);
@@ -163,9 +169,22 @@ public:
 				return;
 			}
 			
-			if (bufferStartOffset + transferredBytes == activeBuffer.size()) {
+			if (
+					bufferStartOffset + transferredBytes == activeBuffer.size()
+					&& nextBuffer.size() <= activeBuffer.size()) {
+				AssertEq(activeBuffer.size(), nextBuffer.size());
 				nextBuffer.clear();
-				nextBuffer.resize(activeBuffer.size() * 2);
+				const auto newSize = activeBuffer.size() * 2;
+				{
+					boost::format message(
+						"Increase the buffer size"
+							": %1$.02f -> %2$.02f kilobytes.");
+					message
+						% (double(activeBuffer.size()) / 1024)
+						% (double(newSize) / 1024);
+					m_self.LogDebug(message.str());
+				}
+				nextBuffer.resize(newSize);
 			}
 			const auto &transferedEnd
 				= activeBuffer.cbegin() + bufferStartOffset + transferredBytes;
@@ -187,20 +206,12 @@ public:
 			const auto &len = std::distance(
 				activeBuffer.cbegin(),
 				lastMessageRbegin.base());
-			m_self.HandleNewMessages(begin, begin + len, timeMeasurement);
+			m_self.HandleNewMessages(now, begin, begin + len, timeMeasurement);
 		}
 
-		if (activeBuffer.size() != nextBuffer.size()) {
-			AssertLt(activeBuffer.size(), nextBuffer.size());
-			{
-				boost::format message(
-					"Growing connection buffer"
-						": %1$.02f -> %2$.02f kilobytes...");
-				message
-					% (double(activeBuffer.size()) / 1024)
-					% (double(nextBuffer.size()) / 1024);
-				m_self.LogWarn(message.str());
-			}
+		// activeBuffer.size() may be greater if handler of prev thread raised
+		// exception after nextBuffer has been resized.
+		if (activeBuffer.size() <= nextBuffer.size()) {
 			activeBuffer.clear();
 			activeBuffer.resize(nextBuffer.size());
 		}
@@ -249,7 +260,7 @@ NetworkClient::NetworkClient(
 	} catch (const std::exception &ex) {
 		boost::format errorText("Failed to connect: \"%1%\"");
 		errorText % ex.what();
-		throw NetworkClient::Exception(errorText.str().c_str());
+		throw NetworkClient::ConnectError(errorText.str().c_str());
 	}
 
 }

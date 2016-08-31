@@ -25,12 +25,13 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 		explicit Security(
 				Context &,
 				const Lib::Symbol &,
-				const MarketDataSource &);
+				const trdk::MarketDataSource &);
 
 	public:
 
 		using Base::SetExpiration;
 		using Base::IsLevel1Required;
+		using Base::AddLevel1Tick;
 
 	public:
 

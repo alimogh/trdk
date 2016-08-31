@@ -27,6 +27,11 @@ namespace trdk { namespace Lib {
 			explicit Exception(const char *what) throw();
 		};
 
+		class ConnectError : public Exception {
+		public:
+			explicit ConnectError(const char *what) throw();
+		};
+
 	protected:
 
 		typedef std::vector<char> Buffer;
@@ -48,6 +53,7 @@ namespace trdk { namespace Lib {
 		virtual trdk::Lib::TimeMeasurement::Milestones StartMessageMeasurement()
 				const
 			= 0;
+		virtual boost::posix_time::ptime GetCurrentTime() const = 0;
 		virtual void LogDebug(const std::string &message) const = 0;
 		virtual void LogInfo(const std::string &message) const = 0;
 		virtual void LogWarn(const std::string &message) const = 0;
@@ -71,6 +77,7 @@ namespace trdk { namespace Lib {
 		/** This range has one or more messages.
 		  */
 		virtual void HandleNewMessages(
+				const boost::posix_time::ptime &time,
 				const Buffer::iterator &begin,
 				const Buffer::iterator &end,
 				const trdk::Lib::TimeMeasurement::Milestones &)

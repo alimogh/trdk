@@ -13,6 +13,7 @@
 namespace trdk { namespace Interaction { namespace DdfPlus {
 
 	class Security;
+	class MarketDataSource;
 
 } } }
 

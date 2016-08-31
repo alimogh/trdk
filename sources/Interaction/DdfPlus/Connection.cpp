@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "Connection.hpp"
 #include "Security.hpp"
-#include "Core/MarketDataSource.hpp"
+#include "MarketDataSource.hpp"
 #include "Common/ExpirationCalendar.hpp"
 #include "Common/NetworkClient.hpp"
 
@@ -22,12 +22,6 @@ using namespace trdk::Interaction::DdfPlus;
 
 namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
-
-////////////////////////////////////////////////////////////////////////////////
-
-ConnectionDataHandler::~ConnectionDataHandler() {
-	//...//
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -59,7 +53,7 @@ namespace {
 			STX = 0x02,
 			//! <etx> control character(x03) signified the end of the block.
 			EXT = 0x03,
-			MESSAGE_END = '\n'
+			VARIABLE_FIELD_END = ',',
 		};
 
 		class ErrorMessage : private boost::noncopyable {
@@ -72,7 +66,7 @@ namespace {
 					++begin;
 				}
 				m_message = &*begin;
-				m_end = std::find(begin, bufferEnd, MESSAGE_END);
+				m_end = std::find(begin, bufferEnd, '\n');
 				if (bufferEnd == m_end) {
 					throw MessageFormatException(
 						"Error message does not have message end");
@@ -84,7 +78,7 @@ namespace {
 			const Buffer::iterator & GetEnd() const {
 				return m_end;
 			}
-			void Handle() const {
+			void Handle(const Client &) const {
 				boost::format message("Server error: \"%1%\"");
 				message % m_message;
 				throw Client::Exception(message.str().c_str());
@@ -98,21 +92,19 @@ namespace {
 		public:
 			explicit TimeMessage(
 					const Buffer::iterator &begin,
-					const Buffer::iterator &end,
-					Client &client)
-				: m_client(client)
-				, m_end(end) {
+					const Buffer::iterator &end)
+				: m_end(end) {
 				if (std::distance(begin, m_end) != 14) {
 					throw MessageFormatException(
 						"Time stamp message has wrong length");
 				}
 			}
 		public:
-			void Handle() const {
-				const auto &now = m_client.GetContext().GetCurrentTime();
+			void Handle(Client &client) {
+				const auto &now = client.GetContext().GetCurrentTime();
 				if (
-						!m_client.m_lastServerTimeUpdate.is_not_a_date_time()
-						&&	now - m_client.m_lastServerTimeUpdate
+						!client.m_lastServerTimeUpdate.is_not_a_date_time()
+						&&	now - client.m_lastServerTimeUpdate
 								< pt::minutes(5)) {
 					return;
 				}
@@ -152,18 +144,17 @@ namespace {
 					const pt::ptime time(
 						gr::date(year, month, day),
 						pt::time_duration(hours, minutes, seconds));
-					m_client.m_lastServerTimeUpdate = std::move(now);
-					m_client.m_lastKnownServerTime = std::move(time);
+					client.m_lastServerTimeUpdate = std::move(now);
+					client.m_lastKnownServerTime = std::move(time);
 				} catch (const boost::bad_lexical_cast &) {
 					throw MessageFormatException(
 						"Time stamp message has wrong format");
 				}
 				boost::format message("Server time: %1%.");
-				message % m_client.m_lastKnownServerTime;
-				m_client.LogDebug(message.str());
+				message % client.m_lastKnownServerTime;
+				client.LogDebug(message.str());
 			}
 		private:
-			Client &m_client;
 			Buffer::iterator m_end;
 		};
 
@@ -191,38 +182,26 @@ namespace {
 		  * Requesting data:
 		  * http://www.barchartmarketdata.com/client/protocol_stream.php
 		  */
-		void SubscribeToMarketData(
-				const std::vector<boost::shared_ptr<DdfPlus::Security>> &securies) {
-			bool hasSymbols = false;
-			std::ostringstream command; 
-			command << "GO ";
-			for (const auto &security: securies) {
- 				Assert(security->IsLevel1Required());
- 				if (!security->IsLevel1Required()) {
- 					boost::format message(
- 						"Market data is not required by %1%.");
- 					message % *security;
- 					LogWarn(message.str());
- 					continue;;
- 				}
-				if (!hasSymbols) {
-					hasSymbols = true;
-				} else {
-					command << ',';
-				}
-				/*
-					s - request a snapshot / refresh quote
-					S - request quote stream
-					b - request a refresh of the book(market depth)
-					B - request a stream of the book
-				*/
-				command << security->GenerateDdfPlusCode() << "=sS";
+		void SubscribeToMarketData(const DdfPlus::Security &security) {
+
+			{
+				boost::format message(
+					"Sending market data request for %1% (%2%)...");
+				message % security % security.GenerateDdfPlusCode();
+				LogInfo(message.str());
 			}
-			if (!hasSymbols) {
+
+			Assert(security.IsLevel1Required());
+			if (!security.IsLevel1Required()) {
+				boost::format message("Market data is not required by %1%.");
+				message % security;
+				LogWarn(message.str());
 				return;
 			}
 
-			Send(command.str() + "\n\r");
+			boost::format command("GO %1%=S\n\r");
+			command % security.GenerateDdfPlusCode();
+			Send(command.str());
 
 		}
 
@@ -240,6 +219,10 @@ namespace {
 		virtual Lib::TimeMeasurement::Milestones StartMessageMeasurement()
 				const {
 			return GetContext().StartStrategyTimeMeasurement();
+		}
+
+		virtual pt::ptime GetCurrentTime() const {
+			return GetContext().GetCurrentTime();
 		}
 			
 		virtual void LogDebug(const std::string &message) const {
@@ -292,75 +275,89 @@ namespace {
 				const Buffer::const_reverse_iterator &rbegin,
 				const Buffer::const_reverse_iterator &rend)
 				const {
-			return FindMessageSeparator(rbegin, rend);
+			return std::find(rbegin, rend, '\n');
 		}
 
 		virtual void HandleNewMessages(
+				const pt::ptime &now,
 				const Buffer::iterator &begin,
-				const Buffer::iterator &listEnd,
+				const Buffer::iterator &bufferEnd,
 				const TimeMeasurement::Milestones &measurement) {
+
+			Assert(begin != bufferEnd);
+
 			auto messageBegin = begin;
 			do {
+
 				switch (*messageBegin++) {
-					case MESSAGE_END:
+					case '\n':
+						break;
+					case '-':
+						messageBegin = HandleNewMessage<ErrorMessage>(
+							messageBegin,
+							bufferEnd);
 						break;
 					case SOH:
 						messageBegin = HandleNewDdfPlusMessage(
+							now,
 							messageBegin,
-							listEnd,
+							bufferEnd,
 							measurement);
-						break;
-					case '-':
-						{
-							const ErrorMessage message(messageBegin, listEnd);
-							message.Handle();
-							messageBegin = message.GetEnd();
-						}
-						break;
 					default:
-						LogDebug("Unknown message type received.");
-						messageBegin
-							= FindMessageSeparator(messageBegin, listEnd);
-						if (messageBegin != listEnd) {
-							++messageBegin;
+						for (; messageBegin != bufferEnd; ++messageBegin) {
+							if (*messageBegin == SOH || *messageBegin == '\n') {
+								++messageBegin;
+								break;
+							}
 						}
 						break;
 				}
-			} while (messageBegin < listEnd);
+
+			} while (messageBegin < bufferEnd);
+
 		}
 
 	private:
 
-		template<typename T>
-		static T FindMessageSeparator(const T &begin, const T &end) {
-			const auto &result = std::find(begin, end, EXT);
-			return result != end
-				? result
-				: std::find(begin, end, MESSAGE_END);
-		}
-
-		MarketDataSource::Log & GetLog() const {
-			return GetService().GetHandler().GetSource().GetLog();
+		DdfPlus::MarketDataSource::Log & GetLog() const {
+			return GetService().GetSource().GetLog();
 		}
 
 		const Context & GetContext() const {
-			return GetService().GetHandler().GetSource().GetContext();
+			return GetService().GetSource().GetContext();
+		}
+
+		template<typename Message>
+		Buffer::iterator HandleNewMessage(
+				const Buffer::iterator &messageBegin,
+				const Buffer::iterator &bufferEnd) {
+			const Message message(messageBegin, bufferEnd);
+			message.Handle(*this);
+			return message.GetEnd();
 		}
 
 		Buffer::iterator HandleNewDdfPlusMessage(
+				const pt::ptime &now,
 				Buffer::iterator messageBegin,
-				const Buffer::iterator &listEnd,
-				const TimeMeasurement::Milestones &) {
+				const Buffer::iterator &bufferEnd,
+				const TimeMeasurement::Milestones &measurement) {
 			
-			auto end = std::find(messageBegin, listEnd, EXT);
-			if (end == listEnd) {
+			auto end = std::find(messageBegin, bufferEnd, EXT);
+			if (end == bufferEnd) {
 				throw MessageFormatException(
 					"Ddfplus message does not have message end");
 			}
 
 			switch (*messageBegin++) {
+				case '2':
+					HandleNewDdfPlusSubMessage(
+						now,
+						messageBegin,
+						end,
+						measurement);
+					break;
 				case '#':
-					TimeMessage(messageBegin, end, *this).Handle();
+					TimeMessage(messageBegin, end).Handle(*this);
 					break;
 				default:
 					LogDebug("Unknown ddfplus message type received.");
@@ -369,6 +366,103 @@ namespace {
 		
 			return ++end;
 		
+		}
+
+		void HandleNewDdfPlusSubMessage(
+				const pt::ptime &time,
+				const Buffer::const_iterator &messageBegin,
+				const Buffer::const_iterator &messageEnd,
+				const TimeMeasurement::Milestones &timeMeasurement) {
+
+			auto symbolEnd
+				= std::find(messageBegin, messageEnd, VARIABLE_FIELD_END);
+			if (std::distance(symbolEnd, messageEnd) < 8) {
+				throw MessageFormatException(
+					"Trading message does not have symbol");
+			}
+
+			auto textBegin = std::next(symbolEnd);
+			const auto &subType = *textBegin;
+			if (*(++textBegin) != STX) {
+				throw MessageFormatException(
+					"Trading message does not have symbol");
+			}
+
+			switch (subType) {
+				case '7':
+					break;
+				default:
+					return;
+			}
+
+			DdfPlus::Security *const security = GetService()
+				.GetSource()
+				.FindSecurity(std::string(messageBegin, symbolEnd));
+			if (!security) {
+				throw MessageFormatException(
+					"Trading message has unknown symbol");
+			}
+			
+			++textBegin;
+			if (*textBegin != 'A') {
+				throw MessageFormatException(
+					"Trading sub-message has unsupported base for price");
+			}
+			++textBegin;
+			if (*textBegin != 'J') {
+				throw MessageFormatException(
+					"Trading sub-message has unsupported exchange");
+			}
+
+			textBegin += 3;
+			HandleNewDdfPlusTradeMessage(
+				subType,
+				*security,
+				time,
+				textBegin,
+				messageEnd,
+				timeMeasurement);
+
+		}
+		
+		void HandleNewDdfPlusTradeMessage(
+				char type,
+				DdfPlus::Security &security,
+				const pt::ptime &time,
+				const Buffer::const_iterator &begin,
+				const Buffer::const_iterator &end,
+				const TimeMeasurement::Milestones &timeMeasurement) {
+			
+			AssertEq('7', type);
+			UseUnused(type);
+
+			auto priceRange = boost::make_iterator_range(
+				begin,
+				std::find(begin, end, VARIABLE_FIELD_END));
+			if (boost::end(priceRange) == end) {
+				throw MessageFormatException(
+					"Trading sub-message does not have price");
+			}
+
+			auto sizeRange = boost::make_iterator_range(
+				std::next(boost::end(priceRange)),
+				std::find(
+					std::next(boost::end(priceRange)),
+					end,
+					VARIABLE_FIELD_END));
+			if (boost::end(sizeRange) == end) {
+				throw MessageFormatException(
+					"Trading sub-message does not have size");
+			}
+
+			security.AddLevel1Tick(
+				time,
+				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
+					boost::lexical_cast<ScaledPrice>(priceRange)),
+				Level1TickValue::Create<LEVEL1_TICK_LAST_QTY>(
+					boost::lexical_cast<Qty>(sizeRange)),
+				timeMeasurement);
+
 		}
 
 	private:
@@ -384,9 +478,9 @@ namespace {
 
 Connection::Connection(
 		const Credentials &credentials,
-		ConnectionDataHandler &handler)
+		DdfPlus::MarketDataSource &source)
 	: m_credentials(credentials)
-	, m_handler(handler) {
+	, m_source(source) {
 	//...//
 }
 
@@ -394,11 +488,11 @@ Connection::~Connection() {
 	//...//
 }
 
-ConnectionDataHandler & Connection::GetHandler() {
-	return m_handler;
+DdfPlus::MarketDataSource & Connection::GetSource() {
+	return m_source;
 }
-const ConnectionDataHandler & Connection::GetHandler() const {
-	return m_handler;
+const DdfPlus::MarketDataSource & Connection::GetSource() const {
+	return m_source;
 }
 
 const Connection::Credentials & Connection::GetCredentials() const {
@@ -406,7 +500,7 @@ const Connection::Credentials & Connection::GetCredentials() const {
 }
 
 pt::ptime Connection::GetCurrentTime() const {
-	return m_handler.GetSource().GetContext().GetCurrentTime();
+	return m_source.GetContext().GetCurrentTime();
 }
 
 std::unique_ptr<NetworkClient> Connection::CreateClient() {
@@ -414,28 +508,24 @@ std::unique_ptr<NetworkClient> Connection::CreateClient() {
 }
 
 void Connection::LogDebug(const char *message) const {
-	m_handler.GetSource().GetLog().Debug(message);
+	m_source.GetLog().Debug(message);
 }
 
 void Connection::LogInfo(const std::string &message) const {
-	m_handler.GetSource().GetLog().Info(message.c_str());
+	m_source.GetLog().Info(message.c_str());
 }
 
 void Connection::LogError(const std::string &message) const {
-	m_handler.GetSource().GetLog().Error(message.c_str());
+	m_source.GetLog().Error(message.c_str());
 }
 
 void Connection::OnConnectionRestored() {
-	m_handler.GetSource().SubscribeToSecurities();
+	m_source.SubscribeToSecurities();
 }
 
-void Connection::SubscribeToMarketData(
-		const std::vector<boost::shared_ptr<DdfPlus::Security>> &securities) {
+void Connection::SubscribeToMarketData(const DdfPlus::Security &security) {
 	InvokeClient<Client>(
-		boost::bind(
-			&Client::SubscribeToMarketData,
-			_1,
-			boost::cref(securities)));
+		boost::bind(&Client::SubscribeToMarketData, _1, boost::cref(security)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

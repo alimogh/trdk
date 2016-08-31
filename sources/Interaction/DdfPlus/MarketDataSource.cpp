@@ -17,6 +17,8 @@ using namespace trdk::Lib;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::DdfPlus;
 
+////////////////////////////////////////////////////////////////////////////////
+
 namespace {
 
 	Connection::Credentials ReadCredentials(const IniSectionRef &conf) {
@@ -30,6 +32,8 @@ namespace {
 	}
 
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 DdfPlus::MarketDataSource::MarketDataSource(
 		size_t index,
@@ -66,37 +70,18 @@ void DdfPlus::MarketDataSource::Connect(const IniSectionRef &) {
 }
 
 void DdfPlus::MarketDataSource::SubscribeToSecurities() {
-	
-	{
-		std::vector<std::string> symbols;
-		for (const auto &security: m_securities) {
-			boost::format symbol("%1% (%2%)");
-			symbol % *security % security->GenerateDdfPlusCode();
-			symbols.emplace_back(symbol.str());
-		}
-		GetLog().Info(
-			"Sending market data request for %1% securities: %2%...",
-			m_securities.size(),
-			boost::join(symbols, ", "));
-	}
-
+	GetLog().Debug(
+		"Sending market data request for %1% securities...",
+		m_securities.size());
 	try {
-		m_connection.SubscribeToMarketData(m_securities);
+		for (const auto &security : m_securities) {
+			m_connection.SubscribeToMarketData(*security.second);
+		}
 	} catch (const DdfPlus::Connection::Exception &ex) {
-		GetLog().Error(
-			"Failed to send market data request: \"%1%\".",
-			ex);
+		GetLog().Error("Failed to send market data request: \"%1%\".", ex);
 		throw Error("Failed to send market data request");
 	}
 	GetLog().Debug("Market data request sent.");
-
-}
-
-trdk::MarketDataSource & DdfPlus::MarketDataSource::GetSource() {
-	return *this;
-}
-const trdk::MarketDataSource & DdfPlus::MarketDataSource::GetSource() const {
-	return *this;
 }
 
 trdk::Security & DdfPlus::MarketDataSource::CreateNewSecurityObject(
@@ -127,11 +112,22 @@ trdk::Security & DdfPlus::MarketDataSource::CreateNewSecurityObject(
 		break;
 	}
 
-	m_securities.emplace_back(result);
+	Assert(m_securities.count(result->GenerateDdfPlusCode()) == 0);
+	m_securities.emplace(std::make_pair(result->GenerateDdfPlusCode(), result));
 
 	return *result;
 
 }
+
+DdfPlus::Security * DdfPlus::MarketDataSource::FindSecurity(
+			const std::string &ddfPlusCodeSymbolCode) {
+	const auto &result = m_securities.find(ddfPlusCodeSymbolCode);
+	return result != m_securities.cend()
+		? &*result->second
+		: nullptr;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 TRDK_INTERACTION_DDFPLUS_API boost::shared_ptr<trdk::MarketDataSource>
 CreateMarketDataSource(
@@ -146,3 +142,5 @@ CreateMarketDataSource(
 			tag,
 			conf));
 }
+
+////////////////////////////////////////////////////////////////////////////////

@@ -17,9 +17,7 @@
 
 namespace trdk { namespace Interaction { namespace DdfPlus {
 
-	class MarketDataSource
-		: public trdk::MarketDataSource,
-		public ConnectionDataHandler {
+	class MarketDataSource : public trdk::MarketDataSource {
 
 	public:
 
@@ -42,19 +40,22 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 
 	public:
 
-		virtual trdk::MarketDataSource & GetSource();
-		virtual const trdk::MarketDataSource & GetSource() const;
+		using Base::FindSecurity;
+
+		DdfPlus::Security * FindSecurity(
+				const std::string &ddfPlusCodeSymbolCode);
 
 	protected:
 
 		virtual trdk::Security & CreateNewSecurityObject(
-				const trdk::Lib::Symbol &);
+				const trdk::Lib::Symbol &symbolDdfPlusCode);
 
 	private:
 
 		Connection m_connection;
 
-		std::vector<boost::shared_ptr<DdfPlus::Security>> m_securities;
+		boost::unordered_map<std::string, boost::shared_ptr<DdfPlus::Security>>
+			m_securities;
 
 	};
 

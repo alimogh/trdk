@@ -20,7 +20,7 @@ using namespace trdk::Interaction::DdfPlus;
 DdfPlus::Security::Security(
 		Context &context,
 		const Symbol &symbol,
-		const MarketDataSource &source)
+		const trdk::MarketDataSource &source)
 	: trdk::Security(context, symbol, source, true) {
 	//...//
 }

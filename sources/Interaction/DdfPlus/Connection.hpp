@@ -15,19 +15,6 @@
 
 namespace trdk { namespace Interaction { namespace DdfPlus {
 
-	class ConnectionDataHandler {
-
-	public:
-
-		virtual ~ConnectionDataHandler() = 0;
-
-	public:
-
-		virtual trdk::MarketDataSource & GetSource() = 0;
-		virtual const trdk::MarketDataSource & GetSource() const = 0;
-
-	};
-
 	class Connection : public Lib::NetworkClientService {
 
 	public:
@@ -41,18 +28,17 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 
 	public:
 
-		explicit Connection(const Credentials &, ConnectionDataHandler &);
+		explicit Connection(const Credentials &, DdfPlus::MarketDataSource &);
 		virtual ~Connection();
 
 	public:
 
-		ConnectionDataHandler & GetHandler();
-		const ConnectionDataHandler & GetHandler() const;
+		DdfPlus::MarketDataSource & GetSource();
+		const DdfPlus::MarketDataSource & GetSource() const;
 
 		const Credentials & GetCredentials() const;
 
-		void SubscribeToMarketData(
-				const std::vector<boost::shared_ptr<DdfPlus::Security>> &);
+		void SubscribeToMarketData(const DdfPlus::Security &);
 
 	protected:
 
@@ -69,7 +55,7 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 	private:
 
 		const Credentials m_credentials;
-		ConnectionDataHandler &m_handler;
+		DdfPlus::MarketDataSource &m_source;
 
 	};
 
