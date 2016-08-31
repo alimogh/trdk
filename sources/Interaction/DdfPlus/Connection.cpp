@@ -35,14 +35,6 @@ namespace {
 
 		typedef Lib::NetworkClient Base;
 
-		class MessageFormatException : public Exception {
-		public:
-			explicit MessageFormatException(const char *what) throw()
-				: Exception(what) {
-				//...//
-			}
-		};
-
 	private:
 
 		enum {
@@ -68,8 +60,10 @@ namespace {
 				m_message = &*begin;
 				m_end = std::find(begin, bufferEnd, '\n');
 				if (bufferEnd == m_end) {
-					throw MessageFormatException(
-						"Error message does not have message end");
+					throw ProtocolError(
+						"Error message does not have message end",
+						&*std::prev(m_end),
+						'\n');
 				}
 				// \n replacing by \0 and moving iterator to real message end.
 				*m_end++ = 0;
@@ -81,7 +75,7 @@ namespace {
 			void Handle(const Client &) const {
 				boost::format message("Server error: \"%1%\"");
 				message % m_message;
-				throw Client::Exception(message.str().c_str());
+				throw Exception(message.str().c_str());
 			}
 		private:
 			const char *m_message;
@@ -95,17 +89,25 @@ namespace {
 					const Buffer::iterator &end)
 				: m_end(end) {
 				if (std::distance(begin, m_end) != 14) {
-					throw MessageFormatException(
-						"Time stamp message has wrong length");
+					throw ProtocolError(
+						"Time stamp message has wrong length",
+						&*std::prev(m_end),
+						0);
 				}
 			}
 		public:
 			void Handle(Client &client) {
 				const auto &now = client.GetContext().GetCurrentTime();
+#				if defined(_DEBUG)
+					const auto &period = pt::minutes(1);
+#				elif defined(_TEST)
+					const auto &period = pt::minutes(5);
+#				else
+					const auto &period = pt::minutes(15);
+#				endif
 				if (
 						!client.m_lastServerTimeUpdate.is_not_a_date_time()
-						&&	now - client.m_lastServerTimeUpdate
-								< pt::minutes(5)) {
+						&&	now - client.m_lastServerTimeUpdate < period) {
 					return;
 				}
 				try {
@@ -114,32 +116,42 @@ namespace {
 					const auto &month
 						= boost::lexical_cast<uint16_t>(&*(m_end - 10), 2);
 					if (month <= 0 || month > 12) {
-						throw MessageFormatException(
-							"Time stamp message has wrong value for month");
+						throw ProtocolError(
+							"Time stamp message has wrong value for month",
+							&*std::prev(m_end),
+							0);
 					}
 					const auto &day
 						= boost::lexical_cast<uint16_t>(&*(m_end - 8), 2);
 					if (month <= 0 || month > 31) {
-						throw MessageFormatException(
-							"Time stamp message has wrong value for month day");
+						throw ProtocolError(
+							"Time stamp message has wrong value for month day",
+							&*std::prev(m_end),
+							0);
 					}
 					const auto &hours
 						= boost::lexical_cast<uint32_t>(&*(m_end - 6), 2);
 					if (hours > 23) {
-						throw MessageFormatException(
-							"Time stamp message has wrong value for hours");
+						throw ProtocolError(
+							"Time stamp message has wrong value for hours",
+							&*std::prev(m_end),
+							0);
 					}
 					const auto &minutes
 						= boost::lexical_cast<uint16_t>(&*(m_end - 4), 2);
 					if (minutes > 59) {
-						throw MessageFormatException(
-							"Time stamp message has wrong value for minutes");
+						throw ProtocolError(
+							"Time stamp message has wrong value for minutes",
+							&*std::prev(m_end),
+							0);
 					}
 					const auto &seconds
 						= boost::lexical_cast<uint16_t>(&*(m_end - 2), 2);
 					if (seconds > 59) {
-						throw MessageFormatException(
-							"Time stamp message has wrong value for seconds");
+						throw ProtocolError(
+							"Time stamp message has wrong value for seconds",
+							&*std::prev(m_end),
+							0);
 					}
 					const pt::ptime time(
 						gr::date(year, month, day),
@@ -147,11 +159,23 @@ namespace {
 					client.m_lastServerTimeUpdate = std::move(now);
 					client.m_lastKnownServerTime = std::move(time);
 				} catch (const boost::bad_lexical_cast &) {
-					throw MessageFormatException(
-						"Time stamp message has wrong format");
+					throw ProtocolError(
+						"Time stamp message has wrong format",
+						&*std::prev(m_end),
+						0);
 				}
-				boost::format message("Server time: %1%.");
+				boost::format message(
+					"Server local time: %1%. Received %2$.02f %3%.");
 				message % client.m_lastKnownServerTime;
+				if (client.GetNumberOfReceivedBytes() > (1024 * 1024)) {
+					message
+						%	(client.GetNumberOfReceivedBytes() / (1024 * 1024))
+						%	"megabytes";
+				} else {
+					message
+						%	(client.GetNumberOfReceivedBytes() / 1024)
+						%	"kilobytes";
+				}
 				client.LogDebug(message.str());
 			}
 		private:
@@ -260,7 +284,7 @@ namespace {
 							"login request",
 							"+ Successful login\n",
 							"- Login Failed\n")) {
-					throw Client::Exception("Failed to login");
+					throw Exception("Failed to login");
 				}
 			}
 
@@ -304,8 +328,8 @@ namespace {
 							bufferEnd,
 							measurement);
 					default:
-						for (; messageBegin != bufferEnd; ++messageBegin) {
-							if (*messageBegin == SOH || *messageBegin == '\n') {
+						for ( ; messageBegin != bufferEnd; ++messageBegin) {
+							if (*messageBegin == '\n') {
 								++messageBegin;
 								break;
 							}
@@ -344,8 +368,14 @@ namespace {
 			
 			auto end = std::find(messageBegin, bufferEnd, EXT);
 			if (end == bufferEnd) {
-				throw MessageFormatException(
-					"Ddfplus message does not have message end");
+				if (std::distance(messageBegin, bufferEnd) == 1) {
+					// Workaround for strange protocol behavior "0a 01 <0a>".
+					return end;
+				}
+				throw ProtocolError(
+					"Ddfplus message does not have end",
+					&*std::prev(bufferEnd),
+					EXT);
 			}
 
 			switch (*messageBegin++) {
@@ -360,8 +390,10 @@ namespace {
 					TimeMessage(messageBegin, end).Handle(*this);
 					break;
 				default:
-					LogDebug("Unknown ddfplus message type received.");
-					break;
+					throw ProtocolError(
+						"Unknown ddfplus message",
+						&*std::prev(messageBegin),
+						0);
 			}
 		
 			return ++end;
@@ -377,15 +409,19 @@ namespace {
 			auto symbolEnd
 				= std::find(messageBegin, messageEnd, VARIABLE_FIELD_END);
 			if (std::distance(symbolEnd, messageEnd) < 8) {
-				throw MessageFormatException(
-					"Trading message does not have symbol");
+				throw ProtocolError(
+					"Trading message does not have symbol",
+					&*std::prev(messageEnd),
+					VARIABLE_FIELD_END);
 			}
 
 			auto textBegin = std::next(symbolEnd);
 			const auto &subType = *textBegin;
 			if (*(++textBegin) != STX) {
-				throw MessageFormatException(
-					"Trading message does not have symbol");
+				throw ProtocolError(
+					"Trading message does not have symbol",
+					&*std::prev(textBegin),
+					STX);
 			}
 
 			switch (subType) {
@@ -399,49 +435,56 @@ namespace {
 				.GetSource()
 				.FindSecurity(std::string(messageBegin, symbolEnd));
 			if (!security) {
-				throw MessageFormatException(
-					"Trading message has unknown symbol");
+				throw Exception("Trading message has unknown symbol");
 			}
 			
 			++textBegin;
 			if (*textBegin != 'A') {
-				throw MessageFormatException(
-					"Trading sub-message has unsupported base for price");
+				throw ProtocolError(
+					"Trading sub-message has unsupported base for price",
+					&*textBegin,
+					'A');
 			}
 			++textBegin;
 			if (*textBegin != 'J') {
-				throw MessageFormatException(
-					"Trading sub-message has unsupported exchange");
+				throw ProtocolError(
+					"Trading sub-message has unsupported exchange",
+					&*textBegin,
+					'J');
 			}
 
 			textBegin += 3;
-			HandleNewDdfPlusTradeMessage(
-				subType,
-				*security,
-				time,
-				textBegin,
-				messageEnd,
-				timeMeasurement);
+			switch (subType) {
+				case '7':
+					HandleNewDdfPlusMessage7(
+						*security,
+						time,
+						textBegin,
+						messageEnd,
+						timeMeasurement);
+					break;
+				default:
+					AssertFail("Unknown sub-message type");
+					break;
+			}
 
 		}
 		
-		void HandleNewDdfPlusTradeMessage(
-				char type,
+		void HandleNewDdfPlusMessage7(
 				DdfPlus::Security &security,
 				const pt::ptime &time,
 				const Buffer::const_iterator &begin,
 				const Buffer::const_iterator &end,
 				const TimeMeasurement::Milestones &timeMeasurement) {
-			
-			AssertEq('7', type);
-			UseUnused(type);
 
 			auto priceRange = boost::make_iterator_range(
 				begin,
 				std::find(begin, end, VARIABLE_FIELD_END));
 			if (boost::end(priceRange) == end) {
-				throw MessageFormatException(
-					"Trading sub-message does not have price");
+				throw ProtocolError(
+					"Trading sub-message does not have price",
+					&*std::prev(end),
+					VARIABLE_FIELD_END);
 			}
 
 			auto sizeRange = boost::make_iterator_range(
@@ -451,8 +494,10 @@ namespace {
 					end,
 					VARIABLE_FIELD_END));
 			if (boost::end(sizeRange) == end) {
-				throw MessageFormatException(
-					"Trading sub-message does not have size");
+				throw ProtocolError(
+					"Trading sub-message does not have size",
+					&*std::prev(end),
+					VARIABLE_FIELD_END);
 			}
 
 			security.AddLevel1Tick(
